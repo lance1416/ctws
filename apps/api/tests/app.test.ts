@@ -30,7 +30,12 @@ describe('app', () => {
   it('publishes an OpenAPI document', async () => {
     const res = await ctx.app.inject({ method: 'GET', url: '/api/v1/openapi.json' })
     expect(res.statusCode).toBe(200)
-    expect(res.json()).toMatchObject({ openapi: expect.stringMatching(/^3\./) })
+    const doc = res.json()
+    expect(doc).toMatchObject({ openapi: expect.stringMatching(/^3\./) })
+
+    const register = doc.paths['/api/v1/auth/register'].post
+    expect(register).toBeDefined()
+    expect(register.requestBody.content['application/json'].schema.required).toContain('timezone')
   })
 
   it('returns a problem-details 400 for a Zod validation failure', async () => {

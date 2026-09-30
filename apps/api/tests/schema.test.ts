@@ -14,12 +14,12 @@ afterAll(async () => {
 
 async function columns(table: string) {
   const rows = await ctx.db.execute(sql`
-    select column_name, is_nullable
+    select column_name, is_nullable, data_type
     from information_schema.columns
     where table_name = ${table}
     order by column_name
   `)
-  return rows.rows as { column_name: string; is_nullable: string }[]
+  return rows.rows as { column_name: string; is_nullable: string; data_type: string }[]
 }
 
 describe('migrations', () => {
@@ -47,6 +47,25 @@ describe('migrations', () => {
     expect(names).toEqual(
       expect.arrayContaining(['id', 'email', 'password_hash', 'timezone', 'created_at']),
     )
+  })
+
+  // timestamptz is a project-wide constraint (M3 timezone correctness depends on it).
+  it('stores every timestamp column as timestamptz and non-null', async () => {
+    const expected = {
+      users: ['created_at'],
+      sessions: ['expires_at', 'created_at', 'last_seen_at'],
+      workspaces: ['created_at'],
+      workspace_members: ['joined_at'],
+    }
+    for (const [table, names] of Object.entries(expected)) {
+      const cols = await columns(table)
+      for (const name of names) {
+        const col = cols.find((c) => c.column_name === name)
+        expect(col, `${table}.${name} exists`).toBeDefined()
+        expect(col!.data_type, `${table}.${name}`).toBe('timestamp with time zone')
+        expect(col!.is_nullable, `${table}.${name}`).toBe('NO')
+      }
+    }
   })
 
   it('enforces unique emails', async () => {

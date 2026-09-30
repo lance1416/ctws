@@ -15,8 +15,9 @@ describe('cookieOptions', () => {
     expect(cookieOptions(parseEnv(base)).sameSite).toBe('lax')
   })
 
-  // Review Focus #1 -- SameSite=None must always be paired with Secure, or browsers drop the cookie
-  it('always pairs sameSite=none with secure', () => {
+  // The none-requires-secure invariant itself is enforced and tested in env.test.ts; this only
+  // checks that cookieOptions mirrors the parsed env.
+  it('mirrors the parsed sameSite and secure settings', () => {
     const opts = cookieOptions(
       parseEnv({ ...base, COOKIE_SAMESITE: 'none', COOKIE_SECURE: 'true' }),
     )

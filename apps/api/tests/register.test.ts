@@ -41,6 +41,16 @@ describe('POST /api/v1/auth/register', () => {
       payload: body,
     })
     expect(res.headers['set-cookie']).toBeDefined()
+
+    // The cookie must be a usable session, not merely present.
+    const cookie = String(res.headers['set-cookie']).split(';')[0]!
+    const me = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/v1/auth/me',
+      headers: { cookie },
+    })
+    expect(me.statusCode).toBe(200)
+    expect(me.json()).toMatchObject({ email: 'new@example.com' })
   })
 
   // Review Focus #5 -- a duplicate email must be 409, not 500
@@ -85,7 +95,7 @@ describe('POST /api/v1/auth/register', () => {
       headers,
       payload: body,
     })
-    expect(JSON.stringify(res.json())).not.toMatch(/argon2|passwordHash|password_hash/)
+    expect(Object.keys(res.json()).sort()).toEqual(['email', 'id', 'timezone', 'workspaceId'])
   })
 })
 
