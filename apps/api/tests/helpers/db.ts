@@ -3,7 +3,7 @@ import { closeDb, createDb } from '../../src/db/client'
 import { runMigrations } from '../../src/db/migrate'
 
 export async function withDatabase() {
-  const container = await new PostgreSqlContainer('postgres:17-alpine').start()
+  const container = await new PostgreSqlContainer('postgres:18-alpine').start()
   const connectionString = container.getConnectionUri()
   await runMigrations(connectionString)
   const db = createDb(connectionString)
