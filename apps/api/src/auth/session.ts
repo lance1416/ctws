@@ -1,5 +1,5 @@
 import { and, eq, gt } from 'drizzle-orm'
-import { v7 as uuidv7, validate as isUuid } from 'uuid'
+import { v4 as uuidv4, validate as isUuid } from 'uuid'
 import type { Db } from '../db/client'
 import { sessions } from '../db/schema'
 
@@ -8,7 +8,12 @@ export async function createSession(
   userId: string,
   ttlDays: number,
 ): Promise<{ id: string; expiresAt: Date }> {
-  const id = uuidv7()
+  // Session ids are opaque bearer credentials (design spec §10.1), not
+  // entities — unlike the rest of the schema they must NOT be v7, since v7
+  // embeds a 48-bit creation timestamp and would make the token partially
+  // predictable/time-sortable. Use v4 here on purpose; do not "fix" this
+  // back to v7 for consistency with other ids.
+  const id = uuidv4()
   const expiresAt = new Date(Date.now() + ttlDays * 86_400_000)
   await db.insert(sessions).values({ id, userId, expiresAt })
   return { id, expiresAt }

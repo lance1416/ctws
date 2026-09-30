@@ -60,6 +60,20 @@ describe('session', () => {
     expect(days).toBeLessThan(7.1)
   })
 
+  it('generates the session id as a random (v4) uuid, not a time-ordered one', async () => {
+    const a = await createSession(ctx.db, userId, 30)
+    const b = await createSession(ctx.db, userId, 30)
+
+    // The version nibble is the first character of the third group.
+    expect(a.id.split('-')[2]?.[0]).toBe('4')
+    expect(b.id.split('-')[2]?.[0]).toBe('4')
+
+    // A time-ordered id (v7) would share a long common prefix between two
+    // sessions created back to back; a v4 id should not.
+    const commonPrefixLength = [...a.id].findIndex((ch, i) => ch !== b.id[i])
+    expect(commonPrefixLength).toBeLessThan(8)
+  })
+
   // Cross-task dependency for Task 7: malformed/attacker-controlled session ids
   // must never reach the database as a raw UUID query parameter.
   describe('malformed session ids', () => {
