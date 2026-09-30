@@ -12,6 +12,7 @@ import { authRoutes } from './auth/routes'
 import { warmDummyHash } from './auth/service'
 import type { Db } from './db/client'
 import type { Env } from './env'
+import { registerGuards } from './guards'
 import { sendProblem } from './problem'
 
 export async function buildApp(opts: { env: Env; db: Db }): Promise<FastifyInstance> {
@@ -32,6 +33,9 @@ export async function buildApp(opts: { env: Env; db: Db }): Promise<FastifyInsta
     openapi: { info: { title: 'CTWS API', version: '1' } },
     transform: jsonSchemaTransform,
   })
+
+  // CORS, CSRF and rate limiting; must precede the routes they guard.
+  await registerGuards(app)
 
   // Must be registered before the auth routes so `reply.setCookie` /
   // `reply.clearCookie` are available inside them.

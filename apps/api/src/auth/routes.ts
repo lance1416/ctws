@@ -18,7 +18,10 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
   typed.post(
     '/auth/register',
-    { schema: { body: registerBody, response: { 201: userResponse } } },
+    {
+      config: { rateLimit: { max: 20, timeWindow: '1 minute' } },
+      schema: { body: registerBody, response: { 201: userResponse } },
+    },
     async (req, reply) => {
       const { env, db } = app
       if (env.authRegistration === 'closed') {
@@ -49,7 +52,10 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
   typed.post(
     '/auth/login',
-    { schema: { body: loginBody, response: { 200: userResponse } } },
+    {
+      config: { rateLimit: { max: 20, timeWindow: '1 minute' } },
+      schema: { body: loginBody, response: { 200: userResponse } },
+    },
     async (req, reply) => {
       const { env, db } = app
       const result = await authenticate(db, req.body.email, req.body.password)

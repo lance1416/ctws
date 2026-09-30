@@ -48,6 +48,7 @@ describe('app', () => {
     const res = await validationApp.inject({
       method: 'POST',
       url: '/api/v1/__test-validation',
+      headers: { 'x-ctws-client': 'web' },
       payload: { name: 42 },
     })
 
