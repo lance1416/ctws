@@ -21,7 +21,7 @@ describe('registerBody', () => {
     expect(registerBody.safeParse({ ...valid, password: 'short' }).success).toBe(false)
   })
 
-  // Review Focus #3 —— 非法时区必须在边界处被拒
+  // Review Focus #3 -- an invalid timezone must be rejected at the boundary
   it.each(['GMT+8', '', 'Not/AZone', 'UTC+08:00', 'asia/shanghai'])(
     'rejects invalid IANA timezone %j',
     (timezone) => {
@@ -40,7 +40,7 @@ describe('registerBody', () => {
     expect(registerBody.safeParse({ ...valid, role: 'admin' }).success).toBe(false)
   })
 
-  // AUTH_REGISTRATION=invite 时由端点校验其值；schema 只负责它是可选字符串
+  // When AUTH_REGISTRATION=invite, the endpoint validates its value; the schema only ensures it is an optional string
   it('accepts an optional invite code', () => {
     expect(registerBody.safeParse({ ...valid, inviteCode: 'let-me-in' }).success).toBe(true)
     expect(registerBody.safeParse(valid).success).toBe(true)
@@ -49,7 +49,7 @@ describe('registerBody', () => {
 
 describe('loginBody', () => {
   it('does not impose a password length rule', () => {
-    // 登录不该泄露密码策略，也不该因历史密码不合新规而拒绝
+    // Login must not leak the password policy, nor reject because a historical password no longer meets the new rules
     expect(loginBody.safeParse({ email: 'a@b.com', password: 'x' }).success).toBe(true)
   })
 })

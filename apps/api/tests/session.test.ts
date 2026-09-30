@@ -30,7 +30,7 @@ describe('session', () => {
     expect(await findValidSession(ctx.db, '00000000-0000-0000-0000-000000000000')).toBeNull()
   })
 
-  // Review Focus #4 —— 过期 session 必须被拒
+  // Review Focus #4 -- an expired session must be rejected
   it('rejects an expired session', async () => {
     const session = await createSession(ctx.db, userId, 30)
     await ctx.db.execute(sql`
@@ -39,7 +39,7 @@ describe('session', () => {
     expect(await findValidSession(ctx.db, session.id)).toBeNull()
   })
 
-  // Review Focus #4 —— 吊销后必须立即失效
+  // Review Focus #4 -- revocation must take effect immediately
   it('rejects a revoked session', async () => {
     const session = await createSession(ctx.db, userId, 30)
     await revokeSession(ctx.db, session.id)

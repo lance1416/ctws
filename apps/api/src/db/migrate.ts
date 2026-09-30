@@ -13,7 +13,7 @@ export async function runMigrations(connectionString: string): Promise<void> {
   }
 }
 
-// 允许作为脚本直接执行：pnpm --filter @ctws/api db:migrate
+// Allow running directly as a script: pnpm --filter @ctws/api db:migrate
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const url = process.env.DATABASE_URL
   if (!url) throw new Error('DATABASE_URL is required')

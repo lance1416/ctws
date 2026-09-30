@@ -7,7 +7,7 @@ export const users = pgTable(
     id: uuid('id').primaryKey(),
     email: text('email').notNull(),
     passwordHash: text('password_hash').notNull(),
-    // IANA 时区标识符，见 spec §5 / Global Constraints
+    // IANA timezone identifier; see spec §5 / Global Constraints
     timezone: text('timezone').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
