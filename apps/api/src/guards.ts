@@ -6,9 +6,17 @@ import { sendProblem } from './problem'
 const CSRF_HEADER = 'x-ctws-client'
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 
+// OPTIONS must stay exempt -- a preflight does not carry custom headers.
+export function requiresCsrfHeader(method: string): boolean {
+  return !SAFE_METHODS.has(method)
+}
+
 export async function registerGuards(app: FastifyInstance): Promise<void> {
-  // Registered first so its hook answers preflights and adds CORS headers
-  // before the CSRF hook below ever runs.
+  // ORDER MATTERS: CORS must be registered before the CSRF hook below. Its
+  // onRequest hook answers every OPTIONS request itself (a bare OPTIONS gets
+  // 400 'Invalid Preflight Request') and adds CORS headers, so preflights never
+  // reach the CSRF hook. Reordering these two breaks every cross-origin browser
+  // write, and the failure surfaces as a CORS error, not a CSRF one.
   await app.register(fastifyCors, {
     origin: app.env.corsOrigins,
     credentials: true,
@@ -27,10 +35,10 @@ export async function registerGuards(app: FastifyInstance): Promise<void> {
   // custom header cross-origin without a preflight, and the preflight is
   // gated by the CORS allowlist.
   //
-  // OPTIONS must be exempt -- a preflight does not carry custom headers.
-  // Blocking it would make every cross-origin write from a browser fail.
+  // Blocking OPTIONS here would make every cross-origin write from a browser
+  // fail (see requiresCsrfHeader).
   app.addHook('onRequest', async (req, reply) => {
-    if (SAFE_METHODS.has(req.method)) return
+    if (!requiresCsrfHeader(req.method)) return
     if (req.headers[CSRF_HEADER]) return
     return sendProblem(reply, 403, `Missing ${CSRF_HEADER} header`)
   })

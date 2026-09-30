@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { requiresCsrfHeader } from '../src/guards'
 import { withApp } from './helpers/app'
 
 const ORIGIN = 'https://app.test'
@@ -134,5 +135,17 @@ describe('rate limiting', () => {
       codes.push((await ctx.app.inject({ method: 'GET', url: '/api/v1/health' })).statusCode)
     }
     expect(new Set(codes)).toEqual(new Set([200]))
+  })
+})
+
+describe('requiresCsrfHeader', () => {
+  // Pins the safe-method set directly: the integration preflight test cannot catch a
+  // regression here, because the CORS plugin answers OPTIONS before the CSRF hook runs.
+  it.each(['GET', 'HEAD', 'OPTIONS'])('does not require the header for %s', (method) => {
+    expect(requiresCsrfHeader(method)).toBe(false)
+  })
+
+  it.each(['POST', 'PUT', 'PATCH', 'DELETE'])('requires the header for %s', (method) => {
+    expect(requiresCsrfHeader(method)).toBe(true)
   })
 })
