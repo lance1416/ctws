@@ -1,0 +1,60 @@
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { z } from 'zod'
+import { buildApp } from '../src/app'
+import { withApp } from './helpers/app'
+
+let ctx: Awaited<ReturnType<typeof withApp>>
+
+beforeAll(async () => {
+  ctx = await withApp()
+}, 120_000)
+
+afterAll(async () => {
+  await ctx?.stop()
+})
+
+describe('app', () => {
+  it('serves a health check', async () => {
+    const res = await ctx.app.inject({ method: 'GET', url: '/api/v1/health' })
+    expect(res.statusCode).toBe(200)
+    expect(res.json()).toMatchObject({ status: 'ok' })
+  })
+
+  it('returns RFC 9457 problem details for unknown routes', async () => {
+    const res = await ctx.app.inject({ method: 'GET', url: '/api/v1/nope' })
+    expect(res.statusCode).toBe(404)
+    expect(res.headers['content-type']).toContain('application/problem+json')
+    expect(res.json()).toMatchObject({ status: 404, title: expect.any(String) })
+  })
+
+  it('publishes an OpenAPI document', async () => {
+    const res = await ctx.app.inject({ method: 'GET', url: '/api/v1/openapi.json' })
+    expect(res.statusCode).toBe(200)
+    expect(res.json()).toMatchObject({ openapi: expect.stringMatching(/^3\./) })
+  })
+
+  it('returns a problem-details 400 for a Zod validation failure', async () => {
+    // Fresh instance: routes cannot be added to ctx.app after it is ready/listening, and
+    // this throwaway route must never ship in production code.
+    const validationApp = await buildApp({ env: ctx.env, db: ctx.db })
+    validationApp.withTypeProvider().route({
+      method: 'POST',
+      url: '/api/v1/__test-validation',
+      schema: { body: z.object({ name: z.string() }).strict() },
+      handler: async () => ({ ok: true }),
+    })
+    await validationApp.ready()
+
+    const res = await validationApp.inject({
+      method: 'POST',
+      url: '/api/v1/__test-validation',
+      payload: { name: 42 },
+    })
+
+    expect(res.statusCode).toBe(400)
+    expect(res.headers['content-type']).toContain('application/problem+json')
+    expect(res.json()).toMatchObject({ status: 400, title: expect.any(String) })
+
+    await validationApp.close()
+  })
+})
