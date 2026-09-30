@@ -1,8 +1,25 @@
-import type { preHandlerAsyncHookHandler } from 'fastify'
+import type { FastifyRequest, preHandlerAsyncHookHandler } from 'fastify'
 import { sendProblem } from '../problem'
 import { SESSION_COOKIE } from './cookie'
 import { getWorkspaceIdForUser } from './service'
 import { findValidSession } from './session'
+
+export type AuthedUser = { id: string; workspaceId: string }
+
+// A request that has already passed through `requireUser`. `user` is
+// required here (unlike the optional `FastifyRequest.user` below), so
+// handlers registered with `requireUser` as their preHandler can use
+// `authedUser(req)` once instead of repeating `req.user!` at every call
+// site -- see Fix round 1.
+export type AuthedRequest = FastifyRequest & { user: AuthedUser }
+
+// Narrows a request to `AuthedRequest`. Only call this from a handler whose
+// route registers `requireUser` as a preHandler -- that is what guarantees
+// `req.user` is populated. The single `!` this centralises would otherwise
+// be duplicated at every authenticated route.
+export function authedUser(req: FastifyRequest): AuthedUser {
+  return (req as AuthedRequest).user!
+}
 
 // Must stay a `function` declaration, not an arrow function: Fastify binds
 // `this` to the calling FastifyInstance for preHandler hooks declared this

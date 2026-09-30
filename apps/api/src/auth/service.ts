@@ -74,18 +74,26 @@ export async function registerUser(
 // still pays for one argon2id verification -- otherwise the response time
 // (or a hardcoded hash drifting from the library's current cost params)
 // could leak whether an email is registered. Derived lazily from
-// `hashPassword` at first use, rather than hard-coded as the brief
-// suggests, so it always reflects this deployment's actual argon2
-// parameters instead of a string frozen at the time this file was written.
-// Tradeoff: the very first login attempt after process start pays for one
-// extra hash instead of zero, and this constant is per-process rather than
-// a fixed literal -- both acceptable given the alternative (a value that
-// silently stops matching current cost parameters as the library or its
-// defaults change).
-let dummyHash: Promise<string> | undefined
-function getDummyHash(): Promise<string> {
-  if (!dummyHash) dummyHash = hashPassword('unused-dummy-password-for-timing-equalisation')
-  return dummyHash
+// `hashPassword`, rather than hard-coded as the brief suggests, so it always
+// reflects this deployment's actual argon2 parameters instead of a string
+// frozen at the time this file was written.
+//
+// The promise is created eagerly at module load (not on first call), and
+// `warmDummyHash` lets `buildApp` await it before the server starts
+// accepting requests -- see Fix round 1, Important #2. That removes the
+// asymmetry a purely lazy cache would have had: without warming, the first
+// authenticate() call of a process to hit the unknown-email branch would
+// pay for `hashPassword` *in addition to* `verifyPassword` (roughly 2x one
+// argon2 op vs 1x), while every known-email call, cold or not, only ever
+// pays for one. Warming at startup means that extra cost is paid once,
+// before any request arrives, so no single login observation can see it.
+const dummyHash: Promise<string> = hashPassword('unused-dummy-password-for-timing-equalisation')
+
+// Call once during app startup (before the server is ready to accept
+// requests) so the dummy hash above is already resolved by the time any
+// real login request -- known or unknown email -- reaches `authenticate`.
+export async function warmDummyHash(): Promise<void> {
+  await dummyHash
 }
 
 export async function authenticate(
@@ -103,8 +111,9 @@ export async function authenticate(
   if (!row) {
     // Run a verification against a dummy hash even for an unregistered
     // email, so this path is not distinguishable from a wrong password by
-    // response time.
-    await verifyPassword(await getDummyHash(), password)
+    // response time. `dummyHash` is already resolved (see `warmDummyHash`),
+    // so this `await` costs nothing beyond the verify itself.
+    await verifyPassword(await dummyHash, password)
     return null
   }
   return (await verifyPassword(row.passwordHash, password)) ? { userId: row.id } : null

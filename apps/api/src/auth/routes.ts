@@ -3,7 +3,7 @@ import type { FastifyPluginAsync } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { sendProblem } from '../problem'
 import { clearSessionCookie, SESSION_COOKIE, setSessionCookie } from './cookie'
-import { requireUser } from './require-user'
+import { authedUser, requireUser } from './require-user'
 import { createSession, revokeSession } from './session'
 import {
   authenticate,
@@ -56,14 +56,19 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       // Same status and title as an unknown email -- see authenticate().
       if (!result) return sendProblem(reply, 401, 'Invalid email or password')
 
-      const session = await createSession(db, result.userId, env.sessionTtlDays)
-      setSessionCookie(reply, env, session.id, session.expiresAt)
-
+      // Resolve everything needed for a 200 BEFORE minting a session or
+      // setting the cookie. A session must never be created, and a cookie
+      // must never be handed out, for a request we are about to reject --
+      // otherwise a caller who gets a 401 here would still be left holding
+      // a live, usable session (see Fix round 1, Important #1).
       const workspaceId = await getWorkspaceIdForUser(db, result.userId)
       if (!workspaceId) return sendProblem(reply, 401, 'Invalid email or password')
 
       const user = await loadUser(db, result.userId, workspaceId)
       if (!user) return sendProblem(reply, 401, 'Invalid email or password')
+
+      const session = await createSession(db, result.userId, env.sessionTtlDays)
+      setSessionCookie(reply, env, session.id, session.expiresAt)
       return reply.send(user)
     },
   )
@@ -72,7 +77,8 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     '/auth/me',
     { preHandler: requireUser, schema: { response: { 200: userResponse } } },
     async (req, reply) => {
-      const user = await loadUser(app.db, req.user!.id, req.user!.workspaceId)
+      const { id, workspaceId } = authedUser(req)
+      const user = await loadUser(app.db, id, workspaceId)
       if (!user) return sendProblem(reply, 401, 'Authentication required')
       return reply.send(user)
     },

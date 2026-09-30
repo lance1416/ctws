@@ -9,11 +9,17 @@ import {
   type ZodTypeProvider,
 } from 'fastify-type-provider-zod'
 import { authRoutes } from './auth/routes'
+import { warmDummyHash } from './auth/service'
 import type { Db } from './db/client'
 import type { Env } from './env'
 import { sendProblem } from './problem'
 
 export async function buildApp(opts: { env: Env; db: Db }): Promise<FastifyInstance> {
+  // Resolve the login timing-equalisation hash before the app is ready, so
+  // the very first login request -- known or unknown email -- never pays
+  // for hashing it. See auth/service.ts `warmDummyHash`.
+  await warmDummyHash()
+
   const app = Fastify({ logger: false }).withTypeProvider<ZodTypeProvider>()
 
   app.setValidatorCompiler(validatorCompiler)
