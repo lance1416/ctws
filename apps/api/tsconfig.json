@@ -5,5 +5,5 @@
     "lib": ["ES2023"],
     "noEmit": true
   },
-  "include": ["src", "tests", "drizzle.config.ts", "tsup.config.ts"]
+  "include": ["src", "tests", "drizzle.config.ts", "tsup.config.ts", "vitest.config.ts"]
 }
