@@ -4,3 +4,5 @@ node_modules
 .git
 docs
 .superpowers
+.env
+.env.*
