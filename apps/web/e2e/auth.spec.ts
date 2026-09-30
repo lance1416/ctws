@@ -1,7 +1,9 @@
 import { expect, test } from '@playwright/test'
 
-// Requires the API running with AUTH_REGISTRATION=open and CORS_ORIGINS including
-// http://localhost:5173. Register is rate limited (20/min/IP), so each run uses a unique email.
+// Requires the API on http://localhost:3000 with AUTH_REGISTRATION=open,
+// CORS_ORIGINS=http://127.0.0.1:5173, COOKIE_SAMESITE=none and COOKIE_SECURE=true. The web app
+// is served from 127.0.0.1, a different site than localhost, so the cookie is cross-site.
+// Register is rate limited (20/min/IP), so each run uses a unique email.
 test('register, stay signed in across a reload, then log out', async ({ page, context }) => {
   const email = `e2e-${Date.now()}@example.com`
 
