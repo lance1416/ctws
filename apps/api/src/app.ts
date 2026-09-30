@@ -1,3 +1,4 @@
+import fastifyCookie from '@fastify/cookie'
 import fastifySwagger from '@fastify/swagger'
 import Fastify, { type FastifyError, type FastifyInstance } from 'fastify'
 import {
@@ -7,6 +8,7 @@ import {
   validatorCompiler,
   type ZodTypeProvider,
 } from 'fastify-type-provider-zod'
+import { authRoutes } from './auth/routes'
 import type { Db } from './db/client'
 import type { Env } from './env'
 import { sendProblem } from './problem'
@@ -24,6 +26,10 @@ export async function buildApp(opts: { env: Env; db: Db }): Promise<FastifyInsta
     openapi: { info: { title: 'CTWS API', version: '1' } },
     transform: jsonSchemaTransform,
   })
+
+  // Must be registered before the auth routes so `reply.setCookie` /
+  // `reply.clearCookie` are available inside them.
+  await app.register(fastifyCookie)
 
   app.setNotFoundHandler((_req, reply) => sendProblem(reply, 404, 'Not Found'))
 
@@ -50,6 +56,8 @@ export async function buildApp(opts: { env: Env; db: Db }): Promise<FastifyInsta
   app.get('/api/v1/health', { schema: { hide: true } }, async () => ({ status: 'ok' }))
 
   app.get('/api/v1/openapi.json', { schema: { hide: true } }, async () => app.swagger())
+
+  await app.register(authRoutes, { prefix: '/api/v1' })
 
   return app
 }
