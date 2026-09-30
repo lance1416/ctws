@@ -51,3 +51,10 @@ jobs:
       - run: pnpm --filter @ctws/web e2e
       - if: failure()
         run: docker compose logs api
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-artifacts
+          path: |
+            apps/web/playwright-report/
+            apps/web/test-results/

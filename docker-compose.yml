@@ -20,6 +20,15 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
     env_file: .env
+    environment:
+      # Inside compose the database host is the postgres service, not localhost;
+      # this overrides the value from env_file (which stays valid for host tooling).
+      DATABASE_URL: postgres://ctws:ctws@postgres:5432/ctws
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:3000/api/v1/health']
+      interval: 5s
+      timeout: 5s
+      retries: 10
     depends_on:
       postgres:
         condition: service_healthy
