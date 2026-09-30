@@ -1,0 +1,63 @@
+#!/bin/sh
+# Enforce the project's commit convention:
+#   - Conventional Commits subject
+#   - subject line ONLY: no body, no trailers (and therefore no Co-Authored-By)
+#
+# Dependency-free on purpose: this must work before any package manager is
+# installed, and in CI containers that have nothing but git and a shell.
+#
+# Enable in a fresh clone with:  git config core.hooksPath .githooks
+
+set -eu
+
+msg_file="$1"
+types='feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert'
+max_len=72
+
+fail() {
+	echo "" >&2
+	echo "  commit-msg rejected: $1" >&2
+	shift
+	for line in "$@"; do
+		echo "  $line" >&2
+	done
+	echo "" >&2
+	exit 1
+}
+
+# Drop comment lines (git's template) and blank lines.
+content=$(grep -v '^[[:space:]]*#' "$msg_file" | grep -v '^[[:space:]]*$' || true)
+
+if [ -z "$content" ]; then
+	fail "empty commit message."
+fi
+
+subject=$(printf '%s\n' "$content" | head -n 1)
+rest=$(printf '%s\n' "$content" | tail -n +2)
+
+if printf '%s\n' "$rest" | grep -qi '^[[:space:]]*co-authored-by:'; then
+	fail "Co-Authored-By trailers are not allowed in this repository."
+fi
+
+if [ -n "$rest" ]; then
+	fail "subject line only -- no commit body allowed." \
+		"offending line(s):" \
+		"$(printf '%s\n' "$rest" | sed 's/^/    /')"
+fi
+
+if ! printf '%s' "$subject" | grep -qE "^($types)(\([a-z0-9][a-z0-9._/-]*\))?!?: .+$"; then
+	fail "subject is not a valid Conventional Commit." \
+		"got:      $subject" \
+		"expected: <type>[(scope)][!]: <description>" \
+		"types:    $(printf '%s' "$types" | tr '|' ' ')" \
+		"example:  feat(api): add task move endpoint"
+fi
+
+if printf '%s' "$subject" | grep -qE '\.$'; then
+	fail "subject must not end with a period." "got: $subject"
+fi
+
+len=$(printf '%s' "$subject" | wc -c | tr -d '[:space:]')
+if [ "$len" -gt "$max_len" ]; then
+	fail "subject is $len characters; limit is $max_len." "got: $subject"
+fi

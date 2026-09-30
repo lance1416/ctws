@@ -1,0 +1,21 @@
+# Normalize line endings: LF in the repository, regardless of author platform.
+# Matters here because development happens on Windows while the API and
+# Postgres run in Linux containers -- CRLF in a shell script breaks the image.
+* text=auto eol=lf
+
+*.sh      text eol=lf
+Dockerfile text eol=lf
+*.bat     text eol=crlf
+*.cmd     text eol=crlf
+
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.pdf  binary
+
+pnpm-lock.yaml -diff linguist-generated
