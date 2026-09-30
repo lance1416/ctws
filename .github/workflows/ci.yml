@@ -19,3 +19,35 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @ctws/web exec playwright install --with-deps chromium
+      # Localhost is plain http, so the cookie cannot be Secure; SameSite stays at its lax default.
+      - name: Write .env for the api container
+        run: |
+          cat > .env <<'ENV'
+          PORT=3000
+          DATABASE_URL=postgres://ctws:ctws@postgres:5432/ctws
+          AUTH_REGISTRATION=open
+          CORS_ORIGINS=http://localhost:5173
+          COOKIE_SECURE=false
+          ENV
+      - run: docker compose up -d --wait postgres
+      # Migrations run from the host against the published Postgres port.
+      - run: pnpm --filter @ctws/api db:migrate
+        env:
+          DATABASE_URL: postgres://ctws:ctws@localhost:5432/ctws
+      - run: docker compose up -d --build --wait api
+      - run: curl --fail --retry 10 --retry-delay 2 --retry-connrefused http://localhost:3000/api/v1/health
+      - run: pnpm --filter @ctws/web e2e
+      - if: failure()
+        run: docker compose logs api
