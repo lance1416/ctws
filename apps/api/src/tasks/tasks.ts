@@ -6,6 +6,7 @@ import { v7 as uuidv7 } from 'uuid'
 import type { Db, Queryable } from '../db/client'
 import { projects, tasks } from '../db/schema'
 import { appendEvent, type AppendEventInput } from './events'
+import { TaskNotFoundError } from './errors'
 import { ProjectNotFoundError } from './projects'
 
 export type Task = typeof tasks.$inferSelect
@@ -32,17 +33,6 @@ export type TaskCtx = { workspaceId: string; actorUserId: string }
  * rather than a safety invariant.
  */
 export const LOCK_TASK_TREE = 7_301_003
-
-/**
- * Raised when a task does not exist, is soft-deleted, or belongs to another workspace. One error
- * on purpose, for the same reason as `ProjectNotFoundError`: ids must not be probeable.
- */
-export class TaskNotFoundError extends Error {
-  constructor() {
-    super('Task not found')
-    this.name = 'TaskNotFoundError'
-  }
-}
 
 export class DepthLimitError extends Error {
   constructor() {

@@ -3,6 +3,7 @@ import {
   createTaskBody,
   moveTaskBody,
   projectResponse,
+  taskEventResponse,
   taskResponse,
   updateProjectBody,
   updateTaskBody,
@@ -20,6 +21,8 @@ import {
   updateProject,
   type Project,
 } from './projects'
+import { TaskNotFoundError } from './errors'
+import { DEFAULT_EVENT_LIMIT, InvalidCursorError, listTaskEvents, MAX_EVENT_LIMIT } from './events'
 import { CycleError, InvalidNeighbourError, moveTask } from './move'
 import {
   createTask,
@@ -27,7 +30,6 @@ import {
   listProjectTasks,
   ManualProgressOnParentError,
   softDeleteTask,
-  TaskNotFoundError,
   updateTask,
   type Task,
 } from './tasks'
@@ -64,6 +66,12 @@ function toTaskResponse(t: Task): z.infer<typeof taskResponse> {
 
 const idParams = z.object({ id: z.uuid() }).strict()
 const listQuery = z.object({ archived: z.enum(['true', 'false']).optional() }).strict()
+const eventsQuery = z
+  .object({
+    cursor: z.string().max(256).optional(),
+    limit: z.coerce.number().int().min(1).max(MAX_EVENT_LIMIT).default(DEFAULT_EVENT_LIMIT),
+  })
+  .strict()
 
 // Domain failures map to problem responses; anything else is a bug and propagates to the
 // global error handler. Not-found covers a missing task, parent, or project alike (no probing).
@@ -80,7 +88,7 @@ function sendTaskProblem(reply: FastifyReply, error: unknown): void {
   }
   // A malformed position is the caller's own mistake, and naming a neighbour they already hold
   // leaks nothing, so it is told apart from a not-found.
-  if (error instanceof InvalidNeighbourError) {
+  if (error instanceof InvalidNeighbourError || error instanceof InvalidCursorError) {
     return sendProblem(reply, 400, 'Bad Request', error.message)
   }
   throw error
@@ -253,6 +261,32 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
           req.params.id,
         )
         return reply.status(204).send()
+      } catch (error) {
+        return sendTaskProblem(reply, error)
+      }
+    },
+  )
+
+  typed.get(
+    '/tasks/:id/events',
+    {
+      preHandler: requireUser,
+      schema: {
+        params: idParams,
+        querystring: eventsQuery,
+        response: {
+          200: z
+            .object({
+              events: z.array(taskEventResponse),
+              nextCursor: z.string().nullable(),
+            })
+            .strict(),
+        },
+      },
+    },
+    async (req, reply) => {
+      try {
+        return await listTaskEvents(app.db, authedUser(req).workspaceId, req.params.id, req.query)
       } catch (error) {
         return sendTaskProblem(reply, error)
       }
