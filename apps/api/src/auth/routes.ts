@@ -8,8 +8,9 @@ import { createSession, revokeSession } from './session'
 import {
   authenticate,
   EmailTakenError,
-  getWorkspaceIdForUser,
+  getAuthContext,
   loadUser,
+  RegistrationClosedError,
   registerUser,
 } from './service'
 
@@ -24,15 +25,19 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     },
     async (req, reply) => {
       const { env, db } = app
-      if (env.authRegistration === 'closed') {
-        return sendProblem(reply, 403, 'Registration is closed')
-      }
-      if (env.authRegistration === 'invite' && req.body.inviteCode !== env.authInviteCode) {
-        return sendProblem(reply, 403, 'A valid invite code is required')
-      }
+      // Closed, or invite-only without a matching code: refused unless the users table is empty,
+      // so a fresh instance can always create its first account (which becomes admin). The
+      // emptiness check runs inside registerUser's transaction.
+      const openToAll =
+        env.authRegistration === 'open' ||
+        (env.authRegistration === 'invite' && req.body.inviteCode === env.authInviteCode)
 
       try {
-        const { userId, workspaceId } = await registerUser(db, req.body)
+        const { userId, workspaceId } = await registerUser(db, req.body, {
+          onlyIfFirst: !openToAll,
+        })
+        const ctx = await getAuthContext(db, userId)
+        if (!ctx) throw new Error('freshly registered user has no auth context')
         const session = await createSession(db, userId, env.sessionTtlDays)
         setSessionCookie(reply, env, session.id, session.expiresAt)
         return reply.status(201).send({
@@ -40,8 +45,18 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
           email: req.body.email,
           timezone: req.body.timezone,
           workspaceId,
+          role: ctx.role,
         })
       } catch (error) {
+        if (error instanceof RegistrationClosedError) {
+          return sendProblem(
+            reply,
+            403,
+            env.authRegistration === 'invite'
+              ? 'A valid invite code is required'
+              : 'Registration is closed',
+          )
+        }
         if (error instanceof EmailTakenError) {
           return sendProblem(reply, 409, 'That email is already registered')
         }
@@ -67,10 +82,11 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       // must never be handed out, for a request we are about to reject --
       // otherwise a caller who gets a 401 here would still be left holding
       // a live, usable session (see Fix round 1, Important #1).
-      const workspaceId = await getWorkspaceIdForUser(db, result.userId)
-      if (!workspaceId) return sendProblem(reply, 401, 'Invalid email or password')
+      // Also null for a disabled user: refuse the login rather than mint a dead session.
+      const ctx = await getAuthContext(db, result.userId)
+      if (!ctx) return sendProblem(reply, 401, 'Invalid email or password')
 
-      const user = await loadUser(db, result.userId, workspaceId)
+      const user = await loadUser(db, result.userId, ctx)
       if (!user) return sendProblem(reply, 401, 'Invalid email or password')
 
       const session = await createSession(db, result.userId, env.sessionTtlDays)
@@ -83,8 +99,8 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     '/auth/me',
     { preHandler: requireUser, schema: { response: { 200: userResponse } } },
     async (req, reply) => {
-      const { id, workspaceId } = authedUser(req)
-      const user = await loadUser(app.db, id, workspaceId)
+      const { id, workspaceId, role } = authedUser(req)
+      const user = await loadUser(app.db, id, { workspaceId, role })
       if (!user) return sendProblem(reply, 401, 'Authentication required')
       return reply.send(user)
     },

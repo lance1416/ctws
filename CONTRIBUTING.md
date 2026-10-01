@@ -10,6 +10,10 @@ pnpm install
 cp .env.example .env                  # then edit: set AUTH_REGISTRATION=open for local use
 ```
 
+The first account registered on an empty database becomes the instance admin, locally too (even
+with `AUTH_REGISTRATION=closed`). Later accounts are `member` unless an admin creates them with a
+role via `POST /api/v1/admin/users`.
+
 Commit messages are a single Conventional Commits subject line (lowercase scope, no trailing
 period, at most 72 characters); the hook rejects anything else.
 

@@ -1,5 +1,5 @@
-import { relations } from 'drizzle-orm'
-import { pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import { relations, sql } from 'drizzle-orm'
+import { check, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 
 export const users = pgTable(
   'users',
@@ -9,9 +9,16 @@ export const users = pgTable(
     passwordHash: text('password_hash').notNull(),
     // IANA timezone identifier; see spec §5 / Global Constraints
     timezone: text('timezone').notNull(),
+    // Instance role (who may administer the instance), not a workspace role. See auth/roles.ts.
+    role: text('role').notNull().default('member'),
+    // Soft disable: set means the user cannot authenticate; the row and its data stay.
+    disabledAt: timestamp('disabled_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [uniqueIndex('users_email_key').on(t.email)],
+  (t) => [
+    uniqueIndex('users_email_key').on(t.email),
+    check('users_role_check', sql`${t.role} in ('admin', 'maintainer', 'member')`),
+  ],
 )
 
 export const sessions = pgTable('sessions', {
@@ -42,7 +49,11 @@ export const workspaceMembers = pgTable(
     role: text('role').notNull(),
     joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [primaryKey({ columns: [t.workspaceId, t.userId] })],
+  (t) => [
+    primaryKey({ columns: [t.workspaceId, t.userId] }),
+    // Workspace role (deferred: nothing reads it yet). Independent of users.role.
+    check('workspace_members_role_check', sql`${t.role} in ('owner', 'member')`),
+  ],
 )
 
 export const usersRelations = relations(users, ({ many }) => ({

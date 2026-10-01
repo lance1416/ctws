@@ -21,10 +21,20 @@ POSTGRES_PASSWORD=<long random value>
 server with a token that has `read:packages`.
 
 The compose file fixes the production app settings: `AUTH_REGISTRATION=closed`,
-`COOKIE_SECURE=true`, `COOKIE_SAMESITE=lax`, no CORS origins. With registration closed, `/auth` registration returns 403 for everyone, including the first user,
-and the repo has no other account-creation path yet. Create the first account by temporarily
-editing `AUTH_REGISTRATION` in the compose file to `open` (or `invite` plus `AUTH_INVITE_CODE`),
-then set it back to `closed`.
+`COOKIE_SECURE=true`, `COOKIE_SAMESITE=lax`, no CORS origins.
+
+### First admin
+
+While the user table is empty, registration is allowed regardless of `AUTH_REGISTRATION`, and the
+first account created becomes the instance admin. Once any user exists, `closed` applies again
+(403 for everyone) and further accounts are created by an admin through `POST /api/v1/admin/users`.
+
+The first-run race: while the user table is empty, whoever reaches the instance first becomes
+admin. Do not expose a fresh instance publicly before you have registered. For example, register
+through `http://127.0.0.1:3000` on the host before pointing the tunnel at it (section 4).
+
+Instances deployed before roles existed are migrated automatically: the earliest existing user
+is promoted to admin.
 
 ## 2. Deploy
 

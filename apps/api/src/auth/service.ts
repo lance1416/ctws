@@ -1,4 +1,5 @@
-import { eq } from 'drizzle-orm'
+import type { Role } from '@ctws/contracts'
+import { and, eq, isNull, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import type { Db } from '../db/client'
 import { users, workspaceMembers, workspaces } from '../db/schema'
@@ -42,9 +43,25 @@ export function isUniqueViolation(error: unknown): boolean {
   return false
 }
 
+export class RegistrationClosedError extends Error {
+  constructor() {
+    super('registration is closed')
+  }
+}
+
+// Arbitrary constants naming transaction-scoped advisory locks. They serialise the places where
+// "look at the users table, then write based on what you saw" must not interleave.
+const LOCK_FIRST_USER = 7_301_001
+export const LOCK_ADMIN_SET = 7_301_002
+
+// `explicitRole` is for admin-created users. Without it the role is decided by the database in
+// the same statement as the insert: the first user ever becomes admin, everyone else member.
+// `onlyIfFirst` refuses (RegistrationClosedError) unless the users table is empty -- it is how
+// a closed or invite-only instance still lets the very first account through.
 export async function registerUser(
   db: Db,
   input: { email: string; password: string; timezone: string },
+  opts: { explicitRole?: Role; onlyIfFirst?: boolean } = {},
 ): Promise<{ userId: string; workspaceId: string }> {
   const userId = uuidv7()
   const workspaceId = uuidv7()
@@ -55,9 +72,25 @@ export async function registerUser(
     // succeed or all fail. Otherwise a duplicate-email failure on the user
     // insert could leave an orphan workspace behind -- see Review Focus #5.
     await db.transaction(async (tx) => {
-      await tx
-        .insert(users)
-        .values({ id: userId, email: input.email, passwordHash, timezone: input.timezone })
+      if (!opts.explicitRole) {
+        // READ COMMITTED lets two concurrent first registrations both see an empty table, so
+        // the CASE below alone is not enough. The lock makes check-and-insert exclusive: the
+        // second transaction waits, then sees the first user and becomes a member (or is refused).
+        await tx.execute(sql`select pg_advisory_xact_lock(${LOCK_FIRST_USER})`)
+        if (opts.onlyIfFirst) {
+          const existing = await tx.select({ id: users.id }).from(users).limit(1)
+          if (existing.length > 0) throw new RegistrationClosedError()
+        }
+      }
+      await tx.insert(users).values({
+        id: userId,
+        email: input.email,
+        passwordHash,
+        timezone: input.timezone,
+        role:
+          opts.explicitRole ??
+          sql`case when not exists (select 1 from users) then 'admin' else 'member' end`,
+      })
       await tx.insert(workspaces).values({ id: workspaceId, name: 'My Workspace' })
       await tx.insert(workspaceMembers).values({ workspaceId, userId, role: 'owner' })
     })
@@ -115,24 +148,38 @@ export async function authenticate(
   return (await verifyPassword(row.passwordHash, password)) ? { userId: row.id } : null
 }
 
+export type AuthContext = { workspaceId: string; role: Role }
+
 // Shared by the login route and `requireUser` so the workspace-membership
 // lookup lives in one place instead of being duplicated across the routing
 // layer -- see design spec §10.5 (queries are scoped by workspace in the
 // service layer, not left to route handlers to remember).
-export async function getWorkspaceIdForUser(db: Db, userId: string): Promise<string | null> {
+//
+// One query for membership and instance role. Returns null for a disabled user, so a valid
+// session stops working the moment an admin disables the account. The role is read here on
+// every request rather than stored in the session, so a demotion also applies immediately.
+export async function getAuthContext(db: Db, userId: string): Promise<AuthContext | null> {
   const rows = await db
-    .select({ workspaceId: workspaceMembers.workspaceId })
-    .from(workspaceMembers)
-    .where(eq(workspaceMembers.userId, userId))
+    .select({ workspaceId: workspaceMembers.workspaceId, role: users.role })
+    .from(users)
+    .innerJoin(workspaceMembers, eq(workspaceMembers.userId, users.id))
+    .where(and(eq(users.id, userId), isNull(users.disabledAt)))
     .limit(1)
-  return rows[0]?.workspaceId ?? null
+  const row = rows[0]
+  return row ? { workspaceId: row.workspaceId, role: row.role as Role } : null
 }
 
 export async function loadUser(
   db: Db,
   userId: string,
-  workspaceId: string,
-): Promise<{ id: string; email: string; timezone: string; workspaceId: string } | null> {
+  ctx: AuthContext,
+): Promise<{
+  id: string
+  email: string
+  timezone: string
+  workspaceId: string
+  role: Role
+} | null> {
   // Select explicit columns -- never the whole row -- so the password hash
   // can never end up in a response body.
   const rows = await db
@@ -141,5 +188,5 @@ export async function loadUser(
     .where(eq(users.id, userId))
     .limit(1)
   const row = rows[0]
-  return row ? { ...row, workspaceId } : null
+  return row ? { ...row, workspaceId: ctx.workspaceId, role: ctx.role } : null
 }

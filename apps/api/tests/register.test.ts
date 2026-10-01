@@ -95,38 +95,99 @@ describe('POST /api/v1/auth/register', () => {
       headers,
       payload: body,
     })
-    expect(Object.keys(res.json()).sort()).toEqual(['email', 'id', 'timezone', 'workspaceId'])
+    expect(Object.keys(res.json()).sort()).toEqual([
+      'email',
+      'id',
+      'role',
+      'timezone',
+      'workspaceId',
+    ])
   })
 })
 
+const post = (ctx: Awaited<ReturnType<typeof app>>, payload: object) =>
+  ctx.app.inject({ method: 'POST', url: '/api/v1/auth/register', headers, payload })
+
+const second = { ...body, email: 'second@example.com' }
+
 describe('registration gating', () => {
-  it('returns 403 when registration is closed', async () => {
+  // Seeds the first account, which is always allowed; the gating below applies to everyone after.
+  it('returns 403 when registration is closed and a user already exists', async () => {
     const ctx = await app({ authRegistration: 'closed' })
-    const res = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/register',
-      headers,
-      payload: body,
-    })
-    expect(res.statusCode).toBe(403)
+    expect((await post(ctx, body)).statusCode).toBe(201)
+    expect((await post(ctx, second)).statusCode).toBe(403)
   })
 
-  it('requires a matching invite code when invite-only', async () => {
+  it('requires a matching invite code when invite-only and a user already exists', async () => {
     const ctx = await app({ authRegistration: 'invite', authInviteCode: 'let-me-in' })
-    const bad = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/register',
-      headers,
-      payload: { ...body, inviteCode: 'wrong' },
-    })
+    expect((await post(ctx, body)).statusCode).toBe(201)
+
+    const bad = await post(ctx, { ...second, inviteCode: 'wrong' })
     expect(bad.statusCode).toBe(403)
 
-    const good = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/register',
-      headers,
-      payload: { ...body, inviteCode: 'let-me-in' },
-    })
+    const good = await post(ctx, { ...second, inviteCode: 'let-me-in' })
     expect(good.statusCode).toBe(201)
   })
+})
+
+describe('first-user bootstrap', () => {
+  it('lets the first user in when registration is closed, and makes them admin', async () => {
+    const ctx = await app({ authRegistration: 'closed' })
+    const res = await post(ctx, body)
+    expect(res.statusCode).toBe(201)
+    expect(res.json()).toMatchObject({ role: 'admin' })
+
+    const rows = await ctx.db.execute(sql`select role from users`)
+    expect(rows.rows).toEqual([{ role: 'admin' }])
+  })
+
+  it('lets the first user in when invite-only without a code', async () => {
+    const ctx = await app({ authRegistration: 'invite', authInviteCode: 'let-me-in' })
+    const res = await post(ctx, body)
+    expect(res.statusCode).toBe(201)
+    expect(res.json()).toMatchObject({ role: 'admin' })
+  })
+
+  it('refuses a second registration when closed', async () => {
+    const ctx = await app({ authRegistration: 'closed' })
+    await post(ctx, body)
+    const res = await post(ctx, second)
+    expect(res.statusCode).toBe(403)
+    expect(res.headers['content-type']).toContain('application/problem+json')
+  })
+
+  it('makes a second registration a member when registration is open', async () => {
+    const ctx = await app({ authRegistration: 'open' })
+    expect((await post(ctx, body)).json()).toMatchObject({ role: 'admin' })
+    const res = await post(ctx, second)
+    expect(res.statusCode).toBe(201)
+    expect(res.json()).toMatchObject({ role: 'member' })
+  })
+
+  it('reports the role on /auth/me', async () => {
+    const ctx = await app({ authRegistration: 'closed' })
+    const res = await post(ctx, body)
+    const cookie = String(res.headers['set-cookie']).split(';')[0]!
+    const me = await ctx.app.inject({ method: 'GET', url: '/api/v1/auth/me', headers: { cookie } })
+    expect(me.json()).toMatchObject({ role: 'admin' })
+  })
+
+  // READ COMMITTED lets both transactions see an empty table; only the advisory lock stops two
+  // first registrations from both becoming admin (closed: the loser must be refused instead).
+  it.each(['open', 'closed'] as const)(
+    'creates exactly one admin when two first registrations race (%s)',
+    async (mode) => {
+      const ctx = await app({ authRegistration: mode })
+      const results = await Promise.all([
+        post(ctx, { ...body, email: 'r1@example.com' }),
+        post(ctx, { ...body, email: 'r2@example.com' }),
+      ])
+      const rows = await ctx.db.execute(sql`select role from users`)
+      const roles = (rows.rows as { role: string }[]).map((r) => r.role).sort()
+      expect(roles.filter((r) => r === 'admin')).toHaveLength(1)
+      expect(results.map((r) => r.statusCode).sort()).toEqual(
+        mode === 'open' ? [201, 201] : [201, 403],
+      )
+    },
+  )
 })

@@ -11,6 +11,7 @@ import {
   validatorCompiler,
   type ZodTypeProvider,
 } from 'fastify-type-provider-zod'
+import { adminRoutes } from './admin/routes'
 import { authRoutes } from './auth/routes'
 import { warmDummyHash } from './auth/service'
 import type { Db } from './db/client'
@@ -69,6 +70,7 @@ export async function buildApp(opts: { env: Env; db: Db }): Promise<FastifyInsta
   app.get('/api/v1/openapi.json', { schema: { hide: true } }, async () => app.swagger())
 
   await app.register(authRoutes, { prefix: '/api/v1' })
+  await app.register(adminRoutes, { prefix: '/api/v1' })
 
   // Serve the built web app, if configured. Registered after the API routes on purpose: API
   // routes must win over static files, and anything that misses falls to the not-found handler.

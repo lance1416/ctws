@@ -62,7 +62,22 @@ describe('userResponse', () => {
       email: 'a@b.com',
       timezone: 'Asia/Shanghai',
       workspaceId: '01931b9c-5d7e-7c3a-8f2e-1a2b3c4d5e6f',
+      role: 'member',
     }
     expect(userResponse.safeParse(payload).success).toBe(true)
+  })
+
+  it('requires a known role', () => {
+    const payload = {
+      id: '01931b9c-5d7e-7c3a-8f2e-1a2b3c4d5e6f',
+      email: 'a@b.com',
+      timezone: 'UTC',
+      workspaceId: '01931b9c-5d7e-7c3a-8f2e-1a2b3c4d5e6f',
+    }
+    expect(userResponse.safeParse(payload).success).toBe(false)
+    expect(userResponse.safeParse({ ...payload, role: 'root' }).success).toBe(false)
+    for (const role of ['admin', 'maintainer', 'member']) {
+      expect(userResponse.safeParse({ ...payload, role }).success).toBe(true)
+    }
   })
 })

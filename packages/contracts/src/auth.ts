@@ -5,7 +5,7 @@ import { z } from 'zod'
 // Asia/Calcutta), so we validate by constructing a DateTimeFormat, then require that
 // the resolved canonical name matches the input exactly (rejecting deprecated aliases
 // and case variants).
-const ianaTimezone = z.string().superRefine((value, ctx) => {
+export const ianaTimezone = z.string().superRefine((value, ctx) => {
   if (value !== value.trim() || value.length === 0) {
     ctx.addIssue({ code: 'custom', message: 'timezone must not be empty or padded' })
     return
@@ -22,7 +22,12 @@ const ianaTimezone = z.string().superRefine((value, ctx) => {
   }
 })
 
-const email = z.string().trim().toLowerCase().pipe(z.email().max(254))
+// Instance-level roles, ordered admin > maintainer > member. See apps/api/src/auth/roles.ts.
+export const ROLES = ['admin', 'maintainer', 'member'] as const
+export const roleSchema = z.enum(ROLES)
+export type Role = z.infer<typeof roleSchema>
+
+export const email = z.string().trim().toLowerCase().pipe(z.email().max(254))
 
 export const registerBody = z
   .object({
@@ -46,6 +51,7 @@ export const userResponse = z
     email: z.email(),
     timezone: z.string(),
     workspaceId: z.uuid(),
+    role: roleSchema,
   })
   .strict()
 

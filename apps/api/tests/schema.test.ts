@@ -45,8 +45,56 @@ describe('migrations', () => {
   it('requires the columns auth depends on', async () => {
     const names = (await columns('users')).map((c) => c.column_name)
     expect(names).toEqual(
-      expect.arrayContaining(['id', 'email', 'password_hash', 'timezone', 'created_at']),
+      expect.arrayContaining([
+        'id',
+        'email',
+        'password_hash',
+        'timezone',
+        'created_at',
+        'role',
+        'disabled_at',
+      ]),
     )
+  })
+
+  it('defaults users.role to member and leaves disabled_at nullable', async () => {
+    const cols = await columns('users')
+    expect(cols.find((c) => c.column_name === 'role')!.is_nullable).toBe('NO')
+    expect(cols.find((c) => c.column_name === 'disabled_at')!.is_nullable).toBe('YES')
+    expect(cols.find((c) => c.column_name === 'disabled_at')!.data_type).toBe(
+      'timestamp with time zone',
+    )
+    const [row] = (
+      await ctx.db.execute(sql`
+        insert into users (id, email, password_hash, timezone)
+        values (gen_random_uuid(), 'default-role@example.com', 'x', 'UTC') returning role`)
+    ).rows as { role: string }[]
+    expect(row!.role).toBe('member')
+  })
+
+  it('restricts users.role to admin, maintainer and member', async () => {
+    await expect(
+      ctx.db.execute(sql`
+        insert into users (id, email, password_hash, timezone, role)
+        values (gen_random_uuid(), 'bad-role@example.com', 'x', 'UTC', 'root')`),
+    ).rejects.toMatchObject({ cause: { constraint: 'users_role_check' } })
+  })
+
+  it('restricts workspace_members.role to owner and member', async () => {
+    const [u] = (
+      await ctx.db.execute(sql`
+        insert into users (id, email, password_hash, timezone)
+        values (gen_random_uuid(), 'wm@example.com', 'x', 'UTC') returning id`)
+    ).rows as { id: string }[]
+    const [w] = (
+      await ctx.db.execute(sql`
+        insert into workspaces (id, name) values (gen_random_uuid(), 'w') returning id`)
+    ).rows as { id: string }[]
+    await expect(
+      ctx.db.execute(sql`
+        insert into workspace_members (workspace_id, user_id, role)
+        values (${w!.id}, ${u!.id}, 'admin')`),
+    ).rejects.toMatchObject({ cause: { constraint: 'workspace_members_role_check' } })
   })
 
   // timestamptz is a project-wide constraint (M3 timezone correctness depends on it).

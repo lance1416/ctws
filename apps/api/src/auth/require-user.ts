@@ -1,10 +1,12 @@
+import type { Role } from '@ctws/contracts'
 import type { FastifyRequest, preHandlerAsyncHookHandler } from 'fastify'
 import { sendProblem } from '../problem'
 import { SESSION_COOKIE } from './cookie'
-import { getWorkspaceIdForUser } from './service'
+import { hasRole } from './roles'
+import { getAuthContext } from './service'
 import { findValidSession } from './session'
 
-export type AuthedUser = { id: string; workspaceId: string }
+export type AuthedUser = { id: string; workspaceId: string; role: Role }
 
 // A request that has already passed through `requireUser`. `user` is
 // required here (unlike the optional `FastifyRequest.user` below), so
@@ -37,16 +39,24 @@ export const requireUser: preHandlerAsyncHookHandler = async function (req, repl
 
   // Workspace scoping is injected here, once, so route handlers never need
   // to remember to scope their own queries -- see design spec §10.5. The
-  // actual membership lookup lives in service.ts so both this preHandler
-  // and the login route share one implementation.
-  const workspaceId = await getWorkspaceIdForUser(this.db, session.userId)
-  if (!workspaceId) return sendProblem(reply, 401, 'Authentication required')
+  // actual lookup lives in service.ts so both this preHandler and the login
+  // route share one implementation. It returns null for a disabled user (401
+  // even with a valid session) and supplies the instance role, read fresh on
+  // every request so a demotion applies immediately.
+  const ctx = await getAuthContext(this.db, session.userId)
+  if (!ctx) return sendProblem(reply, 401, 'Authentication required')
 
-  req.user = { id: session.userId, workspaceId }
+  req.user = { id: session.userId, ...ctx }
+}
+
+// Use as `preHandler: [requireUser, requireAdmin]`.
+export const requireAdmin: preHandlerAsyncHookHandler = async function (req, reply) {
+  if (!req.user) return sendProblem(reply, 401, 'Authentication required')
+  if (!hasRole(req.user.role, 'admin')) return sendProblem(reply, 403, 'Admin role required')
 }
 
 declare module 'fastify' {
   interface FastifyRequest {
-    user?: { id: string; workspaceId: string }
+    user?: { id: string; workspaceId: string; role: Role }
   }
 }
