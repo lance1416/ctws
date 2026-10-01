@@ -1,5 +1,12 @@
-import { createProjectBody, projectResponse, updateProjectBody } from '@ctws/contracts'
-import type { FastifyPluginAsync } from 'fastify'
+import {
+  createProjectBody,
+  createTaskBody,
+  projectResponse,
+  taskResponse,
+  updateProjectBody,
+  updateTaskBody,
+} from '@ctws/contracts'
+import type { FastifyPluginAsync, FastifyReply } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 import { authedUser, requireUser } from '../auth/require-user'
@@ -12,6 +19,15 @@ import {
   updateProject,
   type Project,
 } from './projects'
+import {
+  createTask,
+  DepthLimitError,
+  ManualProgressOnParentError,
+  softDeleteTask,
+  TaskNotFoundError,
+  updateTask,
+  type Task,
+} from './tasks'
 
 function toProjectResponse(p: Project): z.infer<typeof projectResponse> {
   return {
@@ -25,8 +41,38 @@ function toProjectResponse(p: Project): z.infer<typeof projectResponse> {
   }
 }
 
+function toTaskResponse(t: Task): z.infer<typeof taskResponse> {
+  return {
+    id: t.id,
+    projectId: t.projectId,
+    parentId: t.parentId,
+    title: t.title,
+    notes: t.notes,
+    status: t.status as z.infer<typeof taskResponse>['status'],
+    scheduledOn: t.scheduledOn,
+    dueAt: t.dueAt ? t.dueAt.toISOString() : null,
+    rank: t.rank,
+    manualProgress: t.manualProgress === null ? null : Number(t.manualProgress),
+    completedAt: t.completedAt ? t.completedAt.toISOString() : null,
+    createdAt: t.createdAt.toISOString(),
+    updatedAt: t.updatedAt.toISOString(),
+  }
+}
+
 const idParams = z.object({ id: z.uuid() }).strict()
 const listQuery = z.object({ archived: z.enum(['true', 'false']).optional() }).strict()
+
+// Domain failures map to problem responses; anything else is a bug and propagates to the
+// global error handler. Not-found covers a missing task, parent, or project alike (no probing).
+function sendTaskProblem(reply: FastifyReply, error: unknown): void {
+  if (error instanceof TaskNotFoundError || error instanceof ProjectNotFoundError) {
+    return sendProblem(reply, 404, 'Not Found')
+  }
+  if (error instanceof DepthLimitError || error instanceof ManualProgressOnParentError) {
+    return sendProblem(reply, 409, 'Conflict', error.message)
+  }
+  throw error
+}
 
 export const taskRoutes: FastifyPluginAsync = async (app) => {
   const typed = app.withTypeProvider<ZodTypeProvider>()
@@ -92,6 +138,67 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
       } catch (error) {
         if (error instanceof ProjectNotFoundError) return sendProblem(reply, 404, 'Not Found')
         throw error
+      }
+    },
+  )
+
+  typed.post(
+    '/tasks',
+    {
+      preHandler: requireUser,
+      schema: { body: createTaskBody, response: { 201: taskResponse } },
+    },
+    async (req, reply) => {
+      const user = authedUser(req)
+      try {
+        const row = await createTask(
+          app.db,
+          { workspaceId: user.workspaceId, actorUserId: user.id },
+          req.body,
+        )
+        return reply.status(201).send(toTaskResponse(row))
+      } catch (error) {
+        return sendTaskProblem(reply, error)
+      }
+    },
+  )
+
+  typed.patch(
+    '/tasks/:id',
+    {
+      preHandler: requireUser,
+      schema: { params: idParams, body: updateTaskBody, response: { 200: taskResponse } },
+    },
+    async (req, reply) => {
+      const user = authedUser(req)
+      try {
+        const row = await updateTask(
+          app.db,
+          { workspaceId: user.workspaceId, actorUserId: user.id },
+          req.params.id,
+          req.body,
+        )
+        return toTaskResponse(row)
+      } catch (error) {
+        return sendTaskProblem(reply, error)
+      }
+    },
+  )
+
+  typed.delete(
+    '/tasks/:id',
+    { preHandler: requireUser, schema: { params: idParams } },
+    async (req, reply) => {
+      const user = authedUser(req)
+      try {
+        await softDeleteTask(
+          app.db,
+          { workspaceId: user.workspaceId, actorUserId: user.id },
+          req.params.id,
+        )
+        return reply.status(204).send()
+      } catch (error) {
+        return sendTaskProblem(reply, error)
       }
     },
   )
