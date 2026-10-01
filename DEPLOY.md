@@ -19,17 +19,17 @@ POSTGRES_PASSWORD=<long random value>
 `IMAGE` and `POSTGRES_PASSWORD` are required: compose refuses to start without them.
 `<owner>` must be lowercase.
 
-**The repository is private, so the GHCR package is private too — the pull will fail without
-authentication.** Run this once on the server, with a personal access token that has
-`read:packages`:
+**The package is public, so the server needs no registry credentials** — the repository itself
+stays private. Package visibility is a separate setting from repository visibility: making the
+repo public does not publish the package, and vice versa. It lives at
+`https://github.com/users/<owner>/packages/container/ctws/settings`.
+
+If you ever set the package back to private, the pull fails with `unauthorized` and the server
+then needs a personal access token with `read:packages`:
 
 ```sh
 echo "$GHCR_TOKEN" | docker login ghcr.io -u <owner> --password-stdin
 ```
-
-Make the package public instead if you would rather not keep a token on the server: GitHub →
-Packages → `ctws` → Package settings → Change visibility. A public image is pullable without
-credentials, and GHCR does not bill bandwidth for public packages.
 
 The compose file fixes the production app settings: `AUTH_REGISTRATION=closed`,
 `COOKIE_SECURE=true`, `COOKIE_SAMESITE=lax`, no CORS origins.
