@@ -26,6 +26,13 @@ jobs:
         with:
           # ghcr.io requires a lowercase image name
           images: ${{ steps.image.outputs.name }}
+          # Explicit rather than relying on the action's defaults. With type=semver a
+          # pre-release tag (v0.1.0-rc.1) publishes only its exact version: it gets no
+          # `latest` and no `0.1` alias, so a trial release can never become the tag a
+          # server pulls by default.
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
       - uses: docker/build-push-action@v7
         with:
           context: .
