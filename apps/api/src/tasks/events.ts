@@ -88,6 +88,7 @@ export const MAX_EVENT_LIMIT = 100
 export class InvalidCursorError extends Error {
   constructor() {
     super('Invalid cursor')
+    this.name = 'InvalidCursorError'
   }
 }
 

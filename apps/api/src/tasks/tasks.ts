@@ -19,18 +19,34 @@ export type TaskCtx = { workspaceId: string; actorUserId: string }
 
 /**
  * Transaction-scoped advisory lock serialising every per-workspace change to the *shape* of the
- * task tree: `move` and the cascading `softDeleteTask`. Same series as auth/service.ts's
- * LOCK_FIRST_USER / LOCK_ADMIN_SET, and always keyed together with `hashtext(workspaceId)` so one
- * workspace's reordering never blocks another's.
+ * task tree: `createTask`, `move` and the cascading `softDeleteTask`. Same series as
+ * auth/service.ts's LOCK_FIRST_USER / LOCK_ADMIN_SET, and always keyed together with
+ * `hashtext(workspaceId)` so one workspace's reordering never blocks another's.
  *
- * Both callers are read-then-write against the tree, and a recursive CTE materialises its subtree
- * from its own READ COMMITTED snapshot, so interleaving them produces states neither one can
- * produce alone -- a cycle (see move.ts) or a live task under a soft-deleted parent (see
- * softDeleteTask).
+ * All three callers are read-then-write against the tree, and the cascades in `move` and
+ * `softDeleteTask` traverse it with a recursive CTE evaluated from their own READ COMMITTED
+ * statement snapshot. Interleaving them produces states none of them can produce alone:
  *
- * It deliberately does NOT cover `createTask`: an insert has no descendants, so it cannot make a
- * cycle, and the only thing it can race is the depth cap, which spec 5.2 calls a product guardrail
- * rather than a safety invariant.
+ *   - move against move: a cycle, because both pass their own cycle check (see move.ts).
+ *   - create against either cascade: **snapshot invisibility**, which is the subtle one and the
+ *     reason `createTask` is in here too. A row inserted after a cascade's CTE was evaluated is
+ *     not in that CTE's result, so the cascade never visits it -- and the `FOR UPDATE` that
+ *     `lockVisibleTask` holds on the parent does NOT help, because the cascade blocks on the
+ *     parent, re-checks it under EvalPlanQual and updates *the parent*, never learning that a new
+ *     child appeared. The outcomes are a live task under a soft-deleted parent (spec 5.4) and a
+ *     subtree whose `project_id` disagrees with its ancestors (spec 5.1), both silent, both
+ *     durable, and neither with a repair path in M2a.
+ *
+ * It is taken unconditionally, including for a root-level insert that has no ancestor whose
+ * subtree could be mid-traversal: one uncontended advisory lock is not worth a gate whose
+ * correctness a reader then has to re-derive.
+ *
+ * If you add a fourth operation that changes the tree's shape -- a restore, a bulk reparent, a
+ * merge -- take this lock as its transaction's FIRST statement, before any read, and pin it with
+ * `expectBlockedByTreeLock` in the tests. That helper proves contention, not position: a caller
+ * taking the lock last would pass it and protect nothing, so "first statement" is a contract this
+ * comment enforces and no test can. The realistic regression is not a lock moved to the end, it is
+ * a new mutator added without one.
  */
 export const LOCK_TASK_TREE = 7_301_003
 
@@ -108,10 +124,32 @@ const iso = (d: Date | null): string | null => (d ? d.toISOString() : null)
  * deep one grown by create alone.
  *
  * With a parent, `project_id` is taken from the parent and the client's `projectId` is ignored
- * (spec 5.1: a child's project must equal its parent's).
+ * (spec 5.1: a child's project must equal its parent's) -- but it is still validated, see below.
  */
 export async function createTask(db: Db, ctx: TaskCtx, input: CreateTaskBody): Promise<Task> {
   return db.transaction(async (tx) => {
+    // First statement, before anything is read: serialises this insert against a concurrent
+    // cascade that would otherwise never see it. See LOCK_TASK_TREE.
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(${LOCK_TASK_TREE}, hashtext(${ctx.workspaceId}))`,
+    )
+
+    // Validated even when a parent is given and the parent's project is what actually wins. The
+    // id is part of the request either way, and `move` rejects an unresolvable or foreign one, so
+    // accepting it here would make two paths that the comments describe as symmetric disagree --
+    // and a 201 is an easy thing to mistake for "that project id was fine".
+    const [project] = await tx
+      .select({ id: projects.id })
+      .from(projects)
+      .where(
+        and(
+          eq(projects.id, input.projectId),
+          eq(projects.workspaceId, ctx.workspaceId),
+          isNull(projects.deletedAt),
+        ),
+      )
+    if (!project) throw new ProjectNotFoundError()
+
     let projectId: string
     if (input.parentId) {
       const parent = await lockVisibleTask(tx, ctx.workspaceId, input.parentId)
@@ -134,17 +172,6 @@ export async function createTask(db: Db, ctx: TaskCtx, input: CreateTaskBody): P
         })
       }
     } else {
-      const [project] = await tx
-        .select({ id: projects.id })
-        .from(projects)
-        .where(
-          and(
-            eq(projects.id, input.projectId),
-            eq(projects.workspaceId, ctx.workspaceId),
-            isNull(projects.deletedAt),
-          ),
-        )
-      if (!project) throw new ProjectNotFoundError()
       projectId = project.id
     }
 
@@ -305,10 +332,15 @@ export async function softDeleteTask(db: Db, ctx: TaskCtx, id: string): Promise<
     // They diverge on exactly one state: a live task under a soft-deleted parent. The prune would
     // stop above it and leave it alive; the UPDATE would happily delete it if it were ever
     // reached. Three things together make that state unreachable, and all three are load-bearing:
-    // `move` refuses a soft-deleted parent as not-found (see move.ts), `createTask` goes through
-    // `lockVisibleTask`, and LOCK_TASK_TREE above serialises this cascade against a concurrent
-    // move -- without which a move committing mid-cascade would reach it anyway. If any of the
-    // three goes, this is the function that has to be revisited.
+    // `move` refuses a soft-deleted parent as not-found (see move.ts); `lockVisibleTask`'s
+    // `isNull(deletedAt)` predicate -- the predicate, not the row lock -- is what stops
+    // `createTask` parenting onto a deleted task single-threaded, so dropping that filter makes
+    // this state reachable in ONE request; and LOCK_TASK_TREE serialises this cascade against a
+    // concurrent move or create. The lock is what covers the concurrent case, because
+    // `lockVisibleTask`'s row lock on the parent is NOT enough:
+    // because a child inserted after the CTE below was evaluated is absent from its result and so
+    // is never visited, however long the cascade blocks on the parent. If either guard goes, this
+    // is the function that has to be revisited.
     const result = await tx.execute(sql`
       with recursive subtree(id) as (
         select ${id}::uuid

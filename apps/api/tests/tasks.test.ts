@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
@@ -6,6 +7,7 @@ import {
   createProject,
   createTask,
   eventsOf,
+  expectBlockedByTreeLock,
   type TaskCtx,
 } from './helpers/tasks'
 
@@ -99,6 +101,17 @@ describe('create', () => {
     expect(res.statusCode).toBe(201)
     expect(res.json().projectId).toBe(p1)
     expect((await rowOf(ctx, res.json().id)).project_id).toBe(p1)
+  })
+
+  // The parent's project is what gets stored, but the client's projectId is still part of the
+  // request and `move` rejects an unresolvable one. Accepting it here would make the two paths
+  // disagree, and a 201 is easy to read as "that project id was fine".
+  it('404s an unresolvable projectId even when the parent is valid', async () => {
+    const ctx = await setup()
+    const projectId = await createProject(ctx, 'P')
+    const parentId = await createTask(ctx, projectId, 'parent')
+    const res = await post(ctx, { projectId: randomUUID(), parentId, title: 'child' })
+    expect(res.statusCode).toBe(404)
   })
 
   it('records a created event', async () => {
@@ -396,6 +409,26 @@ describe('workspace isolation', () => {
     expect(res.statusCode).toBe(404)
   })
 
+  it('cannot create a task under its own parent while naming another workspace project', async () => {
+    const a = await setup()
+    const projectId = await createProject(a, 'mine')
+    const parentId = await createTask(a, projectId, 'parent')
+    const bAuthed = await secondUser(a)
+    const bProject = (
+      await a.app.inject({
+        method: 'POST',
+        url: '/api/v1/projects',
+        headers: bAuthed,
+        payload: { name: 'theirs' },
+      })
+    ).json().id
+
+    // The parent is legitimately ours and its project is what would be stored, so this is about
+    // the request being coherent, not about leaking anything: `move` 404s the same pair.
+    const res = await post(a, { projectId: bProject, parentId, title: 'child' })
+    expect(res.statusCode).toBe(404)
+  })
+
   it('cannot patch or delete another workspace task', async () => {
     const a = await setup()
     const projectId = await createProject(a, 'mine')
@@ -462,6 +495,33 @@ describe('guards that must not be silently dropped', () => {
     const projectId = await createProject(ctx, 'P')
     const res = await post(ctx, { projectId, title: 'x', status: 'done' })
     expect(res.json().completedAt).toEqual(expect.any(String))
+  })
+
+  // Both of these pin LOCK_TASK_TREE, which two comments in tasks.ts call load-bearing and which
+  // nothing used to pin: it could be deleted with the whole suite staying green. A create or a
+  // cascading delete that did not take it would be invisible to a concurrent cascade's statement
+  // snapshot -- see LOCK_TASK_TREE for the two silent states that produces.
+  it('creating a task contends on the workspace-keyed tree lock', async () => {
+    const ctx = await setup()
+    const projectId = await createProject(ctx, 'P')
+    const parentId = await createTask(ctx, projectId, 'parent')
+
+    const res = await expectBlockedByTreeLock(ctx, () =>
+      post(ctx, { projectId, parentId, title: 'child' }),
+    )
+    expect(res.statusCode).toBe(201)
+    expect(res.json().parentId).toBe(parentId)
+  })
+
+  it('deleting a task contends on the workspace-keyed tree lock', async () => {
+    const ctx = await setup()
+    const projectId = await createProject(ctx, 'P')
+    const parentId = await createTask(ctx, projectId, 'parent')
+    const childId = await createTask(ctx, projectId, 'child', parentId)
+
+    const res = await expectBlockedByTreeLock(ctx, () => del(ctx, parentId))
+    expect(res.statusCode).toBe(204)
+    expect((await rowOf(ctx, childId)).deleted_at).toEqual(expect.any(String))
   })
 
   it('treats tasks in a soft-deleted project as not found', async () => {

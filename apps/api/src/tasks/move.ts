@@ -141,7 +141,9 @@ export async function moveTask(
     //
     // With a parent, the parent's project wins over the client's `projectId`, exactly as in
     // createTask: spec 5.1 requires a child's project to equal its parent's, and making that
-    // structurally impossible to violate beats validating it.
+    // structurally impossible to violate beats validating it. The client's `projectId` is still
+    // resolved and scoped above -- also exactly as in createTask -- so an unresolvable or foreign
+    // id is a 404 on both paths rather than being silently ignored on one of them.
     const parent = input.parentId
       ? await lockVisibleTask(tx, ctx.workspaceId, input.parentId)
       : null

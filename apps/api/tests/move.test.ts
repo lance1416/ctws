@@ -1,13 +1,13 @@
 import { randomUUID } from 'node:crypto'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
-import { LOCK_TASK_TREE } from '../src/tasks/tasks'
 import {
   appWithUser,
   createChain,
   createProject,
   createTask,
   eventsOf,
+  expectBlockedByTreeLock,
   tasksOf,
   type TaskCtx,
 } from './helpers/tasks'
@@ -498,57 +498,18 @@ describe('POST /tasks/:id/move', () => {
 
   // The cycle check is read-then-write, so two concurrent moves -- A under B and B under A --
   // could each pass their own check and together commit a cycle. The guard is a workspace-keyed
-  // advisory lock taken as the transaction's first statement.
-  //
-  // Firing the two requests with Promise.all does NOT prove the lock: it passed with the lock
-  // removed, because the requests never actually interleave inside the critical window. So this
-  // asserts the mechanism directly -- hold the same lock from the test and the move must block
-  // until it is released. Delete the lock and this fails.
-  //
-  // What it does NOT prove is WHERE in the transaction the lock is taken. A move that took it
-  // last would contend just the same here and would be useless, so the "first statement" part of
-  // the contract rests on the comment in move.ts, not on this test.
-  it('contends on the workspace-keyed advisory lock', async () => {
+  // advisory lock taken as the transaction's first statement; see expectBlockedByTreeLock for
+  // what this proves and what it does not.
+  it('contends on the workspace-keyed tree lock', async () => {
     const ctx = await setup()
     const p = await createProject(ctx, 'p')
     const a = await createTask(ctx, p, 'a')
     const b = await createTask(ctx, p, 'b')
-    const { workspaceId } = (
-      await ctx.app.inject({ method: 'GET', url: '/api/v1/auth/me', headers: ctx.authed })
-    ).json() as { workspaceId: string }
 
-    let release!: () => void
-    const held = new Promise<void>((resolve) => {
-      release = resolve
-    })
-    const holding = ctx.db.transaction(async (tx) => {
-      await tx.execute(
-        sql`select pg_advisory_xact_lock(${LOCK_TASK_TREE}, hashtext(${workspaceId}))`,
-      )
-      await held
-    })
-
-    let settled = false
-    const moving = move(ctx, a, { projectId: p, parentId: b }).then((res) => {
-      settled = true
-      return res
-    })
-
-    try {
-      // A blocked request stays blocked, so this wait cannot end early by luck; it can only be
-      // too short, and a move that is not waiting on the lock finishes in a couple of ms.
-      await new Promise((resolve) => setTimeout(resolve, 500))
-      expect(settled).toBe(false)
-    } finally {
-      // Always, or a failed assertion would leave the transaction holding the lock and the
-      // pending move would hang the suite's teardown instead of reporting the failure.
-      release()
-      await holding
-      // Keep a failed assertion's output clean: the move is still in flight on that path, and an
-      // unawaited rejection would surface as noise on top of the real failure.
-      moving.catch(() => {})
-    }
-    expect((await moving).statusCode).toBe(200)
+    const res = await expectBlockedByTreeLock(ctx, () =>
+      move(ctx, a, { projectId: p, parentId: b }),
+    )
+    expect(res.statusCode).toBe(200)
     expect((await tasksOf(ctx, p)).find((t) => t.id === a)!.parentId).toBe(b)
   })
 })

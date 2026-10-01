@@ -1,4 +1,6 @@
 import { sql } from 'drizzle-orm'
+import { expect } from 'vitest'
+import { LOCK_TASK_TREE } from '../../src/tasks/tasks'
 import { withApp } from './app'
 
 export type TaskCtx = Awaited<ReturnType<typeof withApp>> & {
@@ -91,4 +93,54 @@ export async function eventsOf(
     select type, payload from task_events where task_id = ${taskId} order by occurred_at
   `)
   return r.rows as { type: string; payload: unknown }[]
+}
+
+/**
+ * Fires a request while LOCK_TASK_TREE is held on another transaction, asserts the request is
+ * still in flight after a moment, then releases the lock and returns the response.
+ *
+ * This is a MECHANISM test, not a race test. Reproducing the interleaving the lock prevents needs
+ * a pause point inside the service transaction -- a hook in production code -- and an attempt at
+ * it without one passed with the lock removed, which is the definition of a vacuous test. Holding
+ * the lock from outside instead is deterministic in the safe direction: a blocked request stays
+ * blocked indefinitely, so the wait cannot end early by luck; it could only ever be too short,
+ * and an unblocked request finishes in single-digit milliseconds.
+ *
+ * What it does NOT prove is where in the transaction the lock is taken. A caller that took it last
+ * would contend identically here and be useless, so "first statement" rests on the comments in the
+ * services, not on this helper.
+ */
+export async function expectBlockedByTreeLock<T>(ctx: TaskCtx, fire: () => Promise<T>): Promise<T> {
+  const { workspaceId } = (
+    await ctx.app.inject({ method: 'GET', url: '/api/v1/auth/me', headers: ctx.authed })
+  ).json() as { workspaceId: string }
+
+  let release!: () => void
+  const held = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  const holding = ctx.db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(${LOCK_TASK_TREE}, hashtext(${workspaceId}))`)
+    await held
+  })
+
+  let settled = false
+  const pending = fire().then((res) => {
+    settled = true
+    return res
+  })
+
+  try {
+    await new Promise((resolve) => setTimeout(resolve, 500))
+    expect(settled).toBe(false)
+  } finally {
+    // Always, or a failed assertion would leave the lock held and the pending request would hang
+    // the suite's teardown instead of reporting the failure.
+    release()
+    await holding
+    // Keep a failed assertion's output clean: the request is still in flight on that path, and an
+    // unawaited rejection would pile onto the real failure.
+    pending.catch(() => {})
+  }
+  return pending
 }
