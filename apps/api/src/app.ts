@@ -18,6 +18,7 @@ import type { Db } from './db/client'
 import type { Env } from './env'
 import { registerGuards } from './guards'
 import { sendProblem } from './problem'
+import { taskRoutes } from './tasks/routes'
 
 export async function buildApp(opts: { env: Env; db: Db }): Promise<FastifyInstance> {
   // Resolve the login timing-equalisation hash before the app is ready, so
@@ -70,6 +71,7 @@ export async function buildApp(opts: { env: Env; db: Db }): Promise<FastifyInsta
   app.get('/api/v1/openapi.json', { schema: { hide: true } }, async () => app.swagger())
 
   await app.register(authRoutes, { prefix: '/api/v1' })
+  await app.register(taskRoutes, { prefix: '/api/v1' })
   await app.register(adminRoutes, { prefix: '/api/v1' })
 
   // Serve the built web app, if configured. Registered after the API routes on purpose: API

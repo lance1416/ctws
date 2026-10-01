@@ -20,6 +20,9 @@ importers:
       '@ctws/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@ctws/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@fastify/cookie':
         specifier: 11.1.2
         version: 11.1.2

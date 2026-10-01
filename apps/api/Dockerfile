@@ -2,7 +2,11 @@ FROM node:24-alpine AS build
 WORKDIR /app
 RUN corepack enable
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+# Workspace manifests only, so the dependency layer caches on lockfile changes alone. This list
+# must track pnpm-workspace.yaml: a missing package is NOT caught by --frozen-lockfile, it just
+# installs fewer deps and surfaces later as an unresolved import during the bundle step.
 COPY packages/contracts/package.json packages/contracts/
+COPY packages/core/package.json packages/core/
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
 RUN pnpm install --frozen-lockfile
