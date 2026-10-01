@@ -1,0 +1,43 @@
+# Production stack. Deploy: docker compose -f compose.prod.yaml pull && docker compose -f compose.prod.yaml up -d
+# See DEPLOY.md. Required in the env file: IMAGE, POSTGRES_PASSWORD.
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ctws}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      POSTGRES_DB: ${POSTGRES_DB:-ctws}
+    # No published ports: only the api reaches Postgres, over the compose network.
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    image: ${IMAGE:?IMAGE must be set, e.g. ghcr.io/<owner>/ctws:v1.0.0}
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgres://${POSTGRES_USER:-ctws}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}@postgres:5432/${POSTGRES_DB:-ctws}
+      AUTH_REGISTRATION: closed
+      COOKIE_SECURE: 'true'
+      COOKIE_SAMESITE: lax
+      CORS_ORIGINS: ''
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:3000/api/v1/health']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      # Loopback only: the Cloudflare Tunnel on the host connects here.
+      - '127.0.0.1:3000:3000'
+
+volumes:
+  pgdata:
