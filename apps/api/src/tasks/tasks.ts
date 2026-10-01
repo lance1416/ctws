@@ -17,6 +17,23 @@ export const MAX_DEPTH = 10
 export type TaskCtx = { workspaceId: string; actorUserId: string }
 
 /**
+ * Transaction-scoped advisory lock serialising every per-workspace change to the *shape* of the
+ * task tree: `move` and the cascading `softDeleteTask`. Same series as auth/service.ts's
+ * LOCK_FIRST_USER / LOCK_ADMIN_SET, and always keyed together with `hashtext(workspaceId)` so one
+ * workspace's reordering never blocks another's.
+ *
+ * Both callers are read-then-write against the tree, and a recursive CTE materialises its subtree
+ * from its own READ COMMITTED snapshot, so interleaving them produces states neither one can
+ * produce alone -- a cycle (see move.ts) or a live task under a soft-deleted parent (see
+ * softDeleteTask).
+ *
+ * It deliberately does NOT cover `createTask`: an insert has no descendants, so it cannot make a
+ * cycle, and the only thing it can race is the depth cap, which spec 5.2 calls a product guardrail
+ * rather than a safety invariant.
+ */
+export const LOCK_TASK_TREE = 7_301_003
+
+/**
  * Raised when a task does not exist, is soft-deleted, or belongs to another workspace. One error
  * on purpose, for the same reason as `ProjectNotFoundError`: ids must not be probeable.
  */
@@ -63,8 +80,14 @@ export async function depthOf(q: Queryable, taskId: string): Promise<number> {
  * Loads a live task in the caller's workspace and locks it for the rest of the transaction.
  * The workspace is reached through one join to `projects` (spec 10.5: `tasks` carries no
  * `workspace_id` of its own), and a task in a deleted project is as invisible as a deleted task.
+ *
+ * Exported so `move` scopes identically rather than carrying a second copy of this predicate.
  */
-async function lockVisibleTask(q: Queryable, workspaceId: string, id: string): Promise<Task> {
+export async function lockVisibleTask(
+  q: Queryable,
+  workspaceId: string,
+  id: string,
+): Promise<Task> {
   const [row] = await q
     .select({ task: tasks })
     .from(tasks)
@@ -268,8 +291,34 @@ export async function updateTask(
  */
 export async function softDeleteTask(db: Db, ctx: TaskCtx, id: string): Promise<void> {
   await db.transaction(async (tx) => {
+    // First statement, before anything is read, and the same lock `move` takes. Without it the
+    // two serialise against themselves but not against each other: a move could commit
+    // `X.parent_id = C` after this transaction's subtree CTE had already been evaluated from a
+    // snapshot in which X was elsewhere, so the cascade below would skip X and leave it live
+    // under a deleted C. That is the exact state the comment on the two guards relies on being
+    // impossible, so the lock is load-bearing for that claim, not just for `move`.
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(${LOCK_TASK_TREE}, hashtext(${ctx.workspaceId}))`,
+    )
+
     await lockVisibleTask(tx, ctx.workspaceId, id)
 
+    // Two `deleted_at is null` guards that are NOT interchangeable, though no test can currently
+    // tell them apart -- do not delete either as redundant.
+    //
+    //   - In the recursive step it PRUNES the traversal: an already-deleted descendant keeps its
+    //     original `deleted_at` (spec 5.4, so a later restore can tell "deleted by this cascade"
+    //     from "deleted long ago"), and its own children are not revisited either.
+    //   - In the UPDATE it REFUSES to overwrite, and also decides which rows come back in
+    //     `returning`, hence which rows get a `deleted` event.
+    //
+    // They diverge on exactly one state: a live task under a soft-deleted parent. The prune would
+    // stop above it and leave it alive; the UPDATE would happily delete it if it were ever
+    // reached. Three things together make that state unreachable, and all three are load-bearing:
+    // `move` refuses a soft-deleted parent as not-found (see move.ts), `createTask` goes through
+    // `lockVisibleTask`, and LOCK_TASK_TREE above serialises this cascade against a concurrent
+    // move -- without which a move committing mid-cascade would reach it anyway. If any of the
+    // three goes, this is the function that has to be revisited.
     const result = await tx.execute(sql`
       with recursive subtree(id) as (
         select ${id}::uuid

@@ -1,6 +1,7 @@
 import {
   createProjectBody,
   createTaskBody,
+  moveTaskBody,
   projectResponse,
   taskResponse,
   updateProjectBody,
@@ -19,6 +20,7 @@ import {
   updateProject,
   type Project,
 } from './projects'
+import { CycleError, InvalidNeighbourError, moveTask } from './move'
 import {
   createTask,
   DepthLimitError,
@@ -69,8 +71,17 @@ function sendTaskProblem(reply: FastifyReply, error: unknown): void {
   if (error instanceof TaskNotFoundError || error instanceof ProjectNotFoundError) {
     return sendProblem(reply, 404, 'Not Found')
   }
-  if (error instanceof DepthLimitError || error instanceof ManualProgressOnParentError) {
+  if (
+    error instanceof DepthLimitError ||
+    error instanceof ManualProgressOnParentError ||
+    error instanceof CycleError
+  ) {
     return sendProblem(reply, 409, 'Conflict', error.message)
+  }
+  // A malformed position is the caller's own mistake, and naming a neighbour they already hold
+  // leaks nothing, so it is told apart from a not-found.
+  if (error instanceof InvalidNeighbourError) {
+    return sendProblem(reply, 400, 'Bad Request', error.message)
   }
   throw error
 }
@@ -193,6 +204,31 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
       const user = authedUser(req)
       try {
         const row = await updateTask(
+          app.db,
+          { workspaceId: user.workspaceId, actorUserId: user.id },
+          req.params.id,
+          req.body,
+        )
+        return toTaskResponse(row)
+      } catch (error) {
+        return sendTaskProblem(reply, error)
+      }
+    },
+  )
+
+  // A separate endpoint rather than part of PATCH (spec 8.3): move carries a whole set of
+  // invariants -- cycle, depth, project_id cascade, rank -- that a generic PATCH must not
+  // quietly take on.
+  typed.post(
+    '/tasks/:id/move',
+    {
+      preHandler: requireUser,
+      schema: { params: idParams, body: moveTaskBody, response: { 200: taskResponse } },
+    },
+    async (req, reply) => {
+      const user = authedUser(req)
+      try {
+        const row = await moveTask(
           app.db,
           { workspaceId: user.workspaceId, actorUserId: user.id },
           req.params.id,
