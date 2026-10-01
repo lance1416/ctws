@@ -1,0 +1,234 @@
+import { TASK_STATUSES } from '@ctws/contracts'
+import { sql } from 'drizzle-orm'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { withDatabase } from './helpers/db'
+
+let ctx: Awaited<ReturnType<typeof withDatabase>>
+
+beforeAll(async () => {
+  ctx = await withDatabase()
+}, 120_000)
+
+afterAll(async () => {
+  await ctx?.stop()
+})
+
+async function columns(table: string) {
+  const r = await ctx.db.execute(sql`
+    select column_name, data_type, is_nullable
+    from information_schema.columns where table_name = ${table}
+  `)
+  return r.rows as { column_name: string; data_type: string; is_nullable: string }[]
+}
+
+async function count(table: 'projects' | 'tasks' | 'task_events', col: string, id: string) {
+  const r = await ctx.db.execute(
+    sql`select count(*)::int as n from ${sql.identifier(table)} where ${sql.identifier(col)} = ${id}`,
+  )
+  return (r.rows as { n: number }[])[0]!.n
+}
+
+const FOREIGN_KEY_VIOLATION = '23503'
+const CHECK_VIOLATION = '23514'
+
+// Runs a statement expected to fail and returns the Postgres SQLSTATE it failed with. drizzle wraps
+// the driver error, so the code sits on `.cause`, not on the thrown error; this walks the cause
+// chain the same way isUniqueViolation does in src/auth/service.ts (deliberately mirrored). Asserting
+// the SQLSTATE proves *why* it failed, so a typo in the statement itself cannot pass as a refusal.
+async function sqlStateOf(statement: PromiseLike<unknown>): Promise<string | undefined> {
+  let error: unknown
+  try {
+    await statement
+  } catch (e) {
+    error = e
+  }
+  expect(error, 'statement was expected to fail').toBeDefined()
+  let current = error as { code?: unknown; cause?: unknown } | undefined
+  for (let depth = 0; current && depth < 5; depth++) {
+    if (typeof current.code === 'string') return current.code
+    current =
+      typeof current.cause === 'object' && current.cause !== null
+        ? (current.cause as typeof current)
+        : undefined
+  }
+  return undefined
+}
+
+// One workspace with a project, a task and an event on that task.
+async function seed() {
+  const id = async (q: ReturnType<typeof sql>) => (await ctx.db.execute(q)).rows[0]!.id as string
+  const userId = await id(sql`
+    insert into users (id, email, password_hash, timezone)
+    values (gen_random_uuid(), ${`u-${Math.random()}@example.com`}, 'x', 'UTC') returning id
+  `)
+  const workspaceId = await id(sql`
+    insert into workspaces (id, name) values (gen_random_uuid(), 'w') returning id
+  `)
+  const projectId = await id(sql`
+    insert into projects (id, workspace_id, name, rank)
+    values (gen_random_uuid(), ${workspaceId}, 'p', 'a0') returning id
+  `)
+  const taskId = await id(sql`
+    insert into tasks (id, project_id, title, status, rank)
+    values (gen_random_uuid(), ${projectId}, 't', 'todo', 'a0') returning id
+  `)
+  await ctx.db.execute(sql`
+    insert into task_events (id, task_id, workspace_id, actor_user_id, type, payload, occurred_at)
+    values (gen_random_uuid(), ${taskId}, ${workspaceId}, ${userId}, 'created', '{}'::jsonb, now())
+  `)
+  return { userId, workspaceId, projectId, taskId }
+}
+
+describe('task tables', () => {
+  it('creates projects, tasks and task_events', async () => {
+    const r = await ctx.db.execute(sql`
+      select table_name from information_schema.tables
+      where table_schema = 'public' and table_name in ('projects','tasks','task_events')
+    `)
+    expect((r.rows as { table_name: string }[]).map((x) => x.table_name).sort()).toEqual([
+      'projects',
+      'task_events',
+      'tasks',
+    ])
+  })
+
+  it('stores scheduled_on as a date and due_at as timestamptz', async () => {
+    const cols = await columns('tasks')
+    const by = (n: string) => cols.find((c) => c.column_name === n)
+    expect(by('scheduled_on')?.data_type).toBe('date')
+    expect(by('due_at')?.data_type).toBe('timestamp with time zone')
+  })
+
+  it('stores every other tasks timestamp as timestamptz', async () => {
+    const cols = await columns('tasks')
+    for (const n of ['completed_at', 'deleted_at', 'created_at', 'updated_at']) {
+      expect(cols.find((c) => c.column_name === n)?.data_type, n).toBe('timestamp with time zone')
+    }
+  })
+
+  it('constrains status to exactly the TASK_STATUSES set', async () => {
+    const r = await ctx.db.execute(sql`
+      select pg_get_constraintdef(oid) as def from pg_constraint
+      where conrelid = 'tasks'::regclass and contype = 'c' and conname = 'tasks_status_check'
+    `)
+    const def = (r.rows as { def: string }[])[0]!.def
+    // The check must be on the status column, not some other one.
+    expect(def).toMatch(/^CHECK \(\(?status\b/)
+    const allowed = [...def.matchAll(/'([^']+)'/g)].map((m) => m[1]).sort()
+    expect(allowed).toEqual([...TASK_STATUSES].sort())
+  })
+
+  it('rejects a task whose status is outside the set', async () => {
+    const { projectId } = await seed()
+    expect(
+      await sqlStateOf(
+        ctx.db.execute(sql`
+        insert into tasks (id, project_id, title, status, rank)
+        values (gen_random_uuid(), ${projectId}, 't', 'archived', 'a0')
+      `),
+      ),
+    ).toBe(CHECK_VIOLATION)
+    await expect(
+      ctx.db.execute(sql`
+        insert into tasks (id, project_id, title, status, rank)
+        values (gen_random_uuid(), ${projectId}, 't', 'in_progress', 'a0')
+      `),
+    ).resolves.toBeDefined()
+  })
+
+  it('requires project_id but allows a null parent_id', async () => {
+    const cols = await columns('tasks')
+    expect(cols.find((c) => c.column_name === 'project_id')?.is_nullable).toBe('NO')
+    expect(cols.find((c) => c.column_name === 'parent_id')?.is_nullable).toBe('YES')
+  })
+
+  it('indexes the queries this milestone actually runs', async () => {
+    const r = await ctx.db.execute(sql`
+      select indexname, indexdef from pg_indexes
+      where schemaname = 'public' and tablename in ('tasks', 'task_events')
+    `)
+    const defs = new Map(
+      (r.rows as { indexname: string; indexdef: string }[]).map((x) => [x.indexname, x.indexdef]),
+    )
+    // Spec 5.1: "all tasks of a project" must be a plain index scan, not a recursive query.
+    expect(defs.get('tasks_project_id_idx')).toMatch(/ON public\.tasks USING btree \(project_id\)$/)
+    // Walking the tree.
+    expect(defs.get('tasks_parent_id_idx')).toMatch(/ON public\.tasks USING btree \(parent_id\)$/)
+    // The weekly review's workspace-wide event scan (spec 9.4), and per-task history, newest first.
+    expect(defs.get('task_events_workspace_occurred_idx')).toMatch(
+      /ON public\.task_events USING btree \(workspace_id, occurred_at DESC( NULLS LAST)?\)$/,
+    )
+    expect(defs.get('task_events_task_occurred_idx')).toMatch(
+      /ON public\.task_events USING btree \(task_id, occurred_at DESC( NULLS LAST)?\)$/,
+    )
+  })
+
+  // The rank's lexicographic order only matches its logical order under bytewise comparison
+  // (COLLATE "C"). We assert the column's declared collation rather than an ordering, because the
+  // Alpine test container's default collation already coincides with bytewise, so an ordering
+  // assertion could not fail here while still being wrong on glibc Postgres.
+  it.each(['tasks', 'projects'])('declares rank COLLATE "C" on %s', async (table) => {
+    const r = await ctx.db.execute(sql`
+      select collation_name from information_schema.columns
+      where table_schema = 'public' and table_name = ${table} and column_name = 'rank'
+    `)
+    expect((r.rows as { collation_name: string | null }[])[0]!.collation_name).toBe('C')
+  })
+
+  it('cascades tasks when their project is removed', async () => {
+    const r = await ctx.db.execute(sql`
+      select confdeltype from pg_constraint
+      where conrelid = 'tasks'::regclass and contype = 'f'
+        and confrelid = 'projects'::regclass
+    `)
+    expect((r.rows as { confdeltype: string }[])[0]!.confdeltype).toBe('c')
+  })
+
+  // Hard-deleting a task must not silently erase its history (spec 5.4): refuse it loudly.
+  it('refuses a hard delete of a task that has events', async () => {
+    const { taskId } = await seed()
+    expect(await sqlStateOf(ctx.db.execute(sql`delete from tasks where id = ${taskId}`))).toBe(
+      FOREIGN_KEY_VIOLATION,
+    )
+    expect(await count('tasks', 'id', taskId)).toBe(1)
+    expect(await count('task_events', 'task_id', taskId)).toBe(1)
+  })
+
+  it('refuses hard deletes that would cascade onto a task with events', async () => {
+    const { projectId, taskId } = await seed()
+    // Via tasks.project_id.
+    expect(
+      await sqlStateOf(ctx.db.execute(sql`delete from projects where id = ${projectId}`)),
+    ).toBe(FOREIGN_KEY_VIOLATION)
+    // Via tasks.parent_id: the event sits on the child, the parent is deleted.
+    const child = await ctx.db.execute(sql`
+      insert into tasks (id, project_id, parent_id, title, status, rank)
+      values (gen_random_uuid(), ${projectId}, ${taskId}, 'c', 'todo', 'a0') returning id
+    `)
+    const childId = (child.rows as { id: string }[])[0]!.id
+    await ctx.db.execute(sql`
+      insert into task_events (id, task_id, workspace_id, actor_user_id, type, payload, occurred_at)
+      select gen_random_uuid(), ${childId}, workspace_id, actor_user_id, 'created', '{}'::jsonb, now()
+      from task_events where task_id = ${taskId}
+    `)
+    expect(await sqlStateOf(ctx.db.execute(sql`delete from tasks where id = ${taskId}`))).toBe(
+      FOREIGN_KEY_VIOLATION,
+    )
+    expect(await count('task_events', 'task_id', childId)).toBe(1)
+  })
+
+  it('removes projects, tasks and events when their workspace is deleted', async () => {
+    const { workspaceId, projectId, taskId } = await seed()
+    await ctx.db.execute(sql`delete from workspaces where id = ${workspaceId}`)
+    expect(await count('projects', 'id', projectId)).toBe(0)
+    expect(await count('tasks', 'id', taskId)).toBe(0)
+    expect(await count('task_events', 'workspace_id', workspaceId)).toBe(0)
+  })
+
+  it('refuses to hard delete a user who authored events', async () => {
+    const { userId } = await seed()
+    expect(await sqlStateOf(ctx.db.execute(sql`delete from users where id = ${userId}`))).toBe(
+      FOREIGN_KEY_VIOLATION,
+    )
+  })
+})

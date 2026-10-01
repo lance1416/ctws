@@ -34,14 +34,6 @@ describe('migrations', () => {
     )
   })
 
-  it('does not create M2 tables yet', async () => {
-    const rows = await ctx.db.execute(sql`
-      select table_name from information_schema.tables
-      where table_name in ('tasks', 'projects', 'task_events')
-    `)
-    expect(rows.rows).toHaveLength(0)
-  })
-
   it('requires the columns auth depends on', async () => {
     const names = (await columns('users')).map((c) => c.column_name)
     expect(names).toEqual(
