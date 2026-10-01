@@ -1,7 +1,7 @@
 import type { Role } from '@ctws/contracts'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
-import type { Db } from '../db/client'
+import type { Db, Queryable } from '../db/client'
 import { users, workspaceMembers, workspaces } from '../db/schema'
 import { hashPassword, verifyPassword } from './password'
 
@@ -58,6 +58,7 @@ export const LOCK_ADMIN_SET = 7_301_002
 // the same statement as the insert: the first user ever becomes admin, everyone else member.
 // `onlyIfFirst` refuses (RegistrationClosedError) unless the users table is empty -- it is how
 // a closed or invite-only instance still lets the very first account through.
+// Takes `Db`, not `Queryable`: it opens its own transaction, which a `Queryable` cannot promise.
 export async function registerUser(
   db: Db,
   input: { email: string; password: string; timezone: string },
@@ -126,7 +127,7 @@ export async function warmDummyHash(): Promise<void> {
 }
 
 export async function authenticate(
-  db: Db,
+  db: Queryable,
   email: string,
   password: string,
 ): Promise<{ userId: string } | null> {
@@ -158,19 +159,21 @@ export type AuthContext = { workspaceId: string; role: Role }
 // One query for membership and instance role. Returns null for a disabled user, so a valid
 // session stops working the moment an admin disables the account. The role is read here on
 // every request rather than stored in the session, so a demotion also applies immediately.
-export async function getAuthContext(db: Db, userId: string): Promise<AuthContext | null> {
+export async function getAuthContext(db: Queryable, userId: string): Promise<AuthContext | null> {
   const rows = await db
     .select({ workspaceId: workspaceMembers.workspaceId, role: users.role })
     .from(users)
     .innerJoin(workspaceMembers, eq(workspaceMembers.userId, users.id))
     .where(and(eq(users.id, userId), isNull(users.disabledAt)))
+    // Deterministic pick: joinedAt can tie (rows inserted in one transaction), so workspaceId breaks it.
+    .orderBy(workspaceMembers.joinedAt, workspaceMembers.workspaceId)
     .limit(1)
   const row = rows[0]
   return row ? { workspaceId: row.workspaceId, role: row.role as Role } : null
 }
 
 export async function loadUser(
-  db: Db,
+  db: Queryable,
   userId: string,
   ctx: AuthContext,
 ): Promise<{

@@ -1,7 +1,7 @@
 import type { AdminUser, Role } from '@ctws/contracts'
 import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 import { LOCK_ADMIN_SET } from '../auth/service'
-import type { Db } from '../db/client'
+import type { Db, Queryable } from '../db/client'
 import { sessions, users } from '../db/schema'
 
 export class UserNotFoundError extends Error {
@@ -41,16 +41,17 @@ function toAdminUser(row: {
   }
 }
 
-export async function listUsers(db: Db): Promise<AdminUser[]> {
+export async function listUsers(db: Queryable): Promise<AdminUser[]> {
   const rows = await db.select(adminColumns).from(users).orderBy(asc(users.createdAt))
   return rows.map(toAdminUser)
 }
 
-export async function getAdminUser(db: Db, id: string): Promise<AdminUser | null> {
+export async function getAdminUser(db: Queryable, id: string): Promise<AdminUser | null> {
   const rows = await db.select(adminColumns).from(users).where(eq(users.id, id)).limit(1)
   return rows[0] ? toAdminUser(rows[0]) : null
 }
 
+// Takes `Db`, not `Queryable`: it opens its own transaction, which a `Queryable` cannot promise.
 export async function updateUser(
   db: Db,
   id: string,

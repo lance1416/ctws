@@ -1,10 +1,10 @@
 import { and, eq, gt } from 'drizzle-orm'
 import { v4 as uuidv4, validate as isUuid } from 'uuid'
-import type { Db } from '../db/client'
+import type { Queryable } from '../db/client'
 import { sessions } from '../db/schema'
 
 export async function createSession(
-  db: Db,
+  db: Queryable,
   userId: string,
   ttlDays: number,
 ): Promise<{ id: string; expiresAt: Date }> {
@@ -19,7 +19,10 @@ export async function createSession(
   return { id, expiresAt }
 }
 
-export async function findValidSession(db: Db, id: string): Promise<{ userId: string } | null> {
+export async function findValidSession(
+  db: Queryable,
+  id: string,
+): Promise<{ userId: string } | null> {
   // Attacker-controlled cookie values must never reach Postgres as a raw
   // uuid query parameter: a malformed string raises 22P02 (invalid input
   // syntax for type uuid) rather than simply matching no rows.
@@ -33,7 +36,7 @@ export async function findValidSession(db: Db, id: string): Promise<{ userId: st
   return rows[0] ?? null
 }
 
-export async function revokeSession(db: Db, id: string): Promise<void> {
+export async function revokeSession(db: Queryable, id: string): Promise<void> {
   if (!isUuid(id)) return
 
   await db.delete(sessions).where(eq(sessions.id, id))

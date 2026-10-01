@@ -11,3 +11,17 @@ export function createDb(connectionString: string): Db {
 export async function closeDb(db: Db): Promise<void> {
   await db.$client.end()
 }
+
+/**
+ * The transaction handle drizzle hands to a `db.transaction` callback.
+ * Derived from drizzle's own signature so it cannot drift from the installed version.
+ */
+export type Tx = Parameters<Parameters<Db['transaction']>[0]>[0]
+
+/**
+ * What every service function takes. A service must work both standalone and composed inside
+ * a caller's transaction, because spec section 9.5 requires each write to append its event in
+ * the same transaction as the mutation. `Db` alone cannot express that: a `Tx` is not
+ * assignable to `Db`, which carries `$client: Pool`.
+ */
+export type Queryable = Db | Tx
