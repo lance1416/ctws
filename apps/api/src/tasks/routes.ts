@@ -22,6 +22,7 @@ import {
 import {
   createTask,
   DepthLimitError,
+  listProjectTasks,
   ManualProgressOnParentError,
   softDeleteTask,
   TaskNotFoundError,
@@ -138,6 +139,25 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
       } catch (error) {
         if (error instanceof ProjectNotFoundError) return sendProblem(reply, 404, 'Not Found')
         throw error
+      }
+    },
+  )
+
+  typed.get(
+    '/projects/:id/tasks',
+    {
+      preHandler: requireUser,
+      schema: {
+        params: idParams,
+        response: { 200: z.object({ tasks: z.array(taskResponse) }).strict() },
+      },
+    },
+    async (req, reply) => {
+      try {
+        const rows = await listProjectTasks(app.db, authedUser(req).workspaceId, req.params.id)
+        return { tasks: rows.map(toTaskResponse) }
+      } catch (error) {
+        return sendTaskProblem(reply, error)
       }
     },
   )

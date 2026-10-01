@@ -1,6 +1,6 @@
 import type { CreateTaskBody, UpdateTaskBody } from '@ctws/contracts'
 import { rankBetween } from '@ctws/core'
-import { and, desc, eq, isNull, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm'
 import type { PgUpdateSetSource } from 'drizzle-orm/pg-core'
 import { v7 as uuidv7 } from 'uuid'
 import type { Db, Queryable } from '../db/client'
@@ -290,4 +290,32 @@ export async function softDeleteTask(db: Db, ctx: TaskCtx, id: string): Promise<
       })
     }
   })
+}
+
+/**
+ * Every live task of a project as a flat list in sibling order; the client assembles the tree
+ * (spec 8.1). Deliberately not recursive: `project_id` is denormalized onto each task (spec 5.1)
+ * so this is one indexed scan. Ordered `(rank, id)` because ranks can collide (spec 5.3).
+ */
+export async function listProjectTasks(
+  q: Queryable,
+  workspaceId: string,
+  projectId: string,
+): Promise<Task[]> {
+  const [project] = await q
+    .select({ id: projects.id })
+    .from(projects)
+    .where(
+      and(
+        eq(projects.id, projectId),
+        eq(projects.workspaceId, workspaceId),
+        isNull(projects.deletedAt),
+      ),
+    )
+  if (!project) throw new ProjectNotFoundError()
+  return q
+    .select()
+    .from(tasks)
+    .where(and(eq(tasks.projectId, projectId), isNull(tasks.deletedAt)))
+    .orderBy(asc(tasks.rank), asc(tasks.id))
 }
