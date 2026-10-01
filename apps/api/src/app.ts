@@ -1,4 +1,7 @@
+import { existsSync } from 'node:fs'
+import { resolve } from 'node:path'
 import fastifyCookie from '@fastify/cookie'
+import fastifyStatic from '@fastify/static'
 import fastifySwagger from '@fastify/swagger'
 import Fastify, { type FastifyError, type FastifyInstance } from 'fastify'
 import {
@@ -41,8 +44,6 @@ export async function buildApp(opts: { env: Env; db: Db }): Promise<FastifyInsta
   // `reply.clearCookie` are available inside them.
   await app.register(fastifyCookie)
 
-  app.setNotFoundHandler((_req, reply) => sendProblem(reply, 404, 'Not Found'))
-
   app.setErrorHandler((error: FastifyError, _req, reply) => {
     // The zod type provider raises validation failures as a Fastify error carrying Zod
     // issues in `error.validation` -- these are client errors (bad request bodies/params)
@@ -68,6 +69,18 @@ export async function buildApp(opts: { env: Env; db: Db }): Promise<FastifyInsta
   app.get('/api/v1/openapi.json', { schema: { hide: true } }, async () => app.swagger())
 
   await app.register(authRoutes, { prefix: '/api/v1' })
+
+  // Serve the built web app, if configured. Registered after the API routes on purpose: API
+  // routes must win over static files, and anything that misses falls to the not-found handler.
+  const webDist = opts.env.webDist && existsSync(opts.env.webDist) ? opts.env.webDist : undefined
+  if (webDist) await app.register(fastifyStatic, { root: resolve(webDist) })
+
+  app.setNotFoundHandler((req, reply) => {
+    // Browser navigations to client-side routes get the SPA shell; API paths keep their 404.
+    const navigation = req.method === 'GET' && (req.headers.accept ?? '').includes('text/html')
+    if (webDist && navigation && !req.url.startsWith('/api/')) return reply.sendFile('index.html')
+    return sendProblem(reply, 404, 'Not Found')
+  })
 
   return app
 }

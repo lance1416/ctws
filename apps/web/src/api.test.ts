@@ -56,3 +56,34 @@ describe('apiFetch', () => {
     await expect(apiFetch('/auth/logout', { method: 'POST' })).resolves.toBeUndefined()
   })
 })
+
+describe('API base', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.resetModules()
+  })
+
+  it('defaults to the same-origin /api/v1 path', async () => {
+    vi.stubEnv('VITE_API_BASE', undefined)
+    vi.resetModules()
+    const { apiFetch: fresh } = await import('./api')
+    const fetchMock = vi.fn().mockResolvedValue(new Response('{}', { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await fresh('/auth/me')
+
+    expect(fetchMock.mock.calls[0]![0]).toBe('/api/v1/auth/me')
+  })
+
+  it('honours VITE_API_BASE for a split deployment', async () => {
+    vi.stubEnv('VITE_API_BASE', 'https://api.example.test/api/v1')
+    vi.resetModules()
+    const { apiFetch: fresh } = await import('./api')
+    const fetchMock = vi.fn().mockResolvedValue(new Response('{}', { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await fresh('/auth/me')
+
+    expect(fetchMock.mock.calls[0]![0]).toBe('https://api.example.test/api/v1/auth/me')
+  })
+})

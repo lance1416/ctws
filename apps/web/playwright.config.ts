@@ -1,23 +1,16 @@
 import { defineConfig } from '@playwright/test'
 
+// The e2e runs against the real image: the API container serves the built web app, so the page
+// and the API share one origin, exactly like the deployed topology. There is no dev server here;
+// start the stack first (see CONTRIBUTING.md).
 export default defineConfig({
   testDir: './e2e',
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? 'html' : 'list',
   use: {
-    // 127.0.0.1 and localhost are different *sites*, so the web app (here) and the API
-    // (http://localhost:3000) are genuinely cross-site: the SameSite=None; Secure cookie path
-    // of the production topology is what gets exercised.
-    baseURL: 'http://127.0.0.1:5173',
+    baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
-  },
-  webServer: {
-    command: 'pnpm dev --host 127.0.0.1',
-    url: 'http://127.0.0.1:5173',
-    // In CI never adopt a stray server already on the port; locally reusing your own is fine.
-    reuseExistingServer: !process.env.CI,
-    timeout: 60_000,
   },
 })

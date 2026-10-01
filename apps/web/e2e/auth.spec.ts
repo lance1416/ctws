@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test'
 
-// Requires the API on http://localhost:3000 with AUTH_REGISTRATION=open,
-// CORS_ORIGINS=http://127.0.0.1:5173, COOKIE_SAMESITE=none and COOKIE_SECURE=true. The web app
-// is served from 127.0.0.1, a different site than localhost, so the cookie is cross-site.
+// Runs against the API container at http://localhost:3000, which serves the built web app, so the
+// page and the API are one origin. Needs AUTH_REGISTRATION=open and COOKIE_SECURE=false (plain
+// http); the SameSite default (lax) and an empty CORS_ORIGINS are what a same-origin deploy uses.
 // Register is rate limited (20/min/IP), so each run uses a unique email.
 test('register, stay signed in across a reload, then log out', async ({ page, context }) => {
   const email = `e2e-${Date.now()}@example.com`
@@ -33,4 +33,22 @@ test('register, stay signed in across a reload, then log out', async ({ page, co
 
   await page.reload()
   await expect(page.getByLabel('Email')).toBeVisible()
+})
+
+// Client-side routes must deep-link: the API answers an HTML navigation to an unknown,
+// non-API path with the SPA shell instead of a 404. The status check alone would pass for any
+// 200, so also require the app to have rendered (the logged-out form is visible).
+test('a deep client-side route returns the SPA, not a 404', async ({ page }) => {
+  const response = await page.goto('/some/deep/route')
+  expect(response?.status()).toBe(200)
+  expect(response?.headers()['content-type']).toContain('text/html')
+  await expect(page.getByLabel('Email')).toBeVisible()
+})
+
+// API routes must win over the static handler: /api/v1/health is JSON, never index.html.
+test('GET /api/v1/health returns JSON, not the SPA shell', async ({ request }) => {
+  const res = await request.get('/api/v1/health')
+  expect(res.status()).toBe(200)
+  expect(res.headers()['content-type']).toContain('application/json')
+  expect(await res.json()).toEqual({ status: 'ok' })
 })

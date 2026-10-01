@@ -20,6 +20,20 @@ describe('parseEnv', () => {
     expect(env.corsOrigins).toEqual(['https://a.test', 'https://b.test'])
   })
 
+  it('treats CORS_ORIGINS as optional and defaults it to an empty list', () => {
+    const env = parseEnv({ DATABASE_URL: base.DATABASE_URL })
+    expect(env.corsOrigins).toEqual([])
+  })
+
+  it('treats an empty CORS_ORIGINS as an empty list', () => {
+    expect(parseEnv({ ...base, CORS_ORIGINS: '' }).corsOrigins).toEqual([])
+  })
+
+  it('treats WEB_DIST as optional', () => {
+    expect(parseEnv(base).webDist).toBeUndefined()
+    expect(parseEnv({ ...base, WEB_DIST: '/app/apps/web/dist' }).webDist).toBe('/app/apps/web/dist')
+  })
+
   // Review Focus #1 -- SameSite=None without Secure is silently dropped by browsers
   it('rejects COOKIE_SAMESITE=none without secure cookies', () => {
     expect(() => parseEnv({ ...base, COOKIE_SAMESITE: 'none', COOKIE_SECURE: 'false' })).toThrow(

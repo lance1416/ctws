@@ -101,6 +101,42 @@ describe('CORS and CSRF', () => {
   })
 })
 
+// Same-origin deployment: CORS_ORIGINS is unset, so the allowlist is empty and nothing is allowed.
+describe('CORS with no CORS_ORIGINS configured', () => {
+  let ctx: Awaited<ReturnType<typeof withApp>>
+
+  beforeAll(async () => {
+    ctx = await withApp({ corsOrigins: [] })
+  }, 120_000)
+
+  afterAll(async () => {
+    await ctx?.stop()
+  })
+
+  it('does not grant a cross-origin request access-control-allow-origin', async () => {
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/v1/health',
+      headers: { origin: ORIGIN },
+    })
+    expect(res.statusCode).toBe(200)
+    expect(res.headers['access-control-allow-origin']).toBeUndefined()
+  })
+
+  it('does not grant a preflight access-control-allow-origin', async () => {
+    const res = await ctx.app.inject({
+      method: 'OPTIONS',
+      url: '/api/v1/auth/login',
+      headers: {
+        origin: ORIGIN,
+        'access-control-request-method': 'POST',
+        'access-control-request-headers': 'content-type,x-ctws-client',
+      },
+    })
+    expect(res.headers['access-control-allow-origin']).toBeUndefined()
+  })
+})
+
 // Own app instance: exhausting the login bucket here must not leak a 429 into the tests above.
 describe('rate limiting', () => {
   let ctx: Awaited<ReturnType<typeof withApp>>

@@ -15,16 +15,32 @@ period, at most 72 characters); the hook rejects anything else.
 
 ## Run locally
 
+The browser talks to a single origin, in development and in the deployed image alike.
+
+Single image (what ships): the API container serves the built web app too.
+
 ```sh
 docker compose up -d --wait postgres     # Postgres on 127.0.0.1:5432
 pnpm --filter @ctws/api db:migrate       # apply migrations (reads DATABASE_URL from .env)
-pnpm --filter @ctws/api dev              # API on http://localhost:3000
-pnpm --filter @ctws/web dev              # web app on http://localhost:5173
+docker compose up -d --build --wait api  # app and API on http://localhost:3000
 ```
 
-`docker compose up` starts the API container too, but it does not migrate: run `db:migrate`
-against a fresh volume before using it. Keep `DATABASE_URL` in `.env` in sync with the
-`POSTGRES_*` values. Change `POSTGRES_PASSWORD` for anything that is not local dev.
+Two dev servers (hot reload): Vite serves the web app and proxies `/api` to the API, so this is
+same-origin as well and needs no CORS.
+
+```sh
+docker compose up -d --wait postgres
+pnpm --filter @ctws/api db:migrate
+pnpm --filter @ctws/api dev              # API on http://localhost:3000
+pnpm --filter @ctws/web dev              # web app on http://localhost:5173, proxies /api
+```
+
+The compose API container does not migrate: run `db:migrate` against a fresh volume first. Keep
+`DATABASE_URL` in `.env` in sync with the `POSTGRES_*` values, and change `POSTGRES_PASSWORD`
+for anything that is not local dev. For plain-http local use set `COOKIE_SECURE=false`.
+
+`WEB_DIST` (set by the image) makes the API serve the web build; unset, it is API only.
+`CORS_ORIGINS` and `VITE_API_BASE` are only needed for a split (cross-origin) deployment.
 
 ## Checks
 
@@ -44,14 +60,13 @@ pnpm --filter @ctws/web test         # unit
 
 ### End-to-end (Playwright)
 
-The e2e is deliberately cross-site: the web app is served from `127.0.0.1:5173` and the API from
-`localhost:3000`, so the API must run with the production cookie mode. Set these in `.env`:
+The e2e runs against the real image, same-origin: the API container serves the built web app and
+Playwright drives `http://localhost:3000` for both the page and the API. There is no dev server.
+Set these in `.env`:
 
 ```
 AUTH_REGISTRATION=open
-CORS_ORIGINS=http://127.0.0.1:5173
-COOKIE_SAMESITE=none
-COOKIE_SECURE=true
+COOKIE_SECURE=false
 ```
 
 ```sh
@@ -62,5 +77,4 @@ docker compose up -d --build --wait api
 pnpm --filter @ctws/web e2e
 ```
 
-Playwright starts the web dev server itself. With `COOKIE_SAMESITE=lax` the e2e is expected to fail.
 After changing `.env`, recreate the API container (`docker compose up -d --force-recreate api`).

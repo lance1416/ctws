@@ -1,6 +1,6 @@
 import type { Problem } from '@ctws/contracts'
 
-const BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:3000/api/v1'
+const BASE = import.meta.env.VITE_API_BASE ?? '/api/v1'
 
 export async function apiFetch<T = unknown>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers)
@@ -12,7 +12,7 @@ export async function apiFetch<T = unknown>(path: string, init: RequestInit = {}
   const res = await fetch(`${BASE}${path}`, {
     ...init,
     headers,
-    // The session cookie must travel on cross-origin requests.
+    // Needed only for a split deployment (cross-origin API); harmless same-origin.
     credentials: 'include',
   })
 

@@ -31,18 +31,15 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @ctws/web exec playwright install --with-deps chromium
-      # The web app runs on 127.0.0.1 and the API on localhost: different sites, so this exercises
-      # the production cookie mode (SameSite=None; Secure). Chromium treats loopback as a secure
-      # context, so Secure cookies work over plain http there.
+      # Same-origin, like production: the api image serves the built web app on :3000 and the
+      # e2e drives that one origin. COOKIE_SECURE=false because this is plain http.
       - name: Write .env for the api container
         run: |
           cat > .env <<'ENV'
           PORT=3000
           DATABASE_URL=postgres://ctws:ctws@postgres:5432/ctws
           AUTH_REGISTRATION=open
-          CORS_ORIGINS=http://127.0.0.1:5173
-          COOKIE_SAMESITE=none
-          COOKIE_SECURE=true
+          COOKIE_SECURE=false
           ENV
       - run: docker compose up -d --wait postgres
       # Migrations run from the host against the published Postgres port.

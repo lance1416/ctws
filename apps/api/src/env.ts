@@ -15,7 +15,10 @@ const raw = z.object({
   COOKIE_SAMESITE: z.enum(['lax', 'none']).default('lax'),
   COOKIE_SECURE: bool(true),
   COOKIE_DOMAIN: z.string().optional(),
-  CORS_ORIGINS: z.string().min(1, 'CORS_ORIGINS is required'),
+  // Optional: a same-origin deployment has no cross-origin clients. Empty means none are allowed.
+  CORS_ORIGINS: z.string().default(''),
+  // Built web app to serve (apps/web/dist). Unset or missing: the API serves no frontend.
+  WEB_DIST: z.string().optional(),
 })
 
 export type Env = {
@@ -28,6 +31,7 @@ export type Env = {
   cookieSecure: boolean
   cookieDomain: string | undefined
   corsOrigins: string[]
+  webDist: string | undefined
 }
 
 export function parseEnv(source: NodeJS.ProcessEnv | Record<string, string | undefined>): Env {
@@ -55,5 +59,6 @@ export function parseEnv(source: NodeJS.ProcessEnv | Record<string, string | und
     corsOrigins: parsed.CORS_ORIGINS.split(',')
       .map((o) => o.trim())
       .filter(Boolean),
+    webDist: parsed.WEB_DIST || undefined,
   }
 }
