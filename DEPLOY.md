@@ -10,7 +10,7 @@ automatically):
 
 ```
 IMAGE=ghcr.io/<owner>/ctws:v1.0.0
-POSTGRES_PASSWORD=<long random value>
+POSTGRES_PASSWORD=<output of: openssl rand -hex 32>
 # optional, default ctws
 # POSTGRES_USER=ctws
 # POSTGRES_DB=ctws
@@ -18,6 +18,18 @@ POSTGRES_PASSWORD=<long random value>
 
 `IMAGE` and `POSTGRES_PASSWORD` are required: compose refuses to start without them.
 `<owner>` must be lowercase.
+
+**Use a URL-safe password — `openssl rand -hex 32`, not `-base64`.** Compose assembles
+`DATABASE_URL` by interpolating the password into a URL, so `/`, `+`, `=`, `#` and `?` make that
+URL invalid (base64 output contains the first three), while `@` and `:` parse but yield a
+different password than you set. The API now rejects an unparseable `DATABASE_URL` at startup
+with a message saying so; before that check existed, `pg` reported it as a redacted
+`ERR_INVALID_URL` thrown from inside a query.
+
+**`POSTGRES_PASSWORD` only takes effect when the volume is first initialised.** Changing it later
+does nothing to an existing database — the API will simply fail to authenticate. To change it you
+must either `ALTER USER` inside Postgres, or destroy the volume
+(`docker compose -f compose.prod.yaml down -v`, which loses all data).
 
 **The package is public, so the server needs no registry credentials** — the repository itself
 stays private. Package visibility is a separate setting from repository visibility: making the
@@ -61,11 +73,31 @@ and restarts; check `docker compose -f compose.prod.yaml logs api`.
 
 ## 4. Cloudflare Tunnel
 
-The API listens on `127.0.0.1:3000` only. Point the tunnel's public hostname at
-`http://127.0.0.1:3000` (cloudflared running on the host). Postgres publishes no port.
+Postgres publishes no port. The API's published address comes from `API_BIND`, which defaults to
+`127.0.0.1` so nothing is reachable off the box until you say otherwise.
 
-Alternative, not set up here: run `cloudflared` as another compose service and point the tunnel at
-`http://api:3000`; the host port mapping would then be unnecessary.
+**If cloudflared runs on this same host**, leave `API_BIND` unset and point the tunnel at
+`http://127.0.0.1:3000`.
+
+**If cloudflared runs elsewhere** (its own LXC or VM, which is the usual shape when one tunnel
+fronts several services), the API must be reachable over the network, so set this host's LAN
+address in `.env`:
+
+```
+API_BIND=10.0.0.5
+```
+
+and point the tunnel at `http://10.0.0.5:3000`. This does expose the API to that network — the
+application still requires authentication, but the HTTP endpoint is reachable by anything on the
+subnet. Restrict it with a firewall rule allowing only the cloudflared host, or put the two on a
+dedicated bridge or VLAN, if that matters to you.
+
+Either way, register the first admin through the loopback address from inside this host _before_
+pointing the tunnel at it — see the first-run race note in section 1.
+
+Alternative, not set up here: run `cloudflared` as another service in this compose file and point
+the tunnel at `http://api:3000`. The `ports:` mapping then becomes unnecessary and nothing is
+published at all.
 
 ## 5. Roll back
 

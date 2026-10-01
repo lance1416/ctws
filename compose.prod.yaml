@@ -36,8 +36,9 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      # Loopback only: the Cloudflare Tunnel on the host connects here.
-      - '127.0.0.1:3000:3000'
+      # Loopback by default, so nothing is reachable off the box. Set API_BIND to this host's
+      # LAN address when the tunnel runs elsewhere (e.g. its own LXC) -- see DEPLOY.md section 4.
+      - '${API_BIND:-127.0.0.1}:3000:3000'
 
 volumes:
   pgdata:

@@ -47,6 +47,20 @@ export function parseEnv(source: NodeJS.ProcessEnv | Record<string, string | und
     throw new Error('AUTH_INVITE_CODE is required when AUTH_REGISTRATION=invite')
   }
 
+  // An unparseable DATABASE_URL otherwise surfaces far from its cause: `pg` redacts the
+  // connection string and throws `ERR_INVALID_URL` from inside a query, so the stack says
+  // nothing about which character broke it. The usual culprit is a password assembled into
+  // the URL by a deployment template: `/`, `+`, `=`, `#` and `?` make the URL invalid, while
+  // `@` and `:` parse but silently yield a different password than intended.
+  try {
+    new URL(parsed.DATABASE_URL)
+  } catch {
+    throw new Error(
+      'DATABASE_URL is not a valid URL. If the password contains / + = # ? @ or :, it must be ' +
+        'percent-encoded, or use a URL-safe password such as `openssl rand -hex 32`.',
+    )
+  }
+
   return {
     port: parsed.PORT,
     databaseUrl: parsed.DATABASE_URL,

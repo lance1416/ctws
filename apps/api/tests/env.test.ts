@@ -47,6 +47,23 @@ describe('parseEnv', () => {
     expect(env.cookieSecure).toBe(true)
   })
 
+  // A deployment template that interpolates a password into the URL produces this, and `pg`
+  // reports it as a redacted ERR_INVALID_URL from inside a query -- far from the cause.
+  it.each([
+    'postgres://ctws:ab/cd+ef=@postgres:5432/ctws',
+    'postgres://ctws:pw#1@postgres:5432/ctws',
+    'postgres://ctws:pw?x@postgres:5432/ctws',
+    'not-a-url',
+  ])('rejects an unparseable DATABASE_URL %j', (url) => {
+    expect(() => parseEnv({ ...base, DATABASE_URL: url })).toThrow(/not a valid URL/)
+  })
+
+  it('names the characters that break the URL, so the message is actionable', () => {
+    expect(() => parseEnv({ ...base, DATABASE_URL: 'postgres://u:a/b@h:5432/d' })).toThrow(
+      /percent-encoded/,
+    )
+  })
+
   it('requires an invite code when registration is invite-only', () => {
     expect(() => parseEnv({ ...base, AUTH_REGISTRATION: 'invite' })).toThrow(/AUTH_INVITE_CODE/)
   })
