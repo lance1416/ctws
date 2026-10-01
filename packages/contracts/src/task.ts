@@ -1,0 +1,157 @@
+import { z } from 'zod'
+
+export const TASK_STATUSES = ['backlog', 'todo', 'in_progress', 'done', 'cancelled'] as const
+export const taskStatus = z.enum(TASK_STATUSES)
+export type TaskStatus = z.infer<typeof taskStatus>
+
+// A calendar day ("which day I plan to do this"), deliberately not an instant. We do not use
+// z.coerce.date(): it accepts full timestamps and would silently turn a day into an instant.
+// The regex fixes the shape; the round trip through Date.UTC rejects impossible days (2026-02-30).
+export const calendarDate = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'expected a date in YYYY-MM-DD form')
+  .refine(
+    (value) => {
+      const [y, m, d] = value.split('-').map(Number) as [number, number, number]
+      const date = new Date(Date.UTC(y, m - 1, d))
+      return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d
+    },
+    { message: 'not a real calendar date' },
+  )
+
+// An instant, e.g. the hard deadline. Offsets are allowed; the server stores timestamptz.
+const instant = z.iso.datetime({ offset: true })
+
+const title = z.string().trim().min(1).max(500)
+const notes = z.string().max(100_000)
+const manualProgress = z.number().min(0).max(1)
+
+// ---- projects ----
+
+export const createProjectBody = z
+  .object({
+    name: z.string().trim().min(1).max(200),
+    color: z.string().max(32).nullish(),
+  })
+  .strict()
+
+export const updateProjectBody = z
+  .object({
+    name: z.string().trim().min(1).max(200),
+    color: z.string().max(32).nullable(),
+    archived: z.boolean(),
+  })
+  .partial()
+  .strict()
+
+export const projectResponse = z
+  .object({
+    id: z.uuid(),
+    workspaceId: z.uuid(),
+    name: z.string(),
+    color: z.string().nullable(),
+    rank: z.string(),
+    archivedAt: instant.nullable(),
+    createdAt: instant,
+  })
+  .strict()
+
+// ---- tasks ----
+
+// Rank is server-computed: neither create nor update accepts one.
+export const createTaskBody = z
+  .object({
+    projectId: z.uuid(),
+    parentId: z.uuid().nullish(),
+    title,
+    notes: notes.nullish(),
+    // Backlog by default so that capturing an idea costs nothing (spec section 6.3).
+    status: taskStatus.default('backlog'),
+    scheduledOn: calendarDate.nullish(),
+    dueAt: instant.nullish(),
+    manualProgress: manualProgress.nullish(),
+  })
+  .strict()
+
+// Deliberately omits parentId, projectId and rank: reparenting and reordering go through the
+// move endpoint, which enforces cycle detection, the depth limit and project-id cascading.
+export const updateTaskBody = z
+  .object({
+    title,
+    notes: notes.nullable(),
+    status: taskStatus,
+    scheduledOn: calendarDate.nullable(),
+    dueAt: instant.nullable(),
+    manualProgress: manualProgress.nullable(),
+  })
+  .partial()
+  .strict()
+
+// The client reports the neighbours the task lands between; the server computes the rank.
+export const moveTaskBody = z
+  .object({
+    projectId: z.uuid(),
+    parentId: z.uuid().nullable(),
+    beforeId: z.uuid().optional(),
+    afterId: z.uuid().optional(),
+  })
+  .strict()
+
+export const taskResponse = z
+  .object({
+    id: z.uuid(),
+    projectId: z.uuid(),
+    parentId: z.uuid().nullable(),
+    title: z.string(),
+    notes: z.string().nullable(),
+    status: taskStatus,
+    scheduledOn: calendarDate.nullable(),
+    dueAt: instant.nullable(),
+    rank: z.string(),
+    manualProgress: z.number().nullable(),
+    completedAt: instant.nullable(),
+    createdAt: instant,
+    updatedAt: instant,
+  })
+  .strict()
+
+// ---- events ----
+
+// There is intentionally no event type for reordering: a pure rank change is not logged
+// (spec section 9.1), or tidy-ups would flood the log and poison last_activity_at.
+export const TASK_EVENT_TYPES = [
+  'created',
+  'status_changed',
+  'due_changed',
+  'scheduled_changed',
+  'moved',
+  'title_changed',
+  'notes_changed',
+  'progress_set',
+  'deleted',
+  'restored',
+] as const
+export const taskEventType = z.enum(TASK_EVENT_TYPES)
+export type TaskEventType = z.infer<typeof taskEventType>
+
+export const taskEventResponse = z
+  .object({
+    id: z.uuid(),
+    taskId: z.uuid(),
+    actorUserId: z.uuid(),
+    type: taskEventType,
+    // Only the before/after values of the changed fields, never a row snapshot.
+    payload: z.record(z.string(), z.unknown()),
+    source: z.string(),
+    occurredAt: instant,
+  })
+  .strict()
+
+export type CreateProjectBody = z.infer<typeof createProjectBody>
+export type UpdateProjectBody = z.infer<typeof updateProjectBody>
+export type ProjectResponse = z.infer<typeof projectResponse>
+export type CreateTaskBody = z.infer<typeof createTaskBody>
+export type UpdateTaskBody = z.infer<typeof updateTaskBody>
+export type MoveTaskBody = z.infer<typeof moveTaskBody>
+export type TaskResponse = z.infer<typeof taskResponse>
+export type TaskEventResponse = z.infer<typeof taskEventResponse>
