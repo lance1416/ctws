@@ -1,16 +1,12 @@
 import { expect, test } from '@playwright/test'
+import { registerFreshUser } from './helpers'
 
 // Runs against the API container at http://localhost:3000, which serves the built web app, so the
 // page and the API are one origin. Needs AUTH_REGISTRATION=open and COOKIE_SECURE=false (plain
 // http); the SameSite default (lax) and an empty CORS_ORIGINS are what a same-origin deploy uses.
 // Register is rate limited (20/min/IP), so each run uses a unique email.
 test('register, stay signed in across a reload, then log out', async ({ page, context }) => {
-  const email = `e2e-${Date.now()}@example.com`
-
-  await page.goto('/')
-  await page.getByLabel('Email').fill(email)
-  await page.getByLabel('Password').fill('correct horse battery')
-  await page.getByRole('button', { name: 'Register' }).click()
+  const email = await registerFreshUser(page)
 
   await expect(page.getByTestId('current-user')).toHaveText(email)
   await expect(page.getByTestId('workspace-id')).not.toBeEmpty()

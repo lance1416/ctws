@@ -1,0 +1,62 @@
+@import 'tailwindcss';
+
+/* Semantic tokens only. Components must never use a literal palette class such as
+   `bg-slate-*`: with literals, swapping the colour scheme means editing every component
+   instead of this file. Dark mode REDEFINES the same tokens below rather than sprinkling
+   `dark:` variants through the components, for the same reason.
+   `static` makes Tailwind emit every token even when no class uses it yet, so each token has
+   a light and a dark value in the built CSS.
+   The dark block must be a plain :root override, not a nested @theme: Tailwind hoists an
+   @theme inside @media out of the query, which would make the dark values apply always. */
+@theme static {
+  --color-surface: oklch(99% 0 0);
+  --color-surface-raised: oklch(100% 0 0);
+  --color-surface-sunken: oklch(96% 0.002 250);
+  --color-fg: oklch(25% 0.01 250);
+  --color-fg-muted: oklch(50% 0.01 250);
+  --color-fg-subtle: oklch(65% 0.01 250);
+  --color-border-subtle: oklch(92% 0.003 250);
+  --color-border-strong: oklch(80% 0.005 250);
+  --color-accent: oklch(55% 0.17 255);
+  --color-accent-fg: oklch(99% 0 0);
+  --color-danger: oklch(55% 0.19 25);
+  --color-danger-fg: oklch(99% 0 0);
+  --color-overdue: oklch(55% 0.19 25);
+  --color-status-backlog: oklch(70% 0.01 250);
+  --color-status-todo: oklch(60% 0.12 255);
+  --color-status-in-progress: oklch(65% 0.15 85);
+  --color-status-done: oklch(60% 0.14 150);
+  --color-status-cancelled: oklch(65% 0.01 250);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-surface: oklch(20% 0.01 250);
+    --color-surface-raised: oklch(24% 0.012 250);
+    --color-surface-sunken: oklch(16% 0.01 250);
+    --color-fg: oklch(94% 0.005 250);
+    --color-fg-muted: oklch(72% 0.01 250);
+    --color-fg-subtle: oklch(58% 0.01 250);
+    --color-border-subtle: oklch(30% 0.01 250);
+    --color-border-strong: oklch(42% 0.012 250);
+    --color-accent: oklch(70% 0.15 255);
+    --color-accent-fg: oklch(18% 0.01 250);
+    --color-danger: oklch(68% 0.17 25);
+    --color-danger-fg: oklch(18% 0.01 250);
+    --color-overdue: oklch(68% 0.17 25);
+    --color-status-backlog: oklch(50% 0.01 250);
+    --color-status-todo: oklch(68% 0.12 255);
+    --color-status-in-progress: oklch(75% 0.14 85);
+    --color-status-done: oklch(68% 0.13 150);
+    --color-status-cancelled: oklch(48% 0.01 250);
+  }
+}
+
+/* Native controls (date pickers, scrollbars) follow the scheme too. */
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  @apply bg-surface text-fg;
+}

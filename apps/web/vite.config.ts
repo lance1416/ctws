@@ -1,8 +1,9 @@
+import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   // Read VITE_* variables from the repo-root .env, the single env file of the project.
   envDir: '../..',
   // strictPort: fail loudly instead of drifting to a port other tooling does not expect.
