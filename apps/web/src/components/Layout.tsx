@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Navigate, NavLink, Outlet } from 'react-router-dom'
 import { apiFetch } from '../api'
 import { useMe } from '../useMe'
+import { QuickCapture } from './QuickCapture'
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `rounded px-3 py-2 ${isActive ? 'bg-surface-raised text-fg' : 'text-fg-muted'}`
@@ -45,6 +46,7 @@ export function Layout() {
         </div>
       </nav>
       <main className="flex-1 p-6">
+        <QuickCapture />
         <Outlet />
       </main>
     </div>
