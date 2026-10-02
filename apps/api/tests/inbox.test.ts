@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
+import { sqlStateOf } from './helpers/sql'
 import { appWithUser, createProject } from './helpers/tasks'
 
 // The backfill is read out of drizzle/0003_*.sql rather than copied here: a copy that drifts tests
@@ -60,12 +61,15 @@ describe('inbox project', () => {
       await ctx.db.execute(sql`select workspace_id from projects where is_inbox limit 1`)
     ).rows as { workspace_id: string }[]
     const wsId = rows[0]!.workspace_id
-    await expect(
-      ctx.db.execute(sql`
-        insert into projects (id, workspace_id, name, rank, is_inbox)
-        values (gen_random_uuid(), ${wsId}, 'second inbox', 'zz', true)
-      `),
-    ).rejects.toThrow()
+    const UNIQUE_VIOLATION = '23505'
+    expect(
+      await sqlStateOf(
+        ctx.db.execute(sql`
+          insert into projects (id, workspace_id, name, rank, is_inbox)
+          values (gen_random_uuid(), ${wsId}, 'second inbox', 'zz', true)
+        `),
+      ),
+    ).toBe(UNIQUE_VIOLATION)
   })
 
   // Review Focus 1. The deployed instance's workspace predates this column; without the
@@ -81,5 +85,70 @@ describe('inbox project', () => {
     const inboxes = (await projectsOf(ctx)).filter((p) => p.isInbox)
     expect(inboxes).toHaveLength(1)
     expect(inboxes[0]!.name).toBe('Inbox')
+  })
+})
+
+describe('deleting the inbox', () => {
+  async function del(ctx: Awaited<ReturnType<typeof setup>>, id: string) {
+    return ctx.app.inject({ method: 'DELETE', url: `/api/v1/projects/${id}`, headers: ctx.authed })
+  }
+
+  // 409, not 404: it exists, it just may not be deleted. A 404 would make the caller think
+  // they had the wrong id.
+  it('refuses with 409 and leaves it in place', async () => {
+    const ctx = await setup()
+    const inbox = (await projectsOf(ctx)).find((p) => p.isInbox)!
+    const res = await del(ctx, inbox.id)
+    expect(res.statusCode).toBe(409)
+    expect(res.headers['content-type']).toContain('application/problem+json')
+    expect((await projectsOf(ctx)).some((p) => p.id === inbox.id)).toBe(true)
+  })
+
+  it('still deletes an ordinary project', async () => {
+    const ctx = await setup()
+    const id = await createProject(ctx, 'ordinary')
+    expect((await del(ctx, id)).statusCode).toBe(204)
+  })
+
+  // Archiving has the same user-visible consequence as deleting: the inbox leaves the default
+  // project list, `inboxOf` finds nothing, and quick capture stops working.
+  it('refuses to archive the inbox with 409', async () => {
+    const ctx = await setup()
+    const inbox = (await projectsOf(ctx)).find((p) => p.isInbox)!
+    const res = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/v1/projects/${inbox.id}`,
+      headers: ctx.authed,
+      payload: { archived: true },
+    })
+    expect(res.statusCode).toBe(409)
+    expect((await projectsOf(ctx)).some((p) => p.id === inbox.id)).toBe(true)
+  })
+
+  // A rename is fine: the inbox is found by its flag, never by its name.
+  it('still allows renaming the inbox', async () => {
+    const ctx = await setup()
+    const inbox = (await projectsOf(ctx)).find((p) => p.isInbox)!
+    const res = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/v1/projects/${inbox.id}`,
+      headers: ctx.authed,
+      payload: { name: '收件箱' },
+    })
+    expect(res.statusCode).toBe(200)
+    expect((await projectsOf(ctx)).find((p) => p.isInbox)!.name).toBe('收件箱')
+  })
+
+  // Unarchiving is harmless, and refusing it would be a trap if an inbox ever did get archived.
+  it('allows archived: false on the inbox', async () => {
+    const ctx = await setup()
+    const inbox = (await projectsOf(ctx)).find((p) => p.isInbox)!
+    const res = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/v1/projects/${inbox.id}`,
+      headers: ctx.authed,
+      payload: { archived: false },
+    })
+    expect(res.statusCode).toBe(200)
   })
 })

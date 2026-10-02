@@ -29,7 +29,9 @@ describe('projects', () => {
       headers: ctx.authed,
     })
     expect(res.statusCode).toBe(200)
-    expect(ordinary(res.json())).toEqual([])
+    const list = (res.json() as { projects: Listed[] }).projects
+    expect(list).toHaveLength(1)
+    expect(list[0]!.isInbox).toBe(true)
   })
 
   it('creates a project and lists it', async () => {
@@ -179,11 +181,17 @@ describe('projects', () => {
     const bCookie = String(second.headers['set-cookie']).split(';')[0]!
     const bAuthed = { ...headers, cookie: bCookie }
 
-    expect(
-      ordinary(
-        (await a.app.inject({ method: 'GET', url: '/api/v1/projects', headers: bAuthed })).json(),
-      ),
-    ).toEqual([])
+    // The full list, not `ordinary()`: that filter would hide an inbox leaked from workspace A.
+    // B sees exactly its own inbox and nothing of A's.
+    const bWorkspaceId = (
+      await a.app.inject({ method: 'GET', url: '/api/v1/auth/me', headers: bAuthed })
+    ).json().workspaceId as string
+    const bList = (
+      await a.app.inject({ method: 'GET', url: '/api/v1/projects', headers: bAuthed })
+    ).json().projects as (Listed & { workspaceId: string })[]
+    expect(bList).toHaveLength(1)
+    expect(bList[0]!.isInbox).toBe(true)
+    expect(bList[0]!.workspaceId).toBe(bWorkspaceId)
 
     for (const [method, payload] of [
       ['PATCH', { name: 'stolen' }],

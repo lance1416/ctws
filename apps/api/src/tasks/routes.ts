@@ -21,7 +21,7 @@ import {
   updateProject,
   type Project,
 } from './projects'
-import { TaskNotFoundError } from './errors'
+import { InboxNotDeletableError, TaskNotFoundError } from './errors'
 import { DEFAULT_EVENT_LIMIT, InvalidCursorError, listTaskEvents, MAX_EVENT_LIMIT } from './events'
 import { CycleError, InvalidNeighbourError, moveTask } from './move'
 import {
@@ -83,7 +83,8 @@ function sendTaskProblem(reply: FastifyReply, error: unknown): void {
   if (
     error instanceof DepthLimitError ||
     error instanceof ManualProgressOnParentError ||
-    error instanceof CycleError
+    error instanceof CycleError ||
+    error instanceof InboxNotDeletableError
   ) {
     return sendProblem(reply, 409, 'Conflict', error.message)
   }
@@ -143,8 +144,7 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
         )
         return toProjectResponse(row)
       } catch (error) {
-        if (error instanceof ProjectNotFoundError) return sendProblem(reply, 404, 'Not Found')
-        throw error
+        return sendTaskProblem(reply, error)
       }
     },
   )
@@ -157,8 +157,7 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
         await softDeleteProject(app.db, authedUser(req).workspaceId, req.params.id)
         return reply.status(204).send()
       } catch (error) {
-        if (error instanceof ProjectNotFoundError) return sendProblem(reply, 404, 'Not Found')
-        throw error
+        return sendTaskProblem(reply, error)
       }
     },
   )

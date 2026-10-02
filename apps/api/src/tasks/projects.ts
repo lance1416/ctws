@@ -5,6 +5,7 @@ import type { PgUpdateSetSource } from 'drizzle-orm/pg-core'
 import { v7 as uuidv7 } from 'uuid'
 import type { Queryable } from '../db/client'
 import { projects } from '../db/schema'
+import { InboxNotDeletableError } from './errors'
 
 /** The quick-capture destination. One per workspace; see schema.ts and the 0003 migration. */
 export const INBOX_NAME = 'Inbox'
@@ -86,6 +87,17 @@ export async function updateProject(
   id: string,
   patch: UpdateProjectBody,
 ): Promise<Project> {
+  // Archiving the inbox hides it from the default project list, which breaks quick capture just
+  // as deleting it would. Rename and unarchive stay allowed: the inbox is found by its flag, not
+  // its name, and refusing `archived: false` would be a trap.
+  if (patch.archived === true) {
+    const [existing] = await q
+      .select({ isInbox: projects.isInbox })
+      .from(projects)
+      .where(and(visible(workspaceId), eq(projects.id, id)))
+    if (existing?.isInbox) throw new InboxNotDeletableError()
+  }
+
   const set: PgUpdateSetSource<typeof projects> = {}
   if (patch.name !== undefined) set.name = patch.name
   if (patch.color !== undefined) set.color = patch.color
@@ -117,10 +129,21 @@ export async function softDeleteProject(
   workspaceId: string,
   id: string,
 ): Promise<void> {
+  // Checked in the service, not the route: the UI hides the delete control, but a UI is not a
+  // constraint. One statement so a concurrent rename cannot slip between check and delete.
   const rows = await q
     .update(projects)
     .set({ deletedAt: sql`now()` })
-    .where(and(visible(workspaceId), eq(projects.id, id)))
+    .where(and(visible(workspaceId), eq(projects.id, id), eq(projects.isInbox, false)))
     .returning({ id: projects.id })
-  if (rows.length === 0) throw new ProjectNotFoundError()
+  if (rows.length === 0) {
+    // Distinguish "is the inbox" from "does not exist" with one extra read, only on the
+    // failure path.
+    const [existing] = await q
+      .select({ isInbox: projects.isInbox })
+      .from(projects)
+      .where(and(visible(workspaceId), eq(projects.id, id)))
+    if (existing?.isInbox) throw new InboxNotDeletableError()
+    throw new ProjectNotFoundError()
+  }
 }
