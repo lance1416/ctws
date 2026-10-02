@@ -1,0 +1,416 @@
+import { expect, test, type Page } from '@playwright/test'
+import { registerFreshUser } from './helpers'
+
+const MOVE_URL = /\/tasks\/[^/]+\/move$/
+
+/** The row's drag handle and keyboard focus carrier; its accessible name is the task title. */
+const handle = (page: Page, title: string) =>
+  page.getByRole('button', { name: `任务：${title}`, exact: true })
+
+/** Resolves when a move request has been answered successfully, i.e. it is persisted. */
+function movePersisted(page: Page) {
+  return page.waitForResponse((r) => MOVE_URL.test(r.url()) && r.ok())
+}
+
+/** Records every move request the page sends, so a test can assert that none was. */
+function recordMoves(page: Page) {
+  const moves: string[] = []
+  page.on('request', (r) => {
+    if (MOVE_URL.test(r.url())) moves.push(r.url())
+  })
+  return moves
+}
+
+async function startProject(page: Page) {
+  await page.getByRole('link', { name: '项目' }).click()
+  await page.getByPlaceholder('新项目').fill('P')
+  await page.getByPlaceholder('新项目').press('Enter')
+  await page.getByText('P', { exact: true }).click()
+  return page.url()
+}
+
+/** Adds a root task through the new-task box and waits until it shows. */
+async function addTask(page: Page, title: string) {
+  await page.getByPlaceholder('新任务').fill(title)
+  await page.getByPlaceholder('新任务').press('Enter')
+  await expect(page.getByPlaceholder('新任务')).toHaveValue('')
+  await expect(page.getByRole('listitem').filter({ hasText: title })).toBeVisible()
+}
+
+/** Creates a project with three root tasks and returns its url. */
+async function seedProject(page: Page) {
+  const url = await startProject(page)
+  for (const title of ['one', 'two', 'three']) await addTask(page, title)
+  await expect(page.getByRole('listitem')).toHaveCount(3)
+  return url
+}
+
+/**
+ * Builds a tree through the API (far faster than the UI) and reloads. `spec` lists titles with
+ * the title of their parent, in creation order. Returns the ids by title.
+ */
+async function seedTree(page: Page, url: string, spec: [title: string, parent: string | null][]) {
+  const projectId = url.split('/').pop()!
+  const ids = new Map<string, string>()
+  for (const [title, parent] of spec) {
+    const res = await page.request.post('/api/v1/tasks', {
+      headers: { 'x-ctws-client': 'web' },
+      data: { projectId, title, parentId: parent ? ids.get(parent)! : null },
+    })
+    expect(res.ok()).toBeTruthy()
+    ids.set(title, ((await res.json()) as { id: string }).id)
+  }
+  await page.goto(url)
+  await expect(page.getByRole('listitem')).toHaveCount(spec.length)
+  return ids
+}
+
+/** The server's view of the tree, as title -> parent title (null for a root). */
+async function serverParents(page: Page, url: string) {
+  const projectId = url.split('/').pop()!
+  const body = await (await page.request.get(`/api/v1/projects/${projectId}/tasks`)).json()
+  const tasks = body.tasks as { id: string; title: string; parentId: string | null }[]
+  const title = new Map(tasks.map((t) => [t.id, t.title]))
+  return Object.fromEntries(tasks.map((t) => [t.title, t.parentId ? title.get(t.parentId) : null]))
+}
+
+/** Drags one handle onto another with real pointer events. */
+async function dragOnto(page: Page, from: string, to: string) {
+  const a = await handle(page, from).boundingBox()
+  const b = await handle(page, to).boundingBox()
+  await page.mouse.move(a!.x + a!.width / 2, a!.y + a!.height / 2)
+  await page.mouse.down()
+  // dnd-kit needs a few intermediate moves before it treats this as a drag.
+  await page.mouse.move(b!.x + b!.width / 2, b!.y + b!.height / 2, { steps: 10 })
+  await page.mouse.up()
+}
+
+const depthOf = (page: Page, title: string) => page.getByRole('listitem').filter({ hasText: title })
+
+test('a reorder survives a reload', async ({ page }) => {
+  await registerFreshUser(page)
+  const url = await seedProject(page)
+
+  const rows = page.getByRole('listitem')
+  await expect(rows).toHaveText([/one/, /two/, /three/])
+
+  // Keyboard reorder: the same drop.ts path the pointer drag uses, and deterministic in a test.
+  await handle(page, 'three').focus()
+  const persisted = movePersisted(page)
+  await page.keyboard.press('Alt+ArrowUp')
+  await expect(rows).toHaveText([/one/, /three/, /two/])
+  await persisted
+
+  await page.goto(url)
+  await expect(page.getByRole('listitem')).toHaveText([/one/, /three/, /two/])
+})
+
+test('indenting makes a task the child of the row above and survives a reload', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const url = await seedProject(page)
+
+  await handle(page, 'two').focus()
+  const persisted = movePersisted(page)
+  await page.keyboard.press('Alt+ArrowRight')
+  await persisted
+
+  await page.goto(url)
+  await expect(depthOf(page, 'two')).toHaveAttribute('data-depth', '2')
+  // The parent, not just the depth: a move under `three` would also be depth 2.
+  expect(await serverParents(page, url)).toEqual({ one: null, two: 'one', three: null })
+})
+
+test('outdenting makes a child a sibling of its parent', async ({ page }) => {
+  await registerFreshUser(page)
+  const url = await startProject(page)
+  await seedTree(page, url, [
+    ['one', null],
+    ['two', 'one'],
+    ['three', null],
+  ])
+
+  await handle(page, 'two').focus()
+  const persisted = movePersisted(page)
+  await page.keyboard.press('Alt+ArrowLeft')
+  await persisted
+
+  await expect(depthOf(page, 'two')).toHaveAttribute('data-depth', '1')
+  expect(await serverParents(page, url)).toEqual({ one: null, two: null, three: null })
+  await expect(page.getByRole('listitem')).toHaveText([/one/, /two/, /three/])
+})
+
+test('Tab leaves the tree instead of being captured by it', async ({ page }) => {
+  await registerFreshUser(page)
+  await seedProject(page)
+  const moves = recordMoves(page)
+
+  await handle(page, 'one').focus()
+  await page.keyboard.press('Tab')
+  // Focus moved on to the next control and nothing was reorganised.
+  await expect(handle(page, 'one')).not.toBeFocused()
+  await expect(handle(page, 'two')).toBeFocused()
+  await expect(page.getByRole('listitem')).toHaveText([/one/, /two/, /three/])
+  expect(moves).toEqual([])
+})
+
+// Review Focus 5. A 409 must roll the optimistic update back, and the optimistic update must
+// have happened in the first place. Both halves are pinned here by holding the requests open:
+//  - the move request is held, so the transient (optimistic) order is observable;
+//  - the task-list refetch is held, because it would repaint the true order whether or not the
+//    rollback ran, and this test would pass without the rollback.
+test('a move shows at once, and a rejected one rolls back visibly', async ({ page }) => {
+  await registerFreshUser(page)
+  const url = await seedProject(page)
+  const rows = page.getByRole('listitem')
+
+  let releaseList!: () => void
+  const listGate = new Promise<void>((resolve) => (releaseList = resolve))
+  await page.route('**/api/v1/projects/*/tasks', async (route) => {
+    await listGate
+    await route.continue()
+  })
+
+  let releaseMove!: () => void
+  const moveGate = new Promise<void>((resolve) => (releaseMove = resolve))
+  await page.route('**/api/v1/tasks/*/move', async (route) => {
+    await moveGate
+    await route.fulfill({
+      status: 409,
+      contentType: 'application/problem+json',
+      body: JSON.stringify({ type: 'about:blank', title: 'Conflict', status: 409 }),
+    })
+  })
+
+  await handle(page, 'three').focus()
+  await page.keyboard.press('Alt+ArrowUp')
+
+  // The server has not answered, yet the row has moved: this is the optimistic update.
+  await expect(rows).toHaveText([/one/, /three/, /two/])
+  await expect(page.getByRole('alert')).toHaveCount(0)
+
+  releaseMove()
+  // The failure is visible rather than silent. Asserted before the order: once the alert shows,
+  // the move has failed and the rollback has had its chance to run.
+  await expect(page.getByRole('alert')).toBeVisible()
+  await expect(rows).toHaveText([/one/, /two/, /three/])
+
+  await page.unroute('**/api/v1/tasks/*/move')
+  releaseList()
+  await page.goto(url)
+  await expect(page.getByRole('listitem')).toHaveText([/one/, /two/, /three/])
+})
+
+test('a captured task shows up in the inbox tree', async ({ page }) => {
+  await registerFreshUser(page)
+  await page.getByPlaceholder('捕获…').fill('买咩6')
+  await page.getByPlaceholder('捕获…').press('Enter')
+  await page.getByRole('link', { name: '项目' }).click()
+  await page.getByText('Inbox').click()
+  await expect(page.getByRole('listitem').filter({ hasText: '买咩6' })).toBeVisible()
+})
+
+test('a pointer drag up reorders the tree', async ({ page }) => {
+  await registerFreshUser(page)
+  const url = await seedProject(page)
+  const rows = page.getByRole('listitem')
+
+  const persisted = movePersisted(page)
+  await dragOnto(page, 'three', 'one')
+
+  await expect(rows).toHaveText([/three/, /one/, /two/])
+  await persisted
+  // Persisted, not just optimistic: the order must survive a reload.
+  await page.goto(url)
+  await expect(page.getByRole('listitem')).toHaveText([/three/, /one/, /two/])
+})
+
+// Dragging down must land after the target's whole visible block. With a childless target the
+// slot is the same either way, so the target here has a child: landing between the target and
+// its child would make the dragged row that child's sibling instead.
+test('a pointer drag down lands after the whole block it is dropped on', async ({ page }) => {
+  await registerFreshUser(page)
+  const url = await startProject(page)
+  await seedTree(page, url, [
+    ['aa', null],
+    ['bb', null],
+    ['bkid', 'bb'],
+  ])
+  const rows = page.getByRole('listitem')
+
+  const persisted = movePersisted(page)
+  await dragOnto(page, 'aa', 'bb')
+
+  await expect(rows).toHaveText([/bb/, /bkid/, /aa/])
+  await persisted
+  await expect(depthOf(page, 'aa')).toHaveAttribute('data-depth', '1')
+  await expect(depthOf(page, 'bkid')).toHaveAttribute('data-depth', '2')
+  await page.goto(url)
+  await expect(rows).toHaveText([/bb/, /bkid/, /aa/])
+  expect(await serverParents(page, url)).toEqual({ aa: null, bb: null, bkid: 'bb' })
+})
+
+// Dropping a row inside its own subtree is refused before any request is made.
+test('dragging a parent onto its own child is refused and sends no move', async ({ page }) => {
+  await registerFreshUser(page)
+  const url = await startProject(page)
+  await seedTree(page, url, [
+    ['pp', null],
+    ['c1', 'pp'],
+    ['c2', 'pp'],
+  ])
+  const moves = recordMoves(page)
+
+  await dragOnto(page, 'pp', 'c1')
+
+  await expect(page.getByRole('alert')).toHaveText('不能把任务移到它自己的子任务里')
+  // Absence is only meaningful after giving a wrongly-sent request time to leave the page.
+  await page.waitForTimeout(500)
+  expect(moves).toEqual([])
+  await expect(page.getByRole('listitem')).toHaveText([/pp/, /c1/, /c2/])
+})
+
+// Moving past an expanded subtree must step over all of it. Landing between the subtree's root
+// and its first child would silently make the moved row that subtree's child.
+test('Alt+Down moves a row with children past the whole next block', async ({ page }) => {
+  await registerFreshUser(page)
+  const url = await startProject(page)
+  await seedTree(page, url, [
+    ['mm', null],
+    ['mkid', 'mm'],
+    ['qq', null],
+    ['qkid', 'qq'],
+  ])
+  const rows = page.getByRole('listitem')
+
+  await handle(page, 'mm').focus()
+  const persisted = movePersisted(page)
+  await page.keyboard.press('Alt+ArrowDown')
+  await persisted
+
+  await expect(rows).toHaveText([/qq/, /qkid/, /mm/, /mkid/])
+  await expect(depthOf(page, 'mm')).toHaveAttribute('data-depth', '1')
+  await expect(depthOf(page, 'mkid')).toHaveAttribute('data-depth', '2')
+  expect(await serverParents(page, url)).toEqual({ mm: null, mkid: 'mm', qq: null, qkid: 'qq' })
+})
+
+test('Alt+Up past an expanded parent keeps the row at its own depth', async ({ page }) => {
+  await registerFreshUser(page)
+  const url = await startProject(page)
+  await seedTree(page, url, [
+    ['pa', null],
+    ['qa', null],
+    ['kid', 'qa'],
+    ['ra', null],
+  ])
+  const rows = page.getByRole('listitem')
+
+  await handle(page, 'ra').focus()
+  const persisted = movePersisted(page)
+  await page.keyboard.press('Alt+ArrowUp')
+  await persisted
+  await expect(rows).toHaveText([/pa/, /ra/, /qa/, /kid/])
+  await expect(depthOf(page, 'ra')).toHaveAttribute('data-depth', '1')
+  await expect(depthOf(page, 'kid')).toHaveAttribute('data-depth', '2')
+})
+
+// A collapsed row hides its descendants, so its visible block is shorter than its real one. The
+// move must step over the visible block only, and the hidden children must stay with their parent.
+test('Alt+Down past a collapsed sibling lands after it', async ({ page }) => {
+  await registerFreshUser(page)
+  const url = await startProject(page)
+  await seedTree(page, url, [
+    ['aa', null],
+    ['bb', null],
+    ['bkid', 'bb'],
+    ['cc', null],
+  ])
+  const rows = page.getByRole('listitem')
+  await page.getByRole('button', { name: '折叠' }).click()
+  await expect(rows).toHaveText([/aa/, /bb/, /cc/])
+
+  await handle(page, 'aa').focus()
+  const persisted = movePersisted(page)
+  await page.keyboard.press('Alt+ArrowDown')
+  await persisted
+  await expect(rows).toHaveText([/bb/, /aa/, /cc/])
+
+  await page.getByRole('button', { name: '展开' }).click()
+  await expect(rows).toHaveText([/bb/, /bkid/, /aa/, /cc/])
+  expect(await serverParents(page, url)).toEqual({ aa: null, bb: null, bkid: 'bb', cc: null })
+})
+
+test('Alt+Up on the first row and Alt+Down on the last row do nothing', async ({ page }) => {
+  await registerFreshUser(page)
+  await seedProject(page)
+  const rows = page.getByRole('listitem')
+  const moves = recordMoves(page)
+
+  await handle(page, 'one').focus()
+  await page.keyboard.press('Alt+ArrowUp')
+  await handle(page, 'three').focus()
+  await page.keyboard.press('Alt+ArrowDown')
+
+  await page.waitForTimeout(500)
+  expect(moves).toEqual([])
+  await expect(rows).toHaveText([/one/, /two/, /three/])
+  await expect(page.getByRole('alert')).toHaveCount(0)
+})
+
+test('collapsing hides the descendants and the fold survives a reload', async ({ page }) => {
+  await registerFreshUser(page)
+  const url = await startProject(page)
+  await seedTree(page, url, [
+    ['pa', null],
+    ['kid', 'pa'],
+  ])
+  const rows = page.getByRole('listitem')
+  await expect(rows).toHaveCount(2)
+
+  await page.getByRole('button', { name: '折叠' }).click()
+  await expect(rows).toHaveCount(1)
+
+  await page.goto(url)
+  await expect(rows.filter({ hasText: 'pa' })).toBeVisible()
+  await expect(rows).toHaveCount(1)
+
+  await page.getByRole('button', { name: '展开' }).click()
+  await expect(rows).toHaveCount(2)
+  await expect(rows.filter({ hasText: 'kid' })).toBeVisible()
+})
+
+test('a stale collapsed id on a leaf draws no chevron', async ({ page }) => {
+  await registerFreshUser(page)
+  const url = await startProject(page)
+  await addTask(page, 'leaf')
+  const projectId = url.split('/').pop()!
+  const tasks = await (await page.request.get(`/api/v1/projects/${projectId}/tasks`)).json()
+  const leafId = tasks.tasks[0].id as string
+  await page.evaluate(
+    ([k, v]) => localStorage.setItem(k!, v!),
+    [`ctws.collapsed.${projectId}`, JSON.stringify([leafId])],
+  )
+
+  await page.goto(url)
+  await expect(page.getByRole('listitem').filter({ hasText: 'leaf' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /展开|折叠/ })).toHaveCount(0)
+})
+
+// Not reachable from the keyboard (Alt+arrows can only produce clamped, legal depths), so this
+// uses the pointer: a 2-high subtree dragged in front of a row at MAX_DEPTH has nowhere legal to go.
+test('a too-deep drop shows a message and sends no move', async ({ page }) => {
+  await registerFreshUser(page)
+  const url = await startProject(page)
+  const chain: [string, string | null][] = []
+  for (let i = 1; i <= 10; i++) chain.push([`chain${i}`, i === 1 ? null : `chain${i - 1}`])
+  await seedTree(page, url, [...chain, ['xx', null], ['xkid', 'xx']])
+  const moves = recordMoves(page)
+
+  await dragOnto(page, 'xx', 'chain10')
+
+  await expect(page.getByRole('alert')).toHaveText('层级太深，无法移到那里')
+  // Absence is only meaningful after giving a wrongly-sent request time to leave the page.
+  await page.waitForTimeout(500)
+  expect(moves).toEqual([])
+})
