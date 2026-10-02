@@ -72,8 +72,8 @@ describe('flatten', () => {
   it('hides the descendants of a collapsed node but keeps the node', () => {
     const nodes = [node('a', null, 'a'), node('b', 'a', 'a'), node('c', 'b', 'a')]
     const rows = flatten(nodes, new Set(['a']))
-    // Collapsed node is emitted, and its unreached descendants are emitted flat (corrupt data renders odd but visible)
-    expect(rows.map((r) => r.id)).toEqual(['a', 'b', 'c'])
+    // Collapsed node is emitted, its descendants are hidden and not emitted
+    expect(rows.map((r) => r.id)).toEqual(['a'])
     expect(rows[0]).toMatchObject({
       hasChildren: true,
       collapsed: true,
@@ -93,8 +93,8 @@ describe('flatten', () => {
   it('reports subtreeHeight of a middle collapsed node from all its descendants', () => {
     const nodes = [node('a', null, 'a'), node('b', 'a', 'a'), node('c', 'b', 'a')]
     const rows = flatten(nodes, new Set(['b']))
-    // b is collapsed, so c is unreachable and emitted flat
-    expect(rows.map((r) => r.id)).toEqual(['a', 'b', 'c'])
+    // b is collapsed, so c is hidden and not emitted
+    expect(rows.map((r) => r.id)).toEqual(['a', 'b'])
     expect(rows.find((r) => r.id === 'b')!.subtreeHeight).toBe(2)
   })
 
@@ -142,7 +142,8 @@ describe('flatten', () => {
 
   it('shows collapsed cycle with children flat', () => {
     // Cycle a<->b with child c under b, and a is collapsed.
-    // Unreached nodes sorted by (rank, id): a, b, c
+    // The walk never reaches the cycle (no entry from root), so all three are flat-emitted.
+    // Note: a's collapsed flag is set but has no effect, as flat-emitted rows are roots and not descended.
     const nodes = [
       node('a', 'b', 'a'),
       node('b', 'a', 'a'),

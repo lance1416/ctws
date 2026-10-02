@@ -65,6 +65,13 @@ export function flatten(nodes: TaskNode[], collapsed: ReadonlySet<string>): Flat
 
   const rows: FlatRow[] = []
   const emitted = new Set<string>()
+  const visited = new Set<string>()
+
+  const markVisited = (id: string) => {
+    if (visited.has(id)) return
+    visited.add(id)
+    for (const k of children.get(id) ?? []) markVisited(k.id)
+  }
 
   const pushRow = (n: TaskNode, depth: number, parentId: string | null) => {
     const kids = children.get(n.id) ?? []
@@ -78,6 +85,7 @@ export function flatten(nodes: TaskNode[], collapsed: ReadonlySet<string>): Flat
       collapsed: isCollapsed,
     })
     emitted.add(n.id)
+    visited.add(n.id)
   }
 
   const visit = (parent: string | null, depth: number, onPath: Set<string>) => {
@@ -91,15 +99,20 @@ export function flatten(nodes: TaskNode[], collapsed: ReadonlySet<string>): Flat
         onPath.add(n.id)
         visit(n.id, depth + 1, onPath)
         onPath.delete(n.id)
+      } else {
+        // A collapsed node's descendants are reached by the walk; they just do not produce rows.
+        // Marking them visited is what keeps the leftover pass from mistaking "hidden" for
+        // "unreachable" -- the bug that made folding a row move its children to the top level.
+        for (const k of children.get(n.id) ?? []) markVisited(k.id)
       }
     }
   }
 
   visit(null, 1, new Set())
 
-  // Anything the walk above never reached is on a parent cycle (a cycle has no entry from the
-  // root list). The API's guards make that unreachable, but silently dropping tasks is the one
-  // outcome this file exists to prevent -- a task missing from the tree reads as lost work.
+  // Only nodes the walk never reached at all, which means they sit on a parent cycle: a cycle has
+  // no entry from the root list. A collapsed node's descendants were reached and deliberately not
+  // emitted, which is a different thing -- see markVisited.
   //
   // These rows are emitted FLAT, each at depth 1, with no descent. That is deliberate: descending
   // from them gave a second emission path with its own rules, which produced duplicate rows and
@@ -108,7 +121,7 @@ export function flatten(nodes: TaskNode[], collapsed: ReadonlySet<string>): Flat
   // Flat-emitted rows are rendered as roots (parentId: null, depth: 1); drop.ts relies on this
   // invariant to find siblings at the root level.
   for (const n of [...nodes].sort(byRankThenId)) {
-    if (emitted.has(n.id)) continue
+    if (visited.has(n.id)) continue
     pushRow(n, 1, null)
   }
 
