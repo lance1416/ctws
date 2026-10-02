@@ -73,6 +73,9 @@ export function TaskDetail({ task, projectId, onClose }: Props) {
     },
     // Settled, not success: if the move fails after the patch landed, the list is still stale.
     onSettled: async () => {
+      // The today list is cross-project and server-derived: any edit can move a task between
+      // segments or off the list, so it is always refetched.
+      await qc.invalidateQueries({ queryKey: ['today'] })
       await qc.invalidateQueries({ queryKey: ['tasks', projectId] })
       if (nextProjectId !== projectId)
         await qc.invalidateQueries({ queryKey: ['tasks', nextProjectId] })
