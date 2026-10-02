@@ -7,6 +7,7 @@ beforeAll(() => {
 })
 
 const load = () => import('./components/TaskDetail')
+const loadLabel = () => import('./dueAt')
 
 describe('due time conversion', () => {
   it('reads a local wall-clock value as the matching instant', async () => {
@@ -24,5 +25,25 @@ describe('due time conversion', () => {
     const { fromLocalInput, toLocalInput } = await load()
     expect(fromLocalInput('')).toBeNull()
     expect(toLocalInput(null)).toBe('')
+  })
+})
+
+describe('overdue label', () => {
+  it('counts local calendar days, not elapsed milliseconds', async () => {
+    const { overdueLabel } = await loadLabel()
+    // Due 23:30 on the 3rd (+05:30); it is 00:10 on the 4th. Forty minutes, but already a day late.
+    expect(overdueLabel('2026-10-03T18:00:00.000Z', new Date('2026-10-03T18:40:00.000Z'))).toBe(
+      '已逾 1 天',
+    )
+    expect(overdueLabel('2026-10-01T03:30:00.000Z', new Date('2026-10-04T10:00:00.000Z'))).toBe(
+      '已逾 3 天',
+    )
+  })
+
+  it('never says 0 days, and never prints the datetime-local format', async () => {
+    const { overdueLabel } = await loadLabel()
+    const label = overdueLabel('2026-10-03T03:00:00.000Z', new Date('2026-10-03T10:00:00.000Z'))
+    expect(label).toBe('已逾 1 天')
+    expect(label).not.toMatch(/T/)
   })
 })

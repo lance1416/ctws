@@ -338,6 +338,63 @@ test('Alt+Down past a collapsed sibling lands after it', async ({ page }) => {
   expect(await serverParents(page, url)).toEqual({ aa: null, bb: null, bkid: 'bb', cc: null })
 })
 
+// Indenting under a folded row is legal, but the row would then sit inside the fold and vanish
+// from the screen while staying in the database. The fold must open so the result is visible.
+test('Alt+Right under a collapsed row opens it and keeps the moved row visible', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const url = await startProject(page)
+  await seedTree(page, url, [
+    ['aa', null],
+    ['akid', 'aa'],
+    ['bb', null],
+  ])
+  const rows = page.getByRole('listitem')
+  await page.getByRole('button', { name: '折叠' }).click()
+  await expect(rows).toHaveText([/aa/, /bb/])
+
+  await handle(page, 'bb').focus()
+  const persisted = movePersisted(page)
+  await page.keyboard.press('Alt+ArrowRight')
+  await persisted
+
+  await expect(rows).toHaveText([/aa/, /akid/, /bb/])
+  await expect(depthOf(page, 'bb')).toHaveAttribute('data-depth', '2')
+  expect(await serverParents(page, url)).toEqual({ aa: null, akid: 'aa', bb: 'aa' })
+  // The opened state is persisted, so a reload agrees with what was on screen.
+  await page.reload()
+  await expect(rows).toHaveText([/aa/, /akid/, /bb/])
+})
+
+test('dragging a row right under a collapsed row opens it and keeps the row visible', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const url = await startProject(page)
+  await seedTree(page, url, [
+    ['aa', null],
+    ['akid', 'aa'],
+    ['bb', null],
+  ])
+  const rows = page.getByRole('listitem')
+  await page.getByRole('button', { name: '折叠' }).click()
+  await expect(rows).toHaveText([/aa/, /bb/])
+
+  const box = await handle(page, 'bb').boundingBox()
+  const persisted = movePersisted(page)
+  await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2)
+  await page.mouse.down()
+  // One indent step to the right, no vertical travel.
+  await page.mouse.move(box!.x + box!.width / 2 + 25, box!.y + box!.height / 2, { steps: 10 })
+  await page.mouse.up()
+  await persisted
+
+  await expect(rows).toHaveText([/aa/, /akid/, /bb/])
+  await expect(depthOf(page, 'bb')).toHaveAttribute('data-depth', '2')
+  expect(await serverParents(page, url)).toEqual({ aa: null, akid: 'aa', bb: 'aa' })
+})
+
 test('Alt+Up on the first row and Alt+Down on the last row do nothing', async ({ page }) => {
   await registerFreshUser(page)
   await seedProject(page)
@@ -418,13 +475,13 @@ test('a too-deep drop shows a message and sends no move', async ({ page }) => {
  * Later GETs pass straight through. A fixed delay cannot do this: it would let the server see the
  * create, which makes the held response fresh and hides the bug.
  */
-async function holdFirstListFetch(page: Page) {
+async function holdFirstListFetch(page: Page, glob = '**/api/v1/projects/*/tasks') {
   let release!: () => void
   const gate = new Promise<void>((resolve) => (release = resolve))
   let captured!: () => void
   const heldStale = new Promise<void>((resolve) => (captured = resolve))
   let first = true
-  await page.route('**/api/v1/projects/*/tasks', async (route) => {
+  await page.route(glob, async (route) => {
     if (route.request().method() !== 'GET' || !first) return route.continue()
     first = false
     const stale = await route.fetch()
@@ -463,4 +520,17 @@ test('a capture made while the inbox is still loading appears', async ({ page })
   release()
 
   await expect(page.getByRole('listitem').filter({ hasText: 'captured early' })).toBeVisible()
+})
+
+// The projects list has the same first-load hole as the task list: a project created while the
+// very first GET /projects is still in flight must still appear.
+test('a project created while the project list is still loading appears', async ({ page }) => {
+  await registerFreshUser(page)
+  const { release, heldStale } = await holdFirstListFetch(page, '**/api/v1/projects')
+  await page.goto('/projects')
+  await heldStale
+  await submitCreate(page, '新项目', 'typed early')
+  release()
+
+  await expect(page.getByRole('link', { name: 'typed early' })).toBeVisible()
 })

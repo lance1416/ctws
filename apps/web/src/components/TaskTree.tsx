@@ -9,8 +9,9 @@ import {
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import type { MoveTaskBody, TaskResponse } from '@ctws/contracts'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useMemo, useState, type KeyboardEvent } from 'react'
+import { useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 import { listProjectTasks, moveTask } from '../api/tasks'
+import { tasksKey } from '../api/taskCache'
 import { flatten } from '../tree/flatten'
 import { loadCollapsed, saveCollapsed } from '../tree/collapse'
 import { planDrop, type DropPlan } from '../tree/drop'
@@ -50,7 +51,7 @@ function applyMove(old: TaskResponse[], id: string, body: MoveTaskBody): TaskRes
 
 export function TaskTree({ projectId }: { projectId: string }) {
   const qc = useQueryClient()
-  const key = ['tasks', projectId]
+  const key = tasksKey(projectId)
   const [collapsed, setCollapsed] = useState(() => loadCollapsed(projectId))
   const [error, setError] = useState<string | null>(null)
   const [openId, setOpenId] = useState<string | null>(null)
@@ -95,6 +96,14 @@ export function TaskTree({ projectId }: { projectId: string }) {
       return
     }
     setError(null)
+    // The gesture is legal and the intent clear, so show the result: a row moved under a folded
+    // parent would otherwise vanish from the screen while sitting in the database.
+    if (plan.parentId && collapsed.has(plan.parentId)) {
+      const next = new Set(collapsed)
+      next.delete(plan.parentId)
+      setCollapsed(next)
+      saveCollapsed(projectId, next)
+    }
     const body: MoveTaskBody = { projectId, parentId: plan.parentId }
     if (plan.beforeId) body.beforeId = plan.beforeId
     if (plan.afterId) body.afterId = plan.afterId
@@ -149,6 +158,15 @@ export function TaskTree({ projectId }: { projectId: string }) {
     setOpenId(null)
     if (id) document.querySelector<HTMLElement>(`[data-handle-id="${id}"]`)?.focus()
   }
+
+  // The panel also unmounts without onClose when its task leaves the list; focus would fall to
+  // <body> (WCAG 2.4.3). Return it to the tree instead.
+  useEffect(() => {
+    if (openId && tasks.isSuccess && !openTask) {
+      setOpenId(null)
+      queueMicrotask(() => document.querySelector<HTMLElement>('[data-handle-id]')?.focus())
+    }
+  }, [openId, openTask, tasks.isSuccess])
 
   const toggle = (id: string) => {
     const next = new Set(collapsed)

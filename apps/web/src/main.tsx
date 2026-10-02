@@ -24,9 +24,13 @@ const router = createBrowserRouter([
   },
 ])
 
+// One retry covers a genuine blip; the default three (with backoff) hide a down server behind a
+// spinner for about seven seconds, which is the wrong trade for a self-hosted personal app.
+const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1 } } })
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <QueryClientProvider client={new QueryClient()}>
+    <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
     </QueryClientProvider>
   </StrictMode>,

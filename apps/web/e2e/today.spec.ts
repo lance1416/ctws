@@ -99,7 +99,10 @@ test('an edit made from the today page is reflected without a reload', async ({ 
   await page.getByLabel('状态').selectOption('done')
   await page.getByRole('button', { name: '保存' }).click()
 
+  await expect(page.getByText('先在做')).toHaveCount(0)
   await expect(page.getByText('今天没有安排的事')).toBeVisible()
+  // The panel unmounted without being closed; focus must not have fallen to <body>.
+  await expect(page.locator('#today-heading')).toBeFocused()
 })
 
 // The breadcrumb is what makes the list usable without opening anything; a nested task must show
@@ -134,7 +137,35 @@ test('a failed fetch shows an error, not the empty-state line', async ({ page })
     route.fulfill({ status: 500, json: { title: 'boom' } }),
   )
   await registerFreshUser(page)
-  // TanStack retries a failed query three times with backoff (about 7s) before reporting it.
-  await expect(page.getByRole('alert')).toHaveText('boom', { timeout: 15_000 })
+  await expect(page.getByRole('alert')).toHaveText('boom')
   await expect(page.getByText('今天没有安排的事')).toHaveCount(0)
+})
+
+// The overdue date is for reading, not for a form: a relative label, with the exact local time on
+// hover. The datetime-local wire format ("2026-10-01T09:00") must never reach the screen.
+test('an overdue task shows a relative label, not the datetime-local format', async ({ page }) => {
+  await registerFreshUser(page)
+  await captureAndOpen(page, '交报告')
+  await page.getByLabel('截止').fill('2020-01-01T09:00')
+  await page.getByRole('button', { name: '保存' }).click()
+
+  await page.getByRole('link', { name: '今天' }).click()
+  const section = page.getByRole('region', { name: '逾期' })
+  const label = section.getByText(/^已逾 \d+ 天$/)
+  await expect(label).toBeVisible()
+  await expect(label).toHaveAttribute('title', '2020-01-01 09:00')
+  await expect(section).not.toContainText(/\d{4}-\d{2}-\d{2}T/)
+  await expect(section).not.toContainText('T09:00')
+})
+
+test('the status dot has a text alternative', async ({ page }) => {
+  await registerFreshUser(page)
+  await captureAndOpen(page, '写 M2b')
+  await page.getByLabel('状态').selectOption('in_progress')
+  await page.getByRole('button', { name: '保存' }).click()
+
+  await page.getByRole('link', { name: '今天' }).click()
+  await expect(
+    page.getByRole('region', { name: '正在做' }).getByRole('img', { name: '进行中' }),
+  ).toBeVisible()
 })

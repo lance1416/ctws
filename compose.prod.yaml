@@ -27,6 +27,9 @@ services:
       COOKIE_SECURE: 'true'
       COOKIE_SAMESITE: lax
       CORS_ORIGINS: ''
+      # Per-minute cap on auth endpoints; the app defaults to 20 when unset. Raise it if a shared
+      # tunnel IP trips it (DEPLOY.md section 4).
+      AUTH_RATE_LIMIT_MAX: ${AUTH_RATE_LIMIT_MAX:-20}
     healthcheck:
       test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:3000/api/v1/health']
       interval: 5s

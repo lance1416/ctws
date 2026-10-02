@@ -1,8 +1,9 @@
 import { TODAY_SEGMENTS, type TaskStatus, type TodaySegment } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { listToday } from '../api/today'
-import { TaskDetail, toLocalInput } from '../components/TaskDetail'
+import { STATUS_LABEL, TaskDetail, toLocalInput } from '../components/TaskDetail'
+import { overdueLabel } from '../dueAt'
 
 const LABELS: Record<TodaySegment, string> = {
   overdue: '逾期',
@@ -34,6 +35,17 @@ export function Today() {
     }
   }
 
+  // The panel unmounts without onClose when an edit moves its task off this page; return focus
+  // to the page's first row (or the heading, when none is left) rather than losing it to <body> (WCAG 2.4.3).
+  useEffect(() => {
+    if (openId && today.isSuccess && !openTask) {
+      setOpenId(null)
+      queueMicrotask(() =>
+        document.querySelector<HTMLElement>('[data-today-row], #today-heading')?.focus(),
+      )
+    }
+  }, [openId, openTask, today.isSuccess])
+
   // The server already assigned each task to exactly one segment and ordered rows within it.
   // Grouping here is only partitioning by that field; no re-filtering, no re-sorting.
   const sections = TODAY_SEGMENTS.map((segment) => ({
@@ -43,7 +55,9 @@ export function Today() {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">今天</h1>
+      <h1 id="today-heading" tabIndex={-1} className="text-2xl font-semibold focus:outline-none">
+        今天
+      </h1>
       {today.isPending && <p className="mt-4 text-fg-muted">加载中…</p>}
       {today.isError && (
         <p role="alert" className="mt-4 text-danger">
@@ -66,7 +80,9 @@ export function Today() {
                   className="flex w-full items-center gap-2 rounded px-1 py-1 text-left"
                 >
                   <span
-                    aria-hidden="true"
+                    role="img"
+                    aria-label={STATUS_LABEL[t.status]}
+                    title={STATUS_LABEL[t.status]}
                     className={`size-2 shrink-0 rounded-full ${DOT[t.status]}`}
                   />
                   <span className="text-fg">{t.title}</span>
@@ -74,7 +90,12 @@ export function Today() {
                     {t.parentTitle === null ? t.projectName : `${t.projectName} › ${t.parentTitle}`}
                   </span>
                   {segment === 'overdue' && t.dueAt && (
-                    <span className="ml-auto text-overdue">{toLocalInput(t.dueAt)}</span>
+                    <span
+                      className="ml-auto text-overdue"
+                      title={toLocalInput(t.dueAt).replace('T', ' ')}
+                    >
+                      {overdueLabel(t.dueAt)}
+                    </span>
                   )}
                 </button>
               </li>

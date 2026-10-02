@@ -92,8 +92,7 @@ test('a failed project fetch tells the capture box user why it is disabled', asy
   await page.route('**/api/v1/projects', (route) => route.fulfill({ status: 500, json: {} }))
   await page.reload()
   await expect(page.getByPlaceholder('捕获…')).toBeDisabled()
-  // TanStack Query retries a failed fetch three times (~7s) before isError.
-  await expect(page.getByRole('status')).toContainText('无法加载收件箱', { timeout: 15_000 })
+  await expect(page.getByRole('status')).toContainText('无法加载收件箱')
 })
 
 test('a project can be deleted from the list', async ({ page }) => {

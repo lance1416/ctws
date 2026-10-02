@@ -44,7 +44,10 @@ echo "$GHCR_TOKEN" | docker login ghcr.io -u <owner> --password-stdin
 ```
 
 The compose file fixes the production app settings: `AUTH_REGISTRATION=closed`,
-`COOKIE_SECURE=true`, `COOKIE_SAMESITE=lax`, no CORS origins.
+`COOKIE_SECURE=true`, `COOKIE_SAMESITE=lax`, no CORS origins. The one exception is
+`AUTH_RATE_LIMIT_MAX` (requests per minute on the auth endpoints, default `20`): the compose file
+passes it through from the production env file, so set it there if a shared tunnel address trips
+the limit.
 
 ### First admin
 

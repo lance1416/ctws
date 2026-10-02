@@ -189,3 +189,20 @@ test('a rejected move is reported and nothing changes', async ({ page }) => {
   await openProject(page, 'Inbox')
   await expect(row(page, '写方案')).toHaveCount(0)
 })
+
+// A task that leaves the list while its panel is open unmounts the panel without onClose; focus
+// must land on a remaining row, not fall to <body> (WCAG 2.4.3).
+test('moving a task away returns focus to a remaining row', async ({ page }) => {
+  await registerFreshUser(page)
+  await seedOneTask(page)
+  await page.getByRole('button', { name: '关闭' }).click()
+  await submitCreate(page, '新任务', '留下')
+  await row(page, '写方案').click()
+  await expect(page.getByRole('dialog')).toBeVisible()
+
+  await page.getByLabel('项目').selectOption({ label: 'Inbox' })
+  await save(page, MOVE_URL)
+
+  await expect(row(page, '写方案')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: '任务：留下', exact: true })).toBeFocused()
+})

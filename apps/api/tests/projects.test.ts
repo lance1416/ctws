@@ -193,13 +193,25 @@ describe('projects', () => {
     expect(bList[0]!.isInbox).toBe(true)
     expect(bList[0]!.workspaceId).toBe(bWorkspaceId)
 
-    for (const [method, payload] of [
-      ['PATCH', { name: 'stolen' }],
-      ['DELETE', undefined],
+    // A's inbox too: archiving an inbox is refused with 409, so if the pre-read were not scoped to
+    // the caller's workspace, B would learn that this id is an inbox instead of getting a 404.
+    const aInboxId = (
+      await a.app.inject({ method: 'GET', url: '/api/v1/projects', headers: a.authed })
+    )
+      .json()
+      .projects.find((p: Listed) => p.isInbox).id as string
+
+    for (const [method, payload, id] of [
+      ['PATCH', { name: 'stolen' }, aId],
+      // The one project path with a pre-read before its scoped update, so the one place a scoping
+      // slip could behave differently from its siblings.
+      ['PATCH', { archived: true }, aId],
+      ['PATCH', { archived: true }, aInboxId],
+      ['DELETE', undefined, aId],
     ] as const) {
       const res = await a.app.inject({
         method,
-        url: `/api/v1/projects/${aId}`,
+        url: `/api/v1/projects/${id}`,
         headers: bAuthed,
         ...(payload ? { payload } : {}),
       })

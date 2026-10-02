@@ -8,12 +8,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { listProjects } from '../api/projects'
 import { moveTask, patchTask } from '../api/tasks'
+import { tasksKey } from '../api/taskCache'
 
 // An empty date input yields '' , and the contract takes a date or null. Sending '' would be
 // rejected; silently coercing it to today would be worse.
 export const orNull = (v: string) => (v.trim() === '' ? null : v)
 
-const STATUS_LABEL: Record<TaskStatus, string> = {
+export const STATUS_LABEL: Record<TaskStatus, string> = {
   backlog: '待整理',
   todo: '待办',
   in_progress: '进行中',
@@ -76,9 +77,9 @@ export function TaskDetail({ task, projectId, onClose }: Props) {
       // The today list is cross-project and server-derived: any edit can move a task between
       // segments or off the list, so it is always refetched.
       await qc.invalidateQueries({ queryKey: ['today'] })
-      await qc.invalidateQueries({ queryKey: ['tasks', projectId] })
+      await qc.invalidateQueries({ queryKey: tasksKey(projectId) })
       if (nextProjectId !== projectId)
-        await qc.invalidateQueries({ queryKey: ['tasks', nextProjectId] })
+        await qc.invalidateQueries({ queryKey: tasksKey(nextProjectId) })
     },
   })
 

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { refreshProjects } from '../api/taskCache'
 import { createProject, deleteProject, listProjects } from '../api/projects'
 
 export function Projects() {
@@ -12,12 +13,12 @@ export function Projects() {
     mutationFn: createProject,
     onSuccess: () => {
       setName('')
-      return qc.invalidateQueries({ queryKey: ['projects'] })
+      return refreshProjects(qc)
     },
   })
   const remove = useMutation({
     mutationFn: deleteProject,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['projects'] }),
+    onSuccess: () => refreshProjects(qc),
   })
 
   const submit = () => {

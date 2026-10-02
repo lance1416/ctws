@@ -61,6 +61,23 @@ describe('GET /today', () => {
   })
 
   // Review Focus 2. A task that is both overdue and in_progress must appear ONCE.
+  // The query labels every row that is not overdue or today as in_progress, relying on its WHERE
+  // to let only in-progress rows reach that arm. A `todo` task is the status most likely to be
+  // added to that WHERE later, so pin that it is neither listed nor mislabelled today.
+  it('does not list a dateless todo task, and never labels a todo task in_progress', async () => {
+    const ctx = await setup()
+    const p = await createProject(ctx, 'p')
+    const dateless = await createTask(ctx, p, 'todo, no dates')
+    const scheduled = await createTask(ctx, p, 'todo, scheduled')
+    await schedule(ctx, dateless, { status: 'todo' })
+    await schedule(ctx, scheduled, { status: 'todo', scheduledOn: '2020-01-01' })
+
+    const rows = await today(ctx)
+    expect(rows.find((r) => r.id === dateless)?.segment ?? 'absent').toBe('absent')
+    expect(rows.find((r) => r.id === scheduled)?.segment).toBe('today')
+    expect(rows.filter((r) => r.segment === 'in_progress')).toEqual([])
+  })
+
   it('puts a task that matches several segments in exactly one', async () => {
     const ctx = await setup()
     const p = await createProject(ctx, 'p')

@@ -52,8 +52,7 @@ test('a failed project list shows an error, not an empty list', async ({ page })
 
   await page.getByRole('link', { name: '项目' }).click()
 
-  // TanStack Query retries a failed fetch three times with backoff (~7s) before isError.
   const alert = page.getByRole('alert')
-  await expect(alert).toBeVisible({ timeout: 15_000 })
+  await expect(alert).toBeVisible()
   await expect(alert).toContainText('项目加载失败')
 })
