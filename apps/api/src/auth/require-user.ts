@@ -6,7 +6,7 @@ import { hasRole } from './roles'
 import { getAuthContext } from './service'
 import { findValidSession } from './session'
 
-export type AuthedUser = { id: string; workspaceId: string; role: Role }
+export type AuthedUser = { id: string; workspaceId: string; role: Role; timezone: string }
 
 // A request that has already passed through `requireUser`. `user` is
 // required here (unlike the optional `FastifyRequest.user` below), so
@@ -57,6 +57,6 @@ export const requireAdmin: preHandlerAsyncHookHandler = async function (req, rep
 
 declare module 'fastify' {
   interface FastifyRequest {
-    user?: { id: string; workspaceId: string; role: Role }
+    user?: { id: string; workspaceId: string; role: Role; timezone: string }
   }
 }

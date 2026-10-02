@@ -116,6 +116,25 @@ export const taskResponse = z
   })
   .strict()
 
+// ---- today ----
+
+// Display order. The precedence between segments (a task matching several belongs to exactly one:
+// overdue, then today, then in_progress) is hard-coded in the CASE of `listToday`'s SQL, NOT derived
+// from this array. Change the two together.
+export const TODAY_SEGMENTS = ['overdue', 'today', 'in_progress'] as const
+export const todaySegment = z.enum(TODAY_SEGMENTS)
+export type TodaySegment = z.infer<typeof todaySegment>
+
+export const todayTaskResponse = taskResponse
+  .extend({
+    projectName: z.string(),
+    // The breadcrumb shows `project > parent`; a root task has no parent half.
+    parentTitle: z.string().nullable(),
+    segment: todaySegment,
+  })
+  .strict()
+export type TodayTaskResponse = z.infer<typeof todayTaskResponse>
+
 // ---- events ----
 
 // There is intentionally no event type for reordering: a pure rank change is not logged

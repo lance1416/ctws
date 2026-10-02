@@ -99,8 +99,8 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     '/auth/me',
     { preHandler: requireUser, schema: { response: { 200: userResponse } } },
     async (req, reply) => {
-      const { id, workspaceId, role } = authedUser(req)
-      const user = await loadUser(app.db, id, { workspaceId, role })
+      const { id, workspaceId, role, timezone } = authedUser(req)
+      const user = await loadUser(app.db, id, { workspaceId, role, timezone })
       if (!user) return sendProblem(reply, 401, 'Authentication required')
       return reply.send(user)
     },

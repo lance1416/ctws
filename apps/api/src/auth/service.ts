@@ -160,7 +160,7 @@ export async function authenticate(
   return (await verifyPassword(row.passwordHash, password)) ? { userId: row.id } : null
 }
 
-export type AuthContext = { workspaceId: string; role: Role }
+export type AuthContext = { workspaceId: string; role: Role; timezone: string }
 
 // Shared by the login route and `requireUser` so the workspace-membership
 // lookup lives in one place instead of being duplicated across the routing
@@ -172,7 +172,11 @@ export type AuthContext = { workspaceId: string; role: Role }
 // every request rather than stored in the session, so a demotion also applies immediately.
 export async function getAuthContext(db: Queryable, userId: string): Promise<AuthContext | null> {
   const rows = await db
-    .select({ workspaceId: workspaceMembers.workspaceId, role: users.role })
+    .select({
+      workspaceId: workspaceMembers.workspaceId,
+      role: users.role,
+      timezone: users.timezone,
+    })
     .from(users)
     .innerJoin(workspaceMembers, eq(workspaceMembers.userId, users.id))
     .where(and(eq(users.id, userId), isNull(users.disabledAt)))
@@ -180,7 +184,9 @@ export async function getAuthContext(db: Queryable, userId: string): Promise<Aut
     .orderBy(workspaceMembers.joinedAt, workspaceMembers.workspaceId)
     .limit(1)
   const row = rows[0]
-  return row ? { workspaceId: row.workspaceId, role: row.role as Role } : null
+  return row
+    ? { workspaceId: row.workspaceId, role: row.role as Role, timezone: row.timezone }
+    : null
 }
 
 export async function loadUser(

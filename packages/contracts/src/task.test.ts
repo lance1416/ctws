@@ -5,6 +5,7 @@ import {
   taskStatus,
   TASK_EVENT_TYPES,
   TASK_STATUSES,
+  TODAY_SEGMENTS,
   updateTaskBody,
 } from './task'
 
@@ -131,5 +132,12 @@ describe('scheduledOn calendar validation', () => {
     expect(updateTaskBody.safeParse({ scheduledOn: '2026-13-01' }).success).toBe(false)
     expect(updateTaskBody.safeParse({ scheduledOn: '2028-02-29' }).success).toBe(true)
     expect(updateTaskBody.safeParse({ scheduledOn: '2026-02-29' }).success).toBe(false)
+  })
+})
+
+describe('TODAY_SEGMENTS', () => {
+  // Pins the display order; the SQL CASE in listToday hard-codes the same precedence.
+  it('is exactly the three segments in display order', () => {
+    expect([...TODAY_SEGMENTS]).toEqual(['overdue', 'today', 'in_progress'])
   })
 })

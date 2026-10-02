@@ -13,6 +13,10 @@ const clientHeader = { 'x-ctws-client': 'web' }
 /**
  * Boots an app with open registration and registers one user. The caller owns `ctx.stop()`.
  * `authed` is a ready-to-use header bag carrying the session cookie.
+ *
+ * EACH CALL BOOTS ITS OWN POSTGRES CONTAINER. Two calls give two unrelated databases, so a test
+ * of workspace isolation built from two `appWithUser()`s passes trivially. Create the second
+ * user through `ctx.app.inject` (POST /api/v1/auth/register) on the same app instead.
  */
 export async function appWithUser(email = 'p@example.com'): Promise<TaskCtx> {
   const ctx = await withApp({ authRegistration: 'open' })

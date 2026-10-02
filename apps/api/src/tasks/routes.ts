@@ -5,6 +5,7 @@ import {
   projectResponse,
   taskEventResponse,
   taskResponse,
+  todayTaskResponse,
   updateProjectBody,
   updateTaskBody,
 } from '@ctws/contracts'
@@ -23,6 +24,7 @@ import {
 } from './projects'
 import { InboxNotDeletableError, TaskNotFoundError } from './errors'
 import { DEFAULT_EVENT_LIMIT, InvalidCursorError, listTaskEvents, MAX_EVENT_LIMIT } from './events'
+import { listToday, type TodayTask } from './today'
 import { CycleError, InvalidNeighbourError, moveTask } from './move'
 import {
   createTask,
@@ -65,6 +67,15 @@ function toTaskResponse(t: Task): z.infer<typeof taskResponse> {
   }
 }
 
+function toTodayResponse(t: TodayTask): z.infer<typeof todayTaskResponse> {
+  return {
+    ...toTaskResponse(t),
+    projectName: t.projectName,
+    parentTitle: t.parentTitle,
+    segment: t.segment,
+  }
+}
+
 const idParams = z.object({ id: z.uuid() }).strict()
 const listQuery = z.object({ archived: z.enum(['true', 'false']).optional() }).strict()
 const eventsQuery = z
@@ -98,6 +109,20 @@ function sendTaskProblem(reply: FastifyReply, error: unknown): void {
 
 export const taskRoutes: FastifyPluginAsync = async (app) => {
   const typed = app.withTypeProvider<ZodTypeProvider>()
+
+  typed.get(
+    '/today',
+    {
+      preHandler: requireUser,
+      schema: { response: { 200: z.object({ tasks: z.array(todayTaskResponse) }).strict() } },
+    },
+    async (req) => {
+      const user = authedUser(req)
+      // The timezone comes from the user record, not from a request header or the server clock.
+      const rows = await listToday(app.db, user.workspaceId, user.timezone)
+      return { tasks: rows.map(toTodayResponse) }
+    },
+  )
 
   typed.get(
     '/projects',
