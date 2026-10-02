@@ -6,6 +6,9 @@ import { v7 as uuidv7 } from 'uuid'
 import type { Queryable } from '../db/client'
 import { projects } from '../db/schema'
 
+/** The quick-capture destination. One per workspace; see schema.ts and the 0003 migration. */
+export const INBOX_NAME = 'Inbox'
+
 export type Project = typeof projects.$inferSelect
 
 /**
@@ -27,7 +30,7 @@ function visible(workspaceId: string) {
 }
 
 /**
- * Lists a workspace's projects ordered by `(rank, id)`. By default archived projects are hidden;
+ * Lists a workspace's projects ordered inbox-first, then `(rank, id)`. By default archived projects are hidden;
  * `archived: true` lists them instead. Soft-deleted projects never appear.
  */
 export async function listProjects(
@@ -35,16 +38,19 @@ export async function listProjects(
   workspaceId: string,
   opts: { archived: boolean },
 ): Promise<Project[]> {
-  return q
-    .select()
-    .from(projects)
-    .where(
-      and(
-        visible(workspaceId),
-        opts.archived ? isNotNull(projects.archivedAt) : isNull(projects.archivedAt),
-      ),
-    )
-    .orderBy(asc(projects.rank), asc(projects.id))
+  return (
+    q
+      .select()
+      .from(projects)
+      .where(
+        and(
+          visible(workspaceId),
+          opts.archived ? isNotNull(projects.archivedAt) : isNull(projects.archivedAt),
+        ),
+      )
+      // Inbox first, then the user's own order. `desc` on a boolean puts true first.
+      .orderBy(desc(projects.isInbox), asc(projects.rank), asc(projects.id))
+  )
 }
 
 /** Creates a project appended after the workspace's last one. The rank is never client-supplied. */

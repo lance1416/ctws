@@ -2,6 +2,7 @@ import { TASK_STATUSES } from '@ctws/contracts'
 import { relations, sql } from 'drizzle-orm'
 import {
   type AnyPgColumn,
+  boolean,
   check,
   date,
   index,
@@ -81,6 +82,10 @@ export const projects = pgTable('projects', {
     .references(() => workspaces.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   color: text('color'),
+  // Exactly one per workspace, enforced by a partial unique index that lives in the migration
+  // SQL (drizzle 0.45.3 cannot express `unique ... where`). Quick capture lands here so that
+  // capturing costs no decisions; everything else about it is an ordinary project.
+  isInbox: boolean('is_inbox').notNull().default(false),
   // COLLATE "C" lives in the migration SQL; see note above. Deliberately not unique.
   rank: text('rank').notNull(),
   archivedAt: timestamp('archived_at', { withTimezone: true }),

@@ -1,8 +1,10 @@
 import type { Role } from '@ctws/contracts'
+import { rankBetween } from '@ctws/core'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import type { Db, Queryable } from '../db/client'
-import { users, workspaceMembers, workspaces } from '../db/schema'
+import { projects, users, workspaceMembers, workspaces } from '../db/schema'
+import { INBOX_NAME } from '../tasks/projects'
 import { hashPassword, verifyPassword } from './password'
 
 export class EmailTakenError extends Error {
@@ -94,6 +96,15 @@ export async function registerUser(
       })
       await tx.insert(workspaces).values({ id: workspaceId, name: 'My Workspace' })
       await tx.insert(workspaceMembers).values({ workspaceId, userId, role: 'owner' })
+      // The inbox is created with the workspace, not lazily on first capture: a lazy path would
+      // need its own check-then-insert race handling, and M2a already paid for one of those.
+      await tx.insert(projects).values({
+        id: uuidv7(),
+        workspaceId,
+        name: INBOX_NAME,
+        rank: rankBetween(null, null),
+        isInbox: true,
+      })
     })
   } catch (error) {
     if (isUniqueViolation(error)) throw new EmailTakenError()

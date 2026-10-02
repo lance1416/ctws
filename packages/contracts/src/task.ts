@@ -50,6 +50,7 @@ export const projectResponse = z
     workspaceId: z.uuid(),
     name: z.string(),
     color: z.string().nullable(),
+    isInbox: z.boolean(),
     rank: z.string(),
     archivedAt: instant.nullable(),
     createdAt: instant,

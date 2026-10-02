@@ -40,6 +40,7 @@ function toProjectResponse(p: Project): z.infer<typeof projectResponse> {
     workspaceId: p.workspaceId,
     name: p.name,
     color: p.color,
+    isInbox: p.isInbox,
     rank: p.rank,
     archivedAt: p.archivedAt ? p.archivedAt.toISOString() : null,
     createdAt: p.createdAt.toISOString(),

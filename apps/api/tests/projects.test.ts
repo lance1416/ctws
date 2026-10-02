@@ -15,8 +15,13 @@ async function setup(email?: string): Promise<TaskCtx> {
   return ctx
 }
 
+// Registration creates the workspace's inbox, so a fresh workspace is not empty; these tests are
+// about ordinary projects.
+type Listed = { id: string; isInbox: boolean }
+const ordinary = (body: { projects: Listed[] }) => body.projects.filter((p) => !p.isInbox)
+
 describe('projects', () => {
-  it('starts empty', async () => {
+  it('starts with only the inbox', async () => {
     const ctx = await setup()
     const res = await ctx.app.inject({
       method: 'GET',
@@ -24,7 +29,7 @@ describe('projects', () => {
       headers: ctx.authed,
     })
     expect(res.statusCode).toBe(200)
-    expect(res.json().projects).toEqual([])
+    expect(ordinary(res.json())).toEqual([])
   })
 
   it('creates a project and lists it', async () => {
@@ -44,7 +49,7 @@ describe('projects', () => {
       url: '/api/v1/projects',
       headers: ctx.authed,
     })
-    expect(list.json().projects).toHaveLength(1)
+    expect(ordinary(list.json())).toHaveLength(1)
   })
 
   it('appends new projects to the end', async () => {
@@ -59,7 +64,7 @@ describe('projects', () => {
       url: '/api/v1/projects',
       headers: ctx.authed,
     })
-    expect(list.json().projects.map((p: { id: string }) => p.id)).toEqual(ids)
+    expect(ordinary(list.json()).map((p) => p.id)).toEqual(ids)
   })
 
   it('rejects a client-supplied rank', async () => {
@@ -110,7 +115,7 @@ describe('projects', () => {
       url: '/api/v1/projects',
       headers: ctx.authed,
     })
-    expect(list.json().projects).toEqual([])
+    expect(ordinary(list.json())).toEqual([])
     // Spec 5.4: hard deletion would leave the event log pointing at nothing.
     const rows = await ctx.db.execute(sql`select deleted_at from projects where id = ${id}`)
     expect((rows.rows as { deleted_at: unknown }[])[0]!.deleted_at).not.toBeNull()
@@ -149,7 +154,7 @@ describe('projects', () => {
       url: '/api/v1/projects',
       headers: ctx.authed,
     })
-    expect(plain.json().projects).toEqual([])
+    expect(ordinary(plain.json())).toEqual([])
     const withArchived = await ctx.app.inject({
       method: 'GET',
       url: '/api/v1/projects?archived=true',
@@ -175,8 +180,9 @@ describe('projects', () => {
     const bAuthed = { ...headers, cookie: bCookie }
 
     expect(
-      (await a.app.inject({ method: 'GET', url: '/api/v1/projects', headers: bAuthed })).json()
-        .projects,
+      ordinary(
+        (await a.app.inject({ method: 'GET', url: '/api/v1/projects', headers: bAuthed })).json(),
+      ),
     ).toEqual([])
 
     for (const [method, payload] of [
