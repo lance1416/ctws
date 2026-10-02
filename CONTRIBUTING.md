@@ -71,7 +71,11 @@ Set these in `.env`:
 ```
 AUTH_REGISTRATION=open
 COOKIE_SECURE=false
+AUTH_RATE_LIMIT_MAX=1000
 ```
+
+The last one matters: every test registers a fresh user from one IP, and the default limit of 20
+per minute makes the suite fail with registration timeouts.
 
 ```sh
 pnpm --filter @ctws/web exec playwright install chromium   # once

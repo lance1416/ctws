@@ -20,7 +20,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
   typed.post(
     '/auth/register',
     {
-      config: { rateLimit: { max: 20, timeWindow: '1 minute' } },
+      config: { rateLimit: { max: app.env.authRateLimitMax, timeWindow: '1 minute' } },
       schema: { body: registerBody, response: { 201: userResponse } },
     },
     async (req, reply) => {
@@ -68,7 +68,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
   typed.post(
     '/auth/login',
     {
-      config: { rateLimit: { max: 20, timeWindow: '1 minute' } },
+      config: { rateLimit: { max: app.env.authRateLimitMax, timeWindow: '1 minute' } },
       schema: { body: loginBody, response: { 200: userResponse } },
     },
     async (req, reply) => {

@@ -11,6 +11,15 @@ describe('parseEnv', () => {
     expect(parseEnv(base).authRegistration).toBe('closed')
   })
 
+  it('defaults the auth rate limit to 20 and accepts an override', () => {
+    expect(parseEnv(base).authRateLimitMax).toBe(20)
+    expect(parseEnv({ ...base, AUTH_RATE_LIMIT_MAX: '500' }).authRateLimitMax).toBe(500)
+  })
+
+  it.each(['0', '-1', '1.5', 'abc'])('rejects AUTH_RATE_LIMIT_MAX=%s', (value) => {
+    expect(() => parseEnv({ ...base, AUTH_RATE_LIMIT_MAX: value })).toThrow()
+  })
+
   it('fails fast when DATABASE_URL is missing', () => {
     expect(() => parseEnv({ CORS_ORIGINS: base.CORS_ORIGINS })).toThrow(/DATABASE_URL/)
   })

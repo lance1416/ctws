@@ -40,6 +40,9 @@ jobs:
           DATABASE_URL=postgres://ctws:ctws@postgres:5432/ctws
           AUTH_REGISTRATION=open
           COOKIE_SECURE=false
+          # Every e2e test registers a user and the runner is a single IP, so the default of 20
+          # attempts per minute would fail the suite (and retries would register even more).
+          AUTH_RATE_LIMIT_MAX=1000
           ENV
       - run: docker compose up -d --wait postgres
       # Migrations run from the host against the published Postgres port.

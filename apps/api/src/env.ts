@@ -12,6 +12,9 @@ const raw = z.object({
   SESSION_TTL_DAYS: z.coerce.number().int().positive().default(30),
   AUTH_REGISTRATION: z.enum(['open', 'invite', 'closed']).default('closed'),
   AUTH_INVITE_CODE: z.string().optional(),
+  // Per-IP attempts per minute on register and login. Tunable because many users can share one
+  // IP (tunnel, NAT, the e2e suite).
+  AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(20),
   COOKIE_SAMESITE: z.enum(['lax', 'none']).default('lax'),
   COOKIE_SECURE: bool(true),
   COOKIE_DOMAIN: z.string().optional(),
@@ -27,6 +30,7 @@ export type Env = {
   sessionTtlDays: number
   authRegistration: 'open' | 'invite' | 'closed'
   authInviteCode: string | undefined
+  authRateLimitMax: number
   cookieSameSite: 'lax' | 'none'
   cookieSecure: boolean
   cookieDomain: string | undefined
@@ -67,6 +71,7 @@ export function parseEnv(source: NodeJS.ProcessEnv | Record<string, string | und
     sessionTtlDays: parsed.SESSION_TTL_DAYS,
     authRegistration: parsed.AUTH_REGISTRATION,
     authInviteCode: parsed.AUTH_INVITE_CODE,
+    authRateLimitMax: parsed.AUTH_RATE_LIMIT_MAX,
     cookieSameSite: parsed.COOKIE_SAMESITE,
     cookieSecure: parsed.COOKIE_SECURE,
     cookieDomain: parsed.COOKIE_DOMAIN || undefined,
