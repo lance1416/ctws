@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { registerFreshUser } from './helpers'
+import { openProject, registerFreshUser, submitCreate } from './helpers'
 
 const PATCH_URL = /\/tasks\/[^/]+$/
 const MOVE_URL = /\/tasks\/[^/]+\/move$/
@@ -17,11 +17,9 @@ const row = (page: Page, title: string) => page.getByRole('listitem').filter({ h
 
 async function seedOneTask(page: Page) {
   await page.getByRole('link', { name: '项目' }).click()
-  await page.getByPlaceholder('新项目').fill('P')
-  await page.getByPlaceholder('新项目').press('Enter')
-  await page.getByText('P', { exact: true }).click()
-  await page.getByPlaceholder('新任务').fill('写方案')
-  await page.getByPlaceholder('新任务').press('Enter')
+  await submitCreate(page, '新项目', 'P')
+  await openProject(page, 'P', true)
+  await submitCreate(page, '新任务', '写方案')
   await row(page, '写方案').click()
   await expect(page.getByRole('dialog')).toBeVisible()
 }
@@ -71,7 +69,7 @@ test('moves a task to another project', async ({ page }) => {
   await expect(page.getByRole('dialog')).toHaveCount(0)
   // ...and arrives in the other one.
   await page.getByRole('link', { name: '项目' }).click()
-  await page.getByText('Inbox').click()
+  await openProject(page, 'Inbox')
   await expect(row(page, '写方案')).toBeVisible()
 })
 
@@ -188,6 +186,6 @@ test('a rejected move is reported and nothing changes', async ({ page }) => {
   await page.goto(url)
   await expect(row(page, '写方案')).toHaveCount(1)
   await page.getByRole('link', { name: '项目' }).click()
-  await page.getByText('Inbox').click()
+  await openProject(page, 'Inbox')
   await expect(row(page, '写方案')).toHaveCount(0)
 })

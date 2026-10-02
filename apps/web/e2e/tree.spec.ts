@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { registerFreshUser } from './helpers'
+import { openProject, registerFreshUser, submitCreate } from './helpers'
 
 const MOVE_URL = /\/tasks\/[^/]+\/move$/
 
@@ -23,16 +23,14 @@ function recordMoves(page: Page) {
 
 async function startProject(page: Page) {
   await page.getByRole('link', { name: '项目' }).click()
-  await page.getByPlaceholder('新项目').fill('P')
-  await page.getByPlaceholder('新项目').press('Enter')
-  await page.getByText('P', { exact: true }).click()
+  await submitCreate(page, '新项目', 'P')
+  await openProject(page, 'P', true)
   return page.url()
 }
 
 /** Adds a root task through the new-task box and waits until it shows. */
 async function addTask(page: Page, title: string) {
-  await page.getByPlaceholder('新任务').fill(title)
-  await page.getByPlaceholder('新任务').press('Enter')
+  await submitCreate(page, '新任务', title)
   await expect(page.getByPlaceholder('新任务')).toHaveValue('')
   await expect(page.getByRole('listitem').filter({ hasText: title })).toBeVisible()
 }
@@ -204,10 +202,9 @@ test('a move shows at once, and a rejected one rolls back visibly', async ({ pag
 
 test('a captured task shows up in the inbox tree', async ({ page }) => {
   await registerFreshUser(page)
-  await page.getByPlaceholder('捕获…').fill('买咩6')
-  await page.getByPlaceholder('捕获…').press('Enter')
+  await submitCreate(page, '捕获…', '买咩6')
   await page.getByRole('link', { name: '项目' }).click()
-  await page.getByText('Inbox').click()
+  await openProject(page, 'Inbox')
   await expect(page.getByRole('listitem').filter({ hasText: '买咩6' })).toBeVisible()
 })
 

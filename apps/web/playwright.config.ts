@@ -5,6 +5,8 @@ import { defineConfig } from '@playwright/test'
 // start the stack first (see CONTRIBUTING.md).
 export default defineConfig({
   testDir: './e2e',
+  // One API container and one Postgres serve every worker; the default (half the cores) swamps them.
+  workers: 4,
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? 'html' : 'list',
   use: {

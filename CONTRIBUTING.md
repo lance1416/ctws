@@ -86,3 +86,5 @@ pnpm --filter @ctws/web e2e
 ```
 
 After changing `.env`, recreate the API container (`docker compose up -d --force-recreate api`).
+
+Do not run the API test suite while the compose stack is up: it starts its own Postgres per test and times out waiting for ports. Run `docker compose down` first.

@@ -1,11 +1,10 @@
 import { expect, test, type Page } from '@playwright/test'
-import { registerFreshUser } from './helpers'
+import { openProject, registerFreshUser, submitCreate } from './helpers'
 
 async function captureAndOpen(page: Page, title: string) {
-  await page.getByPlaceholder('捕获…').fill(title)
-  await page.getByPlaceholder('捕获…').press('Enter')
+  await submitCreate(page, '捕获…', title)
   await page.getByRole('link', { name: '项目' }).click()
-  await page.getByText('Inbox').click()
+  await openProject(page, 'Inbox')
   await page.getByRole('listitem').filter({ hasText: title }).click()
 }
 
@@ -70,15 +69,13 @@ test('the three sections render in the order overdue, today, in progress', async
   await page.getByRole('button', { name: '保存' }).click()
   await page.getByRole('button', { name: '关闭' }).click()
 
-  await page.getByPlaceholder('捕获…').fill('乙今天')
-  await page.getByPlaceholder('捕获…').press('Enter')
+  await submitCreate(page, '捕获…', '乙今天')
   await page.getByRole('listitem').filter({ hasText: '乙今天' }).click()
   await page.getByLabel('排期').fill(today)
   await page.getByRole('button', { name: '保存' }).click()
   await page.getByRole('button', { name: '关闭' }).click()
 
-  await page.getByPlaceholder('捕获…').fill('丙逾期')
-  await page.getByPlaceholder('捕获…').press('Enter')
+  await submitCreate(page, '捕获…', '丙逾期')
   await page.getByRole('listitem').filter({ hasText: '丙逾期' }).click()
   await page.getByLabel('截止').fill('2020-01-01T00:00')
   await page.getByRole('button', { name: '保存' }).click()
@@ -109,12 +106,10 @@ test('an edit made from the today page is reflected without a reload', async ({ 
 // where it sits, not only which project it is in.
 test('a nested task shows both its project and its parent in the breadcrumb', async ({ page }) => {
   await registerFreshUser(page)
-  await page.getByPlaceholder('捕获…').fill('父任务')
-  await page.getByPlaceholder('捕获…').press('Enter')
+  await submitCreate(page, '捕获…', '父任务')
   await page.getByRole('link', { name: '项目' }).click()
-  await page.getByText('Inbox').click()
-  await page.getByPlaceholder('捕获…').fill('子任务')
-  await page.getByPlaceholder('捕获…').press('Enter')
+  await openProject(page, 'Inbox')
+  await submitCreate(page, '捕获…', '子任务')
   await expect(page.getByRole('listitem')).toHaveCount(2)
 
   const moved = page.waitForResponse((r) => r.url().includes('/move') && r.ok())

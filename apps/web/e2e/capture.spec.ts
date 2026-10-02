@@ -1,12 +1,11 @@
 import { expect, test } from '@playwright/test'
-import { registerFreshUser } from './helpers'
+import { registerFreshUser, submitCreate } from './helpers'
 
 test('capture from any page lands in the inbox', async ({ page }) => {
   await registerFreshUser(page)
 
   // Captured from the today page, with no project chosen: that is the whole point.
-  await page.getByPlaceholder('捕获…').fill('问问房东空调')
-  await page.getByPlaceholder('捕获…').press('Enter')
+  await submitCreate(page, '捕获…', '问问房东空调')
   // The box clears, so the next thing can be typed without reaching for the mouse.
   await expect(page.getByPlaceholder('捕获…')).toHaveValue('')
 
@@ -21,8 +20,7 @@ test('capture from any page lands in the inbox', async ({ page }) => {
 test('the inbox sorts first and offers no delete control', async ({ page }) => {
   await registerFreshUser(page)
   await page.getByRole('link', { name: '项目' }).click()
-  await page.getByPlaceholder('新项目').fill('aaa')
-  await page.getByPlaceholder('新项目').press('Enter')
+  await submitCreate(page, '新项目', 'aaa')
 
   const items = page.getByRole('listitem')
   await expect(items.first()).toHaveText(/Inbox/)
@@ -55,8 +53,7 @@ test('capture still finds the inbox after it is renamed', async ({ page }) => {
   const after = await (await page.request.get('/api/v1/projects')).json()
   expect(after.projects.find((p: { id: string }) => p.id === inbox.id).name).toBe('收件箱')
   await page.reload()
-  await page.getByPlaceholder('捕获…').fill('改名后仍然能捕获')
-  await page.getByPlaceholder('捕获…').press('Enter')
+  await submitCreate(page, '捕获…', '改名后仍然能捕获')
   // The box clears only once the server has accepted the task; without this wait the API read
   // below could race the request.
   await expect(page.getByPlaceholder('捕获…')).toHaveValue('')
@@ -102,8 +99,7 @@ test('a failed project fetch tells the capture box user why it is disabled', asy
 test('a project can be deleted from the list', async ({ page }) => {
   await registerFreshUser(page)
   await page.getByRole('link', { name: '项目' }).click()
-  await page.getByPlaceholder('新项目').fill('待删除')
-  await page.getByPlaceholder('新项目').press('Enter')
+  await submitCreate(page, '新项目', '待删除')
   const doomed = page.getByRole('listitem').filter({ hasText: '待删除' })
   await expect(doomed).toHaveCount(1)
   await doomed.getByRole('button', { name: '删除' }).click()
