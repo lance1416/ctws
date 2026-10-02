@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { listProjects } from '../api/projects'
 import { createTask } from '../api/tasks'
+import { refreshTasks } from '../api/taskCache'
 import { TaskTree } from '../components/TaskTree'
 
 export function Project() {
@@ -18,7 +19,7 @@ export function Project() {
     mutationFn: (t: string) => createTask({ projectId: id!, title: t, parentId: null }),
     onSuccess: () => {
       setTitle('')
-      return qc.invalidateQueries({ queryKey: ['tasks', id] })
+      return refreshTasks(qc, id!)
     },
   })
 

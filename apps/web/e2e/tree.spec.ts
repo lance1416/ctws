@@ -411,3 +411,56 @@ test('a too-deep drop shows a message and sends no move', async ({ page }) => {
   await page.waitForTimeout(500)
   expect(moves).toEqual([])
 })
+
+/**
+ * Holds the FIRST task-list GET of a project: the server's answer is captured immediately (so it
+ * reflects the state before any create) but delivered to the page only when `release` is called.
+ * Later GETs pass straight through. A fixed delay cannot do this: it would let the server see the
+ * create, which makes the held response fresh and hides the bug.
+ */
+async function holdFirstListFetch(page: Page) {
+  let release!: () => void
+  const gate = new Promise<void>((resolve) => (release = resolve))
+  let captured!: () => void
+  const heldStale = new Promise<void>((resolve) => (captured = resolve))
+  let first = true
+  await page.route('**/api/v1/projects/*/tasks', async (route) => {
+    if (route.request().method() !== 'GET' || !first) return route.continue()
+    first = false
+    const stale = await route.fetch()
+    captured()
+    await gate
+    await route.fulfill({ response: stale })
+  })
+  return { release, heldStale }
+}
+
+// A task created while the project's first list fetch is still in flight must still appear: the
+// refetch after the create has to start a NEW request rather than be absorbed by the stale one.
+test('a task created while the project is still loading appears', async ({ page }) => {
+  await registerFreshUser(page)
+  await page.getByRole('link', { name: '项目' }).click()
+  await submitCreate(page, '新项目', 'P')
+
+  const { release, heldStale } = await holdFirstListFetch(page)
+  await page.getByText('P', { exact: true }).click()
+  await heldStale
+  await submitCreate(page, '新任务', 'typed early')
+  release()
+
+  await expect(page.getByRole('listitem').filter({ hasText: 'typed early' })).toBeVisible()
+})
+
+test('a capture made while the inbox is still loading appears', async ({ page }) => {
+  await registerFreshUser(page)
+  await page.getByRole('link', { name: '项目' }).click()
+  await expect(page.getByText('Inbox')).toBeVisible()
+
+  const { release, heldStale } = await holdFirstListFetch(page)
+  await page.getByText('Inbox').click()
+  await heldStale
+  await submitCreate(page, '捕获…', 'captured early')
+  release()
+
+  await expect(page.getByRole('listitem').filter({ hasText: 'captured early' })).toBeVisible()
+})

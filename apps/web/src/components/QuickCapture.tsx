@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { inboxOf, listProjects } from '../api/projects'
 import { createTask } from '../api/tasks'
+import { refreshTasks } from '../api/taskCache'
 
 // One input on every page: the destination is always the inbox, so there is nothing to choose.
 export function QuickCapture() {
@@ -15,7 +16,7 @@ export function QuickCapture() {
     mutationFn: (t: string) => createTask({ projectId: inbox!.id, title: t }),
     onSuccess: () => {
       setTitle('')
-      return qc.invalidateQueries({ queryKey: ['tasks', inbox!.id] })
+      return refreshTasks(qc, inbox!.id)
     },
   })
 
