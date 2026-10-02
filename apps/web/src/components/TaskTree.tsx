@@ -14,6 +14,7 @@ import { listProjectTasks, moveTask } from '../api/tasks'
 import { flatten } from '../tree/flatten'
 import { loadCollapsed, saveCollapsed } from '../tree/collapse'
 import { planDrop, type DropPlan } from '../tree/drop'
+import { TaskDetail } from './TaskDetail'
 import { TaskRow } from './TaskRow'
 
 const INDENT_PX = 20
@@ -52,10 +53,13 @@ export function TaskTree({ projectId }: { projectId: string }) {
   const key = ['tasks', projectId]
   const [collapsed, setCollapsed] = useState(() => loadCollapsed(projectId))
   const [error, setError] = useState<string | null>(null)
+  const [openId, setOpenId] = useState<string | null>(null)
 
   // The cache holds exactly what listProjectTasks returns; the rows are derived, never cached.
   const tasks = useQuery({ queryKey: key, queryFn: () => listProjectTasks(projectId) })
   const rows = useMemo(() => flatten(tasks.data ?? [], collapsed), [tasks.data, collapsed])
+  // Looked up by id each render, so a task that has left this project (moved away) closes itself.
+  const openTask = tasks.data?.find((t) => t.id === openId)
   const titles = useMemo(
     () => new Map((tasks.data ?? []).map((t) => [t.id, t.title])),
     [tasks.data],
@@ -105,7 +109,10 @@ export function TaskTree({ projectId }: { projectId: string }) {
 
   const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>, index: number) => {
     const row = rows[index]!
-    if (e.altKey && e.key === 'ArrowUp') {
+    if (e.key === 'Enter' && !e.altKey) {
+      e.preventDefault()
+      setOpenId(row.id)
+    } else if (e.altKey && e.key === 'ArrowUp') {
       e.preventDefault()
       // Step over the previous sibling's whole visible block. Landing at index - 1 would put the
       // slot inside an expanded subtree above, and the lower depth clamp would drag the row
@@ -134,6 +141,13 @@ export function TaskTree({ projectId }: { projectId: string }) {
     // Dropping below the target lands after its whole visible block, not inside it.
     const slot = overIndex > from ? overIndex + blockLength(overIndex) : overIndex
     run(rows[from]!.id, slot, rows[from]!.depth + Math.round(delta.x / INDENT_PX))
+  }
+
+  // Focus goes back to the handle that opened the panel (a moved-away task has no handle left).
+  const closeDetail = () => {
+    const id = openId
+    setOpenId(null)
+    if (id) document.querySelector<HTMLElement>(`[data-handle-id="${id}"]`)?.focus()
   }
 
   const toggle = (id: string) => {
@@ -165,11 +179,15 @@ export function TaskTree({ projectId }: { projectId: string }) {
                 title={titles.get(row.id) ?? ''}
                 onToggle={() => toggle(row.id)}
                 onKeyDown={(e) => onKeyDown(e, i)}
+                onOpen={() => setOpenId(row.id)}
               />
             ))}
           </ul>
         </SortableContext>
       </DndContext>
+      {openTask && (
+        <TaskDetail key={openTask.id} task={openTask} projectId={projectId} onClose={closeDetail} />
+      )}
     </>
   )
 }

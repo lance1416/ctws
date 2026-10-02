@@ -9,9 +9,10 @@ type Props = {
   title: string
   onToggle: () => void
   onKeyDown: (e: KeyboardEvent<HTMLButtonElement>) => void
+  onOpen: () => void
 }
 
-export function TaskRow({ row, title, onToggle, onKeyDown }: Props) {
+export function TaskRow({ row, title, onToggle, onKeyDown, onOpen }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: row.id,
   })
@@ -21,13 +22,18 @@ export function TaskRow({ row, title, onToggle, onKeyDown }: Props) {
       ref={setNodeRef}
       role="listitem"
       data-depth={row.depth}
+      // A click on the row body opens the detail; the chevron and the handle are buttons with
+      // their own jobs. A drag starts on the handle, so it never reaches here as a row click.
+      onClick={(e) => {
+        if (!(e.target as HTMLElement).closest('button')) onOpen()
+      }}
       style={{
         // Pixel indentation is layout, not colour.
         paddingLeft: (row.depth - 1) * INDENT_PX,
         transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
         transition,
       }}
-      className={`flex items-center gap-2 rounded py-1 ${isDragging ? 'bg-surface-sunken opacity-70' : ''}`}
+      className={`flex cursor-pointer items-center gap-2 rounded py-1 ${isDragging ? 'bg-surface-sunken opacity-70' : ''}`}
     >
       {/* Gated on hasChildren, not on collapsed: a stale collapsed id for a row that has since
           become a leaf yields collapsed: true with no children, and must not show a chevron. */}
@@ -49,6 +55,7 @@ export function TaskRow({ row, title, onToggle, onKeyDown }: Props) {
       <button
         type="button"
         aria-label={`任务：${title}`}
+        data-handle-id={row.id}
         {...attributes}
         {...listeners}
         onKeyDown={onKeyDown}
