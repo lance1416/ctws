@@ -65,6 +65,10 @@ export function TaskTree({ projectId }: { projectId: string }) {
     () => new Map((tasks.data ?? []).map((t) => [t.id, t.title])),
     [tasks.data],
   )
+  const statuses = useMemo(
+    () => new Map((tasks.data ?? []).map((t) => [t.id, t.status])),
+    [tasks.data],
+  )
 
   // Distance, so a plain click on the handle (to focus it) is not mistaken for a drag.
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
@@ -178,12 +182,12 @@ export function TaskTree({ projectId }: { projectId: string }) {
   return (
     <>
       {tasks.isError && (
-        <p role="alert" className="mt-4 text-danger">
+        <p role="alert" className="mt-4 text-sm text-danger">
           任务加载失败
         </p>
       )}
       {error && (
-        <p role="alert" className="mt-4 text-danger">
+        <p role="alert" className="mt-4 text-sm text-danger">
           {error}
         </p>
       )}
@@ -195,6 +199,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
                 key={row.id}
                 row={row}
                 title={titles.get(row.id) ?? ''}
+                status={statuses.get(row.id) ?? 'todo'}
                 onToggle={() => toggle(row.id)}
                 onKeyDown={(e) => onKeyDown(e, i)}
                 onOpen={() => setOpenId(row.id)}

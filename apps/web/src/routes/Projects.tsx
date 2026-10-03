@@ -37,29 +37,32 @@ export function Projects() {
         }}
         placeholder="新项目"
         aria-label="新项目"
-        className="mt-4 w-full rounded border border-border-strong bg-surface-raised px-3 py-2 text-fg"
+        className="mt-6 h-10 w-full border-b border-border-strong bg-transparent px-0.5 text-fg placeholder:text-fg-muted"
       />
       {projects.isError && (
-        <p role="alert" className="mt-4 text-danger">
+        <p role="alert" className="mt-4 text-sm text-danger">
           项目加载失败
         </p>
       )}
       {(create.isError || remove.isError) && (
-        <p role="alert" className="mt-4 text-danger">
+        <p role="alert" className="mt-4 text-sm text-danger">
           操作失败，请重试
         </p>
       )}
       {/* Rendered in the order the server returns: it puts the inbox first. Sorting here too
           would give two sorts that drift apart. */}
-      <ul className="mt-4 flex flex-col gap-1">
+      <ul className="mt-6 flex flex-col">
         {projects.data?.map((p) => (
-          <li key={p.id} role="listitem" className="flex items-center gap-3">
-            <Link to={`/projects/${p.id}`} className="text-accent">
+          <li key={p.id} role="listitem" className="flex items-center justify-between gap-3">
+            <Link
+              to={`/projects/${p.id}`}
+              className="-mx-2 flex-1 rounded-md px-2 py-2 font-medium hover:bg-surface-sunken"
+            >
               {p.name}
             </Link>
             {!p.isInbox && (
               <button
-                className="text-sm text-danger"
+                className="rounded-md px-2 py-1 text-sm text-fg-muted hover:text-danger disabled:opacity-50"
                 disabled={remove.isPending}
                 onClick={() => remove.mutate(p.id)}
               >

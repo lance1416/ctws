@@ -37,7 +37,9 @@ export function fromLocalInput(v: string): string | null {
   return s === null ? null : new Date(s).toISOString()
 }
 
-const field = 'mt-1 w-full rounded border border-border-strong bg-surface px-3 py-2 text-fg'
+const field =
+  'mt-1 w-full rounded-md border border-border-strong bg-surface px-3 py-2 text-fg leading-snug'
+const label = 'block text-sm text-fg-muted'
 
 type Props = { task: TaskResponse; projectId: string; onClose: () => void }
 
@@ -94,20 +96,20 @@ export function TaskDetail({ task, projectId, onClose }: Props) {
       role="dialog"
       aria-label="任务详情"
       onKeyDown={onKeyDown}
-      className="fixed inset-y-0 focus:outline-none right-0 z-10 w-full max-w-md overflow-y-auto border-l border-border-subtle bg-surface-raised p-4 text-fg"
+      className="fixed inset-y-0 right-0 z-20 w-full max-w-md overflow-y-auto border-l border-border-subtle bg-surface-raised p-5 text-fg focus:outline-none"
     >
       <form
         onSubmit={(e) => {
           e.preventDefault()
           if (title.trim() && !save.isPending) save.mutate()
         }}
-        className="flex flex-col gap-3"
+        className="flex flex-col gap-4"
       >
-        <label>
+        <label className={label}>
           标题
           <input value={title} onChange={(e) => setTitle(e.target.value)} className={field} />
         </label>
-        <label>
+        <label className={label}>
           备注
           <textarea
             value={notes}
@@ -116,7 +118,7 @@ export function TaskDetail({ task, projectId, onClose }: Props) {
             className={field}
           />
         </label>
-        <label>
+        <label className={label}>
           状态
           <select
             value={status}
@@ -130,7 +132,7 @@ export function TaskDetail({ task, projectId, onClose }: Props) {
             ))}
           </select>
         </label>
-        <label>
+        <label className={label}>
           排期
           <input
             type="date"
@@ -139,7 +141,7 @@ export function TaskDetail({ task, projectId, onClose }: Props) {
             className={field}
           />
         </label>
-        <label>
+        <label className={label}>
           截止
           <input
             type="datetime-local"
@@ -148,7 +150,7 @@ export function TaskDetail({ task, projectId, onClose }: Props) {
             className={field}
           />
         </label>
-        <label>
+        <label className={label}>
           项目
           <select
             value={nextProjectId}
@@ -165,7 +167,7 @@ export function TaskDetail({ task, projectId, onClose }: Props) {
           </select>
         </label>
         {save.isError && (
-          <p role="alert" className="text-danger">
+          <p role="alert" className="text-sm text-danger">
             {save.error instanceof Error ? save.error.message : '保存失败'}
           </p>
         )}
@@ -173,14 +175,14 @@ export function TaskDetail({ task, projectId, onClose }: Props) {
           <button
             type="submit"
             disabled={save.isPending || !title.trim()}
-            className="rounded bg-accent px-3 py-2 text-accent-fg disabled:opacity-50"
+            className="h-10 rounded-md bg-accent px-4 font-medium text-accent-fg hover:opacity-90 disabled:opacity-50"
           >
             保存
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="rounded border border-border-strong px-3 py-2"
+            className="h-10 rounded-md border border-border-strong px-4 text-fg hover:bg-surface-sunken"
           >
             关闭
           </button>

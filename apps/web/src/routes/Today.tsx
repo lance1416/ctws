@@ -1,9 +1,12 @@
-import { TODAY_SEGMENTS, type TaskStatus, type TodaySegment } from '@ctws/contracts'
+import { TODAY_SEGMENTS, type TodaySegment } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { listToday } from '../api/today'
-import { STATUS_LABEL, TaskDetail, toLocalInput } from '../components/TaskDetail'
+import { StatusMark } from '../components/StatusMark'
+import { TaskDetail, toLocalInput } from '../components/TaskDetail'
 import { overdueLabel } from '../dueAt'
+import { useMe } from '../useMe'
 
 const LABELS: Record<TodaySegment, string> = {
   overdue: '逾期',
@@ -11,17 +14,16 @@ const LABELS: Record<TodaySegment, string> = {
   in_progress: '正在做',
 }
 
-// Full literal class names so Tailwind can see them.
-const DOT: Record<TaskStatus, string> = {
-  backlog: 'bg-status-backlog',
-  todo: 'bg-status-todo',
-  in_progress: 'bg-status-in-progress',
-  done: 'bg-status-done',
-  cancelled: 'bg-status-cancelled',
-}
-
 export function Today() {
   const today = useQuery({ queryKey: ['today'], queryFn: listToday })
+  const me = useMe()
+  // Display only: which segment a task is in is decided by the server in the user's timezone.
+  const dateLabel = new Intl.DateTimeFormat('zh-CN', {
+    month: 'long',
+    day: 'numeric',
+    weekday: 'short',
+    timeZone: me.data?.timezone,
+  }).format(new Date())
   const [openId, setOpenId] = useState<string | null>(null)
   const rows = today.data ?? []
   const openTask = rows.find((t) => t.id === openId)
@@ -55,48 +57,59 @@ export function Today() {
 
   return (
     <>
-      <h1 id="today-heading" tabIndex={-1} className="text-2xl font-semibold focus:outline-none">
-        今天
-      </h1>
-      {today.isPending && <p className="mt-4 text-fg-muted">加载中…</p>}
+      <div className="flex items-baseline justify-between gap-4">
+        <h1 id="today-heading" tabIndex={-1} className="text-2xl font-semibold focus:outline-none">
+          今天
+        </h1>
+        <p className="text-sm text-fg-muted">{dateLabel}</p>
+      </div>
+      {today.isPending && <p className="mt-6 text-fg-muted">加载中…</p>}
       {today.isError && (
-        <p role="alert" className="mt-4 text-danger">
-          {today.error instanceof Error ? today.error.message : '加载失败'}
+        <p role="alert" className="mt-6 text-danger">
+          {today.error instanceof Error ? today.error.message : '加载失败，检查服务是否在运行'}
         </p>
       )}
       {today.isSuccess && sections.length === 0 && (
-        <p className="mt-4 text-fg-muted">今天没有安排的事</p>
+        <div className="mt-6">
+          <p className="text-fg-muted">今天没有安排的事</p>
+          <Link to="/projects" className="text-sm text-accent underline underline-offset-4">
+            看看全部清单
+          </Link>
+        </div>
       )}
       {sections.map(({ segment, tasks }) => (
-        <section key={segment} aria-label={LABELS[segment]} className="mt-6">
-          <h2 className="text-lg font-medium">{LABELS[segment]}</h2>
-          <ul className="mt-2 flex flex-col gap-1">
+        <section key={segment} aria-label={LABELS[segment]} className="mt-8">
+          <h2 className="text-sm font-medium text-fg-muted">
+            {LABELS[segment]} <span className="tabular-nums">{tasks.length}</span>
+          </h2>
+          <ul className="mt-1 flex flex-col">
             {tasks.map((t) => (
               <li key={t.id}>
                 <button
                   type="button"
                   data-today-row={t.id}
                   onClick={() => setOpenId(t.id)}
-                  className="flex w-full items-center gap-2 rounded px-1 py-1 text-left"
+                  className="-mx-2 grid w-[calc(100%+1rem)] grid-cols-[16px_1fr_auto] items-start gap-x-3 rounded-md px-2 py-2 text-left leading-snug hover:bg-surface-sunken"
                 >
-                  <span
-                    role="img"
-                    aria-label={STATUS_LABEL[t.status]}
-                    title={STATUS_LABEL[t.status]}
-                    className={`size-2 shrink-0 rounded-full ${DOT[t.status]}`}
-                  />
-                  <span className="text-fg">{t.title}</span>
-                  <span className="text-fg-muted">
-                    {t.parentTitle === null ? t.projectName : `${t.projectName} › ${t.parentTitle}`}
+                  <span className="mt-[3px]">
+                    <StatusMark status={t.status} />
                   </span>
-                  {segment === 'overdue' && t.dueAt && (
+                  <span className={t.status === 'in_progress' ? 'font-semibold' : ''}>
+                    {t.title}
+                  </span>
+                  {segment === 'overdue' && t.dueAt ? (
                     <span
-                      className="ml-auto text-overdue"
+                      className="text-sm text-overdue"
                       title={toLocalInput(t.dueAt).replace('T', ' ')}
                     >
                       {overdueLabel(t.dueAt)}
                     </span>
+                  ) : (
+                    <span />
                   )}
+                  <span className="col-start-2 col-span-2 text-sm text-fg-muted">
+                    {t.parentTitle === null ? t.projectName : `${t.projectName} › ${t.parentTitle}`}
+                  </span>
                 </button>
               </li>
             ))}

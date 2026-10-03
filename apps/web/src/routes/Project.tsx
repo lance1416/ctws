@@ -39,10 +39,10 @@ export function Project() {
         }}
         placeholder="新任务"
         aria-label="新任务"
-        className="mt-4 w-full rounded border border-border-strong bg-surface-raised px-3 py-2 text-fg"
+        className="mt-6 h-10 w-full border-b border-border-strong bg-transparent px-0.5 text-fg placeholder:text-fg-muted"
       />
       {create.isError && (
-        <p role="alert" className="mt-2 text-danger">
+        <p role="alert" className="mt-2 text-sm text-danger">
           创建失败，请重试
         </p>
       )}

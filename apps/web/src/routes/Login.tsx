@@ -37,39 +37,53 @@ export function Login() {
   if (me.data) return <Navigate to="/" replace />
 
   return (
-    <main className="mx-auto flex max-w-sm flex-col gap-3 p-6">
-      <input
-        aria-label="Email"
-        className="rounded border border-border-strong bg-surface-raised px-3 py-2"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
-      <input
-        aria-label="Password"
-        type="password"
-        className="rounded border border-border-strong bg-surface-raised px-3 py-2"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
-      <div className="flex gap-2">
-        <button
-          className="rounded bg-accent px-3 py-2 text-accent-fg"
-          onClick={() => act.mutate('/auth/register')}
-        >
-          Register
-        </button>
-        <button
-          className="rounded border border-border-strong px-3 py-2"
-          onClick={() => act.mutate('/auth/login')}
-        >
-          Log in
-        </button>
+    <main className="mx-auto max-w-sm px-4 pt-[14vh] pb-8">
+      <h1 className="text-2xl font-semibold">CTWS</h1>
+      <p className="mt-1 text-fg-muted">个人工作台账</p>
+      <div className="mt-8 flex flex-col gap-4">
+        <div>
+          <label htmlFor="login-email" className="text-sm text-fg-muted">
+            Email
+          </label>
+          <input
+            id="login-email"
+            className="mt-1 h-10 w-full rounded-md border border-border-strong bg-surface-raised px-3 text-fg placeholder:text-fg-muted"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
+        <div>
+          <label htmlFor="login-password" className="text-sm text-fg-muted">
+            Password
+          </label>
+          <input
+            id="login-password"
+            type="password"
+            className="mt-1 h-10 w-full rounded-md border border-border-strong bg-surface-raised px-3 text-fg placeholder:text-fg-muted"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
+        <div className="flex gap-2">
+          <button
+            className="h-10 rounded-md border border-border-strong px-4 text-fg hover:bg-surface-sunken"
+            onClick={() => act.mutate('/auth/register')}
+          >
+            Register
+          </button>
+          <button
+            className="h-10 rounded-md bg-accent px-4 font-medium text-accent-fg hover:opacity-90"
+            onClick={() => act.mutate('/auth/login')}
+          >
+            Log in
+          </button>
+        </div>
+        {error && (
+          <p role="alert" className="text-sm text-danger">
+            {error}
+          </p>
+        )}
       </div>
-      {error && (
-        <p role="alert" className="text-danger">
-          {error}
-        </p>
-      )}
     </main>
   )
 }
