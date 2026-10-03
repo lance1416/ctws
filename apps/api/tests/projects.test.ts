@@ -219,3 +219,118 @@ describe('projects', () => {
     }
   })
 })
+
+// `visible()` in src/tasks/projects.ts does two jobs, scoping to the workspace and hiding soft-deleted
+// rows, and every project query shares it. Each condition is crossed with every exported function that
+// goes through it, so removing either half of the predicate fails something on its own.
+describe('project visibility', () => {
+  type Scenario = {
+    name: string
+    // The caller whose view is under test, given the owner's context and the other workspace's headers.
+    caller: (owner: TaskCtx, other: Record<string, string>) => Record<string, string>
+    prepare: (owner: TaskCtx, id: string) => Promise<void>
+  }
+
+  const scenarios: Scenario[] = [
+    {
+      name: 'a project of another workspace',
+      caller: (_o, other) => other,
+      prepare: async () => {},
+    },
+    {
+      name: 'a soft-deleted project',
+      caller: (owner) => owner.authed,
+      prepare: async (owner, id) => {
+        const res = await owner.app.inject({
+          method: 'DELETE',
+          url: `/api/v1/projects/${id}`,
+          headers: owner.authed,
+        })
+        expect(res.statusCode).toBe(204)
+      },
+    },
+  ]
+
+  async function otherWorkspace(ctx: TaskCtx) {
+    // On the same app, hence the same database: a second `appWithUser()` would get its own
+    // database and make the isolation trivially true, so these tests could never fail.
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      headers,
+      payload: { email: 'other@example.com', password: 'correct horse battery', timezone: 'UTC' },
+    })
+    return { ...headers, cookie: String(res.headers['set-cookie']).split(';')[0]! }
+  }
+
+  const ids = async (ctx: TaskCtx, authed: Record<string, string>, archived: boolean) => {
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/projects${archived ? '?archived=true' : ''}`,
+      headers: authed,
+    })
+    expect(res.statusCode).toBe(200)
+    return (res.json() as { projects: Listed[] }).projects.map((p) => p.id)
+  }
+
+  describe.each(scenarios)('$name', (scenario) => {
+    // listProjects, for both of the views it has: archived projects are listed apart from the rest.
+    it.each([false, true])('is absent from the list (archived=%s)', async (archived) => {
+      const ctx = await setup()
+      const id = await createProject(ctx, 'target')
+      if (archived) {
+        const res = await ctx.app.inject({
+          method: 'PATCH',
+          url: `/api/v1/projects/${id}`,
+          headers: ctx.authed,
+          payload: { archived: true },
+        })
+        expect(res.statusCode).toBe(200)
+      }
+      const other = await otherWorkspace(ctx)
+
+      // Control: the owner does see it, so the absence below is not just an empty or broken list.
+      expect(await ids(ctx, ctx.authed, archived)).toContain(id)
+
+      await scenario.prepare(ctx, id)
+      expect(await ids(ctx, scenario.caller(ctx, other), archived)).not.toContain(id)
+    })
+
+    // updateProject: a rename, an empty patch (its own read-only path), and both archive directions
+    // (archiving has a pre-read before the update).
+    it.each([
+      ['rename', { name: 'stolen' }],
+      ['empty patch', {}],
+      ['archive', { archived: true }],
+      ['unarchive', { archived: false }],
+    ] as const)('answers 404 to updateProject: %s', async (_label, payload) => {
+      const ctx = await setup()
+      const id = await createProject(ctx, 'target')
+      const other = await otherWorkspace(ctx)
+      await scenario.prepare(ctx, id)
+
+      const res = await ctx.app.inject({
+        method: 'PATCH',
+        url: `/api/v1/projects/${id}`,
+        headers: scenario.caller(ctx, other),
+        payload,
+      })
+      expect(res.statusCode).toBe(404)
+    })
+
+    // softDeleteProject
+    it('answers 404 to softDeleteProject', async () => {
+      const ctx = await setup()
+      const id = await createProject(ctx, 'target')
+      const other = await otherWorkspace(ctx)
+      await scenario.prepare(ctx, id)
+
+      const res = await ctx.app.inject({
+        method: 'DELETE',
+        url: `/api/v1/projects/${id}`,
+        headers: scenario.caller(ctx, other),
+      })
+      expect(res.statusCode).toBe(404)
+    })
+  })
+})
