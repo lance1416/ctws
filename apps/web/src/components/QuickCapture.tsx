@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import { inboxOf, listProjects } from '../api/projects'
 import { createTask } from '../api/tasks'
 import { refreshTasks } from '../api/taskCache'
@@ -8,6 +9,12 @@ import { refreshTasks } from '../api/taskCache'
 export function QuickCapture() {
   const qc = useQueryClient()
   const [title, setTitle] = useState('')
+  // Set when a capture lands; cleared by the next keystroke or navigation. One line, never a
+  // queue. It names the destination but not the title: the title would sit in the DOM of every
+  // page (this box is in the layout) and show up twice wherever that task is also listed.
+  const [landed, setLanded] = useState(false)
+  const { pathname } = useLocation()
+  useEffect(() => setLanded(false), [pathname])
   const input = useRef<HTMLInputElement>(null)
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
   const inbox = projects.data ? inboxOf(projects.data) : undefined
@@ -17,6 +24,7 @@ export function QuickCapture() {
     mutationFn: (t: string) => createTask({ projectId: inbox!.id, title: t }),
     onSuccess: () => {
       setTitle('')
+      setLanded(true)
       return refreshTasks(qc, inbox!.id)
     },
   })
@@ -46,7 +54,10 @@ export function QuickCapture() {
         <input
           ref={input}
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          onChange={(e) => {
+            setTitle(e.target.value)
+            setLanded(false)
+          }}
           onKeyDown={(e) => {
             // isComposing: Enter confirms an IME candidate, it must not submit half a word.
             if (e.key === 'Enter' && !e.nativeEvent.isComposing) submit()
@@ -73,6 +84,17 @@ export function QuickCapture() {
       {projects.isError && (
         <p role="status" className="order-4 basis-full text-sm text-danger lg:col-start-2">
           无法加载收件箱，暂时不能捕获。请检查网络后刷新页面
+        </p>
+      )}
+      {landed && inbox && (
+        <p
+          role="status"
+          className="order-4 basis-full truncate text-sm text-fg-muted lg:col-start-2"
+        >
+          已放入{' '}
+          <Link to={`/projects/${inbox.id}`} className="text-accent underline">
+            {inbox.name}
+          </Link>
         </p>
       )}
       {capture.isError && (

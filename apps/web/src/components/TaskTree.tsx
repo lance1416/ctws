@@ -9,13 +9,14 @@ import {
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import type { MoveTaskBody, TaskResponse } from '@ctws/contracts'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useMemo, useState, type KeyboardEvent } from 'react'
-import { listProjectTasks, moveTask } from '../api/tasks'
-import { tasksKey } from '../api/taskCache'
+import { Fragment, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { createTask, listProjectTasks, moveTask } from '../api/tasks'
+import { refreshTasks, tasksKey } from '../api/taskCache'
 import { flatten } from '../tree/flatten'
 import { loadCollapsed, saveCollapsed } from '../tree/collapse'
-import { planDrop, type DropPlan } from '../tree/drop'
+import { MAX_DEPTH, planDrop, type DropPlan } from '../tree/drop'
 import { TaskDetail } from './TaskDetail'
+import { NewTaskInput } from './NewTaskInput'
 import { TaskRow } from './TaskRow'
 
 const INDENT_PX = 20
@@ -55,6 +56,11 @@ export function TaskTree({ projectId }: { projectId: string }) {
   const [collapsed, setCollapsed] = useState(() => loadCollapsed(projectId))
   const [error, setError] = useState<string | null>(null)
   const [openId, setOpenId] = useState<string | null>(null)
+  // Where an inline create input is showing: the parent whose children it appends to (null is
+  // the root level) and the row whose handle gets focus back when it is cancelled. The server
+  // appends a new task to the END of its parent's children, so that is where the input sits.
+  const [adding, setAdding] = useState<{ parentId: string | null; from: string } | null>(null)
+  const inFlight = useRef(false)
 
   // The cache holds exactly what listProjectTasks returns; the rows are derived, never cached.
   const tasks = useQuery({ queryKey: key, queryFn: () => listProjectTasks(projectId) })
@@ -120,9 +126,58 @@ export function TaskTree({ projectId }: { projectId: string }) {
     return end - index
   }
 
+  // Opens the inline input at the end of `parentId`'s children, unfolding that parent first so
+  // the input (and what it creates) is on screen.
+  const startAdd = (parentId: string | null, from: string) => {
+    if (parentId && collapsed.has(parentId)) {
+      const next = new Set(collapsed)
+      next.delete(parentId)
+      setCollapsed(next)
+      saveCollapsed(projectId, next)
+    }
+    setError(null)
+    setAdding({ parentId, from })
+  }
+
+  const addChild = (row: (typeof rows)[number]) => {
+    if (row.depth >= MAX_DEPTH) setError('层级太深，无法在这里添加子任务')
+    else startAdd(row.id, row.id)
+  }
+
+  const commitAdd = async (title: string) => {
+    if (!adding || inFlight.current) return false
+    inFlight.current = true
+    try {
+      await createTask({ projectId, title, parentId: adding.parentId })
+      await refreshTasks(qc, projectId)
+      return true
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '创建失败')
+      return false
+    } finally {
+      inFlight.current = false
+    }
+  }
+
+  const cancelAdd = (restoreFocus: boolean) => {
+    const from = adding?.from
+    setAdding(null)
+    if (restoreFocus && from)
+      queueMicrotask(() =>
+        document.querySelector<HTMLElement>(`[data-handle-id="${from}"]`)?.focus(),
+      )
+  }
+
   const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>, index: number) => {
     const row = rows[index]!
-    if (e.key === 'Enter' && !e.altKey) {
+    if (e.key === 'Enter' && e.altKey) {
+      e.preventDefault()
+      addChild(row)
+    } else if (e.key === 'Enter' && e.shiftKey) {
+      // Plain Enter already opens the detail panel (the keyboard way in), so a sibling is Shift+Enter.
+      e.preventDefault()
+      startAdd(row.parentId, row.id)
+    } else if (e.key === 'Enter') {
       e.preventDefault()
       setOpenId(row.id)
     } else if (e.altKey && e.key === 'ArrowUp') {
@@ -146,6 +201,19 @@ export function TaskTree({ projectId }: { projectId: string }) {
       run(row.id, index, row.depth + (e.key === 'ArrowRight' ? 1 : -1))
     }
   }
+
+  // The input renders after the last visible row of the parent's subtree (or of the whole list
+  // for the root level): the end of the sibling group, which is where the server will put it.
+  let inputSlot = -1
+  let inputDepth = 1
+  if (adding) {
+    const at = adding.parentId === null ? -1 : rows.findIndex((r) => r.id === adding.parentId)
+    inputSlot = at < 0 ? rows.length : at + blockLength(at)
+    inputDepth = at < 0 ? 1 : rows[at]!.depth + 1
+  }
+  const input = adding && (
+    <NewTaskInput depth={inputDepth} onCommit={commitAdd} onCancel={cancelAdd} />
+  )
 
   const onDragEnd = ({ active, over, delta }: DragEndEvent) => {
     const from = rows.findIndex((r) => r.id === active.id)
@@ -195,15 +263,18 @@ export function TaskTree({ projectId }: { projectId: string }) {
         <SortableContext items={rows.map((r) => r.id)} strategy={verticalListSortingStrategy}>
           <ul className="mt-4 flex flex-col">
             {rows.map((row, i) => (
-              <TaskRow
-                key={row.id}
-                row={row}
-                title={titles.get(row.id) ?? ''}
-                status={statuses.get(row.id) ?? 'todo'}
-                onToggle={() => toggle(row.id)}
-                onKeyDown={(e) => onKeyDown(e, i)}
-                onOpen={() => setOpenId(row.id)}
-              />
+              <Fragment key={row.id}>
+                <TaskRow
+                  row={row}
+                  title={titles.get(row.id) ?? ''}
+                  status={statuses.get(row.id) ?? 'todo'}
+                  onToggle={() => toggle(row.id)}
+                  onKeyDown={(e) => onKeyDown(e, i)}
+                  onOpen={() => setOpenId(row.id)}
+                  onAddChild={() => addChild(row)}
+                />
+                {inputSlot === i + 1 && input}
+              </Fragment>
             ))}
           </ul>
         </SortableContext>

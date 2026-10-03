@@ -16,6 +16,7 @@ type Props = {
   onToggle: () => void
   onKeyDown: (e: KeyboardEvent<HTMLButtonElement>) => void
   onOpen: () => void
+  onAddChild: () => void
 }
 
 // 16px canvas, 1.5px stroke, same as StatusMark: glyph characters like ▸ and ⋮⋮ differ in size
@@ -38,7 +39,7 @@ function Icon({ d }: { d: string }) {
   )
 }
 
-export function TaskRow({ row, title, status, onToggle, onKeyDown, onOpen }: Props) {
+export function TaskRow({ row, title, status, onToggle, onKeyDown, onOpen, onAddChild }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: row.id,
   })
@@ -116,6 +117,17 @@ export function TaskRow({ row, title, status, onToggle, onKeyDown, onOpen }: Pro
       >
         {title}
       </span>
+      {/* Mouse path to "add under this": the keyboard has Alt+Enter, so this stays out of the tab
+          order. Shown on row hover; always shown where there is no hover. */}
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label={`添加子任务（${title}）`}
+        onClick={onAddChild}
+        className="ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-fg-muted opacity-0 group-hover:opacity-100 hover:text-fg [@media(hover:none)]:opacity-100"
+      >
+        <Icon d="M8 3v10M3 8h10" />
+      </button>
     </li>
   )
 }
