@@ -213,40 +213,131 @@ test('a Today row is finished by its mark, by x, and focus moves to the next row
 
 // ------------------------------------------------------------------------------ F3: overdue exits
 
-test('an overdue row can be pushed to tomorrow or next week: it stays overdue and says where it went', async ({
+test('推迟 on an overdue row moves the deadline, keeps its time of day, and the row leaves 逾期', async ({
   page,
 }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   const due = dueAgo(2)
-  await makeTask(page, pid, '回 issue', { dueAt: due })
+  await makeTask(page, pid, '推到明天', { dueAt: due })
+  await makeTask(page, pid, '推到下周', { dueAt: due })
+  await makeTask(page, pid, '不动的', { dueAt: due })
   await page.goto('/')
   const section = page.getByRole('region', { name: '逾期' })
-  await expect(section.getByText('已逾 2 天')).toBeVisible()
-  await expect(section.getByText(/^排到/)).toHaveCount(0)
+  await expect(section.getByText('已逾 2 天')).toHaveCount(3)
 
-  const tomorrow = ymd(new Date(Date.now() + DAY))
+  // The same local time of day, on another local day.
+  const onDay = (days: number) => {
+    const d = new Date(due)
+    return new Date(
+      d.getFullYear(),
+      d.getMonth(),
+      d.getDate() + days,
+      d.getHours(),
+      d.getMinutes(),
+      d.getSeconds(),
+      d.getMilliseconds(),
+    )
+  }
+  const tomorrow = new Date()
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  const expectTomorrow = new Date(
+    tomorrow.getFullYear(),
+    tomorrow.getMonth(),
+    tomorrow.getDate(),
+    onDay(0).getHours(),
+    onDay(0).getMinutes(),
+    onDay(0).getSeconds(),
+    onDay(0).getMilliseconds(),
+  )
+
+  const group = (title: string) => page.getByRole('group', { name: `处理逾期：${title}` })
   let res = patched(page)
-  await section.getByRole('button', { name: '推迟到明天' }).click()
-  expect((await res).request().postDataJSON()).toEqual({ scheduledOn: tomorrow })
-  // The deadline is untouched and the row is still in the overdue segment: a missed deadline is
-  // missed. What changed is that the row now says it has been dealt with.
-  await expect(section.getByText('排到明天')).toBeVisible()
-  await expect(section.getByText('已逾 2 天')).toBeVisible()
-  const t = await serverTask(page, pid, '回 issue')
-  expect(t.scheduledOn).toBe(tomorrow)
-  expect(new Date(t.dueAt!).getTime()).toBe(new Date(due).getTime())
+  await group('推到明天').getByRole('button', { name: '推迟到明天' }).click()
+  // The request moves the deadline and nothing else.
+  expect((await res).request().postDataJSON()).toEqual({ dueAt: expectTomorrow.toISOString() })
+  // The row left 逾期; the other two overdue rows did not move.
+  await expect(page.getByText('推到明天')).toHaveCount(0)
+  await expect(section.getByText('已逾 2 天')).toHaveCount(2)
+  // The server says so, from a fresh read, in its own segment arithmetic: not on the list at all.
+  const today = (await (await page.request.get('/api/v1/today')).json()).tasks as {
+    title: string
+    segment: string
+  }[]
+  expect(today.find((t) => t.title === '推到明天')).toBeUndefined()
+  expect(
+    today
+      .filter((t) => t.segment === 'overdue')
+      .map((t) => t.title)
+      .sort(),
+  ).toEqual(['不动的', '推到下周'])
+  const moved = await serverTask(page, pid, '推到明天')
+  expect(new Date(moved.dueAt!).getTime()).toBe(expectTomorrow.getTime())
+  // No scheduling was invented on the way.
+  expect(moved.scheduledOn).toBeNull()
   await page.reload()
-  await expect(page.getByRole('region', { name: '逾期' }).getByText('排到明天')).toBeVisible()
+  await expect(page.getByText('推到明天')).toHaveCount(0)
 
-  // Next week is the coming Monday.
+  // Next week is the coming Monday, at the same time of day.
   const now = new Date()
   const toMonday = (8 - now.getDay()) % 7 || 7
-  const monday = ymd(new Date(now.getFullYear(), now.getMonth(), now.getDate() + toMonday))
+  const monday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() + toMonday,
+    onDay(0).getHours(),
+    onDay(0).getMinutes(),
+    onDay(0).getSeconds(),
+    onDay(0).getMilliseconds(),
+  )
   res = patched(page)
-  await page.getByRole('button', { name: '推迟到下周' }).click()
-  expect((await res).request().postDataJSON()).toEqual({ scheduledOn: monday })
-  expect((await serverTask(page, pid, '回 issue')).scheduledOn).toBe(monday)
+  await group('推到下周').getByRole('button', { name: '推迟到下周' }).click()
+  expect((await res).request().postDataJSON()).toEqual({ dueAt: monday.toISOString() })
+  await expect(page.getByText('推到下周')).toHaveCount(0)
+  expect(new Date((await serverTask(page, pid, '推到下周')).dueAt!).getTime()).toBe(
+    monday.getTime(),
+  )
+  // The untouched one is still overdue on the server.
+  expect(new Date((await serverTask(page, pid, '不动的')).dueAt!).getTime()).toBe(
+    new Date(due).getTime(),
+  )
+  await expect(section.getByText('不动的')).toBeVisible()
+})
+
+test('only a deadline change takes a task out of 逾期: a bare scheduledOn does not', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'P')
+  const id = await makeTask(page, pid, '过期了', { dueAt: dueAgo(2) })
+  const tomorrow = ymd(new Date(Date.now() + DAY))
+  const segmentOf = async () => {
+    const tasks = (await (await page.request.get('/api/v1/today')).json()).tasks as {
+      id: string
+      segment: string
+    }[]
+    return tasks.find((t) => t.id === id)?.segment ?? 'absent'
+  }
+  expect(await segmentOf()).toBe('overdue')
+
+  // Scheduling it for tomorrow (what the old 推迟 did) must NOT hide the missed deadline.
+  const p = await page.request.patch(`/api/v1/tasks/${id}`, {
+    headers: HEADERS,
+    data: { scheduledOn: tomorrow },
+  })
+  expect(p.ok()).toBeTruthy()
+  expect((await serverTask(page, pid, '过期了')).scheduledOn).toBe(tomorrow)
+  expect(await segmentOf()).toBe('overdue')
+  await page.goto('/')
+  await expect(page.getByRole('region', { name: '逾期' }).getByText('过期了')).toBeVisible()
+
+  // Whereas moving the deadline itself does take it out.
+  const q = await page.request.patch(`/api/v1/tasks/${id}`, {
+    headers: HEADERS,
+    data: { dueAt: new Date(Date.now() + 3 * DAY).toISOString() },
+  })
+  expect(q.ok()).toBeTruthy()
+  expect(await segmentOf()).not.toBe('overdue')
 })
 
 test('取消截止 takes a row out of overdue and the server forgets the deadline', async ({

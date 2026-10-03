@@ -5,10 +5,13 @@ import {
   type UpdateTaskBody,
 } from '@ctws/contracts'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useContext, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useBlocker } from 'react-router-dom'
 import { listProjects } from '../api/projects'
-import { moveTask, patchTask } from '../api/tasks'
+import { deleteTask, listProjectTasks, moveTask, patchTask } from '../api/tasks'
 import { tasksKey } from '../api/taskCache'
+import { DeleteConfirm } from './DeleteConfirm'
+import { LeaveGuardContext } from './leaveGuard'
 
 // An empty date input yields '' , and the contract takes a date or null. Sending '' would be
 // rejected; silently coercing it to today would be worse.
@@ -83,14 +86,45 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
     scheduledOn !== initial.current.scheduledOn ||
     dueAt !== initial.current.dueAt ||
     nextProjectId !== initial.current.projectId
-  // Closing with unsaved edits asks first, in the panel: a browser confirm() would block the
-  // automation this app is tested with, and the typing would be lost without a word otherwise.
-  const [askDiscard, setAskDiscard] = useState(false)
-  const keepEditing = useRef<HTMLButtonElement>(null)
-  useEffect(() => {
-    if (askDiscard) keepEditing.current?.focus()
-  }, [askDiscard])
-  const requestClose = () => (dirty ? setAskDiscard(true) : onClose())
+  // Deleting a task takes its subtree with it and cannot be undone, so it asks first, naming what
+  // is lost. The descendant count is read live when the question opens (the panel's own task
+  // list may be a page that never loaded this project's tree).
+  const [deleting, setDeleting] = useState<{ descendants: number | null } | null>(null)
+  const deleteButton = useRef<HTMLButtonElement>(null)
+  const askDelete = async () => {
+    setDeleting({ descendants: null })
+    try {
+      const all = await qc.fetchQuery({
+        queryKey: tasksKey(task.projectId),
+        queryFn: () => listProjectTasks(task.projectId),
+        staleTime: 0,
+      })
+      let count = 0
+      let frontier = [task.id]
+      while (frontier.length > 0) {
+        const kids = all.filter((t) => t.parentId !== null && frontier.includes(t.parentId))
+        count += kids.length
+        frontier = kids.map((t) => t.id)
+      }
+      setDeleting({ descendants: count })
+    } catch {
+      // Without the count the person would be confirming blind; say so and let them cancel.
+      setDeleting({ descendants: -1 })
+    }
+  }
+  const cancelDelete = () => {
+    setDeleting(null)
+    queueMicrotask(() => deleteButton.current?.focus())
+  }
+  const remove = useMutation({
+    mutationFn: () => deleteTask(task.id),
+    // Settled, not success: a failed delete may still have changed what the lists should show.
+    onSettled: async () => {
+      await qc.invalidateQueries({ queryKey: ['today'] })
+      await qc.invalidateQueries({ queryKey: ['completed'] })
+      await qc.invalidateQueries({ queryKey: tasksKey(task.projectId) })
+    },
+  })
 
   // The panel starts below the sticky top bar rather than over it, so the capture box and the
   // account controls stay visible and usable while a task is open.
@@ -125,16 +159,61 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
       // The today list is cross-project and server-derived: any edit can move a task between
       // segments or off the list, so it is always refetched.
       await qc.invalidateQueries({ queryKey: ['today'] })
+      await qc.invalidateQueries({ queryKey: ['completed'] })
       await qc.invalidateQueries({ queryKey: tasksKey(projectId) })
       if (nextProjectId !== projectId)
         await qc.invalidateQueries({ queryKey: tasksKey(nextProjectId) })
     },
   })
 
+  // Leaving with unsaved edits asks first, in the panel: a browser confirm() would block the
+  // automation this app is tested with, and the typing would be lost without a word otherwise.
+  // Three ways to lose the form, one prompt: closing the panel, navigating away (the router
+  // blocker also catches the browser's back button), and Log out (not a navigation, so the
+  // layout asks through LeaveGuardContext instead).
+  const [askDiscard, setAskDiscard] = useState(false)
+  const [logoutVia, setLogoutVia] = useState<(() => void) | null>(null)
+  // A save that is in flight (or has landed, with the panel about to close) loses nothing, so it
+  // must not trap the person who pressed Save and then, at once, a nav link.
+  const unsaved = dirty && !save.isPending && !save.isSuccess
+  const blocker = useBlocker(unsaved)
+  const leaving = blocker.state === 'blocked' || logoutVia !== null
+  const asking = askDiscard || leaving
+  const keepEditing = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    if (asking) keepEditing.current?.focus()
+  }, [asking])
+  const requestClose = () => (dirty ? setAskDiscard(true) : onClose())
+  const dirtyNow = useRef(unsaved)
+  dirtyNow.current = unsaved
+  const guard = useContext(LeaveGuardContext)
+  useEffect(() => {
+    if (!guard) return
+    guard.current = (go) => {
+      if (!dirtyNow.current) return false
+      setLogoutVia(() => go)
+      return true
+    }
+    return () => {
+      guard.current = null
+    }
+  }, [guard])
+  const keepEditingNow = () => {
+    setAskDiscard(false)
+    setLogoutVia(null)
+    if (blocker.state === 'blocked') blocker.reset()
+  }
+  const discard = () => {
+    if (blocker.state === 'blocked') blocker.proceed()
+    else if (logoutVia) logoutVia()
+    else onClose()
+  }
+
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Escape') {
-      // A second Escape on the discard prompt means "keep editing".
-      if (askDiscard) setAskDiscard(false)
+      // A second Escape on the discard prompt means "keep editing"; on the delete question, "no".
+      if (deleting) cancelDelete()
+      else if (asking) keepEditingNow()
       else requestClose()
     } else if (e.key === 'Tab') {
       // Trap: Tab cycles inside the panel. Left alone it would walk on into whatever the panel
@@ -244,21 +323,23 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                 ))}
             </select>
           </label>
-          {askDiscard && (
+          {asking && (
             <div role="alert" className="rounded-md border border-border-strong p-3 text-sm">
-              <p className="text-fg">有未保存的修改，关闭会丢掉它们。</p>
+              <p className="text-fg">
+                {leaving ? '有未保存的修改，离开会丢掉它们。' : '有未保存的修改，关闭会丢掉它们。'}
+              </p>
               <div className="mt-2 flex gap-2">
                 <button
                   ref={keepEditing}
                   type="button"
-                  onClick={() => setAskDiscard(false)}
+                  onClick={keepEditingNow}
                   className="h-9 rounded-md bg-accent px-3 font-medium text-accent-fg hover:opacity-90"
                 >
                   继续编辑
                 </button>
                 <button
                   type="button"
-                  onClick={onClose}
+                  onClick={discard}
                   className="h-9 rounded-md border border-border-strong px-3 text-fg hover:bg-surface-sunken"
                 >
                   放弃修改
@@ -286,7 +367,38 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
             >
               关闭
             </button>
+            <button
+              ref={deleteButton}
+              type="button"
+              onClick={askDelete}
+              className="ml-auto h-10 rounded-md px-3 text-sm text-fg-muted hover:text-danger"
+            >
+              删除任务
+            </button>
           </div>
+          {deleting && (
+            <DeleteConfirm
+              label="确认删除任务"
+              className="rounded-md border border-border-strong p-3"
+              message={
+                deleting.descendants === null
+                  ? `删除「${task.title}」…`
+                  : deleting.descendants < 0
+                    ? `删除「${task.title}」及其全部子任务，无法恢复。`
+                    : deleting.descendants === 0
+                      ? `删除「${task.title}」，无法恢复。`
+                      : `删除「${task.title}」及其 ${deleting.descendants} 条子任务，无法恢复。`
+              }
+              busy={deleting.descendants === null || remove.isPending}
+              onConfirm={() => remove.mutate()}
+              onCancel={cancelDelete}
+            />
+          )}
+          {remove.isError && (
+            <p role="alert" className="text-sm text-danger">
+              {remove.error instanceof Error ? remove.error.message : '删除失败'}
+            </p>
+          )}
         </form>
       </div>
     </>

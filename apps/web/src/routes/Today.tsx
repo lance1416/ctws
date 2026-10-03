@@ -6,7 +6,7 @@ import { toggleDoneTarget, toggleStartTarget, useTaskActions } from '../api/task
 import { listToday } from '../api/today'
 import { StartButton, StatusButton, statusForKey } from '../components/StatusControls'
 import { TaskDetail, toLocalInput } from '../components/TaskDetail'
-import { addDays, dateHints, nextMonday, overdueLabel, ymd } from '../dueAt'
+import { addDays, dateHints, moveDueToDay, nextMonday, overdueLabel, ymd } from '../dueAt'
 import { useMe } from '../useMe'
 
 const LABELS: Record<TodaySegment, string> = {
@@ -203,10 +203,11 @@ export function Today() {
                     />
                   </span>
                   {segment === 'overdue' && (
-                    // The way out of the overdue wall. Pushing a task out does NOT take it off
-                    // this list (a missed deadline stays missed, so the segment cascade is
-                    // untouched): it shows where the task now sits, so "已逾 2 天，排到明天"
-                    // reads as dealt with rather than ignored.
+                    // The way out of the overdue wall. 推迟 moves the DEADLINE to the chosen day,
+                    // keeping its time of day: the person is deliberately moving their own
+                    // deadline, so the task legitimately leaves 逾期. The segment cascade is
+                    // untouched, so merely scheduling a task still cannot hide a missed deadline;
+                    // only changing due_at itself can.
                     <div
                       role="group"
                       aria-label={`处理逾期：${t.title}`}
@@ -219,14 +220,14 @@ export function Today() {
                       )}
                       <button
                         type="button"
-                        onClick={() => patch(t.id, { scheduledOn: tomorrow })}
+                        onClick={() => patch(t.id, { dueAt: moveDueToDay(t.dueAt!, tomorrow) })}
                         className={exitButton}
                       >
                         推迟到明天
                       </button>
                       <button
                         type="button"
-                        onClick={() => patch(t.id, { scheduledOn: nextWeek })}
+                        onClick={() => patch(t.id, { dueAt: moveDueToDay(t.dueAt!, nextWeek) })}
                         className={exitButton}
                       >
                         推迟到下周

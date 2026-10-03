@@ -135,6 +135,17 @@ export const todayTaskResponse = taskResponse
   .strict()
 export type TodayTaskResponse = z.infer<typeof todayTaskResponse>
 
+// The "what I finished" list. `completedOn` is the calendar day in the user's timezone, decided
+// by the server; the list arrives newest first and the client only partitions it by that field.
+export const completedTaskResponse = taskResponse
+  .extend({
+    projectName: z.string(),
+    parentTitle: z.string().nullable(),
+    completedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  })
+  .strict()
+export type CompletedTaskResponse = z.infer<typeof completedTaskResponse>
+
 // ---- events ----
 
 // There is intentionally no event type for reordering: a pure rank change is not logged

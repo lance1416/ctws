@@ -3,6 +3,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { Layout } from './components/Layout'
+import { Completed } from './routes/Completed'
 import { Login } from './routes/Login'
 import { Project } from './routes/Project'
 import { Projects } from './routes/Projects'
@@ -18,6 +19,7 @@ const router = createBrowserRouter([
     children: [
       { path: '/', element: <Today /> },
       { path: '/projects', element: <Projects /> },
+      { path: '/completed', element: <Completed /> },
       { path: '/projects/:id', element: <Project /> },
       { path: '*', element: <Today /> },
     ],

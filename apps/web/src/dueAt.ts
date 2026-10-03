@@ -12,6 +12,19 @@ export function overdueLabel(dueIso: string, now: Date = new Date()): string {
   return `已逾 ${days} 天`
 }
 
+/**
+ * A deadline moved to another calendar day, keeping its time of day (local, to the second).
+ * Pushing "due 09:00 on the 1st" to the 4th gives 09:00 on the 4th: the person is moving the
+ * date, so inventing midnight (which reads as "due at the very start of the day") or "now"
+ * would be changing something they did not touch.
+ */
+export function moveDueToDay(dueIso: string, day: string): string {
+  const d = new Date(dueIso)
+  const [y, m, dd] = day.split('-').map(Number) as [number, number, number]
+  d.setFullYear(y, m - 1, dd)
+  return d.toISOString()
+}
+
 const pad2 = (n: number) => String(n).padStart(2, '0')
 
 /** A local calendar day as "YYYY-MM-DD": the shape `scheduled_on` is stored and sent in. */

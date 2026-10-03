@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process'
 import type { Page } from '@playwright/test'
 
 // Registers a brand-new user through the UI and waits until the signed-in shell is showing.
@@ -40,4 +41,35 @@ export async function openProject(page: Page, name: string, exact = false): Prom
   )
   await page.getByText(name, { exact }).click()
   await loaded
+}
+
+// Moves a finished task's completion back in time. The API (rightly) offers no way to set
+// completed_at, and a view grouped by day cannot be tested without days of history, so this goes
+// to the database the stack is running on. Needs `docker compose` and the stack up, like the
+// rest of the e2e.
+export function backdateCompletion(taskId: string, ago: string): void {
+  if (!/^[0-9a-f-]{36}$/.test(taskId) || !/^\d+ (minutes|hours|days)$/.test(ago)) {
+    throw new Error('backdateCompletion: refusing a malformed argument')
+  }
+  const out = execFileSync(
+    'docker',
+    [
+      'compose',
+      'exec',
+      '-T',
+      'postgres',
+      'psql',
+      '-v',
+      'ON_ERROR_STOP=1',
+      '-U',
+      'ctws',
+      '-d',
+      'ctws',
+      '-c',
+      `update tasks set completed_at = now() - interval '${ago}' where id = '${taskId}' and status = 'done'`,
+    ],
+    { stdio: 'pipe' },
+  ).toString()
+  // A no-op update would leave the test proving nothing about history.
+  if (!out.includes('UPDATE 1')) throw new Error(`backdateCompletion: no row updated: ${out}`)
 }

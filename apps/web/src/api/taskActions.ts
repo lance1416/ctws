@@ -60,6 +60,7 @@ export function useTaskActions(onError: (message: string) => void) {
     onSettled: async () => {
       await qc.invalidateQueries({ queryKey: ['today'] })
       await qc.invalidateQueries({ queryKey: ['tasks'] })
+      await qc.invalidateQueries({ queryKey: ['completed'] })
     },
   })
 

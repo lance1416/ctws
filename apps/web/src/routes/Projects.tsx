@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { DeleteConfirm } from '../components/DeleteConfirm'
 import { refreshProjects } from '../api/taskCache'
 import { createProject, deleteProject, listProjects } from '../api/projects'
 import { listProjectTasks } from '../api/tasks'
@@ -115,40 +116,27 @@ export function Projects() {
               </button>
             )}
             {confirming?.id === p.id && (
-              <div
-                role="alertdialog"
-                aria-label="确认删除项目"
-                className="flex basis-full flex-wrap items-center gap-x-3 gap-y-1 pb-2 text-sm"
-              >
-                <p className="text-fg">
-                  {confirming.tasks === null
+              <DeleteConfirm
+                label="确认删除项目"
+                className="basis-full pb-2"
+                message={
+                  confirming.tasks === null
                     ? `删除「${p.name}」…`
                     : confirming.tasks < 0
                       ? `删除「${p.name}」及其全部任务，无法恢复。`
-                      : `删除「${p.name}」及其 ${confirming.tasks} 条任务，无法恢复。`}
-                </p>
-                <button
-                  autoFocus
-                  disabled={confirming.tasks === null || remove.isPending}
-                  onClick={() =>
-                    remove.mutate(p.id, {
-                      onSuccess: () => {
-                        setConfirming(null)
-                        heading.current?.focus()
-                      },
-                    })
-                  }
-                  className="h-8 rounded-md bg-danger px-3 font-medium text-danger-fg hover:opacity-90 disabled:opacity-50"
-                >
-                  确认删除
-                </button>
-                <button
-                  onClick={cancelDelete}
-                  className="h-8 rounded-md border border-border-strong px-3 text-fg hover:bg-surface-sunken"
-                >
-                  取消
-                </button>
-              </div>
+                      : `删除「${p.name}」及其 ${confirming.tasks} 条任务，无法恢复。`
+                }
+                busy={confirming.tasks === null || remove.isPending}
+                onConfirm={() =>
+                  remove.mutate(p.id, {
+                    onSuccess: () => {
+                      setConfirming(null)
+                      heading.current?.focus()
+                    },
+                  })
+                }
+                onCancel={cancelDelete}
+              />
             )}
           </li>
         ))}

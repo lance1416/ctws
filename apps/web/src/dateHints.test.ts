@@ -123,3 +123,22 @@ describe('status targets', () => {
       expect(statusForKey(k('x', { [m]: true }), 'todo')).toBeNull()
   })
 })
+
+describe('moveDueToDay', () => {
+  it('moves the day and keeps the local time of day, across a month end', async () => {
+    const { moveDueToDay } = await load()
+    const due = new Date(2026, 9, 1, 9, 45, 30).toISOString() // Oct 1st, 09:45:30 local
+    const moved = new Date(moveDueToDay(due, '2026-11-02'))
+    expect([moved.getFullYear(), moved.getMonth(), moved.getDate()]).toEqual([2026, 10, 2])
+    expect([moved.getHours(), moved.getMinutes(), moved.getSeconds()]).toEqual([9, 45, 30])
+  })
+
+  it('keeps a late-evening time on the chosen LOCAL day (not the UTC day)', async () => {
+    const { moveDueToDay } = await load()
+    // 23:30 local in +05:30 is 18:00 UTC: the same calendar day either way, but 00:15 local is
+    // 18:45 UTC of the day BEFORE, which is where a UTC-based implementation goes wrong.
+    const due = new Date(2026, 9, 1, 0, 15).toISOString()
+    const moved = new Date(moveDueToDay(due, '2026-10-05'))
+    expect([moved.getDate(), moved.getHours(), moved.getMinutes()]).toEqual([5, 0, 15])
+  })
+})

@@ -1,7 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useRef } from 'react'
 import { Navigate, NavLink, Outlet } from 'react-router-dom'
 import { apiFetch } from '../api'
 import { useMe } from '../useMe'
+import { LeaveGuardContext, type LeaveGuard } from './leaveGuard'
 import { QuickCapture } from './QuickCapture'
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -14,6 +16,7 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
 export function Layout() {
   const qc = useQueryClient()
   const me = useMe()
+  const leaveGuard: LeaveGuard = useRef(null)
 
   const logout = useMutation({
     mutationFn: () => apiFetch('/auth/logout', { method: 'POST' }),
@@ -41,6 +44,9 @@ export function Layout() {
             <NavLink to="/projects" className={linkClass}>
               项目
             </NavLink>
+            <NavLink to="/completed" className={linkClass}>
+              已完成
+            </NavLink>
           </nav>
           <QuickCapture />
           <div className="order-2 ml-auto flex items-center gap-3 text-sm sm:order-3 lg:col-start-3 lg:row-start-1 lg:justify-self-end">
@@ -56,7 +62,10 @@ export function Layout() {
             </span>
             <button
               className="whitespace-nowrap rounded-md px-2 py-1.5 text-fg-muted hover:text-fg"
-              onClick={() => logout.mutate()}
+              onClick={() => {
+                // An open panel with unsaved edits asks first; it runs the logout if they let go.
+                if (!leaveGuard.current?.(() => logout.mutate())) logout.mutate()
+              }}
             >
               Log out
             </button>
@@ -65,7 +74,9 @@ export function Layout() {
       </header>
       <main className="px-4 py-8 sm:px-8">
         <div className="mx-auto max-w-[68ch]">
-          <Outlet />
+          <LeaveGuardContext.Provider value={leaveGuard}>
+            <Outlet />
+          </LeaveGuardContext.Provider>
         </div>
       </main>
     </div>
