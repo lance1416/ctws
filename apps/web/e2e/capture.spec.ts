@@ -102,6 +102,8 @@ test('a project can be deleted from the list', async ({ page }) => {
   const doomed = page.getByRole('listitem').filter({ hasText: '待删除' })
   await expect(doomed).toHaveCount(1)
   await doomed.getByRole('button', { name: '删除' }).click()
+  // Deleting now asks first; the confirmation is the step that actually deletes.
+  await doomed.getByRole('button', { name: '确认删除' }).click()
   await expect(doomed).toHaveCount(0)
   // Gone on the server too, not just hidden by the client cache.
   const list = await (await page.request.get('/api/v1/projects')).json()

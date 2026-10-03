@@ -15,7 +15,9 @@ import { refreshTasks, tasksKey } from '../api/taskCache'
 import { flatten } from '../tree/flatten'
 import { loadCollapsed, saveCollapsed } from '../tree/collapse'
 import { MAX_DEPTH, planDrop, type DropPlan } from '../tree/drop'
+import { useTaskActions } from '../api/taskActions'
 import { TaskDetail } from './TaskDetail'
+import { statusForKey } from './StatusControls'
 import { NewTaskInput } from './NewTaskInput'
 import { TaskRow } from './TaskRow'
 
@@ -67,14 +69,15 @@ export function TaskTree({ projectId }: { projectId: string }) {
   const rows = useMemo(() => flatten(tasks.data ?? [], collapsed), [tasks.data, collapsed])
   // Looked up by id each render, so a task that has left this project (moved away) closes itself.
   const openTask = tasks.data?.find((t) => t.id === openId)
-  const titles = useMemo(
-    () => new Map((tasks.data ?? []).map((t) => [t.id, t.title])),
-    [tasks.data],
-  )
-  const statuses = useMemo(
-    () => new Map((tasks.data ?? []).map((t) => [t.id, t.status])),
-    [tasks.data],
-  )
+  const byId = useMemo(() => new Map((tasks.data ?? []).map((t) => [t.id, t])), [tasks.data])
+  // The row that just saved from the panel: it says so for a moment, since the panel is gone.
+  const [savedId, setSavedId] = useState<string | null>(null)
+  useEffect(() => {
+    if (!savedId) return
+    const timer = setTimeout(() => setSavedId(null), 2000)
+    return () => clearTimeout(timer)
+  }, [savedId])
+  const actions = useTaskActions(setError)
 
   // Distance, so a plain click on the handle (to focus it) is not mistaken for a drag.
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
@@ -170,7 +173,12 @@ export function TaskTree({ projectId }: { projectId: string }) {
 
   const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>, index: number) => {
     const row = rows[index]!
-    if (e.key === 'Enter' && e.altKey) {
+    const nextStatus = statusForKey(e, byId.get(row.id)?.status ?? 'todo')
+    if (nextStatus) {
+      e.preventDefault()
+      setError(null)
+      actions.setStatus(row.id, nextStatus)
+    } else if (e.key === 'Enter' && e.altKey) {
       e.preventDefault()
       addChild(row)
     } else if (e.key === 'Enter' && e.shiftKey) {
@@ -231,6 +239,25 @@ export function TaskTree({ projectId }: { projectId: string }) {
     if (id) document.querySelector<HTMLElement>(`[data-handle-id="${id}"]`)?.focus()
   }
 
+  // A save can also take the task out of this list (moved to another project). The list the
+  // save's callback sees is already updated but the screen is not, so the handle is still there
+  // to take focus and is then removed under it. Remember the task, and once its row is really
+  // gone put focus on the first remaining row instead of letting it fall to <body> (WCAG 2.4.3).
+  const leaving = useRef<string | null>(null)
+  const savedClose = () => {
+    if (!openTask) return
+    setSavedId(openTask.id)
+    leaving.current = openTask.id
+    setTimeout(() => (leaving.current = null), 1000)
+    closeDetail()
+  }
+  useEffect(() => {
+    const id = leaving.current
+    if (!id || document.querySelector(`[data-handle-id="${id}"]`)) return
+    leaving.current = null
+    document.querySelector<HTMLElement>('[data-handle-id]')?.focus()
+  })
+
   // The panel also unmounts without onClose when its task leaves the list; focus would fall to
   // <body> (WCAG 2.4.3). Return it to the tree instead.
   useEffect(() => {
@@ -266,8 +293,15 @@ export function TaskTree({ projectId }: { projectId: string }) {
               <Fragment key={row.id}>
                 <TaskRow
                   row={row}
-                  title={titles.get(row.id) ?? ''}
-                  status={statuses.get(row.id) ?? 'todo'}
+                  title={byId.get(row.id)?.title ?? ''}
+                  status={byId.get(row.id)?.status ?? 'todo'}
+                  dueAt={byId.get(row.id)?.dueAt ?? null}
+                  scheduledOn={byId.get(row.id)?.scheduledOn ?? null}
+                  saved={savedId === row.id}
+                  onSetStatus={(status) => {
+                    setError(null)
+                    actions.setStatus(row.id, status)
+                  }}
                   onToggle={() => toggle(row.id)}
                   onKeyDown={(e) => onKeyDown(e, i)}
                   onOpen={() => setOpenId(row.id)}
@@ -280,7 +314,13 @@ export function TaskTree({ projectId }: { projectId: string }) {
         </SortableContext>
       </DndContext>
       {openTask && (
-        <TaskDetail key={openTask.id} task={openTask} projectId={projectId} onClose={closeDetail} />
+        <TaskDetail
+          key={openTask.id}
+          task={openTask}
+          projectId={projectId}
+          onClose={closeDetail}
+          onSaved={savedClose}
+        />
       )}
     </>
   )

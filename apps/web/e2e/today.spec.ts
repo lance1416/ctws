@@ -67,13 +67,15 @@ test('the three sections render in the order overdue, today, in progress', async
   await captureAndOpen(page, '甲在做')
   await page.getByLabel('状态').selectOption('in_progress')
   await page.getByRole('button', { name: '保存' }).click()
-  await page.getByRole('button', { name: '关闭' }).click()
+  // Saving closes the panel by itself (it used to need a separate 关闭).
+  await expect(page.getByRole('dialog')).toHaveCount(0)
 
   await submitCreate(page, '捕获…', '乙今天')
   await page.getByRole('listitem').filter({ hasText: '乙今天' }).click()
   await page.getByLabel('排期').fill(today)
   await page.getByRole('button', { name: '保存' }).click()
-  await page.getByRole('button', { name: '关闭' }).click()
+  // Saving closes the panel by itself (it used to need a separate 关闭).
+  await expect(page.getByRole('dialog')).toHaveCount(0)
 
   await submitCreate(page, '捕获…', '丙逾期')
   await page.getByRole('listitem').filter({ hasText: '丙逾期' }).click()

@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { refreshProjects } from '../api/taskCache'
 import { createProject, deleteProject, listProjects } from '../api/projects'
+import { listProjectTasks } from '../api/tasks'
+import { tasksKey } from '../api/taskCache'
 
 export function Projects() {
   const qc = useQueryClient()
@@ -21,6 +23,42 @@ export function Projects() {
     onSuccess: () => refreshProjects(qc),
   })
 
+  // Deleting a project takes its tasks with it and cannot be undone, so it asks first, here in
+  // the page (a browser confirm() would block the automation this app is tested with). The ask
+  // names what is lost: the project and how many tasks go with it, counted when it is opened.
+  const [confirming, setConfirming] = useState<{
+    id: string
+    name: string
+    tasks: number | null
+  } | null>(null)
+  const heading = useRef<HTMLHeadingElement>(null)
+  const askDelete = async (id: string, name: string) => {
+    setConfirming({ id, name, tasks: null })
+    try {
+      const tasks = await qc.fetchQuery({
+        queryKey: tasksKey(id),
+        queryFn: () => listProjectTasks(id),
+        staleTime: 0,
+      })
+      setConfirming((c) => (c?.id === id ? { id, name, tasks: tasks.length } : c))
+    } catch {
+      // Without the count the user would be confirming blind; say so and let them cancel.
+      setConfirming((c) => (c?.id === id ? { id, name, tasks: -1 } : c))
+    }
+  }
+  const cancelDelete = () => {
+    const id = confirming?.id
+    setConfirming(null)
+    if (id)
+      queueMicrotask(() => document.querySelector<HTMLElement>(`[data-delete="${id}"]`)?.focus())
+  }
+  useEffect(() => {
+    if (!confirming) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && cancelDelete()
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  })
+
   const submit = () => {
     const n = name.trim()
     if (n && !create.isPending) create.mutate({ name: n })
@@ -28,7 +66,9 @@ export function Projects() {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">项目</h1>
+      <h1 ref={heading} tabIndex={-1} className="text-2xl font-semibold focus:outline-none">
+        项目
+      </h1>
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
@@ -53,7 +93,11 @@ export function Projects() {
           would give two sorts that drift apart. */}
       <ul className="mt-6 flex flex-col">
         {projects.data?.map((p) => (
-          <li key={p.id} role="listitem" className="flex items-center justify-between gap-3">
+          <li
+            key={p.id}
+            role="listitem"
+            className="flex flex-wrap items-center justify-between gap-x-3"
+          >
             <Link
               to={`/projects/${p.id}`}
               className="-mx-2 flex-1 rounded-md px-2 py-2 font-medium hover:bg-surface-sunken"
@@ -62,12 +106,49 @@ export function Projects() {
             </Link>
             {!p.isInbox && (
               <button
+                data-delete={p.id}
                 className="rounded-md px-2 py-1 text-sm text-fg-muted hover:text-danger disabled:opacity-50"
                 disabled={remove.isPending}
-                onClick={() => remove.mutate(p.id)}
+                onClick={() => askDelete(p.id, p.name)}
               >
                 删除
               </button>
+            )}
+            {confirming?.id === p.id && (
+              <div
+                role="alertdialog"
+                aria-label="确认删除项目"
+                className="flex basis-full flex-wrap items-center gap-x-3 gap-y-1 pb-2 text-sm"
+              >
+                <p className="text-fg">
+                  {confirming.tasks === null
+                    ? `删除「${p.name}」…`
+                    : confirming.tasks < 0
+                      ? `删除「${p.name}」及其全部任务，无法恢复。`
+                      : `删除「${p.name}」及其 ${confirming.tasks} 条任务，无法恢复。`}
+                </p>
+                <button
+                  autoFocus
+                  disabled={confirming.tasks === null || remove.isPending}
+                  onClick={() =>
+                    remove.mutate(p.id, {
+                      onSuccess: () => {
+                        setConfirming(null)
+                        heading.current?.focus()
+                      },
+                    })
+                  }
+                  className="h-8 rounded-md bg-danger px-3 font-medium text-danger-fg hover:opacity-90 disabled:opacity-50"
+                >
+                  确认删除
+                </button>
+                <button
+                  onClick={cancelDelete}
+                  className="h-8 rounded-md border border-border-strong px-3 text-fg hover:bg-surface-sunken"
+                >
+                  取消
+                </button>
+              </div>
             )}
           </li>
         ))}
