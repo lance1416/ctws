@@ -39,7 +39,7 @@ export function Project() {
         }}
         placeholder="新任务"
         aria-label="新任务"
-        className="mt-6 h-10 w-full border-b border-border-strong bg-transparent px-0.5 text-fg placeholder:text-fg-muted"
+        className="mt-5 h-10 w-full max-w-[40ch] rounded-md border border-border-strong bg-surface px-3 text-fg placeholder:text-fg-muted"
       />
       {create.isError && (
         <p role="alert" className="mt-2 text-sm text-danger">

@@ -28,7 +28,12 @@ export function SideRail() {
   return (
     <nav
       aria-label="主导航"
-      className="flex flex-col gap-1 border-border-subtle max-lg:flex-row max-lg:items-center max-lg:overflow-x-auto max-lg:border-b max-lg:px-4 max-lg:py-2 lg:h-[calc(100vh-3rem)] lg:gap-0 lg:overflow-y-auto lg:border-r lg:py-4 lg:pr-3 lg:pl-4"
+      // Chrome, not work: the rail, the top bar and the detail pane share ONE surface
+      // (`sunken`), and the centre column keeps `surface`. That is the whole figure/ground
+      // device -- no cards, no shadows, no hairline round everything, just two planes. It reads
+      // in both schemes because `sunken` is darker than `surface` in each: a lighter sheet of
+      // work in light mode, a brighter one in dark.
+      className="flex flex-col gap-1 border-border-subtle bg-surface-sunken max-lg:flex-row max-lg:items-center max-lg:overflow-x-auto max-lg:border-b max-lg:px-4 max-lg:py-2 lg:h-[calc(100vh-3rem)] lg:gap-0 lg:overflow-y-auto lg:border-r lg:py-4 lg:pr-3 lg:pl-4"
     >
       <Destination to="/" label="今天" count={todayCount} end={true} />
       <Destination to="/completed" label="已完成" count={null} end={false} />
@@ -38,7 +43,7 @@ export function SideRail() {
       <NavLink
         to="/projects"
         className={({ isActive }) =>
-          `mt-0 shrink-0 rounded-md px-2 py-1 text-2xs font-medium tracking-wide whitespace-nowrap lg:mt-6 ${
+          `mt-0 shrink-0 rounded-md px-2 py-1 font-medium whitespace-nowrap lg:mt-6 lg:text-2xs ${
             isActive ? 'text-fg' : 'text-fg-muted hover:text-fg'
           }`
         }
@@ -56,7 +61,9 @@ export function SideRail() {
             to={`/projects/${p.id}`}
             className={({ isActive }) =>
               `flex items-center gap-2 rounded-md py-1 pr-1.5 pl-2 text-sm ${
-                isActive ? 'bg-surface-sunken text-fg' : 'text-fg-muted hover:text-fg'
+                // The current page wears the WORK surface, so the rail says "you are over
+                // there" with the same two planes the layout already uses.
+                isActive ? 'bg-surface text-fg' : 'text-fg-muted hover:text-fg'
               }`
             }
           >
@@ -94,7 +101,7 @@ function Destination({
       end={end}
       className={({ isActive }) =>
         `flex shrink-0 items-center gap-2 rounded-md px-2 py-1 whitespace-nowrap ${
-          isActive ? 'bg-surface-sunken font-medium text-fg' : 'text-fg-muted hover:text-fg'
+          isActive ? 'bg-surface font-medium text-fg' : 'text-fg-muted hover:text-fg'
         }`
       }
     >

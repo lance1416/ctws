@@ -76,12 +76,20 @@ export function Layout() {
         }`}
       >
         <SideRail />
-        <main className="min-w-0 px-4 pt-5 pb-16 sm:px-6">
-          <DetailPaneContext.Provider value={setPaneOpen}>
-            <LeaveGuardContext.Provider value={leaveGuard}>
-              <Outlet />
-            </LeaveGuardContext.Provider>
-          </DetailPaneContext.Provider>
+        <main className="min-w-0 bg-surface px-4 pt-5 pb-16 sm:px-6">
+          {/* A working measure, not a reading measure, and not the full viewport either: it is
+              set so the centre column is the SAME width whether or not the detail pane is open.
+              A list that reflowed every time a task was opened would make the pane feel like a
+              modal with extra steps. Beyond it, a right-hand date column would end up a thousand
+              pixels from the title it belongs to -- which is what the fluid version actually
+              looked like. */}
+          <div className="max-w-[51rem] min-w-0">
+            <DetailPaneContext.Provider value={setPaneOpen}>
+              <LeaveGuardContext.Provider value={leaveGuard}>
+                <Outlet />
+              </LeaveGuardContext.Provider>
+            </DetailPaneContext.Provider>
+          </div>
         </main>
         {/* The pane's own box is position-fixed (it has to stay put while the centre column
             scrolls), so this placeholder is what actually takes the width out of the grid. */}

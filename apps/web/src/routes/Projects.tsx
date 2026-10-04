@@ -98,7 +98,10 @@ export function Projects() {
           <li
             key={p.id}
             role="listitem"
-            className="flex flex-wrap items-center justify-between gap-x-3"
+            // A grid, not justify-between: with the count and the delete control floating, the
+            // inbox row (which has no delete control) pushed its count further right than every
+            // other row's, and a column of numbers that does not line up is worse than none.
+            className="grid grid-cols-[minmax(0,1fr)_auto_4rem] items-center gap-x-3"
           >
             <Link
               to={`/projects/${p.id}`}
@@ -116,23 +119,27 @@ export function Projects() {
                 count of open tasks, not something counted here.
                 OUTSIDE the link on purpose: inside, it would become part of the link's
                 accessible name, and "P" would no longer be the name of the link to P. */}
-            <span data-count className="text-xs text-fg-muted">
+            <span data-count className="justify-self-end text-xs text-fg-muted">
               {p.openTasks > 0 ? `${p.openTasks} 项未完成` : '没有未完成的'}
             </span>
-            {!p.isInbox && (
-              <button
-                data-delete={p.id}
-                className="rounded-md px-2 py-1 text-sm text-fg-muted hover:text-danger disabled:opacity-50"
-                disabled={remove.isPending}
-                onClick={() => askDelete(p.id, p.name)}
-              >
-                删除
-              </button>
-            )}
+            {/* The slot is always there, empty for the inbox: the control may be absent, the
+                column may not move. */}
+            <span className="justify-self-start">
+              {!p.isInbox && (
+                <button
+                  data-delete={p.id}
+                  className="rounded-md px-2 py-1 text-sm text-fg-muted hover:text-danger disabled:opacity-50"
+                  disabled={remove.isPending}
+                  onClick={() => askDelete(p.id, p.name)}
+                >
+                  删除
+                </button>
+              )}
+            </span>
             {confirming?.id === p.id && (
               <DeleteConfirm
                 label="确认删除项目"
-                className="basis-full pb-2"
+                className="col-span-3 pb-2"
                 message={
                   confirming.tasks === null
                     ? `删除「${p.name}」…`

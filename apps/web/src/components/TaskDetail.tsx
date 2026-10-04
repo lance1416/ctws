@@ -262,10 +262,16 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
         data-detail-mode={wide ? 'pane' : 'overlay'}
         onKeyDown={onKeyDown}
         style={{ top }}
-        className={`fixed right-0 bottom-0 z-20 overflow-y-auto border-l border-border-subtle bg-surface-raised p-5 text-fg focus:outline-none ${
-          wide ? 'w-[22.5rem]' : 'w-full max-w-md'
+        className={`fixed right-0 bottom-0 z-20 overflow-y-auto border-l border-border-subtle p-5 text-fg focus:outline-none ${
+          // A COLUMN is chrome, so it wears the same sunken surface as the rail and the top bar.
+          // A LAYER is above the page, so it wears the raised one and has the scrim under it.
+          wide ? 'w-[22.5rem] bg-surface-sunken' : 'w-full max-w-md bg-surface-raised'
         }`}
       >
+        {/* The pane carries no page heading (there is already one h1 on screen, and this is
+            not a second page), but as a column that never covers anything it does need to say
+            what it is. */}
+        <p className="mb-4 text-xs text-fg-muted">任务详情</p>
         <form
           onSubmit={(e) => {
             e.preventDefault()
