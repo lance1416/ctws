@@ -146,9 +146,14 @@ test('Tab leaves the tree instead of being captured by it', async ({ page }) => 
 
   await handle(page, 'one').focus()
   await page.keyboard.press('Tab')
-  // Focus moved on to the next control and nothing was reorganised.
+  // Focus moved on and nothing was reorganised. It used to land on the NEXT ROW, because every
+  // row was its own tab stop; with the roving tabindex (D51) the tree is one stop, so Tab leaves
+  // the tree altogether. Tab is still bound to nothing either way -- that is what this pins.
   await expect(handle(page, 'one')).not.toBeFocused()
-  await expect(handle(page, 'two')).toBeFocused()
+  await expect(handle(page, 'two')).not.toBeFocused()
+  expect(await page.evaluate(() => !!document.activeElement?.closest('[data-task-tree]'))).toBe(
+    false,
+  )
   await expect(page.getByRole('listitem')).toHaveText([/one/, /two/, /three/])
   expect(moves).toEqual([])
 })

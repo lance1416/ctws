@@ -19,6 +19,13 @@ type Props = {
   scheduledOn: string | null
   /** True for a moment after a save from the detail panel: the panel closed, this says it worked. */
   saved: boolean
+  /**
+   * The roving tabindex: exactly one row in the tree carries it, so the whole tree is ONE tab
+   * stop and Tab leaves it in a single press no matter how many rows there are (D51). The arrow
+   * keys and j/k move between rows; Tab stays unbound (WCAG 2.1.2).
+   */
+  tabStop: boolean
+  onFocus: () => void
   onSetStatus: (status: TaskStatus) => void
   onToggle: () => void
   onKeyDown: (e: KeyboardEvent<HTMLButtonElement>) => void
@@ -53,6 +60,8 @@ export function TaskRow({
   dueAt,
   scheduledOn,
   saved,
+  tabStop,
+  onFocus,
   onSetStatus,
   onToggle,
   onKeyDown,
@@ -101,6 +110,10 @@ export function TaskRow({
         data-handle-id={row.id}
         {...attributes}
         {...listeners}
+        // After the spread: dnd-kit's sortable attributes include a tabIndex of their own, and
+        // letting it win would put every row back in the tab order.
+        tabIndex={tabStop ? 0 : -1}
+        onFocus={onFocus}
         onKeyDown={onKeyDown}
         style={{ width: HANDLE_PX }}
         className="flex h-8 shrink-0 cursor-grab touch-none items-center justify-center text-fg-muted opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"

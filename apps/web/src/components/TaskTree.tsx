@@ -65,6 +65,9 @@ export function TaskTree({ projectId }: { projectId: string }) {
   // appends a new task to the END of its parent's children, so that is where the input sits.
   const [adding, setAdding] = useState<{ parentId: string | null; from: string } | null>(null)
   const inFlight = useRef(false)
+  // Which row holds the tree's single tab stop. It follows focus, so Tab re-enters the tree at
+  // the row the person last used instead of jumping back to the top (the roving tabindex, D51).
+  const [activeId, setActiveId] = useState<string | null>(null)
 
   // The cache holds exactly what listProjectTasks returns; the rows are derived, never cached.
   const tasks = useQuery({ queryKey: key, queryFn: () => listProjectTasks(projectId) })
@@ -72,6 +75,16 @@ export function TaskTree({ projectId }: { projectId: string }) {
   // Looked up by id each render, so a task that has left this project (moved away) closes itself.
   const openTask = tasks.data?.find((t) => t.id === openId)
   const byId = useMemo(() => new Map((tasks.data ?? []).map((t) => [t.id, t])), [tasks.data])
+  // Falls back to the first row: the remembered row may have been deleted, moved to another
+  // project, or folded out of sight, and a tree whose only tab stop does not exist is a tree the
+  // keyboard cannot reach at all.
+  const tabId = rows.some((r) => r.id === activeId) ? activeId : (rows[0]?.id ?? null)
+
+  const focusRow = (index: number) => {
+    const row = rows[index]
+    if (!row) return
+    document.querySelector<HTMLElement>(`[data-handle-id="${row.id}"]`)?.focus()
+  }
   // The row that just saved from the panel: it says so for a moment, since the panel is gone.
   const [savedId, setSavedId] = useState<string | null>(null)
   useEffect(() => {
@@ -173,8 +186,21 @@ export function TaskTree({ projectId }: { projectId: string }) {
       )
   }
 
+  /**
+   * How plain arrows coexist with the Alt-modified pair: **the modifier is the whole
+   * distinction.** Bare `↑/↓` (and `j`/`k`) move the FOCUS between rows; `Alt+↑/↓` move the
+   * ROW itself, exactly as before. Bare `←/→` fold and unfold (the ARIA treeview behaviour);
+   * `Alt+←/→` change the depth, exactly as before. Nothing is ambiguous because the two sets
+   * are disjoint on `altKey`, and the Alt branches are tested first.
+   *
+   * Tab remains bound to nothing at all. It was a keyboard trap here once (WCAG 2.1.2) and the
+   * roving tabindex is what makes a single Tab leave the tree instead of visiting every row.
+   */
   const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>, index: number) => {
     const row = rows[index]!
+    // Bare, with no Shift either: Shift+Enter is a different command and Shift+arrow is a
+    // selection gesture we do not own.
+    const plain = !e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey
     const nextStatus = statusForKey(e, byId.get(row.id)?.status ?? 'todo')
     if (nextStatus) {
       e.preventDefault()
@@ -209,6 +235,31 @@ export function TaskTree({ projectId }: { projectId: string }) {
       // tree is a keyboard trap (WCAG 2.1.2).
       e.preventDefault()
       run(row.id, index, row.depth + (e.key === 'ArrowRight' ? 1 : -1))
+    } else if (plain && (e.key === 'ArrowDown' || e.key === 'j')) {
+      // Clamped at the ends rather than wrapping: a list that jumps from bottom to top loses the
+      // person's place silently.
+      e.preventDefault()
+      focusRow(index + 1)
+    } else if (plain && (e.key === 'ArrowUp' || e.key === 'k')) {
+      e.preventDefault()
+      focusRow(index - 1)
+    } else if (plain && e.key === 'Home') {
+      e.preventDefault()
+      focusRow(0)
+    } else if (plain && e.key === 'End') {
+      e.preventDefault()
+      focusRow(rows.length - 1)
+    } else if (plain && e.key === 'ArrowRight') {
+      e.preventDefault()
+      if (row.hasChildren && row.collapsed) toggle(row.id)
+      else if (row.hasChildren) focusRow(index + 1)
+    } else if (plain && e.key === 'ArrowLeft') {
+      e.preventDefault()
+      if (row.hasChildren && !row.collapsed) toggle(row.id)
+      else if (row.parentId) {
+        const parent = rows.findIndex((r) => r.id === row.parentId)
+        if (parent >= 0) focusRow(parent)
+      }
     }
   }
 
@@ -320,6 +371,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
     const el = document.querySelector<HTMLElement>(`[data-handle-id="${id}"]`)
     if (!el) return
     pendingReveal.current = null
+    setActiveId(id)
     el.focus()
     el.scrollIntoView({ block: 'center' })
   })
@@ -338,7 +390,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
       )}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={rows.map((r) => r.id)} strategy={verticalListSortingStrategy}>
-          <ul className="mt-4 flex flex-col">
+          <ul data-task-tree className="mt-4 flex flex-col">
             {rows.map((row, i) => (
               <Fragment key={row.id}>
                 <TaskRow
@@ -348,6 +400,8 @@ export function TaskTree({ projectId }: { projectId: string }) {
                   dueAt={byId.get(row.id)?.dueAt ?? null}
                   scheduledOn={byId.get(row.id)?.scheduledOn ?? null}
                   saved={savedId === row.id}
+                  tabStop={row.id === tabId}
+                  onFocus={() => setActiveId(row.id)}
                   onSetStatus={(status) => {
                     setError(null)
                     actions.setStatus(row.id, status)
