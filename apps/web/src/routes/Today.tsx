@@ -6,7 +6,15 @@ import { toggleDoneTarget, toggleStartTarget, useTaskActions } from '../api/task
 import { listToday } from '../api/today'
 import { StartButton, StatusButton, statusForKey } from '../components/StatusControls'
 import { TaskDetail, toLocalInput } from '../components/TaskDetail'
-import { addDays, dateHints, moveDueToDay, nextMonday, overdueLabel, ymd } from '../dueAt'
+import {
+  addDays,
+  carriedLabel,
+  dateHints,
+  moveDueToDay,
+  nextMonday,
+  overdueLabel,
+  ymd,
+} from '../dueAt'
 import { useMe } from '../useMe'
 
 const LABELS: Record<TodaySegment, string> = {
@@ -148,6 +156,7 @@ export function Today() {
           <ul className="mt-1 flex flex-col">
             {tasks.map((t) => {
               const hints = dateHints(t)
+              const carried = segment === 'today' ? carriedLabel(t.scheduledOn) : null
               return (
                 <li
                   key={t.id}
@@ -238,6 +247,74 @@ export function Today() {
                         className={exitButton}
                       >
                         取消截止
+                      </button>
+                      {/* The deadline stops being one: nobody is waiting, so it becomes a plan.
+                          Both fields change in one request, so the row cannot be left half-way. */}
+                      <span className="flex items-center gap-x-4 text-fg-muted">
+                        <span>转为排期：</span>
+                        <button
+                          type="button"
+                          onClick={() => patch(t.id, { dueAt: null, scheduledOn: todayYmd })}
+                          className={exitButton}
+                        >
+                          今天
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => patch(t.id, { dueAt: null, scheduledOn: tomorrow })}
+                          className={exitButton}
+                        >
+                          明天
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => patch(t.id, { dueAt: null, scheduledOn: nextWeek })}
+                          className={exitButton}
+                        >
+                          下周
+                        </button>
+                      </span>
+                    </div>
+                  )}
+                  {carried && (
+                    // The plan-side twin of the group above. It moves the PLAN (scheduled_on) and
+                    // never touches the deadline. Marked in words and weight, not red: a carried
+                    // plan is not a missed deadline.
+                    <div
+                      role="group"
+                      aria-label={`处理顺延：${t.title}`}
+                      className="col-span-2 col-start-2 mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm"
+                    >
+                      <span data-date-hint="carried" className="font-medium text-fg-muted">
+                        {carried}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => patch(t.id, { scheduledOn: todayYmd })}
+                        className={exitButton}
+                      >
+                        改到今天
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => patch(t.id, { scheduledOn: tomorrow })}
+                        className={exitButton}
+                      >
+                        改到明天
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => patch(t.id, { scheduledOn: nextWeek })}
+                        className={exitButton}
+                      >
+                        改到下周
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => patch(t.id, { scheduledOn: null })}
+                        className={exitButton}
+                      >
+                        清除排期
                       </button>
                     </div>
                   )}

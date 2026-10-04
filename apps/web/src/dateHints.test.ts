@@ -142,3 +142,26 @@ describe('moveDueToDay', () => {
     expect([moved.getDate(), moved.getHours(), moved.getMinutes()]).toEqual([5, 0, 15])
   })
 })
+
+describe('carriedLabel', () => {
+  it('names the planned day and says it was carried, for any day before today', async () => {
+    const { carriedLabel } = await load()
+    expect(carriedLabel('2026-09-28', NOW())).toBe('原定9月28日，已顺延')
+    expect(carriedLabel('2026-10-02', NOW())).toBe('原定昨天，已顺延')
+    expect(carriedLabel('2025-12-31', NOW())).toBe('原定2025年12月31日，已顺延')
+  })
+
+  it('stays quiet for a plan on today, later, or none', async () => {
+    const { carriedLabel } = await load()
+    expect(carriedLabel('2026-10-03', NOW())).toBeNull()
+    expect(carriedLabel('2026-10-04', NOW())).toBeNull()
+    expect(carriedLabel(null, NOW())).toBeNull()
+  })
+
+  it('judges by the local calendar day, not the instant: 00:05 today is still today', async () => {
+    const { carriedLabel } = await load()
+    const justAfterMidnight = new Date(2026, 9, 3, 0, 5)
+    expect(carriedLabel('2026-10-03', justAfterMidnight)).toBeNull()
+    expect(carriedLabel('2026-10-02', justAfterMidnight)).not.toBeNull()
+  })
+})

@@ -88,3 +88,16 @@ export function dateHints(
   const text = dueDay === today ? `今天 ${clock} 截止` : `${dayPhrase(dueDay, today)}截止`
   return { scheduled, due: { text, overdue: false } }
 }
+
+/**
+ * The mark on a plan that has been carried: planned for a day that has already passed and still
+ * not done. Null for a plan on today or later (today's own plans stay quiet) and for no plan.
+ * It names the planned day and says it was carried; it is deliberately not worded like the
+ * overdue label, since a missed plan is not a missed deadline.
+ */
+export function carriedLabel(scheduledOn: string | null, now: Date = new Date()): string | null {
+  if (!scheduledOn) return null
+  const today = ymd(now)
+  if (scheduledOn >= today) return null
+  return `原定${dayPhrase(scheduledOn, today)}，已顺延`
+}

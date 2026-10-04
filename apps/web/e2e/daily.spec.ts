@@ -605,3 +605,209 @@ test('saving from the Today panel closes it and confirms on the row', async ({ p
     '已保存',
   )
 })
+
+// ------------------------------------------------------------------ plan side: carried plans
+
+const dayOffset = (n: number) => {
+  const d = new Date()
+  d.setDate(d.getDate() + n)
+  return ymd(d)
+}
+const nextMondayYmd = () => {
+  const d = new Date()
+  d.setDate(d.getDate() + (d.getDay() === 0 ? 1 : 8 - d.getDay()))
+  return ymd(d)
+}
+const planGroup = (page: Page, title: string) =>
+  page.getByRole('group', { name: `处理顺延：${title}` })
+const rowOf = (page: Page, title: string) =>
+  page
+    .locator('li')
+    .filter({ has: page.locator('[data-today-row]') })
+    .filter({ hasText: title })
+async function todaySegment(page: Page, id: string): Promise<string> {
+  const tasks = (await (await page.request.get('/api/v1/today')).json()).tasks as {
+    id: string
+    segment: string
+  }[]
+  return tasks.find((t) => t.id === id)?.segment ?? 'absent'
+}
+
+test('a plan carried over from days ago is marked in 今天 with its day; a plan for today is not', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'P')
+  const old = dayOffset(-5)
+  await makeTask(page, pid, '搁置的计划', { scheduledOn: old })
+  await makeTask(page, pid, '昨天的计划', { scheduledOn: dayOffset(-1) })
+  await makeTask(page, pid, '今天的计划', { scheduledOn: dayOffset(0) })
+  await page.goto('/')
+  const section = page.getByRole('region', { name: '今天' })
+  await expect(section.getByText('今天的计划')).toBeVisible()
+
+  const [, m, d] = old.split('-').map(Number)
+  await expect(rowOf(page, '搁置的计划').locator('[data-date-hint="carried"]')).toHaveText(
+    `原定${m}月${d}日，已顺延`,
+  )
+  await expect(rowOf(page, '昨天的计划').locator('[data-date-hint="carried"]')).toHaveText(
+    '原定昨天，已顺延',
+  )
+  // Today's own plan carries no mark and no triage group.
+  await expect(rowOf(page, '今天的计划').locator('[data-date-hint]')).toHaveCount(0)
+  await expect(planGroup(page, '今天的计划')).toHaveCount(0)
+  await expect(page.locator('[data-date-hint="carried"]')).toHaveCount(2)
+  // Not an overdue deadline: no overdue segment, no overdue wording.
+  await expect(page.getByRole('region', { name: '逾期' })).toHaveCount(0)
+  await expect(section).not.toContainText('已逾')
+})
+
+test('改到今天 keeps the row, drops the mark, and changes only the plan', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'P')
+  const id = await makeTask(page, pid, '改到今天的', { scheduledOn: dayOffset(-3) })
+  await makeTask(page, pid, '旁观者', { scheduledOn: dayOffset(-3) })
+  await page.goto('/')
+  const res = patched(page)
+  await planGroup(page, '改到今天的').getByRole('button', { name: '改到今天' }).click()
+  expect((await res).request().postDataJSON()).toEqual({ scheduledOn: dayOffset(0) })
+
+  await expect(planGroup(page, '改到今天的')).toHaveCount(0)
+  await expect(page.getByRole('region', { name: '今天' }).getByText('改到今天的')).toBeVisible()
+  // The neighbour is untouched and still marked.
+  await expect(planGroup(page, '旁观者')).toBeVisible()
+  expect((await serverTask(page, pid, '改到今天的')).scheduledOn).toBe(dayOffset(0))
+  expect((await serverTask(page, pid, '旁观者')).scheduledOn).toBe(dayOffset(-3))
+  expect(await todaySegment(page, id)).toBe('today')
+  await page.reload()
+  await expect(page.getByText('改到今天的')).toBeVisible()
+  await expect(planGroup(page, '改到今天的')).toHaveCount(0)
+})
+
+test('改到明天 and 改到下周 move the plan and the row leaves 今天', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'P')
+  const a = await makeTask(page, pid, '改到明天的', { scheduledOn: dayOffset(-2) })
+  const b = await makeTask(page, pid, '改到下周的', { scheduledOn: dayOffset(-2) })
+  await makeTask(page, pid, '留着的', { scheduledOn: dayOffset(-2) })
+  await page.goto('/')
+
+  let res = patched(page)
+  await planGroup(page, '改到明天的').getByRole('button', { name: '改到明天' }).click()
+  expect((await res).request().postDataJSON()).toEqual({ scheduledOn: dayOffset(1) })
+  await expect(page.getByText('改到明天的')).toHaveCount(0)
+  expect((await serverTask(page, pid, '改到明天的')).scheduledOn).toBe(dayOffset(1))
+  expect(await todaySegment(page, a)).toBe('absent')
+
+  res = patched(page)
+  await planGroup(page, '改到下周的').getByRole('button', { name: '改到下周' }).click()
+  expect((await res).request().postDataJSON()).toEqual({ scheduledOn: nextMondayYmd() })
+  await expect(page.getByText('改到下周的')).toHaveCount(0)
+  expect((await serverTask(page, pid, '改到下周的')).scheduledOn).toBe(nextMondayYmd())
+  expect(await todaySegment(page, b)).toBe('absent')
+
+  // The one nobody touched is still there and still carried.
+  await expect(planGroup(page, '留着的')).toBeVisible()
+  await expect(page.locator('[data-today-row]')).toHaveCount(1)
+  await page.reload()
+  await expect(page.locator('[data-today-row]')).toHaveCount(1)
+})
+
+test('清除排期 removes the row from 今天 and the server holds no plan', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'P')
+  const id = await makeTask(page, pid, '不排了', { scheduledOn: dayOffset(-4) })
+  await makeTask(page, pid, '另一个', { scheduledOn: dayOffset(-4) })
+  await page.goto('/')
+  const res = patched(page)
+  await planGroup(page, '不排了').getByRole('button', { name: '清除排期' }).click()
+  expect((await res).request().postDataJSON()).toEqual({ scheduledOn: null })
+  await expect(page.getByText('不排了')).toHaveCount(0)
+
+  const t = await serverTask(page, pid, '不排了')
+  expect(t.scheduledOn).toBeNull()
+  expect(t.status).toBe('backlog') // the task still exists, untouched: only the plan went
+  expect(await todaySegment(page, id)).toBe('absent')
+  await page.reload()
+  await expect(page.getByText('不排了')).toHaveCount(0)
+  await expect(page.getByText('另一个')).toBeVisible()
+})
+
+test('a carried plan is not a deadline: clearing the plan leaves dueAt alone', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'P')
+  const due = new Date()
+  due.setHours(23, 0, 0, 0)
+  await makeTask(page, pid, '计划和今晚截止', {
+    scheduledOn: dayOffset(-2),
+    dueAt: due.toISOString(),
+  })
+  await page.goto('/')
+  await expect(planGroup(page, '计划和今晚截止')).toBeVisible()
+  const res = patched(page)
+  await planGroup(page, '计划和今晚截止').getByRole('button', { name: '清除排期' }).click()
+  await res
+  const t = await serverTask(page, pid, '计划和今晚截止')
+  expect(t.scheduledOn).toBeNull()
+  expect(new Date(t.dueAt!).getTime()).toBe(due.getTime())
+  // It is still due today, so it stays on the list, no longer marked.
+  await expect(page.getByText('计划和今晚截止')).toBeVisible()
+  await expect(planGroup(page, '计划和今晚截止')).toHaveCount(0)
+})
+
+test('转为排期 turns an overdue deadline into a plan: out of 逾期, into 今天, dueAt gone', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'P')
+  const id = await makeTask(page, pid, '没人在等', { dueAt: dueAgo(3) })
+  await makeTask(page, pid, '转到明天', { dueAt: dueAgo(3) })
+  await makeTask(page, pid, '还逾期', { dueAt: dueAgo(3) })
+  await page.goto('/')
+  const overdue = page.getByRole('region', { name: '逾期' })
+  await expect(overdue.getByText('已逾 3 天')).toHaveCount(3)
+  expect(await todaySegment(page, id)).toBe('overdue')
+
+  const group = (title: string) => page.getByRole('group', { name: `处理逾期：${title}` })
+  let res = patched(page)
+  await group('没人在等').getByRole('button', { name: '今天', exact: true }).click()
+  // One request carries both halves of the change.
+  expect((await res).request().postDataJSON()).toEqual({ dueAt: null, scheduledOn: dayOffset(0) })
+
+  await expect(overdue.getByText('没人在等')).toHaveCount(0)
+  await expect(page.getByRole('region', { name: '今天' }).getByText('没人在等')).toBeVisible()
+  const t = await serverTask(page, pid, '没人在等')
+  expect(t.dueAt).toBeNull()
+  expect(t.scheduledOn).toBe(dayOffset(0))
+  expect(await todaySegment(page, id)).toBe('today')
+  // A plan for today is quiet: no carried mark.
+  await expect(planGroup(page, '没人在等')).toHaveCount(0)
+  await page.reload()
+  await expect(page.getByRole('region', { name: '今天' }).getByText('没人在等')).toBeVisible()
+
+  // Demoting to tomorrow leaves the list altogether; the neighbour stays overdue.
+  res = patched(page)
+  await group('转到明天').getByRole('button', { name: '明天', exact: true }).click()
+  expect((await res).request().postDataJSON()).toEqual({ dueAt: null, scheduledOn: dayOffset(1) })
+  await expect(page.getByText('转到明天')).toHaveCount(0)
+  const t2 = await serverTask(page, pid, '转到明天')
+  expect(t2.dueAt).toBeNull()
+  expect(t2.scheduledOn).toBe(dayOffset(1))
+  expect(new Date((await serverTask(page, pid, '还逾期')).dueAt!).getTime()).toBeLessThan(
+    Date.now(),
+  )
+  await expect(overdue.getByText('还逾期')).toBeVisible()
+})
+
+test('the plan actions are not offered on an overdue row or on a plan for today', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'P')
+  await makeTask(page, pid, '逾期兼旧计划', { dueAt: dueAgo(2), scheduledOn: dayOffset(-3) })
+  await makeTask(page, pid, '今天计划', { scheduledOn: dayOffset(0) })
+  await page.goto('/')
+  await expect(page.getByText('今天计划')).toBeVisible()
+  await expect(page.getByRole('button', { name: '改到今天' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: '清除排期' })).toHaveCount(0)
+})
