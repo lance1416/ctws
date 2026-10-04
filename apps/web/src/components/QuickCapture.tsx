@@ -4,6 +4,8 @@ import { Link, useLocation } from 'react-router-dom'
 import { inboxOf, listProjects } from '../api/projects'
 import { createTask } from '../api/tasks'
 import { refreshTasks } from '../api/taskCache'
+import { isBareKey, isTypingTarget } from '../shortcuts/keys'
+import { isOverlayOpen } from './overlayState'
 
 // One input on every page: the destination is always the inbox, so there is nothing to choose.
 export function QuickCapture() {
@@ -35,12 +37,13 @@ export function QuickCapture() {
     capture.mutate(t)
   }
 
-  // `/` jumps to the capture box from anywhere that is not already a text field.
+  // `/` jumps to the capture box from anywhere that is not already a text field. The guard is
+  // now shared with the other document-level keys (`f`, `?`, the `g` chords) rather than
+  // duplicated, and it also stands down while an overlay owns the keyboard.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return
-      const t = e.target as HTMLElement | null
-      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return
+      if (e.key !== '/' || !isBareKey(e)) return
+      if (isTypingTarget(e.target) || isOverlayOpen()) return
       e.preventDefault()
       input.current?.focus()
     }

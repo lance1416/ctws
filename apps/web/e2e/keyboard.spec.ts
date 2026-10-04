@@ -226,3 +226,61 @@ test('Alt arrows still move and reparent rows, and Enter still opens the detail'
   await page.keyboard.press('s')
   await expect(row(page, 'r1').getByRole('img', { name: '进行中' })).toBeVisible()
 })
+
+test('the ? overlay lists the keys, closes on Escape and on a click outside', async ({ page }) => {
+  await registerFreshUser(page)
+
+  await page.keyboard.press('?')
+  const dialog = page.getByRole('dialog', { name: '键盘快捷键' })
+  await expect(dialog).toBeVisible()
+  // The keys it must actually name, not merely "a dialog appeared".
+  for (const key of ['/', 'f', '?', 'g t', 'Alt+Enter', 'Shift+Enter', 's', 'x']) {
+    // `.first()`: `s` and `x` are listed twice, once for the tree and once for the today page.
+    await expect(dialog.getByText(key, { exact: true }).first()).toBeVisible()
+  }
+
+  await page.keyboard.press('Escape')
+  await expect(dialog).toHaveCount(0)
+
+  await page.keyboard.press('?')
+  await expect(dialog).toBeVisible()
+  // Outside the panel: the backdrop, at the very top of the viewport.
+  await page.mouse.click(5, 5)
+  await expect(dialog).toHaveCount(0)
+
+  // Typed into a field it is a question mark, not a shortcut.
+  await page.getByLabel('捕获').fill('')
+  await page.getByLabel('捕获').press('?')
+  await expect(dialog).toHaveCount(0)
+  await expect(page.getByLabel('捕获')).toHaveValue('?')
+})
+
+test('g chords jump between the four destinations and not while typing', async ({ page }) => {
+  await registerFreshUser(page)
+  const inbox = await page.request.get('/api/v1/projects')
+  const { projects } = (await inbox.json()) as { projects: { id: string; name: string }[] }
+  const inboxId = projects.find((p) => p.name === 'Inbox')!.id
+
+  await page.keyboard.press('g')
+  await page.keyboard.press('p')
+  await expect(page).toHaveURL(/\/projects$/)
+
+  await page.keyboard.press('g')
+  await page.keyboard.press('d')
+  await expect(page).toHaveURL(/\/completed$/)
+
+  await page.keyboard.press('g')
+  await page.keyboard.press('i')
+  await expect(page).toHaveURL(`/projects/${inboxId}`)
+
+  await page.keyboard.press('g')
+  await page.keyboard.press('t')
+  await expect(page).toHaveURL(/\/$/)
+
+  // In a text field, `g` then `p` is two letters of a word.
+  await page.getByLabel('捕获').fill('')
+  await page.getByLabel('捕获').press('g')
+  await page.getByLabel('捕获').press('p')
+  await expect(page).toHaveURL(/\/$/)
+  await expect(page.getByLabel('捕获')).toHaveValue('gp')
+})
