@@ -4,6 +4,7 @@ import {
   createTaskBody,
   moveTaskBody,
   projectResponse,
+  searchTaskResponse,
   taskEventResponse,
   taskResponse,
   todayTaskResponse,
@@ -26,6 +27,7 @@ import {
 import { InboxNotDeletableError, TaskNotFoundError } from './errors'
 import { DEFAULT_EVENT_LIMIT, InvalidCursorError, listTaskEvents, MAX_EVENT_LIMIT } from './events'
 import { listCompleted, type CompletedTask } from './completed'
+import { searchTasks, type SearchTask } from './search'
 import { listToday, type TodayTask } from './today'
 import { CycleError, InvalidNeighbourError, moveTask } from './move'
 import {
@@ -87,8 +89,20 @@ function toCompletedResponse(t: CompletedTask): z.infer<typeof completedTaskResp
   }
 }
 
+function toSearchResponse(t: SearchTask): z.infer<typeof searchTaskResponse> {
+  return {
+    ...toTaskResponse(t),
+    projectName: t.projectName,
+    parentTitle: t.parentTitle,
+    projectArchived: t.projectArchived,
+  }
+}
+
 const idParams = z.object({ id: z.uuid() }).strict()
 const listQuery = z.object({ archived: z.enum(['true', 'false']).optional() }).strict()
+// Trimmed and non-empty: a blank query would otherwise match every task in the workspace, which
+// is a full table scan dressed up as a search result.
+const searchQuery = z.object({ q: z.string().trim().min(1).max(200) }).strict()
 const eventsQuery = z
   .object({
     cursor: z.string().max(256).optional(),
@@ -145,6 +159,21 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
       const user = authedUser(req)
       const rows = await listCompleted(app.db, user.workspaceId, user.timezone)
       return { tasks: rows.map(toCompletedResponse) }
+    },
+  )
+
+  typed.get(
+    '/search',
+    {
+      preHandler: requireUser,
+      schema: {
+        querystring: searchQuery,
+        response: { 200: z.object({ tasks: z.array(searchTaskResponse) }).strict() },
+      },
+    },
+    async (req) => {
+      const rows = await searchTasks(app.db, authedUser(req).workspaceId, req.query.q)
+      return { tasks: rows.map(toSearchResponse) }
     },
   )
 

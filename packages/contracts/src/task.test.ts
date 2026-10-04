@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   createTaskBody,
   moveTaskBody,
+  searchTaskResponse,
   taskStatus,
   TASK_EVENT_TYPES,
   TASK_STATUSES,
@@ -139,5 +140,57 @@ describe('TODAY_SEGMENTS', () => {
   // Pins the display order; the SQL CASE in listToday hard-codes the same precedence.
   it('is exactly the three segments in display order', () => {
     expect([...TODAY_SEGMENTS]).toEqual(['overdue', 'today', 'in_progress'])
+  })
+})
+
+describe('searchTaskResponse', () => {
+  const base = {
+    id: '00000000-0000-7000-8000-000000000001',
+    projectId: '00000000-0000-7000-8000-000000000002',
+    parentId: null,
+    title: 'a',
+    notes: null,
+    status: 'done',
+    scheduledOn: null,
+    dueAt: null,
+    rank: 'm',
+    manualProgress: null,
+    completedAt: null,
+    createdAt: '2026-10-04T00:00:00Z',
+    updatedAt: '2026-10-04T00:00:00Z',
+  }
+
+  it('carries the context a result needs to be actionable: project, parent, archived', () => {
+    const parsed = searchTaskResponse.parse({
+      ...base,
+      projectName: 'Alpha',
+      parentTitle: '父任务',
+      projectArchived: true,
+    })
+    expect(parsed.projectName).toBe('Alpha')
+    expect(parsed.parentTitle).toBe('父任务')
+    expect(parsed.projectArchived).toBe(true)
+  })
+
+  it('requires the archived flag rather than defaulting it', () => {
+    // A default of false would make every archived result claim to be live work, and nothing
+    // would fail -- the client would simply stop saying 已归档.
+    const { success } = searchTaskResponse.safeParse({
+      ...base,
+      projectName: 'Alpha',
+      parentTitle: null,
+    })
+    expect(success).toBe(false)
+  })
+
+  it('accepts a finished task: search is not filtered by status', () => {
+    const parsed = searchTaskResponse.parse({
+      ...base,
+      status: 'cancelled',
+      projectName: 'Alpha',
+      parentTitle: null,
+      projectArchived: false,
+    })
+    expect(parsed.status).toBe('cancelled')
   })
 })

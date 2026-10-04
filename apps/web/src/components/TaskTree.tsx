@@ -10,8 +10,10 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import type { MoveTaskBody, TaskResponse } from '@ctws/contracts'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Fragment, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { createTask, listProjectTasks, moveTask } from '../api/tasks'
 import { refreshTasks, tasksKey } from '../api/taskCache'
+import { ancestorsOf } from '../tree/ancestors'
 import { flatten } from '../tree/flatten'
 import { loadCollapsed, saveCollapsed } from '../tree/collapse'
 import { MAX_DEPTH, planDrop, type DropPlan } from '../tree/drop'
@@ -273,6 +275,54 @@ export function TaskTree({ projectId }: { projectId: string }) {
     setCollapsed(next)
     saveCollapsed(projectId, next)
   }
+
+  /**
+   * Arriving from search: `?reveal=<id>` means "this task, visible". Routing to the project is
+   * only half of it -- the task may sit several folds deep, and landing on a collapsed parent is
+   * the single most likely way search lands wrong -- so every ancestor is unfolded first and the
+   * row then takes focus, which also makes it the tree's tab stop.
+   *
+   * The parameter is dropped once consumed (`replace`, so Back still goes where it did): leaving
+   * it in the URL would re-unfold the path every time this component re-rendered, fighting the
+   * person who just folded it again.
+   */
+  const [params, setParams] = useSearchParams()
+  const reveal = params.get('reveal')
+  const pendingReveal = useRef<string | null>(null)
+  useEffect(() => {
+    if (!reveal || !tasks.data) return
+    // Not in this project: leave the parameter alone rather than claiming a focus target that
+    // does not exist. A wrong id is a dead link, not a hijacked focus.
+    if (!tasks.data.some((t) => t.id === reveal)) return
+    const chain = ancestorsOf(tasks.data, reveal)
+    if (chain.some((id) => collapsed.has(id))) {
+      const next = new Set(collapsed)
+      for (const id of chain) next.delete(id)
+      setCollapsed(next)
+      saveCollapsed(projectId, next)
+    }
+    pendingReveal.current = reveal
+    setParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.delete('reveal')
+        return next
+      },
+      { replace: true },
+    )
+  }, [reveal, tasks.data, collapsed, projectId, setParams])
+
+  // The row only exists after the unfold has rendered, so the focus waits for that render rather
+  // than running inside the effect above.
+  useEffect(() => {
+    const id = pendingReveal.current
+    if (!id) return
+    const el = document.querySelector<HTMLElement>(`[data-handle-id="${id}"]`)
+    if (!el) return
+    pendingReveal.current = null
+    el.focus()
+    el.scrollIntoView({ block: 'center' })
+  })
 
   return (
     <>

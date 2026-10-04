@@ -5,6 +5,7 @@ import { apiFetch } from '../api'
 import { useMe } from '../useMe'
 import { LeaveGuardContext, type LeaveGuard } from './leaveGuard'
 import { QuickCapture } from './QuickCapture'
+import { Shortcuts } from './Shortcuts'
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `rounded-md px-3 py-1.5 text-sm ${
@@ -49,10 +50,11 @@ export function Layout() {
             </NavLink>
           </nav>
           <QuickCapture />
-          <div className="order-2 ml-auto flex items-center gap-3 text-sm sm:order-3 lg:col-start-3 lg:row-start-1 lg:justify-self-end">
+          <div className="order-2 ml-auto flex items-center gap-1 text-sm sm:order-3 lg:col-start-3 lg:row-start-1 lg:justify-self-end">
+            <Shortcuts />
             <span
               data-testid="current-user"
-              className="max-w-[16ch] truncate text-fg-muted max-xl:sr-only"
+              className="ml-2 max-w-[16ch] truncate text-fg-muted max-xl:sr-only"
             >
               {me.data.email}
             </span>

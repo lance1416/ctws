@@ -146,6 +146,27 @@ export const completedTaskResponse = taskResponse
   .strict()
 export type CompletedTaskResponse = z.infer<typeof completedTaskResponse>
 
+// ---- search ----
+
+/**
+ * Newest 50 matches. No paging: search is "take me to the one I mean", and a query that returns
+ * more than fifty rows is better retyped than scrolled.
+ */
+export const SEARCH_LIMIT = 50
+
+/** A match carries enough context to act on without opening it: project, parent, status. */
+export const searchTaskResponse = taskResponse
+  .extend({
+    projectName: z.string(),
+    // Same breadcrumb as the today and completed lists: `project > parent`.
+    parentTitle: z.string().nullable(),
+    // Archived projects ARE searched (archiving is not deletion), so a result says so rather
+    // than presenting a set-aside task as live work.
+    projectArchived: z.boolean(),
+  })
+  .strict()
+export type SearchTaskResponse = z.infer<typeof searchTaskResponse>
+
 // ---- events ----
 
 // There is intentionally no event type for reordering: a pure rank change is not logged
