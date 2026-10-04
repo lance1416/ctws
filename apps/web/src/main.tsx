@@ -8,6 +8,13 @@ import { Login } from './routes/Login'
 import { Project } from './routes/Project'
 import { Projects } from './routes/Projects'
 import { Today } from './routes/Today'
+// IBM Plex Sans, self-hosted and LATIN SUBSET ONLY: no Google Fonts link, because this app is
+// private and self-hosted and has no business making a third-party request on every load. Three
+// weights (body / emphasis / heading), ~24 KB of woff2 each. Chinese is served by the system
+// face, which is why no CJK subset is imported here (see styles.css).
+import '@fontsource/ibm-plex-sans/latin-400.css'
+import '@fontsource/ibm-plex-sans/latin-500.css'
+import '@fontsource/ibm-plex-sans/latin-600.css'
 import './styles.css'
 
 const router = createBrowserRouter([
