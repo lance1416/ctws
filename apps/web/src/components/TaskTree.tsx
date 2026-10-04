@@ -18,6 +18,7 @@ import { flatten } from '../tree/flatten'
 import { loadCollapsed, saveCollapsed } from '../tree/collapse'
 import { MAX_DEPTH, planDrop, type DropPlan } from '../tree/drop'
 import { useTaskActions } from '../api/taskActions'
+import { useShortcutsEnabled } from '../shortcuts/enabled'
 import { TaskDetail } from './TaskDetail'
 import { statusForKey } from './StatusControls'
 import { NewTaskInput } from './NewTaskInput'
@@ -68,6 +69,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
   // Which row holds the tree's single tab stop. It follows focus, so Tab re-enters the tree at
   // the row the person last used instead of jumping back to the top (the roving tabindex, D51).
   const [activeId, setActiveId] = useState<string | null>(null)
+  const singleKeys = useShortcutsEnabled()
 
   // The cache holds exactly what listProjectTasks returns; the rows are derived, never cached.
   const tasks = useQuery({ queryKey: key, queryFn: () => listProjectTasks(projectId) })
@@ -201,7 +203,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
     // Bare, with no Shift either: Shift+Enter is a different command and Shift+arrow is a
     // selection gesture we do not own.
     const plain = !e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey
-    const nextStatus = statusForKey(e, byId.get(row.id)?.status ?? 'todo')
+    const nextStatus = singleKeys ? statusForKey(e, byId.get(row.id)?.status ?? 'todo') : null
     if (nextStatus) {
       e.preventDefault()
       setError(null)
@@ -235,12 +237,12 @@ export function TaskTree({ projectId }: { projectId: string }) {
       // tree is a keyboard trap (WCAG 2.1.2).
       e.preventDefault()
       run(row.id, index, row.depth + (e.key === 'ArrowRight' ? 1 : -1))
-    } else if (plain && (e.key === 'ArrowDown' || e.key === 'j')) {
+    } else if (plain && (e.key === 'ArrowDown' || (singleKeys && e.key === 'j'))) {
       // Clamped at the ends rather than wrapping: a list that jumps from bottom to top loses the
       // person's place silently.
       e.preventDefault()
       focusRow(index + 1)
-    } else if (plain && (e.key === 'ArrowUp' || e.key === 'k')) {
+    } else if (plain && (e.key === 'ArrowUp' || (singleKeys && e.key === 'k'))) {
       e.preventDefault()
       focusRow(index - 1)
     } else if (plain && e.key === 'Home') {

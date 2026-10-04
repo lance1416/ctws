@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { inboxOf, listProjects } from '../api/projects'
 import { CHORD_TIMEOUT_MS, JUMP_PREFIX, resolveJump, type JumpTarget } from '../shortcuts/chords'
+import { useShortcutsEnabled } from '../shortcuts/enabled'
 import { isBareKey, isTypingTarget } from '../shortcuts/keys'
 import { isOverlayOpen } from './overlayState'
 import { SearchDialog } from './SearchDialog'
@@ -25,6 +26,7 @@ const hint =
 export function Shortcuts() {
   const [search, setSearch] = useState(false)
   const [help, setHelp] = useState(false)
+  const enabled = useShortcutsEnabled()
   const navigate = useNavigate()
   // Shares the ['projects'] cache entry with every other reader, so `g i` costs no extra request.
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
@@ -37,6 +39,7 @@ export function Shortcuts() {
   const inboxId = inbox?.id
 
   useEffect(() => {
+    if (!enabled) return
     const jump = (target: JumpTarget) => {
       if (target === 'today') navigate('/')
       else if (target === 'projects') navigate('/projects')
@@ -83,7 +86,7 @@ export function Shortcuts() {
     }
     // Deliberately NOT re-run on every render: a re-render between `g` and its second key would
     // run the cleanup and forget the pending chord.
-  }, [inboxId, navigate])
+  }, [enabled, inboxId, navigate])
 
   return (
     <>

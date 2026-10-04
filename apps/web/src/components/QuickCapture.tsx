@@ -4,6 +4,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { inboxOf, listProjects } from '../api/projects'
 import { createTask } from '../api/tasks'
 import { refreshTasks } from '../api/taskCache'
+import { useShortcutsEnabled } from '../shortcuts/enabled'
 import { isBareKey, isTypingTarget } from '../shortcuts/keys'
 import { isOverlayOpen } from './overlayState'
 
@@ -16,6 +17,7 @@ export function QuickCapture() {
   // page (this box is in the layout) and show up twice wherever that task is also listed.
   const [landed, setLanded] = useState(false)
   const { pathname } = useLocation()
+  const shortcuts = useShortcutsEnabled()
   useEffect(() => setLanded(false), [pathname])
   const input = useRef<HTMLInputElement>(null)
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
@@ -41,6 +43,7 @@ export function QuickCapture() {
   // now shared with the other document-level keys (`f`, `?`, the `g` chords) rather than
   // duplicated, and it also stands down while an overlay owns the keyboard.
   useEffect(() => {
+    if (!shortcuts) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== '/' || !isBareKey(e)) return
       if (isTypingTarget(e.target) || isOverlayOpen()) return
@@ -49,7 +52,7 @@ export function QuickCapture() {
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [])
+  }, [shortcuts])
 
   return (
     <>

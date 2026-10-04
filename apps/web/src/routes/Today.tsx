@@ -15,6 +15,7 @@ import {
   overdueLabel,
   ymd,
 } from '../dueAt'
+import { useShortcutsEnabled } from '../shortcuts/enabled'
 import { useMe } from '../useMe'
 
 const LABELS: Record<TodaySegment, string> = {
@@ -40,6 +41,7 @@ export function Today() {
   const openTask = rows.find((t) => t.id === openId)
 
   const [error, setError] = useState<string | null>(null)
+  const singleKeys = useShortcutsEnabled()
   const actions = useTaskActions(setError)
   // The row that just saved from the panel: it says so for a moment, since the panel is gone.
   const [savedId, setSavedId] = useState<string | null>(null)
@@ -80,7 +82,8 @@ export function Today() {
     actions.patch(id, body, clearPlan)
   }
   const onRowKeyDown = (e: KeyboardEvent, id: string, status: TaskStatus) => {
-    const next = statusForKey(e, status)
+    // `s` and `x` are single-key shortcuts, so they answer to the same off switch as `/` and `f`.
+    const next = singleKeys ? statusForKey(e, status) : null
     if (!next) return
     e.preventDefault()
     setStatus(id, next)

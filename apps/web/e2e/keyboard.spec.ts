@@ -284,3 +284,55 @@ test('g chords jump between the four destinations and not while typing', async (
   await expect(page).toHaveURL(/\/$/)
   await expect(page.getByLabel('捕获')).toHaveValue('gp')
 })
+
+test('the single-key shortcuts can be turned off, and stay off after a reload', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const url = await startProject(page, 'Off')
+  await seed(page, url, flat(3))
+
+  // The switch lives in the overlay, which also has a button: with the keys off, `?` must not be
+  // the only way back to the setting that turned them off.
+  await page.getByRole('button', { name: '键盘快捷键' }).click()
+  const toggle = page.getByRole('checkbox', { name: /启用单键快捷键/ })
+  await expect(toggle).toBeChecked()
+  await toggle.uncheck()
+  await page.keyboard.press('Escape')
+
+  await page.keyboard.press('f')
+  await expect(page.getByRole('textbox', { name: '搜索任务' })).toHaveCount(0)
+  await page.keyboard.press('?')
+  await expect(page.getByRole('dialog', { name: '键盘快捷键' })).toHaveCount(0)
+  await page.keyboard.press('g')
+  await page.keyboard.press('p')
+  await expect(page).toHaveURL(new RegExp(`/projects/${url.split('/').pop()!}`))
+
+  await page.getByRole('heading', { name: 'Off' }).click()
+  await page.keyboard.press('/')
+  await expect(page.getByLabel('捕获')).not.toBeFocused()
+
+  // And on a row: `s` no longer starts the task, but the widget keys still work, because a
+  // treeview with no arrow keys and one tab stop would be unreachable.
+  await handle(page, 'r0').focus()
+  await page.keyboard.press('s')
+  await expect(row(page, 'r0').getByRole('img', { name: '进行中' })).toHaveCount(0)
+  await page.keyboard.press('ArrowDown')
+  await expect(handle(page, 'r1')).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(page.getByRole('dialog')).toBeVisible()
+  await page.keyboard.press('Escape')
+
+  // Survives a reload: it is stored, not just held in React state.
+  await page.reload()
+  await expect(page.getByRole('listitem')).toHaveCount(3)
+  await page.keyboard.press('f')
+  await expect(page.getByRole('textbox', { name: '搜索任务' })).toHaveCount(0)
+
+  // And it can be turned back on again through the same button.
+  await page.getByRole('button', { name: '键盘快捷键' }).click()
+  await page.getByRole('checkbox', { name: /启用单键快捷键/ }).check()
+  await page.keyboard.press('Escape')
+  await page.keyboard.press('f')
+  await expect(page.getByRole('textbox', { name: '搜索任务' })).toBeFocused()
+})
