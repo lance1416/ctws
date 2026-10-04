@@ -73,9 +73,8 @@
   --color-plan: oklch(51% 0.105 200);
   --color-deadline: oklch(53% 0.145 55);
   --color-missed: oklch(51% 0.19 25);
-  /* `overdue` and `danger` are the same red as `missed`; they are kept as separate names because
-     they mean different things (a deadline that has gone / an action that destroys data). */
-  --color-overdue: oklch(51% 0.19 25);
+  /* `danger` is the same red as `missed` but a separate name on purpose: they mean different
+     things (a deadline that has gone / an action that destroys data) and could diverge. */
   --color-danger: oklch(51% 0.19 25);
   --color-danger-fg: oklch(99% 0 0);
   /* Categorical project identity. Six hues, evenly spread, at one lightness so no project reads
@@ -106,7 +105,6 @@
     --color-plan: oklch(76% 0.11 200);
     --color-deadline: oklch(78% 0.13 55);
     --color-missed: oklch(72% 0.15 25);
-    --color-overdue: oklch(72% 0.15 25);
     --color-danger: oklch(72% 0.15 25);
     --color-danger-fg: oklch(18% 0.012 265);
     --color-project-1: oklch(72% 0.13 250);

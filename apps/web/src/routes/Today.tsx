@@ -126,7 +126,9 @@ export function Today() {
 
   return (
     <>
-      <div className="flex items-baseline justify-between gap-4">
+      {/* The date sits NEXT TO the heading, not pushed to the far right of the column: on a
+          wide workbench `justify-between` left it a thousand pixels from the word it dates. */}
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <h1 id="today-heading" tabIndex={-1} className="text-2xl font-semibold focus:outline-none">
           今天
         </h1>
@@ -192,14 +194,15 @@ export function Today() {
                   <span className="col-start-3 row-start-1 flex items-center gap-2">
                     {segment === 'overdue' && t.dueAt ? (
                       <span
-                        className="text-sm font-medium text-overdue"
+                        className="text-sm font-medium text-missed"
                         title={toLocalInput(t.dueAt).replace('T', ' ')}
                       >
                         {overdueLabel(t.dueAt)}
                       </span>
                     ) : (
                       hints.due && (
-                        <span className="text-sm tabular-nums text-fg-muted">{hints.due.text}</span>
+                        // Warm: this is a deadline. The plan hints below are cool.
+                        <span className="text-sm tabular-nums text-deadline">{hints.due.text}</span>
                       )
                     )}
                     {savedId === t.id && (
@@ -226,7 +229,7 @@ export function Today() {
                       className="col-span-2 col-start-2 mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm"
                     >
                       {hints.scheduled && (
-                        <span data-date-hint="scheduled" className="text-fg-muted">
+                        <span data-date-hint="scheduled" className="text-plan">
                           {hints.scheduled}
                         </span>
                       )}
@@ -288,7 +291,7 @@ export function Today() {
                       aria-label={`处理顺延：${t.title}`}
                       className="col-span-2 col-start-2 mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm"
                     >
-                      <span data-date-hint="carried" className="font-medium text-fg-muted">
+                      <span data-date-hint="carried" className="font-medium text-plan">
                         {carried}
                       </span>
                       <button

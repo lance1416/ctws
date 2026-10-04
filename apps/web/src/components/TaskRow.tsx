@@ -160,13 +160,17 @@ export function TaskRow({
       {hints.due && (
         <span
           data-date-hint={hints.due.overdue ? 'overdue' : 'due'}
-          className={`ml-3 shrink-0 text-sm tabular-nums ${hints.due.overdue ? 'font-medium text-overdue' : 'text-fg-muted'}`}
+          // The one colour decision of the redesign that is not decoration: a PLAN (cool) and
+          // a DEADLINE (warm) are two different promises, and they used to be the same grey.
+          // Colour is the second channel only -- the words still say which is which, and the
+          // marker still carries status -- so nothing here depends on seeing hue (WCAG 1.4.1).
+          className={`ml-3 shrink-0 text-sm tabular-nums ${hints.due.overdue ? 'font-medium text-missed' : 'text-deadline'}`}
         >
           {hints.due.text}
         </span>
       )}
       {hints.scheduled && (
-        <span data-date-hint="scheduled" className="ml-3 shrink-0 text-sm text-fg-muted">
+        <span data-date-hint="scheduled" className="ml-3 shrink-0 text-sm text-plan">
           {hints.scheduled}
         </span>
       )}
