@@ -1,8 +1,13 @@
-import type { ProjectResponse } from '@ctws/contracts'
+import type { ProjectListItem, ProjectResponse } from '@ctws/contracts'
 import { apiFetch } from '../api'
 
-export async function listProjects(): Promise<ProjectResponse[]> {
-  return (await apiFetch<{ projects: ProjectResponse[] }>('/projects')).projects
+/**
+ * Every reader of the ['projects'] cache entry goes through this one function, so they all see
+ * the same shape -- including `openTasks`, which the server counts in the same query that lists
+ * the projects. Nothing here recounts anything client-side.
+ */
+export async function listProjects(): Promise<ProjectListItem[]> {
+  return (await apiFetch<{ projects: ProjectListItem[] }>('/projects')).projects
 }
 
 export function createProject(body: { name: string }): Promise<ProjectResponse> {
@@ -17,6 +22,6 @@ export function deleteProject(id: string): Promise<void> {
  * The quick-capture destination. Found by the `isInbox` flag, never by name: the name is just a
  * label the user may change, and a name match would also break under any other language.
  */
-export function inboxOf(projects: ProjectResponse[]): ProjectResponse | undefined {
+export function inboxOf<T extends ProjectResponse>(projects: T[]): T | undefined {
   return projects.find((p) => p.isInbox)
 }

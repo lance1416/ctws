@@ -13,6 +13,13 @@ export const INBOX_NAME = 'Inbox'
 export type Project = typeof projects.$inferSelect
 
 /**
+ * A project as the LIST returns it: the row plus `openTasks`, the number of its tasks that are
+ * neither finished, cancelled nor deleted. It closes D47 (the project list showed nothing but
+ * names) and it is what the left rail puts beside each destination.
+ */
+export type ProjectListRow = Project & { openTasks: number }
+
+/**
  * Raised when a project does not exist, is soft-deleted, or belongs to another workspace. The
  * three cases are deliberately one error: telling them apart would let a caller probe which
  * project ids exist in workspaces they cannot see.
@@ -38,20 +45,37 @@ export async function listProjects(
   q: Queryable,
   workspaceId: string,
   opts: { archived: boolean },
-): Promise<Project[]> {
-  return (
-    q
-      .select()
-      .from(projects)
-      .where(
-        and(
-          visible(workspaceId),
-          opts.archived ? isNotNull(projects.archivedAt) : isNull(projects.archivedAt),
-        ),
-      )
-      // Inbox first, then the user's own order. `desc` on a boolean puts true first.
-      .orderBy(desc(projects.isInbox), asc(projects.rank), asc(projects.id))
-  )
+): Promise<ProjectListRow[]> {
+  const rows = await q
+    .select({
+      project: projects,
+      // A correlated subquery, so this is still ONE round trip for the whole list -- the same
+      // rule `listToday` and `listCompleted` hold to. Counting in the client would mean
+      // fetching every task of every project just to render a number.
+      // "Open" is defined by exclusion: a status this app has not invented yet is open until
+      // someone says otherwise, which is the safe direction for a count of outstanding work.
+      // Written with literal, ALIASED table names rather than `${tasks.projectId}` and the
+      // like (the style the raw queries in today.ts and completed.ts already use): drizzle
+      // interpolates a column reference UNQUALIFIED, so `${tasks.projectId} = ${projects.id}`
+      // renders as `"project_id" = "id"`, where `"id"` binds to the subquery's own `tasks`
+      // row. That correlates a task to itself, is always false, and silently counts zero.
+      openTasks: sql<number>`(
+        select count(*) from tasks open_t
+        where open_t.project_id = projects.id
+          and open_t.deleted_at is null
+          and open_t.status not in ('done', 'cancelled')
+      )`.mapWith(Number),
+    })
+    .from(projects)
+    .where(
+      and(
+        visible(workspaceId),
+        opts.archived ? isNotNull(projects.archivedAt) : isNull(projects.archivedAt),
+      ),
+    )
+    // Inbox first, then the user's own order. `desc` on a boolean puts true first.
+    .orderBy(desc(projects.isInbox), asc(projects.rank), asc(projects.id))
+  return rows.map(({ project, openTasks }) => ({ ...project, openTasks }))
 }
 
 /** Creates a project appended after the workspace's last one. The rank is never client-supplied. */

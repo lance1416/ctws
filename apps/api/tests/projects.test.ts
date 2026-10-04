@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
-import { appWithUser, createProject, type TaskCtx } from './helpers/tasks'
+import { appWithUser, createProject, createTask, type TaskCtx } from './helpers/tasks'
 
 const cleanups: (() => Promise<void>)[] = []
 afterEach(async () => {
@@ -332,5 +332,112 @@ describe('project visibility', () => {
       })
       expect(res.statusCode).toBe(404)
     })
+  })
+})
+
+// D47: the project list used to return nothing but names, so the left rail had nothing to show
+// beside a destination. `openTasks` is counted by the server in the same query that lists the
+// projects -- never in the client, which would have to fetch every task of every project.
+describe('project open-task counts', () => {
+  const listed = async (ctx: TaskCtx, archived = false) => {
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/projects${archived ? '?archived=true' : ''}`,
+      headers: ctx.authed,
+    })
+    expect(res.statusCode).toBe(200)
+    const body = res.json() as { projects: { name: string; openTasks: number }[] }
+    return Object.fromEntries(body.projects.map((p) => [p.name, p.openTasks]))
+  }
+
+  const patch = async (ctx: TaskCtx, id: string, payload: Record<string, unknown>) => {
+    const res = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/v1/tasks/${id}`,
+      headers: ctx.authed,
+      payload,
+    })
+    expect(res.statusCode).toBe(200)
+  }
+
+  it('counts every task that is not done, cancelled or deleted, at any depth', async () => {
+    const ctx = await setup()
+    const a = await createProject(ctx, 'A')
+    const b = await createProject(ctx, 'B')
+
+    // Two roots, one child of the first: depth must not change the count.
+    const open1 = await createTask(ctx, a, 'open 1')
+    await createTask(ctx, a, 'open child', open1)
+    await createTask(ctx, a, 'open 2')
+    // One of each kind that must NOT count.
+    await patch(ctx, await createTask(ctx, a, 'finished'), { status: 'done' })
+    await patch(ctx, await createTask(ctx, a, 'abandoned'), { status: 'cancelled' })
+    const gone = await createTask(ctx, a, 'deleted')
+    expect(
+      (
+        await ctx.app.inject({
+          method: 'DELETE',
+          url: `/api/v1/tasks/${gone}`,
+          headers: ctx.authed,
+        })
+      ).statusCode,
+    ).toBe(204)
+    // A task in the OTHER project, so the subquery cannot be counting the whole workspace.
+    await createTask(ctx, b, 'elsewhere')
+
+    expect(await listed(ctx)).toEqual({ Inbox: 0, A: 3, B: 1 })
+  })
+
+  it('follows a status change back and forth', async () => {
+    const ctx = await setup()
+    const a = await createProject(ctx, 'A')
+    const t = await createTask(ctx, a, 'one')
+    expect((await listed(ctx)).A).toBe(1)
+    await patch(ctx, t, { status: 'done' })
+    expect((await listed(ctx)).A).toBe(0)
+    // Back out of done: the count is derived, never stored, so it comes back on its own.
+    await patch(ctx, t, { status: 'todo' })
+    expect((await listed(ctx)).A).toBe(1)
+  })
+
+  it('counts another workspace nothing of ours', async () => {
+    const ctx = await setup()
+    const mine = await createProject(ctx, 'mine')
+    await createTask(ctx, mine, 'mine 1')
+    await createTask(ctx, mine, 'mine 2')
+
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      headers,
+      payload: { email: 'counts@example.com', password: 'correct horse battery', timezone: 'UTC' },
+    })
+    expect(res.statusCode).toBe(201)
+    const theirs = { ...headers, cookie: String(res.headers['set-cookie']).split(';')[0]! }
+    const other = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/v1/projects',
+      headers: theirs,
+    })
+    const body = other.json() as { projects: { name: string; openTasks: number }[] }
+    // They see only their own inbox, and it is empty -- our two tasks are not in anyone else's count.
+    expect(body.projects.map((p) => [p.name, p.openTasks])).toEqual([['Inbox', 0]])
+  })
+
+  it('carries the count on the archived list too', async () => {
+    const ctx = await setup()
+    const a = await createProject(ctx, 'A')
+    await createTask(ctx, a, 'still open')
+    expect(
+      (
+        await ctx.app.inject({
+          method: 'PATCH',
+          url: `/api/v1/projects/${a}`,
+          headers: ctx.authed,
+          payload: { archived: true },
+        })
+      ).statusCode,
+    ).toBe(200)
+    expect(await listed(ctx, true)).toEqual({ A: 1 })
   })
 })

@@ -3,6 +3,7 @@ import {
   createProjectBody,
   createTaskBody,
   moveTaskBody,
+  projectListItem,
   projectResponse,
   searchTaskResponse,
   taskEventResponse,
@@ -23,6 +24,7 @@ import {
   softDeleteProject,
   updateProject,
   type Project,
+  type ProjectListRow,
 } from './projects'
 import { InboxNotDeletableError, TaskNotFoundError } from './errors'
 import { DEFAULT_EVENT_LIMIT, InvalidCursorError, listTaskEvents, MAX_EVENT_LIMIT } from './events'
@@ -51,6 +53,10 @@ function toProjectResponse(p: Project): z.infer<typeof projectResponse> {
     archivedAt: p.archivedAt ? p.archivedAt.toISOString() : null,
     createdAt: p.createdAt.toISOString(),
   }
+}
+
+function toProjectListItem(p: ProjectListRow): z.infer<typeof projectListItem> {
+  return { ...toProjectResponse(p), openTasks: p.openTasks }
 }
 
 function toTaskResponse(t: Task): z.infer<typeof taskResponse> {
@@ -183,14 +189,14 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
       preHandler: requireUser,
       schema: {
         querystring: listQuery,
-        response: { 200: z.object({ projects: z.array(projectResponse) }).strict() },
+        response: { 200: z.object({ projects: z.array(projectListItem) }).strict() },
       },
     },
     async (req) => {
       const rows = await listProjects(app.db, authedUser(req).workspaceId, {
         archived: req.query.archived === 'true',
       })
-      return { projects: rows.map(toProjectResponse) }
+      return { projects: rows.map(toProjectListItem) }
     },
   )
 
