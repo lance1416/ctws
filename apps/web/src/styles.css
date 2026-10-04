@@ -24,10 +24,10 @@
 
    Contrast, WCAG 2.1 ratios measured on the surfaces each token actually appears on
    (surface / surface-sunken, the hover surface rows sit on):
-   light  fg 15.3   fg-muted 5.8/5.3   accent 5.9/5.4   plan 5.0/4.5   deadline 5.2/4.7
+   light  fg 15.3/14.0   fg-muted 5.8/5.3   accent 5.9/5.4   plan 5.0/4.5   deadline 5.2/4.7
           missed 5.9/5.4   border-strong 3.7/3.4   project chips 3.5-4.3 / 3.2-3.9
-   dark   fg 15.3   fg-muted 7.4/7.9   accent 8.5/9.0   plan 9.0/9.5   deadline 8.9/9.4
-          missed 7.0/7.4   border-strong 4.3/3.9 (3.9 on raised)   project chips 6.4-7.9
+   dark   fg 15.3/16.2   fg-muted 7.4/7.9   accent 8.5/9.0   plan 9.0/9.5   deadline 8.9/9.4
+          missed 7.0/7.4   border-strong 4.3/4.6 (3.9 on raised)   project chips 7.0-7.9 / 7.5-8.4
    Every pairing that carries meaning clears AA 4.5 as text; the chips and borders clear the
    3:1 non-text threshold. `plan` and `deadline` are two steps darker in light mode than the
    design plan's table proposed (the plan's 55%/60% lightnesses measure 4.3 and 3.9, i.e. they
