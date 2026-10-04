@@ -505,7 +505,9 @@ test('a task created while the project is still loading appears', async ({ page 
   await submitCreate(page, '新项目', 'P')
 
   const { release, heldStale } = await holdFirstListFetch(page)
-  await page.getByText('P', { exact: true }).click()
+  // Scoped to <main>: the left rail lists every project by name too, so an unscoped
+  // project-name locator now matches twice. The centre column is the list under test.
+  await page.getByRole('main').getByText('P', { exact: true }).click()
   await heldStale
   await submitCreate(page, '新任务', 'typed early')
   release()
@@ -516,10 +518,10 @@ test('a task created while the project is still loading appears', async ({ page 
 test('a capture made while the inbox is still loading appears', async ({ page }) => {
   await registerFreshUser(page)
   await page.getByRole('link', { name: '项目' }).click()
-  await expect(page.getByText('Inbox')).toBeVisible()
+  await expect(page.getByRole('main').getByText('Inbox')).toBeVisible()
 
   const { release, heldStale } = await holdFirstListFetch(page)
-  await page.getByText('Inbox').click()
+  await page.getByRole('main').getByText('Inbox').click()
   await heldStale
   await submitCreate(page, '捕获…', 'captured early')
   release()
@@ -537,5 +539,5 @@ test('a project created while the project list is still loading appears', async 
   await submitCreate(page, '新项目', 'typed early')
   release()
 
-  await expect(page.getByRole('link', { name: 'typed early' })).toBeVisible()
+  await expect(page.getByRole('main').getByRole('link', { name: 'typed early' })).toBeVisible()
 })

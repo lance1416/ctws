@@ -15,8 +15,9 @@ test('the app shell routes between today, projects and a project', async ({ page
   await page.getByRole('link', { name: '项目' }).click()
   await expect(page).toHaveURL(/\/projects$/)
   await expect(page.getByRole('heading', { name: '项目' })).toBeVisible()
-  // Registration creates the inbox, so the project list is never empty.
-  await page.getByRole('link', { name: 'Inbox' }).click()
+  // Registration creates the inbox, so the project list is never empty. Scoped to <main>: the
+  // left rail lists the same projects, so two links carry this name now.
+  await page.getByRole('main').getByRole('link', { name: 'Inbox' }).click()
 
   await expect(page).toHaveURL(`/projects/${inbox!.id}`)
   await expect(page.getByRole('heading', { name: 'Inbox' })).toBeVisible()

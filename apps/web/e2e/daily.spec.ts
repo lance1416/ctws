@@ -459,95 +459,108 @@ test('deleting a project asks first, names what is lost, and cancel deletes noth
   expect(after.projects.map((p: { name: string }) => p.name)).not.toContain('待删项目')
 })
 
-test('closing a panel with unsaved edits asks; keep editing keeps them, discard drops them', async ({
-  page,
-}) => {
-  await registerFreshUser(page)
-  const pid = await makeProject(page, 'P')
-  await makeTask(page, pid, '写方案')
-  await openTree(page, pid)
-  await page.getByRole('listitem').filter({ hasText: '写方案' }).click()
-  const dialog = page.getByRole('dialog')
-  await page.getByLabel('标题').fill('写方案 v2')
+// The detail panel is an OVERLAY only below 1280px (design plan section 4); at or above that
+// width it is a coexisting third column, where a scrim, a click-outside and a focus trap would
+// all be wrong -- the whole point is that the list beside it stays usable. These three tests are
+// about the overlay, so they run at a width where it is one. The pane's own contract (no
+// backdrop, Tab leaves it, a click on the list is a click on the list) is pinned in
+// workbench.spec.ts, so neither half of the rule rests on the default viewport happening to be
+// 1280.
+const OVERLAY_VIEWPORT = { width: 1024, height: 800 }
 
-  // Every way out asks: the button, Escape, and a click outside.
-  await page.getByRole('button', { name: '关闭' }).click()
-  await expect(dialog).toBeVisible()
-  await expect(dialog).toContainText('有未保存的修改')
-  await page.getByRole('button', { name: '继续编辑' }).click()
-  await expect(dialog.getByText('有未保存的修改')).toHaveCount(0)
-  await expect(page.getByLabel('标题')).toHaveValue('写方案 v2')
+test.describe('the panel as an overlay', () => {
+  test.use({ viewport: OVERLAY_VIEWPORT })
 
-  await page.getByLabel('标题').press('Escape')
-  await expect(dialog).toContainText('有未保存的修改')
-  await page.keyboard.press('Escape') // a second Escape on the prompt means keep editing
-  await expect(dialog.getByText('有未保存的修改')).toHaveCount(0)
-  await expect(dialog).toBeVisible()
+  test('closing a panel with unsaved edits asks; keep editing keeps them, discard drops them', async ({
+    page,
+  }) => {
+    await registerFreshUser(page)
+    const pid = await makeProject(page, 'P')
+    await makeTask(page, pid, '写方案')
+    await openTree(page, pid)
+    await page.getByRole('listitem').filter({ hasText: '写方案' }).click()
+    const dialog = page.getByRole('dialog')
+    await page.getByLabel('标题').fill('写方案 v2')
 
-  await page.mouse.click(60, 600)
-  await expect(dialog).toContainText('有未保存的修改')
+    // Every way out asks: the button, Escape, and a click outside.
+    await page.getByRole('button', { name: '关闭' }).click()
+    await expect(dialog).toBeVisible()
+    await expect(dialog).toContainText('有未保存的修改')
+    await page.getByRole('button', { name: '继续编辑' }).click()
+    await expect(dialog.getByText('有未保存的修改')).toHaveCount(0)
+    await expect(page.getByLabel('标题')).toHaveValue('写方案 v2')
 
-  await page.getByRole('button', { name: '放弃修改' }).click()
-  await expect(dialog).toHaveCount(0)
-  expect((await serverTask(page, pid, '写方案')).title).toBe('写方案')
-  // A panel reopened afterwards is clean again.
-  await page.getByRole('listitem').filter({ hasText: '写方案' }).click()
-  await expect(page.getByLabel('标题')).toHaveValue('写方案')
-  await page.keyboard.press('Escape')
-  await expect(dialog).toHaveCount(0)
-})
+    await page.getByLabel('标题').press('Escape')
+    await expect(dialog).toContainText('有未保存的修改')
+    await page.keyboard.press('Escape') // a second Escape on the prompt means keep editing
+    await expect(dialog.getByText('有未保存的修改')).toHaveCount(0)
+    await expect(dialog).toBeVisible()
 
-// -------------------------------------------------------------------------------------- F7: panel
+    await page.mouse.click(60, 600)
+    await expect(dialog).toContainText('有未保存的修改')
 
-test('tab and shift+tab never leave the open panel', async ({ page }) => {
-  await registerFreshUser(page)
-  const pid = await makeProject(page, 'P')
-  await makeTask(page, pid, '写方案')
-  await openTree(page, pid)
-  await page.getByRole('listitem').filter({ hasText: '写方案' }).click()
-  await expect(page.getByRole('dialog')).toBeFocused()
+    await page.getByRole('button', { name: '放弃修改' }).click()
+    await expect(dialog).toHaveCount(0)
+    expect((await serverTask(page, pid, '写方案')).title).toBe('写方案')
+    // A panel reopened afterwards is clean again.
+    await page.getByRole('listitem').filter({ hasText: '写方案' }).click()
+    await expect(page.getByLabel('标题')).toHaveValue('写方案')
+    await page.keyboard.press('Escape')
+    await expect(dialog).toHaveCount(0)
+  })
 
-  const inside = () =>
-    page.evaluate(() => {
-      const a = document.activeElement
-      return !!a && !!a.closest('[role="dialog"]')
-    })
-  const seen = new Set<string>()
-  // Far more presses than the panel has controls, so a leak into the page would show.
-  for (let i = 0; i < 40; i++) {
-    await page.keyboard.press('Tab')
-    expect(await inside(), `after Tab ${i + 1}`).toBe(true)
-    seen.add(
-      await page.evaluate(
-        () => document.activeElement!.textContent + document.activeElement!.tagName,
-      ),
-    )
-  }
-  // It really did walk the panel's controls (not stuck on one).
-  expect(seen.size).toBeGreaterThan(5)
-  for (let i = 0; i < 40; i++) {
-    await page.keyboard.press('Shift+Tab')
-    expect(await inside(), `after Shift+Tab ${i + 1}`).toBe(true)
-  }
-  // The control the panel used to cover is not the one that gets focus.
-  await expect(page.getByRole('button', { name: 'Log out' })).not.toBeFocused()
-})
+  // -------------------------------------------------------------------------------------- F7: panel
 
-test('a click outside closes the panel, a click inside does not', async ({ page }) => {
-  await registerFreshUser(page)
-  const pid = await makeProject(page, 'P')
-  await makeTask(page, pid, '写方案')
-  await openTree(page, pid)
-  await page.getByRole('listitem').filter({ hasText: '写方案' }).click()
-  const dialog = page.getByRole('dialog')
+  test('tab and shift+tab never leave the open panel', async ({ page }) => {
+    await registerFreshUser(page)
+    const pid = await makeProject(page, 'P')
+    await makeTask(page, pid, '写方案')
+    await openTree(page, pid)
+    await page.getByRole('listitem').filter({ hasText: '写方案' }).click()
+    await expect(page.getByRole('dialog')).toBeFocused()
 
-  await page.getByLabel('备注').click()
-  await dialog.getByText('标题').click()
-  await expect(dialog).toBeVisible()
+    const inside = () =>
+      page.evaluate(() => {
+        const a = document.activeElement
+        return !!a && !!a.closest('[role="dialog"]')
+      })
+    const seen = new Set<string>()
+    // Far more presses than the panel has controls, so a leak into the page would show.
+    for (let i = 0; i < 40; i++) {
+      await page.keyboard.press('Tab')
+      expect(await inside(), `after Tab ${i + 1}`).toBe(true)
+      seen.add(
+        await page.evaluate(
+          () => document.activeElement!.textContent + document.activeElement!.tagName,
+        ),
+      )
+    }
+    // It really did walk the panel's controls (not stuck on one).
+    expect(seen.size).toBeGreaterThan(5)
+    for (let i = 0; i < 40; i++) {
+      await page.keyboard.press('Shift+Tab')
+      expect(await inside(), `after Shift+Tab ${i + 1}`).toBe(true)
+    }
+    // The control the panel used to cover is not the one that gets focus.
+    await expect(page.getByRole('button', { name: 'Log out' })).not.toBeFocused()
+  })
 
-  await page.mouse.click(60, 600)
-  await expect(dialog).toHaveCount(0)
-  await expect(page.getByRole('button', { name: '任务：写方案', exact: true })).toBeFocused()
+  test('a click outside closes the panel, a click inside does not', async ({ page }) => {
+    await registerFreshUser(page)
+    const pid = await makeProject(page, 'P')
+    await makeTask(page, pid, '写方案')
+    await openTree(page, pid)
+    await page.getByRole('listitem').filter({ hasText: '写方案' }).click()
+    const dialog = page.getByRole('dialog')
+
+    await page.getByLabel('备注').click()
+    await dialog.getByText('标题').click()
+    await expect(dialog).toBeVisible()
+
+    await page.mouse.click(60, 600)
+    await expect(dialog).toHaveCount(0)
+    await expect(page.getByRole('button', { name: '任务：写方案', exact: true })).toBeFocused()
+  })
 })
 
 test('the open panel leaves the top bar usable', async ({ page }) => {

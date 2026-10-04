@@ -276,7 +276,8 @@ test('navigating away from a dirty panel asks first; keep editing stays, discard
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '写方案')
   await page.goto('/projects')
-  await page.getByRole('link', { name: 'P', exact: true }).click()
+  // Scoped to <main>: the left rail lists every project by name too.
+  await page.getByRole('main').getByRole('link', { name: 'P', exact: true }).click()
   await page.getByRole('listitem').first().waitFor()
   await openPanel(page, '写方案')
   await page.getByLabel('标题').fill('写方案 v2')

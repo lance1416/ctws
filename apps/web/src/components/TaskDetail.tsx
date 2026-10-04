@@ -11,6 +11,7 @@ import { listProjects } from '../api/projects'
 import { deleteTask, listProjectTasks, moveTask, patchTask } from '../api/tasks'
 import { tasksKey } from '../api/taskCache'
 import { DeleteConfirm } from './DeleteConfirm'
+import { useReservePane, useWidePane } from './detailPane'
 import { LeaveGuardContext } from './leaveGuard'
 
 // An empty date input yields '' , and the contract takes a date or null. Sending '' would be
@@ -42,7 +43,7 @@ export function fromLocalInput(v: string): string | null {
 
 const field =
   'mt-1 w-full rounded-md border border-border-strong bg-surface px-3 py-2 text-fg leading-snug'
-const label = 'block text-sm text-fg-muted'
+const label = 'block text-xs text-fg-muted'
 
 type Props = {
   task: TaskResponse
@@ -58,6 +59,11 @@ const TABBABLE = 'input, select, textarea, button, a[href], [tabindex]:not([tabi
 export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
   const qc = useQueryClient()
   const panel = useRef<HTMLDivElement>(null)
+  // At >=1280 the detail is a third COLUMN, not a layer: no scrim, no click-outside, no focus
+  // trap, and the list it was opened from stays usable beside it. Below that width there is no
+  // room for both, so it goes back to being an overlay and takes the keyboard with it.
+  const wide = useWidePane()
+  useReservePane()
   // The panel is last in the DOM, so without this a keyboard user would tab past every row to
   // reach it. Escape also only works while focus is inside.
   useEffect(() => panel.current?.focus(), [])
@@ -215,7 +221,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
       if (deleting) cancelDelete()
       else if (asking) keepEditingNow()
       else requestClose()
-    } else if (e.key === 'Tab') {
+    } else if (e.key === 'Tab' && !wide) {
       // Trap: Tab cycles inside the panel. Left alone it would walk on into whatever the panel
       // is covering, which is invisible to the person pressing the key.
       const items = [...(panel.current?.querySelectorAll<HTMLElement>(TABBABLE) ?? [])].filter(
@@ -237,22 +243,28 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
 
   return (
     <>
-      {/* Click-outside: an invisible layer over the page (below the top bar) that closes the panel. */}
-      <div
-        aria-hidden="true"
-        data-detail-backdrop
-        onClick={requestClose}
-        style={{ top }}
-        className="fixed inset-x-0 bottom-0 z-20"
-      />
+      {/* Click-outside, and the wash that tells you the page behind is not the thing in hand.
+          Only in overlay mode: as a coexisting pane, a click on the list is a click on the list. */}
+      {!wide && (
+        <div
+          aria-hidden="true"
+          data-detail-backdrop
+          onClick={requestClose}
+          style={{ top }}
+          className="fixed inset-x-0 bottom-0 z-20 bg-scrim"
+        />
+      )}
       <div
         ref={panel}
         tabIndex={-1}
         role="dialog"
         aria-label="任务详情"
+        data-detail-mode={wide ? 'pane' : 'overlay'}
         onKeyDown={onKeyDown}
         style={{ top }}
-        className="fixed bottom-0 right-0 z-20 w-full max-w-md overflow-y-auto border-l border-border-subtle bg-surface-raised p-5 text-fg focus:outline-none"
+        className={`fixed right-0 bottom-0 z-20 overflow-y-auto border-l border-border-subtle bg-surface-raised p-5 text-fg focus:outline-none ${
+          wide ? 'w-[22.5rem]' : 'w-full max-w-md'
+        }`}
       >
         <form
           onSubmit={(e) => {
@@ -268,11 +280,14 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
           </label>
           <label className={label}>
             备注
+            {/* The one place in the app that keeps a READING measure: notes are prose, and
+                68ch is where prose wants to wrap. Nothing else does, which is the whole point
+                of the redesign -- a list is scanned, not read. */}
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={5}
-              className={field}
+              className={`${field} max-w-[68ch]`}
             />
           </label>
           <label className={label}>

@@ -39,7 +39,10 @@ export async function openProject(page: Page, name: string, exact = false): Prom
       r.request().method() === 'GET' &&
       /\/api\/v1\/projects\/[^/]+\/tasks$/.test(new URL(r.url()).pathname),
   )
-  await page.getByText(name, { exact }).click()
+  // Scoped to <main>: since the three-pane shell, the left rail ALSO lists every project by
+  // name, so an unscoped getByText would match two elements and fail strict mode. The project
+  // list page is the thing being exercised here, and it lives in the centre column.
+  await page.getByRole('main').getByText(name, { exact }).click()
   await loaded
 }
 
