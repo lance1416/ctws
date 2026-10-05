@@ -10,7 +10,9 @@ async function captureAndOpen(page: Page, title: string) {
 
 test('a freshly registered user sees an empty today page, not an error', async ({ page }) => {
   await registerFreshUser(page)
-  await expect(page.getByRole('heading', { name: '今天' })).toBeVisible()
+  // `level: 1` because 今天完成的 is a heading on this page too, and getByRole matches names by
+  // substring: without it this would be ambiguous the moment anything is finished today.
+  await expect(page.getByRole('heading', { level: 1, name: '今天' })).toBeVisible()
   await expect(page.getByText('今天没有要做的事')).toBeVisible()
 })
 
@@ -24,7 +26,8 @@ test('scheduling a task through the detail panel puts it on the today page', asy
   await page.getByRole('button', { name: '保存' }).click()
 
   await page.getByRole('link', { name: '今天' }).click()
-  const section = page.getByRole('region', { name: '今天' })
+  // `exact` because 今天完成的 is also a region whose name contains 今天.
+  const section = page.getByRole('region', { name: '今天', exact: true })
   await expect(section.getByText('改简历')).toBeVisible()
   // The breadcrumb says where it lives, so the list is usable without opening anything.
   await expect(section.getByText('Inbox')).toBeVisible()
@@ -58,8 +61,18 @@ test('a task that is both overdue and in progress is shown once', async ({ page 
   await expect(page.getByText('又逾期又在做')).toHaveCount(1)
 })
 
-// The order comes from TODAY_SEGMENTS in contracts, not from a second array in the page.
-test('the three sections render in the order overdue, today, in progress', async ({ page }) => {
+/**
+ * Since the workbench, the three segments go to three DIFFERENT panels rather than three sections
+ * of one column, and the panel order is the design's (workbench spec §1) rather than anything
+ * derived from a list inside the page. So this pins two things instead of one:
+ *   - the panel order of the workbench itself, including the panels that are not segments; and
+ *   - that each segment's task lands in its own panel AND IN NO OTHER, which is the assertion the
+ *     old section-order test was really protecting (a task matching several segments rendering
+ *     twice reads as "did I create this twice?").
+ */
+test('each segment goes to its own panel, in the workbench order, and to only one', async ({
+  page,
+}) => {
   await registerFreshUser(page)
   const today = new Date().toLocaleDateString('en-CA')
 
@@ -74,7 +87,6 @@ test('the three sections render in the order overdue, today, in progress', async
   await page.getByRole('listitem').filter({ hasText: '乙今天' }).click()
   await page.getByLabel('排期').fill(today)
   await page.getByRole('button', { name: '保存' }).click()
-  // Saving closes the panel by itself (it used to need a separate 关闭).
   await expect(page.getByRole('dialog')).toHaveCount(0)
 
   await submitCreate(page, '捕获…', '丙逾期')
@@ -83,11 +95,24 @@ test('the three sections render in the order overdue, today, in progress', async
   await page.getByRole('button', { name: '保存' }).click()
 
   await page.getByRole('link', { name: '今天' }).click()
-  await expect(page.getByRole('region')).toHaveCount(3)
-  const labels = await page
-    .getByRole('region')
-    .evaluateAll((els) => els.map((el) => el.getAttribute('aria-label')))
-  expect(labels).toEqual(['逾期', '今天', '正在做'])
+  await expect(page.getByRole('heading', { level: 1, name: '今天' })).toBeVisible()
+  // 做到哪儿了 is in this list too: the set is the WORKBENCH's panels, not the segment list.
+  // 今天完成的 is absent because nothing was finished -- a panel with nothing to say is not drawn.
+  expect(
+    await page.locator('[data-panel]').evaluateAll((els) => els.map((el) => el.dataset.panel)),
+  ).toEqual(['正在做', '今天', '逾期', '做到哪儿了'])
+
+  for (const [title, panel] of [
+    ['甲在做', '正在做'],
+    ['乙今天', '今天'],
+    ['丙逾期', '逾期'],
+  ] as const) {
+    await expect(
+      page.getByRole('region', { name: panel, exact: true }).getByText(title),
+    ).toHaveCount(1)
+    // And nowhere else on the page: one task, one panel.
+    await expect(page.getByText(title)).toHaveCount(1)
+  }
 })
 
 test('an edit made from the today page is reflected without a reload', async ({ page }) => {
@@ -101,7 +126,15 @@ test('an edit made from the today page is reflected without a reload', async ({ 
   await setDetailStatus(page, '已完成')
   await page.getByRole('button', { name: '保存' }).click()
 
-  await expect(page.getByText('先在做')).toHaveCount(0)
+  // It left 正在做 -- and it turned up in 今天完成的 without a reload, which is the other half of
+  // the same claim now that the workbench has a panel for finished work. (A bare "the text is
+  // gone from the page" would now be false, and would have been hiding this.)
+  await expect(
+    page.getByRole('region', { name: '正在做', exact: true }).getByText('先在做'),
+  ).toHaveCount(0)
+  await expect(
+    page.getByRole('region', { name: '今天完成的', exact: true }).getByText('先在做'),
+  ).toBeVisible()
   await expect(page.getByText('今天没有要做的事')).toBeVisible()
   // The panel unmounted without being closed; focus must not have fallen to <body>.
   await expect(page.locator('#today-heading')).toBeFocused()

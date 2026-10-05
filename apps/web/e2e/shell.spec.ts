@@ -3,7 +3,7 @@ import { registerFreshUser } from './helpers'
 
 test('the app shell routes between today, projects and a project', async ({ page }) => {
   await registerFreshUser(page)
-  await expect(page.getByRole('heading', { name: '今天' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: '今天' })).toBeVisible()
 
   // The id the API assigned to the inbox: the URL must carry exactly this, not merely
   // something shaped like a UUID.

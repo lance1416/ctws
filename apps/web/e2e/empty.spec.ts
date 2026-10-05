@@ -56,7 +56,9 @@ test('an empty 今天 says what the page is for and offers the way to fill it', 
   // The other half: with something on today, none of it is on the page.
   await makeTask(page, pid, '今天要做的', { scheduledOn: ymd(new Date()) })
   await page.goto('/')
-  await expect(page.getByRole('region', { name: '今天' }).getByText('今天要做的')).toBeVisible()
+  await expect(
+    page.getByRole('region', { name: '今天', exact: true }).getByText('今天要做的'),
+  ).toBeVisible()
   await expect(page.getByText('今天没有要做的事')).toHaveCount(0)
   await expect(page.getByRole('link', { name: '去挑一件来做' })).toHaveCount(0)
 })
@@ -109,7 +111,7 @@ test('a search with no match says what search covers and clears itself', async (
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '找得到的任务')
   await page.goto('/')
-  await page.getByRole('heading', { name: '今天' }).waitFor()
+  await page.getByRole('heading', { level: 1, name: '今天' }).waitFor()
 
   await page.keyboard.press('f')
   const box = page.getByRole('textbox', { name: '搜索任务' })

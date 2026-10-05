@@ -261,7 +261,7 @@ test('a cross-project row carries its own project’s rail, at one x, beside its
   await makeTask(page, a, '甲二', { scheduledOn: dayOffset(0) })
   await makeTask(page, b, '乙一', { scheduledOn: dayOffset(0) })
   await page.goto('/')
-  const section = page.getByRole('region', { name: '今天' })
+  const section = page.getByRole('region', { name: '今天', exact: true })
   await expect(section.getByText('甲一')).toBeVisible()
 
   const railOf = (title: string) =>
@@ -275,8 +275,11 @@ test('a cross-project row carries its own project’s rail, at one x, beside its
   await expect(railOf('甲二')).toHaveAttribute('data-project-rail', a)
   await expect(railOf('乙一')).toHaveAttribute('data-project-rail', b)
 
-  // Fixed x on every row -- a spine, not a decoration that follows the content.
-  const rails = await xs(page, '[data-project-rail]')
+  // Fixed x on every row OF ONE LIST -- a spine, not a decoration that follows the content.
+  // Scoped to the 今天 queue since the workbench: the overdue panel and the completed-today panel
+  // are lists of their own in another column, and a rail x shared across columns was never the
+  // claim. Within the list the assertion is the same one, on the same three rows.
+  const rails = await xs(page, '[aria-label="今天"] [data-project-rail]')
   expect(new Set(rails).size, `rail x values: ${rails.join(',')}`).toBe(1)
   // Six hues cannot identify an unbounded number of projects, so the rail is never alone: the
   // project's name is on the row as well (WCAG 1.4.1), and the rail itself is hidden from AT.
@@ -325,9 +328,10 @@ test('the status marker is the heaviest mark on the row, and still hue-free', as
   await page.goto('/')
 
   const mark = (name: string) => page.getByRole('img', { name })
-  // 18px, not the 16px it used to be: the app's core semantic was the faintest thing on the row.
+  // 20px at 2px of stroke: the app's core semantic used to be the faintest thing on the row, and
+  // the workbench stepped every size up again (spec section 4) around 46px rows.
   for (const name of ['进行中', '待办', '待整理'])
-    expect(await mark(name).evaluate((el) => el.getBoundingClientRect().width)).toBe(18)
+    expect(await mark(name).evaluate((el) => el.getBoundingClientRect().width)).toBe(20)
 
   // An OPEN task's mark is drawn in the body colour; a settled one stays muted. Value and weight,
   // never hue: `color` here must be the very same colour the row's own text is painted in, so no
@@ -345,7 +349,7 @@ test('the status marker is the heaviest mark on the row, and still hue-free', as
   await page.goto('/completed')
   await expect(page.getByText('收工')).toBeVisible()
   expect(await colourOf(mark('已完成'))).not.toBe(bodyColour)
-  expect(await mark('已完成').evaluate((el) => el.getBoundingClientRect().width)).toBe(18)
+  expect(await mark('已完成').evaluate((el) => el.getBoundingClientRect().width)).toBe(20)
 })
 
 // ------------------------------------------------------------- the two date semantics, by shape

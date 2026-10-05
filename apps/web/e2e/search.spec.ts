@@ -72,7 +72,7 @@ test('search finds a task inside a collapsed subtree and leaves it visible and f
 
   // Leave the project entirely, so nothing about this is "already on the right page".
   await page.getByRole('link', { name: '今天' }).click()
-  await expect(page.getByRole('heading', { name: '今天' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: '今天' })).toBeVisible()
 
   await page.keyboard.press('f')
   await query(page, '针')

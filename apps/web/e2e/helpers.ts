@@ -88,3 +88,43 @@ export function backdateCompletion(taskId: string, ago: string): void {
   // A no-op update would leave the test proving nothing about history.
   if (!out.includes('UPDATE 1')) throw new Error(`backdateCompletion: no row updated: ${out}`)
 }
+
+/**
+ * Pushes a project's whole logged history back in time, so 做到哪儿了's stagnation line can be
+ * tested without waiting a week. Like `backdateCompletion` this goes to the database the stack is
+ * running on: the API (rightly) offers no way to write an event's timestamp, and a panel about
+ * "how long has this been quiet" cannot be tested without history.
+ *
+ * It deliberately moves the EVENT LOG and not `updated_at`: the panel reads the log precisely so
+ * that a reorder cannot make a dead project look alive, and a helper that moved the wrong column
+ * would let a broken panel pass.
+ */
+export function backdateProjectActivity(projectId: string, ago: string): void {
+  if (!/^[0-9a-f-]{36}$/.test(projectId) || !/^\d+ (minutes|hours|days)$/.test(ago)) {
+    throw new Error('backdateProjectActivity: refusing a malformed argument')
+  }
+  const out = execFileSync(
+    'docker',
+    [
+      'compose',
+      'exec',
+      '-T',
+      'postgres',
+      'psql',
+      '-v',
+      'ON_ERROR_STOP=1',
+      '-U',
+      'ctws',
+      '-d',
+      'ctws',
+      '-c',
+      `update task_events set occurred_at = now() - interval '${ago}' ` +
+        `where task_id in (select id from tasks where project_id = '${projectId}')`,
+    ],
+    { stdio: 'pipe' },
+  ).toString()
+  // A no-op update would leave the test proving nothing about history.
+  if (/UPDATE 0/.test(out) || !out.includes('UPDATE')) {
+    throw new Error(`backdateProjectActivity: no row updated: ${out}`)
+  }
+}

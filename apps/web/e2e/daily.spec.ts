@@ -697,7 +697,7 @@ test('a plan carried over from days ago is marked in 今天 with its day; a plan
   await makeTask(page, pid, '昨天的计划', { scheduledOn: dayOffset(-1) })
   await makeTask(page, pid, '今天的计划', { scheduledOn: dayOffset(0) })
   await page.goto('/')
-  const section = page.getByRole('region', { name: '今天' })
+  const section = page.getByRole('region', { name: '今天', exact: true })
   await expect(section.getByText('今天的计划')).toBeVisible()
 
   const [, m, d] = old.split('-').map(Number)
@@ -733,7 +733,9 @@ test('改到今天 keeps the row, drops the mark, and changes only the plan', as
   // The row stays but is no longer carried, so its date control goes with the mark.
   await expect(triage(page, '改到今天的')).toHaveCount(0)
   await expect(rowOf(page, '改到今天的').locator('[data-date-hint="carried"]')).toHaveCount(0)
-  await expect(page.getByRole('region', { name: '今天' }).getByText('改到今天的')).toBeVisible()
+  await expect(
+    page.getByRole('region', { name: '今天', exact: true }).getByText('改到今天的'),
+  ).toBeVisible()
   // The neighbour is untouched and still marked.
   await expect(triage(page, '旁观者')).toBeVisible()
   expect((await serverTask(page, pid, '改到今天的')).scheduledOn).toBe(dayOffset(0))
@@ -851,7 +853,9 @@ test('转为排期 turns an overdue deadline into a plan: out of 逾期, into �
   expect((await res).request().postDataJSON()).toEqual({ dueAt: null, scheduledOn: dayOffset(0) })
 
   await expect(overdue.getByText('没人在等')).toHaveCount(0)
-  await expect(page.getByRole('region', { name: '今天' }).getByText('没人在等')).toBeVisible()
+  await expect(
+    page.getByRole('region', { name: '今天', exact: true }).getByText('没人在等'),
+  ).toBeVisible()
   const t = await serverTask(page, pid, '没人在等')
   expect(t.dueAt).toBeNull()
   expect(t.scheduledOn).toBe(dayOffset(0))
@@ -860,7 +864,9 @@ test('转为排期 turns an overdue deadline into a plan: out of 逾期, into �
   await expect(triage(page, '没人在等')).toHaveCount(0)
   await expect(rowOf(page, '没人在等').locator('[data-date-hint]')).toHaveCount(0)
   await page.reload()
-  await expect(page.getByRole('region', { name: '今天' }).getByText('没人在等')).toBeVisible()
+  await expect(
+    page.getByRole('region', { name: '今天', exact: true }).getByText('没人在等'),
+  ).toBeVisible()
 
   // Demoting to tomorrow leaves the list altogether; the neighbour stays overdue.
   res = patched(page)
