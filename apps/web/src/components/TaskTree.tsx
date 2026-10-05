@@ -22,9 +22,8 @@ import { useShortcutsEnabled } from '../shortcuts/enabled'
 import { TaskDetail } from './TaskDetail'
 import { statusForKey } from './StatusControls'
 import { NewTaskInput } from './NewTaskInput'
+import { INDENT_PX } from './RowParts'
 import { TaskRow } from './TaskRow'
-
-const INDENT_PX = 20
 
 /**
  * Optimistic result of a move. The server computes the real rank (spec 8.3), so this only has to
@@ -397,6 +396,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
               <Fragment key={row.id}>
                 <TaskRow
                   row={row}
+                  projectId={projectId}
                   title={byId.get(row.id)?.title ?? ''}
                   status={byId.get(row.id)?.status ?? 'todo'}
                   dueAt={byId.get(row.id)?.dueAt ?? null}

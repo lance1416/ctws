@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { searchTasks } from '../api/search'
+import { ProjectRail } from './RowParts'
 import { StatusMark } from './StatusMark'
 import { Overlay } from './Overlay'
 
@@ -92,10 +93,13 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
               aria-current={i === at ? 'true' : undefined}
               onClick={() => choose(t)}
               onMouseEnter={() => setActive(i)}
-              className={`flex w-full items-start gap-2 px-4 py-2 text-left leading-snug ${
+              // Same row system as the lists: the project rail at x=0, then the marker and
+              // the title at a fixed x. A result's project is a glance, not a read.
+              className={`relative flex w-full items-start gap-2 py-2 pr-4 pl-5 text-left leading-snug ${
                 i === at ? 'bg-surface-sunken' : ''
               }`}
             >
+              <ProjectRail projectId={t.projectId} />
               <span className="flex h-6 w-6 shrink-0 items-center justify-center">
                 <StatusMark status={t.status} />
               </span>

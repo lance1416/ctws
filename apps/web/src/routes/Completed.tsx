@@ -4,6 +4,7 @@ import { useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { listCompleted } from '../api/completed'
 import { useTaskActions } from '../api/taskActions'
+import { DONE_ROW_GRID, ProjectRail } from '../components/RowParts'
 import { StatusButton } from '../components/StatusControls'
 import { addDays } from '../dueAt'
 import { useMe } from '../useMe'
@@ -75,29 +76,35 @@ export function Completed() {
             {tasks.map((t) => (
               <li
                 key={t.id}
-                className="-mx-2 grid grid-cols-[24px_1fr_auto] items-start gap-x-2 rounded-md px-2 py-2 leading-snug"
+                // The same row system as 今天 and the tree: the project rail at x=0, the marker,
+                // the title, and one right-hand column. The clock lands at an identical x on
+                // every row, which is what makes a day's list scannable rather than readable.
+                className={`relative -mx-2 grid items-start gap-x-2 rounded-md py-1.5 pr-2 pl-3 leading-snug ${DONE_ROW_GRID}`}
               >
+                <ProjectRail projectId={t.projectId} />
                 {/* Restoring is the one way back from a mis-click: a finished task has no other
                     way off this list, and there is deliberately no general undo. */}
-                <StatusButton
-                  status={t.status}
-                  title={t.title}
-                  onClick={() =>
-                    actions.setStatus(t.id, 'backlog', () =>
-                      // The row leaves with the refetch; keep focus on the page, not <body>.
-                      setTimeout(() => heading.current?.focus(), 0),
-                    )
-                  }
-                />
-                <span className="flex flex-col">
-                  <span>{t.title}</span>
-                  <span className="text-sm text-fg-muted">
+                <span className="col-start-1 row-start-1 flex h-6 items-center">
+                  <StatusButton
+                    status={t.status}
+                    title={t.title}
+                    onClick={() =>
+                      actions.setStatus(t.id, 'backlog', () =>
+                        // The row leaves with the refetch; keep focus on the page, not <body>.
+                        setTimeout(() => heading.current?.focus(), 0),
+                      )
+                    }
+                  />
+                </span>
+                <span className="col-start-2 row-start-1 flex min-w-0 flex-col">
+                  <span className="truncate">{t.title}</span>
+                  <span className="truncate text-sm text-fg-muted">
                     {t.parentTitle === null ? t.projectName : `${t.projectName} › ${t.parentTitle}`}
                   </span>
                 </span>
                 <time
                   dateTime={t.completedAt ?? undefined}
-                  className="text-sm tabular-nums text-fg-muted"
+                  className="col-start-3 row-start-1 flex h-6 items-center text-sm tabular-nums text-fg-muted"
                 >
                   {t.completedAt ? clock.format(new Date(t.completedAt)) : ''}
                 </time>

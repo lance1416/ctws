@@ -4,15 +4,24 @@ import type { KeyboardEvent } from 'react'
 import type { FlatRow } from '../tree/flatten'
 import { toggleDoneTarget, toggleStartTarget } from '../api/taskActions'
 import { dateHints } from '../dueAt'
+import {
+  CHEVRON_PX,
+  DUE_CELL,
+  DueCell,
+  HANDLE_PX,
+  INDENT_PX,
+  PLAN_CELL,
+  PlanCell,
+  ProjectRail,
+  RAIL_GUTTER_PX,
+  SavedMark,
+} from './RowParts'
 import { StartButton, StatusButton } from './StatusControls'
-
-const INDENT_PX = 20
-// The handle column is a fixed width so that showing it on hover never shifts the row.
-const HANDLE_PX = 16
-const CHEVRON_PX = 20
 
 type Props = {
   row: FlatRow
+  /** The project every row in this tree belongs to: the rail is one continuous spine here. */
+  projectId: string
   title: string
   status: TaskStatus
   dueAt: string | null
@@ -55,6 +64,7 @@ function Icon({ d }: { d: string }) {
 
 export function TaskRow({
   row,
+  projectId,
   title,
   status,
   dueAt,
@@ -85,20 +95,23 @@ export function TaskRow({
         if (!(e.target as HTMLElement).closest('button')) onOpen()
       }}
       style={{
-        // Pixel indentation is layout, not colour.
-        paddingLeft: (row.depth - 1) * INDENT_PX,
+        // Pixel indentation is layout, not colour. The project rail sits BEFORE it, at x=0 on
+        // every row whatever its depth: the rail carries project identity and nothing else.
+        paddingLeft: RAIL_GUTTER_PX + (row.depth - 1) * INDENT_PX,
         transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
         transition,
       }}
       className={`group relative flex min-h-8 cursor-pointer items-center rounded-md leading-snug hover:bg-surface-sunken ${isDragging ? 'bg-surface-sunken opacity-70' : ''}`}
     >
-      {/* One hairline per ancestor level, centred under that level's chevron column. */}
+      <ProjectRail projectId={projectId} />
+      {/* One hairline per ancestor level, centred under that level's chevron column. Depth is
+          carried by these guides, never by the rail. */}
       {Array.from({ length: row.depth - 1 }, (_, i) => (
         <span
           key={i}
           aria-hidden="true"
           className="pointer-events-none absolute inset-y-0 w-px bg-border-subtle"
-          style={{ left: i * INDENT_PX + HANDLE_PX + CHEVRON_PX / 2 }}
+          style={{ left: RAIL_GUTTER_PX + i * INDENT_PX + HANDLE_PX + CHEVRON_PX / 2 }}
         />
       ))}
       {/* The focus carrier and the pointer drag handle. Only the pointer sensor is registered,
@@ -148,42 +161,25 @@ export function TaskRow({
         />
       </span>
       <span
-        className={`min-w-0 py-1 text-[15px] ${
+        className={`min-w-0 flex-1 truncate py-1 text-[15px] ${
           status === 'in_progress' ? 'font-semibold' : ''
         } ${inactive ? 'text-fg-muted' : 'text-fg'} ${status === 'cancelled' ? 'line-through' : ''}`}
       >
         {title}
+        {saved && <SavedMark />}
       </span>
-      {/* Dates only where they carry information: none on a dateless or finished task, so the
-          row stays a row and not a table. The overdue label is words ("已逾 N 天"), so it does
-          not depend on its colour. */}
-      {hints.due && (
-        <span
-          data-date-hint={hints.due.overdue ? 'overdue' : 'due'}
-          // The one colour decision of the redesign that is not decoration: a PLAN (cool) and
-          // a DEADLINE (warm) are two different promises, and they used to be the same grey.
-          // Colour is the second channel only -- the words still say which is which, and the
-          // marker still carries status -- so nothing here depends on seeing hue (WCAG 1.4.1).
-          className={`ml-3 shrink-0 text-sm tabular-nums ${hints.due.overdue ? 'font-medium text-missed' : 'text-deadline'}`}
-        >
-          {hints.due.text}
-        </span>
-      )}
-      {hints.scheduled && (
-        <span data-date-hint="scheduled" className="ml-3 shrink-0 text-sm text-plan">
-          {hints.scheduled}
-        </span>
-      )}
-      {saved && (
-        <span role="status" className="ml-3 shrink-0 text-sm text-fg-muted">
-          已保存
-        </span>
-      )}
+      {/* The same two date columns the cross-project lists use, in the same order and at the same
+          width. Everything after the title is a FIXED width, so each column starts at an identical
+          x on every row of the tree however deeply indented the row is -- which is the whole
+          reason the right-hand zone exists. Empty cells are still reserved: a column that moves
+          when a row has no date is not a column. */}
+      <DueCell due={hints.due} className={`ml-3 shrink-0 ${DUE_CELL}`} />
+      <PlanCell text={hints.scheduled} className={`ml-3 shrink-0 ${PLAN_CELL}`} />
       <StartButton
         status={status}
         title={title}
         onClick={() => onSetStatus(toggleStartTarget(status))}
-        className="ml-auto opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
+        className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
       />
       {/* Mouse path to "add under this": the keyboard has Alt+Enter, so this stays out of the tab
           order. Shown on row hover; always shown where there is no hover. */}
