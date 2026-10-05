@@ -2,6 +2,7 @@ import {
   completedTaskResponse,
   createTaskBody,
   moveTaskBody,
+  projectMovementResponse,
   searchTaskResponse,
   taskEventResponse,
   taskResponse,
@@ -18,6 +19,7 @@ import { TaskNotFoundError } from './errors'
 import { DEFAULT_EVENT_LIMIT, InvalidCursorError, listTaskEvents, MAX_EVENT_LIMIT } from './events'
 import { listCompleted, type CompletedTask } from './completed'
 import { searchTasks, type SearchTask } from './search'
+import { listProjectMovement } from './movement'
 import { listToday, type TodayTask } from './today'
 import { CycleError, InvalidNeighbourError, moveTask } from './move'
 import {
@@ -136,6 +138,26 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
       const user = authedUser(req)
       const rows = await listCompleted(app.db, user.workspaceId, user.timezone)
       return { tasks: rows.map(toCompletedResponse) }
+    },
+  )
+
+  // 做到哪儿了. Under the task module's namespace and not under `projects`: the numbers are task
+  // semantics (finished, open, logged change) hung on a shell project, exactly as `today` and
+  // `completed` are. The project itself stays the shell's.
+  typed.get(
+    '/movement',
+    {
+      preHandler: requireUser,
+      schema: {
+        response: { 200: z.object({ projects: z.array(projectMovementResponse) }).strict() },
+      },
+    },
+    async (req) => {
+      const user = authedUser(req)
+      // The week boundary and the day count come from the user record's timezone, never the
+      // server clock's zone.
+      const rows = await listProjectMovement(app.db, user.workspaceId, user.timezone)
+      return { projects: rows }
     },
   )
 

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { projectMovementResponse } from './task'
 import {
   createTaskBody,
   moveTaskBody,
@@ -192,5 +193,58 @@ describe('searchTaskResponse', () => {
       projectArchived: false,
     })
     expect(parsed.status).toBe('cancelled')
+  })
+})
+
+describe('projectMovementResponse', () => {
+  const base = {
+    projectId: '0199f0d6-0000-7000-8000-000000000001',
+    projectName: '开源贡献',
+    doneThisWeek: 2,
+    remaining: 5,
+    lastActivityOn: '2026-09-28',
+    quietDays: 7,
+  }
+
+  it('carries counts and movement', () => {
+    expect(projectMovementResponse.parse(base)).toEqual(base)
+  })
+
+  it('allows a project nothing has ever happened in', () => {
+    const parsed = projectMovementResponse.parse({
+      ...base,
+      lastActivityOn: null,
+      quietDays: null,
+    })
+    expect(parsed.quietDays).toBeNull()
+  })
+
+  /**
+   * The shape is `.strict()` on purpose and this is the assertion that keeps it honest: there is
+   * no rollup (M3) and nothing writes `manual_progress`, so a ratio on this line would be a
+   * number the backend cannot cash. Adding one has to be a deliberate change to the contract, not
+   * something that slips in beside the counts.
+   */
+  it('refuses a percentage, however it is spelled', () => {
+    for (const extra of [{ progress: 0.5 }, { percent: 50 }, { manualProgress: 0.5 }]) {
+      expect(
+        projectMovementResponse.safeParse({ ...base, ...extra }).success,
+        JSON.stringify(extra),
+      ).toBe(false)
+    }
+  })
+
+  it('refuses a last-activity day that is an instant rather than a calendar day', () => {
+    // The day is the USER'S calendar day, decided by the server. A timestamp here would mean the
+    // client was being asked to work out which day that was, in which timezone.
+    expect(
+      projectMovementResponse.safeParse({ ...base, lastActivityOn: '2026-09-28T10:00:00Z' })
+        .success,
+    ).toBe(false)
+  })
+
+  it('refuses negative counts', () => {
+    expect(projectMovementResponse.safeParse({ ...base, remaining: -1 }).success).toBe(false)
+    expect(projectMovementResponse.safeParse({ ...base, quietDays: -1 }).success).toBe(false)
   })
 })

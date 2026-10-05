@@ -158,6 +158,31 @@ export const completedTaskResponse = taskResponse
   .strict()
 export type CompletedTaskResponse = z.infer<typeof completedTaskResponse>
 
+// ---- 做到哪儿了 ----
+
+/**
+ * One project's line in 做到哪儿了: COUNTS AND MOVEMENT, NEVER A RATIO.
+ *
+ * There is deliberately no percentage and no `progress` field. Rollup is M3 and nothing in the
+ * codebase writes `manual_progress`, so a ratio here would be a number the backend cannot
+ * honour -- a bar drawn against a column that is null for every row in the database. What a
+ * person can act on is movement: finished this week, left to do, and how long the line has been
+ * quiet. The server decides the week and the day in the USER's timezone, exactly as
+ * `completedTaskResponse.completedOn` does; the client only formats them.
+ */
+export const projectMovementResponse = z
+  .object({
+    projectId: z.uuid(),
+    projectName: z.string(),
+    doneThisWeek: z.number().int().nonnegative(),
+    remaining: z.number().int().nonnegative(),
+    // Null when the project has no logged activity at all, which is only ever an empty project.
+    lastActivityOn: calendarDate.nullable(),
+    quietDays: z.number().int().nonnegative().nullable(),
+  })
+  .strict()
+export type ProjectMovementResponse = z.infer<typeof projectMovementResponse>
+
 // ---- search ----
 
 /**

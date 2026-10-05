@@ -1,0 +1,242 @@
+import { sql } from 'drizzle-orm'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { listProjectMovement } from '../src/tasks/movement'
+import { appWithUser, createProject, createTask, type TaskCtx } from './helpers/tasks'
+
+/**
+ * 做到哪儿了's server half: per-project counts and movement, in one query, through the tenant
+ * chokepoint.
+ *
+ * The numbers here are the only ones on the workbench that no other endpoint already reports, so
+ * they get their own guards: the per-project correlation (a subquery that correlated a row to
+ * itself has already shipped once in this codebase and silently counted zero), the week boundary
+ * in the user's timezone rather than the server's, and the fact that activity is read from the
+ * EVENT LOG -- which is what makes "this has been quiet for nine days" mean anything, because a
+ * reorder writes no event by design.
+ */
+
+let ctx: TaskCtx
+let workspaceId: string
+let otherAuthed: Record<string, string>
+
+beforeAll(async () => {
+  ctx = await appWithUser('movement@example.com')
+  workspaceId = (
+    (
+      await ctx.app.inject({ method: 'GET', url: '/api/v1/auth/me', headers: ctx.authed })
+    ).json() as {
+      workspaceId: string
+    }
+  ).workspaceId
+  // A SECOND user on the SAME app and database: two `appWithUser()` calls would be two unrelated
+  // databases and any isolation assertion between them would pass trivially.
+  const res = await ctx.app.inject({
+    method: 'POST',
+    url: '/api/v1/auth/register',
+    headers: { 'x-ctws-client': 'web' },
+    payload: { email: 'other@example.com', password: 'correct horse battery', timezone: 'UTC' },
+  })
+  expect(res.statusCode).toBe(201)
+  otherAuthed = { 'x-ctws-client': 'web', cookie: String(res.headers['set-cookie']).split(';')[0]! }
+}, 180_000)
+
+afterAll(async () => {
+  await ctx?.stop()
+})
+
+type Row = {
+  projectId: string
+  projectName: string
+  doneThisWeek: number
+  remaining: number
+  lastActivityOn: string | null
+  quietDays: number | null
+}
+
+async function movement(headers = ctx.authed): Promise<Row[]> {
+  const res = await ctx.app.inject({
+    method: 'GET',
+    url: '/api/v1/tasks/movement',
+    headers,
+  })
+  expect(res.statusCode).toBe(200)
+  return res.json().projects as Row[]
+}
+
+const rowFor = (rows: Row[], id: string): Row => {
+  const r = rows.find((x) => x.projectId === id)
+  expect(r, `project ${id} in the movement list`).toBeDefined()
+  return r!
+}
+
+/** Finishes through the real API (so `completed_at` is set by the service), then pins the instant. */
+async function finishAt(id: string, at: string) {
+  const res = await ctx.app.inject({
+    method: 'PATCH',
+    url: `/api/v1/tasks/${id}`,
+    headers: ctx.authed,
+    payload: { status: 'done' },
+  })
+  expect(res.statusCode).toBe(200)
+  await ctx.db.execute(sql`update tasks set completed_at = ${at}::timestamptz where id = ${id}`)
+}
+
+describe('GET /tasks/movement', () => {
+  it('requires authentication', async () => {
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/v1/tasks/movement',
+      headers: { 'x-ctws-client': 'web' },
+    })
+    expect(res.statusCode).toBe(401)
+  })
+
+  it('counts open work PER PROJECT, not across the workspace', async () => {
+    const few = await createProject(ctx, 'few')
+    const many = await createProject(ctx, 'many')
+    await createTask(ctx, few, 'f1')
+    for (const t of ['m1', 'm2', 'm3']) await createTask(ctx, many, t)
+
+    const rows = await movement()
+    // The two counts must DIFFER and both be non-zero: a subquery that correlated a task to
+    // itself returns 0 everywhere, and one that forgot the project filter returns the same
+    // workspace-wide total for both. Only two different non-zero numbers rule out both.
+    expect(rowFor(rows, few).remaining).toBe(1)
+    expect(rowFor(rows, many).remaining).toBe(3)
+  })
+
+  it('leaves finished, cancelled and deleted tasks out of 还剩', async () => {
+    const pid = await createProject(ctx, 'leftovers')
+    const open = await createTask(ctx, pid, 'open')
+    const done = await createTask(ctx, pid, 'done')
+    const cancelled = await createTask(ctx, pid, 'cancelled')
+    const gone = await createTask(ctx, pid, 'gone')
+    for (const [id, status] of [
+      [done, 'done'],
+      [cancelled, 'cancelled'],
+    ] as const) {
+      expect(
+        (
+          await ctx.app.inject({
+            method: 'PATCH',
+            url: `/api/v1/tasks/${id}`,
+            headers: ctx.authed,
+            payload: { status },
+          })
+        ).statusCode,
+      ).toBe(200)
+    }
+    expect(
+      (
+        await ctx.app.inject({
+          method: 'DELETE',
+          url: `/api/v1/tasks/${gone}`,
+          headers: ctx.authed,
+        })
+      ).statusCode,
+    ).toBe(204)
+    expect(open).toBeTruthy()
+
+    expect(rowFor(await movement(), pid).remaining).toBe(1)
+  })
+
+  it('omits archived projects, which are set aside and not waiting for anybody', async () => {
+    const pid = await createProject(ctx, 'archived')
+    await createTask(ctx, pid, 'still open')
+    expect(rowFor(await movement(), pid).remaining).toBe(1)
+
+    const res = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/v1/projects/${pid}`,
+      headers: ctx.authed,
+      payload: { archived: true },
+    })
+    expect(res.statusCode).toBe(200)
+    expect((await movement()).some((r) => r.projectId === pid)).toBe(false)
+  })
+
+  it('counts 本周 from Monday IN THE USER’S TIMEZONE, not the server’s', async () => {
+    const pid = await createProject(ctx, 'week')
+    // Sunday 2026-10-04 at 23:30 in Shanghai = 15:30 UTC. Monday 2026-10-05 at 00:30 there is
+    // 16:30 UTC on the Sunday. Both are "last week" and "this week" respectively for a Shanghai
+    // user; a server computing the week in UTC would put BOTH in the same (wrong) week.
+    const lastWeek = await createTask(ctx, pid, 'sunday night')
+    const thisWeek = await createTask(ctx, pid, 'monday morning')
+    await finishAt(lastWeek, '2026-10-04T15:30:00Z')
+    await finishAt(thisWeek, '2026-10-04T16:30:00Z')
+    // Wednesday of that Shanghai week.
+    const now = new Date('2026-10-07T04:00:00Z')
+
+    const shanghai = await listProjectMovement(ctx.db, workspaceId, 'Asia/Shanghai', now)
+    expect(rowFor(shanghai as Row[], pid).doneThisWeek).toBe(1)
+
+    // The same two instants, read by a UTC user: now BOTH fall on Sunday 2026-10-04 UTC, which is
+    // the previous week, so the count is zero. Same rows, same clock, different timezone --
+    // which is the whole point and is invisible to a test run in one zone only.
+    const utc = await listProjectMovement(ctx.db, workspaceId, 'UTC', now)
+    expect(rowFor(utc as Row[], pid).doneThisWeek).toBe(0)
+  })
+
+  it('reads last activity from the event log, so a pure reorder does not revive a project', async () => {
+    const pid = await createProject(ctx, 'quiet')
+    const first = await createTask(ctx, pid, 'a')
+    const second = await createTask(ctx, pid, 'b')
+    // Nine days of silence.
+    await ctx.db.execute(sql`
+      update task_events set occurred_at = now() - interval '9 days'
+      where task_id in (select id from tasks where project_id = ${pid})
+    `)
+
+    const before = rowFor(await movement(), pid)
+    expect(before.quietDays).toBe(9)
+    expect(before.lastActivityOn).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+
+    // A reorder: same parent, same project, only the rank changes. It writes no event by design
+    // (contracts, section 9.1) precisely so that a tidy-up cannot poison this number.
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/tasks/${second}/move`,
+      headers: ctx.authed,
+      payload: { projectId: pid, parentId: null, beforeId: first },
+    })
+    expect(res.statusCode).toBe(200)
+
+    const after = rowFor(await movement(), pid)
+    expect(after.quietDays).toBe(9)
+    expect(after.lastActivityOn).toBe(before.lastActivityOn)
+
+    // A real change does move it: the number is not simply frozen.
+    expect(
+      (
+        await ctx.app.inject({
+          method: 'PATCH',
+          url: `/api/v1/tasks/${first}`,
+          headers: ctx.authed,
+          payload: { title: 'a, renamed' },
+        })
+      ).statusCode,
+    ).toBe(200)
+    expect(rowFor(await movement(), pid).quietDays).toBe(0)
+  })
+
+  it('reports no activity at all for a project nothing has ever happened in', async () => {
+    const pid = await createProject(ctx, 'untouched')
+    const row = rowFor(await movement(), pid)
+    expect(row.lastActivityOn).toBeNull()
+    expect(row.quietDays).toBeNull()
+    expect(row).toMatchObject({ remaining: 0, doneThisWeek: 0 })
+  })
+
+  it('shows a workspace only its own projects', async () => {
+    const mine = await createProject(ctx, 'mine only')
+    await createTask(ctx, mine, 'secret')
+
+    const theirs = await movement(otherAuthed)
+    expect(theirs.some((r) => r.projectId === mine)).toBe(false)
+    // Their own list is not empty for the wrong reason: they have an inbox of their own.
+    expect(theirs.length).toBeGreaterThan(0)
+    expect(theirs.every((r) => r.remaining === 0)).toBe(true)
+
+    expect((await movement()).some((r) => r.projectId === mine)).toBe(true)
+  })
+})
