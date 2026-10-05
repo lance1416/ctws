@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { openProject, registerFreshUser, submitCreate } from './helpers'
+import { openProject, registerFreshUser, setDetailStatus, submitCreate } from './helpers'
 
 async function captureAndOpen(page: Page, title: string) {
   await submitCreate(page, '捕获…', title)
@@ -11,7 +11,7 @@ async function captureAndOpen(page: Page, title: string) {
 test('a freshly registered user sees an empty today page, not an error', async ({ page }) => {
   await registerFreshUser(page)
   await expect(page.getByRole('heading', { name: '今天' })).toBeVisible()
-  await expect(page.getByText('今天没有安排的事')).toBeVisible()
+  await expect(page.getByText('今天没有要做的事')).toBeVisible()
 })
 
 test('scheduling a task through the detail panel puts it on the today page', async ({ page }) => {
@@ -29,13 +29,13 @@ test('scheduling a task through the detail panel puts it on the today page', asy
   // The breadcrumb says where it lives, so the list is usable without opening anything.
   await expect(section.getByText('Inbox')).toBeVisible()
   // With something scheduled, the empty-state line must be gone, not shown beside the list.
-  await expect(page.getByText('今天没有安排的事')).toHaveCount(0)
+  await expect(page.getByText('今天没有要做的事')).toHaveCount(0)
 })
 
 test('an in-progress task appears under 正在做', async ({ page }) => {
   await registerFreshUser(page)
   await captureAndOpen(page, '写 M2b')
-  await page.getByLabel('状态').selectOption('in_progress')
+  await setDetailStatus(page, '进行中')
   await page.getByRole('button', { name: '保存' }).click()
 
   await page.getByRole('link', { name: '今天' }).click()
@@ -47,7 +47,7 @@ test('an in-progress task appears under 正在做', async ({ page }) => {
 test('a task that is both overdue and in progress is shown once', async ({ page }) => {
   await registerFreshUser(page)
   await captureAndOpen(page, '又逾期又在做')
-  await page.getByLabel('状态').selectOption('in_progress')
+  await setDetailStatus(page, '进行中')
   await page.getByLabel('截止').fill('2020-01-01T00:00')
   await page.getByRole('button', { name: '保存' }).click()
 
@@ -65,7 +65,7 @@ test('the three sections render in the order overdue, today, in progress', async
 
   // Created in the reverse of display order so insertion order cannot explain a pass.
   await captureAndOpen(page, '甲在做')
-  await page.getByLabel('状态').selectOption('in_progress')
+  await setDetailStatus(page, '进行中')
   await page.getByRole('button', { name: '保存' }).click()
   // Saving closes the panel by itself (it used to need a separate 关闭).
   await expect(page.getByRole('dialog')).toHaveCount(0)
@@ -93,16 +93,16 @@ test('the three sections render in the order overdue, today, in progress', async
 test('an edit made from the today page is reflected without a reload', async ({ page }) => {
   await registerFreshUser(page)
   await captureAndOpen(page, '先在做')
-  await page.getByLabel('状态').selectOption('in_progress')
+  await setDetailStatus(page, '进行中')
   await page.getByRole('button', { name: '保存' }).click()
 
   await page.getByRole('link', { name: '今天' }).click()
   await page.getByRole('region', { name: '正在做' }).getByText('先在做').click()
-  await page.getByLabel('状态').selectOption('done')
+  await setDetailStatus(page, '已完成')
   await page.getByRole('button', { name: '保存' }).click()
 
   await expect(page.getByText('先在做')).toHaveCount(0)
-  await expect(page.getByText('今天没有安排的事')).toBeVisible()
+  await expect(page.getByText('今天没有要做的事')).toBeVisible()
   // The panel unmounted without being closed; focus must not have fallen to <body>.
   await expect(page.locator('#today-heading')).toBeFocused()
 })
@@ -123,7 +123,7 @@ test('a nested task shows both its project and its parent in the breadcrumb', as
   await moved
 
   await page.getByRole('listitem').filter({ hasText: '子任务' }).click()
-  await page.getByLabel('状态').selectOption('in_progress')
+  await setDetailStatus(page, '进行中')
   await page.getByRole('button', { name: '保存' }).click()
 
   await page.getByRole('link', { name: '今天' }).click()
@@ -140,7 +140,7 @@ test('a failed fetch shows an error, not the empty-state line', async ({ page })
   )
   await registerFreshUser(page)
   await expect(page.getByRole('alert')).toHaveText('boom')
-  await expect(page.getByText('今天没有安排的事')).toHaveCount(0)
+  await expect(page.getByText('今天没有要做的事')).toHaveCount(0)
 })
 
 // The overdue date is for reading, not for a form: a relative label, with the exact local time on
@@ -163,7 +163,7 @@ test('an overdue task shows a relative label, not the datetime-local format', as
 test('the status dot has a text alternative', async ({ page }) => {
   await registerFreshUser(page)
   await captureAndOpen(page, '写 M2b')
-  await page.getByLabel('状态').selectOption('in_progress')
+  await setDetailStatus(page, '进行中')
   await page.getByRole('button', { name: '保存' }).click()
 
   await page.getByRole('link', { name: '今天' }).click()

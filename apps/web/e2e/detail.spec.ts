@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { openProject, registerFreshUser, submitCreate } from './helpers'
+import { openProject, registerFreshUser, setDetailStatus, submitCreate } from './helpers'
 
 const PATCH_URL = /\/tasks\/[^/]+$/
 const MOVE_URL = /\/tasks\/[^/]+\/move$/
@@ -30,14 +30,14 @@ test('edits persist across a reload', async ({ page }) => {
   const url = page.url()
 
   await page.getByLabel('备注').fill('先问清需求')
-  await page.getByLabel('状态').selectOption('in_progress')
+  await setDetailStatus(page, '进行中')
   await page.getByLabel('排期').fill('2026-10-02')
   await save(page)
 
   await page.goto(url)
   await row(page, '写方案').click()
   await expect(page.getByLabel('备注')).toHaveValue('先问清需求')
-  await expect(page.getByLabel('状态')).toHaveValue('in_progress')
+  await expect(page.getByRole('radio', { name: '进行中', exact: true })).toBeChecked()
   await expect(page.getByLabel('排期')).toHaveValue('2026-10-02')
 })
 

@@ -142,7 +142,7 @@ test('starting a task from its row puts it under 正在做, stopping takes it of
 
   // A dateless, not-started task is not on the Today page at all.
   await page.getByRole('link', { name: '今天' }).click()
-  await expect(page.getByText('今天没有安排的事')).toBeVisible()
+  await expect(page.getByText('今天没有要做的事')).toBeVisible()
   await page.goBack()
   await page.getByRole('listitem').first().waitFor()
 
@@ -158,7 +158,7 @@ test('starting a task from its row puts it under 正在做, stopping takes it of
   const stopped = patched(page)
   await page.getByRole('button', { name: '暂停「写方案」' }).click()
   expect((await stopped).request().postDataJSON()).toEqual({ status: 'todo' })
-  await expect(page.getByText('今天没有安排的事')).toBeVisible()
+  await expect(page.getByText('今天没有要做的事')).toBeVisible()
   expect((await serverTask(page, pid, '写方案')).status).toBe('todo')
 })
 
@@ -594,7 +594,10 @@ test.describe('the panel as an overlay', () => {
     const dialog = page.getByRole('dialog')
 
     await page.getByLabel('备注').click()
-    await dialog.getByText('标题').click()
+    // A click on a non-interactive part of the panel. The panel no longer prints the word 标题
+    // over the title (it opens with the task itself), so this presses the 备注 label instead --
+    // still a dead area of the panel, which is the whole point of the assertion.
+    await dialog.getByText('备注').click()
     await expect(dialog).toBeVisible()
 
     await page.mouse.click(60, 600)

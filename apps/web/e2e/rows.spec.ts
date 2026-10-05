@@ -203,7 +203,7 @@ test('the date control is reachable, operable and escapable by keyboard alone', 
   expect(Object.keys(body)).toEqual(['dueAt'])
   expect(ymd(new Date(body.dueAt))).toBe(dayOffset(1))
   // The row left the page; focus went to the heading rather than falling to <body>.
-  await expect(page.getByText('今天没有安排的事')).toBeVisible()
+  await expect(page.getByText('今天没有要做的事')).toBeVisible()
   await expect(page.locator('#today-heading')).toBeFocused()
 })
 

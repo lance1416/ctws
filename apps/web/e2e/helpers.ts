@@ -46,6 +46,13 @@ export async function openProject(page: Page, name: string, exact = false): Prom
   await loaded
 }
 
+// Picks a status in the open detail panel. Status there is no longer a <select> of words but the
+// same five marker shapes the rows use, as a radio group: one tab stop, arrow keys inside it.
+// The VALUE written is unchanged, which is what every caller of this is actually about.
+export async function setDetailStatus(page: Page, label: string): Promise<void> {
+  await page.getByRole('radio', { name: label, exact: true }).check()
+}
+
 // Moves a finished task's completion back in time. The API (rightly) offers no way to set
 // completed_at, and a view grouped by day cannot be tested without days of history, so this goes
 // to the database the stack is running on. Needs `docker compose` and the stack up, like the
