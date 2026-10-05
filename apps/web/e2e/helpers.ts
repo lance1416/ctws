@@ -34,11 +34,16 @@ export async function submitCreate(page: Page, placeholder: string, text: string
 // first list fetch is still in flight is a race: the page's own refetch can be satisfied by that
 // stale in-flight request, and the new task never shows up.
 export async function openProject(page: Page, name: string, exact = false): Promise<void> {
-  const loaded = page.waitForResponse(
-    (r) =>
+  const loaded = page.waitForResponse((r) => {
+    // The task module lists a project's tasks at `GET /api/v1/tasks?projectId=<id>`: the project
+    // is the shell's, so it is a filter rather than a path segment of the module's route.
+    const url = new URL(r.url())
+    return (
       r.request().method() === 'GET' &&
-      /\/api\/v1\/projects\/[^/]+\/tasks$/.test(new URL(r.url()).pathname),
-  )
+      url.pathname === '/api/v1/tasks' &&
+      url.searchParams.has('projectId')
+    )
+  })
   // Scoped to <main>: since the three-pane shell, the left rail ALSO lists every project by
   // name, so an unscoped getByText would match two elements and fail strict mode. The project
   // list page is the thing being exercised here, and it lives in the centre column.
