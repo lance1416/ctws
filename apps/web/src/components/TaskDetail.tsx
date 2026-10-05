@@ -10,9 +10,13 @@ import { useBlocker } from 'react-router-dom'
 import { listProjects } from '../api/projects'
 import { deleteTask, listProjectTasks, moveTask, patchTask } from '../api/tasks'
 import { tasksKey } from '../api/taskCache'
+import { addDays, dayPhrase, moveDueToDay, nextMonday, ymd } from '../dueAt'
+import { projectRailClass } from '../projectColor'
 import { DeleteConfirm } from './DeleteConfirm'
 import { useReservePane, useWidePane } from './detailPane'
 import { LeaveGuardContext } from './leaveGuard'
+import { DeadlineMark, PlanMark } from './RowParts'
+import { StatusMark } from './StatusMark'
 
 // An empty date input yields '' , and the contract takes a date or null. Sending '' would be
 // rejected; silently coercing it to today would be worse.
@@ -42,8 +46,35 @@ export function fromLocalInput(v: string): string | null {
 }
 
 const field =
-  'mt-1 w-full rounded-md border border-border-strong bg-surface px-3 py-2 text-fg leading-snug'
+  'w-full rounded-md border border-border-strong bg-surface px-3 py-2 text-fg leading-snug'
+/** The section label. Small, muted, and the same on every block, so the blocks read as peers. */
 const label = 'block text-xs text-fg-muted'
+/** A named decision: the same shape as the row's triage buttons, so the two speak one language. */
+const decision =
+  'rounded-md border border-border-subtle px-2 py-1 text-sm text-fg hover:border-border-strong hover:bg-surface'
+/**
+ * The exact field, for the days the three named decisions do not cover. Quieter than them on
+ * purpose -- it is the fallback, and a full-width boxed input made the rarer route the loudest
+ * thing in the block -- but quieter by SIZE, not by a fainter edge: an input's edge is what says
+ * "this is a control", so it keeps `border-strong` (styles.css: border-subtle is decorative only).
+ */
+const exact =
+  'w-full max-w-[14rem] rounded-md border border-border-strong bg-surface px-2 py-1 text-sm text-fg'
+
+/**
+ * The exact local day and time, said the way the rest of the app says it ("明天 14:30"), under the
+ * native date control.
+ *
+ * It is here because a native date input renders its format in the BROWSER'S UI language, which
+ * the page cannot set (not through `lang`, not through the JS locale -- verified), so the field
+ * itself may read `dd/mm/yyyy` on one machine and `yyyy/mm/dd` on another. The echo is the app
+ * saying back, in its own words, which day it understood -- which is the thing the reader actually
+ * needs, and it is right whatever the field prints.
+ */
+function DateEcho({ text }: { text: string | null }) {
+  if (!text) return null
+  return <p className="mt-1 text-2xs tabular-nums text-fg-muted">{text}</p>
+}
 
 type Props = {
   task: TaskResponse
@@ -131,6 +162,28 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
       await qc.invalidateQueries({ queryKey: tasksKey(task.projectId) })
     },
   })
+
+  // The named decisions, the same three days the row's triage control offers (今天 / 明天 / 下周)
+  // plus the way out. They write the SAME fields the exact inputs write and are saved by the same
+  // Save press -- they are a faster way to type a date, not a second way to change the task.
+  const todayYmd = ymd(new Date())
+  const DAYS: [string, string][] = [
+    ['今天', todayYmd],
+    ['明天', addDays(todayYmd, 1)],
+    ['下周', nextMonday(todayYmd)],
+  ]
+  /** Keeps the time of day when there already is one; a new deadline means "by the end of it". */
+  const setDueDay = (day: string) => {
+    const from = fromLocalInput(dueAt)
+    setDueAt(toLocalInput(from ? moveDueToDay(from, day) : `${day}T23:59:00`))
+  }
+  const dueEcho = (() => {
+    const iso = fromLocalInput(dueAt)
+    if (!iso) return null
+    const d = new Date(iso)
+    return `${dayPhrase(ymd(d), todayYmd)} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+  })()
+  const planEcho = scheduledOn ? dayPhrase(scheduledOn, todayYmd) : null
 
   // The panel starts below the sticky top bar rather than over it, so the capture box and the
   // account controls stay visible and usable while a task is open.
@@ -268,22 +321,153 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
           wide ? 'w-[22.5rem] bg-surface-sunken' : 'w-full max-w-md bg-surface-raised'
         }`}
       >
-        {/* The pane carries no page heading (there is already one h1 on screen, and this is
-            not a second page), but as a column that never covers anything it does need to say
-            what it is. */}
-        <p className="mb-4 text-xs text-fg-muted">任务详情</p>
         <form
           onSubmit={(e) => {
             e.preventDefault()
             // After the lists have refetched, so the row behind the panel is already up to date.
             if (title.trim() && !save.isPending) save.mutate(undefined, { onSuccess: onSaved })
           }}
-          className="flex flex-col gap-4"
+          className="flex flex-col gap-5"
         >
-          <label className={label}>
-            标题
-            <input value={title} onChange={(e) => setTitle(e.target.value)} className={field} />
-          </label>
+          {/* The pane opens with the TASK: where it lives, then what it is called. It used to
+              open with the word 标题 over an input, which made a task read as a settings form.
+              The project is the identity line AND the control that moves it -- one thing, not a
+              breadcrumb at the top and a duplicate dropdown at the bottom. The chip beside it is
+              never alone: the project's NAME is right there (WCAG 1.4.1). */}
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span
+                aria-hidden="true"
+                className={`h-3.5 w-[3px] shrink-0 rounded-full ${projectRailClass(nextProjectId)}`}
+              />
+              <select
+                aria-label="项目"
+                value={nextProjectId}
+                onChange={(e) => setNextProjectId(e.target.value)}
+                className="-ml-0.5 max-w-full rounded-md bg-transparent py-0.5 text-sm text-fg-muted hover:text-fg"
+              >
+                {(projects.data ?? [])
+                  .filter((p) => !p.archivedAt || p.id === task.projectId)
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <input
+              aria-label="标题"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="mt-1 w-full rounded-md bg-transparent py-0.5 text-lg font-semibold text-fg"
+            />
+          </div>
+
+          {/* Status speaks the vocabulary the rows speak: the same five marker shapes, named.
+              A dropdown of words made the app's core semantic something you had to open a menu
+              to read. Native radios on purpose -- the group is one tab stop and the arrow keys
+              move within it, for free and correctly. */}
+          <div role="radiogroup" aria-labelledby="detail-status-label">
+            <span id="detail-status-label" className={label}>
+              状态
+            </span>
+            {/* Three to a row rather than free wrapping: five chips of unequal width left 已取消
+                hanging alone on a second line like an afterthought, and it is not one. */}
+            <div className="mt-1.5 grid grid-cols-3 gap-1">
+              {TASK_STATUSES.map((s) => (
+                <label
+                  key={s}
+                  className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border-subtle py-1 pr-2 pl-1.5 text-sm text-fg-muted hover:bg-surface has-[:checked]:border-border-strong has-[:checked]:bg-surface has-[:checked]:font-medium has-[:checked]:text-fg has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent"
+                >
+                  <input
+                    type="radio"
+                    name="detail-status"
+                    value={s}
+                    checked={status === s}
+                    onChange={() => setStatus(s)}
+                    className="sr-only"
+                  />
+                  {/* aria-hidden: the radio's name comes from the text beside it, and a marker
+                      that also announced 「进行中」 would say it twice. */}
+                  <span aria-hidden="true" className="flex">
+                    <StatusMark status={s} />
+                  </span>
+                  {STATUS_LABEL[s]}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* The two dates, wearing the glyph and the colour family the rows wear (a flag for a
+              deadline, warm; a tick on a timeline for a plan, cool). Each offers the same named
+              decisions the row's triage control offers -- 今天 / 明天 / 下周 and the way out --
+              AND an exact field for everything those three do not cover. */}
+          <div>
+            <label
+              htmlFor="detail-due"
+              className="flex items-center gap-1 text-sm font-medium text-deadline"
+            >
+              <DeadlineMark filled={false} />
+              截止
+            </label>
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {DAYS.map(([word, day]) => (
+                <button
+                  key={word}
+                  type="button"
+                  onClick={() => setDueDay(day)}
+                  className={decision}
+                >
+                  {word}截止
+                </button>
+              ))}
+              <button type="button" onClick={() => setDueAt('')} className={decision}>
+                取消截止
+              </button>
+            </div>
+            <input
+              id="detail-due"
+              type="datetime-local"
+              value={dueAt}
+              onChange={(e) => setDueAt(e.target.value)}
+              className={`${exact} mt-1.5`}
+            />
+            <DateEcho text={dueEcho} />
+          </div>
+
+          <div>
+            <label
+              htmlFor="detail-plan"
+              className="flex items-center gap-1 text-sm font-medium text-plan"
+            >
+              <PlanMark />
+              排期
+            </label>
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {DAYS.map(([word, day]) => (
+                <button
+                  key={word}
+                  type="button"
+                  onClick={() => setScheduledOn(day)}
+                  className={decision}
+                >
+                  排到{word}
+                </button>
+              ))}
+              <button type="button" onClick={() => setScheduledOn('')} className={decision}>
+                清除排期
+              </button>
+            </div>
+            <input
+              id="detail-plan"
+              type="date"
+              value={scheduledOn}
+              onChange={(e) => setScheduledOn(e.target.value)}
+              className={`${exact} mt-1.5`}
+            />
+            <DateEcho text={planEcho} />
+          </div>
+
           <label className={label}>
             备注
             {/* The one place in the app that keeps a READING measure: notes are prose, and
@@ -293,56 +477,8 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={5}
-              className={`${field} max-w-[68ch]`}
+              className={`${field} mt-1.5 max-w-[68ch]`}
             />
-          </label>
-          <label className={label}>
-            状态
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value as TaskStatus)}
-              className={field}
-            >
-              {TASK_STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {STATUS_LABEL[s]}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className={label}>
-            排期
-            <input
-              type="date"
-              value={scheduledOn}
-              onChange={(e) => setScheduledOn(e.target.value)}
-              className={field}
-            />
-          </label>
-          <label className={label}>
-            截止
-            <input
-              type="datetime-local"
-              value={dueAt}
-              onChange={(e) => setDueAt(e.target.value)}
-              className={field}
-            />
-          </label>
-          <label className={label}>
-            项目
-            <select
-              value={nextProjectId}
-              onChange={(e) => setNextProjectId(e.target.value)}
-              className={field}
-            >
-              {(projects.data ?? [])
-                .filter((p) => !p.archivedAt || p.id === task.projectId)
-                .map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-            </select>
           </label>
           {asking && (
             <div role="alert" className="rounded-md border border-border-strong p-3 text-sm">
@@ -388,11 +524,15 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
             >
               关闭
             </button>
+          </div>
+          {/* Destroying the task is not a peer of saving it. It sits below the rule, at the size
+              of a footnote, where nothing lands on it by accident on the way to 保存. */}
+          <div className="mt-2 border-t border-border-subtle pt-3">
             <button
               ref={deleteButton}
               type="button"
               onClick={askDelete}
-              className="ml-auto h-10 rounded-md px-3 text-sm text-fg-muted hover:text-danger"
+              className="-mx-2 rounded-md px-2 py-1 text-sm text-fg-muted hover:text-danger"
             >
               删除任务
             </button>
@@ -400,7 +540,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
           {deleting && (
             <DeleteConfirm
               label="确认删除任务"
-              className="rounded-md border border-border-strong p-3"
+              className="-mt-3 rounded-md border border-border-strong p-3"
               message={
                 deleting.descendants === null
                   ? `删除「${task.title}」…`

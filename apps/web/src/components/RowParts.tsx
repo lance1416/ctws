@@ -101,7 +101,7 @@ export function ProjectRail({
  * channels: the words ("…截止" against "排到…"), the colour family (warm against cool) and -- this
  * -- the shape. A flag is a line you must not cross; it is filled once the line has been crossed.
  */
-function DeadlineMark({ filled }: { filled: boolean }) {
+export function DeadlineMark({ filled }: { filled: boolean }) {
   return (
     <svg
       viewBox="0 0 12 12"
@@ -125,7 +125,7 @@ function DeadlineMark({ filled }: { filled: boolean }) {
  * A plan's glyph: a tick on a timeline. Deliberately HORIZONTAL, so in a grey screenshot (or to a
  * colourblind reader) a plan and a deadline are told apart by silhouette alone.
  */
-function PlanMark() {
+export function PlanMark() {
   return (
     <svg
       viewBox="0 0 12 12"
