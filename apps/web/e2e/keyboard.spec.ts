@@ -267,7 +267,7 @@ test('g chords jump between the four destinations and not while typing', async (
 
   await page.keyboard.press('g')
   await page.keyboard.press('d')
-  await expect(page).toHaveURL(/\/completed$/)
+  await expect(page).toHaveURL(/\/tasks\/completed$/)
 
   await page.keyboard.press('g')
   await page.keyboard.press('i')
@@ -275,13 +275,13 @@ test('g chords jump between the four destinations and not while typing', async (
 
   await page.keyboard.press('g')
   await page.keyboard.press('t')
-  await expect(page).toHaveURL(/\/$/)
+  await expect(page).toHaveURL(/\/tasks\/today$/)
 
   // In a text field, `g` then `p` is two letters of a word.
   await page.getByLabel('捕获').fill('')
   await page.getByLabel('捕获').press('g')
   await page.getByLabel('捕获').press('p')
-  await expect(page).toHaveURL(/\/$/)
+  await expect(page).toHaveURL(/\/tasks\/today$/)
   await expect(page.getByLabel('捕获')).toHaveValue('gp')
 })
 

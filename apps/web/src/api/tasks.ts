@@ -2,7 +2,7 @@ import type { MoveTaskBody, TaskResponse, UpdateTaskBody } from '@ctws/contracts
 import { apiFetch } from '../api'
 
 export async function listProjectTasks(projectId: string): Promise<TaskResponse[]> {
-  return (await apiFetch<{ tasks: TaskResponse[] }>(`/projects/${projectId}/tasks`)).tasks
+  return (await apiFetch<{ tasks: TaskResponse[] }>(`/tasks?projectId=${projectId}`)).tasks
 }
 
 export function createTask(body: {

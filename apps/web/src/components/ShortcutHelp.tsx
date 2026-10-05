@@ -1,4 +1,6 @@
+import { allChords } from '../modules/registry'
 import { setShortcutsEnabled, useShortcutsEnabled } from '../shortcuts/enabled'
+import { JUMP_PREFIX } from '../shortcuts/chords'
 import { Overlay } from './Overlay'
 
 /**
@@ -15,10 +17,9 @@ const GROUPS: { title: string; keys: [string, string][] }[] = [
       ['/', '跳到捕获框'],
       ['f', '搜索所有项目的任务'],
       ['?', '这份快捷键清单'],
-      ['g t', '去「今天」'],
-      ['g p', '去「项目」'],
-      ['g d', '去「已完成」'],
-      ['g i', '去收件箱'],
+      // The jump chords come from the key table, so a module that adds one cannot add it
+      // without the help overlay saying so -- an undiscoverable key is no key at all.
+      ...allChords().map((c): [string, string] => [`${JUMP_PREFIX} ${c.key}`, c.label]),
       ['Esc', '关闭面板或浮层'],
     ],
   },

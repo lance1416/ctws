@@ -135,7 +135,7 @@ test('a nested task shows both its project and its parent in the breadcrumb', as
 // A failed fetch must not read as "nothing to do": that would tell the user they are free when the
 // app simply could not ask.
 test('a failed fetch shows an error, not the empty-state line', async ({ page }) => {
-  await page.route('**/api/v1/today', (route) =>
+  await page.route('**/api/v1/tasks/today', (route) =>
     route.fulfill({ status: 500, json: { title: 'boom' } }),
   )
   await registerFreshUser(page)

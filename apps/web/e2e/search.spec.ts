@@ -34,9 +34,12 @@ async function seed(page: Page, url: string, spec: [title: string, parent: strin
 
 /** Types into the search box and waits for the server's answer, so no assertion races the fetch. */
 async function query(page: Page, text: string) {
-  const answered = page.waitForResponse((r) => r.url().includes('/api/v1/search?q=') && r.ok(), {
-    timeout: 15_000,
-  })
+  const answered = page.waitForResponse(
+    (r) => r.url().includes('/api/v1/tasks/search?q=') && r.ok(),
+    {
+      timeout: 15_000,
+    },
+  )
   await searchBox(page).fill(text)
   await answered
 }

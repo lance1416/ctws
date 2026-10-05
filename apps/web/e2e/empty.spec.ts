@@ -95,7 +95,7 @@ test('an empty 已完成 says what the page records and offers the way back', as
   await expect(page.getByText('还没有完成的任务')).toBeVisible()
   await expect(page.getByText('标记完成的任务按天记在这里，最近的一天在最上面。')).toBeVisible()
   await page.getByRole('link', { name: '回到今天' }).click()
-  await expect(page).toHaveURL(/\/$/)
+  await expect(page).toHaveURL(/\/tasks\/today$/)
 
   await makeTask(page, pid, '做完的事', { status: 'done' })
   await page.goto('/completed')
@@ -116,7 +116,7 @@ test('a search with no match says what search covers and clears itself', async (
   await expect(box).toBeFocused()
 
   // A query that really has no match.
-  const missed = page.waitForResponse((r) => r.url().includes('/api/v1/search?q=') && r.ok())
+  const missed = page.waitForResponse((r) => r.url().includes('/api/v1/tasks/search?q=') && r.ok())
   await box.fill('绝不存在的词')
   await missed
   await expect(page.getByText('没有匹配的任务')).toBeVisible()
@@ -130,7 +130,7 @@ test('a search with no match says what search covers and clears itself', async (
   await expect(page.getByText('没有匹配的任务')).toHaveCount(0)
 
   // The other half: with a match, none of the empty state is on screen.
-  const found = page.waitForResponse((r) => r.url().includes('/api/v1/search?q=') && r.ok())
+  const found = page.waitForResponse((r) => r.url().includes('/api/v1/tasks/search?q=') && r.ok())
   await page.keyboard.type('找得到')
   await found
   await expect(page.locator('[data-search-result]')).toHaveCount(1)

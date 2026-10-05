@@ -2,6 +2,7 @@ import type { UserResponse } from '@ctws/contracts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
+import { homePath } from '../modules/registry'
 import { apiFetch } from '../api'
 import { useMe } from '../useMe'
 
@@ -28,13 +29,13 @@ export function Login() {
       // Seed the cache before navigating: Layout reads it and would bounce back to /login
       // if it still saw the stale null.
       qc.setQueryData(['me'], user)
-      navigate('/', { replace: true })
+      navigate(homePath(), { replace: true })
     },
     onError: (e: Error) => setError(e.message),
   })
 
   if (me.isLoading) return null
-  if (me.data) return <Navigate to="/" replace />
+  if (me.data) return <Navigate to={homePath()} replace />
 
   return (
     // One plane, centred. An earlier pass stood the workbench's two surfaces on end here, which

@@ -65,7 +65,7 @@ export function Completed() {
           title="还没有完成的任务"
           hint="标记完成的任务按天记在这里，最近的一天在最上面。"
           action={
-            <Link to="/" className={EMPTY_ACTION}>
+            <Link to="/tasks/today" className={EMPTY_ACTION}>
               回到今天
             </Link>
           }

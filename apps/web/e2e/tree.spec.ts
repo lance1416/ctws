@@ -3,6 +3,16 @@ import { openProject, registerFreshUser, submitCreate } from './helpers'
 
 const MOVE_URL = /\/tasks\/[^/]+\/move$/
 
+type RouteUrl = Parameters<Page['route']>[0]
+
+/**
+ * A project's task list. The task module answers it at `GET /api/v1/tasks?projectId=<id>` (the
+ * project belongs to the shell, so it is a filter rather than a path segment), and a URL glob
+ * cannot express a query parameter -- hence a predicate.
+ */
+const TASK_LIST: RouteUrl = (url) =>
+  url.pathname === '/api/v1/tasks' && url.searchParams.has('projectId')
+
 /** The row's drag handle and keyboard focus carrier; its accessible name is the task title. */
 const handle = (page: Page, title: string) =>
   page.getByRole('button', { name: `任务：${title}`, exact: true })
@@ -170,7 +180,7 @@ test('a move shows at once, and a rejected one rolls back visibly', async ({ pag
 
   let releaseList!: () => void
   const listGate = new Promise<void>((resolve) => (releaseList = resolve))
-  await page.route('**/api/v1/projects/*/tasks', async (route) => {
+  await page.route(TASK_LIST, async (route) => {
     await listGate
     await route.continue()
   })
@@ -480,7 +490,7 @@ test('a too-deep drop shows a message and sends no move', async ({ page }) => {
  * Later GETs pass straight through. A fixed delay cannot do this: it would let the server see the
  * create, which makes the held response fresh and hides the bug.
  */
-async function holdFirstListFetch(page: Page, glob = '**/api/v1/projects/*/tasks') {
+async function holdFirstListFetch(page: Page, glob: RouteUrl = TASK_LIST) {
   let release!: () => void
   const gate = new Promise<void>((resolve) => (release = resolve))
   let captured!: () => void

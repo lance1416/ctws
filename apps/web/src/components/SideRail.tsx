@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { NavLink } from 'react-router-dom'
 import { listProjects } from '../api/projects'
-import { listToday } from '../api/today'
+import { moduleDestinations } from '../modules/registry'
 import { projectRailClass } from '../projectColor'
 
 /**
@@ -13,17 +13,19 @@ import { projectRailClass } from '../projectColor'
  * its open-task count and its identity chip, which also closes D47 (the project list showed
  * nothing but names).
  *
+ * The destinations are no longer written in here: each MODULE contributes its own, and the rail
+ * renders whatever is registered (module-boundary contract §3). The project list below them is
+ * the shell's own -- the user's life is organised by line of work, and a note about CTWS belongs
+ * to CTWS as much as a task does.
+ *
  * Deliberately NOT a <ul>/<li>: the pages below render their own lists, and a second set of
  * listitems in the chrome would make "how many rows does this page have" unanswerable, for the
  * reader and for the tests alike.
  */
 export function SideRail() {
-  // Both queries share their cache entry with the pages that own them, so the rail costs one
-  // extra request per session, not one per navigation.
+  // Shares its cache entry with the pages that own it, so the rail costs one extra request per
+  // session, not one per navigation.
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
-  const today = useQuery({ queryKey: ['today'], queryFn: listToday })
-  // Only tasks that are actually on today's plate; the rail must not claim work that is not due.
-  const todayCount = today.data?.length ?? null
 
   return (
     <nav
@@ -35,8 +37,23 @@ export function SideRail() {
       // work in light mode, a brighter one in dark.
       className="flex flex-col gap-1 border-border-subtle bg-surface-sunken max-lg:flex-row max-lg:items-center max-lg:overflow-x-auto max-lg:border-b max-lg:px-4 max-lg:py-2 lg:h-[calc(100vh-3rem)] lg:gap-0 lg:overflow-y-auto lg:border-r lg:py-4 lg:pr-3 lg:pl-4"
     >
-      <Destination to="/" label="今天" count={todayCount} end={true} />
-      <Destination to="/completed" label="已完成" count={null} end={false} />
+      {/* One hook per registered count, over a frozen module list: see MODULES on why the list
+          must not change at runtime. */}
+      {moduleDestinations().map(({ moduleId, id, to, label, end, Count }) => (
+        <NavLink
+          key={`${moduleId}:${id}`}
+          to={to}
+          end={end ?? false}
+          className={({ isActive }) =>
+            `flex shrink-0 items-center gap-2 rounded-md px-2 py-1 whitespace-nowrap ${
+              isActive ? 'bg-surface font-medium text-fg' : 'text-fg-muted hover:text-fg'
+            }`
+          }
+        >
+          <span>{label}</span>
+          {Count && <Count />}
+        </NavLink>
+      ))}
 
       {/* The group label is itself the link to the full project page: one control, so there is
           never a label that looks clickable next to a link that is. */}
@@ -81,36 +98,5 @@ export function SideRail() {
         ))}
       </div>
     </nav>
-  )
-}
-
-function Destination({
-  to,
-  label,
-  count,
-  end,
-}: {
-  to: string
-  label: string
-  count: number | null
-  end: boolean
-}) {
-  return (
-    <NavLink
-      to={to}
-      end={end}
-      className={({ isActive }) =>
-        `flex shrink-0 items-center gap-2 rounded-md px-2 py-1 whitespace-nowrap ${
-          isActive ? 'bg-surface font-medium text-fg' : 'text-fg-muted hover:text-fg'
-        }`
-      }
-    >
-      <span>{label}</span>
-      {count !== null && count > 0 && (
-        <span data-count className="ml-auto pl-1 text-2xs text-fg-muted">
-          {count}
-        </span>
-      )}
-    </NavLink>
   )
 }

@@ -1,16 +1,22 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { inboxOf, listProjects } from '../api/projects'
-import { createTask } from '../api/tasks'
-import { refreshTasks } from '../api/taskCache'
+import { captureContribution } from '../modules/registry'
 import { useShortcutsEnabled } from '../shortcuts/enabled'
 import { isBareKey, isTypingTarget } from '../shortcuts/keys'
 import { isOverlayOpen } from './overlayState'
 
-// One input on every page: the destination is always the inbox, so there is nothing to choose.
+/**
+ * One input on every page.
+ *
+ * The destination is no longer "the inbox, obviously": it is whichever module the registry names
+ * as the default capture target, and that module resolves its own destination (module-boundary
+ * contract §3). With one module the line still lands in the inbox and nothing is asked of the
+ * typist -- which is the point. "敲一行字就走" is a success criterion, so naming the destination
+ * must not cost a keystroke, and it does not: the default is explicit in the registry, not chosen
+ * at the keyboard.
+ */
 export function QuickCapture() {
-  const qc = useQueryClient()
   const [title, setTitle] = useState('')
   // Set when a capture lands; cleared by the next keystroke or navigation. One line, never a
   // queue. It names the destination but not the title: the title would sit in the DOM of every
@@ -20,22 +26,19 @@ export function QuickCapture() {
   const shortcuts = useShortcutsEnabled()
   useEffect(() => setLanded(false), [pathname])
   const input = useRef<HTMLInputElement>(null)
-  const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
-  const inbox = projects.data ? inboxOf(projects.data) : undefined
-  const missing = projects.isSuccess && !inbox
+  const { target, missing, unavailable } = captureContribution().useTarget()
 
   const capture = useMutation({
-    mutationFn: (t: string) => createTask({ projectId: inbox!.id, title: t }),
+    mutationFn: (t: string) => target!.submit(t),
     onSuccess: () => {
       setTitle('')
       setLanded(true)
-      return refreshTasks(qc, inbox!.id)
     },
   })
 
   const submit = () => {
     const t = title.trim()
-    if (!t || !inbox || capture.isPending) return
+    if (!t || !target || capture.isPending) return
     capture.mutate(t)
   }
 
@@ -78,7 +81,7 @@ export function QuickCapture() {
             if (e.key === 'Enter' && !e.nativeEvent.isComposing) submit()
           }}
           placeholder="捕获…"
-          disabled={!inbox}
+          disabled={!target}
           aria-label="捕获"
           className="h-9 w-full rounded-md border border-border-strong bg-surface pr-8 pl-3 text-fg placeholder:text-fg-muted disabled:opacity-50"
         />
@@ -96,16 +99,16 @@ export function QuickCapture() {
       )}
       {/* role="status", not "alert": on the projects page the list already raises its own alert
           for the same failed fetch, and two alerts would be announced (and matched) twice. */}
-      {projects.isError && (
+      {unavailable && (
         <p role="status" className="order-3 w-full text-sm text-danger">
           无法加载收件箱，暂时不能捕获。请检查网络后刷新页面
         </p>
       )}
-      {landed && inbox && (
+      {landed && target && (
         <p role="status" className="order-3 w-full truncate text-sm text-fg-muted">
           已放入{' '}
-          <Link to={`/projects/${inbox.id}`} className="text-accent underline">
-            {inbox.name}
+          <Link to={target.to} className="text-accent underline">
+            {target.name}
           </Link>
         </p>
       )}

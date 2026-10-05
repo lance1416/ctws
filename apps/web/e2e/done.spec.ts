@@ -301,7 +301,7 @@ test('navigating away from a dirty panel asks first; keep editing stays, discard
 
   await nav(page).getByRole('link', { name: '已完成' }).click()
   await page.getByRole('button', { name: '放弃修改' }).click()
-  await expect(page).toHaveURL(/\/completed$/)
+  await expect(page).toHaveURL(/\/tasks\/completed$/)
   await expect(page.getByRole('dialog')).toHaveCount(0)
   expect((await serverTasks(page, pid))[0]!.title).toBe('写方案')
 })
@@ -369,7 +369,7 @@ test('pressing Save and then a nav link at once is not mistaken for losing edits
   })
   await page.getByRole('button', { name: '保存' }).click()
   await nav(page).getByRole('link', { name: '今天' }).click()
-  await expect(page).toHaveURL(/\/$/)
+  await expect(page).toHaveURL(/\/tasks\/today$/)
   await expect(page.getByText('有未保存的修改')).toHaveCount(0)
   // The save was not lost on the way.
   await expect

@@ -1,21 +1,23 @@
-import type { SearchTaskResponse } from '@ctws/contracts'
-import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { searchTasks } from '../api/search'
-import { ProjectRail } from './RowParts'
-import { StatusMark } from './StatusMark'
+import { searchProviders } from '../modules/registry'
+import { federate, type FederatedHit, type ProviderResult } from '../modules/search'
 import { Overlay } from './Overlay'
 
 /** Long enough that typing a word does not fire a request per letter, short enough to feel live. */
 const DEBOUNCE_MS = 150
 
 /**
- * Cross-project search (D46). Reached with `f` from anywhere, or the 搜索 button in the header.
+ * FEDERATED search (D46). Reached with `f` from anywhere, or the 搜索 button in the header.
  *
- * Choosing a result goes to the task's project with `?reveal=<id>`, which `TaskTree` consumes by
- * unfolding the ancestors and putting focus on that row. Routing alone is not enough: the row may
- * sit in a collapsed subtree, and arriving at a folded parent is exactly the failure this is for.
+ * Every module that can be searched contributes a provider and the dialog merges their answers
+ * (module-boundary contract §3). With one module registered the list is exactly the task list it
+ * always was, and no row says which module it came from -- there is only one, so a module name
+ * would be noise. From two providers on, every row carries its module as TEXT, never as a colour
+ * (WCAG 1.4.1, the rule the redesign follows).
+ *
+ * Where a hit goes is the module's business; the dialog only lays the pieces out, so results from
+ * two modules line up in one list instead of each bringing their own row design.
  */
 export function SearchDialog({ onClose }: { onClose: () => void }) {
   const [query, setQuery] = useState('')
@@ -30,12 +32,15 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
     return () => clearTimeout(timer)
   }, [query])
 
-  const results = useQuery({
-    queryKey: ['search', debounced],
-    queryFn: () => searchTasks(debounced),
-    enabled: debounced.length > 0,
-  })
-  const rows = debounced.length > 0 ? (results.data ?? []) : []
+  // One hook per provider, over the frozen module list: see MODULES on why that list must not
+  // change at runtime.
+  const parts: ProviderResult[] = searchProviders().map((p) => ({
+    moduleId: p.moduleId,
+    moduleLabel: p.moduleLabel,
+    ...p.useHits(debounced),
+  }))
+  const results = federate(parts)
+  const rows = debounced.length > 0 ? results.rows : []
   // A shorter result set must not leave the selection pointing past the end.
   const at = Math.min(active, Math.max(rows.length - 1, 0))
 
@@ -44,9 +49,9 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
     list.current?.children[at]?.scrollIntoView({ block: 'nearest' })
   }, [at])
 
-  const choose = (task: SearchTaskResponse) => {
+  const choose = (hit: FederatedHit) => {
     onClose()
-    navigate(`/projects/${task.projectId}?reveal=${task.id}`)
+    navigate(hit.to)
   }
 
   return (
@@ -66,8 +71,8 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
               setActive(Math.max(at - 1, 0))
             } else if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
               e.preventDefault()
-              const task = rows[at]
-              if (task) choose(task)
+              const hit = rows[at]
+              if (hit) choose(hit)
             }
           }}
           placeholder="搜索标题和备注…"
@@ -104,31 +109,30 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
         <p className="px-4 py-3 text-sm text-fg-muted">输入关键词搜索所有项目的任务</p>
       )}
       <ul ref={list} className="max-h-[52vh] overflow-y-auto">
-        {rows.map((t, i) => (
-          <li key={t.id}>
+        {rows.map((hit, i) => (
+          <li key={`${hit.moduleId}:${hit.id}`}>
             <button
               type="button"
-              data-search-result={t.id}
+              data-search-result={hit.id}
               aria-current={i === at ? 'true' : undefined}
-              onClick={() => choose(t)}
+              onClick={() => choose(hit)}
               onMouseEnter={() => setActive(i)}
-              // Same row system as the lists: the project rail at x=0, then the marker and
-              // the title at a fixed x. A result's project is a glance, not a read.
+              // Same row system as the lists: the module's identity rail at x=0, then the marker
+              // and the title at a fixed x. A result's project is a glance, not a read.
               className={`relative flex w-full items-start gap-2 py-2 pr-4 pl-5 text-left leading-snug ${
                 i === at ? 'bg-surface-sunken' : ''
               }`}
             >
-              <ProjectRail projectId={t.projectId} at="left-2" />
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center">
-                <StatusMark status={t.status} />
-              </span>
+              {hit.rail}
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center">{hit.mark}</span>
               <span className="flex min-w-0 flex-col">
-                <span className="truncate text-fg">{t.title}</span>
+                <span className="truncate text-fg">{hit.title}</span>
                 {/* The same breadcrumb the today and completed lists show, so a result is
-                    actionable without opening it. */}
+                    actionable without opening it -- prefixed by the module it came from once
+                    there is more than one module to tell apart. */}
                 <span className="truncate text-sm text-fg-muted">
-                  {t.parentTitle === null ? t.projectName : `${t.projectName} › ${t.parentTitle}`}
-                  {t.projectArchived && ' · 已归档'}
+                  {results.showModule && `${hit.moduleLabel} · `}
+                  {hit.meta}
                 </span>
               </span>
             </button>

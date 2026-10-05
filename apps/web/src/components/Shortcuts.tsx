@@ -1,8 +1,8 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { inboxOf, listProjects } from '../api/projects'
-import { CHORD_TIMEOUT_MS, JUMP_PREFIX, resolveJump, type JumpTarget } from '../shortcuts/chords'
+import { resolveChord } from '../modules/registry'
+import { CHORD_TIMEOUT_MS, JUMP_PREFIX } from '../shortcuts/chords'
 import { useShortcutsEnabled } from '../shortcuts/enabled'
 import { isBareKey, isTypingTarget } from '../shortcuts/keys'
 import { isOverlayOpen } from './overlayState'
@@ -22,30 +22,23 @@ const hint =
  * `?` lists everything, and is also the only way to find the switch that turns these off -- which
  * is why both overlays have a visible button as well: with the single-key shortcuts disabled,
  * `?` cannot be the only route to the setting that disabled them.
+ *
+ * WHERE the `g` chords go is no longer written in here: the shell and each module contribute to
+ * one key table and this component only runs it (module-boundary contract §3).
  */
 export function Shortcuts() {
   const [search, setSearch] = useState(false)
   const [help, setHelp] = useState(false)
   const enabled = useShortcutsEnabled()
   const navigate = useNavigate()
-  // Shares the ['projects'] cache entry with every other reader, so `g i` costs no extra request.
-  const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
-  const inbox = projects.data ? inboxOf(projects.data) : undefined
+  const qc = useQueryClient()
   // A pending `g`, and the timer that forgets it. Without the timeout a stray `g` would turn the
   // next `t` typed anywhere outside a field into a navigation.
   const pending = useRef(false)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const inboxId = inbox?.id
-
   useEffect(() => {
     if (!enabled) return
-    const jump = (target: JumpTarget) => {
-      if (target === 'today') navigate('/')
-      else if (target === 'projects') navigate('/projects')
-      else if (target === 'completed') navigate('/completed')
-      else if (inboxId) navigate(`/projects/${inboxId}`)
-    }
     const forget = () => {
       pending.current = false
       if (timer.current) clearTimeout(timer.current)
@@ -58,10 +51,13 @@ export function Shortcuts() {
       }
       if (pending.current) {
         forget()
-        const target = resolveJump(e.key)
-        if (target) {
+        const chord = resolveChord(e.key)
+        if (chord) {
+          // The key is consumed whether or not the destination can be resolved yet: a chord that
+          // fell through to the page's own `t` handler would be worse than one that did nothing.
           e.preventDefault()
-          jump(target)
+          const to = chord.resolve({ queryClient: qc })
+          if (to) navigate(to)
         }
         return
       }
@@ -86,7 +82,7 @@ export function Shortcuts() {
     }
     // Deliberately NOT re-run on every render: a re-render between `g` and its second key would
     // run the cleanup and forget the pending chord.
-  }, [enabled, inboxId, navigate])
+  }, [enabled, navigate, qc])
 
   return (
     <>
