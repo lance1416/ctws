@@ -27,7 +27,7 @@ type Row = {
 async function search(ctx: TaskCtx, q: string, cookie?: string): Promise<Row[]> {
   const res = await ctx.app.inject({
     method: 'GET',
-    url: `/api/v1/search?q=${encodeURIComponent(q)}`,
+    url: `/api/v1/tasks/search?q=${encodeURIComponent(q)}`,
     headers: cookie ? { 'x-ctws-client': 'web', cookie } : ctx.authed,
   })
   expect(res.statusCode).toBe(200)
@@ -62,7 +62,7 @@ describe('GET /search', () => {
     const ctx = await setup()
     const res = await ctx.app.inject({
       method: 'GET',
-      url: '/api/v1/search?q=anything',
+      url: '/api/v1/tasks/search?q=anything',
       headers: { 'x-ctws-client': 'web' },
     })
     expect(res.statusCode).toBe(401)
@@ -72,7 +72,11 @@ describe('GET /search', () => {
     const ctx = await setup()
     const project = await createProject(ctx, 'Alpha')
     await createTask(ctx, project, 'something')
-    for (const url of ['/api/v1/search', '/api/v1/search?q=', '/api/v1/search?q=%20%20']) {
+    for (const url of [
+      '/api/v1/tasks/search',
+      '/api/v1/tasks/search?q=',
+      '/api/v1/tasks/search?q=%20%20',
+    ]) {
       const res = await ctx.app.inject({ method: 'GET', url, headers: ctx.authed })
       expect(res.statusCode, url).toBe(400)
     }

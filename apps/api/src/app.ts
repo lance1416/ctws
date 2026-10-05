@@ -13,11 +13,13 @@ import {
 } from 'fastify-type-provider-zod'
 import { adminRoutes } from './admin/routes'
 import { authRoutes } from './auth/routes'
+import { movedRoutes } from './compat'
 import { warmDummyHash } from './auth/service'
 import type { Db } from './db/client'
 import type { Env } from './env'
 import { registerGuards } from './guards'
 import { sendProblem } from './problem'
+import { projectRoutes } from './projects/routes'
 import { taskRoutes } from './tasks/routes'
 
 export async function buildApp(opts: { env: Env; db: Db }): Promise<FastifyInstance> {
@@ -71,8 +73,13 @@ export async function buildApp(opts: { env: Env; db: Db }): Promise<FastifyInsta
   app.get('/api/v1/openapi.json', { schema: { hide: true } }, async () => app.swagger())
 
   await app.register(authRoutes, { prefix: '/api/v1' })
-  await app.register(taskRoutes, { prefix: '/api/v1' })
+  // The shell's own surfaces stay flat under /api/v1; a MODULE gets a namespace of its own, so
+  // the second module can be added without either one having to know the other's paths.
+  await app.register(projectRoutes, { prefix: '/api/v1' })
   await app.register(adminRoutes, { prefix: '/api/v1' })
+  await app.register(taskRoutes, { prefix: '/api/v1/tasks' })
+  // Registered last: a legacy path must never shadow a real one.
+  await app.register(movedRoutes, { prefix: '/api/v1' })
 
   // Serve the built web app, if configured. Registered after the API routes on purpose: API
   // routes must win over static files, and anything that misses falls to the not-found handler.

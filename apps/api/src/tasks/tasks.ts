@@ -7,7 +7,8 @@ import type { Db, Queryable } from '../db/client'
 import { projects, tasks } from '../db/schema'
 import { appendEvent, type AppendEventInput } from './events'
 import { TaskNotFoundError } from './errors'
-import { ProjectNotFoundError } from './projects'
+import { ProjectNotFoundError } from '../projects/errors'
+import { visibleProjects } from '../projects/store'
 
 export type Task = typeof tasks.$inferSelect
 
@@ -102,8 +103,9 @@ export async function lockVisibleTask(
       and(
         eq(tasks.id, id),
         isNull(tasks.deletedAt),
-        eq(projects.workspaceId, workspaceId),
-        isNull(projects.deletedAt),
+        // The shell's tenant chokepoint, not a copy of it: a task is in this workspace exactly
+        // when the project it hangs on is.
+        visibleProjects(workspaceId),
       ),
     )
     .for('update', { of: tasks })
@@ -141,13 +143,7 @@ export async function createTask(db: Db, ctx: TaskCtx, input: CreateTaskBody): P
     const [project] = await tx
       .select({ id: projects.id })
       .from(projects)
-      .where(
-        and(
-          eq(projects.id, input.projectId),
-          eq(projects.workspaceId, ctx.workspaceId),
-          isNull(projects.deletedAt),
-        ),
-      )
+      .where(and(eq(projects.id, input.projectId), visibleProjects(ctx.workspaceId)))
     if (!project) throw new ProjectNotFoundError()
 
     let projectId: string
@@ -376,13 +372,7 @@ export async function listProjectTasks(
   const [project] = await q
     .select({ id: projects.id })
     .from(projects)
-    .where(
-      and(
-        eq(projects.id, projectId),
-        eq(projects.workspaceId, workspaceId),
-        isNull(projects.deletedAt),
-      ),
-    )
+    .where(and(eq(projects.id, projectId), visibleProjects(workspaceId)))
   if (!project) throw new ProjectNotFoundError()
   return q
     .select()

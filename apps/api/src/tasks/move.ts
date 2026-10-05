@@ -4,7 +4,8 @@ import { and, asc, desc, eq, gt, isNull, lt, ne, sql } from 'drizzle-orm'
 import type { Db, Queryable } from '../db/client'
 import { projects, tasks } from '../db/schema'
 import { appendEvent } from './events'
-import { ProjectNotFoundError } from './projects'
+import { ProjectNotFoundError } from '../projects/errors'
+import { visibleProjects } from '../projects/store'
 import {
   DepthLimitError,
   depthOf,
@@ -126,13 +127,7 @@ export async function moveTask(
     const [project] = await tx
       .select({ id: projects.id })
       .from(projects)
-      .where(
-        and(
-          eq(projects.id, input.projectId),
-          eq(projects.workspaceId, ctx.workspaceId),
-          isNull(projects.deletedAt),
-        ),
-      )
+      .where(and(eq(projects.id, input.projectId), visibleProjects(ctx.workspaceId)))
     if (!project) throw new ProjectNotFoundError()
 
     // A soft-deleted parent is not a valid target: lockVisibleTask reports it as not found. Were

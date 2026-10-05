@@ -4,7 +4,7 @@ import { and, eq, isNull, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import type { Db, Queryable } from '../db/client'
 import { projects, users, workspaceMembers, workspaces } from '../db/schema'
-import { INBOX_NAME } from '../tasks/projects'
+import { INBOX_NAME } from '../projects/store'
 import { hashPassword, verifyPassword } from './password'
 
 export class EmailTakenError extends Error {

@@ -24,7 +24,11 @@ type Row = {
   completedAt: string
 }
 async function completed(ctx: Ctx): Promise<Row[]> {
-  const res = await ctx.app.inject({ method: 'GET', url: '/api/v1/completed', headers: ctx.authed })
+  const res = await ctx.app.inject({
+    method: 'GET',
+    url: '/api/v1/tasks/completed',
+    headers: ctx.authed,
+  })
   expect(res.statusCode).toBe(200)
   return res.json().tasks as Row[]
 }
@@ -46,7 +50,7 @@ describe('GET /completed', () => {
     const ctx = await setup()
     const res = await ctx.app.inject({
       method: 'GET',
-      url: '/api/v1/completed',
+      url: '/api/v1/tasks/completed',
       headers: { 'x-ctws-client': 'web' },
     })
     expect(res.statusCode).toBe(401)
@@ -132,7 +136,11 @@ describe('GET /completed', () => {
       'x-ctws-client': 'web',
       cookie: String(reg.headers['set-cookie']).split(';')[0]!,
     }
-    const res = await ctx.app.inject({ method: 'GET', url: '/api/v1/completed', headers: other })
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/v1/tasks/completed',
+      headers: other,
+    })
     expect(res.json().tasks).toEqual([])
     expect(await completed(ctx)).toHaveLength(1)
   })

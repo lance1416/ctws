@@ -22,14 +22,14 @@ async function setup(): Promise<TaskCtx> {
 }
 
 function list(ctx: TaskCtx, projectId: string, headers = ctx.authed) {
-  return ctx.app.inject({ method: 'GET', url: `/api/v1/projects/${projectId}/tasks`, headers })
+  return ctx.app.inject({ method: 'GET', url: `/api/v1/tasks?projectId=${projectId}`, headers })
 }
 
 function del(ctx: TaskCtx, id: string) {
   return ctx.app.inject({ method: 'DELETE', url: `/api/v1/tasks/${id}`, headers: ctx.authed })
 }
 
-describe('GET /projects/:id/tasks', () => {
+describe('GET /tasks?projectId', () => {
   it('returns a flat array, not a nested tree', async () => {
     const ctx = await setup()
     const p = await createProject(ctx, 'P')

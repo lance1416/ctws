@@ -1,15 +1,11 @@
 import {
   completedTaskResponse,
-  createProjectBody,
   createTaskBody,
   moveTaskBody,
-  projectListItem,
-  projectResponse,
   searchTaskResponse,
   taskEventResponse,
   taskResponse,
   todayTaskResponse,
-  updateProjectBody,
   updateTaskBody,
 } from '@ctws/contracts'
 import type { FastifyPluginAsync, FastifyReply } from 'fastify'
@@ -17,16 +13,8 @@ import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 import { authedUser, requireUser } from '../auth/require-user'
 import { sendProblem } from '../problem'
-import {
-  createProject,
-  listProjects,
-  ProjectNotFoundError,
-  softDeleteProject,
-  updateProject,
-  type Project,
-  type ProjectListRow,
-} from './projects'
-import { InboxNotDeletableError, TaskNotFoundError } from './errors'
+import { InboxNotDeletableError, ProjectNotFoundError } from '../projects/errors'
+import { TaskNotFoundError } from './errors'
 import { DEFAULT_EVENT_LIMIT, InvalidCursorError, listTaskEvents, MAX_EVENT_LIMIT } from './events'
 import { listCompleted, type CompletedTask } from './completed'
 import { searchTasks, type SearchTask } from './search'
@@ -41,23 +29,6 @@ import {
   updateTask,
   type Task,
 } from './tasks'
-
-function toProjectResponse(p: Project): z.infer<typeof projectResponse> {
-  return {
-    id: p.id,
-    workspaceId: p.workspaceId,
-    name: p.name,
-    color: p.color,
-    isInbox: p.isInbox,
-    rank: p.rank,
-    archivedAt: p.archivedAt ? p.archivedAt.toISOString() : null,
-    createdAt: p.createdAt.toISOString(),
-  }
-}
-
-function toProjectListItem(p: ProjectListRow): z.infer<typeof projectListItem> {
-  return { ...toProjectResponse(p), openTasks: p.openTasks }
-}
 
 function toTaskResponse(t: Task): z.infer<typeof taskResponse> {
   return {
@@ -105,7 +76,7 @@ function toSearchResponse(t: SearchTask): z.infer<typeof searchTaskResponse> {
 }
 
 const idParams = z.object({ id: z.uuid() }).strict()
-const listQuery = z.object({ archived: z.enum(['true', 'false']).optional() }).strict()
+const byProjectQuery = z.object({ projectId: z.uuid() }).strict()
 // Trimmed and non-empty: a blank query would otherwise match every task in the workspace, which
 // is a full table scan dressed up as a search result.
 const searchQuery = z.object({ q: z.string().trim().min(1).max(200) }).strict()
@@ -183,81 +154,25 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
     },
   )
 
+  // Was `GET /api/v1/projects/:id/tasks`. The project is the shell's, the tasks under it are the
+  // module's, so the project is a FILTER on the module's own collection rather than a parent path
+  // segment the module would be hanging routes off. The old path still answers, by redirect.
   typed.get(
-    '/projects',
+    '/',
     {
       preHandler: requireUser,
       schema: {
-        querystring: listQuery,
-        response: { 200: z.object({ projects: z.array(projectListItem) }).strict() },
-      },
-    },
-    async (req) => {
-      const rows = await listProjects(app.db, authedUser(req).workspaceId, {
-        archived: req.query.archived === 'true',
-      })
-      return { projects: rows.map(toProjectListItem) }
-    },
-  )
-
-  typed.post(
-    '/projects',
-    {
-      preHandler: requireUser,
-      schema: { body: createProjectBody, response: { 201: projectResponse } },
-    },
-    async (req, reply) => {
-      const row = await createProject(app.db, authedUser(req).workspaceId, req.body)
-      return reply.status(201).send(toProjectResponse(row))
-    },
-  )
-
-  typed.patch(
-    '/projects/:id',
-    {
-      preHandler: requireUser,
-      schema: { params: idParams, body: updateProjectBody, response: { 200: projectResponse } },
-    },
-    async (req, reply) => {
-      try {
-        const row = await updateProject(
-          app.db,
-          authedUser(req).workspaceId,
-          req.params.id,
-          req.body,
-        )
-        return toProjectResponse(row)
-      } catch (error) {
-        return sendTaskProblem(reply, error)
-      }
-    },
-  )
-
-  typed.delete(
-    '/projects/:id',
-    { preHandler: requireUser, schema: { params: idParams } },
-    async (req, reply) => {
-      try {
-        await softDeleteProject(app.db, authedUser(req).workspaceId, req.params.id)
-        return reply.status(204).send()
-      } catch (error) {
-        return sendTaskProblem(reply, error)
-      }
-    },
-  )
-
-  typed.get(
-    '/projects/:id/tasks',
-    {
-      preHandler: requireUser,
-      schema: {
-        params: idParams,
+        querystring: byProjectQuery,
         response: { 200: z.object({ tasks: z.array(taskResponse) }).strict() },
       },
     },
     async (req, reply) => {
       try {
-        const rows = await listProjectTasks(app.db, authedUser(req).workspaceId, req.params.id)
+        const rows = await listProjectTasks(
+          app.db,
+          authedUser(req).workspaceId,
+          req.query.projectId,
+        )
         return { tasks: rows.map(toTaskResponse) }
       } catch (error) {
         return sendTaskProblem(reply, error)
@@ -266,7 +181,7 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
   )
 
   typed.post(
-    '/tasks',
+    '/',
     {
       preHandler: requireUser,
       schema: { body: createTaskBody, response: { 201: taskResponse } },
@@ -287,7 +202,7 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
   )
 
   typed.patch(
-    '/tasks/:id',
+    '/:id',
     {
       preHandler: requireUser,
       schema: { params: idParams, body: updateTaskBody, response: { 200: taskResponse } },
@@ -312,7 +227,7 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
   // invariants -- cycle, depth, project_id cascade, rank -- that a generic PATCH must not
   // quietly take on.
   typed.post(
-    '/tasks/:id/move',
+    '/:id/move',
     {
       preHandler: requireUser,
       schema: { params: idParams, body: moveTaskBody, response: { 200: taskResponse } },
@@ -334,7 +249,7 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
   )
 
   typed.delete(
-    '/tasks/:id',
+    '/:id',
     { preHandler: requireUser, schema: { params: idParams } },
     async (req, reply) => {
       const user = authedUser(req)
@@ -352,7 +267,7 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
   )
 
   typed.get(
-    '/tasks/:id/events',
+    '/:id/events',
     {
       preHandler: requireUser,
       schema: {

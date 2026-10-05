@@ -5,7 +5,7 @@ import type { PgUpdateSetSource } from 'drizzle-orm/pg-core'
 import { v7 as uuidv7 } from 'uuid'
 import type { Queryable } from '../db/client'
 import { projects } from '../db/schema'
-import { InboxNotDeletableError } from './errors'
+import { InboxNotDeletableError, ProjectNotFoundError } from './errors'
 
 /** The quick-capture destination. One per workspace; see schema.ts and the 0003 migration. */
 export const INBOX_NAME = 'Inbox'
@@ -20,20 +20,16 @@ export type Project = typeof projects.$inferSelect
 export type ProjectListRow = Project & { openTasks: number }
 
 /**
- * Raised when a project does not exist, is soft-deleted, or belongs to another workspace. The
- * three cases are deliberately one error: telling them apart would let a caller probe which
- * project ids exist in workspaces they cannot see.
+ * THE TENANT CHOKEPOINT. Every query that reads or writes a project goes through this predicate,
+ * so scoping and soft-delete filtering cannot be forgotten on one path. `workspaceId` is a
+ * required parameter of every exported function here.
+ *
+ * It is exported because `tasks` reaches its workspace through a join to `projects` (spec 10.5:
+ * `tasks` carries no workspace id of its own), and three places in the task module used to
+ * re-spell this predicate by hand. Modules now borrow the shell's one copy instead: a module
+ * cannot define its own idea of which projects it may see.
  */
-export class ProjectNotFoundError extends Error {
-  constructor() {
-    super('Project not found')
-    this.name = 'ProjectNotFoundError'
-  }
-}
-
-// Every query goes through this predicate, so scoping and soft-delete filtering cannot be
-// forgotten on one path. `workspaceId` is a required parameter of every exported function.
-function visible(workspaceId: string) {
+export function visibleProjects(workspaceId: string) {
   return and(eq(projects.workspaceId, workspaceId), isNull(projects.deletedAt))
 }
 
@@ -69,7 +65,7 @@ export async function listProjects(
     .from(projects)
     .where(
       and(
-        visible(workspaceId),
+        visibleProjects(workspaceId),
         opts.archived ? isNotNull(projects.archivedAt) : isNull(projects.archivedAt),
       ),
     )
@@ -88,7 +84,7 @@ export async function createProject(
   const [last] = await q
     .select({ rank: projects.rank })
     .from(projects)
-    .where(visible(workspaceId))
+    .where(visibleProjects(workspaceId))
     .orderBy(desc(projects.rank), desc(projects.id))
     .limit(1)
 
@@ -118,7 +114,7 @@ export async function updateProject(
     const [existing] = await q
       .select({ isInbox: projects.isInbox })
       .from(projects)
-      .where(and(visible(workspaceId), eq(projects.id, id)))
+      .where(and(visibleProjects(workspaceId), eq(projects.id, id)))
     if (existing?.isInbox) throw new InboxNotDeletableError()
   }
 
@@ -133,7 +129,7 @@ export async function updateProject(
     const [row] = await q
       .select()
       .from(projects)
-      .where(and(visible(workspaceId), eq(projects.id, id)))
+      .where(and(visibleProjects(workspaceId), eq(projects.id, id)))
     if (!row) throw new ProjectNotFoundError()
     return row
   }
@@ -141,7 +137,7 @@ export async function updateProject(
   const [row] = await q
     .update(projects)
     .set(set)
-    .where(and(visible(workspaceId), eq(projects.id, id)))
+    .where(and(visibleProjects(workspaceId), eq(projects.id, id)))
     .returning()
   if (!row) throw new ProjectNotFoundError()
   return row
@@ -158,7 +154,7 @@ export async function softDeleteProject(
   const rows = await q
     .update(projects)
     .set({ deletedAt: sql`now()` })
-    .where(and(visible(workspaceId), eq(projects.id, id), eq(projects.isInbox, false)))
+    .where(and(visibleProjects(workspaceId), eq(projects.id, id), eq(projects.isInbox, false)))
     .returning({ id: projects.id })
   if (rows.length === 0) {
     // Distinguish "is the inbox" from "does not exist" with one extra read, only on the
@@ -166,7 +162,7 @@ export async function softDeleteProject(
     const [existing] = await q
       .select({ isInbox: projects.isInbox })
       .from(projects)
-      .where(and(visible(workspaceId), eq(projects.id, id)))
+      .where(and(visibleProjects(workspaceId), eq(projects.id, id)))
     if (existing?.isInbox) throw new InboxNotDeletableError()
     throw new ProjectNotFoundError()
   }

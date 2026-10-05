@@ -81,7 +81,7 @@ export async function tasksOf(
 ): Promise<{ id: string; parentId: string | null; rank: string }[]> {
   const res = await ctx.app.inject({
     method: 'GET',
-    url: `/api/v1/projects/${projectId}/tasks`,
+    url: `/api/v1/tasks?projectId=${projectId}`,
     headers: ctx.authed,
   })
   if (res.statusCode !== 200) throw new Error(`tasksOf: ${res.statusCode} ${res.body}`)

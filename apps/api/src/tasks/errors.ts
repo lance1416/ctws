@@ -8,14 +8,3 @@ export class TaskNotFoundError extends Error {
     this.name = 'TaskNotFoundError'
   }
 }
-
-/**
- * The inbox is quick capture's destination; deleting or archiving it would break capture for the
- * workspace.
- */
-export class InboxNotDeletableError extends Error {
-  constructor() {
-    super('The inbox cannot be removed')
-    this.name = 'InboxNotDeletableError'
-  }
-}

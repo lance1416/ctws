@@ -3,6 +3,7 @@ import { and, eq, isNull, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import type { Queryable } from '../db/client'
 import { projects, taskEvents, tasks } from '../db/schema'
+import { visibleProjects } from '../projects/store'
 import { TaskNotFoundError } from './errors'
 
 export const COALESCE_WINDOW_MS = 5 * 60 * 1000
@@ -141,14 +142,7 @@ export async function listTaskEvents(
     .select({ id: tasks.id })
     .from(tasks)
     .innerJoin(projects, eq(projects.id, tasks.projectId))
-    .where(
-      and(
-        eq(tasks.id, taskId),
-        isNull(tasks.deletedAt),
-        eq(projects.workspaceId, workspaceId),
-        isNull(projects.deletedAt),
-      ),
-    )
+    .where(and(eq(tasks.id, taskId), isNull(tasks.deletedAt), visibleProjects(workspaceId)))
   if (!visible) throw new TaskNotFoundError()
 
   const result = await q.execute(sql`
