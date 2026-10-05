@@ -37,52 +37,79 @@ export function Login() {
   if (me.data) return <Navigate to="/" replace />
 
   return (
-    <main className="mx-auto max-w-sm px-4 pt-[14vh] pb-8">
-      <h1 className="text-2xl font-semibold">CTWS</h1>
-      <p className="mt-1 text-fg-muted">个人工作台账</p>
-      <div className="mt-8 flex flex-col gap-4">
-        <div>
-          <label htmlFor="login-email" className="text-sm text-fg-muted">
-            Email
-          </label>
-          <input
-            id="login-email"
-            className="mt-1 h-10 w-full rounded-md border border-border-strong bg-surface-raised px-3 text-fg placeholder:text-fg-muted"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
+    // One plane, centred. An earlier pass stood the workbench's two surfaces on end here, which
+    // only produced a pale column with a grey sliver down each side at 375 -- figure/ground needs
+    // something to be the figure, and on a page with one block there is nothing. The design is
+    // the type, the rhythm and the mark.
+    <main className="flex min-h-screen items-center justify-center px-4 py-10">
+      <div className="w-full max-w-[20rem]">
+        {/* The identity mark is the app's own rail: the 3px bar that means "a project" on every
+            other screen, here at the size of a wordmark. It is the only ornament on the page. */}
+        <div className="flex items-center gap-2.5">
+          <span aria-hidden="true" className="h-7 w-[3px] rounded-full bg-accent" />
+          <h1 className="text-2xl font-semibold">CTWS</h1>
         </div>
-        <div>
-          <label htmlFor="login-password" className="text-sm text-fg-muted">
-            Password
-          </label>
-          <input
-            id="login-password"
-            type="password"
-            className="mt-1 h-10 w-full rounded-md border border-border-strong bg-surface-raised px-3 text-fg placeholder:text-fg-muted"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-        <div className="flex gap-2">
+        <p className="mt-2 text-sm text-fg-muted">个人工作台账</p>
+
+        {/* A real form, so Enter from either field signs in -- the thing a daily tool should not
+            make you reach for the mouse to do. Register is a deliberate second press. */}
+        <form
+          className="mt-10 flex flex-col gap-4"
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (!act.isPending) act.mutate('/auth/login')
+          }}
+        >
+          <div>
+            <label htmlFor="login-email" className="block text-xs text-fg-muted">
+              Email
+            </label>
+            <input
+              id="login-email"
+              type="email"
+              autoComplete="username"
+              className="mt-1.5 h-10 w-full rounded-md border border-border-strong bg-surface-raised px-3 text-fg"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div>
+            <label htmlFor="login-password" className="block text-xs text-fg-muted">
+              Password
+            </label>
+            <input
+              id="login-password"
+              type="password"
+              autoComplete="current-password"
+              className="mt-1.5 h-10 w-full rounded-md border border-border-strong bg-surface-raised px-3 text-fg"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+          {error && (
+            <p role="alert" className="text-sm text-danger">
+              {error}
+            </p>
+          )}
           <button
-            className="h-10 rounded-md border border-border-strong px-4 text-fg hover:bg-surface-sunken"
-            onClick={() => act.mutate('/auth/register')}
-          >
-            Register
-          </button>
-          <button
-            className="h-10 rounded-md bg-accent px-4 font-medium text-accent-fg hover:opacity-90"
-            onClick={() => act.mutate('/auth/login')}
+            type="submit"
+            disabled={act.isPending}
+            className="mt-2 h-10 w-full rounded-md bg-accent font-medium text-accent-fg hover:opacity-90 disabled:opacity-50"
           >
             Log in
           </button>
-        </div>
-        {error && (
-          <p role="alert" className="text-sm text-danger">
-            {error}
-          </p>
-        )}
+          <div className="flex items-baseline gap-2 text-sm text-fg-muted">
+            第一次用？
+            <button
+              type="button"
+              disabled={act.isPending}
+              className="-mx-1 rounded-md px-1 py-0.5 text-fg underline underline-offset-4 hover:text-accent disabled:opacity-50"
+              onClick={() => act.mutate('/auth/register')}
+            >
+              Register
+            </button>
+          </div>
+        </form>
       </div>
     </main>
   )
