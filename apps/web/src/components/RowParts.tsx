@@ -28,34 +28,47 @@ export const RAIL_GUTTER_PX = 12
  * because Tailwind only emits classes it can SEE in the source: an interpolated
  * `grid-cols-[${x}]` compiles to nothing.
  *
- * 7.5rem fits the longest everyday deadline label ("今天 23:30 截止") at 13px; 9rem fits the
+ * THE BREAKPOINT IS THE CONTAINER, NOT THE VIEWPORT. Since the workbench, the same row renders
+ * both in the 今天 queue (two thirds of a 1440 screen) and in the 逾期 panel (one third of it) on
+ * ONE page, so a `sm:` rule keyed to the viewport would lay five fixed tracks inside a 280px
+ * panel and push the whole document sideways. `@container` on the list and `@xl` (36rem) on the
+ * row let each list answer for its own width: wide lists get the five-track row, a narrow panel
+ * drops the right-hand zone onto a second line as two equal columns.
+ *
+ * 8rem fits the longest everyday deadline label ("今天 23:30 截止") at 14px; 11rem fits the
  * carried-plan sentence ("原定9月28日，已顺延"), the longest thing either column holds. The
  * sentence is kept whole rather than shortened, because those words -- not the colour -- are what
  * say "carried".
- *
- * Below `sm` the right-hand zone drops onto a second line of its own, as the SAME two columns:
- * a phone has no room for five tracks, and giving up the alignment there would give up the point.
  */
 export const ROW_GRID =
-  'grid-cols-[1.5rem_minmax(0,1fr)_3.5rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_7.5rem_9rem_3.5rem]'
-/** The wrapper that holds the two date columns on a narrow screen and dissolves on a wide one. */
-export const ROW_DATE_STACK = 'grid grid-cols-[7.5rem_9rem] sm:contents'
-/** 已完成 has one right-hand column (the clock), so it gets its own, shorter template. */
-export const DONE_ROW_GRID = 'grid-cols-[1.5rem_minmax(0,1fr)_4.5rem]'
+  'grid-cols-[1.75rem_minmax(0,1fr)_4.5rem] @xl:grid-cols-[1.75rem_minmax(0,1fr)_8rem_11rem_4.5rem]'
 /**
- * How wide a LIST is, which is not how wide the column is. The work column is capped at 51rem so
- * that opening the detail pane reflows nothing (stage 1), but a list of title + two dates has no
- * business spending all of it: at the full width the clock on 已完成 sat 570px from the task it
- * timed, and a deadline sat 300px from its title. A right-hand column that far from its row is
- * not using the width, it is spending it -- the same defect stage 1 found one level up.
+ * The wrapper that holds the two date columns on a narrow list and dissolves on a wide one. Two
+ * EQUAL columns rather than the wide row's fixed rem widths: a panel a third of the screen wide
+ * cannot spend 19rem on dates, and the point of the stack is that the two cells sit at the same
+ * x on every row of the list -- which proportions do just as well as fixed widths. The split is
+ * 2:3 and not 1:1 because the plan cell holds a whole sentence ("原定9月28日，已顺延") while the
+ * deadline cell holds four characters, and those words -- not the colour -- are what say
+ * "carried": cutting them to "原定10月…" throws away the information the cell exists for.
+ */
+export const ROW_DATE_STACK = 'grid grid-cols-[2fr_3fr] @xl:contents'
+/** Every row list opts into container queries here, so the rows above can ask how wide it is. */
+export const ROW_LIST = '@container flex flex-col'
+/** 已完成 has one right-hand column (the clock), so it gets its own, shorter template. */
+export const DONE_ROW_GRID = 'grid-cols-[1.75rem_minmax(0,1fr)_4.5rem]'
+/**
+ * How wide a LIST is, which is not how wide the panel is. A list of title + two dates has no
+ * business spending a whole 1440: at the full width the clock on 已完成 sat 570px from the task
+ * it timed, and a deadline sat 300px from its title. A right-hand column that far from its row is
+ * not using the width, it is spending it.
  */
 export const LIST_MEASURE = 'max-w-[47rem]'
 /** 已完成 carries one short column (a clock), so its list is narrower still. */
-export const DONE_LIST_MEASURE = 'max-w-[34rem]'
+export const DONE_LIST_MEASURE = 'max-w-[36rem]'
 
 /** The tree is a flex row (depth padding, drag handle), so its cells carry their widths directly. */
-export const DUE_CELL = 'w-30 max-sm:w-auto'
-export const PLAN_CELL = 'w-36 max-sm:w-auto'
+export const DUE_CELL = 'w-32 max-sm:w-auto'
+export const PLAN_CELL = 'w-44 max-sm:w-auto'
 
 /**
  * The 3px bar at x=0. It means ONE thing -- which project this task belongs to -- in every view.
@@ -105,12 +118,12 @@ export function DeadlineMark({ filled }: { filled: boolean }) {
   return (
     <svg
       viewBox="0 0 12 12"
-      width="12"
-      height="12"
+      width="14"
+      height="14"
       aria-hidden="true"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.3"
+      strokeWidth="1.4"
       strokeLinecap="round"
       strokeLinejoin="round"
       className="shrink-0"
@@ -129,12 +142,12 @@ export function PlanMark() {
   return (
     <svg
       viewBox="0 0 12 12"
-      width="12"
-      height="12"
+      width="14"
+      height="14"
       aria-hidden="true"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.3"
+      strokeWidth="1.4"
       strokeLinecap="round"
       strokeLinejoin="round"
       className="shrink-0"

@@ -83,11 +83,11 @@ export function QuickCapture() {
           placeholder="捕获…"
           disabled={!target}
           aria-label="捕获"
-          className="h-9 w-full rounded-md border border-border-strong bg-surface pr-8 pl-3 text-fg placeholder:text-fg-muted disabled:opacity-50"
+          className="h-10 w-full rounded-lg border border-border-strong bg-surface-panel pr-9 pl-3 text-fg placeholder:text-fg-muted disabled:opacity-50"
         />
         <kbd
           aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border border-border-strong px-1.5 text-2xs leading-5 text-fg-muted"
+          className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 rounded border border-border-strong px-1.5 text-xs leading-5 text-fg-muted"
         >
           /
         </kbd>

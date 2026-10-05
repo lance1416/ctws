@@ -2,6 +2,8 @@ import type { QueryClient, QueryKey } from '@tanstack/react-query'
 
 export const tasksKey = (projectId: string) => ['tasks', projectId]
 export const projectsKey = ['projects']
+/** 做到哪儿了's numbers. Any task that is created, finished or deleted moves one of them. */
+export const movementKey = ['movement']
 
 /**
  * Makes a list refetch after something changed it on the server.
@@ -19,7 +21,12 @@ async function refreshList(qc: QueryClient, queryKey: QueryKey): Promise<void> {
   await qc.invalidateQueries({ queryKey })
 }
 
-export const refreshTasks = (qc: QueryClient, projectId: string) =>
-  refreshList(qc, tasksKey(projectId))
+export const refreshTasks = async (qc: QueryClient, projectId: string): Promise<void> => {
+  await refreshList(qc, tasksKey(projectId))
+  // A new row changes 「还剩 N」 and the project's last activity, so the movement panel is stale
+  // the moment a task is created. It is invalidated here rather than at each call site, because
+  // every creation path in the app already goes through this one function.
+  await qc.invalidateQueries({ queryKey: movementKey })
+}
 
 export const refreshProjects = (qc: QueryClient) => refreshList(qc, projectsKey)

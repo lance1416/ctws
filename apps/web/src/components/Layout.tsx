@@ -35,10 +35,10 @@ export function Layout() {
 
   return (
     <div className="min-h-screen">
-      {/* 48px of chrome, and it holds exactly one thing the user does from every page: capture.
+      {/* 60px of chrome, and it holds exactly one thing the user does from every page: capture.
           The destinations moved out of here and into the left rail, where they can carry counts. */}
       <header className="sticky top-0 z-30 border-b border-border-subtle bg-surface-sunken">
-        <div className="flex min-h-12 flex-wrap items-center gap-x-3 gap-y-1 px-4 py-1.5">
+        <div className="flex min-h-15 flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5">
           <QuickCapture />
           <div className="order-2 ml-auto flex items-center gap-1 text-sm">
             <Shortcuts />
@@ -65,25 +65,24 @@ export function Layout() {
         </div>
       </header>
       {/* The workbench: destinations, the work itself, and the detail beside it rather than on
-          top of it. `minmax(0,1fr)` and not `1fr`: a grid track sized `1fr` takes its minimum
-          from its content, so one long untruncated title would push the centre column wider than
-          the viewport and bring back the horizontal scrollbar at 375px. */}
+          top of it. The rail is 256px (workbench spec §2): it has to hold a project name at 15px
+          without truncating every one of them. `minmax(0,1fr)` and not `1fr`: a grid track sized
+          `1fr` takes its minimum from its content, so one long untruncated title would push the
+          centre column wider than the viewport and bring back the horizontal scrollbar at 375px. */}
       <div
         className={`lg:grid lg:items-start ${
           paneOpen && wide
-            ? 'lg:grid-cols-[13rem_minmax(0,1fr)_22.5rem]'
-            : 'lg:grid-cols-[13rem_minmax(0,1fr)]'
+            ? 'lg:grid-cols-[16rem_minmax(0,1fr)_22.5rem]'
+            : 'lg:grid-cols-[16rem_minmax(0,1fr)]'
         }`}
       >
         <SideRail />
-        <main className="min-w-0 bg-surface px-4 pt-5 pb-16 sm:px-6">
-          {/* A working measure, not a reading measure, and not the full viewport either: it is
-              set so the centre column is the SAME width whether or not the detail pane is open.
-              A list that reflowed every time a task was opened would make the pane feel like a
-              modal with extra steps. Beyond it, a right-hand date column would end up a thousand
-              pixels from the title it belongs to -- which is what the fluid version actually
-              looked like. */}
-          <div className="max-w-[51rem] min-w-0">
+        <main className="min-w-0 bg-surface px-4 pt-4 pb-16 sm:px-6">
+          {/* NO WIDTH CAP. The capped 51rem centre column is what put one clump of rows left of
+              centre at 1440 with half the screen empty beside it. The width is now carried by the
+              PANEL GRID the page lays out inside it, and each list keeps its own measure
+              (RowParts) so a date column never drifts away from the title it belongs to. */}
+          <div className="min-w-0">
             <DetailPaneContext.Provider value={setPaneOpen}>
               <LeaveGuardContext.Provider value={leaveGuard}>
                 <Outlet />

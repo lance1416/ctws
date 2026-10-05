@@ -35,7 +35,7 @@ export function SideRail() {
       // device -- no cards, no shadows, no hairline round everything, just two planes. It reads
       // in both schemes because `sunken` is darker than `surface` in each: a lighter sheet of
       // work in light mode, a brighter one in dark.
-      className="flex flex-col gap-1 border-border-subtle bg-surface-sunken max-lg:flex-row max-lg:items-center max-lg:overflow-x-auto max-lg:border-b max-lg:px-4 max-lg:py-2 lg:h-[calc(100vh-3rem)] lg:gap-0 lg:overflow-y-auto lg:border-r lg:py-4 lg:pr-3 lg:pl-4"
+      className="flex flex-col gap-1 border-border-subtle bg-surface-sunken max-lg:flex-row max-lg:items-center max-lg:overflow-x-auto max-lg:border-b max-lg:px-4 max-lg:py-2 lg:h-[calc(100vh-3.75rem)] lg:gap-0 lg:overflow-y-auto lg:border-r lg:py-4 lg:pr-3 lg:pl-4"
     >
       {/* One hook per registered count, over a frozen module list: see MODULES on why the list
           must not change at runtime. */}
@@ -45,8 +45,8 @@ export function SideRail() {
           to={to}
           end={end ?? false}
           className={({ isActive }) =>
-            `flex shrink-0 items-center gap-2 rounded-md px-2 py-1 whitespace-nowrap ${
-              isActive ? 'bg-surface font-medium text-fg' : 'text-fg-muted hover:text-fg'
+            `flex min-h-9 shrink-0 items-center gap-2 rounded-lg px-2.5 py-1 whitespace-nowrap ${
+              isActive ? 'bg-surface-panel font-medium text-fg' : 'text-fg-muted hover:text-fg'
             }`
           }
         >
@@ -60,7 +60,7 @@ export function SideRail() {
       <NavLink
         to="/projects"
         className={({ isActive }) =>
-          `mt-0 shrink-0 rounded-md px-2 py-1 font-medium whitespace-nowrap lg:mt-6 lg:text-2xs ${
+          `mt-0 shrink-0 rounded-lg px-2.5 py-1 font-medium whitespace-nowrap lg:mt-6 lg:text-xs ${
             isActive ? 'text-fg' : 'text-fg-muted hover:text-fg'
           }`
         }
@@ -77,20 +77,20 @@ export function SideRail() {
             key={p.id}
             to={`/projects/${p.id}`}
             className={({ isActive }) =>
-              `flex items-center gap-2 rounded-md py-1 pr-1.5 pl-2 text-sm ${
+              `flex min-h-11 items-center gap-2.5 rounded-lg py-1 pr-2 pl-2.5 ${
                 // The current page wears the WORK surface, so the rail says "you are over
                 // there" with the same two planes the layout already uses.
-                isActive ? 'bg-surface text-fg' : 'text-fg-muted hover:text-fg'
+                isActive ? 'bg-surface-panel text-fg' : 'text-fg-muted hover:text-fg'
               }`
             }
           >
             <span
               aria-hidden="true"
-              className={`h-3.5 w-[3px] shrink-0 rounded-full ${projectRailClass(p.id)}`}
+              className={`h-4 w-[3px] shrink-0 rounded-full ${projectRailClass(p.id)}`}
             />
             <span className="truncate">{p.name}</span>
             {p.openTasks > 0 && (
-              <span data-count className="ml-auto pl-1 text-2xs text-fg-muted">
+              <span data-count className="ml-auto pl-1 text-sm text-fg-subtle tabular-nums">
                 {p.openTasks}
               </span>
             )}
