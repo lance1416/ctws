@@ -6,7 +6,7 @@ import type { TaskStatus } from '@ctws/contracts'
 //
 // The mark is the app's core semantic and it used to be the faintest thing on the row: 16px of
 // 1.5px muted stroke. It is now 18px of 1.75px, and a LIVE task (待办 / 进行中) draws it in full
-// `fg` while a settled one (待整理 / 已完成 / 已取消) stays muted. That is weight by stroke,
+// `fg` while a settled one (已完成 / 已取消) stays muted. That is weight by stroke,
 // size and value -- still no hue, so the rule that status is carried by shape is intact.
 // The disc and the check are always rendered and scale/fade in, so the 120ms echo of a status
 // change is a transition on a persistent element rather than a mount.
@@ -20,7 +20,9 @@ const LABEL: Record<TaskStatus, string> = {
 
 export function StatusMark({ status }: { status: TaskStatus }) {
   const solid = status === 'in_progress' || status === 'done'
-  const live = status === 'todo' || status === 'in_progress'
+  // Every task that is still open draws at full strength; only a settled one recedes. An open
+  // task is the thing the list exists to show, and 待整理 is open -- it is untriaged, not done.
+  const live = status !== 'done' && status !== 'cancelled'
   return (
     <svg
       role="img"

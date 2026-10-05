@@ -103,7 +103,7 @@ export function TaskRow({
       }}
       className={`group relative flex min-h-8 cursor-pointer items-center rounded-md leading-snug hover:bg-surface-sunken ${isDragging ? 'bg-surface-sunken opacity-70' : ''}`}
     >
-      <ProjectRail projectId={projectId} />
+      <ProjectRail projectId={projectId} continuous />
       {/* One hairline per ancestor level, centred under that level's chevron column. Depth is
           carried by these guides, never by the rail. */}
       {Array.from({ length: row.depth - 1 }, (_, i) => (

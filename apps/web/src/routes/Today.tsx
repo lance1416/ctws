@@ -7,6 +7,7 @@ import { listToday } from '../api/today'
 import {
   DueCell,
   PlanCell,
+  LIST_MEASURE,
   ProjectRail,
   SavedMark,
   ROW_DATE_STACK,
@@ -162,7 +163,7 @@ export function Today() {
           <h2 className="text-sm font-medium text-fg-muted">
             {LABELS[segment]} <span className="tabular-nums">{tasks.length}</span>
           </h2>
-          <ul className="mt-1 flex flex-col">
+          <ul className={`mt-1 flex flex-col ${LIST_MEASURE}`}>
             {tasks.map((t) => {
               const hints = dateHints(t)
               const carried = segment === 'today' ? carriedLabel(t.scheduledOn) : null

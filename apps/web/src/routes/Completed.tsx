@@ -4,7 +4,7 @@ import { useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { listCompleted } from '../api/completed'
 import { useTaskActions } from '../api/taskActions'
-import { DONE_ROW_GRID, ProjectRail } from '../components/RowParts'
+import { DONE_LIST_MEASURE, DONE_ROW_GRID, ProjectRail } from '../components/RowParts'
 import { StatusButton } from '../components/StatusControls'
 import { addDays } from '../dueAt'
 import { useMe } from '../useMe'
@@ -72,7 +72,7 @@ export function Completed() {
           <h2 className="text-sm font-medium text-fg-muted">
             {dayHeading(day, today)} <span className="tabular-nums">{tasks.length}</span>
           </h2>
-          <ul className="mt-1 flex flex-col">
+          <ul className={`mt-1 flex flex-col ${DONE_LIST_MEASURE}`}>
             {tasks.map((t) => (
               <li
                 key={t.id}

@@ -22,7 +22,7 @@ import { useShortcutsEnabled } from '../shortcuts/enabled'
 import { TaskDetail } from './TaskDetail'
 import { statusForKey } from './StatusControls'
 import { NewTaskInput } from './NewTaskInput'
-import { INDENT_PX } from './RowParts'
+import { INDENT_PX, LIST_MEASURE } from './RowParts'
 import { TaskRow } from './TaskRow'
 
 /**
@@ -391,7 +391,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
       )}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={rows.map((r) => r.id)} strategy={verticalListSortingStrategy}>
-          <ul data-task-tree className="mt-4 flex flex-col">
+          <ul data-task-tree className={`mt-4 flex flex-col ${LIST_MEASURE}`}>
             {rows.map((row, i) => (
               <Fragment key={row.id}>
                 <TaskRow

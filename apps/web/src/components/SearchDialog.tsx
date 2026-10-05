@@ -99,7 +99,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
                 i === at ? 'bg-surface-sunken' : ''
               }`}
             >
-              <ProjectRail projectId={t.projectId} />
+              <ProjectRail projectId={t.projectId} at="left-2" />
               <span className="flex h-6 w-6 shrink-0 items-center justify-center">
                 <StatusMark status={t.status} />
               </span>

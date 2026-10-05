@@ -112,10 +112,15 @@ export function TriageControl({ groupLabel, triggerLabel, sections, onRan }: Pro
           onBlur={(e) => {
             if (!wrap.current?.contains(e.relatedTarget as Node | null)) setOpen(false)
           }}
-          className="absolute top-full right-0 z-20 mt-1 flex w-max flex-col gap-1 rounded-md border border-border-strong bg-surface-raised p-2 text-sm"
+          // `w-max` so the clusters stay on one line where there is room, capped to the viewport
+          // so a narrow phone wraps them instead of growing a horizontal scrollbar.
+          className="absolute top-full right-0 z-20 mt-1 flex w-max max-w-[calc(100vw-2rem)] flex-col gap-1 rounded-md border border-border-strong bg-surface-raised p-2 text-sm"
         >
           {sections.map((section) => (
-            <div key={section.heading ?? ''} className="flex items-center gap-1 whitespace-nowrap">
+            <div
+              key={section.heading ?? ''}
+              className="flex flex-wrap items-center gap-1 whitespace-nowrap"
+            >
               {section.heading && (
                 <span className="pr-1 text-xs text-fg-muted">{section.heading}</span>
               )}

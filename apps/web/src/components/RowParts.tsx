@@ -42,6 +42,17 @@ export const ROW_GRID =
 export const ROW_DATE_STACK = 'grid grid-cols-[7.5rem_9rem] sm:contents'
 /** 已完成 has one right-hand column (the clock), so it gets its own, shorter template. */
 export const DONE_ROW_GRID = 'grid-cols-[1.5rem_minmax(0,1fr)_4.5rem]'
+/**
+ * How wide a LIST is, which is not how wide the column is. The work column is capped at 51rem so
+ * that opening the detail pane reflows nothing (stage 1), but a list of title + two dates has no
+ * business spending all of it: at the full width the clock on 已完成 sat 570px from the task it
+ * timed, and a deadline sat 300px from its title. A right-hand column that far from its row is
+ * not using the width, it is spending it -- the same defect stage 1 found one level up.
+ */
+export const LIST_MEASURE = 'max-w-[47rem]'
+/** 已完成 carries one short column (a clock), so its list is narrower still. */
+export const DONE_LIST_MEASURE = 'max-w-[34rem]'
+
 /** The tree is a flex row (depth padding, drag handle), so its cells carry their widths directly. */
 export const DUE_CELL = 'w-30 max-sm:w-auto'
 export const PLAN_CELL = 'w-36 max-sm:w-auto'
@@ -55,12 +66,30 @@ export const PLAN_CELL = 'w-36 max-sm:w-auto'
  * two projects can share one. The project's NAME is always on the row as well (WCAG 1.4.1). The
  * rail is a hint for the eye, not an identifier.
  */
-export function ProjectRail({ projectId }: { projectId: string }) {
+export function ProjectRail({
+  projectId,
+  continuous = false,
+  at = 'left-0',
+}: {
+  projectId: string
+  /**
+   * True inside a project tree, where every row is the same project: the rail runs the full
+   * height of each row and square, so the rows join into ONE spine rather than a column of
+   * dashes. On a cross-project list each row is a separate project, so each rail is its own
+   * rounded segment.
+   */
+  continuous?: boolean
+  /** Where x=0 is for this list. The search overlay insets it, so the rail is not mistaken for
+   *  a piece of the dialog's own rounded edge. */
+  at?: string
+}) {
   return (
     <span
       aria-hidden="true"
       data-project-rail={projectId}
-      className={`pointer-events-none absolute top-1 bottom-1 left-0 w-[3px] rounded-full ${projectRailClass(projectId)}`}
+      className={`pointer-events-none absolute w-[3px] ${at} ${
+        continuous ? 'inset-y-0' : 'top-1 bottom-1 rounded-full'
+      } ${projectRailClass(projectId)}`}
     />
   )
 }

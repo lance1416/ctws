@@ -232,6 +232,23 @@ test('转为排期下周 demotes the deadline to next Monday’s plan in one req
   expect(t.scheduledOn).toBe(nextMondayYmd())
 })
 
+test('the open date control adds no horizontal scroll at 375', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 })
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'P')
+  await makeTask(page, pid, '窄屏上的逾期任务标题也可能很长', { dueAt: dueAgo(2) })
+  await page.goto('/')
+  await triage(page, '窄屏上的逾期任务标题也可能很长').click()
+  await expect(page.getByRole('group', { name: /^处理逾期：/ })).toBeVisible()
+  // 375px zero horizontal scroll is a pinned result (plan section 7); a popover anchored to the
+  // right edge of a row is exactly the kind of thing that quietly breaks it.
+  const over = await page.evaluate(() => ({
+    body: document.body.scrollWidth - document.body.clientWidth,
+    doc: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  }))
+  expect(over).toEqual({ body: 0, doc: 0 })
+})
+
 // ------------------------------------------------------------------------------- the project rail
 
 test('a cross-project row carries its own project’s rail, at one x, beside its name', async ({
@@ -312,16 +329,23 @@ test('the status marker is the heaviest mark on the row, and still hue-free', as
   for (const name of ['进行中', '待办', '待整理'])
     expect(await mark(name).evaluate((el) => el.getBoundingClientRect().width)).toBe(18)
 
-  // A LIVE task's mark is drawn in the body colour; a settled one stays muted. Value and weight,
-  // never hue: `color` here must be the very same colour the row's own text is painted in.
+  // An OPEN task's mark is drawn in the body colour; a settled one stays muted. Value and weight,
+  // never hue: `color` here must be the very same colour the row's own text is painted in, so no
+  // status has a hue of its own and the shapes still carry the meaning.
   const colourOf = (l: ReturnType<typeof mark>) => l.evaluate((el) => getComputedStyle(el).color)
   const bodyColour = await page
     .locator('[data-today-row]')
     .first()
     .evaluate((el) => getComputedStyle(el).color)
-  expect(await colourOf(mark('进行中'))).toBe(bodyColour)
-  expect(await colourOf(mark('待办'))).toBe(bodyColour)
-  expect(await colourOf(mark('待整理'))).not.toBe(bodyColour)
+  for (const name of ['进行中', '待办', '待整理'])
+    expect(await colourOf(mark(name)), name).toBe(bodyColour)
+
+  // A finished one recedes. (On 已完成, where every row is settled.)
+  await makeTask(page, pid, '收工', { status: 'done' })
+  await page.goto('/completed')
+  await expect(page.getByText('收工')).toBeVisible()
+  expect(await colourOf(mark('已完成'))).not.toBe(bodyColour)
+  expect(await mark('已完成').evaluate((el) => el.getBoundingClientRect().width)).toBe(18)
 })
 
 // ------------------------------------------------------------- the two date semantics, by shape
