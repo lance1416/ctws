@@ -19,6 +19,7 @@ import { loadCollapsed, saveCollapsed } from '../tree/collapse'
 import { MAX_DEPTH, planDrop, type DropPlan } from '../tree/drop'
 import { useTaskActions } from '../api/taskActions'
 import { useShortcutsEnabled } from '../shortcuts/enabled'
+import { EMPTY_ACTION, EmptyState } from './EmptyState'
 import { TaskDetail } from './TaskDetail'
 import { statusForKey } from './StatusControls'
 import { NewTaskInput } from './NewTaskInput'
@@ -388,6 +389,25 @@ export function TaskTree({ projectId }: { projectId: string }) {
         <p role="alert" className="mt-4 text-sm text-danger">
           {error}
         </p>
+      )}
+      {tasks.isSuccess && rows.length === 0 && !adding && (
+        <EmptyState
+          title="这个项目还没有任务"
+          hint="任务在这里按层级排列，最深可以嵌到十层。"
+          action={
+            <button
+              type="button"
+              className={EMPTY_ACTION}
+              // The one action that fills this page is the input already on it; this puts the
+              // cursor in it rather than adding a second way to create a task.
+              onClick={() =>
+                document.querySelector<HTMLElement>('input[aria-label="新任务"]')?.focus()
+              }
+            >
+              写第一条任务
+            </button>
+          }
+        />
       )}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={rows.map((r) => r.id)} strategy={verticalListSortingStrategy}>

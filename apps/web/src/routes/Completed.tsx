@@ -4,6 +4,7 @@ import { useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { listCompleted } from '../api/completed'
 import { useTaskActions } from '../api/taskActions'
+import { EMPTY_ACTION, EmptyState } from '../components/EmptyState'
 import { DONE_LIST_MEASURE, DONE_ROW_GRID, ProjectRail } from '../components/RowParts'
 import { StatusButton } from '../components/StatusControls'
 import { addDays } from '../dueAt'
@@ -60,12 +61,15 @@ export function Completed() {
         </p>
       )}
       {completed.isSuccess && rows.length === 0 && (
-        <div className="mt-6">
-          <p className="text-fg-muted">还没有完成的任务</p>
-          <Link to="/" className="text-sm text-accent underline underline-offset-4">
-            回到今天
-          </Link>
-        </div>
+        <EmptyState
+          title="还没有完成的任务"
+          hint="标记完成的任务按天记在这里，最近的一天在最上面。"
+          action={
+            <Link to="/" className={EMPTY_ACTION}>
+              回到今天
+            </Link>
+          }
+        />
       )}
       {days.map(({ day, tasks }) => (
         <section key={day} aria-label={dayHeading(day, today)} className="mt-8">

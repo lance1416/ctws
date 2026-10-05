@@ -13,6 +13,7 @@ import {
   ROW_DATE_STACK,
   ROW_GRID,
 } from '../components/RowParts'
+import { EMPTY_ACTION, EmptyState } from '../components/EmptyState'
 import { StartButton, StatusButton, statusForKey } from '../components/StatusControls'
 import { TaskDetail, toLocalInput } from '../components/TaskDetail'
 import { TriageControl, type TriageSection } from '../components/TriageControl'
@@ -151,12 +152,15 @@ export function Today() {
         </p>
       )}
       {today.isSuccess && sections.length === 0 && (
-        <div className="mt-6">
-          <p className="text-fg-muted">今天没有安排的事</p>
-          <Link to="/projects" className="text-sm text-accent underline underline-offset-4">
-            看看全部清单
-          </Link>
-        </div>
+        <EmptyState
+          title="今天没有要做的事"
+          hint="排到今天的、已经逾期的、正在做的，都会落到这一页。"
+          action={
+            <Link to="/projects" className={EMPTY_ACTION}>
+              从项目里挑一件
+            </Link>
+          }
+        />
       )}
       {sections.map(({ segment, tasks }) => (
         <section key={segment} aria-label={LABELS[segment]} className="mt-8">

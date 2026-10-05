@@ -23,6 +23,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
   const [active, setActive] = useState(0)
   const navigate = useNavigate()
   const list = useRef<HTMLUListElement>(null)
+  const box = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const timer = setTimeout(() => setDebounced(query.trim()), DEBOUNCE_MS)
@@ -52,6 +53,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
     <Overlay label="搜索任务" onClose={onClose} className="rounded-lg">
       <div className="border-b border-border-subtle px-4 py-3">
         <input
+          ref={box}
           autoFocus
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -79,7 +81,24 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
         </p>
       )}
       {debounced.length > 0 && results.isSuccess && rows.length === 0 && (
-        <p className="px-4 py-3 text-sm text-fg-muted">没有匹配的任务</p>
+        <div className="px-4 py-3">
+          <p className="text-sm text-fg">没有匹配的任务</p>
+          <p className="mt-1 text-sm text-fg-muted">
+            搜索覆盖所有项目的标题和备注，包括已归档的项目。
+          </p>
+          <button
+            type="button"
+            // The one action here is to search for something else, so this does the clearing and
+            // puts the cursor back in the box rather than making the reader do both.
+            onClick={() => {
+              setQuery('')
+              box.current?.focus()
+            }}
+            className="mt-3 -ml-2 rounded-md px-2 py-1 text-sm text-accent"
+          >
+            换个词
+          </button>
+        </div>
       )}
       {debounced.length === 0 && (
         <p className="px-4 py-3 text-sm text-fg-muted">输入关键词搜索所有项目的任务</p>
