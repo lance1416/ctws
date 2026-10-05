@@ -37,6 +37,18 @@ async function makeTask(
   return id
 }
 
+/**
+ * Hours to go back so a completion lands around NOON on the day `daysAgo` before today.
+ *
+ * A fixed offset cannot express "yesterday": run at 23:30, `25 hours` lands on yesterday; run at
+ * 00:30 it lands the day BEFORE yesterday, and the heading reads a date instead of 昨天. No single
+ * constant works for both, so the offset is measured from the current local hour. This test was
+ * red for roughly one hour out of every twenty-four until it was anchored this way.
+ */
+function hoursBackToNoon(daysAgo: number): number {
+  return new Date().getHours() + 12 + (daysAgo - 1) * 24
+}
+
 /** Finishes a task through the API, then (optionally) moves the completion back in time. */
 async function finish(page: Page, id: string, ago?: string) {
   const p = await page.request.patch(`/api/v1/tasks/${id}`, {
@@ -118,10 +130,10 @@ test('the completed list is grouped by day, newest day and newest task first', a
   const olderA = await makeTask(page, pid, '五天前上午')
   const olderB = await makeTask(page, pid, '五天前晚上')
   await finish(page, nowTask)
-  await finish(page, yesterday, '25 hours')
+  await finish(page, yesterday, `${hoursBackToNoon(1)} hours`)
   // Same day, six hours apart: the later one must come first within the day.
-  await finish(page, olderA, `${5 * 24 + 8} hours`)
-  await finish(page, olderB, `${5 * 24 + 2} hours`)
+  await finish(page, olderA, `${hoursBackToNoon(5)} hours`)
+  await finish(page, olderB, `${hoursBackToNoon(5) - 6} hours`)
 
   await page.goto('/completed')
   const headings = page.getByRole('heading', { level: 2 })
@@ -129,7 +141,7 @@ test('the completed list is grouped by day, newest day and newest task first', a
   await expect(headings).toHaveCount(3)
   await expect(headings.nth(0)).toContainText('今天')
   await expect(headings.nth(1)).toContainText('昨天')
-  const five = new Date(Date.now() - (5 * 24 + 5) * 3_600_000)
+  const five = new Date(Date.now() - hoursBackToNoon(5) * 3_600_000)
   const fiveLabel = `${five.getMonth() + 1}月${five.getDate()}日`
   await expect(headings.nth(2)).toContainText(fiveLabel)
   await expect(headings.nth(2)).not.toContainText('今天')
