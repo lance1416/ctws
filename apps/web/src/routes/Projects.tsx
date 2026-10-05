@@ -93,7 +93,10 @@ export function Projects() {
       )}
       {/* Rendered in the order the server returns: it puts the inbox first. Sorting here too
           would give two sorts that drift apart. */}
-      <ul className="mt-5 flex max-w-[64ch] flex-col">
+      {/* A list measure of its own, like every other list in the app (see RowParts): at 64ch the
+          count sat ~450px from the short project name it belonged to -- the stranded right-hand
+          column stages 1 and 2 fixed on 今天 and 已完成 and never came back for here. */}
+      <ul className="mt-5 flex max-w-[30rem] flex-col">
         {projects.data?.map((p) => (
           <li
             key={p.id}
@@ -118,9 +121,12 @@ export function Projects() {
             {/* D47: the list used to show nothing but names. The number is the server's own
                 count of open tasks, not something counted here.
                 OUTSIDE the link on purpose: inside, it would become part of the link's
-                accessible name, and "P" would no longer be the name of the link to P. */}
+                accessible name, and "P" would no longer be the name of the link to P.
+                Zero is drawn as NOTHING, the way the left rail already draws it: a column whose
+                job is "how much is waiting here" should be silent when nothing is, and the
+                sentence it used to print made the emptiest row the loudest thing on the page. */}
             <span data-count className="justify-self-end text-xs text-fg-muted">
-              {p.openTasks > 0 ? `${p.openTasks} 项未完成` : '没有未完成的'}
+              {p.openTasks > 0 ? `${p.openTasks} 项未完成` : ''}
             </span>
             {/* The slot is always there, empty for the inbox: the control may be absent, the
                 column may not move. */}

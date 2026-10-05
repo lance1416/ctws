@@ -166,14 +166,20 @@ test('the named deadline decisions write the day the row would show', async ({ p
   await page.getByRole('button', { name: '下周截止', exact: true }).click()
   expect(ymd(new Date((await saveBody(page)).dueAt as string))).toBe(nextMondayYmd())
 
-  // Moving the day keeps the time of day, exactly as 推迟到明天 does on the row.
+  // Moving the day keeps the time of day, exactly as 推迟到明天 does on the row. The time is set
+  // through the exact field first, and to something that is NOT the default a new deadline gets:
+  // with 23:59 on both sides this assertion would hold however the day was moved.
+  await openPane(page, pid, '交报告')
+  await page.getByLabel('截止').fill(`${dayOffset(3)}T09:15`)
+  await saveBody(page)
   const kept = (await serverTask(page, pid, id)).dueAt!
+  expect(new Date(kept).getHours(), 'the fixture really is not the 23:59 default').toBe(9)
   await openPane(page, pid, '交报告')
   await page.getByRole('button', { name: '今天截止', exact: true }).click()
   const moved = (await saveBody(page)).dueAt as string
   expect(ymd(new Date(moved))).toBe(dayOffset(0))
-  expect(new Date(moved).getHours()).toBe(new Date(kept).getHours())
-  expect(new Date(moved).getMinutes()).toBe(new Date(kept).getMinutes())
+  expect(new Date(moved).getHours()).toBe(9)
+  expect(new Date(moved).getMinutes()).toBe(15)
 
   // And the way out sends null, not an empty string the contract would reject.
   await openPane(page, pid, '交报告')

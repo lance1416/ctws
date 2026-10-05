@@ -473,3 +473,44 @@ test.describe('the tree on a phone', () => {
     expect(overflow).toEqual({ body: 0, doc: 0 })
   })
 })
+
+// ------------------------------------------------------------------------- motion, on request
+
+/**
+ * The app has exactly one animation: the 120ms echo of the user's own status change. Section 7
+ * says a reader who asks for no motion gets none, and nothing pinned that -- a stylesheet rule
+ * is exactly the kind of thing a redesign deletes by accident.
+ *
+ * Both directions, because "0s under reduce" also holds for an app with no animation at all.
+ */
+test.describe('motion', () => {
+  const duration = (page: Page) =>
+    page
+      .locator('[data-task-tree] svg circle[fill="currentColor"]')
+      .first()
+      .evaluate((el) => getComputedStyle(el).transitionDuration)
+
+  test.describe('asked for', () => {
+    test.use({ reducedMotion: 'no-preference' })
+    test('the status mark animates', async ({ page }) => {
+      await registerFreshUser(page)
+      const pid = await makeProject(page, 'P')
+      await makeTask(page, pid, '会动的')
+      await page.goto(`/projects/${pid}`)
+      await page.getByRole('button', { name: '任务：会动的', exact: true }).waitFor()
+      expect(await duration(page)).toBe('0.12s')
+    })
+  })
+
+  test.describe('declined', () => {
+    test.use({ reducedMotion: 'reduce' })
+    test('the status mark does not', async ({ page }) => {
+      await registerFreshUser(page)
+      const pid = await makeProject(page, 'P')
+      await makeTask(page, pid, '不动的')
+      await page.goto(`/projects/${pid}`)
+      await page.getByRole('button', { name: '任务：不动的', exact: true }).waitFor()
+      expect(await duration(page)).toBe('0s')
+    })
+  })
+})
