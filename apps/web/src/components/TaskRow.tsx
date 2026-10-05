@@ -101,7 +101,7 @@ export function TaskRow({
         transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
         transition,
       }}
-      className={`group relative flex min-h-8 cursor-pointer items-center rounded-md leading-snug max-sm:flex-wrap hover:bg-surface-sunken ${isDragging ? 'bg-surface-sunken opacity-70' : ''}`}
+      className={`group relative flex min-h-8 cursor-pointer items-center rounded-md leading-snug max-sm:flex-wrap hover:bg-surface-hover ${isDragging ? 'bg-surface-raised opacity-70' : ''}`}
     >
       <ProjectRail projectId={projectId} continuous />
       {/* One hairline per ancestor level, centred under that level's chevron column. Depth is

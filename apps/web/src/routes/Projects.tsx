@@ -108,7 +108,7 @@ export function Projects() {
           >
             <Link
               to={`/projects/${p.id}`}
-              className="-mx-2 flex min-w-0 flex-1 items-center gap-3 rounded-md px-2 py-2 font-medium hover:bg-surface-sunken"
+              className="-mx-2 flex min-w-0 flex-1 items-center gap-3 rounded-md px-2 py-2 font-medium hover:bg-surface-hover"
             >
               {/* The identity rail, same meaning and same width as in the left column and (from
                   stage 2) on every task row. Never alone: the name is right beside it. */}

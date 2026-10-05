@@ -120,7 +120,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
               // Same row system as the lists: the module's identity rail at x=0, then the marker
               // and the title at a fixed x. A result's project is a glance, not a read.
               className={`relative flex w-full items-start gap-2 py-2 pr-4 pl-5 text-left leading-snug ${
-                i === at ? 'bg-surface-sunken' : ''
+                i === at ? 'bg-surface-hover' : ''
               }`}
             >
               {hit.rail}

@@ -40,7 +40,7 @@ export function DeleteConfirm({
       <button
         type="button"
         onClick={onCancel}
-        className="h-8 rounded-md border border-border-strong px-3 text-fg hover:bg-surface-sunken"
+        className="h-8 rounded-md border border-border-strong px-3 text-fg hover:bg-surface-hover"
       >
         取消
       </button>

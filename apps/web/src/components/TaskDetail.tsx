@@ -73,7 +73,7 @@ const exact =
  */
 function DateEcho({ text }: { text: string | null }) {
   if (!text) return null
-  return <p className="mt-1 text-2xs tabular-nums text-fg-muted">{text}</p>
+  return <p className="mt-1 text-xs tabular-nums text-fg-muted">{text}</p>
 }
 
 type Props = {
@@ -159,6 +159,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
     onSettled: async () => {
       await qc.invalidateQueries({ queryKey: ['today'] })
       await qc.invalidateQueries({ queryKey: ['completed'] })
+      await qc.invalidateQueries({ queryKey: ['movement'] })
       await qc.invalidateQueries({ queryKey: tasksKey(task.projectId) })
     },
   })
@@ -219,6 +220,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
       // segments or off the list, so it is always refetched.
       await qc.invalidateQueries({ queryKey: ['today'] })
       await qc.invalidateQueries({ queryKey: ['completed'] })
+      await qc.invalidateQueries({ queryKey: ['movement'] })
       await qc.invalidateQueries({ queryKey: tasksKey(projectId) })
       if (nextProjectId !== projectId)
         await qc.invalidateQueries({ queryKey: tasksKey(nextProjectId) })
@@ -500,7 +502,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                 <button
                   type="button"
                   onClick={discard}
-                  className="h-9 rounded-md border border-border-strong px-3 text-fg hover:bg-surface-sunken"
+                  className="h-9 rounded-md border border-border-strong px-3 text-fg hover:bg-surface-hover"
                 >
                   放弃修改
                 </button>
@@ -523,7 +525,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
             <button
               type="button"
               onClick={requestClose}
-              className="h-10 rounded-md border border-border-strong px-4 text-fg hover:bg-surface-sunken"
+              className="h-10 rounded-md border border-border-strong px-4 text-fg hover:bg-surface-hover"
             >
               关闭
             </button>

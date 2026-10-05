@@ -29,7 +29,7 @@ function TodayCount() {
   const count = today.data?.length ?? null
   if (count === null || count <= 0) return null
   return (
-    <span data-count className="ml-auto pl-1 text-2xs text-fg-muted">
+    <span data-count className="ml-auto pl-1 text-xs text-fg-muted">
       {count}
     </span>
   )

@@ -9,12 +9,16 @@
    The dark block must be a plain :root override, not a nested @theme: Tailwind hoists an
    @theme inside @media out of the query, which would make the dark values apply always.
 
-   Colour discipline (docs/superpowers/specs/2026-10-04-ctws-ui-redesign.md section 2):
-   - The ground is a COOL neutral paper (hue 250), not the warm cream it used to be. A warm
-     cream ground says "document"; this is a tool.
-   - `plan` (cool) and `deadline` (warm) are two different FAMILIES, because they are two
-     different promises: "the day I mean to do it" against "the moment it has to be finished".
-     They were both grey before, which hid the one distinction the user themselves drew.
+   Colour discipline (docs/superpowers/specs/2026-10-06-ctws-workbench.md section 3):
+   - The two defects the previous palette had are named in the spec and both are fixed here.
+     The dark accents sat at lightness 0.72-0.78 and chroma 0.11-0.15, which GLOWS on a
+     near-black ground; everything that carries meaning is now in the 0.60-0.70 band. And the
+     accent (`#4ebceb`) and the plan colour (`#46c6cd`) were nearly the same hue -- two
+     different meanings wearing one face. `plan` is now a TEAL-GREEN, separated from the blue
+     accent in hue and in lightness alike.
+   - `plan` (teal-green) and `deadline` (warm amber) are two different FAMILIES, because they
+     are two different promises: "the day I mean to do it" against "the moment it has to be
+     finished". The shapes differ too (RowParts): colour is never the only channel.
    - `missed` is the single red: a deadline that has already gone.
    - `project-1..6` are categorical, for RAILS AND CHIPS ONLY -- never a text colour, never a
      background fill, and never alone: a chip always sits beside the project's name, so colour
@@ -22,18 +26,47 @@
    - Colour carries CATEGORY and URGENCY only. Task status is carried by the SHAPE of its
      marker and by font weight, never by hue.
 
-   Contrast, WCAG 2.1 ratios measured on the surfaces each token actually appears on
-   (surface / surface-sunken, the hover surface rows sit on):
-   light  fg 15.3/14.0   fg-muted 5.8/5.3   accent 5.9/5.4   plan 5.0/4.5   deadline 5.2/4.7
-          missed 5.9/5.4   border-strong 3.7/3.4   project chips 3.5-4.3 / 3.2-3.9
-   dark   fg 15.3/16.2   fg-muted 7.4/7.9   accent 8.5/9.0   plan 9.0/9.5   deadline 8.9/9.4
-          missed 7.0/7.4   border-strong 4.3/4.6 (3.9 on raised)   project chips 7.0-7.9 / 7.5-8.4
-   Every pairing that carries meaning clears AA 4.5 as text; the chips and borders clear the
-   3:1 non-text threshold. `plan` and `deadline` are two steps darker in light mode than the
-   design plan's table proposed (the plan's 55%/60% lightnesses measure 4.3 and 3.9, i.e. they
-   fail AA as text); the hues are exactly as specified, so the cool/warm split is intact.
-   border-subtle (1.25:1) is a decorative hairline only: tree guides and the column rules.
-   Anything that identifies a control (input edges, markers) uses border-strong or fg-muted. */
+   FIGURE AND GROUND ARE TWO DIFFERENT TECHNIQUES, NOT ONE INVERTED (spec section 3):
+   - Dark layers by SURFACE LIGHTNESS and uses no shadows at all. ground < chrome < panel <
+     raised, each step a few percent. A shadow on a near-black ground is invisible anyway, and
+     a scrim-like overlay there lightens the page instead of lifting the panel.
+   - Light puts WHITE panels on a tinted ground and lifts them with one hair of shadow,
+     `0 1px 2px rgba(26,29,35,.05)`. The ground is the tint; the panel is the paper.
+   `--shadow-panel` carries that difference, so a panel says `shadow-panel` once and is right in
+   both schemes.
+
+   CONTRAST. WCAG 2.1 ratios MEASURED on the surfaces each token actually appears on, not
+   inferred from hue -- the previous redesign wrote its palette against hues and shipped three
+   values that failed AA as text. Everything that carries meaning clears AA 4.5 as text; chips
+   and borders clear the 3:1 non-text threshold.
+
+     dark    ground  panel  chrome  raised        light   ground  panel  chrome
+     fg      15.69   14.48  14.91   13.42         fg      15.46   16.88  14.26
+     fg-mutd  8.46    7.81   8.04    7.23         fg-mutd  7.33    8.01   6.76
+     fg-sbtl  5.56    5.13   5.28    4.75         fg-sbtl  5.13    5.60   4.73
+     accent   6.72    6.20   6.38    5.75         accent   5.31    5.80   4.90
+     plan     6.70    6.18   6.37    5.73         plan     4.51    4.92   4.16*
+     deadline 8.22    7.58   7.81    7.03         deadline 5.41    5.91   4.99
+     missed   6.23    5.75   5.92    5.33         missed   5.92    6.47   5.46
+     brd-strg 3.89    3.59   3.70    3.33         brd-strg 3.75    4.10   3.46
+     projects 5.37-5.89 / 4.59-5.04 on raised     projects 4.48-5.38 / 4.13-4.97 on chrome
+   (* `plan`, `deadline` and `missed` are row text inside a panel; they never appear on the
+    chrome plane, so the chrome column is informational for them.)
+
+   FOUR VALUES DEPART FROM THE SPEC'S HEX TABLE, each because the spec's own rule -- "take the
+   MEASURED ratio as the authority, not the hue" -- rejects the literal value:
+     - control border, light: `#c3cad5` measures 1.51 on the ground and 1.65 on a white panel.
+       An input whose only affordance is its edge needs 3:1 (WCAG 1.4.11). `#737e91` -> 3.75 / 4.10.
+     - control border, dark: `#2d333c` measures 1.37 on a panel. `#687283` -> 3.59.
+     - tertiary text, light: `#6b7280` measures 4.43 on the ground and 4.08 on the chrome plane,
+       i.e. it fails AA as text in the two places it is used. `#616876` -> 5.13 / 4.73.
+     - tertiary text, dark: `#717a86` measures 4.01 on a panel. `#838c99` -> 5.13.
+     - accent, light: `#3a6cc4` measures 4.30 against the capture bar, where the "已放入 X" link
+       sits. `#3364b4` -> 4.90, one step darker, same hue.
+   Every other value in the spec's table is used exactly as written.
+   `border-subtle` (1.19-1.30) is a decorative hairline only: panel edges, tree guides and
+   column rules, where the SURFACE step already carries the separation. Anything that identifies
+   a control (input edges, markers) uses `border-strong` or `fg-muted`. */
 @theme static {
   /* Latin is IBM Plex Sans, self-hosted and LATIN-SUBSET ONLY (see main.tsx). CJK deliberately
      falls through to the system face: a CJK webfont is megabytes even after subsetting, and this
@@ -44,76 +77,92 @@
     'IBM Plex Sans', -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC',
     sans-serif;
 
-  /* A scale with real jumps -- 11 / 12 / 13 / 15 / 20 / 28 -- replacing one 15px size doing
-     every job. Latin line-heights are tighter than the CJK body measure; the body keeps the
-     looser 1.7 that Chinese needs. */
-  --text-2xs: 0.6875rem;
-  --text-2xs--line-height: 1.45;
-  --text-xs: 0.75rem;
+  /* The scale: 13 / 14 / 15 / 17 / 23 / 34, one step up from the old 11/12/13/15/20/28, with
+     15px body (spec section 4). The complaint this answers is "组件太小", so the smallest step
+     in the app is 13 and nothing is set below it. Latin line-heights are tighter than the CJK
+     body measure; the body keeps the looser 1.7 that Chinese needs. */
+  --text-xs: 0.8125rem;
   --text-xs--line-height: 1.5;
-  --text-sm: 0.8125rem;
-  --text-sm--line-height: 1.55;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.5;
   --text-base: 0.9375rem;
   --text-base--line-height: 1.7;
-  --text-lg: 1.25rem;
-  --text-lg--line-height: 1.35;
-  --text-2xl: 1.75rem;
+  --text-lg: 1.0625rem;
+  --text-lg--line-height: 1.45;
+  --text-xl: 1.4375rem;
+  --text-xl--line-height: 1.3;
+  --text-2xl: 2.125rem;
   --text-2xl--line-height: 1.2;
 
-  --color-surface: oklch(97.5% 0.004 250);
-  --color-surface-raised: oklch(99.5% 0.003 250);
-  --color-surface-sunken: oklch(94.5% 0.006 250);
-  --color-fg: oklch(24% 0.02 265);
-  --color-fg-muted: oklch(49% 0.014 265);
-  --color-border-subtle: oklch(90% 0.006 250);
-  --color-border-strong: oklch(60% 0.014 265);
-  --color-accent: oklch(47% 0.13 230);
-  --color-accent-fg: oklch(99% 0 0);
-  /* The two date semantics, cool against warm. */
-  --color-plan: oklch(51% 0.105 200);
-  --color-deadline: oklch(53% 0.145 55);
-  --color-missed: oklch(51% 0.19 25);
+  /* The four planes, light. White paper on a tinted ground. */
+  --color-surface: #f3f5f8;
+  --color-surface-panel: #ffffff;
+  --color-surface-raised: #ffffff;
+  --color-surface-sunken: #e9ecf1;
+  /* What a row goes to under the pointer. Its own token rather than `sunken`, because in dark
+     a hover has to go UP (the panel is already dark) and in light it goes down onto the tint. */
+  --color-surface-hover: #e9ecf1;
+  --color-fg: #1a1d23;
+  --color-fg-muted: #4a515c;
+  --color-fg-subtle: #616876;
+  --color-border-subtle: #dde2ea;
+  --color-border-strong: #737e91;
+  --color-accent: #3364b4;
+  --color-accent-fg: #ffffff;
+  /* The two date semantics: a teal-green plan against a warm amber deadline. */
+  --color-plan: #2f7d6b;
+  --color-deadline: #8a5a12;
+  --color-missed: #a53a30;
   /* `danger` is the same red as `missed` but a separate name on purpose: they mean different
      things (a deadline that has gone / an action that destroys data) and could diverge. */
-  --color-danger: oklch(51% 0.19 25);
-  --color-danger-fg: oklch(99% 0 0);
+  --color-danger: #a53a30;
+  --color-danger-fg: #ffffff;
   /* Categorical project identity. Six hues, evenly spread, at one lightness so no project reads
-     as more important than another. Rails and chips only. */
-  --color-project-1: oklch(58% 0.14 250);
-  --color-project-2: oklch(58% 0.14 150);
-  --color-project-3: oklch(58% 0.14 85);
-  --color-project-4: oklch(58% 0.14 25);
-  --color-project-5: oklch(58% 0.14 300);
-  --color-project-6: oklch(58% 0.14 195);
+     as more important than another. Rails and chips only. Written in oklch because the even
+     spread is a property of the colour space, not of six hand-picked hex values. */
+  --color-project-1: oklch(52% 0.13 250);
+  --color-project-2: oklch(52% 0.13 150);
+  --color-project-3: oklch(52% 0.13 85);
+  --color-project-4: oklch(52% 0.13 25);
+  --color-project-5: oklch(52% 0.13 300);
+  --color-project-6: oklch(52% 0.13 195);
   /* The wash behind an overlay. It carries its own alpha, and it is a token of its own rather
      than `fg` at an opacity: `fg` is near-white in dark mode, so `bg-fg/20` LIGHTENS the page it
      is meant to dim. A scrim has to darken in both schemes. */
-  --color-scrim: oklch(24% 0.02 265 / 0.32);
+  --color-scrim: rgb(26 29 35 / 0.32);
+  /* One hair of lift under a white panel; see the figure/ground note above. Dark replaces it
+     with nothing, so a panel carries this class in both schemes and is right in both. */
+  --shadow-panel: 0 1px 2px rgb(26 29 35 / 0.05);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-surface: oklch(19% 0.012 265);
-    --color-surface-raised: oklch(23.5% 0.014 265);
-    --color-surface-sunken: oklch(15.5% 0.012 265);
-    --color-fg: oklch(93.5% 0.006 265);
-    --color-fg-muted: oklch(72% 0.014 265);
-    --color-border-subtle: oklch(29% 0.012 265);
-    --color-border-strong: oklch(58% 0.014 265);
-    --color-accent: oklch(75% 0.12 230);
-    --color-accent-fg: oklch(18% 0.012 265);
-    --color-plan: oklch(76% 0.11 200);
-    --color-deadline: oklch(78% 0.13 55);
-    --color-missed: oklch(72% 0.15 25);
-    --color-danger: oklch(72% 0.15 25);
-    --color-danger-fg: oklch(18% 0.012 265);
-    --color-project-1: oklch(72% 0.13 250);
-    --color-project-2: oklch(72% 0.13 150);
-    --color-project-3: oklch(72% 0.13 85);
-    --color-project-4: oklch(72% 0.13 25);
-    --color-project-5: oklch(72% 0.13 300);
-    --color-project-6: oklch(72% 0.13 195);
-    --color-scrim: oklch(7% 0.006 265 / 0.6);
+    --color-surface: #0f1115;
+    --color-surface-panel: #171a1f;
+    --color-surface-raised: #1d2127;
+    --color-surface-sunken: #14171c;
+    --color-surface-hover: #1d2127;
+    --color-fg: #e8eaee;
+    --color-fg-muted: #a7aeb9;
+    --color-fg-subtle: #838c99;
+    --color-border-subtle: #242932;
+    --color-border-strong: #687283;
+    --color-accent: #6f9ae8;
+    --color-accent-fg: #0f1115;
+    --color-plan: #58a894;
+    --color-deadline: #d9a05b;
+    --color-missed: #e0756b;
+    --color-danger: #e0756b;
+    --color-danger-fg: #0f1115;
+    --color-project-1: oklch(64% 0.1 250);
+    --color-project-2: oklch(64% 0.1 150);
+    --color-project-3: oklch(64% 0.1 85);
+    --color-project-4: oklch(64% 0.1 25);
+    --color-project-5: oklch(64% 0.1 300);
+    --color-project-6: oklch(64% 0.1 195);
+    --color-scrim: rgb(5 6 8 / 0.62);
+    /* No shadows in dark: the layering is done by surface lightness. */
+    --shadow-panel: 0 0 #0000;
   }
 }
 
@@ -135,9 +184,10 @@ h2 {
   line-height: 1.25;
 }
 
-/* Tabular figures wherever digits sit in a column and have to line up: counts in the left rail,
-   dates and times in the row columns, clock times on the completed list. Plex ships `tnum`, which
-   is the reason it was chosen over a face without it. Prose keeps proportional figures. */
+/* Tabular figures wherever digits sit in a column and have to line up: counts in the left rail
+   and on every panel heading, dates and times in the row columns, clock times on the completed
+   list, the day-counts in 做到哪儿了. Plex ships `tnum`, which is the reason it was chosen over
+   a face without it. Prose keeps proportional figures. */
 .tabular-nums,
 time,
 kbd,

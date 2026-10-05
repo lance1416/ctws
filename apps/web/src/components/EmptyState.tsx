@@ -34,4 +34,4 @@ export function EmptyState({
 
 /** The one action an empty state offers, as a button. Quiet: it is an invitation, not a demand. */
 export const EMPTY_ACTION =
-  'inline-flex h-9 items-center rounded-md border border-border-strong px-3 text-sm text-fg hover:bg-surface-sunken'
+  'inline-flex h-9 items-center rounded-md border border-border-strong px-3 text-sm text-fg hover:bg-surface-hover'
