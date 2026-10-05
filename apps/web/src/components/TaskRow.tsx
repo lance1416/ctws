@@ -101,7 +101,7 @@ export function TaskRow({
         transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
         transition,
       }}
-      className={`group relative flex min-h-8 cursor-pointer items-center rounded-md leading-snug hover:bg-surface-sunken ${isDragging ? 'bg-surface-sunken opacity-70' : ''}`}
+      className={`group relative flex min-h-8 cursor-pointer items-center rounded-md leading-snug max-sm:flex-wrap hover:bg-surface-sunken ${isDragging ? 'bg-surface-sunken opacity-70' : ''}`}
     >
       <ProjectRail projectId={projectId} continuous />
       {/* One hairline per ancestor level, centred under that level's chevron column. Depth is
@@ -173,8 +173,20 @@ export function TaskRow({
           x on every row of the tree however deeply indented the row is -- which is the whole
           reason the right-hand zone exists. Empty cells are still reserved: a column that moves
           when a row has no date is not a column. */}
-      <DueCell due={hints.due} className={`ml-3 shrink-0 ${DUE_CELL}`} />
-      <PlanCell text={hints.scheduled} className={`ml-3 shrink-0 ${PLAN_CELL}`} />
+      {/* Below `sm` the pair drops onto a line of its own, exactly as it does on 今天 -- at 375
+          a depth-3 row with a deadline used to cut its title to "操…". The wrapper is `hidden`
+          rather than absent when the row has no date, so a dateless row costs no second line and
+          the reserved widths above `sm` (where `contents` dissolves this span) are untouched. */}
+      <span
+        className={`flex items-center sm:contents ${
+          hints.due || hints.scheduled
+            ? 'max-sm:order-last max-sm:w-full max-sm:gap-3 max-sm:pb-1 max-sm:pl-[4.25rem]'
+            : 'max-sm:hidden'
+        }`}
+      >
+        <DueCell due={hints.due} className={`ml-3 shrink-0 max-sm:ml-0 ${DUE_CELL}`} />
+        <PlanCell text={hints.scheduled} className={`ml-3 shrink-0 max-sm:ml-0 ${PLAN_CELL}`} />
+      </span>
       <StartButton
         status={status}
         title={title}
