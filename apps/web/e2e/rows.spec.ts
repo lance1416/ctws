@@ -391,3 +391,85 @@ test('a plan and a deadline differ by shape, not only by colour', async ({ page 
   await expect(row.locator('[data-date-hint="due"]')).toContainText('截止')
   await expect(row.locator('[data-date-hint="carried"]')).toContainText('原定')
 })
+
+// ------------------------------------------------------------------- the phone, deep in a tree
+
+/**
+ * Stage 2 named this and chose not to spend on it: at 375 a depth-3 tree row with a deadline cut
+ * its title to "操…", because below `sm` the tree's date cells collapse to `w-auto` and the title
+ * gets whatever is left after the indent, the handle, the chevron, the marker, the two dates and
+ * the two row buttons.
+ *
+ * The claim being pinned is NOT "a title is never truncated" -- a long enough title at depth 3 on
+ * a 375px screen has to end somewhere, and asserting a character count would be a number asserting
+ * itself. The claim is that **the dates no longer take the title's width**: at the same depth, a
+ * row with both dates gives its title exactly as much room as a row with none. That is the defect,
+ * and the old layout failed it by about 170px.
+ *
+ * Stage 2's reason for leaving it was that a second line would cost every DATELESS row an empty
+ * one. It does not: the wrapper is `hidden` when the row has no date. The height assertions below
+ * are that half, which is the half stage 2 was actually worried about.
+ */
+test.describe('the tree on a phone', () => {
+  test.use({ viewport: { width: 375, height: 820 } })
+
+  test('a deep row’s dates no longer eat its title, and a bare row pays nothing', async ({
+    page,
+  }) => {
+    await registerFreshUser(page)
+    const pid = await makeProject(page, '深树')
+    const a = await makeTask(page, pid, '顶层')
+    const b = await makeTask(page, pid, '第二层', {}, a)
+    // Same depth, same title length: the only difference is that one of them has both dates.
+    await makeTask(
+      page,
+      pid,
+      '第三层上的一条很长的任务标题',
+      {
+        dueAt: dueAgo(2),
+        scheduledOn: dayOffset(1),
+      },
+      b,
+    )
+    await makeTask(page, pid, '第三层上的一条很长的别的标题', {}, b)
+
+    await page.goto(`/projects/${pid}`)
+    const dated = page.getByRole('button', { name: '任务：第三层上的一条很长的任务标题' })
+    const bare = page.getByRole('button', { name: '任务：第三层上的一条很长的别的标题' })
+    await dated.waitFor()
+
+    const titleWidth = (handle: typeof dated) =>
+      page
+        .locator('li', { has: handle })
+        .locator('span.truncate')
+        .first()
+        .evaluate((el) => Math.round(el.clientWidth))
+    const withDates = await titleWidth(dated)
+    const without = await titleWidth(bare)
+    expect(withDates, 'the dates no longer take the title’s width').toBe(without)
+    // ...and that width is most of the row, not a sliver. (Before, it was ~25 of ~195 CSS px.)
+    expect(withDates).toBeGreaterThan(140)
+
+    // The dates are still shown -- the title did not get its width by losing them.
+    await expect(
+      page.locator('li', { has: dated }).locator('[data-date-hint="overdue"]'),
+    ).toBeVisible()
+    await expect(
+      page.locator('li', { has: dated }).locator('[data-date-hint="scheduled"]'),
+    ).toBeVisible()
+
+    // A row with dates is taller by one line; a row without them is not. No empty second line
+    // was bought for every row in the tree.
+    const datedBox = (await page.locator('li', { has: dated }).boundingBox())!
+    const bareBox = (await page.locator('li', { has: bare }).boundingBox())!
+    expect(datedBox.height).toBeGreaterThan(bareBox.height)
+    expect(bareBox.height).toBeLessThanOrEqual(40)
+
+    // ...and none of it bought a horizontal scrollbar.
+    const overflow = await page.evaluate(() => ({
+      body: document.body.scrollWidth - document.body.clientWidth,
+      doc: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    }))
+    expect(overflow).toEqual({ body: 0, doc: 0 })
+  })
+})

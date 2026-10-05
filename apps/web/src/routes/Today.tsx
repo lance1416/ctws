@@ -157,7 +157,7 @@ export function Today() {
           hint="排到今天的、已经逾期的、正在做的，都会落到这一页。"
           action={
             <Link to="/projects" className={EMPTY_ACTION}>
-              从项目里挑一件
+              去挑一件来做
             </Link>
           }
         />

@@ -377,7 +377,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
               {TASK_STATUSES.map((s) => (
                 <label
                   key={s}
-                  className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border-subtle py-1 pr-2 pl-1.5 text-sm text-fg-muted hover:bg-surface has-[:checked]:border-border-strong has-[:checked]:bg-surface has-[:checked]:font-medium has-[:checked]:text-fg has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent"
+                  className="relative flex cursor-pointer items-center gap-1.5 rounded-md border border-border-subtle py-1 pr-2 pl-1.5 text-sm text-fg-muted hover:bg-surface has-[:checked]:border-border-strong has-[:checked]:bg-surface has-[:checked]:font-medium has-[:checked]:text-fg has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent"
                 >
                   <input
                     type="radio"
@@ -385,7 +385,10 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                     value={s}
                     checked={status === s}
                     onChange={() => setStatus(s)}
-                    className="sr-only"
+                    // The real control, covering the whole chip rather than hidden off-screen:
+                    // the chip IS the radio, so a press anywhere on it is a press on the input
+                    // and the keyboard gets the native radiogroup for nothing.
+                    className="absolute inset-0 cursor-pointer appearance-none opacity-0"
                   />
                   {/* aria-hidden: the radio's name comes from the text beside it, and a marker
                       that also announced 「进行中」 would say it twice. */}
