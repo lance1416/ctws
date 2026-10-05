@@ -4,17 +4,18 @@ import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { toggleDoneTarget, toggleStartTarget, useTaskActions } from '../api/taskActions'
 import { listToday } from '../api/today'
+import {
+  DueCell,
+  PlanCell,
+  ProjectRail,
+  SavedMark,
+  ROW_DATE_STACK,
+  ROW_GRID,
+} from '../components/RowParts'
 import { StartButton, StatusButton, statusForKey } from '../components/StatusControls'
 import { TaskDetail, toLocalInput } from '../components/TaskDetail'
-import {
-  addDays,
-  carriedLabel,
-  dateHints,
-  moveDueToDay,
-  nextMonday,
-  overdueLabel,
-  ymd,
-} from '../dueAt'
+import { TriageControl, type TriageSection } from '../components/TriageControl'
+import { addDays, carriedLabel, dateHints, moveDueToDay, nextMonday, ymd } from '../dueAt'
 import { useShortcutsEnabled } from '../shortcuts/enabled'
 import { useMe } from '../useMe'
 
@@ -23,8 +24,6 @@ const LABELS: Record<TodaySegment, string> = {
   today: '今天',
   in_progress: '正在做',
 }
-
-const exitButton = 'rounded-md py-1 text-fg underline underline-offset-4 hover:text-accent'
 
 export function Today() {
   const today = useQuery({ queryKey: ['today'], queryFn: listToday })
@@ -81,6 +80,11 @@ export function Today() {
     planFocus(id)
     actions.patch(id, body, clearPlan)
   }
+  // Where focus goes once a triage action has run. The panel and the button inside it unmount, so
+  // without this focus would fall to <body> (WCAG 2.4.3). The row is still on screen at this
+  // moment; if the change then takes it off the page, `planFocus` above moves focus on again.
+  const focusRow = (id: string) =>
+    queueMicrotask(() => document.querySelector<HTMLElement>(`[data-today-row="${id}"]`)?.focus())
   const onRowKeyDown = (e: KeyboardEvent, id: string, status: TaskStatus) => {
     // `s` and `x` are single-key shortcuts, so they answer to the same off switch as `/` and `f`.
     const next = singleKeys ? statusForKey(e, status) : null
@@ -162,168 +166,147 @@ export function Today() {
             {tasks.map((t) => {
               const hints = dateHints(t)
               const carried = segment === 'today' ? carriedLabel(t.scheduledOn) : null
+              // The plan column: a carried plan says so in words; otherwise the planned day, but
+              // only when that day is not today -- "排到今天" under a heading that already says
+              // 今天 is noise, not information.
+              const plan = carried ?? (t.scheduledOn !== todayYmd ? hints.scheduled : null)
+              // The triage this row needs, if any. The actions are exactly the ones that used to
+              // lie on the row as underlined links; what changed is the form, not the request.
+              const sections: TriageSection[] | null =
+                segment === 'overdue' && t.dueAt
+                  ? [
+                      {
+                        heading: '推迟截止',
+                        actions: [
+                          {
+                            label: '推迟到明天',
+                            run: () => patch(t.id, { dueAt: moveDueToDay(t.dueAt!, tomorrow) }),
+                          },
+                          {
+                            label: '推迟到下周',
+                            run: () => patch(t.id, { dueAt: moveDueToDay(t.dueAt!, nextWeek) }),
+                          },
+                          { label: '取消截止', run: () => patch(t.id, { dueAt: null }) },
+                        ],
+                      },
+                      {
+                        // The deadline stops being one: nobody is waiting, so it becomes a plan.
+                        // Both fields change in ONE request, so the row cannot be left half-way.
+                        heading: '转为排期',
+                        actions: [
+                          {
+                            label: '今天',
+                            run: () => patch(t.id, { dueAt: null, scheduledOn: todayYmd }),
+                          },
+                          {
+                            label: '明天',
+                            run: () => patch(t.id, { dueAt: null, scheduledOn: tomorrow }),
+                          },
+                          {
+                            label: '下周',
+                            run: () => patch(t.id, { dueAt: null, scheduledOn: nextWeek }),
+                          },
+                        ],
+                      },
+                    ]
+                  : carried
+                    ? [
+                        {
+                          // The plan-side twin: it moves the PLAN and never touches the deadline.
+                          heading: null,
+                          actions: [
+                            {
+                              label: '改到今天',
+                              run: () => patch(t.id, { scheduledOn: todayYmd }),
+                            },
+                            {
+                              label: '改到明天',
+                              run: () => patch(t.id, { scheduledOn: tomorrow }),
+                            },
+                            {
+                              label: '改到下周',
+                              run: () => patch(t.id, { scheduledOn: nextWeek }),
+                            },
+                            { label: '清除排期', run: () => patch(t.id, { scheduledOn: null }) },
+                          ],
+                        },
+                      ]
+                    : null
               return (
                 <li
                   key={t.id}
                   onClick={(e) => {
                     if (!(e.target as HTMLElement).closest('button')) setOpenId(t.id)
                   }}
-                  className="group -mx-2 grid cursor-pointer grid-cols-[24px_1fr_auto] items-start gap-x-2 rounded-md px-2 py-2 leading-snug hover:bg-surface-sunken"
+                  // One row system (see RowParts): the project rail at x=0, the status marker, the
+                  // title, then the deadline column, the plan column and the action slot -- every
+                  // one at a fixed x and reserved whether or not this row fills it.
+                  className={`group relative -mx-2 grid cursor-pointer items-start gap-x-2 gap-y-0.5 rounded-md py-1.5 pr-2 pl-3 leading-snug hover:bg-surface-sunken ${ROW_GRID}`}
                 >
-                  <StatusButton
-                    status={t.status}
-                    title={t.title}
-                    onClick={() => setStatus(t.id, toggleDoneTarget(t.status))}
-                  />
+                  <ProjectRail projectId={t.projectId} />
+                  <span className="col-start-1 row-start-1 flex h-6 items-center">
+                    <StatusButton
+                      status={t.status}
+                      title={t.title}
+                      onClick={() => setStatus(t.id, toggleDoneTarget(t.status))}
+                    />
+                  </span>
                   <button
                     type="button"
                     data-today-row={t.id}
                     onClick={() => setOpenId(t.id)}
                     onKeyDown={(e) => onRowKeyDown(e, t.id, t.status)}
-                    className="col-start-2 row-span-2 row-start-1 -m-1 flex flex-col rounded-md p-1 text-left"
+                    className="col-start-2 row-start-1 -m-1 flex min-w-0 flex-col rounded-md p-1 text-left"
                   >
-                    <span className={t.status === 'in_progress' ? 'font-semibold' : ''}>
-                      {t.title}
+                    <span className="flex items-baseline">
+                      <span
+                        className={`truncate ${t.status === 'in_progress' ? 'font-semibold' : ''}`}
+                      >
+                        {t.title}
+                      </span>
+                      {savedId === t.id && <SavedMark />}
                     </span>
-                    <span className="text-sm text-fg-muted">
+                    <span className="truncate text-sm text-fg-muted">
                       {t.parentTitle === null
                         ? t.projectName
                         : `${t.projectName} › ${t.parentTitle}`}
                     </span>
                   </button>
-                  <span className="col-start-3 row-start-1 flex items-center gap-2">
-                    {segment === 'overdue' && t.dueAt ? (
-                      <span
-                        className="text-sm font-medium text-missed"
-                        title={toLocalInput(t.dueAt).replace('T', ' ')}
-                      >
-                        {overdueLabel(t.dueAt)}
-                      </span>
-                    ) : (
-                      hints.due && (
-                        // Warm: this is a deadline. The plan hints below are cool.
-                        <span className="text-sm tabular-nums text-deadline">{hints.due.text}</span>
-                      )
-                    )}
-                    {savedId === t.id && (
-                      <span role="status" className="text-sm text-fg-muted">
-                        已保存
-                      </span>
-                    )}
+                  {/* Below `sm` the right-hand zone drops to a line of its own -- still two fixed
+                      columns, so the alignment survives a phone. `sm:contents` then dissolves this
+                      wrapper so the same two columns are grid tracks of the row itself. */}
+                  {(hints.due || plan) && (
+                    <span className={`col-start-2 row-start-2 gap-x-2 ${ROW_DATE_STACK}`}>
+                      <DueCell
+                        due={hints.due}
+                        exact={t.dueAt ? toLocalInput(t.dueAt).replace('T', ' ') : undefined}
+                        className="sm:col-start-3 sm:row-start-1 sm:h-6"
+                      />
+                      <PlanCell
+                        text={plan}
+                        carried={carried !== null}
+                        className="sm:col-start-4 sm:row-start-1 sm:h-6"
+                      />
+                    </span>
+                  )}
+                  <span className="col-start-3 row-start-1 flex h-6 items-center justify-end gap-0.5 sm:col-start-5">
                     <StartButton
                       status={t.status}
                       title={t.title}
                       onClick={() => setStatus(t.id, toggleStartTarget(t.status))}
-                      className="-my-1 opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
+                      className="h-7 w-7 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
                     />
+                    {sections && (
+                      <TriageControl
+                        groupLabel={
+                          segment === 'overdue' ? `处理逾期：${t.title}` : `处理顺延：${t.title}`
+                        }
+                        triggerLabel={`调整「${t.title}」的日期`}
+                        sections={sections}
+                        onRan={() => focusRow(t.id)}
+                      />
+                    )}
                   </span>
-                  {segment === 'overdue' && (
-                    // The way out of the overdue wall. 推迟 moves the DEADLINE to the chosen day,
-                    // keeping its time of day: the person is deliberately moving their own
-                    // deadline, so the task legitimately leaves 逾期. The segment cascade is
-                    // untouched, so merely scheduling a task still cannot hide a missed deadline;
-                    // only changing due_at itself can.
-                    <div
-                      role="group"
-                      aria-label={`处理逾期：${t.title}`}
-                      className="col-span-2 col-start-2 mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm"
-                    >
-                      {hints.scheduled && (
-                        <span data-date-hint="scheduled" className="text-plan">
-                          {hints.scheduled}
-                        </span>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => patch(t.id, { dueAt: moveDueToDay(t.dueAt!, tomorrow) })}
-                        className={exitButton}
-                      >
-                        推迟到明天
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => patch(t.id, { dueAt: moveDueToDay(t.dueAt!, nextWeek) })}
-                        className={exitButton}
-                      >
-                        推迟到下周
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => patch(t.id, { dueAt: null })}
-                        className={exitButton}
-                      >
-                        取消截止
-                      </button>
-                      {/* The deadline stops being one: nobody is waiting, so it becomes a plan.
-                          Both fields change in one request, so the row cannot be left half-way. */}
-                      <span className="flex items-center gap-x-4 text-fg-muted">
-                        <span>转为排期：</span>
-                        <button
-                          type="button"
-                          onClick={() => patch(t.id, { dueAt: null, scheduledOn: todayYmd })}
-                          className={exitButton}
-                        >
-                          今天
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => patch(t.id, { dueAt: null, scheduledOn: tomorrow })}
-                          className={exitButton}
-                        >
-                          明天
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => patch(t.id, { dueAt: null, scheduledOn: nextWeek })}
-                          className={exitButton}
-                        >
-                          下周
-                        </button>
-                      </span>
-                    </div>
-                  )}
-                  {carried && (
-                    // The plan-side twin of the group above. It moves the PLAN (scheduled_on) and
-                    // never touches the deadline. Marked in words and weight, not red: a carried
-                    // plan is not a missed deadline.
-                    <div
-                      role="group"
-                      aria-label={`处理顺延：${t.title}`}
-                      className="col-span-2 col-start-2 mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm"
-                    >
-                      <span data-date-hint="carried" className="font-medium text-plan">
-                        {carried}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => patch(t.id, { scheduledOn: todayYmd })}
-                        className={exitButton}
-                      >
-                        改到今天
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => patch(t.id, { scheduledOn: tomorrow })}
-                        className={exitButton}
-                      >
-                        改到明天
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => patch(t.id, { scheduledOn: nextWeek })}
-                        className={exitButton}
-                      >
-                        改到下周
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => patch(t.id, { scheduledOn: null })}
-                        className={exitButton}
-                      >
-                        清除排期
-                      </button>
-                    </div>
-                  )}
                 </li>
               )
             })}

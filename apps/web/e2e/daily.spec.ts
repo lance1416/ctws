@@ -59,6 +59,25 @@ const patched = (page: Page) => page.waitForResponse((r) => isPatch(r) && r.ok()
 
 const dueAgo = (days: number) => new Date(Date.now() - days * DAY).toISOString()
 
+/**
+ * The row's date control. It replaced the seven inline text links an overdue row used to carry
+ * (and the five a carried row carried): the actions are the same actions and send the same
+ * requests, but they live inside one disclosure instead of lying on the row.
+ *
+ * The trigger's name deliberately does not CONTAIN either group name, so `getByRole` -- which
+ * matches accessible names by substring -- cannot confuse the two.
+ */
+const triage = (page: Page, title: string) =>
+  page.getByRole('button', { name: `调整「${title}」的日期` })
+
+/** Opens a row's date control and returns the panel, asserting it actually opened. */
+async function openTriage(page: Page, title: string, kind: '逾期' | '顺延') {
+  await triage(page, title).click()
+  const panel = page.getByRole('group', { name: `处理${kind}：${title}` })
+  await expect(panel).toBeVisible()
+  return panel
+}
+
 async function openTree(page: Page, projectId: string) {
   await page.goto(`/projects/${projectId}`)
   await page.getByRole('listitem').first().waitFor()
@@ -251,9 +270,12 @@ test('推迟 on an overdue row moves the deadline, keeps its time of day, and th
     onDay(0).getMilliseconds(),
   )
 
-  const group = (title: string) => page.getByRole('group', { name: `处理逾期：${title}` })
   let res = patched(page)
-  await group('推到明天').getByRole('button', { name: '推迟到明天' }).click()
+  await (
+    await openTriage(page, '推到明天', '逾期')
+  )
+    .getByRole('button', { name: '推迟到明天' })
+    .click()
   // The request moves the deadline and nothing else.
   expect((await res).request().postDataJSON()).toEqual({ dueAt: expectTomorrow.toISOString() })
   // The row left 逾期; the other two overdue rows did not move.
@@ -291,7 +313,11 @@ test('推迟 on an overdue row moves the deadline, keeps its time of day, and th
     onDay(0).getMilliseconds(),
   )
   res = patched(page)
-  await group('推到下周').getByRole('button', { name: '推迟到下周' }).click()
+  await (
+    await openTriage(page, '推到下周', '逾期')
+  )
+    .getByRole('button', { name: '推迟到下周' })
+    .click()
   expect((await res).request().postDataJSON()).toEqual({ dueAt: monday.toISOString() })
   await expect(page.getByText('推到下周')).toHaveCount(0)
   expect(new Date((await serverTask(page, pid, '推到下周')).dueAt!).getTime()).toBe(
@@ -352,8 +378,9 @@ test('取消截止 takes a row out of overdue and the server forgets the deadlin
   await expect(section.getByText('不再重要')).toBeVisible()
 
   const res = patched(page)
-  await page
-    .getByRole('group', { name: '处理逾期：不再重要' })
+  await (
+    await openTriage(page, '不再重要', '逾期')
+  )
     .getByRole('button', { name: '取消截止' })
     .click()
   expect((await res).request().postDataJSON()).toEqual({ dueAt: null })
@@ -375,8 +402,21 @@ test('an overdue row is finished with its mark, and only overdue rows have the e
   await makeTask(page, pid, '逾期的', { dueAt: dueAgo(2) })
   await makeTask(page, pid, '在做的', { status: 'in_progress' })
   await page.goto('/')
-  await expect(page.getByRole('button', { name: '推迟到明天' })).toHaveCount(1)
-  await expect(page.getByRole('button', { name: '取消截止' })).toHaveCount(1)
+  // Exactly one date control on the page: the overdue row has one, the in-progress row has none.
+  await expect(page.locator('[data-triage-trigger]')).toHaveCount(1)
+  await expect(triage(page, '逾期的')).toBeVisible()
+  await expect(triage(page, '在做的')).toHaveCount(0)
+
+  // Opening it offers the same two exits it always did, and nothing is reachable while it is shut.
+  await expect(page.getByRole('button', { name: '推迟到明天' })).toHaveCount(0)
+  const panel = await openTriage(page, '逾期的', '逾期')
+  await expect(panel.getByRole('button', { name: '推迟到明天' })).toBeVisible()
+  await expect(panel.getByRole('button', { name: '推迟到下周' })).toBeVisible()
+  await expect(panel.getByRole('button', { name: '取消截止' })).toBeVisible()
+  // Escape shuts it and hands focus back to the trigger rather than to <body> (WCAG 2.4.3).
+  await page.keyboard.press('Escape')
+  await expect(panel).toHaveCount(0)
+  await expect(triage(page, '逾期的')).toBeFocused()
 
   const res = patched(page)
   await page.getByRole('button', { name: '完成「逾期的」' }).click()
@@ -631,8 +671,6 @@ const nextMondayYmd = () => {
   d.setDate(d.getDate() + (d.getDay() === 0 ? 1 : 8 - d.getDay()))
   return ymd(d)
 }
-const planGroup = (page: Page, title: string) =>
-  page.getByRole('group', { name: `处理顺延：${title}` })
 const rowOf = (page: Page, title: string) =>
   page
     .locator('li')
@@ -668,7 +706,7 @@ test('a plan carried over from days ago is marked in 今天 with its day; a plan
   )
   // Today's own plan carries no mark and no triage group.
   await expect(rowOf(page, '今天的计划').locator('[data-date-hint]')).toHaveCount(0)
-  await expect(planGroup(page, '今天的计划')).toHaveCount(0)
+  await expect(triage(page, '今天的计划')).toHaveCount(0)
   await expect(page.locator('[data-date-hint="carried"]')).toHaveCount(2)
   // Not an overdue deadline: no overdue segment, no overdue wording.
   await expect(page.getByRole('region', { name: '逾期' })).toHaveCount(0)
@@ -682,19 +720,25 @@ test('改到今天 keeps the row, drops the mark, and changes only the plan', as
   await makeTask(page, pid, '旁观者', { scheduledOn: dayOffset(-3) })
   await page.goto('/')
   const res = patched(page)
-  await planGroup(page, '改到今天的').getByRole('button', { name: '改到今天' }).click()
+  await (
+    await openTriage(page, '改到今天的', '顺延')
+  )
+    .getByRole('button', { name: '改到今天' })
+    .click()
   expect((await res).request().postDataJSON()).toEqual({ scheduledOn: dayOffset(0) })
 
-  await expect(planGroup(page, '改到今天的')).toHaveCount(0)
+  // The row stays but is no longer carried, so its date control goes with the mark.
+  await expect(triage(page, '改到今天的')).toHaveCount(0)
+  await expect(rowOf(page, '改到今天的').locator('[data-date-hint="carried"]')).toHaveCount(0)
   await expect(page.getByRole('region', { name: '今天' }).getByText('改到今天的')).toBeVisible()
   // The neighbour is untouched and still marked.
-  await expect(planGroup(page, '旁观者')).toBeVisible()
+  await expect(triage(page, '旁观者')).toBeVisible()
   expect((await serverTask(page, pid, '改到今天的')).scheduledOn).toBe(dayOffset(0))
   expect((await serverTask(page, pid, '旁观者')).scheduledOn).toBe(dayOffset(-3))
   expect(await todaySegment(page, id)).toBe('today')
   await page.reload()
   await expect(page.getByText('改到今天的')).toBeVisible()
-  await expect(planGroup(page, '改到今天的')).toHaveCount(0)
+  await expect(triage(page, '改到今天的')).toHaveCount(0)
 })
 
 test('改到明天 and 改到下周 move the plan and the row leaves 今天', async ({ page }) => {
@@ -706,21 +750,30 @@ test('改到明天 and 改到下周 move the plan and the row leaves 今天', as
   await page.goto('/')
 
   let res = patched(page)
-  await planGroup(page, '改到明天的').getByRole('button', { name: '改到明天' }).click()
+  await (
+    await openTriage(page, '改到明天的', '顺延')
+  )
+    .getByRole('button', { name: '改到明天' })
+    .click()
   expect((await res).request().postDataJSON()).toEqual({ scheduledOn: dayOffset(1) })
   await expect(page.getByText('改到明天的')).toHaveCount(0)
   expect((await serverTask(page, pid, '改到明天的')).scheduledOn).toBe(dayOffset(1))
   expect(await todaySegment(page, a)).toBe('absent')
 
   res = patched(page)
-  await planGroup(page, '改到下周的').getByRole('button', { name: '改到下周' }).click()
+  await (
+    await openTriage(page, '改到下周的', '顺延')
+  )
+    .getByRole('button', { name: '改到下周' })
+    .click()
   expect((await res).request().postDataJSON()).toEqual({ scheduledOn: nextMondayYmd() })
   await expect(page.getByText('改到下周的')).toHaveCount(0)
   expect((await serverTask(page, pid, '改到下周的')).scheduledOn).toBe(nextMondayYmd())
   expect(await todaySegment(page, b)).toBe('absent')
 
   // The one nobody touched is still there and still carried.
-  await expect(planGroup(page, '留着的')).toBeVisible()
+  await expect(triage(page, '留着的')).toBeVisible()
+  await expect(rowOf(page, '留着的').locator('[data-date-hint="carried"]')).toBeVisible()
   await expect(page.locator('[data-today-row]')).toHaveCount(1)
   await page.reload()
   await expect(page.locator('[data-today-row]')).toHaveCount(1)
@@ -733,7 +786,7 @@ test('清除排期 removes the row from 今天 and the server holds no plan', as
   await makeTask(page, pid, '另一个', { scheduledOn: dayOffset(-4) })
   await page.goto('/')
   const res = patched(page)
-  await planGroup(page, '不排了').getByRole('button', { name: '清除排期' }).click()
+  await (await openTriage(page, '不排了', '顺延')).getByRole('button', { name: '清除排期' }).click()
   expect((await res).request().postDataJSON()).toEqual({ scheduledOn: null })
   await expect(page.getByText('不排了')).toHaveCount(0)
 
@@ -756,16 +809,20 @@ test('a carried plan is not a deadline: clearing the plan leaves dueAt alone', a
     dueAt: due.toISOString(),
   })
   await page.goto('/')
-  await expect(planGroup(page, '计划和今晚截止')).toBeVisible()
+  await expect(triage(page, '计划和今晚截止')).toBeVisible()
   const res = patched(page)
-  await planGroup(page, '计划和今晚截止').getByRole('button', { name: '清除排期' }).click()
+  await (
+    await openTriage(page, '计划和今晚截止', '顺延')
+  )
+    .getByRole('button', { name: '清除排期' })
+    .click()
   await res
   const t = await serverTask(page, pid, '计划和今晚截止')
   expect(t.scheduledOn).toBeNull()
   expect(new Date(t.dueAt!).getTime()).toBe(due.getTime())
   // It is still due today, so it stays on the list, no longer marked.
   await expect(page.getByText('计划和今晚截止')).toBeVisible()
-  await expect(planGroup(page, '计划和今晚截止')).toHaveCount(0)
+  await expect(triage(page, '计划和今晚截止')).toHaveCount(0)
 })
 
 test('转为排期 turns an overdue deadline into a plan: out of 逾期, into 今天, dueAt gone', async ({
@@ -781,9 +838,12 @@ test('转为排期 turns an overdue deadline into a plan: out of 逾期, into �
   await expect(overdue.getByText('已逾 3 天')).toHaveCount(3)
   expect(await todaySegment(page, id)).toBe('overdue')
 
-  const group = (title: string) => page.getByRole('group', { name: `处理逾期：${title}` })
   let res = patched(page)
-  await group('没人在等').getByRole('button', { name: '今天', exact: true }).click()
+  await (
+    await openTriage(page, '没人在等', '逾期')
+  )
+    .getByRole('button', { name: '今天', exact: true })
+    .click()
   // One request carries both halves of the change.
   expect((await res).request().postDataJSON()).toEqual({ dueAt: null, scheduledOn: dayOffset(0) })
 
@@ -793,14 +853,19 @@ test('转为排期 turns an overdue deadline into a plan: out of 逾期, into �
   expect(t.dueAt).toBeNull()
   expect(t.scheduledOn).toBe(dayOffset(0))
   expect(await todaySegment(page, id)).toBe('today')
-  // A plan for today is quiet: no carried mark.
-  await expect(planGroup(page, '没人在等')).toHaveCount(0)
+  // A plan for today is quiet: no carried mark and no date control.
+  await expect(triage(page, '没人在等')).toHaveCount(0)
+  await expect(rowOf(page, '没人在等').locator('[data-date-hint]')).toHaveCount(0)
   await page.reload()
   await expect(page.getByRole('region', { name: '今天' }).getByText('没人在等')).toBeVisible()
 
   // Demoting to tomorrow leaves the list altogether; the neighbour stays overdue.
   res = patched(page)
-  await group('转到明天').getByRole('button', { name: '明天', exact: true }).click()
+  await (
+    await openTriage(page, '转到明天', '逾期')
+  )
+    .getByRole('button', { name: '明天', exact: true })
+    .click()
   expect((await res).request().postDataJSON()).toEqual({ dueAt: null, scheduledOn: dayOffset(1) })
   await expect(page.getByText('转到明天')).toHaveCount(0)
   const t2 = await serverTask(page, pid, '转到明天')
@@ -821,6 +886,16 @@ test('the plan actions are not offered on an overdue row or on a plan for today'
   await makeTask(page, pid, '今天计划', { scheduledOn: dayOffset(0) })
   await page.goto('/')
   await expect(page.getByText('今天计划')).toBeVisible()
-  await expect(page.getByRole('button', { name: '改到今天' })).toHaveCount(0)
-  await expect(page.getByRole('button', { name: '清除排期' })).toHaveCount(0)
+  // A plan for today needs no triage at all, so that row has no date control.
+  await expect(triage(page, '今天计划')).toHaveCount(0)
+  // The overdue row has one, and it offers the DEADLINE exits only: a task whose deadline has
+  // gone is not triaged by nudging the plan it also happens to carry.
+  const panel = await openTriage(page, '逾期兼旧计划', '逾期')
+  await expect(panel.getByRole('button', { name: '推迟到明天' })).toBeVisible()
+  await expect(panel.getByRole('button', { name: '改到今天' })).toHaveCount(0)
+  await expect(panel.getByRole('button', { name: '清除排期' })).toHaveCount(0)
+  await expect(page.getByRole('group', { name: '处理顺延：逾期兼旧计划' })).toHaveCount(0)
+  // Its carried plan is still SHOWN, in the plan column, beside the missed deadline.
+  await expect(rowOf(page, '逾期兼旧计划').locator('[data-date-hint="scheduled"]')).toBeVisible()
+  await expect(rowOf(page, '逾期兼旧计划').locator('[data-date-hint="overdue"]')).toBeVisible()
 })
