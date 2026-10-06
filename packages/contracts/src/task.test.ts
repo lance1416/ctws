@@ -202,6 +202,7 @@ describe('projectMovementResponse', () => {
     projectName: '开源贡献',
     doneThisWeek: 2,
     remaining: 5,
+    overdue: 1,
     lastActivityOn: '2026-09-28',
     quietDays: 7,
   }
@@ -246,5 +247,16 @@ describe('projectMovementResponse', () => {
   it('refuses negative counts', () => {
     expect(projectMovementResponse.safeParse({ ...base, remaining: -1 }).success).toBe(false)
     expect(projectMovementResponse.safeParse({ ...base, quietDays: -1 }).success).toBe(false)
+    expect(projectMovementResponse.safeParse({ ...base, overdue: -1 }).success).toBe(false)
+  })
+
+  /**
+   * The project header banner shows four numbers and every one of them is the server's. A missing
+   * field here would otherwise reach the banner as `undefined` and render as a blank where a
+   * count should be -- which reads as "nothing is overdue".
+   */
+  it('requires the overdue count rather than letting the banner guess', () => {
+    const { overdue: _overdue, ...withoutOverdue } = base
+    expect(projectMovementResponse.safeParse(withoutOverdue).success).toBe(false)
   })
 })

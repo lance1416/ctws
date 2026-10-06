@@ -49,6 +49,7 @@ type Row = {
   projectName: string
   doneThisWeek: number
   remaining: number
+  overdue: number
   lastActivityOn: string | null
   quietDays: number | null
 }
@@ -67,6 +68,17 @@ const rowFor = (rows: Row[], id: string): Row => {
   const r = rows.find((x) => x.projectId === id)
   expect(r, `project ${id} in the movement list`).toBeDefined()
   return r!
+}
+
+/** Sets a deadline through the real API, so the contract's own coercion is what stores it. */
+async function dueAt(id: string, iso: string) {
+  const res = await ctx.app.inject({
+    method: 'PATCH',
+    url: `/api/v1/tasks/${id}`,
+    headers: ctx.authed,
+    payload: { dueAt: iso },
+  })
+  expect(res.statusCode).toBe(200)
 }
 
 /** Finishes through the real API (so `completed_at` is set by the service), then pins the instant. */
@@ -219,12 +231,118 @@ describe('GET /tasks/movement', () => {
     expect(rowFor(await movement(), pid).quietDays).toBe(0)
   })
 
+  // ------------------------------------------------------------------ 逾期, the banner's fourth number
+
+  it('counts 逾期 PER PROJECT, not across the workspace', async () => {
+    const one = await createProject(ctx, 'one late')
+    const three = await createProject(ctx, 'three late')
+    await dueAt(await createTask(ctx, one, 'o1'), '2020-01-01T09:00:00Z')
+    for (const t of ['t1', 't2', 't3'])
+      await dueAt(await createTask(ctx, three, t), '2020-01-01T09:00:00Z')
+    // Open and not late, in the same project: the count is not just "how many have a deadline".
+    await createTask(ctx, three, 'no deadline')
+
+    const rows = await movement()
+    // Two DIFFERENT non-zero numbers, for the same reason 还剩 asserts two: a subquery that
+    // correlated a task to itself reports 0 everywhere, and one that lost its project filter
+    // reports the same workspace-wide total on every row. Only 1 and 3 rule out both.
+    expect(rowFor(rows, one).overdue).toBe(1)
+    expect(rowFor(rows, three).overdue).toBe(3)
+  })
+
+  it('leaves finished, cancelled, deleted and not-yet-late tasks out of 逾期', async () => {
+    const pid = await createProject(ctx, 'late leftovers')
+    await dueAt(await createTask(ctx, pid, 'really late'), '2020-01-01T09:00:00Z')
+    // Finished and cancelled tasks with a deadline in the past: the deadline no longer matters.
+    for (const status of ['done', 'cancelled'] as const) {
+      const id = await createTask(ctx, pid, `settled ${status}`)
+      await dueAt(id, '2020-01-01T09:00:00Z')
+      expect(
+        (
+          await ctx.app.inject({
+            method: 'PATCH',
+            url: `/api/v1/tasks/${id}`,
+            headers: ctx.authed,
+            payload: { status },
+          })
+        ).statusCode,
+      ).toBe(200)
+    }
+    const gone = await createTask(ctx, pid, 'deleted')
+    await dueAt(gone, '2020-01-01T09:00:00Z')
+    expect(
+      (
+        await ctx.app.inject({
+          method: 'DELETE',
+          url: `/api/v1/tasks/${gone}`,
+          headers: ctx.authed,
+        })
+      ).statusCode,
+    ).toBe(204)
+    // A deadline a long way off is not overdue.
+    await dueAt(await createTask(ctx, pid, 'next decade'), '2099-01-01T09:00:00Z')
+
+    expect(rowFor(await movement(), pid).overdue).toBe(1)
+  })
+
+  /**
+   * The same boundary `listToday` draws, in the SAME zone: a task is overdue when its deadline is
+   * before midnight of the user's today. This fixture sits in the hour where the two zones
+   * disagree, so a server computing the boundary in UTC gets it wrong for the Shanghai reader --
+   * and the project banner would then contradict the 逾期 panel on the very same task.
+   */
+  it('draws the 逾期 boundary at midnight IN THE USER’S TIMEZONE', async () => {
+    const pid = await createProject(ctx, 'late by zone')
+    // 2026-10-06 17:00Z is 2026-10-07 01:00 in Shanghai -- during the Shanghai reader's today,
+    // so NOT overdue for them -- and still 2026-10-06 for a UTC reader, so overdue for them.
+    await dueAt(await createTask(ctx, pid, 'one in the morning'), '2026-10-06T17:00:00Z')
+    const now = new Date('2026-10-07T04:00:00Z')
+
+    const shanghai = (await listProjectMovement(ctx.db, workspaceId, 'Asia/Shanghai', now)) as Row[]
+    expect(rowFor(shanghai, pid).overdue).toBe(0)
+
+    const utc = (await listProjectMovement(ctx.db, workspaceId, 'UTC', now)) as Row[]
+    expect(rowFor(utc, pid).overdue).toBe(1)
+  })
+
+  /**
+   * The number on the project banner and the rows in the 逾期 panel are two different queries
+   * answering one question. This asserts they agree, per project, rather than asserting each
+   * against a constant -- which is the only way a drift between them would ever be noticed.
+   */
+  it('agrees with the overdue segment of today, project by project', async () => {
+    const a = await createProject(ctx, 'agree a')
+    const b = await createProject(ctx, 'agree b')
+    await dueAt(await createTask(ctx, a, 'a late'), '2020-02-02T09:00:00Z')
+    await dueAt(await createTask(ctx, b, 'b late 1'), '2020-02-02T09:00:00Z')
+    await dueAt(await createTask(ctx, b, 'b late 2'), '2020-03-03T09:00:00Z')
+
+    const today = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/v1/tasks/today',
+      headers: ctx.authed,
+    })
+    expect(today.statusCode).toBe(200)
+    const segmented = (today.json().tasks as { projectId: string; segment: string }[]).filter(
+      (t) => t.segment === 'overdue',
+    )
+    const fromToday = new Map<string, number>()
+    for (const t of segmented) fromToday.set(t.projectId, (fromToday.get(t.projectId) ?? 0) + 1)
+    // The fixture really does put overdue tasks in more than one project, or "they agree" would
+    // be a claim about one number.
+    expect(fromToday.get(a)).toBe(1)
+    expect(fromToday.get(b)).toBe(2)
+
+    for (const row of await movement())
+      expect(row.overdue, row.projectName).toBe(fromToday.get(row.projectId) ?? 0)
+  })
+
   it('reports no activity at all for a project nothing has ever happened in', async () => {
     const pid = await createProject(ctx, 'untouched')
     const row = rowFor(await movement(), pid)
     expect(row.lastActivityOn).toBeNull()
     expect(row.quietDays).toBeNull()
-    expect(row).toMatchObject({ remaining: 0, doneThisWeek: 0 })
+    expect(row).toMatchObject({ remaining: 0, doneThisWeek: 0, overdue: 0 })
   })
 
   it('shows a workspace only its own projects', async () => {

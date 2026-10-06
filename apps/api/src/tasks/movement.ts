@@ -19,6 +19,12 @@ export type ProjectMovement = {
   doneThisWeek: number
   /** Still open: neither done, cancelled nor deleted. Same definition as the rail's count. */
   remaining: number
+  /**
+   * Still open and past its deadline: `due_at` before the start of TODAY in the user's zone,
+   * which is exactly the `overdue` segment `listToday` computes. The two must agree, or the
+   * project banner and the 逾期 panel would disagree about the same task.
+   */
+  overdue: number
   /** The calendar day of the last logged change, in the user's timezone; null if nothing ever happened. */
   lastActivityOn: string | null
   /** Whole days from that day to today, in the user's timezone. Null when there is no activity. */
@@ -62,6 +68,9 @@ export async function listProjectMovement(
   // conversion order is the same: truncate the LOCAL timestamp, then convert back.
   const weekStart = sql`((date_trunc('week', ${clock} at time zone ${timezone})) at time zone ${timezone})`
   const today = sql`((${clock} at time zone ${timezone})::date)`
+  // Midnight of the user's today, as an instant. Same expression `listToday` calls `t0`, and the
+  // same conversion order: truncate the LOCAL timestamp, then convert back.
+  const dayStart = sql`((date_trunc('day', ${clock} at time zone ${timezone})) at time zone ${timezone})`
   const lastActivity = sql`(
     select max(ev.occurred_at)
     from task_events ev
@@ -87,6 +96,14 @@ export async function listProjectMovement(
           and open_t.deleted_at is null
           and open_t.status not in ('done', 'cancelled')
       )`.mapWith(Number),
+      overdue: sql<number>`(
+        select count(*) from tasks late_t
+        where late_t.project_id = projects.id
+          and late_t.deleted_at is null
+          and late_t.status not in ('done', 'cancelled')
+          and late_t.due_at is not null
+          and late_t.due_at < ${dayStart}
+      )`.mapWith(Number),
       lastActivityOn: sql<
         string | null
       >`(((${lastActivity}) at time zone ${timezone})::date)::text`,
@@ -104,6 +121,7 @@ export async function listProjectMovement(
     projectName: r.projectName,
     doneThisWeek: r.doneThisWeek,
     remaining: r.remaining,
+    overdue: r.overdue,
     lastActivityOn: r.lastActivityOn ?? null,
     quietDays: r.quietDays === null || r.quietDays === undefined ? null : Number(r.quietDays),
   }))

@@ -176,6 +176,13 @@ export const projectMovementResponse = z
     projectName: z.string(),
     doneThisWeek: z.number().int().nonnegative(),
     remaining: z.number().int().nonnegative(),
+    /**
+     * Still open and already past its deadline, counted the same way the `overdue` segment of
+     * `today` is: `due_at` before the start of the user's day. It lives here rather than on a
+     * second endpoint because it is the fourth number the project header banner shows and the
+     * other three are already in this one query.
+     */
+    overdue: z.number().int().nonnegative(),
     // Null when the project has no logged activity at all, which is only ever an empty project.
     lastActivityOn: calendarDate.nullable(),
     quietDays: z.number().int().nonnegative().nullable(),

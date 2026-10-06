@@ -12,6 +12,7 @@ const row = (p: Partial<ProjectMovementResponse> = {}): ProjectMovementResponse 
   projectName: p.projectName ?? '项目',
   doneThisWeek: p.doneThisWeek ?? 0,
   remaining: p.remaining ?? 0,
+  overdue: p.overdue ?? 0,
   lastActivityOn: p.lastActivityOn ?? null,
   quietDays: p.quietDays ?? null,
 })
