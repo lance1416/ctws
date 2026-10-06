@@ -10,7 +10,7 @@ import { useBlocker } from 'react-router-dom'
 import { listProjects } from '../api/projects'
 import { deleteTask, listProjectTasks, moveTask, patchTask } from '../api/tasks'
 import { tasksKey } from '../api/taskCache'
-import { addDays, dayPhrase, moveDueToDay, nextMonday, ymd } from '../dueAt'
+import { addDays, dayPhrase, moveDueToDay, nextMonday, overdueLabel, ymd } from '../dueAt'
 import { projectRailClass } from '../projectColor'
 import { DeleteConfirm } from './DeleteConfirm'
 import { useReservePane, useWidePane } from './detailPane'
@@ -105,6 +105,26 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
   const [scheduledOn, setScheduledOn] = useState(task.scheduledOn ?? '')
   const [dueAt, setDueAt] = useState(toLocalInput(task.dueAt))
   const [nextProjectId, setNextProjectId] = useState(task.projectId)
+  /**
+   * READING MODE IS THE DEFAULT (spec §5), and it is what answers both halves of the complaint:
+   * 「想要的信息在二层菜单」 and 「编辑和信息显示在同一个地方，容易误触」.
+   *
+   * Looking something up now costs nothing and risks nothing: there is not one control on screen
+   * that can change a value, so a mis-aimed click cannot edit the task. The editing controls are
+   * all behind 编辑, which is also where the notes will one day render Markdown into -- a reading
+   * mode had to exist for that anyway.
+   *
+   * It is NOT autosave. Explicit 保存 and the unsaved-edit guard (close, navigate, log out) are
+   * unchanged; this only decides whether the controls those guard are on screen yet.
+   */
+  const [editing, setEditing] = useState(false)
+  const titleField = useRef<HTMLInputElement>(null)
+  const startEditing = () => {
+    setEditing(true)
+    // The first field, not the panel: 编辑 is a request to type, and the control the press
+    // destroyed must not take focus to <body> with it (WCAG 2.4.3).
+    queueMicrotask(() => titleField.current?.focus())
+  }
 
   // What the form started from, fixed at mount: a background refetch of `task` must not make an
   // untouched form look edited (or an edited one look clean).
@@ -185,6 +205,21 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
     return `${dayPhrase(ymd(d), todayYmd)} ${pad(d.getHours())}:${pad(d.getMinutes())}`
   })()
   const planEcho = scheduledOn ? dayPhrase(scheduledOn, todayYmd) : null
+
+  // What reading mode says the two dates are. The SERVER's values, said in the app's own words --
+  // never the wire format, which is a thing to parse rather than to read.
+  // A deadline whose day has gone says so, in the row's own words and the row's own `missed`
+  // colour. Without it the pane was the one place in the app where "this is late" was invisible,
+  // and reading mode is precisely where someone goes to look that up.
+  const dueOverdue = task.dueAt !== null && ymd(new Date(task.dueAt)) < todayYmd
+  const dueReading = (() => {
+    if (!task.dueAt) return null
+    const d = new Date(task.dueAt)
+    const exact = `${dayPhrase(ymd(d), todayYmd)} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+    return dueOverdue ? `${exact} · ${overdueLabel(task.dueAt)}` : exact
+  })()
+  const planReading = task.scheduledOn ? dayPhrase(task.scheduledOn, todayYmd) : null
+  const projectName = projects.data?.find((p) => p.id === task.projectId)?.name ?? ''
 
   // The panel starts below the sticky top bar rather than over it, so the capture box and the
   // account controls stay visible and usable while a task is open.
@@ -332,249 +367,354 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
             : 'right-0 bottom-0 w-full max-w-md border-l border-border-subtle bg-surface-raised'
         }`}
       >
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            // After the lists have refetched, so the row behind the panel is already up to date.
-            if (title.trim() && !save.isPending) save.mutate(undefined, { onSuccess: onSaved })
-          }}
-          className="flex flex-col gap-5"
-        >
-          {/* The pane opens with the TASK: where it lives, then what it is called. It used to
+        {/* ---------------------------------------------------------------- READING MODE
+            Title, the status and the two dates read-only, the notes as prose, and 编辑. The only
+            two controls are 编辑 and 关闭, and neither of them changes the task -- which is the
+            whole point: 「编辑和信息显示在同一个地方，容易误触」. */}
+        {!editing && (
+          <div className="flex flex-col gap-4">
+            <div>
+              <div className="flex min-w-0 items-start justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-1.5">
+                  {/* A chip, never alone: the project's NAME is beside it (WCAG 1.4.1). */}
+                  <span
+                    aria-hidden="true"
+                    className={`h-3.5 w-[3px] shrink-0 rounded-full ${projectRailClass(task.projectId)}`}
+                  />
+                  <span className="truncate text-sm text-fg-muted">{projectName}</span>
+                </div>
+                {/* 「编辑」 and not 「编辑任务」: accessible names share one flat namespace and are
+                    matched by substring, and the guard's 继续编辑 already contains 编辑 -- a longer
+                    name here would only add a second way for the two to collide. */}
+                <button
+                  type="button"
+                  onClick={startEditing}
+                  className="-mt-1 h-9 shrink-0 rounded-lg border border-border-strong px-3 text-sm text-fg hover:bg-surface-hover"
+                >
+                  编辑
+                </button>
+              </div>
+              {/* The task's name, at the top of the pane's type scale: the pane opens with the
+                  TASK, exactly as the editing form does. */}
+              <h2 data-detail-title className="mt-0.5 text-xl font-semibold text-fg">
+                {task.title}
+              </h2>
+            </div>
+
+            <div className="flex flex-col gap-2.5">
+              <div className="flex items-center gap-2">
+                <span className={label}>状态</span>
+                <span aria-hidden="true" className="flex">
+                  <StatusMark status={task.status} />
+                </span>
+                <span className="text-sm text-fg">{STATUS_LABEL[task.status]}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="flex items-center gap-1 text-sm font-medium text-deadline">
+                  <DeadlineMark filled={false} />
+                  截止
+                </span>
+                <span
+                  className={`text-sm tabular-nums ${dueOverdue ? 'font-medium text-missed' : 'text-fg'}`}
+                >
+                  {dueReading ?? '没有设定'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="flex items-center gap-1 text-sm font-medium text-plan">
+                  <PlanMark />
+                  排期
+                </span>
+                <span className="text-sm tabular-nums text-fg">{planReading ?? '没有设定'}</span>
+              </div>
+            </div>
+
+            <div>
+              <span className={label}>备注</span>
+              {/* Prose, kept at the reading measure the textarea has, and with the author's own
+                  line breaks: `whitespace-pre-wrap` is what makes a note read the way it was
+                  typed. This is the element Markdown will later render into (a later stage). */}
+              {task.notes ? (
+                <p
+                  data-detail-notes
+                  className="mt-1 max-w-[68ch] text-sm leading-relaxed whitespace-pre-wrap text-fg"
+                >
+                  {task.notes}
+                </p>
+              ) : (
+                <p className="mt-1 text-sm text-fg-subtle">还没有备注</p>
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={requestClose}
+                className="h-10 rounded-lg border border-border-strong px-4 text-fg hover:bg-surface-hover"
+              >
+                关闭
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ---------------------------------------------------------------- EDITING MODE */}
+        {editing && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              // After the lists have refetched, so the row behind the panel is already up to date.
+              if (title.trim() && !save.isPending) save.mutate(undefined, { onSuccess: onSaved })
+            }}
+            className="flex flex-col gap-5"
+          >
+            {/* The pane opens with the TASK: where it lives, then what it is called. It used to
               open with the word 标题 over an input, which made a task read as a settings form.
               The project is the identity line AND the control that moves it -- one thing, not a
               breadcrumb at the top and a duplicate dropdown at the bottom. The chip beside it is
               never alone: the project's NAME is right there (WCAG 1.4.1). */}
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span
-                aria-hidden="true"
-                className={`h-3.5 w-[3px] shrink-0 rounded-full ${projectRailClass(nextProjectId)}`}
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span
+                  aria-hidden="true"
+                  className={`h-3.5 w-[3px] shrink-0 rounded-full ${projectRailClass(nextProjectId)}`}
+                />
+                <select
+                  aria-label="项目"
+                  value={nextProjectId}
+                  onChange={(e) => setNextProjectId(e.target.value)}
+                  className="-ml-0.5 max-w-full rounded-lg bg-transparent py-0.5 text-sm text-fg-muted hover:text-fg"
+                >
+                  {(projects.data ?? [])
+                    .filter((p) => !p.archivedAt || p.id === task.projectId)
+                    .map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                </select>
+              </div>
+              <input
+                ref={titleField}
+                aria-label="标题"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="mt-0.5 w-full rounded-lg bg-transparent py-0.5 text-xl font-semibold text-fg"
               />
-              <select
-                aria-label="项目"
-                value={nextProjectId}
-                onChange={(e) => setNextProjectId(e.target.value)}
-                className="-ml-0.5 max-w-full rounded-lg bg-transparent py-0.5 text-sm text-fg-muted hover:text-fg"
-              >
-                {(projects.data ?? [])
-                  .filter((p) => !p.archivedAt || p.id === task.projectId)
-                  .map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-              </select>
             </div>
-            <input
-              aria-label="标题"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="mt-0.5 w-full rounded-lg bg-transparent py-0.5 text-xl font-semibold text-fg"
-            />
-          </div>
 
-          {/* Status speaks the vocabulary the rows speak: the same five marker shapes, named.
+            {/* Status speaks the vocabulary the rows speak: the same five marker shapes, named.
               A dropdown of words made the app's core semantic something you had to open a menu
               to read. Native radios on purpose -- the group is one tab stop and the arrow keys
               move within it, for free and correctly. */}
-          <div role="radiogroup" aria-labelledby="detail-status-label">
-            <span id="detail-status-label" className={label}>
-              状态
-            </span>
-            {/* Three to a row rather than free wrapping: five chips of unequal width left 已取消
+            <div role="radiogroup" aria-labelledby="detail-status-label">
+              <span id="detail-status-label" className={label}>
+                状态
+              </span>
+              {/* Three to a row rather than free wrapping: five chips of unequal width left 已取消
                 hanging alone on a second line like an afterthought, and it is not one. */}
-            <div className="mt-1.5 grid grid-cols-3 gap-1">
-              {TASK_STATUSES.map((s) => (
-                <label
-                  key={s}
-                  className="relative flex min-h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-border-subtle py-1 pr-2 pl-1.5 text-sm text-fg-muted hover:bg-surface has-[:checked]:border-border-strong has-[:checked]:bg-surface has-[:checked]:font-medium has-[:checked]:text-fg has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent"
-                >
-                  <input
-                    type="radio"
-                    name="detail-status"
-                    value={s}
-                    checked={status === s}
-                    onChange={() => setStatus(s)}
-                    // The real control, covering the whole chip rather than hidden off-screen:
-                    // the chip IS the radio, so a press anywhere on it is a press on the input
-                    // and the keyboard gets the native radiogroup for nothing.
-                    className="absolute inset-0 cursor-pointer appearance-none opacity-0"
-                  />
-                  {/* aria-hidden: the radio's name comes from the text beside it, and a marker
+              <div className="mt-1.5 grid grid-cols-3 gap-1">
+                {TASK_STATUSES.map((s) => (
+                  <label
+                    key={s}
+                    className="relative flex min-h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-border-subtle py-1 pr-2 pl-1.5 text-sm text-fg-muted hover:bg-surface has-[:checked]:border-border-strong has-[:checked]:bg-surface has-[:checked]:font-medium has-[:checked]:text-fg has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent"
+                  >
+                    <input
+                      type="radio"
+                      name="detail-status"
+                      value={s}
+                      checked={status === s}
+                      onChange={() => setStatus(s)}
+                      // The real control, covering the whole chip rather than hidden off-screen:
+                      // the chip IS the radio, so a press anywhere on it is a press on the input
+                      // and the keyboard gets the native radiogroup for nothing.
+                      className="absolute inset-0 cursor-pointer appearance-none opacity-0"
+                    />
+                    {/* aria-hidden: the radio's name comes from the text beside it, and a marker
                       that also announced 「进行中」 would say it twice. */}
-                  <span aria-hidden="true" className="flex">
-                    <StatusMark status={s} />
-                  </span>
-                  {STATUS_LABEL[s]}
-                </label>
-              ))}
+                    <span aria-hidden="true" className="flex">
+                      <StatusMark status={s} />
+                    </span>
+                    {STATUS_LABEL[s]}
+                  </label>
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* The two dates, wearing the glyph and the colour family the rows wear (a flag for a
+            {/* The two dates, wearing the glyph and the colour family the rows wear (a flag for a
               deadline, warm; a tick on a timeline for a plan, cool). Each offers the same named
               decisions the row's triage control offers -- 今天 / 明天 / 下周 and the way out --
               AND an exact field for everything those three do not cover. */}
-          <div>
-            <label
-              htmlFor="detail-due"
-              className="flex items-center gap-1 text-sm font-medium text-deadline"
-            >
-              <DeadlineMark filled={false} />
-              截止
-            </label>
-            <div className="mt-1.5 flex flex-wrap gap-1">
-              {DAYS.map(([word, day]) => (
-                <button
-                  key={word}
-                  type="button"
-                  onClick={() => setDueDay(day)}
-                  className={decision}
-                >
-                  {word}截止
-                </button>
-              ))}
-              <button type="button" onClick={() => setDueAt('')} className={decision}>
-                取消截止
-              </button>
-            </div>
-            <input
-              id="detail-due"
-              type="datetime-local"
-              value={dueAt}
-              onChange={(e) => setDueAt(e.target.value)}
-              className={`${exact} mt-1.5`}
-            />
-            <DateEcho text={dueEcho} />
-          </div>
-
-          <div>
-            <label
-              htmlFor="detail-plan"
-              className="flex items-center gap-1 text-sm font-medium text-plan"
-            >
-              <PlanMark />
-              排期
-            </label>
-            <div className="mt-1.5 flex flex-wrap gap-1">
-              {DAYS.map(([word, day]) => (
-                <button
-                  key={word}
-                  type="button"
-                  onClick={() => setScheduledOn(day)}
-                  className={decision}
-                >
-                  排到{word}
-                </button>
-              ))}
-              <button type="button" onClick={() => setScheduledOn('')} className={decision}>
-                清除排期
-              </button>
-            </div>
-            <input
-              id="detail-plan"
-              type="date"
-              value={scheduledOn}
-              onChange={(e) => setScheduledOn(e.target.value)}
-              className={`${exact} mt-1.5`}
-            />
-            <DateEcho text={planEcho} />
-          </div>
-
-          <label className={label}>
-            备注
-            {/* The one place in the app that keeps a READING measure: notes are prose, and
-                68ch is where prose wants to wrap. Nothing else does, which is the whole point
-                of the redesign -- a list is scanned, not read. */}
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={5}
-              className={`${field} mt-1.5 max-w-[68ch]`}
-            />
-          </label>
-          {asking && (
-            <div role="alert" className="rounded-lg border border-border-strong p-3 text-sm">
-              <p className="text-fg">
-                {leaving ? '有未保存的修改，离开会丢掉它们。' : '有未保存的修改，关闭会丢掉它们。'}
-              </p>
-              <div className="mt-2 flex gap-2">
-                <button
-                  ref={keepEditing}
-                  type="button"
-                  onClick={keepEditingNow}
-                  className="h-9 rounded-lg bg-accent px-3 font-medium text-accent-fg hover:opacity-90"
-                >
-                  继续编辑
-                </button>
-                <button
-                  type="button"
-                  onClick={discard}
-                  className="h-9 rounded-lg border border-border-strong px-3 text-fg hover:bg-surface-hover"
-                >
-                  放弃修改
+            <div>
+              <label
+                htmlFor="detail-due"
+                className="flex items-center gap-1 text-sm font-medium text-deadline"
+              >
+                <DeadlineMark filled={false} />
+                截止
+              </label>
+              <div className="mt-1.5 flex flex-wrap gap-1">
+                {DAYS.map(([word, day]) => (
+                  <button
+                    key={word}
+                    type="button"
+                    onClick={() => setDueDay(day)}
+                    className={decision}
+                  >
+                    {word}截止
+                  </button>
+                ))}
+                <button type="button" onClick={() => setDueAt('')} className={decision}>
+                  取消截止
                 </button>
               </div>
+              <input
+                id="detail-due"
+                type="datetime-local"
+                value={dueAt}
+                onChange={(e) => setDueAt(e.target.value)}
+                className={`${exact} mt-1.5`}
+              />
+              <DateEcho text={dueEcho} />
             </div>
-          )}
-          {save.isError && (
-            <p role="alert" className="text-sm text-danger">
-              {save.error instanceof Error ? save.error.message : '保存失败'}
-            </p>
-          )}
-          <div className="flex gap-2">
-            <button
-              type="submit"
-              disabled={save.isPending || !title.trim()}
-              className="h-10 rounded-lg bg-accent px-4 font-medium text-accent-fg hover:opacity-90 disabled:opacity-50"
-            >
-              保存
-            </button>
-            <button
-              type="button"
-              onClick={requestClose}
-              className="h-10 rounded-lg border border-border-strong px-4 text-fg hover:bg-surface-hover"
-            >
-              关闭
-            </button>
-          </div>
-          {/* Destroying the task is not a peer of saving it. It sits below the rule, at the size
+
+            <div>
+              <label
+                htmlFor="detail-plan"
+                className="flex items-center gap-1 text-sm font-medium text-plan"
+              >
+                <PlanMark />
+                排期
+              </label>
+              <div className="mt-1.5 flex flex-wrap gap-1">
+                {DAYS.map(([word, day]) => (
+                  <button
+                    key={word}
+                    type="button"
+                    onClick={() => setScheduledOn(day)}
+                    className={decision}
+                  >
+                    排到{word}
+                  </button>
+                ))}
+                <button type="button" onClick={() => setScheduledOn('')} className={decision}>
+                  清除排期
+                </button>
+              </div>
+              <input
+                id="detail-plan"
+                type="date"
+                value={scheduledOn}
+                onChange={(e) => setScheduledOn(e.target.value)}
+                className={`${exact} mt-1.5`}
+              />
+              <DateEcho text={planEcho} />
+            </div>
+
+            {/* `htmlFor` rather than a label WRAPPING the textarea, like the two dates above it.
+                A wrapping label's text is its whole subtree, and React writes a textarea's value
+                into the element's text, so the field's label read 「备注」 plus whatever had been
+                typed -- which made the name unmatchable as a whole string, and a substring match
+                for 备注 collides with the row's own 「有备注」 mark on this very page. */}
+            <div>
+              <label htmlFor="detail-notes" className={label}>
+                备注
+              </label>
+              {/* The one place in the app that keeps a READING measure: notes are prose, and
+                68ch is where prose wants to wrap. Nothing else does, which is the whole point
+                of the redesign -- a list is scanned, not read. */}
+              <textarea
+                id="detail-notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={5}
+                className={`${field} mt-1.5 max-w-[68ch]`}
+              />
+            </div>
+            {asking && (
+              <div role="alert" className="rounded-lg border border-border-strong p-3 text-sm">
+                <p className="text-fg">
+                  {leaving
+                    ? '有未保存的修改，离开会丢掉它们。'
+                    : '有未保存的修改，关闭会丢掉它们。'}
+                </p>
+                <div className="mt-2 flex gap-2">
+                  <button
+                    ref={keepEditing}
+                    type="button"
+                    onClick={keepEditingNow}
+                    className="h-9 rounded-lg bg-accent px-3 font-medium text-accent-fg hover:opacity-90"
+                  >
+                    继续编辑
+                  </button>
+                  <button
+                    type="button"
+                    onClick={discard}
+                    className="h-9 rounded-lg border border-border-strong px-3 text-fg hover:bg-surface-hover"
+                  >
+                    放弃修改
+                  </button>
+                </div>
+              </div>
+            )}
+            {save.isError && (
+              <p role="alert" className="text-sm text-danger">
+                {save.error instanceof Error ? save.error.message : '保存失败'}
+              </p>
+            )}
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={save.isPending || !title.trim()}
+                className="h-10 rounded-lg bg-accent px-4 font-medium text-accent-fg hover:opacity-90 disabled:opacity-50"
+              >
+                保存
+              </button>
+              <button
+                type="button"
+                onClick={requestClose}
+                className="h-10 rounded-lg border border-border-strong px-4 text-fg hover:bg-surface-hover"
+              >
+                关闭
+              </button>
+            </div>
+            {/* Destroying the task is not a peer of saving it. It sits below the rule, at the size
               of a footnote, where nothing lands on it by accident on the way to 保存. */}
-          <div className="mt-2 border-t border-border-subtle pt-3">
-            <button
-              ref={deleteButton}
-              type="button"
-              onClick={askDelete}
-              className="-mx-2 rounded-lg px-2 py-1 text-sm text-fg-muted hover:text-danger"
-            >
-              删除任务
-            </button>
-          </div>
-          {deleting && (
-            <DeleteConfirm
-              label="确认删除任务"
-              className="-mt-3 rounded-lg border border-border-strong p-3"
-              message={
-                deleting.descendants === null
-                  ? `删除「${task.title}」…`
-                  : deleting.descendants < 0
-                    ? `删除「${task.title}」及其全部子任务，无法恢复。`
-                    : deleting.descendants === 0
-                      ? `删除「${task.title}」，无法恢复。`
-                      : `删除「${task.title}」及其 ${deleting.descendants} 条子任务，无法恢复。`
-              }
-              busy={deleting.descendants === null || remove.isPending}
-              onConfirm={() => remove.mutate()}
-              onCancel={cancelDelete}
-            />
-          )}
-          {remove.isError && (
-            <p role="alert" className="text-sm text-danger">
-              {remove.error instanceof Error ? remove.error.message : '删除失败'}
-            </p>
-          )}
-        </form>
+            <div className="mt-2 border-t border-border-subtle pt-3">
+              <button
+                ref={deleteButton}
+                type="button"
+                onClick={askDelete}
+                className="-mx-2 rounded-lg px-2 py-1 text-sm text-fg-muted hover:text-danger"
+              >
+                删除任务
+              </button>
+            </div>
+            {deleting && (
+              <DeleteConfirm
+                label="确认删除任务"
+                className="-mt-3 rounded-lg border border-border-strong p-3"
+                message={
+                  deleting.descendants === null
+                    ? `删除「${task.title}」…`
+                    : deleting.descendants < 0
+                      ? `删除「${task.title}」及其全部子任务，无法恢复。`
+                      : deleting.descendants === 0
+                        ? `删除「${task.title}」，无法恢复。`
+                        : `删除「${task.title}」及其 ${deleting.descendants} 条子任务，无法恢复。`
+                }
+                busy={deleting.descendants === null || remove.isPending}
+                onConfirm={() => remove.mutate()}
+                onCancel={cancelDelete}
+              />
+            )}
+            {remove.isError && (
+              <p role="alert" className="text-sm text-danger">
+                {remove.error instanceof Error ? remove.error.message : '删除失败'}
+              </p>
+            )}
+          </form>
+        )}
       </div>
     </>
   )
