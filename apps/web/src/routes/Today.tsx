@@ -10,19 +10,13 @@ import { DoneTodayPanel } from '../components/DoneTodayPanel'
 import { MovementPanel } from '../components/MovementPanel'
 import { hasMovement } from '../movement'
 import { Panel, PanelEmpty } from '../components/Panel'
-import {
-  DueCell,
-  PlanCell,
-  ProjectRail,
-  SavedMark,
-  ROW_DATE_STACK,
-  ROW_LIST,
-} from '../components/RowParts'
+import { DueCell, PlanCell, ProjectRail, SavedMark, ROW_LIST } from '../components/RowParts'
 import {
   actionColumnClass,
   dateColumns,
-  DUE_COLUMN_CLASS,
+  dueColumnClass,
   planColumnClass,
+  rowDateStackClass,
   rowGridClass,
   type DateColumns,
 } from '../rowColumns'
@@ -289,8 +283,9 @@ export function Today() {
           <span className="truncate text-sm text-fg-muted">{breadcrumb(t)}</span>
         </button>
         {/* On a narrow list the right-hand zone drops to a line of its own -- still two columns,
-            so the alignment survives a phone and a one-third panel alike. `@xl:contents` then
-            dissolves this wrapper so the same two columns are grid tracks of the row itself.
+            so the alignment survives a phone and a one-third panel alike. Above the list's derived
+            stack threshold (rowColumns) `contents` dissolves this wrapper, so the same two columns
+            are grid tracks of the row itself.
             That second line spans the WHOLE row rather than starting under the title: inside a
             one-third panel the title track is about 190px, and sharing it between a deadline
             ("今天 23:30 截止") and a carried plan ("原定10月2日，已顺延") clipped both of them --
@@ -298,12 +293,14 @@ export function Today() {
         {/* Only the columns the LIST reserves are rendered: a cell nobody in the list fills is not
             an empty column, it is 8 or 11rem taken off every title on the page. */}
         {(hints.due || plan) && (
-          <span className={`col-start-1 col-span-3 row-start-2 gap-x-2 ${ROW_DATE_STACK}`}>
+          <span
+            className={`col-start-1 col-span-3 row-start-2 gap-x-2 ${rowDateStackClass(columns)}`}
+          >
             {columns.due && (
               <DueCell
                 due={hints.due}
                 exact={t.dueAt ? toLocalInput(t.dueAt).replace('T', ' ') : undefined}
-                className={DUE_COLUMN_CLASS}
+                className={dueColumnClass(columns)}
               />
             )}
             {columns.plan && (

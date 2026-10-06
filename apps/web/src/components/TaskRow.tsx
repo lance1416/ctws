@@ -6,13 +6,17 @@ import { toggleDoneTarget, toggleStartTarget } from '../api/taskActions'
 import { dateHints } from '../dueAt'
 import type { DateColumns } from '../rowColumns'
 import {
+  treeDateLineClass,
+  treeDueCellClass,
+  treePlanCellClass,
+  treeRowWrapClass,
+} from '../rowColumns'
+import {
   CHEVRON_PX,
-  DUE_CELL,
   DueCell,
   HANDLE_PX,
   INDENT_PX,
   NotesMark,
-  PLAN_CELL,
   PlanCell,
   ProjectRail,
   RAIL_GUTTER_PX,
@@ -119,7 +123,7 @@ export function TaskRow({
       }}
       // 44px, the workbench's single-line row (spec §4, at the sizes stage 1 settled on): the tree
       // is the densest list in the app and the one the complaint 「组件太小」 was about.
-      className={`group relative flex min-h-11 cursor-pointer items-center rounded-lg leading-snug max-sm:flex-wrap hover:bg-surface-hover ${isDragging ? 'bg-surface-raised opacity-70' : ''}`}
+      className={`group relative flex min-h-11 cursor-pointer items-center rounded-lg leading-snug hover:bg-surface-hover ${treeRowWrapClass(columns)} ${isDragging ? 'bg-surface-raised opacity-70' : ''}`}
     >
       <ProjectRail projectId={projectId} continuous />
       {/* One hairline per ancestor level, centred under that level's chevron column. Depth is
@@ -207,23 +211,18 @@ export function TaskRow({
           reason the right-hand zone exists. Empty cells are still reserved WITHIN A LIST THAT HAS
           THE COLUMN: a column that moves when a row has no date is not a column. A column no row
           in the list fills is not rendered at all, and that width goes back to the title. */}
-      {/* Below `sm` the pair drops onto a line of its own, exactly as it does on 今天 -- at 375
-          a depth-3 row with a deadline used to cut its title to "操…". The wrapper is `hidden`
-          rather than absent when the row has no date, so a dateless row costs no second line and
-          the reserved widths above `sm` (where `contents` dissolves this span) are untouched. */}
+      {/* BELOW THE LIST'S STACK THRESHOLD the pair drops onto a line of its own, exactly as it
+          does on 今天, and the title takes the whole first line. The threshold is the LIST's width
+          and not the window's (rowColumns): keyed to the viewport, this wrapped correctly on a
+          375px phone and then truncated inside a 734px panel on a 1440px screen, which is the
+          defect. The wrapper is `hidden` rather than absent when the row has no date, so a dateless
+          row costs no second line and the reserved widths above the threshold (where `contents`
+          dissolves this span) are untouched. */}
       {(columns.due || columns.plan) && (
-        <span
-          className={`flex items-center sm:contents ${
-            hints.due || hints.scheduled
-              ? 'max-sm:order-last max-sm:w-full max-sm:gap-3 max-sm:pb-1 max-sm:pl-[4.25rem]'
-              : 'max-sm:hidden'
-          }`}
-        >
-          {columns.due && (
-            <DueCell due={hints.due} className={`ml-3 shrink-0 max-sm:ml-0 ${DUE_CELL}`} />
-          )}
+        <span className={treeDateLineClass(columns, Boolean(hints.due || hints.scheduled))}>
+          {columns.due && <DueCell due={hints.due} className={treeDueCellClass(columns)} />}
           {columns.plan && (
-            <PlanCell text={hints.scheduled} className={`ml-3 shrink-0 max-sm:ml-0 ${PLAN_CELL}`} />
+            <PlanCell text={hints.scheduled} className={treePlanCellClass(columns)} />
           )}
         </span>
       )}

@@ -23,7 +23,7 @@ import { EMPTY_ACTION, EmptyState } from './EmptyState'
 import { TaskDetail } from './TaskDetail'
 import { statusForKey } from './StatusControls'
 import { NewTaskInput } from './NewTaskInput'
-import { INDENT_PX } from './RowParts'
+import { INDENT_PX, ROW_LIST } from './RowParts'
 import { dateCells } from '../dueAt'
 import { dateColumns, listMeasureClass } from '../rowColumns'
 import { TaskRow } from './TaskRow'
@@ -439,7 +439,13 @@ export function TaskTree({ projectId }: { projectId: string }) {
         <SortableContext items={rows.map((r) => r.id)} strategy={verticalListSortingStrategy}>
           {/* No top margin: the tree is the first thing in its panel, under the one input that
               adds a root task. */}
-          <ul data-task-tree className={`flex flex-col ${listMeasureClass(columns)}`}>
+          <ul
+            data-task-tree
+            /* `@container`, so the row below can ask how wide THIS LIST is: whether the dates fit
+               beside the title is a question about the list's own box, never about the viewport
+               (rowColumns). The box is this measure, so the two numbers answer each other. */
+            className={`${ROW_LIST} ${listMeasureClass(columns)}`}
+          >
             {rows.map((row, i) => (
               <Fragment key={row.id}>
                 <TaskRow

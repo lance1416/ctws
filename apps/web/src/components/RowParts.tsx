@@ -29,28 +29,18 @@ export const RAIL_GUTTER_PX = 12
  * list has that value (rows-and-reading spec §2), and a list of title-only rows spends nothing on
  * a right-hand zone it would never fill.
  *
- * THE BREAKPOINT IS THE CONTAINER, NOT THE VIEWPORT. Since the workbench, the same row renders
- * both in the 今天 queue (two thirds of a 1440 screen) and in the 逾期 panel (one third of it) on
- * ONE page, so a `sm:` rule keyed to the viewport would lay five fixed tracks inside a 280px
- * panel and push the whole document sideways. `@container` on the list and `@xl` (36rem) on the
- * row let each list answer for its own width: wide lists get the full row, a narrow panel drops
- * the right-hand zone onto a second line as two equal columns.
+ * THE BREAKPOINT IS THE CONTAINER, NOT THE VIEWPORT, and it is DERIVED from the column widths
+ * rather than a named step. Since the workbench, the same row renders both in the 今天 queue (two
+ * thirds of a 1440 screen) and in the 逾期 panel (one third of it) on ONE page, and the project
+ * tree renders in a 1134px panel or a 734px one depending on whether the detail column is open --
+ * on the same 1440px screen. A viewport rule gets every one of those wrong. `@container` on the
+ * list and the threshold in `../rowColumns` let each list answer for its own width: a list wide
+ * enough for both keeps the full row, a cramped one drops the right-hand zone onto a second line
+ * and gives the title the whole first one.
  *
- * 8rem fits the longest everyday deadline label ("今天 23:30 截止") at 14px; 11rem fits the
- * carried-plan sentence ("原定9月28日，已顺延"), the longest thing either column holds. The
- * sentence is kept whole rather than shortened, because those words -- not the colour -- are what
- * say "carried".
+ * The column widths themselves, and the measure and threshold derived from them, are in
+ * `../rowColumns`.
  */
-/**
- * The wrapper that holds the two date columns on a narrow list and dissolves on a wide one. Two
- * EQUAL columns rather than the wide row's fixed rem widths: a panel a third of the screen wide
- * cannot spend 19rem on dates, and the point of the stack is that the two cells sit at the same
- * x on every row of the list -- which proportions do just as well as fixed widths. The split is
- * 2:3 and not 1:1 because the plan cell holds a whole sentence ("原定9月28日，已顺延") while the
- * deadline cell holds four characters, and those words -- not the colour -- are what say
- * "carried": cutting them to "原定10月…" throws away the information the cell exists for.
- */
-export const ROW_DATE_STACK = 'grid grid-cols-[2fr_3fr] @xl:contents'
 /** Every row list opts into container queries here, so the rows above can ask how wide it is. */
 export const ROW_LIST = '@container flex flex-col'
 /** 已完成 has one right-hand column (the clock), so it gets its own, shorter template. */
@@ -64,10 +54,6 @@ export const DONE_ROW_GRID = 'grid-cols-[1.75rem_minmax(0,1fr)_4.5rem]'
  */
 /** 已完成 carries one short column (a clock), so its list is narrower still. */
 export const DONE_LIST_MEASURE = 'max-w-[36rem]'
-
-/** The tree is a flex row (depth padding, drag handle), so its cells carry their widths directly. */
-export const DUE_CELL = 'w-32 max-sm:w-auto'
-export const PLAN_CELL = 'w-44 max-sm:w-auto'
 
 /**
  * The 3px bar at x=0. It means ONE thing -- which project this task belongs to -- in every view.
