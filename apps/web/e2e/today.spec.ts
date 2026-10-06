@@ -59,7 +59,7 @@ test('a task that is both overdue and in progress is shown once', async ({ page 
   await registerFreshUser(page)
   await captureAndOpen(page, '又逾期又在做')
   await setDetailStatus(page, '进行中')
-  await page.getByLabel('截止').fill('2020-01-01T00:00')
+  await page.getByLabel('截止', { exact: true }).fill('2020-01-01T00:00')
   await page.getByRole('button', { name: '保存' }).click()
 
   await page.getByRole('link', { name: '今天' }).click()
@@ -101,7 +101,7 @@ test('each segment goes to its own panel, in the workbench order, and to only on
   await submitCreate(page, '捕获…', '丙逾期')
   await page.getByRole('listitem').filter({ hasText: '丙逾期' }).click()
   await editDetail(page)
-  await page.getByLabel('截止').fill('2020-01-01T00:00')
+  await page.getByLabel('截止', { exact: true }).fill('2020-01-01T00:00')
   await page.getByRole('button', { name: '保存' }).click()
 
   await page.getByRole('link', { name: '今天' }).click()
@@ -193,14 +193,21 @@ test('a failed fetch shows an error, not the empty-state line', async ({ page })
 test('an overdue task shows a relative label, not the datetime-local format', async ({ page }) => {
   await registerFreshUser(page)
   await captureAndOpen(page, '交报告')
-  await page.getByLabel('截止').fill('2020-01-01T09:00')
+  await page.getByLabel('截止', { exact: true }).fill('2020-01-01T09:00')
   await page.getByRole('button', { name: '保存' }).click()
 
   await page.getByRole('link', { name: '今天' }).click()
   const section = page.getByRole('region', { name: '逾期' })
-  const label = section.getByText(/^已逾 \d+ 天$/)
+  // The wording is the whole sentence now (rows-and-reading §2, second edition): the deadline's own
+  // day and time, then how late it is. The second line is where it lives, so there is room for it --
+  // and 「2020年1月1日 09:00 截止」 is the reader's format, never the field's.
+  await expect(section.locator('[data-row-meta]')).toHaveText(
+    /^.+·2020年1月1日 09:00 截止·已逾 \d+ 天$/,
+  )
+  const label = section.locator('[data-late-text]')
   await expect(label).toBeVisible()
-  await expect(label).toHaveAttribute('title', '2020-01-01 09:00')
+  await expect(label).toHaveText(/^已逾 \d+ 天$/)
+  await expect(section.locator('[data-due-text]')).toHaveAttribute('title', '2020-01-01 09:00')
   await expect(section).not.toContainText(/\d{4}-\d{2}-\d{2}T/)
   await expect(section).not.toContainText('T09:00')
 })

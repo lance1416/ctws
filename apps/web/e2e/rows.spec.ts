@@ -2,17 +2,26 @@ import { expect, test, type Page } from '@playwright/test'
 import { editDetail, registerFreshUser } from './helpers'
 
 /**
- * The row system (redesign stage 2): one structure for every list -- the project rail at x=0, the
- * status marker, the title, then the deadline and plan columns and the action slot.
+ * The row system (rows-and-reading, second edition): the project rail at x=0, the status marker, a
+ * LEADING ICON SLOT, and a title that owns the whole line -- with the dates spelled out in full on
+ * a second line under it.
  *
  * What these guards are for, in order of how easy it would be to fake:
- * - "the dates are in a column" is NOT provable by asserting a date is present. It is provable
- *   only by measuring the same cell on rows whose titles and labels differ in length and finding
- *   it at the same x. Before this redesign every one of those x values was different.
- * - "the action control does not shift the row" is provable only by measuring the row before and
- *   after it opens.
+ * - "the title is not truncated" is provable only by measuring `scrollWidth` against `clientWidth`
+ *   on a REAL long title at the panel width the complaint was about. A short title fits every
+ *   layout, and a placeholder string proves nothing.
+ * - "the icons are a column" is NOT provable by asserting an icon is present. It is provable only
+ *   by measuring the glyph on rows whose titles differ in length and finding it at one x.
+ * - "the slot costs nothing when no row needs it" is provable only by measuring a list that has no
+ *   icons against one that has.
+ * - "the wording is complete" is provable only against the minute, because the mechanism this
+ *   replaced compressed exactly that away.
  * - "the triage still does what it did" is provable only from the request body; the UI can agree
  *   with itself while sending nothing.
+ *
+ * The three mechanisms this edition deleted (the 8rem/11rem date columns, the stack threshold and
+ * the derived list measure) are pinned ABSENT from the source at the end of this file: "we deleted
+ * it" is the kind of claim that rots.
  */
 
 const HEADERS = { 'x-ctws-client': 'web' }
@@ -74,123 +83,158 @@ async function xs(page: Page, selector: string): Promise<number[]> {
   return boxes
 }
 
-// ----------------------------------------------------------------------- the columns are columns
+// ------------------------------------------------------------- the leading icons ARE the column
 
-test('on 今天, every row puts its deadline and its plan at the same x', async ({ page }) => {
-  await registerFreshUser(page)
-  const pid = await makeProject(page, 'P')
-  // Titles of wildly different lengths, and date labels of different lengths too ("已逾 2 天"
-  // against "已逾 11 天"). Before the row system, each of these landed at its own x.
-  await makeTask(page, pid, '短', { dueAt: dueAgo(2), scheduledOn: dayOffset(3) })
-  await makeTask(page, pid, '中等长度的一个标题', { dueAt: dueAgo(11), scheduledOn: dayOffset(1) })
-  await makeTask(page, pid, '一个非常非常非常非常非常长的标题用来把右边挤掉', {
-    dueAt: dueAgo(4),
-    scheduledOn: dayOffset(9),
-  })
-  await page.goto('/')
-  const section = page.getByRole('region', { name: '逾期' })
-  await expect(section.locator('[data-date-hint="overdue"]')).toHaveCount(3)
-
-  const due = await xs(page, '[data-date-hint="overdue"]')
-  expect(new Set(due).size, `deadline column x values: ${due.join(',')}`).toBe(1)
-  const plan = await xs(page, '[data-date-hint="scheduled"]')
-  expect(new Set(plan).size, `plan column x values: ${plan.join(',')}`).toBe(1)
-  // Two columns, in order, not one zone the two share.
-  expect(plan[0]!).toBeGreaterThan(due[0]!)
-
-  // And the title cell -- the thing whose length used to decide where the dates went -- starts at
-  // the same x as well, so the eye lands in the same place on every line.
-  const titles = await xs(page, '[data-today-row]')
-  expect(new Set(titles).size, `title column x values: ${titles.join(',')}`).toBe(1)
-})
-
-test('in the project tree, depth moves the title but never the date columns', async ({ page }) => {
-  await registerFreshUser(page)
-  const pid = await makeProject(page, 'P')
-  const a = await makeTask(page, pid, '根', { dueAt: dueAgo(3) })
-  const b = await makeTask(page, pid, '子', { dueAt: dueAgo(14) }, a)
-  await makeTask(page, pid, '孙孙孙孙孙孙孙孙孙', { dueAt: dueAgo(1) }, b)
-  await page.goto(`/projects/${pid}`)
-  await expect(page.locator('li[data-depth]')).toHaveCount(3)
-  // The depths really do differ, or the alignment claim is about one indentation level.
-  expect(
-    await page
-      .locator('li[data-depth]')
-      .evaluateAll((els) => els.map((el) => el.getAttribute('data-depth'))),
-  ).toEqual(['1', '2', '3'])
-
-  const due = await xs(page, '[data-date-hint="overdue"]')
-  expect(new Set(due).size, `deadline column x values: ${due.join(',')}`).toBe(1)
-  // Indentation is still visible: the titles are NOT in one column here, by design (depth is the
-  // tree's own business), which is exactly why the date columns have to be.
-  const marks = await xs(page, '[data-status-button]')
-  expect(new Set(marks).size).toBe(3)
-})
-
-// ------------------------------------------------------- the columns collapse, per WHOLE LIST
+/** Every x of a set of elements, rounded to the pixel: sub-pixel layout noise is not a column break. */
 
 /**
- * THE DEFECT: 「你还是没有完全运用横向空间（字直接被截断了）」. The row grid reserved
- * `1.75rem · 1fr · 8rem · 11rem · 4.5rem` -- 23.5rem of right-hand zone -- whether or not a single
- * row in the list had a date, and `47rem` of list measure on top of it, so the title track was
- * about 348px however wide the panel grew. The user's screenshot was a project with ONE task whose
- * title was cut at 348px inside a panel over a thousand pixels wide.
- *
- * The title here is a REAL one, long enough to have been truncated before. A placeholder string
- * would prove nothing: the bug is about truncation, and a short title fits either layout.
+ * §6: 「行首图标在所有行上落在同一个 x」. On a flat list that is literally every row, whatever
+ * its title length and whatever glyph it wears -- which is the whole point of a fixed slot, and the
+ * claim the deleted date columns used to carry.
  */
-test('a project whose rows have no dates spends nothing on the date columns', async ({ page }) => {
+test('on 今天, every row puts its leading icon at the same x', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'P')
+  // Titles of wildly different lengths, and three different glyphs: a missed deadline, a deadline
+  // still standing and a carried plan. Before the row system each date landed wherever its title
+  // happened to end.
+  await makeTask(page, pid, '短', { dueAt: dueAgo(2) })
+  await makeTask(page, pid, '中等长度的一个标题', { dueAt: dueAgo(11) })
+  await makeTask(page, pid, '一个非常非常非常非常非常长的标题用来把右边挤掉', { dueAt: dueAgo(4) })
+  await page.goto('/')
+  const section = page.getByRole('region', { name: '逾期' })
+  await expect(section.locator('[data-lead-icon="missed"]')).toHaveCount(3)
+
+  const icons = await xs(page, '[aria-label="逾期"] [data-lead-icon]')
+  expect(new Set(icons).size, `icon x values: ${icons.join(',')}`).toBe(1)
+  // The title starts at one x as well, so the eye lands in the same place on every line.
+  const titles = await xs(page, '[aria-label="逾期"] [data-today-row]')
+  expect(new Set(titles).size, `title column x values: ${titles.join(',')}`).toBe(1)
+  // The icon is BEFORE the title, which is what "行首" means.
+  expect(icons[0]!).toBeLessThan(titles[0]!)
+})
+
+/**
+ * 今天 is two lists in two columns of one page (the queue and 逾期), and a glyph at one x on each
+ * row of ITS OWN list is the claim -- the two panels are not one column. Three glyph kinds in one
+ * list, because "one x" is easy to pass when every row wears the same icon.
+ */
+test('one list, one x, however many kinds of glyph are in it', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 })
   await registerFreshUser(page)
-  const pid = await makeProject(page, '无日期的线')
-  const long = '把邮件服务的 Connection timeout 查清楚，顺手给 SMTP 那边加上指数退避重试和告警'
-  await makeTask(page, pid, long)
-  const second = await makeTask(page, pid, '第二条，同样没有任何日期，标题也不短')
-  await makeTask(page, pid, '一条子任务，缩进一层，标题照样长到足以说明问题', {}, second)
+  const pid = await makeProject(page, 'P')
+  const today = dayOffset(0)
+  await makeTask(page, pid, '今天要做的第一件事，标题写得长些好看出宽度', { scheduledOn: today })
+  await makeTask(page, pid, '今天截止的', {
+    scheduledOn: today,
+    dueAt: new Date(new Date().setHours(23, 30, 0, 0)).toISOString(),
+  })
+  await makeTask(page, pid, '顺延过来的', { scheduledOn: dayOffset(-4) })
+  await page.goto('/')
+  const queue = page.getByRole('region', { name: '今天', exact: true })
+  await expect(queue.locator('[data-today-row]')).toHaveCount(3)
+  // Two different glyphs in the one list, so this is not three copies of one row.
+  await expect(queue.locator('[data-lead-icon="deadline"]')).toHaveCount(1)
+  await expect(queue.locator('[data-lead-icon="plan"]')).toHaveCount(1)
+  const icons = await xs(page, '[aria-label="今天"] [data-lead-icon]')
+  expect(new Set(icons).size, `icon x values: ${icons.join(',')}`).toBe(1)
+  // ...and the row that has nothing to say still reserves the slot, which is what holds the x.
+  await expect(queue.locator('[data-lead-slot]')).toHaveCount(3)
+})
+
+/**
+ * In the tree the row is indented, so the slot travels with its row's own level: that is the one
+ * place §6's "the same x" cannot mean the window's x, because §2 puts the slot AFTER the status
+ * marker and the marker has always moved with depth (the titles are deliberately not in one column
+ * here either). What must hold -- and what the scan actually needs -- is that the slot's x depends
+ * on the row's DEPTH and on nothing else: not on the title, not on the glyph, not on the date.
+ */
+test('in the project tree the icon slot moves with depth and with nothing else', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'P')
+  // Three rows at depth 1 with titles and glyphs that differ in every way, then one child.
+  await makeTask(page, pid, '短', { dueAt: dueAgo(3) })
+  await makeTask(page, pid, '一条标题长得多的任务，用来证明标题长度不会挪动图标', {
+    scheduledOn: dayOffset(4),
+  })
+  const c = await makeTask(page, pid, '有备注的', { notes: '先问清楚' })
+  await makeTask(page, pid, '子任务，深一层', { dueAt: dueAgo(1) }, c)
   await page.goto(`/projects/${pid}`)
+  await expect(page.locator('[data-task-tree] li[data-depth]')).toHaveCount(4)
+
+  const at = (depth: string) =>
+    page
+      .locator(`[data-task-tree] li[data-depth="${depth}"] [data-lead-icon]`)
+      .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().x)))
+  const top = await at('1')
+  expect(top, 'three glyphs at depth 1').toHaveLength(3)
+  expect(new Set(top).size, `depth-1 icon x values: ${top.join(',')}`).toBe(1)
+  // Three DIFFERENT glyphs, so the x is not shared because the rows are identical.
+  expect(
+    await page
+      .locator('[data-task-tree] li[data-depth="1"] [data-lead-icon]')
+      .evaluateAll((els) => els.map((el) => (el as HTMLElement).dataset.leadIcon)),
+  ).toEqual(['missed', 'plan', 'notes'])
+  // The child's glyph is one indent step to the right, and exactly one: the slot rides the row.
+  const child = await at('2')
+  expect(child[0]! - top[0]!, `depth 1 -> 2: ${top[0]} -> ${child[0]}`).toBe(20)
+})
+
+// ------------------------------------------------- the slot collapses, per WHOLE LIST (§2, §6)
+
+/**
+ * §6: 「整表无图标时图标槽不占位」. Measured against a list that DOES have the slot, not merely
+ * counted: a reserved-but-empty box is invisible to a glyph count while taking 1.5rem off every
+ * title in the list.
+ */
+test('a list where no row has an icon spends nothing on the slot', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await registerFreshUser(page)
+  const bare = await makeProject(page, '无图标的线')
+  await makeTask(page, bare, LONG_TITLE)
+  const second = await makeTask(page, bare, '第二条，没有日期也没有备注')
+  await makeTask(page, bare, '一条子任务，缩进一层', {}, second)
+  await page.goto(`/projects/${bare}`)
   await expect(page.locator('[data-task-tree] li[data-depth]')).toHaveCount(3)
 
-  // Neither column is reserved: not an empty cell, not a zero-width track, nothing.
-  await expect(page.locator('[data-task-tree] [data-due-cell]')).toHaveCount(0)
-  await expect(page.locator('[data-task-tree] [data-plan-cell]')).toHaveCount(0)
+  // Not an empty box, not a zero-width one: nothing.
+  await expect(page.locator('[data-task-tree] [data-lead-slot]')).toHaveCount(0)
+  const without = await firstRow(page)
+  expect(without.fits, `title needs ${without.needs}px of ${without.cell}px`).toBe(true)
+  // A dateless, noteless list is a list of ONE-LINE rows: 44px, and no second line anywhere.
+  expect(without.h, 'a row with nothing to say').toBe(44)
+  await expect(page.locator('[data-task-tree] [data-row-meta]')).toHaveCount(0)
 
-  const measured = await page
-    .locator('[data-task-tree] [data-row-title]')
-    .first()
-    .evaluate((el) => ({
-      clientWidth: Math.round(el.clientWidth),
-      scrollWidth: Math.round(el.scrollWidth),
-    }))
-  // The real title is NOT cut. `scrollWidth > clientWidth` is exactly what the ellipsis means, so
-  // this is the defect itself rather than a proxy for it.
-  expect(measured.scrollWidth, `title ${JSON.stringify(measured)}`).toBeLessThanOrEqual(
-    measured.clientWidth,
-  )
-  // ...and it got there by being given the width, not by the title being short: the cell the title
-  // sits in is now more than twice the ~348px the old layout pinned it at, which no amount of text
-  // shortening would do.
-  const cell = await page
-    .locator('[data-task-tree] [data-row-cell]')
-    .first()
-    .evaluate((el) => Math.round(el.clientWidth))
-  expect(cell, `title cell ${cell}px`).toBeGreaterThan(700)
-  // The list itself widened past the 47rem (752px) measure that was sized for "title + two dates".
-  const list = (await page.locator('[data-task-tree]').boundingBox())!
-  expect(Math.round(list.width), 'list measure').toBeGreaterThan(752)
+  // The same three titles in a list where ONE row has a note: the slot appears and takes exactly
+  // its own width off the title cell. 28px = the 1.5rem slot plus the gap that separates it.
+  const noted = await makeProject(page, '有一个图标的线')
+  await makeTask(page, noted, LONG_TITLE)
+  const s2 = await makeTask(page, noted, '第二条，没有日期也没有备注', { notes: '一句话' })
+  await makeTask(page, noted, '一条子任务，缩进一层', {}, s2)
+  await page.goto(`/projects/${noted}`)
+  await expect(page.locator('[data-task-tree] [data-lead-slot]')).toHaveCount(3)
+  const withSlot = await firstRow(page)
+  expect(
+    without.cell - withSlot.cell,
+    `title cell ${without.cell}px with no slot, ${withSlot.cell}px with one`,
+  ).toBe(28)
+  // The LIST did not change width: one measure for every list now (§3's third deletion), so a list
+  // that gains an icon does not gain or lose width.
+  expect(withSlot.list, `list ${without.list}px -> ${withSlot.list}px`).toBe(without.list)
 })
 
 /**
  * The other end of the same rule, and the one that stops the first from being a regression: the
- * collapse is per WHOLE LIST, not per row and not per group. One dated row makes the column exist
- * for every row of the list, at ONE x -- which is the only thing a fixed column is for. Collapsing
- * per group would put the same cell at a different x under each parent.
+ * collapse is per WHOLE LIST, not per row and not per group. One row with a date makes the slot
+ * exist for every row of the list, which is the only thing that holds the glyphs at one x.
  */
-test('one dated row gives EVERY row in the list a date cell at the same x', async ({ page }) => {
+test('one dated row gives EVERY row in the list its slot, glyph or not', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 })
   await registerFreshUser(page)
   const pid = await makeProject(page, '混合的线')
-  // Only the FIRST row has a deadline, only the LAST has a plan, and the rows sit at three depths
-  // with titles of wildly different lengths: every way the old layout had of moving a cell.
+  // Only the FIRST row has a deadline, only the LAST has a plan, and the rows sit at three depths.
   const a = await makeTask(page, pid, '只有这一条有截止时间', { dueAt: dueAgo(3) })
   const b = await makeTask(page, pid, '这一条什么日期都没有，而且标题相当长', {}, a)
   await makeTask(page, pid, '短', {}, b)
@@ -205,36 +249,32 @@ test('one dated row gives EVERY row in the list a date cell at the same x', asyn
     '1',
   ])
 
-  // One cell per row, filled or not, and every one of them at a single x.
-  for (const [cell, label] of [
-    ['[data-due-cell]', 'deadline'],
-    ['[data-plan-cell]', 'plan'],
-  ] as const) {
-    await expect(page.locator(`[data-task-tree] ${cell}`), label).toHaveCount(4)
-    const at = await xs(page, `[data-task-tree] ${cell}`)
-    expect(new Set(at).size, `${label} column x values: ${at.join(',')}`).toBe(1)
-  }
-  // Two columns in order, not one zone they share.
-  const due = await xs(page, '[data-task-tree] [data-due-cell]')
-  const plan = await xs(page, '[data-task-tree] [data-plan-cell]')
-  expect(plan[0]!).toBeGreaterThan(due[0]!)
-  // The values really are only on the rows that have them: the other cells are reserved and empty,
-  // which is what makes this a column rather than three rows that happen to line up.
-  await expect(page.locator('[data-task-tree] [data-date-hint="overdue"]')).toHaveCount(1)
-  await expect(page.locator('[data-task-tree] [data-date-hint="scheduled"]')).toHaveCount(1)
+  // One slot per row, filled or not.
+  await expect(page.locator('[data-task-tree] [data-lead-slot]')).toHaveCount(4)
+  // ...and the glyphs are only on the rows that have something: two of four, which is what makes
+  // this a reserved slot rather than four rows that happen to agree.
+  await expect(page.locator('[data-task-tree] [data-lead-icon]')).toHaveCount(2)
+  await expect(page.locator('[data-task-tree] [data-lead-icon="missed"]')).toHaveCount(1)
+  await expect(page.locator('[data-task-tree] [data-lead-icon="plan"]')).toHaveCount(1)
+  // The empty slot is hidden from assistive technology: it is width, not information.
+  expect(
+    await page
+      .locator('[data-task-tree] li[data-depth="2"] [data-lead-slot]')
+      .getAttribute('aria-hidden'),
+  ).toBe('true')
 })
 
 /**
- * 今天 is two lists in two columns of one page (the queue and 逾期), so the rule is per list there
- * too: every row of 逾期 has a deadline, and a queue of tasks scheduled for today has neither
- * column -- which is the ordinary case for that panel.
+ * 今天 is two lists in two columns of one page, so the rule is per list there too: a queue of
+ * tasks planned for today carries no glyph at all (that is the ordinary case for that panel -- a
+ * plan for today under a heading that says 今天 is not news), while 逾期 next to it does.
  */
-test('on 今天 the queue and 逾期 each answer for their own columns', async ({ page }) => {
+test('on 今天 the queue and 逾期 each answer for their own slot', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 })
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   const today = dayOffset(0)
-  await makeTask(page, pid, '今天要做的第一件事，标题写得长一些好看出宽度', { scheduledOn: today })
+  await makeTask(page, pid, '今天要做的第一件事，标题写得长些好看出宽度', { scheduledOn: today })
   await makeTask(page, pid, '今天要做的第二件事', { scheduledOn: today })
   await makeTask(page, pid, '一条逾期的', { dueAt: dueAgo(2) })
   await page.goto('/')
@@ -243,56 +283,45 @@ test('on 今天 the queue and 逾期 each answer for their own columns', async (
   await expect(queue.locator('[data-today-row]')).toHaveCount(2)
   await expect(late.locator('[data-today-row]')).toHaveCount(1)
 
-  // The queue's rows are all planned for today, which the heading already says, so neither column
-  // is reserved there -- and the titles get that width.
-  await expect(queue.locator('[data-due-cell]')).toHaveCount(0)
-  await expect(queue.locator('[data-plan-cell]')).toHaveCount(0)
-  // Measured, not merely counted: on a flat list the columns are GRID TRACKS, and an unfilled
-  // track is invisible to a cell count while still taking 19rem off every title in the panel.
+  await expect(queue.locator('[data-lead-slot]')).toHaveCount(0)
+  // Measured, not merely counted.
   const titleWidth = await queue
     .locator('[data-today-row]')
     .first()
     .evaluate((el) => Math.round(el.clientWidth))
   expect(titleWidth, `title track in the queue: ${titleWidth}px`).toBeGreaterThan(500)
-  // 逾期 is a different list and keeps its deadline column.
-  await expect(late.locator('[data-due-cell]')).toHaveCount(1)
-  // One panel's collapse did not take the other's column with it.
-  await expect(late.locator('[data-date-hint="overdue"]')).toHaveCount(1)
+  // 逾期 is a different list and keeps its slot, and one panel's collapse did not take the
+  // other's glyph with it.
+  await expect(late.locator('[data-lead-slot]')).toHaveCount(1)
+  await expect(late.locator('[data-lead-icon="missed"]')).toHaveCount(1)
 })
 
-// ------------------------------------------- the title track is a constant, and the list widens
+// ------------------------------------------------- the title owns the line, at every panel width
 
 /**
- * A REAL, LONG title. 575px of text at 15px, which is longer than the 482px a 1280 panel can give
- * it and shorter than the 642px a 1440 one can: a placeholder string would prove nothing, because
- * the bug is truncation and a short title fits every layout.
+ * A REAL, LONG title: 575px of text at 15px. A placeholder string would prove nothing, because the
+ * bug is truncation and a short title fits every layout.
  */
 const LONG_TITLE = '把邮件服务的 Connection timeout 查清楚，顺手给 SMTP 那边加上指数退避重试和告警'
 
-/** The width of the first row's title cell in the tree, and whether the title overflows it. */
-const firstTitle = (page: Page) =>
+/** The first tree row: how wide its title cell is, whether the title overflows it, and its height. */
+const firstRow = (page: Page) =>
   page
     .locator('[data-task-tree] li[data-depth]')
     .first()
     .evaluate((li) => {
       const cell = li.querySelector('[data-row-cell]') as HTMLElement
       const title = li.querySelector('[data-row-title]') as HTMLElement
-      const due = li.querySelector('[data-due-cell]') as HTMLElement | null
       return {
         cell: Math.round(cell.clientWidth),
         fits: title.scrollWidth <= title.clientWidth + 1,
         needs: Math.round(title.scrollWidth),
-        // The dates are on a second line when the deadline cell sits BELOW the title, not merely
-        // when the viewport is small: that is the only thing "stacked" can mean to the eye.
-        stacked:
-          due === null
-            ? null
-            : Math.round(due.getBoundingClientRect().y) >
-              Math.round(title.getBoundingClientRect().y) + 4,
+        h: Math.round(li.getBoundingClientRect().height),
+        list: Math.round(document.querySelector('[data-task-tree]')!.getBoundingClientRect().width),
       }
     })
 
-/** A project with the long title, a deadline on one row and a plan on another: both columns exist. */
+/** A project with the long title, a deadline on one row and a plan on another. */
 async function mixedProject(page: Page, name: string): Promise<string> {
   const pid = await makeProject(page, name)
   await makeTask(page, pid, LONG_TITLE, { dueAt: dueAgo(2) })
@@ -303,199 +332,147 @@ async function mixedProject(page: Page, name: string): Promise<string> {
 }
 
 /**
- * THE DEFECT THIS GUARDS. The measure used to STEP DOWN as columns appeared -- 64rem for a
- * title-only list, 47rem the moment one row had a date -- so a project with a single deadline
- * anywhere in it (which is most of them) had its titles clamped back to 276px with ~540px of panel
- * empty beside them. Asserted as an EQUALITY between two lists rather than against a number: the
- * title track is a constant, so the only thing a date column may do is make the LIST wider.
+ * §6, THE FIRST ONE, AND THE DEFECT ITSELF: 「你还是没有完全运用横向空间（字直接被截断了）」.
+ * The user's own sentence, at 1440 WITH THE DETAIL COLUMN OPEN -- the ≈734px panel that is the
+ * hardest case and the one the screenshot was taken in. The previous edition could only do it by
+ * dropping the dates to a second line below a threshold; there is no threshold now, because the
+ * dates are always on the second line and the title always owns the first.
  *
- * Measured at 1920 with the detail closed, where both lists reach their own measure and the panel
- * is not what limits either of them -- which is the only width at which "the same track" is a
- * claim about the measure rather than about the panel.
+ * Asserted at both panel widths, from the same page, with the window never changing: the closed
+ * panel is 1118px and the open one 734px, and a guard that only checks the easy one would have
+ * passed before this stage as well.
  */
-test('one dated row costs a title NOTHING: the same track as a title-only list', async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 1920, height: 1000 })
-  await registerFreshUser(page)
-
-  const bare = await makeProject(page, '无日期的线')
-  await makeTask(page, bare, LONG_TITLE)
-  await makeTask(page, bare, '第二条，同样没有任何日期')
-  await page.goto(`/projects/${bare}`)
-  await expect(page.locator('[data-task-tree] li[data-depth]')).toHaveCount(2)
-  const titleOnly = await firstTitle(page)
-
-  const mixed = await mixedProject(page, '有一条日期的线')
-  await page.goto(`/projects/${mixed}`)
-  await expect(page.locator('[data-task-tree] li[data-depth]')).toHaveCount(4)
-  // The columns really are there, or this compares two title-only lists.
-  await expect(page.locator('[data-task-tree] [data-due-cell]')).toHaveCount(4)
-  await expect(page.locator('[data-task-tree] [data-plan-cell]')).toHaveCount(4)
-  const withDates = await firstTitle(page)
-  expect(withDates.stacked, 'the dates are beside the title at 1920').toBe(false)
-
-  expect(
-    withDates.cell,
-    `title cell: ${titleOnly.cell}px with no dates, ${withDates.cell}px with one dated row`,
-  ).toBe(titleOnly.cell)
-  // And both of them hold the real title whole, so the equality is not two equally clipped cells.
-  expect(titleOnly.fits && withDates.fits, JSON.stringify({ titleOnly, withDates })).toBe(true)
-
-  // The list, not the title, is what grew: 84.5rem against 64rem, i.e. the two columns and their
-  // gutters (20.5rem = 328px) added to the same title track.
-  const width = (sel: string) =>
-    page
-      .locator(sel)
-      .first()
-      .evaluate((el) => Math.round(el.getBoundingClientRect().width))
-  const mixedList = await width('[data-task-tree]')
-  await page.goto(`/projects/${bare}`)
-  await expect(page.locator('[data-task-tree] li[data-depth]')).toHaveCount(2)
-  const bareList = await width('[data-task-tree]')
-  expect(mixedList - bareList, `list ${bareList}px -> ${mixedList}px`).toBe(328)
-})
-
-/**
- * The user's own sentence, at the width the defect screenshot was taken at: 1440 with the detail
- * column CLOSED. 「你还是没有完全运用横向空间（字直接被截断了）」 -- a real title must not be cut
- * in a panel that is wide enough to hold it. Before this ruling the list was clamped to 47rem here
- * and the title was cut at 276px of a 1134px panel.
- */
-test('a long real title is not truncated in a panel wide enough to hold it', async ({ page }) => {
+test('a real long title is not truncated at 1440, detail open or closed', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 })
   await registerFreshUser(page)
-  const pid = await mixedProject(page, '混合的线')
+  const pid = await mixedProject(page, '长标题')
   await page.goto(`/projects/${pid}`)
   await expect(page.locator('[data-task-tree] li[data-depth]')).toHaveCount(4)
+  // The slot really is reserved, or this measures a list with no furniture in it.
+  await expect(page.locator('[data-task-tree] [data-lead-slot]')).toHaveCount(4)
 
-  const first = await firstTitle(page)
-  expect(first.stacked, 'the dates are still beside the title in an 1118px list').toBe(false)
-  expect(first.fits, `title needs ${first.needs}px, cell is ${first.cell}px`).toBe(true)
-  // It got there by being given the width, not by the title being short: 47rem of list used to
-  // leave 276px here whatever the panel was.
-  expect(first.cell, `title cell ${first.cell}px`).toBeGreaterThan(first.needs)
-})
+  const closed = await firstRow(page)
+  expect(closed.fits, `detail closed: title needs ${closed.needs}px of ${closed.cell}px`).toBe(true)
+  expect(closed.needs, 'the title really is a long one').toBeGreaterThan(500)
 
-// ------------------------------------------------ where the dates drop below the title, and why
-
-/**
- * THE OTHER FACE OF THE SAME DEFECT. Whether the dates sit beside the title or beneath it is
- * decided by whether THE LIST can hold both, never by the viewport: at 1440 with the detail open
- * the list is 734px, which cannot hold a title plus 8rem plus 11rem plus an action slot, and no
- * measure can fix that because it is the panel that is narrow. The old threshold (`@xl`, 36rem)
- * was a named step rather than a derived one and was too low, so a 734px list squeaked past it and
- * clipped its titles instead of wrapping.
- *
- * Asserted FROM BOTH SIDES. A one-sided test ("it stacks when narrow") passes against a threshold
- * set anywhere at all, including the old one that caused the bug; the pair of them pins it to the
- * 53.5rem (856px) the column widths derive. The list is `viewport − 322px` with the detail closed,
- * so 1170 gives an 848px list and 1186 gives an 864px one -- one on each side of 856.
- */
-test('the dates drop below the title exactly when the LIST cannot hold both', async ({ page }) => {
-  await registerFreshUser(page)
-  const pid = await mixedProject(page, '阈值两侧')
-
-  const at = async (viewport: number) => {
-    await page.setViewportSize({ width: viewport, height: 1000 })
-    await page.goto(`/projects/${pid}`)
-    await expect(page.locator('[data-task-tree] li[data-depth]')).toHaveCount(4)
-    const list = await page
-      .locator('[data-task-tree]')
-      .evaluate((el) => Math.round(el.getBoundingClientRect().width))
-    return { list, ...(await firstTitle(page)) }
-  }
-
-  // Just BELOW the threshold: the dates take a line of their own and the title gets the whole row.
-  const below = await at(1170)
-  expect(below.list, `list at 1170: ${below.list}px`).toBeLessThan(856)
-  expect(below.stacked, `list ${below.list}px: ${JSON.stringify(below)}`).toBe(true)
-  // The point of stacking: the title is given the width the dates were holding, not clipped.
-  expect(below.fits, `stacked title needs ${below.needs}px of ${below.cell}px`).toBe(true)
-
-  // Just ABOVE it: the columns are back beside the title, at one x per column.
-  const above = await at(1186)
-  expect(above.list, `list at 1186: ${above.list}px`).toBeGreaterThan(856)
-  expect(above.stacked, `list ${above.list}px: ${JSON.stringify(above)}`).toBe(false)
-  const due = await xs(page, '[data-task-tree] [data-due-cell]')
-  expect(new Set(due).size, `deadline column x values: ${due.join(',')}`).toBe(1)
-
-  // 16px of window moved the dates, so the decision really is the list's width and not a round
-  // viewport step: both of these are the same `lg` layout, the same page and the same data.
-  expect(above.list - below.list).toBe(16)
-  // And the stacked row is the taller one, which is what "a second line" means.
-  expect(below.cell, `stacked cell ${below.cell}px vs inline ${above.cell}px`).toBeGreaterThan(
-    above.cell,
-  )
-})
-
-/**
- * ...and the proof that it is the CONTAINER and not the viewport: ONE viewport, one page, one set
- * of rows, and opening the detail column -- which takes 384px out of the list and nothing out of
- * the window -- moves the dates below the title. This is the case in the defect screenshot: at 1440
- * with the detail open the list is 734px, and a viewport rule (`sm:`, 640px) kept five fixed tracks
- * in it and cut the title to 258px. No list measure can fix that, because it is the panel that is
- * narrow.
- */
-test('opening the detail column stacks the dates without the window changing', async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 1000 })
-  await registerFreshUser(page)
-  const pid = await mixedProject(page, '详情栏开合')
-  await page.goto(`/projects/${pid}`)
-  await expect(page.locator('[data-task-tree] li[data-depth]')).toHaveCount(4)
-
-  const closed = await firstTitle(page)
-  expect(closed.stacked, `detail closed: ${JSON.stringify(closed)}`).toBe(false)
-  expect(closed.fits, `detail closed, title needs ${closed.needs}px of ${closed.cell}px`).toBe(true)
-
-  // The row whose title is long is the one we measure, so open the pane from another row.
+  // Open the pane from ANOTHER row, so the row being measured is not the one that is selected.
   await page.locator('[data-task-tree] li[data-depth]').nth(1).click()
   await expect(page.getByRole('dialog')).toBeVisible()
-  const open = await firstTitle(page)
+  const open = await firstRow(page)
   expect(await page.evaluate(() => window.innerWidth), 'the window did not change').toBe(1440)
-  expect(open.stacked, `detail open: ${JSON.stringify(open)}`).toBe(true)
-  // The whole point: the title takes the width the dates were holding rather than being clipped.
-  expect(open.fits, `detail open, title needs ${open.needs}px of ${open.cell}px`).toBe(true)
+  expect(open.list, `list with the detail open: ${open.list}px`).toBeLessThan(800)
+  expect(open.fits, `detail open: title needs ${open.needs}px of ${open.cell}px`).toBe(true)
+  // It got there by being given the width, not by the title being short or the list being wide.
+  expect(open.cell, `title cell ${open.cell}px`).toBeGreaterThan(open.needs)
   expect(open.cell, `${closed.cell}px -> ${open.cell}px`).toBeLessThan(closed.cell)
 })
 
-// ------------------------------------------------------------- the mark on a row with something to read
-
 /**
- * Ruling §4: the project page gets NO permanent second line (the project is known and the depth is
- * visible, so a breadcrumb would spend vertical space on nothing). What is missing from a row is
- * whether there is anything to READ, so a row with notes carries a mark.
+ * §6: 「带日期的行有第二行且文案完整到分钟；无日期无备注的行仍是一行」 -- both halves on ONE
+ * list, since "a second line" passes trivially if every row has one and "one line" passes trivially
+ * if none does.
  *
- * Asserted in both directions on one list, because "a mark on every row" passes a one-row test.
+ * The minute is the assertion that matters: the mechanism this edition deleted compressed
+ * 「10月4日 12:30 截止」 into 「已逾 2 天」 to fit an 8rem cell, and the user rejected exactly that.
+ * The expected wording is derived from the instant the fixture was CREATED with, so the test says
+ * the same thing at every hour of the day.
  */
-test('a tree row carries a notes mark only when its task has notes', async ({ page }) => {
+test('a dated row has a second line, complete to the minute; a bare row stays one line', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1000 })
   await registerFreshUser(page)
-  const pid = await makeProject(page, '备注标记')
-  await makeTask(page, pid, '有话要说的', { notes: '先去问清楚需求再动手' })
-  await makeTask(page, pid, '没有备注的')
-  // An empty string is not "has notes": the API accepts one and a truthiness test would mark it.
-  await makeTask(page, pid, '备注是空串的', { notes: '' })
+  const pid = await makeProject(page, '两种行')
+  // One instant, read once: deriving the expectation from a second `new Date()` would make this
+  // test red for one minute in sixty.
+  const due = new Date(Date.now() - 2 * DAY)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  await makeTask(page, pid, '过期两天的', { dueAt: due.toISOString() })
+  await makeTask(page, pid, '什么都没有的')
   await page.goto(`/projects/${pid}`)
   const row = (title: string) =>
     page.locator('[data-task-tree] li[data-depth]').filter({ hasText: title })
-  await expect(page.locator('[data-task-tree] li[data-depth]')).toHaveCount(3)
+  await expect(page.locator('[data-task-tree] li[data-depth]')).toHaveCount(2)
 
-  await expect(row('有话要说的').locator('[data-notes-mark]')).toHaveCount(1)
-  await expect(row('没有备注的').locator('[data-notes-mark]')).toHaveCount(0)
-  await expect(row('备注是空串的').locator('[data-notes-mark]')).toHaveCount(0)
-  // It is not a decoration: it carries information nothing else on the row repeats, so it has a
-  // text alternative (WCAG 1.1.1). The name is 「有备注」 and not 「备注」 because accessible names
-  // are one flat namespace matched by substring, and the detail pane's own 备注 field is on this
-  // very page.
-  await expect(row('有话要说的').getByRole('img', { name: '有备注' })).toHaveCount(1)
+  // The whole sentence, to the minute, with nothing dropped.
+  await expect(row('过期两天的').locator('[data-row-meta]')).toHaveText(
+    `${due.getMonth() + 1}月${due.getDate()}日 ${pad(due.getHours())}:${pad(due.getMinutes())} 截止·已逾 2 天`,
+  )
+  // The text is the carrier, not the colour and not the glyph (WCAG 1.4.1): the deadline's own
+  // phrase and the lateness are both there in words.
+  await expect(row('过期两天的').locator('[data-due-text]')).toContainText('截止')
+  await expect(row('过期两天的').locator('[data-late-text]')).toHaveText('已逾 2 天')
+  // ...and the icon has a name of its own, so a screen reader is not left with a hue.
+  await expect(row('过期两天的').getByRole('img', { name: '截止已过' })).toHaveCount(1)
 
-  // And it follows the data: adding notes through the pane puts the mark on that row.
-  await row('没有备注的').click()
-  await editDetail(page)
-  await page.getByLabel('备注', { exact: true }).fill('后来才想到的')
-  await page.getByRole('button', { name: '保存' }).click()
-  await expect(row('没有备注的').locator('[data-notes-mark]')).toHaveCount(1)
+  // A row carrying information is 58px; a row carrying none is 44px and has no second line at all.
+  const h = (title: string) =>
+    row(title).evaluate((el) => Math.round(el.getBoundingClientRect().height))
+  expect(await h('过期两天的'), 'a row with a second line').toBe(58)
+  expect(await h('什么都没有的'), 'a row with nothing to say').toBe(44)
+  await expect(row('什么都没有的').locator('[data-row-meta]')).toHaveCount(0)
 })
+
+/**
+ * §2: a task with BOTH a deadline and a plan wears the deadline at the row start -- the one that
+ * bites -- and the second line lists both. Three channels, no colour among them: which glyph, and
+ * two phrases of words.
+ */
+test('a row with both dates wears the deadline, and says both in words', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'P')
+  await makeTask(page, pid, '两种日期都有', { dueAt: dueAgo(3), scheduledOn: dayOffset(2) })
+  await page.goto(`/projects/${pid}`)
+  const row = page.locator('[data-task-tree] li[data-depth]').first()
+
+  // One glyph, and it is the deadline's.
+  await expect(row.locator('[data-lead-icon]')).toHaveCount(1)
+  await expect(row.locator('[data-lead-icon="missed"]')).toHaveCount(1)
+  // Both dates on the second line, in full.
+  await expect(row.locator('[data-due-text]')).toContainText('截止')
+  await expect(row.locator('[data-late-text]')).toHaveText('已逾 3 天')
+  await expect(row.locator('[data-plan-text]')).toContainText('排到')
+})
+
+/**
+ * §2: the TREE's second line carries no breadcrumb (the project is known and the hierarchy is in
+ * the indentation), while 今天's carries one -- and there the breadcrumb and the date share that
+ * one line rather than taking two.
+ */
+test('the tree has no breadcrumb on its second line; 今天 shares one line with the date', async ({
+  page,
+}) => {
+  // 1920, so the one-third 逾期 panel is wide enough to hold the crumb and the date side by side:
+  // the claim is that they SHARE a line where there is room, not that the line never wraps -- §2
+  // keeps the wording whole, so a cramped panel wraps it rather than cutting it.
+  await page.setViewportSize({ width: 1920, height: 1000 })
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '面包屑')
+  const parent = await makeTask(page, pid, '父任务')
+  await makeTask(page, pid, '子任务', { dueAt: dueAgo(2) }, parent)
+  await page.goto(`/projects/${pid}`)
+  const child = page.locator('[data-task-tree] li[data-depth="2"]')
+  await expect(child.locator('[data-row-meta]')).toHaveCount(1)
+  await expect(child.locator('[data-row-crumb]')).toHaveCount(0)
+  await expect(child.locator('[data-row-meta]')).not.toContainText('面包屑')
+  await expect(child.locator('[data-row-meta]')).not.toContainText('父任务')
+
+  // The same task on 今天: one second line, carrying the project, the parent AND the date.
+  await page.goto('/')
+  const line = page.getByRole('region', { name: '逾期' }).locator('[data-row-meta]')
+  await expect(line).toHaveCount(1)
+  await expect(line.locator('[data-row-crumb]')).toHaveText('面包屑 › 父任务')
+  await expect(line.locator('[data-due-text]')).toContainText('截止')
+  // One line, not two: the crumb and the date share a baseline.
+  const ys = await line.evaluate((el) => {
+    const crumb = el.querySelector('[data-row-crumb]')!.getBoundingClientRect()
+    const due = el.querySelector('[data-due-text]')!.getBoundingClientRect()
+    return [Math.round(crumb.y), Math.round(due.y)]
+  })
+  expect(ys[0], `crumb y ${ys[0]}, date y ${ys[1]}`).toBe(ys[1])
+})
+
+// ------------------------------------------------------------- the mark on a row with something to read
 
 // --------------------------------------------------------------------------- the action control
 
@@ -729,41 +706,102 @@ test('a plan and a deadline differ by shape, not only by colour', async ({ page 
   const pid = await makeProject(page, 'P')
   const late = new Date()
   late.setHours(23, 30, 0, 0)
-  await makeTask(page, pid, '两种日期', {
-    dueAt: late.toISOString(),
-    scheduledOn: dayOffset(-2),
-  })
-  await page.goto('/')
-  const row = page
-    .locator('li')
-    .filter({ has: page.locator('[data-today-row]') })
-    .first()
+  // Two rows, because a row that has both wears ONE glyph (the deadline's): comparing the two
+  // silhouettes means putting them on two rows.
+  await makeTask(page, pid, '有截止的', { dueAt: late.toISOString() })
+  await makeTask(page, pid, '有计划的', { scheduledOn: dayOffset(2) })
+  await page.goto(`/projects/${pid}`)
+  const row = (title: string) =>
+    page.locator('[data-task-tree] li[data-depth]').filter({ hasText: title })
 
-  // Each cell carries a glyph of its own, so the distinction survives a grey screenshot and a
-  // colourblind reader. The paths differ, and they differ in ORIENTATION: the deadline's flag is
-  // taller than it is wide, the plan's timeline is wider than it is tall.
-  const shape = (hint: string) =>
-    row.locator(`[data-date-hint="${hint}"] svg`).evaluate((el) => {
-      const ink = (el as SVGGraphicsElement).getBBox()
-      return {
-        paths: [...el.querySelectorAll('path')].map((p) => p.getAttribute('d')).join('|'),
-        // The drawn ink, not the 12x12 canvas: this is the silhouette a grey screenshot shows.
-        portrait: ink.height > ink.width,
-      }
-    })
-  const due = await shape('due')
-  const carried = await shape('carried')
-  expect(due.paths).not.toBe(carried.paths)
+  // The two leading glyphs differ, and they differ in ORIENTATION: the deadline's flag is taller
+  // than it is wide, the plan's timeline is wider than it is tall. That is the channel that
+  // survives a grey screenshot and a colourblind reader.
+  const shape = (title: string) =>
+    row(title)
+      .locator('[data-lead-icon] svg')
+      .evaluate((el) => {
+        const ink = (el as SVGGraphicsElement).getBBox()
+        return {
+          paths: [...el.querySelectorAll('path')].map((p) => p.getAttribute('d')).join('|'),
+          // The drawn ink, not the 12x12 canvas: this is the silhouette a grey screenshot shows.
+          portrait: ink.height > ink.width,
+        }
+      })
+  const due = await shape('有截止的')
+  const plan = await shape('有计划的')
+  expect(due.paths).not.toBe(plan.paths)
   expect(due.paths.length).toBeGreaterThan(0)
-  expect(carried.paths.length).toBeGreaterThan(0)
-  // A deadline is UPRIGHT (a flag on a pole); a plan is WIDE (a tick on a timeline). Orientation
-  // is the channel that survives both greyscale and colourblindness.
+  expect(plan.paths.length).toBeGreaterThan(0)
   expect(due.portrait).toBe(true)
-  expect(carried.portrait).toBe(false)
+  expect(plan.portrait).toBe(false)
+
+  // Each has a NAME of its own, and neither name is the other's substring: accessible names are one
+  // flat namespace matched by substring, so a 「有截止，已逾期」 would make every query for the
+  // standing flag match the missed one too.
+  await expect(row('有截止的').getByRole('img', { name: '有截止' })).toHaveCount(1)
+  await expect(row('有计划的').getByRole('img', { name: '有计划' })).toHaveCount(1)
 
   // And the words say it too, so nothing rests on the glyph either.
-  await expect(row.locator('[data-date-hint="due"]')).toContainText('截止')
-  await expect(row.locator('[data-date-hint="carried"]')).toContainText('原定')
+  await expect(row('有截止的').locator('[data-row-meta]')).toContainText('截止')
+  await expect(row('有计划的').locator('[data-row-meta]')).toContainText('排到')
+})
+
+/**
+ * §3 §6: the three mechanisms this edition replaced are GONE from the source, not merely unused.
+ * Two layout systems side by side is the failure this guards: the columns would keep working, the
+ * threshold would keep firing in some panel nobody measured, and the next stage would inherit both.
+ *
+ * Read off the source rather than the DOM on purpose -- a deleted mechanism leaves no trace in a
+ * rendered page, which is exactly why "we deleted it" rots.
+ */
+test('the deleted mechanisms are absent from the source', async () => {
+  const { readdirSync, readFileSync, statSync } = await import('node:fs')
+  const walk = (dir: string): string[] =>
+    readdirSync(dir).flatMap((name) => {
+      const full = `${dir}/${name}`
+      return statSync(full).isDirectory() ? walk(full) : /\.(ts|tsx|css)$/.test(full) ? [full] : []
+    })
+  const files = walk('src')
+  expect(files.length, 'source files scanned').toBeGreaterThan(30)
+  // Comments are stripped first: the prose that RECORDS the deletion names the thing it deleted,
+  // and a guard that cannot tell those apart would be answered by rewording a comment.
+  const code = (text: string) => text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ 	]*\/\/.*$/gm, '')
+
+  const banned: [RegExp, string][] = [
+    // 1. the 8rem deadline column and the 11rem plan column (and the tree's w-32 / w-44 twins).
+    [/\b(8rem|11rem)\b/, 'a date column width'],
+    [/\b(DUE_REM|PLAN_REM|dueColumnClass|planColumnClass|DueCell|PlanCell)\b/, 'a date column'],
+    [/\bshrink-0 w-(32|44)\b/, "a tree date cell's fixed width"],
+    // 2. the stack threshold and the container queries that drove it.
+    [
+      /ROW_DATE_STACK|rowDateStackClass|rowStackBelowRem|treeRowWrapClass|treeDateLineClass/,
+      'the stack threshold',
+    ],
+    [/@container|@min-\[|@max-\[/, 'a container query'],
+    // 3. the list measure derived from the column makeup.
+    [
+      /72\.75rem|75\.75rem|84\.5rem|53\.5rem|TITLE_BASELINE_REM|furnitureRem|listMeasureRem|listMeasureClass|columnCase|dateColumns/,
+      'the derived list measure',
+    ],
+  ]
+  const hits: string[] = []
+  for (const file of files) {
+    const text = code(readFileSync(file, 'utf8'))
+    for (const [pattern, what] of banned) {
+      const m = pattern.exec(text)
+      if (m) hits.push(`${file}: ${what} -- ${JSON.stringify(m[0])}`)
+    }
+  }
+  expect(hits, hits.join('\n')).toEqual([])
+
+  // ...and the thing that REPLACED them is a single measure, named in ONE place. Four measures
+  // keyed by column makeup is the mechanism §3 deleted; this is the test that notices it coming
+  // back under another name. (Its own unit test names the literal too, which is its job.)
+  const measures = files
+    .filter((f) => !f.endsWith('.test.ts'))
+    .filter((f) => /max-w-\[64rem\]/.test(code(readFileSync(f, 'utf8'))))
+  expect(measures, "one file names the task lists' measure").toEqual(['src/rowLead.ts'])
 })
 
 // ------------------------------------------------------------------- the phone, deep in a tree

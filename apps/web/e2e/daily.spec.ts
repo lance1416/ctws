@@ -432,7 +432,10 @@ test('the tree shows dates only where they mean something', async ({ page }) => 
   const pid = await makeProject(page, 'P')
   const now = new Date()
   const todayLate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 30)
-  await makeTask(page, pid, '逾期的', { dueAt: dueAgo(5) })
+  // Taken ONCE and reused below: deriving the expected wording from a second `dueAgo(5)` call
+  // would read the clock twice, and a minute tick between the two makes the test red for a minute.
+  const lateDue = dueAgo(5)
+  await makeTask(page, pid, '逾期的', { dueAt: lateDue })
   await makeTask(page, pid, '今天截止', { dueAt: todayLate.toISOString() })
   await makeTask(page, pid, '只排期', { scheduledOn: ymd(new Date(now.getTime() + DAY)) })
   await makeTask(page, pid, '没日期')
@@ -440,7 +443,15 @@ test('the tree shows dates only where they mean something', async ({ page }) => 
   await openTree(page, pid)
 
   const hints = (title: string) => treeRow(page, title).locator('[data-date-hint]')
-  await expect(hints('逾期的')).toHaveText('已逾 5 天')
+  // The second line now carries the WHOLE wording (rows-and-reading §2, second edition): an
+  // overdue row says which deadline it was and when, to the minute, as well as how late it is. The
+  // previous edition showed only 「已逾 5 天」 because the label had to fit an 8rem cell.
+  const line = (title: string) => treeRow(page, title).locator('[data-row-meta]')
+  const d = new Date(lateDue)
+  const clock = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  await expect(line('逾期的')).toHaveText(
+    `${d.getMonth() + 1}月${d.getDate()}日 ${clock} 截止·已逾 5 天`,
+  )
   await expect(hints('逾期的')).toHaveAttribute('data-date-hint', 'overdue')
   await expect(hints('今天截止')).toHaveText('今天 23:30 截止')
   await expect(hints('今天截止')).toHaveAttribute('data-date-hint', 'due')
@@ -451,6 +462,7 @@ test('the tree shows dates only where they mean something', async ({ page }) => 
 
   // Overdue is told apart by its words, not by its colour: the same row without the colour
   // class would still read "已逾 5 天", and the due-today row never says it.
+  await expect(line('逾期的')).toContainText('已逾 5 天')
   await expect(treeRow(page, '今天截止')).not.toContainText('已逾')
 })
 

@@ -176,7 +176,7 @@ test('the named deadline decisions write the day the row would show', async ({ p
   // through the exact field first, and to something that is NOT the default a new deadline gets:
   // with 23:59 on both sides this assertion would hold however the day was moved.
   await openPane(page, pid, '交报告')
-  await page.getByLabel('截止').fill(`${dayOffset(3)}T09:15`)
+  await page.getByLabel('截止', { exact: true }).fill(`${dayOffset(3)}T09:15`)
   await saveBody(page)
   const kept = (await serverTask(page, pid, id)).dueAt!
   expect(new Date(kept).getHours(), 'the fixture really is not the 23:59 default').toBe(9)

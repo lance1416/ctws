@@ -63,14 +63,14 @@ test('title and due time persist across a reload', async ({ page }) => {
   const url = page.url()
 
   await page.getByLabel('标题').fill('写方案 v2')
-  await page.getByLabel('截止').fill('2026-10-03T14:30')
+  await page.getByLabel('截止', { exact: true }).fill('2026-10-03T14:30')
   await save(page)
 
   await page.goto(url)
   await reopen(page, '写方案 v2')
   await expect(page.getByLabel('标题')).toHaveValue('写方案 v2')
   // Local wall-clock in, local wall-clock out: the instant round trip must not shift it.
-  await expect(page.getByLabel('截止')).toHaveValue('2026-10-03T14:30')
+  await expect(page.getByLabel('截止', { exact: true })).toHaveValue('2026-10-03T14:30')
 })
 
 test('moves a task to another project', async ({ page }) => {
@@ -157,13 +157,13 @@ test.describe('due time in a non-UTC zone', () => {
   test('the due time is sent as the instant the local wall-clock time means', async ({ page }) => {
     await registerFreshUser(page)
     await seedOneTask(page)
-    await page.getByLabel('截止').fill('2026-10-03T02:30')
+    await page.getByLabel('截止', { exact: true }).fill('2026-10-03T02:30')
     const res = await save(page)
     expect(res.request().postDataJSON()).toEqual({ dueAt: '2026-10-02T21:00:00.000Z' })
 
     await page.reload()
     await reopen(page, '写方案')
-    await expect(page.getByLabel('截止')).toHaveValue('2026-10-03T02:30')
+    await expect(page.getByLabel('截止', { exact: true })).toHaveValue('2026-10-03T02:30')
   })
 })
 
