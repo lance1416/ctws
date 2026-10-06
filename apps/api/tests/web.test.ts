@@ -17,6 +17,9 @@ describe('serving the built web app', () => {
     writeFileSync(join(dist, 'index.html'), SHELL)
     mkdirSync(join(dist, 'assets'))
     writeFileSync(join(dist, 'assets', 'app.js'), 'console.log("app")')
+    // Stands in for the real content-hashed CJK webfont, which is the whole reason the caching
+    // below matters: 1.8 MiB re-downloaded on every navigation, or downloaded once.
+    writeFileSync(join(dist, 'assets', 'noto-sans-sc-subset-C6NWTKHK.woff2'), 'wOF2-not-really')
     // A static file sitting on an API path: the API route must win over it.
     mkdirSync(join(dist, 'api', 'v1'), { recursive: true })
     writeFileSync(join(dist, 'api', 'v1', 'health'), 'STATIC FILE, NOT THE API')
@@ -100,6 +103,47 @@ describe('serving the built web app', () => {
       } finally {
         await app.close()
       }
+    })
+  })
+
+  /**
+   * The two halves of the caching rule, which exist for different reasons and must not be
+   * conflated. Everything under /assets carries a content hash in its filename, so the bytes at a
+   * URL can never change and the browser need never ask again. index.html has no hash, so caching
+   * it the same way would mean a deploy is never picked up.
+   */
+  describe('cache-control', () => {
+    it('serves a content-hashed asset immutable for a year', async () => {
+      const res = await ctx.app.inject({
+        method: 'GET',
+        url: '/assets/noto-sans-sc-subset-C6NWTKHK.woff2',
+      })
+      expect(res.statusCode).toBe(200)
+      expect(res.headers['cache-control']).toBe('public, max-age=31536000, immutable')
+    })
+
+    it.each([
+      ['the root', '/'],
+      ['the SPA fallback for a client-side route', '/some/deep/route'],
+    ])('does not let the browser hold index.html, via %s', async (_label, url) => {
+      const res = await ctx.app.inject({ method: 'GET', url, headers: HTML })
+      expect(res.statusCode).toBe(200)
+      expect(res.headers['cache-control']).toBe('no-cache')
+      expect(res.headers['cache-control']).not.toContain('immutable')
+      expect(res.headers['cache-control']).not.toMatch(/max-age=[1-9]/)
+    })
+
+    it('still answers index.html with a cheap 304 when it has not changed', async () => {
+      const first = await ctx.app.inject({ method: 'GET', url: '/', headers: HTML })
+      const etag = first.headers.etag as string
+      expect(etag).toBeTruthy()
+      const again = await ctx.app.inject({
+        method: 'GET',
+        url: '/',
+        headers: { ...HTML, 'if-none-match': etag },
+      })
+      expect(again.statusCode).toBe(304)
+      expect(again.body).toBe('')
     })
   })
 })

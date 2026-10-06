@@ -84,7 +84,28 @@ export async function buildApp(opts: { env: Env; db: Db }): Promise<FastifyInsta
   // Serve the built web app, if configured. Registered after the API routes on purpose: API
   // routes must win over static files, and anything that misses falls to the not-found handler.
   const webDist = opts.env.webDist && existsSync(opts.env.webDist) ? opts.env.webDist : undefined
-  if (webDist) await app.register(fastifyStatic, { root: resolve(webDist) })
+  if (webDist)
+    await app.register(fastifyStatic, {
+      root: resolve(webDist),
+      // Two different caching rules, and the distinction is the whole point:
+      //
+      // `/assets/*` is Vite's output and every filename in it carries a content hash, so a file at
+      // a given URL can never change. It gets a year and `immutable`, which means the browser does
+      // not even revalidate. Without this the server answered `max-age=0` for everything and the
+      // webfonts came back 200 with full bodies on EVERY navigation -- 1.8 MiB of CJK font
+      // re-downloaded twenty times a day. `immutable` on hashed assets is what makes a self-hosted
+      // webfont a one-time cost instead of a per-load one.
+      //
+      // `index.html` (and anything else unhashed) must NOT be cached that way: its URL never
+      // changes, so an immutable copy would pin the browser to the deployed-before version for a
+      // year and no deploy would ever be picked up. It gets `no-cache`, which still allows a
+      // conditional request and a cheap 304 -- it means "revalidate", not "do not store".
+      cacheControl: false,
+      setHeaders(reply, path) {
+        const hashed = /[/\\]assets[/\\]/.test(path)
+        reply.header('cache-control', hashed ? 'public, max-age=31536000, immutable' : 'no-cache')
+      },
+    })
 
   app.setNotFoundHandler((req, reply) => {
     // Browser navigations to client-side routes get the SPA shell; API paths keep their 404.
