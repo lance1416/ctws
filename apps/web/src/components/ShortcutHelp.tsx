@@ -1,7 +1,7 @@
 import { allChords } from '../modules/registry'
 import { setShortcutsEnabled, useShortcutsEnabled } from '../shortcuts/enabled'
 import { JUMP_PREFIX } from '../shortcuts/chords'
-import { Overlay } from './Overlay'
+import { Modal } from './Modal'
 
 /**
  * The `?` overlay. Nothing in this app announced its own keys before; a keyboard-first tool whose
@@ -22,6 +22,12 @@ const GROUPS: { title: string; keys: [string, string][] }[] = [
       ...allChords().map((c): [string, string] => [`${JUMP_PREFIX} ${c.key}`, c.label]),
       ['Esc', '关闭面板或浮层'],
     ],
+  },
+  {
+    // `n` is not in 任何地方 on purpose: it needs a project to create into, so it exists only on
+    // a project page. Listed because a key nobody can find is not a key.
+    title: '项目页上',
+    keys: [['n', '打开「新建」浮层']],
   },
   {
     title: '任务树里（焦点在某一行上）',
@@ -53,17 +59,9 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
   const enabled = useShortcutsEnabled()
 
   return (
-    <Overlay label="键盘快捷键" onClose={onClose} className="rounded-lg">
-      <div className="flex items-center justify-between border-b border-border-subtle px-5 py-3">
-        <h2 className="font-semibold text-fg">键盘快捷键</h2>
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-md px-2 py-1 text-sm text-fg-muted hover:text-fg"
-        >
-          关闭
-        </button>
-      </div>
+    // Radix now owns Escape, the press outside, the focus trap and the focus restoration that this
+    // file used to get from the hand-built `Overlay`. Nothing about WHAT it says changed.
+    <Modal title="键盘快捷键" onClose={onClose} className="rounded-lg">
       <div className="px-5 py-4">
         {GROUPS.map((group) => (
           <section key={group.title} className="mt-4 first:mt-0">
@@ -102,6 +100,6 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
           </span>
         </label>
       </div>
-    </Overlay>
+    </Modal>
   )
 }
