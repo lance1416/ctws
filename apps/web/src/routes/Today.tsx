@@ -16,9 +16,16 @@ import {
   ProjectRail,
   SavedMark,
   ROW_DATE_STACK,
-  ROW_GRID,
   ROW_LIST,
 } from '../components/RowParts'
+import {
+  actionColumnClass,
+  dateColumns,
+  DUE_COLUMN_CLASS,
+  planColumnClass,
+  rowGridClass,
+  type DateColumns,
+} from '../rowColumns'
 import { EMPTY_ACTION, EmptyState } from '../components/EmptyState'
 import { StartButton, StatusButton, statusForKey } from '../components/StatusControls'
 import { StatusMark } from '../components/StatusMark'
@@ -210,18 +217,45 @@ export function Today() {
         : null
 
   /**
+   * A row's date cells, worked out ONCE per render. The list's reserved columns and the cells drawn
+   * into them must agree, and both of these read the clock ("原定10月2日，已顺延" against "排到明天"),
+   * so computing them twice would let a midnight tick between the two answers.
+   */
+  type Prepared = {
+    t: TodayTaskResponse
+    hints: ReturnType<typeof dateHints>
+    carried: string | null
+    plan: string | null
+  }
+  const prepare = (list: TodayTaskResponse[]): Prepared[] =>
+    list.map((t) => {
+      const hints = dateHints(t)
+      const carried = t.segment === 'today' ? carriedLabel(t.scheduledOn) : null
+      // The plan column: a carried plan says so in words; otherwise the planned day, but only when
+      // that day is not today -- "排到今天" under a heading that already says 今天 is noise.
+      return {
+        t,
+        hints,
+        carried,
+        plan: carried ?? (t.scheduledOn !== todayYmd ? hints.scheduled : null),
+      }
+    })
+  /**
+   * Which columns ONE PANEL's list reserves. Per list and never per row (spec §2): the 今天 queue
+   * and the 逾期 panel are two lists in two columns of the page, so each answers for itself, while
+   * within either one the cells stay at a single x.
+   */
+  const columnsOf = (list: Prepared[]): DateColumns =>
+    dateColumns(list.map((p) => ({ due: p.hints.due !== null, plan: p.plan !== null })))
+
+  /**
    * One queue row. The row system is unchanged (RowParts): the project rail at x=0, the status
    * marker, the title, then the deadline column, the plan column and the action slot -- every one
-   * at a fixed x and reserved whether or not this row fills it. What is new is that the columns
-   * answer to the LIST's width rather than the viewport's, because the same row now renders in a
-   * two-thirds panel and in a one-third one on the same screen.
+   * at a fixed x and reserved whether or not THIS row fills it, as long as some row in the list
+   * does. The columns answer to the LIST's width rather than the viewport's, because the same row
+   * renders in a two-thirds panel and in a one-third one on the same screen.
    */
-  const row = (t: TodayTaskResponse): ReactNode => {
-    const hints = dateHints(t)
-    const carried = t.segment === 'today' ? carriedLabel(t.scheduledOn) : null
-    // The plan column: a carried plan says so in words; otherwise the planned day, but only when
-    // that day is not today -- "排到今天" under a heading that already says 今天 is noise.
-    const plan = carried ?? (t.scheduledOn !== todayYmd ? hints.scheduled : null)
+  const row = ({ t, hints, carried, plan }: Prepared, columns: DateColumns): ReactNode => {
     const sections = triageFor(t, carried)
     return (
       <li
@@ -229,7 +263,7 @@ export function Today() {
         onClick={(e) => {
           if (!(e.target as HTMLElement).closest('button')) setOpenId(t.id)
         }}
-        className={`group relative grid min-h-[46px] cursor-pointer items-start gap-x-2 gap-y-0.5 rounded-lg py-2 pr-2 pl-3 leading-snug hover:bg-surface-hover ${ROW_GRID}`}
+        className={`group relative grid min-h-[46px] cursor-pointer items-start gap-x-2 gap-y-0.5 rounded-lg py-2 pr-2 pl-3 leading-snug hover:bg-surface-hover ${rowGridClass(columns)}`}
       >
         <ProjectRail projectId={t.projectId} />
         <span className="col-start-1 row-start-1 flex h-7 items-center">
@@ -261,22 +295,30 @@ export function Today() {
             one-third panel the title track is about 190px, and sharing it between a deadline
             ("今天 23:30 截止") and a carried plan ("原定10月2日，已顺延") clipped both of them --
             and those words, not the colour, are what the cells are for. */}
+        {/* Only the columns the LIST reserves are rendered: a cell nobody in the list fills is not
+            an empty column, it is 8 or 11rem taken off every title on the page. */}
         {(hints.due || plan) && (
           <span className={`col-start-1 col-span-3 row-start-2 gap-x-2 ${ROW_DATE_STACK}`}>
-            <DueCell
-              due={hints.due}
-              exact={t.dueAt ? toLocalInput(t.dueAt).replace('T', ' ') : undefined}
-              className="@xl:col-start-3 @xl:row-start-1 @xl:h-7"
-            />
-            <PlanCell
-              text={plan}
-              carried={carried !== null}
-              exact={carried ?? undefined}
-              className="@xl:col-start-4 @xl:row-start-1 @xl:h-7"
-            />
+            {columns.due && (
+              <DueCell
+                due={hints.due}
+                exact={t.dueAt ? toLocalInput(t.dueAt).replace('T', ' ') : undefined}
+                className={DUE_COLUMN_CLASS}
+              />
+            )}
+            {columns.plan && (
+              <PlanCell
+                text={plan}
+                carried={carried !== null}
+                exact={carried ?? undefined}
+                className={planColumnClass(columns)}
+              />
+            )}
           </span>
         )}
-        <span className="col-start-3 row-start-1 flex h-7 items-center justify-end gap-0.5 @xl:col-start-5">
+        <span
+          className={`col-start-3 row-start-1 flex h-7 items-center justify-end gap-0.5 ${actionColumnClass(columns)}`}
+        >
           <StartButton
             status={t.status}
             title={t.title}
@@ -297,8 +339,10 @@ export function Today() {
   }
 
   const inProgress = rows.filter((t) => t.segment === 'in_progress')
-  const queue = rows.filter((t) => t.segment === 'today')
-  const overdue = rows.filter((t) => t.segment === 'overdue')
+  const queue = prepare(rows.filter((t) => t.segment === 'today'))
+  const overdue = prepare(rows.filter((t) => t.segment === 'overdue'))
+  const queueColumns = columnsOf(queue)
+  const overdueColumns = columnsOf(overdue)
   const doneToday = (completed.data ?? []).filter((t) => t.completedOn === localToday)
   const movementRows = (movement.data ?? []).filter(hasMovement)
   // The right column renders only what has something to say. An empty column at 1440 would be
@@ -422,7 +466,7 @@ export function Today() {
           {today.isSuccess && rows.length > 0 && queue.length === 0 && (
             <PanelEmpty>队列是空的。</PanelEmpty>
           )}
-          <ul className={ROW_LIST}>{queue.map(row)}</ul>
+          <ul className={ROW_LIST}>{queue.map((p) => row(p, queueColumns))}</ul>
         </Panel>
 
         {rightColumn && (
@@ -431,7 +475,7 @@ export function Today() {
                 noise, and this one has to mean something when it appears. */}
             {overdue.length > 0 && (
               <Panel label="逾期" count={overdue.length}>
-                <ul className={ROW_LIST}>{overdue.map(row)}</ul>
+                <ul className={ROW_LIST}>{overdue.map((p) => row(p, overdueColumns))}</ul>
               </Panel>
             )}
             {movementRows.length > 0 && (

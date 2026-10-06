@@ -87,6 +87,49 @@ describe('dateHints', () => {
   })
 })
 
+/**
+ * `dateCells` is what a LIST reserves its date columns from, and `dateHints` is what each row then
+ * draws into them. If the two could disagree, a column would be reserved and left empty, or a cell
+ * would be drawn with no track under it.
+ *
+ * The clock is the way they would drift, so the agreement is checked at SEVERAL instants on either
+ * side of the wordings' boundaries -- a deadline before today, earlier today, later today and in
+ * the future -- while `dateCells` reads no clock at all. Every instant here is a literal, so this
+ * test says the same thing at every hour of every day (the repo has had a test that was red for one
+ * hour in twenty-four; it expressed "yesterday" as a fixed 25-hour offset).
+ */
+describe('dateCells agrees with dateHints, without reading the clock', () => {
+  const INSTANTS = [
+    new Date(2026, 9, 3, 0, 1), // just after midnight: yesterday's deadline just became overdue
+    new Date(2026, 9, 3, 12, 0),
+    new Date(2026, 9, 3, 23, 59),
+    new Date(2026, 9, 5, 12, 0), // two days on: "明天" has become "昨天"
+  ]
+  const DUES = [
+    null,
+    new Date(2026, 9, 1, 9, 0).toISOString(),
+    new Date(2026, 9, 3, 8, 0).toISOString(),
+    new Date(2026, 9, 8, 9, 0).toISOString(),
+  ]
+  const PLANS = [null, '2026-10-02', '2026-10-03', '2026-10-04']
+
+  it('says a cell exists exactly when dateHints fills it, for every status and every instant', async () => {
+    const { dateCells, dateHints } = await load()
+    for (const status of ['backlog', 'todo', 'in_progress', 'done', 'cancelled'])
+      for (const dueAt of DUES)
+        for (const scheduledOn of PLANS) {
+          const t = { status, dueAt, scheduledOn }
+          const cells = dateCells(t)
+          for (const now of INSTANTS) {
+            const hints = dateHints(t, now)
+            const why = `${status} due=${dueAt} plan=${scheduledOn} at ${now.toISOString()}`
+            expect(cells.due, why).toBe(hints.due !== null)
+            expect(cells.plan, why).toBe(hints.scheduled !== null)
+          }
+        }
+  })
+})
+
 describe('status targets', () => {
   it('finishing and restoring', async () => {
     const { toggleDoneTarget } = await loadActions()

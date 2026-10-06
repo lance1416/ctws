@@ -23,7 +23,9 @@ import { EMPTY_ACTION, EmptyState } from './EmptyState'
 import { TaskDetail } from './TaskDetail'
 import { statusForKey } from './StatusControls'
 import { NewTaskInput } from './NewTaskInput'
-import { INDENT_PX, LIST_MEASURE } from './RowParts'
+import { INDENT_PX } from './RowParts'
+import { dateCells } from '../dueAt'
+import { dateColumns, listMeasureClass } from '../rowColumns'
 import { TaskRow } from './TaskRow'
 
 /**
@@ -77,6 +79,30 @@ export function TaskTree({ projectId }: { projectId: string }) {
   // Looked up by id each render, so a task that has left this project (moved away) closes itself.
   const openTask = tasks.data?.find((t) => t.id === openId)
   const byId = useMemo(() => new Map((tasks.data ?? []).map((t) => [t.id, t])), [tasks.data])
+  /**
+   * Which date columns this TREE reserves -- one decision for the whole list, taken from the rows
+   * that are actually on screen (spec §2). Reserving per group would put the deadline at one x
+   * under one parent and another x under the next, which is precisely the scanning a fixed column
+   * exists for; reserving from folded-away rows would hold width for cells nobody can see.
+   *
+   * The cost of getting this wrong is what the complaint was about: five fixed tracks spent 23.5rem
+   * on a right-hand zone whether or not a single row had a date, and the title was left ~348px in a
+   * panel over a thousand wide.
+   */
+  const columns = useMemo(
+    () =>
+      dateColumns(
+        rows.map((r) => {
+          const t = byId.get(r.id)
+          return dateCells({
+            status: t?.status ?? 'todo',
+            dueAt: t?.dueAt ?? null,
+            scheduledOn: t?.scheduledOn ?? null,
+          })
+        }),
+      ),
+    [rows, byId],
+  )
   // Falls back to the first row: the remembered row may have been deleted, moved to another
   // project, or folded out of sight, and a tree whose only tab stop does not exist is a tree the
   // keyboard cannot reach at all.
@@ -413,7 +439,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
         <SortableContext items={rows.map((r) => r.id)} strategy={verticalListSortingStrategy}>
           {/* No top margin: the tree is the first thing in its panel, under the one input that
               adds a root task. */}
-          <ul data-task-tree className={`flex flex-col ${LIST_MEASURE}`}>
+          <ul data-task-tree className={`flex flex-col ${listMeasureClass(columns)}`}>
             {rows.map((row, i) => (
               <Fragment key={row.id}>
                 <TaskRow
@@ -423,6 +449,8 @@ export function TaskTree({ projectId }: { projectId: string }) {
                   status={byId.get(row.id)?.status ?? 'todo'}
                   dueAt={byId.get(row.id)?.dueAt ?? null}
                   scheduledOn={byId.get(row.id)?.scheduledOn ?? null}
+                  hasNotes={(byId.get(row.id)?.notes ?? '') !== ''}
+                  columns={columns}
                   saved={savedId === row.id}
                   tabStop={row.id === tabId}
                   onFocus={() => setActiveId(row.id)}

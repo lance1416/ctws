@@ -4,12 +4,14 @@ import type { KeyboardEvent } from 'react'
 import type { FlatRow } from '../tree/flatten'
 import { toggleDoneTarget, toggleStartTarget } from '../api/taskActions'
 import { dateHints } from '../dueAt'
+import type { DateColumns } from '../rowColumns'
 import {
   CHEVRON_PX,
   DUE_CELL,
   DueCell,
   HANDLE_PX,
   INDENT_PX,
+  NotesMark,
   PLAN_CELL,
   PlanCell,
   ProjectRail,
@@ -26,6 +28,18 @@ type Props = {
   status: TaskStatus
   dueAt: string | null
   scheduledOn: string | null
+  /**
+   * Whether the task has notes. The row gets a mark rather than a second line of its own (spec
+   * §4): in a project tree the project is known and the depth is visible, so the only thing a row
+   * is actually missing is "there is something to read here".
+   */
+  hasNotes: boolean
+  /**
+   * Which date columns THIS LIST reserves. Decided once for the whole tree, never per row: a cell
+   * that exists on some rows and not others is not a column (spec §2). When a column is not
+   * reserved the cell is not rendered at all, and the title gets the width back.
+   */
+  columns: DateColumns
   /** True for a moment after a save from the detail panel: the panel closed, this says it worked. */
   saved: boolean
   /**
@@ -69,6 +83,8 @@ export function TaskRow({
   status,
   dueAt,
   scheduledOn,
+  hasNotes,
+  columns,
   saved,
   tabStop,
   onFocus,
@@ -162,33 +178,55 @@ export function TaskRow({
           onClick={() => onSetStatus(toggleDoneTarget(status))}
         />
       </span>
-      <span
-        className={`min-w-0 flex-1 truncate py-1 text-[15px] ${
-          status === 'in_progress' ? 'font-semibold' : ''
-        } ${inactive ? 'text-fg-muted' : 'text-fg'} ${status === 'cancelled' ? 'line-through' : ''}`}
-      >
-        {title}
-        {saved && <SavedMark />}
+      {/* The title CELL takes the width (`flex-1`, so the date columns stay at their own x); the
+          title itself only takes what the text needs. The difference is the notes mark: inside the
+          cell but after the text, it sits beside the words it is about. Hung off the end of the
+          cell instead, it floated 300px away from a short title in a dateless list -- which is a
+          mark that looks like it belongs to the row's right-hand zone rather than to its title. */}
+      <span data-row-cell className="flex min-w-0 flex-1 items-center">
+        <span
+          data-row-title
+          className={`truncate py-1 text-[15px] ${
+            status === 'in_progress' ? 'font-semibold' : ''
+          } ${inactive ? 'text-fg-muted' : 'text-fg'} ${status === 'cancelled' ? 'line-through' : ''}`}
+        >
+          {title}
+          {saved && <SavedMark />}
+        </span>
+        {/* There is something to read in this one. `shrink-0`, so it costs the row no height and
+            reserves no width on the rows that do not have it. */}
+        {hasNotes && (
+          <span className="ml-2 flex shrink-0 items-center">
+            <NotesMark />
+          </span>
+        )}
       </span>
       {/* The same two date columns the cross-project lists use, in the same order and at the same
           width. Everything after the title is a FIXED width, so each column starts at an identical
           x on every row of the tree however deeply indented the row is -- which is the whole
-          reason the right-hand zone exists. Empty cells are still reserved: a column that moves
-          when a row has no date is not a column. */}
+          reason the right-hand zone exists. Empty cells are still reserved WITHIN A LIST THAT HAS
+          THE COLUMN: a column that moves when a row has no date is not a column. A column no row
+          in the list fills is not rendered at all, and that width goes back to the title. */}
       {/* Below `sm` the pair drops onto a line of its own, exactly as it does on 今天 -- at 375
           a depth-3 row with a deadline used to cut its title to "操…". The wrapper is `hidden`
           rather than absent when the row has no date, so a dateless row costs no second line and
           the reserved widths above `sm` (where `contents` dissolves this span) are untouched. */}
-      <span
-        className={`flex items-center sm:contents ${
-          hints.due || hints.scheduled
-            ? 'max-sm:order-last max-sm:w-full max-sm:gap-3 max-sm:pb-1 max-sm:pl-[4.25rem]'
-            : 'max-sm:hidden'
-        }`}
-      >
-        <DueCell due={hints.due} className={`ml-3 shrink-0 max-sm:ml-0 ${DUE_CELL}`} />
-        <PlanCell text={hints.scheduled} className={`ml-3 shrink-0 max-sm:ml-0 ${PLAN_CELL}`} />
-      </span>
+      {(columns.due || columns.plan) && (
+        <span
+          className={`flex items-center sm:contents ${
+            hints.due || hints.scheduled
+              ? 'max-sm:order-last max-sm:w-full max-sm:gap-3 max-sm:pb-1 max-sm:pl-[4.25rem]'
+              : 'max-sm:hidden'
+          }`}
+        >
+          {columns.due && (
+            <DueCell due={hints.due} className={`ml-3 shrink-0 max-sm:ml-0 ${DUE_CELL}`} />
+          )}
+          {columns.plan && (
+            <PlanCell text={hints.scheduled} className={`ml-3 shrink-0 max-sm:ml-0 ${PLAN_CELL}`} />
+          )}
+        </span>
+      )}
       <StartButton
         status={status}
         title={title}

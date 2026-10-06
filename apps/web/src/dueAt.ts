@@ -90,6 +90,26 @@ export function dateHints(
 }
 
 /**
+ * WHETHER A ROW WOULD FILL EACH DATE CELL -- the same two answers `dateHints` gives, with the
+ * CLOCK TAKEN OUT.
+ *
+ * A list decides which date columns it reserves from every one of its rows (rows-and-reading spec
+ * §2), and that decision must not be able to disagree with what the rows then render. `dateHints`
+ * reads the clock to word the cell ("已逾 5 天" against "明天截止"), but whether the cell exists at
+ * all never depends on it: a deadline that has passed still occupies the deadline column. So this
+ * is the predicate, and `dueAt.test.ts` pins that the two agree -- including at an instant where
+ * the wording changes, which is where a clock-reading predicate would drift.
+ */
+export function dateCells(t: {
+  status: string
+  dueAt: string | null
+  scheduledOn: string | null
+}): { due: boolean; plan: boolean } {
+  if (t.status === 'done' || t.status === 'cancelled') return { due: false, plan: false }
+  return { due: t.dueAt !== null, plan: t.scheduledOn !== null }
+}
+
+/**
  * The mark on a plan that has been carried: planned for a day that has already passed and still
  * not done. Null for a plan on today or later (today's own plans stay quiet) and for no plan.
  * It names the planned day and says it was carried; it is deliberately not worded like the
