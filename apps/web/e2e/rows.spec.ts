@@ -488,10 +488,19 @@ test('a dated row has a second line, complete to the minute; a bare row stays on
   // ...and the icon has a name of its own, so a screen reader is not left with a hue.
   await expect(row('过期两天的').getByRole('img', { name: '截止已过' })).toHaveCount(1)
 
-  // A row carrying information is 58px; a row carrying none is 44px and has no second line at all.
+  // A row carrying information is 66px; a row carrying none is 44px and has no second line at all.
+  //
+  // BOTH NUMBERS ARE DERIVED FROM THE TYPE SCALE, not read off the browser and pasted back. The
+  // cell is `py-2.5` (10px each side); the title is 行标题 16/24 and the second line is 元信息
+  // 14/22 (typography spec §2, TDesign's px pairs). So 10 + 24 + 10 = 44 and 10 + 24 + 22 + 10 =
+  // 66. The 44 is the SAME number the 15/20 title produced (12 + 20 + 8), which is why the
+  // workbench's single-line row metric is untouched by a scale on which every step from the body
+  // up got bigger -- the padding absorbed the four extra pixels of leading. Only the rows that
+  // already pay for a second line got taller, and they got taller by exactly the 4px the meta
+  // line's own leading grew (18 -> 22).
   const h = (title: string) =>
     row(title).evaluate((el) => Math.round(el.getBoundingClientRect().height))
-  expect(await h('过期两天的'), 'a row with a second line').toBe(58)
+  expect(await h('过期两天的'), 'a row with a second line').toBe(66)
   expect(await h('什么都没有的'), 'a row with nothing to say').toBe(44)
   await expect(row('什么都没有的').locator('[data-row-meta]')).toHaveCount(0)
 })
