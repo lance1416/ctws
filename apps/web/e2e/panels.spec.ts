@@ -224,7 +224,12 @@ test('a workspace where nothing has gone quiet shows no stagnation line at all',
 test('the workbench is a panel grid at 1440 and one column at 375', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '一个名字相当长的项目用来挤宽度')
-  await makeTask(page, pid, '在做的那条', { status: 'in_progress' })
+  // Long, and in progress: this test also asserts zero sideways scroll at 375, and the banner sets
+  // its subject at the scale's top step (36/44) -- a short title there fits whatever the banner
+  // does with overflow.
+  await makeTask(page, pid, '在做的那条，标题长到足以把三十六像素的横幅主语挤出一部手机的宽度去', {
+    status: 'in_progress',
+  })
   await makeTask(page, pid, '今天的那条', { scheduledOn: ymd(new Date()) })
   await makeTask(page, pid, '一条标题也很长的任务，用来看它会不会把这一行撑出屏幕之外去', {
     dueAt: dueAgo(3),

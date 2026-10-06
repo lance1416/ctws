@@ -503,6 +503,23 @@ test('a dated row has a second line, complete to the minute; a bare row stays on
   expect(await h('过期两天的'), 'a row with a second line').toBe(66)
   expect(await h('什么都没有的'), 'a row with nothing to say').toBe(44)
   await expect(row('什么都没有的').locator('[data-row-meta]')).toHaveCount(0)
+
+  // AND THE TITLE SITS ON THE GLYPHS' OWN CENTRE LINE, on both kinds of row. The height alone
+  // does not say this: the cell's padding has to be SYMMETRIC around a 24px title to put its
+  // centre at 22, and `pt-3 pb-2` (the asymmetry the 15/20 title needed) adds up to the same 20px
+  // and gives the same 44 and 66 while sitting the title two pixels low against a glyph column
+  // that is still centred at 22 -- measured, which is why this assertion exists.
+  const centres = (title: string) =>
+    row(title).evaluate((el) => {
+      const t = el.querySelector('[data-row-title]')!.getBoundingClientRect()
+      const g = el.querySelector('[data-status-button]')!.getBoundingClientRect()
+      const top = el.getBoundingClientRect().top
+      return { title: t.top + t.height / 2 - top, glyph: g.top + g.height / 2 - top }
+    })
+  for (const title of ['过期两天的', '什么都没有的']) {
+    const c = await centres(title)
+    expect(Math.abs(c.title - c.glyph), `${title}: ${JSON.stringify(c)}`).toBeLessThanOrEqual(0.5)
+  }
 })
 
 /**

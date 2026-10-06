@@ -93,27 +93,36 @@ test('the computed font stack is the spec string, entry for entry and in order',
 }) => {
   await registerFreshUser(page)
 
-  const sans = await page.evaluate(() => getComputedStyle(document.body).fontFamily)
-  expect(families(sans)).toEqual(FONT_SANS)
+  const sans = families(await page.evaluate(() => getComputedStyle(document.body).fontFamily))
 
+  // THE TWO NAMED FACTS COME FIRST, then the whole list. Each is a separate reason the spec gives,
+  // and an exact-list assertion placed in front would swallow both: every mutation would report
+  // "the list differs" and neither reason would ever get to say what it is about.
+  //
   // Latin FIRST. §1 refuses Apple's CJK-first ordering, because handing Latin to Noto would throw
-  // away the reason IBM Plex Sans is self-hosted at all. Asserted as its own fact, so the reason
-  // survives even if somebody edits the list above.
-  expect(families(sans).indexOf('IBM Plex Sans')).toBeLessThan(
-    families(sans).indexOf('CTWS Noto Sans SC'),
+  // away the reason IBM Plex Sans is self-hosted at all.
+  expect(sans.indexOf('IBM Plex Sans'), `Latin must lead: ${sans}`).toBeLessThan(
+    sans.indexOf('CTWS Noto Sans SC'),
   )
-  expect(families(sans).indexOf('CTWS Noto Sans SC')).toBeLessThan(
-    families(sans).indexOf('PingFang SC'),
-  )
+  expect(
+    sans.indexOf('CTWS Noto Sans SC'),
+    `the webfont must precede the system CJK faces: ${sans}`,
+  ).toBeLessThan(sans.indexOf('PingFang SC'))
+
+  // §5: no serif display step, and §1 names no serif family. The terminal `sans-serif` is the only
+  // place the word may appear, so a `Songti`/`Source Han Serif` step cannot be slipped in.
+  expect(
+    sans.filter((name) => /serif/i.test(name)),
+    `a serif family appeared in the stack: ${sans}`,
+  ).toEqual(['sans-serif'])
+
+  // ...and then the whole string, entry for entry.
+  expect(sans).toEqual(FONT_SANS)
 
   const mono = await page.evaluate(() =>
     getComputedStyle(document.documentElement).getPropertyValue('--font-mono'),
   )
   expect(families(mono)).toEqual(FONT_MONO)
-
-  // §5: no serif display step, and §1 names no serif family. The terminal `sans-serif` is the only
-  // place the word may appear, so a `Songti`/`Source Han Serif` step cannot be slipped in.
-  expect(families(sans).filter((name) => /serif/i.test(name))).toEqual(['sans-serif'])
 })
 
 // ------------------------------------------------------------------ §2, the scale, as px pairs
@@ -134,6 +143,11 @@ test('every role wears its own px pair from the spec table', async ({ page }) =>
   await page.goto(`/projects/${pid}`)
   await expect(page.locator('[data-task-tree] li[data-depth]')).toHaveCount(1)
 
+  // 页面标题 again, on the OTHER page that has one: the project page's <h1> is a different element
+  // in a different file from the list page's, and pinning one of them leaves the other free to
+  // wander up to the banner step -- measured, which is why both are here.
+  expect(await pair(page, 'h1')).toEqual({ size: '24px', line: '32px', weight: '600' })
+
   // 行标题 16/24 (TDesign body-large / title-medium) and 元信息 14/22 (TDesign body-medium).
   expect(await pair(page, '[data-row-title]')).toEqual({
     size: '16px',
@@ -145,8 +159,14 @@ test('every role wears its own px pair from the spec table', async ({ page }) =>
     line: '22px',
     weight: '400',
   })
-  // 面板标题 20/28 (TDesign title-extraLarge; antd fontSizeXL agrees to the pixel) -- here on the
-  // banner's own number, which is the project page's `Stat`.
+  // 面板标题 20/28 (TDesign title-extraLarge; antd fontSizeXL agrees to the pixel), on the panel's
+  // own heading AND on the banner's number, which is the project page's `Stat`. Both, because they
+  // are the two things that wear this step and a mutation to either must have somewhere to land.
+  expect(await pair(page, '[data-panel="任务"] h2')).toEqual({
+    size: '20px',
+    line: '28px',
+    weight: '600',
+  })
   expect(await pair(page, '[data-stat] dd')).toEqual({
     size: '20px',
     line: '28px',
@@ -159,9 +179,40 @@ test('every role wears its own px pair from the spec table', async ({ page }) =>
     weight: '400',
   })
 
-  // 正文 16/24 on the body itself, and NOT a unitless leading: `line-height` must resolve to the
-  // scale's own px, because two faces with different metrics meet on every line in this app.
+  // 正文 16/24 on the body itself.
   expect(await pair(page, 'body')).toEqual({ size: '16px', line: '24px', weight: '400' })
+
+  // AND THE TOKENS THEMSELVES ARE PX, which the computed styles above cannot show: a unitless
+  // `1.5` on the 16px step computes to exactly `24px`, so every assertion in this test passes on
+  // the ratio the spec forbids -- measured, which is why this is here. A unitless leading is a
+  // multiple of the element's own font-size, so it silently rescales on any descendant that sets
+  // a different size, and §2's whole point is that the pair is fixed.
+  const tokens = await page.evaluate(() => {
+    const root = getComputedStyle(document.documentElement)
+    return Object.fromEntries(
+      ['xs', 'sm', 'base', 'lg', 'xl', '2xl'].flatMap((step) => [
+        [`--text-${step}`, root.getPropertyValue(`--text-${step}`).trim()],
+        [
+          `--text-${step}--line-height`,
+          root.getPropertyValue(`--text-${step}--line-height`).trim(),
+        ],
+      ]),
+    )
+  })
+  expect(tokens).toEqual({
+    '--text-xs': '12px',
+    '--text-xs--line-height': '20px',
+    '--text-sm': '14px',
+    '--text-sm--line-height': '22px',
+    '--text-base': '16px',
+    '--text-base--line-height': '24px',
+    '--text-lg': '20px',
+    '--text-lg--line-height': '28px',
+    '--text-xl': '24px',
+    '--text-xl--line-height': '32px',
+    '--text-2xl': '36px',
+    '--text-2xl--line-height': '44px',
+  })
 })
 
 test('横幅主语 is the top step, 36/44, and the page title is one step below it', async ({
@@ -191,7 +242,46 @@ test('横幅主语 is the top step, 36/44, and the page title is one step below 
 
 // --------------------------------------------------------------- §3, 400 and 600, and no 500
 
-test('nothing in the shipped stylesheet declares font-weight 500', async ({ page }) => {
+test('no source file asks for 500, and the 500 face is no longer fetched', async ({ page }) => {
+  // 500 is a no-op on the Microsoft YaHei fallback path (measured in this project:
+  // 100=200=300 | 400=500 | 600=700=800=900), so a weight step that exists only when the webfont
+  // loads is not a step. TDesign's `_font.less` has zero occurrences of 500 and Semi has no 500
+  // token; this app now has neither.
+  //
+  // READ OFF THE SOURCE, not off the built stylesheet. Tailwind emits the `.font-medium` utility
+  // into every build whether or not anything uses it (verified: it is in the clean build too), so
+  // "the stylesheet contains no 500" is a claim the stylesheet cannot settle. The DOM walk below
+  // catches a 500 that is on screen; this catches one on a surface no test visits.
+  const { readdirSync, readFileSync, statSync } = await import('node:fs')
+  const walk = (dir: string): string[] =>
+    readdirSync(dir).flatMap((name) => {
+      const full = `${dir}/${name}`
+      return statSync(full).isDirectory() ? walk(full) : /\.(ts|tsx|css)$/.test(full) ? [full] : []
+    })
+  const files = walk('src')
+  expect(files.length, 'source files scanned').toBeGreaterThan(30)
+  // Comments are stripped first: the prose that RECORDS the decision has to name the weight it
+  // dropped, and a guard that could not tell those apart would be answered by rewording a comment.
+  const code = (text: string) =>
+    text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '')
+  const banned: [RegExp, string][] = [
+    [/\bfont-medium\b/, 'the Tailwind 500 utility'],
+    [/\bfont-\[500\]\b/, 'an arbitrary 500 utility'],
+    // `font-weight: 400 700` on the variable @font-face is a RANGE, not a request, so the literal
+    // is matched only where a single value is being asked for.
+    [/font-weight:\s*500\b/, 'a literal 500 declaration'],
+    [/fontWeight:\s*['"`]?500\b/, 'a 500 written in JS'],
+    // 700 and above are out as well: indistinguishable from 600 under Microsoft YaHei, and too
+    // heavy for a dense interface under Noto.
+    [/\bfont-(bold|extrabold|black)\b/, 'a weight above 600'],
+  ]
+  const hits = files.flatMap((file) => {
+    const text = code(readFileSync(file, 'utf8'))
+    return banned.filter(([re]) => re.test(text)).map(([, what]) => `${file}: ${what}`)
+  })
+  expect(hits, `weights the spec does not have: ${hits.join(', ')}`).toEqual([])
+
+  // And the 24 KB Plex 500 face is no longer fetched, since nothing can ask for it.
   await page.goto('/login')
   const href = await page.evaluate(() =>
     [...document.styleSheets]
@@ -200,15 +290,6 @@ test('nothing in the shipped stylesheet declares font-weight 500', async ({ page
   )
   expect(href, 'the page should load a built stylesheet from /assets').toBeTruthy()
   const css = await (await page.request.get(href!)).text()
-
-  // 500 is a no-op on the Microsoft YaHei fallback path (measured in this project:
-  // 100=200=300 | 400=500 | 600=700=800=900), so a weight step that exists only when the webfont
-  // loads is not a step. TDesign's `_font.less` has zero occurrences of 500 and Semi has no 500
-  // token; this app now has neither.
-  // Scoped to declarations: `font-weight: 400 700` on the variable @font-face is a RANGE, not a
-  // request, and must not be caught.
-  expect(css.match(/font-weight:\s*500\b/g) ?? []).toEqual([])
-  // And the 24 KB Plex 500 face is no longer fetched, since nothing can ask for it.
   expect(css).toContain('ibm-plex-sans-latin-400')
   expect(css).toContain('ibm-plex-sans-latin-600')
   expect(css).not.toContain('ibm-plex-sans-latin-500')
@@ -281,13 +362,10 @@ test('no element computes to font-weight 500, in any state that could introduce 
 test('text-autospace is asked for, and actually moves the glyphs', async ({ page }) => {
   await registerFreshUser(page)
 
-  // `normal` is NOT the initial value in the browsers this ships to (Chromium computes
-  // `no-autospace` unless asked), so the app has to opt in -- and it must opt in on the INHERITED
-  // root, not per component.
-  await expect(page.locator('body')).toHaveCSS('text-autospace', 'normal')
-  const heading = page.getByRole('heading', { level: 1, name: '今天' })
-  await expect(heading).toHaveCSS('text-autospace', 'normal')
-
+  // RENDERED GEOMETRY FIRST, and the computed property only afterwards: a property can be set and
+  // ignored, so the property check is the weaker claim and must not be the one that speaks when
+  // this breaks.
+  //
   // RENDERED GEOMETRY, not the computed property. A browser that parses `text-autospace` and does
   // nothing with it reports exactly the same computed value as one that honours it, so the only
   // honest measure is whether the text got wider. Two probes, same text, same font, same size,
@@ -295,7 +373,13 @@ test('text-autospace is asked for, and actually moves the glyphs', async ({ page
   const measured = await page.evaluate(() => {
     const make = (autospace: string) => {
       const el = document.createElement('span')
-      el.style.cssText = `position:fixed;top:-500px;left:0;white-space:pre;font-size:16px;text-autospace:${autospace}`
+      el.style.cssText = `position:fixed;top:-500px;left:0;white-space:pre;font-size:16px`
+      // INHERITED, not set here, for the probe that is supposed to be spaced. A probe that writes
+      // `text-autospace: normal` on itself measures the BROWSER and passes even when the app never
+      // opted in -- measured against a mutation that turned the app's own declaration off, which
+      // is why it is written this way. Only the opt-OUT probe overrides, because the thing being
+      // proved is that the app's cascade reaches ordinary text.
+      if (autospace) el.style.setProperty('text-autospace', autospace)
       // No literal spaces: the ¼-em is the engine's to insert. Two Han/Latin joins and two
       // Han/digit joins, which is what CLREQ's rule is about.
       el.textContent = '任务ABC还剩123条'
@@ -303,19 +387,13 @@ test('text-autospace is asked for, and actually moves the glyphs', async ({ page
       return el
     }
     const off = make('no-autospace')
-    const on = make('normal')
-    const spaced = document.createElement('span')
-    spaced.style.cssText =
-      'position:fixed;top:-500px;left:0;white-space:pre;font-size:16px;text-autospace:normal'
+    const on = make('')
+    const spaced = make('')
     // The author already typed the space, so the engine must spend nothing: CLREQ's rule is about
     // the join that has no space, and doubling an existing one would be a defect.
     spaced.textContent = '任务 ABC'
-    document.body.append(spaced)
-    const spacedOff = document.createElement('span')
-    spacedOff.style.cssText =
-      'position:fixed;top:-500px;left:0;white-space:pre;font-size:16px;text-autospace:no-autospace'
+    const spacedOff = make('no-autospace')
     spacedOff.textContent = '任务 ABC'
-    document.body.append(spacedOff)
     const out = {
       off: off.getBoundingClientRect().width,
       on: on.getBoundingClientRect().width,
@@ -339,6 +417,15 @@ test('text-autospace is asked for, and actually moves the glyphs', async ({ page
   expect(perJoin).toBeLessThanOrEqual(4)
   // Nothing is spent where a space was already typed.
   expect(measured.spaced).toBeCloseTo(measured.spacedOff, 1)
+
+  // ...and now the property. `normal` is NOT the initial value in the browsers this ships to
+  // (Chromium computes `no-autospace` unless asked), so the app has to opt in -- and it must opt
+  // in on the INHERITED root, not per component, which is what the heading shows.
+  await expect(page.locator('body')).toHaveCSS('text-autospace', 'normal')
+  await expect(page.getByRole('heading', { level: 1, name: '今天' })).toHaveCSS(
+    'text-autospace',
+    'normal',
+  )
 })
 
 test('no size-adjust, no font-size-adjust, and Han is never tracked', async ({ page }) => {

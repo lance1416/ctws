@@ -170,7 +170,12 @@ test('nothing scrolls sideways at 375px', async ({ page }) => {
   const pid = await apiProject(page, '一个名字相当长的项目用来挤宽度')
   await apiTask(page, pid, '一条标题也很长的任务，用来看它会不会把这一行撑出屏幕之外去')
   await apiTask(page, pid, '逾期的那条', { dueAt: '2020-01-01T09:00:00.000Z' })
-  await apiTask(page, pid, '在做的那条', { status: 'in_progress' })
+  // LONG, and in progress: the 正在做 banner sets its subject at the scale's top step (36/44), so a
+  // five-character title there fits 375 whatever the banner does with overflow and proves nothing.
+  // Measured: with a short title this test passes even when the subject is told never to wrap.
+  await apiTask(page, pid, '在做的那条，标题长到足以把三十六像素的横幅主语挤出一部手机的宽度去', {
+    status: 'in_progress',
+  })
 
   await page.setViewportSize(PHONE)
   const overflow = () =>
