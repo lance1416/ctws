@@ -429,6 +429,36 @@ test('the dates drop below the title exactly when the LIST cannot hold both', as
   )
 })
 
+/**
+ * ...and the proof that it is the CONTAINER and not the viewport: ONE viewport, one page, one set
+ * of rows, and opening the detail column -- which takes 384px out of the list and nothing out of
+ * the window -- moves the dates below the title. This is the case in the defect screenshot: at 1440
+ * with the detail open the list is 734px, and a viewport rule (`sm:`, 640px) kept five fixed tracks
+ * in it and cut the title to 258px. No list measure can fix that, because it is the panel that is
+ * narrow.
+ */
+test('opening the detail column stacks the dates without the window changing', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await registerFreshUser(page)
+  const pid = await mixedProject(page, '详情栏开合')
+  await page.goto(`/projects/${pid}`)
+  await expect(page.locator('[data-task-tree] li[data-depth]')).toHaveCount(4)
+
+  const closed = await firstTitle(page)
+  expect(closed.stacked, `detail closed: ${JSON.stringify(closed)}`).toBe(false)
+  expect(closed.fits, `detail closed, title needs ${closed.needs}px of ${closed.cell}px`).toBe(true)
+
+  // The row whose title is long is the one we measure, so open the pane from another row.
+  await page.locator('[data-task-tree] li[data-depth]').nth(1).click()
+  await expect(page.getByRole('dialog')).toBeVisible()
+  const open = await firstTitle(page)
+  expect(await page.evaluate(() => window.innerWidth), 'the window did not change').toBe(1440)
+  expect(open.stacked, `detail open: ${JSON.stringify(open)}`).toBe(true)
+  // The whole point: the title takes the width the dates were holding rather than being clipped.
+  expect(open.fits, `detail open, title needs ${open.needs}px of ${open.cell}px`).toBe(true)
+  expect(open.cell, `${closed.cell}px -> ${open.cell}px`).toBeLessThan(closed.cell)
+})
+
 // ------------------------------------------------------------- the mark on a row with something to read
 
 /**
