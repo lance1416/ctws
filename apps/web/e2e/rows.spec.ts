@@ -260,6 +260,175 @@ test('on 今天 the queue and 逾期 each answer for their own columns', async (
   await expect(late.locator('[data-date-hint="overdue"]')).toHaveCount(1)
 })
 
+// ------------------------------------------- the title track is a constant, and the list widens
+
+/**
+ * A REAL, LONG title. 575px of text at 15px, which is longer than the 482px a 1280 panel can give
+ * it and shorter than the 642px a 1440 one can: a placeholder string would prove nothing, because
+ * the bug is truncation and a short title fits every layout.
+ */
+const LONG_TITLE = '把邮件服务的 Connection timeout 查清楚，顺手给 SMTP 那边加上指数退避重试和告警'
+
+/** The width of the first row's title cell in the tree, and whether the title overflows it. */
+const firstTitle = (page: Page) =>
+  page
+    .locator('[data-task-tree] li[data-depth]')
+    .first()
+    .evaluate((li) => {
+      const cell = li.querySelector('[data-row-cell]') as HTMLElement
+      const title = li.querySelector('[data-row-title]') as HTMLElement
+      const due = li.querySelector('[data-due-cell]') as HTMLElement | null
+      return {
+        cell: Math.round(cell.clientWidth),
+        fits: title.scrollWidth <= title.clientWidth + 1,
+        needs: Math.round(title.scrollWidth),
+        // The dates are on a second line when the deadline cell sits BELOW the title, not merely
+        // when the viewport is small: that is the only thing "stacked" can mean to the eye.
+        stacked:
+          due === null
+            ? null
+            : Math.round(due.getBoundingClientRect().y) >
+              Math.round(title.getBoundingClientRect().y) + 4,
+      }
+    })
+
+/** A project with the long title, a deadline on one row and a plan on another: both columns exist. */
+async function mixedProject(page: Page, name: string): Promise<string> {
+  const pid = await makeProject(page, name)
+  await makeTask(page, pid, LONG_TITLE, { dueAt: dueAgo(2) })
+  const mid = await makeTask(page, pid, '这一条什么日期都没有，标题也不算短')
+  await makeTask(page, pid, '一条子任务，也没有日期', {}, mid)
+  await makeTask(page, pid, '只有这一条有排期', { scheduledOn: dayOffset(3) })
+  return pid
+}
+
+/**
+ * THE DEFECT THIS GUARDS. The measure used to STEP DOWN as columns appeared -- 64rem for a
+ * title-only list, 47rem the moment one row had a date -- so a project with a single deadline
+ * anywhere in it (which is most of them) had its titles clamped back to 276px with ~540px of panel
+ * empty beside them. Asserted as an EQUALITY between two lists rather than against a number: the
+ * title track is a constant, so the only thing a date column may do is make the LIST wider.
+ *
+ * Measured at 1920 with the detail closed, where both lists reach their own measure and the panel
+ * is not what limits either of them -- which is the only width at which "the same track" is a
+ * claim about the measure rather than about the panel.
+ */
+test('one dated row costs a title NOTHING: the same track as a title-only list', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1920, height: 1000 })
+  await registerFreshUser(page)
+
+  const bare = await makeProject(page, '无日期的线')
+  await makeTask(page, bare, LONG_TITLE)
+  await makeTask(page, bare, '第二条，同样没有任何日期')
+  await page.goto(`/projects/${bare}`)
+  await expect(page.locator('[data-task-tree] li[data-depth]')).toHaveCount(2)
+  const titleOnly = await firstTitle(page)
+
+  const mixed = await mixedProject(page, '有一条日期的线')
+  await page.goto(`/projects/${mixed}`)
+  await expect(page.locator('[data-task-tree] li[data-depth]')).toHaveCount(4)
+  // The columns really are there, or this compares two title-only lists.
+  await expect(page.locator('[data-task-tree] [data-due-cell]')).toHaveCount(4)
+  await expect(page.locator('[data-task-tree] [data-plan-cell]')).toHaveCount(4)
+  const withDates = await firstTitle(page)
+  expect(withDates.stacked, 'the dates are beside the title at 1920').toBe(false)
+
+  expect(
+    withDates.cell,
+    `title cell: ${titleOnly.cell}px with no dates, ${withDates.cell}px with one dated row`,
+  ).toBe(titleOnly.cell)
+  // And both of them hold the real title whole, so the equality is not two equally clipped cells.
+  expect(titleOnly.fits && withDates.fits, JSON.stringify({ titleOnly, withDates })).toBe(true)
+
+  // The list, not the title, is what grew: 84.5rem against 64rem, i.e. the two columns and their
+  // gutters (20.5rem = 328px) added to the same title track.
+  const width = (sel: string) =>
+    page
+      .locator(sel)
+      .first()
+      .evaluate((el) => Math.round(el.getBoundingClientRect().width))
+  const mixedList = await width('[data-task-tree]')
+  await page.goto(`/projects/${bare}`)
+  await expect(page.locator('[data-task-tree] li[data-depth]')).toHaveCount(2)
+  const bareList = await width('[data-task-tree]')
+  expect(mixedList - bareList, `list ${bareList}px -> ${mixedList}px`).toBe(328)
+})
+
+/**
+ * The user's own sentence, at the width the defect screenshot was taken at: 1440 with the detail
+ * column CLOSED. 「你还是没有完全运用横向空间（字直接被截断了）」 -- a real title must not be cut
+ * in a panel that is wide enough to hold it. Before this ruling the list was clamped to 47rem here
+ * and the title was cut at 276px of a 1134px panel.
+ */
+test('a long real title is not truncated in a panel wide enough to hold it', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await registerFreshUser(page)
+  const pid = await mixedProject(page, '混合的线')
+  await page.goto(`/projects/${pid}`)
+  await expect(page.locator('[data-task-tree] li[data-depth]')).toHaveCount(4)
+
+  const first = await firstTitle(page)
+  expect(first.stacked, 'the dates are still beside the title in an 1118px list').toBe(false)
+  expect(first.fits, `title needs ${first.needs}px, cell is ${first.cell}px`).toBe(true)
+  // It got there by being given the width, not by the title being short: 47rem of list used to
+  // leave 276px here whatever the panel was.
+  expect(first.cell, `title cell ${first.cell}px`).toBeGreaterThan(first.needs)
+})
+
+// ------------------------------------------------ where the dates drop below the title, and why
+
+/**
+ * THE OTHER FACE OF THE SAME DEFECT. Whether the dates sit beside the title or beneath it is
+ * decided by whether THE LIST can hold both, never by the viewport: at 1440 with the detail open
+ * the list is 734px, which cannot hold a title plus 8rem plus 11rem plus an action slot, and no
+ * measure can fix that because it is the panel that is narrow. The old threshold (`@xl`, 36rem)
+ * was a named step rather than a derived one and was too low, so a 734px list squeaked past it and
+ * clipped its titles instead of wrapping.
+ *
+ * Asserted FROM BOTH SIDES. A one-sided test ("it stacks when narrow") passes against a threshold
+ * set anywhere at all, including the old one that caused the bug; the pair of them pins it to the
+ * 53.5rem (856px) the column widths derive. The list is `viewport − 322px` with the detail closed,
+ * so 1170 gives an 848px list and 1186 gives an 864px one -- one on each side of 856.
+ */
+test('the dates drop below the title exactly when the LIST cannot hold both', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await mixedProject(page, '阈值两侧')
+
+  const at = async (viewport: number) => {
+    await page.setViewportSize({ width: viewport, height: 1000 })
+    await page.goto(`/projects/${pid}`)
+    await expect(page.locator('[data-task-tree] li[data-depth]')).toHaveCount(4)
+    const list = await page
+      .locator('[data-task-tree]')
+      .evaluate((el) => Math.round(el.getBoundingClientRect().width))
+    return { list, ...(await firstTitle(page)) }
+  }
+
+  // Just BELOW the threshold: the dates take a line of their own and the title gets the whole row.
+  const below = await at(1170)
+  expect(below.list, `list at 1170: ${below.list}px`).toBeLessThan(856)
+  expect(below.stacked, `list ${below.list}px: ${JSON.stringify(below)}`).toBe(true)
+  // The point of stacking: the title is given the width the dates were holding, not clipped.
+  expect(below.fits, `stacked title needs ${below.needs}px of ${below.cell}px`).toBe(true)
+
+  // Just ABOVE it: the columns are back beside the title, at one x per column.
+  const above = await at(1186)
+  expect(above.list, `list at 1186: ${above.list}px`).toBeGreaterThan(856)
+  expect(above.stacked, `list ${above.list}px: ${JSON.stringify(above)}`).toBe(false)
+  const due = await xs(page, '[data-task-tree] [data-due-cell]')
+  expect(new Set(due).size, `deadline column x values: ${due.join(',')}`).toBe(1)
+
+  // 16px of window moved the dates, so the decision really is the list's width and not a round
+  // viewport step: both of these are the same `lg` layout, the same page and the same data.
+  expect(above.list - below.list).toBe(16)
+  // And the stacked row is the taller one, which is what "a second line" means.
+  expect(below.cell, `stacked cell ${below.cell}px vs inline ${above.cell}px`).toBeGreaterThan(
+    above.cell,
+  )
+})
+
 // ------------------------------------------------------------- the mark on a row with something to read
 
 /**
