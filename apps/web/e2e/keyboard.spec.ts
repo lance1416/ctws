@@ -28,6 +28,12 @@ const tabStops = (page: Page) =>
       document.querySelectorAll('[data-task-tree] [data-handle-id]:not([tabindex="-1"])').length,
   )
 
+/**
+ * The last tab stop before the tree on a project page. The 新任务 box and the 新建… button sit
+ * side by side above the rows, so the control a Tab walk into the tree starts from is the button.
+ */
+const aboveTree = (page: Page) => page.getByRole('button', { name: '新建…', exact: true })
+
 const focusedTitle = (page: Page) =>
   page.evaluate(() => document.activeElement?.getAttribute('aria-label') ?? null)
 
@@ -71,18 +77,24 @@ test('the whole tree is one tab stop, however many rows it has', async ({ page }
   expect(await tabStops(page)).toBe(1)
 
   // From the control above the tree, one Tab enters it and one more leaves it: two presses with
-  // twelve rows, where the old behaviour needed twelve.
-  await page.getByPlaceholder('新任务').focus()
+  // twelve rows, where the old behaviour needed twelve. That control is now 新建… rather than the
+  // 新任务 box -- the two sit side by side above the rows, and 新建… is the last stop before them.
+  await aboveTree(page).focus()
   await page.keyboard.press('Tab')
   expect(await inTree(page)).toBe(true)
   await page.keyboard.press('Tab')
   expect(await inTree(page)).toBe(false)
 
-  // Shift+Tab is symmetric: back in, and back out to the box above.
+  // Shift+Tab is symmetric: back in, and back out to the control above.
   await page.keyboard.press('Shift+Tab')
   expect(await inTree(page)).toBe(true)
   await page.keyboard.press('Shift+Tab')
-  await expect(page.getByPlaceholder('新任务')).toBeFocused()
+  await expect(aboveTree(page)).toBeFocused()
+
+  // And the pair above the rows is exactly two stops, in reading order: the box, then 新建….
+  await page.getByPlaceholder('新任务').focus()
+  await page.keyboard.press('Tab')
+  await expect(aboveTree(page)).toBeFocused()
 
   // Tab is still bound to nothing: it reorganised nothing on the way through.
   expect(moves).toEqual([])
@@ -98,7 +110,7 @@ test('the tab stop follows the row last used, so Tab re-enters where you left of
 
   await handle(page, 'r3').focus()
   expect(await tabStops(page)).toBe(1)
-  await page.getByPlaceholder('新任务').focus()
+  await aboveTree(page).focus()
   await page.keyboard.press('Tab')
   // Not r0: a roving tabindex that always snapped back to the first row would make Tab a way of
   // losing your place.
