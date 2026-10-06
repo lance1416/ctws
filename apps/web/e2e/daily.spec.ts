@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { registerFreshUser } from './helpers'
+import { editDetail, registerFreshUser } from './helpers'
 
 // The daily loop: finishing, starting and deferring work from the list itself, the dates a tree
 // row shows, and the panel / delete guards. Every assertion that a status or date changed reads
@@ -519,6 +519,7 @@ test.describe('the panel as an overlay', () => {
     await makeTask(page, pid, '写方案')
     await openTree(page, pid)
     await page.getByRole('listitem').filter({ hasText: '写方案' }).click()
+    await editDetail(page)
     const dialog = page.getByRole('dialog')
     await page.getByLabel('标题').fill('写方案 v2')
 
@@ -544,6 +545,7 @@ test.describe('the panel as an overlay', () => {
     expect((await serverTask(page, pid, '写方案')).title).toBe('写方案')
     // A panel reopened afterwards is clean again.
     await page.getByRole('listitem').filter({ hasText: '写方案' }).click()
+    await editDetail(page)
     await expect(page.getByLabel('标题')).toHaveValue('写方案')
     await page.keyboard.press('Escape')
     await expect(dialog).toHaveCount(0)
@@ -557,7 +559,11 @@ test.describe('the panel as an overlay', () => {
     await makeTask(page, pid, '写方案')
     await openTree(page, pid)
     await page.getByRole('listitem').filter({ hasText: '写方案' }).click()
-    await expect(page.getByRole('dialog')).toBeFocused()
+    await editDetail(page)
+    // Focus is inside the panel to start with. (That it lands on the PANEL when the pane first
+    // opens is pinned in detail.spec.ts; 编辑 hands it to the first field instead, which is
+    // pinned in pane.spec.ts. What this test is about is that it never gets out.)
+    await expect(page.getByRole('textbox', { name: '标题' })).toBeFocused()
 
     const inside = () =>
       page.evaluate(() => {
@@ -591,9 +597,10 @@ test.describe('the panel as an overlay', () => {
     await makeTask(page, pid, '写方案')
     await openTree(page, pid)
     await page.getByRole('listitem').filter({ hasText: '写方案' }).click()
+    await editDetail(page)
     const dialog = page.getByRole('dialog')
 
-    await page.getByLabel('备注').click()
+    await page.getByLabel('备注', { exact: true }).click()
     // A click on a non-interactive part of the panel. The panel no longer prints the word 标题
     // over the title (it opens with the task itself), so this presses the 备注 label instead --
     // still a dead area of the panel, which is the whole point of the assertion.
@@ -634,7 +641,8 @@ test('saving closes the panel, says so on the row, and is on the server', async 
   await makeTask(page, pid, '写方案')
   await openTree(page, pid)
   await page.getByRole('listitem').filter({ hasText: '写方案' }).click()
-  await page.getByLabel('备注').fill('先问清需求')
+  await editDetail(page)
+  await page.getByLabel('备注', { exact: true }).fill('先问清需求')
 
   const done = page.waitForResponse((r) => isPatch(r) && r.ok())
   await page.getByRole('button', { name: '保存' }).click()
@@ -654,7 +662,8 @@ test('saving from the Today panel closes it and confirms on the row', async ({ p
   await makeTask(page, pid, '写方案', { status: 'in_progress' })
   await page.goto('/')
   await page.getByRole('region', { name: '正在做' }).getByText('写方案').click()
-  await page.getByLabel('备注').fill('备注')
+  await editDetail(page)
+  await page.getByLabel('备注', { exact: true }).fill('备注')
   await page.getByRole('button', { name: '保存' }).click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
   await expect(page.getByRole('region', { name: '正在做' }).getByRole('status')).toHaveText(

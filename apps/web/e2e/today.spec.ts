@@ -1,11 +1,19 @@
 import { expect, test, type Page } from '@playwright/test'
-import { openProject, registerFreshUser, setDetailStatus, submitCreate } from './helpers'
+import {
+  editDetail,
+  openProject,
+  registerFreshUser,
+  setDetailStatus,
+  submitCreate,
+} from './helpers'
 
 async function captureAndOpen(page: Page, title: string) {
   await submitCreate(page, '捕获…', title)
   await page.getByRole('link', { name: '项目' }).click()
   await openProject(page, 'Inbox')
   await page.getByRole('listitem').filter({ hasText: title }).click()
+  // The pane opens in reading mode (rows-and-reading §5); every test here is about an edit.
+  await editDetail(page)
 }
 
 test('a freshly registered user sees an empty today page, not an error', async ({ page }) => {
@@ -85,12 +93,14 @@ test('each segment goes to its own panel, in the workbench order, and to only on
 
   await submitCreate(page, '捕获…', '乙今天')
   await page.getByRole('listitem').filter({ hasText: '乙今天' }).click()
+  await editDetail(page)
   await page.getByLabel('排期').fill(today)
   await page.getByRole('button', { name: '保存' }).click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
 
   await submitCreate(page, '捕获…', '丙逾期')
   await page.getByRole('listitem').filter({ hasText: '丙逾期' }).click()
+  await editDetail(page)
   await page.getByLabel('截止').fill('2020-01-01T00:00')
   await page.getByRole('button', { name: '保存' }).click()
 
@@ -123,6 +133,7 @@ test('an edit made from the today page is reflected without a reload', async ({ 
 
   await page.getByRole('link', { name: '今天' }).click()
   await page.getByRole('region', { name: '正在做' }).getByText('先在做').click()
+  await editDetail(page)
   await setDetailStatus(page, '已完成')
   await page.getByRole('button', { name: '保存' }).click()
 
@@ -156,6 +167,7 @@ test('a nested task shows both its project and its parent in the breadcrumb', as
   await moved
 
   await page.getByRole('listitem').filter({ hasText: '子任务' }).click()
+  await editDetail(page)
   await setDetailStatus(page, '进行中')
   await page.getByRole('button', { name: '保存' }).click()
 

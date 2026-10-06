@@ -234,7 +234,10 @@ test('the tree is a panel spanning two columns and the detail is the third, at 1
   // It coexists: the tree is still operable, and clicking another row loads it into the same
   // column with no closing step in between.
   await page.getByRole('listitem').filter({ hasText: '旁边的任务' }).click()
-  await expect(dialog.getByLabel('标题')).toHaveValue('旁边的任务')
+  // Reading mode, so the task's name is the pane's heading rather than the value of an
+  // input (rows-and-reading §5). The claim is unchanged: the OTHER row's task is now in the
+  // same pane, with no closing step in between.
+  await expect(dialog.locator('[data-detail-title]')).toHaveText('旁边的任务')
   // ...and the detail wears the page's own panel surface rather than a chrome plane, which is what
   // makes it read as part of the page instead of a form bolted to the window's edge.
   const [paneBg, panelBg] = await Promise.all([
@@ -283,7 +286,9 @@ test('the detail traps the keyboard at 1024 and does not at 1440', async ({ page
   expect(await escapes(), 'Tab leaves the column').toBe(true)
   // Leaving it with Tab is not dismissing it, and Escape still closes it onto the row it came from.
   await expect(dialog).toBeVisible()
-  await dialog.getByLabel('标题').press('Escape')
+  // Pressed from inside the pane. In reading mode the control to press it on is 编辑 ('exact'
+  // because 继续编辑 contains it); what is pinned is that Escape from inside still closes.
+  await dialog.getByRole('button', { name: '编辑', exact: true }).press('Escape')
   await expect(dialog).toHaveCount(0)
   await expect(page.getByRole('button', { name: '任务：开着的任务', exact: true })).toBeFocused()
 })

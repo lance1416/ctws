@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { registerFreshUser } from './helpers'
+import { editDetail, registerFreshUser } from './helpers'
 
 /**
  * The detail pane (redesign stage 3).
@@ -84,10 +84,16 @@ async function saveBody(page: Page): Promise<Record<string, unknown>> {
   return res.request().postDataJSON() as Record<string, unknown>
 }
 
-async function openPane(page: Page, projectId: string, title: string) {
+/**
+ * Opens a task's pane. `edit` presses 编辑, because since rows-and-reading §5 the pane opens in
+ * READING mode and the controls these tests are about exist only in editing mode. What each control
+ * WRITES is asserted exactly as before, on the request body.
+ */
+async function openPane(page: Page, projectId: string, title: string, edit = true) {
   await page.goto(`/projects/${projectId}`)
   await page.getByRole('listitem').filter({ hasText: title }).first().click()
   await expect(page.getByRole('dialog', { name: '任务详情' })).toBeVisible()
+  if (edit) await editDetail(page)
 }
 
 // ------------------------------------------------------------------- status, as shapes not words
@@ -363,7 +369,7 @@ test('the pane opens with the task, and 删除任务 is not a peer of 保存', a
   expect(shown).toBe('工作台')
   const titleSize = await title.evaluate((el) => parseFloat(getComputedStyle(el).fontSize))
   const notesSize = await dialog
-    .getByLabel('备注')
+    .getByLabel('备注', { exact: true })
     .evaluate((el) => parseFloat(getComputedStyle(el).fontSize))
   expect(titleSize, 'the title is the biggest text in the pane').toBeGreaterThan(notesSize)
 
@@ -383,4 +389,79 @@ test('the pane opens with the task, and 删除任务 is not a peer of 保存', a
   // ...and it still asks before it does anything.
   await del.click()
   await expect(page.getByRole('alertdialog', { name: '确认删除任务' })).toBeVisible()
+})
+
+// ------------------------------------------------------ reading mode and editing mode (spec §5)
+
+/**
+ * The complaint this answers is 「编辑和信息显示在同一个地方，容易误触」 plus 「想要的信息在二层菜单」.
+ *
+ * "There is no editable control" is NOT provable by asserting that some particular field is absent:
+ * a pane that hid the title input while leaving the five status radios live would pass that and
+ * keep the whole mis-click surface. So the assertion is over EVERY form control in the dialog,
+ * counted, and it is paired with the other half -- that 编辑 brings them all back -- because a pane
+ * that never shows a control passes the first half on its own.
+ */
+test('the pane opens in reading mode with no editable control, and 编辑 reveals them', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '只读')
+  const id = await makeTask(page, pid, '读一下这条任务', {
+    status: 'in_progress',
+    dueAt: `${dayOffset(2)}T09:15:00.000Z`,
+    scheduledOn: dayOffset(1),
+    notes: '第一行\n第二行',
+  })
+  const writes: string[] = []
+  page.on('request', (r) => {
+    if (r.method() === 'PATCH' || r.method() === 'DELETE') writes.push(r.url())
+  })
+
+  await openPane(page, pid, '读一下这条任务', false)
+  const dialog = page.getByRole('dialog', { name: '任务详情' })
+
+  // Not one control on screen can change a value: no input of any kind, no select, no textarea,
+  // and nothing exposed as a textbox / radio / checkbox / combobox either.
+  const controls = await dialog.locator('input, select, textarea, [contenteditable]').count()
+  expect(controls, 'editable controls in reading mode').toBe(0)
+  for (const role of ['textbox', 'radio', 'checkbox', 'combobox', 'spinbutton', 'slider'] as const)
+    await expect(dialog.getByRole(role), role).toHaveCount(0)
+  // Destroying the task is not something to land on while reading either.
+  await expect(dialog.getByRole('button', { name: '删除任务' })).toHaveCount(0)
+  // And the information is all there -- which is the half 「想要的信息在二层菜单」 is about.
+  await expect(dialog.locator('[data-detail-title]')).toHaveText('读一下这条任务')
+  await expect(dialog).toContainText('进行中')
+  await expect(dialog).toContainText('只读')
+  await expect(dialog.locator('[data-detail-notes]')).toContainText('第二行')
+  // Said in the app's own words, never the wire format a reader would have to parse.
+  await expect(dialog.getByText(/^\d{4}-\d{2}-\d{2}/)).toHaveCount(0)
+  await expect(dialog).toContainText('明天')
+
+  // 编辑 brings every one of them back.
+  await editDetail(page)
+  await expect(dialog.getByRole('textbox', { name: '标题' })).toHaveValue('读一下这条任务')
+  await expect(dialog.getByRole('radio', { name: '进行中', exact: true })).toBeChecked()
+  await expect(dialog.getByLabel('排期')).toHaveValue(dayOffset(1))
+  await expect(dialog.getByLabel('备注', { exact: true })).toHaveValue('第一行\n第二行')
+  await expect(dialog.getByRole('button', { name: '保存' })).toBeVisible()
+  await expect(dialog.getByRole('button', { name: '删除任务' })).toBeVisible()
+
+  // Reading and then choosing to edit wrote nothing on its own: this is not autosave with a
+  // read-only skin on it.
+  await page.waitForTimeout(200)
+  expect(writes, 'nothing was written by reading or by pressing 编辑').toEqual([])
+  expect((await serverTask(page, pid, id)).status).toBe('in_progress')
+})
+
+test('编辑 hands focus to the first field rather than dropping it on the body', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'P')
+  await makeTask(page, pid, '按下编辑')
+  await openPane(page, pid, '按下编辑', false)
+  // The 编辑 button unmounts as it is pressed; focus must not fall to <body> (WCAG 2.4.3).
+  await page.getByRole('button', { name: '编辑', exact: true }).click()
+  await expect(page.getByRole('textbox', { name: '标题' })).toBeFocused()
 })

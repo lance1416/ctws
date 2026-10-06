@@ -51,6 +51,24 @@ export async function openProject(page: Page, name: string, exact = false): Prom
   await loaded
 }
 
+/**
+ * Puts the OPEN detail pane into editing mode.
+ *
+ * The pane opens in READING mode (rows-and-reading spec §5): title, read-only status and dates and
+ * the notes as prose, with not one control on screen that can change a value. Everything that can
+ * be typed into lives behind 编辑. Every assertion about what a control WRITES is unchanged; only
+ * the press that reveals the control is new.
+ *
+ * `exact` is not optional here: accessible names share one flat namespace and Playwright matches
+ * them by substring, and the unsaved-edit guard's 继续编辑 contains 编辑.
+ */
+export async function editDetail(page: Page): Promise<void> {
+  await page.getByRole('button', { name: '编辑', exact: true }).click()
+  // The pane has handed focus to the title field, so the controls are really there before the
+  // caller's next locator runs.
+  await page.getByRole('textbox', { name: '标题' }).waitFor()
+}
+
 // Picks a status in the open detail panel. Status there is no longer a <select> of words but the
 // same five marker shapes the rows use, as a radio group: one tab stop, arrow keys inside it.
 // The VALUE written is unchanged, which is what every caller of this is actually about.

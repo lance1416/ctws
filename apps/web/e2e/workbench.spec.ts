@@ -93,7 +93,10 @@ test('the task detail is a coexisting pane at 1280 and up, and an overlay below 
   // The proof that it coexists: the list is still operable while the detail is open. Clicking
   // the OTHER row loads that task into the same pane, with no closing step in between.
   await page.getByRole('listitem').filter({ hasText: '旁边的任务' }).click()
-  await expect(dialog.getByLabel('标题')).toHaveValue('旁边的任务')
+  // Reading mode, so the task's name is the pane's heading rather than the value of an
+  // input (rows-and-reading §5). The claim is unchanged: the OTHER row's task is now in the
+  // same pane, with no closing step in between.
+  await expect(dialog.locator('[data-detail-title]')).toHaveText('旁边的任务')
 
   // --- below the threshold: a layer ---
   await page.setViewportSize(MEDIUM)
@@ -222,7 +225,9 @@ test('the detail pane does not trap the keyboard at 1280 and up', async ({ page 
   // And the pane is still open -- leaving it with Tab is not dismissing it.
   await expect(dialog).toBeVisible()
   // Escape, pressed from inside, still closes it and hands focus back to the row.
-  await dialog.getByLabel('标题').press('Escape')
+  // Pressed from inside the pane. In reading mode the control to press it on is 编辑 ('exact'
+  // because 继续编辑 contains it); what is pinned is that Escape from inside still closes.
+  await dialog.getByRole('button', { name: '编辑', exact: true }).press('Escape')
   await expect(dialog).toHaveCount(0)
   await expect(page.getByRole('button', { name: '任务：开着的任务', exact: true })).toBeFocused()
 })

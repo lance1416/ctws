@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { backdateCompletion, registerFreshUser } from './helpers'
+import { backdateCompletion, editDetail, registerFreshUser } from './helpers'
 
 // The completed-work view, task deletion, and the panel's guard against losing edits on
 // navigation. As in daily.spec.ts, every claim about what changed is checked against the SERVER
@@ -192,9 +192,13 @@ test('with nothing finished, the view says so', async ({ page }) => {
 
 // ------------------------------------------------------------------------------ task deletion
 
+// Opens a row's detail AND puts it into editing mode. The pane opens in reading mode since
+// rows-and-reading §5, and both of the things this file is about -- 删除任务 and the unsaved-edit
+// guard -- are editing-mode concerns: there is nothing to lose while only reading.
 async function openPanel(page: Page, title: string) {
   await page.getByRole('listitem').filter({ hasText: title }).first().click()
   await expect(page.getByRole('dialog')).toBeVisible()
+  await editDetail(page)
 }
 
 test('deleting a parent states how many descendants go, cancel deletes nothing, confirm deletes all', async ({
@@ -263,6 +267,7 @@ test('deleting a leaf does not claim descendants, and works from the Today panel
   await expect(page.locator('[data-today-row]')).toHaveCount(2)
 
   await page.locator('[data-today-row]').filter({ hasText: '在做的' }).click()
+  await editDetail(page)
   await page.getByRole('button', { name: '删除任务' }).click()
   const ask = page.getByRole('alertdialog', { name: '确认删除任务' })
   await expect(ask).toContainText('删除「在做的」，无法恢复。')
