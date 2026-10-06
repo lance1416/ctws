@@ -463,11 +463,13 @@ test.describe('the tree on a phone', () => {
     ).toBeVisible()
 
     // A row with dates is taller by one line; a row without them is not. No empty second line
-    // was bought for every row in the tree.
+    // was bought for every row in the tree. The magnitude is the workbench's single-line row
+    // (44px, project.spec.ts pins it exactly at every depth), not the 32 the tree used to be: a
+    // dateless row still costs ONE line, which is what this half is about.
     const datedBox = (await page.locator('li', { has: dated }).boundingBox())!
     const bareBox = (await page.locator('li', { has: bare }).boundingBox())!
     expect(datedBox.height).toBeGreaterThan(bareBox.height)
-    expect(bareBox.height).toBeLessThanOrEqual(40)
+    expect(bareBox.height).toBeLessThanOrEqual(48)
 
     // ...and none of it bought a horizontal scrollbar.
     const overflow = await page.evaluate(() => ({

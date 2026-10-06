@@ -84,6 +84,11 @@ async function serverParents(page: Page, url: string) {
 
 /** Drags one handle onto another with real pointer events. */
 async function dragOnto(page: Page, from: string, to: string) {
+  // Both ends have to be ON SCREEN before the boxes are read: the pointer cannot be moved to a
+  // coordinate outside the viewport, and since the workbench a row is 44px, so a dozen of them no
+  // longer fit under the header at the default height.
+  await handle(page, to).scrollIntoViewIfNeeded()
+  await handle(page, from).scrollIntoViewIfNeeded()
   const a = await handle(page, from).boundingBox()
   const b = await handle(page, to).boundingBox()
   await page.mouse.move(a!.x + a!.width / 2, a!.y + a!.height / 2)

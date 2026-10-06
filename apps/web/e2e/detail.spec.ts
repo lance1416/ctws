@@ -61,7 +61,7 @@ test('moves a task to another project', async ({ page }) => {
   await registerFreshUser(page)
   await seedOneTask(page)
 
-  await page.getByLabel('项目').selectOption({ label: 'Inbox' })
+  await page.getByLabel('项目', { exact: true }).selectOption({ label: 'Inbox' })
   await save(page, MOVE_URL)
 
   // It leaves the project it was in...
@@ -175,7 +175,7 @@ test('a rejected move is reported and nothing changes', async ({ page }) => {
   await seedOneTask(page)
   const url = page.url()
   await page.route(MOVE_URL, (r) => r.fulfill({ status: 500, body: '{}' }))
-  await page.getByLabel('项目').selectOption({ label: 'Inbox' })
+  await page.getByLabel('项目', { exact: true }).selectOption({ label: 'Inbox' })
   await page.getByRole('button', { name: '保存' }).click()
   await expect(page.getByRole('alert')).toBeVisible()
   await expect(page.getByRole('dialog')).toBeVisible()
@@ -200,7 +200,7 @@ test('moving a task away returns focus to a remaining row', async ({ page }) => 
   await row(page, '写方案').click()
   await expect(page.getByRole('dialog')).toBeVisible()
 
-  await page.getByLabel('项目').selectOption({ label: 'Inbox' })
+  await page.getByLabel('项目', { exact: true }).selectOption({ label: 'Inbox' })
   await save(page, MOVE_URL)
 
   await expect(row(page, '写方案')).toHaveCount(0)
