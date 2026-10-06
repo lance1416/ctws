@@ -4,22 +4,16 @@ import type { KeyboardEvent } from 'react'
 import type { FlatRow } from '../tree/flatten'
 import { toggleDoneTarget, toggleStartTarget } from '../api/taskActions'
 import { dateHints } from '../dueAt'
-import type { DateColumns } from '../rowColumns'
-import {
-  treeDateLineClass,
-  treeDueCellClass,
-  treePlanCellClass,
-  treeRowWrapClass,
-} from '../rowColumns'
+import { leadIcon } from '../rowLead'
 import {
   CHEVRON_PX,
-  DueCell,
   HANDLE_PX,
   INDENT_PX,
+  LeadMark,
   NotesMark,
-  PlanCell,
   ProjectRail,
   RAIL_GUTTER_PX,
+  RowMeta,
   SavedMark,
 } from './RowParts'
 import { StartButton, StatusButton } from './StatusControls'
@@ -33,17 +27,18 @@ type Props = {
   dueAt: string | null
   scheduledOn: string | null
   /**
-   * Whether the task has notes. The row gets a mark rather than a second line of its own (spec
-   * §4): in a project tree the project is known and the depth is visible, so the only thing a row
-   * is actually missing is "there is something to read here".
+   * Whether the task has notes. A row with notes and no date wears the notes glyph in the leading
+   * slot; a row that has a date wears the date's glyph there and keeps the notes mark beside its
+   * title, so adding a deadline never silently removes "there is something to read here".
    */
   hasNotes: boolean
   /**
-   * Which date columns THIS LIST reserves. Decided once for the whole tree, never per row: a cell
-   * that exists on some rows and not others is not a column (spec §2). When a column is not
-   * reserved the cell is not rendered at all, and the title gets the width back.
+   * Whether THIS LIST reserves the leading icon slot at all -- decided once for the whole tree,
+   * never per row: a slot that exists on some rows and not others puts the first glyph of each row
+   * at a different x, and these icons are the only column this layout has (spec §2). When no row
+   * in the tree would carry an icon the slot is not rendered, and the title gets the width back.
    */
-  columns: DateColumns
+  leadSlot: boolean
   /** True for a moment after a save from the detail panel: the panel closed, this says it worked. */
   saved: boolean
   /**
@@ -88,7 +83,7 @@ export function TaskRow({
   dueAt,
   scheduledOn,
   hasNotes,
-  columns,
+  leadSlot,
   saved,
   tabStop,
   onFocus,
@@ -103,6 +98,14 @@ export function TaskRow({
   })
   const inactive = status === 'done' || status === 'cancelled'
   const hints = dateHints({ status, dueAt, scheduledOn })
+  // ONE glyph for the row, chosen by what bites first (rowLead). The notes mark falls back to its
+  // old place beside the title when a date has taken the slot.
+  const icon = leadIcon({
+    due: hints.due !== null,
+    overdue: hints.due?.overdue === true,
+    plan: hints.scheduled !== null,
+    notes: hasNotes,
+  })
 
   return (
     <li
@@ -121,9 +124,12 @@ export function TaskRow({
         transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
         transition,
       }}
-      // 44px, the workbench's single-line row (spec §4, at the sizes stage 1 settled on): the tree
-      // is the densest list in the app and the one the complaint 「组件太小」 was about.
-      className={`group relative flex min-h-11 cursor-pointer items-center rounded-lg leading-snug hover:bg-surface-hover ${treeRowWrapClass(columns)} ${isDragging ? 'bg-surface-raised opacity-70' : ''}`}
+      // 44px for a row with nothing to say and 58px for one with a second line (spec §2): the
+      // height is not a class but the sum of what the row carries, so only the rows that carry
+      // information pay for the extra line. `items-start`, because the glyphs belong to the FIRST
+      // line: every one of them is 44px tall, so they centre on the title whether or not a second
+      // line follows it.
+      className={`group relative flex min-h-11 cursor-pointer items-start rounded-lg hover:bg-surface-hover ${isDragging ? 'bg-surface-raised opacity-70' : ''}`}
     >
       <ProjectRail projectId={projectId} continuous />
       {/* One hairline per ancestor level, centred under that level's chevron column. Depth is
@@ -175,74 +181,80 @@ export function TaskRow({
       ) : (
         <span style={{ width: CHEVRON_PX }} className="shrink-0" aria-hidden="true" />
       )}
-      <span className="mr-2 flex shrink-0 items-center">
+      <span className="mr-2 flex h-11 shrink-0 items-center">
         <StatusButton
           status={status}
           title={title}
           onClick={() => onSetStatus(toggleDoneTarget(status))}
         />
       </span>
-      {/* The title CELL takes the width (`flex-1`, so the date columns stay at their own x); the
-          title itself only takes what the text needs. The difference is the notes mark: inside the
-          cell but after the text, it sits beside the words it is about. Hung off the end of the
-          cell instead, it floated 300px away from a short title in a dateless list -- which is a
-          mark that looks like it belongs to the row's right-hand zone rather than to its title. */}
-      <span data-row-cell className="flex min-w-0 flex-1 items-center">
+      {/* THE LEADING ICON SLOT: 1.5rem, fixed, reserved for the whole list or not at all, so every
+          row's glyph lands at one x however deeply the row is indented. It holds a PURE ICON and
+          never text (spec §2) -- the words are on the second line, where they fit whole. */}
+      {leadSlot && (
         <span
-          data-row-title
-          className={`truncate py-1 text-[15px] ${
-            status === 'in_progress' ? 'font-semibold' : ''
-          } ${inactive ? 'text-fg-muted' : 'text-fg'} ${status === 'cancelled' ? 'line-through' : ''}`}
+          data-lead-slot
+          className="mr-1 flex h-11 w-6 shrink-0 items-center justify-center"
+          aria-hidden={icon === null ? true : undefined}
         >
-          {title}
-          {saved && <SavedMark />}
-        </span>
-        {/* There is something to read in this one. `shrink-0`, so it costs the row no height and
-            reserves no width on the rows that do not have it. */}
-        {hasNotes && (
-          <span className="ml-2 flex shrink-0 items-center">
-            <NotesMark />
-          </span>
-        )}
-      </span>
-      {/* The same two date columns the cross-project lists use, in the same order and at the same
-          width. Everything after the title is a FIXED width, so each column starts at an identical
-          x on every row of the tree however deeply indented the row is -- which is the whole
-          reason the right-hand zone exists. Empty cells are still reserved WITHIN A LIST THAT HAS
-          THE COLUMN: a column that moves when a row has no date is not a column. A column no row
-          in the list fills is not rendered at all, and that width goes back to the title. */}
-      {/* BELOW THE LIST'S STACK THRESHOLD the pair drops onto a line of its own, exactly as it
-          does on 今天, and the title takes the whole first line. The threshold is the LIST's width
-          and not the window's (rowColumns): keyed to the viewport, this wrapped correctly on a
-          375px phone and then truncated inside a 734px panel on a 1440px screen, which is the
-          defect. The wrapper is `hidden` rather than absent when the row has no date, so a dateless
-          row costs no second line and the reserved widths above the threshold (where `contents`
-          dissolves this span) are untouched. */}
-      {(columns.due || columns.plan) && (
-        <span className={treeDateLineClass(columns, Boolean(hints.due || hints.scheduled))}>
-          {columns.due && <DueCell due={hints.due} className={treeDueCellClass(columns)} />}
-          {columns.plan && (
-            <PlanCell text={hints.scheduled} className={treePlanCellClass(columns)} />
-          )}
+          {icon && <LeadMark icon={icon} />}
         </span>
       )}
-      <StartButton
-        status={status}
-        title={title}
-        onClick={() => onSetStatus(toggleStartTarget(status))}
-        className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
-      />
-      {/* Mouse path to "add under this": the keyboard has Alt+Enter, so this stays out of the tab
+      {/* The title owns the whole first line: there is nothing to its right to reserve width for
+          any more. Under it, the dates in full words -- and NOT a breadcrumb: in a project tree the
+          project is known and the hierarchy is visible from the indentation, so writing it again
+          would spend vertical space on zero information (spec §2).
+          `pt-3 pb-2` around a 20px title puts its centre at 22px, which is the centre of the 44px
+          glyphs beside it, and makes the row exactly 44px with no second line and 58px with one. */}
+      <span data-row-cell className="flex min-w-0 flex-1 flex-col pt-3 pb-2">
+        <span className="flex min-w-0 items-center">
+          <span
+            data-row-title
+            className={`truncate text-[15px] leading-5 ${
+              status === 'in_progress' ? 'font-semibold' : ''
+            } ${inactive ? 'text-fg-muted' : 'text-fg'} ${status === 'cancelled' ? 'line-through' : ''}`}
+          >
+            {title}
+            {saved && <SavedMark />}
+          </span>
+          {/* There is something to read in this one, and a date took the leading slot. `shrink-0`,
+              so it costs the row no height and reserves no width on the rows without it. */}
+          {hasNotes && icon !== 'notes' && (
+            <span className="ml-2 flex shrink-0 items-center text-fg-subtle">
+              <NotesMark />
+            </span>
+          )}
+        </span>
+        <RowMeta due={hints.due} plan={hints.scheduled} />
+      </span>
+      {/* THE TWO HOVER CONTROLS RESERVE NO WIDTH. They are invisible until the row is hovered, so
+          holding 64px of every row for them was the last thing taking width off the titles: with
+          them in the flow the user's own long title still did not fit the 734px panel the detail
+          column leaves (spec §6), and it does with 48px of slack now. Over the page rather than in
+          it, they appear on the hovered row's own background, so a truncated title's ellipsis is
+          covered rather than jostled -- the row does not reflow when the pointer arrives.
+          `static` again where there is no hover, since there they are shown permanently and must
+          not sit on top of the text.
+          Pinned to the FIRST line (`top-0 h-11`), so a row with a second line does not drag them
+          down to its middle. */}
+      <span className="absolute top-0 right-1 flex h-11 shrink-0 items-center bg-surface-hover opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:static [@media(hover:none)]:bg-transparent [@media(hover:none)]:opacity-100">
+        <StartButton
+          status={status}
+          title={title}
+          onClick={() => onSetStatus(toggleStartTarget(status))}
+        />
+        {/* Mouse path to "add under this": the keyboard has Alt+Enter, so this stays out of the tab
           order. Shown on row hover; always shown where there is no hover. */}
-      <button
-        type="button"
-        tabIndex={-1}
-        aria-label={`添加子任务（${title}）`}
-        onClick={onAddChild}
-        className="flex h-9 w-8 shrink-0 items-center justify-center rounded-lg text-fg-muted opacity-0 group-hover:opacity-100 hover:text-fg [@media(hover:none)]:opacity-100"
-      >
-        <Icon d="M8 3v10M3 8h10" />
-      </button>
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-label={`添加子任务（${title}）`}
+          onClick={onAddChild}
+          className="flex h-9 w-8 shrink-0 items-center justify-center rounded-lg text-fg-muted hover:text-fg"
+        >
+          <Icon d="M8 3v10M3 8h10" />
+        </button>
+      </span>
     </li>
   )
 }

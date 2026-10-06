@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { LEAD_GAP_PX, LEAD_SLOT_PX } from '../rowLead'
 import { CHEVRON_PX, HANDLE_PX, INDENT_PX, RAIL_GUTTER_PX } from './RowParts'
 
 // The status marker's COLUMN -- the width of `StatusButton`, not of the glyph inside it -- so the
@@ -8,6 +9,9 @@ const MARK_PX = 28
 type Props = {
   /** Depth of the task this input creates; a root task is 1. Indents it into place. */
   depth: number
+  /** Whether the tree around it reserves the leading icon slot: the input clears it too, so the
+   *  cursor starts where the titles start rather than 28px to their left. */
+  leadSlot: boolean
   /** Resolves true when the task was created, so the input can clear and stay open. */
   onCommit: (title: string) => Promise<boolean>
   /** `restoreFocus` is false when the user left by clicking elsewhere. */
@@ -16,7 +20,7 @@ type Props = {
 
 // One input at the end of a sibling group. Enter creates and stays open for the next one;
 // Escape, Enter on an empty box, or blurring an empty box leaves.
-export function NewTaskInput({ depth, onCommit, onCancel }: Props) {
+export function NewTaskInput({ depth, leadSlot, onCommit, onCancel }: Props) {
   const [title, setTitle] = useState('')
   const input = useRef<HTMLInputElement>(null)
 
@@ -35,7 +39,13 @@ export function NewTaskInput({ depth, onCommit, onCancel }: Props) {
       data-new-task
       style={{
         paddingLeft:
-          RAIL_GUTTER_PX + (depth - 1) * INDENT_PX + HANDLE_PX + CHEVRON_PX + MARK_PX + 8,
+          RAIL_GUTTER_PX +
+          (depth - 1) * INDENT_PX +
+          HANDLE_PX +
+          CHEVRON_PX +
+          MARK_PX +
+          8 +
+          (leadSlot ? LEAD_SLOT_PX + LEAD_GAP_PX : 0),
       }}
       className="flex min-h-11 items-center"
     >

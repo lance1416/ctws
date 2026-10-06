@@ -10,16 +10,8 @@ import { DoneTodayPanel } from '../components/DoneTodayPanel'
 import { MovementPanel } from '../components/MovementPanel'
 import { hasMovement } from '../movement'
 import { Panel, PanelEmpty } from '../components/Panel'
-import { DueCell, PlanCell, ProjectRail, SavedMark, ROW_LIST } from '../components/RowParts'
-import {
-  actionColumnClass,
-  dateColumns,
-  dueColumnClass,
-  planColumnClass,
-  rowDateStackClass,
-  rowGridClass,
-  type DateColumns,
-} from '../rowColumns'
+import { LeadMark, ProjectRail, RowMeta, SavedMark, ROW_LIST } from '../components/RowParts'
+import { hasLeadSlot, leadIcon } from '../rowLead'
 import { EMPTY_ACTION, EmptyState } from '../components/EmptyState'
 import { StartButton, StatusButton, statusForKey } from '../components/StatusControls'
 import { StatusMark } from '../components/StatusMark'
@@ -235,87 +227,82 @@ export function Today() {
       }
     })
   /**
-   * Which columns ONE PANEL's list reserves. Per list and never per row (spec §2): the 今天 queue
-   * and the 逾期 panel are two lists in two columns of the page, so each answers for itself, while
-   * within either one the cells stay at a single x.
+   * Whether ONE PANEL's list reserves the leading icon slot. Per list and never per row (spec §2):
+   * the 今天 queue and the 逾期 panel are two lists in two columns of the page, so each answers for
+   * itself, while within either one the icons stay at a single x.
    */
-  const columnsOf = (list: Prepared[]): DateColumns =>
-    dateColumns(list.map((p) => ({ due: p.hints.due !== null, plan: p.plan !== null })))
+  const leadSlotOf = (list: Prepared[]): boolean =>
+    hasLeadSlot(list.map((p) => ({ due: p.t.dueAt !== null, plan: p.plan !== null, notes: false })))
 
   /**
-   * One queue row. The row system is unchanged (RowParts): the project rail at x=0, the status
-   * marker, the title, then the deadline column, the plan column and the action slot -- every one
-   * at a fixed x and reserved whether or not THIS row fills it, as long as some row in the list
-   * does. The columns answer to the LIST's width rather than the viewport's, because the same row
-   * renders in a two-thirds panel and in a one-third one on the same screen.
+   * One queue row (RowParts): the project rail at x=0, the status marker, the leading icon slot,
+   * then the title with the breadcrumb and the dates under it. There is nothing to the right of the
+   * title but the two controls, so the row reads the same in a two-thirds panel and in a
+   * one-third one -- which is what let the threshold machinery go.
    */
-  const row = ({ t, hints, carried, plan }: Prepared, columns: DateColumns): ReactNode => {
+  const row = ({ t, hints, carried, plan }: Prepared, leadSlot: boolean): ReactNode => {
     const sections = triageFor(t, carried)
+    // One glyph at the row start, the words on the second line (spec §2). A row whose plan is
+    // today's shows no plan text, so it must not claim a plan icon either -- hence `plan`, the
+    // wording this row actually renders, rather than `t.scheduledOn`.
+    const icon = leadIcon({
+      due: hints.due !== null,
+      overdue: hints.due?.overdue === true,
+      plan: plan !== null,
+      notes: false,
+    })
     return (
       <li
         key={t.id}
         onClick={(e) => {
           if (!(e.target as HTMLElement).closest('button')) setOpenId(t.id)
         }}
-        className={`group relative grid min-h-[46px] cursor-pointer items-start gap-x-2 gap-y-0.5 rounded-lg py-2 pr-2 pl-3 leading-snug hover:bg-surface-hover ${rowGridClass(columns)}`}
+        className="group relative flex min-h-[46px] cursor-pointer items-start gap-x-2 rounded-lg py-2 pr-2 pl-3 hover:bg-surface-hover"
       >
         <ProjectRail projectId={t.projectId} />
-        <span className="col-start-1 row-start-1 flex h-7 items-center">
+        <span className="flex h-7 shrink-0 items-center">
           <StatusButton
             status={t.status}
             title={t.title}
             onClick={() => setStatus(t.id, toggleDoneTarget(t.status))}
           />
         </span>
+        {/* The icon slot: 1.5rem, reserved for the whole list or not at all, so the glyphs line up
+            down the panel. Empty on a row with nothing to say, which is what keeps them aligned. */}
+        {leadSlot && (
+          <span
+            data-lead-slot
+            className="flex h-7 w-6 shrink-0 items-center justify-center"
+            aria-hidden={icon === null ? true : undefined}
+          >
+            {icon && <LeadMark icon={icon} />}
+          </span>
+        )}
         <button
           type="button"
           data-today-row={t.id}
           onClick={() => setOpenId(t.id)}
           onKeyDown={(e) => onRowKeyDown(e, t.id, t.status)}
-          className="col-start-2 row-start-1 -m-1 flex min-w-0 flex-col rounded-lg p-1 text-left"
+          className="-m-1 flex min-w-0 flex-1 flex-col rounded-lg p-1 text-left"
         >
-          <span className="flex items-baseline">
+          <span className="flex min-w-0 items-baseline">
             <span className={`truncate ${t.status === 'in_progress' ? 'font-semibold' : ''}`}>
               {t.title}
             </span>
             {savedId === t.id && <SavedMark />}
           </span>
-          <span className="truncate text-sm text-fg-muted">{breadcrumb(t)}</span>
+          {/* Breadcrumb and dates share ONE line here, in full words: this is the line the user
+              reads, and it is not a column, so nothing on it is compressed to line up with the row
+              above (spec §2). The deadline keeps its date and its time to the minute. */}
+          <RowMeta
+            breadcrumb={breadcrumb(t)}
+            due={hints.due}
+            plan={plan}
+            carried={carried !== null}
+            exact={t.dueAt ? toLocalInput(t.dueAt).replace('T', ' ') : undefined}
+          />
         </button>
-        {/* On a narrow list the right-hand zone drops to a line of its own -- still two columns,
-            so the alignment survives a phone and a one-third panel alike. Above the list's derived
-            stack threshold (rowColumns) `contents` dissolves this wrapper, so the same two columns
-            are grid tracks of the row itself.
-            That second line spans the WHOLE row rather than starting under the title: inside a
-            one-third panel the title track is about 190px, and sharing it between a deadline
-            ("今天 23:30 截止") and a carried plan ("原定10月2日，已顺延") clipped both of them --
-            and those words, not the colour, are what the cells are for. */}
-        {/* Only the columns the LIST reserves are rendered: a cell nobody in the list fills is not
-            an empty column, it is 8 or 11rem taken off every title on the page. */}
-        {(hints.due || plan) && (
-          <span
-            className={`col-start-1 col-span-3 row-start-2 gap-x-2 ${rowDateStackClass(columns)}`}
-          >
-            {columns.due && (
-              <DueCell
-                due={hints.due}
-                exact={t.dueAt ? toLocalInput(t.dueAt).replace('T', ' ') : undefined}
-                className={dueColumnClass(columns)}
-              />
-            )}
-            {columns.plan && (
-              <PlanCell
-                text={plan}
-                carried={carried !== null}
-                exact={carried ?? undefined}
-                className={planColumnClass(columns)}
-              />
-            )}
-          </span>
-        )}
-        <span
-          className={`col-start-3 row-start-1 flex h-7 items-center justify-end gap-0.5 ${actionColumnClass(columns)}`}
-        >
+        <span className="flex h-7 shrink-0 items-center justify-end gap-0.5">
           <StartButton
             status={t.status}
             title={t.title}
@@ -338,8 +325,8 @@ export function Today() {
   const inProgress = rows.filter((t) => t.segment === 'in_progress')
   const queue = prepare(rows.filter((t) => t.segment === 'today'))
   const overdue = prepare(rows.filter((t) => t.segment === 'overdue'))
-  const queueColumns = columnsOf(queue)
-  const overdueColumns = columnsOf(overdue)
+  const queueLead = leadSlotOf(queue)
+  const overdueLead = leadSlotOf(overdue)
   const doneToday = (completed.data ?? []).filter((t) => t.completedOn === localToday)
   const movementRows = (movement.data ?? []).filter(hasMovement)
   // The right column renders only what has something to say. An empty column at 1440 would be
@@ -463,7 +450,7 @@ export function Today() {
           {today.isSuccess && rows.length > 0 && queue.length === 0 && (
             <PanelEmpty>队列是空的。</PanelEmpty>
           )}
-          <ul className={ROW_LIST}>{queue.map((p) => row(p, queueColumns))}</ul>
+          <ul className={ROW_LIST}>{queue.map((p) => row(p, queueLead))}</ul>
         </Panel>
 
         {rightColumn && (
@@ -472,7 +459,7 @@ export function Today() {
                 noise, and this one has to mean something when it appears. */}
             {overdue.length > 0 && (
               <Panel label="逾期" count={overdue.length}>
-                <ul className={ROW_LIST}>{overdue.map((p) => row(p, overdueColumns))}</ul>
+                <ul className={ROW_LIST}>{overdue.map((p) => row(p, overdueLead))}</ul>
               </Panel>
             )}
             {movementRows.length > 0 && (

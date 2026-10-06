@@ -24,8 +24,8 @@ import { TaskDetail } from './TaskDetail'
 import { statusForKey } from './StatusControls'
 import { NewTaskInput } from './NewTaskInput'
 import { INDENT_PX, ROW_LIST } from './RowParts'
-import { dateCells } from '../dueAt'
-import { dateColumns, listMeasureClass } from '../rowColumns'
+import { dateMarks } from '../dueAt'
+import { hasLeadSlot, LIST_MEASURE } from '../rowLead'
 import { TaskRow } from './TaskRow'
 
 /**
@@ -80,25 +80,27 @@ export function TaskTree({ projectId }: { projectId: string }) {
   const openTask = tasks.data?.find((t) => t.id === openId)
   const byId = useMemo(() => new Map((tasks.data ?? []).map((t) => [t.id, t])), [tasks.data])
   /**
-   * Which date columns this TREE reserves -- one decision for the whole list, taken from the rows
-   * that are actually on screen (spec §2). Reserving per group would put the deadline at one x
-   * under one parent and another x under the next, which is precisely the scanning a fixed column
-   * exists for; reserving from folded-away rows would hold width for cells nobody can see.
+   * Whether this TREE reserves the leading icon slot -- one decision for the whole list, taken from
+   * the rows that are actually on screen (spec §2). Deciding per group would put the first glyph of
+   * a row at one x under one parent and another x under the next, which is the scanning the slot
+   * exists for; deciding from folded-away rows would hold 1.5rem for icons nobody can see.
    *
-   * The cost of getting this wrong is what the complaint was about: five fixed tracks spent 23.5rem
-   * on a right-hand zone whether or not a single row had a date, and the title was left ~348px in a
-   * panel over a thousand wide.
+   * It reads no clock: a row wants an icon because it HAS a deadline, a plan or notes, never
+   * because of what time it is. Which glyph it then shows is `leadIcon`'s business.
    */
-  const columns = useMemo(
+  const leadSlot = useMemo(
     () =>
-      dateColumns(
+      hasLeadSlot(
         rows.map((r) => {
           const t = byId.get(r.id)
-          return dateCells({
-            status: t?.status ?? 'todo',
-            dueAt: t?.dueAt ?? null,
-            scheduledOn: t?.scheduledOn ?? null,
-          })
+          return {
+            ...dateMarks({
+              status: t?.status ?? 'todo',
+              dueAt: t?.dueAt ?? null,
+              scheduledOn: t?.scheduledOn ?? null,
+            }),
+            notes: (t?.notes ?? '') !== '',
+          }
         }),
       ),
     [rows, byId],
@@ -301,7 +303,12 @@ export function TaskTree({ projectId }: { projectId: string }) {
     inputDepth = at < 0 ? 1 : rows[at]!.depth + 1
   }
   const input = adding && (
-    <NewTaskInput depth={inputDepth} onCommit={commitAdd} onCancel={cancelAdd} />
+    <NewTaskInput
+      depth={inputDepth}
+      leadSlot={leadSlot}
+      onCommit={commitAdd}
+      onCancel={cancelAdd}
+    />
   )
 
   const onDragEnd = ({ active, over, delta }: DragEndEvent) => {
@@ -439,13 +446,9 @@ export function TaskTree({ projectId }: { projectId: string }) {
         <SortableContext items={rows.map((r) => r.id)} strategy={verticalListSortingStrategy}>
           {/* No top margin: the tree is the first thing in its panel, under the one input that
               adds a root task. */}
-          <ul
-            data-task-tree
-            /* `@container`, so the row below can ask how wide THIS LIST is: whether the dates fit
-               beside the title is a question about the list's own box, never about the viewport
-               (rowColumns). The box is this measure, so the two numbers answer each other. */
-            className={`${ROW_LIST} ${listMeasureClass(columns)}`}
-          >
+          {/* One measure for every task list (rowLead): the title no longer competes with
+              anything to its right, so there is nothing left for the measure to be derived from. */}
+          <ul data-task-tree className={`${ROW_LIST} ${LIST_MEASURE}`}>
             {rows.map((row, i) => (
               <Fragment key={row.id}>
                 <TaskRow
@@ -456,7 +459,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
                   dueAt={byId.get(row.id)?.dueAt ?? null}
                   scheduledOn={byId.get(row.id)?.scheduledOn ?? null}
                   hasNotes={(byId.get(row.id)?.notes ?? '') !== ''}
-                  columns={columns}
+                  leadSlot={leadSlot}
                   saved={savedId === row.id}
                   tabStop={row.id === tabId}
                   onFocus={() => setActiveId(row.id)}
