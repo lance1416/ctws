@@ -52,11 +52,18 @@ describe('dateHints', () => {
       })
   })
 
-  it('a deadline before the start of today is overdue and says how many days', async () => {
+  it('an overdue deadline says WHICH one it was, to the minute, and how late it is', async () => {
     const { dateHints } = await load()
     // 2026-10-01 09:00 local is two calendar days before the 3rd.
     const due = new Date(2026, 9, 1, 9, 0).toISOString()
-    expect(dateHints(task({ dueAt: due }), NOW()).due).toEqual({ text: '已逾 2 天', overdue: true })
+    // Both halves. The previous edition said only 「已逾 2 天」 because the label had to fit an 8rem
+    // cell; the words are on a line of their own now (spec §2), and 「已逾 2 天」 alone cannot
+    // answer "due when?" -- which is the compression the user rejected.
+    expect(dateHints(task({ dueAt: due }), NOW()).due).toEqual({
+      text: '10月1日 09:00 截止',
+      late: '已逾 2 天',
+      overdue: true,
+    })
   })
 
   it('a deadline earlier today is not overdue (the server cascade only tests the day boundary)', async () => {
@@ -64,17 +71,28 @@ describe('dateHints', () => {
     const due = new Date(2026, 9, 3, 8, 0).toISOString()
     expect(dateHints(task({ dueAt: due }), NOW()).due).toEqual({
       text: '今天 08:00 截止',
+      late: null,
       overdue: false,
     })
   })
 
-  it('a future deadline and a scheduled day each get their own phrase', async () => {
+  it('a future deadline keeps its clock too, and a scheduled day gets its own phrase', async () => {
     const { dateHints } = await load()
     const due = new Date(2026, 9, 8, 9, 0).toISOString()
     expect(dateHints(task({ dueAt: due, scheduledOn: '2026-10-04' }), NOW())).toEqual({
       scheduled: '排到明天',
-      due: { text: '10月8日截止', overdue: false },
+      // "10月8日截止" was the old cell's wording: a day with no time is not complete to the
+      // minute, and §6 asks for the minute.
+      due: { text: '10月8日 09:00 截止', late: null, overdue: false },
     })
+  })
+
+  it('a deadline a minute before midnight still says 23:59, not the next day', async () => {
+    const { dateHints } = await load()
+    // A clock printed from a UTC getter in +05:30 would read 18:29 here, and a rounded one 00:00
+    // of the 9th. The minute is the thing §6 pins, so it is pinned at the hardest minute there is.
+    const due = new Date(2026, 9, 8, 23, 59).toISOString()
+    expect(dateHints(task({ dueAt: due }), NOW()).due!.text).toBe('10月8日 23:59 截止')
   })
 
   it('an overdue task that has been rescheduled shows both', async () => {
@@ -82,23 +100,23 @@ describe('dateHints', () => {
     const due = new Date(2026, 9, 1, 9, 0).toISOString()
     expect(dateHints(task({ dueAt: due, scheduledOn: '2026-10-04' }), NOW())).toEqual({
       scheduled: '排到明天',
-      due: { text: '已逾 2 天', overdue: true },
+      due: { text: '10月1日 09:00 截止', late: '已逾 2 天', overdue: true },
     })
   })
 })
 
 /**
- * `dateCells` is what a LIST reserves its date columns from, and `dateHints` is what each row then
+ * `dateMarks` is what a LIST reserves its date columns from, and `dateHints` is what each row then
  * draws into them. If the two could disagree, a column would be reserved and left empty, or a cell
  * would be drawn with no track under it.
  *
  * The clock is the way they would drift, so the agreement is checked at SEVERAL instants on either
  * side of the wordings' boundaries -- a deadline before today, earlier today, later today and in
- * the future -- while `dateCells` reads no clock at all. Every instant here is a literal, so this
+ * the future -- while `dateMarks` reads no clock at all. Every instant here is a literal, so this
  * test says the same thing at every hour of every day (the repo has had a test that was red for one
  * hour in twenty-four; it expressed "yesterday" as a fixed 25-hour offset).
  */
-describe('dateCells agrees with dateHints, without reading the clock', () => {
+describe('dateMarks agrees with dateHints, without reading the clock', () => {
   const INSTANTS = [
     new Date(2026, 9, 3, 0, 1), // just after midnight: yesterday's deadline just became overdue
     new Date(2026, 9, 3, 12, 0),
@@ -114,12 +132,12 @@ describe('dateCells agrees with dateHints, without reading the clock', () => {
   const PLANS = [null, '2026-10-02', '2026-10-03', '2026-10-04']
 
   it('says a cell exists exactly when dateHints fills it, for every status and every instant', async () => {
-    const { dateCells, dateHints } = await load()
+    const { dateMarks, dateHints } = await load()
     for (const status of ['backlog', 'todo', 'in_progress', 'done', 'cancelled'])
       for (const dueAt of DUES)
         for (const scheduledOn of PLANS) {
           const t = { status, dueAt, scheduledOn }
-          const cells = dateCells(t)
+          const cells = dateMarks(t)
           for (const now of INSTANTS) {
             const hints = dateHints(t, now)
             const why = `${status} due=${dueAt} plan=${scheduledOn} at ${now.toISOString()}`

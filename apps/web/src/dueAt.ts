@@ -64,14 +64,26 @@ export function dayPhrase(day: string, today: string): string {
 export type DateHints = {
   /** "排到明天": present whenever the task has a scheduled day. */
   scheduled: string | null
-  /** The deadline as a short phrase; `overdue` is true when its day has passed. */
-  due: { text: string; overdue: boolean } | null
+  /**
+   * The deadline, worded in full and in TWO phrases: when it is, and -- once its day has gone --
+   * how late it is. Two, not one string, because the row prints them as separate phrases: a single
+   * 「10月4日 12:30 截止 · 已逾 2 天」 could not be broken anywhere, and inside a 375px row at
+   * depth 3 an unbreakable 230px phrase is a horizontal scrollbar. Read in order they are the one
+   * sentence §2 asks for.
+   */
+  due: { text: string; late: string | null; overdue: boolean } | null
 }
 
 /**
  * The date cues worth showing on a row. A finished or cancelled task shows none: its dates no
  * longer tell the reader anything. Overdue uses the same rule as the server's segment cascade
  * (the deadline is before the start of today), and the same label as the Today page.
+ *
+ * THE WORDING IS COMPLETE, TO THE MINUTE (rows-and-reading §2, second edition). It lives on a line
+ * of its own under the title now, not in an 8rem cell, so there is nothing to compress for: an
+ * overdue deadline says WHEN it was -- 「10月4日 12:30 截止 · 已逾 2 天」 -- rather than only how
+ * long ago. The previous edition shortened it to 「已逾 2 天」 because the cell was narrow, and the
+ * user rejected exactly that compression: "已逾 2 天" cannot answer "due when?".
  */
 export function dateHints(
   t: { status: string; dueAt: string | null; scheduledOn: string | null },
@@ -83,24 +95,27 @@ export function dateHints(
   if (!t.dueAt) return { scheduled, due: null }
   const due = new Date(t.dueAt)
   const dueDay = ymd(due)
-  if (dueDay < today) return { scheduled, due: { text: overdueLabel(t.dueAt, now), overdue: true } }
   const clock = `${pad2(due.getHours())}:${pad2(due.getMinutes())}`
-  const text = dueDay === today ? `今天 ${clock} 截止` : `${dayPhrase(dueDay, today)}截止`
-  return { scheduled, due: { text, overdue: false } }
+  const text = `${dayPhrase(dueDay, today)} ${clock} 截止`
+  // Past its day: the same sentence, plus how long ago. Both halves, never one -- the day and the
+  // time say WHICH deadline this is, and "已逾 N 天" is the urgency.
+  if (dueDay < today)
+    return { scheduled, due: { text, late: overdueLabel(t.dueAt, now), overdue: true } }
+  return { scheduled, due: { text, late: null, overdue: false } }
 }
 
 /**
- * WHETHER A ROW WOULD FILL EACH DATE CELL -- the same two answers `dateHints` gives, with the
- * CLOCK TAKEN OUT.
+ * WHETHER A ROW HAS EACH KIND OF DATE -- the same two answers `dateHints` gives, with the CLOCK
+ * TAKEN OUT.
  *
- * A list decides which date columns it reserves from every one of its rows (rows-and-reading spec
- * §2), and that decision must not be able to disagree with what the rows then render. `dateHints`
- * reads the clock to word the cell ("已逾 5 天" against "明天截止"), but whether the cell exists at
- * all never depends on it: a deadline that has passed still occupies the deadline column. So this
- * is the predicate, and `dueAt.test.ts` pins that the two agree -- including at an instant where
- * the wording changes, which is where a clock-reading predicate would drift.
+ * A list decides whether it reserves the leading icon slot from every one of its rows (`rowLead`),
+ * and that decision must not be able to disagree with what the rows then render. `dateHints` reads
+ * the clock to word the line ("已逾 5 天" against "明天 09:00 截止"), but whether there IS a
+ * deadline never depends on it: a deadline that has passed is still a deadline, and still an icon.
+ * So this is the predicate, and `dateHints.test.ts` pins that the two agree -- including at an
+ * instant where the wording changes, which is where a clock-reading predicate would drift.
  */
-export function dateCells(t: {
+export function dateMarks(t: {
   status: string
   dueAt: string | null
   scheduledOn: string | null
