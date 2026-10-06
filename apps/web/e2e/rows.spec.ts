@@ -247,6 +247,13 @@ test('on 今天 the queue and 逾期 each answer for their own columns', async (
   // is reserved there -- and the titles get that width.
   await expect(queue.locator('[data-due-cell]')).toHaveCount(0)
   await expect(queue.locator('[data-plan-cell]')).toHaveCount(0)
+  // Measured, not merely counted: on a flat list the columns are GRID TRACKS, and an unfilled
+  // track is invisible to a cell count while still taking 19rem off every title in the panel.
+  const titleWidth = await queue
+    .locator('[data-today-row]')
+    .first()
+    .evaluate((el) => Math.round(el.clientWidth))
+  expect(titleWidth, `title track in the queue: ${titleWidth}px`).toBeGreaterThan(500)
   // 逾期 is a different list and keeps its deadline column.
   await expect(late.locator('[data-due-cell]')).toHaveCount(1)
   // One panel's collapse did not take the other's column with it.
