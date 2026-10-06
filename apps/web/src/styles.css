@@ -67,15 +67,51 @@
    `border-subtle` (1.19-1.30) is a decorative hairline only: panel edges, tree guides and
    column rules, where the SURFACE step already carries the separation. Anything that identifies
    a control (input edges, markers) uses `border-strong` or `fg-muted`. */
+
+/* The CJK face, self-hosted. ONE variable woff2 (wght 400-700), subset to the app's own Chinese
+   vocabulary plus all 6,763 han of GB2312: 1,800,080 B, one request, content-hashed by Vite into
+   /assets and served `immutable` (apps/api/src/app.ts), so it is paid once and never again.
+   Regenerate with `tools/fonts/subset-cjk-font.py`; `src/fonts/coverage.test.ts` fails if a
+   Chinese string in the source falls outside the subset.
+
+   WHY THE WHOLE OF GB2312 AND NOT THE 124.5 KiB CHROME-ONLY SUBSET: font fallback is PER GLYPH,
+   and 31% of the han in real task titles sits outside the chrome vocabulary, so a chrome-only
+   subset draws ONE task title in two faces at two weights, changing as the user types. Either the
+   subset covers what a user can type or it should not exist.
+
+   WHY ONE FILE AND NOT `unicode-range` CHUNKS: the container serves HTTP/1.1 (measured), so the
+   13-14 requests a chunked route needs cost round-trip waves; and because a page of Chinese draws
+   ~150 distinct characters from across the whole character space, a chunking measured for this app
+   fetched MORE bytes than this single file.
+
+   WHY `swap` AND NOT `optional`: CJK is full-width -- the em advance is 15.000px in every
+   candidate face and pure-CJK titles measure 0.00% width change -- and `unicode-range` below keeps
+   this face off Latin entirely, so the swap cannot move the layout. That removes the only reason
+   to prefer `optional`, which would otherwise show the system face for a whole cold-cache visit
+   and make which face you get a race. `swap` is deterministic: the designed type always arrives.
+
+   `unicode-range` is CJK ONLY, deliberately: the file does contain Latin, but Latin must keep
+   coming from Plex (its tabular figures, and its metrics, are load-bearing). */
+@font-face {
+  font-family: 'CTWS Noto Sans SC';
+  src: url('./fonts/noto-sans-sc-subset.woff2') format('woff2');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+3000-303F, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
+}
+
 @theme static {
-  /* Latin is IBM Plex Sans, self-hosted and LATIN-SUBSET ONLY (see main.tsx). CJK deliberately
-     falls through to the system face: a CJK webfont is megabytes even after subsetting, and this
-     is a private tool opened twenty times a day. Plex is here for its tabular figures -- dates,
+  /* Latin is IBM Plex Sans, self-hosted and LATIN-SUBSET ONLY (see main.tsx). CJK is
+     `CTWS Noto Sans SC`, also self-hosted: one variable woff2 subset to the UI's own vocabulary
+     plus all of GB2312, 1.72 MiB, declared above. Plex is here for its tabular figures -- dates,
      times and counts are everywhere in this app -- not for a display voice: the headings of this
-     interface are Chinese, so a Latin display face could never set them anyway. */
+     interface are Chinese, so a Latin display face could never set them anyway.
+     The system CJK faces stay in the stack BEHIND the webfont, so a font that fails to load
+     degrades to exactly what this app rendered before it existed. */
   --font-sans:
-    'IBM Plex Sans', -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC',
-    sans-serif;
+    'IBM Plex Sans', 'CTWS Noto Sans SC', -apple-system, 'Segoe UI', 'PingFang SC',
+    'Microsoft YaHei', 'Noto Sans SC', sans-serif;
 
   /* The scale: 13 / 14 / 15 / 17 / 23 / 34, one step up from the old 11/12/13/15/20/28, with
      15px body (spec section 4). The complaint this answers is "组件太小", so the smallest step
