@@ -300,6 +300,7 @@ export function Today() {
             plan={plan}
             carried={carried !== null}
             exact={t.dueAt ? toLocalInput(t.dueAt).replace('T', ' ') : undefined}
+            summary={t.segment === 'overdue'}
           />
         </button>
         <span className="flex h-7 shrink-0 items-center justify-end gap-0.5">

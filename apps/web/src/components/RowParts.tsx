@@ -235,6 +235,7 @@ export function RowMeta({
   plan = null,
   carried = false,
   exact,
+  summary = false,
 }: {
   /** The project (and parent) a cross-project list shows. The tree passes none: §2 says the
    *  project is known there and the hierarchy is visible from the indentation. */
@@ -245,6 +246,18 @@ export function RowMeta({
   carried?: boolean
   /** The exact local deadline, for the tooltip: "2026-10-01 09:00". */
   exact?: string | undefined
+  /**
+   * A SUMMARY SURFACE's line: the project and how late, nothing else.
+   *
+   * This is a per-surface editorial choice, not a compression of the row's vocabulary (spec §2
+   * stands: wherever the full line is shown it is whole, to the minute). The 逾期 panel is a
+   * one-third-width summary of "what is late, and how late"; with the absolute deadline and the
+   * plan added, every row wrapped to three lines and the titles truncated anyway. The absolute
+   * deadline is NOT lost: it is on the same task's row in the main 今天 queue, in the detail pane,
+   * and in this line's tooltip (`exact`). A deadline that is not yet past a whole day has no
+   * "已逾" phrase to show, so it falls back to the full wording rather than to nothing.
+   */
+  summary?: boolean
 }) {
   type Part = { node: ReactNode; cap?: boolean }
   const parts: Part[] = (
@@ -263,7 +276,7 @@ export function RowMeta({
             ),
           }
         : null,
-      due
+      due && !(summary && due.late)
         ? {
             node: (
               <span
@@ -285,13 +298,18 @@ export function RowMeta({
             node: (
               // How late, as a phrase of its own: the separator between it and the deadline is the line's
               // own ·, so a narrow row breaks between the two instead of overflowing with one 230px word.
-              <span key="late" data-late-text className="font-medium whitespace-nowrap text-missed">
+              <span
+                key="late"
+                data-late-text
+                title={summary ? exact : undefined}
+                className="font-medium whitespace-nowrap text-missed"
+              >
                 {due.late}
               </span>
             ),
           }
         : null,
-      plan
+      plan && !summary
         ? {
             node: (
               <span

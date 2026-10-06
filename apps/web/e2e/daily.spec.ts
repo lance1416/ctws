@@ -925,7 +925,17 @@ test('the plan actions are not offered on an overdue row or on a plan for today'
   await expect(panel.getByRole('button', { name: '改到今天' })).toHaveCount(0)
   await expect(panel.getByRole('button', { name: '清除排期' })).toHaveCount(0)
   await expect(page.getByRole('group', { name: '处理顺延：逾期兼旧计划' })).toHaveCount(0)
-  // Its carried plan is still SHOWN, in the plan column, beside the missed deadline.
-  await expect(rowOf(page, '逾期兼旧计划').locator('[data-date-hint="scheduled"]')).toBeVisible()
-  await expect(rowOf(page, '逾期兼旧计划').locator('[data-date-hint="overdue"]')).toBeVisible()
+  // 逾期 is a one-third-width SUMMARY, so its row says how late and no longer lists the plan or the
+  // deadline's timestamp (rows-and-reading §2, per-surface). The carried plan is not gone: it is
+  // read from the detail pane, which is where this test now looks for it.
+  await page.keyboard.press('Escape')
+  await expect(rowOf(page, '逾期兼旧计划').locator('[data-late-text]')).toBeVisible()
+  await expect(rowOf(page, '逾期兼旧计划').locator('[data-date-hint="scheduled"]')).toHaveCount(0)
+  await rowOf(page, '逾期兼旧计划').locator('[data-today-row]').click()
+  const planLine = page
+    .locator('div')
+    .filter({ has: page.getByText('排期', { exact: true }) })
+    .last()
+  await expect(planLine).not.toContainText('没有设定')
+  await expect(planLine).toContainText(`${Number(dayOffset(-3).slice(5, 7))}月`)
 })

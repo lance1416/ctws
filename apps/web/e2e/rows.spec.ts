@@ -296,6 +296,89 @@ test('on 今天 the queue and 逾期 each answer for their own slot', async ({ p
   await expect(late.locator('[data-lead-icon="missed"]')).toHaveCount(1)
 })
 
+/**
+ * The 逾期 panel is a one-third-width SUMMARY: the project and how late, and not the absolute
+ * deadline or the plan. With them every row wrapped to three lines and truncated its title anyway.
+ *
+ * ONE test proves both halves, on ONE task: while its deadline is later today it sits in the main
+ * 今天 queue and that row says the timestamp in full; once the deadline is two days gone the same
+ * task sits in 逾期 and says only the project and 已逾 2 天. A test of the panel alone would be
+ * satisfied by a global truncation, and the main queue half is what forbids one.
+ *
+ * The deadline is pinned at 12:34 local so the timestamp is a fixed string, not a function of when
+ * the suite happens to run; "later today" holds at any hour because 今天 takes everything from the
+ * start of the day.
+ */
+test('逾期 says the project and how late; the same task in the queue says the whole deadline', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '邮件服务')
+  const noon = new Date()
+  noon.setHours(12, 34, 0, 0)
+  const TITLE = '核对退信率并给收件人分组'
+  const id = await makeTask(page, pid, TITLE, { dueAt: noon.toISOString() })
+  await makeTask(page, pid, '另一条没有日期的', { scheduledOn: dayOffset(0) })
+
+  await page.goto('/')
+  const queue = page.getByRole('region', { name: '今天', exact: true })
+  const late = page.getByRole('region', { name: '逾期' })
+  const queueRow = queue.locator('li').filter({ hasText: TITLE })
+  await expect(queueRow.locator('[data-row-meta]')).toContainText('12:34 截止')
+  await expect(late).toHaveCount(0)
+
+  // The same task, two days late (12:34 kept: only the day moves).
+  const twoDaysAgo = new Date(noon.getTime() - 2 * DAY)
+  twoDaysAgo.setHours(12, 34, 0, 0)
+  const res = await page.request.patch(`/api/v1/tasks/${id}`, {
+    headers: HEADERS,
+    // A plan on another day too: the summary must not spend a line on it either.
+    data: { dueAt: twoDaysAgo.toISOString(), scheduledOn: dayOffset(3) },
+  })
+  expect(res.ok()).toBeTruthy()
+  await page.reload()
+
+  const lateRow = late.locator('li').filter({ hasText: TITLE })
+  const meta = lateRow.locator('[data-row-meta]')
+  await expect(meta).toHaveText('邮件服务·已逾 2 天')
+  await expect(lateRow.locator('[data-due-text]')).toHaveCount(0)
+  await expect(lateRow.locator('[data-plan-text]')).toHaveCount(0)
+  await expect(lateRow).not.toContainText('12:34')
+  await expect(lateRow).not.toContainText('截止')
+  // The deadline is not lost with the line: it is in the tooltip of the lateness phrase.
+  await expect(lateRow.locator('[data-late-text]')).toHaveAttribute(
+    'title',
+    `${ymd(twoDaysAgo)} 12:34`,
+  )
+  // ...and the missed-deadline icon still leads the row.
+  await expect(lateRow.getByRole('img', { name: '截止已过' })).toHaveCount(1)
+
+  // A row in the one-third panel is no taller than the two-line metric: a title and ONE meta line.
+  // The metric is measured, not typed: a queue row with a title and a project line, in this page.
+  const height = (row: typeof lateRow) =>
+    row.evaluate((el) => Math.round(el.getBoundingClientRect().height))
+  const twoLines = await height(queue.locator('li').filter({ hasText: '另一条没有日期的' }))
+  const h = await height(lateRow)
+  expect(h, `逾期 row ${h}px against the two-line metric ${twoLines}px`).toBeLessThanOrEqual(
+    twoLines,
+  )
+  expect(h, 'and it is not a one-line row by accident').toBeGreaterThan(50)
+  const panelW = await late.evaluate((el) => Math.round(el.getBoundingClientRect().width))
+  expect(panelW, 'this is the narrow panel').toBeLessThan(420)
+
+  // The queue half, on the same task, in the same page, still unabridged: put it back in the queue
+  // by moving the deadline to later today.
+  const back = await page.request.patch(`/api/v1/tasks/${id}`, {
+    headers: HEADERS,
+    data: { dueAt: noon.toISOString() },
+  })
+  expect(back.ok()).toBeTruthy()
+  await page.reload()
+  await expect(queueRow.locator('[data-row-meta]')).toContainText('12:34 截止')
+  await expect(queueRow.locator('[data-late-text]')).toHaveCount(0)
+})
+
 // ------------------------------------------------- the title owns the line, at every panel width
 
 /**
@@ -462,11 +545,12 @@ test('the tree has no breadcrumb on its second line; 今天 shares one line with
   const line = page.getByRole('region', { name: '逾期' }).locator('[data-row-meta]')
   await expect(line).toHaveCount(1)
   await expect(line.locator('[data-row-crumb]')).toHaveText('面包屑 › 父任务')
-  await expect(line.locator('[data-due-text]')).toContainText('截止')
-  // One line, not two: the crumb and the date share a baseline.
+  // 逾期 is a summary (project and how late): the lateness is what shares the line with the crumb.
+  await expect(line.locator('[data-late-text]')).toHaveText('已逾 2 天')
+  // One line, not two: the crumb and the lateness share a baseline.
   const ys = await line.evaluate((el) => {
     const crumb = el.querySelector('[data-row-crumb]')!.getBoundingClientRect()
-    const due = el.querySelector('[data-due-text]')!.getBoundingClientRect()
+    const due = el.querySelector('[data-late-text]')!.getBoundingClientRect()
     return [Math.round(crumb.y), Math.round(due.y)]
   })
   expect(ys[0], `crumb y ${ys[0]}, date y ${ys[1]}`).toBe(ys[1])
@@ -490,7 +574,7 @@ test('opening a row’s date control moves nothing on the row', async ({ page })
   const before = {
     row: (await row.boundingBox())!,
     title: (await page.locator('[data-today-row]').first().boundingBox())!,
-    due: (await page.locator('[data-date-hint="overdue"]').first().boundingBox())!,
+    due: (await page.locator('[data-late-text]').first().boundingBox())!,
     next: (await page.locator('[data-today-row]').nth(1).boundingBox())!,
   }
 
@@ -501,7 +585,7 @@ test('opening a row’s date control moves nothing on the row', async ({ page })
   const after = {
     row: (await row.boundingBox())!,
     title: (await page.locator('[data-today-row]').first().boundingBox())!,
-    due: (await page.locator('[data-date-hint="overdue"]').first().boundingBox())!,
+    due: (await page.locator('[data-late-text]').first().boundingBox())!,
     next: (await page.locator('[data-today-row]').nth(1).boundingBox())!,
   }
   expect(after).toEqual(before)

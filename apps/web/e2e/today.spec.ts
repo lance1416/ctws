@@ -204,16 +204,14 @@ test('an overdue task shows a relative label, not the datetime-local format', as
 
   await page.getByRole('link', { name: '今天' }).click()
   const section = page.getByRole('region', { name: '逾期' })
-  // The wording is the whole sentence now (rows-and-reading §2, second edition): the deadline's own
-  // day and time, then how late it is. The second line is where it lives, so there is room for it --
-  // and 「2020年1月1日 09:00 截止」 is the reader's format, never the field's.
-  await expect(section.locator('[data-row-meta]')).toHaveText(
-    /^.+·2020年1月1日 09:00 截止·已逾 \d+ 天$/,
-  )
+  // 逾期 is a summary surface: the project and how late. The deadline's own day and time are not
+  // on this line (the main queue and the detail pane carry them, and the lateness phrase keeps
+  // them as its tooltip, below).
+  await expect(section.locator('[data-row-meta]')).toHaveText(/^.+·已逾 \d+ 天$/)
   const label = section.locator('[data-late-text]')
   await expect(label).toBeVisible()
   await expect(label).toHaveText(/^已逾 \d+ 天$/)
-  await expect(section.locator('[data-due-text]')).toHaveAttribute('title', '2020-01-01 09:00')
+  await expect(label).toHaveAttribute('title', '2020-01-01 09:00')
   await expect(section).not.toContainText(/\d{4}-\d{2}-\d{2}T/)
   await expect(section).not.toContainText('T09:00')
 })
