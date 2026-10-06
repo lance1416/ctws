@@ -48,6 +48,17 @@ export type WorkspaceModule = {
    * (contract §3): a module hangs its own rows on a project, it does not own the project page.
    */
   ProjectView?: ComponentType<{ projectId: string }>
+  /**
+   * What this module adds to the project page's HEADER BANNER: the numbers that say where this
+   * line of work stands, in this module's terms.
+   *
+   * A component rather than a list of numbers, for the same reason `Destination.Count` is one: the
+   * numbers come from the module's own query and the shell must not know which endpoint that is.
+   * The shell owns the banner (projects are the shell's dimension, §3) and the generic pieces the
+   * numbers are set in (`Stat`), so two modules' numbers sit in one banner instead of each
+   * bringing its own layout.
+   */
+  ProjectHeadline?: ComponentType<{ projectId: string }>
 }
 
 /** A row in the left rail. */

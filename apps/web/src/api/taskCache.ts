@@ -23,10 +23,17 @@ async function refreshList(qc: QueryClient, queryKey: QueryKey): Promise<void> {
 
 export const refreshTasks = async (qc: QueryClient, projectId: string): Promise<void> => {
   await refreshList(qc, tasksKey(projectId))
-  // A new row changes 「还剩 N」 and the project's last activity, so the movement panel is stale
-  // the moment a task is created. It is invalidated here rather than at each call site, because
-  // every creation path in the app already goes through this one function.
-  await qc.invalidateQueries({ queryKey: movementKey })
+  // A new row changes 「还剩 N」 and the project's last activity, so the movement numbers are stale
+  // the moment a task is created -- in 做到哪儿了 and now in the project header banner too. It is
+  // invalidated here rather than at each call site, because every creation path already goes
+  // through this one function.
+  //
+  // DELIBERATELY NOT AWAITED. The caller keeps its input busy until this resolves, and the typist
+  // is waiting for the ROW, not for a count beside the project's name. Since the banner mounted
+  // this query on the project page, awaiting it put a second round trip between one Enter and the
+  // next, and a key pressed in that window is dropped: adding tasks in a row started losing
+  // every other one under load. The refetch still starts immediately; nothing waits for it.
+  void qc.invalidateQueries({ queryKey: movementKey }).catch(() => {})
 }
 
 export const refreshProjects = (qc: QueryClient) => refreshList(qc, projectsKey)

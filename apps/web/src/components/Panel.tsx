@@ -49,7 +49,11 @@ export function Panel({
         )}
         {action && <span className="ml-auto">{action}</span>}
       </div>
-      <div className="min-w-0 px-2 pt-0.5 pb-3">{children}</div>
+      {/* The body's gutter halves on a phone: at 375 the panel's padding is paid on TOP of the
+          page's own, and a deep tree row has only what is left after the indent, the handle, the
+          chevron, the marker and the two row buttons. Four pixels a side there is the difference
+          between a title and an ellipsis. */}
+      <div className="min-w-0 px-1 pt-0.5 pb-3 sm:px-2">{children}</div>
     </section>
   )
 }

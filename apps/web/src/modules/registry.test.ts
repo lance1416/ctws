@@ -7,6 +7,8 @@ import {
   homePath,
   moduleDestinations,
   moduleRoutes,
+  projectHeadlines,
+  projectViews,
   resolveChord,
   searchProviders,
 } from './registry'
@@ -19,6 +21,9 @@ import {
  * fakes -- a notes module and a files module -- and assert the shell would render, route, key and
  * search them.
  */
+const NotesOnProject = () => null
+const NotesProjectNumbers = () => null
+
 const notes: WorkspaceModule = {
   id: 'notes',
   label: '笔记',
@@ -32,6 +37,8 @@ const notes: WorkspaceModule = {
   chords: [
     { id: 'recent', key: 'n', label: '去「最近」', resolve: () => '/notes/recent', order: 5 },
   ],
+  ProjectView: NotesOnProject,
+  ProjectHeadline: NotesProjectNumbers,
 }
 
 const files: WorkspaceModule = {
@@ -40,6 +47,7 @@ const files: WorkspaceModule = {
   destinations: [{ id: 'drive', to: '/files/drive', label: '云盘' }],
   routes: [{ path: 'drive' }],
   capture: { useTarget: () => ({ target: null, missing: true, unavailable: false }) },
+  ProjectView: () => null,
 }
 
 describe('destinations', () => {
@@ -116,5 +124,35 @@ describe('search providers', () => {
     // `files` contributes no search provider, so it is absent rather than empty.
     expect(providers.map((p) => p.moduleId)).toEqual(['notes'])
     expect(providers.map((p) => p.moduleLabel)).toEqual(['笔记'])
+  })
+})
+
+/**
+ * The project page is the SHELL's (contract §3) and the rows on it are a module's. These two
+ * helpers are the seam that keeps it that way: without them the page would import the task
+ * module's tree by name, and a second module's rows could never appear on a project at all.
+ *
+ * Both are asserted with modules that do not exist, because the real registry holds exactly one
+ * module and a one-module assertion passes just as well against a hardwired page.
+ */
+describe('what a module hangs on a project page', () => {
+  it('collects every module that has rows for a project, in registration order', () => {
+    const views = projectViews([notes, files])
+    expect(views.map((v) => v.moduleId)).toEqual(['notes', 'files'])
+    expect(views.map((v) => v.moduleLabel)).toEqual(['笔记', '文件'])
+    expect(views[0]!.Component).toBe(NotesOnProject)
+  })
+
+  it('collects the banner numbers separately, and skips a module that has none', () => {
+    // `files` contributes rows but NO numbers. A helper that returned "every module with a
+    // ProjectView" would hand the banner a component that does not exist.
+    const headlines = projectHeadlines([notes, files])
+    expect(headlines.map((h) => h.moduleId)).toEqual(['notes'])
+    expect(headlines[0]!.Component).toBe(NotesProjectNumbers)
+  })
+
+  it('contributes nothing when no module is registered', () => {
+    expect(projectViews([])).toEqual([])
+    expect(projectHeadlines([])).toEqual([])
   })
 })

@@ -1,3 +1,4 @@
+import type { ComponentType } from 'react'
 import type { RouteObject } from 'react-router-dom'
 import type {
   CaptureContribution,
@@ -114,6 +115,42 @@ export function searchProviders(modules: readonly WorkspaceModule[] = MODULES): 
   return modules
     .filter((m) => m.search)
     .map((m) => ({ moduleId: m.id, moduleLabel: m.label, useHits: m.search!.useHits }))
+}
+
+/**
+ * What a module hangs on a shell project page: its rows, and its numbers in the header banner.
+ *
+ * The project page asks the REGISTRY for these rather than importing the task module's tree, which
+ * is the whole point of the seam: the page would otherwise be the shell knowing one module by
+ * name, and the second module's rows could never appear on it.
+ */
+export type RegisteredProjectBlock = {
+  moduleId: string
+  moduleLabel: string
+  Component: ComponentType<{ projectId: string }>
+}
+
+const projectBlocks = (
+  modules: readonly WorkspaceModule[],
+  pick: (m: WorkspaceModule) => ComponentType<{ projectId: string }> | undefined,
+): RegisteredProjectBlock[] =>
+  modules.flatMap((m) => {
+    const Component = pick(m)
+    return Component ? [{ moduleId: m.id, moduleLabel: m.label, Component }] : []
+  })
+
+/** Each module's rows under a shell project, in registration order. */
+export function projectViews(
+  modules: readonly WorkspaceModule[] = MODULES,
+): RegisteredProjectBlock[] {
+  return projectBlocks(modules, (m) => m.ProjectView)
+}
+
+/** Each module's numbers in the project header banner, in registration order. */
+export function projectHeadlines(
+  modules: readonly WorkspaceModule[] = MODULES,
+): RegisteredProjectBlock[] {
+  return projectBlocks(modules, (m) => m.ProjectHeadline)
 }
 
 export type { ChordContext }
