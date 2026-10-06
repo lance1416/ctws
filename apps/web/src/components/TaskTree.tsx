@@ -411,7 +411,9 @@ export function TaskTree({ projectId }: { projectId: string }) {
       )}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={rows.map((r) => r.id)} strategy={verticalListSortingStrategy}>
-          <ul data-task-tree className={`mt-4 flex flex-col ${LIST_MEASURE}`}>
+          {/* No top margin: the tree is the first thing in its panel, under the one input that
+              adds a root task. */}
+          <ul data-task-tree className={`flex flex-col ${LIST_MEASURE}`}>
             {rows.map((row, i) => (
               <Fragment key={row.id}>
                 <TaskRow

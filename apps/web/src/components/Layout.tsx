@@ -71,8 +71,14 @@ export function Layout() {
           centre column wider than the viewport and bring back the horizontal scrollbar at 375px. */}
       <div
         className={`lg:grid lg:items-start ${
+          // 24rem for the detail: at 1440 that leaves the work 800px against the detail's 384,
+          // so the content area really is three columns with the work spanning two of them
+          // (workbench spec §2). The pane's own box is 22rem inside it, with a 16px gutter on
+          // either side so it reads as a PANEL in that column rather than a slab bolted to the
+          // edge of the window. TaskDetail holds the matching numbers; they are two places and
+          // must agree.
           paneOpen && wide
-            ? 'lg:grid-cols-[16rem_minmax(0,1fr)_22.5rem]'
+            ? 'lg:grid-cols-[16rem_minmax(0,1fr)_24rem]'
             : 'lg:grid-cols-[16rem_minmax(0,1fr)]'
         }`}
       >

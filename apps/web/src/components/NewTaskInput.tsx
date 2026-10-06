@@ -1,8 +1,9 @@
 import { useRef, useState } from 'react'
 import { CHEVRON_PX, HANDLE_PX, INDENT_PX, RAIL_GUTTER_PX } from './RowParts'
 
-// The status marker's column: the input lines up with the TITLE of the rows around it.
-const MARK_PX = 18
+// The status marker's COLUMN -- the width of `StatusButton`, not of the glyph inside it -- so the
+// input lines up with the TITLE of the rows around it rather than with the marker.
+const MARK_PX = 28
 
 type Props = {
   /** Depth of the task this input creates; a root task is 1. Indents it into place. */
@@ -36,7 +37,7 @@ export function NewTaskInput({ depth, onCommit, onCancel }: Props) {
         paddingLeft:
           RAIL_GUTTER_PX + (depth - 1) * INDENT_PX + HANDLE_PX + CHEVRON_PX + MARK_PX + 8,
       }}
-      className="flex min-h-8 items-center"
+      className="flex min-h-11 items-center"
     >
       <input
         ref={input}

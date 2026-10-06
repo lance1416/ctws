@@ -33,14 +33,14 @@ export function DeleteConfirm({
         type="button"
         disabled={busy}
         onClick={onConfirm}
-        className="h-8 rounded-md bg-danger px-3 font-medium text-danger-fg hover:opacity-90 disabled:opacity-50"
+        className="h-9 rounded-lg bg-danger px-3 font-medium text-danger-fg hover:opacity-90 disabled:opacity-50"
       >
         确认删除
       </button>
       <button
         type="button"
         onClick={onCancel}
-        className="h-8 rounded-md border border-border-strong px-3 text-fg hover:bg-surface-hover"
+        className="h-9 rounded-lg border border-border-strong px-3 text-fg hover:bg-surface-hover"
       >
         取消
       </button>

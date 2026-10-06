@@ -101,7 +101,9 @@ export function TaskRow({
         transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
         transition,
       }}
-      className={`group relative flex min-h-8 cursor-pointer items-center rounded-md leading-snug max-sm:flex-wrap hover:bg-surface-hover ${isDragging ? 'bg-surface-raised opacity-70' : ''}`}
+      // 44px, the workbench's single-line row (spec §4, at the sizes stage 1 settled on): the tree
+      // is the densest list in the app and the one the complaint 「组件太小」 was about.
+      className={`group relative flex min-h-11 cursor-pointer items-center rounded-lg leading-snug max-sm:flex-wrap hover:bg-surface-hover ${isDragging ? 'bg-surface-raised opacity-70' : ''}`}
     >
       <ProjectRail projectId={projectId} continuous />
       {/* One hairline per ancestor level, centred under that level's chevron column. Depth is
@@ -129,7 +131,7 @@ export function TaskRow({
         onFocus={onFocus}
         onKeyDown={onKeyDown}
         style={{ width: HANDLE_PX }}
-        className="flex h-8 shrink-0 cursor-grab touch-none items-center justify-center text-fg-muted opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
+        className="flex h-11 shrink-0 cursor-grab touch-none items-center justify-center text-fg-muted opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
       >
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="currentColor">
           {[5.5, 10.5].flatMap((x) =>
@@ -146,7 +148,7 @@ export function TaskRow({
           aria-expanded={!row.collapsed}
           onClick={onToggle}
           style={{ width: CHEVRON_PX }}
-          className="flex h-8 shrink-0 items-center justify-center text-fg-muted hover:text-fg"
+          className="flex h-11 shrink-0 items-center justify-center text-fg-muted hover:text-fg"
         >
           <Icon d={row.collapsed ? 'M6 3.5l4.5 4.5L6 12.5' : 'M3.5 6l4.5 4.5L12.5 6'} />
         </button>
@@ -200,7 +202,7 @@ export function TaskRow({
         tabIndex={-1}
         aria-label={`添加子任务（${title}）`}
         onClick={onAddChild}
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-fg-muted opacity-0 group-hover:opacity-100 hover:text-fg [@media(hover:none)]:opacity-100"
+        className="flex h-9 w-8 shrink-0 items-center justify-center rounded-lg text-fg-muted opacity-0 group-hover:opacity-100 hover:text-fg [@media(hover:none)]:opacity-100"
       >
         <Icon d="M8 3v10M3 8h10" />
       </button>

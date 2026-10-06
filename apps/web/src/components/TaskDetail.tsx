@@ -46,12 +46,12 @@ export function fromLocalInput(v: string): string | null {
 }
 
 const field =
-  'w-full rounded-md border border-border-strong bg-surface px-3 py-2 text-fg leading-snug'
+  'w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-fg leading-snug'
 /** The section label. Small, muted, and the same on every block, so the blocks read as peers. */
 const label = 'block text-xs text-fg-muted'
 /** A named decision: the same shape as the row's triage buttons, so the two speak one language. */
 const decision =
-  'rounded-md border border-border-subtle px-2 py-1 text-sm text-fg hover:border-border-strong hover:bg-surface'
+  'flex h-9 items-center rounded-lg border border-border-subtle px-2.5 text-sm text-fg hover:border-border-strong hover:bg-surface'
 /**
  * The exact field, for the days the three named decisions do not cover. Quieter than them on
  * purpose -- it is the fallback, and a full-width boxed input made the rarer route the loudest
@@ -59,7 +59,7 @@ const decision =
  * "this is a control", so it keeps `border-strong` (styles.css: border-subtle is decorative only).
  */
 const exact =
-  'w-full max-w-[14rem] rounded-md border border-border-strong bg-surface px-2 py-1 text-sm text-fg'
+  'h-9 w-full max-w-[14rem] rounded-lg border border-border-strong bg-surface px-2 text-sm text-fg'
 
 /**
  * The exact local day and time, said the way the rest of the app says it ("明天 14:30"), under the
@@ -316,11 +316,20 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
         aria-label="任务详情"
         data-detail-mode={wide ? 'pane' : 'overlay'}
         onKeyDown={onKeyDown}
-        style={{ top }}
-        className={`fixed right-0 bottom-0 z-20 overflow-y-auto border-l border-border-subtle p-5 text-fg focus:outline-none ${
-          // A COLUMN is chrome, so it wears the same sunken surface as the rail and the top bar.
-          // A LAYER is above the page, so it wears the raised one and has the scrim under it.
-          wide ? 'w-[22.5rem] bg-surface-sunken' : 'w-full max-w-md bg-surface-raised'
+        // In the column the panel is inset by the grid's own gutter, so the 16px is added to the
+        // top as well -- a panel that started flush with the top bar and had air on three sides
+        // would read as a sheet that had slid down from it.
+        style={{ top: wide ? top + 16 : top }}
+        className={`fixed z-20 overflow-y-auto p-5 text-fg focus:outline-none ${
+          // A COLUMN is a PANEL in the page's right-hand column: the same surface, radius, hairline
+          // and (in light) hair of shadow every other panel on the page wears, so it reads as part
+          // of the page rather than a form bolted to the window's edge. Its 22rem plus the two
+          // 16px gutters is the 24rem track Layout takes out of the grid for it.
+          // A LAYER is above the page, so it is flush with the edges, wears the raised surface and
+          // has the scrim under it.
+          wide
+            ? 'right-4 bottom-4 w-[22rem] rounded-xl border border-border-subtle bg-surface-panel shadow-panel'
+            : 'right-0 bottom-0 w-full max-w-md border-l border-border-subtle bg-surface-raised'
         }`}
       >
         <form
@@ -346,7 +355,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                 aria-label="项目"
                 value={nextProjectId}
                 onChange={(e) => setNextProjectId(e.target.value)}
-                className="-ml-0.5 max-w-full rounded-md bg-transparent py-0.5 text-sm text-fg-muted hover:text-fg"
+                className="-ml-0.5 max-w-full rounded-lg bg-transparent py-0.5 text-sm text-fg-muted hover:text-fg"
               >
                 {(projects.data ?? [])
                   .filter((p) => !p.archivedAt || p.id === task.projectId)
@@ -361,7 +370,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
               aria-label="标题"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="mt-1 w-full rounded-md bg-transparent py-0.5 text-lg font-semibold text-fg"
+              className="mt-0.5 w-full rounded-lg bg-transparent py-0.5 text-xl font-semibold text-fg"
             />
           </div>
 
@@ -379,7 +388,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
               {TASK_STATUSES.map((s) => (
                 <label
                   key={s}
-                  className="relative flex cursor-pointer items-center gap-1.5 rounded-md border border-border-subtle py-1 pr-2 pl-1.5 text-sm text-fg-muted hover:bg-surface has-[:checked]:border-border-strong has-[:checked]:bg-surface has-[:checked]:font-medium has-[:checked]:text-fg has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent"
+                  className="relative flex min-h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-border-subtle py-1 pr-2 pl-1.5 text-sm text-fg-muted hover:bg-surface has-[:checked]:border-border-strong has-[:checked]:bg-surface has-[:checked]:font-medium has-[:checked]:text-fg has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent"
                 >
                   <input
                     type="radio"
@@ -486,7 +495,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
             />
           </label>
           {asking && (
-            <div role="alert" className="rounded-md border border-border-strong p-3 text-sm">
+            <div role="alert" className="rounded-lg border border-border-strong p-3 text-sm">
               <p className="text-fg">
                 {leaving ? '有未保存的修改，离开会丢掉它们。' : '有未保存的修改，关闭会丢掉它们。'}
               </p>
@@ -495,14 +504,14 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                   ref={keepEditing}
                   type="button"
                   onClick={keepEditingNow}
-                  className="h-9 rounded-md bg-accent px-3 font-medium text-accent-fg hover:opacity-90"
+                  className="h-9 rounded-lg bg-accent px-3 font-medium text-accent-fg hover:opacity-90"
                 >
                   继续编辑
                 </button>
                 <button
                   type="button"
                   onClick={discard}
-                  className="h-9 rounded-md border border-border-strong px-3 text-fg hover:bg-surface-hover"
+                  className="h-9 rounded-lg border border-border-strong px-3 text-fg hover:bg-surface-hover"
                 >
                   放弃修改
                 </button>
@@ -518,14 +527,14 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
             <button
               type="submit"
               disabled={save.isPending || !title.trim()}
-              className="h-10 rounded-md bg-accent px-4 font-medium text-accent-fg hover:opacity-90 disabled:opacity-50"
+              className="h-10 rounded-lg bg-accent px-4 font-medium text-accent-fg hover:opacity-90 disabled:opacity-50"
             >
               保存
             </button>
             <button
               type="button"
               onClick={requestClose}
-              className="h-10 rounded-md border border-border-strong px-4 text-fg hover:bg-surface-hover"
+              className="h-10 rounded-lg border border-border-strong px-4 text-fg hover:bg-surface-hover"
             >
               关闭
             </button>
@@ -537,7 +546,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
               ref={deleteButton}
               type="button"
               onClick={askDelete}
-              className="-mx-2 rounded-md px-2 py-1 text-sm text-fg-muted hover:text-danger"
+              className="-mx-2 rounded-lg px-2 py-1 text-sm text-fg-muted hover:text-danger"
             >
               删除任务
             </button>
@@ -545,7 +554,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
           {deleting && (
             <DeleteConfirm
               label="确认删除任务"
-              className="-mt-3 rounded-md border border-border-strong p-3"
+              className="-mt-3 rounded-lg border border-border-strong p-3"
               message={
                 deleting.descendants === null
                   ? `删除「${task.title}」…`
