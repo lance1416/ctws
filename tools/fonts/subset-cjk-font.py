@@ -18,6 +18,13 @@ subset renders a single task title in two faces at two weights, changing as the 
 the subset covers what a user can type or it should not exist. See
 docs/superpowers/specs/2026-10-06-ctws-workbench.md section 4.
 
+NOT BIT-REPRODUCIBLE. Re-running this on the same source font and the same charset produces a file
+of a slightly different size each time -- 1,800,080 / 1,800,096 / 1,800,100 / 1,800,284 B measured
+across four runs, a spread of 0.01%, and `PYTHONHASHSEED=0` does not fix it, so the ordering comes
+from inside fontTools rather than from this script. Coverage is identical every time (6,879
+codepoints), which is what the tests assert. Do not treat a changed hash as a changed font, and do
+not regenerate just to "refresh" the artefact: the committed file is the one that was shipped.
+
 One file, not `unicode-range` chunks: the container serves HTTP/1.1, where 13-14 chunk requests
 cost round-trip waves, and a chunking measured for this app came out larger than the single file
 because a page of Chinese draws ~150 distinct characters from across the whole character space.
