@@ -14,6 +14,8 @@ import { addDays, dayPhrase, moveDueToDay, nextMonday, overdueLabel, ymd } from 
 import { projectRailClass } from '../projectColor'
 import { DeleteConfirm } from './DeleteConfirm'
 import { useReservePane, useWidePane } from './detailPane'
+// The shared editing vocabulary, now that the 新建 dialog types into a task as well.
+import { decision, field, label } from './formStyles'
 import { LeaveGuardContext } from './leaveGuard'
 import { DeadlineMark, PlanMark } from './RowParts'
 import { StatusMark } from './StatusMark'
@@ -45,13 +47,6 @@ export function fromLocalInput(v: string): string | null {
   return s === null ? null : new Date(s).toISOString()
 }
 
-const field =
-  'w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-fg leading-snug'
-/** The section label. Small, muted, and the same on every block, so the blocks read as peers. */
-const label = 'block text-xs text-fg-muted'
-/** A named decision: the same shape as the row's triage buttons, so the two speak one language. */
-const decision =
-  'flex h-9 items-center rounded-lg border border-border-subtle px-2.5 text-sm text-fg hover:border-border-strong hover:bg-surface'
 /**
  * The exact field, for the days the three named decisions do not cover. Quieter than them on
  * purpose -- it is the fallback, and a full-width boxed input made the rarer route the loudest
