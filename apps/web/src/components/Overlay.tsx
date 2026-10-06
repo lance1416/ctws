@@ -70,7 +70,10 @@ export function Overlay({
   }, [onClose])
 
   return (
-    <div className="fixed inset-0 z-20 flex justify-center overflow-y-auto bg-scrim px-4 py-[8vh]">
+    // `max-sm:pt-24`: the sticky top bar is two rows tall below 640px and sits above the scrim
+    // (z-30), which sliced the top off this panel on a phone. Same correction as `Modal`'s, so the
+    // migrated layer and this one still sit in the same place.
+    <div className="fixed inset-0 z-20 flex justify-center overflow-y-auto bg-scrim px-4 py-[8vh] max-sm:pt-24">
       <div
         ref={panel}
         role="dialog"
