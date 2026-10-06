@@ -1,16 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { listMovement } from '../api/movement'
 import { inboxOf, listProjects } from '../api/projects'
 import { searchTasks } from '../api/search'
 import { createTask } from '../api/tasks'
 import { refreshTasks } from '../api/taskCache'
 import { listToday } from '../api/today'
+import { CreateTaskDialog } from '../components/CreateTaskDialog'
+import { isOverlayOpen } from '../components/overlayState'
 import { ProjectRail } from '../components/RowParts'
 import { Stat, StatRow } from '../components/Stat'
 import { StatusMark } from '../components/StatusMark'
 import { TaskTree } from '../components/TaskTree'
 import { dayPhrase } from '../dueAt'
+import { useShortcutsEnabled } from '../shortcuts/enabled'
+import { isBareKey, isTypingTarget } from '../shortcuts/keys'
 import { Completed } from '../routes/Completed'
 import { Today } from '../routes/Today'
 import { useMe } from '../useMe'
@@ -137,6 +141,27 @@ function ProjectNumbers({ projectId }: { projectId: string }) {
 function ProjectTasks({ projectId }: { projectId: string }) {
   const qc = useQueryClient()
   const [title, setTitle] = useState('')
+  const [creating, setCreating] = useState(false)
+  const shortcuts = useShortcutsEnabled()
+
+  /**
+   * `n` opens 「新建」. It lives HERE rather than in the shell's key table because it needs a
+   * project to create into, so it exists exactly where that is true; the `?` list says so under
+   * 项目页上. It obeys the same three guards every other single key obeys -- the off switch, "not
+   * while typing", and "not under an open layer" -- and it is not a `g` chord, so it cannot
+   * collide with one.
+   */
+  useEffect(() => {
+    if (!shortcuts) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'n' || !isBareKey(e)) return
+      if (isTypingTarget(e.target) || isOverlayOpen()) return
+      e.preventDefault()
+      setCreating(true)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [shortcuts])
 
   const create = useMutation({
     mutationFn: (t: string) => createTask({ projectId, title: t, parentId: null }),
@@ -153,17 +178,36 @@ function ProjectTasks({ projectId }: { projectId: string }) {
 
   return (
     <>
-      <input
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && !e.nativeEvent.isComposing) submit()
-        }}
-        placeholder="新任务"
-        aria-label="新任务"
-        // Inside the panel now, so it leads the rows rather than hanging under a page heading.
-        className="mb-1 ml-3 h-10 w-[calc(100%-1.5rem)] max-w-[40ch] rounded-lg border border-border-strong bg-surface px-3 text-fg placeholder:text-fg-muted"
-      />
+      {/* The fast path and the full one, side by side and in that order: a line typed into the box
+          and filed with Enter is the project's success criterion, so it stays first and stays
+          untouched. 新建… is the way in for the task whose shape is already known. */}
+      <div className="mb-1 ml-3 flex w-[calc(100%-1.5rem)] max-w-[52ch] flex-wrap items-center gap-2">
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.nativeEvent.isComposing) submit()
+          }}
+          placeholder="新任务"
+          aria-label="新任务"
+          // Inside the panel now, so it leads the rows rather than hanging under a page heading.
+          className="h-10 min-w-0 flex-1 basis-[22ch] rounded-lg border border-border-strong bg-surface px-3 text-fg placeholder:text-fg-muted"
+        />
+        <button
+          type="button"
+          onClick={() => setCreating(true)}
+          className="flex h-10 shrink-0 items-center gap-1.5 rounded-lg border border-border-strong px-3 text-sm text-fg hover:bg-surface-hover"
+        >
+          新建…
+          <kbd
+            aria-hidden="true"
+            className="pointer-events-none rounded border border-border-strong px-1.5 text-xs leading-5 text-fg-muted max-sm:hidden"
+          >
+            n
+          </kbd>
+        </button>
+      </div>
+      {creating && <CreateTaskDialog projectId={projectId} onClose={() => setCreating(false)} />}
       {create.isError && (
         <p role="alert" className="mt-2 text-sm text-danger">
           创建失败，请重试
