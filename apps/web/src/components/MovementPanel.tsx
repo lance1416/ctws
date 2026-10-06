@@ -57,7 +57,7 @@ export function MovementPanel({
               {/* Weight and value tell the two numbers apart, not hue: `plan`, `deadline` and
                   `missed` mean particular things about DATES, and spending one of them on a
                   count would make the palette say two things at once. */}
-              <span className="shrink-0 text-sm font-medium text-fg tabular-nums">
+              <span className="shrink-0 text-sm font-semibold text-fg tabular-nums">
                 本周 +{r.doneThisWeek}
               </span>
               <span className="shrink-0 text-sm text-fg-subtle tabular-nums">
@@ -74,9 +74,9 @@ export function MovementPanel({
           data-stagnant={quiet.projectId}
           className="mt-2 rounded-lg bg-surface px-3 py-2 text-sm text-fg-muted"
         >
-          <span className="font-medium text-fg">{quiet.projectName}</span>最后一次活动是
+          <span className="font-semibold text-fg">{quiet.projectName}</span>最后一次活动是
           {activityLabel(quiet.lastActivityOn!, today)}，已经静了{' '}
-          <span className="font-medium text-fg tabular-nums">{quiet.quietDays}</span> 天。
+          <span className="font-semibold text-fg tabular-nums">{quiet.quietDays}</span> 天。
         </p>
       )}
     </Panel>

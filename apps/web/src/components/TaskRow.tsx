@@ -124,11 +124,15 @@ export function TaskRow({
         transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
         transition,
       }}
-      // 44px for a row with nothing to say and 58px for one with a second line (spec §2): the
-      // height is not a class but the sum of what the row carries, so only the rows that carry
-      // information pay for the extra line. `items-start`, because the glyphs belong to the FIRST
-      // line: every one of them is 44px tall, so they centre on the title whether or not a second
-      // line follows it.
+      // 44px for a row with nothing to say and 66px for one with a second line: the height is not
+      // a class but the sum of what the row carries, so only the rows that carry information pay
+      // for the extra line. `items-start`, because the glyphs belong to the FIRST line: every one
+      // of them is 44px tall, so they centre on the title whether or not a second line follows it.
+      // 44 = 10 + 24 + 10 and 66 = 10 + 24 + 22 + 10, from the typography spec's px pairs: the
+      // title is 行标题 16/24 and the second line is 元信息 14/22. The 44 is unchanged from the
+      // 15/20 title it replaces -- it was 12 + 20 + 8 then and the padding absorbed the two extra
+      // pixels of leading -- so the workbench's single-line row metric survives the larger scale
+      // exactly, and only the rows that already cost a second line got taller.
       className={`group relative flex min-h-11 cursor-pointer items-start rounded-lg hover:bg-surface-hover ${isDragging ? 'bg-surface-raised opacity-70' : ''}`}
     >
       <ProjectRail projectId={projectId} continuous />
@@ -204,13 +208,14 @@ export function TaskRow({
           any more. Under it, the dates in full words -- and NOT a breadcrumb: in a project tree the
           project is known and the hierarchy is visible from the indentation, so writing it again
           would spend vertical space on zero information (spec §2).
-          `pt-3 pb-2` around a 20px title puts its centre at 22px, which is the centre of the 44px
-          glyphs beside it, and makes the row exactly 44px with no second line and 58px with one. */}
-      <span data-row-cell className="flex min-w-0 flex-1 flex-col pt-3 pb-2">
+          `py-2.5` around a 24px title line puts its centre at 22px, which is the centre of the
+          44px glyphs beside it, and makes the row exactly 44px with no second line and 66px with
+          one. Symmetric now, where the old 15/20 title needed `pt-3 pb-2` to land on 22. */}
+      <span data-row-cell className="flex min-w-0 flex-1 flex-col py-2.5">
         <span className="flex min-w-0 items-center">
           <span
             data-row-title
-            className={`truncate text-[15px] leading-5 ${
+            className={`truncate text-base ${
               status === 'in_progress' ? 'font-semibold' : ''
             } ${inactive ? 'text-fg-muted' : 'text-fg'} ${status === 'cancelled' ? 'line-through' : ''}`}
           >

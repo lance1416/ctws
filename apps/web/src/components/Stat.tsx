@@ -33,7 +33,7 @@ export function Stat({
     <div data-stat={label} className="min-w-0">
       <dt className="text-xs whitespace-nowrap text-fg-subtle">{label}</dt>
       <dd
-        className={`text-xl leading-tight font-semibold tabular-nums ${
+        className={`text-lg font-semibold tabular-nums ${
           tone === 'missed' ? 'text-missed' : 'text-fg'
         }`}
       >

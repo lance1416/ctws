@@ -46,7 +46,7 @@ export function SideRail() {
           end={end ?? false}
           className={({ isActive }) =>
             `flex min-h-9 shrink-0 items-center gap-2 rounded-lg px-2.5 py-1 whitespace-nowrap ${
-              isActive ? 'bg-surface-panel font-medium text-fg' : 'text-fg-muted hover:text-fg'
+              isActive ? 'bg-surface-panel font-semibold text-fg' : 'text-fg-muted hover:text-fg'
             }`
           }
         >
@@ -60,7 +60,7 @@ export function SideRail() {
       <NavLink
         to="/projects"
         className={({ isActive }) =>
-          `mt-0 shrink-0 rounded-lg px-2.5 py-1 font-medium whitespace-nowrap lg:mt-6 lg:text-xs ${
+          `mt-0 shrink-0 rounded-lg px-2.5 py-1 font-semibold whitespace-nowrap lg:mt-6 lg:text-xs ${
             isActive ? 'text-fg' : 'text-fg-muted hover:text-fg'
           }`
         }

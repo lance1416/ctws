@@ -65,7 +65,7 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
       <div className="px-5 py-4">
         {GROUPS.map((group) => (
           <section key={group.title} className="mt-4 first:mt-0">
-            <h3 className="text-sm font-medium text-fg-muted">{group.title}</h3>
+            <h3 className="text-sm font-semibold text-fg-muted">{group.title}</h3>
             <dl className="mt-1">
               {group.keys.map(([key, what]) => (
                 <div key={`${group.title}-${key}`} className="flex items-baseline gap-3 py-0.5">

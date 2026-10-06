@@ -48,7 +48,7 @@ export function Login() {
             other screen, here at the size of a wordmark. It is the only ornament on the page. */}
         <div className="flex items-center gap-2.5">
           <span aria-hidden="true" className="h-7 w-[3px] rounded-full bg-accent" />
-          <h1 className="text-2xl font-semibold">CTWS</h1>
+          <h1 className="text-xl font-semibold">CTWS</h1>
         </div>
         <p className="mt-2 text-sm text-fg-muted">个人工作台账</p>
 
@@ -95,7 +95,7 @@ export function Login() {
           <button
             type="submit"
             disabled={act.isPending}
-            className="mt-2 h-10 w-full rounded-md bg-accent font-medium text-accent-fg hover:opacity-90 disabled:opacity-50"
+            className="mt-2 h-10 w-full rounded-md bg-accent font-semibold text-accent-fg hover:opacity-90 disabled:opacity-50"
           >
             Log in
           </button>

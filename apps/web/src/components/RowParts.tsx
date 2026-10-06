@@ -285,7 +285,7 @@ export function RowMeta({
                 data-date-hint={due.overdue ? 'overdue' : 'due'}
                 title={exact}
                 className={`whitespace-nowrap tabular-nums ${
-                  due.overdue ? 'font-medium text-missed' : 'text-deadline'
+                  due.overdue ? 'text-missed' : 'text-deadline'
                 }`}
               >
                 {due.text}
@@ -302,7 +302,7 @@ export function RowMeta({
                 key="late"
                 data-late-text
                 title={summary ? exact : undefined}
-                className="font-medium whitespace-nowrap text-missed"
+                className="whitespace-nowrap text-missed"
               >
                 {due.late}
               </span>
@@ -316,7 +316,7 @@ export function RowMeta({
                 key="plan"
                 data-plan-text
                 data-date-hint={carried ? 'carried' : 'scheduled'}
-                className={`whitespace-nowrap text-plan ${carried ? 'font-medium' : ''}`}
+                className="whitespace-nowrap text-plan"
               >
                 {plan}
               </span>
@@ -327,9 +327,16 @@ export function RowMeta({
   ).filter((part): part is Part => part !== null)
   if (parts.length === 0) return null
   return (
+    // 元信息: 14/22, weight 400, from the typography spec's scale -- and 400 for EVERY phrase on
+    // this line, including the overdue date, the 已逾 phrase and a carried plan, which each used
+    // to be 500. The spec publishes no 600 step at 14/22 (only at 16/24, 行标题（强调）), and 500
+    // does not exist any more: it is a no-op on the Microsoft YaHei fallback path. The three
+    // emphases lose nothing they were the sole carrier of -- the deadline keeps `missed` against
+    // `deadline`, the row keeps its own leading glyph, and the lateness is spelled out in words
+    // (WCAG 1.4.1 was never satisfied by the weight here).
     <span
       data-row-meta
-      className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 text-sm leading-[18px] text-fg-muted"
+      className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 text-sm text-fg-muted"
     >
       {parts.map((part, i) => (
         // The separator travels WITH the phrase it follows, inside one flex item: loose, it can be

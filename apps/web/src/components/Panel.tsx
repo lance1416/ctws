@@ -41,7 +41,7 @@ export function Panel({
       className={`flex min-w-0 flex-col rounded-xl border border-border-subtle bg-surface-panel shadow-panel ${className}`}
     >
       <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1 px-4 pt-3.5 pb-1.5">
-        {heading ?? <h2 className="text-sm font-medium text-fg-muted">{label}</h2>}
+        {heading ?? <h2 className="text-lg font-semibold text-fg">{label}</h2>}
         {count !== undefined && count > 0 && (
           <span data-count className="text-sm text-fg-subtle tabular-nums">
             {count}

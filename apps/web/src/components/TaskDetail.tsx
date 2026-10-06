@@ -391,7 +391,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
               </div>
               {/* The task's name, at the top of the pane's type scale: the pane opens with the
                   TASK, exactly as the editing form does. */}
-              <h2 data-detail-title className="mt-0.5 text-xl font-semibold text-fg">
+              <h2 data-detail-title className="mt-0.5 text-lg font-semibold text-fg">
                 {task.title}
               </h2>
             </div>
@@ -405,18 +405,16 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                 <span className="text-sm text-fg">{STATUS_LABEL[task.status]}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="flex items-center gap-1 text-sm font-medium text-deadline">
+                <span className="flex items-center gap-1 text-sm text-deadline">
                   <DeadlineMark filled={false} />
                   截止
                 </span>
-                <span
-                  className={`text-sm tabular-nums ${dueOverdue ? 'font-medium text-missed' : 'text-fg'}`}
-                >
+                <span className={`text-sm tabular-nums ${dueOverdue ? 'text-missed' : 'text-fg'}`}>
                   {dueReading ?? '没有设定'}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="flex items-center gap-1 text-sm font-medium text-plan">
+                <span className="flex items-center gap-1 text-sm text-plan">
                   <PlanMark />
                   排期
                 </span>
@@ -430,10 +428,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                   line breaks: `whitespace-pre-wrap` is what makes a note read the way it was
                   typed. This is the element Markdown will later render into (a later stage). */}
               {task.notes ? (
-                <p
-                  data-detail-notes
-                  className="mt-1 max-w-[68ch] text-sm leading-relaxed whitespace-pre-wrap text-fg"
-                >
+                <p data-detail-notes className="mt-1 max-w-[68ch] whitespace-pre-wrap text-fg">
                   {task.notes}
                 </p>
               ) : (
@@ -494,7 +489,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                 aria-label="标题"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="mt-0.5 w-full rounded-lg bg-transparent py-0.5 text-xl font-semibold text-fg"
+                className="mt-0.5 w-full rounded-lg bg-transparent py-0.5 text-lg font-semibold text-fg"
               />
             </div>
 
@@ -512,7 +507,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                 {TASK_STATUSES.map((s) => (
                   <label
                     key={s}
-                    className="relative flex min-h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-border-subtle py-1 pr-2 pl-1.5 text-sm text-fg-muted hover:bg-surface has-[:checked]:border-border-strong has-[:checked]:bg-surface has-[:checked]:font-medium has-[:checked]:text-fg has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent"
+                    className="relative flex min-h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-border-subtle py-1 pr-2 pl-1.5 text-sm text-fg-muted hover:bg-surface has-[:checked]:border-border-strong has-[:checked]:bg-surface has-[:checked]:font-semibold has-[:checked]:text-fg has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent"
                   >
                     <input
                       type="radio"
@@ -541,10 +536,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
               decisions the row's triage control offers -- 今天 / 明天 / 下周 and the way out --
               AND an exact field for everything those three do not cover. */}
             <div>
-              <label
-                htmlFor="detail-due"
-                className="flex items-center gap-1 text-sm font-medium text-deadline"
-              >
+              <label htmlFor="detail-due" className="flex items-center gap-1 text-sm text-deadline">
                 <DeadlineMark filled={false} />
                 截止
               </label>
@@ -574,10 +566,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
             </div>
 
             <div>
-              <label
-                htmlFor="detail-plan"
-                className="flex items-center gap-1 text-sm font-medium text-plan"
-              >
+              <label htmlFor="detail-plan" className="flex items-center gap-1 text-sm text-plan">
                 <PlanMark />
                 排期
               </label>
@@ -638,7 +627,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                     ref={keepEditing}
                     type="button"
                     onClick={keepEditingNow}
-                    className="h-9 rounded-lg bg-accent px-3 font-medium text-accent-fg hover:opacity-90"
+                    className="h-9 rounded-lg bg-accent px-3 font-semibold text-accent-fg hover:opacity-90"
                   >
                     继续编辑
                   </button>
@@ -661,7 +650,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
               <button
                 type="submit"
                 disabled={save.isPending || !title.trim()}
-                className="h-10 rounded-lg bg-accent px-4 font-medium text-accent-fg hover:opacity-90 disabled:opacity-50"
+                className="h-10 rounded-lg bg-accent px-4 font-semibold text-accent-fg hover:opacity-90 disabled:opacity-50"
               >
                 保存
               </button>

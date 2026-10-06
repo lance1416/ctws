@@ -182,7 +182,7 @@ export function CreateTaskDialog({
               setTitle(e.target.value)
               setProblem(null)
             }}
-            className="mt-0.5 w-full rounded-lg bg-transparent py-0.5 text-xl font-semibold text-fg"
+            className="mt-0.5 w-full rounded-lg bg-transparent py-0.5 text-lg font-semibold text-fg"
           />
         </div>
 
@@ -218,7 +218,7 @@ export function CreateTaskDialog({
             {TASK_STATUSES.map((s) => (
               <label
                 key={s}
-                className="relative flex min-h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-border-subtle py-1 pr-2 pl-1.5 text-sm text-fg-muted hover:bg-surface has-[:checked]:border-border-strong has-[:checked]:bg-surface has-[:checked]:font-medium has-[:checked]:text-fg has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent"
+                className="relative flex min-h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-border-subtle py-1 pr-2 pl-1.5 text-sm text-fg-muted hover:bg-surface has-[:checked]:border-border-strong has-[:checked]:bg-surface has-[:checked]:font-semibold has-[:checked]:text-fg has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent"
               >
                 <input
                   type="radio"
@@ -243,7 +243,7 @@ export function CreateTaskDialog({
             each button is a STATE here and not a one-shot action -- the form has not been sent
             yet, so the person has to be able to see (and hear) what is currently chosen. */}
         <div>
-          <span className="flex items-center gap-1 text-sm font-medium text-deadline">
+          <span className="flex items-center gap-1 text-sm text-deadline">
             <DeadlineMark filled={false} />
             截止
           </span>
@@ -267,7 +267,7 @@ export function CreateTaskDialog({
         </div>
 
         <div>
-          <span className="flex items-center gap-1 text-sm font-medium text-plan">
+          <span className="flex items-center gap-1 text-sm text-plan">
             <PlanMark />
             排期
           </span>
@@ -320,7 +320,7 @@ export function CreateTaskDialog({
         <div className="flex flex-wrap items-center gap-2 border-t border-border-subtle pt-4">
           <button
             type="submit"
-            className="h-9 rounded-lg bg-accent px-3 font-medium text-accent-fg hover:opacity-90"
+            className="h-9 rounded-lg bg-accent px-3 font-semibold text-accent-fg hover:opacity-90"
           >
             创建
           </button>

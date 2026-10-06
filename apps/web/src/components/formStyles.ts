@@ -9,8 +9,7 @@
  * not shared vocabulary.
  */
 
-export const field =
-  'w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-fg leading-snug'
+export const field = 'w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-fg'
 
 /** The section label. Small, muted, and the same on every block, so the blocks read as peers. */
 export const label = 'block text-xs text-fg-muted'

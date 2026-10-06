@@ -357,7 +357,7 @@ export function Today() {
       <Panel
         label="正在做"
         className="border-l-4 border-l-accent"
-        heading={<h2 className="text-xs font-medium text-fg-subtle">正在做</h2>}
+        heading={<h2 className="text-xs font-semibold text-fg-subtle">正在做</h2>}
       >
         {inProgress.length === 0 ? (
           <PanelEmpty>现在没有在做的事。从下面的队列里挑一件，按 s 开始。</PanelEmpty>
@@ -393,7 +393,7 @@ export function Today() {
                     type="button"
                     aria-label={`完成「${t.title}」`}
                     onClick={() => setStatus(t.id, toggleDoneTarget(t.status))}
-                    className="h-9 rounded-lg bg-accent px-3.5 text-sm font-medium text-accent-fg hover:opacity-90"
+                    className="h-9 rounded-lg bg-accent px-3.5 text-sm font-semibold text-accent-fg hover:opacity-90"
                   >
                     完成
                   </button>

@@ -70,7 +70,7 @@ export function NewTaskInput({ depth, leadSlot, onCommit, onCancel }: Props) {
         }}
         placeholder="回车添加，Esc 取消"
         aria-label="添加任务"
-        className="h-8 w-full border-b border-border-strong bg-transparent text-[15px] text-fg placeholder:text-fg-muted"
+        className="h-8 w-full border-b border-border-strong bg-transparent text-base text-fg placeholder:text-fg-muted"
       />
     </li>
   )

@@ -37,7 +37,7 @@ export function Project() {
       <Panel
         label="项目概况"
         className="border-l-4 border-l-accent"
-        heading={<h2 className="text-xs font-medium text-fg-subtle">项目</h2>}
+        heading={<h2 className="text-xs font-semibold text-fg-subtle">项目</h2>}
       >
         <div className="flex min-w-0 flex-wrap items-end justify-between gap-x-8 gap-y-3 px-2 pb-1">
           <div className="flex min-w-0 items-center gap-2.5">
@@ -54,7 +54,7 @@ export function Project() {
             <h1
               id="project-heading"
               tabIndex={-1}
-              className="min-w-0 truncate text-2xl font-semibold focus:outline-none"
+              className="min-w-0 truncate text-xl font-semibold focus:outline-none"
             >
               {name ?? ''}
             </h1>

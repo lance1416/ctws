@@ -33,7 +33,7 @@ export function DeleteConfirm({
         type="button"
         disabled={busy}
         onClick={onConfirm}
-        className="h-9 rounded-lg bg-danger px-3 font-medium text-danger-fg hover:opacity-90 disabled:opacity-50"
+        className="h-9 rounded-lg bg-danger px-3 font-semibold text-danger-fg hover:opacity-90 disabled:opacity-50"
       >
         确认删除
       </button>
