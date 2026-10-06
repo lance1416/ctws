@@ -61,6 +61,9 @@ test('a task that is both overdue and in progress is shown once', async ({ page 
   await setDetailStatus(page, '进行中')
   await page.getByLabel('截止', { exact: true }).fill('2020-01-01T00:00')
   await page.getByRole('button', { name: '保存' }).click()
+  // Wait for the save to land before navigating, the way the saves above this one do. Without it
+  // the test races its own PATCH: it went red roughly once in sixty runs, with 逾期 simply absent.
+  await expect(page.getByRole('dialog')).toHaveCount(0)
 
   await page.getByRole('link', { name: '今天' }).click()
   // Wait for the list to be on screen before counting: while the route is still switching the
@@ -103,6 +106,9 @@ test('each segment goes to its own panel, in the workbench order, and to only on
   await editDetail(page)
   await page.getByLabel('截止', { exact: true }).fill('2020-01-01T00:00')
   await page.getByRole('button', { name: '保存' }).click()
+  // Wait for the save to land before navigating, the way the saves above this one do. Without it
+  // the test races its own PATCH: it went red roughly once in sixty runs, with 逾期 simply absent.
+  await expect(page.getByRole('dialog')).toHaveCount(0)
 
   await page.getByRole('link', { name: '今天' }).click()
   await expect(page.getByRole('heading', { level: 1, name: '今天' })).toBeVisible()
