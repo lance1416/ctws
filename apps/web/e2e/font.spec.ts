@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 import { registerFreshUser } from './helpers'
 
 /**
@@ -11,7 +11,7 @@ import { registerFreshUser } from './helpers'
  */
 
 /** The `/assets/...woff2` URL the built stylesheet points at, read out of the live stylesheet. */
-async function fontUrl(page: import('@playwright/test').Page): Promise<string> {
+async function fontUrl(page: Page): Promise<string> {
   const href = await page.evaluate(() =>
     [...document.styleSheets]
       .map((sheet) => sheet.href)
@@ -26,7 +26,7 @@ async function fontUrl(page: import('@playwright/test').Page): Promise<string> {
 }
 
 /** Waits until the CJK face has actually been applied, not merely declared. */
-async function fontReady(page: import('@playwright/test').Page): Promise<void> {
+async function fontReady(page: Page): Promise<void> {
   await page.evaluate(() => document.fonts.load('600 23px "CTWS Noto Sans SC"', '今天项目'))
   await page.waitForFunction(() => document.fonts.check('600 23px "CTWS Noto Sans SC"', '今天'))
 }
@@ -101,38 +101,42 @@ test('index.html is never cached immutably, or no deploy would be seen again', a
   expect(again.status()).toBe(304)
 })
 
-test('a second navigation does not re-download the font', async ({ page }) => {
+test('re-opening the app does not re-download the font', async ({ page, context }) => {
   await registerFreshUser(page)
   await fontReady(page)
   const url = await fontUrl(page)
 
-  // Resource Timing, not the request log: a cache hit is exactly the case where no request is made,
-  // so the only honest measure is how many bytes crossed the wire. `transferSize` is 0 for a hit.
-  const transferred = (target: string) =>
-    page.evaluate(
+  // Resource Timing, not the request log: a cache hit is exactly the case where no request is
+  // made, so the only honest measure is how many bytes crossed the wire. `transferSize` is 0 for a
+  // hit and non-zero even for a 304, because the response headers still cross.
+  const transferred = (target: Page, path: string) =>
+    target.evaluate(
       (u) =>
         performance
           .getEntriesByType('resource')
           .filter((e) => new URL(e.name).pathname === u)
           .map((e) => (e as PerformanceResourceTiming).transferSize),
-      target,
+      path,
     )
 
-  const first = await transferred(url)
+  const first = await transferred(page, url)
   expect(first, 'the first load should fetch the font over the network').toHaveLength(1)
   expect(first[0]).toBeGreaterThan(1_000_000)
 
-  await page.goto('/')
-  // `fontReady` above and again here is what makes the next assertion mean something: the face IS
-  // applied on this second document, so zero transferred bytes can only be a cache hit. (An empty
-  // list is the strongest form of the same result -- Chromium did not even open a connection.
-  // Without `immutable` it instead revalidates, and the measured behaviour of this server before
-  // the fix was a full 200 with the whole body, which lands here as ~1.8 MB.)
-  await fontReady(page)
-  const second = await transferred(url)
+  // A NEW PAGE in the same context, not another goto in the same one. A second navigation inside
+  // one renderer is served by its in-memory cache whatever the headers say, so it would pass even
+  // with `no-cache` -- measured. Closing the page and opening another keeps the context's cookies
+  // and disk cache but throws the memory cache away, which is what actually happens when the user
+  // closes the tab and opens the app again tomorrow. With `immutable` Chromium then reuses the
+  // file without asking; with `no-cache` it has to revalidate, and those bytes show up here.
+  await page.close()
+  const reopened = await context.newPage()
+  await reopened.goto('/')
+  await fontReady(reopened)
+  const second = await transferred(reopened, url)
   expect(
     second.filter((bytes) => bytes > 0),
-    `second navigation transferred bytes for the font: ${JSON.stringify(second)}`,
+    `re-opening transferred bytes for the font: ${JSON.stringify(second)}`,
   ).toEqual([])
 })
 
