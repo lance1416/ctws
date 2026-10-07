@@ -54,11 +54,18 @@ describe("a note's own Markdown", () => {
   })
 
   it('leaves maths for KaTeX to pick up, tagged the way rehype-katex looks for it', () => {
-    // KaTeX itself is not loaded here (it arrives in an effect, and this is a static render), so
-    // what is pinned is the HANDOFF: the class names `rehype-katex` keys on survived the sanitiser.
-    // Lose them and maths renders as inline code forever, silently.
+    /**
+     * KaTeX itself is not loaded here (it arrives in an effect, and this is a static render), so
+     * what is pinned is the HANDOFF: the class `rehype-katex` keys on survived the sanitiser. Lose
+     * it and maths renders as inline code forever, silently.
+     *
+     * `language-math` AND NOT `math-inline`. The first version of this assertion named both, and a
+     * mutation that dropped `math-inline` killed it while the end-to-end test watched KaTeX
+     * typeset the formula perfectly well. `rehype-katex` takes `language-math` on its own and gets
+     * display mode from the `pre > code` structure, so `math-inline` was never load-bearing and
+     * this test was pinning an implementation detail. Pin the one that is.
+     */
     const html = render('面积是 $\\pi r^2$ 。')
-    expect(html).toContain('math-inline')
     expect(html).toContain('language-math')
   })
 
@@ -195,13 +202,13 @@ describe('the sanitiser itself', () => {
     expect(JSON.stringify(out)).not.toContain('display:none')
   })
 
-  it('allows the two maths class names on code and nothing else', () => {
+  it("keeps a fence's language class and drops every other class", () => {
     const out = sanitize([
       el('code', { className: ['language-math', 'math-inline'] }),
       el('code', { className: ['fixed', 'inset-0', 'bg-scrim'] }),
     ])
     const json = JSON.stringify(out)
-    expect(json).toContain('math-inline')
+    // What KaTeX and the code-fence styling both need.
     expect(json).toContain('language-math')
     // A pasted note must not get to wear the app's own layout classes.
     expect(json).not.toContain('inset-0')

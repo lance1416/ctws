@@ -20,13 +20,16 @@ import { defaultSchema, type Options as SanitizeSchema } from 'rehype-sanitize'
  * http/https/mailto/irc/xmpp (so `javascript:` is dropped), and `id`/`name` prefixed with
  * `user-content-` so a note cannot clobber a DOM property the app reads.
  *
- * THE ONE ADDITION is the pair of class names `remark-math` puts on its fences. `remark-math`
- * emits `<code class="language-math math-inline">` / `math-display`, and `rehype-katex` finds its
- * work by exactly those two class names. `defaultSchema` allows `className` on `code` only where
- * it matches `/^language-./`, which keeps `language-math` and drops `math-inline` -- so without
- * this line maths silently renders as inline code. The allowlist stays a LIST OF VALUES rather
- * than becoming `['className']`: an open `className` on `code` would let a pasted note wear any
- * class the stylesheet happens to contain.
+ * NOTHING IS ADDED TO THE ALLOWLIST, and that is a correction rather than an omission. The first
+ * version of this file widened `code`'s `className` to keep `math-inline` and `math-display`,
+ * reasoning that `rehype-katex` keys on them. It does not have to: it accepts `language-math` as
+ * well -- which `defaultSchema`'s own `/^language-./` already allows -- and it derives display mode
+ * from the `pre > code` structure, not from the class. The mutation that removed the widening was
+ * caught only by a unit test asserting the class names, while the end-to-end test watched KaTeX
+ * typeset the formula and passed. That is a test pinning an implementation detail over a
+ * behaviour, and the honest fix was to delete BOTH the widening and the assertion: an allowlist
+ * that allows less is strictly better, and `code`'s `className` stays a LIST OF VALUES rather than
+ * an open `['className']`, so a pasted note still cannot wear the app's own classes.
  *
  * ORDER MATTERS, AND IT IS SANITISE-THEN-TYPESET (`NoteMarkdown`'s `rehypePlugins`). The maths
  * that reaches KaTeX is a TEXT node this schema has already been over; KaTeX then generates its
@@ -37,10 +40,6 @@ import { defaultSchema, type Options as SanitizeSchema } from 'rehype-sanitize'
  */
 export const noteSchema: SanitizeSchema = {
   ...defaultSchema,
-  attributes: {
-    ...defaultSchema.attributes,
-    code: [['className', /^language-./, 'math-inline', 'math-display']],
-  },
   /**
    * Dropped WITH their text, rather than unwrapped. An element that is merely absent from
    * `tagNames` is replaced by its children, which for `<style>` means printing the CSS as visible

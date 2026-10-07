@@ -274,6 +274,38 @@ const fetched = (urls: string[], what: RegExp) => urls.filter((u) => what.test(u
 const KATEX = /katex/i
 const MERMAID = /mermaid/i
 
+/**
+ * WHAT IS IN THE BYTES, not what is in the file names.
+ *
+ * The three tests below watch REQUESTS, which catches a renderer that is fetched as its own chunk.
+ * It does not catch a renderer that was BUNDLED INTO a chunk the page loads anyway -- and that is
+ * exactly what a static `import 'rehype-katex'` does: KaTeX lands inside the Markdown chunk, no URL
+ * ever says "katex", and a name-based assertion passes while every opened note pays 260 KB.
+ * Measured: mutating `NoteMarkdown` to import KaTeX statically, and to import the diagram component
+ * eagerly, left all three of them green. So the claim is made on the content of every script and
+ * stylesheet the page actually loaded.
+ *
+ * The two fingerprints are strings that exist in the vendors' bundles and in no source file of this
+ * app (grepped): `katex-mathml` is a class KaTeX emits, `flowchart-v2` a diagram id mermaid
+ * registers. Asserting on a string rather than on a byte count is what keeps this from being a
+ * threshold somebody later raises until it is green again.
+ */
+test('no chunk a plain note loads contains KaTeX or mermaid', async ({ page }) => {
+  const urls = watchRequests(page)
+  await seedNote(page, '先问清需求，再排期。\n\n- 一条\n- 两条\n\n**要紧的**那条先做。')
+  await expect(notesBlock(page).locator('strong')).toHaveText('要紧的')
+
+  const assets = [...new Set(urls.filter((u) => /\/assets\/[^/]+\.(?:js|css)$/.test(u)))]
+  expect(assets.length, 'the page loaded its own code').toBeGreaterThan(1)
+  const carries: string[] = []
+  for (const url of assets) {
+    const body = await (await page.request.get(url)).text()
+    if (body.includes('katex-mathml')) carries.push(`${url} carries KaTeX`)
+    if (body.includes('flowchart-v2')) carries.push(`${url} carries mermaid`)
+  }
+  expect(carries).toEqual([])
+})
+
 test('a plain note fetches neither mermaid nor katex', async ({ page }) => {
   const urls = watchRequests(page)
   await seedNote(page, '先问清需求，再排期。\n\n- 一条\n- 两条\n\n**要紧的**那条先做。')
