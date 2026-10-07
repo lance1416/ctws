@@ -305,6 +305,27 @@ test('a note with a diagram fetches mermaid and still not katex', async ({ page 
   expect(fetched(urls, KATEX)).toEqual([])
 })
 
+test("KaTeX's stylesheet ships only woff2, like the app's own two faces", async ({ page }) => {
+  /**
+   * KaTeX lists a `.woff` AND a `.ttf` after each `.woff2`, across twenty faces -- about 700 KB of
+   * files no browser that can run this app will ever ask for. The same Vite plugin that already
+   * stripped @fontsource's legacy `.woff` now covers KaTeX too (apps/web/vite.config.ts), and this
+   * is the assertion that makes that extension real: `font.spec.ts` only ever looked at the app's
+   * OWN stylesheet, so without this the plugin's katex half had no test at all.
+   */
+  await seedNote(page, '面积 $\\pi r^2$ 。')
+  await expect(notesBlock(page).locator('.katex').first()).toBeVisible()
+  const href = await page.evaluate(() =>
+    [...document.styleSheets]
+      .map((s) => s.href)
+      .find((url): url is string => !!url?.includes('katex')),
+  )
+  expect(href, 'the page should have loaded a built KaTeX stylesheet').toBeTruthy()
+  const css = await (await page.request.get(href as string)).text()
+  expect(css).toContain('.woff2')
+  expect(css.match(/url\([^)]*\.(?:woff|ttf)\)/g) ?? []).toEqual([])
+})
+
 // ------------------------------------------------------------------------- the writing mode (H)
 
 const writingSource = (page: Page) => page.getByLabel('备注原文')
