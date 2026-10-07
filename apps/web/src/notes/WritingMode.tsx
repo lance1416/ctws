@@ -84,7 +84,11 @@ export function WritingMode({
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border-subtle px-4 py-3">
             <div className="min-w-0">
               <Dialog.Title className="truncate text-lg font-semibold">{heading}</Dialog.Title>
-              <p className="text-xs text-fg-muted">写完按「退出全屏」回到编辑，保存仍在面板里</p>
+              {/* The hint costs two lines of a phone's writing area, which is the scarcest space
+                  this layer has; the two controls it describes are both on screen anyway. */}
+              <p className="text-xs text-fg-muted max-sm:hidden">
+                写完按「退出全屏」回到编辑，保存仍在面板里
+              </p>
             </div>
             <Dialog.Close className="h-9 shrink-0 rounded-lg border border-border-strong px-3 text-sm text-fg hover:bg-surface-hover">
               退出全屏
@@ -95,8 +99,14 @@ export function WritingMode({
             readable measures, stacked below that. At 375px two columns would be two unusable
             columns, and 「375px 零横向滚动」 is pinned app-wide; stacking keeps both halves at a
             full width each and the page at one scroll direction.
+
+            THE ROWS ARE EXPLICIT (`grid-rows-2`), not automatic. With automatic rows the stacked
+            layout sized each half to its CONTENT, so a long note's preview took the whole window
+            and left the textarea about 70px tall with its own lines clipped -- which the 375
+            screenshot showed. Two equal tracks, each scrolling itself, is what a writing mode
+            needs: half the window is always the thing being typed.
           */}
-          <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-2">
+          <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-2 lg:grid-cols-2 lg:grid-rows-1">
             <div className="flex min-h-0 flex-col border-border-subtle max-lg:border-b lg:border-r">
               <label htmlFor="writing-source" className="px-4 pt-3 text-xs text-fg-muted">
                 {/* 「备注原文」 and not 「备注」: the pane's own textarea is still mounted behind
