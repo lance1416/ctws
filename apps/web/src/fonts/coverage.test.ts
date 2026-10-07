@@ -31,10 +31,10 @@ import { describe, expect, it } from 'vitest'
 const here = dirname(fileURLToPath(import.meta.url))
 const repo = resolve(here, '../../../..')
 const font = readFileSync(join(here, 'noto-sans-sc-subset.woff2'))
-const face = fontkit.create(font) as {
-  characterSet: number[]
-  hasGlyphForCodePoint: (code: number) => boolean
-}
+// `create` answers `Font | FontCollection`; this file is a single-face woff2, and narrowing to the
+// real `Font` type is what gives `characterSet` and `hasGlyphForCodePoint` their own signatures
+// rather than a structural guess written here.
+const face = fontkit.create(font) as fontkit.Font
 const covered = new Set(face.characterSet.filter((code) => face.hasGlyphForCodePoint(code)))
 
 /**
