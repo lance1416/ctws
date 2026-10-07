@@ -14,8 +14,8 @@
  * WHAT IT SAYS -- keyed on the issue code the schema produced, so a new kind of refusal cannot
  * silently inherit the wrong sentence.
  */
-import { createTaskBody, updateTaskBody } from '@ctws/contracts'
-import type { z } from 'zod'
+import { createTaskBody, updateTaskBody, type UpdateTaskBody } from '@ctws/contracts'
+import { z } from 'zod'
 
 /**
  * The 新建 dialog's schema. The create contract unchanged: `manualProgress` is simply never in the
@@ -41,6 +41,24 @@ export type CreateTaskValues = z.output<typeof createTaskBody>
  */
 export const updateTaskForm = updateTaskBody
 export type UpdateTaskForm = z.input<typeof updateTaskBody>
+
+/**
+ * The detail pane's schema: the update contract PLUS the one thing the pane edits that a PATCH
+ * cannot carry. `updateTaskBody` omits `projectId` on purpose -- moving a task across projects
+ * cascades to its subtree and is the MOVE endpoint's job -- but the pane edits the project in the
+ * same form and saves it with the same press, so the FORM has a field the BODY does not. Extending
+ * the contract rather than restating it keeps that one difference visible and one line long.
+ */
+export const detailTaskForm = updateTaskBody.extend({ projectId: z.uuid() })
+export type DetailTaskForm = z.input<typeof detailTaskForm>
+export type DetailTaskValues = z.output<typeof detailTaskForm>
+
+/**
+ * The keys a PATCH may carry, read off the contract rather than listed again. This is what turns
+ * `dirtyFields` into a request body: the pane used to compare six values against the task by hand,
+ * field by field, and every field added to the form meant remembering to add a line there too.
+ */
+export const PATCH_KEYS = Object.keys(updateTaskBody.shape) as (keyof UpdateTaskBody)[]
 
 /**
  * The app's own sentence for a title the SCHEMA refused, keyed on the issue code it refused with.

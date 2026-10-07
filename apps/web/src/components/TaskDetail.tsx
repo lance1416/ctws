@@ -4,8 +4,10 @@ import {
   type TaskStatus,
   type UpdateTaskBody,
 } from '@ctws/contracts'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useContext, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { Controller, useForm } from 'react-hook-form'
 import { useBlocker } from 'react-router-dom'
 import { tabbable } from 'tabbable'
 import { listProjects } from '../api/projects'
@@ -31,11 +33,8 @@ import { decision, field, label } from './formStyles'
 import { LeaveGuardContext } from './leaveGuard'
 import { DeadlineMark, PlanMark } from './RowParts'
 import { StatusMark } from './StatusMark'
+import { detailTaskForm, PATCH_KEYS, type DetailTaskForm, type DetailTaskValues } from './taskForm'
 import { useTimeZone } from '../useMe'
-
-// An empty date input yields '' , and the contract takes a date or null. Sending '' would be
-// rejected; silently coercing it to today would be worse.
-export const orNull = (v: string) => (v.trim() === '' ? null : v)
 
 export const STATUS_LABEL: Record<TaskStatus, string> = {
   backlog: '待整理',
@@ -97,12 +96,50 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
   // reach it. Escape also only works while focus is inside.
   useEffect(() => panel.current?.focus(), [])
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
-  const [title, setTitle] = useState(task.title)
-  const [notes, setNotes] = useState(task.notes ?? '')
-  const [status, setStatus] = useState<TaskStatus>(task.status)
-  const [scheduledOn, setScheduledOn] = useState(task.scheduledOn ?? '')
-  const [dueAt, setDueAt] = useState(toDayTimeInput(task.dueAt, timeZone))
-  const [nextProjectId, setNextProjectId] = useState(task.projectId)
+  /**
+   * THE FORM IS `react-hook-form`'S, FOR TWO THINGS AND NOT A THIRD.
+   *
+   * 1. `formState.isDirty` replaces six `useState`s compared one by one against a mount-time
+   *    snapshot.
+   * 2. `formState.dirtyFields` replaces the hand-written patch diff -- six `if (x !== task.x)`
+   *    lines that had to be remembered once per field -- with the contract's own key list.
+   *
+   * It does NOT replace the leave guard. Closing, navigating and logging out are three ways to lose
+   * the form and only the first is a form event; the other two are `useBlocker` and
+   * `LeaveGuardContext`, and dragging them into a form library would be filing routing under
+   * validation. They are below, untouched.
+   *
+   * `defaultValues` is read once, on the first render -- which is exactly the mount-time snapshot
+   * the hand-written `initial` ref existed to take, and for the same reason: a background refetch of
+   * `task` must not make an untouched form look edited, or an edited one look clean.
+   *
+   * The DEADLINE is held as the INSTANT the contract takes, not as the `datetime-local` text, so
+   * `dirtyFields.dueAt` is an answer about the task and not about a widget's formatting. It is
+   * normalised through the field's own minute precision first, so an untouched deadline whose stored
+   * value carries seconds is not reported as changed (and so is not rewritten at minute precision).
+   */
+  const {
+    control,
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { dirtyFields, isDirty },
+  } = useForm<DetailTaskForm, unknown, DetailTaskValues>({
+    resolver: zodResolver(detailTaskForm),
+    defaultValues: {
+      projectId: task.projectId,
+      title: task.title,
+      notes: task.notes,
+      status: task.status,
+      scheduledOn: task.scheduledOn,
+      dueAt: fromDayTimeInput(toDayTimeInput(task.dueAt, timeZone), timeZone),
+    },
+  })
+  const title = watch('title')
+  const scheduledOn = watch('scheduledOn')
+  const dueAt = watch('dueAt')
+  const nextProjectId = watch('projectId')
   /**
    * READING MODE IS THE DEFAULT (spec §5), and it is what answers both halves of the complaint:
    * 「想要的信息在二层菜单」 and 「编辑和信息显示在同一个地方，容易误触」.
@@ -116,7 +153,8 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
    * unchanged; this only decides whether the controls those guard are on screen yet.
    */
   const [editing, setEditing] = useState(false)
-  const titleField = useRef<HTMLInputElement>(null)
+  const titleField = useRef<HTMLInputElement | null>(null)
+  const { ref: registerTitle, ...titleRest } = register('title')
   const startEditing = () => {
     setEditing(true)
     // The first field, not the panel: 编辑 is a request to type, and the control the press
@@ -124,23 +162,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
     queueMicrotask(() => titleField.current?.focus())
   }
 
-  // What the form started from, fixed at mount: a background refetch of `task` must not make an
-  // untouched form look edited (or an edited one look clean).
-  const initial = useRef({
-    title: task.title,
-    notes: task.notes ?? '',
-    status: task.status,
-    scheduledOn: task.scheduledOn ?? '',
-    dueAt: toDayTimeInput(task.dueAt, timeZone),
-    projectId: task.projectId,
-  })
-  const dirty =
-    title !== initial.current.title ||
-    notes !== initial.current.notes ||
-    status !== initial.current.status ||
-    scheduledOn !== initial.current.scheduledOn ||
-    dueAt !== initial.current.dueAt ||
-    nextProjectId !== initial.current.projectId
+  const dirty = isDirty
   // Deleting a task takes its subtree with it and cannot be undone, so it asks first, naming what
   // is lost. The descendant count is read live when the question opens (the panel's own task
   // list may be a page that never loaded this project's tree).
@@ -191,22 +213,24 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
     ['明天', addDays(todayYmd, 1)],
     ['下周', nextMonday(todayYmd)],
   ]
-  /** Keeps the time of day when there already is one; a new deadline means "by the end of it". */
+  /**
+   * Keeps the time of day when there already is one; a new deadline means "by the end of it".
+   *
+   * `shouldDirty`, on every one of these: a named day pressed is an edit, so it has to reach
+   * `isDirty` (the unsaved-edit guard) and `dirtyFields` (the request body) exactly as typing into
+   * the field does. Without it the library's default is to write the value and say nothing.
+   */
   const setDueDay = (day: string) => {
-    const from = fromDayTimeInput(dueAt, timeZone)
-    setDueAt(
-      toDayTimeInput(from ? moveDueToDay(from, day, timeZone) : dayEndIso(day, timeZone), timeZone),
-    )
+    setValue('dueAt', dueAt ? moveDueToDay(dueAt, day, timeZone) : dayEndIso(day, timeZone), {
+      shouldDirty: true,
+    })
   }
   /** An instant in the app's own words: 「明天 14:30」, on the account's calendar and clock. */
   const say = (iso: string) => {
     const [day, clock] = toDayTimeInput(iso, timeZone).split('T') as [string, string]
     return `${dayPhrase(day, todayYmd)} ${clock}`
   }
-  const dueEcho = (() => {
-    const iso = fromDayTimeInput(dueAt, timeZone)
-    return iso ? say(iso) : null
-  })()
+  const dueEcho = dueAt ? say(dueAt) : null
   const planEcho = scheduledOn ? dayPhrase(scheduledOn, todayYmd) : null
 
   // What reading mode says the two dates are. The SERVER's values, said in the app's own words --
@@ -235,21 +259,34 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
   }, [])
 
   const save = useMutation({
-    mutationFn: async () => {
-      // Only what changed: an untouched due time must not be rewritten at minute precision.
+    mutationFn: async ({
+      values,
+      changed,
+    }: {
+      values: DetailTaskValues
+      /** `dirtyFields`' own keys: which fields the person actually touched. */
+      changed: Set<string>
+    }) => {
+      /**
+       * ONLY WHAT CHANGED -- and the library is what knows it now. This was six `if (x !== task.x)`
+       * lines, which is six chances to forget one and six comparisons that read the LIVE `task`
+       * while `dirty` read the mount-time snapshot. The two notions could disagree: a background
+       * refetch that changed a field nobody had touched made the old diff send the stale local value
+       * back, quietly undoing someone else's edit. One notion now, and it is `dirtyFields`.
+       *
+       * The key list is the contract's (`PATCH_KEYS`), so a field added to the form is either in the
+       * update contract -- and sent -- or rejected by the resolver before it gets here.
+       */
       const patch: UpdateTaskBody = {}
-      if (title.trim() !== task.title) patch.title = title.trim()
-      if (orNull(notes) !== (task.notes ?? null)) patch.notes = orNull(notes)
-      if (status !== task.status) patch.status = status
-      if (orNull(scheduledOn) !== task.scheduledOn) patch.scheduledOn = orNull(scheduledOn)
-      if (dueAt !== toDayTimeInput(task.dueAt, timeZone))
-        patch.dueAt = fromDayTimeInput(dueAt, timeZone)
+      for (const key of PATCH_KEYS) {
+        if (changed.has(key)) Object.assign(patch, { [key]: values[key] })
+      }
       if (Object.keys(patch).length > 0) await patchTask(task.id, patch)
-      if (nextProjectId !== task.projectId) {
+      if (changed.has('projectId')) {
         // Crossing projects is a structural change: `move` cascades project_id to the subtree and
         // enforces the invariants. A PATCH would not. parentId resets to null because the old
         // parent does not exist in the destination.
-        await moveTask(task.id, { projectId: nextProjectId, parentId: null })
+        await moveTask(task.id, { projectId: values.projectId, parentId: null })
       }
     },
     // Settled, not success: if the move fails after the patch landed, the list is still stale.
@@ -476,11 +513,17 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
         {/* ---------------------------------------------------------------- EDITING MODE */}
         {editing && (
           <form
-            onSubmit={(e) => {
-              e.preventDefault()
+            // `handleSubmit` is what refuses an invalid form, and what it validates against is the
+            // UPDATE CONTRACT: the empty-title rule is `updateTaskBody`'s `.trim().min(1)`, not a
+            // second copy of it written here.
+            onSubmit={handleSubmit((values) => {
+              if (save.isPending) return
               // After the lists have refetched, so the row behind the panel is already up to date.
-              if (title.trim() && !save.isPending) save.mutate(undefined, { onSuccess: onSaved })
-            }}
+              save.mutate(
+                { values, changed: new Set(Object.keys(dirtyFields)) },
+                { onSuccess: onSaved },
+              )
+            })}
             className="flex flex-col gap-5"
           >
             {/* The pane opens with the TASK: where it lives, then what it is called. It used to
@@ -496,8 +539,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                 />
                 <select
                   aria-label="项目"
-                  value={nextProjectId}
-                  onChange={(e) => setNextProjectId(e.target.value)}
+                  {...register('projectId')}
                   className="-ml-0.5 max-w-full rounded-lg bg-transparent py-0.5 text-sm text-fg-muted hover:text-fg"
                 >
                   {(projects.data ?? [])
@@ -510,10 +552,14 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                 </select>
               </div>
               <input
-                ref={titleField}
+                {...titleRest}
+                // Two refs on one element: the library's, and the pane's own -- 编辑 hands focus to
+                // this field, and the control the press destroyed must not take focus to <body>.
+                ref={(el) => {
+                  registerTitle(el)
+                  titleField.current = el
+                }}
                 aria-label="标题"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
                 className="mt-0.5 w-full rounded-lg bg-transparent py-0.5 text-lg font-semibold text-fg"
               />
             </div>
@@ -536,10 +582,8 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                   >
                     <input
                       type="radio"
-                      name="detail-status"
                       value={s}
-                      checked={status === s}
-                      onChange={() => setStatus(s)}
+                      {...register('status')}
                       // The real control, covering the whole chip rather than hidden off-screen:
                       // the chip IS the radio, so a press anywhere on it is a press on the input
                       // and the keyboard gets the native radiogroup for nothing.
@@ -576,16 +620,34 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                     {word}截止
                   </button>
                 ))}
-                <button type="button" onClick={() => setDueAt('')} className={decision}>
+                <button
+                  type="button"
+                  onClick={() => setValue('dueAt', null, { shouldDirty: true })}
+                  className={decision}
+                >
                   取消截止
                 </button>
               </div>
-              <input
-                id="detail-due"
-                type="datetime-local"
-                value={dueAt}
-                onChange={(e) => setDueAt(e.target.value)}
-                className={`${exact} mt-1.5`}
+              {/* A `Controller`, not `register`: the form holds the INSTANT the contract takes while
+                  this control's value is bare wall-clock text with no zone in it, so the two are
+                  different representations of one field and something has to convert between them.
+                  `fromDayTimeInput`/`toDayTimeInput` do it in the account's zone -- the same zone
+                  the reading line, the row and the server all use. */}
+              <Controller
+                name="dueAt"
+                control={control}
+                render={({ field }) => (
+                  <input
+                    id="detail-due"
+                    type="datetime-local"
+                    name={field.name}
+                    ref={field.ref}
+                    onBlur={field.onBlur}
+                    value={toDayTimeInput(field.value ?? null, timeZone)}
+                    onChange={(e) => field.onChange(fromDayTimeInput(e.target.value, timeZone))}
+                    className={`${exact} mt-1.5`}
+                  />
+                )}
               />
               <DateEcho text={dueEcho} />
             </div>
@@ -600,21 +662,28 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                   <button
                     key={word}
                     type="button"
-                    onClick={() => setScheduledOn(day)}
+                    onClick={() => setValue('scheduledOn', day, { shouldDirty: true })}
                     className={decision}
                   >
                     排到{word}
                   </button>
                 ))}
-                <button type="button" onClick={() => setScheduledOn('')} className={decision}>
+                <button
+                  type="button"
+                  onClick={() => setValue('scheduledOn', null, { shouldDirty: true })}
+                  className={decision}
+                >
                   清除排期
                 </button>
               </div>
               <input
                 id="detail-plan"
                 type="date"
-                value={scheduledOn}
-                onChange={(e) => setScheduledOn(e.target.value)}
+                // An empty date input yields '', and the contract takes a day or null. Sending ''
+                // would be rejected; silently coercing it to today would be worse.
+                {...register('scheduledOn', {
+                  setValueAs: (v: unknown) => (typeof v === 'string' && v !== '' ? v : null),
+                })}
                 className={`${exact} mt-1.5`}
               />
               <DateEcho text={planEcho} />
@@ -634,8 +703,11 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                 of the redesign -- a list is scanned, not read. */}
               <textarea
                 id="detail-notes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+                // Empty notes are null, not '': the contract's `notes` is nullable, and a PATCH
+                // clearing them has to say null.
+                {...register('notes', {
+                  setValueAs: (v: unknown) => (typeof v === 'string' && v.trim() !== '' ? v : null),
+                })}
                 rows={5}
                 className={`${field} mt-1.5 max-w-[68ch]`}
               />
@@ -674,7 +746,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
             <div className="flex gap-2">
               <button
                 type="submit"
-                disabled={save.isPending || !title.trim()}
+                disabled={save.isPending || !title?.trim()}
                 className="h-10 rounded-lg bg-accent px-4 font-semibold text-accent-fg hover:opacity-90 disabled:opacity-50"
               >
                 保存

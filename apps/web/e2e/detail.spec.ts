@@ -108,6 +108,59 @@ test('clearing a date removes it rather than sending an empty string', async ({ 
   await expect(page.getByLabel('排期')).toHaveValue('')
 })
 
+/**
+ * THE PATCH BODY IS THE DIFF, and the diff is now `react-hook-form`'s `dirtyFields` rather than six
+ * hand-written comparisons. What is pinned is the BODY -- which fields the request names -- because
+ * that is the observable the hand-written version produced and the thing a replacement has to
+ * reproduce exactly:
+ *
+ * - a field typed into is named;
+ * - a field never touched is ABSENT, even when the form plainly holds a value for it (an untouched
+ *   deadline must not be rewritten at minute precision, which is what sending it would do);
+ * - a field typed into and then typed BACK to what it was is absent too, because nothing changed.
+ */
+test('the PATCH names the fields that changed, and only those', async ({ page }) => {
+  await registerFreshUser(page)
+  await seedOneTask(page)
+
+  // Give the task a deadline and a plan first, so there is something the save COULD wrongly resend.
+  await page.getByLabel('截止', { exact: true }).fill('2026-10-03T09:15')
+  await page.getByLabel('排期').fill('2026-10-02')
+  expect((await save(page)).request().postDataJSON()).toEqual({
+    dueAt: new Date('2026-10-03T09:15').toISOString(),
+    scheduledOn: '2026-10-02',
+  })
+
+  // One field edited: one field in the body. Not the title, not the notes, and -- the point --
+  // not the deadline, which the form is still holding.
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await reopen(page, '写方案')
+  await setDetailStatus(page, '进行中')
+  expect((await save(page)).request().postDataJSON()).toEqual({ status: 'in_progress' })
+
+  // Edited and put back: nothing changed, so the body does not mention it. The title goes along for
+  // the ride so that a request is sent at all and the assertion is about what is MISSING from it.
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await reopen(page, '写方案')
+  await page.getByLabel('备注', { exact: true }).fill('先问清需求')
+  await page.getByLabel('备注', { exact: true }).fill('')
+  await page.getByLabel('标题').fill('写方案 v2')
+  expect((await save(page)).request().postDataJSON()).toEqual({ title: '写方案 v2' })
+
+  // And the server still holds everything the three saves never mentioned.
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  const listed = await (
+    await page.request.get(page.url().replace(/\/projects\//, '/api/v1/tasks?projectId='))
+  ).json()
+  const task = (listed.tasks as Record<string, unknown>[])[0]!
+  expect(task.scheduledOn).toBe('2026-10-02')
+  expect(task.status).toBe('in_progress')
+  expect(task.notes).toBeNull()
+  expect(new Date(task.dueAt as string).toISOString()).toBe(
+    new Date('2026-10-03T09:15').toISOString(),
+  )
+})
+
 test('a rejected save is reported and leaves the panel open', async ({ page }) => {
   await registerFreshUser(page)
   await seedOneTask(page)
