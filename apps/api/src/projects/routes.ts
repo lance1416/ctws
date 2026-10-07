@@ -1,5 +1,6 @@
 import {
   createProjectBody,
+  projectColor,
   projectListItem,
   projectResponse,
   updateProjectBody,
@@ -31,7 +32,10 @@ function toProjectResponse(p: Project): z.infer<typeof projectResponse> {
     id: p.id,
     workspaceId: p.workspaceId,
     name: p.name,
-    color: p.color,
+    // The column is plain text, so a row could in principle hold a slot name this build does not
+    // know (an older app, a hand-edited row). Anything unrecognised is reported as "no colour",
+    // which the client already draws as a neutral rail, rather than failing the response.
+    color: projectColor.safeParse(p.color).data ?? null,
     isInbox: p.isInbox,
     rank: p.rank,
     archivedAt: p.archivedAt ? p.archivedAt.toISOString() : null,

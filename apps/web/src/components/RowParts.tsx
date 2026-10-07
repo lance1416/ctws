@@ -1,5 +1,5 @@
 import { Fragment, type ReactNode } from 'react'
-import { projectRailClass } from '../projectColor'
+import { useProjectRail } from '../projectColor'
 import type { DateHints } from '../dueAt'
 import type { LeadIcon } from '../rowLead'
 
@@ -71,13 +71,14 @@ export function ProjectRail({
    *  a piece of the dialog's own rounded edge. */
   at?: string
 }) {
+  const rail = useProjectRail()
   return (
     <span
       aria-hidden="true"
       data-project-rail={projectId}
       className={`pointer-events-none absolute w-[3px] ${at} ${
         continuous ? 'inset-y-0' : 'top-1 bottom-1 rounded-full'
-      } ${projectRailClass(projectId)}`}
+      } ${rail(projectId)}`}
     />
   )
 }

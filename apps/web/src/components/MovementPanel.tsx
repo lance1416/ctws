@@ -1,7 +1,7 @@
 import type { ProjectMovementResponse } from '@ctws/contracts'
 import { Link } from 'react-router-dom'
 import { hasMovement, stagnant, activityLabel } from '../movement'
-import { projectRailClass } from '../projectColor'
+import { useProjectRail } from '../projectColor'
 import { Panel } from './Panel'
 
 /**
@@ -33,6 +33,7 @@ export function MovementPanel({
 }) {
   const rows = all.filter(hasMovement)
   const quiet = stagnant(all)
+  const rail = useProjectRail()
 
   return (
     <Panel label="做到哪儿了">
@@ -49,7 +50,7 @@ export function MovementPanel({
               <span
                 aria-hidden="true"
                 data-project-chip={r.projectId}
-                className={`h-4 w-[3px] shrink-0 rounded-full ${projectRailClass(r.projectId)}`}
+                className={`h-4 w-[3px] shrink-0 rounded-full ${rail(r.projectId)}`}
               />
               <span className="min-w-0 flex-1 truncate text-fg">{r.projectName}</span>
               {/* Two numbers, both of them things that can move. Tabular, so a column of

@@ -1,4 +1,9 @@
-import type { CreateProjectBody, UpdateProjectBody } from '@ctws/contracts'
+import {
+  type CreateProjectBody,
+  type ProjectColor,
+  projectColors,
+  type UpdateProjectBody,
+} from '@ctws/contracts'
 import { rankBetween } from '@ctws/core'
 import { and, asc, desc, eq, isNotNull, isNull, sql } from 'drizzle-orm'
 import type { PgUpdateSetSource } from 'drizzle-orm/pg-core'
@@ -74,6 +79,24 @@ export async function listProjects(
   return rows.map(({ project, openTasks }) => ({ ...project, openTasks }))
 }
 
+/**
+ * The lowest-numbered colour slot no live project in the workspace is wearing, or slot 1 once all
+ * six are taken.
+ *
+ * ASSIGNED ONCE AND STORED, which replaced hashing the project's id into six buckets. The hash was
+ * stable per project -- the property that mattered -- but it was stable and RANDOM: six buckets and
+ * four projects collide with probability 1 - (6·5·4·3)/6^4 = 72%, and the user's four projects duly
+ * drew three colours. Taking the first free slot makes the first six projects distinct by
+ * construction, and the seventh collides predictably instead of the second collinding by luck.
+ *
+ * Archived projects still hold their slot, for the same reason they still hold their rank:
+ * un-archiving must not repaint a project.
+ */
+function firstFreeColor(taken: readonly (string | null)[]): ProjectColor {
+  const used = new Set(taken)
+  return projectColors.find((c) => !used.has(c)) ?? projectColors[0]
+}
+
 /** Creates a project appended after the workspace's last one. The rank is never client-supplied. */
 export async function createProject(
   q: Queryable,
@@ -88,13 +111,18 @@ export async function createProject(
     .orderBy(desc(projects.rank), desc(projects.id))
     .limit(1)
 
+  const taken = await q
+    .select({ color: projects.color })
+    .from(projects)
+    .where(visibleProjects(workspaceId))
+
   const [row] = await q
     .insert(projects)
     .values({
       id: uuidv7(),
       workspaceId,
       name: input.name,
-      color: input.color ?? null,
+      color: input.color ?? firstFreeColor(taken.map((t) => t.color)),
       rank: rankBetween(last?.rank ?? null, null),
     })
     .returning()

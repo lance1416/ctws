@@ -8,7 +8,7 @@ import { refreshTasks, tasksKey } from '../api/taskCache'
 import { createTask, listProjectTasks } from '../api/tasks'
 import { addDays, dayEndIso, dayPhrase, nextMonday, todayIn, ymd } from '../dueAt'
 import { useTimeZone } from '../useMe'
-import { projectRailClass } from '../projectColor'
+import { useProjectRail } from '../projectColor'
 import { flatten } from '../tree/flatten'
 import { MAX_DEPTH } from '../tree/drop'
 import { decision, field, label } from './formStyles'
@@ -88,6 +88,7 @@ export function CreateTaskDialog({
     },
   })
   const project = watch('projectId')
+  const rail = useProjectRail()
   const scheduledOn = watch('scheduledOn')
   const dueAt = watch('dueAt')
 
@@ -187,7 +188,7 @@ export function CreateTaskDialog({
           <div className="flex items-center gap-1.5">
             <span
               aria-hidden="true"
-              className={`h-3.5 w-[3px] shrink-0 rounded-full ${projectRailClass(project)}`}
+              className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(project)}`}
             />
             <select
               aria-label="项目"

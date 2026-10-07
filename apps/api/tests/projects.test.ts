@@ -18,9 +18,64 @@ async function setup(email?: string): Promise<TaskCtx> {
 // Registration creates the workspace's inbox, so a fresh workspace is not empty; these tests are
 // about ordinary projects.
 type Listed = { id: string; isInbox: boolean }
+type Named = { id: string; isInbox: boolean; name: string; color: string | null }
 const ordinary = (body: { projects: Listed[] }) => body.projects.filter((p) => !p.isInbox)
 
 describe('projects', () => {
+  // THE IDENTITY COLOUR IS A SLOT, ASSIGNED ONCE. It was derived in the browser by hashing the
+  // project id into six buckets, which collides on four projects 72% of the time -- the user had
+  // four projects wearing three colours. These pin the replacement.
+  describe('identity colour', () => {
+    const colorsOf = async (ctx: TaskCtx) => {
+      const res = await ctx.app.inject({
+        method: 'GET',
+        url: '/api/v1/projects',
+        headers: ctx.authed,
+      })
+      return (res.json() as { projects: Named[] }).projects
+    }
+
+    it('gives the first six projects six different slots, inbox included', async () => {
+      const ctx = await setup()
+      for (let i = 0; i < 5; i += 1) await createProject(ctx, `P${i}`)
+      const all = await colorsOf(ctx)
+      expect(all).toHaveLength(6)
+      expect(new Set(all.map((p) => p.color)).size).toBe(6)
+      // The inbox is every workspace's first project, so it holds slot 1.
+      expect(all.find((p) => p.isInbox)!.color).toBe('project-1')
+    })
+
+    it('wraps to the first slot once all six are taken', async () => {
+      const ctx = await setup()
+      for (let i = 0; i < 6; i += 1) await createProject(ctx, `P${i}`)
+      const all = await colorsOf(ctx)
+      expect(all).toHaveLength(7)
+      // Predictable rather than lucky: the SEVENTH project is the first to repeat, and it repeats
+      // the slot the inbox already holds.
+      expect(all.filter((p) => p.color === 'project-1')).toHaveLength(2)
+    })
+
+    it('does not hand a new project the slot an archived one still holds', async () => {
+      const ctx = await setup()
+      const id = await createProject(ctx, 'archived')
+      const before = (await colorsOf(ctx)).find((p) => !p.isInbox)!.color
+      await ctx.app.inject({
+        method: 'PATCH',
+        url: `/api/v1/projects/${id}`,
+        headers: { ...ctx.authed, ...headers },
+        payload: { archived: true },
+      })
+      await createProject(ctx, 'new')
+      // The archived project is not in the default list, so this asserts on the slot NUMBER
+      // rather than on distinctness: slot 2 is gone even though nothing visible is wearing it.
+      const all = await colorsOf(ctx)
+      expect(before).toBe('project-2')
+      // Un-archiving must not repaint a project, which means the slot stays spoken for -- the same
+      // reason an archived project keeps its rank.
+      expect(all.find((p) => p.name === 'new')!.color).toBe('project-3')
+    })
+  })
+
   it('starts with only the inbox', async () => {
     const ctx = await setup()
     const res = await ctx.app.inject({

@@ -6,7 +6,7 @@ import { refreshProjects } from '../api/taskCache'
 import { createProject, deleteProject, listProjects } from '../api/projects'
 import { listProjectTasks } from '../api/tasks'
 import { tasksKey } from '../api/taskCache'
-import { projectRailClass } from '../projectColor'
+import { railClass } from '../projectColor'
 
 export function Projects() {
   const qc = useQueryClient()
@@ -114,7 +114,7 @@ export function Projects() {
                   stage 2) on every task row. Never alone: the name is right beside it. */}
               <span
                 aria-hidden="true"
-                className={`h-4 w-[3px] shrink-0 rounded-full ${projectRailClass(p.id)}`}
+                className={`h-4 w-[3px] shrink-0 rounded-full ${railClass(p.color)}`}
               />
               <span className="truncate">{p.name}</span>
             </Link>

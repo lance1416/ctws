@@ -27,7 +27,7 @@ import {
 } from '../dueAt'
 import { NoteBody } from '../notes/NoteBody'
 import { WritingMode } from '../notes/WritingMode'
-import { projectRailClass } from '../projectColor'
+import { useProjectRail } from '../projectColor'
 import { DeleteConfirm } from './DeleteConfirm'
 import { useReservePane, useWidePane } from './detailPane'
 // The shared editing vocabulary, now that the 新建 dialog types into a task as well.
@@ -98,6 +98,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
   // reach it. Escape also only works while focus is inside.
   useEffect(() => panel.current?.focus(), [])
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
+  const rail = useProjectRail()
   /**
    * THE FORM IS `react-hook-form`'S, FOR TWO THINGS AND NOT A THIRD.
    *
@@ -458,7 +459,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                   {/* A chip, never alone: the project's NAME is beside it (WCAG 1.4.1). */}
                   <span
                     aria-hidden="true"
-                    className={`h-3.5 w-[3px] shrink-0 rounded-full ${projectRailClass(task.projectId)}`}
+                    className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(task.projectId)}`}
                   />
                   <span className="truncate text-sm text-fg-muted">{projectName}</span>
                 </div>
@@ -559,7 +560,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
               <div className="flex items-center gap-1.5">
                 <span
                   aria-hidden="true"
-                  className={`h-3.5 w-[3px] shrink-0 rounded-full ${projectRailClass(nextProjectId)}`}
+                  className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(nextProjectId)}`}
                 />
                 <select
                   aria-label="项目"

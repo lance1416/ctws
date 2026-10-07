@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom'
 import { listProjects } from '../api/projects'
 import { Panel } from '../components/Panel'
 import { projectHeadlines, projectViews } from '../modules/registry'
-import { projectRailClass } from '../projectColor'
+import { useProjectRail } from '../projectColor'
 
 /**
  * A project page, laid out as the workbench is (workbench spec §2): a HEADER BANNER carrying this
@@ -27,6 +27,7 @@ export function Project() {
   // Same query function as every other reader of ['projects']: they share one cache entry, so
   // they must agree on its shape.
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
+  const rail = useProjectRail()
   const name = projects.data?.find((p) => p.id === id)?.name
 
   return (
@@ -48,7 +49,7 @@ export function Project() {
               <span
                 aria-hidden="true"
                 data-project-chip={id}
-                className={`h-7 w-[4px] shrink-0 rounded-full ${projectRailClass(id)}`}
+                className={`h-7 w-[4px] shrink-0 rounded-full ${rail(id)}`}
               />
             )}
             <h1

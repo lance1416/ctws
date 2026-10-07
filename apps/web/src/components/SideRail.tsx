@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { NavLink } from 'react-router-dom'
 import { listProjects } from '../api/projects'
 import { moduleDestinations } from '../modules/registry'
-import { projectRailClass } from '../projectColor'
+import { railClass } from '../projectColor'
 
 /**
  * The left column: where you can go, and how much is waiting there.
@@ -86,7 +86,7 @@ export function SideRail() {
           >
             <span
               aria-hidden="true"
-              className={`h-4 w-[3px] shrink-0 rounded-full ${projectRailClass(p.id)}`}
+              className={`h-4 w-[3px] shrink-0 rounded-full ${railClass(p.color)}`}
             />
             <span className="truncate">{p.name}</span>
             {p.openTasks > 0 && (

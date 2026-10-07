@@ -1,46 +1,52 @@
-/**
- * The project identity rail: which of the six categorical hues a project wears.
- *
- * It is derived from the project id, not stored and not taken from the list position, for two
- * reasons: a position-derived colour would re-paint every rail the moment a project is created,
- * archived or reordered -- the rail is supposed to be the one thing about a project that never
- * moves -- and a stored colour would need a UI, a migration and a default. The id is a uuidv7
- * and never changes, so the hue is stable for the life of the project.
- *
- * Six is the count the design plan fixes, and it is deliberately not "one per project": two of
- * twelve projects sharing a hue is fine, because the chip NEVER carries meaning on its own. It
- * always sits beside the project's name (WCAG 1.4.1), so it is a pre-attentive hint for scanning
- * a cross-project list, not an identifier.
- */
-export const PROJECT_HUES = 6
+import type { ProjectColor } from '@ctws/contracts'
+import { useQuery } from '@tanstack/react-query'
+import { listProjects } from './api/projects'
 
-/** 1..6, the suffix of the `project-N` colour token. Stable for a given id. */
-export function projectHue(id: string): number {
-  // FNV-1a over the whole id. A cheap sum of char codes would collide on anagrams and, worse,
-  // spread badly across six buckets for ids that share a prefix -- which uuidv7s all do, since
-  // the leading bits are a timestamp.
-  let hash = 0x811c9dc5
-  for (let i = 0; i < id.length; i++) {
-    hash ^= id.charCodeAt(i)
-    hash = Math.imul(hash, 0x01000193) >>> 0
-  }
-  return (hash % PROJECT_HUES) + 1
+/**
+ * The project identity rail: which of the six categorical slots a project wears.
+ *
+ * IT IS STORED ON THE PROJECT, assigned once by the server from the first free slot. It used to be
+ * derived here by hashing the project id into six buckets -- stable per project, which was the
+ * point, but stable and RANDOM: six buckets and four projects collide 72% of the time, and the
+ * user's four projects duly drew three colours, which is the report that started this. The first
+ * six projects are now distinct by construction.
+ *
+ * The slot names a `--color-project-N` token rather than a colour, because the six hexes differ
+ * between light and dark (see the block in styles.css): a stored colour could only be right in one
+ * of the two schemes.
+ */
+const RAIL: Record<ProjectColor, string> = {
+  'project-1': 'bg-project-1',
+  'project-2': 'bg-project-2',
+  'project-3': 'bg-project-3',
+  'project-4': 'bg-project-4',
+  'project-5': 'bg-project-5',
+  'project-6': 'bg-project-6',
 }
 
 /**
- * The Tailwind background class for a project's rail or chip. A lookup table, not a template
- * string: Tailwind only emits classes it can see in the source, so `bg-project-${n}` would
- * compile to nothing.
+ * What a rail wears before the project list has loaded, or for a project that is not in it (an
+ * archived one referenced by a task). A neutral hairline, not a guessed colour: the chip is
+ * decorative -- it never carries meaning without the project's name beside it (WCAG 1.4.1) -- so
+ * showing no colour for a moment is honest, where showing the wrong one and correcting it is a
+ * visible flicker that teaches the user the colours are not reliable.
  */
-const RAIL: Record<number, string> = {
-  1: 'bg-project-1',
-  2: 'bg-project-2',
-  3: 'bg-project-3',
-  4: 'bg-project-4',
-  5: 'bg-project-5',
-  6: 'bg-project-6',
+export const UNKNOWN_RAIL = 'bg-border-subtle'
+
+/** A Tailwind class for a slot. A lookup, not a template: Tailwind only emits classes it can see. */
+export function railClass(color: ProjectColor | null | undefined): string {
+  return color ? RAIL[color] : UNKNOWN_RAIL
 }
 
-export function projectRailClass(id: string): string {
-  return RAIL[projectHue(id)]!
+/**
+ * `(projectId) => class`, for the many places that hold a task's project id and not the project.
+ *
+ * It reads the same `['projects']` cache entry every screen already subscribes to, so it costs no
+ * extra request; on a screen that did not fetch the list, it is the fetch that was going to be
+ * needed anyway.
+ */
+export function useProjectRail(): (projectId: string) => string {
+  const { data } = useQuery({ queryKey: ['projects'], queryFn: listProjects })
+  const byId = new Map(data?.map((p) => [p.id, p.color]) ?? [])
+  return (projectId) => railClass(byId.get(projectId))
 }

@@ -1,4 +1,4 @@
-import type { Role } from '@ctws/contracts'
+import { projectColors, type Role } from '@ctws/contracts'
 import { rankBetween } from '@ctws/core'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
@@ -103,6 +103,9 @@ export async function registerUser(
         workspaceId,
         name: INBOX_NAME,
         rank: rankBetween(null, null),
+        // Slot 1, the same one the backfill migration gives it: the inbox is always a workspace's
+        // first project, so `createProject`'s first-free-slot rule would hand it this anyway.
+        color: projectColors[0],
         isInbox: true,
       })
     })

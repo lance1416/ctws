@@ -28,17 +28,37 @@ const manualProgress = z.number().min(0).max(1)
 
 // ---- projects ----
 
+/**
+ * A project's identity colour is a SLOT, not a colour value. The six slots name the
+ * `--color-project-N` tokens, which hold a different hex in light and dark; a stored hex could
+ * only be right in one of the two schemes.
+ *
+ * The server assigns the first free slot when the project is created, so the client never sends
+ * one -- the field stays writable because choosing your own is the obvious next step, and
+ * accepting it now costs one line.
+ */
+export const projectColors = [
+  'project-1',
+  'project-2',
+  'project-3',
+  'project-4',
+  'project-5',
+  'project-6',
+] as const
+export const projectColor = z.enum(projectColors)
+export type ProjectColor = z.infer<typeof projectColor>
+
 export const createProjectBody = z
   .object({
     name: z.string().trim().min(1).max(200),
-    color: z.string().max(32).nullish(),
+    color: projectColor.nullish(),
   })
   .strict()
 
 export const updateProjectBody = z
   .object({
     name: z.string().trim().min(1).max(200),
-    color: z.string().max(32).nullable(),
+    color: projectColor.nullable(),
     archived: z.boolean(),
   })
   .partial()
@@ -49,7 +69,7 @@ export const projectResponse = z
     id: z.uuid(),
     workspaceId: z.uuid(),
     name: z.string(),
-    color: z.string().nullable(),
+    color: projectColor.nullable(),
     isInbox: z.boolean(),
     rank: z.string(),
     archivedAt: instant.nullable(),
