@@ -25,6 +25,8 @@ import {
   todayIn,
   ymd,
 } from '../dueAt'
+import { NoteBody } from '../notes/NoteBody'
+import { WritingMode } from '../notes/WritingMode'
 import { projectRailClass } from '../projectColor'
 import { DeleteConfirm } from './DeleteConfirm'
 import { useReservePane, useWidePane } from './detailPane'
@@ -161,6 +163,17 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
     // destroyed must not take focus to <body> with it (WCAG 2.4.3).
     queueMicrotask(() => titleField.current?.focus())
   }
+
+  /**
+   * THE FULL-SCREEN WRITING MODE (D73, artboard H) -- the escape hatch of editing model A.
+   *
+   * It is reached FROM editing mode and returns TO it: the pane keeps the form, the save and the
+   * guard, and the layer is only a bigger place to type. `notes` is the one field it touches, and
+   * it writes through `setValue(..., { shouldDirty: true })` so an edit made in there is an edit as
+   * far as `isDirty`, the router blocker and the log-out guard are concerned.
+   */
+  const [writing, setWriting] = useState(false)
+  const notesSource = watch('notes')
 
   const dirty = isDirty
   // Deleting a task takes its subtree with it and cannot be undone, so it asks first, naming what
@@ -318,6 +331,15 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
   const keepEditing = useRef<HTMLButtonElement>(null)
   useEffect(() => {
     if (asking) keepEditing.current?.focus()
+  }, [asking])
+  /**
+   * A QUESTION NOBODY CAN SEE IS NOT A GUARD. The discard prompt renders inside the pane's form, and
+   * the writing mode is a full-screen layer over it -- so when the guard has something to ask (the
+   * browser's back button is the way out of a layer that covers the whole window), the layer stands
+   * down first and the question is on screen where the answer has to be given.
+   */
+  useEffect(() => {
+    if (asking) setWriting(false)
   }, [asking])
   const requestClose = () => (dirty ? setAskDiscard(true) : onClose())
   const dirtyNow = useRef(unsaved)
@@ -486,13 +508,15 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
 
             <div>
               <span className={label}>备注</span>
-              {/* Prose, kept at the reading measure the textarea has, and with the author's own
-                  line breaks: `whitespace-pre-wrap` is what makes a note read the way it was
-                  typed. This is the element Markdown will later render into (a later stage). */}
+              {/* THE NOTE, RENDERED AS MARKDOWN (D73). Kept at the 68ch reading measure the
+                  textarea has always had, because that is where prose wants to wrap and because the
+                  pane's own layout and scroll must not move when a note contains a table or a
+                  diagram. `NoteBody`'s fallback is the plain `whitespace-pre-wrap` paragraph this
+                  used to be, so the words are on screen before the renderer has even loaded. */}
               {task.notes ? (
-                <p data-detail-notes className="mt-1 max-w-[68ch] whitespace-pre-wrap text-fg">
-                  {task.notes}
-                </p>
+                <div data-detail-notes className="mt-1 max-w-[68ch] text-fg">
+                  <NoteBody source={task.notes} />
+                </div>
               ) : (
                 <p className="mt-1 text-sm text-fg-subtle">还没有备注</p>
               )}
@@ -695,9 +719,21 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                 typed -- which made the name unmatchable as a whole string, and a substring match
                 for 备注 collides with the row's own 「有备注」 mark on this very page. */}
             <div>
-              <label htmlFor="detail-notes" className={label}>
-                备注
-              </label>
+              <div className="flex items-end justify-between gap-2">
+                <label htmlFor="detail-notes" className={label}>
+                  备注
+                </label>
+                {/* 「全屏写作」 -- a name that collides with nothing in the app's one flat
+                    namespace (编辑 / 继续编辑 / 保存 / 关闭 are the pane's others). The pane is
+                    22rem wide: this is the way out for a note that is a page rather than a line. */}
+                <button
+                  type="button"
+                  onClick={() => setWriting(true)}
+                  className="-mb-0.5 h-7 rounded-md border border-border-subtle px-2 text-xs text-fg-muted hover:border-border-strong hover:text-fg"
+                >
+                  全屏写作
+                </button>
+              </div>
               {/* The one place in the app that keeps a READING measure: notes are prose, and
                 68ch is where prose wants to wrap. Nothing else does, which is the whole point
                 of the redesign -- a list is scanned, not read. */}
@@ -712,6 +748,18 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                 className={`${field} mt-1.5 max-w-[68ch]`}
               />
             </div>
+            {writing && (
+              <WritingMode
+                heading={title?.trim() || '备注'}
+                source={notesSource ?? ''}
+                // Empty notes are null, not '' -- the same rule the field's own `setValueAs` keeps,
+                // because the contract's `notes` is nullable and a PATCH that clears them says null.
+                onChange={(next) =>
+                  setValue('notes', next.trim() === '' ? null : next, { shouldDirty: true })
+                }
+                onClose={() => setWriting(false)}
+              />
+            )}
             {asking && (
               <div role="alert" className="rounded-lg border border-border-strong p-3 text-sm">
                 <p className="text-fg">
