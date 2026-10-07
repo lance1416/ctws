@@ -293,6 +293,63 @@ test('the detail traps the keyboard at 1024 and does not at 1440', async ({ page
   await expect(page.getByRole('button', { name: '任务：开着的任务', exact: true })).toBeFocused()
 })
 
+/**
+ * THE TRAP MUST BE BUILT ON TAB ORDER, NOT ON A SELECTOR -- the guard for the one thing swapping in
+ * `tabbable` actually buys.
+ *
+ * The trap used to collect its candidates with
+ * `querySelectorAll('input, select, textarea, button, a[href], [tabindex]:not([tabindex="-1"])')`
+ * and filter them by the `disabled` ATTRIBUTE alone. Anything in that list that the keyboard cannot
+ * actually reach -- `display:none`, `visibility:hidden`, `hidden`, `inert`, a folded `<details>` --
+ * still counted, and if such a thing sorted LAST then `active === last` was never true: the wrap
+ * never fired and Tab walked out of a panel the reader cannot see past. That is the same shape as
+ * the WCAG 2.1.2 trap this project already shipped once.
+ *
+ * Today's panel happens to contain no such control, so the trap test above passes either way --
+ * a mutation back to the old selector survived every one of the fifty-nine detail, pane and
+ * workbench specs. So this test PUTS one there: a hidden button appended as the panel's last child
+ * is exactly the DOM the old implementation mishandled, and the claim being pinned is that
+ * membership of the cycle is decided by what the keyboard can reach.
+ */
+test('the overlay trap ignores a trailing control the keyboard cannot reach', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '隐藏控件')
+  await makeTask(page, pid, '开着的任务')
+
+  await page.setViewportSize(MEDIUM)
+  await page.goto(`/projects/${pid}`)
+  await openDetail(page, '开着的任务')
+  const dialog = page.getByRole('dialog', { name: '任务详情' })
+  await expect(dialog).toHaveAttribute('data-detail-mode', 'overlay')
+  await expect(dialog).toBeFocused()
+
+  // A button the selector matches and the keyboard can never land on, as the LAST child.
+  const planted = await dialog.evaluate((panel) => {
+    const probe = document.createElement('button')
+    probe.type = 'button'
+    probe.textContent = 'probe'
+    probe.style.display = 'none'
+    panel.append(probe)
+    // It really is matched by the selector that used to be here, and really is unreachable.
+    return (
+      panel.querySelectorAll(
+        'input, select, textarea, button, a[href], [tabindex]:not([tabindex="-1"])',
+      ).length > 0 &&
+      probe === panel.lastElementChild &&
+      probe.offsetParent === null
+    )
+  })
+  expect(planted, 'the hidden trailing button was planted').toBe(true)
+
+  const inside = () => page.evaluate(() => !!document.activeElement?.closest('[role="dialog"]'))
+  for (let i = 0; i < 40; i++) {
+    await page.keyboard.press('Tab')
+    expect(await inside(), `Tab press ${i + 1} left the overlay`).toBe(true)
+  }
+  // And the planted node never took focus either -- it cannot, which is the whole point.
+  expect(await page.evaluate(() => document.activeElement?.textContent)).not.toBe('probe')
+})
+
 // ------------------------------------------------------------------------------ the rail, and the row
 
 /**
