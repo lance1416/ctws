@@ -195,6 +195,8 @@ test('no Tab reaches outside the search dialog while it is open', async ({ page 
   await page.goto(url)
   await expect(page.getByRole('listitem')).toHaveCount(2)
 
+  // Opened from a real control, so "where focus goes back to" has an answer worth asserting.
+  await handle(page, '第一条').focus()
   await page.keyboard.press('f')
   await expect(searchBox(page)).toBeFocused()
   // With results on screen there is something to tab TO, so the cycle is not a single element.
@@ -213,9 +215,9 @@ test('no Tab reaches outside the search dialog while it is open', async ({ page 
     }
   }
 
-  // The trap is not a lock: Escape still closes it, and focus goes back where it came from rather
-  // than to <body> (WCAG 2.4.3).
+  // The trap is not a lock: Escape still closes it, and focus goes back to the row it was opened
+  // from rather than to <body> (WCAG 2.4.3).
   await page.keyboard.press('Escape')
   await expect(searchBox(page)).toHaveCount(0)
-  expect(await page.evaluate(() => document.activeElement?.tagName)).not.toBe('BODY')
+  await expect(handle(page, '第一条')).toBeFocused()
 })
