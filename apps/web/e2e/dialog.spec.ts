@@ -314,7 +314,7 @@ test('closing the ? list and pressing f leaves focus in the search box', async (
   await expect(page.getByRole('dialog', { name: '键盘快捷键' })).toBeVisible()
   await page.keyboard.press('Escape')
   await page.keyboard.press('f')
-  const search = page.getByRole('textbox', { name: '搜索任务' })
+  const search = page.getByRole('combobox', { name: '搜索任务' })
   await expect(search).toBeVisible()
   await page.waitForTimeout(300)
   await expect(search).toBeFocused()

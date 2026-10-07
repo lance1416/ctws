@@ -767,7 +767,7 @@ test('已完成 and the search results carry the same rail', async ({ page }) =>
   expect(new Set(times).size, `clock column x values: ${times.join(',')}`).toBe(1)
 
   await page.keyboard.press('f')
-  await page.getByRole('textbox', { name: '搜索任务' }).fill('做完的事')
+  await page.getByRole('combobox', { name: '搜索任务' }).fill('做完的事')
   await expect(page.locator('[data-search-result]')).toHaveCount(2)
   const resultRails = page.locator('[data-search-result] [data-project-rail]')
   await expect(resultRails).toHaveCount(2)

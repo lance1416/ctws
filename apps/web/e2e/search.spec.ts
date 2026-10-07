@@ -7,7 +7,7 @@ const handle = (page: Page, title: string) =>
 
 const row = (page: Page, title: string) => page.getByRole('listitem').filter({ hasText: title })
 
-const searchBox = (page: Page) => page.getByRole('textbox', { name: '搜索任务' })
+const searchBox = (page: Page) => page.getByRole('combobox', { name: '搜索任务' })
 
 /** Creates a project through the UI and returns its url. */
 async function startProject(page: Page, name: string) {
@@ -44,8 +44,15 @@ async function query(page: Page, text: string) {
   await answered
 }
 
+/**
+ * A result row, BY ITS ROLE. It used to be `getByRole('button')`: the results were buttons in a bare
+ * `<ul>`, which is the defect that was fixed -- a screen reader was told the dialog contained a list
+ * of buttons and nothing about which one the keyboard had selected. They are `role="option"` inside a
+ * `role="listbox"` now (ARIA 1.2 combobox), so that is what they are matched by. Every behaviour
+ * these helpers are used to assert -- the text, the breadcrumb, the click, the reveal -- is unchanged.
+ */
 const result = (page: Page, title: string) =>
-  page.getByRole('dialog', { name: '搜索任务' }).getByRole('button').filter({ hasText: title })
+  page.getByRole('dialog', { name: '搜索任务' }).getByRole('option').filter({ hasText: title })
 
 // The case the browser's own Ctrl+F cannot do: a collapsed row is not in the DOM at all, so there
 // is nothing on the page for the browser to find. If this test ever passes with the subtree left
@@ -150,6 +157,83 @@ test('search shows the parent breadcrumb and the status, and skips deleted tasks
   await expect(result(page, 'hint 删掉的')).toHaveCount(0)
 })
 
+/**
+ * WHAT A SCREEN READER HEARS. The keyboard selection in this dialog was real and invisible: the box
+ * was a bare `<input aria-label>` with no `role="combobox"`, no `aria-expanded` and no
+ * `aria-activedescendant`, and the results were `<button aria-current>` in a plain `<ul>`. So
+ * ArrowDown moved a highlight that assistive technology could not report -- no list, no item count,
+ * no "2 of 3", and no title read out.
+ *
+ * This asserts the RELATIONSHIP and not the highlight class: that the box is a combobox pointing at
+ * a listbox, that `aria-activedescendant` names a real element, that the element it names is the
+ * `option` the keyboard selected, and that moving the selection moves the pointer with it. A class
+ * swap would satisfy none of these.
+ */
+test('the search selection is announceable: combobox, listbox, activedescendant', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const url = await startProject(page, 'Aria')
+  await seed(page, url, [
+    ['查找甲', null],
+    ['查找乙', null],
+    ['查找丙', null],
+  ])
+  await page.goto(url)
+  await expect(page.getByRole('listitem')).toHaveCount(3)
+  await page.keyboard.press('f')
+
+  const box = searchBox(page)
+  await expect(box).toHaveRole('combobox')
+  // Before anything is typed there is no list, and the box says so rather than pointing at nothing.
+  await expect(box).toHaveAttribute('aria-expanded', 'false')
+  expect(await box.getAttribute('aria-activedescendant')).toBeNull()
+  const listId = await box.getAttribute('aria-controls')
+  expect(listId).toBeTruthy()
+
+  await query(page, '查找')
+  await expect(box).toHaveAttribute('aria-expanded', 'true')
+  // `aria-controls` resolves to a real listbox -- the one holding the options.
+  const list = page.locator(`#${listId!}`)
+  await expect(list).toHaveRole('listbox')
+  await expect(list.getByRole('option')).toHaveCount(3)
+
+  /** The option `aria-activedescendant` currently names, and what it says. */
+  const pointed = async () => {
+    const id = await box.getAttribute('aria-activedescendant')
+    expect(id, 'aria-activedescendant names nothing').toBeTruthy()
+    const el = page.locator(`#${id!}`)
+    await expect(el, 'aria-activedescendant names an element that is not in the list').toHaveCount(
+      1,
+    )
+    await expect(el).toHaveRole('option')
+    await expect(el).toHaveAttribute('aria-selected', 'true')
+    return (await el.innerText()).split('\n')[0]!
+  }
+
+  // It starts on the first result, and `aria-selected` is on that one option alone.
+  const first = await pointed()
+  await expect(list.locator('[aria-selected="true"]')).toHaveCount(1)
+
+  // ArrowDown moves the POINTER, not the focus: the box still has the keyboard, which is what lets
+  // typing continue while the highlight walks.
+  await page.keyboard.press('ArrowDown')
+  const second = await pointed()
+  expect(second).not.toBe(first)
+  await expect(box).toBeFocused()
+
+  // And the non-standard pair moves it the same way, so the two routes cannot drift apart.
+  await page.keyboard.press('Control+p')
+  expect(await pointed()).toBe(first)
+  await page.keyboard.press('Control+n')
+  expect(await pointed()).toBe(second)
+
+  // Enter opens the option the pointer names -- the selection a reader was told about is the one
+  // that acts.
+  await page.keyboard.press('Enter')
+  await expect(handle(page, second)).toBeFocused()
+})
+
 test('Escape closes search, and f typed into a text field does not open it', async ({ page }) => {
   await registerFreshUser(page)
 
@@ -199,9 +283,12 @@ test('no Tab reaches outside the search dialog while it is open', async ({ page 
   await handle(page, '第一条').focus()
   await page.keyboard.press('f')
   await expect(searchBox(page)).toBeFocused()
-  // With results on screen there is something to tab TO, so the cycle is not a single element.
   await query(page, '条')
   await expect(page.locator('[data-search-result]')).toHaveCount(2)
+  // The results are NOT in the cycle, and that is the combobox pattern rather than an omission:
+  // focus stays in the box and `aria-activedescendant` carries the selection, so two results do not
+  // put two tab stops between the box and 关闭. The panel still has more than one thing to tab to.
+  await expect(page.locator('[data-search-result] button')).toHaveCount(0)
 
   const inside = () =>
     page.evaluate(() => {

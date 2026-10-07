@@ -114,7 +114,7 @@ test('a search with no match says what search covers and clears itself', async (
   await page.getByRole('heading', { level: 1, name: '今天' }).waitFor()
 
   await page.keyboard.press('f')
-  const box = page.getByRole('textbox', { name: '搜索任务' })
+  const box = page.getByRole('combobox', { name: '搜索任务' })
   await expect(box).toBeFocused()
 
   // A query that really has no match.
