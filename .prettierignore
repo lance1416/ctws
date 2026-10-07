@@ -1,3 +1,5 @@
 docs/
 .superpowers/
 pnpm-lock.yaml
+# Vendored verbatim from the dataviz skill; reformatting it would make the next copy a diff.
+scripts/validate_palette.js

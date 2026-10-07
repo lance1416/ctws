@@ -192,15 +192,31 @@
      things (a deadline that has gone / an action that destroys data) and could diverge. */
   --color-danger: #a53a30;
   --color-danger-fg: #ffffff;
-  /* Categorical project identity. Six hues, evenly spread, at one lightness so no project reads
-     as more important than another. Rails and chips only. Written in oklch because the even
-     spread is a property of the colour space, not of six hand-picked hex values. */
-  --color-project-1: oklch(52% 0.13 250);
-  --color-project-2: oklch(52% 0.13 150);
-  --color-project-3: oklch(52% 0.13 85);
-  --color-project-4: oklch(52% 0.13 25);
-  --color-project-5: oklch(52% 0.13 300);
-  --color-project-6: oklch(52% 0.13 195);
+  /* Categorical project identity -- rails and chips only, never alone (see the note at the top).
+     These six are OKABE-ITO, the colourblind-safe qualitative set, not a palette picked here. The
+     earlier one WAS picked here -- six evenly spread hue angles at one lightness -- and it failed
+     measurably: equal hue ANGLES are not equal DISCRIMINABILITY (the green-cyan-blue arc is
+     perceptually compressed), and at one lightness there is nothing else left to tell them apart.
+     Measured worst all-pairs distance was ΔE 11.0 against a floor of 15 -- hard to tell apart with
+     full colour vision, which is exactly the report that started this.
+
+     Hex, not oklch, because the values are quoted from a published set rather than generated from
+     a formula, and because `projectColors.test.ts` reads these very lines and runs the palette
+     validator on them. Their OKLCH is in the comment so the structure is still legible.
+
+     slot  hex       OKLCH                    Okabe-Ito name
+       1   #0072B2   53.2% 0.131 244          blue
+       2   #D55E00   62.1% 0.170  48          vermillion
+       3   #009E73   62.0% 0.130 165          bluish green
+       4   #CC79A7   67.9% 0.118 346          reddish purple
+       5   #56B4E9   73.5% 0.117 236          sky blue
+       6   #E69F00   75.3% 0.158  77          orange */
+  --color-project-1: #0072b2;
+  --color-project-2: #d55e00;
+  --color-project-3: #009e73;
+  --color-project-4: #cc79a7;
+  --color-project-5: #56b4e9;
+  --color-project-6: #e69f00;
   /* The wash behind an overlay. It carries its own alpha, and it is a token of its own rather
      than `fg` at an opacity: `fg` is near-white in dark mode, so `bg-fg/20` LIGHTENS the page it
      is meant to dim. A scrim has to darken in both schemes. */
@@ -229,12 +245,31 @@
     --color-missed: #e0756b;
     --color-danger: #e0756b;
     --color-danger-fg: #0f1115;
-    --color-project-1: oklch(64% 0.1 250);
-    --color-project-2: oklch(64% 0.1 150);
-    --color-project-3: oklch(64% 0.1 85);
-    --color-project-4: oklch(64% 0.1 25);
-    --color-project-5: oklch(64% 0.1 300);
-    --color-project-6: oklch(64% 0.1 195);
+    /* THE SAME SIX HUES, RE-STEPPED FOR DARK -- not the light set lightened or inverted. Dark mode
+       has a narrower usable lightness band (L 0.48-0.67 against light's 0.43-0.77), and Okabe-Ito
+       leans on lightness for two of its pairs: blue/sky share a hue within 8°, as do
+       vermillion/orange, and in light they are told apart by a 0.20 lightness gap that does not fit
+       here. Snapping the three out-of-band colours inward collapses those pairs (measured: orange
+       against vermillion ΔE 9.4). So the band is re-spent: the pair that was light-above-dark in
+       light mode is dark-above-light here. Every hue angle is carried over unchanged, so a project
+       keeps its colour across the two schemes.
+
+       Searched, then measured, not hand-tuned: worst all-pairs ΔE 18.1 normal / 8.2 protan, which
+       is better separation than the light set's own 15.6 / 7.6.
+
+       slot  hex       OKLCH
+         1   #009aee   66.1% 0.163 244
+         2   #e1691a   65.6% 0.170  48
+         3   #009f73   62.2% 0.131 165
+         4   #a52f76   50.6% 0.169 348
+         5   #006895   49.0% 0.107 237
+         6   #835900   49.7% 0.104  77 */
+    --color-project-1: #009aee;
+    --color-project-2: #e1691a;
+    --color-project-3: #009f73;
+    --color-project-4: #a52f76;
+    --color-project-5: #006895;
+    --color-project-6: #835900;
     --color-scrim: rgb(5 6 8 / 0.62);
     /* No shadows in dark: the layering is done by surface lightness. */
     --shadow-panel: 0 0 #0000;
