@@ -80,15 +80,21 @@ export function purifyDiagram(svg: string): DocumentFragment {
 
 /**
  * SIZING, which is ours. Mermaid asks for its width in the `style` attribute the config above
- * drops, so the box is re-stated here in the app's terms: never wider than the pane it is in, and
- * as tall as its own `viewBox` makes it.
+ * drops, so the box is re-stated here in the app's terms: shrink to the pane, but never GROW past
+ * the diagram's natural size.
+ *
+ * The ceiling is read off the `viewBox`, whose user units are CSS pixels at scale 1 -- i.e. the
+ * same number mermaid would have written. Without it a three-node flowchart in a 22rem pane was
+ * blown up until its labels were larger than the panel's own heading, which is what the first
+ * screenshots showed and the only reason this function is more than two lines.
  */
 export function sizeDiagram(host: Element): void {
   const svg = host.querySelector('svg')
   if (!svg) return
+  const natural = svg.getAttribute('viewBox')?.split(/[\s,]+/)[2]
   svg.setAttribute('width', '100%')
   svg.removeAttribute('height')
-  svg.style.maxWidth = '100%'
+  svg.style.maxWidth = natural ? `${natural}px` : '100%'
   svg.style.height = 'auto'
 }
 
