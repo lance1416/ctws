@@ -7,6 +7,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useContext, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { useBlocker } from 'react-router-dom'
+import { tabbable } from 'tabbable'
 import { listProjects } from '../api/projects'
 import { deleteTask, listProjectTasks, moveTask, patchTask } from '../api/tasks'
 import { tasksKey } from '../api/taskCache'
@@ -67,8 +68,6 @@ function DateEcho({ text }: { text: string | null }) {
   if (!text) return null
   return <p className="mt-1 text-xs tabular-nums text-fg-muted">{text}</p>
 }
-
-const TABBABLE = 'input, select, textarea, button, a[href], [tabindex]:not([tabindex="-1"])'
 
 type Props = {
   task: TaskResponse
@@ -316,11 +315,28 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
       else if (asking) keepEditingNow()
       else requestClose()
     } else if (e.key === 'Tab' && !wide) {
-      // Trap: Tab cycles inside the panel. Left alone it would walk on into whatever the panel
-      // is covering, which is invisible to the person pressing the key.
-      const items = [...(panel.current?.querySelectorAll<HTMLElement>(TABBABLE) ?? [])].filter(
-        (el) => !el.hasAttribute('disabled'),
-      )
+      /**
+       * Trap: Tab cycles inside the panel. Left alone it would walk on into whatever the panel is
+       * covering, which is invisible to the person pressing the key.
+       *
+       * ONLY IN THE OVERLAY HALF (`!wide`). At >=1280 this is a third COLUMN beside a list the
+       * reader can plainly see, and a trap there would lock them out of it -- the same WCAG 2.1.2
+       * failure from the other end. That is also why the pane is not a Radix `Dialog.Content`:
+       * `Dialog` marks the rest of the page `aria-hidden`, which is exactly what a coexisting
+       * column must not do (see `Modal`). So the LAYER keeps a trap of its own -- but the ORDER
+       * and the MEMBERSHIP of the cycle are `tabbable`'s, not a hand-written selector's.
+       *
+       * The selector that used to be here walked DOM order (so a positive `tabindex` came out in
+       * the wrong place) and listed only `input, select, textarea, button, a[href], [tabindex]`,
+       * filtered by the `disabled` ATTRIBUTE alone. It therefore missed `[contenteditable]`,
+       * `iframe`, `details`/`summary` and `audio`/`video[controls]`, and counted things the
+       * keyboard cannot reach: `inert` subtrees, `display:none`, `visibility:hidden`, `hidden`,
+       * and anything inside a folded `<details>`. One hidden control sorting LAST was enough to
+       * make `last.focus()` a no-op and let Tab walk out of the panel -- the same shape as the
+       * 2.1.2 trap this project already shipped once. `tabbable` is the library that answer comes
+       * from (it is what `focus-trap` and Radix's own `FocusScope` are built on).
+       */
+      const items = panel.current ? tabbable(panel.current) : []
       const first = items[0]
       const last = items[items.length - 1]
       if (!first || !last) return e.preventDefault()
