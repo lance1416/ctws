@@ -12,12 +12,12 @@ import { ProjectRail } from '../components/RowParts'
 import { Stat, StatRow } from '../components/Stat'
 import { StatusMark } from '../components/StatusMark'
 import { TaskTree } from '../components/TaskTree'
-import { dayPhrase } from '../dueAt'
+import { dayPhrase, todayIn } from '../dueAt'
 import { useShortcutsEnabled } from '../shortcuts/enabled'
 import { isBareKey, isTypingTarget } from '../shortcuts/keys'
 import { Completed } from '../routes/Completed'
 import { Today } from '../routes/Today'
-import { useMe } from '../useMe'
+import { useTimeZone } from '../useMe'
 import type { CaptureTargetState, SearchHit, WorkspaceModule } from './contract'
 
 /**
@@ -113,7 +113,7 @@ function useTaskHits(query: string) {
  */
 function ProjectNumbers({ projectId }: { projectId: string }) {
   const movement = useQuery({ queryKey: ['movement'], queryFn: listMovement })
-  const me = useMe()
+  const timeZone = useTimeZone()
   const row = movement.data?.find((r) => r.projectId === projectId)
   // Nothing rather than zeroes while the numbers are in flight, and nothing for an ARCHIVED
   // project: archiving sets a line of work aside, and the movement query leaves it out on purpose
@@ -121,7 +121,7 @@ function ProjectNumbers({ projectId }: { projectId: string }) {
   if (!row) return null
   // The account's own calendar day, for reading the server's `lastActivityOn` back as a phrase.
   // Never a browser-local date: the server already decided which day that was.
-  const today = new Intl.DateTimeFormat('en-CA', { timeZone: me.data?.timezone }).format(new Date())
+  const today = todayIn(timeZone)
   return (
     <StatRow>
       <Stat label="未完成" value={row.remaining} />

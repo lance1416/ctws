@@ -7,8 +7,8 @@ import { useTaskActions } from '../api/taskActions'
 import { EMPTY_ACTION, EmptyState } from '../components/EmptyState'
 import { DONE_LIST_MEASURE, DONE_ROW_GRID, ProjectRail } from '../components/RowParts'
 import { StatusButton } from '../components/StatusControls'
-import { addDays } from '../dueAt'
-import { useMe } from '../useMe'
+import { addDays, todayIn } from '../dueAt'
+import { useTimeZone } from '../useMe'
 
 const WEEKDAY = ['日', '一', '二', '三', '四', '五', '六']
 
@@ -27,9 +27,8 @@ function dayHeading(day: string, today: string): string {
  */
 export function Completed() {
   const completed = useQuery({ queryKey: ['completed'], queryFn: listCompleted })
-  const me = useMe()
-  const timezone = me.data?.timezone
-  const today = new Intl.DateTimeFormat('en-CA', { timeZone: timezone }).format(new Date())
+  const timezone = useTimeZone()
+  const today = todayIn(timezone)
   const clock = new Intl.DateTimeFormat('zh-CN', {
     hour: '2-digit',
     minute: '2-digit',

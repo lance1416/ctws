@@ -15,11 +15,19 @@ import { hasLeadSlot, leadIcon } from '../rowLead'
 import { EMPTY_ACTION, EmptyState } from '../components/EmptyState'
 import { StartButton, StatusButton, statusForKey } from '../components/StatusControls'
 import { StatusMark } from '../components/StatusMark'
-import { TaskDetail, toLocalInput } from '../components/TaskDetail'
+import { TaskDetail } from '../components/TaskDetail'
 import { TriageControl, type TriageSection } from '../components/TriageControl'
-import { addDays, carriedLabel, dateHints, moveDueToDay, nextMonday, ymd } from '../dueAt'
+import {
+  addDays,
+  carriedLabel,
+  dateHints,
+  moveDueToDay,
+  nextMonday,
+  toDayTimeInput,
+  todayIn,
+} from '../dueAt'
 import { useShortcutsEnabled } from '../shortcuts/enabled'
-import { useMe } from '../useMe'
+import { useTimeZone } from '../useMe'
 
 /**
  * THE WORKBENCH. Four panels, each answering one question, in a fixed arrangement.
@@ -50,8 +58,7 @@ export function Today() {
   // one request per session rather than one per visit.
   const completed = useQuery({ queryKey: ['completed'], queryFn: listCompleted })
   const movement = useQuery({ queryKey: ['movement'], queryFn: listMovement })
-  const me = useMe()
-  const timezone = me.data?.timezone
+  const timezone = useTimeZone()
   // Display only: which segment a task is in is decided by the server in the user's timezone.
   const dateLabel = new Intl.DateTimeFormat('zh-CN', {
     month: 'long',
@@ -61,7 +68,8 @@ export function Today() {
   }).format(new Date())
   // The account's own calendar day, for matching the server's `completedOn`. Never a browser-local
   // date: the server already decided which day a task was finished on, and the two must agree.
-  const localToday = new Intl.DateTimeFormat('en-CA', { timeZone: timezone }).format(new Date())
+  // `todayIn` is the ONE place that answers this, for this page, the rows and the panel alike.
+  const localToday = todayIn(timezone)
   const clock = new Intl.DateTimeFormat('zh-CN', {
     hour: '2-digit',
     minute: '2-digit',
@@ -126,7 +134,7 @@ export function Today() {
     e.preventDefault()
     setStatus(id, next)
   }
-  const todayYmd = ymd(new Date())
+  const todayYmd = localToday
   const tomorrow = addDays(todayYmd, 1)
   const nextWeek = nextMonday(todayYmd)
 
@@ -167,11 +175,11 @@ export function Today() {
             actions: [
               {
                 label: '推迟到明天',
-                run: () => patch(t.id, { dueAt: moveDueToDay(t.dueAt!, tomorrow) }),
+                run: () => patch(t.id, { dueAt: moveDueToDay(t.dueAt!, tomorrow, timezone) }),
               },
               {
                 label: '推迟到下周',
-                run: () => patch(t.id, { dueAt: moveDueToDay(t.dueAt!, nextWeek) }),
+                run: () => patch(t.id, { dueAt: moveDueToDay(t.dueAt!, nextWeek, timezone) }),
               },
               { label: '取消截止', run: () => patch(t.id, { dueAt: null }) },
             ],
@@ -215,8 +223,8 @@ export function Today() {
   }
   const prepare = (list: TodayTaskResponse[]): Prepared[] =>
     list.map((t) => {
-      const hints = dateHints(t)
-      const carried = t.segment === 'today' ? carriedLabel(t.scheduledOn) : null
+      const hints = dateHints(t, timezone)
+      const carried = t.segment === 'today' ? carriedLabel(t.scheduledOn, timezone) : null
       // The plan column: a carried plan says so in words; otherwise the planned day, but only when
       // that day is not today -- "排到今天" under a heading that already says 今天 is noise.
       return {
@@ -299,7 +307,7 @@ export function Today() {
             due={hints.due}
             plan={plan}
             carried={carried !== null}
-            exact={t.dueAt ? toLocalInput(t.dueAt).replace('T', ' ') : undefined}
+            exact={t.dueAt ? toDayTimeInput(t.dueAt, timezone).replace('T', ' ') : undefined}
             summary={t.segment === 'overdue'}
           />
         </button>

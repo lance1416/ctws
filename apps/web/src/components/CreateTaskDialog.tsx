@@ -4,7 +4,8 @@ import { useRef, useState } from 'react'
 import { listProjects } from '../api/projects'
 import { refreshTasks, tasksKey } from '../api/taskCache'
 import { createTask, listProjectTasks, type NewTask } from '../api/tasks'
-import { addDays, dayPhrase, nextMonday, ymd } from '../dueAt'
+import { addDays, dayEndIso, dayPhrase, nextMonday, todayIn } from '../dueAt'
+import { useTimeZone } from '../useMe'
 import { projectRailClass } from '../projectColor'
 import { flatten } from '../tree/flatten'
 import { MAX_DEPTH } from '../tree/drop'
@@ -63,7 +64,8 @@ export function CreateTaskDialog({
     queryFn: () => listProjectTasks(project),
   })
 
-  const todayYmd = ymd(new Date())
+  const timeZone = useTimeZone()
+  const todayYmd = todayIn(timeZone)
   const DAYS: [string, string][] = [
     ['今天', todayYmd],
     ['明天', addDays(todayYmd, 1)],
@@ -104,7 +106,7 @@ export function CreateTaskDialog({
       title: t,
       status,
       scheduledOn: scheduledOn === '' ? null : scheduledOn,
-      dueAt: dueDay === '' ? null : new Date(`${dueDay}T23:59:00`).toISOString(),
+      dueAt: dueDay === '' ? null : dayEndIso(dueDay, timeZone),
       notes: notes.trim() === '' ? null : notes,
     }
     create.mutate(body, {

@@ -10,7 +10,18 @@ import { useBlocker } from 'react-router-dom'
 import { listProjects } from '../api/projects'
 import { deleteTask, listProjectTasks, moveTask, patchTask } from '../api/tasks'
 import { tasksKey } from '../api/taskCache'
-import { addDays, dayPhrase, moveDueToDay, nextMonday, overdueLabel, ymd } from '../dueAt'
+import {
+  addDays,
+  dayEndIso,
+  dayPhrase,
+  fromDayTimeInput,
+  moveDueToDay,
+  nextMonday,
+  overdueLabel,
+  toDayTimeInput,
+  todayIn,
+  ymd,
+} from '../dueAt'
 import { projectRailClass } from '../projectColor'
 import { DeleteConfirm } from './DeleteConfirm'
 import { useReservePane, useWidePane } from './detailPane'
@@ -19,6 +30,7 @@ import { decision, field, label } from './formStyles'
 import { LeaveGuardContext } from './leaveGuard'
 import { DeadlineMark, PlanMark } from './RowParts'
 import { StatusMark } from './StatusMark'
+import { useTimeZone } from '../useMe'
 
 // An empty date input yields '' , and the contract takes a date or null. Sending '' would be
 // rejected; silently coercing it to today would be worse.
@@ -30,21 +42,6 @@ export const STATUS_LABEL: Record<TaskStatus, string> = {
   in_progress: '进行中',
   done: '已完成',
   cancelled: '已取消',
-}
-
-const pad = (n: number) => String(n).padStart(2, '0')
-
-/** An instant as the local "YYYY-MM-DDTHH:mm" a datetime-local input shows; '' when absent. */
-export function toLocalInput(iso: string | null): string {
-  if (!iso) return ''
-  const d = new Date(iso)
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-}
-
-/** The inverse: a local datetime-local value as the instant (with offset) the contract takes. */
-export function fromLocalInput(v: string): string | null {
-  const s = orNull(v)
-  return s === null ? null : new Date(s).toISOString()
 }
 
 /**
@@ -71,6 +68,8 @@ function DateEcho({ text }: { text: string | null }) {
   return <p className="mt-1 text-xs tabular-nums text-fg-muted">{text}</p>
 }
 
+const TABBABLE = 'input, select, textarea, button, a[href], [tabindex]:not([tabindex="-1"])'
+
 type Props = {
   task: TaskResponse
   projectId: string
@@ -80,10 +79,15 @@ type Props = {
   onSaved: () => void
 }
 
-const TABBABLE = 'input, select, textarea, button, a[href], [tabindex]:not([tabindex="-1"])'
-
 export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
   const qc = useQueryClient()
+  /**
+   * THE ACCOUNT'S ZONE, for every day and clock on this panel -- including the exact
+   * `datetime-local` field, whose value is bare wall-clock text with no zone in it. Reading that
+   * field as the BROWSER's wall clock is what made the pane a third notion of "today" beside the
+   * row's and the server's; it now means the same zone as both.
+   */
+  const timeZone = useTimeZone()
   const panel = useRef<HTMLDivElement>(null)
   // At >=1280 the detail is a third COLUMN, not a layer: no scrim, no click-outside, no focus
   // trap, and the list it was opened from stays usable beside it. Below that width there is no
@@ -98,7 +102,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
   const [notes, setNotes] = useState(task.notes ?? '')
   const [status, setStatus] = useState<TaskStatus>(task.status)
   const [scheduledOn, setScheduledOn] = useState(task.scheduledOn ?? '')
-  const [dueAt, setDueAt] = useState(toLocalInput(task.dueAt))
+  const [dueAt, setDueAt] = useState(toDayTimeInput(task.dueAt, timeZone))
   const [nextProjectId, setNextProjectId] = useState(task.projectId)
   /**
    * READING MODE IS THE DEFAULT (spec §5), and it is what answers both halves of the complaint:
@@ -128,7 +132,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
     notes: task.notes ?? '',
     status: task.status,
     scheduledOn: task.scheduledOn ?? '',
-    dueAt: toLocalInput(task.dueAt),
+    dueAt: toDayTimeInput(task.dueAt, timeZone),
     projectId: task.projectId,
   })
   const dirty =
@@ -182,7 +186,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
   // The named decisions, the same three days the row's triage control offers (今天 / 明天 / 下周)
   // plus the way out. They write the SAME fields the exact inputs write and are saved by the same
   // Save press -- they are a faster way to type a date, not a second way to change the task.
-  const todayYmd = ymd(new Date())
+  const todayYmd = todayIn(timeZone)
   const DAYS: [string, string][] = [
     ['今天', todayYmd],
     ['明天', addDays(todayYmd, 1)],
@@ -190,14 +194,19 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
   ]
   /** Keeps the time of day when there already is one; a new deadline means "by the end of it". */
   const setDueDay = (day: string) => {
-    const from = fromLocalInput(dueAt)
-    setDueAt(toLocalInput(from ? moveDueToDay(from, day) : `${day}T23:59:00`))
+    const from = fromDayTimeInput(dueAt, timeZone)
+    setDueAt(
+      toDayTimeInput(from ? moveDueToDay(from, day, timeZone) : dayEndIso(day, timeZone), timeZone),
+    )
+  }
+  /** An instant in the app's own words: 「明天 14:30」, on the account's calendar and clock. */
+  const say = (iso: string) => {
+    const [day, clock] = toDayTimeInput(iso, timeZone).split('T') as [string, string]
+    return `${dayPhrase(day, todayYmd)} ${clock}`
   }
   const dueEcho = (() => {
-    const iso = fromLocalInput(dueAt)
-    if (!iso) return null
-    const d = new Date(iso)
-    return `${dayPhrase(ymd(d), todayYmd)} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+    const iso = fromDayTimeInput(dueAt, timeZone)
+    return iso ? say(iso) : null
   })()
   const planEcho = scheduledOn ? dayPhrase(scheduledOn, todayYmd) : null
 
@@ -206,12 +215,11 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
   // A deadline whose day has gone says so, in the row's own words and the row's own `missed`
   // colour. Without it the pane was the one place in the app where "this is late" was invisible,
   // and reading mode is precisely where someone goes to look that up.
-  const dueOverdue = task.dueAt !== null && ymd(new Date(task.dueAt)) < todayYmd
+  const dueOverdue = task.dueAt !== null && ymd(new Date(task.dueAt), timeZone) < todayYmd
   const dueReading = (() => {
     if (!task.dueAt) return null
-    const d = new Date(task.dueAt)
-    const exact = `${dayPhrase(ymd(d), todayYmd)} ${pad(d.getHours())}:${pad(d.getMinutes())}`
-    return dueOverdue ? `${exact} · ${overdueLabel(task.dueAt)}` : exact
+    const exact = say(task.dueAt)
+    return dueOverdue ? `${exact} · ${overdueLabel(task.dueAt, timeZone)}` : exact
   })()
   const planReading = task.scheduledOn ? dayPhrase(task.scheduledOn, todayYmd) : null
   const projectName = projects.data?.find((p) => p.id === task.projectId)?.name ?? ''
@@ -235,7 +243,8 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
       if (orNull(notes) !== (task.notes ?? null)) patch.notes = orNull(notes)
       if (status !== task.status) patch.status = status
       if (orNull(scheduledOn) !== task.scheduledOn) patch.scheduledOn = orNull(scheduledOn)
-      if (dueAt !== toLocalInput(task.dueAt)) patch.dueAt = fromLocalInput(dueAt)
+      if (dueAt !== toDayTimeInput(task.dueAt, timeZone))
+        patch.dueAt = fromDayTimeInput(dueAt, timeZone)
       if (Object.keys(patch).length > 0) await patchTask(task.id, patch)
       if (nextProjectId !== task.projectId) {
         // Crossing projects is a structural change: `move` cascades project_id to the subtree and

@@ -4,6 +4,7 @@ import type { KeyboardEvent } from 'react'
 import type { FlatRow } from '../tree/flatten'
 import { toggleDoneTarget, toggleStartTarget } from '../api/taskActions'
 import { dateHints } from '../dueAt'
+import { useTimeZone } from '../useMe'
 import { leadIcon } from '../rowLead'
 import {
   CHEVRON_PX,
@@ -97,7 +98,11 @@ export function TaskRow({
     id: row.id,
   })
   const inactive = status === 'done' || status === 'cancelled'
-  const hints = dateHints({ status, dueAt, scheduledOn })
+  // The ACCOUNT's zone, not the browser's: the server decides what is overdue in that zone, and a
+  // row that said 「明天截止」 about a task the server had already filed under 逾期 would be the
+  // page contradicting itself.
+  const timeZone = useTimeZone()
+  const hints = dateHints({ status, dueAt, scheduledOn }, timeZone)
   // ONE glyph for the row, chosen by what bites first (rowLead). The notes mark falls back to its
   // old place beside the title when a date has taken the slot.
   const icon = leadIcon({
