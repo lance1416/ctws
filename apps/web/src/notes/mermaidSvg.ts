@@ -49,6 +49,13 @@ import DOMPurify from 'dompurify'
  *   `htmlLabels` is off, so `<img>`, `<a>` and the rest are simply not in the allowlist. The
  *   profile's own disallowed list already removes `foreignObject`, `use`, `script`, `animate` and
  *   `set` -- which is the second place `htmlLabels: false` is enforced.
+ * - `FORBID_TAGS` -- named explicitly even where the profile already refuses them. `a` it does NOT
+ *   refuse: an `<a>` is valid SVG, and mermaid's `click` directive emits one. DOMPurify would strip
+ *   a `javascript:` target from it and leave an inert link behind, which is harmless and also
+ *   pointless -- a diagram in a note is a picture, not navigation -- so the element goes. The other
+ *   four are already in the profile's disallowed list; writing them here means a future change to
+ *   that list cannot quietly let `htmlLabels` output through. `KEEP_CONTENT` stays at its default,
+ *   so a node that was wrapped in a link keeps its shape and its label.
  * - `FORBID_ATTR: ['style']` -- DOMPurify allowlists the `style` ATTRIBUTE without parsing its CSS,
  *   and an inline declaration is the one piece of CSS `scopeDiagramStyles` below cannot narrow,
  *   because it has no selector to anchor. Mermaid's appearance comes from the stylesheet it
@@ -61,6 +68,7 @@ export const DIAGRAM_PURIFY_CONFIG: Parameters<typeof DOMPurify.sanitize>[1] & {
   RETURN_DOM_FRAGMENT: true
 } = {
   USE_PROFILES: { svg: true },
+  FORBID_TAGS: ['a', 'foreignObject', 'use', 'image', 'script'],
   FORBID_ATTR: ['style'],
   RETURN_DOM_FRAGMENT: true,
 }
