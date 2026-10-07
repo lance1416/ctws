@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { searchProviders } from '../modules/registry'
 import { federate, type FederatedHit, type ProviderResult } from '../modules/search'
-import { Overlay } from './Overlay'
+import { Modal } from './Modal'
 
 /** Long enough that typing a word does not fire a request per letter, short enough to feel live. */
 const DEBOUNCE_MS = 150
@@ -55,11 +55,23 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <Overlay label="搜索任务" onClose={onClose} className="rounded-lg">
+    /**
+     * THE MODAL LAYER IS RADIX'S (`Modal`), not the hand-built `Overlay` this dialog used to sit
+     * in. That overlay declared `role="dialog" aria-modal="true"` and handled Escape, the press
+     * outside and the focus restoration -- but it had no Tab handling at all, so it promised
+     * assistive technology that the rest of the page was unreachable while the keyboard could
+     * still walk straight into the task tree underneath. A broken promise is worse than no
+     * promise: AT reads focus as being inside the dialog while it is in fact on a row nobody can
+     * see. Radix's `FocusScope` is the trap that claim needed.
+     *
+     * `initialFocus`, not `autoFocus`: Radix moves focus itself when the layer opens, and the
+     * first tabbable thing in the panel is the header's 关闭 -- the box is what is being typed
+     * into, so it is named explicitly.
+     */
+    <Modal title="搜索任务" onClose={onClose} initialFocus={box} className="rounded-lg">
       <div className="border-b border-border-subtle px-4 py-3">
         <input
           ref={box}
-          autoFocus
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
@@ -139,6 +151,6 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
           </li>
         ))}
       </ul>
-    </Overlay>
+    </Modal>
   )
 }

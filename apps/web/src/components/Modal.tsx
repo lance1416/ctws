@@ -10,14 +10,20 @@ import { enterOverlay, exitOverlay } from './overlayState'
  * it was wrongly generalised to every library. What this codebase actually hand-built instead was
  * a focus trap, focus restoration, Escape, press-outside, and four dialogs -- and it shipped a
  * WCAG 2.1.2 keyboard trap doing it. Radix ships zero styles, so every visual decision below is
- * still this project's: the scrim, the measure, the border and the type are the same ones
- * `Overlay` drew by hand (and the palette grep still applies to this file).
+ * still this project's: the scrim, the measure, the border and the type are the same ones the
+ * hand-built `Overlay` drew (and the palette grep still applies to this file).
  *
- * What is NOT here: the search overlay, `DeleteConfirm` and the detail pane stay on `Overlay` and
- * on their own code for now (radix-and-create spec §2 -- one migration, the lowest-risk one). The
- * detail pane may never move: it is a third COLUMN at >=1280 and a layer below that, and
- * `Dialog`'s semantics (scrim, trap, aria-modal) fight a component that must be able to not be a
- * modal at all.
+ * EVERY FLOATING LAYER IS HERE NOW. `ShortcutHelp` came first (radix-and-create spec §2, the
+ * lowest-risk one), and `SearchDialog` followed once it became clear that `Overlay`'s
+ * `aria-modal="true"` had no Tab handling behind it -- a promise to assistive technology that the
+ * keyboard then broke. `Overlay` is gone; there is nothing left that it served.
+ *
+ * What is NOT here, and is a decision rather than a leftover: `DeleteConfirm` (an inline
+ * `alertdialog` block inside a panel, never a layer of its own) and the DETAIL PANE. The pane may
+ * never move: it is a third COLUMN at >=1280 and a layer below that, and `Dialog`'s semantics
+ * (scrim, trap, and above all `aria-hidden` on the rest of the page) fight a component that must
+ * be able to coexist with the list it was opened from. Its trap is built on `tabbable` instead,
+ * in `TaskDetail`, and exists only in the overlay half.
  */
 export function Modal({
   title,

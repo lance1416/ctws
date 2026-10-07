@@ -171,3 +171,51 @@ test('Escape closes search, and f typed into a text field does not open it', asy
   await expect(searchBox(page)).toHaveCount(0)
   await expect(page.getByLabel('捕获')).toHaveValue('f')
 })
+
+/**
+ * THE PROMISE `aria-modal` MAKES, now kept.
+ *
+ * This dialog used to sit in a hand-built `Overlay` that declared `role="dialog"
+ * aria-modal="true"` and handled Escape, the press outside and the focus restoration -- but had no
+ * Tab handling of any kind. So assistive technology was told the rest of the page was unreachable
+ * while the keyboard walked straight out of the panel and into the task tree underneath: focus read
+ * as being inside the dialog and was in fact on a row nobody could see. That is worse than claiming
+ * nothing. It is Radix's `Dialog` now (the project's own `Modal`), and the trap is the point.
+ *
+ * Forty presses, not one: a trap that holds for a few and then gives way is the failure shape, and
+ * the count is more than twice the panel's own tabbable controls either way round.
+ */
+test('no Tab reaches outside the search dialog while it is open', async ({ page }) => {
+  await registerFreshUser(page)
+  const url = await startProject(page, 'Trap')
+  await seed(page, url, [
+    ['第一条', null],
+    ['第二条', null],
+  ])
+  await page.goto(url)
+  await expect(page.getByRole('listitem')).toHaveCount(2)
+
+  await page.keyboard.press('f')
+  await expect(searchBox(page)).toBeFocused()
+  // With results on screen there is something to tab TO, so the cycle is not a single element.
+  await query(page, '条')
+  await expect(page.locator('[data-search-result]')).toHaveCount(2)
+
+  const inside = () =>
+    page.evaluate(() => {
+      const el = document.activeElement
+      return !!el && el !== document.body && !!el.closest('[role="dialog"]')
+    })
+  for (const key of ['Tab', 'Shift+Tab']) {
+    for (let i = 0; i < 40; i++) {
+      await page.keyboard.press(key)
+      expect(await inside(), `${key} press ${i + 1} left the dialog`).toBe(true)
+    }
+  }
+
+  // The trap is not a lock: Escape still closes it, and focus goes back where it came from rather
+  // than to <body> (WCAG 2.4.3).
+  await page.keyboard.press('Escape')
+  await expect(searchBox(page)).toHaveCount(0)
+  expect(await page.evaluate(() => document.activeElement?.tagName)).not.toBe('BODY')
+})
