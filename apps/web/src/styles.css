@@ -128,19 +128,23 @@
      adopts the surveyed answer instead of inventing a stack. */
   --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
 
-  /* THE SCALE IS TDESIGN'S PX PAIRS (typography spec section 2): 12/20, 14/22, 16/24, 20/28,
-     24/32, 36/44, read off `style/web/theme/_font.less`. TDesign is the only surveyed system that
-     publishes size AND line-height as a pair per semantic step, and three of the six steps are
-     agreed to the pixel by Ant Design independently (14/22, 20/28, 24/32).
+  /* THE SCALE IS TDESIGN'S PAIRS (typography spec section 2): 12/20, 14/22, 16/24, 20/28, 24/32,
+     36/44, read off `style/web/theme/_font.less` and written in REM. TDesign is the only surveyed
+     system that publishes size AND line-height as a pair per semantic step, and three of the six
+     steps are agreed to the pixel by Ant Design independently (14/22, 20/28, 24/32).
 
-     LINE-HEIGHTS IN PX, NEVER UNITLESS. Two faces with different metrics meet on one line here,
-     and the whole point of the px pair is that the leading cannot then depend on which script the
-     line happens to contain. TDesign writes px directly; antd's `(size + 8) / size` is the same
+     REM, NOT PX. A px font size ignores the reader's browser default-font-size setting; TDesign
+     publishes px because it is a component library aimed at pixel-perfect designs, and that
+     constraint is not ours while the accessibility cost is. At the default 16px root every value
+     below is exactly TDesign's px (0.75rem = 12px ...), so nothing moves for a default reader and
+     everything scales for one who raised the setting. Size and leading are BOTH rem, so the pair
+     scales as a pair.
+
+     LINE-HEIGHTS AS A LENGTH, NEVER UNITLESS. A unitless line-height is a multiple of the
+     element's OWN font-size, so any descendant that sets its own size re-multiplies it and the
+     pair stops being a pair. (On the 16px step `1.5` computes to exactly 24px, which is why only a
+     token-level assertion can tell it from the length.) antd's `(size + 8) / size` is the same
      additive 8px leading wearing a ratio.
-
-     SIZES IN PX TOO, not rem: the pair is the unit of adoption, and a rem size against a px
-     leading is only half of TDesign's answer -- raise the browser's default font size and the
-     text grows inside a leading that does not.
 
      The role map, same table:
        xs   12/20  说明文字: date echoes, kbd chips, counts, the deliberately demoted labels
@@ -152,18 +156,18 @@
      Every step from `base` up is LARGER than the scale it replaces (15/17/23 -> 16/20/24 with a
      new 36 on top), which is the answer to 「组件太小」. `xs` goes 13 -> 12 and `sm` stays at 14:
      those two are TDesign's published values and are adopted as published. */
-  --text-xs: 12px;
-  --text-xs--line-height: 20px;
-  --text-sm: 14px;
-  --text-sm--line-height: 22px;
-  --text-base: 16px;
-  --text-base--line-height: 24px;
-  --text-lg: 20px;
-  --text-lg--line-height: 28px;
-  --text-xl: 24px;
-  --text-xl--line-height: 32px;
-  --text-2xl: 36px;
-  --text-2xl--line-height: 44px;
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.25rem;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.375rem;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg: 1.25rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.5rem;
+  --text-xl--line-height: 2rem;
+  --text-2xl: 2.25rem;
+  --text-2xl--line-height: 2.75rem;
 
   /* The four planes, light. White paper on a tinted ground. */
   --color-surface: #f3f5f8;

@@ -125,9 +125,9 @@ test('the computed font stack is the spec string, entry for entry and in order',
   expect(families(mono)).toEqual(FONT_MONO)
 })
 
-// ------------------------------------------------------------------ §2, the scale, as px pairs
+// ------------------------------------------------------------------ §2, the scale, as rem pairs
 
-test('every role wears its own px pair from the spec table', async ({ page }) => {
+test('every role wears its own pair from the spec table', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 })
   await registerFreshUser(page)
   const pid = await makeProject(page, '字阶')
@@ -182,37 +182,112 @@ test('every role wears its own px pair from the spec table', async ({ page }) =>
   // 正文 16/24 on the body itself.
   expect(await pair(page, 'body')).toEqual({ size: '16px', line: '24px', weight: '400' })
 
-  // AND THE TOKENS THEMSELVES ARE PX, which the computed styles above cannot show: a unitless
-  // `1.5` on the 16px step computes to exactly `24px`, so every assertion in this test passes on
-  // the ratio the spec forbids -- measured, which is why this is here. A unitless leading is a
-  // multiple of the element's own font-size, so it silently rescales on any descendant that sets
-  // a different size, and §2's whole point is that the pair is fixed.
+  // AND THE TOKENS THEMSELVES ARE REM LENGTHS, which the computed styles above cannot show: a
+  // unitless `1.5` on the 16px step computes to exactly `24px`, so every assertion in this test
+  // passes on the ratio the spec forbids -- measured, which is why this is here. A unitless
+  // leading is a multiple of the element's own font-size, so any descendant that sets its own size
+  // re-multiplies it and the pair stops being a pair. The values are pinned EXACTLY, not by unit
+  // class: "any unit" would accept the unitless case back. (That they are rem and not px is
+  // proved by behaviour, in the next test; this one stops a unitless value and a typo.)
+  // The build minifier writes 0.875rem as `.875rem`; the value is the same, the spelling is not.
   const tokens = await page.evaluate(() => {
+    const canonical = (v: string) => v.replace(/^\./, '0.')
     const root = getComputedStyle(document.documentElement)
     return Object.fromEntries(
       ['xs', 'sm', 'base', 'lg', 'xl', '2xl'].flatMap((step) => [
-        [`--text-${step}`, root.getPropertyValue(`--text-${step}`).trim()],
+        [`--text-${step}`, canonical(root.getPropertyValue(`--text-${step}`).trim())],
         [
           `--text-${step}--line-height`,
-          root.getPropertyValue(`--text-${step}--line-height`).trim(),
+          canonical(root.getPropertyValue(`--text-${step}--line-height`).trim()),
         ],
       ]),
     )
   })
   expect(tokens).toEqual({
-    '--text-xs': '12px',
-    '--text-xs--line-height': '20px',
-    '--text-sm': '14px',
-    '--text-sm--line-height': '22px',
-    '--text-base': '16px',
-    '--text-base--line-height': '24px',
-    '--text-lg': '20px',
-    '--text-lg--line-height': '28px',
-    '--text-xl': '24px',
-    '--text-xl--line-height': '32px',
-    '--text-2xl': '36px',
-    '--text-2xl--line-height': '44px',
+    '--text-xs': '0.75rem',
+    '--text-xs--line-height': '1.25rem',
+    '--text-sm': '0.875rem',
+    '--text-sm--line-height': '1.375rem',
+    '--text-base': '1rem',
+    '--text-base--line-height': '1.5rem',
+    '--text-lg': '1.25rem',
+    '--text-lg--line-height': '1.75rem',
+    '--text-xl': '1.5rem',
+    '--text-xl--line-height': '2rem',
+    '--text-2xl': '2.25rem',
+    '--text-2xl--line-height': '2.75rem',
   })
+})
+
+/** The browser's own default font-size setting (Chrome: Settings > Appearance > Font size). */
+async function setBrowserDefaultFontSize(page: Page, px: number) {
+  const cdp = await page.context().newCDPSession(page)
+  await cdp.send('Page.setFontSizes', { fontSizes: { standard: px } })
+  await page.reload()
+  await expect(page.locator('[data-task-tree] li[data-depth]')).toHaveCount(1)
+}
+
+test('the scale follows the reader root font size: size AND leading, as a pair', async ({
+  page,
+}) => {
+  // §2: the pairs are rem so that raising the browser's default font size raises the type. A px
+  // scale -- or `calc(12px)`, or a token string that merely looks right -- computes to the same
+  // numbers at the default size and cannot be told apart there; only a different root can. 125%
+  // is what a reader who set their browser default to 20px gives the root. It is applied as that
+  // setting, through the browser (CDP `Page.setFontSizes`), NOT by writing a `font-size` rule onto
+  // <html>: a rule would override whatever the app itself put there, so an app that pinned
+  // `html { font-size: 16px }` would pass. This way it is the same lever the reader pulls.
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '大字号')
+  await makeTask(page, pid, '一条任务', { dueAt: new Date(Date.now() - 1000).toISOString() })
+  await page.goto(`/projects/${pid}`)
+  await expect(page.locator('[data-task-tree] li[data-depth]')).toHaveCount(1)
+
+  const roles = {
+    body: 'body',
+    h1: 'h1',
+    title: '[data-row-title]',
+    meta: '[data-row-meta]',
+    panel: '[data-panel="任务"] h2',
+    caption: '[data-stat] dt',
+  } as const
+  const measure = async () =>
+    Object.fromEntries(
+      await Promise.all(
+        Object.entries(roles).map(async ([role, sel]) => {
+          const m = await pair(page, sel).catch(() => null)
+          return [role, m && { size: m.size, line: m.line }]
+        }),
+      ),
+    )
+
+  const base = await measure()
+  expect(base).toEqual({
+    body: { size: '16px', line: '24px' },
+    h1: { size: '24px', line: '32px' },
+    title: { size: '16px', line: '24px' },
+    meta: { size: '14px', line: '22px' },
+    panel: { size: '20px', line: '28px' },
+    caption: { size: '12px', line: '20px' },
+  })
+
+  await setBrowserDefaultFontSize(page, 20)
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).fontSize)).toBe(
+    '20px',
+  )
+  expect(await measure()).toEqual({
+    body: { size: '20px', line: '30px' },
+    h1: { size: '30px', line: '40px' },
+    title: { size: '20px', line: '30px' },
+    meta: { size: '17.5px', line: '27.5px' },
+    panel: { size: '25px', line: '35px' },
+    caption: { size: '15px', line: '25px' },
+  })
+
+  // And smaller, so a floor written in px (`max(16px, ...)`) cannot hide behind the larger case.
+  await setBrowserDefaultFontSize(page, 12)
+  expect((await measure()).title).toEqual({ size: '12px', line: '18px' })
 })
 
 test('横幅主语 is the top step, 36/44, and the page title is one step below it', async ({
