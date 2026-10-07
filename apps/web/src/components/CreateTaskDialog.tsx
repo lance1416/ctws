@@ -1,10 +1,12 @@
-import { TASK_STATUSES, type TaskStatus } from '@ctws/contracts'
+import { TASK_STATUSES } from '@ctws/contracts'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useRef, useState } from 'react'
+import { useRef } from 'react'
+import { useForm } from 'react-hook-form'
 import { listProjects } from '../api/projects'
 import { refreshTasks, tasksKey } from '../api/taskCache'
-import { createTask, listProjectTasks, type NewTask } from '../api/tasks'
-import { addDays, dayEndIso, dayPhrase, nextMonday, todayIn } from '../dueAt'
+import { createTask, listProjectTasks } from '../api/tasks'
+import { addDays, dayEndIso, dayPhrase, nextMonday, todayIn, ymd } from '../dueAt'
 import { useTimeZone } from '../useMe'
 import { projectRailClass } from '../projectColor'
 import { flatten } from '../tree/flatten'
@@ -14,6 +16,12 @@ import { Modal } from './Modal'
 import { DeadlineMark, PlanMark } from './RowParts'
 import { STATUS_LABEL } from './TaskDetail'
 import { StatusMark } from './StatusMark'
+import {
+  createTaskForm,
+  titleProblem,
+  type CreateTaskForm,
+  type CreateTaskValues,
+} from './taskForm'
 
 /**
  * 「新建」: a task created WITH its details, in one request.
@@ -32,6 +40,14 @@ import { StatusMark } from './StatusMark'
  * dates) is deliberately kept: they are what the next few tasks have in common. The notes are kept
  * too, and visibly so -- the textarea still shows them -- because the spec says the title is what
  * clears and a field quietly emptying itself is worse than one that did not.
+ *
+ * THE FORM IS `react-hook-form`'S, AND THE VALIDATION IS THE CONTRACT'S. Seven `useState`s, a
+ * hand-written 「请先写标题」 rule and a hand-assembled request body are gone: the form's values ARE
+ * `createTaskBody`'s shape, `zodResolver(createTaskForm)` is the only thing that decides whether
+ * they may be sent, and what `handleSubmit` hands over is the schema's own parsed output -- already
+ * trimmed, already defaulted -- so the body is passed on rather than built a second time. The two
+ * date buttons' values go through `setValue` rather than an input, because a named day is a
+ * DECISION pressed, not a field typed into; that is what `Controller`/`setValue` exist for.
  */
 export function CreateTaskDialog({
   projectId,
@@ -43,18 +59,37 @@ export function CreateTaskDialog({
 }) {
   const qc = useQueryClient()
   const titleField = useRef<HTMLInputElement>(null)
+  const timeZone = useTimeZone()
+  const todayYmd = todayIn(timeZone)
 
-  const [title, setTitle] = useState('')
-  const [project, setProject] = useState(projectId)
-  const [parentId, setParentId] = useState('')
-  const [status, setStatus] = useState<TaskStatus>('backlog')
-  const [scheduledOn, setScheduledOn] = useState('')
-  // The deadline is kept as a DAY and turned into an instant on submit. The dialog offers named
-  // days only (an exact minute belongs in the detail pane), and a new deadline means "by the end
-  // of that day" -- the same 23:59 the pane picks when there was no time to keep.
-  const [dueDay, setDueDay] = useState('')
-  const [notes, setNotes] = useState('')
-  const [problem, setProblem] = useState<string | null>(null)
+  /**
+   * The deadline is chosen as a DAY and held as the INSTANT the contract wants, assembled the
+   * moment the day is pressed instead of on submit. The dialog offers named days only (an exact
+   * minute belongs in the detail pane), and a new deadline means "by the end of that day" -- the
+   * same 23:59 the pane picks when there was no time to keep. Holding the instant is what lets the
+   * form's values be the request body with nothing left to assemble.
+   */
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<CreateTaskForm, unknown, CreateTaskValues>({
+    resolver: zodResolver(createTaskForm),
+    defaultValues: {
+      projectId,
+      parentId: null,
+      title: '',
+      status: 'backlog',
+      scheduledOn: null,
+      dueAt: null,
+      notes: null,
+    },
+  })
+  const project = watch('projectId')
+  const scheduledOn = watch('scheduledOn')
+  const dueAt = watch('dueAt')
 
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
   // The chosen project's tasks, for 放在谁下面. Shares the cache entry the tree already filled on
@@ -64,13 +99,13 @@ export function CreateTaskDialog({
     queryFn: () => listProjectTasks(project),
   })
 
-  const timeZone = useTimeZone()
-  const todayYmd = todayIn(timeZone)
   const DAYS: [string, string][] = [
     ['今天', todayYmd],
     ['明天', addDays(todayYmd, 1)],
     ['下周', nextMonday(todayYmd)],
   ]
+  /** Which named day the held instant IS, so the buttons can say which one is pressed. */
+  const dueDay = dueAt ? ymd(new Date(dueAt), timeZone) : ''
 
   /**
    * The candidate parents, in the tree's own order and indented like it. Nothing is collapsed
@@ -86,40 +121,37 @@ export function CreateTaskDialog({
   })
 
   const create = useMutation({
-    mutationFn: (body: NewTask) => createTask(body),
+    mutationFn: (body: CreateTaskValues) => createTask(body),
     onSuccess: () => refreshTasks(qc, project),
   })
 
-  /** `stay` is the `⌘↵` route: create, keep the layer, clear the title and go back to it. */
-  const submit = (stay: boolean) => {
-    const t = title.trim()
-    if (!t) {
-      setProblem('请先写标题')
-      titleField.current?.focus()
-      return
-    }
-    if (create.isPending) return
-    setProblem(null)
-    const body: NewTask = {
-      projectId: project,
-      parentId: parentId === '' ? null : parentId,
-      title: t,
-      status,
-      scheduledOn: scheduledOn === '' ? null : scheduledOn,
-      dueAt: dueDay === '' ? null : dayEndIso(dueDay, timeZone),
-      notes: notes.trim() === '' ? null : notes,
-    }
-    create.mutate(body, {
-      onSuccess: () => {
-        if (!stay) return onClose()
-        setTitle('')
-        titleField.current?.focus()
-      },
+  /**
+   * `stay` is the `⌘↵` route: create, keep the layer, clear the title and go back to it.
+   *
+   * `handleSubmit` is what refuses an invalid form, and it refuses BOTH routes -- the press and the
+   * chord -- because both go through it. It also moves focus to the first field it refused
+   * (`shouldFocusError`, on by default), which is the behaviour the hand-written rule had to spell
+   * out with a ref.
+   */
+  const submit = (stay: boolean) =>
+    handleSubmit((values) => {
+      if (create.isPending) return
+      create.mutate(values, {
+        onSuccess: () => {
+          if (!stay) return onClose()
+          setValue('title', '')
+          titleField.current?.focus()
+        },
+      })
     })
-  }
+
+  // register returns the ref the library needs; the dialog needs its own, both for `Modal`'s
+  // `initialFocus` and to go back to the field after a ⌘↵. Both get it.
+  const { ref: registerTitle, ...titleRest } = register('title')
 
   const dueEcho = dueDay === '' ? null : `${dayPhrase(dueDay, todayYmd)} 23:59`
-  const planEcho = scheduledOn === '' ? null : dayPhrase(scheduledOn, todayYmd)
+  const planEcho = !scheduledOn ? null : dayPhrase(scheduledOn, todayYmd)
+  const problem = titleProblem(errors.title?.type as string | undefined)
 
   return (
     <Modal
@@ -134,7 +166,7 @@ export function CreateTaskDialog({
       <form
         onSubmit={(e) => {
           e.preventDefault()
-          submit(false)
+          void submit(false)()
         }}
         onKeyDown={(e) => {
           // isComposing: Enter confirms an IME candidate, it must not submit half a word.
@@ -144,7 +176,7 @@ export function CreateTaskDialog({
           // where a plain Enter is a newline and `⌘↵` is the only way to commit without reaching
           // for the mouse.
           e.preventDefault()
-          submit(true)
+          void submit(true)()
         }}
         className="flex flex-col gap-5 px-5 py-4"
       >
@@ -159,12 +191,12 @@ export function CreateTaskDialog({
             />
             <select
               aria-label="项目"
-              value={project}
-              onChange={(e) => {
-                setProject(e.target.value)
-                // A parent belongs to a project; keeping the old one would send a foreign id.
-                setParentId('')
-              }}
+              {...register('projectId', {
+                onChange: () => {
+                  // A parent belongs to a project; keeping the old one would send a foreign id.
+                  setValue('parentId', null)
+                },
+              })}
               className="-ml-0.5 max-w-full rounded-lg bg-transparent py-0.5 text-sm text-fg-muted hover:text-fg"
             >
               {(projects.data ?? [])
@@ -177,13 +209,13 @@ export function CreateTaskDialog({
             </select>
           </div>
           <input
-            ref={titleField}
-            aria-label="标题"
-            value={title}
-            onChange={(e) => {
-              setTitle(e.target.value)
-              setProblem(null)
+            {...titleRest}
+            ref={(el) => {
+              registerTitle(el)
+              titleField.current = el
             }}
+            aria-label="标题"
+            aria-invalid={errors.title ? true : undefined}
             className="mt-0.5 w-full rounded-lg bg-transparent py-0.5 text-lg font-semibold text-fg"
           />
         </div>
@@ -194,8 +226,11 @@ export function CreateTaskDialog({
           </label>
           <select
             id="create-parent"
-            value={parentId}
-            onChange={(e) => setParentId(e.target.value)}
+            // An empty <option> cannot carry null, and the contract takes a uuid or null -- never
+            // the empty string. `setValueAs` is where that boundary belongs.
+            {...register('parentId', {
+              setValueAs: (v: unknown) => (typeof v === 'string' && v !== '' ? v : null),
+            })}
             className={`${field} mt-1.5`}
           >
             <option value="">不放在任何任务下</option>
@@ -203,7 +238,7 @@ export function CreateTaskDialog({
               // Indented with figure spaces rather than nbsp: an <option>'s text is all a native
               // select will render, so the shape of the tree has to be in the text itself.
               <option key={p.id} value={p.id}>
-                {' '.repeat((p.depth - 1) * 2)}
+                {' '.repeat((p.depth - 1) * 2)}
                 {p.title}
               </option>
             ))}
@@ -224,10 +259,8 @@ export function CreateTaskDialog({
               >
                 <input
                   type="radio"
-                  name="create-status"
                   value={s}
-                  checked={status === s}
-                  onChange={() => setStatus(s)}
+                  {...register('status')}
                   className="absolute inset-0 cursor-pointer appearance-none opacity-0"
                 />
                 <span aria-hidden="true" className="flex">
@@ -255,13 +288,13 @@ export function CreateTaskDialog({
                 key={word}
                 type="button"
                 aria-pressed={dueDay === day}
-                onClick={() => setDueDay(day)}
+                onClick={() => setValue('dueAt', dayEndIso(day, timeZone))}
                 className={decision}
               >
                 {word}截止
               </button>
             ))}
-            <button type="button" onClick={() => setDueDay('')} className={decision}>
+            <button type="button" onClick={() => setValue('dueAt', null)} className={decision}>
               取消截止
             </button>
           </div>
@@ -279,13 +312,17 @@ export function CreateTaskDialog({
                 key={word}
                 type="button"
                 aria-pressed={scheduledOn === day}
-                onClick={() => setScheduledOn(day)}
+                onClick={() => setValue('scheduledOn', day)}
                 className={decision}
               >
                 排到{word}
               </button>
             ))}
-            <button type="button" onClick={() => setScheduledOn('')} className={decision}>
+            <button
+              type="button"
+              onClick={() => setValue('scheduledOn', null)}
+              className={decision}
+            >
               清除排期
             </button>
           </div>
@@ -301,8 +338,12 @@ export function CreateTaskDialog({
           </label>
           <textarea
             id="create-notes"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
+            // An empty textarea is no notes, not the empty string the contract would reject.
+            // Guarded against the non-string the library hands this on the first render, before
+            // the element exists: the default value for 「no notes」 is null, not ''.
+            {...register('notes', {
+              setValueAs: (v: unknown) => (typeof v === 'string' && v.trim() !== '' ? v : null),
+            })}
             rows={3}
             className={`${field} mt-1.5 max-w-[68ch]`}
           />

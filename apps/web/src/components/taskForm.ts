@@ -1,0 +1,53 @@
+/**
+ * The two editing surfaces' FORM SCHEMAS -- which are the wire contracts themselves, not a second
+ * copy of them.
+ *
+ * `@ctws/contracts` already owns what a task may be: `createTaskBody` trims and bounds the title,
+ * shapes a calendar day, demands an offset-bearing instant, and is `.strict()`. The forms used to
+ * carry a hand-written rule beside it (`if (!title.trim()) …`), which is one more place for the two
+ * to disagree -- and the disagreement would show up as a 400 from the server rather than as a word
+ * in the form. Handing the SAME schema to `zodResolver` removes that second place: widen or narrow
+ * the contract and both forms follow on the next render, with no edit here.
+ *
+ * What stays ours is the WORDING. A resolver reports `too_small`; 「请先写标题」 is a product
+ * decision and no schema will make it. So the schema decides WHETHER, and `titleProblem` decides
+ * WHAT IT SAYS -- keyed on the issue code the schema produced, so a new kind of refusal cannot
+ * silently inherit the wrong sentence.
+ */
+import { createTaskBody, updateTaskBody } from '@ctws/contracts'
+import type { z } from 'zod'
+
+/**
+ * The 新建 dialog's schema. The create contract unchanged: `manualProgress` is simply never in the
+ * form's values, and `.strict()` is what guarantees a field added to the form without being added
+ * to the contract fails loudly here instead of quietly on the server.
+ */
+export const createTaskForm = createTaskBody
+
+/**
+ * The INPUT type, not the output: `status` carries `.default('backlog')` and the title is trimmed
+ * by a transform, so what the form holds and what the resolver hands to the submit handler are two
+ * different types. React Hook Form holds the former.
+ */
+export type CreateTaskForm = z.input<typeof createTaskBody>
+/** What the resolver produces once the schema has run: trimmed title, defaulted status. */
+export type CreateTaskValues = z.output<typeof createTaskBody>
+
+/**
+ * The detail pane's schema: the UPDATE contract, which is `.partial()` and therefore already says
+ * "a PATCH names only what changed". Every field of the pane's form is present in its values, so
+ * the partiality does not relax the title -- `title` is still `min(1)` whenever it is there, and
+ * the form always has it.
+ */
+export const updateTaskForm = updateTaskBody
+export type UpdateTaskForm = z.input<typeof updateTaskBody>
+
+/**
+ * The app's own sentence for a title the SCHEMA refused, keyed on the issue code it refused with.
+ * `undefined` in, `null` out: no refusal, nothing to say.
+ */
+export function titleProblem(code: string | undefined): string | null {
+  if (code === undefined) return null
+  if (code === 'too_big') return '标题太长了'
+  return '请先写标题'
+}
