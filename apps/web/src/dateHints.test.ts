@@ -327,6 +327,13 @@ describe('the account timezone decides, even when the browser is in another one'
       hour12: false,
     })
     expect(clock.format(new Date(moved))).toBe('00:30')
+    // AND A DEADLINE WHOSE TWO ZONES DISAGREE ABOUT WHICH DAY IT IS ON: 22:00 on the 3rd in New
+    // York is already 07:30 on the 4th in Kolkata. Setting the date on the browser's calendar
+    // lands this on the 8th in New York, not the 9th -- which the case above cannot see, because
+    // its two zones happened to share a day. A mutation proved exactly that.
+    const crossMoved = moveDueToDay('2026-10-04T02:00:00.000Z', '2026-10-09', ACCOUNT)
+    expect(serverDay(new Date(crossMoved))).toBe('2026-10-09')
+    expect(clock.format(new Date(crossMoved))).toBe('22:00')
   })
 
   it('the end of the day is the end of the account day', async () => {
@@ -375,6 +382,13 @@ describe('date helpers across a DST boundary', () => {
     // And a deadline one hour after the spring-forward jump, read from the following day, is one.
     expect(overdueLabel('2026-03-08T07:30:00.000Z', NY, new Date('2026-03-09T14:00:00.000Z'))).toBe(
       '已逾 1 天',
+    )
+    // THE DST CASE THAT ONLY CALENDAR COUNTING GETS RIGHT. Due 23:30 on the 7th, read at 00:30 on
+    // the 9th: two calendar days, across the 23-hour day -- and EXACTLY 24 elapsed hours, because
+    // the short day ate one. Subtracting milliseconds says one day, however it rounds; this is the
+    // case the old implementation's "round, not floor" comment was dancing around.
+    expect(overdueLabel('2026-03-08T04:30:00.000Z', NY, new Date('2026-03-09T04:30:00.000Z'))).toBe(
+      '已逾 2 天',
     )
   })
 

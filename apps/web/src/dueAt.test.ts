@@ -55,6 +55,15 @@ describe('overdue label', () => {
     expect(overdueLabel('2026-10-01T03:30:00.000Z', TZ, new Date('2026-10-04T10:00:00.000Z'))).toBe(
       '已逾 3 天',
     )
+    // THE CASE THAT SEPARATES THE TWO WAYS OF COUNTING, and the reason this test is worded the way
+    // it is. Due 23:30 on the 3rd, read at 00:10 on the 5th: TWO calendar days have turned over,
+    // and the elapsed time is 24 hours 40 minutes -- which a subtraction over 86_400_000 rounds to
+    // ONE however it rounds. A mutation that swapped the calendar-day difference for that
+    // subtraction passed every other case in this file, so the claim in the name was not pinned
+    // until this line.
+    expect(overdueLabel('2026-10-03T18:00:00.000Z', TZ, new Date('2026-10-04T18:40:00.000Z'))).toBe(
+      '已逾 2 天',
+    )
   })
 
   it('never says 0 days, and never prints the datetime-local format', async () => {
