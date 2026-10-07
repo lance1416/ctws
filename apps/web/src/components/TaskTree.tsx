@@ -7,15 +7,16 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import type { MoveTaskBody, TaskResponse } from '@ctws/contracts'
+import type { MoveTaskBody, TaskResponse, TaskStatus } from '@ctws/contracts'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Fragment, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { listProjects } from '../api/projects'
 import { createTask, listProjectTasks, moveTask } from '../api/tasks'
 import { refreshTasks, tasksKey } from '../api/taskCache'
 import { ancestorsOf } from '../tree/ancestors'
 import { flatten } from '../tree/flatten'
-import { loadCollapsed, saveCollapsed } from '../tree/collapse'
+import { loadCollapsed, loadShowDone, saveCollapsed, saveShowDone } from '../tree/collapse'
 import { MAX_DEPTH, planDrop, type DropPlan } from '../tree/drop'
 import { useTaskActions } from '../api/taskActions'
 import { useShortcutsEnabled } from '../shortcuts/enabled'
@@ -59,9 +60,32 @@ function applyMove(old: TaskResponse[], id: string, body: MoveTaskBody): TaskRes
 
 export function TaskTree({ projectId }: { projectId: string }) {
   const qc = useQueryClient()
+  // Only the INBOX dates its rows (D49). Quick capture makes the inbox the one list that grows
+  // without anyone deciding anything, so "how long has this been sitting here" is the question
+  // it raises and no other project does; and since most rows in an ordinary tree carry no date
+  // at all, putting an age on them would give every one of them a second line.
+  const inInbox =
+    useQuery({ queryKey: ['projects'], queryFn: listProjects }).data?.find(
+      (p) => p.id === projectId,
+    )?.isInbox === true
   const key = tasksKey(projectId)
   const [collapsed, setCollapsed] = useState(() => loadCollapsed(projectId))
+  const [showDone, setShowDone] = useState(() => loadShowDone(projectId))
+  /**
+   * Rows finished RIGHT HERE, which stay on screen even while finished rows are hidden.
+   *
+   * Without this, pressing x on a focused row deletes it from under the cursor: the mark never
+   * gets to show it worked, the focus has nowhere to go, and the second x that undoes a mis-press
+   * has no row to land on. What D48 is for is the BACKLOG of things finished days ago, not the
+   * thing finished a second ago. The set lives only as long as this mount, so the row is gone on
+   * the next load -- which is also when the person has stopped looking at it.
+   */
+  const [keptFinished, setKeptFinished] = useState<ReadonlySet<string>>(() => new Set())
   const [error, setError] = useState<string | null>(null)
+  // SEPARATE FROM `error` ON PURPOSE (D53). A failed creation is about one input that is on
+  // screen, so it is said next to that input; everything else here -- a refused move, a depth
+  // limit -- has no single row to sit beside and stays in the banner above the tree.
+  const [createError, setCreateError] = useState<string | null>(null)
   const [openId, setOpenId] = useState<string | null>(null)
   // Where an inline create input is showing: the parent whose children it appends to (null is
   // the root level) and the row whose handle gets focus back when it is cancelled. The server
@@ -75,7 +99,32 @@ export function TaskTree({ projectId }: { projectId: string }) {
 
   // The cache holds exactly what listProjectTasks returns; the rows are derived, never cached.
   const tasks = useQuery({ queryKey: key, queryFn: () => listProjectTasks(projectId) })
-  const rows = useMemo(() => flatten(tasks.data ?? [], collapsed), [tasks.data, collapsed])
+  /**
+   * WHAT IS LEFT TO DO (D48). A finished row leaves the tree unless the person asks for it back.
+   *
+   * The rule has one exception, and it is the tree's oldest rule: a list that loses tasks cannot
+   * be trusted. A finished PARENT with unfinished children stays -- hiding it would take its
+   * children with it, which is precisely losing tasks. It is dimmed instead, by `TaskRow`'s own
+   * finished styling, and the unfinished work under it is still reachable.
+   */
+  const visible = useMemo(() => {
+    const all = tasks.data ?? []
+    if (showDone) return all
+    const index = new Map(all.map((t) => [t.id, t]))
+    const live = new Set<string>()
+    for (const t of all) {
+      if (t.status === 'done' || t.status === 'cancelled') continue
+      // Walk up marking ancestors: an unfinished task keeps every parent above it on screen.
+      // `live.has` stops the walk, so each chain is climbed once and the whole pass is O(n).
+      for (let at = t as TaskResponse | undefined; at && !live.has(at.id);) {
+        live.add(at.id)
+        at = at.parentId === null ? undefined : index.get(at.parentId)
+      }
+    }
+    return all.filter((t) => live.has(t.id) || keptFinished.has(t.id))
+  }, [tasks.data, showDone, keptFinished])
+  const hiddenDone = (tasks.data?.length ?? 0) - visible.length
+  const rows = useMemo(() => flatten(visible, collapsed), [visible, collapsed])
   // Looked up by id each render, so a task that has left this project (moved away) closes itself.
   const openTask = tasks.data?.find((t) => t.id === openId)
   const byId = useMemo(() => new Map((tasks.data ?? []).map((t) => [t.id, t])), [tasks.data])
@@ -184,6 +233,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
       saveCollapsed(projectId, next)
     }
     setError(null)
+    setCreateError(null)
     setAdding({ parentId, from })
   }
 
@@ -198,9 +248,10 @@ export function TaskTree({ projectId }: { projectId: string }) {
     try {
       await createTask({ projectId, title, parentId: adding.parentId })
       await refreshTasks(qc, projectId)
+      setCreateError(null)
       return true
     } catch (e) {
-      setError(e instanceof Error ? e.message : '创建失败')
+      setCreateError(e instanceof Error ? e.message : '没能创建，再按一次回车重试。')
       return false
     } finally {
       inFlight.current = false
@@ -226,6 +277,18 @@ export function TaskTree({ projectId }: { projectId: string }) {
    * Tab remains bound to nothing at all. It was a keyboard trap here once (WCAG 2.1.2) and the
    * roving tabindex is what makes a single Tab leave the tree instead of visiting every row.
    */
+  /**
+   * Every status change the TREE makes goes through here, so finishing a row keeps it on screen
+   * whichever way it was finished -- the mark, or `x` on a focused row. Two call sites wrote the
+   * same two lines before; one of them forgot the keeping and the keyboard lost its own row.
+   */
+  const setStatus = (id: string, status: TaskStatus) => {
+    setError(null)
+    if (status === 'done' || status === 'cancelled')
+      setKeptFinished((prev) => new Set(prev).add(id))
+    actions.setStatus(id, status)
+  }
+
   const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>, index: number) => {
     const row = rows[index]!
     // Bare, with no Shift either: Shift+Enter is a different command and Shift+arrow is a
@@ -234,8 +297,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
     const nextStatus = singleKeys ? statusForKey(e, byId.get(row.id)?.status ?? 'todo') : null
     if (nextStatus) {
       e.preventDefault()
-      setError(null)
-      actions.setStatus(row.id, nextStatus)
+      setStatus(row.id, nextStatus)
     } else if (e.key === 'Enter' && e.altKey) {
       e.preventDefault()
       addChild(row)
@@ -308,6 +370,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
       leadSlot={leadSlot}
       onCommit={commitAdd}
       onCancel={cancelAdd}
+      error={createError}
     />
   )
 
@@ -379,7 +442,14 @@ export function TaskTree({ projectId }: { projectId: string }) {
     if (!reveal || !tasks.data) return
     // Not in this project: leave the parameter alone rather than claiming a focus target that
     // does not exist. A wrong id is a dead link, not a hijacked focus.
-    if (!tasks.data.some((t) => t.id === reveal)) return
+    const target = tasks.data.find((t) => t.id === reveal)
+    if (!target) return
+    // Unfolding is not enough when the row is FINISHED and finished rows are hidden (D48):
+    // search would route here and focus nothing. Arriving at a task is a request to see it.
+    if (!showDone && (target.status === 'done' || target.status === 'cancelled')) {
+      setShowDone(true)
+      saveShowDone(projectId, true)
+    }
     const chain = ancestorsOf(tasks.data, reveal)
     if (chain.some((id) => collapsed.has(id))) {
       const next = new Set(collapsed)
@@ -396,7 +466,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
       },
       { replace: true },
     )
-  }, [reveal, tasks.data, collapsed, projectId, setParams])
+  }, [reveal, tasks.data, collapsed, showDone, projectId, setParams])
 
   // The row only exists after the unfold has rendered, so the focus waits for that render rather
   // than running inside the effect above.
@@ -411,8 +481,30 @@ export function TaskTree({ projectId }: { projectId: string }) {
     el.scrollIntoView({ block: 'center' })
   })
 
+  const toggleDone = () => {
+    const next = !showDone
+    setShowDone(next)
+    saveShowDone(projectId, next)
+  }
+
   return (
     <>
+      {/* THE ONE CONTROL D48 ADDS, and it is absent until there is something to say: a project
+          with nothing finished shows no chrome for it. `aria-pressed` rather than a checkbox --
+          it is a view toggle, not a field, and the count IS the label. */}
+      {(hiddenDone > 0 || showDone) && (
+        <div className="mt-2 flex justify-end">
+          <button
+            type="button"
+            onClick={toggleDone}
+            aria-pressed={showDone}
+            data-show-done={showDone ? 'on' : 'off'}
+            className="min-h-8 rounded-lg px-2 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
+          >
+            {showDone ? '隐藏已完成' : `已完成 ${hiddenDone}`}
+          </button>
+        </div>
+      )}
       {tasks.isError && (
         <p role="alert" className="mt-4 text-sm text-danger">
           任务加载失败
@@ -424,9 +516,16 @@ export function TaskTree({ projectId }: { projectId: string }) {
         </p>
       )}
       {tasks.isSuccess && rows.length === 0 && !adding && (
+        // TWO DIFFERENT EMPTIES (D48). A project with nothing in it and a project whose every
+        // task is finished are opposite situations, and telling someone who just cleared their
+        // list that they "have no tasks yet" reads as having lost the work.
         <EmptyState
-          title="这个项目还没有任务"
-          hint="任务在这里按层级排列，最深可以嵌到十层。"
+          title={hiddenDone > 0 ? '这个项目清空了' : '这个项目还没有任务'}
+          hint={
+            hiddenDone > 0
+              ? `${hiddenDone} 条已完成，没有在做的了。`
+              : '任务在这里按层级排列，最深可以嵌到十层。'
+          }
           action={
             <button
               type="button"
@@ -437,7 +536,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
                 document.querySelector<HTMLElement>('input[aria-label="新任务"]')?.focus()
               }
             >
-              写第一条任务
+              {hiddenDone > 0 ? '再添一条' : '写第一条任务'}
             </button>
           }
         />
@@ -459,14 +558,12 @@ export function TaskTree({ projectId }: { projectId: string }) {
                   dueAt={byId.get(row.id)?.dueAt ?? null}
                   scheduledOn={byId.get(row.id)?.scheduledOn ?? null}
                   hasNotes={(byId.get(row.id)?.notes ?? '') !== ''}
+                  capturedAt={inInbox ? (byId.get(row.id)?.createdAt ?? null) : null}
                   leadSlot={leadSlot}
                   saved={savedId === row.id}
                   tabStop={row.id === tabId}
                   onFocus={() => setActiveId(row.id)}
-                  onSetStatus={(status) => {
-                    setError(null)
-                    actions.setStatus(row.id, status)
-                  }}
+                  onSetStatus={(status) => setStatus(row.id, status)}
                   onToggle={() => toggle(row.id)}
                   onKeyDown={(e) => onKeyDown(e, i)}
                   onOpen={() => setOpenId(row.id)}

@@ -25,3 +25,30 @@ export function saveCollapsed(projectId: string, ids: ReadonlySet<string>): void
     // Folding simply stops being remembered. Nothing else on the page depends on it.
   }
 }
+
+const doneKeyFor = (projectId: string) => `ctws.showDone.${projectId}`
+
+/**
+ * Whether this project's tree shows its finished rows (D48). Hidden is the default: a tree is
+ * what is left to do, and after a few weeks the done rows outnumber the live ones.
+ *
+ * Same storage and the same reasoning as the folds above -- a per-viewer convenience, every
+ * accessor wrapped. It is a separate key rather than a field beside them so that reading one
+ * cannot be broken by the other's shape changing.
+ */
+export function loadShowDone(projectId: string): boolean {
+  try {
+    return localStorage.getItem(doneKeyFor(projectId)) === '1'
+  } catch {
+    return false
+  }
+}
+
+export function saveShowDone(projectId: string, show: boolean): void {
+  try {
+    if (show) localStorage.setItem(doneKeyFor(projectId), '1')
+    else localStorage.removeItem(doneKeyFor(projectId))
+  } catch {
+    // The choice simply stops being remembered.
+  }
+}

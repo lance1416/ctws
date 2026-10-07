@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { listMovement } from '../api/movement'
 import { inboxOf, listProjects } from '../api/projects'
 import { searchTasks } from '../api/search'
@@ -163,6 +163,7 @@ function ProjectTasks({ projectId }: { projectId: string }) {
     return () => document.removeEventListener('keydown', onKey)
   }, [shortcuts])
 
+  const failureId = useId()
   const create = useMutation({
     mutationFn: (t: string) => createTask({ projectId, title: t, parentId: null }),
     onSuccess: () => {
@@ -190,8 +191,12 @@ function ProjectTasks({ projectId }: { projectId: string }) {
           }}
           placeholder="新任务"
           aria-label="新任务"
+          aria-invalid={create.isError ? true : undefined}
+          aria-describedby={create.isError ? failureId : undefined}
           // Inside the panel now, so it leads the rows rather than hanging under a page heading.
-          className="h-10 min-w-0 flex-1 basis-[22ch] rounded-lg border border-border-strong bg-surface px-3 text-fg placeholder:text-fg-muted"
+          className={`h-10 min-w-0 flex-1 basis-[22ch] rounded-lg border bg-surface px-3 text-fg placeholder:text-fg-muted ${
+            create.isError ? 'border-danger' : 'border-border-strong'
+          }`}
         />
         <button
           type="button"
@@ -207,12 +212,15 @@ function ProjectTasks({ projectId }: { projectId: string }) {
           </kbd>
         </button>
       </div>
-      {creating && <CreateTaskDialog projectId={projectId} onClose={() => setCreating(false)} />}
+      {/* THE FAILURE SITS UNDER ITS OWN BOX (D53), inside the same block and at the same left
+          edge, rather than as a line of page chrome below the whole control group. The typed
+          title is still in the box: what was typed is the user's, not the request's. */}
       {create.isError && (
-        <p role="alert" className="mt-2 text-sm text-danger">
-          创建失败，请重试
+        <p id={failureId} role="alert" className="mt-1 ml-3 text-sm text-danger">
+          没能创建，再按一次回车重试。
         </p>
       )}
+      {creating && <CreateTaskDialog projectId={projectId} onClose={() => setCreating(false)} />}
       <TaskTree key={projectId} projectId={projectId} />
     </>
   )

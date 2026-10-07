@@ -79,8 +79,18 @@ async function openTriage(page: Page, title: string, kind: '逾期' | '顺延') 
 }
 
 async function openTree(page: Page, projectId: string) {
+  // Waits for the LIST, not for a row: a project whose only task is finished renders no rows at
+  // all now that the tree hides them (D48), and waiting for one would hang until the timeout.
+  const listed = page.waitForResponse((r) => {
+    const url = new URL(r.url())
+    return (
+      r.request().method() === 'GET' &&
+      url.pathname === '/api/v1/tasks' &&
+      url.searchParams.get('projectId') === projectId
+    )
+  })
   await page.goto(`/projects/${projectId}`)
-  await page.getByRole('listitem').first().waitFor()
+  await listed
 }
 
 const treeRow = (page: Page, title: string) =>
@@ -111,9 +121,16 @@ test('the status mark in a tree row finishes the task in one click, and it is sa
   // One action: the detail panel never opened.
   await expect(page.getByRole('dialog')).toHaveCount(0)
 
-  // The server has it, and so does a fresh page load.
+  // It stayed on screen: a row finished HERE is not swept up by D48's hiding, so the mark can
+  // show it worked and a mis-press can be undone from the same row.
+  await expect(treeRow(page, '写方案').getByRole('img', { name: '已完成' })).toBeVisible()
+
+  // The server has it. A fresh load is where the hiding applies: the tree is what is left to do,
+  // and this is now part of the finished pile, reachable behind its own count.
   expect((await serverTask(page, pid, '写方案')).status).toBe('done')
   await page.reload()
+  await expect(treeRow(page, '写方案')).toHaveCount(0)
+  await page.getByRole('button', { name: '已完成 1' }).click()
   await expect(treeRow(page, '写方案').getByRole('img', { name: '已完成' })).toBeVisible()
   await expect(page.getByRole('button', { name: '恢复「写方案」' })).toBeVisible()
 })
@@ -123,6 +140,9 @@ test('a finished task can be restored from its mark, landing on backlog', async 
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '写方案', { status: 'done' })
   await openTree(page, pid)
+  // It arrived already finished, so the tree starts without it (D48); the count is the way in.
+  await expect(treeRow(page, '写方案')).toHaveCount(0)
+  await page.getByRole('button', { name: '已完成 1' }).click()
 
   const restored = patched(page)
   await page.getByRole('button', { name: '恢复「写方案」' }).click()

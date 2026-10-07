@@ -115,6 +115,29 @@ export function overdueLabel(dueIso: string, timeZone: string, now: Date = new D
 }
 
 /**
+ * 「3 天前捕获」-- how long something has been sitting in the inbox (D49), counted in the
+ * account's calendar days like every other phrase here.
+ *
+ * A COUNT, not a date. `dayPhrase` would say 「10月1日捕获」, which answers a question nobody asked:
+ * the inbox is read to find what has gone stale, and "17 days" is that answer where "October 1st"
+ * is arithmetic the reader has to do. Today and yesterday keep their names, because for those two
+ * the count reads worse than the word.
+ */
+export function capturedLabel(
+  createdIso: string,
+  timeZone: string,
+  now: Date = new Date(),
+): string {
+  const days = differenceInCalendarDays(
+    new TZDate(now, timeZone),
+    new TZDate(new Date(createdIso), timeZone),
+  )
+  if (days <= 0) return '今天捕获'
+  if (days === 1) return '昨天捕获'
+  return `${days} 天前捕获`
+}
+
+/**
  * A deadline moved to another calendar day, keeping its time of day (in the account's zone, to the
  * second). Pushing "due 09:00 on the 1st" to the 4th gives 09:00 on the 4th: the person is moving
  * the date, so inventing midnight (which reads as "due at the very start of the day") or "now"

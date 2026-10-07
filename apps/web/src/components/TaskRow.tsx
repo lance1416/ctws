@@ -3,7 +3,7 @@ import type { TaskStatus } from '@ctws/contracts'
 import type { KeyboardEvent } from 'react'
 import type { FlatRow } from '../tree/flatten'
 import { toggleDoneTarget, toggleStartTarget } from '../api/taskActions'
-import { dateHints } from '../dueAt'
+import { capturedLabel, dateHints } from '../dueAt'
 import { useTimeZone } from '../useMe'
 import { leadIcon } from '../rowLead'
 import {
@@ -33,6 +33,8 @@ type Props = {
    * title, so adding a deadline never silently removes "there is something to read here".
    */
   hasNotes: boolean
+  /** When this was captured, for the inbox's age line (D49). Every other list passes null. */
+  capturedAt?: string | null
   /**
    * Whether THIS LIST reserves the leading icon slot at all -- decided once for the whole tree,
    * never per row: a slot that exists on some rows and not others puts the first glyph of each row
@@ -84,6 +86,7 @@ export function TaskRow({
   dueAt,
   scheduledOn,
   hasNotes,
+  capturedAt = null,
   leadSlot,
   saved,
   tabStop,
@@ -235,7 +238,11 @@ export function TaskRow({
             </span>
           )}
         </span>
-        <RowMeta due={hints.due} plan={hints.scheduled} />
+        <RowMeta
+          due={hints.due}
+          plan={hints.scheduled}
+          age={capturedAt ? capturedLabel(capturedAt, timeZone) : null}
+        />
       </span>
       {/* THE TWO HOVER CONTROLS RESERVE NO WIDTH. They are invisible until the row is hovered, so
           holding 64px of every row for them was the last thing taking width off the titles: with

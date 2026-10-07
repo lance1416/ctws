@@ -237,6 +237,7 @@ export function RowMeta({
   carried = false,
   exact,
   summary = false,
+  age = null,
 }: {
   /** The project (and parent) a cross-project list shows. The tree passes none: §2 says the
    *  project is known there and the hierarchy is visible from the indentation. */
@@ -245,6 +246,15 @@ export function RowMeta({
   /** The plan, worded: "排到明天", or "原定9月28日，已顺延" once it has been carried. */
   plan?: string | null
   carried?: boolean
+  /**
+   * HOW LONG THIS HAS BEEN SITTING HERE, worded: 「3 天前捕获」(D49).
+   *
+   * The inbox is the only list that passes one. It is also the only part that is dropped when the
+   * line has anything else to say: a date or a plan is a decision someone made about this task,
+   * and an age is the absence of one, so the age never costs a row that already earns its second
+   * line any width.
+   */
+  age?: string | null
   /** The exact local deadline, for the tooltip: "2026-10-01 09:00". */
   exact?: string | undefined
   /**
@@ -320,6 +330,18 @@ export function RowMeta({
                 className="whitespace-nowrap text-plan"
               >
                 {plan}
+              </span>
+            ),
+          }
+        : null,
+      // LAST, and only on a line that would otherwise be empty -- see the prop's note. `fg-subtle`
+      // and not `fg-muted`: an age is the one phrase here that nobody chose, so it sits a step
+      // quieter than a date somebody set.
+      age && !breadcrumb && !due && !plan
+        ? {
+            node: (
+              <span key="age" data-row-age className="whitespace-nowrap text-fg-subtle">
+                {age}
               </span>
             ),
           }
