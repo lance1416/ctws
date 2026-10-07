@@ -104,10 +104,10 @@ test('the status markers write exactly what the status dropdown wrote', async ({
   const id = await makeTask(page, pid, '写方案')
   await openPane(page, pid, '写方案')
 
-  // The task starts at 待整理, and the group says so without anything being opened -- which is
+  // The task starts at 待办, and the group says so without anything being opened -- which is
   // the whole complaint about the <select> it replaces.
-  await expect(page.getByRole('radio', { name: '待整理', exact: true })).toBeChecked()
-  for (const name of ['待办', '进行中', '已完成', '已取消']) {
+  await expect(page.getByRole('radio', { name: '待办', exact: true })).toBeChecked()
+  for (const name of ['待整理', '进行中', '已完成', '已取消']) {
     await expect(page.getByRole('radio', { name, exact: true })).not.toBeChecked()
   }
 
@@ -134,22 +134,24 @@ test('the five statuses are one tab stop and the arrow keys move inside it', asy
   // radiogroup contract and the reason this is not five buttons.
   await page.getByRole('textbox', { name: '标题' }).focus()
   await page.keyboard.press('Tab')
-  await expect(page.getByRole('radio', { name: '待整理', exact: true })).toBeFocused()
-
-  await page.keyboard.press('ArrowRight')
   await expect(page.getByRole('radio', { name: '待办', exact: true })).toBeFocused()
-  await expect(page.getByRole('radio', { name: '待办', exact: true })).toBeChecked()
+
+  // The group is in the status model's own order (backlog, todo, in_progress, done, cancelled),
+  // so one step right of 待办 is 进行中; arrowing also CHECKS, which is the native contract.
+  await page.keyboard.press('ArrowRight')
+  await expect(page.getByRole('radio', { name: '进行中', exact: true })).toBeFocused()
+  await expect(page.getByRole('radio', { name: '进行中', exact: true })).toBeChecked()
 
   // One more Tab LEAVES the group entirely: five statuses cost one tab stop, not five.
   await page.keyboard.press('Tab')
-  await expect(page.getByRole('radio', { name: '进行中', exact: true })).not.toBeFocused()
+  await expect(page.getByRole('radio', { name: '已完成', exact: true })).not.toBeFocused()
   const inGroup = await page.evaluate(
     () => document.activeElement?.closest('[role="radiogroup"]') !== null,
   )
   expect(inGroup, 'Tab left the status group').toBe(false)
 
   // The arrow press is a real edit: the pane now guards it like any other.
-  expect(await saveBody(page)).toEqual({ status: 'todo' })
+  expect(await saveBody(page)).toEqual({ status: 'in_progress' })
 })
 
 // --------------------------------------------------------------------------- the two dates
@@ -244,7 +246,7 @@ test('both dates change in one request, and nothing is saved until 保存 is pre
   // the rule that these controls did NOT become autosave.)
   await page.waitForTimeout(300)
   expect(writes, 'nothing is written before 保存').toHaveLength(0)
-  expect((await serverTask(page, pid, id)).status).toBe('backlog')
+  expect((await serverTask(page, pid, id)).status).toBe('todo')
 
   const body = await saveBody(page)
   expect(Object.keys(body).sort()).toEqual(['dueAt', 'scheduledOn', 'status'])
@@ -329,7 +331,7 @@ test('the status chip wears the app’s focus ring when the keyboard reaches it'
   // one control a keyboard user cannot see (section 7: a visible ring on every control).
   await page.getByRole('textbox', { name: '标题' }).focus()
   await page.keyboard.press('Tab')
-  const chip = page.getByRole('radio', { name: '待整理', exact: true }).locator('xpath=..')
+  const chip = page.getByRole('radio', { name: '待办', exact: true }).locator('xpath=..')
   const ring = await chip.evaluate((el) => {
     const s = getComputedStyle(el)
     return { width: s.outlineWidth, style: s.outlineStyle, color: s.outlineColor }

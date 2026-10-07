@@ -76,7 +76,9 @@ async function insertAt(ctx: TaskCtx, taskId: string, n: number, at: string): Pr
 async function taskWithEvents(ctx: TaskCtx, n: number): Promise<string> {
   const p = await createProject(ctx, 'P')
   const t = await createTask(ctx, p, 't0')
-  const statuses = ['todo', 'in_progress', 'todo', 'in_progress', 'todo', 'in_progress']
+  // Starts at in_progress, not todo: a task is CREATED on todo now, and a PATCH to the status
+  // it already has is a no-op that writes no event -- which would quietly make this n-1.
+  const statuses = ['in_progress', 'todo', 'in_progress', 'todo', 'in_progress', 'todo']
   for (let i = 0; i < n - 1; i++) {
     const res = await ctx.app.inject({
       method: 'PATCH',

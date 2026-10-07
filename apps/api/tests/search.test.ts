@@ -153,7 +153,7 @@ describe('GET /search', () => {
     expect(Object.fromEntries(rows.map((r) => [r.title, r.status]))).toEqual({
       'ember 做完了': 'done',
       'ember 不做了': 'cancelled',
-      'ember 还在做': 'backlog',
+      'ember 还在做': 'todo',
     })
   })
 

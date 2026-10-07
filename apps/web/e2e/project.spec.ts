@@ -430,7 +430,7 @@ test('a single-line tree row is 44px tall, at every depth', async ({ page }) => 
   // The marker inside it is the workbench's 20px, not a 16px glyph left sitting in a taller row.
   expect(
     await page
-      .getByRole('img', { name: '待整理' })
+      .getByRole('img', { name: '待办' })
       .first()
       .evaluate((el) => el.getBoundingClientRect().width),
   ).toBe(20)

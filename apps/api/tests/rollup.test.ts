@@ -93,11 +93,6 @@ describe('rollups ride along with the task list', () => {
     const y2 = await createTask(ctx, pid, 'y2', y)
     await setStatus(ctx, x, 'done')
     await setStatus(ctx, y1, 'done')
-    await setStatus(ctx, y2, 'todo')
-    // The two parents are moved off backlog ON PURPOSE: §7.2 excludes a backlog node BEFORE it
-    // looks at its children, and every task is created on backlog. See the test below.
-    await setStatus(ctx, y, 'todo')
-    await setStatus(ctx, root, 'todo')
 
     const r = await rollups(ctx, pid)
     // y is (1 + 0) / 2 = 0.5, and the root is (1 + 0.5) / 2 = 0.75: the mean is over DIRECT
@@ -115,8 +110,8 @@ describe('rollups ride along with the task list', () => {
 
     const r = await rollups(ctx, pid)
     expect(r[root]!.counts).toEqual({
-      backlog: 1,
-      todo: 0,
+      backlog: 0,
+      todo: 1,
       in_progress: 0,
       done: 1,
       cancelled: 0,
@@ -140,28 +135,37 @@ describe('rollups ride along with the task list', () => {
     // The root is a leaf again, so it falls back to its own status rather than keeping the 1 the
     // deleted child used to give it.
     expect(r[root]!.counts.done).toBe(0)
-    expect(r[root]!.progress).toBeNull()
+    expect(r[root]!.progress).toBe(0)
   })
 })
 
-describe('what the exclusion rule means for a tree built the normal way', () => {
-  it('reports no progress for a freshly built tree, because every task starts on backlog', async () => {
+describe('the exclusion rule on a tree built the normal way', () => {
+  it('reports progress for a freshly built tree, with nobody setting a status first', async () => {
     const ctx = await setup()
-    const pid = await createProject(ctx, 'P')
+    const pid = await createProject(ctx, '改版')
     const root = await createTask(ctx, pid, '根')
     const kid = await createTask(ctx, pid, '子', root)
     await setStatus(ctx, kid, 'done')
 
-    // §7.2 excludes a `backlog` node before it looks at its children, and `createTask` files
-    // everything on backlog. So a parent nobody has explicitly moved to `todo` reports null even
-    // with finished work under it. This is the spec's rule applied to this app's default, and it
-    // is pinned here rather than left to be discovered from a blank number in the interface.
-    expect((await rollups(ctx, pid))[root]!.progress).toBeNull()
-    // The counts still see everything: exclusion is about averaging, not about existing.
-    expect((await rollups(ctx, pid))[root]!.counts).toMatchObject({ backlog: 1, done: 1 })
-
-    await setStatus(ctx, root, 'todo')
+    // THIS IS WHY THE DEFAULT MOVED (2026-10-07). §7.2 excludes a `backlog` node before it looks
+    // at its children, and `createTask` used to file everything on backlog -- so this read null
+    // however much was finished underneath, everywhere, for every tree anyone built.
     expect((await rollups(ctx, pid))[root]!.progress).toBe(1)
+  })
+
+  it('still excludes a parent somebody deliberately filed as backlog', async () => {
+    const ctx = await setup()
+    const pid = await createProject(ctx, '改版')
+    const root = await createTask(ctx, pid, '以后再说')
+    const kid = await createTask(ctx, pid, '子', root)
+    await setStatus(ctx, kid, 'done')
+    await setStatus(ctx, root, 'backlog')
+
+    // The rule itself did not change: something only recorded, not committed to, is not work in
+    // flight and must not pull an average around.
+    expect((await rollups(ctx, pid))[root]!.progress).toBeNull()
+    // The counts still see everything -- exclusion is about averaging, not about existing.
+    expect((await rollups(ctx, pid))[root]!.counts).toMatchObject({ backlog: 1, done: 1 })
   })
 })
 

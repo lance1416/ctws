@@ -56,7 +56,7 @@ async function rowOf(ctx: TaskCtx, id: string) {
 }
 
 describe('create', () => {
-  it('creates a task at project root with status backlog by default', async () => {
+  it('creates a task at project root with status todo by default', async () => {
     const ctx = await setup()
     const projectId = await createProject(ctx, 'P')
     const res = await post(ctx, { projectId, title: 'idea' })
@@ -65,7 +65,9 @@ describe('create', () => {
       projectId,
       parentId: null,
       title: 'idea',
-      status: 'backlog',
+      // `todo` since 2026-10-07: the rollup excludes a backlog node before it looks at its
+      // children, so the old default blanked the progress of every tree anyone built.
+      status: 'todo',
       notes: null,
       completedAt: null,
       manualProgress: null,
@@ -180,7 +182,7 @@ describe('update', () => {
     await patch(ctx, id, { status: 'in_progress' })
     const events = await eventsOf(ctx, id)
     expect(events.map((e) => e.type)).toEqual(['created', 'status_changed'])
-    expect(events[1]!.payload).toEqual({ from: 'backlog', to: 'in_progress' })
+    expect(events[1]!.payload).toEqual({ from: 'todo', to: 'in_progress' })
   })
 
   it('records one event per changed field, with before and after values', async () => {
@@ -281,7 +283,7 @@ describe('update', () => {
     const parentId = await createTask(ctx, projectId, 'parent')
     const childId = await createTask(ctx, projectId, 'child', parentId)
     await patch(ctx, parentId, { status: 'done' })
-    expect((await rowOf(ctx, childId)).status).toBe('backlog')
+    expect((await rowOf(ctx, childId)).status).toBe('todo')
     expect(await eventsOf(ctx, childId).then((e) => e.map((x) => x.type))).toEqual(['created'])
   })
 
@@ -293,7 +295,7 @@ describe('update', () => {
     const c2 = await createTask(ctx, projectId, 'c2', parentId)
     await patch(ctx, c1, { status: 'done' })
     await patch(ctx, c2, { status: 'done' })
-    expect((await rowOf(ctx, parentId)).status).toBe('backlog')
+    expect((await rowOf(ctx, parentId)).status).toBe('todo')
     expect(await eventsOf(ctx, parentId).then((e) => e.map((x) => x.type))).toEqual(['created'])
   })
 })
@@ -564,10 +566,12 @@ describe('event and mutation share one transaction', () => {
     const id = await createTask(ctx, projectId, 'x')
     await failAtCommit(ctx)
 
-    const res = await patch(ctx, id, { status: 'todo' })
+    // Not 'todo': that is what a task is created with, and a PATCH to the status it already
+    // has changes nothing, so there would be no write for the commit to fail on.
+    const res = await patch(ctx, id, { status: 'in_progress' })
     expect(res.statusCode).toBe(500)
 
-    expect((await rowOf(ctx, id)).status).toBe('backlog')
+    expect((await rowOf(ctx, id)).status).toBe('todo')
     expect((await eventsOf(ctx, id)).map((e) => e.type)).toEqual(['created'])
   })
 

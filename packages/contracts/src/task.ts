@@ -98,8 +98,20 @@ export const createTaskBody = z
     parentId: z.uuid().nullish(),
     title,
     notes: notes.nullish(),
-    // Backlog by default so that capturing an idea costs nothing (spec section 6.3).
-    status: taskStatus.default('backlog'),
+    /**
+     * `todo` BY DEFAULT since 2026-10-07, where it used to be `backlog`.
+     *
+     * The old default made §6.3's exclusion rule swallow the whole tree: the rollup drops a
+     * `backlog` node BEFORE looking at its children (§7.2), so a parent nobody had explicitly
+     * moved reported no progress even with every child finished -- and nobody had explicitly
+     * moved anything, because this was the default. Measured, and pinned in
+     * `apps/api/tests/rollup.test.ts`.
+     *
+     * §6.3's reasoning survives intact and is why `backlog` still exists: an idea that is only
+     * recorded should not drag a number down. It is now a bucket a person puts something INTO,
+     * rather than where everything lands by accident.
+     */
+    status: taskStatus.default('todo'),
     scheduledOn: calendarDate.nullish(),
     dueAt: instant.nullish(),
     manualProgress: manualProgress.nullish(),

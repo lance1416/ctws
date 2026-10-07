@@ -29,8 +29,15 @@ describe('createTaskBody', () => {
     expect(createTaskBody.safeParse(valid).success).toBe(true)
   })
 
-  it('defaults the status to backlog, so capturing an idea costs nothing', () => {
-    expect(createTaskBody.parse(valid).status).toBe('backlog')
+  it('defaults the status to todo, so the rollup can see the task at all', () => {
+    // It was `backlog` until 2026-10-07. The rollup excludes a backlog node BEFORE looking at
+    // its children (design spec §7.2), so with that default every parent reported no progress
+    // however much was finished under it. `backlog` is now a bucket somebody puts work INTO.
+    expect(createTaskBody.parse(valid).status).toBe('todo')
+  })
+
+  it('still accepts an explicit backlog, which is the only way in now', () => {
+    expect(createTaskBody.parse({ ...valid, status: 'backlog' }).status).toBe('backlog')
   })
 
   it('rejects an empty or whitespace-only title', () => {

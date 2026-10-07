@@ -874,7 +874,7 @@ test('清除排期 removes the row from 今天 and the server holds no plan', as
 
   const t = await serverTask(page, pid, '不排了')
   expect(t.scheduledOn).toBeNull()
-  expect(t.status).toBe('backlog') // the task still exists, untouched: only the plan went
+  expect(t.status).toBe('todo') // the task still exists, untouched: only the plan went
   expect(await todaySegment(page, id)).toBe('absent')
   await page.reload()
   await expect(page.getByText('不排了')).toHaveCount(0)
