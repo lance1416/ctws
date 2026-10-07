@@ -563,6 +563,42 @@ test.describe('the panel as an overlay', () => {
     await expect(dialog).toHaveCount(0)
   })
 
+  /**
+   * A NAMED DAY PRESSED IS AN UNSAVED EDIT. The three date decisions (今天 / 明天 / 下周 and the
+   * two ways out) do not type into a field, so whatever the form holds has to be told that they
+   * changed something. A mutation proved this needed its own guard: dropping the flag that says so
+   * left the form clean, which the existing cases caught only as a MISSING request -- the person
+   * would have walked away from a press that silently did nothing, with no prompt at all.
+   */
+  test('a named date decision counts as an unsaved edit, with nothing typed', async ({ page }) => {
+    await registerFreshUser(page)
+    const pid = await makeProject(page, 'P')
+    await makeTask(page, pid, '写方案')
+    await openTree(page, pid)
+    await page.getByRole('listitem').filter({ hasText: '写方案' }).click()
+    await editDetail(page)
+    const dialog = page.getByRole('dialog')
+
+    // Not a keystroke in the panel: one press on 明天截止, which writes the deadline field.
+    await page.getByRole('button', { name: '明天截止' }).click()
+    await expect(page.getByLabel('截止', { exact: true })).not.toHaveValue('')
+    await page.getByRole('button', { name: '关闭' }).click()
+    await expect(dialog).toContainText('有未保存的修改')
+    await page.getByRole('button', { name: '继续编辑' }).click()
+
+    // The plan half of the same control, and the ways OUT of a date are edits too: 清除排期 on a
+    // task that has a plan removes it, so leaving would lose that.
+    await page.getByRole('button', { name: '排到今天' }).click()
+    await page.getByRole('button', { name: '清除排期' }).click()
+    // Back to what it was (no plan), so there is nothing to lose and nothing to ask about -- the
+    // deadline press above is what still makes it dirty.
+    await expect(page.getByLabel('排期')).toHaveValue('')
+    await page.getByRole('button', { name: '取消截止' }).click()
+    await page.getByRole('button', { name: '关闭' }).click()
+    await expect(dialog).toHaveCount(0)
+    expect((await serverTask(page, pid, '写方案')).dueAt).toBeNull()
+  })
+
   // -------------------------------------------------------------------------------------- F7: panel
 
   test('tab and shift+tab never leave the open panel', async ({ page }) => {
