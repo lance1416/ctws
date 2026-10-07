@@ -1,0 +1,309 @@
+import type { RollupResponse } from '@ctws/contracts'
+import { sql } from 'drizzle-orm'
+import { afterEach, describe, expect, it } from 'vitest'
+import { appWithUser, createProject, createTask, type TaskCtx } from './helpers/tasks'
+
+/**
+ * THE HALF OF §7 THAT IS NOT IN `@ctws/core`.
+ *
+ * The fold is covered case by case in `packages/core/src/progress.test.ts`. What only the real
+ * database can answer is the part written in SQL: the two deadline flags, decided in the ACCOUNT's
+ * timezone, and the per-task last-activity max joined from the event log.
+ */
+
+const cleanups: (() => Promise<void>)[] = []
+afterEach(async () => {
+  for (const stop of cleanups.splice(0)) await stop()
+})
+
+async function setup(timezone?: string): Promise<TaskCtx> {
+  const ctx = await appWithUser()
+  cleanups.push(ctx.stop)
+  if (timezone) await ctx.db.execute(sql`update users set timezone = ${timezone}`)
+  return ctx
+}
+
+async function rollups(ctx: TaskCtx, projectId: string): Promise<Record<string, RollupResponse>> {
+  const res = await ctx.app.inject({
+    method: 'GET',
+    url: `/api/v1/tasks?projectId=${projectId}`,
+    headers: ctx.authed,
+  })
+  expect(res.statusCode).toBe(200)
+  return res.json().rollups as Record<string, RollupResponse>
+}
+
+const setStatus = (ctx: TaskCtx, id: string, status: string) =>
+  ctx.app.inject({
+    method: 'PATCH',
+    url: `/api/v1/tasks/${id}`,
+    headers: { ...ctx.authed, 'x-ctws-client': 'web' },
+    payload: { status },
+  })
+
+const setDue = (ctx: TaskCtx, id: string, dueAt: string | null) =>
+  ctx.app.inject({
+    method: 'PATCH',
+    url: `/api/v1/tasks/${id}`,
+    headers: { ...ctx.authed, 'x-ctws-client': 'web' },
+    payload: { dueAt },
+  })
+
+describe('rollups ride along with the task list', () => {
+  it('returns one entry per task, keyed by id', async () => {
+    const ctx = await setup()
+    const pid = await createProject(ctx, 'P')
+    const a = await createTask(ctx, pid, '父')
+    const b = await createTask(ctx, pid, '子', a)
+
+    const r = await rollups(ctx, pid)
+    expect(Object.keys(r).sort()).toEqual([a, b].sort())
+  })
+
+  it('is an empty object for a project with no tasks, not an error', async () => {
+    const ctx = await setup()
+    const pid = await createProject(ctx, 'P')
+    expect(await rollups(ctx, pid)).toEqual({})
+  })
+
+  it('404s for a project in another workspace rather than returning nothing', async () => {
+    // The 404 is `listProjectTasks`', which the route calls first; the rollup query is scoped in
+    // its own `where` and would simply find nothing. Both halves matter, so this asserts the
+    // behaviour the endpoint actually has.
+    const mine = await setup()
+    const theirs = await appWithUser('other@example.com')
+    cleanups.push(theirs.stop)
+    const pid = await createProject(theirs, 'theirs')
+
+    const res = await mine.app.inject({
+      method: 'GET',
+      url: `/api/v1/tasks?projectId=${pid}`,
+      headers: mine.authed,
+    })
+    expect(res.statusCode).toBe(404)
+  })
+
+  it('folds a real tree the way the pure function does', async () => {
+    const ctx = await setup()
+    const pid = await createProject(ctx, 'P')
+    const root = await createTask(ctx, pid, '根')
+    const x = await createTask(ctx, pid, 'x', root)
+    const y = await createTask(ctx, pid, 'y', root)
+    const y1 = await createTask(ctx, pid, 'y1', y)
+    const y2 = await createTask(ctx, pid, 'y2', y)
+    await setStatus(ctx, x, 'done')
+    await setStatus(ctx, y1, 'done')
+    await setStatus(ctx, y2, 'todo')
+    // The two parents are moved off backlog ON PURPOSE: §7.2 excludes a backlog node BEFORE it
+    // looks at its children, and every task is created on backlog. See the test below.
+    await setStatus(ctx, y, 'todo')
+    await setStatus(ctx, root, 'todo')
+
+    const r = await rollups(ctx, pid)
+    // y is (1 + 0) / 2 = 0.5, and the root is (1 + 0.5) / 2 = 0.75: the mean is over DIRECT
+    // children at every level, so the root is not 2/3 (the done-leaf fraction).
+    expect(r[y]!.progress).toBe(0.5)
+    expect(r[root]!.progress).toBe(0.75)
+  })
+
+  it('counts the whole subtree, including the node itself', async () => {
+    const ctx = await setup()
+    const pid = await createProject(ctx, 'P')
+    const root = await createTask(ctx, pid, '根')
+    const kid = await createTask(ctx, pid, '子', root)
+    await setStatus(ctx, kid, 'done')
+
+    const r = await rollups(ctx, pid)
+    expect(r[root]!.counts).toEqual({
+      backlog: 1,
+      todo: 0,
+      in_progress: 0,
+      done: 1,
+      cancelled: 0,
+    })
+  })
+
+  it('leaves a soft-deleted task out of its parent entirely', async () => {
+    const ctx = await setup()
+    const pid = await createProject(ctx, 'P')
+    const root = await createTask(ctx, pid, '根')
+    const gone = await createTask(ctx, pid, '删掉的', root)
+    await setStatus(ctx, gone, 'done')
+    await ctx.app.inject({
+      method: 'DELETE',
+      url: `/api/v1/tasks/${gone}`,
+      headers: { ...ctx.authed, 'x-ctws-client': 'web' },
+    })
+
+    const r = await rollups(ctx, pid)
+    expect(r[gone]).toBeUndefined()
+    // The root is a leaf again, so it falls back to its own status rather than keeping the 1 the
+    // deleted child used to give it.
+    expect(r[root]!.counts.done).toBe(0)
+    expect(r[root]!.progress).toBeNull()
+  })
+})
+
+describe('what the exclusion rule means for a tree built the normal way', () => {
+  it('reports no progress for a freshly built tree, because every task starts on backlog', async () => {
+    const ctx = await setup()
+    const pid = await createProject(ctx, 'P')
+    const root = await createTask(ctx, pid, '根')
+    const kid = await createTask(ctx, pid, '子', root)
+    await setStatus(ctx, kid, 'done')
+
+    // §7.2 excludes a `backlog` node before it looks at its children, and `createTask` files
+    // everything on backlog. So a parent nobody has explicitly moved to `todo` reports null even
+    // with finished work under it. This is the spec's rule applied to this app's default, and it
+    // is pinned here rather than left to be discovered from a blank number in the interface.
+    expect((await rollups(ctx, pid))[root]!.progress).toBeNull()
+    // The counts still see everything: exclusion is about averaging, not about existing.
+    expect((await rollups(ctx, pid))[root]!.counts).toMatchObject({ backlog: 1, done: 1 })
+
+    await setStatus(ctx, root, 'todo')
+    expect((await rollups(ctx, pid))[root]!.progress).toBe(1)
+  })
+})
+
+describe('the two deadline flags, decided in the account timezone', () => {
+  // UTC+14. Noon UTC is already the next calendar day here, which is what makes the two windows
+  // below differ from the ones a server reading its own clock would build.
+  const TZ = 'Pacific/Kiritimati'
+  const dayOffset = (days: number) => {
+    const d = new Date()
+    d.setUTCDate(d.getUTCDate() + days)
+    return d.toISOString()
+  }
+
+  it('counts a past deadline as overdue and not as due soon', async () => {
+    const ctx = await setup(TZ)
+    const pid = await createProject(ctx, 'P')
+    const root = await createTask(ctx, pid, '根')
+    const late = await createTask(ctx, pid, '逾期的', root)
+    await setDue(ctx, late, dayOffset(-3))
+
+    const r = await rollups(ctx, pid)
+    expect(r[late]).toMatchObject({ overdue: 1, dueSoon: 0 })
+    expect(r[root]).toMatchObject({ overdue: 1, dueSoon: 0 })
+  })
+
+  it('counts tomorrow as due soon and the day after as neither', async () => {
+    const ctx = await setup(TZ)
+    const pid = await createProject(ctx, 'P')
+    const root = await createTask(ctx, pid, '根')
+    const soon = await createTask(ctx, pid, '快到期', root)
+    const later = await createTask(ctx, pid, '还早', root)
+    await setDue(ctx, soon, dayOffset(1))
+    await setDue(ctx, later, dayOffset(5))
+
+    const r = await rollups(ctx, pid)
+    expect(r[soon]).toMatchObject({ overdue: 0, dueSoon: 1 })
+    expect(r[later]).toMatchObject({ overdue: 0, dueSoon: 0 })
+    expect(r[root]).toMatchObject({ overdue: 0, dueSoon: 1 })
+  })
+
+  it('stops counting a passed deadline once the task is finished', async () => {
+    const ctx = await setup(TZ)
+    const pid = await createProject(ctx, 'P')
+    const done = await createTask(ctx, pid, '做完了但逾期')
+    await setDue(ctx, done, dayOffset(-3))
+    expect((await rollups(ctx, pid))[done]).toMatchObject({ overdue: 1 })
+
+    await setStatus(ctx, done, 'done')
+    // A deadline that has passed on something already finished is not a problem to report.
+    expect((await rollups(ctx, pid))[done]).toMatchObject({ overdue: 0, dueSoon: 0 })
+  })
+
+  it('stops counting a COMING deadline once the task is finished', async () => {
+    // The same guard, on the other flag. Without its own case the due-soon branch could lose the
+    // status check and nothing would notice -- measured, by removing it.
+    const ctx = await setup(TZ)
+    const pid = await createProject(ctx, 'P')
+    const done = await createTask(ctx, pid, '提前做完了')
+    await setDue(ctx, done, dayOffset(1))
+    expect((await rollups(ctx, pid))[done]).toMatchObject({ dueSoon: 1 })
+
+    await setStatus(ctx, done, 'done')
+    expect((await rollups(ctx, pid))[done]).toMatchObject({ overdue: 0, dueSoon: 0 })
+  })
+
+  it('does not call a deadline that passed EARLIER TODAY overdue', async () => {
+    // THE CUT IS THE START OF TODAY, not `now()`. A deadline at 09:00 that it is now 14:00 past
+    // has not "gone" in the sense this app means -- the day it was due is the day in progress,
+    // and the 逾期 panel would otherwise fill up with things the person is still working on.
+    const ctx = await setup(TZ)
+    const pid = await createProject(ctx, 'P')
+    const id = await createTask(ctx, pid, '今天早些时候到期')
+
+    // Strictly between the start of the account's day and now, whenever this runs.
+    const now = Date.now()
+    const local = new Date(new Date().toLocaleString('en-US', { timeZone: TZ }))
+    const sinceDayStart =
+      local.getHours() * 3600_000 + local.getMinutes() * 60_000 + local.getSeconds() * 1000
+    const midday = new Date(now - sinceDayStart / 2)
+    await setDue(ctx, id, midday.toISOString())
+
+    expect((await rollups(ctx, pid))[id]).toMatchObject({ overdue: 0, dueSoon: 1 })
+  })
+
+  it('agrees with the today view about which tasks are overdue', async () => {
+    // The project banner and the 逾期 panel must not disagree about the same task, which is why
+    // both cut at the start of today in the account's zone rather than at `now()`.
+    const ctx = await setup(TZ)
+    const pid = await createProject(ctx, 'P')
+    const late = await createTask(ctx, pid, '逾期的')
+    await setDue(ctx, late, dayOffset(-3))
+
+    const todayRes = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/v1/tasks/today',
+      headers: ctx.authed,
+    })
+    const segments = (todayRes.json().tasks as { id: string; segment: string }[]).filter(
+      (t) => t.segment === 'overdue',
+    )
+    expect(segments.map((t) => t.id)).toEqual([late])
+    expect((await rollups(ctx, pid))[late]).toMatchObject({ overdue: 1 })
+  })
+})
+
+describe('last activity comes from the event log', () => {
+  it('is the most recent change anywhere in the subtree', async () => {
+    const ctx = await setup()
+    const pid = await createProject(ctx, 'P')
+    const root = await createTask(ctx, pid, '根')
+    const kid = await createTask(ctx, pid, '子', root)
+
+    // Backdate every event, then give the CHILD one recent event: the parent must report the
+    // child's, since the point of the metric is that a whole branch has gone quiet.
+    await ctx.db.execute(sql`update task_events set occurred_at = now() - interval '30 days'`)
+    await setStatus(ctx, kid, 'in_progress')
+
+    const r = await rollups(ctx, pid)
+    expect(r[root]!.lastActivityAt).toBe(r[kid]!.lastActivityAt)
+    const age = Date.now() - Date.parse(r[root]!.lastActivityAt!)
+    expect(age).toBeLessThan(60_000)
+  })
+
+  it('reports each node its own subtree, not the project as a whole', async () => {
+    const ctx = await setup()
+    const pid = await createProject(ctx, 'P')
+    const quiet = await createTask(ctx, pid, '放着的')
+    const busy = await createTask(ctx, pid, '在动的')
+    await ctx.db.execute(sql`update task_events set occurred_at = now() - interval '30 days'`)
+    await setStatus(ctx, busy, 'in_progress')
+
+    const r = await rollups(ctx, pid)
+    expect(Date.parse(r[busy]!.lastActivityAt!)).toBeGreaterThan(
+      Date.parse(r[quiet]!.lastActivityAt!),
+    )
+  })
+
+  it('is a fixed-width UTC instant, which is what makes the max a max', async () => {
+    const ctx = await setup()
+    const pid = await createProject(ctx, 'P')
+    const id = await createTask(ctx, pid, '一条')
+    const r = await rollups(ctx, pid)
+    expect(r[id]!.lastActivityAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/)
+  })
+})

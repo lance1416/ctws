@@ -148,6 +148,39 @@ export const taskResponse = z
   })
   .strict()
 
+/**
+ * ROLLUP METRICS (design spec §7.3), returned beside the flat task list rather than embedded in
+ * each task: they are DERIVED from the whole subtree, not stored on the row, and keeping them
+ * apart stops anyone from PATCHing one back.
+ */
+export const rollupResponse = z
+  .object({
+    /**
+     * 0..1, or null for a task the rollup EXCLUDES (`backlog` and `cancelled`). Null is not zero:
+     * "not counted" and "nothing done" are different answers, and the mean depends on the
+     * difference.
+     */
+    progress: z.number().min(0).max(1).nullable(),
+    counts: z
+      .object({
+        backlog: z.number().int().min(0),
+        todo: z.number().int().min(0),
+        in_progress: z.number().int().min(0),
+        done: z.number().int().min(0),
+        cancelled: z.number().int().min(0),
+      })
+      .strict(),
+    overdue: z.number().int().min(0),
+    dueSoon: z.number().int().min(0),
+    /** The most recent logged change anywhere in the subtree (§7.4), or null. */
+    lastActivityAt: instant.nullable(),
+  })
+  .strict()
+export type RollupResponse = z.infer<typeof rollupResponse>
+
+/** Keyed by task id, one entry per task in the same response's `tasks`. */
+export const rollupsResponse = z.record(z.uuid(), rollupResponse)
+
 // ---- today ----
 
 // Display order. The precedence between segments (a task matching several belongs to exactly one:

@@ -5,6 +5,7 @@ import {
   projectMovementResponse,
   searchTaskResponse,
   taskEventResponse,
+  rollupsResponse,
   taskResponse,
   todayTaskResponse,
   updateTaskBody,
@@ -31,6 +32,7 @@ import {
   updateTask,
   type Task,
 } from './tasks'
+import { projectRollups } from './rollup'
 
 function toTaskResponse(t: Task): z.infer<typeof taskResponse> {
   return {
@@ -185,17 +187,28 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
       preHandler: requireUser,
       schema: {
         querystring: byProjectQuery,
-        response: { 200: z.object({ tasks: z.array(taskResponse) }).strict() },
+        response: {
+          200: z.object({ tasks: z.array(taskResponse), rollups: rollupsResponse }).strict(),
+        },
       },
     },
     async (req, reply) => {
       try {
-        const rows = await listProjectTasks(
+        const user = authedUser(req)
+        // Two statements rather than one: `listProjectTasks` returns ROWS, and the rollup needs
+        // two computed flags and a joined max beside them. Widening the row query would make its
+        // result no longer a row, and at personal scale (spec §7.5) the second lookup is free.
+        const rows = await listProjectTasks(app.db, user.workspaceId, req.query.projectId)
+        const metrics = await projectRollups(
           app.db,
-          authedUser(req).workspaceId,
+          user.workspaceId,
           req.query.projectId,
+          user.timezone,
         )
-        return { tasks: rows.map(toTaskResponse) }
+        return {
+          tasks: rows.map(toTaskResponse),
+          rollups: Object.fromEntries(metrics),
+        }
       } catch (error) {
         return sendTaskProblem(reply, error)
       }
