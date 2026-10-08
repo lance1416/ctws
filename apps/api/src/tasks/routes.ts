@@ -8,6 +8,10 @@ import {
   searchTaskResponse,
   taskEventResponse,
   rollupsResponse,
+  addDependencyBody,
+  blockersResponse,
+  dependencyLists,
+  type DependencyRef,
   taskResponse,
   todayTaskResponse,
   updateTaskBody,
@@ -18,7 +22,7 @@ import { z } from 'zod'
 import { authedUser, requireUser } from '../auth/require-user'
 import { sendProblem } from '../problem'
 import { InboxNotDeletableError, ProjectNotFoundError } from '../projects/errors'
-import { TaskNotFoundError } from './errors'
+import { DependencyCycleError, TaskNotFoundError } from './errors'
 import { DEFAULT_EVENT_LIMIT, InvalidCursorError, listTaskEvents, MAX_EVENT_LIMIT } from './events'
 import { listCompleted, type CompletedTask } from './completed'
 import { searchTasks, type SearchTask } from './search'
@@ -36,6 +40,7 @@ import {
 } from './tasks'
 import { projectRollups } from './rollup'
 import { listReview } from './review'
+import { addDependency, blockersFor, removeDependency, taskDependencyLists } from './dependencies'
 
 function toTaskResponse(t: Task): z.infer<typeof taskResponse> {
   return {
@@ -55,12 +60,16 @@ function toTaskResponse(t: Task): z.infer<typeof taskResponse> {
   }
 }
 
-function toTodayResponse(t: TodayTask): z.infer<typeof todayTaskResponse> {
+function toTodayResponse(
+  t: TodayTask,
+  blockers: Map<string, DependencyRef[]>,
+): z.infer<typeof todayTaskResponse> {
   return {
     ...toTaskResponse(t),
     projectName: t.projectName,
     parentTitle: t.parentTitle,
     segment: t.segment,
+    blockedBy: blockers.get(t.id) ?? [],
   }
 }
 
@@ -104,6 +113,7 @@ function sendTaskProblem(reply: FastifyReply, error: unknown): void {
     error instanceof DepthLimitError ||
     error instanceof ManualProgressOnParentError ||
     error instanceof CycleError ||
+    error instanceof DependencyCycleError ||
     error instanceof InboxNotDeletableError
   ) {
     return sendProblem(reply, 409, 'Conflict', error.message)
@@ -129,7 +139,13 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
       const user = authedUser(req)
       // The timezone comes from the user record, not from a request header or the server clock.
       const rows = await listToday(app.db, user.workspaceId, user.timezone)
-      return { tasks: rows.map(toTodayResponse) }
+      // One query for the whole page, not one per row.
+      const blockers = await blockersFor(
+        app.db,
+        user.workspaceId,
+        rows.map((t) => t.id),
+      )
+      return { tasks: rows.map((t) => toTodayResponse(t, blockers)) }
     },
   )
 
@@ -204,7 +220,13 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
       schema: {
         querystring: byProjectQuery,
         response: {
-          200: z.object({ tasks: z.array(taskResponse), rollups: rollupsResponse }).strict(),
+          200: z
+            .object({
+              tasks: z.array(taskResponse),
+              rollups: rollupsResponse,
+              blockers: blockersResponse,
+            })
+            .strict(),
         },
       },
     },
@@ -221,9 +243,15 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
           req.query.projectId,
           user.timezone,
         )
+        const blockers = await blockersFor(
+          app.db,
+          user.workspaceId,
+          rows.map((t) => t.id),
+        )
         return {
           tasks: rows.map(toTaskResponse),
           rollups: Object.fromEntries(metrics),
+          blockers: Object.fromEntries(blockers),
         }
       } catch (error) {
         return sendTaskProblem(reply, error)
@@ -309,6 +337,75 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
           app.db,
           { workspaceId: user.workspaceId, actorUserId: user.id },
           req.params.id,
+        )
+        return reply.status(204).send()
+      } catch (error) {
+        return sendTaskProblem(reply, error)
+      }
+    },
+  )
+
+  /**
+   * 「A 没做完 B 做不了」 (D64). Three routes, and the pair that writes is deliberately NOT a
+   * `PATCH` on the task: a dependency is an edge between two tasks, and `PATCH /tasks/:id` is
+   * for this task's own independent scalar fields -- the same division `move` is on the other
+   * side of.
+   */
+  typed.get(
+    '/:id/dependencies',
+    {
+      preHandler: requireUser,
+      schema: { params: idParams, response: { 200: dependencyLists } },
+    },
+    async (req, reply) => {
+      try {
+        return await taskDependencyLists(app.db, authedUser(req).workspaceId, req.params.id)
+      } catch (error) {
+        return sendTaskProblem(reply, error)
+      }
+    },
+  )
+
+  typed.post(
+    '/:id/dependencies',
+    {
+      preHandler: requireUser,
+      // No response schema: a 204 has no body, and declaring one makes the type provider
+      // demand `send(null)`. The task delete above is written the same way.
+      schema: { params: idParams, body: addDependencyBody },
+    },
+    async (req, reply) => {
+      try {
+        const user = authedUser(req)
+        // `:id` is the task that WAITS. The body names what it waits for, which reads the way
+        // the sentence does: this task depends on that one.
+        await addDependency(
+          app.db,
+          { workspaceId: user.workspaceId, actorUserId: user.id },
+          req.params.id,
+          req.body.blockerId,
+        )
+        return reply.status(204).send()
+      } catch (error) {
+        return sendTaskProblem(reply, error)
+      }
+    },
+  )
+
+  typed.delete(
+    '/:id/dependencies/:blockerId',
+    {
+      preHandler: requireUser,
+      schema: { params: z.object({ id: z.uuid(), blockerId: z.uuid() }).strict() },
+    },
+    async (req, reply) => {
+      try {
+        const user = authedUser(req)
+        await removeDependency(
+          app.db,
+          { workspaceId: user.workspaceId, actorUserId: user.id },
+          req.params.id,
+          req.params.blockerId,
         )
         return reply.status(204).send()
       } catch (error) {

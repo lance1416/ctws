@@ -226,6 +226,31 @@ export const reviewQuery = z
   .object({ from: calendarDate.optional(), to: calendarDate.optional() })
   .strict()
 
+/**
+ * 「A 没做完 B 做不了」 (D64). A reference to the task at the other end, carrying enough to name
+ * it on a row -- including its PROJECT, because a dependency may cross one.
+ */
+export const dependencyRef = z
+  .object({
+    id: z.uuid(),
+    title: z.string(),
+    projectId: z.uuid(),
+    projectName: z.string(),
+    /** Finished blockers are kept in the detail lists and left out of what a row shows. */
+    done: z.boolean(),
+  })
+  .strict()
+export type DependencyRef = z.infer<typeof dependencyRef>
+
+export const dependencyLists = z
+  .object({ blockedBy: z.array(dependencyRef), blocks: z.array(dependencyRef) })
+  .strict()
+
+export const addDependencyBody = z.object({ blockerId: z.uuid() }).strict()
+
+/** Keyed by the WAITING task's id; only what is still in the way. */
+export const blockersResponse = z.record(z.uuid(), z.array(dependencyRef))
+
 // ---- today ----
 
 // Display order. The precedence between segments (a task matching several belongs to exactly one:
@@ -241,6 +266,12 @@ export const todayTaskResponse = taskResponse
     // The breadcrumb shows `project > parent`; a root task has no parent half.
     parentTitle: z.string().nullable(),
     segment: todaySegment,
+    /**
+     * What is still in the way (D64), unfinished blockers only. ON THIS RESPONSE and not in a
+     * parallel map, because this is the page the feature exists for: 今天 stops being 「什么到期
+     * 了」 and becomes 「什么现在做得了」, and that is a property of each row.
+     */
+    blockedBy: z.array(dependencyRef),
   })
   .strict()
 export type TodayTaskResponse = z.infer<typeof todayTaskResponse>
@@ -322,6 +353,10 @@ export const TASK_EVENT_TYPES = [
   'title_changed',
   'notes_changed',
   'progress_set',
+  // 「A 没做完 B 做不了」 arrived and left. Recorded on the WAITING task: it is the one whose
+  // situation changed, and its history is where someone looks to ask why it sat still.
+  'dependency_added',
+  'dependency_removed',
   'deleted',
   'restored',
 ] as const

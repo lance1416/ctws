@@ -50,6 +50,13 @@
       "when": 1791430000000,
       "tag": "0006_hash_the_session_token",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791460000000,
+      "tag": "0007_task_dependencies",
+      "breakpoints": true
     }
   ]
 }

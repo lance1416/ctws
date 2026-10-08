@@ -135,6 +135,48 @@ export const tasks = pgTable(
   ],
 )
 
+/**
+ * WHICH TASK HAS TO WAIT FOR WHICH (D64). 「A 没做完 B 做不了」.
+ *
+ * A SECOND GRAPH, COMPLETELY SEPARATE FROM THE PARENT TREE. The tree says what a piece of work
+ * is made of; this says what has to happen first. Siblings can depend on each other, and so can
+ * tasks in different projects -- 「等 rrgen 的 CI 跑通才能发 CTWS 的 release」 is a real sentence
+ * -- so there is no containment relationship between the two graphs at all.
+ *
+ * NOTHING HERE RECORDS WHETHER SOMETHING IS BLOCKED. That is derived: a task is blocked while any
+ * of its blockers is unfinished. Finishing A unblocks B with no second write, so the two can
+ * never drift apart.
+ *
+ * `workspace_id` is denormalised, as on `task_events` and for the same reason: every query here
+ * is tenant-scoped and reaching the workspace through two joins buys nothing.
+ */
+export const taskDependencies = pgTable(
+  'task_dependencies',
+  {
+    /** The one that has to finish first. */
+    blockerId: uuid('blocker_id')
+      .notNull()
+      .references(() => tasks.id, { onDelete: 'cascade' }),
+    /** The one that waits. */
+    blockedId: uuid('blocked_id')
+      .notNull()
+      .references(() => tasks.id, { onDelete: 'cascade' }),
+    workspaceId: uuid('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.blockerId, t.blockedId] }),
+    // The reverse lookup: "what is this task blocking", for the detail pane and for the cycle
+    // check, which walks the graph in that direction.
+    index('task_dependencies_blocked_idx').on(t.blockedId),
+    // A task cannot wait for itself. The cycle check below catches longer loops; this one is
+    // worth a constraint because it is the loop a single bad request can make.
+    check('task_dependencies_not_self', sql`${t.blockerId} <> ${t.blockedId}`),
+  ],
+)
+
 export const taskEvents = pgTable(
   'task_events',
   {

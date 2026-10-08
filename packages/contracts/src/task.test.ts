@@ -119,6 +119,8 @@ describe('TASK_EVENT_TYPES', () => {
         'moved',
         'notes_changed',
         'progress_set',
+        'dependency_added',
+        'dependency_removed',
         'restored',
         'scheduled_changed',
         'status_changed',
