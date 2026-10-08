@@ -16,6 +16,7 @@ import { Modal } from './Modal'
 import { DeadlineMark, PlanMark } from './RowParts'
 import { STATUS_LABEL } from './statusLabel'
 import { StatusMark } from './StatusMark'
+import { useComposing } from '../composition'
 import {
   createTaskForm,
   titleProblem,
@@ -57,6 +58,7 @@ export function CreateTaskDialog({
   projectId: string
   onClose: () => void
 }) {
+  const composing = useComposing()
   const qc = useQueryClient()
   const titleField = useRef<HTMLInputElement>(null)
   const timeZone = useTimeZone()
@@ -169,9 +171,10 @@ export function CreateTaskDialog({
           e.preventDefault()
           void submit(false)()
         }}
+        {...composing.bind}
         onKeyDown={(e) => {
           // isComposing: Enter confirms an IME candidate, it must not submit half a word.
-          if (e.key !== 'Enter' || e.nativeEvent.isComposing) return
+          if (e.key !== 'Enter' || composing.composingNow(e)) return
           if (!e.metaKey && !e.ctrlKey) return
           // Caught here rather than on the title field so it works from the notes textarea too,
           // where a plain Enter is a newline and `⌘↵` is the only way to commit without reaching

@@ -6,6 +6,7 @@ import { refreshProjects } from '../api/taskCache'
 import { railGroups } from '../modules/registry'
 import { QuickCapture } from './QuickCapture'
 import { railClass } from '../projectColor'
+import { useComposing } from '../composition'
 
 /**
  * The left column: where you can go, and how much is waiting there.
@@ -31,6 +32,7 @@ export function SideRail() {
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
   const qc = useQueryClient()
   const navigate = useNavigate()
+  const composing = useComposing()
   const [naming, setNaming] = useState(false)
   const [name, setName] = useState('')
   const field = useRef<HTMLInputElement>(null)
@@ -141,8 +143,9 @@ export function SideRail() {
             ref={field}
             value={name}
             onChange={(e) => setName(e.target.value)}
+            {...composing.bind}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.nativeEvent.isComposing) submit()
+              if (e.key === 'Enter' && !composing.composingNow(e)) submit()
               else if (e.key === 'Escape') {
                 e.stopPropagation()
                 setName('')

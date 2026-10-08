@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { deleteReadingItem, patchReadingItem, readingLabel } from '../api/reading'
 import { addDays, dayPhrase, daysAgoIn, nextMonday, todayIn } from '../dueAt'
+import { useComposing } from '../composition'
 
 /**
  * ONE ROW OF 待读.
@@ -60,6 +61,7 @@ export function ReadingRow({
 }) {
   const qc = useQueryClient()
   const today = todayIn(timeZone)
+  const composing = useComposing()
   const [renaming, setRenaming] = useState(false)
   const [draft, setDraft] = useState('')
   // Set when 改标题 is chosen, so the menu's closing hands focus to the NEW INPUT instead of back
@@ -112,11 +114,12 @@ export function ReadingRow({
             autoFocus
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
+            {...composing.bind}
             onKeyDown={(e) => {
               // Escape cancels and Enter saves. Clicking away does NEITHER: a blur that threw the
               // typed title away is a keystroke-eating trap, and an editor left open is visible.
               if (e.key === 'Escape') setRenaming(false)
-              if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+              if (e.key === 'Enter' && !composing.composingNow(e)) {
                 const t = draft.trim()
                 // An emptied title is a cleared title for a link (it goes back to showing its
                 // host) and is refused for a book, which is the server's rule, not this row's.

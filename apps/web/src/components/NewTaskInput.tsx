@@ -1,6 +1,7 @@
 import { useId, useRef, useState } from 'react'
 import { LEAD_GAP_PX, LEAD_SLOT_PX } from '../rowLead'
 import { CHEVRON_PX, HANDLE_PX, INDENT_PX, RAIL_GUTTER_PX } from './RowParts'
+import { useComposing } from '../composition'
 
 // The status marker's COLUMN -- the width of `StatusButton`, not of the glyph inside it -- so the
 // input lines up with the TITLE of the rows around it rather than with the marker.
@@ -23,6 +24,7 @@ type Props = {
 // One input at the end of a sibling group. Enter creates and stays open for the next one;
 // Escape, Enter on an empty box, or blurring an empty box leaves.
 export function NewTaskInput({ depth, leadSlot, onCommit, onCancel, error }: Props) {
+  const composing = useComposing()
   const [title, setTitle] = useState('')
   const input = useRef<HTMLInputElement>(null)
   const describedBy = useId()
@@ -60,9 +62,10 @@ export function NewTaskInput({ depth, leadSlot, onCommit, onCancel, error }: Pro
           autoFocus
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          {...composing.bind}
           onKeyDown={(e) => {
             // isComposing: Enter confirms an IME candidate, it must not submit half a word.
-            if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+            if (e.key === 'Enter' && !composing.composingNow(e)) {
               e.preventDefault()
               void submit()
             } else if (e.key === 'Escape') {

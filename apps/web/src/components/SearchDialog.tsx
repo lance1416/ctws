@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { searchProviders } from '../modules/registry'
 import { federate, type FederatedHit, type ProviderResult } from '../modules/search'
 import { Modal } from './Modal'
+import { useComposing } from '../composition'
 
 /** Long enough that typing a word does not fire a request per letter, short enough to feel live. */
 const DEBOUNCE_MS = 150
@@ -36,6 +37,7 @@ const DEBOUNCE_MS = 150
  * autocompletion of the box, or selection that must survive re-sorting. None of those exist here.
  */
 export function SearchDialog({ onClose }: { onClose: () => void }) {
+  const composing = useComposing()
   const [query, setQuery] = useState('')
   const [debounced, setDebounced] = useState('')
   const [active, setActive] = useState(0)
@@ -124,6 +126,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
           aria-controls={listId}
           aria-autocomplete="list"
           aria-activedescendant={rows.length > 0 ? optionId(at) : undefined}
+          {...composing.bind}
           onKeyDown={(e) => {
             if (e.key === 'ArrowDown' || (e.key === 'n' && e.ctrlKey)) {
               e.preventDefault()
@@ -131,7 +134,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
             } else if (e.key === 'ArrowUp' || (e.key === 'p' && e.ctrlKey)) {
               e.preventDefault()
               setActive(Math.max(at - 1, 0))
-            } else if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+            } else if (e.key === 'Enter' && !composing.composingNow(e)) {
               e.preventDefault()
               const hit = rows[at]
               if (hit) choose(hit)

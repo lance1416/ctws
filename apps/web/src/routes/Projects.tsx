@@ -7,9 +7,11 @@ import { createProject, deleteProject, listProjects } from '../api/projects'
 import { listProjectTasks } from '../api/tasks'
 import { tasksKey } from '../api/taskCache'
 import { railClass } from '../projectColor'
+import { useComposing } from '../composition'
 
 export function Projects() {
   const qc = useQueryClient()
+  const composing = useComposing()
   const [name, setName] = useState('')
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
 
@@ -74,8 +76,9 @@ export function Projects() {
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
+        {...composing.bind}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' && !e.nativeEvent.isComposing) submit()
+          if (e.key === 'Enter' && !composing.composingNow(e)) submit()
         }}
         placeholder="新项目"
         aria-label="新项目"

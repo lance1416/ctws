@@ -23,6 +23,7 @@ import { Review } from '../routes/Review'
 import { Today } from '../routes/Today'
 import { useTimeZone } from '../useMe'
 import type { CaptureTargetState, SearchHit, WorkspaceModule } from './contract'
+import { useComposing } from '../composition'
 
 /**
  * THE TASK MODULE: everything the shell used to have written into it.
@@ -307,6 +308,7 @@ function NewTaskAction({ projectId }: { projectId: string }) {
 /** The module's rows under a shell project: the tree, and the one input that adds a root task. */
 function ProjectTasks({ projectId, view }: { projectId: string; view: string }) {
   const qc = useQueryClient()
+  const composing = useComposing()
   const [title, setTitle] = useState('')
   const failureId = useId()
   const create = useMutation({
@@ -333,8 +335,9 @@ function ProjectTasks({ projectId, view }: { projectId: string; view: string }) 
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          {...composing.bind}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.nativeEvent.isComposing) submit()
+            if (e.key === 'Enter' && !composing.composingNow(e)) submit()
           }}
           placeholder="新任务"
           aria-label="新任务"

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { updateProject } from '../api/projects'
 import { refreshProjects } from '../api/taskCache'
 import { railClass } from '../projectColor'
+import { useComposing } from '../composition'
 
 /**
  * A PROJECT'S NAME AND COLOUR, EDITABLE WHERE THEY ARE SHOWN (D54, D74).
@@ -27,6 +28,7 @@ export function ProjectIdentity({
   color: ProjectColor | null
 }) {
   const qc = useQueryClient()
+  const composing = useComposing()
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(name)
   const field = useRef<HTMLInputElement>(null)
@@ -87,8 +89,9 @@ export function ProjectIdentity({
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onBlur={commit}
+          {...composing.bind}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.nativeEvent.isComposing) commit()
+            if (e.key === 'Enter' && !composing.composingNow(e)) commit()
             else if (e.key === 'Escape') {
               e.stopPropagation()
               setDraft(name)

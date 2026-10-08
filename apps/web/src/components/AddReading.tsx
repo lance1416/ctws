@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { createReadingItem } from '../api/reading'
 import { isReadingUrl } from '../readingUrl'
+import { useComposing } from '../composition'
 
 /**
  * ONE INPUT, both kinds.
@@ -13,6 +14,7 @@ import { isReadingUrl } from '../readingUrl'
  */
 export function AddReading({ projectId }: { projectId?: string } = {}) {
   const qc = useQueryClient()
+  const composing = useComposing()
   const [line, setLine] = useState('')
   const trimmed = line.trim()
   const isLink = isReadingUrl(trimmed)
@@ -35,9 +37,10 @@ export function AddReading({ projectId }: { projectId?: string } = {}) {
       <input
         value={line}
         onChange={(e) => setLine(e.target.value)}
+        {...composing.bind}
         onKeyDown={(e) => {
           // isComposing: Enter confirms an IME candidate, it must not submit half a word.
-          if (e.key !== 'Enter' || e.nativeEvent.isComposing) return
+          if (e.key !== 'Enter' || composing.composingNow(e)) return
           if (trimmed === '' || add.isPending) return
           add.mutate(trimmed)
         }}

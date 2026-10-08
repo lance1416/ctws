@@ -6,6 +6,7 @@ import type { CaptureTarget } from '../modules/contract'
 import { useShortcutsEnabled } from '../shortcuts/enabled'
 import { isBareKey, isTypingTarget } from '../shortcuts/keys'
 import { isOverlayOpen } from './overlayState'
+import { useComposing } from '../composition'
 
 /**
  * One input on every page.
@@ -20,6 +21,7 @@ import { isOverlayOpen } from './overlayState'
  * 「已放入 X」 names where the line went.
  */
 export function QuickCapture() {
+  const composing = useComposing()
   const [title, setTitle] = useState('')
   // WHERE THE LAST LINE LANDED, or null. One line, never a queue. It names the destination but
   // not the title: the title would sit in the DOM of every page (this box is in the layout) and
@@ -98,9 +100,10 @@ export function QuickCapture() {
             setTitle(e.target.value)
             setLanded(null)
           }}
+          {...composing.bind}
           onKeyDown={(e) => {
             // isComposing: Enter confirms an IME candidate, it must not submit half a word.
-            if (e.key === 'Enter' && !e.nativeEvent.isComposing) submit()
+            if (e.key === 'Enter' && !composing.composingNow(e)) submit()
           }}
           placeholder="捕获…"
           disabled={!fallback.target}

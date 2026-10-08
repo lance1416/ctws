@@ -2,6 +2,7 @@ import type { ContactResponse } from '@ctws/contracts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { createContact } from '../api/contacts'
+import { useComposing } from '../composition'
 
 /**
  * MAKING A PERSON: type a name, press Enter.
@@ -21,6 +22,7 @@ export function NewContactInput({
   placeholder?: string
 }) {
   const qc = useQueryClient()
+  const composing = useComposing()
   const [name, setName] = useState('')
 
   const create = useMutation({
@@ -40,8 +42,9 @@ export function NewContactInput({
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
+        {...composing.bind}
         onKeyDown={(e) => {
-          if (e.key !== 'Enter' || e.nativeEvent.isComposing) return
+          if (e.key !== 'Enter' || composing.composingNow(e)) return
           if (name.trim() === '' || create.isPending) return
           create.mutate(name.trim())
         }}

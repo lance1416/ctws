@@ -1,5 +1,6 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useComposing } from '../composition'
 
 /**
  * THE THREE WAYS TO CHANGE SOMETHING IN A DETAIL PANE, and every module uses the same three.
@@ -207,6 +208,7 @@ export function InlineText({
   const [draft, setDraft] = useState(value)
   const box = useRef<HTMLInputElement & HTMLTextAreaElement>(null)
   const trigger = useRef<HTMLButtonElement>(null)
+  const composing = useComposing()
   // Focus goes back to the control that opened the field. Without it the field unmounts and
   // focus falls to <body>: the next Escape reaches nothing, so backing out of an edit leaves the
   // keyboard stranded outside the pane it was in (WCAG 2.4.3).
@@ -252,6 +254,9 @@ export function InlineText({
   const common = {
     ref: box,
     autoFocus: true,
+    // Without these the tracked half of the composition guard never arms, and Enter on a Mac
+    // committing English out of a Chinese IME would save and close the editor.
+    ...composing.bind,
     value: draft,
     'aria-label': label,
     placeholder,
@@ -264,7 +269,7 @@ export function InlineText({
     shiftKey: boolean
     preventDefault: () => void
     stopPropagation: () => void
-    nativeEvent: { isComposing: boolean }
+    nativeEvent: { isComposing?: boolean }
   }) => {
     if (e.key === 'Escape') {
       e.stopPropagation()
@@ -274,7 +279,7 @@ export function InlineText({
       return
     }
     // Enter commits a single line; in a note it is a newline, and leaving the field commits.
-    if (e.key === 'Enter' && !multiline && !e.nativeEvent.isComposing) {
+    if (e.key === 'Enter' && !multiline && !composing.composingNow(e)) {
       e.preventDefault()
       commit()
     }
