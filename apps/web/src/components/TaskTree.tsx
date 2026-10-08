@@ -395,12 +395,14 @@ export function TaskTree({ projectId }: { projectId: string }) {
   // to take focus and is then removed under it. Remember the task, and once its row is really
   // gone put focus on the first remaining row instead of letting it fall to <body> (WCAG 2.4.3).
   const leaving = useRef<string | null>(null)
+  /**
+   * A save happened. It MARKS the row and nothing else: the pane stays open, in reading mode,
+   * showing what was just written. It used to close here, which took the answer off screen at
+   * the moment the person went to check it.
+   */
   const savedClose = () => {
     if (!openTask) return
     setSavedId(openTask.id)
-    leaving.current = openTask.id
-    setTimeout(() => (leaving.current = null), 1000)
-    closeDetail()
   }
   useEffect(() => {
     const id = leaving.current
@@ -521,11 +523,6 @@ export function TaskTree({ projectId }: { projectId: string }) {
         // list that they "have no tasks yet" reads as having lost the work.
         <EmptyState
           title={hiddenDone > 0 ? '这个项目清空了' : '这个项目还没有任务'}
-          hint={
-            hiddenDone > 0
-              ? `${hiddenDone} 条已完成，没有在做的了。`
-              : '任务在这里按层级排列，最深可以嵌到十层。'
-          }
           action={
             <button
               type="button"

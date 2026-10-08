@@ -59,10 +59,8 @@ export function QuickCapture() {
 
   return (
     <>
-      {/* The first thing in the bar, and the widest: capture is the one action taken from every
-          page. It is capped rather than fluid -- a 1400px-wide single-line input looks like a
-          search engine, and the thought being thrown in is a line, not a paragraph. */}
-      <div className="relative order-1 w-full min-w-0 sm:max-w-[44ch] sm:flex-1">
+      {/* At the top of the rail: the first thing in the column you make things from. */}
+      <div className="relative w-full min-w-0">
         {/* The rail, at the same fixed x position the project rails use, so the bar reads as
             part of the same system rather than a floating search box. */}
         <span
@@ -83,29 +81,29 @@ export function QuickCapture() {
           placeholder="捕获…"
           disabled={!target}
           aria-label="捕获"
-          className="h-10 w-full rounded-lg border border-border-strong bg-surface-panel pr-9 pl-3 text-fg placeholder:text-fg-muted disabled:opacity-50"
+          className="h-9 w-full rounded-lg border border-border-strong bg-surface-panel pr-8 pl-3 text-sm text-fg placeholder:text-fg-muted disabled:opacity-50"
         />
         <kbd
           aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 rounded border border-border-strong px-1.5 text-xs leading-5 text-fg-muted"
+          className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border border-border-subtle px-1 text-xs leading-5 text-fg-subtle"
         >
           /
         </kbd>
       </div>
       {missing && (
-        <p role="alert" className="order-3 w-full text-sm text-danger">
-          没有找到收件箱，无法捕获。请刷新页面；若仍然如此，请联系管理员检查数据库迁移。
+        <p role="alert" className="w-full text-sm text-danger">
+          没有找到收件箱，无法捕获
         </p>
       )}
       {/* role="status", not "alert": on the projects page the list already raises its own alert
           for the same failed fetch, and two alerts would be announced (and matched) twice. */}
       {unavailable && (
-        <p role="status" className="order-3 w-full text-sm text-danger">
-          无法加载收件箱，暂时不能捕获。请检查网络后刷新页面
+        <p role="status" className="w-full text-sm text-danger">
+          暂时读不到收件箱
         </p>
       )}
       {landed && target && (
-        <p role="status" className="order-3 w-full truncate text-sm text-fg-muted">
+        <p role="status" className="w-full truncate text-sm text-fg-muted">
           已放入{' '}
           <Link to={target.to} className="text-accent underline">
             {target.name}
@@ -113,8 +111,8 @@ export function QuickCapture() {
         </p>
       )}
       {capture.isError && (
-        <p role="alert" className="order-3 w-full text-sm text-danger">
-          捕获失败，内容仍保留在输入框中，请重试
+        <p role="alert" className="w-full text-sm text-danger">
+          没能保存，再按一次回车重试
         </p>
       )}
     </>

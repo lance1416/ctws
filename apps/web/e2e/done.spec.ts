@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { backdateCompletion, editDetail, registerFreshUser } from './helpers'
+import { backdateCompletion, editDetail, logOut, registerFreshUser } from './helpers'
 
 // The completed-work view, task deletion, and the panel's guard against losing edits on
 // navigation. As in daily.spec.ts, every claim about what changed is checked against the SERVER
@@ -349,7 +349,7 @@ test('Log out with a dirty panel asks first and does not log out until discarded
 
   const logouts: string[] = []
   page.on('request', (r) => r.url().endsWith('/auth/logout') && logouts.push(r.url()))
-  await page.getByRole('button', { name: 'Log out' }).click()
+  await logOut(page)
   await expect(page.getByRole('dialog')).toContainText('有未保存的修改，离开会丢掉它们')
   await expect(page.getByLabel('标题')).toHaveValue('写方案 v2')
   await expect(page.getByTestId('current-user')).toBeVisible()
@@ -361,7 +361,7 @@ test('Log out with a dirty panel asks first and does not log out until discarded
   await page.getByRole('button', { name: '继续编辑' }).click()
   await expect(page.getByLabel('标题')).toHaveValue('写方案 v2')
 
-  await page.getByRole('button', { name: 'Log out' }).click()
+  await logOut(page)
   await page.getByRole('button', { name: '放弃修改' }).click()
   await expect(page.getByLabel('Email')).toBeVisible()
   expect(logouts).toHaveLength(1)

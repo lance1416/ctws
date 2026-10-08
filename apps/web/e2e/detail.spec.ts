@@ -16,10 +16,31 @@ async function save(page: Page, url: RegExp = PATCH_URL) {
   await page.getByRole('button', { name: '保存' }).click()
   const res = await done
   expect(res.ok()).toBeTruthy()
+  // A save now lands the pane back in READING mode -- or takes the task off this page entirely,
+  // which unmounts the pane. Either way nothing is left in EDITING mode, and waiting for that is
+  // not politeness: until it happens the form is still dirty, so anything that tries to leave
+  // meets the discard prompt instead.
+  await expect(page.getByRole('button', { name: '保存' })).toHaveCount(0)
   return res
 }
 
 const row = (page: Page, title: string) => page.getByRole('listitem').filter({ hasText: title })
+
+/**
+ * Leaves the detail pane if one is open.
+ *
+ * It PRESSES THE ✕ rather than Escape: Escape is handled on the panel element, so it only works
+ * while focus is inside, and right after a save focus is still on its way back there. A click is
+ * what a person does and does not race the focus.
+ */
+async function closeAnyPane(page: Page) {
+  const pane = page.getByRole('dialog')
+  if ((await pane.count()) === 0) return
+  await pane.getByRole('button', { name: '关闭' }).click()
+  const discard = page.getByRole('button', { name: '放弃修改' })
+  if ((await discard.count()) > 0) await discard.click()
+  await expect(pane).toHaveCount(0)
+}
 
 /**
  * Opens a row's detail. The pane opens in reading mode, so a test that is about an EDIT asks for
@@ -27,6 +48,9 @@ const row = (page: Page, title: string) => page.getByRole('listitem').filter({ h
  * what they pin is what happens on open.
  */
 async function reopen(page: Page, title: string, edit = true) {
+  // Saving returns the pane to reading rather than closing it, so a reopen starts by stepping
+  // out of whatever is open -- otherwise the row click lands on a pane that is already showing.
+  await closeAnyPane(page)
   await row(page, title).click()
   await expect(page.getByRole('dialog')).toBeVisible()
   if (edit) await editDetail(page)
@@ -132,15 +156,14 @@ test('the PATCH names the fields that changed, and only those', async ({ page })
   })
 
   // One field edited: one field in the body. Not the title, not the notes, and -- the point --
-  // not the deadline, which the form is still holding.
-  await expect(page.getByRole('dialog')).toHaveCount(0)
+  // not the deadline, which the form is still holding. (`reopen` leaves the pane first: saving
+  // returns it to reading rather than closing it.)
   await reopen(page, '写方案')
   await setDetailStatus(page, '进行中')
   expect((await save(page)).request().postDataJSON()).toEqual({ status: 'in_progress' })
 
   // Edited and put back: nothing changed, so the body does not mention it. The title goes along for
   // the ride so that a request is sent at all and the assertion is about what is MISSING from it.
-  await expect(page.getByRole('dialog')).toHaveCount(0)
   await reopen(page, '写方案')
   await page.getByLabel('备注', { exact: true }).fill('先问清需求')
   await page.getByLabel('备注', { exact: true }).fill('')
@@ -148,7 +171,6 @@ test('the PATCH names the fields that changed, and only those', async ({ page })
   expect((await save(page)).request().postDataJSON()).toEqual({ title: '写方案 v2' })
 
   // And the server still holds everything the three saves never mentioned.
-  await expect(page.getByRole('dialog')).toHaveCount(0)
   const listed = await (
     await page.request.get(page.url().replace(/\/projects\//, '/api/v1/tasks?projectId='))
   ).json()

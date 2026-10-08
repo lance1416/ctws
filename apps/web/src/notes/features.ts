@@ -28,6 +28,8 @@ export type NoteFeatures = {
   math: boolean
   /** The note contains a fenced block whose info string is `mermaid`. */
   mermaid: boolean
+  /** The note contains a fenced block with any OTHER language on it, so it wants highlighting. */
+  highlight: boolean
 }
 
 /** The info string a fence has to carry to be a diagram. Also what `NoteMarkdown` matches on. */
@@ -40,12 +42,17 @@ const scanner = unified().use(remarkParse).use(remarkGfm).use(remarkMath)
 type ScanNode = { type: string; lang?: string | null; children?: ScanNode[] }
 
 export function noteFeatures(source: string | null | undefined): NoteFeatures {
-  const found: NoteFeatures = { math: false, mermaid: false }
+  const found: NoteFeatures = { math: false, mermaid: false, highlight: false }
   if (!source) return found
   const walk = (node: ScanNode): void => {
     if (node.type === 'math' || node.type === 'inlineMath') found.math = true
-    else if (node.type === 'code' && node.lang?.trim().toLowerCase() === MERMAID_LANG)
-      found.mermaid = true
+    else if (node.type === 'code') {
+      const lang = node.lang?.trim().toLowerCase()
+      // A fence with NO language is left alone: highlight.js would guess, and a wrong guess
+      // paints shell output or a log file in the colours of whatever language it decided on.
+      if (lang === MERMAID_LANG) found.mermaid = true
+      else if (lang) found.highlight = true
+    }
     for (const child of node.children ?? []) walk(child)
   }
   walk(scanner.parse(source) as unknown as ScanNode)

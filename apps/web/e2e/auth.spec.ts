@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { registerFreshUser } from './helpers'
+import { logOut, registerFreshUser } from './helpers'
 
 // Runs against the API container at http://localhost:3000, which serves the built web app, so the
 // page and the API are one origin. Needs AUTH_REGISTRATION=open and COOKIE_SECURE=false (plain
@@ -8,12 +8,17 @@ import { registerFreshUser } from './helpers'
 test('register, stay signed in across a reload, then log out', async ({ page, context }) => {
   const email = await registerFreshUser(page)
 
-  await expect(page.getByTestId('current-user')).toHaveText(email)
-  await expect(page.getByTestId('workspace-id')).not.toBeEmpty()
+  // The account button wears the initial; the address itself is inside the menu, which is also
+  // the only place it is now. The workspace id used to be printed into the DOM as a debugging
+  // leftover -- it is read from the API here instead, where it actually comes from.
+  await expect(page.getByTestId('current-user')).toHaveAccessibleName(`账户：${email}`)
+  const me = await page.request.get('/api/v1/auth/me')
+  expect(me.ok()).toBe(true)
+  expect((await me.json()).workspaceId).toBeTruthy()
 
   // Proof that cookie authentication works: still signed in after a reload.
   await page.reload()
-  await expect(page.getByTestId('current-user')).toHaveText(email)
+  await expect(page.getByTestId('current-user')).toHaveAccessibleName(`账户：${email}`)
 
   // The session cookie must really be in the browser jar (otherwise the next assertion
   // would pass vacuously), and the jar must mark it HttpOnly.
@@ -24,7 +29,7 @@ test('register, stay signed in across a reload, then log out', async ({ page, co
   // ...yet page JavaScript cannot read it (spec section 10.2).
   expect(await page.evaluate(() => document.cookie)).not.toContain('ctws_session')
 
-  await page.getByRole('button', { name: 'Log out' }).click()
+  await logOut(page)
   await expect(page.getByLabel('Email')).toBeVisible()
 
   await page.reload()

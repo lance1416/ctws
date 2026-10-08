@@ -181,7 +181,7 @@ export function Today() {
                 label: '推迟到下周',
                 run: () => patch(t.id, { dueAt: moveDueToDay(t.dueAt!, nextWeek, timezone) }),
               },
-              { label: '取消截止', run: () => patch(t.id, { dueAt: null }) },
+              { label: '清除截止', run: () => patch(t.id, { dueAt: null }) },
             ],
           },
           {
@@ -368,7 +368,7 @@ export function Today() {
         heading={<h2 className="text-xs font-semibold text-fg-subtle">正在做</h2>}
       >
         {inProgress.length === 0 ? (
-          <PanelEmpty>现在没有在做的事。从下面的队列里挑一件，按 s 开始。</PanelEmpty>
+          <PanelEmpty>没有在做的事</PanelEmpty>
         ) : (
           <ul className="flex flex-col gap-1">
             {inProgress.map((t) => (
@@ -445,19 +445,12 @@ export function Today() {
             </>
           }
         >
-          {today.isSuccess && rows.length === 0 && (
-            <EmptyState
-              title="今天没有要做的事"
-              hint="排到今天的、已经逾期的、正在做的，都会落到这一页。"
-              action={
-                <Link to="/projects" className={EMPTY_ACTION}>
-                  去挑一件来做
-                </Link>
-              }
-            />
-          )}
+          {/* NO ACTION on this one. An empty 今天 has no single obvious next step -- whatever the
+              reader might do next is already in the rail -- and a button that exists because the
+              layout looked bare is the filler that makes an interface read as generated. */}
+          {today.isSuccess && rows.length === 0 && <EmptyState title="今天没有要做的事" />}
           {today.isSuccess && rows.length > 0 && queue.length === 0 && (
-            <PanelEmpty>队列是空的。</PanelEmpty>
+            <PanelEmpty>队列是空的</PanelEmpty>
           )}
           <ul className={ROW_LIST}>{queue.map((p) => row(p, queueLead))}</ul>
         </Panel>
@@ -486,11 +479,10 @@ export function Today() {
           projectId={openTask.projectId}
           onClose={closeDetail}
           onSaved={() => {
+            // Marks the row; the pane stays open in reading mode. The save may have taken the
+            // row off this page, and that is fine: what was written is still on screen beside
+            // the list it left.
             setSavedId(openTask.id)
-            // The save may have taken the row off this page: same rule as a status change.
-            planFocus(openTask.id)
-            setTimeout(() => (focusPlan.current = null), 1000)
-            closeDetail()
           }}
         />
       )}

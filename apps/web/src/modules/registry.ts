@@ -146,6 +146,13 @@ export function projectViews(
   return projectBlocks(modules, (m) => m.ProjectView)
 }
 
+/** Each module's block-header control, in registration order. */
+export function projectViewActions(
+  modules: readonly WorkspaceModule[] = MODULES,
+): RegisteredProjectBlock[] {
+  return projectBlocks(modules, (m) => m.ProjectViewAction)
+}
+
 /** Each module's numbers in the project header banner, in registration order. */
 export function projectHeadlines(
   modules: readonly WorkspaceModule[] = MODULES,

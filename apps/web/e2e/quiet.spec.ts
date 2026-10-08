@@ -239,3 +239,66 @@ test('saving an untouched task sends nothing and still closes the pane', async (
   await expect(page.getByRole('textbox', { name: '标题' })).toHaveCount(0)
   expect(writes).toEqual([])
 })
+
+// ------------------------------------------------- the shell, after the 2026-10-08 requests
+
+test('a code fence is highlighted, and an unlabelled one is left alone', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '改版')
+  const id = await makeTask(page, pid, '写 rollup')
+  const note = ['```ts', 'const a = 1', '```', '', '```', 'plain output 42', '```'].join('\n')
+  await page.request.patch(`/api/v1/tasks/${id}`, { headers: HEADERS, data: { notes: note } })
+
+  await openTree(page, pid)
+  await row(page, '写 rollup').click()
+  const notes = page.locator('[data-detail-notes]')
+  // highlight.js ran: the keyword is its own element, wearing this app's token rather than a
+  // theme's hex (the colour itself is asserted in the unit tests over styles.css).
+  await expect(notes.locator('.hljs-keyword').first()).toHaveText('const')
+  // The second fence carries no language, so nothing guessed at it: no spans, just the text.
+  const fences = notes.locator('pre code')
+  await expect(fences.nth(1)).toHaveText('plain output 42\n')
+  await expect(fences.nth(1).locator('span')).toHaveCount(0)
+})
+
+test('the project rail makes a project without leaving the page', async ({ page }) => {
+  await registerFreshUser(page)
+  await page.getByRole('button', { name: '新建项目' }).click()
+  const box = page.getByRole('textbox', { name: '新项目' })
+  await expect(box).toBeFocused()
+  await box.fill('求职')
+  await page.keyboard.press('Enter')
+
+  // Straight into it: naming a line of work is the start of putting something in it.
+  await expect(page.getByRole('heading', { level: 1, name: '求职' })).toBeVisible()
+  await expect(page.locator('nav').getByRole('link', { name: '求职' })).toBeVisible()
+})
+
+test('the detail pane closes from the corner, and Escape unwinds one level at a time', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '改版')
+  await makeTask(page, pid, '配色重做')
+  await openTree(page, pid)
+  await row(page, '配色重做').click()
+
+  const pane = page.getByRole('dialog')
+  await expect(pane).toBeVisible()
+  // There is no 关闭 BUTTON in the control row any more: it is a ✕ in the corner, carrying the
+  // word as its accessible name for anyone who cannot see it.
+  const close = pane.locator('[data-detail-close]')
+  await expect(close).toHaveAccessibleName('关闭')
+  await expect(close).toHaveText('')
+  await close.click()
+  await expect(pane).toHaveCount(0)
+
+  // And Escape out of editing lands in reading, not out of the pane.
+  await row(page, '配色重做').click()
+  await editDetail(page)
+  await page.keyboard.press('Escape')
+  await expect(pane).toHaveCount(1)
+  await expect(pane.getByRole('button', { name: '编辑', exact: true })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(pane).toHaveCount(0)
+})

@@ -386,7 +386,7 @@ test('only a deadline change takes a task out of 逾期: a bare scheduledOn does
   expect(await segmentOf()).not.toBe('overdue')
 })
 
-test('取消截止 takes a row out of overdue and the server forgets the deadline', async ({
+test('清除截止 takes a row out of overdue and the server forgets the deadline', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -401,7 +401,7 @@ test('取消截止 takes a row out of overdue and the server forgets the deadlin
   await (
     await openTriage(page, '不再重要', '逾期')
   )
-    .getByRole('button', { name: '取消截止' })
+    .getByRole('button', { name: '清除截止' })
     .click()
   expect((await res).request().postDataJSON()).toEqual({ dueAt: null })
   await expect(page.getByText('不再重要')).toHaveCount(0)
@@ -432,7 +432,7 @@ test('an overdue row is finished with its mark, and only overdue rows have the e
   const panel = await openTriage(page, '逾期的', '逾期')
   await expect(panel.getByRole('button', { name: '推迟到明天' })).toBeVisible()
   await expect(panel.getByRole('button', { name: '推迟到下周' })).toBeVisible()
-  await expect(panel.getByRole('button', { name: '取消截止' })).toBeVisible()
+  await expect(panel.getByRole('button', { name: '清除截止' })).toBeVisible()
   // Escape shuts it and hands focus back to the trigger rather than to <body> (WCAG 2.4.3).
   await page.keyboard.press('Escape')
   await expect(panel).toHaveCount(0)
@@ -555,7 +555,11 @@ test.describe('the panel as an overlay', () => {
     const dialog = page.getByRole('dialog')
     await page.getByLabel('标题').fill('写方案 v2')
 
-    // Every way out asks: the button, Escape, and a click outside.
+    // Every way out asks: stepping back to reading (取消), closing the pane (the ✕), Escape,
+    // and a click outside.
+    await page.getByRole('button', { name: '取消' }).click()
+    await expect(dialog).toContainText('有未保存的修改')
+    await page.getByRole('button', { name: '继续编辑' }).click()
     await page.getByRole('button', { name: '关闭' }).click()
     await expect(dialog).toBeVisible()
     await expect(dialog).toContainText('有未保存的修改')
@@ -579,6 +583,11 @@ test.describe('the panel as an overlay', () => {
     await page.getByRole('listitem').filter({ hasText: '写方案' }).click()
     await editDetail(page)
     await expect(page.getByLabel('标题')).toHaveValue('写方案')
+    // ESCAPE UNWINDS ONE LEVEL AT A TIME: out of editing into reading, and only then out of the
+    // pane. With nothing typed neither step asks.
+    await page.keyboard.press('Escape')
+    await expect(dialog).toHaveCount(1)
+    await expect(page.getByRole('button', { name: '编辑', exact: true })).toBeVisible()
     await page.keyboard.press('Escape')
     await expect(dialog).toHaveCount(0)
   })
@@ -613,7 +622,7 @@ test.describe('the panel as an overlay', () => {
     // Back to what it was (no plan), so there is nothing to lose and nothing to ask about -- the
     // deadline press above is what still makes it dirty.
     await expect(page.getByLabel('排期')).toHaveValue('')
-    await page.getByRole('button', { name: '取消截止' }).click()
+    await page.getByRole('button', { name: '清除截止' }).click()
     await page.getByRole('button', { name: '关闭' }).click()
     await expect(dialog).toHaveCount(0)
     expect((await serverTask(page, pid, '写方案')).dueAt).toBeNull()
@@ -656,7 +665,7 @@ test.describe('the panel as an overlay', () => {
       expect(await inside(), `after Shift+Tab ${i + 1}`).toBe(true)
     }
     // The control the panel used to cover is not the one that gets focus.
-    await expect(page.getByRole('button', { name: 'Log out' })).not.toBeFocused()
+    await expect(page.getByTestId('current-user')).not.toBeFocused()
   })
 
   test('a click outside closes the panel, a click inside does not', async ({ page }) => {
@@ -681,7 +690,7 @@ test.describe('the panel as an overlay', () => {
   })
 })
 
-test('the open panel leaves the top bar usable', async ({ page }) => {
+test('the open panel leaves the chrome usable', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '写方案')
@@ -689,11 +698,10 @@ test('the open panel leaves the top bar usable', async ({ page }) => {
   await page.getByRole('listitem').filter({ hasText: '写方案' }).click()
   await expect(page.getByRole('dialog')).toBeVisible()
 
-  // What is at the centre of each top-bar control is that control, not the panel.
-  for (const target of [
-    page.getByPlaceholder('捕获…'),
-    page.getByRole('button', { name: 'Log out' }),
-  ]) {
+  // What is at the centre of each control is that control, not the panel. Capture lives in the
+  // rail now and the account menu is the bar's own control, so the pair spans both pieces of
+  // chrome the pane sits beside.
+  for (const target of [page.getByPlaceholder('捕获…'), page.getByTestId('current-user')]) {
     const box = (await target.boundingBox())!
     const hit = await target.evaluate((el, p) => document.elementFromPoint(p.x, p.y) === el, {
       x: box.x + box.width / 2,
@@ -703,7 +711,9 @@ test('the open panel leaves the top bar usable', async ({ page }) => {
   }
 })
 
-test('saving closes the panel, says so on the row, and is on the server', async ({ page }) => {
+test('saving returns the panel to reading, says so on the row, and is on the server', async ({
+  page,
+}) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '写方案')
@@ -715,16 +725,20 @@ test('saving closes the panel, says so on the row, and is on the server', async 
   const done = page.waitForResponse((r) => isPatch(r) && r.ok())
   await page.getByRole('button', { name: '保存' }).click()
   await done
-  await expect(page.getByRole('dialog')).toHaveCount(0)
+  // THE PANE STAYS OPEN, in reading mode: what was just written is on screen to be read back,
+  // which is what a person does immediately after writing it. It used to close here.
+  await expect(page.getByRole('dialog')).toHaveCount(1)
+  await expect(page.getByRole('button', { name: '编辑', exact: true })).toBeVisible()
+  await expect(page.getByRole('textbox', { name: '标题' })).toHaveCount(0)
+  await expect(page.getByText('先问清需求')).toBeVisible()
   await expect(treeRow(page, '写方案').getByRole('status')).toHaveText('已保存')
-  await expect(page.getByRole('button', { name: '任务：写方案', exact: true })).toBeFocused()
   // The confirmation is momentary, not a permanent badge.
   await expect(treeRow(page, '写方案').getByRole('status')).toHaveCount(0, { timeout: 6000 })
   const body = await (await page.request.get(`/api/v1/projects/${pid}/tasks`)).json()
   expect(body.tasks[0].notes).toBe('先问清需求')
 })
 
-test('saving from the Today panel closes it and confirms on the row', async ({ page }) => {
+test('saving from the Today panel keeps it open and confirms on the row', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '写方案', { status: 'in_progress' })
@@ -733,7 +747,8 @@ test('saving from the Today panel closes it and confirms on the row', async ({ p
   await editDetail(page)
   await page.getByLabel('备注', { exact: true }).fill('备注')
   await page.getByRole('button', { name: '保存' }).click()
-  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: '编辑', exact: true })).toBeVisible()
+  await expect(page.getByRole('dialog')).toHaveCount(1)
   await expect(page.getByRole('region', { name: '正在做' }).getByRole('status')).toHaveText(
     '已保存',
   )

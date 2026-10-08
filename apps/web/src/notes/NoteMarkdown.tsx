@@ -17,6 +17,7 @@ import { noteSchema } from './schema'
  *
  *   - `rehype-katex` + `katex` + KaTeX's stylesheet: only when `noteFeatures` finds maths.
  *   - `mermaid`: only when `noteFeatures` finds a `mermaid` fence.
+ *   - `rehype-highlight` (highlight.js's common grammars): only when a fence carries a language.
  *
  * That split is D73's second decision and it is asserted on the NETWORK in `notes.spec.ts`, not on
  * a flag -- a boolean that says "lazy" is exactly the thing that can be true while the bytes still
@@ -116,6 +117,7 @@ const components: Components = {
 export default function NoteMarkdown({ source }: { source: string }): ReactNode {
   const features = useMemo(() => noteFeatures(source), [source])
   const [katex, setKatex] = useState<PluggableList | null>(null)
+  const [hljs, setHljs] = useState<PluggableList | null>(null)
 
   useEffect(() => {
     if (!features.math || katex !== null) return
@@ -135,9 +137,35 @@ export default function NoteMarkdown({ source }: { source: string }): ReactNode 
     }
   }, [features.math, katex])
 
-  // Until KaTeX arrives, maths shows as the inline code `remark-math` made of it -- a flicker of
-  // the author's own characters, which is the honest thing to show and cheaper than a spinner.
-  const rehypePlugins = katex ? [...BASE_REHYPE, ...katex] : BASE_REHYPE
+  useEffect(() => {
+    if (!features.highlight || hljs !== null) return
+    let live = true
+    void (async () => {
+      const mod = await import('rehype-highlight')
+      if (live) {
+        setHljs([
+          [
+            mod.default,
+            {
+              // Never guess. A fence with no language stays plain text (`features.ts` does not
+              // even flag it), and one whose language highlight.js does not know stays plain
+              // rather than being painted as whatever scored highest.
+              detect: false,
+              // An unknown info string is not an error worth throwing a note's rendering away for.
+              ignoreMissing: true,
+            },
+          ],
+        ])
+      }
+    })()
+    return () => {
+      live = false
+    }
+  }, [features.highlight, hljs])
+
+  // Until a renderer arrives, the block shows the author's own characters -- a flicker of plain
+  // text, which is honest and cheaper than a spinner. Sanitise FIRST in both cases: see schema.ts.
+  const rehypePlugins = [...BASE_REHYPE, ...(katex ?? []), ...(hljs ?? [])]
 
   return (
     <div data-note-md className="max-w-full">

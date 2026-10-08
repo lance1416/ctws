@@ -92,7 +92,7 @@ test('a failed project fetch tells the capture box user why it is disabled', asy
   await page.route('**/api/v1/projects', (route) => route.fulfill({ status: 500, json: {} }))
   await page.reload()
   await expect(page.getByPlaceholder('捕获…')).toBeDisabled()
-  await expect(page.getByRole('status')).toContainText('无法加载收件箱')
+  await expect(page.getByRole('status')).toContainText('暂时读不到收件箱')
 })
 
 test('a project can be deleted from the list', async ({ page }) => {

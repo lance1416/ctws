@@ -211,6 +211,24 @@
        4   #CC79A7   67.9% 0.118 346          reddish purple
        5   #56B4E9   73.5% 0.117 236          sky blue
        6   #E69F00   75.3% 0.158  77          orange */
+  /* SYNTAX COLOURS, for highlighted code fences only (D-none; feature request 2026-10-07). They
+     are their own family rather than borrowed from `accent` / `plan` / `deadline` / `missed`:
+     those four MEAN something in this app (a link, a plan, a deadline, a miss), and a keyword
+     wearing 「截止」's colour would be the one thing the colour rules here forbid.
+
+     Measured on `surface-sunken`, which is the only background a code block has, in each scheme:
+     light 5.1-6.8:1, dark 5.3-9.6:1 -- every one of them clears AA as body text, which matters
+     because this IS body text, at 14px, read character by character.
+
+     Not a highlight.js theme: importing one would bring a whole second palette with its own
+     notion of light and dark into a file whose entire point is that there is one. */
+  --color-code-keyword: #8a3fa0;
+  --color-code-string: #1a7046;
+  --color-code-number: #9a5000;
+  --color-code-comment: #616876;
+  --color-code-fn: #2d5fb0;
+  --color-code-attr: #8a5a12;
+  --color-code-punct: #4a515c;
   --color-project-1: #0072b2;
   --color-project-2: #d55e00;
   --color-project-3: #009e73;
@@ -264,6 +282,13 @@
          4   #a52f76   50.6% 0.169 348
          5   #006895   49.0% 0.107 237
          6   #835900   49.7% 0.104  77 */
+    --color-code-keyword: #c58fd8;
+    --color-code-string: #7fc9a0;
+    --color-code-number: #e0a86b;
+    --color-code-comment: #838c99;
+    --color-code-fn: #8ab4f0;
+    --color-code-attr: #d9b98a;
+    --color-code-punct: #a7aeb9;
     --color-project-1: #009aee;
     --color-project-2: #e1691a;
     --color-project-3: #009f73;
@@ -517,4 +542,59 @@ kbd,
 [data-note-md] .katex-display {
   overflow-x: auto;
   overflow-y: hidden;
+}
+
+/* HIGHLIGHT.JS'S CLASSES, MAPPED ONTO THE SEVEN TOKENS ABOVE.
+   highlight.js emits ~40 class names; they collapse into these seven buckets, and a class that is
+   not listed simply inherits the block's own colour -- which is the right default, because an
+   unlisted token is one this app has no opinion about. */
+[data-note-md] .hljs-comment,
+[data-note-md] .hljs-quote {
+  color: var(--color-code-comment);
+  font-style: italic;
+}
+[data-note-md] .hljs-keyword,
+[data-note-md] .hljs-selector-tag,
+[data-note-md] .hljs-literal,
+[data-note-md] .hljs-doctag,
+[data-note-md] .hljs-meta {
+  color: var(--color-code-keyword);
+}
+[data-note-md] .hljs-string,
+[data-note-md] .hljs-regexp,
+[data-note-md] .hljs-addition,
+[data-note-md] .hljs-template-variable {
+  color: var(--color-code-string);
+}
+[data-note-md] .hljs-number,
+[data-note-md] .hljs-symbol,
+[data-note-md] .hljs-bullet,
+[data-note-md] .hljs-link {
+  color: var(--color-code-number);
+}
+[data-note-md] .hljs-title,
+[data-note-md] .hljs-title.class_,
+[data-note-md] .hljs-title.function_,
+[data-note-md] .hljs-section,
+[data-note-md] .hljs-name {
+  color: var(--color-code-fn);
+}
+[data-note-md] .hljs-attr,
+[data-note-md] .hljs-attribute,
+[data-note-md] .hljs-variable,
+[data-note-md] .hljs-type,
+[data-note-md] .hljs-selector-attr,
+[data-note-md] .hljs-selector-class {
+  color: var(--color-code-attr);
+}
+[data-note-md] .hljs-punctuation,
+[data-note-md] .hljs-operator,
+[data-note-md] .hljs-params {
+  color: var(--color-code-punct);
+}
+[data-note-md] .hljs-emphasis {
+  font-style: italic;
+}
+[data-note-md] .hljs-strong {
+  font-weight: 600;
 }

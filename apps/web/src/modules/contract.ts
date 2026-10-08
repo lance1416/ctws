@@ -49,6 +49,15 @@ export type WorkspaceModule = {
    */
   ProjectView?: ComponentType<{ projectId: string }>
   /**
+   * A control in the HEAD of this module's block, beside its name -- the block's own "new",
+   * typically.
+   *
+   * A block header is 「名字 · 计数 · 本块的动作」, and the action belongs to the module because
+   * only the module knows what making one of its things involves. The shell draws the header and
+   * decides nothing about what is in this slot.
+   */
+  ProjectViewAction?: ComponentType<{ projectId: string }>
+  /**
    * What this module adds to the project page's HEADER BANNER: the numbers that say where this
    * line of work stands, in this module's terms.
    *

@@ -77,6 +77,13 @@ const isPatch = (r: { url: () => string; request: () => { method: () => string }
   /\/tasks\/[^/]+$/.test(r.url()) && r.request().method() === 'PATCH'
 
 /** Presses 保存 and returns the PATCH the press produced, so the BODY can be asserted. */
+/** The calendar day after `day`, as a plain date string. */
+function dayAfter(day: string): string {
+  const d = new Date(`${day}T12:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + 1)
+  return d.toISOString().slice(0, 10)
+}
+
 async function saveBody(page: Page): Promise<Record<string, unknown>> {
   const done = page.waitForResponse((r) => isPatch(r) && r.ok())
   await page.getByRole('button', { name: '保存' }).click()
@@ -191,7 +198,7 @@ test('the named deadline decisions write the day the row would show', async ({ p
 
   // And the way out sends null, not an empty string the contract would reject.
   await openPane(page, pid, '交报告')
-  await page.getByRole('button', { name: '取消截止', exact: true }).click()
+  await page.getByRole('button', { name: '清除截止', exact: true }).click()
   expect(await saveBody(page)).toEqual({ dueAt: null })
   expect((await serverTask(page, pid, id)).dueAt).toBeNull()
 })
@@ -211,8 +218,12 @@ test('the named plan decisions write the same scheduledOn the exact field writes
   // The named decision and the exact field are two ways to the SAME field, not two fields.
   await openPane(page, pid, '改简历')
   await expect(page.getByLabel('排期')).toHaveValue(dayOffset(1))
-  await page.getByLabel('排期').fill(dayOffset(4))
-  expect(await saveBody(page)).toEqual({ scheduledOn: dayOffset(4) })
+  // THE DAY AFTER NEXT MONDAY, not a fixed offset. `dayOffset(4)` is next Monday whenever this
+  // runs on a Thursday, and then 排到下周 below writes the value already stored -- the form is
+  // not dirty, no request is sent, and the test hangs waiting for one. It did, on a Thursday.
+  const afterNextMonday = dayAfter(nextMondayYmd())
+  await page.getByLabel('排期').fill(afterNextMonday)
+  expect(await saveBody(page)).toEqual({ scheduledOn: afterNextMonday })
 
   await openPane(page, pid, '改简历')
   await page.getByRole('button', { name: '排到下周', exact: true }).click()

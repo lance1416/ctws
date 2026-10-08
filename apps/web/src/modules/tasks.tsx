@@ -137,20 +137,18 @@ function ProjectNumbers({ projectId }: { projectId: string }) {
   )
 }
 
-/** The module's rows under a shell project: the tree, and the one input that adds a root task. */
-function ProjectTasks({ projectId }: { projectId: string }) {
-  const qc = useQueryClient()
-  const [title, setTitle] = useState('')
+/**
+ * THE TASK BLOCK'S OWN 「新建」, in the block's head.
+ *
+ * It carries the `n` key with it. The key lives in the module rather than in the shell's table
+ * because it needs a project to create into, so it exists exactly where that is true; it obeys
+ * the same three guards every other single key obeys -- the off switch, "not while typing", and
+ * "not under an open layer" -- and it is not a `g` chord, so it cannot collide with one.
+ */
+function NewTaskAction({ projectId }: { projectId: string }) {
   const [creating, setCreating] = useState(false)
   const shortcuts = useShortcutsEnabled()
 
-  /**
-   * `n` opens 「新建」. It lives HERE rather than in the shell's key table because it needs a
-   * project to create into, so it exists exactly where that is true; the `?` list says so under
-   * 项目页上. It obeys the same three guards every other single key obeys -- the off switch, "not
-   * while typing", and "not under an open layer" -- and it is not a `g` chord, so it cannot
-   * collide with one.
-   */
   useEffect(() => {
     if (!shortcuts) return
     const onKey = (e: KeyboardEvent) => {
@@ -163,6 +161,30 @@ function ProjectTasks({ projectId }: { projectId: string }) {
     return () => document.removeEventListener('keydown', onKey)
   }, [shortcuts])
 
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setCreating(true)}
+        className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-2 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
+      >
+        新建…
+        <kbd
+          aria-hidden="true"
+          className="pointer-events-none rounded border border-border-subtle px-1.5 text-xs leading-5 text-fg-subtle max-sm:hidden"
+        >
+          n
+        </kbd>
+      </button>
+      {creating && <CreateTaskDialog projectId={projectId} onClose={() => setCreating(false)} />}
+    </>
+  )
+}
+
+/** The module's rows under a shell project: the tree, and the one input that adds a root task. */
+function ProjectTasks({ projectId }: { projectId: string }) {
+  const qc = useQueryClient()
+  const [title, setTitle] = useState('')
   const failureId = useId()
   const create = useMutation({
     mutationFn: (t: string) => createTask({ projectId, title: t, parentId: null }),
@@ -179,9 +201,11 @@ function ProjectTasks({ projectId }: { projectId: string }) {
 
   return (
     <>
-      {/* The fast path and the full one, side by side and in that order: a line typed into the box
-          and filed with Enter is the project's success criterion, so it stays first and stays
-          untouched. 新建… is the way in for the task whose shape is already known. */}
+      {/* THE FAST PATH, ALONE. 新建… used to sit right beside this box, which made the two ways
+          in one control group and so made having two of them pointless -- whichever you reached
+          for, you reached to the same place. The full form is the BLOCK's action now and lives in
+          the block's head (`NewTaskAction`), where every block's "new" is. A line typed here and
+          filed with Enter is this project's success criterion, so it keeps the position. */}
       <div className="mb-1 ml-3 flex w-[calc(100%-1.5rem)] max-w-[52ch] flex-wrap items-center gap-2">
         <input
           value={title}
@@ -198,19 +222,6 @@ function ProjectTasks({ projectId }: { projectId: string }) {
             create.isError ? 'border-danger' : 'border-border-strong'
           }`}
         />
-        <button
-          type="button"
-          onClick={() => setCreating(true)}
-          className="flex h-10 shrink-0 items-center gap-1.5 rounded-lg border border-border-strong px-3 text-sm text-fg hover:bg-surface-hover"
-        >
-          新建…
-          <kbd
-            aria-hidden="true"
-            className="pointer-events-none rounded border border-border-strong px-1.5 text-xs leading-5 text-fg-muted max-sm:hidden"
-          >
-            n
-          </kbd>
-        </button>
       </div>
       {/* THE FAILURE SITS UNDER ITS OWN BOX (D53), inside the same block and at the same left
           edge, rather than as a line of page chrome below the whole control group. The typed
@@ -220,7 +231,6 @@ function ProjectTasks({ projectId }: { projectId: string }) {
           没能创建，再按一次回车重试。
         </p>
       )}
-      {creating && <CreateTaskDialog projectId={projectId} onClose={() => setCreating(false)} />}
       <TaskTree key={projectId} projectId={projectId} />
     </>
   )
@@ -260,5 +270,6 @@ export const taskModule: WorkspaceModule = {
     },
   ],
   ProjectView: ProjectTasks,
+  ProjectViewAction: NewTaskAction,
   ProjectHeadline: ProjectNumbers,
 }

@@ -184,7 +184,7 @@ test('Escape closes the dialog and hands focus back to whatever opened it', asyn
 
   // 取消 is the same decision with a mouse.
   await openButton(page).click()
-  // `exact`: accessible names are one flat namespace matched by substring, and 取消截止 is in
+  // `exact`: accessible names are one flat namespace matched by substring, and 清除截止 is in
   // this very dialog.
   await dialog(page).getByRole('button', { name: '取消', exact: true }).click()
   await expect(dialog(page)).toHaveCount(0)

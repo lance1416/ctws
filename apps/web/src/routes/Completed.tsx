@@ -59,17 +59,7 @@ export function Completed() {
             : '加载失败，检查服务是否在运行'}
         </p>
       )}
-      {completed.isSuccess && rows.length === 0 && (
-        <EmptyState
-          title="还没有完成的任务"
-          hint="标记完成的任务按天记在这里，最近的一天在最上面。"
-          action={
-            <Link to="/tasks/today" className={EMPTY_ACTION}>
-              回到今天
-            </Link>
-          }
-        />
-      )}
+      {completed.isSuccess && rows.length === 0 && <EmptyState title="还没有完成的任务" />}
       {days.map(({ day, tasks }) => (
         <section key={day} aria-label={dayHeading(day, today)} className="mt-8">
           <h2 className="text-sm font-semibold text-fg-muted">

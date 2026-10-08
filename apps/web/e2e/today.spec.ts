@@ -63,7 +63,8 @@ test('a task that is both overdue and in progress is shown once', async ({ page 
   await page.getByRole('button', { name: '保存' }).click()
   // Wait for the save to land before navigating, the way the saves above this one do. Without it
   // the test races its own PATCH: it went red roughly once in sixty runs, with 逾期 simply absent.
-  await expect(page.getByRole('dialog')).toHaveCount(0)
+  // The pane returns to reading rather than closing now, so 编辑 coming back is the signal.
+  await expect(page.getByRole('button', { name: '编辑', exact: true })).toBeVisible()
 
   await page.getByRole('link', { name: '今天' }).click()
   // Wait for the list to be on screen before counting: while the route is still switching the
@@ -91,7 +92,9 @@ test('each segment goes to its own panel, in the workbench order, and to only on
   await captureAndOpen(page, '甲在做')
   await setDetailStatus(page, '进行中')
   await page.getByRole('button', { name: '保存' }).click()
-  // Saving closes the panel by itself (it used to need a separate 关闭).
+  // Saving returns the pane to reading rather than closing it, so this steps out explicitly.
+  await expect(page.getByRole('button', { name: '编辑', exact: true })).toBeVisible()
+  await page.keyboard.press('Escape')
   await expect(page.getByRole('dialog')).toHaveCount(0)
 
   await submitCreate(page, '捕获…', '乙今天')
@@ -99,6 +102,8 @@ test('each segment goes to its own panel, in the workbench order, and to only on
   await editDetail(page)
   await page.getByLabel('排期').fill(today)
   await page.getByRole('button', { name: '保存' }).click()
+  await expect(page.getByRole('button', { name: '编辑', exact: true })).toBeVisible()
+  await page.keyboard.press('Escape')
   await expect(page.getByRole('dialog')).toHaveCount(0)
 
   await submitCreate(page, '捕获…', '丙逾期')
@@ -108,7 +113,8 @@ test('each segment goes to its own panel, in the workbench order, and to only on
   await page.getByRole('button', { name: '保存' }).click()
   // Wait for the save to land before navigating, the way the saves above this one do. Without it
   // the test races its own PATCH: it went red roughly once in sixty runs, with 逾期 simply absent.
-  await expect(page.getByRole('dialog')).toHaveCount(0)
+  // The pane returns to reading rather than closing now, so 编辑 coming back is the signal.
+  await expect(page.getByRole('button', { name: '编辑', exact: true })).toBeVisible()
 
   await page.getByRole('link', { name: '今天' }).click()
   await expect(page.getByRole('heading', { level: 1, name: '今天' })).toBeVisible()

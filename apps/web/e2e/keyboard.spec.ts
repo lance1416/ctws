@@ -32,7 +32,9 @@ const tabStops = (page: Page) =>
  * The last tab stop before the tree on a project page. The 新任务 box and the 新建… button sit
  * side by side above the rows, so the control a Tab walk into the tree starts from is the button.
  */
-const aboveTree = (page: Page) => page.getByRole('button', { name: '新建…', exact: true })
+// The last tab stop before the tree. 新建… moved into the BLOCK HEADER, above the 新任务 box, so
+// the box is what sits immediately above the rows now.
+const aboveTree = (page: Page) => page.getByRole('textbox', { name: '新任务' })
 
 const focusedTitle = (page: Page) =>
   page.evaluate(() => document.activeElement?.getAttribute('aria-label') ?? null)
@@ -77,8 +79,7 @@ test('the whole tree is one tab stop, however many rows it has', async ({ page }
   expect(await tabStops(page)).toBe(1)
 
   // From the control above the tree, one Tab enters it and one more leaves it: two presses with
-  // twelve rows, where the old behaviour needed twelve. That control is now 新建… rather than the
-  // 新任务 box -- the two sit side by side above the rows, and 新建… is the last stop before them.
+  // twelve rows, where the old behaviour needed twelve.
   await aboveTree(page).focus()
   await page.keyboard.press('Tab')
   expect(await inTree(page)).toBe(true)
@@ -91,8 +92,10 @@ test('the whole tree is one tab stop, however many rows it has', async ({ page }
   await page.keyboard.press('Shift+Tab')
   await expect(aboveTree(page)).toBeFocused()
 
-  // And the pair above the rows is exactly two stops, in reading order: the box, then 新建….
-  await page.getByPlaceholder('新任务').focus()
+  // The block's own 新建… is a stop too, and it comes BEFORE the box: it lives in the block
+  // header, so reading order puts it first. This is the shape the two create paths have now --
+  // the full form in the head, the one-line box leading the rows -- rather than side by side.
+  await page.getByRole('button', { name: '新建…', exact: true }).focus()
   await page.keyboard.press('Tab')
   await expect(aboveTree(page)).toBeFocused()
 

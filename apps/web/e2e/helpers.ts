@@ -15,6 +15,21 @@ export async function registerFreshUser(page: Page): Promise<string> {
   return email
 }
 
+/**
+ * Signs out through the account menu.
+ *
+ * The bar used to carry a bare `Log out` button; it is an item in the top-right account menu
+ * now, which is where every workspace app of this shape puts it. One helper so the twelve call
+ * sites do not each know the menu's shape.
+ */
+export async function logOut(page: Page): Promise<void> {
+  await page.getByTestId('current-user').click()
+  await page.getByRole('menuitem', { name: '退出登录' }).click()
+}
+
+/** Opens the account menu without acting, for tests about the bar itself. */
+export const accountButton = (page: Page) => page.getByTestId('current-user')
+
 // Submits one of the create inputs (capture, new project, new task) and waits for the POST to be
 // acknowledged. Without the wait the next locator's auto-wait is the only thing between the test
 // and a slow API, which is a race under load.

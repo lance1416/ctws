@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { registerFreshUser } from './helpers'
+import { logOut, registerFreshUser } from './helpers'
 
 /**
  * The sign-in screen (redesign stage 3). Its COPY is frozen -- `auth.spec.ts` asserts the
@@ -15,7 +15,7 @@ import { registerFreshUser } from './helpers'
 
 test('Enter from either field signs in, without reloading the page', async ({ page }) => {
   const email = await registerFreshUser(page)
-  await page.getByRole('button', { name: 'Log out' }).click()
+  await logOut(page)
   await expect(page.getByLabel('Email')).toBeVisible()
 
   // A marker on the window: if the form submitted natively, the document is replaced and it goes.
@@ -25,7 +25,7 @@ test('Enter from either field signs in, without reloading the page', async ({ pa
   await page.getByLabel('Password').fill('correct horse battery')
   await page.getByLabel('Password').press('Enter')
 
-  await expect(page.getByTestId('current-user')).toHaveText(email)
+  await expect(page.getByTestId('current-user')).toHaveAccessibleName(`账户：${email}`)
   expect(await page.evaluate(() => (window as unknown as { __kept?: boolean }).__kept)).toBe(true)
   // The query string is untouched: a native GET submit would have put the password in the URL.
   expect(new URL(page.url()).search).toBe('')
@@ -33,7 +33,7 @@ test('Enter from either field signs in, without reloading the page', async ({ pa
 
 test('a rejected sign-in says so and keeps what was typed', async ({ page }) => {
   const email = await registerFreshUser(page)
-  await page.getByRole('button', { name: 'Log out' }).click()
+  await logOut(page)
   await expect(page.getByLabel('Email')).toBeVisible()
 
   await page.getByLabel('Email').fill(email)
@@ -64,5 +64,5 @@ test('Register is a deliberate second press, not what Enter does', async ({ page
 
   // The same two fields, through Register, do make the account.
   await page.getByRole('button', { name: 'Register' }).click()
-  await expect(page.getByTestId('current-user')).toHaveText(email)
+  await expect(page.getByTestId('current-user')).toHaveAccessibleName(`账户：${email}`)
 })

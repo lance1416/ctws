@@ -296,7 +296,7 @@ export function CreateTaskDialog({
               </button>
             ))}
             <button type="button" onClick={() => setValue('dueAt', null)} className={decision}>
-              取消截止
+              清除截止
             </button>
           </div>
           {dueEcho && <p className="mt-1 text-xs tabular-nums text-fg-muted">{dueEcho}</p>}

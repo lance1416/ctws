@@ -10,17 +10,22 @@ import { noteFeatures } from './features'
  *
  * The cases below are the ones a regex-based scan gets wrong, which is why this one parses.
  */
+/** A fenced block, written out of line so the cases below read as Markdown rather than escapes. */
+const fence = (lang: string, body: string) => ['```' + lang, body, '```'].join('\n')
+
 describe('noteFeatures', () => {
   it('finds nothing in plain prose', () => {
     expect(noteFeatures('先问清需求，再排期。\n\n- 一条\n- 两条')).toEqual({
       math: false,
       mermaid: false,
+      highlight: false,
     })
   })
 
   it('finds nothing in an empty or absent note', () => {
-    expect(noteFeatures('')).toEqual({ math: false, mermaid: false })
-    expect(noteFeatures(null)).toEqual({ math: false, mermaid: false })
+    const none = { math: false, mermaid: false, highlight: false }
+    expect(noteFeatures('')).toEqual(none)
+    expect(noteFeatures(null)).toEqual(none)
   })
 
   it('finds inline and display maths', () => {
@@ -61,15 +66,31 @@ describe('noteFeatures', () => {
     expect(noteFeatures('```text\nmermaid\n```').mermaid).toBe(false)
   })
 
-  it('reports the two independently', () => {
-    expect(noteFeatures('$x$\n\n```mermaid\ngraph TD; A-->B;\n```')).toEqual({
-      math: true,
-      mermaid: true,
-    })
-    expect(noteFeatures('```mermaid\ngraph TD; A-->B;\n```')).toEqual({
+  it('finds a fence that carries a language, and wants it highlighted', () => {
+    expect(noteFeatures(fence('ts', 'const a = 1')).highlight).toBe(true)
+    expect(noteFeatures(fence('sh', 'pnpm build')).highlight).toBe(true)
+  })
+
+  it('leaves a fence with no language alone', () => {
+    // highlight.js would otherwise GUESS, and a wrong guess paints shell output or a log file in
+    // the colours of whatever language scored highest. An unlabelled fence stays plain text.
+    expect(noteFeatures(fence('', 'some output')).highlight).toBe(false)
+    expect(noteFeatures('    indented code').highlight).toBe(false)
+  })
+
+  it('does not ask for highlighting on a mermaid fence, which is not code to read', () => {
+    expect(noteFeatures(fence('mermaid', 'graph TD; A-->B;'))).toEqual({
       math: false,
       mermaid: true,
+      highlight: false,
     })
+  })
+
+  it('reports the three independently', () => {
+    const note = ['$x$', '', fence('mermaid', 'graph TD; A-->B;'), '', fence('ts', 'let a')].join(
+      '\n',
+    )
+    expect(noteFeatures(note)).toEqual({ math: true, mermaid: true, highlight: true })
   })
 
   it('looks inside list items and tables, not only at the top level', () => {

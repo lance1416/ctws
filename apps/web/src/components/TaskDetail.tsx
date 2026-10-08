@@ -79,6 +79,36 @@ type Props = {
   onSaved: () => void
 }
 
+/**
+ * The pane's one way out that is not a keypress.
+ *
+ * An icon and not the word 「关闭」: a text button of that size sat in the control row as a peer
+ * of 编辑 and 保存, which read as though closing were something you DO to the task. Every panel
+ * of this shape -- Linear's peek, Notion's side peek -- puts a small ✕ in the corner and leaves
+ * Escape as the real shortcut. `aria-label` carries the word for anyone who needs it.
+ */
+function CloseButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="关闭"
+      data-detail-close
+      className="flex h-9 w-9 items-center justify-center rounded-lg text-fg-muted hover:bg-surface-hover hover:text-fg"
+    >
+      <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4">
+        <path
+          d="M4 4l8 8M12 4l-8 8"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+      </svg>
+    </button>
+  )
+}
+
 export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
   const qc = useQueryClient()
   /**
@@ -127,6 +157,8 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
     handleSubmit,
     setValue,
     watch,
+    reset,
+    getValues,
     formState: { dirtyFields, isDirty },
   } = useForm<DetailTaskForm, unknown, DetailTaskValues>({
     resolver: zodResolver(detailTaskForm),
@@ -325,7 +357,12 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
   const [logoutVia, setLogoutVia] = useState<(() => void) | null>(null)
   // A save that is in flight (or has landed, with the panel about to close) loses nothing, so it
   // must not trap the person who pressed Save and then, at once, a nav link.
-  const unsaved = dirty && !save.isPending && !save.isSuccess
+  // NOT `&& !save.isSuccess` any more. That term existed because the pane used to CLOSE on a
+  // successful save, and the mutation's success flag was what let the closing navigation
+  // through. The pane stays open now, so the flag would stay true for the rest of its life and
+  // the guard would never fire again -- a second round of edits would walk away unprotected.
+  // The save clears the form's own dirty state instead (`reset`), which is the honest signal.
+  const unsaved = dirty && !save.isPending
   const blocker = useBlocker(unsaved)
   const leaving = blocker.state === 'blocked' || logoutVia !== null
   const asking = askDiscard || leaving
@@ -342,7 +379,24 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
   useEffect(() => {
     if (asking) setWriting(false)
   }, [asking])
-  const requestClose = () => (dirty ? setAskDiscard(true) : onClose())
+  /**
+   * Leaving the editing state, whichever way out: closing the pane, or stepping back to reading.
+   * With unsaved edits the discard prompt asks first and `discard` runs whichever one was asked
+   * for -- before this, both the prompt and Escape could only ever mean "close".
+   */
+  const [exitVia, setExitVia] = useState<(() => void) | null>(null)
+  const leave = (go: () => void) => {
+    if (!dirty) return go()
+    setExitVia(() => go)
+    setAskDiscard(true)
+  }
+  const stopEditing = () => {
+    reset()
+    setEditing(false)
+    // Back to the control the press came from, not to <body> (WCAG 2.4.3).
+    queueMicrotask(() => panel.current?.focus())
+  }
+  const requestClose = () => leave(onClose)
   const dirtyNow = useRef(unsaved)
   dirtyNow.current = unsaved
   const guard = useContext(LeaveGuardContext)
@@ -360,11 +414,13 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
   const keepEditingNow = () => {
     setAskDiscard(false)
     setLogoutVia(null)
+    setExitVia(null)
     if (blocker.state === 'blocked') blocker.reset()
   }
   const discard = () => {
     if (blocker.state === 'blocked') blocker.proceed()
     else if (logoutVia) logoutVia()
+    else if (exitVia) exitVia()
     else onClose()
   }
 
@@ -373,6 +429,8 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
       // A second Escape on the discard prompt means "keep editing"; on the delete question, "no".
       if (deleting) cancelDelete()
       else if (asking) keepEditingNow()
+      // Escape unwinds ONE level: out of editing into reading, and only then out of the pane.
+      else if (editing) leave(stopEditing)
       else requestClose()
     } else if (e.key === 'Tab' && !wide) {
       /**
@@ -448,9 +506,10 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
         }`}
       >
         {/* ---------------------------------------------------------------- READING MODE
-            Title, the status and the two dates read-only, the notes as prose, and 编辑. The only
-            two controls are 编辑 and 关闭, and neither of them changes the task -- which is the
-            whole point: 「编辑和信息显示在同一个地方，容易误触」. */}
+            Title, the status and the two dates read-only, the notes as prose, and 编辑. Nothing
+            on this screen changes the task, which is the whole point:
+            「编辑和信息显示在同一个地方，容易误触」. Saving returns HERE rather than closing the
+            pane -- reading back what was just written is the next thing a person does. */}
         {!editing && (
           <div className="flex flex-col gap-4">
             <div>
@@ -466,13 +525,16 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                 {/* 「编辑」 and not 「编辑任务」: accessible names share one flat namespace and are
                     matched by substring, and the guard's 继续编辑 already contains 编辑 -- a longer
                     name here would only add a second way for the two to collide. */}
-                <button
-                  type="button"
-                  onClick={startEditing}
-                  className="-mt-1 h-9 shrink-0 rounded-lg border border-border-strong px-3 text-sm text-fg hover:bg-surface-hover"
-                >
-                  编辑
-                </button>
+                <div className="-mt-1 flex shrink-0 items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={startEditing}
+                    className="h-9 rounded-lg border border-border-strong px-3 text-sm text-fg hover:bg-surface-hover"
+                  >
+                    编辑
+                  </button>
+                  <CloseButton onClick={requestClose} />
+                </div>
               </div>
               {/* The task's name, at the top of the pane's type scale: the pane opens with the
                   TASK, exactly as the editing form does. */}
@@ -522,16 +584,6 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                 <p className="mt-1 text-sm text-fg-subtle">还没有备注</p>
               )}
             </div>
-
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={requestClose}
-                className="h-10 rounded-lg border border-border-strong px-4 text-fg hover:bg-surface-hover"
-              >
-                关闭
-              </button>
-            </div>
           </div>
         )}
 
@@ -546,7 +598,28 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
               // After the lists have refetched, so the row behind the panel is already up to date.
               save.mutate(
                 { values, changed: new Set(Object.keys(dirtyFields)) },
-                { onSuccess: onSaved },
+                {
+                  onSuccess: () => {
+                    // SAVING DOES NOT CLOSE THE PANE. It drops back to reading mode, where the
+                    // values that were just written are on screen to be read back -- which is
+                    // what a person wants to do immediately after writing them. `onSaved` still
+                    // marks the row behind; what it no longer does is take the pane with it.
+                    // `getValues()`, not the submitted `values`: those are the RESOLVER'S
+                    // OUTPUT (`dueAt` an ISO instant, say) while the form holds the input shape
+                    // (a `datetime-local` string). Resetting to the output left every such field
+                    // looking changed, so the form stayed dirty, so the router's leave guard
+                    // blocked the next navigation -- a pane that had just been saved cleanly
+                    // refused to let the page move.
+                    reset(getValues())
+                    setEditing(false)
+                    // The control that was pressed no longer exists, so focus has to be put
+                    // somewhere deliberately: the panel, which is where it was when the pane
+                    // opened and which is what listens for Escape. Without this it falls to
+                    // <body> and the pane stops answering the keyboard entirely (WCAG 2.4.3).
+                    queueMicrotask(() => panel.current?.focus())
+                    onSaved()
+                  },
+                },
               )
             })}
             className="flex flex-col gap-5"
@@ -575,6 +648,9 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                       </option>
                     ))}
                 </select>
+                <span className="-mt-1 ml-auto shrink-0">
+                  <CloseButton onClick={requestClose} />
+                </span>
               </div>
               <input
                 {...titleRest}
@@ -650,7 +726,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                   onClick={() => setValue('dueAt', null, { shouldDirty: true })}
                   className={decision}
                 >
-                  取消截止
+                  清除截止
                 </button>
               </div>
               {/* A `Controller`, not `register`: the form holds the INSTANT the contract takes while
@@ -725,7 +801,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                   备注
                 </label>
                 {/* 「全屏写作」 -- a name that collides with nothing in the app's one flat
-                    namespace (编辑 / 继续编辑 / 保存 / 关闭 are the pane's others). The pane is
+                    namespace (编辑 / 继续编辑 / 保存 / 取消 are the pane's others). The pane is
                     22rem wide: this is the way out for a note that is a page rather than a line. */}
                 <button
                   type="button"
@@ -802,10 +878,10 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
               </button>
               <button
                 type="button"
-                onClick={requestClose}
+                onClick={() => leave(stopEditing)}
                 className="h-10 rounded-lg border border-border-strong px-4 text-fg hover:bg-surface-hover"
               >
-                关闭
+                取消
               </button>
             </div>
             {/* Destroying the task is not a peer of saving it. It sits below the rule, at the size

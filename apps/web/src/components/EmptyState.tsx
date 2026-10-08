@@ -1,15 +1,16 @@
 import type { ReactNode } from 'react'
 
 /**
- * What a screen says when it has nothing on it.
+ * What a screen says when it has nothing on it: ONE LINE, and an action only where there is a
+ * single obvious one.
  *
- * An empty screen is the one moment the interface has the reader's whole attention and nothing to
- * compete with, so it is worth more than a shrug. Each one says what this screen is FOR -- which
- * is the thing a newcomer cannot deduce from an empty list -- and offers the single action that
- * would fill it. No apology ("抱歉"), no exclamation, no illustration.
+ * The second line used to be mandatory and explained what the screen was for -- 「排到今天的、已经
+ * 逾期的、正在做的，都会落到这一页。」 That is a manual, not an interface. The one person using
+ * this built the screens; a sentence teaching them what their own page is for reads as filler,
+ * and filler is what makes software sound like it was generated rather than designed.
  *
- * Left-aligned like everything else in this app: a centred block in a left-aligned workbench
- * announces itself as a different kind of page, and it is not one.
+ * Left-aligned like everything else here: a centred block announces itself as a different kind of
+ * page, and it is not one.
  */
 export function EmptyState({
   title,
@@ -18,15 +19,15 @@ export function EmptyState({
 }: {
   /** One line, the state itself. Plain, present tense. */
   title: string
-  /** One line, what this screen is for. */
-  hint: string
+  /** A second line, only when it says something the first cannot. Usually there is none. */
+  hint?: string
   /** The one action that fills it. */
   action?: ReactNode
 }) {
   return (
     <div className="mt-8 max-w-[44ch]">
       <p className="text-fg">{title}</p>
-      <p className="mt-1 text-sm text-fg-muted">{hint}</p>
+      {hint && <p className="mt-1 text-sm text-fg-muted">{hint}</p>}
       {action && <div className="mt-4">{action}</div>}
     </div>
   )

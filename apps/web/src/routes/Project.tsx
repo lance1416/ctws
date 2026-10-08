@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
 import { listProjects } from '../api/projects'
 import { Panel } from '../components/Panel'
-import { projectHeadlines, projectViews } from '../modules/registry'
+import { projectHeadlines, projectViewActions, projectViews } from '../modules/registry'
 import { useProjectRail } from '../projectColor'
 
 /**
@@ -69,11 +69,18 @@ export function Project() {
 
       <div className="mt-4 flex min-w-0 flex-col gap-4">
         {id &&
-          projectViews().map(({ moduleId, moduleLabel, Component }) => (
-            <Panel key={moduleId} label={moduleLabel}>
-              <Component projectId={id} />
-            </Panel>
-          ))}
+          projectViews().map(({ moduleId, moduleLabel, Component }) => {
+            const action = projectViewActions().find((a) => a.moduleId === moduleId)
+            return (
+              <Panel
+                key={moduleId}
+                label={moduleLabel}
+                action={action ? <action.Component projectId={id} /> : undefined}
+              >
+                <Component projectId={id} />
+              </Panel>
+            )
+          })}
       </div>
     </>
   )

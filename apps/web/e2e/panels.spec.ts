@@ -302,7 +302,7 @@ test('正在做 carries the running task, and says so plainly when nothing is ru
   const banner = panel(page, '正在做')
   // Nothing running: the banner is still there, says what would fill it, and holds no row.
   await expect(banner).toBeVisible()
-  await expect(banner.getByText('现在没有在做的事')).toBeVisible()
+  await expect(banner.getByText('没有在做的事')).toBeVisible()
   await expect(banner.locator('[data-today-row]')).toHaveCount(0)
 
   // Start the dateless one from its project row; it is not on 今天 at all until it is running.
@@ -315,7 +315,7 @@ test('正在做 carries the running task, and says so plainly when nothing is ru
   await expect(banner.getByText('没有日期的')).toBeVisible()
   await expect(banner.locator('[data-today-row]')).toHaveCount(1)
   await expect(banner.getByRole('img', { name: '进行中' })).toBeVisible()
-  await expect(banner.getByText('现在没有在做的事')).toHaveCount(0)
+  await expect(banner.getByText('没有在做的事')).toHaveCount(0)
   // One task, one panel.
   await expect(page.getByText('没有日期的')).toHaveCount(1)
 
@@ -337,7 +337,7 @@ test('正在做 carries the running task, and says so plainly when nothing is ru
   expect((await stopped).request().postDataJSON()).toEqual({ status: 'todo' })
 
   // Back to empty, and the server agrees -- not just the screen.
-  await expect(banner.getByText('现在没有在做的事')).toBeVisible()
+  await expect(banner.getByText('没有在做的事')).toBeVisible()
   const tasks = (await (await page.request.get(`/api/v1/tasks?projectId=${pid}`)).json()).tasks as {
     title: string
     status: string
