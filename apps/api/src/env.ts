@@ -15,6 +15,13 @@ const raw = z.object({
   // Per-IP attempts per minute on register and login. Tunable because many users can share one
   // IP (tunnel, NAT, the e2e suite).
   AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(20),
+  /**
+   * The per-CONNECTION ceiling on the auth routes, whatever addresses it names (guards.ts).
+   * Configurable for the same reason `AUTH_RATE_LIMIT_MAX` is -- and because the e2e suite
+   * registers a few hundred users a minute from one address, which no production value should
+   * allow.
+   */
+  AUTH_IP_CEILING: z.coerce.number().int().positive().default(60),
   COOKIE_SAMESITE: z.enum(['lax', 'none']).default('lax'),
   COOKIE_SECURE: bool(true),
   COOKIE_DOMAIN: z.string().optional(),
@@ -31,6 +38,8 @@ export type Env = {
   authRegistration: 'open' | 'invite' | 'closed'
   authInviteCode: string | undefined
   authRateLimitMax: number
+  /** The per-connection ceiling on the auth routes; see guards.ts. */
+  authIpCeiling: number
   cookieSameSite: 'lax' | 'none'
   cookieSecure: boolean
   cookieDomain: string | undefined
@@ -72,6 +81,7 @@ export function parseEnv(source: NodeJS.ProcessEnv | Record<string, string | und
     authRegistration: parsed.AUTH_REGISTRATION,
     authInviteCode: parsed.AUTH_INVITE_CODE,
     authRateLimitMax: parsed.AUTH_RATE_LIMIT_MAX,
+    authIpCeiling: parsed.AUTH_IP_CEILING,
     cookieSameSite: parsed.COOKIE_SAMESITE,
     cookieSecure: parsed.COOKIE_SECURE,
     cookieDomain: parsed.COOKIE_DOMAIN || undefined,

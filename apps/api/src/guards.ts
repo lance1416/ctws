@@ -1,6 +1,6 @@
 import fastifyCors from '@fastify/cors'
 import fastifyRateLimit from '@fastify/rate-limit'
-import type { FastifyInstance } from 'fastify'
+import type { FastifyInstance, onRequestHookHandler } from 'fastify'
 import { sendProblem } from './problem'
 
 const CSRF_HEADER = 'x-ctws-client'
@@ -27,17 +27,21 @@ export async function registerGuards(app: FastifyInstance): Promise<void> {
   /**
    * global: false -- only routes that declare `config.rateLimit` are limited.
    *
-   * KEYED BY EMAIL, NOT BY IP (D3). Behind a reverse proxy -- which is the planned deployment,
-   * a Cloudflare Tunnel -- every request arrives from the proxy, so an IP key puts the whole
-   * world in one 20-a-minute bucket: one person fat-fingering their password locks out
-   * everyone, and an attacker spreads a credential-stuffing run across a thousand accounts
-   * inside one bucket without noticing it.
+   * TWO BUCKETS, NOT ONE (D3). They stop different attacks and neither replaces the other.
    *
-   * The alternative was `trustProxy` plus `X-Forwarded-For`, which gives a correct per-user
-   * bucket AND is forgeable by anyone who can reach the API directly -- it would have to be
-   * pinned to the tunnel's CIDR to be worth anything. The email is not forgeable in the way
-   * that matters: a stuffing run has to send the account it is attacking, so keying on it is a
-   * better control for the attack this limit exists to stop, and it is immune to the topology.
+   * THIS ONE IS PER EMAIL. Behind a reverse proxy -- the planned deployment is a Cloudflare
+   * Tunnel -- every request arrives from the proxy, so an IP-only key puts everybody in one
+   * bucket and one person fat-fingering their password locks out the rest. The email is the
+   * key that actually identifies the account under attack, and it is immune to the topology.
+   * (`trustProxy` + `X-Forwarded-For` would give a correct per-user bucket and is forgeable by
+   * anyone who can reach the API directly, so it would have to be pinned to the tunnel's CIDR
+   * to be worth anything.)
+   *
+   * IT IS NOT ENOUGH ON ITS OWN, and the first version of this change shipped as though it
+   * were. Per-email alone has no ceiling on the INSTANCE: an attacker with ten thousand
+   * addresses gets ten thousand buckets from one connection, and `authenticate` runs argon2
+   * against a dummy hash even for an address that does not exist (deliberately, to equalise
+   * timing) -- so that is unbounded CPU. `IP_CEILING` below is the other half.
    *
    * A body without a usable email falls back to the IP: a malformed request still costs
    * something, and the schema rejects it a moment later anyway.
@@ -61,6 +65,38 @@ export async function registerGuards(app: FastifyInstance): Promise<void> {
       return email && email.length > 0 ? `email:${email}` : `ip:${req.ip}`
     },
   })
+
+  /**
+   * THE SECOND BUCKET: everything one CONNECTION can do to the auth routes, whatever addresses
+   * it names. Higher than the per-email limit, because several tabs (or several people behind
+   * one proxy) legitimately share an address, and finite, which is what the per-email bucket is
+   * not.
+   *
+   * WRITTEN BY HAND, and that is a deviation worth justifying. `fastify-rate-limit` is already
+   * here and does everything else; it does not do TWO limits on one route -- a second limiter
+   * attached beside the route's own silently disables it (measured: all 25 attempts came back
+   * 401 where the twenty-first should have been 429). A fixed window over a Map is twenty lines
+   * for one self-hosted instance, and the alternative was a limit that looked present and was
+   * not, which is the worse failure by a distance.
+   *
+   * Fixed window, not sliding: at the boundary an attacker gets 2x for one second. Against a
+   * ceiling whose job is to bound argon2 on one box, that is noise.
+   */
+  const CEILING = app.env.authIpCeiling
+  const WINDOW_MS = 60_000
+  const seen = new Map<string, { count: number; until: number }>()
+  app.decorate('authIpCeiling', (async (req, reply) => {
+    const now = Date.now()
+    // Opportunistic sweep: this runs only on auth requests, so the map never holds more than
+    // the addresses that have tried to sign in during one window.
+    for (const [k, v] of seen) if (v.until <= now) seen.delete(k)
+    const bucket = seen.get(req.ip) ?? { count: 0, until: now + WINDOW_MS }
+    bucket.count += 1
+    seen.set(req.ip, bucket)
+    if (bucket.count > CEILING) {
+      return sendProblem(reply, 429, 'Too many requests from this address')
+    }
+  }) satisfies onRequestHookHandler)
 
   // CSRF: require a custom header on unsafe methods. A browser cannot send a
   // custom header cross-origin without a preflight, and the preflight is

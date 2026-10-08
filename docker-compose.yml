@@ -25,6 +25,10 @@ services:
       # Inside compose the database host is the postgres service, not localhost;
       # this overrides the value from env_file (which stays valid for host tooling).
       DATABASE_URL: postgres://${POSTGRES_USER:-ctws}:${POSTGRES_PASSWORD:-ctws}@postgres:5432/${POSTGRES_DB:-ctws}
+      # The e2e suite registers a few hundred users a minute from one address; no production
+      # value should allow that, so the DEV stack raises it rather than the default being wrong.
+      # `compose.prod.yaml` leaves it at the shipped 60.
+      AUTH_IP_CEILING: ${AUTH_IP_CEILING:-100000}
     healthcheck:
       test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:3000/api/v1/health']
       interval: 5s

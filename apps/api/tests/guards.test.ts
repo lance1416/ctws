@@ -186,6 +186,26 @@ describe('rate limiting', () => {
     expect((await attempt('  VICTIM@example.com ')).statusCode).toBe(429)
   }, 60_000)
 
+  it('still has a ceiling on one connection, however many addresses it names', async () => {
+    // THE HALF THE FIRST VERSION OF D3 LOST. Per-email buckets protect an account; alone they
+    // leave the INSTANCE unprotected, because ten thousand addresses are ten thousand buckets
+    // from one connection -- and `authenticate` runs argon2 against a dummy hash even for an
+    // address that does not exist, so that is unbounded CPU for the asking.
+    const codes: number[] = []
+    for (let i = 0; i < 70; i++) {
+      const res = await ctx.app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/login',
+        headers: { origin: ORIGIN, 'x-ctws-client': 'web' },
+        payload: { email: `spray-${i}@example.com`, password: 'whatever at all' },
+      })
+      codes.push(res.statusCode)
+    }
+    // Every address is its own email bucket, so none of these is throttled for being repeated.
+    // The connection's own ceiling is what stops them.
+    expect(codes.filter((c) => c === 429).length).toBeGreaterThan(0)
+  }, 120_000)
+
   it('does not rate limit the health check', async () => {
     const codes: number[] = []
     for (let i = 0; i < 25; i++) {

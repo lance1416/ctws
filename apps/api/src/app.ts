@@ -3,7 +3,11 @@ import { resolve } from 'node:path'
 import fastifyCookie from '@fastify/cookie'
 import fastifyStatic from '@fastify/static'
 import fastifySwagger from '@fastify/swagger'
-import Fastify, { type FastifyError, type FastifyInstance } from 'fastify'
+import Fastify, {
+  type FastifyError,
+  type FastifyInstance,
+  type onRequestHookHandler,
+} from 'fastify'
 import {
   hasZodFastifySchemaValidationErrors,
   jsonSchemaTransform,
@@ -121,5 +125,7 @@ declare module 'fastify' {
   interface FastifyInstance {
     db: Db
     env: Env
+    /** The per-connection ceiling on the auth routes; see guards.ts. */
+    authIpCeiling: onRequestHookHandler
   }
 }
