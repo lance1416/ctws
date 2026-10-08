@@ -1,4 +1,4 @@
-import { TASK_STATUSES } from '@ctws/contracts'
+import { READING_KINDS, READING_STATUSES, TASK_STATUSES } from '@ctws/contracts'
 import { relations, sql } from 'drizzle-orm'
 import {
   type AnyPgColumn,
@@ -36,19 +36,27 @@ export const users = pgTable(
   ],
 )
 
-export const sessions = pgTable('sessions', {
-  // An INTERNAL id. Nothing outside this table ever sees it: the cookie carries a token whose
-  // SHA-256 is `token_hash` below (D2), and every lookup goes through that.
-  id: uuid('id').primaryKey(),
-  /** `sha256(cookie token)`, hex. Unique, because it is what a session is looked up by. */
-  tokenHash: text('token_hash').notNull().unique(),
-  userId: uuid('user_id')
-    .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
-  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).notNull().defaultNow(),
-})
+export const sessions = pgTable(
+  'sessions',
+  {
+    // An INTERNAL id. Nothing outside this table ever sees it: the cookie carries a token whose
+    // SHA-256 is `token_hash` below (D2), and every lookup goes through that.
+    id: uuid('id').primaryKey(),
+    /** `sha256(cookie token)`, hex. Unique, because it is what a session is looked up by. */
+    tokenHash: text('token_hash').notNull(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  // A unique INDEX and not `.unique()`, because that is what migration 0006 actually created.
+  // The two enforce the same thing under different names, and the declaration was the half that
+  // was wrong: every `drizzle-kit generate` after it proposed adding a constraint the database
+  // already had in another form. `users_email_key` above is spelled the same way.
+  (t) => [uniqueIndex('sessions_token_hash_idx').on(t.tokenHash)],
+)
 
 export const workspaces = pgTable('workspaces', {
   id: uuid('id').primaryKey(),
@@ -174,6 +182,60 @@ export const taskDependencies = pgTable(
     // A task cannot wait for itself. The cycle check below catches longer loops; this one is
     // worth a constraint because it is the loop a single bad request can make.
     check('task_dependencies_not_self', sql`${t.blockerId} <> ${t.blockedId}`),
+  ],
+)
+
+/**
+ * 待读清单 -- the SECOND module's own table.
+ *
+ * It belongs to the reading module and nothing in the task module may read it (module-boundary
+ * contract §3). What it shares with tasks is only what the SHELL owns: the workspace, and an
+ * optional project, because a project is the shell's organising dimension and an article about
+ * CTWS belongs to CTWS exactly as a task does.
+ *
+ * It carries `workspace_id` directly rather than reaching one through a project, because a
+ * reading item NEED NOT have a project: a book you are reading is not a line of work.
+ */
+const inList = (column: AnyPgColumn, values: readonly string[]) =>
+  sql`${column} in (${sql.join(
+    values.map((v) => sql.raw(`'${v}'`)),
+    sql`, `,
+  )})`
+
+export const readingItems = pgTable(
+  'reading_items',
+  {
+    id: uuid('id').primaryKey(),
+    workspaceId: uuid('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    // SET NULL, not cascade: deleting a project must not silently throw away a book.
+    projectId: uuid('project_id').references(() => projects.id, { onDelete: 'set null' }),
+    kind: text('kind').notNull(),
+    /** Nullable for a link: capture is a pasted url, and the list shows the host until someone
+     *  types a title. */
+    title: text('title'),
+    url: text('url'),
+    author: text('author'),
+    status: text('status').notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    // The list's own order, newest first -- a reading pile has no hand-kept rank.
+    index('reading_items_workspace_created_idx').on(t.workspaceId, t.createdAt.desc()),
+    // Built from the shared lists so the CHECKs and the Zod enums cannot drift apart, the same
+    // way `tasks_status_check` is.
+    check('reading_items_kind_check', inList(t.kind, READING_KINDS)),
+    check('reading_items_status_check', inList(t.status, READING_STATUSES)),
+    // The shapes, said once more where the data actually lives: the contract's union is the
+    // edge, and an edge is not a guarantee about rows written by anything else.
+    check(
+      'reading_items_shape_check',
+      sql`(${t.kind} = 'link' and ${t.url} is not null and ${t.author} is null)
+          or (${t.kind} = 'book' and ${t.url} is null and ${t.title} is not null)`,
+    ),
   ],
 )
 

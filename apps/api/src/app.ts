@@ -24,6 +24,7 @@ import type { Env } from './env'
 import { registerGuards } from './guards'
 import { sendProblem } from './problem'
 import { projectRoutes } from './projects/routes'
+import { readingRoutes } from './reading/routes'
 import { taskRoutes } from './tasks/routes'
 
 export async function buildApp(opts: { env: Env; db: Db }): Promise<FastifyInstance> {
@@ -82,6 +83,7 @@ export async function buildApp(opts: { env: Env; db: Db }): Promise<FastifyInsta
   await app.register(projectRoutes, { prefix: '/api/v1' })
   await app.register(adminRoutes, { prefix: '/api/v1' })
   await app.register(taskRoutes, { prefix: '/api/v1/tasks' })
+  await app.register(readingRoutes, { prefix: '/api/v1/reading' })
   // Registered last: a legacy path must never shadow a real one.
   await app.register(movedRoutes, { prefix: '/api/v1' })
 

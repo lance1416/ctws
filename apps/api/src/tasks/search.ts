@@ -1,30 +1,14 @@
 import { SEARCH_LIMIT } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import type { Queryable } from '../db/client'
+// The shell's, not this module's: a second module needed the same escaping (contract §3).
+import { LIKE_ESCAPE as ESCAPE, likePattern } from '../db/like'
 import type { Task } from './tasks'
 
 export type SearchTask = Task & {
   projectName: string
   parentTitle: string | null
   projectArchived: boolean
-}
-
-/**
- * The escape character for the LIKE pattern. Backslash is the obvious choice and the wrong one:
- * it is also an escape inside a SQL string literal under non-standard-conforming settings, so the
- * `escape` clause below would read differently depending on a server setting. `!` has no other
- * meaning in either language.
- */
-const ESCAPE = '!'
-
-/**
- * Turns a user's words into one case-insensitive containment pattern. Without this, a query of
- * `100%` matches every task (`%` is LIKE's wildcard) and `a_b` matches `axb` -- a search that
- * silently returns the wrong rows rather than none.
- */
-export function likePattern(query: string): string {
-  const escaped = query.replace(/[!%_]/g, (c) => ESCAPE + c)
-  return `%${escaped}%`
 }
 
 /**

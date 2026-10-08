@@ -1,0 +1,222 @@
+import type { ReadingItemResponse } from '@ctws/contracts'
+import { afterEach, describe, expect, it } from 'vitest'
+import { appWithUser, createProject, type TaskCtx } from './helpers/tasks'
+
+/**
+ * 待读清单 -- THE SECOND MODULE.
+ *
+ * Most of what is worth testing here is not the CRUD: it is the two claims the module is built
+ * on. A link may have no title, because capturing one is pasting a url and nothing else. And the
+ * module is SEPARATE -- its rows are scoped by workspace on their own, not through a project,
+ * because an item need not have one.
+ */
+
+const cleanups: (() => Promise<void>)[] = []
+afterEach(async () => {
+  for (const stop of cleanups.splice(0)) await stop()
+})
+
+async function setup(): Promise<TaskCtx> {
+  const ctx = await appWithUser()
+  cleanups.push(ctx.stop)
+  return ctx
+}
+
+const web = (ctx: TaskCtx) => ({ ...ctx.authed, 'x-ctws-client': 'web' })
+
+const add = (ctx: TaskCtx, payload: Record<string, unknown>) =>
+  ctx.app.inject({ method: 'POST', url: '/api/v1/reading', headers: web(ctx), payload })
+
+async function added(ctx: TaskCtx, payload: Record<string, unknown>): Promise<ReadingItemResponse> {
+  const res = await add(ctx, payload)
+  if (res.statusCode !== 201) throw new Error(`add: ${res.statusCode} ${res.body}`)
+  return res.json() as ReadingItemResponse
+}
+
+const patch = (ctx: TaskCtx, id: string, payload: Record<string, unknown>) =>
+  ctx.app.inject({ method: 'PATCH', url: `/api/v1/reading/${id}`, headers: web(ctx), payload })
+
+async function list(ctx: TaskCtx, query = ''): Promise<ReadingItemResponse[]> {
+  const res = await ctx.app.inject({
+    method: 'GET',
+    url: `/api/v1/reading${query}`,
+    headers: ctx.authed,
+  })
+  expect(res.statusCode).toBe(200)
+  return (res.json() as { items: ReadingItemResponse[] }).items
+}
+
+describe('reading list', () => {
+  it('takes a bare url, and leaves the title empty rather than inventing one', async () => {
+    // 「粘链接先显示域名，标题自己填」. A server that filled the title in with the url would leave
+    // nobody able to tell a real title from a placeholder.
+    const ctx = await setup()
+    const item = await added(ctx, { kind: 'link', url: 'https://linear.app/now/redesign' })
+    expect(item).toMatchObject({ kind: 'link', title: null, author: null, status: 'todo' })
+    expect(item.url).toBe('https://linear.app/now/redesign')
+  })
+
+  it('keeps a book and a link apart, both ways round', async () => {
+    const ctx = await setup()
+    expect(
+      (await add(ctx, { kind: 'book', title: '设计心理学', url: 'https://x.test' })).statusCode,
+    ).toBe(400)
+    expect(
+      (await add(ctx, { kind: 'link', url: 'https://x.test', author: '某人' })).statusCode,
+    ).toBe(400)
+
+    const book = await added(ctx, { kind: 'book', title: '设计心理学', author: 'Don Norman' })
+    expect(book).toMatchObject({ kind: 'book', url: null, author: 'Don Norman' })
+  })
+
+  it('refuses a url that is not http(s), because the list renders it as a link', async () => {
+    const ctx = await setup()
+    for (const url of ['javascript:alert(1)', 'data:text/html,<script>']) {
+      expect((await add(ctx, { kind: 'link', url })).statusCode, url).toBe(400)
+    }
+  })
+
+  it('lists newest first, which is where the thing you just saved is', async () => {
+    const ctx = await setup()
+    await added(ctx, { kind: 'book', title: '第一本' })
+    await added(ctx, { kind: 'book', title: '第二本' })
+    expect((await list(ctx)).map((i) => i.title)).toEqual(['第二本', '第一本'])
+  })
+
+  it('filters by status, repeatably, so 待读 and 在读 can be asked for together', async () => {
+    const ctx = await setup()
+    const a = await added(ctx, { kind: 'book', title: '在读的' })
+    const b = await added(ctx, { kind: 'book', title: '读完的' })
+    await added(ctx, { kind: 'book', title: '待读的' })
+    expect((await patch(ctx, a.id, { status: 'reading' })).statusCode).toBe(200)
+    expect((await patch(ctx, b.id, { status: 'done' })).statusCode).toBe(200)
+
+    const open = await list(ctx, '?status=todo&status=reading')
+    expect(open.map((i) => i.title).sort()).toEqual(['在读的', '待读的'])
+  })
+
+  it('files an item under a shell project, and says which', async () => {
+    // A project is the SHELL's dimension: an article about CTWS belongs to CTWS exactly as a task
+    // does, and the module hangs its rows on it without owning it.
+    const ctx = await setup()
+    const pid = await createProject(ctx, 'CTWS')
+    const item = await added(ctx, { kind: 'link', url: 'https://x.test/a', projectId: pid })
+    expect(item).toMatchObject({ projectId: pid, projectName: 'CTWS' })
+    expect((await list(ctx, `?projectId=${pid}`)).map((i) => i.id)).toEqual([item.id])
+  })
+
+  it('keeps an item when its project is deleted, rather than throwing a book away', async () => {
+    // Projects are SOFT-deleted, so the column's ON DELETE SET NULL never fires. What keeps this
+    // honest is that the module reports the project you can still SEE, on both fields at once.
+    const ctx = await setup()
+    const pid = await createProject(ctx, '临时')
+    const item = await added(ctx, { kind: 'book', title: '留下来的书', projectId: pid })
+    const del = await ctx.app.inject({
+      method: 'DELETE',
+      url: `/api/v1/projects/${pid}`,
+      headers: web(ctx),
+    })
+    expect(del.statusCode).toBe(204)
+
+    const kept = (await list(ctx)).find((i) => i.id === item.id)
+    expect(kept).toMatchObject({ title: '留下来的书', projectId: null, projectName: null })
+  })
+
+  it('refuses the fields of the other kind on a patch, as a conflict and not a crash', async () => {
+    const ctx = await setup()
+    const book = await added(ctx, { kind: 'book', title: '一本书' })
+    const link = await added(ctx, { kind: 'link', url: 'https://x.test/b' })
+    expect((await patch(ctx, book.id, { url: 'https://x.test/c' })).statusCode).toBe(409)
+    expect((await patch(ctx, link.id, { author: '某人' })).statusCode).toBe(409)
+    // A book with no title is not a book; a link without one falls back to its host.
+    expect((await patch(ctx, book.id, { title: null })).statusCode).toBe(409)
+    expect((await patch(ctx, link.id, { title: null })).statusCode).toBe(200)
+  })
+
+  it('does not let a link become a book', async () => {
+    const ctx = await setup()
+    const link = await added(ctx, { kind: 'link', url: 'https://x.test/d' })
+    expect((await patch(ctx, link.id, { kind: 'book' })).statusCode).toBe(400)
+  })
+
+  it('finds an item by its url, because half of them have no title yet', async () => {
+    const ctx = await setup()
+    await added(ctx, { kind: 'link', url: 'https://linear.app/now/redesign' })
+    await added(ctx, { kind: 'book', title: '设计心理学', author: 'Don Norman' })
+
+    const hits = async (q: string) => {
+      const res = await ctx.app.inject({
+        method: 'GET',
+        url: `/api/v1/reading/search?q=${encodeURIComponent(q)}`,
+        headers: ctx.authed,
+      })
+      expect(res.statusCode).toBe(200)
+      return (res.json() as { items: ReadingItemResponse[] }).items
+    }
+    expect((await hits('linear')).map((i) => i.url)).toEqual(['https://linear.app/now/redesign'])
+    expect((await hits('Norman')).map((i) => i.title)).toEqual(['设计心理学'])
+    // A wildcard typed by a person is a character, not a pattern.
+    expect(await hits('%')).toEqual([])
+  })
+
+  it('hides a deleted item from every read, and refuses to delete it twice', async () => {
+    const ctx = await setup()
+    const item = await added(ctx, { kind: 'book', title: '不要了' })
+    const del = () =>
+      ctx.app.inject({ method: 'DELETE', url: `/api/v1/reading/${item.id}`, headers: web(ctx) })
+    expect((await del()).statusCode).toBe(204)
+    expect((await del()).statusCode).toBe(404)
+    expect(await list(ctx)).toEqual([])
+  })
+
+  it('keeps one workspace out of another, as a not-found', async () => {
+    const ctx = await setup()
+    const mine = await added(ctx, { kind: 'book', title: '我的书' })
+
+    // The SAME app, so this is one database and the isolation under test is real.
+    const other = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      headers: { 'x-ctws-client': 'web' },
+      payload: { email: 'other@example.com', password: 'correct horse battery', timezone: 'UTC' },
+    })
+    const theirs: TaskCtx = {
+      ...ctx,
+      authed: {
+        'x-ctws-client': 'web',
+        cookie: String(other.headers['set-cookie']).split(';')[0]!,
+      },
+    }
+
+    expect(await list(theirs)).toEqual([])
+    expect((await patch(theirs, mine.id, { status: 'done' })).statusCode).toBe(404)
+    const del = await theirs.app.inject({
+      method: 'DELETE',
+      url: `/api/v1/reading/${mine.id}`,
+      headers: web(theirs),
+    })
+    expect(del.statusCode).toBe(404)
+    // And it is still there for its owner.
+    expect((await list(ctx)).map((i) => i.title)).toEqual(['我的书'])
+  })
+
+  it('refuses a project from another workspace as a not-found', async () => {
+    const ctx = await setup()
+    const other = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      headers: { 'x-ctws-client': 'web' },
+      payload: { email: 'two@example.com', password: 'correct horse battery', timezone: 'UTC' },
+    })
+    const theirs: TaskCtx = {
+      ...ctx,
+      authed: {
+        'x-ctws-client': 'web',
+        cookie: String(other.headers['set-cookie']).split(';')[0]!,
+      },
+    }
+    const theirProject = await createProject(theirs, '别人的项目')
+    const res = await add(ctx, { kind: 'book', title: '书', projectId: theirProject })
+    expect(res.statusCode).toBe(404)
+  })
+})
