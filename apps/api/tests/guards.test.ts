@@ -9,7 +9,9 @@ describe('CORS and CSRF', () => {
   let ctx: Awaited<ReturnType<typeof withApp>>
 
   beforeAll(async () => {
-    ctx = await withApp({ authRegistration: 'open', corsOrigins: [ORIGIN] })
+    // A low ceiling for this instance only: the test is about the MECHANISM, and asserting the
+    // shipped 600 would mean sending 601 requests to learn the same thing.
+    ctx = await withApp({ authRegistration: 'open', corsOrigins: [ORIGIN], authCeiling: 70 })
   }, 120_000)
 
   afterAll(async () => {
@@ -142,7 +144,9 @@ describe('rate limiting', () => {
   let ctx: Awaited<ReturnType<typeof withApp>>
 
   beforeAll(async () => {
-    ctx = await withApp({ authRegistration: 'open', corsOrigins: [ORIGIN] })
+    // A low ceiling for this instance only: the test is about the MECHANISM, and asserting the
+    // shipped 600 would mean sending 601 requests to learn the same thing.
+    ctx = await withApp({ authRegistration: 'open', corsOrigins: [ORIGIN], authCeiling: 70 })
   }, 120_000)
 
   afterAll(async () => {

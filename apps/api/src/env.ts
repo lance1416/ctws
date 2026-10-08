@@ -16,11 +16,16 @@ const raw = z.object({
   // IP (tunnel, NAT, the e2e suite).
   AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(20),
   /**
-   * The INSTANCE-WIDE ceiling on auth requests per minute (guards.ts). Configurable for the same
-   * reason `AUTH_RATE_LIMIT_MAX` is -- and because the e2e suite registers a few hundred users a
-   * minute, which no production value should allow.
+   * The INSTANCE-WIDE ceiling on auth requests per minute (guards.ts).
+   *
+   * 600, AND THAT NUMBER IS MEASURED. A rejected sign-in costs ~13 ms of CPU here (sustained
+   * 314/s pegged 4.2 cores on this machine, 2026-10-08), so 600/min bounds a flood to about 13%
+   * of ONE core -- the box stays usable -- while being far above anything a person does. The
+   * first version of this was 60, which was a guess: it bought a further 10x reduction of
+   * something already small, and paid for it in how easily an ordinary retry storm could lock
+   * the owner out of signing in.
    */
-  AUTH_CEILING: z.coerce.number().int().positive().default(60),
+  AUTH_CEILING: z.coerce.number().int().positive().default(600),
   COOKIE_SAMESITE: z.enum(['lax', 'none']).default('lax'),
   COOKIE_SECURE: bool(true),
   COOKIE_DOMAIN: z.string().optional(),
