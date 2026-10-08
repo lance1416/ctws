@@ -1,4 +1,4 @@
-import type { ProjectListItem, ProjectResponse } from '@ctws/contracts'
+import type { ProjectColor, ProjectListItem, ProjectResponse } from '@ctws/contracts'
 import { apiFetch } from '../api'
 
 /**
@@ -24,4 +24,15 @@ export function deleteProject(id: string): Promise<void> {
  */
 export function inboxOf<T extends ProjectResponse>(projects: T[]): T | undefined {
   return projects.find((p) => p.isInbox)
+}
+
+/** Renames a project, or repaints it. Both are ordinary scalar fields on the project row. */
+export function updateProject(
+  id: string,
+  body: { name?: string; color?: ProjectColor },
+): Promise<ProjectResponse> {
+  return apiFetch<ProjectResponse>(`/projects/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  })
 }

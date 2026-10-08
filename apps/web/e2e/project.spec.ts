@@ -117,9 +117,10 @@ test('the project header shows the four numbers the server reports, for THIS pro
     await page.goto(`/projects/${id}`)
     await expect(page.getByRole('heading', { level: 1, name: row.projectName })).toBeVisible()
     // The chip beside the name is never the only carrier: the NAME is right there (WCAG 1.4.1).
-    await expect(header(page).locator(`[data-project-chip="${id}"]`)).toHaveAttribute(
-      'aria-hidden',
-      'true',
+    // It is a CONTROL now (it opens the colour picker, D74), so it is named rather than hidden --
+    // the rule it has to keep is that colour is not the only thing saying which project this is.
+    await expect(header(page).locator(`[data-project-chip="${id}"]`)).toHaveAccessibleName(
+      '项目颜色',
     )
     await expect(stat(page, '未完成'), row.projectName).toHaveText(String(row.remaining))
     await expect(stat(page, '本周完成'), row.projectName).toHaveText(String(row.doneThisWeek))

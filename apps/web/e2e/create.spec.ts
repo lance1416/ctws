@@ -230,7 +230,7 @@ test('an empty commit cancels instead of creating a blank task', async ({ page }
   // Blurring an empty input cancels it as well.
   await page.keyboard.press('Alt+Enter')
   await expect(newInput(page)).toBeFocused()
-  await page.getByRole('heading', { level: 1 }).click()
+  await page.getByRole('heading', { name: '任务', exact: true }).click()
   await expect(newInput(page)).toHaveCount(0)
 
   expect(await shape(page)).toEqual(['1:A', '2:a1', '2:a2', '1:B'])

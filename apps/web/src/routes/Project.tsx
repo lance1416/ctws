@@ -3,7 +3,7 @@ import { useParams, useSearchParams } from 'react-router-dom'
 import { listProjects } from '../api/projects'
 import { Panel } from '../components/Panel'
 import { projectHeadlines, projectViewActions, projectViews } from '../modules/registry'
-import { useProjectRail } from '../projectColor'
+import { ProjectIdentity } from '../components/ProjectIdentity'
 
 /**
  * A project page, laid out as the workbench is (workbench spec §2): a HEADER BANNER carrying this
@@ -88,8 +88,8 @@ export function Project() {
   // Same query function as every other reader of ['projects']: they share one cache entry, so
   // they must agree on its shape.
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
-  const rail = useProjectRail()
-  const name = projects.data?.find((p) => p.id === id)?.name
+  const project = projects.data?.find((p) => p.id === id)
+  const name = project?.name
 
   return (
     <>
@@ -102,25 +102,12 @@ export function Project() {
         heading={<h2 className="text-xs font-semibold text-fg-subtle">项目</h2>}
       >
         <div className="flex min-w-0 flex-wrap items-end justify-between gap-x-8 gap-y-3 px-2 pb-1">
-          <div className="flex min-w-0 items-center gap-2.5">
-            {/* A chip, never a text colour and never alone: the project's NAME is right here
-                beside it (WCAG 1.4.1). Not `data-project-rail` -- this is not a task row and must
-                not be measured as one. */}
-            {id && (
-              <span
-                aria-hidden="true"
-                data-project-chip={id}
-                className={`h-7 w-[4px] shrink-0 rounded-full ${rail(id)}`}
-              />
-            )}
-            <h1
-              id="project-heading"
-              tabIndex={-1}
-              className="min-w-0 truncate text-xl font-semibold focus:outline-none"
-            >
-              {name ?? ''}
-            </h1>
-          </div>
+          {/* The chip is the colour PICKER and the name is editable in place: the server has
+              taken both since M2a and nothing could write either (D54, D74). The chip is still
+              never alone -- the name is right beside it (WCAG 1.4.1). */}
+          {id && (
+            <ProjectIdentity projectId={id} name={name ?? ''} color={project?.color ?? null} />
+          )}
           {id &&
             projectHeadlines().map(({ moduleId, Component }) => (
               <Component key={moduleId} projectId={id} />

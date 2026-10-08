@@ -213,13 +213,16 @@ test('`n` opens the dialog, obeys the off switch and is a letter while typing', 
 }) => {
   await seed(page)
 
+  // Clicks land on the 任务 block's heading rather than the page's <h1>: the project title is
+  // an editable control now (D54), so clicking it opens a text field and the next keypress is
+  // typing. A block heading is the neutral spot this needs.
   // Not while typing: `n` is a letter in the capture box.
   await page.getByLabel('捕获').fill('')
   await page.getByLabel('捕获').press('n')
   await expect(dialog(page)).toHaveCount(0)
   await expect(page.getByLabel('捕获')).toHaveValue('n')
 
-  await page.getByRole('heading', { level: 1 }).click()
+  await page.getByRole('heading', { name: '任务', exact: true }).click()
   await page.keyboard.press('n')
   await expect(dialog(page)).toBeVisible()
   await page.keyboard.press('Escape')
@@ -228,7 +231,7 @@ test('`n` opens the dialog, obeys the off switch and is a letter while typing', 
   await page.getByRole('button', { name: '键盘快捷键' }).click()
   await page.getByRole('checkbox', { name: /启用单键快捷键/ }).uncheck()
   await page.keyboard.press('Escape')
-  await page.getByRole('heading', { level: 1 }).click()
+  await page.getByRole('heading', { name: '任务', exact: true }).click()
   await page.keyboard.press('n')
   await expect(dialog(page)).toHaveCount(0)
   // And the button still is the way in, which is why a key being off is not a dead end.
@@ -253,7 +256,7 @@ test('the quick paths are untouched: the 新任务 box and / still behave exactl
   await expect(page.getByRole('listitem')).toHaveCount(2)
 
   // `/` still jumps to capture, and capture still files to the inbox with its landing line.
-  await page.getByRole('heading', { level: 1 }).click()
+  await page.getByRole('heading', { name: '任务', exact: true }).click()
   await page.keyboard.press('/')
   await expect(page.getByLabel('捕获')).toBeFocused()
   const captured = page.waitForResponse((r) => isCreate(r.request().method(), r.url()) && r.ok())
@@ -331,8 +334,10 @@ test('closing the ? list and pressing f leaves focus in the search box', async (
 test('the migrated ? overlay keeps all five of its behaviours', async ({ page }) => {
   await seed(page)
 
-  // 1. `?` opens it.
-  await page.getByRole('heading', { level: 1 }).click()
+  // 1. `?` opens it. It is pressed from the 新任务 box's NEIGHBOUR -- a focusable control that
+  // is not a text field -- so that "focus goes back to what opened it" below has something to go
+  // back to. (A heading is not focusable, and the page's <h1> is a rename control now.)
+  await page.getByRole('button', { name: '新建…', exact: true }).focus()
   await page.keyboard.press('?')
   const help = page.getByRole('dialog', { name: '键盘快捷键' })
   await expect(help).toBeVisible()
@@ -353,7 +358,7 @@ test('the migrated ? overlay keeps all five of its behaviours', async ({ page })
   // 2. Escape closes it. 4. And focus goes back to what opened it.
   await page.keyboard.press('Escape')
   await expect(help).toHaveCount(0)
-  await expect(page.getByRole('heading', { level: 1 })).toBeFocused()
+  await expect(page.getByRole('button', { name: '新建…', exact: true })).toBeFocused()
 
   // 3. A click outside closes it.
   await page.getByRole('button', { name: '键盘快捷键' }).click()
@@ -369,13 +374,13 @@ test('the migrated ? overlay keeps all five of its behaviours', async ({ page })
   await expect(toggle).toBeChecked()
   await toggle.uncheck()
   await page.keyboard.press('Escape')
-  await page.getByRole('heading', { level: 1 }).click()
+  await page.getByRole('heading', { name: '任务', exact: true }).click()
   await page.keyboard.press('?')
   await expect(help).toHaveCount(0)
   await page.getByRole('button', { name: '键盘快捷键' }).click()
   await help.getByRole('checkbox', { name: /启用单键快捷键/ }).check()
   await page.keyboard.press('Escape')
-  await page.getByRole('heading', { level: 1 }).click()
+  await page.getByRole('heading', { name: '任务', exact: true }).click()
   await page.keyboard.press('?')
   await expect(help).toBeVisible()
 })

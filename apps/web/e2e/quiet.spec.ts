@@ -323,3 +323,44 @@ test('a parent row says how its subtree stands, and a quiet one says nothing', a
   // Leaves never carry one: their "progress" is the marker at the head of the row.
   await expect(row(page, '公式换行').locator('[data-row-rollup]')).toHaveCount(0)
 })
+
+// ------------------------------------------------------- D54 / D74: a project can be edited
+
+test('a project can be renamed where it is shown, inbox included', async ({ page }) => {
+  await registerFreshUser(page)
+  const { projects } = await (await page.request.get('/api/v1/projects')).json()
+  const inbox = projects.find((p: { isInbox: boolean }) => p.isInbox)
+  await page.goto(`/projects/${inbox.id}`)
+
+  // The inbox was stuck being called "Inbox" in an otherwise Chinese app: the server has taken
+  // a rename since M2a and nothing in the interface could send one.
+  await page.getByRole('button', { name: 'Inbox' }).click()
+  const field = page.getByRole('textbox', { name: '项目名称' })
+  await field.fill('收件箱')
+  await page.keyboard.press('Enter')
+
+  await expect(page.getByRole('heading', { level: 1, name: '收件箱' })).toBeVisible()
+  // And the rail says so too, from the same cache entry.
+  await expect(page.locator('nav').getByRole('link', { name: '收件箱' })).toBeVisible()
+
+  const after = await (await page.request.get('/api/v1/projects')).json()
+  expect(after.projects.find((p: { id: string }) => p.id === inbox.id).name).toBe('收件箱')
+})
+
+test('a project colour can be picked from the chip that shows it', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '改版')
+  await page.goto(`/projects/${pid}`)
+
+  const before = await (await page.request.get('/api/v1/projects')).json()
+  const was = before.projects.find((p: { id: string }) => p.id === pid).color
+
+  await page.getByRole('button', { name: '项目颜色' }).click()
+  await page.getByRole('menuitem', { name: '颜色 5' }).click()
+
+  const after = await (await page.request.get('/api/v1/projects')).json()
+  expect(after.projects.find((p: { id: string }) => p.id === pid).color).toBe('project-5')
+  expect(was).not.toBe('project-5')
+  // The chip is a control now, and it still carries the project's name beside it (WCAG 1.4.1).
+  await expect(page.getByRole('heading', { level: 1, name: '改版' })).toBeVisible()
+})
