@@ -28,17 +28,25 @@ export type ObjectType = z.infer<typeof objectType>
  * `null` for an end means any type.
  */
 export const LINK_KINDS = [
-  { kind: 'belongs', from: null, to: 'project', label: '属于', inverse: '相关' },
-  { kind: 'attends', from: 'meeting', to: 'contact', label: '参与', inverse: '参加过' },
-  { kind: 'recommends', from: 'contact', to: 'reading', label: '推荐', inverse: '推荐人' },
-  { kind: 'about', from: null, to: null, label: '关于', inverse: '相关' },
+  // `belongs` says nothing out loud: the group it lands in is already called Projects, and a
+  // row reading "Projects / Job hunt / in" says the same thing twice.
+  { kind: 'belongs', from: null, to: 'project', label: '', inverse: '' },
+  { kind: 'attends', from: 'meeting', to: 'contact', label: 'attendee', inverse: 'attended' },
+  {
+    kind: 'recommends',
+    from: 'contact',
+    to: 'reading',
+    label: 'recommended',
+    inverse: 'recommended by',
+  },
+  { kind: 'about', from: null, to: null, label: 'about', inverse: 'about' },
 ] as const satisfies readonly {
   kind: string
   from: ObjectType | null
   to: ObjectType | null
-  /** Read along the edge: 「这个会 参与 陈颖」. */
+  /** Read along the edge: "this meeting -- attendee -- Ying". Empty when the group says it. */
   label: string
-  /** Read against it, on the other object's page: 「陈颖 参加过 这个会」. */
+  /** Read against it, on the other object's page: "Ying -- attended -- this meeting". */
   inverse: string
 }[]
 

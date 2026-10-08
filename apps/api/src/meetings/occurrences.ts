@@ -144,28 +144,28 @@ const MAX_COUNT = 1000
 const MAX_INTERVAL = 1000
 
 export function ruleProblem(rule: string): string | null {
-  if (!isOneLine(rule)) return '这条重复规则读不懂'
+  if (!isOneLine(rule)) return 'that repeat rule cannot be read'
   let parsed: Rule
   try {
     parsed = RRule.fromString(withDtstart(rule, '2026-01-01T00:00'))
   } catch {
-    return '这条重复规则读不懂'
+    return 'that repeat rule cannot be read'
   }
   const problem = optionsProblem(parsed)
   if (problem) return problem
   // A rule that produces nothing is not a schedule, it is a typo that happens to parse.
-  return parsed.all((_, i) => i < 1).length > 0 ? null : '这条重复规则一次也不会发生'
+  return parsed.all((_, i) => i < 1).length > 0 ? null : 'that repeat rule never happens'
 }
 
 /** The same checks against an ALREADY PARSED rule, for the expansion's own guard. */
 function optionsProblem(parsed: Rule): string | null {
   const { freq, interval, count } = parsed.options
-  if (SUB_DAILY.has(freq)) return '会议不会比每天更频繁'
+  if (SUB_DAILY.has(freq)) return 'a meeting cannot repeat more often than daily'
   if (!Number.isInteger(interval) || interval < 1 || interval > MAX_INTERVAL) {
-    return '这个间隔不是一个日程'
+    return 'that interval is not a schedule'
   }
   if (count !== null && count !== undefined && (!Number.isInteger(count) || count > MAX_COUNT)) {
-    return '重复的次数太多了'
+    return 'that repeats too many times'
   }
   return null
 }

@@ -92,7 +92,7 @@ describe('create', () => {
     expect(res.json()).toMatchObject({ parentId, projectId })
   })
 
-  // Spec 5.1: the child's project_id must equal the parent's. Trusting the client's projectId
+  // Spec 5.1: the child"s project_id must equal the parent's. Trusting the client"s projectId
   // here would let a caller plant a child whose project_id points elsewhere.
   it('ignores a projectId that disagrees with the parent and uses the parent project', async () => {
     const ctx = await setup()

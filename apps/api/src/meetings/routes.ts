@@ -88,8 +88,8 @@ function sendMeetingProblem(reply: FastifyReply, error: unknown): void {
   throw error
 }
 
-/** 「EST」 / 「BST」: the zone's own short name at that moment, which is what a person says. */
-function zoneLabel(at: Date, timeZone: string): string {
+/** "EST" / "BST": the zone's own short name at that moment, which is what a person says. */
+export function zoneLabel(at: Date, timeZone: string): string {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone,
     timeZoneName: 'short',
@@ -161,8 +161,8 @@ export const meetingRoutes: FastifyPluginAsync = async (app) => {
           to: '/calendar',
           kind:
             m.timeZone === user.timezone
-              ? '会议'
-              : `会议 · ${zoneLabel(m.startsAt, m.timeZone)} ${localOf(m.startsAt, m.timeZone).slice(11)}`,
+              ? 'Meetings'
+              : `meeting · ${zoneLabel(m.startsAt, m.timeZone)} ${localOf(m.startsAt, m.timeZone).slice(11)}`,
           time: clock.format(m.startsAt),
           zone: m.timeZone === user.timezone ? null : zoneLabel(m.startsAt, m.timeZone),
           projectId: m.projectId,

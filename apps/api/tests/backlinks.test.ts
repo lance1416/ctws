@@ -59,10 +59,13 @@ describe('opening a thing shows what it is connected to', () => {
       org: 'Acme 招聘',
     })
     // The guest list is written on the MEETING. The person's record is untouched.
-    for (const title of ['二面', '一面']) {
+    for (const [title, startsLocal] of [
+      ['二面', '2026-10-20T21:00'],
+      ['一面', '2026-10-06T20:00'],
+    ]) {
       await post(ctx, '/api/v1/meetings', {
         title,
-        startsLocal: '2026-10-20T21:00',
+        startsLocal,
         timeZone: 'America/Toronto',
         durationMinutes: 60,
         attendeeIds: [person.id],
@@ -72,11 +75,15 @@ describe('opening a thing shows what it is connected to', () => {
     const groups = await linksOf(ctx, 'contact', person.id)
     expect(titles(groups, 'meeting')).toEqual(['一面', '二面'])
     const meetings = groups.find((g) => g.type === 'meeting')!
-    expect(meetings.label).toBe('会议')
+    expect(meetings.label).toBe('Meetings')
     // Read AGAINST the edge, because the row says 「这个会 参与 陈颖」 and this is the other end.
     expect(meetings.items.every((i) => i.outgoing === false)).toBe(true)
-    expect(meetings.items.every((i) => i.label === '参加过')).toBe(true)
-    expect(meetings.items[0]!.detail).toContain('America/Toronto')
+    expect(meetings.items.every((i) => i.label === 'attended')).toBe(true)
+    // The zone is named the way a person says it, on the meeting's OWN wall clock.
+    expect(meetings.items.map((i) => i.detail)).toEqual([
+      'Oct 6, 20:00 · EDT',
+      'Oct 20, 21:00 · EDT',
+    ])
   })
 
   it('shows a project everything on it, tasks included, in one uniform set of edges', async () => {
@@ -182,13 +189,13 @@ describe('making and removing one edge by hand', () => {
     const theirs = await linksOf(ctx, 'contact', person.id)
     expect(theirs.find((g) => g.type === 'reading')!.items[0]).toMatchObject({
       title: '设计心理学',
-      label: '推荐',
+      label: 'recommended',
       outgoing: true,
     })
     const books = await linksOf(ctx, 'reading', reading.id)
     expect(books.find((g) => g.type === 'contact')!.items[0]).toMatchObject({
       title: '陈颖',
-      label: '推荐人',
+      label: 'recommended by',
       outgoing: false,
     })
 

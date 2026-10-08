@@ -9,7 +9,7 @@ import { visibleProjects } from './store'
  */
 export const projectLinkable: Linkable = {
   type: 'project',
-  label: '项目',
+  label: 'Projects',
   name: async (q, workspaceId, ids) => {
     const rows = await q
       .select({ id: projects.id, name: projects.name })

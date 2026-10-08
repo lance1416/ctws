@@ -38,18 +38,18 @@ export async function listTaskCalendar(
       where p.workspace_id = ${workspaceId}
         and t.deleted_at is null
         and p.deleted_at is null
-        -- A finished task is not something to plan around. It stays in 已完成, which is the
-        -- surface for looking backwards; the calendar answers 「哪天要做什么」.
+        -- A finished task is not something to plan around. It stays in Done, which is the
+        -- surface for looking backwards; the calendar answers "what is there on which day".
         and t.status not in ('done', 'cancelled')
     )
-    select id, to_char(scheduled_on, 'YYYY-MM-DD') as day, title, '排期' as kind,
+    select id, to_char(scheduled_on, 'YYYY-MM-DD') as day, title, 'planned' as kind,
            project_id, project_name
     from visible
     where scheduled_on is not null
       and scheduled_on between ${range.from}::date and ${range.to}::date
     union all
     select id, to_char((due_at at time zone ${timezone})::date, 'YYYY-MM-DD') as day, title,
-           '截止' as kind, project_id, project_name
+           'due' as kind, project_id, project_name
     from visible
     where due_at is not null
       and (due_at at time zone ${timezone})::date

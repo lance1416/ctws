@@ -133,10 +133,10 @@ describe('deleting the inbox', () => {
       method: 'PATCH',
       url: `/api/v1/projects/${inbox.id}`,
       headers: ctx.authed,
-      payload: { name: '收件箱' },
+      payload: { name: 'Inbox' },
     })
     expect(res.statusCode).toBe(200)
-    expect((await projectsOf(ctx)).find((p) => p.isInbox)!.name).toBe('收件箱')
+    expect((await projectsOf(ctx)).find((p) => p.isInbox)!.name).toBe('Inbox')
   })
 
   // Unarchiving is harmless, and refusing it would be a trap if an inbox ever did get archived.

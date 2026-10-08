@@ -143,7 +143,7 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
     },
     async (req) => {
       const user = authedUser(req)
-      // The window is the client's; the DAY each thing falls on is the server's, in the account's
+      // The window is the client"s; the DAY each thing falls on is the server's, in the account"s
       // zone -- the same rule today / completed / review keep.
       const rows = await listTaskCalendar(app.db, user.workspaceId, user.timezone, req.query)
       return {

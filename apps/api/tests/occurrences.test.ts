@@ -224,18 +224,20 @@ describe('rules', () => {
   it('refuses, BY PARSING, what one request cannot be made to compute', () => {
     // Each measured. The decision is the parser's, not a regex's, because a regex and a parser
     // disagree about whitespace and number formats and the parser is the one that expands.
-    expect(ruleProblem('FREQ=SECONDLY')).toBe('会议不会比每天更频繁')
-    expect(ruleProblem('FREQ=MINUTELY;INTERVAL=1')).toBe('会议不会比每天更频繁')
+    expect(ruleProblem('FREQ=SECONDLY')).toBe('a meeting cannot repeat more often than daily')
+    expect(ruleProblem('FREQ=MINUTELY;INTERVAL=1')).toBe(
+      'a meeting cannot repeat more often than daily',
+    )
     // COUNT=5000000 costs 3.2s even when the window holds 31 of them.
-    expect(ruleProblem('FREQ=DAILY;COUNT=5000000')).toBe('重复的次数太多了')
-    expect(ruleProblem('FREQ=DAILY;INTERVAL=999999')).toBe('这个间隔不是一个日程')
+    expect(ruleProblem('FREQ=DAILY;COUNT=5000000')).toBe('that repeats too many times')
+    expect(ruleProblem('FREQ=DAILY;INTERVAL=999999')).toBe('that interval is not a schedule')
   })
 
   it('refuses the spellings a regex and a parser disagree about', () => {
     // `rrule` is lenient about case and about an RRULE: prefix inside the body. Whatever it
     // accepts, the check sees the same thing it does -- which is the whole point of parsing.
-    expect(ruleProblem('freq=secondly')).toBe('会议不会比每天更频繁')
-    expect(ruleProblem('RRULE:FREQ=HOURLY')).toBe('会议不会比每天更频繁')
+    expect(ruleProblem('freq=secondly')).toBe('a meeting cannot repeat more often than daily')
+    expect(ruleProblem('RRULE:FREQ=HOURLY')).toBe('a meeting cannot repeat more often than daily')
   })
 
   it('refuses a rule carrying a second line, whatever that line says', () => {

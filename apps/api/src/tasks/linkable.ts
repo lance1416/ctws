@@ -27,13 +27,13 @@ const visible = (workspaceId: string) => and(visibleProjects(workspaceId), isNul
  */
 export const taskLinkable: Linkable = {
   type: 'task',
-  label: '任务',
+  label: 'Tasks',
   name: async (q, workspaceId, ids) => {
     const rows = await ofWorkspace(q, workspaceId).where(
       and(visible(workspaceId), inArray(tasks.id, [...ids])),
     )
     return new Map(
-      rows.map((r) => [r.id, { title: r.title, detail: r.status === 'done' ? '已完成' : null }]),
+      rows.map((r) => [r.id, { title: r.title, detail: r.status === 'done' ? 'Done' : null }]),
     )
   },
   own: async (q, workspaceId, of): Promise<StoredEdge[]> => {

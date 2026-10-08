@@ -49,8 +49,8 @@ describe('the task calendar', () => {
 
     const got = await entries(ctx, 'tasks', '2026-10-01', '2026-10-31')
     expect(got.map((e) => [e.day, e.kind])).toEqual([
-      ['2026-10-05', '排期'],
-      ['2026-10-09', '截止'],
+      ['2026-10-05', 'planned'],
+      ['2026-10-09', 'due'],
     ])
     // Two entries from one task need two ids, or the grid draws one and loses the other.
     expect(new Set(got.map((e) => e.id)).size).toBe(2)
@@ -136,7 +136,7 @@ describe('the reading calendar', () => {
 
     const got = await entries(ctx, 'reading', '2026-10-01', '2026-10-31')
     expect(got).toHaveLength(1)
-    expect(got[0]).toMatchObject({ day: '2026-10-07', title: '设计心理学', kind: '想读完' })
+    expect(got[0]).toMatchObject({ day: '2026-10-07', title: '设计心理学', kind: 'to read' })
   })
 
   it('shows an untitled link by its url rather than leaving a blank square', async () => {

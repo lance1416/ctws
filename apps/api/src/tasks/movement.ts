@@ -39,7 +39,7 @@ export type ProjectMovement = {
  *   - **Scoped through the tenant chokepoint.** The predicate is `visibleProjects(workspaceId)`
  *     from the shell's project store, not a hand-rolled `workspace_id = …`: that is the one
  *     place scoping and soft-delete filtering live, and a module does not get its own copy.
- *   - **The week and the day are the USER'S, not the server's.** `date_trunc('week', …)` is
+ *   - **The week and the day are the USER"S, not the server's.** `date_trunc("week', …)` is
  *     applied to the local timestamp and converted back, so a task finished at 23:30 on Sunday
  *     local does not count towards next week because the database runs in UTC.
  *   - **Archived projects are out.** Archiving sets a line of work aside; it has no business

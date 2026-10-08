@@ -3,7 +3,7 @@ import { sql } from 'drizzle-orm'
 import type { Queryable } from '../db/client'
 
 /**
- * THE NUMBERS BEHIND 「做到哪儿了」 (design spec §7), for one project's whole tree.
+ * THE NUMBERS BEHIND “Movement” (design spec §7), for one project's whole tree.
  *
  * The split is the one §7.5 argues for: this file asks the database for a flat list and nothing
  * else, and `@ctws/core`'s `rollup` folds it. The recursive mean is awkward in SQL and a dozen

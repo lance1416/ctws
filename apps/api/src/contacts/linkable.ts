@@ -5,7 +5,7 @@ import type { Linkable } from '../links/linkable'
 /** 联系人 names its own people for the shell. See `links/linkable.ts` for why this exists. */
 export const contactLinkable: Linkable = {
   type: 'contact',
-  label: '人',
+  label: 'People',
   name: async (q, workspaceId, ids) => {
     const rows = await q
       .select({ id: contacts.id, name: contacts.name, org: contacts.org })

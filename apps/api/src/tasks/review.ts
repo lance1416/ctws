@@ -10,7 +10,7 @@ import type { Queryable } from '../db/client'
  * second, which is the honest account of the week -- and the dishonest version is exactly the one
  * that makes a review not worth opening.
  *
- * THREE TRANSITIONS, not every event. 「完成」, 「开始」 and 「放弃」 are the ones a person recounts
+ * THREE TRANSITIONS, not every event. “Done”, “Start” and “Dropped” are the ones a person recounts
  * about a week. A title edit and a reparent are in the log and are deliberately not here: a
  * review that lists every keystroke is a diff, not a review. (§9.3 already keeps pure reordering
  * out of the log entirely, for the same reason.)

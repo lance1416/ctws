@@ -32,7 +32,7 @@ export async function listReadingCalendar(
       -- An untitled link is shown by its host everywhere else; the calendar has even less room,
       -- so the fallback happens here rather than leaving a blank square.
       coalesce(r.title, r.url) as title,
-      '想读完' as kind,
+      'to read' as kind,
       p.id as project_id,
       p.name as project_name
     from reading_items r

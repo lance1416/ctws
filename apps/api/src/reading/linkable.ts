@@ -5,7 +5,7 @@ import type { Linkable } from '../links/linkable'
 /** 待读 names its own items for the shell. See `links/linkable.ts` for why this exists. */
 export const readingLinkable: Linkable = {
   type: 'reading',
-  label: '要读的',
+  label: 'Reading',
   name: async (q, workspaceId, ids) => {
     const rows = await q
       .select({

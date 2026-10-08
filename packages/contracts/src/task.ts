@@ -293,7 +293,7 @@ export const calendarEntry = z
     title: z.string(),
     /** Where clicking it goes, inside the app. */
     to: z.string(),
-    /** The module's own word for what this date is: 「截止」, 「排期」, 「想读完」. */
+    /** The module's own word for what this date is: “Due”, “Plan”, 「想读完」. */
     kind: z.string(),
     /**
      * The time of day, when the thing HAS one: 「14:00」, formatted by the server in the account's

@@ -150,8 +150,8 @@ describe('a recurring meeting on the calendar', () => {
     await arrange(ctx)
     const got = await entries(ctx, '2026-10-20', '2026-11-10')
     expect(got.map((e) => e.time)).toEqual(['13:00', '13:00', '14:00', '14:00'])
-    expect(got[0]!.kind).toBe('会议 · EDT 09:00')
-    expect(got[2]!.kind).toBe('会议 · EST 09:00')
+    expect(got[0]!.kind).toBe('meeting · EDT 09:00')
+    expect(got[2]!.kind).toBe('meeting · EST 09:00')
   })
 
   it('keeps a Toronto meeting and a London one apart in the week between their changes', async () => {

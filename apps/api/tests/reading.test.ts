@@ -86,7 +86,7 @@ describe('reading list', () => {
   it('filters by status, repeatably, so 待读 and 在读 can be asked for together', async () => {
     const ctx = await setup()
     const a = await added(ctx, { kind: 'book', title: '在读的' })
-    const b = await added(ctx, { kind: 'book', title: '读完的' })
+    const b = await added(ctx, { kind: 'book', title: 'Finished' })
     await added(ctx, { kind: 'book', title: '待读的' })
     expect((await patch(ctx, a.id, { status: 'reading' })).statusCode).toBe(200)
     expect((await patch(ctx, b.id, { status: 'done' })).statusCode).toBe(200)
@@ -253,7 +253,7 @@ describe('reading list', () => {
       },
     }
     const theirProject = await createProject(theirs, '别人的项目')
-    const res = await add(ctx, { kind: 'book', title: '书', projectId: theirProject })
+    const res = await add(ctx, { kind: 'book', title: 'Book', projectId: theirProject })
     expect(res.statusCode).toBe(404)
   })
 })
