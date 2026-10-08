@@ -9,6 +9,7 @@ import type {
   Widget,
   WorkspaceModule,
 } from './contract'
+import { contactModule } from './contacts'
 import { readingModule } from './reading'
 import { taskModule } from './tasks'
 
@@ -20,7 +21,11 @@ import { taskModule } from './tasks'
  * length or order at runtime or React would see a different hook order between renders. It is
  * frozen to say so out loud.
  */
-export const MODULES: readonly WorkspaceModule[] = Object.freeze([taskModule, readingModule])
+export const MODULES: readonly WorkspaceModule[] = Object.freeze([
+  taskModule,
+  readingModule,
+  contactModule,
+])
 
 /**
  * Where a captured line goes by DEFAULT, named rather than inferred. With one module "the only

@@ -356,7 +356,13 @@ test('a project colour can be picked from the chip that shows it', async ({ page
   const was = before.projects.find((p: { id: string }) => p.id === pid).color
 
   await page.getByRole('button', { name: '项目颜色' }).click()
+  // Waited for, not assumed: reading the server straight after the click is a race the test wins
+  // on an idle machine and loses under a full suite run, which is the worst way for it to fail.
+  const written = page.waitForResponse(
+    (r) => r.request().method() === 'PATCH' && r.url().includes(`/projects/${pid}`),
+  )
   await page.getByRole('menuitem', { name: '颜色 5' }).click()
+  await written
 
   const after = await (await page.request.get('/api/v1/projects')).json()
   expect(after.projects.find((p: { id: string }) => p.id === pid).color).toBe('project-5')

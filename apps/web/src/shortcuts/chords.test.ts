@@ -10,11 +10,12 @@ describe('jump chords', () => {
     // each module. The rest is unchanged, which is the point -- a second module contributed a
     // key without the table being rewritten around it.
     // 工作台 leads: it is where `/` lands and the page every other key is a way out of.
-    expect(chords.map((c) => c.key).join('')).toBe('wtlcpdri')
+    expect(chords.map((c) => c.key).join('')).toBe('wtlncpdri')
     expect(chords.map((c) => c.id)).toEqual([
       'workbench',
       'today',
       'reading',
+      'contacts',
       'calendar',
       'projects',
       'completed',

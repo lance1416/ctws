@@ -9,7 +9,14 @@
  * not shared vocabulary.
  */
 
-export const field = 'w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-fg'
+/**
+ * A field's look WITHOUT its width, for the rows where several controls share a line. A field
+ * that owns its line takes `field` below; composing `field` with a fixed width would leave
+ * whichever of `w-full` and `w-20` Tailwind happened to emit last.
+ */
+export const boxed = 'rounded-lg border border-border-strong bg-surface px-3 py-2 text-fg'
+
+export const field = `w-full ${boxed}`
 
 /** The section label. Small, muted, and the same on every block, so the blocks read as peers. */
 export const label = 'block text-xs text-fg-muted'
