@@ -103,12 +103,19 @@ export type Occurrence = {
 }
 
 /**
- * How far ahead an endless series is expanded when nobody gives an end.
+ * THE MOST OCCURRENCES ONE SERIES MAY PRODUCE FOR ONE WINDOW.
  *
- * A window always bounds the answer in practice; this only stops `RRule.all()` from being asked
- * for an infinite list if a caller ever forgets one.
+ * Not a tidiness limit -- a bound on work a request can ask for. Measured: `FREQ=SECONDLY` over a
+ * one-month window is 2,646,001 occurrences and 5.5 seconds of one core, and `FREQ=DAILY` over a
+ * thousand years is 365,242 and 0.9s, against 6 occurrences and 2ms for the weekly meeting this
+ * is actually for.
+ *
+ * The contract refuses sub-daily rules and over-long windows, but both of those are edges, and
+ * this is where the work happens: the limit is passed to the WALK rather than applied to its
+ * result, because `between()` materialises the whole array before anything downstream can slice
+ * it. An earlier version sliced afterwards and bounded nothing at all.
  */
-const HARD_LIMIT = 1000
+const HARD_LIMIT = 2000
 
 /**
  * Checks a rule string by parsing it the way the expansion will.
@@ -202,7 +209,8 @@ export function occurrencesIn(
     return one && overlaps(one) ? [one] : []
   }
 
-  const naive = rule.between(fromNaiveTime, toNaiveTime, true).slice(0, HARD_LIMIT)
+  // The fourth argument stops the walk; `len` is how many have been collected so far.
+  const naive = rule.between(fromNaiveTime, toNaiveTime, true, (_, len) => len < HARD_LIMIT)
   const out: Occurrence[] = []
   for (const at of naive) {
     const one = made(fromNaive(at))

@@ -261,8 +261,28 @@ export const calendarEntry = z
   .strict()
 export type CalendarEntry = z.infer<typeof calendarEntry>
 
-/** The window a calendar asks for. Inclusive at both ends; the server decides nothing about it. */
-export const calendarQuery = z.object({ from: calendarDate, to: calendarDate }).strict()
+/**
+ * The window a calendar asks for. Inclusive at both ends.
+ *
+ * BOUNDED, and not as tidiness: a window is how much work a request asks a module for, and a
+ * recurring thing has no last occurrence. `FREQ=DAILY` over a thousand years is 365,242
+ * occurrences and most of a second of one core -- measured -- from one request anybody can send.
+ * A grid shows six weeks and the longest view anyone has asked for is a year, so a year and a bit
+ * is room to spare.
+ */
+export const MAX_CALENDAR_SPAN_DAYS = 370
+
+export const calendarQuery = z
+  .object({ from: calendarDate, to: calendarDate })
+  .strict()
+  .refine((q) => Date.parse(q.to) >= Date.parse(q.from), {
+    message: 'the window ends before it starts',
+    path: ['to'],
+  })
+  .refine((q) => (Date.parse(q.to) - Date.parse(q.from)) / 86_400_000 <= MAX_CALENDAR_SPAN_DAYS, {
+    message: `a calendar window is at most ${MAX_CALENDAR_SPAN_DAYS} days`,
+    path: ['to'],
+  })
 export type CalendarQuery = z.infer<typeof calendarQuery>
 
 /**

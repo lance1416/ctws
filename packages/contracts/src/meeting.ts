@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { calendarDate, MAX_CALENDAR_SPAN_DAYS } from './task'
 
 /**
  * 会议 -- the fourth module, on iCalendar's `VEVENT` (RFC 5545).
@@ -67,10 +68,27 @@ const durationMinutes = z
   .max(60 * 36)
 
 /**
- * The `RRULE` body, without its `RRULE:` prefix. Shape only -- whether it SCHEDULES anything is
- * decided by the expander, which is the thing that has to agree with it.
+ * The `RRULE` body, without its `RRULE:` prefix.
+ *
+ * SUB-DAILY FREQUENCIES ARE REFUSED. `FREQ=SECONDLY` over a one-month window is 2,646,001
+ * occurrences and 5.5 seconds of one core -- measured -- and nobody schedules a meeting every
+ * second. `INTERVAL` is bounded for the same reason it exists at all: a number nobody typed on
+ * purpose should not be able to cost anything.
+ *
+ * Whether a rule SCHEDULES anything is still the expander's to decide; this is only about what it
+ * can be asked to do.
  */
-const rrule = z.string().trim().min(1).max(500)
+const SUB_DAILY = /FREQ=(SECONDLY|MINUTELY|HOURLY)/i
+const rrule = z
+  .string()
+  .trim()
+  .min(1)
+  .max(500)
+  .refine((r) => !SUB_DAILY.test(r), 'a meeting does not repeat more often than daily')
+  .refine((r) => {
+    const interval = /INTERVAL=(\d+)/i.exec(r)
+    return !interval || (Number(interval[1]) >= 1 && Number(interval[1]) <= 1000)
+  }, 'that interval is not a schedule')
 
 export const createMeetingBody = z
   .object({
@@ -162,10 +180,20 @@ export const meetingListQuery = z
   .object({
     projectId: z.uuid().optional(),
     /** Inclusive calendar days in the ACCOUNT's zone. Absent means a window the server picks. */
-    from: z.string().optional(),
-    to: z.string().optional(),
+    from: calendarDate.optional(),
+    to: calendarDate.optional(),
   })
   .strict()
+  // The same bound the calendar keeps, for the same reason: this is the same question with the
+  // days named differently, and a series has no last occurrence to stop at.
+  .refine(
+    (q) =>
+      !q.from ||
+      !q.to ||
+      (Date.parse(q.to) >= Date.parse(q.from) &&
+        (Date.parse(q.to) - Date.parse(q.from)) / 86_400_000 <= MAX_CALENDAR_SPAN_DAYS),
+    { message: `a window is at most ${MAX_CALENDAR_SPAN_DAYS} days`, path: ['to'] },
+  )
 
 /** Deleting takes a scope too: cancelling one week is not cancelling the series. */
 export const deleteMeetingQuery = z

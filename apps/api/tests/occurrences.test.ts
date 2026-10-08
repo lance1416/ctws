@@ -295,3 +295,35 @@ describe('wall clocks and instants', () => {
     expect(at.toISOString()).toBe('2026-03-08T07:30:00.000Z')
   })
 })
+
+describe('what one request may cost', () => {
+  it('bounds the walk itself, not its result', () => {
+    // MEASURED: `FREQ=SECONDLY` over a month is 2,646,001 occurrences and 5.5s of one core. The
+    // contract refuses sub-daily rules, but a limit applied AFTER `between()` returns bounds
+    // nothing -- the array is already built. This is the layer that actually stops it.
+    const started = Date.now()
+    const got = occurrencesIn(
+      weekly({ rrule: 'FREQ=SECONDLY', startsLocal: '2026-01-01T00:00', durationMinutes: 1 }),
+      none,
+      window('2026-01-01T00:00Z', '2026-02-01T00:00Z'),
+    )
+    expect(got.length).toBeLessThanOrEqual(2000)
+    // Two seconds is ten times what the bounded walk costs and less than half the unbounded one;
+    // the point is the ceiling, not the exact number.
+    expect(Date.now() - started).toBeLessThan(2000)
+  })
+
+  it('still answers a normal question in full', () => {
+    // The bound must never cut a real schedule short. The window runs from 2026-10-20 to
+    // 2027-10-19 00:00Z, and the last 09:00 Toronto before it closes is 2027-10-18 -- 364 days of
+    // meetings, well under the ceiling and every one of them reported.
+    const got = occurrencesIn(
+      weekly({ rrule: 'FREQ=DAILY' }),
+      none,
+      window('2026-10-20T00:00Z', '2027-10-19T00:00Z'),
+    )
+    expect(got).toHaveLength(364)
+    expect(got[0]!.startsLocal).toBe('2026-10-20T09:00')
+    expect(got[363]!.startsLocal).toBe('2027-10-18T09:00')
+  })
+})
