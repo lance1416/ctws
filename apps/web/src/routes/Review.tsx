@@ -1,9 +1,12 @@
 import type { ReviewResponse } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { listReview } from '../api/review'
 import { EmptyState } from '../components/EmptyState'
 import { Panel } from '../components/Panel'
+import { ViewTabs } from '../components/ViewTabs'
+import { Completed } from './Completed'
 import { useProjectRail } from '../projectColor'
 
 /** "10月2日" — the year only when it is not the window's own. */
@@ -55,11 +58,34 @@ function Group({
  * The window is the server's. It decides the week boundary in the account's zone and reports the
  * bounds it used; this page shows them and offers the one step back a weekly review needs.
  */
+/**
+ * 回顾 AND 已完成 ARE ONE DESTINATION.
+ *
+ * Both answer 「我做了什么」 -- one summarised by week off the event log, one as the flat list of
+ * finished tasks by day. They were two rows in the rail because they were built a week apart, not
+ * because they are two places. The view tabs are the shell's own mechanism, already carrying the
+ * project blocks and the calendar; this is its third user.
+ */
+const VIEWS = [
+  { id: 'week', label: '这周' },
+  { id: 'done', label: '已完成' },
+]
+
 export function Review() {
+  const [params, setParams] = useSearchParams()
+  const view = VIEWS.find((v) => v.id === params.get('view'))?.id ?? 'week'
+  const pickView = (next: string) => {
+    const copy = new URLSearchParams(params)
+    if (next === 'week') copy.delete('view')
+    else copy.set('view', next)
+    setParams(copy, { replace: true })
+  }
   const [range, setRange] = useState<{ from: string; to: string } | null>(null)
   const review = useQuery({
     queryKey: ['review', range?.from ?? 'week', range?.to ?? ''],
     queryFn: () => listReview(range ?? undefined),
+    // The other view does not need it, and a request nobody reads is a request nobody should make.
+    enabled: view === 'week',
   })
   const heading = useRef<HTMLHeadingElement>(null)
   const rail = useProjectRail()
@@ -71,12 +97,13 @@ export function Review() {
         <h1 ref={heading} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
           回顾
         </h1>
-        {data && (
+        <ViewTabs views={VIEWS} current={view} onPick={pickView} />
+        {view === 'week' && data && (
           <p className="text-sm text-fg-muted">
             {dayLabel(data.from)} – {dayLabel(data.to)}
           </p>
         )}
-        {data && (
+        {view === 'week' && data && (
           <button
             type="button"
             onClick={() => setRange(range ? null : shiftWeek(data.from, data.to))}
@@ -87,37 +114,42 @@ export function Review() {
         )}
       </div>
 
-      {review.isError && (
+      {view === 'done' && <Completed heading={false} />}
+
+      {view === 'week' && review.isError && (
         <p role="alert" className="mt-4 text-sm text-danger">
           回顾加载失败
         </p>
       )}
 
-      {data && data.projects.length === 0 && <EmptyState title="这一周还没有动静" />}
+      {view === 'week' && data && data.projects.length === 0 && (
+        <EmptyState title="这一周还没有动静" />
+      )}
 
       <div className="mt-4 flex max-w-[52rem] flex-col gap-3">
-        {data?.projects.map((p) => (
-          <Panel
-            key={p.projectId}
-            label={p.projectName}
-            heading={
-              <h2 className="flex min-w-0 items-center gap-2 text-lg font-semibold text-fg">
-                {/* A chip, never alone: the project's NAME is right beside it (WCAG 1.4.1). */}
-                <span
-                  aria-hidden="true"
-                  className={`h-4 w-[3px] shrink-0 rounded-full ${rail(p.projectId)}`}
-                />
-                <span className="truncate">{p.projectName}</span>
-              </h2>
-            }
-          >
-            <div className="px-2 pb-1">
-              <Group title="完成" tasks={p.finished} />
-              <Group title="开始" tasks={p.started} />
-              <Group title="放弃" tasks={p.dropped} />
-            </div>
-          </Panel>
-        ))}
+        {view === 'week' &&
+          data?.projects.map((p) => (
+            <Panel
+              key={p.projectId}
+              label={p.projectName}
+              heading={
+                <h2 className="flex min-w-0 items-center gap-2 text-lg font-semibold text-fg">
+                  {/* A chip, never alone: the project's NAME is right beside it (WCAG 1.4.1). */}
+                  <span
+                    aria-hidden="true"
+                    className={`h-4 w-[3px] shrink-0 rounded-full ${rail(p.projectId)}`}
+                  />
+                  <span className="truncate">{p.projectName}</span>
+                </h2>
+              }
+            >
+              <div className="px-2 pb-1">
+                <Group title="完成" tasks={p.finished} />
+                <Group title="开始" tasks={p.started} />
+                <Group title="放弃" tasks={p.dropped} />
+              </div>
+            </Panel>
+          ))}
       </div>
     </>
   )

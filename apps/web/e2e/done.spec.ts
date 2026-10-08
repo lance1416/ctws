@@ -64,9 +64,14 @@ const serverTasks = async (page: Page, projectId: string): Promise<ApiTask[]> =>
 
 const nav = (page: Page) => page.getByRole('navigation', { name: '主导航' })
 
+/**
+ * 已完成 is a VIEW of 回顾 now, not a rail row of its own: both answer 「我做了什么」, and they were
+ * two destinations only because they were built a week apart.
+ */
 const goCompleted = async (page: Page) => {
-  await nav(page).getByRole('link', { name: '已完成' }).click()
-  await expect(page.getByRole('heading', { name: '已完成', level: 1 })).toBeVisible()
+  await nav(page).getByRole('link', { name: '回顾' }).click()
+  await page.getByRole('tab', { name: '已完成' }).click()
+  await expect(page.getByRole('tab', { name: '已完成' })).toHaveAttribute('aria-selected', 'true')
 }
 
 const rowsIn = (page: Page, section: string | RegExp) =>
@@ -168,15 +173,16 @@ test('a finished task can be restored from the completed list, and the server ag
   await finish(page, wrong)
   await finish(page, right)
 
-  await page.goto('/completed')
-  await expect(page.getByRole('listitem')).toHaveCount(2)
+  await page.goto('/tasks/review?view=done')
+  await expect(page.getByRole('main').getByRole('listitem')).toHaveCount(2)
   const restored = page.waitForResponse((r) => isTaskPatch(r) && r.ok())
   await page.getByRole('button', { name: '恢复「点错了」' }).click()
   expect((await restored).request().postDataJSON()).toEqual({ status: 'backlog' })
   await expect(page.getByText('点错了')).toHaveCount(0)
   await expect(page.getByText('真完成了')).toBeVisible()
-  // Focus did not fall to <body>.
-  await expect(page.getByRole('heading', { name: '已完成', level: 1 })).toBeFocused()
+  // Focus did not fall to <body>: it goes to the view's own heading, which is an h2 inside 回顾
+  // and is there whether or not it is drawn.
+  await expect(page.getByRole('heading', { name: '已完成', level: 2 })).toBeFocused()
 
   expect((await serverTasks(page, pid)).find((t) => t.title === '点错了')!.status).toBe('backlog')
   await page.reload()
@@ -316,9 +322,9 @@ test('navigating away from a dirty panel asks first; keep editing stays, discard
   await expect(page).toHaveURL(new RegExp(`/projects/${pid}$`))
   await page.getByRole('button', { name: '继续编辑' }).click()
 
-  await nav(page).getByRole('link', { name: '已完成' }).click()
+  await nav(page).getByRole('link', { name: '回顾' }).click()
   await page.getByRole('button', { name: '放弃修改' }).click()
-  await expect(page).toHaveURL(/\/tasks\/completed$/)
+  await expect(page).toHaveURL(/\/tasks\/review$/)
   await expect(page.getByRole('dialog')).toHaveCount(0)
   expect((await serverTasks(page, pid))[0]!.title).toBe('写方案')
 })

@@ -177,7 +177,7 @@ function ReadingHeadline({ projectId }: { projectId: string }) {
 export const readingModule: WorkspaceModule = {
   id: ID,
   label: '待读',
-  destinations: [{ id: 'list', to: `/${ID}`, label: '待读', Count: ReadingCount }],
+  destinations: [{ id: 'list', to: `/${ID}`, label: '待读', Count: ReadingCount, zone: 'kept' }],
   routes: [{ index: true, element: <Reading /> }],
   capture: { useTarget: useReadingCapture, accepts: isReadingUrl },
   search: { useHits: useReadingHits },

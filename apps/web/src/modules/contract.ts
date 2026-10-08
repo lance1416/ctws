@@ -138,6 +138,24 @@ export type Widget = {
 export type Destination = {
   /** Unique within the module. */
   id: string
+  /**
+   * WHICH GROUP OF THE RAIL this row belongs in, by what the person is trying to do:
+   *
+   * - `now` (the default): what is in front of me today.
+   * - `kept`: things I have put aside -- a reading pile, an address book.
+   * - `back`: what I have already done.
+   *
+   * The module declares it because only the module knows what its page is FOR; the shell draws
+   * the groups. Grouping by which module owns a row is what the rail did before, and it is the
+   * reason 「今天」 (one module's view) sat beside 「待读」 (a whole module) as if they were peers.
+   */
+  zone?: 'now' | 'kept' | 'back'
+  /**
+   * The row's place WITHIN its zone. Explicit, because the reading order is an editorial decision
+   * and letting it fall out of registration order would make it an accident of which module was
+   * added first -- 日程 landed above 今天 exactly that way.
+   */
+  order?: number
   /** Absolute path, inside the module's own namespace. */
   to: string
   label: string

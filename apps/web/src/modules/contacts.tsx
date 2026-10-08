@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { contactsKey, listContacts, searchContacts } from '../api/contacts'
-import { ContactDialog } from '../components/ContactDialog'
+import { ContactDetail } from '../components/ContactDetail'
 import { ContactList } from '../components/ContactList'
+import { NewContactInput } from '../components/NewContactInput'
 import { Contacts } from '../routes/Contacts'
 import type { SearchHit, WorkspaceModule } from './contract'
 
@@ -38,36 +39,35 @@ function useContactHits(query: string) {
     to: `/${ID}`,
     title: person.name,
     // What identifies a person at a glance is where they are from and how to reach them.
-    meta: [person.org, person.projectName, person.channels[0]?.value].filter(Boolean).join(' · '),
+    meta: [person.org, ...person.projects.map((p) => p.name), person.channels[0]?.value]
+      .filter(Boolean)
+      .join(' · '),
     mark: null,
   }))
   return { hits, isError: results.isError, isSuccess: results.isSuccess }
 }
 
-/** The people on a line of work: a recruiter belongs to 找工作 exactly as a task does. */
+/** The people on a line of work: a recruiter is on 找工作 exactly as a task is. */
 function ContactsProjectView({ projectId }: { projectId: string }) {
   const contacts = useQuery({
     queryKey: contactsKey({ projectId }),
     queryFn: () => listContacts({ projectId }),
   })
-  return <ContactList contacts={contacts.data ?? []} here={projectId} emptyLine="还没有联系人" />
-}
+  const [openId, setOpenId] = useState<string | null>(null)
+  const open = contacts.data?.find((c) => c.id === openId) ?? null
 
-/** The block's own 新建, in the panel head where every module's is. */
-function NewContact({ projectId }: { projectId: string }) {
-  const [adding, setAdding] = useState(false)
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setAdding(true)}
-        className="h-8 rounded-lg px-2.5 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
-      >
-        新建
-      </button>
-      {adding && (
-        <ContactDialog contact={null} projectId={projectId} onClose={() => setAdding(false)} />
-      )}
+      <div className="mb-1 max-w-[52ch]">
+        <NewContactInput projectId={projectId} onCreated={(c) => setOpenId(c.id)} />
+      </div>
+      <ContactList
+        contacts={contacts.data ?? []}
+        here={projectId}
+        emptyLine="还没有联系人"
+        onOpen={(c) => setOpenId(c.id)}
+      />
+      {open && <ContactDetail contact={open} onClose={() => setOpenId(null)} />}
     </>
   )
 }
@@ -75,11 +75,10 @@ function NewContact({ projectId }: { projectId: string }) {
 export const contactModule: WorkspaceModule = {
   id: ID,
   label: '联系人',
-  destinations: [{ id: 'list', to: `/${ID}`, label: '联系人' }],
+  destinations: [{ id: 'list', to: `/${ID}`, label: '联系人', zone: 'kept' }],
   routes: [{ index: true, element: <Contacts /> }],
   search: { useHits: useContactHits },
   // `n` for 人. One keyspace across modules, so this is checked against every other chord.
   chords: [{ id: 'contacts', key: 'n', label: '去「联系人」', resolve: () => `/${ID}`, order: 17 }],
   ProjectView: ContactsProjectView,
-  ProjectViewAction: NewContact,
 }

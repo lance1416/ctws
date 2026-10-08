@@ -19,8 +19,13 @@ async function project(page: Page, name: string): Promise<string> {
   return ((await res.json()) as { id: string }).id
 }
 
-const add = (page: Page, data: Record<string, unknown>) =>
-  page.request.post('/api/v1/contacts', { headers: HEADERS, data })
+async function add(page: Page, data: Record<string, unknown>) {
+  const res = await page.request.post('/api/v1/contacts', { headers: HEADERS, data })
+  // Asserted, because a payload the contract refused used to leave the test looking at an empty
+  // list and blaming the page.
+  expect(res.status(), await res.text()).toBe(201)
+  return res
+}
 
 test('a person keeps several addresses, and each one is a link', async ({ page }) => {
   await registerFreshUser(page, '/contacts')
@@ -53,31 +58,67 @@ test('a person keeps several addresses, and each one is a link', async ({ page }
   await expect(person).toContainText('工作')
 })
 
-test('a contact is made and edited in a dialog, addresses and all', async ({ page }) => {
+test('a person is made by typing a name, and finished in the pane', async ({ page }) => {
+  // One line into a box, like every other thing this app makes. The form that used to stand
+  // between a name and a contact is gone.
   await registerFreshUser(page, '/contacts')
+  await page.getByLabel('新建联系人').fill('李雷')
+  await page.getByLabel('新建联系人').press('Enter')
 
-  // Scoped and exact: the rail carries a 新建项目 button on every page.
-  await page.getByRole('main').getByRole('button', { name: '新建', exact: true }).click()
-  const dialog = page.getByRole('dialog', { name: '新建联系人' })
-  await dialog.getByLabel('姓名').fill('李雷')
-  await dialog.getByRole('button', { name: '加一项' }).click()
-  await dialog.getByLabel('第 1 项', { exact: true }).fill('lilei@acme.test')
-  await dialog.getByRole('button', { name: '保存' }).click()
+  // The pane opens on them: a name alone is never all you know about somebody, and this is the
+  // moment you have the rest of it to hand.
+  const pane = page.getByRole('dialog', { name: '联系人' })
+  await expect(pane).toContainText('李雷')
+
+  await pane.getByRole('button', { name: '加一项' }).click()
+  await pane.getByRole('button', { name: '改第 1 项' }).click()
+  await pane.getByRole('textbox', { name: '第 1 项' }).fill('lilei@acme.test')
+  await page.keyboard.press('Enter')
   await expect(row(page, '李雷')).toContainText('lilei@acme.test')
 
-  // Editing opens on the person, and a second address is added to the set.
-  await page.getByRole('button', { name: '李雷' }).click()
-  const editing = page.getByRole('dialog', { name: '编辑联系人' })
-  await editing.getByRole('button', { name: '加一项' }).click()
-  await editing.getByLabel('第 2 项的类型').selectOption('phone')
-  await editing.getByLabel('第 2 项', { exact: true }).fill('13800000000')
-  await editing.getByRole('button', { name: '保存' }).click()
-
-  await expect(row(page, '李雷')).toContainText('lilei@acme.test')
-  await expect(row(page, '李雷')).toContainText('13800000000')
+  // NOTHING WAS SAVED, because there is nothing to save: no 保存 button exists in this pane.
+  await expect(pane.getByRole('button', { name: '保存' })).toHaveCount(0)
 })
 
-test('an address removed in the dialog is really gone', async ({ page }) => {
+test('a person can be on several lines of work at once', async ({ page }) => {
+  await registerFreshUser(page, '/')
+  const hunt = await project(page, '找工作')
+  const ctws = await project(page, 'CTWS')
+  await add(page, { name: '陈颖' })
+  await page.goto('/contacts')
+
+  await page.getByRole('button', { name: '陈颖' }).click()
+  const pane = page.getByRole('dialog', { name: '联系人' })
+  for (const name of ['找工作', 'CTWS']) {
+    await pane.getByRole('button', { name: '加一个项目' }).click()
+    await page.getByRole('menuitem', { name }).click()
+  }
+
+  // On BOTH lines, and found from either.
+  await page.goto(`/projects/${hunt}`)
+  await expect(page.getByRole('region', { name: '联系人' })).toContainText('陈颖')
+  await page.goto(`/projects/${ctws}`)
+  await expect(page.getByRole('region', { name: '联系人' })).toContainText('陈颖')
+})
+
+test('a line of work is taken off without touching the others', async ({ page }) => {
+  await registerFreshUser(page, '/')
+  const hunt = await project(page, '找工作')
+  const ctws = await project(page, 'CTWS')
+  await add(page, { name: '陈颖', projectIds: [hunt, ctws] })
+  await page.goto('/contacts')
+
+  await page.getByRole('button', { name: '陈颖' }).click()
+  const pane = page.getByRole('dialog', { name: '联系人' })
+  await pane.getByRole('button', { name: '把项目「找工作」去掉' }).click()
+  await expect(pane.getByRole('button', { name: '把项目「找工作」去掉' })).toHaveCount(0)
+  await expect(pane.getByRole('button', { name: '把项目「CTWS」去掉' })).toBeVisible()
+
+  await page.goto(`/projects/${hunt}`)
+  await expect(page.getByRole('region', { name: '联系人' })).not.toContainText('陈颖')
+})
+
+test('an address removed in the pane is really gone', async ({ page }) => {
   // The failure mode of a replace-the-set write is an orphan nobody can delete.
   await registerFreshUser(page, '/contacts')
   await add(page, {
@@ -91,7 +132,6 @@ test('an address removed in the dialog is really gone', async ({ page }) => {
 
   await page.getByRole('button', { name: '韩梅梅' }).click()
   await page.getByRole('dialog').getByRole('button', { name: '删掉第 1 项' }).click()
-  await page.getByRole('dialog').getByRole('button', { name: '保存' }).click()
 
   await expect(row(page, '韩梅梅')).toContainText('keep@acme.test')
   await expect(row(page, '韩梅梅')).not.toContainText('old@acme.test')
@@ -108,12 +148,12 @@ test('the list is in pinyin order, not byte order', async ({ page }) => {
   await expect(page.getByRole('main').locator('li button')).toHaveText(['李四', '王五', '张三'])
 })
 
-test('a project page carries its people, and the module brought its own 新建', async ({ page }) => {
+test('a project page carries its people, and its own way to add one', async ({ page }) => {
   await registerFreshUser(page, '/')
   const pid = await project(page, '找工作')
   await add(page, {
     name: '某招聘',
-    projectId: pid,
+    projectIds: [pid],
     channels: [{ kind: 'email', value: 'r@acme.test' }],
   })
   await add(page, { name: '不相干的人' })
@@ -124,7 +164,7 @@ test('a project page carries its people, and the module brought its own 新建',
   await expect(block).not.toContainText('不相干的人')
   // The project you are standing in is not named again on the row.
   await expect(block).not.toContainText('找工作')
-  await expect(block.getByRole('button', { name: '新建', exact: true })).toBeVisible()
+  await expect(block.getByLabel('新建联系人')).toBeVisible()
 })
 
 test('search reaches a person by their address, from the shell box', async ({ page }) => {
@@ -144,4 +184,47 @@ test('g n goes to the contacts, in the one keyspace', async ({ page }) => {
   await page.keyboard.press('n')
   await expect(page).toHaveURL(/\/contacts$/)
   await expect(page.getByRole('heading', { name: '联系人', level: 1 })).toBeVisible()
+})
+
+test('Escape puts an inline edit back without closing the pane', async ({ page }) => {
+  // One key, one level: the first Escape cancels what is being typed, and only a second one
+  // leaves. Without that, backing out of a typo also loses your place.
+  await registerFreshUser(page, '/contacts')
+  await add(page, { name: '陈颖', org: 'Acme 招聘' })
+  await page.reload()
+  await page.getByRole('button', { name: '陈颖' }).click()
+  const pane = page.getByRole('dialog', { name: '联系人' })
+
+  await pane.getByRole('button', { name: '改公司' }).click()
+  await pane.getByRole('textbox', { name: '公司' }).fill('打错了')
+  await page.keyboard.press('Escape')
+
+  await expect(pane).toBeVisible()
+  await expect(pane.getByRole('textbox', { name: '公司' })).toHaveCount(0)
+  await expect(pane).toContainText('Acme 招聘')
+
+  // The second one leaves.
+  await page.keyboard.press('Escape')
+  await expect(pane).toHaveCount(0)
+})
+
+test('leaving a field you did not change writes nothing', async ({ page }) => {
+  // A request that changes nothing, followed by a refetch that shows the same thing, is a flicker
+  // with no meaning -- and on a list it is a reorder nobody asked for.
+  await registerFreshUser(page, '/contacts')
+  await add(page, { name: '陈颖', org: 'Acme 招聘' })
+  await page.reload()
+  await page.getByRole('button', { name: '陈颖' }).click()
+  const pane = page.getByRole('dialog', { name: '联系人' })
+
+  const writes: string[] = []
+  page.on('request', (r) => {
+    if (r.method() === 'PATCH') writes.push(r.url())
+  })
+  await pane.getByRole('button', { name: '改公司' }).click()
+  await pane.getByRole('textbox', { name: '公司' }).click()
+  await page.keyboard.press('Enter')
+
+  await expect(pane).toContainText('Acme 招聘')
+  expect(writes, 'leaving an untouched field must not write').toEqual([])
 })

@@ -256,7 +256,6 @@ export const contacts = pgTable(
     workspaceId: uuid('workspace_id')
       .notNull()
       .references(() => workspaces.id, { onDelete: 'cascade' }),
-    projectId: uuid('project_id').references(() => projects.id, { onDelete: 'set null' }),
     /** vCard's `FN`: the name as a person writes it, not parsed into parts. */
     name: text('name').notNull(),
     /** vCard's `ORG`. */
@@ -268,6 +267,33 @@ export const contacts = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('contacts_workspace_name_idx').on(t.workspaceId, t.name)],
+)
+
+/**
+ * WHICH LINES OF WORK A PERSON IS ON.
+ *
+ * Many-to-many, because a person usually is: a maintainer on two of your repos, a recruiter
+ * holding two roles open. It is an association and not an attribute of the person, which is also
+ * why it is a table rather than a column -- the single `project_id` it replaced could only ever
+ * be half an answer.
+ *
+ * It is read in the other direction as often as this one: standing on 找工作, who do I know here.
+ */
+export const contactProjects = pgTable(
+  'contact_projects',
+  {
+    contactId: uuid('contact_id')
+      .notNull()
+      .references(() => contacts.id, { onDelete: 'cascade' }),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.contactId, t.projectId] }),
+    // The reverse lookup: the people on one project.
+    index('contact_projects_project_idx').on(t.projectId),
+  ],
 )
 
 /**

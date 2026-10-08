@@ -30,7 +30,7 @@ import { WritingMode } from '../notes/WritingMode'
 import { useProjectRail } from '../projectColor'
 import { DeleteConfirm } from './DeleteConfirm'
 import { Dependencies } from './Dependencies'
-import { useReservePane, useWidePane } from './detailPane'
+import { useReservePane, useWidePane } from './paneLayout'
 // The shared editing vocabulary, now that the 新建 dialog types into a task as well.
 import { decision, field, label } from './formStyles'
 import { LeaveGuardContext } from './leaveGuard'

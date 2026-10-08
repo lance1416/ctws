@@ -60,7 +60,7 @@ test('it shows work that was finished and then reopened, which 已完成 does no
   await page.goto('/tasks/review')
   await expect(project(page, 'CTWS')).toContainText('写迁移')
 
-  await page.getByRole('link', { name: '已完成' }).click()
+  await page.getByRole('tab', { name: '已完成' }).click()
   await expect(page.getByText('还没有完成的任务')).toBeVisible()
 })
 

@@ -55,6 +55,18 @@ const SHELL_CHORDS: Chord[] = [
   { id: 'projects', key: 'p', label: '去「项目」', resolve: () => '/projects', order: 20 },
 ]
 
+/**
+ * WHERE A DESTINATION SITS IN THE RAIL -- by what the person is trying to do, not by which module
+ * owns it.
+ *
+ * Grouping by owner is what the rail did before, and it put 「今天」(one module's view) beside
+ * 「待读」(a whole module) with nothing to tell them apart. Past five or six rows a flat list has
+ * to be grouped, and the grouping that helps is the reader's: what is in front of me, what I keep,
+ * what I look back at.
+ */
+export const RAIL_ZONES = ['now', 'kept', 'back'] as const
+export type RailZone = (typeof RAIL_ZONES)[number]
+
 export type RegisteredDestination = Destination & { moduleId: string }
 export type RegisteredChord = Chord & { moduleId: string | null }
 
@@ -63,6 +75,39 @@ export function moduleDestinations(
   modules: readonly WorkspaceModule[] = MODULES,
 ): RegisteredDestination[] {
   return modules.flatMap((m) => m.destinations.map((d) => ({ ...d, moduleId: m.id })))
+}
+
+/**
+ * The rail's rows, grouped and in reading order.
+ *
+ * The shell's own surfaces are in here too: 工作台 and 日程 answer 「现在」 as much as 今天 does,
+ * and a rail that listed the modules' rows and then the shell's would be grouping by owner again.
+ */
+export function railGroups(
+  modules: readonly WorkspaceModule[] = MODULES,
+): { zone: RailZone; rows: RegisteredDestination[] }[] {
+  const shell: RegisteredDestination[] = [
+    {
+      moduleId: '',
+      id: 'workbench',
+      to: WORKBENCH_PATH,
+      label: '工作台',
+      end: true,
+      zone: 'now',
+      order: 10,
+    },
+    { moduleId: '', id: 'calendar', to: '/calendar', label: '日程', zone: 'now', order: 30 },
+  ]
+  const all = [...shell, ...moduleDestinations(modules)]
+  return RAIL_ZONES.map((zone) => ({
+    zone,
+    // 工作台, 今天, 日程: the shell's home leads, and the module's daily list sits between the two
+    // shell surfaces, because that is the order they are reached in rather than the order the
+    // modules happened to be registered in.
+    rows: all
+      .filter((d) => (d.zone ?? 'now') === zone)
+      .sort((a, b) => (a.order ?? 50) - (b.order ?? 50)),
+  })).filter((g) => g.rows.length > 0)
 }
 
 /** Every module's pages, mounted under its own namespace. */

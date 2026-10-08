@@ -281,8 +281,8 @@ test('g chords jump between the four destinations and not while typing', async (
   await expect(page).toHaveURL(/\/projects$/)
 
   await page.keyboard.press('g')
-  await page.keyboard.press('d')
-  await expect(page).toHaveURL(/\/tasks\/completed$/)
+  await page.keyboard.press('r')
+  await expect(page).toHaveURL(/\/tasks\/review$/)
 
   await page.keyboard.press('g')
   await page.keyboard.press('i')

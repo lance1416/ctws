@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { createProject, listProjects } from '../api/projects'
 import { refreshProjects } from '../api/taskCache'
-import { moduleDestinations, WORKBENCH_PATH } from '../modules/registry'
+import { railGroups } from '../modules/registry'
 import { QuickCapture } from './QuickCapture'
 import { railClass } from '../projectColor'
 
@@ -76,50 +76,35 @@ export function SideRail() {
         aria-label="主导航"
         className="flex flex-col gap-1 max-lg:flex-row max-lg:items-center max-lg:overflow-x-auto max-lg:px-4 max-lg:py-2 lg:gap-0"
       >
-        {/* The SHELL's own destination, above every module's: the workbench is the page that is
-          nobody's module, and it is where you land. */}
-        <NavLink
-          to={WORKBENCH_PATH}
-          end
-          className={({ isActive }) =>
-            `flex min-h-9 shrink-0 items-center gap-2 rounded-lg px-2.5 py-1 whitespace-nowrap ${
-              isActive ? 'bg-surface-panel font-semibold text-fg' : 'text-fg-muted hover:text-fg'
-            }`
-          }
-        >
-          工作台
-        </NavLink>
+        {/* FOUR GROUPS, by what you are trying to do: 现在 / 收着的 / 回头看 / 项目. A hairline
+          between them and no labels -- past five or six rows a flat list has to be grouped, but a
+          label on every group would be more chrome than the rows. 项目 keeps its label, because
+          what is under it is yours and it grows.
 
-        {/* One hook per registered count, over a frozen module list: see MODULES on why the list
+          One hook per registered count, over a frozen module list: see MODULES on why the list
           must not change at runtime. */}
-        {moduleDestinations().map(({ moduleId, id, to, label, end, Count }) => (
-          <NavLink
-            key={`${moduleId}:${id}`}
-            to={to}
-            end={end ?? false}
-            className={({ isActive }) =>
-              `flex min-h-9 shrink-0 items-center gap-2 rounded-lg px-2.5 py-1 whitespace-nowrap ${
-                isActive ? 'bg-surface-panel font-semibold text-fg' : 'text-fg-muted hover:text-fg'
-              }`
-            }
-          >
-            <span>{label}</span>
-            {Count && <Count />}
-          </NavLink>
+        {railGroups().map((group, at) => (
+          <Fragment key={group.zone}>
+            {at > 0 && <span aria-hidden="true" className="my-1.5 h-px bg-border-subtle lg:mx-2" />}
+            {group.rows.map(({ moduleId, id, to, label, end, Count }) => (
+              <NavLink
+                key={`${moduleId}:${id}`}
+                to={to}
+                end={end ?? false}
+                className={({ isActive }) =>
+                  `flex min-h-9 shrink-0 items-center gap-2 rounded-lg px-2.5 py-1 whitespace-nowrap ${
+                    isActive
+                      ? 'bg-surface-panel font-semibold text-fg'
+                      : 'text-fg-muted hover:text-fg'
+                  }`
+                }
+              >
+                <span>{label}</span>
+                {Count && <Count />}
+              </NavLink>
+            ))}
+          </Fragment>
         ))}
-
-        {/* The shell's second destination. It sits BELOW the modules' own pages because it is
-          about them: you come here to see when their things are due, not to do the work. */}
-        <NavLink
-          to="/calendar"
-          className={({ isActive }) =>
-            `flex min-h-9 shrink-0 items-center gap-2 rounded-lg px-2.5 py-1 whitespace-nowrap ${
-              isActive ? 'bg-surface-panel font-semibold text-fg' : 'text-fg-muted hover:text-fg'
-            }`
-          }
-        >
-          日程
-        </NavLink>
 
         {/* The group label is the link to the full project page; the `+` beside it is the only
           other thing in this row, so there is still no label that merely looks clickable. */}

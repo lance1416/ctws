@@ -11,7 +11,7 @@ import { TaskBoard } from '../components/TaskBoard'
 import { isOverlayOpen } from '../components/overlayState'
 import { ProjectRail } from '../components/RowParts'
 import { useProjectRail } from '../projectColor'
-import { Panel, PanelEmpty } from '../components/Panel'
+import { PanelEmpty } from '../components/Panel'
 import { Stat, StatRow } from '../components/Stat'
 import { StatusMark } from '../components/StatusMark'
 import { TaskTree } from '../components/TaskTree'
@@ -93,6 +93,53 @@ function DoingWidget() {
     </ul>
   )
 }
+
+/**
+ * THE SECOND WORKBENCH CARD: what is actually due.
+ *
+ * Without it the workbench says what you are DOING and never what is late -- you had to open
+ * 今天 to find out anything had slipped, which is the opposite of a page that exists so you do
+ * not have to decide where to look first.
+ *
+ * Overdue leads and is marked; the rest is what is due or planned for today. Both come from the
+ * list 今天 already draws, so this is a second reader of one answer, not a second question.
+ */
+function DueWidget() {
+  const today = useQuery({ queryKey: ['today'], queryFn: listToday })
+  const rail = useProjectRail()
+  const rows = (today.data ?? []).filter((t) => t.segment !== 'in_progress')
+  const late = rows.filter((t) => t.segment === 'overdue')
+  const rest = rows.filter((t) => t.segment !== 'overdue')
+
+  if (today.isError) {
+    return (
+      <p role="alert" className="px-2 py-1.5 text-sm text-danger">
+        读不到今天的任务
+      </p>
+    )
+  }
+  if (today.isSuccess && rows.length === 0) return <PanelEmpty>今天没有到期的</PanelEmpty>
+  return (
+    <ul className="min-w-0">
+      {[...late, ...rest].slice(0, WIDGET_ROWS).map((t) => (
+        <li key={t.id} className="flex min-h-9 min-w-0 items-center gap-2 px-2">
+          <span
+            aria-hidden="true"
+            className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(t.projectId)}`}
+          />
+          <span className="min-w-0 flex-1 truncate text-sm text-fg">{t.title}</span>
+          {t.segment === 'overdue' && <span className="shrink-0 text-xs text-missed">逾期</span>}
+        </li>
+      ))}
+      {rows.length > WIDGET_ROWS && (
+        <li className="px-2 py-1 text-xs text-fg-subtle">还有 {rows.length - WIDGET_ROWS} 件</li>
+      )}
+    </ul>
+  )
+}
+
+/** How many rows a workbench card shows before it defers to its page. */
+const WIDGET_ROWS = 5
 
 /**
  * Quick capture's destination: the workspace inbox. Found by the `isInbox` flag, never by name.
@@ -322,9 +369,9 @@ export const taskModule: WorkspaceModule = {
   id: ID,
   label: '任务',
   destinations: [
-    { id: 'today', to: at('today'), label: '今天', end: true, Count: TodayCount },
-    { id: 'completed', to: at('completed'), label: '已完成', end: false },
-    { id: 'review', to: at('review'), label: '回顾', end: false },
+    { id: 'today', to: at('today'), label: '今天', end: true, Count: TodayCount, order: 20 },
+    // 已完成 is a VIEW of 回顾 now, not a destination of its own: both answer 「我做了什么」.
+    { id: 'review', to: at('review'), label: '回顾', end: false, zone: 'back' },
   ],
   routes: [
     { path: 'today', element: <Today /> },
@@ -335,7 +382,6 @@ export const taskModule: WorkspaceModule = {
   search: { useHits: useTaskHits },
   chords: [
     { id: 'today', key: 't', label: '去「今天」', resolve: () => at('today'), order: 10 },
-    { id: 'completed', key: 'd', label: '去「已完成」', resolve: () => at('completed'), order: 30 },
     { id: 'review', key: 'r', label: '去「回顾」', resolve: () => at('review'), order: 40 },
     {
       id: 'inbox',
@@ -359,7 +405,10 @@ export const taskModule: WorkspaceModule = {
     { id: 'board', label: '看板' },
   ],
   calendar: { label: '任务', useEntries: useTaskEntries },
-  widgets: [{ id: 'doing', label: '正在做', to: at('today'), Component: DoingWidget }],
+  widgets: [
+    { id: 'doing', label: '正在做', to: at('today'), Component: DoingWidget },
+    { id: 'due', label: '今天要紧的', to: at('today'), Component: DueWidget },
+  ],
   ProjectView: ProjectTasks,
   ProjectViewAction: NewTaskAction,
   ProjectHeadline: ProjectNumbers,

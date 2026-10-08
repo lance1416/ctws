@@ -26,7 +26,7 @@ function dayHeading(day: string, today: string): string {
  * What I finished, newest first, across projects. The server decided the order and which day each
  * task belongs to (in the account timezone); this only partitions the list by that day.
  */
-export function Completed() {
+export function Completed({ heading: showHeading = true }: { heading?: boolean } = {}) {
   const completed = useQuery({ queryKey: ['completed'], queryFn: listCompleted })
   const [openId, setOpenId] = useState<string | null>(null)
   const qc = useQueryClient()
@@ -52,9 +52,23 @@ export function Completed() {
 
   return (
     <>
-      <h1 ref={heading} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
-        已完成
-      </h1>
+      {/* As a VIEW of 回顾 this is an h2 and not an h1 -- that page's own heading is the h1, and
+          two of them would tell a screen reader the page had two titles. It is still rendered,
+          and still the thing focus lands on after a restore: a heading nobody can see is better
+          than focus falling to <body>. */}
+      {showHeading ? (
+        <h1 ref={heading} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
+          已完成
+        </h1>
+      ) : (
+        <h2
+          ref={heading as unknown as React.RefObject<HTMLHeadingElement>}
+          tabIndex={-1}
+          className="absolute h-px w-px overflow-hidden whitespace-nowrap focus:outline-none"
+        >
+          已完成
+        </h2>
+      )}
       {completed.isPending && <p className="mt-6 text-fg-muted">加载中…</p>}
       {completed.isError && (
         <p role="alert" className="mt-6 text-danger">

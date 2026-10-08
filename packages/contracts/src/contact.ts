@@ -54,7 +54,8 @@ export const createContactBody = z
     name: contactName,
     org: org.nullish(),
     note: note.nullish(),
-    projectId: z.uuid().nullish(),
+    /** The lines of work this person is on. A person is often on several. */
+    projectIds: z.array(z.uuid()).max(20).optional(),
     channels: channels.optional(),
   })
   .strict()
@@ -65,7 +66,7 @@ export const updateContactBody = z
     name: contactName.optional(),
     org: org.nullable().optional(),
     note: note.nullable().optional(),
-    projectId: z.uuid().nullable().optional(),
+    projectIds: z.array(z.uuid()).max(20).optional(),
     channels: channels.optional(),
   })
   .strict()
@@ -78,9 +79,13 @@ export const contactResponse = z
     name: z.string(),
     org: z.string().nullable(),
     note: z.string().nullable(),
-    projectId: z.uuid().nullable(),
-    /** The project's name, so a cross-project list needs no second request. */
-    projectName: z.string().nullable(),
+    /**
+     * The projects this person is on, named, so a list needs no second request.
+     *
+     * A LIST because a person is often on several: a maintainer who is on two of your repos, a
+     * recruiter holding two roles open. The single column this replaced was a shortcut.
+     */
+    projects: z.array(z.object({ id: z.uuid(), name: z.string() }).strict()),
     channels: z.array(contactChannel),
     createdAt: z.iso.datetime({ offset: true }),
     updatedAt: z.iso.datetime({ offset: true }),
@@ -91,7 +96,7 @@ export type ContactResponse = z.infer<typeof contactResponse>
 export const contactListQuery = z
   .object({
     projectId: z.uuid().optional(),
-    /** Only the people who belong to no project. */
+    /** Only the people who are on no project at all. */
     unfiled: z.enum(['true', 'false']).optional(),
   })
   .strict()

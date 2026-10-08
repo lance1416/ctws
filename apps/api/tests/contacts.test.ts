@@ -131,25 +131,47 @@ describe('contacts', () => {
     expect((await list(ctx)).map((c) => c.name)).toEqual(['Adam', 'Mina', 'Zoe'])
   })
 
-  it('files a person under a shell project, and can list the ones with none', async () => {
+  it('puts one person on SEVERAL lines of work', async () => {
+    // A maintainer on two of your repos, a recruiter holding two roles open. The single column
+    // this replaced could only ever be half an answer.
     const ctx = await setup()
-    const pid = await createProject(ctx, '找工作')
-    const filed = await add(ctx, { name: '某招聘', projectId: pid })
+    const hunt = await createProject(ctx, '找工作')
+    const rrgen = await createProject(ctx, 'rrgen')
+    const person = await add(ctx, { name: '某维护者', projectIds: [hunt, rrgen] })
     await add(ctx, { name: '老朋友' })
 
-    expect(filed).toMatchObject({ projectId: pid, projectName: '找工作' })
-    expect((await list(ctx, `?projectId=${pid}`)).map((c) => c.name)).toEqual(['某招聘'])
+    expect(person.projects.map((p) => p.name).sort()).toEqual(['rrgen', '找工作'])
+    // And they turn up standing on EITHER line.
+    expect((await list(ctx, `?projectId=${hunt}`)).map((c) => c.name)).toEqual(['某维护者'])
+    expect((await list(ctx, `?projectId=${rrgen}`)).map((c) => c.name)).toEqual(['某维护者'])
     expect((await list(ctx, '?unfiled=true')).map((c) => c.name)).toEqual(['老朋友'])
+  })
+
+  it('replaces the whole set of projects, leaving none of the old links behind', async () => {
+    const ctx = await setup()
+    const a = await createProject(ctx, 'A')
+    const b = await createProject(ctx, 'B')
+    const person = await add(ctx, { name: '换了线的人', projectIds: [a] })
+    const res = await patch(ctx, person.id, { projectIds: [b] })
+    expect(res.statusCode).toBe(200)
+    expect((res.json() as ContactResponse).projects.map((p) => p.name)).toEqual(['B'])
+    expect(await list(ctx, `?projectId=${a}`)).toEqual([])
+
+    // And an empty set really takes them off every line.
+    expect((await patch(ctx, person.id, { projectIds: [] })).statusCode).toBe(200)
+    expect((await list(ctx, '?unfiled=true')).map((c) => c.name)).toEqual(['换了线的人'])
   })
 
   it('keeps a person when their project is deleted', async () => {
     const ctx = await setup()
     const pid = await createProject(ctx, '没了的项目')
-    const person = await add(ctx, { name: '留下来的人', projectId: pid })
+    const person = await add(ctx, { name: '留下来的人', projectIds: [pid] })
     await ctx.app.inject({ method: 'DELETE', url: `/api/v1/projects/${pid}`, headers: web(ctx) })
 
     const kept = (await list(ctx)).find((c) => c.id === person.id)
-    expect(kept).toMatchObject({ name: '留下来的人', projectId: null, projectName: null })
+    // The link outlives the soft-deleted project, so the row must leave it out: a project nobody
+    // can navigate to is worse than none.
+    expect(kept).toMatchObject({ name: '留下来的人', projects: [] })
     // And they are findable again, as somebody who belongs to no project.
     expect((await list(ctx, '?unfiled=true')).map((c) => c.name)).toEqual(['留下来的人'])
   })
@@ -230,6 +252,7 @@ describe('contacts', () => {
       },
     }
     const theirProject = await createProject(theirs, '别人的项目')
+    const mine = await createProject(ctx, '我的项目')
 
     const res = await ctx.app.inject({
       method: 'POST',
@@ -237,7 +260,9 @@ describe('contacts', () => {
       headers: web(ctx),
       payload: {
         name: '某人',
-        projectId: theirProject,
+        // One of mine and one of theirs: the request must be refused WHOLE, not filed under the
+        // half that happened to be visible.
+        projectIds: [mine, theirProject],
         channels: [{ kind: 'email', value: 'a@b.test' }],
       },
     })

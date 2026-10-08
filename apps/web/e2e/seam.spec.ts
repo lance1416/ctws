@@ -27,10 +27,7 @@ test('the rail is built from the registered destinations', async ({ page }) => {
   // Each rail row carries the path the MODULE registered, not one the shell wrote down: moving a
   // destination in the registry has to move the link, which is the whole point of the seam.
   await expect(rail.getByRole('link', { name: '今天' })).toHaveAttribute('href', '/tasks/today')
-  await expect(rail.getByRole('link', { name: '已完成' })).toHaveAttribute(
-    'href',
-    '/tasks/completed',
-  )
+  await expect(rail.getByRole('link', { name: '待读' })).toHaveAttribute('href', '/reading')
   // The shell's own surface, outside any module namespace.
   await expect(rail.getByRole('link', { name: '项目', exact: true })).toHaveAttribute(
     'href',
@@ -39,6 +36,27 @@ test('the rail is built from the registered destinations', async ({ page }) => {
 
   await rail.getByRole('link', { name: '今天' }).click()
   await expect(page).toHaveURL(/\/tasks\/today$/)
+})
+
+test('the rail is grouped by what you are doing, in a fixed reading order', async ({ page }) => {
+  // The rail used to be a flat list in the order the modules happened to be registered, which is
+  // how 日程 ended up above 今天. The order is an editorial decision now and it is declared.
+  await registerFreshUser(page, '/')
+  const rail = page.getByRole('navigation', { name: '主导航' })
+
+  await expect(rail.getByRole('link')).toHaveText([
+    '工作台',
+    '今天',
+    '日程',
+    '待读',
+    '联系人',
+    '回顾',
+    '项目',
+    'Inbox',
+  ])
+  // Two hairlines, for the three groups of destinations: 现在 | 收着的 | 回头看. 项目 is divided
+  // off by its own label instead, because what is under it is the person's own and it grows.
+  await expect(rail.locator('span[aria-hidden="true"].h-px')).toHaveCount(2)
 })
 
 test('the paths from before the move still land on the same page', async ({ page }) => {
