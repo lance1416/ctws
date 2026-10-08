@@ -68,8 +68,18 @@ const SHELL_CHORDS: Chord[] = [
  * to be grouped, and the grouping that helps is the reader's: what is in front of me, what I keep,
  * what I look back at.
  */
-export const RAIL_ZONES = ['now', 'kept', 'back'] as const
+export const RAIL_ZONES = ['now', 'things', 'views'] as const
 export type RailZone = (typeof RAIL_ZONES)[number]
+
+/**
+ * What a group is CALLED, where it is worth saying. The first needs no name -- it is the top of
+ * the rail and what is in it is obvious -- and naming it too would be a label on every group,
+ * which is more chrome than the rows.
+ */
+export const ZONE_LABEL: Partial<Record<RailZone, string>> = {
+  things: 'Things',
+  views: 'Views',
+}
 
 export type RegisteredDestination = Destination & { moduleId: string }
 export type RegisteredChord = Chord & { moduleId: string | null }
@@ -100,7 +110,7 @@ export function railGroups(
       zone: 'now',
       order: 10,
     },
-    { moduleId: '', id: 'calendar', to: '/calendar', label: 'Calendar', zone: 'now', order: 30 },
+    { moduleId: '', id: 'calendar', to: '/calendar', label: 'Calendar', zone: 'views', order: 10 },
   ]
   const all = [...shell, ...moduleDestinations(modules)]
   return RAIL_ZONES.map((zone) => ({

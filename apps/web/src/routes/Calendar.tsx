@@ -9,17 +9,25 @@ import { useProjectRail } from '../projectColor'
 import { useTimeZone } from '../useMe'
 
 /**
- * 日程 -- A SHELL SURFACE, and the first one that is about every module at once.
+ * THE CALENDAR -- a SHELL SURFACE, and the first one that is about every module at once.
+ *
+ * A LENS, not a place things live. It answers 「这个月有什么」 by laying every module's dated
+ * things on one grid; it owns none of them, and it is not where any of them is made. The "+" that
+ * used to sit on each day square was exactly that mistake: in a calendar app an event is the only
+ * entity, so the square is the obvious place to make one -- here a meeting has its own page, and
+ * a deadline is a property of a task. Making something from a lens would be the lens claiming a
+ * kind of thing (framing §2).
  *
  * The shell draws the grid; each module says what it has on which day. The shell does not know
- * what a 截止 is, nor how it differs from 想读完: a module hands over entries that already carry
- * their day and their own word for the date, and both are shown as given.
+ * what a deadline is, nor how it differs from a day you mean to finish something: a module hands
+ * over entries that already carry their day and their own word for the date, and both are shown
+ * as given.
  *
- * WHAT v1 DOES NOT DO, deliberately: no drag to reschedule (「拖一个截止」 and 「拖一个排期」 are
- * not the same act and that has to be decided before it can be built), no week view, no time
- * axis (this app has no concept of a time slot -- a task has a day and a deadline instant), no
- * ics export. Each of those is a real feature, and none of them is needed to answer 「这个月有
- * 什么」.
+ * WHAT IT DOES NOT DO, deliberately: no drag to reschedule (dragging a deadline and dragging a
+ * plan are not the same act, and that has to be decided before it can be built), no week view, no
+ * time axis (this app has no concept of a time slot -- a task has a day and a deadline instant),
+ * no ics export. Each of those is a real feature, and none is needed to answer what is on which
+ * day this month.
  */
 
 /** How many entries a square shows before it says 「+N」. Three is what fits without scrolling. */
@@ -40,11 +48,6 @@ export function Calendar() {
   // ONE HOOK PER REGISTERED MODULE, over the registry's frozen list -- the same rule the capture
   // box and the rail counts follow.
   const results = providers.map((p) => ({ moduleId: p.moduleId, ...p.useEntries(range) }))
-  // The modules that can MAKE something on a day. Most cannot: a deadline is a property of a
-  // task, not something you arrange on a Tuesday.
-  const makers = providers.map((p) => ({ moduleId: p.moduleId, maker: p.useCreate?.() ?? null }))
-  const maker = makers.find((m) => m.maker)?.maker ?? null
-
   // 全部 plus one tab per module. A single module would mean a tab bar that decides nothing, so
   // it is drawn only when there is a choice to make -- the same rule the project blocks keep.
   const views = [
@@ -145,27 +148,6 @@ export function Calendar() {
                 >
                   {Number(day.slice(8))}
                 </div>
-                {/* MAKING ONE HERE. A calendar you can only read is half a calendar, and
-                    clicking an empty day is how every one of them has worked. It appears on
-                    hover and on keyboard focus, so the squares stay quiet at rest. */}
-                {maker && (
-                  <button
-                    type="button"
-                    onClick={() => maker.create(day)}
-                    aria-label={`${maker.label} on ${day}`}
-                    className="absolute top-0.5 right-0.5 flex h-6 w-6 items-center justify-center rounded-lg text-fg-subtle opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-surface-hover hover:text-fg [@media(hover:none)]:opacity-100"
-                  >
-                    <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3 w-3">
-                      <path
-                        d="M8 3.5v9M3.5 8h9"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  </button>
-                )}
                 <ul className="flex flex-col">
                   {entries.slice(0, PER_SQUARE).map((entry) => (
                     <li key={entry.id} className="min-w-0">

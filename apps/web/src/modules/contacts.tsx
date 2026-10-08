@@ -76,7 +76,7 @@ function ContactsProjectView({ projectId }: { projectId: string }) {
 export const contactModule: WorkspaceModule = {
   id: ID,
   label: 'Contacts',
-  destinations: [{ id: 'list', to: `/${ID}`, label: 'Contacts', zone: 'kept' }],
+  destinations: [{ id: 'list', to: `/${ID}`, label: 'Contacts', zone: 'things', order: 30 }],
   routes: [{ index: true, element: <Contacts /> }],
   search: { useHits: useContactHits },
   // `n` for 人. One keyspace across modules, so this is checked against every other chord.

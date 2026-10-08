@@ -87,6 +87,17 @@ export function repeatChoices(startsLocal: string): RepeatChoice[] {
   ]
 }
 
+/** `BYDAY`'s two-letter codes, as a person says them. */
+const DAY_NAME: Record<string, string> = {
+  MO: 'Mon',
+  TU: 'Tue',
+  WE: 'Wed',
+  TH: 'Thu',
+  FR: 'Fri',
+  SA: 'Sat',
+  SU: 'Sun',
+}
+
 const FREQ_NAME: Record<string, string> = {
   DAILY: 'day',
   WEEKLY: 'week',
@@ -116,5 +127,15 @@ export function repeatLabel(rule: string | null, startsLocal: string): string {
   const unit = freq ? FREQ_NAME[freq] : undefined
   if (!unit) return 'Custom'
   const every = Number(/INTERVAL=(\d+)/i.exec(rule)?.[1] ?? 1)
+  // A weekly rule that names its days SAYS them: "Every week" for MO,TU,WE,TH,FR is true of the
+  // rule and useless about the meeting, which is the one thing the row is there to say.
+  const byDay = /BYDAY=([A-Z,]+)/i.exec(rule)?.[1]
+  if (freq === 'WEEKLY' && byDay && byDay.includes(',')) {
+    const named = byDay
+      .split(',')
+      .map((d) => DAY_NAME[d.trim().toUpperCase()])
+      .filter(Boolean)
+    if (named.length > 0) return `Weekly on ${named.join(', ')}`
+  }
   return every > 1 ? `Every ${every} ${unit}s` : `Every ${unit}`
 }

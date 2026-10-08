@@ -374,7 +374,7 @@ export const taskModule: WorkspaceModule = {
   destinations: [
     { id: 'today', to: at('today'), label: 'Today', end: true, Count: TodayCount, order: 20 },
     // 已完成 is a VIEW of 回顾 now, not a destination of its own: both answer 「我做了什么」.
-    { id: 'review', to: at('review'), label: 'Review', end: false, zone: 'back' },
+    { id: 'review', to: at('review'), label: 'Review', end: false, zone: 'views', order: 20 },
   ],
   routes: [
     { path: 'today', element: <Today /> },

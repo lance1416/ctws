@@ -1,15 +1,9 @@
 import type { MeetingOccurrence } from '@ctws/contracts'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import {
-  createMeeting,
-  DEFAULT_HOUR,
-  DEFAULT_MINUTES,
-  listMeetings,
-  meetingCalendar,
-  meetingsKey,
-} from '../api/meetings'
+import { listMeetings, meetingCalendar, meetingsKey } from '../api/meetings'
 import { MeetingDetail } from '../components/MeetingDetail'
+import { Meetings } from '../routes/Meetings'
 import { PanelEmpty } from '../components/Panel'
 import { todayIn } from '../dueAt'
 import { useProjectRail } from '../projectColor'
@@ -17,19 +11,25 @@ import { useTimeZone } from '../useMe'
 import type { WorkspaceModule } from './contract'
 
 /**
- * THE MEETINGS MODULE -- the fourth, and the first with no page of its own.
+ * THE MEETINGS MODULE -- the fourth.
  *
- * A meeting lives on the calendar. Giving it a rail row would be giving it a list to read instead
- * of a grid, which is not how anybody looks at what they have agreed to attend; every calendar app
- * since the first one has had you click a day. So it contributes:
+ * It used to have no page: a meeting lived on the calendar and was MADE by a "+" on a day square,
+ * which is how every calendar app works because in a calendar app an event is the only entity.
+ * Here it is not. The calendar is a lens over everything with a date -- a deadline, a day you
+ * mean to finish something, a meeting -- and a lens does not own a kind of thing, so it is not
+ * where one is made (framing §2). Meetings now have their own destination, and the grid went back
+ * to answering 「这个月有什么」.
  *
- * - CALENDAR entries, with a time, the way to MAKE one on a day, and the pane one opens in;
+ * It contributes:
+ *
+ * - its own PAGE and rail row, where a meeting is arranged in one act;
+ * - CALENDAR entries, with a time, and the pane one opens in;
  * - a WORKBENCH card for today, the one moment a flat list of meetings is the right shape --
- *   「今天有什么会」 is a question about the next eight hours, not about a month;
- * - a PROJECT block, because a meeting about 找工作 belongs to it.
+ *   what is in the next eight hours is not a question about a month;
+ * - a PROJECT block, because a meeting about the job hunt belongs to it.
  *
- * No search provider, on purpose: a meeting is found by its date, and 「周会」 is the same title
- * fifty times over.
+ * No search provider, on purpose: a meeting is found by its date, and the same weekly title
+ * repeats fifty times over.
  */
 const ID = 'meetings'
 
@@ -59,30 +59,6 @@ function useMeetingEntries(range: { from: string; to: string }) {
     queryFn: () => meetingCalendar(range),
   })
   return { entries: result.data ?? [], isError: result.isError }
-}
-
-/** 「在这天安排一个会」 -- the shell draws the affordance, this decides what it does. */
-function useArrange() {
-  const qc = useQueryClient()
-  const accountZone = useTimeZone()
-  const create = useMutation({
-    mutationFn: (day: string) =>
-      createMeeting({
-        title: 'New meeting',
-        // A square has no time in it, so one has to be chosen: a plausible working hour the
-        // person then drags onto the real one. Midnight would be precise and useless.
-        startsLocal: `${day}T${String(DEFAULT_HOUR).padStart(2, '0')}:00`,
-        // A meeting made by clicking a day is in the zone you are standing in. The pane is where
-        // 「这个会是多伦多时间」 gets said, because that is a thing you know and the grid does not.
-        timeZone: accountZone,
-        durationMinutes: DEFAULT_MINUTES,
-      }),
-    onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ['meetings'] })
-      await qc.invalidateQueries({ queryKey: ['meeting-calendar'] })
-    },
-  })
-  return { label: 'New meeting', create: (day: string) => create.mutate(day) }
 }
 
 /**
@@ -226,18 +202,14 @@ function MeetingsProjectView({ projectId }: { projectId: string }) {
 export const meetingModule: WorkspaceModule = {
   id: ID,
   label: 'Meetings',
-  // No rail row: a meeting is looked at on the calendar, not in a list.
-  destinations: [],
-  routes: [],
-  calendar: {
-    label: 'Meetings',
-    useEntries: useMeetingEntries,
-    useCreate: useArrange,
-    Detail: CalendarDetail,
-  },
+  destinations: [{ id: 'list', to: `/${ID}`, label: 'Meetings', zone: 'things', order: 20 }],
+  routes: [{ index: true, element: <Meetings /> }],
+  // `m`. One keyspace across modules, so this is checked against every other chord.
+  chords: [
+    { id: 'meetings', key: 'm', label: 'Go to Meetings', resolve: () => `/${ID}`, order: 16 },
+  ],
+  calendar: { label: 'Meetings', useEntries: useMeetingEntries, Detail: CalendarDetail },
   widgets: [{ id: 'today', label: "Today's meetings", to: '/calendar', Component: TodayMeetings }],
   ProjectView: MeetingsProjectView,
-  // The calendar, because that is still the only place a meeting is visible. It is the clearest
-  // thing wrong with the framing, and it changes when meetings get a destination of their own.
-  relations: [{ type: 'meeting', to: () => '/calendar' }],
+  relations: [{ type: 'meeting', to: () => `/${ID}` }],
 }

@@ -3,7 +3,7 @@ import { Fragment, useEffect, useRef, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { createProject, listProjects } from '../api/projects'
 import { refreshProjects } from '../api/taskCache'
-import { railGroups } from '../modules/registry'
+import { railGroups, ZONE_LABEL } from '../modules/registry'
 import { QuickCapture } from './QuickCapture'
 import { railClass } from '../projectColor'
 import { useComposing } from '../composition'
@@ -78,16 +78,21 @@ export function SideRail() {
         aria-label="Main navigation"
         className="flex flex-col gap-1 max-lg:flex-row max-lg:items-center max-lg:overflow-x-auto max-lg:px-4 max-lg:py-2 lg:gap-0"
       >
-        {/* FOUR GROUPS, by what you are trying to do: now / kept / looking back / projects. A hairline
-          between them and no labels -- past five or six rows a flat list has to be grouped, but a
-          label on every group would be more chrome than the rows. Projects keeps its label, because
-          what is under it is yours and it grows.
+        {/* THREE GROUPS AND THE PROJECTS, by what you are trying to do rather than by which
+          module owns a row: what is in front of me now, the kinds of thing I keep, and the ways
+          of looking across them. The first needs no name -- it is the top of the rail and the two
+          rows in it say what they are -- so it gets the hairline alone.
 
           One hook per registered count, over a frozen module list: see MODULES on why the list
           must not change at runtime. */}
         {railGroups().map((group, at) => (
           <Fragment key={group.zone}>
             {at > 0 && <span aria-hidden="true" className="my-1.5 h-px bg-border-subtle lg:mx-2" />}
+            {ZONE_LABEL[group.zone] && (
+              <span className="hidden shrink-0 px-2.5 py-1 text-xs font-semibold text-fg-subtle lg:block">
+                {ZONE_LABEL[group.zone]}
+              </span>
+            )}
             {group.rows.map(({ moduleId, id, to, label, end, Count }) => (
               <NavLink
                 key={`${moduleId}:${id}`}

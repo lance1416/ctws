@@ -40,23 +40,29 @@ test('the rail is built from the registered destinations', async ({ page }) => {
 
 test('the rail is grouped by what you are doing, in a fixed reading order', async ({ page }) => {
   // The rail used to be a flat list in the order the modules happened to be registered, which is
-  // how 日程 ended up above 今天. The order is an editorial decision now and it is declared.
+  // how the calendar ended up above Today. The order is an editorial decision now and declared.
   await registerFreshUser(page, '/')
   const rail = page.getByRole('navigation', { name: 'Main navigation' })
 
   await expect(rail.getByRole('link')).toHaveText([
     'Workbench',
     'Today',
-    'Calendar',
-    'Reading',
+    'Meetings',
     'Contacts',
+    'Reading',
+    'Calendar',
     'Review',
     'Projects',
     'Inbox',
   ])
-  // Two hairlines, for the three groups of destinations: 现在 | 收着的 | 回头看. 项目 is divided
-  // off by its own label instead, because what is under it is the person's own and it grows.
+  // Three groups: what is in front of me now | the kinds of thing I keep | the ways of looking
+  // across them. Two hairlines divide them; Projects is divided off by its own label instead,
+  // because what is under it is the person's own and it grows.
   await expect(rail.locator('span[aria-hidden="true"].h-px')).toHaveCount(2)
+  // The first group needs no name; the other two carry one, because "Meetings, Contacts,
+  // Reading" and "Calendar, Review" are not self-evidently two different kinds of row.
+  await expect(rail.getByText('Things', { exact: true })).toBeVisible()
+  await expect(rail.getByText('Views', { exact: true })).toBeVisible()
 })
 
 test('the paths from before the move still land on the same page', async ({ page }) => {

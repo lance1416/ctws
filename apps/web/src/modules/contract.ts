@@ -144,18 +144,6 @@ export type CalendarContribution = {
     isError: boolean
   }
   /**
-   * MAKING ONE ON A DAY, when this module's thing is something you arrange rather than something
-   * that acquires a date.
-   *
-   * Clicking an empty day to create is how every calendar has worked since the first one, and a
-   * calendar you can only read is half a calendar. The shell draws the affordance on the square
-   * and hands over the day; the module decides what making one means.
-   *
-   * A hook, because creating needs the query client and the module's own open-pane state. Most
-   * modules have none: a deadline is a property of a task, not something you arrange on a Tuesday.
-   */
-  useCreate?: () => { label: string; create: (day: string) => void } | null
-  /**
    * WHAT OPENS when one of this module's entries is clicked ON THE GRID.
    *
    * Without it an entry is a link to wherever `to` points, which is right for a deadline -- it
@@ -186,18 +174,20 @@ export type Destination = {
    * WHICH GROUP OF THE RAIL this row belongs in, by what the person is trying to do:
    *
    * - `now` (the default): what is in front of me today.
-   * - `kept`: things I have put aside -- a reading pile, an address book.
-   * - `back`: what I have already done.
+   * - `things`: a KIND of object, listed -- meetings, people, the reading pile. Each is where one
+   *   of that kind is made, because the making belongs with the kind.
+   * - `views`: a way of looking ACROSS the kinds -- the calendar, the week in review. A view owns
+   *   nothing and makes nothing (framing §2).
    *
    * The module declares it because only the module knows what its page is FOR; the shell draws
    * the groups. Grouping by which module owns a row is what the rail did before, and it is the
    * reason “Today” (one module's view) sat beside “Reading” (a whole module) as if they were peers.
    */
-  zone?: 'now' | 'kept' | 'back'
+  zone?: 'now' | 'things' | 'views'
   /**
    * The row's place WITHIN its zone. Explicit, because the reading order is an editorial decision
    * and letting it fall out of registration order would make it an accident of which module was
-   * added first -- 日程 landed above 今天 exactly that way.
+   * added first -- the calendar landed above Today exactly that way.
    */
   order?: number
   /** Absolute path, inside the module's own namespace. */

@@ -59,17 +59,16 @@ test('a series agreed in Toronto shows on your clock, and says whose 09:00 it is
   await expect(square(page, '2026-10-20')).toContainText('EDT')
 })
 
-test('clicking an empty day arranges a meeting there', async ({ page }) => {
-  // A calendar you can only read is half a calendar; clicking a day is how every one of them has
-  // worked.
+test('the calendar makes nothing: a day square has no create control', async ({ page }) => {
+  // THE FRAMING, as a test. In a calendar app an event is the only entity, so the square is the
+  // obvious place to make one. Here the calendar is a LENS over everything with a date and owns
+  // no kind of thing, so it offers no way to make one -- a meeting is arranged on its own page.
   await inLondon(page)
   await page.goto('/calendar')
   const today = new Date().toISOString().slice(0, 10)
 
-  await square(page, today)
-    .getByRole('button', { name: /New meeting/ })
-    .click()
-  await expect(square(page, today)).toContainText('New meeting')
+  await expect(square(page, today).getByRole('button')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /New meeting/ })).toHaveCount(0)
 })
 
 test('a repeating meeting asks which occurrences a move touches', async ({ page }) => {
