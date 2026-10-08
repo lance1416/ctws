@@ -1,4 +1,4 @@
-import type { CalendarEntry } from '@ctws/contracts'
+import type { CalendarEntry, ObjectType } from '@ctws/contracts'
 import type { QueryClient } from '@tanstack/react-query'
 import type { ComponentType, ReactNode } from 'react'
 import type { RouteObject } from 'react-router-dom'
@@ -109,6 +109,29 @@ export type WorkspaceModule = {
    * bringing its own layout.
    */
   ProjectHeadline?: ComponentType<{ projectId: string }>
+  /**
+   * HOW THIS MODULE'S THINGS ARE REACHED FROM SOMEBODY ELSE'S PAGE.
+   *
+   * The edge table is the shell's, and so is the backlink panel: opening a person and seeing the
+   * meetings they are in is one read of one table, and no module could own it without learning
+   * about another. What the shell cannot know is where one of ANOTHER module's things lives, so
+   * the module says.
+   *
+   * The API half of this is `links/linkable.ts`, where a module says what its things are CALLED.
+   * Routing stays here, because a route is the web app's and the server has no business holding
+   * one.
+   */
+  relations?: readonly RelationContribution[]
+}
+
+/** One object type this module answers for, as the far end of an edge. */
+export type RelationContribution = {
+  /** The type as the contract names it. Exactly one module answers for each. */
+  type: ObjectType
+  /** Where one of these lives. */
+  to: (id: string) => string
+  /** The 24px marker at the head of the row, as a search hit has. */
+  mark?: ReactNode
 }
 
 /** A module's half of the calendar. One provider per module; the shell merges them. */

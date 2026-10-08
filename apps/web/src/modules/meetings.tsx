@@ -237,4 +237,7 @@ export const meetingModule: WorkspaceModule = {
   },
   widgets: [{ id: 'today', label: '今天的会', to: '/calendar', Component: TodayMeetings }],
   ProjectView: MeetingsProjectView,
+  // The calendar, because that is still the only place a meeting is visible. It is the clearest
+  // thing wrong with the framing, and it changes when meetings get a destination of their own.
+  relations: [{ type: 'meeting', to: () => '/calendar' }],
 }

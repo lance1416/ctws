@@ -15,7 +15,8 @@ import type { SearchHit, WorkspaceModule } from './contract'
  * A seam that a new module can be built against without changing it is a seam that has stopped
  * being a draft.
  *
- * It contributes a rail row, a chord, a search provider and a project block, and nothing else:
+ * It contributes a rail row, a chord, a search provider, a project block and -- added later,
+ * with the edge table -- where one of its people lives. And nothing else:
  * - no WORKBENCH card, because the workbench answers 「现在手头有什么」 and an address book is not
  *   something in front of you. A card listing people would be decoration on the one page that is
  *   supposed to be only what is live.
@@ -81,4 +82,5 @@ export const contactModule: WorkspaceModule = {
   // `n` for 人. One keyspace across modules, so this is checked against every other chord.
   chords: [{ id: 'contacts', key: 'n', label: '去「联系人」', resolve: () => `/${ID}`, order: 17 }],
   ProjectView: ContactsProjectView,
+  relations: [{ type: 'contact', to: () => `/${ID}` }],
 }

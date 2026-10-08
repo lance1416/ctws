@@ -1,3 +1,4 @@
+import { OBJECT_TYPES } from '@ctws/contracts'
 import { QueryClient } from '@tanstack/react-query'
 import { describe, expect, it } from 'vitest'
 import type { WorkspaceModule } from './contract'
@@ -10,6 +11,8 @@ import {
   moduleWidgets,
   projectHeadlines,
   projectViews,
+  relationFor,
+  relations,
   resolveChord,
   searchProviders,
 } from './registry'
@@ -167,5 +170,37 @@ describe('what a module hangs on a project page', () => {
   it('contributes nothing when no module is registered', () => {
     expect(projectViews([])).toEqual([])
     expect(projectHeadlines([])).toEqual([])
+  })
+})
+
+/**
+ * WHO ANSWERS FOR EACH KIND OF THING at the far end of an edge.
+ *
+ * The backlink panel is the shell's, so the shell has to be able to route to anything an edge
+ * points at. A type nobody answers for would draw a row that cannot be opened -- which is a
+ * registration mistake, and the only place it can be caught is here.
+ */
+describe('where another module keeps its things', () => {
+  it('answers for every kind of thing the contract names', () => {
+    const answered = relations().map((r) => r.type)
+    expect([...answered].sort()).toEqual([...OBJECT_TYPES].sort())
+    // One answer each: two modules claiming `meeting` would make the route depend on which was
+    // registered first.
+    expect(new Set(answered).size).toBe(answered.length)
+  })
+
+  it('keeps projects in the shell, and takes a type from a module that does not exist', () => {
+    // The project entry survives every module being removed, because a project is the shell's.
+    expect(relations([]).map((r) => r.type)).toEqual(['project'])
+    expect(relationFor('project', [])?.to('p1')).toBe('/projects/p1')
+    const withNotes = relationFor('reading', [
+      { ...notes, relations: [{ type: 'reading', to: (id) => `/notes/${id}` }] },
+    ])
+    expect(withNotes?.moduleId).toBe('notes')
+    expect(withNotes?.to('r1')).toBe('/notes/r1')
+  })
+
+  it('has no answer for a type no module claims', () => {
+    expect(relationFor('contact', [notes])).toBeNull()
   })
 })

@@ -6,6 +6,7 @@ import { listProjects } from '../api/projects'
 import { useProjectRail } from '../projectColor'
 import { DeleteConfirm } from './DeleteConfirm'
 import { DetailHead, DetailPane } from './DetailPane'
+import { Links } from './Links'
 import { InlineText, PickMany, PickOne } from './inline'
 
 /**
@@ -196,6 +197,14 @@ export function ContactDetail({
             onSave={(note) => save.mutate({ note: note || null })}
             className="mt-1 block max-w-[68ch] text-sm whitespace-pre-wrap text-fg"
           />
+        </div>
+
+        {/* 牵着的东西 -- the meetings they are in, what they recommended, the task that came out
+            of a call. None of it is written on the person: the edges are, and this reads them from
+            the other end. This panel is why the edge table exists. */}
+        <div className="border-t border-border-subtle pt-3">
+          <span className="block px-2 pb-1 text-xs text-fg-muted">牵着的东西</span>
+          <Links of={{ type: 'contact', id: contact.id }} />
         </div>
 
         <div className="pt-1">

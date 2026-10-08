@@ -188,4 +188,5 @@ export const readingModule: WorkspaceModule = {
   widgets: [{ id: 'unfiled', label: '待读 · 散的', to: `/${ID}`, Component: ReadingWidget }],
   ProjectView: ReadingProjectView,
   ProjectHeadline: ReadingHeadline,
+  relations: [{ type: 'reading', to: () => `/${ID}` }],
 }

@@ -1,3 +1,4 @@
+import type { ObjectType } from '@ctws/contracts'
 import type { ComponentType } from 'react'
 import type { RouteObject } from 'react-router-dom'
 import type {
@@ -6,6 +7,7 @@ import type {
   Chord,
   ChordContext,
   Destination,
+  RelationContribution,
   Widget,
   WorkspaceModule,
 } from './contract'
@@ -234,6 +236,34 @@ export function moduleWidgets(modules: readonly WorkspaceModule[] = MODULES): Re
   return modules.flatMap((m) =>
     (m.widgets ?? []).map((w) => ({ ...w, moduleId: m.id, moduleLabel: m.label })),
   )
+}
+
+export type RegisteredRelation = RelationContribution & { moduleId: string }
+
+/**
+ * WHO ANSWERS FOR EACH KIND OF THING at the far end of an edge, the shell's own included.
+ *
+ * The project entry is the SHELL's, like the project chord above: a project is one kind of object
+ * now rather than the thing everything hangs off, but it is still not a module's.
+ *
+ * A type with no entry would make the backlink panel draw a group it cannot navigate, so
+ * `relations.test.ts` asserts the set covers the contract exactly.
+ */
+const SHELL_RELATIONS: RelationContribution[] = [{ type: 'project', to: (id) => `/projects/${id}` }]
+
+export function relations(modules: readonly WorkspaceModule[] = MODULES): RegisteredRelation[] {
+  return [
+    ...SHELL_RELATIONS.map((r) => ({ ...r, moduleId: '' })),
+    ...modules.flatMap((m) => (m.relations ?? []).map((r) => ({ ...r, moduleId: m.id }))),
+  ]
+}
+
+/** Where one thing lives, or null when nothing answers for its type. */
+export function relationFor(
+  type: ObjectType,
+  modules: readonly WorkspaceModule[] = MODULES,
+): RegisteredRelation | null {
+  return relations(modules).find((r) => r.type === type) ?? null
 }
 
 /** Each module's numbers in the project header banner, in registration order. */

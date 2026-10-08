@@ -415,4 +415,7 @@ export const taskModule: WorkspaceModule = {
   ProjectView: ProjectTasks,
   ProjectViewAction: NewTaskAction,
   ProjectHeadline: ProjectNumbers,
+  // A task lives on its project's page, in the tree. There is nowhere else for one to be, which
+  // is why the project id is in the path: the tree is what gives a task its context.
+  relations: [{ type: 'task', to: (id) => `/projects?task=${id}` }],
 }
