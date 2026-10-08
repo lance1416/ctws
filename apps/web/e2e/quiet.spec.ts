@@ -439,3 +439,22 @@ test('the bar moves the picked rows to another project', async ({ page }) => {
   // It lands at the destination's root: keeping its old parent would mean moving the parent too.
   expect(moved.tasks[0].parentId).toBeNull()
 })
+
+test('the project title gets the width it needs, not the width it can shrink to', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '改版')
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto(`/projects/${pid}`)
+
+  // MEASURED, not read. Making the title an editable control collapsed its flex item and the
+  // banner rendered 「改...」 at 1440px -- and every assertion that matched it BY NAME still
+  // passed, because truncation is CSS and the accessible name is whole.
+  const heading = page.getByRole('heading', { level: 1, name: '改版' })
+  const cut = await heading.evaluate((el) => {
+    const inner = el.querySelector('button') ?? el
+    return inner.scrollWidth > inner.clientWidth + 1
+  })
+  expect(cut, 'the project name is truncated at desk width').toBe(false)
+})
