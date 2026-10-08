@@ -1,47 +1,63 @@
-import type { CreateMeetingBody, UpdateMeetingBody } from '@ctws/contracts'
+import type { CreateMeetingBody, EditScope, UpdateMeetingBody } from '@ctws/contracts'
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
-import type { Queryable } from '../db/client'
-import { contacts, meetingAttendees, meetings, projects } from '../db/schema'
 import { ContactNotFoundError } from '../contacts/errors'
+import type { Queryable } from '../db/client'
+import { contacts, meetingAttendees, meetingExceptions, meetings, projects } from '../db/schema'
 import { ProjectNotFoundError } from '../projects/errors'
 import { visibleProjects } from '../projects/store'
-import { BackwardsMeetingError, MeetingNotFoundError } from './errors'
+import {
+  BadRuleError,
+  MeetingNotFoundError,
+  OccurrenceNotFoundError,
+  OneOccurrenceLimitError,
+} from './errors'
+import {
+  endedBefore,
+  isUsableRule,
+  occurrencesIn,
+  type Exception,
+  type LocalTime,
+  type Occurrence,
+} from './occurrences'
 
 /**
- * 会议's storage, on iCalendar's `VEVENT`.
+ * 会议's storage.
  *
- * It borrows the workspace and `visibleProjects` from the shell, and -- uniquely among the
- * modules so far -- it reads the CONTACTS table, because `ATTENDEE` points at people and the
- * address book is the list you pick them out of. That is a real coupling and it is written down
- * here rather than hidden behind a copy of the names.
+ * A row here is a SERIES, not a meeting: one row plus its rule and its exceptions describes every
+ * occurrence of it. Nothing below ever stores an instant -- `occurrences.ts` has the argument.
+ *
+ * It borrows the workspace and `visibleProjects` from the shell, and reads the CONTACTS table,
+ * because `ATTENDEE` points at people and the address book is the list you pick them out of.
  */
 
 export type MeetingAttendee = { id: string; name: string }
 
-export type MeetingRow = {
-  id: string
+export type SeriesRow = typeof meetings.$inferSelect & {
+  projectId: string | null
+  projectName: string | null
+  attendees: MeetingAttendee[]
+  exceptions: Exception[]
+}
+
+/** One occurrence, with everything a reader needs about it and its series. */
+export type OccurrenceRow = Occurrence & {
+  meetingId: string
   title: string
-  startsAt: Date
-  endsAt: Date
+  rrule: string | null
+  overridden: boolean
   location: string | null
   note: string | null
   projectId: string | null
   projectName: string | null
   attendees: MeetingAttendee[]
-  createdAt: Date
-  updatedAt: Date
 }
+
+const DAY = 86_400_000
 
 /** THE TENANT CHOKEPOINT. Every read and write below goes through it. */
 function visibleMeetings(workspaceId: string) {
   return and(eq(meetings.workspaceId, workspaceId), isNull(meetings.deletedAt))
-}
-
-type Selected = {
-  meeting: typeof meetings.$inferSelect
-  projectId: string | null
-  projectName: string | null
 }
 
 // Both halves of the project come from one subquery, so a meeting never reports a project the
@@ -56,38 +72,78 @@ const withProject = {
   )`,
 }
 
-/** Attaches each meeting's attendees, in ONE query for the whole page. */
-async function hydrate(q: Queryable, rows: Selected[]): Promise<MeetingRow[]> {
+type Selected = {
+  meeting: typeof meetings.$inferSelect
+  projectId: string | null
+  projectName: string | null
+}
+
+/** Attaches attendees and exceptions, in ONE query each for the whole page. */
+async function hydrate(q: Queryable, rows: Selected[]): Promise<SeriesRow[]> {
   const ids = rows.map((r) => r.meeting.id)
-  const byMeeting = new Map<string, MeetingAttendee[]>()
+  const people = new Map<string, MeetingAttendee[]>()
+  const skips = new Map<string, Exception[]>()
   if (ids.length > 0) {
-    const found = await q
-      .select({ meetingId: meetingAttendees.meetingId, id: contacts.id, name: contacts.name })
-      .from(meetingAttendees)
-      .innerJoin(contacts, eq(contacts.id, meetingAttendees.contactId))
-      // A person deleted since the meeting was arranged is left out rather than named: the
-      // address book is where a name comes from, and a name nobody can look up is not one.
-      .where(and(inArray(meetingAttendees.meetingId, ids), isNull(contacts.deletedAt)))
-      .orderBy(asc(contacts.name), asc(contacts.id))
-    for (const row of found) {
-      const person = { id: row.id, name: row.name }
-      const list = byMeeting.get(row.meetingId)
+    const [guests, found] = await Promise.all([
+      q
+        .select({ meetingId: meetingAttendees.meetingId, id: contacts.id, name: contacts.name })
+        .from(meetingAttendees)
+        .innerJoin(contacts, eq(contacts.id, meetingAttendees.contactId))
+        // A person deleted since the meeting was arranged is left out rather than named: the
+        // address book is where a name comes from, and a name nobody can look up is not one.
+        .where(and(inArray(meetingAttendees.meetingId, ids), isNull(contacts.deletedAt)))
+        .orderBy(asc(contacts.name), asc(contacts.id)),
+      q.select().from(meetingExceptions).where(inArray(meetingExceptions.meetingId, ids)),
+    ])
+    for (const g of guests) {
+      const person = { id: g.id, name: g.name }
+      const list = people.get(g.meetingId)
       if (list) list.push(person)
-      else byMeeting.set(row.meetingId, [person])
+      else people.set(g.meetingId, [person])
+    }
+    for (const e of found) {
+      const one: Exception = {
+        recurrenceId: e.recurrenceId,
+        cancelled: e.cancelled,
+        startsLocal: e.startsLocal,
+        durationMinutes: e.durationMinutes,
+      }
+      const list = skips.get(e.meetingId)
+      if (list) list.push(one)
+      else skips.set(e.meetingId, [one])
     }
   }
   return rows.map(({ meeting, projectId, projectName }) => ({
-    id: meeting.id,
-    title: meeting.title,
-    startsAt: meeting.startsAt,
-    endsAt: meeting.endsAt,
-    location: meeting.location,
-    note: meeting.note,
+    ...meeting,
     projectId,
     projectName,
-    attendees: byMeeting.get(meeting.id) ?? [],
-    createdAt: meeting.createdAt,
-    updatedAt: meeting.updatedAt,
+    attendees: people.get(meeting.id) ?? [],
+    exceptions: skips.get(meeting.id) ?? [],
+  }))
+}
+
+const asSeries = (s: SeriesRow) => ({
+  startsLocal: s.startsLocal,
+  timeZone: s.timeZone,
+  durationMinutes: s.durationMinutes,
+  rrule: s.rrule,
+})
+
+function expand(series: SeriesRow, window: { from: Date; to: Date }): OccurrenceRow[] {
+  const overridden = new Set(
+    series.exceptions.filter((e) => !e.cancelled).map((e) => e.recurrenceId),
+  )
+  return occurrencesIn(asSeries(series), series.exceptions, window).map((o) => ({
+    ...o,
+    meetingId: series.id,
+    title: series.title,
+    rrule: series.rrule,
+    overridden: overridden.has(o.recurrenceId),
+    location: series.location,
+    note: series.note,
+    projectId: series.projectId,
+    projectName: series.projectName,
+    attendees: series.attendees,
   }))
 }
 
@@ -120,7 +176,6 @@ async function assertAttendees(
   if (rows.length !== unique.length) throw new ContactNotFoundError()
 }
 
-/** Replaces the whole guest list. Called inside the caller's transaction. */
 async function putAttendees(
   q: Queryable,
   meetingId: string,
@@ -132,12 +187,12 @@ async function putAttendees(
   await q.insert(meetingAttendees).values(unique.map((contactId) => ({ meetingId, contactId })))
 }
 
-export async function listMeetings(
+/** Every series of a workspace, hydrated. The expansion is the caller's, per window. */
+async function seriesOf(
   q: Queryable,
   workspaceId: string,
-  timezone: string,
-  opts: { projectId?: string | undefined; from?: string | undefined; to?: string | undefined } = {},
-): Promise<MeetingRow[]> {
+  opts: { projectId?: string | undefined; id?: string | undefined } = {},
+): Promise<SeriesRow[]> {
   const rows = await q
     .select(withProject)
     .from(meetings)
@@ -145,55 +200,89 @@ export async function listMeetings(
       and(
         visibleMeetings(workspaceId),
         opts.projectId ? eq(meetings.projectId, opts.projectId) : undefined,
-        // The WINDOW is in calendar days in the ACCOUNT's zone, so asking for 「这周」 means the
-        // person's week and not the server's.
-        opts.from
-          ? sql`(${meetings.startsAt} at time zone ${timezone})::date >= ${opts.from}::date`
-          : undefined,
-        opts.to
-          ? sql`(${meetings.startsAt} at time zone ${timezone})::date <= ${opts.to}::date`
-          : undefined,
+        opts.id ? eq(meetings.id, opts.id) : undefined,
       ),
     )
-    // Earliest first: a list of meetings is read forwards, unlike a reading pile.
-    .orderBy(asc(meetings.startsAt), asc(meetings.id))
   return hydrate(q, rows)
 }
 
-export async function getMeeting(
+/**
+ * Every occurrence in a window, across every series.
+ *
+ * The window arrives as INSTANTS: the caller turned the account's calendar days into them, which
+ * is the only zone-free way to ask a question of events that each carry their own zone.
+ */
+export async function listOccurrences(
+  q: Queryable,
+  workspaceId: string,
+  window: { from: Date; to: Date },
+  opts: { projectId?: string | undefined } = {},
+): Promise<OccurrenceRow[]> {
+  const series = await seriesOf(q, workspaceId, opts)
+  return series
+    .flatMap((s) => expand(s, window))
+    .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
+}
+
+/** The window to search for one named occurrence: its own local time, surrounded. */
+function around(recurrenceId: LocalTime): { from: Date; to: Date } {
+  const at = Date.parse(`${recurrenceId}:00Z`)
+  return { from: new Date(at - 2 * DAY), to: new Date(at + 2 * DAY) }
+}
+
+/** One occurrence by its series and its recurrence id. */
+export async function getOccurrence(
   q: Queryable,
   workspaceId: string,
   id: string,
-): Promise<MeetingRow> {
-  const rows = await q
-    .select(withProject)
-    .from(meetings)
-    .where(and(visibleMeetings(workspaceId), eq(meetings.id, id)))
-  if (rows.length === 0) throw new MeetingNotFoundError()
-  const [row] = await hydrate(q, rows)
-  return row!
+  recurrenceId?: LocalTime,
+): Promise<OccurrenceRow> {
+  const [series] = await seriesOf(q, workspaceId, { id })
+  if (!series) throw new MeetingNotFoundError()
+  const want = recurrenceId ?? series.startsLocal
+  const one = expand(series, around(want)).find((o) => o.recurrenceId === want)
+  if (!one) throw new OccurrenceNotFoundError()
+  return one
+}
+
+/**
+ * A recurrence id the RULE never produced names no occurrence, whatever it looks like.
+ *
+ * Checked without the exceptions: one that was already moved or cancelled is still an occurrence
+ * of the rule, and editing it again has to be able to reach it.
+ */
+function assertOccurs(series: SeriesRow, recurrenceId: LocalTime): void {
+  const found = occurrencesIn(asSeries(series), [], around(recurrenceId))
+  if (!found.some((o) => o.recurrenceId === recurrenceId)) throw new OccurrenceNotFoundError()
 }
 
 export async function createMeeting(
   q: Queryable,
   workspaceId: string,
   body: CreateMeetingBody,
-): Promise<MeetingRow> {
+): Promise<OccurrenceRow> {
   if (body.projectId) await assertProject(q, workspaceId, body.projectId)
   await assertAttendees(q, workspaceId, body.attendeeIds ?? [])
+  // The expander is what has to understand a rule, so it is what decides whether one is usable:
+  // a schema that accepted what the expansion then ignored would store a schedule that never
+  // happens.
+  if (body.rrule && !isUsableRule(body.rrule)) throw new BadRuleError()
+
   const id = uuidv7()
   await q.insert(meetings).values({
     id,
     workspaceId,
     projectId: body.projectId ?? null,
     title: body.title,
-    startsAt: new Date(body.startsAt),
-    endsAt: new Date(body.endsAt),
+    startsLocal: body.startsLocal,
+    timeZone: body.timeZone,
+    durationMinutes: body.durationMinutes,
+    rrule: body.rrule ?? null,
     location: body.location ?? null,
     note: body.note ?? null,
   })
   await putAttendees(q, id, body.attendeeIds ?? [])
-  return getMeeting(q, workspaceId, id)
+  return getOccurrence(q, workspaceId, id, body.startsLocal)
 }
 
 export async function updateMeeting(
@@ -201,40 +290,141 @@ export async function updateMeeting(
   workspaceId: string,
   id: string,
   patch: UpdateMeetingBody,
-): Promise<MeetingRow> {
-  // Read first, so an id from another workspace is "not found" before anything is written.
-  const current = await getMeeting(q, workspaceId, id)
+): Promise<OccurrenceRow> {
+  const [series] = await seriesOf(q, workspaceId, { id })
+  if (!series) throw new MeetingNotFoundError()
   if (patch.projectId) await assertProject(q, workspaceId, patch.projectId)
   if (patch.attendeeIds) await assertAttendees(q, workspaceId, patch.attendeeIds)
+  if (patch.rrule && !isUsableRule(patch.rrule)) throw new BadRuleError()
 
-  const startsAt = patch.startsAt ? new Date(patch.startsAt) : current.startsAt
-  const endsAt = patch.endsAt ? new Date(patch.endsAt) : current.endsAt
-  // MOVING ONE END IS CHECKED AGAINST THE OTHER, which only the server knows: the contract can
-  // only compare two values it was both sent, so dragging a start past a stored end would pass it.
-  if (endsAt.getTime() <= startsAt.getTime()) throw new BackwardsMeetingError()
+  const { scope: asked, recurrenceId, attendeeIds, ...fields } = patch
+  // A meeting that happens once has one occurrence, so the three scopes are the same thing.
+  const scope: EditScope = series.rrule ? asked : 'all'
 
-  // The two instants are pulled out and re-added as Dates: the contract carries them as ISO
-  // strings, and handing a string to a timestamptz column is how a type error becomes a runtime
-  // one.
-  const { attendeeIds, startsAt: _s, endsAt: _e, ...fields } = patch
+  if (scope === 'one') {
+    assertOccurs(series, recurrenceId!)
+    /**
+     * ONE OCCURRENCE: a `RECURRENCE-ID` override, and only of what can differ between two
+     * occurrences of one series. A title, a place, a guest list and a project belong to the
+     * SERIES -- moving one week's meeting is not a reason for it to have two titles.
+     */
+    const moved = {
+      startsLocal: fields.startsLocal ?? null,
+      durationMinutes: fields.durationMinutes ?? null,
+    }
+    const others = Object.keys(fields).filter((k) => k !== 'startsLocal' && k !== 'durationMinutes')
+    if (others.length > 0 || attendeeIds) throw new OneOccurrenceLimitError()
+    if (moved.startsLocal === null && moved.durationMinutes === null) {
+      throw new OneOccurrenceLimitError()
+    }
+    await q
+      .insert(meetingExceptions)
+      .values({ meetingId: id, recurrenceId: recurrenceId!, cancelled: false, ...moved })
+      .onConflictDoUpdate({
+        target: [meetingExceptions.meetingId, meetingExceptions.recurrenceId],
+        set: { cancelled: false, ...moved },
+      })
+    await touch(q, workspaceId, id)
+    return getOccurrence(q, workspaceId, id, recurrenceId!)
+  }
+
+  if (scope === 'following') {
+    assertOccurs(series, recurrenceId!)
+    /**
+     * FROM HERE ON: the old series is stopped just before this occurrence and a new one starts at
+     * it. RFC 5545 has no "change from here"; splitting is what every calendar does, and it
+     * leaves the past exactly as it happened.
+     */
+    await q
+      .update(meetings)
+      .set({ rrule: endedBefore(series.rrule!, recurrenceId!), updatedAt: new Date() })
+      .where(and(visibleMeetings(workspaceId), eq(meetings.id, id)))
+
+    const newId = uuidv7()
+    const startsLocal = fields.startsLocal ?? recurrenceId!
+    await q.insert(meetings).values({
+      id: newId,
+      workspaceId,
+      projectId: 'projectId' in fields ? (fields.projectId ?? null) : series.projectId,
+      title: fields.title ?? series.title,
+      startsLocal,
+      timeZone: fields.timeZone ?? series.timeZone,
+      durationMinutes: fields.durationMinutes ?? series.durationMinutes,
+      rrule: 'rrule' in fields ? (fields.rrule ?? null) : series.rrule,
+      location: 'location' in fields ? (fields.location ?? null) : series.location,
+      note: 'note' in fields ? (fields.note ?? null) : series.note,
+    })
+    await putAttendees(q, newId, attendeeIds ?? series.attendees.map((p) => p.id))
+    // The overrides AT OR AFTER the split belong to the new series; the earlier ones stay with the
+    // old one, because the past is still what happened.
+    await q.execute(sql`
+      update meeting_exceptions set meeting_id = ${newId}
+      where meeting_id = ${id} and recurrence_id >= ${recurrenceId!}
+    `)
+    return getOccurrence(q, workspaceId, newId, startsLocal)
+  }
+
+  // THE WHOLE SERIES.
   await q
     .update(meetings)
-    .set({
-      ...fields,
-      ...(patch.startsAt ? { startsAt } : {}),
-      ...(patch.endsAt ? { endsAt } : {}),
-      updatedAt: new Date(),
-    })
+    .set({ ...fields, updatedAt: new Date() })
     .where(and(visibleMeetings(workspaceId), eq(meetings.id, id)))
   if (attendeeIds) await putAttendees(q, id, attendeeIds)
-  return getMeeting(q, workspaceId, id)
+  /**
+   * Moving the series' own start, or changing its rule, moves every occurrence -- so the overrides,
+   * which are keyed by the OLD local times, no longer name anything. They are dropped rather than
+   * left to haunt a schedule nobody can see them in.
+   */
+  if (fields.startsLocal !== undefined || fields.rrule !== undefined) {
+    await q.delete(meetingExceptions).where(eq(meetingExceptions.meetingId, id))
+  }
+  const [after] = await seriesOf(q, workspaceId, { id })
+  return getOccurrence(q, workspaceId, id, after!.startsLocal)
 }
 
-export async function softDeleteMeeting(
+/** Cancels a whole series, or one occurrence of it (`EXDATE`), or everything from one on. */
+export async function cancelMeeting(
   q: Queryable,
   workspaceId: string,
   id: string,
+  opts: { scope: EditScope; recurrenceId?: LocalTime | undefined },
 ): Promise<void> {
+  const [series] = await seriesOf(q, workspaceId, { id })
+  if (!series) throw new MeetingNotFoundError()
+  const scope: EditScope = series.rrule ? opts.scope : 'all'
+
+  if (scope === 'one') {
+    assertOccurs(series, opts.recurrenceId!)
+    await q
+      .insert(meetingExceptions)
+      .values({
+        meetingId: id,
+        recurrenceId: opts.recurrenceId!,
+        cancelled: true,
+        startsLocal: null,
+        durationMinutes: null,
+      })
+      .onConflictDoUpdate({
+        target: [meetingExceptions.meetingId, meetingExceptions.recurrenceId],
+        set: { cancelled: true, startsLocal: null, durationMinutes: null },
+      })
+    await touch(q, workspaceId, id)
+    return
+  }
+
+  if (scope === 'following') {
+    assertOccurs(series, opts.recurrenceId!)
+    await q
+      .update(meetings)
+      .set({ rrule: endedBefore(series.rrule!, opts.recurrenceId!), updatedAt: new Date() })
+      .where(and(visibleMeetings(workspaceId), eq(meetings.id, id)))
+    await q.execute(sql`
+      delete from meeting_exceptions
+      where meeting_id = ${id} and recurrence_id >= ${opts.recurrenceId!}
+    `)
+    return
+  }
+
   const deleted = await q
     .update(meetings)
     .set({ deletedAt: new Date() })
@@ -242,3 +432,9 @@ export async function softDeleteMeeting(
     .returning({ id: meetings.id })
   if (deleted.length === 0) throw new MeetingNotFoundError()
 }
+
+const touch = (q: Queryable, workspaceId: string, id: string) =>
+  q
+    .update(meetings)
+    .set({ updatedAt: new Date() })
+    .where(and(visibleMeetings(workspaceId), eq(meetings.id, id)))

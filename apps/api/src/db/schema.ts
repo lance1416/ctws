@@ -327,9 +327,13 @@ export const contactChannels = pgTable(
 /**
  * 会议 -- the fourth module's own table, on iCalendar's `VEVENT` (RFC 5545).
  *
- * TWO INSTANTS, not a calendar day: 「周四 14:00」 is the point of a meeting in a way it is not the
- * point of a deadline. Which day it shows on is derived from the start in the account's zone, by
- * the server, like every other date in this app.
+ * A WALL CLOCK PLUS A ZONE, never an instant. 「每周二多伦多时间 09:00」 is at 09:00 in Toronto
+ * forever; its UTC instant moves by an hour twice a year. Storing the instant and advancing it by
+ * seven days would hold the instant still and move the meeting for the people in the room -- the
+ * bug every hand-rolled recurrence ships. `occurrences.ts` has the whole argument.
+ *
+ * A DURATION rather than an end instant, for the same reason: a 60-minute meeting is 60 minutes
+ * on the day the clocks change too. RFC 5545 offers both and `DURATION` is the one that survives.
  */
 export const meetings = pgTable(
   'meetings',
@@ -342,10 +346,15 @@ export const meetings = pgTable(
     projectId: uuid('project_id').references(() => projects.id, { onDelete: 'set null' }),
     /** `SUMMARY`. */
     title: text('title').notNull(),
-    /** `DTSTART` / `DTEND`. */
-    startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
-    endsAt: timestamp('ends_at', { withTimezone: true }).notNull(),
-    /** `LOCATION`: a room, a address, a call link. Free text, as the RFC has it. */
+    /** `DTSTART`'s local half: `YYYY-MM-DDTHH:mm`, no zone. */
+    startsLocal: text('starts_local').notNull(),
+    /** `DTSTART`'s `TZID`: an IANA zone. A meeting in Toronto and one in London are not the same
+     *  wall clock, and the account's own zone is neither of them. */
+    timeZone: text('time_zone').notNull(),
+    /** `DURATION`, in minutes. */
+    durationMinutes: integer('duration_minutes').notNull(),
+    /** `RRULE`, without the `RRULE:` prefix. Null means it happens once. */
+    rrule: text('rrule'),
     location: text('location'),
     /** `DESCRIPTION`. */
     note: text('note'),
@@ -354,10 +363,49 @@ export const meetings = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    index('meetings_workspace_starts_idx').on(t.workspaceId, t.startsAt),
-    // A meeting that ends before it starts is a typo, not a short meeting. The contract refuses it
-    // at the edge; this is the same rule where the data actually lives.
-    check('meetings_ends_after_starts', sql`${t.endsAt} > ${t.startsAt}`),
+    index('meetings_workspace_idx').on(t.workspaceId),
+    check('meetings_duration_positive', sql`${t.durationMinutes} > 0`),
+    // The stored shape of a wall clock, checked where the data lives and not only at the edge.
+    check(
+      'meetings_starts_local_shape',
+      sql`${t.startsLocal} ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}$'`,
+    ),
+  ],
+)
+
+/**
+ * `EXDATE` AND `RECURRENCE-ID` IN ONE TABLE: the single occurrences that differ from their series.
+ *
+ * `recurrence_id` is the local time the RULE put the occurrence at -- the occurrence's identity,
+ * which does not change when the occurrence is moved. `cancelled` is `EXDATE`; the nullable
+ * columns are the override, each null meaning 「跟系列一样」.
+ *
+ * One table rather than two because they are one question -- 「这一次有什么不同」 -- and a
+ * cancellation is the answer 「这一次不开了」.
+ */
+export const meetingExceptions = pgTable(
+  'meeting_exceptions',
+  {
+    meetingId: uuid('meeting_id')
+      .notNull()
+      .references(() => meetings.id, { onDelete: 'cascade' }),
+    /** `RECURRENCE-ID`: which occurrence, by the series' own local time for it. */
+    recurrenceId: text('recurrence_id').notNull(),
+    cancelled: boolean('cancelled').notNull().default(false),
+    startsLocal: text('starts_local'),
+    durationMinutes: integer('duration_minutes'),
+  },
+  (t) => [
+    primaryKey({ columns: [t.meetingId, t.recurrenceId] }),
+    check(
+      'meeting_exceptions_duration_positive',
+      sql`${t.durationMinutes} is null or ${t.durationMinutes} > 0`,
+    ),
+    // A cancelled occurrence that also carries an override is two answers to one question.
+    check(
+      'meeting_exceptions_cancelled_is_bare',
+      sql`not ${t.cancelled} or (${t.startsLocal} is null and ${t.durationMinutes} is null)`,
+    ),
   ],
 )
 

@@ -1,5 +1,5 @@
 {
-  "id": "451f1764-3761-4822-a8a2-ec61fd728cee",
+  "id": "6e7b7f5a-a357-492c-862e-a650a3f475e9",
   "prevId": "21fa12fb-ffe5-4f06-86c9-d22af5f5ef55",
   "version": "7",
   "dialect": "postgresql",
@@ -315,6 +315,74 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.meeting_exceptions": {
+      "name": "meeting_exceptions",
+      "schema": "",
+      "columns": {
+        "meeting_id": {
+          "name": "meeting_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recurrence_id": {
+          "name": "recurrence_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cancelled": {
+          "name": "cancelled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "starts_local": {
+          "name": "starts_local",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "duration_minutes": {
+          "name": "duration_minutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "meeting_exceptions_meeting_id_meetings_id_fk": {
+          "name": "meeting_exceptions_meeting_id_meetings_id_fk",
+          "tableFrom": "meeting_exceptions",
+          "tableTo": "meetings",
+          "columnsFrom": ["meeting_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "meeting_exceptions_meeting_id_recurrence_id_pk": {
+          "name": "meeting_exceptions_meeting_id_recurrence_id_pk",
+          "columns": ["meeting_id", "recurrence_id"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "meeting_exceptions_duration_positive": {
+          "name": "meeting_exceptions_duration_positive",
+          "value": "\"meeting_exceptions\".\"duration_minutes\" is null or \"meeting_exceptions\".\"duration_minutes\" > 0"
+        },
+        "meeting_exceptions_cancelled_is_bare": {
+          "name": "meeting_exceptions_cancelled_is_bare",
+          "value": "not \"meeting_exceptions\".\"cancelled\" or (\"meeting_exceptions\".\"starts_local\" is null and \"meeting_exceptions\".\"duration_minutes\" is null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
     "public.meetings": {
       "name": "meetings",
       "schema": "",
@@ -343,17 +411,29 @@
           "primaryKey": false,
           "notNull": true
         },
-        "starts_at": {
-          "name": "starts_at",
-          "type": "timestamp with time zone",
+        "starts_local": {
+          "name": "starts_local",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "ends_at": {
-          "name": "ends_at",
-          "type": "timestamp with time zone",
+        "time_zone": {
+          "name": "time_zone",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "duration_minutes": {
+          "name": "duration_minutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rrule": {
+          "name": "rrule",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "location": {
           "name": "location",
@@ -389,17 +469,11 @@
         }
       },
       "indexes": {
-        "meetings_workspace_starts_idx": {
-          "name": "meetings_workspace_starts_idx",
+        "meetings_workspace_idx": {
+          "name": "meetings_workspace_idx",
           "columns": [
             {
               "expression": "workspace_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "starts_at",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -435,9 +509,13 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {
-        "meetings_ends_after_starts": {
-          "name": "meetings_ends_after_starts",
-          "value": "\"meetings\".\"ends_at\" > \"meetings\".\"starts_at\""
+        "meetings_duration_positive": {
+          "name": "meetings_duration_positive",
+          "value": "\"meetings\".\"duration_minutes\" > 0"
+        },
+        "meetings_starts_local_shape": {
+          "name": "meetings_starts_local_shape",
+          "value": "\"meetings\".\"starts_local\" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}$'"
         }
       },
       "isRLSEnabled": false
