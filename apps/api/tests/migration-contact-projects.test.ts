@@ -9,19 +9,16 @@ import { runMigrations } from '../src/db/migrate'
 
 const drizzleDir = resolve(import.meta.dirname, '../drizzle')
 
-/**
- * Builds a migrations folder holding everything UP TO 0010 -- the schema of a database deployed
- * while a contact still had a single `project_id`.
- */
-function beforeContactProjects(): string {
-  const dir = mkdtempSync(join(tmpdir(), 'ctws-0010-'))
+/** Builds a migrations folder holding everything BEFORE the migration tagged `stop`. */
+function upTo(stop: string): string {
+  const dir = mkdtempSync(join(tmpdir(), `ctws-before-${stop}-`))
   mkdirSync(join(dir, 'meta'))
   const journal = JSON.parse(readFileSync(join(drizzleDir, 'meta/_journal.json'), 'utf8')) as {
     entries: { tag: string }[]
   }
-  const upTo = journal.entries.findIndex((e) => e.tag.startsWith('0011'))
-  expect(upTo, 'migration 0011 is in the journal').toBeGreaterThan(0)
-  journal.entries = journal.entries.slice(0, upTo)
+  const cut = journal.entries.findIndex((e) => e.tag.startsWith(stop))
+  expect(cut, `migration ${stop} is in the journal`).toBeGreaterThan(0)
+  journal.entries = journal.entries.slice(0, cut)
   writeFileSync(join(dir, 'meta/_journal.json'), JSON.stringify(journal))
   for (const entry of journal.entries) {
     cpSync(join(drizzleDir, `${entry.tag}.sql`), join(dir, `${entry.tag}.sql`))
@@ -43,9 +40,8 @@ describe('migration 0011 on an already-deployed database', () => {
     const url = container.getConnectionUri()
     const db = createDb(url)
     try {
-      process.env.MIGRATIONS_DIR = beforeContactProjects()
+      process.env.MIGRATIONS_DIR = upTo('0011')
       await runMigrations(url)
-      delete process.env.MIGRATIONS_DIR
 
       await db.execute(sql`
         insert into workspaces (id, name) values
@@ -62,7 +58,11 @@ describe('migration 0011 on an already-deployed database', () => {
           ('44444444-4444-4444-8444-444444444444',
            '11111111-1111-4111-8111-111111111111', null, '老朋友')`)
 
+      // Stop at 0011: 0014 moves these rows into `links` and drops the table, and that move has
+      // a test of its own. This one is about 0011 alone.
+      process.env.MIGRATIONS_DIR = upTo('0012')
       await runMigrations(url)
+      delete process.env.MIGRATIONS_DIR
 
       const links = await db.execute(sql`
         select contact_id::text as contact_id, project_id::text as project_id

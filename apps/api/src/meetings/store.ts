@@ -3,7 +3,8 @@ import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import { ContactNotFoundError } from '../contacts/errors'
 import type { Queryable } from '../db/client'
-import { contacts, meetingAttendees, meetingExceptions, meetings, projects } from '../db/schema'
+import { contacts, meetingExceptions, meetings, projects } from '../db/schema'
+import { contactsLinkedFrom, filedUnder, oneProjectOf, putLinks } from '../links/store'
 import { ProjectNotFoundError } from '../projects/errors'
 import { visibleProjects } from '../projects/store'
 import {
@@ -60,17 +61,9 @@ function visibleMeetings(workspaceId: string) {
   return and(eq(meetings.workspaceId, workspaceId), isNull(meetings.deletedAt))
 }
 
-// Both halves of the project come from one subquery, so a meeting never reports a project the
-// person cannot see: projects are SOFT-deleted, so the column's ON DELETE SET NULL never fires.
-const withProject = {
-  meeting: meetings,
-  projectId: sql<string | null>`(
-    select p.id from projects p where p.id = meetings.project_id and p.deleted_at is null
-  )`,
-  projectName: sql<string | null>`(
-    select p.name from projects p where p.id = meetings.project_id and p.deleted_at is null
-  )`,
-}
+// The project is an EDGE now, not a column: `oneProjectOf` is the shell's, and every module that
+// shows one project reads it the same way.
+const withProject = { meeting: meetings, ...oneProjectOf('meeting', 'meetings') }
 
 type Selected = {
   meeting: typeof meetings.$inferSelect
@@ -79,28 +72,16 @@ type Selected = {
 }
 
 /** Attaches attendees and exceptions, in ONE query each for the whole page. */
-async function hydrate(q: Queryable, rows: Selected[]): Promise<SeriesRow[]> {
+async function hydrate(q: Queryable, workspaceId: string, rows: Selected[]): Promise<SeriesRow[]> {
   const ids = rows.map((r) => r.meeting.id)
-  const people = new Map<string, MeetingAttendee[]>()
+  let people = new Map<string, MeetingAttendee[]>()
   const skips = new Map<string, Exception[]>()
   if (ids.length > 0) {
     const [guests, found] = await Promise.all([
-      q
-        .select({ meetingId: meetingAttendees.meetingId, id: contacts.id, name: contacts.name })
-        .from(meetingAttendees)
-        .innerJoin(contacts, eq(contacts.id, meetingAttendees.contactId))
-        // A person deleted since the meeting was arranged is left out rather than named: the
-        // address book is where a name comes from, and a name nobody can look up is not one.
-        .where(and(inArray(meetingAttendees.meetingId, ids), isNull(contacts.deletedAt)))
-        .orderBy(asc(contacts.name), asc(contacts.id)),
+      contactsLinkedFrom(q, workspaceId, 'meeting', ids, 'attends'),
       q.select().from(meetingExceptions).where(inArray(meetingExceptions.meetingId, ids)),
     ])
-    for (const g of guests) {
-      const person = { id: g.id, name: g.name }
-      const list = people.get(g.meetingId)
-      if (list) list.push(person)
-      else people.set(g.meetingId, [person])
-    }
+    people = guests
     for (const e of found) {
       const one: Exception = {
         recurrenceId: e.recurrenceId,
@@ -176,17 +157,6 @@ async function assertAttendees(
   if (rows.length !== unique.length) throw new ContactNotFoundError()
 }
 
-async function putAttendees(
-  q: Queryable,
-  meetingId: string,
-  contactIds: readonly string[],
-): Promise<void> {
-  await q.delete(meetingAttendees).where(eq(meetingAttendees.meetingId, meetingId))
-  const unique = [...new Set(contactIds)]
-  if (unique.length === 0) return
-  await q.insert(meetingAttendees).values(unique.map((contactId) => ({ meetingId, contactId })))
-}
-
 /**
  * HOW MANY SERIES ONE REQUEST WILL EXPAND.
  *
@@ -208,13 +178,13 @@ async function seriesOf(
     .where(
       and(
         visibleMeetings(workspaceId),
-        opts.projectId ? eq(meetings.projectId, opts.projectId) : undefined,
+        opts.projectId ? filedUnder('meeting', 'meetings', opts.projectId) : undefined,
         opts.id ? eq(meetings.id, opts.id) : undefined,
       ),
     )
     .orderBy(asc(meetings.startsLocal), asc(meetings.id))
     .limit(MAX_SERIES_PER_REQUEST)
-  return hydrate(q, rows)
+  return hydrate(q, workspaceId, rows)
 }
 
 /**
@@ -284,7 +254,6 @@ export async function createMeeting(
   await q.insert(meetings).values({
     id,
     workspaceId,
-    projectId: body.projectId ?? null,
     title: body.title,
     startsLocal: body.startsLocal,
     timeZone: body.timeZone,
@@ -293,7 +262,22 @@ export async function createMeeting(
     location: body.location ?? null,
     note: body.note ?? null,
   })
-  await putAttendees(q, id, body.attendeeIds ?? [])
+  await putLinks(
+    q,
+    workspaceId,
+    { type: 'meeting', id },
+    'contact',
+    'attends',
+    body.attendeeIds ?? [],
+  )
+  await putLinks(
+    q,
+    workspaceId,
+    { type: 'meeting', id },
+    'project',
+    'belongs',
+    body.projectId ? [body.projectId] : [],
+  )
   return getOccurrence(q, workspaceId, id, body.startsLocal)
 }
 
@@ -310,7 +294,7 @@ export async function updateMeeting(
   const wrong = patch.rrule ? ruleProblem(patch.rrule) : null
   if (wrong) throw new BadRuleError(wrong)
 
-  const { scope: asked, recurrenceId, attendeeIds, ...fields } = patch
+  const { scope: asked, recurrenceId, attendeeIds, projectId, ...fields } = patch
   // A meeting that happens once has one occurrence, so the three scopes are the same thing.
   const scope: EditScope = series.rrule ? asked : 'all'
 
@@ -326,7 +310,9 @@ export async function updateMeeting(
       durationMinutes: fields.durationMinutes ?? null,
     }
     const others = Object.keys(fields).filter((k) => k !== 'startsLocal' && k !== 'durationMinutes')
-    if (others.length > 0 || attendeeIds) throw new OneOccurrenceLimitError()
+    if (others.length > 0 || attendeeIds || projectId !== undefined) {
+      throw new OneOccurrenceLimitError()
+    }
     if (moved.startsLocal === null && moved.durationMinutes === null) {
       throw new OneOccurrenceLimitError()
     }
@@ -358,7 +344,6 @@ export async function updateMeeting(
     await q.insert(meetings).values({
       id: newId,
       workspaceId,
-      projectId: 'projectId' in fields ? (fields.projectId ?? null) : series.projectId,
       title: fields.title ?? series.title,
       startsLocal,
       timeZone: fields.timeZone ?? series.timeZone,
@@ -367,7 +352,23 @@ export async function updateMeeting(
       location: 'location' in fields ? (fields.location ?? null) : series.location,
       note: 'note' in fields ? (fields.note ?? null) : series.note,
     })
-    await putAttendees(q, newId, attendeeIds ?? series.attendees.map((p) => p.id))
+    const carried = projectId !== undefined ? projectId : series.projectId
+    await putLinks(
+      q,
+      workspaceId,
+      { type: 'meeting', id: newId },
+      'contact',
+      'attends',
+      attendeeIds ?? series.attendees.map((p) => p.id),
+    )
+    await putLinks(
+      q,
+      workspaceId,
+      { type: 'meeting', id: newId },
+      'project',
+      'belongs',
+      carried ? [carried] : [],
+    )
     // The overrides AT OR AFTER the split belong to the new series; the earlier ones stay with the
     // old one, because the past is still what happened.
     await q.execute(sql`
@@ -382,7 +383,21 @@ export async function updateMeeting(
     .update(meetings)
     .set({ ...fields, updatedAt: new Date() })
     .where(and(visibleMeetings(workspaceId), eq(meetings.id, id)))
-  if (attendeeIds) await putAttendees(q, id, attendeeIds)
+  if (attendeeIds) {
+    await putLinks(q, workspaceId, { type: 'meeting', id }, 'contact', 'attends', attendeeIds)
+  }
+  // `projectId: null` and an absent `projectId` are different answers: one unfiles the meeting,
+  // the other leaves it where it is.
+  if (projectId !== undefined) {
+    await putLinks(
+      q,
+      workspaceId,
+      { type: 'meeting', id },
+      'project',
+      'belongs',
+      projectId ? [projectId] : [],
+    )
+  }
   /**
    * Moving the series' own start, or changing its rule, moves every occurrence -- so the overrides,
    * which are keyed by the OLD local times, no longer name anything. They are dropped rather than

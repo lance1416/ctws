@@ -1,4 +1,11 @@
-import { CHANNEL_KINDS, READING_KINDS, READING_STATUSES, TASK_STATUSES } from '@ctws/contracts'
+import {
+  CHANNEL_KINDS,
+  LINK_KINDS,
+  OBJECT_TYPES,
+  READING_KINDS,
+  READING_STATUSES,
+  TASK_STATUSES,
+} from '@ctws/contracts'
 import { relations, sql } from 'drizzle-orm'
 import {
   type AnyPgColumn,
@@ -211,7 +218,6 @@ export const readingItems = pgTable(
       .notNull()
       .references(() => workspaces.id, { onDelete: 'cascade' }),
     // SET NULL, not cascade: deleting a project must not silently throw away a book.
-    projectId: uuid('project_id').references(() => projects.id, { onDelete: 'set null' }),
     kind: text('kind').notNull(),
     /** Nullable for a link: capture is a pasted url, and the list shows the host until someone
      *  types a title. */
@@ -270,33 +276,6 @@ export const contacts = pgTable(
 )
 
 /**
- * WHICH LINES OF WORK A PERSON IS ON.
- *
- * Many-to-many, because a person usually is: a maintainer on two of your repos, a recruiter
- * holding two roles open. It is an association and not an attribute of the person, which is also
- * why it is a table rather than a column -- the single `project_id` it replaced could only ever
- * be half an answer.
- *
- * It is read in the other direction as often as this one: standing on 找工作, who do I know here.
- */
-export const contactProjects = pgTable(
-  'contact_projects',
-  {
-    contactId: uuid('contact_id')
-      .notNull()
-      .references(() => contacts.id, { onDelete: 'cascade' }),
-    projectId: uuid('project_id')
-      .notNull()
-      .references(() => projects.id, { onDelete: 'cascade' }),
-  },
-  (t) => [
-    primaryKey({ columns: [t.contactId, t.projectId] }),
-    // The reverse lookup: the people on one project.
-    index('contact_projects_project_idx').on(t.projectId),
-  ],
-)
-
-/**
  * vCard's `EMAIL` / `TEL` / `URL`, which are REPEATABLE properties.
  *
  * A table and not two columns on `contacts`: one address per person is wrong the first time
@@ -342,8 +321,6 @@ export const meetings = pgTable(
     workspaceId: uuid('workspace_id')
       .notNull()
       .references(() => workspaces.id, { onDelete: 'cascade' }),
-    // SET NULL, not cascade: deleting a project must not erase the history of having met about it.
-    projectId: uuid('project_id').references(() => projects.id, { onDelete: 'set null' }),
     /** `SUMMARY`. */
     title: text('title').notNull(),
     /** `DTSTART`'s local half: `YYYY-MM-DDTHH:mm`, no zone. */
@@ -410,26 +387,47 @@ export const meetingExceptions = pgTable(
 )
 
 /**
- * `ATTENDEE`: who is in the room, out of the contacts module.
+ * 东西之间的边 -- the SHELL's table, and the one that replaced 「什么都挂到项目上」.
  *
- * This is the one place two modules' tables touch, and it is the reason an address book belongs in
- * a workbench at all -- it is the list you pick people out of. Deleting a person cascades the
- * membership away rather than leaving a meeting with a guest nobody can name.
+ * Polymorphic on purpose: an edge may join any two kinds of thing, and the alternative -- a join
+ * table per pair -- is what produced four columns all pointing at projects and no way to say
+ * anything else.
+ *
+ * NO FOREIGN KEY to either end, because there is no one table to point at. It costs nothing in
+ * practice: everything in this app is SOFT-deleted, so a foreign key would never have fired
+ * anyway, and every read already resolves an id against the owning table and drops what it cannot
+ * see. The workspace IS a foreign key, so a deleted workspace takes its edges with it.
  */
-export const meetingAttendees = pgTable(
-  'meeting_attendees',
+export const links = pgTable(
+  'links',
   {
-    meetingId: uuid('meeting_id')
+    workspaceId: uuid('workspace_id')
       .notNull()
-      .references(() => meetings.id, { onDelete: 'cascade' }),
-    contactId: uuid('contact_id')
-      .notNull()
-      .references(() => contacts.id, { onDelete: 'cascade' }),
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    fromType: text('from_type').notNull(),
+    fromId: uuid('from_id').notNull(),
+    toType: text('to_type').notNull(),
+    toId: uuid('to_id').notNull(),
+    kind: text('kind').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    primaryKey({ columns: [t.meetingId, t.contactId] }),
-    // The reverse lookup: 「我跟这个人开过哪些会」.
-    index('meeting_attendees_contact_idx').on(t.contactId),
+    // One edge of one kind between two things. Asking twice is the same fact.
+    primaryKey({ columns: [t.fromType, t.fromId, t.toType, t.toId, t.kind] }),
+    // BOTH DIRECTIONS are read: 「这个会有谁」 and 「我跟这个人开过哪些会」 are one row.
+    index('links_from_idx').on(t.workspaceId, t.fromType, t.fromId),
+    index('links_to_idx').on(t.workspaceId, t.toType, t.toId),
+    check('links_type_check', inList(t.fromType, OBJECT_TYPES)),
+    check('links_to_type_check', inList(t.toType, OBJECT_TYPES)),
+    check(
+      'links_kind_check',
+      inList(
+        t.kind,
+        LINK_KINDS.map((l) => l.kind),
+      ),
+    ),
+    // A thing is not related to itself.
+    check('links_not_self', sql`not (${t.fromType} = ${t.toType} and ${t.fromId} = ${t.toId})`),
   ],
 )
 

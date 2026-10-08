@@ -36,7 +36,16 @@ export async function listReadingCalendar(
       p.id as project_id,
       p.name as project_name
     from reading_items r
-    left join projects p on p.id = r.project_id and p.deleted_at is null
+    -- The project is an edge now. LATERAL rather than a join, because the edge table permits
+    -- many and the calendar square has room for one: the first by project rank, which is the one
+    -- the item's own row shows.
+    left join lateral (
+      select p.id, p.name from links l
+      join projects p on p.id = l.to_id and p.deleted_at is null
+      where l.from_type = 'reading' and l.from_id = r.id
+        and l.to_type = 'project' and l.kind = 'belongs'
+      order by p.rank, p.id limit 1
+    ) p on true
     where r.workspace_id = ${workspaceId}
       and r.deleted_at is null
       and r.plan_on is not null

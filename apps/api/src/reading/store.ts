@@ -2,6 +2,7 @@ import type { CreateReadingItemBody, UpdateReadingItemBody } from '@ctws/contrac
 import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import type { Queryable } from '../db/client'
+import { filedUnder, oneProjectOf, putLinks, unfiled } from '../links/store'
 import { LIKE_ESCAPE, likePattern } from '../db/like'
 import { projects, readingItems } from '../db/schema'
 import { ProjectNotFoundError } from '../projects/errors'
@@ -18,7 +19,10 @@ import { ReadingItemNotFoundError, WrongKindError } from './errors'
 
 export type ReadingItem = typeof readingItems.$inferSelect
 /** A row as a list returns it: the item plus the shell project's name, so one round trip is enough. */
-export type ReadingItemRow = ReadingItem & { projectName: string | null }
+export type ReadingItemRow = ReadingItem & {
+  projectId: string | null
+  projectName: string | null
+}
 
 /**
  * THE TENANT CHOKEPOINT, this module's own. Every read and write below goes through it, so
@@ -28,23 +32,9 @@ function visibleItems(workspaceId: string) {
   return and(eq(readingItems.workspaceId, workspaceId), isNull(readingItems.deletedAt))
 }
 
-// Written with literal, aliased table names rather than `${projects.name}`: drizzle interpolates
-// a column reference UNQUALIFIED inside raw SQL, which would bind to the outer row instead of the
-// subquery's. The projects store's own `openTasks` count carries the same warning.
-const withProject = {
-  item: readingItems,
-  // BOTH halves come from the same subquery, so an item never reports a project the person
-  // cannot see. Projects are SOFT-deleted, so the column's ON DELETE SET NULL never fires: the
-  // id would otherwise go on pointing at a project that is gone from every list.
-  projectId: sql<string | null>`(
-    select p.id from projects p
-    where p.id = reading_items.project_id and p.deleted_at is null
-  )`,
-  projectName: sql<string | null>`(
-    select p.name from projects p
-    where p.id = reading_items.project_id and p.deleted_at is null
-  )`,
-}
+// The project is an EDGE now, not a column: `oneProjectOf` is the shell's, and every module that
+// shows one project reads it the same way.
+const withProject = { item: readingItems, ...oneProjectOf('reading', 'reading_items') }
 
 const rowOf = ({
   item,
@@ -81,16 +71,8 @@ export async function listReadingItems(
     .where(
       and(
         visibleItems(workspaceId),
-        opts.projectId ? eq(readingItems.projectId, opts.projectId) : undefined,
-        // 「散的」: no project the person can still SEE. An item whose project was deleted reads
-        // as having none everywhere else (the row reports only visible projects), so it has to
-        // read that way here too -- otherwise it would belong to no list at all.
-        opts.unfiled
-          ? sql`not exists (
-              select 1 from projects p
-              where p.id = reading_items.project_id and p.deleted_at is null
-            )`
-          : undefined,
+        opts.projectId ? filedUnder('reading', 'reading_items', opts.projectId) : undefined,
+        opts.unfiled ? unfiled('reading', 'reading_items') : undefined,
         // An empty list would mean "no status matches", which is never what a caller means; an
         // absent filter means every status.
         opts.statuses && opts.statuses.length > 0
@@ -133,14 +115,22 @@ export async function createReadingItem(
     .values({
       id: uuidv7(),
       workspaceId,
-      projectId: body.projectId ?? null,
       // 待读 is where everything starts. There is no separate inbox for reading: the list IS the
       // inbox, which is why the age of a row is worth showing on it.
       status: 'todo',
       ...values,
     })
     .returning({ id: readingItems.id })
-  return getReadingItem(q, workspaceId, created!.id)
+  const id = created!.id
+  await putLinks(
+    q,
+    workspaceId,
+    { type: 'reading', id },
+    'project',
+    'belongs',
+    body.projectId ? [body.projectId] : [],
+  )
+  return getReadingItem(q, workspaceId, id)
 }
 
 export async function updateReadingItem(
@@ -162,10 +152,23 @@ export async function updateReadingItem(
   }
   if (patch.projectId) await assertProject(q, workspaceId, patch.projectId)
 
+  const { projectId, ...fields } = patch
   await q
     .update(readingItems)
-    .set({ ...patch, updatedAt: new Date() })
+    .set({ ...fields, updatedAt: new Date() })
     .where(and(visibleItems(workspaceId), eq(readingItems.id, id)))
+  // `projectId: null` and an absent `projectId` are different answers: one unfiles the item, the
+  // other leaves it where it is.
+  if (projectId !== undefined) {
+    await putLinks(
+      q,
+      workspaceId,
+      { type: 'reading', id },
+      'project',
+      'belongs',
+      projectId ? [projectId] : [],
+    )
+  }
   return getReadingItem(q, workspaceId, id)
 }
 

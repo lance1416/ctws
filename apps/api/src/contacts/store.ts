@@ -3,7 +3,8 @@ import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import type { Queryable } from '../db/client'
 import { LIKE_ESCAPE, likePattern } from '../db/like'
-import { contactChannels, contactProjects, contacts, projects } from '../db/schema'
+import { contactChannels, contacts, projects } from '../db/schema'
+import { filedUnder, projectsLinkedFrom, putLinks, unfiled } from '../links/store'
 import { ProjectNotFoundError } from '../projects/errors'
 import { visibleProjects } from '../projects/store'
 import { ContactNotFoundError } from './errors'
@@ -42,30 +43,20 @@ type Selected = typeof contacts.$inferSelect
  * table can outlive the project it points at, and a name nobody can navigate to is worse than no
  * name. A query per contact would be the N+1 this codebase refuses everywhere else.
  */
-async function hydrate(q: Queryable, rows: Selected[]): Promise<ContactRow[]> {
+async function hydrate(q: Queryable, workspaceId: string, rows: Selected[]): Promise<ContactRow[]> {
   const ids = rows.map((r) => r.id)
-  const byContact = new Map<string, ContactProject[]>()
+  let byContact = new Map<string, ContactProject[]>()
   const channelsOf = new Map<string, ContactChannel[]>()
   if (ids.length > 0) {
     const [linked, found] = await Promise.all([
-      q
-        .select({ contactId: contactProjects.contactId, id: projects.id, name: projects.name })
-        .from(contactProjects)
-        .innerJoin(projects, eq(projects.id, contactProjects.projectId))
-        .where(and(inArray(contactProjects.contactId, ids), isNull(projects.deletedAt)))
-        .orderBy(asc(projects.rank), asc(projects.id)),
+      projectsLinkedFrom(q, workspaceId, 'contact', ids),
       q
         .select()
         .from(contactChannels)
         .where(inArray(contactChannels.contactId, ids))
         .orderBy(asc(contactChannels.rank), asc(contactChannels.id)),
     ])
-    for (const row of linked) {
-      const list = byContact.get(row.contactId)
-      const project = { id: row.id, name: row.name }
-      if (list) list.push(project)
-      else byContact.set(row.contactId, [project])
-    }
+    byContact = linked
     for (const c of found) {
       const channel: ContactChannel = {
         kind: c.kind as ContactChannel['kind'],
@@ -104,18 +95,6 @@ async function assertProjects(
   if (rows.length !== new Set(projectIds).size) throw new ProjectNotFoundError()
 }
 
-/** Replaces the whole set of a person's projects. Called inside the caller's transaction. */
-async function putProjects(
-  q: Queryable,
-  contactId: string,
-  projectIds: readonly string[],
-): Promise<void> {
-  await q.delete(contactProjects).where(eq(contactProjects.contactId, contactId))
-  const unique = [...new Set(projectIds)]
-  if (unique.length === 0) return
-  await q.insert(contactProjects).values(unique.map((projectId) => ({ contactId, projectId })))
-}
-
 /** Replaces a contact's whole channel set. Called inside the caller's transaction. */
 async function putChannels(
   q: Queryable,
@@ -147,28 +126,16 @@ export async function listContacts(
     .where(
       and(
         visibleContacts(workspaceId),
-        // Through the association table, and only VISIBLE projects: a link to a soft-deleted
-        // project is a link to nothing, so it must not make a person count as filed either.
-        opts.projectId
-          ? sql`exists (
-              select 1 from contact_projects cp
-              join projects p on p.id = cp.project_id and p.deleted_at is null
-              where cp.contact_id = contacts.id and cp.project_id = ${opts.projectId}
-            )`
-          : undefined,
-        opts.unfiled
-          ? sql`not exists (
-              select 1 from contact_projects cp
-              join projects p on p.id = cp.project_id and p.deleted_at is null
-              where cp.contact_id = contacts.id
-            )`
-          : undefined,
+        // Only VISIBLE projects: an edge to a soft-deleted project is an edge to nothing, so it
+        // must not make a person count as filed either.
+        opts.projectId ? filedUnder('contact', 'contacts', opts.projectId) : undefined,
+        opts.unfiled ? unfiled('contact', 'contacts') : undefined,
       ),
     )
     // By name. A contact list is looked at to FIND someone, and alphabetical is where a person
     // expects to find them -- unlike the reading pile, where the newest thing is the point.
     .orderBy(asc(contacts.name), asc(contacts.id))
-  return hydrate(q, rows)
+  return hydrate(q, workspaceId, rows)
 }
 
 export async function getContact(
@@ -181,7 +148,7 @@ export async function getContact(
     .from(contacts)
     .where(and(visibleContacts(workspaceId), eq(contacts.id, id)))
   if (rows.length === 0) throw new ContactNotFoundError()
-  const [row] = await hydrate(q, rows)
+  const [row] = await hydrate(q, workspaceId, rows)
   return row!
 }
 
@@ -199,7 +166,14 @@ export async function createContact(
     org: body.org ?? null,
     note: body.note ?? null,
   })
-  await putProjects(q, id, body.projectIds ?? [])
+  await putLinks(
+    q,
+    workspaceId,
+    { type: 'contact', id },
+    'project',
+    'belongs',
+    body.projectIds ?? [],
+  )
   await putChannels(q, id, body.channels ?? [])
   return getContact(q, workspaceId, id)
 }
@@ -221,7 +195,9 @@ export async function updateContact(
     .update(contacts)
     .set({ ...fields, updatedAt: new Date() })
     .where(and(visibleContacts(workspaceId), eq(contacts.id, id)))
-  if (projectIds) await putProjects(q, id, projectIds)
+  if (projectIds) {
+    await putLinks(q, workspaceId, { type: 'contact', id }, 'project', 'belongs', projectIds)
+  }
   if (channels) await putChannels(q, id, channels)
   return getContact(q, workspaceId, id)
 }
@@ -271,5 +247,5 @@ export async function searchContacts(
     )
     .orderBy(asc(contacts.name), asc(contacts.id))
     .limit(limit)
-  return hydrate(q, rows)
+  return hydrate(q, workspaceId, rows)
 }
