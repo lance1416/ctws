@@ -131,8 +131,9 @@ describe('migrations', () => {
     ).rows as { id: string }[]
 
     await ctx.db.execute(sql`
-      insert into sessions (id, user_id, expires_at, created_at, last_seen_at)
-      values (gen_random_uuid(), ${user!.id}, now() + interval '1 day', now(), now())
+      insert into sessions (id, token_hash, user_id, expires_at, created_at, last_seen_at)
+      values (gen_random_uuid(), encode(sha256('cascade'::bytea), 'hex'),
+              ${user!.id}, now() + interval '1 day', now(), now())
     `)
     await ctx.db.execute(sql`delete from users where id = ${user!.id}`)
 

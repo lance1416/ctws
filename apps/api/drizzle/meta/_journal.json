@@ -43,6 +43,13 @@
       "when": 1791410000000,
       "tag": "0005_commit_the_backlog",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791430000000,
+      "tag": "0006_hash_the_session_token",
+      "breakpoints": true
     }
   ]
 }

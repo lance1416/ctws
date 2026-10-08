@@ -42,7 +42,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
         const ctx = await getAuthContext(db, userId)
         if (!ctx) throw new Error('freshly registered user has no auth context')
         const session = await createSession(db, userId, env.sessionTtlDays)
-        setSessionCookie(reply, env, session.id, session.expiresAt)
+        setSessionCookie(reply, env, session.token, session.expiresAt)
         return reply.status(201).send({
           id: userId,
           email: req.body.email,
@@ -96,7 +96,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       if (!user) return sendProblem(reply, 401, 'Invalid email or password')
 
       const session = await createSession(db, result.userId, env.sessionTtlDays)
-      setSessionCookie(reply, env, session.id, session.expiresAt)
+      setSessionCookie(reply, env, session.token, session.expiresAt)
       return reply.send(user)
     },
   )

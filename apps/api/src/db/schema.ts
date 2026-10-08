@@ -37,7 +37,11 @@ export const users = pgTable(
 )
 
 export const sessions = pgTable('sessions', {
+  // An INTERNAL id. Nothing outside this table ever sees it: the cookie carries a token whose
+  // SHA-256 is `token_hash` below (D2), and every lookup goes through that.
   id: uuid('id').primaryKey(),
+  /** `sha256(cookie token)`, hex. Unique, because it is what a session is looked up by. */
+  tokenHash: text('token_hash').notNull().unique(),
   userId: uuid('user_id')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
