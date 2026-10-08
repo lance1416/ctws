@@ -324,6 +324,67 @@ export const contactChannels = pgTable(
   ],
 )
 
+/**
+ * 会议 -- the fourth module's own table, on iCalendar's `VEVENT` (RFC 5545).
+ *
+ * TWO INSTANTS, not a calendar day: 「周四 14:00」 is the point of a meeting in a way it is not the
+ * point of a deadline. Which day it shows on is derived from the start in the account's zone, by
+ * the server, like every other date in this app.
+ */
+export const meetings = pgTable(
+  'meetings',
+  {
+    id: uuid('id').primaryKey(),
+    workspaceId: uuid('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    // SET NULL, not cascade: deleting a project must not erase the history of having met about it.
+    projectId: uuid('project_id').references(() => projects.id, { onDelete: 'set null' }),
+    /** `SUMMARY`. */
+    title: text('title').notNull(),
+    /** `DTSTART` / `DTEND`. */
+    startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
+    endsAt: timestamp('ends_at', { withTimezone: true }).notNull(),
+    /** `LOCATION`: a room, a address, a call link. Free text, as the RFC has it. */
+    location: text('location'),
+    /** `DESCRIPTION`. */
+    note: text('note'),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('meetings_workspace_starts_idx').on(t.workspaceId, t.startsAt),
+    // A meeting that ends before it starts is a typo, not a short meeting. The contract refuses it
+    // at the edge; this is the same rule where the data actually lives.
+    check('meetings_ends_after_starts', sql`${t.endsAt} > ${t.startsAt}`),
+  ],
+)
+
+/**
+ * `ATTENDEE`: who is in the room, out of the contacts module.
+ *
+ * This is the one place two modules' tables touch, and it is the reason an address book belongs in
+ * a workbench at all -- it is the list you pick people out of. Deleting a person cascades the
+ * membership away rather than leaving a meeting with a guest nobody can name.
+ */
+export const meetingAttendees = pgTable(
+  'meeting_attendees',
+  {
+    meetingId: uuid('meeting_id')
+      .notNull()
+      .references(() => meetings.id, { onDelete: 'cascade' }),
+    contactId: uuid('contact_id')
+      .notNull()
+      .references(() => contacts.id, { onDelete: 'cascade' }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.meetingId, t.contactId] }),
+    // The reverse lookup: 「我跟这个人开过哪些会」.
+    index('meeting_attendees_contact_idx').on(t.contactId),
+  ],
+)
+
 export const taskEvents = pgTable(
   'task_events',
   {

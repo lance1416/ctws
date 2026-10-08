@@ -25,6 +25,7 @@ import { registerGuards } from './guards'
 import { sendProblem } from './problem'
 import { projectRoutes } from './projects/routes'
 import { contactRoutes } from './contacts/routes'
+import { meetingRoutes } from './meetings/routes'
 import { readingRoutes } from './reading/routes'
 import { taskRoutes } from './tasks/routes'
 
@@ -86,6 +87,7 @@ export async function buildApp(opts: { env: Env; db: Db }): Promise<FastifyInsta
   await app.register(taskRoutes, { prefix: '/api/v1/tasks' })
   await app.register(readingRoutes, { prefix: '/api/v1/reading' })
   await app.register(contactRoutes, { prefix: '/api/v1/contacts' })
+  await app.register(meetingRoutes, { prefix: '/api/v1/meetings' })
   // Registered last: a legacy path must never shadow a real one.
   await app.register(movedRoutes, { prefix: '/api/v1' })
 

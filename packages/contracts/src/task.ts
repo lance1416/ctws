@@ -247,6 +247,14 @@ export const calendarEntry = z
     to: z.string(),
     /** The module's own word for what this date is: 「截止」, 「排期」, 「想读完」. */
     kind: z.string(),
+    /**
+     * The time of day, when the thing HAS one: 「14:00」, formatted by the server in the account's
+     * zone. A deadline has an instant too but it is not what a deadline is about; a meeting is at
+     * a time, and a grid that showed only the day would be hiding the useful half.
+     *
+     * It is also what a square sorts by, so the morning really is above the afternoon.
+     */
+    time: z.string().nullable(),
     projectId: z.uuid().nullable(),
     projectName: z.string().nullable(),
   })
