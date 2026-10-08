@@ -57,6 +57,13 @@ type Props = {
   onToggle: () => void
   onKeyDown: (e: KeyboardEvent<HTMLButtonElement>) => void
   onOpen: () => void
+  /**
+   * Shift+click toggles this row's membership of the selection (D61). Plain click still opens
+   * the detail, so the one gesture people already use is untouched.
+   */
+  onToggleSelected?: () => void
+  /** Whether this row is in the selection. */
+  selected?: boolean
   onAddChild: () => void
 }
 
@@ -98,6 +105,8 @@ export function TaskRow({
   onToggle,
   onKeyDown,
   onOpen,
+  onToggleSelected,
+  selected = false,
   onAddChild,
 }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -125,8 +134,17 @@ export function TaskRow({
       data-depth={row.depth}
       // A click on the row body opens the detail; the chevron and the handle are buttons with
       // their own jobs. A drag starts on the handle, so it never reaches here as a row click.
+      aria-selected={onToggleSelected ? selected : undefined}
       onClick={(e) => {
-        if (!(e.target as HTMLElement).closest('button')) onOpen()
+        if ((e.target as HTMLElement).closest('button')) return
+        // Shift picks rows instead of opening one. A plain click is unchanged, which is what
+        // keeps the gesture people already use from becoming a mode.
+        if (e.shiftKey && onToggleSelected) {
+          e.preventDefault()
+          onToggleSelected()
+          return
+        }
+        onOpen()
       }}
       style={{
         // Pixel indentation is layout, not colour. The project rail sits BEFORE it, at x=0 on
@@ -144,7 +162,13 @@ export function TaskRow({
       // 15/20 title it replaces -- it was 12 + 20 + 8 then and the padding absorbed the two extra
       // pixels of leading -- so the workbench's single-line row metric survives the larger scale
       // exactly, and only the rows that already cost a second line got taller.
-      className={`group relative flex min-h-11 cursor-pointer items-start rounded-lg hover:bg-surface-hover ${isDragging ? 'bg-surface-raised opacity-70' : ''}`}
+      className={`group relative flex min-h-11 cursor-pointer items-start rounded-lg hover:bg-surface-hover ${
+        isDragging ? 'bg-surface-raised opacity-70' : ''
+      } ${
+        // A selected row wears the hover plane permanently plus an accent edge: the plane alone
+        // would be indistinguishable from whatever the pointer happens to be over.
+        selected ? 'bg-surface-hover shadow-[inset_2px_0_0_0_var(--color-accent)]' : ''
+      }`}
     >
       <ProjectRail projectId={projectId} continuous />
       {/* One hairline per ancestor level, centred under that level's chevron column. Depth is

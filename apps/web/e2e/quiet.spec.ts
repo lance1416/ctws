@@ -385,3 +385,57 @@ test('a finished task opens from the 已完成 list, where it could only be rest
   await expect(pane).toContainText('先问清需求')
   await expect(pane.getByRole('button', { name: '编辑', exact: true })).toBeVisible()
 })
+
+// ------------------------------------------------------------ D61: doing something to five rows
+
+test('shift-click picks rows, and the bar finishes them in one press', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '改版')
+  for (const t of ['写迁移', '补测试', '接好验证器', '量一遍对比度']) await makeTask(page, pid, t)
+  await openTree(page, pid)
+
+  // A plain click still opens the detail, which is the gesture that must not become a mode.
+  await row(page, '写迁移').click()
+  await expect(page.getByRole('dialog', { name: '任务详情' })).toBeVisible()
+  await page.locator('[data-detail-close]').click()
+  await expect(page.locator('[data-selection-bar]')).toHaveCount(0)
+
+  await row(page, '写迁移').click({ modifiers: ['Shift'] })
+  await row(page, '补测试').click({ modifiers: ['Shift'] })
+  await row(page, '接好验证器').click({ modifiers: ['Shift'] })
+  // Shift does not open anything.
+  await expect(page.getByRole('dialog', { name: '任务详情' })).toHaveCount(0)
+  await expect(page.locator('[data-selection-bar]')).toContainText('已选 3')
+
+  // Shift again takes one back out.
+  await row(page, '接好验证器').click({ modifiers: ['Shift'] })
+  await expect(page.locator('[data-selection-bar]')).toContainText('已选 2')
+
+  await page.getByRole('button', { name: '标记完成' }).click()
+  await expect(page.locator('[data-selection-bar]')).toHaveCount(0)
+  const after = await (await page.request.get(`/api/v1/tasks?projectId=${pid}`)).json()
+  const byTitle = Object.fromEntries(
+    (after.tasks as { title: string; status: string }[]).map((t) => [t.title, t.status]),
+  )
+  expect(byTitle).toMatchObject({ 写迁移: 'done', 补测试: 'done', 接好验证器: 'todo' })
+})
+
+test('the bar moves the picked rows to another project', async ({ page }) => {
+  await registerFreshUser(page)
+  const from = await makeProject(page, '改版')
+  const to = await makeProject(page, '求职')
+  await makeTask(page, from, '改简历')
+  await makeTask(page, from, '留在这儿的')
+  await openTree(page, from)
+
+  await row(page, '改简历').click({ modifiers: ['Shift'] })
+  await page.getByLabel('移到项目').selectOption({ label: '求职' })
+
+  await expect(row(page, '改简历')).toHaveCount(0)
+  const moved = await (await page.request.get(`/api/v1/tasks?projectId=${to}`)).json()
+  expect((moved.tasks as { title: string; parentId: null }[]).map((t) => t.title)).toEqual([
+    '改简历',
+  ])
+  // It lands at the destination's root: keeping its old parent would mean moving the parent too.
+  expect(moved.tasks[0].parentId).toBeNull()
+})

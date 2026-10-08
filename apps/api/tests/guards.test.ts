@@ -165,6 +165,27 @@ describe('rate limiting', () => {
     expect(codes.slice(20).every((c) => c === 429)).toBe(true)
   }, 60_000)
 
+  it('buckets by EMAIL, so one account under attack does not lock out the others', async () => {
+    // THE WHOLE POINT OF D3. Behind a reverse proxy every request has the proxy's IP, so an
+    // IP-keyed bucket is one bucket for everybody: a stuffing run against one account would
+    // take the instance offline for its owner, and spreading that run across a thousand
+    // accounts would stay inside a single 20-a-minute allowance.
+    const attempt = (email: string) =>
+      ctx.app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/login',
+        headers: { origin: ORIGIN, 'x-ctws-client': 'web' },
+        payload: { email, password: 'whatever at all' },
+      })
+
+    for (let i = 0; i < 25; i++) await attempt('victim@example.com')
+    expect((await attempt('victim@example.com')).statusCode).toBe(429)
+    // Same IP, same minute, a different account: unaffected.
+    expect((await attempt('bystander@example.com')).statusCode).toBe(401)
+    // And the case matters as little as the whitespace does, or the bucket is trivially evaded.
+    expect((await attempt('  VICTIM@example.com ')).statusCode).toBe(429)
+  }, 60_000)
+
   it('does not rate limit the health check', async () => {
     const codes: number[] = []
     for (let i = 0; i < 25; i++) {

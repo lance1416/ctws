@@ -12,7 +12,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Fragment, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { listProjects } from '../api/projects'
-import { createTask, listProjectTasks, moveTask, type ProjectTasks } from '../api/tasks'
+import { createTask, listProjectTasks, moveTask, patchTask, type ProjectTasks } from '../api/tasks'
 import { refreshTasks, tasksKey } from '../api/taskCache'
 import { ancestorsOf } from '../tree/ancestors'
 import { flatten } from '../tree/flatten'
@@ -22,6 +22,7 @@ import { MAX_DEPTH, planDrop, type DropPlan } from '../tree/drop'
 import { useTaskActions } from '../api/taskActions'
 import { useShortcutsEnabled } from '../shortcuts/enabled'
 import { EMPTY_ACTION, EmptyState } from './EmptyState'
+import { SelectionBar } from './SelectionBar'
 import { TaskDetail } from './TaskDetail'
 import { statusForKey } from './StatusControls'
 import { NewTaskInput } from './NewTaskInput'
@@ -61,14 +62,12 @@ function applyMove(old: TaskResponse[], id: string, body: MoveTaskBody): TaskRes
 
 export function TaskTree({ projectId }: { projectId: string }) {
   const qc = useQueryClient()
+  const allProjects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
   // Only the INBOX dates its rows (D49). Quick capture makes the inbox the one list that grows
   // without anyone deciding anything, so "how long has this been sitting here" is the question
   // it raises and no other project does; and since most rows in an ordinary tree carry no date
   // at all, putting an age on them would give every one of them a second line.
-  const inInbox =
-    useQuery({ queryKey: ['projects'], queryFn: listProjects }).data?.find(
-      (p) => p.id === projectId,
-    )?.isInbox === true
+  const inInbox = allProjects.data?.find((p) => p.id === projectId)?.isInbox === true
   const key = tasksKey(projectId)
   const [collapsed, setCollapsed] = useState(() => loadCollapsed(projectId))
   const [showDone, setShowDone] = useState(() => loadShowDone(projectId))
@@ -82,6 +81,13 @@ export function TaskTree({ projectId }: { projectId: string }) {
    * the next load -- which is also when the person has stopped looking at it.
    */
   const [keptFinished, setKeptFinished] = useState<ReadonlySet<string>>(() => new Set())
+  /**
+   * The rows Shift+click has picked (D61). A set of ids and nothing else: it is not persisted,
+   * and anything that leaves the tree -- a navigation, a refetch that drops a row -- simply
+   * stops matching, so there is no stale selection to clean up.
+   */
+  const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set())
+  const [bulkBusy, setBulkBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   // SEPARATE FROM `error` ON PURPOSE (D53). A failed creation is about one input that is on
   // screen, so it is said next to that input; everything else here -- a refused move, a depth
@@ -504,6 +510,45 @@ export function TaskTree({ projectId }: { projectId: string }) {
     el.scrollIntoView({ block: 'center' })
   })
 
+  /**
+   * THE TWO BULK ACTIONS, one request per task.
+   *
+   * Sequential rather than parallel, and deliberately: `move` takes a per-workspace advisory
+   * lock on the tree's shape, so five concurrent moves would queue on it anyway while making the
+   * failure of one impossible to attribute. Five requests is a handful; the lists refresh once,
+   * at the end.
+   */
+  const bulkFinish = async () => {
+    setBulkBusy(true)
+    try {
+      for (const id of selected) await patchTask(id, { status: 'done' })
+      setKeptFinished((prev) => new Set([...prev, ...selected]))
+      setSelected(new Set())
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '批量操作失败')
+    } finally {
+      setBulkBusy(false)
+      await refreshTasks(qc, projectId)
+    }
+  }
+
+  const bulkMove = async (toProjectId: string) => {
+    setBulkBusy(true)
+    try {
+      // `parentId: null` -- a task moved to another project lands at that project's root. Keeping
+      // its parent would mean moving the parent too, which is a different request than the one
+      // the person made.
+      for (const id of selected) await moveTask(id, { projectId: toProjectId, parentId: null })
+      setSelected(new Set())
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '批量操作失败')
+    } finally {
+      setBulkBusy(false)
+      await refreshTasks(qc, projectId)
+      await refreshTasks(qc, toProjectId)
+    }
+  }
+
   const toggleDone = () => {
     const next = !showDone
     setShowDone(next)
@@ -528,6 +573,15 @@ export function TaskTree({ projectId }: { projectId: string }) {
           </button>
         </div>
       )}
+      <SelectionBar
+        count={selected.size}
+        projects={allProjects.data ?? []}
+        currentProjectId={projectId}
+        onFinish={() => void bulkFinish()}
+        onMove={(to) => void bulkMove(to)}
+        onClear={() => setSelected(new Set())}
+        busy={bulkBusy}
+      />
       {tasks.isError && (
         <p role="alert" className="mt-4 text-sm text-danger">
           任务加载失败
@@ -586,6 +640,14 @@ export function TaskTree({ projectId }: { projectId: string }) {
                   onToggle={() => toggle(row.id)}
                   onKeyDown={(e) => onKeyDown(e, i)}
                   onOpen={() => setOpenId(row.id)}
+                  selected={selected.has(row.id)}
+                  onToggleSelected={() =>
+                    setSelected((prev) => {
+                      const next = new Set(prev)
+                      if (!next.delete(row.id)) next.add(row.id)
+                      return next
+                    })
+                  }
                   onAddChild={() => addChild(row)}
                 />
                 {inputSlot === i + 1 && input}
