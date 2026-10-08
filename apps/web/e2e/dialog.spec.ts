@@ -310,7 +310,7 @@ test('closing the ? list and pressing f leaves focus in the search box', async (
   await expect(page.getByRole('dialog', { name: '键盘快捷键' })).toBeVisible()
   await page.keyboard.press('Escape')
   await page.keyboard.press('f')
-  const search = page.getByRole('combobox', { name: '搜索任务' })
+  const search = page.getByRole('combobox', { name: '搜索' })
   await expect(search).toBeVisible()
   await page.waitForTimeout(300)
   await expect(search).toBeFocused()
@@ -345,7 +345,7 @@ test('the migrated ? overlay keeps all five of its behaviours', async ({ page })
   // By attribute, NOT by role: a modal layer marks the rest of the page `aria-hidden`, so a
   // search dialog that really had stacked underneath would be invisible to `getByRole` and the
   // assertion would pass on a stacked dialog. A mutation proved exactly that.
-  await expect(page.locator('input[aria-label="搜索任务"]')).toHaveCount(0)
+  await expect(page.locator('input[aria-label="搜索"]')).toHaveCount(0)
   await expect(help).toBeVisible()
 
   // 2. Escape closes it. 4. And focus goes back to what opened it.

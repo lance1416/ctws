@@ -7,7 +7,7 @@ const handle = (page: Page, title: string) =>
 
 const row = (page: Page, title: string) => page.getByRole('listitem').filter({ hasText: title })
 
-const searchBox = (page: Page) => page.getByRole('combobox', { name: '搜索任务' })
+const searchBox = (page: Page) => page.getByRole('combobox', { name: '搜索' })
 
 /** Creates a project through the UI and returns its url. */
 async function startProject(page: Page, name: string) {
@@ -52,7 +52,7 @@ async function query(page: Page, text: string) {
  * these helpers are used to assert -- the text, the breadcrumb, the click, the reveal -- is unchanged.
  */
 const result = (page: Page, title: string) =>
-  page.getByRole('dialog', { name: '搜索任务' }).getByRole('option').filter({ hasText: title })
+  page.getByRole('dialog', { name: '搜索' }).getByRole('option').filter({ hasText: title })
 
 // The case the browser's own Ctrl+F cannot do: a collapsed row is not in the DOM at all, so there
 // is nothing on the page for the browser to find. If this test ever passes with the subtree left

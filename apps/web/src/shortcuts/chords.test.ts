@@ -6,8 +6,18 @@ const chords = allChords()
 
 describe('jump chords', () => {
   it('resolves each destination, in the order the help list teaches them', () => {
-    expect(chords.map((c) => c.key).join('')).toBe('tpdri')
-    expect(chords.map((c) => c.id)).toEqual(['today', 'projects', 'completed', 'review', 'inbox'])
+    // 待读 sits right after 今天: they are the two lists that answer 「现在做什么」, one from
+    // each module. The rest is unchanged, which is the point -- a second module contributed a
+    // key without the table being rewritten around it.
+    expect(chords.map((c) => c.key).join('')).toBe('tlpdri')
+    expect(chords.map((c) => c.id)).toEqual([
+      'today',
+      'reading',
+      'projects',
+      'completed',
+      'review',
+      'inbox',
+    ])
   })
 
   it('resolves nothing for a key that starts no jump', () => {

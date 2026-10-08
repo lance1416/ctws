@@ -1,7 +1,8 @@
 import { useMutation } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { captureContribution } from '../modules/registry'
+import { CAPTURE_MODULE_ID, captureContributions } from '../modules/registry'
+import type { CaptureTarget } from '../modules/contract'
 import { useShortcutsEnabled } from '../shortcuts/enabled'
 import { isBareKey, isTypingTarget } from '../shortcuts/keys'
 import { isOverlayOpen } from './overlayState'
@@ -9,36 +10,59 @@ import { isOverlayOpen } from './overlayState'
 /**
  * One input on every page.
  *
- * The destination is no longer "the inbox, obviously": it is whichever module the registry names
- * as the default capture target, and that module resolves its own destination (module-boundary
- * contract §3). With one module the line still lands in the inbox and nothing is asked of the
- * typist -- which is the point. "敲一行字就走" is a success criterion, so naming the destination
- * must not cost a keystroke, and it does not: the default is explicit in the registry, not chosen
- * at the keyboard.
+ * The destination is no longer "the inbox, obviously": every module that can take a line is asked
+ * whether it claims this one, in registration order, and the line falls to the registry's named
+ * default when nobody does (module-boundary contract §3). A pasted url goes to 待读; a sentence
+ * goes to the inbox.
+ *
+ * "敲一行字就走" is a success criterion, so routing must not cost a keystroke -- and it does not:
+ * `accepts` is a pure function of the line. When the guess is wrong you can SEE it, because
+ * 「已放入 X」 names where the line went.
  */
 export function QuickCapture() {
   const [title, setTitle] = useState('')
-  // Set when a capture lands; cleared by the next keystroke or navigation. One line, never a
-  // queue. It names the destination but not the title: the title would sit in the DOM of every
-  // page (this box is in the layout) and show up twice wherever that task is also listed.
-  const [landed, setLanded] = useState(false)
+  // WHERE THE LAST LINE LANDED, or null. One line, never a queue. It names the destination but
+  // not the title: the title would sit in the DOM of every page (this box is in the layout) and
+  // show up twice wherever that task is also listed. It holds the target rather than a boolean
+  // because with two modules the destination is no longer always the same place.
+  const [landed, setLanded] = useState<CaptureTarget | null>(null)
   const { pathname } = useLocation()
   const shortcuts = useShortcutsEnabled()
-  useEffect(() => setLanded(false), [pathname])
+  useEffect(() => setLanded(null), [pathname])
   const input = useRef<HTMLInputElement>(null)
-  const { target, missing, unavailable } = captureContribution().useTarget()
+
+  // ONE HOOK PER REGISTERED MODULE, in the registry's frozen order -- which is why the registry
+  // says out loud that the list never changes at runtime.
+  const contributions = captureContributions()
+  const states = contributions.map(({ moduleId, capture }) => ({
+    moduleId,
+    accepts: capture.accepts,
+    // eslint-disable-next-line react-hooks/rules-of-hooks -- fixed-length, fixed-order list
+    ...capture.useTarget(),
+  }))
+  const fallback = states.find((s) => s.moduleId === CAPTURE_MODULE_ID)
+  if (!fallback) throw new Error(`capture module "${CAPTURE_MODULE_ID}" is not registered`)
+  const { missing, unavailable } = fallback
+
+  /** The first module that claims the line and can actually take it; otherwise the default. */
+  const routeOf = (line: string): CaptureTarget | null =>
+    states.find((s) => s.accepts?.(line) && s.target)?.target ?? fallback.target
 
   const capture = useMutation({
-    mutationFn: (t: string) => target!.submit(t),
-    onSuccess: () => {
+    mutationFn: async (line: string) => {
+      const target = routeOf(line)
+      await target!.submit(line)
+      return target!
+    },
+    onSuccess: (target) => {
       setTitle('')
-      setLanded(true)
+      setLanded(target)
     },
   })
 
   const submit = () => {
     const t = title.trim()
-    if (!t || !target || capture.isPending) return
+    if (!t || !routeOf(t) || capture.isPending) return
     capture.mutate(t)
   }
 
@@ -72,14 +96,14 @@ export function QuickCapture() {
           value={title}
           onChange={(e) => {
             setTitle(e.target.value)
-            setLanded(false)
+            setLanded(null)
           }}
           onKeyDown={(e) => {
             // isComposing: Enter confirms an IME candidate, it must not submit half a word.
             if (e.key === 'Enter' && !e.nativeEvent.isComposing) submit()
           }}
           placeholder="捕获…"
-          disabled={!target}
+          disabled={!fallback.target}
           aria-label="捕获"
           className="h-9 w-full rounded-lg border border-border-strong bg-surface-panel pr-8 pl-3 text-sm text-fg placeholder:text-fg-muted disabled:opacity-50"
         />
@@ -102,11 +126,11 @@ export function QuickCapture() {
           暂时读不到收件箱
         </p>
       )}
-      {landed && target && (
+      {landed && (
         <p role="status" className="w-full truncate text-sm text-fg-muted">
           已放入{' '}
-          <Link to={target.to} className="text-accent underline">
-            {target.name}
+          <Link to={landed.to} className="text-accent underline">
+            {landed.name}
           </Link>
         </p>
       )}

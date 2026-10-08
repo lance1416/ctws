@@ -115,6 +115,12 @@ export function overdueLabel(dueIso: string, timeZone: string, now: Date = new D
 }
 
 /**
+ * HOW MANY CALENDAR DAYS AGO, in the account's zone. The arithmetic only; each module words it,
+ * because 「3 天前捕获」 and 「3 天前加的」 are the same count said by different modules about
+ * different things, and the shell owns the clock rather than the vocabulary.
+ */
+
+/**
  * 「3 天前捕获」-- how long something has been sitting in the inbox (D49), counted in the
  * account's calendar days like every other phrase here.
  *
@@ -123,15 +129,16 @@ export function overdueLabel(dueIso: string, timeZone: string, now: Date = new D
  * is arithmetic the reader has to do. Today and yesterday keep their names, because for those two
  * the count reads worse than the word.
  */
+export function daysAgoIn(iso: string, timeZone: string, now: Date = new Date()): number {
+  return differenceInCalendarDays(new TZDate(now, timeZone), new TZDate(new Date(iso), timeZone))
+}
+
 export function capturedLabel(
   createdIso: string,
   timeZone: string,
   now: Date = new Date(),
 ): string {
-  const days = differenceInCalendarDays(
-    new TZDate(now, timeZone),
-    new TZDate(new Date(createdIso), timeZone),
-  )
+  const days = daysAgoIn(createdIso, timeZone, now)
   if (days <= 0) return '今天捕获'
   if (days === 1) return '昨天捕获'
   return `${days} 天前捕获`

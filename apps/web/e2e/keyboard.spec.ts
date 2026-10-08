@@ -316,7 +316,7 @@ test('the single-key shortcuts can be turned off, and stay off after a reload', 
   await page.keyboard.press('Escape')
 
   await page.keyboard.press('f')
-  await expect(page.getByRole('combobox', { name: '搜索任务' })).toHaveCount(0)
+  await expect(page.getByRole('combobox', { name: '搜索' })).toHaveCount(0)
   await page.keyboard.press('?')
   await expect(page.getByRole('dialog', { name: '键盘快捷键' })).toHaveCount(0)
   await page.keyboard.press('g')
@@ -342,12 +342,12 @@ test('the single-key shortcuts can be turned off, and stay off after a reload', 
   await page.reload()
   await expect(page.getByRole('listitem')).toHaveCount(3)
   await page.keyboard.press('f')
-  await expect(page.getByRole('combobox', { name: '搜索任务' })).toHaveCount(0)
+  await expect(page.getByRole('combobox', { name: '搜索' })).toHaveCount(0)
 
   // And it can be turned back on again through the same button.
   await page.getByRole('button', { name: '键盘快捷键' }).click()
   await page.getByRole('checkbox', { name: /启用单键快捷键/ }).check()
   await page.keyboard.press('Escape')
   await page.keyboard.press('f')
-  await expect(page.getByRole('combobox', { name: '搜索任务' })).toBeFocused()
+  await expect(page.getByRole('combobox', { name: '搜索' })).toBeFocused()
 })

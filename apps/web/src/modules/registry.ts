@@ -7,6 +7,7 @@ import type {
   Destination,
   WorkspaceModule,
 } from './contract'
+import { readingModule } from './reading'
 import { taskModule } from './tasks'
 
 /**
@@ -17,7 +18,7 @@ import { taskModule } from './tasks'
  * length or order at runtime or React would see a different hook order between renders. It is
  * frozen to say so out loud.
  */
-export const MODULES: readonly WorkspaceModule[] = Object.freeze([taskModule])
+export const MODULES: readonly WorkspaceModule[] = Object.freeze([taskModule, readingModule])
 
 /**
  * Where a captured line goes by DEFAULT, named rather than inferred. With one module "the only
@@ -104,6 +105,21 @@ export function captureContribution(
   const chosen = modules.find((m) => m.id === moduleId)?.capture
   if (!chosen) throw new Error(`capture module "${moduleId}" is not registered`)
   return chosen
+}
+
+/**
+ * Every module that can take a captured line, in registration order, with the DEFAULT named.
+ *
+ * The order is the registry's and never changes at runtime, which is what lets the capture box
+ * call one hook per entry (`MODULES` is frozen for this reason). Routing is the caller's: it asks
+ * each `accepts` in turn and falls back to the default, so "which module claimed it" stays a pure
+ * decision made at the keyboard.
+ */
+export function captureContributions(modules: readonly WorkspaceModule[] = MODULES): {
+  moduleId: string
+  capture: CaptureContribution
+}[] {
+  return modules.flatMap((m) => (m.capture ? [{ moduleId: m.id, capture: m.capture }] : []))
 }
 
 export type SearchProvider = { moduleId: string; moduleLabel: string } & NonNullable<

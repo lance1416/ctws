@@ -109,6 +109,17 @@ export type Destination = {
 export type CaptureContribution = {
   /** A hook: the module's default capture target, and why there is none when there is none. */
   useTarget: () => CaptureTargetState
+  /**
+   * Does this module claim the line? Asked in registration order; the first claimer takes it, and
+   * when nobody claims it the line goes to `CAPTURE_MODULE_ID`.
+   *
+   * NOT A HOOK, and deliberately pure: it runs on every keystroke, and a rule that needed a
+   * query could not answer before the person pressed Enter. It is also the reason capture can
+   * stay 「敲一行字就走」 with two modules registered -- resolving the destination costs no
+   * interaction, and when the guess is wrong you can SEE it, because 「已放入 X」 names where the
+   * line went.
+   */
+  accepts?: (line: string) => boolean
 }
 
 export type CaptureTargetState = {
