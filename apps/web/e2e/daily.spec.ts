@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { editDetail, registerFreshUser } from './helpers'
+import { dayOffset, nextMondayYmd, ymd } from './days'
 
 // The daily loop: finishing, starting and deferring work from the list itself, the dates a tree
 // row shows, and the panel / delete guards. Every assertion that a status or date changed reads
@@ -16,9 +17,6 @@ type ApiTask = {
   scheduledOn: string | null
   dueAt: string | null
 }
-
-const ymd = (d: Date) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
 async function makeProject(page: Page, name: string): Promise<string> {
   const res = await page.request.post('/api/v1/projects', { headers: HEADERS, data: { name } })
@@ -756,16 +754,6 @@ test('saving from the Today panel keeps it open and confirms on the row', async 
 
 // ------------------------------------------------------------------ plan side: carried plans
 
-const dayOffset = (n: number) => {
-  const d = new Date()
-  d.setDate(d.getDate() + n)
-  return ymd(d)
-}
-const nextMondayYmd = () => {
-  const d = new Date()
-  d.setDate(d.getDate() + (d.getDay() === 0 ? 1 : 8 - d.getDay()))
-  return ymd(d)
-}
 const rowOf = (page: Page, title: string) =>
   page
     .locator('li')

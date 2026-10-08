@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { editDetail, registerFreshUser } from './helpers'
+import { dayAfter, dayOffset, nextMondayYmd, ymd } from './days'
 
 /**
  * The detail pane (redesign stage 3).
@@ -20,18 +21,6 @@ import { editDetail, registerFreshUser } from './helpers'
  */
 
 const HEADERS = { 'x-ctws-client': 'web' }
-const ymd = (d: Date) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-const dayOffset = (n: number) => {
-  const d = new Date()
-  d.setDate(d.getDate() + n)
-  return ymd(d)
-}
-const nextMondayYmd = () => {
-  const d = new Date()
-  d.setDate(d.getDate() + (d.getDay() === 0 ? 1 : 8 - d.getDay()))
-  return ymd(d)
-}
 
 async function makeProject(page: Page, name: string): Promise<string> {
   const res = await page.request.post('/api/v1/projects', { headers: HEADERS, data: { name } })
@@ -78,11 +67,6 @@ const isPatch = (r: { url: () => string; request: () => { method: () => string }
 
 /** Presses 保存 and returns the PATCH the press produced, so the BODY can be asserted. */
 /** The calendar day after `day`, as a plain date string. */
-function dayAfter(day: string): string {
-  const d = new Date(`${day}T12:00:00Z`)
-  d.setUTCDate(d.getUTCDate() + 1)
-  return d.toISOString().slice(0, 10)
-}
 
 async function saveBody(page: Page): Promise<Record<string, unknown>> {
   const done = page.waitForResponse((r) => isPatch(r) && r.ok())

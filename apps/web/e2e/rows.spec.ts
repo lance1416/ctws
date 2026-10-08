@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { editDetail, registerFreshUser } from './helpers'
+import { dayOffset, nextMondayYmd, ymd } from './days'
 
 /**
  * The row system (rows-and-reading, second edition): the project rail at x=0, the status marker, a
@@ -27,19 +28,7 @@ import { editDetail, registerFreshUser } from './helpers'
 const HEADERS = { 'x-ctws-client': 'web' }
 const DAY = 86_400_000
 
-const ymd = (d: Date) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-const dayOffset = (n: number) => {
-  const d = new Date()
-  d.setDate(d.getDate() + n)
-  return ymd(d)
-}
 const dueAgo = (days: number) => new Date(Date.now() - days * DAY).toISOString()
-const nextMondayYmd = () => {
-  const d = new Date()
-  d.setDate(d.getDate() + (d.getDay() === 0 ? 1 : 8 - d.getDay()))
-  return ymd(d)
-}
 
 async function makeProject(page: Page, name: string): Promise<string> {
   const res = await page.request.post('/api/v1/projects', { headers: HEADERS, data: { name } })

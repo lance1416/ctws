@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { registerFreshUser } from './helpers'
+import { dayOffset, ymd } from './days'
 
 /**
  * 「新建」浮层 and the one overlay migrated onto Radix (radix-and-create spec §3 and §2).
@@ -11,14 +12,6 @@ import { registerFreshUser } from './helpers'
  */
 
 const HEADERS = { 'x-ctws-client': 'web' }
-
-const ymd = (d: Date) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-const dayOffset = (n: number) => {
-  const d = new Date()
-  d.setDate(d.getDate() + n)
-  return ymd(d)
-}
 
 const POST_TASK = /\/api\/v1\/tasks$/
 const isCreate = (method: string, url: string) =>
