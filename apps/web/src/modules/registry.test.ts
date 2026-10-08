@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { WorkspaceModule } from './contract'
 import {
   allChords,
+  MODULES,
   captureContribution,
   moduleDestinations,
   moduleRoutes,
@@ -71,6 +72,15 @@ describe('routes', () => {
       { path: '/notes', children: notes.routes },
       { path: '/files', children: files.routes },
     ])
+  })
+})
+
+describe('this workspace', () => {
+  it('registers every module it has', () => {
+    // A module that is imported and never added to the list is invisible: no rail row, no
+    // calendar entries, no card -- and nothing else fails, so it looks like the module is broken
+    // rather than absent. It has happened.
+    expect(MODULES.map((m) => m.id)).toEqual(['tasks', 'reading', 'contacts', 'meetings'])
   })
 })
 

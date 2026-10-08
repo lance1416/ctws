@@ -101,6 +101,7 @@ export const readingRoutes: FastifyPluginAsync = async (app) => {
           kind: r.kind,
           // A plan and a deadline are about the DAY; 「15:30 之前」 is not how anyone reads one.
           time: null,
+          zone: null,
           projectId: r.project_id,
           projectName: r.project_name,
         })),

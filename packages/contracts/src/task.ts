@@ -303,6 +303,12 @@ export const calendarEntry = z
      * It is also what a square sorts by, so the morning really is above the afternoon.
      */
     time: z.string().nullable(),
+    /**
+     * The zone this thing was agreed in, as people say it (「EDT」), and only when it is NOT the
+     * account's. A meeting at 09:00 in Toronto shows on your clock -- 「我几点要到场」 -- and this
+     * is how it still says what was actually agreed.
+     */
+    zone: z.string().nullable(),
     projectId: z.uuid().nullable(),
     projectName: z.string().nullable(),
   })

@@ -120,6 +120,27 @@ export type CalendarContribution = {
     entries: CalendarEntry[]
     isError: boolean
   }
+  /**
+   * MAKING ONE ON A DAY, when this module's thing is something you arrange rather than something
+   * that acquires a date.
+   *
+   * Clicking an empty day to create is how every calendar has worked since the first one, and a
+   * calendar you can only read is half a calendar. The shell draws the affordance on the square
+   * and hands over the day; the module decides what making one means.
+   *
+   * A hook, because creating needs the query client and the module's own open-pane state. Most
+   * modules have none: a deadline is a property of a task, not something you arrange on a Tuesday.
+   */
+  useCreate?: () => { label: string; create: (day: string) => void } | null
+  /**
+   * WHAT OPENS when one of this module's entries is clicked ON THE GRID.
+   *
+   * Without it an entry is a link to wherever `to` points, which is right for a deadline -- it
+   * belongs to a task, and the task's own list is where you deal with it. A meeting has nowhere
+   * else to be, so it opens here. The shell knows which module an entry came from, because it
+   * merged them, so nothing has to be encoded in the entry itself.
+   */
+  Detail?: ComponentType<{ id: string; onClose: () => void }>
 }
 
 /** One card on the workbench. */

@@ -1,5 +1,11 @@
 import { TZDate } from '@date-fns/tz'
-import { RRule } from 'rrule'
+// A DEFAULT IMPORT, destructured. `rrule` ships CommonJS, and a named import of it survives the
+// test runner's transform and then fails at startup in the bundled ESM the image actually runs --
+// the container would not boot at all. One import style that works in both.
+import rrulePkg from 'rrule'
+
+const { RRule } = rrulePkg
+type Rule = InstanceType<typeof RRule>
 
 /**
  * EXPANDING A RECURRING MEETING, in the meeting's OWN time zone.
@@ -139,7 +145,7 @@ const MAX_INTERVAL = 1000
 
 export function ruleProblem(rule: string): string | null {
   if (!isOneLine(rule)) return '这条重复规则读不懂'
-  let parsed: RRule
+  let parsed: Rule
   try {
     parsed = RRule.fromString(withDtstart(rule, '2026-01-01T00:00'))
   } catch {
@@ -152,7 +158,7 @@ export function ruleProblem(rule: string): string | null {
 }
 
 /** The same checks against an ALREADY PARSED rule, for the expansion's own guard. */
-function optionsProblem(parsed: RRule): string | null {
+function optionsProblem(parsed: Rule): string | null {
   const { freq, interval, count } = parsed.options
   if (SUB_DAILY.has(freq)) return '会议不会比每天更频繁'
   if (!Number.isInteger(interval) || interval < 1 || interval > MAX_INTERVAL) {
@@ -248,7 +254,7 @@ export function occurrencesIn(
   const fromNaiveTime = asNaive(localOf(new Date(window.from.getTime() - DAY), series.timeZone))
   const toNaiveTime = asNaive(localOf(new Date(window.to.getTime() + DAY), series.timeZone))
 
-  let rule: RRule
+  let rule: Rule
   try {
     rule = RRule.fromString(withDtstart(series.rrule, series.startsLocal))
   } catch {
