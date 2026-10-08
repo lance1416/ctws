@@ -42,7 +42,7 @@ export function Projects() {
         queryFn: () => listProjectTasks(id),
         staleTime: 0,
       })
-      setConfirming((c) => (c?.id === id ? { id, name, tasks: tasks.length } : c))
+      setConfirming((c) => (c?.id === id ? { id, name, tasks: tasks.tasks.length } : c))
     } catch {
       // Without the count the user would be confirming blind; say so and let them cancel.
       setConfirming((c) => (c?.id === id ? { id, name, tasks: -1 } : c))

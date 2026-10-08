@@ -1,8 +1,22 @@
-import type { CreateTaskBody, MoveTaskBody, TaskResponse, UpdateTaskBody } from '@ctws/contracts'
+import type {
+  CreateTaskBody,
+  MoveTaskBody,
+  RollupResponse,
+  TaskResponse,
+  UpdateTaskBody,
+} from '@ctws/contracts'
 import { apiFetch } from '../api'
 
-export async function listProjectTasks(projectId: string): Promise<TaskResponse[]> {
-  return (await apiFetch<{ tasks: TaskResponse[] }>(`/tasks?projectId=${projectId}`)).tasks
+/**
+ * A project's flat task list AND its rollups, which the endpoint returns side by side (design
+ * spec §8). They are kept together in one cache entry because they are one answer about one
+ * moment: a list whose numbers came from a different fetch could disagree with itself.
+ */
+export type ProjectTasks = { tasks: TaskResponse[]; rollups: Record<string, RollupResponse> }
+
+export async function listProjectTasks(projectId: string): Promise<ProjectTasks> {
+  const body = await apiFetch<ProjectTasks>(`/tasks?projectId=${projectId}`)
+  return { tasks: body.tasks, rollups: body.rollups ?? {} }
 }
 
 /**

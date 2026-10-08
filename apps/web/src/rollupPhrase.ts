@@ -1,0 +1,29 @@
+import type { RollupResponse } from '@ctws/contracts'
+
+/**
+ * 「60% · 2 进行中 · 1 已逾期」 -- a parent row's subtree, said in words (design spec §7.3).
+ *
+ * THE PERCENTAGE ALONE DOES NOT ANSWER 「做到哪儿了」, which is why the spec writes the line this
+ * way and not as a bar. Each part is dropped when it has nothing to say, so a parent whose
+ * children are merely unstarted gets 「0%」 and no tail, rather than a row of zeroes.
+ *
+ * `null` when there is nothing worth a second line -- and A LONE 「0%」 COUNTS AS NOTHING.
+ *
+ * That exception is the whole reason this is a function and not a template. Every task now
+ * starts on `todo`, so every parent has a progress number, so without it every parent in the
+ * tree would grow a second line reading 「0%」: a 14px tax on half the rows to say what the
+ * children listed underneath already say. A 0 that comes with 「2 进行中」 or 「1 已逾期」 keeps
+ * its place -- there it is context for a number that does mean something.
+ */
+export function rollupPhrase(r: RollupResponse | undefined): string | null {
+  if (!r) return null
+  const parts: string[] = []
+  if (r.progress !== null) parts.push(`${Math.round(r.progress * 100)}%`)
+  if (r.counts.in_progress > 0) parts.push(`${r.counts.in_progress} 进行中`)
+  if (r.overdue > 0) parts.push(`${r.overdue} 已逾期`)
+  if (parts.length === 1 && r.progress === 0) return null
+  // `dueSoon` is deliberately NOT here. It is in the rollup because the project banner and a
+  // future board can use it, but on a row it would be a fourth number competing with the row's
+  // own deadline, which is already shown exactly and to the minute.
+  return parts.length > 0 ? parts.join(' · ') : null
+}

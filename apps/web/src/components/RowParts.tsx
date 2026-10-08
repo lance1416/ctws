@@ -238,6 +238,7 @@ export function RowMeta({
   exact,
   summary = false,
   age = null,
+  rollup = null,
 }: {
   /** The project (and parent) a cross-project list shows. The tree passes none: §2 says the
    *  project is known there and the hierarchy is visible from the indentation. */
@@ -255,6 +256,13 @@ export function RowMeta({
    * line any width.
    */
   age?: string | null
+  /**
+   * 「60% · 2 进行中 · 1 已逾期」 for a row that HAS CHILDREN (design spec §7.3).
+   *
+   * Only for a parent. A leaf's "progress" is just its own status, already drawn as the marker
+   * at the head of the row, and saying it again in words is noise.
+   */
+  rollup?: string | null
   /** The exact local deadline, for the tooltip: "2026-10-01 09:00". */
   exact?: string | undefined
   /**
@@ -334,10 +342,19 @@ export function RowMeta({
             ),
           }
         : null,
+      rollup
+        ? {
+            node: (
+              <span key="rollup" data-row-rollup className="whitespace-nowrap tabular-nums">
+                {rollup}
+              </span>
+            ),
+          }
+        : null,
       // LAST, and only on a line that would otherwise be empty -- see the prop's note. `fg-subtle`
       // and not `fg-muted`: an age is the one phrase here that nobody chose, so it sits a step
       // quieter than a date somebody set.
-      age && !breadcrumb && !due && !plan
+      age && !breadcrumb && !due && !plan && !rollup
         ? {
             node: (
               <span key="age" data-row-age className="whitespace-nowrap text-fg-subtle">

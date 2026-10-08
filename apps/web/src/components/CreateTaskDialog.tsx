@@ -115,9 +115,9 @@ export function CreateTaskDialog({
    * Depth 10 is the API's limit, so a task already at it cannot take a child -- offering it would
    * be offering a 409. The tree's inline add refuses the same thing in the same place.
    */
-  const parents = flatten(tasks.data ?? [], new Set()).flatMap((row) => {
+  const parents = flatten(tasks.data?.tasks ?? [], new Set()).flatMap((row) => {
     if (row.depth >= MAX_DEPTH) return []
-    const task = tasks.data?.find((t) => t.id === row.id)
+    const task = tasks.data?.tasks.find((t) => t.id === row.id)
     return task ? [{ id: row.id, depth: row.depth, title: task.title }] : []
   })
 

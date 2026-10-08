@@ -35,6 +35,8 @@ type Props = {
   hasNotes: boolean
   /** When this was captured, for the inbox's age line (D49). Every other list passes null. */
   capturedAt?: string | null
+  /** This row's subtree, said in words (§7.3). Only a row with children gets one. */
+  rollup?: string | null
   /**
    * Whether THIS LIST reserves the leading icon slot at all -- decided once for the whole tree,
    * never per row: a slot that exists on some rows and not others puts the first glyph of each row
@@ -87,6 +89,7 @@ export function TaskRow({
   scheduledOn,
   hasNotes,
   capturedAt = null,
+  rollup = null,
   leadSlot,
   saved,
   tabStop,
@@ -242,6 +245,7 @@ export function TaskRow({
           due={hints.due}
           plan={hints.scheduled}
           age={capturedAt ? capturedLabel(capturedAt, timeZone) : null}
+          rollup={rollup}
         />
       </span>
       {/* THE TWO HOVER CONTROLS RESERVE NO WIDTH. They are invisible until the row is hovered, so

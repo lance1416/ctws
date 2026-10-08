@@ -3,8 +3,8 @@ import { useEffect, useId, useState } from 'react'
 import { listMovement } from '../api/movement'
 import { inboxOf, listProjects } from '../api/projects'
 import { searchTasks } from '../api/search'
-import { createTask } from '../api/tasks'
-import { refreshTasks } from '../api/taskCache'
+import { createTask, listProjectTasks } from '../api/tasks'
+import { refreshTasks, tasksKey } from '../api/taskCache'
 import { listToday } from '../api/today'
 import { CreateTaskDialog } from '../components/CreateTaskDialog'
 import { isOverlayOpen } from '../components/overlayState'
@@ -115,6 +115,27 @@ function ProjectNumbers({ projectId }: { projectId: string }) {
   const movement = useQuery({ queryKey: ['movement'], queryFn: listMovement })
   const timeZone = useTimeZone()
   const row = movement.data?.find((r) => r.projectId === projectId)
+  /**
+   * THE PROJECT'S OWN PROGRESS, derived here from the rollups the task list already carries --
+   * no extra request, no extra column.
+   *
+   * A project is the parent of its root tasks, so it gets the SAME rule §7.2 gives a parent: the
+   * mean of its direct children, skipping the ones the rollup excludes. A project whose roots are
+   * all `backlog` or `cancelled` has no number, and shows none rather than a 0 that would read as
+   * "nothing done".
+   */
+  const tasks = useQuery({
+    queryKey: tasksKey(projectId),
+    queryFn: () => listProjectTasks(projectId),
+  })
+  const progress = (() => {
+    const data = tasks.data
+    if (!data) return null
+    const roots = data.tasks.filter((t) => t.parentId === null)
+    const scored = roots.map((t) => data.rollups[t.id]?.progress).filter((p) => p != null)
+    if (scored.length === 0) return null
+    return scored.reduce((a, b) => a + b, 0) / scored.length
+  })()
   // Nothing rather than zeroes while the numbers are in flight, and nothing for an ARCHIVED
   // project: archiving sets a line of work aside, and the movement query leaves it out on purpose
   // rather than reporting that it has been quiet for forty days.
@@ -124,6 +145,10 @@ function ProjectNumbers({ projectId }: { projectId: string }) {
   const today = todayIn(timeZone)
   return (
     <StatRow>
+      {/* NO BAR, only the number (workbench spec §5 still stands). A 60% line and a 60% line that
+          nobody has touched for three weeks draw the same bar; 最后活动 beside it is the metric
+          §7.4 calls the valuable one, and it is already in this row. */}
+      {progress !== null && <Stat label="进度" value={`${Math.round(progress * 100)}%`} />}
       <Stat label="未完成" value={row.remaining} />
       <Stat label="本周完成" value={row.doneThisWeek} />
       {/* The one number that is allowed a hue, and it is the row system's own `missed`: a deadline

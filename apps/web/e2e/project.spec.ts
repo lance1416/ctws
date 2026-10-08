@@ -166,23 +166,26 @@ test('the header’s numbers follow a task added on the page, without a reload',
  * them. Rollup is M3 and nothing writes `manual_progress`, so a ratio in this banner would be a
  * number the backend cannot cash (spec §5).
  */
-test('the project header draws no percentage and no progress bar', async ({ page }) => {
+test('the project header draws a percentage but never a progress bar', async ({ page }) => {
   await registerFreshUser(page)
   await page.setViewportSize(WIDE)
   const pid = await makeProject(page, '有进展的线')
   for (const t of ['做完一', '做完二']) await makeTask(page, pid, t, { status: 'done' })
   await makeTask(page, pid, '没做的')
-  // A task carrying an explicit progress value: the one input a bar could claim to be showing.
   await makeTask(page, pid, '写了进度的', { manualProgress: 0.5 })
 
   await page.goto(`/projects/${pid}`)
   const banner = header(page)
   await expect(stat(page, '本周完成')).toHaveText('2')
 
+  // THE NUMBER IS BACK, THE BAR IS NOT. It was absent entirely until 2026-10-08 because the data
+  // did not exist -- `manual_progress` was written by nothing and the rollup was unbuilt. It is
+  // the mean of the four root tasks (1 + 1 + 0 + 0.5) / 4, the same §7.2 rule a parent gets.
+  await expect(stat(page, '进度')).toHaveText('63%')
+  // A BAR is still refused: a 60% line and a 60% line nobody has touched for three weeks draw
+  // the same bar, and 最后活动 beside it is the metric §7.4 calls the valuable one.
   await expect(banner.getByRole('progressbar')).toHaveCount(0)
   await expect(banner.locator('progress, meter')).toHaveCount(0)
-  await expect(banner).not.toContainText('%')
-  await expect(banner).not.toContainText('50')
   // A bar built by hand: an element whose width is a fraction of its parent.
   const proportional = await banner.evaluate(
     (el) =>

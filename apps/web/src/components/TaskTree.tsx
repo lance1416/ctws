@@ -12,10 +12,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Fragment, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { listProjects } from '../api/projects'
-import { createTask, listProjectTasks, moveTask } from '../api/tasks'
+import { createTask, listProjectTasks, moveTask, type ProjectTasks } from '../api/tasks'
 import { refreshTasks, tasksKey } from '../api/taskCache'
 import { ancestorsOf } from '../tree/ancestors'
 import { flatten } from '../tree/flatten'
+import { rollupPhrase } from '../rollupPhrase'
 import { loadCollapsed, loadShowDone, saveCollapsed, saveShowDone } from '../tree/collapse'
 import { MAX_DEPTH, planDrop, type DropPlan } from '../tree/drop'
 import { useTaskActions } from '../api/taskActions'
@@ -108,7 +109,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
    * finished styling, and the unfinished work under it is still reachable.
    */
   const visible = useMemo(() => {
-    const all = tasks.data ?? []
+    const all = tasks.data?.tasks ?? []
     if (showDone) return all
     const index = new Map(all.map((t) => [t.id, t]))
     const live = new Set<string>()
@@ -123,11 +124,11 @@ export function TaskTree({ projectId }: { projectId: string }) {
     }
     return all.filter((t) => live.has(t.id) || keptFinished.has(t.id))
   }, [tasks.data, showDone, keptFinished])
-  const hiddenDone = (tasks.data?.length ?? 0) - visible.length
+  const hiddenDone = (tasks.data?.tasks.length ?? 0) - visible.length
   const rows = useMemo(() => flatten(visible, collapsed), [visible, collapsed])
   // Looked up by id each render, so a task that has left this project (moved away) closes itself.
-  const openTask = tasks.data?.find((t) => t.id === openId)
-  const byId = useMemo(() => new Map((tasks.data ?? []).map((t) => [t.id, t])), [tasks.data])
+  const openTask = tasks.data?.tasks.find((t) => t.id === openId)
+  const byId = useMemo(() => new Map((tasks.data?.tasks ?? []).map((t) => [t.id, t])), [tasks.data])
   /**
    * Whether this TREE reserves the leading icon slot -- one decision for the whole list, taken from
    * the rows that are actually on screen (spec §2). Deciding per group would put the first glyph of
@@ -180,8 +181,13 @@ export function TaskTree({ projectId }: { projectId: string }) {
     mutationFn: ({ id, body }: { id: string; body: MoveTaskBody }) => moveTask(id, body),
     onMutate: async ({ id, body }) => {
       await qc.cancelQueries({ queryKey: key })
-      const previous = qc.getQueryData<TaskResponse[]>(key)
-      qc.setQueryData<TaskResponse[]>(key, (old) => applyMove(old ?? [], id, body))
+      const previous = qc.getQueryData<ProjectTasks>(key)
+      // Only the rows move optimistically. The ROLLUPS are the server's arithmetic over the whole
+      // subtree and are left as they are until the refetch: re-deriving them here would be a
+      // second implementation of §7 living in the browser, free to disagree with the first.
+      qc.setQueryData<ProjectTasks>(key, (old) =>
+        old ? { ...old, tasks: applyMove(old.tasks, id, body) } : old,
+      )
       return { previous }
     },
     onError: (error, _vars, context) => {
@@ -444,7 +450,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
     if (!reveal || !tasks.data) return
     // Not in this project: leave the parameter alone rather than claiming a focus target that
     // does not exist. A wrong id is a dead link, not a hijacked focus.
-    const target = tasks.data.find((t) => t.id === reveal)
+    const target = tasks.data.tasks.find((t) => t.id === reveal)
     if (!target) return
     // Unfolding is not enough when the row is FINISHED and finished rows are hidden (D48):
     // search would route here and focus nothing. Arriving at a task is a request to see it.
@@ -452,7 +458,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
       setShowDone(true)
       saveShowDone(projectId, true)
     }
-    const chain = ancestorsOf(tasks.data, reveal)
+    const chain = ancestorsOf(tasks.data.tasks, reveal)
     if (chain.some((id) => collapsed.has(id))) {
       const next = new Set(collapsed)
       for (const id of chain) next.delete(id)
@@ -556,6 +562,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
                   scheduledOn={byId.get(row.id)?.scheduledOn ?? null}
                   hasNotes={(byId.get(row.id)?.notes ?? '') !== ''}
                   capturedAt={inInbox ? (byId.get(row.id)?.createdAt ?? null) : null}
+                  rollup={row.hasChildren ? rollupPhrase(tasks.data?.rollups[row.id]) : null}
                   leadSlot={leadSlot}
                   saved={savedId === row.id}
                   tabStop={row.id === tabId}

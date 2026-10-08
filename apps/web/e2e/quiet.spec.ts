@@ -302,3 +302,24 @@ test('the detail pane closes from the corner, and Escape unwinds one level at a 
   await page.keyboard.press('Escape')
   await expect(pane).toHaveCount(0)
 })
+
+test('a parent row says how its subtree stands, and a quiet one says nothing', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '改版')
+  const live = await makeTask(page, pid, '接入 KaTeX')
+  const done = await makeTask(page, pid, '装依赖', live, { status: 'done' })
+  await makeTask(page, pid, '公式换行', live, { status: 'in_progress' })
+  const quiet = await makeTask(page, pid, '写变更日志')
+  await makeTask(page, pid, '列个提纲', quiet)
+  expect(done).toBeTruthy()
+
+  await openTree(page, pid)
+  // §7.3's line, on the parent that has something to report: half its children are done and one
+  // of them is running.
+  await expect(row(page, '接入 KaTeX').locator('[data-row-rollup]')).toHaveText('50% · 1 进行中')
+  // And nothing at all on the parent whose subtree is merely unstarted: a lone 「0%」 would be a
+  // second line on half the rows in any tree, saying what the children below already say.
+  await expect(row(page, '写变更日志').locator('[data-row-rollup]')).toHaveCount(0)
+  // Leaves never carry one: their "progress" is the marker at the head of the row.
+  await expect(row(page, '公式换行').locator('[data-row-rollup]')).toHaveCount(0)
+})

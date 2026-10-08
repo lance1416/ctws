@@ -1,6 +1,6 @@
 import type { TaskResponse, TaskStatus, TodayTaskResponse, UpdateTaskBody } from '@ctws/contracts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { patchTask } from './tasks'
+import { patchTask, type ProjectTasks } from './tasks'
 
 /**
  * What the status mark does when clicked (or `x` on a focused row): finish the task, or, if it is
@@ -36,12 +36,13 @@ export function useTaskActions(onError: (message: string) => void) {
     onMutate: async ({ id, body }) => {
       await qc.cancelQueries({ queryKey: ['tasks'] })
       await qc.cancelQueries({ queryKey: ['today'] })
-      const tasks = qc.getQueriesData<TaskResponse[]>({ queryKey: ['tasks'] })
+      const tasks = qc.getQueriesData<ProjectTasks>({ queryKey: ['tasks'] })
       const today = qc.getQueryData<TodayTaskResponse[]>(['today'])
       const status = body.status
       if (status) {
-        qc.setQueriesData<TaskResponse[]>({ queryKey: ['tasks'] }, (old) =>
-          old?.map((t) => (t.id === id ? { ...t, status } : t)),
+        // The row answers at once; the rollups wait for the refetch (see the note in TaskTree).
+        qc.setQueriesData<ProjectTasks>({ queryKey: ['tasks'] }, (old) =>
+          old ? { ...old, tasks: old.tasks.map((t) => (t.id === id ? { ...t, status } : t)) } : old,
         )
         qc.setQueryData<TodayTaskResponse[]>(['today'], (old) =>
           old

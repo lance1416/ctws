@@ -225,7 +225,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
       let count = 0
       let frontier = [task.id]
       while (frontier.length > 0) {
-        const kids = all.filter((t) => t.parentId !== null && frontier.includes(t.parentId))
+        const kids = all.tasks.filter((t) => t.parentId !== null && frontier.includes(t.parentId))
         count += kids.length
         frontier = kids.map((t) => t.id)
       }
