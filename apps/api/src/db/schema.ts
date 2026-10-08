@@ -1,4 +1,4 @@
-import { READING_KINDS, READING_STATUSES, TASK_STATUSES } from '@ctws/contracts'
+import { CHANNEL_KINDS, READING_KINDS, READING_STATUSES, TASK_STATUSES } from '@ctws/contracts'
 import { relations, sql } from 'drizzle-orm'
 import {
   type AnyPgColumn,
@@ -6,6 +6,7 @@ import {
   check,
   date,
   index,
+  integer,
   jsonb,
   numeric,
   pgTable,
@@ -238,6 +239,62 @@ export const readingItems = pgTable(
       sql`(${t.kind} = 'link' and ${t.url} is not null and ${t.author} is null)
           or (${t.kind} = 'book' and ${t.url} is null and ${t.title} is not null)`,
     ),
+  ],
+)
+
+/**
+ * 联系人 -- THE THIRD MODULE's own tables, modelled on vCard 4.0 (RFC 6350).
+ *
+ * Like reading items, a contact carries `workspace_id` directly and its project is optional: a
+ * person you know is not a line of work. ON DELETE SET NULL on the project for the same reason --
+ * deleting a project must not delete the people.
+ */
+export const contacts = pgTable(
+  'contacts',
+  {
+    id: uuid('id').primaryKey(),
+    workspaceId: uuid('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    projectId: uuid('project_id').references(() => projects.id, { onDelete: 'set null' }),
+    /** vCard's `FN`: the name as a person writes it, not parsed into parts. */
+    name: text('name').notNull(),
+    /** vCard's `ORG`. */
+    org: text('org'),
+    /** vCard's `NOTE`. */
+    note: text('note'),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('contacts_workspace_name_idx').on(t.workspaceId, t.name)],
+)
+
+/**
+ * vCard's `EMAIL` / `TEL` / `URL`, which are REPEATABLE properties.
+ *
+ * A table and not two columns on `contacts`: one address per person is wrong the first time
+ * somebody has a work address and a personal one, which is why vCard has allowed several since
+ * 1996. Rows are replaced as a set by the contact's own endpoint; they have no endpoints of their
+ * own, because a person's addresses are read, shown and edited together.
+ */
+export const contactChannels = pgTable(
+  'contact_channels',
+  {
+    id: uuid('id').primaryKey(),
+    contactId: uuid('contact_id')
+      .notNull()
+      .references(() => contacts.id, { onDelete: 'cascade' }),
+    kind: text('kind').notNull(),
+    value: text('value').notNull(),
+    /** vCard's TYPE parameter, as free text: 「面试用的」 beats anything a fixed list offers. */
+    label: text('label'),
+    /** The order the person put them in. The first of a kind is the one a row shows. */
+    rank: integer('rank').notNull(),
+  },
+  (t) => [
+    index('contact_channels_contact_idx').on(t.contactId, t.rank),
+    check('contact_channels_kind_check', inList(t.kind, CHANNEL_KINDS)),
   ],
 )
 

@@ -1,0 +1,246 @@
+import type { ContactChannel, CreateContactBody, UpdateContactBody } from '@ctws/contracts'
+import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
+import { v7 as uuidv7 } from 'uuid'
+import type { Queryable } from '../db/client'
+import { LIKE_ESCAPE, likePattern } from '../db/like'
+import { contactChannels, contacts, projects } from '../db/schema'
+import { ProjectNotFoundError } from '../projects/errors'
+import { visibleProjects } from '../projects/store'
+import { ContactNotFoundError } from './errors'
+
+/**
+ * 联系人's storage. vCard's shape (RFC 6350), cut to what one person needs.
+ *
+ * Like the reading module it borrows exactly two things from the shell -- the workspace and
+ * `visibleProjects` -- and nothing at all from the other two modules.
+ */
+
+export type ContactRow = {
+  id: string
+  name: string
+  org: string | null
+  note: string | null
+  projectId: string | null
+  projectName: string | null
+  channels: ContactChannel[]
+  createdAt: Date
+  updatedAt: Date
+}
+
+/** THE TENANT CHOKEPOINT. Every read and write below goes through it. */
+function visibleContacts(workspaceId: string) {
+  return and(eq(contacts.workspaceId, workspaceId), isNull(contacts.deletedAt))
+}
+
+// Both halves of the project come from one subquery, so a contact never reports a project the
+// person cannot see: projects are SOFT-deleted, so the column's ON DELETE SET NULL never fires.
+// The reading module's store carries the same note for the same reason.
+const withProject = {
+  contact: contacts,
+  projectId: sql<string | null>`(
+    select p.id from projects p where p.id = contacts.project_id and p.deleted_at is null
+  )`,
+  projectName: sql<string | null>`(
+    select p.name from projects p where p.id = contacts.project_id and p.deleted_at is null
+  )`,
+}
+
+type Selected = {
+  contact: typeof contacts.$inferSelect
+  projectId: string | null
+  projectName: string | null
+}
+
+/**
+ * Attaches each contact's channels, in ONE query for the whole page.
+ *
+ * A query per contact would be the N+1 this codebase refuses everywhere else; the list is small
+ * enough to fetch its channels by `in (…)` and group them in memory.
+ */
+async function withChannels(q: Queryable, rows: Selected[]): Promise<ContactRow[]> {
+  const ids = rows.map((r) => r.contact.id)
+  const grouped = new Map<string, ContactChannel[]>()
+  if (ids.length > 0) {
+    const found = await q
+      .select()
+      .from(contactChannels)
+      .where(inArray(contactChannels.contactId, ids))
+      .orderBy(asc(contactChannels.rank), asc(contactChannels.id))
+    for (const c of found) {
+      const channel: ContactChannel = {
+        kind: c.kind as ContactChannel['kind'],
+        value: c.value,
+        label: c.label,
+      }
+      const list = grouped.get(c.contactId)
+      if (list) list.push(channel)
+      else grouped.set(c.contactId, [channel])
+    }
+  }
+  return rows.map(({ contact, projectId, projectName }) => ({
+    id: contact.id,
+    name: contact.name,
+    org: contact.org,
+    note: contact.note,
+    projectId,
+    projectName,
+    channels: grouped.get(contact.id) ?? [],
+    createdAt: contact.createdAt,
+    updatedAt: contact.updatedAt,
+  }))
+}
+
+async function assertProject(q: Queryable, workspaceId: string, projectId: string): Promise<void> {
+  const rows = await q
+    .select({ id: projects.id })
+    .from(projects)
+    .where(and(visibleProjects(workspaceId), eq(projects.id, projectId)))
+  if (rows.length === 0) throw new ProjectNotFoundError()
+}
+
+/** Replaces a contact's whole channel set. Called inside the caller's transaction. */
+async function putChannels(
+  q: Queryable,
+  contactId: string,
+  channels: readonly ContactChannel[],
+): Promise<void> {
+  await q.delete(contactChannels).where(eq(contactChannels.contactId, contactId))
+  if (channels.length === 0) return
+  await q.insert(contactChannels).values(
+    channels.map((c, rank) => ({
+      id: uuidv7(),
+      contactId,
+      kind: c.kind,
+      value: c.value,
+      label: c.label ?? null,
+      rank,
+    })),
+  )
+}
+
+export async function listContacts(
+  q: Queryable,
+  workspaceId: string,
+  opts: { projectId?: string; unfiled?: boolean } = {},
+): Promise<ContactRow[]> {
+  const rows = await q
+    .select(withProject)
+    .from(contacts)
+    .where(
+      and(
+        visibleContacts(workspaceId),
+        opts.projectId ? eq(contacts.projectId, opts.projectId) : undefined,
+        opts.unfiled
+          ? sql`not exists (
+              select 1 from projects p where p.id = contacts.project_id and p.deleted_at is null
+            )`
+          : undefined,
+      ),
+    )
+    // By name. A contact list is looked at to FIND someone, and alphabetical is where a person
+    // expects to find them -- unlike the reading pile, where the newest thing is the point.
+    .orderBy(asc(contacts.name), asc(contacts.id))
+  return withChannels(q, rows)
+}
+
+export async function getContact(
+  q: Queryable,
+  workspaceId: string,
+  id: string,
+): Promise<ContactRow> {
+  const rows = await q
+    .select(withProject)
+    .from(contacts)
+    .where(and(visibleContacts(workspaceId), eq(contacts.id, id)))
+  if (rows.length === 0) throw new ContactNotFoundError()
+  const [row] = await withChannels(q, rows)
+  return row!
+}
+
+export async function createContact(
+  q: Queryable,
+  workspaceId: string,
+  body: CreateContactBody,
+): Promise<ContactRow> {
+  if (body.projectId) await assertProject(q, workspaceId, body.projectId)
+  const id = uuidv7()
+  await q.insert(contacts).values({
+    id,
+    workspaceId,
+    projectId: body.projectId ?? null,
+    name: body.name,
+    org: body.org ?? null,
+    note: body.note ?? null,
+  })
+  await putChannels(q, id, body.channels ?? [])
+  return getContact(q, workspaceId, id)
+}
+
+export async function updateContact(
+  q: Queryable,
+  workspaceId: string,
+  id: string,
+  patch: UpdateContactBody,
+): Promise<ContactRow> {
+  // Reads first, so an id from another workspace is "not found" before anything is written.
+  await getContact(q, workspaceId, id)
+  if (patch.projectId) await assertProject(q, workspaceId, patch.projectId)
+
+  const { channels, ...fields } = patch
+  // An update of only the channels must still touch the row, or `updated_at` would say the
+  // contact has not changed when their phone number just did.
+  await q
+    .update(contacts)
+    .set({ ...fields, updatedAt: new Date() })
+    .where(and(visibleContacts(workspaceId), eq(contacts.id, id)))
+  if (channels) await putChannels(q, id, channels)
+  return getContact(q, workspaceId, id)
+}
+
+export async function softDeleteContact(
+  q: Queryable,
+  workspaceId: string,
+  id: string,
+): Promise<void> {
+  const deleted = await q
+    .update(contacts)
+    .set({ deletedAt: new Date() })
+    .where(and(visibleContacts(workspaceId), eq(contacts.id, id)))
+    .returning({ id: contacts.id })
+  if (deleted.length === 0) throw new ContactNotFoundError()
+}
+
+/**
+ * This module's half of federated search: the name, the organisation, and every address.
+ *
+ * Searching the addresses is the point as often as the name is -- 「那个 @example.com 的人叫什么
+ * 来着」 is exactly the question a contact list answers.
+ */
+export async function searchContacts(
+  q: Queryable,
+  workspaceId: string,
+  query: string,
+  limit = 20,
+): Promise<ContactRow[]> {
+  const pattern = likePattern(query)
+  const rows = await q
+    .select(withProject)
+    .from(contacts)
+    .where(
+      and(
+        visibleContacts(workspaceId),
+        sql`(
+          contacts.name ilike ${pattern} escape ${LIKE_ESCAPE}
+          or contacts.org ilike ${pattern} escape ${LIKE_ESCAPE}
+          or exists (
+            select 1 from contact_channels ch
+            where ch.contact_id = contacts.id
+              and ch.value ilike ${pattern} escape ${LIKE_ESCAPE}
+          )
+        )`,
+      ),
+    )
+    .orderBy(asc(contacts.name), asc(contacts.id))
+    .limit(limit)
+  return withChannels(q, rows)
+}

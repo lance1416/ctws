@@ -71,6 +71,13 @@
       "when": 1791480000000,
       "tag": "0009_reading_plan_on",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791490000000,
+      "tag": "0010_contacts",
+      "breakpoints": true
     }
   ]
 }
