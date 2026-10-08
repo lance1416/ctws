@@ -20,10 +20,10 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
   typed.post(
     '/auth/register',
     {
-      // Two limits: the route's own, bucketed by EMAIL, and the instance-wide ceiling on this
+      // Two limits: the route's own, bucketed by EMAIL, and the instance-wide ceiling on auth
       // connection (guards.ts). Per-email alone has no ceiling on the whole box.
       config: { rateLimit: { max: app.env.authRateLimitMax, timeWindow: '1 minute' } },
-      onRequest: app.authIpCeiling,
+      onRequest: app.authCeiling,
       schema: { body: registerBody, response: { 201: userResponse } },
     },
     async (req, reply) => {
@@ -71,10 +71,10 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
   typed.post(
     '/auth/login',
     {
-      // Two limits: the route's own, bucketed by EMAIL, and the instance-wide ceiling on this
+      // Two limits: the route's own, bucketed by EMAIL, and the instance-wide ceiling on auth
       // connection (guards.ts). Per-email alone has no ceiling on the whole box.
       config: { rateLimit: { max: app.env.authRateLimitMax, timeWindow: '1 minute' } },
-      onRequest: app.authIpCeiling,
+      onRequest: app.authCeiling,
       schema: { body: loginBody, response: { 200: userResponse } },
     },
     async (req, reply) => {

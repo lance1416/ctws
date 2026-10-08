@@ -19,6 +19,23 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+      # The production compose file's knobs are not reachable from any test: they are strings
+      # that only mean something once Docker has interpolated them (D39). This renders it and
+      # checks the two that matter -- the one that is overridable, and the one whose default is
+      # the security control it is (guards.ts's ceiling is NOT raised in production).
+      - name: compose.prod.yaml renders its auth limits
+        env:
+          POSTGRES_PASSWORD: rendering-only
+          IMAGE: ghcr.io/owner/ctws:v0
+        run: |
+          # `--env-file /dev/null`: the claim is about THIS FILE's defaults, not about whatever
+          # the machine happens to export. A developer's own .env raises the limit to 1000.
+          render() { docker compose --env-file /dev/null -f compose.prod.yaml config; }
+          render | grep -E 'AUTH_RATE_LIMIT_MAX: "?20"?'
+          AUTH_RATE_LIMIT_MAX=77 render | grep -E 'AUTH_RATE_LIMIT_MAX: "?77"?'
+          # And the per-connection ceiling is NOT raised in production: it is a security control,
+          # and the only place it is loosened is the dev stack the e2e suite runs against.
+          ! render | grep -q AUTH_CEILING
 
   e2e:
     runs-on: ubuntu-latest

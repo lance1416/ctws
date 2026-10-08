@@ -67,34 +67,36 @@ export async function registerGuards(app: FastifyInstance): Promise<void> {
   })
 
   /**
-   * THE SECOND BUCKET: everything one CONNECTION can do to the auth routes, whatever addresses
-   * it names. Higher than the per-email limit, because several tabs (or several people behind
-   * one proxy) legitimately share an address, and finite, which is what the per-email bucket is
-   * not.
+   * THE SECOND LIMIT: a CEILING ON THE WHOLE INSTANCE's auth traffic, per minute.
    *
-   * WRITTEN BY HAND, and that is a deviation worth justifying. `fastify-rate-limit` is already
-   * here and does everything else; it does not do TWO limits on one route -- a second limiter
-   * attached beside the route's own silently disables it (measured: all 25 attempts came back
-   * 401 where the twenty-first should have been 429). A fixed window over a Map is twenty lines
-   * for one self-hosted instance, and the alternative was a limit that looked present and was
-   * not, which is the worse failure by a distance.
+   * WHAT IT IS FOR, exactly: `authenticate` runs argon2 even for an address that does not exist
+   * (deliberately, to equalise timing), so every auth request costs real CPU. The per-email
+   * bucket above cannot bound that -- ten thousand addresses are ten thousand buckets.
    *
-   * Fixed window, not sliding: at the boundary an attacker gets 2x for one second. Against a
-   * ceiling whose job is to bound argon2 on one box, that is noise.
+   * NOT PER IP, and that is the correction. The first version of this kept a Map keyed by
+   * `req.ip` and swept it on every request: an attacker rotating source addresses (an IPv6 /64
+   * is billions) grows that map without bound and makes the sweep O(n) per request, so the
+   * limiter becomes the amplifier. A single counter has no key to rotate, no table to grow and
+   * nothing to sweep.
+   *
+   * THE TRADE, stated plainly: a flood can exhaust this ceiling and the legitimate user is
+   * refused a sign-in for the rest of the minute. That is the same outcome as the unbounded
+   * version -- the box is under attack either way -- except that here everything which is not
+   * the auth routes stays responsive. A per-address version would also have to decide what to
+   * do with a full table, and every answer to that is this trade under another name.
+   *
+   * Fixed window, not sliding: at a boundary an attacker gets 2x for one second, which against
+   * a CPU ceiling is noise.
    */
-  const CEILING = app.env.authIpCeiling
+  const CEILING = app.env.authCeiling
   const WINDOW_MS = 60_000
-  const seen = new Map<string, { count: number; until: number }>()
-  app.decorate('authIpCeiling', (async (req, reply) => {
+  let window = { count: 0, until: 0 }
+  app.decorate('authCeiling', (async (_req, reply) => {
     const now = Date.now()
-    // Opportunistic sweep: this runs only on auth requests, so the map never holds more than
-    // the addresses that have tried to sign in during one window.
-    for (const [k, v] of seen) if (v.until <= now) seen.delete(k)
-    const bucket = seen.get(req.ip) ?? { count: 0, until: now + WINDOW_MS }
-    bucket.count += 1
-    seen.set(req.ip, bucket)
-    if (bucket.count > CEILING) {
-      return sendProblem(reply, 429, 'Too many requests from this address')
+    if (now >= window.until) window = { count: 0, until: now + WINDOW_MS }
+    window.count += 1
+    if (window.count > CEILING) {
+      return sendProblem(reply, 429, 'Too many sign-in attempts right now')
     }
   }) satisfies onRequestHookHandler)
 

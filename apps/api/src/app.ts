@@ -125,7 +125,7 @@ declare module 'fastify' {
   interface FastifyInstance {
     db: Db
     env: Env
-    /** The per-connection ceiling on the auth routes; see guards.ts. */
-    authIpCeiling: onRequestHookHandler
+    /** The instance-wide ceiling on auth traffic; see guards.ts. */
+    authCeiling: onRequestHookHandler
   }
 }

@@ -186,11 +186,15 @@ describe('rate limiting', () => {
     expect((await attempt('  VICTIM@example.com ')).statusCode).toBe(429)
   }, 60_000)
 
-  it('still has a ceiling on one connection, however many addresses it names', async () => {
+  it('still has an instance-wide ceiling, however many addresses are named', async () => {
     // THE HALF THE FIRST VERSION OF D3 LOST. Per-email buckets protect an account; alone they
-    // leave the INSTANCE unprotected, because ten thousand addresses are ten thousand buckets
-    // from one connection -- and `authenticate` runs argon2 against a dummy hash even for an
-    // address that does not exist, so that is unbounded CPU for the asking.
+    // leave the INSTANCE unprotected, because ten thousand addresses are ten thousand buckets --
+    // and `authenticate` runs argon2 against a dummy hash even for an address that does not
+    // exist, so that is unbounded CPU for the asking.
+    //
+    // The ceiling is a single counter with no key, so there is nothing to rotate past it. The
+    // second version of this control kept a Map keyed by `req.ip` and swept it on every request,
+    // which an attacker rotating source addresses turns into the amplifier.
     const codes: number[] = []
     for (let i = 0; i < 70; i++) {
       const res = await ctx.app.inject({
