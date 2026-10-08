@@ -9,7 +9,7 @@ import { activityLabel, hasMovement, QUIET_DAYS, stagnant } from './movement'
  */
 const row = (p: Partial<ProjectMovementResponse> = {}): ProjectMovementResponse => ({
   projectId: p.projectId ?? 'p',
-  projectName: p.projectName ?? '项目',
+  projectName: p.projectName ?? 'Projects',
   doneThisWeek: p.doneThisWeek ?? 0,
   remaining: p.remaining ?? 0,
   overdue: p.overdue ?? 0,
@@ -64,10 +64,10 @@ describe('stagnant', () => {
 
 describe('activityLabel', () => {
   it('writes the month and day inside the current year', () => {
-    expect(activityLabel('2026-09-28', '2026-10-05')).toBe('9月28日')
+    expect(activityLabel('2026-09-28', '2026-10-05')).toBe('Sep 28')
   })
 
   it('adds the year once the day is not in the current one', () => {
-    expect(activityLabel('2025-12-30', '2026-10-05')).toBe('2025年12月30日')
+    expect(activityLabel('2025-12-30', '2026-10-05')).toBe('Dec 30, 2025')
   })
 })

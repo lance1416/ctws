@@ -31,7 +31,7 @@ export async function searchReading(query: string): Promise<ReadingItemResponse[
   return (await apiFetch<{ items: ReadingItemResponse[] }>(path)).items
 }
 
-/** This module's dated things for a window. The DAY is the server's, in the account's zone. */
+/** This module"s dated things for a window. The DAY is the server's, in the account"s zone. */
 export async function readingCalendar(range: {
   from: string
   to: string
@@ -64,7 +64,7 @@ export function deleteReadingItem(id: string): Promise<void> {
  */
 export function readingLabel(item: Pick<ReadingItemResponse, 'title' | 'url'>): string {
   if (item.title) return item.title
-  if (!item.url) return '（无标题）'
+  if (!item.url) return '(untitled)'
   try {
     return new URL(item.url).host.replace(/^www\./, '')
   } catch {

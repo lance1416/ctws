@@ -12,7 +12,7 @@ import { registerFreshUser } from './helpers'
 
 const HEADERS = { 'x-ctws-client': 'web' }
 
-const capture = (page: Page) => page.getByLabel('捕获')
+const capture = (page: Page) => page.getByLabel('Capture')
 const rowOf = (page: Page, text: string) =>
   page.getByRole('listitem').filter({ hasText: text }).first()
 
@@ -34,11 +34,11 @@ test('a pasted link goes to 待读; a sentence still goes to the inbox', async (
 
   const toReading = await captureLine(page, 'https://linear.app/now/redesign')
   expect(new URL(toReading.url()).pathname).toBe('/api/v1/reading')
-  await expect(page.getByText('已放入')).toContainText('待读')
+  await expect(page.getByText('Added to')).toContainText('Reading')
 
   const toInbox = await captureLine(page, '看看这篇 https://linear.app/now/redesign')
   expect(new URL(toInbox.url()).pathname).toBe('/api/v1/tasks')
-  await expect(page.getByText('已放入')).toContainText('Inbox')
+  await expect(page.getByText('Added to')).toContainText('Inbox')
 })
 
 test('an untitled link is listed by its host, and can be given a name', async ({ page }) => {
@@ -49,7 +49,7 @@ test('an untitled link is listed by its host, and can be given a name', async ({
   })
   await page.goto('/reading')
 
-  // 「粘链接先显示域名」 -- never the raw url, which is unreadable at row width.
+  // 「粘链接先显示域名” -- never the raw url, which is unreadable at row width.
   const row = rowOf(page, 'linear.app')
   await expect(row.getByRole('link')).toHaveText('linear.app')
   await expect(row.getByRole('link')).toHaveAttribute(
@@ -59,12 +59,12 @@ test('an untitled link is listed by its host, and can be given a name', async ({
   // And it opens away from the workspace, so a half-read list is not lost.
   await expect(row.getByRole('link')).toHaveAttribute('target', '_blank')
 
-  await row.getByRole('button', { name: /更多操作/ }).click()
-  await page.getByRole('menuitem', { name: '改标题' }).click()
+  await row.getByRole('button', { name: /More for/ }).click()
+  await page.getByRole('menuitem', { name: 'Rename' }).click()
   // FOCUS IS IN THE FIELD, not back on the menu's trigger: a menu restores focus to its trigger
   // when it closes, which would leave an editor nobody can type into without clicking it first.
-  await expect(page.getByRole('textbox', { name: '标题' })).toBeFocused()
-  await page.getByRole('textbox', { name: '标题' }).fill('Linear 怎么重做 issue')
+  await expect(page.getByRole('textbox', { name: 'Title' })).toBeFocused()
+  await page.getByRole('textbox', { name: 'Title' }).fill('Linear 怎么重做 issue')
   // On the KEYBOARD, not through the locator: re-resolving it would blur the field, and blurring
   // is how this row cancels a rename.
   await page.keyboard.press('Enter')
@@ -80,17 +80,17 @@ test('a book moves 待读 → 在读 → 读完, and the finished pile folds awa
   await page.goto('/reading')
 
   const section = (name: string) => page.getByRole('region', { name })
-  await expect(section('待读').getByText('设计心理学')).toBeVisible()
+  await expect(section('Reading').getByText('设计心理学')).toBeVisible()
 
-  await rowOf(page, '设计心理学').getByRole('button', { name: '开始读' }).click()
-  await expect(section('在读').getByText('设计心理学')).toBeVisible()
+  await rowOf(page, '设计心理学').getByRole('button', { name: 'Start reading' }).click()
+  await expect(section('Reading now').getByText('设计心理学')).toBeVisible()
 
-  await rowOf(page, '设计心理学').getByRole('button', { name: '读完了' }).click()
+  await rowOf(page, '设计心理学').getByRole('button', { name: 'Finished' }).click()
   // Gone from both open sections, and not gone from the app: the count is the way back, which is
   // the rule the task tree already keeps about finished work.
-  await expect(section('在读')).toHaveCount(0)
-  await expect(section('待读')).toHaveCount(0)
-  const toggle = page.getByRole('button', { name: '读完的 1' })
+  await expect(section('Reading now')).toHaveCount(0)
+  await expect(section('Reading')).toHaveCount(0)
+  const toggle = page.getByRole('button', { name: 'Finished 1' })
   await expect(toggle).toHaveAttribute('aria-pressed', 'false')
   await toggle.click()
   await expect(rowOf(page, '设计心理学')).toBeVisible()
@@ -108,7 +108,9 @@ test('the rail counts what is waiting, not the size of the pile', async ({ page 
   })
 
   await page.goto('/reading')
-  const rail = page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: /待读/ })
+  const rail = page
+    .getByRole('navigation', { name: 'Main navigation' })
+    .getByRole('link', { name: /Reading/ })
   await expect(rail.locator('[data-count]')).toHaveText('1')
 })
 
@@ -120,12 +122,12 @@ test('g l goes to 待读, in one keyspace with the task module', async ({ page }
   await page.keyboard.press('g')
   await page.keyboard.press('l')
   await expect(page).toHaveURL(/\/reading$/)
-  await expect(page.getByRole('heading', { name: '待读', level: 1 })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Reading', level: 1 })).toBeVisible()
 })
 
 test('search reaches both modules from one box', async ({ page }) => {
   // The shell merges the providers; neither module knows the other is there. The dialog is named
-  // 「搜索」 and not 「搜索任务」 for the same reason.
+  // “Search” and not 「搜索任务” for the same reason.
   await registerFreshUser(page)
   const projects = await (await page.request.get('/api/v1/projects', { headers: HEADERS })).json()
   const inbox = projects.projects.find((p: { isInbox: boolean }) => p.isInbox)
@@ -139,9 +141,9 @@ test('search reaches both modules from one box', async ({ page }) => {
   })
   await page.goto('/tasks/today')
 
-  await page.getByRole('button', { name: '搜索' }).click()
-  await page.getByRole('combobox', { name: '搜索' }).fill('配色')
-  const dialog = page.getByRole('dialog', { name: '搜索' })
+  await page.getByRole('button', { name: 'Search' }).click()
+  await page.getByRole('combobox', { name: 'Search' }).fill('配色')
+  const dialog = page.getByRole('dialog', { name: 'Search' })
   await expect(dialog.getByRole('option').filter({ hasText: '配色重做' })).toHaveCount(1)
   await expect(dialog.getByRole('option').filter({ hasText: '配色的书' })).toHaveCount(1)
 })
@@ -172,7 +174,7 @@ test('a project page carries both modules, each with its own block and numbers',
   await expect(page.getByText('配色重做')).toBeVisible()
   await expect(page.getByText('一篇相关的文章')).toBeVisible()
   // And the reading module's number in the banner the shell owns.
-  await expect(page.getByRole('region', { name: '项目概况' })).toContainText('待读')
+  await expect(page.getByRole('region', { name: 'Project at a glance' })).toContainText('Reading')
   // The row does NOT repeat the name of the project you are standing in -- the same rule the
   // dependency pane keeps, and the same reason the task tree shows no breadcrumb.
   await expect(page.getByRole('listitem').filter({ hasText: '一篇相关的文章' })).not.toContainText(

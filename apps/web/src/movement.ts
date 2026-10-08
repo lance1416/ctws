@@ -1,17 +1,20 @@
 import type { ProjectMovementResponse } from '@ctws/contracts'
+import { MONTHS } from './dueAt'
 
 /**
- * The judgements 做到哪儿了 makes, kept out of the component so they can be tested as what they
- * are: rules about when a project is worth a line and when one has gone quiet.
+ * The judgements the movement panel makes, kept out of the component so they can be tested as
+ * what they are: rules about when a project is worth a line and when one has gone quiet.
  */
 
 /** A project has to have been quiet this long before the panel says so. One working week. */
 export const QUIET_DAYS = 7
 
-/** "9月28日", or "2025年9月28日" when it is not this year. */
+/** "Sep 28", or "Sep 28, 2025" when it is not this year. */
 export function activityLabel(day: string, today: string): string {
   const [y, m, d] = day.split('-').map(Number) as [number, number, number]
-  return today.slice(0, 4) === day.slice(0, 4) ? `${m}月${d}日` : `${y}年${m}月${d}日`
+  return today.slice(0, 4) === day.slice(0, 4)
+    ? `${MONTHS[m - 1]} ${d}`
+    : `${MONTHS[m - 1]} ${d}, ${y}`
 }
 
 /**

@@ -1,6 +1,9 @@
 import { expect, test, type Page } from '@playwright/test'
 import { backdateCompletion, editDetail, logOut, registerFreshUser } from './helpers'
 
+/** The month names the app prints, so a spec can build the string the page will show. */
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
 // The completed-work view, task deletion, and the panel's guard against losing edits on
 // navigation. As in daily.spec.ts, every claim about what changed is checked against the SERVER
 // (a fresh GET) or a reload, so an implementation that only updates the screen cannot pass.
@@ -62,16 +65,16 @@ async function finish(page: Page, id: string, ago?: string) {
 const serverTasks = async (page: Page, projectId: string): Promise<ApiTask[]> =>
   (await (await page.request.get(`/api/v1/projects/${projectId}/tasks`)).json()).tasks
 
-const nav = (page: Page) => page.getByRole('navigation', { name: '主导航' })
+const nav = (page: Page) => page.getByRole('navigation', { name: 'Main navigation' })
 
 /**
- * 已完成 is a VIEW of 回顾 now, not a rail row of its own: both answer 「我做了什么」, and they were
+ * 已完成 is a VIEW of 回顾 now, not a rail row of its own: both answer 「我做了什么”, and they were
  * two destinations only because they were built a week apart.
  */
 const goCompleted = async (page: Page) => {
-  await nav(page).getByRole('link', { name: '回顾' }).click()
-  await page.getByRole('tab', { name: '已完成' }).click()
-  await expect(page.getByRole('tab', { name: '已完成' })).toHaveAttribute('aria-selected', 'true')
+  await nav(page).getByRole('link', { name: 'Review' }).click()
+  await page.getByRole('tab', { name: 'Done' }).click()
+  await expect(page.getByRole('tab', { name: 'Done' })).toHaveAttribute('aria-selected', 'true')
 }
 
 const rowsIn = (page: Page, section: string | RegExp) =>
@@ -102,14 +105,14 @@ test('finishing a task in the tree puts it on 已完成 with its project and par
     await page.goto(`/projects/${pid}`)
     await page.getByRole('listitem').first().waitFor()
     const saved = page.waitForResponse((r) => isTaskPatch(r) && r.ok())
-    await page.getByRole('button', { name: `完成「${title}」` }).click()
+    await page.getByRole('button', { name: `Complete “${title}”` }).click()
     await saved
     // Distinct instants: the order below must come from the clock, not from creation order.
     await page.waitForTimeout(50)
   }
 
   await goCompleted(page)
-  const rows = rowsIn(page, /^今天 · /)
+  const rows = rowsIn(page, /^Today · /)
   // Newest first, across both projects, each under its project (and parent, when it has one).
   await expect(rows).toHaveCount(2)
   await expect(rows.nth(0)).toContainText('修 bug')
@@ -123,8 +126,8 @@ test('finishing a task in the tree puts it on 已完成 with its project and par
 
   // A reload shows the same, from the server.
   await page.reload()
-  await expect(rowsIn(page, /^今天 · /)).toHaveCount(2)
-  await expect(rowsIn(page, /^今天 · /).first()).toContainText('修 bug')
+  await expect(rowsIn(page, /^Today · /)).toHaveCount(2)
+  await expect(rowsIn(page, /^Today · /).first()).toContainText('修 bug')
 })
 
 test('the completed list is grouped by day, newest day and newest task first', async ({ page }) => {
@@ -144,17 +147,17 @@ test('the completed list is grouped by day, newest day and newest task first', a
   const headings = page.getByRole('heading', { level: 2 })
   // Three days, newest first; the nearest two are told apart as 今天 / 昨天.
   await expect(headings).toHaveCount(3)
-  await expect(headings.nth(0)).toContainText('今天')
-  await expect(headings.nth(1)).toContainText('昨天')
+  await expect(headings.nth(0)).toContainText('Today')
+  await expect(headings.nth(1)).toContainText('Yesterday')
   const five = new Date(Date.now() - hoursBackToNoon(5) * 3_600_000)
-  const fiveLabel = `${five.getMonth() + 1}月${five.getDate()}日`
+  const fiveLabel = `${MONTHS[five.getMonth()]} ${five.getDate()}`
   await expect(headings.nth(2)).toContainText(fiveLabel)
-  await expect(headings.nth(2)).not.toContainText('今天')
-  await expect(headings.nth(2)).not.toContainText('昨天')
+  await expect(headings.nth(2)).not.toContainText('Today')
+  await expect(headings.nth(2)).not.toContainText('Yesterday')
 
-  await expect(rowsIn(page, /^今天 · /)).toHaveCount(1)
-  await expect(rowsIn(page, /^昨天 · /)).toHaveCount(1)
-  const old = rowsIn(page, new RegExp(`^${fiveLabel}`))
+  await expect(rowsIn(page, /^Today · /)).toHaveCount(1)
+  await expect(rowsIn(page, /^Yesterday · /)).toHaveCount(1)
+  const old = rowsIn(page, new RegExp(fiveLabel))
   await expect(old).toHaveCount(2)
   await expect(old.nth(0)).toContainText('五天前晚上')
   await expect(old.nth(1)).toContainText('五天前上午')
@@ -176,13 +179,13 @@ test('a finished task can be restored from the completed list, and the server ag
   await page.goto('/tasks/review?view=done')
   await expect(page.getByRole('main').getByRole('listitem')).toHaveCount(2)
   const restored = page.waitForResponse((r) => isTaskPatch(r) && r.ok())
-  await page.getByRole('button', { name: '恢复「点错了」' }).click()
+  await page.getByRole('button', { name: 'Reopen “点错了”' }).click()
   expect((await restored).request().postDataJSON()).toEqual({ status: 'backlog' })
   await expect(page.getByText('点错了')).toHaveCount(0)
   await expect(page.getByText('真完成了')).toBeVisible()
   // Focus did not fall to <body>: it goes to the view's own heading, which is an h2 inside 回顾
   // and is there whether or not it is drawn.
-  await expect(page.getByRole('heading', { name: '已完成', level: 2 })).toBeFocused()
+  await expect(page.getByRole('heading', { name: 'Done', level: 2 })).toBeFocused()
 
   expect((await serverTasks(page, pid)).find((t) => t.title === '点错了')!.status).toBe('backlog')
   await page.reload()
@@ -193,7 +196,7 @@ test('a finished task can be restored from the completed list, and the server ag
 test('with nothing finished, the view says so', async ({ page }) => {
   await registerFreshUser(page)
   await page.goto('/completed')
-  await expect(page.getByText('还没有完成的任务')).toBeVisible()
+  await expect(page.getByText('Nothing finished yet')).toBeVisible()
 })
 
 // ------------------------------------------------------------------------------ task deletion
@@ -224,17 +227,17 @@ test('deleting a parent states how many descendants go, cancel deletes nothing, 
   page.on('request', (r) => r.method() === 'DELETE' && deletes.push(r.url()))
 
   await openPanel(page, '大块')
-  await page.getByRole('button', { name: '删除任务' }).click()
-  const ask = page.getByRole('alertdialog', { name: '确认删除任务' })
+  await page.getByRole('button', { name: 'Delete task' }).click()
+  const ask = page.getByRole('alertdialog', { name: 'Confirm deleting this task' })
   // Two children and one grandchild: three, not two (direct children only) and not four.
-  await expect(ask).toContainText('删除「大块」及其 3 条子任务，无法恢复。')
+  await expect(ask).toContainText('Delete “大块” and its 3 subtasks. This cannot be undone.')
   expect(deletes).toHaveLength(0) // the first click only asks
 
   // Cancel: nothing was deleted, on the server or on the screen, and the panel is still there.
-  await ask.getByRole('button', { name: '取消' }).click()
+  await ask.getByRole('button', { name: 'Cancel' }).click()
   await expect(ask).toHaveCount(0)
   await expect(page.getByRole('dialog')).toBeVisible()
-  await expect(page.getByRole('button', { name: '删除任务' })).toBeFocused()
+  await expect(page.getByRole('button', { name: 'Delete task' })).toBeFocused()
   await page.waitForTimeout(200)
   expect(deletes).toHaveLength(0)
   expect((await serverTasks(page, pid)).map((t) => t.title).sort()).toEqual(
@@ -242,7 +245,7 @@ test('deleting a parent states how many descendants go, cancel deletes nothing, 
   )
 
   // Escape is also "no", and it cancels the question rather than closing the panel.
-  await page.getByRole('button', { name: '删除任务' }).click()
+  await page.getByRole('button', { name: 'Delete task' }).click()
   await expect(ask).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(ask).toHaveCount(0)
@@ -251,8 +254,8 @@ test('deleting a parent states how many descendants go, cancel deletes nothing, 
   expect(await serverTasks(page, pid)).toHaveLength(5)
 
   // Confirm: the whole subtree is gone on the server, the bystander is not.
-  await page.getByRole('button', { name: '删除任务' }).click()
-  await ask.getByRole('button', { name: '确认删除' }).click()
+  await page.getByRole('button', { name: 'Delete task' }).click()
+  await ask.getByRole('button', { name: 'Delete' }).click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
   expect(deletes).toHaveLength(1)
   expect((await serverTasks(page, pid)).map((t) => t.title)).toEqual(['旁观者'])
@@ -274,11 +277,11 @@ test('deleting a leaf does not claim descendants, and works from the Today panel
 
   await page.locator('[data-today-row]').filter({ hasText: '在做的' }).click()
   await editDetail(page)
-  await page.getByRole('button', { name: '删除任务' }).click()
-  const ask = page.getByRole('alertdialog', { name: '确认删除任务' })
-  await expect(ask).toContainText('删除「在做的」，无法恢复。')
-  await expect(ask).not.toContainText('子任务')
-  await ask.getByRole('button', { name: '确认删除' }).click()
+  await page.getByRole('button', { name: 'Delete task' }).click()
+  const ask = page.getByRole('alertdialog', { name: 'Confirm deleting this task' })
+  await expect(ask).toContainText('Delete “在做的”. This cannot be undone.')
+  await expect(ask).not.toContainText('subtask')
+  await ask.getByRole('button', { name: 'Delete' }).click()
 
   await expect(page.getByRole('dialog')).toHaveCount(0)
   await expect(page.getByText('在做的')).toHaveCount(0)
@@ -303,27 +306,31 @@ test('navigating away from a dirty panel asks first; keep editing stays, discard
   await page.getByRole('main').getByRole('link', { name: 'P', exact: true }).click()
   await page.getByRole('listitem').first().waitFor()
   await openPanel(page, '写方案')
-  await page.getByLabel('标题').fill('写方案 v2')
+  await page.getByLabel('Title').fill('写方案 v2')
 
-  await nav(page).getByRole('link', { name: '今天' }).click()
+  await nav(page).getByRole('link', { name: 'Today' }).click()
   // Still here: same page, panel open, the typing intact, and it says why.
   await expect(page).toHaveURL(new RegExp(`/projects/${pid}$`))
-  await expect(page.getByRole('dialog')).toContainText('有未保存的修改，离开会丢掉它们')
-  await expect(page.getByLabel('标题')).toHaveValue('写方案 v2')
+  await expect(page.getByRole('dialog')).toContainText(
+    'You have unsaved changes. Leaving will discard them',
+  )
+  await expect(page.getByLabel('Title')).toHaveValue('写方案 v2')
 
-  await page.getByRole('button', { name: '继续编辑' }).click()
-  await expect(page.getByRole('dialog').getByText('有未保存的修改')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Keep editing' }).click()
+  await expect(page.getByRole('dialog').getByText('You have unsaved changes')).toHaveCount(0)
   await expect(page).toHaveURL(new RegExp(`/projects/${pid}$`))
-  await expect(page.getByLabel('标题')).toHaveValue('写方案 v2')
+  await expect(page.getByLabel('Title')).toHaveValue('写方案 v2')
 
   // The browser's back button is a navigation too.
   await page.goBack()
-  await expect(page.getByRole('dialog')).toContainText('有未保存的修改，离开会丢掉它们')
+  await expect(page.getByRole('dialog')).toContainText(
+    'You have unsaved changes. Leaving will discard them',
+  )
   await expect(page).toHaveURL(new RegExp(`/projects/${pid}$`))
-  await page.getByRole('button', { name: '继续编辑' }).click()
+  await page.getByRole('button', { name: 'Keep editing' }).click()
 
-  await nav(page).getByRole('link', { name: '回顾' }).click()
-  await page.getByRole('button', { name: '放弃修改' }).click()
+  await nav(page).getByRole('link', { name: 'Review' }).click()
+  await page.getByRole('button', { name: 'Discard changes' }).click()
   await expect(page).toHaveURL(/\/tasks\/review$/)
   await expect(page.getByRole('dialog')).toHaveCount(0)
   expect((await serverTasks(page, pid))[0]!.title).toBe('写方案')
@@ -336,9 +343,9 @@ test('a clean panel does not stop navigation', async ({ page }) => {
   await page.goto(`/projects/${pid}`)
   await page.getByRole('listitem').first().waitFor()
   await openPanel(page, '写方案')
-  await page.getByLabel('标题').fill('写方案 v2')
-  await page.getByLabel('标题').fill('写方案') // back to what it was: not dirty
-  await nav(page).getByRole('link', { name: '项目' }).click()
+  await page.getByLabel('Title').fill('写方案 v2')
+  await page.getByLabel('Title').fill('写方案') // back to what it was: not dirty
+  await nav(page).getByRole('link', { name: 'Projects' }).click()
   await expect(page).toHaveURL(/\/projects$/)
 })
 
@@ -351,25 +358,27 @@ test('Log out with a dirty panel asks first and does not log out until discarded
   await page.goto(`/projects/${pid}`)
   await page.getByRole('listitem').first().waitFor()
   await openPanel(page, '写方案')
-  await page.getByLabel('标题').fill('写方案 v2')
+  await page.getByLabel('Title').fill('写方案 v2')
 
   const logouts: string[] = []
   page.on('request', (r) => r.url().endsWith('/auth/logout') && logouts.push(r.url()))
   await logOut(page)
-  await expect(page.getByRole('dialog')).toContainText('有未保存的修改，离开会丢掉它们')
-  await expect(page.getByLabel('标题')).toHaveValue('写方案 v2')
+  await expect(page.getByRole('dialog')).toContainText(
+    'You have unsaved changes. Leaving will discard them',
+  )
+  await expect(page.getByLabel('Title')).toHaveValue('写方案 v2')
   await expect(page.getByTestId('current-user')).toBeVisible()
   await page.waitForTimeout(300)
   expect(logouts).toHaveLength(0) // no logout request was sent
   // Still signed in on the server.
   expect((await page.request.get('/api/v1/auth/me')).ok()).toBeTruthy()
 
-  await page.getByRole('button', { name: '继续编辑' }).click()
-  await expect(page.getByLabel('标题')).toHaveValue('写方案 v2')
+  await page.getByRole('button', { name: 'Keep editing' }).click()
+  await expect(page.getByLabel('Title')).toHaveValue('写方案 v2')
 
   await logOut(page)
-  await page.getByRole('button', { name: '放弃修改' }).click()
-  await expect(page.getByLabel('邮箱')).toBeVisible()
+  await page.getByRole('button', { name: 'Discard changes' }).click()
+  await expect(page.getByLabel('Email')).toBeVisible()
   expect(logouts).toHaveLength(1)
   expect((await page.request.get('/api/v1/auth/me')).ok()).toBeFalsy()
 })
@@ -383,17 +392,17 @@ test('pressing Save and then a nav link at once is not mistaken for losing edits
   await page.goto(`/projects/${pid}`)
   await page.getByRole('listitem').first().waitFor()
   await openPanel(page, '写方案')
-  await page.getByLabel('标题').fill('写方案 v2')
+  await page.getByLabel('Title').fill('写方案 v2')
 
   // Hold the save in flight, so "click Save, then a link" is deterministic rather than a race.
   await page.route('**/api/v1/tasks/*', async (route) => {
     if (route.request().method() === 'PATCH') await new Promise((r) => setTimeout(r, 800))
     await route.continue()
   })
-  await page.getByRole('button', { name: '保存' }).click()
-  await nav(page).getByRole('link', { name: '今天' }).click()
+  await page.getByRole('button', { name: 'Save' }).click()
+  await nav(page).getByRole('link', { name: 'Today' }).click()
   await expect(page).toHaveURL(/\/tasks\/today$/)
-  await expect(page.getByText('有未保存的修改')).toHaveCount(0)
+  await expect(page.getByText('You have unsaved changes')).toHaveCount(0)
   // The save was not lost on the way.
   await expect
     .poll(async () => (await serverTasks(page, pid))[0]!.title, { timeout: 5000 })

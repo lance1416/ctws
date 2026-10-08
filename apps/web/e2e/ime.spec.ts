@@ -44,11 +44,11 @@ async function commitWithIme(page: Page, selector: string, text: string) {
 
 test('committing English out of an IME does not file the capture', async ({ page }) => {
   await registerFreshUser(page)
-  await commitWithIme(page, 'input[aria-label="捕获"]', 'hello')
+  await commitWithIme(page, 'input[aria-label="Capture"]', 'hello')
 
   // The letters are still in the box and nothing was filed.
-  await expect(page.getByLabel('捕获')).toHaveValue('hello')
-  await expect(page.getByText('已放入')).toHaveCount(0)
+  await expect(page.getByLabel('Capture')).toHaveValue('hello')
+  await expect(page.getByText('Added to')).toHaveCount(0)
 })
 
 test('committing English out of an IME does not create a task', async ({ page }) => {
@@ -60,9 +60,9 @@ test('committing English out of an IME does not create a task', async ({ page })
   const { id } = (await made.json()) as { id: string }
   await page.goto(`/projects/${id}`)
 
-  await commitWithIme(page, 'input[aria-label="新任务"]', 'ship it')
-  await expect(page.getByLabel('新任务')).toHaveValue('ship it')
-  await expect(page.getByRole('button', { name: '任务：ship it', exact: true })).toHaveCount(0)
+  await commitWithIme(page, 'input[aria-label="New task"]', 'ship it')
+  await expect(page.getByLabel('New task')).toHaveValue('ship it')
+  await expect(page.getByRole('button', { name: 'Task: ship it', exact: true })).toHaveCount(0)
 })
 
 test('committing English out of an IME does not close an inline editor', async ({ page }) => {
@@ -73,19 +73,19 @@ test('committing English out of an IME does not close an inline editor', async (
   })
   await page.reload()
   await page.getByRole('button', { name: '陈颖' }).click()
-  const pane = page.getByRole('dialog', { name: '联系人' })
-  await pane.getByRole('button', { name: '改公司' }).click()
+  const pane = page.getByRole('dialog', { name: 'Contacts' })
+  await pane.getByRole('button', { name: 'Edit Company' }).click()
 
-  await commitWithIme(page, 'input[aria-label="公司"]', 'Acme')
+  await commitWithIme(page, 'input[aria-label="Company"]', 'Acme')
   // Still open, still holding what was typed: the Enter belonged to the IME.
-  await expect(pane.getByRole('textbox', { name: '公司' })).toHaveValue('Acme')
+  await expect(pane.getByRole('textbox', { name: 'Company' })).toHaveValue('Acme')
 })
 
 test('a real Enter still submits', async ({ page }) => {
   // The guard must not swallow the Enter anybody actually meant.
   await registerFreshUser(page)
-  await page.getByLabel('捕获').fill('写迁移')
-  await page.getByLabel('捕获').press('Enter')
-  await expect(page.getByText('已放入')).toBeVisible()
-  await expect(page.getByLabel('捕获')).toHaveValue('')
+  await page.getByLabel('Capture').fill('写迁移')
+  await page.getByLabel('Capture').press('Enter')
+  await expect(page.getByText('Added to')).toBeVisible()
+  await expect(page.getByLabel('Capture')).toHaveValue('')
 })

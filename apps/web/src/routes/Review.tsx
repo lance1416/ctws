@@ -7,12 +7,13 @@ import { EmptyState } from '../components/EmptyState'
 import { Panel } from '../components/Panel'
 import { ViewTabs } from '../components/ViewTabs'
 import { Completed } from './Completed'
+import { MONTHS } from '../dueAt'
 import { useProjectRail } from '../projectColor'
 
-/** "10月2日" — the year only when it is not the window's own. */
+/** "Oct 2" -- the month and the day; the window itself carries the year. */
 function dayLabel(day: string): string {
   const [, m, d] = day.split('-').map(Number) as [number, number, number]
-  return `${m}月${d}日`
+  return `${MONTHS[m - 1]} ${d}`
 }
 
 function shiftWeek(from: string, to: string): { from: string; to: string } {
@@ -67,8 +68,8 @@ function Group({
  * project blocks and the calendar; this is its third user.
  */
 const VIEWS = [
-  { id: 'week', label: '这周' },
-  { id: 'done', label: '已完成' },
+  { id: 'week', label: 'This week' },
+  { id: 'done', label: 'Done' },
 ]
 
 export function Review() {
@@ -95,7 +96,7 @@ export function Review() {
     <>
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <h1 ref={heading} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
-          回顾
+          Review
         </h1>
         <ViewTabs views={VIEWS} current={view} onPick={pickView} />
         {view === 'week' && data && (
@@ -109,7 +110,7 @@ export function Review() {
             onClick={() => setRange(range ? null : shiftWeek(data.from, data.to))}
             className="ml-auto h-8 rounded-lg px-2.5 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
           >
-            {range ? '本周' : '上周'}
+            {range ? 'This week' : 'Last week'}
           </button>
         )}
       </div>
@@ -118,12 +119,12 @@ export function Review() {
 
       {view === 'week' && review.isError && (
         <p role="alert" className="mt-4 text-sm text-danger">
-          回顾加载失败
+          Couldn't load the review
         </p>
       )}
 
       {view === 'week' && data && data.projects.length === 0 && (
-        <EmptyState title="这一周还没有动静" />
+        <EmptyState title="Nothing happened this week" />
       )}
 
       <div className="mt-4 flex max-w-[52rem] flex-col gap-3">
@@ -144,9 +145,9 @@ export function Review() {
               }
             >
               <div className="px-2 pb-1">
-                <Group title="完成" tasks={p.finished} />
-                <Group title="开始" tasks={p.started} />
-                <Group title="放弃" tasks={p.dropped} />
+                <Group title="Done" tasks={p.finished} />
+                <Group title="Start" tasks={p.started} />
+                <Group title="Dropped" tasks={p.dropped} />
               </div>
             </Panel>
           ))}

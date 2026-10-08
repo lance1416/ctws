@@ -38,7 +38,7 @@ async function apiTask(
   return id
 }
 
-const rail = (page: Page) => page.getByRole('navigation', { name: '主导航' })
+const rail = (page: Page) => page.getByRole('navigation', { name: 'Main navigation' })
 
 /**
  * Opens a tree row's detail the keyboard way. A CLICK on the handle deliberately does not open
@@ -46,7 +46,7 @@ const rail = (page: Page) => page.getByRole('navigation', { name: '主导航' })
  * detail.spec.ts uses.
  */
 async function openDetail(page: Page, title: string) {
-  await page.getByRole('button', { name: `任务：${title}`, exact: true }).focus()
+  await page.getByRole('button', { name: `Task: ${title}`, exact: true }).focus()
   await page.keyboard.press('Enter')
 }
 
@@ -76,7 +76,7 @@ test('the task detail is a coexisting pane at 1280 and up, and an overlay below 
   await page.setViewportSize(WIDE)
   await page.goto(`/projects/${pid}`)
   await openDetail(page, '被打开的任务')
-  const dialog = page.getByRole('dialog', { name: '任务详情' })
+  const dialog = page.getByRole('dialog', { name: 'Task details' })
   await expect(dialog).toBeVisible()
   await expect(dialog).toHaveAttribute('data-detail-mode', 'pane')
   // No layer over the page: as a column, a click on the list is a click on the list.
@@ -157,7 +157,7 @@ test('the left rail shows each project the open-task count the server reports', 
   // The 今天 destination carries its own count, from the same server list the page renders.
   await apiTask(page, busy, '今天要做的', { scheduledOn: new Date().toLocaleDateString('en-CA') })
   await page.reload()
-  await expect(rail(page).getByRole('link', { name: '今天' }).locator('[data-count]')).toHaveText(
+  await expect(rail(page).getByRole('link', { name: 'Today' }).locator('[data-count]')).toHaveText(
     '1',
   )
 })
@@ -185,10 +185,10 @@ test('nothing scrolls sideways at 375px', async ({ page }) => {
     }))
 
   for (const [name, url] of [
-    ['今天', '/'],
+    ['Today', '/'],
     ['项目列表', '/projects'],
-    ['项目', `/projects/${pid}`],
-    ['已完成', '/completed'],
+    ['Projects', `/projects/${pid}`],
+    ['Done', '/completed'],
   ] as const) {
     await page.goto(url)
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
@@ -198,7 +198,7 @@ test('nothing scrolls sideways at 375px', async ({ page }) => {
   // And with the detail open, which at this width is a layer over the page.
   await page.goto(`/projects/${pid}`)
   await openDetail(page, '逾期的那条')
-  await expect(page.getByRole('dialog', { name: '任务详情' })).toBeVisible()
+  await expect(page.getByRole('dialog', { name: 'Task details' })).toBeVisible()
   expect(await overflow(), '详情打开时').toEqual({ doc: 0, body: 0 })
 })
 
@@ -216,7 +216,7 @@ test('the detail pane does not trap the keyboard at 1280 and up', async ({ page 
   await page.setViewportSize(WIDE)
   await page.goto(`/projects/${pid}`)
   await openDetail(page, '开着的任务')
-  const dialog = page.getByRole('dialog', { name: '任务详情' })
+  const dialog = page.getByRole('dialog', { name: 'Task details' })
   await expect(dialog).toBeFocused()
 
   const inside = () => page.evaluate(() => !!document.activeElement?.closest('[role="dialog"]'))
@@ -232,7 +232,7 @@ test('the detail pane does not trap the keyboard at 1280 and up', async ({ page 
   // Escape, pressed from inside, still closes it and hands focus back to the row.
   // Pressed from inside the pane. In reading mode the control to press it on is 编辑 ('exact'
   // because 继续编辑 contains it); what is pinned is that Escape from inside still closes.
-  await dialog.getByRole('button', { name: '编辑', exact: true }).press('Escape')
+  await dialog.getByRole('button', { name: 'Edit', exact: true }).press('Escape')
   await expect(dialog).toHaveCount(0)
-  await expect(page.getByRole('button', { name: '任务：开着的任务', exact: true })).toBeFocused()
+  await expect(page.getByRole('button', { name: 'Task: 开着的任务', exact: true })).toBeFocused()
 })

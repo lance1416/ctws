@@ -25,7 +25,7 @@ export function StatusButton({
       type="button"
       tabIndex={-1}
       data-status-button
-      aria-label={inactive ? `恢复「${title}」` : `完成「${title}」`}
+      aria-label={inactive ? `Reopen “${title}”` : `Complete “${title}”`}
       onClick={onClick}
       className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg hover:bg-surface-hover ${className}`}
     >
@@ -52,7 +52,7 @@ export function StartButton({
       type="button"
       tabIndex={-1}
       data-start-button
-      aria-label={running ? `暂停「${title}」` : `开始「${title}」`}
+      aria-label={running ? `Pause “${title}”` : `Start “${title}”`}
       onClick={onClick}
       className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-fg-muted hover:bg-surface-hover hover:text-fg ${className}`}
     >

@@ -35,14 +35,14 @@ export function DeleteConfirm({
         onClick={onConfirm}
         className="h-9 rounded-lg bg-danger px-3 font-semibold text-danger-fg hover:opacity-90 disabled:opacity-50"
       >
-        确认删除
+        Confirm delete
       </button>
       <button
         type="button"
         onClick={onCancel}
         className="h-9 rounded-lg border border-border-strong px-3 text-fg hover:bg-surface-hover"
       >
-        取消
+        Cancel
       </button>
     </div>
   )

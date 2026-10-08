@@ -87,7 +87,7 @@ export function Shortcuts() {
   return (
     <>
       <button type="button" onClick={() => setSearch(true)} className={button}>
-        搜索
+        Search
         <kbd aria-hidden="true" className={hint}>
           f
         </kbd>
@@ -95,13 +95,13 @@ export function Shortcuts() {
       <button
         type="button"
         onClick={() => setHelp(true)}
-        aria-label="键盘快捷键"
+        aria-label="Keyboard shortcuts"
         className={button}
       >
         <kbd aria-hidden="true" className={hint}>
           ?
         </kbd>
-        <span className="sm:hidden">快捷键</span>
+        <span className="sm:hidden">Shortcuts</span>
       </button>
       {search && <SearchDialog onClose={() => setSearch(false)} />}
       {help && <ShortcutHelp onClose={() => setHelp(false)} />}

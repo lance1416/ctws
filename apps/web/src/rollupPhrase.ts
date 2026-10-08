@@ -3,7 +3,7 @@ import type { RollupResponse } from '@ctws/contracts'
 /**
  * 「60% · 2 进行中 · 1 已逾期」 -- a parent row's subtree, said in words (design spec §7.3).
  *
- * THE PERCENTAGE ALONE DOES NOT ANSWER 「做到哪儿了」, which is why the spec writes the line this
+ * THE PERCENTAGE ALONE DOES NOT ANSWER “Movement”, which is why the spec writes the line this
  * way and not as a bar. Each part is dropped when it has nothing to say, so a parent whose
  * children are merely unstarted gets 「0%」 and no tail, rather than a row of zeroes.
  *
@@ -19,8 +19,8 @@ export function rollupPhrase(r: RollupResponse | undefined): string | null {
   if (!r) return null
   const parts: string[] = []
   if (r.progress !== null) parts.push(`${Math.round(r.progress * 100)}%`)
-  if (r.counts.in_progress > 0) parts.push(`${r.counts.in_progress} 进行中`)
-  if (r.overdue > 0) parts.push(`${r.overdue} 已逾期`)
+  if (r.counts.in_progress > 0) parts.push(`${r.counts.in_progress} in progress`)
+  if (r.overdue > 0) parts.push(`${r.overdue} overdue`)
   if (parts.length === 1 && r.progress === 0) return null
   // `dueSoon` is deliberately NOT here. It is in the rollup because the project banner and a
   // future board can use it, but on a row it would be a fourth number competing with the row's

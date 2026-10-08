@@ -116,11 +116,12 @@ export function TaskBoard({ projectId }: { projectId: string }) {
     if (!task || task.status === status) return
     setError(null)
     // The same mutation the row markers use, so a card and a marker cannot disagree about what
-    // moving to 「已完成」 means (it stamps `completed_at`, among other things).
+    // moving to “Done” means (it stamps `completed_at`, among other things).
     actions.setStatus(task.id, status)
   }
 
-  if (tasks.isSuccess && rows.length === 0) return <PanelEmpty>这个项目还没有任务</PanelEmpty>
+  if (tasks.isSuccess && rows.length === 0)
+    return <PanelEmpty>No tasks in this project yet</PanelEmpty>
 
   return (
     <>

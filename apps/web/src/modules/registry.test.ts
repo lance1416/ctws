@@ -30,36 +30,36 @@ const NotesProjectNumbers = () => null
 
 const notes: WorkspaceModule = {
   id: 'notes',
-  label: '笔记',
+  label: 'Notes',
   destinations: [
-    { id: 'recent', to: '/notes/recent', label: '最近' },
-    { id: 'all', to: '/notes/all', label: '全部' },
+    { id: 'recent', to: '/notes/recent', label: 'Recent' },
+    { id: 'all', to: '/notes/all', label: 'All' },
   ],
   routes: [{ path: 'recent' }, { path: 'all' }],
   capture: { useTarget: () => ({ target: null, missing: false, unavailable: false }) },
   search: { useHits: () => ({ hits: [], isError: false, isSuccess: true }) },
   chords: [
-    { id: 'recent', key: 'n', label: '去「最近」', resolve: () => '/notes/recent', order: 5 },
+    { id: 'recent', key: 'n', label: 'Go to Recent', resolve: () => '/notes/recent', order: 5 },
   ],
-  widgets: [{ id: 'recent', label: '最近的笔记', to: '/notes/recent', Component: () => null }],
+  widgets: [{ id: 'recent', label: 'Recent notes', to: '/notes/recent', Component: () => null }],
   ProjectView: NotesOnProject,
   ProjectHeadline: NotesProjectNumbers,
 }
 
 const files: WorkspaceModule = {
   id: 'files',
-  label: '文件',
-  destinations: [{ id: 'drive', to: '/files/drive', label: '云盘' }],
+  label: 'Files',
+  destinations: [{ id: 'drive', to: '/files/drive', label: 'Drive' }],
   routes: [{ path: 'drive' }],
   capture: { useTarget: () => ({ target: null, missing: true, unavailable: false }) },
-  widgets: [{ id: 'big', label: '占地方的', Component: () => null }],
+  widgets: [{ id: 'big', label: 'Bulky', Component: () => null }],
   ProjectView: () => null,
 }
 
 describe('destinations', () => {
   it('puts a module contribution in the rail, tagged with the module it came from', () => {
     const rail = moduleDestinations([notes, files])
-    expect(rail.map((d) => d.label)).toEqual(['最近', '全部', '云盘'])
+    expect(rail.map((d) => d.label)).toEqual(['Recent', 'All', 'Drive'])
     expect(rail.map((d) => d.moduleId)).toEqual(['notes', 'notes', 'files'])
     expect(rail.map((d) => d.to)).toEqual(['/notes/recent', '/notes/all', '/files/drive'])
   })
@@ -139,7 +139,7 @@ describe('search providers', () => {
     const providers = searchProviders([notes, files])
     // `files` contributes no search provider, so it is absent rather than empty.
     expect(providers.map((p) => p.moduleId)).toEqual(['notes'])
-    expect(providers.map((p) => p.moduleLabel)).toEqual(['笔记'])
+    expect(providers.map((p) => p.moduleLabel)).toEqual(['Notes'])
   })
 })
 
@@ -155,7 +155,7 @@ describe('what a module hangs on a project page', () => {
   it('collects every module that has rows for a project, in registration order', () => {
     const views = projectViews([notes, files])
     expect(views.map((v) => v.moduleId)).toEqual(['notes', 'files'])
-    expect(views.map((v) => v.moduleLabel)).toEqual(['笔记', '文件'])
+    expect(views.map((v) => v.moduleLabel)).toEqual(['Notes', 'Files'])
     expect(views[0]!.Component).toBe(NotesOnProject)
   })
 

@@ -55,7 +55,7 @@ async function openTree(page: Page, projectId: string) {
 const row = (page: Page, title: string) =>
   page
     .locator('li[data-depth]')
-    .filter({ has: page.getByRole('button', { name: `任务：${title}`, exact: true }) })
+    .filter({ has: page.getByRole('button', { name: `Task: ${title}`, exact: true }) })
 
 // ------------------------------------------------------------------ D48: the finished pile
 
@@ -74,7 +74,7 @@ test('the tree shows what is left to do, and the count is the way back to the re
   // Cancelled counts as finished: it is equally not work that is left.
   await expect(row(page, '补测试')).toHaveCount(0)
 
-  const toggle = page.getByRole('button', { name: '已完成 2' })
+  const toggle = page.getByRole('button', { name: '2 done' })
   await expect(toggle).toHaveAttribute('aria-pressed', 'false')
   await toggle.click()
   await expect(row(page, '写迁移')).toBeVisible()
@@ -83,7 +83,7 @@ test('the tree shows what is left to do, and the count is the way back to the re
   // Remembered per project, so the choice is not re-made on every visit.
   await page.reload()
   await expect(row(page, '写迁移')).toBeVisible()
-  await page.getByRole('button', { name: '隐藏已完成' }).click()
+  await page.getByRole('button', { name: 'Hide done' }).click()
   await expect(row(page, '写迁移')).toHaveCount(0)
 })
 
@@ -113,7 +113,7 @@ test('a row finished right here stays put, so a mis-press can be undone from it'
   await openTree(page, pid)
 
   const patched = () => page.waitForResponse((r) => r.request().method() === 'PATCH' && r.ok())
-  const handle = page.getByRole('button', { name: '任务：配色重做', exact: true })
+  const handle = page.getByRole('button', { name: 'Task: 配色重做', exact: true })
   await handle.focus()
   // Each press is awaited: `x` computes the NEXT status from the current one, so firing the
   // second before the first has landed would read a stale status and repeat it.
@@ -128,7 +128,7 @@ test('a row finished right here stays put, so a mis-press can be undone from it'
   done = patched()
   await page.keyboard.press('x')
   await done
-  await expect(row(page, '配色重做').getByRole('img', { name: '待整理' })).toBeVisible()
+  await expect(row(page, '配色重做').getByRole('img', { name: 'Backlog' })).toBeVisible()
 })
 
 test('a project whose every task is finished reads as cleared, not as empty', async ({ page }) => {
@@ -138,8 +138,8 @@ test('a project whose every task is finished reads as cleared, not as empty', as
   await openTree(page, pid)
 
   // Telling someone who just cleared their list that they have no tasks YET reads as lost work.
-  await expect(page.getByText('这个项目清空了')).toBeVisible()
-  await expect(page.getByText('这个项目还没有任务')).toHaveCount(0)
+  await expect(page.getByText('This project is clear')).toBeVisible()
+  await expect(page.getByText('No tasks in this project yet')).toHaveCount(0)
 })
 
 // ------------------------------------------------------------------ D49: how old is this
@@ -148,12 +148,12 @@ test('an inbox row says how long it has been sitting there, and only when it mus
   page,
 }) => {
   await registerFreshUser(page)
-  await submitCreate(page, '捕获…', '查一下 Cloudflare Tunnel')
-  await page.getByRole('link', { name: '项目' }).click()
+  await submitCreate(page, 'Capture…', '查一下 Cloudflare Tunnel')
+  await page.getByRole('link', { name: 'Projects' }).click()
   await openProject(page, 'Inbox')
 
   await expect(row(page, '查一下 Cloudflare Tunnel').locator('[data-row-age]')).toHaveText(
-    '今天捕获',
+    'Captured today',
   )
 
   // A date is a decision someone made about this task; an age is the absence of one. Once there
@@ -163,8 +163,8 @@ test('an inbox row says how long it has been sitting there, and only when it mus
   const saved = page.waitForResponse(
     (r) => r.request().method() === 'PATCH' && r.ok() && /\/api\/v1\/tasks\//.test(r.url()),
   )
-  await page.getByLabel('排期').fill(new Date().toLocaleDateString('en-CA'))
-  await page.getByRole('button', { name: '保存' }).click()
+  await page.getByLabel('Plan', { exact: true }).fill(new Date().toLocaleDateString('en-CA'))
+  await page.getByRole('button', { name: 'Save' }).click()
   await saved
   await expect(row(page, '查一下 Cloudflare Tunnel').locator('[data-row-age]')).toHaveCount(0)
 })
@@ -193,12 +193,12 @@ test('a refused creation is reported at the input, which keeps what was typed', 
   // Over the contract's 500-character ceiling, so the SERVER refuses it -- a real failure path,
   // not a stubbed one.
   const tooLong = '很'.repeat(600)
-  const box = page.getByRole('textbox', { name: '新任务' })
+  const box = page.getByRole('textbox', { name: 'New task' })
   await box.fill(tooLong)
   await page.keyboard.press('Enter')
 
   const alert = page.getByRole('alert')
-  await expect(alert).toHaveText('没能创建，再按一次回车重试。')
+  await expect(alert).toHaveText("Couldn't create. Press Enter to try again.")
   await expect(box).toHaveAttribute('aria-invalid', 'true')
   // The message is wired to the box, so a screen reader meets it as the box's own problem rather
   // than as a loose line somewhere on the page.
@@ -228,15 +228,15 @@ test('saving an untouched task sends nothing and still closes the pane', async (
   page.on('request', (r) => {
     if (r.method() !== 'GET') writes.push(`${r.method()} ${new URL(r.url()).pathname}`)
   })
-  await page.getByRole('button', { name: '保存' }).click()
+  await page.getByRole('button', { name: 'Save' }).click()
 
   // D40 SAID THIS WAS BROKEN AND IT IS NOT -- measured, by disabling the guard that was about to
   // be added for it and watching this test keep passing. `save`'s own body already skips the
   // request when no field changed, and its success still closes the pane, so 保存 on an untouched
   // task has always meant "I am done here". The entry predates the reading/editing split. What
   // was missing was a test, which is this one; no code changed.
-  await expect(page.getByRole('button', { name: '编辑', exact: true })).toHaveCount(0)
-  await expect(page.getByRole('textbox', { name: '标题' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Edit', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('textbox', { name: 'Title' })).toHaveCount(0)
   expect(writes).toEqual([])
 })
 
@@ -263,8 +263,8 @@ test('a code fence is highlighted, and an unlabelled one is left alone', async (
 
 test('the project rail makes a project without leaving the page', async ({ page }) => {
   await registerFreshUser(page)
-  await page.getByRole('button', { name: '新建项目' }).click()
-  const box = page.getByRole('textbox', { name: '新项目' })
+  await page.getByRole('button', { name: 'New project' }).click()
+  const box = page.getByRole('textbox', { name: 'New project' })
   await expect(box).toBeFocused()
   await box.fill('求职')
   await page.keyboard.press('Enter')
@@ -288,7 +288,7 @@ test('the detail pane closes from the corner, and Escape unwinds one level at a 
   // There is no 关闭 BUTTON in the control row any more: it is a ✕ in the corner, carrying the
   // word as its accessible name for anyone who cannot see it.
   const close = pane.locator('[data-detail-close]')
-  await expect(close).toHaveAccessibleName('关闭')
+  await expect(close).toHaveAccessibleName('Close')
   await expect(close).toHaveText('')
   await close.click()
   await expect(pane).toHaveCount(0)
@@ -298,7 +298,7 @@ test('the detail pane closes from the corner, and Escape unwinds one level at a 
   await editDetail(page)
   await page.keyboard.press('Escape')
   await expect(pane).toHaveCount(1)
-  await expect(pane.getByRole('button', { name: '编辑', exact: true })).toBeVisible()
+  await expect(pane.getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(pane).toHaveCount(0)
 })
@@ -316,8 +316,10 @@ test('a parent row says how its subtree stands, and a quiet one says nothing', a
   await openTree(page, pid)
   // §7.3's line, on the parent that has something to report: half its children are done and one
   // of them is running.
-  await expect(row(page, '接入 KaTeX').locator('[data-row-rollup]')).toHaveText('50% · 1 进行中')
-  // And nothing at all on the parent whose subtree is merely unstarted: a lone 「0%」 would be a
+  await expect(row(page, '接入 KaTeX').locator('[data-row-rollup]')).toHaveText(
+    '50% · 1 in progress',
+  )
+  // And nothing at all on the parent whose subtree is merely unstarted: a lone 「0%” would be a
   // second line on half the rows in any tree, saying what the children below already say.
   await expect(row(page, '写变更日志').locator('[data-row-rollup]')).toHaveCount(0)
   // Leaves never carry one: their "progress" is the marker at the head of the row.
@@ -335,16 +337,16 @@ test('a project can be renamed where it is shown, inbox included', async ({ page
   // The inbox was stuck being called "Inbox" in an otherwise Chinese app: the server has taken
   // a rename since M2a and nothing in the interface could send one.
   await page.getByRole('button', { name: 'Inbox' }).click()
-  const field = page.getByRole('textbox', { name: '项目名称' })
-  await field.fill('收件箱')
+  const field = page.getByRole('textbox', { name: 'Project name' })
+  await field.fill('Inbox')
   await page.keyboard.press('Enter')
 
-  await expect(page.getByRole('heading', { level: 1, name: '收件箱' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Inbox' })).toBeVisible()
   // And the rail says so too, from the same cache entry.
-  await expect(page.locator('nav').getByRole('link', { name: '收件箱' })).toBeVisible()
+  await expect(page.locator('nav').getByRole('link', { name: 'Inbox' })).toBeVisible()
 
   const after = await (await page.request.get('/api/v1/projects')).json()
-  expect(after.projects.find((p: { id: string }) => p.id === inbox.id).name).toBe('收件箱')
+  expect(after.projects.find((p: { id: string }) => p.id === inbox.id).name).toBe('Inbox')
 })
 
 test('a project colour can be picked from the chip that shows it', async ({ page }) => {
@@ -355,13 +357,13 @@ test('a project colour can be picked from the chip that shows it', async ({ page
   const before = await (await page.request.get('/api/v1/projects')).json()
   const was = before.projects.find((p: { id: string }) => p.id === pid).color
 
-  await page.getByRole('button', { name: '项目颜色' }).click()
+  await page.getByRole('button', { name: 'Project colour' }).click()
   // Waited for, not assumed: reading the server straight after the click is a race the test wins
   // on an idle machine and loses under a full suite run, which is the worst way for it to fail.
   const written = page.waitForResponse(
     (r) => r.request().method() === 'PATCH' && r.url().includes(`/projects/${pid}`),
   )
-  await page.getByRole('menuitem', { name: '颜色 5' }).click()
+  await page.getByRole('menuitem', { name: 'Colour 5' }).click()
   await written
 
   const after = await (await page.request.get('/api/v1/projects')).json()
@@ -384,12 +386,12 @@ test('a finished task opens from the 已完成 list, where it could only be rest
 
   await page.goto('/tasks/completed')
   await page.getByRole('button', { name: '写迁移 改版' }).click()
-  const pane = page.getByRole('dialog', { name: '任务详情' })
+  const pane = page.getByRole('dialog', { name: 'Task details' })
   await expect(pane).toBeVisible()
   // Reading it is the point: until now the only thing this list could do to a task was restore
   // it, so looking at one meant finding it again in its project's tree.
   await expect(pane).toContainText('先问清需求')
-  await expect(pane.getByRole('button', { name: '编辑', exact: true })).toBeVisible()
+  await expect(pane.getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
 })
 
 // ------------------------------------------------------------ D61: doing something to five rows
@@ -402,7 +404,7 @@ test('shift-click picks rows, and the bar finishes them in one press', async ({ 
 
   // A plain click still opens the detail, which is the gesture that must not become a mode.
   await row(page, '写迁移').click()
-  await expect(page.getByRole('dialog', { name: '任务详情' })).toBeVisible()
+  await expect(page.getByRole('dialog', { name: 'Task details' })).toBeVisible()
   await page.locator('[data-detail-close]').click()
   await expect(page.locator('[data-selection-bar]')).toHaveCount(0)
 
@@ -410,14 +412,14 @@ test('shift-click picks rows, and the bar finishes them in one press', async ({ 
   await row(page, '补测试').click({ modifiers: ['Shift'] })
   await row(page, '接好验证器').click({ modifiers: ['Shift'] })
   // Shift does not open anything.
-  await expect(page.getByRole('dialog', { name: '任务详情' })).toHaveCount(0)
-  await expect(page.locator('[data-selection-bar]')).toContainText('已选 3')
+  await expect(page.getByRole('dialog', { name: 'Task details' })).toHaveCount(0)
+  await expect(page.locator('[data-selection-bar]')).toContainText('3 selected')
 
   // Shift again takes one back out.
   await row(page, '接好验证器').click({ modifiers: ['Shift'] })
-  await expect(page.locator('[data-selection-bar]')).toContainText('已选 2')
+  await expect(page.locator('[data-selection-bar]')).toContainText('2 selected')
 
-  await page.getByRole('button', { name: '标记完成' }).click()
+  await page.getByRole('button', { name: 'Mark done' }).click()
   await expect(page.locator('[data-selection-bar]')).toHaveCount(0)
   const after = await (await page.request.get(`/api/v1/tasks?projectId=${pid}`)).json()
   const byTitle = Object.fromEntries(
@@ -435,7 +437,7 @@ test('the bar moves the picked rows to another project', async ({ page }) => {
   await openTree(page, from)
 
   await row(page, '改简历').click({ modifiers: ['Shift'] })
-  await page.getByLabel('移到项目').selectOption({ label: '求职' })
+  await page.getByLabel('Move to project').selectOption({ label: '求职' })
 
   await expect(row(page, '改简历')).toHaveCount(0)
   const moved = await (await page.request.get(`/api/v1/tasks?projectId=${to}`)).json()
@@ -455,7 +457,7 @@ test('the project title gets the width it needs, not the width it can shrink to'
   await page.goto(`/projects/${pid}`)
 
   // MEASURED, not read. Making the title an editable control collapsed its flex item and the
-  // banner rendered 「改...」 at 1440px -- and every assertion that matched it BY NAME still
+  // banner rendered 「改...” at 1440px -- and every assertion that matched it BY NAME still
   // passed, because truncation is CSS and the accessible name is whole.
   const heading = page.getByRole('heading', { level: 1, name: '改版' })
   const cut = await heading.evaluate((el) => {
@@ -474,19 +476,19 @@ test('a half-failed bulk action leaves exactly what still needs doing', async ({
 
   await row(page, '写迁移').click({ modifiers: ['Shift'] })
   await row(page, '补测试').click({ modifiers: ['Shift'] })
-  await expect(page.locator('[data-selection-bar]')).toContainText('已选 2')
+  await expect(page.locator('[data-selection-bar]')).toContainText('2 selected')
 
   // One of the two is refused. The other really happens -- that is what makes this about PARTIAL
   // failure rather than about failure.
   await page.route(`**/api/v1/tasks/${b}`, (r) =>
     r.request().method() === 'PATCH' ? r.fulfill({ status: 500, body: '{}' }) : r.continue(),
   )
-  await page.getByRole('button', { name: '标记完成' }).click()
+  await page.getByRole('button', { name: 'Mark done' }).click()
 
-  await expect(page.getByRole('alert')).toContainText('还剩 1 条没做')
+  await expect(page.getByRole('alert')).toContainText('(1 left undone)')
   // The one that worked has left the selection; the one that did not is still in it, so pressing
   // again retries precisely that and does not re-do the first.
-  await expect(page.locator('[data-selection-bar]')).toContainText('已选 1')
+  await expect(page.locator('[data-selection-bar]')).toContainText('1 selected')
   expect(a).toBeTruthy()
   const server = await (await page.request.get(`/api/v1/tasks?projectId=${pid}`)).json()
   const byTitle = Object.fromEntries(
@@ -496,6 +498,6 @@ test('a half-failed bulk action leaves exactly what still needs doing', async ({
 
   // And the retry goes through once the refusal stops.
   await page.unroute(`**/api/v1/tasks/${b}`)
-  await page.getByRole('button', { name: '标记完成' }).click()
+  await page.getByRole('button', { name: 'Mark done' }).click()
   await expect(page.locator('[data-selection-bar]')).toHaveCount(0)
 })

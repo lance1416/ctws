@@ -137,7 +137,7 @@ test('every role wears its own pair from the spec table', async ({ page }) => {
 
   // 页面标题 24/32, from TDesign headline-small (antd Heading3 agrees to the pixel).
   await page.goto('/projects')
-  await expect(page.getByRole('heading', { level: 1, name: '项目' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Projects' })).toBeVisible()
   expect(await pair(page, 'h1')).toEqual({ size: '24px', line: '32px', weight: '600' })
 
   await page.goto(`/projects/${pid}`)
@@ -162,7 +162,7 @@ test('every role wears its own pair from the spec table', async ({ page }) => {
   // 面板标题 20/28 (TDesign title-extraLarge; antd fontSizeXL agrees to the pixel), on the panel's
   // own heading AND on the banner's number, which is the project page's `Stat`. Both, because they
   // are the two things that wear this step and a mutation to either must have somewhere to land.
-  expect(await pair(page, '[data-panel="任务"] h2')).toEqual({
+  expect(await pair(page, '[data-panel="Tasks"] h2')).toEqual({
     size: '20px',
     line: '28px',
     weight: '600',
@@ -249,7 +249,7 @@ test('the scale follows the reader root font size: size AND leading, as a pair',
     h1: 'h1',
     title: '[data-row-title]',
     meta: '[data-row-meta]',
-    panel: '[data-panel="任务"] h2',
+    panel: '[data-panel="Tasks"] h2',
     caption: '[data-stat] dt',
   } as const
   const measure = async () =>
@@ -298,7 +298,7 @@ test('横幅主语 is the top step, 36/44, and the page title is one step below 
   const pid = await makeProject(page, '横幅')
   await makeTask(page, pid, '正在做的这一条')
   await page.goto(`/projects/${pid}`)
-  await page.getByRole('button', { name: '开始「正在做的这一条」' }).click()
+  await page.getByRole('button', { name: 'Start “正在做的这一条”' }).click()
   await page.goto('/tasks/today')
   const banner = page.locator('[data-today-row]')
   await expect(banner).toHaveCount(1)
@@ -393,13 +393,13 @@ test('no element computes to font-weight 500, in any state that could introduce 
   // item, a row that is 正在做 (the one weight-carrying row state), a CHECKED decision chip in the
   // pane and in the 新建 dialog, and the ? overlay's group headings.
   await page.goto(`/projects/${pid}`)
-  await page.getByRole('button', { name: '开始「一条正在做的任务」' }).click()
+  await page.getByRole('button', { name: 'Start “一条正在做的任务”' }).click()
   await expect(page.locator('[data-row-title]').first()).toHaveCSS('font-weight', '600')
   expect(await weights(page), 'project page, with a running row').not.toContain('500')
 
   await page.locator('[data-row-title]').first().click()
   await editDetail(page)
-  await page.getByRole('radio', { name: '进行中', exact: true }).check()
+  await page.getByRole('radio', { name: 'In progress', exact: true }).check()
   expect(await weights(page), 'detail pane in editing mode, a decision checked').not.toContain(
     '500',
   )
@@ -410,8 +410,8 @@ test('no element computes to font-weight 500, in any state that could introduce 
   // document depends on where focus happens to be after a navigation, and that is keyboard.spec's
   // subject, not this one's.
   await page.goto('/tasks/today')
-  await page.getByRole('button', { name: '键盘快捷键' }).click()
-  await expect(page.getByRole('dialog', { name: '键盘快捷键' })).toBeVisible()
+  await page.getByRole('button', { name: 'Keyboard shortcuts' }).click()
+  await expect(page.getByRole('dialog', { name: 'Keyboard shortcuts' })).toBeVisible()
   expect(await weights(page), 'the ? overlay').not.toContain('500')
   await page.keyboard.press('Escape')
 
@@ -419,9 +419,9 @@ test('no element computes to font-weight 500, in any state that could introduce 
   // something.
   await page.goto(`/projects/${pid}`)
   await expect(page.locator('[data-task-tree] li[data-depth]')).toHaveCount(1)
-  await page.getByRole('button', { name: '新建…', exact: true }).click()
-  await expect(page.getByRole('dialog', { name: '新建任务' })).toBeVisible()
-  await page.getByRole('radio', { name: '进行中', exact: true }).check()
+  await page.getByRole('button', { name: 'New…', exact: true }).click()
+  await expect(page.getByRole('dialog', { name: 'New task' })).toBeVisible()
+  await page.getByRole('radio', { name: 'In progress', exact: true }).check()
   const inDialog = await weights(page)
   expect(inDialog, 'the 新建 dialog, a decision checked').not.toContain('500')
   // ...and the only two weights the whole app spends are the two the spec allows. 700+ is out as
@@ -485,7 +485,7 @@ test('text-autospace is asked for, and actually moves the glyphs', async ({ page
     measured.on,
     `text-autospace changed nothing: ${JSON.stringify(measured)}`,
   ).toBeGreaterThan(measured.off)
-  // And it took effect within CLREQ's ceiling: 「不多于四分之一个汉字宽」 per join, which at 16px
+  // And it took effect within CLREQ's ceiling: 「不多于四分之一个汉字宽” per join, which at 16px
   // is 4px. An implementation that spent a full em at each join would "pass" a mere inequality.
   const perJoin = (measured.on - measured.off) / measured.joins
   expect(perJoin, `${perJoin}px per join, ceiling 4px`).toBeGreaterThan(0)
@@ -497,7 +497,7 @@ test('text-autospace is asked for, and actually moves the glyphs', async ({ page
   // (Chromium computes `no-autospace` unless asked), so the app has to opt in -- and it must opt
   // in on the INHERITED root, not per component, which is what the heading shows.
   await expect(page.locator('body')).toHaveCSS('text-autospace', 'normal')
-  await expect(page.getByRole('heading', { level: 1, name: '今天' })).toHaveCSS(
+  await expect(page.getByRole('heading', { level: 1, name: 'Today' })).toHaveCSS(
     'text-autospace',
     'normal',
   )
@@ -537,7 +537,7 @@ test('numeric columns keep tabular figures', async ({ page }) => {
   })
   await page.goto(`/projects/${pid}`)
 
-  // antd's one positive numeric rule, adopted in §4. The row's date column and the banner's
+  // antd"s one positive numeric rule, adopted in §4. The row's date column and the banner"s
   // counts are the places a column of digits has to line up.
   await expect(page.locator('[data-due-text]').first()).toHaveCSS(
     'font-variant-numeric',

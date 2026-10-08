@@ -164,21 +164,21 @@ export function NotesMark() {
  * is a WCAG 1.1.1 failure, and here it would also leave a reader who cannot see the colour without
  * the one thing the glyph is for.
  *
- * 「有备注」 and not 「备注」, on purpose: accessible names share ONE FLAT NAMESPACE and are
+ * “Has notes” and not “Notes”, on purpose: accessible names share ONE FLAT NAMESPACE and are
  * matched by substring, and a bare 备注 would collide with the detail pane's own 备注 field on the
- * very page both appear on. For the same reason the missed deadline is 「截止已过」 and not
- * 「有截止，已逾期」: a name that CONTAINS 「有截止」 makes every by-name query for the un-missed
- * flag match the missed one too. The plan's name is §2's own word, 「有计划」, which is also the one
+ * very page both appear on. For the same reason the missed deadline is “Overdue” and not
+ * 「有截止，已逾期」: a name that CONTAINS “Has a deadline” makes every by-name query for the un-missed
+ * flag match the missed one too. The plan's name is §2's own word, “Has a plan”, which is also the one
  * that does NOT contain the pane's 排期 field.
  *
- * 「有截止」 does contain the pane's 截止 field, and there is no word for a deadline in this app's
+ * “Has a deadline” does contain the pane's 截止 field, and there is no word for a deadline in this app's
  * vocabulary that does not; the queries that mean that FIELD say `{ exact: true }`.
  */
 const LEAD_LABEL: Record<LeadIcon, string> = {
-  missed: '截止已过',
-  deadline: '有截止',
-  plan: '有计划',
-  notes: '有备注',
+  missed: 'Overdue',
+  deadline: 'Has a deadline',
+  plan: 'Has a plan',
+  notes: 'Has notes',
 }
 
 /** The tone each icon is drawn in. Never the only carrier: the second line says it in words. */
@@ -417,12 +417,12 @@ export function RowMeta({
   )
 }
 
-/** A momentary "已保存" after a save from the detail panel. It sits inline after the title rather
+/** A momentary "Saved" after a save from the detail panel. It sits inline after the title rather
  * than in a column, so it never reserves width and never moves one. */
 export function SavedMark() {
   return (
     <span role="status" className="ml-2 shrink-0 text-sm font-normal text-fg-muted">
-      已保存
+      Saved
     </span>
   )
 }

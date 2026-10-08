@@ -90,7 +90,7 @@ describe('monthRange', () => {
 
 describe('monthTitle', () => {
   it('is written the way a person says it', () => {
-    expect(monthTitle('2026-10-15')).toBe('2026年10月')
-    expect(monthTitle('2026-01-01')).toBe('2026年1月')
+    expect(monthTitle('2026-10-15')).toBe('Oct 2026')
+    expect(monthTitle('2026-01-01')).toBe('Jan 2026')
   })
 })

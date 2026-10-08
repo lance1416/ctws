@@ -51,7 +51,7 @@ export function MeetingDetail({
   const save = useMutation({
     mutationFn: (patch: UpdateMeetingInput) => patchMeeting(meeting.meetingId, patch),
     onSuccess: () => setFailed(null),
-    onError: (e) => setFailed(e instanceof Error ? e.message : '没能保存'),
+    onError: (e) => setFailed(e instanceof Error ? e.message : "Couldn't save it"),
     onSettled: refresh,
   })
   const drop = useMutation({
@@ -82,33 +82,33 @@ export function MeetingDetail({
   const elsewhere = meeting.timeZone !== accountZone
 
   return (
-    <DetailPane label="会议" onClose={onClose}>
+    <DetailPane label="Meetings" onClose={onClose}>
       <div className="flex flex-col gap-4">
         <div>
           <DetailHead
             kind={
               <span className="flex min-w-0 items-center gap-1.5 text-sm text-fg-muted">
-                会议
-                {meeting.overridden && <span className="text-xs text-fg-subtle">这次改过</span>}
+                Meetings
+                {meeting.overridden && <span className="text-xs text-fg-subtle">Edited</span>}
               </span>
             }
             onClose={onClose}
           />
           <InlineText
-            label="标题"
+            label="Title"
             value={meeting.title}
-            placeholder="这个会叫什么"
+            placeholder="What is this meeting?"
             onSave={(title) => title && series({ title })}
             className="mt-0.5 block text-lg font-semibold text-fg"
           />
         </div>
 
         <div className="flex flex-col gap-2">
-          <Field label="开始">
+          <Field label="Start">
             <div className="flex min-w-0 flex-wrap items-center gap-1.5">
               <input
                 type="datetime-local"
-                aria-label="开始"
+                aria-label="Start"
                 key={meeting.startsLocal}
                 defaultValue={meeting.startsLocal}
                 onBlur={(e) => {
@@ -121,16 +121,16 @@ export function MeetingDetail({
                   if (next !== meeting.startsLocal) {
                     timing(
                       { startsLocal: next },
-                      `这是重复的会议，要把它移到 ${next.replace('T', ' ')} 吗？`,
+                      `This meeting repeats. Move it to ${next.replace('T', ' ')}?`,
                     )
                   }
                 }}
                 className={`${boxed} h-8 py-0 text-sm tabular-nums`}
               />
-              {/* The zone is the MEETING's: 「多伦多时间 09:00」 is what was agreed, whatever the
+              {/* The zone is the MEETING’s: "09:00 Toronto time" is what was agreed, whatever the
                   clock says here. */}
               <PickOne
-                label="时区"
+                label="Time zone"
                 value={meeting.timeZone}
                 choices={ZONES.map((z) => ({ value: z, label: zoneLabel(z) }))}
                 onPick={(timeZone) => series({ timeZone })}
@@ -138,14 +138,14 @@ export function MeetingDetail({
             </div>
           </Field>
           {elsewhere && (
-            <Field label="你这儿">
-              {/* The same meeting on the account's own clock -- 「我几点要到场」. Read-only: the
+            <Field label="Your time">
+              {/* The same meeting on the account's own clock -- when YOU have to be there. Read-only: the
                   time was agreed in the other zone, and editing it here would be editing a
                   conversion. */}
               <span data-local-clock className="text-sm tabular-nums text-fg-muted">
-                {new Intl.DateTimeFormat('zh-CN', {
+                {new Intl.DateTimeFormat('en-US', {
                   timeZone: accountZone,
-                  month: 'numeric',
+                  month: 'short',
                   day: 'numeric',
                   hour: '2-digit',
                   minute: '2-digit',
@@ -154,22 +154,25 @@ export function MeetingDetail({
               </span>
             </Field>
           )}
-          <Field label="多久">
+          <Field label="Length">
             <PickOne
-              label="多久"
+              label="Length"
               value={String(meeting.durationMinutes)}
               choices={[15, 30, 45, 60, 90, 120].map((m) => ({
                 value: String(m),
-                label: m >= 60 ? `${m / 60} 小时` : `${m} 分钟`,
+                label: m >= 60 ? `${m / 60} h` : `${m} min`,
               }))}
               onPick={(m) =>
-                timing({ durationMinutes: Number(m) }, '这是重复的会议，要改哪些场次的时长？')
+                timing(
+                  { durationMinutes: Number(m) },
+                  'This meeting repeats. Which occurrences change length?',
+                )
               }
             />
           </Field>
-          <Field label="重复">
+          <Field label="Repeats">
             <PickOne
-              label="重复"
+              label="Repeats"
               value={meeting.rrule ?? '__none'}
               /* A rule the menu does not offer is still one of its options while it is the
                  current value, or the control would show a placeholder for a value it has. */
@@ -206,47 +209,47 @@ export function MeetingDetail({
         )}
 
         <div className="flex flex-col gap-2">
-          <Field label="地点">
+          <Field label="Location">
             <InlineText
-              label="地点"
+              label="Location"
               value={meeting.location ?? ''}
-              placeholder="没有填"
+              placeholder="Not set"
               onSave={(location) => series({ location: location || null })}
               className="text-sm"
             />
           </Field>
-          <Field label="项目" top>
+          <Field label="Projects" top>
             <PickOne
-              label="项目"
+              label="Projects"
               value={meeting.projectId}
               choices={(projects.data ?? [])
                 .filter((p) => !p.archivedAt)
                 .map((p) => ({ value: p.id, label: p.name, mark: chip(p.id) }))}
               onPick={(projectId) => series({ projectId })}
-              placeholder="不属于任何项目"
+              placeholder="No project"
             />
           </Field>
         </div>
 
         <div>
-          <span className="block text-xs text-fg-muted">参与人</span>
+          <span className="block text-xs text-fg-muted">Attendees</span>
           <div className="mt-1" data-attendees>
             <PickMany
-              label="参与人"
+              label="Attendees"
               chosen={meeting.attendees.map((p) => ({ value: p.id, label: p.name }))}
               choices={(contacts.data ?? []).map((p) => ({ value: p.id, label: p.name }))}
               onChange={(attendeeIds) => series({ attendeeIds })}
-              empty="还没有人"
+              empty="Nobody yet"
             />
           </div>
         </div>
 
         <div>
-          <span className="block text-xs text-fg-muted">备注</span>
+          <span className="block text-xs text-fg-muted">Notes</span>
           <InlineText
-            label="备注"
+            label="Notes"
             value={meeting.note ?? ''}
-            placeholder="还没有备注"
+            placeholder="No notes yet"
             multiline
             onSave={(note) => series({ note: note || null })}
             className="mt-1 block max-w-[68ch] text-sm whitespace-pre-wrap text-fg"
@@ -257,14 +260,14 @@ export function MeetingDetail({
           {cancelling ? (
             repeats ? (
               <ScopeAsk
-                what={`取消「${meeting.title}」的哪些场次？`}
+                what={`Cancel which occurrences of “${meeting.title}”?`}
                 onPick={(scope) => drop.mutate(scope)}
                 onCancel={() => setCancelling(false)}
               />
             ) : (
               <DeleteConfirm
-                label="确认取消会议"
-                message={`取消「${meeting.title}」？`}
+                label="Confirm cancelling this meeting"
+                message={`Cancel “${meeting.title}”?`}
                 busy={drop.isPending}
                 onConfirm={() => drop.mutate('all')}
                 onCancel={() => setCancelling(false)}
@@ -276,7 +279,7 @@ export function MeetingDetail({
               onClick={() => setCancelling(true)}
               className="h-9 rounded-lg px-2.5 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
             >
-              取消会议
+              Cancel meeting
             </button>
           )}
         </div>
@@ -296,7 +299,7 @@ function Field({
 }) {
   return (
     <div className={`flex gap-2 ${top ? 'items-start' : 'items-center'}`}>
-      <span className={`w-10 shrink-0 text-xs text-fg-muted ${top ? 'pt-2' : ''}`}>{label}</span>
+      <span className={`w-20 shrink-0 text-xs text-fg-muted ${top ? 'pt-2' : ''}`}>{label}</span>
       <span className="min-w-0 flex-1">{children}</span>
     </div>
   )

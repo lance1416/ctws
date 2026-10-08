@@ -33,23 +33,23 @@ export function SelectionBar({
   return (
     <div
       role="group"
-      aria-label="已选的任务"
+      aria-label="Selected tasks"
       data-selection-bar
       className="mb-1 ml-3 flex w-[calc(100%-1.5rem)] flex-wrap items-center gap-2 rounded-lg border border-border-strong bg-surface px-3 py-2"
     >
-      <span className="text-sm text-fg">已选 {count}</span>
+      <span className="text-sm text-fg">{count} selected</span>
       <button
         type="button"
         onClick={onFinish}
         disabled={busy}
         className="h-8 rounded-lg border border-border-strong px-2.5 text-sm text-fg hover:bg-surface-hover disabled:opacity-50"
       >
-        标记完成
+        Mark done
       </button>
       <label className="flex items-center gap-1.5 text-sm text-fg-muted">
-        移到
+        Move to
         <select
-          aria-label="移到项目"
+          aria-label="Move to project"
           value=""
           disabled={busy}
           onChange={(e) => {
@@ -57,7 +57,7 @@ export function SelectionBar({
           }}
           className="h-8 rounded-lg border border-border-strong bg-surface px-2 text-sm text-fg disabled:opacity-50"
         >
-          <option value="">选择项目…</option>
+          <option value="">Choose a project…</option>
           {projects
             .filter((p) => p.id !== currentProjectId && !p.archivedAt)
             .map((p) => (
@@ -72,7 +72,7 @@ export function SelectionBar({
         onClick={onClear}
         className="ml-auto h-8 rounded-lg px-2 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
       >
-        取消选择
+        Clear selection
       </button>
     </div>
   )

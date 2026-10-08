@@ -13,14 +13,14 @@ const MOVE_URL = /\/tasks\/[^/]+\/move$/
 /** Clicks Save and resolves once the server has accepted the request, i.e. it is persisted. */
 async function save(page: Page, url: RegExp = PATCH_URL) {
   const done = page.waitForResponse((r) => url.test(r.url()) && r.request().method() !== 'GET')
-  await page.getByRole('button', { name: '保存' }).click()
+  await page.getByRole('button', { name: 'Save' }).click()
   const res = await done
   expect(res.ok()).toBeTruthy()
   // A save now lands the pane back in READING mode -- or takes the task off this page entirely,
   // which unmounts the pane. Either way nothing is left in EDITING mode, and waiting for that is
   // not politeness: until it happens the form is still dirty, so anything that tries to leave
   // meets the discard prompt instead.
-  await expect(page.getByRole('button', { name: '保存' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Save' })).toHaveCount(0)
   return res
 }
 
@@ -36,8 +36,8 @@ const row = (page: Page, title: string) => page.getByRole('listitem').filter({ h
 async function closeAnyPane(page: Page) {
   const pane = page.getByRole('dialog')
   if ((await pane.count()) === 0) return
-  await pane.getByRole('button', { name: '关闭' }).click()
-  const discard = page.getByRole('button', { name: '放弃修改' })
+  await pane.getByRole('button', { name: 'Close' }).click()
+  const discard = page.getByRole('button', { name: 'Discard changes' })
   if ((await discard.count()) > 0) await discard.click()
   await expect(pane).toHaveCount(0)
 }
@@ -57,10 +57,10 @@ async function reopen(page: Page, title: string, edit = true) {
 }
 
 async function seedOneTask(page: Page, edit = true) {
-  await page.getByRole('link', { name: '项目' }).click()
-  await submitCreate(page, '新项目', 'P')
+  await page.getByRole('link', { name: 'Projects' }).click()
+  await submitCreate(page, 'New project', 'P')
   await openProject(page, 'P', true)
-  await submitCreate(page, '新任务', '写方案')
+  await submitCreate(page, 'New task', '写方案')
   await reopen(page, '写方案', edit)
 }
 
@@ -69,16 +69,16 @@ test('edits persist across a reload', async ({ page }) => {
   await seedOneTask(page)
   const url = page.url()
 
-  await page.getByLabel('备注', { exact: true }).fill('先问清需求')
-  await setDetailStatus(page, '进行中')
-  await page.getByLabel('排期').fill('2026-10-02')
+  await page.getByLabel('Notes', { exact: true }).fill('先问清需求')
+  await setDetailStatus(page, 'In progress')
+  await page.getByLabel('Plan', { exact: true }).fill('2026-10-02')
   await save(page)
 
   await page.goto(url)
   await reopen(page, '写方案')
-  await expect(page.getByLabel('备注', { exact: true })).toHaveValue('先问清需求')
-  await expect(page.getByRole('radio', { name: '进行中', exact: true })).toBeChecked()
-  await expect(page.getByLabel('排期')).toHaveValue('2026-10-02')
+  await expect(page.getByLabel('Notes', { exact: true })).toHaveValue('先问清需求')
+  await expect(page.getByRole('radio', { name: 'In progress', exact: true })).toBeChecked()
+  await expect(page.getByLabel('Plan', { exact: true })).toHaveValue('2026-10-02')
 })
 
 test('title and due time persist across a reload', async ({ page }) => {
@@ -86,29 +86,29 @@ test('title and due time persist across a reload', async ({ page }) => {
   await seedOneTask(page)
   const url = page.url()
 
-  await page.getByLabel('标题').fill('写方案 v2')
-  await page.getByLabel('截止', { exact: true }).fill('2026-10-03T14:30')
+  await page.getByLabel('Title').fill('写方案 v2')
+  await page.getByLabel('Due', { exact: true }).fill('2026-10-03T14:30')
   await save(page)
 
   await page.goto(url)
   await reopen(page, '写方案 v2')
-  await expect(page.getByLabel('标题')).toHaveValue('写方案 v2')
+  await expect(page.getByLabel('Title')).toHaveValue('写方案 v2')
   // Local wall-clock in, local wall-clock out: the instant round trip must not shift it.
-  await expect(page.getByLabel('截止', { exact: true })).toHaveValue('2026-10-03T14:30')
+  await expect(page.getByLabel('Due', { exact: true })).toHaveValue('2026-10-03T14:30')
 })
 
 test('moves a task to another project', async ({ page }) => {
   await registerFreshUser(page)
   await seedOneTask(page)
 
-  await page.getByLabel('项目', { exact: true }).selectOption({ label: 'Inbox' })
+  await page.getByLabel('Projects', { exact: true }).selectOption({ label: 'Inbox' })
   await save(page, MOVE_URL)
 
   // It leaves the project it was in...
   await expect(row(page, '写方案')).toHaveCount(0)
   await expect(page.getByRole('dialog')).toHaveCount(0)
   // ...and arrives in the other one.
-  await page.getByRole('link', { name: '项目' }).click()
+  await page.getByRole('link', { name: 'Projects' }).click()
   await openProject(page, 'Inbox')
   await expect(row(page, '写方案')).toBeVisible()
 })
@@ -116,20 +116,20 @@ test('moves a task to another project', async ({ page }) => {
 test('clearing a date removes it rather than sending an empty string', async ({ page }) => {
   await registerFreshUser(page)
   await seedOneTask(page)
-  await page.getByLabel('排期').fill('2026-10-02')
+  await page.getByLabel('Plan', { exact: true }).fill('2026-10-02')
   await save(page)
 
   // The date really was stored; otherwise clearing it proves nothing.
   await page.reload()
   await reopen(page, '写方案')
-  await expect(page.getByLabel('排期')).toHaveValue('2026-10-02')
+  await expect(page.getByLabel('Plan', { exact: true })).toHaveValue('2026-10-02')
 
-  await page.getByLabel('排期').fill('')
+  await page.getByLabel('Plan', { exact: true }).fill('')
   const res = await save(page)
   expect(res.request().postDataJSON()).toEqual({ scheduledOn: null })
   await page.reload()
   await reopen(page, '写方案')
-  await expect(page.getByLabel('排期')).toHaveValue('')
+  await expect(page.getByLabel('Plan', { exact: true })).toHaveValue('')
 })
 
 /**
@@ -148,8 +148,8 @@ test('the PATCH names the fields that changed, and only those', async ({ page })
   await seedOneTask(page)
 
   // Give the task a deadline and a plan first, so there is something the save COULD wrongly resend.
-  await page.getByLabel('截止', { exact: true }).fill('2026-10-03T09:15')
-  await page.getByLabel('排期').fill('2026-10-02')
+  await page.getByLabel('Due', { exact: true }).fill('2026-10-03T09:15')
+  await page.getByLabel('Plan', { exact: true }).fill('2026-10-02')
   expect((await save(page)).request().postDataJSON()).toEqual({
     dueAt: new Date('2026-10-03T09:15').toISOString(),
     scheduledOn: '2026-10-02',
@@ -159,15 +159,15 @@ test('the PATCH names the fields that changed, and only those', async ({ page })
   // not the deadline, which the form is still holding. (`reopen` leaves the pane first: saving
   // returns it to reading rather than closing it.)
   await reopen(page, '写方案')
-  await setDetailStatus(page, '进行中')
+  await setDetailStatus(page, 'In progress')
   expect((await save(page)).request().postDataJSON()).toEqual({ status: 'in_progress' })
 
   // Edited and put back: nothing changed, so the body does not mention it. The title goes along for
   // the ride so that a request is sent at all and the assertion is about what is MISSING from it.
   await reopen(page, '写方案')
-  await page.getByLabel('备注', { exact: true }).fill('先问清需求')
-  await page.getByLabel('备注', { exact: true }).fill('')
-  await page.getByLabel('标题').fill('写方案 v2')
+  await page.getByLabel('Notes', { exact: true }).fill('先问清需求')
+  await page.getByLabel('Notes', { exact: true }).fill('')
+  await page.getByLabel('Title').fill('写方案 v2')
   expect((await save(page)).request().postDataJSON()).toEqual({ title: '写方案 v2' })
 
   // And the server still holds everything the three saves never mentioned.
@@ -189,8 +189,8 @@ test('a rejected save is reported and leaves the panel open', async ({ page }) =
   await page.route(PATCH_URL, (r) =>
     r.request().method() === 'PATCH' ? r.fulfill({ status: 500, body: '{}' }) : r.continue(),
   )
-  await page.getByLabel('备注', { exact: true }).fill('x')
-  await page.getByRole('button', { name: '保存' }).click()
+  await page.getByLabel('Notes', { exact: true }).fill('x')
+  await page.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByRole('alert')).toBeVisible()
   await expect(page.getByRole('dialog')).toBeVisible()
 })
@@ -198,10 +198,10 @@ test('a rejected save is reported and leaves the panel open', async ({ page }) =
 test('dragging a row does not open the detail', async ({ page }) => {
   await registerFreshUser(page)
   await seedOneTask(page)
-  await page.getByRole('button', { name: '关闭' }).click()
+  await page.getByRole('button', { name: 'Close' }).click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
 
-  const handle = page.getByRole('button', { name: '任务：写方案', exact: true })
+  const handle = page.getByRole('button', { name: 'Task: 写方案', exact: true })
   const box = await handle.boundingBox()
   await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2)
   await page.mouse.down()
@@ -213,10 +213,10 @@ test('dragging a row does not open the detail', async ({ page }) => {
 test('clicking the drag handle focuses it and does not open the detail', async ({ page }) => {
   await registerFreshUser(page)
   await seedOneTask(page)
-  await page.getByRole('button', { name: '关闭' }).click()
+  await page.getByRole('button', { name: 'Close' }).click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
 
-  await page.getByRole('button', { name: '任务：写方案', exact: true }).click()
+  await page.getByRole('button', { name: 'Task: 写方案', exact: true }).click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
   // Enter on the focused handle is the keyboard way in.
   await page.keyboard.press('Enter')
@@ -232,13 +232,13 @@ test.describe('due time in a non-UTC zone', () => {
   test('the due time is sent as the instant the local wall-clock time means', async ({ page }) => {
     await registerFreshUser(page)
     await seedOneTask(page)
-    await page.getByLabel('截止', { exact: true }).fill('2026-10-03T02:30')
+    await page.getByLabel('Due', { exact: true }).fill('2026-10-03T02:30')
     const res = await save(page)
     expect(res.request().postDataJSON()).toEqual({ dueAt: '2026-10-02T21:00:00.000Z' })
 
     await page.reload()
     await reopen(page, '写方案')
-    await expect(page.getByLabel('截止', { exact: true })).toHaveValue('2026-10-03T02:30')
+    await expect(page.getByLabel('Due', { exact: true })).toHaveValue('2026-10-03T02:30')
   })
 })
 
@@ -248,9 +248,9 @@ test('opening moves focus into the panel and closing returns it to the handle', 
   await registerFreshUser(page)
   await seedOneTask(page, false)
   await expect(page.getByRole('dialog')).toBeFocused()
-  await page.getByRole('button', { name: '关闭' }).click()
+  await page.getByRole('button', { name: 'Close' }).click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
-  await expect(page.getByRole('button', { name: '任务：写方案', exact: true })).toBeFocused()
+  await expect(page.getByRole('button', { name: 'Task: 写方案', exact: true })).toBeFocused()
 })
 
 test('Escape closes the panel and returns focus to the handle', async ({ page }) => {
@@ -258,7 +258,7 @@ test('Escape closes the panel and returns focus to the handle', async ({ page })
   await seedOneTask(page, false)
   await page.keyboard.press('Escape')
   await expect(page.getByRole('dialog')).toHaveCount(0)
-  await expect(page.getByRole('button', { name: '任务：写方案', exact: true })).toBeFocused()
+  await expect(page.getByRole('button', { name: 'Task: 写方案', exact: true })).toBeFocused()
 })
 
 test('a rejected move is reported and nothing changes', async ({ page }) => {
@@ -266,8 +266,8 @@ test('a rejected move is reported and nothing changes', async ({ page }) => {
   await seedOneTask(page)
   const url = page.url()
   await page.route(MOVE_URL, (r) => r.fulfill({ status: 500, body: '{}' }))
-  await page.getByLabel('项目', { exact: true }).selectOption({ label: 'Inbox' })
-  await page.getByRole('button', { name: '保存' }).click()
+  await page.getByLabel('Projects', { exact: true }).selectOption({ label: 'Inbox' })
+  await page.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByRole('alert')).toBeVisible()
   await expect(page.getByRole('dialog')).toBeVisible()
   await expect(row(page, '写方案')).toHaveCount(1)
@@ -276,7 +276,7 @@ test('a rejected move is reported and nothing changes', async ({ page }) => {
   await page.unroute(MOVE_URL)
   await page.goto(url)
   await expect(row(page, '写方案')).toHaveCount(1)
-  await page.getByRole('link', { name: '项目' }).click()
+  await page.getByRole('link', { name: 'Projects' }).click()
   await openProject(page, 'Inbox')
   await expect(row(page, '写方案')).toHaveCount(0)
 })
@@ -286,14 +286,14 @@ test('a rejected move is reported and nothing changes', async ({ page }) => {
 test('moving a task away returns focus to a remaining row', async ({ page }) => {
   await registerFreshUser(page)
   await seedOneTask(page)
-  await page.getByRole('button', { name: '关闭' }).click()
-  await submitCreate(page, '新任务', '留下')
+  await page.getByRole('button', { name: 'Close' }).click()
+  await submitCreate(page, 'New task', '留下')
   await reopen(page, '写方案')
   await expect(page.getByRole('dialog')).toBeVisible()
 
-  await page.getByLabel('项目', { exact: true }).selectOption({ label: 'Inbox' })
+  await page.getByLabel('Projects', { exact: true }).selectOption({ label: 'Inbox' })
   await save(page, MOVE_URL)
 
   await expect(row(page, '写方案')).toHaveCount(0)
-  await expect(page.getByRole('button', { name: '任务：留下', exact: true })).toBeFocused()
+  await expect(page.getByRole('button', { name: 'Task: 留下', exact: true })).toBeFocused()
 })

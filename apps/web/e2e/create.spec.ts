@@ -4,10 +4,10 @@ import { openProject, registerFreshUser, submitCreate } from './helpers'
 const POST_TASK = /\/api\/v1\/tasks$/
 
 const handle = (page: Page, title: string) =>
-  page.getByRole('button', { name: `任务：${title}`, exact: true })
+  page.getByRole('button', { name: `Task: ${title}`, exact: true })
 const row = (page: Page, title: string) =>
   page.getByRole('listitem').filter({ has: handle(page, title) })
-const newInput = (page: Page) => page.getByPlaceholder('回车添加，Esc 取消')
+const newInput = (page: Page) => page.getByPlaceholder('Enter to add, Esc to cancel')
 
 /** Counts task creations the page sends, so a test can assert that none was. */
 function recordCreates(page: Page) {
@@ -31,7 +31,7 @@ async function shape(page: Page) {
     .evaluateAll((els) =>
       els.map((el) => `${el.getAttribute('data-depth')}:${el.querySelector('button')!.ariaLabel}`),
     )
-  return l.map((s) => s.replace('任务：', ''))
+  return l.map((s) => s.replace('Task: ', ''))
 }
 
 /** The server's view: title -> parent title (null for a root). */
@@ -45,8 +45,8 @@ async function serverParents(page: Page, projectId: string) {
 /** A project holding A (children a1, a2) and a root B. Returns its id. */
 async function seed(page: Page): Promise<string> {
   await registerFreshUser(page)
-  await page.getByRole('link', { name: '项目' }).click()
-  await submitCreate(page, '新项目', 'P')
+  await page.getByRole('link', { name: 'Projects' }).click()
+  await submitCreate(page, 'New project', 'P')
   await openProject(page, 'P', true)
   const projectId = page.url().split('/').pop()!
   const ids = new Map<string, string>()
@@ -136,7 +136,7 @@ test('Alt+Enter on a leaf makes it a parent', async ({ page }) => {
 test('the + button adds a child under its own row', async ({ page }) => {
   const projectId = await seed(page)
   await row(page, 'B').hover()
-  await row(page, 'B').getByRole('button', { name: '添加子任务（B）' }).click()
+  await row(page, 'B').getByRole('button', { name: 'Add a subtask to “B”' }).click()
   await expect(newInput(page)).toBeFocused()
   const created = createdOk(page)
   await page.keyboard.type('b1')
@@ -151,7 +151,7 @@ test('the + button adds a child under its own row', async ({ page }) => {
 
 test('adding a child to a collapsed row expands it first', async ({ page }) => {
   const projectId = await seed(page)
-  await row(page, 'A').getByRole('button', { name: '折叠' }).click()
+  await row(page, 'A').getByRole('button', { name: 'Collapse' }).click()
   await expect(row(page, 'a1')).toHaveCount(0)
 
   await handle(page, 'A').focus()
@@ -159,7 +159,7 @@ test('adding a child to a collapsed row expands it first', async ({ page }) => {
   // Expanded so the input is visible, and the existing children are back with it.
   await expect(newInput(page)).toBeVisible()
   await expect(row(page, 'a1')).toBeVisible()
-  await expect(row(page, 'A').getByRole('button', { name: '折叠' })).toBeVisible()
+  await expect(row(page, 'A').getByRole('button', { name: 'Collapse' })).toBeVisible()
 
   const created = createdOk(page)
   await page.keyboard.type('a3')
@@ -230,7 +230,7 @@ test('an empty commit cancels instead of creating a blank task', async ({ page }
   // Blurring an empty input cancels it as well.
   await page.keyboard.press('Alt+Enter')
   await expect(newInput(page)).toBeFocused()
-  await page.getByRole('heading', { name: '任务', exact: true }).click()
+  await page.getByRole('heading', { name: 'Tasks', exact: true }).click()
   await expect(newInput(page)).toHaveCount(0)
 
   expect(await shape(page)).toEqual(['1:A', '2:a1', '2:a2', '1:B'])
@@ -271,12 +271,12 @@ test('plain Enter on a handle still opens the detail and Tab still leaves the tr
 test('the new-task box on the project page keeps focus after creating', async ({ page }) => {
   await seed(page)
   const created = createdOk(page)
-  await page.getByPlaceholder('新任务').fill('quick')
-  await page.getByPlaceholder('新任务').press('Enter')
+  await page.getByPlaceholder('New task').fill('quick')
+  await page.getByPlaceholder('New task').press('Enter')
   await created
   await expect(row(page, 'quick')).toBeVisible()
-  await expect(page.getByPlaceholder('新任务')).toBeFocused()
-  await expect(page.getByPlaceholder('新任务')).toHaveValue('')
+  await expect(page.getByPlaceholder('New task')).toBeFocused()
+  await expect(page.getByPlaceholder('New task')).toHaveValue('')
 })
 
 test('capture confirms where the task went, and the line goes on the next keystroke', async ({
@@ -285,10 +285,10 @@ test('capture confirms where the task went, and the line goes on the next keystr
   await registerFreshUser(page)
   const projects = await (await page.request.get('/api/v1/projects')).json()
   const inbox = projects.projects.find((p: { isInbox: boolean }) => p.isInbox)
-  const line = page.getByRole('status').filter({ hasText: '已放入' })
+  const line = page.getByRole('status').filter({ hasText: 'Added to' })
   await expect(line).toHaveCount(0)
 
-  await submitCreate(page, '捕获…', '问问房东')
+  await submitCreate(page, 'Capture…', '问问房东')
   await expect(line).toBeVisible()
   await expect(line.getByRole('link', { name: inbox.name })).toHaveAttribute(
     'href',
@@ -296,19 +296,19 @@ test('capture confirms where the task went, and the line goes on the next keystr
   )
 
   // One line, in place: a second capture does not stack another beneath it.
-  await submitCreate(page, '捕获…', '第二件事')
+  await submitCreate(page, 'Capture…', '第二件事')
   await expect(line).toHaveCount(1)
 
-  await page.getByPlaceholder('捕获…').press('x')
+  await page.getByPlaceholder('Capture…').press('x')
   await expect(line).toHaveCount(0)
 })
 
 test('the capture line goes when the user navigates away', async ({ page }) => {
   await registerFreshUser(page)
-  await submitCreate(page, '捕获…', '问问房东')
-  const line = page.getByRole('status').filter({ hasText: '已放入' })
+  await submitCreate(page, 'Capture…', '问问房东')
+  const line = page.getByRole('status').filter({ hasText: 'Added to' })
   await expect(line).toBeVisible()
-  await page.getByRole('link', { name: '项目' }).click()
+  await page.getByRole('link', { name: 'Projects' }).click()
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
   await expect(line).toHaveCount(0)
 })

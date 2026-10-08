@@ -62,22 +62,22 @@ test('a person is made by typing a name, and finished in the pane', async ({ pag
   // One line into a box, like every other thing this app makes. The form that used to stand
   // between a name and a contact is gone.
   await registerFreshUser(page, '/contacts')
-  await page.getByLabel('新建联系人').fill('李雷')
-  await page.getByLabel('新建联系人').press('Enter')
+  await page.getByLabel('New contact').fill('李雷')
+  await page.getByLabel('New contact').press('Enter')
 
   // The pane opens on them: a name alone is never all you know about somebody, and this is the
   // moment you have the rest of it to hand.
-  const pane = page.getByRole('dialog', { name: '联系人' })
+  const pane = page.getByRole('dialog', { name: 'Contacts' })
   await expect(pane).toContainText('李雷')
 
-  await pane.getByRole('button', { name: '加一项' }).click()
-  await pane.getByRole('button', { name: '改第 1 项' }).click()
-  await pane.getByRole('textbox', { name: '第 1 项' }).fill('lilei@acme.test')
+  await pane.getByRole('button', { name: 'Add one' }).click()
+  await pane.getByRole('button', { name: 'Edit Item 1' }).click()
+  await pane.getByRole('textbox', { name: 'Item 1' }).fill('lilei@acme.test')
   await page.keyboard.press('Enter')
   await expect(row(page, '李雷')).toContainText('lilei@acme.test')
 
   // NOTHING WAS SAVED, because there is nothing to save: no 保存 button exists in this pane.
-  await expect(pane.getByRole('button', { name: '保存' })).toHaveCount(0)
+  await expect(pane.getByRole('button', { name: 'Save' })).toHaveCount(0)
 })
 
 test('a person can be on several lines of work at once', async ({ page }) => {
@@ -88,21 +88,21 @@ test('a person can be on several lines of work at once', async ({ page }) => {
   await page.goto('/contacts')
 
   await page.getByRole('button', { name: '陈颖' }).click()
-  const pane = page.getByRole('dialog', { name: '联系人' })
+  const pane = page.getByRole('dialog', { name: 'Contacts' })
   // Picked back to back WITHOUT waiting in between: that is what a person does, and it used to
   // drop the first one -- both writes computed their new set from the same pre-refetch list.
   for (const name of ['找工作', 'CTWS']) {
-    await pane.getByRole('button', { name: '加一个项目' }).click()
+    await pane.getByRole('button', { name: 'Add Projects' }).click()
     await page.getByRole('menuitem', { name }).click()
   }
-  await expect(pane.getByRole('button', { name: '把项目「找工作」去掉' })).toBeVisible()
-  await expect(pane.getByRole('button', { name: '把项目「CTWS」去掉' })).toBeVisible()
+  await expect(pane.getByRole('button', { name: 'Remove Projects “找工作”' })).toBeVisible()
+  await expect(pane.getByRole('button', { name: 'Remove Projects “CTWS”' })).toBeVisible()
 
   // On BOTH lines, and found from either.
   await page.goto(`/projects/${hunt}`)
-  await expect(page.getByRole('region', { name: '联系人' })).toContainText('陈颖')
+  await expect(page.getByRole('region', { name: 'Contacts' })).toContainText('陈颖')
   await page.goto(`/projects/${ctws}`)
-  await expect(page.getByRole('region', { name: '联系人' })).toContainText('陈颖')
+  await expect(page.getByRole('region', { name: 'Contacts' })).toContainText('陈颖')
 })
 
 test('a line of work is taken off without touching the others', async ({ page }) => {
@@ -113,13 +113,13 @@ test('a line of work is taken off without touching the others', async ({ page })
   await page.goto('/contacts')
 
   await page.getByRole('button', { name: '陈颖' }).click()
-  const pane = page.getByRole('dialog', { name: '联系人' })
-  await pane.getByRole('button', { name: '把项目「找工作」去掉' }).click()
-  await expect(pane.getByRole('button', { name: '把项目「找工作」去掉' })).toHaveCount(0)
-  await expect(pane.getByRole('button', { name: '把项目「CTWS」去掉' })).toBeVisible()
+  const pane = page.getByRole('dialog', { name: 'Contacts' })
+  await pane.getByRole('button', { name: 'Remove Projects “找工作”' }).click()
+  await expect(pane.getByRole('button', { name: 'Remove Projects “找工作”' })).toHaveCount(0)
+  await expect(pane.getByRole('button', { name: 'Remove Projects “CTWS”' })).toBeVisible()
 
   await page.goto(`/projects/${hunt}`)
-  await expect(page.getByRole('region', { name: '联系人' })).not.toContainText('陈颖')
+  await expect(page.getByRole('region', { name: 'Contacts' })).not.toContainText('陈颖')
 })
 
 test('an address removed in the pane is really gone', async ({ page }) => {
@@ -135,7 +135,7 @@ test('an address removed in the pane is really gone', async ({ page }) => {
   await page.reload()
 
   await page.getByRole('button', { name: '韩梅梅' }).click()
-  await page.getByRole('dialog').getByRole('button', { name: '删掉第 1 项' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Remove item 1' }).click()
 
   await expect(row(page, '韩梅梅')).toContainText('keep@acme.test')
   await expect(row(page, '韩梅梅')).not.toContainText('old@acme.test')
@@ -163,22 +163,22 @@ test('a project page carries its people, and its own way to add one', async ({ p
   await add(page, { name: '不相干的人' })
   await page.goto(`/projects/${pid}`)
 
-  const block = page.getByRole('region', { name: '联系人' })
+  const block = page.getByRole('region', { name: 'Contacts' })
   await expect(block).toContainText('某招聘')
   await expect(block).not.toContainText('不相干的人')
   // The project you are standing in is not named again on the row.
   await expect(block).not.toContainText('找工作')
-  await expect(block.getByLabel('新建联系人')).toBeVisible()
+  await expect(block.getByLabel('New contact')).toBeVisible()
 })
 
 test('search reaches a person by their address, from the shell box', async ({ page }) => {
   await registerFreshUser(page, '/')
   await add(page, { name: '陈颖', channels: [{ kind: 'email', value: 'ying@acme.test' }] })
 
-  await page.getByRole('button', { name: '搜索' }).click()
-  await page.getByRole('combobox', { name: '搜索' }).fill('acme.test')
+  await page.getByRole('button', { name: 'Search' }).click()
+  await page.getByRole('combobox', { name: 'Search' }).fill('acme.test')
   await expect(
-    page.getByRole('dialog', { name: '搜索' }).getByRole('option').filter({ hasText: '陈颖' }),
+    page.getByRole('dialog', { name: 'Search' }).getByRole('option').filter({ hasText: '陈颖' }),
   ).toHaveCount(1)
 })
 
@@ -187,7 +187,7 @@ test('g n goes to the contacts, in the one keyspace', async ({ page }) => {
   await page.keyboard.press('g')
   await page.keyboard.press('n')
   await expect(page).toHaveURL(/\/contacts$/)
-  await expect(page.getByRole('heading', { name: '联系人', level: 1 })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Contacts', level: 1 })).toBeVisible()
 })
 
 test('Escape puts an inline edit back without closing the pane', async ({ page }) => {
@@ -197,14 +197,14 @@ test('Escape puts an inline edit back without closing the pane', async ({ page }
   await add(page, { name: '陈颖', org: 'Acme 招聘' })
   await page.reload()
   await page.getByRole('button', { name: '陈颖' }).click()
-  const pane = page.getByRole('dialog', { name: '联系人' })
+  const pane = page.getByRole('dialog', { name: 'Contacts' })
 
-  await pane.getByRole('button', { name: '改公司' }).click()
-  await pane.getByRole('textbox', { name: '公司' }).fill('打错了')
+  await pane.getByRole('button', { name: 'Edit Company' }).click()
+  await pane.getByRole('textbox', { name: 'Company' }).fill('打错了')
   await page.keyboard.press('Escape')
 
   await expect(pane).toBeVisible()
-  await expect(pane.getByRole('textbox', { name: '公司' })).toHaveCount(0)
+  await expect(pane.getByRole('textbox', { name: 'Company' })).toHaveCount(0)
   await expect(pane).toContainText('Acme 招聘')
 
   // The second one leaves.
@@ -219,14 +219,14 @@ test('leaving a field you did not change writes nothing', async ({ page }) => {
   await add(page, { name: '陈颖', org: 'Acme 招聘' })
   await page.reload()
   await page.getByRole('button', { name: '陈颖' }).click()
-  const pane = page.getByRole('dialog', { name: '联系人' })
+  const pane = page.getByRole('dialog', { name: 'Contacts' })
 
   const writes: string[] = []
   page.on('request', (r) => {
     if (r.method() === 'PATCH') writes.push(r.url())
   })
-  await pane.getByRole('button', { name: '改公司' }).click()
-  await pane.getByRole('textbox', { name: '公司' }).click()
+  await pane.getByRole('button', { name: 'Edit Company' }).click()
+  await pane.getByRole('textbox', { name: 'Company' }).click()
   await page.keyboard.press('Enter')
 
   await expect(pane).toContainText('Acme 招聘')

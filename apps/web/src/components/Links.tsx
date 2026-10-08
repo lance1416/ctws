@@ -22,12 +22,12 @@ export function Links({ of, className = '' }: { of: Endpoint; className?: string
   const groups = links.data ?? []
 
   if (links.isError) {
-    return <PanelEmpty>牵着的东西没能读出来。</PanelEmpty>
+    return <PanelEmpty>Couldn't load the links.</PanelEmpty>
   }
   // Nothing at all while loading: a skeleton here would flash on every pane that opens, and the
   // panel is below the thing's own fields rather than in place of them.
   if (groups.length === 0) {
-    return links.isLoading ? null : <PanelEmpty>还没有牵着别的东西。</PanelEmpty>
+    return links.isLoading ? null : <PanelEmpty>Nothing linked yet.</PanelEmpty>
   }
 
   return (
@@ -80,9 +80,9 @@ function LinkedRow({
   const where = relationFor(type)
   const body = (
     <>
-      <span className="min-w-0 flex-1 truncate">{title}</span>
-      {detail && <span className="shrink-0 truncate text-xs text-fg-muted">{detail}</span>}
-      <span className="shrink-0 text-xs text-fg-subtle">{label}</span>
+      <span className="min-w-0 flex-[2] truncate">{title}</span>
+      {detail && <span className="min-w-0 shrink truncate text-xs text-fg-muted">{detail}</span>}
+      {label && <span className="shrink-0 text-xs text-fg-subtle">{label}</span>}
     </>
   )
   const shape = 'flex min-w-0 items-baseline gap-2 rounded-md px-2 py-1.5 text-sm text-fg'

@@ -172,7 +172,7 @@ export type Widget = {
   id: string
   /** The card's heading. */
   label: string
-  /** Where 「看全部」 goes, when there is more than the card shows. */
+  /** Where “See all” goes, when there is more than the card shows. */
   to?: string
   /** The card's contents. The shell gives it no props: a widget is about the workspace, not a row. */
   Component: ComponentType
@@ -191,7 +191,7 @@ export type Destination = {
    *
    * The module declares it because only the module knows what its page is FOR; the shell draws
    * the groups. Grouping by which module owns a row is what the rail did before, and it is the
-   * reason 「今天」 (one module's view) sat beside 「待读」 (a whole module) as if they were peers.
+   * reason “Today” (one module's view) sat beside “Reading” (a whole module) as if they were peers.
    */
   zone?: 'now' | 'kept' | 'back'
   /**

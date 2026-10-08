@@ -31,7 +31,7 @@ export function DetailPane({
   onClose,
   children,
 }: {
-  /** The pane's accessible name: what KIND of thing is open -- 「任务详情」, 「联系人」. */
+  /** The pane's accessible name: what KIND of thing is open -- 「任务详情」, “Contacts”. */
   label: string
   onClose: () => void
   children: ReactNode
@@ -147,7 +147,7 @@ export function DetailHead({
         <button
           type="button"
           onClick={onClose}
-          aria-label="关闭"
+          aria-label="Close"
           className="flex h-9 w-9 items-center justify-center rounded-lg text-fg-muted hover:bg-surface-hover hover:text-fg"
         >
           <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4">

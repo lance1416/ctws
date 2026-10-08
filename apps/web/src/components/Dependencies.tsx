@@ -48,7 +48,7 @@ function Row({
         <button
           type="button"
           onClick={onRemove}
-          aria-label={`移除依赖「${task.title}」`}
+          aria-label={`Remove dependency “${task.title}”`}
           className="ml-auto h-7 w-7 shrink-0 rounded-lg text-fg-subtle hover:bg-surface-hover hover:text-fg"
         >
           <svg aria-hidden="true" viewBox="0 0 16 16" className="mx-auto h-3.5 w-3.5">
@@ -109,7 +109,9 @@ export function Dependencies({ taskId, projectId }: { taskId: string; projectId:
     // on, and 「That would make two tasks wait for each other」 is a developer's phrasing.
     onError: (e) =>
       setError(
-        e instanceof ApiError && e.status === 409 ? '这样两件事会互相等着' : '没能添加这条依赖',
+        e instanceof ApiError && e.status === 409
+          ? 'That would leave the two waiting on each other'
+          : "Couldn't add that dependency",
       ),
   })
   const drop = useMutation({
@@ -126,13 +128,13 @@ export function Dependencies({ taskId, projectId }: { taskId: string; projectId:
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-baseline gap-2">
-        <span className={label}>依赖</span>
+        <span className={label}>Dependencies</span>
         <button
           type="button"
           onClick={() => setAdding((v) => !v)}
           className="-mx-1 rounded-lg px-1 text-xs text-fg-muted hover:text-fg"
         >
-          {adding ? '取消' : '添加'}
+          {adding ? 'Cancel' : 'Add'}
         </button>
       </div>
 
@@ -148,8 +150,8 @@ export function Dependencies({ taskId, projectId }: { taskId: string; projectId:
                 setAdding(false)
               }
             }}
-            placeholder="搜索要等的任务"
-            aria-label="搜索要等的任务"
+            placeholder="Search for a task to wait on"
+            aria-label="Search for a task to wait on"
             className={`${field} text-sm`}
           />
           <ul data-dep-candidates className="mt-1 flex flex-col">
@@ -176,7 +178,7 @@ export function Dependencies({ taskId, projectId }: { taskId: string; projectId:
       )}
 
       {blockedBy.length > 0 && (
-        <Group tag="等">
+        <Group tag="Waits on">
           <ul data-blocked-by className="flex flex-col">
             {blockedBy.map((t) => (
               <Row key={t.id} item={t} here={projectId} onRemove={() => drop.mutate(t.id)} />
@@ -186,7 +188,7 @@ export function Dependencies({ taskId, projectId }: { taskId: string; projectId:
       )}
 
       {blocks.length > 0 && (
-        <Group tag="挡着">
+        <Group tag="Blocks">
           {/* No remove button on this side: the edge belongs to the OTHER task's "waiting for"
               list, and removing it from here would be editing a task that is not open. */}
           <ul data-blocks className="flex flex-col">
@@ -198,7 +200,7 @@ export function Dependencies({ taskId, projectId }: { taskId: string; projectId:
       )}
 
       {!adding && blockedBy.length === 0 && blocks.length === 0 && (
-        <p className="text-sm text-fg-subtle">没有</p>
+        <p className="text-sm text-fg-subtle">None</p>
       )}
     </div>
   )

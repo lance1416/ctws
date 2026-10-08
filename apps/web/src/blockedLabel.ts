@@ -11,6 +11,6 @@ export function blockedLabel(
   if (!blockers || blockers.length === 0) return null
   const [first, ...rest] = blockers
   return rest.length === 0
-    ? `被「${first!.title}」挡着`
-    : `被「${first!.title}」等 ${blockers.length} 件事挡着`
+    ? `Blocked by “${first!.title}”`
+    : `Blocked by “${first!.title}” and ${blockers.length - 1} more`
 }

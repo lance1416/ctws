@@ -195,7 +195,7 @@ export function TaskRow({
           at rest, shown on hover and on keyboard focus; always shown where there is no hover. */}
       <button
         type="button"
-        aria-label={`任务：${title}`}
+        aria-label={`Task: ${title}`}
         data-handle-id={row.id}
         {...attributes}
         {...listeners}
@@ -218,7 +218,7 @@ export function TaskRow({
       {row.hasChildren ? (
         <button
           type="button"
-          aria-label={row.collapsed ? '展开' : '折叠'}
+          aria-label={row.collapsed ? 'Expand' : 'Collapse'}
           aria-expanded={!row.collapsed}
           onClick={onToggle}
           style={{ width: CHEVRON_PX }}
@@ -303,7 +303,7 @@ export function TaskRow({
         <button
           type="button"
           tabIndex={-1}
-          aria-label={`添加子任务（${title}）`}
+          aria-label={`Add a subtask to “${title}”`}
           onClick={onAddChild}
           className="flex h-9 w-8 shrink-0 items-center justify-center rounded-lg text-fg-muted hover:text-fg"
         >

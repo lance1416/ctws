@@ -24,7 +24,7 @@ export function ScopeAsk({
   return (
     <div
       role="alertdialog"
-      aria-label="这是重复的会议"
+      aria-label="This meeting repeats"
       className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-border-subtle bg-surface px-2.5 py-2 text-sm"
     >
       <p className="w-full text-fg">{what}</p>
@@ -34,21 +34,21 @@ export function ScopeAsk({
         onClick={() => onPick('one')}
         className="h-9 rounded-lg border border-border-strong px-2.5 text-fg hover:bg-surface-hover"
       >
-        只改这次
+        Just this one
       </button>
       <button
         type="button"
         onClick={() => onPick('following')}
         className="h-9 rounded-lg border border-border-strong px-2.5 text-fg hover:bg-surface-hover"
       >
-        这次及以后
+        This and all later
       </button>
       <button
         type="button"
         onClick={onCancel}
         className="h-9 rounded-lg px-2 text-fg-muted hover:text-fg"
       >
-        取消
+        Cancel
       </button>
     </div>
   )

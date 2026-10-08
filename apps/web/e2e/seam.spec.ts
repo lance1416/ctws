@@ -13,28 +13,28 @@ test('the module pages answer under the module namespace', async ({ page }) => {
 
   await page.goto('/tasks/today')
   await expect(page).toHaveURL(/\/tasks\/today$/)
-  await expect(page.getByRole('heading', { level: 1, name: '今天' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Today' })).toBeVisible()
 
   await page.goto('/tasks/completed')
   await expect(page).toHaveURL(/\/tasks\/completed$/)
-  await expect(page.getByRole('heading', { level: 1, name: '已完成' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Done' })).toBeVisible()
 })
 
 test('the rail is built from the registered destinations', async ({ page }) => {
   await registerFreshUser(page)
-  const rail = page.getByRole('navigation', { name: '主导航' })
+  const rail = page.getByRole('navigation', { name: 'Main navigation' })
 
   // Each rail row carries the path the MODULE registered, not one the shell wrote down: moving a
   // destination in the registry has to move the link, which is the whole point of the seam.
-  await expect(rail.getByRole('link', { name: '今天' })).toHaveAttribute('href', '/tasks/today')
-  await expect(rail.getByRole('link', { name: '待读' })).toHaveAttribute('href', '/reading')
+  await expect(rail.getByRole('link', { name: 'Today' })).toHaveAttribute('href', '/tasks/today')
+  await expect(rail.getByRole('link', { name: 'Reading' })).toHaveAttribute('href', '/reading')
   // The shell's own surface, outside any module namespace.
-  await expect(rail.getByRole('link', { name: '项目', exact: true })).toHaveAttribute(
+  await expect(rail.getByRole('link', { name: 'Projects', exact: true })).toHaveAttribute(
     'href',
     '/projects',
   )
 
-  await rail.getByRole('link', { name: '今天' }).click()
+  await rail.getByRole('link', { name: 'Today' }).click()
   await expect(page).toHaveURL(/\/tasks\/today$/)
 })
 
@@ -42,16 +42,16 @@ test('the rail is grouped by what you are doing, in a fixed reading order', asyn
   // The rail used to be a flat list in the order the modules happened to be registered, which is
   // how 日程 ended up above 今天. The order is an editorial decision now and it is declared.
   await registerFreshUser(page, '/')
-  const rail = page.getByRole('navigation', { name: '主导航' })
+  const rail = page.getByRole('navigation', { name: 'Main navigation' })
 
   await expect(rail.getByRole('link')).toHaveText([
-    '工作台',
-    '今天',
-    '日程',
-    '待读',
-    '联系人',
-    '回顾',
-    '项目',
+    'Workbench',
+    'Today',
+    'Calendar',
+    'Reading',
+    'Contacts',
+    'Review',
+    'Projects',
     'Inbox',
   ])
   // Two hairlines, for the three groups of destinations: 现在 | 收着的 | 回头看. 项目 is divided
@@ -65,20 +65,20 @@ test('the paths from before the move still land on the same page', async ({ page
   // A bookmark, or a tab that was open when the container restarted.
   await page.goto('/completed')
   await expect(page).toHaveURL(/\/tasks\/completed$/)
-  await expect(page.getByRole('heading', { level: 1, name: '已完成' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Done' })).toBeVisible()
 
   // The workspace root IS a page of its own now -- the workbench. It used to redirect into a
   // module because the shell had nothing to show; with two modules it has their glances.
   await page.goto('/')
   await expect(page).toHaveURL(/\/$/)
-  await expect(page.getByRole('heading', { level: 1, name: '工作台' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Workbench' })).toBeVisible()
 })
 
 test('a path no module registered still resolves', async ({ page }) => {
   await registerFreshUser(page)
   await page.goto('/notes/recent')
   await expect(page).toHaveURL(/\/$/)
-  await expect(page.getByRole('heading', { level: 1, name: '工作台' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Workbench' })).toBeVisible()
 })
 
 test('the API answers the module namespace and redirects the old path to it', async ({ page }) => {

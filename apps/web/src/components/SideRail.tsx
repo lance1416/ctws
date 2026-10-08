@@ -75,12 +75,12 @@ export function SideRail() {
         <QuickCapture />
       </div>
       <nav
-        aria-label="主导航"
+        aria-label="Main navigation"
         className="flex flex-col gap-1 max-lg:flex-row max-lg:items-center max-lg:overflow-x-auto max-lg:px-4 max-lg:py-2 lg:gap-0"
       >
-        {/* FOUR GROUPS, by what you are trying to do: 现在 / 收着的 / 回头看 / 项目. A hairline
+        {/* FOUR GROUPS, by what you are trying to do: now / kept / looking back / projects. A hairline
           between them and no labels -- past five or six rows a flat list has to be grouped, but a
-          label on every group would be more chrome than the rows. 项目 keeps its label, because
+          label on every group would be more chrome than the rows. Projects keeps its label, because
           what is under it is yours and it grows.
 
           One hook per registered count, over a frozen module list: see MODULES on why the list
@@ -119,12 +119,12 @@ export function SideRail() {
               }`
             }
           >
-            项目
+            Projects
           </NavLink>
           <button
             type="button"
             onClick={() => setNaming(true)}
-            aria-label="新建项目"
+            aria-label="New project"
             className="hidden h-6 w-6 items-center justify-center rounded-md text-fg-subtle hover:bg-surface-hover hover:text-fg lg:flex"
           >
             <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3.5 w-3.5">
@@ -155,7 +155,7 @@ export function SideRail() {
             onBlur={() => {
               if (!name.trim()) setNaming(false)
             }}
-            aria-label="新项目"
+            aria-label="New project"
             aria-invalid={create.isError ? true : undefined}
             className={`mx-2.5 hidden h-8 rounded-md border bg-surface px-2 text-sm text-fg lg:block ${
               create.isError ? 'border-danger' : 'border-border-strong'

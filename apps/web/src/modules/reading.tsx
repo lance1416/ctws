@@ -51,7 +51,7 @@ function useReadingCapture(): CaptureTargetState {
   const qc = useQueryClient()
   return {
     target: {
-      name: '待读',
+      name: 'Reading',
       to: `/${ID}`,
       submit: async (line: string) => {
         await createReadingItem({ kind: 'link', url: line.trim() })
@@ -77,7 +77,7 @@ function useReadingHits(query: string) {
     // from a search dialog would take the person out of the workspace mid-search.
     to: `/${ID}`,
     title: readingLabel(item),
-    meta: [item.projectName, item.kind === 'book' ? '书' : '链接'].filter(Boolean).join(' · '),
+    meta: [item.projectName, item.kind === 'book' ? 'Book' : 'Link'].filter(Boolean).join(' · '),
     mark: null,
   }))
   return { hits, isError: results.isError, isSuccess: results.isSuccess }
@@ -110,14 +110,14 @@ function ReadingWidget() {
   if (items.isError) {
     return (
       <p role="alert" className="px-2 py-1.5 text-sm text-danger">
-        读不到待读清单
+        Couldn't load the reading list
       </p>
     )
   }
-  if (items.isSuccess && rows.length === 0) return <PanelEmpty>没有散着的待读</PanelEmpty>
+  if (items.isSuccess && rows.length === 0) return <PanelEmpty>Nothing unfiled</PanelEmpty>
   return (
     <ul className="min-w-0">
-      {/* A glance, not a list: five rows, and 看全部 for the rest. A card that grows without
+      {/* A glance, not a list: five rows, and See all for the rest. A card that grows without
           bound stops being a card and starts being a second copy of the page. */}
       {rows.slice(0, WIDGET_ROWS).map((item) => (
         <ReadingRow key={item.id} item={item} timeZone={timeZone} />
@@ -140,13 +140,13 @@ function ReadingProjectView({ projectId }: { projectId: string }) {
 
   return (
     <div>
-      {/* The same measure the task block's 新任务 keeps, so the two blocks on one project page
+      {/* The same measure the task block's New task keeps, so the two blocks on one project page
           read as one product rather than two. */}
       <div className="mb-1 max-w-[52ch]">
         <AddReading projectId={projectId} />
       </div>
       {rows.length === 0 ? (
-        <p className="mt-2 text-sm text-fg-subtle">还没有要读的</p>
+        <p className="mt-2 text-sm text-fg-subtle">Nothing to read yet</p>
       ) : (
         <ul className="mt-1">
           {rows.map((item) => (
@@ -169,23 +169,23 @@ function ReadingHeadline({ projectId }: { projectId: string }) {
   const open = rows.filter((i) => i.status === 'todo' || i.status === 'reading').length
   return (
     <StatRow>
-      <Stat label="待读" value={String(open)} />
+      <Stat label="Reading" value={String(open)} />
     </StatRow>
   )
 }
 
 export const readingModule: WorkspaceModule = {
   id: ID,
-  label: '待读',
-  destinations: [{ id: 'list', to: `/${ID}`, label: '待读', Count: ReadingCount, zone: 'kept' }],
+  label: 'Reading',
+  destinations: [{ id: 'list', to: `/${ID}`, label: 'Reading', Count: ReadingCount, zone: 'kept' }],
   routes: [{ index: true, element: <Reading /> }],
   capture: { useTarget: useReadingCapture, accepts: isReadingUrl },
   search: { useHits: useReadingHits },
   // `l` for list. `r` is the task module's 回顾 and one keyspace is shared across modules, so a
   // second module cannot take a key that is already spoken for.
-  chords: [{ id: 'reading', key: 'l', label: '去「待读」', resolve: () => `/${ID}`, order: 15 }],
-  calendar: { label: '待读', useEntries: useReadingEntries },
-  widgets: [{ id: 'unfiled', label: '待读 · 散的', to: `/${ID}`, Component: ReadingWidget }],
+  chords: [{ id: 'reading', key: 'l', label: 'Go to Reading', resolve: () => `/${ID}`, order: 15 }],
+  calendar: { label: 'Reading', useEntries: useReadingEntries },
+  widgets: [{ id: 'unfiled', label: 'Reading · unfiled', to: `/${ID}`, Component: ReadingWidget }],
   ProjectView: ReadingProjectView,
   ProjectHeadline: ReadingHeadline,
   relations: [{ type: 'reading', to: () => `/${ID}` }],

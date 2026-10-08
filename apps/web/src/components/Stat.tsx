@@ -20,7 +20,7 @@ export function Stat({
   tone = 'fg',
 }: {
   label: string
-  /** A count, or a short phrase ("今天", "还没有"). Never a percentage. */
+  /** A count, or a short phrase ("Today", "还没有"). Never a percentage. */
   value: ReactNode
   /**
    * `missed` for a count of things whose deadline has gone -- the same token the rows paint an

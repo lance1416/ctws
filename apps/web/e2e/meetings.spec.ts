@@ -1,6 +1,9 @@
 import { expect, test, type Page } from '@playwright/test'
 import { registerFreshUser } from './helpers'
 
+/** The month names the app prints, so a spec can build the string the page will show. */
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
 /**
  * 会议 -- the fourth module, through the browser.
  *
@@ -21,7 +24,7 @@ const HEADERS = { 'x-ctws-client': 'web' }
 test.use({ timezoneId: 'Europe/London' })
 
 const square = (page: Page, day: string) => page.locator(`[data-day="${day}"]`)
-const pane = (page: Page) => page.getByRole('dialog', { name: '会议' })
+const pane = (page: Page) => page.getByRole('dialog', { name: 'Meetings' })
 
 async function arrange(page: Page, data: Record<string, unknown>) {
   const res = await page.request.post('/api/v1/meetings', { headers: HEADERS, data })
@@ -64,9 +67,9 @@ test('clicking an empty day arranges a meeting there', async ({ page }) => {
   const today = new Date().toISOString().slice(0, 10)
 
   await square(page, today)
-    .getByRole('button', { name: /安排一个会/ })
+    .getByRole('button', { name: /New meeting/ })
     .click()
-  await expect(square(page, today)).toContainText('新会议')
+  await expect(square(page, today)).toContainText('New meeting')
 })
 
 test('a repeating meeting asks which occurrences a move touches', async ({ page }) => {
@@ -78,14 +81,14 @@ test('a repeating meeting asks which occurrences a move touches', async ({ page 
   await square(page, '2026-10-27').getByRole('button', { name: /周会/ }).click()
   await expect(pane(page)).toBeVisible()
 
-  await pane(page).getByLabel('开始').fill('2026-10-27T15:00')
+  await pane(page).getByLabel('Start').fill('2026-10-27T15:00')
   // Clicking elsewhere, not Tab: a `datetime-local` has internal segments and Tab moves BETWEEN
   // THEM, so the field never blurs and nothing is committed. Leaving it is what commits it; there
   // is no 保存 anywhere in this pane.
-  await pane(page).getByText('多久').click()
+  await pane(page).getByText('Length').click()
   // The question is the data model surfacing, not a dialog invented for the occasion.
-  await expect(page.getByRole('alertdialog', { name: '这是重复的会议' })).toBeVisible()
-  await page.getByRole('button', { name: '只改这次' }).click()
+  await expect(page.getByRole('alertdialog', { name: 'This meeting repeats' })).toBeVisible()
+  await page.getByRole('button', { name: 'Just this one' }).click()
 
   // THAT WEEK MOVED AND THE OTHERS DID NOT. 15:00 in Toronto on the 27th is 19:00 in London,
   // which is already on GMT by then.
@@ -101,8 +104,8 @@ test('cancelling one week leaves the series alone', async ({ page }) => {
   await openOctober(page)
 
   await square(page, '2026-10-27').getByRole('button', { name: /周会/ }).click()
-  await pane(page).getByRole('button', { name: '取消会议' }).click()
-  await page.getByRole('button', { name: '只改这次' }).click()
+  await pane(page).getByRole('button', { name: 'Cancel meeting' }).click()
+  await page.getByRole('button', { name: 'Just this one' }).click()
 
   await expect(square(page, '2026-10-27')).not.toContainText('周会')
   await expect(square(page, '2026-10-20')).toContainText('周会')
@@ -116,9 +119,9 @@ test('the people in the room come out of the contacts module', async ({ page }) 
   await openOctober(page)
 
   await square(page, '2026-10-20').getByRole('button', { name: /周会/ }).click()
-  await pane(page).getByRole('button', { name: '加一个参与人' }).click()
+  await pane(page).getByRole('button', { name: 'Add Attendees' }).click()
   await page.getByRole('menuitem', { name: '陈颖' }).click()
-  await expect(pane(page).getByRole('button', { name: '把参与人「陈颖」去掉' })).toBeVisible()
+  await expect(pane(page).getByRole('button', { name: 'Remove Attendees “陈颖”' })).toBeVisible()
 })
 
 /**
@@ -129,18 +132,18 @@ test('the people in the room come out of the contacts module', async ({ page }) 
  * happened.
  */
 async function openOctober(page: Page) {
-  const heading = page.getByText(/^\d{4}年\d{1,2}月$/)
+  const heading = page.getByText(/^[A-Z][a-z]{2} \d{4}$/)
   for (let i = 0; i < 36; i++) {
     const shown = (await heading.textContent()) ?? ''
-    const [, year, month] = /^(\d{4})年(\d{1,2})月$/.exec(shown) ?? []
-    if (!year || !month) throw new Error(`no month on the page: ${shown}`)
-    const at = Number(year) * 12 + Number(month) - 1
+    const [, name, year] = /^([A-Z][a-z]{2}) (\d{4})$/.exec(shown) ?? []
+    if (!year || !name) throw new Error(`no month on the page: ${shown}`)
+    const at = Number(year) * 12 + MONTHS.indexOf(name)
     const want = 2026 * 12 + 9
     if (at === want) {
       await expect(page.locator('[data-day="2026-10-20"]')).toBeVisible()
       return
     }
-    await page.getByRole('button', { name: at > want ? '上个月' : '下个月' }).click()
+    await page.getByRole('button', { name: at > want ? 'Previous month' : 'Next month' }).click()
   }
   throw new Error('could not reach October 2026')
 }

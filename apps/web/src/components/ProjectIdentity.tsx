@@ -56,7 +56,7 @@ export function ProjectIdentity({
     <div className="flex min-w-0 flex-1 items-center gap-2.5">
       <DropdownMenu.Root>
         <DropdownMenu.Trigger
-          aria-label="项目颜色"
+          aria-label="Project colour"
           data-project-chip={projectId}
           className={`h-7 w-[4px] shrink-0 rounded-full ${railClass(color)}`}
         />
@@ -72,8 +72,8 @@ export function ProjectIdentity({
                   aria-hidden="true"
                   className={`h-4 w-[3px] shrink-0 rounded-full ${railClass(slot)}`}
                 />
-                颜色 {i + 1}
-                {slot === color && <span className="ml-auto pl-3 text-fg-subtle">当前</span>}
+                Colour {i + 1}
+                {slot === color && <span className="ml-auto pl-3 text-fg-subtle">Current</span>}
               </DropdownMenu.Item>
             ))}
           </DropdownMenu.Content>
@@ -95,7 +95,7 @@ export function ProjectIdentity({
               setEditing(false)
             }
           }}
-          aria-label="项目名称"
+          aria-label="Project name"
           className="min-w-0 flex-1 rounded-lg border border-border-strong bg-surface px-2 py-0.5 text-xl font-semibold text-fg"
         />
       ) : (

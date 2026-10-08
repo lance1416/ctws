@@ -50,10 +50,10 @@ describe('overdue label', () => {
     const { overdueLabel } = await loadLabel()
     // Due 23:30 on the 3rd (+05:30); it is 00:10 on the 4th. Forty minutes, but already a day late.
     expect(overdueLabel('2026-10-03T18:00:00.000Z', TZ, new Date('2026-10-03T18:40:00.000Z'))).toBe(
-      '已逾 1 天',
+      '1 day late',
     )
     expect(overdueLabel('2026-10-01T03:30:00.000Z', TZ, new Date('2026-10-04T10:00:00.000Z'))).toBe(
-      '已逾 3 天',
+      '3 days late',
     )
     // THE CASE THAT SEPARATES THE TWO WAYS OF COUNTING, and the reason this test is worded the way
     // it is. Due 23:30 on the 3rd, read at 00:10 on the 5th: TWO calendar days have turned over,
@@ -62,14 +62,14 @@ describe('overdue label', () => {
     // subtraction passed every other case in this file, so the claim in the name was not pinned
     // until this line.
     expect(overdueLabel('2026-10-03T18:00:00.000Z', TZ, new Date('2026-10-04T18:40:00.000Z'))).toBe(
-      '已逾 2 天',
+      '2 days late',
     )
   })
 
   it('never says 0 days, and never prints the datetime-local format', async () => {
     const { overdueLabel } = await loadLabel()
     const label = overdueLabel('2026-10-03T03:00:00.000Z', TZ, new Date('2026-10-03T10:00:00.000Z'))
-    expect(label).toBe('已逾 1 天')
+    expect(label).toBe('1 day late')
     expect(label).not.toMatch(/T/)
   })
 })

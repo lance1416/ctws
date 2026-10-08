@@ -214,7 +214,7 @@
   /* SYNTAX COLOURS, for highlighted code fences only (D-none; feature request 2026-10-07). They
      are their own family rather than borrowed from `accent` / `plan` / `deadline` / `missed`:
      those four MEAN something in this app (a link, a plan, a deadline, a miss), and a keyword
-     wearing 「截止」's colour would be the one thing the colour rules here forbid.
+     wearing “Due”'s colour would be the one thing the colour rules here forbid.
 
      Measured on `surface-sunken`, which is the only background a code block has, in each scheme:
      light 5.1-6.8:1, dark 5.3-9.6:1 -- every one of them clears AA as body text, which matters

@@ -61,17 +61,17 @@ export function Today() {
   const movement = useQuery({ queryKey: ['movement'], queryFn: listMovement })
   const timezone = useTimeZone()
   // Display only: which segment a task is in is decided by the server in the user's timezone.
-  const dateLabel = new Intl.DateTimeFormat('zh-CN', {
-    month: 'long',
-    day: 'numeric',
+  const dateLabel = new Intl.DateTimeFormat('en-US', {
     weekday: 'short',
+    month: 'short',
+    day: 'numeric',
     timeZone: timezone,
   }).format(new Date())
   // The account's own calendar day, for matching the server's `completedOn`. Never a browser-local
   // date: the server already decided which day a task was finished on, and the two must agree.
   // `todayIn` is the ONE place that answers this, for this page, the rows and the panel alike.
   const localToday = todayIn(timezone)
-  const clock = new Intl.DateTimeFormat('zh-CN', {
+  const clock = new Intl.DateTimeFormat('en-US', {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
@@ -172,27 +172,30 @@ export function Today() {
     t.segment === 'overdue' && t.dueAt
       ? [
           {
-            heading: '推迟截止',
+            heading: 'Push the deadline',
             actions: [
               {
-                label: '推迟到明天',
+                label: 'To tomorrow',
                 run: () => patch(t.id, { dueAt: moveDueToDay(t.dueAt!, tomorrow, timezone) }),
               },
               {
-                label: '推迟到下周',
+                label: 'To next week',
                 run: () => patch(t.id, { dueAt: moveDueToDay(t.dueAt!, nextWeek, timezone) }),
               },
-              { label: '清除截止', run: () => patch(t.id, { dueAt: null }) },
+              { label: 'Clear the deadline', run: () => patch(t.id, { dueAt: null }) },
             ],
           },
           {
             // The deadline stops being one: nobody is waiting, so it becomes a plan.
             // Both fields change in ONE request, so the row cannot be left half-way.
-            heading: '转为排期',
+            heading: 'Make it a plan',
             actions: [
-              { label: '今天', run: () => patch(t.id, { dueAt: null, scheduledOn: todayYmd }) },
-              { label: '明天', run: () => patch(t.id, { dueAt: null, scheduledOn: tomorrow }) },
-              { label: '下周', run: () => patch(t.id, { dueAt: null, scheduledOn: nextWeek }) },
+              { label: 'Today', run: () => patch(t.id, { dueAt: null, scheduledOn: todayYmd }) },
+              { label: 'Tomorrow', run: () => patch(t.id, { dueAt: null, scheduledOn: tomorrow }) },
+              {
+                label: 'Next week',
+                run: () => patch(t.id, { dueAt: null, scheduledOn: nextWeek }),
+              },
             ],
           },
         ]
@@ -202,10 +205,10 @@ export function Today() {
               // The plan-side twin: it moves the PLAN and never touches the deadline.
               heading: null,
               actions: [
-                { label: '改到今天', run: () => patch(t.id, { scheduledOn: todayYmd }) },
-                { label: '改到明天', run: () => patch(t.id, { scheduledOn: tomorrow }) },
-                { label: '改到下周', run: () => patch(t.id, { scheduledOn: nextWeek }) },
-                { label: '清除排期', run: () => patch(t.id, { scheduledOn: null }) },
+                { label: 'Move to today', run: () => patch(t.id, { scheduledOn: todayYmd }) },
+                { label: 'Move to tomorrow', run: () => patch(t.id, { scheduledOn: tomorrow }) },
+                { label: 'Move to next week', run: () => patch(t.id, { scheduledOn: nextWeek }) },
+                { label: 'Clear the plan', run: () => patch(t.id, { scheduledOn: null }) },
               ],
             },
           ]
@@ -327,8 +330,10 @@ export function Today() {
           />
           {sections && (
             <TriageControl
-              groupLabel={t.segment === 'overdue' ? `处理逾期：${t.title}` : `处理顺延：${t.title}`}
-              triggerLabel={`调整「${t.title}」的日期`}
+              groupLabel={
+                t.segment === 'overdue' ? `Overdue: ${t.title}` : `Carried over: ${t.title}`
+              }
+              triggerLabel={`Change the dates for “${t.title}”`}
               sections={sections}
               onRan={() => focusRow(t.id)}
             />
@@ -352,10 +357,12 @@ export function Today() {
 
   return (
     <>
-      {today.isPending && <p className="text-fg-muted">加载中…</p>}
+      {today.isPending && <p className="text-fg-muted">Loading…</p>}
       {today.isError && (
         <p role="alert" className="text-danger">
-          {today.error instanceof Error ? today.error.message : '加载失败，检查服务是否在运行'}
+          {today.error instanceof Error
+            ? today.error.message
+            : "Couldn't load. Check that the server is running."}
         </p>
       )}
       {error && (
@@ -364,18 +371,18 @@ export function Today() {
         </p>
       )}
 
-      {/* 正在做 -- the first thing the eye should land on (workbench spec §1). It is the only
+      {/* Working on -- the first thing the eye should land on (workbench spec §1). It is the only
           block carrying the accent across its full height, and the ONLY place the type scale's
           top step (34px) is spent: on the thing being done right now. The page's own heading is
-          one step below it, because a 34px 今天 beside a 23px task title made the page title the
+          one step below it, because a 34px Today beside a 23px task title made the page title the
           focal point and the work the footnote -- exactly backwards. */}
       <Panel
-        label="正在做"
+        label="Working on"
         className="border-l-4 border-l-accent"
-        heading={<h2 className="text-xs font-semibold text-fg-subtle">正在做</h2>}
+        heading={<h2 className="text-xs font-semibold text-fg-subtle">Working on</h2>}
       >
         {inProgress.length === 0 ? (
-          <PanelEmpty>没有在做的事</PanelEmpty>
+          <PanelEmpty>Nothing in progress</PanelEmpty>
         ) : (
           <ul className="flex flex-col gap-1">
             {inProgress.map((t) => (
@@ -400,25 +407,25 @@ export function Today() {
                   </span>
                   <span className="truncate text-sm text-fg-muted">{breadcrumb(t)}</span>
                 </button>
-                {/* The visible word is contained in the accessible name (WCAG 2.5.3): "完成" in
-                    「完成「标题」」. Two controls, no more -- a third "标记完成" beside the mark
+                {/* The visible word is contained in the accessible name (WCAG 2.5.3): "Done" in
+                    “Complete “Title””. Two controls, no more -- a third “Mark done” beside the mark
                     would give one action two accessible names in one flat namespace. */}
                 <span className="flex shrink-0 items-center gap-2">
                   <button
                     type="button"
-                    aria-label={`完成「${t.title}」`}
+                    aria-label={`Complete “${t.title}”`}
                     onClick={() => setStatus(t.id, toggleDoneTarget(t.status))}
                     className="h-9 rounded-lg bg-accent px-3.5 text-sm font-semibold text-accent-fg hover:opacity-90"
                   >
-                    完成
+                    Done
                   </button>
                   <button
                     type="button"
-                    aria-label={`暂停「${t.title}」`}
+                    aria-label={`Pause “${t.title}”`}
                     onClick={() => setStatus(t.id, toggleStartTarget(t.status))}
                     className="h-9 rounded-lg border border-border-strong px-3.5 text-sm text-fg hover:bg-surface-hover"
                   >
-                    暂停
+                    Pause
                   </button>
                 </span>
               </li>
@@ -432,7 +439,7 @@ export function Today() {
         className={`mt-4 grid min-w-0 items-start gap-4 ${rightColumn ? 'lg:grid-cols-[repeat(3,minmax(0,1fr))]' : ''}`}
       >
         <Panel
-          label="今天"
+          label="Today"
           className={rightColumn ? 'lg:col-span-2' : ''}
           heading={
             <>
@@ -441,7 +448,7 @@ export function Today() {
                 tabIndex={-1}
                 className="text-xl font-semibold focus:outline-none"
               >
-                今天
+                Today
               </h1>
               {queue.length > 0 && (
                 <span data-count className="text-sm text-fg-subtle tabular-nums">
@@ -452,22 +459,22 @@ export function Today() {
             </>
           }
         >
-          {/* NO ACTION on this one. An empty 今天 has no single obvious next step -- whatever the
+          {/* NO ACTION on this one. An empty Today has no single obvious next step -- whatever the
               reader might do next is already in the rail -- and a button that exists because the
               layout looked bare is the filler that makes an interface read as generated. */}
-          {today.isSuccess && rows.length === 0 && <EmptyState title="今天没有要做的事" />}
+          {today.isSuccess && rows.length === 0 && <EmptyState title="Nothing for today" />}
           {today.isSuccess && rows.length > 0 && queue.length === 0 && (
-            <PanelEmpty>队列是空的</PanelEmpty>
+            <PanelEmpty>The queue is empty</PanelEmpty>
           )}
           <ul className={ROW_LIST}>{queue.map((p) => row(p, queueLead))}</ul>
         </Panel>
 
         {rightColumn && (
           <div className="flex min-w-0 flex-col gap-4">
-            {/* 逾期 renders only when something IS overdue: a panel reading "0" every day is
+            {/* Overdue renders only when something IS overdue: a panel reading "0" every day is
                 noise, and this one has to mean something when it appears. */}
             {overdue.length > 0 && (
-              <Panel label="逾期" count={overdue.length}>
+              <Panel label="Overdue" count={overdue.length}>
                 <ul className={ROW_LIST}>{overdue.map((p) => row(p, overdueLead))}</ul>
               </Panel>
             )}

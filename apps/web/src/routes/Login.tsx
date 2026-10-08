@@ -50,7 +50,7 @@ export function Login() {
           <span aria-hidden="true" className="h-7 w-[3px] rounded-full bg-accent" />
           <h1 className="text-xl font-semibold">CTWS</h1>
         </div>
-        <p className="mt-2 text-sm text-fg-muted">个人工作台账</p>
+        <p className="mt-2 text-sm text-fg-muted">Your personal workbench</p>
 
         {/* A real form, so Enter from either field signs in -- the thing a daily tool should not
             make you reach for the mouse to do. Register is a deliberate second press. */}
@@ -63,7 +63,7 @@ export function Login() {
         >
           <div>
             <label htmlFor="login-email" className="block text-xs text-fg-muted">
-              邮箱
+              Email
             </label>
             <input
               id="login-email"
@@ -76,7 +76,7 @@ export function Login() {
           </div>
           <div>
             <label htmlFor="login-password" className="block text-xs text-fg-muted">
-              密码
+              Password
             </label>
             <input
               id="login-password"
@@ -97,17 +97,17 @@ export function Login() {
             disabled={act.isPending}
             className="mt-2 h-10 w-full rounded-md bg-accent font-semibold text-accent-fg hover:opacity-90 disabled:opacity-50"
           >
-            登录
+            Sign in
           </button>
           <div className="flex items-baseline gap-2 text-sm text-fg-muted">
-            第一次用？
+            First time?
             <button
               type="button"
               disabled={act.isPending}
               className="-mx-1 rounded-md px-1 py-0.5 text-fg underline underline-offset-4 hover:text-accent disabled:opacity-50"
               onClick={() => act.mutate('/auth/register')}
             >
-              注册
+              Create an account
             </button>
           </div>
         </form>

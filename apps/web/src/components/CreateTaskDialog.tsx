@@ -43,7 +43,7 @@ import {
  * clears and a field quietly emptying itself is worse than one that did not.
  *
  * THE FORM IS `react-hook-form`'S, AND THE VALIDATION IS THE CONTRACT'S. Seven `useState`s, a
- * hand-written 「请先写标题」 rule and a hand-assembled request body are gone: the form's values ARE
+ * hand-written “Title is required” rule and a hand-assembled request body are gone: the form's values ARE
  * `createTaskBody`'s shape, `zodResolver(createTaskForm)` is the only thing that decides whether
  * they may be sent, and what `handleSubmit` hands over is the schema's own parsed output -- already
  * trimmed, already defaulted -- so the body is passed on rather than built a second time. The two
@@ -103,9 +103,9 @@ export function CreateTaskDialog({
   })
 
   const DAYS: [string, string][] = [
-    ['今天', todayYmd],
-    ['明天', addDays(todayYmd, 1)],
-    ['下周', nextMonday(todayYmd)],
+    ['Today', todayYmd],
+    ['Tomorrow', addDays(todayYmd, 1)],
+    ['Next week', nextMonday(todayYmd)],
   ]
   /** Which named day the held instant IS, so the buttons can say which one is pressed. */
   const dueDay = dueAt ? ymd(new Date(dueAt), timeZone) : ''
@@ -158,7 +158,7 @@ export function CreateTaskDialog({
 
   return (
     <Modal
-      title="新建任务"
+      title="New task"
       onClose={onClose}
       initialFocus={titleField}
       // The footer already carries 取消; a second dismiss in the header would be a third way to
@@ -194,7 +194,7 @@ export function CreateTaskDialog({
               className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(project)}`}
             />
             <select
-              aria-label="项目"
+              aria-label="Projects"
               {...register('projectId', {
                 onChange: () => {
                   // A parent belongs to a project; keeping the old one would send a foreign id.
@@ -218,7 +218,7 @@ export function CreateTaskDialog({
               registerTitle(el)
               titleField.current = el
             }}
-            aria-label="标题"
+            aria-label="Title"
             aria-invalid={errors.title ? true : undefined}
             className="mt-0.5 w-full rounded-lg bg-transparent py-0.5 text-lg font-semibold text-fg"
           />
@@ -226,7 +226,7 @@ export function CreateTaskDialog({
 
         <div>
           <label htmlFor="create-parent" className={label}>
-            放在谁下面
+            Put it under
           </label>
           <select
             id="create-parent"
@@ -237,7 +237,7 @@ export function CreateTaskDialog({
             })}
             className={`${field} mt-1.5`}
           >
-            <option value="">不放在任何任务下</option>
+            <option value="">Top level</option>
             {parents.map((p) => (
               // Indented with figure spaces rather than nbsp: an <option>'s text is all a native
               // select will render, so the shape of the tree has to be in the text itself.
@@ -253,7 +253,7 @@ export function CreateTaskDialog({
             the arrow keys inside it, for free and correctly. */}
         <div role="radiogroup" aria-labelledby="create-status-label">
           <span id="create-status-label" className={label}>
-            状态
+            Status
           </span>
           <div className="mt-1.5 grid grid-cols-3 gap-1">
             {TASK_STATUSES.map((s) => (
@@ -284,7 +284,7 @@ export function CreateTaskDialog({
         <div>
           <span className="flex items-center gap-1 text-sm text-deadline">
             <DeadlineMark filled={false} />
-            截止
+            Due
           </span>
           <div className="mt-1.5 flex flex-wrap gap-1">
             {DAYS.map(([word, day]) => (
@@ -295,11 +295,11 @@ export function CreateTaskDialog({
                 onClick={() => setValue('dueAt', dayEndIso(day, timeZone))}
                 className={decision}
               >
-                {word}截止
+                Due {word.toLowerCase()}
               </button>
             ))}
             <button type="button" onClick={() => setValue('dueAt', null)} className={decision}>
-              清除截止
+              Clear the deadline
             </button>
           </div>
           {dueEcho && <p className="mt-1 text-xs tabular-nums text-fg-muted">{dueEcho}</p>}
@@ -308,7 +308,7 @@ export function CreateTaskDialog({
         <div>
           <span className="flex items-center gap-1 text-sm text-plan">
             <PlanMark />
-            排期
+            Plan
           </span>
           <div className="mt-1.5 flex flex-wrap gap-1">
             {DAYS.map(([word, day]) => (
@@ -319,7 +319,7 @@ export function CreateTaskDialog({
                 onClick={() => setValue('scheduledOn', day)}
                 className={decision}
               >
-                排到{word}
+                Plan for {word.toLowerCase()}
               </button>
             ))}
             <button
@@ -327,18 +327,18 @@ export function CreateTaskDialog({
               onClick={() => setValue('scheduledOn', null)}
               className={decision}
             >
-              清除排期
+              Clear the plan
             </button>
           </div>
           {planEcho && <p className="mt-1 text-xs tabular-nums text-fg-muted">{planEcho}</p>}
         </div>
 
         {/* `htmlFor` rather than a wrapping label, for the reason the detail pane records: React
-            writes a textarea's value into the element's text, so a wrapping label's name would be
-            「备注」 plus whatever had been typed. */}
+            writes a textarea"s value into the element's text, so a wrapping label"s name would be
+            “Notes” plus whatever had been typed. */}
         <div>
           <label htmlFor="create-notes" className={label}>
-            备注
+            Notes
           </label>
           <textarea
             id="create-notes"
@@ -360,7 +360,7 @@ export function CreateTaskDialog({
         )}
         {create.isError && (
           <p role="alert" className="text-sm text-danger">
-            创建失败，内容仍留在这里，请重试
+            Couldn't create it. Your text is still here — try again.
           </p>
         )}
 
@@ -369,14 +369,14 @@ export function CreateTaskDialog({
             type="submit"
             className="h-9 rounded-lg bg-accent px-3 font-semibold text-accent-fg hover:opacity-90"
           >
-            创建
+            Create
           </button>
           <button
             type="button"
             onClick={onClose}
             className="h-9 rounded-lg border border-border-strong px-3 text-fg hover:bg-surface-hover"
           >
-            取消
+            Cancel
           </button>
           {/* Both chords, not one guessed from the user agent: the keys are what the hint is for,
               and a wrong guess teaches the wrong key. */}
@@ -385,7 +385,7 @@ export function CreateTaskDialog({
             <kbd className="rounded border border-border-strong px-1.5 text-xs leading-5">
               Ctrl↵
             </kbd>{' '}
-            创建并接着建下一条
+            Create and add another
           </p>
         </div>
       </form>

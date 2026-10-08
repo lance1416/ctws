@@ -8,18 +8,19 @@ import { EMPTY_ACTION, EmptyState } from '../components/EmptyState'
 import { DONE_LIST_MEASURE, DONE_ROW_GRID, ProjectRail } from '../components/RowParts'
 import { StatusButton } from '../components/StatusControls'
 import { TaskDetail } from '../components/TaskDetail'
-import { addDays, todayIn } from '../dueAt'
+import { addDays, MONTHS, todayIn } from '../dueAt'
 import { useTimeZone } from '../useMe'
 
-const WEEKDAY = ['日', '一', '二', '三', '四', '五', '六']
+const WEEKDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
-/** "10月2日 周五", with the year when it is not this year; the day is a calendar day, not an instant. */
+/** "Fri, Oct 2", with the year when it is not this year; the day is a calendar day, not an instant. */
 function dayHeading(day: string, today: string): string {
   const [y, m, d] = day.split('-').map(Number) as [number, number, number]
   const weekday = WEEKDAY[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]
-  const date = today.slice(0, 4) === day.slice(0, 4) ? `${m}月${d}日` : `${y}年${m}月${d}日`
-  const near = day === today ? '今天 · ' : day === addDays(today, -1) ? '昨天 · ' : ''
-  return `${near}${date} 周${weekday}`
+  const date =
+    today.slice(0, 4) === day.slice(0, 4) ? `${MONTHS[m - 1]} ${d}` : `${MONTHS[m - 1]} ${d}, ${y}`
+  const near = day === today ? 'Today · ' : day === addDays(today, -1) ? 'Yesterday · ' : ''
+  return `${near}${weekday}, ${date}`
 }
 
 /**
@@ -32,7 +33,7 @@ export function Completed({ heading: showHeading = true }: { heading?: boolean }
   const qc = useQueryClient()
   const timezone = useTimeZone()
   const today = todayIn(timezone)
-  const clock = new Intl.DateTimeFormat('zh-CN', {
+  const clock = new Intl.DateTimeFormat('en-US', {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
@@ -52,13 +53,13 @@ export function Completed({ heading: showHeading = true }: { heading?: boolean }
 
   return (
     <>
-      {/* As a VIEW of 回顾 this is an h2 and not an h1 -- that page's own heading is the h1, and
+      {/* As a VIEW of Review this is an h2 and not an h1 -- that page's own heading is the h1, and
           two of them would tell a screen reader the page had two titles. It is still rendered,
           and still the thing focus lands on after a restore: a heading nobody can see is better
           than focus falling to <body>. */}
       {showHeading ? (
         <h1 ref={heading} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
-          已完成
+          Done
         </h1>
       ) : (
         <h2
@@ -66,18 +67,18 @@ export function Completed({ heading: showHeading = true }: { heading?: boolean }
           tabIndex={-1}
           className="absolute h-px w-px overflow-hidden whitespace-nowrap focus:outline-none"
         >
-          已完成
+          Done
         </h2>
       )}
-      {completed.isPending && <p className="mt-6 text-fg-muted">加载中…</p>}
+      {completed.isPending && <p className="mt-6 text-fg-muted">Loading…</p>}
       {completed.isError && (
         <p role="alert" className="mt-6 text-danger">
           {completed.error instanceof Error
             ? completed.error.message
-            : '加载失败，检查服务是否在运行'}
+            : "Couldn't load. Check that the server is running."}
         </p>
       )}
-      {completed.isSuccess && rows.length === 0 && <EmptyState title="还没有完成的任务" />}
+      {completed.isSuccess && rows.length === 0 && <EmptyState title="Nothing finished yet" />}
       {days.map(({ day, tasks }) => (
         <section key={day} aria-label={dayHeading(day, today)} className="mt-8">
           <h2 className="text-sm font-semibold text-fg-muted">
@@ -131,7 +132,9 @@ export function Completed({ heading: showHeading = true }: { heading?: boolean }
           </ul>
         </section>
       ))}
-      {rows.length >= 200 && <p className="mt-8 text-sm text-fg-muted">只显示最近完成的 200 条</p>}
+      {rows.length >= 200 && (
+        <p className="mt-8 text-sm text-fg-muted">Showing the 200 most recently finished</p>
+      )}
       {openTask && (
         <TaskDetail
           key={openTask.id}

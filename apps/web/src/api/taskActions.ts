@@ -16,7 +16,7 @@ export const toggleDoneTarget = (s: TaskStatus): TaskStatus =>
   s === 'done' || s === 'cancelled' ? 'backlog' : 'done'
 
 /**
- * The cheap route to "正在做": start, or stop. Stopping lands on `todo` (it is still something to
+ * The cheap route to "Working on": start, or stop. Stopping lands on `todo` (it is still something to
  * do), again a simplification: it does not remember a `backlog` it may have come from.
  */
 export const toggleStartTarget = (s: TaskStatus): TaskStatus =>
@@ -56,7 +56,7 @@ export function useTaskActions(onError: (message: string) => void) {
     onError: (e, _vars, ctx) => {
       ctx?.tasks.forEach(([key, data]) => qc.setQueryData(key, data))
       qc.setQueryData(['today'], ctx?.today)
-      onError(e instanceof Error ? e.message : '修改失败')
+      onError(e instanceof Error ? e.message : "Couldn't save the change")
     },
     onSettled: async () => {
       await qc.invalidateQueries({ queryKey: ['today'] })

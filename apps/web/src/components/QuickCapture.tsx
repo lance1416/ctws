@@ -105,9 +105,9 @@ export function QuickCapture() {
             // isComposing: Enter confirms an IME candidate, it must not submit half a word.
             if (e.key === 'Enter' && !composing.composingNow(e)) submit()
           }}
-          placeholder="捕获…"
+          placeholder="Capture…"
           disabled={!fallback.target}
-          aria-label="捕获"
+          aria-label="Capture"
           className="h-9 w-full rounded-lg border border-border-strong bg-surface-panel pr-8 pl-3 text-sm text-fg placeholder:text-fg-muted disabled:opacity-50"
         />
         <kbd
@@ -119,19 +119,19 @@ export function QuickCapture() {
       </div>
       {missing && (
         <p role="alert" className="w-full text-sm text-danger">
-          没有找到收件箱，无法捕获
+          No inbox to capture into
         </p>
       )}
       {/* role="status", not "alert": on the projects page the list already raises its own alert
           for the same failed fetch, and two alerts would be announced (and matched) twice. */}
       {unavailable && (
         <p role="status" className="w-full text-sm text-danger">
-          暂时读不到收件箱
+          Inbox unavailable
         </p>
       )}
       {landed && (
         <p role="status" className="w-full truncate text-sm text-fg-muted">
-          已放入{' '}
+          Added to{' '}
           <Link to={landed.to} className="text-accent underline">
             {landed.name}
           </Link>
@@ -139,7 +139,7 @@ export function QuickCapture() {
       )}
       {capture.isError && (
         <p role="alert" className="w-full text-sm text-danger">
-          没能保存，再按一次回车重试
+          Couldn't save. Press Enter to try again.
         </p>
       )}
     </>

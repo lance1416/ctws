@@ -24,11 +24,11 @@ export function Workbench() {
   return (
     <>
       <h1 ref={heading} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
-        工作台
+        Workbench
       </h1>
 
       {/* Two columns where there is room for two, one where there is not. The modules' cards come
-          first and in registration order; the shell's own card sits under them, because 项目 is
+          first and in registration order; the shell's own card sits under them, because Projects is
           the thing you go INTO and the rest is what is already in front of you. */}
       {/* `items-start`: each card is as tall as what is in it. Stretching them to match the
           tallest leaves the shorter one with a pane of empty paper under it, which reads as
@@ -55,7 +55,7 @@ export function Workbench() {
 function SeeAll({ to }: { to: string }) {
   return (
     <Link to={to} className="rounded-lg text-sm text-fg-muted hover:text-fg">
-      看全部
+      See all
     </Link>
   )
 }
@@ -72,13 +72,13 @@ function ProjectsWidget() {
   const rows = (projects.data ?? []).filter((p) => !p.archivedAt)
 
   return (
-    <Panel label="项目" action={<SeeAll to="/projects" />}>
+    <Panel label="Projects" action={<SeeAll to="/projects" />}>
       {projects.isError && (
         <p role="alert" className="px-2 py-1.5 text-sm text-danger">
-          读不到项目
+          Couldn't load projects
         </p>
       )}
-      {projects.isSuccess && rows.length === 0 && <PanelEmpty>还没有项目</PanelEmpty>}
+      {projects.isSuccess && rows.length === 0 && <PanelEmpty>No projects yet</PanelEmpty>}
       <ul className="flex flex-wrap gap-x-5 gap-y-1 px-2">
         {rows.map((p) => (
           <li key={p.id} className="flex min-w-0 items-center gap-1.5">

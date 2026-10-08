@@ -65,7 +65,7 @@ function ContactsProjectView({ projectId }: { projectId: string }) {
       <ContactList
         contacts={contacts.data ?? []}
         here={projectId}
-        emptyLine="还没有联系人"
+        emptyLine="No contacts yet"
         onOpen={(c) => setOpenId(c.id)}
       />
       {open && <ContactDetail contact={open} onClose={() => setOpenId(null)} />}
@@ -75,12 +75,14 @@ function ContactsProjectView({ projectId }: { projectId: string }) {
 
 export const contactModule: WorkspaceModule = {
   id: ID,
-  label: '联系人',
-  destinations: [{ id: 'list', to: `/${ID}`, label: '联系人', zone: 'kept' }],
+  label: 'Contacts',
+  destinations: [{ id: 'list', to: `/${ID}`, label: 'Contacts', zone: 'kept' }],
   routes: [{ index: true, element: <Contacts /> }],
   search: { useHits: useContactHits },
   // `n` for 人. One keyspace across modules, so this is checked against every other chord.
-  chords: [{ id: 'contacts', key: 'n', label: '去「联系人」', resolve: () => `/${ID}`, order: 17 }],
+  chords: [
+    { id: 'contacts', key: 'n', label: 'Go to Contacts', resolve: () => `/${ID}`, order: 17 },
+  ],
   ProjectView: ContactsProjectView,
   relations: [{ type: 'contact', to: () => `/${ID}` }],
 }

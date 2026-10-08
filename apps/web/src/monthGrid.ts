@@ -1,3 +1,5 @@
+import { MONTHS } from './dueAt'
+
 /**
  * THE MONTH GRID's arithmetic, kept away from the component that draws it.
  *
@@ -7,7 +9,7 @@
  */
 
 /** Monday-first, like the weekly review's week. */
-export const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日'] as const
+export const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const
 
 const parse = (day: string): [number, number, number] =>
   day.split('-').map(Number) as [number, number, number]
@@ -40,7 +42,7 @@ export const monthOf = (day: string): string => day.slice(0, 7)
 /** 「2026年10月」 */
 export function monthTitle(day: string): string {
   const [y, m] = parse(day)
-  return `${y}年${m}月`
+  return `${MONTHS[m - 1]} ${y}`
 }
 
 /**

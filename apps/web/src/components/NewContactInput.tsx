@@ -14,7 +14,7 @@ import { useComposing } from '../composition'
 export function NewContactInput({
   projectId,
   onCreated,
-  placeholder = '新建联系人',
+  placeholder = 'New contact',
 }: {
   /** The project a person made here is on, when made from inside one. */
   projectId?: string | undefined
@@ -54,7 +54,7 @@ export function NewContactInput({
       />
       {create.isError && (
         <p role="alert" className="mt-1 text-sm text-danger">
-          没能新建，再按一次回车重试
+          Couldn't create. Press Enter to try again.
         </p>
       )}
     </div>

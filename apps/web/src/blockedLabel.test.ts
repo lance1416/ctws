@@ -10,13 +10,13 @@ describe('blockedLabel', () => {
   })
 
   it('names the one blocker, because naming it answers the question on the spot', () => {
-    expect(blockedLabel([b('跑通 CI')])).toBe('被「跑通 CI」挡着')
+    expect(blockedLabel([b('跑通 CI')])).toBe('Blocked by “跑通 CI”')
   })
 
   it('names the first and COUNTS THEM ALL, not the ones it did not name', () => {
     // 「等 3 件事」 with three blockers; an off-by-one here would read as two.
     expect(blockedLabel([b('跑通 CI'), b('写迁移'), b('补测试')])).toBe(
-      '被「跑通 CI」等 3 件事挡着',
+      'Blocked by “跑通 CI” and 2 more',
     )
   })
 })

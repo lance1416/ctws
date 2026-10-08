@@ -8,7 +8,7 @@ const project = (over: Partial<ProjectResponse>): ProjectResponse =>
 describe('inboxOf', () => {
   it('finds the flagged project wherever it is, ignoring a decoy named Inbox', () => {
     const decoy = project({ id: 'decoy', name: 'Inbox', isInbox: false })
-    const real = project({ id: 'real', name: '收件箱', isInbox: true })
+    const real = project({ id: 'real', name: 'Inbox', isInbox: true })
     expect(inboxOf([project({ id: 'a', name: 'a' }), decoy, real])?.id).toBe('real')
   })
 

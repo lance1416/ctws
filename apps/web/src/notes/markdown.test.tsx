@@ -11,7 +11,7 @@ import { noteSchema } from './schema'
  * "a heading becomes an h2" but "this specific injection does not become an element". There are two
  * defences (see `schema.ts`) and they are tested SEPARATELY, because the first one masks the second:
  *
- *   `describe('a note's own Markdown')` goes through the real component, which has no `rehype-raw`,
+ *   `describe("a note's own Markdown")` goes through the real component, which has no `rehype-raw`,
  *   so an HTML tag in the source is printed as characters.
  *
  *   `describe('the sanitiser itself')` hands the schema a hast tree that ALREADY contains the
@@ -43,8 +43,8 @@ describe("a note's own Markdown", () => {
     // GFM's `<input type=checkbox disabled>` is replaced by a labelled mark: reading mode is
     // pinned to contain NOT ONE control, and that must not become conditional on a note's text.
     expect(html).not.toContain('<input')
-    expect(html).toContain('aria-label="已勾选"')
-    expect(html).toContain('aria-label="未勾选"')
+    expect(html).toContain('aria-label="Checked"')
+    expect(html).toContain('aria-label="Empty"')
   })
 
   it('renders a fenced code block with its language class', () => {

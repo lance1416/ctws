@@ -3,16 +3,16 @@ import { openProject, registerFreshUser, submitCreate } from './helpers'
 
 /** The row's focus carrier in the tree; its accessible name is the task title. */
 const handle = (page: Page, title: string) =>
-  page.getByRole('button', { name: `任务：${title}`, exact: true })
+  page.getByRole('button', { name: `Task: ${title}`, exact: true })
 
 const row = (page: Page, title: string) => page.getByRole('listitem').filter({ hasText: title })
 
-const searchBox = (page: Page) => page.getByRole('combobox', { name: '搜索' })
+const searchBox = (page: Page) => page.getByRole('combobox', { name: 'Search' })
 
 /** Creates a project through the UI and returns its url. */
 async function startProject(page: Page, name: string) {
-  await page.getByRole('link', { name: '项目' }).click()
-  await submitCreate(page, '新项目', name)
+  await page.getByRole('link', { name: 'Projects' }).click()
+  await submitCreate(page, 'New project', name)
   await openProject(page, name, true)
   return page.url()
 }
@@ -52,7 +52,7 @@ async function query(page: Page, text: string) {
  * these helpers are used to assert -- the text, the breadcrumb, the click, the reveal -- is unchanged.
  */
 const result = (page: Page, title: string) =>
-  page.getByRole('dialog', { name: '搜索' }).getByRole('option').filter({ hasText: title })
+  page.getByRole('dialog', { name: 'Search' }).getByRole('option').filter({ hasText: title })
 
 // The case the browser's own Ctrl+F cannot do: a collapsed row is not in the DOM at all, so there
 // is nothing on the page for the browser to find. If this test ever passes with the subtree left
@@ -71,15 +71,15 @@ test('search finds a task inside a collapsed subtree and leaves it visible and f
   await expect(page.getByRole('listitem')).toHaveCount(3)
 
   // Fold the top of the chain: both descendants leave the DOM.
-  await row(page, '外层').getByRole('button', { name: '折叠' }).click()
+  await row(page, '外层').getByRole('button', { name: 'Collapse' }).click()
   await expect(page.getByRole('listitem')).toHaveCount(1)
   await expect(handle(page, '藏起来的针')).toHaveCount(0)
   // And the browser could not find it either: the text is not on the page.
   expect(await page.locator('body').innerText()).not.toContain('藏起来的针')
 
   // Leave the project entirely, so nothing about this is "already on the right page".
-  await page.getByRole('link', { name: '今天' }).click()
-  await expect(page.getByRole('heading', { level: 1, name: '今天' })).toBeVisible()
+  await page.getByRole('link', { name: 'Today' }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'Today' })).toBeVisible()
 
   await page.keyboard.press('f')
   await query(page, '针')
@@ -94,12 +94,12 @@ test('search finds a task inside a collapsed subtree and leaves it visible and f
   // Focus lands on it, so the very next keystroke acts on the task that was looked for.
   await expect(target).toBeFocused()
   // Both ancestors were unfolded, not just the one that was clicked.
-  await expect(row(page, '外层').getByRole('button', { name: '展开' })).toHaveCount(0)
-  await expect(row(page, '中层').getByRole('button', { name: '展开' })).toHaveCount(0)
+  await expect(row(page, '外层').getByRole('button', { name: 'Expand' })).toHaveCount(0)
+  await expect(row(page, '中层').getByRole('button', { name: 'Expand' })).toHaveCount(0)
 
   // The reveal is consumed: the url is clean, so folding it again is not undone on the next render.
   await expect(page).not.toHaveURL(/reveal=/)
-  await row(page, '外层').getByRole('button', { name: '折叠' }).click()
+  await row(page, '外层').getByRole('button', { name: 'Collapse' }).click()
   await expect(page.getByRole('listitem')).toHaveCount(1)
 })
 
@@ -152,7 +152,7 @@ test('search shows the parent breadcrumb and the status, and skips deleted tasks
   // `项目 › 父任务`, exactly as the today and completed lists write it.
   await expect(result(page, 'hint 的子任务')).toContainText('Ctx › 迁移计划')
   // A finished task is findable on purpose -- and says so, so it is not mistaken for live work.
-  await expect(result(page, 'hint 已完成')).toContainText('已完成')
+  await expect(result(page, 'hint 已完成')).toContainText('Done')
   // Deleted is the one thing search does not return.
   await expect(result(page, 'hint 删掉的')).toHaveCount(0)
 })
@@ -244,16 +244,16 @@ test('Escape closes search, and f typed into a text field does not open it', asy
 
   // Opened from the header button instead: closing returns focus to it rather than dropping to
   // <body> (WCAG 2.4.3), which is the behaviour the rest of this app already holds to.
-  await page.getByRole('button', { name: '搜索' }).click()
+  await page.getByRole('button', { name: 'Search' }).click()
   await expect(searchBox(page)).toBeFocused()
   await page.keyboard.press('Escape')
-  await expect(page.getByRole('button', { name: '搜索' })).toBeFocused()
+  await expect(page.getByRole('button', { name: 'Search' })).toBeFocused()
 
   // The guard every document-level key needs: in the capture box, `f` is a letter.
-  await page.getByLabel('捕获').fill('')
-  await page.getByLabel('捕获').press('f')
+  await page.getByLabel('Capture').fill('')
+  await page.getByLabel('Capture').press('f')
   await expect(searchBox(page)).toHaveCount(0)
-  await expect(page.getByLabel('捕获')).toHaveValue('f')
+  await expect(page.getByLabel('Capture')).toHaveValue('f')
 })
 
 /**

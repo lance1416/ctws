@@ -28,7 +28,7 @@ import { useComposing } from '../composition'
 /**
  * THE TASK MODULE: everything the shell used to have written into it.
  *
- * 「今天」and 「已完成」live here, not in the shell: they are defined by task semantics (overdue,
+ * “Today”and “Done”live here, not in the shell: they are defined by task semantics (overdue,
  * scheduled, in progress). A cross-module "today" is a separate idea and is not borrowed against
  * here (module-boundary contract §3). The shell only offers the SLOT.
  */
@@ -72,11 +72,11 @@ function DoingWidget() {
   if (today.isError) {
     return (
       <p role="alert" className="px-2 py-1.5 text-sm text-danger">
-        读不到今天的任务
+        Couldn't load today's tasks
       </p>
     )
   }
-  if (today.isSuccess && doing.length === 0) return <PanelEmpty>没有在做的事</PanelEmpty>
+  if (today.isSuccess && doing.length === 0) return <PanelEmpty>Nothing in progress</PanelEmpty>
   return (
     <ul className="min-w-0">
       {doing.map((t) => (
@@ -115,11 +115,11 @@ function DueWidget() {
   if (today.isError) {
     return (
       <p role="alert" className="px-2 py-1.5 text-sm text-danger">
-        读不到今天的任务
+        Couldn't load today's tasks
       </p>
     )
   }
-  if (today.isSuccess && rows.length === 0) return <PanelEmpty>今天没有到期的</PanelEmpty>
+  if (today.isSuccess && rows.length === 0) return <PanelEmpty>Nothing due today</PanelEmpty>
   return (
     <ul className="min-w-0">
       {[...late, ...rest].slice(0, WIDGET_ROWS).map((t) => (
@@ -129,11 +129,11 @@ function DueWidget() {
             className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(t.projectId)}`}
           />
           <span className="min-w-0 flex-1 truncate text-sm text-fg">{t.title}</span>
-          {t.segment === 'overdue' && <span className="shrink-0 text-xs text-missed">逾期</span>}
+          {t.segment === 'overdue' && <span className="shrink-0 text-xs text-missed">Overdue</span>}
         </li>
       ))}
       {rows.length > WIDGET_ROWS && (
-        <li className="px-2 py-1 text-xs text-fg-subtle">还有 {rows.length - WIDGET_ROWS} 件</li>
+        <li className="px-2 py-1 text-xs text-fg-subtle">{rows.length - WIDGET_ROWS} more</li>
       )}
     </ul>
   )
@@ -187,7 +187,7 @@ function useTaskHits(query: string) {
     meta: (
       <>
         {t.parentTitle === null ? t.projectName : `${t.projectName} › ${t.parentTitle}`}
-        {t.projectArchived && ' · 已归档'}
+        {t.projectArchived && ' · archived'}
       </>
     ),
     mark: <StatusMark status={t.status} />,
@@ -245,17 +245,17 @@ function ProjectNumbers({ projectId }: { projectId: string }) {
   return (
     <StatRow>
       {/* NO BAR, only the number (workbench spec §5 still stands). A 60% line and a 60% line that
-          nobody has touched for three weeks draw the same bar; 最后活动 beside it is the metric
+          nobody has touched for three weeks draw the same bar; Last activity beside it is the metric
           §7.4 calls the valuable one, and it is already in this row. */}
-      {progress !== null && <Stat label="进度" value={`${Math.round(progress * 100)}%`} />}
-      <Stat label="未完成" value={row.remaining} />
-      <Stat label="本周完成" value={row.doneThisWeek} />
+      {progress !== null && <Stat label="Progress" value={`${Math.round(progress * 100)}%`} />}
+      <Stat label="Open" value={row.remaining} />
+      <Stat label="Done this week" value={row.doneThisWeek} />
       {/* The one number that is allowed a hue, and it is the row system's own `missed`: a deadline
-          that has gone. Zero stays plain, because "0 逾期" is not a warning. */}
-      <Stat label="逾期" value={row.overdue} tone={row.overdue > 0 ? 'missed' : 'fg'} />
+          that has gone. Zero stays plain, because "0 overdue" is not a warning. */}
+      <Stat label="Overdue" value={row.overdue} tone={row.overdue > 0 ? 'missed' : 'fg'} />
       <Stat
-        label="最后活动"
-        value={row.lastActivityOn ? dayPhrase(row.lastActivityOn, today) : '还没有'}
+        label="Last activity"
+        value={row.lastActivityOn ? dayPhrase(row.lastActivityOn, today) : 'None yet'}
       />
     </StatRow>
   )
@@ -292,7 +292,7 @@ function NewTaskAction({ projectId }: { projectId: string }) {
         onClick={() => setCreating(true)}
         className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-2 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
       >
-        新建…
+        New…
         <kbd
           aria-hidden="true"
           className="pointer-events-none rounded border border-border-subtle px-1.5 text-xs leading-5 text-fg-subtle max-sm:hidden"
@@ -326,7 +326,7 @@ function ProjectTasks({ projectId, view }: { projectId: string; view: string }) 
 
   return (
     <>
-      {/* THE FAST PATH, ALONE. 新建… used to sit right beside this box, which made the two ways
+      {/* THE FAST PATH, ALONE. New… used to sit right beside this box, which made the two ways
           in one control group and so made having two of them pointless -- whichever you reached
           for, you reached to the same place. The full form is the BLOCK's action now and lives in
           the block's head (`NewTaskAction`), where every block's "new" is. A line typed here and
@@ -339,8 +339,8 @@ function ProjectTasks({ projectId, view }: { projectId: string; view: string }) 
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !composing.composingNow(e)) submit()
           }}
-          placeholder="新任务"
-          aria-label="新任务"
+          placeholder="New task"
+          aria-label="New task"
           aria-invalid={create.isError ? true : undefined}
           aria-describedby={create.isError ? failureId : undefined}
           // Inside the panel now, so it leads the rows rather than hanging under a page heading.
@@ -354,7 +354,7 @@ function ProjectTasks({ projectId, view }: { projectId: string; view: string }) 
           title is still in the box: what was typed is the user's, not the request's. */}
       {create.isError && (
         <p id={failureId} role="alert" className="mt-1 ml-3 text-sm text-danger">
-          没能创建，再按一次回车重试。
+          Couldn't create. Press Enter to try again.
         </p>
       )}
       {/* The board is a VIEW of this block, not a page: the one-line box above stays, because
@@ -370,11 +370,11 @@ function ProjectTasks({ projectId, view }: { projectId: string; view: string }) 
 
 export const taskModule: WorkspaceModule = {
   id: ID,
-  label: '任务',
+  label: 'Tasks',
   destinations: [
-    { id: 'today', to: at('today'), label: '今天', end: true, Count: TodayCount, order: 20 },
+    { id: 'today', to: at('today'), label: 'Today', end: true, Count: TodayCount, order: 20 },
     // 已完成 is a VIEW of 回顾 now, not a destination of its own: both answer 「我做了什么」.
-    { id: 'review', to: at('review'), label: '回顾', end: false, zone: 'back' },
+    { id: 'review', to: at('review'), label: 'Review', end: false, zone: 'back' },
   ],
   routes: [
     { path: 'today', element: <Today /> },
@@ -384,12 +384,12 @@ export const taskModule: WorkspaceModule = {
   capture: { useTarget: useInboxCapture },
   search: { useHits: useTaskHits },
   chords: [
-    { id: 'today', key: 't', label: '去「今天」', resolve: () => at('today'), order: 10 },
-    { id: 'review', key: 'r', label: '去「回顾」', resolve: () => at('review'), order: 40 },
+    { id: 'today', key: 't', label: 'Go to Today', resolve: () => at('today'), order: 10 },
+    { id: 'review', key: 'r', label: 'Go to Review', resolve: () => at('review'), order: 40 },
     {
       id: 'inbox',
       key: 'i',
-      label: '去收件箱',
+      label: 'Go to Inbox',
       // Read from the cache at keypress time rather than through a hook: the inbox is a row in the
       // database, and the rail and the capture box have both already loaded ['projects'] by the
       // time anyone can press a key. Unresolved means "do nothing", exactly as before.
@@ -404,13 +404,13 @@ export const taskModule: WorkspaceModule = {
     },
   ],
   views: [
-    { id: 'list', label: '列表' },
-    { id: 'board', label: '看板' },
+    { id: 'list', label: 'List' },
+    { id: 'board', label: 'Board' },
   ],
-  calendar: { label: '任务', useEntries: useTaskEntries },
+  calendar: { label: 'Tasks', useEntries: useTaskEntries },
   widgets: [
-    { id: 'doing', label: '正在做', to: at('today'), Component: DoingWidget },
-    { id: 'due', label: '今天要紧的', to: at('today'), Component: DueWidget },
+    { id: 'doing', label: 'Working on', to: at('today'), Component: DoingWidget },
+    { id: 'due', label: 'Due today', to: at('today'), Component: DueWidget },
   ],
   ProjectView: ProjectTasks,
   ProjectViewAction: NewTaskAction,

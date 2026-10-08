@@ -17,8 +17,8 @@ import { useTimeZone } from '../useMe'
  * claim on today.
  */
 const SECTIONS: { status: ReadingStatus; label: string }[] = [
-  { status: 'reading', label: '在读' },
-  { status: 'todo', label: '待读' },
+  { status: 'reading', label: 'Reading now' },
+  { status: 'todo', label: 'Reading' },
 ]
 
 export function Reading() {
@@ -38,7 +38,7 @@ export function Reading() {
     <>
       <div className="flex items-center justify-between gap-3">
         <h1 ref={heading} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
-          待读
+          Reading
         </h1>
       </div>
 
@@ -48,13 +48,15 @@ export function Reading() {
         <AddReading />
       </div>
 
-      {items.isPending && <p className="mt-6 text-fg-muted">加载中…</p>}
+      {items.isPending && <p className="mt-6 text-fg-muted">Loading…</p>}
       {items.isError && (
         <p role="alert" className="mt-6 text-danger">
-          {items.error instanceof Error ? items.error.message : '加载失败，检查服务是否在运行'}
+          {items.error instanceof Error
+            ? items.error.message
+            : "Couldn't load. Check that the server is running."}
         </p>
       )}
-      {items.isSuccess && rows.length === 0 && <EmptyState title="清单是空的" />}
+      {items.isSuccess && rows.length === 0 && <EmptyState title="The list is empty" />}
 
       {SECTIONS.map(({ status, label }) => {
         const section = of(status)
@@ -84,7 +86,7 @@ export function Reading() {
             onClick={() => setShowFinished((v) => !v)}
             className="rounded-lg text-sm text-fg-muted hover:text-fg"
           >
-            读完的 <span className="tabular-nums">{finished.length}</span>
+            Finished <span className="tabular-nums">{finished.length}</span>
           </button>
           {showFinished && (
             <ul className={`mt-1 ${LIST_MEASURE}`}>
@@ -97,7 +99,7 @@ export function Reading() {
       )}
 
       {items.isSuccess && rows.length > 0 && open.length === 0 && finished.length > 0 && (
-        <p className="mt-8 text-fg-muted">清单读完了。</p>
+        <p className="mt-8 text-fg-muted">You are through the list.</p>
       )}
     </>
   )

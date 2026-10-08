@@ -36,7 +36,7 @@ export function StatusPicker({
         disabled={disabled}
         // The accessible name carries the CURRENT value, so a screen reader hears what the status
         // is as well as what the control does -- this one button is both.
-        aria-label={`状态：${STATUS_LABEL[status]}`}
+        aria-label={`Status: ${STATUS_LABEL[status]}`}
         data-status-picker
         className="-mx-1.5 flex h-8 items-center gap-2 rounded-lg px-1.5 text-sm text-fg hover:bg-surface-hover disabled:opacity-50"
       >
@@ -71,7 +71,7 @@ export function StatusPicker({
                 <StatusMark status={s} />
               </span>
               {STATUS_LABEL[s]}
-              {s === status && <span className="ml-auto text-xs text-fg-subtle">当前</span>}
+              {s === status && <span className="ml-auto text-xs text-fg-subtle">Current</span>}
             </DropdownMenu.Item>
           ))}
         </DropdownMenu.Content>

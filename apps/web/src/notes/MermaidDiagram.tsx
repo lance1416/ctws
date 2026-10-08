@@ -95,7 +95,7 @@ export default function MermaidDiagram({ source }: { source: string }) {
         // A diagram that does not parse is a typo in a note, not a broken app. Say so, and keep
         // the source visible so the typo can be found.
         if (!live) return
-        setFailure(err instanceof Error ? err.message : '图表无法渲染')
+        setFailure(err instanceof Error ? err.message : "Couldn't draw the diagram")
         setState('failed')
       }
     })()
@@ -106,10 +106,10 @@ export default function MermaidDiagram({ source }: { source: string }) {
 
   return (
     <>
-      {state === 'drawing' && <p className="my-3 text-sm text-fg-subtle">正在画图…</p>}
+      {state === 'drawing' && <p className="my-3 text-sm text-fg-subtle">Drawing…</p>}
       {state === 'failed' && (
         <div className="my-3">
-          <p className="text-sm text-missed">图表无法渲染：{failure}</p>
+          <p className="text-sm text-missed">Couldn't draw the diagram: {failure}</p>
           <pre className="mt-1 overflow-x-auto rounded-lg bg-surface-sunken p-3 text-sm">
             <code>{source}</code>
           </pre>

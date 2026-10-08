@@ -23,7 +23,7 @@ export function dayOffset(n: number): string {
   return ymd(d)
 }
 
-/** The Monday the app's 「排到下周」 means: the next one, never today. */
+/** The Monday the app's "Plan for next week" means: the next one, never today. */
 export function nextMondayYmd(): string {
   const d = new Date()
   d.setDate(d.getDate() + (d.getDay() === 0 ? 1 : 8 - d.getDay()))

@@ -141,8 +141,17 @@ test('re-opening the app does not re-download the font', async ({ page, context 
 
 test('Chinese is painted with the shipped subset, not a system fallback', async ({ page }) => {
   await registerFreshUser(page)
+  // The interface is in English, so the h1 that used to carry Chinese no longer does. A project
+  // NAME still can -- the font has to cover what the person types, which is the thing this test
+  // is really about.
+  const made = await page.request.post('/api/v1/projects', {
+    headers: { 'x-ctws-client': 'web' },
+    data: { name: '配色重做' },
+  })
+  expect(made.ok()).toBe(true)
+  await page.goto(`/projects/${(await made.json()).id}`)
   await fontReady(page)
-  const heading = page.getByRole('heading', { level: 1, name: '今天' })
+  const heading = page.getByRole('heading', { level: 1, name: '配色重做' })
   await expect(heading).toBeVisible()
 
   // Computed style only echoes the CSS. This asks Chrome which font file it actually rasterised

@@ -15,7 +15,7 @@ export type Federated = {
   rows: FederatedHit[]
   /** Any provider failed. One failure is reported; the dialog does not pretend it is complete. */
   isError: boolean
-  /** Every provider answered. A half-answered search must not say "没有匹配的任务". */
+  /** Every provider answered. A half-answered search must not say "No matching tasks". */
   isSuccess: boolean
   /**
    * Whether a row has to name the module it came from. With one provider the name would be noise

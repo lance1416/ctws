@@ -21,11 +21,11 @@ async function project(page: Page, name: string): Promise<string> {
 test('signing in lands on the workbench, not inside a module', async ({ page }) => {
   await registerFreshUser(page, '/')
   await expect(page).toHaveURL(/\/$/)
-  await expect(page.getByRole('heading', { name: '工作台', level: 1 })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Workbench', level: 1 })).toBeVisible()
   // Every module has a card here, and the shell has its own.
-  await expect(card(page, '正在做')).toBeVisible()
-  await expect(card(page, '待读 · 散的')).toBeVisible()
-  await expect(card(page, '项目')).toBeVisible()
+  await expect(card(page, 'Working on')).toBeVisible()
+  await expect(card(page, 'Reading · unfiled')).toBeVisible()
+  await expect(card(page, 'Projects')).toBeVisible()
 })
 
 test('the 待读 card holds only what belongs to no project', async ({ page }) => {
@@ -41,7 +41,7 @@ test('the 待读 card holds only what belongs to no project', async ({ page }) =
   })
   await page.goto('/')
 
-  const reading = card(page, '待读 · 散的')
+  const reading = card(page, 'Reading · unfiled')
   await expect(reading).toContainText('散着的书')
   // THE DIVISION OF LABOUR: what is filed under a project lives on that project's page, and this
   // card does not repeat it.
@@ -65,7 +65,7 @@ test('an item whose project was deleted turns up on the card rather than nowhere
   })
   await page.request.delete(`/api/v1/projects/${pid}`, { headers: HEADERS })
   await page.goto('/')
-  await expect(card(page, '待读 · 散的')).toContainText('留下来的书')
+  await expect(card(page, 'Reading · unfiled')).toContainText('留下来的书')
 })
 
 test('the 正在做 card shows what is in progress, across projects', async ({ page }) => {
@@ -86,7 +86,7 @@ test('the 正在做 card shows what is in progress, across projects', async ({ p
   await task(a, '还没开始的')
   await page.goto('/')
 
-  const doing = card(page, '正在做')
+  const doing = card(page, 'Working on')
   await expect(doing).toContainText('配色重做')
   await expect(doing).toContainText('跑通 CI')
   await expect(doing).not.toContainText('还没开始的')
@@ -100,5 +100,5 @@ test('g w goes to the workbench, and it is the shell own key', async ({ page }) 
   await page.keyboard.press('g')
   await page.keyboard.press('w')
   await expect(page).toHaveURL(/\/$/)
-  await expect(page.getByRole('heading', { name: '工作台', level: 1 })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Workbench', level: 1 })).toBeVisible()
 })

@@ -15,7 +15,7 @@ const TASK_LIST: RouteUrl = (url) =>
 
 /** The row's drag handle and keyboard focus carrier; its accessible name is the task title. */
 const handle = (page: Page, title: string) =>
-  page.getByRole('button', { name: `任务：${title}`, exact: true })
+  page.getByRole('button', { name: `Task: ${title}`, exact: true })
 
 /** Resolves when a move request has been answered successfully, i.e. it is persisted. */
 function movePersisted(page: Page) {
@@ -32,16 +32,16 @@ function recordMoves(page: Page) {
 }
 
 async function startProject(page: Page) {
-  await page.getByRole('link', { name: '项目' }).click()
-  await submitCreate(page, '新项目', 'P')
+  await page.getByRole('link', { name: 'Projects' }).click()
+  await submitCreate(page, 'New project', 'P')
   await openProject(page, 'P', true)
   return page.url()
 }
 
 /** Adds a root task through the new-task box and waits until it shows. */
 async function addTask(page: Page, title: string) {
-  await submitCreate(page, '新任务', title)
-  await expect(page.getByPlaceholder('新任务')).toHaveValue('')
+  await submitCreate(page, 'New task', title)
+  await expect(page.getByPlaceholder('New task')).toHaveValue('')
   await expect(page.getByRole('listitem').filter({ hasText: title })).toBeVisible()
 }
 
@@ -222,8 +222,8 @@ test('a move shows at once, and a rejected one rolls back visibly', async ({ pag
 
 test('a captured task shows up in the inbox tree', async ({ page }) => {
   await registerFreshUser(page)
-  await submitCreate(page, '捕获…', '买咩6')
-  await page.getByRole('link', { name: '项目' }).click()
+  await submitCreate(page, 'Capture…', '买咩6')
+  await page.getByRole('link', { name: 'Projects' }).click()
   await openProject(page, 'Inbox')
   await expect(page.getByRole('listitem').filter({ hasText: '买咩6' })).toBeVisible()
 })
@@ -281,7 +281,7 @@ test('dragging a parent onto its own child is refused and sends no move', async 
 
   await dragOnto(page, 'pp', 'c1')
 
-  await expect(page.getByRole('alert')).toHaveText('不能把任务移到它自己的子任务里')
+  await expect(page.getByRole('alert')).toHaveText('A task cannot move inside itself')
   // Absence is only meaningful after giving a wrongly-sent request time to leave the page.
   await page.waitForTimeout(500)
   expect(moves).toEqual([])
@@ -344,7 +344,7 @@ test('Alt+Down past a collapsed sibling lands after it', async ({ page }) => {
     ['cc', null],
   ])
   const rows = page.getByRole('listitem')
-  await page.getByRole('button', { name: '折叠' }).click()
+  await page.getByRole('button', { name: 'Collapse' }).click()
   await expect(rows).toHaveText([/aa/, /bb/, /cc/])
 
   await handle(page, 'aa').focus()
@@ -353,7 +353,7 @@ test('Alt+Down past a collapsed sibling lands after it', async ({ page }) => {
   await persisted
   await expect(rows).toHaveText([/bb/, /aa/, /cc/])
 
-  await page.getByRole('button', { name: '展开' }).click()
+  await page.getByRole('button', { name: 'Expand' }).click()
   await expect(rows).toHaveText([/bb/, /bkid/, /aa/, /cc/])
   expect(await serverParents(page, url)).toEqual({ aa: null, bb: null, bkid: 'bb', cc: null })
 })
@@ -371,7 +371,7 @@ test('Alt+Right under a collapsed row opens it and keeps the moved row visible',
     ['bb', null],
   ])
   const rows = page.getByRole('listitem')
-  await page.getByRole('button', { name: '折叠' }).click()
+  await page.getByRole('button', { name: 'Collapse' }).click()
   await expect(rows).toHaveText([/aa/, /bb/])
 
   await handle(page, 'bb').focus()
@@ -398,7 +398,7 @@ test('dragging a row right under a collapsed row opens it and keeps the row visi
     ['bb', null],
   ])
   const rows = page.getByRole('listitem')
-  await page.getByRole('button', { name: '折叠' }).click()
+  await page.getByRole('button', { name: 'Collapse' }).click()
   await expect(rows).toHaveText([/aa/, /bb/])
 
   const box = await handle(page, 'bb').boundingBox()
@@ -442,14 +442,14 @@ test('collapsing hides the descendants and the fold survives a reload', async ({
   const rows = page.getByRole('listitem')
   await expect(rows).toHaveCount(2)
 
-  await page.getByRole('button', { name: '折叠' }).click()
+  await page.getByRole('button', { name: 'Collapse' }).click()
   await expect(rows).toHaveCount(1)
 
   await page.goto(url)
   await expect(rows.filter({ hasText: 'pa' })).toBeVisible()
   await expect(rows).toHaveCount(1)
 
-  await page.getByRole('button', { name: '展开' }).click()
+  await page.getByRole('button', { name: 'Expand' }).click()
   await expect(rows).toHaveCount(2)
   await expect(rows.filter({ hasText: 'kid' })).toBeVisible()
 })
@@ -468,7 +468,7 @@ test('a stale collapsed id on a leaf draws no chevron', async ({ page }) => {
 
   await page.goto(url)
   await expect(page.getByRole('listitem').filter({ hasText: 'leaf' })).toBeVisible()
-  await expect(page.getByRole('button', { name: /展开|折叠/ })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /Expand|Collapse/ })).toHaveCount(0)
 })
 
 // Not reachable from the keyboard (Alt+arrows can only produce clamped, legal depths), so this
@@ -483,7 +483,7 @@ test('a too-deep drop shows a message and sends no move', async ({ page }) => {
 
   await dragOnto(page, 'xx', 'chain10')
 
-  await expect(page.getByRole('alert')).toHaveText('层级太深，无法移到那里')
+  await expect(page.getByRole('alert')).toHaveText('Too deep to move it there')
   // Absence is only meaningful after giving a wrongly-sent request time to leave the page.
   await page.waitForTimeout(500)
   expect(moves).toEqual([])
@@ -516,15 +516,15 @@ async function holdFirstListFetch(page: Page, glob: RouteUrl = TASK_LIST) {
 // refetch after the create has to start a NEW request rather than be absorbed by the stale one.
 test('a task created while the project is still loading appears', async ({ page }) => {
   await registerFreshUser(page)
-  await page.getByRole('link', { name: '项目' }).click()
-  await submitCreate(page, '新项目', 'P')
+  await page.getByRole('link', { name: 'Projects' }).click()
+  await submitCreate(page, 'New project', 'P')
 
   const { release, heldStale } = await holdFirstListFetch(page)
   // Scoped to <main>: the left rail lists every project by name too, so an unscoped
   // project-name locator now matches twice. The centre column is the list under test.
   await page.getByRole('main').getByText('P', { exact: true }).click()
   await heldStale
-  await submitCreate(page, '新任务', 'typed early')
+  await submitCreate(page, 'New task', 'typed early')
   release()
 
   await expect(page.getByRole('listitem').filter({ hasText: 'typed early' })).toBeVisible()
@@ -532,13 +532,13 @@ test('a task created while the project is still loading appears', async ({ page 
 
 test('a capture made while the inbox is still loading appears', async ({ page }) => {
   await registerFreshUser(page)
-  await page.getByRole('link', { name: '项目' }).click()
+  await page.getByRole('link', { name: 'Projects' }).click()
   await expect(page.getByRole('main').getByText('Inbox')).toBeVisible()
 
   const { release, heldStale } = await holdFirstListFetch(page)
   await page.getByRole('main').getByText('Inbox').click()
   await heldStale
-  await submitCreate(page, '捕获…', 'captured early')
+  await submitCreate(page, 'Capture…', 'captured early')
   release()
 
   await expect(page.getByRole('listitem').filter({ hasText: 'captured early' })).toBeVisible()
@@ -551,7 +551,7 @@ test('a project created while the project list is still loading appears', async 
   const { release, heldStale } = await holdFirstListFetch(page, '**/api/v1/projects')
   await page.goto('/projects')
   await heldStale
-  await submitCreate(page, '新项目', 'typed early')
+  await submitCreate(page, 'New project', 'typed early')
   release()
 
   await expect(page.getByRole('main').getByRole('link', { name: 'typed early' })).toBeVisible()
@@ -566,7 +566,7 @@ test('a refused move puts the fold it opened back (D37)', async ({ page }) => {
     ['bb', null],
   ])
   const rows = page.getByRole('listitem')
-  await page.getByRole('button', { name: '折叠' }).click()
+  await page.getByRole('button', { name: 'Collapse' }).click()
   await expect(rows).toHaveText([/aa/, /bb/])
 
   // The drop unfolds `aa` so the moved row lands somewhere visible. The server then refuses it.

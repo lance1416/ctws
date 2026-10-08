@@ -42,7 +42,7 @@ const card = (page: Page, title: string) =>
 async function openBoard(page: Page, projectId: string) {
   await page.goto(`/projects/${projectId}`)
   await page.getByRole('listitem').first().waitFor()
-  await page.getByRole('tab', { name: '看板' }).click()
+  await page.getByRole('tab', { name: 'Board' }).click()
   await column(page, 'todo').waitFor()
 }
 
@@ -55,9 +55,9 @@ test('the board is a view of the task block, not a page of its own', async ({ pa
   // Same page, same block, same project banner above it. Only the rows are drawn differently.
   await expect(page).toHaveURL(new RegExp(`/projects/${pid}\\?view=tasks%3Aboard$`))
   await expect(page.getByRole('heading', { level: 1, name: '改版' })).toBeVisible()
-  await expect(page.getByRole('region', { name: '任务' })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Tasks' })).toBeVisible()
   // The one-line capture box stays: adding to this project is the same action either way.
-  await expect(page.getByRole('textbox', { name: '新任务' })).toBeVisible()
+  await expect(page.getByRole('textbox', { name: 'New task' })).toBeVisible()
   // And the tree is gone -- it is the other view, not a thing hidden under this one.
   await expect(page.locator('[data-task-tree]')).toHaveCount(0)
 })
@@ -70,12 +70,12 @@ test('the chosen view survives a reload, because it is in the URL', async ({ pag
 
   await page.reload()
   await expect(column(page, 'todo')).toBeVisible()
-  await expect(page.getByRole('tab', { name: '看板' })).toHaveAttribute('aria-selected', 'true')
+  await expect(page.getByRole('tab', { name: 'Board' })).toHaveAttribute('aria-selected', 'true')
 
   // Back to the list, and the parameter goes with it.
-  await page.getByRole('tab', { name: '列表' }).click()
+  await page.getByRole('tab', { name: 'List' }).click()
   await expect(page.locator('[data-task-tree]')).toBeVisible()
-  await expect(page.getByRole('tab', { name: '列表' })).toHaveAttribute('aria-selected', 'true')
+  await expect(page.getByRole('tab', { name: 'List' })).toHaveAttribute('aria-selected', 'true')
 })
 
 test('every task appears once, in its own column, with its parent named', async ({ page }) => {
@@ -131,6 +131,6 @@ test('an empty project says so once, not four times', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '空的')
   await page.goto(`/projects/${pid}?view=tasks:board`)
-  await expect(page.getByText('这个项目还没有任务')).toHaveCount(1)
+  await expect(page.getByText('No tasks in this project yet')).toHaveCount(1)
   await expect(page.locator('[data-board-column]')).toHaveCount(0)
 })

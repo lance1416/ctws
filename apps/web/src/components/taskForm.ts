@@ -9,7 +9,7 @@
  * in the form. Handing the SAME schema to `zodResolver` removes that second place: widen or narrow
  * the contract and both forms follow on the next render, with no edit here.
  *
- * What stays ours is the WORDING. A resolver reports `too_small`; 「请先写标题」 is a product
+ * What stays ours is the WORDING. A resolver reports `too_small`; “Title is required” is a product
  * decision and no schema will make it. So the schema decides WHETHER, and `titleProblem` decides
  * WHAT IT SAYS -- keyed on the issue code the schema produced, so a new kind of refusal cannot
  * silently inherit the wrong sentence.
@@ -66,6 +66,6 @@ export const PATCH_KEYS = Object.keys(updateTaskBody.shape) as (keyof UpdateTask
  */
 export function titleProblem(code: string | undefined): string | null {
   if (code === undefined) return null
-  if (code === 'too_big') return '标题太长了'
-  return '请先写标题'
+  if (code === 'too_big') return 'Title is too long'
+  return 'Title is required'
 }

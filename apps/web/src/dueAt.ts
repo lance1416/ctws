@@ -22,7 +22,7 @@ import {
  *
  * 2. THE WORDING is this product's and stays hand-written. 今天 / 明天 / 昨天, 「10月8日」, 「已逾 N
  *    天」, 「原定…，已顺延」, and the decision to say a deadline in TWO phrases rather than one, are
- *    editorial choices no library makes. `date-fns/locale/zh-CN` would replace them with its own.
+ *    editorial choices no library makes. A date-fns locale would replace them with its own.
  *
  * WHOSE TODAY. Every function that needs to know what day it is takes an explicit IANA `timeZone`
  * and the caller passes the ACCOUNT's (`useTimeZone`). It used to read `getFullYear()/getMonth()/
@@ -36,7 +36,7 @@ import {
 const DAY = 'yyyy-MM-dd'
 
 /**
- * The browser's own zone, for the one moment the account's is not known yet (the `['me']` query is
+ * The browser"s own zone, for the one moment the account's is not known yet (the `["me']` query is
  * in flight, or there is no session). It is a fallback and never a second answer: as soon as `me`
  * lands, `useTimeZone` returns the account's and every phrase is recomputed from it.
  */
@@ -72,22 +72,46 @@ const dayStart = (day: string) => new TZDate(`${day}T00:00:00Z`, 'UTC')
  */
 const utc = (d: Date) => new Date(d.getTime()).toISOString()
 
+/**
+ * A day phrase inside a sentence. "Today" and "Tomorrow" are words there, not proper nouns; a
+ * month name still is, so only the first letter is touched.
+ */
+const lower = (phrase: string) =>
+  /^(Today|Tomorrow|Yesterday)$/.test(phrase) ? phrase.toLowerCase() : phrase
+
 export function addDays(day: string, n: number): string {
   return format(addDaysFn(dayStart(day), n), DAY)
 }
 
-/** The Monday after `day` (always strictly later, so "下周" from a Monday is a week away). */
+/** The Monday after `day` (always strictly later, so "next week" from a Monday is a week away). */
 export function nextMonday(day: string): string {
   return format(nextMondayFn(dayStart(day)), DAY)
 }
 
-/** A calendar day as the reader says it: 今天 / 明天 / 昨天, else "10月8日" (with the year if it differs). */
+/** Month names, shared by every surface that prints a short date. */
+export const MONTHS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+] as const
+
+/** A calendar day as the reader says it: Today / Tomorrow / Yesterday, else "Oct 8" (with the year if it differs). */
 export function dayPhrase(day: string, today: string): string {
-  if (day === today) return '今天'
-  if (day === addDays(today, 1)) return '明天'
-  if (day === addDays(today, -1)) return '昨天'
-  const [y, m, d] = day.split('-').map(Number)
-  return today.slice(0, 4) === day.slice(0, 4) ? `${m}月${d}日` : `${y}年${m}月${d}日`
+  if (day === today) return 'Today'
+  if (day === addDays(today, 1)) return 'Tomorrow'
+  if (day === addDays(today, -1)) return 'Yesterday'
+  const [y, m, d] = day.split('-').map(Number) as [number, number, number]
+  const short = `${MONTHS[m - 1]} ${d}`
+  return today.slice(0, 4) === day.slice(0, 4) ? short : `${short}, ${y}`
 }
 
 /**
@@ -102,7 +126,7 @@ export function dayEndIso(day: string, timeZone: string): string {
 }
 
 /**
- * "已逾 N 天" for an overdue instant, counted in the account's calendar days: a task due late
+ * "N days late" for an overdue instant, counted in the account's calendar days: a task due late
  * yesterday is 1 day overdue, not 0, whatever the hour. Never less than 1, since a task is only
  * overdue once its due day has passed.
  */
@@ -111,20 +135,21 @@ export function overdueLabel(dueIso: string, timeZone: string, now: Date = new D
     new TZDate(now, timeZone),
     new TZDate(new Date(dueIso), timeZone),
   )
-  return `已逾 ${Math.max(1, days)} 天`
+  const days_ = Math.max(1, days)
+  return `${days_} day${days_ === 1 ? '' : 's'} late`
 }
 
 /**
  * HOW MANY CALENDAR DAYS AGO, in the account's zone. The arithmetic only; each module words it,
- * because 「3 天前捕获」 and 「3 天前加的」 are the same count said by different modules about
- * different things, and the shell owns the clock rather than the vocabulary.
+ * because "captured 3 days ago" and "added 3 days ago" are the same count said by different
+ * modules about different things, and the shell owns the clock rather than the vocabulary.
  */
 
 /**
- * 「3 天前捕获」-- how long something has been sitting in the inbox (D49), counted in the
+ * "Captured 3 days ago" -- how long something has been sitting in the inbox (D49), counted in the
  * account's calendar days like every other phrase here.
  *
- * A COUNT, not a date. `dayPhrase` would say 「10月1日捕获」, which answers a question nobody asked:
+ * A COUNT, not a date. `dayPhrase` would say "Captured Oct 1", which answers a question nobody asked:
  * the inbox is read to find what has gone stale, and "17 days" is that answer where "October 1st"
  * is arithmetic the reader has to do. Today and yesterday keep their names, because for those two
  * the count reads worse than the word.
@@ -139,9 +164,9 @@ export function capturedLabel(
   now: Date = new Date(),
 ): string {
   const days = daysAgoIn(createdIso, timeZone, now)
-  if (days <= 0) return '今天捕获'
-  if (days === 1) return '昨天捕获'
-  return `${days} 天前捕获`
+  if (days <= 0) return 'Captured today'
+  if (days === 1) return 'Captured yesterday'
+  return `Captured ${days} days ago`
 }
 
 /**
@@ -177,12 +202,12 @@ export function fromDayTimeInput(v: string, timeZone: string): string | null {
 }
 
 export type DateHints = {
-  /** "排到明天": present whenever the task has a scheduled day. */
+  /** "Planned for tomorrow": present whenever the task has a scheduled day. */
   scheduled: string | null
   /**
    * The deadline, worded in full and in TWO phrases: when it is, and -- once its day has gone --
    * how late it is. Two, not one string, because the row prints them as separate phrases: a single
-   * 「10月4日 12:30 截止 · 已逾 2 天」 could not be broken anywhere, and inside a 375px row at
+   * "Due Oct 4, 12:30 · 2 days late" could not be broken anywhere, and inside a 375px row at
    * depth 3 an unbreakable 230px phrase is a horizontal scrollbar. Read in order they are the one
    * sentence §2 asks for.
    */
@@ -196,14 +221,14 @@ export type DateHints = {
  *
  * `timeZone` is the ACCOUNT's, and it is not optional. The segment a task is in is decided by the
  * server in that zone; if this wording were worked out in the browser's instead, the two would
- * disagree whenever they differ -- the server filing a task under 逾期 while the row beneath its
- * own heading read 「明天截止」. Same zone, same answer.
+ * disagree whenever they differ -- the server filing a task under Overdue while the row beneath its
+ * own heading read "Due tomorrow". Same zone, same answer.
  *
  * THE WORDING IS COMPLETE, TO THE MINUTE (rows-and-reading §2, second edition). It lives on a line
  * of its own under the title now, not in an 8rem cell, so there is nothing to compress for: an
- * overdue deadline says WHEN it was -- 「10月4日 12:30 截止 · 已逾 2 天」 -- rather than only how
- * long ago. The previous edition shortened it to 「已逾 2 天」 because the cell was narrow, and the
- * user rejected exactly that compression: "已逾 2 天" cannot answer "due when?".
+ * overdue deadline says WHEN it was -- "Due Oct 4, 12:30 · 2 days late" -- rather than only how
+ * long ago. The previous edition shortened it to "2 days late" because the cell was narrow, and the
+ * user rejected exactly that compression: "2 days late" cannot answer "due when?".
  */
 export function dateHints(
   t: { status: string; dueAt: string | null; scheduledOn: string | null },
@@ -212,13 +237,13 @@ export function dateHints(
 ): DateHints {
   if (t.status === 'done' || t.status === 'cancelled') return { scheduled: null, due: null }
   const today = todayIn(timeZone, now)
-  const scheduled = t.scheduledOn ? `排到${dayPhrase(t.scheduledOn, today)}` : null
+  const scheduled = t.scheduledOn ? `Planned for ${lower(dayPhrase(t.scheduledOn, today))}` : null
   if (!t.dueAt) return { scheduled, due: null }
   const due = new TZDate(new Date(t.dueAt), timeZone)
   const dueDay = format(due, DAY)
-  const text = `${dayPhrase(dueDay, today)} ${format(due, 'HH:mm')} 截止`
+  const text = `Due ${lower(dayPhrase(dueDay, today))}, ${format(due, 'HH:mm')}`
   // Past its day: the same sentence, plus how long ago. Both halves, never one -- the day and the
-  // time say WHICH deadline this is, and "已逾 N 天" is the urgency.
+  // time say WHICH deadline this is, and "N days late" is the urgency.
   if (dueDay < today)
     return { scheduled, due: { text, late: overdueLabel(t.dueAt, timeZone, now), overdue: true } }
   return { scheduled, due: { text, late: null, overdue: false } }
@@ -230,7 +255,7 @@ export function dateHints(
  *
  * A list decides whether it reserves the leading icon slot from every one of its rows (`rowLead`),
  * and that decision must not be able to disagree with what the rows then render. `dateHints` reads
- * the clock to word the line ("已逾 5 天" against "明天 09:00 截止"), but whether there IS a
+ * the clock to word the line ("5 days late" against "Due tomorrow, 09:00"), but whether there IS a
  * deadline never depends on it: a deadline that has passed is still a deadline, and still an icon.
  * So this is the predicate, and `dateHints.test.ts` pins that the two agree -- including at an
  * instant where the wording changes, and in a zone other than the process's, which is where a
@@ -259,5 +284,5 @@ export function carriedLabel(
   if (!scheduledOn) return null
   const today = todayIn(timeZone, now)
   if (scheduledOn >= today) return null
-  return `原定${dayPhrase(scheduledOn, today)}，已顺延`
+  return `Carried over from ${lower(dayPhrase(scheduledOn, today))}`
 }

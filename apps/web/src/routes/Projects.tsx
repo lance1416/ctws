@@ -71,7 +71,7 @@ export function Projects() {
   return (
     <>
       <h1 ref={heading} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
-        项目
+        Projects
       </h1>
       <input
         value={name}
@@ -80,25 +80,25 @@ export function Projects() {
         onKeyDown={(e) => {
           if (e.key === 'Enter' && !composing.composingNow(e)) submit()
         }}
-        placeholder="新项目"
-        aria-label="新项目"
+        placeholder="New project"
+        aria-label="New project"
         className="mt-5 h-10 w-full max-w-[40ch] rounded-md border border-border-strong bg-surface px-3 text-fg placeholder:text-fg-muted"
       />
       {projects.isError && (
         <p role="alert" className="mt-4 text-sm text-danger">
-          项目加载失败
+          Couldn't load projects
         </p>
       )}
       {(create.isError || remove.isError) && (
         <p role="alert" className="mt-4 text-sm text-danger">
-          操作失败，请重试
+          That didn't work. Try again.
         </p>
       )}
       {/* Rendered in the order the server returns: it puts the inbox first. Sorting here too
           would give two sorts that drift apart. */}
       {/* A list measure of its own, like every other list in the app (see RowParts): at 64ch the
           count sat ~450px from the short project name it belonged to -- the stranded right-hand
-          column stages 1 and 2 fixed on 今天 and 已完成 and never came back for here. */}
+          column stages 1 and 2 fixed on Today and Done and never came back for here. */}
       <ul className="mt-5 flex max-w-[30rem] flex-col">
         {projects.data?.map((p) => (
           <li
@@ -129,7 +129,7 @@ export function Projects() {
                 job is "how much is waiting here" should be silent when nothing is, and the
                 sentence it used to print made the emptiest row the loudest thing on the page. */}
             <span data-count className="justify-self-end text-xs text-fg-muted">
-              {p.openTasks > 0 ? `${p.openTasks} 项未完成` : ''}
+              {p.openTasks > 0 ? `${p.openTasks} open` : ''}
             </span>
             {/* The slot is always there, empty for the inbox: the control may be absent, the
                 column may not move. */}
@@ -141,20 +141,20 @@ export function Projects() {
                   disabled={remove.isPending}
                   onClick={() => askDelete(p.id, p.name)}
                 >
-                  删除
+                  Delete
                 </button>
               )}
             </span>
             {confirming?.id === p.id && (
               <DeleteConfirm
-                label="确认删除项目"
+                label="Confirm deleting this project"
                 className="col-span-3 pb-2"
                 message={
                   confirming.tasks === null
-                    ? `删除「${p.name}」…`
+                    ? `Delete “${p.name}”…`
                     : confirming.tasks < 0
-                      ? `删除「${p.name}」及其全部任务，无法恢复。`
-                      : `删除「${p.name}」及其 ${confirming.tasks} 条任务，无法恢复。`
+                      ? `Delete “${p.name}” and all its tasks. This cannot be undone.`
+                      : `Delete “${p.name}” and its ${confirming.tasks} tasks. This cannot be undone.`
                 }
                 busy={confirming.tasks === null || remove.isPending}
                 onConfirm={() =>

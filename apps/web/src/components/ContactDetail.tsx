@@ -18,7 +18,7 @@ import { InlineText, PickMany, PickOne } from './inline'
  * to write, not because a person is edited differently from a task.
  */
 
-const KIND_LABEL: Record<ChannelKind, string> = { email: '邮箱', phone: '电话', url: '链接' }
+const KIND_LABEL: Record<ChannelKind, string> = { email: 'Email', phone: 'Phone', url: 'Link' }
 const KIND_CHOICES = CHANNEL_KINDS.map((k) => ({ value: k, label: KIND_LABEL[k] }))
 
 export function ContactDetail({
@@ -61,35 +61,35 @@ export function ContactDetail({
   )
 
   return (
-    <DetailPane label="联系人" onClose={onClose}>
+    <DetailPane label="Contacts" onClose={onClose}>
       <div className="flex flex-col gap-4">
         <div>
           <DetailHead
-            kind={<span className="text-sm text-fg-muted">联系人</span>}
+            kind={<span className="text-sm text-fg-muted">Contacts</span>}
             onClose={onClose}
           />
           <InlineText
-            label="姓名"
+            label="Name"
             value={contact.name}
-            placeholder="这个人叫什么"
+            placeholder="Who is this?"
             onSave={(name) => name && save.mutate({ name })}
             className="mt-0.5 block text-lg font-semibold text-fg"
           />
         </div>
 
         <div className="flex flex-col gap-2">
-          <Field label="公司">
+          <Field label="Company">
             <InlineText
-              label="公司"
+              label="Company"
               value={contact.org ?? ''}
-              placeholder="没有填"
+              placeholder="Not set"
               onSave={(org) => save.mutate({ org: org || null })}
               className="text-sm"
             />
           </Field>
-          <Field label="项目" top>
+          <Field label="Projects" top>
             <PickMany
-              label="项目"
+              label="Projects"
               chosen={contact.projects.map((p) => ({
                 value: p.id,
                 label: p.name,
@@ -99,18 +99,18 @@ export function ContactDetail({
                 .filter((p) => !p.archivedAt)
                 .map((p) => ({ value: p.id, label: p.name, mark: chip(p.id) }))}
               onChange={(projectIds) => save.mutate({ projectIds })}
-              empty="不在任何项目上"
+              empty="Not on any project"
             />
           </Field>
         </div>
 
         <div>
-          <span className="block text-xs text-fg-muted">联系方式</span>
+          <span className="block text-xs text-fg-muted">Contact</span>
           <ul data-channels className="mt-1 flex flex-col gap-0.5">
             {channels.map((c, i) => (
               <li key={i} className="flex min-w-0 items-center gap-1.5">
                 <PickOne
-                  label={`第 ${i + 1} 项的类型`}
+                  label={`Type of item ${i + 1}`}
                   value={c.kind}
                   choices={KIND_CHOICES}
                   onPick={(kind) =>
@@ -119,9 +119,9 @@ export function ContactDetail({
                 />
                 <span className="min-w-0 flex-1">
                   <InlineText
-                    label={`第 ${i + 1} 项`}
+                    label={`Item ${i + 1}`}
                     value={c.value}
-                    placeholder="地址"
+                    placeholder="Address"
                     onSave={(value) =>
                       putChannels(channels.map((row, at) => (at === i ? { ...row, value } : row)))
                     }
@@ -133,7 +133,7 @@ export function ContactDetail({
                 {channelHref(c.kind, c.value) && (
                   <a
                     href={channelHref(c.kind, c.value)!}
-                    aria-label={`打开 ${c.value}`}
+                    aria-label={`Open ${c.value}`}
                     className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-fg-subtle hover:bg-surface-hover hover:text-fg"
                   >
                     <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3.5 w-3.5">
@@ -150,7 +150,7 @@ export function ContactDetail({
                 )}
                 <button
                   type="button"
-                  aria-label={`删掉第 ${i + 1} 项`}
+                  aria-label={`Remove item ${i + 1}`}
                   onClick={() => putChannels(channels.filter((_, at) => at !== i))}
                   className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-fg-subtle hover:bg-surface-hover hover:text-fg"
                 >
@@ -170,7 +170,7 @@ export function ContactDetail({
           <button
             type="button"
             onClick={() =>
-              putChannels([...channels, { kind: 'email', value: '待填', label: null }])
+              putChannels([...channels, { kind: 'email', value: 'to fill in', label: null }])
             }
             className="mt-1.5 flex h-8 items-center gap-1.5 rounded-lg border border-dashed border-border-strong px-2.5 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
           >
@@ -183,35 +183,35 @@ export function ContactDetail({
                 strokeLinecap="round"
               />
             </svg>
-            加一项
+            Add one
           </button>
         </div>
 
         <div>
-          <span className="block text-xs text-fg-muted">备注</span>
+          <span className="block text-xs text-fg-muted">Notes</span>
           <InlineText
-            label="备注"
+            label="Notes"
             value={contact.note ?? ''}
-            placeholder="还没有备注"
+            placeholder="No notes yet"
             multiline
             onSave={(note) => save.mutate({ note: note || null })}
             className="mt-1 block max-w-[68ch] text-sm whitespace-pre-wrap text-fg"
           />
         </div>
 
-        {/* 牵着的东西 -- the meetings they are in, what they recommended, the task that came out
+        {/* Linked -- the meetings they are in, what they recommended, the task that came out
             of a call. None of it is written on the person: the edges are, and this reads them from
             the other end. This panel is why the edge table exists. */}
         <div className="border-t border-border-subtle pt-3">
-          <span className="block px-2 pb-1 text-xs text-fg-muted">牵着的东西</span>
+          <span className="block px-2 pb-1 text-xs text-fg-muted">Linked</span>
           <Links of={{ type: 'contact', id: contact.id }} />
         </div>
 
         <div className="pt-1">
           {deleting ? (
             <DeleteConfirm
-              label="确认删除联系人"
-              message={`删掉「${contact.name}」？`}
+              label="Confirm deleting this contact"
+              message={`Delete “${contact.name}”?`}
               busy={drop.isPending}
               onConfirm={() => drop.mutate()}
               onCancel={() => setDeleting(false)}
@@ -222,7 +222,7 @@ export function ContactDetail({
               onClick={() => setDeleting(true)}
               className="h-9 rounded-lg px-2.5 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
             >
-              删除联系人
+              Delete contact
             </button>
           )}
         </div>
@@ -243,7 +243,7 @@ function Field({
 }) {
   return (
     <div className={`flex gap-2 ${top ? 'items-start' : 'items-center'}`}>
-      <span className={`w-10 shrink-0 text-xs text-fg-muted ${top ? 'pt-2' : ''}`}>{label}</span>
+      <span className={`w-20 shrink-0 text-xs text-fg-muted ${top ? 'pt-2' : ''}`}>{label}</span>
       <span className="min-w-0 flex-1">{children}</span>
     </div>
   )

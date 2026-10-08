@@ -1,6 +1,9 @@
 import { expect, test } from '@playwright/test'
 import { editDetail, openProject, registerFreshUser, submitCreate } from './helpers'
 
+/** The month names the app prints, so a spec can build the string the page will show. */
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
 /**
  * THE ONE PLACE THE ACCOUNT'S TIMEZONE IS NOT THE RUNNER'S (D70).
  *
@@ -8,7 +11,7 @@ import { editDetail, openProject, registerFreshUser, submitCreate } from './help
  * `users.timezone` always equals `TZ` and the whole suite is blind to the bug class that actually
  * bit this project three times: the server deciding which day it is in one zone while the page
  * says a day worked out in another. A reader was once shown a task filed under 逾期 whose own row
- * read 「明天截止」, and that shipped.
+ * read 「明天截止”, and that shipped.
  *
  * Nothing new was built to close this. Playwright contexts take a `timezoneId`, the login form
  * already registers with `Intl.DateTimeFormat().resolvedOptions().timeZone`, and `test.use` sets
@@ -51,9 +54,9 @@ test('today means today in the account zone, for the list and the caption alike'
   page,
 }) => {
   await registerFreshUser(page)
-  await submitCreate(page, '捕获…', '按账户时区排的')
+  await submitCreate(page, 'Capture…', '按账户时区排的')
 
-  await page.getByRole('link', { name: '项目' }).click()
+  await page.getByRole('link', { name: 'Projects' }).click()
   await openProject(page, 'Inbox')
   await page.getByRole('listitem').filter({ hasText: '按账户时区排的' }).click()
   await editDetail(page)
@@ -62,28 +65,28 @@ test('today means today in the account zone, for the list and the caption alike'
   const saved = page.waitForResponse(
     (r) => r.request().method() === 'PATCH' && r.ok() && /\/api\/v1\/tasks\//.test(r.url()),
   )
-  await page.getByLabel('排期').fill(dayIn(ACCOUNT_TZ))
-  await page.getByRole('button', { name: '保存' }).click()
+  await page.getByLabel('Plan', { exact: true }).fill(dayIn(ACCOUNT_TZ))
+  await page.getByRole('button', { name: 'Save' }).click()
   await saved
 
-  await page.getByRole('link', { name: '今天' }).click()
+  await page.getByRole('link', { name: 'Today' }).click()
   // The SERVER put it here, having compared the day string against `now() at time zone $tz`. In
   // the runner's zone this is yesterday or tomorrow, so a server reading its own clock misses it.
   await expect(
-    page.getByRole('region', { name: '今天', exact: true }).getByText('按账户时区排的'),
+    page.getByRole('region', { name: 'Today', exact: true }).getByText('按账户时区排的'),
   ).toBeVisible()
 
   // And the page's own caption agrees with the server, which is the half that broke before: the
   // day number comes from the account zone, never the browser's or the runner's.
   const [, month, day] = dayIn(ACCOUNT_TZ).split('-').map(Number)
-  await expect(page.getByText(`${month}月${day}日`, { exact: false })).toBeVisible()
+  await expect(page.getByText(`${MONTHS[month! - 1]} ${day}`, { exact: false })).toBeVisible()
 })
 
 test('the runner’s today is some OTHER day, and the page says which', async ({ page }) => {
   await registerFreshUser(page)
-  await submitCreate(page, '捕获…', '按进程时区排的')
+  await submitCreate(page, 'Capture…', '按进程时区排的')
 
-  await page.getByRole('link', { name: '项目' }).click()
+  await page.getByRole('link', { name: 'Projects' }).click()
   await openProject(page, 'Inbox')
   await page.getByRole('listitem').filter({ hasText: '按进程时区排的' }).click()
   await editDetail(page)
@@ -92,8 +95,8 @@ test('the runner’s today is some OTHER day, and the page says which', async ({
   const saved = page.waitForResponse(
     (r) => r.request().method() === 'PATCH' && r.ok() && /\/api\/v1\/tasks\//.test(r.url()),
   )
-  await page.getByLabel('排期').fill(runnerDay())
-  await page.getByRole('button', { name: '保存' }).click()
+  await page.getByLabel('Plan', { exact: true }).fill(runnerDay())
+  await page.getByRole('button', { name: 'Save' }).click()
   await saved
 
   // The mirror of the test above. The runner's today is NOT the account's today, so it is either
@@ -103,11 +106,11 @@ test('the runner’s today is some OTHER day, and the page says which', async ({
   // about the app rather than about the zones: a scheduled day that has passed is deliberately
   // CARRIED OVER into today's list rather than dropped, so the row does show -- marked. The mark
   // is the assertion worth having: 'yesterday' is a word only the account's zone can produce.
-  await page.getByRole('link', { name: '今天' }).click()
+  await page.getByRole('link', { name: 'Today' }).click()
   const row = page.getByRole('listitem').filter({ hasText: '按进程时区排的' })
   if (dayIn(ACCOUNT_TZ) > runnerDay()) {
     await expect(row).toBeVisible()
-    await expect(row.getByText('原定昨天，已顺延')).toBeVisible()
+    await expect(row.getByText('Carried over from yesterday')).toBeVisible()
   } else {
     // The account is behind the runner, so this day has not arrived yet for the account and
     // nothing may surface it as due now.
@@ -143,7 +146,7 @@ test('a deadline inside the account day counts as today on another UTC date', as
 
   const project = await page.request.post('/api/v1/projects', {
     headers: { 'x-ctws-client': 'web' },
-    data: { name: '时区' },
+    data: { name: 'Time zone' },
   })
   const made = await page.request.post('/api/v1/tasks', {
     headers: { 'x-ctws-client': 'web' },
@@ -167,6 +170,6 @@ test('a deadline inside the account day counts as today on another UTC date', as
   // server that built those bounds from its OWN zone puts the task on the wrong day, which is the
   // regression this file exists for -- and the one the rest of the suite cannot see.
   await expect(
-    page.getByRole('region', { name: '今天', exact: true }).getByText('今天之内截止'),
+    page.getByRole('region', { name: 'Today', exact: true }).getByText('今天之内截止'),
   ).toBeVisible()
 })

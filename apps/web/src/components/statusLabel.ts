@@ -8,9 +8,9 @@ import type { TaskStatus } from '@ctws/contracts'
  * cycle. A label table is not one surface's property.
  */
 export const STATUS_LABEL: Record<TaskStatus, string> = {
-  backlog: '待整理',
-  todo: '待办',
-  in_progress: '进行中',
-  done: '已完成',
-  cancelled: '已取消',
+  backlog: 'Backlog',
+  todo: 'To do',
+  in_progress: 'In progress',
+  done: 'Done',
+  cancelled: 'Cancelled',
 }

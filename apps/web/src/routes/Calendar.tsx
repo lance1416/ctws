@@ -48,7 +48,7 @@ export function Calendar() {
   // 全部 plus one tab per module. A single module would mean a tab bar that decides nothing, so
   // it is drawn only when there is a choice to make -- the same rule the project blocks keep.
   const views = [
-    { id: 'all', label: '全部' },
+    { id: 'all', label: 'All' },
     ...providers.map((p) => ({ id: p.moduleId, label: p.label })),
   ]
   const view = views.find((v) => v.id === params.get('view'))?.id ?? 'all'
@@ -72,7 +72,7 @@ export function Calendar() {
     }
   }
   // Inside a square: the things with a clock first and in clock order, then the things that are
-  // only about the day. A 14:00 meeting under a 「截止」 would be a square sorted by which module
+  // only about the day. A 14:00 meeting under a “Due” would be a square sorted by which module
   // answered first.
   for (const list of byDay.values()) {
     list.sort(
@@ -86,17 +86,17 @@ export function Calendar() {
     <>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <h1 ref={heading} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
-          日程
+          Calendar
         </h1>
         <span className="text-sm text-fg-muted tabular-nums">{monthTitle(cursor)}</span>
         <span className="flex items-center gap-1">
-          <Step label="上个月" onClick={() => setCursor(shiftMonth(cursor, -1))}>
+          <Step label="Previous month" onClick={() => setCursor(shiftMonth(cursor, -1))}>
             ‹
           </Step>
-          <Step label="回到本月" onClick={() => setCursor(today)}>
-            本月
+          <Step label="Back to this month" onClick={() => setCursor(today)}>
+            This month
           </Step>
-          <Step label="下个月" onClick={() => setCursor(shiftMonth(cursor, 1))}>
+          <Step label="Next month" onClick={() => setCursor(shiftMonth(cursor, 1))}>
             ›
           </Step>
         </span>
@@ -109,7 +109,7 @@ export function Calendar() {
 
       {failed && (
         <p role="alert" className="mt-3 text-sm text-danger">
-          有一部分日程没读到
+          Some entries failed to load
         </p>
       )}
 
@@ -152,7 +152,7 @@ export function Calendar() {
                   <button
                     type="button"
                     onClick={() => maker.create(day)}
-                    aria-label={`在 ${day} ${maker.label}`}
+                    aria-label={`${maker.label} on ${day}`}
                     className="absolute top-0.5 right-0.5 flex h-6 w-6 items-center justify-center rounded-lg text-fg-subtle opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-surface-hover hover:text-fg [@media(hover:none)]:opacity-100"
                   >
                     <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3 w-3">

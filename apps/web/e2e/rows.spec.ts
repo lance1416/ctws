@@ -2,6 +2,9 @@ import { expect, test, type Page } from '@playwright/test'
 import { editDetail, registerFreshUser } from './helpers'
 import { dayOffset, nextMondayYmd, ymd } from './days'
 
+/** The month names the app prints, so a spec can build the string the page will show. */
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
 /**
  * The row system (rows-and-reading, second edition): the project rail at x=0, the status marker, a
  * LEADING ICON SLOT, and a title that owns the whole line -- with the dates spelled out in full on
@@ -61,7 +64,7 @@ const isPatch = (r: { url: () => string; request: () => { method: () => string }
 const patched = (page: Page) => page.waitForResponse((r) => isPatch(r) && r.ok())
 
 const triage = (page: Page, title: string) =>
-  page.getByRole('button', { name: `调整「${title}」的日期` })
+  page.getByRole('button', { name: `Change the dates for “${title}”` })
 
 /** Every x of a set of cells, rounded to the pixel: sub-pixel layout noise is not a column break. */
 async function xs(page: Page, selector: string): Promise<number[]> {
@@ -77,7 +80,7 @@ async function xs(page: Page, selector: string): Promise<number[]> {
 /** Every x of a set of elements, rounded to the pixel: sub-pixel layout noise is not a column break. */
 
 /**
- * §6: 「行首图标在所有行上落在同一个 x」. On a flat list that is literally every row, whatever
+ * §6: 「行首图标在所有行上落在同一个 x”. On a flat list that is literally every row, whatever
  * its title length and whatever glyph it wears -- which is the whole point of a fixed slot, and the
  * claim the deleted date columns used to carry.
  */
@@ -91,13 +94,13 @@ test('on 今天, every row puts its leading icon at the same x', async ({ page }
   await makeTask(page, pid, '中等长度的一个标题', { dueAt: dueAgo(11) })
   await makeTask(page, pid, '一个非常非常非常非常非常长的标题用来把右边挤掉', { dueAt: dueAgo(4) })
   await page.goto('/tasks/today')
-  const section = page.getByRole('region', { name: '逾期' })
+  const section = page.getByRole('region', { name: 'Overdue' })
   await expect(section.locator('[data-lead-icon="missed"]')).toHaveCount(3)
 
-  const icons = await xs(page, '[aria-label="逾期"] [data-lead-icon]')
+  const icons = await xs(page, '[aria-label="Overdue"] [data-lead-icon]')
   expect(new Set(icons).size, `icon x values: ${icons.join(',')}`).toBe(1)
   // The title starts at one x as well, so the eye lands in the same place on every line.
-  const titles = await xs(page, '[aria-label="逾期"] [data-today-row]')
+  const titles = await xs(page, '[aria-label="Overdue"] [data-today-row]')
   expect(new Set(titles).size, `title column x values: ${titles.join(',')}`).toBe(1)
   // The icon is BEFORE the title, which is what "行首" means.
   expect(icons[0]!).toBeLessThan(titles[0]!)
@@ -120,12 +123,12 @@ test('one list, one x, however many kinds of glyph are in it', async ({ page }) 
   })
   await makeTask(page, pid, '顺延过来的', { scheduledOn: dayOffset(-4) })
   await page.goto('/tasks/today')
-  const queue = page.getByRole('region', { name: '今天', exact: true })
+  const queue = page.getByRole('region', { name: 'Today', exact: true })
   await expect(queue.locator('[data-today-row]')).toHaveCount(3)
   // Two different glyphs in the one list, so this is not three copies of one row.
   await expect(queue.locator('[data-lead-icon="deadline"]')).toHaveCount(1)
   await expect(queue.locator('[data-lead-icon="plan"]')).toHaveCount(1)
-  const icons = await xs(page, '[aria-label="今天"] [data-lead-icon]')
+  const icons = await xs(page, '[aria-label="Today"] [data-lead-icon]')
   expect(new Set(icons).size, `icon x values: ${icons.join(',')}`).toBe(1)
   // ...and the row that has nothing to say still reserves the slot, which is what holds the x.
   await expect(queue.locator('[data-lead-slot]')).toHaveCount(3)
@@ -174,7 +177,7 @@ test('in the project tree the icon slot moves with depth and with nothing else',
 // ------------------------------------------------- the slot collapses, per WHOLE LIST (§2, §6)
 
 /**
- * §6: 「整表无图标时图标槽不占位」. Measured against a list that DOES have the slot, not merely
+ * §6: 「整表无图标时图标槽不占位”. Measured against a list that DOES have the slot, not merely
  * counted: a reserved-but-empty box is invisible to a glyph count while taking 1.5rem off every
  * title in the list.
  */
@@ -267,8 +270,8 @@ test('on 今天 the queue and 逾期 each answer for their own slot', async ({ p
   await makeTask(page, pid, '今天要做的第二件事', { scheduledOn: today })
   await makeTask(page, pid, '一条逾期的', { dueAt: dueAgo(2) })
   await page.goto('/tasks/today')
-  const queue = page.getByRole('region', { name: '今天', exact: true })
-  const late = page.getByRole('region', { name: '逾期' })
+  const queue = page.getByRole('region', { name: 'Today', exact: true })
+  const late = page.getByRole('region', { name: 'Overdue' })
   await expect(queue.locator('[data-today-row]')).toHaveCount(2)
   await expect(late.locator('[data-today-row]')).toHaveCount(1)
 
@@ -311,10 +314,10 @@ test('逾期 says the project and how late; the same task in the queue says the 
   await makeTask(page, pid, '另一条没有日期的', { scheduledOn: dayOffset(0) })
 
   await page.goto('/tasks/today')
-  const queue = page.getByRole('region', { name: '今天', exact: true })
-  const late = page.getByRole('region', { name: '逾期' })
+  const queue = page.getByRole('region', { name: 'Today', exact: true })
+  const late = page.getByRole('region', { name: 'Overdue' })
   const queueRow = queue.locator('li').filter({ hasText: TITLE })
-  await expect(queueRow.locator('[data-row-meta]')).toContainText('12:34 截止')
+  await expect(queueRow.locator('[data-row-meta]')).toContainText('12:34')
   await expect(late).toHaveCount(0)
 
   // The same task, two days late (12:34 kept: only the day moves).
@@ -330,18 +333,18 @@ test('逾期 says the project and how late; the same task in the queue says the 
 
   const lateRow = late.locator('li').filter({ hasText: TITLE })
   const meta = lateRow.locator('[data-row-meta]')
-  await expect(meta).toHaveText('邮件服务·已逾 2 天')
+  await expect(meta).toHaveText('邮件服务·2 days late')
   await expect(lateRow.locator('[data-due-text]')).toHaveCount(0)
   await expect(lateRow.locator('[data-plan-text]')).toHaveCount(0)
   await expect(lateRow).not.toContainText('12:34')
-  await expect(lateRow).not.toContainText('截止')
+  await expect(lateRow).not.toContainText('Due')
   // The deadline is not lost with the line: it is in the tooltip of the lateness phrase.
   await expect(lateRow.locator('[data-late-text]')).toHaveAttribute(
     'title',
     `${ymd(twoDaysAgo)} 12:34`,
   )
   // ...and the missed-deadline icon still leads the row.
-  await expect(lateRow.getByRole('img', { name: '截止已过' })).toHaveCount(1)
+  await expect(lateRow.getByRole('img', { name: 'Overdue' })).toHaveCount(1)
 
   // A row in the one-third panel is no taller than the two-line metric: a title and ONE meta line.
   // The metric is measured, not typed: a queue row with a title and a project line, in this page.
@@ -364,7 +367,7 @@ test('逾期 says the project and how late; the same task in the queue says the 
   })
   expect(back.ok()).toBeTruthy()
   await page.reload()
-  await expect(queueRow.locator('[data-row-meta]')).toContainText('12:34 截止')
+  await expect(queueRow.locator('[data-row-meta]')).toContainText('12:34')
   await expect(queueRow.locator('[data-late-text]')).toHaveCount(0)
 })
 
@@ -404,7 +407,7 @@ async function mixedProject(page: Page, name: string): Promise<string> {
 }
 
 /**
- * §6, THE FIRST ONE, AND THE DEFECT ITSELF: 「你还是没有完全运用横向空间（字直接被截断了）」.
+ * §6, THE FIRST ONE, AND THE DEFECT ITSELF: 「你还是没有完全运用横向空间（字直接被截断了）”.
  * The user's own sentence, at 1440 WITH THE DETAIL COLUMN OPEN -- the ≈734px panel that is the
  * hardest case and the one the screenshot was taken in. The previous edition could only do it by
  * dropping the dates to a second line below a threshold; there is no threshold now, because the
@@ -440,12 +443,12 @@ test('a real long title is not truncated at 1440, detail open or closed', async 
 })
 
 /**
- * §6: 「带日期的行有第二行且文案完整到分钟；无日期无备注的行仍是一行」 -- both halves on ONE
+ * §6: 「带日期的行有第二行且文案完整到分钟；无日期无备注的行仍是一行” -- both halves on ONE
  * list, since "a second line" passes trivially if every row has one and "one line" passes trivially
  * if none does.
  *
  * The minute is the assertion that matters: the mechanism this edition deleted compressed
- * 「10月4日 12:30 截止」 into 「已逾 2 天」 to fit an 8rem cell, and the user rejected exactly that.
+ * 「10月4日 12:30 截止” into 「已逾 2 天” to fit an 8rem cell, and the user rejected exactly that.
  * The expected wording is derived from the instant the fixture was CREATED with, so the test says
  * the same thing at every hour of the day.
  */
@@ -468,14 +471,14 @@ test('a dated row has a second line, complete to the minute; a bare row stays on
 
   // The whole sentence, to the minute, with nothing dropped.
   await expect(row('过期两天的').locator('[data-row-meta]')).toHaveText(
-    `${due.getMonth() + 1}月${due.getDate()}日 ${pad(due.getHours())}:${pad(due.getMinutes())} 截止·已逾 2 天`,
+    `Due ${MONTHS[due.getMonth()]} ${due.getDate()}, ${pad(due.getHours())}:${pad(due.getMinutes())}·2 days late`,
   )
   // The text is the carrier, not the colour and not the glyph (WCAG 1.4.1): the deadline's own
   // phrase and the lateness are both there in words.
-  await expect(row('过期两天的').locator('[data-due-text]')).toContainText('截止')
-  await expect(row('过期两天的').locator('[data-late-text]')).toHaveText('已逾 2 天')
+  await expect(row('过期两天的').locator('[data-due-text]')).toContainText('Due')
+  await expect(row('过期两天的').locator('[data-late-text]')).toHaveText('2 days late')
   // ...and the icon has a name of its own, so a screen reader is not left with a hue.
-  await expect(row('过期两天的').getByRole('img', { name: '截止已过' })).toHaveCount(1)
+  await expect(row('过期两天的').getByRole('img', { name: 'Overdue' })).toHaveCount(1)
 
   // A row carrying information is 66px; a row carrying none is 44px and has no second line at all.
   //
@@ -527,9 +530,9 @@ test('a row with both dates wears the deadline, and says both in words', async (
   await expect(row.locator('[data-lead-icon]')).toHaveCount(1)
   await expect(row.locator('[data-lead-icon="missed"]')).toHaveCount(1)
   // Both dates on the second line, in full.
-  await expect(row.locator('[data-due-text]')).toContainText('截止')
-  await expect(row.locator('[data-late-text]')).toHaveText('已逾 3 天')
-  await expect(row.locator('[data-plan-text]')).toContainText('排到')
+  await expect(row.locator('[data-due-text]')).toContainText('Due')
+  await expect(row.locator('[data-late-text]')).toHaveText('3 days late')
+  await expect(row.locator('[data-plan-text]')).toContainText('Planned for')
 })
 
 /**
@@ -557,11 +560,11 @@ test('the tree has no breadcrumb on its second line; 今天 shares one line with
 
   // The same task on 今天: one second line, carrying the project, the parent AND the date.
   await page.goto('/tasks/today')
-  const line = page.getByRole('region', { name: '逾期' }).locator('[data-row-meta]')
+  const line = page.getByRole('region', { name: 'Overdue' }).locator('[data-row-meta]')
   await expect(line).toHaveCount(1)
   await expect(line.locator('[data-row-crumb]')).toHaveText('面包屑 › 父任务')
   // 逾期 is a summary (project and how late): the lateness is what shares the line with the crumb.
-  await expect(line.locator('[data-late-text]')).toHaveText('已逾 2 天')
+  await expect(line.locator('[data-late-text]')).toHaveText('2 days late')
   // One line, not two: the crumb and the lateness share a baseline.
   const ys = await line.evaluate((el) => {
     const crumb = el.querySelector('[data-row-crumb]')!.getBoundingClientRect()
@@ -594,7 +597,7 @@ test('opening a row’s date control moves nothing on the row', async ({ page })
   }
 
   await triage(page, '逾期的').click()
-  const panel = page.getByRole('group', { name: '处理逾期：逾期的' })
+  const panel = page.getByRole('group', { name: 'Overdue: 逾期的' })
   await expect(panel).toBeVisible()
 
   const after = {
@@ -629,7 +632,7 @@ test('the date control is reachable, operable and escapable by keyboard alone', 
   await expect(triage(page, '键盘逾期')).toHaveAttribute('aria-expanded', 'false')
 
   await page.keyboard.press('Enter')
-  const panel = page.getByRole('group', { name: '处理逾期：键盘逾期' })
+  const panel = page.getByRole('group', { name: 'Overdue: 键盘逾期' })
   await expect(panel).toBeVisible()
   await expect(triage(page, '键盘逾期')).toHaveAttribute('aria-expanded', 'true')
 
@@ -642,14 +645,14 @@ test('the date control is reachable, operable and escapable by keyboard alone', 
   await page.keyboard.press('Enter')
   await expect(panel).toBeVisible()
   await page.keyboard.press('Tab')
-  await expect(panel.getByRole('button', { name: '推迟到明天' })).toBeFocused()
+  await expect(panel.getByRole('button', { name: 'To tomorrow' })).toBeFocused()
   const res = patched(page)
   await page.keyboard.press('Enter')
   const body = (await res).request().postDataJSON() as { dueAt: string }
   expect(Object.keys(body)).toEqual(['dueAt'])
   expect(ymd(new Date(body.dueAt))).toBe(dayOffset(1))
   // The row left the page; focus went to the heading rather than falling to <body>.
-  await expect(page.getByText('今天没有要做的事')).toBeVisible()
+  await expect(page.getByText('Nothing for today')).toBeVisible()
   await expect(page.locator('#today-heading')).toBeFocused()
 })
 
@@ -661,8 +664,8 @@ test('转为排期下周 demotes the deadline to next Monday’s plan in one req
   await triage(page, '没人等下周').click()
   const res = patched(page)
   await page
-    .getByRole('group', { name: '处理逾期：没人等下周' })
-    .getByRole('button', { name: '下周', exact: true })
+    .getByRole('group', { name: 'Overdue: 没人等下周' })
+    .getByRole('button', { name: 'Next week', exact: true })
     .click()
   expect((await res).request().postDataJSON()).toEqual({
     dueAt: null,
@@ -685,7 +688,7 @@ test('the open date control adds no horizontal scroll at 375', async ({ page }) 
   await makeTask(page, pid, '窄屏上的逾期任务标题也可能很长', { dueAt: dueAgo(2) })
   await page.goto('/tasks/today')
   await triage(page, '窄屏上的逾期任务标题也可能很长').click()
-  await expect(page.getByRole('group', { name: /^处理逾期：/ })).toBeVisible()
+  await expect(page.getByRole('group', { name: /^Overdue: / })).toBeVisible()
   // 375px zero horizontal scroll is a pinned result (plan section 7); a popover anchored to the
   // right edge of a row is exactly the kind of thing that quietly breaks it.
   const over = await page.evaluate(() => ({
@@ -707,7 +710,7 @@ test('a cross-project row carries its own project’s rail, at one x, beside its
   await makeTask(page, a, '甲二', { scheduledOn: dayOffset(0) })
   await makeTask(page, b, '乙一', { scheduledOn: dayOffset(0) })
   await page.goto('/tasks/today')
-  const section = page.getByRole('region', { name: '今天', exact: true })
+  const section = page.getByRole('region', { name: 'Today', exact: true })
   await expect(section.getByText('甲一')).toBeVisible()
 
   const railOf = (title: string) =>
@@ -725,7 +728,7 @@ test('a cross-project row carries its own project’s rail, at one x, beside its
   // Scoped to the 今天 queue since the workbench: the overdue panel and the completed-today panel
   // are lists of their own in another column, and a rail x shared across columns was never the
   // claim. Within the list the assertion is the same one, on the same three rows.
-  const rails = await xs(page, '[aria-label="今天"] [data-project-rail]')
+  const rails = await xs(page, '[aria-label="Today"] [data-project-rail]')
   expect(new Set(rails).size, `rail x values: ${rails.join(',')}`).toBe(1)
   // Six hues cannot identify an unbounded number of projects, so the rail is never alone: the
   // project's name is on the row as well (WCAG 1.4.1), and the rail itself is hidden from AT.
@@ -756,7 +759,7 @@ test('已完成 and the search results carry the same rail', async ({ page }) =>
   expect(new Set(times).size, `clock column x values: ${times.join(',')}`).toBe(1)
 
   await page.keyboard.press('f')
-  await page.getByRole('combobox', { name: '搜索' }).fill('做完的事')
+  await page.getByRole('combobox', { name: 'Search' }).fill('做完的事')
   await expect(page.locator('[data-search-result]')).toHaveCount(2)
   const resultRails = page.locator('[data-search-result] [data-project-rail]')
   await expect(resultRails).toHaveCount(2)
@@ -776,7 +779,7 @@ test('the status marker is the heaviest mark on the row, and still hue-free', as
   const mark = (name: string) => page.getByRole('img', { name })
   // 20px at 2px of stroke: the app's core semantic used to be the faintest thing on the row, and
   // the workbench stepped every size up again (spec section 4) around 46px rows.
-  for (const name of ['进行中', '待办', '待整理'])
+  for (const name of ['In progress', 'To do', 'Backlog'])
     expect(await mark(name).evaluate((el) => el.getBoundingClientRect().width)).toBe(20)
 
   // An OPEN task's mark is drawn in the body colour; a settled one stays muted. Value and weight,
@@ -787,15 +790,15 @@ test('the status marker is the heaviest mark on the row, and still hue-free', as
     .locator('[data-today-row]')
     .first()
     .evaluate((el) => getComputedStyle(el).color)
-  for (const name of ['进行中', '待办', '待整理'])
+  for (const name of ['In progress', 'To do', 'Backlog'])
     expect(await colourOf(mark(name)), name).toBe(bodyColour)
 
   // A finished one recedes. (On 已完成, where every row is settled.)
   await makeTask(page, pid, '收工', { status: 'done' })
   await page.goto('/completed')
   await expect(page.getByText('收工')).toBeVisible()
-  expect(await colourOf(mark('已完成'))).not.toBe(bodyColour)
-  expect(await mark('已完成').evaluate((el) => el.getBoundingClientRect().width)).toBe(20)
+  expect(await colourOf(mark('Done'))).not.toBe(bodyColour)
+  expect(await mark('Done').evaluate((el) => el.getBoundingClientRect().width)).toBe(20)
 })
 
 // ------------------------------------------------------------- the two date semantics, by shape
@@ -836,14 +839,14 @@ test('a plan and a deadline differ by shape, not only by colour', async ({ page 
   expect(plan.portrait).toBe(false)
 
   // Each has a NAME of its own, and neither name is the other's substring: accessible names are one
-  // flat namespace matched by substring, so a 「有截止，已逾期」 would make every query for the
+  // flat namespace matched by substring, so a 「有截止，已逾期” would make every query for the
   // standing flag match the missed one too.
-  await expect(row('有截止的').getByRole('img', { name: '有截止' })).toHaveCount(1)
-  await expect(row('有计划的').getByRole('img', { name: '有计划' })).toHaveCount(1)
+  await expect(row('有截止的').getByRole('img', { name: 'Has a deadline' })).toHaveCount(1)
+  await expect(row('有计划的').getByRole('img', { name: 'Has a plan' })).toHaveCount(1)
 
   // And the words say it too, so nothing rests on the glyph either.
-  await expect(row('有截止的').locator('[data-row-meta]')).toContainText('截止')
-  await expect(row('有计划的').locator('[data-row-meta]')).toContainText('排到')
+  await expect(row('有截止的').locator('[data-row-meta]')).toContainText('Due')
+  await expect(row('有计划的').locator('[data-row-meta]')).toContainText('Planned for')
 })
 
 /**
@@ -945,8 +948,8 @@ test.describe('the tree on a phone', () => {
     await makeTask(page, pid, '第三层上的一条很长的别的标题', {}, b)
 
     await page.goto(`/projects/${pid}`)
-    const dated = page.getByRole('button', { name: '任务：第三层上的一条很长的任务标题' })
-    const bare = page.getByRole('button', { name: '任务：第三层上的一条很长的别的标题' })
+    const dated = page.getByRole('button', { name: 'Task: 第三层上的一条很长的任务标题' })
+    const bare = page.getByRole('button', { name: 'Task: 第三层上的一条很长的别的标题' })
     await dated.waitFor()
 
     const titleWidth = (handle: typeof dated) =>
@@ -1010,7 +1013,7 @@ test.describe('motion', () => {
       const pid = await makeProject(page, 'P')
       await makeTask(page, pid, '会动的')
       await page.goto(`/projects/${pid}`)
-      await page.getByRole('button', { name: '任务：会动的', exact: true }).waitFor()
+      await page.getByRole('button', { name: 'Task: 会动的', exact: true }).waitFor()
       expect(await duration(page)).toBe('0.12s')
     })
   })
@@ -1022,7 +1025,7 @@ test.describe('motion', () => {
       const pid = await makeProject(page, 'P')
       await makeTask(page, pid, '不动的')
       await page.goto(`/projects/${pid}`)
-      await page.getByRole('button', { name: '任务：不动的', exact: true }).waitFor()
+      await page.getByRole('button', { name: 'Task: 不动的', exact: true }).waitFor()
       expect(await duration(page)).toBe('0s')
     })
   })

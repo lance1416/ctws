@@ -39,7 +39,7 @@ async function seedNote(page: Page, notes: string, title = '读一下') {
   await makeNoted(page, pid, title, notes)
   await page.goto(`/projects/${pid}`)
   await page.getByRole('listitem').filter({ hasText: title }).first().click()
-  await expect(page.getByRole('dialog', { name: '任务详情' })).toBeVisible()
+  await expect(page.getByRole('dialog', { name: 'Task details' })).toBeVisible()
   return pid
 }
 
@@ -68,8 +68,8 @@ test('a note renders GFM: a table, a task list and strikethrough', async ({ page
   // The task-list mark is an image with a name, not a disabled checkbox: reading mode stays free of
   // controls whatever a note contains (see `pane.spec.ts`), and that invariant must not become
   // conditional on the note's text.
-  await expect(notes.getByRole('img', { name: '已勾选' })).toBeVisible()
-  await expect(notes.getByRole('img', { name: '未勾选' })).toBeVisible()
+  await expect(notes.getByRole('img', { name: 'Checked' })).toBeVisible()
+  await expect(notes.getByRole('img', { name: 'Empty' })).toBeVisible()
   await expect(notes.locator('input')).toHaveCount(0)
 })
 
@@ -360,15 +360,15 @@ test("KaTeX's stylesheet ships only woff2, like the app's own two faces", async 
 
 // ------------------------------------------------------------------------- the writing mode (H)
 
-const writingSource = (page: Page) => page.getByLabel('备注原文')
+const writingSource = (page: Page) => page.getByLabel('Markdown source')
 
 test('the full-screen writing mode round-trips the source unchanged', async ({ page }) => {
   const pid = await seedNote(page, '第一行\n\n第二段')
   await editDetail(page)
   // The pane holds the SOURCE, which is what is stored (D73's third decision).
-  await expect(page.getByLabel('备注', { exact: true })).toHaveValue('第一行\n\n第二段')
+  await expect(page.getByLabel('Notes', { exact: true })).toHaveValue('第一行\n\n第二段')
 
-  await page.getByRole('button', { name: '全屏写作' }).click()
+  await page.getByRole('button', { name: 'Full screen' }).click()
   await expect(writingSource(page)).toHaveValue('第一行\n\n第二段')
 
   const written =
@@ -378,15 +378,15 @@ test('the full-screen writing mode round-trips the source unchanged', async ({ p
   await expect(page.locator('[data-writing-preview] h1')).toHaveText('标题')
   await expect(page.locator('[data-writing-preview] table')).toBeVisible()
 
-  await page.getByRole('button', { name: '退出全屏' }).click()
+  await page.getByRole('button', { name: 'Leave full screen' }).click()
   await expect(writingSource(page)).toHaveCount(0)
   // Byte for byte, back in the pane's own field.
-  await expect(page.getByLabel('备注', { exact: true })).toHaveValue(written)
+  await expect(page.getByLabel('Notes', { exact: true })).toHaveValue(written)
 
   const saved = page.waitForResponse(
     (r) => r.request().method() === 'PATCH' && /\/tasks\/[^/]+$/.test(r.url()),
   )
-  await page.getByRole('button', { name: '保存' }).click()
+  await page.getByRole('button', { name: 'Save' }).click()
   expect((await saved).ok()).toBeTruthy()
 
   // And the SOURCE is what the server kept -- never the rendered HTML.
@@ -412,11 +412,11 @@ test('the unsaved-edit guard fires from the writing mode, and the question is vi
    * here: the pane asks on 关闭 at this point too.
    */
   await page.keyboard.press('Escape')
-  await page.getByRole('link', { name: '项目' }).click()
+  await page.getByRole('link', { name: 'Projects' }).click()
   await openProject(page, 'P', true)
   await page.getByRole('listitem').filter({ hasText: '读一下' }).first().click()
   await editDetail(page)
-  await page.getByRole('button', { name: '全屏写作' }).click()
+  await page.getByRole('button', { name: 'Full screen' }).click()
   await writingSource(page).fill('原文，又写了一段')
 
   // The browser's back button is the one way out of a layer that covers the whole window.
@@ -424,27 +424,27 @@ test('the unsaved-edit guard fires from the writing mode, and the question is vi
   // Still here, and the layer stood down so the question is where the answer has to be given.
   await expect(page).toHaveURL(new RegExp(`/projects/${pid}$`))
   await expect(writingSource(page)).toHaveCount(0)
-  await expect(page.getByRole('dialog', { name: '任务详情' })).toContainText(
-    '有未保存的修改，离开会丢掉它们',
+  await expect(page.getByRole('dialog', { name: 'Task details' })).toContainText(
+    'You have unsaved changes. Leaving will discard them',
   )
-  await page.getByRole('button', { name: '继续编辑' }).click()
+  await page.getByRole('button', { name: 'Keep editing' }).click()
   // The typing survived the question.
-  await expect(page.getByLabel('备注', { exact: true })).toHaveValue('原文，又写了一段')
+  await expect(page.getByLabel('Notes', { exact: true })).toHaveValue('原文，又写了一段')
   // And 放弃修改 really does leave, which is what makes the question a question.
   await page.goBack()
-  await page.getByRole('button', { name: '放弃修改' }).click()
+  await page.getByRole('button', { name: 'Discard changes' }).click()
   await expect(page).toHaveURL(/\/projects$/)
 })
 
 test('the writing mode stands the single-key shortcuts down', async ({ page }) => {
   await seedNote(page, '原文')
   await editDetail(page)
-  await page.getByRole('button', { name: '全屏写作' }).click()
+  await page.getByRole('button', { name: 'Full screen' }).click()
   await writingSource(page).fill('')
   await writingSource(page).press('/')
   // `/` is the capture shortcut. Typed into a note it is a slash.
   await expect(writingSource(page)).toHaveValue('/')
-  await expect(page.getByRole('dialog', { name: '搜索' })).toHaveCount(0)
+  await expect(page.getByRole('dialog', { name: 'Search' })).toHaveCount(0)
 })
 
 // ------------------------------------------------------------------------------- 375px, both modes
@@ -476,7 +476,7 @@ test('a note full of wide things still has no horizontal scroll at 375', async (
   expect(reading).toEqual({ doc: 0, body: 0 })
 
   await editDetail(page)
-  await page.getByRole('button', { name: '全屏写作' }).click()
+  await page.getByRole('button', { name: 'Full screen' }).click()
   await expect(writingSource(page)).toBeVisible()
   const writing = await page.evaluate(() => ({
     doc: document.documentElement.scrollWidth - document.documentElement.clientWidth,

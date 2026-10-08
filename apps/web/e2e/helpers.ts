@@ -17,15 +17,15 @@ export async function registerFreshUser(page: Page, at: string = '/tasks/today')
   const email = `e2e-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`
 
   await page.goto('/')
-  await page.getByLabel('邮箱').fill(email)
-  await page.getByLabel('密码').fill('correct horse battery')
-  await page.getByRole('button', { name: '注册' }).click()
+  await page.getByLabel('Email').fill(email)
+  await page.getByLabel('Password').fill('correct horse battery')
+  await page.getByRole('button', { name: 'Create an account' }).click()
   await page.getByTestId('current-user').waitFor()
 
   if (at === '/tasks/today') {
     await page
-      .getByRole('navigation', { name: '主导航' })
-      .getByRole('link', { name: '今天' })
+      .getByRole('navigation', { name: 'Main navigation' })
+      .getByRole('link', { name: 'Today' })
       .click()
   } else if (at !== '/') {
     await page.goto(at)
@@ -43,7 +43,7 @@ export async function registerFreshUser(page: Page, at: string = '/tasks/today')
  */
 export async function logOut(page: Page): Promise<void> {
   await page.getByTestId('current-user').click()
-  await page.getByRole('menuitem', { name: '退出登录' }).click()
+  await page.getByRole('menuitem', { name: 'Sign out' }).click()
 }
 
 /** Opens the account menu without acting, for tests about the bar itself. */
@@ -97,10 +97,10 @@ export async function openProject(page: Page, name: string, exact = false): Prom
  * them by substring, and the unsaved-edit guard's 继续编辑 contains 编辑.
  */
 export async function editDetail(page: Page): Promise<void> {
-  await page.getByRole('button', { name: '编辑', exact: true }).click()
+  await page.getByRole('button', { name: 'Edit', exact: true }).click()
   // The pane has handed focus to the title field, so the controls are really there before the
   // caller's next locator runs.
-  await page.getByRole('textbox', { name: '标题' }).waitFor()
+  await page.getByRole('textbox', { name: 'Title' }).waitFor()
 }
 
 // Picks a status in the open detail panel. Status there is no longer a <select> of words but the

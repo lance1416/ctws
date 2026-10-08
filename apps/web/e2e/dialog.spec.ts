@@ -3,7 +3,7 @@ import { registerFreshUser } from './helpers'
 import { dayOffset, ymd } from './days'
 
 /**
- * 「新建」浮层 and the one overlay migrated onto Radix (radix-and-create spec §3 and §2).
+ * 「新建”浮层 and the one overlay migrated onto Radix (radix-and-create spec §3 and §2).
  *
  * The point of the migration half is that NOTHING the user can observe changed, so the five
  * behaviours `ShortcutHelp` had before are asserted here item by item -- including the one nothing
@@ -37,9 +37,9 @@ const nextCreate = (page: Page) =>
     .waitForResponse((r) => isCreate(r.request().method(), r.url()) && r.ok())
     .then((r) => r.request().postDataJSON())
 
-const dialog = (page: Page) => page.getByRole('dialog', { name: '新建任务' })
-const openButton = (page: Page) => page.getByRole('button', { name: '新建…', exact: true })
-const titleField = (page: Page) => dialog(page).getByRole('textbox', { name: '标题' })
+const dialog = (page: Page) => page.getByRole('dialog', { name: 'New task' })
+const openButton = (page: Page) => page.getByRole('button', { name: 'New…', exact: true })
+const titleField = (page: Page) => dialog(page).getByRole('textbox', { name: 'Title' })
 
 async function makeProject(page: Page, name: string): Promise<string> {
   const res = await page.request.post('/api/v1/projects', { headers: HEADERS, data: { name } })
@@ -78,14 +78,14 @@ test('创建 writes the title, project, parent, status, plan, deadline and notes
   await expect(titleField(page)).toBeFocused()
 
   await titleField(page).fill('带细节的任务')
-  await dialog(page).getByLabel('放在谁下面').selectOption(rootId)
-  await dialog(page).getByRole('radio', { name: '进行中', exact: true }).check()
-  await dialog(page).getByRole('button', { name: '排到明天' }).click()
-  await dialog(page).getByRole('button', { name: '明天截止' }).click()
-  await dialog(page).getByLabel('备注').fill('记一句')
+  await dialog(page).getByLabel('Put it under').selectOption(rootId)
+  await dialog(page).getByRole('radio', { name: 'In progress', exact: true }).check()
+  await dialog(page).getByRole('button', { name: 'Plan for tomorrow' }).click()
+  await dialog(page).getByRole('button', { name: 'Due tomorrow' }).click()
+  await dialog(page).getByLabel('Notes').fill('记一句')
 
   const posted = nextCreate(page)
-  await dialog(page).getByRole('button', { name: '创建', exact: true }).click()
+  await dialog(page).getByRole('button', { name: 'Create', exact: true }).click()
   const body = (await posted) as Record<string, unknown>
 
   // The BODY, not the screen: what is being pinned is that one POST carries the whole task, so a
@@ -118,8 +118,8 @@ test('创建 writes the title, project, parent, status, plan, deadline and notes
 test('⌘↵ creates and stays open, with the title cleared and focused', async ({ page }) => {
   const { pid } = await seed(page)
   await openButton(page).click()
-  await dialog(page).getByRole('radio', { name: '待办', exact: true }).check()
-  await dialog(page).getByRole('button', { name: '排到今天' }).click()
+  await dialog(page).getByRole('radio', { name: 'To do', exact: true }).check()
+  await dialog(page).getByRole('button', { name: 'Plan for today' }).click()
 
   await titleField(page).fill('第一条')
   let posted = nextCreate(page)
@@ -167,7 +167,7 @@ test('Escape closes the dialog and hands focus back to whatever opened it', asyn
 
   // Opened from a task row by `n`, focus goes back to THAT row rather than to the button or, worse,
   // to <body> (WCAG 2.4.3).
-  const handle = page.getByRole('button', { name: '任务：放在我下面', exact: true })
+  const handle = page.getByRole('button', { name: 'Task: 放在我下面', exact: true })
   await handle.focus()
   await page.keyboard.press('n')
   await expect(dialog(page)).toBeVisible()
@@ -179,7 +179,7 @@ test('Escape closes the dialog and hands focus back to whatever opened it', asyn
   await openButton(page).click()
   // `exact`: accessible names are one flat namespace matched by substring, and 清除截止 is in
   // this very dialog.
-  await dialog(page).getByRole('button', { name: '取消', exact: true }).click()
+  await dialog(page).getByRole('button', { name: 'Cancel', exact: true }).click()
   await expect(dialog(page)).toHaveCount(0)
   expect(writes).toEqual([])
 })
@@ -189,8 +189,8 @@ test('an empty title creates nothing and says so', async ({ page }) => {
   const writes = recordWrites(page)
 
   await openButton(page).click()
-  await dialog(page).getByRole('button', { name: '创建', exact: true }).click()
-  await expect(dialog(page).getByRole('alert')).toHaveText('请先写标题')
+  await dialog(page).getByRole('button', { name: 'Create', exact: true }).click()
+  await expect(dialog(page).getByRole('alert')).toHaveText('Title is required')
   await expect(titleField(page)).toBeFocused()
   await expect(dialog(page)).toBeVisible()
 
@@ -210,21 +210,21 @@ test('`n` opens the dialog, obeys the off switch and is a letter while typing', 
   // an editable control now (D54), so clicking it opens a text field and the next keypress is
   // typing. A block heading is the neutral spot this needs.
   // Not while typing: `n` is a letter in the capture box.
-  await page.getByLabel('捕获').fill('')
-  await page.getByLabel('捕获').press('n')
+  await page.getByLabel('Capture').fill('')
+  await page.getByLabel('Capture').press('n')
   await expect(dialog(page)).toHaveCount(0)
-  await expect(page.getByLabel('捕获')).toHaveValue('n')
+  await expect(page.getByLabel('Capture')).toHaveValue('n')
 
-  await page.getByRole('heading', { name: '任务', exact: true }).click()
+  await page.getByRole('heading', { name: 'Tasks', exact: true }).click()
   await page.keyboard.press('n')
   await expect(dialog(page)).toBeVisible()
   await page.keyboard.press('Escape')
 
   // It is a single-key shortcut, so the off switch governs it like every other one.
-  await page.getByRole('button', { name: '键盘快捷键' }).click()
-  await page.getByRole('checkbox', { name: /启用单键快捷键/ }).uncheck()
+  await page.getByRole('button', { name: 'Keyboard shortcuts' }).click()
+  await page.getByRole('checkbox', { name: /Single-key shortcuts/ }).uncheck()
   await page.keyboard.press('Escape')
-  await page.getByRole('heading', { name: '任务', exact: true }).click()
+  await page.getByRole('heading', { name: 'Tasks', exact: true }).click()
   await page.keyboard.press('n')
   await expect(dialog(page)).toHaveCount(0)
   // And the button still is the way in, which is why a key being off is not a dead end.
@@ -238,26 +238,26 @@ test('the quick paths are untouched: the 新任务 box and / still behave exactl
   const { pid } = await seed(page)
 
   // Enter in the 新任务 box still files the line and keeps the box focused and empty -- and does
-  // NOT open the dialog. 「敲一行回车即落」 is a success criterion; 新建 is an addition to it.
+  // NOT open the dialog. 「敲一行回车即落” is a success criterion; 新建 is an addition to it.
   const created = page.waitForResponse((r) => isCreate(r.request().method(), r.url()) && r.ok())
-  await page.getByPlaceholder('新任务').fill('一行就走')
-  await page.getByPlaceholder('新任务').press('Enter')
+  await page.getByPlaceholder('New task').fill('一行就走')
+  await page.getByPlaceholder('New task').press('Enter')
   await created
-  await expect(page.getByPlaceholder('新任务')).toBeFocused()
-  await expect(page.getByPlaceholder('新任务')).toHaveValue('')
+  await expect(page.getByPlaceholder('New task')).toBeFocused()
+  await expect(page.getByPlaceholder('New task')).toHaveValue('')
   await expect(dialog(page)).toHaveCount(0)
   await expect(page.getByRole('listitem')).toHaveCount(2)
 
   // `/` still jumps to capture, and capture still files to the inbox with its landing line.
-  await page.getByRole('heading', { name: '任务', exact: true }).click()
+  await page.getByRole('heading', { name: 'Tasks', exact: true }).click()
   await page.keyboard.press('/')
-  await expect(page.getByLabel('捕获')).toBeFocused()
+  await expect(page.getByLabel('Capture')).toBeFocused()
   const captured = page.waitForResponse((r) => isCreate(r.request().method(), r.url()) && r.ok())
-  await page.getByLabel('捕获').fill('扔进收件箱')
-  await page.getByLabel('捕获').press('Enter')
+  await page.getByLabel('Capture').fill('扔进收件箱')
+  await page.getByLabel('Capture').press('Enter')
   await captured
-  await expect(page.getByRole('status').filter({ hasText: '已放入' })).toBeVisible()
-  await expect(page.getByLabel('捕获')).toHaveValue('')
+  await expect(page.getByRole('status').filter({ hasText: 'Added to' })).toBeVisible()
+  await expect(page.getByLabel('Capture')).toHaveValue('')
 
   // The inbox line did not go into this project.
   const listed = await (await page.request.get(`/api/v1/tasks?projectId=${pid}`)).json()
@@ -272,7 +272,7 @@ test('the dialog fits 375px with no horizontal scroll', async ({ page }) => {
   await openButton(page).click()
   await expect(dialog(page)).toBeVisible()
   await dialog(page)
-    .getByLabel('备注')
+    .getByLabel('Notes')
     .fill('一段不短的备注，用来把这块内容撑开看看会不会顶出横向滚动条')
 
   const over = await page.evaluate(() => ({
@@ -306,11 +306,11 @@ test('the dialog fits 375px with no horizontal scroll', async ({ page }) => {
 test('closing the ? list and pressing f leaves focus in the search box', async ({ page }) => {
   await seed(page)
 
-  await page.getByRole('button', { name: '键盘快捷键' }).click()
-  await expect(page.getByRole('dialog', { name: '键盘快捷键' })).toBeVisible()
+  await page.getByRole('button', { name: 'Keyboard shortcuts' }).click()
+  await expect(page.getByRole('dialog', { name: 'Keyboard shortcuts' })).toBeVisible()
   await page.keyboard.press('Escape')
   await page.keyboard.press('f')
-  const search = page.getByRole('combobox', { name: '搜索' })
+  const search = page.getByRole('combobox', { name: 'Search' })
   await expect(search).toBeVisible()
   await page.waitForTimeout(300)
   await expect(search).toBeFocused()
@@ -330,9 +330,9 @@ test('the migrated ? overlay keeps all five of its behaviours', async ({ page })
   // 1. `?` opens it. It is pressed from the 新任务 box's NEIGHBOUR -- a focusable control that
   // is not a text field -- so that "focus goes back to what opened it" below has something to go
   // back to. (A heading is not focusable, and the page's <h1> is a rename control now.)
-  await page.getByRole('button', { name: '新建…', exact: true }).focus()
+  await page.getByRole('button', { name: 'New…', exact: true }).focus()
   await page.keyboard.press('?')
-  const help = page.getByRole('dialog', { name: '键盘快捷键' })
+  const help = page.getByRole('dialog', { name: 'Keyboard shortcuts' })
   await expect(help).toBeVisible()
   // It still SAYS what it says, including the new project-page key.
   for (const key of ['/', 'f', '?', 'n', 'g t', 'Alt+Enter', 's', 'x']) {
@@ -345,35 +345,35 @@ test('the migrated ? overlay keeps all five of its behaviours', async ({ page })
   // By attribute, NOT by role: a modal layer marks the rest of the page `aria-hidden`, so a
   // search dialog that really had stacked underneath would be invisible to `getByRole` and the
   // assertion would pass on a stacked dialog. A mutation proved exactly that.
-  await expect(page.locator('input[aria-label="搜索"]')).toHaveCount(0)
+  await expect(page.locator('input[aria-label="Search"]')).toHaveCount(0)
   await expect(help).toBeVisible()
 
   // 2. Escape closes it. 4. And focus goes back to what opened it.
   await page.keyboard.press('Escape')
   await expect(help).toHaveCount(0)
-  await expect(page.getByRole('button', { name: '新建…', exact: true })).toBeFocused()
+  await expect(page.getByRole('button', { name: 'New…', exact: true })).toBeFocused()
 
   // 3. A click outside closes it.
-  await page.getByRole('button', { name: '键盘快捷键' }).click()
+  await page.getByRole('button', { name: 'Keyboard shortcuts' }).click()
   await expect(help).toBeVisible()
   await page.mouse.click(5, 5)
   await expect(help).toHaveCount(0)
   // 4 again, from the toolbar button this time.
-  await expect(page.getByRole('button', { name: '键盘快捷键' })).toBeFocused()
+  await expect(page.getByRole('button', { name: 'Keyboard shortcuts' })).toBeFocused()
 
   // 5. The single-key off switch is still in it and still works -- and still comes back on.
   await page.keyboard.press('?')
-  const toggle = help.getByRole('checkbox', { name: /启用单键快捷键/ })
+  const toggle = help.getByRole('checkbox', { name: /Single-key shortcuts/ })
   await expect(toggle).toBeChecked()
   await toggle.uncheck()
   await page.keyboard.press('Escape')
-  await page.getByRole('heading', { name: '任务', exact: true }).click()
+  await page.getByRole('heading', { name: 'Tasks', exact: true }).click()
   await page.keyboard.press('?')
   await expect(help).toHaveCount(0)
-  await page.getByRole('button', { name: '键盘快捷键' }).click()
-  await help.getByRole('checkbox', { name: /启用单键快捷键/ }).check()
+  await page.getByRole('button', { name: 'Keyboard shortcuts' }).click()
+  await help.getByRole('checkbox', { name: /Single-key shortcuts/ }).check()
   await page.keyboard.press('Escape')
-  await page.getByRole('heading', { name: '任务', exact: true }).click()
+  await page.getByRole('heading', { name: 'Tasks', exact: true }).click()
   await page.keyboard.press('?')
   await expect(help).toBeVisible()
 })

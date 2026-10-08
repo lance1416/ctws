@@ -61,7 +61,15 @@ export const DEFAULT_MINUTES = 60
 export type RepeatChoice = { value: string | null; label: string }
 
 const WEEKDAYS = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'] as const
-const WEEKDAY_NAMES = ['日', '一', '二', '三', '四', '五', '六'] as const
+const WEEKDAY_NAMES = [
+  'Sunday',
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+] as const
 
 /** The choices for a meeting starting on `startsLocal`, named after the day it falls on. */
 export function repeatChoices(startsLocal: string): RepeatChoice[] {
@@ -71,19 +79,26 @@ export function repeatChoices(startsLocal: string): RepeatChoice[] {
   const weekday = WEEKDAYS[at.getUTCDay()]!
   const name = WEEKDAY_NAMES[at.getUTCDay()]!
   return [
-    { value: null, label: '不重复' },
-    { value: 'FREQ=DAILY', label: '每天' },
-    { value: `FREQ=WEEKLY;BYDAY=${weekday}`, label: `每周${name}` },
-    { value: `FREQ=WEEKLY;INTERVAL=2;BYDAY=${weekday}`, label: `每两周的周${name}` },
-    { value: `FREQ=MONTHLY;BYMONTHDAY=${d}`, label: `每月 ${d} 号` },
+    { value: null, label: 'Does not repeat' },
+    { value: 'FREQ=DAILY', label: 'Daily' },
+    { value: `FREQ=WEEKLY;BYDAY=${weekday}`, label: `Weekly on ${name}` },
+    { value: `FREQ=WEEKLY;INTERVAL=2;BYDAY=${weekday}`, label: `Every two weeks on ${name}` },
+    { value: `FREQ=MONTHLY;BYMONTHDAY=${d}`, label: `Monthly on the ${ordinal(d)}` },
   ]
 }
 
 const FREQ_NAME: Record<string, string> = {
-  DAILY: '天',
-  WEEKLY: '周',
-  MONTHLY: '月',
-  YEARLY: '年',
+  DAILY: 'day',
+  WEEKLY: 'week',
+  MONTHLY: 'month',
+  YEARLY: 'year',
+}
+
+/** 1st, 2nd, 3rd, 4th -- for the day of the month a monthly rule falls on. */
+function ordinal(d: number): string {
+  const teen = d % 100 >= 11 && d % 100 <= 13
+  const suffix = teen ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[d % 10] ?? 'th')
+  return `${d}${suffix}`
 }
 
 /**
@@ -94,12 +109,12 @@ const FREQ_NAME: Record<string, string> = {
  * model leaking into the page.
  */
 export function repeatLabel(rule: string | null, startsLocal: string): string {
-  if (!rule) return '不重复'
+  if (!rule) return 'Does not repeat'
   const named = repeatChoices(startsLocal).find((c) => c.value === rule)
   if (named) return named.label
   const freq = /FREQ=([A-Z]+)/i.exec(rule)?.[1]?.toUpperCase()
   const unit = freq ? FREQ_NAME[freq] : undefined
-  if (!unit) return '按规则重复'
+  if (!unit) return 'Custom'
   const every = Number(/INTERVAL=(\d+)/i.exec(rule)?.[1] ?? 1)
-  return every > 1 ? `每 ${every} ${unit}` : `每${unit}`
+  return every > 1 ? `Every ${every} ${unit}s` : `Every ${unit}`
 }

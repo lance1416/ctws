@@ -51,14 +51,14 @@ describe('the create form validates with the create CONTRACT', () => {
       // `too_small` is the code the contract's `.trim().min(1)` produces. The app's sentence is
       // keyed on it rather than hard-wired beside it.
       expect(out.errors.title?.type).toBe('too_small')
-      expect(titleProblem(out.errors.title?.type as string)).toBe('请先写标题')
+      expect(titleProblem(out.errors.title?.type as string)).toBe('Title is required')
     }
   })
 
   it('refuses a title past the contract’s own maximum, and says a different thing', async () => {
     const out = await resolveCreate(draft({ title: 'あ'.repeat(501) }))
     expect(out.errors.title?.type).toBe('too_big')
-    expect(titleProblem(out.errors.title?.type as string)).toBe('标题太长了')
+    expect(titleProblem(out.errors.title?.type as string)).toBe('Title is too long')
     // The two refusals are not one sentence with two causes.
     expect(titleProblem('too_big')).not.toBe(titleProblem('too_small'))
     expect(titleProblem(undefined)).toBeNull()

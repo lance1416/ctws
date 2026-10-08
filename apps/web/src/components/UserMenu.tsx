@@ -18,7 +18,7 @@ export function UserMenu({ email, onLogout }: { email: string; onLogout: () => v
     <DropdownMenu.Root>
       <DropdownMenu.Trigger
         data-testid="current-user"
-        aria-label={`账户：${email}`}
+        aria-label={`Account: ${email}`}
         className="flex h-8 w-8 items-center justify-center rounded-full border border-border-strong text-sm font-semibold text-fg-muted uppercase hover:bg-surface-hover hover:text-fg"
       >
         {email.slice(0, 1)}
@@ -31,7 +31,7 @@ export function UserMenu({ email, onLogout }: { email: string; onLogout: () => v
             onSelect={onLogout}
             className="cursor-pointer rounded-lg px-2.5 py-1.5 text-sm text-fg outline-none data-[highlighted]:bg-surface-hover"
           >
-            退出登录
+            Sign out
           </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Portal>

@@ -38,11 +38,11 @@ describe('calendar arithmetic', () => {
 
   it('says today / tomorrow / yesterday, else the date', async () => {
     const { dayPhrase } = await load()
-    expect(dayPhrase('2026-10-03', '2026-10-03')).toBe('今天')
-    expect(dayPhrase('2026-10-04', '2026-10-03')).toBe('明天')
-    expect(dayPhrase('2026-10-02', '2026-10-03')).toBe('昨天')
-    expect(dayPhrase('2026-10-08', '2026-10-03')).toBe('10月8日')
-    expect(dayPhrase('2027-01-02', '2026-10-03')).toBe('2027年1月2日')
+    expect(dayPhrase('2026-10-03', '2026-10-03')).toBe('Today')
+    expect(dayPhrase('2026-10-04', '2026-10-03')).toBe('Tomorrow')
+    expect(dayPhrase('2026-10-02', '2026-10-03')).toBe('Yesterday')
+    expect(dayPhrase('2026-10-08', '2026-10-03')).toBe('Oct 8')
+    expect(dayPhrase('2027-01-02', '2026-10-03')).toBe('Jan 2, 2027')
   })
 })
 
@@ -70,8 +70,8 @@ describe('dateHints', () => {
     // cell; the words are on a line of their own now (spec §2), and 「已逾 2 天」 alone cannot
     // answer "due when?" -- which is the compression the user rejected.
     expect(dateHints(task({ dueAt: due }), TZ, NOW()).due).toEqual({
-      text: '10月1日 09:00 截止',
-      late: '已逾 2 天',
+      text: 'Due Oct 1, 09:00',
+      late: '2 days late',
       overdue: true,
     })
   })
@@ -80,7 +80,7 @@ describe('dateHints', () => {
     const { dateHints } = await load()
     const due = new Date(2026, 9, 3, 8, 0).toISOString()
     expect(dateHints(task({ dueAt: due }), TZ, NOW()).due).toEqual({
-      text: '今天 08:00 截止',
+      text: 'Due today, 08:00',
       late: null,
       overdue: false,
     })
@@ -90,10 +90,10 @@ describe('dateHints', () => {
     const { dateHints } = await load()
     const due = new Date(2026, 9, 8, 9, 0).toISOString()
     expect(dateHints(task({ dueAt: due, scheduledOn: '2026-10-04' }), TZ, NOW())).toEqual({
-      scheduled: '排到明天',
+      scheduled: 'Planned for tomorrow',
       // "10月8日截止" was the old cell's wording: a day with no time is not complete to the
       // minute, and §6 asks for the minute.
-      due: { text: '10月8日 09:00 截止', late: null, overdue: false },
+      due: { text: 'Due Oct 8, 09:00', late: null, overdue: false },
     })
   })
 
@@ -102,15 +102,15 @@ describe('dateHints', () => {
     // A clock printed from a UTC getter in +05:30 would read 18:29 here, and a rounded one 00:00
     // of the 9th. The minute is the thing §6 pins, so it is pinned at the hardest minute there is.
     const due = new Date(2026, 9, 8, 23, 59).toISOString()
-    expect(dateHints(task({ dueAt: due }), TZ, NOW()).due!.text).toBe('10月8日 23:59 截止')
+    expect(dateHints(task({ dueAt: due }), TZ, NOW()).due!.text).toBe('Due Oct 8, 23:59')
   })
 
   it('an overdue task that has been rescheduled shows both', async () => {
     const { dateHints } = await load()
     const due = new Date(2026, 9, 1, 9, 0).toISOString()
     expect(dateHints(task({ dueAt: due, scheduledOn: '2026-10-04' }), TZ, NOW())).toEqual({
-      scheduled: '排到明天',
-      due: { text: '10月1日 09:00 截止', late: '已逾 2 天', overdue: true },
+      scheduled: 'Planned for tomorrow',
+      due: { text: 'Due Oct 1, 09:00', late: '2 days late', overdue: true },
     })
   })
 })
@@ -131,7 +131,7 @@ describe('dateMarks agrees with dateHints, without reading the clock', () => {
     new Date(2026, 9, 3, 0, 1), // just after midnight: yesterday's deadline just became overdue
     new Date(2026, 9, 3, 12, 0),
     new Date(2026, 9, 3, 23, 59),
-    new Date(2026, 9, 5, 12, 0), // two days on: "明天" has become "昨天"
+    new Date(2026, 9, 5, 12, 0), // two days on: "Tomorrow" has become "Yesterday"
   ]
   const DUES = [
     null,
@@ -217,9 +217,9 @@ describe('moveDueToDay', () => {
 describe('carriedLabel', () => {
   it('names the planned day and says it was carried, for any day before today', async () => {
     const { carriedLabel } = await load()
-    expect(carriedLabel('2026-09-28', TZ, NOW())).toBe('原定9月28日，已顺延')
-    expect(carriedLabel('2026-10-02', TZ, NOW())).toBe('原定昨天，已顺延')
-    expect(carriedLabel('2025-12-31', TZ, NOW())).toBe('原定2025年12月31日，已顺延')
+    expect(carriedLabel('2026-09-28', TZ, NOW())).toBe('Carried over from Sep 28')
+    expect(carriedLabel('2026-10-02', TZ, NOW())).toBe('Carried over from yesterday')
+    expect(carriedLabel('2025-12-31', TZ, NOW())).toBe('Carried over from Dec 31, 2025')
   })
 
   it('stays quiet for a plan on today, later, or none', async () => {
@@ -286,8 +286,8 @@ describe('the account timezone decides, even when the browser is in another one'
     // Not overdue, because the server does not think so either -- and this is the assertion the
     // old browser-zone implementation failed: it answered `true`.
     expect(hints.due!.overdue).toBe(serverSaysOverdue(DUE, NOW_CROSS))
-    // And the words are New York's day and New York's clock, not Kolkata's 「昨天 10:00」.
-    expect(hints.due).toEqual({ text: '今天 00:30 截止', late: null, overdue: false })
+    // And the words are New York"s day and New York's clock, not Kolkata"s 「昨天 10:00」.
+    expect(hints.due).toEqual({ text: 'Due today, 00:30', late: null, overdue: false })
   })
 
   it('when the account really is late, both say so, with the account day count', async () => {
@@ -296,21 +296,21 @@ describe('the account timezone decides, even when the browser is in another one'
     const late = '2026-10-02T03:00:00.000Z'
     expect(serverSaysOverdue(late, NOW_CROSS)).toBe(true)
     const hints = dateHints({ status: 'todo', dueAt: late, scheduledOn: null }, ACCOUNT, NOW_CROSS)
-    expect(hints.due).toEqual({ text: '10月1日 23:00 截止', late: '已逾 3 天', overdue: true })
+    expect(hints.due).toEqual({ text: 'Due Oct 1, 23:00', late: '3 days late', overdue: true })
   })
 
   it('a plan is carried by the account calendar, not the browser one', async () => {
     const { carriedLabel } = await load()
     // The 4th is today in New York and yesterday in Kolkata: the plan is not carried.
     expect(carriedLabel('2026-10-04', ACCOUNT, NOW_CROSS)).toBeNull()
-    expect(carriedLabel('2026-10-03', ACCOUNT, NOW_CROSS)).toBe('原定昨天，已顺延')
+    expect(carriedLabel('2026-10-03', ACCOUNT, NOW_CROSS)).toBe('Carried over from yesterday')
   })
 
   it('today, tomorrow and next Monday are the account days', async () => {
     const { todayIn, addDays, nextMonday } = await load()
     expect(todayIn(ACCOUNT, NOW_CROSS)).toBe('2026-10-04')
     expect(addDays(todayIn(ACCOUNT, NOW_CROSS), 1)).toBe('2026-10-05')
-    // The 4th is a Sunday in New York while the browser is already on Monday the 5th: 「下周」 from
+    // The 4th is a Sunday in New York while the browser is already on Monday the 5th: “Next week” from
     // there is the 5th, and from the browser's day it would have been the 12th.
     expect(nextMonday(todayIn(ACCOUNT, NOW_CROSS))).toBe('2026-10-05')
   })
@@ -372,23 +372,23 @@ describe('date helpers across a DST boundary', () => {
     // Spring forward: 2026-03-08 is 23 hours long in New York. Due 20:00 on the 7th, now 10:00 on
     // the 9th -- 47 wall-clock hours, and two calendar days.
     expect(overdueLabel('2026-03-08T01:00:00.000Z', NY, new Date('2026-03-09T14:00:00.000Z'))).toBe(
-      '已逾 2 天',
+      '2 days late',
     )
     // Fall back: 2026-11-01 is 25 hours long. Due 20:00 on October 31st, now 10:00 on November 2nd
     // -- 49 hours, and still two calendar days.
     expect(overdueLabel('2026-11-01T00:00:00.000Z', NY, new Date('2026-11-02T15:00:00.000Z'))).toBe(
-      '已逾 2 天',
+      '2 days late',
     )
     // And a deadline one hour after the spring-forward jump, read from the following day, is one.
     expect(overdueLabel('2026-03-08T07:30:00.000Z', NY, new Date('2026-03-09T14:00:00.000Z'))).toBe(
-      '已逾 1 天',
+      '1 day late',
     )
     // THE DST CASE THAT ONLY CALENDAR COUNTING GETS RIGHT. Due 23:30 on the 7th, read at 00:30 on
     // the 9th: two calendar days, across the 23-hour day -- and EXACTLY 24 elapsed hours, because
     // the short day ate one. Subtracting milliseconds says one day, however it rounds; this is the
     // case the old implementation's "round, not floor" comment was dancing around.
     expect(overdueLabel('2026-03-08T04:30:00.000Z', NY, new Date('2026-03-09T04:30:00.000Z'))).toBe(
-      '已逾 2 天',
+      '2 days late',
     )
   })
 
@@ -409,8 +409,8 @@ describe('date helpers across a DST boundary', () => {
     const hint = (dueIso: string) =>
       dateHints({ status: 'todo', dueAt: dueIso, scheduledOn: null }, NY, at).due!.text
     // 06:30 UTC on the 8th is 01:30 EST (before the jump); 07:30 UTC is 03:30 EDT (after it).
-    expect(hint('2026-03-08T06:30:00.000Z')).toBe('3月8日 01:30 截止')
-    expect(hint('2026-03-08T07:30:00.000Z')).toBe('3月8日 03:30 截止')
+    expect(hint('2026-03-08T06:30:00.000Z')).toBe('Due Mar 8, 01:30')
+    expect(hint('2026-03-08T07:30:00.000Z')).toBe('Due Mar 8, 03:30')
   })
 
   it('moving a deadline keeps its wall clock across the jump, not its offset', async () => {

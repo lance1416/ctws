@@ -9,7 +9,7 @@ const hit = (id: string) => ({ id, to: `/x/${id}`, title: id, meta: id, mark: nu
 
 const tasks = (ids: string[], over: Partial<ProviderResult> = {}): ProviderResult => ({
   moduleId: 'tasks',
-  moduleLabel: '任务',
+  moduleLabel: 'Tasks',
   hits: ids.map(hit),
   isError: false,
   isSuccess: true,
@@ -18,7 +18,7 @@ const tasks = (ids: string[], over: Partial<ProviderResult> = {}): ProviderResul
 
 const notes = (ids: string[], over: Partial<ProviderResult> = {}): ProviderResult => ({
   moduleId: 'notes',
-  moduleLabel: '笔记',
+  moduleLabel: 'Notes',
   hits: ids.map(hit),
   isError: false,
   isSuccess: true,
@@ -32,7 +32,7 @@ describe('federate', () => {
     expect(rows.map((r) => r.moduleId)).toEqual(['tasks', 'tasks', 'notes'])
     // The module is carried as its own NAME, so a row can say where it came from in text. Nothing
     // here is a colour: WCAG 1.4.1, the rule the redesign follows.
-    expect(rows.map((r) => r.moduleLabel)).toEqual(['任务', '任务', '笔记'])
+    expect(rows.map((r) => r.moduleLabel)).toEqual(['Tasks', 'Tasks', 'Notes'])
   })
 
   it('only asks a row to name its module when there is another module to confuse it with', () => {

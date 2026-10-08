@@ -92,7 +92,7 @@ test('做到哪儿了 shows the counts the server reports, for every project tha
   expect(quiet).toBeTruthy()
 
   await page.goto('/tasks/today')
-  const where = panel(page, '做到哪儿了')
+  const where = panel(page, 'Movement')
   await expect(where).toBeVisible()
 
   // The numbers on screen are the SERVER's, not a second count made here.
@@ -107,8 +107,8 @@ test('做到哪儿了 shows the counts the server reports, for every project tha
   for (const r of withSomething) {
     const line = where.getByRole('link', { name: new RegExp(`^${r.projectName}`) })
     await expect(line).toHaveCount(1)
-    await expect(line).toContainText(`本周 +${r.doneThisWeek}`)
-    await expect(line).toContainText(`还剩 ${r.remaining}`)
+    await expect(line).toContainText(`+${r.doneThisWeek} this week`)
+    await expect(line).toContainText(`${r.remaining} left`)
   }
   // A project with no work at all gets no line.
   await expect(where.getByText('丙线')).toHaveCount(0)
@@ -137,8 +137,8 @@ test('做到哪儿了 draws no percentage and no progress bar', async ({ page })
   await makeTask(page, pid, '写了进度的', { manualProgress: 0.5 })
 
   await page.goto('/tasks/today')
-  const where = panel(page, '做到哪儿了')
-  await expect(where.getByText('本周 +2')).toBeVisible()
+  const where = panel(page, 'Movement')
+  await expect(where.getByText('+2 this week')).toBeVisible()
 
   await expect(where.getByRole('progressbar')).toHaveCount(0)
   await expect(where.locator('progress, meter')).toHaveCount(0)
@@ -177,7 +177,7 @@ test('the stagnation line names a project only while that project is really quie
   backdateProjectActivity(finished, '9 days')
 
   await page.goto('/tasks/today')
-  const where = panel(page, '做到哪儿了')
+  const where = panel(page, 'Movement')
   const server = await movementOf(page)
   const quiet = server.find((r) => r.projectId === stale)!
   expect(quiet.quietDays).toBe(9)
@@ -187,7 +187,7 @@ test('the stagnation line names a project only while that project is really quie
   await expect(line).toHaveAttribute('data-stagnant', stale)
   // The sentence names the project, the day of the last change and how long it has been.
   await expect(line).toContainText('没人管的')
-  await expect(line).toContainText('已经静了')
+  await expect(line).toContainText('last moved')
   await expect(line).toContainText(String(quiet.quietDays))
   // A project with nothing left to do is not "stagnant", it is finished; it is never named.
   await expect(line).not.toContainText('已经做完的')
@@ -210,7 +210,7 @@ test('a workspace where nothing has gone quiet shows no stagnation line at all',
   await makeTask(page, pid, '刚写的')
 
   await page.goto('/tasks/today')
-  await expect(panel(page, '做到哪儿了').getByText('刚开的')).toBeVisible()
+  await expect(panel(page, 'Movement').getByText('刚开的')).toBeVisible()
   await expect(page.locator('[data-stagnant]')).toHaveCount(0)
 })
 
@@ -239,7 +239,7 @@ test('the workbench is a panel grid at 1440 and one column at 375', async ({ pag
 
   const boxes = async () => {
     const out: Record<string, { x: number; y: number; w: number }> = {}
-    for (const name of ['正在做', '今天', '逾期', '做到哪儿了', '今天完成的']) {
+    for (const name of ['Working on', 'Today', 'Overdue', 'Movement', 'Done today']) {
       const b = (await panel(page, name).boundingBox())!
       expect(b, name).toBeTruthy()
       out[name] = { x: Math.round(b.x), y: Math.round(b.y), w: Math.round(b.width) }
@@ -255,35 +255,35 @@ test('the workbench is a panel grid at 1440 and one column at 375', async ({ pag
   // --- 1440: two columns of panels, the banner across the top ---
   await page.setViewportSize(WIDE)
   await page.goto('/tasks/today')
-  await expect(panel(page, '今天完成的')).toBeVisible()
+  await expect(panel(page, 'Done today')).toBeVisible()
   let b = await boxes()
   // The queue is beside the right-hand panels, not above them.
-  expect(b['今天']!.x + b['今天']!.w).toBeLessThanOrEqual(b['逾期']!.x + 1)
-  expect(b['逾期']!.y).toBeLessThan(b['今天']!.y + b['今天']!.w)
+  expect(b['Today']!.x + b['Today']!.w).toBeLessThanOrEqual(b['Overdue']!.x + 1)
+  expect(b['Overdue']!.y).toBeLessThan(b['Today']!.y + b['Today']!.w)
   // The queue really does take two thirds of the grid: it is wider than the right column, and not
   // merely non-zero. (A 1fr/1fr grid would pass a bare "it is to the left of" assertion.)
-  expect(b['今天']!.w).toBeGreaterThan(b['逾期']!.w * 1.6)
+  expect(b['Today']!.w).toBeGreaterThan(b['Overdue']!.w * 1.6)
   // The three right-hand panels share one column and stack in the designed order.
-  expect(b['做到哪儿了']!.x).toBe(b['逾期']!.x)
-  expect(b['今天完成的']!.x).toBe(b['逾期']!.x)
-  expect(b['逾期']!.y).toBeLessThan(b['做到哪儿了']!.y)
-  expect(b['做到哪儿了']!.y).toBeLessThan(b['今天完成的']!.y)
+  expect(b['Movement']!.x).toBe(b['Overdue']!.x)
+  expect(b['Done today']!.x).toBe(b['Overdue']!.x)
+  expect(b['Overdue']!.y).toBeLessThan(b['Movement']!.y)
+  expect(b['Movement']!.y).toBeLessThan(b['Done today']!.y)
   // The banner is the full width of the content area and above everything.
-  expect(b['正在做']!.y).toBeLessThan(b['今天']!.y)
-  expect(b['正在做']!.w).toBeGreaterThan(b['今天']!.w)
+  expect(b['Working on']!.y).toBeLessThan(b['Today']!.y)
+  expect(b['Working on']!.w).toBeGreaterThan(b['Today']!.w)
   expect(await overflow()).toEqual({ doc: 0, body: 0 })
 
   // --- 375: one column, same order, and no sideways scroll ---
   await page.setViewportSize(PHONE)
   await page.goto('/tasks/today')
-  await expect(panel(page, '今天完成的')).toBeVisible()
+  await expect(panel(page, 'Done today')).toBeVisible()
   b = await boxes()
   const xs = new Set(Object.values(b).map((v) => v.x))
   expect(xs.size, `panel x values at 375: ${[...xs].join(',')}`).toBe(1)
   const order = Object.entries(b)
     .sort((a, c) => a[1].y - c[1].y)
     .map(([name]) => name)
-  expect(order).toEqual(['正在做', '今天', '逾期', '做到哪儿了', '今天完成的'])
+  expect(order).toEqual(['Working on', 'Today', 'Overdue', 'Movement', 'Done today'])
   expect(await overflow()).toEqual({ doc: 0, body: 0 })
 })
 
@@ -299,23 +299,23 @@ test('正在做 carries the running task, and says so plainly when nothing is ru
   await makeTask(page, pid, '没有日期的')
 
   await page.goto('/tasks/today')
-  const banner = panel(page, '正在做')
+  const banner = panel(page, 'Working on')
   // Nothing running: the banner is still there, says what would fill it, and holds no row.
   await expect(banner).toBeVisible()
-  await expect(banner.getByText('没有在做的事')).toBeVisible()
+  await expect(banner.getByText('Nothing in progress')).toBeVisible()
   await expect(banner.locator('[data-today-row]')).toHaveCount(0)
 
   // Start the dateless one from its project row; it is not on 今天 at all until it is running.
   await page.goto(`/projects/${pid}`)
   const started = patched(page)
-  await page.getByRole('button', { name: '开始「没有日期的」' }).click()
+  await page.getByRole('button', { name: 'Start “没有日期的”' }).click()
   expect((await started).request().postDataJSON()).toEqual({ status: 'in_progress' })
 
-  await page.getByRole('link', { name: '今天' }).click()
+  await page.getByRole('link', { name: 'Today' }).click()
   await expect(banner.getByText('没有日期的')).toBeVisible()
   await expect(banner.locator('[data-today-row]')).toHaveCount(1)
-  await expect(banner.getByRole('img', { name: '进行中' })).toBeVisible()
-  await expect(banner.getByText('没有在做的事')).toHaveCount(0)
+  await expect(banner.getByRole('img', { name: 'In progress' })).toBeVisible()
+  await expect(banner.getByText('Nothing in progress')).toHaveCount(0)
   // One task, one panel.
   await expect(page.getByText('没有日期的')).toHaveCount(1)
 
@@ -324,20 +324,20 @@ test('正在做 carries the running task, and says so plainly when nothing is ru
   // server put it in. (A banner filtered on `status === 'in_progress'` would steal it, and would
   // also take an overdue-and-running task out of 逾期.)
   const alsoStarted = patched(page)
-  await page.getByRole('button', { name: '开始「排到今天的」' }).click()
+  await page.getByRole('button', { name: 'Start “排到今天的”' }).click()
   await alsoStarted
-  await expect(panel(page, '今天').getByText('排到今天的')).toBeVisible()
+  await expect(panel(page, 'Today').getByText('排到今天的')).toBeVisible()
   await expect(banner.getByText('排到今天的')).toHaveCount(0)
 
   // The banner's own two controls act on its task, and their visible words are INSIDE their
   // accessible names (WCAG 2.5.3) rather than beside them.
-  await expect(banner.getByRole('button', { name: '完成「没有日期的」' })).toHaveText('完成')
+  await expect(banner.getByRole('button', { name: 'Complete “没有日期的”' })).toHaveText('Done')
   const stopped = patched(page)
-  await banner.getByRole('button', { name: '暂停「没有日期的」' }).click()
+  await banner.getByRole('button', { name: 'Pause “没有日期的”' }).click()
   expect((await stopped).request().postDataJSON()).toEqual({ status: 'todo' })
 
   // Back to empty, and the server agrees -- not just the screen.
-  await expect(banner.getByText('没有在做的事')).toBeVisible()
+  await expect(banner.getByText('Nothing in progress')).toBeVisible()
   const tasks = (await (await page.request.get(`/api/v1/tasks?projectId=${pid}`)).json()).tasks as {
     title: string
     status: string

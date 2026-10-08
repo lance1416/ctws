@@ -68,7 +68,7 @@ function useArrange() {
   const create = useMutation({
     mutationFn: (day: string) =>
       createMeeting({
-        title: '新会议',
+        title: 'New meeting',
         // A square has no time in it, so one has to be chosen: a plausible working hour the
         // person then drags onto the real one. Midnight would be precise and useless.
         startsLocal: `${day}T${String(DEFAULT_HOUR).padStart(2, '0')}:00`,
@@ -82,7 +82,7 @@ function useArrange() {
       await qc.invalidateQueries({ queryKey: ['meeting-calendar'] })
     },
   })
-  return { label: '安排一个会', create: (day: string) => create.mutate(day) }
+  return { label: 'New meeting', create: (day: string) => create.mutate(day) }
 }
 
 /**
@@ -126,7 +126,7 @@ function TodayMeetings() {
   })
   const rows = meetings.data ?? []
   const { setOpen, pane } = useOpenMeeting(rows)
-  const clock = new Intl.DateTimeFormat('zh-CN', {
+  const clock = new Intl.DateTimeFormat('en-US', {
     timeZone: accountZone,
     hour: '2-digit',
     minute: '2-digit',
@@ -136,11 +136,11 @@ function TodayMeetings() {
   if (meetings.isError) {
     return (
       <p role="alert" className="px-2 py-1.5 text-sm text-danger">
-        读不到今天的会
+        Couldn't load today's meetings
       </p>
     )
   }
-  if (meetings.isSuccess && rows.length === 0) return <PanelEmpty>今天没有会</PanelEmpty>
+  if (meetings.isSuccess && rows.length === 0) return <PanelEmpty>No meetings today</PanelEmpty>
   return (
     <>
       <ul className="min-w-0">
@@ -182,16 +182,16 @@ function MeetingsProjectView({ projectId }: { projectId: string }) {
   const rows = meetings.data ?? []
   const { setOpen, pane } = useOpenMeeting(rows)
   const rail = useProjectRail()
-  const when = new Intl.DateTimeFormat('zh-CN', {
+  const when = new Intl.DateTimeFormat('en-US', {
     timeZone: accountZone,
-    month: 'numeric',
+    month: 'short',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
   })
 
-  if (rows.length === 0) return <PanelEmpty>接下来没有会</PanelEmpty>
+  if (rows.length === 0) return <PanelEmpty>No meetings coming up</PanelEmpty>
   return (
     <>
       <ul className="flex flex-col">
@@ -214,7 +214,7 @@ function MeetingsProjectView({ projectId }: { projectId: string }) {
             >
               {m.title}
             </button>
-            {m.rrule && <span className="shrink-0 text-xs text-fg-subtle">重复</span>}
+            {m.rrule && <span className="shrink-0 text-xs text-fg-subtle">Repeats</span>}
           </li>
         ))}
       </ul>
@@ -225,17 +225,17 @@ function MeetingsProjectView({ projectId }: { projectId: string }) {
 
 export const meetingModule: WorkspaceModule = {
   id: ID,
-  label: '会议',
+  label: 'Meetings',
   // No rail row: a meeting is looked at on the calendar, not in a list.
   destinations: [],
   routes: [],
   calendar: {
-    label: '会议',
+    label: 'Meetings',
     useEntries: useMeetingEntries,
     useCreate: useArrange,
     Detail: CalendarDetail,
   },
-  widgets: [{ id: 'today', label: '今天的会', to: '/calendar', Component: TodayMeetings }],
+  widgets: [{ id: 'today', label: "Today's meetings", to: '/calendar', Component: TodayMeetings }],
   ProjectView: MeetingsProjectView,
   // The calendar, because that is still the only place a meeting is visible. It is the clearest
   // thing wrong with the framing, and it changes when meetings get a destination of their own.

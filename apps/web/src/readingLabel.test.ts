@@ -24,9 +24,9 @@ describe('readingLabel', () => {
 describe('addedLabel', () => {
   it('names today and yesterday, and counts the rest', () => {
     const now = at('2026-10-08T09:00:00Z')
-    expect(addedLabel('2026-10-08T01:00:00Z', 'UTC', now)).toBe('今天加的')
-    expect(addedLabel('2026-10-07T23:00:00Z', 'UTC', now)).toBe('昨天加的')
-    expect(addedLabel('2026-09-21T10:00:00Z', 'UTC', now)).toBe('17 天前加的')
+    expect(addedLabel('2026-10-08T01:00:00Z', 'UTC', now)).toBe('Added today')
+    expect(addedLabel('2026-10-07T23:00:00Z', 'UTC', now)).toBe('Added yesterday')
+    expect(addedLabel('2026-09-21T10:00:00Z', 'UTC', now)).toBe('Added 17 days ago')
   })
 
   it("counts in the account's zone, not the browser's", () => {
@@ -34,7 +34,7 @@ describe('addedLabel', () => {
     // the 8th is still the 7th in Los Angeles, while 09:00 UTC is the 8th there.
     const now = at('2026-10-08T09:00:00Z')
     const added = '2026-10-08T01:00:00Z'
-    expect(addedLabel(added, 'UTC', now)).toBe('今天加的')
-    expect(addedLabel(added, 'America/Los_Angeles', now)).toBe('昨天加的')
+    expect(addedLabel(added, 'UTC', now)).toBe('Added today')
+    expect(addedLabel(added, 'America/Los_Angeles', now)).toBe('Added yesterday')
   })
 })

@@ -36,7 +36,7 @@ export function MovementPanel({
   const rail = useProjectRail()
 
   return (
-    <Panel label="做到哪儿了">
+    <Panel label="Movement">
       <ul className="flex flex-col">
         {rows.map((r) => (
           <li key={r.projectId} className="min-w-0">
@@ -59,10 +59,10 @@ export function MovementPanel({
                   `missed` mean particular things about DATES, and spending one of them on a
                   count would make the palette say two things at once. */}
               <span className="shrink-0 text-sm font-semibold text-fg tabular-nums">
-                本周 +{r.doneThisWeek}
+                +{r.doneThisWeek} this week
               </span>
               <span className="shrink-0 text-sm text-fg-subtle tabular-nums">
-                还剩 {r.remaining}
+                {r.remaining} left
               </span>
             </Link>
           </li>
@@ -75,9 +75,9 @@ export function MovementPanel({
           data-stagnant={quiet.projectId}
           className="mt-2 rounded-lg bg-surface px-3 py-2 text-sm text-fg-muted"
         >
-          <span className="font-semibold text-fg">{quiet.projectName}</span>最后一次活动是
-          {activityLabel(quiet.lastActivityOn!, today)}，已经静了{' '}
-          <span className="font-semibold text-fg tabular-nums">{quiet.quietDays}</span> 天。
+          <span className="font-semibold text-fg">{quiet.projectName}</span> last moved{' '}
+          {activityLabel(quiet.lastActivityOn!, today)} —{' '}
+          <span className="font-semibold text-fg tabular-nums">{quiet.quietDays}</span> days ago.
         </p>
       )}
     </Panel>

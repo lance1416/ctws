@@ -26,26 +26,26 @@ export function Contacts() {
   return (
     <>
       <h1 ref={heading} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
-        联系人
+        Contacts
       </h1>
 
       <div className={`mt-4 ${LIST_MEASURE}`}>
         <NewContactInput onCreated={(c: ContactResponse) => setOpenId(c.id)} />
       </div>
 
-      {contacts.isPending && <p className="mt-6 text-fg-muted">加载中…</p>}
+      {contacts.isPending && <p className="mt-6 text-fg-muted">Loading…</p>}
       {contacts.isError && (
         <p role="alert" className="mt-6 text-danger">
           {contacts.error instanceof Error
             ? contacts.error.message
-            : '加载失败，检查服务是否在运行'}
+            : "Couldn't load. Check that the server is running."}
         </p>
       )}
       {contacts.isSuccess && (
         <div className={`mt-3 ${LIST_MEASURE}`}>
           <ContactList
             contacts={contacts.data}
-            emptyLine="还没有联系人"
+            emptyLine="No contacts yet"
             onOpen={(c) => setOpenId(c.id)}
           />
         </div>

@@ -21,23 +21,23 @@ import { MENU_SURFACE } from './menuSurface'
 /** 「17 天前加的」. A count, not a date: a reading pile is read to find what has gone stale. */
 export function addedLabel(createdAt: string, timeZone: string, now: Date = new Date()): string {
   const days = daysAgoIn(createdAt, timeZone, now)
-  if (days <= 0) return '今天加的'
-  if (days === 1) return '昨天加的'
-  return `${days} 天前加的`
+  if (days <= 0) return 'Added today'
+  if (days === 1) return 'Added yesterday'
+  return `Added ${days} days ago`
 }
 
 /** 「想读完」 as named days. No exact date: nobody plans reading to the day. */
 const PLANS: { label: string; day: (today: string) => string }[] = [
-  { label: '今天读完', day: (t) => t },
-  { label: '明天读完', day: (t) => addDays(t, 1) },
-  { label: '这周读完', day: (t) => addDays(nextMonday(t), -1) },
-  { label: '下周读完', day: (t) => nextMonday(t) },
+  { label: 'Finish today', day: (t) => t },
+  { label: 'Finish tomorrow', day: (t) => addDays(t, 1) },
+  { label: 'Finish this week', day: (t) => addDays(nextMonday(t), -1) },
+  { label: 'Finish next week', day: (t) => nextMonday(t) },
 ]
 
 /** What the one visible button does next, by where the item is now. */
 const NEXT: Record<ReadingStatus, { status: ReadingStatus; label: string } | null> = {
-  todo: { status: 'reading', label: '开始读' },
-  reading: { status: 'done', label: '读完了' },
+  todo: { status: 'reading', label: 'Start reading' },
+  reading: { status: 'done', label: 'Finished' },
   done: null,
   dropped: null,
 }
@@ -95,7 +95,7 @@ export function ReadingRow({
     item.projectId === here ? null : item.projectName,
     // The plan leads the rest of the line when there is one: it is the only part that says
     // anything about WHEN, and 「17 天前加的」 is about how long it has been ignored.
-    item.planOn ? `想${dayPhrase(item.planOn, today)}读完` : null,
+    item.planOn ? `Finish ${dayPhrase(item.planOn, today).toLowerCase()}` : null,
     item.kind === 'book' ? item.author : host === label ? null : host,
     addedLabel(item.createdAt, timeZone),
   ].filter(Boolean)
@@ -127,7 +127,7 @@ export function ReadingRow({
                 save.mutate({ title: t === '' ? null : t })
               }
             }}
-            aria-label="标题"
+            aria-label="Title"
             className="h-7 w-full rounded-lg border border-border-strong bg-surface px-2 text-sm text-fg"
           />
         ) : item.url ? (
@@ -170,7 +170,7 @@ export function ReadingRow({
 
       <DropdownMenu.Root>
         <DropdownMenu.Trigger
-          aria-label={`「${label}」的更多操作`}
+          aria-label={`More for “${label}”`}
           className="h-7 w-7 shrink-0 rounded-lg text-fg-subtle hover:bg-surface hover:text-fg"
         >
           <svg aria-hidden="true" viewBox="0 0 16 16" className="mx-auto h-4 w-4">
@@ -202,21 +202,25 @@ export function ReadingRow({
                 setRenaming(true)
               }}
             >
-              改标题
+              Rename
             </Item>
-            {/* 「想读完的那天」, as NAMED DECISIONS rather than a date picker -- the same choice
+            {/* The day you mean to finish it, as NAMED DECISIONS rather than a date picker -- the same choice
                 the overdue row's triage made, and for the same reason: a calendar makes you
-                compute the date, where 「这周末」 is the thought you actually had. The exact day
+                compute the date, where "this weekend" is the thought you actually had. The exact day
                 is not offered because nobody plans reading to the day. */}
             {PLANS.map(({ label, day }) => (
               <Item key={label} onSelect={() => save.mutate({ planOn: day(today) })}>
                 {label}
               </Item>
             ))}
-            {item.planOn && <Item onSelect={() => save.mutate({ planOn: null })}>不定日子</Item>}
-            {!finished && <Item onSelect={() => save.mutate({ status: 'dropped' })}>不读了</Item>}
-            {finished && <Item onSelect={() => save.mutate({ status: 'todo' })}>放回待读</Item>}
-            <Item onSelect={() => drop.mutate()}>删除</Item>
+            {item.planOn && (
+              <Item onSelect={() => save.mutate({ planOn: null })}>Clear the plan</Item>
+            )}
+            {!finished && <Item onSelect={() => save.mutate({ status: 'dropped' })}>Drop it</Item>}
+            {finished && (
+              <Item onSelect={() => save.mutate({ status: 'todo' })}>Back to the list</Item>
+            )}
+            <Item onSelect={() => drop.mutate()}>Delete</Item>
           </DropdownMenu.Content>
         </DropdownMenu.Portal>
       </DropdownMenu.Root>

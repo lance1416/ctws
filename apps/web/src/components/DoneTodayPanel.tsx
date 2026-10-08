@@ -25,11 +25,11 @@ export function DoneTodayPanel({
 }) {
   return (
     <Panel
-      label="今天完成的"
+      label="Done today"
       count={tasks.length}
       action={
         <Link to="/tasks/completed" className="text-sm text-accent hover:underline">
-          全部
+          All
         </Link>
       }
     >

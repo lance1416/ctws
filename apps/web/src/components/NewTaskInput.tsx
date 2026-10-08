@@ -77,8 +77,8 @@ export function NewTaskInput({ depth, leadSlot, onCommit, onCancel, error }: Pro
           onBlur={() => {
             if (!title.trim()) onCancel(false)
           }}
-          placeholder="回车添加，Esc 取消"
-          aria-label="添加任务"
+          placeholder="Enter to add, Esc to cancel"
+          aria-label="Add a task"
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? describedBy : undefined}
           className={`h-8 w-full border-b bg-transparent text-base text-fg placeholder:text-fg-muted ${

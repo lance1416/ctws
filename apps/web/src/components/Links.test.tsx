@@ -18,31 +18,31 @@ import { Links } from './Links'
 
 const groups: LinksResponse['groups'] = [
   {
-    label: '会议',
+    label: 'Meetings',
     type: 'meeting',
     items: [
       {
         type: 'meeting',
         id: 'm1',
-        title: '二面',
+        title: 'Second interview',
         detail: '2026-10-20 21:00 · America/Toronto',
         kind: 'attends',
-        label: '参加过',
+        label: 'attended',
         outgoing: false,
       },
     ],
   },
   {
-    label: '项目',
+    label: 'Projects',
     type: 'project',
     items: [
       {
         type: 'project',
         id: 'p1',
-        title: '找工作',
+        title: 'Job hunt',
         detail: null,
         kind: 'belongs',
-        label: '属于',
+        label: '',
         outgoing: true,
       },
     ],
@@ -66,9 +66,9 @@ const of = { type: 'contact', id: 'c1' } as const
 describe('what one thing is connected to', () => {
   it('names each group and counts what is in it', () => {
     const html = render(of, groups)
-    expect(html).toContain('会议')
-    expect(html).toContain('项目')
-    expect(html).toContain('aria-label="会议"')
+    expect(html).toContain('Meetings')
+    expect(html).toContain('Projects')
+    expect(html).toContain('aria-label="Meetings"')
   })
 
   it('routes a row through the module that owns its type, not through a path of its own', () => {
@@ -82,13 +82,17 @@ describe('what one thing is connected to', () => {
   it("shows the edge's own word, read from this end", () => {
     const html = render(of, groups)
     // 「参加过」 is the INVERSE: the row stored says 「这个会 参与 陈颖」, and this is the person.
-    expect(html).toContain('参加过')
-    expect(html).toContain('属于')
+    expect(html).toContain('attended')
+    // `belongs` carries no word of its own: the group is already called Projects, and a row
+    // reading "Projects / Job hunt / in" would say the same thing twice.
+    const projectRow = /data-linked="p1".*?<\/a>/.exec(html)![0]
+    expect(projectRow).toContain('Job hunt')
+    expect(projectRow).not.toContain('text-fg-subtle')
     expect(html).toContain('America/Toronto')
   })
 
   it('says so when there is nothing, rather than drawing an empty frame', () => {
-    expect(render(of, [])).toContain('还没有牵着别的东西')
+    expect(render(of, [])).toContain('Nothing linked yet')
   })
 
   it('renders nothing at all while it is still loading', () => {

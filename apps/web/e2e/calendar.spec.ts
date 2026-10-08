@@ -77,16 +77,16 @@ test('the view tabs show one module at a time', async ({ page }) => {
   await book(page, '设计心理学', dayOffset(1))
   await page.goto('/calendar')
 
-  await page.getByRole('tab', { name: '待读' }).click()
+  await page.getByRole('tab', { name: 'Reading' }).click()
   await expect(square(page, dayOffset(1))).toContainText('设计心理学')
   await expect(square(page, dayOffset(1))).not.toContainText('配色重做')
 
   // The chosen view is in the URL, so a reload lands where the person was.
   await expect(page).toHaveURL(/view=reading/)
   await page.reload()
-  await expect(page.getByRole('tab', { name: '待读' })).toHaveAttribute('aria-selected', 'true')
+  await expect(page.getByRole('tab', { name: 'Reading' })).toHaveAttribute('aria-selected', 'true')
 
-  await page.getByRole('tab', { name: '全部' }).click()
+  await page.getByRole('tab', { name: 'All' }).click()
   await expect(square(page, dayOffset(1))).toContainText('配色重做')
 })
 
@@ -111,11 +111,11 @@ test('the months step, and 本月 comes back', async ({ page }) => {
   await expect(square(page, dayOffset(1))).toContainText('这个月的')
 
   // Two months forward is far enough that the day cannot still be on the grid as a neighbour.
-  await page.getByRole('button', { name: '下个月' }).click()
-  await page.getByRole('button', { name: '下个月' }).click()
+  await page.getByRole('button', { name: 'Next month' }).click()
+  await page.getByRole('button', { name: 'Next month' }).click()
   await expect(square(page, dayOffset(1))).toHaveCount(0)
 
-  await page.getByRole('button', { name: '回到本月' }).click()
+  await page.getByRole('button', { name: 'Back to this month' }).click()
   await expect(square(page, dayOffset(1))).toContainText('这个月的')
 })
 
@@ -138,5 +138,5 @@ test('g c goes to the calendar', async ({ page }) => {
   await page.keyboard.press('g')
   await page.keyboard.press('c')
   await expect(page).toHaveURL(/\/calendar$/)
-  await expect(page.getByRole('heading', { name: '日程', level: 1 })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Calendar', level: 1 })).toBeVisible()
 })

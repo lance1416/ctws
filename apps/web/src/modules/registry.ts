@@ -54,17 +54,17 @@ export const WORKBENCH_PATH = '/'
  * are not a module's to contribute -- they would survive every module being removed.
  */
 const SHELL_CHORDS: Chord[] = [
-  { id: 'workbench', key: 'w', label: '去「工作台」', resolve: () => WORKBENCH_PATH, order: 5 },
-  { id: 'calendar', key: 'c', label: '去「日程」', resolve: () => '/calendar', order: 18 },
-  { id: 'projects', key: 'p', label: '去「项目」', resolve: () => '/projects', order: 20 },
+  { id: 'workbench', key: 'w', label: 'Go to Workbench', resolve: () => WORKBENCH_PATH, order: 5 },
+  { id: 'calendar', key: 'c', label: 'Go to Calendar', resolve: () => '/calendar', order: 18 },
+  { id: 'projects', key: 'p', label: 'Go to Projects', resolve: () => '/projects', order: 20 },
 ]
 
 /**
  * WHERE A DESTINATION SITS IN THE RAIL -- by what the person is trying to do, not by which module
  * owns it.
  *
- * Grouping by owner is what the rail did before, and it put 「今天」(one module's view) beside
- * 「待读」(a whole module) with nothing to tell them apart. Past five or six rows a flat list has
+ * Grouping by owner is what the rail did before, and it put “Today”(one module's view) beside
+ * “Reading”(a whole module) with nothing to tell them apart. Past five or six rows a flat list has
  * to be grouped, and the grouping that helps is the reader's: what is in front of me, what I keep,
  * what I look back at.
  */
@@ -95,12 +95,12 @@ export function railGroups(
       moduleId: '',
       id: 'workbench',
       to: WORKBENCH_PATH,
-      label: '工作台',
+      label: 'Workbench',
       end: true,
       zone: 'now',
       order: 10,
     },
-    { moduleId: '', id: 'calendar', to: '/calendar', label: '日程', zone: 'now', order: 30 },
+    { moduleId: '', id: 'calendar', to: '/calendar', label: 'Calendar', zone: 'now', order: 30 },
   ]
   const all = [...shell, ...moduleDestinations(modules)]
   return RAIL_ZONES.map((zone) => ({

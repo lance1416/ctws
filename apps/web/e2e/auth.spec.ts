@@ -11,14 +11,14 @@ test('register, stay signed in across a reload, then log out', async ({ page, co
   // The account button wears the initial; the address itself is inside the menu, which is also
   // the only place it is now. The workspace id used to be printed into the DOM as a debugging
   // leftover -- it is read from the API here instead, where it actually comes from.
-  await expect(page.getByTestId('current-user')).toHaveAccessibleName(`账户：${email}`)
+  await expect(page.getByTestId('current-user')).toHaveAccessibleName(`Account: ${email}`)
   const me = await page.request.get('/api/v1/auth/me')
   expect(me.ok()).toBe(true)
   expect((await me.json()).workspaceId).toBeTruthy()
 
   // Proof that cookie authentication works: still signed in after a reload.
   await page.reload()
-  await expect(page.getByTestId('current-user')).toHaveAccessibleName(`账户：${email}`)
+  await expect(page.getByTestId('current-user')).toHaveAccessibleName(`Account: ${email}`)
 
   // The session cookie must really be in the browser jar (otherwise the next assertion
   // would pass vacuously), and the jar must mark it HttpOnly.
@@ -30,10 +30,10 @@ test('register, stay signed in across a reload, then log out', async ({ page, co
   expect(await page.evaluate(() => document.cookie)).not.toContain('ctws_session')
 
   await logOut(page)
-  await expect(page.getByLabel('邮箱')).toBeVisible()
+  await expect(page.getByLabel('Email')).toBeVisible()
 
   await page.reload()
-  await expect(page.getByLabel('邮箱')).toBeVisible()
+  await expect(page.getByLabel('Email')).toBeVisible()
 })
 
 // Client-side routes must deep-link: the API answers an HTML navigation to an unknown,
@@ -43,7 +43,7 @@ test('a deep client-side route returns the SPA, not a 404', async ({ page }) => 
   const response = await page.goto('/some/deep/route')
   expect(response?.status()).toBe(200)
   expect(response?.headers()['content-type']).toContain('text/html')
-  await expect(page.getByLabel('邮箱')).toBeVisible()
+  await expect(page.getByLabel('Email')).toBeVisible()
 })
 
 // API routes must win over the static handler: /api/v1/health is JSON, never index.html.

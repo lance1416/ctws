@@ -31,15 +31,15 @@ test('the review is a destination, grouped by line of work', async ({ page }) =>
   const ctws = await makeProject(page, 'CTWS')
   const job = await makeProject(page, '求职')
   await setStatus(page, await makeTask(page, ctws, '配色重做'), 'done')
-  await setStatus(page, await makeTask(page, ctws, '看板'), 'in_progress')
+  await setStatus(page, await makeTask(page, ctws, 'Board'), 'in_progress')
   await setStatus(page, await makeTask(page, ctws, '再开一次会'), 'cancelled')
   await setStatus(page, await makeTask(page, job, '改简历'), 'done')
 
-  await page.getByRole('link', { name: '回顾' }).click()
-  await expect(page.getByRole('heading', { level: 1, name: '回顾' })).toBeVisible()
+  await page.getByRole('link', { name: 'Review' }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'Review' })).toBeVisible()
 
   await expect(project(page, 'CTWS')).toContainText('配色重做')
-  await expect(project(page, 'CTWS')).toContainText('看板')
+  await expect(project(page, 'CTWS')).toContainText('Board')
   await expect(project(page, 'CTWS')).toContainText('再开一次会')
   // Each line of work is its own block; nothing from one shows up under the other.
   await expect(project(page, '求职')).toContainText('改简历')
@@ -60,17 +60,17 @@ test('it shows work that was finished and then reopened, which 已完成 does no
   await page.goto('/tasks/review')
   await expect(project(page, 'CTWS')).toContainText('写迁移')
 
-  await page.getByRole('tab', { name: '已完成' }).click()
-  await expect(page.getByText('还没有完成的任务')).toBeVisible()
+  await page.getByRole('tab', { name: 'Done' }).click()
+  await expect(page.getByText('Nothing finished yet')).toBeVisible()
 })
 
 test('a week with nothing in it still says which week it was', async ({ page }) => {
   await registerFreshUser(page)
   await page.goto('/tasks/review')
-  await expect(page.getByText('这一周还没有动静')).toBeVisible()
+  await expect(page.getByText('Nothing happened this week')).toBeVisible()
   // The bounds come from the server, which decided them in the account's zone; they are shown
   // even with no rows, so they cannot have been derived from the rows.
-  await expect(page.getByText(/\d+月\d+日 – \d+月\d+日/)).toBeVisible()
+  await expect(page.getByText(/[A-Z][a-z]{2} \d+ – [A-Z][a-z]{2} \d+/)).toBeVisible()
 })
 
 test('last week is one press away, and so is the way back', async ({ page }) => {
@@ -80,8 +80,8 @@ test('last week is one press away, and so is the way back', async ({ page }) => 
   await page.goto('/tasks/review')
   await expect(project(page, 'CTWS')).toContainText('这周做完的')
 
-  await page.getByRole('button', { name: '上周' }).click()
-  await expect(page.getByText('这一周还没有动静')).toBeVisible()
-  await page.getByRole('button', { name: '本周' }).click()
+  await page.getByRole('button', { name: 'Last week' }).click()
+  await expect(page.getByText('Nothing happened this week')).toBeVisible()
+  await page.getByRole('button', { name: 'This week' }).click()
   await expect(project(page, 'CTWS')).toContainText('这周做完的')
 })

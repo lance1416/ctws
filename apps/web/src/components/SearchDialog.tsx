@@ -94,13 +94,13 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
      * first tabbable thing in the panel is the header's 关闭 -- the box is what is being typed
      * into, so it is named explicitly.
      *
-     * 「搜索」 and not 「搜索任务」: this is a SHELL surface and it merges every module's hits
+     * “Search” and not 「搜索任务」: this is a SHELL surface and it merges every module's hits
      * (module-boundary contract §3). It was named after the task module back when there was only
      * one, which is the shell knowing a module by name -- the second module is what made that
      * visible. The placeholder lost 「标题和备注」 for the same reason: those are a task's fields,
      * and a book has neither.
      */
-    <Modal title="搜索" onClose={onClose} initialFocus={box} className="rounded-lg">
+    <Modal title="Search" onClose={onClose} initialFocus={box} className="rounded-lg">
       <div className="border-b border-border-subtle px-4 py-3">
         {/**
          * THE ARIA 1.2 COMBOBOX CONTRACT. Without these five attributes the selection the keyboard
@@ -140,21 +140,21 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
               if (hit) choose(hit)
             }
           }}
-          placeholder="搜索…"
-          aria-label="搜索"
+          placeholder="Search…"
+          aria-label="Search"
           className="h-9 w-full bg-transparent px-0.5 text-fg placeholder:text-fg-muted"
         />
       </div>
       {results.isError && (
         <p role="alert" className="px-4 py-3 text-sm text-danger">
-          搜索失败，检查服务是否在运行
+          Search failed. Check that the server is running.
         </p>
       )}
       {debounced.length > 0 && results.isSuccess && rows.length === 0 && (
         <div className="px-4 py-3">
-          <p className="text-sm text-fg">没有匹配的任务</p>
+          <p className="text-sm text-fg">No matching tasks</p>
           <p className="mt-1 text-sm text-fg-muted">
-            搜索覆盖所有项目的标题和备注，包括已归档的项目。
+            Searches titles and notes across every project, archived ones included.
           </p>
           <button
             type="button"
@@ -166,12 +166,12 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
             }}
             className="mt-3 -ml-2 rounded-md px-2 py-1 text-sm text-accent"
           >
-            换个词
+            Try another word
           </button>
         </div>
       )}
       {debounced.length === 0 && (
-        <p className="px-4 py-3 text-sm text-fg-muted">输入关键词搜索所有项目的任务</p>
+        <p className="px-4 py-3 text-sm text-fg-muted">Type to search tasks across every project</p>
       )}
       {/* `role="listbox"` on the list and `role="option"` on each row, which is what makes
           `aria-activedescendant` above mean anything: an id pointing at an element with no `option`
@@ -182,7 +182,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
         ref={list}
         id={listId}
         role="listbox"
-        aria-label="搜索结果"
+        aria-label="Search results"
         className="max-h-[52vh] overflow-y-auto"
       >
         {rows.map((hit, i) => (

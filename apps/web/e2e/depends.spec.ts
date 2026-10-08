@@ -6,7 +6,7 @@ import { registerFreshUser } from './helpers'
  *
  * The API suite already pins the edges -- loops refused, tenants separated, both directions
  * readable. What only a browser can show is the part the feature was built for: a list stops
- * saying 「什么到期了」 and starts saying 「什么现在做得了」, and the thing in the way is NAMED on
+ * saying 「什么到期了” and starts saying 「什么现在做得了”, and the thing in the way is NAMED on
  * the row instead of being a mystery behind a click.
  */
 
@@ -43,12 +43,12 @@ async function openTree(page: Page, projectId: string) {
 const row = (page: Page, title: string) =>
   page
     .locator('li[data-depth]')
-    .filter({ has: page.getByRole('button', { name: `任务：${title}`, exact: true }) })
+    .filter({ has: page.getByRole('button', { name: `Task: ${title}`, exact: true }) })
 
-const pane = (page: Page) => page.getByRole('dialog', { name: '任务详情' })
+const pane = (page: Page) => page.getByRole('dialog', { name: 'Task details' })
 
 const openPane = async (page: Page, title: string) => {
-  // The ROW opens the pane; the `任务：X` button inside it is the status marker.
+  // The ROW opens the pane; the `Task: X` button inside it is the status marker.
   await page.getByRole('listitem').filter({ hasText: title }).first().click()
   await expect(pane(page).locator('[data-detail-title]')).toHaveText(title)
 }
@@ -70,15 +70,17 @@ test('a blocked row names what is in the way, and finishing that frees it', asyn
   await openTree(page, pid)
 
   // NAMED, not merely marked: the point of the phrase is that nobody has to click to find out.
-  await expect(row(page, '发 v0.8.0').locator('[data-row-blocked]')).toHaveText('被「跑通 CI」挡着')
+  await expect(row(page, '发 v0.8.0').locator('[data-row-blocked]')).toHaveText(
+    'Blocked by “跑通 CI”',
+  )
   // Dimmed but PRESENT -- a list that drops tasks cannot be trusted.
   await expect(row(page, '发 v0.8.0')).toBeVisible()
 
   // Finishing the blocker is the only write. Nothing touches the waiting task.
   await openPane(page, '跑通 CI')
-  await pane(page).getByRole('button', { name: '编辑', exact: true }).click()
-  await pane(page).getByRole('radio', { name: '已完成', exact: true }).check()
-  await pane(page).getByRole('button', { name: '保存' }).click()
+  await pane(page).getByRole('button', { name: 'Edit', exact: true }).click()
+  await pane(page).getByRole('radio', { name: 'Done', exact: true }).check()
+  await pane(page).getByRole('button', { name: 'Save' }).click()
   await expect(row(page, '跑通 CI')).toHaveCount(0)
 
   await expect(row(page, '发 v0.8.0').locator('[data-row-blocked]')).toHaveCount(0)
@@ -95,9 +97,9 @@ test('a dependency is added by searching, and it reaches into another project', 
   await openTree(page, mine)
 
   await openPane(page, '发 v0.8.0')
-  await expect(pane(page).getByText('没有', { exact: true })).toBeVisible()
-  await pane(page).getByRole('button', { name: '添加', exact: true }).click()
-  await pane(page).getByLabel('搜索要等的任务').fill('rrgen')
+  await expect(pane(page).getByText('None', { exact: true })).toBeVisible()
+  await pane(page).getByRole('button', { name: 'Add', exact: true }).click()
+  await pane(page).getByLabel('Search for a task to wait on').fill('rrgen')
   await pane(page)
     .getByRole('button', { name: /跑通 rrgen 的 CI/ })
     .click()
@@ -107,7 +109,7 @@ test('a dependency is added by searching, and it reaches into another project', 
   await expect(waitingFor(page)).toContainText(['跑通 rrgen 的 CI'])
   await expect(waitingFor(page).first()).toContainText('rrgen')
   await expect(row(page, '发 v0.8.0').locator('[data-row-blocked]')).toHaveText(
-    '被「跑通 rrgen 的 CI」挡着',
+    'Blocked by “跑通 rrgen 的 CI”',
   )
 })
 
@@ -119,13 +121,13 @@ test('the search never offers the task itself', async ({ page }) => {
   await openTree(page, pid)
 
   await openPane(page, '配色重做的收尾')
-  await pane(page).getByRole('button', { name: '添加', exact: true }).click()
-  await pane(page).getByLabel('搜索要等的任务').fill('配色重做')
+  await pane(page).getByRole('button', { name: 'Add', exact: true }).click()
+  await pane(page).getByLabel('Search for a task to wait on').fill('配色重做')
 
-  // The sibling is offered; itself is not. 「自己等自己」 is the one edge the server refuses
+  // The sibling is offered; itself is not. 「自己等自己” is the one edge the server refuses
   // outright, and an interface that proposes it is proposing something it knows cannot happen.
   // Both titles match the query, so the count is the assertion: one candidate, and it is the
-  // sibling. A candidate is named 「<title> <project>」, hence the anchored patterns.
+  // sibling. A candidate is named 「<title> <project>”, hence the anchored patterns.
   const candidates = pane(page).locator('[data-dep-candidates] li')
   await expect(candidates).toHaveCount(1)
   await expect(candidates.getByRole('button', { name: /^配色重做 / })).toHaveCount(1)
@@ -148,7 +150,7 @@ test('a dependency is removed from the pane, and the row stops waiting', async (
   // The project is named only when it is a DIFFERENT one: repeating the name of the project you
   // are already looking at is noise, which is why the tree's rows leave it out too.
   await expect(waitingFor(page).first()).not.toContainText('改版')
-  await pane(page).getByRole('button', { name: '移除依赖「跑通 CI」' }).click()
+  await pane(page).getByRole('button', { name: 'Remove dependency “跑通 CI”' }).click()
   await expect(waitingFor(page)).toHaveCount(0)
   await expect(row(page, '发 v0.8.0').locator('[data-row-blocked]')).toHaveCount(0)
 })
@@ -170,7 +172,7 @@ test('the other end shows the edge too, and offers no way to undo it from there'
   await expect(inTheWayOf(page)).toContainText(['发 v0.8.0'])
   // The edge belongs to the WAITING task's list. Removing it from here would be editing a task
   // that is not open.
-  await expect(pane(page).getByRole('button', { name: /移除依赖/ })).toHaveCount(0)
+  await expect(pane(page).getByRole('button', { name: /Remove dependency/ })).toHaveCount(0)
 })
 
 test('a loop is refused in words, not by silently doing nothing', async ({ page }) => {
@@ -186,12 +188,14 @@ test('a loop is refused in words, not by silently doing nothing', async ({ page 
 
   // A waiting for B would close the loop.
   await openPane(page, '搭脚手架')
-  await pane(page).getByRole('button', { name: '添加', exact: true }).click()
-  await pane(page).getByLabel('搜索要等的任务').fill('接上后端')
+  await pane(page).getByRole('button', { name: 'Add', exact: true }).click()
+  await pane(page).getByLabel('Search for a task to wait on').fill('接上后端')
   await pane(page)
     .getByRole('button', { name: /接上后端/ })
     .click()
 
-  await expect(pane(page).getByRole('alert')).toHaveText('这样两件事会互相等着')
+  await expect(pane(page).getByRole('alert')).toHaveText(
+    'That would leave the two waiting on each other',
+  )
   await expect(waitingFor(page)).toHaveCount(0)
 })

@@ -3,7 +3,7 @@ import { registerFreshUser } from './helpers'
 
 test('the app shell routes between today, projects and a project', async ({ page }) => {
   await registerFreshUser(page)
-  await expect(page.getByRole('heading', { level: 1, name: '今天' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Today' })).toBeVisible()
 
   // The id the API assigned to the inbox: the URL must carry exactly this, not merely
   // something shaped like a UUID.
@@ -12,9 +12,9 @@ test('the app shell routes between today, projects and a project', async ({ page
   const inbox = projects.find((p) => p.name === 'Inbox')
   expect(inbox).toBeDefined()
 
-  await page.getByRole('link', { name: '项目' }).click()
+  await page.getByRole('link', { name: 'Projects' }).click()
   await expect(page).toHaveURL(/\/projects$/)
-  await expect(page.getByRole('heading', { name: '项目' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Projects' })).toBeVisible()
   // Registration creates the inbox, so the project list is never empty. Scoped to <main>: the
   // left rail lists the same projects, so two links carry this name now.
   await page.getByRole('main').getByRole('link', { name: 'Inbox' }).click()
@@ -26,7 +26,7 @@ test('the app shell routes between today, projects and a project', async ({ page
 test('an unauthenticated visit lands on login', async ({ page }) => {
   await page.goto('/')
   await expect(page).toHaveURL(/\/login$/)
-  await expect(page.getByLabel('邮箱')).toBeVisible()
+  await expect(page.getByLabel('Email')).toBeVisible()
 })
 
 // Tailwind 4 hoists an @theme nested in @media out of the query, so a build can end up with only
@@ -51,9 +51,9 @@ test('a failed project list shows an error, not an empty list', async ({ page })
     route.fulfill({ status: 500, contentType: 'application/json', body: '{"title":"boom"}' }),
   )
 
-  await page.getByRole('link', { name: '项目' }).click()
+  await page.getByRole('link', { name: 'Projects' }).click()
 
   const alert = page.getByRole('alert')
   await expect(alert).toBeVisible()
-  await expect(alert).toContainText('项目加载失败')
+  await expect(alert).toContainText("Couldn't load projects")
 })

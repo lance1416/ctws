@@ -1,6 +1,9 @@
 import { expect, test, type Page } from '@playwright/test'
 import { backdateProjectActivity, registerFreshUser } from './helpers'
 
+/** The month names the app prints, so a spec can build the string the page will show. */
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
 /**
  * THE PROJECT PAGE as a workbench (workbench spec §2): the header banner carrying this line of
  * work's state, the tree in a panel, and the detail as the third column rather than a layer.
@@ -71,7 +74,8 @@ const movementOf = async (page: Page): Promise<Movement[]> =>
   ((await (await page.request.get('/api/v1/tasks/movement')).json()) as { projects: Movement[] })
     .projects
 
-const header = (page: Page) => page.getByRole('region', { name: '项目概况', exact: true })
+const header = (page: Page) =>
+  page.getByRole('region', { name: 'Project at a glance', exact: true })
 const stat = (page: Page, label: string) => header(page).locator(`[data-stat="${label}"] dd`)
 
 /**
@@ -79,7 +83,7 @@ const stat = (page: Page, label: string) => header(page).locator(`[data-stat="${
  * (it starts a drag), so Enter on the focused handle is the way in.
  */
 async function openDetail(page: Page, title: string) {
-  await page.getByRole('button', { name: `任务：${title}`, exact: true }).focus()
+  await page.getByRole('button', { name: `Task: ${title}`, exact: true }).focus()
   await page.keyboard.press('Enter')
 }
 
@@ -120,24 +124,24 @@ test('the project header shows the four numbers the server reports, for THIS pro
     // It is a CONTROL now (it opens the colour picker, D74), so it is named rather than hidden --
     // the rule it has to keep is that colour is not the only thing saying which project this is.
     await expect(header(page).locator(`[data-project-chip="${id}"]`)).toHaveAccessibleName(
-      '项目颜色',
+      'Project colour',
     )
-    await expect(stat(page, '未完成'), row.projectName).toHaveText(String(row.remaining))
-    await expect(stat(page, '本周完成'), row.projectName).toHaveText(String(row.doneThisWeek))
-    await expect(stat(page, '逾期'), row.projectName).toHaveText(String(row.overdue))
-    // The day is the SERVER's, read back in the app's words. `quietDays` is the server's own
+    await expect(stat(page, 'Open'), row.projectName).toHaveText(String(row.remaining))
+    await expect(stat(page, 'Done this week'), row.projectName).toHaveText(String(row.doneThisWeek))
+    await expect(stat(page, 'Overdue'), row.projectName).toHaveText(String(row.overdue))
+    // The day is the SERVER"s, read back in the app's words. `quietDays` is the server"s own
     // arithmetic in the user's timezone, so nothing here depends on this machine's clock.
     expect(row.quietDays).toBe(0)
-    await expect(stat(page, '最后活动'), row.projectName).toHaveText('今天')
+    await expect(stat(page, 'Last activity'), row.projectName).toHaveText('Today')
   }
 
-  // A quiet line says the DAY it last moved, not "今天" -- which is the number's whole point.
+  // A quiet line says the DAY it last moved, not "Today" -- which is the number's whole point.
   backdateProjectActivity(calm, '9 days')
   await page.goto(`/projects/${calm}`)
   const quiet = (await movementOf(page)).find((r) => r.projectId === calm)!
   expect(quiet.quietDays).toBe(9)
   const [, month, day] = quiet.lastActivityOn!.split('-').map(Number)
-  await expect(stat(page, '最后活动')).toHaveText(`${month}月${day}日`)
+  await expect(stat(page, 'Last activity')).toHaveText(`${MONTHS[month! - 1]} ${day}`)
 })
 
 /**
@@ -152,12 +156,12 @@ test('the header’s numbers follow a task added on the page, without a reload',
   const pid = await makeProject(page, '会变的线')
   await makeTask(page, pid, '本来就有的')
   await page.goto(`/projects/${pid}`)
-  await expect(stat(page, '未完成')).toHaveText('1')
+  await expect(stat(page, 'Open')).toHaveText('1')
 
-  await page.getByRole('textbox', { name: '新任务' }).fill('刚加的')
-  await page.getByRole('textbox', { name: '新任务' }).press('Enter')
-  await expect(page.getByRole('button', { name: '任务：刚加的', exact: true })).toBeVisible()
-  await expect(stat(page, '未完成')).toHaveText('2')
+  await page.getByRole('textbox', { name: 'New task' }).fill('刚加的')
+  await page.getByRole('textbox', { name: 'New task' }).press('Enter')
+  await expect(page.getByRole('button', { name: 'Task: 刚加的', exact: true })).toBeVisible()
+  await expect(stat(page, 'Open')).toHaveText('2')
   // ...and the server agrees, so this is not a count the page made up on its own.
   expect((await movementOf(page)).find((r) => r.projectId === pid)!.remaining).toBe(2)
 })
@@ -177,12 +181,12 @@ test('the project header draws a percentage but never a progress bar', async ({ 
 
   await page.goto(`/projects/${pid}`)
   const banner = header(page)
-  await expect(stat(page, '本周完成')).toHaveText('2')
+  await expect(stat(page, 'Done this week')).toHaveText('2')
 
   // THE NUMBER IS BACK, THE BAR IS NOT. It was absent entirely until 2026-10-08 because the data
   // did not exist -- `manual_progress` was written by nothing and the rollup was unbuilt. It is
   // the mean of the four root tasks (1 + 1 + 0 + 0.5) / 4, the same §7.2 rule a parent gets.
-  await expect(stat(page, '进度')).toHaveText('63%')
+  await expect(stat(page, 'Progress')).toHaveText('63%')
   // A BAR is still refused: a 60% line and a 60% line nobody has touched for three weeks draw
   // the same bar, and 最后活动 beside it is the metric §7.4 calls the valuable one.
   await expect(banner.getByRole('progressbar')).toHaveCount(0)
@@ -210,7 +214,7 @@ test('the tree is a panel spanning two columns and the detail is the third, at 1
   await makeTask(page, pid, '旁边的任务')
   await page.goto(`/projects/${pid}`)
 
-  const treePanel = page.getByRole('region', { name: '任务', exact: true })
+  const treePanel = page.getByRole('region', { name: 'Tasks', exact: true })
   // The tree is INSIDE the panel, not beside it: a panel drawn around nothing would otherwise pass.
   await expect(treePanel.locator('[data-task-tree]')).toHaveCount(1)
   // The banner is above it and the full width of the content area.
@@ -220,7 +224,7 @@ test('the tree is a panel spanning two columns and the detail is the third, at 1
   expect(Math.round(bannerBox.width)).toBe(Math.round(closedBox.width))
 
   await openDetail(page, '被打开的任务')
-  const dialog = page.getByRole('dialog', { name: '任务详情' })
+  const dialog = page.getByRole('dialog', { name: 'Task details' })
   await expect(dialog).toHaveAttribute('data-detail-mode', 'pane')
   // No layer over the page: as a column, a click on the tree is a click on the tree.
   await expect(page.locator('[data-detail-backdrop]')).toHaveCount(0)
@@ -275,7 +279,7 @@ test('the detail traps the keyboard at 1024 and does not at 1440', async ({ page
   await page.setViewportSize(MEDIUM)
   await page.goto(`/projects/${pid}`)
   await openDetail(page, '开着的任务')
-  const dialog = page.getByRole('dialog', { name: '任务详情' })
+  const dialog = page.getByRole('dialog', { name: 'Task details' })
   await expect(dialog).toHaveAttribute('data-detail-mode', 'overlay')
   await expect(page.locator('[data-detail-backdrop]')).toHaveCount(1)
   await expect(dialog).toBeFocused()
@@ -292,9 +296,9 @@ test('the detail traps the keyboard at 1024 and does not at 1440', async ({ page
   await expect(dialog).toBeVisible()
   // Pressed from inside the pane. In reading mode the control to press it on is 编辑 ('exact'
   // because 继续编辑 contains it); what is pinned is that Escape from inside still closes.
-  await dialog.getByRole('button', { name: '编辑', exact: true }).press('Escape')
+  await dialog.getByRole('button', { name: 'Edit', exact: true }).press('Escape')
   await expect(dialog).toHaveCount(0)
-  await expect(page.getByRole('button', { name: '任务：开着的任务', exact: true })).toBeFocused()
+  await expect(page.getByRole('button', { name: 'Task: 开着的任务', exact: true })).toBeFocused()
 })
 
 /**
@@ -323,7 +327,7 @@ test('the overlay trap ignores a trailing control the keyboard cannot reach', as
   await page.setViewportSize(MEDIUM)
   await page.goto(`/projects/${pid}`)
   await openDetail(page, '开着的任务')
-  const dialog = page.getByRole('dialog', { name: '任务详情' })
+  const dialog = page.getByRole('dialog', { name: 'Task details' })
   await expect(dialog).toHaveAttribute('data-detail-mode', 'overlay')
   await expect(dialog).toBeFocused()
 
@@ -415,7 +419,7 @@ test('the tree’s rail reads as one continuous spine, not one dash per row', as
  * The workbench's row metric, on the densest list in the app. 44px for a single-line row is the
  * size stage 1 settled on (spec §4's band, measured against what had actually shipped rather than
  * against the stale "原 28–30" the section quotes); the tree was still at 32 and is the page the
- * complaint 「组件太小」 was about.
+ * complaint 「组件太小” was about.
  */
 test('a single-line tree row is 44px tall, at every depth', async ({ page }) => {
   await registerFreshUser(page)
@@ -434,7 +438,7 @@ test('a single-line tree row is 44px tall, at every depth', async ({ page }) => 
   // The marker inside it is the workbench's 20px, not a 16px glyph left sitting in a taller row.
   expect(
     await page
-      .getByRole('img', { name: '待办' })
+      .getByRole('img', { name: 'To do' })
       .first()
       .evaluate((el) => el.getBoundingClientRect().width),
   ).toBe(20)
@@ -457,7 +461,7 @@ test('the project page does not scroll sideways at 375, banner and all', async (
 
   await page.setViewportSize(PHONE)
   await page.goto(`/projects/${pid}`)
-  await expect(stat(page, '逾期')).toHaveText('2')
+  await expect(stat(page, 'Overdue')).toHaveText('2')
   const overflow = () =>
     page.evaluate(() => ({
       doc: document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -467,6 +471,6 @@ test('the project page does not scroll sideways at 375, banner and all', async (
 
   // ...and with the detail open, which at this width is a layer.
   await openDetail(page, '深一点的那条')
-  await expect(page.getByRole('dialog', { name: '任务详情' })).toBeVisible()
+  await expect(page.getByRole('dialog', { name: 'Task details' })).toBeVisible()
   expect(await overflow(), '详情打开时').toEqual({ doc: 0, body: 0 })
 })

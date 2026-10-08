@@ -87,17 +87,17 @@ export function WritingMode({
               {/* The hint costs two lines of a phone's writing area, which is the scarcest space
                   this layer has; the two controls it describes are both on screen anyway. */}
               <p className="text-xs text-fg-muted max-sm:hidden">
-                写完按「退出全屏」回到编辑，保存仍在面板里
+                Leave full screen to go back. Saving still happens in the pane.
               </p>
             </div>
             <Dialog.Close className="h-9 shrink-0 rounded-lg border border-border-strong px-3 text-sm text-fg hover:bg-surface-hover">
-              退出全屏
+              Leave full screen
             </Dialog.Close>
           </div>
           {/*
             SOURCE ON ONE SIDE, RESULT ON THE OTHER -- side by side once there is room for two
             readable measures, stacked below that. At 375px two columns would be two unusable
-            columns, and 「375px 零横向滚动」 is pinned app-wide; stacking keeps both halves at a
+            columns, and "no horizontal scroll at 375px" is pinned app-wide; stacking keeps both halves at a
             full width each and the page at one scroll direction.
 
             THE ROWS ARE EXPLICIT (`grid-rows-2`), not automatic. With automatic rows the stacked
@@ -109,10 +109,10 @@ export function WritingMode({
           <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-2 lg:grid-cols-2 lg:grid-rows-1">
             <div className="flex min-h-0 flex-col border-border-subtle max-lg:border-b lg:border-r">
               <label htmlFor="writing-source" className="px-4 pt-3 text-xs text-fg-muted">
-                {/* 「备注原文」 and not 「备注」: the pane's own textarea is still mounted behind
+                {/* “Markdown source” and not “Notes”: the pane's own textarea is still mounted behind
                     this layer, accessible names share one flat namespace, and an exact match for
-                    备注 must keep meaning the one field it has always meant. */}
-                备注原文
+                    Notes must keep meaning the one field it has always meant. */}
+                Markdown source
               </label>
               <textarea
                 id="writing-source"
@@ -129,10 +129,10 @@ export function WritingMode({
               />
             </div>
             <div className="min-h-0 overflow-y-auto px-4 py-3">
-              <span className="text-xs text-fg-muted">预览</span>
+              <span className="text-xs text-fg-muted">Preview</span>
               <div data-writing-preview className="mt-1 max-w-[68ch]">
                 {preview.trim() === '' ? (
-                  <p className="text-sm text-fg-subtle">还没有备注</p>
+                  <p className="text-sm text-fg-subtle">No notes yet</p>
                 ) : (
                   <NoteBody source={preview} />
                 )}

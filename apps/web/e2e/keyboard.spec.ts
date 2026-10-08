@@ -4,7 +4,7 @@ import { openProject, registerFreshUser, submitCreate } from './helpers'
 const MOVE_URL = /\/tasks\/[^/]+\/move$/
 
 const handle = (page: Page, title: string) =>
-  page.getByRole('button', { name: `任务：${title}`, exact: true })
+  page.getByRole('button', { name: `Task: ${title}`, exact: true })
 
 const row = (page: Page, title: string) => page.getByRole('listitem').filter({ hasText: title })
 
@@ -34,14 +34,14 @@ const tabStops = (page: Page) =>
  */
 // The last tab stop before the tree. 新建… moved into the BLOCK HEADER, above the 新任务 box, so
 // the box is what sits immediately above the rows now.
-const aboveTree = (page: Page) => page.getByRole('textbox', { name: '新任务' })
+const aboveTree = (page: Page) => page.getByRole('textbox', { name: 'New task' })
 
 const focusedTitle = (page: Page) =>
   page.evaluate(() => document.activeElement?.getAttribute('aria-label') ?? null)
 
 async function startProject(page: Page, name: string) {
-  await page.getByRole('link', { name: '项目' }).click()
-  await submitCreate(page, '新项目', name)
+  await page.getByRole('link', { name: 'Projects' }).click()
+  await submitCreate(page, 'New project', name)
   await openProject(page, name, true)
   return page.url()
 }
@@ -95,7 +95,7 @@ test('the whole tree is one tab stop, however many rows it has', async ({ page }
   // The block's own 新建… is a stop too, and it comes BEFORE the box: it lives in the block
   // header, so reading order puts it first. This is the shape the two create paths have now --
   // the full form in the head, the one-line box leading the rows -- rather than side by side.
-  await page.getByRole('button', { name: '新建…', exact: true }).focus()
+  await page.getByRole('button', { name: 'New…', exact: true }).focus()
   await page.keyboard.press('Tab')
   await expect(aboveTree(page)).toBeFocused()
 
@@ -229,24 +229,24 @@ test('Alt arrows still move and reparent rows, and Enter still opens the detail'
 
   // Shift+Enter adds a sibling, Alt+Enter a child: both still open their input.
   await page.keyboard.press('Shift+Enter')
-  await expect(page.getByLabel('添加任务')).toBeVisible()
+  await expect(page.getByLabel('Add a task')).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(handle(page, 'r1')).toBeFocused()
   await page.keyboard.press('Alt+Enter')
-  await expect(page.getByLabel('添加任务')).toBeVisible()
+  await expect(page.getByLabel('Add a task')).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(handle(page, 'r1')).toBeFocused()
 
   // `s` still starts the task.
   await page.keyboard.press('s')
-  await expect(row(page, 'r1').getByRole('img', { name: '进行中' })).toBeVisible()
+  await expect(row(page, 'r1').getByRole('img', { name: 'In progress' })).toBeVisible()
 })
 
 test('the ? overlay lists the keys, closes on Escape and on a click outside', async ({ page }) => {
   await registerFreshUser(page)
 
   await page.keyboard.press('?')
-  const dialog = page.getByRole('dialog', { name: '键盘快捷键' })
+  const dialog = page.getByRole('dialog', { name: 'Keyboard shortcuts' })
   await expect(dialog).toBeVisible()
   // The keys it must actually name, not merely "a dialog appeared".
   for (const key of ['/', 'f', '?', 'g t', 'Alt+Enter', 'Shift+Enter', 's', 'x']) {
@@ -264,10 +264,10 @@ test('the ? overlay lists the keys, closes on Escape and on a click outside', as
   await expect(dialog).toHaveCount(0)
 
   // Typed into a field it is a question mark, not a shortcut.
-  await page.getByLabel('捕获').fill('')
-  await page.getByLabel('捕获').press('?')
+  await page.getByLabel('Capture').fill('')
+  await page.getByLabel('Capture').press('?')
   await expect(dialog).toHaveCount(0)
-  await expect(page.getByLabel('捕获')).toHaveValue('?')
+  await expect(page.getByLabel('Capture')).toHaveValue('?')
 })
 
 test('g chords jump between the four destinations and not while typing', async ({ page }) => {
@@ -293,11 +293,11 @@ test('g chords jump between the four destinations and not while typing', async (
   await expect(page).toHaveURL(/\/tasks\/today$/)
 
   // In a text field, `g` then `p` is two letters of a word.
-  await page.getByLabel('捕获').fill('')
-  await page.getByLabel('捕获').press('g')
-  await page.getByLabel('捕获').press('p')
+  await page.getByLabel('Capture').fill('')
+  await page.getByLabel('Capture').press('g')
+  await page.getByLabel('Capture').press('p')
   await expect(page).toHaveURL(/\/tasks\/today$/)
-  await expect(page.getByLabel('捕获')).toHaveValue('gp')
+  await expect(page.getByLabel('Capture')).toHaveValue('gp')
 })
 
 test('the single-key shortcuts can be turned off, and stay off after a reload', async ({
@@ -309,29 +309,29 @@ test('the single-key shortcuts can be turned off, and stay off after a reload', 
 
   // The switch lives in the overlay, which also has a button: with the keys off, `?` must not be
   // the only way back to the setting that turned them off.
-  await page.getByRole('button', { name: '键盘快捷键' }).click()
-  const toggle = page.getByRole('checkbox', { name: /启用单键快捷键/ })
+  await page.getByRole('button', { name: 'Keyboard shortcuts' }).click()
+  const toggle = page.getByRole('checkbox', { name: /Single-key shortcuts/ })
   await expect(toggle).toBeChecked()
   await toggle.uncheck()
   await page.keyboard.press('Escape')
 
   await page.keyboard.press('f')
-  await expect(page.getByRole('combobox', { name: '搜索' })).toHaveCount(0)
+  await expect(page.getByRole('combobox', { name: 'Search' })).toHaveCount(0)
   await page.keyboard.press('?')
-  await expect(page.getByRole('dialog', { name: '键盘快捷键' })).toHaveCount(0)
+  await expect(page.getByRole('dialog', { name: 'Keyboard shortcuts' })).toHaveCount(0)
   await page.keyboard.press('g')
   await page.keyboard.press('p')
   await expect(page).toHaveURL(new RegExp(`/projects/${url.split('/').pop()!}`))
 
   await page.getByRole('heading', { name: 'Off' }).click()
   await page.keyboard.press('/')
-  await expect(page.getByLabel('捕获')).not.toBeFocused()
+  await expect(page.getByLabel('Capture')).not.toBeFocused()
 
   // And on a row: `s` no longer starts the task, but the widget keys still work, because a
   // treeview with no arrow keys and one tab stop would be unreachable.
   await handle(page, 'r0').focus()
   await page.keyboard.press('s')
-  await expect(row(page, 'r0').getByRole('img', { name: '进行中' })).toHaveCount(0)
+  await expect(row(page, 'r0').getByRole('img', { name: 'In progress' })).toHaveCount(0)
   await page.keyboard.press('ArrowDown')
   await expect(handle(page, 'r1')).toBeFocused()
   await page.keyboard.press('Enter')
@@ -342,12 +342,12 @@ test('the single-key shortcuts can be turned off, and stay off after a reload', 
   await page.reload()
   await expect(page.getByRole('listitem')).toHaveCount(3)
   await page.keyboard.press('f')
-  await expect(page.getByRole('combobox', { name: '搜索' })).toHaveCount(0)
+  await expect(page.getByRole('combobox', { name: 'Search' })).toHaveCount(0)
 
   // And it can be turned back on again through the same button.
-  await page.getByRole('button', { name: '键盘快捷键' }).click()
-  await page.getByRole('checkbox', { name: /启用单键快捷键/ }).check()
+  await page.getByRole('button', { name: 'Keyboard shortcuts' }).click()
+  await page.getByRole('checkbox', { name: /Single-key shortcuts/ }).check()
   await page.keyboard.press('Escape')
   await page.keyboard.press('f')
-  await expect(page.getByRole('combobox', { name: '搜索' })).toBeFocused()
+  await expect(page.getByRole('combobox', { name: 'Search' })).toBeFocused()
 })

@@ -32,9 +32,9 @@ export function PickOne<T extends string>({
   choices,
   onPick,
   disabled = false,
-  placeholder = '没有设定',
+  placeholder = 'Not set',
 }: {
-  /** What this value IS, for the accessible name: 「状态」. The control is both label and value. */
+  /** What this value IS, for the accessible name: “Status”. The control is both label and value. */
   label: string
   value: T | null
   choices: readonly Choice<T>[]
@@ -76,7 +76,7 @@ export function PickOne<T extends string>({
                 </span>
               )}
               <span className="truncate">{c.label}</span>
-              {c.value === value && <span className="ml-auto text-xs text-fg-subtle">当前</span>}
+              {c.value === value && <span className="ml-auto text-xs text-fg-subtle">Current</span>}
             </DropdownMenu.Item>
           ))}
         </DropdownMenu.Content>
@@ -144,7 +144,7 @@ export function PickMany({
           <span className="truncate">{c.label}</span>
           <button
             type="button"
-            aria-label={`把${label}「${c.label}」去掉`}
+            aria-label={`Remove ${label} “${c.label}”`}
             onClick={() => change(live.filter((v) => v !== c.value))}
             className="-mr-1 flex h-5 w-5 shrink-0 items-center justify-center rounded text-fg-subtle hover:text-fg"
           >
@@ -164,7 +164,7 @@ export function PickMany({
       {rest.length > 0 && (
         <DropdownMenu.Root>
           <DropdownMenu.Trigger
-            aria-label={`加一个${label}`}
+            aria-label={`Add ${label}`}
             className="flex h-7 w-7 items-center justify-center rounded-lg border border-dashed border-border-strong text-fg-subtle hover:bg-surface-hover hover:text-fg"
           >
             <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3 w-3">
@@ -260,7 +260,7 @@ export function InlineText({
       <button
         ref={trigger}
         type="button"
-        aria-label={`改${label}`}
+        aria-label={`Edit ${label}`}
         onClick={() => {
           setDraft(value)
           setEditing(true)

@@ -17,11 +17,11 @@ import type { TaskStatus } from '@ctws/contracts'
 // The disc and the check are always rendered and scale/fade in, so the 120ms echo of a status
 // change is a transition on a persistent element rather than a mount.
 const LABEL: Record<TaskStatus, string> = {
-  backlog: '待整理',
-  todo: '待办',
-  in_progress: '进行中',
-  done: '已完成',
-  cancelled: '已取消',
+  backlog: 'Backlog',
+  todo: 'To do',
+  in_progress: 'In progress',
+  done: 'Done',
+  cancelled: 'Cancelled',
 }
 
 export function StatusMark({ status }: { status: TaskStatus }) {

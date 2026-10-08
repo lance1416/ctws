@@ -212,7 +212,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
         setCollapsed(back)
         saveCollapsed(projectId, back)
       }
-      setError(error instanceof Error ? error.message : '移动失败')
+      setError(error instanceof Error ? error.message : "Couldn't move it")
     },
     onSettled: () => qc.invalidateQueries({ queryKey: key }),
   })
@@ -222,8 +222,8 @@ export function TaskTree({ projectId }: { projectId: string }) {
     const plan: DropPlan = planDrop({ rows, draggedId, slot, wantedDepth })
     // A refused plan means do nothing: never send a move the plan refused.
     if (!plan.ok) {
-      if (plan.reason === 'own-subtree') setError('不能把任务移到它自己的子任务里')
-      else if (plan.reason === 'too-deep') setError('层级太深，无法移到那里')
+      if (plan.reason === 'own-subtree') setError('A task cannot move inside itself')
+      else if (plan.reason === 'too-deep') setError('Too deep to move it there')
       return
     }
     setError(null)
@@ -265,7 +265,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
   }
 
   const addChild = (row: (typeof rows)[number]) => {
-    if (row.depth >= MAX_DEPTH) setError('层级太深，无法在这里添加子任务')
+    if (row.depth >= MAX_DEPTH) setError('Too deep to add a subtask here')
     else startAdd(row.id, row.id)
   }
 
@@ -278,7 +278,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
       setCreateError(null)
       return true
     } catch (e) {
-      setCreateError(e instanceof Error ? e.message : '没能创建，再按一次回车重试。')
+      setCreateError(e instanceof Error ? e.message : "Couldn't create. Press Enter to try again.")
       return false
     } finally {
       inFlight.current = false
@@ -546,7 +546,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
       }
     } catch (e) {
       const left = selected.size - done.size
-      setError(`${e instanceof Error ? e.message : '操作失败'}（还剩 ${left} 条没做）`)
+      setError(`${e instanceof Error ? e.message : "That didn't work"} (${left} left undone)`)
     } finally {
       setSelected((prev) => new Set([...prev].filter((id) => !done.has(id))))
       setBulkBusy(false)
@@ -594,7 +594,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
             data-show-done={showDone ? 'on' : 'off'}
             className="min-h-8 rounded-lg px-2 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
           >
-            {showDone ? '隐藏已完成' : `已完成 ${hiddenDone}`}
+            {showDone ? 'Hide done' : `${hiddenDone} done`}
           </button>
         </div>
       )}
@@ -609,7 +609,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
       />
       {tasks.isError && (
         <p role="alert" className="mt-4 text-sm text-danger">
-          任务加载失败
+          Couldn't load tasks
         </p>
       )}
       {error && (
@@ -622,7 +622,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
         // task is finished are opposite situations, and telling someone who just cleared their
         // list that they "have no tasks yet" reads as having lost the work.
         <EmptyState
-          title={hiddenDone > 0 ? '这个项目清空了' : '这个项目还没有任务'}
+          title={hiddenDone > 0 ? 'This project is clear' : 'No tasks in this project yet'}
           action={
             <button
               type="button"
@@ -630,10 +630,10 @@ export function TaskTree({ projectId }: { projectId: string }) {
               // The one action that fills this page is the input already on it; this puts the
               // cursor in it rather than adding a second way to create a task.
               onClick={() =>
-                document.querySelector<HTMLElement>('input[aria-label="新任务"]')?.focus()
+                document.querySelector<HTMLElement>('input[aria-label="New task"]')?.focus()
               }
             >
-              {hiddenDone > 0 ? '再添一条' : '写第一条任务'}
+              {hiddenDone > 0 ? 'Add another' : 'Add the first task'}
             </button>
           }
         />

@@ -36,7 +36,7 @@ export function Modal({
    */
   initialFocus,
   /** The header's own dismiss control. `null` on a layer whose footer already carries 取消. */
-  dismissLabel = '关闭',
+  dismissLabel = 'Close',
   children,
 }: {
   title: string

@@ -55,13 +55,13 @@ export function Project() {
 
   return (
     <>
-      {/* The banner, in the same language as 今天's 正在做 strip: one accent edge, the top step
+      {/* The banner, in the same language as the Working on strip: one accent edge, the top step
           of the type scale spent on its subject, and the numbers that say where it stands beside
           it. Its subject here is the LINE OF WORK, so the project's name takes that top step. */}
       <Panel
-        label="项目概况"
+        label="Project at a glance"
         className="border-l-4 border-l-accent"
-        heading={<h2 className="text-xs font-semibold text-fg-subtle">项目</h2>}
+        heading={<h2 className="text-xs font-semibold text-fg-subtle">Project</h2>}
       >
         <div className="flex min-w-0 flex-wrap items-end justify-between gap-x-8 gap-y-3 px-2 pb-1">
           {/* The chip is the colour PICKER and the name is editable in place: the server has
