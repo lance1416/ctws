@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   endedBefore,
   instantOf,
-  isUsableRule,
+  ruleProblem,
   localOf,
   occurrencesIn,
   type Exception,
@@ -211,14 +211,42 @@ describe('rules', () => {
       'FREQ=MONTHLY;BYDAY=-1FR',
       'FREQ=WEEKLY;BYDAY=MO,WE,FR;COUNT=10',
     ]) {
-      expect(isUsableRule(rule), rule).toBe(true)
+      expect(ruleProblem(rule), rule).toBeNull()
     }
   })
 
   it('refuses a rule that parses but schedules nothing, and one that does not parse', () => {
-    expect(isUsableRule('FREQ=WEEKLY;COUNT=0')).toBe(false)
-    expect(isUsableRule('every other tuesday')).toBe(false)
-    expect(isUsableRule('')).toBe(false)
+    expect(ruleProblem('FREQ=WEEKLY;COUNT=0')).not.toBeNull()
+    expect(ruleProblem('every other tuesday')).not.toBeNull()
+    expect(ruleProblem('')).not.toBeNull()
+  })
+
+  it('refuses, BY PARSING, what one request cannot be made to compute', () => {
+    // Each measured. The decision is the parser's, not a regex's, because a regex and a parser
+    // disagree about whitespace and number formats and the parser is the one that expands.
+    expect(ruleProblem('FREQ=SECONDLY')).toBe('会议不会比每天更频繁')
+    expect(ruleProblem('FREQ=MINUTELY;INTERVAL=1')).toBe('会议不会比每天更频繁')
+    // COUNT=5000000 costs 3.2s even when the window holds 31 of them.
+    expect(ruleProblem('FREQ=DAILY;COUNT=5000000')).toBe('重复的次数太多了')
+    expect(ruleProblem('FREQ=DAILY;INTERVAL=999999')).toBe('这个间隔不是一个日程')
+  })
+
+  it('refuses the spellings a regex and a parser disagree about', () => {
+    // `rrule` is lenient about case and about an RRULE: prefix inside the body. Whatever it
+    // accepts, the check sees the same thing it does -- which is the whole point of parsing.
+    expect(ruleProblem('freq=secondly')).toBe('会议不会比每天更频繁')
+    expect(ruleProblem('RRULE:FREQ=HOURLY')).toBe('会议不会比每天更频繁')
+  })
+
+  it('does not expand a stored rule it would have refused', () => {
+    // A row written before a limit existed must not be expanded on every read for the life of
+    // the workspace. It is reported as the one meeting its start describes.
+    const got = occurrencesIn(
+      weekly({ rrule: 'FREQ=DAILY;COUNT=5000000' }),
+      none,
+      window('2026-10-20T00:00Z', '2026-11-01T00:00Z'),
+    )
+    expect(got.map((o) => o.startsLocal)).toEqual(['2026-10-20T09:00'])
   })
 
   it('counts every other week as every other week', () => {

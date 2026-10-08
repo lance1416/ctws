@@ -42,6 +42,17 @@ export const localTime = z
       mm < 60
     )
   }, 'not a real local time')
+  /**
+   * A MEETING IS SOMETHING YOU SCHEDULE, so it starts within a human range.
+   *
+   * Not tidiness: a daily series starting in year 1 makes the expansion walk from there to the
+   * window on every read -- measured at 64ms for one series against 3ms for a normal one, and it
+   * is paid per series per request.
+   */
+  .refine((v) => {
+    const year = Number(v.slice(0, 4))
+    return year >= 1970 && year <= 2200
+  }, 'that is not a date anybody is meeting on')
 
 /**
  * An IANA zone name, checked by asking the platform rather than against a list that would rot.
@@ -68,27 +79,15 @@ const durationMinutes = z
   .max(60 * 36)
 
 /**
- * The `RRULE` body, without its `RRULE:` prefix.
+ * The `RRULE` body, without its `RRULE:` prefix. LENGTH ONLY.
  *
- * SUB-DAILY FREQUENCIES ARE REFUSED. `FREQ=SECONDLY` over a one-month window is 2,646,001
- * occurrences and 5.5 seconds of one core -- measured -- and nobody schedules a meeting every
- * second. `INTERVAL` is bounded for the same reason it exists at all: a number nobody typed on
- * purpose should not be able to cost anything.
- *
- * Whether a rule SCHEDULES anything is still the expander's to decide; this is only about what it
- * can be asked to do.
+ * It deliberately does not inspect the rule. An earlier version matched `FREQ=(SECONDLY|…)` and
+ * `INTERVAL=(\d+)` with regexes, which is a second parser beside the real one -- and two parsers
+ * disagree about whitespace, repeated parts and number formats, so a string can be refused here
+ * and accepted there, or the reverse. The server decides with the library that will expand it,
+ * and says why (422).
  */
-const SUB_DAILY = /FREQ=(SECONDLY|MINUTELY|HOURLY)/i
-const rrule = z
-  .string()
-  .trim()
-  .min(1)
-  .max(500)
-  .refine((r) => !SUB_DAILY.test(r), 'a meeting does not repeat more often than daily')
-  .refine((r) => {
-    const interval = /INTERVAL=(\d+)/i.exec(r)
-    return !interval || (Number(interval[1]) >= 1 && Number(interval[1]) <= 1000)
-  }, 'that interval is not a schedule')
+const rrule = z.string().trim().min(1).max(500)
 
 export const createMeetingBody = z
   .object({
@@ -144,6 +143,12 @@ export const updateMeetingBody = z
     path: ['recurrenceId'],
   })
 export type UpdateMeetingBody = z.infer<typeof updateMeetingBody>
+/**
+ * What a CLIENT sends: `scope` is optional here because the schema defaults it. The server's own
+ * type has it present, which is the whole point of a default -- one side may leave it out and the
+ * other never has to wonder whether it is there.
+ */
+export type UpdateMeetingInput = z.input<typeof updateMeetingBody>
 
 /** One occurrence of a meeting, as every read returns it. */
 export const meetingOccurrence = z

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { calendarQuery } from './task'
-import { createMeetingBody, meetingListQuery, updateMeetingBody } from './meeting'
+import { createMeetingBody, meetingListQuery } from './meeting'
 
 /**
  * The edge's share of bounding what one request can cost. The expander bounds itself as well --
@@ -15,7 +15,9 @@ const BASE = {
 }
 
 describe('repeat rules', () => {
-  it('takes the shapes a person schedules', () => {
+  it('takes the shapes a person schedules, and does not judge the rest', () => {
+    // The CONTRACT only bounds the length. Whether a rule is usable is decided by the library
+    // that will expand it, because a regex here would be a second parser that disagrees with it.
     for (const rrule of [
       'FREQ=DAILY',
       'FREQ=WEEKLY;BYDAY=TU',
@@ -26,21 +28,24 @@ describe('repeat rules', () => {
     }
   })
 
-  it('refuses sub-daily frequencies, which nobody schedules and which cost seconds', () => {
-    // Measured: FREQ=SECONDLY over a month is 2,646,001 occurrences and 5.5s of one core.
-    for (const rrule of ['FREQ=SECONDLY', 'FREQ=MINUTELY;INTERVAL=1', 'freq=hourly']) {
-      expect(createMeetingBody.safeParse({ ...BASE, rrule }).success, rrule).toBe(false)
-      expect(updateMeetingBody.safeParse({ rrule }).success, rrule).toBe(false)
-    }
+  it('refuses a rule longer than any rule is', () => {
+    expect(createMeetingBody.safeParse({ ...BASE, rrule: 'A'.repeat(501) }).success).toBe(false)
   })
+})
 
-  it('refuses an interval nobody typed on purpose', () => {
-    expect(createMeetingBody.safeParse({ ...BASE, rrule: 'FREQ=DAILY;INTERVAL=0' }).success).toBe(
+describe('when a meeting can start', () => {
+  it('refuses a year nobody is meeting in', () => {
+    // A daily series starting in year 1 makes the expansion walk from there to the window on
+    // every read: 64ms for one series against 3ms for a normal one, paid per series per request.
+    expect(createMeetingBody.safeParse({ ...BASE, startsLocal: '0001-01-01T09:00' }).success).toBe(
       false,
     )
-    expect(
-      createMeetingBody.safeParse({ ...BASE, rrule: 'FREQ=DAILY;INTERVAL=999999' }).success,
-    ).toBe(false)
+    expect(createMeetingBody.safeParse({ ...BASE, startsLocal: '9999-01-01T09:00' }).success).toBe(
+      false,
+    )
+    expect(createMeetingBody.safeParse({ ...BASE, startsLocal: '2026-10-20T09:00' }).success).toBe(
+      true,
+    )
   })
 })
 
@@ -54,6 +59,12 @@ describe('windows', () => {
     // A recurring thing has no last occurrence, so the window IS the bound.
     expect(calendarQuery.safeParse({ from: '2026-01-01', to: '3026-01-01' }).success).toBe(false)
     expect(meetingListQuery.safeParse({ from: '2026-01-01', to: '3026-01-01' }).success).toBe(false)
+  })
+
+  it('refuses a window nobody is looking at, however narrow', () => {
+    // The distance to a window is work too: a series is expanded from its own start forward to it.
+    expect(calendarQuery.safeParse({ from: '9000-10-01', to: '9000-11-15' }).success).toBe(false)
+    expect(calendarQuery.safeParse({ from: '1900-01-01', to: '1900-02-01' }).success).toBe(false)
   })
 
   it('refuses a window that ends before it starts', () => {

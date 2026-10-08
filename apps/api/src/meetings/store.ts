@@ -14,7 +14,7 @@ import {
 } from './errors'
 import {
   endedBefore,
-  isUsableRule,
+  ruleProblem,
   occurrencesIn,
   type Exception,
   type LocalTime,
@@ -266,7 +266,8 @@ export async function createMeeting(
   // The expander is what has to understand a rule, so it is what decides whether one is usable:
   // a schema that accepted what the expansion then ignored would store a schedule that never
   // happens.
-  if (body.rrule && !isUsableRule(body.rrule)) throw new BadRuleError()
+  const wrong = body.rrule ? ruleProblem(body.rrule) : null
+  if (wrong) throw new BadRuleError(wrong)
 
   const id = uuidv7()
   await q.insert(meetings).values({
@@ -295,7 +296,8 @@ export async function updateMeeting(
   if (!series) throw new MeetingNotFoundError()
   if (patch.projectId) await assertProject(q, workspaceId, patch.projectId)
   if (patch.attendeeIds) await assertAttendees(q, workspaceId, patch.attendeeIds)
-  if (patch.rrule && !isUsableRule(patch.rrule)) throw new BadRuleError()
+  const wrong = patch.rrule ? ruleProblem(patch.rrule) : null
+  if (wrong) throw new BadRuleError(wrong)
 
   const { scope: asked, recurrenceId, attendeeIds, ...fields } = patch
   // A meeting that happens once has one occurrence, so the three scopes are the same thing.

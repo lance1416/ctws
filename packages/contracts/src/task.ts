@@ -272,6 +272,16 @@ export type CalendarEntry = z.infer<typeof calendarEntry>
  */
 export const MAX_CALENDAR_SPAN_DAYS = 370
 
+/**
+ * And WHERE a window may sit, not only how wide it is.
+ *
+ * A window in year 9000 is as expensive as a wide one: a series is expanded from its own start
+ * forward to the window, so the distance is the work. Nothing in this app draws a calendar
+ * outside a human range, and a meeting cannot start outside one either.
+ */
+const CALENDAR_FLOOR = '1970-01-01'
+const CALENDAR_CEILING = '2200-12-31'
+
 export const calendarQuery = z
   .object({ from: calendarDate, to: calendarDate })
   .strict()
@@ -282,6 +292,12 @@ export const calendarQuery = z
   .refine((q) => (Date.parse(q.to) - Date.parse(q.from)) / 86_400_000 <= MAX_CALENDAR_SPAN_DAYS, {
     message: `a calendar window is at most ${MAX_CALENDAR_SPAN_DAYS} days`,
     path: ['to'],
+  })
+  // Compared as strings, which is safe for `YYYY-MM-DD` and is the same comparison a database
+  // index would do.
+  .refine((q) => q.from >= CALENDAR_FLOOR && q.to <= CALENDAR_CEILING, {
+    message: 'that is not a window anybody is looking at',
+    path: ['from'],
   })
 export type CalendarQuery = z.infer<typeof calendarQuery>
 

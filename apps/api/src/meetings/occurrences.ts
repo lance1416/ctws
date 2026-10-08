@@ -118,19 +118,49 @@ export type Occurrence = {
 const HARD_LIMIT = 2000
 
 /**
- * Checks a rule string by parsing it the way the expansion will.
+ * WHAT IS WRONG WITH A RULE, or null.
  *
- * `rrule` accepts a surprising amount and throws on the rest, so this is the one place that
- * decides whether a stored rule is usable -- the API refuses what this refuses.
+ * Decided by PARSING it with the same library that will expand it, and reading the parsed
+ * options -- never by matching the string. A regex and a parser disagree about things like
+ * whitespace, repeated parts and number formats, and when they disagree the parser wins at
+ * expansion time, which is exactly the gap an attacker aims at.
+ *
+ * The limits are about what one request may be made to compute, and each was measured:
+ *
+ * - SUB-DAILY: `FREQ=SECONDLY` over a one-month window is 2,646,001 occurrences and 5.5s of one
+ *   core. Nobody schedules a meeting every second.
+ * - COUNT: `COUNT=5000000` costs 3.2s even when the window holds 31 of them -- the engine walks
+ *   every one. A series of more than `MAX_COUNT` is 「一直重复」, which is what no COUNT means.
+ * - INTERVAL: a number nobody typed on purpose should not be able to cost anything.
  */
-export function isUsableRule(rule: string): boolean {
+const SUB_DAILY = new Set([RRule.SECONDLY, RRule.MINUTELY, RRule.HOURLY])
+const MAX_COUNT = 1000
+const MAX_INTERVAL = 1000
+
+export function ruleProblem(rule: string): string | null {
+  let parsed: RRule
   try {
-    const parsed = RRule.fromString(withDtstart(rule, '2026-01-01T00:00'))
-    // A rule that produces nothing is not a schedule, it is a typo that happens to parse.
-    return parsed.all((_, i) => i < 1).length > 0
+    parsed = RRule.fromString(withDtstart(rule, '2026-01-01T00:00'))
   } catch {
-    return false
+    return '这条重复规则读不懂'
   }
+  const problem = optionsProblem(parsed)
+  if (problem) return problem
+  // A rule that produces nothing is not a schedule, it is a typo that happens to parse.
+  return parsed.all((_, i) => i < 1).length > 0 ? null : '这条重复规则一次也不会发生'
+}
+
+/** The same checks against an ALREADY PARSED rule, for the expansion's own guard. */
+function optionsProblem(parsed: RRule): string | null {
+  const { freq, interval, count } = parsed.options
+  if (SUB_DAILY.has(freq)) return '会议不会比每天更频繁'
+  if (!Number.isInteger(interval) || interval < 1 || interval > MAX_INTERVAL) {
+    return '这个间隔不是一个日程'
+  }
+  if (count !== null && count !== undefined && (!Number.isInteger(count) || count > MAX_COUNT)) {
+    return '重复的次数太多了'
+  }
+  return null
 }
 
 function withDtstart(rule: string, startsLocal: LocalTime): string {
@@ -205,6 +235,18 @@ export function occurrencesIn(
   } catch {
     // A rule that no longer parses must not take the whole calendar down with it: the series is
     // reported as the one meeting its start describes.
+    const one = made(series.startsLocal)
+    return one && overlaps(one) ? [one] : []
+  }
+  /**
+   * THE SAME GUARD, HERE, where the work actually happens.
+   *
+   * The API refuses an unusable rule before storing it, but a row written before a limit existed
+   * -- or by anything other than that endpoint -- would otherwise be expanded on every calendar
+   * read for the life of the workspace. A stored rule nobody can afford to expand is reported as
+   * the one meeting its start describes.
+   */
+  if (optionsProblem(rule)) {
     const one = made(series.startsLocal)
     return one && overlaps(one) ? [one] : []
   }

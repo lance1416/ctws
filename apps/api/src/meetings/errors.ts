@@ -26,8 +26,8 @@ export class OccurrenceNotFoundError extends Error {
  * what the expansion then ignored would store a schedule that never happens.
  */
 export class BadRuleError extends Error {
-  constructor() {
-    super('That repeat rule schedules nothing')
+  constructor(why = 'That repeat rule schedules nothing') {
+    super(why)
     this.name = 'BadRuleError'
   }
 }
