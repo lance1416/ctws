@@ -26,7 +26,7 @@ test('the app shell routes between today, projects and a project', async ({ page
 test('an unauthenticated visit lands on login', async ({ page }) => {
   await page.goto('/')
   await expect(page).toHaveURL(/\/login$/)
-  await expect(page.getByLabel('Email')).toBeVisible()
+  await expect(page.getByLabel('邮箱')).toBeVisible()
 })
 
 // Tailwind 4 hoists an @theme nested in @media out of the query, so a build can end up with only

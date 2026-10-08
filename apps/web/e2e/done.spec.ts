@@ -363,7 +363,7 @@ test('Log out with a dirty panel asks first and does not log out until discarded
 
   await logOut(page)
   await page.getByRole('button', { name: '放弃修改' }).click()
-  await expect(page.getByLabel('Email')).toBeVisible()
+  await expect(page.getByLabel('邮箱')).toBeVisible()
   expect(logouts).toHaveLength(1)
   expect((await page.request.get('/api/v1/auth/me')).ok()).toBeFalsy()
 })

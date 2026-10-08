@@ -30,10 +30,10 @@ test('register, stay signed in across a reload, then log out', async ({ page, co
   expect(await page.evaluate(() => document.cookie)).not.toContain('ctws_session')
 
   await logOut(page)
-  await expect(page.getByLabel('Email')).toBeVisible()
+  await expect(page.getByLabel('邮箱')).toBeVisible()
 
   await page.reload()
-  await expect(page.getByLabel('Email')).toBeVisible()
+  await expect(page.getByLabel('邮箱')).toBeVisible()
 })
 
 // Client-side routes must deep-link: the API answers an HTML navigation to an unknown,
@@ -43,7 +43,7 @@ test('a deep client-side route returns the SPA, not a 404', async ({ page }) => 
   const response = await page.goto('/some/deep/route')
   expect(response?.status()).toBe(200)
   expect(response?.headers()['content-type']).toContain('text/html')
-  await expect(page.getByLabel('Email')).toBeVisible()
+  await expect(page.getByLabel('邮箱')).toBeVisible()
 })
 
 // API routes must win over the static handler: /api/v1/health is JSON, never index.html.

@@ -7,9 +7,9 @@ export async function registerFreshUser(page: Page): Promise<string> {
   const email = `e2e-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`
 
   await page.goto('/')
-  await page.getByLabel('Email').fill(email)
-  await page.getByLabel('Password').fill('correct horse battery')
-  await page.getByRole('button', { name: 'Register' }).click()
+  await page.getByLabel('邮箱').fill(email)
+  await page.getByLabel('密码').fill('correct horse battery')
+  await page.getByRole('button', { name: '注册' }).click()
   await page.getByTestId('current-user').waitFor()
 
   return email

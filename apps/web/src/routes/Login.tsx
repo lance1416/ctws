@@ -63,7 +63,7 @@ export function Login() {
         >
           <div>
             <label htmlFor="login-email" className="block text-xs text-fg-muted">
-              Email
+              邮箱
             </label>
             <input
               id="login-email"
@@ -76,7 +76,7 @@ export function Login() {
           </div>
           <div>
             <label htmlFor="login-password" className="block text-xs text-fg-muted">
-              Password
+              密码
             </label>
             <input
               id="login-password"
@@ -97,7 +97,7 @@ export function Login() {
             disabled={act.isPending}
             className="mt-2 h-10 w-full rounded-md bg-accent font-semibold text-accent-fg hover:opacity-90 disabled:opacity-50"
           >
-            Log in
+            登录
           </button>
           <div className="flex items-baseline gap-2 text-sm text-fg-muted">
             第一次用？
@@ -107,7 +107,7 @@ export function Login() {
               className="-mx-1 rounded-md px-1 py-0.5 text-fg underline underline-offset-4 hover:text-accent disabled:opacity-50"
               onClick={() => act.mutate('/auth/register')}
             >
-              Register
+              注册
             </button>
           </div>
         </form>
