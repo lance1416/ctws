@@ -1,4 +1,6 @@
 import {
+  calendarEntry,
+  calendarQuery,
   createReadingItemBody,
   readingItemResponse,
   readingListQuery,
@@ -11,6 +13,7 @@ import { authedUser, requireUser } from '../auth/require-user'
 import { sendProblem } from '../problem'
 import { ProjectNotFoundError } from '../projects/errors'
 import { ReadingItemNotFoundError, WrongKindError } from './errors'
+import { listReadingCalendar } from './calendar'
 import {
   createReadingItem,
   listReadingItems,
@@ -36,6 +39,7 @@ function toResponse(r: ReadingItemRow): z.infer<typeof readingItemResponse> {
     url: r.url,
     author: r.author,
     status: r.status as z.infer<typeof readingItemResponse>['status'],
+    planOn: r.planOn,
     projectId: r.projectId,
     projectName: r.projectName,
     createdAt: r.createdAt.toISOString(),
@@ -74,6 +78,31 @@ export const readingRoutes: FastifyPluginAsync = async (app) => {
         ...(status ? { statuses: Array.isArray(status) ? status : [status] } : {}),
       })
       return { items: rows.map(toResponse) }
+    },
+  )
+
+  typed.get(
+    '/calendar',
+    {
+      preHandler: requireUser,
+      schema: {
+        querystring: calendarQuery,
+        response: { 200: z.object({ entries: z.array(calendarEntry) }).strict() },
+      },
+    },
+    async (req) => {
+      const rows = await listReadingCalendar(app.db, authedUser(req).workspaceId, req.query)
+      return {
+        entries: rows.map((r) => ({
+          id: r.id,
+          day: r.day,
+          title: r.title,
+          to: '/reading',
+          kind: r.kind,
+          projectId: r.project_id,
+          projectName: r.project_name,
+        })),
+      }
     },
   )
 

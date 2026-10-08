@@ -227,6 +227,37 @@ export const reviewQuery = z
   .strict()
 
 /**
+ * ONE DATED THING, as a module hands it to the calendar.
+ *
+ * Deliberately thin: an id, the DAY it falls on, what to call it, where to go, and which project
+ * it belongs to. The shell draws the grid and knows nothing about what a 截止 is or how it
+ * differs from 想读完 -- `kind` is the module's own word for it, shown as given.
+ *
+ * The DAY is computed by the server in the account's zone, like today / completed / review. A
+ * client that turned an instant into a day would put a 23:00 deadline on the wrong square for
+ * half the world.
+ */
+export const calendarEntry = z
+  .object({
+    id: z.string(),
+    /** The calendar day it sits on, in the account's zone. */
+    day: calendarDate,
+    title: z.string(),
+    /** Where clicking it goes, inside the app. */
+    to: z.string(),
+    /** The module's own word for what this date is: 「截止」, 「排期」, 「想读完」. */
+    kind: z.string(),
+    projectId: z.uuid().nullable(),
+    projectName: z.string().nullable(),
+  })
+  .strict()
+export type CalendarEntry = z.infer<typeof calendarEntry>
+
+/** The window a calendar asks for. Inclusive at both ends; the server decides nothing about it. */
+export const calendarQuery = z.object({ from: calendarDate, to: calendarDate }).strict()
+export type CalendarQuery = z.infer<typeof calendarQuery>
+
+/**
  * 「A 没做完 B 做不了」 (D64). A reference to the task at the other end, carrying enough to name
  * it on a row -- including its PROJECT, because a dependency may cross one.
  */

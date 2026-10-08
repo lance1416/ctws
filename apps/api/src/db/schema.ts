@@ -218,6 +218,8 @@ export const readingItems = pgTable(
     url: text('url'),
     author: text('author'),
     status: text('status').notNull(),
+    /** 「想读完的那天」. A calendar day with no time zone, deliberately not a timestamp. */
+    planOn: date('plan_on'),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

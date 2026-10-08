@@ -64,6 +64,13 @@
       "when": 1791470000000,
       "tag": "0008_reading_items",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791480000000,
+      "tag": "0009_reading_plan_on",
+      "breakpoints": true
     }
   ]
 }

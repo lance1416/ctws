@@ -8,6 +8,8 @@ import {
   searchTaskResponse,
   taskEventResponse,
   rollupsResponse,
+  calendarEntry,
+  calendarQuery,
   addDependencyBody,
   blockersResponse,
   dependencyLists,
@@ -40,6 +42,7 @@ import {
 } from './tasks'
 import { projectRollups } from './rollup'
 import { listReview } from './review'
+import { listTaskCalendar } from './calendar'
 import { addDependency, blockersFor, removeDependency, taskDependencyLists } from './dependencies'
 
 function toTaskResponse(t: Task): z.infer<typeof taskResponse> {
@@ -128,6 +131,35 @@ function sendTaskProblem(reply: FastifyReply, error: unknown): void {
 
 export const taskRoutes: FastifyPluginAsync = async (app) => {
   const typed = app.withTypeProvider<ZodTypeProvider>()
+
+  typed.get(
+    '/calendar',
+    {
+      preHandler: requireUser,
+      schema: {
+        querystring: calendarQuery,
+        response: { 200: z.object({ entries: z.array(calendarEntry) }).strict() },
+      },
+    },
+    async (req) => {
+      const user = authedUser(req)
+      // The window is the client's; the DAY each thing falls on is the server's, in the account's
+      // zone -- the same rule today / completed / review keep.
+      const rows = await listTaskCalendar(app.db, user.workspaceId, user.timezone, req.query)
+      return {
+        entries: rows.map((r) => ({
+          // A task can be both scheduled and due, so the task id alone is not unique on the grid.
+          id: `${r.id}:${r.kind}`,
+          day: r.day,
+          title: r.title,
+          to: `/tasks/today`,
+          kind: r.kind,
+          projectId: r.project_id,
+          projectName: r.project_name,
+        })),
+      }
+    },
+  )
 
   typed.get(
     '/today',

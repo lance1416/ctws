@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { calendarDate } from './task'
 
 /**
  * 待读清单 -- THE SECOND MODULE.
@@ -66,6 +67,8 @@ export const updateReadingItemBody = z
     author: author.nullable().optional(),
     status: readingStatus.optional(),
     projectId: z.uuid().nullable().optional(),
+    /** 「想读完的那天」. A calendar day, like a task's plan -- never an instant. */
+    planOn: calendarDate.nullable().optional(),
   })
   .strict()
   .refine((b) => Object.keys(b).length > 0, { message: 'expected at least one field' })
@@ -79,6 +82,15 @@ export const readingItemResponse = z
     url: z.string().nullable(),
     author: z.string().nullable(),
     status: readingStatus,
+    /**
+     * 「想读完的那天」, or null.
+     *
+     * A PLAN, not a deadline: nothing goes overdue here and nothing nags. It exists because a
+     * reading list with no dates at all cannot say 「这周想读完哪本」, and because the calendar
+     * needs a second module's worth of dated things or its contribution point would be shaped
+     * around the task module alone.
+     */
+    planOn: calendarDate.nullable(),
     projectId: z.uuid().nullable(),
     /** The project's name, so a cross-project list need not fetch them separately. */
     projectName: z.string().nullable(),
