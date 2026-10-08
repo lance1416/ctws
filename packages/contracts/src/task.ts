@@ -193,6 +193,39 @@ export type RollupResponse = z.infer<typeof rollupResponse>
 /** Keyed by task id, one entry per task in the same response's `tasks`. */
 export const rollupsResponse = z.record(z.uuid(), rollupResponse)
 
+/**
+ * THE WEEKLY REVIEW (design spec §8). What HAPPENED in a window, read off the event log and
+ * grouped by project -- as against 已完成, which lists what is finished right now.
+ */
+export const reviewTask = z.object({ id: z.uuid(), title: z.string(), at: instant }).strict()
+
+export const reviewProject = z
+  .object({
+    projectId: z.uuid(),
+    projectName: z.string(),
+    /** Moved INTO done inside the window. */
+    finished: z.array(reviewTask),
+    /** Moved INTO in_progress: the week's starts, which a recount of a week needs as much. */
+    started: z.array(reviewTask),
+    /** Moved INTO cancelled. Dropping something is a decision, and it belongs in the account. */
+    dropped: z.array(reviewTask),
+  })
+  .strict()
+
+export const reviewResponse = z
+  .object({
+    /** The window's own bounds, as calendar days in the account's zone. */
+    from: calendarDate,
+    to: calendarDate,
+    projects: z.array(reviewProject),
+  })
+  .strict()
+export type ReviewResponse = z.infer<typeof reviewResponse>
+
+export const reviewQuery = z
+  .object({ from: calendarDate.optional(), to: calendarDate.optional() })
+  .strict()
+
 // ---- today ----
 
 // Display order. The precedence between segments (a task matching several belongs to exactly one:

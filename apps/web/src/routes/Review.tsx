@@ -1,0 +1,124 @@
+import type { ReviewResponse } from '@ctws/contracts'
+import { useQuery } from '@tanstack/react-query'
+import { useRef, useState } from 'react'
+import { listReview } from '../api/review'
+import { EmptyState } from '../components/EmptyState'
+import { Panel } from '../components/Panel'
+import { useProjectRail } from '../projectColor'
+
+/** "10月2日" — the year only when it is not the window's own. */
+function dayLabel(day: string): string {
+  const [, m, d] = day.split('-').map(Number) as [number, number, number]
+  return `${m}月${d}日`
+}
+
+function shiftWeek(from: string, to: string): { from: string; to: string } {
+  const back = (day: string) => {
+    const d = new Date(`${day}T12:00:00Z`)
+    d.setUTCDate(d.getUTCDate() - 7)
+    return d.toISOString().slice(0, 10)
+  }
+  return { from: back(from), to: back(to) }
+}
+
+function Group({
+  title,
+  tasks,
+}: {
+  title: string
+  tasks: ReviewResponse['projects'][number]['finished']
+}) {
+  if (tasks.length === 0) return null
+  return (
+    <div className="mt-2">
+      <h4 className="text-sm text-fg-muted">
+        {title} <span className="tabular-nums text-fg-subtle">{tasks.length}</span>
+      </h4>
+      <ul className="mt-0.5 flex flex-col">
+        {tasks.map((t) => (
+          <li key={t.id} className="min-h-7 py-0.5 text-fg">
+            {t.title}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+/**
+ * 我做了什么 — the third of the spec's v1 views (§2), and the one the other two cannot answer.
+ *
+ * 已完成 lists what is finished RIGHT NOW. This lists what HAPPENED in a window, read off the
+ * event log: finished, started, dropped, grouped by line of work. A task finished on Tuesday and
+ * reopened on Thursday is in neither place in 已完成 and is in this one, which is the point.
+ *
+ * The window is the server's. It decides the week boundary in the account's zone and reports the
+ * bounds it used; this page shows them and offers the one step back a weekly review needs.
+ */
+export function Review() {
+  const [range, setRange] = useState<{ from: string; to: string } | null>(null)
+  const review = useQuery({
+    queryKey: ['review', range?.from ?? 'week', range?.to ?? ''],
+    queryFn: () => listReview(range ?? undefined),
+  })
+  const heading = useRef<HTMLHeadingElement>(null)
+  const rail = useProjectRail()
+  const data = review.data
+
+  return (
+    <>
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <h1 ref={heading} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
+          回顾
+        </h1>
+        {data && (
+          <p className="text-sm text-fg-muted">
+            {dayLabel(data.from)} – {dayLabel(data.to)}
+          </p>
+        )}
+        {data && (
+          <button
+            type="button"
+            onClick={() => setRange(range ? null : shiftWeek(data.from, data.to))}
+            className="ml-auto h-8 rounded-lg px-2.5 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
+          >
+            {range ? '本周' : '上周'}
+          </button>
+        )}
+      </div>
+
+      {review.isError && (
+        <p role="alert" className="mt-4 text-sm text-danger">
+          回顾加载失败
+        </p>
+      )}
+
+      {data && data.projects.length === 0 && <EmptyState title="这一周还没有动静" />}
+
+      <div className="mt-4 flex max-w-[52rem] flex-col gap-3">
+        {data?.projects.map((p) => (
+          <Panel
+            key={p.projectId}
+            label={p.projectName}
+            heading={
+              <h2 className="flex min-w-0 items-center gap-2 text-lg font-semibold text-fg">
+                {/* A chip, never alone: the project's NAME is right beside it (WCAG 1.4.1). */}
+                <span
+                  aria-hidden="true"
+                  className={`h-4 w-[3px] shrink-0 rounded-full ${rail(p.projectId)}`}
+                />
+                <span className="truncate">{p.projectName}</span>
+              </h2>
+            }
+          >
+            <div className="px-2 pb-1">
+              <Group title="完成" tasks={p.finished} />
+              <Group title="开始" tasks={p.started} />
+              <Group title="放弃" tasks={p.dropped} />
+            </div>
+          </Panel>
+        ))}
+      </div>
+    </>
+  )
+}

@@ -2,6 +2,8 @@ import {
   completedTaskResponse,
   createTaskBody,
   moveTaskBody,
+  reviewQuery,
+  reviewResponse,
   projectMovementResponse,
   searchTaskResponse,
   taskEventResponse,
@@ -33,6 +35,7 @@ import {
   type Task,
 } from './tasks'
 import { projectRollups } from './rollup'
+import { listReview } from './review'
 
 function toTaskResponse(t: Task): z.infer<typeof taskResponse> {
   return {
@@ -127,6 +130,19 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
       // The timezone comes from the user record, not from a request header or the server clock.
       const rows = await listToday(app.db, user.workspaceId, user.timezone)
       return { tasks: rows.map(toTodayResponse) }
+    },
+  )
+
+  typed.get(
+    '/review',
+    {
+      preHandler: requireUser,
+      schema: { querystring: reviewQuery, response: { 200: reviewResponse } },
+    },
+    async (req) => {
+      const user = authedUser(req)
+      // The week boundary is the SERVER's, in the account's zone, like every other boundary here.
+      return listReview(app.db, user.workspaceId, user.timezone, req.query)
     },
   )
 

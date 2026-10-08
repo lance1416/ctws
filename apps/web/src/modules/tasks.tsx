@@ -17,6 +17,7 @@ import { dayPhrase, todayIn } from '../dueAt'
 import { useShortcutsEnabled } from '../shortcuts/enabled'
 import { isBareKey, isTypingTarget } from '../shortcuts/keys'
 import { Completed } from '../routes/Completed'
+import { Review } from '../routes/Review'
 import { Today } from '../routes/Today'
 import { useTimeZone } from '../useMe'
 import type { CaptureTargetState, SearchHit, WorkspaceModule } from './contract'
@@ -274,16 +275,19 @@ export const taskModule: WorkspaceModule = {
   destinations: [
     { id: 'today', to: at('today'), label: '今天', end: true, Count: TodayCount },
     { id: 'completed', to: at('completed'), label: '已完成', end: false },
+    { id: 'review', to: at('review'), label: '回顾', end: false },
   ],
   routes: [
     { path: 'today', element: <Today /> },
     { path: 'completed', element: <Completed /> },
+    { path: 'review', element: <Review /> },
   ],
   capture: { useTarget: useInboxCapture },
   search: { useHits: useTaskHits },
   chords: [
     { id: 'today', key: 't', label: '去「今天」', resolve: () => at('today'), order: 10 },
     { id: 'completed', key: 'd', label: '去「已完成」', resolve: () => at('completed'), order: 30 },
+    { id: 'review', key: 'r', label: '去「回顾」', resolve: () => at('review'), order: 40 },
     {
       id: 'inbox',
       key: 'i',
