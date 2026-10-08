@@ -122,6 +122,43 @@ describe('reading list', () => {
     expect(kept).toMatchObject({ title: '留下来的书', projectId: null, projectName: null })
   })
 
+  it('lists only what belongs to no project, for the workbench widget', async () => {
+    // 「散的」: the dashboard widget's whole contents. What is filed under a project is on that
+    // project's page, and a widget that repeated it would make two places to keep in your head.
+    const ctx = await setup()
+    const pid = await createProject(ctx, 'CTWS')
+    await added(ctx, { kind: 'link', url: 'https://x.test/filed', projectId: pid })
+    await added(ctx, { kind: 'book', title: '散的书' })
+
+    const loose = await list(ctx, '?unfiled=true')
+    expect(loose.map((i) => i.title)).toEqual(['散的书'])
+    // And it is a FILTER, not the whole list: without it both are there.
+    expect(await list(ctx)).toHaveLength(2)
+  })
+
+  it('counts an item whose project was deleted as having none', async () => {
+    // Projects are soft-deleted and the row reports only the project you can still SEE, so an
+    // item left behind by a deleted project has to turn up here -- otherwise it would belong to
+    // no list at all: absent from every project page AND from the widget.
+    const ctx = await setup()
+    const pid = await createProject(ctx, '没了的项目')
+    await added(ctx, { kind: 'book', title: '留下来的书', projectId: pid })
+    await ctx.app.inject({ method: 'DELETE', url: `/api/v1/projects/${pid}`, headers: web(ctx) })
+
+    expect((await list(ctx, '?unfiled=true')).map((i) => i.title)).toEqual(['留下来的书'])
+  })
+
+  it('refuses a filter that contradicts itself', async () => {
+    const ctx = await setup()
+    const pid = await createProject(ctx, 'CTWS')
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/reading?projectId=${pid}&unfiled=true`,
+      headers: ctx.authed,
+    })
+    expect(res.statusCode).toBe(400)
+  })
+
   it('refuses the fields of the other kind on a patch, as a conflict and not a crash', async () => {
     const ctx = await setup()
     const book = await added(ctx, { kind: 'book', title: '一本书' })

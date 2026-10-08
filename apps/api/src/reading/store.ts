@@ -73,7 +73,7 @@ async function assertProject(q: Queryable, workspaceId: string, projectId: strin
 export async function listReadingItems(
   q: Queryable,
   workspaceId: string,
-  opts: { projectId?: string; statuses?: readonly string[] } = {},
+  opts: { projectId?: string; unfiled?: boolean; statuses?: readonly string[] } = {},
 ): Promise<ReadingItemRow[]> {
   const rows = await q
     .select(withProject)
@@ -82,6 +82,15 @@ export async function listReadingItems(
       and(
         visibleItems(workspaceId),
         opts.projectId ? eq(readingItems.projectId, opts.projectId) : undefined,
+        // 「散的」: no project the person can still SEE. An item whose project was deleted reads
+        // as having none everywhere else (the row reports only visible projects), so it has to
+        // read that way here too -- otherwise it would belong to no list at all.
+        opts.unfiled
+          ? sql`not exists (
+              select 1 from projects p
+              where p.id = reading_items.project_id and p.deleted_at is null
+            )`
+          : undefined,
         // An empty list would mean "no status matches", which is never what a caller means; an
         // absent filter means every status.
         opts.statuses && opts.statuses.length > 0

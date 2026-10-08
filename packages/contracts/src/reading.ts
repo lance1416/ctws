@@ -92,8 +92,19 @@ export type ReadingItemResponse = z.infer<typeof readingItemResponse>
 export const readingListQuery = z
   .object({
     projectId: z.uuid().optional(),
+    /**
+     * Only the items that belong to NO project -- 「散的」.
+     *
+     * A separate flag rather than `projectId=none`, because it is not a project id and typing one
+     * where a uuid is expected is how a filter silently becomes no filter. It is also the
+     * complement of `projectId`, so asking for both is a contradiction and is refused below.
+     */
+    unfiled: z.enum(['true', 'false']).optional(),
     /** Repeatable: `?status=todo&status=reading`. Absent means every status. */
     status: z.union([readingStatus, z.array(readingStatus)]).optional(),
   })
   .strict()
+  .refine((q) => !(q.projectId && q.unfiled === 'true'), {
+    message: 'unfiled and projectId cannot both be asked for',
+  })
 export type ReadingListQuery = z.infer<typeof readingListQuery>

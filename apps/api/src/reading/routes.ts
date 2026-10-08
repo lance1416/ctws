@@ -65,9 +65,10 @@ export const readingRoutes: FastifyPluginAsync = async (app) => {
       schema: { querystring: readingListQuery, response: { 200: itemsResponse } },
     },
     async (req) => {
-      const { projectId, status } = req.query
+      const { projectId, unfiled, status } = req.query
       const rows = await listReadingItems(app.db, authedUser(req).workspaceId, {
         ...(projectId ? { projectId } : {}),
+        ...(unfiled === 'true' ? { unfiled: true } : {}),
         // Fastify gives one value for `?status=todo` and an array for a repeated key; the
         // contract accepts both and the store wants one shape.
         ...(status ? { statuses: Array.isArray(status) ? status : [status] } : {}),
