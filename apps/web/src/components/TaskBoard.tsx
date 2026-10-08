@@ -15,7 +15,7 @@ import { listProjectTasks } from '../api/tasks'
 import { tasksKey } from '../api/taskCache'
 import { useTaskActions } from '../api/taskActions'
 import { PanelEmpty } from './Panel'
-import { STATUS_LABEL } from './TaskDetail'
+import { STATUS_LABEL } from './statusLabel'
 
 /**
  * THE BOARD: the task block's second view (design spec §2's third v1 view, and the first user of

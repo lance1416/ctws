@@ -36,16 +36,10 @@ import { decision, field, label } from './formStyles'
 import { LeaveGuardContext } from './leaveGuard'
 import { DeadlineMark, PlanMark } from './RowParts'
 import { StatusMark } from './StatusMark'
+import { StatusPicker } from './StatusPicker'
+import { STATUS_LABEL } from './statusLabel'
 import { detailTaskForm, PATCH_KEYS, type DetailTaskForm, type DetailTaskValues } from './taskForm'
 import { useTimeZone } from '../useMe'
-
-export const STATUS_LABEL: Record<TaskStatus, string> = {
-  backlog: '待整理',
-  todo: '待办',
-  in_progress: '进行中',
-  done: '已完成',
-  cancelled: '已取消',
-}
 
 /**
  * The exact field, for the days the three named decisions do not cover. Quieter than them on
@@ -305,6 +299,22 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
     return () => window.removeEventListener('resize', measure)
   }, [])
 
+  /**
+   * WHAT EVERY WRITE FROM THIS PANE HAS TO REFRESH.
+   *
+   * The today list is cross-project and server-derived: any edit can move a task between segments
+   * or off the list, so it is always refetched. One copy, because there are two writers now (the
+   * form and the status picker) and a second copy is a second chance to forget a list.
+   */
+  const refreshAfterWrite = async () => {
+    await qc.invalidateQueries({ queryKey: ['today'] })
+    await qc.invalidateQueries({ queryKey: ['completed'] })
+    await qc.invalidateQueries({ queryKey: ['movement'] })
+    await qc.invalidateQueries({ queryKey: tasksKey(projectId) })
+    if (nextProjectId !== projectId)
+      await qc.invalidateQueries({ queryKey: tasksKey(nextProjectId) })
+  }
+
   const save = useMutation({
     mutationFn: async ({
       values,
@@ -337,16 +347,19 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
       }
     },
     // Settled, not success: if the move fails after the patch landed, the list is still stale.
-    onSettled: async () => {
-      // The today list is cross-project and server-derived: any edit can move a task between
-      // segments or off the list, so it is always refetched.
-      await qc.invalidateQueries({ queryKey: ['today'] })
-      await qc.invalidateQueries({ queryKey: ['completed'] })
-      await qc.invalidateQueries({ queryKey: ['movement'] })
-      await qc.invalidateQueries({ queryKey: tasksKey(projectId) })
-      if (nextProjectId !== projectId)
-        await qc.invalidateQueries({ queryKey: tasksKey(nextProjectId) })
-    },
+    onSettled: refreshAfterWrite,
+  })
+
+  /**
+   * THE DIRECT STATUS WRITE (D78). It lands at once, and the refetch set is the SAME one the
+   * form's save uses -- a status change moves a task between today's segments, on and off 已完成,
+   * and through the project's counts exactly as the form's did.
+   *
+   * It is outside the leave guard on purpose: nothing here is ever unsaved.
+   */
+  const setStatus = useMutation({
+    mutationFn: (status: TaskStatus) => patchTask(task.id, { status }),
+    onSettled: refreshAfterWrite,
   })
 
   // Leaving with unsaved edits asks first, in the panel: a browser confirm() would block the
@@ -545,12 +558,17 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
             </div>
 
             <div className="flex flex-col gap-2.5">
+              {/* THE STATUS IS CHANGED HERE (D78). One value out of five is a decision, not a
+                  composition: there is nothing for a 保存 to mean, so there is none. The menu is
+                  what keeps it deliberate -- the old 阅读/编辑 split was answering 「容易误触」,
+                  and a control you have to open answers it at a third of the cost. */}
               <div className="flex items-center gap-2">
                 <span className={label}>状态</span>
-                <span aria-hidden="true" className="flex">
-                  <StatusMark status={task.status} />
-                </span>
-                <span className="text-sm text-fg">{STATUS_LABEL[task.status]}</span>
+                <StatusPicker
+                  status={task.status}
+                  disabled={setStatus.isPending}
+                  onPick={(next) => setStatus.mutate(next)}
+                />
               </div>
               <div className="flex items-center gap-2">
                 <span className="flex items-center gap-1 text-sm text-deadline">

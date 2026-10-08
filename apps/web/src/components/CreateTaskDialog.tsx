@@ -14,7 +14,7 @@ import { MAX_DEPTH } from '../tree/drop'
 import { decision, field, label } from './formStyles'
 import { Modal } from './Modal'
 import { DeadlineMark, PlanMark } from './RowParts'
-import { STATUS_LABEL } from './TaskDetail'
+import { STATUS_LABEL } from './statusLabel'
 import { StatusMark } from './StatusMark'
 import {
   createTaskForm,

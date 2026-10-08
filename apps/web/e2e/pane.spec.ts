@@ -393,15 +393,20 @@ test('the pane opens with the task, and 删除任务 is not a peer of 保存', a
 /**
  * The complaint this answers is 「编辑和信息显示在同一个地方，容易误触」 plus 「想要的信息在二层菜单」.
  *
- * "There is no editable control" is NOT provable by asserting that some particular field is absent:
- * a pane that hid the title input while leaving the five status radios live would pass that and
- * keep the whole mis-click surface. So the assertion is over EVERY form control in the dialog,
- * counted, and it is paired with the other half -- that 编辑 brings them all back -- because a pane
- * that never shows a control passes the first half on its own.
+ * It was later narrowed (D78): the mis-click surface is a LIVE FORM, not every control. What the
+ * pane must not do at rest is sit there with a title field, five status radios and two date
+ * inputs one elbow away; a value you have to open a menu to change is deliberate, and making it
+ * cost 编辑-改-保存 turned one decision into a procedure. So the count below is over form controls
+ * -- fields -- and the status picker is asserted separately, by its own test, as working without
+ * any of them.
+ *
+ * "There is no field" is NOT provable by asserting that some particular one is absent: a pane that
+ * hid the title input while leaving the five status radios live would pass that and keep the whole
+ * mis-click surface. So the assertion is over EVERY form control in the dialog, counted, and it is
+ * paired with the other half -- that 编辑 brings them all back -- because a pane that never shows a
+ * control passes the first half on its own.
  */
-test('the pane opens in reading mode with no editable control, and 编辑 reveals them', async ({
-  page,
-}) => {
+test('the pane opens in reading mode with no field, and 编辑 reveals them', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '只读')
   const id = await makeTask(page, pid, '读一下这条任务', {
@@ -418,8 +423,8 @@ test('the pane opens in reading mode with no editable control, and 编辑 reveal
   await openPane(page, pid, '读一下这条任务', false)
   const dialog = page.getByRole('dialog', { name: '任务详情' })
 
-  // Not one control on screen can change a value: no input of any kind, no select, no textarea,
-  // and nothing exposed as a textbox / radio / checkbox / combobox either.
+  // Not one FIELD on screen: no input of any kind, no select, no textarea, and nothing exposed as
+  // a textbox / radio / checkbox / combobox either.
   const controls = await dialog.locator('input, select, textarea, [contenteditable]').count()
   expect(controls, 'editable controls in reading mode').toBe(0)
   for (const role of ['textbox', 'radio', 'checkbox', 'combobox', 'spinbutton', 'slider'] as const)
@@ -461,4 +466,74 @@ test('编辑 hands focus to the first field rather than dropping it on the body'
   // The 编辑 button unmounts as it is pressed; focus must not fall to <body> (WCAG 2.4.3).
   await page.getByRole('button', { name: '编辑', exact: true }).click()
   await expect(page.getByRole('textbox', { name: '标题' })).toBeFocused()
+})
+
+/**
+ * THE STATUS IS CHANGED WITHOUT ENTERING THE FORM (D78).
+ *
+ * 「编辑 item 状态不应该点进编辑，这个编辑-改-保存的流程太繁琐了。」 One value out of five is a
+ * decision, not a composition: there is nothing for a 保存 to mean. What is asserted here is the
+ * whole of that claim -- it writes, it writes ONCE, the form never opens, and nothing is left
+ * unsaved behind it.
+ */
+test('the status is changed from reading mode, in one act and with no 保存', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '状态')
+  const id = await makeTask(page, pid, '改我的状态')
+  const writes: string[] = []
+  page.on('request', (r) => {
+    if (r.method() === 'PATCH') writes.push(r.url())
+  })
+
+  await openPane(page, pid, '改我的状态', false)
+  const dialog = page.getByRole('dialog', { name: '任务详情' })
+
+  await dialog.getByRole('button', { name: '状态：待办' }).click()
+  await page.getByRole('menuitem', { name: '进行中' }).click()
+
+  // The value is on the server, from one request.
+  await expect.poll(async () => (await serverTask(page, pid, id)).status).toBe('in_progress')
+  expect(writes).toHaveLength(1)
+  // The pane is still READING: no form opened behind the menu, and nothing to save.
+  await expect(dialog.getByRole('textbox', { name: '标题' })).toHaveCount(0)
+  await expect(dialog.getByRole('button', { name: '保存' })).toHaveCount(0)
+  // And the control now says what the status is.
+  await expect(dialog.getByRole('button', { name: '状态：进行中' })).toBeVisible()
+})
+
+test('picking the status it already has writes nothing', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '状态')
+  await makeTask(page, pid, '不改我的状态')
+  const writes: string[] = []
+  page.on('request', (r) => {
+    if (r.method() === 'PATCH') writes.push(r.url())
+  })
+
+  await openPane(page, pid, '不改我的状态', false)
+  const dialog = page.getByRole('dialog', { name: '任务详情' })
+  await dialog.getByRole('button', { name: '状态：待办' }).click()
+  await page.getByRole('menuitem', { name: '待办' }).click()
+
+  await expect(dialog.getByRole('button', { name: '状态：待办' })).toBeVisible()
+  expect(writes, 'a no-op pick must not write').toEqual([])
+})
+
+test('a status changed from the pane leaves nothing unsaved to walk away from', async ({
+  page,
+}) => {
+  // The leave guard exists for a form with typing in it. A write that already landed has nothing
+  // to lose, so it must not stop someone navigating away a second later.
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '状态')
+  await makeTask(page, pid, '改完就走')
+
+  await openPane(page, pid, '改完就走', false)
+  await page.getByRole('dialog').getByRole('button', { name: '状态：待办' }).click()
+  await page.getByRole('menuitem', { name: '已完成' }).click()
+  await expect(page.getByRole('dialog').getByRole('button', { name: '状态：已完成' })).toBeVisible()
+
+  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '今天' }).click()
+  await expect(page).toHaveURL(/\/tasks\/today$/)
+  await expect(page.getByRole('button', { name: '继续编辑' })).toHaveCount(0)
 })
