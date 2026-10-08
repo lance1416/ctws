@@ -55,7 +55,7 @@ test('an empty 今天 is one line, and goes when there is something on it', asyn
 
   // The other half: with something on today, none of it is on the page.
   await makeTask(page, pid, '今天要做的', { scheduledOn: ymd(new Date()) })
-  await page.goto('/')
+  await page.goto('/tasks/today')
   await expect(
     page.getByRole('region', { name: '今天', exact: true }).getByText('今天要做的'),
   ).toBeVisible()
@@ -107,7 +107,7 @@ test('a search with no match says what search covers and clears itself', async (
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '找得到的任务')
-  await page.goto('/')
+  await page.goto('/tasks/today')
   await page.getByRole('heading', { level: 1, name: '今天' }).waitFor()
 
   await page.keyboard.press('f')

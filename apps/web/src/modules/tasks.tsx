@@ -10,6 +10,8 @@ import { CreateTaskDialog } from '../components/CreateTaskDialog'
 import { TaskBoard } from '../components/TaskBoard'
 import { isOverlayOpen } from '../components/overlayState'
 import { ProjectRail } from '../components/RowParts'
+import { useProjectRail } from '../projectColor'
+import { Panel, PanelEmpty } from '../components/Panel'
 import { Stat, StatRow } from '../components/Stat'
 import { StatusMark } from '../components/StatusMark'
 import { TaskTree } from '../components/TaskTree'
@@ -42,6 +44,44 @@ function TodayCount() {
     <span data-count className="ml-auto pl-1 text-xs text-fg-muted">
       {count}
     </span>
+  )
+}
+
+/**
+ * THE WORKBENCH CARD: what is being worked on right now.
+ *
+ * A GLANCE, not a second 今天: no detail pane, no status controls, no dates. The workbench asks
+ * 「现在手头有什么」 and this answers it in one line each; everything you can DO with a task is
+ * one click away on the page the card links to.
+ */
+function DoingWidget() {
+  const today = useQuery({ queryKey: ['today'], queryFn: listToday })
+  const rail = useProjectRail()
+  const doing = (today.data ?? []).filter((t) => t.status === 'in_progress')
+
+  if (today.isError) {
+    return (
+      <p role="alert" className="px-2 py-1.5 text-sm text-danger">
+        读不到今天的任务
+      </p>
+    )
+  }
+  if (today.isSuccess && doing.length === 0) return <PanelEmpty>没有在做的事</PanelEmpty>
+  return (
+    <ul className="min-w-0">
+      {doing.map((t) => (
+        <li key={t.id} className="flex min-h-9 min-w-0 items-center gap-2 px-2">
+          <span
+            aria-hidden="true"
+            className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(t.projectId)}`}
+          />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm text-fg">{t.title}</span>
+            <span className="block truncate text-xs text-fg-subtle">{t.projectName}</span>
+          </span>
+        </li>
+      ))}
+    </ul>
   )
 }
 
@@ -309,6 +349,7 @@ export const taskModule: WorkspaceModule = {
     { id: 'list', label: '列表' },
     { id: 'board', label: '看板' },
   ],
+  widgets: [{ id: 'doing', label: '正在做', to: at('today'), Component: DoingWidget }],
   ProjectView: ProjectTasks,
   ProjectViewAction: NewTaskAction,
   ProjectHeadline: ProjectNumbers,

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { createProject, listProjects } from '../api/projects'
 import { refreshProjects } from '../api/taskCache'
-import { moduleDestinations } from '../modules/registry'
+import { moduleDestinations, WORKBENCH_PATH } from '../modules/registry'
 import { QuickCapture } from './QuickCapture'
 import { railClass } from '../projectColor'
 
@@ -76,6 +76,20 @@ export function SideRail() {
         aria-label="主导航"
         className="flex flex-col gap-1 max-lg:flex-row max-lg:items-center max-lg:overflow-x-auto max-lg:px-4 max-lg:py-2 lg:gap-0"
       >
+        {/* The SHELL's own destination, above every module's: the workbench is the page that is
+          nobody's module, and it is where you land. */}
+        <NavLink
+          to={WORKBENCH_PATH}
+          end
+          className={({ isActive }) =>
+            `flex min-h-9 shrink-0 items-center gap-2 rounded-lg px-2.5 py-1 whitespace-nowrap ${
+              isActive ? 'bg-surface-panel font-semibold text-fg' : 'text-fg-muted hover:text-fg'
+            }`
+          }
+        >
+          工作台
+        </NavLink>
+
         {/* One hook per registered count, over a frozen module list: see MODULES on why the list
           must not change at runtime. */}
         {moduleDestinations().map(({ moduleId, id, to, label, end, Count }) => (

@@ -263,7 +263,7 @@ test('deleting a leaf does not claim descendants, and works from the Today panel
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '在做的', { patch: { status: 'in_progress' } })
   await makeTask(page, pid, '另一个', { patch: { status: 'in_progress' } })
-  await page.goto('/')
+  await page.goto('/tasks/today')
   await expect(page.locator('[data-today-row]')).toHaveCount(2)
 
   await page.locator('[data-today-row]').filter({ hasText: '在做的' }).click()

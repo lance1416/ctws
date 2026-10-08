@@ -299,7 +299,7 @@ test('横幅主语 is the top step, 36/44, and the page title is one step below 
   await makeTask(page, pid, '正在做的这一条')
   await page.goto(`/projects/${pid}`)
   await page.getByRole('button', { name: '开始「正在做的这一条」' }).click()
-  await page.goto('/')
+  await page.goto('/tasks/today')
   const banner = page.locator('[data-today-row]')
   await expect(banner).toHaveCount(1)
 
@@ -409,7 +409,7 @@ test('no element computes to font-weight 500, in any state that could introduce 
   // Opened by their own controls rather than by the single-key shortcuts: whether `?` reaches the
   // document depends on where focus happens to be after a navigation, and that is keyboard.spec's
   // subject, not this one's.
-  await page.goto('/')
+  await page.goto('/tasks/today')
   await page.getByRole('button', { name: '键盘快捷键' }).click()
   await expect(page.getByRole('dialog', { name: '键盘快捷键' })).toBeVisible()
   expect(await weights(page), 'the ? overlay').not.toContain('500')

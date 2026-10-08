@@ -91,7 +91,7 @@ test('做到哪儿了 shows the counts the server reports, for every project tha
   // 丙线 has nothing at all, so it must not get a line: "0 / 0" is not news.
   expect(quiet).toBeTruthy()
 
-  await page.goto('/')
+  await page.goto('/tasks/today')
   const where = panel(page, '做到哪儿了')
   await expect(where).toBeVisible()
 
@@ -136,7 +136,7 @@ test('做到哪儿了 draws no percentage and no progress bar', async ({ page })
   // A task carrying an explicit progress value, which is the one input a bar could claim to show.
   await makeTask(page, pid, '写了进度的', { manualProgress: 0.5 })
 
-  await page.goto('/')
+  await page.goto('/tasks/today')
   const where = panel(page, '做到哪儿了')
   await expect(where.getByText('本周 +2')).toBeVisible()
 
@@ -176,7 +176,7 @@ test('the stagnation line names a project only while that project is really quie
   backdateProjectActivity(stale, '9 days')
   backdateProjectActivity(finished, '9 days')
 
-  await page.goto('/')
+  await page.goto('/tasks/today')
   const where = panel(page, '做到哪儿了')
   const server = await movementOf(page)
   const quiet = server.find((r) => r.projectId === stale)!
@@ -209,7 +209,7 @@ test('a workspace where nothing has gone quiet shows no stagnation line at all',
   const pid = await makeProject(page, '刚开的')
   await makeTask(page, pid, '刚写的')
 
-  await page.goto('/')
+  await page.goto('/tasks/today')
   await expect(panel(page, '做到哪儿了').getByText('刚开的')).toBeVisible()
   await expect(page.locator('[data-stagnant]')).toHaveCount(0)
 })
@@ -254,7 +254,7 @@ test('the workbench is a panel grid at 1440 and one column at 375', async ({ pag
 
   // --- 1440: two columns of panels, the banner across the top ---
   await page.setViewportSize(WIDE)
-  await page.goto('/')
+  await page.goto('/tasks/today')
   await expect(panel(page, '今天完成的')).toBeVisible()
   let b = await boxes()
   // The queue is beside the right-hand panels, not above them.
@@ -275,7 +275,7 @@ test('the workbench is a panel grid at 1440 and one column at 375', async ({ pag
 
   // --- 375: one column, same order, and no sideways scroll ---
   await page.setViewportSize(PHONE)
-  await page.goto('/')
+  await page.goto('/tasks/today')
   await expect(panel(page, '今天完成的')).toBeVisible()
   b = await boxes()
   const xs = new Set(Object.values(b).map((v) => v.x))
@@ -298,7 +298,7 @@ test('正在做 carries the running task, and says so plainly when nothing is ru
   await makeTask(page, pid, '排到今天的', { scheduledOn: ymd(new Date()) })
   await makeTask(page, pid, '没有日期的')
 
-  await page.goto('/')
+  await page.goto('/tasks/today')
   const banner = panel(page, '正在做')
   // Nothing running: the banner is still there, says what would fill it, and holds no row.
   await expect(banner).toBeVisible()

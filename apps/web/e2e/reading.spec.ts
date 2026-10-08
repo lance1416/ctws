@@ -173,4 +173,9 @@ test('a project page carries both modules, each with its own block and numbers',
   await expect(page.getByText('一篇相关的文章')).toBeVisible()
   // And the reading module's number in the banner the shell owns.
   await expect(page.getByRole('region', { name: '项目概况' })).toContainText('待读')
+  // The row does NOT repeat the name of the project you are standing in -- the same rule the
+  // dependency pane keeps, and the same reason the task tree shows no breadcrumb.
+  await expect(page.getByRole('listitem').filter({ hasText: '一篇相关的文章' })).not.toContainText(
+    'CTWS',
+  )
 })

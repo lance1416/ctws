@@ -132,7 +132,7 @@ test('the left rail shows each project the open-task count the server reports', 
   await apiTask(page, busy, '取消了', { status: 'cancelled' })
   await apiTask(page, quiet, '也做完了', { status: 'done' })
 
-  await page.goto('/')
+  await page.goto('/tasks/today')
   const { projects } = (await (await page.request.get('/api/v1/projects')).json()) as {
     projects: { id: string; name: string; openTasks: number }[]
   }

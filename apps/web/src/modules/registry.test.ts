@@ -4,9 +4,9 @@ import type { WorkspaceModule } from './contract'
 import {
   allChords,
   captureContribution,
-  homePath,
   moduleDestinations,
   moduleRoutes,
+  moduleWidgets,
   projectHeadlines,
   projectViews,
   resolveChord,
@@ -37,6 +37,7 @@ const notes: WorkspaceModule = {
   chords: [
     { id: 'recent', key: 'n', label: '去「最近」', resolve: () => '/notes/recent', order: 5 },
   ],
+  widgets: [{ id: 'recent', label: '最近的笔记', to: '/notes/recent', Component: () => null }],
   ProjectView: NotesOnProject,
   ProjectHeadline: NotesProjectNumbers,
 }
@@ -47,6 +48,7 @@ const files: WorkspaceModule = {
   destinations: [{ id: 'drive', to: '/files/drive', label: '云盘' }],
   routes: [{ path: 'drive' }],
   capture: { useTarget: () => ({ target: null, missing: true, unavailable: false }) },
+  widgets: [{ id: 'big', label: '占地方的', Component: () => null }],
   ProjectView: () => null,
 }
 
@@ -72,27 +74,28 @@ describe('routes', () => {
   })
 })
 
-describe('the home path', () => {
-  it('is a destination the home module registered, not a literal', () => {
-    expect(homePath([notes, files], 'notes', 'all')).toBe('/notes/all')
-    expect(homePath([notes, files], 'files', 'drive')).toBe('/files/drive')
+describe('the workbench widgets', () => {
+  it('collects every module card, in registration order, tagged with its module', () => {
+    expect(moduleWidgets([notes, files]).map((w) => `${w.moduleId}:${w.id}`)).toEqual([
+      'notes:recent',
+      'files:big',
+    ])
   })
 
-  it('falls back to the module first destination, never to a path nobody registered', () => {
-    expect(homePath([notes], 'notes', 'nonesuch')).toBe('/notes/recent')
-    expect(() => homePath([{ ...notes, destinations: [] }], 'notes')).toThrow(
-      /contributes no destination/,
-    )
+  it('is empty for a module that contributes none, rather than inventing one', () => {
+    const { widgets: _dropped, ...noWidgets } = notes
+    expect(moduleWidgets([noWidgets, files])).toHaveLength(1)
   })
 })
 
 describe('the master key table', () => {
   it('merges the shell chords and every module chord into one ordered table', () => {
     const table = allChords([notes])
-    // `n` is declared with a lower order than the shell's `p`, so it leads -- the order is the
-    // table's, not the registration sequence's.
-    expect(table.map((c) => c.key)).toEqual(['n', 'p'])
-    expect(table.map((c) => c.moduleId)).toEqual(['notes', null])
+    // The shell's own keys are always there (`w` workbench, `p` projects); `n` is declared with
+    // a lower order than `p`, so it slots between them -- the order is the table's, not the
+    // registration sequence's.
+    expect(table.map((c) => c.key)).toEqual(['w', 'n', 'p'])
+    expect(table.map((c) => c.moduleId)).toEqual([null, 'notes', null])
   })
 
   it('resolves a module chord to the module own path', () => {

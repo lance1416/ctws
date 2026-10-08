@@ -71,6 +71,19 @@ export type WorkspaceModule = {
    */
   ProjectViewAction?: ComponentType<{ projectId: string }>
   /**
+   * This module's cards on the WORKBENCH -- the shell's own front page.
+   *
+   * A widget answers 「现在手头有什么」 in this module's terms and nothing else: it is a glance,
+   * not a second copy of the module's page. The shell draws the card (its name, its link, the
+   * grid it sits in) and decides nothing about the contents, exactly as it does for a project
+   * block.
+   *
+   * WHAT A WIDGET MUST NOT SHOW is anything that already has a home on the project page. The
+   * workbench is where the things that belong to no line of work live; the project pages are
+   * where the rest do. Two surfaces showing the same rows is two places to keep in your head.
+   */
+  widgets?: readonly Widget[]
+  /**
    * What this module adds to the project page's HEADER BANNER: the numbers that say where this
    * line of work stands, in this module's terms.
    *
@@ -81,6 +94,18 @@ export type WorkspaceModule = {
    * bringing its own layout.
    */
   ProjectHeadline?: ComponentType<{ projectId: string }>
+}
+
+/** One card on the workbench. */
+export type Widget = {
+  /** Unique within the module. Also the card's test handle. */
+  id: string
+  /** The card's heading. */
+  label: string
+  /** Where 「看全部」 goes, when there is more than the card shows. */
+  to?: string
+  /** The card's contents. The shell gives it no props: a widget is about the workspace, not a row. */
+  Component: ComponentType
 }
 
 /** A row in the left rail. */

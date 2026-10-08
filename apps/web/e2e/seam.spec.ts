@@ -49,17 +49,18 @@ test('the paths from before the move still land on the same page', async ({ page
   await expect(page).toHaveURL(/\/tasks\/completed$/)
   await expect(page.getByRole('heading', { level: 1, name: '已完成' })).toBeVisible()
 
-  // The workspace root is not a page of its own: it opens the module you work in.
+  // The workspace root IS a page of its own now -- the workbench. It used to redirect into a
+  // module because the shell had nothing to show; with two modules it has their glances.
   await page.goto('/')
-  await expect(page).toHaveURL(/\/tasks\/today$/)
-  await expect(page.getByRole('heading', { level: 1, name: '今天' })).toBeVisible()
+  await expect(page).toHaveURL(/\/$/)
+  await expect(page.getByRole('heading', { level: 1, name: '工作台' })).toBeVisible()
 })
 
 test('a path no module registered still resolves', async ({ page }) => {
   await registerFreshUser(page)
   await page.goto('/notes/recent')
-  await expect(page).toHaveURL(/\/tasks\/today$/)
-  await expect(page.getByRole('heading', { level: 1, name: '今天' })).toBeVisible()
+  await expect(page).toHaveURL(/\/$/)
+  await expect(page.getByRole('heading', { level: 1, name: '工作台' })).toBeVisible()
 })
 
 test('the API answers the module namespace and redirects the old path to it', async ({ page }) => {

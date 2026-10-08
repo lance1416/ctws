@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createReadingItem, listReading, readingLabel, searchReading } from '../api/reading'
 import { AddReading } from '../components/AddReading'
+import { PanelEmpty } from '../components/Panel'
 import { ReadingRow } from '../components/ReadingRow'
 import { Stat, StatRow } from '../components/Stat'
 import { isReadingUrl } from '../readingUrl'
@@ -76,6 +77,43 @@ function useReadingHits(query: string) {
   return { hits, isError: results.isError, isSuccess: results.isSuccess }
 }
 
+/**
+ * THE WORKBENCH CARD: what belongs to NO project -- 「散的」.
+ *
+ * Deliberately not the whole list. Anything filed under a project is on that project's page, and
+ * a card that repeated it would make two places to keep in your head. What is left is exactly
+ * what has nowhere else to appear: a book, a link you saved on the way past.
+ */
+function ReadingWidget() {
+  const items = useQuery({
+    queryKey: ['reading', 'unfiled', null],
+    queryFn: () => listReading({ unfiled: true }),
+  })
+  const timeZone = useTimeZone()
+  const rows = (items.data ?? []).filter((i) => i.status === 'todo' || i.status === 'reading')
+
+  if (items.isError) {
+    return (
+      <p role="alert" className="px-2 py-1.5 text-sm text-danger">
+        读不到待读清单
+      </p>
+    )
+  }
+  if (items.isSuccess && rows.length === 0) return <PanelEmpty>没有散着的待读</PanelEmpty>
+  return (
+    <ul className="min-w-0">
+      {/* A glance, not a list: five rows, and 看全部 for the rest. A card that grows without
+          bound stops being a card and starts being a second copy of the page. */}
+      {rows.slice(0, WIDGET_ROWS).map((item) => (
+        <ReadingRow key={item.id} item={item} timeZone={timeZone} />
+      ))}
+    </ul>
+  )
+}
+
+/** How many rows a workbench card shows before it defers to its page. */
+const WIDGET_ROWS = 5
+
 /** This module's rows under a shell project: an article about CTWS belongs to CTWS. */
 function ReadingProjectView({ projectId }: { projectId: string }) {
   const items = useQuery({
@@ -87,13 +125,17 @@ function ReadingProjectView({ projectId }: { projectId: string }) {
 
   return (
     <div>
-      <AddReading projectId={projectId} />
+      {/* The same measure the task block's 新任务 keeps, so the two blocks on one project page
+          read as one product rather than two. */}
+      <div className="mb-1 max-w-[52ch]">
+        <AddReading projectId={projectId} />
+      </div>
       {rows.length === 0 ? (
         <p className="mt-2 text-sm text-fg-subtle">还没有要读的</p>
       ) : (
         <ul className="mt-1">
           {rows.map((item) => (
-            <ReadingRow key={item.id} item={item} timeZone={timeZone} />
+            <ReadingRow key={item.id} item={item} timeZone={timeZone} here={projectId} />
           ))}
         </ul>
       )}
@@ -127,6 +169,7 @@ export const readingModule: WorkspaceModule = {
   // `l` for list. `r` is the task module's 回顾 and one keyspace is shared across modules, so a
   // second module cannot take a key that is already spoken for.
   chords: [{ id: 'reading', key: 'l', label: '去「待读」', resolve: () => `/${ID}`, order: 15 }],
+  widgets: [{ id: 'unfiled', label: '待读 · 散的', to: `/${ID}`, Component: ReadingWidget }],
   ProjectView: ReadingProjectView,
   ProjectHeadline: ReadingHeadline,
 }

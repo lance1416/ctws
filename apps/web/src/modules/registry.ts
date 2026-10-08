@@ -5,6 +5,7 @@ import type {
   Chord,
   ChordContext,
   Destination,
+  Widget,
   WorkspaceModule,
 } from './contract'
 import { readingModule } from './reading'
@@ -28,17 +29,22 @@ export const MODULES: readonly WorkspaceModule[] = Object.freeze([taskModule, re
  */
 export const CAPTURE_MODULE_ID = 'tasks'
 
-/** What `/` resolves to. The shell has no page of its own; it opens the module you work in. */
-export const HOME_MODULE_ID = 'tasks'
-
-/** The destination the home module opens on. */
-export const HOME_DESTINATION_ID = 'today'
+/**
+ * WHERE `/` GOES: the workbench, which is the shell's own page.
+ *
+ * It used to open a module's page, because the shell had nothing of its own to show and a default
+ * that silently depended on registration order would have been worse. With two modules there IS
+ * something to show -- each module's glance, side by side -- and that is a shell surface, so the
+ * home path is no longer a module's to supply.
+ */
+export const WORKBENCH_PATH = '/'
 
 /**
- * The shell's OWN chords. Projects are a shell concept (contract §3), so `g p` is not the task
- * module's to contribute -- it would survive the task module being removed.
+ * The shell's OWN chords. Projects and the workbench are shell concepts (contract §3), so these
+ * are not a module's to contribute -- they would survive every module being removed.
  */
 const SHELL_CHORDS: Chord[] = [
+  { id: 'workbench', key: 'w', label: '去「工作台」', resolve: () => WORKBENCH_PATH, order: 5 },
   { id: 'projects', key: 'p', label: '去「项目」', resolve: () => '/projects', order: 20 },
 ]
 
@@ -55,21 +61,6 @@ export function moduleDestinations(
 /** Every module's pages, mounted under its own namespace. */
 export function moduleRoutes(modules: readonly WorkspaceModule[] = MODULES): RouteObject[] {
   return modules.map((m) => ({ path: `/${m.id}`, children: m.routes }))
-}
-
-/** Where `/` goes. */
-export function homePath(
-  modules: readonly WorkspaceModule[] = MODULES,
-  moduleId: string = HOME_MODULE_ID,
-  destinationId: string = HOME_DESTINATION_ID,
-): string {
-  const home = modules.find((m) => m.id === moduleId)
-  const destination =
-    home?.destinations.find((d) => d.id === destinationId) ?? home?.destinations[0]
-  // Not a fallback to a literal: a workspace whose home module contributes no destination has a
-  // registry bug, and sending the user to a path nobody registered would hide it.
-  if (!destination) throw new Error(`home module "${moduleId}" contributes no destination`)
-  return destination.to
 }
 
 /**
@@ -171,6 +162,15 @@ export function projectViewActions(
   modules: readonly WorkspaceModule[] = MODULES,
 ): RegisteredProjectBlock[] {
   return projectBlocks(modules, (m) => m.ProjectViewAction)
+}
+
+export type RegisteredWidget = Widget & { moduleId: string; moduleLabel: string }
+
+/** Every module's workbench cards, in registration order. */
+export function moduleWidgets(modules: readonly WorkspaceModule[] = MODULES): RegisteredWidget[] {
+  return modules.flatMap((m) =>
+    (m.widgets ?? []).map((w) => ({ ...w, moduleId: m.id, moduleLabel: m.label })),
+  )
 }
 
 /** Each module's numbers in the project header banner, in registration order. */

@@ -9,8 +9,10 @@ describe('jump chords', () => {
     // 待读 sits right after 今天: they are the two lists that answer 「现在做什么」, one from
     // each module. The rest is unchanged, which is the point -- a second module contributed a
     // key without the table being rewritten around it.
-    expect(chords.map((c) => c.key).join('')).toBe('tlpdri')
+    // 工作台 leads: it is where `/` lands and the page every other key is a way out of.
+    expect(chords.map((c) => c.key).join('')).toBe('wtlpdri')
     expect(chords.map((c) => c.id)).toEqual([
+      'workbench',
       'today',
       'reading',
       'projects',

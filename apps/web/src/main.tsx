@@ -3,10 +3,11 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom'
 import { Layout } from './components/Layout'
-import { homePath, moduleRoutes } from './modules/registry'
+import { moduleRoutes, WORKBENCH_PATH } from './modules/registry'
 import { Login } from './routes/Login'
 import { Project } from './routes/Project'
 import { Projects } from './routes/Projects'
+import { Workbench } from './routes/Workbench'
 // IBM Plex Sans, self-hosted and LATIN SUBSET ONLY: no Google Fonts link, because this app is
 // private and self-hosted and has no business making a third-party request on every load. TWO
 // weights, ~24 KB of woff2 each: the typography spec's scale has exactly two, 400 and 600, so the
@@ -34,14 +35,15 @@ const router = createBrowserRouter([
     // unauthenticated visit (and falls back to the home destination once signed in).
     element: <Layout />,
     children: [
-      // The shell has no page of its own: `/` opens the module you work in, named in the registry.
-      { index: true, element: <Navigate to={homePath()} replace /> },
+      // The shell's own front page. It used to redirect into a module, because the shell had
+      // nothing of its own to show; with two modules it has their glances side by side.
+      { index: true, element: <Workbench /> },
       // The shell's own pages stay at the top level; a MODULE's pages live under /<module>/.
       { path: '/projects', element: <Projects /> },
       { path: '/projects/:id', element: <Project /> },
       ...moduleRoutes(),
       ...MOVED.map(({ from, to }) => ({ path: from, element: <Navigate to={to} replace /> })),
-      { path: '*', element: <Navigate to={homePath()} replace /> },
+      { path: '*', element: <Navigate to={WORKBENCH_PATH} replace /> },
     ],
   },
 ])

@@ -9,14 +9,17 @@ import { apiFetch } from '../api'
 /** The reading module's own namespace. Nothing in the task module reaches in here. */
 const BASE = '/reading'
 
-export const readingKey = (query: ReadingQuery = {}) =>
-  ['reading', query.projectId ?? null, query.statuses ?? null] as const
-
-export type ReadingQuery = { projectId?: string; statuses?: readonly ReadingStatus[] }
+export type ReadingQuery = {
+  projectId?: string
+  /** Only what belongs to no project -- the workbench card's whole contents. */
+  unfiled?: boolean
+  statuses?: readonly ReadingStatus[]
+}
 
 export async function listReading(query: ReadingQuery = {}): Promise<ReadingItemResponse[]> {
   const params = new URLSearchParams()
   if (query.projectId) params.set('projectId', query.projectId)
+  if (query.unfiled) params.set('unfiled', 'true')
   for (const s of query.statuses ?? []) params.append('status', s)
   const suffix = params.size > 0 ? `?${params}` : ''
   return (await apiFetch<{ items: ReadingItemResponse[] }>(`${BASE}${suffix}`)).items

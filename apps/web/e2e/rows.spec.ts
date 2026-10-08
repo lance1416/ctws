@@ -90,7 +90,7 @@ test('on 今天, every row puts its leading icon at the same x', async ({ page }
   await makeTask(page, pid, '短', { dueAt: dueAgo(2) })
   await makeTask(page, pid, '中等长度的一个标题', { dueAt: dueAgo(11) })
   await makeTask(page, pid, '一个非常非常非常非常非常长的标题用来把右边挤掉', { dueAt: dueAgo(4) })
-  await page.goto('/')
+  await page.goto('/tasks/today')
   const section = page.getByRole('region', { name: '逾期' })
   await expect(section.locator('[data-lead-icon="missed"]')).toHaveCount(3)
 
@@ -119,7 +119,7 @@ test('one list, one x, however many kinds of glyph are in it', async ({ page }) 
     dueAt: new Date(new Date().setHours(23, 30, 0, 0)).toISOString(),
   })
   await makeTask(page, pid, '顺延过来的', { scheduledOn: dayOffset(-4) })
-  await page.goto('/')
+  await page.goto('/tasks/today')
   const queue = page.getByRole('region', { name: '今天', exact: true })
   await expect(queue.locator('[data-today-row]')).toHaveCount(3)
   // Two different glyphs in the one list, so this is not three copies of one row.
@@ -266,7 +266,7 @@ test('on 今天 the queue and 逾期 each answer for their own slot', async ({ p
   await makeTask(page, pid, '今天要做的第一件事，标题写得长些好看出宽度', { scheduledOn: today })
   await makeTask(page, pid, '今天要做的第二件事', { scheduledOn: today })
   await makeTask(page, pid, '一条逾期的', { dueAt: dueAgo(2) })
-  await page.goto('/')
+  await page.goto('/tasks/today')
   const queue = page.getByRole('region', { name: '今天', exact: true })
   const late = page.getByRole('region', { name: '逾期' })
   await expect(queue.locator('[data-today-row]')).toHaveCount(2)
@@ -310,7 +310,7 @@ test('逾期 says the project and how late; the same task in the queue says the 
   const id = await makeTask(page, pid, TITLE, { dueAt: noon.toISOString() })
   await makeTask(page, pid, '另一条没有日期的', { scheduledOn: dayOffset(0) })
 
-  await page.goto('/')
+  await page.goto('/tasks/today')
   const queue = page.getByRole('region', { name: '今天', exact: true })
   const late = page.getByRole('region', { name: '逾期' })
   const queueRow = queue.locator('li').filter({ hasText: TITLE })
@@ -556,7 +556,7 @@ test('the tree has no breadcrumb on its second line; 今天 shares one line with
   await expect(child.locator('[data-row-meta]')).not.toContainText('父任务')
 
   // The same task on 今天: one second line, carrying the project, the parent AND the date.
-  await page.goto('/')
+  await page.goto('/tasks/today')
   const line = page.getByRole('region', { name: '逾期' }).locator('[data-row-meta]')
   await expect(line).toHaveCount(1)
   await expect(line.locator('[data-row-crumb]')).toHaveText('面包屑 › 父任务')
@@ -580,7 +580,7 @@ test('opening a row’s date control moves nothing on the row', async ({ page })
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '逾期的', { dueAt: dueAgo(2) })
   await makeTask(page, pid, '下面那行', { dueAt: dueAgo(2) })
-  await page.goto('/')
+  await page.goto('/tasks/today')
 
   const row = page
     .locator('li')
@@ -619,7 +619,7 @@ test('the date control is reachable, operable and escapable by keyboard alone', 
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '键盘逾期', { dueAt: dueAgo(2) })
-  await page.goto('/')
+  await page.goto('/tasks/today')
 
   // From the row itself, one Tab reaches the control: the row gained ONE tab stop, where the old
   // inline links added six.
@@ -657,7 +657,7 @@ test('转为排期下周 demotes the deadline to next Monday’s plan in one req
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '没人等下周', { dueAt: dueAgo(6) })
-  await page.goto('/')
+  await page.goto('/tasks/today')
   await triage(page, '没人等下周').click()
   const res = patched(page)
   await page
@@ -683,7 +683,7 @@ test('the open date control adds no horizontal scroll at 375', async ({ page }) 
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '窄屏上的逾期任务标题也可能很长', { dueAt: dueAgo(2) })
-  await page.goto('/')
+  await page.goto('/tasks/today')
   await triage(page, '窄屏上的逾期任务标题也可能很长').click()
   await expect(page.getByRole('group', { name: /^处理逾期：/ })).toBeVisible()
   // 375px zero horizontal scroll is a pinned result (plan section 7); a popover anchored to the
@@ -706,7 +706,7 @@ test('a cross-project row carries its own project’s rail, at one x, beside its
   await makeTask(page, a, '甲一', { scheduledOn: dayOffset(0) })
   await makeTask(page, a, '甲二', { scheduledOn: dayOffset(0) })
   await makeTask(page, b, '乙一', { scheduledOn: dayOffset(0) })
-  await page.goto('/')
+  await page.goto('/tasks/today')
   const section = page.getByRole('region', { name: '今天', exact: true })
   await expect(section.getByText('甲一')).toBeVisible()
 
@@ -771,7 +771,7 @@ test('the status marker is the heaviest mark on the row, and still hue-free', as
   await makeTask(page, pid, '在做', { status: 'in_progress' })
   await makeTask(page, pid, '待办的', { status: 'todo', scheduledOn: dayOffset(0) })
   await makeTask(page, pid, '整理中', { status: 'backlog', scheduledOn: dayOffset(0) })
-  await page.goto('/')
+  await page.goto('/tasks/today')
 
   const mark = (name: string) => page.getByRole('img', { name })
   // 20px at 2px of stroke: the app's core semantic used to be the faintest thing on the row, and

@@ -1,9 +1,19 @@
 import { execFileSync } from 'node:child_process'
 import type { Page } from '@playwright/test'
 
-// Registers a brand-new user through the UI and waits until the signed-in shell is showing.
-// Register is rate limited (20/min/IP), so every call uses a unique email. Returns that email.
-export async function registerFreshUser(page: Page): Promise<string> {
+/**
+ * Registers a brand-new user through the UI and waits until the signed-in shell is showing.
+ * Register is rate limited (20/min/IP), so every call uses a unique email. Returns that email.
+ *
+ * It then goes on to 今天, because that is where almost every test here does its work and it is
+ * where registration used to land. Signing in now opens the WORKBENCH -- the shell's own page --
+ * so the step that used to be implicit is explicit. `at` takes any path, and `'/'` stays put.
+ *
+ * It CLICKS the rail rather than calling `goto`: a fresh navigation leaves focus where the
+ * document-level keys (the `g` chords, `/`, `f`) cannot see it, which silently breaks every
+ * keyboard test that follows.
+ */
+export async function registerFreshUser(page: Page, at: string = '/tasks/today'): Promise<string> {
   const email = `e2e-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`
 
   await page.goto('/')
@@ -11,6 +21,15 @@ export async function registerFreshUser(page: Page): Promise<string> {
   await page.getByLabel('密码').fill('correct horse battery')
   await page.getByRole('button', { name: '注册' }).click()
   await page.getByTestId('current-user').waitFor()
+
+  if (at === '/tasks/today') {
+    await page
+      .getByRole('navigation', { name: '主导航' })
+      .getByRole('link', { name: '今天' })
+      .click()
+  } else if (at !== '/') {
+    await page.goto(at)
+  }
 
   return email
 }

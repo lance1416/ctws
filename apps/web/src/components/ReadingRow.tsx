@@ -39,7 +39,17 @@ const MARK: Record<ReadingStatus, string> = {
   dropped: 'text-fg-subtle',
 }
 
-export function ReadingRow({ item, timeZone }: { item: ReadingItemResponse; timeZone: string }) {
+export function ReadingRow({
+  item,
+  timeZone,
+  here,
+}: {
+  item: ReadingItemResponse
+  timeZone: string
+  /** The project this list is already inside, if any. Its name is then not worth repeating -- the
+   *  same rule the dependency pane keeps, and why the task tree shows no breadcrumb. */
+  here?: string
+}) {
   const qc = useQueryClient()
   const [renaming, setRenaming] = useState(false)
   const [draft, setDraft] = useState('')
@@ -70,7 +80,7 @@ export function ReadingRow({ item, timeZone }: { item: ReadingItemResponse; time
   // then how long it has been waiting. Each part is dropped when it has nothing to say -- and the
   // host is dropped when it is ALREADY the title, which is what an untitled link shows.
   const meta = [
-    item.projectName,
+    item.projectId === here ? null : item.projectName,
     item.kind === 'book' ? item.author : host === label ? null : host,
     addedLabel(item.createdAt, timeZone),
   ].filter(Boolean)
