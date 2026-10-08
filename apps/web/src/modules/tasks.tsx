@@ -7,6 +7,7 @@ import { createTask, listProjectTasks } from '../api/tasks'
 import { refreshTasks, tasksKey } from '../api/taskCache'
 import { listToday } from '../api/today'
 import { CreateTaskDialog } from '../components/CreateTaskDialog'
+import { TaskBoard } from '../components/TaskBoard'
 import { isOverlayOpen } from '../components/overlayState'
 import { ProjectRail } from '../components/RowParts'
 import { Stat, StatRow } from '../components/Stat'
@@ -207,7 +208,7 @@ function NewTaskAction({ projectId }: { projectId: string }) {
 }
 
 /** The module's rows under a shell project: the tree, and the one input that adds a root task. */
-function ProjectTasks({ projectId }: { projectId: string }) {
+function ProjectTasks({ projectId, view }: { projectId: string; view: string }) {
   const qc = useQueryClient()
   const [title, setTitle] = useState('')
   const failureId = useId()
@@ -256,7 +257,13 @@ function ProjectTasks({ projectId }: { projectId: string }) {
           没能创建，再按一次回车重试。
         </p>
       )}
-      <TaskTree key={projectId} projectId={projectId} />
+      {/* The board is a VIEW of this block, not a page: the one-line box above stays, because
+          capturing into this project is the same action whichever way the rows are drawn. */}
+      {view === 'board' ? (
+        <TaskBoard key={projectId} projectId={projectId} />
+      ) : (
+        <TaskTree key={projectId} projectId={projectId} />
+      )}
     </>
   )
 }
@@ -293,6 +300,10 @@ export const taskModule: WorkspaceModule = {
       },
       order: 40,
     },
+  ],
+  views: [
+    { id: 'list', label: '列表' },
+    { id: 'board', label: '看板' },
   ],
   ProjectView: ProjectTasks,
   ProjectViewAction: NewTaskAction,

@@ -47,7 +47,20 @@ export type WorkspaceModule = {
    * What this module shows under a shell project. Projects are the SHELL's organising dimension
    * (contract §3): a module hangs its own rows on a project, it does not own the project page.
    */
-  ProjectView?: ComponentType<{ projectId: string }>
+  ProjectView?: ComponentType<{ projectId: string; view: string }>
+  /**
+   * The views this module's block offers, as tabs in the block's head. One entry means no tabs
+   * are drawn: a tab bar with a single tab is chrome that decides nothing.
+   *
+   * THE MODULE NAMES THEM, THE SHELL DRAWS THEM. A board is not a second page and not a second
+   * destination in the rail -- it is another way to look at the same block, the way Notion's
+   * databases and Linear's issue lists carry their views. That is also what keeps a third view
+   * (and a second module's views) from costing any layout work.
+   *
+   * The first entry is the default. The selected one is in the URL (`?view=<module>:<id>`), so a
+   * reload and a shared link both land where the person was.
+   */
+  views?: readonly { id: string; label: string }[]
   /**
    * A control in the HEAD of this module's block, beside its name -- the block's own "new",
    * typically.

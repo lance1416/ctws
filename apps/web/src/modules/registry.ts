@@ -124,25 +124,29 @@ export function searchProviders(modules: readonly WorkspaceModule[] = MODULES): 
  * is the whole point of the seam: the page would otherwise be the shell knowing one module by
  * name, and the second module's rows could never appear on it.
  */
-export type RegisteredProjectBlock = {
+export type RegisteredProjectBlock<P extends { projectId: string } = { projectId: string }> = {
   moduleId: string
   moduleLabel: string
-  Component: ComponentType<{ projectId: string }>
+  Component: ComponentType<P>
+  /** The block's views. Empty when the module declares none. */
+  views: readonly { id: string; label: string }[]
 }
 
-const projectBlocks = (
+const projectBlocks = <P extends { projectId: string }>(
   modules: readonly WorkspaceModule[],
-  pick: (m: WorkspaceModule) => ComponentType<{ projectId: string }> | undefined,
-): RegisteredProjectBlock[] =>
+  pick: (m: WorkspaceModule) => ComponentType<P> | undefined,
+): RegisteredProjectBlock<P>[] =>
   modules.flatMap((m) => {
     const Component = pick(m)
-    return Component ? [{ moduleId: m.id, moduleLabel: m.label, Component }] : []
+    return Component
+      ? [{ moduleId: m.id, moduleLabel: m.label, Component, views: m.views ?? [] }]
+      : []
   })
 
 /** Each module's rows under a shell project, in registration order. */
 export function projectViews(
   modules: readonly WorkspaceModule[] = MODULES,
-): RegisteredProjectBlock[] {
+): RegisteredProjectBlock<{ projectId: string; view: string }>[] {
   return projectBlocks(modules, (m) => m.ProjectView)
 }
 

@@ -20,6 +20,7 @@ export function Panel({
   count,
   heading,
   action,
+  tabs,
   children,
   className = '',
 }: {
@@ -31,6 +32,8 @@ export function Panel({
   heading?: ReactNode
   /** A control that belongs to the panel as a whole, pushed to the end of the heading row. */
   action?: ReactNode
+  /** The block's views, as tabs. Fewer than two draws nothing. */
+  tabs?: ReactNode
   children: ReactNode
   className?: string
 }) {
@@ -47,7 +50,10 @@ export function Panel({
             {count}
           </span>
         )}
-        {action && <span className="ml-auto">{action}</span>}
+        {tabs && <span className="ml-auto flex items-center">{tabs}</span>}
+        {action && (
+          <span className={tabs ? 'flex items-center' : 'ml-auto flex items-center'}>{action}</span>
+        )}
       </div>
       {/* The body's gutter halves on a phone: at 375 the panel's padding is paid on TOP of the
           page's own, and a deep tree row has only what is left after the indent, the handle, the
