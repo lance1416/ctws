@@ -1,3 +1,4 @@
+import type { CalendarEntry } from '@ctws/contracts'
 import type { QueryClient } from '@tanstack/react-query'
 import type { ComponentType, ReactNode } from 'react'
 import type { RouteObject } from 'react-router-dom'
@@ -71,6 +72,20 @@ export type WorkspaceModule = {
    */
   ProjectViewAction?: ComponentType<{ projectId: string }>
   /**
+   * This module's DATED THINGS, for the shell's calendar.
+   *
+   * The shell draws the grid and knows nothing about what a 截止 is or how it differs from
+   * 想读完: the module supplies entries that already carry their day and their own word for what
+   * the date means. The day is decided by the SERVER in the account's zone, like every other date
+   * in this app -- a client turning an instant into a day would put a 23:00 deadline on the wrong
+   * square for half the world.
+   *
+   * This is the fifth contribution point and the first designed with two modules in front of it,
+   * which is why it exists at all: a seam shaped by one module is that module's shape wearing a
+   * general name (contract §2).
+   */
+  calendar?: CalendarContribution
+  /**
    * This module's cards on the WORKBENCH -- the shell's own front page.
    *
    * A widget answers 「现在手头有什么」 in this module's terms and nothing else: it is a glance,
@@ -94,6 +109,17 @@ export type WorkspaceModule = {
    * bringing its own layout.
    */
   ProjectHeadline?: ComponentType<{ projectId: string }>
+}
+
+/** A module's half of the calendar. One provider per module; the shell merges them. */
+export type CalendarContribution = {
+  /** How this module's entries are named in the grid's view tabs. */
+  label: string
+  /** A hook: this module's entries for an inclusive day range. */
+  useEntries: (range: { from: string; to: string }) => {
+    entries: CalendarEntry[]
+    isError: boolean
+  }
 }
 
 /** One card on the workbench. */

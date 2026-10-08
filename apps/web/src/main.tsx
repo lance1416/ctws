@@ -6,6 +6,7 @@ import { Layout } from './components/Layout'
 import { moduleRoutes, WORKBENCH_PATH } from './modules/registry'
 import { Login } from './routes/Login'
 import { Project } from './routes/Project'
+import { Calendar } from './routes/Calendar'
 import { Projects } from './routes/Projects'
 import { Workbench } from './routes/Workbench'
 // IBM Plex Sans, self-hosted and LATIN SUBSET ONLY: no Google Fonts link, because this app is
@@ -39,6 +40,9 @@ const router = createBrowserRouter([
       // nothing of its own to show; with two modules it has their glances side by side.
       { index: true, element: <Workbench /> },
       // The shell's own pages stay at the top level; a MODULE's pages live under /<module>/.
+      // A SHELL page, like /projects: the calendar is about every module at once, so it is not
+      // under any module's namespace.
+      { path: '/calendar', element: <Calendar /> },
       { path: '/projects', element: <Projects /> },
       { path: '/projects/:id', element: <Project /> },
       ...moduleRoutes(),

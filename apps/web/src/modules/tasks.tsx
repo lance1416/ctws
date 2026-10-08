@@ -5,7 +5,7 @@ import { inboxOf, listProjects } from '../api/projects'
 import { searchTasks } from '../api/search'
 import { createTask, listProjectTasks } from '../api/tasks'
 import { refreshTasks, tasksKey } from '../api/taskCache'
-import { listToday } from '../api/today'
+import { listToday, taskCalendar } from '../api/today'
 import { CreateTaskDialog } from '../components/CreateTaskDialog'
 import { TaskBoard } from '../components/TaskBoard'
 import { isOverlayOpen } from '../components/overlayState'
@@ -45,6 +45,15 @@ function TodayCount() {
       {count}
     </span>
   )
+}
+
+/** This module's dated things: a plan day and a deadline day, both decided by the server. */
+function useTaskEntries(range: { from: string; to: string }) {
+  const result = useQuery({
+    queryKey: ['task-calendar', range.from, range.to],
+    queryFn: () => taskCalendar(range),
+  })
+  return { entries: result.data ?? [], isError: result.isError }
 }
 
 /**
@@ -349,6 +358,7 @@ export const taskModule: WorkspaceModule = {
     { id: 'list', label: '列表' },
     { id: 'board', label: '看板' },
   ],
+  calendar: { label: '任务', useEntries: useTaskEntries },
   widgets: [{ id: 'doing', label: '正在做', to: at('today'), Component: DoingWidget }],
   ProjectView: ProjectTasks,
   ProjectViewAction: NewTaskAction,

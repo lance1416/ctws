@@ -3,7 +3,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { deleteReadingItem, patchReadingItem, readingLabel } from '../api/reading'
-import { daysAgoIn } from '../dueAt'
+import { addDays, dayPhrase, daysAgoIn, nextMonday, todayIn } from '../dueAt'
 
 /**
  * ONE ROW OF 待读.
@@ -23,6 +23,14 @@ export function addedLabel(createdAt: string, timeZone: string, now: Date = new 
   if (days === 1) return '昨天加的'
   return `${days} 天前加的`
 }
+
+/** 「想读完」 as named days. No exact date: nobody plans reading to the day. */
+const PLANS: { label: string; day: (today: string) => string }[] = [
+  { label: '今天读完', day: (t) => t },
+  { label: '明天读完', day: (t) => addDays(t, 1) },
+  { label: '这周读完', day: (t) => addDays(nextMonday(t), -1) },
+  { label: '下周读完', day: (t) => nextMonday(t) },
+]
 
 /** What the one visible button does next, by where the item is now. */
 const NEXT: Record<ReadingStatus, { status: ReadingStatus; label: string } | null> = {
@@ -51,6 +59,7 @@ export function ReadingRow({
   here?: string
 }) {
   const qc = useQueryClient()
+  const today = todayIn(timeZone)
   const [renaming, setRenaming] = useState(false)
   const [draft, setDraft] = useState('')
   // Set when 改标题 is chosen, so the menu's closing hands focus to the NEW INPUT instead of back
@@ -81,6 +90,9 @@ export function ReadingRow({
   // host is dropped when it is ALREADY the title, which is what an untitled link shows.
   const meta = [
     item.projectId === here ? null : item.projectName,
+    // The plan leads the rest of the line when there is one: it is the only part that says
+    // anything about WHEN, and 「17 天前加的」 is about how long it has been ignored.
+    item.planOn ? `想${dayPhrase(item.planOn, today)}读完` : null,
     item.kind === 'book' ? item.author : host === label ? null : host,
     addedLabel(item.createdAt, timeZone),
   ].filter(Boolean)
@@ -188,6 +200,16 @@ export function ReadingRow({
             >
               改标题
             </Item>
+            {/* 「想读完的那天」, as NAMED DECISIONS rather than a date picker -- the same choice
+                the overdue row's triage made, and for the same reason: a calendar makes you
+                compute the date, where 「这周末」 is the thought you actually had. The exact day
+                is not offered because nobody plans reading to the day. */}
+            {PLANS.map(({ label, day }) => (
+              <Item key={label} onSelect={() => save.mutate({ planOn: day(today) })}>
+                {label}
+              </Item>
+            ))}
+            {item.planOn && <Item onSelect={() => save.mutate({ planOn: null })}>不定日子</Item>}
             {!finished && <Item onSelect={() => save.mutate({ status: 'dropped' })}>不读了</Item>}
             {finished && <Item onSelect={() => save.mutate({ status: 'todo' })}>放回待读</Item>}
             <Item onSelect={() => drop.mutate()}>删除</Item>

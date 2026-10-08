@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { listProjects } from '../api/projects'
 import { Panel } from '../components/Panel'
+import { ViewTabs } from '../components/ViewTabs'
 import { projectHeadlines, projectViewActions, projectViews } from '../modules/registry'
 import { ProjectIdentity } from '../components/ProjectIdentity'
 
@@ -22,45 +23,6 @@ import { ProjectIdentity } from '../components/ProjectIdentity'
  * there is no second three-column grid inside this page -- one would leave a third of the width
  * empty whenever the detail is closed, which is the dead space the workbench exists to remove.
  */
-/**
- * The tabs in a block's head. Fewer than two views draws nothing: a tab bar with one tab is
- * chrome that decides nothing, and the block's name already says what is in it.
- *
- * A real `tablist`, so the arrow keys and the `aria-selected` pair are what a screen reader
- * expects -- these are views of one block, not links to other pages.
- */
-function ViewTabs({
-  views,
-  current,
-  onPick,
-}: {
-  views: readonly { id: string; label: string }[]
-  current: string
-  onPick: (id: string) => void
-}) {
-  if (views.length < 2) return null
-  return (
-    <span role="tablist" className="flex items-center gap-0.5">
-      {views.map((v) => (
-        <button
-          key={v.id}
-          type="button"
-          role="tab"
-          aria-selected={v.id === current}
-          onClick={() => onPick(v.id)}
-          className={`h-8 rounded-lg px-2.5 text-sm ${
-            v.id === current
-              ? 'bg-surface-sunken text-fg'
-              : 'text-fg-muted hover:bg-surface-hover hover:text-fg'
-          }`}
-        >
-          {v.label}
-        </button>
-      ))}
-    </span>
-  )
-}
-
 export function Project() {
   const { id } = useParams()
   /**

@@ -91,11 +91,11 @@ describe('the workbench widgets', () => {
 describe('the master key table', () => {
   it('merges the shell chords and every module chord into one ordered table', () => {
     const table = allChords([notes])
-    // The shell's own keys are always there (`w` workbench, `p` projects); `n` is declared with
-    // a lower order than `p`, so it slots between them -- the order is the table's, not the
-    // registration sequence's.
-    expect(table.map((c) => c.key)).toEqual(['w', 'n', 'p'])
-    expect(table.map((c) => c.moduleId)).toEqual([null, 'notes', null])
+    // The shell's own keys are always there (`w` workbench, `c` calendar, `p` projects); `n` is
+    // declared with a lower order than all but `w`, so it slots in after it -- the order is the
+    // table's, not the registration sequence's.
+    expect(table.map((c) => c.key)).toEqual(['w', 'n', 'c', 'p'])
+    expect(table.map((c) => c.moduleId)).toEqual([null, 'notes', null, null])
   })
 
   it('resolves a module chord to the module own path', () => {

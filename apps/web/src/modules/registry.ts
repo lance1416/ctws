@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react'
 import type { RouteObject } from 'react-router-dom'
 import type {
+  CalendarContribution,
   CaptureContribution,
   Chord,
   ChordContext,
@@ -45,6 +46,7 @@ export const WORKBENCH_PATH = '/'
  */
 const SHELL_CHORDS: Chord[] = [
   { id: 'workbench', key: 'w', label: '去「工作台」', resolve: () => WORKBENCH_PATH, order: 5 },
+  { id: 'calendar', key: 'c', label: '去「日程」', resolve: () => '/calendar', order: 18 },
   { id: 'projects', key: 'p', label: '去「项目」', resolve: () => '/projects', order: 20 },
 ]
 
@@ -162,6 +164,15 @@ export function projectViewActions(
   modules: readonly WorkspaceModule[] = MODULES,
 ): RegisteredProjectBlock[] {
   return projectBlocks(modules, (m) => m.ProjectViewAction)
+}
+
+export type CalendarProvider = { moduleId: string } & CalendarContribution
+
+/** Every module that has dated things, in registration order. */
+export function calendarProviders(
+  modules: readonly WorkspaceModule[] = MODULES,
+): CalendarProvider[] {
+  return modules.flatMap((m) => (m.calendar ? [{ moduleId: m.id, ...m.calendar }] : []))
 }
 
 export type RegisteredWidget = Widget & { moduleId: string; moduleLabel: string }

@@ -1,4 +1,5 @@
 import type {
+  CalendarEntry,
   CreateReadingItemBody,
   ReadingItemResponse,
   ReadingStatus,
@@ -28,6 +29,15 @@ export async function listReading(query: ReadingQuery = {}): Promise<ReadingItem
 export async function searchReading(query: string): Promise<ReadingItemResponse[]> {
   const path = `${BASE}/search?q=${encodeURIComponent(query)}`
   return (await apiFetch<{ items: ReadingItemResponse[] }>(path)).items
+}
+
+/** This module's dated things for a window. The DAY is the server's, in the account's zone. */
+export async function readingCalendar(range: {
+  from: string
+  to: string
+}): Promise<CalendarEntry[]> {
+  const path = `${BASE}/calendar?from=${range.from}&to=${range.to}`
+  return (await apiFetch<{ entries: CalendarEntry[] }>(path)).entries
 }
 
 export function createReadingItem(body: CreateReadingItemBody): Promise<ReadingItemResponse> {

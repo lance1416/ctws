@@ -1,0 +1,38 @@
+/**
+ * The tabs in a block's head, and now in the calendar's.
+ *
+ * A SHELL piece: it started inside the project page and moved here the day a second surface
+ * needed it. The views are the MODULES' to name and the shell's to draw (module-boundary contract
+ * §3), so the drawing lives with the shell's other generic pieces rather than in one page.
+ */
+export function ViewTabs({
+  views,
+  current,
+  onPick,
+}: {
+  views: readonly { id: string; label: string }[]
+  current: string
+  onPick: (id: string) => void
+}) {
+  if (views.length < 2) return null
+  return (
+    <span role="tablist" className="flex items-center gap-0.5">
+      {views.map((v) => (
+        <button
+          key={v.id}
+          type="button"
+          role="tab"
+          aria-selected={v.id === current}
+          onClick={() => onPick(v.id)}
+          className={`h-8 rounded-lg px-2.5 text-sm ${
+            v.id === current
+              ? 'bg-surface-sunken text-fg'
+              : 'text-fg-muted hover:bg-surface-hover hover:text-fg'
+          }`}
+        >
+          {v.label}
+        </button>
+      ))}
+    </span>
+  )
+}

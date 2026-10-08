@@ -1,5 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { createReadingItem, listReading, readingLabel, searchReading } from '../api/reading'
+import {
+  createReadingItem,
+  listReading,
+  readingCalendar,
+  readingLabel,
+  searchReading,
+} from '../api/reading'
 import { AddReading } from '../components/AddReading'
 import { PanelEmpty } from '../components/Panel'
 import { ReadingRow } from '../components/ReadingRow'
@@ -75,6 +81,15 @@ function useReadingHits(query: string) {
     mark: null,
   }))
   return { hits, isError: results.isError, isSuccess: results.isSuccess }
+}
+
+/** This module's dated things: 「想读完」, already a calendar day in the account's zone. */
+function useReadingEntries(range: { from: string; to: string }) {
+  const result = useQuery({
+    queryKey: ['reading-calendar', range.from, range.to],
+    queryFn: () => readingCalendar(range),
+  })
+  return { entries: result.data ?? [], isError: result.isError }
 }
 
 /**
@@ -169,6 +184,7 @@ export const readingModule: WorkspaceModule = {
   // `l` for list. `r` is the task module's 回顾 and one keyspace is shared across modules, so a
   // second module cannot take a key that is already spoken for.
   chords: [{ id: 'reading', key: 'l', label: '去「待读」', resolve: () => `/${ID}`, order: 15 }],
+  calendar: { label: '待读', useEntries: useReadingEntries },
   widgets: [{ id: 'unfiled', label: '待读 · 散的', to: `/${ID}`, Component: ReadingWidget }],
   ProjectView: ReadingProjectView,
   ProjectHeadline: ReadingHeadline,

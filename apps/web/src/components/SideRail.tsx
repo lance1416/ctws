@@ -108,6 +108,19 @@ export function SideRail() {
           </NavLink>
         ))}
 
+        {/* The shell's second destination. It sits BELOW the modules' own pages because it is
+          about them: you come here to see when their things are due, not to do the work. */}
+        <NavLink
+          to="/calendar"
+          className={({ isActive }) =>
+            `flex min-h-9 shrink-0 items-center gap-2 rounded-lg px-2.5 py-1 whitespace-nowrap ${
+              isActive ? 'bg-surface-panel font-semibold text-fg' : 'text-fg-muted hover:text-fg'
+            }`
+          }
+        >
+          日程
+        </NavLink>
+
         {/* The group label is the link to the full project page; the `+` beside it is the only
           other thing in this row, so there is still no label that merely looks clickable. */}
         <div className="mt-0 flex shrink-0 items-center gap-1 lg:mt-6">
