@@ -42,8 +42,8 @@ export const LINK_KINDS = [
   inverse: string
 }[]
 
-export const linkKind = z.enum(LINK_KINDS.map((l) => l.kind) as [string, ...string[]])
 export type LinkKind = (typeof LINK_KINDS)[number]['kind']
+export const linkKind = z.enum(LINK_KINDS.map((l) => l.kind) as [LinkKind, ...LinkKind[]])
 
 /** Whether this edge is one the model allows, which is the only check there is on a link. */
 export function linkIsAllowed(kind: string, from: string, to: string): boolean {
@@ -103,3 +103,18 @@ export const linksResponse = z
 export type LinksResponse = z.infer<typeof linksResponse>
 
 export const linkParams = z.object({ type: objectType, id: z.uuid() }).strict()
+
+/**
+ * NAMING ONE EDGE TO REMOVE IT. Both ends and the kind, because that tuple IS the edge's identity
+ * -- there is no id to hand back, and inventing one would be a second way to say the same thing.
+ */
+export const linkQuery = z
+  .object({
+    fromType: objectType,
+    fromId: z.uuid(),
+    toType: objectType,
+    toId: z.uuid(),
+    kind: linkKind,
+  })
+  .strict()
+export type LinkQuery = z.infer<typeof linkQuery>

@@ -196,3 +196,49 @@ export async function contactsLinkedFrom(
   }
   return by
 }
+
+/**
+ * ADDS ONE EDGE. Already there is the state the caller asked for, so the conflict is ignored
+ * rather than reported -- the primary key is the whole identity of an edge.
+ */
+export async function addLink(
+  q: Queryable,
+  workspaceId: string,
+  from: Endpoint,
+  to: Endpoint,
+  kind: LinkKind,
+): Promise<void> {
+  await q
+    .insert(links)
+    .values({
+      workspaceId,
+      fromType: from.type,
+      fromId: from.id,
+      toType: to.type,
+      toId: to.id,
+      kind,
+    })
+    .onConflictDoNothing()
+}
+
+/** Removes one edge, named by both ends and the kind. Gone already is the same answer. */
+export async function removeLink(
+  q: Queryable,
+  workspaceId: string,
+  from: Endpoint,
+  to: Endpoint,
+  kind: LinkKind,
+): Promise<void> {
+  await q
+    .delete(links)
+    .where(
+      and(
+        eq(links.workspaceId, workspaceId),
+        eq(links.fromType, from.type),
+        eq(links.fromId, from.id),
+        eq(links.toType, to.type),
+        eq(links.toId, to.id),
+        eq(links.kind, kind),
+      ),
+    )
+}

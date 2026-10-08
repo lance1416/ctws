@@ -22,6 +22,7 @@ import { warmDummyHash } from './auth/service'
 import type { Db } from './db/client'
 import type { Env } from './env'
 import { registerGuards } from './guards'
+import { linkRoutes } from './links/routes'
 import { sendProblem } from './problem'
 import { projectRoutes } from './projects/routes'
 import { contactRoutes } from './contacts/routes'
@@ -84,6 +85,9 @@ export async function buildApp(opts: { env: Env; db: Db }): Promise<FastifyInsta
   // the second module can be added without either one having to know the other's paths.
   await app.register(projectRoutes, { prefix: '/api/v1' })
   await app.register(adminRoutes, { prefix: '/api/v1' })
+  // The edge table is the shell's, like projects: an edge joins two modules' things, so no
+  // module could own it without learning about another.
+  await app.register(linkRoutes, { prefix: '/api/v1' })
   await app.register(taskRoutes, { prefix: '/api/v1/tasks' })
   await app.register(readingRoutes, { prefix: '/api/v1/reading' })
   await app.register(contactRoutes, { prefix: '/api/v1/contacts' })
