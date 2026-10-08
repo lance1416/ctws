@@ -556,3 +556,33 @@ test('a project created while the project list is still loading appears', async 
 
   await expect(page.getByRole('main').getByRole('link', { name: 'typed early' })).toBeVisible()
 })
+
+test('a refused move puts the fold it opened back (D37)', async ({ page }) => {
+  await registerFreshUser(page)
+  const url = await startProject(page)
+  await seedTree(page, url, [
+    ['aa', null],
+    ['akid', 'aa'],
+    ['bb', null],
+  ])
+  const rows = page.getByRole('listitem')
+  await page.getByRole('button', { name: '折叠' }).click()
+  await expect(rows).toHaveText([/aa/, /bb/])
+
+  // The drop unfolds `aa` so the moved row lands somewhere visible. The server then refuses it.
+  await page.route('**/api/v1/tasks/*/move', (r) => r.fulfill({ status: 500, body: '{}' }))
+  const box = (await handle(page, 'bb').boundingBox())!
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(box.x + box.width / 2 + 25, box.y + box.height / 2, { steps: 10 })
+  await page.mouse.up()
+  await expect(page.getByRole('alert')).toBeVisible()
+
+  // Nothing landed there, so nothing should have been opened: the tree is exactly as it was.
+  // It used to stay open -- the one visible trace of an action that did not happen.
+  await expect(rows).toHaveText([/aa/, /bb/])
+  await page.unroute('**/api/v1/tasks/*/move')
+  // And the fold is remembered that way, not just drawn that way.
+  await page.reload()
+  await expect(rows).toHaveText([/aa/, /bb/])
+})

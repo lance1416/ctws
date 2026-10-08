@@ -364,3 +364,24 @@ test('a project colour can be picked from the chip that shows it', async ({ page
   // The chip is a control now, and it still carries the project's name beside it (WCAG 1.4.1).
   await expect(page.getByRole('heading', { level: 1, name: '改版' })).toBeVisible()
 })
+
+test('a finished task opens from the 已完成 list, where it could only be restored (D58)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '改版')
+  const id = await makeTask(page, pid, '写迁移')
+  await page.request.patch(`/api/v1/tasks/${id}`, {
+    headers: HEADERS,
+    data: { status: 'done', notes: '先问清需求' },
+  })
+
+  await page.goto('/tasks/completed')
+  await page.getByRole('button', { name: '写迁移 改版' }).click()
+  const pane = page.getByRole('dialog', { name: '任务详情' })
+  await expect(pane).toBeVisible()
+  // Reading it is the point: until now the only thing this list could do to a task was restore
+  // it, so looking at one meant finding it again in its project's tree.
+  await expect(pane).toContainText('先问清需求')
+  await expect(pane.getByRole('button', { name: '编辑', exact: true })).toBeVisible()
+})

@@ -178,8 +178,9 @@ export function TaskTree({ projectId }: { projectId: string }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
   const move = useMutation({
-    mutationFn: ({ id, body }: { id: string; body: MoveTaskBody }) => moveTask(id, body),
-    onMutate: async ({ id, body }) => {
+    mutationFn: ({ id, body }: { id: string; body: MoveTaskBody; unfolded?: string }) =>
+      moveTask(id, body),
+    onMutate: async ({ id, body, unfolded }) => {
       await qc.cancelQueries({ queryKey: key })
       const previous = qc.getQueryData<ProjectTasks>(key)
       // Only the rows move optimistically. The ROLLUPS are the server's arithmetic over the whole
@@ -188,12 +189,23 @@ export function TaskTree({ projectId }: { projectId: string }) {
       qc.setQueryData<ProjectTasks>(key, (old) =>
         old ? { ...old, tasks: applyMove(old.tasks, id, body) } : old,
       )
-      return { previous }
+      return { previous, unfolded }
     },
     onError: (error, _vars, context) => {
       // Without this the UI keeps a state the database does not contain, and the user believes
       // the move succeeded until the next reload. See Review Focus 5.
       if (context?.previous) qc.setQueryData(key, context.previous)
+      // AND THE FOLD GOES BACK TOO (D37). The drop unfolded the destination so the row would be
+      // on screen where it landed; if the move was refused, nothing landed there and the parent
+      // is left standing open for no reason -- the one visible trace of an action that did not
+      // happen. It was argued as acceptable because the user can re-fold it; they should not
+      // have to undo something the app did on their behalf and then undid behind their back.
+      if (context?.unfolded) {
+        const back = new Set(collapsed)
+        back.add(context.unfolded)
+        setCollapsed(back)
+        saveCollapsed(projectId, back)
+      }
       setError(error instanceof Error ? error.message : '移动失败')
     },
     onSettled: () => qc.invalidateQueries({ queryKey: key }),
@@ -210,17 +222,20 @@ export function TaskTree({ projectId }: { projectId: string }) {
     }
     setError(null)
     // The gesture is legal and the intent clear, so show the result: a row moved under a folded
-    // parent would otherwise vanish from the screen while sitting in the database.
+    // parent would otherwise vanish from the screen while sitting in the database. Which parent
+    // was opened travels with the mutation, so a refusal can put it back.
+    let unfolded: string | undefined
     if (plan.parentId && collapsed.has(plan.parentId)) {
       const next = new Set(collapsed)
       next.delete(plan.parentId)
       setCollapsed(next)
       saveCollapsed(projectId, next)
+      unfolded = plan.parentId
     }
     const body: MoveTaskBody = { projectId, parentId: plan.parentId }
     if (plan.beforeId) body.beforeId = plan.beforeId
     if (plan.afterId) body.afterId = plan.afterId
-    move.mutate({ id: draggedId, body })
+    move.mutate({ id: draggedId, body, ...(unfolded ? { unfolded } : {}) })
   }
 
   const blockLength = (index: number) => {

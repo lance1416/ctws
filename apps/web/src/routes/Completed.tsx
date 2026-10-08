@@ -1,12 +1,13 @@
 import type { CompletedTaskResponse } from '@ctws/contracts'
-import { useQuery } from '@tanstack/react-query'
-import { useRef } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { listCompleted } from '../api/completed'
 import { useTaskActions } from '../api/taskActions'
 import { EMPTY_ACTION, EmptyState } from '../components/EmptyState'
 import { DONE_LIST_MEASURE, DONE_ROW_GRID, ProjectRail } from '../components/RowParts'
 import { StatusButton } from '../components/StatusControls'
+import { TaskDetail } from '../components/TaskDetail'
 import { addDays, todayIn } from '../dueAt'
 import { useTimeZone } from '../useMe'
 
@@ -27,6 +28,8 @@ function dayHeading(day: string, today: string): string {
  */
 export function Completed() {
   const completed = useQuery({ queryKey: ['completed'], queryFn: listCompleted })
+  const [openId, setOpenId] = useState<string | null>(null)
+  const qc = useQueryClient()
   const timezone = useTimeZone()
   const today = todayIn(timezone)
   const clock = new Intl.DateTimeFormat('zh-CN', {
@@ -39,6 +42,7 @@ export function Completed() {
   const actions = useTaskActions(() => {})
 
   const rows = completed.data ?? []
+  const openTask = rows.find((t) => t.id === openId)
   const days: { day: string; tasks: CompletedTaskResponse[] }[] = []
   for (const t of rows) {
     const last = days[days.length - 1]
@@ -89,12 +93,19 @@ export function Completed() {
                     }
                   />
                 </span>
-                <span className="col-start-2 row-start-1 flex min-w-0 flex-col">
+                {/* THE ROW OPENS (D58). Until now a finished task could be restored from here
+                    and nothing else -- not read, not corrected, not deleted -- so the only way
+                    to look at one was to find it again in its project's tree. */}
+                <button
+                  type="button"
+                  onClick={() => setOpenId(t.id)}
+                  className="col-start-2 row-start-1 flex min-w-0 flex-col text-left"
+                >
                   <span className="truncate">{t.title}</span>
                   <span className="truncate text-sm text-fg-muted">
                     {t.parentTitle === null ? t.projectName : `${t.projectName} › ${t.parentTitle}`}
                   </span>
-                </span>
+                </button>
                 <time
                   dateTime={t.completedAt ?? undefined}
                   className="col-start-3 row-start-1 flex h-6 items-center text-sm tabular-nums text-fg-muted"
@@ -106,8 +117,17 @@ export function Completed() {
           </ul>
         </section>
       ))}
-      {rows.length >= 200 && (
-        <p className="mt-8 text-sm text-fg-muted">只显示最近完成的 200 条。</p>
+      {rows.length >= 200 && <p className="mt-8 text-sm text-fg-muted">只显示最近完成的 200 条</p>}
+      {openTask && (
+        <TaskDetail
+          key={openTask.id}
+          task={openTask}
+          projectId={openTask.projectId}
+          onClose={() => setOpenId(null)}
+          // A save can take the row off this page (restoring it, say), so the list is refetched;
+          // the pane itself stays open showing what was written, as it does everywhere else.
+          onSaved={() => void qc.invalidateQueries({ queryKey: ['completed'] })}
+        />
       )}
     </>
   )
