@@ -187,6 +187,15 @@ async function putAttendees(
   await q.insert(meetingAttendees).values(unique.map((contactId) => ({ meetingId, contactId })))
 }
 
+/**
+ * HOW MANY SERIES ONE REQUEST WILL EXPAND.
+ *
+ * Expansion is bounded per series; the number of series was not, so a workspace with thousands of
+ * meetings turned one calendar read into thousands of expansions. A month of a personal calendar
+ * is tens of meetings, so this is far above any real page and still a ceiling.
+ */
+const MAX_SERIES_PER_REQUEST = 500
+
 /** Every series of a workspace, hydrated. The expansion is the caller's, per window. */
 async function seriesOf(
   q: Queryable,
@@ -203,6 +212,8 @@ async function seriesOf(
         opts.id ? eq(meetings.id, opts.id) : undefined,
       ),
     )
+    .orderBy(asc(meetings.startsLocal), asc(meetings.id))
+    .limit(MAX_SERIES_PER_REQUEST)
   return hydrate(q, rows)
 }
 

@@ -138,6 +138,7 @@ const MAX_COUNT = 1000
 const MAX_INTERVAL = 1000
 
 export function ruleProblem(rule: string): string | null {
+  if (!isOneLine(rule)) return '这条重复规则读不懂'
   let parsed: RRule
   try {
     parsed = RRule.fromString(withDtstart(rule, '2026-01-01T00:00'))
@@ -162,6 +163,24 @@ function optionsProblem(parsed: RRule): string | null {
   }
   return null
 }
+
+/**
+ * ONE LINE, BY DEFINITION.
+ *
+ * An `RRULE` body is a single content line (RFC 5545 §3.3.10). A newline inside one would let the
+ * stored string smuggle a second property into the text handed to the parser -- another `RRULE`,
+ * an `RDATE`, a `DTSTART` of its own -- so what the parser sees would stop being what the check
+ * read. Refusing the character is the whole fix: there is no rule that needs it.
+ */
+// Written as a scan rather than a regex: the character class this needs is made of the very
+// characters that are hard to put into a source file correctly, and a regex that was subtly
+// wrong here would be a gate that only looks closed.
+const isOneLine = (value: string) =>
+  value.length > 0 &&
+  [...value].every((c) => {
+    const code = c.codePointAt(0)!
+    return code > 0x1f && code !== 0x7f
+  })
 
 function withDtstart(rule: string, startsLocal: LocalTime): string {
   const body = rule.replace(/^RRULE:/i, '')
@@ -246,7 +265,7 @@ export function occurrencesIn(
    * read for the life of the workspace. A stored rule nobody can afford to expand is reported as
    * the one meeting its start describes.
    */
-  if (optionsProblem(rule)) {
+  if (!isOneLine(series.rrule) || optionsProblem(rule)) {
     const one = made(series.startsLocal)
     return one && overlaps(one) ? [one] : []
   }

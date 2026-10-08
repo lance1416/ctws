@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { calendarDate, MAX_CALENDAR_SPAN_DAYS } from './task'
+import { calendarDate, windowIsBounded, WINDOW_REFUSED } from './task'
 
 /**
  * 会议 -- the fourth module, on iCalendar's `VEVENT` (RFC 5545).
@@ -189,16 +189,9 @@ export const meetingListQuery = z
     to: calendarDate.optional(),
   })
   .strict()
-  // The same bound the calendar keeps, for the same reason: this is the same question with the
-  // days named differently, and a series has no last occurrence to stop at.
-  .refine(
-    (q) =>
-      !q.from ||
-      !q.to ||
-      (Date.parse(q.to) >= Date.parse(q.from) &&
-        (Date.parse(q.to) - Date.parse(q.from)) / 86_400_000 <= MAX_CALENDAR_SPAN_DAYS),
-    { message: `a window is at most ${MAX_CALENDAR_SPAN_DAYS} days`, path: ['to'] },
-  )
+  // THE SAME CHECK the calendar uses, not a copy of it: this is that question with the days
+  // named differently, and two copies drifted apart once already.
+  .refine(windowIsBounded, { message: WINDOW_REFUSED, path: ['to'] })
 
 /** Deleting takes a scope too: cancelling one week is not cancelling the series. */
 export const deleteMeetingQuery = z

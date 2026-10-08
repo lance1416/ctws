@@ -222,9 +222,57 @@ export const reviewResponse = z
   .strict()
 export type ReviewResponse = z.infer<typeof reviewResponse>
 
+/**
+ * The window a calendar asks for. Inclusive at both ends.
+ *
+ * BOUNDED, and not as tidiness: a window is how much work a request asks a module for, and a
+ * recurring thing has no last occurrence. `FREQ=DAILY` over a thousand years is 365,242
+ * occurrences and most of a second of one core -- measured -- from one request anybody can send.
+ * A grid shows six weeks and the longest view anyone has asked for is a year, so a year and a bit
+ * is room to spare.
+ */
+export const MAX_CALENDAR_SPAN_DAYS = 370
+
+/**
+ * And WHERE a window may sit, not only how wide it is.
+ *
+ * A window in year 9000 is as expensive as a wide one: a series is expanded from its own start
+ * forward to the window, so the distance is the work. Nothing in this app draws a calendar
+ * outside a human range, and a meeting cannot start outside one either.
+ */
+const CALENDAR_FLOOR = '1970-01-01'
+const CALENDAR_CEILING = '2200-12-31'
+
+/**
+ * THE ONE PLACE A DATE WINDOW IS BOUNDED, so the endpoints that take one cannot drift apart.
+ *
+ * They did: `calendarQuery` was given a span and a range and `meetingListQuery` -- the same
+ * question with the days named differently -- kept neither, so the walk one refused the other
+ * still allowed. A shared check is the only version of this that stays true.
+ *
+ * Both ends optional, because some windows have defaults; a half-given window is bounded on the
+ * half it has.
+ */
+export function windowIsBounded(q: {
+  from?: string | undefined
+  to?: string | undefined
+}): boolean {
+  if (q.from && (q.from < CALENDAR_FLOOR || q.from > CALENDAR_CEILING)) return false
+  if (q.to && (q.to < CALENDAR_FLOOR || q.to > CALENDAR_CEILING)) return false
+  if (!q.from || !q.to) return true
+  if (q.to < q.from) return false
+  return (Date.parse(q.to) - Date.parse(q.from)) / 86_400_000 <= MAX_CALENDAR_SPAN_DAYS
+}
+
+/** What a refused window is told. */
+export const WINDOW_REFUSED = 'that is not a window anybody is looking at'
+
 export const reviewQuery = z
   .object({ from: calendarDate.optional(), to: calendarDate.optional() })
   .strict()
+  // The same bound, for the same reason: this reads the event log over a window, and a window
+  // nobody is looking at is a scan nobody asked for.
+  .refine(windowIsBounded, { message: WINDOW_REFUSED, path: ['to'] })
 
 /**
  * ONE DATED THING, as a module hands it to the calendar.
@@ -261,44 +309,11 @@ export const calendarEntry = z
   .strict()
 export type CalendarEntry = z.infer<typeof calendarEntry>
 
-/**
- * The window a calendar asks for. Inclusive at both ends.
- *
- * BOUNDED, and not as tidiness: a window is how much work a request asks a module for, and a
- * recurring thing has no last occurrence. `FREQ=DAILY` over a thousand years is 365,242
- * occurrences and most of a second of one core -- measured -- from one request anybody can send.
- * A grid shows six weeks and the longest view anyone has asked for is a year, so a year and a bit
- * is room to spare.
- */
-export const MAX_CALENDAR_SPAN_DAYS = 370
-
-/**
- * And WHERE a window may sit, not only how wide it is.
- *
- * A window in year 9000 is as expensive as a wide one: a series is expanded from its own start
- * forward to the window, so the distance is the work. Nothing in this app draws a calendar
- * outside a human range, and a meeting cannot start outside one either.
- */
-const CALENDAR_FLOOR = '1970-01-01'
-const CALENDAR_CEILING = '2200-12-31'
-
 export const calendarQuery = z
   .object({ from: calendarDate, to: calendarDate })
   .strict()
-  .refine((q) => Date.parse(q.to) >= Date.parse(q.from), {
-    message: 'the window ends before it starts',
-    path: ['to'],
-  })
-  .refine((q) => (Date.parse(q.to) - Date.parse(q.from)) / 86_400_000 <= MAX_CALENDAR_SPAN_DAYS, {
-    message: `a calendar window is at most ${MAX_CALENDAR_SPAN_DAYS} days`,
-    path: ['to'],
-  })
-  // Compared as strings, which is safe for `YYYY-MM-DD` and is the same comparison a database
-  // index would do.
-  .refine((q) => q.from >= CALENDAR_FLOOR && q.to <= CALENDAR_CEILING, {
-    message: 'that is not a window anybody is looking at',
-    path: ['from'],
-  })
+  .refine(windowIsBounded, { message: WINDOW_REFUSED, path: ['to'] })
+
 export type CalendarQuery = z.infer<typeof calendarQuery>
 
 /**

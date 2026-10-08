@@ -238,6 +238,30 @@ describe('rules', () => {
     expect(ruleProblem('RRULE:FREQ=HOURLY')).toBe('会议不会比每天更频繁')
   })
 
+  it('refuses a rule carrying a second line, whatever that line says', () => {
+    // An RRULE body is ONE content line. A newline lets the stored string smuggle another
+    // property into the text the parser is handed -- another RRULE, an RDATE, a DTSTART of its
+    // own -- so what the parser sees stops being what the check read.
+    // Built with an explicit newline rather than an escape: a source file is exactly the wrong
+    // place to be casual about the character under test.
+    const NEWLINE = String.fromCharCode(10)
+    const smuggled = [
+      `FREQ=DAILY${NEWLINE}RRULE:FREQ=SECONDLY`,
+      `FREQ=DAILY${NEWLINE}DTSTART:00010101T000000Z`,
+    ]
+    for (const rule of smuggled) {
+      expect(ruleProblem(rule), JSON.stringify(rule)).not.toBeNull()
+      // And the expansion refuses it too, for a row written before the check existed.
+      expect(
+        occurrencesIn(
+          weekly({ rrule: rule }),
+          none,
+          window('2026-10-20T00:00Z', '2026-11-01T00:00Z'),
+        ).length,
+      ).toBe(1)
+    }
+  })
+
   it('does not expand a stored rule it would have refused', () => {
     // A row written before a limit existed must not be expanded on every read for the life of
     // the workspace. It is reported as the one meeting its start describes.
