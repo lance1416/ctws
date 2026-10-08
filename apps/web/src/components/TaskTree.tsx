@@ -518,36 +518,61 @@ export function TaskTree({ projectId }: { projectId: string }) {
    * failure of one impossible to attribute. Five requests is a handful; the lists refresh once,
    * at the end.
    */
-  const bulkFinish = async () => {
+  /**
+   * Runs `act` over the selection, one request at a time, and keeps the SELECTION HONEST when
+   * one of them fails.
+   *
+   * PARTIAL FAILURE IS THE CASE THAT MATTERS. Five requests go out; if the third is refused, two
+   * are already applied and three are not. Clearing the whole selection would hide which, and
+   * leaving it whole would mean pressing again re-does the two that worked. So each id leaves
+   * the selection as it succeeds, and what is left afterwards is exactly what still needs doing
+   * -- pressing the same button again retries precisely that.
+   *
+   * Sequential rather than parallel, deliberately: `move` takes a per-workspace advisory lock on
+   * the tree's shape, so concurrent moves queue on it anyway while making a failure impossible
+   * to attribute to one row.
+   */
+  const runOverSelection = async (
+    act: (id: string) => Promise<unknown>,
+    /** Given the ids that really succeeded, and run whether or not one of them failed. */
+    settle?: (done: ReadonlySet<string>) => void | Promise<void>,
+  ) => {
     setBulkBusy(true)
+    const done = new Set<string>()
     try {
-      for (const id of selected) await patchTask(id, { status: 'done' })
-      setKeptFinished((prev) => new Set([...prev, ...selected]))
-      setSelected(new Set())
+      for (const id of selected) {
+        await act(id)
+        done.add(id)
+      }
     } catch (e) {
-      setError(e instanceof Error ? e.message : '批量操作失败')
+      const left = selected.size - done.size
+      setError(`${e instanceof Error ? e.message : '操作失败'}（还剩 ${left} 条没做）`)
     } finally {
+      setSelected((prev) => new Set([...prev].filter((id) => !done.has(id))))
       setBulkBusy(false)
+      await settle?.(done)
       await refreshTasks(qc, projectId)
     }
   }
 
-  const bulkMove = async (toProjectId: string) => {
-    setBulkBusy(true)
-    try {
-      // `parentId: null` -- a task moved to another project lands at that project's root. Keeping
-      // its parent would mean moving the parent too, which is a different request than the one
-      // the person made.
-      for (const id of selected) await moveTask(id, { projectId: toProjectId, parentId: null })
-      setSelected(new Set())
-    } catch (e) {
-      setError(e instanceof Error ? e.message : '批量操作失败')
-    } finally {
-      setBulkBusy(false)
-      await refreshTasks(qc, projectId)
-      await refreshTasks(qc, toProjectId)
-    }
-  }
+  const bulkFinish = () =>
+    runOverSelection(
+      (id) => patchTask(id, { status: 'done' }),
+      // The rows that really finished stay on screen, the same way a single one does (D48) --
+      // `done`, not the whole selection, or a half-failed run would pin rows that never moved.
+      (done) => setKeptFinished((prev) => new Set([...prev, ...done])),
+    )
+
+  const bulkMove = (toProjectId: string) =>
+    runOverSelection(
+      // `parentId: null` -- a task moved to another project lands at that project's root.
+      // Keeping its parent would mean moving the parent too, which is a different request than
+      // the one the person made.
+      (id) => moveTask(id, { projectId: toProjectId, parentId: null }),
+      // Unconditionally: if three of five landed, the destination holds three and its cache has
+      // to say so.
+      () => refreshTasks(qc, toProjectId),
+    )
 
   const toggleDone = () => {
     const next = !showDone

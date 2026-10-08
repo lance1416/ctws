@@ -458,3 +458,38 @@ test('the project title gets the width it needs, not the width it can shrink to'
   })
   expect(cut, 'the project name is truncated at desk width').toBe(false)
 })
+
+test('a half-failed bulk action leaves exactly what still needs doing', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '改版')
+  const a = await makeTask(page, pid, '写迁移')
+  const b = await makeTask(page, pid, '补测试')
+  await openTree(page, pid)
+
+  await row(page, '写迁移').click({ modifiers: ['Shift'] })
+  await row(page, '补测试').click({ modifiers: ['Shift'] })
+  await expect(page.locator('[data-selection-bar]')).toContainText('已选 2')
+
+  // One of the two is refused. The other really happens -- that is what makes this about PARTIAL
+  // failure rather than about failure.
+  await page.route(`**/api/v1/tasks/${b}`, (r) =>
+    r.request().method() === 'PATCH' ? r.fulfill({ status: 500, body: '{}' }) : r.continue(),
+  )
+  await page.getByRole('button', { name: '标记完成' }).click()
+
+  await expect(page.getByRole('alert')).toContainText('还剩 1 条没做')
+  // The one that worked has left the selection; the one that did not is still in it, so pressing
+  // again retries precisely that and does not re-do the first.
+  await expect(page.locator('[data-selection-bar]')).toContainText('已选 1')
+  expect(a).toBeTruthy()
+  const server = await (await page.request.get(`/api/v1/tasks?projectId=${pid}`)).json()
+  const byTitle = Object.fromEntries(
+    (server.tasks as { title: string; status: string }[]).map((t) => [t.title, t.status]),
+  )
+  expect(byTitle).toMatchObject({ 写迁移: 'done', 补测试: 'todo' })
+
+  // And the retry goes through once the refusal stops.
+  await page.unroute(`**/api/v1/tasks/${b}`)
+  await page.getByRole('button', { name: '标记完成' }).click()
+  await expect(page.locator('[data-selection-bar]')).toHaveCount(0)
+})
