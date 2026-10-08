@@ -1,6 +1,7 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useComposing } from '../composition'
+import { MENU_ITEM, MENU_SURFACE } from './menuSurface'
 
 /**
  * THE THREE WAYS TO CHANGE SOMETHING IN A DETAIL PANE, and every module uses the same three.
@@ -60,14 +61,14 @@ export function PickOne<T extends string>({
         <Chevron />
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
-        <DropdownMenu.Content align="start" sideOffset={4} className={MENU}>
+        <DropdownMenu.Content align="start" sideOffset={4} className={MENU_SURFACE}>
           {choices.map((c) => (
             <DropdownMenu.Item
               key={c.value}
               onSelect={() => {
                 if (c.value !== value) onPick(c.value)
               }}
-              className={ITEM}
+              className={MENU_ITEM}
             >
               {c.mark && (
                 <span aria-hidden="true" className="flex shrink-0">
@@ -105,10 +106,32 @@ export function PickMany({
   /** What to say when nothing is chosen. */
   empty: string
 }) {
-  const rest = choices.filter((c) => !chosen.some((p) => p.value === c.value))
+  /**
+   * WHAT HAS BEEN PICKED, INCLUDING WHAT IS STILL IN FLIGHT.
+   *
+   * `chosen` is the server's answer, and it arrives a request later. Picking two things quickly
+   * computed both new sets from the SAME stale list, so the second write dropped the first -- a
+   * lost update that showed up as a flaky test and would have shown up as 「我明明加了两个」.
+   *
+   * The optimistic list leads, and is dropped the moment the server's answer agrees with it.
+   */
+  const [pending, setPending] = useState<string[] | null>(null)
+  const settled = chosen.map((c) => c.value)
+  useEffect(() => {
+    if (pending && same(pending, settled)) setPending(null)
+  }, [pending, settled])
+
+  const live = pending ?? settled
+  const byValue = new Map([...choices, ...chosen].map((c) => [c.value, c]))
+  const shown = live.map((v) => byValue.get(v)).filter((c) => c !== undefined)
+  const change = (next: string[]) => {
+    setPending(next)
+    onChange(next)
+  }
+  const rest = choices.filter((c) => !live.includes(c.value))
   return (
     <span className="flex min-w-0 flex-wrap items-center gap-1.5 py-0.5">
-      {chosen.map((c) => (
+      {shown.map((c) => (
         <span
           key={c.value}
           className="flex h-7 min-w-0 items-center gap-1.5 rounded-lg bg-surface-hover px-2 text-xs text-fg"
@@ -122,7 +145,7 @@ export function PickMany({
           <button
             type="button"
             aria-label={`把${label}「${c.label}」去掉`}
-            onClick={() => onChange(chosen.filter((p) => p.value !== c.value).map((p) => p.value))}
+            onClick={() => change(live.filter((v) => v !== c.value))}
             className="-mr-1 flex h-5 w-5 shrink-0 items-center justify-center rounded text-fg-subtle hover:text-fg"
           >
             <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3 w-3">
@@ -137,7 +160,7 @@ export function PickMany({
           </button>
         </span>
       ))}
-      {chosen.length === 0 && <span className="text-sm text-fg-subtle">{empty}</span>}
+      {shown.length === 0 && <span className="text-sm text-fg-subtle">{empty}</span>}
       {rest.length > 0 && (
         <DropdownMenu.Root>
           <DropdownMenu.Trigger
@@ -155,12 +178,12 @@ export function PickMany({
             </svg>
           </DropdownMenu.Trigger>
           <DropdownMenu.Portal>
-            <DropdownMenu.Content align="start" sideOffset={4} className={MENU}>
+            <DropdownMenu.Content align="start" sideOffset={4} className={MENU_SURFACE}>
               {rest.map((c) => (
                 <DropdownMenu.Item
                   key={c.value}
-                  onSelect={() => onChange([...chosen.map((p) => p.value), c.value])}
-                  className={ITEM}
+                  onSelect={() => change([...live, c.value])}
+                  className={MENU_ITEM}
                 >
                   {c.mark && (
                     <span aria-hidden="true" className="flex shrink-0">
@@ -292,11 +315,6 @@ export function InlineText({
   )
 }
 
-const MENU =
-  'max-h-80 min-w-40 overflow-y-auto rounded-xl border border-border-subtle bg-surface-panel p-1 shadow-panel'
-const ITEM =
-  'flex h-9 min-w-0 cursor-default items-center gap-2 rounded-lg px-2 text-sm text-fg outline-none data-[highlighted]:bg-surface-hover'
-
 function Chevron() {
   return (
     <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3 w-3 shrink-0 text-fg-subtle">
@@ -310,4 +328,9 @@ function Chevron() {
       />
     </svg>
   )
+}
+
+/** Two sets of values, compared as sets: the server may return them in its own order. */
+function same(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((v) => b.includes(v))
 }

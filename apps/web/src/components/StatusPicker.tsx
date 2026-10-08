@@ -2,6 +2,7 @@ import { TASK_STATUSES, type TaskStatus } from '@ctws/contracts'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { STATUS_LABEL } from './statusLabel'
 import { StatusMark } from './StatusMark'
+import { MENU_SURFACE } from './menuSurface'
 
 /**
  * THE STATUS, CHANGED WHERE IT IS SHOWN (D78).
@@ -55,11 +56,7 @@ export function StatusPicker({
         </svg>
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
-        <DropdownMenu.Content
-          align="start"
-          sideOffset={4}
-          className="min-w-36 rounded-xl border border-border-subtle bg-surface-panel p-1 shadow-panel"
-        >
+        <DropdownMenu.Content align="start" sideOffset={4} className={MENU_SURFACE}>
           {TASK_STATUSES.map((s) => (
             <DropdownMenu.Item
               key={s}

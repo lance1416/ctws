@@ -89,10 +89,14 @@ test('a person can be on several lines of work at once', async ({ page }) => {
 
   await page.getByRole('button', { name: '陈颖' }).click()
   const pane = page.getByRole('dialog', { name: '联系人' })
+  // Picked back to back WITHOUT waiting in between: that is what a person does, and it used to
+  // drop the first one -- both writes computed their new set from the same pre-refetch list.
   for (const name of ['找工作', 'CTWS']) {
     await pane.getByRole('button', { name: '加一个项目' }).click()
     await page.getByRole('menuitem', { name }).click()
   }
+  await expect(pane.getByRole('button', { name: '把项目「找工作」去掉' })).toBeVisible()
+  await expect(pane.getByRole('button', { name: '把项目「CTWS」去掉' })).toBeVisible()
 
   // On BOTH lines, and found from either.
   await page.goto(`/projects/${hunt}`)

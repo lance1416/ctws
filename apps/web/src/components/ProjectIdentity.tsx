@@ -6,6 +6,7 @@ import { updateProject } from '../api/projects'
 import { refreshProjects } from '../api/taskCache'
 import { railClass } from '../projectColor'
 import { useComposing } from '../composition'
+import { MENU_SURFACE } from './menuSurface'
 
 /**
  * A PROJECT'S NAME AND COLOUR, EDITABLE WHERE THEY ARE SHOWN (D54, D74).
@@ -60,11 +61,7 @@ export function ProjectIdentity({
           className={`h-7 w-[4px] shrink-0 rounded-full ${railClass(color)}`}
         />
         <DropdownMenu.Portal>
-          <DropdownMenu.Content
-            align="start"
-            sideOffset={8}
-            className="z-40 rounded-xl border border-border-subtle bg-surface-panel p-1 shadow-panel"
-          >
+          <DropdownMenu.Content align="start" sideOffset={8} className={MENU_SURFACE}>
             {projectColors.map((slot, i) => (
               <DropdownMenu.Item
                 key={slot}

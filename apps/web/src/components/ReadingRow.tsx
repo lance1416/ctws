@@ -5,6 +5,7 @@ import { useRef, useState } from 'react'
 import { deleteReadingItem, patchReadingItem, readingLabel } from '../api/reading'
 import { addDays, dayPhrase, daysAgoIn, nextMonday, todayIn } from '../dueAt'
 import { useComposing } from '../composition'
+import { MENU_SURFACE } from './menuSurface'
 
 /**
  * ONE ROW OF 待读.
@@ -192,7 +193,7 @@ export function ReadingRow({
               takingFocus.current = false
               titleInput.current?.focus()
             }}
-            className="min-w-36 rounded-xl border border-border-subtle bg-surface-panel p-1 shadow-panel"
+            className={MENU_SURFACE}
           >
             <Item
               onSelect={() => {
