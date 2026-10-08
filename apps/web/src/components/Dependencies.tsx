@@ -1,0 +1,205 @@
+import type { DependencyRef } from '@ctws/contracts'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useState, type ReactNode } from 'react'
+import { ApiError } from '../api'
+import { searchTasks } from '../api/search'
+import { addDependency, removeDependency, taskDependencies } from '../api/tasks'
+import { refreshTasks } from '../api/taskCache'
+import { field, label } from './formStyles'
+
+/**
+ * 「A 没做完 B 做不了」, in the detail pane (D64).
+ *
+ * BOTH DIRECTIONS, AND FINISHED BLOCKERS TOO. The row outside shows only what is still in the
+ * way, because a row answers 「现在做得了吗」. The pane shows the arrangement: 「等 CI 跑通」 with
+ * CI already green is a fact about this task worth seeing, and it is also the only way to find
+ * an edge in order to remove it.
+ *
+ * ADDING GOES THROUGH SEARCH, not a dropdown of every task in the workspace. A dependency
+ * reaches across projects by design, so the candidate list is "everything", and a select of
+ * everything is a list nobody can use. Search is the control this app already has for finding a
+ * task by name.
+ */
+
+// `item`, not `ref`: React reserves that name in JSX, and a prop that only works by accident of
+// the current version is not a prop.
+function Row({
+  item: task,
+  here,
+  onRemove,
+}: {
+  item: DependencyRef
+  /** The project the OPEN task is in. */
+  here: string
+  onRemove?: () => void
+}) {
+  return (
+    <li className="flex min-h-8 items-center gap-2 text-sm">
+      <span className={`truncate ${task.done ? 'text-fg-subtle line-through' : 'text-fg'}`}>
+        {task.title}
+      </span>
+      {/* The project only when it is a DIFFERENT one. Dependencies usually stay inside a project,
+          and repeating the name of the project you are already looking at is the same noise the
+          tree's rows leave out for the same reason. */}
+      {task.projectId !== here && (
+        <span className="truncate text-xs text-fg-subtle">{task.projectName}</span>
+      )}
+      {onRemove && (
+        <button
+          type="button"
+          onClick={onRemove}
+          aria-label={`移除依赖「${task.title}」`}
+          className="ml-auto h-7 w-7 shrink-0 rounded-lg text-fg-subtle hover:bg-surface-hover hover:text-fg"
+        >
+          <svg aria-hidden="true" viewBox="0 0 16 16" className="mx-auto h-3.5 w-3.5">
+            <path
+              d="M4 4l8 8M12 4l-8 8"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
+          </svg>
+        </button>
+      )}
+    </li>
+  )
+}
+
+/** 等 / 挡着 beside its list -- the same label-then-value rhythm as 状态, 截止 and 排期 above. */
+function Group({ tag, children }: { tag: string; children: ReactNode }) {
+  return (
+    <div className="flex gap-2">
+      <span className="w-8 shrink-0 pt-1.5 text-xs text-fg-subtle">{tag}</span>
+      <div className="min-w-0 flex-1">{children}</div>
+    </div>
+  )
+}
+
+export function Dependencies({ taskId, projectId }: { taskId: string; projectId: string }) {
+  const qc = useQueryClient()
+  const [adding, setAdding] = useState(false)
+  const [query, setQuery] = useState('')
+  const [error, setError] = useState<string | null>(null)
+
+  const lists = useQuery({
+    queryKey: ['dependencies', taskId],
+    queryFn: () => taskDependencies(taskId),
+  })
+  const hits = useQuery({
+    queryKey: ['search', query],
+    queryFn: () => searchTasks(query),
+    enabled: adding && query.trim().length > 0,
+  })
+
+  const refresh = async () => {
+    await qc.invalidateQueries({ queryKey: ['dependencies', taskId] })
+    await refreshTasks(qc, projectId)
+    await qc.invalidateQueries({ queryKey: ['today'] })
+  }
+  const add = useMutation({
+    mutationFn: (blockerId: string) => addDependency(taskId, blockerId),
+    onSuccess: async () => {
+      setQuery('')
+      setAdding(false)
+      setError(null)
+      await refresh()
+    },
+    // Our own words, not the server's sentence: 409 is the one refusal a person can actually act
+    // on, and 「That would make two tasks wait for each other」 is a developer's phrasing.
+    onError: (e) =>
+      setError(
+        e instanceof ApiError && e.status === 409 ? '这样两件事会互相等着' : '没能添加这条依赖',
+      ),
+  })
+  const drop = useMutation({
+    mutationFn: (blockerId: string) => removeDependency(taskId, blockerId),
+    onSuccess: refresh,
+  })
+
+  const blockedBy = lists.data?.blockedBy ?? []
+  const blocks = lists.data?.blocks ?? []
+  // Never offer this task itself: it is the one edge the server refuses outright, and offering
+  // it would be the interface proposing something it knows is impossible.
+  const candidates = (hits.data ?? []).filter((t) => t.id !== taskId).slice(0, 6)
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-baseline gap-2">
+        <span className={label}>依赖</span>
+        <button
+          type="button"
+          onClick={() => setAdding((v) => !v)}
+          className="-mx-1 rounded-lg px-1 text-xs text-fg-muted hover:text-fg"
+        >
+          {adding ? '取消' : '添加'}
+        </button>
+      </div>
+
+      {adding && (
+        <div>
+          <input
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                e.stopPropagation()
+                setAdding(false)
+              }
+            }}
+            placeholder="搜索要等的任务"
+            aria-label="搜索要等的任务"
+            className={`${field} text-sm`}
+          />
+          <ul data-dep-candidates className="mt-1 flex flex-col">
+            {candidates.map((t) => (
+              <li key={t.id}>
+                <button
+                  type="button"
+                  onClick={() => add.mutate(t.id)}
+                  className="flex min-h-8 w-full items-center gap-2 rounded-lg px-2 text-left text-sm hover:bg-surface-hover"
+                >
+                  <span className="truncate text-fg">{t.title}</span>
+                  <span className="ml-auto shrink-0 text-xs text-fg-subtle">{t.projectName}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {error && (
+        <p role="alert" className="text-sm text-danger">
+          {error}
+        </p>
+      )}
+
+      {blockedBy.length > 0 && (
+        <Group tag="等">
+          <ul data-blocked-by className="flex flex-col">
+            {blockedBy.map((t) => (
+              <Row key={t.id} item={t} here={projectId} onRemove={() => drop.mutate(t.id)} />
+            ))}
+          </ul>
+        </Group>
+      )}
+
+      {blocks.length > 0 && (
+        <Group tag="挡着">
+          {/* No remove button on this side: the edge belongs to the OTHER task's "waiting for"
+              list, and removing it from here would be editing a task that is not open. */}
+          <ul data-blocks className="flex flex-col">
+            {blocks.map((t) => (
+              <Row key={t.id} item={t} here={projectId} />
+            ))}
+          </ul>
+        </Group>
+      )}
+
+      {!adding && blockedBy.length === 0 && blocks.length === 0 && (
+        <p className="text-sm text-fg-subtle">没有</p>
+      )}
+    </div>
+  )
+}

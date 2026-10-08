@@ -657,6 +657,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
                   hasNotes={(byId.get(row.id)?.notes ?? '') !== ''}
                   capturedAt={inInbox ? (byId.get(row.id)?.createdAt ?? null) : null}
                   rollup={row.hasChildren ? rollupPhrase(tasks.data?.rollups[row.id]) : null}
+                  blockedBy={tasks.data?.blockers[row.id]}
                   leadSlot={leadSlot}
                   saved={savedId === row.id}
                   tabStop={row.id === tabId}

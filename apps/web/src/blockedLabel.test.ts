@@ -1,0 +1,22 @@
+import { describe, expect, it } from 'vitest'
+import { blockedLabel } from './blockedLabel'
+
+const b = (title: string) => ({ id: title, title })
+
+describe('blockedLabel', () => {
+  it('says nothing when nothing is in the way', () => {
+    expect(blockedLabel(undefined)).toBeNull()
+    expect(blockedLabel([])).toBeNull()
+  })
+
+  it('names the one blocker, because naming it answers the question on the spot', () => {
+    expect(blockedLabel([b('跑通 CI')])).toBe('被「跑通 CI」挡着')
+  })
+
+  it('names the first and COUNTS THEM ALL, not the ones it did not name', () => {
+    // 「等 3 件事」 with three blockers; an off-by-one here would read as two.
+    expect(blockedLabel([b('跑通 CI'), b('写迁移'), b('补测试')])).toBe(
+      '被「跑通 CI」等 3 件事挡着',
+    )
+  })
+})

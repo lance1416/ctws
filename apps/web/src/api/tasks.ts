@@ -1,5 +1,6 @@
 import type {
   CreateTaskBody,
+  DependencyRef,
   MoveTaskBody,
   RollupResponse,
   TaskResponse,
@@ -12,11 +13,35 @@ import { apiFetch } from '../api'
  * spec §8). They are kept together in one cache entry because they are one answer about one
  * moment: a list whose numbers came from a different fetch could disagree with itself.
  */
-export type ProjectTasks = { tasks: TaskResponse[]; rollups: Record<string, RollupResponse> }
+export type ProjectTasks = {
+  tasks: TaskResponse[]
+  rollups: Record<string, RollupResponse>
+  /** Keyed by the WAITING task's id; only what is still in the way (D64). */
+  blockers: Record<string, DependencyRef[]>
+}
 
 export async function listProjectTasks(projectId: string): Promise<ProjectTasks> {
   const body = await apiFetch<ProjectTasks>(`/tasks?projectId=${projectId}`)
-  return { tasks: body.tasks, rollups: body.rollups ?? {} }
+  return { tasks: body.tasks, rollups: body.rollups ?? {}, blockers: body.blockers ?? {} }
+}
+
+/** Both directions for one task, finished blockers included -- what the detail pane shows. */
+export function taskDependencies(
+  id: string,
+): Promise<{ blockedBy: DependencyRef[]; blocks: DependencyRef[] }> {
+  return apiFetch(`/tasks/${id}/dependencies`)
+}
+
+/** `id` is the task that WAITS; `blockerId` is what it waits for. */
+export function addDependency(id: string, blockerId: string): Promise<void> {
+  return apiFetch(`/tasks/${id}/dependencies`, {
+    method: 'POST',
+    body: JSON.stringify({ blockerId }),
+  })
+}
+
+export function removeDependency(id: string, blockerId: string): Promise<void> {
+  return apiFetch(`/tasks/${id}/dependencies/${blockerId}`, { method: 'DELETE' })
 }
 
 /**

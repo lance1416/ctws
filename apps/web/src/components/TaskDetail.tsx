@@ -29,6 +29,7 @@ import { NoteBody } from '../notes/NoteBody'
 import { WritingMode } from '../notes/WritingMode'
 import { useProjectRail } from '../projectColor'
 import { DeleteConfirm } from './DeleteConfirm'
+import { Dependencies } from './Dependencies'
 import { useReservePane, useWidePane } from './detailPane'
 // The shared editing vocabulary, now that the 新建 dialog types into a task as well.
 import { decision, field, label } from './formStyles'
@@ -568,6 +569,11 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                 <span className="text-sm tabular-nums text-fg">{planReading ?? '没有设定'}</span>
               </div>
             </div>
+
+            {/* WHAT HAS TO HAPPEN FIRST (D64). It lives in READING mode and not in the form:
+                an edge is a fact about two tasks that is written the moment it is named, and
+                parking it behind 保存 would make 「加一条依赖」 wait on a form it is not part of. */}
+            <Dependencies taskId={task.id} projectId={task.projectId} />
 
             <div>
               <span className={label}>备注</span>

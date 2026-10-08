@@ -239,6 +239,7 @@ export function RowMeta({
   summary = false,
   age = null,
   rollup = null,
+  blocked = null,
 }: {
   /** The project (and parent) a cross-project list shows. The tree passes none: §2 says the
    *  project is known there and the hierarchy is visible from the indentation. */
@@ -263,6 +264,14 @@ export function RowMeta({
    * at the head of the row, and saying it again in words is noise.
    */
   rollup?: string | null
+  /**
+   * 「被「跑通 CI」挡着」 (D64) -- what this row is waiting for, named.
+   *
+   * FIRST ON THE LINE, and never dropped. Everything else here says when something is due; this
+   * says whether it can be done at all, and a row that cannot be worked on is not a row whose
+   * deadline is the interesting part.
+   */
+  blocked?: string | null
   /** The exact local deadline, for the tooltip: "2026-10-01 09:00". */
   exact?: string | undefined
   /**
@@ -281,6 +290,15 @@ export function RowMeta({
   type Part = { node: ReactNode; cap?: boolean }
   const parts: Part[] = (
     [
+      blocked
+        ? {
+            node: (
+              <span key="blocked" data-row-blocked className="whitespace-nowrap text-fg-subtle">
+                {blocked}
+              </span>
+            ),
+          }
+        : null,
       breadcrumb
         ? {
             // Half the line at most (`cap`). A project-and-parent breadcrumb can be longer than the whole
@@ -354,7 +372,7 @@ export function RowMeta({
       // LAST, and only on a line that would otherwise be empty -- see the prop's note. `fg-subtle`
       // and not `fg-muted`: an age is the one phrase here that nobody chose, so it sits a step
       // quieter than a date somebody set.
-      age && !breadcrumb && !due && !plan && !rollup
+      age && !breadcrumb && !due && !plan && !rollup && !blocked
         ? {
             node: (
               <span key="age" data-row-age className="whitespace-nowrap text-fg-subtle">

@@ -3,6 +3,7 @@ import type { TaskStatus } from '@ctws/contracts'
 import type { KeyboardEvent } from 'react'
 import type { FlatRow } from '../tree/flatten'
 import { toggleDoneTarget, toggleStartTarget } from '../api/taskActions'
+import { blockedLabel } from '../blockedLabel'
 import { capturedLabel, dateHints } from '../dueAt'
 import { useTimeZone } from '../useMe'
 import { leadIcon } from '../rowLead'
@@ -37,6 +38,8 @@ type Props = {
   capturedAt?: string | null
   /** This row's subtree, said in words (§7.3). Only a row with children gets one. */
   rollup?: string | null
+  /** What is still in the way (D64). The row dims; it does not disappear. */
+  blockedBy?: readonly { id: string; title: string }[] | undefined
   /**
    * Whether THIS LIST reserves the leading icon slot at all -- decided once for the whole tree,
    * never per row: a slot that exists on some rows and not others puts the first glyph of each row
@@ -97,6 +100,7 @@ export function TaskRow({
   hasNotes,
   capturedAt = null,
   rollup = null,
+  blockedBy,
   leadSlot,
   saved,
   tabStop,
@@ -168,6 +172,11 @@ export function TaskRow({
         // A selected row wears the hover plane permanently plus an accent edge: the plane alone
         // would be indistinguishable from whatever the pointer happens to be over.
         selected ? 'bg-surface-hover shadow-[inset_2px_0_0_0_var(--color-accent)]' : ''
+      } ${
+        // BLOCKED ROWS DIM, THEY DO NOT DISAPPEAR (D64). 「列表丢任务就没法信」 is this tree's
+        // oldest rule, and what is in the way is named on the line right under the title -- the
+        // point is to answer "why not this one" without opening anything.
+        blockedBy && blockedBy.length > 0 ? 'opacity-60' : ''
       }`}
     >
       <ProjectRail projectId={projectId} continuous />
@@ -270,6 +279,7 @@ export function TaskRow({
           plan={hints.scheduled}
           age={capturedAt ? capturedLabel(capturedAt, timeZone) : null}
           rollup={rollup}
+          blocked={blockedLabel(blockedBy)}
         />
       </span>
       {/* THE TWO HOVER CONTROLS RESERVE NO WIDTH. They are invisible until the row is hovered, so

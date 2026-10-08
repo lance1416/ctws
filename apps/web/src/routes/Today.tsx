@@ -10,6 +10,7 @@ import { DoneTodayPanel } from '../components/DoneTodayPanel'
 import { MovementPanel } from '../components/MovementPanel'
 import { hasMovement } from '../movement'
 import { Panel, PanelEmpty } from '../components/Panel'
+import { blockedLabel } from '../blockedLabel'
 import { LeadMark, ProjectRail, RowMeta, SavedMark, ROW_LIST } from '../components/RowParts'
 import { hasLeadSlot, leadIcon } from '../rowLead'
 import { EMPTY_ACTION, EmptyState } from '../components/EmptyState'
@@ -265,7 +266,12 @@ export function Today() {
         onClick={(e) => {
           if (!(e.target as HTMLElement).closest('button')) setOpenId(t.id)
         }}
-        className="group relative flex min-h-[46px] cursor-pointer items-start gap-x-2 rounded-lg py-2 pr-2 pl-3 hover:bg-surface-hover"
+        className={`group relative flex min-h-[46px] cursor-pointer items-start gap-x-2 rounded-lg py-2 pr-2 pl-3 hover:bg-surface-hover ${
+          // BLOCKED ROWS DIM AND STAY (D64). This is the page the feature is for: 今天 stops
+          // being 「什么到期了」 and becomes 「什么现在做得了」. Hiding them would be the other
+          // mistake -- a list that loses tasks cannot be trusted.
+          t.blockedBy.length > 0 ? 'opacity-60' : ''
+        }`}
       >
         <ProjectRail projectId={t.projectId} />
         <span className="flex h-7 shrink-0 items-center">
@@ -309,6 +315,7 @@ export function Today() {
             carried={carried !== null}
             exact={t.dueAt ? toDayTimeInput(t.dueAt, timezone).replace('T', ' ') : undefined}
             summary={t.segment === 'overdue'}
+            blocked={blockedLabel(t.blockedBy)}
           />
         </button>
         <span className="flex h-7 shrink-0 items-center justify-end gap-0.5">
