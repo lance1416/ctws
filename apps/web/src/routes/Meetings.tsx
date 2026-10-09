@@ -7,6 +7,7 @@ import { MeetingDetail } from '../components/MeetingDetail'
 import { NewMeetingDialog } from '../components/NewMeetingDialog'
 import { PanelEmpty } from '../components/Panel'
 import { addDays, todayIn } from '../dueAt'
+import { meetingLink } from '../meetingPlace'
 import { useProjectRail } from '../projectColor'
 import { zoneLabel } from '../timeZones'
 import { LIST_MEASURE } from '../rowLead'
@@ -237,6 +238,18 @@ function Section({
                   <span className="shrink-0 text-xs text-fg-subtle">
                     {repeatLabel(m.rrule, m.startsLocal)}
                   </span>
+                )}
+                {/* JOIN, from the list. At 09:29 the useful thing about a meeting link is a
+                    control that opens it, not a string to go and find. */}
+                {meetingLink(m.location) && (
+                  <a
+                    href={meetingLink(m.location)!}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="shrink-0 rounded-md px-1.5 py-0.5 text-xs font-semibold text-accent hover:bg-surface-hover"
+                  >
+                    Join
+                  </a>
                 )}
               </li>
             ))}

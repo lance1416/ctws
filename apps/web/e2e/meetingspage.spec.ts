@@ -149,3 +149,67 @@ test('what has already happened is behind a toggle, not in front of you', async 
   await page.getByRole('button', { name: 'Hide earlier' }).click()
   await expect(page.getByText('Last week one-to-one')).toHaveCount(0)
 })
+
+test('a repeat can be given an end date, and the series really stops there', async ({ page }) => {
+  await registerFreshUser(page)
+  await page.goto('/meetings')
+  await page.getByRole('button', { name: 'New meeting' }).click()
+
+  const form = dialog(page)
+  await form.getByLabel('Title').fill('Weekly sync')
+  await form.getByLabel('Date').fill('2026-11-03') // a Tuesday
+  await form.getByLabel('Start time').fill('09:00')
+  await form.getByLabel('Location').fill('https://meet.example.test/abc')
+  await pickOne(form, 'Repeats', 'Weekly on Tuesday')
+  await form.getByLabel('Ends').fill('2026-11-17')
+
+  const made = page.waitForResponse(
+    (r) => r.request().method() === 'POST' && /\/api\/v1\/meetings$/.test(r.url()),
+  )
+  await form.getByRole('button', { name: 'Create' }).click()
+  const body = (await made).request().postDataJSON() as { rrule: string; location: string }
+
+  // The end is written in the SAME naive space as the start, at the end of the chosen day.
+  expect(body.rrule).toBe('FREQ=WEEKLY;BYDAY=TU;UNTIL=20261117T235959Z')
+  expect(body.location).toBe('https://meet.example.test/abc')
+
+  // And the server agrees: three Tuesdays, not a fourth.
+  const got = await page.request.get('/api/v1/meetings?from=2026-11-01&to=2026-11-30', {
+    headers: HEADERS,
+  })
+  const days = ((await got.json()) as { meetings: { recurrenceId: string }[] }).meetings.map((m) =>
+    m.recurrenceId.slice(0, 10),
+  )
+  expect(days).toEqual(['2026-11-03', '2026-11-10', '2026-11-17'])
+})
+
+test('a meeting with a link can be joined from the list', async ({ page }) => {
+  await registerFreshUser(page)
+  await page.request.post('/api/v1/meetings', {
+    headers: HEADERS,
+    data: {
+      title: 'Standup',
+      startsLocal: `${dayOffset(1)}T09:30`,
+      timeZone: 'UTC',
+      durationMinutes: 15,
+      location: 'https://meet.example.test/standup',
+    },
+  })
+  await page.request.post('/api/v1/meetings', {
+    headers: HEADERS,
+    data: {
+      title: 'In the room',
+      startsLocal: `${dayOffset(1)}T14:00`,
+      timeZone: 'UTC',
+      durationMinutes: 30,
+      location: 'Acme HQ, 3F',
+    },
+  })
+
+  await page.goto('/meetings')
+  const join = page.getByRole('link', { name: 'Join' })
+  await expect(join).toHaveCount(1)
+  await expect(join).toHaveAttribute('href', 'https://meet.example.test/standup')
+  // A room is not a link. Guessing would send you to a site that may be somebody else's.
+  await expect(page.getByText('In the room')).toBeVisible()
+})

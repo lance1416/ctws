@@ -2,7 +2,13 @@ import type { CreateMeetingBody, MeetingOccurrence } from '@ctws/contracts'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { contactsKey, listContacts } from '../api/contacts'
-import { createMeeting, DEFAULT_HOUR, DEFAULT_MINUTES, repeatChoices } from '../api/meetings'
+import {
+  createMeeting,
+  DEFAULT_HOUR,
+  DEFAULT_MINUTES,
+  repeatChoices,
+  withUntil,
+} from '../api/meetings'
 import { listProjects } from '../api/projects'
 import { useComposing } from '../composition'
 import { todayIn } from '../dueAt'
@@ -50,6 +56,8 @@ export function NewMeetingDialog({
   const [timeZone, setTimeZone] = useState(accountZone)
   const [durationMinutes, setDuration] = useState(DEFAULT_MINUTES)
   const [rrule, setRrule] = useState<string | null>(null)
+  const [until, setUntil] = useState<string | null>(null)
+  const [location, setLocation] = useState('')
   const [projectId, setProjectId] = useState<string | null>(null)
   const [attendeeIds, setAttendees] = useState<string[]>([])
 
@@ -76,7 +84,8 @@ export function NewMeetingDialog({
       startsLocal,
       timeZone,
       durationMinutes,
-      ...(rrule ? { rrule } : {}),
+      ...(rrule ? { rrule: withUntil(rrule, until) } : {}),
+      ...(location.trim() ? { location: location.trim() } : {}),
       ...(projectId ? { projectId } : {}),
       ...(attendeeIds.length > 0 ? { attendeeIds } : {}),
     })
@@ -191,16 +200,63 @@ export function NewMeetingDialog({
           </div>
         </div>
 
-        <div>
-          <span className={label}>Repeats</span>
-          <div className="mt-1.5">
-            <PickOne
-              label="Repeats"
-              value={rrule ?? NO_REPEAT}
-              choices={repeats.map((c) => ({ value: c.value ?? NO_REPEAT, label: c.label }))}
-              onPick={(v) => setRrule(v === NO_REPEAT ? null : v)}
-            />
+        <div className="flex flex-wrap gap-x-8 gap-y-3">
+          <div>
+            <span className={label}>Repeats</span>
+            <div className="mt-1.5">
+              <PickOne
+                label="Repeats"
+                value={rrule ?? NO_REPEAT}
+                choices={repeats.map((c) => ({ value: c.value ?? NO_REPEAT, label: c.label }))}
+                onPick={(v) => setRrule(v === NO_REPEAT ? null : v)}
+              />
+            </div>
           </div>
+          {/* WHEN IT STOPS. Only once it repeats -- an ending on a meeting that happens once is
+              a control with nothing to end. */}
+          {rrule && (
+            <div>
+              <label htmlFor="meeting-until" className={label}>
+                Ends
+              </label>
+              <div className="mt-1.5 flex items-center gap-2">
+                <input
+                  id="meeting-until"
+                  type="date"
+                  value={until ?? ''}
+                  min={day}
+                  onChange={(e) => setUntil(e.target.value || null)}
+                  className={boxed}
+                />
+                {until ? (
+                  <button
+                    type="button"
+                    onClick={() => setUntil(null)}
+                    className="rounded-md px-2 py-1 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
+                  >
+                    Never
+                  </button>
+                ) : (
+                  <span className="text-sm text-fg-subtle">Never</span>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* WHERE, which for most of these is a link. A meeting you cannot join from the thing
+            that reminded you of it is a meeting you go looking for in your mail. */}
+        <div>
+          <label htmlFor="meeting-place" className={label}>
+            Location
+          </label>
+          <input
+            id="meeting-place"
+            value={location}
+            placeholder="A room, an address, or a link"
+            onChange={(e) => setLocation(e.target.value)}
+            className={`${field} mt-1.5`}
+          />
         </div>
 
         <div>

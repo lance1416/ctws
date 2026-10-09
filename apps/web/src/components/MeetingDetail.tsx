@@ -2,11 +2,19 @@ import type { EditScope, MeetingOccurrence, UpdateMeetingInput } from '@ctws/con
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type ReactNode } from 'react'
 import { listContacts } from '../api/contacts'
-import { cancelMeeting, patchMeeting, repeatChoices, repeatLabel } from '../api/meetings'
+import {
+  cancelMeeting,
+  patchMeeting,
+  repeatChoices,
+  repeatLabel,
+  untilOf,
+  withUntil,
+} from '../api/meetings'
 import { listProjects } from '../api/projects'
 import { useProjectRail } from '../projectColor'
 import { ZONES, zoneLabel } from '../timeZones'
 import { DeleteConfirm } from './DeleteConfirm'
+import { meetingLink } from '../meetingPlace'
 import { Field } from './Field'
 import { DetailHead, DetailPane } from './DetailPane'
 import { boxed } from './formStyles'
@@ -32,6 +40,9 @@ import { ScopeAsk } from './ScopeAsk'
  */
 /** `PickOne` has no null value, so "belongs to nothing" needs a value of its own. */
 const NO_PROJECT = '__no-project'
+
+/** The same, for a meeting that happens once. */
+const NO_REPEAT = '__none'
 
 export function MeetingDetail({
   meeting,
@@ -107,6 +118,11 @@ export function MeetingFields({
   )
   const choices = repeatChoices(meeting.startsLocal)
   const elsewhere = meeting.timeZone !== accountZone
+  const place = meetingLink(meeting.location)
+  // The rule WITHOUT its ending, and the ending on its own: the picker chooses the shape and the
+  // date field chooses where it stops, and neither should overwrite the other.
+  const bare = meeting.rrule ? withUntil(meeting.rrule, null) : null
+  const until = untilOf(meeting.rrule)
 
   return (
     <div className="flex flex-col gap-4">
@@ -203,23 +219,47 @@ export function MeetingFields({
         <Field label="Repeats">
           <PickOne
             label="Repeats"
-            value={meeting.rrule ?? '__none'}
-            /* A rule the menu does not offer is still one of its options while it is the
-                 current value, or the control would show a placeholder for a value it has. */
+            value={bare ?? NO_REPEAT}
+            /* Matched WITHOUT its ending, so a weekly meeting that stops in December is still
+               the weekly choice. A rule the menu does not offer stays one of its options while
+               it is the current value, or the control would show a placeholder for a value it
+               has. */
             choices={[
-              ...choices.map((c) => ({ value: c.value ?? '__none', label: c.label })),
-              ...(meeting.rrule && !choices.some((c) => c.value === meeting.rrule)
-                ? [
-                    {
-                      value: meeting.rrule,
-                      label: repeatLabel(meeting.rrule, meeting.startsLocal),
-                    },
-                  ]
+              ...choices.map((c) => ({ value: c.value ?? NO_REPEAT, label: c.label })),
+              ...(bare && !choices.some((c) => c.value === bare)
+                ? [{ value: bare, label: repeatLabel(bare, meeting.startsLocal) }]
                 : []),
             ]}
-            onPick={(v) => series({ rrule: v === '__none' ? null : v })}
+            onPick={(v) => series({ rrule: v === NO_REPEAT ? null : withUntil(v, until) })}
           />
         </Field>
+        {/* WHEN IT STOPS. Only once it repeats -- an ending on a meeting that happens once is a
+            control with nothing to end. */}
+        {bare && (
+          <Field label="Ends">
+            <span className="flex items-center gap-2">
+              <input
+                type="date"
+                aria-label="Ends"
+                value={until ?? ''}
+                min={meeting.startsLocal.slice(0, 10)}
+                onChange={(e) => series({ rrule: withUntil(bare, e.target.value || null) })}
+                className={`${boxed} text-sm`}
+              />
+              {until ? (
+                <button
+                  type="button"
+                  onClick={() => series({ rrule: withUntil(bare, null) })}
+                  className="rounded-md px-2 py-1 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
+                >
+                  Never
+                </button>
+              ) : (
+                <span className="text-sm text-fg-subtle">Never</span>
+              )}
+            </span>
+          </Field>
+        )}
       </div>
 
       {asking && (
@@ -240,13 +280,38 @@ export function MeetingFields({
 
       <div className="flex flex-col gap-2">
         <Field label="Location">
-          <InlineText
-            label="Location"
-            value={meeting.location ?? ''}
-            placeholder="Not set"
-            onSave={(location) => series({ location: location || null })}
-            className="text-sm"
-          />
+          <span className="flex min-w-0 items-center gap-1.5">
+            <InlineText
+              label="Location"
+              value={meeting.location ?? ''}
+              placeholder="A room, an address, or a link"
+              onSave={(location) => series({ location: location || null })}
+              className="min-w-0 flex-1 truncate text-sm"
+            />
+            {/* The link sits BESIDE the value, not on it: the value has to stay clickable as an
+                editor, so joining is its own control -- the same shape a contact's address
+                takes. */}
+            {place && (
+              <a
+                href={place}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Join"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-fg-subtle hover:bg-surface-hover hover:text-fg"
+              >
+                <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3.5 w-3.5">
+                  <path
+                    d="M6.5 3.5h6v6M12.5 3.5l-8 8"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </a>
+            )}
+          </span>
         </Field>
         <Field label="Projects" top>
           <PickOne

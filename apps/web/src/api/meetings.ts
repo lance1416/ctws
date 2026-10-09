@@ -6,6 +6,7 @@ import type {
   UpdateMeetingInput,
 } from '@ctws/contracts'
 import { apiFetch } from '../api'
+import { MONTHS } from '../dueAt'
 
 /** The meetings module's own namespace. */
 const BASE = '/meetings'
@@ -105,6 +106,13 @@ const FREQ_NAME: Record<string, string> = {
   YEARLY: 'year',
 }
 
+/** "Dec 31", or "Dec 31, 2027" when it is not this year -- the same shape every date here takes. */
+function shortDay(day: string): string {
+  const [y, m, d] = day.split('-').map(Number) as [number, number, number]
+  const short = `${MONTHS[m - 1]} ${d}`
+  return y === new Date().getFullYear() ? short : `${short}, ${y}`
+}
+
 /** 1st, 2nd, 3rd, 4th -- for the day of the month a monthly rule falls on. */
 function ordinal(d: number): string {
   const teen = d % 100 >= 11 && d % 100 <= 13
@@ -121,11 +129,14 @@ function ordinal(d: number): string {
  */
 export function repeatLabel(rule: string | null, startsLocal: string): string {
   if (!rule) return 'Does not repeat'
-  const named = repeatChoices(startsLocal).find((c) => c.value === rule)
-  if (named) return named.label
+  // The ending is said separately, so a named rule is still recognised once it has one.
+  const ends = untilOf(rule)
+  const tail = ends ? `, until ${shortDay(ends)}` : ''
+  const named = repeatChoices(startsLocal).find((c) => c.value === withUntil(rule, null))
+  if (named) return `${named.label}${tail}`
   const freq = /FREQ=([A-Z]+)/i.exec(rule)?.[1]?.toUpperCase()
   const unit = freq ? FREQ_NAME[freq] : undefined
-  if (!unit) return 'Custom'
+  if (!unit) return `Custom${tail}`
   const every = Number(/INTERVAL=(\d+)/i.exec(rule)?.[1] ?? 1)
   // A weekly rule that names its days SAYS them: "Every week" for MO,TU,WE,TH,FR is true of the
   // rule and useless about the meeting, which is the one thing the row is there to say.
@@ -135,7 +146,33 @@ export function repeatLabel(rule: string | null, startsLocal: string): string {
       .split(',')
       .map((d) => DAY_NAME[d.trim().toUpperCase()])
       .filter(Boolean)
-    if (named.length > 0) return `Weekly on ${named.join(', ')}`
+    if (named.length > 0) return `Weekly on ${named.join(', ')}${tail}`
   }
-  return every > 1 ? `Every ${every} ${unit}s` : `Every ${unit}`
+  return `${every > 1 ? `Every ${every} ${unit}s` : `Every ${unit}`}${tail}`
+}
+
+/**
+ * WHEN A REPEAT STOPS.
+ *
+ * `UNTIL` is stored in the SAME naive space as the series' own start (`occurrences.ts` builds
+ * `DTSTART` from the wall clock and stamps it `Z`, then converts the results into the meeting's
+ * zone afterwards). So the stamp here is the chosen LOCAL day at 23:59:59 with a `Z` on it: it
+ * means "through the end of that day where the meeting is", which is what a person picking a
+ * date means. A real UTC instant would end the series an evening early for anybody west of
+ * Greenwich.
+ */
+const UNTIL = /;?UNTIL=\d{8}T\d{6}Z/i
+
+/** The day a rule stops on, as `YYYY-MM-DD`, or null when it never does. */
+export function untilOf(rule: string | null): string | null {
+  const found = rule?.match(/UNTIL=(\d{4})(\d{2})(\d{2})T\d{6}Z/i)
+  return found ? `${found[1]}-${found[2]}-${found[3]}` : null
+}
+
+/** The same rule, ending on `day` -- or never, when `day` is null. */
+export function withUntil(rule: string, day: string | null): string {
+  const bare = rule.replace(UNTIL, '')
+  if (!day) return bare
+  const [y, m, d] = day.split('-') as [string, string, string]
+  return `${bare};UNTIL=${y}${m}${d}T235959Z`
 }
