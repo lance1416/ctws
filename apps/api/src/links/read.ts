@@ -90,7 +90,8 @@ export async function linksOf(
   const named = new Map<ObjectType, Map<string, { title: string; detail: string | null }>>()
   await Promise.all(
     [...wanted].map(async ([type, ids]) => {
-      named.set(type, await linkableFor(type).name(q, workspaceId, [...ids]))
+      const rows = await linkableFor(type).rows(q, workspaceId, { ids: [...ids] })
+      named.set(type, new Map(rows.map((r) => [r.id, { title: r.title, detail: r.detail }])))
     }),
   )
 
@@ -158,7 +159,7 @@ export async function candidatesFor(
   )
   const found = await Promise.all(
     joinable.map(async (type) => {
-      const rows = await linkableFor(type).find(q, workspaceId, text, perType)
+      const rows = await linkableFor(type).rows(q, workspaceId, { text, limit: perType })
       return rows
         .filter((r) => !(type === of.type && r.id === of.id))
         .map((r) => ({ type, id: r.id, title: r.title, detail: r.detail }))
@@ -169,6 +170,6 @@ export async function candidatesFor(
 
 /** Whether a thing exists and this workspace may see it -- both ends of a write go through here. */
 export async function exists(q: Queryable, workspaceId: string, end: Endpoint): Promise<boolean> {
-  const named = await linkableFor(end.type).name(q, workspaceId, [end.id])
-  return named.has(end.id)
+  const rows = await linkableFor(end.type).rows(q, workspaceId, { ids: [end.id] })
+  return rows.length > 0
 }

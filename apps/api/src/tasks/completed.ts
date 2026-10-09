@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 import type { Queryable } from '../db/client'
 import type { Task } from './tasks'
+import { asDate, taskRowOf } from './rows'
 
 export type CompletedTask = Task & {
   projectName: string
@@ -52,27 +53,9 @@ export async function listCompleted(
   return (result.rows as Record<string, unknown>[]).map(rowToCompletedTask)
 }
 
-const asDate = (v: unknown): Date | null =>
-  v === null || v === undefined ? null : v instanceof Date ? v : new Date(v as string)
-
 function rowToCompletedTask(r: Record<string, unknown>): CompletedTask {
   return {
-    id: r.id as string,
-    projectId: r.project_id as string,
-    parentId: (r.parent_id as string | null) ?? null,
-    title: r.title as string,
-    notes: (r.notes as string | null) ?? null,
-    status: r.status as string,
-    scheduledOn: (r.scheduled_on as string | null) ?? null,
-    dueAt: asDate(r.due_at),
-    rank: r.rank as string,
-    manualProgress: (r.manual_progress as string | null) ?? null,
-    completedAt: asDate(r.completed_at),
-    deletedAt: asDate(r.deleted_at),
-    createdAt: asDate(r.created_at)!,
-    updatedAt: asDate(r.updated_at)!,
-    projectName: r.project_name as string,
-    parentTitle: (r.parent_title as string | null) ?? null,
+    ...taskRowOf(r),
     completedOn: r.completed_on as string,
   }
 }

@@ -15,7 +15,7 @@ import { sql, type SQL } from 'drizzle-orm'
  * `escape` clause would read differently depending on a server setting. `!` has no other meaning
  * in either language.
  */
-export const LIKE_ESCAPE = '!'
+const LIKE_ESCAPE = '!'
 
 /**
  * Turns a user's words into one case-insensitive containment pattern. Without this, a query of

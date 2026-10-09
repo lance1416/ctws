@@ -18,31 +18,19 @@ export type Linkable = {
   /** The heading a group of these gets on an object page: 「会议 2」. */
   label: string
   /**
-   * Names a batch of this module's things, leaving OUT every id it cannot see.
+   * THIS MODULE'S THINGS, named.
    *
-   * Batched because an object page draws a whole group at once, and the shell will not make one
-   * query per row. An id that is missing from the result is an edge pointing at something
-   * soft-deleted or from another workspace; the shell drops the edge rather than drawing a blank.
-   */
-  name: (
-    q: Queryable,
-    workspaceId: string,
-    ids: readonly string[],
-  ) => Promise<Map<string, { title: string; detail: string | null }>>
-  /**
-   * THIS MODULE'S THINGS BY NAME, for the picker that makes an edge.
+   * ONE method and not two, because naming the far end of an edge and searching for something to
+   * link to are the same query with a different `where` -- written as two they were the same
+   * fifteen lines twice in each of five files, and the halves had already started to order
+   * differently for no reason anybody chose.
    *
-   * The same seam as `name`, the other way round: the shell knows which kinds may be joined and
-   * draws the picker, but only the module can search its own table. An empty `text` means "the
-   * most likely few" -- the picker opens before anything is typed, and an empty list there reads
-   * as "there is nothing", which is a different and usually untrue thing.
+   * Always leaves OUT what it cannot see. An id that does not come back is an edge pointing at
+   * something soft-deleted or in another workspace, and the shell drops the edge rather than
+   * drawing a blank. Batched for the same reason: a page draws a whole group at once and the
+   * shell will not make one query per row.
    */
-  find: (
-    q: Queryable,
-    workspaceId: string,
-    text: string,
-    limit: number,
-  ) => Promise<{ id: string; title: string; detail: string | null }[]>
+  rows: (q: Queryable, workspaceId: string, want: Want) => Promise<NamedRow[]>
   /**
    * EDGES THIS MODULE STORES ITSELF, rather than in the edge table.
    *
@@ -60,6 +48,17 @@ export type Linkable = {
     of: { type: ObjectType; id: string },
   ) => Promise<StoredEdge[]>
 }
+
+/**
+ * WHICH of a module's things to fetch: the ones with these ids, or the ones matching some text.
+ *
+ * An empty `text` means "the most likely few" -- the picker opens before anything is typed, and
+ * an empty list there reads as "there is nothing", which is a different and usually untrue thing.
+ */
+export type Want = { ids: readonly string[] } | { text: string; limit: number }
+
+/** One of a module's things, as the shell shows it: a line and a phrase under it. */
+export type NamedRow = { id: string; title: string; detail: string | null }
 
 /** An edge as any source reports it, before the far end has been named. */
 export type StoredEdge = {

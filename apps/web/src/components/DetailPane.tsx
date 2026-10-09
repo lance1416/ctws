@@ -56,8 +56,15 @@ export function DetailPane({
 
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Escape') {
-      // Not stopped from propagating: a module's own body may want Escape first (closing a menu,
-      // cancelling an inline edit) and will stop it there.
+      /**
+       * ESCAPE UNWINDS ONE LEVEL, and the innermost level goes first.
+       *
+       * A module's body may have its own things to back out of before the pane itself -- a menu,
+       * an inline edit, a discard prompt. It handles Escape on the way up and calls
+       * `preventDefault`; this reads that as "already dealt with" and leaves the pane open. A
+       * body that does nothing leaves the press to here, which closes.
+       */
+      if (e.defaultPrevented) return
       e.preventDefault()
       onClose()
       return

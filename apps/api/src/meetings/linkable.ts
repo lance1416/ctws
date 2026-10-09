@@ -18,8 +18,8 @@ function when(startsLocal: string, timeZone: string): string {
 export const meetingLinkable: Linkable = {
   type: 'meeting',
   label: 'Meetings',
-  name: async (q, workspaceId, ids) => {
-    const rows = await q
+  rows: async (q, workspaceId, want) => {
+    const found = await q
       .select({
         id: meetings.id,
         title: meetings.title,
@@ -31,39 +31,20 @@ export const meetingLinkable: Linkable = {
         and(
           eq(meetings.workspaceId, workspaceId),
           isNull(meetings.deletedAt),
-          inArray(meetings.id, [...ids]),
+          'ids' in want
+            ? inArray(meetings.id, [...want.ids])
+            : want.text === ''
+              ? undefined
+              : textMatches(['meetings.title'], want.text),
         ),
       )
-    return new Map(
-      rows.map((r) => [
-        r.id,
-        // The SERIES' own start, not an occurrence: an edge is to the series, and which occurrence
-        // a reader means is a question only the meeting's own page can answer. The zone is named
-        // the way a person says it ("EST"), not as the IANA id, which is a quarter of the row.
-        { title: r.title, detail: when(r.startsLocal, r.timeZone) },
-      ]),
-    )
-  },
-  find: async (q, workspaceId, text, limit) => {
-    const rows = await q
-      .select({
-        id: meetings.id,
-        title: meetings.title,
-        startsLocal: meetings.startsLocal,
-        timeZone: meetings.timeZone,
-      })
-      .from(meetings)
-      .where(
-        and(
-          eq(meetings.workspaceId, workspaceId),
-          isNull(meetings.deletedAt),
-          text === '' ? undefined : textMatches(['meetings.title'], text),
-        ),
-      )
-      // The soonest first. A series shows once here: this is the SERIES table, not its expansion.
+      // The soonest first. A series shows once: this is the SERIES table, not its expansion.
       .orderBy(desc(meetings.startsLocal), desc(meetings.id))
-      .limit(limit)
-    return rows.map((r) => ({
+      .limit('ids' in want ? want.ids.length : want.limit)
+    // The SERIES' own start, not an occurrence: an edge is to the series, and which occurrence a
+    // reader means is a question only the meeting's own page can answer. The zone is named the
+    // way a person says it ("EST"), not as the IANA id, which is a quarter of the row.
+    return found.map((r) => ({
       id: r.id,
       title: r.title,
       detail: when(r.startsLocal, r.timeZone),

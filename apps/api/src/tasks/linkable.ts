@@ -29,22 +29,21 @@ const visible = (workspaceId: string) => and(visibleProjects(workspaceId), isNul
 export const taskLinkable: Linkable = {
   type: 'task',
   label: 'Tasks',
-  name: async (q, workspaceId, ids) => {
-    const rows = await ofWorkspace(q, workspaceId).where(
-      and(visible(workspaceId), inArray(tasks.id, [...ids])),
-    )
-    return new Map(
-      rows.map((r) => [r.id, { title: r.title, detail: r.status === 'done' ? 'Done' : null }]),
-    )
-  },
-  find: async (q, workspaceId, text, limit) => {
-    const rows = await ofWorkspace(q, workspaceId)
+  rows: async (q, workspaceId, want) => {
+    const found = await ofWorkspace(q, workspaceId)
       .where(
-        and(visible(workspaceId), text === '' ? undefined : textMatches(['tasks.title'], text)),
+        and(
+          visible(workspaceId),
+          'ids' in want
+            ? inArray(tasks.id, [...want.ids])
+            : want.text === ''
+              ? undefined
+              : textMatches(['tasks.title'], want.text),
+        ),
       )
       .orderBy(desc(tasks.createdAt), desc(tasks.id))
-      .limit(limit)
-    return rows.map((r) => ({
+      .limit('ids' in want ? want.ids.length : want.limit)
+    return found.map((r) => ({
       id: r.id,
       title: r.title,
       detail: r.status === 'done' ? 'Done' : null,

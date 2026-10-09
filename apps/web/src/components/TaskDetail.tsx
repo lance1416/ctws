@@ -29,6 +29,7 @@ import { NoteBody } from '../notes/NoteBody'
 import { WritingMode } from '../notes/WritingMode'
 import { useProjectRail } from '../projectColor'
 import { DeleteConfirm } from './DeleteConfirm'
+import { DetailPane } from './DetailPane'
 import { PickOne } from './inline'
 import { Dependencies } from './Dependencies'
 import { useReservePane, useWidePane } from './paneLayout'
@@ -114,15 +115,11 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
    * row's and the server's; it now means the same zone as both.
    */
   const timeZone = useTimeZone()
+  /**
+   * The pane's BODY, for putting focus back on it. The frame is the shell's (`DetailPane`): this
+   * is the thing inside it that a cancelled edit returns to, rather than <body> (WCAG 2.4.3).
+   */
   const panel = useRef<HTMLDivElement>(null)
-  // At >=1280 the detail is a third COLUMN, not a layer: no scrim, no click-outside, no focus
-  // trap, and the list it was opened from stays usable beside it. Below that width there is no
-  // room for both, so it goes back to being an overlay and takes the keyboard with it.
-  const wide = useWidePane()
-  useReservePane()
-  // The panel is last in the DOM, so without this a keyboard user would tab past every row to
-  // reach it. Escape also only works while focus is inside.
-  useEffect(() => panel.current?.focus(), [])
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
   const rail = useProjectRail()
   /**
@@ -289,17 +286,6 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
   const planReading = task.scheduledOn ? dayPhrase(task.scheduledOn, todayYmd) : null
   const projectName = projects.data?.find((p) => p.id === task.projectId)?.name ?? ''
 
-  // The panel starts below the sticky top bar rather than over it, so the capture box and the
-  // account controls stay visible and usable while a task is open.
-  const [top, setTop] = useState(0)
-  useLayoutEffect(() => {
-    const measure = () =>
-      setTop(document.querySelector('header')?.getBoundingClientRect().bottom ?? 0)
-    measure()
-    window.addEventListener('resize', measure)
-    return () => window.removeEventListener('resize', measure)
-  }, [])
-
   /**
    * WHAT EVERY WRITE FROM THIS PANE HAS TO REFRESH.
    *
@@ -439,87 +425,25 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
     else onClose()
   }
 
+  /**
+   * ESCAPE UNWINDS ONE LEVEL. The pane is the outermost of them and the shell closes it, so this
+   * handles only the levels INSIDE it and says so with `preventDefault` -- an unhandled press
+   * travels on to `DetailPane`, which closes.
+   */
   const onKeyDown = (e: KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      // A second Escape on the discard prompt means "keep editing"; on the delete question, "no".
-      if (deleting) cancelDelete()
-      else if (asking) keepEditingNow()
-      // Escape unwinds ONE level: out of editing into reading, and only then out of the pane.
-      else if (editing) leave(stopEditing)
-      else requestClose()
-    } else if (e.key === 'Tab' && !wide) {
-      /**
-       * Trap: Tab cycles inside the panel. Left alone it would walk on into whatever the panel is
-       * covering, which is invisible to the person pressing the key.
-       *
-       * ONLY IN THE OVERLAY HALF (`!wide`). At >=1280 this is a third COLUMN beside a list the
-       * reader can plainly see, and a trap there would lock them out of it -- the same WCAG 2.1.2
-       * failure from the other end. That is also why the pane is not a Radix `Dialog.Content`:
-       * `Dialog` marks the rest of the page `aria-hidden`, which is exactly what a coexisting
-       * column must not do (see `Modal`). So the LAYER keeps a trap of its own -- but the ORDER
-       * and the MEMBERSHIP of the cycle are `tabbable`'s, not a hand-written selector's.
-       *
-       * The selector that used to be here walked DOM order (so a positive `tabindex` came out in
-       * the wrong place) and listed only `input, select, textarea, button, a[href], [tabindex]`,
-       * filtered by the `disabled` ATTRIBUTE alone. It therefore missed `[contenteditable]`,
-       * `iframe`, `details`/`summary` and `audio`/`video[controls]`, and counted things the
-       * keyboard cannot reach: `inert` subtrees, `display:none`, `visibility:hidden`, `hidden`,
-       * and anything inside a folded `<details>`. One hidden control sorting LAST was enough to
-       * make `last.focus()` a no-op and let Tab walk out of the panel -- the same shape as the
-       * 2.1.2 trap this project already shipped once. `tabbable` is the library that answer comes
-       * from (it is what `focus-trap` and Radix's own `FocusScope` are built on).
-       */
-      const items = panel.current ? tabbable(panel.current) : []
-      const first = items[0]
-      const last = items[items.length - 1]
-      if (!first || !last) return e.preventDefault()
-      const active = document.activeElement
-      if (e.shiftKey && (active === first || active === panel.current)) {
-        e.preventDefault()
-        last.focus()
-      } else if (!e.shiftKey && active === last) {
-        e.preventDefault()
-        first.focus()
-      }
-    }
+    if (e.key !== 'Escape') return
+    // A second Escape on the discard prompt means "keep editing"; on the delete question, "no".
+    if (deleting) cancelDelete()
+    else if (asking) keepEditingNow()
+    // Out of editing into reading, and only then out of the pane.
+    else if (editing) leave(stopEditing)
+    else return
+    e.preventDefault()
   }
 
   return (
-    <>
-      {/* Click-outside, and the wash that tells you the page behind is not the thing in hand.
-          Only in overlay mode: as a coexisting pane, a click on the list is a click on the list. */}
-      {!wide && (
-        <div
-          aria-hidden="true"
-          data-detail-backdrop
-          onClick={requestClose}
-          style={{ top }}
-          className="fixed inset-x-0 bottom-0 z-20 bg-scrim"
-        />
-      )}
-      <div
-        ref={panel}
-        tabIndex={-1}
-        role="dialog"
-        aria-label="Task details"
-        data-detail-mode={wide ? 'pane' : 'overlay'}
-        onKeyDown={onKeyDown}
-        // In the column the panel is inset by the grid's own gutter, so the 16px is added to the
-        // top as well -- a panel that started flush with the top bar and had air on three sides
-        // would read as a sheet that had slid down from it.
-        style={{ top: wide ? top + 16 : top }}
-        className={`fixed z-20 overflow-y-auto p-5 text-fg focus:outline-none ${
-          // A COLUMN is a PANEL in the page's right-hand column: the same surface, radius, hairline
-          // and (in light) hair of shadow every other panel on the page wears, so it reads as part
-          // of the page rather than a form bolted to the window's edge. Its 22rem plus the two
-          // 16px gutters is the 24rem track Layout takes out of the grid for it.
-          // A LAYER is above the page, so it is flush with the edges, wears the raised surface and
-          // has the scrim under it.
-          wide
-            ? 'right-4 bottom-4 w-[22rem] rounded-xl border border-border-subtle bg-surface-panel shadow-panel'
-            : 'right-0 bottom-0 w-full max-w-md border-l border-border-subtle bg-surface-raised'
-        }`}
-      >
+    <DetailPane label="Task details" onClose={requestClose}>
+      <div ref={panel} tabIndex={-1} onKeyDown={onKeyDown} className="focus:outline-none">
         {/* ---------------------------------------------------------------- READING MODE
             Title, the status and the two dates read-only, the notes as prose, and Edit. Nothing
             on this screen changes the task, which is the whole point:
@@ -946,6 +870,6 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
           </form>
         )}
       </div>
-    </>
+    </DetailPane>
   )
 }

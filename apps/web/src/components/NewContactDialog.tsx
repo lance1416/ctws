@@ -7,6 +7,7 @@ import { useComposing } from '../composition'
 import { useProjectRail } from '../projectColor'
 import { field, label } from './formStyles'
 import { PickMany, PickOne } from './inline'
+import { DialogFooter } from './DialogFooter'
 import { Modal } from './Modal'
 
 /**
@@ -166,30 +167,13 @@ export function NewContactDialog({
           />
         </div>
 
-        {make.isError && (
-          <p role="alert" className="text-sm text-danger">
-            {make.error instanceof Error
-              ? make.error.message
-              : "Couldn't create it. Your answers are still here — try again."}
-          </p>
-        )}
-
-        <div className="flex items-center gap-2">
-          <button
-            type="submit"
-            disabled={!ready || make.isPending}
-            className="h-9 rounded-lg bg-accent px-3 font-semibold text-accent-fg hover:opacity-90 disabled:opacity-50"
-          >
-            Create
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="h-9 rounded-lg px-3 text-fg-muted hover:bg-surface-hover hover:text-fg"
-          >
-            Cancel
-          </button>
-        </div>
+        <DialogFooter
+          submit="Create"
+          error={make.error}
+          busy={make.isPending}
+          disabled={!ready}
+          onCancel={onClose}
+        />
       </form>
     </Modal>
   )

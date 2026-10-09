@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm'
 import type { TodaySegment } from '@ctws/contracts'
 import type { Queryable } from '../db/client'
 import type { Task } from './tasks'
+import { asDate, taskRowOf } from './rows'
 
 export type TodayTask = Task & {
   projectName: string
@@ -93,27 +94,10 @@ export async function listToday(
 
 // drizzle's node-postgres driver hands raw timestamptz values back as strings from a raw
 // `execute`, unlike a typed `select`, so they are normalised to Date to match `Task`.
-const asDate = (v: unknown): Date | null =>
-  v === null || v === undefined ? null : v instanceof Date ? v : new Date(v as string)
 
 function rowToTodayTask(r: Record<string, unknown>): TodayTask {
   return {
-    id: r.id as string,
-    projectId: r.project_id as string,
-    parentId: (r.parent_id as string | null) ?? null,
-    title: r.title as string,
-    notes: (r.notes as string | null) ?? null,
-    status: r.status as string,
-    scheduledOn: (r.scheduled_on as string | null) ?? null,
-    dueAt: asDate(r.due_at),
-    rank: r.rank as string,
-    manualProgress: (r.manual_progress as string | null) ?? null,
-    completedAt: asDate(r.completed_at),
-    deletedAt: asDate(r.deleted_at),
-    createdAt: asDate(r.created_at)!,
-    updatedAt: asDate(r.updated_at)!,
-    projectName: r.project_name as string,
-    parentTitle: (r.parent_title as string | null) ?? null,
+    ...taskRowOf(r),
     segment: r.segment as TodaySegment,
   }
 }
