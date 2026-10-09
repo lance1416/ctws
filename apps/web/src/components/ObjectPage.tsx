@@ -25,10 +25,13 @@ import { ViewTabs } from './ViewTabs'
  */
 /**
  * The kinds a project page already shows in a module's own block, and so does not repeat under
- * Linked. Each is a module that contributes a `ProjectView`; when one stops, its edges appear in
- * the links panel instead, which is the shape the redesign is heading for.
+ * Linked.
+ *
+ * Exactly one: the task tree. Three other modules used to hang a list under every project and
+ * they do not any more -- their rows are edges, and the links panel draws every kind of edge the
+ * same way. A tree is not a list, so it stays.
  */
-const BLOCKED_ON_A_PROJECT: ObjectType[] = ['task', 'reading', 'contact', 'meeting']
+const BLOCKED_ON_A_PROJECT: ObjectType[] = ['task']
 
 export function ObjectPage({ type }: { type: ObjectType }) {
   const { id } = useParams()
@@ -89,14 +92,12 @@ export function ObjectPage({ type }: { type: ObjectType }) {
 
       {/* AND WHAT IT IS CONNECTED TO: on a person, the meetings they are in and what they
           recommended -- a screen that was empty before, because those edges had nowhere to live.
-          Not on a project, where four module blocks already draw all four kinds; saying them
-          again underneath would be the same rows twice, which is the one thing a reader has to
-          hold two of in their head. When a block goes, its kind appears here instead. */}
-      {covered.length === 0 && (
-        <Panel label="Linked" className="mt-4">
-          <Links of={{ type, id }} />
-        </Panel>
-      )}
+          On a project it is the people, the reading and the meetings -- everything except the
+          tasks, which the tree above already draws. Saying a row twice is the one thing a reader
+          has to hold two of in their head. */}
+      <Panel label="Linked" className="mt-4">
+        <Links of={{ type, id }} except={covered} />
+      </Panel>
     </>
   )
 }

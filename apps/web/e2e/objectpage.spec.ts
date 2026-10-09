@@ -26,6 +26,8 @@ async function world(page: Page) {
     org: 'Acme recruiting',
     projectIds: [project.id],
   })
+  // A task, so the exclusion below is about a group that WOULD otherwise be there.
+  await post(page, '/tasks', { projectId: project.id, title: 'Rewrite the CV', parentId: null })
   const book = await post(page, '/reading', {
     kind: 'book',
     title: 'The Design of Everyday Things',
@@ -83,19 +85,20 @@ test('following a link from a person lands on the meeting own page', async ({ pa
   ).toContainText('Ying Chen')
 })
 
-test('a project page keeps the module blocks and does not say their rows twice', async ({
-  page,
-}) => {
+test('a project page keeps the tree, and everything else is an edge', async ({ page }) => {
   const { project } = await world(page)
   await page.goto(`/projects/${project.id}`)
 
   await expect(page.getByRole('region', { name: 'Project at a glance' })).toContainText('Job hunt')
   // A task tree is not a list of links -- no drag, no dependencies, no inline new row -- so the
-  // module keeps its block.
+  // task module keeps its block. It is the only one that does.
   await expect(page.getByRole('region', { name: 'Tasks' })).toBeVisible()
-  // And because those blocks already draw every kind on this page, there is no second copy of
-  // them underneath.
-  await expect(page.getByRole('region', { name: 'Linked' })).toHaveCount(0)
+  const linked = page.getByRole('region', { name: 'Linked' })
+  await expect(linked.getByRole('region', { name: 'People' })).toContainText('Ying Chen')
+  await expect(linked.getByRole('region', { name: 'Meetings' })).toContainText('Second interview')
+  // And the tasks are NOT said twice: the tree above is already the list of them.
+  await expect(page.getByRole('region', { name: 'Tasks' })).toContainText('Rewrite the CV')
+  await expect(linked.getByRole('region', { name: 'Tasks' })).toHaveCount(0)
 })
 
 test('a page for something that is gone says so rather than showing a blank', async ({ page }) => {

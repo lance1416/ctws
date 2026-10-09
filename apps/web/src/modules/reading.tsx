@@ -129,34 +129,18 @@ function ReadingWidget() {
 /** How many rows a workbench card shows before it defers to its page. */
 const WIDGET_ROWS = 5
 
-/** This module's rows under a shell project: an article about CTWS belongs to CTWS. */
-function ReadingProjectView({ projectId }: { projectId: string }) {
-  const items = useQuery({
-    queryKey: ['reading', projectId, null],
-    queryFn: () => listReading({ projectId }),
-  })
-  const timeZone = useTimeZone()
-  const rows = (items.data ?? []).filter((i) => i.status === 'todo' || i.status === 'reading')
-
-  return (
-    <div>
-      {/* The same measure the task block's New task keeps, so the two blocks on one project page
-          read as one product rather than two. */}
-      <div className="mb-1 max-w-[52ch]">
-        <AddReading projectId={projectId} />
-      </div>
-      {rows.length === 0 ? (
-        <p className="mt-2 text-sm text-fg-subtle">Nothing to read yet</p>
-      ) : (
-        <ul className="mt-1">
-          {rows.map((item) => (
-            <ReadingRow key={item.id} item={item} timeZone={timeZone} here={projectId} />
-          ))}
-        </ul>
-      )}
-    </div>
-  )
-}
+/**
+ * NO BLOCK ON A PROJECT PAGE ANY MORE.
+ *
+ * This module used to hang a list of its own rows under every project, which -- with four modules
+ * doing the same -- made the project page a wall of blocks: the module structure drawn for the
+ * reader. Those rows are edges now, and the shell draws every kind of edge the same way
+ * (framing §2). The task tree is the one block that stays, because a tree with drag,
+ * dependencies and an inline new row is an editor, not a list.
+ *
+ * The cost, stated: one of these can no longer be made FROM a project page. It is made on its own
+ * page and filed there, or dropped into the capture box.
+ */
 
 /** This module's numbers in the project banner, beside the task module's. */
 function ReadingHeadline({ projectId }: { projectId: string }) {
@@ -188,7 +172,6 @@ export const readingModule: WorkspaceModule = {
   chords: [{ id: 'reading', key: 'l', label: 'Go to Reading', resolve: () => `/${ID}`, order: 15 }],
   calendar: { label: 'Reading', useEntries: useReadingEntries },
   widgets: [{ id: 'unfiled', label: 'Reading · unfiled', to: `/${ID}`, Component: ReadingWidget }],
-  ProjectView: ReadingProjectView,
   ProjectHeadline: ReadingHeadline,
   // No page of its own: a thing to read is a title, a link and a status, and a page per item
   // would be a page holding one line. The list IS where one is read.

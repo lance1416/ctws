@@ -98,11 +98,14 @@ test('a person can be on several lines of work at once', async ({ page }) => {
   await expect(pane.getByRole('button', { name: 'Remove Projects “找工作”' })).toBeVisible()
   await expect(pane.getByRole('button', { name: 'Remove Projects “CTWS”' })).toBeVisible()
 
-  // On BOTH lines, and found from either.
-  await page.goto(`/projects/${hunt}`)
-  await expect(page.getByRole('region', { name: 'Contacts' })).toContainText('陈颖')
-  await page.goto(`/projects/${ctws}`)
-  await expect(page.getByRole('region', { name: 'Contacts' })).toContainText('陈颖')
+  // On BOTH lines, and found from either -- under Linked now, which is where every kind of
+  // edge is drawn since the per-module blocks went.
+  for (const pid of [hunt, ctws]) {
+    await page.goto(`/projects/${pid}`)
+    await expect(
+      page.getByRole('region', { name: 'Linked' }).getByRole('region', { name: 'People' }),
+    ).toContainText('陈颖')
+  }
 })
 
 test('a line of work is taken off without touching the others', async ({ page }) => {
@@ -119,7 +122,7 @@ test('a line of work is taken off without touching the others', async ({ page })
   await expect(pane.getByRole('button', { name: 'Remove Projects “CTWS”' })).toBeVisible()
 
   await page.goto(`/projects/${hunt}`)
-  await expect(page.getByRole('region', { name: 'Contacts' })).not.toContainText('陈颖')
+  await expect(page.getByRole('region', { name: 'Linked' })).not.toContainText('陈颖')
 })
 
 test('an address removed in the pane is really gone', async ({ page }) => {
@@ -156,7 +159,12 @@ test('the list is in pinyin order, not byte order', async ({ page }) => {
   ])
 })
 
-test('a project page carries its people, and its own way to add one', async ({ page }) => {
+test('a project page carries its people, as edges and not as a block of its own', async ({
+  page,
+}) => {
+  // This module used to hang a list of its own rows under every project. With four modules doing
+  // it the page was a wall of blocks -- the module structure drawn for the reader. The rows are
+  // edges now, and one panel draws every kind.
   await registerFreshUser(page, '/')
   const pid = await project(page, '找工作')
   await add(page, {
@@ -167,12 +175,14 @@ test('a project page carries its people, and its own way to add one', async ({ p
   await add(page, { name: '不相干的人' })
   await page.goto(`/projects/${pid}`)
 
-  const block = page.getByRole('region', { name: 'Contacts' })
-  await expect(block).toContainText('某招聘')
-  await expect(block).not.toContainText('不相干的人')
-  // The project you are standing in is not named again on the row.
-  await expect(block).not.toContainText('找工作')
-  await expect(block.getByLabel('Add a name')).toBeVisible()
+  const people = page
+    .getByRole('region', { name: 'Linked' })
+    .getByRole('region', { name: 'People' })
+  await expect(people).toContainText('某招聘')
+  await expect(people).not.toContainText('不相干的人')
+  // No block, and so no second way to make a person from here: it is made on their own page.
+  await expect(page.getByRole('region', { name: 'Contacts' })).toHaveCount(0)
+  await expect(page.getByLabel('Add a name')).toHaveCount(0)
 })
 
 test('search reaches a person by their address, from the shell box', async ({ page }) => {

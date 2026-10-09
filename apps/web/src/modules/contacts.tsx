@@ -49,30 +49,18 @@ function useContactHits(query: string) {
   return { hits, isError: results.isError, isSuccess: results.isSuccess }
 }
 
-/** The people on a line of work: a recruiter is on 找工作 exactly as a task is. */
-function ContactsProjectView({ projectId }: { projectId: string }) {
-  const contacts = useQuery({
-    queryKey: contactsKey({ projectId }),
-    queryFn: () => listContacts({ projectId }),
-  })
-  const [openId, setOpenId] = useState<string | null>(null)
-  const open = contacts.data?.find((c) => c.id === openId) ?? null
-
-  return (
-    <>
-      <div className="mb-1 max-w-[52ch]">
-        <NewContactInput projectId={projectId} onCreated={(c) => setOpenId(c.id)} />
-      </div>
-      <ContactList
-        contacts={contacts.data ?? []}
-        here={projectId}
-        emptyLine="No contacts yet"
-        onOpen={(c) => setOpenId(c.id)}
-      />
-      {open && <ContactDetail contact={open} onClose={() => setOpenId(null)} />}
-    </>
-  )
-}
+/**
+ * NO BLOCK ON A PROJECT PAGE ANY MORE.
+ *
+ * This module used to hang a list of its own rows under every project, which -- with four modules
+ * doing the same -- made the project page a wall of blocks: the module structure drawn for the
+ * reader. Those rows are edges now, and the shell draws every kind of edge the same way
+ * (framing §2). The task tree is the one block that stays, because a tree with drag,
+ * dependencies and an inline new row is an editor, not a list.
+ *
+ * The cost, stated: one of these can no longer be made FROM a project page. It is made on its own
+ * page and filed there, or dropped into the capture box.
+ */
 
 /**
  * ONE PERSON'S OWN FIELDS, at the head of their page. The shell draws the page; what a person IS
@@ -104,6 +92,5 @@ export const contactModule: WorkspaceModule = {
   chords: [
     { id: 'contacts', key: 'n', label: 'Go to Contacts', resolve: () => `/${ID}`, order: 17 },
   ],
-  ProjectView: ContactsProjectView,
   relations: [{ type: 'contact', kind: 'Person', to: (id) => `/${ID}/${id}`, Head: ContactHead }],
 }

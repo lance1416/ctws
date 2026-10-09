@@ -149,56 +149,18 @@ function TodayMeetings() {
   )
 }
 
-/** The meetings about one line of work, from today on. */
-function MeetingsProjectView({ projectId }: { projectId: string }) {
-  const accountZone = useTimeZone()
-  const meetings = useQuery({
-    queryKey: meetingsKey({ projectId }),
-    queryFn: () => listMeetings({ projectId }),
-  })
-  const rows = meetings.data ?? []
-  const { setOpen, pane } = useOpenMeeting(rows)
-  const rail = useProjectRail()
-  const when = new Intl.DateTimeFormat('en-US', {
-    timeZone: accountZone,
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  })
-
-  if (rows.length === 0) return <PanelEmpty>No meetings coming up</PanelEmpty>
-  return (
-    <>
-      <ul className="flex flex-col">
-        {rows.map((m) => (
-          <li
-            key={`${m.meetingId}:${m.recurrenceId}`}
-            className="flex min-h-9 min-w-0 items-center gap-2 rounded-lg px-2 hover:bg-surface-hover"
-          >
-            <span
-              aria-hidden="true"
-              className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(projectId)}`}
-            />
-            <span className="shrink-0 text-sm tabular-nums text-fg-muted">
-              {when.format(new Date(m.startsAt))}
-            </span>
-            <button
-              type="button"
-              onClick={() => setOpen({ meetingId: m.meetingId, recurrenceId: m.recurrenceId })}
-              className="min-w-0 flex-1 truncate rounded text-left text-sm text-fg hover:underline"
-            >
-              {m.title}
-            </button>
-            {m.rrule && <span className="shrink-0 text-xs text-fg-subtle">Repeats</span>}
-          </li>
-        ))}
-      </ul>
-      {pane}
-    </>
-  )
-}
+/**
+ * NO BLOCK ON A PROJECT PAGE ANY MORE.
+ *
+ * This module used to hang a list of its own rows under every project, which -- with four modules
+ * doing the same -- made the project page a wall of blocks: the module structure drawn for the
+ * reader. Those rows are edges now, and the shell draws every kind of edge the same way
+ * (framing §2). The task tree is the one block that stays, because a tree with drag,
+ * dependencies and an inline new row is an editor, not a list.
+ *
+ * The cost, stated: one of these can no longer be made FROM a project page. It is made on its own
+ * page and filed there, or dropped into the capture box.
+ */
 
 /**
  * ONE MEETING'S OWN FIELDS, at the head of its page.
@@ -244,6 +206,5 @@ export const meetingModule: WorkspaceModule = {
   ],
   calendar: { label: 'Meetings', useEntries: useMeetingEntries, Detail: CalendarDetail },
   widgets: [{ id: 'today', label: "Today's meetings", to: '/calendar', Component: TodayMeetings }],
-  ProjectView: MeetingsProjectView,
   relations: [{ type: 'meeting', kind: 'Meeting', to: (id) => `/${ID}/${id}`, Head: MeetingHead }],
 }
