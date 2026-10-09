@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { registerFreshUser } from './helpers'
+import { makeProject, makeTask, registerFreshUser } from './helpers'
 
 /**
  * THE BOARD, AND THE BLOCK-HEADER TABS IT IS THE FIRST USER OF.
@@ -10,30 +10,6 @@ import { registerFreshUser } from './helpers'
  */
 
 const HEADERS = { 'x-ctws-client': 'web' }
-
-async function makeProject(page: Page, name: string): Promise<string> {
-  const res = await page.request.post('/api/v1/projects', { headers: HEADERS, data: { name } })
-  expect(res.ok()).toBeTruthy()
-  return ((await res.json()) as { id: string }).id
-}
-
-async function makeTask(
-  page: Page,
-  projectId: string,
-  title: string,
-  patch: Record<string, unknown> = {},
-  parentId: string | null = null,
-): Promise<string> {
-  const res = await page.request.post('/api/v1/tasks', {
-    headers: HEADERS,
-    data: { projectId, title, parentId },
-  })
-  const id = ((await res.json()) as { id: string }).id
-  if (Object.keys(patch).length > 0) {
-    await page.request.patch(`/api/v1/tasks/${id}`, { headers: HEADERS, data: patch })
-  }
-  return id
-}
 
 const column = (page: Page, status: string) => page.locator(`[data-board-column="${status}"]`)
 const card = (page: Page, title: string) =>

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { editDetail, registerFreshUser } from './helpers'
+import { editDetail, makeProject, makeTask, registerFreshUser } from './helpers'
 import { dayAfter, dayOffset, nextMondayYmd, ymd } from './days'
 
 /** The month names the app prints, so a spec can build the string the page will show. */
@@ -24,31 +24,6 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
  */
 
 const HEADERS = { 'x-ctws-client': 'web' }
-
-async function makeProject(page: Page, name: string): Promise<string> {
-  const res = await page.request.post('/api/v1/projects', { headers: HEADERS, data: { name } })
-  expect(res.ok()).toBeTruthy()
-  return ((await res.json()) as { id: string }).id
-}
-
-async function makeTask(
-  page: Page,
-  projectId: string,
-  title: string,
-  patch: Record<string, unknown> = {},
-): Promise<string> {
-  const res = await page.request.post('/api/v1/tasks', {
-    headers: HEADERS,
-    data: { projectId, title, parentId: null },
-  })
-  expect(res.ok()).toBeTruthy()
-  const id = ((await res.json()) as { id: string }).id
-  if (Object.keys(patch).length > 0) {
-    const p = await page.request.patch(`/api/v1/tasks/${id}`, { headers: HEADERS, data: patch })
-    expect(p.ok()).toBeTruthy()
-  }
-  return id
-}
 
 type ServerTask = {
   id: string

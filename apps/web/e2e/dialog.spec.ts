@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { pickOne, registerFreshUser } from './helpers'
+import { makeProject, makeTask, pickOne, registerFreshUser } from './helpers'
 import { dayOffset, ymd } from './days'
 
 /**
@@ -40,21 +40,6 @@ const nextCreate = (page: Page) =>
 const dialog = (page: Page) => page.getByRole('dialog', { name: 'New task' })
 const openButton = (page: Page) => page.getByRole('button', { name: 'New…', exact: true })
 const titleField = (page: Page) => dialog(page).getByRole('textbox', { name: 'Title' })
-
-async function makeProject(page: Page, name: string): Promise<string> {
-  const res = await page.request.post('/api/v1/projects', { headers: HEADERS, data: { name } })
-  expect(res.ok()).toBeTruthy()
-  return ((await res.json()) as { id: string }).id
-}
-
-async function makeTask(page: Page, projectId: string, title: string): Promise<string> {
-  const res = await page.request.post('/api/v1/tasks', {
-    headers: HEADERS,
-    data: { projectId, title, parentId: null },
-  })
-  expect(res.ok()).toBeTruthy()
-  return ((await res.json()) as { id: string }).id
-}
 
 /** A project holding one root task, open on its page with the tree loaded. */
 async function seed(page: Page, name = 'P'): Promise<{ pid: string; rootId: string }> {

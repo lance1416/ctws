@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import type { Locator, Page } from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
 
 /**
  * Registers a brand-new user through the UI and waits until the signed-in shell is showing.
@@ -193,4 +193,43 @@ export async function pickOne(
   const page = 'page' in where ? where.page() : where
   await where.getByRole('button', { name: new RegExp(`^${label}`) }).click()
   await page.getByRole('menuitem', { name: choice }).click()
+}
+
+/**
+ * A PROJECT AND A TASK, made over the API because the point of the test is what comes next.
+ *
+ * These were written out in fourteen spec files and thirteen, and the thirteen had grown FOUR
+ * signatures between them -- a positional patch, a positional parent, an options object, and
+ * neither. That is what copying a helper does: every copy is free to drift, and the drift is
+ * invisible until you read two specs side by side.
+ */
+export async function makeProject(page: Page, name: string): Promise<string> {
+  const res = await page.request.post('/api/v1/projects', {
+    headers: { 'x-ctws-client': 'web' },
+    data: { name },
+  })
+  expect(res.ok(), `makeProject: ${res.status()}`).toBeTruthy()
+  return ((await res.json()) as { id: string }).id
+}
+
+export async function makeTask(
+  page: Page,
+  projectId: string,
+  title: string,
+  /** Fields to set after creating it: the create body takes only a title and a parent. */
+  patch: Record<string, unknown> = {},
+  parentId: string | null = null,
+): Promise<string> {
+  const headers = { 'x-ctws-client': 'web' }
+  const res = await page.request.post('/api/v1/tasks', {
+    headers,
+    data: { projectId, title, parentId },
+  })
+  expect(res.ok(), `makeTask: ${res.status()}`).toBeTruthy()
+  const id = ((await res.json()) as { id: string }).id
+  if (Object.keys(patch).length > 0) {
+    const done = await page.request.patch(`/api/v1/tasks/${id}`, { headers, data: patch })
+    expect(done.ok(), `makeTask patch: ${done.status()}`).toBeTruthy()
+  }
+  return id
 }

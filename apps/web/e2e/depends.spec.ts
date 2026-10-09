@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { registerFreshUser } from './helpers'
+import { makeProject, makeTask, registerFreshUser } from './helpers'
 
 /**
  * WHAT HAS TO HAPPEN FIRST (D64), through the browser.
@@ -11,21 +11,6 @@ import { registerFreshUser } from './helpers'
  */
 
 const HEADERS = { 'x-ctws-client': 'web' }
-
-async function makeProject(page: Page, name: string): Promise<string> {
-  const res = await page.request.post('/api/v1/projects', { headers: HEADERS, data: { name } })
-  expect(res.ok()).toBeTruthy()
-  return ((await res.json()) as { id: string }).id
-}
-
-async function makeTask(page: Page, projectId: string, title: string): Promise<string> {
-  const res = await page.request.post('/api/v1/tasks', {
-    headers: HEADERS,
-    data: { projectId, title, parentId: null },
-  })
-  expect(res.ok()).toBeTruthy()
-  return ((await res.json()) as { id: string }).id
-}
 
 async function openTree(page: Page, projectId: string) {
   const listed = page.waitForResponse((r) => {

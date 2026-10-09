@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { editDetail, registerFreshUser } from './helpers'
+import { editDetail, makeProject, makeTask, registerFreshUser } from './helpers'
 
 /**
  * The typography specification (docs/superpowers/specs/2026-10-06-ctws-typography.md), pinned.
@@ -50,31 +50,6 @@ const families = (value: string) =>
     .split(',')
     .map((name) => name.trim().replace(/^["']|["']$/g, ''))
     .filter(Boolean)
-
-async function makeProject(page: Page, name: string): Promise<string> {
-  const res = await page.request.post('/api/v1/projects', { headers: HEADERS, data: { name } })
-  expect(res.ok()).toBeTruthy()
-  return ((await res.json()) as { id: string }).id
-}
-
-async function makeTask(
-  page: Page,
-  projectId: string,
-  title: string,
-  patch: Record<string, unknown> = {},
-): Promise<string> {
-  const res = await page.request.post('/api/v1/tasks', {
-    headers: HEADERS,
-    data: { projectId, title, parentId: null },
-  })
-  expect(res.ok()).toBeTruthy()
-  const id = ((await res.json()) as { id: string }).id
-  if (Object.keys(patch).length > 0) {
-    const put = await page.request.patch(`/api/v1/tasks/${id}`, { headers: HEADERS, data: patch })
-    expect(put.ok()).toBeTruthy()
-  }
-  return id
-}
 
 /** The size/line-height pair a selector's first match computes, in px. */
 const pair = (page: Page, selector: string) =>

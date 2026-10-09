@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { registerFreshUser } from './helpers'
+import { makeProject, makeTask, registerFreshUser } from './helpers'
 
 /**
  * 我做了什么 — the third v1 view. What it has to prove over 已完成 is that it reports what
@@ -7,19 +7,6 @@ import { registerFreshUser } from './helpers'
  */
 
 const HEADERS = { 'x-ctws-client': 'web' }
-
-async function makeProject(page: Page, name: string): Promise<string> {
-  const res = await page.request.post('/api/v1/projects', { headers: HEADERS, data: { name } })
-  return ((await res.json()) as { id: string }).id
-}
-
-async function makeTask(page: Page, projectId: string, title: string): Promise<string> {
-  const res = await page.request.post('/api/v1/tasks', {
-    headers: HEADERS,
-    data: { projectId, title, parentId: null },
-  })
-  return ((await res.json()) as { id: string }).id
-}
 
 const setStatus = (page: Page, id: string, status: string) =>
   page.request.patch(`/api/v1/tasks/${id}`, { headers: HEADERS, data: { status } })

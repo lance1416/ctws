@@ -1,5 +1,13 @@
 import { expect, test, type Page } from '@playwright/test'
-import { editDetail, openProject, pickOne, registerFreshUser, submitCreate } from './helpers'
+import {
+  editDetail,
+  makeProject,
+  makeTask,
+  openProject,
+  pickOne,
+  registerFreshUser,
+  submitCreate,
+} from './helpers'
 
 /**
  * FOUR THINGS THAT MADE THE APP WORSE THE LONGER IT WAS USED (D48, D49, D53, D40).
@@ -11,32 +19,6 @@ import { editDetail, openProject, pickOne, registerFreshUser, submitCreate } fro
  */
 
 const HEADERS = { 'x-ctws-client': 'web' }
-
-async function makeProject(page: Page, name: string): Promise<string> {
-  const res = await page.request.post('/api/v1/projects', { headers: HEADERS, data: { name } })
-  expect(res.ok()).toBeTruthy()
-  return ((await res.json()) as { id: string }).id
-}
-
-async function makeTask(
-  page: Page,
-  projectId: string,
-  title: string,
-  parentId: string | null = null,
-  patch: Record<string, unknown> = {},
-): Promise<string> {
-  const res = await page.request.post('/api/v1/tasks', {
-    headers: HEADERS,
-    data: { projectId, title, parentId },
-  })
-  expect(res.ok()).toBeTruthy()
-  const id = ((await res.json()) as { id: string }).id
-  if (Object.keys(patch).length > 0) {
-    const p = await page.request.patch(`/api/v1/tasks/${id}`, { headers: HEADERS, data: patch })
-    expect(p.ok()).toBeTruthy()
-  }
-  return id
-}
 
 /** Waits for the project's task list, so a tree with no visible rows is still "arrived". */
 async function openTree(page: Page, projectId: string) {
@@ -64,8 +46,8 @@ test('the tree shows what is left to do, and the count is the way back to the re
 }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '改版')
-  await makeTask(page, pid, '写迁移', null, { status: 'done' })
-  await makeTask(page, pid, '补测试', null, { status: 'cancelled' })
+  await makeTask(page, pid, '写迁移', { status: 'done' })
+  await makeTask(page, pid, '补测试', { status: 'cancelled' })
   await makeTask(page, pid, '配色重做')
   await openTree(page, pid)
 
@@ -92,8 +74,8 @@ test('a finished parent with unfinished children is kept, not hidden with them',
 }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '改版')
-  const parent = await makeTask(page, pid, '接入 KaTeX', null, { status: 'done' })
-  await makeTask(page, pid, '公式换行', parent)
+  const parent = await makeTask(page, pid, '接入 KaTeX', { status: 'done' })
+  await makeTask(page, pid, '公式换行', {}, parent)
   await openTree(page, pid)
 
   // THE TREE'S OLDEST RULE: a list that loses tasks cannot be trusted. Hiding the parent would
@@ -134,7 +116,7 @@ test('a row finished right here stays put, so a mis-press can be undone from it'
 test('a project whose every task is finished reads as cleared, not as empty', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '改版')
-  await makeTask(page, pid, '写迁移', null, { status: 'done' })
+  await makeTask(page, pid, '写迁移', { status: 'done' })
   await openTree(page, pid)
 
   // Telling someone who just cleared their list that they have no tasks YET reads as lost work.
@@ -307,10 +289,10 @@ test('a parent row says how its subtree stands, and a quiet one says nothing', a
   await registerFreshUser(page)
   const pid = await makeProject(page, '改版')
   const live = await makeTask(page, pid, '接入 KaTeX')
-  const done = await makeTask(page, pid, '装依赖', live, { status: 'done' })
-  await makeTask(page, pid, '公式换行', live, { status: 'in_progress' })
+  const done = await makeTask(page, pid, '装依赖', { status: 'done' }, live)
+  await makeTask(page, pid, '公式换行', { status: 'in_progress' }, live)
   const quiet = await makeTask(page, pid, '写变更日志')
-  await makeTask(page, pid, '列个提纲', quiet)
+  await makeTask(page, pid, '列个提纲', {}, quiet)
   expect(done).toBeTruthy()
 
   await openTree(page, pid)

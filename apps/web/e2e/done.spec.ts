@@ -1,5 +1,12 @@
 import { expect, test, type Page } from '@playwright/test'
-import { backdateCompletion, editDetail, logOut, registerFreshUser } from './helpers'
+import {
+  backdateCompletion,
+  editDetail,
+  logOut,
+  makeProject,
+  makeTask,
+  registerFreshUser,
+} from './helpers'
 
 /** The month names the app prints, so a spec can build the string the page will show. */
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -11,34 +18,6 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 const HEADERS = { 'x-ctws-client': 'web' }
 
 type ApiTask = { id: string; title: string; status: string }
-
-async function makeProject(page: Page, name: string): Promise<string> {
-  const res = await page.request.post('/api/v1/projects', { headers: HEADERS, data: { name } })
-  expect(res.ok()).toBeTruthy()
-  return ((await res.json()) as { id: string }).id
-}
-
-async function makeTask(
-  page: Page,
-  projectId: string,
-  title: string,
-  opts: { parentId?: string; patch?: Record<string, unknown> } = {},
-): Promise<string> {
-  const res = await page.request.post('/api/v1/tasks', {
-    headers: HEADERS,
-    data: { projectId, title, parentId: opts.parentId ?? null },
-  })
-  expect(res.ok()).toBeTruthy()
-  const id = ((await res.json()) as { id: string }).id
-  if (opts.patch) {
-    const p = await page.request.patch(`/api/v1/tasks/${id}`, {
-      headers: HEADERS,
-      data: opts.patch,
-    })
-    expect(p.ok()).toBeTruthy()
-  }
-  return id
-}
 
 /**
  * Hours to go back so a completion lands around NOON on the day `daysAgo` before today.
@@ -92,10 +71,10 @@ test('finishing a task in the tree puts it on 已完成 with its project and par
   const alpha = await makeProject(page, 'Alpha')
   const beta = await makeProject(page, 'Beta')
   const parent = await makeTask(page, alpha, '发布')
-  await makeTask(page, alpha, '写文档', { parentId: parent })
+  await makeTask(page, alpha, '写文档', {}, parent)
   await makeTask(page, beta, '修 bug')
   await makeTask(page, beta, '还没做')
-  await makeTask(page, beta, '放弃了', { patch: { status: 'cancelled' } })
+  await makeTask(page, beta, '放弃了', { status: 'cancelled' })
 
   // Finish one task in each project, through the UI, the older one first.
   for (const [pid, title] of [
@@ -216,9 +195,9 @@ test('deleting a parent states how many descendants go, cancel deletes nothing, 
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   const root = await makeTask(page, pid, '大块')
-  const kid1 = await makeTask(page, pid, '子一', { parentId: root })
-  await makeTask(page, pid, '子二', { parentId: root })
-  await makeTask(page, pid, '孙一', { parentId: kid1 })
+  const kid1 = await makeTask(page, pid, '子一', {}, root)
+  await makeTask(page, pid, '子二', {}, root)
+  await makeTask(page, pid, '孙一', {}, kid1)
   await makeTask(page, pid, '旁观者')
   await page.goto(`/projects/${pid}`)
   await page.getByRole('listitem').first().waitFor()
@@ -270,8 +249,8 @@ test('deleting a leaf does not claim descendants, and works from the Today panel
 }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
-  await makeTask(page, pid, '在做的', { patch: { status: 'in_progress' } })
-  await makeTask(page, pid, '另一个', { patch: { status: 'in_progress' } })
+  await makeTask(page, pid, '在做的', { status: 'in_progress' })
+  await makeTask(page, pid, '另一个', { status: 'in_progress' })
   await page.goto('/tasks/today')
   await expect(page.locator('[data-today-row]')).toHaveCount(2)
 

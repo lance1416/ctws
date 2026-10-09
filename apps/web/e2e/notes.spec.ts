@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { editDetail, openProject, registerFreshUser } from './helpers'
+import { editDetail, makeProject, openProject, registerFreshUser } from './helpers'
 
 /**
  * MARKDOWN NOTES (D73): what renders, what is refused, and what is NOT downloaded.
@@ -13,12 +13,6 @@ import { editDetail, openProject, registerFreshUser } from './helpers'
  */
 
 const HEADERS = { 'x-ctws-client': 'web' }
-
-async function makeProject(page: Page, name: string): Promise<string> {
-  const res = await page.request.post('/api/v1/projects', { headers: HEADERS, data: { name } })
-  expect(res.ok()).toBeTruthy()
-  return ((await res.json()) as { id: string }).id
-}
 
 async function makeNoted(page: Page, projectId: string, title: string, notes: string) {
   const res = await page.request.post('/api/v1/tasks', {

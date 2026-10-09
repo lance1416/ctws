@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { backdateProjectActivity, registerFreshUser } from './helpers'
+import { backdateProjectActivity, makeProject, makeTask, registerFreshUser } from './helpers'
 
 /** The month names the app prints, so a spec can build the string the page will show. */
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -41,33 +41,6 @@ type Movement = {
   overdue: number
   lastActivityOn: string | null
   quietDays: number | null
-}
-
-async function makeProject(page: Page, name: string): Promise<string> {
-  const res = await page.request.post('/api/v1/projects', { headers: HEADERS, data: { name } })
-  expect(res.ok()).toBeTruthy()
-  return ((await res.json()) as { id: string }).id
-}
-
-async function makeTask(
-  page: Page,
-  projectId: string,
-  title: string,
-  patch: Record<string, unknown> = {},
-  parentId: string | null = null,
-): Promise<string> {
-  const res = await page.request.post('/api/v1/tasks', {
-    headers: HEADERS,
-    data: { projectId, title, parentId },
-  })
-  expect(res.ok()).toBeTruthy()
-  const id = ((await res.json()) as { id: string }).id
-  if (Object.keys(patch).length > 0) {
-    expect(
-      (await page.request.patch(`/api/v1/tasks/${id}`, { headers: HEADERS, data: patch })).ok(),
-    ).toBeTruthy()
-  }
-  return id
 }
 
 const movementOf = async (page: Page): Promise<Movement[]> =>

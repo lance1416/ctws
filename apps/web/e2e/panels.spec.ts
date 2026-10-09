@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { backdateProjectActivity, registerFreshUser } from './helpers'
+import { backdateProjectActivity, makeProject, makeTask, registerFreshUser } from './helpers'
 
 /**
  * The 今天 workbench: the four panels, the banner, and the grid they sit in.
@@ -34,32 +34,6 @@ type Movement = {
   remaining: number
   lastActivityOn: string | null
   quietDays: number | null
-}
-
-async function makeProject(page: Page, name: string): Promise<string> {
-  const res = await page.request.post('/api/v1/projects', { headers: HEADERS, data: { name } })
-  expect(res.ok()).toBeTruthy()
-  return ((await res.json()) as { id: string }).id
-}
-
-async function makeTask(
-  page: Page,
-  projectId: string,
-  title: string,
-  patch: Record<string, unknown> = {},
-): Promise<string> {
-  const res = await page.request.post('/api/v1/tasks', {
-    headers: HEADERS,
-    data: { projectId, title, parentId: null },
-  })
-  expect(res.ok()).toBeTruthy()
-  const id = ((await res.json()) as { id: string }).id
-  if (Object.keys(patch).length > 0) {
-    expect(
-      (await page.request.patch(`/api/v1/tasks/${id}`, { headers: HEADERS, data: patch })).ok(),
-    ).toBeTruthy()
-  }
-  return id
 }
 
 const patched = (page: Page) =>
