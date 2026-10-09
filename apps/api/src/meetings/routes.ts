@@ -1,5 +1,5 @@
 import {
-  calendarEntry,
+  calendarEntriesResponse,
   calendarQuery,
   createMeetingBody,
   deleteMeetingQuery,
@@ -136,7 +136,7 @@ export const meetingRoutes: FastifyPluginAsync = async (app) => {
       preHandler: requireUser,
       schema: {
         querystring: calendarQuery,
-        response: { 200: z.object({ entries: z.array(calendarEntry) }).strict() },
+        response: { 200: calendarEntriesResponse },
       },
     },
     async (req) => {

@@ -1,5 +1,5 @@
 import {
-  calendarEntry,
+  calendarEntriesResponse,
   calendarQuery,
   createReadingItemBody,
   readingItemResponse,
@@ -87,7 +87,7 @@ export const readingRoutes: FastifyPluginAsync = async (app) => {
       preHandler: requireUser,
       schema: {
         querystring: calendarQuery,
-        response: { 200: z.object({ entries: z.array(calendarEntry) }).strict() },
+        response: { 200: calendarEntriesResponse },
       },
     },
     async (req) => {

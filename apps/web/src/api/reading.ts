@@ -5,7 +5,7 @@ import type {
   ReadingStatus,
   UpdateReadingItemBody,
 } from '@ctws/contracts'
-import { apiFetch } from '../api'
+import { apiFetch, calendarOf } from '../api'
 
 /** The reading module's own namespace. Nothing in the task module reaches in here. */
 const BASE = '/reading'
@@ -31,14 +31,8 @@ export async function searchReading(query: string): Promise<ReadingItemResponse[
   return (await apiFetch<{ items: ReadingItemResponse[] }>(path)).items
 }
 
-/** This module"s dated things for a window. The DAY is the server's, in the account"s zone. */
-export async function readingCalendar(range: {
-  from: string
-  to: string
-}): Promise<CalendarEntry[]> {
-  const path = `${BASE}/calendar?from=${range.from}&to=${range.to}`
-  return (await apiFetch<{ entries: CalendarEntry[] }>(path)).entries
-}
+/** This module's dated things for a window. The DAY is the server's, in the account's zone. */
+export const readingCalendar = (range: { from: string; to: string }) => calendarOf(BASE, range)
 
 export function createReadingItem(body: CreateReadingItemBody): Promise<ReadingItemResponse> {
   return apiFetch(BASE, { method: 'POST', body: JSON.stringify(body) })

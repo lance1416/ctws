@@ -1,3 +1,4 @@
+import type { CalendarEntry } from '@ctws/contracts'
 import type { Problem } from '@ctws/contracts'
 
 const BASE = import.meta.env.VITE_API_BASE ?? '/api/v1'
@@ -43,4 +44,20 @@ export async function apiFetch<T = unknown>(path: string, init: RequestInit = {}
     throw new ApiError(res.status, (body as Problem | undefined)?.title ?? `HTTP ${res.status}`)
   }
   return body as T
+}
+
+/**
+ * A MODULE'S DATED THINGS for a window.
+ *
+ * Every module with a calendar asks the same question of its own namespace, and all three wrote
+ * the same four lines to do it. The DAY, the clock and the origin zone are all the SERVER's: a
+ * client turning an instant into a day would put a 23:00 deadline on the wrong square for half
+ * the world, which is the rule this one call exists to keep in one place.
+ */
+export async function calendarOf(
+  base: string,
+  range: { from: string; to: string },
+): Promise<CalendarEntry[]> {
+  const path = `${base}/calendar?from=${range.from}&to=${range.to}`
+  return (await apiFetch<{ entries: CalendarEntry[] }>(path)).entries
 }

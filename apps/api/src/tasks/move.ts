@@ -8,10 +8,11 @@ import { ProjectNotFoundError } from '../projects/errors'
 import { visibleProjects } from '../projects/store'
 import {
   DepthLimitError,
-  depthOf,
   LOCK_TASK_TREE,
-  lockVisibleTask,
   MAX_DEPTH,
+  clearLeafProgress,
+  depthOf,
+  lockVisibleTask,
   type Task,
   type TaskCtx,
 } from './tasks'
@@ -220,19 +221,7 @@ export async function moveTask(
     // Same handling as createTask: clear it and say so in the log rather than rewriting history
     // silently. Without this, `move` would be a second way to break the invariant createTask
     // already defends.
-    if (parent && parentChanged && parent.manualProgress !== null) {
-      await tx
-        .update(tasks)
-        .set({ manualProgress: null, updatedAt: sql`now()` })
-        .where(eq(tasks.id, parent.id))
-      await appendEvent(tx, {
-        taskId: parent.id,
-        workspaceId: ctx.workspaceId,
-        actorUserId: ctx.actorUserId,
-        type: 'progress_set',
-        payload: { from: Number(parent.manualProgress), to: null },
-      })
-    }
+    if (parent && parentChanged) await clearLeafProgress(tx, ctx, parent)
 
     return updated!
   })

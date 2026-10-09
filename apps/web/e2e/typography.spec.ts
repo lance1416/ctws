@@ -537,7 +537,7 @@ test('numeric columns keep tabular figures', async ({ page }) => {
   })
   await page.goto(`/projects/${pid}`)
 
-  // antd"s one positive numeric rule, adopted in §4. The row's date column and the banner"s
+  // antd's one positive numeric rule, adopted in §4. The row's date column and the banner's
   // counts are the places a column of digits has to line up.
   await expect(page.locator('[data-due-text]').first()).toHaveCSS(
     'font-variant-numeric',

@@ -8,7 +8,7 @@ import {
   searchTaskResponse,
   taskEventResponse,
   rollupsResponse,
-  calendarEntry,
+  calendarEntriesResponse,
   calendarQuery,
   addDependencyBody,
   blockersResponse,
@@ -138,12 +138,12 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
       preHandler: requireUser,
       schema: {
         querystring: calendarQuery,
-        response: { 200: z.object({ entries: z.array(calendarEntry) }).strict() },
+        response: { 200: calendarEntriesResponse },
       },
     },
     async (req) => {
       const user = authedUser(req)
-      // The window is the client"s; the DAY each thing falls on is the server's, in the account"s
+      // The window is the client's; the DAY each thing falls on is the server's, in the account's
       // zone -- the same rule today / completed / review keep.
       const rows = await listTaskCalendar(app.db, user.workspaceId, user.timezone, req.query)
       return {

@@ -6,7 +6,7 @@ import { filedUnder, oneProjectOf, putLinks, unfiled } from '../links/store'
 import { textMatches } from '../db/like'
 import { projects, readingItems } from '../db/schema'
 import { ProjectNotFoundError } from '../projects/errors'
-import { visibleProjects } from '../projects/store'
+import { assertProjectVisible, visibleProjects } from '../projects/store'
 import { ReadingItemNotFoundError, WrongKindError } from './errors'
 
 /**
@@ -45,20 +45,6 @@ const rowOf = ({
   projectId: string | null
   projectName: string | null
 }): ReadingItemRow => ({ ...item, projectId, projectName })
-
-/**
- * A project this workspace may file an item under, or a refusal.
- *
- * A project id from another workspace reads as "no such project" rather than as a refusal that
- * would confirm the id exists -- the same answer the task module gives for the same reason.
- */
-async function assertProject(q: Queryable, workspaceId: string, projectId: string): Promise<void> {
-  const rows = await q
-    .select({ id: projects.id })
-    .from(projects)
-    .where(and(visibleProjects(workspaceId), eq(projects.id, projectId)))
-  if (rows.length === 0) throw new ProjectNotFoundError()
-}
 
 export async function listReadingItems(
   q: Queryable,
@@ -105,7 +91,7 @@ export async function createReadingItem(
   workspaceId: string,
   body: CreateReadingItemBody,
 ): Promise<ReadingItemRow> {
-  if (body.projectId) await assertProject(q, workspaceId, body.projectId)
+  if (body.projectId) await assertProjectVisible(q, workspaceId, body.projectId)
   const values =
     body.kind === 'link'
       ? { kind: 'link' as const, url: body.url, title: body.title ?? null, author: null }
@@ -150,7 +136,7 @@ export async function updateReadingItem(
   if (patch.title === null && current.kind === 'book') {
     throw new WrongKindError('empty title', 'book')
   }
-  if (patch.projectId) await assertProject(q, workspaceId, patch.projectId)
+  if (patch.projectId) await assertProjectVisible(q, workspaceId, patch.projectId)
 
   const { projectId, ...fields } = patch
   await q

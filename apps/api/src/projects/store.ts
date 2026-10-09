@@ -195,3 +195,26 @@ export async function softDeleteProject(
     throw new ProjectNotFoundError()
   }
 }
+
+/**
+ * A PROJECT THIS WORKSPACE MAY FILE SOMETHING UNDER, or a refusal.
+ *
+ * Three modules wrote this out: reading, meetings and contacts all have to check a project id
+ * before storing it, and all three checked it the same four lines. Projects are the shell's
+ * (module-boundary contract §3), so the question "may this workspace use this project" is the
+ * shell's to answer -- a module copying it is a module that could answer it differently.
+ *
+ * A project id from another workspace reads as "no such project" rather than as a refusal that
+ * would confirm the id exists.
+ */
+export async function assertProjectVisible(
+  q: Queryable,
+  workspaceId: string,
+  projectId: string,
+): Promise<void> {
+  const rows = await q
+    .select({ id: projects.id })
+    .from(projects)
+    .where(and(visibleProjects(workspaceId), eq(projects.id, projectId)))
+  if (rows.length === 0) throw new ProjectNotFoundError()
+}

@@ -329,7 +329,7 @@ export function CreateTaskDialog({
         </div>
 
         {/* `htmlFor` rather than a wrapping label, for the reason the detail pane records: React
-            writes a textarea"s value into the element's text, so a wrapping label"s name would be
+            writes a textarea's value into the element's text, so a wrapping label's name would be
             “Notes” plus whatever had been typed. */}
         <div>
           <label htmlFor="create-notes" className={label}>

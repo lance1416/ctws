@@ -36,7 +36,7 @@ import {
 const DAY = 'yyyy-MM-dd'
 
 /**
- * The browser"s own zone, for the one moment the account's is not known yet (the `["me']` query is
+ * The browser's own zone, for the one moment the account's is not known yet (the `["me"]` query is
  * in flight, or there is no session). It is a fallback and never a second answer: as soon as `me`
  * lands, `useTimeZone` returns the account's and every phrase is recomputed from it.
  */

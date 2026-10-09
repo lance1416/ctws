@@ -286,7 +286,7 @@ describe('the account timezone decides, even when the browser is in another one'
     // Not overdue, because the server does not think so either -- and this is the assertion the
     // old browser-zone implementation failed: it answered `true`.
     expect(hints.due!.overdue).toBe(serverSaysOverdue(DUE, NOW_CROSS))
-    // And the words are New York"s day and New York's clock, not Kolkata"s 「昨天 10:00」.
+    // And the words are New York's day and New York's clock, not Kolkata's 「昨天 10:00」.
     expect(hints.due).toEqual({ text: 'Due today, 00:30', late: null, overdue: false })
   })
 

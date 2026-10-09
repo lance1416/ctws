@@ -5,7 +5,7 @@ import type {
   MeetingOccurrence,
   UpdateMeetingInput,
 } from '@ctws/contracts'
-import { apiFetch } from '../api'
+import { apiFetch, calendarOf } from '../api'
 import { MONTHS } from '../dueAt'
 
 /** The meetings module's own namespace. */
@@ -24,13 +24,7 @@ export async function listMeetings(query: MeetingQuery = {}): Promise<MeetingOcc
 }
 
 /** This module's dated things. The day, the clock and the origin zone are all the server's. */
-export async function meetingCalendar(range: {
-  from: string
-  to: string
-}): Promise<CalendarEntry[]> {
-  const path = `${BASE}/calendar?from=${range.from}&to=${range.to}`
-  return (await apiFetch<{ entries: CalendarEntry[] }>(path)).entries
-}
+export const meetingCalendar = (range: { from: string; to: string }) => calendarOf(BASE, range)
 
 export function createMeeting(body: CreateMeetingBody): Promise<MeetingOccurrence> {
   return apiFetch(BASE, { method: 'POST', body: JSON.stringify(body) })

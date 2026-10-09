@@ -129,7 +129,7 @@ test('the project header shows the four numbers the server reports, for THIS pro
     await expect(stat(page, 'Open'), row.projectName).toHaveText(String(row.remaining))
     await expect(stat(page, 'Done this week'), row.projectName).toHaveText(String(row.doneThisWeek))
     await expect(stat(page, 'Overdue'), row.projectName).toHaveText(String(row.overdue))
-    // The day is the SERVER"s, read back in the app's words. `quietDays` is the server"s own
+    // The day is the SERVER's, read back in the app's words. `quietDays` is the server's own
     // arithmetic in the user's timezone, so nothing here depends on this machine's clock.
     expect(row.quietDays).toBe(0)
     await expect(stat(page, 'Last activity'), row.projectName).toHaveText('Today')

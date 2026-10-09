@@ -315,6 +315,14 @@ export const calendarEntry = z
   .strict()
 export type CalendarEntry = z.infer<typeof calendarEntry>
 
+/**
+ * What a module's `/calendar` answers with.
+ *
+ * Named because three route files spelled the same wrapper out by hand, and a response shape
+ * that is written three times is a response shape that can be written three ways.
+ */
+export const calendarEntriesResponse = z.object({ entries: z.array(calendarEntry) }).strict()
+
 export const calendarQuery = z
   .object({ from: calendarDate, to: calendarDate })
   .strict()

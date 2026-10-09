@@ -118,6 +118,33 @@ function progressOf(raw: string | null): number | null {
   return raw === null ? null : Number(raw)
 }
 
+/**
+ * A TASK THAT STOPS BEING A LEAF LOSES ITS MANUAL PROGRESS, and the log says so.
+ *
+ * Manual progress is leaf-only (spec 5.2), and a task stops being a leaf two ways: a child is
+ * created under it, or a child is moved under it. Both wrote this out, and the two copies had
+ * already drifted -- one logged `Number(raw)` and the other `progressOf(raw)`, which differ on
+ * null. One of them was going to log `from: 0` for a task that had no progress at all.
+ */
+export async function clearLeafProgress(
+  tx: Queryable,
+  ctx: TaskCtx,
+  parent: { id: string; manualProgress: string | null },
+): Promise<void> {
+  if (parent.manualProgress === null) return
+  await tx
+    .update(tasks)
+    .set({ manualProgress: null, updatedAt: sql`now()` })
+    .where(eq(tasks.id, parent.id))
+  await appendEvent(tx, {
+    taskId: parent.id,
+    workspaceId: ctx.workspaceId,
+    actorUserId: ctx.actorUserId,
+    type: 'progress_set',
+    payload: { from: progressOf(parent.manualProgress), to: null },
+  })
+}
+
 const iso = (d: Date | null): string | null => (d ? d.toISOString() : null)
 
 /**
@@ -152,21 +179,7 @@ export async function createTask(db: Db, ctx: TaskCtx, input: CreateTaskBody): P
       if ((await depthOf(tx, parent.id)) + 1 > MAX_DEPTH) throw new DepthLimitError()
       projectId = parent.projectId
 
-      // The parent stops being a leaf, and manual progress is leaf-only (spec 5.2): clear it,
-      // and say so in the log rather than rewriting history silently.
-      if (parent.manualProgress !== null) {
-        await tx
-          .update(tasks)
-          .set({ manualProgress: null, updatedAt: sql`now()` })
-          .where(eq(tasks.id, parent.id))
-        await appendEvent(tx, {
-          taskId: parent.id,
-          workspaceId: ctx.workspaceId,
-          actorUserId: ctx.actorUserId,
-          type: 'progress_set',
-          payload: { from: progressOf(parent.manualProgress), to: null },
-        })
-      }
+      await clearLeafProgress(tx, ctx, parent)
     } else {
       projectId = project.id
     }

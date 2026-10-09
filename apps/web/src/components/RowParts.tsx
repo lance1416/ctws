@@ -90,7 +90,12 @@ export function ProjectRail({
  * channels: the words ("…截止" against "排到…"), the colour family (warm against cool) and -- this
  * -- the shape. A flag is a line you must not cross; it is filled once the line has been crossed.
  */
-export function DeadlineMark({ filled }: { filled: boolean }) {
+/**
+ * THE GLYPH BOX the date marks share: one 12-unit grid, one stroke weight, one size. Two marks
+ * that differ by SILHOUETTE have to be drawn on the same canvas, or they differ by weight and
+ * scale as well and the silhouette stops being the thing telling them apart.
+ */
+function Glyph({ children }: { children: ReactNode }) {
   return (
     <svg
       viewBox="0 0 12 12"
@@ -104,9 +109,17 @@ export function DeadlineMark({ filled }: { filled: boolean }) {
       strokeLinejoin="round"
       className="shrink-0"
     >
+      {children}
+    </svg>
+  )
+}
+
+export function DeadlineMark({ filled }: { filled: boolean }) {
+  return (
+    <Glyph>
       <path d="M3.25 1.5V11" />
       <path d="M3.25 2.6L9.75 4.4 3.25 6.2z" fill={filled ? 'currentColor' : 'none'} />
-    </svg>
+    </Glyph>
   )
 }
 
@@ -116,21 +129,10 @@ export function DeadlineMark({ filled }: { filled: boolean }) {
  */
 export function PlanMark() {
   return (
-    <svg
-      viewBox="0 0 12 12"
-      width="14"
-      height="14"
-      aria-hidden="true"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="shrink-0"
-    >
+    <Glyph>
       <path d="M1 8.75h10" />
       <path d="M6 4.25v4.5" />
-    </svg>
+    </Glyph>
   )
 }
 

@@ -6,7 +6,7 @@ import type { Queryable } from '../db/client'
 import { contacts, meetingExceptions, meetings, projects } from '../db/schema'
 import { contactsLinkedFrom, filedUnder, oneProjectOf, putLinks } from '../links/store'
 import { ProjectNotFoundError } from '../projects/errors'
-import { visibleProjects } from '../projects/store'
+import { assertProjectVisible, visibleProjects } from '../projects/store'
 import {
   BadRuleError,
   MeetingNotFoundError,
@@ -128,14 +128,6 @@ function expand(series: SeriesRow, window: { from: Date; to: Date }): Occurrence
   }))
 }
 
-async function assertProject(q: Queryable, workspaceId: string, projectId: string): Promise<void> {
-  const rows = await q
-    .select({ id: projects.id })
-    .from(projects)
-    .where(and(visibleProjects(workspaceId), eq(projects.id, projectId)))
-  if (rows.length === 0) throw new ProjectNotFoundError()
-}
-
 /** Every named person has to be one of THIS workspace's, and all of them or none. */
 async function assertAttendees(
   q: Queryable,
@@ -242,7 +234,7 @@ export async function createMeeting(
   workspaceId: string,
   body: CreateMeetingBody,
 ): Promise<OccurrenceRow> {
-  if (body.projectId) await assertProject(q, workspaceId, body.projectId)
+  if (body.projectId) await assertProjectVisible(q, workspaceId, body.projectId)
   await assertAttendees(q, workspaceId, body.attendeeIds ?? [])
   // The expander is what has to understand a rule, so it is what decides whether one is usable:
   // a schema that accepted what the expansion then ignored would store a schedule that never
@@ -289,7 +281,7 @@ export async function updateMeeting(
 ): Promise<OccurrenceRow> {
   const [series] = await seriesOf(q, workspaceId, { id })
   if (!series) throw new MeetingNotFoundError()
-  if (patch.projectId) await assertProject(q, workspaceId, patch.projectId)
+  if (patch.projectId) await assertProjectVisible(q, workspaceId, patch.projectId)
   if (patch.attendeeIds) await assertAttendees(q, workspaceId, patch.attendeeIds)
   const wrong = patch.rrule ? ruleProblem(patch.rrule) : null
   if (wrong) throw new BadRuleError(wrong)
