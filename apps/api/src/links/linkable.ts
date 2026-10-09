@@ -55,10 +55,10 @@ export type Linkable = {
  * An empty `text` means "the most likely few" -- the picker opens before anything is typed, and
  * an empty list there reads as "there is nothing", which is a different and usually untrue thing.
  */
-export type Want = { ids: readonly string[] } | { text: string; limit: number }
+type Want = { ids: readonly string[] } | { text: string; limit: number }
 
 /** One of a module's things, as the shell shows it: a line and a phrase under it. */
-export type NamedRow = { id: string; title: string; detail: string | null }
+type NamedRow = { id: string; title: string; detail: string | null }
 
 /** An edge as any source reports it, before the far end has been named. */
 export type StoredEdge = {

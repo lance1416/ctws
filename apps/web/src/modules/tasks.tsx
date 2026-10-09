@@ -269,6 +269,12 @@ function ProjectNumbers({ projectId }: { projectId: string }) {
  * the same three guards every other single key obeys -- the off switch, "not while typing", and
  * "not under an open layer" -- and it is not a `g` chord, so it cannot collide with one.
  */
+/** The two ways to look at the same rows. The first is the default. */
+const PROJECT_VIEWS = [
+  { id: 'list', label: 'List' },
+  { id: 'board', label: 'Board' },
+] as const
+
 function NewTaskAction({ projectId }: { projectId: string }) {
   const [creating, setCreating] = useState(false)
   const shortcuts = useShortcutsEnabled()
@@ -403,17 +409,12 @@ export const taskModule: WorkspaceModule = {
       order: 40,
     },
   ],
-  views: [
-    { id: 'list', label: 'List' },
-    { id: 'board', label: 'Board' },
-  ],
   calendar: { label: 'Tasks', useEntries: useTaskEntries },
   widgets: [
     { id: 'doing', label: 'Working on', to: at('today'), Component: DoingWidget },
     { id: 'due', label: 'Due today', to: at('today'), Component: DueWidget },
   ],
-  ProjectView: ProjectTasks,
-  ProjectViewAction: NewTaskAction,
+  projectBlock: { Component: ProjectTasks, views: PROJECT_VIEWS, Action: NewTaskAction },
   ProjectHeadline: ProjectNumbers,
   // A task lives on its project's page, in the tree. There is nowhere else for one to be, which
   // is why the project id is in the path: the tree is what gives a task its context.

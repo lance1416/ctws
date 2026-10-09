@@ -1,6 +1,6 @@
 import type { ObjectType } from '@ctws/contracts'
 import { useParams, useSearchParams } from 'react-router-dom'
-import { projectViewActions, projectViews, relationFor } from '../modules/registry'
+import { projectBlocks, relationFor } from '../modules/registry'
 import { Links } from './Links'
 import { Panel } from './Panel'
 import { ViewTabs } from './ViewTabs'
@@ -62,18 +62,18 @@ export function ObjectPage({ type }: { type: ObjectType }) {
       {/* A module's own editor for this kind of thing, where it has one. */}
       {type === 'project' && (
         <div className="mt-4 flex min-w-0 flex-col gap-4">
-          {projectViews().map(({ moduleId, moduleLabel, Component, views: offered }) => {
+          {projectBlocks().map(({ moduleId, moduleLabel, Component, views: offered = [] }) => {
             const chosen =
               offered.find((v) => v.id === views.picked.get(moduleId))?.id ??
               offered[0]?.id ??
               'default'
-            const action = projectViewActions().find((a) => a.moduleId === moduleId)
+            const Action = projectBlocks().find((b) => b.moduleId === moduleId)?.Action
             return (
               <Panel
                 key={moduleId}
                 label={moduleLabel}
-                /* `ViewTabs` draws nothing for a single view, so a block with one is not
-                   given a tab bar that decides nothing. */
+                /* `ViewTabs` draws nothing for a single view, so a block with one is not given
+                   a tab bar that decides nothing. */
                 tabs={
                   <ViewTabs
                     views={offered}
@@ -81,7 +81,7 @@ export function ObjectPage({ type }: { type: ObjectType }) {
                     onPick={(v) => views.pick(moduleId, v)}
                   />
                 }
-                action={action ? <action.Component projectId={id} /> : undefined}
+                action={Action ? <Action projectId={id} /> : undefined}
               >
                 <Component projectId={id} view={chosen} />
               </Panel>

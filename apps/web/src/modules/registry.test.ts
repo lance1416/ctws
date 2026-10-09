@@ -10,7 +10,7 @@ import {
   moduleRoutes,
   moduleWidgets,
   projectHeadlines,
-  projectViews,
+  projectBlocks,
   relationFor,
   relations,
   resolveChord,
@@ -42,7 +42,7 @@ const notes: WorkspaceModule = {
     { id: 'recent', key: 'n', label: 'Go to Recent', resolve: () => '/notes/recent', order: 5 },
   ],
   widgets: [{ id: 'recent', label: 'Recent notes', to: '/notes/recent', Component: () => null }],
-  ProjectView: NotesOnProject,
+  projectBlock: { Component: NotesOnProject },
   ProjectHeadline: NotesProjectNumbers,
 }
 
@@ -53,7 +53,7 @@ const files: WorkspaceModule = {
   routes: [{ path: 'drive' }],
   capture: { useTarget: () => ({ target: null, missing: true, unavailable: false }) },
   widgets: [{ id: 'big', label: 'Bulky', Component: () => null }],
-  ProjectView: () => null,
+  projectBlock: { Component: () => null },
 }
 
 describe('destinations', () => {
@@ -153,7 +153,7 @@ describe('search providers', () => {
  */
 describe('what a module hangs on a project page', () => {
   it('collects every module that has rows for a project, in registration order', () => {
-    const views = projectViews([notes, files])
+    const views = projectBlocks([notes, files])
     expect(views.map((v) => v.moduleId)).toEqual(['notes', 'files'])
     expect(views.map((v) => v.moduleLabel)).toEqual(['Notes', 'Files'])
     expect(views[0]!.Component).toBe(NotesOnProject)
@@ -168,7 +168,7 @@ describe('what a module hangs on a project page', () => {
   })
 
   it('contributes nothing when no module is registered', () => {
-    expect(projectViews([])).toEqual([])
+    expect(projectBlocks([])).toEqual([])
     expect(projectHeadlines([])).toEqual([])
   })
 })

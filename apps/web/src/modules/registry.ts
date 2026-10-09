@@ -197,37 +197,32 @@ export function searchProviders(modules: readonly WorkspaceModule[] = MODULES): 
  * is the whole point of the seam: the page would otherwise be the shell knowing one module by
  * name, and the second module's rows could never appear on it.
  */
-export type RegisteredProjectBlock<P extends { projectId: string } = { projectId: string }> = {
-  moduleId: string
-  moduleLabel: string
-  Component: ComponentType<P>
-  /** The block's views. Empty when the module declares none. */
-  views: readonly { id: string; label: string }[]
-}
+export type RegisteredProjectBlock = { moduleId: string; moduleLabel: string } & NonNullable<
+  WorkspaceModule['projectBlock']
+>
 
-const projectBlocks = <P extends { projectId: string }>(
-  modules: readonly WorkspaceModule[],
-  pick: (m: WorkspaceModule) => ComponentType<P> | undefined,
-): RegisteredProjectBlock<P>[] =>
-  modules.flatMap((m) => {
-    const Component = pick(m)
-    return Component
-      ? [{ moduleId: m.id, moduleLabel: m.label, Component, views: m.views ?? [] }]
-      : []
-  })
-
-/** Each module's rows under a shell project, in registration order. */
-export function projectViews(
-  modules: readonly WorkspaceModule[] = MODULES,
-): RegisteredProjectBlock<{ projectId: string; view: string }>[] {
-  return projectBlocks(modules, (m) => m.ProjectView)
-}
-
-/** Each module's block-header control, in registration order. */
-export function projectViewActions(
+/**
+ * Each module's block under a project, in registration order.
+ *
+ * The object page asks the REGISTRY for these rather than importing the task module's tree by
+ * name, which is the whole point of the seam: the page would otherwise be the shell knowing one
+ * module, and a second module's block could never appear on it.
+ */
+export function projectBlocks(
   modules: readonly WorkspaceModule[] = MODULES,
 ): RegisteredProjectBlock[] {
-  return projectBlocks(modules, (m) => m.ProjectViewAction)
+  return modules.flatMap((m) =>
+    m.projectBlock ? [{ moduleId: m.id, moduleLabel: m.label, ...m.projectBlock }] : [],
+  )
+}
+
+/** Each module's numbers in the project banner, in registration order. */
+export function projectHeadlines(
+  modules: readonly WorkspaceModule[] = MODULES,
+): { moduleId: string; Component: ComponentType<{ projectId: string }> }[] {
+  return modules.flatMap((m) =>
+    m.ProjectHeadline ? [{ moduleId: m.id, Component: m.ProjectHeadline }] : [],
+  )
 }
 
 export type CalendarProvider = { moduleId: string } & CalendarContribution
@@ -276,11 +271,4 @@ export function relationFor(
   modules: readonly WorkspaceModule[] = MODULES,
 ): RegisteredRelation | null {
   return relations(modules).find((r) => r.type === type) ?? null
-}
-
-/** Each module's numbers in the project header banner, in registration order. */
-export function projectHeadlines(
-  modules: readonly WorkspaceModule[] = MODULES,
-): RegisteredProjectBlock[] {
-  return projectBlocks(modules, (m) => m.ProjectHeadline)
 }

@@ -45,32 +45,42 @@ export type WorkspaceModule = {
   /** Keys this module adds to the shell's master key table. */
   chords?: Chord[]
   /**
-   * What this module shows under a shell project. Projects are the SHELL's organising dimension
-   * (contract §3): a module hangs its own rows on a project, it does not own the project page.
-   */
-  ProjectView?: ComponentType<{ projectId: string; view: string }>
-  /**
-   * The views this module's block offers, as tabs in the block's head. One entry means no tabs
-   * are drawn: a tab bar with a single tab is chrome that decides nothing.
+   * WHAT THIS MODULE HANGS UNDER A PROJECT, if anything.
    *
-   * THE MODULE NAMES THEM, THE SHELL DRAWS THEM. A board is not a second page and not a second
-   * destination in the rail -- it is another way to look at the same block, the way Notion's
-   * databases and Linear's issue lists carry their views. That is also what keeps a third view
-   * (and a second module's views) from costing any layout work.
+   * Projects are the SHELL's organising dimension (contract §3): a module hangs its own rows on
+   * a project, it does not own the page. Most modules hang nothing -- their rows are EDGES now,
+   * and the shell draws every kind of edge the same way. A block is for a module whose rows need
+   * an editor the links panel cannot be: the task tree has drag, dependencies and an inline new
+   * row, and a flat list of links is none of those.
    *
-   * The first entry is the default. The selected one is in the URL (`?view=<module>:<id>`), so a
-   * reload and a shared link both land where the person was.
+   * ONE FIELD and not three. The block, its views and its own control were three contribution
+   * points, filled by one module, read by three parallel helpers in the registry -- three names
+   * for one idea, which is three things to keep in step and three places to look.
    */
-  views?: readonly { id: string; label: string }[]
-  /**
-   * A control in the HEAD of this module's block, beside its name -- the block's own "new",
-   * typically.
-   *
-   * A block header is 「名字 · 计数 · 本块的动作」, and the action belongs to the module because
-   * only the module knows what making one of its things involves. The shell draws the header and
-   * decides nothing about what is in this slot.
-   */
-  ProjectViewAction?: ComponentType<{ projectId: string }>
+  projectBlock?: {
+    Component: ComponentType<{ projectId: string; view: string }>
+    /**
+     * The views the block offers, as tabs in its head. Fewer than two draws nothing: a tab bar
+     * with a single tab is chrome that decides nothing.
+     *
+     * THE MODULE NAMES THEM, THE SHELL DRAWS THEM. A board is not a second page and not a second
+     * destination in the rail -- it is another way to look at the same block, the way Notion's
+     * databases and Linear's issue lists carry their views. That is also what keeps a third view
+     * (and a second module's views) from costing any layout work.
+     *
+     * The first entry is the default. The selected one is in the URL (`?view=<module>:<id>`), so
+     * a reload and a shared link both land where the person was.
+     */
+    views?: readonly { id: string; label: string }[]
+    /**
+     * A control in the block's HEAD, beside its name -- its own "new", typically.
+     *
+     * A block header is a name, a count and the block's own action, and the action belongs to
+     * the module because only the module knows what making one of its things involves. The shell
+     * draws the header and decides nothing about what is in this slot.
+     */
+    Action?: ComponentType<{ projectId: string }>
+  }
   /**
    * This module's DATED THINGS, for the shell's calendar.
    *
