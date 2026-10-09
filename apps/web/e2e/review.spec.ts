@@ -80,8 +80,9 @@ test('last week is one press away, and so is the way back', async ({ page }) => 
   await page.goto('/tasks/review')
   await expect(project(page, 'CTWS')).toContainText('这周做完的')
 
-  await page.getByRole('button', { name: 'Last week' }).click()
+  // The week is a stepper now, not a lone "Last week" link: back, forward, and a way home.
+  await page.getByRole('button', { name: 'The week before' }).click()
   await expect(page.getByText('Nothing happened this week')).toBeVisible()
-  await page.getByRole('button', { name: 'This week' }).click()
+  await page.getByRole('button', { name: 'This week', exact: true }).last().click()
   await expect(project(page, 'CTWS')).toContainText('这周做完的')
 })
