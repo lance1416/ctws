@@ -9,8 +9,9 @@ import { PanelEmpty } from './Panel'
  *
  * The addresses are LINKS, not text to copy: a contact list is opened in order to write to
  * someone, and making them select an address by hand is the whole cost the list existed to
- * remove. Changing anything about a person happens in the detail pane, which is where changing
- * anything about anything happens.
+ * remove. Everything else on the row opens the person, because a card whose only target is its
+ * title makes you aim at four characters. Changing anything about them happens in the pane,
+ * which is where changing anything about anything happens.
  */
 export function ContactList({
   contacts,
@@ -32,14 +33,24 @@ export function ContactList({
       {sortByName(contacts).map((person) => {
         const elsewhere = person.projects.filter((p) => p.id !== here)
         return (
-          <li key={person.id} className="rounded-lg px-2 py-1.5 hover:bg-surface-hover">
+          /* THE WHOLE ROW OPENS THE PERSON -- a card whose only target is its title makes you
+             aim at four characters (「expand 到整个卡片」). The click is on the row; the NAME is
+             still a real button, which is what the keyboard reaches and what a screen reader
+             announces. A row that were itself a button could not contain the address links. */
+          // eslint-disable-next-line jsx-a11y/click-events-have-key-events
+          <li
+            key={person.id}
+            onClick={() => onOpen(person)}
+            className="group cursor-pointer rounded-lg px-2 py-1.5 hover:bg-surface-hover"
+          >
             {/* The app's row anatomy: who they are on the first line, how to reach them on the
                 second. */}
             <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
               <button
                 type="button"
                 onClick={() => onOpen(person)}
-                className="truncate rounded text-left text-sm font-semibold text-fg hover:underline"
+                data-contact-name
+                className="truncate rounded text-left text-sm font-semibold text-fg group-hover:underline"
               >
                 {person.name}
               </button>
@@ -61,7 +72,12 @@ export function ContactList({
                   return (
                     <span key={i} className="flex min-w-0 items-baseline gap-1">
                       {href ? (
-                        <a href={href} className="truncate text-sm text-accent hover:underline">
+                        <a
+                          href={href}
+                          // The address is its own target: writing to someone is not opening them.
+                          onClick={(e) => e.stopPropagation()}
+                          className="truncate text-sm text-accent hover:underline"
+                        >
                           {c.value}
                         </a>
                       ) : (

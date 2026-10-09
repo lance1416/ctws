@@ -14,7 +14,7 @@ import { useComposing } from '../composition'
 export function NewContactInput({
   projectId,
   onCreated,
-  placeholder = 'New contact',
+  placeholder = 'Add a name',
 }: {
   /** The project a person made here is on, when made from inside one. */
   projectId?: string | undefined

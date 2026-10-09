@@ -237,7 +237,9 @@ export function ContactFields({
         />
       </div>
 
-      <div className="pt-1">
+      {/* SET APART, above a hairline and in the danger colour. It is the only control here that
+          cannot be undone, and it used to sit among the others in the same grey. */}
+      <div className="mt-2 border-t border-border-subtle pt-3">
         {deleting ? (
           <DeleteConfirm
             label="Confirm deleting this contact"
@@ -250,7 +252,7 @@ export function ContactFields({
           <button
             type="button"
             onClick={() => setDeleting(true)}
-            className="h-9 rounded-lg px-2.5 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
+            className="h-9 rounded-lg px-2.5 text-sm text-danger hover:bg-danger/10"
           >
             Delete contact
           </button>

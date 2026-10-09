@@ -62,8 +62,8 @@ test('a person is made by typing a name, and finished in the pane', async ({ pag
   // One line into a box, like every other thing this app makes. The form that used to stand
   // between a name and a contact is gone.
   await registerFreshUser(page, '/contacts')
-  await page.getByLabel('New contact').fill('李雷')
-  await page.getByLabel('New contact').press('Enter')
+  await page.getByLabel('Add a name').fill('李雷')
+  await page.getByLabel('Add a name').press('Enter')
 
   // The pane opens on them: a name alone is never all you know about somebody, and this is the
   // moment you have the rest of it to hand.
@@ -149,7 +149,11 @@ test('the list is in pinyin order, not byte order', async ({ page }) => {
   // 李 is l, 王 is w, 张 is zh. By code point it would be 张(24352) 李(26446) 王(29579).
   // `toHaveText` with an array, not `allTextContents`: the latter does not wait, so it reads an
   // empty list while the first fetch is still in flight.
-  await expect(page.getByRole('main').locator('li button')).toHaveText(['李四', '王五', '张三'])
+  await expect(page.getByRole('main').locator('li [data-contact-name]')).toHaveText([
+    '李四',
+    '王五',
+    '张三',
+  ])
 })
 
 test('a project page carries its people, and its own way to add one', async ({ page }) => {
@@ -168,7 +172,7 @@ test('a project page carries its people, and its own way to add one', async ({ p
   await expect(block).not.toContainText('不相干的人')
   // The project you are standing in is not named again on the row.
   await expect(block).not.toContainText('找工作')
-  await expect(block.getByLabel('New contact')).toBeVisible()
+  await expect(block.getByLabel('Add a name')).toBeVisible()
 })
 
 test('search reaches a person by their address, from the shell box', async ({ page }) => {
@@ -231,4 +235,69 @@ test('leaving a field you did not change writes nothing', async ({ page }) => {
 
   await expect(pane).toContainText('Acme 招聘')
   expect(writes, 'leaving an untouched field must not write').toEqual([])
+})
+
+test('a person is written down properly in one form, not created then edited', async ({ page }) => {
+  // The complaint this answers: 「没有新建联系人的按钮，只有文本输入框……每次创建完了还要点开才
+  // 能编辑别的东西」. The one-line box stays for the moment a name is all you have; this is the
+  // other moment.
+  await registerFreshUser(page, '/contacts')
+  const hunt = await page.request.post('/api/v1/projects', {
+    headers: { 'x-ctws-client': 'web' },
+    data: { name: 'Job hunt' },
+  })
+  const projectId = ((await hunt.json()) as { id: string }).id
+
+  await page.getByRole('button', { name: 'New contact' }).click()
+  const form = page.getByRole('dialog', { name: 'New contact' })
+  await form.getByLabel('Name').fill('Ying Chen')
+  await form.getByLabel('Company').fill('Acme recruiting')
+  await form.getByLabel('Address').fill('ying@acme.test')
+  await form.getByLabel('Notes').fill('Met at the meetup')
+  await form.getByRole('button', { name: 'Add Projects' }).click()
+  await page.getByRole('menuitem', { name: 'Job hunt' }).click()
+
+  const made = page.waitForResponse(
+    (r) => r.request().method() === 'POST' && /\/api\/v1\/contacts$/.test(r.url()),
+  )
+  await form.getByRole('button', { name: 'Create' }).click()
+
+  // ONE request carries the whole person.
+  expect((await made).request().postDataJSON()).toMatchObject({
+    name: 'Ying Chen',
+    org: 'Acme recruiting',
+    note: 'Met at the meetup',
+    projectIds: [projectId],
+    channels: [{ kind: 'email', value: 'ying@acme.test', label: null }],
+  })
+  await expect(row(page, 'Ying Chen')).toContainText('ying@acme.test')
+})
+
+test('the whole row opens the person, and the addresses stay links', async ({ page }) => {
+  // 「联系人的详细信息只有点到名字上才能打开：expand 到整个卡片」.
+  await registerFreshUser(page, '/contacts')
+  await add(page, { name: 'Ying Chen', org: 'Acme recruiting' })
+  await page.reload()
+
+  // Not the name: the organisation, which is as far from the name as the row gets.
+  await row(page, 'Ying Chen').getByText('Acme recruiting').click()
+  await expect(page.getByRole('dialog', { name: 'Contacts' })).toBeVisible()
+})
+
+test('deleting a person is not a button like the others', async ({ page }) => {
+  // 「删除联系人，这么危险的一个东西，你跟别的所有按钮放一起，颜色还不做区分？」
+  await registerFreshUser(page, '/contacts')
+  await add(page, { name: 'Ying Chen' })
+  await page.reload()
+  await page.getByRole('button', { name: 'Ying Chen' }).click()
+
+  const remove = page.getByRole('dialog', { name: 'Contacts' }).getByRole('button', {
+    name: 'Delete contact',
+  })
+  const colour = await remove.evaluate((el) => getComputedStyle(el).color)
+  const other = await page
+    .getByRole('dialog', { name: 'Contacts' })
+    .getByRole('button', { name: 'Add one' })
+    .evaluate((el) => getComputedStyle(el).color)
+  expect(colour).not.toBe(other)
 })
