@@ -417,5 +417,7 @@ export const taskModule: WorkspaceModule = {
   ProjectHeadline: ProjectNumbers,
   // A task lives on its project's page, in the tree. There is nowhere else for one to be, which
   // is why the project id is in the path: the tree is what gives a task its context.
-  relations: [{ type: 'task', to: (id) => `/projects?task=${id}` }],
+  // No page of its own: a task is read IN ITS TREE, which is where its siblings, its parent and
+  // its dependencies are. A page per task would be the tree with everything around it removed.
+  relations: [{ type: 'task', kind: 'Task', to: (id) => `/projects?task=${id}` }],
 }

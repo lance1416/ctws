@@ -124,14 +124,24 @@ export type WorkspaceModule = {
   relations?: readonly RelationContribution[]
 }
 
-/** One object type this module answers for, as the far end of an edge. */
+/** One object type this module answers for: where one lives, and what one looks like. */
 export type RelationContribution = {
   /** The type as the contract names it. Exactly one module answers for each. */
   type: ObjectType
+  /** ONE of them, named. The API supplies the plural for a group heading; this is the eyebrow. */
+  kind: string
   /** Where one of these lives. */
   to: (id: string) => string
-  /** The 24px marker at the head of the row, as a search hit has. */
-  mark?: ReactNode
+  /**
+   * THE OBJECT'S OWN FIELDS, at the head of its page.
+   *
+   * The page is the SHELL's -- a project, a person and a meeting are read the same way, so they
+   * are one page and not three (framing §2) -- but what a person IS is the contacts module's to
+   * say. The shell draws the frame and what the object is connected to; this fills the top.
+   *
+   * A type with no `Head` has no page of its own, and the shell routes to its module's list.
+   */
+  Head?: ComponentType<{ id: string }>
 }
 
 /** A module's half of the calendar. One provider per module; the shell merges them. */

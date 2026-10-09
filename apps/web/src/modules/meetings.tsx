@@ -2,10 +2,11 @@ import type { MeetingOccurrence } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { listMeetings, meetingCalendar, meetingsKey } from '../api/meetings'
-import { MeetingDetail } from '../components/MeetingDetail'
+import { MeetingDetail, MeetingFields } from '../components/MeetingDetail'
+import { ObjectPage } from '../components/ObjectPage'
 import { Meetings } from '../routes/Meetings'
 import { PanelEmpty } from '../components/Panel'
-import { todayIn } from '../dueAt'
+import { addDays, todayIn } from '../dueAt'
 import { useProjectRail } from '../projectColor'
 import { useTimeZone } from '../useMe'
 import type { WorkspaceModule } from './contract'
@@ -199,11 +200,44 @@ function MeetingsProjectView({ projectId }: { projectId: string }) {
   )
 }
 
+/**
+ * ONE MEETING'S OWN FIELDS, at the head of its page.
+ *
+ * A SERIES has many occurrences and the page is about the series, so it opens on the NEXT one --
+ * which is the occurrence anybody following a link to a meeting means. Editing from here still
+ * asks which occurrences a change touches, exactly as the pane does.
+ */
+function MeetingHead({ id }: { id: string }) {
+  const accountZone = useTimeZone()
+  const today = todayIn(accountZone)
+  const found = useQuery({
+    queryKey: ['meetings', 'series', id],
+    queryFn: async () => {
+      // Forward first, then back: a series that has finished still has a page, and a one-off in
+      // the past is the commonest thing to follow a link to.
+      const ahead = await listMeetings({ from: today, to: addDays(today, 370) })
+      const hit = ahead.find((m) => m.meetingId === id)
+      if (hit) return hit
+      const behind = await listMeetings({ from: addDays(today, -370), to: today })
+      return [...behind].reverse().find((m) => m.meetingId === id) ?? null
+    },
+  })
+  if (!found.data) {
+    return found.isSuccess ? (
+      <p className="text-sm text-fg-muted">This meeting is not here any more.</p>
+    ) : null
+  }
+  return <MeetingFields meeting={found.data} accountZone={accountZone} />
+}
+
 export const meetingModule: WorkspaceModule = {
   id: ID,
   label: 'Meetings',
   destinations: [{ id: 'list', to: `/${ID}`, label: 'Meetings', zone: 'things', order: 20 }],
-  routes: [{ index: true, element: <Meetings /> }],
+  routes: [
+    { index: true, element: <Meetings /> },
+    { path: ':id', element: <ObjectPage type="meeting" /> },
+  ],
   // `m`. One keyspace across modules, so this is checked against every other chord.
   chords: [
     { id: 'meetings', key: 'm', label: 'Go to Meetings', resolve: () => `/${ID}`, order: 16 },
@@ -211,5 +245,5 @@ export const meetingModule: WorkspaceModule = {
   calendar: { label: 'Meetings', useEntries: useMeetingEntries, Detail: CalendarDetail },
   widgets: [{ id: 'today', label: "Today's meetings", to: '/calendar', Component: TodayMeetings }],
   ProjectView: MeetingsProjectView,
-  relations: [{ type: 'meeting', to: () => `/${ID}` }],
+  relations: [{ type: 'meeting', kind: 'Meeting', to: (id) => `/${ID}/${id}`, Head: MeetingHead }],
 }

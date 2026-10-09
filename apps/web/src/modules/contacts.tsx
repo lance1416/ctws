@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { contactsKey, listContacts, searchContacts } from '../api/contacts'
-import { ContactDetail } from '../components/ContactDetail'
+import { ContactDetail, ContactFields } from '../components/ContactDetail'
+import { ObjectPage } from '../components/ObjectPage'
 import { ContactList } from '../components/ContactList'
 import { NewContactInput } from '../components/NewContactInput'
 import { Contacts } from '../routes/Contacts'
@@ -73,16 +74,36 @@ function ContactsProjectView({ projectId }: { projectId: string }) {
   )
 }
 
+/**
+ * ONE PERSON'S OWN FIELDS, at the head of their page. The shell draws the page; what a person IS
+ * is this module's to say (`relations.Head`).
+ */
+function ContactHead({ id }: { id: string }) {
+  const contacts = useQuery({ queryKey: contactsKey(), queryFn: () => listContacts() })
+  const person = contacts.data?.find((c) => c.id === id)
+  if (!person) {
+    return contacts.isSuccess ? (
+      <p className="text-sm text-fg-muted">This person is not here any more.</p>
+    ) : null
+  }
+  return <ContactFields contact={person} />
+}
+
 export const contactModule: WorkspaceModule = {
   id: ID,
   label: 'Contacts',
   destinations: [{ id: 'list', to: `/${ID}`, label: 'Contacts', zone: 'things', order: 30 }],
-  routes: [{ index: true, element: <Contacts /> }],
+  routes: [
+    { index: true, element: <Contacts /> },
+    // The page is the SHELL's -- a person and a project are read the same way -- so the module
+    // says only where it lives.
+    { path: ':id', element: <ObjectPage type="contact" /> },
+  ],
   search: { useHits: useContactHits },
   // `n` for 人. One keyspace across modules, so this is checked against every other chord.
   chords: [
     { id: 'contacts', key: 'n', label: 'Go to Contacts', resolve: () => `/${ID}`, order: 17 },
   ],
   ProjectView: ContactsProjectView,
-  relations: [{ type: 'contact', to: () => `/${ID}` }],
+  relations: [{ type: 'contact', kind: 'Person', to: (id) => `/${ID}/${id}`, Head: ContactHead }],
 }

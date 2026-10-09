@@ -1,4 +1,5 @@
 import type { ObjectType } from '@ctws/contracts'
+import { ProjectHead } from '../components/ProjectHead'
 import type { ComponentType } from 'react'
 import type { RouteObject } from 'react-router-dom'
 import type {
@@ -259,7 +260,9 @@ export type RegisteredRelation = RelationContribution & { moduleId: string }
  * A type with no entry would make the backlink panel draw a group it cannot navigate, so
  * `relations.test.ts` asserts the set covers the contract exactly.
  */
-const SHELL_RELATIONS: RelationContribution[] = [{ type: 'project', to: (id) => `/projects/${id}` }]
+const SHELL_RELATIONS: RelationContribution[] = [
+  { type: 'project', kind: 'Project', to: (id) => `/projects/${id}`, Head: ProjectHead },
+]
 
 export function relations(modules: readonly WorkspaceModule[] = MODULES): RegisteredRelation[] {
   return [

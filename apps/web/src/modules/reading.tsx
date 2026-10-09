@@ -190,5 +190,7 @@ export const readingModule: WorkspaceModule = {
   widgets: [{ id: 'unfiled', label: 'Reading · unfiled', to: `/${ID}`, Component: ReadingWidget }],
   ProjectView: ReadingProjectView,
   ProjectHeadline: ReadingHeadline,
-  relations: [{ type: 'reading', to: () => `/${ID}` }],
+  // No page of its own: a thing to read is a title, a link and a status, and a page per item
+  // would be a page holding one line. The list IS where one is read.
+  relations: [{ type: 'reading', kind: 'Reading', to: () => `/${ID}` }],
 }

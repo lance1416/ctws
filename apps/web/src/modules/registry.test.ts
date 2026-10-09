@@ -194,7 +194,7 @@ describe('where another module keeps its things', () => {
     expect(relations([]).map((r) => r.type)).toEqual(['project'])
     expect(relationFor('project', [])?.to('p1')).toBe('/projects/p1')
     const withNotes = relationFor('reading', [
-      { ...notes, relations: [{ type: 'reading', to: (id) => `/notes/${id}` }] },
+      { ...notes, relations: [{ type: 'reading', kind: 'Note', to: (id) => `/notes/${id}` }] },
     ])
     expect(withNotes?.moduleId).toBe('notes')
     expect(withNotes?.to('r1')).toBe('/notes/r1')

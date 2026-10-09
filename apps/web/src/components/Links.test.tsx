@@ -74,7 +74,7 @@ describe('what one thing is connected to', () => {
   it('routes a row through the module that owns its type, not through a path of its own', () => {
     const html = render(of, groups)
     // The meetings module says where a meeting lives; the shell does not know and must not guess.
-    expect(html).toContain('href="/meetings"')
+    expect(html).toContain('href="/meetings/m1"')
     // A project is the shell's own, and it has a page per project.
     expect(html).toContain('href="/projects/p1"')
   })

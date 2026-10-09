@@ -17,9 +17,24 @@ import { PanelEmpty } from './Panel'
  * The shell knows the kinds and the phrases, because they are the contract's. What it does not
  * know is where another module's thing LIVES, so it asks the registry (`relations`).
  */
-export function Links({ of, className = '' }: { of: Endpoint; className?: string }) {
+export function Links({
+  of,
+  except,
+  className = '',
+}: {
+  of: Endpoint
+  /**
+   * Kinds this page ALREADY SHOWS, in a module's own block.
+   *
+   * A project page carries the task tree, and a flat list of the same tasks under it would be the
+   * same rows twice -- which is the thing a reader has to hold two of in their head. The edges
+   * are still there; this page just does not say them twice.
+   */
+  except?: readonly ObjectType[]
+  className?: string
+}) {
   const links = useQuery({ queryKey: linksKey(of), queryFn: () => listLinks(of) })
-  const groups = links.data ?? []
+  const groups = (links.data ?? []).filter((g) => !except?.includes(g.type))
 
   if (links.isError) {
     return <PanelEmpty>Couldn't load the links.</PanelEmpty>

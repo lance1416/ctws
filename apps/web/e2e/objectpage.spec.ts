@@ -1,0 +1,120 @@
+import { expect, test, type Page } from '@playwright/test'
+import { registerFreshUser } from './helpers'
+
+/**
+ * ONE PAGE FOR EVERY KIND OF THING.
+ *
+ * A person's page did not exist: a contact was a row with a pane over it, and the meetings they
+ * were in, the book they recommended and the task that came out of a call with them had nowhere
+ * to be shown. What is tested here is that the shell draws ONE page for a project, a person and a
+ * meeting alike -- the module fills the top, the shell fills the rest from the edge table -- and
+ * that following a link from one lands on another.
+ */
+
+const HEADERS = { 'x-ctws-client': 'web' }
+const post = async (page: Page, path: string, data: Record<string, unknown>) => {
+  const res = await page.request.post(`/api/v1${path}`, { headers: HEADERS, data })
+  if (!res.ok()) throw new Error(`${path}: ${res.status()} ${await res.text()}`)
+  return res.json() as Promise<Record<string, string>>
+}
+
+async function world(page: Page) {
+  await registerFreshUser(page)
+  const project = await post(page, '/projects', { name: 'Job hunt' })
+  const person = await post(page, '/contacts', {
+    name: 'Ying Chen',
+    org: 'Acme recruiting',
+    projectIds: [project.id],
+  })
+  const book = await post(page, '/reading', {
+    kind: 'book',
+    title: 'The Design of Everyday Things',
+  })
+  await post(page, '/links', {
+    from: { type: 'contact', id: person.id },
+    to: { type: 'reading', id: book.id },
+    kind: 'recommends',
+  })
+  const meeting = await post(page, '/meetings', {
+    title: 'Second interview',
+    startsLocal: '2026-10-20T21:00',
+    timeZone: 'America/Toronto',
+    durationMinutes: 60,
+    projectId: project.id,
+    attendeeIds: [person.id],
+  })
+  return { project, person, meeting }
+}
+
+test('a person has a page, and it shows what nothing was ever written on them to say', async ({
+  page,
+}) => {
+  const { person } = await world(page)
+  await page.goto(`/contacts/${person.id}`)
+
+  // The module fills the top: this is what a person IS.
+  await expect(page.getByRole('region', { name: 'Person at a glance' })).toContainText('Ying Chen')
+  await expect(page.getByRole('region', { name: 'Person at a glance' })).toContainText(
+    'Acme recruiting',
+  )
+
+  // And the shell fills the rest, read from the OTHER end of edges written elsewhere: the guest
+  // list was written on the meeting, the recommendation is one row in one table.
+  const linked = page.getByRole('region', { name: 'Linked' })
+  await expect(linked.getByRole('region', { name: 'Meetings' })).toContainText('Second interview')
+  await expect(linked.getByRole('region', { name: 'Reading' })).toContainText(
+    'The Design of Everyday Things',
+  )
+  await expect(linked.getByRole('region', { name: 'Projects' })).toContainText('Job hunt')
+})
+
+test('following a link from a person lands on the meeting own page', async ({ page }) => {
+  const { person, meeting } = await world(page)
+  await page.goto(`/contacts/${person.id}`)
+  await page.getByRole('link', { name: /Second interview/ }).click()
+
+  await expect(page).toHaveURL(new RegExp(`/meetings/${meeting.meetingId}$`))
+  await expect(page.getByRole('region', { name: 'Meeting at a glance' })).toContainText(
+    'Second interview',
+  )
+  // The same page shape, the other way round: the meeting names who is in the room.
+  await expect(
+    page.getByRole('region', { name: 'Linked' }).getByRole('region', { name: 'People' }),
+  ).toContainText('Ying Chen')
+})
+
+test('a project page keeps the module blocks and does not say their rows twice', async ({
+  page,
+}) => {
+  const { project } = await world(page)
+  await page.goto(`/projects/${project.id}`)
+
+  await expect(page.getByRole('region', { name: 'Project at a glance' })).toContainText('Job hunt')
+  // A task tree is not a list of links -- no drag, no dependencies, no inline new row -- so the
+  // module keeps its block.
+  await expect(page.getByRole('region', { name: 'Tasks' })).toBeVisible()
+  // And because those blocks already draw every kind on this page, there is no second copy of
+  // them underneath.
+  await expect(page.getByRole('region', { name: 'Linked' })).toHaveCount(0)
+})
+
+test('a page for something that is gone says so rather than showing a blank', async ({ page }) => {
+  await registerFreshUser(page)
+  await page.goto('/contacts/99999999-9999-4999-8999-999999999999')
+  await expect(page.getByText('This person is not here any more.')).toBeVisible()
+})
+
+test('a pane reaches the page the thing lives on', async ({ page }) => {
+  // A pane is a quick peek from wherever you were; the page is where the thing lives, with
+  // everything it is connected to. The eyebrow is the way between them -- a pane opened from a
+  // list would otherwise be a dead end, and the page unreachable except by a link from elsewhere.
+  const { person } = await world(page)
+  await page.goto('/contacts')
+  await page.getByRole('button', { name: 'Ying Chen' }).click()
+  const pane = page.getByRole('dialog', { name: 'Contacts' })
+  await expect(pane).toBeVisible()
+
+  await pane.getByRole('link', { name: 'Contacts' }).click()
+  await expect(page).toHaveURL(new RegExp(`/contacts/${person.id}$`))
+  await expect(page.getByRole('region', { name: 'Person at a glance' })).toContainText('Ying Chen')
+})

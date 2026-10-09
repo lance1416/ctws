@@ -5,8 +5,8 @@ import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { moduleRoutes, WORKBENCH_PATH } from './modules/registry'
 import { Login } from './routes/Login'
-import { Project } from './routes/Project'
 import { Calendar } from './routes/Calendar'
+import { ObjectPage } from './components/ObjectPage'
 import { Projects } from './routes/Projects'
 import { Workbench } from './routes/Workbench'
 // IBM Plex Sans, self-hosted and LATIN SUBSET ONLY: no Google Fonts link, because this app is
@@ -44,7 +44,7 @@ const router = createBrowserRouter([
       // under any module's namespace.
       { path: '/calendar', element: <Calendar /> },
       { path: '/projects', element: <Projects /> },
-      { path: '/projects/:id', element: <Project /> },
+      { path: '/projects/:id', element: <ObjectPage type="project" /> },
       ...moduleRoutes(),
       ...MOVED.map(({ from, to }) => ({ path: from, element: <Navigate to={to} replace /> })),
       { path: '*', element: <Navigate to={WORKBENCH_PATH} replace /> },
