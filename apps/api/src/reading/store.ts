@@ -3,7 +3,7 @@ import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import type { Queryable } from '../db/client'
 import { filedUnder, oneProjectOf, putLinks, unfiled } from '../links/store'
-import { LIKE_ESCAPE, likePattern } from '../db/like'
+import { textMatches } from '../db/like'
 import { projects, readingItems } from '../db/schema'
 import { ProjectNotFoundError } from '../projects/errors'
 import { visibleProjects } from '../projects/store'
@@ -17,7 +17,7 @@ import { ReadingItemNotFoundError, WrongKindError } from './errors'
  * the property the whole module seam exists to have.
  */
 
-export type ReadingItem = typeof readingItems.$inferSelect
+type ReadingItem = typeof readingItems.$inferSelect
 /** A row as a list returns it: the item plus the shell project's name, so one round trip is enough. */
 export type ReadingItemRow = ReadingItem & {
   projectId: string | null
@@ -86,7 +86,7 @@ export async function listReadingItems(
   return rows.map(rowOf)
 }
 
-export async function getReadingItem(
+async function getReadingItem(
   q: Queryable,
   workspaceId: string,
   id: string,
@@ -197,18 +197,13 @@ export async function searchReadingItems(
   query: string,
   limit = 20,
 ): Promise<ReadingItemRow[]> {
-  const pattern = likePattern(query)
   const rows = await q
     .select(withProject)
     .from(readingItems)
     .where(
       and(
         visibleItems(workspaceId),
-        sql`(
-          reading_items.title ilike ${pattern} escape ${LIKE_ESCAPE}
-          or reading_items.author ilike ${pattern} escape ${LIKE_ESCAPE}
-          or reading_items.url ilike ${pattern} escape ${LIKE_ESCAPE}
-        )`,
+        textMatches(['reading_items.title', 'reading_items.author', 'reading_items.url'], query),
       ),
     )
     .orderBy(desc(readingItems.createdAt), desc(readingItems.id))

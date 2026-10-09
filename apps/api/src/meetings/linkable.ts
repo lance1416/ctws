@@ -1,5 +1,5 @@
 import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
-import { LIKE_ESCAPE, likePattern } from '../db/like'
+import { textMatches } from '../db/like'
 import { meetings } from '../db/schema'
 import type { Linkable } from '../links/linkable'
 import { instantOf } from './occurrences'
@@ -57,9 +57,7 @@ export const meetingLinkable: Linkable = {
         and(
           eq(meetings.workspaceId, workspaceId),
           isNull(meetings.deletedAt),
-          text === ''
-            ? undefined
-            : sql`meetings.title ilike ${likePattern(text)} escape ${LIKE_ESCAPE}`,
+          text === '' ? undefined : textMatches(['meetings.title'], text),
         ),
       )
       // The soonest first. A series shows once here: this is the SERIES table, not its expansion.

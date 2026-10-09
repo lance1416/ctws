@@ -104,5 +104,3 @@ export function Reading() {
     </>
   )
 }
-
-export type { ReadingItemResponse }

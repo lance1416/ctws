@@ -1,5 +1,5 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
-import { and, eq, gt } from 'drizzle-orm'
+import { and, eq, gt, lt } from 'drizzle-orm'
 import { v4 as uuidv4 } from 'uuid'
 import type { Queryable } from '../db/client'
 import { sessions } from '../db/schema'
@@ -27,6 +27,15 @@ function newToken(): string {
 
 const digest = (token: string): string => createHash('sha256').update(token).digest('hex')
 
+/**
+ * HOW OFTEN A LIVE SESSION IS WRITTEN BACK.
+ *
+ * Sliding expiry means every authenticated request could extend the session, and a write on
+ * every request is a write per page load for no gain. An hour of granularity costs at most an
+ * hour off a thirty-day window and turns the write into one an hour per session.
+ */
+const TOUCH_AFTER_MS = 3_600_000
+
 export async function createSession(
   db: Queryable,
   userId: string,
@@ -41,13 +50,29 @@ export async function createSession(
    */
   const token = newToken()
   const expiresAt = new Date(Date.now() + ttlDays * 86_400_000)
+  // Signing in leaves a row and nothing ever removed one, so the table grew by one per login
+  // forever. Swept HERE rather than on a schedule: it is the one moment this user is certainly
+  // writing to this table anyway, the work is bounded by their own expired rows, and a personal
+  // instance has nowhere to run a cron.
+  await db
+    .delete(sessions)
+    .where(and(eq(sessions.userId, userId), lt(sessions.expiresAt, new Date())))
   await db.insert(sessions).values({ id: uuidv4(), userId, tokenHash: digest(token), expiresAt })
   return { token, expiresAt }
 }
 
+/**
+ * The session behind a cookie, and the place its clock is wound on.
+ *
+ * SLIDING, not absolute. `last_seen_at` was written once at sign-in and never again, so the
+ * thirty days ran from the login whether or not the app was used every day of them -- you were
+ * signed out on day thirty for no reason you could see. It is an IDLE window now: thirty days
+ * since you last used it.
+ */
 export async function findValidSession(
   db: Queryable,
   token: string,
+  ttlDays: number,
 ): Promise<{ userId: string } | null> {
   /**
    * NO SHAPE GUARD ANY MORE, and that is a simplification the hashing bought. The old code had
@@ -56,12 +81,22 @@ export async function findValidSession(
    * hashed to 64 hex characters first now, so no cookie value can be malformed by the time it
    * reaches the database.
    */
+  const hash = digest(token)
+  const now = new Date()
   const rows = await db
-    .select({ userId: sessions.userId })
+    .select({ userId: sessions.userId, lastSeenAt: sessions.lastSeenAt })
     .from(sessions)
-    .where(and(eq(sessions.tokenHash, digest(token)), gt(sessions.expiresAt, new Date())))
+    .where(and(eq(sessions.tokenHash, hash), gt(sessions.expiresAt, now)))
     .limit(1)
-  return rows[0] ?? null
+  const found = rows[0]
+  if (!found) return null
+  if (now.getTime() - found.lastSeenAt.getTime() >= TOUCH_AFTER_MS) {
+    await db
+      .update(sessions)
+      .set({ lastSeenAt: now, expiresAt: new Date(now.getTime() + ttlDays * 86_400_000) })
+      .where(eq(sessions.tokenHash, hash))
+  }
+  return { userId: found.userId }
 }
 
 export async function revokeSession(db: Queryable, token: string): Promise<void> {

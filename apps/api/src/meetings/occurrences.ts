@@ -31,21 +31,6 @@ type Rule = InstanceType<typeof RRule>
 /** A wall clock with no zone: `YYYY-MM-DDTHH:mm`. What a series' start is stored as. */
 export type LocalTime = string
 
-const LOCAL = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/
-
-export function isLocalTime(value: string): boolean {
-  if (!LOCAL.test(value)) return false
-  const [y, m, d, hh, mm] = split(value)
-  const at = new Date(Date.UTC(y, m - 1, d, hh, mm))
-  return (
-    at.getUTCFullYear() === y &&
-    at.getUTCMonth() === m - 1 &&
-    at.getUTCDate() === d &&
-    at.getUTCHours() === hh &&
-    at.getUTCMinutes() === mm
-  )
-}
-
 function split(local: LocalTime): [number, number, number, number, number] {
   const [date, clock] = local.split('T') as [string, string]
   const [y, m, d] = date.split('-').map(Number) as [number, number, number]

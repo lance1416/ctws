@@ -37,7 +37,7 @@ function weekdayOf(day: string): number {
   return (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7
 }
 
-export const monthOf = (day: string): string => day.slice(0, 7)
+const monthOf = (day: string): string => day.slice(0, 7)
 
 /** 「2026年10月」 */
 export function monthTitle(day: string): string {

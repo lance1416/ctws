@@ -47,7 +47,6 @@ export async function logOut(page: Page): Promise<void> {
 }
 
 /** Opens the account menu without acting, for tests about the bar itself. */
-export const accountButton = (page: Page) => page.getByTestId('current-user')
 
 // Submits one of the create inputs (capture, new project, new task) and waits for the POST to be
 // acknowledged. Without the wait the next locator's auto-wait is the only thing between the test

@@ -1,9 +1,9 @@
 import type { QueryClient, QueryKey } from '@tanstack/react-query'
 
 export const tasksKey = (projectId: string) => ['tasks', projectId]
-export const projectsKey = ['projects']
+const projectsKey = ['projects']
 /** 做到哪儿了's numbers. Any task that is created, finished or deleted moves one of them. */
-export const movementKey = ['movement']
+const movementKey = ['movement']
 
 /**
  * Makes a list refetch after something changed it on the server.

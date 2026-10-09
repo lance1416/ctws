@@ -254,7 +254,7 @@ export type CaptureTarget = {
 }
 
 /** A module's half of federated search. One provider per module; the shell merges them. */
-export type SearchContribution = {
+type SearchContribution = {
   /** A hook: this module's hits for `query`. An empty query means idle, not "match everything". */
   useHits: (query: string) => { hits: SearchHit[]; isError: boolean; isSuccess: boolean }
 }
@@ -299,4 +299,4 @@ export type Chord = {
   order: number
 }
 
-export type ChordContext = { queryClient: QueryClient }
+type ChordContext = { queryClient: QueryClient }

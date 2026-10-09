@@ -1,5 +1,5 @@
 import { and, asc, inArray, sql } from 'drizzle-orm'
-import { LIKE_ESCAPE, likePattern } from '../db/like'
+import { textMatches } from '../db/like'
 import { projects } from '../db/schema'
 import type { Linkable } from '../links/linkable'
 import { visibleProjects } from './store'
@@ -25,9 +25,7 @@ export const projectLinkable: Linkable = {
       .where(
         and(
           visibleProjects(workspaceId),
-          text === ''
-            ? undefined
-            : sql`projects.name ilike ${likePattern(text)} escape ${LIKE_ESCAPE}`,
+          text === '' ? undefined : textMatches(['projects.name'], text),
         ),
       )
       .orderBy(asc(projects.rank), asc(projects.id))

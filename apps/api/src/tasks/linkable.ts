@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import type { Queryable } from '../db/client'
-import { LIKE_ESCAPE, likePattern } from '../db/like'
+import { textMatches } from '../db/like'
 import { projects, tasks } from '../db/schema'
 import type { Linkable, StoredEdge } from '../links/linkable'
 import { visibleProjects } from '../projects/store'
@@ -40,12 +40,7 @@ export const taskLinkable: Linkable = {
   find: async (q, workspaceId, text, limit) => {
     const rows = await ofWorkspace(q, workspaceId)
       .where(
-        and(
-          visible(workspaceId),
-          text === ''
-            ? undefined
-            : sql`tasks.title ilike ${likePattern(text)} escape ${LIKE_ESCAPE}`,
-        ),
+        and(visible(workspaceId), text === '' ? undefined : textMatches(['tasks.title'], text)),
       )
       .orderBy(desc(tasks.createdAt), desc(tasks.id))
       .limit(limit)

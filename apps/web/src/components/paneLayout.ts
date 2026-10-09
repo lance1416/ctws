@@ -10,7 +10,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
  * because two copies of the number would eventually disagree and the disagreement would be
  * invisible except at the one width where the pane was both reserved and overlaid.
  */
-export const WIDE_PANE_PX = 1280
+const WIDE_PANE_PX = 1280
 const WIDE_PANE_QUERY = `(min-width: ${WIDE_PANE_PX}px)`
 
 /** True while the viewport is wide enough for the detail to be a pane rather than an overlay. */

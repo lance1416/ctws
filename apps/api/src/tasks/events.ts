@@ -6,7 +6,7 @@ import { projects, taskEvents, tasks } from '../db/schema'
 import { visibleProjects } from '../projects/store'
 import { TaskNotFoundError } from './errors'
 
-export const COALESCE_WINDOW_MS = 5 * 60 * 1000
+const COALESCE_WINDOW_MS = 5 * 60 * 1000
 
 /**
  * Text-edit events that merge while the user is still typing. Every other type is a distinct
@@ -14,7 +14,7 @@ export const COALESCE_WINDOW_MS = 5 * 60 * 1000
  * is not logged at all (spec 9.1), so it neither floods the weekly review nor moves the
  * "last activity" timestamp that stall detection reads.
  */
-export const COALESCING_TYPES: ReadonlySet<TaskEventType> = new Set<TaskEventType>([
+const COALESCING_TYPES: ReadonlySet<TaskEventType> = new Set<TaskEventType>([
   'title_changed',
   'notes_changed',
 ])

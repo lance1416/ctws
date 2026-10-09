@@ -64,7 +64,7 @@ import DOMPurify from 'dompurify'
  * - `RETURN_DOM_FRAGMENT` -- see layer 4. The alternative returns a string, and a string has to be
  *   parsed again.
  */
-export const DIAGRAM_PURIFY_CONFIG: Parameters<typeof DOMPurify.sanitize>[1] & {
+const DIAGRAM_PURIFY_CONFIG: Parameters<typeof DOMPurify.sanitize>[1] & {
   RETURN_DOM_FRAGMENT: true
 } = {
   USE_PROFILES: { svg: true },

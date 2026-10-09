@@ -32,9 +32,9 @@ import {
  * because `ATTENDEE` points at people and the address book is the list you pick them out of.
  */
 
-export type MeetingAttendee = { id: string; name: string }
+type MeetingAttendee = { id: string; name: string }
 
-export type SeriesRow = typeof meetings.$inferSelect & {
+type SeriesRow = typeof meetings.$inferSelect & {
   projectId: string | null
   projectName: string | null
   attendees: MeetingAttendee[]

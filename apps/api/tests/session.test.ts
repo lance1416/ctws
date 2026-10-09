@@ -1,7 +1,11 @@
 import { sql } from 'drizzle-orm'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { createSession, findValidSession, hashMatches, revokeSession } from '../src/auth/session'
+
 import { withDatabase } from './helpers/db'
+
+/** The window a session lives in, and the one it is extended by when it is used. */
+const TTL_DAYS = 30
 
 let ctx: Awaited<ReturnType<typeof withDatabase>>
 let userId: string
@@ -31,7 +35,7 @@ async function storedFor(token: string): Promise<{ id: string; token_hash: strin
 describe('session', () => {
   it('creates a session that resolves to its user', async () => {
     const session = await createSession(ctx.db, userId, 30)
-    expect(await findValidSession(ctx.db, session.token)).toEqual({ userId })
+    expect(await findValidSession(ctx.db, session.token, TTL_DAYS)).toEqual({ userId })
   })
 
   /**
@@ -58,13 +62,13 @@ describe('session', () => {
     // something else and matches nothing.
     const session = await createSession(ctx.db, userId, 30)
     const stored = await storedFor(session.token)
-    expect(await findValidSession(ctx.db, stored!.token_hash)).toBeNull()
+    expect(await findValidSession(ctx.db, stored!.token_hash, TTL_DAYS)).toBeNull()
     // Nor is the internal row id a credential.
-    expect(await findValidSession(ctx.db, stored!.id)).toBeNull()
+    expect(await findValidSession(ctx.db, stored!.id, TTL_DAYS)).toBeNull()
   })
 
   it('returns null for an unknown token', async () => {
-    expect(await findValidSession(ctx.db, 'not-a-session-at-all')).toBeNull()
+    expect(await findValidSession(ctx.db, 'not-a-session-at-all', TTL_DAYS)).toBeNull()
   })
 
   it('rejects an expired session', async () => {
@@ -73,13 +77,13 @@ describe('session', () => {
     await ctx.db.execute(sql`
       update sessions set expires_at = now() - interval '1 second' where id = ${stored!.id}
     `)
-    expect(await findValidSession(ctx.db, session.token)).toBeNull()
+    expect(await findValidSession(ctx.db, session.token, TTL_DAYS)).toBeNull()
   })
 
   it('rejects a revoked session', async () => {
     const session = await createSession(ctx.db, userId, 30)
     await revokeSession(ctx.db, session.token)
-    expect(await findValidSession(ctx.db, session.token)).toBeNull()
+    expect(await findValidSession(ctx.db, session.token, TTL_DAYS)).toBeNull()
   })
 
   it('tolerates revoking a session that does not exist', async () => {
@@ -119,12 +123,97 @@ describe('session', () => {
 
     for (const value of bad) {
       it(`findValidSession returns null for ${JSON.stringify(value.slice(0, 20))}`, async () => {
-        expect(await findValidSession(ctx.db, value)).toBeNull()
+        expect(await findValidSession(ctx.db, value, TTL_DAYS)).toBeNull()
       })
 
       it(`revokeSession resolves for ${JSON.stringify(value.slice(0, 20))}`, async () => {
         await expect(revokeSession(ctx.db, value)).resolves.toBeUndefined()
       })
     }
+  })
+})
+
+/**
+ * A SESSION THAT IS USED STAYS ALIVE, and one that is not expires.
+ *
+ * `last_seen_at` was written once at sign-in and never again, so the thirty days ran from the
+ * login whether or not the app was opened every day of them -- signed out on day thirty with no
+ * explanation. Nothing caught it: every test signs in and acts within the same second.
+ */
+describe('sliding expiry', () => {
+  const hoursAgo = (n: number) => new Date(Date.now() - n * 3_600_000)
+
+  /** A user of this block's own, so the shared one above keeps whatever sessions it had. */
+  async function makeUser(email: string): Promise<string> {
+    const rows = await ctx.db.execute(sql`
+      insert into users (id, email, password_hash, timezone, created_at)
+      values (gen_random_uuid(), ${email}, 'x', 'UTC', now())
+      returning id::text as id`)
+    return (rows.rows as { id: string }[])[0]!.id
+  }
+
+  beforeEach(async () => {
+    await ctx.db.execute(sql`delete from sessions`)
+  })
+
+  it('winds the clock on when a session is used after a while', async () => {
+    const userId = await makeUser(`u-${crypto.randomUUID()}@example.com`)
+    const session = await createSession(ctx.db, userId, TTL_DAYS)
+    // Two hours since it was last seen, which is past the write-back threshold.
+    await ctx.db.execute(
+      sql`update sessions set last_seen_at = ${hoursAgo(2).toISOString()},
+          expires_at = ${new Date(Date.now() + 3_600_000).toISOString()}`,
+    )
+
+    expect(await findValidSession(ctx.db, session.token, TTL_DAYS)).toEqual({ userId })
+
+    const after = await ctx.db.execute(sql`select expires_at, last_seen_at from sessions`)
+    const row = after.rows[0] as { expires_at: string; last_seen_at: string }
+    // A full window from NOW, not an hour from now.
+    const left = new Date(row.expires_at).getTime() - Date.now()
+    expect(left).toBeGreaterThan((TTL_DAYS - 1) * 86_400_000)
+    expect(Date.now() - new Date(row.last_seen_at).getTime()).toBeLessThan(60_000)
+  })
+
+  it('does not write on every request, only once the last write has gone stale', async () => {
+    const userId = await makeUser(`u-${crypto.randomUUID()}@example.com`)
+    const session = await createSession(ctx.db, userId, TTL_DAYS)
+    const before = await ctx.db.execute(sql`select last_seen_at from sessions`)
+
+    await findValidSession(ctx.db, session.token, TTL_DAYS)
+
+    const after = await ctx.db.execute(sql`select last_seen_at from sessions`)
+    expect((after.rows[0] as { last_seen_at: string }).last_seen_at).toBe(
+      (before.rows[0] as { last_seen_at: string }).last_seen_at,
+    )
+  })
+
+  it('sweeps only this user own expired sessions when they sign in again', async () => {
+    const userId = await makeUser(`u-${crypto.randomUUID()}@example.com`)
+    const other = await makeUser(`o-${crypto.randomUUID()}@example.com`)
+    // FOUR sessions, one of each kind, because the sweep has two conditions and a fixture with
+    // only the obvious row passes whichever of them is dropped.
+    const myStale = await createSession(ctx.db, userId, TTL_DAYS)
+    const myLive = await createSession(ctx.db, userId, TTL_DAYS)
+    const theirStale = await createSession(ctx.db, other, TTL_DAYS)
+    const theirLive = await createSession(ctx.db, other, TTL_DAYS)
+    const expire = async (token: string) => {
+      const row = await storedFor(token)
+      await ctx.db.execute(
+        sql`update sessions set expires_at = ${hoursAgo(1).toISOString()}
+            where token_hash = ${row!.token_hash}`,
+      )
+    }
+    await expire(myStale.token)
+    await expire(theirStale.token)
+
+    await createSession(ctx.db, userId, TTL_DAYS)
+
+    // Mine that was dead is gone. Mine that was alive stayed. Neither of theirs was touched --
+    // not even the dead one, which is not this login's to tidy.
+    expect(await findValidSession(ctx.db, myStale.token, TTL_DAYS)).toBeNull()
+    expect(await findValidSession(ctx.db, myLive.token, TTL_DAYS)).toEqual({ userId })
+    expect(await findValidSession(ctx.db, theirLive.token, TTL_DAYS)).toEqual({ userId: other })
+    expect(await storedFor(theirStale.token)).toBeDefined()
   })
 })

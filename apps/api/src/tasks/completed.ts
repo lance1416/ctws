@@ -10,7 +10,7 @@ export type CompletedTask = Task & {
 }
 
 /** Newest 200 finished tasks. No paging: this is a "what did I do lately" list, not an archive. */
-export const COMPLETED_LIMIT = 200
+const COMPLETED_LIMIT = 200
 
 /**
  * The cross-project "what did I finish" list, modelled on `listToday`: one query, workspace-scoped

@@ -16,7 +16,7 @@ export async function closeDb(db: Db): Promise<void> {
  * The transaction handle drizzle hands to a `db.transaction` callback.
  * Derived from drizzle's own signature so it cannot drift from the installed version.
  */
-export type Tx = Parameters<Parameters<Db['transaction']>[0]>[0]
+type Tx = Parameters<Parameters<Db['transaction']>[0]>[0]
 
 /**
  * What every service function takes. A service must work both standalone and composed inside

@@ -63,7 +63,13 @@ export const sessions = pgTable(
   // The two enforce the same thing under different names, and the declaration was the half that
   // was wrong: every `drizzle-kit generate` after it proposed adding a constraint the database
   // already had in another form. `users_email_key` above is spelled the same way.
-  (t) => [uniqueIndex('sessions_token_hash_idx').on(t.tokenHash)],
+  (t) => [
+    uniqueIndex('sessions_token_hash_idx').on(t.tokenHash),
+    // Deleting a user cascades to their sessions, and without this that cascade is a sequential
+    // scan of the whole table. Signing in repeatedly leaves a row each time, so the table is the
+    // one here that grows without anybody deleting anything.
+    index('sessions_user_idx').on(t.userId),
+  ],
 )
 
 export const workspaces = pgTable('workspaces', {

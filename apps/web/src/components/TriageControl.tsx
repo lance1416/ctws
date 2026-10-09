@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-export type TriageAction = { label: string; run: () => void }
+type TriageAction = { label: string; run: () => void }
 export type TriageSection = {
   /** What this group of actions does to the task; null for a single unlabelled cluster. */
   heading: string | null

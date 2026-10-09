@@ -16,14 +16,14 @@ import type { Queryable } from '../db/client'
  * out of the log entirely, for the same reason.)
  */
 
-export type ReviewTask = {
+type ReviewTask = {
   id: string
   title: string
   /** When the transition happened, UTC ISO. */
   at: string
 }
 
-export type ReviewProject = {
+type ReviewProject = {
   projectId: string
   projectName: string
   finished: ReviewTask[]

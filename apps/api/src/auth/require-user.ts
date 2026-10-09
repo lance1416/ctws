@@ -13,7 +13,7 @@ export type AuthedUser = { id: string; workspaceId: string; role: Role; timezone
 // handlers registered with `requireUser` as their preHandler can use
 // `authedUser(req)` once instead of repeating `req.user!` at every call
 // site -- see Fix round 1.
-export type AuthedRequest = FastifyRequest & { user: AuthedUser }
+type AuthedRequest = FastifyRequest & { user: AuthedUser }
 
 // Narrows a request to `AuthedRequest`. Only call this from a handler whose
 // route registers `requireUser` as a preHandler -- that is what guarantees
@@ -34,7 +34,9 @@ export const requireUser: preHandlerAsyncHookHandler = async function (req, repl
   const id = req.cookies[SESSION_COOKIE]
   if (!id) return sendProblem(reply, 401, 'Authentication required')
 
-  const session = await findValidSession(this.db, id)
+  // The ttl is handed in because the lookup WINDS THE CLOCK ON: a session that is used stays
+  // alive, and one left alone for the whole window expires.
+  const session = await findValidSession(this.db, id, this.env.sessionTtlDays)
   if (!session) return sendProblem(reply, 401, 'Authentication required')
 
   // Workspace scoping is injected here, once, so route handlers never need

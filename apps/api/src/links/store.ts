@@ -109,17 +109,6 @@ export async function putLinks(
   )
 }
 
-/** Drops every edge touching one object, in either direction. For a hard delete. */
-export async function dropLinks(q: Queryable, workspaceId: string, of: Endpoint): Promise<void> {
-  await q.delete(links).where(
-    and(
-      eq(links.workspaceId, workspaceId),
-      sql`((${links.fromType} = ${of.type} and ${links.fromId} = ${of.id})
-             or (${links.toType} = ${of.type} and ${links.toId} = ${of.id}))`,
-    ),
-  )
-}
-
 /**
  * The projects a batch of objects are filed under, in ONE query for the whole page.
  *

@@ -6,7 +6,6 @@ import type {
   CalendarContribution,
   CaptureContribution,
   Chord,
-  ChordContext,
   Destination,
   RelationContribution,
   Widget,
@@ -69,7 +68,7 @@ const SHELL_CHORDS: Chord[] = [
  * to be grouped, and the grouping that helps is the reader's: what is in front of me, what I keep,
  * what I look back at.
  */
-export const RAIL_ZONES = ['now', 'things', 'views'] as const
+const RAIL_ZONES = ['now', 'things', 'views'] as const
 export type RailZone = (typeof RAIL_ZONES)[number]
 
 /**
@@ -285,5 +284,3 @@ export function projectHeadlines(
 ): RegisteredProjectBlock[] {
   return projectBlocks(modules, (m) => m.ProjectHeadline)
 }
-
-export type { ChordContext }

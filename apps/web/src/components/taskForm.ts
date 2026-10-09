@@ -40,7 +40,6 @@ export type CreateTaskValues = z.output<typeof createTaskBody>
  * the form always has it.
  */
 export const updateTaskForm = updateTaskBody
-export type UpdateTaskForm = z.input<typeof updateTaskBody>
 
 /**
  * The detail pane's schema: the update contract PLUS the one thing the pane edits that a PATCH

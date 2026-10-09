@@ -2,7 +2,7 @@ import type { ContactChannel, CreateContactBody, UpdateContactBody } from '@ctws
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import type { Queryable } from '../db/client'
-import { LIKE_ESCAPE, likePattern } from '../db/like'
+import { textMatches } from '../db/like'
 import { contactChannels, contacts, projects } from '../db/schema'
 import { filedUnder, projectsLinkedFrom, putLinks, unfiled } from '../links/store'
 import { ProjectNotFoundError } from '../projects/errors'
@@ -16,7 +16,7 @@ import { ContactNotFoundError } from './errors'
  * `visibleProjects` -- and nothing at all from the other two modules.
  */
 
-export type ContactProject = { id: string; name: string }
+type ContactProject = { id: string; name: string }
 
 export type ContactRow = {
   id: string
@@ -138,11 +138,7 @@ export async function listContacts(
   return hydrate(q, workspaceId, rows)
 }
 
-export async function getContact(
-  q: Queryable,
-  workspaceId: string,
-  id: string,
-): Promise<ContactRow> {
+async function getContact(q: Queryable, workspaceId: string, id: string): Promise<ContactRow> {
   const rows = await q
     .select()
     .from(contacts)
@@ -227,7 +223,6 @@ export async function searchContacts(
   query: string,
   limit = 20,
 ): Promise<ContactRow[]> {
-  const pattern = likePattern(query)
   const rows = await q
     .select()
     .from(contacts)
@@ -235,12 +230,10 @@ export async function searchContacts(
       and(
         visibleContacts(workspaceId),
         sql`(
-          contacts.name ilike ${pattern} escape ${LIKE_ESCAPE}
-          or contacts.org ilike ${pattern} escape ${LIKE_ESCAPE}
+          ${textMatches(['contacts.name', 'contacts.org'], query)}
           or exists (
             select 1 from contact_channels ch
-            where ch.contact_id = contacts.id
-              and ch.value ilike ${pattern} escape ${LIKE_ESCAPE}
+            where ch.contact_id = contacts.id and ${textMatches(['ch.value'], query)}
           )
         )`,
       ),

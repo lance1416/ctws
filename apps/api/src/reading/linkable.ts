@@ -1,5 +1,5 @@
 import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
-import { LIKE_ESCAPE, likePattern } from '../db/like'
+import { textMatches } from '../db/like'
 import { readingItems } from '../db/schema'
 import type { Linkable } from '../links/linkable'
 
@@ -46,9 +46,10 @@ export const readingLinkable: Linkable = {
           isNull(readingItems.deletedAt),
           text === ''
             ? undefined
-            : sql`(reading_items.title ilike ${likePattern(text)} escape ${LIKE_ESCAPE}
-                   or reading_items.url ilike ${likePattern(text)} escape ${LIKE_ESCAPE}
-                   or reading_items.author ilike ${likePattern(text)} escape ${LIKE_ESCAPE})`,
+            : textMatches(
+                ['reading_items.title', 'reading_items.url', 'reading_items.author'],
+                text,
+              ),
         ),
       )
       // Newest first, like the pile itself: the thing you just saved is the thing you are most

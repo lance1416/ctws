@@ -7,6 +7,7 @@ import { listProjects } from '../api/projects'
 import { useProjectRail } from '../projectColor'
 import { ZONES, zoneLabel } from '../timeZones'
 import { DeleteConfirm } from './DeleteConfirm'
+import { Field } from './Field'
 import { DetailHead, DetailPane } from './DetailPane'
 import { boxed } from './formStyles'
 import { InlineText, PickMany, PickOne } from './inline'
@@ -316,23 +317,6 @@ export function MeetingFields({
           </button>
         )}
       </div>
-    </div>
-  )
-}
-
-function Field({
-  label,
-  top = false,
-  children,
-}: {
-  label: string
-  top?: boolean
-  children: ReactNode
-}) {
-  return (
-    <div className={`flex gap-2 ${top ? 'items-start' : 'items-center'}`}>
-      <span className={`w-20 shrink-0 text-xs text-fg-muted ${top ? 'pt-2' : ''}`}>{label}</span>
-      <span className="min-w-0 flex-1">{children}</span>
     </div>
   )
 }

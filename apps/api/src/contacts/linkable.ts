@@ -1,6 +1,6 @@
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { contacts } from '../db/schema'
-import { LIKE_ESCAPE, likePattern } from '../db/like'
+import { textMatches } from '../db/like'
 import type { Linkable } from '../links/linkable'
 
 /** 联系人 names its own people for the shell. See `links/linkable.ts` for why this exists. */
@@ -28,13 +28,7 @@ export const contactLinkable: Linkable = {
         and(
           eq(contacts.workspaceId, workspaceId),
           isNull(contacts.deletedAt),
-          // The same shape the module's own search uses: `ilike … escape`, written as SQL
-          // because drizzle's `ilike` has no escape clause and a bare `%` typed by a person
-          // would otherwise match everything.
-          text === ''
-            ? undefined
-            : sql`(contacts.name ilike ${likePattern(text)} escape ${LIKE_ESCAPE}
-                   or contacts.org ilike ${likePattern(text)} escape ${LIKE_ESCAPE})`,
+          text === '' ? undefined : textMatches(['contacts.name', 'contacts.org'], text),
         ),
       )
       .orderBy(asc(contacts.name), asc(contacts.id))

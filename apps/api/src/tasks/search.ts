@@ -2,7 +2,7 @@ import { SEARCH_LIMIT } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import type { Queryable } from '../db/client'
 // The shell's, not this module's: a second module needed the same escaping (contract §3).
-import { LIKE_ESCAPE as ESCAPE, likePattern } from '../db/like'
+import { textMatches } from '../db/like'
 import type { Task } from './tasks'
 
 export type SearchTask = Task & {
@@ -37,7 +37,6 @@ export async function searchTasks(
   workspaceId: string,
   query: string,
 ): Promise<SearchTask[]> {
-  const pattern = likePattern(query)
   const result = await q.execute(sql`
     select
       t.id, t.project_id, t.parent_id, t.title, t.notes, t.status,
@@ -53,12 +52,9 @@ export async function searchTasks(
     where p.workspace_id = ${workspaceId}
       and p.deleted_at is null
       and t.deleted_at is null
-      and (
-        t.title ilike ${pattern} escape ${ESCAPE}
-        or (t.notes is not null and t.notes ilike ${pattern} escape ${ESCAPE})
-      )
+      and ${textMatches(['t.title', 't.notes'], query)}
     order by
-      case when t.title ilike ${pattern} escape ${ESCAPE} then 0 else 1 end,
+      case when ${textMatches(['t.title'], query)} then 0 else 1 end,
       t.updated_at desc,
       t.id
     limit ${SEARCH_LIMIT}
