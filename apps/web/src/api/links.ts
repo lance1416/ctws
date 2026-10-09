@@ -1,4 +1,11 @@
-import type { CreateLinkBody, LinkKind, LinksResponse, ObjectType } from '@ctws/contracts'
+import type {
+  CandidatesResponse,
+  CreateLinkBody,
+  LinkCandidate,
+  LinkKind,
+  LinksResponse,
+  ObjectType,
+} from '@ctws/contracts'
 import { apiFetch } from '../api'
 
 /** The edge table is the SHELL's, like projects: flat, not under a module's namespace. */
@@ -25,4 +32,14 @@ export function deleteLink(from: Endpoint, to: Endpoint, kind: LinkKind): Promis
     kind,
   })
   return apiFetch(`${BASE}?${params}`, { method: 'DELETE' })
+}
+
+export const candidatesKey = (of: Endpoint, q: string) =>
+  ['links', 'candidates', of.type, of.id, q] as const
+
+/** Things this one could be joined to, for the picker. An empty `q` means the likely few. */
+export async function linkCandidates(of: Endpoint, q: string): Promise<LinkCandidate[]> {
+  const params = new URLSearchParams({ type: of.type, id: of.id })
+  if (q) params.set('q', q)
+  return (await apiFetch<CandidatesResponse>(`${BASE}/candidates?${params}`)).candidates
 }

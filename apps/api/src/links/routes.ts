@@ -1,4 +1,6 @@
 import {
+  candidatesQuery,
+  candidatesResponse,
   createLinkBody,
   linkIsAllowed,
   linkParams,
@@ -10,7 +12,7 @@ import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 import { authedUser, requireUser } from '../auth/require-user'
 import { sendProblem } from '../problem'
-import { exists, linksOf } from './read'
+import { candidatesFor, exists, linksOf } from './read'
 import { addLink, removeLink } from './store'
 
 /**
@@ -36,6 +38,30 @@ export const linkRoutes: FastifyPluginAsync = async (app) => {
       // workspace must read the same as one that never existed.
       if (!(await exists(app.db, workspaceId, of))) return sendProblem(reply, 404, 'Not Found')
       return linksOf(app.db, workspaceId, of)
+    },
+  )
+
+  /**
+   * WHAT COULD GO AT THE OTHER END, while the picker is being typed into.
+   *
+   * Only the types the model allows to be joined to this one, and never the object itself. The
+   * shell merges the answers; each module searches its own table, which is the same split as
+   * naming an edge's far end and the reason one box can offer four kinds of thing at once.
+   */
+  typed.get(
+    '/links/candidates',
+    {
+      preHandler: requireUser,
+      schema: { querystring: candidatesQuery, response: { 200: candidatesResponse } },
+    },
+    async (req, reply) => {
+      const { workspaceId } = authedUser(req)
+      const of = { type: req.query.type, id: req.query.id }
+      if (!(await exists(app.db, workspaceId, of))) return sendProblem(reply, 404, 'Not Found')
+      // PER TYPE, not in total: a box that filled with twenty tasks and showed no people would
+      // look like there are no people.
+      const candidates = await candidatesFor(app.db, workspaceId, of, req.query.q ?? '', 8)
+      return { candidates }
     },
   )
 

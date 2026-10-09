@@ -249,3 +249,28 @@ describe('making and removing one edge by hand', () => {
     expect(nowhere.statusCode).toBe(404)
   })
 })
+
+/**
+ * WHICH EDGES ARE THE SHELL'S TO REMOVE.
+ *
+ * An edge a module stores in a column of its own is not one: a task's project is NOT NULL, so
+ * "unlink" on it would mean a task belonging to nothing, which that module does not allow. The
+ * row still shows -- the page would otherwise lie about what the project holds -- and it says it
+ * cannot be removed, which is what the interface reads to decide whether to draw the control.
+ */
+describe('an edge a module stores itself', () => {
+  it('is reported but not removable, unlike one in the edge table', async () => {
+    const ctx = await setup('own@example.com')
+    const project = await createProject(ctx, '找工作')
+    await createTask(ctx, project, '改简历')
+    await post<ContactResponse>(ctx, '/api/v1/contacts', { name: '陈颖', projectIds: [project] })
+
+    const groups = await linksOf(ctx, 'project', project)
+    const task = groups.find((g) => g.type === 'task')!.items[0]!
+    const person = groups.find((g) => g.type === 'contact')!.items[0]!
+
+    // The task's project is a column the task module keeps; the person's is a row in `links`.
+    expect(task).toMatchObject({ title: '改简历', removable: false })
+    expect(person).toMatchObject({ title: '陈颖', removable: true })
+  })
+})
