@@ -96,9 +96,54 @@ export const linkedObject = z
     label: z.string(),
     /** Which way the edge runs, so removing it knows which end is which. */
     outgoing: z.boolean(),
+    /**
+     * Whether this edge can be taken off HERE.
+     *
+     * False for an edge a module stores itself -- a task's project is a NOT NULL column, and
+     * "unlink" on it would mean a task belonging to nothing, which that module does not allow.
+     * The row still shows; it just has no way to remove it, and a reader can see which edges are
+     * theirs to change.
+     */
+    removable: z.boolean(),
   })
   .strict()
 export type LinkedObject = z.infer<typeof linkedObject>
+
+/**
+ * SOMETHING YOU COULD LINK TO, while you are typing its name.
+ *
+ * Thinner than `linkedObject`: there is no edge yet, so there is no kind and no direction.
+ */
+export const linkCandidate = z
+  .object({ type: objectType, id: z.uuid(), title: z.string(), detail: z.string().nullable() })
+  .strict()
+export type LinkCandidate = z.infer<typeof linkCandidate>
+
+export const candidatesQuery = z
+  .object({
+    /** What the picker has typed. Empty means "the most likely few", not "everything". */
+    q: z.string().trim().max(200).optional(),
+    /**
+     * The thing being linked FROM, so the answer leaves out the kinds it could not be joined to
+     * and the object itself. Both halves of the pair decide which kinds are allowed.
+     */
+    type: objectType,
+    id: z.uuid(),
+  })
+  .strict()
+
+export const candidatesResponse = z.object({ candidates: z.array(linkCandidate) }).strict()
+export type CandidatesResponse = z.infer<typeof candidatesResponse>
+
+/**
+ * The kinds of edge allowed between two types, in the order the contract declares them.
+ *
+ * `about` is last wherever it appears: it is the one that means 「有关系，但不是上面那几种」, so
+ * it reads as the fallback it is.
+ */
+export function kindsBetween(from: ObjectType, to: ObjectType): typeof LINK_KINDS {
+  return LINK_KINDS.filter((l) => linkIsAllowed(l.kind, from, to)) as unknown as typeof LINK_KINDS
+}
 
 /** Everything linked to one object, grouped the way its page shows it. */
 export const linksResponse = z

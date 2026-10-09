@@ -1,5 +1,5 @@
 import { readFileSync, readdirSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { LAYER } from './layers'
 import { MENU_SURFACE } from './menuSurface'
@@ -37,5 +37,47 @@ describe('layers', () => {
       if (!source.includes('MENU_SURFACE')) offenders.push(name)
     }
     expect(offenders, 'these draw a menu without the shared surface').toEqual([])
+  })
+})
+
+/**
+ * THE ONE LAYER THAT CANNOT BE SET IN JSX.
+ *
+ * Radix's popper wrapper makes its own stacking context, so the class on the menu content never
+ * competes with a dialog's scrim. The rule that raises the wrapper is in the stylesheet, and the
+ * number in it has to be the same one `LAYER.menu` names -- two places, so this holds them
+ * together. Without the rule a menu opened inside a dialog is unclickable and closes the dialog.
+ */
+describe('the popper wrapper is raised in CSS', () => {
+  it('carries the same number LAYER.menu names', () => {
+    const css = readFileSync(resolve(import.meta.dirname, '../styles.css'), 'utf8')
+    const rule = /\[data-radix-popper-content-wrapper\]\s*\{[^}]*z-index:\s*(\d+)/.exec(css)
+    expect(rule, 'styles.css should raise the Radix popper wrapper').toBeTruthy()
+    expect(`z-${rule![1]}`).toBe(LAYER.menu)
+  })
+})
+
+/**
+ * NO NATIVE `<select>` IN THE APP.
+ *
+ * The OS draws a native select's popup, and it does not know this palette: on Windows in dark
+ * mode the list came up white with the page's own light-grey text on it -- unreadable, and
+ * nothing in CSS reaches inside it. `PickOne` is the app's picker and it is styled here.
+ *
+ * Read off the source, because a menu nobody opened in a test leaves no trace in the DOM.
+ */
+describe('the pickers are the app own', () => {
+  it('has no native select left in a component', () => {
+    const dir = resolve(import.meta.dirname, '..')
+    const walk = (at: string): string[] =>
+      readdirSync(at, { withFileTypes: true }).flatMap((e) =>
+        e.isDirectory() ? walk(join(at, e.name)) : /\.tsx$/.test(e.name) ? [join(at, e.name)] : [],
+      )
+    // Comments are stripped first: the prose that records the removal names the thing it
+    // removed, and a guard that cannot tell those apart is answered by rewording a comment.
+    const code = (text: string) =>
+      text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ 	]*\/\/.*$/gm, '')
+    const offenders = walk(dir).filter((f) => /<select[\s>]/.test(code(readFileSync(f, 'utf8'))))
+    expect(offenders.map((f) => f.slice(dir.length + 1))).toEqual([])
   })
 })

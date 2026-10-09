@@ -109,6 +109,26 @@ export function Modal({
             // No description: `aria-describedby` left dangling would point at nothing, and
             // Radix's own development warning is the thing asking for this.
             aria-describedby={undefined}
+            /**
+             * A MENU OPENED INSIDE THIS LAYER IS NOT OUTSIDE IT.
+             *
+             * Radix portals a `DropdownMenu`'s content to `document.body`, so to the dialog's own
+             * outside-press detection a click on that menu lands outside the panel -- and the
+             * whole dialog closed under the person's cursor while they were picking an attendee.
+             * The menu is a layer ON TOP of this one; pressing in it is pressing inside the stack.
+             *
+             * Matched on the popper wrapper Radix puts around every floating layer rather than on
+             * a role, so a listbox, a tooltip or a submenu is covered by the same line.
+             */
+            onInteractOutside={(e) => {
+              const target = e.target
+              if (
+                target instanceof Element &&
+                target.closest('[data-radix-popper-content-wrapper]')
+              ) {
+                e.preventDefault()
+              }
+            }}
             onCloseAutoFocus={(e) => {
               // Prevented, which also skips Radix's own "focus the trigger" -- there is no
               // trigger. A disconnected opener is left alone: focus has nowhere better to go than

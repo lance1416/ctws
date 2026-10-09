@@ -10,7 +10,7 @@ import { useProjectRail } from '../projectColor'
 import { ZONES, zoneLabel } from '../timeZones'
 import { useTimeZone } from '../useMe'
 import { boxed, field, label } from './formStyles'
-import { PickMany } from './inline'
+import { PickMany, PickOne } from './inline'
 import { Modal } from './Modal'
 
 /**
@@ -24,6 +24,12 @@ import { Modal } from './Modal'
  * This is also what the calendar's day-square "+" used to stand in for. A lens is not a creation
  * affordance (framing §2): the grid answers 「这个月有什么」 and the making happens here.
  */
+/** `PickOne` has no null value, so "does not repeat" needs a value of its own. */
+const NO_REPEAT = '__none'
+
+/** The same, for a meeting that belongs to no line of work. */
+const NO_PROJECT = '__no-project'
+
 export function NewMeetingDialog({
   onClose,
   onMade,
@@ -95,31 +101,31 @@ export function NewMeetingDialog({
         className="flex flex-col gap-5 px-5 py-4"
       >
         <div>
-          <div className="flex items-center gap-1.5">
-            <span
-              aria-hidden="true"
-              className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(projectId ?? '')}`}
-            />
-            <select
-              aria-label="Projects"
-              value={projectId ?? ''}
-              onChange={(e) => setProjectId(e.target.value || null)}
-              className="-ml-0.5 max-w-full rounded-lg bg-transparent py-0.5 text-sm text-fg-muted hover:text-fg"
-            >
-              <option value="">No project</option>
-              {(projects.data ?? [])
+          <PickOne
+            label="Projects"
+            value={projectId ?? NO_PROJECT}
+            /* "No project" is a CHOICE, not only the placeholder: a picker you can enter and
+               never leave is a one-way door. */
+            choices={[
+              { value: NO_PROJECT, label: 'No project' },
+              ...(projects.data ?? [])
                 .filter((p) => !p.archivedAt)
-                .map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-            </select>
-          </div>
+                .map((p) => ({
+                  value: p.id,
+                  label: p.name,
+                  mark: <span className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(p.id)}`} />,
+                })),
+            ]}
+            onPick={(v) => setProjectId(v === NO_PROJECT ? null : v)}
+          />
+          {/* A PLACEHOLDER, and a field you can see. Borderless and empty, this read as a gap
+              between the project and the date -- there was nothing on screen to say a title was
+              wanted. */}
           <input
             ref={titleField}
             aria-label="Title"
             value={title}
+            placeholder="What is this meeting?"
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => {
               // isComposing: Enter confirms an IME candidate, it must not submit half a word.
@@ -128,7 +134,7 @@ export function NewMeetingDialog({
                 submit()
               }
             }}
-            className="mt-0.5 w-full rounded-lg bg-transparent py-0.5 text-lg font-semibold text-fg"
+            className={`${field} mt-1.5 text-lg font-semibold`}
           />
         </div>
 
@@ -158,58 +164,43 @@ export function NewMeetingDialog({
         {/* The zone is the MEETING's, not yours: "09:00 Toronto time" is what was agreed, and it
             stays 09:00 in Toronto whichever city you read it in. */}
         <div className="flex flex-wrap gap-3">
-          <div className="min-w-[12rem] flex-1">
-            <label htmlFor="meeting-zone" className={label}>
-              Time zone
-            </label>
-            <select
-              id="meeting-zone"
-              value={timeZone}
-              onChange={(e) => setTimeZone(e.target.value)}
-              className={`${field} mt-1.5`}
-            >
-              {ZONES.map((z) => (
-                <option key={z} value={z}>
-                  {zoneLabel(z)}
-                </option>
-              ))}
-            </select>
+          <div className="min-w-[12rem]">
+            <span className={label}>Time zone</span>
+            <div className="mt-1.5">
+              <PickOne
+                label="Time zone"
+                value={timeZone}
+                choices={ZONES.map((z) => ({ value: z, label: zoneLabel(z) }))}
+                onPick={setTimeZone}
+              />
+            </div>
           </div>
-          <div className="min-w-[7.5rem] flex-1">
-            <label htmlFor="meeting-length" className={label}>
-              Length
-            </label>
-            <select
-              id="meeting-length"
-              value={durationMinutes}
-              onChange={(e) => setDuration(Number(e.target.value))}
-              className={`${field} mt-1.5`}
-            >
-              {[15, 30, 45, 60, 90, 120].map((m) => (
-                <option key={m} value={m}>
-                  {m >= 60 ? `${m / 60} h` : `${m} min`}
-                </option>
-              ))}
-            </select>
+          <div className="min-w-[7.5rem]">
+            <span className={label}>Length</span>
+            <div className="mt-1.5">
+              <PickOne
+                label="Length"
+                value={String(durationMinutes)}
+                choices={[15, 30, 45, 60, 90, 120].map((m) => ({
+                  value: String(m),
+                  label: m >= 60 ? `${m / 60} h` : `${m} min`,
+                }))}
+                onPick={(m) => setDuration(Number(m))}
+              />
+            </div>
           </div>
         </div>
 
         <div>
-          <label htmlFor="meeting-repeat" className={label}>
-            Repeats
-          </label>
-          <select
-            id="meeting-repeat"
-            value={rrule ?? ''}
-            onChange={(e) => setRrule(e.target.value || null)}
-            className={`${field} mt-1.5`}
-          >
-            {repeats.map((c) => (
-              <option key={c.label} value={c.value ?? ''}>
-                {c.label}
-              </option>
-            ))}
-          </select>
+          <span className={label}>Repeats</span>
+          <div className="mt-1.5">
+            <PickOne
+              label="Repeats"
+              value={rrule ?? NO_REPEAT}
+              choices={repeats.map((c) => ({ value: c.value ?? NO_REPEAT, label: c.label }))}
+              onPick={(v) => setRrule(v === NO_REPEAT ? null : v)}
+            />
+          </div>
         </div>
 
         <div>

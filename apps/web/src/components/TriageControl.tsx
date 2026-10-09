@@ -20,7 +20,8 @@ type Props = {
 /**
  * The way out of an overdue or carried row, as ONE control.
  *
- * It replaces seven inline underlined text links (推迟到明天 推迟到下周 清除截止 转为排期： 今天
+ * It replaces seven inline underlined text links (to tomorrow, to next week, clear the deadline,
+ * make it a plan: today
  * 明天 下周) on an overdue row and five more on a carried one. Those were not designed
  * affordances -- they were the app's capabilities tipped onto the row, which is the single thing
  * the redesign plan names as making this screen look like a demo.

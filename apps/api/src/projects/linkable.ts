@@ -1,4 +1,5 @@
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, asc, inArray, sql } from 'drizzle-orm'
+import { LIKE_ESCAPE, likePattern } from '../db/like'
 import { projects } from '../db/schema'
 import type { Linkable } from '../links/linkable'
 import { visibleProjects } from './store'
@@ -16,5 +17,21 @@ export const projectLinkable: Linkable = {
       .from(projects)
       .where(and(visibleProjects(workspaceId), inArray(projects.id, [...ids])))
     return new Map(rows.map((r) => [r.id, { title: r.name, detail: null }]))
+  },
+  find: async (q, workspaceId, text, limit) => {
+    const rows = await q
+      .select({ id: projects.id, name: projects.name })
+      .from(projects)
+      .where(
+        and(
+          visibleProjects(workspaceId),
+          text === ''
+            ? undefined
+            : sql`projects.name ilike ${likePattern(text)} escape ${LIKE_ESCAPE}`,
+        ),
+      )
+      .orderBy(asc(projects.rank), asc(projects.id))
+      .limit(limit)
+    return rows.map((r) => ({ id: r.id, title: r.name, detail: null }))
   },
 }

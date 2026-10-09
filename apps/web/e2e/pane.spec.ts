@@ -360,13 +360,12 @@ test('the pane opens with the task, and 删除任务 is not a peer of 保存', a
   // label over an input. The project is NAMED (the chip beside it is never the only carrier).
   const title = dialog.getByRole('textbox', { name: 'Title' })
   await expect(title).toHaveValue('这条任务的标题')
-  await expect(dialog.getByLabel('Projects')).toHaveValue(pid)
   // The project is NAMED on screen, not only coloured: the chip beside it is a second channel.
-  // (A `toContainText` here would pass on an unselected option, so it is the selected one.)
-  const shown = await dialog
-    .getByLabel('Projects')
-    .evaluate((el) => (el as HTMLSelectElement).selectedOptions[0]?.textContent)
-  expect(shown).toBe('Workbench')
+  // The picker is the app's own now -- a button that is both the label and the value -- so the
+  // name is its accessible name and its text, and there are no options to read.
+  const picker = dialog.getByRole('button', { name: /^Projects/ })
+  await expect(picker).toHaveAccessibleName('Projects: Workbench')
+  await expect(picker).toHaveText('Workbench')
   const titleSize = await title.evaluate((el) => parseFloat(getComputedStyle(el).fontSize))
   const notesSize = await dialog
     .getByLabel('Notes', { exact: true })

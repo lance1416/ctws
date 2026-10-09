@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { editDetail, openProject, registerFreshUser, submitCreate } from './helpers'
+import { editDetail, openProject, pickOne, registerFreshUser, submitCreate } from './helpers'
 
 /**
  * FOUR THINGS THAT MADE THE APP WORSE THE LONGER IT WAS USED (D48, D49, D53, D40).
@@ -437,7 +437,7 @@ test('the bar moves the picked rows to another project', async ({ page }) => {
   await openTree(page, from)
 
   await row(page, '改简历').click({ modifiers: ['Shift'] })
-  await page.getByLabel('Move to project').selectOption({ label: '求职' })
+  await pickOne(page, 'Move to project', '求职')
 
   await expect(row(page, '改简历')).toHaveCount(0)
   const moved = await (await page.request.get(`/api/v1/tasks?projectId=${to}`)).json()

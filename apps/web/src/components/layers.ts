@@ -11,6 +11,13 @@
  *
  * A MENU IS ALWAYS ON TOP. It is opened from something, so it must paint over whatever opened it,
  * including a modal layer.
+ *
+ * ONE OF THESE CANNOT BE SET IN JSX. Radix wraps every floating layer in a positioned element of
+ * its own (`[data-radix-popper-content-wrapper]`), and a `transform` on that wrapper makes it a
+ * stacking context -- so `z-50` on the content inside it is scoped to the wrapper and never
+ * compared with the scrim outside. The menu then paints UNDER a dialog's scrim, which swallows
+ * every click aimed at it and closes the dialog instead. The rule that raises the wrapper lives
+ * in `styles.css`; `layers.test.ts` holds both ends together.
  */
 export const LAYER = {
   /** The detail pane, and the scrim under it when it is an overlay. */

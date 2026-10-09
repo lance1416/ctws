@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { registerFreshUser } from './helpers'
+import { pickOne, registerFreshUser } from './helpers'
 import { dayOffset, ymd } from './days'
 
 /**
@@ -78,7 +78,7 @@ test('创建 writes the title, project, parent, status, plan, deadline and notes
   await expect(titleField(page)).toBeFocused()
 
   await titleField(page).fill('带细节的任务')
-  await dialog(page).getByLabel('Put it under').selectOption(rootId)
+  await pickOne(dialog(page), 'Put it under', '放在我下面')
   await dialog(page).getByRole('radio', { name: 'In progress', exact: true }).check()
   await dialog(page).getByRole('button', { name: 'Plan for tomorrow' }).click()
   await dialog(page).getByRole('button', { name: 'Due tomorrow' }).click()

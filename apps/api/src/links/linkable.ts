@@ -30,6 +30,20 @@ export type Linkable = {
     ids: readonly string[],
   ) => Promise<Map<string, { title: string; detail: string | null }>>
   /**
+   * THIS MODULE'S THINGS BY NAME, for the picker that makes an edge.
+   *
+   * The same seam as `name`, the other way round: the shell knows which kinds may be joined and
+   * draws the picker, but only the module can search its own table. An empty `text` means "the
+   * most likely few" -- the picker opens before anything is typed, and an empty list there reads
+   * as "there is nothing", which is a different and usually untrue thing.
+   */
+  find: (
+    q: Queryable,
+    workspaceId: string,
+    text: string,
+    limit: number,
+  ) => Promise<{ id: string; title: string; detail: string | null }[]>
+  /**
    * EDGES THIS MODULE STORES ITSELF, rather than in the edge table.
    *
    * One case, and it is a real one: a task's project is a NOT NULL column, because the task tree

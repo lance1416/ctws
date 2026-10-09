@@ -44,10 +44,19 @@ export function PickOne<T extends string>({
 }) {
   const current = choices.find((c) => c.value === value)
   return (
-    <DropdownMenu.Root>
+    /**
+     * NOT MODAL. A modal menu puts `pointer-events: none` on everything behind it, so inside a
+     * dialog EVERY press -- on a label, on a field, on the panel -- lands on the dialog's own
+     * scrim instead of where it was aimed, and the dialog closes under the cursor while someone
+     * is picking. It also `aria-hidden`s the dialog that contains it.
+     *
+     * A picker is not a modal act: it closes on an outside press and on Escape either way. What
+     * it must not do is take the page hostage.
+     */
+    <DropdownMenu.Root modal={false}>
       <DropdownMenu.Trigger
         disabled={disabled}
-        aria-label={`${label}：${current?.label ?? placeholder}`}
+        aria-label={`${label}: ${current?.label ?? placeholder}`}
         className="-mx-1.5 flex h-8 min-w-0 items-center gap-2 rounded-lg px-1.5 text-sm text-fg hover:bg-surface-hover disabled:opacity-50"
       >
         {current?.mark && (
@@ -162,7 +171,7 @@ export function PickMany({
       ))}
       {shown.length === 0 && <span className="text-sm text-fg-subtle">{empty}</span>}
       {rest.length > 0 && (
-        <DropdownMenu.Root>
+        <DropdownMenu.Root modal={false}>
           <DropdownMenu.Trigger
             aria-label={`Add ${label}`}
             className="flex h-7 w-7 items-center justify-center rounded-lg border border-dashed border-border-strong text-fg-subtle hover:bg-surface-hover hover:text-fg"

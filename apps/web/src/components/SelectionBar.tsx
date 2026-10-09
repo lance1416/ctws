@@ -1,4 +1,5 @@
 import type { ProjectListItem } from '@ctws/contracts'
+import { PickOne } from './inline'
 
 /**
  * WHAT TO DO WITH THE ROWS YOU PICKED (D61).
@@ -46,27 +47,21 @@ export function SelectionBar({
       >
         Mark done
       </button>
-      <label className="flex items-center gap-1.5 text-sm text-fg-muted">
+      <span className="flex items-center gap-1.5 text-sm text-fg-muted">
         Move to
-        <select
-          aria-label="Move to project"
-          value=""
+        {/* The app's own picker, not a native `<select>`: the OS draws that popup and does not
+            know this palette. It holds no value -- picking IS the act. */}
+        <PickOne
+          label="Move to project"
+          value={null}
           disabled={busy}
-          onChange={(e) => {
-            if (e.target.value) onMove(e.target.value)
-          }}
-          className="h-8 rounded-lg border border-border-strong bg-surface px-2 text-sm text-fg disabled:opacity-50"
-        >
-          <option value="">Choose a project…</option>
-          {projects
+          placeholder="Choose a project…"
+          choices={projects
             .filter((p) => p.id !== currentProjectId && !p.archivedAt)
-            .map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-        </select>
-      </label>
+            .map((p) => ({ value: p.id, label: p.name }))}
+          onPick={onMove}
+        />
+      </span>
       <button
         type="button"
         onClick={onClear}

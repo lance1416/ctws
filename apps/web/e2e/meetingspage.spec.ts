@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { registerFreshUser } from './helpers'
+import { pickOne, registerFreshUser } from './helpers'
 
 /**
  * 会议 -- the module's own destination, and the form that fills one in once.
@@ -46,10 +46,10 @@ test('a meeting is filled in once: title, time, zone, repeat and the people', as
   await dialog(page).getByLabel('Title').fill('Second interview')
   await dialog(page).getByLabel('Date').fill(dayOffset(1))
   await dialog(page).getByLabel('Start time').fill('21:00')
-  await dialog(page).getByLabel('Time zone').selectOption('America/Toronto')
-  await dialog(page).getByLabel('Length').selectOption('90')
-  await dialog(page).getByLabel('Repeats').selectOption({ label: 'Daily' })
-  await dialog(page).getByLabel('Projects').selectOption(projectId)
+  await pickOne(dialog(page), 'Time zone', /Toronto/)
+  await pickOne(dialog(page), 'Length', '1.5 h')
+  await pickOne(dialog(page), 'Repeats', 'Daily')
+  await pickOne(dialog(page), 'Projects', 'Job hunt')
   await dialog(page).getByRole('button', { name: 'Add Attendees' }).click()
   await page.getByRole('menuitem', { name: 'Ying Chen' }).click()
 

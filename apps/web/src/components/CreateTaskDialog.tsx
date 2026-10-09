@@ -12,6 +12,7 @@ import { useProjectRail } from '../projectColor'
 import { flatten } from '../tree/flatten'
 import { MAX_DEPTH } from '../tree/drop'
 import { decision, field, label } from './formStyles'
+import { PickOne } from './inline'
 import { Modal } from './Modal'
 import { DeadlineMark, PlanMark } from './RowParts'
 import { STATUS_LABEL } from './statusLabel'
@@ -50,6 +51,9 @@ import {
  * date buttons' values go through `setValue` rather than an input, because a named day is a
  * DECISION pressed, not a field typed into; that is what `Controller`/`setValue` exist for.
  */
+/** `PickOne` has no null value, and the contract takes a uuid or null -- never the empty string. */
+const TOP_LEVEL = '__top'
+
 export function CreateTaskDialog({
   projectId,
   onClose,
@@ -90,6 +94,7 @@ export function CreateTaskDialog({
     },
   })
   const project = watch('projectId')
+  const parentId = watch('parentId')
   const rail = useProjectRail()
   const scheduledOn = watch('scheduledOn')
   const dueAt = watch('dueAt')
@@ -188,30 +193,25 @@ export function CreateTaskDialog({
             it is called. The chip is never alone -- the project's NAME is in the control beside
             it (WCAG 1.4.1). */}
         <div>
-          <div className="flex items-center gap-1.5">
-            <span
-              aria-hidden="true"
-              className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(project)}`}
-            />
-            <select
-              aria-label="Projects"
-              {...register('projectId', {
-                onChange: () => {
-                  // A parent belongs to a project; keeping the old one would send a foreign id.
-                  setValue('parentId', null)
-                },
-              })}
-              className="-ml-0.5 max-w-full rounded-lg bg-transparent py-0.5 text-sm text-fg-muted hover:text-fg"
-            >
-              {(projects.data ?? [])
-                .filter((p) => !p.archivedAt || p.id === project)
-                .map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-            </select>
-          </div>
+          {/* The app's own picker, not a native `<select>`: the OS draws that popup and does
+              not know this palette -- on Windows it came up white with the page's light-grey text
+              on it, which is unreadable. */}
+          <PickOne
+            label="Projects"
+            value={project}
+            choices={(projects.data ?? [])
+              .filter((p) => !p.archivedAt || p.id === project)
+              .map((p) => ({
+                value: p.id,
+                label: p.name,
+                mark: <span className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(p.id)}`} />,
+              }))}
+            onPick={(id) => {
+              setValue('projectId', id)
+              // A parent belongs to a project; keeping the old one would send a foreign id.
+              setValue('parentId', null)
+            }}
+          />
           <input
             {...titleRest}
             ref={(el) => {
@@ -225,28 +225,23 @@ export function CreateTaskDialog({
         </div>
 
         <div>
-          <label htmlFor="create-parent" className={label}>
-            Put it under
-          </label>
-          <select
-            id="create-parent"
-            // An empty <option> cannot carry null, and the contract takes a uuid or null -- never
-            // the empty string. `setValueAs` is where that boundary belongs.
-            {...register('parentId', {
-              setValueAs: (v: unknown) => (typeof v === 'string' && v !== '' ? v : null),
-            })}
-            className={`${field} mt-1.5`}
-          >
-            <option value="">Top level</option>
-            {parents.map((p) => (
-              // Indented with figure spaces rather than nbsp: an <option>'s text is all a native
-              // select will render, so the shape of the tree has to be in the text itself.
-              <option key={p.id} value={p.id}>
-                {' '.repeat((p.depth - 1) * 2)}
-                {p.title}
-              </option>
-            ))}
-          </select>
+          <span className={label}>Put it under</span>
+          <div className="mt-1.5">
+            <PickOne
+              label="Put it under"
+              value={parentId ?? TOP_LEVEL}
+              /* Indented with figure spaces: the shape of the tree has to be in the text, which
+                 is all one row of a picker renders. */
+              choices={[
+                { value: TOP_LEVEL, label: 'Top level' },
+                ...parents.map((p) => ({
+                  value: p.id,
+                  label: `${' '.repeat((p.depth - 1) * 2)}${p.title}`,
+                })),
+              ]}
+              onPick={(v) => setValue('parentId', v === TOP_LEVEL ? null : v)}
+            />
+          </div>
         </div>
 
         {/* The same five marker shapes the rows speak, named, as native radios: one tab stop and

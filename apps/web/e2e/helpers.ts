@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 /**
  * Registers a brand-new user through the UI and waits until the signed-in shell is showing.
@@ -179,4 +179,19 @@ export function backdateProjectActivity(projectId: string, ago: string): void {
   if (/UPDATE 0/.test(out) || !out.includes('UPDATE')) {
     throw new Error(`backdateProjectActivity: no row updated: ${out}`)
   }
+}
+
+/**
+ * THE APP'S OWN PICKER, which replaced every native `<select>`: the OS draws a native popup and
+ * does not know this palette, so on Windows the list came up white with the page's own light-grey
+ * text on it. A pick is now a press on the trigger and a press on the item.
+ */
+export async function pickOne(
+  where: Page | Locator,
+  label: string,
+  choice: string | RegExp,
+): Promise<void> {
+  const page = 'page' in where ? where.page() : where
+  await where.getByRole('button', { name: new RegExp(`^${label}`) }).click()
+  await page.getByRole('menuitem', { name: choice }).click()
 }

@@ -6,7 +6,7 @@ import { listProjects } from '../api/projects'
 import { useComposing } from '../composition'
 import { useProjectRail } from '../projectColor'
 import { field, label } from './formStyles'
-import { PickMany } from './inline'
+import { PickMany, PickOne } from './inline'
 import { Modal } from './Modal'
 
 /**
@@ -110,18 +110,17 @@ export function NewContactDialog({
         <div>
           <span className={label}>Contact</span>
           <div className="mt-1.5 flex flex-wrap gap-2">
-            <select
-              aria-label="Kind"
-              value={kind}
-              onChange={(e) => setKind(e.target.value as ChannelKind)}
-              className="min-w-[6.5rem] rounded-lg border border-border-strong bg-surface px-3 py-2 text-fg"
-            >
-              {CHANNEL_KINDS.map((k) => (
-                <option key={k} value={k}>
-                  {KIND_LABEL[k]}
-                </option>
-              ))}
-            </select>
+            {/* The app's own picker, not a native `<select>`: the OS draws that popup and
+                does not know this palette -- on Windows it came up white with the page's
+                light-grey text on it. */}
+            <div className="flex min-w-[6.5rem] items-center">
+              <PickOne
+                label="Kind"
+                value={kind}
+                choices={CHANNEL_KINDS.map((k) => ({ value: k, label: KIND_LABEL[k] }))}
+                onPick={setKind}
+              />
+            </div>
             <input
               aria-label="Address"
               value={address}

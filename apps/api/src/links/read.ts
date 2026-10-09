@@ -1,5 +1,7 @@
 import {
   LINK_KINDS,
+  linkIsAllowed,
+  type LinkCandidate,
   type LinkedObject,
   type LinkKind,
   type LinksResponse,
@@ -66,7 +68,12 @@ export async function linksOf(
     storedEdges(q, workspaceId, of),
     ...LINKABLES.filter((l) => l.own).map((l) => l.own!(q, workspaceId, of)),
   ])
-  const edges = [...stored, ...own.flat()]
+  // WHICH EDGES ARE THE SHELL'S TO REMOVE. One stored in a module's own column is not: a task's
+  // project is NOT NULL, so "unlink" on it would mean a task belonging to nothing.
+  const edges = [
+    ...stored.map((e) => ({ ...e, removable: true })),
+    ...own.flat().map((e) => ({ ...e, removable: false })),
+  ]
 
   // The far end of each edge, by type, so each module is asked ONCE for the whole page.
   const wanted = new Map<ObjectType, Set<string>>()
@@ -109,6 +116,7 @@ export async function linksOf(
       kind: edge.kind,
       label: phrase(edge.kind, end.outgoing),
       outgoing: end.outgoing,
+      removable: edge.removable,
     })
     groups.set(end.type, list)
   }
@@ -127,6 +135,36 @@ export async function linksOf(
         .slice(0, PER_GROUP),
     })),
   }
+}
+
+/**
+ * THINGS THAT COULD GO AT THE OTHER END, while the picker is being typed into.
+ *
+ * Only the types the model allows to be joined to this one, and never the object itself. Each
+ * module searches its own table (`Linkable.find`); the shell merges the answers, which is the
+ * same split as `name` and the reason the picker can offer four kinds of thing at once.
+ */
+export async function candidatesFor(
+  q: Queryable,
+  workspaceId: string,
+  of: Endpoint,
+  text: string,
+  perType: number,
+): Promise<LinkCandidate[]> {
+  const joinable = TYPE_ORDER.filter((type) =>
+    LINK_KINDS.some(
+      (k) => linkIsAllowed(k.kind, of.type, type) || linkIsAllowed(k.kind, type, of.type),
+    ),
+  )
+  const found = await Promise.all(
+    joinable.map(async (type) => {
+      const rows = await linkableFor(type).find(q, workspaceId, text, perType)
+      return rows
+        .filter((r) => !(type === of.type && r.id === of.id))
+        .map((r) => ({ type, id: r.id, title: r.title, detail: r.detail }))
+    }),
+  )
+  return found.flat()
 }
 
 /** Whether a thing exists and this workspace may see it -- both ends of a write go through here. */

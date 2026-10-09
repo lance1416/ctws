@@ -1,4 +1,5 @@
-import { and, eq, inArray, isNull } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
+import { LIKE_ESCAPE, likePattern } from '../db/like'
 import { meetings } from '../db/schema'
 import type { Linkable } from '../links/linkable'
 import { instantOf } from './occurrences'
@@ -42,5 +43,32 @@ export const meetingLinkable: Linkable = {
         { title: r.title, detail: when(r.startsLocal, r.timeZone) },
       ]),
     )
+  },
+  find: async (q, workspaceId, text, limit) => {
+    const rows = await q
+      .select({
+        id: meetings.id,
+        title: meetings.title,
+        startsLocal: meetings.startsLocal,
+        timeZone: meetings.timeZone,
+      })
+      .from(meetings)
+      .where(
+        and(
+          eq(meetings.workspaceId, workspaceId),
+          isNull(meetings.deletedAt),
+          text === ''
+            ? undefined
+            : sql`meetings.title ilike ${likePattern(text)} escape ${LIKE_ESCAPE}`,
+        ),
+      )
+      // The soonest first. A series shows once here: this is the SERIES table, not its expansion.
+      .orderBy(desc(meetings.startsLocal), desc(meetings.id))
+      .limit(limit)
+    return rows.map((r) => ({
+      id: r.id,
+      title: r.title,
+      detail: when(r.startsLocal, r.timeZone),
+    }))
   },
 }

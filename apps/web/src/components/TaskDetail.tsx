@@ -29,6 +29,7 @@ import { NoteBody } from '../notes/NoteBody'
 import { WritingMode } from '../notes/WritingMode'
 import { useProjectRail } from '../projectColor'
 import { DeleteConfirm } from './DeleteConfirm'
+import { PickOne } from './inline'
 import { Dependencies } from './Dependencies'
 import { useReservePane, useWidePane } from './paneLayout'
 // The shared editing vocabulary, now that the 新建 dialog types into a task as well.
@@ -659,19 +660,16 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                   aria-hidden="true"
                   className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(nextProjectId)}`}
                 />
-                <select
-                  aria-label="Projects"
-                  {...register('projectId')}
-                  className="-ml-0.5 max-w-full rounded-lg bg-transparent py-0.5 text-sm text-fg-muted hover:text-fg"
-                >
-                  {(projects.data ?? [])
+                {/* The app's own picker, not a native `<select>`: the OS draws that popup and
+                    does not know this palette. */}
+                <PickOne
+                  label="Projects"
+                  value={nextProjectId}
+                  choices={(projects.data ?? [])
                     .filter((p) => !p.archivedAt || p.id === task.projectId)
-                    .map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                      </option>
-                    ))}
-                </select>
+                    .map((p) => ({ value: p.id, label: p.name }))}
+                  onPick={(id) => setValue('projectId', id, { shouldDirty: true })}
+                />
                 <span className="-mt-1 ml-auto shrink-0">
                   <CloseButton onClick={requestClose} />
                 </span>

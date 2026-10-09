@@ -29,6 +29,9 @@ import { ScopeAsk } from './ScopeAsk'
  * The FIELDS are a component of their own because the meeting's own page shows the same ones with
  * no frame around them (`relations.Head`). One editor, two places -- a second copy drifts.
  */
+/** `PickOne` has no null value, so "belongs to nothing" needs a value of its own. */
+const NO_PROJECT = '__no-project'
+
 export function MeetingDetail({
   meeting,
   accountZone,
@@ -247,12 +250,16 @@ export function MeetingFields({
         <Field label="Projects" top>
           <PickOne
             label="Projects"
-            value={meeting.projectId}
-            choices={(projects.data ?? [])
-              .filter((p) => !p.archivedAt)
-              .map((p) => ({ value: p.id, label: p.name, mark: chip(p.id) }))}
-            onPick={(projectId) => series({ projectId })}
-            placeholder="No project"
+            value={meeting.projectId ?? NO_PROJECT}
+            /* "No project" is a CHOICE, not only the placeholder: a meeting filed by mistake
+               could be moved but never unfiled. */
+            choices={[
+              { value: NO_PROJECT, label: 'No project' },
+              ...(projects.data ?? [])
+                .filter((p) => !p.archivedAt)
+                .map((p) => ({ value: p.id, label: p.name, mark: chip(p.id) })),
+            ]}
+            onPick={(v) => series({ projectId: v === NO_PROJECT ? null : v })}
           />
         </Field>
       </div>

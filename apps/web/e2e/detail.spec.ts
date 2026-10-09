@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import {
   editDetail,
   openProject,
+  pickOne,
   registerFreshUser,
   setDetailStatus,
   submitCreate,
@@ -101,7 +102,7 @@ test('moves a task to another project', async ({ page }) => {
   await registerFreshUser(page)
   await seedOneTask(page)
 
-  await page.getByLabel('Projects', { exact: true }).selectOption({ label: 'Inbox' })
+  await pickOne(page, 'Projects', 'Inbox')
   await save(page, MOVE_URL)
 
   // It leaves the project it was in...
@@ -266,7 +267,7 @@ test('a rejected move is reported and nothing changes', async ({ page }) => {
   await seedOneTask(page)
   const url = page.url()
   await page.route(MOVE_URL, (r) => r.fulfill({ status: 500, body: '{}' }))
-  await page.getByLabel('Projects', { exact: true }).selectOption({ label: 'Inbox' })
+  await pickOne(page, 'Projects', 'Inbox')
   await page.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByRole('alert')).toBeVisible()
   await expect(page.getByRole('dialog')).toBeVisible()
@@ -291,7 +292,7 @@ test('moving a task away returns focus to a remaining row', async ({ page }) => 
   await reopen(page, '写方案')
   await expect(page.getByRole('dialog')).toBeVisible()
 
-  await page.getByLabel('Projects', { exact: true }).selectOption({ label: 'Inbox' })
+  await pickOne(page, 'Projects', 'Inbox')
   await save(page, MOVE_URL)
 
   await expect(row(page, '写方案')).toHaveCount(0)

@@ -1,5 +1,6 @@
-import { and, eq, inArray, isNull } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import type { Queryable } from '../db/client'
+import { LIKE_ESCAPE, likePattern } from '../db/like'
 import { projects, tasks } from '../db/schema'
 import type { Linkable, StoredEdge } from '../links/linkable'
 import { visibleProjects } from '../projects/store'
@@ -35,6 +36,24 @@ export const taskLinkable: Linkable = {
     return new Map(
       rows.map((r) => [r.id, { title: r.title, detail: r.status === 'done' ? 'Done' : null }]),
     )
+  },
+  find: async (q, workspaceId, text, limit) => {
+    const rows = await ofWorkspace(q, workspaceId)
+      .where(
+        and(
+          visible(workspaceId),
+          text === ''
+            ? undefined
+            : sql`tasks.title ilike ${likePattern(text)} escape ${LIKE_ESCAPE}`,
+        ),
+      )
+      .orderBy(desc(tasks.createdAt), desc(tasks.id))
+      .limit(limit)
+    return rows.map((r) => ({
+      id: r.id,
+      title: r.title,
+      detail: r.status === 'done' ? 'Done' : null,
+    }))
   },
   own: async (q, workspaceId, of): Promise<StoredEdge[]> => {
     const edge = (id: string, projectId: string): StoredEdge => ({

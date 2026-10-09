@@ -1,4 +1,5 @@
-import { and, eq, inArray, isNull } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
+import { LIKE_ESCAPE, likePattern } from '../db/like'
 import { readingItems } from '../db/schema'
 import type { Linkable } from '../links/linkable'
 
@@ -29,5 +30,31 @@ export const readingLinkable: Linkable = {
         { title: r.title ?? r.url ?? '', detail: r.author },
       ]),
     )
+  },
+  find: async (q, workspaceId, text, limit) => {
+    const rows = await q
+      .select({
+        id: readingItems.id,
+        title: readingItems.title,
+        url: readingItems.url,
+        author: readingItems.author,
+      })
+      .from(readingItems)
+      .where(
+        and(
+          eq(readingItems.workspaceId, workspaceId),
+          isNull(readingItems.deletedAt),
+          text === ''
+            ? undefined
+            : sql`(reading_items.title ilike ${likePattern(text)} escape ${LIKE_ESCAPE}
+                   or reading_items.url ilike ${likePattern(text)} escape ${LIKE_ESCAPE}
+                   or reading_items.author ilike ${likePattern(text)} escape ${LIKE_ESCAPE})`,
+        ),
+      )
+      // Newest first, like the pile itself: the thing you just saved is the thing you are most
+      // likely to be reaching for.
+      .orderBy(desc(readingItems.createdAt), desc(readingItems.id))
+      .limit(limit)
+    return rows.map((r) => ({ id: r.id, title: r.title ?? r.url ?? '', detail: r.author }))
   },
 }
