@@ -1,6 +1,6 @@
 import type { ContactResponse } from '@ctws/contracts'
 import { afterEach, describe, expect, it } from 'vitest'
-import { appWithUser, createProject, type TaskCtx } from './helpers/tasks'
+import { appWithUser, createProject, setupWith, type TaskCtx, web } from './helpers/tasks'
 
 /**
  * 联系人 -- THE THIRD MODULE, on vCard 4.0's model (RFC 6350).
@@ -11,17 +11,11 @@ import { appWithUser, createProject, type TaskCtx } from './helpers/tasks'
  */
 
 const cleanups: (() => Promise<void>)[] = []
+
+const setup = () => setupWith(cleanups)
 afterEach(async () => {
   for (const stop of cleanups.splice(0)) await stop()
 })
-
-async function setup(): Promise<TaskCtx> {
-  const ctx = await appWithUser()
-  cleanups.push(ctx.stop)
-  return ctx
-}
-
-const web = (ctx: TaskCtx) => ({ ...ctx.authed, 'x-ctws-client': 'web' })
 
 async function add(ctx: TaskCtx, payload: Record<string, unknown>): Promise<ContactResponse> {
   const res = await ctx.app.inject({

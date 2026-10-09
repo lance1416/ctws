@@ -1,7 +1,7 @@
 import type { CalendarEntry, ContactResponse, MeetingOccurrence } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
-import { appWithUser, createProject, type TaskCtx } from './helpers/tasks'
+import { appWithUser, createProject, setupWith, type TaskCtx, web } from './helpers/tasks'
 
 /**
  * 会议 -- the fourth module, on iCalendar's `VEVENT` (RFC 5545).
@@ -14,17 +14,11 @@ import { appWithUser, createProject, type TaskCtx } from './helpers/tasks'
  */
 
 const cleanups: (() => Promise<void>)[] = []
+
+const setup = (email = 'p@example.com') => setupWith(cleanups, email)
 afterEach(async () => {
   for (const stop of cleanups.splice(0)) await stop()
 })
-
-async function setup(email = 'p@example.com'): Promise<TaskCtx> {
-  const ctx = await appWithUser(email)
-  cleanups.push(ctx.stop)
-  return ctx
-}
-
-const web = (ctx: TaskCtx) => ({ ...ctx.authed, 'x-ctws-client': 'web' })
 
 const WEEKLY = {
   title: '周会',

@@ -1,7 +1,14 @@
 import { OBJECT_TYPES, type ContactResponse, type LinksResponse } from '@ctws/contracts'
 import { afterEach, describe, expect, it } from 'vitest'
 import { EVERY_TYPE_ANSWERED, LINKABLES } from '../src/links/registry'
-import { appWithUser, createProject, createTask, type TaskCtx } from './helpers/tasks'
+import {
+  appWithUser,
+  createProject,
+  createTask,
+  setupWith,
+  type TaskCtx,
+  web,
+} from './helpers/tasks'
 
 /**
  * 反向链接 -- open a thing, see everything it is connected to.
@@ -13,17 +20,11 @@ import { appWithUser, createProject, createTask, type TaskCtx } from './helpers/
  */
 
 const cleanups: (() => Promise<void>)[] = []
+
+const setup = (email: string) => setupWith(cleanups, email)
 afterEach(async () => {
   for (const stop of cleanups.splice(0)) await stop()
 })
-
-async function setup(email: string): Promise<TaskCtx> {
-  const ctx = await appWithUser(email)
-  cleanups.push(ctx.stop)
-  return ctx
-}
-
-const web = (ctx: TaskCtx) => ({ ...ctx.authed, 'x-ctws-client': 'web' })
 
 async function post<T>(ctx: TaskCtx, url: string, payload: Record<string, unknown>): Promise<T> {
   const res = await ctx.app.inject({ method: 'POST', url, headers: web(ctx), payload })

@@ -1,6 +1,6 @@
 import type { ReadingItemResponse } from '@ctws/contracts'
 import { afterEach, describe, expect, it } from 'vitest'
-import { appWithUser, createProject, type TaskCtx } from './helpers/tasks'
+import { appWithUser, createProject, setupWith, type TaskCtx, web } from './helpers/tasks'
 
 /**
  * 待读清单 -- THE SECOND MODULE.
@@ -12,17 +12,11 @@ import { appWithUser, createProject, type TaskCtx } from './helpers/tasks'
  */
 
 const cleanups: (() => Promise<void>)[] = []
+
+const setup = () => setupWith(cleanups)
 afterEach(async () => {
   for (const stop of cleanups.splice(0)) await stop()
 })
-
-async function setup(): Promise<TaskCtx> {
-  const ctx = await appWithUser()
-  cleanups.push(ctx.stop)
-  return ctx
-}
-
-const web = (ctx: TaskCtx) => ({ ...ctx.authed, 'x-ctws-client': 'web' })
 
 const add = (ctx: TaskCtx, payload: Record<string, unknown>) =>
   ctx.app.inject({ method: 'POST', url: '/api/v1/reading', headers: web(ctx), payload })

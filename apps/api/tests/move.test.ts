@@ -8,22 +8,19 @@ import {
   createTask,
   eventsOf,
   expectBlockedByTreeLock,
+  setupWith,
   tasksOf,
   type TaskCtx,
 } from './helpers/tasks'
 
 const cleanups: (() => Promise<void>)[] = []
+
+const setup = () => setupWith(cleanups)
 afterEach(async () => {
   while (cleanups.length) await cleanups.pop()!()
 })
 
 const headers = { 'x-ctws-client': 'web' }
-
-async function setup(): Promise<TaskCtx> {
-  const ctx = await appWithUser()
-  cleanups.push(ctx.stop)
-  return ctx
-}
 
 function move(
   ctx: TaskCtx,

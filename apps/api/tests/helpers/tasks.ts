@@ -148,3 +148,26 @@ export async function expectBlockedByTreeLock<T>(ctx: TaskCtx, fire: () => Promi
   }
   return pending
 }
+
+/**
+ * THE HEADERS A BROWSER SENDS. The guard refuses a cookie-authenticated write without them
+ * (CSRF, spec §10.4), so every test that writes through the app has to send them -- and seven
+ * test files wrote this same line out to do it.
+ */
+export const web = (ctx: TaskCtx) => ({ ...ctx.authed, 'x-ctws-client': 'web' })
+
+/**
+ * An app with one user, registered, whose teardown the CALLER owns.
+ *
+ * Nineteen test files wrote the same four lines: boot, push the stop onto a list, return. The
+ * list is the caller's because `afterEach` is where it has to be drained, and a helper that
+ * owned it would be a second lifetime to reason about.
+ */
+export async function setupWith(
+  cleanups: (() => Promise<void>)[],
+  email?: string,
+): Promise<TaskCtx> {
+  const ctx = email === undefined ? await appWithUser() : await appWithUser(email)
+  cleanups.push(ctx.stop)
+  return ctx
+}

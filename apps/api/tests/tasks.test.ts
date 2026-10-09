@@ -8,21 +8,18 @@ import {
   createTask,
   eventsOf,
   expectBlockedByTreeLock,
+  setupWith,
   type TaskCtx,
 } from './helpers/tasks'
 
 const cleanups: (() => Promise<void>)[] = []
+
+const setup = () => setupWith(cleanups)
 afterEach(async () => {
   while (cleanups.length) await cleanups.pop()!()
 })
 
 const headers = { 'x-ctws-client': 'web' }
-
-async function setup(): Promise<TaskCtx> {
-  const ctx = await appWithUser()
-  cleanups.push(ctx.stop)
-  return ctx
-}
 
 function post(ctx: TaskCtx, payload: Record<string, unknown>) {
   return ctx.app.inject({ method: 'POST', url: '/api/v1/tasks', headers: ctx.authed, payload })

@@ -1,6 +1,13 @@
 import type { DependencyRef } from '@ctws/contracts'
 import { afterEach, describe, expect, it } from 'vitest'
-import { appWithUser, createProject, createTask, type TaskCtx } from './helpers/tasks'
+import {
+  appWithUser,
+  createProject,
+  createTask,
+  setupWith,
+  type TaskCtx,
+  web,
+} from './helpers/tasks'
 
 /**
  * 「A 没做完 B 做不了」 (D64).
@@ -11,17 +18,11 @@ import { appWithUser, createProject, createTask, type TaskCtx } from './helpers/
  */
 
 const cleanups: (() => Promise<void>)[] = []
+
+const setup = () => setupWith(cleanups)
 afterEach(async () => {
   for (const stop of cleanups.splice(0)) await stop()
 })
-
-async function setup(): Promise<TaskCtx> {
-  const ctx = await appWithUser()
-  cleanups.push(ctx.stop)
-  return ctx
-}
-
-const web = (ctx: TaskCtx) => ({ ...ctx.authed, 'x-ctws-client': 'web' })
 
 const dependOn = (ctx: TaskCtx, waits: string, on: string) =>
   ctx.app.inject({

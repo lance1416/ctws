@@ -6,20 +6,17 @@ import {
   createChain,
   createProject,
   createTask,
+  setupWith,
   tasksOf,
   type TaskCtx,
 } from './helpers/tasks'
 
 const cleanups: (() => Promise<void>)[] = []
+
+const setup = () => setupWith(cleanups)
 afterEach(async () => {
   while (cleanups.length) await cleanups.pop()!()
 })
-
-async function setup(): Promise<TaskCtx> {
-  const ctx = await appWithUser()
-  cleanups.push(ctx.stop)
-  return ctx
-}
 
 function list(ctx: TaskCtx, projectId: string, headers = ctx.authed) {
   return ctx.app.inject({ method: 'GET', url: `/api/v1/tasks?projectId=${projectId}`, headers })

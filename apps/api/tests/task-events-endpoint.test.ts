@@ -1,18 +1,14 @@
 import { randomUUID } from 'node:crypto'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
-import { appWithUser, createProject, createTask, type TaskCtx } from './helpers/tasks'
+import { appWithUser, createProject, createTask, setupWith, type TaskCtx } from './helpers/tasks'
 
 const cleanups: (() => Promise<void>)[] = []
+
+const setup = () => setupWith(cleanups)
 afterEach(async () => {
   while (cleanups.length) await cleanups.pop()!()
 })
-
-async function setup(): Promise<TaskCtx> {
-  const ctx = await appWithUser()
-  cleanups.push(ctx.stop)
-  return ctx
-}
 
 type Page = {
   events: { id: string; type: string; occurredAt: string }[]
