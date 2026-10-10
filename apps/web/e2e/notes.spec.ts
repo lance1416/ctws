@@ -1,5 +1,12 @@
 import { expect, test, type Page } from '@playwright/test'
-import { editDetail, makeProject, openProject, registerFreshUser, WEB } from './helpers'
+import {
+  editDetail,
+  makeProject,
+  openProject,
+  registerFreshUser,
+  sidewaysScroll,
+  WEB,
+} from './helpers'
 
 /**
  * MARKDOWN NOTES (D73): what renders, what is refused, and what is NOT downloaded.
@@ -461,18 +468,12 @@ test('a note full of wide things still has no horizontal scroll at 375', async (
     ].join('\n'),
   )
   await expect(notesBlock(page).locator('[data-note-diagram="ready"] svg')).toBeVisible()
-  const reading = await page.evaluate(() => ({
-    doc: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-    body: document.body.scrollWidth - document.body.clientWidth,
-  }))
+  const reading = await sidewaysScroll(page)
   expect(reading).toEqual({ doc: 0, body: 0 })
 
   await editDetail(page)
   await page.getByRole('button', { name: 'Full screen' }).click()
   await expect(writingSource(page)).toBeVisible()
-  const writing = await page.evaluate(() => ({
-    doc: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-    body: document.body.scrollWidth - document.body.clientWidth,
-  }))
+  const writing = await sidewaysScroll(page)
   expect(writing).toEqual({ doc: 0, body: 0 })
 })

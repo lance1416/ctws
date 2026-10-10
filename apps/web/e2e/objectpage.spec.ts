@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { registerFreshUser, WEB } from './helpers'
+import { apiPost, registerFreshUser } from './helpers'
 
 /**
  * ONE PAGE FOR EVERY KIND OF THING.
@@ -11,32 +11,26 @@ import { registerFreshUser, WEB } from './helpers'
  * that following a link from one lands on another.
  */
 
-const post = async (page: Page, path: string, data: Record<string, unknown>) => {
-  const res = await page.request.post(`/api/v1${path}`, { headers: WEB, data })
-  if (!res.ok()) throw new Error(`${path}: ${res.status()} ${await res.text()}`)
-  return res.json() as Promise<Record<string, string>>
-}
-
 async function world(page: Page) {
   await registerFreshUser(page)
-  const project = await post(page, '/projects', { name: 'Job hunt' })
-  const person = await post(page, '/contacts', {
+  const project = await apiPost(page, '/projects', { name: 'Job hunt' })
+  const person = await apiPost(page, '/contacts', {
     name: 'Ying Chen',
     org: 'Acme recruiting',
     projectIds: [project.id],
   })
   // A task, so the exclusion below is about a group that WOULD otherwise be there.
-  await post(page, '/tasks', { projectId: project.id, title: 'Rewrite the CV', parentId: null })
-  const book = await post(page, '/reading', {
+  await apiPost(page, '/tasks', { projectId: project.id, title: 'Rewrite the CV', parentId: null })
+  const book = await apiPost(page, '/reading', {
     kind: 'book',
     title: 'The Design of Everyday Things',
   })
-  await post(page, '/links', {
+  await apiPost(page, '/links', {
     from: { type: 'contact', id: person.id },
     to: { type: 'reading', id: book.id },
     kind: 'recommends',
   })
-  const meeting = await post(page, '/meetings', {
+  const meeting = await apiPost(page, '/meetings', {
     title: 'Second interview',
     startsLocal: '2026-10-20T21:00',
     timeZone: 'America/Toronto',

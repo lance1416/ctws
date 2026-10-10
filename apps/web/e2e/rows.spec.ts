@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { makeProject, makeTask, registerFreshUser, WEB } from './helpers'
+import { makeProject, makeTask, registerFreshUser, sidewaysScroll, WEB } from './helpers'
 import { dayOffset, nextMondayYmd, ymd } from './days'
 
 /** The month names the app prints, so a spec can build the string the page will show. */
@@ -668,11 +668,8 @@ test('the open date control adds no horizontal scroll at 375', async ({ page }) 
   await expect(page.getByRole('group', { name: /^Overdue: / })).toBeVisible()
   // 375px zero horizontal scroll is a pinned result (plan section 7); a popover anchored to the
   // right edge of a row is exactly the kind of thing that quietly breaks it.
-  const over = await page.evaluate(() => ({
-    body: document.body.scrollWidth - document.body.clientWidth,
-    doc: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-  }))
-  expect(over).toEqual({ body: 0, doc: 0 })
+  const over = await sidewaysScroll(page)
+  expect(over).toEqual({ doc: 0, body: 0 })
 })
 
 // ------------------------------------------------------------------------------- the project rail
@@ -899,11 +896,8 @@ test.describe('the tree on a phone', () => {
     expect(bareBox.height).toBeLessThanOrEqual(48)
 
     // ...and none of it bought a horizontal scrollbar.
-    const overflow = await page.evaluate(() => ({
-      body: document.body.scrollWidth - document.body.clientWidth,
-      doc: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-    }))
-    expect(overflow).toEqual({ body: 0, doc: 0 })
+    const overflow = await sidewaysScroll(page)
+    expect(overflow).toEqual({ doc: 0, body: 0 })
   })
 })
 

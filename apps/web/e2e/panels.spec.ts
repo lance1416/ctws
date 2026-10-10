@@ -5,6 +5,7 @@ import {
   makeTask,
   movementOf,
   registerFreshUser,
+  sidewaysScroll,
   WEB,
 } from './helpers'
 
@@ -212,11 +213,7 @@ test('the workbench is a panel grid at 1440 and one column at 375', async ({ pag
     }
     return out
   }
-  const overflow = () =>
-    page.evaluate(() => ({
-      doc: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-      body: document.body.scrollWidth - document.body.clientWidth,
-    }))
+  const overflow = () => sidewaysScroll(page)
 
   // --- 1440: two columns of panels, the banner across the top ---
   await page.setViewportSize(WIDE)

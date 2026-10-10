@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { registerFreshUser, WEB } from './helpers'
+import { apiPost, registerFreshUser } from './helpers'
 
 /**
  * SAYING THAT TWO THINGS ARE CONNECTED, from the interface.
@@ -11,16 +11,10 @@ import { registerFreshUser, WEB } from './helpers'
  */
 const picker = (page: Page) => page.getByRole('dialog').filter({ hasText: 'Link to' })
 
-const post = async (page: Page, path: string, data: Record<string, unknown>) => {
-  const res = await page.request.post(`/api/v1${path}`, { headers: WEB, data })
-  if (!res.ok()) throw new Error(`${path}: ${res.status()} ${await res.text()}`)
-  return res.json() as Promise<Record<string, string>>
-}
-
 async function world(page: Page) {
   await registerFreshUser(page)
-  const person = await post(page, '/contacts', { name: 'Ying Chen', org: 'Acme recruiting' })
-  const book = await post(page, '/reading', {
+  const person = await apiPost(page, '/contacts', { name: 'Ying Chen', org: 'Acme recruiting' })
+  const book = await apiPost(page, '/reading', {
     kind: 'book',
     title: 'The Design of Everyday Things',
   })
@@ -58,7 +52,7 @@ test('a book can be marked as the one someone recommended', async ({ page }) => 
 
 test('the edge reads from both ends, written once', async ({ page }) => {
   const { person, book } = await world(page)
-  await post(page, '/links', {
+  await apiPost(page, '/links', {
     from: { type: 'contact', id: person.id },
     to: { type: 'reading', id: book.id },
     kind: 'recommends',
@@ -77,12 +71,12 @@ test('an edge is taken off from either end, whichever way it was written', async
   // the meeting they attend runs IN -- and unlinking has to name the ends the way the row has
   // them, or it deletes nothing and the row comes back on the next read.
   const { person, book } = await world(page)
-  await post(page, '/links', {
+  await apiPost(page, '/links', {
     from: { type: 'contact', id: person.id },
     to: { type: 'reading', id: book.id },
     kind: 'recommends',
   })
-  await post(page, '/meetings', {
+  await apiPost(page, '/meetings', {
     title: 'Second interview',
     startsLocal: '2026-10-20T21:00',
     timeZone: 'America/Toronto',
@@ -105,13 +99,13 @@ test('an edge is taken off from either end, whichever way it was written', async
 
 test('an edge can be taken off again, and the one a module owns cannot', async ({ page }) => {
   const { person, book } = await world(page)
-  const project = await post(page, '/projects', { name: 'Job hunt' })
-  await post(page, '/links', {
+  const project = await apiPost(page, '/projects', { name: 'Job hunt' })
+  await apiPost(page, '/links', {
     from: { type: 'contact', id: person.id },
     to: { type: 'reading', id: book.id },
     kind: 'recommends',
   })
-  await post(page, '/tasks', { projectId: project.id, title: 'Rewrite the CV', parentId: null })
+  await apiPost(page, '/tasks', { projectId: project.id, title: 'Rewrite the CV', parentId: null })
 
   await page.goto(`/contacts/${person.id}`)
   const gone = page.waitForResponse(
@@ -130,8 +124,8 @@ test('an edge can be taken off again, and the one a module owns cannot', async (
 
 test('the picker offers every kind of thing, and never the object itself', async ({ page }) => {
   const { person } = await world(page)
-  await post(page, '/projects', { name: 'Job hunt' })
-  await post(page, '/meetings', {
+  await apiPost(page, '/projects', { name: 'Job hunt' })
+  await apiPost(page, '/meetings', {
     title: 'Second interview',
     startsLocal: '2026-10-20T21:00',
     timeZone: 'America/Toronto',

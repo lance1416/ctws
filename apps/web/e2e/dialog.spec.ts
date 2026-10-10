@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { makeProject, makeTask, pickOne, registerFreshUser } from './helpers'
+import { makeProject, makeTask, pickOne, registerFreshUser, sidewaysScroll } from './helpers'
 import { dayOffset, ymd } from './days'
 
 /**
@@ -260,10 +260,7 @@ test('the dialog fits 375px with no horizontal scroll', async ({ page }) => {
     .getByLabel('Notes')
     .fill('一段不短的备注，用来把这块内容撑开看看会不会顶出横向滚动条')
 
-  const over = await page.evaluate(() => ({
-    doc: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-    body: document.body.scrollWidth - document.body.clientWidth,
-  }))
+  const over = await sidewaysScroll(page)
   expect(over).toEqual({ doc: 0, body: 0 })
 
   // The document alone is not enough, and a mutation proved it: the scrim is its own scroll

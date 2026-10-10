@@ -331,3 +331,30 @@ export async function movementOf(page: Page): Promise<ProjectMovementResponse[]>
  * guard), so a test that posts over `page.request` has to send it too.
  */
 export const WEB = { 'x-ctws-client': 'web' }
+
+/**
+ * Makes one of anything over the API and hands back what the server said, for the tests whose
+ * subject is what comes NEXT. It throws on a refusal: a fixture that failed quietly turns the
+ * real assertion into a mystery about an empty page.
+ */
+export async function apiPost(
+  page: Page,
+  path: string,
+  data: Record<string, unknown>,
+): Promise<Record<string, string>> {
+  const res = await page.request.post(`/api/v1${path}`, { headers: WEB, data })
+  if (!res.ok()) throw new Error(`${path}: ${res.status()} ${await res.text()}`)
+  return (await res.json()) as Record<string, string>
+}
+
+/**
+ * How far the page can be scrolled sideways, which must be 0 at every width this app claims to
+ * work at. BOTH the document and the body: a layout can overflow one and not the other, and the
+ * one that overflows is whichever element the offending rule happens to sit on.
+ */
+export async function sidewaysScroll(page: Page): Promise<{ doc: number; body: number }> {
+  return page.evaluate(() => ({
+    doc: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    body: document.body.scrollWidth - document.body.clientWidth,
+  }))
+}

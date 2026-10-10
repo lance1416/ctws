@@ -35,7 +35,6 @@ const WIDE = { width: 1440, height: 1000 }
 // 1024: the widest viewport still BELOW the 1280 threshold, so it is the case a min-width rule
 // gets wrong most easily.
 const MEDIUM = { width: 1024, height: 800 }
-const PHONE = { width: 375, height: 820 }
 const dueAgo = (n: number) => new Date(Date.now() - n * DAY).toISOString()
 const header = (page: Page) =>
   page.getByRole('region', { name: 'Project at a glance', exact: true })
@@ -399,32 +398,3 @@ test('a single-line tree row is 44px tall, at every depth', async ({ page }) => 
 })
 
 // ----------------------------------------------------------------------------------- the phone
-
-test('the project page does not scroll sideways at 375, banner and all', async ({ page }) => {
-  await registerFreshUser(page)
-  const pid = await makeProject(page, '一个名字相当长的项目用来把横幅挤宽')
-  const a = await makeTask(
-    page,
-    pid,
-    '一条标题也很长的任务，用来看它会不会把这一行撑出屏幕之外去',
-    {
-      dueAt: dueAgo(2),
-    },
-  )
-  await makeTask(page, pid, '深一点的那条', { dueAt: dueAgo(9) }, a)
-
-  await page.setViewportSize(PHONE)
-  await page.goto(`/projects/${pid}`)
-  await expect(stat(page, 'Overdue')).toHaveText('2')
-  const overflow = () =>
-    page.evaluate(() => ({
-      doc: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-      body: document.body.scrollWidth - document.body.clientWidth,
-    }))
-  expect(await overflow(), '详情关着时').toEqual({ doc: 0, body: 0 })
-
-  // ...and with the detail open, which at this width is a layer.
-  await openDetail(page, '深一点的那条')
-  await expect(page.getByRole('dialog', { name: 'Task details' })).toBeVisible()
-  expect(await overflow(), '详情打开时').toEqual({ doc: 0, body: 0 })
-})

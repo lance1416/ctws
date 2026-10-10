@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { makeProject, makeTask, openDetail, registerFreshUser } from './helpers'
+import { makeProject, makeTask, openDetail, registerFreshUser, sidewaysScroll } from './helpers'
 
 // The three-pane workbench: the left rail's counts, the detail as a column rather than a layer,
 // and the one thing the narrow end of the range must never do.
@@ -140,11 +140,7 @@ test('nothing scrolls sideways at 375px', async ({ page }) => {
   })
 
   await page.setViewportSize(PHONE)
-  const overflow = () =>
-    page.evaluate(() => ({
-      doc: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-      body: document.body.scrollWidth - document.body.clientWidth,
-    }))
+  const overflow = () => sidewaysScroll(page)
 
   for (const [name, url] of [
     ['Today', '/'],
