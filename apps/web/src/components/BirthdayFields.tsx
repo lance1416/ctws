@@ -227,6 +227,15 @@ function BirthdayForm({
     enabled: yearOk,
   })
 
+  /**
+   * 服务端说这个日子不存在（400），不是预览没拿到（网络、500）。
+   *
+   * 两者要分开：前者保存必然也是 400，而保存这条路径不画错误——按下去只会让输入无声消失；后者抖
+   * 一下就过去了，不该把人锁在表单里。
+   */
+  const refused =
+    preview.isError && preview.error instanceof ApiError && preview.error.status === 400
+
   return (
     <Field label="Birthday" shape="above">
       <div className="flex flex-col gap-2">
@@ -338,7 +347,14 @@ function BirthdayForm({
         </p>
 
         <div className="flex items-center gap-2">
-          <button type="button" className={BUTTON.primary} onClick={() => onSave(draft)}>
+          <button
+            type="button"
+            className={BUTTON.primary}
+            // 服务端已经拒了这个日子，保存只会 400，而保存这条路径不画错误：按钮关着，旁边那句话
+            // 说的就是原因。只认 400 -- 网络抖一下不该把人锁在表单里。
+            disabled={refused}
+            onClick={() => onSave(draft)}
+          >
             Save
           </button>
           <button type="button" className={BUTTON.secondary} onClick={onCancel}>

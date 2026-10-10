@@ -196,6 +196,10 @@ test('选了那一年没有的日子，预览就说是哪一条不成立', async
   await expect(page.getByTestId('birthday-preview')).toContainText(
     '正月 has 29 days in 2021, so there is no 三十.',
   )
+  // 服务端会拒，而保存这条路径不画错误 -- 按下去只会让输入无声消失。
+  await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled()
+  await pickOne(page, 'Lunar day', '廿九')
+  await expect(page.getByRole('button', { name: 'Save' })).toBeEnabled()
 })
 
 test('联系人列表能按 circle 筛，而且不默认藏人', async ({ page }) => {
