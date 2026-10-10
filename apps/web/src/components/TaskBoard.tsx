@@ -26,8 +26,9 @@ import { STATUS_LABEL } from './statusLabel'
  * is also why it has no route of its own and no row in the rail: adding a third view later costs
  * one entry in the module's `views`.
  *
- * IT IS FLAT, AND THAT IS THE POINT. The tree answers 「这件事由哪些小事组成」; the board answers
- * 「什么卡在哪一步」, and nesting cannot be drawn in a column without turning it back into a tree.
+ * IT IS FLAT, AND THAT IS THE POINT. The tree answers what a piece of work is made of; the board
+ * answers what is stuck at which step, and nesting cannot be drawn in a column without turning it
+ * back into a tree.
  * Every task appears exactly once, under its own status, with its parent named beneath it so a
  * card is never orphaned from the work it belongs to.
  */

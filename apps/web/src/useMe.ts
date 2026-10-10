@@ -18,9 +18,9 @@ export function useMe() {
  *
  * The API decides which segment a task is in, which day it was completed on and which week counts
  * as this one, all with `at time zone $tz` on `users.timezone`. Anything the page then says about a
- * day has to be worked out in the SAME zone or the two disagree -- and they did: the row's wording
- * came from the browser's zone, so a reader on another machine could be shown a task filed under
- * 逾期 whose own row read 「明天截止」. Every date helper takes a zone now and this is what every
+ * day has to be worked out in the SAME zone, or the two disagree: wording taken from the
+ * browser's zone would show a reader on another machine a task the server has filed as overdue
+ * whose own row says it is due tomorrow. Every date helper takes a zone, and this is what every
  * caller passes.
  *
  * The browser's zone is the fallback for the one moment the `['me']` query has not landed (and for

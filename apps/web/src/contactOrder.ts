@@ -4,8 +4,8 @@ import type { ContactResponse } from '@ctws/contracts'
  * A CONTACT LIST IN THE READER'S ORDER.
  *
  * The server returns them ordered by name so a page is deterministic, but a plain byte order puts
- * 陈颖 before 老王 and both after every Latin name -- which is not where a reader looks for them.
- * Chinese names belong in pinyin order, and that is a COLLATION question, not a sorting one.
+ * Chinese names in code-point order rather than pinyin order, and all of them after every Latin
+ * name -- which is not where a reader looks for them. Ordering them is a COLLATION question.
  *
  * Done in the browser rather than in Postgres. The database has the ICU collations
  * (`zh-Hans-x-icu`) and using them would be tidier, but it would make correct ordering depend on

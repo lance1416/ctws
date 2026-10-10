@@ -20,7 +20,7 @@ import type { CaptureTargetState, SearchHit, WorkspaceModule } from './contract'
  *
  * Everything below is a CONTRIBUTION, not a change to the shell: the rail row, the chord, the
  * search provider, the project block and the capture rule all arrive through the contract, and
- * the shell was not edited to make room for 待读. The one thing the contract gained is
+ * the shell was not edited to make room for it. The one thing the contract gained is
  * `accepts` -- there was no way to route a captured line while only one module could take one,
  * and that is exactly the kind of gap a second module is supposed to find.
  */
@@ -83,7 +83,7 @@ function useReadingHits(query: string) {
   return { hits, isError: results.isError, isSuccess: results.isSuccess }
 }
 
-/** This module's dated things: 「想读完」, already a calendar day in the account's zone. */
+/** This module's dated things: when to finish one, already a day in the account's zone. */
 function useReadingEntries(range: { from: string; to: string }) {
   const result = useQuery({
     queryKey: ['reading-calendar', range.from, range.to],
@@ -93,7 +93,7 @@ function useReadingEntries(range: { from: string; to: string }) {
 }
 
 /**
- * THE WORKBENCH CARD: what belongs to NO project -- 「散的」.
+ * THE WORKBENCH CARD: what belongs to NO project.
  *
  * Deliberately not the whole list. Anything filed under a project is on that project's page, and
  * a card that repeated it would make two places to keep in your head. What is left is exactly
@@ -130,16 +130,11 @@ function ReadingWidget() {
 const WIDGET_ROWS = 5
 
 /**
- * NO BLOCK ON A PROJECT PAGE ANY MORE.
+ * NO BLOCK ON A PROJECT PAGE.
  *
- * This module used to hang a list of its own rows under every project, which -- with four modules
- * doing the same -- made the project page a wall of blocks: the module structure drawn for the
- * reader. Those rows are edges now, and the shell draws every kind of edge the same way
- * (framing §2). The task tree is the one block that stays, because a tree with drag,
- * dependencies and an inline new row is an editor, not a list.
- *
- * The cost, stated: one of these can no longer be made FROM a project page. It is made on its own
- * page and filed there, or dropped into the capture box.
+ * This module's rows reach a project as edges, and the shell draws every kind of edge the same
+ * way (framing §2). One of these is made on its own page and filed there, or dropped into the
+ * capture box, never from a project page.
  */
 
 /** This module's numbers in the project banner, beside the task module's. */
@@ -167,7 +162,7 @@ export const readingModule: WorkspaceModule = {
   routes: [{ index: true, element: <Reading /> }],
   capture: { useTarget: useReadingCapture, accepts: isReadingUrl },
   search: { useHits: useReadingHits },
-  // `l` for list. `r` is the task module's 回顾 and one keyspace is shared across modules, so a
+  // `l` for list. `r` is the task module's Review and one keyspace is shared across modules, so a
   // second module cannot take a key that is already spoken for.
   chords: [{ id: 'reading', key: 'l', label: 'Go to Reading', resolve: () => `/${ID}`, order: 15 }],
   calendar: { label: 'Reading', useEntries: useReadingEntries },

@@ -34,7 +34,7 @@ export function StatusButton({
   )
 }
 
-/** Start / stop: the cheap route to 正在做. Same out-of-tab-order rule; the key is `s`. */
+/** Start / stop: the cheap route to In progress. Same out-of-tab-order rule; the key is `s`. */
 export function StartButton({
   status,
   title,

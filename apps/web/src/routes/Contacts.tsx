@@ -9,7 +9,7 @@ import { NewContactInput } from '../components/NewContactInput'
 import { LIST_MEASURE } from '../rowLead'
 
 /**
- * 联系人.
+ * CONTACTS.
  *
  * One flat list, by name. No groups, no favourites, no letter index: this is one person's address
  * book, and at the size it will ever reach, sorting it by name and letting search do the rest is

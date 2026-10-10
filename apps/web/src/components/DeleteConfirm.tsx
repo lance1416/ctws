@@ -1,5 +1,5 @@
 /**
- * The in-page confirmation for a destructive delete: says what is lost, then 确认删除 / 取消.
+ * The in-page confirmation for a destructive delete: says what is lost, then Confirm / Cancel.
  * Shared by projects and tasks so there is one treatment. In the page, never window.confirm: a
  * browser modal blocks this project's automation. The confirm button takes focus; the owner
  * decides where focus goes when it ends.

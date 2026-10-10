@@ -4,18 +4,17 @@ import type { DateHints } from '../dueAt'
 import type { LeadIcon } from '../rowLead'
 
 /**
- * The row system. Every list in the app -- 今天, the project tree, 已完成 and the search results --
+ * The row system. Every list in the app -- Today, the project tree, Done and the search results --
  * lays a row out with the SAME parts at the SAME x:
  *
  *   [project rail][status marker 1.75rem][icon slot 1.5rem][title -- the whole line]
  *                                                          [second line: breadcrumb · the dates]
  *
- * WHY AN ICON AND A SECOND LINE, and not the two date columns this replaces (rows-and-reading §2,
- * second edition). The columns scanned well and cost 19rem of every row: inside a 734px panel there
- * was no width left for a title, so the dates had to drop to a second line anyway below a threshold.
- * That made the cramped case and the wide case two layouts. An icon at the row start plus the full
- * wording underneath is ONE layout at every width -- and the wording stops being compressed into a
- * cell, which is the thing the user actually complained about.
+ * WHY AN ICON AND A SECOND LINE, and not two date columns (rows-and-reading §2). Columns scan
+ * well and cost 19rem of every row: inside a 734px panel that leaves no width for a title, so the
+ * dates drop to a second line below a threshold anyway -- two layouts, one cramped and one wide.
+ * An icon at the row start plus the full wording underneath is ONE layout at every width, and the
+ * wording is never compressed into a cell.
  *
  * The icons are the column now: a fixed slot at a fixed x on every row of a list, reserved for the
  * whole list or not at all (`../rowLead`). The second line is deliberately NOT a column -- it is
@@ -35,19 +34,19 @@ export const RAIL_GUTTER_PX = 12
 
 /** Every row list is a column of rows. (It no longer needs `@container`: nothing asks its width.) */
 export const ROW_LIST = 'flex flex-col'
-/** 已完成 has one right-hand column (the clock), so it keeps its own, shorter template. */
+/** Done has one right-hand column (the clock), so it keeps its own, shorter template. */
 export const DONE_ROW_GRID = 'grid-cols-[1.75rem_minmax(0,1fr)_4.5rem]'
 /**
- * How wide a LIST is, which is not how wide the panel is. At the full 1440 the clock on 已完成 sat
- * 570px from the task it timed; a right-hand column that far from its row is not using the width,
- * it is spending it. The task lists' own measure is a single value in `../rowLead`; 已完成 carries
- * one short column (a clock), so its list is narrower still.
+ * How wide a LIST is, which is not how wide the panel is. At 1440 an unbounded list puts Done's
+ * clock 570px from the task it times, and a right-hand column that far from its row is not using
+ * the width, it is spending it. The task lists' own measure is a single value in `../rowLead`;
+ * Done carries one short column (a clock), so its list is narrower still.
  */
 export const DONE_LIST_MEASURE = 'max-w-[36rem]'
 
 /**
  * The 3px bar at x=0. It means ONE thing -- which project this task belongs to -- in every view.
- * On a cross-project list (今天, 已完成, search) that makes "which project is this" pre-attentive;
+ * On a cross-project list (Today, Done, search) that makes "which project is this" pre-attentive;
  * in a project tree it is one continuous spine.
  *
  * `aria-hidden`, and never the only carrier: there are six hues and more projects than that, so
@@ -87,7 +86,7 @@ export function ProjectRail({
  * A deadline's glyph: a flag on a pole. Upright, with a vertical silhouette.
  *
  * The two date semantics must not differ by HUE ALONE (plan section 2). They differ in three
- * channels: the words ("…截止" against "排到…"), the colour family (warm against cool) and -- this
+ * channels: the words ("due" against "planned"), the colour family (warm against cool) and -- this
  * -- the shape. A flag is a line you must not cross; it is filled once the line has been crossed.
  */
 /**
@@ -162,19 +161,19 @@ export function NotesMark() {
 }
 
 /**
- * The names the leading icons answer to. Every icon has one (spec §2, 无障碍): an icon with no name
+ * The names the leading icons answer to. Every icon has one (spec §2): an icon with no name
  * is a WCAG 1.1.1 failure, and here it would also leave a reader who cannot see the colour without
  * the one thing the glyph is for.
  *
  * “Has notes” and not “Notes”, on purpose: accessible names share ONE FLAT NAMESPACE and are
- * matched by substring, and a bare 备注 would collide with the detail pane's own 备注 field on the
- * very page both appear on. For the same reason the missed deadline is “Overdue” and not
- * 「有截止，已逾期」: a name that CONTAINS “Has a deadline” makes every by-name query for the un-missed
- * flag match the missed one too. The plan's name is §2's own word, “Has a plan”, which is also the one
- * that does NOT contain the pane's 排期 field.
+ * matched by substring, so a bare “Notes” would collide with the detail pane's own Notes field on
+ * the very page both appear on. For the same reason the missed deadline is “Overdue” and not
+ * “Has a deadline, overdue”: a name CONTAINING “Has a deadline” makes every by-name query for the
+ * un-missed flag match the missed one too. The plan's name is §2's own word, “Has a plan”, which
+ * is also the one that does NOT contain the pane's Plan field.
  *
- * “Has a deadline” does contain the pane's 截止 field, and there is no word for a deadline in this app's
- * vocabulary that does not; the queries that mean that FIELD say `{ exact: true }`.
+ * “Has a deadline” does contain the pane's Due field, and no word for a deadline in this app's
+ * vocabulary avoids it; the queries that mean that FIELD say `{ exact: true }`.
  */
 const LEAD_LABEL: Record<LeadIcon, string> = {
   missed: 'Overdue',
@@ -192,8 +191,8 @@ const LEAD_TONE: Record<LeadIcon, string> = {
 }
 
 /**
- * THE ROW'S LEADING ICON. One glyph, no text: it answers only 「有没有、急不急」, and the second
- * line under the title carries the information itself.
+ * THE ROW'S LEADING ICON. One glyph, no text: it answers only whether there is a date and whether
+ * it is urgent, and the second line under the title carries the information itself.
  *
  * `role="img"` with a name of its own rather than `aria-hidden`: it accelerates the reading for an
  * eye, so it must not be the one thing a screen reader is missing.
@@ -220,7 +219,7 @@ export function LeadMark({ icon }: { icon: LeadIcon }) {
 /**
  * THE SECOND LINE: the breadcrumb and the dates, in full words.
  *
- * This is where the information actually lives (spec §2, 无障碍). The icon at the row start says
+ * This is where the information actually lives (spec §2). The icon at the row start says
  * there IS a deadline and whether it has been missed; this says which one and when, to the minute,
  * and it says it in TEXT -- so colour is never the only carrier (WCAG 1.4.1) and a screen reader
  * reaching the row gets the date from the words rather than from a hue.
@@ -230,7 +229,7 @@ export function LeadMark({ icon }: { icon: LeadIcon }) {
  *
  * No alignment, no truncated dates: this line is read, not scanned (§2). Each phrase is kept whole
  * (`whitespace-nowrap` per part) so a narrow panel breaks the line BETWEEN phrases rather than
- * inside 「已逾 2 天」.
+ * inside a phrase like "2 days late".
  */
 export function RowMeta({
   breadcrumb = null,
@@ -247,11 +246,11 @@ export function RowMeta({
    *  project is known there and the hierarchy is visible from the indentation. */
   breadcrumb?: string | null
   due?: DateHints['due']
-  /** The plan, worded: "排到明天", or "原定9月28日，已顺延" once it has been carried. */
+  /** The plan, worded: "Planned for tomorrow", or "Was Sep 28, carried" once carried. */
   plan?: string | null
   carried?: boolean
   /**
-   * HOW LONG THIS HAS BEEN SITTING HERE, worded: 「3 天前捕获」(D49).
+   * HOW LONG THIS HAS BEEN SITTING HERE, worded: "Captured 3 days ago" (D49).
    *
    * The inbox is the only list that passes one. It is also the only part that is dropped when the
    * line has anything else to say: a date or a plan is a decision someone made about this task,
@@ -260,14 +259,14 @@ export function RowMeta({
    */
   age?: string | null
   /**
-   * 「60% · 2 进行中 · 1 已逾期」 for a row that HAS CHILDREN (design spec §7.3).
+   * "60% · 2 in progress · 1 overdue" for a row that HAS CHILDREN (design spec §7.3).
    *
    * Only for a parent. A leaf's "progress" is just its own status, already drawn as the marker
    * at the head of the row, and saying it again in words is noise.
    */
   rollup?: string | null
   /**
-   * 「被「跑通 CI」挡着」 (D64) -- what this row is waiting for, named.
+   * "Waiting on <task>" (D64) -- what this row is waiting for, named.
    *
    * FIRST ON THE LINE, and never dropped. Everything else here says when something is due; this
    * says whether it can be done at all, and a row that cannot be worked on is not a row whose
@@ -280,12 +279,12 @@ export function RowMeta({
    * A SUMMARY SURFACE's line: the project and how late, nothing else.
    *
    * This is a per-surface editorial choice, not a compression of the row's vocabulary (spec §2
-   * stands: wherever the full line is shown it is whole, to the minute). The 逾期 panel is a
+   * stands: wherever the full line is shown it is whole, to the minute). The Overdue panel is a
    * one-third-width summary of "what is late, and how late"; with the absolute deadline and the
-   * plan added, every row wrapped to three lines and the titles truncated anyway. The absolute
-   * deadline is NOT lost: it is on the same task's row in the main 今天 queue, in the detail pane,
-   * and in this line's tooltip (`exact`). A deadline that is not yet past a whole day has no
-   * "已逾" phrase to show, so it falls back to the full wording rather than to nothing.
+   * plan added, every row wraps to three lines and the titles truncate anyway. The absolute
+   * deadline is NOT lost: it is on the same task's row in the main Today queue, in the detail
+   * pane, and in this line's tooltip (`exact`). A deadline not yet past a whole day has no "late"
+   * phrase to show, so it falls back to the full wording rather than to nothing.
    */
   summary?: boolean
 }) {
@@ -387,13 +386,11 @@ export function RowMeta({
   ).filter((part): part is Part => part !== null)
   if (parts.length === 0) return null
   return (
-    // 元信息: 14/22, weight 400, from the typography spec's scale -- and 400 for EVERY phrase on
-    // this line, including the overdue date, the 已逾 phrase and a carried plan, which each used
-    // to be 500. The spec publishes no 600 step at 14/22 (only at 16/24, 行标题（强调）), and 500
-    // does not exist any more: it is a no-op on the Microsoft YaHei fallback path. The three
-    // emphases lose nothing they were the sole carrier of -- the deadline keeps `missed` against
-    // `deadline`, the row keeps its own leading glyph, and the lateness is spelled out in words
-    // (WCAG 1.4.1 was never satisfied by the weight here).
+    // META: 14/22, weight 400, from the typography spec's scale -- 400 for EVERY phrase on this
+    // line, the overdue date and the lateness phrase included. The scale publishes no 600 step at
+    // 14/22, and 500 is a no-op on the Microsoft YaHei fallback path, so weight carries nothing
+    // here: the deadline is told apart by `missed` against `deadline`, by the row's leading glyph,
+    // and by the words themselves (WCAG 1.4.1).
     <span
       data-row-meta
       className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 text-sm text-fg-muted"

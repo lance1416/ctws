@@ -12,24 +12,22 @@ import {
  *
  * Two things live here and they are not the same kind of thing:
  *
- * 1. THE ARITHMETIC is `date-fns` + `@date-fns/tz`'s `TZDate`. It used to be hand-written, and the
- *    hand-written version had already cost this repo three incidents: a test that was red for one
- *    hour in every twenty-four, a midnight-boundary bug, and a helper written to patch it. Two of
- *    the comments it carried were DST workarounds -- "round, not floor: a DST change makes a local
- *    day 23 or 25 hours" and "done in UTC so a DST change cannot shift the day". Neither is needed
- *    now: `differenceInCalendarDays` over two `TZDate`s counts CALENDAR days in a named zone, which
- *    is the question, so there is nothing left to round.
+ * 1. THE ARITHMETIC is `date-fns` + `@date-fns/tz`'s `TZDate`, never hand-rolled. A local day is
+ *    23 or 25 hours long across a DST change, which is what makes day arithmetic by subtraction
+ *    wrong for one hour in every twenty-four. `differenceInCalendarDays` over two `TZDate`s counts
+ *    CALENDAR days in a named zone, which is the question being asked, so there is nothing to
+ *    round and no boundary to patch.
  *
- * 2. THE WORDING is this product's and stays hand-written. 今天 / 明天 / 昨天, 「10月8日」, 「已逾 N
- *    天」, 「原定…，已顺延」, and the decision to say a deadline in TWO phrases rather than one, are
- *    editorial choices no library makes. A date-fns locale would replace them with its own.
+ * 2. THE WORDING is this product's and stays hand-written. Today / Tomorrow / Yesterday, "Oct 8",
+ *    "2 days late", "Was Sep 28, carried", and the decision to say a deadline in TWO phrases
+ *    rather than one, are editorial choices no library makes. A date-fns locale would replace
+ *    them with its own.
  *
- * WHOSE TODAY. Every function that needs to know what day it is takes an explicit IANA `timeZone`
- * and the caller passes the ACCOUNT's (`useTimeZone`). It used to read `getFullYear()/getMonth()/
- * getDate()`, i.e. the BROWSER's zone, while the server segments tasks with `at time zone $tz` on
- * the account's -- so a reader whose browser sat in another zone (travelling, a second machine, a
- * browser in a container) could see the server place a task in 逾期 while the row still read
- * 「明天截止」. There is one notion of "today" now and `todayIn` is it.
+ * WHOSE TODAY. Every function that needs to know what day it is takes an explicit IANA `timeZone`,
+ * and the caller passes the ACCOUNT's (`useTimeZone`). The browser's zone is never consulted: the
+ * server segments tasks with `at time zone $tz` on the account's, so a reader in another zone
+ * (travelling, a second machine, a browser in a container) would otherwise see the server call a
+ * task overdue while its own row said it was due tomorrow. `todayIn` is the one notion of today.
  */
 
 /** A calendar day as "YYYY-MM-DD": the shape `scheduled_on` is stored and sent in. */
@@ -116,9 +114,9 @@ export function dayPhrase(day: string, today: string): string {
 
 /**
  * The instant a day ENDS, in the account's zone: a new deadline with no time on it means "by the
- * end of that day". Both the 新建 dialog and the detail pane's named days pick this, and they must
- * pick the same thing -- the string concatenation they each did (`new Date(`${day}T23:59:00`)`)
- * read as the BROWSER's 23:59, which is a different instant and sometimes a different day.
+ * end of that day". Both the New task dialog and the detail pane's named days pick this, and they
+ * must pick the same thing -- composing the string by hand (`new Date(`${day}T23:59:00`)`) reads
+ * as the BROWSER's 23:59, which is a different instant and sometimes a different day.
  */
 export function dayEndIso(day: string, timeZone: string): string {
   const [y, m, d] = day.split('-').map(Number) as [number, number, number]
@@ -224,11 +222,10 @@ export type DateHints = {
  * disagree whenever they differ -- the server filing a task under Overdue while the row beneath its
  * own heading read "Due tomorrow". Same zone, same answer.
  *
- * THE WORDING IS COMPLETE, TO THE MINUTE (rows-and-reading §2, second edition). It lives on a line
- * of its own under the title now, not in an 8rem cell, so there is nothing to compress for: an
- * overdue deadline says WHEN it was -- "Due Oct 4, 12:30 · 2 days late" -- rather than only how
- * long ago. The previous edition shortened it to "2 days late" because the cell was narrow, and the
- * user rejected exactly that compression: "2 days late" cannot answer "due when?".
+ * THE WORDING IS COMPLETE, TO THE MINUTE (rows-and-reading §2). It lives on a line of its own
+ * under the title, not in an 8rem cell, so there is nothing to compress for: an overdue deadline
+ * says WHEN it was -- "Due Oct 4, 12:30 · 2 days late" -- and not only how long ago, because "2
+ * days late" cannot answer "due when?".
  */
 export function dateHints(
   t: { status: string; dueAt: string | null; scheduledOn: string | null },

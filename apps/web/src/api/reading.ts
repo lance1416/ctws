@@ -52,8 +52,8 @@ export function deleteReadingItem(id: string): Promise<void> {
 /**
  * What a row is CALLED when nobody has typed a title: its host.
  *
- * 「粘链接先显示域名」 -- the url itself is unreadable at row width and the host is the part a
- * person recognises. A url the browser cannot parse falls back to the raw string rather than to
+ * THE HOST, for a pasted link: the url itself is unreadable at row width and the host is the
+ * part a person recognises. A url the browser cannot parse falls back to the raw string rather than to
  * an empty row, because an item you cannot see is worse than an ugly one.
  */
 export function readingLabel(item: Pick<ReadingItemResponse, 'title' | 'url'>): string {

@@ -7,14 +7,14 @@ import { useProjectRail } from '../projectColor'
 import { moduleWidgets } from '../modules/registry'
 
 /**
- * 工作台 -- THE SHELL'S OWN FRONT PAGE, and the first surface that is nobody's module.
+ * THE WORKBENCH -- THE SHELL'S OWN FRONT PAGE, and the first surface that is nobody's module.
  *
- * It answers one question: 「现在手头有什么」. Every card on it is a glance contributed by a
+ * It answers one question: what is in front of me. Every card on it is a glance contributed by a
  * module, and what the cards deliberately leave out is anything that already has a home on a
  * project page -- the workbench is where the things belonging to no line of work live.
  *
- * The arrangement is FIXED. No drag, no resize, no 「添加面板」: one person has one taste, and a
- * free grid only moves the design decision onto the person using the tool (workbench spec §1).
+ * The arrangement is FIXED. No drag, no resize, no way to add a panel: one person has one taste,
+ * and a free grid only moves the design decision onto the person using the tool (workbench §1).
  * If a card is in the wrong place, that is a decision to make here, in the code, once.
  */
 export function Workbench() {

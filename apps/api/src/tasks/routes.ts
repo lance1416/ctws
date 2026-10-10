@@ -154,7 +154,7 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
           title: r.title,
           to: `/tasks/today`,
           kind: r.kind,
-          // A plan and a deadline are about the DAY; 「15:30 之前」 is not how anyone reads one.
+          // A plan and a deadline are about the DAY; nobody reads one as "by 15:30".
           time: null,
           zone: null,
           projectId: r.project_id,
@@ -210,7 +210,7 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
     },
   )
 
-  // 做到哪儿了. Under the task module's namespace and not under `projects`: the numbers are task
+  // Movement. Under the task module's namespace and not under `projects`: the numbers are task
   // semantics (finished, open, logged change) hung on a shell project, exactly as `today` and
   // `completed` are. The project itself stays the shell's.
   typed.get(
@@ -381,7 +381,7 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
   )
 
   /**
-   * 「A 没做完 B 做不了」 (D64). Three routes, and the pair that writes is deliberately NOT a
+   * ONE TASK WAITING FOR ANOTHER (D64). Three routes, and the pair that writes is NOT a
    * `PATCH` on the task: a dependency is an edge between two tasks, and `PATCH /tasks/:id` is
    * for this task's own independent scalar fields -- the same division `move` is on the other
    * side of.

@@ -23,7 +23,7 @@ import {
 } from './occurrences'
 
 /**
- * 会议's storage.
+ * MEETINGS' storage.
  *
  * A row here is a SERIES, not a meeting: one row plus its rule and its exceptions describes every
  * occurrence of it. Nothing below ever stores an instant -- `occurrences.ts` has the argument.

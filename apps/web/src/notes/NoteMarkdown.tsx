@@ -65,13 +65,12 @@ const components: Components = {
    * GFM'S TASK-LIST CHECKBOX, AS A MARK RATHER THAN A CONTROL.
    *
    * GFM renders `- [x]` as `<input type="checkbox" disabled>`, and reading mode is pinned by
-   * `pane.spec.ts` to contain NOT ONE control: 「编辑和信息显示在同一个地方，容易误触」 is the
-   * complaint that invariant answers, and a disabled checkbox would make it conditional on what a
-   * note happens to contain. It is also a control that does nothing, which is worse for a screen
+   * `pane.spec.ts` to contain NOT ONE control, so nothing on screen can be changed by a mis-aimed
+   * click. A disabled checkbox would make that conditional on what a note happens to contain. It is also a control that does nothing, which is worse for a screen
    * reader than a labelled image. Shape plus an accessible name, like `StatusMark`.
    *
-   * 「已勾选 / 未勾选」 and not 「已完成 / 未完成」: accessible names share one flat namespace and
-   * are matched by substring, and 已完成 is already a task STATUS on this very panel.
+   * “Checked” / “Empty” and not “Done” / “Not done”: accessible names share one flat namespace
+   * and are matched by substring, and Done is already a task STATUS on this very panel.
    */
   input({ checked }) {
     return (
@@ -104,7 +103,7 @@ const components: Components = {
     )
   },
   /** A wide table scrolls itself rather than the pane: the pane's own measure must not grow, and
-   * 375px零横向滚动 is pinned app-wide. */
+   * no horizontal scrolling at 375px is pinned app-wide. */
   table({ children }) {
     return (
       <div className="max-w-full overflow-x-auto">

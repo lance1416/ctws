@@ -42,10 +42,8 @@ export const CAPTURE_MODULE_ID = 'tasks'
 /**
  * WHERE `/` GOES: the workbench, which is the shell's own page.
  *
- * It used to open a module's page, because the shell had nothing of its own to show and a default
- * that silently depended on registration order would have been worse. With two modules there IS
- * something to show -- each module's glance, side by side -- and that is a shell surface, so the
- * home path is no longer a module's to supply.
+ * NOT A MODULE'S PAGE, and not a default that silently depends on registration order: what the
+ * front page shows is every module's glance side by side, which is a shell surface.
  */
 export const WORKBENCH_PATH = '/'
 
@@ -94,8 +92,9 @@ export function moduleDestinations(
 /**
  * The rail's rows, grouped and in reading order.
  *
- * The shell's own surfaces are in here too: 工作台 and 日程 answer 「现在」 as much as 今天 does,
- * and a rail that listed the modules' rows and then the shell's would be grouping by owner again.
+ * The shell's own surfaces are in here too: the workbench and the calendar answer "what now" as
+ * much as Today does, and a rail listing the modules' rows and then the shell's would be grouping
+ * by owner again.
  */
 export function railGroups(
   modules: readonly WorkspaceModule[] = MODULES,
@@ -115,9 +114,9 @@ export function railGroups(
   const all = [...shell, ...moduleDestinations(modules)]
   return RAIL_ZONES.map((zone) => ({
     zone,
-    // 工作台, 今天, 日程: the shell's home leads, and the module's daily list sits between the two
-    // shell surfaces, because that is the order they are reached in rather than the order the
-    // modules happened to be registered in.
+    // Workbench, Today, Calendar: the shell's home leads, and the module's daily list sits between
+    // the two shell surfaces, because that is the order they are reached in rather than the order
+    // the modules happened to be registered in.
     rows: all
       .filter((d) => (d.zone ?? 'now') === zone)
       .sort((a, b) => (a.order ?? 50) - (b.order ?? 50)),

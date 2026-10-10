@@ -51,8 +51,8 @@ export function ProjectIdentity({
 
   return (
     // `flex-1`: the heading is a BUTTON inside the <h1> now, and a flex item sized from its
-    // content collapses to nothing once `min-w-0` lets it -- the title rendered as 「改...」 at
-    // full width. The e2e never saw it: truncation is CSS, and the accessible name is whole.
+    // content collapses to nothing once `min-w-0` lets it, truncating the title to a few
+    // characters at full width. An e2e cannot see it: truncation is CSS, and the name is whole.
     <div className="flex min-w-0 flex-1 items-center gap-2.5">
       <DropdownMenu.Root>
         <DropdownMenu.Trigger

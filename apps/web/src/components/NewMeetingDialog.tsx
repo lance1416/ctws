@@ -28,8 +28,8 @@ import { Modal } from './Modal'
  * most of them. Everything it needs is here, so making one is one act rather than "create, then
  * open it and fill in the rest".
  *
- * This is also what the calendar's day-square "+" used to stand in for. A lens is not a creation
- * affordance (framing §2): the grid answers 「这个月有什么」 and the making happens here.
+ * THE CALENDAR DOES NOT MAKE ONE. A lens is not a creation affordance (framing §2): the grid
+ * answers what is on this month, and the making happens here.
  */
 /** `PickOne` has no null value, so "does not repeat" needs a value of its own. */
 const NO_REPEAT = '__none'

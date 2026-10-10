@@ -8,12 +8,12 @@ import { MENU_ITEM, MENU_SURFACE } from './menuSurface'
  *
  * The rule the audit settled on: a value you can only pick is picked where it is shown and
  * written at once; a value you compose is clicked into and written when you leave it; a set is
- * added to and removed from in place. There is no 编辑 mode and no 保存 button anywhere, because
- * neither of them means anything for a decision -- they are the shape of a FORM, and a form is
- * for composing several things at once and then committing them together.
+ * added to and removed from in place. There is no edit mode and no Save button anywhere, because
+ * neither means anything for a decision -- they are the shape of a FORM, and a form is for
+ * composing several things at once and committing them together.
  *
- * The mis-click worry that the old reading/editing split answered is answered here by the
- * controls themselves: a menu has to be opened, and text has to be clicked into.
+ * A mis-click cannot change anything, because of the controls themselves: a menu has to be
+ * opened, and text has to be clicked into.
  */
 
 /** One option in a `PickOne`. */
@@ -95,10 +95,10 @@ export function PickOne<T extends string>({
 }
 
 /**
- * SEVERAL values out of a list, shown as chips with a 「+」 that offers the rest.
+ * SEVERAL values out of a list, shown as chips with a “+” that offers the rest.
  *
- * A multi-select and not a second dropdown, because what it answers is 「这个人在哪几条线上」 and
- * a list of two or three names IS the answer -- hiding them behind a closed control would mean
+ * A multi-select and not a second dropdown, because what it answers is which lines of work
+ * somebody is on, and a list of two or three names IS the answer -- hiding them behind a closed control would mean
  * opening it to read what you already asked for.
  */
 export function PickMany({
@@ -119,8 +119,8 @@ export function PickMany({
    * WHAT HAS BEEN PICKED, INCLUDING WHAT IS STILL IN FLIGHT.
    *
    * `chosen` is the server's answer, and it arrives a request later. Picking two things quickly
-   * computed both new sets from the SAME stale list, so the second write dropped the first -- a
-   * lost update that showed up as a flaky test and would have shown up as 「我明明加了两个」.
+   * computes both new sets from the SAME stale list, so the second write drops the first -- a
+   * lost update that reads on screen as one of the two never having been added.
    *
    * The optimistic list leads, and is dropped the moment the server's answer agrees with it.
    */
@@ -214,7 +214,7 @@ export function PickMany({
  * TEXT YOU COMPOSE: a title, a note, a company name.
  *
  * Click it and it becomes a field; leaving it writes what is there; Escape puts it back. There is
- * no 保存, because the only thing a save could add is a second act to perform after you have
+ * no Save, because the only thing a save could add is a second act to perform after you have
  * already finished typing.
  *
  * Escape STOPS PROPAGATING, so the first press cancels the edit and does not also close the pane

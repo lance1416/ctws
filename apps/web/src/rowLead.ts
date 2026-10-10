@@ -32,9 +32,9 @@ export type RowMarks = { due: boolean; plan: boolean; notes: boolean }
  * The ONE icon a row shows at its start.
  *
  * A deadline beats a plan because it is the one that bites (spec §2), and either beats the notes
- * mark: the slot answers 「有没有、急不急」 and a note is neither. The row does not LOSE the note
- * when a date wins the slot -- the `≡` then stays beside the title, exactly where it sat before
- * this stage (`TaskRow`) -- and the second line lists both dates in full either way.
+ * mark: the slot answers whether there is a date and whether it bites, and a note is neither.
+ * The row does not LOSE the note when a date wins the slot -- the `≡` stays beside the title
+ * (`TaskRow`) -- and the second line lists both dates in full either way.
  */
 export function leadIcon(r: RowMarks & { overdue?: boolean }): LeadIcon | null {
   if (r.due) return r.overdue ? 'missed' : 'deadline'

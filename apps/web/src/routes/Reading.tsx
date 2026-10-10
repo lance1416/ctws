@@ -9,12 +9,12 @@ import { ReadingRow } from '../components/ReadingRow'
 import { useTimeZone } from '../useMe'
 
 /**
- * 待读清单.
+ * THE READING LIST.
  *
  * ONE LIST, split by what you have done with each thing rather than by what it is: a book and an
- * article are read the same way, and a list that sorted by type would make you look in two places
- * for 「我接下来读什么」. 在读 comes first because it is the shortest section and the one with a
- * claim on today.
+ * article are read the same way, and a list sorted by type would make you look in two places to
+ * find what to read next. What you are reading now comes first: it is the shortest section and
+ * the one with a claim on today.
  */
 const SECTIONS: { status: ReadingStatus; label: string }[] = [
   { status: 'reading', label: 'Reading now' },
@@ -29,8 +29,8 @@ export function Reading() {
 
   const rows = items.data ?? []
   const of = (status: ReadingStatus) => rows.filter((i) => i.status === status)
-  // 读完 and 弃 are both「不在清单上了」. They share a section because the difference matters when
-  // you decide, not afterwards.
+  // Finished and dropped are both off the list. They share a section because the difference
+  // matters when you decide, not afterwards.
   const finished = rows.filter((i) => i.status === 'done' || i.status === 'dropped')
   const open = rows.filter((i) => i.status === 'todo' || i.status === 'reading')
 

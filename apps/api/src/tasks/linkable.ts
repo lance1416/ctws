@@ -19,7 +19,7 @@ const ofWorkspace = (q: Queryable, workspaceId: string) =>
 const visible = (workspaceId: string) => and(visibleProjects(workspaceId), isNull(tasks.deletedAt))
 
 /**
- * 任务 names its own tasks, AND reports its project column as an edge.
+ * TASKS names its own tasks, AND reports its project column as an edge.
  *
  * `tasks.project_id` is NOT NULL and the task tree is built on it: every query in the module
  * reaches for it, and a nullable edge in its place would be a rewrite of the module to gain

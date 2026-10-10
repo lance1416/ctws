@@ -4,16 +4,15 @@ import type { TaskStatus } from '@ctws/contracts'
 // disc is being worked on, a disc with a check is done. Backlog is a dashed ring, cancelled a
 // struck ring. Only fg / fg-muted are used, so no status needs a hue of its own.
 //
-// The mark is the app's core semantic and it used to be the faintest thing on the row. It is now
-// 20px of 2px stroke, and a LIVE task (待办 / 进行中) draws it in full `fg` while a settled one
-// (已完成 / 已取消) stays muted. That is weight by stroke, size and value -- still no hue, so the
-// rule that status is carried by shape is intact.
+// The mark is the app's core semantic, so it carries weight: 20px of 2px stroke, with a LIVE task
+// (To do / In progress) drawn in full `fg` while a settled one (Done / Cancelled) stays muted.
+// That is weight by stroke, size and value -- still no hue, so the rule that status is carried by
+// shape is intact.
 //
 // The 2px stroke is the workbench spec's (section 4). The SIZE is 20 and not the 17 that section
-// names, because that 17 was derived from a "原 16" that has not been true since the previous
-// stage shipped 18/1.75: taking the spec's number literally would SHRINK the app's core semantic
-// on the very page that exists to answer "组件太小", and would leave a 20px glyph-well sitting in
-// a 46px row. 20 is 18 stepped up by the same one step the rest of section 4 asks for.
+// names: 17 is derived from a 16px mark, and this one is 18, so stepping it up by the one step
+// the rest of section 4 asks for gives 20. Taking 17 literally would shrink the core semantic and
+// leave a 20px glyph-well sitting in a 46px row.
 // The disc and the check are always rendered and scale/fade in, so the 120ms echo of a status
 // change is a transition on a persistent element rather than a mount.
 const LABEL: Record<TaskStatus, string> = {
@@ -27,7 +26,7 @@ const LABEL: Record<TaskStatus, string> = {
 export function StatusMark({ status }: { status: TaskStatus }) {
   const solid = status === 'in_progress' || status === 'done'
   // Every task that is still open draws at full strength; only a settled one recedes. An open
-  // task is the thing the list exists to show, and 待整理 is open -- it is untriaged, not done.
+  // task is the thing the list exists to show, and backlog is open -- untriaged, not done.
   const live = status !== 'done' && status !== 'cancelled'
   return (
     <svg

@@ -33,7 +33,7 @@ import { DetailPane } from './DetailPane'
 import { PickOne } from './inline'
 import { Dependencies } from './Dependencies'
 import { useReservePane, useWidePane } from './paneLayout'
-// The shared editing vocabulary, now that the 新建 dialog types into a task as well.
+// The shared editing vocabulary, which the New task dialog types into a task with as well.
 import { decision, field, label } from './formStyles'
 import { LeaveGuardContext } from './leaveGuard'
 import { DeadlineMark, PlanMark } from './RowParts'
@@ -53,8 +53,8 @@ const exact =
   'h-9 w-full max-w-[14rem] rounded-lg border border-border-strong bg-surface px-2 text-sm text-fg'
 
 /**
- * The exact local day and time, said the way the rest of the app says it ("明天 14:30"), under the
- * native date control.
+ * The exact local day and time, said the way the rest of the app says it ("Tomorrow, 14:30"),
+ * under the native date control.
  *
  * It is here because a native date input renders its format in the BROWSER'S UI language, which
  * the page cannot set (not through `lang`, not through the JS locale -- verified), so the field
@@ -79,8 +79,8 @@ type Props = {
 /**
  * The pane's one way out that is not a keypress.
  *
- * An icon and not the word “Close”: a text button of that size sat in the control row as a peer
- * of 编辑 and 保存, which read as though closing were something you DO to the task. Every panel
+ * An icon and not the word “Close”: a text button of that size sits in the control row as a peer
+ * of Edit and Save, which reads as though closing were something you DO to the task. Every panel
  * of this shape -- Linear's peek, Notion's side peek -- puts a small ✕ in the corner and leaves
  * Escape as the real shortcut. `aria-label` carries the word for anyone who needs it.
  */
@@ -169,23 +169,22 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
   const dueAt = watch('dueAt')
   const nextProjectId = watch('projectId')
   /**
-   * READING MODE IS THE DEFAULT (spec §5), and it is what answers both halves of the complaint:
-   * 「想要的信息在二层菜单」 and 「编辑和信息显示在同一个地方，容易误触」.
+   * READING MODE IS THE DEFAULT (spec §5): everything about the task is on the first screen, and
+   * nothing on it can be changed by a mis-aimed click.
    *
-   * Looking something up now costs nothing and risks nothing: there is not one control on screen
-   * that can change a value, so a mis-aimed click cannot edit the task. The editing controls are
-   * all behind 编辑, which is also where the notes will one day render Markdown into -- a reading
-   * mode had to exist for that anyway.
+   * Looking something up costs nothing and risks nothing, because there is not one control on
+   * screen that can change a value. The editing controls are all behind Edit, which is also where
+   * the notes render Markdown from.
    *
-   * It is NOT autosave. Explicit 保存 and the unsaved-edit guard (close, navigate, log out) are
-   * unchanged; this only decides whether the controls those guard are on screen yet.
+   * It is NOT autosave. An explicit Save and the unsaved-edit guard (close, navigate, log out)
+   * still apply; this only decides whether the controls they guard are on screen yet.
    */
   const [editing, setEditing] = useState(false)
   const titleField = useRef<HTMLInputElement | null>(null)
   const { ref: registerTitle, ...titleRest } = register('title')
   const startEditing = () => {
     setEditing(true)
-    // The first field, not the panel: 编辑 is a request to type, and the control the press
+    // The first field, not the panel: Edit is a request to type, and the control the press
     // destroyed must not take focus to <body> with it (WCAG 2.4.3).
     queueMicrotask(() => titleField.current?.focus())
   }
@@ -243,7 +242,8 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
     },
   })
 
-  // The named decisions, the same three days the row's triage control offers (今天 / 明天 / 下周)
+  // The named decisions, the same three days the row's triage control offers (today, tomorrow,
+  // next week)
   // plus the way out. They write the SAME fields the exact inputs write and are saved by the same
   // Save press -- they are a faster way to type a date, not a second way to change the task.
   const todayYmd = todayIn(timeZone)
@@ -264,7 +264,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
       shouldDirty: true,
     })
   }
-  /** An instant in the app's own words: 「明天 14:30」, on the account's calendar and clock. */
+  /** An instant in the app's own words: "Tomorrow, 14:30", on the account's calendar and clock. */
   const say = (iso: string) => {
     const [day, clock] = toDayTimeInput(iso, timeZone).split('T') as [string, string]
     return `${dayPhrase(day, todayYmd)}, ${clock}`
@@ -339,8 +339,8 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
 
   /**
    * THE DIRECT STATUS WRITE (D78). It lands at once, and the refetch set is the SAME one the
-   * form's save uses -- a status change moves a task between today's segments, on and off 已完成,
-   * and through the project's counts exactly as the form's did.
+   * form's save uses -- a status change moves a task between today's segments, on and off Done,
+   * and through the project's counts.
    *
    * It is outside the leave guard on purpose: nothing here is ever unsaved.
    */
@@ -600,8 +600,8 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
               </div>
               <input
                 {...titleRest}
-                // Two refs on one element: the library's, and the pane's own -- 编辑 hands focus to
-                // this field, and the control the press destroyed must not take focus to <body>.
+                // Two refs on one element: the library's, and the pane's own -- Edit hands focus
+                // to this field, and the control the press destroyed must not take focus to <body>.
                 ref={(el) => {
                   registerTitle(el)
                   titleField.current = el

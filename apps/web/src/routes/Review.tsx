@@ -56,15 +56,15 @@ function Row({ title, status }: { title: string; status: 'done' | 'in_progress' 
 const counted = (p: Project) => p.finished.length + p.started.length + p.dropped.length
 
 /**
- * 我做了什么 -- the third of the spec's v1 views (§2), and the one the other two cannot answer.
+ * WHAT I DID -- the third of the spec's v1 views (§2), and the one the other two cannot answer.
  *
  * Done lists what is finished RIGHT NOW. This lists what HAPPENED in a window, read off the event
  * log: finished, started, dropped, grouped by line of work. A task finished on Tuesday and
  * reopened on Thursday is in neither place in Done and is in this one, which is the point.
  *
- * THE PAGE ANSWERS ONE QUESTION FIRST: how did the week go. That is three numbers, and until now
- * they were nowhere on it -- you counted rows. The banner carries them, the way the project page
- * and the workbench carry theirs, and everything under it is the detail behind them.
+ * THE PAGE ANSWERS ONE QUESTION FIRST: how did the week go. That is three numbers, and the banner
+ * carries them the way the project page and the workbench carry theirs; everything under it is
+ * the detail behind them.
  *
  * The window is the server's: it decides the week boundary in the account's zone and reports the
  * bounds it used. The stepper moves by whole weeks from there.

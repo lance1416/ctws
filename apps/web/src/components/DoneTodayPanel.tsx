@@ -5,14 +5,14 @@ import { StatusMark } from './StatusMark'
 import { Panel } from './Panel'
 
 /**
- * 今天完成的: the fourth question the workbench answers -- "what did I do".
+ * DONE TODAY: the fourth question the workbench answers -- "what did I do".
  *
- * It reads the SAME ['completed'] list the 已完成 page owns, and takes the day the SERVER
+ * It reads the SAME ['completed'] list the Done page owns, and takes the day the SERVER
  * assigned (`completedOn`, computed in the account's timezone). It does not re-derive "today"
  * from the browser clock: a task finished at 23:30 local must not fall off this panel because
  * the database runs in UTC, and that decision already exists one layer down.
  *
- * The rows are not interactive here. Restoring a task is a 已完成-page action and a mis-aimed
+ * The rows are not interactive here. Restoring a task is a Done-page action and a mis-aimed
  * click on a glance panel should not un-finish work; the panel's footer link is the way through.
  */
 export function DoneTodayPanel({

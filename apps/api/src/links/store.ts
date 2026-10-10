@@ -4,11 +4,10 @@ import type { Queryable } from '../db/client'
 import { contacts, links, projects } from '../db/schema'
 
 /**
- * 边 -- the shell's own store, and the thing that replaced 「什么都挂到项目上」.
+ * EDGES -- the shell's own store, and the one way anything reaches anything else.
  *
- * Four modules used to reach exactly one other thing, and each had its own column or join table
- * for it. They now all come here. A module still knows only its own type and the types it may
- * link to; it does not learn about the others, because every one of these helpers names both ends.
+ * A module knows only its own type and the types it may link to; it does not learn about the
+ * others, because every one of these helpers names both ends.
  *
  * The literal table names below are deliberate: drizzle interpolates a column reference
  * UNQUALIFIED inside raw SQL, which inside a correlated subquery would bind to the outer row.
@@ -40,7 +39,7 @@ export function oneProjectOf(type: ObjectType, table: string) {
   }
 }
 
-/** 「这个东西属于这个项目」 -- the filter behind `?projectId=`. */
+/** Filed under one named project -- the filter behind `?projectId=`. */
 export function filedUnder(type: ObjectType, table: string, projectId: string) {
   return sql`exists (
     select 1 from links l join projects p on p.id = l.to_id
@@ -51,7 +50,7 @@ export function filedUnder(type: ObjectType, table: string, projectId: string) {
 }
 
 /**
- * 「散的」: filed under no project the person can still SEE.
+ * UNFILED: under no project the person can still SEE.
  *
  * An object whose project was deleted reads as having none everywhere else, so it has to read
  * that way here too -- otherwise it would belong to no list at all.

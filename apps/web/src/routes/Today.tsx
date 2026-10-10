@@ -31,22 +31,22 @@ import { useShortcutsEnabled } from '../shortcuts/enabled'
 import { useTimeZone } from '../useMe'
 
 /**
- * THE WORKBENCH. Four panels, each answering one question, in a fixed arrangement.
+ * TODAY. Panels, each answering one question, in a fixed arrangement.
  *
- *   正在做 (the banner)   what am I doing right now -- the page's focal point
- *   今天   (2 of 3)       what am I going to do
- *   逾期   (right, top)   what am I going to do, urgently
- *   做到哪儿了 (right)     where did I get to
- *   今天完成的 (right)     what did I do
+ *   In progress (the banner)  what am I doing right now -- the page's focal point
+ *   Today       (2 of 3)      what am I going to do
+ *   Overdue     (right, top)  what am I going to do, urgently
+ *   Movement    (right)       where did I get to
+ *   Done today  (right)       what did I do
  *
  * The arrangement is fixed by design (workbench spec §1) and there is deliberately no drag,
  * resize or add-panel affordance. The reason is not that it would be hard: one user has one
  * taste, and a rearrangeable grid only hands the design decision back to the person using the
  * tool, every time they open it.
  *
- * The panel grid replaces a single capped centre column. At 1440 that column put one clump of
- * rows left of centre with half the screen empty beside it; the width now carries content
- * instead. Below `lg` the panels stack into one column, in the same order.
+ * A panel grid rather than one capped centre column: at 1440 a single column puts one clump of
+ * rows left of centre with half the screen empty beside it. Below `lg` the panels stack into one
+ * column, in the same order.
  *
  * The SERVER still decides which segment a task belongs to, in the user's timezone, and the
  * order within it. This page only routes each segment to its panel -- no re-filtering, no
@@ -55,7 +55,7 @@ import { useTimeZone } from '../useMe'
  */
 export function Today() {
   const today = useQuery({ queryKey: ['today'], queryFn: listToday })
-  // Shares the ['completed'] cache entry with the 已完成 page that owns it, so the panel costs
+  // Shares the ['completed'] cache entry with the Done page that owns it, so the panel costs
   // one request per session rather than one per visit.
   const completed = useQuery({ queryKey: ['completed'], queryFn: listCompleted })
   const movement = useQuery({ queryKey: ['movement'], queryFn: listMovement })
@@ -216,8 +216,8 @@ export function Today() {
 
   /**
    * A row's date cells, worked out ONCE per render. The list's reserved columns and the cells drawn
-   * into them must agree, and both of these read the clock ("原定10月2日，已顺延" against "排到明天"),
-   * so computing them twice would let a midnight tick between the two answers.
+   * into them must agree, and both of these read the clock ("Was Oct 2, carried" against "Planned
+   * for tomorrow"), so computing them twice would let a midnight tick between the two answers.
    */
   type Prepared = {
     t: TodayTaskResponse
@@ -230,7 +230,7 @@ export function Today() {
       const hints = dateHints(t, timezone)
       const carried = t.segment === 'today' ? carriedLabel(t.scheduledOn, timezone) : null
       // The plan column: a carried plan says so in words; otherwise the planned day, but only when
-      // that day is not today -- "排到今天" under a heading that already says 今天 is noise.
+      // that day is not today -- "Planned for today" under a heading saying Today is noise.
       return {
         t,
         hints,
@@ -240,8 +240,8 @@ export function Today() {
     })
   /**
    * Whether ONE PANEL's list reserves the leading icon slot. Per list and never per row (spec §2):
-   * the 今天 queue and the 逾期 panel are two lists in two columns of the page, so each answers for
-   * itself, while within either one the icons stay at a single x.
+   * the Today queue and the Overdue panel are two lists in two columns of the page, so each
+   * answers for itself, while within either one the icons stay at a single x.
    */
   const leadSlotOf = (list: Prepared[]): boolean =>
     hasLeadSlot(list.map((p) => ({ due: p.t.dueAt !== null, plan: p.plan !== null, notes: false })))
@@ -270,9 +270,9 @@ export function Today() {
           if (!(e.target as HTMLElement).closest('button')) setOpenId(t.id)
         }}
         className={`group relative flex min-h-[46px] cursor-pointer items-start gap-x-2 rounded-lg py-2 pr-2 pl-3 hover:bg-surface-hover ${
-          // BLOCKED ROWS DIM AND STAY (D64). This is the page the feature is for: 今天 stops
-          // being 「什么到期了」 and becomes 「什么现在做得了」. Hiding them would be the other
-          // mistake -- a list that loses tasks cannot be trusted.
+          // BLOCKED ROWS DIM AND STAY (D64). This is the page the feature is for: Today stops
+          // answering what is due and answers what can be worked on. Hiding them would be the
+          // other mistake -- a list that loses tasks cannot be trusted.
           t.blockedBy.length > 0 ? 'opacity-60' : ''
         }`}
       >

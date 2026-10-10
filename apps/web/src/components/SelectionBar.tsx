@@ -4,10 +4,9 @@ import { PickOne } from './inline'
 /**
  * WHAT TO DO WITH THE ROWS YOU PICKED (D61).
  *
- * This was refused once, on the grounds that multi-select is a team clean-up tool. That measured
- * the wrong axis: one person with sixty open tasks across four lines of work does 「把这五条标
- * 完成」 and 「把这几条挪到另一个项目」 as ordinary weekly maintenance, and doing it one row at a
- * time is the chore the tool exists to remove.
+ * MULTI-SELECT IS NOT ONLY A TEAM TOOL: one person with sixty open tasks across four lines of
+ * work finishes five at once and moves a handful to another project as ordinary weekly
+ * maintenance, and doing it one row at a time is the chore this exists to remove.
  *
  * It appears only with a selection, so a tree nobody is picking from carries no chrome for it.
  * Two actions and a way out -- not a toolbar: anything else a person wants to do to five tasks

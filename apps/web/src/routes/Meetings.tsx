@@ -14,21 +14,19 @@ import { LIST_MEASURE } from '../rowLead'
 import { useTimeZone } from '../useMe'
 
 /**
- * 会议 -- the module's own page, which it did not have.
+ * MEETINGS -- the module's own page.
  *
- * Until now the only way to reach a meeting was the calendar, and the only way to MAKE one was
- * the "+" on a day square. That was the framing mistake named in the redesign: the calendar is a
- * LENS over everything with a date, and a lens does not own a kind of thing. A meeting is
- * something you arrange, so it is arranged here, and the grid goes back to answering 「这个月有
- * 什么」.
+ * A meeting is reached and MADE here, not on the calendar: the calendar is a LENS over everything
+ * with a date, and a lens does not own a kind of thing (framing §2). A meeting is something you
+ * arrange, so it is arranged here, and the grid answers what is on this month.
  *
  * COMING UP FIRST, and the past behind a toggle, like the reading pile's finished section: a list
  * of meetings is read to find out what is about to happen to you.
  *
  * ONE ROW PER SERIES, not per occurrence. A daily standup has twenty-three occurrences in a
- * month, and a page that listed them all would BE the standup -- the list answers 「我有哪些会」
- * and the calendar answers 「哪天有什么」. The row carries the next one's time, because that is
- * the part of a series anybody is asking about.
+ * month, and a page that listed them all would BE the standup -- the list answers which meetings
+ * you have, and the calendar answers what falls on which day. The row carries the next one's
+ * time, because that is the part of a series anybody is asking about.
  */
 
 /** The next occurrence of each series, in time order. A series says so on its row. */
@@ -221,8 +219,8 @@ function Section({
                 >
                   {m.title}
                 </button>
-                {/* And what was actually AGREED, when that is not your clock: 「09:30 London」 is
-                    the thing the other people in the room said, and it is not 04:30 anywhere. */}
+                {/* And what was actually AGREED, when that is not your clock: "09:30 London" is
+                    what the other people in the room said, and it is not 04:30 anywhere. */}
                 {m.timeZone !== accountZone && (
                   <span className="min-w-0 shrink truncate text-xs text-fg-subtle">
                     {m.startsLocal.slice(11)} {zoneLabel(m.timeZone)}

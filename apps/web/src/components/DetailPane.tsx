@@ -31,7 +31,7 @@ export function DetailPane({
   onClose,
   children,
 }: {
-  /** The pane's accessible name: what KIND of thing is open -- 「任务详情」, “Contacts”. */
+  /** The pane's accessible name: what KIND of thing is open -- “Task”, “Contacts”. */
   label: string
   onClose: () => void
   children: ReactNode
@@ -135,7 +135,7 @@ export function DetailPane({
  * The pane's header: what kind of thing this is, and the way out.
  *
  * Every module's body starts with one, so the close control is in the same place whatever is
- * open. `trailing` is for the one or two controls that belong to the whole thing (删除, 编辑).
+ * open. `trailing` is for the one or two controls that belong to the whole thing (Delete, Edit).
  */
 export function DetailHead({
   kind,

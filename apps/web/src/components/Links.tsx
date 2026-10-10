@@ -8,13 +8,11 @@ import { AddLink } from './AddLink'
 import { PanelEmpty } from './Panel'
 
 /**
- * 牵着的东西 -- everything one thing is connected to, grouped by kind.
+ * LINKED -- everything one thing is connected to, grouped by kind.
  *
- * A SHELL piece. The edges are the shell's: one row of one table says 「这个会有谁参加」 and
- * 「我跟这个人开过哪些会」 at once, and the second one is this panel. Opening a person used to
- * show their own fields and nothing else -- not the meetings they are in, not what they
- * recommended, not the task that came out of a call with them. Those edges existed in the world;
- * there was nowhere in the model to put them.
+ * A SHELL piece. The edges are the shell's: one row of one table says who is at a meeting and
+ * which meetings a person has been at, and the second reading is this panel -- the meetings
+ * somebody is in, what they recommended, the task that came out of a call with them.
  *
  * The shell knows the kinds and the phrases, because they are the contract's. What it does not
  * know is where another module's thing LIVES, so it asks the registry (`relations`).
@@ -132,8 +130,8 @@ export function Links({
  * One thing at the far end of an edge.
  *
  * The EDGE's own word sits at the end of the line rather than grouping the rows: a person's
- * meetings are all 「参加过」, so a heading per phrase would be a heading per row. Where it earns
- * its place is the mixed group -- a project with a task 「属于」 it and another 「关于」 it.
+ * meetings all read "attended", so a heading per phrase would be a heading per row. Where it
+ * earns its place is the mixed group -- a project with a task in it and another about it.
  */
 function LinkedRow({
   type,

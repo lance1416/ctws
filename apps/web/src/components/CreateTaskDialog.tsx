@@ -26,12 +26,12 @@ import {
 } from './taskForm'
 
 /**
- * 「新建」: a task created WITH its details, in one request.
+ * NEW TASK: a task created WITH its details, in one request.
  *
- * It is an ADDITION, never a replacement. 「敲一行回车即落」 is a success criterion of this
- * project, so the quick-capture box and the project page's 新任务 box are untouched: this is the
- * other half of the same job -- the task you already know the shape of, which otherwise cost a
- * create, then a click into the pane, then 编辑, then a save.
+ * It is an ADDITION, never a replacement. Typing one line and pressing Enter is a success
+ * criterion of this project, so the quick-capture box and the project page's new-task box are
+ * untouched: this is the other half of the same job -- the task you already know the shape of,
+ * which otherwise costs a create, a click into the pane, an edit and a save.
  *
  * ONE request, not a POST then a PATCH: the create contract already accepts status, both dates and
  * the notes, so a half-made task never exists on the server and nothing has to be rolled back if
@@ -100,7 +100,7 @@ export function CreateTaskDialog({
   const dueAt = watch('dueAt')
 
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
-  // The chosen project's tasks, for 放在谁下面. Shares the cache entry the tree already filled on
+  // The chosen project's tasks, for the parent picker. Shares the cache entry the tree filled on
   // this page, so opening the dialog on the project you are looking at costs no request.
   const tasks = useQuery({
     queryKey: tasksKey(project),
@@ -166,8 +166,8 @@ export function CreateTaskDialog({
       title="New task"
       onClose={onClose}
       initialFocus={titleField}
-      // The footer already carries 取消; a second dismiss in the header would be a third way to
-      // leave one small form.
+      // The footer already carries Cancel; a second dismiss in the header would be a third way
+      // to leave one small form.
       dismissLabel={null}
       className="rounded-lg"
     >
@@ -339,7 +339,7 @@ export function CreateTaskDialog({
             id="create-notes"
             // An empty textarea is no notes, not the empty string the contract would reject.
             // Guarded against the non-string the library hands this on the first render, before
-            // the element exists: the default value for 「no notes」 is null, not ''.
+            // the element exists: the default value for "no notes" is null, not ''.
             {...register('notes', {
               setValueAs: (v: unknown) => (typeof v === 'string' && v.trim() !== '' ? v : null),
             })}

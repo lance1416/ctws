@@ -1,8 +1,8 @@
 import { defaultSchema, type Options as SanitizeSchema } from 'rehype-sanitize'
 
 /**
- * THE SANITISER'S ALLOWLIST. D73's first decision: 「消毒不可选」 -- sanitising is not optional,
- * because rendering Markdown is the ONE place in this app where text becomes DOM.
+ * THE SANITISER'S ALLOWLIST. D73's first decision: sanitising is not optional, because rendering
+ * Markdown is the ONE place in this app where text becomes DOM.
  *
  * TWO LINES OF DEFENCE, AND WHY BOTH EXIST.
  *

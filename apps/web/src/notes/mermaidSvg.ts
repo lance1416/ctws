@@ -25,12 +25,11 @@ import DOMPurify from 'dompurify'
  *    generates is narrowed AFTER sanitising, through the CSSOM (`scopeDiagramStyles`), for the same
  *    reason: rules are inspected as parsed objects, never rebuilt as text.
  *
- * THIS FILE WRITES NO SANITISER. An earlier draft of it did -- a hand-written svg element allowlist
- * and a hand-written CSS scanner that re-emitted `<style>` text into the svg it then trusted. That
- * is the exact shape mutation XSS lives in, and it is also the thing this project has a standing
- * rule against: 「不要重复造轮子」（用户原话连用了两个感叹号） DOMPurify's value is the decade of these cases already
- * closed inside it, including the `</style`-in-a-text-node probe and the SVG-namespace confusion
- * checks. What is left here is ours: which profile, what sizing, and the CSSOM narrowing.
+ * THIS FILE WRITES NO SANITISER. A hand-written svg element allowlist, or a CSS scanner that
+ * re-emits `<style>` text into the svg it then trusts, is the exact shape mutation XSS lives in.
+ * DOMPurify's value is the decade of these cases already closed inside it, including the
+ * `</style`-in-a-text-node probe and the SVG-namespace confusion checks. What is left here is
+ * ours: which profile, what sizing, and the CSSOM narrowing.
  *
  * WHAT IS STILL NOT CONTAINED, stated plainly: mermaid runs IN THIS ORIGIN. Layers 1-4 bound what
  * its output can do, not what a bug in its own parser could do. The strictly stronger answer is a

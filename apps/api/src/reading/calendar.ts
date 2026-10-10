@@ -2,14 +2,14 @@ import { sql } from 'drizzle-orm'
 import type { Queryable } from '../db/client'
 
 /**
- * THE READING MODULE'S DATED THINGS: 「想读完」.
+ * THE READING MODULE'S DATED THINGS: the day you mean to finish something by.
  *
  * One kind, and one already stored as a calendar day, so there is no zone arithmetic to get
  * wrong here. It exists so the calendar's contribution point has TWO modules behind it -- a seam
  * shaped by one module is that module's shape wearing a general name.
  *
  * Finished items are left out for the same reason the task module leaves out done tasks: the
- * calendar answers 「哪天要做什么」, and a book you have read is not a plan.
+ * calendar answers what is happening on which day, and a book you have read is not a plan.
  */
 export async function listReadingCalendar(
   q: Queryable,

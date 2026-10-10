@@ -15,8 +15,8 @@ import { Modal } from './Modal'
  *
  * A name alone is never all you know about somebody. The line-of-text box this stands beside is
  * right for the moment you only have a name -- and wrong every other time, because it then makes
- * you create the person and open them again to say anything else. That was the complaint: 「每次
- * 创建完了还要点开才能编辑别的东西」. Both ways in stay: the box for a name, this for a person.
+ * you create the person and open them again to say anything else. Both ways in stay: the box for
+ * a name, this for a person.
  */
 const KIND_LABEL: Record<ChannelKind, string> = { email: 'Email', phone: 'Phone', url: 'Link' }
 

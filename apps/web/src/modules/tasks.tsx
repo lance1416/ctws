@@ -26,7 +26,7 @@ import type { CaptureTargetState, SearchHit, WorkspaceModule } from './contract'
 import { useComposing } from '../composition'
 
 /**
- * THE TASK MODULE: everything the shell used to have written into it.
+ * THE TASK MODULE.
  *
  * “Today”and “Done”live here, not in the shell: they are defined by task semantics (overdue,
  * scheduled, in progress). A cross-module "today" is a separate idea and is not borrowed against
@@ -35,7 +35,7 @@ import { useComposing } from '../composition'
 const ID = 'tasks'
 const at = (page: string) => `/${ID}/${page}`
 
-/** The rail's count for 今天. Shares the ['today'] cache entry with the page that owns it. */
+/** The rail's count for Today. Shares the ['today'] cache entry with the page that owns it. */
 function TodayCount() {
   const today = useQuery({ queryKey: ['today'], queryFn: listToday })
   // Only tasks that are actually on today's plate; the rail must not claim work that is not due.
@@ -60,9 +60,9 @@ function useTaskEntries(range: { from: string; to: string }) {
 /**
  * THE WORKBENCH CARD: what is being worked on right now.
  *
- * A GLANCE, not a second 今天: no detail pane, no status controls, no dates. The workbench asks
- * 「现在手头有什么」 and this answers it in one line each; everything you can DO with a task is
- * one click away on the page the card links to.
+ * A GLANCE, not a second Today: no detail pane, no status controls, no dates. The workbench asks
+ * what is in front of you and this answers it in one line each; everything you can DO with a task
+ * is one click away on the page the card links to.
  */
 function DoingWidget() {
   const today = useQuery({ queryKey: ['today'], queryFn: listToday })
@@ -98,12 +98,12 @@ function DoingWidget() {
 /**
  * THE SECOND WORKBENCH CARD: what is actually due.
  *
- * Without it the workbench says what you are DOING and never what is late -- you had to open
- * 今天 to find out anything had slipped, which is the opposite of a page that exists so you do
+ * Without it the workbench says what you are DOING and never what is late, so finding out that
+ * something had slipped would mean opening Today -- the opposite of a page that exists so you do
  * not have to decide where to look first.
  *
  * Overdue leads and is marked; the rest is what is due or planned for today. Both come from the
- * list 今天 already draws, so this is a second reader of one answer, not a second question.
+ * list Today already draws, so this is a second reader of one answer, not a second question.
  */
 function DueWidget() {
   const today = useQuery({ queryKey: ['today'], queryFn: listToday })
@@ -197,10 +197,10 @@ function useTaskHits(query: string) {
 }
 
 /**
- * THE FOUR NUMBERS in the project header banner (workbench spec §2): 未完成 / 本周完成 / 逾期 /
- * 最后活动.
+ * THE FOUR NUMBERS in the project header banner (workbench spec §2): Open, Done this week,
+ * Overdue, Last activity.
  *
- * Every one of them is the SERVER's, from the one `['movement']` cache entry 做到哪儿了 already
+ * Every one of them is the SERVER's, from the one `['movement']` cache entry that panel already
  * loads -- so a project page costs no extra request, and the banner cannot disagree with that
  * panel about the same line of work. Nothing is re-derived here: the week boundary, the overdue
  * boundary and the day count are all decided in the user's timezone by the query, and this only
@@ -262,7 +262,7 @@ function ProjectNumbers({ projectId }: { projectId: string }) {
 }
 
 /**
- * THE TASK BLOCK'S OWN 「新建」, in the block's head.
+ * THE TASK BLOCK'S OWN NEW BUTTON, in the block's head.
  *
  * It carries the `n` key with it. The key lives in the module rather than in the shell's table
  * because it needs a project to create into, so it exists exactly where that is true; it obeys
@@ -379,7 +379,7 @@ export const taskModule: WorkspaceModule = {
   label: 'Tasks',
   destinations: [
     { id: 'today', to: at('today'), label: 'Today', end: true, Count: TodayCount, order: 20 },
-    // 已完成 is a VIEW of 回顾 now, not a destination of its own: both answer 「我做了什么」.
+    // Done is a VIEW of Review, not a destination of its own: both answer what I did.
     { id: 'review', to: at('review'), label: 'Review', end: false, zone: 'views', order: 20 },
   ],
   routes: [

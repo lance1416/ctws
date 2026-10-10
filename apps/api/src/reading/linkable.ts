@@ -3,7 +3,7 @@ import { textMatches } from '../db/like'
 import { readingItems } from '../db/schema'
 import type { Linkable } from '../links/linkable'
 
-/** 待读 names its own items for the shell. See `links/linkable.ts` for why this exists. */
+/** Reading names its own items for the shell. See `links/linkable.ts` for why this exists. */
 export const readingLinkable: Linkable = {
   type: 'reading',
   label: 'Reading',

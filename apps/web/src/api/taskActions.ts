@@ -62,7 +62,7 @@ export function useTaskActions(onError: (message: string) => void) {
       await qc.invalidateQueries({ queryKey: ['today'] })
       await qc.invalidateQueries({ queryKey: ['tasks'] })
       await qc.invalidateQueries({ queryKey: ['completed'] })
-      // 做到哪儿了 counts finished-this-week and last activity; a status change moves both.
+      // Movement counts finished-this-week and last activity; a status change moves both.
       await qc.invalidateQueries({ queryKey: ['movement'] })
     },
   })

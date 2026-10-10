@@ -7,15 +7,14 @@ import { MENU_SURFACE } from './menuSurface'
 /**
  * THE STATUS, CHANGED WHERE IT IS SHOWN (D78).
  *
- * It used to take three acts: 编辑, pick, 保存. That is a form's shape imposed on a decision that
- * has none -- the status is one value out of five, there is nothing to compose and nothing to
- * revise, so there is nothing for a 保存 to mean.
+ * ONE ACT, not three. Edit, pick, save is a form's shape imposed on a decision that has none:
+ * the status is one value out of five, with nothing to compose and nothing to revise, so a Save
+ * would mean nothing.
  *
- * WHY A MENU AND NOT FIVE MARKS SITTING ON THE PANE. The earlier split of reading and editing
- * came from a real complaint -- 「编辑和信息显示在同一个地方，容易误触」 -- and that complaint was
- * about a live form you could knock with your elbow, not about a control you have to open. A menu
- * keeps the deliberateness (open it, then choose) while costing one act instead of three, and it
- * is how every tool of this shape does it. The rows keep their one-click toggle, because there
+ * WHY A MENU AND NOT FIVE MARKS SITTING ON THE PANE. Reading and editing are kept apart because
+ * a live form can be knocked with an elbow -- which is not true of a control you have to open. A
+ * menu keeps the deliberateness (open it, then choose) at the cost of one act, and it is how
+ * every tool of this shape does it. The rows keep their one-click toggle, because there
  * the target is a single named transition rather than a choice among five.
  *
  * It writes IMMEDIATELY and has no dirty state, so it is outside the pane's leave guard: there is

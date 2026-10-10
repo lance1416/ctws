@@ -4,8 +4,8 @@ import type { Queryable } from '../db/client'
 /**
  * THE TASK MODULE'S DATED THINGS, for the shell's calendar.
  *
- * Two kinds, and a task can be both at once: it has a 排期 (a calendar day, stored as one) and a
- * 截止 (an instant). They are different facts about the same task and both belong on the grid, so
+ * Two kinds, and a task can be both at once: a PLAN (a calendar day, stored as one) and a
+ * DEADLINE (an instant). They are different facts about one task and both belong on the grid, so
  * one task may produce two entries on two squares.
  *
  * THE DAY IS COMPUTED HERE, in the account's zone -- the same rule `listToday`, `listCompleted`

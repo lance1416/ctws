@@ -39,7 +39,7 @@ function weekdayOf(day: string): number {
 
 const monthOf = (day: string): string => day.slice(0, 7)
 
-/** 「2026年10月」 */
+/** "October 2026". */
 export function monthTitle(day: string): string {
   const [y, m] = parse(day)
   return `${MONTHS[m - 1]} ${y}`
@@ -50,7 +50,7 @@ export function monthTitle(day: string): string {
  * and the first row never starts with a gap.
  *
  * It deliberately returns the LEADING and TRAILING days of the neighbouring months rather than
- * blanks. A blank square says "nothing here"; a dimmed 9月30 says "this is last month", which is
+ * blanks. A blank square says "nothing here"; a dimmed Sep 30 says "this is last month", which is
  * the truth and is also where a Monday deadline at the start of a month actually lives.
  */
 export function monthSquares(anyDayInMonth: string): { day: string; inMonth: boolean }[] {

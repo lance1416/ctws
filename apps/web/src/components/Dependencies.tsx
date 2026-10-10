@@ -8,12 +8,12 @@ import { refreshTasks } from '../api/taskCache'
 import { field, label } from './formStyles'
 
 /**
- * 「A 没做完 B 做不了」, in the detail pane (D64).
+ * ONE TASK WAITING FOR ANOTHER, in the detail pane (D64).
  *
  * BOTH DIRECTIONS, AND FINISHED BLOCKERS TOO. The row outside shows only what is still in the
- * way, because a row answers 「现在做得了吗」. The pane shows the arrangement: 「等 CI 跑通」 with
- * CI already green is a fact about this task worth seeing, and it is also the only way to find
- * an edge in order to remove it.
+ * way, because a row answers whether this can be worked on now. The pane shows the arrangement:
+ * a blocker that is already finished is a fact about this task worth seeing, and it is also the
+ * only way to find an edge in order to remove it.
  *
  * ADDING GOES THROUGH SEARCH, not a dropdown of every task in the workspace. A dependency
  * reaches across projects by design, so the candidate list is "everything", and a select of
@@ -66,7 +66,7 @@ function Row({
   )
 }
 
-/** 等 / 挡着 beside its list -- the same label-then-value rhythm as 状态, 截止 and 排期 above. */
+/** One direction beside its list -- the label-then-value rhythm of Status, Due and Plan above. */
 function Group({ tag, children }: { tag: string; children: ReactNode }) {
   return (
     <div className="flex gap-2">
@@ -106,7 +106,7 @@ export function Dependencies({ taskId, projectId }: { taskId: string; projectId:
       await refresh()
     },
     // Our own words, not the server's sentence: 409 is the one refusal a person can actually act
-    // on, and 「That would make two tasks wait for each other」 is a developer's phrasing.
+    // on, and "that would make two tasks wait for each other" is a developer's phrasing.
     onError: (e) =>
       setError(
         e instanceof ApiError && e.status === 409

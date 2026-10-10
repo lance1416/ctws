@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 /**
- * 联系人 -- THE THIRD MODULE.
+ * CONTACTS -- THE THIRD MODULE.
  *
  * The model is vCard 4.0's (RFC 6350), cut down to what one person needs: a formatted name (`FN`),
  * an organisation (`ORG`), free notes (`NOTE`), and a REPEATABLE set of ways to reach someone
@@ -25,8 +25,8 @@ export type ChannelKind = z.infer<typeof channelKind>
  * One way to reach someone.
  *
  * `label` is vCard's TYPE parameter, left as free text rather than an enum: vCard's own list
- * (work, home, cell, …) is advisory, and 「面试用的」 is a more useful label than anything a fixed
- * set would offer.
+ * (work, home, cell, …) is advisory, and "the one for interviews" is a more useful label than
+ * anything a fixed set would offer.
  */
 export const contactChannel = z
   .object({
@@ -83,7 +83,7 @@ export const contactResponse = z
      * The projects this person is on, named, so a list needs no second request.
      *
      * A LIST because a person is often on several: a maintainer who is on two of your repos, a
-     * recruiter holding two roles open. The single column this replaced was a shortcut.
+     * recruiter holding two roles open.
      */
     projects: z.array(z.object({ id: z.uuid(), name: z.string() }).strict()),
     channels: z.array(contactChannel),

@@ -15,15 +15,14 @@ import type { Queryable } from '../db/client'
 export type Linkable = {
   /** Which kind of thing this names. Exactly one module answers for each. */
   type: ObjectType
-  /** The heading a group of these gets on an object page: 「会议 2」. */
+  /** The heading a group of these gets on an object page, with its count beside it. */
   label: string
   /**
    * THIS MODULE'S THINGS, named.
    *
    * ONE method and not two, because naming the far end of an edge and searching for something to
-   * link to are the same query with a different `where` -- written as two they were the same
-   * fifteen lines twice in each of five files, and the halves had already started to order
-   * differently for no reason anybody chose.
+   * link to are the same query with a different `where`. Two of them is the same fifteen lines in
+   * each of five modules, free to drift apart.
    *
    * Always leaves OUT what it cannot see. An id that does not come back is an edge pointing at
    * something soft-deleted or in another workspace, and the shell drops the edge rather than

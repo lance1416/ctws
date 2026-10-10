@@ -9,7 +9,7 @@ import { useComposing } from '../composition'
 const DEBOUNCE_MS = 150
 
 /**
- * FEDERATED search (D46). Reached with `f` from anywhere, or the 搜索 button in the header.
+ * FEDERATED search (D46). Reached with `f` from anywhere, or the Search button in the header.
  *
  * Every module that can be searched contributes a provider and the dialog merges their answers
  * (module-boundary contract §3). With one module registered the list is exactly the task list it
@@ -91,14 +91,13 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
      * see. Radix's `FocusScope` is the trap that claim needed.
      *
      * `initialFocus`, not `autoFocus`: Radix moves focus itself when the layer opens, and the
-     * first tabbable thing in the panel is the header's 关闭 -- the box is what is being typed
+     * first tabbable thing in the panel is the header's Close -- the box is what is being typed
      * into, so it is named explicitly.
      *
-     * “Search” and not 「搜索任务」: this is a SHELL surface and it merges every module's hits
-     * (module-boundary contract §3). It was named after the task module back when there was only
-     * one, which is the shell knowing a module by name -- the second module is what made that
-     * visible. The placeholder lost 「标题和备注」 for the same reason: those are a task's fields,
-     * and a book has neither.
+     * “Search” and not “Search tasks”: this is a SHELL surface and it merges every module's hits
+     * (module-boundary contract §3), so naming it after one module would be the shell knowing a
+     * module by name. The placeholder names no fields for the same reason: a title and notes are a
+     * task's fields, and a book has neither.
      */
     <Modal title="Search" onClose={onClose} initialFocus={box} className="rounded-lg">
       <div className="border-b border-border-subtle px-4 py-3">
@@ -113,7 +112,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
          * `aria-activedescendant` and NOT DOM focus: that is the pattern's whole point. Focus stays
          * in the box so typing keeps working while the highlight walks the list -- which is also why
          * the options below are not buttons any more. They were tab stops, so a seven-result search
-         * put seven stops between the box and 关闭.
+         * put seven stops between the box and Close.
          */}
         <input
           ref={box}

@@ -11,12 +11,11 @@ import { useTimeZone } from '../useMe'
 /**
  * THE CALENDAR -- a SHELL SURFACE, and the first one that is about every module at once.
  *
- * A LENS, not a place things live. It answers 「这个月有什么」 by laying every module's dated
- * things on one grid; it owns none of them, and it is not where any of them is made. The "+" that
- * used to sit on each day square was exactly that mistake: in a calendar app an event is the only
- * entity, so the square is the obvious place to make one -- here a meeting has its own page, and
- * a deadline is a property of a task. Making something from a lens would be the lens claiming a
- * kind of thing (framing §2).
+ * A LENS, not a place things live. It answers what is on this month by laying every module's
+ * dated things on one grid; it owns none of them, and it is not where any of them is made. In a
+ * calendar app an event is the only entity, so a "+" on the day square is the obvious way to make
+ * one; here a meeting has its own page and a deadline is a property of a task, so making anything
+ * from the grid would be a lens claiming a kind of thing (framing §2).
  *
  * The shell draws the grid; each module says what it has on which day. The shell does not know
  * what a deadline is, nor how it differs from a day you mean to finish something: a module hands
@@ -30,7 +29,7 @@ import { useTimeZone } from '../useMe'
  * day this month.
  */
 
-/** How many entries a square shows before it says 「+N」. Three is what fits without scrolling. */
+/** How many entries a square shows before it says "+N". Three fits without scrolling. */
 const PER_SQUARE = 3
 
 export function Calendar() {
@@ -48,7 +47,7 @@ export function Calendar() {
   // ONE HOOK PER REGISTERED MODULE, over the registry's frozen list -- the same rule the capture
   // box and the rail counts follow.
   const results = providers.map((p) => ({ moduleId: p.moduleId, ...p.useEntries(range) }))
-  // 全部 plus one tab per module. A single module would mean a tab bar that decides nothing, so
+  // All, plus one tab per module. A single module would mean a tab bar that decides nothing, so
   // it is drawn only when there is a choice to make -- the same rule the project blocks keep.
   const views = [
     { id: 'all', label: 'All' },

@@ -3,10 +3,9 @@ import { sql, type SQL } from 'drizzle-orm'
 /**
  * LIKE patterns, for every module that searches text.
  *
- * This started inside the task module and moved here the day a second module needed it. It is
- * not task semantics and it is not reading semantics -- it is how this codebase talks to
- * Postgres, which is the shell's (module-boundary contract §3). A module copying it would have
- * been two places to get the escape character wrong.
+ * Not task semantics and not reading semantics -- it is how this codebase talks to Postgres,
+ * which is the shell's (module-boundary contract §3). A module with its own copy would be a
+ * second place to get the escape character wrong.
  */
 
 /**

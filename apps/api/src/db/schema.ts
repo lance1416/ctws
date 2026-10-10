@@ -158,12 +158,12 @@ export const tasks = pgTable(
 )
 
 /**
- * WHICH TASK HAS TO WAIT FOR WHICH (D64). 「A 没做完 B 做不了」.
+ * WHICH TASK HAS TO WAIT FOR WHICH (D64).
  *
  * A SECOND GRAPH, COMPLETELY SEPARATE FROM THE PARENT TREE. The tree says what a piece of work
  * is made of; this says what has to happen first. Siblings can depend on each other, and so can
- * tasks in different projects -- 「等 rrgen 的 CI 跑通才能发 CTWS 的 release」 is a real sentence
- * -- so there is no containment relationship between the two graphs at all.
+ * tasks in different projects -- a release here can wait on another repo's CI -- so there is no
+ * containment relationship between the two graphs at all.
  *
  * NOTHING HERE RECORDS WHETHER SOMETHING IS BLOCKED. That is derived: a task is blocked while any
  * of its blockers is unfinished. Finishing A unblocks B with no second write, so the two can
@@ -200,7 +200,7 @@ export const taskDependencies = pgTable(
 )
 
 /**
- * 待读清单 -- the SECOND module's own table.
+ * READING -- the SECOND module's own table.
  *
  * It belongs to the reading module and nothing in the task module may read it (module-boundary
  * contract §3). What it shares with tasks is only what the SHELL owns: the workspace, and an
@@ -231,7 +231,7 @@ export const readingItems = pgTable(
     url: text('url'),
     author: text('author'),
     status: text('status').notNull(),
-    /** 「想读完的那天」. A calendar day with no time zone, deliberately not a timestamp. */
+    /** The day you mean to finish it by. A calendar day, deliberately not a timestamp. */
     planOn: date('plan_on'),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -255,7 +255,7 @@ export const readingItems = pgTable(
 )
 
 /**
- * 联系人 -- THE THIRD MODULE's own tables, modelled on vCard 4.0 (RFC 6350).
+ * CONTACTS -- THE THIRD MODULE's own tables, modelled on vCard 4.0 (RFC 6350).
  *
  * Like reading items, a contact carries `workspace_id` directly and its project is optional: a
  * person you know is not a line of work. ON DELETE SET NULL on the project for the same reason --
@@ -298,7 +298,7 @@ export const contactChannels = pgTable(
       .references(() => contacts.id, { onDelete: 'cascade' }),
     kind: text('kind').notNull(),
     value: text('value').notNull(),
-    /** vCard's TYPE parameter, as free text: 「面试用的」 beats anything a fixed list offers. */
+    /** vCard's TYPE parameter, as free text: a label of your own beats any fixed list. */
     label: text('label'),
     /** The order the person put them in. The first of a kind is the one a row shows. */
     rank: integer('rank').notNull(),
@@ -310,10 +310,10 @@ export const contactChannels = pgTable(
 )
 
 /**
- * 会议 -- the fourth module's own table, on iCalendar's `VEVENT` (RFC 5545).
+ * MEETINGS -- the fourth module's own table, on iCalendar's `VEVENT` (RFC 5545).
  *
- * A WALL CLOCK PLUS A ZONE, never an instant. 「每周二多伦多时间 09:00」 is at 09:00 in Toronto
- * forever; its UTC instant moves by an hour twice a year. Storing the instant and advancing it by
+ * A WALL CLOCK PLUS A ZONE, never an instant. Every Tuesday at 09:00 Toronto time is at 09:00
+ * in Toronto forever; its UTC instant moves by an hour twice a year. Storing the instant and advancing it by
  * seven days would hold the instant still and move the meeting for the people in the room -- the
  * bug every hand-rolled recurrence ships. `occurrences.ts` has the whole argument.
  *
@@ -361,10 +361,10 @@ export const meetings = pgTable(
  *
  * `recurrence_id` is the local time the RULE put the occurrence at -- the occurrence's identity,
  * which does not change when the occurrence is moved. `cancelled` is `EXDATE`; the nullable
- * columns are the override, each null meaning 「跟系列一样」.
+ * columns are the override, each null meaning "same as the series".
  *
- * One table rather than two because they are one question -- 「这一次有什么不同」 -- and a
- * cancellation is the answer 「这一次不开了」.
+ * One table rather than two because they are one question -- what is different about this one --
+ * and a cancellation is one answer to it.
  */
 export const meetingExceptions = pgTable(
   'meeting_exceptions',
@@ -393,11 +393,10 @@ export const meetingExceptions = pgTable(
 )
 
 /**
- * 东西之间的边 -- the SHELL's table, and the one that replaced 「什么都挂到项目上」.
+ * EDGES BETWEEN THINGS -- the SHELL's table, and the one way anything reaches anything else.
  *
- * Polymorphic on purpose: an edge may join any two kinds of thing, and the alternative -- a join
- * table per pair -- is what produced four columns all pointing at projects and no way to say
- * anything else.
+ * Polymorphic on purpose: an edge may join any two kinds of thing. A join table per pair gives
+ * every module one column pointing at projects and no way to say anything else.
  *
  * NO FOREIGN KEY to either end, because there is no one table to point at. It costs nothing in
  * practice: everything in this app is SOFT-deleted, so a foreign key would never have fired
@@ -420,7 +419,7 @@ export const links = pgTable(
   (t) => [
     // One edge of one kind between two things. Asking twice is the same fact.
     primaryKey({ columns: [t.fromType, t.fromId, t.toType, t.toId, t.kind] }),
-    // BOTH DIRECTIONS are read: 「这个会有谁」 and 「我跟这个人开过哪些会」 are one row.
+    // BOTH DIRECTIONS are read: who is at a meeting, and which meetings a person has been at.
     index('links_from_idx').on(t.workspaceId, t.fromType, t.fromId),
     index('links_to_idx').on(t.workspaceId, t.toType, t.toId),
     check('links_type_check', inList(t.fromType, OBJECT_TYPES)),

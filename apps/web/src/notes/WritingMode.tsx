@@ -6,12 +6,10 @@ import { NoteBody } from './NoteBody'
 /**
  * THE FULL-SCREEN WRITING MODE -- design artboard H, and the escape hatch of editing model A.
  *
- * The model the user chose from three was **A**: reading mode is primary, 编辑 opens a plain text
- * area over the Markdown SOURCE, and a long note gets a full-screen writing mode. This is that
- * third piece, and the reason it exists is that the detail pane is 22rem wide: a 68ch measure is
- * right for READING a note and hopeless for writing a page of one. It is deliberately NOT the
- * side-by-side preview inside the pane (option B) nor a WYSIWYG (option C) -- both were considered
- * and declined.
+ * THE EDITING MODEL: reading mode is primary, Edit opens a plain text area over the Markdown
+ * SOURCE, and a long note gets this. It exists because the detail pane is 22rem wide: a 68ch
+ * measure is right for READING a note and hopeless for writing a page of one. Deliberately not a
+ * side-by-side preview inside the pane, and not a WYSIWYG.
  *
  * It is also the seed of the notes module D73 names. Nothing here knows what a task is: it takes a
  * heading, a string, and a way to report a new string.

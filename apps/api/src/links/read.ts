@@ -17,10 +17,10 @@ import { LINKABLES, linkableFor, TYPE_ORDER } from './registry'
 /**
  * EVERYTHING ONE THING IS CONNECTED TO -- the shell's read, and the whole point of the edge table.
  *
- * Read in BOTH directions, because an edge is one fact: 「这个会有谁参加」 and 「我跟这个人开过哪些会」
- * are the same row, and neither side has to be kept in step with the other. The reading side is
- * where that pays off -- nothing was written on the person's record, and their page still shows
- * the meeting.
+ * Read in BOTH directions, because an edge is one fact: who is at a meeting and which meetings a
+ * person has been at are the same row, and neither side has to be kept in step with the other.
+ * The reading side is where that pays off -- nothing was written on the person's record, and
+ * their page still shows the meeting.
  */
 
 /** How many of one kind of thing a page shows before it stops. A personal workbench, not a CRM. */
@@ -131,7 +131,7 @@ export async function linksOf(
         // By title: a group is read to FIND something in it, and the order edges were made in is
         // not an order anybody remembers. Compared by CODE POINT, not by locale: every other list
         // in this app is ordered by the database, and a second collation here would mean the same
-        // two names read in one order on a project page and the other in 联系人.
+        // two names read in one order on a project page and the other on Contacts.
         .sort((a, b) => (a.title < b.title ? -1 : a.title > b.title ? 1 : a.id < b.id ? -1 : 1))
         .slice(0, PER_GROUP),
     })),

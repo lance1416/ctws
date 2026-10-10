@@ -46,7 +46,7 @@ export function removeDependency(id: string, blockerId: string): Promise<void> {
 
 /**
  * `status` is omitted rather than defaulted here: the contract defaults it to `backlog`, which is
- * what capturing a line costs nothing means (spec §6.3), and the 新建 dialog is the one caller
+ * what capturing a line costs nothing means (spec §6.3), and the New task dialog is the one caller
  * that has an opinion about it. The input type is the contract's own, so every field the server
  * accepts at creation -- status, the two dates, the notes -- can be written in ONE request instead
  * of a POST followed by a PATCH.

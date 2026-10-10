@@ -31,11 +31,11 @@ export function Modal({
   className = '',
   /**
    * What takes focus when the layer opens. Radix otherwise focuses the first tabbable thing in
-   * the panel, which is whatever the header happens to put first; the 新建 dialog opens on its
-   * title field because that is the thing being typed.
+   * the panel, which is whatever the header happens to put first; the New task dialog opens on
+   * its title field because that is the thing being typed.
    */
   initialFocus,
-  /** The header's own dismiss control. `null` on a layer whose footer already carries 取消. */
+  /** The header's own dismiss control. `null` on a layer whose footer already carries Cancel. */
   dismissLabel = 'Close',
   children,
 }: {

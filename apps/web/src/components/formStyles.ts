@@ -1,8 +1,7 @@
 /**
- * The three class strings the app's EDITING blocks share, extracted so the detail pane and the
- * 新建 dialog cannot drift apart. They were written for the detail pane (rows-and-reading spec §5)
- * and the dialog is the second surface that types into a task, so it speaks the same language
- * rather than inventing a second one.
+ * The three class strings the app's EDITING blocks share, so the detail pane and the New task
+ * dialog cannot drift apart. They are the pane's own vocabulary (rows-and-reading spec §5), and
+ * the dialog is a second surface that types into a task rather than a second language.
  *
  * Only the shared ones live here. The detail pane's `exact` (the fallback date field) stays with
  * the pane: the dialog deliberately has no exact date inputs, and a constant with one caller is

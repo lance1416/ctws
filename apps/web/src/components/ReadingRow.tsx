@@ -8,17 +8,17 @@ import { useComposing } from '../composition'
 import { MENU_SURFACE } from './menuSurface'
 
 /**
- * ONE ROW OF 待读.
+ * ONE ROW OF THE READING LIST.
  *
  * It wears the same anatomy as a task row -- a mark, a title, one muted second line -- because
  * they are read by the same person on the same screen, and a second module that invented its own
  * row shape would make the workspace look like two products stapled together.
  *
  * What it does NOT borrow is behaviour: this row has no drag handle, no tree, no dates. A reading
- * list is a pile, and the only question it answers is 「接下来读什么」.
+ * list is a pile, and the only question it answers is what to read next.
  */
 
-/** 「17 天前加的」. A count, not a date: a reading pile is read to find what has gone stale. */
+/** "Added 17 days ago". A count, not a date: a pile is read to find what has gone stale. */
 export function addedLabel(createdAt: string, timeZone: string, now: Date = new Date()): string {
   const days = daysAgoIn(createdAt, timeZone, now)
   if (days <= 0) return 'Added today'
@@ -26,7 +26,7 @@ export function addedLabel(createdAt: string, timeZone: string, now: Date = new 
   return `Added ${days} days ago`
 }
 
-/** 「想读完」 as named days. No exact date: nobody plans reading to the day. */
+/** When to finish it, as named days. No exact date: nobody plans reading to the day. */
 const PLANS: { label: string; day: (today: string) => string }[] = [
   { label: 'Finish today', day: (t) => t },
   { label: 'Finish tomorrow', day: (t) => addDays(t, 1) },
@@ -65,9 +65,9 @@ export function ReadingRow({
   const composing = useComposing()
   const [renaming, setRenaming] = useState(false)
   const [draft, setDraft] = useState('')
-  // Set when 改标题 is chosen, so the menu's closing hands focus to the NEW INPUT instead of back
-  // to its own trigger. Radix restores focus on close by default, which blurred the editor the
-  // moment it appeared -- an inline rename that could never be typed into.
+  // Set when Rename is chosen, so the menu's closing hands focus to the NEW INPUT instead of back
+  // to its own trigger. Radix restores focus on close by default, which blurs the editor the
+  // moment it appears -- an inline rename that cannot be typed into.
   const takingFocus = useRef(false)
   const titleInput = useRef<HTMLInputElement>(null)
   const refresh = () => qc.invalidateQueries({ queryKey: ['reading'] })
@@ -94,7 +94,7 @@ export function ReadingRow({
   const meta = [
     item.projectId === here ? null : item.projectName,
     // The plan leads the rest of the line when there is one: it is the only part that says
-    // anything about WHEN, and 「17 天前加的」 is about how long it has been ignored.
+    // anything about WHEN, and the age is about how long it has been ignored.
     item.planOn ? `Finish ${dayPhrase(item.planOn, today).toLowerCase()}` : null,
     item.kind === 'book' ? item.author : host === label ? null : host,
     addedLabel(item.createdAt, timeZone),

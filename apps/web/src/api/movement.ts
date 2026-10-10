@@ -2,7 +2,7 @@ import type { ProjectMovementResponse } from '@ctws/contracts'
 import { apiFetch } from '../api'
 
 /**
- * The single accessor for the ['movement'] cache key, which feeds 做到哪儿了.
+ * The single accessor for the ['movement'] cache key, which feeds the Movement panel.
  *
  * The server owns every number here: the week boundary and the day count are computed in the
  * user's timezone, and the order is the project order the rail already uses. Nothing is

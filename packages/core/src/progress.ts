@@ -1,5 +1,5 @@
 /**
- * PROGRESS ROLLUP (design spec §7). The one place that answers 「做到哪儿了」.
+ * PROGRESS ROLLUP (design spec §7). The one place that answers how far along something is.
  *
  * It lives here, as a pure fold over a flat list, for the reason §7.5 gives: the recursive mean is
  * awkward in SQL and a dozen lines in TypeScript, and in TypeScript it can be covered case by case

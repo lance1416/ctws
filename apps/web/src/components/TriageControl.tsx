@@ -20,11 +20,10 @@ type Props = {
 /**
  * The way out of an overdue or carried row, as ONE control.
  *
- * It replaces seven inline underlined text links (to tomorrow, to next week, clear the deadline,
- * make it a plan: today
- * 明天 下周) on an overdue row and five more on a carried one. Those were not designed
- * affordances -- they were the app's capabilities tipped onto the row, which is the single thing
- * the redesign plan names as making this screen look like a demo.
+ * ONE TRIGGER, not seven inline text links (push to tomorrow, to next week, clear the deadline,
+ * turn it into a plan for today, tomorrow or next week) on an overdue row and five more on a
+ * carried one. Those are the app's capabilities tipped onto the row, which is what the redesign
+ * plan names as making a screen look like a demo.
  *
  * Why a disclosure and not a revealed cluster or a native date picker:
  * - A cluster revealed on hover or focus would still be six controls wide once revealed, and on a
@@ -33,7 +32,7 @@ type Props = {
  * - A date picker is the wrong shape for this job. Every one of these actions is a named decision
  *   ("push the deadline to next Monday", "this deadline is not a deadline any more, it is a plan")
  *   and two of them change two fields in one request. A calendar makes the user compute the date
- *   and cannot express 转为排期 at all. The exact-date route already exists in the detail panel.
+ *   and cannot express "make this a plan instead" at all. The exact date is in the detail panel.
  *
  * Constraints it meets:
  * - The trigger occupies a FIXED slot that is reserved whether or not the row has triage, and the

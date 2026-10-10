@@ -2,10 +2,10 @@ import { sql } from 'drizzle-orm'
 import type { Queryable } from '../db/client'
 
 /**
- * THE WEEKLY REVIEW (design spec §8, §9.3). The view that answers 「我做了什么」.
+ * THE WEEKLY REVIEW (design spec §8, §9.3). The view that answers what I did.
  *
- * IT READS THE EVENT LOG, NOT THE TASKS. That is the whole difference between this and 已完成.
- * 已完成 lists what is finished RIGHT NOW; this lists what HAPPENED in a window. A task finished
+ * IT READS THE EVENT LOG, NOT THE TASKS. That is the whole difference between this and Done.
+ * Done lists what is finished RIGHT NOW; this lists what HAPPENED in a window. A task finished
  * on Tuesday and reopened on Thursday is absent from the first and present in both halves of the
  * second, which is the honest account of the week -- and the dishonest version is exactly the one
  * that makes a review not worth opening.

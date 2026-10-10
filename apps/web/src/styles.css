@@ -61,8 +61,8 @@
      - tertiary text, light: `#6b7280` measures 4.43 on the ground and 4.08 on the chrome plane,
        i.e. it fails AA as text in the two places it is used. `#616876` -> 5.13 / 4.73.
      - tertiary text, dark: `#717a86` measures 4.01 on a panel. `#838c99` -> 5.13.
-     - accent, light: `#3a6cc4` measures 4.30 against the capture bar, where the "已放入 X" link
-       sits. `#3364b4` -> 4.90, one step darker, same hue.
+     - accent, light: `#3a6cc4` measures 4.30 against the capture bar, where the capture
+       confirmation's link sits. `#3364b4` -> 4.90, one step darker, same hue.
    Every other value in the spec's table is used exactly as written.
    `border-subtle` (1.19-1.30) is a decorative hairline only: panel edges, tree guides and
    column rules, where the SURFACE step already carries the separation. Anything that identifies
@@ -147,15 +147,15 @@
      additive 8px leading wearing a ratio.
 
      The role map, same table:
-       xs   12/20  说明文字: date echoes, kbd chips, counts, the deliberately demoted labels
-       sm   14/22  元信息、面包屑、标签: the row's second line, field labels, panel counts
-       base 16/24  正文、行标题: body, row titles (600 when the row is 正在做), notes, fields
-       lg   20/28  面板标题: Panel's own heading, the detail pane's subject, a banner Stat
-       xl   24/32  页面标题: every <h1>
-       2xl  36/44  横幅主语: the one thing being done right now, on 今天
+       xs   12/20  captions: date echoes, kbd chips, counts, the deliberately demoted labels
+       sm   14/22  meta, breadcrumbs, labels: the row's second line, field labels, panel counts
+       base 16/24  body and row titles (600 when the row is in progress), notes, fields
+       lg   20/28  panel headings: Panel's own heading, the detail pane's subject, a banner Stat
+       xl   24/32  page titles: every <h1>
+       2xl  36/44  the banner subject: the one thing being done right now, on Today
      Every step from `base` up is LARGER than the scale it replaces (15/17/23 -> 16/20/24 with a
-     new 36 on top), which is the answer to 「组件太小」. `xs` goes 13 -> 12 and `sm` stays at 14:
-     those two are TDesign's published values and are adopted as published. */
+     new 36 on top), because the controls were too small to read at a glance. `xs` goes 13 -> 12
+     and `sm` stays at 14: those two are TDesign's published values, adopted as published. */
   --text-xs: 0.75rem;
   --text-xs--line-height: 1.25rem;
   --text-sm: 0.875rem;
@@ -324,11 +324,10 @@
    `line-height` here and none on the headings any more, because a rule outside the scale is
    exactly the unitless leading section 2 forbids. Every heading in the app names a step.
 
-   `text-autospace` IS THE HAN/LATIN SPACING, AND THE ONLY ONE (spec section 4). W3C CLREQ:
-   「汉字与西文字母、阿拉伯数字间使用不多于四分之一个汉字宽的字距」 -- no more than a quarter of a
-   Han character's width between Han and Latin letters or digits. That used to be done by hand-
-   inserting spaces or by tracking; it is now the engine's job, and `normal` is NOT the initial
-   value in the browsers this ships to (measured: Chromium 153 computes `no-autospace` unless
+   `text-autospace` IS THE HAN/LATIN SPACING, AND THE ONLY ONE (spec section 4). W3C CLREQ asks
+   for no more than a quarter of a Han character's width between Han and Latin letters or digits.
+   Hand-inserted spaces and tracking are the other two ways to get it; this is the engine's job,
+   and `normal` is NOT the initial value in the browsers this ships to (measured: Chromium 153 computes `no-autospace` unless
    asked), so it has to be asked for. Chromium spends 1/8 em at each join, inside CLREQ's ceiling,
    and spends nothing where the author already typed a space.
 
@@ -348,7 +347,7 @@ body {
 
 /* Tabular figures wherever digits sit in a column and have to line up: counts in the left rail
    and on every panel heading, dates and times in the row columns, clock times on the completed
-   list, the day-counts in 做到哪儿了. Plex ships `tnum`, which is the reason it was chosen over
+   list, the day-counts in the Movement panel. Plex ships `tnum`, which is the reason it was chosen over
    a face without it. Prose keeps proportional figures. */
 .tabular-nums,
 time,

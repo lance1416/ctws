@@ -145,9 +145,9 @@ export async function removeDependency(
 /**
  * Both directions for one task, FINISHED BLOCKERS INCLUDED.
  *
- * The pane shows the whole arrangement, not only what is still in the way: 「等 CI 跑通」 with CI
- * already green is a fact about this task worth seeing, and it is the only way to find the edge
- * in order to remove it.
+ * The pane shows the whole arrangement, not only what is still in the way: a blocker that is
+ * already finished is a fact about this task worth seeing, and it is the only way to find the
+ * edge in order to remove it.
  */
 export async function taskDependencyLists(
   q: Queryable,

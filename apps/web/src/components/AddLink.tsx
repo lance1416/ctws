@@ -9,10 +9,6 @@ import { Modal } from './Modal'
 /**
  * SAYING THAT TWO THINGS ARE CONNECTED.
  *
- * The edge table landed with no way to write an edge: the server took one and nothing in the app
- * sent one, so the whole point of it -- 「这本书是陈颖推荐的」 -- was reachable with curl and
- * nowhere else. Every edge that existed came from a module's own field.
- *
  * TWO STEPS, because there are two questions and neither can be guessed: WHAT, then HOW. The
  * kinds offered depend on both ends (the model allows an attendee between a meeting and a
  * person, and nothing of the sort between two books), so the second list cannot be drawn until

@@ -11,14 +11,14 @@ import { useComposing } from '../composition'
 /**
  * One input on every page.
  *
- * The destination is no longer "the inbox, obviously": every module that can take a line is asked
- * whether it claims this one, in registration order, and the line falls to the registry's named
- * default when nobody does (module-boundary contract §3). A pasted url goes to 待读; a sentence
- * goes to the inbox.
+ * THE DESTINATION IS NOT ALWAYS THE INBOX: every module that can take a line is asked whether it
+ * claims this one, in registration order, and the line falls to the registry's named default when
+ * nobody does (module-boundary contract §3). A pasted url goes to Reading; a sentence goes to the
+ * inbox.
  *
- * "敲一行字就走" is a success criterion, so routing must not cost a keystroke -- and it does not:
- * `accepts` is a pure function of the line. When the guess is wrong you can SEE it, because
- * 「已放入 X」 names where the line went.
+ * Typing a line and leaving is a success criterion, so routing must not cost a keystroke -- and it
+ * does not: `accepts` is a pure function of the line. When the guess is wrong you can SEE it,
+ * because the confirmation names where the line went.
  */
 export function QuickCapture() {
   const composing = useComposing()
@@ -26,7 +26,7 @@ export function QuickCapture() {
   // WHERE THE LAST LINE LANDED, or null. One line, never a queue. It names the destination but
   // not the title: the title would sit in the DOM of every page (this box is in the layout) and
   // show up twice wherever that task is also listed. It holds the target rather than a boolean
-  // because with two modules the destination is no longer always the same place.
+  // because with two modules the destination is not always the same place.
   const [landed, setLanded] = useState<CaptureTarget | null>(null)
   const { pathname } = useLocation()
   const shortcuts = useShortcutsEnabled()

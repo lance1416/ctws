@@ -10,7 +10,7 @@ import { assertProjectVisible, visibleProjects } from '../projects/store'
 import { ReadingItemNotFoundError, WrongKindError } from './errors'
 
 /**
- * 待读清单's storage -- THE SECOND MODULE's own.
+ * THE READING LIST's storage -- THE SECOND MODULE's own.
  *
  * It borrows exactly two things from the shell: the workspace, and `visibleProjects` for deciding
  * which projects an item may be filed under. It borrows nothing from the task module, which is
@@ -101,7 +101,7 @@ export async function createReadingItem(
     .values({
       id: uuidv7(),
       workspaceId,
-      // 待读 is where everything starts. There is no separate inbox for reading: the list IS the
+      // To read is where everything starts. There is no separate inbox for reading: the list IS the
       // inbox, which is why the age of a row is worth showing on it.
       status: 'todo',
       ...values,

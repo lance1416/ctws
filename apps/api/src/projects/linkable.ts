@@ -5,8 +5,8 @@ import type { Linkable } from '../links/linkable'
 import { visibleProjects } from './store'
 
 /**
- * 项目 names itself. It is the SHELL's, not a module's -- which is the whole point of this file:
- * a project is now one kind of object among five rather than the thing everything hangs off.
+ * PROJECTS names itself. It is the SHELL's, not a module's -- which is the whole point of this
+ * file: a project is one kind of object among five, not the thing everything hangs off.
  */
 export const projectLinkable: Linkable = {
   type: 'project',

@@ -99,17 +99,14 @@ export const createTaskBody = z
     title,
     notes: notes.nullish(),
     /**
-     * `todo` BY DEFAULT since 2026-10-07, where it used to be `backlog`.
+     * `todo` BY DEFAULT, never `backlog`.
      *
-     * The old default made §6.3's exclusion rule swallow the whole tree: the rollup drops a
-     * `backlog` node BEFORE looking at its children (§7.2), so a parent nobody had explicitly
-     * moved reported no progress even with every child finished -- and nobody had explicitly
-     * moved anything, because this was the default. Measured, and pinned in
+     * The rollup drops a `backlog` node BEFORE looking at its children (§7.2), so a `backlog`
+     * default would make a parent report no progress even with every child finished. Pinned in
      * `apps/api/tests/rollup.test.ts`.
      *
-     * §6.3's reasoning survives intact and is why `backlog` still exists: an idea that is only
-     * recorded should not drag a number down. It is now a bucket a person puts something INTO,
-     * rather than where everything lands by accident.
+     * `backlog` still exists for §6.3's reason -- an idea that is only recorded should not drag a
+     * number down -- as a bucket a person puts something INTO.
      */
     status: taskStatus.default('todo'),
     scheduledOn: calendarDate.nullish(),
@@ -195,7 +192,7 @@ export const rollupsResponse = z.record(z.uuid(), rollupResponse)
 
 /**
  * THE WEEKLY REVIEW (design spec §8). What HAPPENED in a window, read off the event log and
- * grouped by project -- as against 已完成, which lists what is finished right now.
+ * grouped by project -- as against Done, which lists what is finished right now.
  */
 export const reviewTask = z.object({ id: z.uuid(), title: z.string(), at: instant }).strict()
 
@@ -278,8 +275,8 @@ export const reviewQuery = z
  * ONE DATED THING, as a module hands it to the calendar.
  *
  * Deliberately thin: an id, the DAY it falls on, what to call it, where to go, and which project
- * it belongs to. The shell draws the grid and knows nothing about what a 截止 is or how it
- * differs from 想读完 -- `kind` is the module's own word for it, shown as given.
+ * it belongs to. The shell draws the grid and knows nothing about what a deadline is or how it
+ * differs from a day you mean to finish a book -- `kind` is the module's own word, shown as given.
  *
  * The DAY is computed by the server in the account's zone, like today / completed / review. A
  * client that turned an instant into a day would put a 23:00 deadline on the wrong square for
@@ -293,10 +290,10 @@ export const calendarEntry = z
     title: z.string(),
     /** Where clicking it goes, inside the app. */
     to: z.string(),
-    /** The module's own word for what this date is: “Due”, “Plan”, 「想读完」. */
+    /** The module's own word for what this date is: “Due”, “Plan”, “Finish by”. */
     kind: z.string(),
     /**
-     * The time of day, when the thing HAS one: 「14:00」, formatted by the server in the account's
+     * The time of day, when the thing HAS one, formatted by the server in the account's
      * zone. A deadline has an instant too but it is not what a deadline is about; a meeting is at
      * a time, and a grid that showed only the day would be hiding the useful half.
      *
@@ -304,9 +301,9 @@ export const calendarEntry = z
      */
     time: z.string().nullable(),
     /**
-     * The zone this thing was agreed in, as people say it (「EDT」), and only when it is NOT the
-     * account's. A meeting at 09:00 in Toronto shows on your clock -- 「我几点要到场」 -- and this
-     * is how it still says what was actually agreed.
+     * The zone this thing was agreed in, as people say it (“EDT”), and only when it is NOT the
+     * account's. A meeting at 09:00 in Toronto shows on your own clock, which answers when to be
+     * there; this is how it still says what was actually agreed.
      */
     zone: z.string().nullable(),
     projectId: z.uuid().nullable(),
@@ -318,8 +315,8 @@ export type CalendarEntry = z.infer<typeof calendarEntry>
 /**
  * What a module's `/calendar` answers with.
  *
- * Named because three route files spelled the same wrapper out by hand, and a response shape
- * that is written three times is a response shape that can be written three ways.
+ * Named once: a response shape written out in three route files is one that can be written
+ * three ways.
  */
 export const calendarEntriesResponse = z.object({ entries: z.array(calendarEntry) }).strict()
 
@@ -331,8 +328,8 @@ export const calendarQuery = z
 export type CalendarQuery = z.infer<typeof calendarQuery>
 
 /**
- * 「A 没做完 B 做不了」 (D64). A reference to the task at the other end, carrying enough to name
- * it on a row -- including its PROJECT, because a dependency may cross one.
+ * ONE TASK WAITING FOR ANOTHER (D64). A reference to the task at the other end, carrying enough
+ * to name it on a row -- including its PROJECT, because a dependency may cross one.
  */
 export const dependencyRef = z
   .object({
@@ -372,8 +369,8 @@ export const todayTaskResponse = taskResponse
     segment: todaySegment,
     /**
      * What is still in the way (D64), unfinished blockers only. ON THIS RESPONSE and not in a
-     * parallel map, because this is the page the feature exists for: 今天 stops being 「什么到期
-     * 了」 and becomes 「什么现在做得了」, and that is a property of each row.
+     * parallel map, because this is the page the feature exists for: Today stops answering what
+     * is due and answers what can be worked on, which is a property of each row.
      */
     blockedBy: z.array(dependencyRef),
   })
@@ -391,10 +388,10 @@ export const completedTaskResponse = taskResponse
   .strict()
 export type CompletedTaskResponse = z.infer<typeof completedTaskResponse>
 
-// ---- 做到哪儿了 ----
+// ---- Movement ----
 
 /**
- * One project's line in 做到哪儿了: COUNTS AND MOVEMENT, NEVER A RATIO.
+ * One project's line of Movement: COUNTS, NEVER A RATIO.
  *
  * There is deliberately no percentage and no `progress` field. Rollup is M3 and nothing in the
  * codebase writes `manual_progress`, so a ratio here would be a number the backend cannot
@@ -457,8 +454,8 @@ export const TASK_EVENT_TYPES = [
   'title_changed',
   'notes_changed',
   'progress_set',
-  // 「A 没做完 B 做不了」 arrived and left. Recorded on the WAITING task: it is the one whose
-  // situation changed, and its history is where someone looks to ask why it sat still.
+  // A dependency arrived or left. Recorded on the WAITING task: it is the one whose situation
+  // changed, and its history is where someone looks to ask why it sat still.
   'dependency_added',
   'dependency_removed',
   'deleted',

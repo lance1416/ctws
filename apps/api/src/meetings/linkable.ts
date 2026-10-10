@@ -14,7 +14,7 @@ function when(startsLocal: string, timeZone: string): string {
   return `${MONTHS[m - 1]} ${d}, ${clock} · ${zoneLabel(instantOf(startsLocal, timeZone), timeZone)}`
 }
 
-/** 会议 names its own meetings for the shell. See `links/linkable.ts` for why this exists. */
+/** Meetings names its own meetings for the shell. See `links/linkable.ts` for why this exists. */
 export const meetingLinkable: Linkable = {
   type: 'meeting',
   label: 'Meetings',

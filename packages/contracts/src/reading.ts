@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { calendarDate } from './task'
 
 /**
- * 待读清单 -- THE SECOND MODULE.
+ * THE READING LIST -- THE SECOND MODULE.
  *
  * One entity, two kinds. A tweet is not modelled separately: it is a link whose host is x.com,
  * and three types for two behaviours is a type system built for a taxonomy nobody asked for.
@@ -16,7 +16,7 @@ export const READING_KINDS = ['link', 'book'] as const
 export const readingKind = z.enum(READING_KINDS)
 export type ReadingKind = z.infer<typeof readingKind>
 
-/** 待读 / 在读 / 读完 / 弃. No page numbers: nobody keeps them up to date. */
+/** To read / reading / finished / dropped. No page numbers: nobody keeps them up to date. */
 export const READING_STATUSES = ['todo', 'reading', 'done', 'dropped'] as const
 export const readingStatus = z.enum(READING_STATUSES)
 export type ReadingStatus = z.infer<typeof readingStatus>
@@ -67,7 +67,7 @@ export const updateReadingItemBody = z
     author: author.nullable().optional(),
     status: readingStatus.optional(),
     projectId: z.uuid().nullable().optional(),
-    /** 「想读完的那天」. A calendar day, like a task's plan -- never an instant. */
+    /** The day you mean to finish it by. A calendar day, like a task's plan -- never an instant. */
     planOn: calendarDate.nullable().optional(),
   })
   .strict()
@@ -83,10 +83,10 @@ export const readingItemResponse = z
     author: z.string().nullable(),
     status: readingStatus,
     /**
-     * 「想读完的那天」, or null.
+     * The day you mean to finish it by, or null.
      *
      * A PLAN, not a deadline: nothing goes overdue here and nothing nags. It exists because a
-     * reading list with no dates at all cannot say 「这周想读完哪本」, and because the calendar
+     * reading list with no dates at all cannot say which book this week is for, and because the calendar
      * needs a second module's worth of dated things or its contribution point would be shaped
      * around the task module alone.
      */
@@ -94,7 +94,7 @@ export const readingItemResponse = z
     projectId: z.uuid().nullable(),
     /** The project's name, so a cross-project list need not fetch them separately. */
     projectName: z.string().nullable(),
-    /** What 「17 天前加的」 is counted from. */
+    /** What "added 17 days ago" is counted from. */
     createdAt: z.iso.datetime({ offset: true }),
     updatedAt: z.iso.datetime({ offset: true }),
   })
@@ -105,7 +105,7 @@ export const readingListQuery = z
   .object({
     projectId: z.uuid().optional(),
     /**
-     * Only the items that belong to NO project -- 「散的」.
+     * Only the items that belong to NO project.
      *
      * A separate flag rather than `projectId=none`, because it is not a project id and typing one
      * where a uuid is expected is how a filter silently becomes no filter. It is also the

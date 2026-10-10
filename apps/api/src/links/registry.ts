@@ -10,8 +10,8 @@ import type { Linkable } from './linkable'
  * EVERY KIND OF THING, and who answers for it.
  *
  * The one place that names all five, which is what a shell is for. Groups on an object page come
- * out in THIS order, so “Tasks” reads before 「要读的」 everywhere rather than in whatever order
- * the edges happened to be stored.
+ * out in THIS order, the same on every page, rather than in whatever order the edges happened to
+ * be stored.
  *
  * A type with no entry would make an object page silently drop a whole group, so
  * `links.test.ts` asserts the set is exactly `OBJECT_TYPES`.

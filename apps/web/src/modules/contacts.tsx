@@ -18,7 +18,8 @@ import type { SearchHit, WorkspaceModule } from './contract'
  *
  * It contributes a rail row, a chord, a search provider, a project block and -- added later,
  * with the edge table -- where one of its people lives. And nothing else:
- * - no WORKBENCH card, because the workbench answers 「现在手头有什么」 and an address book is not
+ * - no WORKBENCH card, because the workbench answers what is in front of you and an address book
+ *   is not
  *   something in front of you. A card listing people would be decoration on the one page that is
  *   supposed to be only what is live.
  * - no CALENDAR entries. Birthdays are a vCard property and would put something on the grid, and
@@ -50,16 +51,11 @@ function useContactHits(query: string) {
 }
 
 /**
- * NO BLOCK ON A PROJECT PAGE ANY MORE.
+ * NO BLOCK ON A PROJECT PAGE.
  *
- * This module used to hang a list of its own rows under every project, which -- with four modules
- * doing the same -- made the project page a wall of blocks: the module structure drawn for the
- * reader. Those rows are edges now, and the shell draws every kind of edge the same way
- * (framing §2). The task tree is the one block that stays, because a tree with drag,
- * dependencies and an inline new row is an editor, not a list.
- *
- * The cost, stated: one of these can no longer be made FROM a project page. It is made on its own
- * page and filed there, or dropped into the capture box.
+ * This module's rows reach a project as edges, and the shell draws every kind of edge the same
+ * way (framing §2). One of these is made on its own page and filed there, or dropped into the
+ * capture box, never from a project page.
  */
 
 /**
@@ -88,7 +84,7 @@ export const contactModule: WorkspaceModule = {
     { path: ':id', element: <ObjectPage type="contact" /> },
   ],
   search: { useHits: useContactHits },
-  // `n` for 人. One keyspace across modules, so this is checked against every other chord.
+  // `n` for name. One keyspace across modules, so this is checked against every other chord.
   chords: [
     { id: 'contacts', key: 'n', label: 'Go to Contacts', resolve: () => `/${ID}`, order: 17 },
   ],

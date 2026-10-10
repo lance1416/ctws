@@ -4,10 +4,9 @@ import type { ReactNode } from 'react'
  * What a screen says when it has nothing on it: ONE LINE, and an action only where there is a
  * single obvious one.
  *
- * The second line used to be mandatory and explained what the screen was for -- 「排到今天的、已经
- * 逾期的、正在做的，都会落到这一页。」 That is a manual, not an interface. The one person using
- * this built the screens; a sentence teaching them what their own page is for reads as filler,
- * and filler is what makes software sound like it was generated rather than designed.
+ * NO SECOND LINE EXPLAINING WHAT THE SCREEN IS FOR. That is a manual, not an interface: the one
+ * person using this built the screens, and a sentence teaching them what their own page does
+ * reads as filler.
  *
  * Left-aligned like everything else here: a centred block announces itself as a different kind of
  * page, and it is not one.

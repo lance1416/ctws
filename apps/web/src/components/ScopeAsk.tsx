@@ -1,7 +1,7 @@
 import type { EditScope } from '@ctws/contracts'
 
 /**
- * 「只改这次 / 以后都改」 -- the question every calendar asks before it changes a repeating event.
+ * THIS ONE, OR FROM HERE ON -- what every calendar asks before changing a repeating event.
  *
  * It is asked rather than guessed because the two answers are not recoverable from one another:
  * changing the series when only this week moved is a mess to undo by hand, and the person is the
@@ -16,7 +16,7 @@ export function ScopeAsk({
   onPick,
   onCancel,
 }: {
-  /** What the change is, in the question: 「把这个会移到…」. */
+  /** What the change is, in the question: "Move this meeting to …". */
   what: string
   onPick: (scope: EditScope) => void
   onCancel: () => void

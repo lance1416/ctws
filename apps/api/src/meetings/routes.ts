@@ -108,8 +108,8 @@ export const meetingRoutes: FastifyPluginAsync = async (app) => {
     },
     async (req) => {
       const user = authedUser(req)
-      // A list with no window means 「从今天起的一个月」: a recurring meeting has no last
-      // occurrence, so "everything" is not an answer anyone can be given.
+      // A list with no window means the month ahead: a recurring meeting has no last occurrence,
+      // so "everything" is not an answer anyone can be given.
       const from = req.query.from ?? localOf(new Date(), user.timezone).slice(0, 10)
       const to =
         req.query.to ?? localOf(new Date(Date.now() + 31 * DAY), user.timezone).slice(0, 10)
@@ -126,8 +126,8 @@ export const meetingRoutes: FastifyPluginAsync = async (app) => {
   /**
    * This module's dated things, for the shell's calendar.
    *
-   * A meeting is the first entry with a TIME on it. The clock shown is the ACCOUNT's -- 「我几点要
-   * 到场」 is the question a calendar answers -- and the event's own zone travels alongside, so a
+   * A meeting is the first entry with a TIME on it. The clock shown is the ACCOUNT's -- when to be
+   * there is the question a calendar answers -- and the event's own zone travels alongside, so a
    * meeting agreed as 09:00 in Toronto can still say so.
    */
   typed.get(

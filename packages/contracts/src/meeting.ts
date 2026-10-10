@@ -2,10 +2,10 @@ import { z } from 'zod'
 import { calendarDate, windowIsBounded, WINDOW_REFUSED } from './task'
 
 /**
- * 会议 -- the fourth module, on iCalendar's `VEVENT` (RFC 5545).
+ * MEETINGS -- the fourth module, on iCalendar's `VEVENT` (RFC 5545).
  *
- * A meeting is a WALL CLOCK PLUS A ZONE, not an instant: 「每周二多伦多时间 09:00」 is at 09:00 in
- * Toronto forever, and its UTC instant moves twice a year. A series stored as an instant and
+ * A meeting is a WALL CLOCK PLUS A ZONE, not an instant: every Tuesday at 09:00 Toronto time is
+ * at 09:00 in Toronto forever, and its UTC instant moves twice a year. A series stored as an instant and
  * advanced by seven days would hold the instant still and move the meeting for the people in the
  * room. A duration rather than an end, for the same reason.
  *
@@ -168,7 +168,7 @@ export const meetingOccurrence = z
     /** The instants, so a client never has to do zone arithmetic to sort or compare. */
     startsAt: instant,
     endsAt: instant,
-    /** The series' rule, so an occurrence can say 「每周二」 without a second request. */
+    /** The series' rule, so an occurrence can say how it repeats without a second request. */
     rrule: z.string().nullable(),
     /** True when this occurrence differs from its series. */
     overridden: z.boolean(),
@@ -190,7 +190,7 @@ export const meetingListQuery = z
   })
   .strict()
   // THE SAME CHECK the calendar uses, not a copy of it: this is that question with the days
-  // named differently, and two copies drifted apart once already.
+  // named differently, and two copies drift apart.
   .refine(windowIsBounded, { message: WINDOW_REFUSED, path: ['to'] })
 
 /** Deleting takes a scope too: cancelling one week is not cancelling the series. */

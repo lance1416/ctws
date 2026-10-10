@@ -10,7 +10,7 @@ import { visibleProjects } from '../projects/store'
 import { ContactNotFoundError } from './errors'
 
 /**
- * 联系人's storage. vCard's shape (RFC 6350), cut to what one person needs.
+ * CONTACTS' storage. vCard's shape (RFC 6350), cut to what one person needs.
  *
  * Like the reading module it borrows exactly two things from the shell -- the workspace and
  * `visibleProjects` -- and nothing at all from the other two modules.
@@ -214,8 +214,8 @@ export async function softDeleteContact(
 /**
  * This module's half of federated search: the name, the organisation, and every address.
  *
- * Searching the addresses is the point as often as the name is -- 「那个 @example.com 的人叫什么
- * 来着」 is exactly the question a contact list answers.
+ * Searching the addresses is the point as often as the name is: "who was the one at
+ * @example.com" is exactly the question a contact list answers.
  */
 export async function searchContacts(
   q: Queryable,

@@ -118,8 +118,8 @@ export function TaskRow({
   })
   const inactive = status === 'done' || status === 'cancelled'
   // The ACCOUNT's zone, not the browser's: the server decides what is overdue in that zone, and a
-  // row that said 「明天截止」 about a task the server had already filed under 逾期 would be the
-  // page contradicting itself.
+  // row saying a task is due tomorrow when the server has already filed it as overdue would be
+  // the page contradicting itself.
   const timeZone = useTimeZone()
   const hints = dateHints({ status, dueAt, scheduledOn }, timeZone)
   // ONE glyph for the row, chosen by what bites first (rowLead). The notes mark falls back to its
@@ -162,10 +162,8 @@ export function TaskRow({
       // for the extra line. `items-start`, because the glyphs belong to the FIRST line: every one
       // of them is 44px tall, so they centre on the title whether or not a second line follows it.
       // 44 = 10 + 24 + 10 and 66 = 10 + 24 + 22 + 10, from the typography spec's px pairs: the
-      // title is 行标题 16/24 and the second line is 元信息 14/22. The 44 is unchanged from the
-      // 15/20 title it replaces -- it was 12 + 20 + 8 then and the padding absorbed the two extra
-      // pixels of leading -- so the workbench's single-line row metric survives the larger scale
-      // exactly, and only the rows that already cost a second line got taller.
+      // title is 16/24 and the second line is 14/22. 44 is the workbench spec's single-line row
+      // metric, so only the rows that carry a second line are taller than it.
       className={`group relative flex min-h-11 cursor-pointer items-start rounded-lg hover:bg-surface-hover ${
         isDragging ? 'bg-surface-raised opacity-70' : ''
       } ${
@@ -173,9 +171,9 @@ export function TaskRow({
         // would be indistinguishable from whatever the pointer happens to be over.
         selected ? 'bg-surface-hover shadow-[inset_2px_0_0_0_var(--color-accent)]' : ''
       } ${
-        // BLOCKED ROWS DIM, THEY DO NOT DISAPPEAR (D64). 「列表丢任务就没法信」 is this tree's
-        // oldest rule, and what is in the way is named on the line right under the title -- the
-        // point is to answer "why not this one" without opening anything.
+        // BLOCKED ROWS DIM, THEY DO NOT DISAPPEAR (D64). A list that loses tasks is a list you
+        // cannot trust, and what is in the way is named on the line under the title -- the point
+        // is to answer "why not this one" without opening anything.
         blockedBy && blockedBy.length > 0 ? 'opacity-60' : ''
       }`}
     >

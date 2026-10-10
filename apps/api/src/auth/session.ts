@@ -7,12 +7,10 @@ import { sessions } from '../db/schema'
 /**
  * SESSIONS. The cookie carries a token; the database holds only its SHA-256 (D2).
  *
- * WHAT THAT CHANGES. The token used to BE the primary key, stored verbatim, so anything that
- * could read the table had a working session -- not a thing to crack, a thing to paste into a
- * cookie jar and be you. "The data is leaked anyway" conflates two different losses: reading
- * rows shows someone your tasks, holding a token lets them ACT as you, and keeps them signed in
- * until it expires. The leak surface is not only a breached database either -- it is a backup,
- * a `pg_dump`, a `select * from sessions` pasted into a chat to debug something.
+ * WHAT THE HASH BUYS. A stored token is a working session to anyone who can read the table --
+ * nothing to crack, just a value to paste into a cookie jar. Reading rows shows someone your
+ * tasks; holding a token lets them ACT as you until it expires. The read surface is wider than a
+ * breach: a backup, a `pg_dump`, a `select * from sessions` pasted somewhere to debug something.
  *
  * SHA-256 AND NOT ARGON2, on purpose. A password is low-entropy and needs a slow hash to survive
  * being guessed. A session token is 32 bytes from the CSPRNG: there is nothing to guess, so the
@@ -75,11 +73,10 @@ export async function findValidSession(
   ttlDays: number,
 ): Promise<{ userId: string } | null> {
   /**
-   * NO SHAPE GUARD ANY MORE, and that is a simplification the hashing bought. The old code had
-   * to refuse a non-uuid cookie before the query, because an attacker-controlled string reaching
-   * Postgres as a `uuid` parameter raises 22P02 rather than matching no rows. Everything is
-   * hashed to 64 hex characters first now, so no cookie value can be malformed by the time it
-   * reaches the database.
+   * NO SHAPE GUARD on the cookie: hashing gives the query 64 hex characters whatever arrived, so
+   * no value can reach Postgres malformed. A column compared against the raw token would need
+   * one, because an attacker-controlled string bound as a `uuid` raises 22P02 rather than
+   * matching no rows.
    */
   const hash = digest(token)
   const now = new Date()

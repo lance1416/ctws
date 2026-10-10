@@ -18,7 +18,7 @@ import { createTaskBody, updateTaskBody, type UpdateTaskBody } from '@ctws/contr
 import { z } from 'zod'
 
 /**
- * The 新建 dialog's schema. The create contract unchanged: `manualProgress` is simply never in the
+ * The New task dialog's schema. The create contract unchanged: `manualProgress` is simply never in the
  * form's values, and `.strict()` is what guarantees a field added to the form without being added
  * to the contract fails loudly here instead of quietly on the server.
  */

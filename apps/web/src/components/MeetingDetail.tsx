@@ -24,13 +24,13 @@ import { ScopeAsk } from './ScopeAsk'
 /**
  * ONE MEETING, in the shell's detail pane -- the same pane a task and a person open in.
  *
- * What is open is an OCCURRENCE, not a series: 「这周二那个会」. Changing it therefore has to ask
+ * What is open is an OCCURRENCE, not a series -- this Tuesday's one. Changing it has to ask
  * which one you mean, and only for the things that can differ between two occurrences. Everything
  * else is the series', and changes all of them.
  *
  * The two fields that are real fields here are the clock and the zone. A time is composed, so
  * `datetime-local` is the control every browser already has for composing one; it still writes on
- * leaving, like everything else in this pane. There is no 保存.
+ * leaving, like everything else in this pane. There is no Save.
  */
 /**
  * The pane: this module's fields inside the shell's frame.
@@ -75,7 +75,7 @@ export function MeetingFields({
   const rail = useProjectRail()
   const [cancelling, setCancelling] = useState(false)
   const [failed, setFailed] = useState<string | null>(null)
-  /** A change waiting on 「只改这次 / 以后都改」. Null when nothing is being asked. */
+  /** A change waiting on "this one / from here on". Null when nothing is being asked. */
   const [asking, setAsking] = useState<{ what: string; patch: UpdateMeetingInput } | null>(null)
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
   const contacts = useQuery({ queryKey: ['contacts', null, false], queryFn: () => listContacts() })

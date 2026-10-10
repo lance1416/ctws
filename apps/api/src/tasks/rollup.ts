@@ -12,7 +12,7 @@ import type { Queryable } from '../db/client'
  * What SQL DOES decide here is the two time-dependent flags, because deciding them anywhere else
  * would be a second notion of "what day is it". Every day boundary in this app is `at time zone
  * users.timezone`, and the overdue cut is the SAME expression `listToday` and `listMovement` use
- * -- if the three disagreed, the project banner, the 逾期 panel and the today page would report
+ * -- if the three disagreed, the project banner, the Overdue panel and Today would report
  * different numbers for the same task.
  *
  * SCOPING, AND WHO SAYS 404. The query is tenant-scoped in its own `where` (`p.workspace_id`), so

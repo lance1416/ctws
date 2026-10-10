@@ -4,7 +4,7 @@ import { projects } from '../db/schema'
 import { visibleProjects } from '../projects/store'
 
 /**
- * One line of 做到哪儿了: what a project MOVED, never how "complete" it is.
+ * One line of Movement: what a project MOVED, never how "complete" it is.
  *
  * There is deliberately no ratio here. Rollup is M3 and nothing in this codebase writes
  * `manual_progress`, so a percentage would be a number the backend cannot honour -- a bar drawn
@@ -22,7 +22,7 @@ export type ProjectMovement = {
   /**
    * Still open and past its deadline: `due_at` before the start of TODAY in the user's zone,
    * which is exactly the `overdue` segment `listToday` computes. The two must agree, or the
-   * project banner and the 逾期 panel would disagree about the same task.
+   * project banner and the Overdue panel would disagree about the same task.
    */
   overdue: number
   /** The calendar day of the last logged change, in the user's timezone; null if nothing ever happened. */

@@ -8,7 +8,7 @@ import { useComposing } from '../composition'
  * ONE INPUT, both kinds.
  *
  * Paste a url and it is a link; type anything else and it is a book. The person already knows
- * which one they are adding, so a 「链接 / 书」 toggle would be asking them to say it twice --
+ * which one they are adding, so a Link / Book toggle would be asking them to say it twice --
  * and the rule is visible in the field itself, which says what will happen before Enter is
  * pressed. Everything else about the item (title, project, author) is edited on the row.
  */

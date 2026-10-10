@@ -1,16 +1,11 @@
 import { z } from 'zod'
 
 /**
- * 东西之间的边 -- the shell's own, and the thing that replaces 「什么都挂到项目上」.
+ * EDGES BETWEEN THINGS -- the shell's own table, and the one way anything reaches anything else.
  *
- * Every module used to reach exactly one other thing: its project. Four tables, four columns, all
- * pointing at the same place, so none of these could be said at all:
- *
- *   这本书是陈颖推荐的 · 这个任务是那次二面之后产生的 · 这篇文章是为了下周那个会读的
- *
- * A link is `from --kind--> to`, where both ends name an object by its type and id. It is read in
- * BOTH directions, so writing 「这个会有谁参加」 is the same fact as 「我跟这个人开过哪些会」 and
- * neither side has to be kept in step with the other.
+ * A link is `from --kind--> to`, where both ends name an object by its type and id. One row says
+ * who is at a meeting and which meetings a person has been at, so neither side has to be kept in
+ * step with the other.
  */
 
 /** Every kind of thing that can be at either end of a link. */
@@ -22,7 +17,7 @@ export type ObjectType = z.infer<typeof objectType>
  * THE KINDS OF EDGE, and what may be at each end.
  *
  * A small fixed set rather than free text: a link whose meaning is whatever somebody typed cannot
- * be read back by anything, and the first thing a reader needs is 「这条边是什么意思」. New kinds
+ * be read back by anything, and what an edge MEANS is the first thing a reader needs. New kinds
  * are cheap to add; a kind nobody can interpret is not.
  *
  * `null` for an end means any type.
@@ -138,8 +133,8 @@ export type CandidatesResponse = z.infer<typeof candidatesResponse>
 /**
  * The kinds of edge allowed between two types, in the order the contract declares them.
  *
- * `about` is last wherever it appears: it is the one that means 「有关系，但不是上面那几种」, so
- * it reads as the fallback it is.
+ * `about` is last wherever it appears: it is the one meaning "related, but none of the above",
+ * so it reads as the fallback it is.
  */
 export function kindsBetween(from: ObjectType, to: ObjectType): typeof LINK_KINDS {
   return LINK_KINDS.filter((l) => linkIsAllowed(l.kind, from, to)) as unknown as typeof LINK_KINDS

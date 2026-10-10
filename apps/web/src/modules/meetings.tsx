@@ -14,12 +14,10 @@ import type { WorkspaceModule } from './contract'
 /**
  * THE MEETINGS MODULE -- the fourth.
  *
- * It used to have no page: a meeting lived on the calendar and was MADE by a "+" on a day square,
- * which is how every calendar app works because in a calendar app an event is the only entity.
- * Here it is not. The calendar is a lens over everything with a date -- a deadline, a day you
- * mean to finish something, a meeting -- and a lens does not own a kind of thing, so it is not
- * where one is made (framing §2). Meetings now have their own destination, and the grid went back
- * to answering 「这个月有什么」.
+ * IT HAS A PAGE OF ITS OWN, and the calendar does not make one. In a calendar app an event is the
+ * only entity, so a "+" on a day square is where one is made; here the calendar is a lens over
+ * everything with a date -- a deadline, a day you mean to finish something, a meeting -- and a
+ * lens does not own a kind of thing (framing §2). The grid answers what is on this month.
  *
  * It contributes:
  *
@@ -93,7 +91,7 @@ function splitEntryId(id: string): [string, string] {
   return [id.slice(0, 36), id.slice(37)]
 }
 
-/** THE WORKBENCH CARD: 「今天有什么会」, a question about the next eight hours. */
+/** THE WORKBENCH CARD: today's meetings, a question about the next eight hours. */
 function TodayMeetings() {
   const accountZone = useTimeZone()
   const day = todayIn(accountZone)
@@ -138,7 +136,7 @@ function TodayMeetings() {
             </button>
             {m.attendees.length > 0 && (
               <span className="shrink-0 truncate text-xs text-fg-subtle">
-                {m.attendees.map((p) => p.name).join('、')}
+                {m.attendees.map((p) => p.name).join(', ')}
               </span>
             )}
           </li>
@@ -150,16 +148,11 @@ function TodayMeetings() {
 }
 
 /**
- * NO BLOCK ON A PROJECT PAGE ANY MORE.
+ * NO BLOCK ON A PROJECT PAGE.
  *
- * This module used to hang a list of its own rows under every project, which -- with four modules
- * doing the same -- made the project page a wall of blocks: the module structure drawn for the
- * reader. Those rows are edges now, and the shell draws every kind of edge the same way
- * (framing §2). The task tree is the one block that stays, because a tree with drag,
- * dependencies and an inline new row is an editor, not a list.
- *
- * The cost, stated: one of these can no longer be made FROM a project page. It is made on its own
- * page and filed there, or dropped into the capture box.
+ * This module's rows reach a project as edges, and the shell draws every kind of edge the same
+ * way (framing §2). One of these is made on its own page and filed there, or dropped into the
+ * capture box, never from a project page.
  */
 
 /**

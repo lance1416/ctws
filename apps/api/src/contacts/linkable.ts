@@ -3,7 +3,7 @@ import { contacts } from '../db/schema'
 import { textMatches } from '../db/like'
 import type { Linkable } from '../links/linkable'
 
-/** 联系人 names its own people for the shell. See `links/linkable.ts` for why this exists. */
+/** Contacts names its own people for the shell. See `links/linkable.ts` for why this exists. */
 export const contactLinkable: Linkable = {
   type: 'contact',
   label: 'People',

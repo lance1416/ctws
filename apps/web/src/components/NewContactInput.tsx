@@ -7,9 +7,9 @@ import { useComposing } from '../composition'
 /**
  * MAKING A PERSON: type a name, press Enter.
  *
- * The same shape as 新任务 and 加到待读, which is the point -- this app makes things by typing one
- * line into a box, and a contact was the one thing that opened a form instead. Everything else
- * about the person is filled in afterwards, in the pane that opens.
+ * The same shape as the new-task and add-to-reading boxes, which is the point: this app makes
+ * things by typing one line into a box. Everything else about the person is filled in
+ * afterwards, in the pane that opens.
  */
 export function NewContactInput({
   projectId,

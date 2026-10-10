@@ -34,7 +34,7 @@ export function ContactList({
         const elsewhere = person.projects.filter((p) => p.id !== here)
         return (
           /* THE WHOLE ROW OPENS THE PERSON -- a card whose only target is its title makes you
-             aim at four characters (「expand 到整个卡片」). The click is on the row; the NAME is
+             aim at four characters. The click is on the row; the NAME is
              still a real button, which is what the keyboard reaches and what a screen reader
              announces. A row that were itself a button could not contain the address links. */
           // eslint-disable-next-line jsx-a11y/click-events-have-key-events

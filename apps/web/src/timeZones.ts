@@ -38,7 +38,7 @@ function here(): string {
 export const ZONES: readonly string[] = [...new Set([here(), ...COMMON])]
 
 /**
- * 「多伦多 · EDT」 -- the city and the abbreviation that zone is using NOW.
+ * "Toronto · EDT" -- the city and the abbreviation that zone is using NOW.
  *
  * The abbreviation is what a person says ("that's 9 EST"), and it changes with the season, so it
  * is read from the platform at the current moment rather than written down. The city is the half

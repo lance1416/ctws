@@ -5,7 +5,7 @@ import { useProjectRail } from '../projectColor'
 import { Panel } from './Panel'
 
 /**
- * 做到哪儿了: COUNTS AND MOVEMENT, NEVER A PERCENTAGE.
+ * MOVEMENT: COUNTS, NEVER A PERCENTAGE.
  *
  * There is deliberately no progress bar and no ratio on this panel, and that is a decision about
  * honesty rather than taste (workbench spec §5). Rollup is M3 work and nothing in the entire

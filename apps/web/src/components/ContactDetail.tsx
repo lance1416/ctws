@@ -14,10 +14,9 @@ import { InlineText, PickMany, PickOne } from './inline'
 /**
  * ONE PERSON, in the shell's detail pane.
  *
- * This replaces the modal dialog it used to be. Nothing here has a 保存: a company name is typed
- * and committed on leaving the field, a project is added and written, an address is edited and
- * written. The dialog existed because contacts were built last and a form was the quickest thing
- * to write, not because a person is edited differently from a task.
+ * NOTHING HERE HAS A SAVE, as nowhere else in the pane does: a company name is typed and
+ * committed on leaving the field, a project is added and written, an address is edited and
+ * written. A person is not edited differently from a task.
  */
 
 const KIND_LABEL: Record<ChannelKind, string> = { email: 'Email', phone: 'Phone', url: 'Link' }

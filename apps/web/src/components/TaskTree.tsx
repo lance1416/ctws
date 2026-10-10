@@ -424,8 +424,8 @@ export function TaskTree({ projectId }: { projectId: string }) {
   const leaving = useRef<string | null>(null)
   /**
    * A save happened. It MARKS the row and nothing else: the pane stays open, in reading mode,
-   * showing what was just written. It used to close here, which took the answer off screen at
-   * the moment the person went to check it.
+   * showing what was just written. Closing here would take the answer off screen at the moment
+   * the person went to check it.
    */
   const savedClose = () => {
     if (!openTask) return

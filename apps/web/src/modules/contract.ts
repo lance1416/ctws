@@ -6,35 +6,22 @@ import type { RouteObject } from 'react-router-dom'
 /**
  * WHAT A MODULE DECLARES.
  *
- * CTWS is a modular workspace and the task tracker is its first module, not its whole. This file
- * is the seam the second module will be built against -- and it is deliberately THIN. An
- * abstraction extracted from one example is the wrong abstraction (module-boundary contract §2),
- * so nothing here is designed for a module that does not exist yet: every field below exists
- * because something in the shell is hardwired to the task module today and had to stop being.
+ * The shell owns authentication and workspace isolation, the three-pane frame, the tokens and
+ * type scale, the focus model, overlays, the leave guard, the generic pieces, projects, the edge
+ * table, and the cross-module surfaces: capture, federated search and the key table.
  *
- * Everything in this file is a DRAFT until a second real module has pushed back on it (§2,
- * stage C). Expect to change it; do not build a plugin framework on it.
- *
- * The shell owns: authentication and workspace isolation (including the tenant chokepoint), the
- * three-pane frame, the tokens and type scale, the focus model, overlays, the leave guard, the
- * generic pieces, projects, and the three CROSS-MODULE surfaces -- where capture goes, federated
- * search, and the master key table.
- *
- * A module owns: its own tables, its routes under `/api/v1/<id>/` and `/<id>/…`, its detail pane,
- * and what it contributes back to those shell surfaces.
+ * A module owns its own tables, its routes under `/api/v1/<id>/` and `/<id>/…`, its own body
+ * inside the detail pane, and what it contributes back to those shell surfaces.
  */
 export type WorkspaceModule = {
   /**
    * The namespace: the module's SPA routes live under `/<id>/…` and its API routes under
-   * `/api/v1/<id>/…`. Stable; it is in URLs the user may have bookmarked.
+   * `/api/v1/<id>/…`. Stable; it is in URLs that may be bookmarked.
    */
   id: string
-  /**
-   * How the module names itself where a result has to say where it came from. Text, never a
-   * colour (WCAG 1.4.1, the rule the whole redesign follows).
-   */
+  /** How the module names itself where a result says where it came from. Text, never a colour. */
   label: string
-  /** Places in the left rail this module offers to go to, in the order the rail shows them. */
+  /** Places in the left rail this module offers to go to. */
   destinations: Destination[]
   /** The module's own pages, mounted by the shell under `/<id>/`. Paths are RELATIVE. */
   routes: RouteObject[]
@@ -42,94 +29,68 @@ export type WorkspaceModule = {
   capture?: CaptureContribution
   /** This module's half of federated search. */
   search?: SearchContribution
-  /** Keys this module adds to the shell's master key table. */
+  /** Keys this module adds to the shell's key table. */
   chords?: Chord[]
   /**
    * WHAT THIS MODULE HANGS UNDER A PROJECT, if anything.
    *
-   * Projects are the SHELL's organising dimension (contract §3): a module hangs its own rows on
-   * a project, it does not own the page. Most modules hang nothing -- their rows are EDGES now,
-   * and the shell draws every kind of edge the same way. A block is for a module whose rows need
-   * an editor the links panel cannot be: the task tree has drag, dependencies and an inline new
-   * row, and a flat list of links is none of those.
-   *
-   * ONE FIELD and not three. The block, its views and its own control were three contribution
-   * points, filled by one module, read by three parallel helpers in the registry -- three names
-   * for one idea, which is three things to keep in step and three places to look.
+   * Most modules hang nothing: their rows are edges, and the shell draws every kind of edge the
+   * same way. A block is for rows that need an editor a list of links cannot be — the task tree
+   * has drag, dependencies and an inline new row.
    */
   projectBlock?: {
     Component: ComponentType<{ projectId: string; view: string }>
     /**
-     * The views the block offers, as tabs in its head. Fewer than two draws nothing: a tab bar
-     * with a single tab is chrome that decides nothing.
+     * The views the block offers, as tabs in its head. Fewer than two draws nothing.
      *
-     * THE MODULE NAMES THEM, THE SHELL DRAWS THEM. A board is not a second page and not a second
-     * destination in the rail -- it is another way to look at the same block, the way Notion's
-     * databases and Linear's issue lists carry their views. That is also what keeps a third view
-     * (and a second module's views) from costing any layout work.
-     *
-     * The first entry is the default. The selected one is in the URL (`?view=<module>:<id>`), so
-     * a reload and a shared link both land where the person was.
+     * THE MODULE NAMES THEM, THE SHELL DRAWS THEM, so a third view costs no layout work. The
+     * first entry is the default; the selected one is in the URL (`?view=<module>:<id>`), so a
+     * reload and a shared link both land where the person was.
      */
     views?: readonly { id: string; label: string }[]
     /**
-     * A control in the block's HEAD, beside its name -- its own "new", typically.
-     *
-     * A block header is a name, a count and the block's own action, and the action belongs to
-     * the module because only the module knows what making one of its things involves. The shell
-     * draws the header and decides nothing about what is in this slot.
+     * A control in the block's head, beside its name — its own "new", typically. Only the module
+     * knows what making one of its things involves.
      */
     Action?: ComponentType<{ projectId: string }>
   }
   /**
    * This module's DATED THINGS, for the shell's calendar.
    *
-   * The shell draws the grid and knows nothing about what a 截止 is or how it differs from
-   * 想读完: the module supplies entries that already carry their day and their own word for what
-   * the date means. The day is decided by the SERVER in the account's zone, like every other date
-   * in this app -- a client turning an instant into a day would put a 23:00 deadline on the wrong
-   * square for half the world.
-   *
-   * This is the fifth contribution point and the first designed with two modules in front of it,
-   * which is why it exists at all: a seam shaped by one module is that module's shape wearing a
-   * general name (contract §2).
+   * The shell draws the grid and knows nothing about what each date MEANS: a module supplies
+   * entries carrying their day and their own word for it. The day is decided by the server in
+   * the account's zone — a client turning an instant into a day would put a 23:00 deadline on
+   * the wrong square for half the world.
    */
   calendar?: CalendarContribution
   /**
-   * This module's cards on the WORKBENCH -- the shell's own front page.
+   * This module's cards on the workbench.
    *
-   * A widget answers 「现在手头有什么」 in this module's terms and nothing else: it is a glance,
-   * not a second copy of the module's page. The shell draws the card (its name, its link, the
-   * grid it sits in) and decides nothing about the contents, exactly as it does for a project
-   * block.
+   * A glance in this module's terms, not a second copy of its page. The shell draws the card and
+   * decides nothing about the contents.
    *
-   * WHAT A WIDGET MUST NOT SHOW is anything that already has a home on the project page. The
-   * workbench is where the things that belong to no line of work live; the project pages are
-   * where the rest do. Two surfaces showing the same rows is two places to keep in your head.
+   * A WIDGET MUST NOT SHOW what already has a home on a project page: the workbench is for the
+   * things belonging to no line of work, and two surfaces showing the same rows is two places to
+   * keep in your head.
    */
   widgets?: readonly Widget[]
   /**
-   * What this module adds to the project page's HEADER BANNER: the numbers that say where this
-   * line of work stands, in this module's terms.
+   * This module's numbers in the project banner.
    *
-   * A component rather than a list of numbers, for the same reason `Destination.Count` is one: the
-   * numbers come from the module's own query and the shell must not know which endpoint that is.
-   * The shell owns the banner (projects are the shell's dimension, §3) and the generic pieces the
-   * numbers are set in (`Stat`), so two modules' numbers sit in one banner instead of each
-   * bringing its own layout.
+   * A component rather than a list of numbers: the numbers come from the module's own query and
+   * the shell must not know which endpoint that is. The shell owns the banner and the pieces the
+   * numbers are set in (`Stat`), so two modules' numbers sit in one banner.
    */
   ProjectHeadline?: ComponentType<{ projectId: string }>
   /**
    * HOW THIS MODULE'S THINGS ARE REACHED FROM SOMEBODY ELSE'S PAGE.
    *
-   * The edge table is the shell's, and so is the backlink panel: opening a person and seeing the
+   * The edge table and the backlink panel are the shell's: opening a person and seeing the
    * meetings they are in is one read of one table, and no module could own it without learning
-   * about another. What the shell cannot know is where one of ANOTHER module's things lives, so
-   * the module says.
+   * about another. What the shell cannot know is where another module's thing lives.
    *
-   * The API half of this is `links/linkable.ts`, where a module says what its things are CALLED.
-   * Routing stays here, because a route is the web app's and the server has no business holding
-   * one.
+   * The API half is `links/linkable.ts`, where a module says what its things are CALLED. Routing
+   * stays here, because a route is the web app's.
    */
   relations?: readonly RelationContribution[]
 }
@@ -145,9 +106,9 @@ export type RelationContribution = {
   /**
    * THE OBJECT'S OWN FIELDS, at the head of its page.
    *
-   * The page is the SHELL's -- a project, a person and a meeting are read the same way, so they
-   * are one page and not three (framing §2) -- but what a person IS is the contacts module's to
-   * say. The shell draws the frame and what the object is connected to; this fills the top.
+   * The page is the shell's — a project, a person and a meeting are read the same way — but what
+   * a person IS is the contacts module's to say. The shell draws the frame and what the object is
+   * connected to; this fills the top.
    *
    * A type with no `Head` has no page of its own, and the shell routes to its module's list.
    */
@@ -164,12 +125,11 @@ export type CalendarContribution = {
     isError: boolean
   }
   /**
-   * WHAT OPENS when one of this module's entries is clicked ON THE GRID.
+   * WHAT OPENS when one of this module's entries is clicked on the grid.
    *
-   * Without it an entry is a link to wherever `to` points, which is right for a deadline -- it
+   * Without it an entry is a link to wherever `to` points, which is right for a deadline: it
    * belongs to a task, and the task's own list is where you deal with it. A meeting has nowhere
-   * else to be, so it opens here. The shell knows which module an entry came from, because it
-   * merged them, so nothing has to be encoded in the entry itself.
+   * else to be, so it opens here.
    */
   Detail?: ComponentType<{ id: string; onClose: () => void }>
 }
@@ -194,20 +154,16 @@ export type Destination = {
    * WHICH GROUP OF THE RAIL this row belongs in, by what the person is trying to do:
    *
    * - `now` (the default): what is in front of me today.
-   * - `things`: a KIND of object, listed -- meetings, people, the reading pile. Each is where one
-   *   of that kind is made, because the making belongs with the kind.
-   * - `views`: a way of looking ACROSS the kinds -- the calendar, the week in review. A view owns
-   *   nothing and makes nothing (framing §2).
+   * - `things`: a KIND of object, listed. Each is where one of that kind is made.
+   * - `views`: a way of looking ACROSS the kinds. A view owns nothing and makes nothing.
    *
    * The module declares it because only the module knows what its page is FOR; the shell draws
-   * the groups. Grouping by which module owns a row is what the rail did before, and it is the
-   * reason “Today” (one module's view) sat beside “Reading” (a whole module) as if they were peers.
+   * the groups.
    */
   zone?: 'now' | 'things' | 'views'
   /**
-   * The row's place WITHIN its zone. Explicit, because the reading order is an editorial decision
-   * and letting it fall out of registration order would make it an accident of which module was
-   * added first -- the calendar landed above Today exactly that way.
+   * The row's place within its zone. Explicit, so the reading order is an editorial decision
+   * rather than an accident of which module was registered first.
    */
   order?: number
   /** Absolute path, inside the module's own namespace. */
@@ -217,17 +173,16 @@ export type Destination = {
   end?: boolean
   /**
    * The count beside the label. A COMPONENT rather than a number, because the count is the
-   * module's own query and the rail must not know which one: it renders nothing when there is
+   * module's own query and the rail must not know which one. It renders nothing when there is
    * nothing to say.
    */
   Count?: ComponentType
 }
 
 /**
- * Where a captured line goes. With one module this could stay implicit; with two it cannot
- * (contract §3), so the destination is named -- and the shell names ONE default explicitly rather
- * than falling through to whichever module happens to be registered. Capture stays a line and a
- * keystroke: resolving the target costs no interaction.
+ * Where a captured line goes. The shell names one default explicitly rather than falling through
+ * to whichever module happens to be registered. Capture stays a line and a keystroke: resolving
+ * the target costs no interaction.
  */
 export type CaptureContribution = {
   /** A hook: the module's default capture target, and why there is none when there is none. */
@@ -236,11 +191,9 @@ export type CaptureContribution = {
    * Does this module claim the line? Asked in registration order; the first claimer takes it, and
    * when nobody claims it the line goes to `CAPTURE_MODULE_ID`.
    *
-   * NOT A HOOK, and deliberately pure: it runs on every keystroke, and a rule that needed a
-   * query could not answer before the person pressed Enter. It is also the reason capture can
-   * stay 「敲一行字就走」 with two modules registered -- resolving the destination costs no
-   * interaction, and when the guess is wrong you can SEE it, because 「已放入 X」 names where the
-   * line went.
+   * NOT A HOOK, and deliberately pure: it runs on every keystroke, and a rule needing a query
+   * could not answer before Enter is pressed. A wrong guess is visible, because the confirmation
+   * names where the line went.
    */
   accepts?: (line: string) => boolean
 }
@@ -248,7 +201,7 @@ export type CaptureContribution = {
 export type CaptureTargetState = {
   /** null while unknown, or when this module cannot capture right now. */
   target: CaptureTarget | null
-  /** The destination is genuinely absent -- a broken install, not a slow network. */
+  /** The destination is genuinely absent — a broken install, not a slow network. */
   missing: boolean
   /** The destination could not be loaded; retrying may work. */
   unavailable: boolean
@@ -257,7 +210,7 @@ export type CaptureTargetState = {
 export type CaptureTarget = {
   /** What to call the place the line landed in. */
   name: string
-  /** Where "已放入 X" links to. */
+  /** Where the confirmation links to. */
   to: string
   /** Writes the line, and leaves the lists that now contain it refreshed. */
   submit: (title: string) => Promise<unknown>
@@ -271,8 +224,7 @@ type SearchContribution = {
 
 /**
  * One search result, in the pieces the dialog lays out. The module decides what its hit SAYS; the
- * shell decides where those pieces sit, so results from two modules line up in one list instead
- * of each bringing their own row design.
+ * shell decides where those pieces sit, so results from two modules line up in one list.
  */
 export type SearchHit = {
   /** Unique across modules in practice (a uuid); also the row's test handle. */
@@ -288,7 +240,7 @@ export type SearchHit = {
   rail?: ReactNode
 }
 
-/** A key in the shell's master table, read after the `g` prefix. */
+/** A key in the shell's key table, read after the `g` prefix. */
 export type Chord = {
   id: string
   /** The second key. One keyspace for the whole app: two modules cannot both claim `t`. */
@@ -302,9 +254,8 @@ export type Chord = {
    */
   resolve: (ctx: ChordContext) => string | null
   /**
-   * The chord's place in the master table. The table is the shell's (contract §3) and the help
-   * overlay teaches the keys in this order, so the order cannot be an accident of which module
-   * was registered first.
+   * The chord's place in the key table, which the help overlay teaches in this order. Explicit,
+   * so the order is not an accident of which module was registered first.
    */
   order: number
 }

@@ -24,7 +24,7 @@ type Rule = InstanceType<typeof RRule>
  * `rrule` has no time zones of its own: it computes on UTC-looking dates. That is exactly what is
  * wanted here -- the wall clock is fed in as if it were UTC, the rule is expanded in those naive
  * terms, and each result is then read as a wall clock in the real zone. The library does the
- * calendar arithmetic (「每月最后一个周五」 and the rest of RFC 5545) and the zone is applied
+ * calendar arithmetic (the last Friday of every month, and the rest of RFC 5545) and the zone is applied
  * afterwards, which is the only order that keeps the local time fixed.
  */
 
@@ -121,7 +121,7 @@ const HARD_LIMIT = 2000
  * - SUB-DAILY: `FREQ=SECONDLY` over a one-month window is 2,646,001 occurrences and 5.5s of one
  *   core. Nobody schedules a meeting every second.
  * - COUNT: `COUNT=5000000` costs 3.2s even when the window holds 31 of them -- the engine walks
- *   every one. A series of more than `MAX_COUNT` is 「一直重复」, which is what no COUNT means.
+ *   every one. A series of more than `MAX_COUNT` repeats forever, which is what no COUNT means.
  * - INTERVAL: a number nobody typed on purpose should not be able to cost anything.
  */
 const SUB_DAILY = new Set([RRule.SECONDLY, RRule.MINUTELY, RRule.HOURLY])
@@ -285,8 +285,8 @@ export function occurrencesIn(
 /**
  * The rule with an `UNTIL` that stops it just before `recurrenceId`.
  *
- * This is how 「以后都改」 works: the old series is ended and a new one starts at the occurrence
- * being edited. RFC 5545 has no "change from here" -- splitting is what every calendar does, and
+ * This is how "change from here on" works: the series is ended and a new one starts at the
+ * occurrence being edited. RFC 5545 has no "change from here" -- splitting is what every calendar does, and
  * it keeps the past exactly as it happened.
  */
 export function endedBefore(rule: string, recurrenceId: LocalTime): string {

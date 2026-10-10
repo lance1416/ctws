@@ -2,7 +2,7 @@ import type { QueryClient, QueryKey } from '@tanstack/react-query'
 
 export const tasksKey = (projectId: string) => ['tasks', projectId]
 const projectsKey = ['projects']
-/** 做到哪儿了's numbers. Any task that is created, finished or deleted moves one of them. */
+/** Movement's numbers. Any task that is created, finished or deleted moves one of them. */
 const movementKey = ['movement']
 
 /**
@@ -23,9 +23,9 @@ async function refreshList(qc: QueryClient, queryKey: QueryKey): Promise<void> {
 
 export const refreshTasks = async (qc: QueryClient, projectId: string): Promise<void> => {
   await refreshList(qc, tasksKey(projectId))
-  // A new row changes 「还剩 N」 and the project's last activity, so the movement numbers are stale
-  // the moment a task is created -- in 做到哪儿了 and now in the project header banner too. It is
-  // invalidated here rather than at each call site, because every creation path already goes
+  // A new row changes how many are open and the project's last activity, so the movement numbers
+  // are stale the moment a task is created -- in the Movement panel and in the project banner. It
+  // is invalidated here rather than at each call site, because every creation path already goes
   // through this one function.
   //
   // DELIBERATELY NOT AWAITED. The caller keeps its input busy until this resolves, and the typist

@@ -16,7 +16,7 @@ import { candidatesFor, exists, linksOf } from './read'
 import { addLink, removeLink } from './store'
 
 /**
- * 边 -- THE SHELL's API, flat at `/api/v1/links`, beside projects.
+ * EDGES -- THE SHELL's API, flat at `/api/v1/links`, beside projects.
  *
  * Not a module's: an edge joins two modules' things, so no module could own it without learning
  * about another. What each module owns is the NAME of its own things, which it hands over through
@@ -102,7 +102,7 @@ export const linkRoutes: FastifyPluginAsync = async (app) => {
       const { workspaceId } = authedUser(req)
       const { fromType, fromId, toType, toId, kind } = req.query
       // A tuple the model never allowed cannot name a stored edge, so it is a bad request rather
-      // than a 204 that would read as 「删掉了」.
+      // than a 204, which would read as though something had been deleted.
       if (!linkIsAllowed(kind, fromType, toType)) {
         return sendProblem(reply, 400, 'Bad Request', 'that is not a kind of link')
       }
