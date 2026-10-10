@@ -31,7 +31,7 @@ import DOMPurify from 'dompurify'
  * `</style`-in-a-text-node probe and the SVG-namespace confusion checks. What is left here is
  * ours: which profile, what sizing, and the CSSOM narrowing.
  *
- * WHAT IS STILL NOT CONTAINED, stated plainly: mermaid runs IN THIS ORIGIN. Layers 1-4 bound what
+ * WHAT IS STILL NOT CONTAINED: mermaid runs IN THIS ORIGIN. Layers 1-4 bound what
  * its output can do, not what a bug in its own parser could do. The strictly stronger answer is a
  * cross-origin sandboxed iframe, where a compromise has no cookies, no API and no DOM to reach.
  * That is the next step if notes ever stop being single-author; it is not taken today because it

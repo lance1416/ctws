@@ -104,7 +104,7 @@ export type Occurrence = {
  * The contract refuses sub-daily rules and over-long windows, but both of those are edges, and
  * this is where the work happens: the limit is passed to the WALK rather than applied to its
  * result, because `between()` materialises the whole array before anything downstream can slice
- * it. An earlier version sliced afterwards and bounded nothing at all.
+ * it -- so slicing afterwards bounds nothing.
  */
 const HARD_LIMIT = 2000
 

@@ -263,9 +263,9 @@ test('the dialog fits 375px with no horizontal scroll', async ({ page }) => {
   const over = await sidewaysScroll(page)
   expect(over).toEqual({ doc: 0, body: 0 })
 
-  // The document alone is not enough, and a mutation proved it: the scrim is its own scroll
-  // container, so a panel too wide for a phone scrolls INSIDE it and the page above stays clean.
-  // What has to be true is that the panel fits the viewport and the scrim has nothing to scroll.
+  // The document alone is not enough: the scrim is its own scroll container, so a panel too wide
+  // for a phone scrolls INSIDE it while the page above stays clean. What has to be true is that
+  // the panel fits the viewport and the scrim has nothing to scroll.
   const box = (await dialog(page).boundingBox())!
   expect(box.x).toBeGreaterThanOrEqual(0)
   expect(Math.ceil(box.x + box.width)).toBeLessThanOrEqual(375)
@@ -325,8 +325,8 @@ test('the migrated ? overlay keeps all five of its behaviours', async ({ page })
   // migration: `f` here would otherwise stack a search dialog on top of the list.
   await page.keyboard.press('f')
   // By attribute, NOT by role: a modal layer marks the rest of the page `aria-hidden`, so a
-  // search dialog that really had stacked underneath would be invisible to `getByRole` and the
-  // assertion would pass on a stacked dialog. A mutation proved exactly that.
+  // search dialog stacked underneath is invisible to `getByRole` -- the role query passes
+  // precisely in the case this is here to catch.
   await expect(page.locator('input[aria-label="Search"]')).toHaveCount(0)
   await expect(help).toBeVisible()
 

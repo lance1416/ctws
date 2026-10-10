@@ -553,11 +553,11 @@ test.describe('the panel as an overlay', () => {
   })
 
   /**
-   * A NAMED DAY PRESSED IS AN UNSAVED EDIT. The three date decisions (today, tomorrow, next week and the
-   * two ways out) do not type into a field, so whatever the form holds has to be told that they
-   * changed something. A mutation proved this needed its own guard: dropping the flag that says so
-   * left the form clean, which the existing cases caught only as a MISSING request -- the person
-   * would have walked away from a press that silently did nothing, with no prompt at all.
+   * A NAMED DAY PRESSED IS AN UNSAVED EDIT. The date decisions (today, tomorrow, next week, and
+   * the two ways out) do not type into a field, so the form has to be told they changed
+   * something. Without that the form reads as clean and the person walks away from a press that
+   * did nothing, with no prompt -- which is why this is its own case rather than a line in the
+   * cases that only watch for a missing request.
    */
   test('a named date decision counts as an unsaved edit, with nothing typed', async ({ page }) => {
     await registerFreshUser(page)

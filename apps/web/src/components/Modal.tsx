@@ -98,8 +98,8 @@ export function Modal({
           /**
            * `max-sm:pt-24` is not decoration: the shell's top bar is sticky and sits ABOVE the
            * scrim on purpose (z-30, so the capture box stays usable while a layer is up), and
-           * below 640px it is two rows tall -- taller than 8vh of a phone viewport, which sliced
-           * the top off this layer's own heading. Screenshots at 375 are what caught it.
+           * below 640px it is two rows tall -- taller than 8vh of a phone viewport, which would
+           * slice the top off this layer's own heading.
            */
           className="fixed inset-0 z-20 flex justify-center overflow-y-auto bg-scrim px-4 py-[8vh] max-sm:pt-24"
         >

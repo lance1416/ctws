@@ -30,11 +30,11 @@ export async function registerGuards(app: FastifyInstance): Promise<void> {
    *
    * `@fastify/cors` answers a malformed preflight -- an OPTIONS with no
    * `Access-Control-Request-Method` -- from inside its own hook, with
-   * `400 text/plain: Invalid Preflight Request`. It never reaches the error handler, so it was
-   * the one error in this API a client could not parse the way it parses every other one.
+   * `400 text/plain: Invalid Preflight Request`. It never reaches the error handler, so without
+   * this a client would meet one error it cannot parse the way it parses every other one.
    *
-   * Rewritten on the way OUT rather than by relaxing the plugin: a preflight without a method is
-   * malformed and 400 is the right answer. Only the envelope was wrong.
+   * Rewritten on the way OUT rather than by relaxing the plugin: a preflight with no requested
+   * method is malformed, and 400 is the right answer. It is the envelope that has to match.
    */
   app.addHook('onSend', async (_req, reply, payload) => {
     const type = reply.getHeader('content-type')
@@ -64,11 +64,10 @@ export async function registerGuards(app: FastifyInstance): Promise<void> {
    * anyone who can reach the API directly, so it would have to be pinned to the tunnel's CIDR
    * to be worth anything.)
    *
-   * IT IS NOT ENOUGH ON ITS OWN, and the first version of this change shipped as though it
-   * were. Per-email alone has no ceiling on the INSTANCE: an attacker with ten thousand
-   * addresses gets ten thousand buckets from one connection, and `authenticate` runs argon2
-   * against a dummy hash even for an address that does not exist (deliberately, to equalise
-   * timing) -- so that is unbounded CPU. `IP_CEILING` below is the other half.
+   * IT IS NOT ENOUGH ON ITS OWN. Per-email has no ceiling on the INSTANCE: an attacker with ten
+   * thousand addresses gets ten thousand buckets from one connection, and `authenticate` runs
+   * argon2 against a dummy hash even for an address that does not exist (deliberately, to
+   * equalise timing) -- so that is unbounded CPU. The ceiling below is the other half.
    *
    * A body without a usable email falls back to the IP: a malformed request still costs
    * something, and the schema rejects it a moment later anyway.
@@ -100,13 +99,12 @@ export async function registerGuards(app: FastifyInstance): Promise<void> {
    * (deliberately, to equalise timing), so every auth request costs real CPU. The per-email
    * bucket above cannot bound that -- ten thousand addresses are ten thousand buckets.
    *
-   * NOT PER IP, and that is the correction. The first version of this kept a Map keyed by
-   * `req.ip` and swept it on every request: an attacker rotating source addresses (an IPv6 /64
-   * is billions) grows that map without bound and makes the sweep O(n) per request, so the
-   * limiter becomes the amplifier. A single counter has no key to rotate, no table to grow and
-   * nothing to sweep.
+   * NOT PER IP. A Map keyed by `req.ip` and swept on every request hands an attacker rotating
+   * source addresses (an IPv6 /64 is billions) an unbounded table and an O(n) sweep per request,
+   * so the limiter becomes the amplifier. A single counter has no key to rotate, no table to grow
+   * and nothing to sweep.
    *
-   * THE TRADE, stated plainly: a flood can exhaust this ceiling and the legitimate user is
+   * THE TRADE: a flood can exhaust this ceiling and the legitimate user is
    * refused a sign-in for the rest of the minute. That is the same outcome as the unbounded
    * version -- the box is under attack either way -- except that here everything which is not
    * the auth routes stays responsive. A per-address version would also have to decide what to

@@ -150,9 +150,9 @@ describe('the exclusion rule on a tree built the normal way', () => {
     const kid = await createTask(ctx, pid, '子', root)
     await setStatus(ctx, kid, 'done')
 
-    // THIS IS WHY THE DEFAULT MOVED (2026-10-07). §7.2 excludes a `backlog` node before it looks
-    // at its children, and `createTask` used to file everything on backlog -- so this read null
-    // however much was finished underneath, everywhere, for every tree anyone built.
+    // WHY THE DEFAULT IS `todo`. §7.2 excludes a `backlog` node before it looks at its children,
+    // so a backlog default makes this read null however much is finished underneath -- for every
+    // tree, everywhere.
     expect((await rollups(ctx, pid))[root]!.progress).toBe(1)
   })
 
@@ -222,8 +222,8 @@ describe('the two deadline flags, decided in the account timezone', () => {
   })
 
   it('stops counting a COMING deadline once the task is finished', async () => {
-    // The same guard, on the other flag. Without its own case the due-soon branch could lose the
-    // status check and nothing would notice -- measured, by removing it.
+    // The same guard, on the other flag: the due-soon branch needs its own case, or it can lose
+    // the status check while the overdue case above stays green.
     const ctx = await setup(TZ)
     const pid = await createProject(ctx, 'P')
     const done = await createTask(ctx, pid, '提前做完了')

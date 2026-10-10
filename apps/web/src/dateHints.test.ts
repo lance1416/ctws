@@ -329,8 +329,8 @@ describe('the account timezone decides, even when the browser is in another one'
     expect(clock.format(new Date(moved))).toBe('00:30')
     // AND A DEADLINE WHOSE TWO ZONES DISAGREE ABOUT WHICH DAY IT IS ON: 22:00 on the 3rd in New
     // York is already 07:30 on the 4th in Kolkata. Setting the date on the browser's calendar
-    // lands this on the 8th in New York, not the 9th -- which the case above cannot see, because
-    // its two zones happened to share a day. A mutation proved exactly that.
+    // lands this on the 8th in New York, not the 9th. The case above cannot see it: its two
+    // zones share a day, so either calendar gives the same answer there.
     const crossMoved = moveDueToDay('2026-10-04T02:00:00.000Z', '2026-10-09', ACCOUNT)
     expect(serverDay(new Date(crossMoved))).toBe('2026-10-09')
     expect(clock.format(new Date(crossMoved))).toBe('22:00')
@@ -359,9 +359,8 @@ describe('the account timezone decides, even when the browser is in another one'
 })
 
 /**
- * ACROSS A DST BOUNDARY. Two of the comments the old implementation carried existed only because of
- * DST -- "round, not floor: a DST change makes a local day 23 or 25 hours" and "done in UTC so a
- * DST change cannot shift the day". The arithmetic is a library's now, so what is left to pin is
+ * ACROSS A DST BOUNDARY, where a local day is 23 or 25 hours long and elapsed time stops being
+ * the same question as calendar days. The arithmetic is a library's, so what is pinned here is
  * the ANSWER, on both sides of both transitions, in a zone that actually has them.
  */
 describe('date helpers across a DST boundary', () => {
@@ -385,8 +384,8 @@ describe('date helpers across a DST boundary', () => {
     )
     // THE DST CASE THAT ONLY CALENDAR COUNTING GETS RIGHT. Due 23:30 on the 7th, read at 00:30 on
     // the 9th: two calendar days, across the 23-hour day -- and EXACTLY 24 elapsed hours, because
-    // the short day ate one. Subtracting milliseconds says one day, however it rounds; this is the
-    // case the old implementation's "round, not floor" comment was dancing around.
+    // the short day ate one. Subtracting milliseconds says one day however it rounds, so this is
+    // the case that separates calendar counting from elapsed time.
     expect(overdueLabel('2026-03-08T04:30:00.000Z', NY, new Date('2026-03-09T04:30:00.000Z'))).toBe(
       '2 days late',
     )

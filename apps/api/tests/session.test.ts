@@ -113,10 +113,10 @@ describe('session', () => {
   })
 
   /**
-   * These used to be a GUARD: an attacker-controlled cookie reaching Postgres as a `uuid`
-   * parameter raises 22P02 rather than matching no rows, so the old code refused a non-uuid
-   * before querying. Hashing removed the guard and the problem with it -- every value is 64 hex
-   * characters by the time it reaches the database -- and these stay to pin that.
+   * NO SHAPE GUARD IS NEEDED, and these pin why. A column holding the raw token would need one:
+   * an attacker-controlled cookie reaching Postgres as a `uuid` parameter raises 22P02 rather
+   * than matching no rows. Hashing makes every value 64 hex characters before it reaches the
+   * database, so none of these can be malformed by the time it is queried.
    */
   describe('cookie values that are not tokens', () => {
     const bad = ['not-a-uuid', '', "' OR 1=1 --", '\u0000', 'ü'.repeat(500)]
@@ -136,9 +136,9 @@ describe('session', () => {
 /**
  * A SESSION THAT IS USED STAYS ALIVE, and one that is not expires.
  *
- * `last_seen_at` was written once at sign-in and never again, so the thirty days ran from the
- * login whether or not the app was opened every day of them -- signed out on day thirty with no
- * explanation. Nothing caught it: every test signs in and acts within the same second.
+ * The window is IDLE, not absolute: thirty days since the app was last used, not since the
+ * login. An absolute window signs you out on day thirty with no explanation, and no test that
+ * signs in and acts within the same second can tell the two apart -- hence the clock below.
  */
 describe('sliding expiry', () => {
   const hoursAgo = (n: number) => new Date(Date.now() - n * 3_600_000)

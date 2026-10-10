@@ -79,8 +79,8 @@ test('the task detail is a coexisting pane at 1280 and up, and an overlay below 
 })
 
 // The left rail is the only place that answers "how much is waiting over there" before you
-// click. The number must be the SERVER's, which is why it is compared against the API and not
-// against a number this test also computes.
+// click. The number is the SERVER's, so it is compared against the API rather than against a
+// number this test computes for itself.
 test('the left rail shows each project the open-task count the server reports', async ({
   page,
 }) => {

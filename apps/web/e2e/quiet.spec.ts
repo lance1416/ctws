@@ -12,12 +12,12 @@ import {
 } from './helpers'
 
 /**
- * FOUR THINGS THAT MADE THE APP WORSE THE LONGER IT WAS USED.
+ * WHAT KEEPS THE APP USABLE AS IT FILLS UP.
  *
- * The tree kept every finished task forever, the inbox gave no clue how long anything had been
- * sitting in it, a failed creation reported itself at the top of the page rather than at the row
- * it failed on, and pressing Save with nothing changed did nothing at all -- visibly nothing, so
- * the one person who pressed it could not tell whether it had worked.
+ * The tree shows what is left to do and counts the rest; an inbox row says how long it has been
+ * sitting there; a refused creation reports itself at the row it failed on; and a save with
+ * nothing to save still closes the pane. Each one is about a screen that has been lived in, not
+ * a screen with three rows on it.
  */
 
 const row = (page: Page, title: string) =>
@@ -181,7 +181,7 @@ test('a refused creation is reported at the input, which keeps what was typed', 
   await expect(page.getByRole('alert')).toHaveCount(0)
 })
 
-// ------------------------------------------------ a save that changed nothing (already right)
+// ------------------------------------------------------------ a save that changed nothing
 
 test('saving an untouched task sends nothing and still closes the pane', async ({ page }) => {
   await registerFreshUser(page)
@@ -198,17 +198,14 @@ test('saving an untouched task sends nothing and still closes the pane', async (
   })
   await page.getByRole('button', { name: 'Save' }).click()
 
-  // REPORTED AS BROKEN AND IT IS NOT -- measured, by disabling the guard that was about to be
-  // added for it and watching this test keep passing. `save`'s own body already skips the
-  // request when no field changed, and its success still closes the pane, so Save on an untouched
-  // task has always meant "I am done here". The entry predates the reading/editing split. What
-  // was missing was a test, which is this one; no code changed.
+  // Save on an untouched task means "I am done here": no request, and the pane returns to
+  // reading. The press has to DO something visible, or the person cannot tell it worked.
   await expect(page.getByRole('button', { name: 'Edit', exact: true })).toHaveCount(0)
   await expect(page.getByRole('textbox', { name: 'Title' })).toHaveCount(0)
   expect(writes).toEqual([])
 })
 
-// ------------------------------------------------- the shell, after the 2026-10-08 requests
+// ----------------------------------------------------------------- the shell's own surfaces
 
 test('a code fence is highlighted, and an unlabelled one is left alone', async ({ page }) => {
   await registerFreshUser(page)

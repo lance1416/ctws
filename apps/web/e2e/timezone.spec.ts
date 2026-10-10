@@ -102,10 +102,9 @@ test('the runner’s today is some OTHER day, and the page says which', async ({
   // The mirror of the test above. The runner's today is NOT the account's today, so it is either
   // the day before or the day after -- and which one decides what the page may say.
   //
-  // This replaced a first draft that asserted the task simply does not appear, which was wrong
-  // about the app rather than about the zones: a scheduled day that has passed is deliberately
-  // CARRIED OVER into today's list rather than dropped, so the row does show -- marked. The mark
-  // is the assertion worth having: 'yesterday' is a word only the account's zone can produce.
+  // NOT "the task does not appear": a scheduled day that has passed is deliberately CARRIED OVER
+  // into today's list rather than dropped, so the row shows -- marked. The mark is the assertion
+  // worth having, because 'yesterday' is a word only the account's zone can produce.
   await page.getByRole('link', { name: 'Today' }).click()
   const row = page.getByRole('listitem').filter({ hasText: '按进程时区排的' })
   if (dayIn(ACCOUNT_TZ) > runnerDay()) {

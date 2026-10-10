@@ -16,9 +16,8 @@ import { noteSchema } from './schema'
  *
  *   `describe('the sanitiser itself')` hands the schema a hast tree that ALREADY contains the
  *   elements, which is what the pipeline would look like the day `rehype-raw` is added for one
- *   convenience or another. Without this half, the schema could be empty and every test above would
- *   still pass -- and the project has already shipped a test whose name claimed coverage it did not
- *   have.
+ *   convenience or another. Without this half the schema could be empty and every test above
+ *   would still pass, so the file would claim a coverage it does not have.
  */
 
 const render = (source: string) => renderToStaticMarkup(<NoteMarkdown source={source} />)
@@ -59,11 +58,9 @@ describe("a note's own Markdown", () => {
      * what is pinned is the HANDOFF: the class `rehype-katex` keys on survived the sanitiser. Lose
      * it and maths renders as inline code forever, silently.
      *
-     * `language-math` AND NOT `math-inline`. The first version of this assertion named both, and a
-     * mutation that dropped `math-inline` killed it while the end-to-end test watched KaTeX
-     * typeset the formula perfectly well. `rehype-katex` takes `language-math` on its own and gets
-     * display mode from the `pre > code` structure, so `math-inline` was never load-bearing and
-     * this test was pinning an implementation detail. Pin the one that is.
+     * `language-math` AND NOT `math-inline`. `rehype-katex` takes `language-math` on its own and
+     * reads display mode from the `pre > code` structure, so naming `math-inline` as well would
+     * fail on a tree KaTeX typesets perfectly well -- an implementation detail, not the claim.
      */
     const html = render('面积是 $\\pi r^2$ 。')
     expect(html).toContain('language-math')

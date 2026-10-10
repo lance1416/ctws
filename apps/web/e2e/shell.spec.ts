@@ -61,9 +61,9 @@ test('a failed project list shows an error, not an empty list', async ({ page })
 /**
  * A SERVER THAT IS DOWN IS NOT A SIGNED-OUT VISITOR.
  *
- * `/auth/me` failing used to be swallowed into "nobody is signed in", so an API that was down
- * bounced the reader to a login page that could not reach the server either -- which reads as a
- * password that stopped working. Only a 401 is an answer; everything else is the shell's to say.
+ * Only a 401 answers "nobody is signed in". Swallowing every failure into that sends the reader
+ * to a login page that cannot reach the server either, which reads as a password that stopped
+ * working; everything that is not a 401 is the shell's to say.
  */
 test('a server that cannot be reached says so instead of showing the login page', async ({
   page,

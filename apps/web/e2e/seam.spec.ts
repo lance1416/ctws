@@ -39,7 +39,7 @@ test('the rail is built from the registered destinations', async ({ page }) => {
 })
 
 test('the rail is grouped by what you are doing, in a fixed reading order', async ({ page }) => {
-  // The rail used to be a flat list in the order the modules happened to be registered, which is
+  // Not a flat list in whatever order the modules happened to be registered, which is
   // how the calendar ended up above Today. The order is an editorial decision now and declared.
   await registerFreshUser(page, '/')
   const rail = page.getByRole('navigation', { name: 'Main navigation' })

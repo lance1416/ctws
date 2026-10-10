@@ -8,10 +8,9 @@ import { appWithUser, createProject, createTask, type TaskCtx } from './helpers/
  * chokepoint.
  *
  * The numbers here are the only ones on the workbench that no other endpoint already reports, so
- * they get their own guards: the per-project correlation (a subquery that correlated a row to
- * itself has already shipped once in this codebase and silently counted zero), the week boundary
- * in the user's timezone rather than the server's, and the fact that activity is read from the
- * EVENT LOG -- which is what makes "this has been quiet for nine days" mean anything, because a
+ * they get their own guards: the per-project correlation (a subquery that correlates a row to
+ * itself counts zero and says nothing about it), the week boundary in the user's timezone rather
+ * than the server's, and the fact that activity is read from the EVENT LOG -- which is what makes "this has been quiet for nine days" mean anything, because a
  * reorder writes no event by design.
  */
 

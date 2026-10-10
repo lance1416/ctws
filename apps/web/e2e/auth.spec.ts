@@ -9,7 +9,7 @@ test('register, stay signed in across a reload, then log out', async ({ page, co
   const email = await registerFreshUser(page)
 
   // The account button wears the initial; the address itself is inside the menu, which is also
-  // the only place it is now. The workspace id used to be printed into the DOM as a debugging
+  // the only place it is. A workspace id printed into the DOM as a debugging
   // leftover -- it is read from the API here instead, where it actually comes from.
   await expect(page.getByTestId('current-user')).toHaveAccessibleName(`Account: ${email}`)
   const me = await page.request.get('/api/v1/auth/me')

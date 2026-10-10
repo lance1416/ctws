@@ -8,7 +8,7 @@ import { expect, type Locator, type Page } from '@playwright/test'
  *
  * It then goes on to Today, because that is where almost every test here does its work and it is
  * where registration used to land. Signing in now opens the WORKBENCH -- the shell's own page --
- * so the step that used to be implicit is explicit. `at` takes any path, and `'/'` stays put.
+ * so that step is explicit. `at` takes any path, and `'/'` stays put.
  *
  * It CLICKS the rail rather than calling `goto`: a fresh navigation leaves focus where the
  * document-level keys (the `g` chords, `/`, `f`) cannot see it, which silently breaks every

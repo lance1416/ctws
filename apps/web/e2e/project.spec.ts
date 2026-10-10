@@ -136,9 +136,8 @@ test('the project header draws a percentage but never a progress bar', async ({ 
   const banner = header(page)
   await expect(stat(page, 'Done this week')).toHaveText('2')
 
-  // THE NUMBER IS BACK, THE BAR IS NOT. It was absent entirely until 2026-10-08 because the data
-  // did not exist -- `manual_progress` was written by nothing and the rollup was unbuilt. It is
-  // the mean of the four root tasks (1 + 1 + 0 + 0.5) / 4, the same §7.2 rule a parent gets.
+  // A NUMBER, AND NO BAR. It is the mean of the four root tasks (1 + 1 + 0 + 0.5) / 4, the same
+  // §7.2 rule a parent gets.
   await expect(stat(page, 'Progress')).toHaveText('63%')
   // A BAR is still refused: a 60% line and a 60% line nobody has touched for three weeks draw
   // the same bar, and Last activity beside it is the metric §7.4 calls the valuable one.
@@ -264,13 +263,12 @@ test('the detail traps the keyboard at 1024 and does not at 1440', async ({ page
  * actually reach -- `display:none`, `visibility:hidden`, `hidden`, `inert`, a folded `<details>` --
  * still counted, and if such a thing sorted LAST then `active === last` was never true: the wrap
  * never fired and Tab walked out of a panel the reader cannot see past. That is the same shape as
- * the WCAG 2.1.2 trap this project already shipped once.
+ * a WCAG 2.1.2 trap.
  *
- * Today's panel happens to contain no such control, so the trap test above passes either way --
- * a mutation back to the old selector survived every one of the fifty-nine detail, pane and
- * workbench specs. So this test PUTS one there: a hidden button appended as the panel's last child
- * is exactly the DOM the old implementation mishandled, and the claim being pinned is that
- * membership of the cycle is decided by what the keyboard can reach.
+ * Today's panel contains no such control, so the trap test above holds whichever rule is in
+ * force. This one PUTS one there -- a hidden button as the panel's last child -- so that what is
+ * pinned is the rule itself: membership of the cycle is decided by what the keyboard can reach,
+ * not by what the DOM happens to end with.
  */
 test('the overlay trap ignores a trailing control the keyboard cannot reach', async ({ page }) => {
   await registerFreshUser(page)
@@ -291,7 +289,7 @@ test('the overlay trap ignores a trailing control the keyboard cannot reach', as
     probe.textContent = 'probe'
     probe.style.display = 'none'
     panel.append(probe)
-    // It really is matched by the selector that used to be here, and really is unreachable.
+    // It is in the DOM, it is last, and the keyboard cannot reach it -- which is the whole case.
     return (
       panel.querySelectorAll(
         'input, select, textarea, button, a[href], [tabindex]:not([tabindex="-1"])',

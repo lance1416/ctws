@@ -52,7 +52,7 @@ describe('CORS and CSRF', () => {
     })
 
     // A preflight carries no custom headers: it asks permission to send them. If the CSRF
-    // check caught it, every cross-origin write from a browser would fail.
+    // check applied to it, every cross-origin write from a browser would fail.
     it('answers the preflight for a write without requiring the CSRF header', async () => {
       const res = await ctx.app.inject({
         method: 'OPTIONS',
@@ -238,10 +238,10 @@ describe('requiresCsrfHeader', () => {
 /**
  * EVERY REFUSAL THIS API MAKES IS RFC 9457.
  *
- * `@fastify/cors` answers a malformed preflight from inside its own hook, in `text/plain`, so it
- * never reaches the error handler -- it was the one error path a client could not parse the way
- * it parses the others. The status is right (a preflight with no requested method IS malformed);
- * only the envelope was wrong.
+ * `@fastify/cors` answers a malformed preflight from inside its own hook, in `text/plain`, and it
+ * never reaches the error handler -- so without the rewrite it is the one error path a client
+ * cannot parse the way it parses the others. The status stands (a preflight with no requested
+ * method IS malformed); it is the envelope that has to match.
  */
 describe('problem details, on every path', () => {
   let ctx: Awaited<ReturnType<typeof withApp>>

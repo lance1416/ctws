@@ -210,7 +210,7 @@ test('a mermaid diagram cannot break out of its own svg or its own stylesheet', 
   const notes = notesBlock(page)
   /**
    * EVERY FENCE SETTLED, one way or the other -- rendered or refused. This has to be WAITED for and
-   * not merely counted: `count()` does not retry, and the first version of this read 0 because the
+   * not merely counted: `count()` does not retry, so it reads 0 while the
    * Markdown chunk had not loaded yet -- which made every assertion below it pass on an empty
    * subtree. An assertion about what is ABSENT is worthless until what should be PRESENT is there.
    */
@@ -405,10 +405,8 @@ test('the unsaved-edit guard fires from the writing mode, and the question is vi
    *
    * `seedNote` arrives with `page.goto`, and going BACK across a document boundary is a browser
    * navigation React Router never sees -- only `beforeunload` could stop it, and this app
-   * deliberately has none (a native prompt would block the automation it is tested with). The first
-   * version of this test used that back button, watched the page leave, and would have reported the
-   * guard as broken when what was broken was the test's own history. The guard really is engaged
-   * here: the pane asks on Close at this point too.
+   * deliberately has none (a native prompt would block the automation it is tested with). So the
+   * route in is the app's own links, which is what the guard can act on.
    */
   await page.keyboard.press('Escape')
   await page.getByRole('link', { name: 'Projects' }).click()

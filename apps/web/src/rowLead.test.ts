@@ -90,12 +90,12 @@ describe('the geometry', () => {
   })
 
   /**
-   * ONE MEASURE, for every list. The four derived measures (64 / 72.75 / 75.75 / 84.5rem) existed
-   * because a list that reserved 19rem of date columns had to be wider to leave the title the same
-   * track; there are no date columns, so there is nothing to derive from -- and 64rem is what the
-   * title-only list already shipped with, so the case that was never broken is unchanged.
+   * ONE MEASURE, for every list. A measure derived per case (64 / 72.75 / 75.75 / 84.5rem) is
+   * what a list reserving 19rem of date columns needs to leave the title the same track; there
+   * are no date columns, so there is nothing to derive from and one literal answers for a
+   * title-only list.
    */
-  it('is a single literal, and the one the title-only list already had', () => {
+  it('is a single literal', () => {
     expect(LIST_MEASURE).toBe('max-w-[64rem]')
     // Not a function of anything: a module that exports a measure PER CASE is the mechanism §3
     // deleted, and this is the test that notices it coming back.

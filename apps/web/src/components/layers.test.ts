@@ -8,11 +8,11 @@ import { MENU_SURFACE } from './menuSurface'
  * A MENU PAINTS OVER WHATEVER OPENED IT.
  *
  * A menu opened inside the detail pane renders into a portal at `<body>`. The pane carries a
- * layer; three of the five menus carried none, so they were painted UNDERNEATH it -- in the DOM,
- * answering clicks, and invisible. Nothing caught it: a headless click finds the element and
- * reports it on top, because paint order is not what `elementFromPoint` is deciding.
+ * layer, so a menu with none is painted UNDERNEATH it -- in the DOM, answering clicks, and
+ * invisible. A click cannot see that: `elementFromPoint` finds the element and reports it on
+ * top whatever the paint order.
  *
- * So the invariant is checked where it is actually expressed: in the numbers.
+ * So the invariant is checked where it is expressed: in the numbers.
  */
 const order = (cls: string) => Number(/z-(\d+)/.exec(cls)?.[1] ?? '0')
 
@@ -27,7 +27,7 @@ describe('layers', () => {
     expect(order(MENU_SURFACE)).toBe(order(LAYER.menu))
   })
 
-  it('leaves no menu writing its own look, which is how three lost their layer', () => {
+  it('leaves no menu writing its own look, which is how one loses its layer', () => {
     const dir = join(import.meta.dirname)
     const offenders: string[] = []
     for (const name of readdirSync(dir)) {

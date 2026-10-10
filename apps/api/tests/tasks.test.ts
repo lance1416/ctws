@@ -64,8 +64,8 @@ describe('create', () => {
       projectId,
       parentId: null,
       title: 'idea',
-      // `todo` since 2026-10-07: the rollup excludes a backlog node before it looks at its
-      // children, so the old default blanked the progress of every tree anyone built.
+      // `todo`, never `backlog`: the rollup excludes a backlog node before it looks at its
+      // children, so a backlog default blanks the progress of every tree.
       status: 'todo',
       notes: null,
       completedAt: null,

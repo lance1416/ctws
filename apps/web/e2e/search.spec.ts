@@ -22,7 +22,7 @@ async function query(page: Page, text: string) {
 }
 
 /**
- * A result row, BY ITS ROLE. It used to be `getByRole('button')`: the results were buttons in a bare
+ * A result row, BY ITS ROLE -- `option`, not `button`. Buttons in a bare
  * `<ul>`, which is the defect that was fixed -- a screen reader was told the dialog contained a list
  * of buttons and nothing about which one the keyboard had selected. They are `role="option"` inside a
  * `role="listbox"` now (ARIA 1.2 combobox), so that is what they are matched by. Every behaviour

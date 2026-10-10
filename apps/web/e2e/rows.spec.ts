@@ -12,8 +12,8 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
  *
  * What these guards are for, in order of how easy it would be to fake:
  * - "the title is not truncated" is provable only by measuring `scrollWidth` against `clientWidth`
- *   on a REAL long title at the panel width the complaint was about. A short title fits every
- *   layout, and a placeholder string proves nothing.
+ *   on a REAL long title at the narrowest panel width. A short title fits every layout, and a
+ *   placeholder string proves nothing.
  * - "the icons are a column" is NOT provable by asserting an icon is present. It is provable only
  *   by measuring the glyph on rows whose titles differ in length and finding it at one x.
  * - "the slot costs nothing when no row needs it" is provable only by measuring a list that has no
@@ -252,7 +252,7 @@ test('on Today the queue and the Overdue panel each answer for their own slot', 
   await expect(late.locator('[data-today-row]')).toHaveCount(1)
 
   await expect(queue.locator('[data-lead-slot]')).toHaveCount(0)
-  // Measured, not merely counted.
+  // The track the title actually gets, not the number of slots.
   const titleWidth = await queue
     .locator('[data-today-row]')
     .first()
@@ -383,15 +383,13 @@ async function mixedProject(page: Page, name: string): Promise<string> {
 }
 
 /**
- * §6, THE FIRST ONE, AND THE DEFECT ITSELF: the width is not used, and the title is cut off.
- * The user's own sentence, at 1440 WITH THE DETAIL COLUMN OPEN -- the ≈734px panel that is the
- * hardest case and the one the screenshot was taken in. The previous edition could only do it by
- * dropping the dates to a second line below a threshold; there is no threshold now, because the
- * dates are always on the second line and the title always owns the first.
+ * §6: A REAL LONG TITLE IS NOT CUT OFF, at 1440 WITH THE DETAIL COLUMN OPEN -- the ≈734px panel,
+ * which is the hardest case. It holds with no width threshold: the dates are always on the second
+ * line and the title always owns the first.
  *
  * Asserted at both panel widths, from the same page, with the window never changing: the closed
- * panel is 1118px and the open one 734px, and a guard that only checks the easy one would have
- * passed before this stage as well.
+ * panel is 1118px and the open one 734px, and a guard that only checked the easy one would pass
+ * on a layout that fails the narrow one.
  */
 test('a real long title is not truncated at 1440, detail open or closed', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 })
@@ -477,7 +475,7 @@ test('a dated row has a second line, complete to the minute; a bare row stays on
   // does not say this: the cell's padding has to be SYMMETRIC around a 24px title to put its
   // centre at 22, and `pt-3 pb-2` (the asymmetry the 15/20 title needed) adds up to the same 20px
   // and gives the same 44 and 66 while sitting the title two pixels low against a glyph column
-  // that is still centred at 22 -- measured, which is why this assertion exists.
+  // that is still centred at 22. So the heights agreeing is not the same claim as this one.
   const centres = (title: string) =>
     row(title).evaluate((el) => {
       const t = el.querySelector('[data-row-title]')!.getBoundingClientRect()
@@ -751,7 +749,7 @@ test('the status marker is the heaviest mark on the row, and still hue-free', as
   await page.goto('/tasks/today')
 
   const mark = (name: string) => page.getByRole('img', { name })
-  // 20px at 2px of stroke: the app's core semantic used to be the faintest thing on the row, and
+  // 20px at 2px of stroke: the mark is the app's core semantic, and
   // the workbench stepped every size up again (spec section 4) around 46px rows.
   for (const name of ['In progress', 'To do', 'Backlog'])
     expect(await mark(name).evaluate((el) => el.getBoundingClientRect().width)).toBe(20)
@@ -888,7 +886,7 @@ test.describe('the tree on a phone', () => {
 
     // A row with dates is taller by one line; a row without them is not. No empty second line
     // was bought for every row in the tree. The magnitude is the workbench's single-line row
-    // (44px, project.spec.ts pins it exactly at every depth), not the 32 the tree used to be: a
+    // (44px, project.spec.ts pins it exactly at every depth): a
     // dateless row still costs ONE line, which is what this half is about.
     const datedBox = (await page.locator('li', { has: dated }).boundingBox())!
     const bareBox = (await page.locator('li', { has: bare }).boundingBox())!
@@ -904,9 +902,9 @@ test.describe('the tree on a phone', () => {
 // ------------------------------------------------------------------------- motion, on request
 
 /**
- * The app has exactly one animation: the 120ms echo of the user's own status change. Section 7
- * says a reader who asks for no motion gets none, and nothing pinned that -- a stylesheet rule
- * is exactly the kind of thing a redesign deletes by accident.
+ * The app has exactly one animation: the 120ms echo of a status change the reader made. Section 7
+ * says a reader who asks for no motion gets none, and a stylesheet rule is the kind of thing a
+ * redesign deletes by accident.
  *
  * Both directions, because "0s under reduce" also holds for an app with no animation at all.
  */
