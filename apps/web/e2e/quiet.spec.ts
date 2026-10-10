@@ -16,7 +16,7 @@ import {
  *
  * The tree kept every finished task forever, the inbox gave no clue how long anything had been
  * sitting in it, a failed creation reported itself at the top of the page rather than at the row
- * it failed on, and pressing 保存 with nothing changed did nothing at all -- visibly nothing, so
+ * it failed on, and pressing Save with nothing changed did nothing at all -- visibly nothing, so
  * the one person who pressed it could not tell whether it had worked.
  */
 
@@ -200,7 +200,7 @@ test('saving an untouched task sends nothing and still closes the pane', async (
 
   // D40 SAID THIS WAS BROKEN AND IT IS NOT -- measured, by disabling the guard that was about to
   // be added for it and watching this test keep passing. `save`'s own body already skips the
-  // request when no field changed, and its success still closes the pane, so 保存 on an untouched
+  // request when no field changed, and its success still closes the pane, so Save on an untouched
   // task has always meant "I am done here". The entry predates the reading/editing split. What
   // was missing was a test, which is this one; no code changed.
   await expect(page.getByRole('button', { name: 'Edit', exact: true })).toHaveCount(0)
@@ -253,7 +253,7 @@ test('the detail pane closes from the corner, and Escape unwinds one level at a 
 
   const pane = page.getByRole('dialog')
   await expect(pane).toBeVisible()
-  // There is no 关闭 BUTTON in the control row any more: it is a ✕ in the corner, carrying the
+  // There is no Close BUTTON in the control row: it is a ✕ in the corner, carrying the
   // word as its accessible name for anyone who cannot see it.
   const close = pane.locator('[data-detail-close]')
   await expect(close).toHaveAccessibleName('Close')
@@ -287,7 +287,7 @@ test('a parent row says how its subtree stands, and a quiet one says nothing', a
   await expect(row(page, '接入 KaTeX').locator('[data-row-rollup]')).toHaveText(
     '50% · 1 in progress',
   )
-  // And nothing at all on the parent whose subtree is merely unstarted: a lone 「0%” would be a
+  // And nothing at all on the parent whose subtree is merely unstarted: a lone "0%" would be a
   // second line on half the rows in any tree, saying what the children below already say.
   await expect(row(page, '写变更日志').locator('[data-row-rollup]')).toHaveCount(0)
   // Leaves never carry one: their "progress" is the marker at the head of the row.
@@ -341,7 +341,7 @@ test('a project colour can be picked from the chip that shows it', async ({ page
   await expect(page.getByRole('heading', { level: 1, name: '改版' })).toBeVisible()
 })
 
-test('a finished task opens from the 已完成 list, where it could only be restored (D58)', async ({
+test('a finished task opens from the Done list, not only restored from it (D58)', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -425,7 +425,8 @@ test('the project title gets the width it needs, not the width it can shrink to'
   await page.goto(`/projects/${pid}`)
 
   // MEASURED, not read. Making the title an editable control collapsed its flex item and the
-  // banner rendered 「改...” at 1440px -- and every assertion that matched it BY NAME still
+  // banner truncated the title to a few characters at 1440px -- and every assertion that
+  // matched it BY NAME still
   // passed, because truncation is CSS and the accessible name is whole.
   const heading = page.getByRole('heading', { level: 1, name: '改版' })
   const cut = await heading.evaluate((el) => {

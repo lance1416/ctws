@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { makeProject, makeTask, registerFreshUser, WEB } from './helpers'
 
 /**
- * 我做了什么 — the third v1 view. What it has to prove over 已完成 is that it reports what
+ * WHAT I DID — the third v1 view. What it has to prove over Done is that it reports what
  * HAPPENED, not what is true now.
  */
 
@@ -31,9 +31,7 @@ test('the review is a destination, grouped by line of work', async ({ page }) =>
   await expect(project(page, '求职')).not.toContainText('配色重做')
 })
 
-test('it shows work that was finished and then reopened, which 已完成 does not', async ({
-  page,
-}) => {
+test('it shows work that was finished and then reopened, which Done does not', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'CTWS')
   const id = await makeTask(page, pid, '写迁移')

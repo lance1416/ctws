@@ -401,7 +401,7 @@ test('the unsaved-edit guard fires from the writing mode, and the question is vi
    * deliberately has none (a native prompt would block the automation it is tested with). The first
    * version of this test used that back button, watched the page leave, and would have reported the
    * guard as broken when what was broken was the test's own history. The guard really is engaged
-   * here: the pane asks on 关闭 at this point too.
+   * here: the pane asks on Close at this point too.
    */
   await page.keyboard.press('Escape')
   await page.getByRole('link', { name: 'Projects' }).click()
@@ -422,7 +422,7 @@ test('the unsaved-edit guard fires from the writing mode, and the question is vi
   await page.getByRole('button', { name: 'Keep editing' }).click()
   // The typing survived the question.
   await expect(page.getByLabel('Notes', { exact: true })).toHaveValue('原文，又写了一段')
-  // And 放弃修改 really does leave, which is what makes the question a question.
+  // And Discard really does leave, which is what makes the question a question.
   await page.goBack()
   await page.getByRole('button', { name: 'Discard changes' }).click()
   await expect(page).toHaveURL(/\/projects$/)

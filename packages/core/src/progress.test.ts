@@ -130,7 +130,7 @@ describe('the counts beside the percentage, per spec §7.3', () => {
   })
 
   it('counts an excluded node, because a count is not a percentage', () => {
-    // 「42% · 2 进行中 · 1 已逾期」 has to be able to say that something IS in the backlog; the
+    // "42% · 2 in progress · 1 overdue" has to be able to say that something IS in the backlog; the
     // exclusion rule is about averaging, not about existing.
     const nodes = [node('a', null, { status: 'backlog' }), node('b', 'a', { status: 'cancelled' })]
     const r = rollup(nodes).get('a')!

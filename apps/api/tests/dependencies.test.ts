@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { createProject, createTask, setupWith, type TaskCtx, web } from './helpers/tasks'
 
 /**
- * 「A 没做完 B 做不了」 (D64).
+ * ONE TASK WAITING FOR ANOTHER (D64).
  *
  * The edge is stored; "blocked" is derived. These are about keeping the edges honest -- loops
  * refused, tenants separated, both directions readable -- and about the one property the whole
@@ -72,7 +72,7 @@ describe('task dependencies', () => {
   })
 
   it('crosses projects, and says which project the other end is in', async () => {
-    // 「等 rrgen 的 CI 跑通才能发 CTWS 的 release」. The two graphs -- parent tree and dependency
+    // A release in one project waiting on another project's CI. The two graphs -- parent tree and dependency
     // -- have no containment relationship, so there is nothing to forbid here.
     const ctx = await setup()
     const ctws = await createProject(ctx, 'CTWS')

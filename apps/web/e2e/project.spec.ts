@@ -142,7 +142,7 @@ test('the project header draws a percentage but never a progress bar', async ({ 
   // the mean of the four root tasks (1 + 1 + 0 + 0.5) / 4, the same §7.2 rule a parent gets.
   await expect(stat(page, 'Progress')).toHaveText('63%')
   // A BAR is still refused: a 60% line and a 60% line nobody has touched for three weeks draw
-  // the same bar, and 最后活动 beside it is the metric §7.4 calls the valuable one.
+  // the same bar, and Last activity beside it is the metric §7.4 calls the valuable one.
   await expect(banner.getByRole('progressbar')).toHaveCount(0)
   await expect(banner.locator('progress, meter')).toHaveCount(0)
   // A bar built by hand: an element whose width is a fraction of its parent.
@@ -248,8 +248,8 @@ test('the detail traps the keyboard at 1024 and does not at 1440', async ({ page
   expect(await escapes(), 'Tab leaves the column').toBe(true)
   // Leaving it with Tab is not dismissing it, and Escape still closes it onto the row it came from.
   await expect(dialog).toBeVisible()
-  // Pressed from inside the pane. In reading mode the control to press it on is 编辑 ('exact'
-  // because 继续编辑 contains it); what is pinned is that Escape from inside still closes.
+  // Pressed from inside the pane. In reading mode the control to press it on is Edit ('exact'
+  // because "Keep editing" contains it); what is pinned is that Escape from inside still closes.
   await dialog.getByRole('button', { name: 'Edit', exact: true }).press('Escape')
   await expect(dialog).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Task: 开着的任务', exact: true })).toBeFocused()
@@ -372,8 +372,8 @@ test('the tree’s rail reads as one continuous spine, not one dash per row', as
 /**
  * The workbench's row metric, on the densest list in the app. 44px for a single-line row is the
  * size stage 1 settled on (spec §4's band, measured against what had actually shipped rather than
- * against the stale "原 28–30" the section quotes); the tree was still at 32 and is the page the
- * complaint 「组件太小” was about.
+ * against the 28-30 the section quotes); the tree is the page where a row being too small to
+ * read at a glance was worst.
  */
 test('a single-line tree row is 44px tall, at every depth', async ({ page }) => {
   await registerFreshUser(page)

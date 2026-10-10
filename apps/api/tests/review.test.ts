@@ -4,8 +4,8 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { appWithUser, createProject, createTask, type TaskCtx } from './helpers/tasks'
 
 /**
- * THE WEEKLY REVIEW reads the EVENT LOG, which is the whole difference between it and 已完成.
- * 已完成 lists what is finished right now; this lists what happened in a window. The cases below
+ * THE WEEKLY REVIEW reads the EVENT LOG, which is the whole difference between it and Done.
+ * Done lists what is finished right now; this lists what happened in a window. The cases below
  * are the ones where the two give different answers -- if they always agreed, one of them would
  * not need to exist.
  */
@@ -62,7 +62,7 @@ describe('the weekly review', () => {
     expect(project.dropped.map((t) => t.title)).toEqual(['再开一次会'])
   })
 
-  it('reports a task that was finished and then reopened, which 已完成 cannot', async () => {
+  it('reports a task that was finished and then reopened, which Done cannot', async () => {
     // THE CASE THAT JUSTIFIES THE VIEW. Finishing something on Tuesday is work done, even if it
     // came back on Thursday; a recount that hides it is the kind of report nobody opens twice.
     const ctx = await setup()

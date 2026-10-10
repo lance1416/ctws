@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { createProject, setupWith, type TaskCtx, web } from './helpers/tasks'
 
 /**
- * 联系人 -- THE THIRD MODULE, on vCard 4.0's model (RFC 6350).
+ * CONTACTS -- THE THIRD MODULE, on vCard 4.0's model (RFC 6350).
  *
  * The claim that matters is the one a hand-rolled contact model always gets wrong: a person has
  * SEVERAL ways to be reached, not one. Everything else here is the usual tenant and lifecycle
@@ -171,7 +171,7 @@ describe('contacts', () => {
   })
 
   it('finds a person by their address, not only by their name', async () => {
-    // 「那个 @acme.test 的人叫什么来着」 is exactly the question a contact list answers.
+    // "who was the one at @acme.test" is exactly the question a contact list answers.
     const ctx = await setup()
     await add(ctx, {
       name: '李雷',

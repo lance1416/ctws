@@ -6,10 +6,10 @@ const chords = allChords()
 
 describe('jump chords', () => {
   it('resolves each destination, in the order the help list teaches them', () => {
-    // 待读 sits right after 今天: they are the two lists that answer 「现在做什么」, one from
+    // Reading sits right after Today: they are the two lists that answer what to do now, one from
     // each module. The rest is unchanged, which is the point -- a second module contributed a
     // key without the table being rewritten around it.
-    // 工作台 leads: it is where `/` lands and the page every other key is a way out of.
+    // The workbench leads: it is where `/` lands and the page every other key is a way out of.
     expect(chords.map((c) => c.key).join('')).toBe('wtlmncpri')
     expect(chords.map((c) => c.id)).toEqual([
       'workbench',

@@ -126,7 +126,7 @@ test('search shows the parent breadcrumb and the status, and skips deleted tasks
   await page.keyboard.press('f')
   await query(page, 'hint')
 
-  // `项目 › 父任务`, exactly as the today and completed lists write it.
+  // `project › parent`, exactly as the Today and Done lists write it.
   await expect(result(page, 'hint 的子任务')).toContainText('Ctx › 迁移计划')
   // A finished task is findable on purpose -- and says so, so it is not mistaken for live work.
   await expect(result(page, 'hint 已完成')).toContainText('Done')
@@ -264,7 +264,7 @@ test('no Tab reaches outside the search dialog while it is open', async ({ page 
   await expect(page.locator('[data-search-result]')).toHaveCount(2)
   // The results are NOT in the cycle, and that is the combobox pattern rather than an omission:
   // focus stays in the box and `aria-activedescendant` carries the selection, so two results do not
-  // put two tab stops between the box and 关闭. The panel still has more than one thing to tab to.
+  // put two tab stops between the box and Close. The panel still has more than one thing to tab to.
   await expect(page.locator('[data-search-result] button')).toHaveCount(0)
 
   const inside = () =>

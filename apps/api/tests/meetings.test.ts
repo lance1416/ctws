@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { createProject, setupWith, type TaskCtx, web } from './helpers/tasks'
 
 /**
- * 会议 -- the fourth module, on iCalendar's `VEVENT` (RFC 5545).
+ * MEETINGS -- the fourth module, on iCalendar's `VEVENT` (RFC 5545).
  *
  * `occurrences.test.ts` holds the recurrence and DST arithmetic, without a database. What is
  * tested here is everything that arithmetic has to be wired to: the three edit scopes, overrides
@@ -139,7 +139,7 @@ describe('a recurring meeting on the calendar', () => {
 
   it('holds 09:00 in Toronto across the DST change, and says which zone that is', async () => {
     // The account is in UTC and the meeting is in Toronto: the grid shows the ACCOUNT's clock --
-    // 「我几点要到场」 -- and the meeting's own time travels beside it.
+    // ...which answers when to be there -- and the meeting's own time travels beside it.
     const ctx = await setup()
     await arrange(ctx)
     const got = await entries(ctx, '2026-10-20', '2026-11-10')
@@ -340,7 +340,7 @@ describe('editing the whole series', () => {
   })
 
   it('takes a scope it cannot honour on a one-off and does the only thing there is', async () => {
-    // A meeting that happens once has one occurrence, so 「只这次」 and 「整个系列」 are the same
+    // A meeting that happens once has one occurrence, so "this one" and "the series" are the same
     // act. Refusing it would be pedantry about a distinction that does not exist.
     const ctx = await setup()
     const one = await arrange(ctx, { ...WEEKLY, rrule: null })
@@ -364,8 +364,8 @@ describe('editing the whole series', () => {
 
 describe('windows, projects and tenants', () => {
   it("cuts the window on the ACCOUNT's calendar days", async () => {
-    // 23:00 UTC on the 8th is 07:00 on the 9th in Shanghai. Asking for 「9 号」 has to find it and
-    // asking for 「8 号」 has to miss it -- silently backwards for everyone east of UTC otherwise.
+    // 23:00 UTC on the 8th is 07:00 on the 9th in Shanghai. Asking for the 9th has to find it and
+    // asking for the 8th has to miss it -- silently backwards for everyone east of UTC otherwise.
     const ctx = await setup('east@example.com')
     await ctx.db.execute(sql`update users set timezone = 'Asia/Shanghai'`)
     await arrange(ctx, {

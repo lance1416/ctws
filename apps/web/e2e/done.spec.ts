@@ -22,9 +22,9 @@ type ApiTask = { id: string; title: string; status: string }
  * Hours to go back so a completion lands around NOON on the day `daysAgo` before today.
  *
  * A fixed offset cannot express "yesterday": run at 23:30, `25 hours` lands on yesterday; run at
- * 00:30 it lands the day BEFORE yesterday, and the heading reads a date instead of 昨天. No single
- * constant works for both, so the offset is measured from the current local hour. This test was
- * red for roughly one hour out of every twenty-four until it was anchored this way.
+ * 00:30 it lands the day BEFORE yesterday, and the heading reads a date instead of "Yesterday".
+ * No single constant works for both, so the offset is measured from the current local hour --
+ * otherwise the test is red for one hour out of every twenty-four.
  */
 function hoursBackToNoon(daysAgo: number): number {
   return new Date().getHours() + 12 + (daysAgo - 1) * 24
@@ -46,8 +46,7 @@ const serverTasks = async (page: Page, projectId: string): Promise<ApiTask[]> =>
 const nav = (page: Page) => page.getByRole('navigation', { name: 'Main navigation' })
 
 /**
- * 已完成 is a VIEW of 回顾 now, not a rail row of its own: both answer 「我做了什么”, and they were
- * two destinations only because they were built a week apart.
+ * Done is a VIEW of Review, not a rail row of its own: both answer what I did.
  */
 const goCompleted = async (page: Page) => {
   await nav(page).getByRole('link', { name: 'Review' }).click()
@@ -63,7 +62,7 @@ const isTaskPatch = (r: { url: () => string; request: () => { method: () => stri
 
 // ------------------------------------------------------------------------- the completed view
 
-test('finishing a task in the tree puts it on 已完成 with its project and parent, across projects', async ({
+test('finishing a task in the tree puts it on Done with its project and parent, across projects', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -123,7 +122,7 @@ test('the completed list is grouped by day, newest day and newest task first', a
 
   await page.goto('/completed')
   const headings = page.getByRole('heading', { level: 2 })
-  // Three days, newest first; the nearest two are told apart as 今天 / 昨天.
+  // Three days, newest first; the nearest two are told apart as Today / Yesterday.
   await expect(headings).toHaveCount(3)
   await expect(headings.nth(0)).toContainText('Today')
   await expect(headings.nth(1)).toContainText('Yesterday')
@@ -161,7 +160,7 @@ test('a finished task can be restored from the completed list, and the server ag
   expect((await restored).request().postDataJSON()).toEqual({ status: 'backlog' })
   await expect(page.getByText('点错了')).toHaveCount(0)
   await expect(page.getByText('真完成了')).toBeVisible()
-  // Focus did not fall to <body>: it goes to the view's own heading, which is an h2 inside 回顾
+  // Focus did not fall to <body>: it goes to the view's own heading, an h2 inside Review
   // and is there whether or not it is drawn.
   await expect(page.getByRole('heading', { name: 'Done', level: 2 })).toBeFocused()
 
@@ -180,7 +179,7 @@ test('with nothing finished, the view says so', async ({ page }) => {
 // ------------------------------------------------------------------------------ task deletion
 
 // Opens a row's detail AND puts it into editing mode. The pane opens in reading mode since
-// rows-and-reading §5, and both of the things this file is about -- 删除任务 and the unsaved-edit
+// rows-and-reading §5, and both of the things this file is about -- Delete task and the unsaved-edit
 // guard -- are editing-mode concerns: there is nothing to lose while only reading.
 async function openPanel(page: Page, title: string) {
   await page.getByRole('listitem').filter({ hasText: title }).first().click()

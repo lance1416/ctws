@@ -3,7 +3,7 @@ import { dayOffset } from './days'
 import { makeProject, makeTask, registerFreshUser, WEB } from './helpers'
 
 /**
- * 日程 -- the shell surface that is about every module at once.
+ * THE CALENDAR -- the shell surface that is about every module at once.
  *
  * The claim worth testing is not that a grid renders: it is that the grid belongs to the SHELL
  * and the contents belong to the modules. Two modules put things on it, each with its own word
@@ -81,7 +81,7 @@ test('a crowded square says how many it is not showing', async ({ page }) => {
   await expect(square(page, dayOffset(1))).toContainText('+2')
 })
 
-test('the months step, and 本月 comes back', async ({ page }) => {
+test('the months step, and This month comes back', async ({ page }) => {
   await registerFreshUser(page, '/')
   const pid = await makeProject(page, 'CTWS')
   await makeTask(page, pid, '这个月的', { scheduledOn: dayOffset(1) })

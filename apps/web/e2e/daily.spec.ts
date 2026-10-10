@@ -112,7 +112,7 @@ test('a finished task can be restored from its mark, landing on backlog', async 
   await expect(treeRow(page, '写方案').getByRole('img', { name: 'Backlog' })).toBeVisible()
 })
 
-test('starting a task from its row puts it under 正在做, stopping takes it off', async ({
+test('starting a task from its row puts it under In progress, stopping takes it off', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -212,7 +212,7 @@ test('a Today row is finished by its mark, by x, and focus moves to the next row
 
 // ------------------------------------------------------------------------------ F3: overdue exits
 
-test('推迟 on an overdue row moves the deadline, keeps its time of day, and the row leaves 逾期', async ({
+test('pushing the deadline on an overdue row keeps its time of day and takes the row out of Overdue', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -258,7 +258,7 @@ test('推迟 on an overdue row moves the deadline, keeps its time of day, and th
     .click()
   // The request moves the deadline and nothing else.
   expect((await res).request().postDataJSON()).toEqual({ dueAt: expectTomorrow.toISOString() })
-  // The row left 逾期; the other two overdue rows did not move.
+  // The row left Overdue; the other two overdue rows did not move.
   await expect(page.getByText('推到明天')).toHaveCount(0)
   await expect(section.getByText('2 days late')).toHaveCount(2)
   // The server says so, from a fresh read, in its own segment arithmetic: not on the list at all.
@@ -310,7 +310,7 @@ test('推迟 on an overdue row moves the deadline, keeps its time of day, and th
   await expect(section.getByText('不动的')).toBeVisible()
 })
 
-test('only a deadline change takes a task out of 逾期: a bare scheduledOn does not', async ({
+test('only a deadline change takes a task out of Overdue: a bare scheduledOn does not', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -326,7 +326,7 @@ test('only a deadline change takes a task out of 逾期: a bare scheduledOn does
   }
   expect(await segmentOf()).toBe('overdue')
 
-  // Scheduling it for tomorrow (what the old 推迟 did) must NOT hide the missed deadline.
+  // Scheduling it for tomorrow must NOT hide the missed deadline.
   const p = await page.request.patch(`/api/v1/tasks/${id}`, {
     headers: WEB,
     data: { scheduledOn: tomorrow },
@@ -346,7 +346,7 @@ test('only a deadline change takes a task out of 逾期: a bare scheduledOn does
   expect(await segmentOf()).not.toBe('overdue')
 })
 
-test('清除截止 takes a row out of overdue and the server forgets the deadline', async ({
+test('clearing the deadline takes a row out of Overdue and the server forgets it', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -515,7 +515,7 @@ test.describe('the panel as an overlay', () => {
     const dialog = page.getByRole('dialog')
     await page.getByLabel('Title').fill('写方案 v2')
 
-    // Every way out asks: stepping back to reading (取消), closing the pane (the ✕), Escape,
+    // Every way out asks: stepping back to reading (Cancel), closing the pane (the ✕), Escape,
     // and a click outside.
     await page.getByRole('button', { name: 'Cancel' }).click()
     await expect(dialog).toContainText('You have unsaved changes')
@@ -553,7 +553,7 @@ test.describe('the panel as an overlay', () => {
   })
 
   /**
-   * A NAMED DAY PRESSED IS AN UNSAVED EDIT. The three date decisions (今天 / 明天 / 下周 and the
+   * A NAMED DAY PRESSED IS AN UNSAVED EDIT. The three date decisions (today, tomorrow, next week and the
    * two ways out) do not type into a field, so whatever the form holds has to be told that they
    * changed something. A mutation proved this needed its own guard: dropping the flag that says so
    * left the form clean, which the existing cases caught only as a MISSING request -- the person
@@ -568,14 +568,14 @@ test.describe('the panel as an overlay', () => {
     await editDetail(page)
     const dialog = page.getByRole('dialog')
 
-    // Not a keystroke in the panel: one press on 明天截止, which writes the deadline field.
+    // Not a keystroke in the panel: one press on the named day, which writes the deadline field.
     await page.getByRole('button', { name: 'Due tomorrow' }).click()
     await expect(page.getByLabel('Due', { exact: true })).not.toHaveValue('')
     await page.getByRole('button', { name: 'Close' }).click()
     await expect(dialog).toContainText('You have unsaved changes')
     await page.getByRole('button', { name: 'Keep editing' }).click()
 
-    // The plan half of the same control, and the ways OUT of a date are edits too: 清除排期 on a
+    // The plan half of the same control, and the ways OUT of a date are edits too: clearing the plan on a
     // task that has a plan removes it, so leaving would lose that.
     await page.getByRole('button', { name: 'Plan for today' }).click()
     await page.getByRole('button', { name: 'Clear the plan' }).click()
@@ -598,7 +598,7 @@ test.describe('the panel as an overlay', () => {
     await page.getByRole('listitem').filter({ hasText: '写方案' }).click()
     await editDetail(page)
     // Focus is inside the panel to start with. (That it lands on the PANEL when the pane first
-    // opens is pinned in detail.spec.ts; 编辑 hands it to the first field instead, which is
+    // opens is pinned in detail.spec.ts; Edit hands it to the first field instead, which is
     // pinned in pane.spec.ts. What this test is about is that it never gets out.)
     await expect(page.getByRole('textbox', { name: 'Title' })).toBeFocused()
 
@@ -638,8 +638,8 @@ test.describe('the panel as an overlay', () => {
     const dialog = page.getByRole('dialog')
 
     await page.getByLabel('Notes', { exact: true }).click()
-    // A click on a non-interactive part of the panel. The panel no longer prints the word 标题
-    // over the title (it opens with the task itself), so this presses the 备注 label instead --
+    // A click on a non-interactive part of the panel. The panel prints no label over the title
+    // (it opens with the task itself), so this presses the Notes label instead --
     // still a dead area of the panel, which is the whole point of the assertion.
     await dialog.getByText('Notes').click()
     await expect(dialog).toBeVisible()
@@ -729,7 +729,7 @@ async function todaySegment(page: Page, id: string): Promise<string> {
   return tasks.find((t) => t.id === id)?.segment ?? 'absent'
 }
 
-test('a plan carried over from days ago is marked in 今天 with its day; a plan for today is not', async ({
+test('a plan carried over from days ago is marked on Today with its day; a plan for today is not', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -758,7 +758,9 @@ test('a plan carried over from days ago is marked in 今天 with its day; a plan
   await expect(section).not.toContainText('late')
 })
 
-test('改到今天 keeps the row, drops the mark, and changes only the plan', async ({ page }) => {
+test('moving the plan to today keeps the row, drops the mark, and changes only the plan', async ({
+  page,
+}) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   const id = await makeTask(page, pid, '改到今天的', { scheduledOn: dayOffset(-3) })
@@ -788,7 +790,7 @@ test('改到今天 keeps the row, drops the mark, and changes only the plan', as
   await expect(triage(page, '改到今天的')).toHaveCount(0)
 })
 
-test('改到明天 and 改到下周 move the plan and the row leaves 今天', async ({ page }) => {
+test('moving the plan to tomorrow or next week takes the row off Today', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   const a = await makeTask(page, pid, '改到明天的', { scheduledOn: dayOffset(-2) })
@@ -826,7 +828,7 @@ test('改到明天 and 改到下周 move the plan and the row leaves 今天', as
   await expect(page.locator('[data-today-row]')).toHaveCount(1)
 })
 
-test('清除排期 removes the row from 今天 and the server holds no plan', async ({ page }) => {
+test('clearing the plan removes the row from Today and the server holds none', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   const id = await makeTask(page, pid, '不排了', { scheduledOn: dayOffset(-4) })
@@ -876,7 +878,7 @@ test('a carried plan is not a deadline: clearing the plan leaves dueAt alone', a
   await expect(triage(page, '计划和今晚截止')).toHaveCount(0)
 })
 
-test('转为排期 turns an overdue deadline into a plan: out of 逾期, into 今天, dueAt gone', async ({
+test('making a deadline a plan moves the row out of Overdue into Today, with dueAt gone', async ({
   page,
 }) => {
   await registerFreshUser(page)

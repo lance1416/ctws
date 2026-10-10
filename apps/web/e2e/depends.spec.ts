@@ -6,8 +6,8 @@ import { makeProject, makeTask, openTree, registerFreshUser, WEB } from './helpe
  *
  * The API suite already pins the edges -- loops refused, tenants separated, both directions
  * readable. What only a browser can show is the part the feature was built for: a list stops
- * saying 「什么到期了” and starts saying 「什么现在做得了”, and the thing in the way is NAMED on
- * the row instead of being a mystery behind a click.
+ * answering what is DUE and starts answering what can be WORKED ON, with the thing in the way
+ * named on the row instead of hidden behind a click.
  */
 
 const row = (page: Page, title: string) =>
@@ -94,10 +94,10 @@ test('the search never offers the task itself', async ({ page }) => {
   await pane(page).getByRole('button', { name: 'Add', exact: true }).click()
   await pane(page).getByLabel('Search for a task to wait on').fill('配色重做')
 
-  // The sibling is offered; itself is not. 「自己等自己” is the one edge the server refuses
+  // The sibling is offered; itself is not. A task waiting for itself is the one edge the server refuses
   // outright, and an interface that proposes it is proposing something it knows cannot happen.
   // Both titles match the query, so the count is the assertion: one candidate, and it is the
-  // sibling. A candidate is named 「<title> <project>”, hence the anchored patterns.
+  // sibling. A candidate is named "<title> <project>", hence the anchored patterns.
   const candidates = pane(page).locator('[data-dep-candidates] li')
   await expect(candidates).toHaveCount(1)
   await expect(candidates.getByRole('button', { name: /^配色重做 / })).toHaveCount(1)

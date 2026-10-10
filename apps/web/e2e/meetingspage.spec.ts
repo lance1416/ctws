@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { pickOne, registerFreshUser, WEB } from './helpers'
 
 /**
- * 会议 -- the module's own destination, and the form that fills one in once.
+ * MEETINGS -- the module's own destination, and the form that fills one in once.
  *
  * What is tested here is the framing change, not a list rendering: a meeting is a kind of thing
  * with a page of its own, reached from the rail, and MADE there rather than by clicking a square

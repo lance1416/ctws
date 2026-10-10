@@ -6,7 +6,7 @@ import { expect, type Locator, type Page } from '@playwright/test'
  * Registers a brand-new user through the UI and waits until the signed-in shell is showing.
  * Register is rate limited (20/min/IP), so every call uses a unique email. Returns that email.
  *
- * It then goes on to 今天, because that is where almost every test here does its work and it is
+ * It then goes on to Today, because that is where almost every test here does its work and it is
  * where registration used to land. Signing in now opens the WORKBENCH -- the shell's own page --
  * so the step that used to be implicit is explicit. `at` takes any path, and `'/'` stays put.
  *
@@ -90,11 +90,10 @@ export async function openProject(page: Page, name: string, exact = false): Prom
  *
  * The pane opens in READING mode (rows-and-reading spec §5): title, read-only status and dates and
  * the notes as prose, with not one control on screen that can change a value. Everything that can
- * be typed into lives behind 编辑. Every assertion about what a control WRITES is unchanged; only
- * the press that reveals the control is new.
+ * be typed into lives behind Edit.
  *
  * `exact` is not optional here: accessible names share one flat namespace and Playwright matches
- * them by substring, and the unsaved-edit guard's 继续编辑 contains 编辑.
+ * them by substring, and the unsaved-edit guard's "Keep editing" contains "Edit".
  */
 export async function editDetail(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Edit', exact: true }).click()
@@ -142,7 +141,7 @@ export function backdateCompletion(taskId: string, ago: string): void {
 }
 
 /**
- * Pushes a project's whole logged history back in time, so 做到哪儿了's stagnation line can be
+ * Pushes a project's whole logged history back in time, so Movement's stagnation line can be
  * tested without waiting a week. Like `backdateCompletion` this goes to the database the stack is
  * running on: the API (rightly) offers no way to write an event's timestamp, and a panel about
  * "how long has this been quiet" cannot be tested without history.

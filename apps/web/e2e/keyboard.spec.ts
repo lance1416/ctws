@@ -19,12 +19,7 @@ const tabStops = (page: Page) =>
       document.querySelectorAll('[data-task-tree] [data-handle-id]:not([tabindex="-1"])').length,
   )
 
-/**
- * The last tab stop before the tree on a project page. The 新任务 box and the 新建… button sit
- * side by side above the rows, so the control a Tab walk into the tree starts from is the button.
- */
-// The last tab stop before the tree. 新建… moved into the BLOCK HEADER, above the 新任务 box, so
-// the box is what sits immediately above the rows now.
+/** The last tab stop before the tree: the new-task box, which sits immediately above the rows. */
 const aboveTree = (page: Page) => page.getByRole('textbox', { name: 'New task' })
 
 const flat = (n: number): [string, null][] =>
@@ -57,7 +52,7 @@ test('the whole tree is one tab stop, however many rows it has', async ({ page }
   await page.keyboard.press('Shift+Tab')
   await expect(aboveTree(page)).toBeFocused()
 
-  // The block's own 新建… is a stop too, and it comes BEFORE the box: it lives in the block
+  // The block's own New… is a stop too, and it comes BEFORE the box: it lives in the block
   // header, so reading order puts it first. This is the shape the two create paths have now --
   // the full form in the head, the one-line box leading the rows -- rather than side by side.
   await page.getByRole('button', { name: 'New…', exact: true }).focus()

@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { makeProject, registerFreshUser, WEB } from './helpers'
 
 /**
- * 联系人 -- THE THIRD MODULE.
+ * CONTACTS -- THE THIRD MODULE.
  *
  * Two things are under test. The vCard claim: a person has SEVERAL ways to be reached, and they
  * are links rather than text to copy. And the seam claim: a third module registered without the
@@ -69,7 +69,7 @@ test('a person is made by typing a name, and finished in the pane', async ({ pag
   await page.keyboard.press('Enter')
   await expect(row(page, '李雷')).toContainText('lilei@acme.test')
 
-  // NOTHING WAS SAVED, because there is nothing to save: no 保存 button exists in this pane.
+  // NOTHING WAS SAVED, because there is nothing to save: this pane has no Save button.
   await expect(pane.getByRole('button', { name: 'Save' })).toHaveCount(0)
 })
 
@@ -142,7 +142,7 @@ test('the list is in pinyin order, not byte order', async ({ page }) => {
   for (const name of ['王五', '李四', '张三']) await add(page, { name })
   await page.reload()
 
-  // 李 is l, 王 is w, 张 is zh. By code point it would be 张(24352) 李(26446) 王(29579).
+  // Li is l, Wang is w, Zhang is zh. By code point the three sort 张(24352) 李(26446) 王(29579).
   // `toHaveText` with an array, not `allTextContents`: the latter does not wait, so it reads an
   // empty list while the first fetch is still in flight.
   await expect(page.getByRole('main').locator('li [data-contact-name]')).toHaveText([
@@ -241,9 +241,8 @@ test('leaving a field you did not change writes nothing', async ({ page }) => {
 })
 
 test('a person is written down properly in one form, not created then edited', async ({ page }) => {
-  // The complaint this answers: 「没有新建联系人的按钮，只有文本输入框……每次创建完了还要点开才
-  // 能编辑别的东西」. The one-line box stays for the moment a name is all you have; this is the
-  // other moment.
+  // A name alone is rarely all you know. The one-line box stays for the moment it is; this is
+  // the other moment, and it must not mean create-then-open-to-edit.
   await registerFreshUser(page, '/contacts')
   const hunt = await page.request.post('/api/v1/projects', {
     headers: WEB,
@@ -277,7 +276,7 @@ test('a person is written down properly in one form, not created then edited', a
 })
 
 test('the whole row opens the person, and the addresses stay links', async ({ page }) => {
-  // 「联系人的详细信息只有点到名字上才能打开：expand 到整个卡片」.
+  // The whole row is the target, not just the four characters of a name.
   await registerFreshUser(page, '/contacts')
   await add(page, { name: 'Ying Chen', org: 'Acme recruiting' })
   await page.reload()
@@ -288,7 +287,7 @@ test('the whole row opens the person, and the addresses stay links', async ({ pa
 })
 
 test('deleting a person is not a button like the others', async ({ page }) => {
-  // 「删除联系人，这么危险的一个东西，你跟别的所有按钮放一起，颜色还不做区分？」
+  // The one control here that cannot be undone must not sit among the others in the same grey.
   await registerFreshUser(page, '/contacts')
   await add(page, { name: 'Ying Chen' })
   await page.reload()

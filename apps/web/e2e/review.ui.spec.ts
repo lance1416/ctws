@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { registerFreshUser, WEB } from './helpers'
 
 /**
- * 回顾 -- the page that answers "how did the week go".
+ * REVIEW -- the page that answers "how did the week go".
  *
  * It did not answer it. The three numbers were nowhere on the page, so the only way to know how
  * much got done was to count rows; the date range was plain text with a lone "Last week" button

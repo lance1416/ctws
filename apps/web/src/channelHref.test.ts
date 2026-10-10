@@ -11,7 +11,7 @@ describe('channelHref', () => {
   })
 
   it('strips the spacing a person writes a phone number with', () => {
-    // A dialler takes digits; 「+86 138 0000 0000」 is how a human writes it.
+    // A dialler takes digits; "+86 138 0000 0000" is how a human writes it.
     expect(channelHref('phone', '+86 138 0000 0000')).toBe('tel:+8613800000000')
     expect(channelHref('phone', '010-1234-5678')).toBe('tel:01012345678')
   })

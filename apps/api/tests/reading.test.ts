@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { createProject, setupWith, type TaskCtx, web } from './helpers/tasks'
 
 /**
- * 待读清单 -- THE SECOND MODULE.
+ * THE READING LIST -- THE SECOND MODULE.
  *
  * Most of what is worth testing here is not the CRUD: it is the two claims the module is built
  * on. A link may have no title, because capturing one is pasting a url and nothing else. And the
@@ -42,7 +42,8 @@ async function list(ctx: TaskCtx, query = ''): Promise<ReadingItemResponse[]> {
 
 describe('reading list', () => {
   it('takes a bare url, and leaves the title empty rather than inventing one', async () => {
-    // 「粘链接先显示域名，标题自己填」. A server that filled the title in with the url would leave
+    // A pasted link is shown by its host until somebody types a title. A server that filled the
+    // title in with the url would leave
     // nobody able to tell a real title from a placeholder.
     const ctx = await setup()
     const item = await added(ctx, { kind: 'link', url: 'https://linear.app/now/redesign' })
@@ -77,7 +78,7 @@ describe('reading list', () => {
     expect((await list(ctx)).map((i) => i.title)).toEqual(['第二本', '第一本'])
   })
 
-  it('filters by status, repeatably, so 待读 and 在读 can be asked for together', async () => {
+  it('filters by status, repeatably, so to-read and reading can be asked for together', async () => {
     const ctx = await setup()
     const a = await added(ctx, { kind: 'book', title: '在读的' })
     const b = await added(ctx, { kind: 'book', title: 'Finished' })
@@ -117,7 +118,7 @@ describe('reading list', () => {
   })
 
   it('lists only what belongs to no project, for the workbench widget', async () => {
-    // 「散的」: the dashboard widget's whole contents. What is filed under a project is on that
+    // UNFILED: the workbench card's whole contents. What is filed under a project is on that
     // project's page, and a widget that repeated it would make two places to keep in your head.
     const ctx = await setup()
     const pid = await createProject(ctx, 'CTWS')

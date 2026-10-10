@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { createProject, setupWith, type TaskCtx, web } from './helpers/tasks'
 
 /**
- * 边表 -- what one table holding every relationship makes newly possible to get wrong.
+ * THE EDGE TABLE -- what one table holding every relationship makes possible to get wrong.
  *
  * Each module used to own a column or a join table of its own, so one kind of relationship could
  * not reach another's storage even by accident. They now share `links`, and a write that forgot

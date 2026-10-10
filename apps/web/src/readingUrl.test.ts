@@ -3,7 +3,7 @@ import { isReadingUrl } from './readingUrl'
 
 /**
  * THE CAPTURE ROUTING RULE. It decides where a typed line goes, so a wrong answer here sends work
- * to the wrong module -- and it is used in two places (capture and the 待读 input) that must
+ * to the wrong module -- and it is used in two places (capture and the reading input) that must
  * agree.
  */
 describe('isReadingUrl', () => {
@@ -14,7 +14,7 @@ describe('isReadingUrl', () => {
   })
 
   it('leaves a sentence that merely contains a url to the task module', () => {
-    // 「看看这篇 https://… 」 is a note ABOUT a link, which is a task. A rule that claimed it
+    // "read this https://…" is a note ABOUT a link, which is a task. A rule that claimed it
     // would quietly swallow sentences, and the only defence against a wrong guess is seeing
     // where the line went.
     expect(isReadingUrl('看看这篇 https://example.com')).toBe(false)

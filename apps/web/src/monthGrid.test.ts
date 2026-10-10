@@ -60,7 +60,7 @@ describe('monthSquares', () => {
   })
 
   it('starts on a Monday and shows the neighbours rather than blanks', () => {
-    // 2026-10-01 is a Thursday, so the grid opens on Monday 9月28.
+    // 2026-10-01 is a Thursday, so the grid opens on Monday Sep 28.
     const squares = monthSquares('2026-10-15')
     expect(squares[0]).toEqual({ day: '2026-09-28', inMonth: false })
     expect(squares[3]).toEqual({ day: '2026-10-01', inMonth: true })

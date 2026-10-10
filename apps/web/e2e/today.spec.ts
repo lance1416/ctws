@@ -18,7 +18,7 @@ async function captureAndOpen(page: Page, title: string) {
 
 test('a freshly registered user sees an empty today page, not an error', async ({ page }) => {
   await registerFreshUser(page)
-  // `level: 1` because 今天完成的 is a heading on this page too, and getByRole matches names by
+  // `level: 1` because "Done today" is a heading on this page too, and getByRole matches names by
   // substring: without it this would be ambiguous the moment anything is finished today.
   await expect(page.getByRole('heading', { level: 1, name: 'Today' })).toBeVisible()
   await expect(page.getByText('Nothing for today')).toBeVisible()
@@ -34,7 +34,7 @@ test('scheduling a task through the detail panel puts it on the today page', asy
   await page.getByRole('button', { name: 'Save' }).click()
 
   await page.getByRole('link', { name: 'Today' }).click()
-  // `exact` because 今天完成的 is also a region whose name contains 今天.
+  // `exact` because "Done today" is also a region whose name contains "Today".
   const section = page.getByRole('region', { name: 'Today', exact: true })
   await expect(section.getByText('改简历')).toBeVisible()
   // The breadcrumb says where it lives, so the list is usable without opening anything.
@@ -43,7 +43,7 @@ test('scheduling a task through the detail panel puts it on the today page', asy
   await expect(page.getByText('Nothing for today')).toHaveCount(0)
 })
 
-test('an in-progress task appears under 正在做', async ({ page }) => {
+test('an in-progress task appears in the banner', async ({ page }) => {
   await registerFreshUser(page)
   await captureAndOpen(page, '写 M2b')
   await setDetailStatus(page, 'In progress')
@@ -62,8 +62,8 @@ test('a task that is both overdue and in progress is shown once', async ({ page 
   await page.getByLabel('Due', { exact: true }).fill('2020-01-01T00:00')
   await page.getByRole('button', { name: 'Save' }).click()
   // Wait for the save to land before navigating, the way the saves above this one do. Without it
-  // the test races its own PATCH: it went red roughly once in sixty runs, with 逾期 simply absent.
-  // The pane returns to reading rather than closing now, so 编辑 coming back is the signal.
+  // the test races its own PATCH, which leaves Overdue simply absent. The pane returns to
+  // reading rather than closing, so Edit coming back is the signal.
   await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
 
   await page.getByRole('link', { name: 'Today' }).click()
@@ -114,14 +114,14 @@ test('each segment goes to its own panel, in the workbench order, and to only on
   await page.getByLabel('Due', { exact: true }).fill('2020-01-01T00:00')
   await page.getByRole('button', { name: 'Save' }).click()
   // Wait for the save to land before navigating, the way the saves above this one do. Without it
-  // the test races its own PATCH: it went red roughly once in sixty runs, with 逾期 simply absent.
-  // The pane returns to reading rather than closing now, so 编辑 coming back is the signal.
+  // the test races its own PATCH, which leaves Overdue simply absent. The pane returns to
+  // reading rather than closing, so Edit coming back is the signal.
   await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
 
   await page.getByRole('link', { name: 'Today' }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'Today' })).toBeVisible()
-  // 做到哪儿了 is in this list too: the set is the WORKBENCH's panels, not the segment list.
-  // 今天完成的 is absent because nothing was finished -- a panel with nothing to say is not drawn.
+  // Movement is in this list too: the set is the PAGE's panels, not the segment list. "Done
+  // today" is absent because nothing was finished -- a panel with nothing to say is not drawn.
   expect(
     await page.locator('[data-panel]').evaluateAll((els) => els.map((el) => el.dataset.panel)),
   ).toEqual(['Working on', 'Today', 'Overdue', 'Movement'])
@@ -151,7 +151,7 @@ test('an edit made from the today page is reflected without a reload', async ({ 
   await setDetailStatus(page, 'Done')
   await page.getByRole('button', { name: 'Save' }).click()
 
-  // It left 正在做 -- and it turned up in 今天完成的 without a reload, which is the other half of
+  // It left the banner -- and it turned up under "Done today" without a reload, which is the other half of
   // the same claim now that the workbench has a panel for finished work. (A bare "the text is
   // gone from the page" would now be false, and would have been hiding this.)
   await expect(
@@ -212,7 +212,7 @@ test('an overdue task shows a relative label, not the datetime-local format', as
 
   await page.getByRole('link', { name: 'Today' }).click()
   const section = page.getByRole('region', { name: 'Overdue' })
-  // 逾期 is a summary surface: the project and how late. The deadline's own day and time are not
+  // Overdue is a summary surface: the project and how late. The deadline's own day and time are not
   // on this line (the main queue and the detail pane carry them, and the lateness phrase keeps
   // them as its tooltip, below).
   await expect(section.locator('[data-row-meta]')).toHaveText(/^.+·\d+ days? late$/)

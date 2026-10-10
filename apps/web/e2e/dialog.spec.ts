@@ -3,7 +3,7 @@ import { makeProject, makeTask, pickOne, registerFreshUser } from './helpers'
 import { dayOffset, ymd } from './days'
 
 /**
- * 「新建”浮层 and the one overlay migrated onto Radix (radix-and-create spec §3 and §2).
+ * THE NEW-TASK LAYER, and the overlays that sit on Radix (radix-and-create spec §3 and §2).
  *
  * The point of the migration half is that NOTHING the user can observe changed, so the five
  * behaviours `ShortcutHelp` had before are asserted here item by item -- including the one nothing
@@ -49,7 +49,7 @@ async function seed(page: Page, name = 'P'): Promise<{ pid: string; rootId: stri
   return { pid, rootId }
 }
 
-test('创建 writes the title, project, parent, status, plan, deadline and notes in ONE request', async ({
+test('Create writes the title, project, parent, status, plan, deadline and notes in ONE request', async ({
   page,
 }) => {
   const { pid, rootId } = await seed(page)
@@ -158,9 +158,10 @@ test('Escape closes the dialog and hands focus back to whatever opened it', asyn
   await expect(dialog(page)).toHaveCount(0)
   await expect(handle).toBeFocused()
 
-  // 取消 is the same decision with a mouse.
+  // Cancel is the same decision with a mouse.
   await openButton(page).click()
-  // `exact`: accessible names are one flat namespace matched by substring, and 清除截止 is in
+  // `exact`: accessible names are one flat namespace matched by substring, and "Clear the
+  // deadline" is in
   // this very dialog.
   await dialog(page).getByRole('button', { name: 'Cancel', exact: true }).click()
   await expect(dialog(page)).toHaveCount(0)
@@ -189,7 +190,7 @@ test('`n` opens the dialog, obeys the off switch and is a letter while typing', 
 }) => {
   await seed(page)
 
-  // Clicks land on the 任务 block's heading rather than the page's <h1>: the project title is
+  // Clicks land on the Tasks block's heading rather than the page's <h1>: the project title is
   // an editable control now (D54), so clicking it opens a text field and the next keypress is
   // typing. A block heading is the neutral spot this needs.
   // Not while typing: `n` is a letter in the capture box.
@@ -215,13 +216,14 @@ test('`n` opens the dialog, obeys the off switch and is a letter while typing', 
   await expect(dialog(page)).toBeVisible()
 })
 
-test('the quick paths are untouched: the 新任务 box and / still behave exactly as before', async ({
+test('the quick paths are untouched: the new-task box and / behave as they did', async ({
   page,
 }) => {
   const { pid } = await seed(page)
 
-  // Enter in the 新任务 box still files the line and keeps the box focused and empty -- and does
-  // NOT open the dialog. 「敲一行回车即落” is a success criterion; 新建 is an addition to it.
+  // Enter in the new-task box still files the line and keeps the box focused and empty -- and
+  // does NOT open the dialog. One line and Enter is a success criterion; the dialog is an
+  // addition to it.
   const created = page.waitForResponse((r) => isCreate(r.request().method(), r.url()) && r.ok())
   await page.getByPlaceholder('New task').fill('一行就走')
   await page.getByPlaceholder('New task').press('Enter')
@@ -310,7 +312,7 @@ test('closing the ? list and pressing f leaves focus in the search box', async (
 test('the migrated ? overlay keeps all five of its behaviours', async ({ page }) => {
   await seed(page)
 
-  // 1. `?` opens it. It is pressed from the 新任务 box's NEIGHBOUR -- a focusable control that
+  // 1. `?` opens it. It is pressed from the new-task box's NEIGHBOUR -- a focusable control that
   // is not a text field -- so that "focus goes back to what opened it" below has something to go
   // back to. (A heading is not focusable, and the page's <h1> is a rename control now.)
   await page.getByRole('button', { name: 'New…', exact: true }).focus()

@@ -7,7 +7,7 @@ import { linksKey } from '../api/links'
 import { Links } from './Links'
 
 /**
- * 牵着的东西 -- the panel that reads an edge from the OTHER end.
+ * LINKED -- the panel that reads an edge from the OTHER end.
  *
  * What is worth testing here is not that a list renders: it is that the shell routes a row it
  * knows nothing about. The panel is handed a type and an id by the server and has to turn that
@@ -83,7 +83,8 @@ describe('what one thing is connected to', () => {
 
   it("shows the edge's own word, read from this end", () => {
     const html = render(of, groups)
-    // 「参加过」 is the INVERSE: the row stored says 「这个会 参与 陈颖」, and this is the person.
+    // "attended" is the INVERSE: the stored row says the MEETING has this person, and this is
+    // the person's end of it.
     expect(html).toContain('attended')
     // `belongs` carries no word of its own: the group is already called Projects, and a row
     // reading "Projects / Job hunt / in" would say the same thing twice.

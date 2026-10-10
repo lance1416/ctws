@@ -184,7 +184,7 @@ describe('searchTaskResponse', () => {
 
   it('requires the archived flag rather than defaulting it', () => {
     // A default of false would make every archived result claim to be live work, and nothing
-    // would fail -- the client would simply stop saying 已归档.
+    // would fail -- the client would simply stop saying a project is archived.
     const { success } = searchTaskResponse.safeParse({
       ...base,
       projectName: 'Alpha',

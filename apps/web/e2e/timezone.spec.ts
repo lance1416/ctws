@@ -10,8 +10,8 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
  * Every other spec registers its user from a browser running in the test process's own zone, so
  * `users.timezone` always equals `TZ` and the whole suite is blind to the bug class that actually
  * bit this project three times: the server deciding which day it is in one zone while the page
- * says a day worked out in another. A reader was once shown a task filed under 逾期 whose own row
- * read 「明天截止”, and that shipped.
+ * says a day worked out in another: a reader on another machine shown a task the server has
+ * filed as overdue whose own row says it is due tomorrow.
  *
  * Nothing new was built to close this. Playwright contexts take a `timezoneId`, the login form
  * already registers with `Intl.DateTimeFormat().resolvedOptions().timeZone`, and `test.use` sets

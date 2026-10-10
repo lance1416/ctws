@@ -10,7 +10,7 @@ describe('readingLabel', () => {
   })
 
   it('falls back to the host, which is the part a person recognises', () => {
-    // 「粘链接先显示域名」: the url itself is unreadable at row width.
+    // A pasted link shows its HOST: the url itself is unreadable at row width.
     expect(readingLabel({ title: null, url: 'https://www.linear.app/now/a/b?c=1' })).toBe(
       'linear.app',
     )

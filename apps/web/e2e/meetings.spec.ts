@@ -5,7 +5,7 @@ import { registerFreshUser, WEB } from './helpers'
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 /**
- * 会议 -- the fourth module, through the browser.
+ * MEETINGS -- the fourth module, through the browser.
  *
  * The API suite has the recurrence and zone arithmetic. What only a browser can show is the part
  * the feature exists for: a series agreed in Toronto showing on YOUR clock, saying so, and moving
@@ -81,7 +81,7 @@ test('a repeating meeting asks which occurrences a move touches', async ({ page 
   await pane(page).getByLabel('Start').fill('2026-10-27T15:00')
   // Clicking elsewhere, not Tab: a `datetime-local` has internal segments and Tab moves BETWEEN
   // THEM, so the field never blurs and nothing is committed. Leaving it is what commits it; there
-  // is no 保存 anywhere in this pane.
+  // is no Save anywhere in this pane.
   await pane(page).getByText('Length').click()
   // The question is the data model surfacing, not a dialog invented for the occasion.
   await expect(page.getByRole('alertdialog', { name: 'This meeting repeats' })).toBeVisible()

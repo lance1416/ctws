@@ -147,7 +147,7 @@ describe('exceptions', () => {
   })
 
   it('finds an occurrence that was MOVED INTO the window from well outside it', () => {
-    // 「这周的会推到下周一」. The rule produces nothing anywhere near this window, so walking the
+    // This week's meeting moved to next Monday. The rule produces nothing anywhere near this window, so walking the
     // rule alone -- even with the slack the zone conversion needs -- would miss it, and the
     // meeting would simply not be on the day it was moved to.
     const got = occurrencesIn(

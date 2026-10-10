@@ -116,7 +116,7 @@ test('the left rail shows each project the open-task count the server reports', 
     }
   }
 
-  // The 今天 destination carries its own count, from the same server list the page renders.
+  // The Today destination carries its own count, from the same server list the page renders.
   await makeTask(page, busy, '今天要做的', { scheduledOn: new Date().toLocaleDateString('en-CA') })
   await page.reload()
   await expect(rail(page).getByRole('link', { name: 'Today' }).locator('[data-count]')).toHaveText(
@@ -132,7 +132,7 @@ test('nothing scrolls sideways at 375px', async ({ page }) => {
   const pid = await makeProject(page, '一个名字相当长的项目用来挤宽度')
   await makeTask(page, pid, '一条标题也很长的任务，用来看它会不会把这一行撑出屏幕之外去')
   await makeTask(page, pid, '逾期的那条', { dueAt: '2020-01-01T09:00:00.000Z' })
-  // LONG, and in progress: the 正在做 banner sets its subject at the scale's top step (36/44), so a
+  // LONG, and in progress: the banner sets its subject at the scale's top step (36/44), so a
   // five-character title there fits 375 whatever the banner does with overflow and proves nothing.
   // Measured: with a short title this test passes even when the subject is told never to wrap.
   await makeTask(page, pid, '在做的那条，标题长到足以把三十六像素的横幅主语挤出一部手机的宽度去', {
@@ -192,8 +192,8 @@ test('the detail pane does not trap the keyboard at 1280 and up', async ({ page 
   // And the pane is still open -- leaving it with Tab is not dismissing it.
   await expect(dialog).toBeVisible()
   // Escape, pressed from inside, still closes it and hands focus back to the row.
-  // Pressed from inside the pane. In reading mode the control to press it on is 编辑 ('exact'
-  // because 继续编辑 contains it); what is pinned is that Escape from inside still closes.
+  // Pressed from inside the pane. In reading mode the control to press it on is Edit ('exact'
+  // because "Keep editing" contains it); what is pinned is that Escape from inside still closes.
   await dialog.getByRole('button', { name: 'Edit', exact: true }).press('Escape')
   await expect(dialog).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Task: 开着的任务', exact: true })).toBeFocused()

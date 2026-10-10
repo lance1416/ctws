@@ -66,8 +66,8 @@ describe('dateHints', () => {
     const { dateHints } = await load()
     // 2026-10-01 09:00 local is two calendar days before the 3rd.
     const due = new Date(2026, 9, 1, 9, 0).toISOString()
-    // Both halves. The previous edition said only 「已逾 2 天」 because the label had to fit an 8rem
-    // cell; the words are on a line of their own now (spec §2), and 「已逾 2 天」 alone cannot
+    // BOTH HALVES. "2 days late" alone is what fits an 8rem cell; the words are on a line of
+    // their own (spec §2), and the lateness on its own cannot
     // answer "due when?" -- which is the compression the user rejected.
     expect(dateHints(task({ dueAt: due }), TZ, NOW()).due).toEqual({
       text: 'Due Oct 1, 09:00',
@@ -91,7 +91,7 @@ describe('dateHints', () => {
     const due = new Date(2026, 9, 8, 9, 0).toISOString()
     expect(dateHints(task({ dueAt: due, scheduledOn: '2026-10-04' }), TZ, NOW())).toEqual({
       scheduled: 'Planned for tomorrow',
-      // "10月8日截止" was the old cell's wording: a day with no time is not complete to the
+      // A day with no time ("Due Oct 8") is not complete to the
       // minute, and §6 asks for the minute.
       due: { text: 'Due Oct 8, 09:00', late: null, overdue: false },
     })
@@ -249,7 +249,7 @@ describe('carriedLabel', () => {
  * What it would have caught: the previous `dateHints` read the day off `getFullYear()/getMonth()/
  * getDate()`, i.e. the BROWSER's zone, and took no timezone argument at all -- `TaskRow` had none
  * to pass. At the instant below the browser's calendar has already turned over and New York's has
- * not, so the old code called this deadline 「昨天 10:00 截止 · 已逾 1 天」 while the server --
+ * not, so reading it in the browser's zone calls this deadline yesterday's, one day late, while the server --
  * which segments with `at time zone 'America/New_York'` -- had it as today's and not overdue. The
  * row and the heading it sat under contradicted each other.
  */
@@ -286,7 +286,7 @@ describe('the account timezone decides, even when the browser is in another one'
     // Not overdue, because the server does not think so either -- and this is the assertion the
     // old browser-zone implementation failed: it answered `true`.
     expect(hints.due!.overdue).toBe(serverSaysOverdue(DUE, NOW_CROSS))
-    // And the words are New York's day and New York's clock, not Kolkata's 「昨天 10:00」.
+    // And the words are New York's day and New York's clock, not Kolkata's.
     expect(hints.due).toEqual({ text: 'Due today, 00:30', late: null, overdue: false })
   })
 

@@ -31,7 +31,7 @@ describe('rollupPhrase', () => {
 
   it('drops a LONE 0%, which is what most parents in a fresh tree would show', () => {
     // Every task starts on todo, so every parent has a number. Without this, half the rows in
-    // any tree grow a second line to say 「0%」 -- which the children listed under them already
+    // any tree grow a second line to say "0%" -- which the children listed under them already
     // say, in more detail.
     expect(rollupPhrase(roll({ progress: 0 }))).toBeNull()
   })

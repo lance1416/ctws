@@ -234,7 +234,7 @@ describe('the two deadline flags, decided in the account timezone', () => {
   it('does not call a deadline that passed EARLIER TODAY overdue', async () => {
     // THE CUT IS THE START OF TODAY, not `now()`. A deadline at 09:00 that it is now 14:00 past
     // has not "gone" in the sense this app means -- the day it was due is the day in progress,
-    // and the 逾期 panel would otherwise fill up with things the person is still working on.
+    // and the Overdue panel would otherwise fill up with things the person is still working on.
     const ctx = await setup(TZ)
     const pid = await createProject(ctx, 'P')
     const id = await createTask(ctx, pid, '今天早些时候到期')
@@ -251,7 +251,7 @@ describe('the two deadline flags, decided in the account timezone', () => {
   })
 
   it('agrees with the today view about which tasks are overdue', async () => {
-    // The project banner and the 逾期 panel must not disagree about the same task, which is why
+    // The project banner and the Overdue panel must not disagree about the same task, which is why
     // both cut at the start of today in the account's zone rather than at `now()`.
     const ctx = await setup(TZ)
     const pid = await createProject(ctx, 'P')

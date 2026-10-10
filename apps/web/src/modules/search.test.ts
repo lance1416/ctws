@@ -43,7 +43,7 @@ describe('federate', () => {
   it('reports one provider failure as a failure instead of a short list', () => {
     const half = federate([tasks(['a']), notes([], { isError: true, isSuccess: false })])
     expect(half.isError).toBe(true)
-    // Not success: a half-answered search must never render 没有匹配的任务.
+    // Not success: a half-answered search must never render "Nothing matches".
     expect(half.isSuccess).toBe(false)
     expect(half.rows).toHaveLength(1)
   })

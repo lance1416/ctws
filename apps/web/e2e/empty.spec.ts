@@ -3,7 +3,7 @@ import { makeProject, makeTask, registerFreshUser } from './helpers'
 
 /**
  * The empty states (redesign stage 3). Four screens that used to say nothing, or a single grey
- * line: 今天 with nothing on it, a project with no tasks, 已完成 with no history, a search with
+ * line: Today with nothing on it, a project with no tasks, Done with no history, a search with
  * no match. Each now says what the screen is for and offers the one action that fills it.
  *
  * The trap these guards are written against: an empty-state test that passes with data present
@@ -15,14 +15,14 @@ import { makeProject, makeTask, registerFreshUser } from './helpers'
 const ymd = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
-test('an empty 今天 is one line, and goes when there is something on it', async ({ page }) => {
+test('an empty Today is one line, and goes when there is something on it', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
 
   await expect(page.getByText('Nothing for today')).toBeVisible()
   // ONE LINE AND NO BUTTON. The second line used to explain what the page was for and a button
   // offered to go and find something -- a manual and a filler CTA, on the screen of the one
-  // person who built it. An empty 今天 has no single obvious next step.
+  // person who built it. An empty Today has no single obvious next step.
   await expect(page.getByRole('link', { name: '去挑一件来做' })).toHaveCount(0)
   await expect(page.getByText('都会落到这一页')).toHaveCount(0)
 
@@ -61,13 +61,13 @@ test('an empty project says what the tree is for and puts the cursor in the inpu
   await expect(page.getByRole('button', { name: 'Add the first task' })).toHaveCount(0)
 })
 
-test('an empty 已完成 is one line too', async ({ page }) => {
+test('an empty Done is one line too', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   await page.goto('/completed')
 
   await expect(page.getByText('Nothing finished yet')).toBeVisible()
-  // 「Back to this month” was a link back to a destination that is in the rail on the same screen.
+  // A "back to this month" link would point at a destination the rail already carries.
   await expect(page.getByRole('link', { name: 'Back to this month' })).toHaveCount(0)
 
   await makeTask(page, pid, '做完的事', { status: 'done' })

@@ -6,13 +6,9 @@ import { dayAfter, dayOffset, nextMondayYmd, ymd } from './days'
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 /**
- * The detail pane (redesign stage 3).
- *
- * The pane used to be a stack of labelled native form controls: a <select> of words for status,
- * two bare date inputs, 保存 / 关闭 and a 删除任务 of the same rank. It now speaks the row
- * system's own vocabulary -- the five marker shapes, the plan and deadline glyphs, the same named
- * decisions the row's triage control offers -- and keeps an exact field for the days those do not
- * cover.
+ * THE DETAIL PANE, in the row system's own vocabulary: the five marker shapes, the plan and
+ * deadline glyphs, and the same named decisions the row's triage control offers, with an exact
+ * field for the days those do not cover. Not a stack of labelled native controls.
  *
  * What these guards are for:
  * - A control that LOOKS right and writes nothing, or writes something else, is the exact failure
@@ -20,7 +16,7 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
  *   values the controls they replace used to send, and then against a fresh read of the server.
  * - "status is told by shape" and "a plan never looks like a deadline" are claims about drawn
  *   ink, so they are measured, not read off a class name.
- * - "a destructive action is not a peer of 保存" is a claim about rank, so it is measured too.
+ * - "a destructive action is not a peer of Save" is a claim about rank, so it is measured too.
  */
 
 type ServerTask = {
@@ -41,7 +37,7 @@ async function serverTask(page: Page, projectId: string, id: string): Promise<Se
 const isPatch = (r: { url: () => string; request: () => { method: () => string } }) =>
   /\/tasks\/[^/]+$/.test(r.url()) && r.request().method() === 'PATCH'
 
-/** Presses 保存 and returns the PATCH the press produced, so the BODY can be asserted. */
+/** Presses Save and returns the PATCH the press produced, so the BODY can be asserted. */
 /** The calendar day after `day`, as a plain date string. */
 
 async function saveBody(page: Page): Promise<Record<string, unknown>> {
@@ -52,7 +48,7 @@ async function saveBody(page: Page): Promise<Record<string, unknown>> {
 }
 
 /**
- * Opens a task's pane. `edit` presses 编辑, because since rows-and-reading §5 the pane opens in
+ * Opens a task's pane. `edit` presses Edit, because under rows-and-reading §5 the pane opens in
  * READING mode and the controls these tests are about exist only in editing mode. What each control
  * WRITES is asserted exactly as before, on the request body.
  */
@@ -71,7 +67,7 @@ test('the status markers write exactly what the status dropdown wrote', async ({
   const id = await makeTask(page, pid, '写方案')
   await openPane(page, pid, '写方案')
 
-  // The task starts at 待办, and the group says so without anything being opened -- which is
+  // The task starts at To do, and the group says so without anything being opened -- which is
   // the whole complaint about the <select> it replaces.
   await expect(page.getByRole('radio', { name: 'To do', exact: true })).toBeChecked()
   for (const name of ['Backlog', 'In progress', 'Done', 'Cancelled']) {
@@ -104,7 +100,7 @@ test('the five statuses are one tab stop and the arrow keys move inside it', asy
   await expect(page.getByRole('radio', { name: 'To do', exact: true })).toBeFocused()
 
   // The group is in the status model's own order (backlog, todo, in_progress, done, cancelled),
-  // so one step right of 待办 is 进行中; arrowing also CHECKS, which is the native contract.
+  // so one step right of To do is In progress; arrowing also CHECKS, which is the native contract.
   await page.keyboard.press('ArrowRight')
   await expect(page.getByRole('radio', { name: 'In progress', exact: true })).toBeFocused()
   await expect(page.getByRole('radio', { name: 'In progress', exact: true })).toBeChecked()
@@ -136,12 +132,12 @@ test('the named deadline decisions write the day the row would show', async ({ p
   expect(ymd(new Date(body.dueAt as string))).toBe(dayOffset(1))
   expect(ymd(new Date((await serverTask(page, pid, id)).dueAt!))).toBe(dayOffset(1))
 
-  // 下周 is the same Monday the row's triage control means.
+  // "Next week" is the same Monday the row's triage control means.
   await openPane(page, pid, '交报告')
   await page.getByRole('button', { name: 'Due next week', exact: true }).click()
   expect(ymd(new Date((await saveBody(page)).dueAt as string))).toBe(nextMondayYmd())
 
-  // Moving the day keeps the time of day, exactly as 推迟到明天 does on the row. The time is set
+  // Moving the day keeps the time of day, exactly as pushing a deadline does on the row. The time is set
   // through the exact field first, and to something that is NOT the default a new deadline gets:
   // with 23:59 on both sides this assertion would hold however the day was moved.
   await openPane(page, pid, '交报告')
@@ -179,7 +175,7 @@ test('the named plan decisions write the same scheduledOn the exact field writes
   await openPane(page, pid, '改简历')
   await expect(page.getByLabel('Plan', { exact: true })).toHaveValue(dayOffset(1))
   // THE DAY AFTER NEXT MONDAY, not a fixed offset. `dayOffset(4)` is next Monday whenever this
-  // runs on a Thursday, and then 排到下周 below writes the value already stored -- the form is
+  // runs on a Thursday, and then "next week" below writes the value already stored -- the form is
   // not dirty, no request is sent, and the test hangs waiting for one. It did, on a Thursday.
   const afterNextMonday = dayAfter(nextMondayYmd())
   await page.getByLabel('Plan', { exact: true }).fill(afterNextMonday)
@@ -197,7 +193,7 @@ test('the named plan decisions write the same scheduledOn the exact field writes
   expect((await serverTask(page, pid, id)).scheduledOn).toBeNull()
 })
 
-test('both dates change in one request, and nothing is saved until 保存 is pressed', async ({
+test('both dates change in one request, and nothing is saved until Save is pressed', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -322,7 +318,7 @@ test('the status chip wears the app’s focus ring when the keyboard reaches it'
 
 // -------------------------------------------------------------------------- rank and the task
 
-test('the pane opens with the task, and 删除任务 is not a peer of 保存', async ({ page }) => {
+test('the pane opens with the task, and Delete is not a peer of Save', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'Workbench')
   await makeTask(page, pid, '这条任务的标题')
@@ -349,7 +345,7 @@ test('the pane opens with the task, and 删除任务 is not a peer of 保存', a
   const del = dialog.getByRole('button', { name: 'Delete task' })
   const saveBox = (await save.boundingBox())!
   const delBox = (await del.boundingBox())!
-  // Below, not beside: nothing on the way to 保存 passes over the control that destroys the task.
+  // Below, not beside: nothing on the way to Save passes over the control that destroys the task.
   expect(delBox.y, '删除任务 is below the save row').toBeGreaterThanOrEqual(
     saveBox.y + saveBox.height,
   )
@@ -366,22 +362,22 @@ test('the pane opens with the task, and 删除任务 is not a peer of 保存', a
 // ------------------------------------------------------ reading mode and editing mode (spec §5)
 
 /**
- * The complaint this answers is 「编辑和信息显示在同一个地方，容易误触” plus 「想要的信息在二层菜单”.
+ * TWO CLAIMS AT ONCE: everything about the task is on the first screen, and nothing on that
+ * screen can change it by mistake.
  *
- * It was later narrowed (D78): the mis-click surface is a LIVE FORM, not every control. What the
- * pane must not do at rest is sit there with a title field, five status radios and two date
- * inputs one elbow away; a value you have to open a menu to change is deliberate, and making it
- * cost 编辑-改-保存 turned one decision into a procedure. So the count below is over form controls
- * -- fields -- and the status picker is asserted separately, by its own test, as working without
- * any of them.
+ * The mis-click surface is a LIVE FORM, not every control (D78). What the pane must not do at rest
+ * is sit there with a title field, five status radios and two date inputs one elbow away; a value
+ * you have to open a menu to change is deliberate, while edit-change-save turns one decision into
+ * a procedure. So the count below is over form controls -- fields -- and the status picker is
+ * asserted separately, by its own test, as working without any of them.
  *
  * "There is no field" is NOT provable by asserting that some particular one is absent: a pane that
  * hid the title input while leaving the five status radios live would pass that and keep the whole
  * mis-click surface. So the assertion is over EVERY form control in the dialog, counted, and it is
- * paired with the other half -- that 编辑 brings them all back -- because a pane that never shows a
- * control passes the first half on its own.
+ * paired with the other half -- that Edit brings them all back -- because a pane that never shows
+ * a control passes the first half on its own.
  */
-test('the pane opens in reading mode with no field, and 编辑 reveals them', async ({ page }) => {
+test('the pane opens in reading mode with no field, and Edit reveals them', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '只读')
   const id = await makeTask(page, pid, '读一下这条任务', {
@@ -406,7 +402,7 @@ test('the pane opens in reading mode with no field, and 编辑 reveals them', as
     await expect(dialog.getByRole(role), role).toHaveCount(0)
   // Destroying the task is not something to land on while reading either.
   await expect(dialog.getByRole('button', { name: 'Delete task' })).toHaveCount(0)
-  // And the information is all there -- which is the half 「想要的信息在二层菜单” is about.
+  // And the information is all there, which is the other half: nothing is behind a second menu.
   await expect(dialog.locator('[data-detail-title]')).toHaveText('读一下这条任务')
   await expect(dialog).toContainText('In progress')
   await expect(dialog).toContainText('只读')
@@ -415,7 +411,7 @@ test('the pane opens in reading mode with no field, and 编辑 reveals them', as
   await expect(dialog.getByText(/^\d{4}-\d{2}-\d{2}/)).toHaveCount(0)
   await expect(dialog).toContainText('Tomorrow')
 
-  // 编辑 brings every one of them back.
+  // Edit brings every one of them back.
   await editDetail(page)
   await expect(dialog.getByRole('textbox', { name: 'Title' })).toHaveValue('读一下这条任务')
   await expect(dialog.getByRole('radio', { name: 'In progress', exact: true })).toBeChecked()
@@ -431,14 +427,14 @@ test('the pane opens in reading mode with no field, and 编辑 reveals them', as
   expect((await serverTask(page, pid, id)).status).toBe('in_progress')
 })
 
-test('编辑 hands focus to the first field rather than dropping it on the body', async ({
+test('Edit hands focus to the first field rather than dropping it on the body', async ({
   page,
 }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '按下编辑')
   await openPane(page, pid, '按下编辑', false)
-  // The 编辑 button unmounts as it is pressed; focus must not fall to <body> (WCAG 2.4.3).
+  // The Edit button unmounts as it is pressed; focus must not fall to <body> (WCAG 2.4.3).
   await page.getByRole('button', { name: 'Edit', exact: true }).click()
   await expect(page.getByRole('textbox', { name: 'Title' })).toBeFocused()
 })
@@ -446,12 +442,11 @@ test('编辑 hands focus to the first field rather than dropping it on the body'
 /**
  * THE STATUS IS CHANGED WITHOUT ENTERING THE FORM (D78).
  *
- * 「编辑 item 状态不应该点进编辑，这个编辑-改-保存的流程太繁琐了。” One value out of five is a
- * decision, not a composition: there is nothing for a 保存 to mean. What is asserted here is the
- * whole of that claim -- it writes, it writes ONCE, the form never opens, and nothing is left
- * unsaved behind it.
+ * One value out of five is a decision, not a composition: there is nothing for a Save to mean,
+ * and edit-change-save is a procedure imposed on one press. What is asserted here is the whole of
+ * that claim -- it writes, it writes ONCE, the form never opens, and nothing is left unsaved.
  */
-test('the status is changed from reading mode, in one act and with no 保存', async ({ page }) => {
+test('the status is changed from reading mode, in one act and with no Save', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'Status')
   const id = await makeTask(page, pid, '改我的状态')

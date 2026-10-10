@@ -6,7 +6,7 @@ import { createProject, createTask, setupWith, type TaskCtx, web } from './helpe
 /**
  * THE CALENDAR'S TWO SUPPLIERS.
  *
- * The shell draws a grid and knows nothing about what a 截止 is. Each module answers for its own
+ * The shell draws a grid and knows nothing about what a deadline is. Each module answers for its own
  * dated things, and the DAY each one falls on is decided here, in the account's zone -- a client
  * that turned an instant into a day would put a 23:00 deadline on the wrong square for half the
  * world, silently and only for some users.
@@ -34,7 +34,7 @@ const patchTask = (ctx: TaskCtx, id: string, payload: Record<string, unknown>) =
 
 describe('the task calendar', () => {
   it('puts a plan and a deadline on their own squares, from one task', async () => {
-    // A task can be both: 「这天做」 and 「这天前交」 are different facts, and a grid that showed
+    // A task can be both: the day to work on it and the day it is due are different facts, and a grid that showed
     // only one of them would quietly drop the other.
     const ctx = await setup()
     const pid = await createProject(ctx, 'CTWS')
@@ -123,7 +123,7 @@ describe('the reading calendar', () => {
       payload: { planOn },
     })
 
-  it('answers for 想读完, which is the second module the grid is built on', async () => {
+  it('answers for a finish-by date, which is the second module the grid is built on', async () => {
     const ctx = await setup()
     const id = await add(ctx, { kind: 'book', title: '设计心理学' })
     expect((await plan(ctx, id, '2026-10-07')).statusCode).toBe(200)

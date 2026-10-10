@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { registerFreshUser, WEB } from './helpers'
 
 /**
- * 待读清单 -- THE SECOND MODULE, through the browser.
+ * THE READING LIST -- THE SECOND MODULE, through the browser.
  *
  * What is under test here is mostly not the list: it is the SEAM. A second module contributed a
  * rail row, a chord, a search provider, a project block and a capture rule, and the shell was not
@@ -25,7 +25,7 @@ async function captureLine(page: Page, line: string) {
   return posted
 }
 
-test('a pasted link goes to 待读; a sentence still goes to the inbox', async ({ page }) => {
+test('a pasted link goes to Reading; a sentence still goes to the inbox', async ({ page }) => {
   // THE WHOLE POINT OF THE SECOND MODULE'S CAPTURE RULE, and the one thing that could not be
   // tested while only one module could take a line.
   await registerFreshUser(page)
@@ -47,7 +47,7 @@ test('an untitled link is listed by its host, and can be given a name', async ({
   })
   await page.goto('/reading')
 
-  // 「粘链接先显示域名” -- never the raw url, which is unreadable at row width.
+  // A pasted link shows its HOST -- never the raw url, which is unreadable at row width.
   const row = rowOf(page, 'linear.app')
   await expect(row.getByRole('link')).toHaveText('linear.app')
   await expect(row.getByRole('link')).toHaveAttribute(
@@ -69,7 +69,9 @@ test('an untitled link is listed by its host, and can be given a name', async ({
   await expect(rowOf(page, 'Linear 怎么重做 issue')).toBeVisible()
 })
 
-test('a book moves 待读 → 在读 → 读完, and the finished pile folds away', async ({ page }) => {
+test('a book moves to read → reading → finished, and the finished pile folds away', async ({
+  page,
+}) => {
   await registerFreshUser(page)
   await page.request.post('/api/v1/reading', {
     headers: WEB,
@@ -112,7 +114,7 @@ test('the rail counts what is waiting, not the size of the pile', async ({ page 
   await expect(rail.locator('[data-count]')).toHaveText('1')
 })
 
-test('g l goes to 待读, in one keyspace with the task module', async ({ page }) => {
+test('g l goes to Reading, in one keyspace with the task module', async ({ page }) => {
   await registerFreshUser(page)
   // No goto: a fresh navigation leaves focus where the document-level keys do not see it, and
   // this is about the chord, not about where focus lands after a page load.
@@ -125,7 +127,7 @@ test('g l goes to 待读, in one keyspace with the task module', async ({ page }
 
 test('search reaches both modules from one box', async ({ page }) => {
   // The shell merges the providers; neither module knows the other is there. The dialog is named
-  // “Search” and not 「搜索任务” for the same reason.
+  // “Search” and not “Search tasks” for the same reason.
   await registerFreshUser(page)
   const projects = await (await page.request.get('/api/v1/projects', { headers: WEB })).json()
   const inbox = projects.projects.find((p: { isInbox: boolean }) => p.isInbox)

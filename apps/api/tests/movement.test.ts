@@ -4,7 +4,7 @@ import { listProjectMovement } from '../src/tasks/movement'
 import { appWithUser, createProject, createTask, type TaskCtx } from './helpers/tasks'
 
 /**
- * 做到哪儿了's server half: per-project counts and movement, in one query, through the tenant
+ * MOVEMENT's server half: per-project counts and movement, in one query, through the tenant
  * chokepoint.
  *
  * The numbers here are the only ones on the workbench that no other endpoint already reports, so
@@ -117,7 +117,7 @@ describe('GET /tasks/movement', () => {
     expect(rowFor(rows, many).remaining).toBe(3)
   })
 
-  it('leaves finished, cancelled and deleted tasks out of 还剩', async () => {
+  it('leaves finished, cancelled and deleted tasks out of what is open', async () => {
     const pid = await createProject(ctx, 'leftovers')
     const open = await createTask(ctx, pid, 'open')
     const done = await createTask(ctx, pid, 'done')
@@ -167,7 +167,7 @@ describe('GET /tasks/movement', () => {
     expect((await movement()).some((r) => r.projectId === pid)).toBe(false)
   })
 
-  it('counts 本周 from Monday IN THE USER’S TIMEZONE, not the server’s', async () => {
+  it('counts this week from Monday IN THE USER’S TIMEZONE, not the server’s', async () => {
     const pid = await createProject(ctx, 'week')
     // Sunday 2026-10-04 at 23:30 in Shanghai = 15:30 UTC. Monday 2026-10-05 at 00:30 there is
     // 16:30 UTC on the Sunday. Both are "last week" and "this week" respectively for a Shanghai
@@ -231,9 +231,9 @@ describe('GET /tasks/movement', () => {
     expect(rowFor(await movement(), pid).quietDays).toBe(0)
   })
 
-  // ------------------------------------------------------------------ 逾期, the banner's fourth number
+  // ------------------------------------------------------------- overdue, the banner's fourth number
 
-  it('counts 逾期 PER PROJECT, not across the workspace', async () => {
+  it('counts what is overdue PER PROJECT, not across the workspace', async () => {
     const one = await createProject(ctx, 'one late')
     const three = await createProject(ctx, 'three late')
     await dueAt(await createTask(ctx, one, 'o1'), '2020-01-01T09:00:00Z')
@@ -243,14 +243,14 @@ describe('GET /tasks/movement', () => {
     await createTask(ctx, three, 'no deadline')
 
     const rows = await movement()
-    // Two DIFFERENT non-zero numbers, for the same reason 还剩 asserts two: a subquery that
+    // Two DIFFERENT non-zero numbers, for the same reason the open count asserts two: a subquery that
     // correlated a task to itself reports 0 everywhere, and one that lost its project filter
     // reports the same workspace-wide total on every row. Only 1 and 3 rule out both.
     expect(rowFor(rows, one).overdue).toBe(1)
     expect(rowFor(rows, three).overdue).toBe(3)
   })
 
-  it('leaves finished, cancelled, deleted and not-yet-late tasks out of 逾期', async () => {
+  it('leaves finished, cancelled, deleted and not-yet-late tasks out of the overdue count', async () => {
     const pid = await createProject(ctx, 'late leftovers')
     await dueAt(await createTask(ctx, pid, 'really late'), '2020-01-01T09:00:00Z')
     // Finished and cancelled tasks with a deadline in the past: the deadline no longer matters.
@@ -289,9 +289,9 @@ describe('GET /tasks/movement', () => {
    * The same boundary `listToday` draws, in the SAME zone: a task is overdue when its deadline is
    * before midnight of the user's today. This fixture sits in the hour where the two zones
    * disagree, so a server computing the boundary in UTC gets it wrong for the Shanghai reader --
-   * and the project banner would then contradict the 逾期 panel on the very same task.
+   * and the project banner would then contradict the Overdue panel on the very same task.
    */
-  it('draws the 逾期 boundary at midnight IN THE USER’S TIMEZONE', async () => {
+  it('draws the overdue boundary at midnight IN THE USER’S TIMEZONE', async () => {
     const pid = await createProject(ctx, 'late by zone')
     // 2026-10-06 17:00Z is 2026-10-07 01:00 in Shanghai -- during the Shanghai reader's today,
     // so NOT overdue for them -- and still 2026-10-06 for a UTC reader, so overdue for them.
@@ -306,7 +306,7 @@ describe('GET /tasks/movement', () => {
   })
 
   /**
-   * The number on the project banner and the rows in the 逾期 panel are two different queries
+   * The number on the project banner and the rows in the Overdue panel are two different queries
    * answering one question. This asserts they agree, per project, rather than asserting each
    * against a constant -- which is the only way a drift between them would ever be noticed.
    */

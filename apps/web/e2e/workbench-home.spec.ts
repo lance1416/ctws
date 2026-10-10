@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { makeProject, registerFreshUser, WEB } from './helpers'
 
 /**
- * 工作台 -- THE SHELL'S OWN FRONT PAGE.
+ * THE WORKBENCH -- THE SHELL'S OWN FRONT PAGE.
  *
  * The claim under test is not that the page renders: it is that the page belongs to NOBODY, and
  * that its cards and the project pages do not show each other's rows. A workbench card that
@@ -21,7 +21,7 @@ test('signing in lands on the workbench, not inside a module', async ({ page }) 
   await expect(card(page, 'Projects')).toBeVisible()
 })
 
-test('the 待读 card holds only what belongs to no project', async ({ page }) => {
+test('the Reading card holds only what belongs to no project', async ({ page }) => {
   await registerFreshUser(page, '/')
   const pid = await makeProject(page, 'CTWS')
   await page.request.post('/api/v1/reading', {
@@ -61,7 +61,7 @@ test('an item whose project was deleted turns up on the card rather than nowhere
   await expect(card(page, 'Reading · unfiled')).toContainText('留下来的书')
 })
 
-test('the 正在做 card shows what is in progress, across projects', async ({ page }) => {
+test('the In progress card shows what is in progress, across projects', async ({ page }) => {
   await registerFreshUser(page, '/')
   const a = await makeProject(page, 'CTWS')
   const b = await makeProject(page, 'rrgen')

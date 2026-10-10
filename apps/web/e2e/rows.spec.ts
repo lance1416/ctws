@@ -53,11 +53,11 @@ async function xs(page: Page, selector: string): Promise<number[]> {
 /** Every x of a set of elements, rounded to the pixel: sub-pixel layout noise is not a column break. */
 
 /**
- * §6: 「行首图标在所有行上落在同一个 x”. On a flat list that is literally every row, whatever
+ * §6: EVERY ROW PUTS ITS LEADING ICON AT THE SAME x. On a flat list that is literally every row, whatever
  * its title length and whatever glyph it wears -- which is the whole point of a fixed slot, and the
  * claim the deleted date columns used to carry.
  */
-test('on 今天, every row puts its leading icon at the same x', async ({ page }) => {
+test('on Today, every row puts its leading icon at the same x', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   // Titles of wildly different lengths, and three different glyphs: a missed deadline, a deadline
@@ -75,12 +75,12 @@ test('on 今天, every row puts its leading icon at the same x', async ({ page }
   // The title starts at one x as well, so the eye lands in the same place on every line.
   const titles = await xs(page, '[aria-label="Overdue"] [data-today-row]')
   expect(new Set(titles).size, `title column x values: ${titles.join(',')}`).toBe(1)
-  // The icon is BEFORE the title, which is what "行首" means.
+  // The icon is BEFORE the title, which is what "leading" means.
   expect(icons[0]!).toBeLessThan(titles[0]!)
 })
 
 /**
- * 今天 is two lists in two columns of one page (the queue and 逾期), and a glyph at one x on each
+ * Today is two lists in two columns of one page (the queue and Overdue), and a glyph at one x on each
  * row of ITS OWN list is the claim -- the two panels are not one column. Three glyph kinds in one
  * list, because "one x" is easy to pass when every row wears the same icon.
  */
@@ -150,7 +150,8 @@ test('in the project tree the icon slot moves with depth and with nothing else',
 // ------------------------------------------------- the slot collapses, per WHOLE LIST (§2, §6)
 
 /**
- * §6: 「整表无图标时图标槽不占位”. Measured against a list that DOES have the slot, not merely
+ * §6: A LIST WHERE NO ROW HAS AN ICON SPENDS NOTHING ON THE SLOT. Measured against a list that
+ * DOES have the slot, not merely
  * counted: a reserved-but-empty box is invisible to a glyph count while taking 1.5rem off every
  * title in the list.
  */
@@ -230,11 +231,13 @@ test('one dated row gives EVERY row in the list its slot, glyph or not', async (
 })
 
 /**
- * 今天 is two lists in two columns of one page, so the rule is per list there too: a queue of
+ * Today is two lists in two columns of one page, so the rule is per list there too: a queue of
  * tasks planned for today carries no glyph at all (that is the ordinary case for that panel -- a
- * plan for today under a heading that says 今天 is not news), while 逾期 next to it does.
+ * plan for today under a heading saying Today is not news), while Overdue next to it does.
  */
-test('on 今天 the queue and 逾期 each answer for their own slot', async ({ page }) => {
+test('on Today the queue and the Overdue panel each answer for their own slot', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1440, height: 1000 })
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
@@ -255,26 +258,26 @@ test('on 今天 the queue and 逾期 each answer for their own slot', async ({ p
     .first()
     .evaluate((el) => Math.round(el.clientWidth))
   expect(titleWidth, `title track in the queue: ${titleWidth}px`).toBeGreaterThan(500)
-  // 逾期 is a different list and keeps its slot, and one panel's collapse did not take the
+  // Overdue is a different list and keeps its slot, and one panel's collapse did not take the
   // other's glyph with it.
   await expect(late.locator('[data-lead-slot]')).toHaveCount(1)
   await expect(late.locator('[data-lead-icon="missed"]')).toHaveCount(1)
 })
 
 /**
- * The 逾期 panel is a one-third-width SUMMARY: the project and how late, and not the absolute
+ * The Overdue panel is a one-third-width SUMMARY: the project and how late, and not the absolute
  * deadline or the plan. With them every row wrapped to three lines and truncated its title anyway.
  *
  * ONE test proves both halves, on ONE task: while its deadline is later today it sits in the main
- * 今天 queue and that row says the timestamp in full; once the deadline is two days gone the same
- * task sits in 逾期 and says only the project and 已逾 2 天. A test of the panel alone would be
+ * Today queue and that row says the timestamp in full; once the deadline is two days gone the
+ * same task sits in Overdue and says only the project and how late. A test of the panel alone would be
  * satisfied by a global truncation, and the main queue half is what forbids one.
  *
  * The deadline is pinned at 12:34 local so the timestamp is a fixed string, not a function of when
- * the suite happens to run; "later today" holds at any hour because 今天 takes everything from the
+ * the suite happens to run; "later today" holds at any hour because Today takes everything from the
  * start of the day.
  */
-test('逾期 says the project and how late; the same task in the queue says the whole deadline', async ({
+test('Overdue says the project and how late; the same task in the queue says the whole deadline', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 1000 })
@@ -380,7 +383,7 @@ async function mixedProject(page: Page, name: string): Promise<string> {
 }
 
 /**
- * §6, THE FIRST ONE, AND THE DEFECT ITSELF: 「你还是没有完全运用横向空间（字直接被截断了）”.
+ * §6, THE FIRST ONE, AND THE DEFECT ITSELF: the width is not used, and the title is cut off.
  * The user's own sentence, at 1440 WITH THE DETAIL COLUMN OPEN -- the ≈734px panel that is the
  * hardest case and the one the screenshot was taken in. The previous edition could only do it by
  * dropping the dates to a second line below a threshold; there is no threshold now, because the
@@ -416,12 +419,13 @@ test('a real long title is not truncated at 1440, detail open or closed', async 
 })
 
 /**
- * §6: 「带日期的行有第二行且文案完整到分钟；无日期无备注的行仍是一行” -- both halves on ONE
+ * §6: a dated row has a second line, complete to the minute, and a row with no date and no note
+ * stays one line -- both halves on ONE
  * list, since "a second line" passes trivially if every row has one and "one line" passes trivially
  * if none does.
  *
  * The minute is the assertion that matters: the mechanism this edition deleted compressed
- * 「10月4日 12:30 截止” into 「已逾 2 天” to fit an 8rem cell, and the user rejected exactly that.
+ * "Due Oct 4, 12:30" into "2 days late" to fit an 8rem cell, which cannot answer "due when?".
  * The expected wording is derived from the instant the fixture was CREATED with, so the test says
  * the same thing at every hour of the day.
  */
@@ -456,7 +460,7 @@ test('a dated row has a second line, complete to the minute; a bare row stays on
   // A row carrying information is 66px; a row carrying none is 44px and has no second line at all.
   //
   // BOTH NUMBERS ARE DERIVED FROM THE TYPE SCALE, not read off the browser and pasted back. The
-  // cell is `py-2.5` (10px each side); the title is 行标题 16/24 and the second line is 元信息
+  // cell is `py-2.5` (10px each side); the title is 16/24 and the second line is the meta step
   // 14/22 (typography spec §2, TDesign's px pairs). So 10 + 24 + 10 = 44 and 10 + 24 + 22 + 10 =
   // 66. The 44 is the SAME number the 15/20 title produced (12 + 20 + 8), which is why the
   // workbench's single-line row metric is untouched by a scale on which every step from the body
@@ -510,13 +514,13 @@ test('a row with both dates wears the deadline, and says both in words', async (
 
 /**
  * §2: the TREE's second line carries no breadcrumb (the project is known and the hierarchy is in
- * the indentation), while 今天's carries one -- and there the breadcrumb and the date share that
+ * the indentation), while Today's carries one -- and there the breadcrumb and the date share that
  * one line rather than taking two.
  */
-test('the tree has no breadcrumb on its second line; 今天 shares one line with the date', async ({
+test('the tree has no breadcrumb on its second line; Today shares one line with the date', async ({
   page,
 }) => {
-  // 1920, so the one-third 逾期 panel is wide enough to hold the crumb and the date side by side:
+  // 1920, so the one-third Overdue panel is wide enough to hold the crumb and the date side by side:
   // the claim is that they SHARE a line where there is room, not that the line never wraps -- §2
   // keeps the wording whole, so a cramped panel wraps it rather than cutting it.
   await page.setViewportSize({ width: 1920, height: 1000 })
@@ -531,12 +535,12 @@ test('the tree has no breadcrumb on its second line; 今天 shares one line with
   await expect(child.locator('[data-row-meta]')).not.toContainText('面包屑')
   await expect(child.locator('[data-row-meta]')).not.toContainText('父任务')
 
-  // The same task on 今天: one second line, carrying the project, the parent AND the date.
+  // The same task on Today: one second line, carrying the project, the parent AND the date.
   await page.goto('/tasks/today')
   const line = page.getByRole('region', { name: 'Overdue' }).locator('[data-row-meta]')
   await expect(line).toHaveCount(1)
   await expect(line.locator('[data-row-crumb]')).toHaveText('面包屑 › 父任务')
-  // 逾期 is a summary (project and how late): the lateness is what shares the line with the crumb.
+  // Overdue is a summary (project and how late): the lateness shares the line with the crumb.
   await expect(line.locator('[data-late-text]')).toHaveText('2 days late')
   // One line, not two: the crumb and the lateness share a baseline.
   const ys = await line.evaluate((el) => {
@@ -629,7 +633,7 @@ test('the date control is reachable, operable and escapable by keyboard alone', 
   await expect(page.locator('#today-heading')).toBeFocused()
 })
 
-test('转为排期下周 demotes the deadline to next Monday’s plan in one request', async ({ page }) => {
+test('making a deadline next week’s plan demotes it in one request', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '没人等下周', { dueAt: dueAgo(6) })
@@ -698,7 +702,7 @@ test('a cross-project row carries its own project’s rail, at one x, beside its
   await expect(railOf('乙一')).toHaveAttribute('data-project-rail', b)
 
   // Fixed x on every row OF ONE LIST -- a spine, not a decoration that follows the content.
-  // Scoped to the 今天 queue since the workbench: the overdue panel and the completed-today panel
+  // Scoped to the Today queue: the overdue panel and the completed-today panel
   // are lists of their own in another column, and a rail x shared across columns was never the
   // claim. Within the list the assertion is the same one, on the same three rows.
   const rails = await xs(page, '[aria-label="Today"] [data-project-rail]')
@@ -714,7 +718,7 @@ test('a cross-project row carries its own project’s rail, at one x, beside its
   expect(await classOf('甲一')).toBe(await classOf('甲二'))
 })
 
-test('已完成 and the search results carry the same rail', async ({ page }) => {
+test('Done and the search results carry the same rail', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '归档测试')
   await makeTask(page, pid, '做完的事', { status: 'done' })
@@ -766,7 +770,7 @@ test('the status marker is the heaviest mark on the row, and still hue-free', as
   for (const name of ['In progress', 'To do', 'Backlog'])
     expect(await colourOf(mark(name)), name).toBe(bodyColour)
 
-  // A finished one recedes. (On 已完成, where every row is settled.)
+  // A finished one recedes. (On Done, where every row is settled.)
   await makeTask(page, pid, '收工', { status: 'done' })
   await page.goto('/completed')
   await expect(page.getByText('收工')).toBeVisible()
@@ -812,7 +816,7 @@ test('a plan and a deadline differ by shape, not only by colour', async ({ page 
   expect(plan.portrait).toBe(false)
 
   // Each has a NAME of its own, and neither name is the other's substring: accessible names are one
-  // flat namespace matched by substring, so a 「有截止，已逾期” would make every query for the
+  // flat namespace matched by substring, so a "has a deadline, overdue" would make every query for the
   // standing flag match the missed one too.
   await expect(row('有截止的').getByRole('img', { name: 'Has a deadline' })).toHaveCount(1)
   await expect(row('有计划的').getByRole('img', { name: 'Has a plan' })).toHaveCount(1)
@@ -825,20 +829,17 @@ test('a plan and a deadline differ by shape, not only by colour', async ({ page 
 // ------------------------------------------------------------------- the phone, deep in a tree
 
 /**
- * Stage 2 named this and chose not to spend on it: at 375 a depth-3 tree row with a deadline cut
- * its title to "操…", because below `sm` the tree's date cells collapse to `w-auto` and the title
- * gets whatever is left after the indent, the handle, the chevron, the marker, the two dates and
- * the two row buttons.
+ * THE DATES MUST NOT TAKE THE TITLE'S WIDTH. At 375 a deep tree row has only what is left after
+ * the indent, the handle, the chevron, the marker and the two row buttons, and date cells beside
+ * the title take about 170px of it -- enough to cut the title to one or two characters.
  *
- * The claim being pinned is NOT "a title is never truncated" -- a long enough title at depth 3 on
- * a 375px screen has to end somewhere, and asserting a character count would be a number asserting
- * itself. The claim is that **the dates no longer take the title's width**: at the same depth, a
- * row with both dates gives its title exactly as much room as a row with none. That is the defect,
- * and the old layout failed it by about 170px.
+ * The claim pinned is NOT "a title is never truncated": a long enough title at depth 3 on a 375px
+ * screen has to end somewhere, and asserting a character count would be a number asserting
+ * itself. It is that at the same depth, a row with both dates gives its title exactly as much
+ * room as a row with none.
  *
- * Stage 2's reason for leaving it was that a second line would cost every DATELESS row an empty
- * one. It does not: the wrapper is `hidden` when the row has no date. The height assertions below
- * are that half, which is the half stage 2 was actually worried about.
+ * The other half is that the second line costs a DATELESS row nothing -- the wrapper is `hidden`
+ * when the row has no date -- which is what the height assertions below are for.
  */
 test.describe('the tree on a phone', () => {
   test.use({ viewport: { width: 375, height: 820 } })

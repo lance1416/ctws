@@ -171,7 +171,7 @@ test('the scale follows the reader root font size: size AND leading, as a pair',
   expect((await measure()).title).toEqual({ size: '12px', line: '18px' })
 })
 
-test('横幅主语 is the top step, 36/44, and the page title is one step below it', async ({
+test('the banner subject is the top step, 36/44, and the page title is one below it', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 1000 })
@@ -251,7 +251,7 @@ test('text-autospace is asked for, and actually moves the glyphs', async ({ page
     measured.on,
     `text-autospace changed nothing: ${JSON.stringify(measured)}`,
   ).toBeGreaterThan(measured.off)
-  // And it took effect within CLREQ's ceiling: 「不多于四分之一个汉字宽” per join, which at 16px
+  // And it took effect within CLREQ's ceiling of a quarter of a Han width per join, which at 16px
   // is 4px. An implementation that spent a full em at each join would "pass" a mere inequality.
   const perJoin = (measured.on - measured.off) / measured.joins
   expect(perJoin, `${perJoin}px per join, ceiling 4px`).toBeGreaterThan(0)

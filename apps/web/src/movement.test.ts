@@ -3,7 +3,7 @@ import type { ProjectMovementResponse } from '@ctws/contracts'
 import { activityLabel, hasMovement, QUIET_DAYS, stagnant } from './movement'
 
 /**
- * The two judgements 做到哪儿了 makes. Both are about what is NOT shown, which is why they are
+ * The two judgements the Movement panel makes. Both are about what is NOT shown, which is why they are
  * worth their own tests: a panel that always prints a stagnation line and one that never prints
  * one both pass a test that only checks the sentence's wording.
  */

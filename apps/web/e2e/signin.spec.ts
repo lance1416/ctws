@@ -3,7 +3,7 @@ import { logOut, registerFreshUser } from './helpers'
 
 /**
  * The sign-in screen (redesign stage 3). Its COPY is frozen -- `auth.spec.ts` asserts the
- * accessible names 邮箱, 密码, 注册 and 退出登录 (the page went Chinese on 2026-10-08, D41), and
+ * accessible names Email, Password, Create an account and Sign out, and
  * is the user's call (D55's sibling, D41) -- so what changed is the layout, the type and the
  * rhythm, plus the one behaviour a daily tool should not make you reach for the mouse to get:
  * Enter signs in.
@@ -46,7 +46,7 @@ test('a rejected sign-in says so and keeps what was typed', async ({ page }) => 
   await expect(page.getByTestId('current-user')).toHaveCount(0)
 })
 
-test('注册 is a deliberate second press, not what Enter does', async ({ page }) => {
+test('creating an account is a deliberate second press, not what Enter does', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByLabel('Email')).toBeVisible()
 
@@ -62,7 +62,7 @@ test('注册 is a deliberate second press, not what Enter does', async ({ page }
   await expect(page.getByRole('alert')).toBeVisible()
   await expect(page.getByTestId('current-user')).toHaveCount(0)
 
-  // The same two fields, through 注册, do make the account.
+  // The same two fields, through Create an account, do make the account.
   await page.getByRole('button', { name: 'Create an account' }).click()
   await expect(page.getByTestId('current-user')).toHaveAccessibleName(`Account: ${email}`)
 })

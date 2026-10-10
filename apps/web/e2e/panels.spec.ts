@@ -9,10 +9,10 @@ import {
 } from './helpers'
 
 /**
- * The 今天 workbench: the four panels, the banner, and the grid they sit in.
+ * TODAY's panels: the four of them, the banner, and the grid they sit in.
  *
  * What these guards are for, in order of how easy each would be to fake:
- * - "做到哪儿了 shows the right numbers" is not provable by reading numbers off the screen and
+ * - "Movement shows the right numbers" is not provable by reading numbers off the screen and
  *   comparing them to numbers the test also computed. It is compared against the SERVER's own
  *   answer, so a panel that quietly counted client-side would have to agree with the query that
  *   produced it, which is the thing being claimed.
@@ -39,9 +39,9 @@ const patched = (page: Page) =>
   )
 const panel = (page: Page, name: string) => page.getByRole('region', { name, exact: true })
 
-// --------------------------------------------------------------------- 做到哪儿了: counts, not a ratio
+// ---------------------------------------------------------------------- Movement: counts, not a ratio
 
-test('做到哪儿了 shows the counts the server reports, for every project that has any', async ({
+test('Movement shows the counts the server reports, for every project that has any', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -92,7 +92,7 @@ test('做到哪儿了 shows the counts the server reports, for every project tha
  * <progress>, an ARIA progressbar, a per-cent sign in the text, or any element sized by a
  * percentage width, which is how a hand-rolled bar is made.
  */
-test('做到哪儿了 draws no percentage and no progress bar', async ({ page }) => {
+test('Movement draws no percentage and no progress bar', async ({ page }) => {
   await registerFreshUser(page)
   await page.setViewportSize(WIDE)
   const pid = await makeProject(page, '有进展的')
@@ -255,7 +255,7 @@ test('the workbench is a panel grid at 1440 and one column at 375', async ({ pag
 
 // --------------------------------------------------------------------------------- the banner
 
-test('正在做 carries the running task, and says so plainly when nothing is running', async ({
+test('the banner carries the running task, and says so plainly when nothing is running', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -271,7 +271,7 @@ test('正在做 carries the running task, and says so plainly when nothing is ru
   await expect(banner.getByText('Nothing in progress')).toBeVisible()
   await expect(banner.locator('[data-today-row]')).toHaveCount(0)
 
-  // Start the dateless one from its project row; it is not on 今天 at all until it is running.
+  // Start the dateless one from its project row; it is not on Today at all until it is running.
   await page.goto(`/projects/${pid}`)
   const started = patched(page)
   await page.getByRole('button', { name: 'Start “没有日期的”' }).click()
@@ -286,9 +286,9 @@ test('正在做 carries the running task, and says so plainly when nothing is ru
   await expect(page.getByText('没有日期的')).toHaveCount(1)
 
   // The SERVER decides which panel a task belongs to, and the page does not second-guess it: a
-  // task that is started AND planned for today stays in 今天, because that is the segment the
+  // task that is started AND planned for today stays in Today, because that is the segment the
   // server put it in. (A banner filtered on `status === 'in_progress'` would steal it, and would
-  // also take an overdue-and-running task out of 逾期.)
+  // also take an overdue-and-running task out of Overdue.)
   const alsoStarted = patched(page)
   await page.getByRole('button', { name: 'Start “排到今天的”' }).click()
   await alsoStarted

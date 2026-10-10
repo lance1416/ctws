@@ -9,12 +9,11 @@ import { EVERY_TYPE_ANSWERED, LINKABLES } from '../src/links/registry'
 import { createProject, createTask, setupWith, type TaskCtx, web } from './helpers/tasks'
 
 /**
- * 反向链接 -- open a thing, see everything it is connected to.
+ * BACKLINKS -- open a thing, see everything it is connected to.
  *
- * This is the half of the edge table that was not possible before. Nothing is written on a
- * person's record when a meeting names them as a guest; one row says both facts, and this read is
- * what turns the second one into a page. Every assertion here fails against the old model, where
- * a person's page could show nothing but their own fields.
+ * The half of the edge table that a per-module column cannot do. Nothing is written on a person's
+ * record when a meeting names them as a guest; one row says both facts, and this read is what
+ * turns the second one into a page.
  */
 
 const cleanups: (() => Promise<void>)[] = []
@@ -75,7 +74,8 @@ describe('opening a thing shows what it is connected to', () => {
     expect(titles(groups, 'meeting')).toEqual(['一面', '二面'])
     const meetings = groups.find((g) => g.type === 'meeting')!
     expect(meetings.label).toBe('Meetings')
-    // Read AGAINST the edge, because the row says 「这个会 参与 陈颖」 and this is the other end.
+    // Read AGAINST the edge: the stored row says the MEETING has this person, and this is the
+    // person's end of it.
     expect(meetings.items.every((i) => i.outgoing === false)).toBe(true)
     expect(meetings.items.every((i) => i.label === 'attended')).toBe(true)
     // The zone is named the way a person says it, on the meeting's OWN wall clock.
@@ -184,7 +184,7 @@ describe('making and removing one edge by hand', () => {
     })
     expect(made.statusCode, made.body).toBe(201)
 
-    // 「陈颖 推荐 设计心理学」 and 「设计心理学 推荐人 陈颖」 are one row read two ways.
+    // "she recommended this book" and "this book was recommended by her" are one row, read twice.
     const theirs = await linksOf(ctx, 'contact', person.id)
     expect(theirs.find((g) => g.type === 'reading')!.items[0]).toMatchObject({
       title: '设计心理学',
@@ -223,7 +223,7 @@ describe('making and removing one edge by hand', () => {
     const make = (payload: Record<string, unknown>) =>
       ctx.app.inject({ method: 'POST', url: '/api/v1/links', headers: web(ctx), payload })
 
-    // 推荐 runs from a person to something to read, never between two people.
+    // `recommends` runs from a person to something to read, never between two people.
     const wrongEnds = await make({
       from: { type: 'contact', id: person.id },
       to: { type: 'contact', id: other.id },
@@ -239,7 +239,7 @@ describe('making and removing one edge by hand', () => {
     })
     expect(itself.statusCode).toBe(400)
 
-    // An id of the right shape that names nothing is 「没有这个东西」, not a stored edge.
+    // An id of the right shape that names nothing is a 404, not a stored edge.
     const nowhere = await make({
       from: { type: 'contact', id: person.id },
       to: { type: 'reading', id: '99999999-9999-4999-8999-999999999999' },
