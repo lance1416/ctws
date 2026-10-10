@@ -78,3 +78,48 @@ jobs:
           path: |
             apps/web/playwright-report/
             apps/web/test-results/
+
+  # THE IMAGE IS PUBLISHED ONLY FROM A COMMIT WHOSE SUITE PASSED, which is why this job lives in
+  # the test workflow instead of a `release.yml` of its own. A second workflow on the same tag push
+  # cannot see this one's result: it races the suite and wins, and that is how every release from
+  # v0.8.0 to v0.17.0 was published with two e2e tests failing. `needs` is a gate that cannot be
+  # forgotten.
+  image:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [check, e2e]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: image
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/ctws" >> "$GITHUB_OUTPUT"
+      - id: meta
+        uses: docker/metadata-action@v6
+        with:
+          # ghcr.io requires a lowercase image name
+          images: ${{ steps.image.outputs.name }}
+          # Explicit rather than relying on the action's defaults. With type=semver a
+          # pre-release tag (v0.1.0-rc.1) publishes only its exact version: it gets no
+          # `latest` and no `0.1` alias, so a trial release can never become the tag a
+          # server pulls by default.
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

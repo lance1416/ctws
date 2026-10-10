@@ -1,7 +1,8 @@
 # Deploying CTWS
 
 Single server (amd64), Docker Compose, Cloudflare Tunnel in front. The image comes from GHCR,
-built by `.github/workflows/release.yml` when a `v*` tag is pushed.
+built by the `image` job in `.github/workflows/ci.yml` when a `v*` tag is pushed -- and only once
+that commit's own checks and e2e suite have passed, so a tag whose suite is red publishes nothing.
 
 ## 1. Env file
 
