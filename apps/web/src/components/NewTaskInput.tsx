@@ -15,7 +15,7 @@ type Props = {
   leadSlot: boolean
   /** Resolves true when the task was created, so the input can clear and stay open. */
   onCommit: (title: string) => Promise<boolean>
-  /** Why the last attempt failed, said HERE rather than above the whole tree (D53). */
+  /** Why the last attempt failed, said HERE rather than above the whole tree. */
   error?: string | null
   /** `restoreFocus` is false when the user left by clicking elsewhere. */
   onCancel: (restoreFocus: boolean) => void

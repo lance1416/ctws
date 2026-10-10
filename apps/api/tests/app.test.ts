@@ -66,7 +66,7 @@ describe('app', () => {
 })
 
 /**
- * THE DOCUMENT DESCRIBES THE REFUSALS TOO (D18).
+ * THE DOCUMENT DESCRIBES THE REFUSALS TOO.
  *
  * Every error is RFC 9457 problem details, and the document used to say that nowhere:
  * `components.schemas` was empty and no operation listed one error response. The statuses are

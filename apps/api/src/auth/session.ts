@@ -5,7 +5,7 @@ import type { Queryable } from '../db/client'
 import { sessions } from '../db/schema'
 
 /**
- * SESSIONS. The cookie carries a token; the database holds only its SHA-256 (D2).
+ * SESSIONS. The cookie carries a token; the database holds only its SHA-256.
  *
  * WHAT THE HASH BUYS. A stored token is a working session to anyone who can read the table --
  * nothing to crack, just a value to paste into a cookie jar. Reading rows shows someone your

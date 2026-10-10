@@ -191,7 +191,7 @@ test('`n` opens the dialog, obeys the off switch and is a letter while typing', 
   await seed(page)
 
   // Clicks land on the Tasks block's heading rather than the page's <h1>: the project title is
-  // an editable control now (D54), so clicking it opens a text field and the next keypress is
+  // an editable control now, so clicking it opens a text field and the next keypress is
   // typing. A block heading is the neutral spot this needs.
   // Not while typing: `n` is a letter in the capture box.
   await page.getByLabel('Capture').fill('')

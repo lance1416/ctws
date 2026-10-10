@@ -368,7 +368,7 @@ describe('listToday timezone and DST', () => {
 })
 
 /**
- * ONE PERSON'S READ MUST NOT COST EVERYBODY ELSE'S DATA (D34).
+ * ONE PERSON'S READ MUST NOT COST EVERYBODY ELSE'S DATA.
  *
  * A task has no workspace of its own: every authenticated read reaches one by joining `projects`
  * and filtering on `workspace_id`. Without an index for that filter the join opens with a

@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { makeProject, makeTask, openTree, registerFreshUser, WEB } from './helpers'
 
 /**
- * WHAT HAS TO HAPPEN FIRST (D64), through the browser.
+ * WHAT HAS TO HAPPEN FIRST, through the browser.
  *
  * The API suite already pins the edges -- loops refused, tenants separated, both directions
  * readable. What only a browser can show is the part the feature was built for: a list stops

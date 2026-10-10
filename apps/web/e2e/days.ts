@@ -1,5 +1,5 @@
 /**
- * THE ONE COPY OF THE SUITE'S DATE ARITHMETIC (the tail of D70).
+ * THE ONE COPY OF THE SUITE'S DATE ARITHMETIC.
  *
  * Five specs had written out their own `ymd` / `dayOffset` / `nextMondayYmd`, each a few lines
  * and each subtly its own. That is how `pane.spec.ts` came to assert that "four days from now"

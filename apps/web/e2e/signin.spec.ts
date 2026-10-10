@@ -4,7 +4,7 @@ import { logOut, registerFreshUser } from './helpers'
 /**
  * The sign-in screen (redesign stage 3). Its COPY is frozen -- `auth.spec.ts` asserts the
  * accessible names Email, Password, Create an account and Sign out, and
- * is the user's call (D55's sibling, D41) -- so what changed is the layout, the type and the
+ * is the user's call -- so what changed is the layout, the type and the
  * rhythm, plus the one behaviour a daily tool should not make you reach for the mouse to get:
  * Enter signs in.
  *

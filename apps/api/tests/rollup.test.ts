@@ -316,7 +316,7 @@ describe('last activity comes from the event log', () => {
 })
 
 /**
- * THE PAGE MUST NOT CONTRADICT ITSELF (D32).
+ * THE PAGE MUST NOT CONTRADICT ITSELF.
  *
  * A project page is three reads: the rows, the rollup each parent reports, and what each row is
  * waiting for. Run under READ COMMITTED they each take their OWN snapshot, so a write landing

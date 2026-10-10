@@ -187,7 +187,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
   }
 
   /**
-   * THE FULL-SCREEN WRITING MODE (D73, artboard H) -- the escape hatch of editing model A.
+   * THE FULL-SCREEN WRITING MODE (artboard H) -- the escape hatch of editing model A.
    *
    * It is reached FROM editing mode and returns TO it: the pane keeps the form, the save and the
    * guard, and the layer is only a bigger place to type. `notes` is the one field it touches, and
@@ -335,7 +335,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
   })
 
   /**
-   * THE DIRECT STATUS WRITE (D78). It lands at once, and the refetch set is the SAME one the
+   * THE DIRECT STATUS WRITE. It lands at once, and the refetch set is the SAME one the
    * form's save uses -- a status change moves a task between today's segments, on and off Done,
    * and through the project's counts.
    *
@@ -433,7 +433,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
             </div>
 
             <div className="flex flex-col gap-2.5">
-              {/* THE STATUS IS CHANGED HERE (D78). One value out of five is a decision, not a
+              {/* THE STATUS IS CHANGED HERE. One value out of five is a decision, not a
                   composition: there is nothing for a Save to mean, so there is none. The menu is
                   what keeps it deliberate -- the old read/edit split was answering "too easy to hit by mistake",
                   and a control you have to open answers it at a third of the cost. */}
@@ -463,14 +463,14 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
               </div>
             </div>
 
-            {/* WHAT HAS TO HAPPEN FIRST (D64). It lives in READING mode and not in the form:
+            {/* WHAT HAS TO HAPPEN FIRST. It lives in READING mode and not in the form:
                 an edge is a fact about two tasks that is written the moment it is named, and
                 parking it behind Save would make adding a dependency wait on a form it is not part of. */}
             <Dependencies taskId={task.id} projectId={task.projectId} />
 
             <div>
               <span className={label}>Notes</span>
-              {/* THE NOTE, RENDERED AS MARKDOWN (D73). Kept at the 68ch reading measure the
+              {/* THE NOTE, RENDERED AS MARKDOWN. Kept at the 68ch reading measure the
                   textarea has always had, because that is where prose wants to wrap and because the
                   pane's own layout and scroll must not move when a note contains a table or a
                   diagram. `NoteBody`'s fallback is the plain `whitespace-pre-wrap` paragraph this

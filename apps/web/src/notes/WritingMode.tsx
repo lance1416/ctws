@@ -11,7 +11,7 @@ import { NoteBody } from './NoteBody'
  * measure is right for READING a note and hopeless for writing a page of one. Deliberately not a
  * side-by-side preview inside the pane, and not a WYSIWYG.
  *
- * It is also the seed of the notes module D73 names. Nothing here knows what a task is: it takes a
+ * It is also the seed of a notes module. Nothing here knows what a task is: it takes a
  * heading, a string, and a way to report a new string.
  *
  * WHAT IT IS NOT ALLOWED TO BREAK:

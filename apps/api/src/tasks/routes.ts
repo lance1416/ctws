@@ -357,7 +357,7 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
   )
 
   /**
-   * ONE TASK WAITING FOR ANOTHER (D64). Three routes, and the pair that writes is NOT a
+   * ONE TASK WAITING FOR ANOTHER. Three routes, and the pair that writes is NOT a
    * `PATCH` on the task: a dependency is an edge between two tasks, and `PATCH /tasks/:id` is
    * for this task's own independent scalar fields -- the same division `move` is on the other
    * side of.

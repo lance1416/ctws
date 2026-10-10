@@ -5,7 +5,7 @@ import { editDetail, openProject, registerFreshUser, submitCreate, WEB } from '.
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 /**
- * THE ONE PLACE THE ACCOUNT'S TIMEZONE IS NOT THE RUNNER'S (D70).
+ * THE ONE PLACE THE ACCOUNT'S TIMEZONE IS NOT THE RUNNER'S.
  *
  * Every other spec registers its user from a browser running in the test process's own zone, so
  * `users.timezone` always equals `TZ` and the whole suite is blind to the bug class that actually

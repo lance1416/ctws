@@ -355,7 +355,7 @@ function ProjectTasks({ projectId, view }: { projectId: string; view: string }) 
           }`}
         />
       </div>
-      {/* THE FAILURE SITS UNDER ITS OWN BOX (D53), inside the same block and at the same left
+      {/* THE FAILURE SITS UNDER ITS OWN BOX, inside the same block and at the same left
           edge, rather than as a line of page chrome below the whole control group. The typed
           title is still in the box: what was typed is the user's, not the request's. */}
       {create.isError && (

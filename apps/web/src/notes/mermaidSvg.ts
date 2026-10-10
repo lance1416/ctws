@@ -11,7 +11,7 @@ import DOMPurify from 'dompurify'
  * FOUR LAYERS, in the order they apply:
  *
  * 1. IT IS NOT LOADED unless the note really contains a `mermaid` fence (`features.ts`). An
- *    interpreter that was never fetched has no attack surface, so D73's performance decision is a
+ *    interpreter that was never fetched has no attack surface, so loading on demand is a
  *    security property as well as a speed one.
  * 2. IT IS CONFIGURED SHUT (`MermaidDiagram.tsx`): `securityLevel: 'strict'`, `htmlLabels: false`
  *    on every family that offers it, and `mermaid.render`'s `bindFunctions` is deliberately NEVER

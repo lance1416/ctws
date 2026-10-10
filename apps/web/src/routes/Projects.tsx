@@ -121,7 +121,7 @@ export function Projects() {
               />
               <span className="truncate">{p.name}</span>
             </Link>
-            {/* HOW MUCH IS WAITING HERE (D47). The server's own count of open tasks, never
+            {/* HOW MUCH IS WAITING HERE. The server's own count of open tasks, never
                 counted on this side.
                 OUTSIDE the link on purpose: inside, it would become part of the link's
                 accessible name, and "P" would no longer be the name of the link to P.

@@ -9,7 +9,7 @@ import {
 } from './helpers'
 
 /**
- * MARKDOWN NOTES (D73): what renders, what is refused, and what is NOT downloaded.
+ * MARKDOWN NOTES: what renders, what is refused, and what is NOT downloaded.
  *
  * These run against the real container, which is the only place two of the three claims can even be
  * made. The bundle split is a claim about REQUESTS -- `mermaid` and `katex` are fetched for a note
@@ -260,7 +260,7 @@ test('a mermaid diagram cannot break out of its own svg or its own stylesheet', 
   expect(stray, 'no diagram CSS reached the network').toEqual([])
 })
 
-// ------------------------------------------------------------------ what is NOT downloaded (D73 §2)
+// --------------------------------------------------------------------- what is NOT downloaded
 
 /** Every URL the page asked for, so the absence of one can be asserted. */
 function watchRequests(page: Page): string[] {
@@ -364,7 +364,7 @@ const writingSource = (page: Page) => page.getByLabel('Markdown source')
 test('the full-screen writing mode round-trips the source unchanged', async ({ page }) => {
   const pid = await seedNote(page, '第一行\n\n第二段')
   await editDetail(page)
-  // The pane holds the SOURCE, which is what is stored (D73's third decision).
+  // The pane holds the SOURCE, which is what is stored.
   await expect(page.getByLabel('Notes', { exact: true })).toHaveValue('第一行\n\n第二段')
 
   await page.getByRole('button', { name: 'Full screen' }).click()

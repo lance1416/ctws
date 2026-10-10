@@ -328,7 +328,7 @@ export const calendarQuery = z
 export type CalendarQuery = z.infer<typeof calendarQuery>
 
 /**
- * ONE TASK WAITING FOR ANOTHER (D64). A reference to the task at the other end, carrying enough
+ * ONE TASK WAITING FOR ANOTHER. A reference to the task at the other end, carrying enough
  * to name it on a row -- including its PROJECT, because a dependency may cross one.
  */
 export const dependencyRef = z
@@ -368,7 +368,7 @@ export const todayTaskResponse = taskResponse
     parentTitle: z.string().nullable(),
     segment: todaySegment,
     /**
-     * What is still in the way (D64), unfinished blockers only. ON THIS RESPONSE and not in a
+     * What is still in the way, unfinished blockers only. ON THIS RESPONSE and not in a
      * parallel map, because this is the page the feature exists for: Today stops answering what
      * is due and answers what can be worked on, which is a property of each row.
      */

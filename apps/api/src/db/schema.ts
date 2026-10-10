@@ -48,7 +48,7 @@ export const sessions = pgTable(
   'sessions',
   {
     // An INTERNAL id. Nothing outside this table ever sees it: the cookie carries a token whose
-    // SHA-256 is `token_hash` below (D2), and every lookup goes through that.
+    // SHA-256 is `token_hash` below, and every lookup goes through that.
     id: uuid('id').primaryKey(),
     /** `sha256(cookie token)`, hex. Unique, because it is what a session is looked up by. */
     tokenHash: text('token_hash').notNull(),
@@ -170,7 +170,7 @@ export const tasks = pgTable(
 )
 
 /**
- * WHICH TASK HAS TO WAIT FOR WHICH (D64).
+ * WHICH TASK HAS TO WAIT FOR WHICH.
  *
  * A SECOND GRAPH, COMPLETELY SEPARATE FROM THE PARENT TREE. The tree says what a piece of work
  * is made of; this says what has to happen first. Siblings can depend on each other, and so can

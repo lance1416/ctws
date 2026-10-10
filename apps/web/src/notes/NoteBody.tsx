@@ -3,7 +3,7 @@ import { lazy, Suspense } from 'react'
 /**
  * THE SEAM THAT KEEPS MARKDOWN OFF EVERY PAGE LOAD.
  *
- * D73's second decision is to load on demand, and the first thing that has to be on demand is
+ * Notes load on demand, and the first thing that has to be on demand is
  * the renderer itself. This app is opened twenty times a day, usually to look at Today and close
  * it again; a visit that never opens a task must not pay for `react-markdown` at all. So the whole
  * Markdown pipeline sits behind this one dynamic import, and the three costs are now staged:

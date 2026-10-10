@@ -396,7 +396,7 @@ describe('project visibility', () => {
   })
 })
 
-// D47: the project list used to return nothing but names, so the left rail had nothing to show
+// The project list returns more than nothing but names, so the left rail had nothing to show
 // beside a destination. `openTasks` is counted by the server in the same query that lists the
 // projects -- never in the client, which would have to fetch every task of every project.
 describe('project open-task counts', () => {

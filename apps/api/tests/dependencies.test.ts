@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { createProject, createTask, setupWith, type TaskCtx, web } from './helpers/tasks'
 
 /**
- * ONE TASK WAITING FOR ANOTHER (D64).
+ * ONE TASK WAITING FOR ANOTHER.
  *
  * The edge is stored; "blocked" is derived. These are about keeping the edges honest -- loops
  * refused, tenants separated, both directions readable -- and about the one property the whole

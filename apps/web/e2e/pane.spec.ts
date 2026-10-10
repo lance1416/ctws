@@ -365,7 +365,7 @@ test('the pane opens with the task, and Delete is not a peer of Save', async ({ 
  * TWO CLAIMS AT ONCE: everything about the task is on the first screen, and nothing on that
  * screen can change it by mistake.
  *
- * The mis-click surface is a LIVE FORM, not every control (D78). What the pane must not do at rest
+ * The mis-click surface is a LIVE FORM, not every control. What the pane must not do at rest
  * is sit there with a title field, five status radios and two date inputs one elbow away; a value
  * you have to open a menu to change is deliberate, while edit-change-save turns one decision into
  * a procedure. So the count below is over form controls -- fields -- and the status picker is
@@ -440,7 +440,7 @@ test('Edit hands focus to the first field rather than dropping it on the body', 
 })
 
 /**
- * THE STATUS IS CHANGED WITHOUT ENTERING THE FORM (D78).
+ * THE STATUS IS CHANGED WITHOUT ENTERING THE FORM.
  *
  * One value out of five is a decision, not a composition: there is nothing for a Save to mean,
  * and edit-change-save is a procedure imposed on one press. What is asserted here is the whole of

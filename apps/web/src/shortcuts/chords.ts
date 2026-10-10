@@ -1,5 +1,5 @@
 /**
- * The mechanics of the `g`-prefixed jump chords, borrowed from OpenProject (D46/B6). A chord
+ * The mechanics of the `g`-prefixed jump chords, borrowed from OpenProject. A chord
  * rather than a bare key because the destinations would otherwise eat a single letter each, and
  * `g` reads as "go".
  *

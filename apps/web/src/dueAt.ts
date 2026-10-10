@@ -143,7 +143,7 @@ export function overdueLabel(dueIso: string, timeZone: string, now: Date = new D
  */
 
 /**
- * "Captured 3 days ago" -- how long something has been sitting in the inbox (D49), counted in the
+ * "Captured 3 days ago" -- how long something has been sitting in the inbox, counted in the
  * account's calendar days like every other phrase here.
  *
  * A COUNT, not a date. `dayPhrase` would say "Captured Oct 1", which answers a question nobody asked:

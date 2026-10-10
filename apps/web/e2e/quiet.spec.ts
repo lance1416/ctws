@@ -12,7 +12,7 @@ import {
 } from './helpers'
 
 /**
- * FOUR THINGS THAT MADE THE APP WORSE THE LONGER IT WAS USED (D48, D49, D53, D40).
+ * FOUR THINGS THAT MADE THE APP WORSE THE LONGER IT WAS USED.
  *
  * The tree kept every finished task forever, the inbox gave no clue how long anything had been
  * sitting in it, a failed creation reported itself at the top of the page rather than at the row
@@ -25,7 +25,7 @@ const row = (page: Page, title: string) =>
     .locator('li[data-depth]')
     .filter({ has: page.getByRole('button', { name: `Task: ${title}`, exact: true }) })
 
-// ------------------------------------------------------------------ D48: the finished pile
+// --------------------------------------------------------------------- the finished pile
 
 test('the tree shows what is left to do, and the count is the way back to the rest', async ({
   page,
@@ -110,7 +110,7 @@ test('a project whose every task is finished reads as cleared, not as empty', as
   await expect(page.getByText('No tasks in this project yet')).toHaveCount(0)
 })
 
-// ------------------------------------------------------------------ D49: how old is this
+// --------------------------------------------------------------------- how old is this
 
 test('an inbox row says how long it has been sitting there, and only when it must', async ({
   page,
@@ -148,7 +148,7 @@ test('an ordinary project does not date its rows', async ({ page }) => {
   await expect(row(page, '配色重做').locator('[data-row-age]')).toHaveCount(0)
 })
 
-// ------------------------------------------------------------------ D53: say it where it happened
+// ------------------------------------------------------- say it where it happened
 
 test('a refused creation is reported at the input, which keeps what was typed', async ({
   page,
@@ -181,7 +181,7 @@ test('a refused creation is reported at the input, which keeps what was typed', 
   await expect(page.getByRole('alert')).toHaveCount(0)
 })
 
-// ------------------------------------------------- D40: a save that changed nothing (already right)
+// ------------------------------------------------ a save that changed nothing (already right)
 
 test('saving an untouched task sends nothing and still closes the pane', async ({ page }) => {
   await registerFreshUser(page)
@@ -198,8 +198,8 @@ test('saving an untouched task sends nothing and still closes the pane', async (
   })
   await page.getByRole('button', { name: 'Save' }).click()
 
-  // D40 SAID THIS WAS BROKEN AND IT IS NOT -- measured, by disabling the guard that was about to
-  // be added for it and watching this test keep passing. `save`'s own body already skips the
+  // REPORTED AS BROKEN AND IT IS NOT -- measured, by disabling the guard that was about to be
+  // added for it and watching this test keep passing. `save`'s own body already skips the
   // request when no field changed, and its success still closes the pane, so Save on an untouched
   // task has always meant "I am done here". The entry predates the reading/editing split. What
   // was missing was a test, which is this one; no code changed.
@@ -294,7 +294,7 @@ test('a parent row says how its subtree stands, and a quiet one says nothing', a
   await expect(row(page, '公式换行').locator('[data-row-rollup]')).toHaveCount(0)
 })
 
-// ------------------------------------------------------- D54 / D74: a project can be edited
+// ----------------------------------------------------------------- a project can be edited
 
 test('a project can be renamed where it is shown, inbox included', async ({ page }) => {
   await registerFreshUser(page)
@@ -341,9 +341,7 @@ test('a project colour can be picked from the chip that shows it', async ({ page
   await expect(page.getByRole('heading', { level: 1, name: '改版' })).toBeVisible()
 })
 
-test('a finished task opens from the Done list, not only restored from it (D58)', async ({
-  page,
-}) => {
+test('a finished task opens from the Done list, not only restored from it', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '改版')
   const id = await makeTask(page, pid, '写迁移')
@@ -362,7 +360,7 @@ test('a finished task opens from the Done list, not only restored from it (D58)'
   await expect(pane.getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
 })
 
-// ------------------------------------------------------------ D61: doing something to five rows
+// ----------------------------------------------------------- doing something to five rows
 
 test('shift-click picks rows, and the bar finishes them in one press', async ({ page }) => {
   await registerFreshUser(page)

@@ -63,7 +63,7 @@ function applyMove(old: TaskResponse[], id: string, body: MoveTaskBody): TaskRes
 export function TaskTree({ projectId }: { projectId: string }) {
   const qc = useQueryClient()
   const allProjects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
-  // Only the INBOX dates its rows (D49). Quick capture makes the inbox the one list that grows
+  // Only the INBOX dates its rows. Quick capture makes the inbox the one list that grows
   // without anyone deciding anything, so "how long has this been sitting here" is the question
   // it raises and no other project does; and since most rows in an ordinary tree carry no date
   // at all, putting an age on them would give every one of them a second line.
@@ -76,20 +76,20 @@ export function TaskTree({ projectId }: { projectId: string }) {
    *
    * Without this, pressing x on a focused row deletes it from under the cursor: the mark never
    * gets to show it worked, the focus has nowhere to go, and the second x that undoes a mis-press
-   * has no row to land on. What D48 is for is the BACKLOG of things finished days ago, not the
+   * has no row to land on. What the hiding is for is the BACKLOG of things finished days ago, not the
    * thing finished a second ago. The set lives only as long as this mount, so the row is gone on
    * the next load -- which is also when the person has stopped looking at it.
    */
   const [keptFinished, setKeptFinished] = useState<ReadonlySet<string>>(() => new Set())
   /**
-   * The rows Shift+click has picked (D61). A set of ids and nothing else: it is not persisted,
+   * The rows Shift+click has picked. A set of ids and nothing else: it is not persisted,
    * and anything that leaves the tree -- a navigation, a refetch that drops a row -- simply
    * stops matching, so there is no stale selection to clean up.
    */
   const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set())
   const [bulkBusy, setBulkBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  // SEPARATE FROM `error` ON PURPOSE (D53). A failed creation is about one input that is on
+  // SEPARATE FROM `error` ON PURPOSE. A failed creation is about one input that is on
   // screen, so it is said next to that input; everything else here -- a refused move, a depth
   // limit -- has no single row to sit beside and stays in the banner above the tree.
   const [createError, setCreateError] = useState<string | null>(null)
@@ -100,14 +100,14 @@ export function TaskTree({ projectId }: { projectId: string }) {
   const [adding, setAdding] = useState<{ parentId: string | null; from: string } | null>(null)
   const inFlight = useRef(false)
   // Which row holds the tree's single tab stop. It follows focus, so Tab re-enters the tree at
-  // the row the person last used instead of jumping back to the top (the roving tabindex, D51).
+  // the row the person last used instead of jumping back to the top (the roving tabindex).
   const [activeId, setActiveId] = useState<string | null>(null)
   const singleKeys = useShortcutsEnabled()
 
   // The cache holds exactly what listProjectTasks returns; the rows are derived, never cached.
   const tasks = useQuery({ queryKey: key, queryFn: () => listProjectTasks(projectId) })
   /**
-   * WHAT IS LEFT TO DO (D48). A finished row leaves the tree unless the person asks for it back.
+   * WHAT IS LEFT TO DO. A finished row leaves the tree unless the person asks for it back.
    *
    * The rule has one exception, and it is the tree's oldest rule: a list that loses tasks cannot
    * be trusted. A finished PARENT with unfinished children stays -- hiding it would take its
@@ -201,7 +201,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
       // Without this the UI keeps a state the database does not contain, and the user believes
       // the move succeeded until the next reload. See Review Focus 5.
       if (context?.previous) qc.setQueryData(key, context.previous)
-      // AND THE FOLD GOES BACK TOO (D37). The drop unfolded the destination so the row would be
+      // AND THE FOLD GOES BACK TOO. The drop unfolded the destination so the row would be
       // on screen where it landed; if the move was refused, nothing landed there and the parent
       // is left standing open for no reason -- the one visible trace of an action that did not
       // happen. It was argued as acceptable because the user can re-fold it; they should not
@@ -473,7 +473,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
     // does not exist. A wrong id is a dead link, not a hijacked focus.
     const target = tasks.data.tasks.find((t) => t.id === reveal)
     if (!target) return
-    // Unfolding is not enough when the row is FINISHED and finished rows are hidden (D48):
+    // Unfolding is not enough when the row is FINISHED and finished rows are hidden:
     // search would route here and focus nothing. Arriving at a task is a request to see it.
     if (!showDone && (target.status === 'done' || target.status === 'cancelled')) {
       setShowDone(true)
@@ -558,7 +558,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
   const bulkFinish = () =>
     runOverSelection(
       (id) => patchTask(id, { status: 'done' }),
-      // The rows that really finished stay on screen, the same way a single one does (D48) --
+      // The rows that really finished stay on screen, the same way a single one does --
       // `done`, not the whole selection, or a half-failed run would pin rows that never moved.
       (done) => setKeptFinished((prev) => new Set([...prev, ...done])),
     )
@@ -582,7 +582,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
 
   return (
     <>
-      {/* THE ONE CONTROL D48 ADDS, and it is absent until there is something to say: a project
+      {/* THE ONE CONTROL THE HIDING ADDS, and it is absent until there is something to say: a project
           with nothing finished shows no chrome for it. `aria-pressed` rather than a checkbox --
           it is a view toggle, not a field, and the count IS the label. */}
       {(hiddenDone > 0 || showDone) && (
@@ -618,7 +618,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
         </p>
       )}
       {tasks.isSuccess && rows.length === 0 && !adding && (
-        // TWO DIFFERENT EMPTIES (D48). A project with nothing in it and a project whose every
+        // TWO DIFFERENT EMPTIES. A project with nothing in it and a project whose every
         // task is finished are opposite situations, and telling someone who just cleared their
         // list that they "have no tasks yet" reads as having lost the work.
         <EmptyState

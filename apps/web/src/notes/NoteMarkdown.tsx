@@ -8,7 +8,7 @@ import { MERMAID_LANG, noteFeatures } from './features'
 import { noteSchema } from './schema'
 
 /**
- * A NOTE, RENDERED. Reading mode's half of D73.
+ * A NOTE, RENDERED. Reading mode's half of the Markdown work.
  *
  * WHAT IS IN THIS CHUNK AND WHAT IS NOT. This module is itself behind a dynamic import (see
  * `NoteBody`), so the app's first paint pays nothing for Markdown. Opening a task pays for THIS:
@@ -19,7 +19,7 @@ import { noteSchema } from './schema'
  *   - `mermaid`: only when `noteFeatures` finds a `mermaid` fence.
  *   - `rehype-highlight` (highlight.js's common grammars): only when a fence carries a language.
  *
- * That split is D73's second decision and it is asserted on the NETWORK in `notes.spec.ts`, not on
+ * That split is asserted on the NETWORK in `notes.spec.ts`, not on
  * a flag -- a boolean that says "lazy" is exactly the thing that can be true while the bytes still
  * ship.
  *

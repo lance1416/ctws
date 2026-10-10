@@ -75,7 +75,7 @@ export function Reading() {
         )
       })}
 
-      {/* The finished pile, behind a switch -- the same rule the task tree learned (D48): a list
+      {/* The finished pile, behind a switch -- the same rule the task tree learned: a list
           that keeps everything forever gets worse the longer it is used, and a list that drops
           things cannot be trusted. The count is the way back to them. */}
       {finished.length > 0 && (

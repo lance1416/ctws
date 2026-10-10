@@ -107,7 +107,7 @@ export function Completed({ heading: showHeading = true }: { heading?: boolean }
                     }
                   />
                 </span>
-                {/* THE ROW OPENS (D58). Until now a finished task could be restored from here
+                {/* THE ROW OPENS. Until now a finished task could be restored from here
                     and nothing else -- not read, not corrected, not deleted -- so the only way
                     to look at one was to find it again in its project's tree. */}
                 <button

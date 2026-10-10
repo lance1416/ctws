@@ -149,7 +149,7 @@ describe('GET /completed', () => {
 })
 
 /**
- * WHETHER THIS IS ALL OF IT (D56).
+ * WHETHER THIS IS ALL OF IT.
  *
  * The list is capped: it answers "what did I do lately", and the archive is the weekly review,
  * which takes any window. `truncated` is the server saying so, instead of the page counting rows

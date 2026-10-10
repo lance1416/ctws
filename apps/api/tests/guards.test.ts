@@ -170,7 +170,7 @@ describe('rate limiting', () => {
   }, 60_000)
 
   it('buckets by EMAIL, so one account under attack does not lock out the others', async () => {
-    // THE WHOLE POINT OF D3. Behind a reverse proxy every request has the proxy's IP, so an
+    // THE WHOLE POINT OF KEYING BY EMAIL. Behind a reverse proxy every request has the proxy's IP, so an
     // IP-keyed bucket is one bucket for everybody: a stuffing run against one account would
     // take the instance offline for its owner, and spreading that run across a thousand
     // accounts would stay inside a single 20-a-minute allowance.
@@ -191,7 +191,7 @@ describe('rate limiting', () => {
   }, 60_000)
 
   it('still has an instance-wide ceiling, however many addresses are named', async () => {
-    // THE HALF THE FIRST VERSION OF D3 LOST. Per-email buckets protect an account; alone they
+    // THE HALF A PER-EMAIL BUCKET CANNOT COVER. Per-email buckets protect an account; alone they
     // leave the INSTANCE unprotected, because ten thousand addresses are ten thousand buckets --
     // and `authenticate` runs argon2 against a dummy hash even for an address that does not
     // exist, so that is unbounded CPU for the asking.
@@ -236,7 +236,7 @@ describe('requiresCsrfHeader', () => {
 })
 
 /**
- * EVERY REFUSAL THIS API MAKES IS RFC 9457 (D11).
+ * EVERY REFUSAL THIS API MAKES IS RFC 9457.
  *
  * `@fastify/cors` answers a malformed preflight from inside its own hook, in `text/plain`, so it
  * never reaches the error handler -- it was the one error path a client could not parse the way

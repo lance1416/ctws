@@ -5,7 +5,7 @@ import { StatusMark } from './StatusMark'
 import { MENU_SURFACE } from './menuSurface'
 
 /**
- * THE STATUS, CHANGED WHERE IT IS SHOWN (D78).
+ * THE STATUS, CHANGED WHERE IT IS SHOWN.
  *
  * ONE ACT, not three. Edit, pick, save is a form's shape imposed on a decision that has none:
  * the status is one value out of five, with nothing to compose and nothing to revise, so a Save

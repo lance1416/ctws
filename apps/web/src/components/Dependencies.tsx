@@ -8,7 +8,7 @@ import { refreshTasks } from '../api/taskCache'
 import { field, label } from './formStyles'
 
 /**
- * ONE TASK WAITING FOR ANOTHER, in the detail pane (D64).
+ * ONE TASK WAITING FOR ANOTHER, in the detail pane.
  *
  * BOTH DIRECTIONS, AND FINISHED BLOCKERS TOO. The row outside shows only what is still in the
  * way, because a row answers whether this can be worked on now. The pane shows the arrangement:

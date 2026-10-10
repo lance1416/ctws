@@ -16,7 +16,7 @@ import { apiFetch } from '../api'
 export type ProjectTasks = {
   tasks: TaskResponse[]
   rollups: Record<string, RollupResponse>
-  /** Keyed by the WAITING task's id; only what is still in the way (D64). */
+  /** Keyed by the WAITING task's id; only what is still in the way. */
   blockers: Record<string, DependencyRef[]>
 }
 

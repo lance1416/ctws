@@ -9,7 +9,7 @@ import { useComposing } from '../composition'
 const DEBOUNCE_MS = 150
 
 /**
- * FEDERATED search (D46). Reached with `f` from anywhere, or the Search button in the header.
+ * FEDERATED search. Reached with `f` from anywhere, or the Search button in the header.
  *
  * Every module that can be searched contributes a provider and the dialog merges their answers
  * (module-boundary contract §3). With one module registered the list is exactly the task list it

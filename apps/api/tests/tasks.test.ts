@@ -544,7 +544,7 @@ describe('guards that must not be silently dropped', () => {
  * SPEC 9.5: the event and the change it describes are one transaction.
  *
  * Two tests, pointing in OPPOSITE directions, because either alone is passed by an implementation
- * that writes the event after the commit (D29):
+ * that writes the event after the commit:
  *
  * 1. A deferred trigger fails the transaction at COMMIT -- after every statement in it has run.
  *    An event written outside would be committed independently and survive.
@@ -626,7 +626,7 @@ describe('event and mutation share one transaction', () => {
 })
 
 /**
- * THE GUARD IS IN THE SERVICE, NOT ONLY IN THE ROUTE (D44).
+ * THE GUARD IS IN THE SERVICE, NOT ONLY IN THE ROUTE.
  *
  * Every cross-workspace test above goes through HTTP, so all of them pass against an app whose
  * only check is a route preHandler -- and the constraint the spec actually cares about is that a

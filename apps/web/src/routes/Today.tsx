@@ -213,7 +213,7 @@ export function Today() {
           if (!(e.target as HTMLElement).closest('button')) setOpenId(t.id)
         }}
         className={`group relative flex min-h-[46px] cursor-pointer items-start gap-x-2 rounded-lg py-2 pr-2 pl-3 hover:bg-surface-hover ${
-          // BLOCKED ROWS DIM AND STAY (D64). This is the page the feature is for: Today stops
+          // BLOCKED ROWS DIM AND STAY. This is the page the feature is for: Today stops
           // answering what is due and answers what can be worked on. Hiding them would be the
           // other mistake -- a list that loses tasks cannot be trusted.
           t.blockedBy.length > 0 ? 'opacity-60' : ''

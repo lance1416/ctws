@@ -248,7 +248,7 @@ export function recordMoves(page: Page): string[] {
 
 /**
  * Opens a project's page and waits for the task LIST, not for a row: a project whose only task is
- * finished renders no rows at all (the tree hides them, D48), and waiting for one would hang.
+ * finished renders no rows at all (the tree hides them), and waiting for one would hang.
  */
 export async function openTree(page: Page, projectId: string): Promise<void> {
   const listed = page.waitForResponse((r) => {

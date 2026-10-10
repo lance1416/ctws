@@ -29,7 +29,7 @@ export function saveCollapsed(projectId: string, ids: ReadonlySet<string>): void
 const doneKeyFor = (projectId: string) => `ctws.showDone.${projectId}`
 
 /**
- * Whether this project's tree shows its finished rows (D48). Hidden is the default: a tree is
+ * Whether this project's tree shows its finished rows. Hidden is the default: a tree is
  * what is left to do, and after a few weeks the done rows outnumber the live ones.
  *
  * Same storage and the same reasoning as the folds above -- a per-viewer convenience, every

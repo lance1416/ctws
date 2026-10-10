@@ -59,7 +59,7 @@ test('a failed project list shows an error, not an empty list', async ({ page })
 })
 
 /**
- * A SERVER THAT IS DOWN IS NOT A SIGNED-OUT VISITOR (D12).
+ * A SERVER THAT IS DOWN IS NOT A SIGNED-OUT VISITOR.
  *
  * `/auth/me` failing used to be swallowed into "nobody is signed in", so an API that was down
  * bounced the reader to a login page that could not reach the server either -- which reads as a

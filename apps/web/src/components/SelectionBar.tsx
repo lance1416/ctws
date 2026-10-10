@@ -2,7 +2,7 @@ import type { ProjectListItem } from '@ctws/contracts'
 import { PickOne } from './inline'
 
 /**
- * WHAT TO DO WITH THE ROWS YOU PICKED (D61).
+ * WHAT TO DO WITH THE ROWS YOU PICKED.
  *
  * MULTI-SELECT IS NOT ONLY A TEAM TOOL: one person with sixty open tasks across four lines of
  * work finishes five at once and moves a handful to another project as ordinary weekly

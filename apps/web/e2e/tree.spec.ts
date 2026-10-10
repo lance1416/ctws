@@ -124,7 +124,7 @@ test('Tab leaves the tree instead of being captured by it', async ({ page }) => 
   await handle(page, 'one').focus()
   await page.keyboard.press('Tab')
   // Focus moved on and nothing was reorganised. It used to land on the NEXT ROW, because every
-  // row was its own tab stop; with the roving tabindex (D51) the tree is one stop, so Tab leaves
+  // row was its own tab stop; with the roving tabindex the tree is one stop, so Tab leaves
   // the tree altogether. Tab is still bound to nothing either way -- that is what this pins.
   await expect(handle(page, 'one')).not.toBeFocused()
   await expect(handle(page, 'two')).not.toBeFocused()
@@ -519,7 +519,7 @@ test('a project created while the project list is still loading appears', async 
   await expect(page.getByRole('main').getByRole('link', { name: 'typed early' })).toBeVisible()
 })
 
-test('a refused move puts the fold it opened back (D37)', async ({ page }) => {
+test('a refused move puts the fold it opened back', async ({ page }) => {
   await registerFreshUser(page)
   const url = await startProject(page)
   await seedTasks(page, url, [

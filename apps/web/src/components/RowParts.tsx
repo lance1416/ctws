@@ -250,7 +250,7 @@ export function RowMeta({
   plan?: string | null
   carried?: boolean
   /**
-   * HOW LONG THIS HAS BEEN SITTING HERE, worded: "Captured 3 days ago" (D49).
+   * HOW LONG THIS HAS BEEN SITTING HERE, worded: "Captured 3 days ago".
    *
    * The inbox is the only list that passes one. It is also the only part that is dropped when the
    * line has anything else to say: a date or a plan is a decision someone made about this task,
@@ -266,7 +266,7 @@ export function RowMeta({
    */
   rollup?: string | null
   /**
-   * "Waiting on <task>" (D64) -- what this row is waiting for, named.
+   * "Waiting on <task>" -- what this row is waiting for, named.
    *
    * FIRST ON THE LINE, and never dropped. Everything else here says when something is due; this
    * says whether it can be done at all, and a row that cannot be worked on is not a row whose

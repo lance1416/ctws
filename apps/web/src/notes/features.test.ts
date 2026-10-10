@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { noteFeatures } from './features'
 
 /**
- * THE GUARD UNDER D73'S SECOND DECISION. `mermaid` and `katex` are fetched only for a note that
+ * THE GUARD UNDER LOADING ON DEMAND. `mermaid` and `katex` are fetched only for a note that
  * really uses them, and this function is what decides. Both kinds of mistake are real:
  *
  *   a false POSITIVE pulls ~300 KB of KaTeX (or ~1 MB of mermaid) onto a note of plain prose,

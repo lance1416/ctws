@@ -26,7 +26,7 @@ const flat = (n: number): [string, null][] =>
   Array.from({ length: n }, (_, i) => [`r${i}`, null] as [string, null])
 
 /**
- * D51. The tree used to be one tab stop PER ROW, so getting past it cost one Tab per visible row.
+ * ONE TAB STOP FOR THE WHOLE TREE, not one PER ROW, so getting past it cost one Tab per visible row.
  * A two-row tree would pass this under the old behaviour too, which is why it runs on twelve rows
  * and asserts the press count, not merely that Tab eventually gets out.
  */

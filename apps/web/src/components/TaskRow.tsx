@@ -34,11 +34,11 @@ type Props = {
    * title, so adding a deadline never silently removes "there is something to read here".
    */
   hasNotes: boolean
-  /** When this was captured, for the inbox's age line (D49). Every other list passes null. */
+  /** When this was captured, for the inbox's age line. Every other list passes null. */
   capturedAt?: string | null
   /** This row's subtree, said in words (§7.3). Only a row with children gets one. */
   rollup?: string | null
-  /** What is still in the way (D64). The row dims; it does not disappear. */
+  /** What is still in the way. The row dims; it does not disappear. */
   blockedBy?: readonly { id: string; title: string }[] | undefined
   /**
    * Whether THIS LIST reserves the leading icon slot at all -- decided once for the whole tree,
@@ -51,7 +51,7 @@ type Props = {
   saved: boolean
   /**
    * The roving tabindex: exactly one row in the tree carries it, so the whole tree is ONE tab
-   * stop and Tab leaves it in a single press no matter how many rows there are (D51). The arrow
+   * stop and Tab leaves it in a single press no matter how many rows there are. The arrow
    * keys and j/k move between rows; Tab stays unbound (WCAG 2.1.2).
    */
   tabStop: boolean
@@ -61,7 +61,7 @@ type Props = {
   onKeyDown: (e: KeyboardEvent<HTMLButtonElement>) => void
   onOpen: () => void
   /**
-   * Shift+click toggles this row's membership of the selection (D61). Plain click still opens
+   * Shift+click toggles this row's membership of the selection. Plain click still opens
    * the detail, so the one gesture people already use is untouched.
    */
   onToggleSelected?: () => void
@@ -171,7 +171,7 @@ export function TaskRow({
         // would be indistinguishable from whatever the pointer happens to be over.
         selected ? 'bg-surface-hover shadow-[inset_2px_0_0_0_var(--color-accent)]' : ''
       } ${
-        // BLOCKED ROWS DIM, THEY DO NOT DISAPPEAR (D64). A list that loses tasks is a list you
+        // BLOCKED ROWS DIM, THEY DO NOT DISAPPEAR. A list that loses tasks is a list you
         // cannot trust, and what is in the way is named on the line under the title -- the point
         // is to answer "why not this one" without opening anything.
         blockedBy && blockedBy.length > 0 ? 'opacity-60' : ''

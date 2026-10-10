@@ -54,7 +54,7 @@ export async function registerGuards(app: FastifyInstance): Promise<void> {
   /**
    * global: false -- only routes that declare `config.rateLimit` are limited.
    *
-   * TWO BUCKETS, NOT ONE (D3). They stop different attacks and neither replaces the other.
+   * TWO BUCKETS, NOT ONE. They stop different attacks and neither replaces the other.
    *
    * THIS ONE IS PER EMAIL. Behind a reverse proxy -- the planned deployment is a Cloudflare
    * Tunnel -- every request arrives from the proxy, so an IP-only key puts everybody in one

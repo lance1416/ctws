@@ -14,7 +14,7 @@ import { useComposing } from '../composition'
  * A column rather than nav links in the top bar, and not for symmetry with other apps: a
  * destination with a NUMBER beside it answers "what is pressing" before you click anything, and
  * a top bar has no room for numbers. The project list carries its open-task count and its
- * identity chip (D47).
+ * identity chip.
  *
  * The destinations are not written in here: each MODULE contributes its own, and the rail
  * renders whatever is registered (module-boundary contract §3). The project list below them is

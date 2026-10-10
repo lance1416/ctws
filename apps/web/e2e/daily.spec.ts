@@ -81,7 +81,7 @@ test('the status mark in a tree row finishes the task in one click, and it is sa
   // One action: the detail panel never opened.
   await expect(page.getByRole('dialog')).toHaveCount(0)
 
-  // It stayed on screen: a row finished HERE is not swept up by D48's hiding, so the mark can
+  // It stayed on screen: a row finished HERE is not swept up by the hiding, so the mark can
   // show it worked and a mis-press can be undone from the same row.
   await expect(treeRow(page, '写方案').getByRole('img', { name: 'Done' })).toBeVisible()
 
@@ -100,7 +100,7 @@ test('a finished task can be restored from its mark, landing on backlog', async 
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '写方案', { status: 'done' })
   await openTree(page, pid)
-  // It arrived already finished, so the tree starts without it (D48); the count is the way in.
+  // It arrived already finished, so the tree starts without it; the count is the way in.
   await expect(treeRow(page, '写方案')).toHaveCount(0)
   await page.getByRole('button', { name: '1 done' }).click()
 

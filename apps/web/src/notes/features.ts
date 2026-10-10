@@ -6,7 +6,7 @@ import { unified } from 'unified'
 /**
  * WHICH OF THE TWO EXPENSIVE FEATURES A NOTE ACTUALLY USES.
  *
- * D73's second decision: `mermaid` and `katex` load ON DEMAND ONLY. This app is opened twenty
+ * Loaded on demand: `mermaid` and `katex` load ON DEMAND ONLY. This app is opened twenty
  * times a day and most notes are two lines of prose; a note that contains no diagram and no maths
  * must not pay for the renderers of either. So the source is asked first, and the renderer is
  * fetched afterwards -- which means the answer has to come from a CHEAP, SYNCHRONOUS read of the

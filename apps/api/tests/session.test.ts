@@ -39,7 +39,7 @@ describe('session', () => {
   })
 
   /**
-   * THE WHOLE POINT OF D2. Anything that can read this table used to hold a working session: the
+   * THE WHOLE POINT OF THE HASH. Anything that can read this table used to hold a working session: the
    * token was the primary key, stored verbatim. Reading rows now gives a digest, which is not a
    * credential -- the difference between seeing someone's tasks and being able to act as them.
    */

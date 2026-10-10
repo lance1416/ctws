@@ -86,7 +86,7 @@ describe('serving the built web app', () => {
   })
 
   /**
-   * DEPLOYMENT MODE 3 (D1): the front end on static hosting, the API on its own server, out of
+   * DEPLOYMENT MODE 3: the front end on static hosting, the API on its own server, out of
    * THIS image with no code change. Two halves: nothing web is served (the cases below), and the
    * front end's own origin is allowed to call the API with credentials (the case after them).
    */

@@ -9,7 +9,7 @@ import { useComposing } from '../composition'
 import { MENU_SURFACE } from './menuSurface'
 
 /**
- * A PROJECT'S NAME AND COLOUR, EDITABLE WHERE THEY ARE SHOWN (D54, D74).
+ * A PROJECT'S NAME AND COLOUR, EDITABLE WHERE THEY ARE SHOWN.
  *
  * The server has taken both since M2a and nothing in the interface could write either: the inbox
  * was stuck being called "Inbox" in an otherwise Chinese app, and a project's identity colour was

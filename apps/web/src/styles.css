@@ -380,7 +380,7 @@ kbd,
   outline: none;
 }
 
-/* ---------------------------------------------------------------- A RENDERED NOTE (D73)
+/* ---------------------------------------------------------------- A RENDERED NOTE
    Markdown's own tag vocabulary needs a type and spacing pass, and these are the only elements in
    the app whose markup the app did not write: a note can contain an `h3`, a table or a blockquote
    and nothing else on the page does. So the rules are written once, here, scoped to the renderer's

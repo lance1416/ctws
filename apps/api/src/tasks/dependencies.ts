@@ -6,7 +6,7 @@ import { appendEvent } from './events'
 import type { TaskCtx } from './tasks'
 
 /**
- * WHAT HAS TO HAPPEN FIRST (D64).
+ * WHAT HAS TO HAPPEN FIRST.
  *
  * The edge is stored; "blocked" is not. A task is blocked while any of its blockers is
  * unfinished, which means finishing the blocker unblocks it with no second write and the two can
