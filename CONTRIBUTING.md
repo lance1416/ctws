@@ -93,3 +93,16 @@ pnpm --filter @ctws/web e2e
 ```
 
 After changing `.env`, recreate the API container (`docker compose up -d --force-recreate api`).
+
+## Licensing
+
+The project's own code is MIT (`LICENSE`). Two third-party faces ship with the web app, both under
+the SIL Open Font License 1.1:
+
+- **Noto Sans SC**, as a subset built by `tools/fonts/subset-cjk-font.py` and committed at
+  `apps/web/src/fonts/noto-sans-sc-subset.woff2`. Because it is redistributed from this repository,
+  upstream's own license file travels beside it: `apps/web/src/fonts/OFL.txt`, plus the
+  `NOTICE.txt` the face is published with. The subset's internal family name is
+  `CTWS Noto Sans SC` -- it is a modified version, and OFL reserves the name `Source`.
+- **IBM Plex Sans**, as the `@fontsource/ibm-plex-sans` dependency, whose license travels in the
+  package. Nothing of it is vendored here.

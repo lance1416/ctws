@@ -91,7 +91,12 @@
    and make which face you get a race. `swap` is deterministic: the designed type always arrives.
 
    `unicode-range` is CJK ONLY, deliberately: the file does contain Latin, but Latin must keep
-   coming from Plex (its tabular figures, and its metrics, are load-bearing). */
+   coming from Plex (its tabular figures, and its metrics, are load-bearing).
+
+   LICENSE: this file is a subset of Noto Sans SC, redistributed under the SIL Open Font License
+   1.1 -- `fonts/OFL.txt` (upstream's own license file, with its copyright line) and
+   `fonts/NOTICE.txt` travel with it. The family is renamed because the subset IS a modified
+   version and OFL reserves the name 'Source'; it carries no Reserved Font Name. */
 @font-face {
   font-family: 'CTWS Noto Sans SC';
   src: url('./fonts/noto-sans-sc-subset.woff2') format('woff2');

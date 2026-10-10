@@ -1,6 +1,7 @@
 {
   "name": "ctws",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "//": "typescript is pinned to 5.9.3 on purpose: TypeScript 7 is the native port and no longer exposes the in-process JS Compiler API (createProgram/transpileModule are undefined), which drizzle-kit needs to parse the schema and generate migrations. The requirement is that API, not the version number. Do not bump without re-checking drizzle-kit.",
   "engines": {
