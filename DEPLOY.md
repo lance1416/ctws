@@ -102,6 +102,33 @@ Alternative, not set up here: run `cloudflared` as another service in this compo
 the tunnel at `http://api:3000`. The `ports:` mapping then becomes unnecessary and nothing is
 published at all.
 
+### Worth one rule at the edge: rate limit `/api/v1/auth/*`
+
+The app already bounds what a sign-in flood can spend. Attempts are counted **per email address**
+(20/min, `AUTH_RATE_LIMIT_MAX`) so one account under attack cannot lock out the others, and a
+**second counter caps the whole instance** (600/min, `AUTH_CEILING`) because verifying a password
+costs real CPU even when the address does not exist — deliberately, so that a wrong address and a
+wrong password take the same time. Measured: one refused sign-in is about 13ms of CPU, so 600/min
+is roughly 13% of one core.
+
+What the application cannot do is stay signable-in _while_ that flood is arriving: the ceiling is
+global, so a flood eats the minute's budget and your own sign-in is refused along with it. Keeping
+an unauthenticated endpoint usable under a flood is the edge's job, not the app's.
+
+In the Cloudflare dashboard, under **Security → WAF → Rate limiting rules**:
+
+| Field                      | Value                                                        |
+| -------------------------- | ------------------------------------------------------------ |
+| If incoming requests match | `URI Path` starts with `/api/v1/auth/`                       |
+| Rate                       | 20 requests per 1 minute                                     |
+| Counting characteristics   | IP (or JA4 fingerprint, which survives IPv6 rotation better) |
+| Then take action           | Block, for 1 minute                                          |
+
+20/min per source is far above anything a person does — a human signing in makes one request —
+and it keeps the flood off the origin entirely, so the instance ceiling never fires and your own
+sign-in still works. Leave the application's own limits where they are: the edge rule is a second
+layer, and the app must stay safe if the tunnel is ever bypassed.
+
 ## 5. Roll back
 
 Set `IMAGE` in `.env` to the previous tag and run the deploy command again. Migrations are

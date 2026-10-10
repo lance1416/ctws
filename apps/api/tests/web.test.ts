@@ -85,6 +85,11 @@ describe('serving the built web app', () => {
     expect(res.headers['content-type']).toContain('application/problem+json')
   })
 
+  /**
+   * DEPLOYMENT MODE 3 (D1): the front end on static hosting, the API on its own server, out of
+   * THIS image with no code change. Two halves: nothing web is served (the cases below), and the
+   * front end's own origin is allowed to call the API with credentials (the case after them).
+   */
   describe('API-only mode', () => {
     it.each([
       ['WEB_DIST unset', undefined],
@@ -100,6 +105,27 @@ describe('serving the built web app', () => {
         }
         const health = await app.inject({ method: 'GET', url: '/api/v1/health' })
         expect(health.statusCode).toBe(200)
+      } finally {
+        await app.close()
+      }
+    })
+
+    // The other half of a split deployment: the front end is on another origin, so it has to be
+    // able to call this API with its session cookie. Nothing about serving no web app changes it.
+    it('still lets the front end own origin call it with credentials', async () => {
+      const app = await buildApp({
+        env: { ...ctx.env, webDist: undefined, corsOrigins: ['https://pages.example'] },
+        db: ctx.db,
+      })
+      await app.ready()
+      try {
+        const res = await app.inject({
+          method: 'GET',
+          url: '/api/v1/health',
+          headers: { origin: 'https://pages.example' },
+        })
+        expect(res.headers['access-control-allow-origin']).toBe('https://pages.example')
+        expect(res.headers['access-control-allow-credentials']).toBe('true')
       } finally {
         await app.close()
       }
