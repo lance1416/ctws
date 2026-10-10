@@ -16,17 +16,10 @@ import { EmptyState } from '../components/EmptyState'
 import { StartButton, StatusButton, statusForKey } from '../components/StatusControls'
 import { StatusMark } from '../components/StatusMark'
 import { TaskDetail } from '../components/TaskDetail'
-import { TriageControl, type TriageSection } from '../components/TriageControl'
-import {
-  addDays,
-  carriedLabel,
-  dateHints,
-  moveDueToDay,
-  nextMonday,
-  toDayTimeInput,
-  todayIn,
-} from '../dueAt'
+import { TriageControl } from '../components/TriageControl'
+import { carriedLabel, dateHints, toDayTimeInput, todayIn } from '../dueAt'
 import { useShortcutsEnabled } from '../shortcuts/enabled'
+import { triageSections } from '../triage'
 import { useTimeZone } from '../useMe'
 
 /**
@@ -135,8 +128,6 @@ export function Today() {
     setStatus(id, next)
   }
   const todayYmd = localToday
-  const tomorrow = addDays(todayYmd, 1)
-  const nextWeek = nextMonday(todayYmd)
 
   const closeDetail = () => {
     const id = openId
@@ -165,53 +156,6 @@ export function Today() {
 
   const breadcrumb = (t: TodayTaskResponse) =>
     t.parentTitle === null ? t.projectName : `${t.projectName} › ${t.parentTitle}`
-
-  /** The triage a row needs, if any: the overdue actions, or the carried-plan ones. */
-  const triageFor = (t: TodayTaskResponse, carried: string | null): TriageSection[] | null =>
-    t.segment === 'overdue' && t.dueAt
-      ? [
-          {
-            heading: 'Push the deadline',
-            actions: [
-              {
-                label: 'To tomorrow',
-                run: () => patch(t.id, { dueAt: moveDueToDay(t.dueAt!, tomorrow, timezone) }),
-              },
-              {
-                label: 'To next week',
-                run: () => patch(t.id, { dueAt: moveDueToDay(t.dueAt!, nextWeek, timezone) }),
-              },
-              { label: 'Clear the deadline', run: () => patch(t.id, { dueAt: null }) },
-            ],
-          },
-          {
-            // The deadline stops being one: nobody is waiting, so it becomes a plan.
-            // Both fields change in ONE request, so the row cannot be left half-way.
-            heading: 'Make it a plan',
-            actions: [
-              { label: 'Today', run: () => patch(t.id, { dueAt: null, scheduledOn: todayYmd }) },
-              { label: 'Tomorrow', run: () => patch(t.id, { dueAt: null, scheduledOn: tomorrow }) },
-              {
-                label: 'Next week',
-                run: () => patch(t.id, { dueAt: null, scheduledOn: nextWeek }),
-              },
-            ],
-          },
-        ]
-      : carried
-        ? [
-            {
-              // The plan-side twin: it moves the PLAN and never touches the deadline.
-              heading: null,
-              actions: [
-                { label: 'Move to today', run: () => patch(t.id, { scheduledOn: todayYmd }) },
-                { label: 'Move to tomorrow', run: () => patch(t.id, { scheduledOn: tomorrow }) },
-                { label: 'Move to next week', run: () => patch(t.id, { scheduledOn: nextWeek }) },
-                { label: 'Clear the plan', run: () => patch(t.id, { scheduledOn: null }) },
-              ],
-            },
-          ]
-        : null
 
   /**
    * A row's date cells, worked out ONCE per render. The list's reserved columns and the cells drawn
@@ -252,7 +196,7 @@ export function Today() {
    * one-third one -- which is what let the threshold machinery go.
    */
   const row = ({ t, hints, carried, plan }: Prepared, leadSlot: boolean): ReactNode => {
-    const sections = triageFor(t, carried)
+    const sections = triageSections(t, carried, todayYmd, timezone, patch)
     // One glyph at the row start, the words on the second line (spec §2). A row whose plan is
     // today's shows no plan text, so it must not claim a plan icon either -- hence `plan`, the
     // wording this row actually renders, rather than `t.scheduledOn`.

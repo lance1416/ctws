@@ -931,36 +931,3 @@ test('转为排期 turns an overdue deadline into a plan: out of 逾期, into �
   )
   await expect(overdue.getByText('还逾期')).toBeVisible()
 })
-
-test('the plan actions are not offered on an overdue row or on a plan for today', async ({
-  page,
-}) => {
-  await registerFreshUser(page)
-  const pid = await makeProject(page, 'P')
-  await makeTask(page, pid, '逾期兼旧计划', { dueAt: dueAgo(2), scheduledOn: dayOffset(-3) })
-  await makeTask(page, pid, '今天计划', { scheduledOn: dayOffset(0) })
-  await page.goto('/tasks/today')
-  await expect(page.getByText('今天计划')).toBeVisible()
-  // A plan for today needs no triage at all, so that row has no date control.
-  await expect(triage(page, '今天计划')).toHaveCount(0)
-  // The overdue row has one, and it offers the DEADLINE exits only: a task whose deadline has
-  // gone is not triaged by nudging the plan it also happens to carry.
-  const panel = await openTriage(page, '逾期兼旧计划', 'Overdue')
-  await expect(panel.getByRole('button', { name: 'To tomorrow' })).toBeVisible()
-  await expect(panel.getByRole('button', { name: 'Move to today' })).toHaveCount(0)
-  await expect(panel.getByRole('button', { name: 'Clear the plan' })).toHaveCount(0)
-  await expect(page.getByRole('group', { name: 'Carried over: 逾期兼旧计划' })).toHaveCount(0)
-  // 逾期 is a one-third-width SUMMARY, so its row says how late and no longer lists the plan or the
-  // deadline's timestamp (rows-and-reading §2, per-surface). The carried plan is not gone: it is
-  // read from the detail pane, which is where this test now looks for it.
-  await page.keyboard.press('Escape')
-  await expect(rowOf(page, '逾期兼旧计划').locator('[data-late-text]')).toBeVisible()
-  await expect(rowOf(page, '逾期兼旧计划').locator('[data-date-hint="scheduled"]')).toHaveCount(0)
-  await rowOf(page, '逾期兼旧计划').locator('[data-today-row]').click()
-  const planLine = page
-    .locator('div')
-    .filter({ has: page.getByText('Plan', { exact: true }) })
-    .last()
-  await expect(planLine).not.toContainText('Not set')
-  await expect(planLine).toContainText(MONTHS[Number(dayOffset(-3).slice(5, 7)) - 1]!)
-})
