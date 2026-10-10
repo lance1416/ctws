@@ -17,18 +17,27 @@ test('capture from any page lands in the inbox', async ({ page }) => {
   expect(tasks.tasks.map((t: { title: string }) => t.title)).toContain('问问房东空调')
 })
 
-test('the inbox sorts first and offers no delete control', async ({ page }) => {
+test('the inbox sorts first, and is the one project with nothing to delete it with', async ({
+  page,
+}) => {
   await registerFreshUser(page)
   await page.getByRole('link', { name: 'Projects' }).click()
   await submitCreate(page, 'New project', 'aaa')
 
   const items = page.getByRole('listitem')
   await expect(items.first()).toHaveText(/Inbox/)
-  // The UI hides it; the server refuses it too (Task 2). Both, because a UI is not a constraint.
-  await expect(items.first().getByRole('button', { name: 'Delete' })).toHaveCount(0)
-  await expect(
-    items.filter({ hasText: 'aaa' }).getByRole('button', { name: 'Delete' }),
-  ).toHaveCount(1)
+  // No row carries it: the list is a place you aim at names.
+  await expect(items.getByRole('button', { name: 'Delete' })).toHaveCount(0)
+
+  // It is at the foot of the project's own page -- for an ordinary project. The inbox has none,
+  // because capture has to land somewhere. The UI hides it; the server refuses it too (Task 2).
+  // Both, because a UI is not a constraint.
+  await items.filter({ hasText: 'aaa' }).getByRole('link').click()
+  await expect(page.getByRole('button', { name: 'Delete project' })).toHaveCount(1)
+  await page.goBack()
+  await items.first().getByRole('link').click()
+  await expect(page.getByRole('heading', { name: 'Inbox' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Delete project' })).toHaveCount(0)
 })
 
 test('capture still finds the inbox after it is renamed', async ({ page }) => {
@@ -95,21 +104,22 @@ test('a failed project fetch tells the capture box user why it is disabled', asy
   await expect(page.getByRole('status')).toContainText('Inbox unavailable')
 })
 
-test('a project can be deleted from the list', async ({ page }) => {
+test('a project is deleted from its own page, and the list loses it', async ({ page }) => {
   await registerFreshUser(page)
   await page.getByRole('link', { name: 'Projects' }).click()
   await submitCreate(page, 'New project', '待删除')
   const doomed = page.getByRole('listitem').filter({ hasText: '待删除' })
   await expect(doomed).toHaveCount(1)
-  await doomed.getByRole('button', { name: 'Delete', exact: true }).click()
-  // Deleting now asks first; the confirmation is the step that actually deletes.
-  await doomed.getByRole('button', { name: 'Confirm delete' }).click()
+
+  await doomed.getByRole('link').click()
+  await page.getByRole('button', { name: 'Delete project' }).click()
+  // The first press only asks; the confirmation is the step that actually deletes.
+  await page.getByRole('button', { name: 'Confirm delete' }).click()
+
+  // The page it was on is gone, so it ends on the list, which no longer has it.
+  await expect(page).toHaveURL(/\/projects$/)
   await expect(doomed).toHaveCount(0)
   // Gone on the server too, not just hidden by the client cache.
   const list = await (await page.request.get('/api/v1/projects')).json()
   expect(list.projects.map((p: { name: string }) => p.name)).not.toContain('待删除')
-  // The inbox is still there and still has no delete control.
-  const inbox = page.getByRole('listitem').first()
-  await expect(inbox).toHaveText(/Inbox/)
-  await expect(inbox.getByRole('button', { name: 'Delete' })).toHaveCount(0)
 })

@@ -1,6 +1,7 @@
 import * as Dialog from '@radix-ui/react-dialog'
 import { useEffect, useRef, type ReactNode, type RefObject } from 'react'
 import { enterOverlay, exitOverlay } from './overlayState'
+import { BUTTON } from './buttonStyles'
 
 /**
  * THE MODAL LAYER, on Radix (`@radix-ui/react-dialog`).
@@ -156,9 +157,7 @@ export function Modal({
                   same words in an `aria-label`. */}
               <Dialog.Title className="font-semibold text-fg">{title}</Dialog.Title>
               {dismissLabel !== null && (
-                <Dialog.Close className="rounded-md px-2 py-1 text-sm text-fg-muted hover:text-fg">
-                  {dismissLabel}
-                </Dialog.Close>
+                <Dialog.Close className={BUTTON.inline}>{dismissLabel}</Dialog.Close>
               )}
             </div>
             {children}

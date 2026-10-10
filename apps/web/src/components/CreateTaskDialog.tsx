@@ -24,6 +24,7 @@ import {
   type CreateTaskForm,
   type CreateTaskValues,
 } from './taskForm'
+import { BUTTON } from './buttonStyles'
 
 /**
  * NEW TASK: a task created WITH its details, in one request.
@@ -360,17 +361,10 @@ export function CreateTaskDialog({
         )}
 
         <div className="flex flex-wrap items-center gap-2 border-t border-border-subtle pt-4">
-          <button
-            type="submit"
-            className="h-9 rounded-lg bg-accent px-3 font-semibold text-accent-fg hover:opacity-90"
-          >
+          <button type="submit" className={BUTTON.primary}>
             Create
           </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="h-9 rounded-lg border border-border-strong px-3 text-fg hover:bg-surface-hover"
-          >
+          <button type="button" onClick={onClose} className={BUTTON.secondary}>
             Cancel
           </button>
           {/* Both chords, not one guessed from the user agent: the keys are what the hint is for,

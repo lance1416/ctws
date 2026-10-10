@@ -181,3 +181,39 @@ test('a project page carries both modules, each with its own block and numbers',
     'CTWS',
   )
 })
+
+test('deleting a reading item asks first, in the row, in the danger colour', async ({ page }) => {
+  // An item has no page of its own to put a danger zone at the foot of, so its menu carries the
+  // two rules the zone would: the colour, and the question.
+  await registerFreshUser(page)
+  await page.request.post('/api/v1/reading', {
+    headers: WEB,
+    data: { kind: 'book', title: '设计心理学', author: 'Don Norman' },
+  })
+  await page.goto('/reading')
+  const deletes: string[] = []
+  page.on('request', (r) => r.method() === 'DELETE' && deletes.push(r.url()))
+
+  const row = rowOf(page, '设计心理学')
+  await row.getByRole('button', { name: /More for/ }).click()
+  const item = page.getByRole('menuitem', { name: 'Delete' })
+  const colour = await item.evaluate((el) => getComputedStyle(el).color)
+  const plain = await page
+    .getByRole('menuitem', { name: 'Rename' })
+    .evaluate((el) => getComputedStyle(el).color)
+  expect(colour).not.toBe(plain)
+  await item.click()
+
+  // The question stands where the row stood, so it is read where the hand already is.
+  const ask = page.getByRole('alertdialog', { name: 'Confirm deleting this item' })
+  await expect(ask).toContainText('Delete “设计心理学”?')
+  expect(deletes).toHaveLength(0)
+  await ask.getByRole('button', { name: 'Cancel' }).click()
+  await expect(row.getByRole('button', { name: /More for/ })).toBeVisible()
+
+  await row.getByRole('button', { name: /More for/ }).click()
+  await page.getByRole('menuitem', { name: 'Delete' }).click()
+  await page.getByRole('button', { name: 'Confirm delete' }).click()
+  await expect(page.getByText('设计心理学')).toHaveCount(0)
+  expect(deletes).toHaveLength(1)
+})

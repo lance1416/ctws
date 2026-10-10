@@ -13,13 +13,14 @@ import {
 import { listProjects } from '../api/projects'
 import { useProjectRail } from '../projectColor'
 import { ZONES, zoneLabel } from '../timeZones'
-import { DeleteConfirm } from './DeleteConfirm'
+import { DangerAction, DangerZone } from './DangerZone'
 import { meetingLink } from '../meetingPlace'
 import { Field } from './Field'
 import { DetailHead, DetailPane } from './DetailPane'
 import { boxed } from './formStyles'
 import { InlineText, PickMany, PickOne } from './inline'
 import { ScopeAsk } from './ScopeAsk'
+import { BUTTON } from './buttonStyles'
 
 /**
  * ONE MEETING, in the shell's detail pane -- the same pane a task and a person open in.
@@ -57,6 +58,10 @@ export function MeetingDetail({
   return (
     <DetailPane label="Meetings" onClose={onClose}>
       <MeetingFields meeting={meeting} accountZone={accountZone} onClose={onClose} />
+      {/* LAST, under a rule, in the danger colour -- the same frame every other thing uses. */}
+      <DangerZone>
+        <CancelMeeting meeting={meeting} onCancelled={onClose} />
+      </DangerZone>
     </DetailPane>
   )
 }
@@ -73,7 +78,6 @@ export function MeetingFields({
 }) {
   const qc = useQueryClient()
   const rail = useProjectRail()
-  const [cancelling, setCancelling] = useState(false)
   const [failed, setFailed] = useState<string | null>(null)
   /** A change waiting on "this one / from here on". Null when nothing is being asked. */
   const [asking, setAsking] = useState<{ what: string; patch: UpdateMeetingInput } | null>(null)
@@ -91,14 +95,6 @@ export function MeetingFields({
     onSuccess: () => setFailed(null),
     onError: (e) => setFailed(e instanceof Error ? e.message : "Couldn't save it"),
     onSettled: refresh,
-  })
-  const drop = useMutation({
-    mutationFn: (scope: EditScope) =>
-      cancelMeeting(meeting.meetingId, { scope, recurrenceId: meeting.recurrenceId }),
-    onSuccess: async () => {
-      await refresh()
-      onClose?.()
-    },
   })
 
   /** A change to the SERIES: title, place, people, project, the rule itself. Never asks. */
@@ -250,7 +246,7 @@ export function MeetingFields({
                 <button
                   type="button"
                   onClick={() => series({ rrule: withUntil(bare, null) })}
-                  className="rounded-md px-2 py-1 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
+                  className={BUTTON.inline}
                 >
                   Never
                 </button>
@@ -352,34 +348,51 @@ export function MeetingFields({
           className="block max-w-[68ch] text-sm whitespace-pre-wrap text-fg"
         />
       </Field>
+    </div>
+  )
+}
 
-      <div className="pt-1">
-        {cancelling ? (
-          repeats ? (
+/**
+ * CANCELLING THIS MEETING, for whichever surface is showing it.
+ *
+ * A repeating meeting is asked WHICH occurrences rather than yes/no -- the same question every
+ * calendar asks, and the one answer that cannot be guessed. A one-off has only itself, so it gets
+ * the plain question.
+ */
+export function CancelMeeting({
+  meeting,
+  onCancelled,
+}: {
+  meeting: MeetingOccurrence
+  onCancelled?: () => void
+}) {
+  const qc = useQueryClient()
+  const drop = useMutation({
+    mutationFn: (scope: EditScope) =>
+      cancelMeeting(meeting.meetingId, { scope, recurrenceId: meeting.recurrenceId }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['meetings'] })
+      await qc.invalidateQueries({ queryKey: ['meeting-calendar'] })
+      onCancelled?.()
+    },
+  })
+  return (
+    <DangerAction
+      label="Cancel meeting"
+      confirmLabel="Confirm cancelling this meeting"
+      message={`Cancel “${meeting.title}”? This cannot be undone.`}
+      busy={drop.isPending}
+      onConfirm={() => drop.mutate('all')}
+    >
+      {meeting.rrule
+        ? (close) => (
             <ScopeAsk
               what={`Cancel which occurrences of “${meeting.title}”?`}
               onPick={(scope) => drop.mutate(scope)}
-              onCancel={() => setCancelling(false)}
-            />
-          ) : (
-            <DeleteConfirm
-              label="Confirm cancelling this meeting"
-              message={`Cancel “${meeting.title}”?`}
-              busy={drop.isPending}
-              onConfirm={() => drop.mutate('all')}
-              onCancel={() => setCancelling(false)}
+              onCancel={close}
             />
           )
-        ) : (
-          <button
-            type="button"
-            onClick={() => setCancelling(true)}
-            className="h-9 rounded-lg px-2.5 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
-          >
-            Cancel meeting
-          </button>
-        )}
-      </div>
-    </div>
+        : undefined}
+    </DangerAction>
   )
 }

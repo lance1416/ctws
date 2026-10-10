@@ -5,7 +5,8 @@ import { useRef, useState } from 'react'
 import { deleteReadingItem, patchReadingItem, readingLabel } from '../api/reading'
 import { addDays, dayPhrase, daysAgoIn, nextMonday, todayIn } from '../dueAt'
 import { useComposing } from '../composition'
-import { MENU_SURFACE } from './menuSurface'
+import { DeleteConfirm } from './DeleteConfirm'
+import { MENU_ITEM, MENU_ITEM_DANGER, MENU_SURFACE } from './menuSurface'
 
 /**
  * ONE ROW OF THE READING LIST.
@@ -64,6 +65,7 @@ export function ReadingRow({
   const today = todayIn(timeZone)
   const composing = useComposing()
   const [renaming, setRenaming] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [draft, setDraft] = useState('')
   // Set when Rename is chosen, so the menu's closing hands focus to the NEW INPUT instead of back
   // to its own trigger. Radix restores focus on close by default, which blurs the editor the
@@ -99,6 +101,22 @@ export function ReadingRow({
     item.kind === 'book' ? item.author : host === label ? null : host,
     addedLabel(item.createdAt, timeZone),
   ].filter(Boolean)
+
+  // The question replaces the row, so it is read where the row was rather than somewhere else on
+  // the page, and nothing else can be pressed by mistake while it is open.
+  if (deleting) {
+    return (
+      <li className="min-h-9 rounded-lg py-1">
+        <DeleteConfirm
+          label="Confirm deleting this item"
+          message={`Delete “${readingLabel(item)}”? This cannot be undone.`}
+          busy={drop.isPending}
+          onConfirm={() => drop.mutate()}
+          onCancel={() => setDeleting(false)}
+        />
+      </li>
+    )
+  }
 
   return (
     <li className="group flex min-h-9 items-center gap-2 rounded-lg py-1 pr-1 hover:bg-surface-hover">
@@ -220,7 +238,12 @@ export function ReadingRow({
             {finished && (
               <Item onSelect={() => save.mutate({ status: 'todo' })}>Back to the list</Item>
             )}
-            <Item onSelect={() => drop.mutate()}>Delete</Item>
+            {/* RED, and it ASKS -- the same two rules the danger zone at the foot of a pane
+                follows. A reading item has no page of its own to put a zone at the foot of, so
+                the menu carries them instead; `onSelect` only opens the question. */}
+            <Item danger onSelect={() => setDeleting(true)}>
+              Delete
+            </Item>
           </DropdownMenu.Content>
         </DropdownMenu.Portal>
       </DropdownMenu.Root>
@@ -228,12 +251,18 @@ export function ReadingRow({
   )
 }
 
-function Item({ children, onSelect }: { children: string; onSelect: () => void }) {
+function Item({
+  children,
+  onSelect,
+  danger = false,
+}: {
+  children: string
+  onSelect: () => void
+  /** An item that destroys something: the danger colour, like every other one in the app. */
+  danger?: boolean
+}) {
   return (
-    <DropdownMenu.Item
-      onSelect={onSelect}
-      className="flex h-8 cursor-default items-center rounded-lg px-2 text-sm text-fg outline-none data-[highlighted]:bg-surface-hover"
-    >
+    <DropdownMenu.Item onSelect={onSelect} className={danger ? MENU_ITEM_DANGER : MENU_ITEM}>
       {children}
     </DropdownMenu.Item>
   )

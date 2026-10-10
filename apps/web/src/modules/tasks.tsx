@@ -24,6 +24,7 @@ import { Today } from '../routes/Today'
 import { useTimeZone } from '../useMe'
 import type { CaptureTargetState, SearchHit, WorkspaceModule } from './contract'
 import { useComposing } from '../composition'
+import { textbox } from '../components/formStyles'
 
 /**
  * THE TASK MODULE.
@@ -350,9 +351,9 @@ function ProjectTasks({ projectId, view }: { projectId: string; view: string }) 
           aria-invalid={create.isError ? true : undefined}
           aria-describedby={create.isError ? failureId : undefined}
           // Inside the panel now, so it leads the rows rather than hanging under a page heading.
-          className={`h-10 min-w-0 flex-1 basis-[22ch] rounded-lg border bg-surface px-3 text-fg placeholder:text-fg-muted ${
-            create.isError ? 'border-danger' : 'border-border-strong'
-          }`}
+          // The border follows `aria-invalid` (see `textbox`), so the colour and the state the
+          // screen reader is told cannot disagree.
+          className={`min-w-0 flex-1 basis-[22ch] bg-surface ${textbox}`}
         />
       </div>
       {/* THE FAILURE SITS UNDER ITS OWN BOX, inside the same block and at the same left

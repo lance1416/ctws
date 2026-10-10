@@ -1,5 +1,5 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-import { MENU_SURFACE } from './menuSurface'
+import { MENU_ITEM, MENU_SURFACE } from './menuSurface'
 
 /**
  * WHO YOU ARE, AND THE WAY OUT.
@@ -25,12 +25,9 @@ export function UserMenu({ email, onLogout }: { email: string; onLogout: () => v
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content align="end" sideOffset={6} className={MENU_SURFACE}>
-          <div className="truncate px-2.5 py-1.5 text-sm text-fg-muted">{email}</div>
+          <div className="truncate px-2 py-1.5 text-sm text-fg-muted">{email}</div>
           <DropdownMenu.Separator className="my-1 h-px bg-border-subtle" />
-          <DropdownMenu.Item
-            onSelect={onLogout}
-            className="cursor-pointer rounded-lg px-2.5 py-1.5 text-sm text-fg outline-none data-[highlighted]:bg-surface-hover"
-          >
+          <DropdownMenu.Item onSelect={onLogout} className={MENU_ITEM}>
             Sign out
           </DropdownMenu.Item>
         </DropdownMenu.Content>

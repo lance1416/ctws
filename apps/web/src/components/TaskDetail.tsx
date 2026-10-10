@@ -26,10 +26,11 @@ import {
 import { NoteBody } from '../notes/NoteBody'
 import { WritingMode } from '../notes/WritingMode'
 import { useProjectRail } from '../projectColor'
-import { DeleteConfirm } from './DeleteConfirm'
+import { DangerAction, DangerZone } from './DangerZone'
 import { DetailPane } from './DetailPane'
 import { PickOne } from './inline'
 import { Dependencies } from './Dependencies'
+import { BUTTON } from './buttonStyles'
 // The shared editing vocabulary, which the New task dialog types into a task with as well.
 import { decision, field, label } from './formStyles'
 import { useUnsavedGuard } from './unsavedGuard'
@@ -201,10 +202,9 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
   // Deleting a task takes its subtree with it and cannot be undone, so it asks first, naming what
   // is lost. The descendant count is read live when the question opens (the panel's own task
   // list may be a page that never loaded this project's tree).
-  const [deleting, setDeleting] = useState<{ descendants: number | null } | null>(null)
-  const deleteButton = useRef<HTMLButtonElement>(null)
-  const askDelete = async () => {
-    setDeleting({ descendants: null })
+  const [descendants, setDescendants] = useState<number | null>(null)
+  const countDescendants = async () => {
+    setDescendants(null)
     try {
       const all = await qc.fetchQuery({
         queryKey: tasksKey(task.projectId),
@@ -218,15 +218,11 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
         count += kids.length
         frontier = kids.map((t) => t.id)
       }
-      setDeleting({ descendants: count })
+      setDescendants(count)
     } catch {
       // Without the count the person would be confirming blind; say so and let them cancel.
-      setDeleting({ descendants: -1 })
+      setDescendants(-1)
     }
-  }
-  const cancelDelete = () => {
-    setDeleting(null)
-    queueMicrotask(() => deleteButton.current?.focus())
   }
   const remove = useMutation({
     mutationFn: () => deleteTask(task.id),
@@ -382,9 +378,10 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
    */
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.key !== 'Escape') return
-    // A second Escape on the discard prompt means "keep editing"; on the delete question, "no".
-    if (deleting) cancelDelete()
-    else if (guard.asking) guard.keep()
+    // The delete question is a level of its own and backs itself out; it says so the same way.
+    if (e.defaultPrevented) return
+    // A second Escape on the discard prompt means "keep editing".
+    if (guard.asking) guard.keep()
     // Out of editing into reading, and only then out of the pane.
     else if (editing) guard.leave(stopEditing)
     else return
@@ -415,11 +412,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                     matched by substring, and the guard's “Keep editing” already contains it -- a longer
                     name here would only add a second way for the two to collide. */}
                 <div className="-mt-1 flex shrink-0 items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={startEditing}
-                    className="h-9 rounded-lg border border-border-strong px-3 text-sm text-fg hover:bg-surface-hover"
-                  >
+                  <button type="button" onClick={startEditing} className={BUTTON.secondary}>
                     Edit
                   </button>
                   <CloseButton onClick={requestClose} />
@@ -746,15 +739,11 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                     ref={guard.focusOn}
                     type="button"
                     onClick={guard.keep}
-                    className="h-9 rounded-lg bg-accent px-3 font-semibold text-accent-fg hover:opacity-90"
+                    className={BUTTON.primary}
                   >
                     Keep editing
                   </button>
-                  <button
-                    type="button"
-                    onClick={guard.discard}
-                    className="h-9 rounded-lg border border-border-strong px-3 text-fg hover:bg-surface-hover"
-                  >
+                  <button type="button" onClick={guard.discard} className={BUTTON.secondary}>
                     Discard changes
                   </button>
                 </div>
@@ -769,48 +758,39 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
               <button
                 type="submit"
                 disabled={save.isPending || !title?.trim()}
-                className="h-10 rounded-lg bg-accent px-4 font-semibold text-accent-fg hover:opacity-90 disabled:opacity-50"
+                className={BUTTON.primary}
               >
                 Save
               </button>
               <button
                 type="button"
                 onClick={() => guard.leave(stopEditing)}
-                className="h-10 rounded-lg border border-border-strong px-4 text-fg hover:bg-surface-hover"
+                className={BUTTON.secondary}
               >
                 Cancel
               </button>
             </div>
-            {/* Destroying the task is not a peer of saving it. It sits below the rule, at the size
-              of a footnote, where nothing lands on it by accident on the way to Save. */}
-            <div className="mt-2 border-t border-border-subtle pt-3">
-              <button
-                ref={deleteButton}
-                type="button"
-                onClick={askDelete}
-                className="-mx-2 rounded-lg px-2 py-1 text-sm text-fg-muted hover:text-danger"
-              >
-                Delete task
-              </button>
-            </div>
-            {deleting && (
-              <DeleteConfirm
-                label="Confirm deleting this task"
-                className="-mt-3 rounded-lg border border-border-strong p-3"
+            {/* LAST, under a rule, in the danger colour -- the same frame every other thing uses
+              (`DangerZone`). Destroying the task is not a peer of saving it, and nothing is
+              reached by passing over it on the way to Save. */}
+            <DangerZone>
+              <DangerAction
+                label="Delete task"
+                confirmLabel="Confirm deleting this task"
                 message={
-                  deleting.descendants === null
-                    ? `Delete “${task.title}”…`
-                    : deleting.descendants < 0
+                  descendants === null
+                    ? null
+                    : descendants < 0
                       ? `Delete “${task.title}” and all its subtasks. This cannot be undone.`
-                      : deleting.descendants === 0
+                      : descendants === 0
                         ? `Delete “${task.title}”. This cannot be undone.`
-                        : `Delete “${task.title}” and its ${deleting.descendants} subtasks. This cannot be undone.`
+                        : `Delete “${task.title}” and its ${descendants} subtasks. This cannot be undone.`
                 }
-                busy={deleting.descendants === null || remove.isPending}
+                busy={remove.isPending}
+                onAsk={countDescendants}
                 onConfirm={() => remove.mutate()}
-                onCancel={cancelDelete}
               />
-            )}
+            </DangerZone>
             {remove.isError && (
               <p role="alert" className="text-sm text-danger">
                 {remove.error instanceof Error ? remove.error.message : "Couldn't delete it"}

@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { createContact } from '../api/contacts'
 import { useComposing } from '../composition'
+import { textbox } from './formStyles'
 
 /**
  * MAKING A PERSON: type a name, press Enter.
@@ -50,7 +51,7 @@ export function NewContactInput({
         }}
         placeholder={placeholder}
         aria-label={placeholder}
-        className="h-9 w-full rounded-lg border border-border-strong bg-surface px-3 text-sm text-fg placeholder:text-fg-muted"
+        className={`w-full bg-surface ${textbox}`}
       />
       {create.isError && (
         <p role="alert" className="mt-1 text-sm text-danger">

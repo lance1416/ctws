@@ -12,6 +12,7 @@ import { useProjectRail } from '../projectColor'
 import { zoneLabel } from '../timeZones'
 import { LIST_MEASURE } from '../rowLead'
 import { useTimeZone } from '../useMe'
+import { BUTTON } from '../components/buttonStyles'
 
 /**
  * MEETINGS -- the module's own page.
@@ -71,11 +72,7 @@ export function Meetings() {
         <h1 ref={heading} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
           Meetings
         </h1>
-        <button
-          type="button"
-          onClick={() => setMaking(true)}
-          className="h-9 rounded-lg border border-border-strong px-3 text-sm font-semibold text-fg hover:bg-surface-hover"
-        >
+        <button type="button" onClick={() => setMaking(true)} className={BUTTON.secondary}>
           New meeting
         </button>
       </div>
@@ -102,11 +99,7 @@ export function Meetings() {
         )}
 
         <div className="mt-8">
-          <button
-            type="button"
-            onClick={() => setShowPast((v) => !v)}
-            className="rounded-md px-2 py-1 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
-          >
+          <button type="button" onClick={() => setShowPast((v) => !v)} className={BUTTON.inline}>
             {showPast ? 'Hide earlier' : 'Earlier'}
           </button>
           {showPast &&

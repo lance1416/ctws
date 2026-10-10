@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { createReadingItem } from '../api/reading'
 import { isReadingUrl } from '../readingUrl'
 import { useComposing } from '../composition'
+import { textbox } from './formStyles'
 
 /**
  * ONE INPUT, both kinds.
@@ -46,7 +47,7 @@ export function AddReading({ projectId }: { projectId?: string } = {}) {
         }}
         placeholder="Paste a link, or type a book title"
         aria-label="Add to the reading list"
-        className="h-9 w-full rounded-lg border border-border-strong bg-surface px-3 text-sm text-fg placeholder:text-fg-muted"
+        className={`w-full bg-surface ${textbox}`}
       />
       {/* Said BEFORE Enter, not after: this is the one place the link/book rule is visible, and a
           rule you can see is one you can work with. */}

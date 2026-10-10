@@ -1,3 +1,5 @@
+import { BUTTON } from './buttonStyles'
+
 /**
  * The in-page confirmation for a destructive delete: says what is lost, then Confirm / Cancel.
  * Shared by projects and tasks so there is one treatment. In the page, never window.confirm: a
@@ -33,15 +35,11 @@ export function DeleteConfirm({
         type="button"
         disabled={busy}
         onClick={onConfirm}
-        className="h-9 rounded-lg bg-danger px-3 font-semibold text-danger-fg hover:opacity-90 disabled:opacity-50"
+        className={BUTTON.destructive}
       >
         Confirm delete
       </button>
-      <button
-        type="button"
-        onClick={onCancel}
-        className="h-9 rounded-lg border border-border-strong px-3 text-fg hover:bg-surface-hover"
-      >
+      <button type="button" onClick={onCancel} className={BUTTON.secondary}>
         Cancel
       </button>
     </div>

@@ -1,3 +1,5 @@
+import { BUTTON } from './buttonStyles'
+
 /**
  * HOW A "NEW THING" DIALOG ENDS: what went wrong, then the two ways out.
  *
@@ -33,18 +35,10 @@ export function DialogFooter({
         </p>
       )}
       <div className="flex items-center gap-2">
-        <button
-          type="submit"
-          disabled={disabled || busy}
-          className="h-9 rounded-lg bg-accent px-3 font-semibold text-accent-fg hover:opacity-90 disabled:opacity-50"
-        >
+        <button type="submit" disabled={disabled || busy} className={BUTTON.primary}>
           {submit}
         </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="h-9 rounded-lg px-3 text-fg-muted hover:bg-surface-hover hover:text-fg"
-        >
+        <button type="button" onClick={onCancel} className={BUTTON.quiet}>
           Cancel
         </button>
       </div>

@@ -5,6 +5,8 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { WORKBENCH_PATH } from '../modules/registry'
 import { apiFetch } from '../api'
 import { useMe } from '../useMe'
+import { BUTTON } from '../components/buttonStyles'
+import { textbox } from '../components/formStyles'
 
 export function Login() {
   const qc = useQueryClient()
@@ -69,7 +71,7 @@ export function Login() {
               id="login-email"
               type="email"
               autoComplete="username"
-              className="mt-1.5 h-10 w-full rounded-md border border-border-strong bg-surface-raised px-3 text-fg"
+              className={`mt-1.5 w-full bg-surface-raised ${textbox}`}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
@@ -82,7 +84,7 @@ export function Login() {
               id="login-password"
               type="password"
               autoComplete="current-password"
-              className="mt-1.5 h-10 w-full rounded-md border border-border-strong bg-surface-raised px-3 text-fg"
+              className={`mt-1.5 w-full bg-surface-raised ${textbox}`}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
@@ -95,7 +97,7 @@ export function Login() {
           <button
             type="submit"
             disabled={act.isPending}
-            className="mt-2 h-10 w-full rounded-md bg-accent font-semibold text-accent-fg hover:opacity-90 disabled:opacity-50"
+            className={`mt-2 w-full ${BUTTON.primary}`}
           >
             Sign in
           </button>

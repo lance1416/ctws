@@ -90,7 +90,7 @@ export function Completed({ heading: showHeading = true }: { heading?: boolean }
                 // The same row system as Today and the tree: the project rail at x=0, the marker,
                 // the title, and one right-hand column. The clock lands at an identical x on
                 // every row, which is what makes a day's list scannable rather than readable.
-                className={`relative -mx-2 grid items-start gap-x-2 rounded-md py-1.5 pr-2 pl-3 ${DONE_ROW_GRID}`}
+                className={`relative -mx-2 grid items-start gap-x-2 rounded-lg py-1.5 pr-2 pl-3 ${DONE_ROW_GRID}`}
               >
                 <ProjectRail projectId={t.projectId} />
                 {/* Restoring is the one way back from a mis-click: a finished task has no other

@@ -2,7 +2,7 @@ import { TASK_STATUSES, type TaskStatus } from '@ctws/contracts'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { STATUS_LABEL } from './statusLabel'
 import { StatusMark } from './StatusMark'
-import { MENU_SURFACE } from './menuSurface'
+import { MENU_ITEM, MENU_SURFACE } from './menuSurface'
 
 /**
  * THE STATUS, CHANGED WHERE IT IS SHOWN.
@@ -64,7 +64,7 @@ export function StatusPicker({
                 // refetch that shows the same thing.
                 if (s !== status) onPick(s)
               }}
-              className="flex h-9 cursor-default items-center gap-2 rounded-lg px-2 text-sm text-fg outline-none data-[highlighted]:bg-surface-hover"
+              className={MENU_ITEM}
             >
               <span aria-hidden="true" className="flex">
                 <StatusMark status={s} />

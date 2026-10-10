@@ -113,6 +113,17 @@ export type RelationContribution = {
    * A type with no `Head` has no page of its own, and the shell routes to its module's list.
    */
   Head?: ComponentType<{ id: string }>
+  /**
+   * HOW ONE OF THESE IS DESTROYED, for the shell's `DangerZone` at the foot of the page.
+   *
+   * The shell decides WHERE a destructive action goes, because "last, under a rule, in red" has
+   * to be the same answer for every kind of thing or the reader has to learn it twice. What it
+   * cannot know is what destroying one MEANS -- a project takes its tasks, a repeating meeting
+   * asks which occurrences -- so the module draws the control and the shell draws the frame.
+   *
+   * Absent for a type with nothing to destroy from a page of its own.
+   */
+  Destroy?: ComponentType<{ id: string }>
 }
 
 /** A module's half of the calendar. One provider per module; the shell merges them. */

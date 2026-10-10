@@ -38,6 +38,18 @@ describe('layers', () => {
     }
     expect(offenders, 'these draw a menu without the shared surface').toEqual([])
   })
+
+  it('leaves no menu writing its own rows, which is how five menus got four heights', () => {
+    const dir = join(import.meta.dirname)
+    const offenders: string[] = []
+    for (const name of readdirSync(dir)) {
+      if (!name.endsWith('.tsx')) continue
+      const source = readFileSync(join(dir, name), 'utf8')
+      if (!source.includes('DropdownMenu.Item')) continue
+      if (!source.includes('MENU_ITEM')) offenders.push(name)
+    }
+    expect(offenders, 'these draw a menu row without the shared one').toEqual([])
+  })
 })
 
 /**

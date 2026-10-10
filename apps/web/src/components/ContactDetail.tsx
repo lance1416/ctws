@@ -1,10 +1,9 @@
 import { CHANNEL_KINDS, type ChannelKind, type ContactResponse } from '@ctws/contracts'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
 import { channelHref, deleteContact, patchContact } from '../api/contacts'
 import { listProjects } from '../api/projects'
 import { useProjectRail } from '../projectColor'
-import { DeleteConfirm } from './DeleteConfirm'
+import { DangerAction, DangerZone } from './DangerZone'
 import { Field } from './Field'
 import { DetailHead, DetailPane } from './DetailPane'
 import { Link } from 'react-router-dom'
@@ -38,6 +37,10 @@ export function ContactDetail({
   return (
     <DetailPane label="Contacts" onClose={onClose}>
       <ContactFields contact={contact} onClose={onClose} />
+      {/* LAST, under a rule: the one control here that cannot be undone (`DangerZone`). */}
+      <DangerZone>
+        <DeleteContact contact={contact} onDeleted={onClose} />
+      </DangerZone>
       {/* Linked -- the meetings they are in, what they recommended, the task that came out of a
           call. None of it is written on the person: the edges are, and this reads them from the
           other end. The edges are the SHELL's, so they sit BESIDE this module's fields rather
@@ -60,20 +63,12 @@ export function ContactFields({
 }) {
   const qc = useQueryClient()
   const rail = useProjectRail()
-  const [deleting, setDeleting] = useState(false)
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
 
   const refresh = () => qc.invalidateQueries({ queryKey: ['contacts'] })
   const save = useMutation({
     mutationFn: (patch: Parameters<typeof patchContact>[1]) => patchContact(contact.id, patch),
     onSettled: refresh,
-  })
-  const drop = useMutation({
-    mutationFn: () => deleteContact(contact.id),
-    onSuccess: async () => {
-      await refresh()
-      onClose?.()
-    },
   })
 
   const channels = contact.channels
@@ -234,28 +229,40 @@ export function ContactFields({
           className="block max-w-[68ch] text-sm whitespace-pre-wrap text-fg"
         />
       </Field>
-
-      {/* SET APART, above a hairline and in the danger colour. It is the only control here that
-          cannot be undone, and it used to sit among the others in the same grey. */}
-      <div className="mt-2 border-t border-border-subtle pt-3">
-        {deleting ? (
-          <DeleteConfirm
-            label="Confirm deleting this contact"
-            message={`Delete “${contact.name}”?`}
-            busy={drop.isPending}
-            onConfirm={() => drop.mutate()}
-            onCancel={() => setDeleting(false)}
-          />
-        ) : (
-          <button
-            type="button"
-            onClick={() => setDeleting(true)}
-            className="h-9 rounded-lg px-2.5 text-sm text-danger hover:bg-danger/10"
-          >
-            Delete contact
-          </button>
-        )}
-      </div>
     </div>
+  )
+}
+
+/**
+ * DESTROYING THIS PERSON, for whichever surface is showing them.
+ *
+ * Exported on its own rather than drawn at the end of the fields above, because WHERE it goes is
+ * the surface's to decide and it is the same answer every time: last, under a rule (`DangerZone`).
+ * The fields are also shown on the object page, which has panels of its own below them -- a delete
+ * drawn inside the fields would land in the middle of that page.
+ */
+export function DeleteContact({
+  contact,
+  onDeleted,
+}: {
+  contact: ContactResponse
+  onDeleted?: () => void
+}) {
+  const qc = useQueryClient()
+  const drop = useMutation({
+    mutationFn: () => deleteContact(contact.id),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['contacts'] })
+      onDeleted?.()
+    },
+  })
+  return (
+    <DangerAction
+      label="Delete contact"
+      confirmLabel="Confirm deleting this contact"
+      message={`Delete “${contact.name}”? This cannot be undone.`}
+      busy={drop.isPending}
+      onConfirm={() => drop.mutate()}
+    />
   )
 }

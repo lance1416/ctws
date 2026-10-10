@@ -1,4 +1,5 @@
 import type { EditScope } from '@ctws/contracts'
+import { BUTTON } from './buttonStyles'
 
 /**
  * THIS ONE, OR FROM HERE ON -- what every calendar asks before changing a repeating event.
@@ -28,26 +29,13 @@ export function ScopeAsk({
       className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-border-subtle bg-surface px-2.5 py-2 text-sm"
     >
       <p className="w-full text-fg">{what}</p>
-      <button
-        autoFocus
-        type="button"
-        onClick={() => onPick('one')}
-        className="h-9 rounded-lg border border-border-strong px-2.5 text-fg hover:bg-surface-hover"
-      >
+      <button autoFocus type="button" onClick={() => onPick('one')} className={BUTTON.secondary}>
         Just this one
       </button>
-      <button
-        type="button"
-        onClick={() => onPick('following')}
-        className="h-9 rounded-lg border border-border-strong px-2.5 text-fg hover:bg-surface-hover"
-      >
+      <button type="button" onClick={() => onPick('following')} className={BUTTON.secondary}>
         This and all later
       </button>
-      <button
-        type="button"
-        onClick={onCancel}
-        className="h-9 rounded-lg px-2 text-fg-muted hover:text-fg"
-      >
+      <button type="button" onClick={onCancel} className={BUTTON.quiet}>
         Cancel
       </button>
     </div>

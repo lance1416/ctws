@@ -19,6 +19,7 @@ import { boxed, field, label } from './formStyles'
 import { PickMany, PickOne } from './inline'
 import { DialogFooter } from './DialogFooter'
 import { Modal } from './Modal'
+import { BUTTON } from './buttonStyles'
 
 /**
  * NEW MEETING, filled in once.
@@ -230,11 +231,7 @@ export function NewMeetingDialog({
                   className={boxed}
                 />
                 {until ? (
-                  <button
-                    type="button"
-                    onClick={() => setUntil(null)}
-                    className="rounded-md px-2 py-1 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
-                  >
+                  <button type="button" onClick={() => setUntil(null)} className={BUTTON.inline}>
                     Never
                   </button>
                 ) : (

@@ -4,6 +4,7 @@ import { searchProviders } from '../modules/registry'
 import { federate, type FederatedHit, type ProviderResult } from '../modules/search'
 import { Modal } from './Modal'
 import { useComposing } from '../composition'
+import { BUTTON } from './buttonStyles'
 
 /** Long enough that typing a word does not fire a request per letter, short enough to feel live. */
 const DEBOUNCE_MS = 150
@@ -161,7 +162,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
               setQuery('')
               box.current?.focus()
             }}
-            className="mt-3 -ml-2 rounded-md px-2 py-1 text-sm text-accent"
+            className={`mt-3 -ml-2 ${BUTTON.link}`}
           >
             Try another word
           </button>

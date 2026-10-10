@@ -6,7 +6,7 @@ import { updateProject } from '../api/projects'
 import { refreshProjects } from '../api/taskCache'
 import { railClass } from '../projectColor'
 import { useComposing } from '../composition'
-import { MENU_SURFACE } from './menuSurface'
+import { MENU_ITEM, MENU_SURFACE } from './menuSurface'
 
 /**
  * A PROJECT'S NAME AND COLOUR, EDITABLE WHERE THEY ARE SHOWN.
@@ -66,7 +66,7 @@ export function ProjectIdentity({
               <DropdownMenu.Item
                 key={slot}
                 onSelect={() => save.mutate({ color: slot })}
-                className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm text-fg outline-none data-[highlighted]:bg-surface-hover"
+                className={MENU_ITEM}
               >
                 <span
                   aria-hidden="true"

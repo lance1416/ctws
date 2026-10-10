@@ -1,4 +1,5 @@
 import type { ObjectType } from '@ctws/contracts'
+import { DeleteProject } from '../components/DeleteProject'
 import { ProjectHead } from '../components/ProjectHead'
 import type { ComponentType } from 'react'
 import type { RouteObject } from 'react-router-dom'
@@ -254,7 +255,13 @@ export type RegisteredRelation = RelationContribution & { moduleId: string }
  * `relations.test.ts` asserts the set covers the contract exactly.
  */
 const SHELL_RELATIONS: RelationContribution[] = [
-  { type: 'project', kind: 'Project', to: (id) => `/projects/${id}`, Head: ProjectHead },
+  {
+    type: 'project',
+    kind: 'Project',
+    to: (id) => `/projects/${id}`,
+    Head: ProjectHead,
+    Destroy: DeleteProject,
+  },
 ]
 
 export function relations(modules: readonly WorkspaceModule[] = MODULES): RegisteredRelation[] {

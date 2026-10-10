@@ -1,8 +1,9 @@
 import type { MeetingOccurrence } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { listMeetings, meetingCalendar, meetingsKey } from '../api/meetings'
-import { MeetingDetail, MeetingFields } from '../components/MeetingDetail'
+import { CancelMeeting, MeetingDetail, MeetingFields } from '../components/MeetingDetail'
 import { ObjectPage } from '../components/ObjectPage'
 import { Meetings } from '../routes/Meetings'
 import { PanelEmpty } from '../components/Panel'
@@ -184,6 +185,14 @@ function MeetingHead({ id }: { id: string }) {
   return <MeetingFields meeting={found.data} accountZone={accountZone} />
 }
 
+/** The shell's danger zone at the foot of a meeting's page; this module says what goes in it. */
+function CancelThisMeeting({ id }: { id: string }) {
+  const navigate = useNavigate()
+  const found = useQuery<MeetingOccurrence | null>({ queryKey: ['meetings', 'series', id] })
+  if (!found.data) return null
+  return <CancelMeeting meeting={found.data} onCancelled={() => navigate(`/${ID}`)} />
+}
+
 export const meetingModule: WorkspaceModule = {
   id: ID,
   label: 'Meetings',
@@ -198,5 +207,13 @@ export const meetingModule: WorkspaceModule = {
   ],
   calendar: { label: 'Meetings', useEntries: useMeetingEntries, Detail: CalendarDetail },
   widgets: [{ id: 'today', label: "Today's meetings", to: '/calendar', Component: TodayMeetings }],
-  relations: [{ type: 'meeting', kind: 'Meeting', to: (id) => `/${ID}/${id}`, Head: MeetingHead }],
+  relations: [
+    {
+      type: 'meeting',
+      kind: 'Meeting',
+      to: (id) => `/${ID}/${id}`,
+      Head: MeetingHead,
+      Destroy: CancelThisMeeting,
+    },
+  ],
 }

@@ -7,6 +7,7 @@ import { ContactList } from '../components/ContactList'
 import { NewContactDialog } from '../components/NewContactDialog'
 import { NewContactInput } from '../components/NewContactInput'
 import { LIST_MEASURE } from '../rowLead'
+import { BUTTON } from '../components/buttonStyles'
 
 /**
  * CONTACTS.
@@ -34,11 +35,7 @@ export function Contacts() {
         {/* TWO WAYS IN, because there are two moments. The box takes a name when a name is all
             you have; the button opens the form for when you are writing somebody down properly
             and already know where they work and how to reach them. */}
-        <button
-          type="button"
-          onClick={() => setMaking(true)}
-          className="h-9 rounded-lg border border-border-strong px-3 text-sm font-semibold text-fg hover:bg-surface-hover"
-        >
+        <button type="button" onClick={() => setMaking(true)} className={BUTTON.secondary}>
           New contact
         </button>
       </div>

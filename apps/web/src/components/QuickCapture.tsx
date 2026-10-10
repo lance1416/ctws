@@ -7,6 +7,7 @@ import { useShortcutsEnabled } from '../shortcuts/enabled'
 import { isBareKey, isTypingTarget } from '../shortcuts/keys'
 import { isOverlayOpen } from './overlayState'
 import { useComposing } from '../composition'
+import { textbox } from './formStyles'
 
 /**
  * One input on every page.
@@ -108,7 +109,7 @@ export function QuickCapture() {
           placeholder="Capture…"
           disabled={!fallback.target}
           aria-label="Capture"
-          className="h-9 w-full rounded-lg border border-border-strong bg-surface-panel pr-8 pl-3 text-sm text-fg placeholder:text-fg-muted disabled:opacity-50"
+          className={`w-full bg-surface-panel pr-8 disabled:opacity-50 ${textbox}`}
         />
         <kbd
           aria-hidden="true"

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { contactsKey, listContacts, searchContacts } from '../api/contacts'
-import { ContactFields } from '../components/ContactDetail'
+import { ContactFields, DeleteContact } from '../components/ContactDetail'
 import { ObjectPage } from '../components/ObjectPage'
 import { Contacts } from '../routes/Contacts'
 import type { SearchHit, WorkspaceModule } from './contract'
@@ -68,6 +69,15 @@ function ContactHead({ id }: { id: string }) {
   return <ContactFields contact={person} />
 }
 
+/** The shell's danger zone at the foot of a person's page; this module says what goes in it. */
+function DeletePerson({ id }: { id: string }) {
+  const contacts = useQuery({ queryKey: contactsKey(), queryFn: () => listContacts() })
+  const person = contacts.data?.find((c) => c.id === id)
+  const navigate = useNavigate()
+  if (!person) return null
+  return <DeleteContact contact={person} onDeleted={() => navigate(`/${ID}`)} />
+}
+
 export const contactModule: WorkspaceModule = {
   id: ID,
   label: 'Contacts',
@@ -83,5 +93,13 @@ export const contactModule: WorkspaceModule = {
   chords: [
     { id: 'contacts', key: 'n', label: 'Go to Contacts', resolve: () => `/${ID}`, order: 17 },
   ],
-  relations: [{ type: 'contact', kind: 'Person', to: (id) => `/${ID}/${id}`, Head: ContactHead }],
+  relations: [
+    {
+      type: 'contact',
+      kind: 'Person',
+      to: (id) => `/${ID}/${id}`,
+      Head: ContactHead,
+      Destroy: DeletePerson,
+    },
+  ],
 }

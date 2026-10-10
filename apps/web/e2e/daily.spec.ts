@@ -454,13 +454,14 @@ test('deleting a project asks first, names what is lost, and cancel deletes noth
   await registerFreshUser(page)
   const pid = await makeProject(page, '待删项目')
   for (const t of ['一', '二', '三']) await makeTask(page, pid, t)
-  await page.goto('/projects')
+  // At the foot of the project's own page, which is the only place it is offered from.
+  await page.goto(`/projects/${pid}`)
   const deletes: string[] = []
   page.on('request', (r) => r.method() === 'DELETE' && deletes.push(r.url()))
 
-  const item = page.getByRole('listitem').filter({ hasText: '待删项目' })
-  await item.getByRole('button', { name: 'Delete', exact: true }).click()
-  const ask = item.getByRole('alertdialog')
+  const del = page.getByRole('button', { name: 'Delete project' })
+  await del.click()
+  const ask = page.getByRole('alertdialog', { name: 'Confirm deleting this project' })
   await expect(ask).toContainText('Delete “待删项目” and its 3 tasks')
   // The first click only asks.
   expect(deletes).toHaveLength(0)
@@ -473,19 +474,20 @@ test('deleting a project asks first, names what is lost, and cancel deletes noth
   expect(list.projects.map((p: { name: string }) => p.name)).toContain('待删项目')
   expect((await serverTask(page, pid, '二')).status).toBeDefined()
   // And focus is back on the control that asked, not lost to <body>.
-  await expect(item.getByRole('button', { name: 'Delete', exact: true })).toBeFocused()
+  await expect(del).toBeFocused()
 
   // Escape is also "no".
-  await item.getByRole('button', { name: 'Delete', exact: true }).click()
+  await del.click()
   await expect(ask).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(ask).toHaveCount(0)
   expect(deletes).toHaveLength(0)
 
   // Only the explicit confirmation deletes, and the server really lost it.
-  await item.getByRole('button', { name: 'Delete', exact: true }).click()
+  await del.click()
   await ask.getByRole('button', { name: 'Delete' }).click()
-  await expect(item).toHaveCount(0)
+  // The page it was on cannot survive it, so it ends on the list.
+  await expect(page).toHaveURL(/\/projects$/)
   expect(deletes).toHaveLength(1)
   const after = await (await page.request.get('/api/v1/projects')).json()
   expect(after.projects.map((p: { name: string }) => p.name)).not.toContain('待删项目')

@@ -5,6 +5,7 @@ import { candidatesKey, createLink, linkCandidates, type Endpoint } from '../api
 import { useComposing } from '../composition'
 import { relationFor } from '../modules/registry'
 import { Modal } from './Modal'
+import { BUTTON } from './buttonStyles'
 
 /**
  * SAYING THAT TWO THINGS ARE CONNECTED.
@@ -118,18 +119,10 @@ export function AddLink({ of, onClose }: { of: Endpoint; onClose: () => void }) 
             </p>
           )}
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setChosen(null)}
-              className="h-9 rounded-lg px-3 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
-            >
+            <button type="button" onClick={() => setChosen(null)} className={BUTTON.quiet}>
               Back
             </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="h-9 rounded-lg px-3 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
-            >
+            <button type="button" onClick={onClose} className={BUTTON.quiet}>
               Cancel
             </button>
           </div>

@@ -2,6 +2,7 @@ import * as Dialog from '@radix-ui/react-dialog'
 import { useEffect, useRef, useState } from 'react'
 import { enterOverlay, exitOverlay } from '../components/overlayState'
 import { NoteBody } from './NoteBody'
+import { BUTTON } from '../components/buttonStyles'
 
 /**
  * THE FULL-SCREEN WRITING MODE -- design artboard H, and the escape hatch of editing model A.
@@ -88,7 +89,7 @@ export function WritingMode({
                 Leave full screen to go back. Saving still happens in the pane.
               </p>
             </div>
-            <Dialog.Close className="h-9 shrink-0 rounded-lg border border-border-strong px-3 text-sm text-fg hover:bg-surface-hover">
+            <Dialog.Close className={`shrink-0 ${BUTTON.secondary}`}>
               Leave full screen
             </Dialog.Close>
           </div>

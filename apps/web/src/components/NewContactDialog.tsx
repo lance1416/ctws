@@ -5,7 +5,7 @@ import { createContact } from '../api/contacts'
 import { listProjects } from '../api/projects'
 import { useComposing } from '../composition'
 import { useProjectRail } from '../projectColor'
-import { field, label } from './formStyles'
+import { boxed, field, label } from './formStyles'
 import { PickMany, PickOne } from './inline'
 import { DialogFooter } from './DialogFooter'
 import { Modal } from './Modal'
@@ -126,7 +126,7 @@ export function NewContactDialog({
               aria-label="Address"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              className="min-w-[12rem] flex-1 rounded-lg border border-border-strong bg-surface px-3 py-2 text-fg"
+              className={`min-w-[12rem] flex-1 ${boxed}`}
             />
           </div>
         </div>

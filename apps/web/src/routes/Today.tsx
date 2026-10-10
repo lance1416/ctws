@@ -21,6 +21,7 @@ import { carriedLabel, dateHints, toDayTimeInput, todayIn } from '../dueAt'
 import { useShortcutsEnabled } from '../shortcuts/enabled'
 import { triageSections } from '../triage'
 import { useTimeZone } from '../useMe'
+import { BUTTON } from '../components/buttonStyles'
 
 /**
  * TODAY. Panels, each answering one question, in a fixed arrangement.
@@ -358,7 +359,7 @@ export function Today() {
                     type="button"
                     aria-label={`Complete “${t.title}”`}
                     onClick={() => setStatus(t.id, toggleDoneTarget(t.status))}
-                    className="h-9 rounded-lg bg-accent px-3.5 text-sm font-semibold text-accent-fg hover:opacity-90"
+                    className={BUTTON.primary}
                   >
                     Done
                   </button>
@@ -366,7 +367,7 @@ export function Today() {
                     type="button"
                     aria-label={`Pause “${t.title}”`}
                     onClick={() => setStatus(t.id, toggleStartTarget(t.status))}
-                    className="h-9 rounded-lg border border-border-strong px-3.5 text-sm text-fg hover:bg-surface-hover"
+                    className={BUTTON.secondary}
                   >
                     Pause
                   </button>

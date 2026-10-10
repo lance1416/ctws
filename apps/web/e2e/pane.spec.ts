@@ -349,11 +349,22 @@ test('the pane opens with the task, and Delete is not a peer of Save', async ({ 
   expect(delBox.y, '删除任务 is below the save row').toBeGreaterThanOrEqual(
     saveBox.y + saveBox.height,
   )
-  const [saveSize, delSize] = await Promise.all([
-    save.evaluate((el) => parseFloat(getComputedStyle(el).fontSize)),
-    del.evaluate((el) => parseFloat(getComputedStyle(el).fontSize)),
+  // The weight is carried by the FILL and the colour, not by the type size -- every control in
+  // the app is one size. Save is the single painted block here; the one that destroys the task is
+  // a word, in a colour nothing else in the footer wears.
+  const paint = (l: typeof save) =>
+    l.evaluate((el) => {
+      const s = getComputedStyle(el)
+      return { fill: s.backgroundColor, ink: s.color }
+    })
+  const [savePaint, delPaint, cancelPaint] = await Promise.all([
+    paint(save),
+    paint(del),
+    paint(dialog.getByRole('button', { name: 'Cancel' })),
   ])
-  expect(delSize, '删除任务 is quieter than 保存').toBeLessThan(saveSize)
+  expect(savePaint.fill, 'Save is a painted block').not.toBe('rgba(0, 0, 0, 0)')
+  expect(delPaint.fill, '删除任务 is not').toBe('rgba(0, 0, 0, 0)')
+  expect(delPaint.ink, '删除任务 is not the colour of the way out').not.toBe(cancelPaint.ink)
   // ...and it still asks before it does anything.
   await del.click()
   await expect(page.getByRole('alertdialog', { name: 'Confirm deleting this task' })).toBeVisible()

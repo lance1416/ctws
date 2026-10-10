@@ -6,6 +6,7 @@ import { deleteLink, linksKey, listLinks, type Endpoint } from '../api/links'
 import { relationFor } from '../modules/registry'
 import { AddLink } from './AddLink'
 import { PanelEmpty } from './Panel'
+import { BUTTON } from './buttonStyles'
 
 /**
  * LINKED -- everything one thing is connected to, grouped by kind.
@@ -47,11 +48,7 @@ export function Links({
   })
   const add = (
     <>
-      <button
-        type="button"
-        onClick={() => setAdding(true)}
-        className="self-start rounded-md px-2 py-1 text-sm text-accent hover:bg-surface-hover"
-      >
+      <button type="button" onClick={() => setAdding(true)} className={`self-start ${BUTTON.link}`}>
         + Link
       </button>
       {adding && <AddLink of={of} onClose={() => setAdding(false)} />}
@@ -154,7 +151,7 @@ function LinkedRow({
       {label && <span className="shrink-0 text-xs text-fg-subtle">{label}</span>}
     </>
   )
-  const shape = 'flex min-w-0 flex-1 items-baseline gap-2 rounded-md px-2 py-1.5 text-sm text-fg'
+  const shape = 'flex min-w-0 flex-1 items-baseline gap-2 rounded-lg px-2 py-1.5 text-sm text-fg'
   // No module answers for this type: a row that cannot be opened, rather than no row at all. The
   // registry test makes this unreachable; it is here because dropping the row silently would hide
   // a real relationship behind a registration mistake.

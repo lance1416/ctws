@@ -1,6 +1,7 @@
 import type { ObjectType } from '@ctws/contracts'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { projectBlocks, relationFor } from '../modules/registry'
+import { DangerZone } from './DangerZone'
 import { Links } from './Links'
 import { Panel } from './Panel'
 import { ViewTabs } from './ViewTabs'
@@ -38,6 +39,7 @@ export function ObjectPage({ type }: { type: ObjectType }) {
 
   if (!id) return null
   const Head = where?.Head
+  const Destroy = where?.Destroy
   // The kinds a module already draws on THIS page, in its own block.
   const covered: ObjectType[] = type === 'project' ? BLOCKED_ON_A_PROJECT : []
 
@@ -96,6 +98,16 @@ export function ObjectPage({ type }: { type: ObjectType }) {
       <Panel label="Linked" className="mt-4">
         <Links of={{ type, id }} except={covered} />
       </Panel>
+
+      {/* LAST ON THE PAGE, below everything, in the danger colour: the one action here that
+          cannot be undone, where nothing is reached by passing over it (`DangerZone`). The shell
+          owns WHERE it goes -- the same place for every kind of thing -- and the module owns what
+          destroying one of its things means. */}
+      {Destroy && (
+        <DangerZone>
+          <Destroy id={id} />
+        </DangerZone>
+      )}
     </>
   )
 }
