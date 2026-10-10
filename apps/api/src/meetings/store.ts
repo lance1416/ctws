@@ -3,10 +3,9 @@ import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import { ContactNotFoundError } from '../contacts/errors'
 import type { Queryable } from '../db/client'
-import { contacts, meetingExceptions, meetings, projects } from '../db/schema'
+import { contacts, meetingExceptions, meetings } from '../db/schema'
 import { contactsLinkedFrom, filedUnder, oneProjectOf, putLinks } from '../links/store'
-import { ProjectNotFoundError } from '../projects/errors'
-import { assertProjectVisible, visibleProjects } from '../projects/store'
+import { assertProjectVisible } from '../projects/store'
 import {
   BadRuleError,
   MeetingNotFoundError,

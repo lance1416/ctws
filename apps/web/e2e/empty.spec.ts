@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { makeProject, makeTask, registerFreshUser } from './helpers'
 
 /**
@@ -11,8 +11,6 @@ import { makeProject, makeTask, registerFreshUser } from './helpers'
  * AND asserts it is gone the moment the screen has something on it -- the second half is what
  * makes the first half mean anything.
  */
-
-const HEADERS = { 'x-ctws-client': 'web' }
 
 const ymd = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`

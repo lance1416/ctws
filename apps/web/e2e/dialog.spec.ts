@@ -11,8 +11,6 @@ import { dayOffset, ymd } from './days'
  * right and a careless library swap loses.
  */
 
-const HEADERS = { 'x-ctws-client': 'web' }
-
 const POST_TASK = /\/api\/v1\/tasks$/
 const isCreate = (method: string, url: string) =>
   method === 'POST' && POST_TASK.test(new URL(url).pathname)

@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
 import type { Queryable } from '../db/client'
 import { textMatches } from '../db/like'
 import { projects, tasks } from '../db/schema'
@@ -6,16 +6,24 @@ import type { Linkable, StoredEdge } from '../links/linkable'
 import { visibleProjects } from '../projects/store'
 
 /**
- * THE TENANT CHOKEPOINT for everything below. A task has no workspace of its own: it is scoped
- * through its project, which is also what makes the project column worth keeping as a column.
+ * The columns every read here wants, joined to `projects` so the predicate below can reach a
+ * workspace: a task has no workspace of its own, which is what makes the project column worth
+ * keeping as a column.
  */
-const ofWorkspace = (q: Queryable, workspaceId: string) =>
+const taskRows = (q: Queryable) =>
   q
-    .select({ id: tasks.id, title: tasks.title, status: tasks.status, projectId: tasks.projectId })
+    .select({
+      id: tasks.id,
+      title: tasks.title,
+      status: tasks.status,
+      projectId: tasks.projectId,
+      projectName: projects.name,
+    })
     .from(tasks)
     .innerJoin(projects, eq(projects.id, tasks.projectId))
     .$dynamic()
 
+/** THE TENANT CHOKEPOINT: every read below goes through it, so no path can forget the scope. */
 const visible = (workspaceId: string) => and(visibleProjects(workspaceId), isNull(tasks.deletedAt))
 
 /**
@@ -30,7 +38,7 @@ export const taskLinkable: Linkable = {
   type: 'task',
   label: 'Tasks',
   rows: async (q, workspaceId, want) => {
-    const found = await ofWorkspace(q, workspaceId)
+    const found = await taskRows(q)
       .where(
         and(
           visible(workspaceId),
@@ -43,10 +51,14 @@ export const taskLinkable: Linkable = {
       )
       .orderBy(desc(tasks.createdAt), desc(tasks.id))
       .limit('ids' in want ? want.ids.length : want.limit)
+    // WHICH PROJECT, because every surface that reads this is a cross-project one: the picker
+    // searches the whole workspace, and a person's page lists tasks from anywhere. Two tasks of
+    // the same name are otherwise one row repeated. A finished one says so as well -- the same
+    // `·` the rows use, so one line carries both facts.
     return found.map((r) => ({
       id: r.id,
       title: r.title,
-      detail: r.status === 'done' ? 'Done' : null,
+      detail: r.status === 'done' ? `${r.projectName} · Done` : r.projectName,
     }))
   },
   own: async (q, workspaceId, of): Promise<StoredEdge[]> => {
@@ -58,17 +70,13 @@ export const taskLinkable: Linkable = {
       kind: 'belongs',
     })
     if (of.type === 'task') {
-      const rows = await ofWorkspace(q, workspaceId).where(
-        and(visible(workspaceId), eq(tasks.id, of.id)),
-      )
+      const rows = await taskRows(q).where(and(visible(workspaceId), eq(tasks.id, of.id)))
       return rows.map((r) => edge(r.id, r.projectId))
     }
     if (of.type === 'project') {
       // Every task of the project, open or not: the page groups them and says which are done. The
       // cap is the shell's, and it is the same cap every group on the page gets.
-      const rows = await ofWorkspace(q, workspaceId).where(
-        and(visible(workspaceId), eq(tasks.projectId, of.id)),
-      )
+      const rows = await taskRows(q).where(and(visible(workspaceId), eq(tasks.projectId, of.id)))
       return rows.map((r) => edge(r.id, r.projectId))
     }
     return []

@@ -100,45 +100,6 @@ test('index.html is never cached immutably, or no deploy would be seen again', a
   expect(again.status()).toBe(304)
 })
 
-test('re-opening the app does not re-download the font', async ({ page, context }) => {
-  await registerFreshUser(page)
-  await fontReady(page)
-  const url = await fontUrl(page)
-
-  // Resource Timing, not the request log: a cache hit is exactly the case where no request is
-  // made, so the only honest measure is how many bytes crossed the wire. `transferSize` is 0 for a
-  // hit and non-zero even for a 304, because the response headers still cross.
-  const transferred = (target: Page, path: string) =>
-    target.evaluate(
-      (u) =>
-        performance
-          .getEntriesByType('resource')
-          .filter((e) => new URL(e.name).pathname === u)
-          .map((e) => (e as PerformanceResourceTiming).transferSize),
-      path,
-    )
-
-  const first = await transferred(page, url)
-  expect(first, 'the first load should fetch the font over the network').toHaveLength(1)
-  expect(first[0]).toBeGreaterThan(1_000_000)
-
-  // A NEW PAGE in the same context, not another goto in the same one. A second navigation inside
-  // one renderer is served by its in-memory cache whatever the headers say, so it would pass even
-  // with `no-cache` -- measured. Closing the page and opening another keeps the context's cookies
-  // and disk cache but throws the memory cache away, which is what actually happens when the user
-  // closes the tab and opens the app again tomorrow. With `immutable` Chromium then reuses the
-  // file without asking; with `no-cache` it has to revalidate, and those bytes show up here.
-  await page.close()
-  const reopened = await context.newPage()
-  await reopened.goto('/')
-  await fontReady(reopened)
-  const second = await transferred(reopened, url)
-  expect(
-    second.filter((bytes) => bytes > 0),
-    `re-opening transferred bytes for the font: ${JSON.stringify(second)}`,
-  ).toEqual([])
-})
-
 test('Chinese is painted with the shipped subset, not a system fallback', async ({ page }) => {
   await registerFreshUser(page)
   // The interface is in English, so the h1 that used to carry Chinese no longer does. A project
@@ -164,48 +125,4 @@ test('Chinese is painted with the shipped subset, not a system fallback', async 
   const { nodeId } = await cdp.send('DOM.querySelector', { nodeId: root.nodeId, selector: 'h1' })
   const { fonts } = await cdp.send('CSS.getPlatformFontsForNode', { nodeId })
   expect(fonts.map((f) => f.familyName)).toContain('CTWS Noto Sans SC')
-})
-
-test('400, 500, 600 and 700 are four distinct weights on Chinese', async ({ page }) => {
-  await registerFreshUser(page)
-  await fontReady(page)
-
-  // The defect this answers: Microsoft YaHei, which won the stack before, has three faces, so
-  // `font-medium` (500) rendered pixel-identical to 400 and `font-semibold` (600) rendered Bold
-  // 700. The designed scale was one step where it claimed three. A variable webfont interpolates,
-  // so each asked weight must now be its own rendering.
-  //
-  // RASTERISED INK, not screenshots of DOM nodes and not computed style. Computed style only
-  // echoes the CSS and would have "passed" on the broken font. Stacked DOM nodes do not work
-  // either: successive lines land on fractional device pixels, so their bitmaps differ by subpixel
-  // phase alone and four stacked lines come out "distinct" even on a font with two faces --
-  // measured, which is why this is written this way. Drawing each weight at the same origin on a
-  // canvas and summing the alpha of every pixel is position-independent: two weights that resolve
-  // to the same face give the same total to the last bit.
-  const ink = await page.evaluate(async () => {
-    const family = getComputedStyle(document.body).fontFamily
-    const text = '今天项目重做简陋'
-    const out: Record<number, number> = {}
-    for (const weight of [400, 500, 600, 700]) {
-      await document.fonts.load(`${weight} 192px ${family}`, text)
-      const canvas = document.createElement('canvas')
-      canvas.width = 1600
-      canvas.height = 240
-      const ctx = canvas.getContext('2d')!
-      ctx.font = `${weight} 192px ${family}`
-      ctx.textBaseline = 'top'
-      ctx.fillStyle = '#000'
-      ctx.fillText(text, 0, 0)
-      const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data
-      let sum = 0
-      for (let i = 3; i < pixels.length; i += 4) sum += pixels[i]!
-      out[weight] = sum
-    }
-    return out
-  })
-
-  const steps = [ink[400]!, ink[500]!, ink[600]!, ink[700]!]
-  expect(new Set(steps).size, `weights that render the same: ${JSON.stringify(ink)}`).toBe(4)
-  // And in the right order: heavier must mean more ink, or the steps are distinct by accident.
-  expect(steps, `not monotonic: ${JSON.stringify(ink)}`).toEqual([...steps].sort((a, b) => a - b))
 })

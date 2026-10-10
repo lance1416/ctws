@@ -1,12 +1,11 @@
 import type { CreateReadingItemBody, UpdateReadingItemBody } from '@ctws/contracts'
-import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import type { Queryable } from '../db/client'
 import { filedUnder, oneProjectOf, putLinks, unfiled } from '../links/store'
 import { textMatches } from '../db/like'
-import { projects, readingItems } from '../db/schema'
-import { ProjectNotFoundError } from '../projects/errors'
-import { assertProjectVisible, visibleProjects } from '../projects/store'
+import { readingItems } from '../db/schema'
+import { assertProjectVisible } from '../projects/store'
 import { ReadingItemNotFoundError, WrongKindError } from './errors'
 
 /**

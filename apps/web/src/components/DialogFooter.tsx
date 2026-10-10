@@ -1,5 +1,3 @@
-import type { ReactNode } from 'react'
-
 /**
  * HOW A "NEW THING" DIALOG ENDS: what went wrong, then the two ways out.
  *

@@ -4,7 +4,7 @@ import type { Queryable } from '../db/client'
 // The shell's, not this module's: a second module needed the same escaping (contract §3).
 import { textMatches } from '../db/like'
 import type { Task } from './tasks'
-import { asDate, taskRowOf } from './rows'
+import { taskRowOf } from './rows'
 
 export type SearchTask = Task & {
   projectName: string

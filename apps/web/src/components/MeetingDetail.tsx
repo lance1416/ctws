@@ -1,6 +1,6 @@
 import type { EditScope, MeetingOccurrence, UpdateMeetingInput } from '@ctws/contracts'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState, type ReactNode } from 'react'
+import { useState } from 'react'
 import { listContacts } from '../api/contacts'
 import {
   cancelMeeting,

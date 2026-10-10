@@ -36,9 +36,6 @@ const tabStops = (page: Page) =>
 // the box is what sits immediately above the rows now.
 const aboveTree = (page: Page) => page.getByRole('textbox', { name: 'New task' })
 
-const focusedTitle = (page: Page) =>
-  page.evaluate(() => document.activeElement?.getAttribute('aria-label') ?? null)
-
 async function startProject(page: Page, name: string) {
   await page.getByRole('link', { name: 'Projects' }).click()
   await submitCreate(page, 'New project', name)

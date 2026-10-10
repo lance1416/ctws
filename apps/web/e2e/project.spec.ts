@@ -23,8 +23,6 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
  * - "the rail is one spine" is a claim about drawn ink: a column of per-row dashes and an unbroken
  *   bar both have one rail per row at one x. Only the gaps between them tell the two apart.
  */
-
-const HEADERS = { 'x-ctws-client': 'web' }
 const DAY = 86_400_000
 const WIDE = { width: 1440, height: 1000 }
 // 1024: the widest viewport still BELOW the 1280 threshold, so it is the case a min-width rule

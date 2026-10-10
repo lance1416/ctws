@@ -23,8 +23,6 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
  * - "a destructive action is not a peer of 保存" is a claim about rank, so it is measured too.
  */
 
-const HEADERS = { 'x-ctws-client': 'web' }
-
 type ServerTask = {
   id: string
   status: string

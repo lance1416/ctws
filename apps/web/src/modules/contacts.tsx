@@ -1,10 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
 import { contactsKey, listContacts, searchContacts } from '../api/contacts'
-import { ContactDetail, ContactFields } from '../components/ContactDetail'
+import { ContactFields } from '../components/ContactDetail'
 import { ObjectPage } from '../components/ObjectPage'
-import { ContactList } from '../components/ContactList'
-import { NewContactInput } from '../components/NewContactInput'
 import { Contacts } from '../routes/Contacts'
 import type { SearchHit, WorkspaceModule } from './contract'
 

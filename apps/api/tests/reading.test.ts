@@ -1,6 +1,6 @@
 import type { ReadingItemResponse } from '@ctws/contracts'
 import { afterEach, describe, expect, it } from 'vitest'
-import { appWithUser, createProject, setupWith, type TaskCtx, web } from './helpers/tasks'
+import { createProject, setupWith, type TaskCtx, web } from './helpers/tasks'
 
 /**
  * 待读清单 -- THE SECOND MODULE.

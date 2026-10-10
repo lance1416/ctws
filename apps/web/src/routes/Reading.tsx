@@ -1,4 +1,4 @@
-import type { ReadingItemResponse, ReadingStatus } from '@ctws/contracts'
+import type { ReadingStatus } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { listReading } from '../api/reading'

@@ -2,7 +2,7 @@ import { sql } from 'drizzle-orm'
 import type { TodaySegment } from '@ctws/contracts'
 import type { Queryable } from '../db/client'
 import type { Task } from './tasks'
-import { asDate, taskRowOf } from './rows'
+import { taskRowOf } from './rows'
 
 export type TodayTask = Task & {
   projectName: string

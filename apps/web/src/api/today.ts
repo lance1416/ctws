@@ -1,4 +1,4 @@
-import type { CalendarEntry, TodayTaskResponse } from '@ctws/contracts'
+import type { TodayTaskResponse } from '@ctws/contracts'
 import { apiFetch, calendarOf } from '../api'
 
 // The single accessor for the ['today'] cache key. The server owns segment assignment and the

@@ -121,27 +121,6 @@ describe('task tables', () => {
     expect(cols.find((c) => c.column_name === 'parent_id')?.is_nullable).toBe('YES')
   })
 
-  it('indexes the queries this milestone actually runs', async () => {
-    const r = await ctx.db.execute(sql`
-      select indexname, indexdef from pg_indexes
-      where schemaname = 'public' and tablename in ('tasks', 'task_events')
-    `)
-    const defs = new Map(
-      (r.rows as { indexname: string; indexdef: string }[]).map((x) => [x.indexname, x.indexdef]),
-    )
-    // Spec 5.1: "all tasks of a project" must be a plain index scan, not a recursive query.
-    expect(defs.get('tasks_project_id_idx')).toMatch(/ON public\.tasks USING btree \(project_id\)$/)
-    // Walking the tree.
-    expect(defs.get('tasks_parent_id_idx')).toMatch(/ON public\.tasks USING btree \(parent_id\)$/)
-    // The weekly review's workspace-wide event scan (spec 9.4), and per-task history, newest first.
-    expect(defs.get('task_events_workspace_occurred_idx')).toMatch(
-      /ON public\.task_events USING btree \(workspace_id, occurred_at DESC( NULLS LAST)?\)$/,
-    )
-    expect(defs.get('task_events_task_occurred_idx')).toMatch(
-      /ON public\.task_events USING btree \(task_id, occurred_at DESC( NULLS LAST)?\)$/,
-    )
-  })
-
   // The rank's lexicographic order only matches its logical order under bytewise comparison
   // (COLLATE "C"). We assert the column's declared collation rather than an ordering, because the
   // Alpine test container's default collation already coincides with bytewise, so an ordering

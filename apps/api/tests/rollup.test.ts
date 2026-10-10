@@ -90,7 +90,7 @@ describe('rollups ride along with the task list', () => {
     const x = await createTask(ctx, pid, 'x', root)
     const y = await createTask(ctx, pid, 'y', root)
     const y1 = await createTask(ctx, pid, 'y1', y)
-    const y2 = await createTask(ctx, pid, 'y2', y)
+    await createTask(ctx, pid, 'y2', y)
     await setStatus(ctx, x, 'done')
     await setStatus(ctx, y1, 'done')
 

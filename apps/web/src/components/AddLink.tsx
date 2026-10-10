@@ -1,7 +1,7 @@
 import { kindsBetween, type LinkCandidate, type LinkKind } from '@ctws/contracts'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
-import { candidatesKey, createLink, linkCandidates, linksKey, type Endpoint } from '../api/links'
+import { candidatesKey, createLink, linkCandidates, type Endpoint } from '../api/links'
 import { useComposing } from '../composition'
 import { relationFor } from '../modules/registry'
 import { Modal } from './Modal'

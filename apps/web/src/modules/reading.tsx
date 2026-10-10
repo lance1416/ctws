@@ -6,7 +6,6 @@ import {
   readingLabel,
   searchReading,
 } from '../api/reading'
-import { AddReading } from '../components/AddReading'
 import { PanelEmpty } from '../components/Panel'
 import { ReadingRow } from '../components/ReadingRow'
 import { Stat, StatRow } from '../components/Stat'

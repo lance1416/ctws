@@ -1,7 +1,7 @@
 import type { CalendarEntry, ContactResponse, MeetingOccurrence } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
-import { appWithUser, createProject, setupWith, type TaskCtx, web } from './helpers/tasks'
+import { createProject, setupWith, type TaskCtx, web } from './helpers/tasks'
 
 /**
  * 会议 -- the fourth module, on iCalendar's `VEVENT` (RFC 5545).

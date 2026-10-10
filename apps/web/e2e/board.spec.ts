@@ -9,8 +9,6 @@ import { makeProject, makeTask, registerFreshUser } from './helpers'
  * they are about the columns.
  */
 
-const HEADERS = { 'x-ctws-client': 'web' }
-
 const column = (page: Page, status: string) => page.locator(`[data-board-column="${status}"]`)
 const card = (page: Page, title: string) =>
   page.locator('[data-board-card]').filter({ hasText: title })

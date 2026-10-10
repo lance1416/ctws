@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm'
 import type { Queryable } from '../db/client'
 import type { Task } from './tasks'
-import { asDate, taskRowOf } from './rows'
+import { taskRowOf } from './rows'
 
 export type CompletedTask = Task & {
   projectName: string

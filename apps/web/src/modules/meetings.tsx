@@ -7,7 +7,6 @@ import { ObjectPage } from '../components/ObjectPage'
 import { Meetings } from '../routes/Meetings'
 import { PanelEmpty } from '../components/Panel'
 import { addDays, todayIn } from '../dueAt'
-import { useProjectRail } from '../projectColor'
 import { useTimeZone } from '../useMe'
 import type { WorkspaceModule } from './contract'
 

@@ -1,13 +1,6 @@
 import type { DependencyRef } from '@ctws/contracts'
 import { afterEach, describe, expect, it } from 'vitest'
-import {
-  appWithUser,
-  createProject,
-  createTask,
-  setupWith,
-  type TaskCtx,
-  web,
-} from './helpers/tasks'
+import { createProject, createTask, setupWith, type TaskCtx, web } from './helpers/tasks'
 
 /**
  * 「A 没做完 B 做不了」 (D64).

@@ -1,5 +1,4 @@
 import type {
-  CalendarEntry,
   CreateReadingItemBody,
   ReadingItemResponse,
   ReadingStatus,

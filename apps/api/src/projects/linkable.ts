@@ -1,4 +1,4 @@
-import { and, asc, inArray, sql } from 'drizzle-orm'
+import { and, asc, inArray } from 'drizzle-orm'
 import { textMatches } from '../db/like'
 import { projects } from '../db/schema'
 import type { Linkable } from '../links/linkable'

@@ -2,7 +2,6 @@ import { randomUUID } from 'node:crypto'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
-  appWithUser,
   createChain,
   createProject,
   createTask,

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
-import { appWithUser, createProject, createTask, setupWith, type TaskCtx } from './helpers/tasks'
+import { createProject, createTask, setupWith, type TaskCtx } from './helpers/tasks'
 
 const cleanups: (() => Promise<void>)[] = []
 

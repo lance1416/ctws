@@ -1,6 +1,6 @@
 import type { ContactResponse } from '@ctws/contracts'
 import { afterEach, describe, expect, it } from 'vitest'
-import { appWithUser, createProject, setupWith, type TaskCtx, web } from './helpers/tasks'
+import { createProject, setupWith, type TaskCtx, web } from './helpers/tasks'
 
 /**
  * 联系人 -- THE THIRD MODULE, on vCard 4.0's model (RFC 6350).

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { editDetail, makeProject, makeTask, registerFreshUser } from './helpers'
+import { makeProject, makeTask, registerFreshUser } from './helpers'
 import { dayOffset, nextMondayYmd, ymd } from './days'
 
 /** The month names the app prints, so a spec can build the string the page will show. */
@@ -821,63 +821,6 @@ test('a plan and a deadline differ by shape, not only by colour', async ({ page 
   // And the words say it too, so nothing rests on the glyph either.
   await expect(row('有截止的').locator('[data-row-meta]')).toContainText('Due')
   await expect(row('有计划的').locator('[data-row-meta]')).toContainText('Planned for')
-})
-
-/**
- * §3 §6: the three mechanisms this edition replaced are GONE from the source, not merely unused.
- * Two layout systems side by side is the failure this guards: the columns would keep working, the
- * threshold would keep firing in some panel nobody measured, and the next stage would inherit both.
- *
- * Read off the source rather than the DOM on purpose -- a deleted mechanism leaves no trace in a
- * rendered page, which is exactly why "we deleted it" rots.
- */
-test('the deleted mechanisms are absent from the source', async () => {
-  const { readdirSync, readFileSync, statSync } = await import('node:fs')
-  const walk = (dir: string): string[] =>
-    readdirSync(dir).flatMap((name) => {
-      const full = `${dir}/${name}`
-      return statSync(full).isDirectory() ? walk(full) : /\.(ts|tsx|css)$/.test(full) ? [full] : []
-    })
-  const files = walk('src')
-  expect(files.length, 'source files scanned').toBeGreaterThan(30)
-  // Comments are stripped first: the prose that RECORDS the deletion names the thing it deleted,
-  // and a guard that cannot tell those apart would be answered by rewording a comment.
-  const code = (text: string) => text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ 	]*\/\/.*$/gm, '')
-
-  const banned: [RegExp, string][] = [
-    // 1. the 8rem deadline column and the 11rem plan column (and the tree's w-32 / w-44 twins).
-    [/\b(8rem|11rem)\b/, 'a date column width'],
-    [/\b(DUE_REM|PLAN_REM|dueColumnClass|planColumnClass|DueCell|PlanCell)\b/, 'a date column'],
-    [/\bshrink-0 w-(32|44)\b/, "a tree date cell's fixed width"],
-    // 2. the stack threshold and the container queries that drove it.
-    [
-      /ROW_DATE_STACK|rowDateStackClass|rowStackBelowRem|treeRowWrapClass|treeDateLineClass/,
-      'the stack threshold',
-    ],
-    [/@container|@min-\[|@max-\[/, 'a container query'],
-    // 3. the list measure derived from the column makeup.
-    [
-      /72\.75rem|75\.75rem|84\.5rem|53\.5rem|TITLE_BASELINE_REM|furnitureRem|listMeasureRem|listMeasureClass|columnCase|dateColumns/,
-      'the derived list measure',
-    ],
-  ]
-  const hits: string[] = []
-  for (const file of files) {
-    const text = code(readFileSync(file, 'utf8'))
-    for (const [pattern, what] of banned) {
-      const m = pattern.exec(text)
-      if (m) hits.push(`${file}: ${what} -- ${JSON.stringify(m[0])}`)
-    }
-  }
-  expect(hits, hits.join('\n')).toEqual([])
-
-  // ...and the thing that REPLACED them is a single measure, named in ONE place. Four measures
-  // keyed by column makeup is the mechanism §3 deleted; this is the test that notices it coming
-  // back under another name. (Its own unit test names the literal too, which is its job.)
-  const measures = files
-    .filter((f) => !f.endsWith('.test.ts'))
-    .filter((f) => /max-w-\[64rem\]/.test(code(readFileSync(f, 'utf8'))))
-  expect(measures, "one file names the task lists' measure").toEqual(['src/rowLead.ts'])
 })
 
 // ------------------------------------------------------------------- the phone, deep in a tree

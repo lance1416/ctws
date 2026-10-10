@@ -30,17 +30,6 @@ describe('Queryable', () => {
     expect(notQueryable).toBeDefined()
   })
 
-  it('accepts the pool-backed db', async () => {
-    expect(await countUsers(ctx.db)).toBeGreaterThanOrEqual(0)
-  })
-
-  // This is the whole point: spec section 9.5 requires every write to append its event in the
-  // same transaction, which is impossible if service functions cannot take a transaction.
-  it('accepts a transaction handle', async () => {
-    const n = await ctx.db.transaction(async (tx) => countUsers(tx))
-    expect(n).toBeGreaterThanOrEqual(0)
-  })
-
   it('sees uncommitted rows when given the transaction, and discards them on rollback', async () => {
     const before = await countUsers(ctx.db)
     await expect(

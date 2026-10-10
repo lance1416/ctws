@@ -1,14 +1,12 @@
-import { OBJECT_TYPES, type ContactResponse, type LinksResponse } from '@ctws/contracts'
+import {
+  OBJECT_TYPES,
+  type CandidatesResponse,
+  type ContactResponse,
+  type LinksResponse,
+} from '@ctws/contracts'
 import { afterEach, describe, expect, it } from 'vitest'
 import { EVERY_TYPE_ANSWERED, LINKABLES } from '../src/links/registry'
-import {
-  appWithUser,
-  createProject,
-  createTask,
-  setupWith,
-  type TaskCtx,
-  web,
-} from './helpers/tasks'
+import { createProject, createTask, setupWith, type TaskCtx, web } from './helpers/tasks'
 
 /**
  * 反向链接 -- open a thing, see everything it is connected to.
@@ -273,5 +271,133 @@ describe('an edge a module stores itself', () => {
     // The task's project is a column the task module keeps; the person's is a row in `links`.
     expect(task).toMatchObject({ title: '改简历', removable: false })
     expect(person).toMatchObject({ title: '陈颖', removable: true })
+  })
+})
+
+/**
+ * WHAT THE PICKER IS OFFERED, which is a server decision and not a UI one.
+ *
+ * The box the person types into shows four kinds of thing at once, and each one comes out of its
+ * own module's table. Everything that keeps the list honest is decided here: which types may be
+ * joined to the one being linked FROM, that the object itself is never offered, that another
+ * workspace's rows are not, and that a deleted row is not.
+ */
+describe('what can go at the other end', () => {
+  const candidatesFor = async (ctx: TaskCtx, type: string, id: string, q = '') => {
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/links/candidates?type=${type}&id=${id}&q=${encodeURIComponent(q)}`,
+      headers: web(ctx),
+    })
+    expect(res.statusCode, res.body).toBe(200)
+    return (res.json() as CandidatesResponse).candidates
+  }
+
+  it('offers every kind the model allows, and never the object itself', async () => {
+    const ctx = await setup('cand@example.com')
+    const project = await createProject(ctx, '找工作')
+    await createTask(ctx, project, '改简历')
+    const person = await post<ContactResponse>(ctx, '/api/v1/contacts', { name: '陈颖' })
+    const other = await post<ContactResponse>(ctx, '/api/v1/contacts', { name: '老王' })
+    await post(ctx, '/api/v1/reading', { kind: 'book', title: '设计心理学' })
+    await post(ctx, '/api/v1/meetings', {
+      title: '二面',
+      startsLocal: '2026-10-20T21:00',
+      timeZone: 'America/Toronto',
+      durationMinutes: 60,
+    })
+
+    const offered = await candidatesFor(ctx, 'contact', person.id)
+    // One box, every kind of thing, each out of its own module's table.
+    expect([...new Set(offered.map((c) => c.type))].sort()).toEqual([
+      'contact',
+      'meeting',
+      'project',
+      'reading',
+      'task',
+    ])
+    // The person being linked FROM is not in their own list; the other person is.
+    expect(offered.filter((c) => c.id === person.id)).toEqual([])
+    expect(offered.filter((c) => c.id === other.id)).toHaveLength(1)
+    // A task carries the project it is in, so two tasks of the same name can be told apart.
+    expect(offered.find((c) => c.type === 'task')).toMatchObject({
+      title: '改简历',
+      detail: '找工作',
+    })
+    // ...and a finished one says so on the same line, rather than losing the project to say it.
+    const done = await createTask(ctx, project, '投出去了')
+    await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/v1/tasks/${done}`,
+      headers: web(ctx),
+      payload: { status: 'done' },
+    })
+    const after = await candidatesFor(ctx, 'contact', person.id)
+    expect(after.find((c) => c.id === done)?.detail).toBe('找工作 · Done')
+  })
+
+  it('narrows to what was typed, across the modules at once', async () => {
+    const ctx = await setup('candq@example.com')
+    const person = await post<ContactResponse>(ctx, '/api/v1/contacts', { name: '陈颖' })
+    await post(ctx, '/api/v1/reading', { kind: 'book', title: '设计心理学' })
+    await post(ctx, '/api/v1/reading', { kind: 'book', title: '代码整洁之道' })
+    const project = await createProject(ctx, '设计系统')
+
+    const found = await candidatesFor(ctx, 'contact', person.id, '设计')
+    expect(found.map((c) => [c.type, c.title]).sort()).toEqual([
+      ['project', '设计系统'],
+      ['reading', '设计心理学'],
+    ])
+    expect(found.some((c) => c.title === '代码整洁之道')).toBe(false)
+    // And the wildcards are characters, not patterns: `_` would match any one character.
+    expect(await candidatesFor(ctx, 'contact', person.id, '设_系统')).toEqual([])
+    expect(project).toBeTruthy()
+  })
+
+  it('offers nothing from another workspace, and nothing deleted', async () => {
+    const ctx = await setup('candiso@example.com')
+    const mine = await post<ContactResponse>(ctx, '/api/v1/contacts', { name: '陈颖' })
+    const doomed = await post<ContactResponse>(ctx, '/api/v1/contacts', { name: '要删掉的' })
+    await ctx.app.inject({
+      method: 'DELETE',
+      url: `/api/v1/contacts/${doomed.id}`,
+      headers: web(ctx),
+    })
+
+    // A second user in the SAME app, so the two workspaces really are rows in one database.
+    const registered = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      headers: { 'x-ctws-client': 'web' },
+      payload: { email: 'theirs@example.com', password: 'correct horse battery', timezone: 'UTC' },
+    })
+    const theirs = {
+      'x-ctws-client': 'web',
+      cookie: String(registered.headers['set-cookie']).split(';')[0]!,
+    }
+    await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/contacts',
+      headers: theirs,
+      payload: { name: '别人的人' },
+    })
+
+    const offered = await candidatesFor(ctx, 'contact', mine.id)
+    expect(offered.map((c) => c.title)).not.toContain('别人的人')
+    expect(offered.map((c) => c.title)).not.toContain('要删掉的')
+
+    // And the other workspace's object is not even a thing to ask about.
+    const theirPerson = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/v1/contacts',
+      headers: theirs,
+    })
+    const theirId = (theirPerson.json() as { contacts: { id: string }[] }).contacts[0]!.id
+    const refused = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/links/candidates?type=contact&id=${theirId}`,
+      headers: web(ctx),
+    })
+    expect(refused.statusCode).toBe(404)
   })
 })

@@ -1,5 +1,4 @@
 import type {
-  CalendarEntry,
   CreateMeetingBody,
   EditScope,
   MeetingOccurrence,

@@ -1,4 +1,4 @@
-import type { TaskResponse, TaskStatus, TodayTaskResponse, UpdateTaskBody } from '@ctws/contracts'
+import type { TaskStatus, TodayTaskResponse, UpdateTaskBody } from '@ctws/contracts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { patchTask, type ProjectTasks } from './tasks'
 

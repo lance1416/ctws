@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { registerFreshUser, submitCreate } from './helpers'
+import { registerFreshUser } from './helpers'
 
 // The three-pane workbench: the left rail's counts, the detail as a column rather than a layer,
 // and the one thing the narrow end of the range must never do.

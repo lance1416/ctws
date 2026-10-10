@@ -1,14 +1,7 @@
 import type { CalendarEntry } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
-import {
-  appWithUser,
-  createProject,
-  createTask,
-  setupWith,
-  type TaskCtx,
-  web,
-} from './helpers/tasks'
+import { createProject, createTask, setupWith, type TaskCtx, web } from './helpers/tasks'
 
 /**
  * THE CALENDAR'S TWO SUPPLIERS.
