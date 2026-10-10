@@ -341,7 +341,7 @@ describe('what can go at the other end', () => {
     const person = await post<ContactResponse>(ctx, '/api/v1/contacts', { name: '陈颖' })
     await post(ctx, '/api/v1/reading', { kind: 'book', title: '设计心理学' })
     await post(ctx, '/api/v1/reading', { kind: 'book', title: '代码整洁之道' })
-    const project = await createProject(ctx, '设计系统')
+    await createProject(ctx, '设计系统')
 
     const found = await candidatesFor(ctx, 'contact', person.id, '设计')
     expect(found.map((c) => [c.type, c.title]).sort()).toEqual([
@@ -351,7 +351,6 @@ describe('what can go at the other end', () => {
     expect(found.some((c) => c.title === '代码整洁之道')).toBe(false)
     // And the wildcards are characters, not patterns: `_` would match any one character.
     expect(await candidatesFor(ctx, 'contact', person.id, '设_系统')).toEqual([])
-    expect(project).toBeTruthy()
   })
 
   it('offers nothing from another workspace, and nothing deleted', async () => {

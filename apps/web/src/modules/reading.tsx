@@ -3,6 +3,7 @@ import {
   createReadingItem,
   listReading,
   readingCalendar,
+  readingKey,
   readingLabel,
   searchReading,
 } from '../api/reading'
@@ -26,7 +27,7 @@ import type { CaptureTargetState, SearchHit, WorkspaceModule } from './contract'
 const ID = 'reading'
 
 /** The whole list, in one cache entry the page and the rail share. */
-const useAll = () => useQuery({ queryKey: ['reading', null, null], queryFn: () => listReading() })
+const useAll = () => useQuery({ queryKey: readingKey(), queryFn: () => listReading() })
 
 /** The rail's count: what is actually waiting to be read, never the pile's total size. */
 function ReadingCount() {
@@ -100,7 +101,7 @@ function useReadingEntries(range: { from: string; to: string }) {
  */
 function ReadingWidget() {
   const items = useQuery({
-    queryKey: ['reading', 'unfiled', null],
+    queryKey: readingKey({ unfiled: true }),
     queryFn: () => listReading({ unfiled: true }),
   })
   const timeZone = useTimeZone()
@@ -139,7 +140,7 @@ const WIDGET_ROWS = 5
 /** This module's numbers in the project banner, beside the task module's. */
 function ReadingHeadline({ projectId }: { projectId: string }) {
   const items = useQuery({
-    queryKey: ['reading', projectId, null],
+    queryKey: readingKey({ projectId }),
     queryFn: () => listReading({ projectId }),
   })
   const rows = items.data ?? []

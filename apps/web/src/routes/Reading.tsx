@@ -1,7 +1,7 @@
 import type { ReadingStatus } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
-import { listReading } from '../api/reading'
+import { listReading, readingKey } from '../api/reading'
 import { EmptyState } from '../components/EmptyState'
 import { LIST_MEASURE } from '../rowLead'
 import { AddReading } from '../components/AddReading'
@@ -22,7 +22,7 @@ const SECTIONS: { status: ReadingStatus; label: string }[] = [
 ]
 
 export function Reading() {
-  const items = useQuery({ queryKey: ['reading', null, null], queryFn: () => listReading() })
+  const items = useQuery({ queryKey: readingKey(), queryFn: () => listReading() })
   const [showFinished, setShowFinished] = useState(false)
   const heading = useRef<HTMLHeadingElement>(null)
   const timeZone = useTimeZone()

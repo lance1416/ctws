@@ -16,6 +16,18 @@ export type ReadingQuery = {
   statuses?: readonly ReadingStatus[]
 }
 
+/**
+ * The cache entry one list of reading items lives in. Named here rather than written out at each
+ * `useQuery`: a positional key spelled by hand is a second cache entry the moment one caller
+ * writes it differently, and the list that never refreshes is the symptom.
+ */
+export const readingKey = (query: ReadingQuery = {}) =>
+  [
+    'reading',
+    query.projectId ?? (query.unfiled ? 'unfiled' : null),
+    query.statuses ?? null,
+  ] as const
+
 export async function listReading(query: ReadingQuery = {}): Promise<ReadingItemResponse[]> {
   const params = new URLSearchParams()
   if (query.projectId) params.set('projectId', query.projectId)
