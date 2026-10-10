@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
+import { birthdaysKey, listBirthdays } from '../api/birthdays'
 import { contactsKey, listContacts, searchContacts } from '../api/contacts'
 import { ContactFields, DeleteContact } from '../components/ContactDetail'
 import { ObjectPage } from '../components/ObjectPage'
+import { Birthdays } from '../routes/Birthdays'
 import { Contacts } from '../routes/Contacts'
 import type { SearchHit, WorkspaceModule } from './contract'
 
@@ -25,6 +27,18 @@ import type { SearchHit, WorkspaceModule } from './contract'
  *   person to file, and a wrong guess here would be silently filing things in the wrong module.
  */
 const ID = 'contacts'
+
+/** The rail's count: how many birthdays the next week holds. Shares the page's cache entry. */
+function BirthdayCount() {
+  const view = useQuery({ queryKey: birthdaysKey(), queryFn: listBirthdays })
+  const count = view.data?.coming.length ?? 0
+  if (count <= 0) return null
+  return (
+    <span data-count className="ml-auto pl-1 text-xs text-fg-muted">
+      {count}
+    </span>
+  )
+}
 
 /** This module's half of federated search: names, organisations and addresses. */
 function useContactHits(query: string) {
@@ -81,9 +95,22 @@ function DeletePerson({ id }: { id: string }) {
 export const contactModule: WorkspaceModule = {
   id: ID,
   label: 'Contacts',
-  destinations: [{ id: 'list', to: `/${ID}`, label: 'Contacts', zone: 'things', order: 30 }],
+  destinations: [
+    { id: 'list', to: `/${ID}`, label: 'Contacts', zone: 'things', order: 30 },
+    // A VIEW, not a thing: it looks at people through their dates and makes nobody.
+    {
+      id: 'birthdays',
+      to: `/${ID}/birthdays`,
+      label: 'Birthdays',
+      zone: 'views',
+      order: 25,
+      Count: BirthdayCount,
+    },
+  ],
   routes: [
     { index: true, element: <Contacts /> },
+    // Before `:id`, so a reader need not know that react-router ranks a static segment higher.
+    { path: 'birthdays', element: <Birthdays /> },
     // The page is the SHELL's -- a person and a project are read the same way -- so the module
     // says only where it lives.
     { path: ':id', element: <ObjectPage type="contact" /> },
@@ -92,6 +119,15 @@ export const contactModule: WorkspaceModule = {
   // `n` for name. One keyspace across modules, so this is checked against every other chord.
   chords: [
     { id: 'contacts', key: 'n', label: 'Go to Contacts', resolve: () => `/${ID}`, order: 17 },
+    {
+      id: 'birthdays',
+      key: 'b',
+      label: 'Go to Birthdays',
+      resolve: () => `/${ID}/birthdays`,
+      // 19 and not 18: the shell's Calendar already holds 18, and two chords with one order leave
+      // the teaching order to whichever list was spread first.
+      order: 19,
+    },
   ],
   relations: [
     {

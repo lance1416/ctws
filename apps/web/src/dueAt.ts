@@ -106,9 +106,25 @@ export function dayPhrase(day: string, today: string): string {
   if (day === today) return 'Today'
   if (day === addDays(today, 1)) return 'Tomorrow'
   if (day === addDays(today, -1)) return 'Yesterday'
+  return shortDay(day, today)
+}
+
+/**
+ * `Oct 12`, or `Apr 15, 2027` when it is not this year. It deliberately never says "Today": where
+ * this is used the column beside it says the distance, and a row that says one thing twice is a
+ * row the reader has to hold two of.
+ */
+export function shortDay(day: string, today: string): string {
   const [y, m, d] = day.split('-').map(Number) as [number, number, number]
   const short = `${MONTHS[m - 1]} ${d}`
   return today.slice(0, 4) === day.slice(0, 4) ? short : `${short}, ${y}`
+}
+
+/** How far off something is: `today`, `tomorrow`, `in 23 days`. */
+export function countdownPhrase(inDays: number): string {
+  if (inDays === 0) return 'today'
+  if (inDays === 1) return 'tomorrow'
+  return `in ${inDays} days`
 }
 
 /**

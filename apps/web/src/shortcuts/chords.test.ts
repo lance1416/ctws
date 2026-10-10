@@ -10,7 +10,9 @@ describe('jump chords', () => {
     // each module. The rest is unchanged, which is the point -- a second module contributed a
     // key without the table being rewritten around it.
     // The workbench leads: it is where `/` lands and the page every other key is a way out of.
-    expect(chords.map((c) => c.key).join('')).toBe('wtlmncpri')
+    // Birthdays sits after Calendar: both are views over things other keys list, and the two of
+    // them read as a pair.
+    expect(chords.map((c) => c.key).join('')).toBe('wtlmncbpri')
     expect(chords.map((c) => c.id)).toEqual([
       'workbench',
       'today',
@@ -18,6 +20,7 @@ describe('jump chords', () => {
       'meetings',
       'contacts',
       'calendar',
+      'birthdays',
       'projects',
       'review',
       'inbox',

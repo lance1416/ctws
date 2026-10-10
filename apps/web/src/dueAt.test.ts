@@ -73,3 +73,27 @@ describe('overdue label', () => {
     expect(label).not.toMatch(/T/)
   })
 })
+
+describe('shortDay', () => {
+  it('同年只写月日，跨年带上年份', async () => {
+    const { shortDay } = await loadLabel()
+    expect(shortDay('2026-10-12', '2026-10-10')).toBe('Oct 12')
+    expect(shortDay('2027-04-15', '2026-10-10')).toBe('Apr 15, 2027')
+  })
+
+  /** 它刻意不说 Today：旁边那一列说距离，一行里说两遍同一件事是读者要存两份的东西。 */
+  it('今天也只写月日', async () => {
+    const { shortDay } = await loadLabel()
+    expect(shortDay('2026-10-10', '2026-10-10')).toBe('Oct 10')
+  })
+})
+
+describe('countdownPhrase', () => {
+  it('零是今天，一是明天，其余按天数', async () => {
+    const { countdownPhrase } = await loadLabel()
+    expect(countdownPhrase(0)).toBe('today')
+    expect(countdownPhrase(1)).toBe('tomorrow')
+    expect(countdownPhrase(2)).toBe('in 2 days')
+    expect(countdownPhrase(118)).toBe('in 118 days')
+  })
+})
