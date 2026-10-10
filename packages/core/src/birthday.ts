@@ -163,14 +163,40 @@ export function factsOf(b: Birthday, hourBranch: number | null): BirthdayFacts {
   }
 }
 
-/** 出生那一天，公历。没有年份时无从得知。 */
+/**
+ * 出生那一天，公历。没有年份时无从得知——一个不可能的日子也一样。
+ *
+ * 边界会把这种输入挡在写入之前（`birthdayProblem`），但已经在表里的行不受那道门的保护：这里抛错
+ * 会让联系人列表、搜索、生日页三处一起 500，而派生值本来就是可以没有的。
+ */
 function bornDay(b: Birthday): SolarDay | null {
+  if (b.year === null || birthdayProblem(b) !== null) return null
+  if (b.calendar === 'solar') return SolarDay.fromYmd(b.year, b.month, b.day)
+  return LunarDay.fromYmd(b.year, b.leapMonth ? -b.month : b.month, b.day).getSolarDay()
+}
+
+/**
+ * 这个日子在那一年发生过吗？发生过返回 null，没有就返回一句能读的话。
+ *
+ * 字段各自合法，凑起来可以不存在：农历三十要看那个月有多长，闰六月要看那一年闰的是不是六月，公历
+ * 2 月 29 日要看那年是不是闰年。三件事都只有历法知道，所以校验在这里，不在 contract 里——contract
+ * 要进浏览器，而历法库有 750 KB。
+ */
+export function birthdayProblem(b: Birthday): string | null {
   if (b.year === null) return null
   if (b.calendar === 'solar') {
-    const day = b.month === 2 && b.day === 29 && !isLeapYear(b.year) ? 28 : b.day
-    return SolarDay.fromYmd(b.year, b.month, day)
+    return b.month === 2 && b.day === 29 && !isLeapYear(b.year)
+      ? `February has 28 days in ${b.year}, so there is no 29th.`
+      : null
   }
-  return LunarDay.fromYmd(b.year, b.leapMonth ? -b.month : b.month, b.day).getSolarDay()
+  const name = `${b.leapMonth ? '闰' : ''}${LUNAR_MONTHS[b.month - 1]}`
+  if (b.leapMonth && LunarYear.fromYear(b.year).getLeapMonth() !== b.month) {
+    return `There was no ${name} in ${b.year}.`
+  }
+  const length = LunarMonth.fromYm(b.year, b.leapMonth ? -b.month : b.month).getDayCount()
+  return b.day > length
+    ? `${name} has ${length} days in ${b.year}, so there is no ${LUNAR_DAYS[b.day - 1]}.`
+    : null
 }
 
 function signOf(b: Birthday, born: SolarDay | null): string | null {
@@ -183,12 +209,14 @@ function signOf(b: Birthday, born: SolarDay | null): string | null {
   return null
 }
 
-/** 「农历九月初三」/「农历闰六月十五」——复发日，里面没有年份。 */
+/**
+ * 「农历九月初三」/「农历闰六月十五」——复发日，里面没有年份。
+ *
+ * 月名日名都来自定表：问某一个具体年份会把三十在那年只有 29 天的月份里悄悄写成廿九，而这一行写的
+ * 是这个人的生日本身，不是它今年落在哪天。
+ */
 function lunarDateLabel(b: Birthday): string {
-  // 2000 年十二个月都在，拿它只为取月名与日名；闰字自己加，因为任一具体年份都未必闰这个月。
-  const month = LunarMonth.fromYm(2000, b.month)
-  const day = LunarDay.fromYmd(2000, b.month, Math.min(b.day, month.getDayCount())).getName()
-  return `农历${b.leapMonth ? '闰' : ''}${month.getName()}${day}`
+  return `农历${b.leapMonth ? '闰' : ''}${LUNAR_MONTHS[b.month - 1]}${LUNAR_DAYS[b.day - 1]}`
 }
 
 /** 日历格子里那一行小字：「初三」，月初写上月名「九月初一」。 */
@@ -212,6 +240,40 @@ export const LUNAR_MONTHS = [
   '十月',
   '十一月',
   '十二月',
+] as const
+
+/** The lunar days, 初一 through 三十, as a reader writes them. A month is never longer than this. */
+export const LUNAR_DAYS = [
+  '初一',
+  '初二',
+  '初三',
+  '初四',
+  '初五',
+  '初六',
+  '初七',
+  '初八',
+  '初九',
+  '初十',
+  '十一',
+  '十二',
+  '十三',
+  '十四',
+  '十五',
+  '十六',
+  '十七',
+  '十八',
+  '十九',
+  '二十',
+  '廿一',
+  '廿二',
+  '廿三',
+  '廿四',
+  '廿五',
+  '廿六',
+  '廿七',
+  '廿八',
+  '廿九',
+  '三十',
 ] as const
 
 /** 「十二月廿九」 -- month and day, no year. What the sentence about a moved day lands on. */
@@ -239,13 +301,22 @@ export function lunarMonthLength(day: string, month: number): number {
  */
 export function keptNote(b: Birthday, next: Occurrence): string | null {
   if (next.kept.length === 0) return null
+  // 年份用公历的：行上写的日期就是公历，读者要能把这句话对上那一天。
   const year = next.day.slice(0, 4)
+  if (next.kept.includes('short-february')) {
+    return `February has 28 days in ${year}, so it is kept on the 28th.`
+  }
+  const plain = LUNAR_MONTHS[b.month - 1]
+  const landing = lunarFullLabel(next.day)
   if (next.kept.includes('leap-month')) {
-    return `No 闰${LUNAR_MONTHS[b.month - 1]} in ${year}, so it is kept on ${lunarFullLabel(next.day)}.`
+    // 闰月不在，日子落进同名的平月；那个平月又短的话，还要再退一天——挪了两次就说两句。
+    const also = next.kept.includes('short-month')
+      ? `, and ${plain} has ${lunarMonthLength(next.day, b.month)} days there`
+      : ''
+    return `No 闰${plain} in ${year}${also}, so it is kept on ${landing}.`
   }
-  if (next.kept.includes('short-month')) {
-    const length = lunarMonthLength(next.day, b.month)
-    return `${LUNAR_MONTHS[b.month - 1]} has ${length} days in ${year}, so it is kept on ${lunarFullLabel(next.day)}.`
-  }
-  return `February has 28 days in ${year}, so it is kept on the 28th.`
+  // 生日在闰月、而那一年也闰这个月：短的是闰月，量的也得是闰月——同年的平月常常不一样长。
+  const month = b.leapMonth ? -b.month : b.month
+  const length = lunarMonthLength(next.day, month)
+  return `${b.leapMonth ? '闰' : ''}${plain} has ${length} days in ${year}, so it is kept on ${landing}.`
 }

@@ -62,13 +62,19 @@ function BirthdayCard() {
     )
   }
   if (rows.length === 0) {
+    // 空着的意思是没人到提前量，不是一周之内没人 -- 三天后生日、只要当天提醒的人同时满足两者，
+    // 说「一周没人」就是在当面说错话。没有下一个人，才是真的一个生日都没记。
     return (
       <PanelEmpty>
-        Nobody in the next week.{' '}
-        {next && (
-          <Link to={`/${ID}/birthdays`} className="text-accent">
-            The next is {next.name}, {countdownPhrase(next.inDays)}.
-          </Link>
+        {next ? (
+          <>
+            Nobody to greet yet.{' '}
+            <Link to={`/${ID}/birthdays`} className="text-accent">
+              {next.name} is next, {countdownPhrase(next.inDays)}.
+            </Link>
+          </>
+        ) : (
+          'No birthdays yet.'
         )}
       </PanelEmpty>
     )

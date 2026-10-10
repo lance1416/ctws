@@ -14,6 +14,8 @@ export class ApiError extends Error {
   constructor(
     readonly status: number,
     message: string,
+    /** problem+json 的 `detail`：这一条出了什么事，说给人看的那一句。 */
+    readonly detail?: string,
   ) {
     super(message)
     this.name = 'ApiError'
@@ -41,7 +43,8 @@ export async function apiFetch<T = unknown>(path: string, init: RequestInit = {}
   const body = text ? JSON.parse(text) : undefined
 
   if (!res.ok) {
-    throw new ApiError(res.status, (body as Problem | undefined)?.title ?? `HTTP ${res.status}`)
+    const problem = body as Problem | undefined
+    throw new ApiError(res.status, problem?.title ?? `HTTP ${res.status}`, problem?.detail)
   }
   return body as T
 }

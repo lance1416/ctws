@@ -6,6 +6,7 @@ import type {
 } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
+import { ApiError } from '../api'
 import { previewBirthday, type BirthdayDraft } from '../api/contacts'
 import { countdownPhrase, shortDay, todayIn } from '../dueAt'
 import { useTimeZone } from '../useMe'
@@ -328,7 +329,12 @@ function BirthdayForm({
         {/* What it MEANS, answered by the server so the rules have one implementation. */}
         <p data-testid="birthday-preview" className="min-h-5 text-xs text-fg-muted">
           {preview.isSuccess ? <PreviewLine facts={preview.data} /> : null}
-          {preview.isError && <span className="text-danger">That is not a date</span>}
+          {/* 服务端那一句（「正月 has 29 days in 2021…」）比「不是个日子」有用：它说的是哪一条不成立。 */}
+          {preview.isError && (
+            <span className="text-danger">
+              {(preview.error instanceof ApiError && preview.error.detail) || 'That is not a date'}
+            </span>
+          )}
         </p>
 
         <div className="flex items-center gap-2">

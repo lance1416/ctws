@@ -2,6 +2,7 @@ import {
   birthdayPreviewQuery,
   birthdayPreviewResponse,
   birthdayResponse,
+  type BirthdayInput,
   birthdaysResponse,
   calendarEntriesResponse,
   calendarQuery,
@@ -14,7 +15,7 @@ import {
 import type { FastifyPluginAsync, FastifyReply } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
-import { factsOf, keptNote, nextOccurrence, type Birthday } from '@ctws/core'
+import { birthdayProblem, factsOf, keptNote, nextOccurrence, type Birthday } from '@ctws/core'
 import { authedUser, requireUser } from '../auth/require-user'
 import { accountToday } from '../db/today'
 import { sendProblem } from '../problem'
@@ -75,6 +76,27 @@ function withFacts(b: StoredBirthday, today: string): z.infer<typeof birthdayRes
 
 const idParams = z.object({ id: z.uuid() }).strict()
 const listResponse = z.object({ contacts: z.array(contactResponse) }).strict()
+
+/**
+ * 历法那道门：没发生过的日子进不来。
+ *
+ * 字段各自合法，凑起来可以不存在，而那取决于年份——那一年的正月没有三十，那一年不闰六月，平年
+ * 没有 2 月 29 日。校验因此不在 contract 里：contract 要跟着界面进浏览器，而只有历法库知道答案，
+ * 它有 750 KB。写进去就晚了——派生值在读取时才算，一行坏数据会让列表、搜索、生日页一起 500。
+ */
+function sendImpossibleDay(reply: FastifyReply, b: BirthdayInput | null | undefined): boolean {
+  if (!b) return false
+  const problem = birthdayProblem({
+    calendar: b.calendar,
+    year: b.year ?? null,
+    month: b.month,
+    day: b.day,
+    leapMonth: b.leapMonth,
+  })
+  if (problem === null) return false
+  sendProblem(reply, 400, 'Bad Request', problem)
+  return true
+}
 
 function sendContactProblem(reply: FastifyReply, error: unknown): void {
   // A project from another workspace reads as "not found" too, never as a refusal that would
@@ -145,7 +167,7 @@ export const contactRoutes: FastifyPluginAsync = async (app) => {
       preHandler: requireUser,
       schema: { querystring: birthdayPreviewQuery, response: { 200: birthdayPreviewResponse } },
     },
-    async (req) => {
+    async (req, reply) => {
       const user = authedUser(req)
       const today = await accountToday(app.db, user.timezone)
       const birthday: Birthday = {
@@ -155,6 +177,8 @@ export const contactRoutes: FastifyPluginAsync = async (app) => {
         day: req.query.day,
         leapMonth: req.query.leap === 'true',
       }
+      const problem = birthdayProblem(birthday)
+      if (problem !== null) return sendProblem(reply, 400, 'Bad Request', problem)
       const next = nextOccurrence(birthday, today)
       return {
         ...factsOf(birthday, req.query.hour ?? null),
@@ -187,6 +211,7 @@ export const contactRoutes: FastifyPluginAsync = async (app) => {
       schema: { body: createContactBody, response: { 201: contactResponse } },
     },
     async (req, reply) => {
+      if (sendImpossibleDay(reply, req.body.birthday)) return reply
       try {
         // One transaction: a contact and its addresses are one thing, and a half-written person
         // with no way to reach them is worse than a refusal.
@@ -208,6 +233,7 @@ export const contactRoutes: FastifyPluginAsync = async (app) => {
       schema: { params: idParams, body: updateContactBody, response: { 200: contactResponse } },
     },
     async (req, reply) => {
+      if (sendImpossibleDay(reply, req.body.birthday)) return reply
       try {
         const updated = await app.db.transaction((tx) =>
           updateContact(tx, authedUser(req).workspaceId, req.params.id, req.body),

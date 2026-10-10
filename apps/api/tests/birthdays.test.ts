@@ -320,3 +320,82 @@ describe('工作台卡片', () => {
     expect([...body.coming, ...body.later][0]?.remindLead).toBe(7)
   })
 })
+
+/**
+ * 一个没发生过的日子。
+ *
+ * 每个字段自己都合法 -- 农历有三十，有的年份闰六月 -- 凑起来可以不存在，而那取决于年份，所以
+ * contract 看不见它（历法库 750 KB，不进浏览器）。门必须在写入之前关上：写进去的话，派生值要在
+ * 读取时才算，联系人列表、搜索、生日页会一起 500，而且 app 里没有改它的地方。
+ */
+describe('农历里没发生过的日子进不来', () => {
+  const post = (ctx: TaskCtx, birthday: unknown) =>
+    ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/contacts',
+      headers: web(ctx),
+      payload: { name: '张三', birthday },
+    })
+
+  const preview = (ctx: TaskCtx, query: string) =>
+    ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/contacts/birthdays/preview?${query}`,
+      headers: ctx.authed,
+    })
+
+  it('那一年的正月没有三十，新建是 400 并说出理由', async () => {
+    const ctx = await setup()
+    const res = await post(ctx, { calendar: 'lunar', year: 2021, month: 1, day: 30 })
+    expect(res.statusCode, res.body).toBe(400)
+    expect(res.json().detail).toBe('正月 has 29 days in 2021, so there is no 三十.')
+  })
+
+  it('那一年不闰六月，新建是 400', async () => {
+    const ctx = await setup()
+    const res = await post(ctx, {
+      calendar: 'lunar',
+      year: 2018,
+      month: 6,
+      day: 15,
+      leapMonth: true,
+    })
+    expect(res.statusCode, res.body).toBe(400)
+    expect(res.json().detail).toBe('There was no 闰六月 in 2018.')
+  })
+
+  it('平年没有 2 月 29 日，新建是 400', async () => {
+    const ctx = await setup()
+    const res = await post(ctx, { calendar: 'solar', year: 2001, month: 2, day: 29 })
+    expect(res.statusCode, res.body).toBe(400)
+    expect(res.json().detail).toBe('February has 28 days in 2001, so there is no 29th.')
+  })
+
+  it('改也进不来', async () => {
+    const ctx = await setup()
+    const created = await post(ctx, { calendar: 'lunar', year: 1996, month: 2, day: 28 })
+    expect(created.statusCode, created.body).toBe(201)
+    const res = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/v1/contacts/${created.json().id}`,
+      headers: web(ctx),
+      payload: { birthday: { calendar: 'lunar', year: 2021, month: 1, day: 30 } },
+    })
+    expect(res.statusCode, res.body).toBe(400)
+    expect(res.json().detail).toBe('正月 has 29 days in 2021, so there is no 三十.')
+  })
+
+  it('preview 先说，所以人在按保存之前就看见了', async () => {
+    const ctx = await setup()
+    const res = await preview(ctx, 'calendar=lunar&year=2021&month=1&day=30')
+    expect(res.statusCode, res.body).toBe(400)
+    expect(res.json().detail).toBe('正月 has 29 days in 2021, so there is no 三十.')
+  })
+
+  it('没有年份就无从不存在：正月三十作为复发日是对的', async () => {
+    const ctx = await setup()
+    const res = await preview(ctx, 'calendar=lunar&month=1&day=30')
+    expect(res.statusCode, res.body).toBe(200)
+    expect(res.json().lunarDate).toBe('农历正月三十')
+  })
+})

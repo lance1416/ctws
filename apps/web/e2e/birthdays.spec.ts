@@ -180,6 +180,24 @@ test('写一个农历生日，输入时就看见换算与回退', async ({ page 
   )
 })
 
+test('选了那一年没有的日子，预览就说是哪一条不成立', async ({ page }) => {
+  await registerFreshUser(page)
+  const id = await person(page, '赵姨')
+  await page.goto(`/contacts/${id}`)
+  await page.getByRole('button', { name: 'Add a birthday' }).click()
+  await page
+    .getByRole('group', { name: 'Which calendar' })
+    .getByRole('button', { name: 'Lunar' })
+    .click()
+  // 2021 年的正月只有 29 天：月、日、年各自都合法，凑起来这一天没发生过。
+  await page.getByRole('textbox', { name: 'Year' }).fill('2021')
+  await pickOne(page, 'Lunar month', '正月')
+  await pickOne(page, 'Lunar day', '三十')
+  await expect(page.getByTestId('birthday-preview')).toContainText(
+    '正月 has 29 days in 2021, so there is no 三十.',
+  )
+})
+
 test('联系人列表能按 circle 筛，而且不默认藏人', async ({ page }) => {
   await registerFreshUser(page)
   await person(page, '妈妈', undefined, 'family')
@@ -265,13 +283,13 @@ test('备注在写作模式里改，关掉就落库', async ({ page }) => {
   await expect(notes.locator('h1')).toHaveText('标题')
 })
 
-test('工作台上有一张卡，一周没人时说下一个是谁', async ({ page }) => {
+test('工作台上有一张卡，没人要提醒时说下一个是谁', async ({ page }) => {
   await registerFreshUser(page)
   await person(page, '很久以后的', { calendar: 'solar', year: 1990, ...monthDay(60) })
   await page.goto('/')
   const card = page.getByRole('region', { name: 'Birthdays' })
-  await expect(card).toContainText('Nobody in the next week')
-  await expect(card).toContainText('很久以后的')
+  await expect(card).toContainText('Nobody to greet yet')
+  await expect(card).toContainText('很久以后的 is next, in 60 days')
 
   await person(page, '今天的', { calendar: 'solar', year: 1993, ...monthDay(0) })
   await page.reload()
@@ -279,6 +297,23 @@ test('工作台上有一张卡，一周没人时说下一个是谁', async ({ pa
   await expect(card).toContainText('today')
   await card.getByRole('link', { name: 'See all' }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'Birthdays' })).toBeVisible()
+})
+
+test('卡片空着时说的是没人要提醒，不是一周之内没人', async ({ page }) => {
+  await registerFreshUser(page)
+  // 三天后生日、只要当天提醒：这个人在一周之内，卡片上却不该有他。
+  await person(page, '只要当天的', {
+    calendar: 'solar',
+    year: 1990,
+    ...monthDay(3),
+    remindLead: 0,
+  })
+  await page.goto('/')
+  const card = page.getByRole('region', { name: 'Birthdays' })
+  await expect(card.locator('[data-birthday-row]')).toHaveCount(0)
+  await expect(card).toContainText('Nobody to greet yet')
+  await expect(card).toContainText('只要当天的 is next, in 3 days')
+  await expect(card).not.toContainText('next week')
 })
 
 test('提前量决定谁上卡片：只要当天的人，五天前不出现', async ({ page }) => {

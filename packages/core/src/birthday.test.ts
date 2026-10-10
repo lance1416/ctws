@@ -4,6 +4,7 @@ import {
   HOUR_BRANCHES,
   LUNAR_MONTHS,
   lunarDayLabel,
+  birthdayProblem,
   keptNote,
   lunarFullLabel,
   lunarMonthLength,
@@ -225,5 +226,82 @@ describe('keptNote', () => {
   it('没有挪过就没有那句话', () => {
     const b = solar(1996, 4, 15)
     expect(keptNote(b, nextOccurrence(b, TODAY))).toBeNull()
+  })
+})
+
+/**
+ * A DATE THAT NEVER HAPPENED.
+ *
+ * The contract cannot see this: whether 正月三十 exists depends on the YEAR, and so does whether a
+ * year had a 闰六月 at all. The library answers by throwing, which used to reach the client as a
+ * 500 -- after the row had already been written.
+ */
+describe('birthdayProblem', () => {
+  it('说出农历那一年没有三十', () => {
+    expect(birthdayProblem(lunar(2021, 1, 30))).toBe(
+      '正月 has 29 days in 2021, so there is no 三十.',
+    )
+  })
+
+  it('说出农历那一年没有闰月', () => {
+    expect(birthdayProblem(lunar(2018, 6, 15, true))).toBe('There was no 闰六月 in 2018.')
+  })
+
+  it('说出公历平年没有 2 月 29 日', () => {
+    expect(birthdayProblem(solar(2001, 2, 29))).toBe(
+      'February has 28 days in 2001, so there is no 29th.',
+    )
+  })
+
+  it('过得去的日子没有问题', () => {
+    expect(birthdayProblem(lunar(1944, 12, 30))).toBeNull()
+    expect(birthdayProblem(lunar(2017, 6, 30, true))).toBeNull()
+    expect(birthdayProblem(solar(2000, 2, 29))).toBeNull()
+    expect(birthdayProblem(solar(1996, 4, 15))).toBeNull()
+  })
+
+  it('没有年份就无从不存在', () => {
+    expect(birthdayProblem(lunar(null, 1, 30))).toBeNull()
+    expect(birthdayProblem(solar(null, 2, 29))).toBeNull()
+  })
+})
+
+describe('factsOf 对一个不可能的日子不抛错', () => {
+  /** 边界拦住了这种输入，但边界不是对已经在表里的行的保证：抛错会让整张联系人列表 500。 */
+  it('退化成没有派生值，而不是把读取整条路炸掉', () => {
+    const facts = factsOf(lunar(2021, 1, 30), null)
+    expect(facts.bornSolar).toBeNull()
+    expect(facts.bornLunar).toBeNull()
+    expect(facts.zodiac).toBeNull()
+    expect(facts.sign).toBeNull()
+    expect(facts.lunarDate).toBe('农历正月三十')
+  })
+})
+
+describe('复发日的写法不借某一年的月长', () => {
+  it('三十就是三十', () => {
+    // 农历 2000 年的九月只有 29 天，但一个人的复发日里没有年份可言。
+    expect(factsOf(lunar(1990, 9, 30), null).lunarDate).toBe('农历九月三十')
+    expect(factsOf(lunar(1944, 12, 30), null).lunarDate).toBe('农历十二月三十')
+  })
+})
+
+describe('keptNote 把发生过的每一次挪动都说出来', () => {
+  it('闰月与小月同时发生时，两句都说', () => {
+    // 2017 年闰六月有 30 天，所以这是真实的生日；2027 年既没有闰六月、六月又只有 29 天。
+    const b = lunar(2017, 6, 30, true)
+    const occ = nextOccurrence(b, TODAY)
+    expect(occ.kept).toEqual(['leap-month', 'short-month'])
+    expect(keptNote(b, occ)).toBe(
+      'No 闰六月 in 2027, and 六月 has 29 days there, so it is kept on 六月廿九.',
+    )
+  })
+
+  it('落在闰月里时，说的是闰月，量的也是闰月', () => {
+    // 1979 年闰六月有 30 天；2025 年的闰六月只有 29 天，而同年的六月有 30 天。
+    const b = lunar(1979, 6, 30, true)
+    const occ = nextOccurrence(b, '2025-03-01')
+    expect(occ.kept).toEqual(['short-month'])
+    expect(keptNote(b, occ)).toBe('闰六月 has 29 days in 2025, so it is kept on 闰六月廿九.')
   })
 })
