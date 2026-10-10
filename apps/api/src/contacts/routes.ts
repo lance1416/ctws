@@ -1,5 +1,6 @@
 import {
   birthdayResponse,
+  birthdaysResponse,
   contactListQuery,
   contactResponse,
   createContactBody,
@@ -14,6 +15,7 @@ import { authedUser, requireUser } from '../auth/require-user'
 import { accountToday } from '../db/today'
 import { sendProblem } from '../problem'
 import { ProjectNotFoundError } from '../projects/errors'
+import { listBirthdays } from './birthdays'
 import { ContactNotFoundError } from './errors'
 import {
   createContact,
@@ -92,6 +94,21 @@ export const contactRoutes: FastifyPluginAsync = async (app) => {
         ...(unfiled === 'true' ? { unfiled: true } : {}),
       })
       return { contacts: rows.map((c) => toResponse(c, today)) }
+    },
+  )
+
+  /**
+   * THE BIRTHDAYS PAGE. A lens: it owns nothing, so there is only a read here.
+   *
+   * Written before `/:id` so a reader does not have to know that Fastify ranks a static segment
+   * above a parameter one.
+   */
+  typed.get(
+    '/birthdays',
+    { preHandler: requireUser, schema: { response: { 200: birthdaysResponse } } },
+    async (req) => {
+      const user = authedUser(req)
+      return listBirthdays(app.db, user.workspaceId, user.timezone)
     },
   )
 

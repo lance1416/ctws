@@ -45,6 +45,7 @@ export const BIRTHDAY_CALENDARS = ['solar', 'lunar'] as const
 export const GENDERS = ['male', 'female', 'other'] as const
 /** Where a person sits in your life. The birthdays page groups by it; the contact list filters by it. */
 export const CIRCLES = ['family', 'friend', 'work'] as const
+export type Circle = (typeof CIRCLES)[number]
 /** How early to put someone on the workbench card. 0 is the day itself. */
 export const REMIND_LEADS = [7, 3, 1, 0] as const
 
@@ -111,6 +112,35 @@ export const birthdayResponse = z
   })
   .strict()
 export type BirthdayResponse = z.infer<typeof birthdayResponse>
+
+/** One row on the birthdays page. The segmenting and the counting are the server's (spec §8.4). */
+export const birthdayListRow = z
+  .object({
+    contactId: z.uuid(),
+    name: z.string(),
+    circle: z.enum(CIRCLES).nullable(),
+    calendar: z.enum(BIRTHDAY_CALENDARS),
+    day: calendarDate,
+    inDays: z.number(),
+    turns: z.number().nullable(),
+    lunarDate: z.string().nullable(),
+    kept: z.array(z.string()),
+    remindLead: z.number(),
+  })
+  .strict()
+export type BirthdayListRow = z.infer<typeof birthdayListRow>
+
+export const birthdaysResponse = z
+  .object({
+    today: calendarDate,
+    coming: z.array(birthdayListRow),
+    later: z.array(birthdayListRow),
+    /** Only the months that have somebody: zero is not drawn as 0. */
+    byMonth: z.record(z.string(), z.number()),
+    circles: z.record(z.string(), z.number()),
+  })
+  .strict()
+export type BirthdaysResponse = z.infer<typeof birthdaysResponse>
 
 const contactName = z.string().trim().min(1).max(200)
 const org = z.string().trim().min(1).max(200)
