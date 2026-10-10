@@ -224,3 +224,43 @@ test('公历但不知年份：有星座，没有生肖，所以只有一个 chip
   await expect(chips).toHaveCount(1)
   await expect(chips).toHaveText('天蝎')
 })
+
+test('一个人的备注是 Markdown，和任务备注同一条管线', async ({ page }) => {
+  await registerFreshUser(page)
+  const id = await person(page, '周楠')
+  await page.request.patch(`/api/v1/contacts/${id}`, {
+    headers: WEB,
+    data: {
+      note: [
+        '一起做过毕设。喝不了酒，爱喝**冷萃**。',
+        '',
+        '### 怎么认识的',
+        '',
+        '- 2018 年同一个实验室',
+        '- 聊到 `pg_trgm`',
+      ].join('\n'),
+    },
+  })
+  await page.goto(`/contacts/${id}`)
+  const notes = page.locator('[data-contact-notes]')
+  // 等渲染器到场：fallback 是备注原文的纯文本，断言在它上面会测到错的那一帧（notes.spec.ts 栽过）。
+  await expect(notes.locator('[data-note-md]')).toBeVisible()
+  await expect(notes.locator('strong')).toHaveText('冷萃')
+  await expect(notes.locator('h3')).toHaveText('怎么认识的')
+  await expect(notes.locator('li')).toHaveCount(2)
+  await expect(notes.locator('code')).toHaveText('pg_trgm')
+})
+
+test('备注在写作模式里改，关掉就落库', async ({ page }) => {
+  await registerFreshUser(page)
+  const id = await person(page, '周楠')
+  await page.goto(`/contacts/${id}`)
+  await page.getByRole('button', { name: 'Write' }).click()
+  // The writing layer is driven the way `notes.spec.ts` drives it: its textarea is labelled
+  // `Markdown source`, and Escape is how it closes everywhere in this app.
+  await page.getByLabel('Markdown source').fill('# 标题\n\n正文一行')
+  await page.keyboard.press('Escape')
+  const notes = page.locator('[data-contact-notes]')
+  await expect(notes.locator('[data-note-md]')).toBeVisible()
+  await expect(notes.locator('h1')).toHaveText('标题')
+})

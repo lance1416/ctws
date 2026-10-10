@@ -4,8 +4,12 @@ import { channelHref, deleteContact, patchContact } from '../api/contacts'
 import { listProjects } from '../api/projects'
 import { useProjectRail } from '../projectColor'
 import { DangerAction, DangerZone } from './DangerZone'
+import { useState } from 'react'
 import { BirthdayFields } from './BirthdayFields'
+import { BUTTON } from './buttonStyles'
 import { Field } from './Field'
+import { NoteBody } from '../notes/NoteBody'
+import { WritingMode } from '../notes/WritingMode'
 import { DetailHead, DetailPane } from './DetailPane'
 import { Link } from 'react-router-dom'
 import { Links } from './Links'
@@ -63,6 +67,7 @@ export function ContactFields({
   onClose?: () => void
 }) {
   const qc = useQueryClient()
+  const [writing, setWriting] = useState(false)
   const rail = useProjectRail()
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
 
@@ -278,16 +283,35 @@ export function ContactFields({
         </button>
       </Field>
 
+      {/*
+        THE NOTE, RENDERED AS MARKDOWN -- the same pipeline a task's note goes through, down to
+        the 68ch reading measure. Nothing is added to the bundle by this: `NoteBody` is already
+        behind a dynamic import, so a person whose note nobody opens costs nothing.
+      */}
       <Field label="Notes" shape="above">
-        <InlineText
-          label="Notes"
-          value={contact.note ?? ''}
-          placeholder="No notes yet"
-          multiline
-          onSave={(note) => save.mutate({ note: note || null })}
-          className="block max-w-[68ch] text-sm whitespace-pre-wrap text-fg"
-        />
+        <div data-contact-notes className="max-w-[68ch] text-fg">
+          {contact.note ? (
+            <NoteBody source={contact.note} />
+          ) : (
+            <p className="text-sm text-fg-subtle">No notes yet</p>
+          )}
+        </div>
+        <button
+          type="button"
+          className={`-ml-2.5 mt-1 ${BUTTON.quiet}`}
+          onClick={() => setWriting(true)}
+        >
+          Write
+        </button>
       </Field>
+      {writing && (
+        <WritingMode
+          heading={contact.name}
+          source={contact.note ?? ''}
+          onChange={(next) => save.mutate({ note: next.trim() === '' ? null : next })}
+          onClose={() => setWriting(false)}
+        />
+      )}
     </div>
   )
 }
