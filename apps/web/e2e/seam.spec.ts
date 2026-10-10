@@ -51,6 +51,7 @@ test('the rail is grouped by what you are doing, in a fixed reading order', asyn
     'Contacts',
     'Reading',
     'Calendar',
+    'Birthdays',
     'Review',
     'Projects',
     'Inbox',
@@ -60,7 +61,7 @@ test('the rail is grouped by what you are doing, in a fixed reading order', asyn
   // because what is under it is the person's own and it grows.
   await expect(rail.locator('span[aria-hidden="true"].h-px')).toHaveCount(2)
   // The first group needs no name; the other two carry one, because "Meetings, Contacts,
-  // Reading" and "Calendar, Review" are not self-evidently two different kinds of row.
+  // Reading" and "Calendar, Birthdays, Review" are not self-evidently two different kinds of row.
   await expect(rail.getByText('Things', { exact: true })).toBeVisible()
   await expect(rail.getByText('Views', { exact: true })).toBeVisible()
 })

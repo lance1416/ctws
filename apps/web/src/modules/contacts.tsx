@@ -157,7 +157,9 @@ export const contactModule: WorkspaceModule = {
       to: `/${ID}/birthdays`,
       label: 'Birthdays',
       zone: 'views',
-      order: 25,
+      // Between the calendar and the review: those two look forward and back, and whose birthday
+      // is next is the forward-looking one.
+      order: 15,
       Count: BirthdayCount,
     },
   ],

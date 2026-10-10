@@ -133,6 +133,13 @@ test('the named deadline decisions write the day the row would show', async ({ p
   expect(ymd(new Date((await serverTask(page, pid, id)).dueAt!))).toBe(dayOffset(1))
 
   // "Next week" is the same Monday the row's triage control means.
+  //
+  // Through TODAY first, and not straight from "tomorrow": on a Sunday next Monday IS tomorrow,
+  // the value would not change, and the app is RIGHT to send nothing -- which used to hang this
+  // test one day in seven (`days.ts` records the Thursday version of the same trap).
+  await openPane(page, pid, '交报告')
+  await page.getByRole('button', { name: 'Due today', exact: true }).click()
+  await saveBody(page)
   await openPane(page, pid, '交报告')
   await page.getByRole('button', { name: 'Due next week', exact: true }).click()
   expect(ymd(new Date((await saveBody(page)).dueAt as string))).toBe(nextMondayYmd())
@@ -238,8 +245,12 @@ test('the pane says the day back in the app’s own words, not the field’s for
   // the echo is the app saying which day it understood, and it is right whatever the field prints.
   await expect(dialog.getByText('Tomorrow', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Plan for next week', exact: true }).click()
-  const [, m, d] = nextMondayYmd().split('-').map(Number)
-  await expect(dialog.getByText(`${MONTHS[m! - 1]} ${d}`, { exact: true })).toBeVisible()
+  const nextMonday = nextMondayYmd()
+  const [, m, d] = nextMonday.split('-').map(Number)
+  // On a Sunday next Monday IS tomorrow, and "Tomorrow" is still the app saying which day it
+  // understood. What this test is about is that the WIRE FORMAT never reaches the screen.
+  const echo = nextMonday === dayOffset(1) ? 'Tomorrow' : `${MONTHS[m! - 1]} ${d}`
+  await expect(dialog.getByText(echo, { exact: true })).toBeVisible()
   // The wire format never reaches the screen as a reading.
   await expect(dialog.getByText(/^\d{4}-\d{2}-\d{2}$/)).toHaveCount(0)
 })
