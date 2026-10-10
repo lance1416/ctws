@@ -68,8 +68,9 @@
    column rules, where the SURFACE step already carries the separation. Anything that identifies
    a control (input edges, markers) uses `border-strong` or `fg-muted`. */
 
-/* The CJK face, self-hosted. ONE variable woff2 (wght 400-700), subset to the app's own Chinese
-   vocabulary plus all 6,763 han of GB2312: 1,800,080 B, one request, content-hashed by Vite into
+/* The CJK face, self-hosted. ONE variable woff2 (wght 400-700), subset to all of GB2312 -- its
+   6,763 han and its punctuation rows -- plus any Chinese left in the app's own source (none, since
+   the UI went English): 1,807,656 B, one request, content-hashed by Vite into
    /assets and served `immutable` (apps/api/src/app.ts), so it is paid once and never again.
    Regenerate with `tools/fonts/subset-cjk-font.py`; `src/fonts/coverage.test.ts` fails if a
    Chinese string in the source falls outside the subset.
