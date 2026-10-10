@@ -2,6 +2,8 @@ import type { CalendarEntry } from '@ctws/contracts'
 import { useRef, useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ViewTabs } from '../components/ViewTabs'
+import { useQuery } from '@tanstack/react-query'
+import { calendarDays } from '../api/birthdays'
 import { todayIn } from '../dueAt'
 import { calendarProviders } from '../modules/registry'
 import { monthRange, monthSquares, monthTitle, shiftMonth, WEEKDAYS } from '../monthGrid'
@@ -44,6 +46,15 @@ export function Calendar() {
 
   const providers = calendarProviders()
   const range = monthRange(cursor)
+  /**
+   * WHAT EACH DAY IS CALLED IN THE OLD CALENDAR. One request per month, from the shell's own
+   * endpoint: a day's name belongs to the day, not to whichever module put something on it. A
+   * square whose label has not arrived (or failed) simply has no label, and is still a square.
+   */
+  const lunar = useQuery({
+    queryKey: ['calendar-days', range.from, range.to],
+    queryFn: () => calendarDays(range),
+  })
   // ONE HOOK PER REGISTERED MODULE, over the registry's frozen list -- the same rule the capture
   // box and the rail counts follow.
   const results = providers.map((p) => ({ moduleId: p.moduleId, ...p.useEntries(range) }))
@@ -146,6 +157,14 @@ export function Calendar() {
                   }`}
                 >
                   {Number(day.slice(8))}
+                  {lunar.data?.[day] && (
+                    <span
+                      data-lunar-day
+                      className={`ml-1.5 text-[11px] ${inMonth ? 'text-fg-subtle' : 'text-fg-subtle/70'}`}
+                    >
+                      {lunar.data[day]}
+                    </span>
+                  )}
                 </div>
                 <ul className="flex flex-col">
                   {entries.slice(0, PER_SQUARE).map((entry) => (

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { birthdaysKey, listBirthdays } from '../api/birthdays'
+import { birthdayCalendar, birthdaysKey, listBirthdays } from '../api/birthdays'
 import { contactsKey, listContacts, searchContacts } from '../api/contacts'
 import { ContactFields, DeleteContact } from '../components/ContactDetail'
 import { ObjectPage } from '../components/ObjectPage'
@@ -20,13 +20,25 @@ import type { SearchHit, WorkspaceModule } from './contract'
  *   is not
  *   something in front of you. A card listing people would be decoration on the one page that is
  *   supposed to be only what is live.
- * - no CALENDAR entries. Birthdays are a vCard property and would put something on the grid, and
- *   that is exactly the kind of feature that gets added because a slot exists rather than because
- *   anyone wants it.
+ * - CALENDAR entries: birthdays. They are here because somebody ASKED for them, not because a
+ *   slot was empty -- which is what the previous version of this comment refused, and rightly,
+ *   until the asking happened. A birthday has no time of day and wears no colour.
  * - no CAPTURE rule. A pasted email address is far likelier to be a note about someone than a
  *   person to file, and a wrong guess here would be silently filing things in the wrong module.
  */
 const ID = 'contacts'
+
+/**
+ * This module's dated things. No `Detail`: a birthday belongs to a person, and that person has a
+ * page of their own, so the entry is a link rather than something that opens here.
+ */
+function useBirthdayEntries(range: { from: string; to: string }) {
+  const result = useQuery({
+    queryKey: ['birthday-calendar', range.from, range.to],
+    queryFn: () => birthdayCalendar(range),
+  })
+  return { entries: result.data ?? [], isError: result.isError }
+}
 
 /** The rail's count: how many birthdays the next week holds. Shares the page's cache entry. */
 function BirthdayCount() {
@@ -116,6 +128,7 @@ export const contactModule: WorkspaceModule = {
     { path: ':id', element: <ObjectPage type="contact" /> },
   ],
   search: { useHits: useContactHits },
+  calendar: { label: 'Birthdays', useEntries: useBirthdayEntries },
   // `n` for name. One keyspace across modules, so this is checked against every other chord.
   chords: [
     { id: 'contacts', key: 'n', label: 'Go to Contacts', resolve: () => `/${ID}`, order: 17 },

@@ -320,6 +320,14 @@ export type CalendarEntry = z.infer<typeof calendarEntry>
  */
 export const calendarEntriesResponse = z.object({ entries: z.array(calendarEntry) }).strict()
 
+/**
+ * What each day in a window is called in the lunar calendar, for the grid's squares.
+ *
+ * The SHELL asks for this, not a module: a day's own name belongs to the day. It is one request
+ * per month view and a few hundred bytes.
+ */
+export const calendarDaysResponse = z.object({ days: z.record(calendarDate, z.string()) }).strict()
+
 export const calendarQuery = z
   .object({ from: calendarDate, to: calendarDate })
   .strict()

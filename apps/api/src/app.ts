@@ -23,6 +23,7 @@ import { warmDummyHash } from './auth/service'
 import type { Db } from './db/client'
 import type { Env } from './env'
 import { documentRefusals } from './openapi'
+import { calendarDayRoutes } from './calendar/days'
 import { registerGuards } from './guards'
 import { linkRoutes } from './links/routes'
 import { sendProblem } from './problem'
@@ -95,6 +96,7 @@ export async function buildApp(opts: { env: Env; db: Db }): Promise<FastifyInsta
   // The edge table is the shell's, like projects: an edge joins two modules' things, so no
   // module could own it without learning about another.
   await app.register(linkRoutes, { prefix: '/api/v1' })
+  await app.register(calendarDayRoutes, { prefix: '/api/v1' })
   await app.register(taskRoutes, { prefix: '/api/v1/tasks' })
   await app.register(readingRoutes, { prefix: '/api/v1/reading' })
   await app.register(contactRoutes, { prefix: '/api/v1/contacts' })

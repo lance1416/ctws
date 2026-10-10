@@ -118,3 +118,34 @@ test('g c goes to the calendar', async ({ page }) => {
   await expect(page).toHaveURL(/\/calendar$/)
   await expect(page.getByRole('heading', { name: 'Calendar', level: 1 })).toBeVisible()
 })
+
+test('生日落在服务端说的那一天，点它去那个人的页', async ({ page }) => {
+  await registerFreshUser(page)
+  // 公历的今天：格子一定在这个月的视图里。农历落在自己那天这件事，由 core 的单测和
+  // `/contacts/calendar` 的 API 测试用固定日期钉住 —— 这里验的是格子把它画在服务端说的那天。
+  const [, month, day] = dayOffset(0).split('-').map(Number) as [number, number, number]
+  const res = await page.request.post('/api/v1/contacts', {
+    headers: WEB,
+    data: { name: '周楠', birthday: { calendar: 'solar', year: 1991, month, day } },
+  })
+  expect(res.ok()).toBe(true)
+
+  await page.goto('/calendar')
+  await expect(square(page, dayOffset(0))).toContainText('周楠')
+  await square(page, dayOffset(0)).getByRole('link', { name: /周楠/ }).click()
+  await expect(page.getByRole('region', { name: 'Person at a glance' })).toContainText('周楠')
+})
+
+test('格子里有农历日，和服务端说的一样', async ({ page }) => {
+  await registerFreshUser(page)
+  const today = dayOffset(0)
+  const answer = await page.request.get(`/api/v1/calendar/days?from=${today}&to=${today}`, {
+    headers: WEB,
+  })
+  expect(answer.ok()).toBe(true)
+  const label = ((await answer.json()) as { days: Record<string, string> }).days[today]
+  expect(label).toBeTruthy()
+
+  await page.goto('/calendar')
+  await expect(square(page, today).locator('[data-lunar-day]')).toHaveText(label!)
+})
