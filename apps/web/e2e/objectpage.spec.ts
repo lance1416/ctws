@@ -114,3 +114,45 @@ test('a pane reaches the page the thing lives on', async ({ page }) => {
   await expect(page).toHaveURL(new RegExp(`/contacts/${person.id}$`))
   await expect(page.getByRole('region', { name: 'Person at a glance' })).toContainText('Ying Chen')
 })
+
+test('1440 下一个人的 Linked 在右栏，不在正文下面', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await registerFreshUser(page)
+  const id = (await apiPost(page, '/contacts', { name: '周楠' })).id as string
+  await page.goto(`/contacts/${id}`)
+  const glance = page.getByRole('region', { name: 'Person at a glance' })
+  const linked = page.getByRole('region', { name: 'Linked' })
+  const [main, side] = await Promise.all([glance.boundingBox(), linked.boundingBox()])
+  expect(main).not.toBeNull()
+  expect(side).not.toBeNull()
+  // Beside, not below: its left edge starts where the main column ends.
+  expect(side!.x).toBeGreaterThan(main!.x + main!.width - 4)
+  // And the main column is the wide one: two of three.
+  expect(main!.width).toBeGreaterThan(side!.width * 1.5)
+})
+
+test('窄屏下还是一列，顺序不变', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await registerFreshUser(page)
+  const id = (await apiPost(page, '/contacts', { name: '周楠' })).id as string
+  await page.goto(`/contacts/${id}`)
+  const glance = await page.getByRole('region', { name: 'Person at a glance' }).boundingBox()
+  const linked = await page.getByRole('region', { name: 'Linked' }).boundingBox()
+  expect(linked!.y).toBeGreaterThan(glance!.y)
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  )
+  expect(overflow).toBeLessThanOrEqual(0)
+})
+
+test('项目页不被改成两栏：它自己的块已经把宽度用掉了', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await registerFreshUser(page)
+  const pid = (await apiPost(page, '/projects', { name: '求职' })).id as string
+  await page.goto(`/projects/${pid}`)
+  const glance = (await page.getByRole('region', { name: 'Project at a glance' }).boundingBox())!
+  const linked = (await page.getByRole('region', { name: 'Linked' }).boundingBox())!
+  // Below, and the same width: the third column on this page belongs to the task detail pane.
+  expect(linked.y).toBeGreaterThan(glance.y + glance.height - 4)
+  expect(Math.round(linked.width)).toBe(Math.round(glance.width))
+})

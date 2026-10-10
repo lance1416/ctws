@@ -42,62 +42,87 @@ export function ObjectPage({ type }: { type: ObjectType }) {
   const Destroy = where?.Destroy
   // The kinds a module already draws on THIS page, in its own block.
   const covered: ObjectType[] = type === 'project' ? BLOCKED_ON_A_PROJECT : []
+  // Only a page made of nothing but fields and edges is laid out in columns -- see below.
+  const sideBySide = type !== 'project'
 
   return (
     <>
-      {/* The banner: one accent edge and the top step of the type scale spent on its subject,
-          the same language the workbench's own strip speaks. */}
-      <Panel
-        label={`${where?.kind ?? 'Thing'} at a glance`}
-        className="border-l-4 border-l-accent"
-        heading={<h2 className="text-xs font-semibold text-fg-subtle">{where?.kind}</h2>}
+      {/*
+        A PANEL GRID, not one capped column. `Today.tsx` wrote the reason down: at 1440 a single
+        column puts one clump of rows left of centre with half the screen empty beside it. The
+        person's page and a meeting's page are exactly that: a short stack of fields with nothing
+        beside them, so the fields take two columns of three and what the thing is CONNECTED to
+        takes the third. Below `lg` it stacks, in the same order.
+
+        A PROJECT PAGE IS LEFT ALONE. Its module's own block already spends the width, and the
+        third column there belongs to the task detail pane (`project.spec.ts` pins the tree and
+        the pane at 2:1). A second grid around that one would halve the pane.
+      */}
+      <div
+        className={
+          sideBySide
+            ? 'grid min-w-0 items-start gap-4 lg:grid-cols-[repeat(3,minmax(0,1fr))]'
+            : 'contents'
+        }
       >
-        {Head ? (
-          <div className="px-2 pb-1">
-            <Head id={id} />
-          </div>
-        ) : null}
-      </Panel>
+        <div className={sideBySide ? 'flex min-w-0 flex-col gap-4 lg:col-span-2' : 'contents'}>
+          {/* The banner: one accent edge and the top step of the type scale spent on its subject,
+          the same language the workbench's own strip speaks. */}
+          <Panel
+            label={`${where?.kind ?? 'Thing'} at a glance`}
+            className="border-l-4 border-l-accent"
+            heading={<h2 className="text-xs font-semibold text-fg-subtle">{where?.kind}</h2>}
+          >
+            {Head ? (
+              <div className="px-2 pb-1">
+                <Head id={id} />
+              </div>
+            ) : null}
+          </Panel>
 
-      {/* A module's own editor for this kind of thing, where it has one. */}
-      {type === 'project' && (
-        <div className="mt-4 flex min-w-0 flex-col gap-4">
-          {projectBlocks().map(({ moduleId, moduleLabel, Component, views: offered = [] }) => {
-            const chosen =
-              offered.find((v) => v.id === views.picked.get(moduleId))?.id ??
-              offered[0]?.id ??
-              'default'
-            const Action = projectBlocks().find((b) => b.moduleId === moduleId)?.Action
-            return (
-              <Panel
-                key={moduleId}
-                label={moduleLabel}
-                /* `ViewTabs` draws nothing for a single view, so a block with one is not given
+          {/* A module's own editor for this kind of thing, where it has one. */}
+          {type === 'project' && (
+            <div className="mt-4 flex min-w-0 flex-col gap-4">
+              {projectBlocks().map(({ moduleId, moduleLabel, Component, views: offered = [] }) => {
+                const chosen =
+                  offered.find((v) => v.id === views.picked.get(moduleId))?.id ??
+                  offered[0]?.id ??
+                  'default'
+                const Action = projectBlocks().find((b) => b.moduleId === moduleId)?.Action
+                return (
+                  <Panel
+                    key={moduleId}
+                    label={moduleLabel}
+                    /* `ViewTabs` draws nothing for a single view, so a block with one is not given
                    a tab bar that decides nothing. */
-                tabs={
-                  <ViewTabs
-                    views={offered}
-                    current={chosen}
-                    onPick={(v) => views.pick(moduleId, v)}
-                  />
-                }
-                action={Action ? <Action projectId={id} /> : undefined}
-              >
-                <Component projectId={id} view={chosen} />
-              </Panel>
-            )
-          })}
+                    tabs={
+                      <ViewTabs
+                        views={offered}
+                        current={chosen}
+                        onPick={(v) => views.pick(moduleId, v)}
+                      />
+                    }
+                    action={Action ? <Action projectId={id} /> : undefined}
+                  >
+                    <Component projectId={id} view={chosen} />
+                  </Panel>
+                )
+              })}
+            </div>
+          )}
         </div>
-      )}
 
-      {/* AND WHAT IT IS CONNECTED TO: on a person, the meetings they are in and what they
+        <div className={sideBySide ? 'flex min-w-0 flex-col gap-4' : 'contents'}>
+          {/* AND WHAT IT IS CONNECTED TO: on a person, the meetings they are in and what they
           recommended -- a screen that was empty before, because those edges had nowhere to live.
           On a project it is the people, the reading and the meetings -- everything except the
           tasks, which the tree above already draws. Saying a row twice is the one thing a reader
           has to hold two of in their head. */}
-      <Panel label="Linked" className="mt-4">
-        <Links of={{ type, id }} except={covered} />
-      </Panel>
+          <Panel label="Linked" className={sideBySide ? '' : 'mt-4'}>
+            <Links of={{ type, id }} except={covered} />
+          </Panel>
+        </div>
+      </div>
 
       {/* LAST ON THE PAGE, below everything, in the danger colour: the one action here that
           cannot be undone, where nothing is reached by passing over it (`DangerZone`). The shell
