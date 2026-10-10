@@ -1,6 +1,10 @@
 import {
+  birthdayPreviewQuery,
+  birthdayPreviewResponse,
   birthdayResponse,
   birthdaysResponse,
+  calendarEntriesResponse,
+  calendarQuery,
   contactListQuery,
   contactResponse,
   createContactBody,
@@ -15,7 +19,7 @@ import { authedUser, requireUser } from '../auth/require-user'
 import { accountToday } from '../db/today'
 import { sendProblem } from '../problem'
 import { ProjectNotFoundError } from '../projects/errors'
-import { listBirthdays } from './birthdays'
+import { listBirthdayEntries, listBirthdays } from './birthdays'
 import { ContactNotFoundError } from './errors'
 import {
   createContact,
@@ -109,6 +113,44 @@ export const contactRoutes: FastifyPluginAsync = async (app) => {
     async (req) => {
       const user = authedUser(req)
       return listBirthdays(app.db, user.workspaceId, user.timezone)
+    },
+  )
+
+  /** This module's dated things, for the shell's calendar. A birthday has no time of day. */
+  typed.get(
+    '/calendar',
+    {
+      preHandler: requireUser,
+      schema: { querystring: calendarQuery, response: { 200: calendarEntriesResponse } },
+    },
+    async (req) => ({
+      entries: await listBirthdayEntries(
+        app.db,
+        authedUser(req).workspaceId,
+        req.query.from,
+        req.query.to,
+      ),
+    }),
+  )
+
+  /** What a birthday WOULD mean, before it is saved. The rules have one implementation. */
+  typed.get(
+    '/birthdays/preview',
+    {
+      preHandler: requireUser,
+      schema: { querystring: birthdayPreviewQuery, response: { 200: birthdayPreviewResponse } },
+    },
+    async (req) => {
+      const user = authedUser(req)
+      const today = await accountToday(app.db, user.timezone)
+      const birthday: Birthday = {
+        calendar: req.query.calendar,
+        year: req.query.year ?? null,
+        month: req.query.month,
+        day: req.query.day,
+        leapMonth: req.query.leap === 'true',
+      }
+      return { ...factsOf(birthday, req.query.hour ?? null), next: nextOccurrence(birthday, today) }
     },
   )
 

@@ -145,3 +145,120 @@ describe('GET /contacts/birthdays', () => {
     expect(res.statusCode).toBe(401)
   })
 })
+
+type Entry = {
+  id: string
+  day: string
+  title: string
+  to: string
+  kind: string
+  time: string | null
+}
+
+async function entries(ctx: TaskCtx, from: string, to: string): Promise<Entry[]> {
+  const res = await ctx.app.inject({
+    method: 'GET',
+    url: `/api/v1/contacts/calendar?from=${from}&to=${to}`,
+    headers: ctx.authed,
+  })
+  expect(res.statusCode, res.body).toBe(200)
+  return (res.json() as { entries: Entry[] }).entries
+}
+
+describe('GET /contacts/calendar', () => {
+  it('窗口里的生日各一条，带名字与年龄，没有时刻', async () => {
+    const ctx = await setup()
+    await add(ctx, '王颖', { calendar: 'solar', year: 1993, month: 10, day: 10 })
+    await add(ctx, '周楠', { calendar: 'lunar', year: 1991, month: 9, day: 3 })
+    const rows = await entries(ctx, '2026-10-01', '2026-10-31')
+    expect(rows).toHaveLength(2)
+    const 王颖 = rows.find((r) => r.title.startsWith('王颖'))
+    expect(王颖).toMatchObject({
+      day: '2026-10-10',
+      title: '王颖 33',
+      kind: 'Birthday',
+      time: null,
+    })
+    expect(王颖?.to).toMatch(/^\/contacts\/[0-9a-f-]{36}$/)
+    // 农历追的人落在他自己的那天，不是公历的 10-10。
+    expect(rows.find((r) => r.title.startsWith('周楠'))?.day).toBe('2026-10-12')
+  })
+
+  it('窗口外的人不出现，没有年份的人只有名字', async () => {
+    const ctx = await setup()
+    await add(ctx, '李雷', { calendar: 'solar', year: 1996, month: 4, day: 15 })
+    await add(ctx, '蒋老师', { calendar: 'solar', year: null, month: 10, day: 20 })
+    const rows = await entries(ctx, '2026-10-01', '2026-10-31')
+    expect(rows.map((r) => r.title)).toEqual(['蒋老师'])
+  })
+
+  it('条目 id 带日期，所以跨年的窗口里同一个人不会撞 id', async () => {
+    const ctx = await setup()
+    await add(ctx, '王颖', { calendar: 'solar', year: 1993, month: 10, day: 10 })
+    // 367 天：在 `MAX_CALENDAR_SPAN_DAYS`（370）之内，而两次 10-10 之间隔着 365 天，所以窗口
+    // 必须跨过那一整年才装得下两次。
+    const rows = await entries(ctx, '2026-10-09', '2027-10-11')
+    expect(rows).toHaveLength(2)
+    expect(new Set(rows.map((r) => r.id)).size).toBe(2)
+    expect(rows.map((r) => r.day)).toEqual(['2026-10-10', '2027-10-10'])
+  })
+})
+
+describe('GET /contacts/birthdays/preview', () => {
+  const preview = (ctx: TaskCtx, query: string) =>
+    ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/contacts/birthdays/preview?${query}`,
+      headers: ctx.authed,
+    })
+
+  it('公历输入回答农历、生肖、星座与下一次', async () => {
+    const ctx = await setup()
+    const res = await preview(ctx, 'calendar=solar&year=1996&month=4&day=15&hour=6')
+    expect(res.statusCode, res.body).toBe(200)
+    expect(res.json()).toMatchObject({
+      bornLunar: '农历丙子年二月廿八',
+      zodiac: '鼠',
+      sign: '白羊',
+      hour: '午时 · 11–13',
+    })
+  })
+
+  /**
+   * 下一次从「今天」算，所以这条的 `kept` 取决于日历：闰六月的年份很稀（2017、2025、2036），
+   * 而下一次总在一年之内，所以从 2026 到 2036 这条都成立。
+   */
+  it('闰月输入把回退说出来', async () => {
+    const ctx = await setup()
+    const res = await preview(ctx, 'calendar=lunar&year=2017&month=6&day=15&leap=true')
+    expect(res.statusCode, res.body).toBe(200)
+    const body = res.json()
+    expect(body.lunarDate).toBe('农历闰六月十五')
+    expect(body.next.kept).toContain('leap-month')
+  })
+
+  it('没有年份的农历输入没有星座', async () => {
+    const ctx = await setup()
+    const res = await preview(ctx, 'calendar=lunar&month=9&day=3')
+    expect(res.statusCode, res.body).toBe(200)
+    expect(res.json().sign).toBeNull()
+    expect(res.json().zodiac).toBeNull()
+    expect(res.json().lunarDate).toBe('农历九月初三')
+  })
+
+  it('公历里不存在的日子是 400', async () => {
+    const ctx = await setup()
+    const res = await preview(ctx, 'calendar=solar&year=1996&month=2&day=30')
+    expect(res.statusCode).toBe(400)
+    expect(res.json().detail).toContain('does not exist')
+  })
+
+  it('没登录就没有', async () => {
+    const ctx = await setup()
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/v1/contacts/birthdays/preview?calendar=solar&month=4&day=15',
+    })
+    expect(res.statusCode).toBe(401)
+  })
+})

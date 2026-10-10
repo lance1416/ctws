@@ -113,6 +113,40 @@ export const birthdayResponse = z
   .strict()
 export type BirthdayResponse = z.infer<typeof birthdayResponse>
 
+/**
+ * The derived line shown WHILE TYPING a birthday in. A small stateless endpoint, so the rules have
+ * exactly one implementation: the other way is shipping a 750 KB lunar library to the browser.
+ */
+export const birthdayPreviewQuery = z
+  .object({
+    calendar: z.enum(BIRTHDAY_CALENDARS),
+    year: z.coerce.number().int().min(1850).max(2200).optional(),
+    month: z.coerce.number().int().min(1).max(12),
+    day: z.coerce.number().int().min(1).max(31),
+    leap: z.enum(['true', 'false']).optional(),
+    hour: z.coerce.number().int().min(0).max(11).optional(),
+  })
+  .strict()
+  .refine((b) => b.calendar === 'lunar' || b.leap !== 'true', {
+    message: 'only a lunar birthday has a leap month',
+  })
+  .refine((b) => b.calendar === 'solar' || b.day <= 30, {
+    message: 'a lunar month has at most 30 days',
+  })
+  .refine((b) => b.calendar === 'lunar' || b.day <= (SOLAR_MONTH_LENGTHS[b.month - 1] ?? 31), {
+    message: 'that day does not exist in that month',
+  })
+
+export const birthdayPreviewResponse = birthdayResponse.omit({
+  calendar: true,
+  year: true,
+  month: true,
+  day: true,
+  leapMonth: true,
+  hourBranch: true,
+  remindLead: true,
+})
+
 /** One row on the birthdays page. The segmenting and the counting are the server's (spec §8.4). */
 export const birthdayListRow = z
   .object({

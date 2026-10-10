@@ -1,4 +1,4 @@
-import type { Circle } from '@ctws/contracts'
+import type { CalendarEntry, Circle } from '@ctws/contracts'
 import { factsOf, nextOccurrence, type Birthday } from '@ctws/core'
 import { and, asc, eq, isNotNull, isNull } from 'drizzle-orm'
 import type { Queryable } from '../db/client'
@@ -81,6 +81,55 @@ export function birthdayOf(p: Person): Birthday {
     day: p.day as number,
     leapMonth: p.leapMonth,
   }
+}
+
+/**
+ * THIS MODULE'S DATED THINGS, for the shell's calendar.
+ *
+ * A birthday has NO TIME (`time: null`) and wears no colour: colour in this app carries category
+ * and urgency, and a birthday is neither. It is told apart from a meeting by leading with a name
+ * and an age instead of a clock.
+ *
+ * One person can appear TWICE in one window (a window that spans a year), so the id carries the
+ * day as well as the contact.
+ */
+export async function listBirthdayEntries(
+  q: Queryable,
+  workspaceId: string,
+  from: string,
+  to: string,
+): Promise<CalendarEntry[]> {
+  const people = await peopleWithBirthdays(q, workspaceId)
+  const entries: CalendarEntry[] = []
+  for (const p of people) {
+    const birthday = birthdayOf(p)
+    let cursor = from
+    // The window is bounded (`calendarQuery` refines it), so this turns at most a few times.
+    for (;;) {
+      const next = nextOccurrence(birthday, cursor)
+      if (next.day > to) break
+      entries.push({
+        id: `${p.id}:${next.day}`,
+        day: next.day,
+        title: next.turns === null ? p.name : `${p.name} ${next.turns}`,
+        to: `/contacts/${p.id}`,
+        kind: 'Birthday',
+        time: null,
+        zone: null,
+        projectId: null,
+        projectName: null,
+      })
+      cursor = dayAfter(next.day)
+    }
+  }
+  return entries.sort((a, b) => a.day.localeCompare(b.day) || a.title.localeCompare(b.title))
+}
+
+/** A calendar day plus one. Plain string arithmetic: there is no time of day here to shift. */
+function dayAfter(day: string): string {
+  const d = new Date(`${day}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + 1)
+  return d.toISOString().slice(0, 10)
 }
 
 export async function listBirthdays(
