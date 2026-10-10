@@ -39,9 +39,22 @@ describe('the self-hosted CJK subset', () => {
     for (const char of '简舍练习') {
       expect(covered.has(char.codePointAt(0)!), `${char} is not in the subset`).toBe(true)
     }
-    // GB2312 level 1 + 2 is 6,763 han; with Latin and CJK punctuation the budget is 6,879
-    // codepoints. Well under that means the subset was rebuilt to a smaller budget.
-    expect(covered.size).toBeGreaterThan(6500)
+    // GB2312 level 1 + 2 is 6,763 han; with Latin and GB2312's own punctuation rows the budget is
+    // 7,049 codepoints. The floor is just under that on purpose: a han-only rebuild lands at 6,869
+    // and must fail here rather than pass by 300.
+    expect(covered.size).toBeGreaterThan(7000)
+  })
+
+  it('covers the marks a Chinese sentence is made of', () => {
+    // Not han, and not in the han rows the budget is mostly made of. These reached the shipped file
+    // only because the UI's own copy used to be Chinese; the UI is English now, the generator's scan
+    // of the source finds nothing, and a rebuild without an explicit punctuation budget silently
+    // drops them -- leaving a typed title taking its commas and brackets from a fallback face, per
+    // glyph, mid-sentence. Five of these (！《》【】～) were in fact never covered at all until the
+    // budget stopped depending on the app's own words.
+    for (const char of '、。，；：？！「」『』（）《》【】…—·～') {
+      expect(covered.has(char.codePointAt(0)!), `${char} is not in the subset`).toBe(true)
+    }
   })
 
   /**

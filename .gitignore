@@ -151,3 +151,6 @@ vite.config.ts.timestamp-*
 # Playwright
 test-results/
 playwright-report/
+
+# The font generator is Python, run by hand (tools/fonts/subset-cjk-font.py)
+__pycache__/

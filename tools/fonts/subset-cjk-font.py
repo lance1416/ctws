@@ -5,13 +5,14 @@ Run this BY HAND, not from the Docker build. `apps/api/Dockerfile` builds on `no
 which has no Python, and a 1.7 MiB artefact that changes when the character budget changes is not
 worth a Python toolchain in the image. The generated woff2 and the charset it was generated from
 are both committed; `apps/web/src/fonts/coverage.test.ts` reads the committed woff2's own cmap and
-fails if a Chinese string in the source has fallen outside it, so a copy change cannot silently
-lose its glyphs.
+fails if a Chinese string in the source, or any of the marks a typed sentence is made of, has
+fallen outside it -- so neither a copy change nor a narrower budget here can silently lose glyphs.
 
     pip install 'fonttools[woff]'     # 4.66.1 when this was last run; needs brotli
     python tools/fonts/subset-cjk-font.py C:/Windows/Fonts/NotoSansSC-VF.ttf
 
-The budget is **the UI's own Chinese vocabulary plus all of GB2312** (6,763 everyday han). Why so
+The budget is **all of GB2312 -- 6,763 everyday han plus its punctuation rows -- and any Chinese
+left in the UI's own source**. Why so
 large, when the chrome vocabulary alone is ~310 characters and 124.5 KiB: CSS font fallback is PER
 GLYPH, and 31% of the han in real task titles falls outside the chrome vocabulary, so a chrome-only
 subset renders a single task title in two faces at two weights, changing as the user types. Either
@@ -19,10 +20,10 @@ the subset covers what a user can type or it should not exist. See
 docs/superpowers/specs/2026-10-06-ctws-workbench.md section 4.
 
 NOT BIT-REPRODUCIBLE. Re-running this on the same source font and the same charset produces a file
-of a slightly different size each time -- 1,800,080 / 1,800,096 / 1,800,100 / 1,800,284 B measured
-across four runs, a spread of 0.01%, and `PYTHONHASHSEED=0` does not fix it, so the ordering comes
-from inside fontTools rather than from this script. Coverage is identical every time (6,879
-codepoints), which is what the tests assert. Do not treat a changed hash as a changed font, and do
+of a slightly different size each time -- 1,807,648 / 1,807,656 / 1,807,656 / 1,807,916 B measured
+across four runs at this budget, a spread of 0.015%, and `PYTHONHASHSEED=0` does not fix it, so the
+ordering comes from inside fontTools rather than from this script. Coverage is identical every time
+(7,049 codepoints), which is what the tests assert. Do not treat a changed hash as a changed font, and do
 not regenerate just to "refresh" the artefact: the committed file is the one that was shipped.
 
 One file, not `unicode-range` chunks: the container serves HTTP/1.1, where 13-14 chunk requests
@@ -88,6 +89,25 @@ def gb2312(cmap: set[int]) -> set[str]:
     return {c for c in out if ord(c) in cmap}
 
 
+def gb2312_punctuation(cmap: set[int]) -> set[str]:
+    """GB2312 rows A1 and A3: the marks a typed Chinese sentence is made of, and the fullwidth forms.
+
+    NOT covered by the han rows above. These used to arrive by accident, through the UI's own
+    Chinese copy -- the UI is English now and `chrome_vocabulary()` returns nothing, so a
+    regeneration without this set drops the ten marks the shipped file had (、。「」（），：；？) and
+    leaves a typed Chinese sentence taking its commas from a fallback face, per glyph. The budget
+    is what a PERSON can type, which never depended on the app's own words.
+    """
+    out = set()
+    for hi in (0xA1, 0xA3):
+        for lo in range(0xA1, 0xFF):
+            try:
+                out.add(bytes([hi, lo]).decode('gb2312'))
+            except UnicodeDecodeError:
+                pass
+    return {c for c in out if ord(c) in cmap}
+
+
 def chrome_vocabulary() -> set[str]:
     """Every CJK character written anywhere in the app's own source."""
     out: set[str] = set()
@@ -122,11 +142,11 @@ def main() -> int:
         print(f'! source font does not cover {len(missing)} chrome chars: {"".join(missing)}')
         return 1
 
-    chars = sorted(LATIN | chrome | gb2312(cmap))
+    chars = sorted(LATIN | chrome | gb2312(cmap) | gb2312_punctuation(cmap))
     print(f'source   : {src}')
     print(f'family   : {family} {version}   cmap {len(cmap):,}')
     print(f'chrome   : {len(chrome):,} CJK chars in apps/{{web,api}}/src')
-    print(f'charset  : {len(chars):,} codepoints  (latin {len(LATIN)} + chrome + GB2312)')
+    print(f'charset  : {len(chars):,} codepoints  (latin {len(LATIN)} + chrome + GB2312 han + GB2312 punctuation)')
 
     font = TTFont(src, lazy=False)
     opts = subset.Options()
@@ -138,7 +158,13 @@ def main() -> int:
     sub = subset.Subsetter(options=opts)
     sub.populate(text=''.join(chars))
     sub.subset(font)
-    font = instancer.instantiateVariableFont(font, {'wght': WGHT_RANGE}, updateFontNames=False)
+    # UPDATE THE NAMES, because clipping the axis changes which instance this file IS. The source
+    # VF's wght default is 100, so its own name records describe Thin -- ID 6 `NotoSansSC-Thin`,
+    # ID 17 `Thin`, and Thin inside ID 3. Clipping to 400-700 moves the default to 400, and with
+    # `updateFontNames=False` the file shipped calling itself Thin while being Regular. True lets
+    # fontTools rewrite those records from the STAT table, which is the spec's own naming rules
+    # rather than this script's guess at them.
+    font = instancer.instantiateVariableFont(font, {'wght': WGHT_RANGE}, updateFontNames=True)
 
     # Rename the family to `CTWS Noto Sans SC`. This is a SUBSET of Noto, not Noto: giving it its
     # own family name means the installed Noto Sans SC on a developer's machine can never be
