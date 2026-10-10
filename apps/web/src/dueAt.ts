@@ -59,8 +59,7 @@ export function todayIn(timeZone: string, now: Date = new Date()): string {
 /**
  * Arithmetic on a calendar-day STRING has no timezone in it at all -- "the day after 2026-10-31" is
  * 2026-11-01 everywhere -- so it is done on a `TZDate` pinned to UTC, where every day is 24 hours
- * and no DST rule can reach it. That is what the old `fromYmd`/`toYmd` pair was for; the pinning is
- * now the zone argument rather than a convention to remember.
+ * and no DST rule can reach it. The pinning is the zone argument, not a convention to remember.
  */
 const dayStart = (day: string) => new TZDate(`${day}T00:00:00Z`, 'UTC')
 

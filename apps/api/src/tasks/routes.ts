@@ -245,9 +245,9 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
     },
   )
 
-  // Was `GET /api/v1/projects/:id/tasks`. The project is the shell's, the tasks under it are the
-  // module's, so the project is a FILTER on the module's own collection rather than a parent path
-  // segment the module would be hanging routes off. The old path still answers, by redirect.
+  // The project is the shell's and the tasks under it are the module's, so the project is a
+  // FILTER on the module's own collection rather than a parent path segment the module hangs its
+  // routes off. `GET /api/v1/projects/:id/tasks` still answers, by redirect (`compat.ts`).
   typed.get(
     '/',
     {

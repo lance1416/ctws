@@ -3,9 +3,9 @@
  * rather than a bare key because the destinations would otherwise eat a single letter each, and
  * `g` reads as "go".
  *
- * The TABLE itself is no longer here: the shell and each module contribute their own chords and
- * the registry merges them into one keyspace (module-boundary contract §3 -- the master key table
- * is a shell surface). This file keeps only what is true of every chord.
+ * The TABLE itself is not here: the shell and each module contribute their own chords and the
+ * registry merges them into one keyspace (module-boundary contract §3 -- the master key table is a
+ * shell surface). This file keeps only what is true of every chord.
  */
 
 /** The chord prefix. */

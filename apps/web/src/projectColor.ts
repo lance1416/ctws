@@ -5,11 +5,11 @@ import { listProjects } from './api/projects'
 /**
  * The project identity rail: which of the six categorical slots a project wears.
  *
- * IT IS STORED ON THE PROJECT, assigned once by the server from the first free slot. It used to be
- * derived here by hashing the project id into six buckets -- stable per project, which was the
- * point, but stable and RANDOM: six buckets and four projects collide 72% of the time, and the
- * user's four projects duly drew three colours, which is the report that started this. The first
- * six projects are now distinct by construction.
+ * IT IS STORED ON THE PROJECT, assigned once by the server from the first free slot, never
+ * derived here by hashing the project id into six buckets. A hash is stable per project, which is
+ * the property that matters, but stable and RANDOM: six buckets and four projects collide 72% of
+ * the time, so four projects usually draw three colours. The first six are distinct by
+ * construction.
  *
  * The slot names a `--color-project-N` token rather than a colour, because the six hexes differ
  * between light and dark (see the block in styles.css): a stored colour could only be right in one

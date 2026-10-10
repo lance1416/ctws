@@ -33,10 +33,10 @@ type Project = ReviewResponse['projects'][number]
 /**
  * WHAT HAPPENED TO ONE TASK, as a row of the app's own shape.
  *
- * The three groups used to be three sub-headings with a grey count each -- "Done 2", "Start 1",
- * "Dropped 1" -- which is three labels to read before the first title. The mark says it instead:
- * the same glyph the task carries everywhere else in the app, so a finished task looks finished
- * here too and the list is one list.
+ * The three groups are told apart by the MARK, not by three sub-headings with a grey count each
+ * -- "Done 2", "Start 1", "Dropped 1" is three labels to read before the first title. It is the
+ * same glyph the task carries everywhere else, so a finished task looks finished here too and
+ * the list is one list.
  */
 function Row({ title, status }: { title: string; status: 'done' | 'in_progress' | 'cancelled' }) {
   return (

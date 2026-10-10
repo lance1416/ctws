@@ -59,8 +59,8 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
   const enabled = useShortcutsEnabled()
 
   return (
-    // Radix now owns Escape, the press outside, the focus trap and the focus restoration that this
-    // file used to get from the hand-built `Overlay`. Nothing about WHAT it says changed.
+    // Radix owns Escape, the press outside, the focus trap and the focus restoration; this file
+    // only says what is in the layer.
     <Modal title="Keyboard shortcuts" onClose={onClose} className="rounded-lg">
       <div className="px-5 py-4">
         {GROUPS.map((group) => (

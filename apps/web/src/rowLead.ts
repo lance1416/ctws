@@ -1,19 +1,13 @@
 /**
  * THE ROW'S LEADING ICON, and how wide a list is.
  *
- * This replaces the right-hand date columns outright (rows-and-reading §3, second edition). The row
- * is now `[status marker 1.75rem][icon slot 1.5rem][title -- the whole line]`, with the full date
- * wording on a second line under the title. Three mechanisms went with the columns, and none of
- * them has a survivor here:
+ * NO RIGHT-HAND DATE COLUMNS (rows-and-reading §3). A row is
+ * `[status marker 1.75rem][icon slot 1.5rem][title -- the whole line]`, with the full date wording
+ * on a second line under the title. So there is no deadline or plan column, no stack threshold
+ * and no container query -- the cramped panel and the wide one are THE SAME LAYOUT -- and no list
+ * measure derived from a column makeup, because the title competes with nothing on its right.
  *
- *   1. the `8rem` deadline column and the `11rem` plan column;
- *   2. the stack threshold (`2 x furniture`) and the container queries that drove it -- the cramped
- *      panel and the wide one are now THE SAME LAYOUT, so there is nothing left to switch between;
- *   3. the list measure derived from the column makeup (64 / 72.75 / 75.75 / 84.5rem) -- the title
- *      no longer competes with anything on its right, so one measure answers for every list.
- *
- * WHAT SURVIVES is the rule that earned its keep: a slot is reserved FOR THE WHOLE LIST or not at
- * all. A slot that exists on some rows and not others puts the first glyph of every row at a
+ * THE ONE RULE THAT REMAINS: a slot is reserved FOR THE WHOLE LIST or not at all. A slot that exists on some rows and not others puts the first glyph of every row at a
  * different x, and the leading icons are the only column this layout still has.
  *
  * NOTHING HERE READS THE CLOCK. Whether the slot exists is decided by whether a row HAS a deadline,
@@ -60,9 +54,8 @@ export const LEAD_GAP_PX = 4
 /**
  * HOW WIDE A LIST IS -- one value, for every list of tasks.
  *
- * It was four values derived from the column makeup, because a list that reserved 19rem for dates
- * had to be wider to leave the title the same track. There are no date columns, so there is nothing
- * to derive from: 64rem is the measure the title-only list already shipped with, which makes the
- * case that was never broken byte-identical, and it is now the only case there is.
+ * One value and not four derived from a column makeup: a list reserving 19rem for dates has to be
+ * wider to leave the title the same track, and there are no date columns. 64rem is the measure of
+ * a title-only list, which is the only kind there is.
  */
 export const LIST_MEASURE = 'max-w-[64rem]'

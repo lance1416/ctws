@@ -8,10 +8,9 @@ import { ViewTabs } from './ViewTabs'
 /**
  * ONE PAGE FOR EVERY KIND OF THING.
  *
- * A project page, a person's page and a meeting's page were going to be three pages. They are one
- * (framing §2): each is a thing with fields of its own and a set of other things it is connected
- * to, and that is the whole shape. The old project page was a block wall -- one block per module
- * -- which was the module structure drawn for the reader.
+ * A project page, a person's page and a meeting's page are ONE page (framing §2): each is a thing
+ * with fields of its own and a set of other things it is connected to, and that is the whole
+ * shape. A block per module instead would be the module structure drawn for the reader.
  *
  * THE SHELL OWNS THE PAGE. What it cannot know is what a person IS, so the module that answers
  * for the type fills the head (`relations.Head`). Everything under it is edges, which are the
@@ -27,9 +26,8 @@ import { ViewTabs } from './ViewTabs'
  * The kinds a project page already shows in a module's own block, and so does not repeat under
  * Linked.
  *
- * Exactly one: the task tree. Three other modules used to hang a list under every project and
- * they do not any more -- their rows are edges, and the links panel draws every kind of edge the
- * same way. A tree is not a list, so it stays.
+ * Exactly one: the task tree. Every other module's rows reach a project as edges, and the links
+ * panel draws every kind of edge the same way. A tree is not a list, so it stays.
  */
 const BLOCKED_ON_A_PROJECT: ObjectType[] = ['task']
 

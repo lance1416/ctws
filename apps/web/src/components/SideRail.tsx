@@ -11,13 +11,12 @@ import { useComposing } from '../composition'
 /**
  * The left column: where you can go, and how much is waiting there.
  *
- * It replaces the three nav links that used to sit in the top bar. The reason is not symmetry
- * with other apps -- it is that a destination with a NUMBER beside it answers "what is pressing"
- * before you click anything, and the top bar had no room for numbers. The project list carries
- * its open-task count and its identity chip, which also closes D47 (the project list showed
- * nothing but names).
+ * A column rather than nav links in the top bar, and not for symmetry with other apps: a
+ * destination with a NUMBER beside it answers "what is pressing" before you click anything, and
+ * a top bar has no room for numbers. The project list carries its open-task count and its
+ * identity chip (D47).
  *
- * The destinations are no longer written in here: each MODULE contributes its own, and the rail
+ * The destinations are not written in here: each MODULE contributes its own, and the rail
  * renders whatever is registered (module-boundary contract §3). The project list below them is
  * the shell's own -- the user's life is organised by line of work, and a note about CTWS belongs
  * to CTWS as much as a task does.

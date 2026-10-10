@@ -30,9 +30,8 @@ export type ProjectListRow = Project & { openTasks: number }
  * required parameter of every exported function here.
  *
  * It is exported because `tasks` reaches its workspace through a join to `projects` (spec 10.5:
- * `tasks` carries no workspace id of its own), and three places in the task module used to
- * re-spell this predicate by hand. Modules now borrow the shell's one copy instead: a module
- * cannot define its own idea of which projects it may see.
+ * `tasks` carries no workspace id of its own), so the task module needs this predicate too and
+ * borrows the shell's one copy. A module does not define its own idea of what it may see.
  */
 export function visibleProjects(workspaceId: string) {
   return and(eq(projects.workspaceId, workspaceId), isNull(projects.deletedAt))
@@ -83,11 +82,10 @@ export async function listProjects(
  * The lowest-numbered colour slot no live project in the workspace is wearing, or slot 1 once all
  * six are taken.
  *
- * ASSIGNED ONCE AND STORED, which replaced hashing the project's id into six buckets. The hash was
- * stable per project -- the property that mattered -- but it was stable and RANDOM: six buckets and
- * four projects collide with probability 1 - (6·5·4·3)/6^4 = 72%, and the user's four projects duly
- * drew three colours. Taking the first free slot makes the first six projects distinct by
- * construction, and the seventh collides predictably instead of the second collinding by luck.
+ * ASSIGNED ONCE AND STORED, never hashed from the project's id. A hash is stable per project --
+ * the property that matters -- but stable and RANDOM: six buckets and four projects collide with
+ * probability 1 - (6·5·4·3)/6^4 = 72%, so four projects usually draw three colours. The first
+ * free slot makes the first six distinct by construction, and the seventh collides predictably.
  *
  * Archived projects still hold their slot, for the same reason they still hold their rank:
  * un-archiving must not repaint a project.

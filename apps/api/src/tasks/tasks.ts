@@ -122,9 +122,9 @@ function progressOf(raw: string | null): number | null {
  * A TASK THAT STOPS BEING A LEAF LOSES ITS MANUAL PROGRESS, and the log says so.
  *
  * Manual progress is leaf-only (spec 5.2), and a task stops being a leaf two ways: a child is
- * created under it, or a child is moved under it. Both wrote this out, and the two copies had
- * already drifted -- one logged `Number(raw)` and the other `progressOf(raw)`, which differ on
- * null. One of them was going to log `from: 0` for a task that had no progress at all.
+ * created under it, or a child is moved under it. ONE function for both, because two copies drift
+ * -- `Number(raw)` and `progressOf(raw)` differ on null, and the first logs `from: 0` for a task
+ * that had no progress at all.
  */
 export async function clearLeafProgress(
   tx: Queryable,

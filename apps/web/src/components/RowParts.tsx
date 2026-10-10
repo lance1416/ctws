@@ -32,7 +32,7 @@ export const CHEVRON_PX = 20
  */
 export const RAIL_GUTTER_PX = 12
 
-/** Every row list is a column of rows. (It no longer needs `@container`: nothing asks its width.) */
+/** Every row list is a column of rows. No `@container`: nothing asks a list for its width. */
 export const ROW_LIST = 'flex flex-col'
 /** Done has one right-hand column (the clock), so it keeps its own, shorter template. */
 export const DONE_ROW_GRID = 'grid-cols-[1.75rem_minmax(0,1fr)_4.5rem]'

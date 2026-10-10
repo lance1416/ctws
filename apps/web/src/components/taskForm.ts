@@ -3,11 +3,11 @@
  * copy of them.
  *
  * `@ctws/contracts` already owns what a task may be: `createTaskBody` trims and bounds the title,
- * shapes a calendar day, demands an offset-bearing instant, and is `.strict()`. The forms used to
- * carry a hand-written rule beside it (`if (!title.trim()) …`), which is one more place for the two
- * to disagree -- and the disagreement would show up as a 400 from the server rather than as a word
- * in the form. Handing the SAME schema to `zodResolver` removes that second place: widen or narrow
- * the contract and both forms follow on the next render, with no edit here.
+ * shapes a calendar day, demands an offset-bearing instant, and is `.strict()`. A hand-written
+ * rule beside it in the form (`if (!title.trim()) …`) is a second place for the two to disagree,
+ * and the disagreement shows up as a 400 from the server rather than as a word in the form.
+ * Handing the SAME schema to `zodResolver` means widening or narrowing the contract and having
+ * both forms follow on the next render, with no edit here.
  *
  * What stays ours is the WORDING. A resolver reports `too_small`; “Title is required” is a product
  * decision and no schema will make it. So the schema decides WHETHER, and `titleProblem` decides
@@ -54,8 +54,8 @@ export type DetailTaskValues = z.output<typeof detailTaskForm>
 
 /**
  * The keys a PATCH may carry, read off the contract rather than listed again. This is what turns
- * `dirtyFields` into a request body: the pane used to compare six values against the task by hand,
- * field by field, and every field added to the form meant remembering to add a line there too.
+ * `dirtyFields` into a request body, so a field added to the form does not also have to be added
+ * to a hand-written comparison in the pane.
  */
 export const PATCH_KEYS = Object.keys(updateTaskBody.shape) as (keyof UpdateTaskBody)[]
 

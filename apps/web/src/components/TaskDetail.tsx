@@ -312,11 +312,11 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
       changed: Set<string>
     }) => {
       /**
-       * ONLY WHAT CHANGED -- and the library is what knows it now. This was six `if (x !== task.x)`
-       * lines, which is six chances to forget one and six comparisons that read the LIVE `task`
-       * while `dirty` read the mount-time snapshot. The two notions could disagree: a background
-       * refetch that changed a field nobody had touched made the old diff send the stale local value
-       * back, quietly undoing someone else's edit. One notion now, and it is `dirtyFields`.
+       * ONLY WHAT CHANGED, and the library is what knows it. A hand-written `if (x !== task.x)`
+       * per field is six chances to forget one, and six comparisons against the LIVE `task` while
+       * `dirty` reads the mount-time snapshot: a background refetch of a field nobody touched
+       * would then send the stale local value back and undo the other edit. One notion of dirty,
+       * and it is `dirtyFields`.
        *
        * The key list is the contract's (`PATCH_KEYS`), so a field added to the form is either in the
        * update contract -- and sent -- or rejected by the resolver before it gets here.
@@ -358,11 +358,10 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
   const [logoutVia, setLogoutVia] = useState<(() => void) | null>(null)
   // A save that is in flight (or has landed, with the panel about to close) loses nothing, so it
   // must not trap the person who pressed Save and then, at once, a nav link.
-  // NOT `&& !save.isSuccess` any more. That term existed because the pane used to CLOSE on a
-  // successful save, and the mutation's success flag was what let the closing navigation
-  // through. The pane stays open now, so the flag would stay true for the rest of its life and
-  // the guard would never fire again -- a second round of edits would walk away unprotected.
-  // The save clears the form's own dirty state instead (`reset`), which is the honest signal.
+  // NOT `&& !save.isSuccess`: the pane stays open after a save, so that flag would stay true for
+  // the rest of its life and the guard would never fire again -- a second round of edits would
+  // walk away unprotected. The save clears the form's own dirty state (`reset`) instead, which is
+  // the honest signal.
   const unsaved = dirty && !save.isPending
   const blocker = useBlocker(unsaved)
   const leaving = blocker.state === 'blocked' || logoutVia !== null
@@ -383,7 +382,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
   /**
    * Leaving the editing state, whichever way out: closing the pane, or stepping back to reading.
    * With unsaved edits the discard prompt asks first and `discard` runs whichever one was asked
-   * for -- before this, both the prompt and Escape could only ever mean "close".
+   * for -- the prompt and Escape each mean the way out that was taken, not "close".
    */
   const [exitVia, setExitVia] = useState<(() => void) | null>(null)
   const leave = (go: () => void) => {
@@ -551,18 +550,17 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                   onSuccess: () => {
                     // SAVING DOES NOT CLOSE THE PANE. It drops back to reading mode, where the
                     // values that were just written are on screen to be read back -- which is
-                    // what a person wants to do immediately after writing them. `onSaved` still
-                    // marks the row behind; what it no longer does is take the pane with it.
+                    // what a person wants to do immediately after writing them. `onSaved` marks
+                    // the row behind and leaves the pane open.
                     // `getValues()`, not the submitted `values`: those are the RESOLVER'S
                     // OUTPUT (`dueAt` an ISO instant, say) while the form holds the input shape
-                    // (a `datetime-local` string). Resetting to the output left every such field
-                    // looking changed, so the form stayed dirty, so the router's leave guard
-                    // blocked the next navigation -- a pane that had just been saved cleanly
-                    // refused to let the page move.
+                    // (a `datetime-local` string). Resetting to the output leaves every such
+                    // field looking changed, so the form stays dirty and the router's leave
+                    // guard blocks the next navigation out of a cleanly saved pane.
                     reset(getValues())
                     setEditing(false)
-                    // The control that was pressed no longer exists, so focus has to be put
-                    // somewhere deliberately: the panel, which is where it was when the pane
+                    // The control that was pressed is gone, so focus has to be put somewhere
+                    // deliberately: the panel, which is where it was when the pane
                     // opened and which is what listens for Escape. Without this it falls to
                     // <body> and the pane stops answering the keyboard entirely (WCAG 2.4.3).
                     queueMicrotask(() => panel.current?.focus())

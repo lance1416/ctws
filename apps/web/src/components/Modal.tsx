@@ -5,18 +5,16 @@ import { enterOverlay, exitOverlay } from './overlayState'
 /**
  * THE MODAL LAYER, on Radix (`@radix-ui/react-dialog`).
  *
- * Why a library at all, after this project spent months refusing one: the refusal was aimed at
- * STYLED KITS (MUI / Chakra / Ant), which really would dilute this design into their defaults, and
- * it was wrongly generalised to every library. What this codebase actually hand-built instead was
- * a focus trap, focus restoration, Escape, press-outside, and four dialogs -- and it shipped a
- * WCAG 2.1.2 keyboard trap doing it. Radix ships zero styles, so every visual decision below is
- * still this project's: the scrim, the measure, the border and the type are the same ones the
- * hand-built `Overlay` drew (and the palette grep still applies to this file).
+ * WHY A LIBRARY. The rule this project keeps is against STYLED KITS (MUI / Chakra / Ant), which
+ * dilute a design into their defaults -- not against every dependency. Hand-building this means
+ * hand-building a focus trap, focus restoration, Escape and press-outside for every dialog, and
+ * getting WCAG 2.1.2 right in each. Radix ships zero styles, so every visual decision below is
+ * still this project's: the scrim, the measure, the border and the type (and the palette grep
+ * applies to this file like any other).
  *
- * EVERY FLOATING LAYER IS HERE NOW. `ShortcutHelp` came first (radix-and-create spec §2, the
- * lowest-risk one), and `SearchDialog` followed once it became clear that `Overlay`'s
- * `aria-modal="true"` had no Tab handling behind it -- a promise to assistive technology that the
- * keyboard then broke. `Overlay` is gone; there is nothing left that it served.
+ * EVERY FLOATING LAYER IS HERE: an `aria-modal="true"` with no Tab handling behind it promises
+ * assistive technology that the rest of the page is unreachable while the keyboard walks straight
+ * into it.
  *
  * What is NOT here, and is a decision rather than a leftover: `DeleteConfirm` (an inline
  * `alertdialog` block inside a panel, never a layer of its own) and the DETAIL PANE. The pane may

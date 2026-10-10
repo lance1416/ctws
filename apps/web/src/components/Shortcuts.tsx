@@ -23,8 +23,8 @@ const hint =
  * is why both overlays have a visible button as well: with the single-key shortcuts disabled,
  * `?` cannot be the only route to the setting that disabled them.
  *
- * WHERE the `g` chords go is no longer written in here: the shell and each module contribute to
- * one key table and this component only runs it (module-boundary contract §3).
+ * WHERE the `g` chords go is not written in here: the shell and each module contribute to one key
+ * table and this component only runs it (module-boundary contract §3).
  */
 export function Shortcuts() {
   const [search, setSearch] = useState(false)

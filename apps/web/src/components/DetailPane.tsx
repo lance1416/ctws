@@ -12,11 +12,9 @@ import { useReservePane, useWidePane } from './paneLayout'
 /**
  * THE DETAIL PANE, and it belongs to the SHELL.
  *
- * One surface for looking at one thing, whatever module the thing came from. It started inside
- * the task module and moved here when the audit found three editing models in one app: a task
- * opened a pane, a reading item had a row menu, a contact opened a modal dialog. That was three
- * "this time let's do it like this", not three personalities, and it meant learning the app three
- * times.
+ * ONE SURFACE for looking at one thing, whatever module the thing came from. A pane for a task,
+ * a row menu for a reading item and a dialog for a contact would be three editing models in one
+ * app, which means learning it three times.
  *
  * What this component owns is the FRAME -- where it sits, how wide, the escape, the focus trap,
  * the scrim below 1280 -- and nothing about what is in it. A module renders its own body inside.
@@ -72,9 +70,9 @@ export function DetailPane({
     if (e.key !== 'Tab' || wide) return
     /**
      * THE TRAP, and only in overlay mode. A layer that claims the keyboard and then lets Tab walk
-     * out onto a page covered by a scrim is the WCAG 2.1.2 trap this project already shipped once.
-     * `tabbable` decides both the ORDER and the MEMBERSHIP of the cycle, not a hand-written
-     * selector that would miss whatever a module puts in here next.
+     * out onto a page covered by a scrim is a WCAG 2.1.2 failure. `tabbable` decides both the
+     * ORDER and the MEMBERSHIP of the cycle, not a hand-written selector that would miss whatever
+     * a module puts in here next.
      */
     const items = panel.current ? tabbable(panel.current) : []
     const first = items[0]

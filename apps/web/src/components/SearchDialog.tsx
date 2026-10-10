@@ -82,13 +82,11 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
 
   return (
     /**
-     * THE MODAL LAYER IS RADIX'S (`Modal`), not the hand-built `Overlay` this dialog used to sit
-     * in. That overlay declared `role="dialog" aria-modal="true"` and handled Escape, the press
-     * outside and the focus restoration -- but it had no Tab handling at all, so it promised
-     * assistive technology that the rest of the page was unreachable while the keyboard could
-     * still walk straight into the task tree underneath. A broken promise is worse than no
-     * promise: AT reads focus as being inside the dialog while it is in fact on a row nobody can
-     * see. Radix's `FocusScope` is the trap that claim needed.
+     * THE MODAL LAYER IS RADIX'S (`Modal`), never hand-built. `role="dialog" aria-modal="true"`
+     * with Escape, press-outside and focus restoration but no Tab handling promises assistive
+     * technology that the rest of the page is unreachable while the keyboard walks straight into
+     * the task tree underneath -- AT reads focus as being inside the dialog while it is in fact
+     * on a row nobody can see. Radix's `FocusScope` is the trap that claim needs.
      *
      * `initialFocus`, not `autoFocus`: Radix moves focus itself when the layer opens, and the
      * first tabbable thing in the panel is the header's Close -- the box is what is being typed

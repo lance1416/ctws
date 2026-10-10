@@ -11,13 +11,11 @@ import type { SearchHit, WorkspaceModule } from './contract'
 /**
  * THE CONTACTS MODULE -- the third, and the first one that contributes NOTHING new to the seam.
  *
- * That is the point of it being third. The reading module found a real gap (capture had no way to
- * route a line) and the calendar needed a contribution point of its own; this one wanted neither.
- * A seam that a new module can be built against without changing it is a seam that has stopped
- * being a draft.
+ * That is the point of it being third: a seam a new module can be built against without changing
+ * it is a seam that has stopped being a draft.
  *
- * It contributes a rail row, a chord, a search provider, a project block and -- added later,
- * with the edge table -- where one of its people lives. And nothing else:
+ * It contributes a rail row, a chord, a search provider, a project block and where one of its
+ * people lives. And nothing else:
  * - no WORKBENCH card, because the workbench answers what is in front of you and an address book
  *   is not
  *   something in front of you. A card listing people would be decoration on the one page that is

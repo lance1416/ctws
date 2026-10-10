@@ -11,8 +11,8 @@ import { Projects } from './routes/Projects'
 import { Workbench } from './routes/Workbench'
 // IBM Plex Sans, self-hosted and LATIN SUBSET ONLY: no Google Fonts link, because this app is
 // private and self-hosted and has no business making a third-party request on every load. TWO
-// weights, ~24 KB of woff2 each: the typography spec's scale has exactly two, 400 and 600, so the
-// 500 face that used to be fetched here paid 24 KB for a weight nothing can ask for any more.
+// weights, ~24 KB of woff2 each, and no more: the typography spec's scale has exactly two, 400
+// and 600, so a third face would be 24 KB for a weight nothing can ask for.
 // Chinese is served by a self-hosted subset of Noto Sans SC, declared as @font-face in styles.css
 // (not imported here, because it needs a `unicode-range` that keeps it off Latin).
 import '@fontsource/ibm-plex-sans/latin-400.css'
@@ -36,8 +36,8 @@ const router = createBrowserRouter([
     // unauthenticated visit (and falls back to the home destination once signed in).
     element: <Layout />,
     children: [
-      // The shell's own front page. It used to redirect into a module, because the shell had
-      // nothing of its own to show; with two modules it has their glances side by side.
+      // The shell's own front page: every module's glance, side by side. Not a redirect into a
+      // module, which would make the front page depend on registration order.
       { index: true, element: <Workbench /> },
       // The shell's own pages stay at the top level; a MODULE's pages live under /<module>/.
       // A SHELL page, like /projects: the calendar is about every module at once, so it is not

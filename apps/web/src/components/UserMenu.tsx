@@ -4,14 +4,14 @@ import { MENU_SURFACE } from './menuSurface'
 /**
  * WHO YOU ARE, AND THE WAY OUT.
  *
- * The bar used to carry the raw email as a truncated string with a bare "Log out" beside it --
- * two pieces of chrome that were neither a control nor a label, in two languages. A workspace's
- * top-right corner is one control everywhere else, and this is that control: initial, menu,
- * identity inside it, and the one destructive-ish action at the bottom.
+ * ONE CONTROL, not a raw email beside a bare "Log out" -- two pieces of chrome that are neither
+ * a control nor a label. A workspace's top-right corner is one control everywhere else, and this
+ * is that control: initial, menu, identity inside it, and the one destructive-ish action at the
+ * bottom.
  *
  * Radix's menu rather than a hand-rolled popover: focus, Escape, outside-click, arrow keys and
- * the `aria-expanded`/`aria-controls` pair are its job, and this project has already paid once
- * for writing that by hand (a WCAG 2.1.2 keyboard trap shipped).
+ * the `aria-expanded`/`aria-controls` pair are its job, and writing them by hand is how a WCAG
+ * 2.1.2 keyboard trap ships.
  */
 export function UserMenu({ email, onLogout }: { email: string; onLogout: () => void }) {
   return (
