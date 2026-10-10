@@ -1,4 +1,5 @@
 import type { ContactResponse } from '@ctws/contracts'
+import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createProject, setupWith, type TaskCtx, web } from './helpers/tasks'
 
@@ -262,5 +263,132 @@ describe('contacts', () => {
     })
     expect(res.statusCode).toBe(404)
     expect(await list(ctx)).toEqual([])
+  })
+})
+
+/**
+ * A PERSON'S BIRTHDAY -- one date, given in one calendar, read in both.
+ *
+ * Every derived value here (the other calendar, the zodiac, the sign, the age, the next
+ * occurrence) is computed on the way out and never stored, so these tests are also what pins
+ * `@ctws/core`'s arithmetic to the wire.
+ */
+describe('一个人的生日', () => {
+  it('公历生日连派生值一起读回来', async () => {
+    const ctx = await setup()
+    const person = await add(ctx, {
+      name: '李雷',
+      birthday: { calendar: 'solar', year: 1996, month: 4, day: 15, hourBranch: 6 },
+    })
+    expect(person.birthday).toMatchObject({
+      calendar: 'solar',
+      year: 1996,
+      month: 4,
+      day: 15,
+      leapMonth: false,
+      hourBranch: 6,
+      remindLead: 7,
+      lunarDate: null,
+      bornSolar: '1996-04-15',
+      bornLunar: '农历丙子年二月廿八',
+      zodiac: '鼠',
+      sign: '白羊',
+      hour: '午时 · 11–13',
+    })
+    expect(person.birthday?.next.day).toMatch(/^\d{4}-04-15$/)
+  })
+
+  it('农历生日记住闰月，并给出复发日', async () => {
+    const ctx = await setup()
+    const person = await add(ctx, {
+      name: '周宇',
+      birthday: { calendar: 'lunar', year: 2017, month: 6, day: 15, leapMonth: true },
+    })
+    expect(person.birthday).toMatchObject({
+      calendar: 'lunar',
+      leapMonth: true,
+      lunarDate: '农历闰六月十五',
+      bornSolar: '2017-08-06',
+      zodiac: '鸡',
+    })
+  })
+
+  it('闰月只有农历有，公历生日带闰月是 400', async () => {
+    const ctx = await setup()
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/contacts',
+      headers: web(ctx),
+      payload: {
+        name: '谁',
+        birthday: { calendar: 'solar', year: 1996, month: 4, day: 15, leapMonth: true },
+      },
+    })
+    expect(res.statusCode).toBe(400)
+    // 不是因为这个键没人认识才 400 —— 是因为公历没有闰月。
+    expect(res.json().detail).toContain('leap month')
+  })
+
+  it('公历里不存在的日子是 400，农历三十可以', async () => {
+    const ctx = await setup()
+    const bad = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/contacts',
+      headers: web(ctx),
+      payload: { name: '谁', birthday: { calendar: 'solar', year: 1996, month: 2, day: 30 } },
+    })
+    expect(bad.statusCode).toBe(400)
+    expect(bad.json().detail).toContain('does not exist')
+    const ok = await add(ctx, {
+      name: '外婆',
+      birthday: { calendar: 'lunar', year: 1944, month: 12, day: 30 },
+    })
+    expect(ok.birthday?.bornSolar).toBe('1945-02-12')
+  })
+
+  it('生日可以清掉，其余字段不受影响', async () => {
+    const ctx = await setup()
+    const person = await add(ctx, {
+      name: '王颖',
+      circle: 'friend',
+      hometown: '杭州',
+      city: '上海',
+      title: '后端工程师',
+      gender: 'female',
+      birthday: { calendar: 'solar', year: 1993, month: 10, day: 10 },
+    })
+    const cleared = await patch(ctx, person.id, { birthday: null })
+    expect(cleared.statusCode, cleared.body).toBe(200)
+    const body = cleared.json() as ContactResponse
+    expect(body.birthday).toBeNull()
+    expect(body.circle).toBe('friend')
+    expect(body.hometown).toBe('杭州')
+    expect(body.city).toBe('上海')
+    expect(body.title).toBe('后端工程师')
+    expect(body.gender).toBe('female')
+  })
+
+  /** 约束要在数据真正在的那一层也成立：契约是边界，边界不是对别的写入者的保证。 */
+  it('数据库拒绝半个生日', async () => {
+    const ctx = await setup()
+    const person = await add(ctx, { name: '半个' })
+    await expect(
+      ctx.db.execute(sql`update contacts set birthday_month = 4 where id = ${person.id}`),
+    ).rejects.toThrow()
+  })
+
+  it('提前量只收 0 / 1 / 3 / 7', async () => {
+    const ctx = await setup()
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/contacts',
+      headers: web(ctx),
+      payload: {
+        name: '谁',
+        birthday: { calendar: 'solar', year: 1990, month: 1, day: 1, remindLead: 5 },
+      },
+    })
+    expect(res.statusCode).toBe(400)
+    expect(res.json().detail).toContain('remindLead')
   })
 })

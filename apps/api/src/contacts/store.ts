@@ -1,4 +1,9 @@
-import type { ContactChannel, CreateContactBody, UpdateContactBody } from '@ctws/contracts'
+import type {
+  BirthdayInput,
+  ContactChannel,
+  CreateContactBody,
+  UpdateContactBody,
+} from '@ctws/contracts'
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import type { Queryable } from '../db/client'
@@ -18,6 +23,20 @@ import { ContactNotFoundError } from './errors'
 
 type ContactProject = { id: string; name: string }
 
+/**
+ * The stored half of a birthday. The derived half (the other calendar, the zodiac, the sign, the
+ * age) is worked out on the way out, in the routes, because it needs today's date.
+ */
+export type StoredBirthday = {
+  calendar: 'solar' | 'lunar'
+  year: number | null
+  month: number
+  day: number
+  leapMonth: boolean
+  hourBranch: number | null
+  remindLead: number
+}
+
 export type ContactRow = {
   id: string
   name: string
@@ -25,6 +44,12 @@ export type ContactRow = {
   note: string | null
   projects: ContactProject[]
   channels: ContactChannel[]
+  birthday: StoredBirthday | null
+  gender: string | null
+  hometown: string | null
+  city: string | null
+  title: string | null
+  circle: string | null
   createdAt: Date
   updatedAt: Date
 }
@@ -35,6 +60,46 @@ function visibleContacts(workspaceId: string) {
 }
 
 type Selected = typeof contacts.$inferSelect
+
+/** A birthday is a GROUP of columns: all present or all absent (the table's own CHECK says so). */
+const birthdayOf = (row: Selected): StoredBirthday | null =>
+  row.birthdayCalendar === null || row.birthdayMonth === null || row.birthdayDay === null
+    ? null
+    : {
+        calendar: row.birthdayCalendar as 'solar' | 'lunar',
+        year: row.birthdayYear,
+        month: row.birthdayMonth,
+        day: row.birthdayDay,
+        leapMonth: row.birthdayLeapMonth,
+        hourBranch: row.birthdayHourBranch,
+        remindLead: row.birthdayRemindLead,
+      }
+
+/**
+ * The same group on the way in. `null` means CLEAR IT; `undefined` means this write is not about
+ * the birthday at all, so the columns are left alone.
+ */
+const birthdayColumns = (b: BirthdayInput | null | undefined) =>
+  b === undefined
+    ? {}
+    : b === null
+      ? {
+          birthdayCalendar: null,
+          birthdayYear: null,
+          birthdayMonth: null,
+          birthdayDay: null,
+          birthdayLeapMonth: false,
+          birthdayHourBranch: null,
+        }
+      : {
+          birthdayCalendar: b.calendar,
+          birthdayYear: b.year ?? null,
+          birthdayMonth: b.month,
+          birthdayDay: b.day,
+          birthdayLeapMonth: b.leapMonth,
+          birthdayHourBranch: b.hourBranch ?? null,
+          birthdayRemindLead: b.remindLead,
+        }
 
 /**
  * Attaches each person's projects and channels, in ONE query each for the whole page.
@@ -75,6 +140,12 @@ async function hydrate(q: Queryable, workspaceId: string, rows: Selected[]): Pro
     note: contact.note,
     projects: byContact.get(contact.id) ?? [],
     channels: channelsOf.get(contact.id) ?? [],
+    birthday: birthdayOf(contact),
+    gender: contact.gender,
+    hometown: contact.hometown,
+    city: contact.city,
+    title: contact.title,
+    circle: contact.circle,
     createdAt: contact.createdAt,
     updatedAt: contact.updatedAt,
   }))
@@ -161,6 +232,12 @@ export async function createContact(
     name: body.name,
     org: body.org ?? null,
     note: body.note ?? null,
+    gender: body.gender ?? null,
+    hometown: body.hometown ?? null,
+    city: body.city ?? null,
+    title: body.title ?? null,
+    circle: body.circle ?? null,
+    ...birthdayColumns(body.birthday ?? undefined),
   })
   await putLinks(
     q,
@@ -184,12 +261,12 @@ export async function updateContact(
   await getContact(q, workspaceId, id)
   if (patch.projectIds) await assertProjects(q, workspaceId, patch.projectIds)
 
-  const { channels, projectIds, ...fields } = patch
+  const { channels, projectIds, birthday, ...fields } = patch
   // An update of only the channels (or only the projects) must still touch the row, or
   // `updated_at` would say the contact has not changed when their phone number just did.
   await q
     .update(contacts)
-    .set({ ...fields, updatedAt: new Date() })
+    .set({ ...fields, ...birthdayColumns(birthday), updatedAt: new Date() })
     .where(and(visibleContacts(workspaceId), eq(contacts.id, id)))
   if (projectIds) {
     await putLinks(q, workspaceId, { type: 'contact', id }, 'project', 'belongs', projectIds)

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { calendarDate } from './task'
 
 /**
  * CONTACTS -- THE THIRD MODULE.
@@ -12,8 +13,10 @@ import { z } from 'zod'
  * time somebody has a work address and a personal one. vCard has said so since 1996.
  *
  * What is deliberately NOT modelled, because a personal workbench is not a CRM: organisations as
- * entities of their own, interaction history, photos, postal addresses, birthdays, and tags. Each
- * is a real vCard property and each would be answering a question nobody has asked here yet.
+ * entities of their own, interaction history, photos, structured postal addresses (`ADR`), and
+ * tags. Birthdays were on that list too, and are not any more: they were asked for, so they are
+ * here. A hometown and a city are PLACE NAMES rather than `ADR` -- a city is not something you can
+ * post a letter to, and calling it an address would be a lie.
  */
 
 /** vCard's `EMAIL`, `TEL` and `URL`. The three ways one person actually reaches another. */
@@ -37,6 +40,78 @@ export const contactChannel = z
   .strict()
 export type ContactChannel = z.infer<typeof contactChannel>
 
+/** The calendar a birthday was GIVEN in. Entered once; the other one is derived (birthdays spec §2). */
+export const BIRTHDAY_CALENDARS = ['solar', 'lunar'] as const
+export const GENDERS = ['male', 'female', 'other'] as const
+/** Where a person sits in your life. The birthdays page groups by it; the contact list filters by it. */
+export const CIRCLES = ['family', 'friend', 'work'] as const
+/** How early to put someone on the workbench card. 0 is the day itself. */
+export const REMIND_LEADS = [7, 3, 1, 0] as const
+
+const SOLAR_MONTH_LENGTHS = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+const remindLead = z.union([z.literal(7), z.literal(3), z.literal(1), z.literal(0)])
+const place = z.string().trim().min(1).max(120)
+
+/**
+ * ONE BIRTHDAY, written in the calendar it was given in. Every derived value -- the other
+ * calendar, the zodiac, the sign, the age -- is computed by the server and never stored.
+ *
+ * `year` may be absent, and that is a first-class case rather than missing data: it is vCard 4.0's
+ * `BDAY:--0415` (RFC 6350 section 6.2.5).
+ */
+export const birthdayInput = z
+  .object({
+    calendar: z.enum(BIRTHDAY_CALENDARS),
+    year: z.number().int().min(1850).max(2200).nullish(),
+    month: z.number().int().min(1).max(12),
+    day: z.number().int().min(1).max(31),
+    leapMonth: z.boolean().default(false),
+    /** 0..11, 子 to 亥. A branch and not a clock: people know 「午时」, not 14:05. */
+    hourBranch: z.number().int().min(0).max(11).nullish(),
+    /** How early, not which days: one choice of four. See the workbench card. */
+    remindLead: remindLead.default(7),
+  })
+  .strict()
+  .refine((b) => b.calendar === 'lunar' || !b.leapMonth, {
+    message: 'only a lunar birthday has a leap month',
+  })
+  .refine((b) => b.calendar === 'solar' || b.day <= 30, {
+    message: 'a lunar month has at most 30 days',
+  })
+  .refine((b) => b.calendar === 'lunar' || b.day <= (SOLAR_MONTH_LENGTHS[b.month - 1] ?? 31), {
+    message: 'that day does not exist in that month',
+  })
+export type BirthdayInput = z.infer<typeof birthdayInput>
+
+/** A birthday read back: the stored half, plus everything DERIVED and never stored. */
+export const birthdayResponse = z
+  .object({
+    calendar: z.enum(BIRTHDAY_CALENDARS),
+    year: z.number().nullable(),
+    month: z.number(),
+    day: z.number(),
+    leapMonth: z.boolean(),
+    hourBranch: z.number().nullable(),
+    remindLead: z.number(),
+    lunarDate: z.string().nullable(),
+    bornSolar: z.string().nullable(),
+    bornLunar: z.string().nullable(),
+    zodiac: z.string().nullable(),
+    sign: z.string().nullable(),
+    hour: z.string().nullable(),
+    next: z
+      .object({
+        day: calendarDate,
+        inDays: z.number(),
+        turns: z.number().nullable(),
+        /** The year had no such day and it was moved -- the page says each one out loud. */
+        kept: z.array(z.string()),
+      })
+      .strict(),
+  })
+  .strict()
+export type BirthdayResponse = z.infer<typeof birthdayResponse>
+
 const contactName = z.string().trim().min(1).max(200)
 const org = z.string().trim().min(1).max(200)
 const note = z.string().max(10_000)
@@ -57,6 +132,12 @@ export const createContactBody = z
     /** The lines of work this person is on. A person is often on several. */
     projectIds: z.array(z.uuid()).max(20).optional(),
     channels: channels.optional(),
+    birthday: birthdayInput.nullish(),
+    gender: z.enum(GENDERS).nullish(),
+    hometown: place.nullish(),
+    city: place.nullish(),
+    title: org.nullish(),
+    circle: z.enum(CIRCLES).nullish(),
   })
   .strict()
 export type CreateContactBody = z.infer<typeof createContactBody>
@@ -68,6 +149,12 @@ export const updateContactBody = z
     note: note.nullable().optional(),
     projectIds: z.array(z.uuid()).max(20).optional(),
     channels: channels.optional(),
+    birthday: birthdayInput.nullish(),
+    gender: z.enum(GENDERS).nullish(),
+    hometown: place.nullish(),
+    city: place.nullish(),
+    title: org.nullish(),
+    circle: z.enum(CIRCLES).nullish(),
   })
   .strict()
   .refine((b) => Object.keys(b).length > 0, { message: 'expected at least one field' })
@@ -87,6 +174,12 @@ export const contactResponse = z
      */
     projects: z.array(z.object({ id: z.uuid(), name: z.string() }).strict()),
     channels: z.array(contactChannel),
+    birthday: birthdayResponse.nullable(),
+    gender: z.enum(GENDERS).nullable(),
+    hometown: z.string().nullable(),
+    city: z.string().nullable(),
+    title: z.string().nullable(),
+    circle: z.enum(CIRCLES).nullable(),
     createdAt: z.iso.datetime({ offset: true }),
     updatedAt: z.iso.datetime({ offset: true }),
   })

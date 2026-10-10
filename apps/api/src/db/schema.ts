@@ -1,5 +1,8 @@
 import {
+  BIRTHDAY_CALENDARS,
   CHANNEL_KINDS,
+  CIRCLES,
+  GENDERS,
   LINK_KINDS,
   OBJECT_TYPES,
   READING_KINDS,
@@ -286,11 +289,61 @@ export const contacts = pgTable(
     org: text('org'),
     /** vCard's `NOTE`. */
     note: text('note'),
+    /**
+     * THE BIRTHDAY, stored in the calendar it was GIVEN in (birthdays spec section 2). A GROUP of
+     * columns, all present or all absent: the CHECK below is what holds that, because half a
+     * birthday read back blows up in the conversion rather than being quietly wrong.
+     */
+    birthdayCalendar: text('birthday_calendar'),
+    /** Null when only the month and the day are known -- RFC 6350's `BDAY:--0415`. */
+    birthdayYear: integer('birthday_year'),
+    birthdayMonth: integer('birthday_month'),
+    birthdayDay: integer('birthday_day'),
+    /** Lunar only. */
+    birthdayLeapMonth: boolean('birthday_leap_month').notNull().default(false),
+    /** 0..11, 子 to 亥. A branch and not a clock. */
+    birthdayHourBranch: integer('birthday_hour_branch'),
+    /** How early to surface this person: 7 / 3 / 1 / 0 days. One choice, not four switches. */
+    birthdayRemindLead: integer('birthday_remind_lead').notNull().default(7),
+    /** vCard's `GENDER`. */
+    gender: text('gender'),
+    /** A place name, not an `ADR`: a city is not something you can post a letter to. */
+    hometown: text('hometown'),
+    city: text('city'),
+    /** vCard's `TITLE`, beside `ORG`. */
+    title: text('title'),
+    /** Where this person sits in your life, for the lens to group and filter by. */
+    circle: text('circle'),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index('contacts_workspace_name_idx').on(t.workspaceId, t.name)],
+  (t) => [
+    index('contacts_workspace_name_idx').on(t.workspaceId, t.name),
+    check('contacts_birthday_calendar_check', inList(t.birthdayCalendar, BIRTHDAY_CALENDARS)),
+    check('contacts_gender_check', inList(t.gender, GENDERS)),
+    check('contacts_circle_check', inList(t.circle, CIRCLES)),
+    check(
+      'contacts_birthday_month_check',
+      sql`${t.birthdayMonth} is null or ${t.birthdayMonth} between 1 and 12`,
+    ),
+    check(
+      'contacts_birthday_day_check',
+      sql`${t.birthdayDay} is null or ${t.birthdayDay} between 1 and 31`,
+    ),
+    check(
+      'contacts_birthday_hour_check',
+      sql`${t.birthdayHourBranch} is null or ${t.birthdayHourBranch} between 0 and 11`,
+    ),
+    check('contacts_birthday_lead_check', sql`${t.birthdayRemindLead} in (0, 1, 3, 7)`),
+    // A group, not a field (the same reason `reading_items_shape_check` exists).
+    check(
+      'contacts_birthday_group_check',
+      sql`(${t.birthdayCalendar} is null and ${t.birthdayMonth} is null and ${t.birthdayDay} is null)
+          or (${t.birthdayCalendar} is not null and ${t.birthdayMonth} is not null and ${t.birthdayDay} is not null)`,
+    ),
+    index('contacts_birthday_idx').on(t.workspaceId, t.birthdayMonth, t.birthdayDay),
+  ],
 )
 
 /**
