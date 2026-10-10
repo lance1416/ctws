@@ -56,6 +56,7 @@ async function view(ctx: TaskCtx) {
     today: string
     coming: Row[]
     later: Row[]
+    card: Row[]
     byMonth: Record<string, number>
     circles: Record<string, number>
   }
@@ -281,5 +282,41 @@ describe('被挪动的日子', () => {
       headers: ctx.authed,
     })
     expect(still.json().next.keptNote).toBeNull()
+  })
+})
+
+describe('工作台卡片', () => {
+  it('按每个人自己的提前量决定谁出现', async () => {
+    const ctx = await setup()
+    const today = (await view(ctx)).today
+    // 提前一周的人，第 5 天就该出现；只要当天的人，第 5 天不该出现。
+    await add(ctx, '要一周的', {
+      calendar: 'solar',
+      year: 1990,
+      ...monthDay(today, 5),
+      remindLead: 7,
+    })
+    await add(ctx, '只要当天的', {
+      calendar: 'solar',
+      year: 1990,
+      ...monthDay(today, 5),
+      remindLead: 0,
+    })
+    await add(ctx, '今天的', {
+      calendar: 'solar',
+      year: 1990,
+      ...monthDay(today, 0),
+      remindLead: 0,
+    })
+
+    const body = await view(ctx)
+    expect(body.card.map((r) => r.name)).toEqual(['今天的', '要一周的'])
+  })
+
+  it('默认是一周', async () => {
+    const ctx = await setup()
+    await add(ctx, '没说的', { calendar: 'solar', year: 1990, month: 10, day: 10 })
+    const body = await view(ctx)
+    expect([...body.coming, ...body.later][0]?.remindLead).toBe(7)
   })
 })

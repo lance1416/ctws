@@ -1,9 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { birthdayCalendar, birthdaysKey, listBirthdays } from '../api/birthdays'
 import { contactsKey, listContacts, searchContacts } from '../api/contacts'
 import { ContactFields, DeleteContact } from '../components/ContactDetail'
 import { ObjectPage } from '../components/ObjectPage'
+import { BirthdayRow } from '../components/BirthdayRow'
+import { PanelEmpty } from '../components/Panel'
+import { countdownPhrase } from '../dueAt'
 import { Birthdays } from '../routes/Birthdays'
 import { Contacts } from '../routes/Contacts'
 import type { SearchHit, WorkspaceModule } from './contract'
@@ -16,10 +19,9 @@ import type { SearchHit, WorkspaceModule } from './contract'
  *
  * It contributes a rail row, a chord, a search provider, a project block and where one of its
  * people lives. And nothing else:
- * - no WORKBENCH card, because the workbench answers what is in front of you and an address book
- *   is not
- *   something in front of you. A card listing people would be decoration on the one page that is
- *   supposed to be only what is live.
+ * - a WORKBENCH card, but only for BIRTHDAYS. An address book is not something in front of you,
+ *   and a card listing people would be decoration on the one page that is supposed to hold only
+ *   what is live -- but whose birthday it is this week is exactly that.
  * - CALENDAR entries: birthdays. They are here because somebody ASKED for them, not because a
  *   slot was empty -- which is what the previous version of this comment refused, and rightly,
  *   until the asking happened. A birthday has no time of day and wears no colour.
@@ -38,6 +40,46 @@ function useBirthdayEntries(range: { from: string; to: string }) {
     queryFn: () => birthdayCalendar(range),
   })
   return { entries: result.data ?? [], isError: result.isError }
+}
+
+/**
+ * THE WORKBENCH CARD: the few birthdays that come TO you.
+ *
+ * WHO appears is the server's answer (each person by their own lead), not a filter written again
+ * here. This card is the only place in the app that comes looking for you -- a real push would
+ * need a scheduler, and v1 deliberately has no background anything (design spec section 2). So the
+ * cost is stated plainly: a week you never open CTWS is a week it cannot tell you.
+ */
+function BirthdayCard() {
+  const view = useQuery({ queryKey: birthdaysKey(), queryFn: listBirthdays })
+  const rows = view.data?.card ?? []
+  const next = view.data?.coming[0] ?? view.data?.later[0]
+  if (view.isError) {
+    return (
+      <p role="alert" className="px-2 py-1.5 text-sm text-danger">
+        Couldn&apos;t load birthdays
+      </p>
+    )
+  }
+  if (rows.length === 0) {
+    return (
+      <PanelEmpty>
+        Nobody in the next week.{' '}
+        {next && (
+          <Link to={`/${ID}/birthdays`} className="text-accent">
+            The next is {next.name}, {countdownPhrase(next.inDays)}.
+          </Link>
+        )}
+      </PanelEmpty>
+    )
+  }
+  return (
+    <ul className="flex flex-col">
+      {rows.map((row) => (
+        <BirthdayRow key={row.contactId} row={row} today={view.data?.today ?? ''} />
+      ))}
+    </ul>
+  )
 }
 
 /** The rail's count: how many birthdays the next week holds. Shares the page's cache entry. */
@@ -129,6 +171,9 @@ export const contactModule: WorkspaceModule = {
   ],
   search: { useHits: useContactHits },
   calendar: { label: 'Birthdays', useEntries: useBirthdayEntries },
+  widgets: [
+    { id: 'birthdays', label: 'Birthdays', to: `/${ID}/birthdays`, Component: BirthdayCard },
+  ],
   // `n` for name. One keyspace across modules, so this is checked against every other chord.
   chords: [
     { id: 'contacts', key: 'n', label: 'Go to Contacts', resolve: () => `/${ID}`, order: 17 },

@@ -174,6 +174,8 @@ export const birthdaysResponse = z
     today: calendarDate,
     coming: z.array(birthdayListRow),
     later: z.array(birthdayListRow),
+    /** Who the workbench card shows: each person by their own lead. */
+    card: z.array(birthdayListRow),
     /** Only the months that have somebody: zero is not drawn as 0. */
     byMonth: z.record(z.string(), z.number()),
     circles: z.record(z.string(), z.number()),

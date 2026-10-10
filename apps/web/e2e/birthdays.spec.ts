@@ -264,3 +264,42 @@ test('备注在写作模式里改，关掉就落库', async ({ page }) => {
   await expect(notes.locator('[data-note-md]')).toBeVisible()
   await expect(notes.locator('h1')).toHaveText('标题')
 })
+
+test('工作台上有一张卡，一周没人时说下一个是谁', async ({ page }) => {
+  await registerFreshUser(page)
+  await person(page, '很久以后的', { calendar: 'solar', year: 1990, ...monthDay(60) })
+  await page.goto('/')
+  const card = page.getByRole('region', { name: 'Birthdays' })
+  await expect(card).toContainText('Nobody in the next week')
+  await expect(card).toContainText('很久以后的')
+
+  await person(page, '今天的', { calendar: 'solar', year: 1993, ...monthDay(0) })
+  await page.reload()
+  await expect(card.locator('[data-birthday-row]')).toHaveCount(1)
+  await expect(card).toContainText('today')
+  await card.getByRole('link', { name: 'See all' }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'Birthdays' })).toBeVisible()
+})
+
+test('提前量决定谁上卡片：只要当天的人，五天前不出现', async ({ page }) => {
+  await registerFreshUser(page)
+  await person(page, '要一周的', {
+    calendar: 'solar',
+    year: 1990,
+    ...monthDay(5),
+    remindLead: 7,
+  })
+  await person(page, '只要当天的', {
+    calendar: 'solar',
+    year: 1990,
+    ...monthDay(5),
+    remindLead: 0,
+  })
+  await page.goto('/')
+  const card = page.getByRole('region', { name: 'Birthdays' })
+  await expect(card).toContainText('要一周的')
+  await expect(card).not.toContainText('只要当天的')
+  // 两个人都在那一页上：卡片是「会找上你的」，不是「全部」。
+  await page.goto('/contacts/birthdays')
+  await expect(page.locator('[data-birthday-row]')).toHaveCount(2)
+})

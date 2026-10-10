@@ -37,6 +37,8 @@ export type BirthdaysView = {
   today: string
   coming: BirthdayRow[]
   later: BirthdayRow[]
+  /** The few who come TO you, each by their own lead. The workbench card draws exactly this. */
+  card: BirthdayRow[]
   byMonth: Record<string, number>
   circles: Record<string, number>
 }
@@ -174,6 +176,9 @@ export async function listBirthdays(
     today,
     coming: all.filter((r) => r.inDays <= COMING_DAYS),
     later: all.filter((r) => r.inDays > COMING_DAYS),
+    // `<=`, never `===`: a person who showed up seven days out and vanished on the sixth would
+    // read as a bug. The lead is how early, not which day.
+    card: all.filter((r) => r.inDays <= r.remindLead),
     byMonth,
     circles,
   }
