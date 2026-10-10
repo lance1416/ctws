@@ -218,6 +218,9 @@ importers:
       fractional-indexing:
         specifier: 4.0.0
         version: 4.0.0
+      tyme4ts:
+        specifier: 1.5.3
+        version: 1.5.3
     devDependencies:
       vitest:
         specifier: 5.0.3
@@ -3967,6 +3970,9 @@ packages:
 
   tweetnacl@0.14.5:
     resolution: {integrity: sha512-KXXFFdAbFXY4geFIwoyNK+f5Z1b7swfXABfL7HXCmoIWMKU3dmS26672A4EeQtDzLKy7SXmfBu51JolvEKwtGA==}
+
+  tyme4ts@1.5.3:
+    resolution: {integrity: sha512-3Jm9Ylbj0rxUbmH0DJLO8r3phT0J3FsseWuWD7/6UeloqkRKchEmTJG+pD36VLsM5QCfh4nI5NRO3DwYYewOig==}
 
   typescript@5.9.3:
     resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
@@ -7837,6 +7843,8 @@ snapshots:
       fsevents: 2.3.3
 
   tweetnacl@0.14.5: {}
+
+  tyme4ts@1.5.3: {}
 
   typescript@5.9.3: {}
 
