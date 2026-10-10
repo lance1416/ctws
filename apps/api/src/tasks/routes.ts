@@ -1,24 +1,25 @@
 import {
-  completedTaskResponse,
-  createTaskBody,
-  moveTaskBody,
-  reviewQuery,
-  reviewResponse,
-  projectMovementResponse,
-  searchTaskResponse,
-  taskEventResponse,
-  rollupsResponse,
-  calendarEntriesResponse,
-  calendarQuery,
   addDependencyBody,
   blockersResponse,
+  calendarEntriesResponse,
+  calendarQuery,
+  completedTaskResponse,
+  createTaskBody,
   dependencyLists,
   type DependencyRef,
+  moveTaskBody,
+  projectMovementResponse,
+  reviewQuery,
+  reviewResponse,
+  rollupsResponse,
+  searchQuery,
+  searchTaskResponse,
+  taskEventResponse,
   taskResponse,
   todayTaskResponse,
   updateTaskBody,
 } from '@ctws/contracts'
-import type { FastifyPluginAsync, FastifyReply } from 'fastify'
+import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 import { authedUser, requireUser } from '../auth/require-user'
@@ -39,6 +40,7 @@ import {
   softDeleteTask,
   updateTask,
   type Task,
+  type TaskCtx,
 } from './tasks'
 import { projectRollups } from './rollup'
 import { listReview } from './review'
@@ -96,9 +98,7 @@ function toSearchResponse(t: SearchTask): z.infer<typeof searchTaskResponse> {
 
 const idParams = z.object({ id: z.uuid() }).strict()
 const byProjectQuery = z.object({ projectId: z.uuid() }).strict()
-// Trimmed and non-empty: a blank query would otherwise match every task in the workspace, which
-// is a full table scan dressed up as a search result.
-const searchQuery = z.object({ q: z.string().trim().min(1).max(200) }).strict()
+
 const eventsQuery = z
   .object({
     cursor: z.string().max(256).optional(),
@@ -108,6 +108,12 @@ const eventsQuery = z
 
 // Domain failures map to problem responses; anything else is a bug and propagates to the
 // global error handler. Not-found covers a missing task, parent, or project alike (no probing).
+/** Who is writing, for the services that log an event against the task they change. */
+const actor = (req: FastifyRequest): TaskCtx => {
+  const user = authedUser(req)
+  return { workspaceId: user.workspaceId, actorUserId: user.id }
+}
+
 function sendTaskProblem(reply: FastifyReply, error: unknown): void {
   if (error instanceof TaskNotFoundError || error instanceof ProjectNotFoundError) {
     return sendProblem(reply, 404, 'Not Found')
@@ -301,13 +307,8 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
       schema: { body: createTaskBody, response: { 201: taskResponse } },
     },
     async (req, reply) => {
-      const user = authedUser(req)
       try {
-        const row = await createTask(
-          app.db,
-          { workspaceId: user.workspaceId, actorUserId: user.id },
-          req.body,
-        )
+        const row = await createTask(app.db, actor(req), req.body)
         return reply.status(201).send(toTaskResponse(row))
       } catch (error) {
         return sendTaskProblem(reply, error)
@@ -322,14 +323,8 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
       schema: { params: idParams, body: updateTaskBody, response: { 200: taskResponse } },
     },
     async (req, reply) => {
-      const user = authedUser(req)
       try {
-        const row = await updateTask(
-          app.db,
-          { workspaceId: user.workspaceId, actorUserId: user.id },
-          req.params.id,
-          req.body,
-        )
+        const row = await updateTask(app.db, actor(req), req.params.id, req.body)
         return toTaskResponse(row)
       } catch (error) {
         return sendTaskProblem(reply, error)
@@ -347,14 +342,8 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
       schema: { params: idParams, body: moveTaskBody, response: { 200: taskResponse } },
     },
     async (req, reply) => {
-      const user = authedUser(req)
       try {
-        const row = await moveTask(
-          app.db,
-          { workspaceId: user.workspaceId, actorUserId: user.id },
-          req.params.id,
-          req.body,
-        )
+        const row = await moveTask(app.db, actor(req), req.params.id, req.body)
         return toTaskResponse(row)
       } catch (error) {
         return sendTaskProblem(reply, error)
@@ -366,13 +355,8 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
     '/:id',
     { preHandler: requireUser, schema: { params: idParams } },
     async (req, reply) => {
-      const user = authedUser(req)
       try {
-        await softDeleteTask(
-          app.db,
-          { workspaceId: user.workspaceId, actorUserId: user.id },
-          req.params.id,
-        )
+        await softDeleteTask(app.db, actor(req), req.params.id)
         return reply.status(204).send()
       } catch (error) {
         return sendTaskProblem(reply, error)
@@ -411,15 +395,9 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
     },
     async (req, reply) => {
       try {
-        const user = authedUser(req)
         // `:id` is the task that WAITS. The body names what it waits for, which reads the way
         // the sentence does: this task depends on that one.
-        await addDependency(
-          app.db,
-          { workspaceId: user.workspaceId, actorUserId: user.id },
-          req.params.id,
-          req.body.blockerId,
-        )
+        await addDependency(app.db, actor(req), req.params.id, req.body.blockerId)
         return reply.status(204).send()
       } catch (error) {
         return sendTaskProblem(reply, error)
@@ -435,13 +413,7 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
     },
     async (req, reply) => {
       try {
-        const user = authedUser(req)
-        await removeDependency(
-          app.db,
-          { workspaceId: user.workspaceId, actorUserId: user.id },
-          req.params.id,
-          req.params.blockerId,
-        )
+        await removeDependency(app.db, actor(req), req.params.id, req.params.blockerId)
         return reply.status(204).send()
       } catch (error) {
         return sendTaskProblem(reply, error)

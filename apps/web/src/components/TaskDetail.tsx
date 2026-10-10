@@ -6,9 +6,8 @@ import {
 } from '@ctws/contracts'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useContext, useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { Controller, useForm } from 'react-hook-form'
-import { useBlocker } from 'react-router-dom'
 import { listProjects } from '../api/projects'
 import { deleteTask, listProjectTasks, moveTask, patchTask } from '../api/tasks'
 import { tasksKey } from '../api/taskCache'
@@ -33,7 +32,7 @@ import { PickOne } from './inline'
 import { Dependencies } from './Dependencies'
 // The shared editing vocabulary, which the New task dialog types into a task with as well.
 import { decision, field, label } from './formStyles'
-import { LeaveGuardContext } from './leaveGuard'
+import { useUnsavedGuard } from './unsavedGuard'
 import { DeadlineMark, PlanMark } from './RowParts'
 import { StatusMark } from './StatusMark'
 import { StatusPicker } from './StatusPicker'
@@ -347,27 +346,18 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
     onSettled: refreshAfterWrite,
   })
 
-  // Leaving with unsaved edits asks first, in the panel: a browser confirm() would block the
-  // automation this app is tested with, and the typing would be lost without a word otherwise.
-  // Three ways to lose the form, one prompt: closing the panel, navigating away (the router
-  // blocker also catches the browser's back button), and Log out (not a navigation, so the
-  // layout asks through LeaveGuardContext instead).
-  const [askDiscard, setAskDiscard] = useState(false)
-  const [logoutVia, setLogoutVia] = useState<(() => void) | null>(null)
-  // A save that is in flight (or has landed, with the panel about to close) loses nothing, so it
-  // must not trap the person who pressed Save and then, at once, a nav link.
-  // NOT `&& !save.isSuccess`: the pane stays open after a save, so that flag would stay true for
-  // the rest of its life and the guard would never fire again -- a second round of edits would
-  // walk away unprotected. The save clears the form's own dirty state (`reset`) instead, which is
-  // the honest signal.
+  /**
+   * LEAVING WITH UNSAVED EDITS asks first, and `unsavedGuard` owns every way out of the pane.
+   *
+   * A save that is in flight (or has landed, with the panel about to close) loses nothing, so it
+   * must not trap the person who pressed Save and then, at once, a nav link. NOT
+   * `&& !save.isSuccess`: the pane stays open after a save, so that flag would stay true for the
+   * rest of its life and the guard would never fire again -- a second round of edits would walk
+   * away unprotected. The save clears the form's own dirty state (`reset`) instead, which is the
+   * honest signal.
+   */
   const unsaved = dirty && !save.isPending
-  const blocker = useBlocker(unsaved)
-  const leaving = blocker.state === 'blocked' || logoutVia !== null
-  const asking = askDiscard || leaving
-  const keepEditing = useRef<HTMLButtonElement>(null)
-  useEffect(() => {
-    if (asking) keepEditing.current?.focus()
-  }, [asking])
+  const guard = useUnsavedGuard(unsaved, onClose)
   /**
    * A QUESTION NOBODY CAN SEE IS NOT A GUARD. The discard prompt renders inside the pane's form, and
    * the writing mode is a full-screen layer over it -- so when the guard has something to ask (the
@@ -375,52 +365,15 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
    * down first and the question is on screen where the answer has to be given.
    */
   useEffect(() => {
-    if (asking) setWriting(false)
-  }, [asking])
-  /**
-   * Leaving the editing state, whichever way out: closing the pane, or stepping back to reading.
-   * With unsaved edits the discard prompt asks first and `discard` runs whichever one was asked
-   * for -- the prompt and Escape each mean the way out that was taken, not "close".
-   */
-  const [exitVia, setExitVia] = useState<(() => void) | null>(null)
-  const leave = (go: () => void) => {
-    if (!dirty) return go()
-    setExitVia(() => go)
-    setAskDiscard(true)
-  }
+    if (guard.asking) setWriting(false)
+  }, [guard.asking])
   const stopEditing = () => {
     reset()
     setEditing(false)
     // Back to the control the press came from, not to <body> (WCAG 2.4.3).
     queueMicrotask(() => panel.current?.focus())
   }
-  const requestClose = () => leave(onClose)
-  const dirtyNow = useRef(unsaved)
-  dirtyNow.current = unsaved
-  const guard = useContext(LeaveGuardContext)
-  useEffect(() => {
-    if (!guard) return
-    guard.current = (go) => {
-      if (!dirtyNow.current) return false
-      setLogoutVia(() => go)
-      return true
-    }
-    return () => {
-      guard.current = null
-    }
-  }, [guard])
-  const keepEditingNow = () => {
-    setAskDiscard(false)
-    setLogoutVia(null)
-    setExitVia(null)
-    if (blocker.state === 'blocked') blocker.reset()
-  }
-  const discard = () => {
-    if (blocker.state === 'blocked') blocker.proceed()
-    else if (logoutVia) logoutVia()
-    else if (exitVia) exitVia()
-    else onClose()
-  }
+  const requestClose = () => guard.leave(onClose)
 
   /**
    * ESCAPE UNWINDS ONE LEVEL. The pane is the outermost of them and the shell closes it, so this
@@ -431,9 +384,9 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
     if (e.key !== 'Escape') return
     // A second Escape on the discard prompt means "keep editing"; on the delete question, "no".
     if (deleting) cancelDelete()
-    else if (asking) keepEditingNow()
+    else if (guard.asking) guard.keep()
     // Out of editing into reading, and only then out of the pane.
-    else if (editing) leave(stopEditing)
+    else if (editing) guard.leave(stopEditing)
     else return
     e.preventDefault()
   }
@@ -781,25 +734,25 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                 onClose={() => setWriting(false)}
               />
             )}
-            {asking && (
+            {guard.asking && (
               <div role="alert" className="rounded-lg border border-border-strong p-3 text-sm">
                 <p className="text-fg">
-                  {leaving
+                  {guard.leaving
                     ? 'You have unsaved changes. Leaving will discard them.'
                     : 'You have unsaved changes. Closing will discard them.'}
                 </p>
                 <div className="mt-2 flex gap-2">
                   <button
-                    ref={keepEditing}
+                    ref={guard.focusOn}
                     type="button"
-                    onClick={keepEditingNow}
+                    onClick={guard.keep}
                     className="h-9 rounded-lg bg-accent px-3 font-semibold text-accent-fg hover:opacity-90"
                   >
                     Keep editing
                   </button>
                   <button
                     type="button"
-                    onClick={discard}
+                    onClick={guard.discard}
                     className="h-9 rounded-lg border border-border-strong px-3 text-fg hover:bg-surface-hover"
                   >
                     Discard changes
@@ -822,7 +775,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
               </button>
               <button
                 type="button"
-                onClick={() => leave(stopEditing)}
+                onClick={() => guard.leave(stopEditing)}
                 className="h-10 rounded-lg border border-border-strong px-4 text-fg hover:bg-surface-hover"
               >
                 Cancel

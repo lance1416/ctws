@@ -2,6 +2,7 @@ import {
   contactListQuery,
   contactResponse,
   createContactBody,
+  searchQuery,
   updateContactBody,
 } from '@ctws/contracts'
 import type { FastifyPluginAsync, FastifyReply } from 'fastify'
@@ -70,7 +71,7 @@ export const contactRoutes: FastifyPluginAsync = async (app) => {
     {
       preHandler: requireUser,
       schema: {
-        querystring: z.object({ q: z.string().trim().min(1).max(200) }).strict(),
+        querystring: searchQuery,
         response: { 200: listResponse },
       },
     },

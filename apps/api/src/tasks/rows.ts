@@ -14,7 +14,7 @@ import type { Task } from './tasks'
  */
 
 /** A `timestamptz` as the driver hands it back: already a Date, a string, or absent. */
-export const asDate = (v: unknown): Date | null =>
+const asDate = (v: unknown): Date | null =>
   v === null || v === undefined ? null : v instanceof Date ? v : new Date(v as string)
 
 /** Every column a task has, plus the two every one of these surfaces joins for. */

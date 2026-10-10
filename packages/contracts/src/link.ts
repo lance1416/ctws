@@ -166,3 +166,14 @@ export const linkQuery = z
   })
   .strict()
 export type LinkQuery = z.infer<typeof linkQuery>
+
+/**
+ * WHAT A MODULE IS ASKED WHEN SOMEBODY TYPES IN THE SEARCH BOX.
+ *
+ * One box feeds every module (the shell merges their answers), so the bound has to be the shell's:
+ * a module that accepted 300 characters where another stopped at 200 would make the same keystroke
+ * mean two things. Trimmed and non-empty, because a blank query matching every row in the
+ * workspace is a full table scan dressed up as a result.
+ */
+export const searchQuery = z.object({ q: z.string().trim().min(1).max(200) }).strict()
+export type SearchQuery = z.infer<typeof searchQuery>

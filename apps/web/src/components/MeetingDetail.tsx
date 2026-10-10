@@ -313,7 +313,7 @@ export function MeetingFields({
             )}
           </span>
         </Field>
-        <Field label="Projects" top>
+        <Field label="Projects" shape="beside-top">
           <PickOne
             label="Projects"
             value={meeting.projectId ?? NO_PROJECT}
@@ -330,9 +330,8 @@ export function MeetingFields({
         </Field>
       </div>
 
-      <div>
-        <span className="block text-xs text-fg-muted">Attendees</span>
-        <div className="mt-1" data-attendees>
+      <Field label="Attendees" shape="above">
+        <div data-attendees>
           <PickMany
             label="Attendees"
             chosen={meeting.attendees.map((p) => ({ value: p.id, label: p.name }))}
@@ -341,19 +340,18 @@ export function MeetingFields({
             empty="Nobody yet"
           />
         </div>
-      </div>
+      </Field>
 
-      <div>
-        <span className="block text-xs text-fg-muted">Notes</span>
+      <Field label="Notes" shape="above">
         <InlineText
           label="Notes"
           value={meeting.note ?? ''}
           placeholder="No notes yet"
           multiline
           onSave={(note) => series({ note: note || null })}
-          className="mt-1 block max-w-[68ch] text-sm whitespace-pre-wrap text-fg"
+          className="block max-w-[68ch] text-sm whitespace-pre-wrap text-fg"
         />
-      </div>
+      </Field>
 
       <div className="pt-1">
         {cancelling ? (

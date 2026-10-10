@@ -125,7 +125,7 @@ export function ContactFields({
             className="text-sm"
           />
         </Field>
-        <Field label="Projects" top>
+        <Field label="Projects" shape="beside-top">
           <PickMany
             label="Projects"
             chosen={contact.projects.map((p) => ({
@@ -142,9 +142,8 @@ export function ContactFields({
         </Field>
       </div>
 
-      <div>
-        <span className="block text-xs text-fg-muted">Contact</span>
-        <ul data-channels className="mt-1 flex flex-col gap-0.5">
+      <Field label="Contact" shape="above">
+        <ul data-channels className="flex flex-col gap-0.5">
           {channels.map((c, i) => (
             <li key={i} className="flex min-w-0 items-center gap-1.5">
               <PickOne
@@ -223,19 +222,18 @@ export function ContactFields({
           </svg>
           Add one
         </button>
-      </div>
+      </Field>
 
-      <div>
-        <span className="block text-xs text-fg-muted">Notes</span>
+      <Field label="Notes" shape="above">
         <InlineText
           label="Notes"
           value={contact.note ?? ''}
           placeholder="No notes yet"
           multiline
           onSave={(note) => save.mutate({ note: note || null })}
-          className="mt-1 block max-w-[68ch] text-sm whitespace-pre-wrap text-fg"
+          className="block max-w-[68ch] text-sm whitespace-pre-wrap text-fg"
         />
-      </div>
+      </Field>
 
       {/* SET APART, above a hairline and in the danger colour. It is the only control here that
           cannot be undone, and it used to sit among the others in the same grey. */}
