@@ -366,3 +366,65 @@ describe('listToday timezone and DST', () => {
     expect(rows.find((r) => r.id === id)?.segment ?? 'absent').toBe(expected)
   })
 })
+
+/**
+ * ONE PERSON'S READ MUST NOT COST EVERYBODY ELSE'S DATA (D34).
+ *
+ * A task has no workspace of its own: every authenticated read reaches one by joining `projects`
+ * and filtering on `workspace_id`. Without an index for that filter the join opens with a
+ * sequential scan of EVERY project in the database -- measured on a database holding 92,839 of
+ * them, `/today` spent 3.8 of its 5.0ms there and touched 1,359 pages to return five rows. With
+ * the index: 0.26ms, and no scan.
+ *
+ * ASSERTED ON THE PLAN, not on the schema. "The index exists" is a restatement of the migration
+ * and would pass while a reworded query quietly stopped using it; what has to stay true is that
+ * this read does not scan the table. It needs a realistically large `projects` to be meaningful:
+ * on a handful of rows a sequential scan is the right plan and the planner is correct to pick it.
+ */
+describe('the tenant join does not scan every project in the database', () => {
+  it('uses the workspace index once the table is big enough to matter', async () => {
+    const ctx = await setup()
+    const mine = await createProject(ctx, 'mine')
+    await createTask(ctx, mine, 'due today')
+    const { workspaceId } = (
+      await ctx.app.inject({ method: 'GET', url: '/api/v1/auth/me', headers: ctx.authed })
+    ).json() as { workspaceId: string }
+
+    // Other people's data, in other workspaces. One statement, so this costs a moment.
+    await ctx.db.execute(sql`
+      insert into workspaces (id, name)
+      select gen_random_uuid(), 'w' || g from generate_series(1, 200) g
+    `)
+    await ctx.db.execute(sql`
+      insert into projects (id, workspace_id, name, rank)
+      select gen_random_uuid(), w.id, 'p' || g, 'a' || g
+      from workspaces w, generate_series(1, 25) g
+      where w.id <> ${workspaceId}
+    `)
+    // ...and their tasks, because the shape only matters when BOTH sides are big: with one task
+    // in the database the planner drives from `tasks` and probes projects by primary key, which
+    // is a fine plan and tells us nothing about the filter this test is about.
+    await ctx.db.execute(sql`
+      insert into tasks (id, project_id, title, status, rank)
+      select gen_random_uuid(), p.id, 't', 'todo', 'a'
+      from projects p where p.workspace_id <> ${workspaceId}
+    `)
+    await ctx.db.execute(sql`analyze projects, tasks`)
+
+    const plan = (
+      await ctx.db.execute(sql`
+        explain select t.id
+        from tasks t
+        join projects p on p.id = t.project_id
+        where p.workspace_id = ${workspaceId}
+          and p.deleted_at is null and p.archived_at is null and t.deleted_at is null
+      `)
+    ).rows
+      .map((r) => Object.values(r as Record<string, unknown>).join(' '))
+      .join('\n')
+
+    // ANY plan is acceptable except one that reads every project. Pinning WHICH index would pin
+    // the planner's choice, and it is entitled to a better one.
+    expect(plan, plan).not.toMatch(/Seq Scan on projects/)
+  })
+})

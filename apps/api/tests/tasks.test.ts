@@ -1,6 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
+import { TaskNotFoundError } from '../src/tasks/errors'
+import { moveTask } from '../src/tasks/move'
+import { softDeleteTask, updateTask } from '../src/tasks/tasks'
 import {
   createChain,
   createProject,
@@ -582,5 +585,47 @@ describe('event and mutation share one transaction', () => {
     expect((await rowOf(ctx, child!)).deleted_at).toBeNull()
     expect((await eventsOf(ctx, root!)).map((e) => e.type)).toEqual(['created'])
     expect((await eventsOf(ctx, child!)).map((e) => e.type)).toEqual(['created'])
+  })
+})
+
+/**
+ * THE GUARD IS IN THE SERVICE, NOT ONLY IN THE ROUTE (D44).
+ *
+ * Every cross-workspace test above goes through HTTP, so all of them pass against an app whose
+ * only check is a route preHandler -- and the constraint the spec actually cares about is that a
+ * guard cannot be skipped by reaching the work another way (a script, a job, a second route).
+ *
+ * So these call the service functions DIRECTLY with a workspace id that does not own the task.
+ * They do not assert WHERE the check lives -- that would pin an implementation detail and get in
+ * the way of honest refactoring -- only that the work itself refuses, whoever asks.
+ */
+describe('a write refuses a foreign workspace without going through a route', () => {
+  it('refuses update, move and delete, and leaves the row untouched', async () => {
+    const ctx = await setup()
+    const projectId = await createProject(ctx, 'mine')
+    const id = await createTask(ctx, projectId, 'mine')
+    const sibling = await createTask(ctx, projectId, 'sibling')
+    const me = (
+      await ctx.app.inject({ method: 'GET', url: '/api/v1/auth/me', headers: ctx.authed })
+    ).json() as { id: string }
+    // A workspace that exists nowhere: the point is the task is not THIS caller's to touch.
+    const stranger = {
+      workspaceId: '99999999-9999-4999-8999-999999999999',
+      actorUserId: me.id,
+    }
+
+    await expect(updateTask(ctx.db, stranger, id, { title: 'stolen' })).rejects.toThrow(
+      TaskNotFoundError,
+    )
+    await expect(moveTask(ctx.db, stranger, id, { projectId, parentId: sibling })).rejects.toThrow(
+      TaskNotFoundError,
+    )
+    await expect(softDeleteTask(ctx.db, stranger, id)).rejects.toThrow(TaskNotFoundError)
+
+    // Nothing moved, nothing was flagged, and no event was logged against any of it.
+    expect(await rowOf(ctx, id)).toMatchObject({ parent_id: null, deleted_at: null })
+    const titles = await ctx.db.execute(sql`select title from tasks where id = ${id}`)
+    expect(titles.rows[0]).toMatchObject({ title: 'mine' })
+    expect((await eventsOf(ctx, id)).map((e) => e.type)).toEqual(['created'])
   })
 })

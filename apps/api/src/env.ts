@@ -12,8 +12,9 @@ const raw = z.object({
   SESSION_TTL_DAYS: z.coerce.number().int().positive().default(30),
   AUTH_REGISTRATION: z.enum(['open', 'invite', 'closed']).default('closed'),
   AUTH_INVITE_CODE: z.string().optional(),
-  // Per-IP attempts per minute on register and login. Tunable because many users can share one
-  // IP (tunnel, NAT, the e2e suite).
+  // Per-EMAIL attempts per minute on register and login: one account under attack must not lock
+  // out the others, and an IP is the wrong key (a tunnel, NAT and the e2e suite all share one).
+  // Tunable; `guards.ts` has why it is keyed this way and what the instance ceiling below adds.
   AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(20),
   /**
    * The INSTANCE-WIDE ceiling on auth requests per minute (guards.ts).
@@ -51,7 +52,7 @@ export type Env = {
   webDist: string | undefined
 }
 
-export function parseEnv(source: NodeJS.ProcessEnv | Record<string, string | undefined>): Env {
+export function parseEnv(source: Record<string, string | undefined>): Env {
   const parsed = raw.parse(source)
 
   // A SameSite=None cookie without Secure is silently dropped by browsers -- login would

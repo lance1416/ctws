@@ -102,6 +102,10 @@ describe('POST /tasks/:id/move', () => {
     })
     expect(res.statusCode).toBe(409)
     expect(res.headers['content-type']).toContain('application/problem+json')
+    // WHICH 409. Depth and cycle both answer 409, so the status alone passes for a bug that
+    // reports one as the other -- and the two are told apart by what the person is then supposed
+    // to do about it. Asserted on the semantic core of the sentence, not the whole wording.
+    expect(res.json().detail).toMatch(/under itself/)
 
     // The tree must be untouched, so a later subtree query cannot recurse forever.
     const after = await tasksOf(ctx, p)
@@ -214,6 +218,11 @@ describe('POST /tasks/:id/move', () => {
       payload: { projectId: p, parentId: deep[7] },
     })
     expect(res.statusCode).toBe(409)
+    // THE DEPTH LIMIT, said as the depth limit. This is the path where the bounded cycle walk
+    // cannot see the destination, so the depth check is the rule doing the refusing -- and a
+    // refusal that blamed a cycle instead would send the reader looking for a loop that is not
+    // there (`move.ts`).
+    expect(res.json().detail).toMatch(/nested at most/)
   })
 
   it('allows a move that lands exactly at MAX_DEPTH', async () => {

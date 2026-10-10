@@ -68,6 +68,9 @@ export async function registerUser(
 ): Promise<{ userId: string; workspaceId: string }> {
   const userId = uuidv7()
   const workspaceId = uuidv7()
+  // HASHED BEFORE THE "is registration open" CHECK, which costs a closed instance one argon2
+  // per refused request. It is one code path instead of two, and the per-email limiter plus the
+  // instance ceiling already bound what a flood can spend here.
   const passwordHash = await hashPassword(input.password)
 
   try {

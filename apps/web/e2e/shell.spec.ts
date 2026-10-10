@@ -57,3 +57,25 @@ test('a failed project list shows an error, not an empty list', async ({ page })
   await expect(alert).toBeVisible()
   await expect(alert).toContainText("Couldn't load projects")
 })
+
+/**
+ * A SERVER THAT IS DOWN IS NOT A SIGNED-OUT VISITOR (D12).
+ *
+ * `/auth/me` failing used to be swallowed into "nobody is signed in", so an API that was down
+ * bounced the reader to a login page that could not reach the server either -- which reads as a
+ * password that stopped working. Only a 401 is an answer; everything else is the shell's to say.
+ */
+test('a server that cannot be reached says so instead of showing the login page', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  await page.route('**/api/v1/auth/me', (route) =>
+    route.fulfill({ status: 500, contentType: 'application/json', body: '{"title":"boom"}' }),
+  )
+  await page.goto('/tasks/today')
+
+  await expect(page.getByRole('alert')).toContainText("Can't reach the server")
+  // NOT the login page: the session is still good, and saying otherwise is the defect.
+  expect(new URL(page.url()).pathname).not.toBe('/login')
+  await expect(page.getByRole('button', { name: 'Create an account' })).toHaveCount(0)
+})

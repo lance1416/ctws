@@ -35,14 +35,13 @@ import { CycleError, InvalidNeighbourError, moveTask } from './move'
 import {
   createTask,
   DepthLimitError,
-  listProjectTasks,
   ManualProgressOnParentError,
   softDeleteTask,
   updateTask,
   type Task,
   type TaskCtx,
 } from './tasks'
-import { projectRollups } from './rollup'
+import { projectBoard } from './board'
 import { listReview } from './review'
 import { listTaskCalendar } from './calendar'
 import { addDependency, blockersFor, removeDependency, taskDependencyLists } from './dependencies'
@@ -274,25 +273,17 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
     async (req, reply) => {
       try {
         const user = authedUser(req)
-        // Two statements rather than one: `listProjectTasks` returns ROWS, and the rollup needs
-        // two computed flags and a joined max beside them. Widening the row query would make its
-        // result no longer a row, and at personal scale (spec §7.5) the second lookup is free.
-        const rows = await listProjectTasks(app.db, user.workspaceId, req.query.projectId)
-        const metrics = await projectRollups(
+        // Three reads, ONE snapshot -- `board.ts` has why that matters and how it is held.
+        const board = await projectBoard(
           app.db,
           user.workspaceId,
           req.query.projectId,
           user.timezone,
         )
-        const blockers = await blockersFor(
-          app.db,
-          user.workspaceId,
-          rows.map((t) => t.id),
-        )
         return {
-          tasks: rows.map(toTaskResponse),
-          rollups: Object.fromEntries(metrics),
-          blockers: Object.fromEntries(blockers),
+          tasks: board.tasks.map(toTaskResponse),
+          rollups: Object.fromEntries(board.rollups),
+          blockers: Object.fromEntries(board.blockers),
         }
       } catch (error) {
         return sendTaskProblem(reply, error)

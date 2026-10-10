@@ -15,7 +15,12 @@ const migrationSql = readFileSync(
   ),
   'utf8',
 )
-const BACKFILL_STATEMENT = /^insert into projects[^;]*;/m.exec(migrationSql)?.[0]
+// Block comments are stripped before the statement is picked out: `/^insert/m` matches inside a
+// `/* … */` just as happily, so a backfill somebody had commented out would be run here and this
+// test would pass against a migration that does nothing in production.
+const BACKFILL_STATEMENT = /^insert into projects[^;]*;/m.exec(
+  migrationSql.replace(/\/\*[\s\S]*?\*\//g, ''),
+)?.[0]
 if (!BACKFILL_STATEMENT) throw new Error('backfill statement not found in the 0003 migration')
 const BACKFILL_SQL = sql.raw(BACKFILL_STATEMENT)
 

@@ -1,6 +1,9 @@
 import type { RollupResponse } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
+import { BOARD_TX } from '../src/tasks/board'
+import { projectRollups } from '../src/tasks/rollup'
+import { listProjectTasks } from '../src/tasks/tasks'
 import { appWithUser, createProject, createTask, type TaskCtx } from './helpers/tasks'
 
 /**
@@ -309,5 +312,45 @@ describe('last activity comes from the event log', () => {
     const id = await createTask(ctx, pid, '一条')
     const r = await rollups(ctx, pid)
     expect(r[id]!.lastActivityAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/)
+  })
+})
+
+/**
+ * THE PAGE MUST NOT CONTRADICT ITSELF (D32).
+ *
+ * A project page is three reads: the rows, the rollup each parent reports, and what each row is
+ * waiting for. Run under READ COMMITTED they each take their OWN snapshot, so a write landing
+ * between two of them is half-visible: the tree draws a task as open while the number above it
+ * already counts it done, and the reader is looking at a page that disagrees with itself.
+ *
+ * `projectBoard` holds one snapshot across the three by naming the level in `BOARD_TX`. This runs
+ * the same three stores through the same kind of transaction and commits a write IN THE MIDDLE,
+ * from another connection -- which is the only arrangement where the two levels differ. Change
+ * `BOARD_TX` back to the default and this test says the rollup reported 1 against a tree that
+ * shows the task open.
+ */
+describe('one project page is one snapshot', () => {
+  it('does not straddle a write that lands between its reads', async () => {
+    const ctx = await setup()
+    const pid = await createProject(ctx, 'P')
+    const parent = await createTask(ctx, pid, 'parent')
+    const child = await createTask(ctx, pid, 'child', parent)
+    const { workspaceId } = (
+      await ctx.app.inject({ method: 'GET', url: '/api/v1/auth/me', headers: ctx.authed })
+    ).json() as { workspaceId: string }
+
+    await ctx.db.transaction(async (tx) => {
+      const tasks = await listProjectTasks(tx, workspaceId, pid)
+      // Committed by the API, on the pool: a write on `tx` itself would be invisible to it
+      // whatever the level, and would prove nothing.
+      expect((await setStatus(ctx, child, 'done')).statusCode).toBe(200)
+      const rolled = await projectRollups(tx, workspaceId, pid, 'UTC')
+
+      expect(tasks.find((t) => t.id === child)!.status).toBe('todo')
+      expect(rolled.get(parent)!.progress).toBe(0)
+    }, BOARD_TX)
+
+    // ...and the write really did land, so this is not passing because nothing happened.
+    expect((await rollups(ctx, pid))[parent]!.progress).toBe(1)
   })
 })

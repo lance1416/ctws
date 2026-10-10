@@ -45,35 +45,24 @@ describe('POST /api/v1/auth/login', () => {
     expect(sessionId(res.headers['set-cookie'])).not.toBe(sessionId(ctx.registerSetCookie))
   })
 
-  it('rejects a wrong password with 401', async () => {
+  // ONE TEST FOR BOTH REFUSALS, because the point is that they are INDISTINGUISHABLE: a wrong
+  // password and an address nobody registered have to answer the same thing, or the difference
+  // between them is a way to ask whether an address has an account here. Asserting 401 on one of
+  // them separately proves a strictly weaker claim than asserting both are equal.
+  it('refuses a wrong password and an unknown address identically', async () => {
     const ctx = await appWithUser()
-    const res = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/login',
-      headers,
-      payload: { ...creds, password: 'wrong horse battery' },
-    })
-    expect(res.statusCode).toBe(401)
-  })
+    const login = (payload: Record<string, string>) =>
+      ctx.app.inject({ method: 'POST', url: '/api/v1/auth/login', headers, payload })
 
-  it('gives an identical response for unknown email and wrong password', async () => {
-    const ctx = await appWithUser()
-    const unknown = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/login',
-      headers,
-      payload: { email: 'nobody@example.com', password: creds.password },
-    })
-    const wrong = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/login',
-      headers,
-      payload: { ...creds, password: 'wrong horse battery' },
-    })
-    // Must not leak whether this email is registered -- compare the full
-    // parsed body (same keys, same detail), not just status and title.
-    expect(unknown.statusCode).toBe(wrong.statusCode)
+    const wrong = await login({ ...creds, password: 'wrong horse battery' })
+    const unknown = await login({ email: 'nobody@example.com', password: creds.password })
+
+    expect(wrong.statusCode).toBe(401)
+    expect(unknown.statusCode).toBe(401)
+    // The whole parsed body, not just status and title: a `detail` that named which half was
+    // wrong would leak exactly what the equal status codes are hiding.
     expect(unknown.json()).toEqual(wrong.json())
+    expect(unknown.headers['set-cookie'], 'a refusal must not set a session').toBeUndefined()
   })
 })
 
@@ -90,20 +79,22 @@ describe('GET /api/v1/auth/me', () => {
     expect(res.json().workspaceId).toMatch(UUID)
   })
 
-  it('returns 401 without a cookie', async () => {
-    const ctx = await appWithUser()
-    const res = await ctx.app.inject({ method: 'GET', url: '/api/v1/auth/me', headers })
-    expect(res.statusCode).toBe(401)
-  })
-
-  it('returns 401 for a garbage cookie value', async () => {
+  // Every way of arriving without a usable session, in one table: no cookie at all, a value that
+  // is not a token, and one that is the right SHAPE but names nothing. The third is the case a
+  // hashed lookup could get wrong by reaching the database with a malformed parameter.
+  it.each([
+    ['no cookie', undefined],
+    ['a value that is not a token', 'ctws_session=not-a-uuid'],
+    ['a well-formed token nobody holds', `ctws_session=${'a'.repeat(43)}`],
+  ])('answers 401 to %s', async (_what, cookie) => {
     const ctx = await appWithUser()
     const res = await ctx.app.inject({
       method: 'GET',
       url: '/api/v1/auth/me',
-      headers: { ...headers, cookie: 'ctws_session=not-a-uuid' },
+      headers: cookie ? { ...headers, cookie } : headers,
     })
     expect(res.statusCode).toBe(401)
+    expect(res.headers['content-type']).toContain('application/problem+json')
   })
 })
 

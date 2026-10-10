@@ -117,6 +117,8 @@ describe('task dependencies', () => {
     // A waiting for C would close A -> B -> C -> A.
     const res = await dependOn(ctx, a, c)
     expect(res.statusCode).toBe(409)
+    // A loop, said as a loop: the task tree's own depth and cycle refusals share this status.
+    expect(res.json().detail).toMatch(/wait for each other/)
     expect((await lists(ctx, a)).blockedBy).toEqual([])
   })
 

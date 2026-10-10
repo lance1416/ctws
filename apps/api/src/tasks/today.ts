@@ -24,6 +24,11 @@ export type TodayTask = Task & {
  *
  * `scheduled_on <= today` (not `= today`) is deliberate: something scheduled yesterday and not
  * done keeps showing up instead of silently vanishing. A list that loses tasks cannot be trusted.
+ *
+ * NO INDEX FOR THIS JOIN, deliberately. It reaches `projects` for the workspace id and then
+ * filters on three columns; at the scale of one person's tasks the plan is a scan of a few
+ * thousand rows. If this page ever feels slow, read the query plan (`explain analyze`) and index
+ * what it actually says -- not a composite guessed here in advance.
  */
 export async function listToday(
   q: Queryable,

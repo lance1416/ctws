@@ -31,6 +31,18 @@ export function Layout() {
   })
 
   if (me.isLoading) return <div className="min-h-screen bg-surface" />
+  // A SERVER THAT IS DOWN IS NOT A SIGNED-OUT VISITOR. Redirecting here would land the reader on
+  // a login page that cannot reach the server either, which reads as "my password stopped
+  // working" rather than "the server is down".
+  if (me.isError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-surface p-6">
+        <p role="alert" className="max-w-prose text-sm text-danger">
+          Can't reach the server. Your session is fine -- try again once it is back.
+        </p>
+      </div>
+    )
+  }
   if (!me.data) return <Navigate to="/login" replace />
 
   return (

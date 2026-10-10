@@ -195,6 +195,10 @@ describe('projects', () => {
       payload: { name: 'zombie' },
     })
     expect(patch.statusCode).toBe(404)
+    // RFC 9457, like every other refusal: a 404 answering in HTML or in a bare string reaches the
+    // client as an unparseable error rather than one it can say something about.
+    expect(patch.headers['content-type']).toContain('application/problem+json')
+    expect(patch.json()).toMatchObject({ status: 404, title: expect.any(String) })
   })
 
   it('archived projects are excluded unless asked for', async () => {
@@ -371,6 +375,7 @@ describe('project visibility', () => {
         payload,
       })
       expect(res.statusCode).toBe(404)
+      expect(res.headers['content-type']).toContain('application/problem+json')
     })
 
     // softDeleteProject
@@ -386,6 +391,7 @@ describe('project visibility', () => {
         headers: scenario.caller(ctx, other),
       })
       expect(res.statusCode).toBe(404)
+      expect(res.headers['content-type']).toContain('application/problem+json')
     })
   })
 })
