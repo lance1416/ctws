@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { factsOf, HOUR_BRANCHES, lunarDayLabel, nextOccurrence, type Birthday } from './birthday'
+import {
+  factsOf,
+  HOUR_BRANCHES,
+  LUNAR_MONTHS,
+  lunarDayLabel,
+  keptNote,
+  lunarFullLabel,
+  lunarMonthLength,
+  nextOccurrence,
+  type Birthday,
+} from './birthday'
 
 /** 2026-10-10 是这些测试里的「今天」：农历丙午年九月初一。 */
 const TODAY = '2026-10-10'
@@ -168,5 +178,52 @@ describe('lunarDayLabel', () => {
   it('月初写月名，其余只写日', () => {
     expect(lunarDayLabel('2026-10-10')).toBe('九月初一')
     expect(lunarDayLabel('2026-10-12')).toBe('初三')
+  })
+})
+
+describe('lunarFullLabel 与 lunarMonthLength', () => {
+  it('完整的农历日写法带月名，不带年', () => {
+    // 2027-02-05 是农历丙午年十二月廿九。
+    expect(lunarFullLabel('2027-02-05')).toBe('十二月廿九')
+    expect(lunarFullLabel('2026-10-10')).toBe('九月初一')
+  })
+
+  it('月名表是十二个，正月在头上', () => {
+    expect(LUNAR_MONTHS).toHaveLength(12)
+    expect(LUNAR_MONTHS[0]).toBe('正月')
+    expect(LUNAR_MONTHS[11]).toBe('十二月')
+  })
+
+  it('说得出某个农历年里一个月有几天', () => {
+    // 外婆那一次落在 2027-02-05，所在农历年的十二月只有 29 天——这就是她被挪动的理由。
+    expect(lunarMonthLength('2027-02-05', 12)).toBe(29)
+  })
+})
+
+describe('keptNote', () => {
+  it('闰月回退说清是哪一年没有闰月，和记在了哪天', () => {
+    const b = lunar(2017, 6, 15, true)
+    expect(keptNote(b, nextOccurrence(b, TODAY))).toBe(
+      'No 闰六月 in 2027, so it is kept on 六月十五.',
+    )
+  })
+
+  it('小月回退说清那个月有几天', () => {
+    const b = lunar(1944, 12, 30)
+    expect(keptNote(b, nextOccurrence(b, TODAY))).toBe(
+      '十二月 has 29 days in 2027, so it is kept on 十二月廿九.',
+    )
+  })
+
+  it('二月二十九的人，平年那一句说的是二月', () => {
+    const b = solar(2000, 2, 29)
+    expect(keptNote(b, nextOccurrence(b, '2026-03-01'))).toBe(
+      'February has 28 days in 2027, so it is kept on the 28th.',
+    )
+  })
+
+  it('没有挪过就没有那句话', () => {
+    const b = solar(1996, 4, 15)
+    expect(keptNote(b, nextOccurrence(b, TODAY))).toBeNull()
   })
 })

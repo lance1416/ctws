@@ -14,7 +14,7 @@ import {
 import type { FastifyPluginAsync, FastifyReply } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
-import { factsOf, nextOccurrence, type Birthday } from '@ctws/core'
+import { factsOf, keptNote, nextOccurrence, type Birthday } from '@ctws/core'
 import { authedUser, requireUser } from '../auth/require-user'
 import { accountToday } from '../db/today'
 import { sendProblem } from '../problem'
@@ -65,7 +65,12 @@ function withFacts(b: StoredBirthday, today: string): z.infer<typeof birthdayRes
     day: b.day,
     leapMonth: b.leapMonth,
   }
-  return { ...b, ...factsOf(birthday, b.hourBranch), next: nextOccurrence(birthday, today) }
+  const next = nextOccurrence(birthday, today)
+  return {
+    ...b,
+    ...factsOf(birthday, b.hourBranch),
+    next: { ...next, keptNote: keptNote(birthday, next) },
+  }
 }
 
 const idParams = z.object({ id: z.uuid() }).strict()
@@ -150,7 +155,11 @@ export const contactRoutes: FastifyPluginAsync = async (app) => {
         day: req.query.day,
         leapMonth: req.query.leap === 'true',
       }
-      return { ...factsOf(birthday, req.query.hour ?? null), next: nextOccurrence(birthday, today) }
+      const next = nextOccurrence(birthday, today)
+      return {
+        ...factsOf(birthday, req.query.hour ?? null),
+        next: { ...next, keptNote: keptNote(birthday, next) },
+      }
     },
   )
 

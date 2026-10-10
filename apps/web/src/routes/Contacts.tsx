@@ -1,4 +1,4 @@
-import type { ContactResponse } from '@ctws/contracts'
+import type { Circle, ContactResponse } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { contactsKey, listContacts } from '../api/contacts'
@@ -8,6 +8,7 @@ import { NewContactDialog } from '../components/NewContactDialog'
 import { NewContactInput } from '../components/NewContactInput'
 import { LIST_MEASURE } from '../rowLead'
 import { BUTTON } from '../components/buttonStyles'
+import { CIRCLE_LABELS } from '../components/BirthdayRow'
 
 /**
  * CONTACTS.
@@ -21,6 +22,7 @@ export function Contacts() {
   const [openId, setOpenId] = useState<string | null>(null)
   const heading = useRef<HTMLHeadingElement>(null)
   const [making, setMaking] = useState(false)
+  const [circle, setCircle] = useState<Circle | null>(null)
 
   // Looked up by id rather than held: the open person has to follow the list's refetches, or an
   // edit made in the pane would leave the pane showing what it said before.
@@ -52,10 +54,30 @@ export function Contacts() {
             : "Couldn't load. Check that the server is running."}
         </p>
       )}
+      {/* ONE LIST, FILTERED -- never a second list. The circle is how an address book that also
+          holds fifty relatives stays readable, and nothing is hidden by default: a row that has
+          vanished is worse than a long list (birthdays spec §1). */}
+      <div className="mt-4 flex flex-wrap gap-1.5">
+        {([null, 'family', 'friend', 'work'] as const).map((key) => {
+          const picked = circle === key
+          return (
+            <button
+              key={key ?? 'all'}
+              type="button"
+              aria-pressed={picked}
+              onClick={() => setCircle(key)}
+              className={picked ? BUTTON.secondary : BUTTON.quiet}
+            >
+              {key === null ? 'Everyone' : CIRCLE_LABELS[key]}
+            </button>
+          )
+        })}
+      </div>
+
       {contacts.isSuccess && (
         <div className={`mt-3 ${LIST_MEASURE}`}>
           <ContactList
-            contacts={contacts.data}
+            contacts={contacts.data.filter((c) => circle === null || c.circle === circle)}
             emptyLine="No contacts yet"
             onOpen={(c) => setOpenId(c.id)}
           />

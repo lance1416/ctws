@@ -1,5 +1,38 @@
-import type { ContactResponse, CreateContactBody, UpdateContactBody } from '@ctws/contracts'
+import type {
+  BirthdayPreviewResponse,
+  ContactResponse,
+  RemindLead,
+  CreateContactBody,
+  UpdateContactBody,
+} from '@ctws/contracts'
 import { apiFetch } from '../api'
+
+/** A birthday as the form holds it, before the server works out what it means. */
+export type BirthdayDraft = {
+  calendar: 'solar' | 'lunar'
+  year: number | null
+  month: number
+  day: number
+  leapMonth: boolean
+  hourBranch: number | null
+  remindLead: RemindLead
+}
+
+/**
+ * What this birthday WOULD mean, while it is being typed. The server answers, so the lunar rules
+ * have one implementation and the browser never pays for the 750 KB library that decides them.
+ */
+export function previewBirthday(draft: BirthdayDraft): Promise<BirthdayPreviewResponse> {
+  const params = new URLSearchParams({
+    calendar: draft.calendar,
+    month: String(draft.month),
+    day: String(draft.day),
+  })
+  if (draft.year !== null) params.set('year', String(draft.year))
+  if (draft.leapMonth) params.set('leap', 'true')
+  if (draft.hourBranch !== null) params.set('hour', String(draft.hourBranch))
+  return apiFetch(`/contacts/birthdays/preview?${params}`)
+}
 
 /** The contacts module's own namespace. */
 const BASE = '/contacts'

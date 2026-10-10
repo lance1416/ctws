@@ -197,3 +197,55 @@ export function lunarDayLabel(day: string): string {
   const name = lunar.getName()
   return name === '初一' ? `${lunar.getLunarMonth().getName()}${name}` : name
 }
+
+/** The lunar months, said the way a reader says them. `正月` and not `一月`. */
+export const LUNAR_MONTHS = [
+  '正月',
+  '二月',
+  '三月',
+  '四月',
+  '五月',
+  '六月',
+  '七月',
+  '八月',
+  '九月',
+  '十月',
+  '十一月',
+  '十二月',
+] as const
+
+/** 「十二月廿九」 -- month and day, no year. What the sentence about a moved day lands on. */
+export function lunarFullLabel(day: string): string {
+  const lunar = parseDay(day).getLunarDay()
+  return `${lunar.getLunarMonth().getName()}${lunar.getName()}`
+}
+
+/**
+ * How many days a given lunar month has in the lunar year that `day` falls in. The short-month
+ * sentence needs the number, and only the library knows it.
+ */
+export function lunarMonthLength(day: string, month: number): number {
+  const year = parseDay(day).getLunarDay().getLunarMonth().getLunarYear().getYear()
+  return LunarMonth.fromYm(year, month).getDayCount()
+}
+
+/**
+ * THE MOVE, SAID OUT LOUD: "No 闰六月 in 2027, so it is kept on 六月十五."
+ *
+ * `kept` is for a program; this is for a person, and a day that quietly moved itself is the kind
+ * of thing that makes someone stop trusting the list. English chrome with Chinese values, the way
+ * a meeting row says `14:00 Toronto · EDT`: there is no English spelling of 六月十五 that a reader
+ * of this app would prefer.
+ */
+export function keptNote(b: Birthday, next: Occurrence): string | null {
+  if (next.kept.length === 0) return null
+  const year = next.day.slice(0, 4)
+  if (next.kept.includes('leap-month')) {
+    return `No 闰${LUNAR_MONTHS[b.month - 1]} in ${year}, so it is kept on ${lunarFullLabel(next.day)}.`
+  }
+  if (next.kept.includes('short-month')) {
+    const length = lunarMonthLength(next.day, b.month)
+    return `${LUNAR_MONTHS[b.month - 1]} has ${length} days in ${year}, so it is kept on ${lunarFullLabel(next.day)}.`
+  }
+  return `February has 28 days in ${year}, so it is kept on the 28th.`
+}

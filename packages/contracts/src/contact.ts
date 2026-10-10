@@ -48,6 +48,7 @@ export const CIRCLES = ['family', 'friend', 'work'] as const
 export type Circle = (typeof CIRCLES)[number]
 /** How early to put someone on the workbench card. 0 is the day itself. */
 export const REMIND_LEADS = [7, 3, 1, 0] as const
+export type RemindLead = (typeof REMIND_LEADS)[number]
 
 const SOLAR_MONTH_LENGTHS = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 const remindLead = z.union([z.literal(7), z.literal(3), z.literal(1), z.literal(0)])
@@ -107,6 +108,8 @@ export const birthdayResponse = z
         turns: z.number().nullable(),
         /** The year had no such day and it was moved -- the page says each one out loud. */
         kept: z.array(z.string()),
+        /** The same thing in a sentence, for a person. Null when nothing moved. */
+        keptNote: z.string().nullable(),
       })
       .strict(),
   })
@@ -136,6 +139,8 @@ export const birthdayPreviewQuery = z
   .refine((b) => b.calendar === 'lunar' || b.day <= (SOLAR_MONTH_LENGTHS[b.month - 1] ?? 31), {
     message: 'that day does not exist in that month',
   })
+
+export type BirthdayPreviewResponse = z.infer<typeof birthdayPreviewResponse>
 
 export const birthdayPreviewResponse = birthdayResponse.omit({
   calendar: true,

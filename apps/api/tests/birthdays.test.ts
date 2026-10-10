@@ -262,3 +262,24 @@ describe('GET /contacts/birthdays/preview', () => {
     expect(res.statusCode).toBe(401)
   })
 })
+
+describe('被挪动的日子', () => {
+  it('回退带着一句写给人看的话，没挪过就是 null', async () => {
+    const ctx = await setup()
+    const moved = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/v1/contacts/birthdays/preview?calendar=lunar&year=2017&month=6&day=15&leap=true',
+      headers: ctx.authed,
+    })
+    expect(moved.statusCode, moved.body).toBe(200)
+    // 具体那句话在 `@ctws/core` 的单测里按固定的「今天」钉住；这里钉的是它确实走到了线上。
+    expect(moved.json().next.keptNote).toMatch(/^No 闰六月 in \d{4}, so it is kept on 六月十五\.$/)
+
+    const still = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/v1/contacts/birthdays/preview?calendar=solar&year=1996&month=4&day=15',
+      headers: ctx.authed,
+    })
+    expect(still.json().next.keptNote).toBeNull()
+  })
+})

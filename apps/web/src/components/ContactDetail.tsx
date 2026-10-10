@@ -4,6 +4,7 @@ import { channelHref, deleteContact, patchContact } from '../api/contacts'
 import { listProjects } from '../api/projects'
 import { useProjectRail } from '../projectColor'
 import { DangerAction, DangerZone } from './DangerZone'
+import { BirthdayFields } from './BirthdayFields'
 import { Field } from './Field'
 import { DetailHead, DetailPane } from './DetailPane'
 import { Link } from 'react-router-dom'
@@ -110,7 +111,12 @@ export function ContactFields({
         />
       </div>
 
-      <div className="flex flex-col gap-2">
+      {/* ONE DATE, in the calendar it was given in. Everything it implies is read-only. */}
+      <BirthdayFields contact={contact} onSave={(patch) => save.mutate(patch)} />
+
+      {/* A label and six characters do not need 700px, so the short fields pair up once there is
+          room for two of them. */}
+      <div className="grid gap-2 sm:grid-cols-2 sm:gap-x-5">
         <Field label="Company">
           <InlineText
             label="Company"
@@ -133,6 +139,59 @@ export function ContactFields({
               .map((p) => ({ value: p.id, label: p.name, mark: chip(p.id) }))}
             onChange={(projectIds) => save.mutate({ projectIds })}
             empty="Not on any project"
+          />
+        </Field>
+        <Field label="Title">
+          <InlineText
+            label="Title"
+            value={contact.title ?? ''}
+            placeholder="Not set"
+            onSave={(title) => save.mutate({ title: title || null })}
+            className="text-sm"
+          />
+        </Field>
+        <Field label="Gender">
+          <PickOne
+            label="Gender"
+            value={contact.gender ?? ''}
+            choices={[
+              { value: '', label: 'Not set' },
+              { value: 'female', label: 'Female' },
+              { value: 'male', label: 'Male' },
+              { value: 'other', label: 'Other' },
+            ]}
+            onPick={(gender) => save.mutate({ gender: (gender || null) as 'male' | null })}
+          />
+        </Field>
+        <Field label="Circle">
+          <PickOne
+            label="Circle"
+            value={contact.circle ?? ''}
+            choices={[
+              { value: '', label: 'Not set' },
+              { value: 'family', label: 'Family' },
+              { value: 'friend', label: 'Friends' },
+              { value: 'work', label: 'Work' },
+            ]}
+            onPick={(circle) => save.mutate({ circle: (circle || null) as 'family' | null })}
+          />
+        </Field>
+        <Field label="Hometown">
+          <InlineText
+            label="Hometown"
+            value={contact.hometown ?? ''}
+            placeholder="Not set"
+            onSave={(hometown) => save.mutate({ hometown: hometown || null })}
+            className="text-sm"
+          />
+        </Field>
+        <Field label="Lives in">
+          <InlineText
+            label="Lives in"
+            value={contact.city ?? ''}
+            placeholder="Not set"
+            onSave={(city) => save.mutate({ city: city || null })}
+            className="text-sm"
           />
         </Field>
       </div>

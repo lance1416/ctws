@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dayOffset } from './days'
-import { registerFreshUser, WEB } from './helpers'
+import { pickOne, registerFreshUser, WEB } from './helpers'
 
 /**
  * BIRTHDAYS -- the lens over the people who have one.
@@ -134,4 +134,93 @@ test('rail 上有它，并且数的是未来一周', async ({ page }) => {
   await expect(row).toContainText('1')
   await row.click()
   await expect(page.getByRole('heading', { level: 1, name: 'Birthdays' })).toBeVisible()
+})
+
+test('人物页上生日是只读的派生值，改在一个地方', async ({ page }) => {
+  await registerFreshUser(page)
+  const id = await person(page, '周楠', {
+    calendar: 'lunar',
+    year: 1991,
+    month: 9,
+    day: 3,
+    hourBranch: 6,
+  })
+  await page.goto(`/contacts/${id}`)
+  const glance = page.getByRole('region', { name: 'Person at a glance' })
+  await expect(glance).toContainText('农历辛未年九月初三')
+  await expect(glance).toContainText('午时')
+  await expect(glance).toContainText('羊')
+  await expect(glance).toContainText('天秤')
+  await expect(glance).toContainText('turns')
+  // 派生值不是输入框：没有一个控件的无障碍名叫 Zodiac 或 Sign。
+  await expect(glance.getByRole('button', { name: /Zodiac|Sign/ })).toHaveCount(0)
+})
+
+test('写一个农历生日，输入时就看见换算与回退', async ({ page }) => {
+  await registerFreshUser(page)
+  const id = await person(page, '外婆')
+  await page.goto(`/contacts/${id}`)
+  await page.getByRole('button', { name: 'Add a birthday' }).click()
+  await page
+    .getByRole('group', { name: 'Which calendar' })
+    .getByRole('button', { name: 'Lunar' })
+    .click()
+  await page.getByRole('textbox', { name: 'Year' }).fill('1944')
+  // The app's own picker, not a native select (`layers.test.ts` forbids those).
+  await pickOne(page, 'Lunar month', '十二月')
+  await pickOne(page, 'Lunar day', '三十')
+  // 预览是服务端算的，所以这里等的是一次请求的结果，不是一个本地字符串。
+  const preview = page.getByTestId('birthday-preview')
+  await expect(preview).toContainText('1945-02-12')
+  await expect(preview).toContainText('猴')
+  await expect(preview).toContainText('has 29 days')
+  await page.getByRole('button', { name: 'Save' }).click()
+  await expect(page.getByRole('region', { name: 'Person at a glance' })).toContainText(
+    '农历甲申年十二月三十',
+  )
+})
+
+test('联系人列表能按 circle 筛，而且不默认藏人', async ({ page }) => {
+  await registerFreshUser(page)
+  await person(page, '妈妈', undefined, 'family')
+  await person(page, '同事老张', undefined, 'work')
+  await page.goto('/contacts')
+  const list = page.getByRole('listitem')
+  await expect(list).toHaveCount(2)
+  await page.getByRole('button', { name: 'Family' }).click()
+  await expect(list).toHaveCount(1)
+  await expect(list).toContainText('妈妈')
+  await page.getByRole('button', { name: 'Everyone' }).click()
+  await expect(list).toHaveCount(2)
+})
+
+test('只知月日的农历生日，一个 chip 都不画', async ({ page }) => {
+  await registerFreshUser(page)
+  // 农历月日对应的公历日期逐年移动，所以星座不唯一；生肖要年份。两个都没有，就什么都别画。
+  const id = await person(page, '蒋老师', { calendar: 'lunar', month: 9, day: 3 })
+  await page.goto(`/contacts/${id}`)
+  const glance = page.getByRole('region', { name: 'Person at a glance' })
+  await expect(glance).toContainText('农历九月初三')
+  await expect(glance.locator('[data-birthday-chip]')).toHaveCount(0)
+})
+
+test('知道年份的人，生肖与星座各一个 chip', async ({ page }) => {
+  await registerFreshUser(page)
+  const id = await person(page, '周楠', { calendar: 'lunar', year: 1991, month: 9, day: 3 })
+  await page.goto(`/contacts/${id}`)
+  await expect(
+    page.getByRole('region', { name: 'Person at a glance' }).locator('[data-birthday-chip]'),
+  ).toHaveCount(2)
+})
+
+test('公历但不知年份：有星座，没有生肖，所以只有一个 chip', async ({ page }) => {
+  await registerFreshUser(page)
+  // 这一条是两个 chip 各自的守卫唯一管用的地方：两个都空时外层就不画了。
+  const id = await person(page, '蒋老师', { calendar: 'solar', month: 11, day: 2 })
+  await page.goto(`/contacts/${id}`)
+  const chips = page
+    .getByRole('region', { name: 'Person at a glance' })
+    .locator('[data-birthday-chip]')
+  await expect(chips).toHaveCount(1)
+  await expect(chips).toHaveText('天蝎')
 })
