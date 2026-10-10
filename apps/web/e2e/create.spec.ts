@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { openProject, registerFreshUser, submitCreate } from './helpers'
+import { openProject, registerFreshUser, serverParents, submitCreate, WEB } from './helpers'
 
 const POST_TASK = /\/api\/v1\/tasks$/
 
@@ -34,14 +34,6 @@ async function shape(page: Page) {
   return l.map((s) => s.replace('Task: ', ''))
 }
 
-/** The server's view: title -> parent title (null for a root). */
-async function serverParents(page: Page, projectId: string) {
-  const body = await (await page.request.get(`/api/v1/projects/${projectId}/tasks`)).json()
-  const tasks = body.tasks as { id: string; title: string; parentId: string | null }[]
-  const title = new Map(tasks.map((t) => [t.id, t.title]))
-  return Object.fromEntries(tasks.map((t) => [t.title, t.parentId ? title.get(t.parentId) : null]))
-}
-
 /** A project holding A (children a1, a2) and a root B. Returns its id. */
 async function seed(page: Page): Promise<string> {
   await registerFreshUser(page)
@@ -57,7 +49,7 @@ async function seed(page: Page): Promise<string> {
     ['B', null],
   ] as const) {
     const res = await page.request.post('/api/v1/tasks', {
-      headers: { 'x-ctws-client': 'web' },
+      headers: WEB,
       data: { projectId, title, parentId: parent ? ids.get(parent)! : null },
     })
     expect(res.ok()).toBeTruthy()

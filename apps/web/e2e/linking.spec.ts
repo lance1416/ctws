@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { registerFreshUser } from './helpers'
+import { registerFreshUser, WEB } from './helpers'
 
 /**
  * SAYING THAT TWO THINGS ARE CONNECTED, from the interface.
@@ -9,11 +9,10 @@ import { registerFreshUser } from './helpers'
  * recommended" -- was reachable with curl and nowhere else. Every edge that existed came from a
  * module's own field.
  */
-const HEADERS = { 'x-ctws-client': 'web' }
 const picker = (page: Page) => page.getByRole('dialog').filter({ hasText: 'Link to' })
 
 const post = async (page: Page, path: string, data: Record<string, unknown>) => {
-  const res = await page.request.post(`/api/v1${path}`, { headers: HEADERS, data })
+  const res = await page.request.post(`/api/v1${path}`, { headers: WEB, data })
   if (!res.ok()) throw new Error(`${path}: ${res.status()} ${await res.text()}`)
   return res.json() as Promise<Record<string, string>>
 }

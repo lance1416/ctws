@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { openProject, registerFreshUser, submitCreate } from './helpers'
+import { registerFreshUser, seedTasks, startProject, WEB } from './helpers'
 
 /** The row's focus carrier in the tree; its accessible name is the task title. */
 const handle = (page: Page, title: string) =>
@@ -8,29 +8,6 @@ const handle = (page: Page, title: string) =>
 const row = (page: Page, title: string) => page.getByRole('listitem').filter({ hasText: title })
 
 const searchBox = (page: Page) => page.getByRole('combobox', { name: 'Search' })
-
-/** Creates a project through the UI and returns its url. */
-async function startProject(page: Page, name: string) {
-  await page.getByRole('link', { name: 'Projects' }).click()
-  await submitCreate(page, 'New project', name)
-  await openProject(page, name, true)
-  return page.url()
-}
-
-/** Builds tasks through the API (far faster than the UI). Returns the ids by title. */
-async function seed(page: Page, url: string, spec: [title: string, parent: string | null][]) {
-  const projectId = url.split('/').pop()!
-  const ids = new Map<string, string>()
-  for (const [title, parent] of spec) {
-    const res = await page.request.post('/api/v1/tasks', {
-      headers: { 'x-ctws-client': 'web' },
-      data: { projectId, title, parentId: parent ? ids.get(parent)! : null },
-    })
-    expect(res.ok()).toBeTruthy()
-    ids.set(title, ((await res.json()) as { id: string }).id)
-  }
-  return ids
-}
 
 /** Types into the search box and waits for the server's answer, so no assertion races the fetch. */
 async function query(page: Page, text: string) {
@@ -62,7 +39,7 @@ test('search finds a task inside a collapsed subtree and leaves it visible and f
 }) => {
   await registerFreshUser(page)
   const url = await startProject(page, 'Deep')
-  await seed(page, url, [
+  await seedTasks(page, url, [
     ['外层', null],
     ['中层', '外层'],
     ['藏起来的针', '中层'],
@@ -106,9 +83,9 @@ test('search finds a task inside a collapsed subtree and leaves it visible and f
 test('search reaches a task in a project other than the one being viewed', async ({ page }) => {
   await registerFreshUser(page)
   const alpha = await startProject(page, 'Alpha')
-  await seed(page, alpha, [['alpha 的活', null]])
+  await seedTasks(page, alpha, [['alpha 的活', null]])
   const beta = await startProject(page, 'Beta')
-  await seed(page, beta, [['beta 的活', null]])
+  await seedTasks(page, beta, [['beta 的活', null]])
 
   // Standing on Beta, looking for something in Alpha.
   await page.goto(beta)
@@ -130,19 +107,19 @@ test('search shows the parent breadcrumb and the status, and skips deleted tasks
 }) => {
   await registerFreshUser(page)
   const url = await startProject(page, 'Ctx')
-  const ids = await seed(page, url, [
+  const ids = await seedTasks(page, url, [
     ['迁移计划', null],
     ['hint 的子任务', '迁移计划'],
     ['hint 已完成', null],
     ['hint 删掉的', null],
   ])
   const done = await page.request.patch(`/api/v1/tasks/${ids.get('hint 已完成')!}`, {
-    headers: { 'x-ctws-client': 'web' },
+    headers: WEB,
     data: { status: 'done' },
   })
   expect(done.ok()).toBeTruthy()
   const removed = await page.request.delete(`/api/v1/tasks/${ids.get('hint 删掉的')!}`, {
-    headers: { 'x-ctws-client': 'web' },
+    headers: WEB,
   })
   expect(removed.ok()).toBeTruthy()
 
@@ -174,7 +151,7 @@ test('the search selection is announceable: combobox, listbox, activedescendant'
 }) => {
   await registerFreshUser(page)
   const url = await startProject(page, 'Aria')
-  await seed(page, url, [
+  await seedTasks(page, url, [
     ['查找甲', null],
     ['查找乙', null],
     ['查找丙', null],
@@ -272,7 +249,7 @@ test('Escape closes search, and f typed into a text field does not open it', asy
 test('no Tab reaches outside the search dialog while it is open', async ({ page }) => {
   await registerFreshUser(page)
   const url = await startProject(page, 'Trap')
-  await seed(page, url, [
+  await seedTasks(page, url, [
     ['第一条', null],
     ['第二条', null],
   ])

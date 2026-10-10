@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { registerFreshUser } from './helpers'
+import { makeProject, registerFreshUser, WEB } from './helpers'
 
 /**
  * 联系人 -- THE THIRD MODULE.
@@ -9,18 +9,11 @@ import { registerFreshUser } from './helpers'
  * contract changing at all.
  */
 
-const HEADERS = { 'x-ctws-client': 'web' }
-
 const row = (page: Page, name: string) =>
   page.getByRole('listitem').filter({ hasText: name }).first()
 
-async function project(page: Page, name: string): Promise<string> {
-  const res = await page.request.post('/api/v1/projects', { headers: HEADERS, data: { name } })
-  return ((await res.json()) as { id: string }).id
-}
-
 async function add(page: Page, data: Record<string, unknown>) {
-  const res = await page.request.post('/api/v1/contacts', { headers: HEADERS, data })
+  const res = await page.request.post('/api/v1/contacts', { headers: WEB, data })
   // Asserted, because a payload the contract refused used to leave the test looking at an empty
   // list and blaming the page.
   expect(res.status(), await res.text()).toBe(201)
@@ -82,8 +75,8 @@ test('a person is made by typing a name, and finished in the pane', async ({ pag
 
 test('a person can be on several lines of work at once', async ({ page }) => {
   await registerFreshUser(page, '/')
-  const hunt = await project(page, '找工作')
-  const ctws = await project(page, 'CTWS')
+  const hunt = await makeProject(page, '找工作')
+  const ctws = await makeProject(page, 'CTWS')
   await add(page, { name: '陈颖' })
   await page.goto('/contacts')
 
@@ -110,8 +103,8 @@ test('a person can be on several lines of work at once', async ({ page }) => {
 
 test('a line of work is taken off without touching the others', async ({ page }) => {
   await registerFreshUser(page, '/')
-  const hunt = await project(page, '找工作')
-  const ctws = await project(page, 'CTWS')
+  const hunt = await makeProject(page, '找工作')
+  const ctws = await makeProject(page, 'CTWS')
   await add(page, { name: '陈颖', projectIds: [hunt, ctws] })
   await page.goto('/contacts')
 
@@ -166,7 +159,7 @@ test('a project page carries its people, as edges and not as a block of its own'
   // it the page was a wall of blocks -- the module structure drawn for the reader. The rows are
   // edges now, and one panel draws every kind.
   await registerFreshUser(page, '/')
-  const pid = await project(page, '找工作')
+  const pid = await makeProject(page, '找工作')
   await add(page, {
     name: '某招聘',
     projectIds: [pid],
@@ -253,7 +246,7 @@ test('a person is written down properly in one form, not created then edited', a
   // other moment.
   await registerFreshUser(page, '/contacts')
   const hunt = await page.request.post('/api/v1/projects', {
-    headers: { 'x-ctws-client': 'web' },
+    headers: WEB,
     data: { name: 'Job hunt' },
   })
   const projectId = ((await hunt.json()) as { id: string }).id

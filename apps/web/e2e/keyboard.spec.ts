@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { openProject, registerFreshUser, submitCreate } from './helpers'
+import { recordMoves, registerFreshUser, seedTasks, startProject } from './helpers'
 
 const MOVE_URL = /\/tasks\/[^/]+\/move$/
 
@@ -7,15 +7,6 @@ const handle = (page: Page, title: string) =>
   page.getByRole('button', { name: `Task: ${title}`, exact: true })
 
 const row = (page: Page, title: string) => page.getByRole('listitem').filter({ hasText: title })
-
-/** Records every move request the page sends, so a test can assert that none was. */
-function recordMoves(page: Page) {
-  const moves: string[] = []
-  page.on('request', (r) => {
-    if (MOVE_URL.test(r.url())) moves.push(r.url())
-  })
-  return moves
-}
 
 /** Is focus on a row of the task tree? */
 const inTree = (page: Page) =>
@@ -36,29 +27,6 @@ const tabStops = (page: Page) =>
 // the box is what sits immediately above the rows now.
 const aboveTree = (page: Page) => page.getByRole('textbox', { name: 'New task' })
 
-async function startProject(page: Page, name: string) {
-  await page.getByRole('link', { name: 'Projects' }).click()
-  await submitCreate(page, 'New project', name)
-  await openProject(page, name, true)
-  return page.url()
-}
-
-async function seed(page: Page, url: string, spec: [title: string, parent: string | null][]) {
-  const projectId = url.split('/').pop()!
-  const ids = new Map<string, string>()
-  for (const [title, parent] of spec) {
-    const res = await page.request.post('/api/v1/tasks', {
-      headers: { 'x-ctws-client': 'web' },
-      data: { projectId, title, parentId: parent ? ids.get(parent)! : null },
-    })
-    expect(res.ok()).toBeTruthy()
-    ids.set(title, ((await res.json()) as { id: string }).id)
-  }
-  await page.goto(url)
-  await expect(page.getByRole('listitem')).toHaveCount(spec.length)
-  return ids
-}
-
 const flat = (n: number): [string, null][] =>
   Array.from({ length: n }, (_, i) => [`r${i}`, null] as [string, null])
 
@@ -70,7 +38,7 @@ const flat = (n: number): [string, null][] =>
 test('the whole tree is one tab stop, however many rows it has', async ({ page }) => {
   await registerFreshUser(page)
   const url = await startProject(page, 'Many')
-  await seed(page, url, flat(12))
+  await seedTasks(page, url, flat(12))
   const moves = recordMoves(page)
 
   expect(await tabStops(page)).toBe(1)
@@ -106,7 +74,7 @@ test('the tab stop follows the row last used, so Tab re-enters where you left of
 }) => {
   await registerFreshUser(page)
   const url = await startProject(page, 'Rove')
-  await seed(page, url, flat(5))
+  await seedTasks(page, url, flat(5))
 
   await handle(page, 'r3').focus()
   expect(await tabStops(page)).toBe(1)
@@ -120,7 +88,7 @@ test('the tab stop follows the row last used, so Tab re-enters where you left of
 test('arrows and j/k move between rows and stop at the ends', async ({ page }) => {
   await registerFreshUser(page)
   const url = await startProject(page, 'Move')
-  await seed(page, url, flat(4))
+  await seedTasks(page, url, flat(4))
   const moves = recordMoves(page)
 
   await handle(page, 'r0').focus()
@@ -158,7 +126,7 @@ test('arrows and j/k move between rows and stop at the ends', async ({ page }) =
 test('plain left and right fold, unfold, and walk the hierarchy', async ({ page }) => {
   await registerFreshUser(page)
   const url = await startProject(page, 'Fold')
-  await seed(page, url, [
+  await seedTasks(page, url, [
     ['p', null],
     ['c', 'p'],
     ['tail', null],
@@ -194,7 +162,7 @@ test('Alt arrows still move and reparent rows, and Enter still opens the detail'
 }) => {
   await registerFreshUser(page)
   const url = await startProject(page, 'Keep')
-  await seed(page, url, flat(3))
+  await seedTasks(page, url, flat(3))
   const projectId = url.split('/').pop()!
 
   const moved = page.waitForResponse((r) => MOVE_URL.test(r.url()) && r.ok())
@@ -302,7 +270,7 @@ test('the single-key shortcuts can be turned off, and stay off after a reload', 
 }) => {
   await registerFreshUser(page)
   const url = await startProject(page, 'Off')
-  await seed(page, url, flat(3))
+  await seedTasks(page, url, flat(3))
 
   // The switch lives in the overlay, which also has a button: with the keys off, `?` must not be
   // the only way back to the setting that turned them off.

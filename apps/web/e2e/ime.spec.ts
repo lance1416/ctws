@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { registerFreshUser } from './helpers'
+import { registerFreshUser, WEB } from './helpers'
 
 /**
  * ENTER WHILE AN IME IS COMPOSING IS NOT A SUBMIT.
@@ -54,7 +54,7 @@ test('committing English out of an IME does not file the capture', async ({ page
 test('committing English out of an IME does not create a task', async ({ page }) => {
   await registerFreshUser(page)
   const made = await page.request.post('/api/v1/projects', {
-    headers: { 'x-ctws-client': 'web' },
+    headers: WEB,
     data: { name: '改版' },
   })
   const { id } = (await made.json()) as { id: string }
@@ -68,7 +68,7 @@ test('committing English out of an IME does not create a task', async ({ page })
 test('committing English out of an IME does not close an inline editor', async ({ page }) => {
   await registerFreshUser(page, '/contacts')
   await page.request.post('/api/v1/contacts', {
-    headers: { 'x-ctws-client': 'web' },
+    headers: WEB,
     data: { name: '陈颖' },
   })
   await page.reload()

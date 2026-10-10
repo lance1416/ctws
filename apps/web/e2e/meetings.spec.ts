@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { registerFreshUser } from './helpers'
+import { registerFreshUser, WEB } from './helpers'
 
 /** The month names the app prints, so a spec can build the string the page will show. */
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -11,8 +11,6 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
  * the feature exists for: a series agreed in Toronto showing on YOUR clock, saying so, and moving
  * by an hour on the week one of the two countries changes its clocks and the other has not.
  */
-
-const HEADERS = { 'x-ctws-client': 'web' }
 
 /**
  * THE ACCOUNT IS IN LONDON for this whole file.
@@ -27,7 +25,7 @@ const square = (page: Page, day: string) => page.locator(`[data-day="${day}"]`)
 const pane = (page: Page) => page.getByRole('dialog', { name: 'Meetings' })
 
 async function arrange(page: Page, data: Record<string, unknown>) {
-  const res = await page.request.post('/api/v1/meetings', { headers: HEADERS, data })
+  const res = await page.request.post('/api/v1/meetings', { headers: WEB, data })
   expect(res.status(), await res.text()).toBe(201)
   return res.json() as Promise<{ meetingId: string; recurrenceId: string }>
 }
@@ -112,7 +110,7 @@ test('cancelling one week leaves the series alone', async ({ page }) => {
 
 test('the people in the room come out of the contacts module', async ({ page }) => {
   await inLondon(page)
-  await page.request.post('/api/v1/contacts', { headers: HEADERS, data: { name: '陈颖' } })
+  await page.request.post('/api/v1/contacts', { headers: WEB, data: { name: '陈颖' } })
   await arrange(page, { ...WEEKLY_IN_TORONTO, rrule: null })
   await page.goto('/calendar')
   await openOctober(page)

@@ -1,5 +1,12 @@
 import { expect, test, type Page } from '@playwright/test'
-import { backdateProjectActivity, makeProject, makeTask, registerFreshUser } from './helpers'
+import {
+  backdateProjectActivity,
+  makeProject,
+  makeTask,
+  movementOf,
+  registerFreshUser,
+  WEB,
+} from './helpers'
 
 /**
  * The 今天 workbench: the four panels, the banner, and the grid they sit in.
@@ -19,7 +26,6 @@ import { backdateProjectActivity, makeProject, makeTask, registerFreshUser } fro
  *   panels sat in one column, and a single-viewport test cannot tell a grid from a stack.
  */
 
-const HEADERS = { 'x-ctws-client': 'web' }
 const WIDE = { width: 1440, height: 1000 }
 const PHONE = { width: 375, height: 800 }
 const DAY = 86_400_000
@@ -27,24 +33,10 @@ const ymd = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 const dueAgo = (n: number) => new Date(Date.now() - n * DAY).toISOString()
 
-type Movement = {
-  projectId: string
-  projectName: string
-  doneThisWeek: number
-  remaining: number
-  lastActivityOn: string | null
-  quietDays: number | null
-}
-
 const patched = (page: Page) =>
   page.waitForResponse(
     (r) => /\/tasks\/[^/]+$/.test(r.url()) && r.request().method() === 'PATCH' && r.ok(),
   )
-
-const movementOf = async (page: Page): Promise<Movement[]> =>
-  ((await (await page.request.get('/api/v1/tasks/movement')).json()) as { projects: Movement[] })
-    .projects
-
 const panel = (page: Page, name: string) => page.getByRole('region', { name, exact: true })
 
 // --------------------------------------------------------------------- 做到哪儿了: counts, not a ratio
@@ -144,7 +136,7 @@ test('the stagnation line names a project only while that project is really quie
   await makeTask(page, live, '今天刚碰过')
   await makeTask(page, stale, '放了很久')
   const done = await makeTask(page, finished, '早就做完')
-  await page.request.patch(`/api/v1/tasks/${done}`, { headers: HEADERS, data: { status: 'done' } })
+  await page.request.patch(`/api/v1/tasks/${done}`, { headers: WEB, data: { status: 'done' } })
 
   // Two projects have been silent for nine days. Only one of them still has work in it.
   backdateProjectActivity(stale, '9 days')
@@ -209,7 +201,7 @@ test('the workbench is a panel grid at 1440 and one column at 375', async ({ pag
     dueAt: dueAgo(3),
   })
   const done = await makeTask(page, pid, '今天做完的')
-  await page.request.patch(`/api/v1/tasks/${done}`, { headers: HEADERS, data: { status: 'done' } })
+  await page.request.patch(`/api/v1/tasks/${done}`, { headers: WEB, data: { status: 'done' } })
 
   const boxes = async () => {
     const out: Record<string, { x: number; y: number; w: number }> = {}

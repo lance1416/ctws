@@ -6,6 +6,7 @@ import {
   makeProject,
   makeTask,
   registerFreshUser,
+  WEB,
 } from './helpers'
 
 /** The month names the app prints, so a spec can build the string the page will show. */
@@ -14,8 +15,6 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 // The completed-work view, task deletion, and the panel's guard against losing edits on
 // navigation. As in daily.spec.ts, every claim about what changed is checked against the SERVER
 // (a fresh GET) or a reload, so an implementation that only updates the screen cannot pass.
-
-const HEADERS = { 'x-ctws-client': 'web' }
 
 type ApiTask = { id: string; title: string; status: string }
 
@@ -34,7 +33,7 @@ function hoursBackToNoon(daysAgo: number): number {
 /** Finishes a task through the API, then (optionally) moves the completion back in time. */
 async function finish(page: Page, id: string, ago?: string) {
   const p = await page.request.patch(`/api/v1/tasks/${id}`, {
-    headers: HEADERS,
+    headers: WEB,
     data: { status: 'done' },
   })
   expect(p.ok()).toBeTruthy()

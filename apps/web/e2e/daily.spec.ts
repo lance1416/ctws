@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { editDetail, makeProject, makeTask, registerFreshUser } from './helpers'
+import { editDetail, makeProject, makeTask, openTree, registerFreshUser, WEB } from './helpers'
 import { dayOffset, nextMondayYmd, ymd } from './days'
 
 /** The month names the app prints, so a spec can build the string the page will show. */
@@ -10,7 +10,6 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 // the SERVER (a fresh GET), not the screen: an optimistic update that never reached the API
 // would pass any check that only looks at the UI.
 
-const HEADERS = { 'x-ctws-client': 'web' }
 const DAY = 86_400_000
 
 type ApiTask = {
@@ -52,21 +51,6 @@ async function openTriage(page: Page, title: string, kind: 'Overdue' | 'Carried 
   const panel = page.getByRole('group', { name: `${kind}: ${title}` })
   await expect(panel).toBeVisible()
   return panel
-}
-
-async function openTree(page: Page, projectId: string) {
-  // Waits for the LIST, not for a row: a project whose only task is finished renders no rows at
-  // all now that the tree hides them (D48), and waiting for one would hang until the timeout.
-  const listed = page.waitForResponse((r) => {
-    const url = new URL(r.url())
-    return (
-      r.request().method() === 'GET' &&
-      url.pathname === '/api/v1/tasks' &&
-      url.searchParams.get('projectId') === projectId
-    )
-  })
-  await page.goto(`/projects/${projectId}`)
-  await listed
 }
 
 const treeRow = (page: Page, title: string) =>
@@ -344,7 +328,7 @@ test('only a deadline change takes a task out of 逾期: a bare scheduledOn does
 
   // Scheduling it for tomorrow (what the old 推迟 did) must NOT hide the missed deadline.
   const p = await page.request.patch(`/api/v1/tasks/${id}`, {
-    headers: HEADERS,
+    headers: WEB,
     data: { scheduledOn: tomorrow },
   })
   expect(p.ok()).toBeTruthy()
@@ -355,7 +339,7 @@ test('only a deadline change takes a task out of 逾期: a bare scheduledOn does
 
   // Whereas moving the deadline itself does take it out.
   const q = await page.request.patch(`/api/v1/tasks/${id}`, {
-    headers: HEADERS,
+    headers: WEB,
     data: { dueAt: new Date(Date.now() + 3 * DAY).toISOString() },
   })
   expect(q.ok()).toBeTruthy()

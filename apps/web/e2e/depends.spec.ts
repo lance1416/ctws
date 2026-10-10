@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { makeProject, makeTask, registerFreshUser } from './helpers'
+import { makeProject, makeTask, openTree, registerFreshUser, WEB } from './helpers'
 
 /**
  * WHAT HAS TO HAPPEN FIRST (D64), through the browser.
@@ -9,21 +9,6 @@ import { makeProject, makeTask, registerFreshUser } from './helpers'
  * saying 「什么到期了” and starts saying 「什么现在做得了”, and the thing in the way is NAMED on
  * the row instead of being a mystery behind a click.
  */
-
-const HEADERS = { 'x-ctws-client': 'web' }
-
-async function openTree(page: Page, projectId: string) {
-  const listed = page.waitForResponse((r) => {
-    const url = new URL(r.url())
-    return (
-      r.request().method() === 'GET' &&
-      url.pathname === '/api/v1/tasks' &&
-      url.searchParams.get('projectId') === projectId
-    )
-  })
-  await page.goto(`/projects/${projectId}`)
-  await listed
-}
 
 const row = (page: Page, title: string) =>
   page
@@ -48,7 +33,7 @@ test('a blocked row names what is in the way, and finishing that frees it', asyn
   const ci = await makeTask(page, pid, '跑通 CI')
   const ship = await makeTask(page, pid, '发 v0.8.0')
   const dep = await page.request.post(`/api/v1/tasks/${ship}/dependencies`, {
-    headers: HEADERS,
+    headers: WEB,
     data: { blockerId: ci },
   })
   expect(dep.ok()).toBeTruthy()
@@ -125,7 +110,7 @@ test('a dependency is removed from the pane, and the row stops waiting', async (
   const ci = await makeTask(page, pid, '跑通 CI')
   const ship = await makeTask(page, pid, '发 v0.8.0')
   await page.request.post(`/api/v1/tasks/${ship}/dependencies`, {
-    headers: HEADERS,
+    headers: WEB,
     data: { blockerId: ci },
   })
   await openTree(page, pid)
@@ -148,7 +133,7 @@ test('the other end shows the edge too, and offers no way to undo it from there'
   const ci = await makeTask(page, pid, '跑通 CI')
   const ship = await makeTask(page, pid, '发 v0.8.0')
   await page.request.post(`/api/v1/tasks/${ship}/dependencies`, {
-    headers: HEADERS,
+    headers: WEB,
     data: { blockerId: ci },
   })
   await openTree(page, pid)
@@ -166,7 +151,7 @@ test('a loop is refused in words, not by silently doing nothing', async ({ page 
   const a = await makeTask(page, pid, '搭脚手架')
   const b = await makeTask(page, pid, '接上后端')
   await page.request.post(`/api/v1/tasks/${b}/dependencies`, {
-    headers: HEADERS,
+    headers: WEB,
     data: { blockerId: a },
   })
   await openTree(page, pid)

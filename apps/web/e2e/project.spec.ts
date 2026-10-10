@@ -1,5 +1,12 @@
 import { expect, test, type Page } from '@playwright/test'
-import { backdateProjectActivity, makeProject, makeTask, registerFreshUser } from './helpers'
+import {
+  backdateProjectActivity,
+  makeProject,
+  makeTask,
+  movementOf,
+  openDetail,
+  registerFreshUser,
+} from './helpers'
 
 /** The month names the app prints, so a spec can build the string the page will show. */
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -30,33 +37,9 @@ const WIDE = { width: 1440, height: 1000 }
 const MEDIUM = { width: 1024, height: 800 }
 const PHONE = { width: 375, height: 820 }
 const dueAgo = (n: number) => new Date(Date.now() - n * DAY).toISOString()
-
-type Movement = {
-  projectId: string
-  projectName: string
-  doneThisWeek: number
-  remaining: number
-  overdue: number
-  lastActivityOn: string | null
-  quietDays: number | null
-}
-
-const movementOf = async (page: Page): Promise<Movement[]> =>
-  ((await (await page.request.get('/api/v1/tasks/movement')).json()) as { projects: Movement[] })
-    .projects
-
 const header = (page: Page) =>
   page.getByRole('region', { name: 'Project at a glance', exact: true })
 const stat = (page: Page, label: string) => header(page).locator(`[data-stat="${label}"] dd`)
-
-/**
- * Opens a tree row's detail the keyboard way. A CLICK on the handle deliberately does not open it
- * (it starts a drag), so Enter on the focused handle is the way in.
- */
-async function openDetail(page: Page, title: string) {
-  await page.getByRole('button', { name: `Task: ${title}`, exact: true }).focus()
-  await page.keyboard.press('Enter')
-}
 
 // ------------------------------------------------------------------ the four numbers in the banner
 

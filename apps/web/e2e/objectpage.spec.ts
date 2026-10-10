@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { registerFreshUser } from './helpers'
+import { registerFreshUser, WEB } from './helpers'
 
 /**
  * ONE PAGE FOR EVERY KIND OF THING.
@@ -11,9 +11,8 @@ import { registerFreshUser } from './helpers'
  * that following a link from one lands on another.
  */
 
-const HEADERS = { 'x-ctws-client': 'web' }
 const post = async (page: Page, path: string, data: Record<string, unknown>) => {
-  const res = await page.request.post(`/api/v1${path}`, { headers: HEADERS, data })
+  const res = await page.request.post(`/api/v1${path}`, { headers: WEB, data })
   if (!res.ok()) throw new Error(`${path}: ${res.status()} ${await res.text()}`)
   return res.json() as Promise<Record<string, string>>
 }

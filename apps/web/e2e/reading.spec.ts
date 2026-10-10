@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { registerFreshUser } from './helpers'
+import { registerFreshUser, WEB } from './helpers'
 
 /**
  * 待读清单 -- THE SECOND MODULE, through the browser.
@@ -9,8 +9,6 @@ import { registerFreshUser } from './helpers'
  * edited to make room for any of them. The capture rule is the one that could not exist before --
  * with one module there was nothing to route to.
  */
-
-const HEADERS = { 'x-ctws-client': 'web' }
 
 const capture = (page: Page) => page.getByLabel('Capture')
 const rowOf = (page: Page, text: string) =>
@@ -44,7 +42,7 @@ test('a pasted link goes to 待读; a sentence still goes to the inbox', async (
 test('an untitled link is listed by its host, and can be given a name', async ({ page }) => {
   await registerFreshUser(page)
   await page.request.post('/api/v1/reading', {
-    headers: HEADERS,
+    headers: WEB,
     data: { kind: 'link', url: 'https://www.linear.app/now/how-we-redesigned-issues' },
   })
   await page.goto('/reading')
@@ -74,7 +72,7 @@ test('an untitled link is listed by its host, and can be given a name', async ({
 test('a book moves 待读 → 在读 → 读完, and the finished pile folds away', async ({ page }) => {
   await registerFreshUser(page)
   await page.request.post('/api/v1/reading', {
-    headers: HEADERS,
+    headers: WEB,
     data: { kind: 'book', title: '设计心理学', author: 'Don Norman' },
   })
   await page.goto('/reading')
@@ -99,11 +97,11 @@ test('a book moves 待读 → 在读 → 读完, and the finished pile folds awa
 test('the rail counts what is waiting, not the size of the pile', async ({ page }) => {
   await registerFreshUser(page)
   const add = (data: Record<string, unknown>) =>
-    page.request.post('/api/v1/reading', { headers: HEADERS, data })
+    page.request.post('/api/v1/reading', { headers: WEB, data })
   await add({ kind: 'book', title: '要读的' })
   const done = await (await add({ kind: 'book', title: '读过的' })).json()
   await page.request.patch(`/api/v1/reading/${done.id}`, {
-    headers: HEADERS,
+    headers: WEB,
     data: { status: 'done' },
   })
 
@@ -129,14 +127,14 @@ test('search reaches both modules from one box', async ({ page }) => {
   // The shell merges the providers; neither module knows the other is there. The dialog is named
   // “Search” and not 「搜索任务” for the same reason.
   await registerFreshUser(page)
-  const projects = await (await page.request.get('/api/v1/projects', { headers: HEADERS })).json()
+  const projects = await (await page.request.get('/api/v1/projects', { headers: WEB })).json()
   const inbox = projects.projects.find((p: { isInbox: boolean }) => p.isInbox)
   await page.request.post('/api/v1/tasks', {
-    headers: HEADERS,
+    headers: WEB,
     data: { projectId: inbox.id, title: '配色重做', parentId: null },
   })
   await page.request.post('/api/v1/reading', {
-    headers: HEADERS,
+    headers: WEB,
     data: { kind: 'book', title: '配色的书' },
   })
   await page.goto('/tasks/today')
@@ -153,14 +151,14 @@ test('a project page carries both modules, each with its own block and numbers',
 }) => {
   await registerFreshUser(page)
   const project = await (
-    await page.request.post('/api/v1/projects', { headers: HEADERS, data: { name: 'CTWS' } })
+    await page.request.post('/api/v1/projects', { headers: WEB, data: { name: 'CTWS' } })
   ).json()
   await page.request.post('/api/v1/tasks', {
-    headers: HEADERS,
+    headers: WEB,
     data: { projectId: project.id, title: '配色重做', parentId: null },
   })
   await page.request.post('/api/v1/reading', {
-    headers: HEADERS,
+    headers: WEB,
     data: {
       kind: 'link',
       url: 'https://example.com/a',

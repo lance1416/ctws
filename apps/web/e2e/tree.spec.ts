@@ -1,7 +1,14 @@
 import { expect, test, type Page } from '@playwright/test'
-import { openProject, registerFreshUser, submitCreate } from './helpers'
-
-const MOVE_URL = /\/tasks\/[^/]+\/move$/
+import {
+  MOVE_URL,
+  openProject,
+  recordMoves,
+  registerFreshUser,
+  seedTasks,
+  serverParents,
+  startProject,
+  submitCreate,
+} from './helpers'
 
 type RouteUrl = Parameters<Page['route']>[0]
 
@@ -22,22 +29,6 @@ function movePersisted(page: Page) {
   return page.waitForResponse((r) => MOVE_URL.test(r.url()) && r.ok())
 }
 
-/** Records every move request the page sends, so a test can assert that none was. */
-function recordMoves(page: Page) {
-  const moves: string[] = []
-  page.on('request', (r) => {
-    if (MOVE_URL.test(r.url())) moves.push(r.url())
-  })
-  return moves
-}
-
-async function startProject(page: Page) {
-  await page.getByRole('link', { name: 'Projects' }).click()
-  await submitCreate(page, 'New project', 'P')
-  await openProject(page, 'P', true)
-  return page.url()
-}
-
 /** Adds a root task through the new-task box and waits until it shows. */
 async function addTask(page: Page, title: string) {
   await submitCreate(page, 'New task', title)
@@ -51,35 +42,6 @@ async function seedProject(page: Page) {
   for (const title of ['one', 'two', 'three']) await addTask(page, title)
   await expect(page.getByRole('listitem')).toHaveCount(3)
   return url
-}
-
-/**
- * Builds a tree through the API (far faster than the UI) and reloads. `spec` lists titles with
- * the title of their parent, in creation order. Returns the ids by title.
- */
-async function seedTree(page: Page, url: string, spec: [title: string, parent: string | null][]) {
-  const projectId = url.split('/').pop()!
-  const ids = new Map<string, string>()
-  for (const [title, parent] of spec) {
-    const res = await page.request.post('/api/v1/tasks', {
-      headers: { 'x-ctws-client': 'web' },
-      data: { projectId, title, parentId: parent ? ids.get(parent)! : null },
-    })
-    expect(res.ok()).toBeTruthy()
-    ids.set(title, ((await res.json()) as { id: string }).id)
-  }
-  await page.goto(url)
-  await expect(page.getByRole('listitem')).toHaveCount(spec.length)
-  return ids
-}
-
-/** The server's view of the tree, as title -> parent title (null for a root). */
-async function serverParents(page: Page, url: string) {
-  const projectId = url.split('/').pop()!
-  const body = await (await page.request.get(`/api/v1/projects/${projectId}/tasks`)).json()
-  const tasks = body.tasks as { id: string; title: string; parentId: string | null }[]
-  const title = new Map(tasks.map((t) => [t.id, t.title]))
-  return Object.fromEntries(tasks.map((t) => [t.title, t.parentId ? title.get(t.parentId) : null]))
 }
 
 /** Drags one handle onto another with real pointer events. */
@@ -138,7 +100,7 @@ test('indenting makes a task the child of the row above and survives a reload', 
 test('outdenting makes a child a sibling of its parent', async ({ page }) => {
   await registerFreshUser(page)
   const url = await startProject(page)
-  await seedTree(page, url, [
+  await seedTasks(page, url, [
     ['one', null],
     ['two', 'one'],
     ['three', null],
@@ -249,7 +211,7 @@ test('a pointer drag up reorders the tree', async ({ page }) => {
 test('a pointer drag down lands after the whole block it is dropped on', async ({ page }) => {
   await registerFreshUser(page)
   const url = await startProject(page)
-  await seedTree(page, url, [
+  await seedTasks(page, url, [
     ['aa', null],
     ['bb', null],
     ['bkid', 'bb'],
@@ -272,7 +234,7 @@ test('a pointer drag down lands after the whole block it is dropped on', async (
 test('dragging a parent onto its own child is refused and sends no move', async ({ page }) => {
   await registerFreshUser(page)
   const url = await startProject(page)
-  await seedTree(page, url, [
+  await seedTasks(page, url, [
     ['pp', null],
     ['c1', 'pp'],
     ['c2', 'pp'],
@@ -293,7 +255,7 @@ test('dragging a parent onto its own child is refused and sends no move', async 
 test('Alt+Down moves a row with children past the whole next block', async ({ page }) => {
   await registerFreshUser(page)
   const url = await startProject(page)
-  await seedTree(page, url, [
+  await seedTasks(page, url, [
     ['mm', null],
     ['mkid', 'mm'],
     ['qq', null],
@@ -315,7 +277,7 @@ test('Alt+Down moves a row with children past the whole next block', async ({ pa
 test('Alt+Up past an expanded parent keeps the row at its own depth', async ({ page }) => {
   await registerFreshUser(page)
   const url = await startProject(page)
-  await seedTree(page, url, [
+  await seedTasks(page, url, [
     ['pa', null],
     ['qa', null],
     ['kid', 'qa'],
@@ -337,7 +299,7 @@ test('Alt+Up past an expanded parent keeps the row at its own depth', async ({ p
 test('Alt+Down past a collapsed sibling lands after it', async ({ page }) => {
   await registerFreshUser(page)
   const url = await startProject(page)
-  await seedTree(page, url, [
+  await seedTasks(page, url, [
     ['aa', null],
     ['bb', null],
     ['bkid', 'bb'],
@@ -365,7 +327,7 @@ test('Alt+Right under a collapsed row opens it and keeps the moved row visible',
 }) => {
   await registerFreshUser(page)
   const url = await startProject(page)
-  await seedTree(page, url, [
+  await seedTasks(page, url, [
     ['aa', null],
     ['akid', 'aa'],
     ['bb', null],
@@ -392,7 +354,7 @@ test('dragging a row right under a collapsed row opens it and keeps the row visi
 }) => {
   await registerFreshUser(page)
   const url = await startProject(page)
-  await seedTree(page, url, [
+  await seedTasks(page, url, [
     ['aa', null],
     ['akid', 'aa'],
     ['bb', null],
@@ -435,7 +397,7 @@ test('Alt+Up on the first row and Alt+Down on the last row do nothing', async ({
 test('collapsing hides the descendants and the fold survives a reload', async ({ page }) => {
   await registerFreshUser(page)
   const url = await startProject(page)
-  await seedTree(page, url, [
+  await seedTasks(page, url, [
     ['pa', null],
     ['kid', 'pa'],
   ])
@@ -478,7 +440,7 @@ test('a too-deep drop shows a message and sends no move', async ({ page }) => {
   const url = await startProject(page)
   const chain: [string, string | null][] = []
   for (let i = 1; i <= 10; i++) chain.push([`chain${i}`, i === 1 ? null : `chain${i - 1}`])
-  await seedTree(page, url, [...chain, ['xx', null], ['xkid', 'xx']])
+  await seedTasks(page, url, [...chain, ['xx', null], ['xkid', 'xx']])
   const moves = recordMoves(page)
 
   await dragOnto(page, 'xx', 'chain10')
@@ -560,7 +522,7 @@ test('a project created while the project list is still loading appears', async 
 test('a refused move puts the fold it opened back (D37)', async ({ page }) => {
   await registerFreshUser(page)
   const url = await startProject(page)
-  await seedTree(page, url, [
+  await seedTasks(page, url, [
     ['aa', null],
     ['akid', 'aa'],
     ['bb', null],

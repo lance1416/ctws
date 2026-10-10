@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { pickOne, registerFreshUser } from './helpers'
+import { pickOne, registerFreshUser, WEB } from './helpers'
 
 /**
  * 会议 -- the module's own destination, and the form that fills one in once.
@@ -10,7 +10,6 @@ import { pickOne, registerFreshUser } from './helpers'
  * route at all.
  */
 
-const HEADERS = { 'x-ctws-client': 'web' }
 const dialog = (page: Page) => page.getByRole('dialog', { name: 'New meeting' })
 const pane = (page: Page) => page.getByRole('dialog', { name: 'Meetings' })
 
@@ -34,11 +33,11 @@ test('the rail reaches meetings, and the page says when there are none', async (
 test('a meeting is filled in once: title, time, zone, repeat and the people', async ({ page }) => {
   await registerFreshUser(page)
   const project = await page.request.post('/api/v1/projects', {
-    headers: HEADERS,
+    headers: WEB,
     data: { name: 'Job hunt' },
   })
   const projectId = ((await project.json()) as { id: string }).id
-  await page.request.post('/api/v1/contacts', { headers: HEADERS, data: { name: 'Ying Chen' } })
+  await page.request.post('/api/v1/contacts', { headers: WEB, data: { name: 'Ying Chen' } })
 
   await page.goto('/meetings')
   await page.getByRole('button', { name: 'New meeting' }).click()
@@ -85,7 +84,7 @@ test('the list is grouped by day, and says what was agreed when that is not your
     ['Second interview', dayOffset(2), 'America/Toronto'],
   ]) {
     const res = await page.request.post('/api/v1/meetings', {
-      headers: HEADERS,
+      headers: WEB,
       data: {
         title,
         startsLocal: `${day}T14:00`,
@@ -113,7 +112,7 @@ test('a repeating meeting is one row, not one row per occurrence', async ({ page
   // BE the standup: the list answers which meetings there are, the calendar answers which day.
   await registerFreshUser(page)
   const res = await page.request.post('/api/v1/meetings', {
-    headers: HEADERS,
+    headers: WEB,
     data: {
       title: 'Standup',
       startsLocal: `${dayOffset(0)}T09:30`,
@@ -133,7 +132,7 @@ test('a repeating meeting is one row, not one row per occurrence', async ({ page
 test('what has already happened is behind a toggle, not in front of you', async ({ page }) => {
   await registerFreshUser(page)
   await page.request.post('/api/v1/meetings', {
-    headers: HEADERS,
+    headers: WEB,
     data: {
       title: 'Last week one-to-one',
       startsLocal: `${dayOffset(-7)}T14:00`,
@@ -175,7 +174,7 @@ test('a repeat can be given an end date, and the series really stops there', asy
 
   // And the server agrees: three Tuesdays, not a fourth.
   const got = await page.request.get('/api/v1/meetings?from=2026-11-01&to=2026-11-30', {
-    headers: HEADERS,
+    headers: WEB,
   })
   const days = ((await got.json()) as { meetings: { recurrenceId: string }[] }).meetings.map((m) =>
     m.recurrenceId.slice(0, 10),
@@ -186,7 +185,7 @@ test('a repeat can be given an end date, and the series really stops there', asy
 test('a meeting with a link can be joined from the list', async ({ page }) => {
   await registerFreshUser(page)
   await page.request.post('/api/v1/meetings', {
-    headers: HEADERS,
+    headers: WEB,
     data: {
       title: 'Standup',
       startsLocal: `${dayOffset(1)}T09:30`,
@@ -196,7 +195,7 @@ test('a meeting with a link can be joined from the list', async ({ page }) => {
     },
   })
   await page.request.post('/api/v1/meetings', {
-    headers: HEADERS,
+    headers: WEB,
     data: {
       title: 'In the room',
       startsLocal: `${dayOffset(1)}T14:00`,

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dayOffset } from './days'
-import { registerFreshUser } from './helpers'
+import { makeProject, makeTask, registerFreshUser, WEB } from './helpers'
 
 /**
  * 日程 -- the shell surface that is about every module at once.
@@ -10,44 +10,22 @@ import { registerFreshUser } from './helpers'
  * for what the date means, and the shell neither knows nor says which is which.
  */
 
-const HEADERS = { 'x-ctws-client': 'web' }
-
 const square = (page: Page, day: string) => page.locator(`[data-day="${day}"]`)
-
-async function project(page: Page, name: string): Promise<string> {
-  const res = await page.request.post('/api/v1/projects', { headers: HEADERS, data: { name } })
-  return ((await res.json()) as { id: string }).id
-}
-
-async function task(
-  page: Page,
-  projectId: string,
-  title: string,
-  patch: Record<string, unknown>,
-): Promise<string> {
-  const res = await page.request.post('/api/v1/tasks', {
-    headers: HEADERS,
-    data: { projectId, title, parentId: null },
-  })
-  const { id } = (await res.json()) as { id: string }
-  await page.request.patch(`/api/v1/tasks/${id}`, { headers: HEADERS, data: patch })
-  return id
-}
 
 async function book(page: Page, title: string, planOn: string): Promise<string> {
   const res = await page.request.post('/api/v1/reading', {
-    headers: HEADERS,
+    headers: WEB,
     data: { kind: 'book', title },
   })
   const { id } = (await res.json()) as { id: string }
-  await page.request.patch(`/api/v1/reading/${id}`, { headers: HEADERS, data: { planOn } })
+  await page.request.patch(`/api/v1/reading/${id}`, { headers: WEB, data: { planOn } })
   return id
 }
 
 test('both modules put their dated things on one grid', async ({ page }) => {
   await registerFreshUser(page, '/')
-  const pid = await project(page, 'CTWS')
-  await task(page, pid, '配色重做', { scheduledOn: dayOffset(1) })
+  const pid = await makeProject(page, 'CTWS')
+  await makeTask(page, pid, '配色重做', { scheduledOn: dayOffset(1) })
   await book(page, '设计心理学', dayOffset(2))
   await page.goto('/calendar')
 
@@ -59,8 +37,8 @@ test('one task with a plan and a deadline lands on two squares', async ({ page }
   // They are different facts about the same task, and a grid that showed one would silently drop
   // the other.
   await registerFreshUser(page, '/')
-  const pid = await project(page, 'CTWS')
-  await task(page, pid, '发版', {
+  const pid = await makeProject(page, 'CTWS')
+  await makeTask(page, pid, '发版', {
     scheduledOn: dayOffset(1),
     dueAt: `${dayOffset(4)}T09:00:00.000Z`,
   })
@@ -72,8 +50,8 @@ test('one task with a plan and a deadline lands on two squares', async ({ page }
 
 test('the view tabs show one module at a time', async ({ page }) => {
   await registerFreshUser(page, '/')
-  const pid = await project(page, 'CTWS')
-  await task(page, pid, '配色重做', { scheduledOn: dayOffset(1) })
+  const pid = await makeProject(page, 'CTWS')
+  await makeTask(page, pid, '配色重做', { scheduledOn: dayOffset(1) })
   await book(page, '设计心理学', dayOffset(1))
   await page.goto('/calendar')
 
@@ -92,9 +70,9 @@ test('the view tabs show one module at a time', async ({ page }) => {
 
 test('a crowded square says how many it is not showing', async ({ page }) => {
   await registerFreshUser(page, '/')
-  const pid = await project(page, 'CTWS')
+  const pid = await makeProject(page, 'CTWS')
   for (const title of ['一件', '二件', '三件', '四件', '五件']) {
-    await task(page, pid, title, { scheduledOn: dayOffset(1) })
+    await makeTask(page, pid, title, { scheduledOn: dayOffset(1) })
   }
   await page.goto('/calendar')
 
@@ -105,8 +83,8 @@ test('a crowded square says how many it is not showing', async ({ page }) => {
 
 test('the months step, and 本月 comes back', async ({ page }) => {
   await registerFreshUser(page, '/')
-  const pid = await project(page, 'CTWS')
-  await task(page, pid, '这个月的', { scheduledOn: dayOffset(1) })
+  const pid = await makeProject(page, 'CTWS')
+  await makeTask(page, pid, '这个月的', { scheduledOn: dayOffset(1) })
   await page.goto('/calendar')
   await expect(square(page, dayOffset(1))).toContainText('这个月的')
 
@@ -123,12 +101,12 @@ test('a finished thing leaves the grid, because the calendar is about what is ah
   page,
 }) => {
   await registerFreshUser(page, '/')
-  const pid = await project(page, 'CTWS')
-  const id = await task(page, pid, '做完的', { scheduledOn: dayOffset(1) })
+  const pid = await makeProject(page, 'CTWS')
+  const id = await makeTask(page, pid, '做完的', { scheduledOn: dayOffset(1) })
   await page.goto('/calendar')
   await expect(square(page, dayOffset(1))).toContainText('做完的')
 
-  await page.request.patch(`/api/v1/tasks/${id}`, { headers: HEADERS, data: { status: 'done' } })
+  await page.request.patch(`/api/v1/tasks/${id}`, { headers: WEB, data: { status: 'done' } })
   await page.reload()
   await expect(square(page, dayOffset(1))).not.toContainText('做完的')
 })

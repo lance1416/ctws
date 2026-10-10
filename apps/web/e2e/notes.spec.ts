@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { editDetail, makeProject, openProject, registerFreshUser } from './helpers'
+import { editDetail, makeProject, openProject, registerFreshUser, WEB } from './helpers'
 
 /**
  * MARKDOWN NOTES (D73): what renders, what is refused, and what is NOT downloaded.
@@ -12,16 +12,14 @@ import { editDetail, makeProject, openProject, registerFreshUser } from './helpe
  * `src/notes/markdown.test.tsx` settle the schema; these settle the page).
  */
 
-const HEADERS = { 'x-ctws-client': 'web' }
-
 async function makeNoted(page: Page, projectId: string, title: string, notes: string) {
   const res = await page.request.post('/api/v1/tasks', {
-    headers: HEADERS,
+    headers: WEB,
     data: { projectId, title, parentId: null },
   })
   expect(res.ok()).toBeTruthy()
   const id = ((await res.json()) as { id: string }).id
-  const p = await page.request.patch(`/api/v1/tasks/${id}`, { headers: HEADERS, data: { notes } })
+  const p = await page.request.patch(`/api/v1/tasks/${id}`, { headers: WEB, data: { notes } })
   expect(p.ok()).toBeTruthy()
   return id
 }

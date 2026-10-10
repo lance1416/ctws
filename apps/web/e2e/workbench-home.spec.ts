@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { registerFreshUser } from './helpers'
+import { makeProject, registerFreshUser, WEB } from './helpers'
 
 /**
  * 工作台 -- THE SHELL'S OWN FRONT PAGE.
@@ -9,14 +9,7 @@ import { registerFreshUser } from './helpers'
  * repeated what is already on a project page would make two places to keep in your head.
  */
 
-const HEADERS = { 'x-ctws-client': 'web' }
-
 const card = (page: Page, name: string) => page.getByRole('region', { name })
-
-async function project(page: Page, name: string): Promise<string> {
-  const res = await page.request.post('/api/v1/projects', { headers: HEADERS, data: { name } })
-  return ((await res.json()) as { id: string }).id
-}
 
 test('signing in lands on the workbench, not inside a module', async ({ page }) => {
   await registerFreshUser(page, '/')
@@ -30,13 +23,13 @@ test('signing in lands on the workbench, not inside a module', async ({ page }) 
 
 test('the 待读 card holds only what belongs to no project', async ({ page }) => {
   await registerFreshUser(page, '/')
-  const pid = await project(page, 'CTWS')
+  const pid = await makeProject(page, 'CTWS')
   await page.request.post('/api/v1/reading', {
-    headers: HEADERS,
+    headers: WEB,
     data: { kind: 'book', title: '散着的书' },
   })
   await page.request.post('/api/v1/reading', {
-    headers: HEADERS,
+    headers: WEB,
     data: { kind: 'book', title: '归了项目的书', projectId: pid },
   })
   await page.goto('/')
@@ -58,28 +51,27 @@ test('an item whose project was deleted turns up on the card rather than nowhere
   // Projects are soft-deleted, so without this the item would be absent from every project page
   // AND from the card -- in the database and on no screen.
   await registerFreshUser(page, '/')
-  const pid = await project(page, '要删掉的')
+  const pid = await makeProject(page, '要删掉的')
   await page.request.post('/api/v1/reading', {
-    headers: HEADERS,
+    headers: WEB,
     data: { kind: 'book', title: '留下来的书', projectId: pid },
   })
-  await page.request.delete(`/api/v1/projects/${pid}`, { headers: HEADERS })
+  await page.request.delete(`/api/v1/projects/${pid}`, { headers: WEB })
   await page.goto('/')
   await expect(card(page, 'Reading · unfiled')).toContainText('留下来的书')
 })
 
 test('the 正在做 card shows what is in progress, across projects', async ({ page }) => {
   await registerFreshUser(page, '/')
-  const a = await project(page, 'CTWS')
-  const b = await project(page, 'rrgen')
+  const a = await makeProject(page, 'CTWS')
+  const b = await makeProject(page, 'rrgen')
   const task = async (projectId: string, title: string, status?: string) => {
     const res = await page.request.post('/api/v1/tasks', {
-      headers: HEADERS,
+      headers: WEB,
       data: { projectId, title, parentId: null },
     })
     const { id } = (await res.json()) as { id: string }
-    if (status)
-      await page.request.patch(`/api/v1/tasks/${id}`, { headers: HEADERS, data: { status } })
+    if (status) await page.request.patch(`/api/v1/tasks/${id}`, { headers: WEB, data: { status } })
   }
   await task(a, '配色重做', 'in_progress')
   await task(b, '跑通 CI', 'in_progress')

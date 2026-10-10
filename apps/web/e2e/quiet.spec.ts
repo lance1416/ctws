@@ -4,9 +4,11 @@ import {
   makeProject,
   makeTask,
   openProject,
+  openTree,
   pickOne,
   registerFreshUser,
   submitCreate,
+  WEB,
 } from './helpers'
 
 /**
@@ -17,22 +19,6 @@ import {
  * it failed on, and pressing 保存 with nothing changed did nothing at all -- visibly nothing, so
  * the one person who pressed it could not tell whether it had worked.
  */
-
-const HEADERS = { 'x-ctws-client': 'web' }
-
-/** Waits for the project's task list, so a tree with no visible rows is still "arrived". */
-async function openTree(page: Page, projectId: string) {
-  const listed = page.waitForResponse((r) => {
-    const url = new URL(r.url())
-    return (
-      r.request().method() === 'GET' &&
-      url.pathname === '/api/v1/tasks' &&
-      url.searchParams.get('projectId') === projectId
-    )
-  })
-  await page.goto(`/projects/${projectId}`)
-  await listed
-}
 
 const row = (page: Page, title: string) =>
   page
@@ -229,7 +215,7 @@ test('a code fence is highlighted, and an unlabelled one is left alone', async (
   const pid = await makeProject(page, '改版')
   const id = await makeTask(page, pid, '写 rollup')
   const note = ['```ts', 'const a = 1', '```', '', '```', 'plain output 42', '```'].join('\n')
-  await page.request.patch(`/api/v1/tasks/${id}`, { headers: HEADERS, data: { notes: note } })
+  await page.request.patch(`/api/v1/tasks/${id}`, { headers: WEB, data: { notes: note } })
 
   await openTree(page, pid)
   await row(page, '写 rollup').click()
@@ -362,7 +348,7 @@ test('a finished task opens from the 已完成 list, where it could only be rest
   const pid = await makeProject(page, '改版')
   const id = await makeTask(page, pid, '写迁移')
   await page.request.patch(`/api/v1/tasks/${id}`, {
-    headers: HEADERS,
+    headers: WEB,
     data: { status: 'done', notes: '先问清需求' },
   })
 

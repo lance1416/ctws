@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { editDetail, openProject, registerFreshUser, submitCreate } from './helpers'
+import { editDetail, openProject, registerFreshUser, submitCreate, WEB } from './helpers'
 
 /** The month names the app prints, so a spec can build the string the page will show. */
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -145,15 +145,15 @@ test('a deadline inside the account day counts as today on another UTC date', as
   expect(utcDay(due), 'the instant must land on another UTC day').not.toBe(utcDay(new Date()))
 
   const project = await page.request.post('/api/v1/projects', {
-    headers: { 'x-ctws-client': 'web' },
+    headers: WEB,
     data: { name: 'Time zone' },
   })
   const made = await page.request.post('/api/v1/tasks', {
-    headers: { 'x-ctws-client': 'web' },
+    headers: WEB,
     data: { projectId: (await project.json()).id, title: '今天之内截止', parentId: null },
   })
   const patched = await page.request.patch(`/api/v1/tasks/${(await made.json()).id}`, {
-    headers: { 'x-ctws-client': 'web' },
+    headers: WEB,
     data: { dueAt: due.toISOString() },
   })
   expect(patched.ok()).toBe(true)

@@ -1,3 +1,4 @@
+import type { ProjectMovementResponse } from '@ctws/contracts'
 import { execFileSync } from 'node:child_process'
 import { expect, type Locator, type Page } from '@playwright/test'
 
@@ -233,3 +234,101 @@ export async function makeTask(
   }
   return id
 }
+
+/** The move endpoint. Tests that count writes to it share one spelling. */
+export const MOVE_URL = /\/tasks\/[^/]+\/move$/
+
+/** Records every move request the page sends, so a test can assert that none was. */
+export function recordMoves(page: Page): string[] {
+  const moves: string[] = []
+  page.on('request', (r) => {
+    if (MOVE_URL.test(r.url())) moves.push(r.url())
+  })
+  return moves
+}
+
+/**
+ * Opens a project's page and waits for the task LIST, not for a row: a project whose only task is
+ * finished renders no rows at all (the tree hides them, D48), and waiting for one would hang.
+ */
+export async function openTree(page: Page, projectId: string): Promise<void> {
+  const listed = page.waitForResponse((r) => {
+    const url = new URL(r.url())
+    return (
+      r.request().method() === 'GET' &&
+      url.pathname === '/api/v1/tasks' &&
+      url.searchParams.get('projectId') === projectId
+    )
+  })
+  await page.goto(`/projects/${projectId}`)
+  await listed
+}
+
+/** Makes a project THROUGH THE UI and lands on its page, for tests about that route in. */
+export async function startProject(page: Page, name = 'P'): Promise<string> {
+  await page.getByRole('link', { name: 'Projects' }).click()
+  await submitCreate(page, 'New project', name)
+  await openProject(page, name, true)
+  return page.url()
+}
+
+/**
+ * Builds a tree through the API, which is far faster than the UI. `spec` lists titles with the
+ * title of their parent, in creation order; `where` takes a project id or a project page's url.
+ * Returns the ids by title.
+ *
+ * Given a URL it then SHOWS that page and waits for every row: the rows were written behind the
+ * app's back, so a test that starts asserting before the reload is racing its own fixture.
+ */
+export async function seedTasks(
+  page: Page,
+  where: string,
+  spec: [title: string, parent: string | null][],
+): Promise<Map<string, string>> {
+  const isUrl = where.includes('/')
+  const projectId = isUrl ? where.split('/').pop()! : where
+  const ids = new Map<string, string>()
+  for (const [title, parent] of spec) {
+    ids.set(title, await makeTask(page, projectId, title, {}, parent ? ids.get(parent)! : null))
+  }
+  if (isUrl) {
+    await page.goto(where)
+    await expect(page.getByRole('listitem')).toHaveCount(spec.length)
+  }
+  return ids
+}
+
+/** The server's view of a project's tree, as title -> parent title (null for a root). */
+export async function serverParents(
+  page: Page,
+  where: string,
+): Promise<Record<string, string | null | undefined>> {
+  const projectId = where.includes('/') ? where.split('/').pop()! : where
+  const res = await page.request.get(`/api/v1/tasks?projectId=${projectId}`)
+  const { tasks } = (await res.json()) as {
+    tasks: { id: string; title: string; parentId: string | null }[]
+  }
+  const title = new Map(tasks.map((t) => [t.id, t.title]))
+  return Object.fromEntries(tasks.map((t) => [t.title, t.parentId ? title.get(t.parentId) : null]))
+}
+
+/**
+ * Opens a tree row's detail the keyboard way. A CLICK on the handle deliberately does not open it
+ * (it starts a drag), so Enter on the focused handle is the way in.
+ */
+export async function openDetail(page: Page, title: string): Promise<void> {
+  await page.getByRole('button', { name: `Task: ${title}`, exact: true }).focus()
+  await page.keyboard.press('Enter')
+}
+
+/** What the server reports for the Movement panel and the project banner, in its own words. */
+export async function movementOf(page: Page): Promise<ProjectMovementResponse[]> {
+  const res = await page.request.get('/api/v1/tasks/movement')
+  return ((await res.json()) as { projects: ProjectMovementResponse[] }).projects
+}
+
+/**
+ * The header every write from the app carries. The API refuses a write without it (the CSRF
+ * guard), so a test that posts over `page.request` has to send it too.
+ */
+export const WEB = { 'x-ctws-client': 'web' }

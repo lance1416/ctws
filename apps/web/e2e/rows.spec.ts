@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { makeProject, makeTask, registerFreshUser } from './helpers'
+import { makeProject, makeTask, registerFreshUser, WEB } from './helpers'
 import { dayOffset, nextMondayYmd, ymd } from './days'
 
 /** The month names the app prints, so a spec can build the string the page will show. */
@@ -28,7 +28,6 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
  * it" is the kind of claim that rots.
  */
 
-const HEADERS = { 'x-ctws-client': 'web' }
 const DAY = 86_400_000
 
 const dueAgo = (days: number) => new Date(Date.now() - days * DAY).toISOString()
@@ -298,7 +297,7 @@ test('逾期 says the project and how late; the same task in the queue says the 
   const twoDaysAgo = new Date(noon.getTime() - 2 * DAY)
   twoDaysAgo.setHours(12, 34, 0, 0)
   const res = await page.request.patch(`/api/v1/tasks/${id}`, {
-    headers: HEADERS,
+    headers: WEB,
     // A plan on another day too: the summary must not spend a line on it either.
     data: { dueAt: twoDaysAgo.toISOString(), scheduledOn: dayOffset(3) },
   })
@@ -336,7 +335,7 @@ test('逾期 says the project and how late; the same task in the queue says the 
   // The queue half, on the same task, in the same page, still unabridged: put it back in the queue
   // by moving the deadline to later today.
   const back = await page.request.patch(`/api/v1/tasks/${id}`, {
-    headers: HEADERS,
+    headers: WEB,
     data: { dueAt: noon.toISOString() },
   })
   expect(back.ok()).toBeTruthy()

@@ -1,10 +1,8 @@
 import { expect, test, type Page } from '@playwright/test'
-import { registerFreshUser } from './helpers'
+import { makeProject, makeTask, openDetail, registerFreshUser } from './helpers'
 
 // The three-pane workbench: the left rail's counts, the detail as a column rather than a layer,
 // and the one thing the narrow end of the range must never do.
-
-const HEADERS = { 'x-ctws-client': 'web' }
 
 const WIDE = { width: 1440, height: 900 }
 // 1024: the widest viewport that is still BELOW the 1280 threshold, so it is the case a
@@ -12,43 +10,7 @@ const WIDE = { width: 1440, height: 900 }
 const MEDIUM = { width: 1024, height: 800 }
 const PHONE = { width: 375, height: 667 }
 
-async function apiProject(page: Page, name: string): Promise<string> {
-  const res = await page.request.post('/api/v1/projects', { headers: HEADERS, data: { name } })
-  expect(res.ok()).toBeTruthy()
-  return ((await res.json()) as { id: string }).id
-}
-
-async function apiTask(
-  page: Page,
-  projectId: string,
-  title: string,
-  patch: Record<string, unknown> = {},
-): Promise<string> {
-  const res = await page.request.post('/api/v1/tasks', {
-    headers: HEADERS,
-    data: { projectId, title, parentId: null },
-  })
-  expect(res.ok()).toBeTruthy()
-  const id = ((await res.json()) as { id: string }).id
-  if (Object.keys(patch).length > 0) {
-    expect(
-      (await page.request.patch(`/api/v1/tasks/${id}`, { headers: HEADERS, data: patch })).ok(),
-    ).toBeTruthy()
-  }
-  return id
-}
-
 const rail = (page: Page) => page.getByRole('navigation', { name: 'Main navigation' })
-
-/**
- * Opens a tree row's detail the keyboard way. A CLICK on the handle deliberately does not open
- * it (it starts a drag), so Enter on the focused handle is the way in -- the same route
- * detail.spec.ts uses.
- */
-async function openDetail(page: Page, title: string) {
-  await page.getByRole('button', { name: `Task: ${title}`, exact: true }).focus()
-  await page.keyboard.press('Enter')
-}
 
 /** The box of an element, or null when it is not laid out. */
 async function box(page: Page, selector: string) {
@@ -68,9 +30,9 @@ test('the task detail is a coexisting pane at 1280 and up, and an overlay below 
   page,
 }) => {
   await registerFreshUser(page)
-  const pid = await apiProject(page, '面板')
-  await apiTask(page, pid, '被打开的任务')
-  await apiTask(page, pid, '旁边的任务')
+  const pid = await makeProject(page, '面板')
+  await makeTask(page, pid, '被打开的任务')
+  await makeTask(page, pid, '旁边的任务')
 
   // --- wide: a third column ---
   await page.setViewportSize(WIDE)
@@ -124,13 +86,13 @@ test('the left rail shows each project the open-task count the server reports', 
 }) => {
   await registerFreshUser(page)
   await page.setViewportSize(WIDE)
-  const quiet = await apiProject(page, '安静的')
-  const busy = await apiProject(page, '很忙的')
-  for (const t of ['一', '二', '三']) await apiTask(page, busy, t)
+  const quiet = await makeProject(page, '安静的')
+  const busy = await makeProject(page, '很忙的')
+  for (const t of ['一', '二', '三']) await makeTask(page, busy, t)
   // Three kinds of task that must NOT be counted, so a rail showing "4" fails.
-  await apiTask(page, busy, '做完了', { status: 'done' })
-  await apiTask(page, busy, '取消了', { status: 'cancelled' })
-  await apiTask(page, quiet, '也做完了', { status: 'done' })
+  await makeTask(page, busy, '做完了', { status: 'done' })
+  await makeTask(page, busy, '取消了', { status: 'cancelled' })
+  await makeTask(page, quiet, '也做完了', { status: 'done' })
 
   await page.goto('/tasks/today')
   const { projects } = (await (await page.request.get('/api/v1/projects')).json()) as {
@@ -155,7 +117,7 @@ test('the left rail shows each project the open-task count the server reports', 
   }
 
   // The 今天 destination carries its own count, from the same server list the page renders.
-  await apiTask(page, busy, '今天要做的', { scheduledOn: new Date().toLocaleDateString('en-CA') })
+  await makeTask(page, busy, '今天要做的', { scheduledOn: new Date().toLocaleDateString('en-CA') })
   await page.reload()
   await expect(rail(page).getByRole('link', { name: 'Today' }).locator('[data-count]')).toHaveText(
     '1',
@@ -167,13 +129,13 @@ test('the left rail shows each project the open-task count the server reports', 
 // unusable in a way that no amount of desktop polish makes up for.
 test('nothing scrolls sideways at 375px', async ({ page }) => {
   await registerFreshUser(page)
-  const pid = await apiProject(page, '一个名字相当长的项目用来挤宽度')
-  await apiTask(page, pid, '一条标题也很长的任务，用来看它会不会把这一行撑出屏幕之外去')
-  await apiTask(page, pid, '逾期的那条', { dueAt: '2020-01-01T09:00:00.000Z' })
+  const pid = await makeProject(page, '一个名字相当长的项目用来挤宽度')
+  await makeTask(page, pid, '一条标题也很长的任务，用来看它会不会把这一行撑出屏幕之外去')
+  await makeTask(page, pid, '逾期的那条', { dueAt: '2020-01-01T09:00:00.000Z' })
   // LONG, and in progress: the 正在做 banner sets its subject at the scale's top step (36/44), so a
   // five-character title there fits 375 whatever the banner does with overflow and proves nothing.
   // Measured: with a short title this test passes even when the subject is told never to wrap.
-  await apiTask(page, pid, '在做的那条，标题长到足以把三十六像素的横幅主语挤出一部手机的宽度去', {
+  await makeTask(page, pid, '在做的那条，标题长到足以把三十六像素的横幅主语挤出一部手机的宽度去', {
     status: 'in_progress',
   })
 
@@ -210,8 +172,8 @@ test('nothing scrolls sideways at 375px', async ({ page }) => {
  */
 test('the detail pane does not trap the keyboard at 1280 and up', async ({ page }) => {
   await registerFreshUser(page)
-  const pid = await apiProject(page, '不困住')
-  await apiTask(page, pid, '开着的任务')
+  const pid = await makeProject(page, '不困住')
+  await makeTask(page, pid, '开着的任务')
 
   await page.setViewportSize(WIDE)
   await page.goto(`/projects/${pid}`)

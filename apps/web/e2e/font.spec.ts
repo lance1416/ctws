@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { registerFreshUser } from './helpers'
+import { registerFreshUser, WEB } from './helpers'
 
 /**
  * The self-hosted CJK webfont, and the caching that makes it a one-time cost.
@@ -106,7 +106,7 @@ test('Chinese is painted with the shipped subset, not a system fallback', async 
   // NAME still can -- the font has to cover what the person types, which is the thing this test
   // is really about.
   const made = await page.request.post('/api/v1/projects', {
-    headers: { 'x-ctws-client': 'web' },
+    headers: WEB,
     data: { name: '配色重做' },
   })
   expect(made.ok()).toBe(true)

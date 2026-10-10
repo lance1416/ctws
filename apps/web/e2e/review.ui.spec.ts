@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { registerFreshUser } from './helpers'
+import { registerFreshUser, WEB } from './helpers'
 
 /**
  * 回顾 -- the page that answers "how did the week go".
@@ -9,11 +9,10 @@ import { registerFreshUser } from './helpers'
  * pushed to the far side, two halves of one idea dressed as two unrelated things; and one column
  * of short lists left two thirds of the width empty.
  */
-const HEADERS = { 'x-ctws-client': 'web' }
 
 async function seed(page: Page) {
   const made = await page.request.post('/api/v1/projects', {
-    headers: HEADERS,
+    headers: WEB,
     data: { name: 'Job hunt' },
   })
   const projectId = ((await made.json()) as { id: string }).id
@@ -24,11 +23,11 @@ async function seed(page: Page) {
     ['Rework the rail', 'cancelled'],
   ]) {
     const t = await page.request.post('/api/v1/tasks', {
-      headers: HEADERS,
+      headers: WEB,
       data: { projectId, title, parentId: null },
     })
     await page.request.patch(`/api/v1/tasks/${((await t.json()) as { id: string }).id}`, {
-      headers: HEADERS,
+      headers: WEB,
       data: { status },
     })
   }

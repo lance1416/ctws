@@ -1,15 +1,13 @@
 import { expect, test, type Page } from '@playwright/test'
-import { makeProject, makeTask, registerFreshUser } from './helpers'
+import { makeProject, makeTask, registerFreshUser, WEB } from './helpers'
 
 /**
  * 我做了什么 — the third v1 view. What it has to prove over 已完成 is that it reports what
  * HAPPENED, not what is true now.
  */
 
-const HEADERS = { 'x-ctws-client': 'web' }
-
 const setStatus = (page: Page, id: string, status: string) =>
-  page.request.patch(`/api/v1/tasks/${id}`, { headers: HEADERS, data: { status } })
+  page.request.patch(`/api/v1/tasks/${id}`, { headers: WEB, data: { status } })
 
 const project = (page: Page, name: string) => page.getByRole('region', { name })
 
