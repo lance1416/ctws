@@ -150,6 +150,11 @@ test('a note cannot smuggle a script, a handler, a javascript: link or an iframe
   await seedNote(page, INJECTIONS.join('\n\n'))
   const notes = notesBlock(page)
   await expect(notes).toBeVisible()
+  // AND WAIT FOR THE PIPELINE. Until the Markdown chunk arrives, `NoteBody`'s fallback is the
+  // note's own characters as plain text -- which contains no script, no handler and no iframe
+  // either, so every assertion below is already true on that frame, before anything has been
+  // sanitised. This wrapper is `NoteMarkdown`'s own: it exists only once the pipeline has run.
+  await expect(notes.locator('[data-note-md]')).toBeVisible()
 
   // Nothing executed, and nothing that could execute is in the tree.
   expect(await page.evaluate(() => (window as unknown as { __xss?: string }).__xss)).toBeUndefined()
@@ -164,8 +169,13 @@ test('a note cannot smuggle a script, a handler, a javascript: link or an iframe
   // The one rule that is about the PAGE and not the subtree: a `<style>` in a note that survived
   // would style everything, so the body must still be visible.
   await expect(page.locator('body')).toBeVisible()
-  // The note is still readable -- sanitising is not blanking.
-  await expect(notes).toContainText('一段原始 HTML')
+  // Sanitising is not blanking: the `javascript:` link keeps its words and loses only its href.
+  await expect(notes).toContainText('点我')
+  // Raw HTML never reaches the sanitiser: with no `rehype-raw`, `mdast-util-to-hast` drops the
+  // `html` node. A div on its own line is a BLOCK, so its tags and the words between them are ONE
+  // node and go together -- unlike inline `<b>x</b>`, whose text stays as prose. Both are pinned
+  // in `markdown.test.tsx`; this is the same rule seen from the page.
+  await expect(notes).not.toContainText('一段原始 HTML')
 
   // Measured on the DOM rather than on a screenshot: no attribute anywhere under the note begins
   // with `on`, whatever its spelling.

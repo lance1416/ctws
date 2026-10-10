@@ -215,7 +215,10 @@ function Section({
                 {/* And what was actually AGREED, when that is not your clock: "09:30 London" is
                     what the other people in the room said, and it is not 04:30 anywhere. */}
                 {m.timeZone !== accountZone && (
-                  <span className="min-w-0 shrink truncate text-xs text-fg-subtle">
+                  <span
+                    data-meeting-zone
+                    className="min-w-0 shrink truncate text-xs text-fg-subtle"
+                  >
                     {m.startsLocal.slice(11)} {zoneLabel(m.timeZone)}
                   </span>
                 )}

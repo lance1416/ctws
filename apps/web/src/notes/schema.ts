@@ -7,8 +7,9 @@ import { defaultSchema, type Options as SanitizeSchema } from 'rehype-sanitize'
  * TWO LINES OF DEFENCE, AND WHY BOTH EXIST.
  *
  * 1. `react-markdown` is configured WITHOUT `rehype-raw`, so an HTML tag in the source is never
- *    parsed as HTML at all -- `<img onerror=...>` arrives at the renderer as a TEXT node and is
- *    printed as the characters the author typed. That is the primary defence, and it is structural.
+ *    parsed as HTML at all: `mdast-util-to-hast` drops the `html` node, tags and all. `<img
+ *    onerror=...>` leaves nothing behind, and `<b onmouseover=...>x</b>` leaves `x` as prose.
+ *    That is the primary defence, and it is structural (measured in `markdown.test.tsx`).
  * 2. This schema is the second. It is not redundant: the day someone adds `rehype-raw` (to let a
  *    note use `<kbd>` or a `<details>` block, say) defence 1 evaporates in one line and this is
  *    the only thing left. It is also what constrains the parts of the pipeline that DO synthesise

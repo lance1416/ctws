@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { dayOffset } from './days'
 import { pickOne, registerFreshUser, WEB } from './helpers'
 
 /**
@@ -12,12 +13,6 @@ import { pickOne, registerFreshUser, WEB } from './helpers'
 
 const dialog = (page: Page) => page.getByRole('dialog', { name: 'New meeting' })
 const pane = (page: Page) => page.getByRole('dialog', { name: 'Meetings' })
-
-/** Today and tomorrow in the account's own zone, which is what the page groups by. */
-function dayOffset(n: number): string {
-  const d = new Date(Date.now() + n * 86_400_000)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
 
 test('the rail reaches meetings, and the page says when there are none', async ({ page }) => {
   await registerFreshUser(page)
@@ -75,13 +70,25 @@ test('a meeting is filled in once: title, time, zone, repeat and the people', as
   await expect(pane(page)).toContainText('Second interview')
 })
 
+/**
+ * THE AGREED ZONE IS THE HALF THAT IS NOT YOUR CLOCK, so the row carries it only when the
+ * meeting's zone is not the account's, and the account's zone is the runner's (see `days.ts`).
+ * Both halves are seeded: one meeting agreed HERE, one agreed where the runner is not. Written
+ * down as `UTC`, the second half was a label only on a machine outside UTC -- true of every
+ * machine this suite had run on, and false on CI's.
+ */
+const HERE = Intl.DateTimeFormat().resolvedOptions().timeZone
+const ELSEWHERE = ['America/Toronto', 'Asia/Tokyo'].find((z) => z !== HERE)!
+/** The half of an IANA name a reader knows, the way `zoneLabel` prints it. */
+const ELSEWHERE_CITY = ELSEWHERE.slice(ELSEWHERE.indexOf('/') + 1).replace(/_/g, ' ')
+
 test('the list is grouped by day, and says what was agreed when that is not your clock', async ({
   page,
 }) => {
   await registerFreshUser(page)
   for (const [title, day, zone] of [
-    ['Standup', dayOffset(0), 'UTC'],
-    ['Second interview', dayOffset(2), 'America/Toronto'],
+    ['Standup', dayOffset(0), HERE],
+    ['Second interview', dayOffset(2), ELSEWHERE],
   ]) {
     const res = await page.request.post('/api/v1/meetings', {
       headers: WEB,
@@ -100,10 +107,13 @@ test('the list is grouped by day, and says what was agreed when that is not your
   await expect(coming).toBeVisible()
   // The nearest day is named Today; the rest carry their date.
   await expect(coming.getByRole('heading', { level: 3 }).first()).toHaveText('Today')
-  // The row leads with YOUR clock and then says what was agreed, which is the half that is not
-  // your clock. Asserted on the agreed string, because the runner's own zone is not fixed.
-  await expect(coming).toContainText('14:00 Toronto')
-  await expect(coming).toContainText('14:00 UTC')
+  // The row leads with YOUR clock, and then says what was agreed -- when that is somewhere else.
+  const row = (title: string) => coming.locator('[data-meeting-row]').filter({ hasText: title })
+  await expect(row('Second interview').locator('[data-meeting-zone]')).toContainText(
+    `14:00 ${ELSEWHERE_CITY}`,
+  )
+  // And says nothing twice: a meeting agreed in your own zone is the clock already on the row.
+  await expect(row('Standup').locator('[data-meeting-zone]')).toHaveCount(0)
   await expect(coming.locator('[data-meeting-row]')).toHaveCount(2)
 })
 
