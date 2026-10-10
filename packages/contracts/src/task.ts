@@ -388,6 +388,18 @@ export const completedTaskResponse = taskResponse
   .strict()
 export type CompletedTaskResponse = z.infer<typeof completedTaskResponse>
 
+/**
+ * The finished list, and whether it is ALL of it.
+ *
+ * The list is capped -- it answers "what did I do lately", and the archive is the weekly review,
+ * which takes any window. `truncated` is how the page can say so instead of letting the oldest
+ * day simply stop, which reads as work that went missing.
+ */
+export const completedResponse = z
+  .object({ tasks: z.array(completedTaskResponse), truncated: z.boolean() })
+  .strict()
+export type CompletedResponse = z.infer<typeof completedResponse>
+
 // ---- Movement ----
 
 /**

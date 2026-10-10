@@ -41,7 +41,7 @@ export function Completed({ heading: showHeading = true }: { heading?: boolean }
   const heading = useRef<HTMLHeadingElement>(null)
   const actions = useTaskActions(() => {})
 
-  const rows = completed.data ?? []
+  const rows = completed.data?.tasks ?? []
   const openTask = rows.find((t) => t.id === openId)
   const days: { day: string; tasks: CompletedTaskResponse[] }[] = []
   for (const t of rows) {
@@ -131,8 +131,15 @@ export function Completed({ heading: showHeading = true }: { heading?: boolean }
           </ul>
         </section>
       ))}
-      {rows.length >= 200 && (
-        <p className="mt-8 text-sm text-fg-muted">Showing the 200 most recently finished</p>
+      {/* THE SERVER SAYS WHETHER THIS IS ALL OF IT. Counting the rows against a 200 written on
+          this side duplicates the server's limit and gets it wrong in both directions: it lies
+          when exactly 200 tasks have ever been finished, and goes quiet if the server's cap ever
+          changes. And it names where the rest is, because it is not lost -- Review takes any
+          week and has no cap. */}
+      {completed.data?.truncated && (
+        <p className="mt-8 text-sm text-fg-muted">
+          Showing the most recent {rows.length}. Older work is in Review, week by week.
+        </p>
       )}
       {openTask && (
         <TaskDetail

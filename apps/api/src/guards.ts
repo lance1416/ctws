@@ -1,3 +1,4 @@
+import type { Problem } from '@ctws/contracts'
 import fastifyCors from '@fastify/cors'
 import fastifyRateLimit from '@fastify/rate-limit'
 import type { FastifyInstance, onRequestHookHandler } from 'fastify'
@@ -22,6 +23,32 @@ export async function registerGuards(app: FastifyInstance): Promise<void> {
     credentials: true,
     allowedHeaders: ['content-type', CSRF_HEADER],
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+  })
+
+  /**
+   * EVERY REFUSAL IS RFC 9457, including the ones a plugin writes itself.
+   *
+   * `@fastify/cors` answers a malformed preflight -- an OPTIONS with no
+   * `Access-Control-Request-Method` -- from inside its own hook, with
+   * `400 text/plain: Invalid Preflight Request`. It never reaches the error handler, so it was
+   * the one error in this API a client could not parse the way it parses every other one.
+   *
+   * Rewritten on the way OUT rather than by relaxing the plugin: a preflight without a method is
+   * malformed and 400 is the right answer. Only the envelope was wrong.
+   */
+  app.addHook('onSend', async (_req, reply, payload) => {
+    const type = reply.getHeader('content-type')
+    if (reply.statusCode < 400 || typeof type !== 'string' || !type.startsWith('text/plain')) {
+      return payload
+    }
+    reply.type('application/problem+json')
+    const problem: Problem = {
+      type: 'about:blank',
+      title: reply.statusCode === 400 ? 'Bad Request' : 'Error',
+      status: reply.statusCode,
+      ...(typeof payload === 'string' && payload ? { detail: payload } : {}),
+    }
+    return JSON.stringify(problem)
   })
 
   /**

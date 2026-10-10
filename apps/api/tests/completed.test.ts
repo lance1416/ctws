@@ -23,15 +23,17 @@ type Row = {
   completedOn: string
   completedAt: string
 }
-async function completed(ctx: Ctx): Promise<Row[]> {
+async function body(ctx: Ctx): Promise<{ tasks: Row[]; truncated: boolean }> {
   const res = await ctx.app.inject({
     method: 'GET',
     url: '/api/v1/tasks/completed',
     headers: ctx.authed,
   })
   expect(res.statusCode).toBe(200)
-  return res.json().tasks as Row[]
+  return res.json() as { tasks: Row[]; truncated: boolean }
 }
+
+const completed = async (ctx: Ctx): Promise<Row[]> => (await body(ctx)).tasks
 
 /** Finishes through the real API (so completed_at is set by the service), then pins the instant. */
 async function finish(ctx: Ctx, id: string, at: string) {
@@ -143,5 +145,40 @@ describe('GET /completed', () => {
     })
     expect(res.json().tasks).toEqual([])
     expect(await completed(ctx)).toHaveLength(1)
+  })
+})
+
+/**
+ * WHETHER THIS IS ALL OF IT (D56).
+ *
+ * The list is capped: it answers "what did I do lately", and the archive is the weekly review,
+ * which takes any window. `truncated` is the server saying so, instead of the page counting rows
+ * against a limit written on the client -- which lies when exactly the limit has been finished
+ * and goes quiet the day the limit changes.
+ */
+describe('the finished list says whether it is complete', () => {
+  it('reports truncated only once there is more than it returns', async () => {
+    const ctx = await setup()
+    const pid = await createProject(ctx, 'P')
+    // One under the cap: a full page that happens to be the whole history is NOT truncated.
+    await ctx.db.execute(sql`
+      insert into tasks (id, project_id, title, status, rank, completed_at)
+      select gen_random_uuid(), ${pid}, 't' || g, 'done', 'a' || g, now() - (g || ' minutes')::interval
+      from generate_series(1, 200) g
+    `)
+    const full = await body(ctx)
+    expect(full.tasks).toHaveLength(200)
+    expect(full.truncated).toBe(false)
+
+    // One more, and the answer says there is more than it shows.
+    await ctx.db.execute(sql`
+      insert into tasks (id, project_id, title, status, rank, completed_at)
+      values (gen_random_uuid(), ${pid}, 'one more', 'done', 'b', now() - interval '500 minutes')
+    `)
+    const capped = await body(ctx)
+    expect(capped.tasks).toHaveLength(200)
+    expect(capped.truncated).toBe(true)
+    // The cap drops the OLDEST, so the extra row is the one missing.
+    expect(capped.tasks.map((t) => t.title)).not.toContain('one more')
   })
 })

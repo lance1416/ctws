@@ -11,6 +11,7 @@ import Fastify, {
 import {
   hasZodFastifySchemaValidationErrors,
   jsonSchemaTransform,
+  jsonSchemaTransformObject,
   serializerCompiler,
   validatorCompiler,
   type ZodTypeProvider,
@@ -21,6 +22,7 @@ import { movedRoutes } from './compat'
 import { warmDummyHash } from './auth/service'
 import type { Db } from './db/client'
 import type { Env } from './env'
+import { documentRefusals } from './openapi'
 import { registerGuards } from './guards'
 import { linkRoutes } from './links/routes'
 import { sendProblem } from './problem'
@@ -47,6 +49,11 @@ export async function buildApp(opts: { env: Env; db: Db }): Promise<FastifyInsta
   await app.register(fastifySwagger, {
     openapi: { info: { title: 'CTWS API', version: '1' } },
     transform: jsonSchemaTransform,
+    // Every refusal this API makes is one shape, so the document says it ONCE and every
+    // operation points at it. Written as a post-pass rather than on each route: the statuses
+    // below are true of every route by construction (the auth hook, the validator, the
+    // limiter), and repeating them on forty routes is forty chances to leave one out.
+    transformObject: (spec) => documentRefusals(jsonSchemaTransformObject(spec)),
   })
 
   // CORS, CSRF and rate limiting; must precede the routes they guard.

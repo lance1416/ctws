@@ -3,6 +3,7 @@ import {
   blockersResponse,
   calendarEntriesResponse,
   calendarQuery,
+  completedResponse,
   completedTaskResponse,
   createTaskBody,
   dependencyLists,
@@ -206,12 +207,12 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
     '/completed',
     {
       preHandler: requireUser,
-      schema: { response: { 200: z.object({ tasks: z.array(completedTaskResponse) }).strict() } },
+      schema: { response: { 200: completedResponse } },
     },
     async (req) => {
       const user = authedUser(req)
-      const rows = await listCompleted(app.db, user.workspaceId, user.timezone)
-      return { tasks: rows.map(toCompletedResponse) }
+      const { tasks, truncated } = await listCompleted(app.db, user.workspaceId, user.timezone)
+      return { tasks: tasks.map(toCompletedResponse), truncated }
     },
   )
 

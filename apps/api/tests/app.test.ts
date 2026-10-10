@@ -64,3 +64,41 @@ describe('app', () => {
     await validationApp.close()
   })
 })
+
+/**
+ * THE DOCUMENT DESCRIBES THE REFUSALS TOO (D18).
+ *
+ * Every error is RFC 9457 problem details, and the document used to say that nowhere:
+ * `components.schemas` was empty and no operation listed one error response. The statuses are
+ * derived from how the app is built (`openapi.ts`), so they cannot drift route by route.
+ */
+describe('the OpenAPI document', () => {
+  it('defines the problem shape once and points every operation at it', async () => {
+    const res = await ctx.app.inject({ method: 'GET', url: '/api/v1/openapi.json' })
+    const doc = res.json() as {
+      components: { schemas: Record<string, { properties?: Record<string, unknown> }> }
+      paths: Record<string, Record<string, { responses: Record<string, unknown> }>>
+    }
+
+    expect(Object.keys(doc.components.schemas)).toContain('Problem')
+    expect(Object.keys(doc.components.schemas.Problem!.properties ?? {})).toEqual([
+      'type',
+      'title',
+      'status',
+      'detail',
+    ])
+
+    const ref = (path: string, method: string, status: string) =>
+      JSON.stringify(doc.paths[path]?.[method]?.responses[status] ?? null)
+
+    // Authenticated, takes a body: both a 400 and a 401, each pointing at the one schema.
+    expect(ref('/api/v1/tasks/', 'post', '401')).toContain('#/components/schemas/Problem')
+    expect(ref('/api/v1/tasks/', 'post', '400')).toContain('application/problem+json')
+    // Rate-limited and public: a 429, and NO 401 -- nobody needs a session to be refused here.
+    expect(ref('/api/v1/auth/login', 'post', '429')).toContain('#/components/schemas/Problem')
+    expect(ref('/api/v1/auth/login', 'post', '401')).toBe('null')
+    // Public and takes nothing: no error responses invented for it.
+    expect(ref('/api/v1/health', 'get', '400')).toBe('null')
+    expect(ref('/api/v1/health', 'get', '401')).toBe('null')
+  })
+})

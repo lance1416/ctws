@@ -10,7 +10,13 @@ export type CompletedTask = Task & {
   completedOn: string
 }
 
-/** Newest 200 finished tasks. No paging: this is a "what did I do lately" list, not an archive. */
+/**
+ * Newest 200 finished tasks. No paging: this is a "what did I do lately" list, and the archive is
+ * the weekly review, which takes any window and has no cap.
+ *
+ * ONE ROW MORE IS FETCHED THAN IS RETURNED, so the answer can say whether it is complete. A list
+ * that silently stops at its own limit tells the reader their older work is gone.
+ */
 const COMPLETED_LIMIT = 200
 
 /**
@@ -29,7 +35,7 @@ export async function listCompleted(
   q: Queryable,
   workspaceId: string,
   timezone: string,
-): Promise<CompletedTask[]> {
+): Promise<{ tasks: CompletedTask[]; truncated: boolean }> {
   const result = await q.execute(sql`
     select
       t.id, t.project_id, t.parent_id, t.title, t.notes, t.status,
@@ -48,9 +54,13 @@ export async function listCompleted(
       and t.status = 'done'
       and t.completed_at is not null
     order by t.completed_at desc, t.id
-    limit ${COMPLETED_LIMIT}
+    limit ${COMPLETED_LIMIT + 1}
   `)
-  return (result.rows as Record<string, unknown>[]).map(rowToCompletedTask)
+  const rows = result.rows as Record<string, unknown>[]
+  return {
+    tasks: rows.slice(0, COMPLETED_LIMIT).map(rowToCompletedTask),
+    truncated: rows.length > COMPLETED_LIMIT,
+  }
 }
 
 function rowToCompletedTask(r: Record<string, unknown>): CompletedTask {

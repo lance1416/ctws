@@ -540,9 +540,18 @@ describe('guards that must not be silently dropped', () => {
   })
 })
 
-// Spec 9.5. A deferred trigger fails the transaction at COMMIT, i.e. after every statement in it
-// (mutation and events) has already run. If an event were written outside the mutation's
-// transaction it would be committed independently and survive; inside it, everything rolls back.
+/**
+ * SPEC 9.5: the event and the change it describes are one transaction.
+ *
+ * Two tests, pointing in OPPOSITE directions, because either alone is passed by an implementation
+ * that writes the event after the commit (D29):
+ *
+ * 1. A deferred trigger fails the transaction at COMMIT -- after every statement in it has run.
+ *    An event written outside would be committed independently and survive.
+ * 2. The EVENT INSERT ITSELF fails. This is the direction the first one cannot see: an
+ *    append-after-commit implementation has already committed the task change by then, so the
+ *    change survives a failed event. Inside one transaction, the change goes with it.
+ */
 describe('event and mutation share one transaction', () => {
   async function failAtCommit(ctx: TaskCtx) {
     await ctx.db.execute(
@@ -571,6 +580,34 @@ describe('event and mutation share one transaction', () => {
     expect(res.statusCode).toBe(500)
 
     expect((await rowOf(ctx, id)).status).toBe('todo')
+    expect((await eventsOf(ctx, id)).map((e) => e.type)).toEqual(['created'])
+  })
+
+  it('rolls back the CHANGE when writing its event fails', async () => {
+    const ctx = await setup()
+    const projectId = await createProject(ctx, 'P')
+    const id = await createTask(ctx, projectId, 'before')
+    // Fails the moment a title_changed event is inserted -- an ordinary immediate trigger, so it
+    // raises DURING the mutation's transaction rather than at commit.
+    await ctx.db.execute(
+      sql.raw(`
+        create function refuse_event() returns trigger language plpgsql as
+          $$ begin raise exception 'forced event failure'; end $$
+      `),
+    )
+    await ctx.db.execute(
+      sql.raw(`
+        create trigger refuse_event before insert on task_events for each row
+          when (new.type = 'title_changed') execute function refuse_event()
+      `),
+    )
+
+    expect((await patch(ctx, id, { title: 'after' })).statusCode).toBe(500)
+
+    // THE TITLE DID NOT CHANGE. If the event were appended after the commit, the rename would
+    // already be durable and this would read 'after' with no event to show for it.
+    const titles = await ctx.db.execute(sql`select title from tasks where id = ${id}`)
+    expect(titles.rows[0]).toMatchObject({ title: 'before' })
     expect((await eventsOf(ctx, id)).map((e) => e.type)).toEqual(['created'])
   })
 

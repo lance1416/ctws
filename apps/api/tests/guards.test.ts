@@ -234,3 +234,35 @@ describe('requiresCsrfHeader', () => {
     expect(requiresCsrfHeader(method)).toBe(true)
   })
 })
+
+/**
+ * EVERY REFUSAL THIS API MAKES IS RFC 9457 (D11).
+ *
+ * `@fastify/cors` answers a malformed preflight from inside its own hook, in `text/plain`, so it
+ * never reaches the error handler -- it was the one error path a client could not parse the way
+ * it parses the others. The status is right (a preflight with no requested method IS malformed);
+ * only the envelope was wrong.
+ */
+describe('problem details, on every path', () => {
+  let ctx: Awaited<ReturnType<typeof withApp>>
+  beforeAll(async () => {
+    ctx = await withApp({ corsOrigins: [ORIGIN] })
+  }, 120_000)
+  afterAll(async () => {
+    await ctx?.stop()
+  })
+
+  it('answers a malformed preflight in problem+json, not text/plain', async () => {
+    const res = await ctx.app.inject({ method: 'OPTIONS', url: '/api/v1/auth/login' })
+    expect(res.statusCode).toBe(400)
+    expect(res.headers['content-type']).toContain('application/problem+json')
+    expect(res.json()).toMatchObject({ status: 400, title: 'Bad Request' })
+  })
+
+  it('leaves an ordinary response alone', async () => {
+    const res = await ctx.app.inject({ method: 'GET', url: '/api/v1/health' })
+    expect(res.statusCode).toBe(200)
+    expect(res.headers['content-type']).toContain('application/json')
+    expect(res.json()).toMatchObject({ status: 'ok' })
+  })
+})

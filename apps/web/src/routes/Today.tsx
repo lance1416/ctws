@@ -291,7 +291,7 @@ export function Today() {
   const overdue = prepare(rows.filter((t) => t.segment === 'overdue'))
   const queueLead = leadSlotOf(queue)
   const overdueLead = leadSlotOf(overdue)
-  const doneToday = (completed.data ?? []).filter((t) => t.completedOn === localToday)
+  const doneToday = (completed.data?.tasks ?? []).filter((t) => t.completedOn === localToday)
   const movementRows = (movement.data ?? []).filter(hasMovement)
   // The right column renders only what has something to say. An empty column at 1440 would be
   // the very dead space the panel grid exists to remove, so when there is nothing for it the
