@@ -22,7 +22,7 @@ export type SearchTask = Task & {
  *   - **done and cancelled tasks are searched.** "What did I do / where did I get to" is half the
  *     reason this app exists, and every result carries its status, so a finished match is never
  *     mistaken for live work. Excluding them would make a remembered task unfindable, which is
- *     the exact complaint search is here to answer.
+ *     what search exists to prevent.
  *   - **archived projects are searched**, on the same reasoning the completed view uses: archiving
  *     sets a project aside, it does not deny the work. The result carries `projectArchived` so the
  *     client can say so instead of presenting it as current.

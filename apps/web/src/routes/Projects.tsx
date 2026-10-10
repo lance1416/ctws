@@ -121,13 +121,13 @@ export function Projects() {
               />
               <span className="truncate">{p.name}</span>
             </Link>
-            {/* D47: the list used to show nothing but names. The number is the server's own
-                count of open tasks, not something counted here.
+            {/* HOW MUCH IS WAITING HERE (D47). The server's own count of open tasks, never
+                counted on this side.
                 OUTSIDE the link on purpose: inside, it would become part of the link's
                 accessible name, and "P" would no longer be the name of the link to P.
-                Zero is drawn as NOTHING, the way the left rail already draws it: a column whose
-                job is "how much is waiting here" should be silent when nothing is, and the
-                sentence it used to print made the emptiest row the loudest thing on the page. */}
+                Zero is drawn as NOTHING, the way the left rail draws it: a column whose job is
+                "how much is waiting here" is silent when nothing is, or the emptiest row is the
+                loudest thing on the page. */}
             <span data-count className="justify-self-end text-xs text-fg-muted">
               {p.openTasks > 0 ? `${p.openTasks} open` : ''}
             </span>

@@ -96,8 +96,8 @@ export async function registerUser(
       })
       await tx.insert(workspaces).values({ id: workspaceId, name: 'My Workspace' })
       await tx.insert(workspaceMembers).values({ workspaceId, userId, role: 'owner' })
-      // The inbox is created with the workspace, not lazily on first capture: a lazy path would
-      // need its own check-then-insert race handling, and M2a already paid for one of those.
+      // The inbox is created with the workspace, not lazily on first capture: a lazy path needs
+      // its own check-then-insert race handling.
       await tx.insert(projects).values({
         id: uuidv7(),
         workspaceId,

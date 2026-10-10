@@ -19,8 +19,8 @@ export type Project = typeof projects.$inferSelect
 
 /**
  * A project as the LIST returns it: the row plus `openTasks`, the number of its tasks that are
- * neither finished, cancelled nor deleted. It closes D47 (the project list showed nothing but
- * names) and it is what the left rail puts beside each destination.
+ * neither finished, cancelled nor deleted (D47). It is what the left rail puts beside each
+ * destination.
  */
 export type ProjectListRow = Project & { openTasks: number }
 
