@@ -101,6 +101,13 @@ const LEADS: readonly [RemindLead, string][] = [
 
 const leadLabel = (lead: number) => LEADS.find(([n]) => n === lead)?.[1] ?? `${lead} days before`
 
+/**
+ * 一个人的生日，在他的页面上就是一格。
+ *
+ * 和「家乡」「现居」一样宽、一样响：一张联系人页是用来认出一个人、找到一个人的，而农历、生肖、
+ * 星座、时辰、下一次、提前量是生日管家那边的事。它们在点开之后才出现（`aria-expanded`），展开的
+ * 那一块横跨整行 —— 浮层要处理定位、裁剪与焦点，而这里只是把二级信息放到第二层。
+ */
 export function BirthdayFields({
   contact,
   onSave,
@@ -108,72 +115,115 @@ export function BirthdayFields({
   contact: ContactResponse
   onSave: (patch: { birthday: BirthdayDraft | null }) => void
 }) {
+  const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState(false)
   const b = contact.birthday
 
-  if (editing) {
-    return (
-      <BirthdayForm
-        birthday={b}
-        onCancel={() => setEditing(false)}
-        onSave={(draft) => {
-          onSave({ birthday: draft })
-          setEditing(false)
-        }}
-      />
-    )
+  const close = () => {
+    setOpen(false)
+    setEditing(false)
   }
 
-  // Nobody's birthday is not a row of empty fields: an unfilled form reads like broken data.
-  if (!b) {
-    return (
-      <Field label="Birthday">
-        <button type="button" className={BUTTON.quiet} onClick={() => setEditing(true)}>
-          Add a birthday
+  return (
+    <>
+      <Field label="Birthday" shape="above">
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-label={b ? `Birthday, ${givenDate(b)}` : 'Birthday, not set'}
+          // 没有生日就直接进编辑：那一格空着的时候，点它和点「家乡」是同一个动作。
+          onClick={() => {
+            if (!b) setEditing(true)
+            setOpen(!open || !b)
+          }}
+          className={`-mx-1.5 flex min-w-0 items-center gap-1.5 rounded-lg px-1.5 py-0.5 text-left text-sm hover:bg-surface-hover ${
+            b ? 'text-fg' : 'text-fg-subtle'
+          }`}
+        >
+          <span className="truncate">{b ? givenDate(b) : 'Not set'}</span>
+          <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3 w-3 shrink-0 text-fg-subtle">
+            <path
+              d="M4 6.5l4 4 4-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </button>
       </Field>
-    )
-  }
 
-  return <BirthdayRead birthday={b} onEdit={() => setEditing(true)} />
+      {open && (
+        <div
+          data-birthday-more
+          className="col-span-full rounded-lg border border-border-strong bg-surface-raised p-3"
+        >
+          {editing ? (
+            <BirthdayForm
+              birthday={b}
+              onCancel={() => (b ? setEditing(false) : close())}
+              onSave={(draft) => {
+                onSave({ birthday: draft })
+                close()
+              }}
+            />
+          ) : (
+            b && <BirthdayRead birthday={b} onEdit={() => setEditing(true)} />
+          )}
+        </div>
+      )}
+    </>
+  )
 }
 
+/** 当初写下的那一天，照它被写下时的历法。年份不知道就只说月日。 */
+function givenDate(b: BirthdayResponse): string {
+  if (b.calendar === 'lunar') return b.bornLunar ?? b.lunarDate ?? ''
+  return b.bornSolar ?? `${SOLAR_MONTHS[b.month - 1]} ${b.day}`
+}
+
+/**
+ * 二级面板的内容：下一次、派生的那几样、挪动的理由，以及提前量。
+ *
+ * 一件事一行。这一段以前是跑在一起的一段话，而日期、距离、周岁、生肖、时辰是五种不同的东西。
+ */
 function BirthdayRead({ birthday: b, onEdit }: { birthday: BirthdayResponse; onEdit: () => void }) {
   const today = todayIn(useTimeZone())
-  const given =
-    b.calendar === 'lunar' ? (b.bornLunar ?? b.lunarDate) : (b.bornSolar ?? `${b.month}-${b.day}`)
   return (
-    <div className="flex flex-col gap-2">
-      <Field label="Birthday" shape="beside-top">
-        <div className="flex min-w-0 items-start gap-2">
-          <div data-birthday className="flex min-w-0 flex-col gap-1">
-            <span className="text-sm text-fg">
-              {given}
-              {b.hour && <span className="text-fg-muted"> · {b.hour}</span>}
-            </span>
-            <span className="text-xs text-fg-muted tabular-nums">
-              {b.bornSolar && `Born ${b.bornSolar} · `}
-              next <span className="text-fg">{shortDay(b.next.day, today)}</span>,{' '}
-              {countdownPhrase(b.next.inDays)}
-              {b.next.turns !== null && `, turns ${b.next.turns}`}
-            </span>
-            {b.next.keptNote && <span className="text-xs text-plan">{b.next.keptNote}</span>}
-            {(b.zodiac || b.sign) && (
-              <span className="mt-0.5 flex gap-1.5">
-                {b.zodiac && <Chip>{b.zodiac}</Chip>}
-                {b.sign && <Chip>{b.sign}</Chip>}
-              </span>
-            )}
-          </div>
-          <span className="flex-1" />
-          <button type="button" className={BUTTON.quiet} onClick={onEdit}>
-            Edit
-          </button>
+    <div data-birthday className="flex flex-col gap-2">
+      <p className="text-sm text-fg-muted tabular-nums">
+        Next <span className="font-medium text-fg">{shortDay(b.next.day, today)}</span>
+        <span className="text-fg-subtle"> · </span>
+        {countdownPhrase(b.next.inDays)}
+        {b.next.turns !== null && (
+          <>
+            <span className="text-fg-subtle"> · </span>turns {b.next.turns}
+          </>
+        )}
+      </p>
+
+      {(b.lunarDate || b.bornLunar || b.zodiac || b.sign || b.hour) && (
+        <div className="flex flex-wrap gap-1.5">
+          {b.calendar === 'solar' && (b.bornLunar || b.lunarDate) && (
+            <Chip>{b.bornLunar ?? b.lunarDate}</Chip>
+          )}
+          {b.zodiac && <Chip>{b.zodiac}</Chip>}
+          {b.sign && <Chip>{b.sign}</Chip>}
+          {b.hour && <Chip>{b.hour}</Chip>}
         </div>
-      </Field>
-      <Field label="Tell me">
+      )}
+
+      {b.next.keptNote && <p className="text-xs text-plan">{b.next.keptNote}</p>}
+
+      <div className="mt-1 flex flex-wrap items-center gap-2 border-t border-border-subtle pt-2">
+        <span className="text-xs text-fg-muted">Tell me</span>
         <span className="text-sm text-fg">{leadLabel(b.remindLead)}</span>
-      </Field>
+        <span className="flex-1" />
+        <button type="button" className={BUTTON.quiet} onClick={onEdit}>
+          Edit
+        </button>
+      </div>
     </div>
   )
 }

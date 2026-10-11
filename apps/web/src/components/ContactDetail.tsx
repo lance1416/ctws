@@ -3,9 +3,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { channelHref, deleteContact, patchContact } from '../api/contacts'
 import { listProjects } from '../api/projects'
 import { useProjectRail } from '../projectColor'
-import { DangerAction, DangerZone } from './DangerZone'
+import { DangerAction } from './DangerZone'
 import { useState } from 'react'
 import { BirthdayFields } from './BirthdayFields'
+import { CIRCLE_LABELS } from './BirthdayRow'
 import { BUTTON } from './buttonStyles'
 import { Field } from './Field'
 import { NoteBody } from '../notes/NoteBody'
@@ -42,10 +43,8 @@ export function ContactDetail({
   return (
     <DetailPane label="Contacts" onClose={onClose}>
       <ContactFields contact={contact} onClose={onClose} />
-      {/* LAST, under a rule: the one control here that cannot be undone (`DangerZone`). */}
-      <DangerZone>
-        <DeleteContact contact={contact} onDeleted={onClose} />
-      </DangerZone>
+      {/* 删一个人不在这里：面板是随手点开、随手关掉的东西，而删除不可撤销。它在这个人自己那一页
+          的最底下（`ObjectPage` 的危险区），底下再没有别的控件可以划过去碰到。 */}
       {/* Linked -- the meetings they are in, what they recommended, the task that came out of a
           call. None of it is written on the person: the edges are, and this reads them from the
           other end. The edges are the SHELL's, so they sit BESIDE this module's fields rather
@@ -96,123 +95,64 @@ export function ContactFields({
       <div>
         {onClose && (
           <DetailHead
+            // 面包屑回列表，像面包屑那样；整页打开是它自己的控件，不是一个伪装成返回的链接。
             kind={
               <Link
-                to={`/contacts/${contact.id}`}
+                to="/contacts"
                 className="rounded text-sm text-fg-muted hover:text-fg hover:underline"
               >
                 Contacts
               </Link>
             }
+            trailing={
+              <Link
+                to={`/contacts/${contact.id}`}
+                aria-label="Open as a page"
+                title="Open as a page"
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-fg-muted hover:bg-surface-hover hover:text-fg"
+              >
+                <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4">
+                  <path
+                    d="M6.5 3.5h6v6M12.5 3.5l-8 8"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </Link>
+            }
             onClose={onClose}
           />
         )}
-        <InlineText
-          label="Name"
-          value={contact.name}
-          placeholder="Who is this?"
-          onSave={(name) => name && save.mutate({ name })}
-          className="mt-0.5 block text-lg font-semibold text-fg"
-        />
-      </div>
-
-      {/* ONE DATE, in the calendar it was given in. Everything it implies is read-only. */}
-      <BirthdayFields contact={contact} onSave={(patch) => save.mutate(patch)} />
-
-      {/*
-        A label and six characters do not need 700px, so the short fields pair up once there is
-        room for two of them.
-
-        ROOM MEANS THIS BLOCK'S OWN WIDTH, not the window's (`@container`, not `sm:`). The same
-        fields render in a 310px detail pane and in a column of a three-column page, where a wide
-        window says nothing about the space here -- a viewport breakpoint put two columns in a
-        145px pane and broke "Not on any project" across three lines.
-
-        `items-start` for the other half of it: a grid cell is stretched to its row's height, so a
-        centred row of fields floats to the middle whenever the Projects beside it wraps.
-      */}
-      <div className="@container">
-        <div data-contact-fields className="grid items-start gap-2 @xl:grid-cols-2 @xl:gap-x-5">
-          <Field label="Company">
+        <div className="flex items-start gap-3">
+          <div className="min-w-0 flex-1">
             <InlineText
-              label="Company"
-              value={contact.org ?? ''}
-              placeholder="Not set"
-              onSave={(org) => save.mutate({ org: org || null })}
-              className="text-sm"
+              label="Name"
+              value={contact.name}
+              placeholder="Who is this?"
+              onSave={(name) => name && save.mutate({ name })}
+              className="mt-0.5 block text-lg font-semibold text-fg"
             />
-          </Field>
-          <Field label="Projects" shape="beside-top">
-            <PickMany
-              label="Projects"
-              chosen={contact.projects.map((p) => ({
-                value: p.id,
-                label: p.name,
-                mark: chip(p.id),
-              }))}
-              choices={(projects.data ?? [])
-                .filter((p) => !p.archivedAt)
-                .map((p) => ({ value: p.id, label: p.name, mark: chip(p.id) }))}
-              onChange={(projectIds) => save.mutate({ projectIds })}
-              empty="Not on any project"
-            />
-          </Field>
-          <Field label="Title">
-            <InlineText
-              label="Title"
-              value={contact.title ?? ''}
-              placeholder="Not set"
-              onSave={(title) => save.mutate({ title: title || null })}
-              className="text-sm"
-            />
-          </Field>
-          <Field label="Gender">
-            <PickOne
-              label="Gender"
-              value={contact.gender ?? ''}
-              choices={[
-                { value: '', label: 'Not set' },
-                { value: 'female', label: 'Female' },
-                { value: 'male', label: 'Male' },
-                { value: 'other', label: 'Other' },
-              ]}
-              onPick={(gender) => save.mutate({ gender: (gender || null) as 'male' | null })}
-            />
-          </Field>
-          <Field label="Circle">
-            <PickOne
-              label="Circle"
-              value={contact.circle ?? ''}
-              choices={[
-                { value: '', label: 'Not set' },
-                { value: 'family', label: 'Family' },
-                { value: 'friend', label: 'Friends' },
-                { value: 'work', label: 'Work' },
-              ]}
-              onPick={(circle) => save.mutate({ circle: (circle || null) as 'family' | null })}
-            />
-          </Field>
-          <Field label="Hometown">
-            <InlineText
-              label="Hometown"
-              value={contact.hometown ?? ''}
-              placeholder="Not set"
-              onSave={(hometown) => save.mutate({ hometown: hometown || null })}
-              className="text-sm"
-            />
-          </Field>
-          <Field label="Lives in">
-            <InlineText
-              label="Lives in"
-              value={contact.city ?? ''}
-              placeholder="Not set"
-              onSave={(city) => save.mutate({ city: city || null })}
-              className="text-sm"
-            />
-          </Field>
+            {/* 读出来的一行，不是第二个编辑器：改还是在下面那两格里改。 */}
+            {(contact.title || contact.org) && (
+              <p className="truncate text-sm text-fg-muted">
+                {[contact.title, contact.org].filter(Boolean).join(' · ')}
+              </p>
+            )}
+          </div>
+          {contact.circle && (
+            <span className="shrink-0 rounded-full border border-border-subtle bg-surface-raised px-2.5 py-1 text-xs text-fg-muted">
+              {CIRCLE_LABELS[contact.circle]}
+            </span>
+          )}
         </div>
       </div>
 
+      {/*
+        先是怎么找到这个人 —— 一张联系人页存在的理由就是这个，所以它排在所有字段前面。
+      */}
       <Field label="Contact" shape="above">
         <ul data-channels className="flex flex-col gap-0.5">
           {channels.map((c, i) => (
@@ -294,6 +234,101 @@ export function ContactFields({
           Add one
         </button>
       </Field>
+
+      {/*
+        其余字段，标签在值上面，一格一件事。
+
+        列数看这一块自己有多宽（`@container`，不是 `sm:`）：同一块东西要在 310px 的详情面板里、
+        在三栏的中栏里、在整页上各渲染一次，窗口宽不代表这里宽。
+
+        生日只是其中一格，和「家乡」一样宽、一样响：农历、生肖、星座、时辰、下一次、提前量都在
+        点开之后（`BirthdayFields`），因为认一个人不需要它们。
+      */}
+      <div className="@container">
+        <div
+          data-contact-fields
+          className="grid items-start gap-x-6 gap-y-4 @xl:grid-cols-2 @2xl:grid-cols-3"
+        >
+          <BirthdayFields contact={contact} onSave={(patch) => save.mutate(patch)} />
+          <Field label="Hometown" shape="above">
+            <InlineText
+              label="Hometown"
+              value={contact.hometown ?? ''}
+              placeholder="Not set"
+              onSave={(hometown) => save.mutate({ hometown: hometown || null })}
+              className="block truncate text-sm"
+            />
+          </Field>
+          <Field label="Lives in" shape="above">
+            <InlineText
+              label="Lives in"
+              value={contact.city ?? ''}
+              placeholder="Not set"
+              onSave={(city) => save.mutate({ city: city || null })}
+              className="block truncate text-sm"
+            />
+          </Field>
+          <Field label="Company" shape="above">
+            <InlineText
+              label="Company"
+              value={contact.org ?? ''}
+              placeholder="Not set"
+              onSave={(org) => save.mutate({ org: org || null })}
+              className="block truncate text-sm"
+            />
+          </Field>
+          <Field label="Title" shape="above">
+            <InlineText
+              label="Title"
+              value={contact.title ?? ''}
+              placeholder="Not set"
+              onSave={(title) => save.mutate({ title: title || null })}
+              className="block truncate text-sm"
+            />
+          </Field>
+          <Field label="Gender" shape="above">
+            <PickOne
+              label="Gender"
+              value={contact.gender ?? ''}
+              choices={[
+                { value: '', label: 'Not set' },
+                { value: 'female', label: 'Female' },
+                { value: 'male', label: 'Male' },
+                { value: 'other', label: 'Other' },
+              ]}
+              onPick={(gender) => save.mutate({ gender: (gender || null) as 'male' | null })}
+            />
+          </Field>
+          <Field label="Circle" shape="above">
+            <PickOne
+              label="Circle"
+              value={contact.circle ?? ''}
+              choices={[
+                { value: '', label: 'Not set' },
+                { value: 'family', label: 'Family' },
+                { value: 'friend', label: 'Friends' },
+                { value: 'work', label: 'Work' },
+              ]}
+              onPick={(circle) => save.mutate({ circle: (circle || null) as 'family' | null })}
+            />
+          </Field>
+          <Field label="Projects" shape="above">
+            <PickMany
+              label="Projects"
+              chosen={contact.projects.map((p) => ({
+                value: p.id,
+                label: p.name,
+                mark: chip(p.id),
+              }))}
+              choices={(projects.data ?? [])
+                .filter((p) => !p.archivedAt)
+                .map((p) => ({ value: p.id, label: p.name, mark: chip(p.id) }))}
+              onChange={(projectIds) => save.mutate({ projectIds })}
+              empty="Not on any project"
+            />
+          </Field>
+        </div>
+      </div>
 
       {/*
         THE NOTE, RENDERED AS MARKDOWN -- the same pipeline a task's note goes through, down to

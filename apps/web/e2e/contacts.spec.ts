@@ -286,22 +286,39 @@ test('the whole row opens the person, and the addresses stay links', async ({ pa
   await expect(page.getByRole('dialog', { name: 'Contacts' })).toBeVisible()
 })
 
-test('deleting a person is not a button like the others', async ({ page }) => {
-  // The one control here that cannot be undone must not sit among the others in the same grey.
+/**
+ * 删一个人在他自己那一页的最底下，面板里没有这个按钮。
+ *
+ * 面板是用来看和改的；一个不可撤销的动作不该出现在一个随手点开、随手关掉的东西里，更不该排在
+ * 别的按钮中间。在那一页上它也是最后一个 —— 底下再没有别的东西，划过去碰不到任何别的控件。
+ */
+test('删一个人只在他自己那一页的最底下', async ({ page }) => {
   await registerFreshUser(page, '/contacts')
   await add(page, { name: 'Ying Chen' })
   await page.reload()
   await page.getByRole('button', { name: 'Ying Chen' }).click()
 
-  const remove = page.getByRole('dialog', { name: 'Contacts' }).getByRole('button', {
-    name: 'Delete contact',
-  })
+  const pane = page.getByRole('dialog', { name: 'Contacts' })
+  await expect(pane).toBeVisible()
+  await expect(pane.getByRole('button', { name: 'Delete contact' })).toHaveCount(0)
+
+  // ↗ 才是「在整页打开」；面包屑回的是列表。
+  await pane.getByRole('link', { name: 'Open as a page' }).click()
+  await expect(page).toHaveURL(new RegExp('/contacts/[0-9a-f-]{36}$'))
+
+  const remove = page.getByRole('button', { name: 'Delete contact' })
+  await expect(remove).toBeVisible()
+  // 颜色和别的按钮不一样，而且是整页最后一个东西。
   const colour = await remove.evaluate((el) => getComputedStyle(el).color)
   const other = await page
-    .getByRole('dialog', { name: 'Contacts' })
     .getByRole('button', { name: 'Add one' })
     .evaluate((el) => getComputedStyle(el).color)
   expect(colour).not.toBe(other)
+  const [box, linked] = await Promise.all([
+    remove.boundingBox(),
+    page.getByRole('region', { name: 'Linked' }).boundingBox(),
+  ])
+  expect(box!.y).toBeGreaterThan(linked!.y + linked!.height - 4)
 })
 
 /**
@@ -336,8 +353,14 @@ async function fieldGrid(page: Page) {
   })
 }
 
-/** 一个标签加六个字不需要 560px，所以够宽才配对；不够宽就一列到底。 */
+/**
+ * 列数由这一块自己的宽度决定：窄就一列，够宽配对，再宽三列。
+ *
+ * 一个标签加六个字不需要 560px，但两列挤在 310px 的面板里会把「Not on any project」折成三行。
+ */
 const PAIR_AT = 576
+const TRIPLE_AT = 672
+const columnsFor = (width: number) => (width >= TRIPLE_AT ? 3 : width >= PAIR_AT ? 2 : 1)
 
 test('短字段的列数看这块自己有多宽，不看窗口有多宽', async ({ page }) => {
   await registerFreshUser(page, '/contacts')
@@ -368,7 +391,7 @@ test('短字段的列数看这块自己有多宽，不看窗口有多宽', async
   await page.goto(`/contacts/${id}`)
   await expect(page.getByText('Lives in')).toBeVisible()
   const narrow = await fieldGrid(page)
-  expect(narrow!.columns).toBe(narrow!.width >= PAIR_AT ? 2 : 1)
+  expect(narrow!.columns).toBe(columnsFor(narrow!.width))
   // Projects 占两行时，同一行的 Company 不许飘到两行中间。
   expect(narrow!.drift.filter((d) => d.off > 6)).toEqual([])
 
@@ -378,7 +401,8 @@ test('短字段的列数看这块自己有多宽，不看窗口有多宽', async
   await expect(page.getByText('Lives in')).toBeVisible()
   const wide = await fieldGrid(page)
   expect(wide!.width).toBeGreaterThanOrEqual(PAIR_AT)
-  expect(wide!.columns).toBe(2)
+  expect(wide!.columns).toBe(columnsFor(wide!.width))
+  expect(wide!.columns).toBeGreaterThan(pane!.columns)
   expect(wide!.drift.filter((d) => d.off > 6)).toEqual([])
 })
 
@@ -409,4 +433,92 @@ test('新建的时候就能写下生日和 circle，一次请求带走整个人'
   })
   // 新建后打开的是这一页的详情面板（生日那一页建的人才会跳到他自己的页面）。
   await expect(page.getByText('农历甲申年十二月三十')).toBeVisible()
+})
+
+/**
+ * 一条很长的链接不能把面板撑宽。
+ *
+ * 撑宽的后果不是难看而已：整个联系人栏多出一条横向滚动条，列表跟着一起横着滚。值永远截断，
+ * 容器的宽度由布局决定，不由内容决定。
+ */
+test('超长的链接地址被截断，面板一毫米都不变宽', async ({ page }) => {
+  await registerFreshUser(page, '/contacts')
+  const short = await page.request.post('/api/v1/contacts', {
+    headers: WEB,
+    data: { name: '短的', channels: [{ kind: 'email', value: 'a@b.test', label: null }] },
+  })
+  await page.request.post('/api/v1/contacts', {
+    headers: WEB,
+    data: {
+      name: '长的',
+      channels: [
+        {
+          kind: 'url',
+          value: 'https://sites.google.com/site/hamzawaseem/home/publications-and-talks-2026',
+          label: null,
+        },
+      ],
+    },
+  })
+  expect(short.ok()).toBe(true)
+
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto('/contacts')
+  await page.getByText('短的').first().click()
+  const pane = page.getByRole('dialog', { name: 'Contacts' })
+  await expect(pane).toBeVisible()
+  const narrow = (await pane.boundingBox())!.width
+
+  await page.getByRole('button', { name: 'Close' }).click()
+  await page.getByText('长的').first().click()
+  await expect(pane).toBeVisible()
+  await expect(pane.getByText('sites.google.com')).toBeVisible()
+  expect((await pane.boundingBox())!.width).toBe(narrow)
+
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  )
+  expect(overflow).toBeLessThanOrEqual(0)
+
+  // 真正要量的是这一行自己：地址有没有被框在它那一格里。
+  // `<button>` 是表单控件 —— 就算写了 display:block，宽度仍然按内容算，于是 truncate 永远
+  // 没机会生效，文字从按钮底下穿过去。面板不变宽只是因为它自己 overflow 了。
+  const clipped = await pane.evaluate((root) => {
+    const b = [...root.querySelectorAll('[data-channels] button')].find((el) =>
+      (el.textContent ?? '').startsWith('https://'),
+    ) as HTMLElement | undefined
+    if (!b) return null
+    const open = root.querySelector('[data-channels] a[aria-label^="Open"]') as HTMLElement | null
+    return {
+      overflows: b.scrollWidth > b.clientWidth,
+      right: Math.round(b.getBoundingClientRect().right),
+      iconLeft: open ? Math.round(open.getBoundingClientRect().left) : 0,
+    }
+  })
+  expect(clipped).not.toBeNull()
+  // 长地址必须是被截断的那一个，而且它的右边不许越过那两个按钮。
+  expect(clipped!.overflows).toBe(true)
+  expect(clipped!.right).toBeLessThanOrEqual(clipped!.iconLeft)
+
+  // 窄窗口下同一条地址：横向滚动条是这条规则坏掉时最先露出来的东西。
+  await page.setViewportSize({ width: 420, height: 900 })
+  await expect(pane.getByText('sites.google.com')).toBeVisible()
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    ),
+  ).toBeLessThanOrEqual(0)
+  await page.setViewportSize({ width: 1280, height: 900 })
+
+  // 写的时候也一样：输入框里是同一条长地址，面板照样不许变宽。
+  await pane.getByRole('button', { name: 'Edit Item 1' }).click()
+  await page
+    .getByRole('textbox', { name: 'Item 1' })
+    .fill('https://sites.google.com/site/hamzawaseem/home/publications-and-talks-2026-really-long')
+  expect((await pane.boundingBox())!.width).toBe(narrow)
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    ),
+  ).toBeLessThanOrEqual(0)
 })

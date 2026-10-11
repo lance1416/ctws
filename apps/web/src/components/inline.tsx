@@ -274,7 +274,10 @@ export function InlineText({
           setDraft(value)
           setEditing(true)
         }}
-        className={`-mx-1.5 min-w-0 rounded-lg px-1.5 py-0.5 text-left hover:bg-surface-hover ${
+        // max-w-full 不是多余的：<button> 是表单控件，就算写了 display:block，它的宽度仍然
+        // 按内容算（fit-content），于是一条长地址会从按钮底下穿出去，调用者写的 truncate 永远
+        // 没机会生效。上限给到格子的宽度，短值照旧只占自己那么宽。
+        className={`-mx-1.5 min-w-0 max-w-full rounded-lg px-1.5 py-0.5 text-left hover:bg-surface-hover ${
           value ? '' : 'text-fg-subtle'
         } ${className}`}
       >

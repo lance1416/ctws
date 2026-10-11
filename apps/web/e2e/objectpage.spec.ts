@@ -102,15 +102,15 @@ test('a page for something that is gone says so rather than showing a blank', as
 
 test('a pane reaches the page the thing lives on', async ({ page }) => {
   // A pane is a quick peek from wherever you were; the page is where the thing lives, with
-  // everything it is connected to. The eyebrow is the way between them -- a pane opened from a
-  // list would otherwise be a dead end, and the page unreachable except by a link from elsewhere.
+  // everything it is connected to. The way between them is a control that SAYS so: the eyebrow
+  // reads like a way back to the list, and a disguised one is how nobody found the page at all.
   const { person } = await world(page)
   await page.goto('/contacts')
   await page.getByRole('button', { name: 'Ying Chen' }).click()
   const pane = page.getByRole('dialog', { name: 'Contacts' })
   await expect(pane).toBeVisible()
 
-  await pane.getByRole('link', { name: 'Contacts' }).click()
+  await pane.getByRole('link', { name: 'Open as a page' }).click()
   await expect(page).toHaveURL(new RegExp(`/contacts/${person.id}$`))
   await expect(page.getByRole('region', { name: 'Person at a glance' })).toContainText('Ying Chen')
 })
@@ -137,11 +137,13 @@ test('1440 下一个人的 Linked 在右栏，不在正文下面', async ({ page
  * 所以三栏要等到窗口真的够宽（1280）才成立。在那之前正文占满一行、Linked 落到下面，字段反而
  * 配得上对：横向空间是给内容用的，不是给空栏用的。
  */
-test('1100 下正文占满一行，Linked 落到下面，字段照样配对', async ({ page }) => {
+test('1100 下正文占满一行，Linked 落到下面，字段排得开', async ({ page }) => {
   await page.setViewportSize({ width: 1100, height: 900 })
   await registerFreshUser(page)
   const id = (await apiPost(page, '/contacts', { name: '周楠' })).id as string
   await page.goto(`/contacts/${id}`)
+  // 量之前先等这一块画完：主面板还在长的时候量出来的高度是上一帧的。
+  await page.getByText('Lives in').waitFor()
   const glance = await page.getByRole('region', { name: 'Person at a glance' }).boundingBox()
   const linked = await page.getByRole('region', { name: 'Linked' }).boundingBox()
   expect(linked!.y).toBeGreaterThan(glance!.y + glance!.height - 4)
@@ -153,8 +155,9 @@ test('1100 下正文占满一行，Linked 落到下面，字段照样配对', as
       columns: new Set(cells.map((c) => Math.round(c.getBoundingClientRect().left))).size,
     }
   })
+  // 够宽就不止配对：1100 下正文占满一行，这一块有 700 多，排得下三列。
   expect(fields.width).toBeGreaterThanOrEqual(576)
-  expect(fields.columns).toBe(2)
+  expect(fields.columns).toBeGreaterThanOrEqual(2)
 })
 
 test('窄屏下还是一列，顺序不变', async ({ page }) => {
