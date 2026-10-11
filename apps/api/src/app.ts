@@ -29,6 +29,7 @@ import { linkRoutes } from './links/routes'
 import { sendProblem } from './problem'
 import { unfurl, type Unfurl } from './reading/unfurl'
 import { projectRoutes } from './projects/routes'
+import { cityRoutes } from './cities/routes'
 import { contactRoutes } from './contacts/routes'
 import { meetingRoutes } from './meetings/routes'
 import { readingRoutes } from './reading/routes'
@@ -107,6 +108,7 @@ export async function buildApp(opts: {
   // module could own it without learning about another.
   await app.register(linkRoutes, { prefix: '/api/v1' })
   await app.register(calendarDayRoutes, { prefix: '/api/v1' })
+  await app.register(cityRoutes, { prefix: '/api/v1' })
   await app.register(taskRoutes, { prefix: '/api/v1/tasks' })
   await app.register(readingRoutes, { prefix: '/api/v1/reading' })
   await app.register(contactRoutes, { prefix: '/api/v1/contacts' })

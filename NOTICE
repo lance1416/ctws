@@ -1,0 +1,14 @@
+CTWS bundles data from other projects. This file says which, and under what terms.
+
+GeoNames geographical database — https://www.geonames.org/
+  Licensed under Creative Commons Attribution 4.0 (CC BY 4.0):
+  https://creativecommons.org/licenses/by/4.0/
+  Used: the cities of more than 15,000 people (`cities15000`), with the names of their
+  first-level administrative divisions and countries, trimmed to name, region, country and
+  population by `tools/cities/build-cities.mjs` and shipped as
+  `apps/api/src/cities/cities.json`. It is what the Hometown and Lives in fields are checked
+  against, so that a city is written one way rather than five.
+
+Noto Sans SC — https://fonts.google.com/noto/specimen/Noto+Sans+SC
+  Licensed under the SIL Open Font License 1.1; the licence travels with the subset as
+  `apps/web/public/fonts/OFL.txt`.

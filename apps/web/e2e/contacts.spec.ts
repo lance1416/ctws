@@ -675,3 +675,47 @@ test('电话一边打一边排好，存下来的就是排好的', async ({ page 
   // 读的时候也是排好的那一串。
   await expect(pane.getByRole('link', { name: '+86 139 0000 1234' })).toBeVisible()
 })
+
+/**
+ * 家乡和现居是城市，不是一行随便什么字。
+ *
+ * 打三个字母就给候选，选中之后存下来的是一个标准写法 —— 两个人的「现居」于是不会一个写
+ * `Oxford` 一个写 `oxford, uk`。表在服务端（一万五千人以上的三万四千个城市，打进镜像），
+ * 所以这件事不看网络脸色，也不把你打的字发给第三方。
+ */
+test('城市打几个字母就有候选，选中存的是标准写法', async ({ page }) => {
+  await registerFreshUser(page, '/contacts')
+  await add(page, { name: '陈颖' })
+  await page.reload()
+  await page.getByRole('button', { name: '陈颖' }).click()
+  const pane = page.getByRole('dialog', { name: 'Contacts' })
+  await pane.getByRole('button', { name: 'Edit', exact: true }).click()
+
+  await pane.getByLabel('Lives in').fill('oxfo')
+  await expect(pane.getByRole('button', { name: 'Oxford, England, United Kingdom' })).toBeVisible()
+  await pane.getByRole('button', { name: 'Oxford, England, United Kingdom' }).click()
+  await expect(pane.getByLabel('Lives in')).toHaveValue('Oxford, England, United Kingdom')
+
+  const written = page.waitForResponse(
+    (r) =>
+      r.request().method() === 'PATCH' && new URL(r.url()).pathname.startsWith('/api/v1/contacts/'),
+  )
+  await pane.getByRole('button', { name: 'Save' }).click()
+  expect((await written).request().postDataJSON()).toMatchObject({
+    city: 'Oxford, England, United Kingdom',
+  })
+})
+
+test('打错一个字母看得出来，但还是存得下', async ({ page }) => {
+  await registerFreshUser(page, '/contacts')
+  await add(page, { name: '陈颖' })
+  await page.reload()
+  await page.getByRole('button', { name: '陈颖' }).click()
+  const pane = page.getByRole('dialog', { name: 'Contacts' })
+  await pane.getByRole('button', { name: 'Edit', exact: true }).click()
+
+  await pane.getByLabel('Hometown').fill('Oxforrd')
+  await expect(pane).toContainText('No city by that name')
+  // 不拦着：世界上有的是不到一万五千人的地方，挡住一个人写外婆家那个镇不是校验，是添堵。
+  await expect(pane.getByRole('button', { name: 'Save' })).toBeEnabled()
+})

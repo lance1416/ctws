@@ -10,6 +10,7 @@ import { CIRCLE_LABELS } from './BirthdayRow'
 import { BUTTON } from './buttonStyles'
 import { byKind, channelLabel, channelPlaceholder, KIND_CHOICES, KIND_LABEL } from '../channels'
 import { Field } from './Field'
+import { PickCity } from './PickCity'
 import { useComposing } from '../composition'
 import { boxed, field, label } from './formStyles'
 import { NoteBody } from '../notes/NoteBody'
@@ -571,8 +572,9 @@ function ContactForm({
               )}
             </div>
           )}
-          <Writes label="Hometown" id="c-home" value={hometown} onChange={setHometown} />
-          <Writes label="Lives in" id="c-city" value={city} onChange={setCity} />
+          {/* 城市级：选中之后存的是一个标准写法，所以两个人的「现居」不会一个 Oxford 一个 oxford, uk。 */}
+          <PickCity label="Hometown" id="c-home" value={hometown} onChange={setHometown} />
+          <PickCity label="Lives in" id="c-city" value={city} onChange={setCity} />
           <Writes label="Company" id="c-org" value={org} onChange={setOrg} />
           <Writes label="Title" id="c-title" value={title} onChange={setTitle} />
           <Field label="Gender" shape="above">
