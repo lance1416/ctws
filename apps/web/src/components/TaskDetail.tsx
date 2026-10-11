@@ -784,33 +784,41 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                 Cancel
               </button>
             </div>
-            {/* LAST, under a rule, in the danger colour -- the same frame every other thing uses
-              (`DangerZone`). Destroying the task is not a peer of saving it, and nothing is
-              reached by passing over it on the way to Save. */}
-            <DangerZone>
-              <DangerAction
-                label="Delete task"
-                confirmLabel="Confirm deleting this task"
-                message={
-                  descendants === null
-                    ? null
-                    : descendants < 0
-                      ? `Delete “${task.title}” and all its subtasks. This cannot be undone.`
-                      : descendants === 0
-                        ? `Delete “${task.title}”. This cannot be undone.`
-                        : `Delete “${task.title}” and its ${descendants} subtasks. This cannot be undone.`
-                }
-                busy={remove.isPending}
-                onAsk={countDescendants}
-                onConfirm={() => remove.mutate()}
-              />
-            </DangerZone>
-            {remove.isError && (
-              <p role="alert" className="text-sm text-danger">
-                {remove.error instanceof Error ? remove.error.message : "Couldn't delete it"}
-              </p>
-            )}
           </form>
+        )}
+        {/*
+          LAST ON THIS SURFACE, in READING mode, under a rule, in the danger colour.
+
+          Not inside the form: destroying the task is not a peer of saving it, and a delete you
+          can only reach by pressing Edit is a delete nobody finds. Every thing in this app now
+          answers the same way -- a person, a meeting, a project -- so the one irreversible
+          action is always in the same place: the foot of the thing's own surface, below
+          everything, asking once.
+        */}
+        {!editing && (
+          <DangerZone>
+            <DangerAction
+              label="Delete task"
+              confirmLabel="Confirm deleting this task"
+              message={
+                descendants === null
+                  ? null
+                  : descendants < 0
+                    ? `Delete “${task.title}” and all its subtasks. This cannot be undone.`
+                    : descendants === 0
+                      ? `Delete “${task.title}”. This cannot be undone.`
+                      : `Delete “${task.title}” and its ${descendants} subtasks. This cannot be undone.`
+              }
+              busy={remove.isPending}
+              onAsk={countDescendants}
+              onConfirm={() => remove.mutate()}
+            />
+          </DangerZone>
+        )}
+        {remove.isError && (
+          <p role="alert" className="text-sm text-danger">
+            {remove.error instanceof Error ? remove.error.message : "Couldn't delete it"}
+          </p>
         )}
       </div>
     </DetailPane>

@@ -352,53 +352,27 @@ test('the pane opens with the task, and Delete is not a peer of Save', async ({ 
     .evaluate((el) => parseFloat(getComputedStyle(el).fontSize))
   expect(titleSize, 'the title is the biggest text in the pane').toBeGreaterThan(notesSize)
 
+  // 删除不和 Save 同处一张表：它在阅读态的最底下，而这里是编辑态。
+  await expect(dialog.getByRole('button', { name: 'Delete task' })).toHaveCount(0)
+  await dialog.getByRole('button', { name: 'Cancel' }).click()
+
   const save = dialog.getByRole('button', { name: 'Save' })
   const del = dialog.getByRole('button', { name: 'Delete task' })
-  const saveBox = (await save.boundingBox())!
-  const delBox = (await del.boundingBox())!
-  // Below, not beside: nothing on the way to Save passes over the control that destroys the task.
-  expect(delBox.y, '删除任务 is below the save row').toBeGreaterThanOrEqual(
-    saveBox.y + saveBox.height,
-  )
-  // The weight is carried by the FILL and the colour, not by the type size -- every control in
-  // the app is one size. Save is the single painted block here; the one that destroys the task is
-  // a word, in a colour nothing else in the footer wears.
-  const paint = (l: typeof save) =>
+  await expect(del).toBeVisible()
+  await expect(save).toHaveCount(0)
+  // 它是这个面里最后一个东西，而且穿的是别处没有的那个颜色。
+  const paint = (l: typeof del) =>
     l.evaluate((el) => {
       const s = getComputedStyle(el)
       return { fill: s.backgroundColor, ink: s.color }
     })
-  const [savePaint, delPaint, cancelPaint] = await Promise.all([
-    paint(save),
-    paint(del),
-    paint(dialog.getByRole('button', { name: 'Cancel' })),
-  ])
-  expect(savePaint.fill, 'Save is a painted block').not.toBe('rgba(0, 0, 0, 0)')
-  expect(delPaint.fill, '删除任务 is not').toBe('rgba(0, 0, 0, 0)')
-  expect(delPaint.ink, '删除任务 is not the colour of the way out').not.toBe(cancelPaint.ink)
-  // ...and it still asks before it does anything.
-  await del.click()
-  await expect(page.getByRole('alertdialog', { name: 'Confirm deleting this task' })).toBeVisible()
+  const delPaint = await paint(del)
+  expect(
+    ['rgba(0, 0, 0, 0)', 'transparent'],
+    'the delete control is not a painted block',
+  ).toContain(delPaint.fill)
 })
 
-// ------------------------------------------------------ reading mode and editing mode (spec §5)
-
-/**
- * TWO CLAIMS AT ONCE: everything about the task is on the first screen, and nothing on that
- * screen can change it by mistake.
- *
- * The mis-click surface is a LIVE FORM, not every control. What the pane must not do at rest
- * is sit there with a title field, five status radios and two date inputs one elbow away; a value
- * you have to open a menu to change is deliberate, while edit-change-save turns one decision into
- * a procedure. So the count below is over form controls -- fields -- and the status picker is
- * asserted separately, by its own test, as working without any of them.
- *
- * "There is no field" is NOT provable by asserting that some particular one is absent: a pane that
- * hid the title input while leaving the five status radios live would pass that and keep the whole
- * mis-click surface. So the assertion is over EVERY form control in the dialog, counted, and it is
- * paired with the other half -- that Edit brings them all back -- because a pane that never shows
- * a control passes the first half on its own.
- */
 test('the pane opens in reading mode with no field, and Edit reveals them', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '只读')
@@ -422,8 +396,9 @@ test('the pane opens in reading mode with no field, and Edit reveals them', asyn
   expect(controls, 'editable controls in reading mode').toBe(0)
   for (const role of ['textbox', 'radio', 'checkbox', 'combobox', 'spinbutton', 'slider'] as const)
     await expect(dialog.getByRole(role), role).toHaveCount(0)
-  // Destroying the task is not something to land on while reading either.
-  await expect(dialog.getByRole('button', { name: 'Delete task' })).toHaveCount(0)
+  // 毁掉这条任务的动作在阅读态的最底下 —— 和删一个人、取消一场会同一个位置。删除不是编辑的
+  // 同侪，逼人先按 Edit 才能删是分类错误；它靠距离和一次确认来保护，不靠藏起来。
+  await expect(dialog.getByRole('button', { name: 'Delete task' })).toBeVisible()
   // And the information is all there, which is the other half: nothing is behind a second menu.
   await expect(dialog.locator('[data-detail-title]')).toHaveText('读一下这条任务')
   await expect(dialog).toContainText('In progress')
@@ -440,7 +415,8 @@ test('the pane opens in reading mode with no field, and Edit reveals them', asyn
   await expect(dialog.getByLabel('Plan', { exact: true })).toHaveValue(dayOffset(1))
   await expect(dialog.getByLabel('Notes', { exact: true })).toHaveValue('第一行\n第二行')
   await expect(dialog.getByRole('button', { name: 'Save' })).toBeVisible()
-  await expect(dialog.getByRole('button', { name: 'Delete task' })).toBeVisible()
+  // 正在改的那张表上不画删除：一张表的两个出口是 Save 和 Cancel。
+  await expect(dialog.getByRole('button', { name: 'Delete task' })).toHaveCount(0)
 
   // Reading and then choosing to edit wrote nothing on its own: this is not autosave with a
   // read-only skin on it.

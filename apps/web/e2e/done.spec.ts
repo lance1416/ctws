@@ -178,13 +178,15 @@ test('with nothing finished, the view says so', async ({ page }) => {
 
 // ------------------------------------------------------------------------------ task deletion
 
-// Opens a row's detail AND puts it into editing mode. The pane opens in reading mode since
-// rows-and-reading §5, and both of the things this file is about -- Delete task and the unsaved-edit
-// guard -- are editing-mode concerns: there is nothing to lose while only reading.
+/**
+ * 打开一行的详情，停在阅读态。
+ *
+ * 删除住在阅读态的最底下（和删一个人、取消一场会同一个位置），所以这里不再按 Edit —— 那一节
+ * 讲的是「未保存的改动」那条守卫，它自己会进编辑态。
+ */
 async function openPanel(page: Page, title: string) {
   await page.getByRole('listitem').filter({ hasText: title }).first().click()
   await expect(page.getByRole('dialog')).toBeVisible()
-  await editDetail(page)
 }
 
 test('deleting a parent states how many descendants go, cancel deletes nothing, confirm deletes all', async ({
@@ -253,7 +255,6 @@ test('deleting a leaf does not claim descendants, and works from the Today panel
   await expect(page.locator('[data-today-row]')).toHaveCount(2)
 
   await page.locator('[data-today-row]').filter({ hasText: '在做的' }).click()
-  await editDetail(page)
   await page.getByRole('button', { name: 'Delete task' }).click()
   const ask = page.getByRole('alertdialog', { name: 'Confirm deleting this task' })
   await expect(ask).toContainText('Delete “在做的”. This cannot be undone.')
@@ -283,6 +284,7 @@ test('navigating away from a dirty panel asks first; keep editing stays, discard
   await page.getByRole('main').getByRole('link', { name: 'P', exact: true }).click()
   await page.getByRole('listitem').first().waitFor()
   await openPanel(page, '写方案')
+  await editDetail(page)
   await page.getByLabel('Title').fill('写方案 v2')
 
   await nav(page).getByRole('link', { name: 'Today' }).click()
@@ -320,6 +322,7 @@ test('a clean panel does not stop navigation', async ({ page }) => {
   await page.goto(`/projects/${pid}`)
   await page.getByRole('listitem').first().waitFor()
   await openPanel(page, '写方案')
+  await editDetail(page)
   await page.getByLabel('Title').fill('写方案 v2')
   await page.getByLabel('Title').fill('写方案') // back to what it was: not dirty
   await nav(page).getByRole('link', { name: 'Projects' }).click()
@@ -335,6 +338,7 @@ test('Log out with a dirty panel asks first and does not log out until discarded
   await page.goto(`/projects/${pid}`)
   await page.getByRole('listitem').first().waitFor()
   await openPanel(page, '写方案')
+  await editDetail(page)
   await page.getByLabel('Title').fill('写方案 v2')
 
   const logouts: string[] = []
@@ -369,6 +373,7 @@ test('pressing Save and then a nav link at once is not mistaken for losing edits
   await page.goto(`/projects/${pid}`)
   await page.getByRole('listitem').first().waitFor()
   await openPanel(page, '写方案')
+  await editDetail(page)
   await page.getByLabel('Title').fill('写方案 v2')
 
   // Hold the save in flight, so "click Save, then a link" is deterministic rather than a race.
@@ -384,4 +389,32 @@ test('pressing Save and then a nav link at once is not mistaken for losing edits
   await expect
     .poll(async () => (await serverTasks(page, pid))[0]!.title, { timeout: 5000 })
     .toBe('写方案 v2')
+})
+
+/**
+ * 删一个任务在阅读态里就看得见，和删一个人、取消一场会同一个位置。
+ *
+ * 以前它藏在编辑态的表底：不先按 Edit 就找不到删除，而删除根本不是「改一个字段」的同类。全 app
+ * 统一成一条：毁掉这一个东西的动作在它那个面的最底、阅读态、危险色、问一次。
+ */
+test('删除在阅读态就在那儿，而且是面里最后一个东西', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'P')
+  await makeTask(page, pid, '写迁移')
+  await page.goto(`/projects/${pid}`)
+  await page.getByRole('listitem').filter({ hasText: '写迁移' }).first().click()
+  const pane = page.getByRole('dialog')
+  await expect(pane).toBeVisible()
+
+  // 没按 Edit：删除就在那儿。
+  const remove = pane.getByRole('button', { name: 'Delete task' })
+  await expect(remove).toBeVisible()
+  await expect(pane.getByRole('button', { name: 'Save' })).toHaveCount(0)
+
+  // 而且是最后一个：它下面没有别的控件可以划过去碰到。
+  const [box, notes] = await Promise.all([
+    remove.boundingBox(),
+    pane.getByText('Notes', { exact: true }).boundingBox(),
+  ])
+  expect(box!.y).toBeGreaterThan(notes!.y)
 })
