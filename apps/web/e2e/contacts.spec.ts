@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { makeProject, registerFreshUser, WEB } from './helpers'
+import { makeProject, pickOne, registerFreshUser, WEB } from './helpers'
 
 /**
  * CONTACTS -- THE THIRD MODULE.
@@ -302,4 +302,83 @@ test('deleting a person is not a button like the others', async ({ page }) => {
     .getByRole('button', { name: 'Add one' })
     .evaluate((el) => getComputedStyle(el).color)
   expect(colour).not.toBe(other)
+})
+
+/**
+ * 短字段那块网格，两条规则。
+ *
+ * 一、**列数看这块自己有多宽，不看窗口有多宽**。它住在一根柱子里（详情面板、三栏的中栏），
+ * 窗口宽不代表这里宽；按视口断点排两列，就会在 235px 的格子里把「Not on any project」挤成三行。
+ * 二、**没有一个标签浮在半空**：网格默认把格子拉到整行高、格子里又垂直居中，于是 Projects 一多
+ * 两行，同一行的 Company 就飘到两行中间。
+ */
+async function fieldGrid(page: Page) {
+  return page.evaluate(() => {
+    const grid = document.querySelector('[data-contact-fields]')
+    if (!grid) return null
+    const cells = [...grid.children]
+    const left = cells[0]?.getBoundingClientRect().left ?? 0
+    return {
+      width: Math.round(grid.getBoundingClientRect().width),
+      // 同一行有几个格子 = 和第一个格子同一行（top 相同）的个数。
+      columns: new Set(cells.map((c) => Math.round(c.getBoundingClientRect().left))).size,
+      firstLeft: Math.round(left),
+      drift: cells.map((cell) => {
+        const label = cell.querySelector('span')
+        return {
+          label: label?.textContent ?? '?',
+          off: Math.round(
+            (label?.getBoundingClientRect().top ?? 0) - cell.getBoundingClientRect().top,
+          ),
+        }
+      }),
+    }
+  })
+}
+
+/** 一个标签加六个字不需要 560px，所以够宽才配对；不够宽就一列到底。 */
+const PAIR_AT = 576
+
+test('短字段的列数看这块自己有多宽，不看窗口有多宽', async ({ page }) => {
+  await registerFreshUser(page, '/contacts')
+  // 够多的项目，好让 Projects 那一格换行 —— 旁边的 Company 会不会被顶到半空，只有这时候看得出来。
+  const projectIds: string[] = []
+  for (const name of ['Job hunt', 'CTWS', '开源维护', 'Reading group']) {
+    const made = await page.request.post('/api/v1/projects', { headers: WEB, data: { name } })
+    projectIds.push(((await made.json()) as { id: string }).id)
+  }
+  const made = await page.request.post('/api/v1/contacts', {
+    headers: WEB,
+    data: { name: '陈颖', projectIds, org: 'Acme' },
+  })
+  const id = ((await made.json()) as { id: string }).id
+
+  // 详情面板：窗口很宽，柱子只有 310px。按视口断点排，这里会在 145px 的格子里排两列。
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto('/contacts')
+  await page.getByText('陈颖').first().click()
+  await expect(page.getByText('Lives in')).toBeVisible()
+  const pane = await fieldGrid(page)
+  expect(pane!.width).toBeLessThan(PAIR_AT)
+  expect(pane!.columns).toBe(1)
+  expect(pane!.drift.filter((d) => d.off > 6)).toEqual([])
+
+  // 人的那一页，窗口 1024：三栏下的中栏也还不到配对的宽度。
+  await page.setViewportSize({ width: 1024, height: 900 })
+  await page.goto(`/contacts/${id}`)
+  await expect(page.getByText('Lives in')).toBeVisible()
+  const narrow = await fieldGrid(page)
+  expect(narrow!.width).toBeLessThan(PAIR_AT)
+  expect(narrow!.columns).toBe(1)
+  // Projects 占两行时，同一行的 Company 不许飘到两行中间。
+  expect(narrow!.drift.filter((d) => d.off > 6)).toEqual([])
+
+  // 够宽了才配对。
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto(`/contacts/${id}`)
+  await expect(page.getByText('Lives in')).toBeVisible()
+  const wide = await fieldGrid(page)
+  expect(wide!.width).toBeGreaterThanOrEqual(PAIR_AT)
+  expect(wide!.columns).toBe(2)
+  expect(wide!.drift.filter((d) => d.off > 6)).toEqual([])
 })

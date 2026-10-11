@@ -119,86 +119,98 @@ export function ContactFields({
       {/* ONE DATE, in the calendar it was given in. Everything it implies is read-only. */}
       <BirthdayFields contact={contact} onSave={(patch) => save.mutate(patch)} />
 
-      {/* A label and six characters do not need 700px, so the short fields pair up once there is
-          room for two of them. */}
-      <div className="grid gap-2 sm:grid-cols-2 sm:gap-x-5">
-        <Field label="Company">
-          <InlineText
-            label="Company"
-            value={contact.org ?? ''}
-            placeholder="Not set"
-            onSave={(org) => save.mutate({ org: org || null })}
-            className="text-sm"
-          />
-        </Field>
-        <Field label="Projects" shape="beside-top">
-          <PickMany
-            label="Projects"
-            chosen={contact.projects.map((p) => ({
-              value: p.id,
-              label: p.name,
-              mark: chip(p.id),
-            }))}
-            choices={(projects.data ?? [])
-              .filter((p) => !p.archivedAt)
-              .map((p) => ({ value: p.id, label: p.name, mark: chip(p.id) }))}
-            onChange={(projectIds) => save.mutate({ projectIds })}
-            empty="Not on any project"
-          />
-        </Field>
-        <Field label="Title">
-          <InlineText
-            label="Title"
-            value={contact.title ?? ''}
-            placeholder="Not set"
-            onSave={(title) => save.mutate({ title: title || null })}
-            className="text-sm"
-          />
-        </Field>
-        <Field label="Gender">
-          <PickOne
-            label="Gender"
-            value={contact.gender ?? ''}
-            choices={[
-              { value: '', label: 'Not set' },
-              { value: 'female', label: 'Female' },
-              { value: 'male', label: 'Male' },
-              { value: 'other', label: 'Other' },
-            ]}
-            onPick={(gender) => save.mutate({ gender: (gender || null) as 'male' | null })}
-          />
-        </Field>
-        <Field label="Circle">
-          <PickOne
-            label="Circle"
-            value={contact.circle ?? ''}
-            choices={[
-              { value: '', label: 'Not set' },
-              { value: 'family', label: 'Family' },
-              { value: 'friend', label: 'Friends' },
-              { value: 'work', label: 'Work' },
-            ]}
-            onPick={(circle) => save.mutate({ circle: (circle || null) as 'family' | null })}
-          />
-        </Field>
-        <Field label="Hometown">
-          <InlineText
-            label="Hometown"
-            value={contact.hometown ?? ''}
-            placeholder="Not set"
-            onSave={(hometown) => save.mutate({ hometown: hometown || null })}
-            className="text-sm"
-          />
-        </Field>
-        <Field label="Lives in">
-          <InlineText
-            label="Lives in"
-            value={contact.city ?? ''}
-            placeholder="Not set"
-            onSave={(city) => save.mutate({ city: city || null })}
-            className="text-sm"
-          />
-        </Field>
+      {/*
+        A label and six characters do not need 700px, so the short fields pair up once there is
+        room for two of them.
+
+        ROOM MEANS THIS BLOCK'S OWN WIDTH, not the window's (`@container`, not `sm:`). The same
+        fields render in a 310px detail pane and in a column of a three-column page, where a wide
+        window says nothing about the space here -- a viewport breakpoint put two columns in a
+        145px pane and broke "Not on any project" across three lines.
+
+        `items-start` for the other half of it: a grid cell is stretched to its row's height, so a
+        centred row of fields floats to the middle whenever the Projects beside it wraps.
+      */}
+      <div className="@container">
+        <div data-contact-fields className="grid items-start gap-2 @xl:grid-cols-2 @xl:gap-x-5">
+          <Field label="Company">
+            <InlineText
+              label="Company"
+              value={contact.org ?? ''}
+              placeholder="Not set"
+              onSave={(org) => save.mutate({ org: org || null })}
+              className="text-sm"
+            />
+          </Field>
+          <Field label="Projects" shape="beside-top">
+            <PickMany
+              label="Projects"
+              chosen={contact.projects.map((p) => ({
+                value: p.id,
+                label: p.name,
+                mark: chip(p.id),
+              }))}
+              choices={(projects.data ?? [])
+                .filter((p) => !p.archivedAt)
+                .map((p) => ({ value: p.id, label: p.name, mark: chip(p.id) }))}
+              onChange={(projectIds) => save.mutate({ projectIds })}
+              empty="Not on any project"
+            />
+          </Field>
+          <Field label="Title">
+            <InlineText
+              label="Title"
+              value={contact.title ?? ''}
+              placeholder="Not set"
+              onSave={(title) => save.mutate({ title: title || null })}
+              className="text-sm"
+            />
+          </Field>
+          <Field label="Gender">
+            <PickOne
+              label="Gender"
+              value={contact.gender ?? ''}
+              choices={[
+                { value: '', label: 'Not set' },
+                { value: 'female', label: 'Female' },
+                { value: 'male', label: 'Male' },
+                { value: 'other', label: 'Other' },
+              ]}
+              onPick={(gender) => save.mutate({ gender: (gender || null) as 'male' | null })}
+            />
+          </Field>
+          <Field label="Circle">
+            <PickOne
+              label="Circle"
+              value={contact.circle ?? ''}
+              choices={[
+                { value: '', label: 'Not set' },
+                { value: 'family', label: 'Family' },
+                { value: 'friend', label: 'Friends' },
+                { value: 'work', label: 'Work' },
+              ]}
+              onPick={(circle) => save.mutate({ circle: (circle || null) as 'family' | null })}
+            />
+          </Field>
+          <Field label="Hometown">
+            <InlineText
+              label="Hometown"
+              value={contact.hometown ?? ''}
+              placeholder="Not set"
+              onSave={(hometown) => save.mutate({ hometown: hometown || null })}
+              className="text-sm"
+            />
+          </Field>
+          <Field label="Lives in">
+            <InlineText
+              label="Lives in"
+              value={contact.city ?? ''}
+              placeholder="Not set"
+              onSave={(city) => save.mutate({ city: city || null })}
+              className="text-sm"
+            />
+          </Field>
+        </div>
       </div>
 
       <Field label="Contact" shape="above">
