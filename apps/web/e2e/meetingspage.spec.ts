@@ -222,3 +222,41 @@ test('a meeting with a link can be joined from the list', async ({ page }) => {
   // A room is not a link. Guessing would send you to a site that may be somebody else's.
   await expect(page.getByText('In the room')).toBeVisible()
 })
+
+/**
+ * 会议的面板和人的面板长成同一套。
+ *
+ * 同一个人在同一块屏幕上读这两种东西：字段的标签都在值上面、列数都看这一块自己有多宽、面板右上
+ * 角都有一个 ↗ 通往那一页。会议这边以前连去那一页的路都没有 —— 左上角那两个字是个 span。
+ */
+test('会议面板也有 ↗ 通往那一页，字段也按自己的宽度排', async ({ page }) => {
+  await registerFreshUser(page)
+  const made = await page.request.post('/api/v1/meetings', {
+    headers: WEB,
+    data: {
+      title: '周会',
+      startsLocal: '2026-10-20T09:00',
+      timeZone: 'America/Toronto',
+      durationMinutes: 30,
+    },
+  })
+  expect(made.ok()).toBe(true)
+
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto('/meetings')
+  await page.getByRole('button', { name: /周会/ }).first().click()
+  const pane = page.getByRole('dialog', { name: 'Meetings' })
+  await expect(pane).toBeVisible()
+
+  // 标签在值上面：标签的下沿在值的上沿之上。
+  const stacked = await pane.evaluate(() => {
+    const label = [...document.querySelectorAll('span')].find((s) => s.textContent === 'Length')
+    const value = label?.parentElement?.querySelector('button')
+    if (!label || !value) return null
+    return label.getBoundingClientRect().bottom <= value.getBoundingClientRect().top + 1
+  })
+  expect(stacked).toBe(true)
+
+  await pane.getByRole('link', { name: 'Open as a page' }).click()
+  await expect(page).toHaveURL(new RegExp('/meetings/[0-9a-f-]{36}$'))
+})

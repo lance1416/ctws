@@ -16,6 +16,7 @@ import { ZONES, zoneLabel } from '../timeZones'
 import { DangerAction, DangerZone } from './DangerZone'
 import { meetingLink } from '../meetingPlace'
 import { Field } from './Field'
+import { Link } from 'react-router-dom'
 import { DetailHead, DetailPane } from './DetailPane'
 import { boxed } from './formStyles'
 import { InlineText, PickMany, PickOne } from './inline'
@@ -58,7 +59,13 @@ export function MeetingDetail({
   return (
     <DetailPane label="Meetings" onClose={onClose}>
       <MeetingFields meeting={meeting} accountZone={accountZone} onClose={onClose} />
-      {/* LAST, under a rule, in the danger colour -- the same frame every other thing uses. */}
+      {/*
+        取消留在面板里，而删一个人不留 —— 两者不是一回事。
+
+        取消一场会是在日历上做的排期动作：你正看着那一格，决定这周不开。它要走到这场会自己那一页
+        才能做的话，日历就废了一半。删一个人毁掉的是整条记录，那是另一种动作，所以它只在那个人
+        自己那一页的最底下。
+      */}
       <DangerZone>
         <CancelMeeting meeting={meeting} onCancelled={onClose} />
       </DangerZone>
@@ -127,9 +134,30 @@ export function MeetingFields({
           <DetailHead
             kind={
               <span className="flex min-w-0 items-center gap-1.5 text-sm text-fg-muted">
-                Meetings
+                <Link to="/meetings" className="rounded hover:text-fg hover:underline">
+                  Meetings
+                </Link>
                 {meeting.overridden && <span className="text-xs text-fg-subtle">Edited</span>}
               </span>
+            }
+            trailing={
+              <Link
+                to={`/meetings/${meeting.meetingId}`}
+                aria-label="Open as a page"
+                title="Open as a page"
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-fg-muted hover:bg-surface-hover hover:text-fg"
+              >
+                <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4">
+                  <path
+                    d="M6.5 3.5h6v6M12.5 3.5l-8 8"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </Link>
             }
             onClose={onClose}
           />
@@ -145,117 +173,125 @@ export function MeetingFields({
         />
       </div>
 
-      <div className="flex flex-col gap-2">
-        <Field label="Start">
-          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-            <input
-              type="datetime-local"
-              aria-label="Start"
-              key={meeting.startsLocal}
-              defaultValue={meeting.startsLocal}
-              onBlur={(e) => {
-                const next = e.target.value
-                // An emptied field is not a request to cancel the meeting, so it is put back.
-                if (!next) {
-                  e.target.value = meeting.startsLocal
-                  return
-                }
-                if (next !== meeting.startsLocal) {
-                  timing(
-                    { startsLocal: next },
-                    `This meeting repeats. Move it to ${next.replace('T', ' ')}?`,
-                  )
-                }
-              }}
-              className={`${boxed} h-8 py-0 text-sm tabular-nums`}
-            />
-            {/* The zone is the MEETING’s: "09:00 Toronto time" is what was agreed, whatever the
+      {/*
+        标签在值上面，列数看这一块自己有多宽（`@container`）—— 和人的那一页同一套，因为它们是
+        同一个人在同一块屏幕上读的两种东西。开始时间和地点各占一整行：它们各自是两个控件。
+      */}
+      <div className="@container">
+        <div className="grid items-start gap-x-6 gap-y-4 @xl:grid-cols-2 @2xl:grid-cols-3">
+          <div className="col-span-full">
+            <Field label="Start" shape="above">
+              <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                <input
+                  type="datetime-local"
+                  aria-label="Start"
+                  key={meeting.startsLocal}
+                  defaultValue={meeting.startsLocal}
+                  onBlur={(e) => {
+                    const next = e.target.value
+                    // An emptied field is not a request to cancel the meeting, so it is put back.
+                    if (!next) {
+                      e.target.value = meeting.startsLocal
+                      return
+                    }
+                    if (next !== meeting.startsLocal) {
+                      timing(
+                        { startsLocal: next },
+                        `This meeting repeats. Move it to ${next.replace('T', ' ')}?`,
+                      )
+                    }
+                  }}
+                  className={`${boxed} h-8 py-0 text-sm tabular-nums`}
+                />
+                {/* The zone is the MEETING’s: "09:00 Toronto time" is what was agreed, whatever the
                   clock says here. */}
-            <PickOne
-              label="Time zone"
-              value={meeting.timeZone}
-              choices={ZONES.map((z) => ({ value: z, label: zoneLabel(z) }))}
-              onPick={(timeZone) => series({ timeZone })}
-            />
+                <PickOne
+                  label="Time zone"
+                  value={meeting.timeZone}
+                  choices={ZONES.map((z) => ({ value: z, label: zoneLabel(z) }))}
+                  onPick={(timeZone) => series({ timeZone })}
+                />
+              </div>
+            </Field>
           </div>
-        </Field>
-        {elsewhere && (
-          <Field label="Your time">
-            {/* The same meeting on the account's own clock -- when YOU have to be there. Read-only: the
+          {elsewhere && (
+            <Field label="Your time" shape="above">
+              {/* The same meeting on the account's own clock -- when YOU have to be there. Read-only: the
                   time was agreed in the other zone, and editing it here would be editing a
                   conversion. */}
-            <span data-local-clock className="text-sm tabular-nums text-fg-muted">
-              {new Intl.DateTimeFormat('en-US', {
-                timeZone: accountZone,
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false,
-              }).format(new Date(meeting.startsAt))}
-            </span>
+              <span data-local-clock className="text-sm tabular-nums text-fg-muted">
+                {new Intl.DateTimeFormat('en-US', {
+                  timeZone: accountZone,
+                  month: 'short',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false,
+                }).format(new Date(meeting.startsAt))}
+              </span>
+            </Field>
+          )}
+          <Field label="Length" shape="above">
+            <PickOne
+              label="Length"
+              value={String(meeting.durationMinutes)}
+              choices={[15, 30, 45, 60, 90, 120].map((m) => ({
+                value: String(m),
+                label: m >= 60 ? `${m / 60} h` : `${m} min`,
+              }))}
+              onPick={(m) =>
+                timing(
+                  { durationMinutes: Number(m) },
+                  'This meeting repeats. Which occurrences change length?',
+                )
+              }
+            />
           </Field>
-        )}
-        <Field label="Length">
-          <PickOne
-            label="Length"
-            value={String(meeting.durationMinutes)}
-            choices={[15, 30, 45, 60, 90, 120].map((m) => ({
-              value: String(m),
-              label: m >= 60 ? `${m / 60} h` : `${m} min`,
-            }))}
-            onPick={(m) =>
-              timing(
-                { durationMinutes: Number(m) },
-                'This meeting repeats. Which occurrences change length?',
-              )
-            }
-          />
-        </Field>
-        <Field label="Repeats">
-          <PickOne
-            label="Repeats"
-            value={bare ?? NO_REPEAT}
-            /* Matched WITHOUT its ending, so a weekly meeting that stops in December is still
+          <Field label="Repeats" shape="above">
+            <PickOne
+              label="Repeats"
+              value={bare ?? NO_REPEAT}
+              /* Matched WITHOUT its ending, so a weekly meeting that stops in December is still
                the weekly choice. A rule the menu does not offer stays one of its options while
                it is the current value, or the control would show a placeholder for a value it
                has. */
-            choices={[
-              ...choices.map((c) => ({ value: c.value ?? NO_REPEAT, label: c.label })),
-              ...(bare && !choices.some((c) => c.value === bare)
-                ? [{ value: bare, label: repeatLabel(bare, meeting.startsLocal) }]
-                : []),
-            ]}
-            onPick={(v) => series({ rrule: v === NO_REPEAT ? null : withUntil(v, until) })}
-          />
-        </Field>
-        {/* WHEN IT STOPS. Only once it repeats -- an ending on a meeting that happens once is a
-            control with nothing to end. */}
-        {bare && (
-          <Field label="Ends">
-            <span className="flex items-center gap-2">
-              <input
-                type="date"
-                aria-label="Ends"
-                value={until ?? ''}
-                min={meeting.startsLocal.slice(0, 10)}
-                onChange={(e) => series({ rrule: withUntil(bare, e.target.value || null) })}
-                className={`${boxed} text-sm`}
-              />
-              {until ? (
-                <button
-                  type="button"
-                  onClick={() => series({ rrule: withUntil(bare, null) })}
-                  className={BUTTON.inline}
-                >
-                  Never
-                </button>
-              ) : (
-                <span className="text-sm text-fg-subtle">Never</span>
-              )}
-            </span>
+              choices={[
+                ...choices.map((c) => ({ value: c.value ?? NO_REPEAT, label: c.label })),
+                ...(bare && !choices.some((c) => c.value === bare)
+                  ? [{ value: bare, label: repeatLabel(bare, meeting.startsLocal) }]
+                  : []),
+              ]}
+              onPick={(v) => series({ rrule: v === NO_REPEAT ? null : withUntil(v, until) })}
+            />
           </Field>
-        )}
+          {/* WHEN IT STOPS. Only once it repeats -- an ending on a meeting that happens once is a
+            control with nothing to end. */}
+          {bare && (
+            <Field label="Ends" shape="above">
+              <span className="flex items-center gap-2">
+                <input
+                  type="date"
+                  aria-label="Ends"
+                  value={until ?? ''}
+                  min={meeting.startsLocal.slice(0, 10)}
+                  onChange={(e) => series({ rrule: withUntil(bare, e.target.value || null) })}
+                  className={`${boxed} text-sm`}
+                />
+                {until ? (
+                  <button
+                    type="button"
+                    onClick={() => series({ rrule: withUntil(bare, null) })}
+                    className={BUTTON.inline}
+                  >
+                    Never
+                  </button>
+                ) : (
+                  <span className="text-sm text-fg-subtle">Never</span>
+                )}
+              </span>
+            </Field>
+          )}
+        </div>
       </div>
 
       {asking && (
@@ -274,56 +310,60 @@ export function MeetingFields({
         </p>
       )}
 
-      <div className="flex flex-col gap-2">
-        <Field label="Location">
-          <span className="flex min-w-0 items-center gap-1.5">
-            <InlineText
-              label="Location"
-              value={meeting.location ?? ''}
-              placeholder="A room, an address, or a link"
-              onSave={(location) => series({ location: location || null })}
-              className="min-w-0 flex-1 truncate text-sm"
-            />
-            {/* The link sits BESIDE the value, not on it: the value has to stay clickable as an
+      <div className="@container">
+        <div className="grid items-start gap-x-6 gap-y-4 @xl:grid-cols-2 @2xl:grid-cols-3">
+          <div className="col-span-full">
+            <Field label="Location" shape="above">
+              <span className="flex min-w-0 items-center gap-1.5">
+                <InlineText
+                  label="Location"
+                  value={meeting.location ?? ''}
+                  placeholder="A room, an address, or a link"
+                  onSave={(location) => series({ location: location || null })}
+                  className="min-w-0 flex-1 truncate text-sm"
+                />
+                {/* The link sits BESIDE the value, not on it: the value has to stay clickable as an
                 editor, so joining is its own control -- the same shape a contact's address
                 takes. */}
-            {place && (
-              <a
-                href={place}
-                target="_blank"
-                rel="noreferrer"
-                aria-label="Join"
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-fg-subtle hover:bg-surface-hover hover:text-fg"
-              >
-                <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3.5 w-3.5">
-                  <path
-                    d="M6.5 3.5h6v6M12.5 3.5l-8 8"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </a>
-            )}
-          </span>
-        </Field>
-        <Field label="Projects" shape="beside-top">
-          <PickOne
-            label="Projects"
-            value={meeting.projectId ?? NO_PROJECT}
-            /* "No project" is a CHOICE, not only the placeholder: a meeting filed by mistake
+                {place && (
+                  <a
+                    href={place}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Join"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-fg-subtle hover:bg-surface-hover hover:text-fg"
+                  >
+                    <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3.5 w-3.5">
+                      <path
+                        d="M6.5 3.5h6v6M12.5 3.5l-8 8"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </a>
+                )}
+              </span>
+            </Field>
+          </div>
+          <Field label="Projects" shape="above">
+            <PickOne
+              label="Projects"
+              value={meeting.projectId ?? NO_PROJECT}
+              /* "No project" is a CHOICE, not only the placeholder: a meeting filed by mistake
                could be moved but never unfiled. */
-            choices={[
-              { value: NO_PROJECT, label: 'No project' },
-              ...(projects.data ?? [])
-                .filter((p) => !p.archivedAt)
-                .map((p) => ({ value: p.id, label: p.name, mark: chip(p.id) })),
-            ]}
-            onPick={(v) => series({ projectId: v === NO_PROJECT ? null : v })}
-          />
-        </Field>
+              choices={[
+                { value: NO_PROJECT, label: 'No project' },
+                ...(projects.data ?? [])
+                  .filter((p) => !p.archivedAt)
+                  .map((p) => ({ value: p.id, label: p.name, mark: chip(p.id) })),
+              ]}
+              onPick={(v) => series({ projectId: v === NO_PROJECT ? null : v })}
+            />
+          </Field>
+        </div>
       </div>
 
       <Field label="Attendees" shape="above">
