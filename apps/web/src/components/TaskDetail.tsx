@@ -30,6 +30,7 @@ import { DangerAction, DangerZone } from './DangerZone'
 import { DetailPane } from './DetailPane'
 import { PickOne } from './inline'
 import { Dependencies } from './Dependencies'
+import { Links } from './Links'
 import { BUTTON } from './buttonStyles'
 // The shared editing vocabulary, which the New task dialog types into a task with as well.
 import { decision, field, label } from './formStyles'
@@ -460,6 +461,19 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                 an edge is a fact about two tasks that is written the moment it is named, and
                 parking it behind Save would make adding a dependency wait on a form it is not part of. */}
             <Dependencies taskId={task.id} projectId={task.projectId} />
+
+            {/*
+              AND WHO OR WHAT IT IS ABOUT: 「这个活要跟陈颖对接」「这本书是她推荐的」。
+
+              边早就收得下这些（`about` 两端都不限），缺的只是任务这一侧没把它画出来 —— 于是一件
+              活和一个人之间的那句话，只有 curl 写得进去。和依赖一样住在阅读态：说出一条边的那一
+              刻它就成立，不该等一张它不属于的表单。
+            */}
+            <section aria-label="Linked" className="border-t border-border-subtle pt-3">
+              <span className="block px-2 pb-1 text-xs text-fg-muted">Linked</span>
+              {/* 项目不在这里重复：面板抬头那一行写的就是它，而一行东西读两遍是这个 app 一直在躲的那件事。 */}
+              <Links of={{ type: 'task', id: task.id }} except={['project']} />
+            </section>
 
             <div>
               <span className={label}>Notes</span>
