@@ -166,7 +166,8 @@ test('写一个农历生日，输入时就看见换算与回退', async ({ page 
   await registerFreshUser(page)
   const id = await person(page, '外婆')
   await page.goto(`/contacts/${id}`)
-  // 空着的那一格点下去就是编辑：没有生日的人不该先看见一张日期表单。
+  // 改生日和改别的字段同一条路：一个 Edit 进表，生日那一格点开是那排控件。
+  await page.getByRole('button', { name: 'Edit', exact: true }).click()
   await page.getByRole('button', { name: 'Birthday, not set' }).click()
   await page
     .getByRole('group', { name: 'Which calendar' })
@@ -189,6 +190,7 @@ test('选了那一年没有的日子，预览就说是哪一条不成立', async
   await registerFreshUser(page)
   const id = await person(page, '赵姨')
   await page.goto(`/contacts/${id}`)
+  await page.getByRole('button', { name: 'Edit', exact: true }).click()
   await page.getByRole('button', { name: 'Birthday, not set' }).click()
   await page
     .getByRole('group', { name: 'Which calendar' })

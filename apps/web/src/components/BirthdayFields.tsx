@@ -10,7 +10,6 @@ import { ApiError } from '../api'
 import { previewBirthday, type BirthdayDraft } from '../api/contacts'
 import { countdownPhrase, shortDay, todayIn } from '../dueAt'
 import { useTimeZone } from '../useMe'
-import { BUTTON } from './buttonStyles'
 import { Field } from './Field'
 import { PickOne } from './inline'
 import { textbox } from './formStyles'
@@ -108,21 +107,18 @@ const leadLabel = (lead: number) => LEADS.find(([n]) => n === lead)?.[1] ?? `${l
  * 星座、时辰、下一次、提前量是生日管家那边的事。它们在点开之后才出现（`aria-expanded`），展开的
  * 那一块横跨整行 —— 浮层要处理定位、裁剪与焦点，而这里只是把二级信息放到第二层。
  */
-export function BirthdayFields({
-  contact,
-  onSave,
-}: {
-  contact: ContactResponse
-  onSave: (patch: { birthday: BirthdayDraft | null }) => void
-}) {
+/**
+ * 一个人的生日，在他那一层上就是一格。
+ *
+ * 和「家乡」「现居」一样宽、一样响：一张联系人页是用来认出一个人、找到一个人的，而农历、生肖、
+ * 星座、时辰、下一次、提前量是生日管家那边的事。它们在点开之后才出现（`aria-expanded`），展开的
+ * 那一块横跨整行 —— 浮层要处理定位、裁剪与焦点，而这里只是把二级信息放到第二层。
+ *
+ * 这里只读：改生日和改别的字段走同一条路（那张表里的 `Birthday`），一个人不该有两个编辑入口。
+ */
+export function BirthdayFields({ contact }: { contact: ContactResponse }) {
   const [open, setOpen] = useState(false)
-  const [editing, setEditing] = useState(false)
   const b = contact.birthday
-
-  const close = () => {
-    setOpen(false)
-    setEditing(false)
-  }
 
   return (
     <>
@@ -131,50 +127,53 @@ export function BirthdayFields({
           type="button"
           aria-expanded={open}
           aria-label={b ? `Birthday, ${givenDate(b)}` : 'Birthday, not set'}
-          // 没有生日就直接进编辑：那一格空着的时候，点它和点「家乡」是同一个动作。
-          onClick={() => {
-            if (!b) setEditing(true)
-            setOpen(!open || !b)
-          }}
-          className={`-mx-1.5 flex min-w-0 items-center gap-1.5 rounded-lg px-1.5 py-0.5 text-left text-sm hover:bg-surface-hover ${
-            b ? 'text-fg' : 'text-fg-subtle'
+          disabled={!b}
+          onClick={() => setOpen(!open)}
+          className={`-mx-1.5 flex min-w-0 items-center gap-1.5 rounded-lg px-1.5 py-0.5 text-left text-sm ${
+            b ? 'text-fg hover:bg-surface-hover' : 'text-fg-subtle'
           }`}
         >
           <span className="truncate">{b ? givenDate(b) : 'Not set'}</span>
-          <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3 w-3 shrink-0 text-fg-subtle">
-            <path
-              d="M4 6.5l4 4 4-4"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          {b && (
+            <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3 w-3 shrink-0 text-fg-subtle">
+              <path
+                d="M4 6.5l4 4 4-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          )}
         </button>
       </Field>
 
-      {open && (
+      {open && b && (
         <div
           data-birthday-more
           className="col-span-full rounded-lg border border-border-strong bg-surface-raised p-3"
         >
-          {editing ? (
-            <BirthdayForm
-              birthday={b}
-              onCancel={() => (b ? setEditing(false) : close())}
-              onSave={(draft) => {
-                onSave({ birthday: draft })
-                close()
-              }}
-            />
-          ) : (
-            b && <BirthdayRead birthday={b} onEdit={() => setEditing(true)} />
-          )}
+          <BirthdayRead birthday={b} />
         </div>
       )}
     </>
   )
+}
+
+/**
+ * 一份草稿读成一行字：表里那个按钮上写的就是它。
+ *
+ * 和 `givenDate` 不同：那一个读的是服务端算过的回显（`农历甲申年十二月三十`），而草稿还没存，
+ * 手里只有输入的那几个数。
+ */
+export function plainDate(d: BirthdayDraft): string {
+  const month =
+    d.calendar === 'lunar'
+      ? `${d.leapMonth ? '闰' : ''}${LUNAR_MONTHS[d.month - 1]}`
+      : SOLAR_MONTHS[d.month - 1]
+  const day = d.calendar === 'lunar' ? LUNAR_DAYS[d.day - 1] : String(d.day)
+  return [d.year === null ? null : `${d.year}`, month, day].filter(Boolean).join(' ')
 }
 
 /** 当初写下的那一天，照它被写下时的历法。年份不知道就只说月日。 */
@@ -188,7 +187,7 @@ function givenDate(b: BirthdayResponse): string {
  *
  * 一件事一行。这一段以前是跑在一起的一段话，而日期、距离、周岁、生肖、时辰是五种不同的东西。
  */
-function BirthdayRead({ birthday: b, onEdit }: { birthday: BirthdayResponse; onEdit: () => void }) {
+function BirthdayRead({ birthday: b }: { birthday: BirthdayResponse }) {
   const today = todayIn(useTimeZone())
   return (
     <div data-birthday className="flex flex-col gap-2">
@@ -219,10 +218,6 @@ function BirthdayRead({ birthday: b, onEdit }: { birthday: BirthdayResponse; onE
       <div className="mt-1 flex flex-wrap items-center gap-2 border-t border-border-subtle pt-2">
         <span className="text-xs text-fg-muted">Tell me</span>
         <span className="text-sm text-fg">{leadLabel(b.remindLead)}</span>
-        <span className="flex-1" />
-        <button type="button" className={BUTTON.quiet} onClick={onEdit}>
-          Edit
-        </button>
       </div>
     </div>
   )
@@ -256,54 +251,6 @@ export function birthdayDraftOf(birthday: BirthdayResponse | null): BirthdayDraf
     hourBranch: birthday?.hourBranch ?? null,
     remindLead: (birthday?.remindLead ?? 7) as RemindLead,
   }
-}
-
-/** 页面上的那一版：编辑器加它自己的按钮。 */
-function BirthdayForm({
-  birthday,
-  onCancel,
-  onSave,
-}: {
-  birthday: BirthdayResponse | null
-  onCancel: () => void
-  onSave: (draft: BirthdayDraft | null) => void
-}) {
-  const [state, setState] = useState(() => ({
-    draft: birthdayDraftOf(birthday),
-    refused: false,
-  }))
-
-  return (
-    <Field label="Birthday" shape="above">
-      <div className="flex flex-col gap-2">
-        <BirthdayEditor
-          birthday={birthday}
-          onChange={(draft, refused) => setState({ draft, refused })}
-        />
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            className={BUTTON.primary}
-            // 服务端已经拒了这个日子，保存只会 400，而保存这条路径不画错误：按钮关着，旁边那句话
-            // 说的就是原因。只认 400 -- 网络抖一下不该把人锁在表单里。
-            disabled={state.refused}
-            onClick={() => onSave(state.draft)}
-          >
-            Save
-          </button>
-          <button type="button" className={BUTTON.secondary} onClick={onCancel}>
-            Cancel
-          </button>
-          <span className="flex-1" />
-          {birthday && (
-            <button type="button" className={BUTTON.quiet} onClick={() => onSave(null)}>
-              Remove
-            </button>
-          )}
-        </div>
-      </div>
-    </Field>
-  )
 }
 
 /**

@@ -1,11 +1,11 @@
 import { CHANNEL_KINDS, type ChannelKind, type ContactResponse } from '@ctws/contracts'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { channelHref, deleteContact, patchContact } from '../api/contacts'
+import { channelHref, deleteContact, patchContact, type BirthdayDraft } from '../api/contacts'
 import { listProjects } from '../api/projects'
 import { useProjectRail } from '../projectColor'
 import { DangerAction, DangerZone } from './DangerZone'
 import { useState, type ReactNode } from 'react'
-import { BirthdayFields } from './BirthdayFields'
+import { BirthdayEditor, BirthdayFields, plainDate } from './BirthdayFields'
 import { CIRCLE_LABELS } from './BirthdayRow'
 import { BUTTON } from './buttonStyles'
 import { Field } from './Field'
@@ -195,7 +195,7 @@ export function ContactFields({
           data-contact-fields
           className="grid items-start gap-x-6 gap-y-4 @xl:grid-cols-2 @2xl:grid-cols-3"
         >
-          <BirthdayFields contact={contact} onSave={(patch) => save.mutate(patch)} />
+          <BirthdayFields contact={contact} />
           <Reads label="Hometown" value={contact.hometown} />
           <Reads label="Lives in" value={contact.city} />
           <Reads label="Company" value={contact.org} />
@@ -337,10 +337,15 @@ function ContactForm({
   const [channels, setChannels] = useState(contact.channels)
   const [note, setNote] = useState(contact.note ?? '')
   const [writing, setWriting] = useState(false)
+  const [pickingDay, setPickingDay] = useState(false)
+  // 没点开就是不动它：undefined 表示「这次没改生日」，null 表示「去掉」。
+  const [birthday, setBirthday] = useState<BirthdayDraft | null | undefined>(undefined)
+  // 服务端说这个日子不存在：保存必然 400，所以按钮关着。
+  const [badDay, setBadDay] = useState(false)
   const composing = useComposing()
 
   const submit = () => {
-    if (busy || name.trim() === '') return
+    if (busy || badDay || name.trim() === '') return
     onSave({
       name: name.trim(),
       org: org.trim() || null,
@@ -355,6 +360,7 @@ function ContactForm({
         .filter((c) => c.value.trim() !== '')
         .map((c) => ({ kind: c.kind, value: c.value.trim(), label: c.label?.trim() || null })),
       note: note.trim() || null,
+      ...(birthday === undefined ? {} : { birthday }),
     })
   }
 
@@ -373,7 +379,11 @@ function ContactForm({
         <button type="button" className={BUTTON.secondary} onClick={onCancel}>
           Cancel
         </button>
-        <button type="submit" className={BUTTON.primary} disabled={busy || name.trim() === ''}>
+        <button
+          type="submit"
+          className={BUTTON.primary}
+          disabled={busy || badDay || name.trim() === ''}
+        >
           Save
         </button>
       </div>
@@ -454,6 +464,64 @@ function ContactForm({
 
       <div className="@container">
         <div className="grid items-start gap-x-6 gap-y-4 @xl:grid-cols-2 @2xl:grid-cols-3">
+          {/*
+            生日也在这张表里，跟着这一次 Save 一起写回。
+
+            它比别的字段胖（历法、年、月、日、闰月、时辰、提前量），所以收着：点一下才摊开那一排
+            控件。摊开的那一块横跨整行 —— 挤在三分之一列里，那排控件会折成四行。
+          */}
+          <Field label="Birthday" shape="above">
+            <button
+              type="button"
+              aria-expanded={pickingDay}
+              // 自己的名字：屏幕上写的是 `Not set`，而性别和 circle 空着时也写 `Not set`。
+              aria-label={birthday ? `Birthday, ${plainDate(birthday)}` : 'Birthday, not set'}
+              onClick={() => setPickingDay(!pickingDay)}
+              className={`-mx-1.5 flex min-w-0 items-center gap-1.5 rounded-lg px-1.5 py-0.5 text-left text-sm hover:bg-surface-hover ${
+                birthday ? 'text-fg' : 'text-fg-subtle'
+              }`}
+            >
+              <span className="truncate">{birthday ? plainDate(birthday) : 'Not set'}</span>
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 16 16"
+                className="h-3 w-3 shrink-0 text-fg-subtle"
+              >
+                <path
+                  d="M4 6.5l4 4 4-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+          </Field>
+          {pickingDay && (
+            <div className="col-span-full rounded-lg border border-border-strong bg-surface-raised p-3">
+              <BirthdayEditor
+                birthday={contact.birthday}
+                onChange={(draft, refused) => {
+                  setBirthday(draft)
+                  setBadDay(refused)
+                }}
+              />
+              {contact.birthday && (
+                <button
+                  type="button"
+                  className={`mt-2 ${BUTTON.quiet}`}
+                  onClick={() => {
+                    setBirthday(null)
+                    setBadDay(false)
+                    setPickingDay(false)
+                  }}
+                >
+                  Remove the birthday
+                </button>
+              )}
+            </div>
+          )}
           <Writes label="Hometown" id="c-home" value={hometown} onChange={setHometown} />
           <Writes label="Lives in" id="c-city" value={city} onChange={setCity} />
           <Writes label="Company" id="c-org" value={org} onChange={setOrg} />
