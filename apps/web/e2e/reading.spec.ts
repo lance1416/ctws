@@ -30,11 +30,11 @@ test('a pasted link goes to Reading; a sentence still goes to the inbox', async 
   // tested while only one module could take a line.
   await registerFreshUser(page)
 
-  const toReading = await captureLine(page, 'https://linear.app/now/redesign')
+  const toReading = await captureLine(page, 'https://linear.invalid/now/redesign')
   expect(new URL(toReading.url()).pathname).toBe('/api/v1/reading')
   await expect(page.getByText('Added to')).toContainText('Reading')
 
-  const toInbox = await captureLine(page, '看看这篇 https://linear.app/now/redesign')
+  const toInbox = await captureLine(page, '看看这篇 https://linear.invalid/now/redesign')
   expect(new URL(toInbox.url()).pathname).toBe('/api/v1/tasks')
   await expect(page.getByText('Added to')).toContainText('Inbox')
 })
@@ -43,19 +43,19 @@ test('an untitled link is listed by host and path, and can be given a name', asy
   await registerFreshUser(page)
   await page.request.post('/api/v1/reading', {
     headers: WEB,
-    data: { kind: 'link', url: 'https://www.linear.app/now/how-we-redesigned-issues' },
+    data: { kind: 'link', url: 'https://www.linear.invalid/now/how-we-redesigned-issues' },
   })
   await page.goto('/reading')
 
   // A pasted link shows its HOST AND PATH -- the host alone ("x.com", "github.com") does not
   // say which tweet or which repo, so a row of it carries no information at all.
-  const row = rowOf(page, 'linear.app/now/how-we-redesigned-issues')
-  await expect(row.getByRole('link')).toHaveText('linear.app/now/how-we-redesigned-issues')
+  const row = rowOf(page, 'linear.invalid/now/how-we-redesigned-issues')
+  await expect(row.getByRole('link')).toHaveText('linear.invalid/now/how-we-redesigned-issues')
   // And the line under it does not repeat what the line above already says.
-  await expect(row.getByText('linear.app', { exact: true })).toHaveCount(0)
+  await expect(row.getByText('linear.invalid', { exact: true })).toHaveCount(0)
   await expect(row.getByRole('link')).toHaveAttribute(
     'href',
-    'https://www.linear.app/now/how-we-redesigned-issues',
+    'https://www.linear.invalid/now/how-we-redesigned-issues',
   )
   // And it opens away from the workspace, so a half-read list is not lost.
   await expect(row.getByRole('link')).toHaveAttribute('target', '_blank')

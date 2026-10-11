@@ -243,6 +243,15 @@ export const readingItems = pgTable(
     /** Nullable for a link: capture is a pasted url, and the list shows the host until someone
      *  types a title. */
     title: text('title'),
+    /**
+     * 抓回来的标题与那句话，以及抓的时间。
+     *
+     * 和 `title` 分开：人改过的标题不能被重抓盖掉。`fetched_at` 记着是什么时候抓的 —— 抓不到
+     * 也要记上，否则分不出「还没抓过」和「抓过但对面什么都不给」。
+     */
+    fetchedTitle: text('fetched_title'),
+    fetchedSummary: text('fetched_summary'),
+    fetchedAt: timestamp('fetched_at', { withTimezone: true }),
     url: text('url'),
     author: text('author'),
     status: text('status').notNull(),

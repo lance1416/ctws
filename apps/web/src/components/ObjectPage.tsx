@@ -52,7 +52,11 @@ export function ObjectPage({ type }: { type: ObjectType }) {
         column puts one clump of rows left of centre with half the screen empty beside it. The
         person's page and a meeting's page are exactly that: a short stack of fields with nothing
         beside them, so the fields take two columns of three and what the thing is CONNECTED to
-        takes the third. Below `lg` it stacks, in the same order.
+        takes the third. Below `xl` it stacks, in the same order.
+
+        1280, NOT 1024. 三栏在一千出头的窗口上是双输：中栏被压到 490px，字段配不上对（它们在
+        576 以上才配对），而右栏只放得下一个几乎是空的 Linked。那一档正文占满一行反而更宽，
+        Linked 落到下面也还是整行 —— 横向空间是给内容用的，不是给空栏用的。
 
         A PROJECT PAGE IS LEFT ALONE. Its module's own block already spends the width, and the
         third column there belongs to the task detail pane (`project.spec.ts` pins the tree and
@@ -61,11 +65,11 @@ export function ObjectPage({ type }: { type: ObjectType }) {
       <div
         className={
           sideBySide
-            ? 'grid min-w-0 items-start gap-4 lg:grid-cols-[repeat(3,minmax(0,1fr))]'
+            ? 'grid min-w-0 items-start gap-4 xl:grid-cols-[repeat(3,minmax(0,1fr))]'
             : 'contents'
         }
       >
-        <div className={sideBySide ? 'flex min-w-0 flex-col gap-4 lg:col-span-2' : 'contents'}>
+        <div className={sideBySide ? 'flex min-w-0 flex-col gap-4 xl:col-span-2' : 'contents'}>
           {/* The banner: one accent edge and the top step of the type scale spent on its subject,
           the same language the workbench's own strip speaks. */}
           <Panel

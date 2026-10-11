@@ -99,7 +99,8 @@ export function ReadingRow({
     // anything about WHEN, and the age is about how long it has been ignored.
     item.planOn ? `Finish ${dayPhrase(item.planOn, today).toLowerCase()}` : null,
     // 没有标题时，标题那一行写的就是 host 加路径，第二行再写一遍 host 是重复。
-    item.kind === 'book' ? item.author : item.title ? host : null,
+    // 标题那一行写的是 host 加路径时，第二行再写一遍 host 是重复。
+    item.kind === 'book' ? item.author : item.title || item.fetchedTitle ? host : null,
     addedLabel(item.createdAt, timeZone),
   ].filter(Boolean)
 
@@ -170,6 +171,12 @@ export function ReadingRow({
           </span>
         )}
         {meta.length > 0 && <p className="truncate text-xs text-fg-subtle">{meta.join(' · ')}</p>}
+        {/* 对面自己写的那一句，一行为止 —— 它是用来认出这是什么的，不是用来读的。 */}
+        {item.fetchedSummary && !item.title && (
+          <p data-reading-summary className="truncate text-xs text-fg-muted">
+            {item.fetchedSummary}
+          </p>
+        )}
       </div>
 
       {/* One visible action, named by what it does. Everything rarer is behind the menu: a row

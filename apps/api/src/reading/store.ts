@@ -45,6 +45,29 @@ const rowOf = ({
   projectName: string | null
 }): ReadingItemRow => ({ ...item, projectId, projectName })
 
+/**
+ * 抓完之后回填。
+ *
+ * 抓不到也写：`fetched_at` 本身就是答案，否则每次列表都会想再抓一次。这是一次单独的写，不是建
+ * 的时候一起写 —— 条目先落库，抓取再慢慢来，于是对面不回话也丢不了这一条。
+ */
+export async function recordFetched(
+  q: Queryable,
+  workspaceId: string,
+  id: string,
+  facts: { title: string | null; summary: string | null },
+): Promise<ReadingItemRow> {
+  await q
+    .update(readingItems)
+    .set({
+      fetchedTitle: facts.title,
+      fetchedSummary: facts.summary,
+      fetchedAt: new Date(),
+    })
+    .where(and(visibleItems(workspaceId), eq(readingItems.id, id)))
+  return getReadingItem(q, workspaceId, id)
+}
+
 export async function listReadingItems(
   q: Queryable,
   workspaceId: string,

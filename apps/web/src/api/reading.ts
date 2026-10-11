@@ -67,8 +67,17 @@ export function deleteReadingItem(id: string): Promise<void> {
  * part a person recognises. A url the browser cannot parse falls back to the raw string rather than to
  * an empty row, because an item you cannot see is worse than an ugly one.
  */
-export function readingLabel(item: Pick<ReadingItemResponse, 'title' | 'url'>): string {
+/**
+ * 这一行写什么：人自己写的标题 > 抓回来的 > host 加路径。
+ *
+ * 顺序是定死的。人改过的标题不能被一次重抓盖掉 —— 这也是抓回来的那一个单独存一列、而不是写进
+ * `title` 的原因。
+ */
+export function readingLabel(
+  item: Pick<ReadingItemResponse, 'title' | 'url'> & { fetchedTitle?: string | null },
+): string {
   if (item.title) return item.title
+  if (item.fetchedTitle) return item.fetchedTitle
   if (!item.url) return '(untitled)'
   return linkLabel(item.url)
 }

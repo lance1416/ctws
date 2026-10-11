@@ -22,6 +22,14 @@ import { checkLinkUrl, isPublicAddress, literalAddress } from './safeUrl'
 
 export type Unfurled = { title: string | null; summary: string | null }
 
+/**
+ * 去抓这一条链接。
+ *
+ * 路由拿的是这个类型而不是下面那个函数本身：测试里的服务器住在 127.0.0.1 上，而那正是线上要挡
+ * 的地址，所以测试传一个放开了那道门的版本进去 —— 生产的那条路上没有任何开关。
+ */
+export type Unfurl = (url: string) => Promise<Unfurled | null>
+
 /** 总预算。捕获是同步等它的，所以这个数字就是「粘一条链接最慢多久回来」。 */
 const BUDGET_MS = 2000
 /** 只读开头这么多：og 标签与 <title> 都在 <head> 里，正文一个字都不需要。 */

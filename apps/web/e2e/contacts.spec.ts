@@ -363,13 +363,12 @@ test('短字段的列数看这块自己有多宽，不看窗口有多宽', async
   expect(pane!.columns).toBe(1)
   expect(pane!.drift.filter((d) => d.off > 6)).toEqual([])
 
-  // 人的那一页，窗口 1024：三栏下的中栏也还不到配对的宽度。
+  // 人的那一页，窗口 1024：这里正文占满一行（三栏要到 1280 才成立），所以这一块反而够宽。
   await page.setViewportSize({ width: 1024, height: 900 })
   await page.goto(`/contacts/${id}`)
   await expect(page.getByText('Lives in')).toBeVisible()
   const narrow = await fieldGrid(page)
-  expect(narrow!.width).toBeLessThan(PAIR_AT)
-  expect(narrow!.columns).toBe(1)
+  expect(narrow!.columns).toBe(narrow!.width >= PAIR_AT ? 2 : 1)
   // Projects 占两行时，同一行的 Company 不许飘到两行中间。
   expect(narrow!.drift.filter((d) => d.off > 6)).toEqual([])
 

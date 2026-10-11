@@ -29,6 +29,9 @@ services:
       # value should allow that, so the DEV stack raises it rather than the default being wrong.
       # `compose.prod.yaml` leaves it at the shipped 60.
       AUTH_CEILING: ${AUTH_CEILING:-100000}
+      # 出站抓取默认开着 —— 这套栈就是日常在用的那一个。要整个关掉（一个出站请求都不发）
+      # 就 READING_UNFURL=false。e2e 不靠这个开关：那些用例粘的是 .invalid 的地址，永远解析不出来。
+      READING_UNFURL: ${READING_UNFURL:-true}
     healthcheck:
       test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:3000/api/v1/health']
       interval: 5s

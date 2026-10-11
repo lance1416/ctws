@@ -27,13 +27,22 @@ import { calendarDayRoutes } from './calendar/days'
 import { registerGuards } from './guards'
 import { linkRoutes } from './links/routes'
 import { sendProblem } from './problem'
+import { unfurl, type Unfurl } from './reading/unfurl'
 import { projectRoutes } from './projects/routes'
 import { contactRoutes } from './contacts/routes'
 import { meetingRoutes } from './meetings/routes'
 import { readingRoutes } from './reading/routes'
 import { taskRoutes } from './tasks/routes'
 
-export async function buildApp(opts: { env: Env; db: Db }): Promise<FastifyInstance> {
+/**
+ * `unfurl` 可以换掉：测试里的服务器住在 127.0.0.1 上，而那正是线上要挡的地址。生产这条路上没有
+ * 任何开关 —— 整个关掉是 env 的事（`READING_UNFURL`），不是把那道门放开。
+ */
+export async function buildApp(opts: {
+  env: Env
+  db: Db
+  unfurl?: Unfurl
+}): Promise<FastifyInstance> {
   // Resolve the login timing-equalisation hash before the app is ready, so
   // the very first login request -- known or unknown email -- never pays
   // for hashing it. See auth/service.ts `warmDummyHash`.
@@ -46,6 +55,7 @@ export async function buildApp(opts: { env: Env; db: Db }): Promise<FastifyInsta
 
   app.decorate('db', opts.db)
   app.decorate('env', opts.env)
+  app.decorate('unfurl', opts.unfurl ?? unfurl)
 
   await app.register(fastifySwagger, {
     openapi: { info: { title: 'CTWS API', version: '1' } },
@@ -144,6 +154,8 @@ declare module 'fastify' {
   interface FastifyInstance {
     db: Db
     env: Env
+    /** 去读一条链接对面说的那句话；见 reading/unfurl.ts。 */
+    unfurl: Unfurl
     /** The instance-wide ceiling on auth traffic; see guards.ts. */
     authCeiling: onRequestHookHandler
   }

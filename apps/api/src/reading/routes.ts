@@ -15,9 +15,13 @@ import { sendProblem } from '../problem'
 import { ProjectNotFoundError } from '../projects/errors'
 import { ReadingItemNotFoundError, WrongKindError } from './errors'
 import { listReadingCalendar } from './calendar'
+import type { Queryable } from '../db/client'
+import type { Env } from '../env'
+import type { Unfurl } from './unfurl'
 import {
   createReadingItem,
   listReadingItems,
+  recordFetched,
   searchReadingItems,
   softDeleteReadingItem,
   updateReadingItem,
@@ -43,9 +47,34 @@ function toResponse(r: ReadingItemRow): z.infer<typeof readingItemResponse> {
     planOn: r.planOn,
     projectId: r.projectId,
     projectName: r.projectName,
+    fetchedTitle: r.fetchedTitle,
+    fetchedSummary: r.fetchedSummary,
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
   }
+}
+
+/**
+ * 粘一条链接之后，去读对面自己说的那句话。
+ *
+ * 条目**先落库**再抓：对面不回话、进程被杀，这一条都还在，而捕获从来不该因为别人的服务器而失败。
+ * 抓取是同步等的（预算 2 秒），所以粘一条链接最慢多两秒 —— 换掉的是一个后台任务，而 v1 里没有
+ * 任何后台（设计里就这么定的）。代价写在这里：慢的那两秒是看得见的。
+ *
+ * 人自己写了标题就不抓：他已经说了这是什么。书也不抓，它没有地址。
+ */
+async function withFetched(
+  app: { db: Queryable; env: Env; unfurl: Unfurl },
+  workspaceId: string,
+  row: ReadingItemRow,
+): Promise<ReadingItemRow> {
+  if (!app.env.readingUnfurl) return row
+  if (row.kind !== 'link' || row.url === null || row.title !== null) return row
+  const facts = await app.unfurl(row.url).catch(() => null)
+  return recordFetched(app.db, workspaceId, row.id, {
+    title: facts?.title ?? null,
+    summary: facts?.summary ?? null,
+  })
 }
 
 const idParams = z.object({ id: z.uuid() }).strict()
@@ -133,8 +162,9 @@ export const readingRoutes: FastifyPluginAsync = async (app) => {
     },
     async (req, reply) => {
       try {
-        const created = await createReadingItem(app.db, authedUser(req).workspaceId, req.body)
-        return reply.code(201).send(toResponse(created))
+        const workspaceId = authedUser(req).workspaceId
+        const created = await createReadingItem(app.db, workspaceId, req.body)
+        return reply.code(201).send(toResponse(await withFetched(app, workspaceId, created)))
       } catch (error) {
         return sendReadingProblem(reply, error)
       }

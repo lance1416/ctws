@@ -94,6 +94,14 @@ export const readingItemResponse = z
     projectId: z.uuid().nullable(),
     /** The project's name, so a cross-project list need not fetch them separately. */
     projectName: z.string().nullable(),
+    /**
+     * 对面自己说的那句话，抓回来存着的。
+     *
+     * 和 `title` 分开放，不是抓到就往 `title` 里写：人改过的标题不能被一次重抓盖掉，而两者
+     * 混在一个字段里之后就再也分不出哪个是谁写的。显示时人写的优先。
+     */
+    fetchedTitle: z.string().nullable(),
+    fetchedSummary: z.string().nullable(),
     /** What "added 17 days ago" is counted from. */
     createdAt: z.iso.datetime({ offset: true }),
     updatedAt: z.iso.datetime({ offset: true }),

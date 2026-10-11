@@ -1,6 +1,8 @@
 import { sql } from 'drizzle-orm'
 import { expect } from 'vitest'
 import { LOCK_TASK_TREE } from '../../src/tasks/tasks'
+import type { Env } from '../../src/env'
+import type { Unfurl } from '../../src/reading/unfurl'
 import { withApp } from './app'
 
 export type TaskCtx = Awaited<ReturnType<typeof withApp>> & {
@@ -18,8 +20,11 @@ const clientHeader = { 'x-ctws-client': 'web' }
  * of workspace isolation built from two `appWithUser()`s passes trivially. Create the second
  * user through `ctx.app.inject` (POST /api/v1/auth/register) on the same app instead.
  */
-export async function appWithUser(email = 'p@example.com'): Promise<TaskCtx> {
-  const ctx = await withApp({ authRegistration: 'open' })
+export async function appWithUser(email = 'p@example.com', opts: Opts = {}): Promise<TaskCtx> {
+  const ctx = await withApp(
+    { authRegistration: 'open', ...opts.env },
+    opts.unfurl ? { unfurl: opts.unfurl } : {},
+  )
   const res = await ctx.app.inject({
     method: 'POST',
     url: '/api/v1/auth/register',
@@ -163,11 +168,15 @@ export const web = (ctx: TaskCtx) => ({ ...ctx.authed, 'x-ctws-client': 'web' })
  * list is the caller's because `afterEach` is where it has to be drained, and a helper that
  * owned it would be a second lifetime to reason about.
  */
+/** 一次性换掉的东西：出站抓取，以及想盖掉的几个 env 值。 */
+export type Opts = { unfurl?: Unfurl; env?: Partial<Env> }
+
 export async function setupWith(
   cleanups: (() => Promise<void>)[],
   email?: string,
+  opts: Opts = {},
 ): Promise<TaskCtx> {
-  const ctx = email === undefined ? await appWithUser() : await appWithUser(email)
+  const ctx = await appWithUser(email ?? 'p@example.com', opts)
   cleanups.push(ctx.stop)
   return ctx
 }

@@ -131,6 +131,32 @@ test('1440 下一个人的 Linked 在右栏，不在正文下面', async ({ page
   expect(main!.width).toBeGreaterThan(side!.width * 1.5)
 })
 
+/**
+ * 一千出头那一档：三栏会把中栏压到 490px，字段配不上对，右栏又几乎是空的 —— 两边都浪费。
+ *
+ * 所以三栏要等到窗口真的够宽（1280）才成立。在那之前正文占满一行、Linked 落到下面，字段反而
+ * 配得上对：横向空间是给内容用的，不是给空栏用的。
+ */
+test('1100 下正文占满一行，Linked 落到下面，字段照样配对', async ({ page }) => {
+  await page.setViewportSize({ width: 1100, height: 900 })
+  await registerFreshUser(page)
+  const id = (await apiPost(page, '/contacts', { name: '周楠' })).id as string
+  await page.goto(`/contacts/${id}`)
+  const glance = await page.getByRole('region', { name: 'Person at a glance' }).boundingBox()
+  const linked = await page.getByRole('region', { name: 'Linked' }).boundingBox()
+  expect(linked!.y).toBeGreaterThan(glance!.y + glance!.height - 4)
+  const fields = await page.evaluate(() => {
+    const grid = document.querySelector('[data-contact-fields]')
+    const cells = grid ? [...grid.children] : []
+    return {
+      width: grid ? Math.round(grid.getBoundingClientRect().width) : 0,
+      columns: new Set(cells.map((c) => Math.round(c.getBoundingClientRect().left))).size,
+    }
+  })
+  expect(fields.width).toBeGreaterThanOrEqual(576)
+  expect(fields.columns).toBe(2)
+})
+
 test('窄屏下还是一列，顺序不变', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 })
   await registerFreshUser(page)
