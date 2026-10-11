@@ -345,7 +345,15 @@ function ContactForm({
   useEffect(() => {
     let alive = true
     void import('../phone').then((m) => {
-      if (alive) setPhone({ format: m.formatPhone, region: m.currentRegion() })
+      if (!alive) return
+      const region = m.currentRegion()
+      setPhone({ format: m.formatPhone, region })
+      // 那一包到达之前打下的号码，到了就补排一次 —— 否则打字快过网络的人永远看不到分组。
+      setChannels((rows) =>
+        rows.map((row) =>
+          row.kind === 'phone' ? { ...row, value: m.formatPhone(row.value, region) } : row,
+        ),
+      )
     })
     return () => {
       alive = false
