@@ -554,13 +554,14 @@ test('这一层里有 Linked，也有滚到底才看见的删除', async ({ page
   await expect(pane.getByText('Linked')).toBeVisible()
   await expect(pane.getByRole('link', { name: 'Job hunt' })).toBeVisible()
 
-  // 删除是这一层里最后一个东西：它下面没有别的控件。
+  // 删除是这一层里最后一个东西：文档顺序上 Linked 在它前面。（屏幕上它贴着底，所以比的是
+  // 顺序，不是坐标。）
   const remove = pane.getByRole('button', { name: 'Delete contact' })
-  const [box, linked] = await Promise.all([
-    remove.boundingBox(),
-    pane.getByText('Linked').boundingBox(),
-  ])
-  expect(box!.y).toBeGreaterThan(linked!.y)
+  const after = await remove.evaluate((el) => {
+    const linked = document.querySelector('[aria-label="Linked"]')!
+    return (linked.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0
+  })
+  expect(after).toBe(true)
   await remove.click()
   // 问一次才算数。
   await expect(pane.getByRole('button', { name: /Delete|Confirm/ }).first()).toBeVisible()

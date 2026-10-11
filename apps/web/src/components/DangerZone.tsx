@@ -6,9 +6,11 @@ import { DeleteConfirm } from './DeleteConfirm'
  *
  * Three rules, and they are the whole component:
  *
- * 1. **LAST.** It sits at the end of the surface that owns the thing -- the bottom of its pane,
- *    the bottom of its page -- below everything else and below a rule. Nothing is reached by
- *    passing over it, which is what stops a mis-aimed press.
+ * 1. **LAST, AND AT THE BOTTOM OF THE SCREEN.** It sits at the end of the surface that owns the
+ *    thing and STICKS to the foot of it, so on a short page it is a band along the bottom of the
+ *    window rather than a red word hanging in the middle of the empty half. Nothing is reached by
+ *    passing over it, which is what stops a mis-aimed press, and the band's own fill plus the
+ *    rule above it say that it is not part of the body.
  * 2. **RED.** `danger`, the same token an overdue deadline and a failed save use. An action that
  *    cannot be undone must not wear the colour of the ones that can.
  * 3. **IT ASKS.** Always, and the question names what is lost. The press that destroys is the
@@ -18,7 +20,19 @@ import { DeleteConfirm } from './DeleteConfirm'
  * carries the same red and the same question instead.
  */
 export function DangerZone({ children }: { children: ReactNode }) {
-  return <div className="mt-6 border-t border-border-subtle pt-3">{children}</div>
+  return (
+    <div
+      data-danger-zone
+      /*
+        `sticky bottom-0` 而不是 `fixed`：它仍然属于这个面，跟着这个面滚；短页面上它停在视口底，
+        长页面上滚到底才是它的真位置。`-mx-*`/`px-*` 把这条带子撑到面的边 —— 一条只有文字宽的
+        分界线不是分界。
+      */
+      className="sticky bottom-0 z-10 mt-auto border-t border-border-subtle bg-surface py-3"
+    >
+      {children}
+    </div>
+  )
 }
 
 /**

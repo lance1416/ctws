@@ -104,3 +104,36 @@ test('项目页不被改成两栏：它自己的块已经把宽度用掉了', as
   expect(linked.y).toBeGreaterThan(glance.y + glance.height - 4)
   expect(Math.round(linked.width)).toBe(Math.round(glance.width))
 })
+
+/**
+ * 删除贴着屏幕底，而且和正文明显分开。
+ *
+ * 一个短页面上，它以前就吊在正文下面、屏幕中间 —— 既不像「最后一个东西」，也和上面那一块糊在
+ * 一起。现在它是一条贴底的带子：停在视口底部，带自己的底色和一条上沿线。
+ */
+test('删除贴在屏幕底部，带自己的底色和分界线', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  const { project } = await world(page)
+  await page.goto(`/projects/${project.id}`)
+  const remove = page.getByRole('button', { name: 'Delete project' })
+  await expect(remove).toBeVisible()
+
+  const band = await remove.evaluate((el) => {
+    const zone = el.closest('[data-danger-zone]') as HTMLElement
+    const r = zone.getBoundingClientRect()
+    const s = getComputedStyle(zone)
+    return {
+      bottom: Math.round(r.bottom),
+      viewport: window.innerHeight,
+      position: s.position,
+      fill: s.backgroundColor,
+      rule: s.borderTopWidth,
+    }
+  })
+  // 贴底：它的下沿就在视口的下沿。
+  expect(band.viewport - band.bottom).toBeLessThanOrEqual(2)
+  expect(band.position).toBe('sticky')
+  // 和正文分开：自己的底色，加一条线。
+  expect(band.fill).not.toBe('rgba(0, 0, 0, 0)')
+  expect(parseFloat(band.rule)).toBeGreaterThan(0)
+})

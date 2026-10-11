@@ -38,18 +38,26 @@
    CONTRAST. WCAG 2.1 ratios MEASURED on the surfaces each token actually appears on, not
    inferred from hue -- the previous redesign wrote its palette against hues and shipped three
    values that failed AA as text. Everything that carries meaning clears AA 4.5 as text; chips
-   and borders clear the 3:1 non-text threshold.
+   and borders clear the 3:1 non-text threshold, EXCEPT the three project colours named below.
 
      dark    ground  panel  chrome  raised        light   ground  panel  chrome
-     fg      15.69   14.48  14.91   13.42         fg      15.46   16.88  14.26
-     fg-mutd  8.46    7.81   8.04    7.23         fg-mutd  7.33    8.01   6.76
-     fg-sbtl  5.56    5.13   5.28    4.75         fg-sbtl  5.13    5.60   4.73
-     accent   6.72    6.20   6.38    5.75         accent   5.31    5.80   4.90
-     plan     6.70    6.18   6.37    5.73         plan     4.51    4.92   4.16*
-     deadline 8.22    7.58   7.81    7.03         deadline 5.41    5.91   4.99
-     missed   6.23    5.75   5.92    5.33         missed   5.92    6.47   5.46
-     brd-strg 3.89    3.59   3.70    3.33         brd-strg 3.75    4.10   3.46
-     projects 5.37-5.89 / 4.59-5.04 on raised     projects 4.48-5.38 / 4.13-4.97 on chrome
+     fg      16.17   15.04  15.65   13.89         fg      15.46   16.88  14.26
+     fg-mutd  8.36    7.77   8.09    7.18         fg-mutd  7.33    8.01   6.76
+     fg-sbtl  5.47    5.08   5.29    4.70         fg-sbtl  5.13    5.60   4.73
+     accent   7.03    6.54   6.81    6.04         accent   5.31    5.80   4.90
+     plan     7.01    6.52   6.79    6.03         plan     4.51    4.92   4.16*
+     deadline 8.60    8.00   8.32    7.39         deadline 5.41    5.91   4.99
+     missed   6.53    6.07   6.32    5.61         missed   5.92    6.47   5.46
+     brd-strg 3.90    3.63   3.78    3.35         brd-strg 3.75    4.10   3.46
+     projects 2.65-5.55 on raised                 projects 4.48-5.38 / 4.13-4.97 on chrome
+   (The dark column was re-measured when the surfaces went neutral; every ink gained a little.)
+
+   THREE DARK PROJECT COLOURS DO NOT CLEAR 3:1, and the earlier version of this table said they
+   did: slots 4, 5 and 6 (#a52f76, #006895, #835900) measure 2.65, 2.76 and 2.75 on the raised
+   plane -- 2.52, 2.63 and 2.61 before the surfaces went neutral, so this change improved them
+   without fixing them. They are never the only channel (a chip always sits beside the project's
+   name, WCAG 1.4.1), so nothing is unreadable; but the claim above was wrong and the fix is to
+   re-step those three, which is the colour search this file's dark block records, not a tweak.
    (* `plan`, `deadline` and `missed` are row text inside a panel; they never appear on the
     chrome plane, so the chrome column is informational for them.)
 
@@ -252,23 +260,28 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-surface: #0f1115;
-    --color-surface-panel: #171a1f;
-    --color-surface-raised: #1d2127;
-    --color-surface-sunken: #14171c;
-    --color-surface-hover: #1d2127;
-    --color-fg: #e8eaee;
-    --color-fg-muted: #a7aeb9;
-    --color-fg-subtle: #838c99;
-    --color-border-subtle: #242932;
-    --color-border-strong: #687283;
+    /* NEUTRAL, AND DARKER. The first dark set carried a blue cast -- every surface had 6 to 10
+       more blue than red (#0f1115 is R15 G17 B21), which reads as navy on a big screen rather
+       than as a dark room. These are grey: 1 to 3 points of blue over red, and the ground is
+       five steps nearer black. Every ink gains contrast from it rather than losing any; the
+       table below is re-measured, not carried over. */
+    --color-surface: #0a0a0b;
+    --color-surface-panel: #141416;
+    --color-surface-raised: #1c1c1f;
+    --color-surface-sunken: #0f0f11;
+    --color-surface-hover: #1c1c1f;
+    --color-fg: #e8e8ea;
+    --color-fg-muted: #a8a8ad;
+    --color-fg-subtle: #86868c;
+    --color-border-subtle: #242427;
+    --color-border-strong: #6e6e73;
     --color-accent: #6f9ae8;
-    --color-accent-fg: #0f1115;
+    --color-accent-fg: #0a0a0b;
     --color-plan: #58a894;
     --color-deadline: #d9a05b;
     --color-missed: #e0756b;
     --color-danger: #e0756b;
-    --color-danger-fg: #0f1115;
+    --color-danger-fg: #0a0a0b;
     /* THE SAME SIX HUES, RE-STEPPED FOR DARK -- not the light set lightened or inverted. Dark mode
        has a narrower usable lightness band (L 0.48-0.67 against light's 0.43-0.77), and Okabe-Ito
        leans on lightness for two of its pairs: blue/sky share a hue within 8°, as do

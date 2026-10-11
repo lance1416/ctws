@@ -90,12 +90,14 @@ export function Layout() {
         }`}
       >
         <SideRail />
-        <main className="min-w-0 bg-surface px-4 pt-4 pb-16 sm:px-6">
+        {/* 至少一屏高：贴底那条带子（`DangerZone`）只在它所在的盒子里生效，而一个比视口矮的
+            盒子没有「底部」可贴 —— 删除于是会吊在半空。顶栏 3.25rem，这里补上。 */}
+        <main className="flex min-h-[calc(100vh-3.25rem)] min-w-0 flex-col bg-surface px-4 pt-4 sm:px-6">
           {/* NO WIDTH CAP. The capped 51rem centre column is what put one clump of rows left of
               centre at 1440 with half the screen empty beside it. The width is now carried by the
               PANEL GRID the page lays out inside it, and each list keeps its own measure
               (RowParts) so a date column never drifts away from the title it belongs to. */}
-          <div className="min-w-0">
+          <div className="flex min-w-0 flex-1 flex-col">
             <DetailPaneContext.Provider value={setPaneOpen}>
               <LeaveGuardContext.Provider value={leaveGuard}>
                 <Outlet />
