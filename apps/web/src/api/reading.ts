@@ -70,9 +70,20 @@ export function deleteReadingItem(id: string): Promise<void> {
 export function readingLabel(item: Pick<ReadingItemResponse, 'title' | 'url'>): string {
   if (item.title) return item.title
   if (!item.url) return '(untitled)'
+  return linkLabel(item.url)
+}
+
+/**
+ * 一条没有标题的链接写成 `github.com/lance1416/ctws`。
+ *
+ * host 一个人认得，但认不出是哪一个 repo、哪一条推 —— 一行写着 `x.com` 等于没有信息。查询串不
+ * 要：utm 之类是噪音，而这一行本来就要在行宽里截断。
+ */
+export function linkLabel(url: string): string {
   try {
-    return new URL(item.url).host.replace(/^www\./, '')
+    const u = new URL(url)
+    return u.host.replace(/^www\./, '') + u.pathname.replace(/\/$/, '')
   } catch {
-    return item.url
+    return url
   }
 }

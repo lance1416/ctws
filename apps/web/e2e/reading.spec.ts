@@ -39,7 +39,7 @@ test('a pasted link goes to Reading; a sentence still goes to the inbox', async 
   await expect(page.getByText('Added to')).toContainText('Inbox')
 })
 
-test('an untitled link is listed by its host, and can be given a name', async ({ page }) => {
+test('an untitled link is listed by host and path, and can be given a name', async ({ page }) => {
   await registerFreshUser(page)
   await page.request.post('/api/v1/reading', {
     headers: WEB,
@@ -47,9 +47,12 @@ test('an untitled link is listed by its host, and can be given a name', async ({
   })
   await page.goto('/reading')
 
-  // A pasted link shows its HOST -- never the raw url, which is unreadable at row width.
-  const row = rowOf(page, 'linear.app')
-  await expect(row.getByRole('link')).toHaveText('linear.app')
+  // A pasted link shows its HOST AND PATH -- the host alone ("x.com", "github.com") does not
+  // say which tweet or which repo, so a row of it carries no information at all.
+  const row = rowOf(page, 'linear.app/now/how-we-redesigned-issues')
+  await expect(row.getByRole('link')).toHaveText('linear.app/now/how-we-redesigned-issues')
+  // And the line under it does not repeat what the line above already says.
+  await expect(row.getByText('linear.app', { exact: true })).toHaveCount(0)
   await expect(row.getByRole('link')).toHaveAttribute(
     'href',
     'https://www.linear.app/now/how-we-redesigned-issues',

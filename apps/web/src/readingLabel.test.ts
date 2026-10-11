@@ -9,11 +9,21 @@ describe('readingLabel', () => {
     expect(readingLabel({ title: '重做配色', url: 'https://example.com' })).toBe('重做配色')
   })
 
-  it('falls back to the host, which is the part a person recognises', () => {
-    // A pasted link shows its HOST: the url itself is unreadable at row width.
+  /**
+   * 没有标题时写 host + 路径。
+   *
+   * 只写 host，一行就是 `github.com`、`x.com` —— 认不出是哪个 repo、哪条推，这一行等于没有信息。
+   * 查询串不写：utm 之类是噪音，而行宽本来就不够。
+   */
+  it('没有标题时写到路径，因为 host 自己认不出是哪一个', () => {
     expect(readingLabel({ title: null, url: 'https://www.linear.app/now/a/b?c=1' })).toBe(
-      'linear.app',
+      'linear.app/now/a/b',
     )
+    expect(readingLabel({ title: null, url: 'https://github.com/lance1416/ctws' })).toBe(
+      'github.com/lance1416/ctws',
+    )
+    // 根路径就是 host 本身，不留一条光秃秃的斜杠。
+    expect(readingLabel({ title: null, url: 'https://example.com/' })).toBe('example.com')
   })
 
   it('shows a url it cannot parse rather than an empty row', () => {

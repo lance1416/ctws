@@ -98,7 +98,8 @@ export function ReadingRow({
     // The plan leads the rest of the line when there is one: it is the only part that says
     // anything about WHEN, and the age is about how long it has been ignored.
     item.planOn ? `Finish ${dayPhrase(item.planOn, today).toLowerCase()}` : null,
-    item.kind === 'book' ? item.author : host === label ? null : host,
+    // 没有标题时，标题那一行写的就是 host 加路径，第二行再写一遍 host 是重复。
+    item.kind === 'book' ? item.author : item.title ? host : null,
     addedLabel(item.createdAt, timeZone),
   ].filter(Boolean)
 
