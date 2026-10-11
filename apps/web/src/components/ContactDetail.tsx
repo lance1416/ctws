@@ -9,6 +9,7 @@ import { BirthdayEditor, BirthdayFields, plainDate } from './BirthdayFields'
 import { CIRCLE_LABELS } from './BirthdayRow'
 import { BUTTON } from './buttonStyles'
 import { byKind, channelLabel, channelPlaceholder, KIND_CHOICES, KIND_LABEL } from '../channels'
+import { usePhone } from '../usePhone'
 import { Field } from './Field'
 import { PickCity } from './PickCity'
 import { useComposing } from '../composition'
@@ -76,6 +77,8 @@ export function ContactFields({
 }) {
   const qc = useQueryClient()
   const [editing, setEditing] = useState(false)
+  // 号码分组那一包：读的时候也要，不然同一个号码在列表里排好了而在这里挤成一条。
+  const phone = usePhone()
   const [writing, setWriting] = useState(false)
   const rail = useProjectRail()
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
@@ -176,7 +179,7 @@ export function ContactFields({
                     c.kind === 'phone' ? 'tabular-nums' : ''
                   }`}
                 >
-                  {channelLabel(c.kind, c.value)}
+                  {channelLabel(c.kind, c.value, phone?.displayPhone)}
                 </a>
               </li>
             ))}
@@ -302,6 +305,18 @@ function Reads({ label, value }: { label: string; value: string | null }) {
 }
 
 /**
+ * 表里的一行联系方式。
+ *
+ * `touched`：这一行被离开过 —— 还在打字的那一行不挑错。
+ * `seed`：框里那个国家码是这张表自己放进去的，不是人写的。人没在它后面接着打，这一行就还是
+ * 空的 —— 加了一行又改主意是常事，不该因此按不动 Save。
+ */
+type Row = ContactResponse['channels'][number] & { touched?: boolean; seed?: string }
+
+/** 这一行上有人写过东西吗？自己放的那个国家码不算。 */
+const written = (c: Row) => c.value.trim() !== '' && c.value !== c.seed
+
+/**
  * 改这个人：一张表，一次保存。
  *
  * 每个值都长成一个输入框，不用猜哪里能点；改完按 Save 一次写回，Cancel 当没发生过。只有两样
@@ -332,41 +347,69 @@ function ContactForm({
   const [gender, setGender] = useState(contact.gender ?? '')
   const [circle, setCircle] = useState(contact.circle ?? '')
   const [projectIds, setProjectIds] = useState(contact.projects.map((p) => p.id))
-  const [channels, setChannels] = useState(() => byKind(contact.channels))
+  const [channels, setChannels] = useState<Row[]>(() => byKind(contact.channels))
+  const phone = usePhone()
+  const region = phone?.currentRegion()
   /**
-   * 号码的分组规则（按国家）在一个单独的包里，只有这张表开着时才去取。
+   * 号码那一包到了之后，把这张表里的电话过一遍。
    *
-   * 它不在首屏那一包里：联系方式的编辑是一个人偶尔做一次的事，而那套元数据有八十来 KB。没取到
-   * 之前打进去的字原样留着 —— 和 Markdown 渲染器一样，先把字摆上，再变好看。
+   * 写了字的：补上国家码再排好。存下来的老号码可能是 `(730) 197-4443`，而现在没有国家码的号码
+   * 过不了校验 —— 不补的话，改他的名字也会被一个他从没打开过的框卡住。
+   *
+   * 空着的：放上本地的国家码。这件事挑号码那一下也做，两处都要：那一包有八十来 KB，而一个人
+   * 完全可能在它到达之前就把那一行改成了电话 —— 先挑的那一下没有国家码可放，这里补上。
    */
-  const [phone, setPhone] = useState<null | {
-    format: (v: string, region?: string) => string
-    region: string | undefined
-  }>(null)
   useEffect(() => {
-    let alive = true
-    void import('../phone').then((m) => {
-      if (!alive) return
-      const region = m.currentRegion()
-      setPhone({ format: m.formatPhone, region })
-      // 那一包到达之前打下的号码，到了就补排一次 —— 否则打字快过网络的人永远看不到分组。
-      setChannels((rows) =>
-        rows.map((row) =>
-          row.kind === 'phone' ? { ...row, value: m.formatPhone(row.value, region) } : row,
-        ),
-      )
-    })
-    return () => {
-      alive = false
-    }
-  }, [])
-  const typed = (kind: ChannelKind, value: string) =>
-    kind === 'phone' && phone ? phone.format(value, phone.region) : value
-  // 空行不算问题：保存时丢掉它 —— 加了一行又改主意，不该因此按不动 Save。
+    if (!phone) return
+    const code = phone.callingCodeFor(region) ?? ''
+    setChannels((rows) =>
+      rows.map((row) =>
+        row.kind !== 'phone'
+          ? row
+          : row.value.trim() === ''
+            ? { ...row, value: code, seed: code }
+            : { ...row, value: phone.formatPhone(phone.toE164(row.value, region), region) },
+      ),
+    )
+  }, [phone, region])
+  /** 又打了一个字之后这个框里该是什么：电话跟着排，别的原样。 */
+  const typed = (kind: ChannelKind, was: string, now: string) =>
+    kind === 'phone' && phone ? phone.retype(was, now, region) : now
+  /** 空的电话框里先放上本地的国家码：它是必填的，而一个空框不会说这件事。 */
+  const seed = phone?.callingCodeFor(region) ?? ''
+  /**
+   * 这一行换了类型之后是什么样。
+   *
+   * 自己放进去的那个国家码跟着类型走 —— 它不是人写的东西，所以改成 Email 时它要消失，而不是
+   * 留在那儿变成一个过不了校验的邮箱地址。
+   */
+  /** 改这一行。走 updater 而不是闭包里那份 `channels`：一行里有三个处理器各自改它。 */
+  const edit = (at: number, change: (row: Row) => Row) =>
+    setChannels((rows) => rows.map((row, i) => (i === at ? change(row) : row)))
+
+  const switched = (row: Row, kind: ChannelKind): Row => {
+    const value = row.value === row.seed ? '' : row.value
+    if (kind !== 'phone') return { kind, label: row.label, value }
+    if (value.trim() === '') return { kind, label: row.label, value: seed, seed }
+    return { kind, label: row.label, value: typed(kind, value, value) }
+  }
+  /**
+   * 这一行哪里不成立。
+   *
+   * 两道：写法（契约那套，服务端同一份）和长度（这个国家的号码到底有多长，要那一包元数据才
+   * 知道）。空行不算问题 —— 加了一行又改主意，不该因此按不动 Save。
+   */
   const problems = channels.map((c) =>
-    c.value.trim() === '' ? undefined : (channelProblem(c.kind, c.value) ?? undefined),
+    !written(c)
+      ? undefined
+      : (channelProblem(c.kind, c.value) ??
+        (c.kind === 'phone' ? (phone?.phoneProblem(c.value) ?? undefined) : undefined) ??
+        undefined),
   )
   const badChannel = problems.some((p) => p !== undefined)
+  // 说出来的只有离开过的那几行。Save 按不按得动看的是全部 —— 挡住一次必然的 400，和当着人的面
+  // 数落他还没打完的字，是两件事。
+  const shown = problems.map((p, i) => (channels[i]?.touched ? p : undefined))
   const [note, setNote] = useState(contact.note ?? '')
   const [writing, setWriting] = useState(false)
   const [pickingDay, setPickingDay] = useState(false)
@@ -389,10 +432,12 @@ function ContactForm({
       projectIds,
       // 空地址当没写：一行填了一半的联系方式不是一条联系方式。
       channels: byKind(channels)
-        .filter((c) => c.value.trim() !== '')
+        .filter(written)
         .map((c) => ({
           kind: c.kind,
-          value: typed(c.kind, c.value.trim()),
+          // 电话存成 E.164：没有空格的那一串，全世界只有一个读法。屏幕上的分组由它算出来，所以
+          // 这个人在列表、在这一层、在以后任何一处，看到的都是同一个样子。
+          value: c.kind === 'phone' && phone ? phone.toE164(c.value, region) : c.value.trim(),
           label: c.label?.trim() || null,
         })),
       note: note.trim() || null,
@@ -446,13 +491,7 @@ function ContactForm({
                 label={`Type of item ${i + 1}`}
                 value={c.kind}
                 choices={KIND_CHOICES}
-                onPick={(kind) =>
-                  setChannels(
-                    channels.map((row, at) =>
-                      at === i ? { kind, label: row.label, value: typed(kind, row.value) } : row,
-                    ),
-                  )
-                }
+                onPick={(kind) => edit(i, (row) => switched(row, kind))}
               />
               <input
                 aria-label={`Item ${i + 1}`}
@@ -461,20 +500,25 @@ function ContactForm({
                 placeholder={channelPlaceholder(c.kind)}
                 type={c.kind === 'phone' ? 'tel' : 'text'}
                 inputMode={c.kind === 'phone' ? 'tel' : 'text'}
-                aria-invalid={problems[i] !== undefined}
-                onChange={(e) =>
-                  setChannels(
-                    channels.map((row, at) =>
-                      at === i ? { ...row, value: typed(row.kind, e.target.value) } : row,
-                    ),
-                  )
-                }
+                aria-invalid={shown[i] !== undefined}
+                onChange={(e) => {
+                  const now = e.target.value
+                  // 又开始打了，红字就收回去：改对了要当场看得见，而不是等再离开一次。
+                  edit(i, (row) => ({
+                    ...row,
+                    value: typed(row.kind, row.value, now),
+                    touched: false,
+                  }))
+                }}
+                // 离开这一行才挑错。一个人打到 `+44` 的时候那还不是一个号码，而红字说的是
+                // 「你写错了」—— 没写完不是写错了。
+                onBlur={() => edit(i, (row) => ({ ...row, touched: true }))}
                 className={`${boxed} min-w-0 flex-1 text-sm ${c.kind === 'phone' ? 'tabular-nums' : ''}`}
               />
               <button
                 type="button"
                 aria-label={`Remove item ${i + 1}`}
-                onClick={() => setChannels(channels.filter((_, at) => at !== i))}
+                onClick={() => setChannels((rows) => rows.filter((_, at) => at !== i))}
                 className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-fg-subtle hover:bg-surface-hover hover:text-fg"
               >
                 <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3.5 w-3.5">
@@ -488,15 +532,15 @@ function ContactForm({
                 </svg>
               </button>
               {/* 保存之前就说清是哪一条不成立：按下 Save 才被服务端拒，中间那段路是白走的。 */}
-              {problems[i] !== undefined && (
-                <p className="w-full text-xs text-danger">{problems[i]}</p>
-              )}
+              {shown[i] !== undefined && <p className="w-full text-xs text-danger">{shown[i]}</p>}
             </li>
           ))}
         </ul>
         <button
           type="button"
-          onClick={() => setChannels([...channels, { kind: 'email', value: '', label: null }])}
+          onClick={() =>
+            setChannels((rows) => [...rows, { kind: 'email', value: '', label: null }])
+          }
           className="mt-1.5 flex h-8 items-center gap-1.5 rounded-lg border border-dashed border-border-strong px-2.5 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
         >
           <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3 w-3">

@@ -38,26 +38,35 @@ export type ChannelKind = z.infer<typeof channelKind>
  * `to fill in`。宽松到不挡人，严到挡住「这明显不是一个电话」：真正的号码、邮箱、网址五花八门，
  * 而这个表是写给一个人自己看的，不是给拨号程序解析的。
  */
-const CHANNEL_SHAPES: Record<ChannelKind, { test: (v: string) => boolean; says: string }> = {
+const CHANNEL_SHAPES: Record<ChannelKind, (v: string) => string | null> = {
   // 一个 @，两边都不空，右边带一个点：够挡住句子和占位符，不去管 RFC 5322 的那些奇形怪状。
-  email: {
-    test: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
-    says: 'an email address looks like name@example.com',
-  },
-  // 数字、空格、横杠、括号，可以带一个加号，至少五位数字。分机和国际区号都写得下。
-  phone: {
-    test: (v) => /^\+?[\d\s()-]+$/.test(v) && (v.match(/\d/g) ?? []).length >= 5,
-    says: 'a phone number is digits, spaces, dashes and brackets',
+  email: (v) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? null : 'an email address looks like name@example.com',
+  /**
+   * 电话必须带国家码 —— 这张表里唯一一条强制的写法，而它值得。
+   *
+   * 不带国家码的一串数字没有唯一的读法：`010-1234-5678` 该按哪个国家分组、`tel:` 该拨到哪里，
+   * 都只能靠猜写下它的人在哪儿。存下来的是 E.164，屏幕上那一串分组是由它算出来的，所以这条得
+   * 在存之前就成立。15 位是 E.164 自己的上限（ITU-T E.164 §6.2.1，含国家码）。
+   *
+   * 说出来的是缺的那一条，不是一句笼统的「格式不对」：少一个加号和多打了一位是两件事。
+   */
+  phone: (v) => {
+    if (!/^\+?[\d\s()-]+$/.test(v)) return 'a phone number is digits, spaces, dashes and brackets'
+    if (!v.startsWith('+')) return 'start with the country code, like +86'
+    const digits = (v.match(/\d/g) ?? []).length
+    if (digits < 5) return 'that is too short for a phone number'
+    if (digits > 15) return 'a phone number has at most 15 digits'
+    return null
   },
   // 主机里要有一个点：`localhost` 不是一个人的主页。协议可以不写，href 那边会补。
   // 不用 `URL`：这个包要在浏览器和服务端两边跑，而它的 tsconfig 里没有 DOM —— 一条校验不值得
   // 去动全局的编译配置。
-  url: {
-    test: (v) => {
-      const host = (v.replace(/^https?:\/\//i, '').split(/[/?#]/)[0] ?? '').toLowerCase()
-      return /^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(host)
-    },
-    says: 'a link needs a host, like github.com/you',
+  url: (v) => {
+    const host = (v.replace(/^https?:\/\//i, '').split(/[/?#]/)[0] ?? '').toLowerCase()
+    return /^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(host)
+      ? null
+      : 'a link needs a host, like github.com/you'
   },
 }
 
@@ -77,7 +86,7 @@ export const contactChannel = z
 export function channelProblem(kind: ChannelKind, value: string): string | null {
   const trimmed = value.trim()
   if (trimmed === '') return 'an address cannot be empty'
-  return CHANNEL_SHAPES[kind].test(trimmed) ? null : CHANNEL_SHAPES[kind].says
+  return CHANNEL_SHAPES[kind](trimmed)
 }
 export type ContactChannel = z.infer<typeof contactChannel>
 

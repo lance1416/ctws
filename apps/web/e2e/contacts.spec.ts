@@ -635,12 +635,34 @@ test('写得不像那一类，保存之前就说出来', async ({ page }) => {
   await pane.getByRole('button', { name: 'Edit', exact: true }).click()
   await pane.getByRole('button', { name: 'Add one' }).click()
   await pickOne(pane, 'Type of item 1', 'Phone')
-  await pane.getByRole('textbox', { name: 'Item 1' }).fill('to fill in')
+  const box = pane.getByRole('textbox', { name: 'Item 1' })
 
-  await expect(pane).toContainText('a phone number is digits, spaces, dashes and brackets')
+  /*
+    还在这个框里打字的时候一个字都不说。
+
+    `+44` 不是一个打错的号码，是一个还没打完的号码，而红字说的是「你写错了」。按不下 Save 已经
+    说了「还不行」，不必再骂一句。（这里一定要真打字：`fill()` 打完会把焦点带走，那就是离开。）
+  */
+  await box.pressSequentially('+44')
+  await expect(pane).not.toContainText('numbers are not that length')
+  await expect(pane).not.toContainText('too short')
+
+  await box.fill('')
+  await box.pressSequentially('to fill in')
+  await expect(pane).not.toContainText('a phone number is digits')
   await expect(pane.getByRole('button', { name: 'Save' })).toBeDisabled()
 
-  await pane.getByRole('textbox', { name: 'Item 1' }).fill('+86 139 0000 1234')
+  // 离开它才说，而且说的是缺的那一条。
+  await box.blur()
+  await expect(pane).toContainText('a phone number is digits, spaces, dashes and brackets')
+
+  // 粘一条没有国家码的进来：离开它的时候才说，说的还是缺的那一条。
+  await box.fill('139 0000 1234')
+  await box.blur()
+  await expect(pane).toContainText('start with the country code, like +86')
+
+  await box.fill('+86 139 0000 1234')
+  await expect(pane).not.toContainText('start with the country code')
   await expect(pane.getByRole('button', { name: 'Save' })).toBeEnabled()
 })
 
@@ -661,6 +683,9 @@ test('电话一边打一边排好，存下来的就是排好的', async ({ page 
   await pickOne(pane, 'Type of item 1', 'Phone')
 
   const box = pane.getByRole('textbox', { name: 'Item 1' })
+  // 空框改成电话，国家码已经在里面了 —— 它是必填的，而一个空框不会说这件事。
+  await expect(box).toHaveValue(/^\+\d+$/)
+
   // 带国家码的，排成国际写法 —— 粘一条从别处抄来的号码就是这个样子。
   await box.fill('+8613900001234')
   await expect(box).toHaveValue('+86 139 0000 1234')
@@ -670,11 +695,15 @@ test('电话一边打一边排好，存下来的就是排好的', async ({ page 
       r.request().method() === 'PATCH' && new URL(r.url()).pathname.startsWith('/api/v1/contacts/'),
   )
   await pane.getByRole('button', { name: 'Save' }).click()
+  // 存下来的是 E.164：没有空格的那一串，全世界只有一个读法。
   expect((await written).request().postDataJSON()).toMatchObject({
-    channels: [{ kind: 'phone', value: '+86 139 0000 1234' }],
+    channels: [{ kind: 'phone', value: '+8613900001234' }],
   })
-  // 读的时候也是排好的那一串。
+  // 看到的是分好组的那一串 —— 由存下来的那条算出来，不是存下来的那条本身。
   await expect(pane.getByRole('link', { name: '+86 139 0000 1234' })).toBeVisible()
+  // 列表上同一个样子：一个号码长什么样，和它当初从哪个框进来无关。
+  await page.reload()
+  await expect(page.getByRole('link', { name: '+86 139 0000 1234' }).first()).toBeVisible()
 })
 
 /**
@@ -718,5 +747,79 @@ test('打错一个字母看得出来，但还是存得下', async ({ page }) => 
   await pane.getByLabel('Hometown').fill('Oxforrd')
   await expect(pane).toContainText('No city by that name')
   // 不拦着：世界上有的是不到一万五千人的地方，挡住一个人写外婆家那个镇不是校验，是添堵。
+  await expect(pane.getByRole('button', { name: 'Save' })).toBeEnabled()
+})
+
+/**
+ * 从新建对话框写下的号码，和从那一层里写下的一模一样。
+ *
+ * 这是出过错的地方：排版当初只发生在联系人详情那张表的输入框里，于是从这个对话框进来的号码存成
+ * 了打字时的那一串（`+8613800000000`），在任何地方都挤成一条 —— 同一个号码长什么样，取决于它
+ * 当初是从哪个框进来的。
+ */
+test('新建对话框里的号码也排好，存的也是同一条', async ({ page }) => {
+  await registerFreshUser(page, '/contacts')
+  await page.getByRole('button', { name: 'New contact' }).click()
+  const form = page.getByRole('dialog', { name: 'New contact' })
+  await form.getByLabel('Name').fill('陈颖')
+  await pickOne(form, 'Kind', 'Phone')
+
+  const box = form.getByLabel('Address')
+  // 国家码已经在框里：必填的东西要先说出来，不能等按下 Create 才说。
+  await expect(box).toHaveValue(/^\+\d+$/)
+  await box.fill('+8613800000000')
+  await expect(box).toHaveValue('+86 138 0000 0000')
+
+  const made = page.waitForResponse(
+    (r) => r.request().method() === 'POST' && /\/api\/v1\/contacts$/.test(r.url()),
+  )
+  await form.getByRole('button', { name: 'Create' }).click()
+  expect((await made).request().postDataJSON()).toMatchObject({
+    channels: [{ kind: 'phone', value: '+8613800000000' }],
+  })
+
+  // 列表上、那一层里，都是分好组的那一串。
+  await expect(page.getByRole('link', { name: '+86 138 0000 0000' }).first()).toBeVisible()
+  await page.getByRole('button', { name: '陈颖' }).click()
+  const pane = page.getByRole('dialog', { name: 'Contacts' })
+  await expect(pane.getByRole('link', { name: '+86 138 0000 0000' })).toBeVisible()
+})
+
+test('没有国家码的号码，新建对话框也不收', async ({ page }) => {
+  await registerFreshUser(page, '/contacts')
+  await page.getByRole('button', { name: 'New contact' }).click()
+  const form = page.getByRole('dialog', { name: 'New contact' })
+  await form.getByLabel('Name').fill('陈颖')
+  await pickOne(form, 'Kind', 'Phone')
+  // 真打字：`fill()` 打完会把焦点带走，那就是离开，而这一条说的正是「还在框里的时候」。
+  await form.getByLabel('Address').fill('')
+  await form.getByLabel('Address').pressSequentially('13800000000')
+
+  // 还在框里就不挑错。
+  await expect(form).not.toContainText('start with the country code')
+  await form.getByLabel('Address').blur()
+  await expect(form).toContainText('start with the country code, like +86')
+  await expect(form.getByRole('button', { name: 'Create' })).toBeDisabled()
+})
+
+/**
+ * 存在表里的老号码没有国家码，打开那张表就补上。
+ *
+ * 不补的话这个人就卡住了：现在没有国家码的号码过不了校验，而那张表总是把所有联系方式一起写回，
+ * 于是改他的名字也按不动 Save，而红字说的是一个他从没打开过的框。
+ */
+test('老号码打开编辑就补上国家码', async ({ page }) => {
+  await registerFreshUser(page, '/contacts')
+  const made = await page.request.post('/api/v1/contacts', {
+    headers: WEB,
+    data: { name: '陈颖', channels: [{ kind: 'phone', value: '+1 (730) 197-4443' }] },
+  })
+  expect(made.ok()).toBe(true)
+  await page.reload()
+  await page.getByRole('button', { name: '陈颖' }).click()
+  const pane = page.getByRole('dialog', { name: 'Contacts' })
+  await pane.getByRole('button', { name: 'Edit', exact: true }).click()
+
+  await expect(pane.getByRole('textbox', { name: 'Item 1' })).toHaveValue('+1 730 197 4443')
   await expect(pane.getByRole('button', { name: 'Save' })).toBeEnabled()
 })

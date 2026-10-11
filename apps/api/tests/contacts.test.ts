@@ -76,7 +76,7 @@ describe('contacts', () => {
       name: '韩梅梅',
       channels: [
         { kind: 'email', value: 'old@acme.test' },
-        { kind: 'phone', value: '12345' },
+        { kind: 'phone', value: '+8613800000000' },
       ],
     })
     const res = await patch(ctx, person.id, {
@@ -98,7 +98,7 @@ describe('contacts', () => {
     const ctx = await setup()
     const person = await add(ctx, { name: '张三' })
     const after = await patch(ctx, person.id, {
-      channels: [{ kind: 'phone', value: '13800000000' }],
+      channels: [{ kind: 'phone', value: '+8613800000000' }],
     })
     expect(new Date((after.json() as ContactResponse).updatedAt).getTime()).toBeGreaterThan(
       new Date(person.updatedAt).getTime(),

@@ -21,9 +21,20 @@ export function byKind<T extends { kind: ChannelKind }>(channels: readonly T[]):
   return [...channels].sort((a, b) => (ORDER.get(a.kind) ?? 9) - (ORDER.get(b.kind) ?? 9))
 }
 
-/** 行上写的那串字。链接写 host 加路径，别的原样 —— 那就是人要读的东西。 */
-export function channelLabel(kind: ChannelKind, value: string): string {
-  return kind === 'url' ? linkLabel(value) : value
+/**
+ * 行上写的那串字。
+ *
+ * 链接写 host 加路径，电话按国家分好组，邮箱原样 —— 那就是人要读的东西。电话那条分组规则在一个
+ * 单独的包里（`usePhone`），所以它是传进来的：没传、或者那一包还在路上，就按存下来的样子显示。
+ */
+export function channelLabel(
+  kind: ChannelKind,
+  value: string,
+  showPhone?: (v: string) => string,
+): string {
+  if (kind === 'url') return linkLabel(value)
+  if (kind === 'phone' && showPhone) return showPhone(value)
+  return value
 }
 
 /** 空着的那一行里写什么：这一类长什么样，而不是一句「待填」。 */

@@ -3,6 +3,7 @@ import { channelHref } from '../api/contacts'
 import { byKind, channelLabel } from '../channels'
 import { useProjectRail } from '../projectColor'
 import { sortByName } from '../contactOrder'
+import { usePhone } from '../usePhone'
 import { PanelEmpty } from './Panel'
 
 /**
@@ -27,6 +28,7 @@ export function ContactList({
   onOpen: (contact: ContactResponse) => void
 }) {
   const rail = useProjectRail()
+  const phone = usePhone()
 
   if (contacts.length === 0) return <PanelEmpty>{emptyLine}</PanelEmpty>
   return (
@@ -84,7 +86,7 @@ export function ContactList({
                         c.kind === 'phone' ? 'tabular-nums' : ''
                       }`}
                     >
-                      {channelLabel(c.kind, c.value)}
+                      {channelLabel(c.kind, c.value, phone?.displayPhone)}
                     </a>
                     {c.label && <span className="text-xs text-fg-subtle">{c.label}</span>}
                   </span>
