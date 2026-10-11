@@ -31,6 +31,36 @@ export type ChannelKind = z.infer<typeof channelKind>
  * (work, home, cell, …) is advisory, and "the one for interviews" is a more useful label than
  * anything a fixed set would offer.
  */
+/**
+ * 三种地址各自长什么样。
+ *
+ * 规则写在这里，服务端和界面就是同一套 —— 以前 `value` 只要求非空，于是一个电话字段里可以躺着
+ * `to fill in`。宽松到不挡人，严到挡住「这明显不是一个电话」：真正的号码、邮箱、网址五花八门，
+ * 而这个表是写给一个人自己看的，不是给拨号程序解析的。
+ */
+const CHANNEL_SHAPES: Record<ChannelKind, { test: (v: string) => boolean; says: string }> = {
+  // 一个 @，两边都不空，右边带一个点：够挡住句子和占位符，不去管 RFC 5322 的那些奇形怪状。
+  email: {
+    test: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
+    says: 'an email address looks like name@example.com',
+  },
+  // 数字、空格、横杠、括号，可以带一个加号，至少五位数字。分机和国际区号都写得下。
+  phone: {
+    test: (v) => /^\+?[\d\s()-]+$/.test(v) && (v.match(/\d/g) ?? []).length >= 5,
+    says: 'a phone number is digits, spaces, dashes and brackets',
+  },
+  // 主机里要有一个点：`localhost` 不是一个人的主页。协议可以不写，href 那边会补。
+  // 不用 `URL`：这个包要在浏览器和服务端两边跑，而它的 tsconfig 里没有 DOM —— 一条校验不值得
+  // 去动全局的编译配置。
+  url: {
+    test: (v) => {
+      const host = (v.replace(/^https?:\/\//i, '').split(/[/?#]/)[0] ?? '').toLowerCase()
+      return /^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(host)
+    },
+    says: 'a link needs a host, like github.com/you',
+  },
+}
+
 export const contactChannel = z
   .object({
     kind: channelKind,
@@ -38,6 +68,17 @@ export const contactChannel = z
     label: z.string().trim().min(1).max(60).nullish(),
   })
   .strict()
+  .superRefine((c, ctx) => {
+    const problem = channelProblem(c.kind, c.value)
+    if (problem !== null) ctx.addIssue({ code: 'custom', message: problem, path: ['value'] })
+  })
+
+/** 这个值当这一类地址说得通吗？不说得通就给出那一句话。界面用它在保存之前就说清楚。 */
+export function channelProblem(kind: ChannelKind, value: string): string | null {
+  const trimmed = value.trim()
+  if (trimmed === '') return 'an address cannot be empty'
+  return CHANNEL_SHAPES[kind].test(trimmed) ? null : CHANNEL_SHAPES[kind].says
+}
 export type ContactChannel = z.infer<typeof contactChannel>
 
 /** The calendar a birthday was GIVEN in. Entered once; the other one is derived (birthdays spec §2). */

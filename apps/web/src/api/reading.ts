@@ -1,3 +1,4 @@
+import { linkLabel } from '../url'
 import type {
   CreateReadingItemBody,
   ReadingItemResponse,
@@ -80,19 +81,4 @@ export function readingLabel(
   if (item.fetchedTitle) return item.fetchedTitle
   if (!item.url) return '(untitled)'
   return linkLabel(item.url)
-}
-
-/**
- * 一条没有标题的链接写成 `github.com/lance1416/ctws`。
- *
- * host 一个人认得，但认不出是哪一个 repo、哪一条推 —— 一行写着 `x.com` 等于没有信息。查询串不
- * 要：utm 之类是噪音，而这一行本来就要在行宽里截断。
- */
-export function linkLabel(url: string): string {
-  try {
-    const u = new URL(url)
-    return u.host.replace(/^www\./, '') + u.pathname.replace(/\/$/, '')
-  } catch {
-    return url
-  }
 }

@@ -455,7 +455,7 @@ test('超长的链接地址被截断，面板一毫米都不变宽', async ({ pa
   // 没机会生效，文字从按钮底下穿过去。面板不变宽只是因为它自己 overflow 了。
   const clipped = await pane.evaluate((root) => {
     const a = [...root.querySelectorAll('[data-channels] a')].find((el) =>
-      (el.textContent ?? '').startsWith('https://'),
+      (el.textContent ?? '').includes('sites.google.com'),
     ) as HTMLElement | undefined
     if (!a) return null
     return {
@@ -564,4 +564,81 @@ test('这一层里有 Linked，也有滚到底才看见的删除', async ({ page
   await remove.click()
   // 问一次才算数。
   await expect(pane.getByRole('button', { name: /Delete|Confirm/ }).first()).toBeVisible()
+})
+
+/**
+ * 三种地址：归堆、按类型写、不许把占位符存成内容。
+ *
+ * 想到一条加一条，于是真实的列表长成 email link email phone link —— 读起来像没整理过的抽屉。
+ * 归堆的次序是 email → phone → link，手写顺序只在同一类里保留（Apple 和 Google 的联系人也是
+ * 按类型归堆，都不给手动排序）。
+ */
+test('地址按类型归堆，不按写下的先后', async ({ page }) => {
+  await registerFreshUser(page, '/contacts')
+  const made = await page.request.post('/api/v1/contacts', {
+    headers: WEB,
+    data: {
+      name: '陈颖',
+      channels: [
+        { kind: 'email', value: 'first@acme.test' },
+        { kind: 'url', value: 'acme.test/ying' },
+        { kind: 'email', value: 'second@acme.test' },
+        { kind: 'phone', value: '+86 139 0000 1234' },
+        { kind: 'url', value: 'github.com/ying' },
+      ],
+    },
+  })
+  const id = ((await made.json()) as { id: string }).id
+  await page.goto(`/contacts/${id}`)
+  await expect(page.locator('[data-channels] li')).toHaveCount(5)
+  const kinds = await page.locator('[data-channels] li span:first-child').allTextContents()
+  expect(kinds).toEqual(['Email', 'Email', 'Phone', 'Link', 'Link'])
+  // 同一类里，先写的还在前面。
+  const rows = await page.locator('[data-channels] li a').allTextContents()
+  expect(rows[0]).toBe('first@acme.test')
+  expect(rows[1]).toBe('second@acme.test')
+  // 链接写 host 加路径，不是整条地址。
+  expect(rows[3]).toBe('acme.test/ying')
+})
+
+test('新加一行是空的，而且说清这一类长什么样', async ({ page }) => {
+  await registerFreshUser(page, '/contacts')
+  await add(page, { name: '陈颖' })
+  await page.reload()
+  await page.getByRole('button', { name: '陈颖' }).click()
+  const pane = page.getByRole('dialog', { name: 'Contacts' })
+  await pane.getByRole('button', { name: 'Edit', exact: true }).click()
+  await pane.getByRole('button', { name: 'Add one' }).click()
+
+  const box = pane.getByRole('textbox', { name: 'Item 1' })
+  // 空的：占位符不是内容，存进去的只能是人写的东西。
+  await expect(box).toHaveValue('')
+  await expect(box).toHaveAttribute('placeholder', 'name@example.com')
+
+  // 改成电话，占位符跟着变 —— 它们是三种不同的结构化文本。
+  await pickOne(pane, 'Type of item 1', 'Phone')
+  await expect(box).toHaveAttribute('placeholder', '+86 139 0000 0000')
+
+  // 一行空的不挡保存：加了一行又改主意是常事。
+  await expect(pane.getByRole('button', { name: 'Save' })).toBeEnabled()
+  await pane.getByRole('button', { name: 'Save' }).click()
+  await expect(pane.getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
+})
+
+test('写得不像那一类，保存之前就说出来', async ({ page }) => {
+  await registerFreshUser(page, '/contacts')
+  await add(page, { name: '陈颖' })
+  await page.reload()
+  await page.getByRole('button', { name: '陈颖' }).click()
+  const pane = page.getByRole('dialog', { name: 'Contacts' })
+  await pane.getByRole('button', { name: 'Edit', exact: true }).click()
+  await pane.getByRole('button', { name: 'Add one' }).click()
+  await pickOne(pane, 'Type of item 1', 'Phone')
+  await pane.getByRole('textbox', { name: 'Item 1' }).fill('to fill in')
+
+  await expect(pane).toContainText('a phone number is digits, spaces, dashes and brackets')
+  await expect(pane.getByRole('button', { name: 'Save' })).toBeDisabled()
+
+  await pane.getByRole('textbox', { name: 'Item 1' }).fill('+86 139 0000 1234')
+  await expect(pane.getByRole('button', { name: 'Save' })).toBeEnabled()
 })

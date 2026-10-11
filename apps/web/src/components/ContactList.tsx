@@ -1,5 +1,6 @@
 import type { ContactResponse } from '@ctws/contracts'
 import { channelHref } from '../api/contacts'
+import { byKind, channelLabel } from '../channels'
 import { useProjectRail } from '../projectColor'
 import { sortByName } from '../contactOrder'
 import { PanelEmpty } from './Panel'
@@ -72,26 +73,22 @@ export function ContactList({
             </div>
             {person.channels.length > 0 && (
               <div className="flex min-w-0 flex-wrap items-baseline gap-x-3">
-                {person.channels.map((c, i) => {
-                  const href = channelHref(c.kind, c.value)
-                  return (
-                    <span key={i} className="flex min-w-0 items-baseline gap-1">
-                      {href ? (
-                        <a
-                          href={href}
-                          // The address is its own target: writing to someone is not opening them.
-                          onClick={(e) => e.stopPropagation()}
-                          className="truncate text-sm text-accent hover:underline"
-                        >
-                          {c.value}
-                        </a>
-                      ) : (
-                        <span className="truncate text-sm text-fg">{c.value}</span>
-                      )}
-                      {c.label && <span className="text-xs text-fg-subtle">{c.label}</span>}
-                    </span>
-                  )
-                })}
+                {/* 归堆、按类型写：和那一层里是同一套规则，一个人不该在两处看见两种写法。 */}
+                {byKind(person.channels).map((c, i) => (
+                  <span key={i} className="flex min-w-0 items-baseline gap-1">
+                    <a
+                      href={channelHref(c.kind, c.value)!}
+                      // The address is its own target: writing to someone is not opening them.
+                      onClick={(e) => e.stopPropagation()}
+                      className={`truncate text-sm text-accent hover:underline ${
+                        c.kind === 'phone' ? 'tabular-nums' : ''
+                      }`}
+                    >
+                      {channelLabel(c.kind, c.value)}
+                    </a>
+                    {c.label && <span className="text-xs text-fg-subtle">{c.label}</span>}
+                  </span>
+                ))}
               </div>
             )}
           </li>

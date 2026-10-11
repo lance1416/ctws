@@ -1,4 +1,4 @@
-import { CHANNEL_KINDS, type ChannelKind, type ContactResponse } from '@ctws/contracts'
+import { channelProblem, type ContactResponse } from '@ctws/contracts'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { channelHref, deleteContact, patchContact, type BirthdayDraft } from '../api/contacts'
 import { listProjects } from '../api/projects'
@@ -8,6 +8,7 @@ import { useState, type ReactNode } from 'react'
 import { BirthdayEditor, BirthdayFields, plainDate } from './BirthdayFields'
 import { CIRCLE_LABELS } from './BirthdayRow'
 import { BUTTON } from './buttonStyles'
+import { byKind, channelLabel, channelPlaceholder, KIND_CHOICES, KIND_LABEL } from '../channels'
 import { Field } from './Field'
 import { useComposing } from '../composition'
 import { boxed, field, label } from './formStyles'
@@ -25,9 +26,6 @@ import { PickMany, PickOne } from './inline'
  * committed on leaving the field, a project is added and written, an address is edited and
  * written. A person is not edited differently from a task.
  */
-
-const KIND_LABEL: Record<ChannelKind, string> = { email: 'Email', phone: 'Phone', url: 'Link' }
-const KIND_CHOICES = CHANNEL_KINDS.map((k) => ({ value: k, label: KIND_LABEL[k] }))
 
 /**
  * The pane: this module's fields inside the shell's frame.
@@ -167,19 +165,18 @@ export function ContactFields({
       {contact.channels.length > 0 && (
         <Field label="Contact" shape="above">
           <ul data-channels className="flex flex-col gap-0.5">
-            {contact.channels.map((c, i) => (
+            {byKind(contact.channels).map((c, i) => (
               <li key={i} className="flex min-w-0 items-center gap-1.5">
                 <span className="w-12 shrink-0 text-xs text-fg-muted">{KIND_LABEL[c.kind]}</span>
-                {channelHref(c.kind, c.value) ? (
-                  <a
-                    href={channelHref(c.kind, c.value)!}
-                    className="min-w-0 flex-1 truncate text-sm text-accent hover:underline"
-                  >
-                    {c.value}
-                  </a>
-                ) : (
-                  <span className="min-w-0 flex-1 truncate text-sm text-fg">{c.value}</span>
-                )}
+                <a
+                  href={channelHref(c.kind, c.value)!}
+                  // 电话用等宽数字：一串号码是用来读和对的，不是一句话。
+                  className={`min-w-0 flex-1 truncate text-sm text-accent hover:underline ${
+                    c.kind === 'phone' ? 'tabular-nums' : ''
+                  }`}
+                >
+                  {channelLabel(c.kind, c.value)}
+                </a>
               </li>
             ))}
           </ul>
@@ -334,7 +331,12 @@ function ContactForm({
   const [gender, setGender] = useState(contact.gender ?? '')
   const [circle, setCircle] = useState(contact.circle ?? '')
   const [projectIds, setProjectIds] = useState(contact.projects.map((p) => p.id))
-  const [channels, setChannels] = useState(contact.channels)
+  const [channels, setChannels] = useState(() => byKind(contact.channels))
+  // 空行不算问题：保存时丢掉它 —— 加了一行又改主意，不该因此按不动 Save。
+  const problems = channels.map((c) =>
+    c.value.trim() === '' ? undefined : (channelProblem(c.kind, c.value) ?? undefined),
+  )
+  const badChannel = problems.some((p) => p !== undefined)
   const [note, setNote] = useState(contact.note ?? '')
   const [writing, setWriting] = useState(false)
   const [pickingDay, setPickingDay] = useState(false)
@@ -345,7 +347,7 @@ function ContactForm({
   const composing = useComposing()
 
   const submit = () => {
-    if (busy || badDay || name.trim() === '') return
+    if (busy || badDay || badChannel || name.trim() === '') return
     onSave({
       name: name.trim(),
       org: org.trim() || null,
@@ -356,7 +358,7 @@ function ContactForm({
       circle: (circle || null) as 'family' | null,
       projectIds,
       // 空地址当没写：一行填了一半的联系方式不是一条联系方式。
-      channels: channels
+      channels: byKind(channels)
         .filter((c) => c.value.trim() !== '')
         .map((c) => ({ kind: c.kind, value: c.value.trim(), label: c.label?.trim() || null })),
       note: note.trim() || null,
@@ -382,7 +384,7 @@ function ContactForm({
         <button
           type="submit"
           className={BUTTON.primary}
-          disabled={busy || badDay || name.trim() === ''}
+          disabled={busy || badDay || badChannel || name.trim() === ''}
         >
           Save
         </button>
@@ -405,7 +407,7 @@ function ContactForm({
         <span className={label}>Contact</span>
         <ul className="mt-1.5 flex flex-col gap-2">
           {channels.map((c, i) => (
-            <li key={i} className="flex min-w-0 items-center gap-1.5">
+            <li key={i} className="flex min-w-0 flex-wrap items-center gap-1.5">
               <PickOne
                 label={`Type of item ${i + 1}`}
                 value={c.kind}
@@ -417,13 +419,17 @@ function ContactForm({
               <input
                 aria-label={`Item ${i + 1}`}
                 value={c.value}
-                placeholder="Address"
+                // 这一类长什么样，而不是一句「待填」—— 占位符不会被存成内容。
+                placeholder={channelPlaceholder(c.kind)}
+                type={c.kind === 'phone' ? 'tel' : 'text'}
+                inputMode={c.kind === 'phone' ? 'tel' : 'text'}
+                aria-invalid={problems[i] !== undefined}
                 onChange={(e) =>
                   setChannels(
                     channels.map((row, at) => (at === i ? { ...row, value: e.target.value } : row)),
                   )
                 }
-                className={`${boxed} min-w-0 flex-1 text-sm`}
+                className={`${boxed} min-w-0 flex-1 text-sm ${c.kind === 'phone' ? 'tabular-nums' : ''}`}
               />
               <button
                 type="button"
@@ -441,6 +447,10 @@ function ContactForm({
                   />
                 </svg>
               </button>
+              {/* 保存之前就说清是哪一条不成立：按下 Save 才被服务端拒，中间那段路是白走的。 */}
+              {problems[i] !== undefined && (
+                <p className="w-full text-xs text-danger">{problems[i]}</p>
+              )}
             </li>
           ))}
         </ul>
