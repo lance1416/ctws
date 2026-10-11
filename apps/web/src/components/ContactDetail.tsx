@@ -4,17 +4,19 @@ import { channelHref, deleteContact, patchContact } from '../api/contacts'
 import { listProjects } from '../api/projects'
 import { useProjectRail } from '../projectColor'
 import { DangerAction, DangerZone } from './DangerZone'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { BirthdayFields } from './BirthdayFields'
 import { CIRCLE_LABELS } from './BirthdayRow'
 import { BUTTON } from './buttonStyles'
 import { Field } from './Field'
+import { useComposing } from '../composition'
+import { boxed, field, label } from './formStyles'
 import { NoteBody } from '../notes/NoteBody'
 import { WritingMode } from '../notes/WritingMode'
 import { DetailHead, DetailPane } from './DetailPane'
 import { Link } from 'react-router-dom'
 import { Links } from './Links'
-import { InlineText, PickMany, PickOne } from './inline'
+import { PickMany, PickOne } from './inline'
 
 /**
  * ONE PERSON, in the shell's detail pane.
@@ -70,80 +72,328 @@ export function ContactFields({
   onClose,
 }: {
   contact: ContactResponse
-  /** Where to go when this person is deleted. The page has nowhere to close TO, so it may omit it. */
+  /** Where to go when this person is deleted. Not every surface has somewhere to close TO. */
   onClose?: () => void
 }) {
   const qc = useQueryClient()
+  const [editing, setEditing] = useState(false)
   const [writing, setWriting] = useState(false)
   const rail = useProjectRail()
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
 
-  const refresh = () => qc.invalidateQueries({ queryKey: ['contacts'] })
+  // 项目是一条边：改了它，读边的那一块（Linked）也要跟着重读，否则刚去掉的那条线还在下面挂着。
+  const refresh = () => {
+    void qc.invalidateQueries({ queryKey: ['contacts'] })
+    void qc.invalidateQueries({ queryKey: ['links'] })
+  }
   const save = useMutation({
     mutationFn: (patch: Parameters<typeof patchContact>[1]) => patchContact(contact.id, patch),
     onSettled: refresh,
   })
 
-  const channels = contact.channels
-  // The whole set goes back on every change: the server replaces it, and a person's addresses are
-  // one thing you edit, not several you sequence.
-  const putChannels = (next: typeof channels) =>
-    save.mutate({
-      channels: next
-        .filter((c) => c.value.trim() !== '')
-        .map((c) => ({ kind: c.kind, value: c.value.trim(), label: c.label?.trim() || null })),
-    })
-
   const chip = (id: string) => (
     <span className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(id)}`} />
   )
 
+  const head = (
+    <div>
+      {onClose && (
+        <DetailHead
+          // 回列表。没有第二个地方可去了：这一层就是这个人的地址。
+          kind={
+            <Link
+              to="/contacts"
+              className="rounded text-sm text-fg-muted hover:text-fg hover:underline"
+            >
+              ← Contacts
+            </Link>
+          }
+          onClose={onClose}
+        />
+      )}
+    </div>
+  )
+
+  if (editing) {
+    return (
+      <div className="flex flex-col gap-4">
+        {head}
+        <ContactForm
+          contact={contact}
+          projects={projects.data ?? []}
+          chip={chip}
+          busy={save.isPending}
+          onCancel={() => setEditing(false)}
+          onSave={(patch) => {
+            save.mutate(patch)
+            setEditing(false)
+          }}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        {onClose && (
-          <DetailHead
-            // 面包屑回列表，像面包屑那样；整页打开是它自己的控件，不是一个伪装成返回的链接。
-            kind={
-              <Link
-                to="/contacts"
-                className="rounded text-sm text-fg-muted hover:text-fg hover:underline"
-              >
-                ← Contacts
-              </Link>
-            }
-            onClose={onClose}
-          />
-        )}
-        <div className="flex items-start gap-3">
-          <div className="min-w-0 flex-1">
-            <InlineText
-              label="Name"
-              value={contact.name}
-              placeholder="Who is this?"
-              onSave={(name) => name && save.mutate({ name })}
-              className="mt-0.5 block text-lg font-semibold text-fg"
-            />
-            {/* 读出来的一行，不是第二个编辑器：改还是在下面那两格里改。 */}
-            {(contact.title || contact.org) && (
-              <p className="truncate text-sm text-fg-muted">
-                {[contact.title, contact.org].filter(Boolean).join(' · ')}
-              </p>
-            )}
-          </div>
-          {contact.circle && (
-            <span className="shrink-0 rounded-full border border-border-subtle bg-surface-raised px-2.5 py-1 text-xs text-fg-muted">
-              {CIRCLE_LABELS[contact.circle]}
-            </span>
+      {head}
+
+      {/*
+        读的时候就只是读：每个值都是文字，整块里只有一个 Edit 可以按。
+
+        以前每个字段自己是一个看不出来的按钮 —— 知道的人用得飞快，不知道的人以为这一页不能改。
+        任务面板早就是「阅读态 / 编辑态」两段（`TaskDetail`），Apple 和 Google 的联系人也是
+        （Edit → Done / 铅笔 → Save）。这里跟上。
+      */}
+      <div className="flex items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <h2 className="truncate text-lg font-semibold text-fg">{contact.name}</h2>
+          {(contact.title || contact.org) && (
+            <p className="truncate text-sm text-fg-muted">
+              {[contact.title, contact.org].filter(Boolean).join(' · ')}
+            </p>
           )}
+        </div>
+        {contact.circle && (
+          <span className="shrink-0 rounded-full border border-border-subtle bg-surface-raised px-2.5 py-1 text-xs text-fg-muted">
+            {CIRCLE_LABELS[contact.circle]}
+          </span>
+        )}
+        <button type="button" className={BUTTON.secondary} onClick={() => setEditing(true)}>
+          Edit
+        </button>
+      </div>
+
+      {/* 先是怎么找到这个人：一张联系人页存在的理由就是这个。 */}
+      {contact.channels.length > 0 && (
+        <Field label="Contact" shape="above">
+          <ul data-channels className="flex flex-col gap-0.5">
+            {contact.channels.map((c, i) => (
+              <li key={i} className="flex min-w-0 items-center gap-1.5">
+                <span className="w-12 shrink-0 text-xs text-fg-muted">{KIND_LABEL[c.kind]}</span>
+                {channelHref(c.kind, c.value) ? (
+                  <a
+                    href={channelHref(c.kind, c.value)!}
+                    className="min-w-0 flex-1 truncate text-sm text-accent hover:underline"
+                  >
+                    {c.value}
+                  </a>
+                ) : (
+                  <span className="min-w-0 flex-1 truncate text-sm text-fg">{c.value}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </Field>
+      )}
+
+      {/*
+        其余字段，标签在值上面，一格一件事。列数看这一块自己有多宽（`@container`，不是 `sm:`）：
+        同一块东西要在 350px 的那一层里和在窄窗口上各渲染一次，窗口宽不代表这里宽。
+      */}
+      <div className="@container">
+        <div
+          data-contact-fields
+          className="grid items-start gap-x-6 gap-y-4 @xl:grid-cols-2 @2xl:grid-cols-3"
+        >
+          <BirthdayFields contact={contact} onSave={(patch) => save.mutate(patch)} />
+          <Reads label="Hometown" value={contact.hometown} />
+          <Reads label="Lives in" value={contact.city} />
+          <Reads label="Company" value={contact.org} />
+          <Reads label="Title" value={contact.title} />
+          <Reads
+            label="Gender"
+            value={contact.gender ? (GENDER_LABELS[contact.gender] ?? null) : null}
+          />
+          <Reads label="Circle" value={contact.circle ? CIRCLE_LABELS[contact.circle] : null} />
+          <Field label="Projects" shape="above">
+            {contact.projects.length === 0 ? (
+              <p className="text-sm text-fg-subtle">Not on any project</p>
+            ) : (
+              <ul className="flex flex-wrap gap-1.5">
+                {contact.projects.map((p) => (
+                  <li
+                    key={p.id}
+                    className="flex min-w-0 items-center gap-1.5 rounded-lg border border-border-subtle bg-surface-raised px-2 py-1 text-sm text-fg"
+                  >
+                    {chip(p.id)}
+                    <span className="truncate">{p.name}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Field>
         </div>
       </div>
 
       {/*
-        先是怎么找到这个人 —— 一张联系人页存在的理由就是这个，所以它排在所有字段前面。
+        备注，和任务备注同一条 Markdown 管线，连 68ch 的阅读行宽都一样。
+
+        改它不必先进整张表：`Edit notes` 直接开写作层 —— 一句想起来就记下的话，不该先经过一张
+        关于这个人的表格。
       */}
-      <Field label="Contact" shape="above">
-        <ul data-channels className="flex flex-col gap-0.5">
+      <div>
+        <div className="flex items-center gap-2">
+          <span className="flex-1 text-xs text-fg-muted">Notes</span>
+          <button type="button" className={BUTTON.secondary} onClick={() => setWriting(true)}>
+            Edit notes
+          </button>
+        </div>
+        <div data-contact-notes className="mt-1.5 max-w-[68ch] text-fg">
+          {contact.note ? (
+            <NoteBody source={contact.note} />
+          ) : (
+            <p className="text-sm text-fg-subtle">No notes yet</p>
+          )}
+        </div>
+      </div>
+      {writing && (
+        <WritingMode
+          heading={contact.name}
+          source={contact.note ?? ''}
+          onChange={(next) => save.mutate({ note: next.trim() === '' ? null : next })}
+          onClose={() => setWriting(false)}
+        />
+      )}
+    </div>
+  )
+}
+
+/** 性别读出来的样子。值是契约的枚举，屏幕上的词在这里，和 circle 一样。 */
+const GENDER_LABELS: Record<string, string> = {
+  female: 'Female',
+  male: 'Male',
+  other: 'Other',
+}
+
+/** 表里的一个短字段：标签在上，输入框在下。 */
+function Writes({
+  label: text,
+  id,
+  value,
+  onChange,
+}: {
+  label: string
+  id: string
+  value: string
+  onChange: (next: string) => void
+}) {
+  return (
+    <div className="min-w-0">
+      <label htmlFor={id} className={label}>
+        {text}
+      </label>
+      <input
+        id={id}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={`${field} mt-1 text-sm`}
+      />
+    </div>
+  )
+}
+
+/** 一个只读的字段：没有值就说 Not set，和别的空格长得一样。 */
+function Reads({ label, value }: { label: string; value: string | null }) {
+  return (
+    <Field label={label} shape="above">
+      <p className={`truncate text-sm ${value ? 'text-fg' : 'text-fg-subtle'}`}>
+        {value || 'Not set'}
+      </p>
+    </Field>
+  )
+}
+
+/**
+ * 改这个人：一张表，一次保存。
+ *
+ * 每个值都长成一个输入框，不用猜哪里能点；改完按 Save 一次写回，Cancel 当没发生过。只有两样
+ * 不在这张表里，各有各的理由：**生日**自己有一套控件（历法、年月日、时辰、提前量），塞进来会
+ * 把表撑回原来那副样子，所以它仍然是那一格加一个二级面板；**Linked** 是边，加一条边当场就成立，
+ * 不该等一个它不属于的表单 —— 任务那边的依赖也是这条规矩。
+ */
+function ContactForm({
+  contact,
+  projects,
+  chip,
+  busy,
+  onCancel,
+  onSave,
+}: {
+  contact: ContactResponse
+  projects: { id: string; name: string; archivedAt: string | null }[]
+  chip: (id: string) => ReactNode
+  busy: boolean
+  onCancel: () => void
+  onSave: (patch: Parameters<typeof patchContact>[1]) => void
+}) {
+  const [name, setName] = useState(contact.name)
+  const [org, setOrg] = useState(contact.org ?? '')
+  const [title, setTitle] = useState(contact.title ?? '')
+  const [hometown, setHometown] = useState(contact.hometown ?? '')
+  const [city, setCity] = useState(contact.city ?? '')
+  const [gender, setGender] = useState(contact.gender ?? '')
+  const [circle, setCircle] = useState(contact.circle ?? '')
+  const [projectIds, setProjectIds] = useState(contact.projects.map((p) => p.id))
+  const [channels, setChannels] = useState(contact.channels)
+  const [note, setNote] = useState(contact.note ?? '')
+  const [writing, setWriting] = useState(false)
+  const composing = useComposing()
+
+  const submit = () => {
+    if (busy || name.trim() === '') return
+    onSave({
+      name: name.trim(),
+      org: org.trim() || null,
+      title: title.trim() || null,
+      hometown: hometown.trim() || null,
+      city: city.trim() || null,
+      gender: (gender || null) as 'male' | null,
+      circle: (circle || null) as 'family' | null,
+      projectIds,
+      // 空地址当没写：一行填了一半的联系方式不是一条联系方式。
+      channels: channels
+        .filter((c) => c.value.trim() !== '')
+        .map((c) => ({ kind: c.kind, value: c.value.trim(), label: c.label?.trim() || null })),
+      note: note.trim() || null,
+    })
+  }
+
+  return (
+    <form
+      aria-label="Edit person"
+      onSubmit={(e) => {
+        e.preventDefault()
+        submit()
+      }}
+      {...composing.bind}
+      className="flex flex-col gap-4"
+    >
+      <div className="flex items-center gap-2">
+        <span className="flex-1 text-xs text-fg-muted">Editing</span>
+        <button type="button" className={BUTTON.secondary} onClick={onCancel}>
+          Cancel
+        </button>
+        <button type="submit" className={BUTTON.primary} disabled={busy || name.trim() === ''}>
+          Save
+        </button>
+      </div>
+
+      <div>
+        <label htmlFor="c-name" className={label}>
+          Name
+        </label>
+        <input
+          id="c-name"
+          autoFocus
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className={`${field} mt-1.5 text-lg font-semibold`}
+        />
+      </div>
+
+      <div>
+        <span className={label}>Contact</span>
+        <ul className="mt-1.5 flex flex-col gap-2">
           {channels.map((c, i) => (
             <li key={i} className="flex min-w-0 items-center gap-1.5">
               <PickOne
@@ -151,45 +401,25 @@ export function ContactFields({
                 value={c.kind}
                 choices={KIND_CHOICES}
                 onPick={(kind) =>
-                  putChannels(channels.map((row, at) => (at === i ? { ...row, kind } : row)))
+                  setChannels(channels.map((row, at) => (at === i ? { ...row, kind } : row)))
                 }
               />
-              <span className="min-w-0 flex-1">
-                <InlineText
-                  label={`Item ${i + 1}`}
-                  value={c.value}
-                  placeholder="Address"
-                  onSave={(value) =>
-                    putChannels(channels.map((row, at) => (at === i ? { ...row, value } : row)))
-                  }
-                  className="block truncate text-sm text-accent"
-                />
-              </span>
-              {/* The link, beside the value rather than on it: the value has to stay clickable
-                    as an EDITOR, so opening it is its own control. */}
-              {channelHref(c.kind, c.value) && (
-                <a
-                  href={channelHref(c.kind, c.value)!}
-                  aria-label={`Open ${c.value}`}
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-fg-subtle hover:bg-surface-hover hover:text-fg"
-                >
-                  <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3.5 w-3.5">
-                    <path
-                      d="M6.5 3.5h6v6M12.5 3.5l-8 8"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </a>
-              )}
+              <input
+                aria-label={`Item ${i + 1}`}
+                value={c.value}
+                placeholder="Address"
+                onChange={(e) =>
+                  setChannels(
+                    channels.map((row, at) => (at === i ? { ...row, value: e.target.value } : row)),
+                  )
+                }
+                className={`${boxed} min-w-0 flex-1 text-sm`}
+              />
               <button
                 type="button"
                 aria-label={`Remove item ${i + 1}`}
-                onClick={() => putChannels(channels.filter((_, at) => at !== i))}
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-fg-subtle hover:bg-surface-hover hover:text-fg"
+                onClick={() => setChannels(channels.filter((_, at) => at !== i))}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-fg-subtle hover:bg-surface-hover hover:text-fg"
               >
                 <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3.5 w-3.5">
                   <path
@@ -206,9 +436,7 @@ export function ContactFields({
         </ul>
         <button
           type="button"
-          onClick={() =>
-            putChannels([...channels, { kind: 'email', value: 'to fill in', label: null }])
-          }
+          onClick={() => setChannels([...channels, { kind: 'email', value: '', label: null }])}
           className="mt-1.5 flex h-8 items-center gap-1.5 rounded-lg border border-dashed border-border-strong px-2.5 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
         >
           <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3 w-3">
@@ -222,133 +450,84 @@ export function ContactFields({
           </svg>
           Add one
         </button>
-      </Field>
+      </div>
 
-      {/*
-        其余字段，标签在值上面，一格一件事。
-
-        列数看这一块自己有多宽（`@container`，不是 `sm:`）：同一块东西要在 310px 的详情面板里、
-        在三栏的中栏里、在整页上各渲染一次，窗口宽不代表这里宽。
-
-        生日只是其中一格，和「家乡」一样宽、一样响：农历、生肖、星座、时辰、下一次、提前量都在
-        点开之后（`BirthdayFields`），因为认一个人不需要它们。
-      */}
       <div className="@container">
-        <div
-          data-contact-fields
-          className="grid items-start gap-x-6 gap-y-4 @xl:grid-cols-2 @2xl:grid-cols-3"
-        >
-          <BirthdayFields contact={contact} onSave={(patch) => save.mutate(patch)} />
-          <Field label="Hometown" shape="above">
-            <InlineText
-              label="Hometown"
-              value={contact.hometown ?? ''}
-              placeholder="Not set"
-              onSave={(hometown) => save.mutate({ hometown: hometown || null })}
-              className="block truncate text-sm"
-            />
-          </Field>
-          <Field label="Lives in" shape="above">
-            <InlineText
-              label="Lives in"
-              value={contact.city ?? ''}
-              placeholder="Not set"
-              onSave={(city) => save.mutate({ city: city || null })}
-              className="block truncate text-sm"
-            />
-          </Field>
-          <Field label="Company" shape="above">
-            <InlineText
-              label="Company"
-              value={contact.org ?? ''}
-              placeholder="Not set"
-              onSave={(org) => save.mutate({ org: org || null })}
-              className="block truncate text-sm"
-            />
-          </Field>
-          <Field label="Title" shape="above">
-            <InlineText
-              label="Title"
-              value={contact.title ?? ''}
-              placeholder="Not set"
-              onSave={(title) => save.mutate({ title: title || null })}
-              className="block truncate text-sm"
-            />
-          </Field>
+        <div className="grid items-start gap-x-6 gap-y-4 @xl:grid-cols-2 @2xl:grid-cols-3">
+          <Writes label="Hometown" id="c-home" value={hometown} onChange={setHometown} />
+          <Writes label="Lives in" id="c-city" value={city} onChange={setCity} />
+          <Writes label="Company" id="c-org" value={org} onChange={setOrg} />
+          <Writes label="Title" id="c-title" value={title} onChange={setTitle} />
           <Field label="Gender" shape="above">
             <PickOne
               label="Gender"
-              value={contact.gender ?? ''}
+              value={gender}
               choices={[
                 { value: '', label: 'Not set' },
                 { value: 'female', label: 'Female' },
                 { value: 'male', label: 'Male' },
                 { value: 'other', label: 'Other' },
               ]}
-              onPick={(gender) => save.mutate({ gender: (gender || null) as 'male' | null })}
+              onPick={setGender}
             />
           </Field>
           <Field label="Circle" shape="above">
             <PickOne
               label="Circle"
-              value={contact.circle ?? ''}
+              value={circle}
               choices={[
                 { value: '', label: 'Not set' },
                 { value: 'family', label: 'Family' },
                 { value: 'friend', label: 'Friends' },
                 { value: 'work', label: 'Work' },
               ]}
-              onPick={(circle) => save.mutate({ circle: (circle || null) as 'family' | null })}
+              onPick={setCircle}
             />
           </Field>
           <Field label="Projects" shape="above">
             <PickMany
               label="Projects"
-              chosen={contact.projects.map((p) => ({
-                value: p.id,
-                label: p.name,
-                mark: chip(p.id),
+              chosen={projectIds.map((id) => ({
+                value: id,
+                label: projects.find((p) => p.id === id)?.name ?? '',
+                mark: chip(id),
               }))}
-              choices={(projects.data ?? [])
+              choices={projects
                 .filter((p) => !p.archivedAt)
                 .map((p) => ({ value: p.id, label: p.name, mark: chip(p.id) }))}
-              onChange={(projectIds) => save.mutate({ projectIds })}
+              onChange={setProjectIds}
               empty="Not on any project"
             />
           </Field>
         </div>
       </div>
 
-      {/*
-        THE NOTE, RENDERED AS MARKDOWN -- the same pipeline a task's note goes through, down to
-        the 68ch reading measure. Nothing is added to the bundle by this: `NoteBody` is already
-        behind a dynamic import, so a person whose note nobody opens costs nothing.
-      */}
-      <Field label="Notes" shape="above">
-        <div data-contact-notes className="max-w-[68ch] text-fg">
-          {contact.note ? (
-            <NoteBody source={contact.note} />
-          ) : (
-            <p className="text-sm text-fg-subtle">No notes yet</p>
-          )}
+      <div>
+        <div className="flex items-center gap-2">
+          <label htmlFor="c-note" className={`flex-1 ${label}`}>
+            Notes
+          </label>
+          <button type="button" className={BUTTON.quiet} onClick={() => setWriting(true)}>
+            Write in full
+          </button>
         </div>
-        <button
-          type="button"
-          className={`-ml-2.5 mt-1 ${BUTTON.quiet}`}
-          onClick={() => setWriting(true)}
-        >
-          Write
-        </button>
-      </Field>
+        <textarea
+          id="c-note"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          rows={4}
+          className={`${field} mt-1.5 max-w-[68ch]`}
+        />
+      </div>
       {writing && (
         <WritingMode
-          heading={contact.name}
-          source={contact.note ?? ''}
-          onChange={(next) => save.mutate({ note: next.trim() === '' ? null : next })}
+          heading={name || contact.name}
+          source={note}
+          onChange={setNote}
           onClose={() => setWriting(false)}
         />
       )}
-    </div>
+    </form>
   )
 }
 

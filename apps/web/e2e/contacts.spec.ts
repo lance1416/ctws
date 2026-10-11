@@ -63,14 +63,16 @@ test('a person is made by typing a name, and finished in the pane', async ({ pag
   const pane = page.getByRole('dialog', { name: 'Contacts' })
   await expect(pane).toContainText('李雷')
 
+  // 一个显眼的入口，不是十个隐形的：读的时候这一层里只有 Edit 可以按。
+  await pane.getByRole('button', { name: 'Edit', exact: true }).click()
   await pane.getByRole('button', { name: 'Add one' }).click()
-  await pane.getByRole('button', { name: 'Edit Item 1' }).click()
   await pane.getByRole('textbox', { name: 'Item 1' }).fill('lilei@acme.test')
-  await page.keyboard.press('Enter')
-  await expect(row(page, '李雷')).toContainText('lilei@acme.test')
+  await pane.getByRole('button', { name: 'Save' }).click()
 
-  // NOTHING WAS SAVED, because there is nothing to save: this pane has no Save button.
+  await expect(row(page, '李雷')).toContainText('lilei@acme.test')
+  // 存完回到阅读态：刚写下的东西就在眼前，而不是停在一张表上。
   await expect(pane.getByRole('button', { name: 'Save' })).toHaveCount(0)
+  await expect(pane.getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
 })
 
 test('a person can be on several lines of work at once', async ({ page }) => {
@@ -82,14 +84,15 @@ test('a person can be on several lines of work at once', async ({ page }) => {
 
   await page.getByRole('button', { name: '陈颖' }).click()
   const pane = page.getByRole('dialog', { name: 'Contacts' })
-  // Picked back to back WITHOUT waiting in between: that is what a person does, and it used to
-  // drop the first one -- both writes computed their new set from the same pre-refetch list.
+  await pane.getByRole('button', { name: 'Edit', exact: true }).click()
+  // 连着挑两个，中间不等：一次保存写回去的是两个，不是最后那一个。
   for (const name of ['找工作', 'CTWS']) {
     await pane.getByRole('button', { name: 'Add Projects' }).click()
     await page.getByRole('menuitem', { name }).click()
   }
-  await expect(pane.getByRole('button', { name: 'Remove Projects “找工作”' })).toBeVisible()
-  await expect(pane.getByRole('button', { name: 'Remove Projects “CTWS”' })).toBeVisible()
+  await pane.getByRole('button', { name: 'Save' }).click()
+  await expect(pane).toContainText('找工作')
+  await expect(pane).toContainText('CTWS')
 
   // On BOTH lines, and found from either -- under Linked now, which is where every kind of
   // edge is drawn since the per-module blocks went.
@@ -110,9 +113,11 @@ test('a line of work is taken off without touching the others', async ({ page })
 
   await page.getByRole('button', { name: '陈颖' }).click()
   const pane = page.getByRole('dialog', { name: 'Contacts' })
+  await pane.getByRole('button', { name: 'Edit', exact: true }).click()
   await pane.getByRole('button', { name: 'Remove Projects “找工作”' }).click()
-  await expect(pane.getByRole('button', { name: 'Remove Projects “找工作”' })).toHaveCount(0)
-  await expect(pane.getByRole('button', { name: 'Remove Projects “CTWS”' })).toBeVisible()
+  await pane.getByRole('button', { name: 'Save' }).click()
+  await expect(pane).not.toContainText('找工作')
+  await expect(pane).toContainText('CTWS')
 
   await page.goto(`/projects/${hunt}`)
   await expect(page.getByRole('region', { name: 'Linked' })).not.toContainText('陈颖')
@@ -131,7 +136,10 @@ test('an address removed in the pane is really gone', async ({ page }) => {
   await page.reload()
 
   await page.getByRole('button', { name: '韩梅梅' }).click()
-  await page.getByRole('dialog').getByRole('button', { name: 'Remove item 1' }).click()
+  const pane = page.getByRole('dialog', { name: 'Contacts' })
+  await pane.getByRole('button', { name: 'Edit', exact: true }).click()
+  await pane.getByRole('button', { name: 'Remove item 1' }).click()
+  await pane.getByRole('button', { name: 'Save' }).click()
 
   await expect(row(page, '韩梅梅')).toContainText('keep@acme.test')
   await expect(row(page, '韩梅梅')).not.toContainText('old@acme.test')
@@ -197,31 +205,13 @@ test('g n goes to the contacts, in the one keyspace', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Contacts', level: 1 })).toBeVisible()
 })
 
-test('Escape puts an inline edit back without closing the pane', async ({ page }) => {
-  // One key, one level: the first Escape cancels what is being typed, and only a second one
-  // leaves. Without that, backing out of a typo also loses your place.
-  await registerFreshUser(page, '/contacts')
-  await add(page, { name: '陈颖', org: 'Acme 招聘' })
-  await page.reload()
-  await page.getByRole('button', { name: '陈颖' }).click()
-  const pane = page.getByRole('dialog', { name: 'Contacts' })
-
-  await pane.getByRole('button', { name: 'Edit Company' }).click()
-  await pane.getByRole('textbox', { name: 'Company' }).fill('打错了')
-  await page.keyboard.press('Escape')
-
-  await expect(pane).toBeVisible()
-  await expect(pane.getByRole('textbox', { name: 'Company' })).toHaveCount(0)
-  await expect(pane).toContainText('Acme 招聘')
-
-  // The second one leaves.
-  await page.keyboard.press('Escape')
-  await expect(pane).toHaveCount(0)
-})
-
-test('leaving a field you did not change writes nothing', async ({ page }) => {
-  // A request that changes nothing, followed by a refetch that shows the same thing, is a flicker
-  // with no meaning -- and on a list it is a reorder nobody asked for.
+/**
+ * Cancel 当这次编辑没发生过 —— 一个字节都不写。
+ *
+ * 一张表的两个出口：Save 把改动一次写回，Cancel 丢掉。以前每个字段自己存，于是「离开一个没改过
+ * 的字段」会发一次什么都没改的 PATCH，列表跟着重排一遍 —— 那条毛病随着那套编辑方式一起没了。
+ */
+test('Cancel 丢掉改动，一个字节都不写', async ({ page }) => {
   await registerFreshUser(page, '/contacts')
   await add(page, { name: '陈颖', org: 'Acme 招聘' })
   await page.reload()
@@ -232,12 +222,40 @@ test('leaving a field you did not change writes nothing', async ({ page }) => {
   page.on('request', (r) => {
     if (r.method() === 'PATCH') writes.push(r.url())
   })
-  await pane.getByRole('button', { name: 'Edit Company' }).click()
-  await pane.getByRole('textbox', { name: 'Company' }).click()
-  await page.keyboard.press('Enter')
 
+  await pane.getByRole('button', { name: 'Edit', exact: true }).click()
+  await pane.getByRole('textbox', { name: 'Company' }).fill('打错了')
+  await pane.getByRole('button', { name: 'Cancel' }).click()
+
+  // 回到阅读态，原来的值还在，而且这一层没有被关掉。
+  await expect(pane).toBeVisible()
   await expect(pane).toContainText('Acme 招聘')
-  expect(writes, 'leaving an untouched field must not write').toEqual([])
+  await expect(pane).not.toContainText('打错了')
+  expect(writes, 'Cancel 不该写任何东西').toEqual([])
+})
+
+test('改完一次保存，读到的就是刚写下的', async ({ page }) => {
+  await registerFreshUser(page, '/contacts')
+  await add(page, { name: '陈颖', org: 'Acme 招聘' })
+  await page.reload()
+  await page.getByRole('button', { name: '陈颖' }).click()
+  const pane = page.getByRole('dialog', { name: 'Contacts' })
+
+  await pane.getByRole('button', { name: 'Edit', exact: true }).click()
+  await pane.getByRole('textbox', { name: 'Company' }).fill('新公司')
+  await pane.getByRole('textbox', { name: 'Title' }).fill('技术负责人')
+  const written = page.waitForResponse(
+    (r) =>
+      r.request().method() === 'PATCH' && new URL(r.url()).pathname.startsWith('/api/v1/contacts/'),
+  )
+  await pane.getByRole('button', { name: 'Save' }).click()
+
+  // 一次请求带走两处改动，不是两次。
+  expect((await written).request().postDataJSON()).toMatchObject({
+    org: '新公司',
+    title: '技术负责人',
+  })
+  await expect(pane).toContainText('技术负责人 · 新公司')
 })
 
 test('a person is written down properly in one form, not created then edited', async ({ page }) => {
@@ -436,21 +454,20 @@ test('超长的链接地址被截断，面板一毫米都不变宽', async ({ pa
   // `<button>` 是表单控件 —— 就算写了 display:block，宽度仍然按内容算，于是 truncate 永远
   // 没机会生效，文字从按钮底下穿过去。面板不变宽只是因为它自己 overflow 了。
   const clipped = await pane.evaluate((root) => {
-    const b = [...root.querySelectorAll('[data-channels] button')].find((el) =>
+    const a = [...root.querySelectorAll('[data-channels] a')].find((el) =>
       (el.textContent ?? '').startsWith('https://'),
     ) as HTMLElement | undefined
-    if (!b) return null
-    const open = root.querySelector('[data-channels] a[aria-label^="Open"]') as HTMLElement | null
+    if (!a) return null
     return {
-      overflows: b.scrollWidth > b.clientWidth,
-      right: Math.round(b.getBoundingClientRect().right),
-      iconLeft: open ? Math.round(open.getBoundingClientRect().left) : 0,
+      overflows: a.scrollWidth > a.clientWidth,
+      right: Math.round(a.getBoundingClientRect().right),
+      edge: Math.round(root.getBoundingClientRect().right),
     }
   })
   expect(clipped).not.toBeNull()
-  // 长地址必须是被截断的那一个，而且它的右边不许越过那两个按钮。
+  // 长地址必须是被截断的那一个，而且它的右边不许越过这一层自己的边。
   expect(clipped!.overflows).toBe(true)
-  expect(clipped!.right).toBeLessThanOrEqual(clipped!.iconLeft)
+  expect(clipped!.right).toBeLessThanOrEqual(clipped!.edge)
 
   // 窄窗口下同一条地址：横向滚动条是这条规则坏掉时最先露出来的东西。
   await page.setViewportSize({ width: 420, height: 900 })
@@ -463,7 +480,7 @@ test('超长的链接地址被截断，面板一毫米都不变宽', async ({ pa
   await page.setViewportSize({ width: 1280, height: 900 })
 
   // 写的时候也一样：输入框里是同一条长地址，面板照样不许变宽。
-  await pane.getByRole('button', { name: 'Edit Item 1' }).click()
+  await pane.getByRole('button', { name: 'Edit', exact: true }).click()
   await page
     .getByRole('textbox', { name: 'Item 1' })
     .fill('https://sites.google.com/site/hamzawaseem/home/publications-and-talks-2026-really-long')

@@ -283,7 +283,8 @@ test('备注在写作模式里改，关掉就落库', async ({ page }) => {
   await registerFreshUser(page)
   const id = await person(page, '周楠')
   await page.goto(`/contacts/${id}`)
-  await page.getByRole('button', { name: 'Write' }).click()
+  // 改备注不必先进整张表：阅读态里它自己有一个入口。
+  await page.getByRole('button', { name: 'Edit notes' }).click()
   // The writing layer is driven the way `notes.spec.ts` drives it: its textarea is labelled
   // `Markdown source`, and Escape is how it closes everywhere in this app.
   await page.getByLabel('Markdown source').fill('# 标题\n\n正文一行')

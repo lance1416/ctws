@@ -65,7 +65,7 @@ test('committing English out of an IME does not create a task', async ({ page })
   await expect(page.getByRole('button', { name: 'Task: ship it', exact: true })).toHaveCount(0)
 })
 
-test('committing English out of an IME does not close an inline editor', async ({ page }) => {
+test('committing English out of an IME does not submit the form', async ({ page }) => {
   await registerFreshUser(page, '/contacts')
   await page.request.post('/api/v1/contacts', {
     headers: WEB,
@@ -74,11 +74,13 @@ test('committing English out of an IME does not close an inline editor', async (
   await page.reload()
   await page.getByRole('button', { name: '陈颖' }).click()
   const pane = page.getByRole('dialog', { name: 'Contacts' })
-  await pane.getByRole('button', { name: 'Edit Company' }).click()
+  await pane.getByRole('button', { name: 'Edit', exact: true }).click()
 
-  await commitWithIme(page, 'input[aria-label="Company"]', 'Acme')
-  // Still open, still holding what was typed: the Enter belonged to the IME.
+  // 表里的输入框由 <label for> 命名，不是 aria-label：这里按 id 取，别去给它加第二个名字。
+  await commitWithIme(page, 'input#c-org', 'Acme')
+  // 表还开着，刚打的字还在：那个 Enter 是 IME 的，不是提交。
   await expect(pane.getByRole('textbox', { name: 'Company' })).toHaveValue('Acme')
+  await expect(pane.getByRole('button', { name: 'Save' })).toBeVisible()
 })
 
 test('a real Enter still submits', async ({ page }) => {
