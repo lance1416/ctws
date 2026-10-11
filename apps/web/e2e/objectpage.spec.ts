@@ -41,21 +41,22 @@ async function world(page: Page) {
   return { project, person, meeting }
 }
 
-test('a person has a page, and it shows what nothing was ever written on them to say', async ({
-  page,
-}) => {
+/**
+ * 一个人、一场会：**一层**，不是一个地方。
+ *
+ * 模块写它是什么，shell 写它连着什么 —— 这两半还是原来那两半，只是不再占掉整个窗口。项目保留
+ * 整页：它是你工作的地方，有一棵会拖会折的任务树，而人和会议是你瞥一眼的记录。
+ */
+test('一个人的那一层里，模块写字段、shell 写边', async ({ page }) => {
   const { person } = await world(page)
   await page.goto(`/contacts/${person.id}`)
 
-  // The module fills the top: this is what a person IS.
-  await expect(page.getByRole('region', { name: 'Person at a glance' })).toContainText('Ying Chen')
-  await expect(page.getByRole('region', { name: 'Person at a glance' })).toContainText(
-    'Acme recruiting',
-  )
+  const layer = page.getByRole('dialog', { name: 'Contacts' })
+  await expect(layer).toContainText('Ying Chen')
+  await expect(layer).toContainText('Acme recruiting')
 
-  // And the shell fills the rest, read from the OTHER end of edges written elsewhere: the guest
-  // list was written on the meeting, the recommendation is one row in one table.
-  const linked = page.getByRole('region', { name: 'Linked' })
+  // 边是从另一端读出来的：客人名单写在会议上，推荐写在一张表的一行里。
+  const linked = layer.getByRole('region', { name: 'Linked' })
   await expect(linked.getByRole('region', { name: 'Meetings' })).toContainText('Second interview')
   await expect(linked.getByRole('region', { name: 'Reading' })).toContainText(
     'The Design of Everyday Things',
@@ -63,115 +64,33 @@ test('a person has a page, and it shows what nothing was ever written on them to
   await expect(linked.getByRole('region', { name: 'Projects' })).toContainText('Job hunt')
 })
 
-test('following a link from a person lands on the meeting own page', async ({ page }) => {
+test('从一个人跟着边走到一场会，落点是会议的那一层', async ({ page }) => {
   const { person, meeting } = await world(page)
   await page.goto(`/contacts/${person.id}`)
   await page.getByRole('link', { name: /Second interview/ }).click()
 
   await expect(page).toHaveURL(new RegExp(`/meetings/${meeting.meetingId}$`))
-  await expect(page.getByRole('region', { name: 'Meeting at a glance' })).toContainText(
-    'Second interview',
-  )
-  // The same page shape, the other way round: the meeting names who is in the room.
-  await expect(
-    page.getByRole('region', { name: 'Linked' }).getByRole('region', { name: 'People' }),
-  ).toContainText('Ying Chen')
+  await expect(page.getByRole('dialog', { name: 'Meetings' })).toContainText('Second interview')
+  // 列表就在后面：从一条边过来的人，下一步多半还在这个列表里。
+  await expect(page.getByRole('heading', { level: 1, name: 'Meetings' })).toBeVisible()
 })
 
-test('a project page keeps the tree, and everything else is an edge', async ({ page }) => {
-  const { project } = await world(page)
-  await page.goto(`/projects/${project.id}`)
-
-  await expect(page.getByRole('region', { name: 'Project at a glance' })).toContainText('Job hunt')
-  // A task tree is not a list of links -- no drag, no dependencies, no inline new row -- so the
-  // task module keeps its block. It is the only one that does.
-  await expect(page.getByRole('region', { name: 'Tasks' })).toBeVisible()
-  const linked = page.getByRole('region', { name: 'Linked' })
-  await expect(linked.getByRole('region', { name: 'People' })).toContainText('Ying Chen')
-  await expect(linked.getByRole('region', { name: 'Meetings' })).toContainText('Second interview')
-  // And the tasks are NOT said twice: the tree above is already the list of them.
-  await expect(page.getByRole('region', { name: 'Tasks' })).toContainText('Rewrite the CV')
-  await expect(linked.getByRole('region', { name: 'Tasks' })).toHaveCount(0)
-})
-
-test('a page for something that is gone says so rather than showing a blank', async ({ page }) => {
+test('指向一个已经不在的人，说出来而不是空着', async ({ page }) => {
   await registerFreshUser(page)
   await page.goto('/contacts/99999999-9999-4999-8999-999999999999')
   await expect(page.getByText('This person is not here any more.')).toBeVisible()
 })
 
-test('a pane reaches the page the thing lives on', async ({ page }) => {
-  // A pane is a quick peek from wherever you were; the page is where the thing lives, with
-  // everything it is connected to. The way between them is a control that SAYS so: the eyebrow
-  // reads like a way back to the list, and a disguised one is how nobody found the page at all.
-  const { person } = await world(page)
-  await page.goto('/contacts')
-  await page.getByRole('button', { name: 'Ying Chen' }).click()
-  const pane = page.getByRole('dialog', { name: 'Contacts' })
-  await expect(pane).toBeVisible()
-
-  await pane.getByRole('link', { name: 'Open as a page' }).click()
-  await expect(page).toHaveURL(new RegExp(`/contacts/${person.id}$`))
-  await expect(page.getByRole('region', { name: 'Person at a glance' })).toContainText('Ying Chen')
-})
-
-test('1440 下一个人的 Linked 在右栏，不在正文下面', async ({ page }) => {
+test('项目页是单栏：Linked 在正文下面', async ({ page }) => {
+  const { project } = await world(page)
   await page.setViewportSize({ width: 1440, height: 900 })
-  await registerFreshUser(page)
-  const id = (await apiPost(page, '/contacts', { name: '周楠' })).id as string
-  await page.goto(`/contacts/${id}`)
-  const glance = page.getByRole('region', { name: 'Person at a glance' })
-  const linked = page.getByRole('region', { name: 'Linked' })
-  const [main, side] = await Promise.all([glance.boundingBox(), linked.boundingBox()])
-  expect(main).not.toBeNull()
-  expect(side).not.toBeNull()
-  // Beside, not below: its left edge starts where the main column ends.
-  expect(side!.x).toBeGreaterThan(main!.x + main!.width - 4)
-  // And the main column is the wide one: two of three.
-  expect(main!.width).toBeGreaterThan(side!.width * 1.5)
-})
-
-/**
- * 一千出头那一档：三栏会把中栏压到 490px，字段配不上对，右栏又几乎是空的 —— 两边都浪费。
- *
- * 所以三栏要等到窗口真的够宽（1280）才成立。在那之前正文占满一行、Linked 落到下面，字段反而
- * 配得上对：横向空间是给内容用的，不是给空栏用的。
- */
-test('1100 下正文占满一行，Linked 落到下面，字段排得开', async ({ page }) => {
-  await page.setViewportSize({ width: 1100, height: 900 })
-  await registerFreshUser(page)
-  const id = (await apiPost(page, '/contacts', { name: '周楠' })).id as string
-  await page.goto(`/contacts/${id}`)
-  // 量之前先等这一块画完：主面板还在长的时候量出来的高度是上一帧的。
-  await page.getByText('Lives in').waitFor()
-  const glance = await page.getByRole('region', { name: 'Person at a glance' }).boundingBox()
-  const linked = await page.getByRole('region', { name: 'Linked' }).boundingBox()
-  expect(linked!.y).toBeGreaterThan(glance!.y + glance!.height - 4)
-  const fields = await page.evaluate(() => {
-    const grid = document.querySelector('[data-contact-fields]')
-    const cells = grid ? [...grid.children] : []
-    return {
-      width: grid ? Math.round(grid.getBoundingClientRect().width) : 0,
-      columns: new Set(cells.map((c) => Math.round(c.getBoundingClientRect().left))).size,
-    }
-  })
-  // 够宽就不止配对：1100 下正文占满一行，这一块有 700 多，排得下三列。
-  expect(fields.width).toBeGreaterThanOrEqual(576)
-  expect(fields.columns).toBeGreaterThanOrEqual(2)
-})
-
-test('窄屏下还是一列，顺序不变', async ({ page }) => {
-  await page.setViewportSize({ width: 375, height: 812 })
-  await registerFreshUser(page)
-  const id = (await apiPost(page, '/contacts', { name: '周楠' })).id as string
-  await page.goto(`/contacts/${id}`)
-  const glance = await page.getByRole('region', { name: 'Person at a glance' }).boundingBox()
+  await page.goto(`/projects/${project.id}`)
+  const glance = await page.getByRole('region', { name: 'Project at a glance' }).boundingBox()
   const linked = await page.getByRole('region', { name: 'Linked' }).boundingBox()
   expect(linked!.y).toBeGreaterThan(glance!.y)
-  const overflow = await page.evaluate(
-    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-  )
-  expect(overflow).toBeLessThanOrEqual(0)
+  // 一栏：两块左边对齐，宽度一样。
+  expect(Math.round(linked!.x)).toBe(Math.round(glance!.x))
+  expect(Math.round(linked!.width)).toBe(Math.round(glance!.width))
 })
 
 test('项目页不被改成两栏：它自己的块已经把宽度用掉了', async ({ page }) => {

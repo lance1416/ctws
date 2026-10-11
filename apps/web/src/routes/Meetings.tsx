@@ -1,6 +1,7 @@
 import type { MeetingOccurrence } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { listMeetings, meetingsKey, repeatLabel } from '../api/meetings'
 import { EmptyState } from '../components/EmptyState'
 import { MeetingDetail } from '../components/MeetingDetail'
@@ -46,7 +47,16 @@ export function Meetings() {
   const heading = useRef<HTMLHeadingElement>(null)
   const [making, setMaking] = useState(false)
   const [showPast, setShowPast] = useState(false)
-  const [open, setOpen] = useState<{ meetingId: string; recurrenceId: string } | null>(null)
+  /**
+   * 开着的是哪一场，写在 URL 里 —— 这一层就是 `/meetings/<id>` 本身。
+   *
+   * 一场会没有自己的页：和人一样，URL 留着好让反向链接有地方可去，列表留在后面。一条指向会议的
+   * 边说的是一个系列，所以它落在这个系列**下一次**那一场上 —— 跟着链接过来的人想看的就是它。
+   */
+  const { id: openId = null } = useParams()
+  const navigate = useNavigate()
+  const setOpen = (next: { meetingId: string } | null) =>
+    navigate(next ? `/meetings/${next.meetingId}` : '/meetings')
 
   const ahead = useQuery({
     queryKey: meetingsKey({ from: today, to: addDays(today, WINDOW_DAYS) }),
@@ -62,9 +72,22 @@ export function Meetings() {
   const coming = nextOfEach(ahead.data ?? [])
   // Backwards, the MOST RECENT of each series is the one worth showing.
   const past = nextOfEach([...(behind.data ?? [])].reverse())
-  const found = [...coming, ...past].find(
-    (m) => m.meetingId === open?.meetingId && m.recurrenceId === open.recurrenceId,
-  )
+  const inWindow = [...coming, ...past].find((m) => m.meetingId === openId)
+  // 窗口之外的那些：一条链接可以指向半年前开过的会，而列表只看前后 31 天。往前一年找，
+  // 找不到再往回一年 —— 已经结束的系列也还有地址，而指向过去的一次性会议最常见。
+  const far = useQuery({
+    queryKey: ['meetings', 'series', openId],
+    queryFn: async () => {
+      if (!openId) return null
+      const ahead = await listMeetings({ from: today, to: addDays(today, 370) })
+      const hit = ahead.find((m) => m.meetingId === openId)
+      if (hit) return hit
+      const behind = await listMeetings({ from: addDays(today, -370), to: today })
+      return [...behind].reverse().find((m) => m.meetingId === openId) ?? null
+    },
+    enabled: openId !== null && !inWindow,
+  })
+  const found = inWindow ?? far.data ?? null
 
   return (
     <>
@@ -125,12 +148,18 @@ export function Meetings() {
             // Straight into the pane, where the parts a form cannot hold -- a note, a place, an
             // exception to one week -- are edited. The server hands back the occurrence, so this
             // names the one that was just made rather than guessing which of a series it is.
-            setOpen({ meetingId: made.meetingId, recurrenceId: made.recurrenceId })
+            setOpen({ meetingId: made.meetingId })
           }}
         />
       )}
       {found && (
         <MeetingDetail meeting={found} accountZone={accountZone} onClose={() => setOpen(null)} />
+      )}
+      {/* 链接指向的会已经不在了（或者取消了）：说出来，别只留一个列表。 */}
+      {openId !== null && !found && far.isSuccess && (
+        <p role="alert" className="mt-4 text-sm text-fg-muted">
+          This meeting is not here any more.
+        </p>
       )}
     </>
   )

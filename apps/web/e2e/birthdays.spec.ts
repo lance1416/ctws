@@ -88,7 +88,7 @@ test('在这一页写下一个人，用的是 contacts 自己的那个对话框'
   await dialog.getByRole('button', { name: 'Create' }).click()
   // It lands on the person's own page -- the shell's, the same one every kind of thing gets.
   await expect(page).toHaveURL(new RegExp('/contacts/[0-9a-f-]{36}$'))
-  await expect(page.getByRole('region', { name: 'Person at a glance' })).toContainText('新来的')
+  await expect(page.getByRole('dialog', { name: 'Contacts' })).toContainText('新来的')
 })
 
 test('这一页在 375 下没有横向滚动', async ({ page }) => {
@@ -146,7 +146,7 @@ test('人物页上生日是只读的派生值，改在一个地方', async ({ pa
     hourBranch: 6,
   })
   await page.goto(`/contacts/${id}`)
-  const glance = page.getByRole('region', { name: 'Person at a glance' })
+  const glance = page.getByRole('dialog', { name: 'Contacts' })
   // 页面上只有日期本身：农历、生肖、星座、时辰、下一次都是第二层的东西。
   await expect(glance).toContainText('农历辛未年九月初三')
   await expect(glance).not.toContainText('turns')
@@ -182,9 +182,7 @@ test('写一个农历生日，输入时就看见换算与回退', async ({ page 
   await expect(preview).toContainText('猴')
   await expect(preview).toContainText('has 29 days')
   await page.getByRole('button', { name: 'Save' }).click()
-  await expect(page.getByRole('region', { name: 'Person at a glance' })).toContainText(
-    '农历甲申年十二月三十',
-  )
+  await expect(page.getByRole('dialog', { name: 'Contacts' })).toContainText('农历甲申年十二月三十')
 })
 
 test('选了那一年没有的日子，预览就说是哪一条不成立', async ({ page }) => {
@@ -228,7 +226,7 @@ test('只知月日的农历生日，一个 chip 都不画', async ({ page }) => 
   // 农历月日对应的公历日期逐年移动，所以星座不唯一；生肖要年份。两个都没有，就什么都别画。
   const id = await person(page, '蒋老师', { calendar: 'lunar', month: 9, day: 3 })
   await page.goto(`/contacts/${id}`)
-  const glance = page.getByRole('region', { name: 'Person at a glance' })
+  const glance = page.getByRole('dialog', { name: 'Contacts' })
   await expect(glance).toContainText('农历九月初三')
   await glance.getByRole('button', { name: /^Birthday,/ }).click()
   await expect(glance.locator('[data-birthday-chip]')).toHaveCount(0)
@@ -238,7 +236,7 @@ test('知道年份的人，生肖与星座各一个 chip', async ({ page }) => {
   await registerFreshUser(page)
   const id = await person(page, '周楠', { calendar: 'lunar', year: 1991, month: 9, day: 3 })
   await page.goto(`/contacts/${id}`)
-  const glance = page.getByRole('region', { name: 'Person at a glance' })
+  const glance = page.getByRole('dialog', { name: 'Contacts' })
   await glance.getByRole('button', { name: /^Birthday,/ }).click()
   await expect(glance.locator('[data-birthday-chip]')).toHaveCount(2)
 })
@@ -248,7 +246,7 @@ test('公历但不知年份：有星座，没有生肖，所以只有一个 chip
   // 这一条是两个 chip 各自的守卫唯一管用的地方：两个都空时外层就不画了。
   const id = await person(page, '蒋老师', { calendar: 'solar', month: 11, day: 2 })
   await page.goto(`/contacts/${id}`)
-  const glance = page.getByRole('region', { name: 'Person at a glance' })
+  const glance = page.getByRole('dialog', { name: 'Contacts' })
   await glance.getByRole('button', { name: /^Birthday,/ }).click()
   const chips = glance.locator('[data-birthday-chip]')
   await expect(chips).toHaveCount(1)

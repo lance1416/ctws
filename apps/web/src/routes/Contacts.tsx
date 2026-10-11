@@ -1,6 +1,7 @@
 import type { Circle, ContactResponse } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { contactsKey, listContacts } from '../api/contacts'
 import { ContactDetail } from '../components/ContactDetail'
 import { ContactList } from '../components/ContactList'
@@ -19,7 +20,16 @@ import { CIRCLE_LABELS } from '../components/BirthdayRow'
  */
 export function Contacts() {
   const contacts = useQuery({ queryKey: contactsKey(), queryFn: () => listContacts() })
-  const [openId, setOpenId] = useState<string | null>(null)
+  /**
+   * 开着的是谁，写在 URL 里 —— 这一层就是 `/contacts/<id>` 本身。
+   *
+   * 一个人没有自己的页：任务也没有（`relations.to` 指的是 `/projects?task=<id>`）。URL 留着，
+   * 反向链接和粘进来的链接才有地方可去；列表留在后面，筛选和滚动位置不会因为看一眼某个人就丢。
+   * 状态只有一处（地址栏），所以后退、前进、刷新都不必另外伺候。
+   */
+  const { id: openId = null } = useParams()
+  const navigate = useNavigate()
+  const setOpenId = (next: string | null) => navigate(next ? `/contacts/${next}` : '/contacts')
   const heading = useRef<HTMLHeadingElement>(null)
   const [making, setMaking] = useState(false)
   const [circle, setCircle] = useState<Circle | null>(null)
@@ -46,6 +56,12 @@ export function Contacts() {
         <NewContactInput onCreated={(c: ContactResponse) => setOpenId(c.id)} />
       </div>
 
+      {/* 链接指向的人已经不在了：说出来。静静地只剩一个列表，读起来像链接坏了。 */}
+      {openId !== null && contacts.isSuccess && open === null && (
+        <p role="alert" className="mt-4 text-sm text-fg-muted">
+          This person is not here any more.
+        </p>
+      )}
       {contacts.isPending && <p className="mt-6 text-fg-muted">Loading…</p>}
       {contacts.isError && (
         <p role="alert" className="mt-6 text-danger">

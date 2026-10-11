@@ -287,41 +287,6 @@ test('the whole row opens the person, and the addresses stay links', async ({ pa
 })
 
 /**
- * 删一个人在他自己那一页的最底下，面板里没有这个按钮。
- *
- * 面板是用来看和改的；一个不可撤销的动作不该出现在一个随手点开、随手关掉的东西里，更不该排在
- * 别的按钮中间。在那一页上它也是最后一个 —— 底下再没有别的东西，划过去碰不到任何别的控件。
- */
-test('删一个人只在他自己那一页的最底下', async ({ page }) => {
-  await registerFreshUser(page, '/contacts')
-  await add(page, { name: 'Ying Chen' })
-  await page.reload()
-  await page.getByRole('button', { name: 'Ying Chen' }).click()
-
-  const pane = page.getByRole('dialog', { name: 'Contacts' })
-  await expect(pane).toBeVisible()
-  await expect(pane.getByRole('button', { name: 'Delete contact' })).toHaveCount(0)
-
-  // ↗ 才是「在整页打开」；面包屑回的是列表。
-  await pane.getByRole('link', { name: 'Open as a page' }).click()
-  await expect(page).toHaveURL(new RegExp('/contacts/[0-9a-f-]{36}$'))
-
-  const remove = page.getByRole('button', { name: 'Delete contact' })
-  await expect(remove).toBeVisible()
-  // 颜色和别的按钮不一样，而且是整页最后一个东西。
-  const colour = await remove.evaluate((el) => getComputedStyle(el).color)
-  const other = await page
-    .getByRole('button', { name: 'Add one' })
-    .evaluate((el) => getComputedStyle(el).color)
-  expect(colour).not.toBe(other)
-  const [box, linked] = await Promise.all([
-    remove.boundingBox(),
-    page.getByRole('region', { name: 'Linked' }).boundingBox(),
-  ])
-  expect(box!.y).toBeGreaterThan(linked!.y + linked!.height - 4)
-})
-
-/**
  * 短字段那块网格，两条规则。
  *
  * 一、**列数看这块自己有多宽，不看窗口有多宽**。它住在一根柱子里（详情面板、三栏的中栏），
@@ -364,7 +329,6 @@ const columnsFor = (width: number) => (width >= TRIPLE_AT ? 3 : width >= PAIR_AT
 
 test('短字段的列数看这块自己有多宽，不看窗口有多宽', async ({ page }) => {
   await registerFreshUser(page, '/contacts')
-  // 够多的项目，好让 Projects 那一格换行 —— 旁边的 Company 会不会被顶到半空，只有这时候看得出来。
   const projectIds: string[] = []
   for (const name of ['Job hunt', 'CTWS', '开源维护', 'Reading group']) {
     const made = await page.request.post('/api/v1/projects', { headers: WEB, data: { name } })
@@ -376,34 +340,22 @@ test('短字段的列数看这块自己有多宽，不看窗口有多宽', async
   })
   const id = ((await made.json()) as { id: string }).id
 
-  // 详情面板：窗口很宽，柱子只有 310px。按视口断点排，这里会在 145px 的格子里排两列。
-  await page.setViewportSize({ width: 1280, height: 900 })
-  await page.goto('/contacts')
-  await page.getByText('陈颖').first().click()
-  await expect(page.getByText('Lives in')).toBeVisible()
-  const pane = await fieldGrid(page)
-  expect(pane!.width).toBeLessThan(PAIR_AT)
-  expect(pane!.columns).toBe(1)
-  expect(pane!.drift.filter((d) => d.off > 6)).toEqual([])
-
-  // 人的那一页，窗口 1024：这里正文占满一行（三栏要到 1280 才成立），所以这一块反而够宽。
-  await page.setViewportSize({ width: 1024, height: 900 })
-  await page.goto(`/contacts/${id}`)
-  await expect(page.getByText('Lives in')).toBeVisible()
-  const narrow = await fieldGrid(page)
-  expect(narrow!.columns).toBe(columnsFor(narrow!.width))
-  // Projects 占两行时，同一行的 Company 不许飘到两行中间。
-  expect(narrow!.drift.filter((d) => d.off > 6)).toEqual([])
-
-  // 够宽了才配对。
+  // 窗口很宽，这一层只有 400 多：按视口断点排，这里会在 200px 的格子里排三列。
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto(`/contacts/${id}`)
   await expect(page.getByText('Lives in')).toBeVisible()
   const wide = await fieldGrid(page)
-  expect(wide!.width).toBeGreaterThanOrEqual(PAIR_AT)
+  expect(wide!.width).toBeLessThan(TRIPLE_AT)
   expect(wide!.columns).toBe(columnsFor(wide!.width))
-  expect(wide!.columns).toBeGreaterThan(pane!.columns)
+  // Projects 占两行时，同一行的那一格不许飘到两行中间。
   expect(wide!.drift.filter((d) => d.off > 6)).toEqual([])
+
+  // 窄窗口：这一层占满屏幕，规则照样是看它自己有多宽。
+  await page.setViewportSize({ width: 420, height: 900 })
+  await expect(page.getByText('Lives in')).toBeVisible()
+  const narrow = await fieldGrid(page)
+  expect(narrow!.columns).toBe(columnsFor(narrow!.width))
+  expect(narrow!.drift.filter((d) => d.off > 6)).toEqual([])
 })
 
 test('新建的时候就能写下生日和 circle，一次请求带走整个人', async ({ page }) => {
@@ -521,4 +473,78 @@ test('超长的链接地址被截断，面板一毫米都不变宽', async ({ pa
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     ),
   ).toBeLessThanOrEqual(0)
+})
+
+/**
+ * 一个人是列表上的一层，不是另一个地方。
+ *
+ * `/contacts/<id>` 渲染的是「列表 + 这个人的那一层」——和任务那条路一样（任务从来没有自己的页：
+ * `relations.to` 指的是 `/projects?task=<id>`）。URL 留着，反向链接才有地方可去；而列表留在后面，
+ * 筛选和滚动位置不会因为看一眼某个人就丢掉。
+ */
+test('粘一条链接进来，落点是列表加这个人的那一层', async ({ page }) => {
+  await registerFreshUser(page, '/contacts')
+  const made = await page.request.post('/api/v1/contacts', {
+    headers: WEB,
+    data: { name: '陈颖', org: 'Acme recruiting' },
+  })
+  await page.request.post('/api/v1/contacts', { headers: WEB, data: { name: '周楠' } })
+  const id = ((await made.json()) as { id: string }).id
+
+  await page.goto(`/contacts/${id}`)
+  const pane = page.getByRole('dialog', { name: 'Contacts' })
+  await expect(pane).toBeVisible()
+  await expect(pane).toContainText('陈颖')
+  // 列表就在后面，不是一个空页。
+  await expect(page.getByRole('heading', { level: 1, name: 'Contacts' })).toBeVisible()
+  await expect(page.getByRole('button', { name: '周楠' })).toBeVisible()
+  // 整页那一套没有了：没有第二个地方可去。
+  await expect(page.getByRole('link', { name: 'Open as a page' })).toHaveCount(0)
+
+  // 关掉回到列表，URL 跟着回去。
+  await page.getByRole('button', { name: 'Close' }).click()
+  await expect(page).toHaveURL(/\/contacts$/)
+  await expect(pane).toHaveCount(0)
+})
+
+test('从列表点开一个人，URL 就是他的地址', async ({ page }) => {
+  await registerFreshUser(page, '/contacts')
+  const made = await page.request.post('/api/v1/contacts', { headers: WEB, data: { name: '陈颖' } })
+  const id = ((await made.json()) as { id: string }).id
+  await page.reload()
+  await page.getByRole('button', { name: '陈颖' }).click()
+  await expect(page).toHaveURL(new RegExp(`/contacts/${id}$`))
+  // 退回去是浏览器的后退，因为这一层本来就是一次导航。
+  await page.goBack()
+  await expect(page).toHaveURL(/\/contacts$/)
+})
+
+test('这一层里有 Linked，也有滚到底才看见的删除', async ({ page }) => {
+  await registerFreshUser(page, '/contacts')
+  const hunt = await page.request.post('/api/v1/projects', {
+    headers: WEB,
+    data: { name: 'Job hunt' },
+  })
+  const projectId = ((await hunt.json()) as { id: string }).id
+  const made = await page.request.post('/api/v1/contacts', {
+    headers: WEB,
+    data: { name: '陈颖', projectIds: [projectId] },
+  })
+  const id = ((await made.json()) as { id: string }).id
+
+  await page.goto(`/contacts/${id}`)
+  const pane = page.getByRole('dialog', { name: 'Contacts' })
+  await expect(pane.getByText('Linked')).toBeVisible()
+  await expect(pane.getByRole('link', { name: 'Job hunt' })).toBeVisible()
+
+  // 删除是这一层里最后一个东西：它下面没有别的控件。
+  const remove = pane.getByRole('button', { name: 'Delete contact' })
+  const [box, linked] = await Promise.all([
+    remove.boundingBox(),
+    pane.getByText('Linked').boundingBox(),
+  ])
+  expect(box!.y).toBeGreaterThan(linked!.y)
+  await remove.click()
+  // 问一次才算数。
+  await expect(pane.getByRole('button', { name: /Delete|Confirm/ }).first()).toBeVisible()
 })

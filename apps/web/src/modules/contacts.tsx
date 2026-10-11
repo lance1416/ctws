@@ -1,9 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { birthdayCalendar, birthdaysKey, listBirthdays } from '../api/birthdays'
-import { contactsKey, listContacts, searchContacts } from '../api/contacts'
-import { ContactFields, DeleteContact } from '../components/ContactDetail'
-import { ObjectPage } from '../components/ObjectPage'
+import { searchContacts } from '../api/contacts'
 import { BirthdayRow } from '../components/BirthdayRow'
 import { PanelEmpty } from '../components/Panel'
 import { countdownPhrase } from '../dueAt'
@@ -128,30 +126,6 @@ function useContactHits(query: string) {
  * capture box, never from a project page.
  */
 
-/**
- * ONE PERSON'S OWN FIELDS, at the head of their page. The shell draws the page; what a person IS
- * is this module's to say (`relations.Head`).
- */
-function ContactHead({ id }: { id: string }) {
-  const contacts = useQuery({ queryKey: contactsKey(), queryFn: () => listContacts() })
-  const person = contacts.data?.find((c) => c.id === id)
-  if (!person) {
-    return contacts.isSuccess ? (
-      <p className="text-sm text-fg-muted">This person is not here any more.</p>
-    ) : null
-  }
-  return <ContactFields contact={person} />
-}
-
-/** The shell's danger zone at the foot of a person's page; this module says what goes in it. */
-function DeletePerson({ id }: { id: string }) {
-  const contacts = useQuery({ queryKey: contactsKey(), queryFn: () => listContacts() })
-  const person = contacts.data?.find((c) => c.id === id)
-  const navigate = useNavigate()
-  if (!person) return null
-  return <DeleteContact contact={person} onDeleted={() => navigate(`/${ID}`)} />
-}
-
 export const contactModule: WorkspaceModule = {
   id: ID,
   label: 'Contacts',
@@ -173,9 +147,9 @@ export const contactModule: WorkspaceModule = {
     { index: true, element: <Contacts /> },
     // Before `:id`, so a reader need not know that react-router ranks a static segment higher.
     { path: 'birthdays', element: <Birthdays /> },
-    // The page is the SHELL's -- a person and a project are read the same way -- so the module
-    // says only where it lives.
-    { path: ':id', element: <ObjectPage type="contact" /> },
+    // 一个人没有自己的页：这条路渲染的是列表加他的那一层（`Contacts` 从 URL 读开着的是谁）。
+    // 任务也是这样接的，而项目保留整页 —— 它有任务树，那是真的需要一整页的东西。
+    { path: ':id', element: <Contacts /> },
   ],
   search: { useHits: useContactHits },
   calendar: { label: 'Birthdays', useEntries: useBirthdayEntries },
@@ -200,8 +174,6 @@ export const contactModule: WorkspaceModule = {
       type: 'contact',
       kind: 'Person',
       to: (id) => `/${ID}/${id}`,
-      Head: ContactHead,
-      Destroy: DeletePerson,
     },
   ],
 }

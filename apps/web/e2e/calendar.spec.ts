@@ -119,7 +119,7 @@ test('g c goes to the calendar', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Calendar', level: 1 })).toBeVisible()
 })
 
-test('生日落在服务端说的那一天，点它去那个人的页', async ({ page }) => {
+test('生日落在服务端说的那一天，点它开那个人的那一层', async ({ page }) => {
   await registerFreshUser(page)
   // 公历的今天：格子一定在这个月的视图里。农历落在自己那天这件事，由 core 的单测和
   // `/contacts/calendar` 的 API 测试用固定日期钉住 —— 这里验的是格子把它画在服务端说的那天。
@@ -133,7 +133,7 @@ test('生日落在服务端说的那一天，点它去那个人的页', async ({
   await page.goto('/calendar')
   await expect(square(page, dayOffset(0))).toContainText('周楠')
   await square(page, dayOffset(0)).getByRole('link', { name: /周楠/ }).click()
-  await expect(page.getByRole('region', { name: 'Person at a glance' })).toContainText('周楠')
+  await expect(page.getByRole('dialog', { name: 'Contacts' })).toContainText('周楠')
 })
 
 test('格子里有农历日，和服务端说的一样', async ({ page }) => {

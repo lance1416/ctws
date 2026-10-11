@@ -7,21 +7,20 @@ import { Panel } from './Panel'
 import { ViewTabs } from './ViewTabs'
 
 /**
- * ONE PAGE FOR EVERY KIND OF THING.
+ * A PAGE FOR A THING THAT IS A PLACE.
  *
- * A project page, a person's page and a meeting's page are ONE page (framing §2): each is a thing
- * with fields of its own and a set of other things it is connected to, and that is the whole
- * shape. A block per module instead would be the module structure drawn for the reader.
+ * Only a project has one now. A person and a meeting are RECORDS: you glance at them from
+ * wherever you were, so each is a layer over its own list (`/contacts/<id>`, `/meetings/<id>`),
+ * the way a task has always been a layer over its project. A record that took the whole window
+ * away made you leave the list to read six fields and then find your way back.
  *
- * THE SHELL OWNS THE PAGE. What it cannot know is what a person IS, so the module that answers
+ * A project is different in kind: it is a place you work in, with a task tree that drags, folds
+ * and takes new rows. That is why its block stays a module's own rather than a list of links --
+ * replacing the tree with backlinks would be losing the module's editor to make a page uniform.
+ *
+ * THE SHELL OWNS THE PAGE. What it cannot know is what a project IS, so the module that answers
  * for the type fills the head (`relations.Head`). Everything under it is edges, which are the
  * shell's, read from both directions.
- *
- * ONE EXCEPTION, and it is deliberate: a module may still hang a block of its own under a project
- * (`ProjectView`). A backlink list of tasks is not a task tree -- no drag, no dependencies, no
- * inline new row -- and replacing the tree with a list of links would be losing the module's
- * editor to make the page uniform. The links panel sits below those blocks and carries everything
- * else.
  */
 /**
  * The kinds a project page already shows in a module's own block, and so does not repeat under
@@ -42,34 +41,18 @@ export function ObjectPage({ type }: { type: ObjectType }) {
   const Destroy = where?.Destroy
   // The kinds a module already draws on THIS page, in its own block.
   const covered: ObjectType[] = type === 'project' ? BLOCKED_ON_A_PROJECT : []
-  // Only a page made of nothing but fields and edges is laid out in columns -- see below.
-  const sideBySide = type !== 'project'
 
   return (
     <>
       {/*
-        A PANEL GRID, not one capped column. `Today.tsx` wrote the reason down: at 1440 a single
-        column puts one clump of rows left of centre with half the screen empty beside it. The
-        person's page and a meeting's page are exactly that: a short stack of fields with nothing
-        beside them, so the fields take two columns of three and what the thing is CONNECTED to
-        takes the third. Below `xl` it stacks, in the same order.
-
-        1280, NOT 1024. 三栏在一千出头的窗口上是双输：中栏被压到 490px，字段配不上对（它们在
-        576 以上才配对），而右栏只放得下一个几乎是空的 Linked。那一档正文占满一行反而更宽，
-        Linked 落到下面也还是整行 —— 横向空间是给内容用的，不是给空栏用的。
-
-        A PROJECT PAGE IS LEFT ALONE. Its module's own block already spends the width, and the
-        third column there belongs to the task detail pane (`project.spec.ts` pins the tree and
-        the pane at 2:1). A second grid around that one would halve the pane.
+        ONE COLUMN, and no grid around it. The three-column version existed for a person's page
+        and a meeting's page; those are layers over their own lists now, so nothing was left for
+        it to lay out. A project page spends its width in the module's own block -- the tree and
+        the task pane at 2:1 (`project.spec.ts` pins that) -- and a second grid around that one
+        would halve the pane.
       */}
-      <div
-        className={
-          sideBySide
-            ? 'grid min-w-0 items-start gap-4 xl:grid-cols-[repeat(3,minmax(0,1fr))]'
-            : 'contents'
-        }
-      >
-        <div className={sideBySide ? 'flex min-w-0 flex-col gap-4 xl:col-span-2' : 'contents'}>
+      <>
+        <>
           {/* The banner: one accent edge and the top step of the type scale spent on its subject,
           the same language the workbench's own strip speaks. */}
           <Panel
@@ -114,19 +97,17 @@ export function ObjectPage({ type }: { type: ObjectType }) {
               })}
             </div>
           )}
-        </div>
+        </>
 
-        <div className={sideBySide ? 'flex min-w-0 flex-col gap-4' : 'contents'}>
-          {/* AND WHAT IT IS CONNECTED TO: on a person, the meetings they are in and what they
-          recommended -- a screen that was empty before, because those edges had nowhere to live.
-          On a project it is the people, the reading and the meetings -- everything except the
-          tasks, which the tree above already draws. Saying a row twice is the one thing a reader
-          has to hold two of in their head. */}
-          <Panel label="Linked" className={sideBySide ? '' : 'mt-4'}>
+        <>
+          {/* AND WHAT IT IS CONNECTED TO: the people, the reading and the meetings -- everything
+          except the tasks, which the tree above already draws. Saying a row twice is the one
+          thing a reader has to hold two of in their head. */}
+          <Panel label="Linked" className="mt-4">
             <Links of={{ type, id }} except={covered} />
           </Panel>
-        </div>
-      </div>
+        </>
+      </>
 
       {/* LAST ON THE PAGE, below everything, in the danger colour: the one action here that
           cannot be undone, where nothing is reached by passing over it (`DangerZone`). The shell

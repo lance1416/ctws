@@ -48,7 +48,12 @@ export function ContactList({
             <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
               <button
                 type="button"
-                onClick={() => onOpen(person)}
+                // 行本身也开这个人：不拦住冒泡的话，点名字会开两次 —— 以前两次写的是同一个
+                // 局部状态，看不出来；现在开一次就是一次导航，历史里会多出一条一模一样的记录。
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onOpen(person)
+                }}
                 data-contact-name
                 className="truncate rounded text-left text-sm font-semibold text-fg group-hover:underline"
               >

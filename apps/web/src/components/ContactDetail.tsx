@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { channelHref, deleteContact, patchContact } from '../api/contacts'
 import { listProjects } from '../api/projects'
 import { useProjectRail } from '../projectColor'
-import { DangerAction } from './DangerZone'
+import { DangerAction, DangerZone } from './DangerZone'
 import { useState } from 'react'
 import { BirthdayFields } from './BirthdayFields'
 import { CIRCLE_LABELS } from './BirthdayRow'
@@ -43,16 +43,24 @@ export function ContactDetail({
   return (
     <DetailPane label="Contacts" onClose={onClose}>
       <ContactFields contact={contact} onClose={onClose} />
-      {/* 删一个人不在这里：面板是随手点开、随手关掉的东西，而删除不可撤销。它在这个人自己那一页
-          的最底下（`ObjectPage` 的危险区），底下再没有别的控件可以划过去碰到。 */}
       {/* Linked -- the meetings they are in, what they recommended, the task that came out of a
           call. None of it is written on the person: the edges are, and this reads them from the
           other end. The edges are the SHELL's, so they sit BESIDE this module's fields rather
           than inside them -- the person's own page composes the same two halves. */}
-      <div className="mt-4 border-t border-border-subtle pt-3">
+      <section aria-label="Linked" className="mt-4 border-t border-border-subtle pt-3">
         <span className="block px-2 pb-1 text-xs text-fg-muted">Linked</span>
         <Links of={{ type: 'contact', id: contact.id }} />
-      </div>
+      </section>
+
+      {/*
+        最后一个东西，底下再没有别的控件。
+
+        一个人没有自己的页了（这一层就是 `/contacts/<id>`），所以删除没有别处可放。它排在
+        Linked 之后、要滚到底才看得见，按下去还先问一次 —— 距离加一次确认，是这里能给的全部。
+      */}
+      <DangerZone>
+        <DeleteContact contact={contact} onDeleted={onClose} />
+      </DangerZone>
     </DetailPane>
   )
 }
@@ -101,26 +109,7 @@ export function ContactFields({
                 to="/contacts"
                 className="rounded text-sm text-fg-muted hover:text-fg hover:underline"
               >
-                Contacts
-              </Link>
-            }
-            trailing={
-              <Link
-                to={`/contacts/${contact.id}`}
-                aria-label="Open as a page"
-                title="Open as a page"
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-fg-muted hover:bg-surface-hover hover:text-fg"
-              >
-                <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4">
-                  <path
-                    d="M6.5 3.5h6v6M12.5 3.5l-8 8"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+                ← Contacts
               </Link>
             }
             onClose={onClose}

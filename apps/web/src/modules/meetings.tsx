@@ -1,13 +1,11 @@
 import type { MeetingOccurrence } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { listMeetings, meetingCalendar, meetingsKey } from '../api/meetings'
-import { CancelMeeting, MeetingDetail, MeetingFields } from '../components/MeetingDetail'
-import { ObjectPage } from '../components/ObjectPage'
+import { MeetingDetail } from '../components/MeetingDetail'
 import { Meetings } from '../routes/Meetings'
 import { PanelEmpty } from '../components/Panel'
-import { addDays, todayIn } from '../dueAt'
+import { todayIn } from '../dueAt'
 import { useTimeZone } from '../useMe'
 import type { WorkspaceModule } from './contract'
 
@@ -155,51 +153,14 @@ function TodayMeetings() {
  * capture box, never from a project page.
  */
 
-/**
- * ONE MEETING'S OWN FIELDS, at the head of its page.
- *
- * A SERIES has many occurrences and the page is about the series, so it opens on the NEXT one --
- * which is the occurrence anybody following a link to a meeting means. Editing from here still
- * asks which occurrences a change touches, exactly as the pane does.
- */
-function MeetingHead({ id }: { id: string }) {
-  const accountZone = useTimeZone()
-  const today = todayIn(accountZone)
-  const found = useQuery({
-    queryKey: ['meetings', 'series', id],
-    queryFn: async () => {
-      // Forward first, then back: a series that has finished still has a page, and a one-off in
-      // the past is the commonest thing to follow a link to.
-      const ahead = await listMeetings({ from: today, to: addDays(today, 370) })
-      const hit = ahead.find((m) => m.meetingId === id)
-      if (hit) return hit
-      const behind = await listMeetings({ from: addDays(today, -370), to: today })
-      return [...behind].reverse().find((m) => m.meetingId === id) ?? null
-    },
-  })
-  if (!found.data) {
-    return found.isSuccess ? (
-      <p className="text-sm text-fg-muted">This meeting is not here any more.</p>
-    ) : null
-  }
-  return <MeetingFields meeting={found.data} accountZone={accountZone} />
-}
-
-/** The shell's danger zone at the foot of a meeting's page; this module says what goes in it. */
-function CancelThisMeeting({ id }: { id: string }) {
-  const navigate = useNavigate()
-  const found = useQuery<MeetingOccurrence | null>({ queryKey: ['meetings', 'series', id] })
-  if (!found.data) return null
-  return <CancelMeeting meeting={found.data} onCancelled={() => navigate(`/${ID}`)} />
-}
-
 export const meetingModule: WorkspaceModule = {
   id: ID,
   label: 'Meetings',
   destinations: [{ id: 'list', to: `/${ID}`, label: 'Meetings', zone: 'things', order: 20 }],
   routes: [
     { index: true, element: <Meetings /> },
-    { path: ':id', element: <ObjectPage type="meeting" /> },
+    // 一场会没有自己的页：这条路渲染的是列表加它的那一层（`Meetings` 从 URL 读开着的是哪一场）。
+    { path: ':id', element: <Meetings /> },
   ],
   // `m`. One keyspace across modules, so this is checked against every other chord.
   chords: [
@@ -212,8 +173,6 @@ export const meetingModule: WorkspaceModule = {
       type: 'meeting',
       kind: 'Meeting',
       to: (id) => `/${ID}/${id}`,
-      Head: MeetingHead,
-      Destroy: CancelThisMeeting,
     },
   ],
 }
