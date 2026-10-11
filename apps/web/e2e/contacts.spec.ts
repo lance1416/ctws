@@ -642,3 +642,36 @@ test('写得不像那一类，保存之前就说出来', async ({ page }) => {
   await pane.getByRole('textbox', { name: 'Item 1' }).fill('+86 139 0000 1234')
   await expect(pane.getByRole('button', { name: 'Save' })).toBeEnabled()
 })
+
+/**
+ * 打进去的号码当场排好。
+ *
+ * 分组规则按国家走（中国手机 3-4-4，英国固话又不一样），所以交给 libphonenumber-js —— 自己写的
+ * 正则只在自己那个国家对。那套元数据只在这张表开着时才取，不进首屏的包。
+ */
+test('电话一边打一边排好，存下来的就是排好的', async ({ page }) => {
+  await registerFreshUser(page, '/contacts')
+  await add(page, { name: '陈颖' })
+  await page.reload()
+  await page.getByRole('button', { name: '陈颖' }).click()
+  const pane = page.getByRole('dialog', { name: 'Contacts' })
+  await pane.getByRole('button', { name: 'Edit', exact: true }).click()
+  await pane.getByRole('button', { name: 'Add one' }).click()
+  await pickOne(pane, 'Type of item 1', 'Phone')
+
+  const box = pane.getByRole('textbox', { name: 'Item 1' })
+  // 带国家码的，排成国际写法 —— 粘一条从别处抄来的号码就是这个样子。
+  await box.fill('+8613900001234')
+  await expect(box).toHaveValue('+86 139 0000 1234')
+
+  const written = page.waitForResponse(
+    (r) =>
+      r.request().method() === 'PATCH' && new URL(r.url()).pathname.startsWith('/api/v1/contacts/'),
+  )
+  await pane.getByRole('button', { name: 'Save' }).click()
+  expect((await written).request().postDataJSON()).toMatchObject({
+    channels: [{ kind: 'phone', value: '+86 139 0000 1234' }],
+  })
+  // 读的时候也是排好的那一串。
+  await expect(pane.getByRole('link', { name: '+86 139 0000 1234' })).toBeVisible()
+})

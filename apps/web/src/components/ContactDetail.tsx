@@ -1,10 +1,10 @@
-import { channelProblem, type ContactResponse } from '@ctws/contracts'
+import { channelProblem, type ChannelKind, type ContactResponse } from '@ctws/contracts'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { channelHref, deleteContact, patchContact, type BirthdayDraft } from '../api/contacts'
 import { listProjects } from '../api/projects'
 import { useProjectRail } from '../projectColor'
 import { DangerAction, DangerZone } from './DangerZone'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { BirthdayEditor, BirthdayFields, plainDate } from './BirthdayFields'
 import { CIRCLE_LABELS } from './BirthdayRow'
 import { BUTTON } from './buttonStyles'
@@ -332,6 +332,27 @@ function ContactForm({
   const [circle, setCircle] = useState(contact.circle ?? '')
   const [projectIds, setProjectIds] = useState(contact.projects.map((p) => p.id))
   const [channels, setChannels] = useState(() => byKind(contact.channels))
+  /**
+   * 号码的分组规则（按国家）在一个单独的包里，只有这张表开着时才去取。
+   *
+   * 它不在首屏那一包里：联系方式的编辑是一个人偶尔做一次的事，而那套元数据有八十来 KB。没取到
+   * 之前打进去的字原样留着 —— 和 Markdown 渲染器一样，先把字摆上，再变好看。
+   */
+  const [phone, setPhone] = useState<null | {
+    format: (v: string, region?: string) => string
+    region: string | undefined
+  }>(null)
+  useEffect(() => {
+    let alive = true
+    void import('../phone').then((m) => {
+      if (alive) setPhone({ format: m.formatPhone, region: m.currentRegion() })
+    })
+    return () => {
+      alive = false
+    }
+  }, [])
+  const typed = (kind: ChannelKind, value: string) =>
+    kind === 'phone' && phone ? phone.format(value, phone.region) : value
   // 空行不算问题：保存时丢掉它 —— 加了一行又改主意，不该因此按不动 Save。
   const problems = channels.map((c) =>
     c.value.trim() === '' ? undefined : (channelProblem(c.kind, c.value) ?? undefined),
@@ -360,7 +381,11 @@ function ContactForm({
       // 空地址当没写：一行填了一半的联系方式不是一条联系方式。
       channels: byKind(channels)
         .filter((c) => c.value.trim() !== '')
-        .map((c) => ({ kind: c.kind, value: c.value.trim(), label: c.label?.trim() || null })),
+        .map((c) => ({
+          kind: c.kind,
+          value: typed(c.kind, c.value.trim()),
+          label: c.label?.trim() || null,
+        })),
       note: note.trim() || null,
       ...(birthday === undefined ? {} : { birthday }),
     })
@@ -413,7 +438,11 @@ function ContactForm({
                 value={c.kind}
                 choices={KIND_CHOICES}
                 onPick={(kind) =>
-                  setChannels(channels.map((row, at) => (at === i ? { ...row, kind } : row)))
+                  setChannels(
+                    channels.map((row, at) =>
+                      at === i ? { kind, label: row.label, value: typed(kind, row.value) } : row,
+                    ),
+                  )
                 }
               />
               <input
@@ -426,7 +455,9 @@ function ContactForm({
                 aria-invalid={problems[i] !== undefined}
                 onChange={(e) =>
                   setChannels(
-                    channels.map((row, at) => (at === i ? { ...row, value: e.target.value } : row)),
+                    channels.map((row, at) =>
+                      at === i ? { ...row, value: typed(row.kind, e.target.value) } : row,
+                    ),
                   )
                 }
                 className={`${boxed} min-w-0 flex-1 text-sm ${c.kind === 'phone' ? 'tabular-nums' : ''}`}
