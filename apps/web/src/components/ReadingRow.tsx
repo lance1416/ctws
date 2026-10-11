@@ -54,12 +54,15 @@ export function ReadingRow({
   item,
   timeZone,
   here,
+  onOpen,
 }: {
   item: ReadingItemResponse
   timeZone: string
   /** The project this list is already inside, if any. Its name is then not worth repeating -- the
    *  same rule the dependency pane keeps, and why the task tree shows no breadcrumb. */
   here?: string
+  /** 打开它自己那一层。没有传就只是一行（项目页上的那份清单）。 */
+  onOpen?: () => void
 }) {
   const qc = useQueryClient()
   const today = todayIn(timeZone)
@@ -121,7 +124,14 @@ export function ReadingRow({
   }
 
   return (
-    <li className="group flex min-h-9 items-center gap-2 rounded-lg py-1 pr-1 hover:bg-surface-hover">
+    /* 整行打开它自己那一层；行里的链接、按钮各自拦住冒泡 —— 和联系人列表同一条规矩：
+       一行是一个目标，而行里的地址是另一个。 */
+    <li
+      onClick={onOpen}
+      className={`group flex min-h-9 items-center gap-2 rounded-lg py-1 pr-1 hover:bg-surface-hover ${
+        onOpen ? 'cursor-pointer' : ''
+      }`}
+    >
       {/* The kind, as a shape. Never alone: a book names its author and a link names its host on
           the line below, so the glyph is decoration over information (WCAG 1.4.1). */}
       <span aria-hidden="true" className={`shrink-0 ${MARK[item.status]}`}>
@@ -151,16 +161,33 @@ export function ReadingRow({
             className="h-7 w-full rounded-lg border border-border-strong bg-surface px-2 text-sm text-fg"
           />
         ) : item.url ? (
+          /* 标题是去读那篇东西的链接 —— 一张读物清单存在的理由就是点开去读。打开它自己那一层
+             是另一件事，由整行承担（下面那个 onClick），所以这里要拦住冒泡。 */
           <a
             href={item.url}
             target="_blank"
             rel="noreferrer noopener"
-            className={`block truncate text-sm hover:underline ${
+            onClick={(e) => e.stopPropagation()}
+            className={`block max-w-full truncate text-sm hover:underline ${
               finished ? 'text-fg-subtle line-through' : 'text-fg'
             }`}
           >
             {label}
           </a>
+        ) : onOpen ? (
+          /* 一本书没有地址可去，所以它的标题就是打开它自己那一层。 */
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              onOpen()
+            }}
+            className={`block max-w-full truncate rounded text-left text-sm hover:underline ${
+              finished ? 'text-fg-subtle line-through' : 'text-fg'
+            }`}
+          >
+            {label}
+          </button>
         ) : (
           <span
             className={`block truncate text-sm ${
@@ -221,15 +248,9 @@ export function ReadingRow({
             }}
             className={MENU_SURFACE}
           >
-            <Item
-              onSelect={() => {
-                takingFocus.current = true
-                setDraft(item.title ?? '')
-                setRenaming(true)
-              }}
-            >
-              Rename
-            </Item>
+            {/* 改内容的事在它自己那一层里做（`ReadingDetail`）：一个下拉菜单不是编辑器。
+                这里只留「不用打开它就能做的事」—— 状态和计划。 */}
+            {onOpen && <Item onSelect={onOpen}>Open</Item>}
             {/* The day you mean to finish it, as NAMED DECISIONS rather than a date picker -- the same choice
                 the overdue row's triage made, and for the same reason: a calendar makes you
                 compute the date, where "this weekend" is the thought you actually had. The exact day
@@ -246,12 +267,6 @@ export function ReadingRow({
             {finished && (
               <Item onSelect={() => save.mutate({ status: 'todo' })}>Back to the list</Item>
             )}
-            {/* RED, and it ASKS -- the same two rules the danger zone at the foot of a pane
-                follows. A reading item has no page of its own to put a zone at the foot of, so
-                the menu carries them instead; `onSelect` only opens the question. */}
-            <Item danger onSelect={() => setDeleting(true)}>
-              Delete
-            </Item>
           </DropdownMenu.Content>
         </DropdownMenu.Portal>
       </DropdownMenu.Root>

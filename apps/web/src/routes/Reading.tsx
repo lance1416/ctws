@@ -1,10 +1,12 @@
 import type { ReadingStatus } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { listReading, readingKey } from '../api/reading'
 import { EmptyState } from '../components/EmptyState'
 import { LIST_MEASURE } from '../rowLead'
 import { AddReading } from '../components/AddReading'
+import { ReadingDetail } from '../components/ReadingDetail'
 import { ReadingRow } from '../components/ReadingRow'
 import { useTimeZone } from '../useMe'
 
@@ -23,6 +25,14 @@ const SECTIONS: { status: ReadingStatus; label: string }[] = [
 
 export function Reading() {
   const items = useQuery({ queryKey: readingKey(), queryFn: () => listReading() })
+  /**
+   * 开着的是哪一条，写在 URL 里 —— 这一层就是 `/reading/<id>` 本身。
+   *
+   * 和人、和会议同一条路：一条读物没有自己的页，URL 留着好让「谁推荐的」那条边有地方可去
+   * （以前它只能落到整张清单上），列表留在后面。
+   */
+  const { id: openId = null } = useParams()
+  const navigate = useNavigate()
   const [showFinished, setShowFinished] = useState(false)
   const heading = useRef<HTMLHeadingElement>(null)
   const timeZone = useTimeZone()
@@ -68,7 +78,12 @@ export function Reading() {
             </h2>
             <ul className={`mt-1 ${LIST_MEASURE}`}>
               {section.map((item) => (
-                <ReadingRow key={item.id} item={item} timeZone={timeZone} />
+                <ReadingRow
+                  key={item.id}
+                  item={item}
+                  timeZone={timeZone}
+                  onOpen={() => navigate(`/reading/${item.id}`)}
+                />
               ))}
             </ul>
           </section>
@@ -78,6 +93,18 @@ export function Reading() {
       {/* The finished pile, behind a switch -- the same rule the task tree learned: a list
           that keeps everything forever gets worse the longer it is used, and a list that drops
           things cannot be trusted. The count is the way back to them. */}
+      {openId !== null &&
+        (() => {
+          const open = rows.find((i) => i.id === openId)
+          if (open) return <ReadingDetail item={open} onClose={() => navigate('/reading')} />
+          // 链接指向的东西已经不在了：说出来，别只留一张清单。
+          return items.isSuccess ? (
+            <p role="alert" className="mt-4 text-sm text-fg-muted">
+              This item is not here any more.
+            </p>
+          ) : null
+        })()}
+
       {finished.length > 0 && (
         <div className="mt-8">
           <button
@@ -91,7 +118,12 @@ export function Reading() {
           {showFinished && (
             <ul className={`mt-1 ${LIST_MEASURE}`}>
               {finished.map((item) => (
-                <ReadingRow key={item.id} item={item} timeZone={timeZone} />
+                <ReadingRow
+                  key={item.id}
+                  item={item}
+                  timeZone={timeZone}
+                  onOpen={() => navigate(`/reading/${item.id}`)}
+                />
               ))}
             </ul>
           )}

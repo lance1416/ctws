@@ -39,7 +39,7 @@ test('a pasted link goes to Reading; a sentence still goes to the inbox', async 
   await expect(page.getByText('Added to')).toContainText('Inbox')
 })
 
-test('an untitled link is listed by host and path, and can be given a name', async ({ page }) => {
+test('an untitled link is listed by host and path', async ({ page }) => {
   await registerFreshUser(page)
   await page.request.post('/api/v1/reading', {
     headers: WEB,
@@ -59,17 +59,6 @@ test('an untitled link is listed by host and path, and can be given a name', asy
   )
   // And it opens away from the workspace, so a half-read list is not lost.
   await expect(row.getByRole('link')).toHaveAttribute('target', '_blank')
-
-  await row.getByRole('button', { name: /More for/ }).click()
-  await page.getByRole('menuitem', { name: 'Rename' }).click()
-  // FOCUS IS IN THE FIELD, not back on the menu's trigger: a menu restores focus to its trigger
-  // when it closes, which would leave an editor nobody can type into without clicking it first.
-  await expect(page.getByRole('textbox', { name: 'Title' })).toBeFocused()
-  await page.getByRole('textbox', { name: 'Title' }).fill('Linear 怎么重做 issue')
-  // On the KEYBOARD, not through the locator: re-resolving it would blur the field, and blurring
-  // is how this row cancels a rename.
-  await page.keyboard.press('Enter')
-  await expect(rowOf(page, 'Linear 怎么重做 issue')).toBeVisible()
 })
 
 test('a book moves to read → reading → finished, and the finished pile folds away', async ({
@@ -185,9 +174,13 @@ test('a project page carries both modules, each with its own block and numbers',
   )
 })
 
-test('deleting a reading item asks first, in the row, in the danger colour', async ({ page }) => {
-  // An item has no page of its own to put a danger zone at the foot of, so its menu carries the
-  // two rules the zone would: the colour, and the question.
+/**
+ * 删一条读物在它自己那一层的最底下，和删一个人、一条任务、取消一场会同一个位置。
+ *
+ * 它以前只有一行加一个 ⋯ 菜单，于是 Rename 和 Delete 都住在菜单里 —— 全 app 唯一一个「在下拉
+ * 菜单里改内容」的地方。现在它有自己的一层，菜单只留下「不用打开它就能做的事」。
+ */
+test('删一条读物在它那一层的最底下，先问一次', async ({ page }) => {
   await registerFreshUser(page)
   await page.request.post('/api/v1/reading', {
     headers: WEB,
@@ -197,26 +190,54 @@ test('deleting a reading item asks first, in the row, in the danger colour', asy
   const deletes: string[] = []
   page.on('request', (r) => r.method() === 'DELETE' && deletes.push(r.url()))
 
-  const row = rowOf(page, '设计心理学')
-  await row.getByRole('button', { name: /More for/ }).click()
-  const item = page.getByRole('menuitem', { name: 'Delete' })
-  const colour = await item.evaluate((el) => getComputedStyle(el).color)
-  const plain = await page
-    .getByRole('menuitem', { name: 'Rename' })
-    .evaluate((el) => getComputedStyle(el).color)
-  expect(colour).not.toBe(plain)
-  await item.click()
+  // 菜单里没有改内容的东西了。
+  await rowOf(page, '设计心理学')
+    .getByRole('button', { name: /More for/ })
+    .click()
+  await expect(page.getByRole('menuitem', { name: 'Rename' })).toHaveCount(0)
+  await expect(page.getByRole('menuitem', { name: 'Delete' })).toHaveCount(0)
+  await page.keyboard.press('Escape')
 
-  // The question stands where the row stood, so it is read where the hand already is.
+  await page.getByRole('button', { name: '设计心理学', exact: true }).click()
+  const layer = page.getByRole('dialog', { name: 'Reading' })
+  await expect(layer).toBeVisible()
+  await expect(page).toHaveURL(new RegExp('/reading/[0-9a-f-]{36}$'))
+
+  const remove = layer.getByRole('button', { name: 'Delete item' })
+  // 最后一个东西：Linked 在它上面。
+  const [box, linked] = await Promise.all([
+    remove.boundingBox(),
+    layer.getByText('Linked', { exact: true }).boundingBox(),
+  ])
+  expect(box!.y).toBeGreaterThan(linked!.y)
+
+  await remove.click()
   const ask = page.getByRole('alertdialog', { name: 'Confirm deleting this item' })
   await expect(ask).toContainText('Delete “设计心理学”?')
   expect(deletes).toHaveLength(0)
-  await ask.getByRole('button', { name: 'Cancel' }).click()
-  await expect(row.getByRole('button', { name: /More for/ })).toBeVisible()
-
-  await row.getByRole('button', { name: /More for/ }).click()
-  await page.getByRole('menuitem', { name: 'Delete' }).click()
-  await page.getByRole('button', { name: 'Confirm delete' }).click()
+  await ask.getByRole('button', { name: 'Confirm delete' }).click()
   await expect(page.getByText('设计心理学')).toHaveCount(0)
   expect(deletes).toHaveLength(1)
+})
+
+test('一条读物在它那一层里改，不在下拉菜单里改', async ({ page }) => {
+  await registerFreshUser(page)
+  await page.request.post('/api/v1/reading', {
+    headers: WEB,
+    data: { kind: 'link', url: 'https://www.linear.invalid/now/how-we-redesigned-issues' },
+  })
+  await page.goto('/reading')
+
+  // 标题那一行是去读它的链接（点它会开新标签页），所以这里点的是行上别的地方 —— 打开那一层
+  // 是整行的事，这正是两个目标分开的意思。
+  await rowOf(page, 'linear.invalid/now/how-we-redesigned-issues')
+    .getByText(/^Added/)
+    .click()
+  const layer = page.getByRole('dialog', { name: 'Reading' })
+  await layer.getByRole('button', { name: 'Edit', exact: true }).click()
+  await layer.getByLabel('Title').fill('Linear 怎么重做 issue')
+  await layer.getByRole('button', { name: 'Save' }).click()
+
+  await expect(layer.getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
+  await expect(page.getByText('Linear 怎么重做 issue').first()).toBeVisible()
 })

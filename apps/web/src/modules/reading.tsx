@@ -159,7 +159,11 @@ export const readingModule: WorkspaceModule = {
   destinations: [
     { id: 'list', to: `/${ID}`, label: 'Reading', Count: ReadingCount, zone: 'things', order: 40 },
   ],
-  routes: [{ index: true, element: <Reading /> }],
+  routes: [
+    { index: true, element: <Reading /> },
+    // 一条读物没有自己的页：这条路渲染的是列表加它的那一层。
+    { path: ':id', element: <Reading /> },
+  ],
   capture: { useTarget: useReadingCapture, accepts: isReadingUrl },
   search: { useHits: useReadingHits },
   // `l` for list. `r` is the task module's Review and one keyspace is shared across modules, so a
@@ -170,5 +174,5 @@ export const readingModule: WorkspaceModule = {
   ProjectHeadline: ReadingHeadline,
   // No page of its own: a thing to read is a title, a link and a status, and a page per item
   // would be a page holding one line. The list IS where one is read.
-  relations: [{ type: 'reading', kind: 'Reading', to: () => `/${ID}` }],
+  relations: [{ type: 'reading', kind: 'Reading', to: (id) => `/${ID}/${id}` }],
 }
