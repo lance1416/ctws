@@ -248,11 +248,11 @@ test('会议面板也有 ↗ 通往那一页，字段也按自己的宽度排', 
   const pane = page.getByRole('dialog', { name: 'Meetings' })
   await expect(pane).toBeVisible()
 
-  // 标签在值上面：标签的下沿在值的上沿之上。
+  // 标签在值上面：标签的下沿在值的上沿之上。读的时候值是文字，所以量的是那一行字。
   const stacked = await pane.evaluate(() => {
     const label = [...document.querySelectorAll('span')].find((s) => s.textContent === 'Length')
-    const value = label?.parentElement?.querySelector('button')
-    if (!label || !value) return null
+    const value = label?.parentElement?.querySelector('span:last-child')
+    if (!label || !value || label === value) return null
     return label.getBoundingClientRect().bottom <= value.getBoundingClientRect().top + 1
   })
   expect(stacked).toBe(true)
