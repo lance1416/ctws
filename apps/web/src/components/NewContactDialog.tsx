@@ -1,10 +1,11 @@
 import { CHANNEL_KINDS, type ChannelKind, type ContactResponse } from '@ctws/contracts'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
-import { createContact } from '../api/contacts'
+import { createContact, type BirthdayDraft } from '../api/contacts'
 import { listProjects } from '../api/projects'
 import { useComposing } from '../composition'
 import { useProjectRail } from '../projectColor'
+import { BirthdayEditor, birthdayDraftOf } from './BirthdayFields'
 import { boxed, field, label } from './formStyles'
 import { PickMany, PickOne } from './inline'
 import { DialogFooter } from './DialogFooter'
@@ -38,6 +39,14 @@ export function NewContactDialog({
   const [kind, setKind] = useState<ChannelKind>('email')
   const [address, setAddress] = useState('')
   const [projectIds, setProjects] = useState<string[]>([])
+  const [circle, setCircle] = useState('')
+  /**
+   * 不摊开，直到有人说有。
+   *
+   * 写下一个人常常只有一个名字，一张摊开的空日期表单读起来像坏数据——他的页面上也是这条规则
+   * （没有生日时那里是一个「Add a birthday」，不是一行空字段）。
+   */
+  const [birthday, setBirthday] = useState<{ draft: BirthdayDraft; refused: boolean } | null>(null)
 
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
   const make = useMutation({
@@ -48,7 +57,8 @@ export function NewContactDialog({
     },
   })
 
-  const ready = name.trim().length > 0
+  // 服务端已经说这个日子不存在了，Create 按下去只会 400，而这个对话框不画那条错误。
+  const ready = name.trim().length > 0 && !birthday?.refused
   const submit = () => {
     if (!ready || make.isPending) return
     make.mutate({
@@ -57,6 +67,8 @@ export function NewContactDialog({
       ...(note.trim() ? { note: note.trim() } : {}),
       ...(projectIds.length > 0 ? { projectIds } : {}),
       ...(address.trim() ? { channels: [{ kind, value: address.trim(), label: null }] } : {}),
+      ...(circle ? { circle: circle as 'family' } : {}),
+      ...(birthday ? { birthday: birthday.draft } : {}),
     })
   }
 
@@ -104,6 +116,54 @@ export function NewContactDialog({
             onChange={(e) => setOrg(e.target.value)}
             className={`${field} mt-1.5`}
           />
+        </div>
+
+        {/* 同一个编辑器，和他页面上那个是同一套规则：预览、闰月、以及服务端那句拒绝。 */}
+        <div>
+          <span className={label}>Birthday</span>
+          <div className="mt-1.5">
+            {birthday ? (
+              <>
+                <BirthdayEditor
+                  birthday={null}
+                  onChange={(draft, refused) => setBirthday({ draft, refused })}
+                />
+                <button
+                  type="button"
+                  onClick={() => setBirthday(null)}
+                  className="mt-1 text-sm text-fg-muted hover:text-fg"
+                >
+                  Not now
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setBirthday({ draft: birthdayDraftOf(null), refused: false })}
+                className="h-9 rounded-lg border border-dashed border-border-strong px-3 text-sm text-fg-muted hover:border-border-strong hover:text-fg"
+              >
+                Add a birthday
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* 谁是谁：列表按它分组，而且写下这个人的时候你就知道答案。 */}
+        <div>
+          <span className={label}>Circle</span>
+          <div className="mt-1.5">
+            <PickOne
+              label="Circle"
+              value={circle}
+              choices={[
+                { value: '', label: 'Not set' },
+                { value: 'family', label: 'Family' },
+                { value: 'friend', label: 'Friends' },
+                { value: 'work', label: 'Work' },
+              ]}
+              onPick={setCircle}
+            />
+          </div>
         </div>
 
         {/* ONE address, because one is what you have when you are writing someone down. The rest

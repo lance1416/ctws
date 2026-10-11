@@ -5,7 +5,7 @@ import type {
   RemindLead,
 } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ApiError } from '../api'
 import { previewBirthday, type BirthdayDraft } from '../api/contacts'
 import { countdownPhrase, shortDay, todayIn } from '../dueAt'
@@ -193,6 +193,22 @@ function Chip({ children }: { children: React.ReactNode }) {
  * Writing one down. The derived line under the fields comes from the SERVER, so the rules that
  * decide it have exactly one implementation.
  */
+/**
+ * 草稿的起点。写一个新的人时也要用它，所以它不在表单里面。
+ */
+export function birthdayDraftOf(birthday: BirthdayResponse | null): BirthdayDraft {
+  return {
+    calendar: birthday?.calendar ?? 'solar',
+    year: birthday?.year ?? null,
+    month: birthday?.month ?? 1,
+    day: birthday?.day ?? 1,
+    leapMonth: birthday?.leapMonth ?? false,
+    hourBranch: birthday?.hourBranch ?? null,
+    remindLead: (birthday?.remindLead ?? 7) as RemindLead,
+  }
+}
+
+/** 页面上的那一版：编辑器加它自己的按钮。 */
 function BirthdayForm({
   birthday,
   onCancel,
@@ -201,6 +217,59 @@ function BirthdayForm({
   birthday: BirthdayResponse | null
   onCancel: () => void
   onSave: (draft: BirthdayDraft | null) => void
+}) {
+  const [state, setState] = useState(() => ({
+    draft: birthdayDraftOf(birthday),
+    refused: false,
+  }))
+
+  return (
+    <Field label="Birthday" shape="above">
+      <div className="flex flex-col gap-2">
+        <BirthdayEditor
+          birthday={birthday}
+          onChange={(draft, refused) => setState({ draft, refused })}
+        />
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className={BUTTON.primary}
+            // 服务端已经拒了这个日子，保存只会 400，而保存这条路径不画错误：按钮关着，旁边那句话
+            // 说的就是原因。只认 400 -- 网络抖一下不该把人锁在表单里。
+            disabled={state.refused}
+            onClick={() => onSave(state.draft)}
+          >
+            Save
+          </button>
+          <button type="button" className={BUTTON.secondary} onClick={onCancel}>
+            Cancel
+          </button>
+          <span className="flex-1" />
+          {birthday && (
+            <button type="button" className={BUTTON.quiet} onClick={() => onSave(null)}>
+              Remove
+            </button>
+          )}
+        </div>
+      </div>
+    </Field>
+  )
+}
+
+/**
+ * 日子本身，没有按钮。
+ *
+ * 一个人的生日有两个写下的时刻——在他的页面上改，和写下这个人的时候顺手记上——而两处的规则必须
+ * 是同一套（预览、闰月、服务端那句拒绝）。所以控件在这里，按钮归调用者：页面有自己的 Save，
+ * 对话框只有一个 Create。
+ */
+export function BirthdayEditor({
+  birthday,
+  onChange,
+}: {
+  birthday: BirthdayResponse | null
+  /** 每次改动都把草稿和「服务端已经拒了它」一起报上去。 */
+  onChange: (draft: BirthdayDraft, refused: boolean) => void
 }) {
   const [calendar, setCalendar] = useState<'solar' | 'lunar'>(birthday?.calendar ?? 'solar')
   const [year, setYear] = useState<string>(birthday?.year ? String(birthday.year) : '')
@@ -236,139 +305,123 @@ function BirthdayForm({
   const refused =
     preview.isError && preview.error instanceof ApiError && preview.error.status === 400
 
+  const report = useRef(onChange)
+  report.current = onChange
+  useEffect(() => {
+    report.current(draft, refused)
+    // 草稿是每次渲染新造的对象，进依赖数组只会每次都触发；这里列的是它由什么构成。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [calendar, draft.year, month, day, draft.leapMonth, hourBranch, lead, refused])
+
   return (
-    <Field label="Birthday" shape="above">
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <div
-            className="inline-flex h-9 overflow-hidden rounded-lg border border-border-strong"
-            role="group"
-            aria-label="Which calendar"
-          >
-            {(['solar', 'lunar'] as const).map((c) => (
-              <button
-                key={c}
-                type="button"
-                aria-pressed={calendar === c}
-                onClick={() => {
-                  setCalendar(c)
-                  if (c === 'solar') setLeapMonth(false)
-                }}
-                className={`h-[34px] px-3.5 text-sm ${
-                  calendar === c ? 'bg-surface-raised font-semibold text-fg' : 'text-fg-muted'
-                }`}
-              >
-                {c === 'solar' ? 'Solar' : 'Lunar'}
-              </button>
-            ))}
-          </div>
-
-          <input
-            value={year}
-            onChange={(e) => setYear(e.target.value.replace(/\D/g, '').slice(0, 4))}
-            inputMode="numeric"
-            placeholder="Year"
-            aria-label="Year"
-            aria-invalid={!yearOk}
-            className={`w-20 bg-surface-panel tabular-nums ${textbox}`}
-          />
-
-          {calendar === 'lunar' ? (
-            <>
-              <PickOne
-                label="Lunar month"
-                value={String(month)}
-                choices={LUNAR_MONTHS.map((name, i) => ({ value: String(i + 1), label: name }))}
-                onPick={(next) => setMonth(Number(next))}
-              />
-              <PickOne
-                label="Lunar day"
-                value={String(day)}
-                choices={LUNAR_DAYS.map((name, i) => ({ value: String(i + 1), label: name }))}
-                onPick={(next) => setDay(Number(next))}
-              />
-              <label className="inline-flex items-center gap-1.5 text-sm text-fg">
-                <input
-                  type="checkbox"
-                  checked={leapMonth}
-                  onChange={(e) => setLeapMonth(e.target.checked)}
-                />
-                闰月
-              </label>
-            </>
-          ) : (
-            <>
-              <PickOne
-                label="Month"
-                value={String(month)}
-                choices={SOLAR_MONTHS.map((name, i) => ({ value: String(i + 1), label: name }))}
-                onPick={(next) => setMonth(Number(next))}
-              />
-              <PickOne
-                label="Day"
-                value={String(day)}
-                choices={Array.from({ length: 31 }, (_, i) => ({
-                  value: String(i + 1),
-                  label: String(i + 1),
-                }))}
-                onPick={(next) => setDay(Number(next))}
-              />
-            </>
-          )}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <PickOne
-            label="时辰"
-            value={hourBranch === null ? '' : String(hourBranch)}
-            choices={[
-              { value: '', label: '时辰 — not known' },
-              ...HOURS.map((name, i) => ({ value: String(i), label: name })),
-            ]}
-            onPick={(next) => setHourBranch(next === '' ? null : Number(next))}
-          />
-          <PickOne
-            label="Tell me"
-            value={String(lead)}
-            choices={LEADS.map(([n, label]) => ({ value: String(n), label }))}
-            onPick={(next) => setLead(Number(next) as RemindLead)}
-          />
-        </div>
-
-        {/* What it MEANS, answered by the server so the rules have one implementation. */}
-        <p data-testid="birthday-preview" className="min-h-5 text-xs text-fg-muted">
-          {preview.isSuccess ? <PreviewLine facts={preview.data} /> : null}
-          {/* 服务端那一句（「正月 has 29 days in 2021…」）比「不是个日子」有用：它说的是哪一条不成立。 */}
-          {preview.isError && (
-            <span className="text-danger">
-              {(preview.error instanceof ApiError && preview.error.detail) || 'That is not a date'}
-            </span>
-          )}
-        </p>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            className={BUTTON.primary}
-            // 服务端已经拒了这个日子，保存只会 400，而保存这条路径不画错误：按钮关着，旁边那句话
-            // 说的就是原因。只认 400 -- 网络抖一下不该把人锁在表单里。
-            disabled={refused}
-            onClick={() => onSave(draft)}
-          >
-            Save
-          </button>
-          <button type="button" className={BUTTON.secondary} onClick={onCancel}>
-            Cancel
-          </button>
-          <span className="flex-1" />
-          {birthday && (
-            <button type="button" className={BUTTON.quiet} onClick={() => onSave(null)}>
-              Remove
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <div
+          className="inline-flex h-9 overflow-hidden rounded-lg border border-border-strong"
+          role="group"
+          aria-label="Which calendar"
+        >
+          {(['solar', 'lunar'] as const).map((c) => (
+            <button
+              key={c}
+              type="button"
+              aria-pressed={calendar === c}
+              onClick={() => {
+                setCalendar(c)
+                if (c === 'solar') setLeapMonth(false)
+              }}
+              className={`h-[34px] px-3.5 text-sm ${
+                calendar === c ? 'bg-surface-raised font-semibold text-fg' : 'text-fg-muted'
+              }`}
+            >
+              {c === 'solar' ? 'Solar' : 'Lunar'}
             </button>
-          )}
+          ))}
         </div>
+
+        <input
+          value={year}
+          onChange={(e) => setYear(e.target.value.replace(/\D/g, '').slice(0, 4))}
+          inputMode="numeric"
+          placeholder="Year"
+          aria-label="Year"
+          aria-invalid={!yearOk}
+          className={`w-20 bg-surface-panel tabular-nums ${textbox}`}
+        />
+
+        {calendar === 'lunar' ? (
+          <>
+            <PickOne
+              label="Lunar month"
+              value={String(month)}
+              choices={LUNAR_MONTHS.map((name, i) => ({ value: String(i + 1), label: name }))}
+              onPick={(next) => setMonth(Number(next))}
+            />
+            <PickOne
+              label="Lunar day"
+              value={String(day)}
+              choices={LUNAR_DAYS.map((name, i) => ({ value: String(i + 1), label: name }))}
+              onPick={(next) => setDay(Number(next))}
+            />
+            <label className="inline-flex items-center gap-1.5 text-sm text-fg">
+              <input
+                type="checkbox"
+                checked={leapMonth}
+                onChange={(e) => setLeapMonth(e.target.checked)}
+              />
+              闰月
+            </label>
+          </>
+        ) : (
+          <>
+            <PickOne
+              label="Month"
+              value={String(month)}
+              choices={SOLAR_MONTHS.map((name, i) => ({ value: String(i + 1), label: name }))}
+              onPick={(next) => setMonth(Number(next))}
+            />
+            <PickOne
+              label="Day"
+              value={String(day)}
+              choices={Array.from({ length: 31 }, (_, i) => ({
+                value: String(i + 1),
+                label: String(i + 1),
+              }))}
+              onPick={(next) => setDay(Number(next))}
+            />
+          </>
+        )}
       </div>
-    </Field>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <PickOne
+          label="时辰"
+          value={hourBranch === null ? '' : String(hourBranch)}
+          choices={[
+            { value: '', label: '时辰 — not known' },
+            ...HOURS.map((name, i) => ({ value: String(i), label: name })),
+          ]}
+          onPick={(next) => setHourBranch(next === '' ? null : Number(next))}
+        />
+        <PickOne
+          label="Tell me"
+          value={String(lead)}
+          choices={LEADS.map(([n, label]) => ({ value: String(n), label }))}
+          onPick={(next) => setLead(Number(next) as RemindLead)}
+        />
+      </div>
+
+      {/* What it MEANS, answered by the server so the rules have one implementation. */}
+      <p data-testid="birthday-preview" className="min-h-5 text-xs text-fg-muted">
+        {preview.isSuccess ? <PreviewLine facts={preview.data} /> : null}
+        {/* 服务端那一句（「正月 has 29 days in 2021…」）比「不是个日子」有用：它说的是哪一条不成立。 */}
+        {preview.isError && (
+          <span className="text-danger">
+            {(preview.error instanceof ApiError && preview.error.detail) || 'That is not a date'}
+          </span>
+        )}
+      </p>
+    </div>
   )
 }
 
@@ -383,7 +436,8 @@ function PreviewLine({ facts }: { facts: BirthdayPreviewResponse }) {
   return (
     <>
       <span className="tabular-nums">{parts.join(' · ')}</span>
-      {facts.next.keptNote && <span className="text-plan"> {facts.next.keptNote}</span>}
+      {/* 挪动那句自己占一行：它是一句话，接在「猴 · 水瓶」后面会连成一串读不断的东西。 */}
+      {facts.next.keptNote && <span className="block text-plan">{facts.next.keptNote}</span>}
     </>
   )
 }

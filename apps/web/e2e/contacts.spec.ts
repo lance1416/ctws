@@ -382,3 +382,32 @@ test('短字段的列数看这块自己有多宽，不看窗口有多宽', async
   expect(wide!.columns).toBe(2)
   expect(wide!.drift.filter((d) => d.off > 6)).toEqual([])
 })
+
+test('新建的时候就能写下生日和 circle，一次请求带走整个人', async ({ page }) => {
+  await registerFreshUser(page, '/contacts')
+  await page.getByRole('button', { name: 'New contact' }).click()
+  const form = page.getByRole('dialog', { name: 'New contact' })
+  await form.getByLabel('Name').fill('外婆')
+  // 生日不是默认摊开的：写一个人常常只有名字，一张摊开的空表单读起来像坏数据。
+  await form.getByRole('button', { name: 'Add a birthday' }).click()
+  await form
+    .getByRole('group', { name: 'Which calendar' })
+    .getByRole('button', { name: 'Lunar' })
+    .click()
+  await form.getByRole('textbox', { name: 'Year' }).fill('1944')
+  await pickOne(form, 'Lunar month', '十二月')
+  await pickOne(form, 'Lunar day', '三十')
+  await pickOne(form, 'Circle', 'Family')
+
+  const posted = page.waitForResponse(
+    (r) => r.request().method() === 'POST' && new URL(r.url()).pathname === '/api/v1/contacts',
+  )
+  await form.getByRole('button', { name: 'Create' }).click()
+  expect((await posted).request().postDataJSON()).toMatchObject({
+    name: '外婆',
+    circle: 'family',
+    birthday: { calendar: 'lunar', year: 1944, month: 12, day: 30 },
+  })
+  // 新建后打开的是这一页的详情面板（生日那一页建的人才会跳到他自己的页面）。
+  await expect(page.getByText('农历甲申年十二月三十')).toBeVisible()
+})
