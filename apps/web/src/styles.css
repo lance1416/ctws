@@ -258,8 +258,20 @@
   --shadow-panel: 0 1px 2px rgb(26 29 35 / 0.05);
 }
 
+/*
+  DARK, TWICE. The same values under two selectors, because a theme the person chose has to beat
+  the one their system asked for:
+
+  - inside the media query, but NOT when `[data-theme='light']` is on <html> -- that is somebody
+    saying "light, whatever the laptop thinks";
+  - under `[data-theme='dark']`, for the other direction.
+
+  The duplication is this technique's price. The alternative -- holding the values in JS and
+  injecting them -- repaints after the first frame, which is a flash of the wrong colour on every
+  load. `index.html` sets the attribute before React exists for the same reason.
+*/
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     /* NEUTRAL, AND DARKER. The first dark set carried a blue cast -- every surface had 6 to 10
        more blue than red (#0f1115 is R15 G17 B21), which reads as navy on a big screen rather
        than as a dark room. These are grey: 1 to 3 points of blue over red, and the ground is
@@ -318,6 +330,66 @@
     /* No shadows in dark: the layering is done by surface lightness. */
     --shadow-panel: 0 0 #0000;
   }
+}
+
+:root[data-theme='dark'] {
+  /* NEUTRAL, AND DARKER. The first dark set carried a blue cast -- every surface had 6 to 10
+       more blue than red (#0f1115 is R15 G17 B21), which reads as navy on a big screen rather
+       than as a dark room. These are grey: 1 to 3 points of blue over red, and the ground is
+       five steps nearer black. Every ink gains contrast from it rather than losing any; the
+       table below is re-measured, not carried over. */
+  --color-surface: #0a0a0b;
+  --color-surface-panel: #141416;
+  --color-surface-raised: #1c1c1f;
+  --color-surface-sunken: #0f0f11;
+  --color-surface-hover: #1c1c1f;
+  --color-fg: #e8e8ea;
+  --color-fg-muted: #a8a8ad;
+  --color-fg-subtle: #86868c;
+  --color-border-subtle: #242427;
+  --color-border-strong: #6e6e73;
+  --color-accent: #6f9ae8;
+  --color-accent-fg: #0a0a0b;
+  --color-plan: #58a894;
+  --color-deadline: #d9a05b;
+  --color-missed: #e0756b;
+  --color-danger: #e0756b;
+  --color-danger-fg: #0a0a0b;
+  /* THE SAME SIX HUES, RE-STEPPED FOR DARK -- not the light set lightened or inverted. Dark mode
+       has a narrower usable lightness band (L 0.48-0.67 against light's 0.43-0.77), and Okabe-Ito
+       leans on lightness for two of its pairs: blue/sky share a hue within 8°, as do
+       vermillion/orange, and in light they are told apart by a 0.20 lightness gap that does not fit
+       here. Snapping the three out-of-band colours inward collapses those pairs (measured: orange
+       against vermillion ΔE 9.4). So the band is re-spent: the pair that was light-above-dark in
+       light mode is dark-above-light here. Every hue angle is carried over unchanged, so a project
+       keeps its colour across the two schemes.
+
+       Searched, then measured, not hand-tuned: worst all-pairs ΔE 18.1 normal / 8.2 protan, which
+       is better separation than the light set's own 15.6 / 7.6.
+
+       slot  hex       OKLCH
+         1   #009aee   66.1% 0.163 244
+         2   #e1691a   65.6% 0.170  48
+         3   #009f73   62.2% 0.131 165
+         4   #a52f76   50.6% 0.169 348
+         5   #006895   49.0% 0.107 237
+         6   #835900   49.7% 0.104  77 */
+  --color-code-keyword: #c58fd8;
+  --color-code-string: #7fc9a0;
+  --color-code-number: #e0a86b;
+  --color-code-comment: #838c99;
+  --color-code-fn: #8ab4f0;
+  --color-code-attr: #d9b98a;
+  --color-code-punct: #a7aeb9;
+  --color-project-1: #009aee;
+  --color-project-2: #e1691a;
+  --color-project-3: #009f73;
+  --color-project-4: #a52f76;
+  --color-project-5: #006895;
+  --color-project-6: #835900;
+  --color-scrim: rgb(5 6 8 / 0.62);
+  /* No shadows in dark: the layering is done by surface lightness. */
+  --shadow-panel: 0 0 #0000;
 }
 
 /* Native controls (date pickers, scrollbars) follow the scheme too. */

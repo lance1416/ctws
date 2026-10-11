@@ -1,4 +1,6 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
+import { useState } from 'react'
+import { applyTheme, readTheme, type Theme } from '../theme'
 import { MENU_ITEM, MENU_SURFACE } from './menuSurface'
 
 /**
@@ -13,7 +15,16 @@ import { MENU_ITEM, MENU_SURFACE } from './menuSurface'
  * the `aria-expanded`/`aria-controls` pair are its job, and writing them by hand is how a WCAG
  * 2.1.2 keyboard trap ships.
  */
+const THEMES: { value: Theme; label: string }[] = [
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' },
+  { value: 'system', label: 'System' },
+]
+
 export function UserMenu({ email, onLogout }: { email: string; onLogout: () => void }) {
+  // 这一份状态只为把对勾画在对的那一行上；真正生效的是 <html> 上的那个属性。
+  const [theme, setTheme] = useState<Theme>(() => readTheme())
+
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger
@@ -26,6 +37,31 @@ export function UserMenu({ email, onLogout }: { email: string; onLogout: () => v
       <DropdownMenu.Portal>
         <DropdownMenu.Content align="end" sideOffset={6} className={MENU_SURFACE}>
           <div className="truncate px-2 py-1.5 text-sm text-fg-muted">{email}</div>
+          <DropdownMenu.Separator className="my-1 h-px bg-border-subtle" />
+
+          {/*
+            THEME, here and not in a settings page: there is no settings page, and this is the
+            one menu that is on every screen. Three choices and not a switch -- "follow the
+            system" is a real answer, and a two-state toggle cannot say it.
+          */}
+          <DropdownMenu.Label className="px-2 pt-1 pb-0.5 text-xs text-fg-subtle">
+            Theme
+          </DropdownMenu.Label>
+          <DropdownMenu.RadioGroup
+            value={theme}
+            onValueChange={(next) => {
+              const picked = next as Theme
+              setTheme(picked)
+              applyTheme(picked)
+            }}
+          >
+            {THEMES.map((t) => (
+              <DropdownMenu.RadioItem key={t.value} value={t.value} className={MENU_ITEM}>
+                <span className="flex-1">{t.label}</span>
+                <DropdownMenu.ItemIndicator aria-hidden="true">✓</DropdownMenu.ItemIndicator>
+              </DropdownMenu.RadioItem>
+            ))}
+          </DropdownMenu.RadioGroup>
           <DropdownMenu.Separator className="my-1 h-px bg-border-subtle" />
           <DropdownMenu.Item onSelect={onLogout} className={MENU_ITEM}>
             Sign out
