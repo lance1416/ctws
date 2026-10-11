@@ -231,9 +231,11 @@ test('the workbench is a panel grid at 1440 and one column at 375', async ({ pag
   expect(b['Done today']!.x).toBe(b['Overdue']!.x)
   expect(b['Overdue']!.y).toBeLessThan(b['Movement']!.y)
   expect(b['Movement']!.y).toBeLessThan(b['Done today']!.y)
-  // The banner is the full width of the content area and above everything.
+  // Working on sits above the queue and IN THE SAME COLUMN as it, not across the whole window:
+  // full width put Done and Pause a thousand pixels right of the row they act on.
   expect(b['Working on']!.y).toBeLessThan(b['Today']!.y)
-  expect(b['Working on']!.w).toBeGreaterThan(b['Today']!.w)
+  expect(b['Working on']!.x).toBe(b['Today']!.x)
+  expect(Math.round(b['Working on']!.w)).toBe(Math.round(b['Today']!.w))
   expect(await overflow()).toEqual({ doc: 0, body: 0 })
 
   // --- 375: one column, same order, and no sideways scroll ---

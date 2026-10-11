@@ -288,6 +288,8 @@ export function Today() {
   }
 
   const inProgress = rows.filter((t) => t.segment === 'in_progress')
+  // One thing in progress is THE thing; several are a list. The block's type scale reads off this.
+  const alone = inProgress.length === 1
   const queue = prepare(rows.filter((t) => t.segment === 'today'))
   const overdue = prepare(rows.filter((t) => t.segment === 'overdue'))
   const queueLead = leadSlotOf(queue)
@@ -315,76 +317,93 @@ export function Today() {
         </p>
       )}
 
-      {/* Working on -- the first thing the eye should land on (workbench spec §1). It is the only
-          block carrying the accent across its full height, and the ONLY place the type scale's
-          top step (34px) is spent: on the thing being done right now. The page's own heading is
-          one step below it, because a 34px Today beside a 23px task title made the page title the
-          focal point and the work the footnote -- exactly backwards. */}
-      <Panel
-        label="Working on"
-        className="border-l-4 border-l-accent"
-        heading={<h2 className="text-xs font-semibold text-fg-subtle">Working on</h2>}
-      >
-        {inProgress.length === 0 ? (
-          <PanelEmpty>Nothing in progress</PanelEmpty>
-        ) : (
-          <ul className="flex flex-col gap-1">
-            {inProgress.map((t) => (
-              <li
-                key={t.id}
-                onClick={(e) => {
-                  if (!(e.target as HTMLElement).closest('button')) setOpenId(t.id)
-                }}
-                className="flex min-w-0 cursor-pointer flex-wrap items-center gap-x-3 gap-y-2 rounded-lg px-2 py-1.5 hover:bg-surface-hover"
-              >
-                <StatusMark status={t.status} />
-                <button
-                  type="button"
-                  data-today-row={t.id}
-                  onClick={() => setOpenId(t.id)}
-                  onKeyDown={(e) => onRowKeyDown(e, t.id, t.status)}
-                  className="-m-1 flex min-w-[12rem] flex-1 flex-col rounded-lg p-1 text-left"
-                >
-                  <span className="flex min-w-0 items-baseline">
-                    <span className="truncate text-2xl font-semibold">{t.title}</span>
-                    {savedId === t.id && <SavedMark />}
-                  </span>
-                  <span className="truncate text-sm text-fg-muted">{breadcrumb(t)}</span>
-                </button>
-                {/* The visible word is contained in the accessible name (WCAG 2.5.3): "Done" in
-                    “Complete “Title””. Two controls, no more -- a third “Mark done” beside the mark
-                    would give one action two accessible names in one flat namespace. */}
-                <span className="flex shrink-0 items-center gap-2">
-                  <button
-                    type="button"
-                    aria-label={`Complete “${t.title}”`}
-                    onClick={() => setStatus(t.id, toggleDoneTarget(t.status))}
-                    className={BUTTON.primary}
-                  >
-                    Done
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={`Pause “${t.title}”`}
-                    onClick={() => setStatus(t.id, toggleStartTarget(t.status))}
-                    className={BUTTON.secondary}
-                  >
-                    Pause
-                  </button>
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Panel>
-
       <div
         data-workbench-grid
-        className={`mt-4 grid min-w-0 items-start gap-4 ${rightColumn ? 'lg:grid-cols-[repeat(3,minmax(0,1fr))]' : ''}`}
+        className={`grid min-w-0 items-start gap-4 ${rightColumn ? 'lg:grid-cols-[repeat(3,minmax(0,1fr))]' : ''}`}
       >
+        {/*
+          Working on -- the first thing the eye should land on (workbench spec §1), and the only
+          block carrying the accent across its full height.
+
+          THE SIZE ANSWERS "HOW MANY". One thing in progress is THE thing, and it gets the type
+          scale's top step; five are a LIST, and five 24px lines are a wall rather than a focal
+          point -- nothing is the focus when everything is. So the title steps down to the row size
+          the moment there is more than one, and the breadcrumb with it.
+
+          It also sits in the SAME COLUMN as Today rather than spanning the window: when it was
+          full-width, Done and Pause sat a thousand pixels right of the row they act on -- further
+          from it than from the edge of the screen.
+        */}
+        <Panel
+          label="Working on"
+          className={`border-l-4 border-l-accent ${rightColumn ? 'lg:col-span-2 lg:row-start-1' : ''}`}
+          heading={<h2 className="text-xs font-semibold text-fg-subtle">Working on</h2>}
+        >
+          {inProgress.length === 0 ? (
+            <PanelEmpty>Nothing in progress</PanelEmpty>
+          ) : (
+            <ul className="flex flex-col gap-1">
+              {inProgress.map((t) => (
+                <li
+                  key={t.id}
+                  onClick={(e) => {
+                    if (!(e.target as HTMLElement).closest('button')) setOpenId(t.id)
+                  }}
+                  className="flex min-w-0 cursor-pointer flex-wrap items-center gap-x-3 gap-y-2 rounded-lg px-2 py-1.5 hover:bg-surface-hover"
+                >
+                  <StatusMark status={t.status} />
+                  <button
+                    type="button"
+                    data-today-row={t.id}
+                    onClick={() => setOpenId(t.id)}
+                    onKeyDown={(e) => onRowKeyDown(e, t.id, t.status)}
+                    className="-m-1 flex min-w-[12rem] flex-1 flex-col rounded-lg p-1 text-left"
+                  >
+                    <span className="flex min-w-0 items-baseline">
+                      <span
+                        data-doing-title
+                        className={`truncate font-semibold ${alone ? 'text-2xl' : 'text-base'}`}
+                      >
+                        {t.title}
+                      </span>
+                      {savedId === t.id && <SavedMark />}
+                    </span>
+                    <span className={`truncate text-fg-muted ${alone ? 'text-sm' : 'text-xs'}`}>
+                      {breadcrumb(t)}
+                    </span>
+                  </button>
+                  {/* The visible word is contained in the accessible name (WCAG 2.5.3): "Done" in
+                      “Complete “Title””. Two controls, no more -- a third “Mark done” beside the mark
+                      would give one action two accessible names in one flat namespace. */}
+                  <span className="flex shrink-0 items-center gap-2">
+                    <button
+                      type="button"
+                      aria-label={`Complete “${t.title}”`}
+                      onClick={() => setStatus(t.id, toggleDoneTarget(t.status))}
+                      // 同一条规则：一件事的时候它是那一下，填实的蓝色就是在说「按这里」；五件
+                      // 事的时候五个填实的蓝块是一堵墙，谁都不突出，于是谁都不是重点。
+                      className={alone ? BUTTON.primary : BUTTON.secondary}
+                    >
+                      Done
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Pause “${t.title}”`}
+                      onClick={() => setStatus(t.id, toggleStartTarget(t.status))}
+                      className={BUTTON.secondary}
+                    >
+                      Pause
+                    </button>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+
         <Panel
           label="Today"
-          className={rightColumn ? 'lg:col-span-2' : ''}
+          className={rightColumn ? 'lg:col-span-2 lg:row-start-2' : ''}
           heading={
             <>
               <h1
@@ -414,7 +433,7 @@ export function Today() {
         </Panel>
 
         {rightColumn && (
-          <div className="flex min-w-0 flex-col gap-4">
+          <div className="flex min-w-0 flex-col gap-4 lg:col-start-3 lg:row-span-2 lg:row-start-1">
             {/* Overdue renders only when something IS overdue: a panel reading "0" every day is
                 noise, and this one has to mean something when it appears. */}
             {overdue.length > 0 && (

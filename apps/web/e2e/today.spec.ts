@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import {
+  apiPost,
   editDetail,
   openProject,
   registerFreshUser,
@@ -234,4 +235,63 @@ test('the status dot has a text alternative', async ({ page }) => {
   await expect(
     page.getByRole('region', { name: 'Working on' }).getByRole('img', { name: 'In progress' }),
   ).toBeVisible()
+})
+
+/**
+ * 「Working on」一条和五条不是同一件事。
+ *
+ * 一条时它是这一页的焦点，顶一级字号花在它身上；五条时没有哪一条是「那一件」，它就是一份清单，
+ * 于是字号落回行的那一级 —— 五行 24px 是一堵墙，不是重点。
+ *
+ * 它也和 Today 同宽：原来它横跨整页而下面的清单只有两栏，于是 Done 和 Pause 被甩到一千九百像素
+ * 开外，离它们作用的那一行比离窗口边还远。
+ */
+test('正在做的只有一条时是焦点，多条时是清单', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1000 })
+  await registerFreshUser(page)
+  const p = await apiPost(page, '/projects', { name: 'P' })
+  const pid = p.id as string
+  await apiPost(page, '/tasks', { title: '只在做这一件', projectId: pid, status: 'in_progress' })
+  await page.goto('/tasks/today')
+
+  const size = (sel: string) =>
+    page
+      .locator(sel)
+      .first()
+      .evaluate((el) => parseFloat(getComputedStyle(el).fontSize))
+  const alone = await size('[data-doing-title]')
+
+  await apiPost(page, '/tasks', { title: '第二件', projectId: pid, status: 'in_progress' })
+  await apiPost(page, '/tasks', { title: '第三件', projectId: pid, status: 'in_progress' })
+  await page.reload()
+  const crowded = await size('[data-doing-title]')
+  expect(crowded, '五条时落回行的字号').toBeLessThan(alone)
+
+  // 和 Today 那一栏同宽：按钮就在内容旁边，不在窗口边上。
+  const [doing, today] = await Promise.all([
+    page.getByRole('region', { name: 'Working on' }).boundingBox(),
+    page.getByRole('region', { name: 'Today' }).boundingBox(),
+  ])
+  expect(Math.round(doing!.x + doing!.width)).toBe(Math.round(today!.x + today!.width))
+})
+
+test('做一件事时 Done 是那一下，做五件时它只是一行上的按钮', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1000 })
+  await registerFreshUser(page)
+  const p = await apiPost(page, '/projects', { name: 'P' })
+  const pid = p.id as string
+  await apiPost(page, '/tasks', { title: '只在做这一件', projectId: pid, status: 'in_progress' })
+  await page.goto('/tasks/today')
+  const fill = () =>
+    page
+      .getByRole('button', { name: /^Complete/ })
+      .first()
+      .evaluate((el) => getComputedStyle(el).backgroundColor)
+  const alone = await fill()
+
+  await apiPost(page, '/tasks', { title: '第二件', projectId: pid, status: 'in_progress' })
+  await apiPost(page, '/tasks', { title: '第三件', projectId: pid, status: 'in_progress' })
+  await page.reload()
+  await expect(page.getByRole('button', { name: /^Complete/ })).toHaveCount(3)
+  expect(await fill(), '三条时不再是填实的那一个').not.toBe(alone)
 })
