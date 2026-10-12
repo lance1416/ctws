@@ -98,7 +98,8 @@ export function DetailPane({
           data-detail-backdrop
           onClick={onClose}
           style={{ top }}
-          className="fixed inset-x-0 bottom-0 z-20 bg-scrim"
+          // Below 1024 the tab bar is the screen's floor, so the scrim and the layer stop at it.
+          className="fixed inset-x-0 bottom-0 z-20 bg-scrim max-lg:bottom-16"
         />
       )}
       <div
@@ -122,7 +123,7 @@ export function DetailPane({
           // A LAYER is above the page: flush with the edges, raised surface, scrim beneath.
           wide
             ? 'right-4 bottom-4 w-[22rem] rounded-xl border border-border-subtle bg-surface-panel shadow-panel'
-            : 'right-0 bottom-0 w-full max-w-md border-l border-border-subtle bg-surface-raised'
+            : 'right-0 bottom-0 w-full max-w-md border-l border-border-subtle bg-surface-raised max-lg:bottom-16'
         }`}
       >
         {children}

@@ -59,7 +59,7 @@ export function Layout() {
           not in the rail because it is the same box at every width, phone included.
           Nothing here knows what a task is, which is the test a shell has to pass. */}
         <header className="sticky top-0 z-30 border-b border-border-subtle bg-surface-sunken">
-          <div className="flex min-h-13 items-center gap-x-4 px-4 py-2">
+          <div className="flex min-h-13 items-center gap-x-3 px-4 py-2 sm:gap-x-4">
             <Link to="/" className="shrink-0 font-semibold tracking-tight text-fg">
               CTWS
             </Link>

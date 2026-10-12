@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { createProject, listProjects } from '../api/projects'
 import { refreshProjects } from '../api/taskCache'
-import { pinnedPages } from '../modules/registry'
+import { kinds, pinnedPages } from '../modules/registry'
 import { railClass } from '../projectColor'
 import { useComposing } from '../composition'
 
@@ -31,6 +31,12 @@ export function SideRail() {
   const qc = useQueryClient()
   const navigate = useNavigate()
   const composing = useComposing()
+  const { pathname } = useLocation()
+  const pinned = pinnedPages()
+  const within = (to: string) => pathname === to || pathname.startsWith(`${to}/`)
+  const inThings =
+    within('/things') ||
+    kinds().some((k) => k.moduleId !== '' && !pinned.some((p) => p.to === k.to) && within(k.to))
   const [naming, setNaming] = useState(false)
   const [name, setName] = useState('')
   const field = useRef<HTMLInputElement>(null)
@@ -73,11 +79,8 @@ export function SideRail() {
           The pinned pages cut across every kind and are organised by time and routine; the shell
           picks them (`PINNED`) and there are never more than five. Every kind of thing sits behind
           the single Things row, so a new kind adds a row THERE and nothing here. Only the project
-          list grows, and it is the person's own.
-
-          One hook per pinned count, over a frozen list: see MODULES on why it must not change at
-          runtime. */}
-        {pinnedPages().map(({ key, to, label, end, Count }) => (
+          list grows, and it is the person's own. */}
+        {pinned.map(({ key, to, label, end, Count }) => (
           <NavLink
             key={key}
             to={to}
@@ -93,16 +96,17 @@ export function SideRail() {
           </NavLink>
         ))}
         <span aria-hidden="true" className="h-3 shrink-0" />
-        <NavLink
+        {/* Things is current on its own page and on every kind's page that is not pinned: a kind
+            has no row of its own, so this is the row that says which tier you are in. */}
+        <Link
           to="/things"
-          className={({ isActive }) =>
-            `flex min-h-9 shrink-0 items-center gap-2 rounded-lg px-2.5 py-1 whitespace-nowrap ${
-              isActive ? 'bg-surface-panel font-semibold text-fg' : 'text-fg-muted hover:text-fg'
-            }`
-          }
+          aria-current={inThings ? 'page' : undefined}
+          className={`flex min-h-9 shrink-0 items-center gap-2 rounded-lg px-2.5 py-1 whitespace-nowrap ${
+            inThings ? 'bg-surface-panel font-semibold text-fg' : 'text-fg-muted hover:text-fg'
+          }`}
         >
           Things
-        </NavLink>
+        </Link>
 
         {/* The group label is the link to the full project page; the `+` beside it is the only
           other thing in this row, so there is still no label that merely looks clickable. */}

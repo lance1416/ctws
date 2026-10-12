@@ -45,9 +45,14 @@ export function Location() {
       {crumbs.map((c, i) => {
         const last = i === crumbs.length - 1
         return (
-          <span key={i} className={`flex items-center gap-2 ${last ? 'min-w-0' : 'shrink-0'}`}>
+          // Below 640 there is room for the page's own name and nothing above it: the ancestors
+          // are the tab bar's and Things' to show there.
+          <span
+            key={i}
+            className={`flex items-center gap-2 ${last ? 'min-w-0' : 'shrink-0 max-sm:hidden'}`}
+          >
             {i > 0 && (
-              <span aria-hidden="true" className="text-fg-subtle">
+              <span aria-hidden="true" className="text-fg-subtle max-sm:hidden">
                 /
               </span>
             )}

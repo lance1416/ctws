@@ -223,3 +223,72 @@ test('the tab bar never covers the end of the page', async ({ page }) => {
   const last = await page.getByRole('button', { name: 'Delete project' }).boundingBox()
   expect(last!.y + last!.height).toBeLessThanOrEqual(bar!.y)
 })
+
+/** What is under the middle of `locator`: the control itself, or something drawn over it. */
+async function topmostAt(
+  page: import('@playwright/test').Page,
+  box: { x: number; y: number; width: number; height: number },
+) {
+  return page.evaluate(
+    ([x, y]) => document.elementFromPoint(x!, y!)?.closest('button, a')?.textContent ?? null,
+    [box.x + box.width / 2, box.y + box.height / 2],
+  )
+}
+
+test('on a phone, a detail pane ends above the tab bar, so its last control can be pressed', async ({
+  page,
+}) => {
+  await page.setViewportSize(PHONE)
+  await registerFreshUser(page, '/people')
+  const made = await page.request.post('/api/v1/people', {
+    headers: { 'x-ctws-client': 'web' },
+    data: { name: '要删的人' },
+  })
+  const { id } = (await made.json()) as { id: string }
+  await page.goto(`/people/${id}`)
+  const remove = page
+    .getByRole('dialog', { name: 'People' })
+    .getByRole('button', { name: 'Delete person' })
+  await remove.scrollIntoViewIfNeeded()
+  expect(await topmostAt(page, (await remove.boundingBox())!)).toContain('Delete person')
+})
+
+test('on a phone, a dialog ends above the tab bar too', async ({ page }) => {
+  await page.setViewportSize(PHONE)
+  await registerFreshUser(page, '/people')
+  await page.getByRole('button', { name: 'New person' }).click()
+  const create = page
+    .getByRole('dialog', { name: 'New person' })
+    .getByRole('button', { name: 'Create' })
+  await create.scrollIntoViewIfNeeded()
+  expect(await topmostAt(page, (await create.boundingBox())!)).toContain('Create')
+})
+
+for (const width of [320, 375]) {
+  test(`at ${width}px the header still names the page, clear of Capture`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 700 })
+    await registerFreshUser(page, '/people')
+    const current = page.getByRole('banner').locator('[aria-current="page"]')
+    await expect(current).toHaveText('People')
+    expect(await current.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+    const named = (await current.boundingBox())!
+    const capture = (await page
+      .getByRole('banner')
+      .getByRole('textbox', { name: 'Capture' })
+      .boundingBox())!
+    expect(named.x + named.width).toBeLessThanOrEqual(capture.x)
+  })
+}
+
+test('the rail marks Things while you are on a kind of thing', async ({ page }) => {
+  await registerFreshUser(page, '/people')
+  const rail = page.getByRole('navigation', { name: 'Main navigation' })
+  await expect(rail.getByRole('link', { name: 'Things' })).toHaveAttribute('aria-current', 'page')
+  await page.goto('/meetings')
+  await expect(rail.getByRole('link', { name: 'Things' })).toHaveAttribute('aria-current', 'page')
+  await page.goto('/tasks/today')
+  await expect(rail.getByRole('link', { name: 'Things' })).not.toHaveAttribute(
+    'aria-current',
+    'page',
+  )
+})
