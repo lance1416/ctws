@@ -16,8 +16,7 @@ left in the UI's own source**. Why so
 large, when the chrome vocabulary alone is ~310 characters and 124.5 KiB: CSS font fallback is PER
 GLYPH, and 31% of the han in real task titles falls outside the chrome vocabulary, so a chrome-only
 subset renders a single task title in two faces at two weights, changing as the user types. Either
-the subset covers what a user can type or it should not exist. See
-docs/superpowers/specs/2026-10-06-ctws-workbench.md section 4.
+the subset covers what a user can type or it should not exist.
 
 NOT BIT-REPRODUCIBLE. Re-running this on the same source font and the same charset produces a file
 of a slightly different size each time -- 1,807,648 / 1,807,656 / 1,807,656 / 1,807,916 B measured
