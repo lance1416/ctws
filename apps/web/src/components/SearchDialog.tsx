@@ -325,13 +325,14 @@ function SearchRow({
         aria-selected={selected}
         onClick={onChoose}
         onMouseEnter={onHover}
-        // Same row system as the lists: the module's identity rail at x=0, then the marker
-        // and the title at a fixed x. A result's project is a glance, not a read.
-        className={`relative flex w-full cursor-pointer items-start gap-2 py-2 pr-4 pl-5 text-left ${
+        // Same anatomy as the lists, less the margin: the project's thread, then the marker and
+        // the title at a fixed x. A row with no project keeps the thread's 3px, so every marker
+        // lands at one x.
+        className={`relative flex w-full cursor-pointer items-start gap-2 py-2 pr-4 pl-2 text-left ${
           selected ? 'bg-hover' : ''
         }`}
       >
-        {row.rail}
+        {row.rail ?? <span aria-hidden="true" className="w-[3px] shrink-0" />}
         <span className="flex h-6 w-6 shrink-0 items-center justify-center">{row.mark}</span>
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="truncate text-ink">{row.title}</span>

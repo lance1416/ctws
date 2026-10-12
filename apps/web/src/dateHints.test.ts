@@ -116,49 +116,6 @@ describe('dateHints', () => {
   })
 })
 
-/**
- * `dateMarks` is what a LIST reserves its date columns from, and `dateHints` is what each row then
- * draws into them. If the two could disagree, a column would be reserved and left empty, or a cell
- * would be drawn with no track under it.
- *
- * The clock is the way they would drift, so the agreement is checked at SEVERAL instants on either
- * side of the wordings' boundaries -- a deadline before today, earlier today, later today and in
- * the future -- while `dateMarks` reads no clock at all. Every instant here is a literal, so this
- * test says the same thing at every hour of every day (the repo has had a test that was red for one
- * hour in twenty-four; it expressed "yesterday" as a fixed 25-hour offset).
- */
-describe('dateMarks agrees with dateHints, without reading the clock', () => {
-  const INSTANTS = [
-    new Date(2026, 9, 3, 0, 1), // just after midnight: yesterday's deadline just became overdue
-    new Date(2026, 9, 3, 12, 0),
-    new Date(2026, 9, 3, 23, 59),
-    new Date(2026, 9, 5, 12, 0), // two days on: "Tomorrow" has become "Yesterday"
-  ]
-  const DUES = [
-    null,
-    new Date(2026, 9, 1, 9, 0).toISOString(),
-    new Date(2026, 9, 3, 8, 0).toISOString(),
-    new Date(2026, 9, 8, 9, 0).toISOString(),
-  ]
-  const PLANS = [null, '2026-10-02', '2026-10-03', '2026-10-04']
-
-  it('says a cell exists exactly when dateHints fills it, for every status and every instant', async () => {
-    const { dateMarks, dateHints } = await load()
-    for (const status of ['backlog', 'todo', 'in_progress', 'done', 'cancelled'])
-      for (const dueAt of DUES)
-        for (const scheduledOn of PLANS) {
-          const t = { status, dueAt, scheduledOn }
-          const cells = dateMarks(t)
-          for (const now of INSTANTS) {
-            const hints = dateHints(t, TZ, now)
-            const why = `${status} due=${dueAt} plan=${scheduledOn} at ${now.toISOString()}`
-            expect(cells.due, why).toBe(hints.due !== null)
-            expect(cells.plan, why).toBe(hints.scheduled !== null)
-          }
-        }
-  })
-})
-
 describe('status targets', () => {
   it('finishing and restoring', async () => {
     const { toggleDoneTarget } = await loadActions()
@@ -212,29 +169,6 @@ describe('moveDueToDay', () => {
     const due = new Date(2026, 9, 1, 0, 15).toISOString()
     const moved = new Date(moveDueToDay(due, '2026-10-05', TZ))
     expect([moved.getDate(), moved.getHours(), moved.getMinutes()]).toEqual([5, 0, 15])
-  })
-})
-
-describe('carriedLabel', () => {
-  it('names the planned day and says it was carried, for any day before today', async () => {
-    const { carriedLabel } = await load()
-    expect(carriedLabel('2026-09-28', TZ, NOW())).toBe('Carried over from Sep 28')
-    expect(carriedLabel('2026-10-02', TZ, NOW())).toBe('Carried over from yesterday')
-    expect(carriedLabel('2025-12-31', TZ, NOW())).toBe('Carried over from Dec 31, 2025')
-  })
-
-  it('stays quiet for a plan on today, later, or none', async () => {
-    const { carriedLabel } = await load()
-    expect(carriedLabel('2026-10-03', TZ, NOW())).toBeNull()
-    expect(carriedLabel('2026-10-04', TZ, NOW())).toBeNull()
-    expect(carriedLabel(null, TZ, NOW())).toBeNull()
-  })
-
-  it('judges by the local calendar day, not the instant: 00:05 today is still today', async () => {
-    const { carriedLabel } = await load()
-    const justAfterMidnight = new Date(2026, 9, 3, 0, 5)
-    expect(carriedLabel('2026-10-03', TZ, justAfterMidnight)).toBeNull()
-    expect(carriedLabel('2026-10-02', TZ, justAfterMidnight)).not.toBeNull()
   })
 })
 
@@ -300,13 +234,6 @@ describe('the account timezone decides, even when the browser is in another one'
     expect(hints.due).toEqual({ text: 'Due Oct 1, 23:00', late: '3 days late', overdue: true })
   })
 
-  it('a plan is carried by the account calendar, not the browser one', async () => {
-    const { carriedLabel } = await load()
-    // The 4th is today in New York and yesterday in Kolkata: the plan is not carried.
-    expect(carriedLabel('2026-10-04', ACCOUNT, NOW_CROSS)).toBeNull()
-    expect(carriedLabel('2026-10-03', ACCOUNT, NOW_CROSS)).toBe('Carried over from yesterday')
-  })
-
   it('today, tomorrow and next Monday are the account days', async () => {
     const { todayIn, addDays, nextMonday } = await load()
     expect(todayIn(ACCOUNT, NOW_CROSS)).toBe('2026-10-04')
@@ -342,20 +269,6 @@ describe('the account timezone decides, even when the browser is in another one'
     // 23:59 on the 4th in New York (EDT, -04:00) is 03:59 UTC on the 5th; the browser's zone would
     // have made it 18:29 UTC on the 4th, a different instant and the wrong day there.
     expect(dayEndIso('2026-10-04', ACCOUNT)).toBe('2026-10-05T03:59:00.000Z')
-  })
-
-  it('the datemarks agreement holds in a zone other than the process one', async () => {
-    const { dateMarks, dateHints } = await load()
-    for (const status of ['backlog', 'todo', 'in_progress', 'done', 'cancelled'])
-      for (const dueAt of [null, DUE, '2026-10-02T03:00:00.000Z'])
-        for (const scheduledOn of [null, '2026-10-03', '2026-10-04', '2026-10-05']) {
-          const t = { status, dueAt, scheduledOn }
-          const cells = dateMarks(t)
-          const hints = dateHints(t, ACCOUNT, NOW_CROSS)
-          const why = `${status} due=${dueAt} plan=${scheduledOn}`
-          expect(cells.due, why).toBe(hints.due !== null)
-          expect(cells.plan, why).toBe(hints.scheduled !== null)
-        }
   })
 })
 

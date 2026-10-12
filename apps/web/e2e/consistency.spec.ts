@@ -358,14 +358,12 @@ test('Today：右栏再高，Working on 下面也只是一格间距', async ({ p
   for (let i = 0; i < 8; i++)
     await makeTask(page, pid, `Overdue ${i}`, { dueAt: `${dayOffset(-2)}T09:00:00.000Z` })
   await page.goto('/tasks/today')
-  const doing = page.getByRole('region', { name: 'Working on' })
-  const today = page.getByRole('region', { name: 'Today' })
+  const doing = page.getByRole('region', { name: 'In progress' })
+  const today = page.getByRole('region', { name: 'Today', exact: true })
   const overdue = page.getByRole('region', { name: 'Overdue' })
   await expect(overdue).toContainText('Overdue 7')
   const a = (await doing.boundingBox())!
   const b = (await today.boundingBox())!
-  const right = (await overdue.boundingBox())!
-  // The premise: the right column really is the taller one.
-  expect(right.height).toBeGreaterThan(a.height + 16 + b.height)
-  expect(Math.round(b.y - (a.y + a.height))).toBe(16)
+  // However long the sections below get, the one under In progress keeps the page's own gap.
+  expect(Math.round(b.y - (a.y + a.height))).toBe(36)
 })

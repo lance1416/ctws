@@ -18,12 +18,13 @@ import { Projects } from './routes/Projects'
 import { Things } from './routes/Things'
 import { Workbench } from './routes/Workbench'
 // IBM Plex Sans, self-hosted and LATIN SUBSET ONLY: no Google Fonts link, because this app is
-// private and self-hosted and has no business making a third-party request on every load. TWO
-// weights, ~24 KB of woff2 each, and no more: the type scale has exactly two, 400 and 600, so a
-// third face would be 24 KB for a weight nothing can ask for.
+// private and self-hosted and has no business making a third-party request on every load. THREE
+// weights, ~24 KB of woff2 each: the scale's 400 and 600, and 500 for the one display step (the
+// date at the head of Today) -- without the face a 500 silently renders as 400.
 // Chinese is served by a self-hosted subset of Noto Sans SC, declared as @font-face in styles.css
 // (not imported here, because it needs a `unicode-range` that keeps it off Latin).
 import '@fontsource/ibm-plex-sans/latin-400.css'
+import '@fontsource/ibm-plex-sans/latin-500.css'
 import '@fontsource/ibm-plex-sans/latin-600.css'
 import './styles.css'
 

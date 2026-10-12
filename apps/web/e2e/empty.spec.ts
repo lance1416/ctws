@@ -81,7 +81,7 @@ test('a search with no match says what search covers and clears itself', async (
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '找得到的任务')
   await page.goto('/tasks/today')
-  await page.getByRole('heading', { level: 1, name: 'Today' }).waitFor()
+  await page.locator('#today-heading').waitFor()
 
   await page.keyboard.press('f')
   const box = page.getByRole('combobox', { name: 'Search' })

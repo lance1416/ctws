@@ -191,8 +191,21 @@ export async function pickOne(
   choice: string | RegExp,
 ): Promise<void> {
   const page = 'page' in where ? where.page() : where
-  await where.getByRole('button', { name: new RegExp(`^${label}`) }).click()
+  const trigger = where.getByRole('button', { name: new RegExp(`^${label}`) })
+  await trigger.click()
   await page.getByRole('menuitem', { name: choice }).click()
+  // The menu hands focus back to its trigger a moment after it closes. Under load that lands
+  // after the caller has moved on -- into a field it then types in, so the keystrokes go to the
+  // trigger and the field is left empty, which a field that speaks up when it is left reads as
+  // the person leaving it. Return only once the hand-back has happened -- or once there is no
+  // trigger to hand it back to, for a pick that takes its own control away.
+  await expect
+    .poll(
+      async () =>
+        (await trigger.count()) === 0 ||
+        (await trigger.evaluate((el) => el === document.activeElement)),
+    )
+    .toBe(true)
 }
 
 /**

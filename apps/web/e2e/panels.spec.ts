@@ -38,7 +38,7 @@ const patched = (page: Page) =>
   page.waitForResponse(
     (r) => /\/tasks\/[^/]+$/.test(r.url()) && r.request().method() === 'PATCH' && r.ok(),
   )
-const panel = (page: Page, name: string) => page.getByRole('region', { name, exact: true })
+const panel = (page: Page, name: string) => page.locator(`[data-panel="${name}"]`)
 
 // ---------------------------------------------------------------------- Movement: counts, not a ratio
 
@@ -59,7 +59,7 @@ test('Movement shows the counts the server reports, for every project that has a
   expect(quiet).toBeTruthy()
 
   await page.goto('/tasks/today')
-  const where = panel(page, 'Movement')
+  const where = panel(page, 'This week')
   await expect(where).toBeVisible()
 
   // The numbers on screen are the SERVER's, not a second count made here.
@@ -74,8 +74,8 @@ test('Movement shows the counts the server reports, for every project that has a
   for (const r of withSomething) {
     const line = where.getByRole('link', { name: new RegExp(`^${r.projectName}`) })
     await expect(line).toHaveCount(1)
-    await expect(line).toContainText(`+${r.doneThisWeek} this week`)
-    await expect(line).toContainText(`${r.remaining} left`)
+    if (r.doneThisWeek > 0) await expect(line).toContainText(`${r.doneThisWeek} done`)
+    await expect(line).toContainText(`${r.remaining} open`)
   }
   // A project with no work at all gets no line.
   await expect(where.getByText('丙线')).toHaveCount(0)
@@ -104,8 +104,8 @@ test('Movement draws no percentage and no progress bar', async ({ page }) => {
   await makeTask(page, pid, '写了进度的', { manualProgress: 0.5 })
 
   await page.goto('/tasks/today')
-  const where = panel(page, 'Movement')
-  await expect(where.getByText('+2 this week')).toBeVisible()
+  const where = panel(page, 'This week')
+  await expect(where.getByText(/^2 done/)).toBeVisible()
 
   await expect(where.getByRole('progressbar')).toHaveCount(0)
   await expect(where.locator('progress, meter')).toHaveCount(0)
@@ -144,7 +144,7 @@ test('the stagnation line names a project only while that project is really quie
   backdateProjectActivity(finished, '9 days')
 
   await page.goto('/tasks/today')
-  const where = panel(page, 'Movement')
+  const where = panel(page, 'This week')
   const server = await movementOf(page)
   const quiet = server.find((r) => r.projectId === stale)!
   expect(quiet.quietDays).toBe(9)
@@ -154,8 +154,7 @@ test('the stagnation line names a project only while that project is really quie
   await expect(line).toHaveAttribute('data-stagnant', stale)
   // The sentence names the project, the day of the last change and how long it has been.
   await expect(line).toContainText('没人管的')
-  await expect(line).toContainText('last moved')
-  await expect(line).toContainText(String(quiet.quietDays))
+  await expect(line).toContainText(`Quiet for ${quiet.quietDays} days`)
   // A project with nothing left to do is not "stagnant", it is finished; it is never named.
   await expect(line).not.toContainText('已经做完的')
   await expect(line).not.toContainText('天天动的')
@@ -177,7 +176,7 @@ test('a workspace where nothing has gone quiet shows no stagnation line at all',
   await makeTask(page, pid, '刚写的')
 
   await page.goto('/tasks/today')
-  await expect(panel(page, 'Movement').getByText('刚开的')).toBeVisible()
+  await expect(panel(page, 'This week').getByText('刚开的')).toBeVisible()
   await expect(page.locator('[data-stagnant]')).toHaveCount(0)
 })
 
@@ -206,7 +205,7 @@ test('the workbench is a panel grid at 1440 and one column at 375', async ({ pag
 
   const boxes = async () => {
     const out: Record<string, { x: number; y: number; w: number }> = {}
-    for (const name of ['Working on', 'Today', 'Overdue', 'Movement', 'Done today']) {
+    for (const name of ['In progress', 'Today', 'Overdue', 'Done today', 'This week']) {
       const b = (await panel(page, name).boundingBox())!
       expect(b, name).toBeTruthy()
       out[name] = { x: Math.round(b.x), y: Math.round(b.y), w: Math.round(b.width) }
@@ -215,40 +214,31 @@ test('the workbench is a panel grid at 1440 and one column at 375', async ({ pag
   }
   const overflow = () => sidewaysScroll(page)
 
-  // --- 1440: two columns of panels, the banner across the top ---
+  // --- 1440: one column of sections, This week beside them ---
   await page.setViewportSize(WIDE)
   await page.goto('/tasks/today')
   await expect(panel(page, 'Done today')).toBeVisible()
   let b = await boxes()
-  // The queue is beside the right-hand panels, not above them.
-  expect(b['Today']!.x + b['Today']!.w).toBeLessThanOrEqual(b['Overdue']!.x + 1)
-  expect(b['Overdue']!.y).toBeLessThan(b['Today']!.y + b['Today']!.w)
-  // The queue really does take two thirds of the grid: it is wider than the right column, and not
-  // merely non-zero. (A 1fr/1fr grid would pass a bare "it is to the left of" assertion.)
-  expect(b['Today']!.w).toBeGreaterThan(b['Overdue']!.w * 1.6)
-  // The three right-hand panels share one column and stack in the designed order.
-  expect(b['Movement']!.x).toBe(b['Overdue']!.x)
-  expect(b['Done today']!.x).toBe(b['Overdue']!.x)
-  expect(b['Overdue']!.y).toBeLessThan(b['Movement']!.y)
-  expect(b['Movement']!.y).toBeLessThan(b['Done today']!.y)
-  // Working on sits above the queue and IN THE SAME COLUMN as it, not across the whole window:
-  // full width put Done and Pause a thousand pixels right of the row they act on.
-  expect(b['Working on']!.y).toBeLessThan(b['Today']!.y)
-  expect(b['Working on']!.x).toBe(b['Today']!.x)
-  expect(Math.round(b['Working on']!.w)).toBe(Math.round(b['Today']!.w))
+  const sections = ['In progress', 'Today', 'Overdue', 'Done today'] as const
+  // The sections share one edge and read top to bottom in the designed order.
+  expect(new Set(sections.map((n) => b[n]!.x)).size).toBe(1)
+  for (let i = 1; i < sections.length; i++)
+    expect(b[sections[i]!]!.y).toBeGreaterThan(b[sections[i - 1]!]!.y)
+  // This week is beside them, not under them, and narrower.
+  expect(b['This week']!.x).toBeGreaterThanOrEqual(b['Today']!.x + b['Today']!.w)
+  expect(b['This week']!.y).toBeLessThan(b['Today']!.y)
+  expect(b['This week']!.w).toBeLessThan(b['Today']!.w)
   expect(await overflow()).toEqual({ doc: 0, body: 0 })
 
-  // --- 375: one column, same order, and no sideways scroll ---
+  // --- 375: one column, This week last, and no sideways scroll ---
   await page.setViewportSize(PHONE)
   await page.goto('/tasks/today')
   await expect(panel(page, 'Done today')).toBeVisible()
   b = await boxes()
-  const xs = new Set(Object.values(b).map((v) => v.x))
-  expect(xs.size, `panel x values at 375: ${[...xs].join(',')}`).toBe(1)
   const order = Object.entries(b)
     .sort((a, c) => a[1].y - c[1].y)
     .map(([name]) => name)
-  expect(order).toEqual(['Working on', 'Today', 'Overdue', 'Movement', 'Done today'])
+  expect(order).toEqual(['In progress', 'Today', 'Overdue', 'Done today', 'This week'])
   expect(await overflow()).toEqual({ doc: 0, body: 0 })
 })
 
@@ -264,7 +254,7 @@ test('the banner carries the running task, and says so plainly when nothing is r
   await makeTask(page, pid, '没有日期的')
 
   await page.goto('/tasks/today')
-  const banner = panel(page, 'Working on')
+  const banner = panel(page, 'In progress')
   // Nothing running: the banner is still there, says what would fill it, and holds no row.
   await expect(banner).toBeVisible()
   await expect(banner.getByText('Nothing in progress')).toBeVisible()

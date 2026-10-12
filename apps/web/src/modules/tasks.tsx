@@ -210,7 +210,7 @@ function useTaskHits(query: string) {
       </>
     ),
     mark: <StatusMark status={t.status} />,
-    rail: <ProjectRail projectId={t.projectId} at="left-2" />,
+    rail: <ProjectRail projectId={t.projectId} />,
   }))
   return { hits, isError: results.isError, isSuccess: results.isSuccess }
 }

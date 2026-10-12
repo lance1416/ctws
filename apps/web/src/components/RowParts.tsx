@@ -1,24 +1,20 @@
 import { Fragment, type ReactNode } from 'react'
 import { useProjectRail } from '../projectColor'
-import type { DateHints } from '../dueAt'
-import type { LeadIcon } from '../rowLead'
 
 /**
- * The row system. Every list in the app -- Today, the project tree, Done and the search results --
- * lays a row out with the SAME parts at the SAME x:
+ * THE ROW ANATOMY. Every list in the app -- Today, the project tree, Done -- lays a row out with
+ * the SAME parts at the SAME x:
  *
- *   [project rail][status marker 1.75rem][icon slot 1.5rem][title -- the whole line]
- *                                                          [second line: breadcrumb · the dates]
+ *   [margin][thread][marker][title ................................][note]
+ *                           [where it came from]
  *
- * WHY AN ICON AND A SECOND LINE, and not two date columns. Columns scan well and cost 19rem of
- * every row: inside a 734px panel that leaves no width for a title, so the dates drop to a second
- * line below a threshold anyway -- two layouts, one cramped and one wide. An icon at the row start
- * plus the full wording underneath is ONE layout at every width, and the wording is never
- * compressed into a cell.
- *
- * The icons are the column now: a fixed slot at a fixed x on every row of a list, reserved for the
- * whole list or not at all (`../rowLead`). The second line is deliberately NOT a column -- it is
- * read, not scanned, so nothing is aligned there and nothing is truncated to make it line up.
+ * - The MARGIN (`RowLead`) says when, in one short word, right-aligned, so a list's dates end at
+ *   one x and read down like a diary's left margin.
+ * - The THREAD (`ProjectRail`) is the project's colour, a 3px strand at one x.
+ * - The BODY carries everything else, and only the body is indented, hovered and selected: the
+ *   margin and the thread stay put, so a deep tree's dates still read as one column.
+ * - The second line says where a row came from -- the breadcrumb, what it waits on, how far along
+ *   its children are -- and nothing about when; the note on the right says how late.
  */
 
 /** Tree geometry, shared by the tree row and the inline new-task input so they stay aligned. */
@@ -26,58 +22,46 @@ export const INDENT_PX = 20
 export const HANDLE_PX = 16
 export const CHEVRON_PX = 20
 /**
- * The project rail's gutter. The rail is at x=0 on EVERY row, BEFORE any depth indentation:
- * it carries project identity only, and depth is carried by the hairline guides (plan section 6,
- * "take off one accessory").
+ * The body's own gutter after the thread: 8px on a phone, where a deep row's title needs every
+ * pixel, and 14px from 640 up. Depth is added to this and to nothing before it: the thread carries
+ * project identity only, and depth is carried by the hairline guides.
+ *
+ * A CSS VARIABLE set on the body, so the row, its guides and the new-task input all offset from
+ * the one value at either width (`gutterPlus`).
  */
-export const RAIL_GUTTER_PX = 12
+export const BODY_GUTTER = '[--gutter:8px] sm:[--gutter:14px]'
+export const gutterPlus = (px: number) => `calc(var(--gutter) + ${px}px)`
 
 /** Every row list is a column of rows. No `@container`: nothing asks a list for its width. */
 export const ROW_LIST = 'flex flex-col'
-/** Done has one right-hand column (the clock), so it keeps its own, shorter template. */
-export const DONE_ROW_GRID = 'grid-cols-[1.75rem_minmax(0,1fr)_4.5rem]'
 /**
- * How wide a LIST is, which is not how wide the panel is. At 1440 an unbounded list puts Done's
- * clock 570px from the task it times, and a right-hand column that far from its row is not using
- * the width, it is spending it. The task lists' own measure is a single value in `../rowLead`;
- * Done carries one short column (a clock), so its list is narrower still.
+ * How wide Done's list is. Its rows carry nothing on the right, so at 1440 an unbounded one puts
+ * the end of a short title a long way from the margin it hangs on.
  */
 export const DONE_LIST_MEASURE = 'max-w-[36rem]'
 
 /**
- * The 3px bar at x=0. It means ONE thing -- which project this task belongs to -- in every view.
- * On a cross-project list (Today, Done, search) that makes "which project is this" pre-attentive;
- * in a project tree it is one continuous spine.
+ * THE THREAD: the 3px strand after the margin. It means ONE thing -- which project this belongs
+ * to -- in every view: on a cross-project list that makes "which project is this" pre-attentive,
+ * and down a run of one project's rows it is ONE strand -- the full height of every row and square,
+ * so rows meet with no gap and no lozenge ends. (A segmented rail was logged as a defect once and
+ * fixed; `project.spec` guards it.)
  *
  * `aria-hidden`, and never the only carrier: there are six hues and more projects than that, so
- * two projects can share one. The project's NAME is always on the row as well (WCAG 1.4.1). The
- * rail is a hint for the eye, not an identifier.
+ * two projects can share one. The project's NAME is always on the row or the page as well
+ * (WCAG 1.4.1).
  */
-export function ProjectRail({
-  projectId,
-  continuous = false,
-  at = 'left-0',
-}: {
-  projectId: string
-  /**
-   * True inside a project tree, where every row is the same project: the rail runs the full
-   * height of each row and square, so the rows join into ONE spine rather than a column of
-   * dashes. On a cross-project list each row is a separate project, so each rail is its own
-   * rounded segment.
-   */
-  continuous?: boolean
-  /** Where x=0 is for this list. The search overlay insets it, so the rail is not mistaken for
-   *  a piece of the dialog's own rounded edge. */
-  at?: string
-}) {
+export function ProjectRail({ projectId }: { projectId: string | null }) {
   const rail = useProjectRail()
   return (
     <span
       aria-hidden="true"
-      data-project-rail={projectId}
-      className={`pointer-events-none absolute w-[3px] ${at} ${
-        continuous ? 'inset-y-0' : 'top-1 bottom-1 rounded-full'
-      } ${rail(projectId)}`}
+      data-project-rail={projectId ?? undefined}
+      // A thing in no project still has its strand, in the hairline's colour, so every row of a
+      // list has the same parts at the same x.
+      className={`pointer-events-none w-[3px] shrink-0 self-stretch ${
+        projectId ? rail(projectId) : 'bg-rule'
+      }`}
     />
   )
 }
@@ -161,83 +145,16 @@ export function NotesMark() {
 }
 
 /**
- * The names the leading icons answer to. Every icon has one: an icon with no name is a WCAG 1.1.1
- * failure, and here it would also leave a reader who cannot see the colour without the one thing
- * the glyph is for.
+ * THE SECOND LINE: where a row came from, in words -- never when; that is the margin's.
  *
- * “Has notes” and not “Notes”, on purpose: accessible names share ONE FLAT NAMESPACE and are
- * matched by substring, so a bare “Notes” would collide with the detail pane's own Notes field on
- * the very page both appear on. For the same reason the missed deadline is “Overdue” and not “Has a
- * deadline, overdue”: a name CONTAINING “Has a deadline” makes every by-name query for the
- * un-missed flag match the missed one too. The plan's name is the row's own word, “Has a plan”,
- * which is also the one that does NOT contain the pane's Plan field.
+ * It renders NOTHING when there is nothing to say, so a row with no breadcrumb stays one line
+ * (44px) and only the rows that carry information pay for the second one (66px).
  *
- * “Has a deadline” does contain the pane's Due field, and no word for a deadline in this app's
- * vocabulary avoids it; the queries that mean that FIELD say `{ exact: true }`.
- */
-const LEAD_LABEL: Record<LeadIcon, string> = {
-  missed: 'Overdue',
-  deadline: 'Has a deadline',
-  plan: 'Has a plan',
-  notes: 'Has notes',
-}
-
-/** The tone each icon is drawn in. Never the only carrier: the second line says it in words. */
-const LEAD_TONE: Record<LeadIcon, string> = {
-  missed: 'text-missed',
-  deadline: 'text-deadline',
-  plan: 'text-plan',
-  notes: 'text-ink-subtle',
-}
-
-/**
- * THE ROW'S LEADING ICON. One glyph, no text: it answers only whether there is a date and whether
- * it is urgent, and the second line under the title carries the information itself.
- *
- * `role="img"` with a name of its own rather than `aria-hidden`: it accelerates the reading for an
- * eye, so it must not be the one thing a screen reader is missing.
- */
-export function LeadMark({ icon }: { icon: LeadIcon }) {
-  return (
-    <span
-      role="img"
-      aria-label={LEAD_LABEL[icon]}
-      data-lead-icon={icon}
-      className={`flex items-center justify-center ${LEAD_TONE[icon]}`}
-    >
-      {icon === 'notes' ? (
-        <NotesMark />
-      ) : icon === 'plan' ? (
-        <PlanMark />
-      ) : (
-        <DeadlineMark filled={icon === 'missed'} />
-      )}
-    </span>
-  )
-}
-
-/**
- * THE SECOND LINE: the breadcrumb and the dates, in full words.
- *
- * This is where the information actually lives. The icon at the row start says there IS a deadline
- * and whether it has been missed; this says which one and when, to the minute, and it says it in
- * TEXT -- so colour is never the only carrier (WCAG 1.4.1) and a screen reader reaching the row
- * gets the date from the words rather than from a hue.
- *
- * It renders NOTHING when there is nothing to say, so a row with no date, no plan and no breadcrumb
- * stays one line (44px) and only the rows that carry information pay for the second one (58px).
- *
- * No alignment, no truncated dates: this line is read, not scanned. Each phrase is kept whole
- * (`whitespace-nowrap` per part) so a narrow panel breaks the line BETWEEN phrases rather than
- * inside a phrase like "2 days late".
+ * No alignment, no truncated phrases: this line is read, not scanned. Each phrase is kept whole
+ * (`whitespace-nowrap` per part) so a narrow panel breaks the line BETWEEN phrases.
  */
 export function RowMeta({
   breadcrumb = null,
-  due = null,
-  plan = null,
-  carried = false,
-  exact,
-  summary = false,
   age = null,
   rollup = null,
   blocked = null,
@@ -245,165 +162,56 @@ export function RowMeta({
   /** The project (and parent) a cross-project list shows. The tree passes none: the project is
    *  known there and the hierarchy is visible from the indentation. */
   breadcrumb?: string | null
-  due?: DateHints['due']
-  /** The plan, worded: "Planned for tomorrow", or "Was Sep 28, carried" once carried. */
-  plan?: string | null
-  carried?: boolean
   /**
-   * HOW LONG THIS HAS BEEN SITTING HERE, worded: "Captured 3 days ago".
-   *
-   * The inbox is the only list that passes one. It is also the only part that is dropped when the
-   * line has anything else to say: a date or a plan is a decision someone made about this task,
-   * and an age is the absence of one, so the age never costs a row that already earns its second
-   * line any width.
+   * HOW LONG THIS HAS BEEN SITTING HERE, worded: "Captured 3 days ago". The inbox is the only list
+   * that passes one, and it is dropped when the line has anything else to say.
    */
   age?: string | null
-  /**
-   * "60% · 2 in progress · 1 overdue" for a row that HAS CHILDREN.
-   *
-   * Only for a parent. A leaf's "progress" is just its own status, already drawn as the marker
-   * at the head of the row, and saying it again in words is noise.
-   */
+  /** "60% · 2 in progress · 1 overdue" for a row that HAS CHILDREN. */
   rollup?: string | null
   /**
-   * "Waiting on <task>" -- what this row is waiting for, named.
-   *
-   * FIRST ON THE LINE, and never dropped. Everything else here says when something is due; this
-   * says whether it can be done at all, and a row that cannot be worked on is not a row whose
-   * deadline is the interesting part.
+   * "Waiting on <task>" -- what this row is waiting for, named. FIRST ON THE LINE, and never
+   * dropped: it says whether the row can be worked on at all.
    */
   blocked?: string | null
-  /** The exact local deadline, for the tooltip: "2026-10-01 09:00". */
-  exact?: string | undefined
-  /**
-   * A SUMMARY SURFACE's line: the project and how late, nothing else.
-   *
-   * This is a per-surface editorial choice, not a compression of the row's vocabulary (wherever the
-   * full line is shown it is whole, to the minute). The Overdue panel is a one-third-width summary
-   * of "what is late, and how late"; with the absolute deadline and the plan added, every row wraps
-   * to three lines and the titles truncate anyway. The absolute deadline is NOT lost: it is on the
-   * same task's row in the main Today queue, in the detail pane, and in this line's tooltip
-   * (`exact`). A deadline not yet past a whole day has no "late" phrase to show, so it falls back
-   * to the full wording rather than to nothing.
-   */
-  summary?: boolean
 }) {
-  type Part = { node: ReactNode; cap?: boolean }
-  const parts: Part[] = (
-    [
-      blocked
-        ? {
-            node: (
-              <span key="blocked" data-row-blocked className="whitespace-nowrap text-ink-subtle">
-                {blocked}
-              </span>
-            ),
-          }
-        : null,
-      breadcrumb
-        ? {
-            // Half the line at most (`cap`). A project-and-parent breadcrumb can be longer than the whole
-            // second line, and as a flex item that long it takes the line to itself and pushes the date
-            // onto a third one -- which spends a row's height on the part that matters least. Capped, it
-            // truncates and the date keeps its place beside it.
-            cap: true,
-            node: (
-              <span key="crumb" data-row-crumb className="min-w-0 truncate">
-                {breadcrumb}
-              </span>
-            ),
-          }
-        : null,
-      due && !(summary && due.late)
-        ? {
-            node: (
-              <span
-                key="due"
-                data-due-text
-                data-date-hint={due.overdue ? 'overdue' : 'due'}
-                title={exact}
-                className={`whitespace-nowrap tabular-nums ${
-                  due.overdue ? 'text-missed' : 'text-deadline'
-                }`}
-              >
-                {due.text}
-              </span>
-            ),
-          }
-        : null,
-      due?.late
-        ? {
-            node: (
-              // How late, as a phrase of its own: the separator between it and the deadline is the line's
-              // own ·, so a narrow row breaks between the two instead of overflowing with one 230px word.
-              <span
-                key="late"
-                data-late-text
-                title={summary ? exact : undefined}
-                className="whitespace-nowrap text-missed"
-              >
-                {due.late}
-              </span>
-            ),
-          }
-        : null,
-      plan && !summary
-        ? {
-            node: (
-              <span
-                key="plan"
-                data-plan-text
-                data-date-hint={carried ? 'carried' : 'scheduled'}
-                className="whitespace-nowrap text-plan"
-              >
-                {plan}
-              </span>
-            ),
-          }
-        : null,
-      rollup
-        ? {
-            node: (
-              <span key="rollup" data-row-rollup className="whitespace-nowrap tabular-nums">
-                {rollup}
-              </span>
-            ),
-          }
-        : null,
-      // LAST, and only on a line that would otherwise be empty -- see the prop's note. `fg-subtle`
-      // and not `fg-muted`: an age is the one phrase here that nobody chose, so it sits a step
-      // quieter than a date somebody set.
-      age && !breadcrumb && !due && !plan && !rollup && !blocked
-        ? {
-            node: (
-              <span key="age" data-row-age className="whitespace-nowrap text-ink-subtle">
-                {age}
-              </span>
-            ),
-          }
-        : null,
-    ] as (Part | null)[]
-  ).filter((part): part is Part => part !== null)
+  const parts = [
+    blocked ? (
+      <span key="blocked" data-row-blocked className="whitespace-nowrap text-ink-subtle">
+        {blocked}
+      </span>
+    ) : null,
+    breadcrumb ? (
+      <span key="crumb" data-row-crumb className="min-w-0 truncate">
+        {breadcrumb}
+      </span>
+    ) : null,
+    rollup ? (
+      <span key="rollup" data-row-rollup className="whitespace-nowrap tabular-nums">
+        {rollup}
+      </span>
+    ) : null,
+    // Only on a line that would otherwise be empty, a step quieter: an age is the one phrase here
+    // that nobody chose.
+    age && !breadcrumb && !rollup && !blocked ? (
+      <span key="age" data-row-age className="whitespace-nowrap text-ink-subtle">
+        {age}
+      </span>
+    ) : null,
+  ].filter((part) => part !== null)
   if (parts.length === 0) return null
   return (
-    // META: 14/22, weight 400, from the type scale -- 400 for EVERY phrase on this line, the
-    // overdue date and the lateness phrase included. The scale publishes no 600 step at 14/22, and
-    // 500 is a no-op on the Microsoft YaHei fallback path, so weight carries nothing here: the
-    // deadline is told apart by `missed` against `deadline`, by the row's leading glyph, and by the
-    // words themselves (WCAG 1.4.1).
+    // META: 14/22, weight 400, from the type scale.
     <span
       data-row-meta
       className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 text-sm text-ink-muted"
     >
       {parts.map((part, i) => (
         // The separator travels WITH the phrase it follows, inside one flex item: loose, it can be
-        // pushed onto the next line and start it with a stray ·. And it is hidden from assistive
-        // technology -- read aloud, a · between two nodes that are already separate is noise.
+        // pushed onto the next line and start it with a stray ·. Hidden from assistive technology.
         <Fragment key={i}>
-          <span
-            className={`flex min-w-0 items-baseline gap-x-1.5 ${part.cap ? 'max-w-[50%]' : ''}`}
-          >
-            {part.node}
+          <span className="flex min-w-0 items-baseline gap-x-1.5">
+            {part}
             {i < parts.length - 1 && (
               <span aria-hidden="true" className="text-ink-subtle">
                 ·
@@ -412,6 +220,28 @@ export function RowMeta({
           </span>
         </Fragment>
       ))}
+    </span>
+  )
+}
+
+/**
+ * THE NOTE ON THE RIGHT: one short phrase at the end of the title's line -- how late, how far
+ * along, where a meeting is in its own zone. Never wraps; never more than one.
+ */
+export function RowNote({
+  children,
+  tone = 'text-ink-subtle',
+}: {
+  children: ReactNode
+  tone?: string
+}) {
+  return (
+    <span
+      data-row-note
+      // Not on a phone: there the margin's word and its colour say it, and the title needs the room.
+      className={`shrink-0 pt-2.5 pl-3 text-sm leading-6 whitespace-nowrap tabular-nums max-sm:hidden ${tone}`}
+    >
+      {children}
     </span>
   )
 }

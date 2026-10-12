@@ -13,7 +13,7 @@ test('the module pages answer under the module namespace', async ({ page }) => {
 
   await page.goto('/tasks/today')
   await expect(page).toHaveURL(/\/tasks\/today$/)
-  await expect(page.getByRole('heading', { level: 1, name: 'Today' })).toBeVisible()
+  await expect(page.locator('#today-heading')).toBeVisible()
 
   await page.goto('/tasks/completed')
   await expect(page).toHaveURL(/\/tasks\/completed$/)

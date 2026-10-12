@@ -1,12 +1,20 @@
 import { expect, test, type Page } from '@playwright/test'
+import { TZDate } from '@date-fns/tz'
+import { format } from 'date-fns'
 import {
   apiPost,
   editDetail,
+  makeProject,
+  makeTask,
   openProject,
   registerFreshUser,
   setDetailStatus,
   submitCreate,
+  WEB,
 } from './helpers'
+
+/** Today, in `timeZone`. */
+const dayInZone = (timeZone: string) => new Date().toLocaleDateString('en-CA', { timeZone })
 
 async function captureAndOpen(page: Page, title: string) {
   await submitCreate(page, 'Capture…', title)
@@ -24,7 +32,7 @@ test('a freshly registered user sees an empty today page, not an error', async (
   await registerFreshUser(page)
   // `level: 1` because "Done today" is a heading on this page too, and getByRole matches names by
   // substring: without it this would be ambiguous the moment anything is finished today.
-  await expect(page.getByRole('heading', { level: 1, name: 'Today' })).toBeVisible()
+  await expect(page.locator('#today-heading')).toBeVisible()
   await expect(page.getByText('Nothing for today')).toBeVisible()
 })
 
@@ -54,7 +62,7 @@ test('an in-progress task appears in the banner', async ({ page }) => {
   await page.getByRole('button', { name: 'Save' }).click()
 
   await page.getByRole('link', { name: 'Today' }).click()
-  await expect(page.getByRole('region', { name: 'Working on' }).getByText('写 M2b')).toBeVisible()
+  await expect(page.getByRole('region', { name: 'In progress' }).getByText('写 M2b')).toBeVisible()
 })
 
 // The segments are decided by the server precisely so this cannot happen (Review Focus 2); this
@@ -123,15 +131,15 @@ test('each segment goes to its own panel, in the workbench order, and to only on
   await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
 
   await page.getByRole('link', { name: 'Today' }).click()
-  await expect(page.getByRole('heading', { level: 1, name: 'Today' })).toBeVisible()
-  // Movement is in this list too: the set is the PAGE's panels, not the segment list. "Done
-  // today" is absent because nothing was finished -- a panel with nothing to say is not drawn.
+  await expect(page.locator('#today-heading')).toBeVisible()
+  // This week is in this list too: the set is the PAGE's sections, not the segment list. "Done
+  // today" is absent because nothing was finished -- a section with nothing to say is not drawn.
   expect(
     await page.locator('[data-panel]').evaluateAll((els) => els.map((el) => el.dataset.panel)),
-  ).toEqual(['Working on', 'Today', 'Overdue', 'Movement'])
+  ).toEqual(['In progress', 'Today', 'Overdue', 'This week'])
 
   for (const [title, panel] of [
-    ['甲在做', 'Working on'],
+    ['甲在做', 'In progress'],
     ['乙今天', 'Today'],
     ['丙逾期', 'Overdue'],
   ] as const) {
@@ -150,7 +158,7 @@ test('an edit made from the today page is reflected without a reload', async ({ 
   await page.getByRole('button', { name: 'Save' }).click()
 
   await page.getByRole('link', { name: 'Today' }).click()
-  await page.getByRole('region', { name: 'Working on' }).getByText('先在做').click()
+  await page.getByRole('region', { name: 'In progress' }).getByText('先在做').click()
   await editDetail(page)
   await setDetailStatus(page, 'Done')
   await page.getByRole('button', { name: 'Save' }).click()
@@ -159,7 +167,7 @@ test('an edit made from the today page is reflected without a reload', async ({ 
   // the same claim now that the workbench has a panel for finished work. (A bare "the text is
   // gone from the page" would now be false, and would have been hiding this.)
   await expect(
-    page.getByRole('region', { name: 'Working on', exact: true }).getByText('先在做'),
+    page.getByRole('region', { name: 'In progress', exact: true }).getByText('先在做'),
   ).toHaveCount(0)
   await expect(
     page.getByRole('region', { name: 'Done today', exact: true }).getByText('先在做'),
@@ -193,7 +201,7 @@ test('a nested task shows both its project and its parent in the breadcrumb', as
   await page.getByRole('button', { name: 'Save' }).click()
 
   await page.getByRole('link', { name: 'Today' }).click()
-  const section = page.getByRole('region', { name: 'Working on' })
+  const section = page.getByRole('region', { name: 'In progress' })
   await expect(section.getByText('子任务')).toBeVisible()
   await expect(section.getByText('Inbox › 父任务')).toBeVisible()
 })
@@ -219,14 +227,13 @@ test('an overdue task shows a relative label, not the datetime-local format', as
 
   await page.getByRole('link', { name: 'Today' }).click()
   const section = page.getByRole('region', { name: 'Overdue' })
-  // Overdue is a summary surface: the project and how late. The deadline's own day and time are not
-  // on this line (the main queue and the detail pane carry them, and the lateness phrase keeps
-  // them as its tooltip, below).
-  await expect(section.locator('[data-row-meta]')).toHaveText(/^.+·\d+ days? late$/)
-  const label = section.locator('[data-late-text]')
-  await expect(label).toBeVisible()
-  await expect(label).toHaveText(/^\d+ days? late$/)
-  await expect(label).toHaveAttribute('title', '2020-01-01 09:00')
+  // The day it was due is the margin, flagged; the exact moment is the margin's title; how late is
+  // the note on the right; the line under the title says where.
+  const row = section.locator('li').filter({ hasText: '交报告' })
+  await expect(row.locator('[data-row-lead-text]')).toHaveText('Jan 1')
+  await expect(row.locator('[data-row-lead]')).toHaveAttribute('title', 'Due Jan 1, 2020, 09:00')
+  await expect(row.locator('[data-row-note]')).toHaveText(/^\d+ days? late$/)
+  await expect(row.locator('[data-row-meta]')).toHaveText('Inbox')
   await expect(section).not.toContainText(/\d{4}-\d{2}-\d{2}T/)
   await expect(section).not.toContainText('T09:00')
 })
@@ -239,7 +246,7 @@ test('the status dot has a text alternative', async ({ page }) => {
 
   await page.getByRole('link', { name: 'Today' }).click()
   await expect(
-    page.getByRole('region', { name: 'Working on' }).getByRole('img', { name: 'In progress' }),
+    page.getByRole('region', { name: 'In progress' }).getByRole('img', { name: 'In progress' }),
   ).toBeVisible()
 })
 
@@ -275,7 +282,7 @@ test('正在做的只有一条时是焦点，多条时是清单', async ({ page 
 
   // 和 Today 那一栏同宽：按钮就在内容旁边，不在窗口边上。
   const [doing, today] = await Promise.all([
-    page.getByRole('region', { name: 'Working on' }).boundingBox(),
+    page.getByRole('region', { name: 'In progress' }).boundingBox(),
     page.getByRole('region', { name: 'Today' }).boundingBox(),
   ])
   expect(Math.round(doing!.x + doing!.width)).toBe(Math.round(today!.x + today!.width))
@@ -300,4 +307,105 @@ test('做一件事时 Done 是那一下，做五件时它只是一行上的按�
   await page.reload()
   await expect(page.getByRole('button', { name: /^Complete/ })).toHaveCount(3)
   expect(await fill(), '三条时不再是填实的那一个').not.toBe(alone)
+})
+
+// ------------------------------------------------------------------------------- the day's line
+
+/** The account's zone, as the server holds it. */
+async function accountZone(page: Page): Promise<string> {
+  const me = await page.request.get('/api/v1/auth/me', { headers: WEB })
+  return ((await me.json()) as { timezone: string }).timezone
+}
+
+/** A meeting at `hh:mm` today on the ACCOUNT's clock, agreed in `zone`. */
+async function meetingToday(page: Page, title: string, hhmm: string, zone: string) {
+  const account = await accountZone(page)
+  const [y, m, d] = new Date()
+    .toLocaleDateString('en-CA', { timeZone: account })
+    .split('-')
+    .map(Number) as [number, number, number]
+  const [hh, mm] = hhmm.split(':').map(Number) as [number, number]
+  const instant = new TZDate(y, m - 1, d, hh, mm, 0, 0, account)
+  const startsLocal = format(new TZDate(instant.getTime(), zone), "yyyy-MM-dd'T'HH:mm")
+  const res = await page.request.post('/api/v1/meetings', {
+    headers: WEB,
+    data: { title, startsLocal, timeZone: zone, durationMinutes: 30 },
+  })
+  expect(res.ok(), await res.text()).toBe(true)
+}
+
+test('a meeting sits on the day at your own time, and says the zone it was agreed in', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const account = await accountZone(page)
+  // Any zone that is not the account's, with no clock change near today's date, so the label is
+  // the same whatever day this runs.
+  const zone = account === 'Asia/Tokyo' ? 'Asia/Kolkata' : 'Asia/Tokyo'
+  await meetingToday(page, 'Northwind intro call', '12:00', zone)
+  const entries = await page.request.get(
+    `/api/v1/meetings/calendar?from=${dayInZone(account)}&to=${dayInZone(account)}`,
+    { headers: WEB },
+  )
+  const [entry] = ((await entries.json()) as { entries: { zone: string | null }[] }).entries
+  expect(entry?.zone, 'the server names the zone').toBeTruthy()
+
+  await page.goto('/tasks/today')
+  const row = page
+    .getByRole('region', { name: 'Today', exact: true })
+    .locator('[data-day-entry]')
+    .filter({ hasText: 'Northwind intro call' })
+  await expect(row.locator('[data-row-lead-text]')).toHaveText('12:00')
+  await expect(row.locator('[data-entry-zone]')).toHaveText(entry!.zone!)
+})
+
+test('a meeting already over is drawn a step quieter, above the now line', async ({ page }) => {
+  await registerFreshUser(page)
+  const account = await accountZone(page)
+  // Midnight is past at every hour of the day, so this does not depend on when it runs.
+  await meetingToday(page, 'Early call', '00:00', account)
+  await page.goto('/tasks/today')
+  const row = page.locator('[data-day-entry]').filter({ hasText: 'Early call' })
+  const subtle = await page.evaluate(() => {
+    const probe = document.createElement('span')
+    probe.style.color = 'var(--color-ink-subtle)'
+    document.body.append(probe)
+    const c = getComputedStyle(probe).color
+    probe.remove()
+    return c
+  })
+  await expect(row.locator('[data-row-title]')).toHaveCSS('color', subtle)
+  const now = (await page.locator('[data-now-line]').boundingBox())!
+  expect((await row.boundingBox())!.y).toBeLessThan(now.y)
+})
+
+test('with nothing timed today there is no now line', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'P')
+  await makeTask(page, pid, '今天随时做', { scheduledOn: dayInZone(await accountZone(page)) })
+  await page.goto('/tasks/today')
+  const row = page.locator('li').filter({ has: page.locator('[data-today-row]') })
+  await expect(row).toHaveCount(1)
+  await expect(page.locator('[data-now-line]')).toHaveCount(0)
+  // The untimed rows begin with the word for them.
+  await expect(row.locator('[data-row-lead-text]')).toHaveText('Any time')
+})
+
+test('a task due today at a time is on the line once, at its time', async ({ page }) => {
+  await registerFreshUser(page)
+  const account = await accountZone(page)
+  const pid = await makeProject(page, 'P')
+  const [y, m, d] = dayInZone(account).split('-').map(Number) as [number, number, number]
+  await makeTask(page, pid, '下午交的', {
+    dueAt: new TZDate(y, m - 1, d, 16, 0, 0, 0, account).toISOString(),
+  })
+  await page.goto('/tasks/today')
+  const line = page.getByRole('region', { name: 'Today', exact: true })
+  await expect(line.getByText('下午交的')).toHaveCount(1)
+  await expect(page.getByText('下午交的')).toHaveCount(1)
+  await expect(
+    line.locator('li').filter({ hasText: '下午交的' }).locator('[data-row-lead-text]'),
+  ).toHaveText('16:00')
+  // Something is timed, so the day has a now.
+  await expect(page.locator('[data-now-line]')).toHaveCount(1)
 })

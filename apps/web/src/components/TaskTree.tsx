@@ -28,8 +28,7 @@ import { TaskDetail } from './TaskDetail'
 import { statusForKey } from './StatusControls'
 import { NewTaskInput } from './NewTaskInput'
 import { INDENT_PX, ROW_LIST } from './RowParts'
-import { dateMarks } from '../dueAt'
-import { hasLeadSlot, LIST_MEASURE } from '../rowLead'
+import { LIST_MEASURE } from '../rowLead'
 import { TaskRow } from './TaskRow'
 
 /**
@@ -136,32 +135,6 @@ export function TaskTree({ projectId }: { projectId: string }) {
   // Looked up by id each render, so a task that has left this project (moved away) closes itself.
   const openTask = tasks.data?.tasks.find((t) => t.id === openId)
   const byId = useMemo(() => new Map((tasks.data?.tasks ?? []).map((t) => [t.id, t])), [tasks.data])
-  /**
-   * Whether this TREE reserves the leading icon slot -- one decision for the whole list, taken from
-   * the rows that are actually on screen. Deciding per group would put the first glyph of
-   * a row at one x under one parent and another x under the next, which is the scanning the slot
-   * exists for; deciding from folded-away rows would hold 1.5rem for icons nobody can see.
-   *
-   * It reads no clock: a row wants an icon because it HAS a deadline, a plan or notes, never
-   * because of what time it is. Which glyph it then shows is `leadIcon`'s business.
-   */
-  const leadSlot = useMemo(
-    () =>
-      hasLeadSlot(
-        rows.map((r) => {
-          const t = byId.get(r.id)
-          return {
-            ...dateMarks({
-              status: t?.status ?? 'todo',
-              dueAt: t?.dueAt ?? null,
-              scheduledOn: t?.scheduledOn ?? null,
-            }),
-            notes: (t?.notes ?? '') !== '',
-          }
-        }),
-      ),
-    [rows, byId],
-  )
   // Falls back to the first row: the remembered row may have been deleted, moved to another
   // project, or folded out of sight, and a tree whose only tab stop does not exist is a tree the
   // keyboard cannot reach at all.
@@ -395,7 +368,6 @@ export function TaskTree({ projectId }: { projectId: string }) {
   const input = adding && (
     <NewTaskInput
       depth={inputDepth}
-      leadSlot={leadSlot}
       onCommit={commitAdd}
       onCancel={cancelAdd}
       error={createError}
@@ -663,7 +635,6 @@ export function TaskTree({ projectId }: { projectId: string }) {
                   capturedAt={inInbox ? (byId.get(row.id)?.createdAt ?? null) : null}
                   rollup={row.hasChildren ? rollupPhrase(tasks.data?.rollups[row.id]) : null}
                   blockedBy={tasks.data?.blockers[row.id]}
-                  leadSlot={leadSlot}
                   saved={savedId === row.id}
                   tabStop={row.id === tabId}
                   onFocus={() => setActiveId(row.id)}

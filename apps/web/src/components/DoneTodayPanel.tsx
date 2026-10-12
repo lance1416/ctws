@@ -1,9 +1,10 @@
 import { LINK } from './buttonStyles'
 import type { CompletedTaskResponse } from '@ctws/contracts'
 import { Link } from 'react-router-dom'
-import { DONE_ROW_GRID, ProjectRail } from './RowParts'
+import { ProjectRail } from './RowParts'
+import { RowLead } from './RowLead'
 import { StatusMark } from './StatusMark'
-import { Panel } from './Panel'
+import { DaySection } from './DaySection'
 
 /**
  * DONE TODAY: the fourth question the workbench answers -- "what did I do".
@@ -25,7 +26,7 @@ export function DoneTodayPanel({
   clock: Intl.DateTimeFormat
 }) {
   return (
-    <Panel
+    <DaySection
       label="Done today"
       count={tasks.length}
       action={
@@ -36,24 +37,24 @@ export function DoneTodayPanel({
     >
       <ul className="flex flex-col">
         {tasks.map((t) => (
-          <li
-            key={t.id}
-            className={`relative grid min-h-11 items-center gap-x-2 rounded-lg px-2 py-1.5 pl-3 ${DONE_ROW_GRID}`}
-          >
-            <ProjectRail projectId={t.projectId} at="left-0" />
-            <span className="col-start-1 flex items-center justify-center">
-              <StatusMark status={t.status} />
-            </span>
-            <span className="col-start-2 min-w-0 truncate text-ink-muted">{t.title}</span>
-            <time
+          // The anatomy (RowParts): when it was finished is the margin.
+          <li key={t.id} className="flex items-stretch">
+            <RowLead
+              lead={
+                t.completedAt
+                  ? { text: clock.format(new Date(t.completedAt)), tone: 'quiet', flag: false }
+                  : null
+              }
               dateTime={t.completedAt ?? undefined}
-              className="col-start-3 text-sm text-ink-subtle tabular-nums"
-            >
-              {t.completedAt ? clock.format(new Date(t.completedAt)) : ''}
-            </time>
+            />
+            <ProjectRail projectId={t.projectId} />
+            <span className="flex min-h-11 min-w-0 flex-1 items-center gap-2.5 pr-2 pl-3.5">
+              <StatusMark status={t.status} />
+              <span className="min-w-0 truncate text-ink-muted">{t.title}</span>
+            </span>
           </li>
         ))}
       </ul>
-    </Panel>
+    </DaySection>
   )
 }

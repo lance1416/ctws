@@ -79,10 +79,16 @@ test('today means today in the account zone, for the list and the caption alike'
     page.getByRole('region', { name: 'Today', exact: true }).getByText('按账户时区排的'),
   ).toBeVisible()
 
-  // And the page's own caption agrees with the server, which is the half that broke before: the
-  // day number comes from the account zone, never the browser's or the runner's.
-  const [, month, day] = dayIn(ACCOUNT_TZ).split('-').map(Number)
-  await expect(page.getByText(`${MONTHS[month! - 1]} ${day}`, { exact: false })).toBeVisible()
+  // And the page's own heading -- the date -- agrees with the server, which is the half that broke
+  // before: the day comes from the account zone, never the browser's or the runner's.
+  const [y, month, day] = dayIn(ACCOUNT_TZ).split('-').map(Number) as [number, number, number]
+  const said = new Intl.DateTimeFormat('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    timeZone: 'UTC',
+  }).format(Date.UTC(y, month - 1, day, 12))
+  await expect(page.locator('#today-heading')).toHaveText(said)
 })
 
 test('the runner’s today is some OTHER day, and the page says which', async ({ page }) => {
@@ -115,7 +121,11 @@ test('the runner’s today is some OTHER day, and the page says which', async ({
   const row = page.getByRole('listitem').filter({ hasText: '按进程时区排的' })
   if (dayIn(ACCOUNT_TZ) > runnerDay()) {
     await expect(row).toBeVisible()
-    await expect(row.getByText('Carried over from yesterday')).toBeVisible()
+    // Carried, and the day it was planned for is the account's yesterday -- a day only the
+    // account's zone can name.
+    await expect(row.locator('[data-date-hint="carried"]')).toBeVisible()
+    const [, m, d] = runnerDay().split('-').map(Number) as [number, number, number]
+    await expect(row.locator('[data-row-lead-text]')).toHaveText(`${MONTHS[m - 1]} ${d}`)
   } else {
     // The account is behind the runner, so this day has not arrived yet for the account and
     // nothing may surface it as due now.

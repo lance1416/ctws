@@ -1,61 +1,79 @@
-/**
- * THE ROW'S LEADING ICON, and how wide a list is.
- *
- * NO RIGHT-HAND DATE COLUMNS. A row is `[status marker 1.75rem][icon slot 1.5rem][title -- the
- * whole line]`, with the full date wording on a second line under the title. So there is no
- * deadline or plan column, no stack threshold and no container query -- the cramped panel and the
- * wide one are THE SAME LAYOUT -- and no list measure derived from a column makeup, because the
- * title competes with nothing on its right.
- *
- * THE ONE RULE THAT REMAINS: a slot is reserved FOR THE WHOLE LIST or not at all. A slot that exists on some rows and not others puts the first glyph of every row at a
- * different x, and the leading icons are the only column this layout still has.
- *
- * NOTHING HERE READS THE CLOCK. Whether the slot exists is decided by whether a row HAS a deadline,
- * a plan or notes; only WHICH glyph goes in it depends on whether the deadline has passed. A
- * midnight tick can therefore change a flag from `deadline` to `missed` but can never add or remove
- * the slot under it, so the list's structure and its rows cannot disagree.
- */
-
-/** The four things the leading slot can say. `missed` is a deadline whose day has gone. */
-export type LeadIcon = 'missed' | 'deadline' | 'plan' | 'notes'
-
-/** What a row has, with no wording and no clock in it. */
-export type RowMarks = { due: boolean; plan: boolean; notes: boolean }
+import { TZDate } from '@date-fns/tz'
+import { format } from 'date-fns'
+import { addDays, fullDay, MONTHS } from './dueAt'
 
 /**
- * The ONE icon a row shows at its start.
+ * THE MARGIN: what a row says about WHEN, in front of everything else on it.
  *
- * A deadline beats a plan because it is the one that bites, and either beats the notes mark: the
- * slot answers whether there is a date and whether it bites, and a note is neither. The row does
- * not LOSE the note when a date wins the slot -- the `≡` stays beside the title (`TaskRow`) -- and
- * the second line lists both dates in full either way.
+ * A row is `[margin][thread][marker, title, meta, note]`. The margin is a column of its own at the
+ * row's left -- right-aligned, tabular, one short line -- so the eye can run down a list's times
+ * and dates the way it runs down a diary's, and the title owns the rest of the line. The date's
+ * whole wording used to sit on a second line under every dated title; it is now this one word,
+ * and the exact moment is its title.
+ *
+ * NEAREST COMMITMENT FIRST, one thing only: a deadline (missed, or standing) before a plan, a plan
+ * before a bare time. A row with a plan and a deadline shows the deadline, because it is the one
+ * that bites; the plan is in the sheet.
+ *
+ * NOTHING HERE READS THE CLOCK. Today and the zone are arguments, so the same row says the same
+ * thing in a test at any hour, and the caller's notion of today is the only one.
  */
-export function leadIcon(r: RowMarks & { overdue?: boolean }): LeadIcon | null {
-  if (r.due) return r.overdue ? 'missed' : 'deadline'
-  if (r.plan) return 'plan'
-  if (r.notes) return 'notes'
+
+export type LeadTone = 'missed' | 'deadline' | 'plan' | 'time' | 'quiet'
+
+/** What goes in the margin. `exact` is the moment in full, for the title. */
+export type Lead = { text: string; tone: LeadTone; flag: boolean; exact?: string }
+
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
+
+/** `Oct 8`. Never the year: the margin is one short line, and the exact moment carries it. */
+const monthDay = (day: string) => {
+  const [, m, d] = day.split('-').map(Number) as [number, number, number]
+  return `${MONTHS[m - 1]} ${d}`
+}
+
+/** A day in the week ahead is its weekday; anything else is its date. */
+const weekdayOrDate = (day: string, today: string) =>
+  day > today && day <= addDays(today, 6)
+    ? WEEKDAYS[new Date(`${day}T00:00:00Z`).getUTCDay()]!
+    : monthDay(day)
+
+export function leadFor(
+  row: { dueAt: string | null; scheduledOn: string | null; at?: string | null },
+  today: string,
+  tz: string,
+): Lead | null {
+  if (row.dueAt) {
+    const due = new TZDate(new Date(row.dueAt), tz)
+    const day = format(due, 'yyyy-MM-dd')
+    const clock = format(due, 'HH:mm')
+    const exact = `Due ${fullDay(day)}, ${clock}`
+    // Gone: the day it was due. How LATE is the row's right-hand note, not this.
+    if (day < today) return { text: monthDay(day), tone: 'missed', flag: true, exact }
+    // Today: the time, unless it is the end of the day, which is a day and not a time -- 23:59
+    // would read as a deadline at midnight.
+    if (day === today)
+      return { text: clock === '23:59' ? 'Today' : clock, tone: 'deadline', flag: true, exact }
+    // A deadline later in the week is its weekday, tomorrow included: "Tomorrow" beside a flag is
+    // wider than the margin, and Tue is no less clear four days out than one.
+    return { text: weekdayOrDate(day, today), tone: 'deadline', flag: true, exact }
+  }
+  if (row.scheduledOn) {
+    const day = row.scheduledOn
+    const text =
+      day === today ? 'Today' : day === addDays(today, 1) ? 'Tomorrow' : weekdayOrDate(day, today)
+    return { text, tone: 'plan', flag: false, exact: `Planned for ${fullDay(day)}` }
+  }
+  if (row.at) {
+    return { text: format(new TZDate(new Date(row.at), tz), 'HH:mm'), tone: 'time', flag: false }
+  }
   return null
 }
 
 /**
- * Whether THIS LIST reserves the slot at all: true iff some row in it would show an icon. An empty
- * list reserves nothing, and a list where nothing is dated and nothing has notes pays no 1.5rem.
- */
-export function hasLeadSlot(rows: Iterable<RowMarks>): boolean {
-  for (const r of rows) if (leadIcon(r) !== null) return true
-  return false
-}
-
-/** The slot's width, as a number, so the inline new-task input can line up with the titles. */
-export const LEAD_SLOT_PX = 24
-/** ...and the gap between the slot and the title, which the input has to clear as well. */
-export const LEAD_GAP_PX = 4
-
-/**
  * HOW WIDE A LIST IS -- one value, for every list of tasks.
  *
- * One value and not four derived from a column makeup: a list reserving 19rem for dates has to be
- * wider to leave the title the same track, and there are no date columns. 64rem is the measure of
- * a title-only list, which is the only kind there is.
+ * The title competes with nothing on its right but a short note, so there is one measure; 64rem is
+ * the measure of a title-only list, which is the only kind there is.
  */
 export const LIST_MEASURE = 'max-w-[64rem]'

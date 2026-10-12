@@ -132,7 +132,7 @@ test('starting a task from its row puts it under In progress, stopping takes it 
   expect((await serverTask(page, pid, '写方案')).status).toBe('in_progress')
 
   await page.getByRole('link', { name: 'Today' }).click()
-  await expect(page.getByRole('region', { name: 'Working on' }).getByText('写方案')).toBeVisible()
+  await expect(page.getByRole('region', { name: 'In progress' }).getByText('写方案')).toBeVisible()
 
   // Stop it from the Today row: it has no date, so it leaves the page.
   const stopped = patched(page)
@@ -184,7 +184,7 @@ test('a Today row is finished by its mark, by x, and focus moves to the next row
   await makeTask(page, pid, '乙', { status: 'in_progress' })
   await makeTask(page, pid, '丙', { status: 'in_progress' })
   await page.goto('/tasks/today')
-  const region = page.getByRole('region', { name: 'Working on' })
+  const region = page.getByRole('region', { name: 'In progress' })
   await expect(region.getByText('甲')).toBeVisible()
   const order = await page.locator('[data-today-row]').allInnerTexts()
   const firstTitle = order[0]!.split('\n')[0]!
@@ -422,27 +422,25 @@ test('the tree shows dates only where they mean something', async ({ page }) => 
   await makeTask(page, pid, '已完成逾期', { dueAt: dueAgo(9), status: 'done' })
   await openTree(page, pid)
 
-  const hints = (title: string) => treeRow(page, title).locator('[data-date-hint]')
-  // The second line carries the WHOLE wording: an overdue row says which deadline it was and
-  // when, to the minute, as well as how late it is. The row used to show only "5 days late",
-  // because the label had to fit an 8rem cell.
-  const line = (title: string) => treeRow(page, title).locator('[data-row-meta]')
+  const lead = (title: string) => treeRow(page, title).locator('[data-row-lead]')
   const d = new Date(lateDue)
-  const clock = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-  await expect(line('逾期的')).toHaveText(
-    `Due ${MONTHS[d.getMonth()]} ${d.getDate()}, ${clock}·5 days late`,
+  // The margin says WHEN in one word, and the moment in full is its title: an overdue row the day
+  // it was due, flagged, with how late on the right.
+  await expect(lead('逾期的')).toHaveAttribute('data-row-lead', 'missed')
+  await expect(lead('逾期的').locator('[data-row-lead-text]')).toHaveText(
+    `${MONTHS[d.getMonth()]} ${d.getDate()}`,
   )
-  await expect(hints('逾期的')).toHaveAttribute('data-date-hint', 'overdue')
-  await expect(hints('今天截止')).toHaveText('Due today, 23:30')
-  await expect(hints('今天截止')).toHaveAttribute('data-date-hint', 'due')
-  await expect(hints('只排期')).toHaveText('Planned for tomorrow')
-  // A dateless row and a finished row carry no date at all: the row is still a row.
-  await expect(hints('没日期')).toHaveCount(0)
-  await expect(hints('已完成逾期')).toHaveCount(0)
+  await expect(treeRow(page, '逾期的').locator('[data-row-note]')).toHaveText('5 days late')
+  // Due today at the end of the day is a day, not a minute before midnight.
+  await expect(lead('今天截止')).toHaveAttribute('data-row-lead', 'deadline')
+  await expect(lead('今天截止').locator('[data-row-lead-text]')).toHaveText('23:30')
+  await expect(lead('只排期')).toHaveAttribute('data-row-lead', 'plan')
+  await expect(lead('只排期').locator('[data-row-lead-text]')).toHaveText('Tomorrow')
+  // A dateless row and a finished row say nothing in the margin: the row is still a row.
+  await expect(lead('没日期').locator('[data-row-lead-text]')).toHaveCount(0)
+  await expect(lead('已完成逾期').locator('[data-row-lead-text]')).toHaveCount(0)
 
-  // Overdue is told apart by its words, not by its colour: the same row without the colour
-  // class would still read "5 days late", and the due-today row never says it.
-  await expect(line('逾期的')).toContainText('5 days late')
+  // Overdue is told apart by its words as well as its colour, and the due-today row never says it.
   await expect(treeRow(page, '今天截止')).not.toContainText('late')
 })
 
@@ -705,13 +703,13 @@ test('saving from the Today panel keeps it open and confirms on the row', async 
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '写方案', { status: 'in_progress' })
   await page.goto('/tasks/today')
-  await page.getByRole('region', { name: 'Working on' }).getByText('写方案').click()
+  await page.getByRole('region', { name: 'In progress' }).getByText('写方案').click()
   await editDetail(page)
   await page.getByLabel('Notes', { exact: true }).fill('Notes')
   await page.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
   await expect(page.getByRole('dialog')).toHaveCount(1)
-  await expect(page.getByRole('region', { name: 'Working on' }).getByRole('status')).toHaveText(
+  await expect(page.getByRole('region', { name: 'In progress' }).getByRole('status')).toHaveText(
     'Saved',
   )
 })
@@ -744,12 +742,16 @@ test('a plan carried over from days ago is marked on Today with its day; a plan 
   const section = page.getByRole('region', { name: 'Today', exact: true })
   await expect(section.getByText('今天的计划')).toBeVisible()
 
+  // The planned day is the margin, in the plan's colour; that it was carried is said on the right.
   const [, m, d] = old.split('-').map(Number)
+  await expect(rowOf(page, '搁置的计划').locator('[data-row-lead-text]')).toHaveText(
+    `${MONTHS[m! - 1]} ${d}`,
+  )
   await expect(rowOf(page, '搁置的计划').locator('[data-date-hint="carried"]')).toHaveText(
-    `Carried over from ${MONTHS[m! - 1]} ${d}`,
+    'Carried over',
   )
   await expect(rowOf(page, '昨天的计划').locator('[data-date-hint="carried"]')).toHaveText(
-    'Carried over from yesterday',
+    'Carried over',
   )
   // Today's own plan carries no mark and no triage group.
   await expect(rowOf(page, '今天的计划').locator('[data-date-hint]')).toHaveCount(0)

@@ -1,104 +1,83 @@
 import { describe, expect, it } from 'vitest'
-import { hasLeadSlot, leadIcon, LEAD_GAP_PX, LEAD_SLOT_PX, LIST_MEASURE } from './rowLead'
+import { leadFor } from './rowLead'
 
-/** Every combination of what a row can carry, so a priority rule cannot be checked in half its cases. */
-const ROWS = [false, true].flatMap((due) =>
-  [false, true].flatMap((plan) =>
-    [false, true].flatMap((notes) =>
-      [false, true].map((overdue) => ({ due, plan, notes, overdue })),
-    ),
-  ),
-)
+/**
+ * THE MARGIN: what a row says about WHEN, before anything else on it.
+ *
+ * Every expectation here is pinned to a fixed today and a fixed zone, never to the clock this runs
+ * on: the words change at midnight, and a test whose answer depends on the hour is a test that is
+ * right for part of the day.
+ */
+const TODAY = '2026-10-12' // a Monday
+const TZ = 'America/Toronto' // EDT, UTC-4, all of this month
 
-describe('leadIcon', () => {
-  it('shows nothing for a row that carries nothing', () => {
-    expect(leadIcon({ due: false, plan: false, notes: false })).toBeNull()
-    expect(leadIcon({ due: false, plan: false, notes: false, overdue: true })).toBeNull()
-  })
-
-  it('shows the deadline on a row that has one, and says whether it has passed', () => {
-    expect(leadIcon({ due: true, plan: false, notes: false })).toBe('deadline')
-    expect(leadIcon({ due: true, plan: false, notes: false, overdue: true })).toBe('missed')
-  })
-
-  it('shows the DEADLINE on a row that has a plan as well -- the one that bites', () => {
-    expect(leadIcon({ due: true, plan: true, notes: false })).toBe('deadline')
-    expect(leadIcon({ due: true, plan: true, notes: true, overdue: true })).toBe('missed')
-  })
-
-  it('falls back to the plan, then to the notes mark', () => {
-    expect(leadIcon({ due: false, plan: true, notes: true })).toBe('plan')
-    expect(leadIcon({ due: false, plan: false, notes: true })).toBe('notes')
-    // A plan has no "overdue": a carried plan is not a missed deadline, and the glyph must not
-    // start claiming it is.
-    expect(leadIcon({ due: false, plan: true, notes: false, overdue: true })).toBe('plan')
-  })
-
-  /**
-   * THE CLOCK MAY ONLY CHOOSE THE GLYPH, NEVER WHETHER THERE IS ONE. The slot is reserved for the
-   * whole list from a clock-free predicate (`hasLeadSlot`, fed by `dateMarks`), so if midnight could
-   * make an icon appear or disappear the list's structure and its rows would disagree: a reserved
-   * 1.5rem with nothing in it, or a glyph with no slot under it.
-   */
-  it('depends on the clock for WHICH icon, never for whether there is one', () => {
-    for (const row of ROWS) {
-      const withClock = leadIcon(row)
-      const without = leadIcon({ due: row.due, plan: row.plan, notes: row.notes })
-      expect(withClock === null, JSON.stringify(row)).toBe(without === null)
-    }
-  })
+const row = (o: { dueAt?: string; scheduledOn?: string; at?: string }) => ({
+  dueAt: o.dueAt ?? null,
+  scheduledOn: o.scheduledOn ?? null,
+  at: o.at ?? null,
 })
 
-describe('hasLeadSlot', () => {
-  it('reserves nothing for an empty list, or one where no row carries anything', () => {
-    expect(hasLeadSlot([])).toBe(false)
-    expect(
-      hasLeadSlot([
-        { due: false, plan: false, notes: false },
-        { due: false, plan: false, notes: false },
-      ]),
-    ).toBe(false)
+describe('the margin', () => {
+  it('names an overdue deadline by its day, flagged and in the missed tone', () => {
+    expect(leadFor(row({ dueAt: '2026-10-08T13:00:00.000Z' }), TODAY, TZ)).toMatchObject({
+      text: 'Oct 8',
+      tone: 'missed',
+      flag: true,
+    })
   })
 
-  /**
-   * The rule that survived the columns: the slot is reserved for the WHOLE list, so one row with a
-   * deadline gives every row of the list its slot and the glyphs land at ONE x. Per row -- or per
-   * group -- would put the first glyph of each row somewhere else, and the leading icons are the
-   * only column this layout has.
-   */
-  it('reserves the slot for the whole list when a SINGLE row carries anything', () => {
-    for (const mark of ['due', 'plan', 'notes'] as const) {
-      const rows = [
-        { due: false, plan: false, notes: false },
-        { due: false, plan: false, notes: false, [mark]: true },
-        { due: false, plan: false, notes: false },
-      ]
-      expect(hasLeadSlot(rows), mark).toBe(true)
-    }
+  it('gives a deadline today its time', () => {
+    expect(leadFor(row({ dueAt: '2026-10-12T20:00:00.000Z' }), TODAY, TZ)).toMatchObject({
+      text: '16:00',
+      tone: 'deadline',
+      flag: true,
+    })
   })
 
-  it('agrees with leadIcon, row for row', () => {
-    for (const row of ROWS)
-      expect(hasLeadSlot([row]), JSON.stringify(row)).toBe(leadIcon(row) !== null)
-  })
-})
-
-describe('the geometry', () => {
-  it('reserves the 1.5rem the spec names, plus the gap the input has to clear', () => {
-    expect(LEAD_SLOT_PX).toBe(24) // 1.5rem
-    expect(LEAD_GAP_PX).toBe(4)
+  it('says a deadline at the end of today as Today, not as a minute before midnight', () => {
+    expect(leadFor(row({ dueAt: '2026-10-13T03:59:00.000Z' }), TODAY, TZ)?.text).toBe('Today')
   })
 
-  /**
-   * ONE MEASURE, for every list. A measure derived per case (64 / 72.75 / 75.75 / 84.5rem) is
-   * what a list reserving 19rem of date columns needs to leave the title the same track; there
-   * are no date columns, so there is nothing to derive from and one literal answers for a
-   * title-only list.
-   */
-  it('is a single literal', () => {
-    expect(LIST_MEASURE).toBe('max-w-[64rem]')
-    // Not a function of anything: a module that exports a measure PER CASE is the mechanism the
-    // row system deleted, and this is the test that notices it coming back.
-    expect(typeof LIST_MEASURE).toBe('string')
+  it('names a plan for tomorrow, unflagged', () => {
+    expect(leadFor(row({ scheduledOn: '2026-10-13' }), TODAY, TZ)).toMatchObject({
+      text: 'Tomorrow',
+      tone: 'plan',
+      flag: false,
+    })
+  })
+
+  it('says nothing for a row with no date', () => {
+    expect(leadFor(row({}), TODAY, TZ)).toBeNull()
+  })
+
+  it('shows the deadline when a row has a plan and a deadline both', () => {
+    const lead = leadFor(row({ scheduledOn: TODAY, dueAt: '2026-10-15T21:00:00.000Z' }), TODAY, TZ)
+    expect(lead).toMatchObject({ tone: 'deadline', flag: true, text: 'Thu' })
+  })
+
+  it('names a day in the week ahead by its weekday, and one beyond it by its date', () => {
+    expect(leadFor(row({ scheduledOn: '2026-10-18' }), TODAY, TZ)?.text).toBe('Sun')
+    expect(leadFor(row({ scheduledOn: '2026-10-19' }), TODAY, TZ)?.text).toBe('Oct 19')
+    // The year is the exact moment's to say; the margin stays one short line.
+    expect(leadFor(row({ scheduledOn: '2027-01-05' }), TODAY, TZ)?.text).toBe('Jan 5')
+  })
+
+  it('reads the deadline in the account zone, not the machine one', () => {
+    // 02:00 UTC on the 13th is still the 12th, 22:00, in Toronto: due today, not tomorrow.
+    expect(leadFor(row({ dueAt: '2026-10-13T02:00:00.000Z' }), TODAY, TZ)?.text).toBe('22:00')
+  })
+
+  it('carries the exact moment, year included, for the title', () => {
+    expect(leadFor(row({ dueAt: '2027-01-05T14:30:00.000Z' }), TODAY, TZ)?.exact).toBe(
+      'Due Jan 5, 2027, 09:30',
+    )
+  })
+
+  it('gives a timed entry its time when there is no date to keep', () => {
+    expect(leadFor(row({ at: '2026-10-12T14:30:00.000Z' }), TODAY, TZ)).toMatchObject({
+      text: '10:30',
+      tone: 'time',
+      flag: false,
+    })
   })
 })

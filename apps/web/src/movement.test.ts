@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ProjectMovementResponse } from '@ctws/contracts'
-import { activityLabel, hasMovement, QUIET_DAYS, stagnant } from './movement'
+import { activityLabel, hasMovement, movedLine, QUIET_DAYS, stagnant } from './movement'
 
 /**
  * The two judgements the Movement panel makes. Both are about what is NOT shown, which is why they are
@@ -69,5 +69,49 @@ describe('activityLabel', () => {
 
   it('adds the year once the day is not in the current one', () => {
     expect(activityLabel('2025-12-30', '2026-10-05')).toBe('Dec 30, 2025')
+  })
+})
+
+/**
+ * THIS WEEK'S LINE FOR ONE PROJECT: what moved and when, in words, and a project gone quiet said
+ * as such on its own line rather than in a sentence of its own. Pinned to a fixed today.
+ */
+describe('movedLine', () => {
+  const TODAY = '2026-10-12' // a Monday
+
+  it('says what was done and when it last moved', () => {
+    expect(movedLine(row({ doneThisWeek: 1, remaining: 3, lastActivityOn: TODAY }), TODAY)).toBe(
+      '1 done, moved today',
+    )
+  })
+
+  it('says only when, when nothing was done this week', () => {
+    expect(movedLine(row({ remaining: 3, lastActivityOn: '2026-10-11' }), TODAY)).toBe(
+      'Moved yesterday',
+    )
+    expect(movedLine(row({ remaining: 3, lastActivityOn: '2026-10-08' }), TODAY)).toBe(
+      'Moved Thursday',
+    )
+    expect(movedLine(row({ remaining: 3, lastActivityOn: '2026-09-28' }), TODAY)).toBe(
+      'Moved Sep 28',
+    )
+  })
+
+  it('says a project with open work has gone quiet, and for how long', () => {
+    expect(
+      movedLine(
+        row({ remaining: 2, lastActivityOn: '2026-09-30', quietDays: QUIET_DAYS + 5 }),
+        TODAY,
+      ),
+    ).toBe('Quiet for 12 days')
+  })
+
+  it('does not call a finished project quiet', () => {
+    expect(
+      movedLine(
+        row({ doneThisWeek: 2, remaining: 0, lastActivityOn: '2026-10-09', quietDays: 9 }),
+        TODAY,
+      ),
+    ).toBe('2 done, moved Friday')
   })
 })

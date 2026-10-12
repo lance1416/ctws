@@ -1,28 +1,19 @@
 import type { ProjectMovementResponse } from '@ctws/contracts'
 import { Link } from 'react-router-dom'
-import { hasMovement, stagnant, activityLabel } from '../movement'
+import { hasMovement, movedLine, QUIET_DAYS } from '../movement'
 import { useProjectRail } from '../projectColor'
-import { Panel } from './Panel'
 
 /**
- * MOVEMENT: COUNTS, NEVER A PERCENTAGE.
+ * THIS WEEK: where each line of work got to. COUNTS, NEVER A PERCENTAGE.
  *
- * There is deliberately no progress bar and no ratio on this panel, and that is a decision about
- * honesty rather than taste. Rollup is M3 work and nothing in the entire codebase writes
- * `manual_progress`, so a bar would be drawn against a column that is null for every row in the
- * database: a number the backend cannot cash. What a person can act on is what MOVED -- how many
- * finished this week, how many are left -- and what did NOT move.
+ * There is deliberately no progress bar and no ratio here, and that is a decision about honesty
+ * rather than taste: nothing in the codebase writes `manual_progress`, so a bar would be drawn
+ * against a column that is null for every row. What a person can act on is what MOVED -- what got
+ * done, and when the line last changed -- and what did NOT.
  *
- * The stagnation line is the part that is hard to get from anywhere else. A project with open
- * work and no logged change for a week does not announce itself: it just quietly stops being
- * thought about. One sentence, naming one project, is enough; a list of them is a second backlog.
- */
-
-/**
- * `rows` is every project the server reported; the panel decides which of them have a line worth
- * printing and which one, if any, has gone quiet. The page above owns the query so that it can
- * know whether this panel has anything to say before it decides to lay out a right-hand column
- * at all.
+ * A project that has gone quiet says so on its own line ("Quiet for 12 days"), its name a step
+ * quieter, rather than in a sentence of its own: one line per project, and the silent one is
+ * found where the reader is already looking.
  */
 export function MovementPanel({
   rows: all,
@@ -32,54 +23,43 @@ export function MovementPanel({
   today: string
 }) {
   const rows = all.filter(hasMovement)
-  const quiet = stagnant(all)
   const rail = useProjectRail()
 
   return (
-    <Panel label="Movement">
+    <aside aria-label="This week" data-panel="This week" className="min-w-0">
+      <h2 className="mb-1.5 text-base font-semibold text-ink">This week</h2>
       <ul className="flex flex-col">
-        {rows.map((r) => (
-          <li key={r.projectId} className="min-w-0">
-            <Link
-              to={`/projects/${r.projectId}`}
-              className="flex min-h-11 items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-hover"
-            >
-              {/* A chip, never a text colour and never alone: the project's NAME is right here
-                  beside it (WCAG 1.4.1). Deliberately not the row system's `data-project-rail`,
-                  because this is not a task row and must not be measured as one. */}
-              <span
-                aria-hidden="true"
-                data-project-chip={r.projectId}
-                className={`h-4 w-[3px] shrink-0 rounded-full ${rail(r.projectId)}`}
-              />
-              <span className="min-w-0 flex-1 truncate text-ink">{r.projectName}</span>
-              {/* Two numbers, both of them things that can move. Tabular, so a column of
-                  projects reads as a column of numbers. */}
-              {/* Weight and value tell the two numbers apart, not hue: `plan`, `deadline` and
-                  `missed` mean particular things about DATES, and spending one of them on a
-                  count would make the palette say two things at once. */}
-              <span className="shrink-0 text-sm font-semibold text-ink tabular-nums">
-                +{r.doneThisWeek} this week
-              </span>
-              <span className="shrink-0 text-sm text-ink-subtle tabular-nums">
-                {r.remaining} left
-              </span>
-            </Link>
-          </li>
-        ))}
+        {rows.map((r) => {
+          const quiet = r.remaining > 0 && r.quietDays !== null && r.quietDays >= QUIET_DAYS
+          return (
+            <li key={r.projectId} className="min-w-0">
+              <Link
+                to={`/projects/${r.projectId}`}
+                data-stagnant={quiet ? r.projectId : undefined}
+                className="grid grid-cols-[3px_minmax(0,1fr)_auto] items-start gap-x-3 py-[7px] pr-1 hover:bg-hover"
+              >
+                {/* The project's strand, never alone: the NAME is right beside it (WCAG 1.4.1).
+                    Not the row system's `data-project-rail`: this is not a task row and must not
+                    be measured as one. */}
+                <span
+                  aria-hidden="true"
+                  data-project-chip={r.projectId}
+                  className={`self-stretch ${rail(r.projectId)}`}
+                />
+                <span className="flex min-w-0 flex-col">
+                  <span className={`truncate ${quiet ? 'text-ink-muted' : 'text-ink'}`}>
+                    {r.projectName}
+                  </span>
+                  <span className="text-sm text-ink-subtle">{movedLine(r, today)}</span>
+                </span>
+                <span className="text-sm whitespace-nowrap text-ink-subtle tabular-nums">
+                  {r.remaining} open
+                </span>
+              </Link>
+            </li>
+          )
+        })}
       </ul>
-      {quiet && (
-        /* Set off by a PLANE, not by a hue: it is a sentence about silence, not a date
-           semantic, and `deadline` / `missed` already mean particular things about dates. */
-        <p
-          data-stagnant={quiet.projectId}
-          className="mt-2 rounded-lg bg-desk px-3 py-2 text-sm text-ink-muted"
-        >
-          <span className="font-semibold text-ink">{quiet.projectName}</span> last moved{' '}
-          {activityLabel(quiet.lastActivityOn!, today)} —{' '}
-          <span className="font-semibold text-ink tabular-nums">{quiet.quietDays}</span> days ago.
-        </p>
-      )}
-    </Panel>
+    </aside>
   )
 }

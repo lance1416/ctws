@@ -4,7 +4,8 @@ import { useRef, useState } from 'react'
 import { listCompleted } from '../api/completed'
 import { useTaskActions } from '../api/taskActions'
 import { EmptyState } from '../components/EmptyState'
-import { DONE_LIST_MEASURE, DONE_ROW_GRID, ProjectRail } from '../components/RowParts'
+import { DONE_LIST_MEASURE, ProjectRail } from '../components/RowParts'
+import { RowLead } from '../components/RowLead'
 import { StatusButton } from '../components/StatusControls'
 import { TaskDetail } from '../components/TaskDetail'
 import { addDays, MONTHS, todayIn } from '../dueAt'
@@ -89,45 +90,50 @@ export function Completed({ heading: showHeading = true }: { heading?: boolean }
             {tasks.map((t) => (
               <li
                 key={t.id}
-                // The same row system as Today and the tree: the project rail at x=0, the marker,
-                // the title, and one right-hand column. The clock lands at an identical x on
-                // every row, which is what makes a day's list scannable rather than readable.
-                className={`relative -mx-2 grid items-start gap-x-2 rounded-lg py-1.5 pr-2 pl-3 ${DONE_ROW_GRID}`}
+                // The same anatomy as Today and the tree: when it was finished is the margin, so a
+                // day's clocks end at one x and the list is scanned rather than read.
+                className="flex items-stretch"
               >
+                <RowLead
+                  lead={
+                    t.completedAt
+                      ? { text: clock.format(new Date(t.completedAt)), tone: 'quiet', flag: false }
+                      : null
+                  }
+                  dateTime={t.completedAt ?? undefined}
+                />
                 <ProjectRail projectId={t.projectId} />
-                {/* Restoring is the one way back from a mis-click: a finished task has no other
+                <span className="flex min-w-0 flex-1 items-start gap-2.5 pr-2 pl-3.5">
+                  {/* Restoring is the one way back from a mis-click: a finished task has no other
                     way off this list, and there is deliberately no general undo. */}
-                <span className="col-start-1 row-start-1 flex h-6 items-center">
-                  <StatusButton
-                    status={t.status}
-                    title={t.title}
-                    onClick={() =>
-                      actions.setStatus(t.id, 'backlog', () =>
-                        // The row leaves with the refetch; keep focus on the page, not <body>.
-                        setTimeout(() => heading.current?.focus(), 0),
-                      )
-                    }
-                  />
-                </span>
-                {/* THE ROW OPENS. Until now a finished task could be restored from here
+                  <span className="flex h-11 shrink-0 items-center">
+                    <StatusButton
+                      status={t.status}
+                      title={t.title}
+                      onClick={() =>
+                        actions.setStatus(t.id, 'backlog', () =>
+                          // The row leaves with the refetch; keep focus on the page, not <body>.
+                          setTimeout(() => heading.current?.focus(), 0),
+                        )
+                      }
+                    />
+                  </span>
+                  {/* THE ROW OPENS. Until now a finished task could be restored from here
                     and nothing else -- not read, not corrected, not deleted -- so the only way
                     to look at one was to find it again in its project's tree. */}
-                <button
-                  type="button"
-                  onClick={() => setOpenId(t.id)}
-                  className="col-start-2 row-start-1 flex min-w-0 flex-col text-left"
-                >
-                  <span className="truncate">{t.title}</span>
-                  <span className="truncate text-sm text-ink-muted">
-                    {t.parentTitle === null ? t.projectName : `${t.projectName} › ${t.parentTitle}`}
-                  </span>
-                </button>
-                <time
-                  dateTime={t.completedAt ?? undefined}
-                  className="col-start-3 row-start-1 flex h-6 items-center text-sm tabular-nums text-ink-muted"
-                >
-                  {t.completedAt ? clock.format(new Date(t.completedAt)) : ''}
-                </time>
+                  <button
+                    type="button"
+                    onClick={() => setOpenId(t.id)}
+                    className="flex min-w-0 flex-1 flex-col py-2.5 text-left"
+                  >
+                    <span className="truncate">{t.title}</span>
+                    <span className="truncate text-sm text-ink-muted">
+                      {t.parentTitle === null
+                        ? t.projectName
+                        : `${t.projectName} › ${t.parentTitle}`}
+                    </span>
+                  </button>
+                </span>
               </li>
             ))}
           </ul>

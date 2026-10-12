@@ -130,7 +130,8 @@ test('the scale follows the reader root font size: size AND leading, as a pair',
     body: 'body',
     h1: 'h1',
     title: '[data-row-title]',
-    meta: '[data-row-meta]',
+    // The margin: the meta size, on the TITLE's leading, so its word sits on the title's line.
+    lead: '[data-row-lead-text]',
     panel: '[data-panel="Tasks"] h2',
     caption: '[data-stat] dt',
   } as const
@@ -149,7 +150,7 @@ test('the scale follows the reader root font size: size AND leading, as a pair',
     body: { size: '16px', line: '24px' },
     h1: { size: '24px', line: '32px' },
     title: { size: '16px', line: '24px' },
-    meta: { size: '14px', line: '22px' },
+    lead: { size: '14px', line: '24px' },
     // A section's heading is body size in semibold: with no box round it, the heading is the
     // only thing that says where a section starts, and a 20px heading over every block made a
     // page of shouting.
@@ -165,7 +166,7 @@ test('the scale follows the reader root font size: size AND leading, as a pair',
     body: { size: '20px', line: '30px' },
     h1: { size: '30px', line: '40px' },
     title: { size: '20px', line: '30px' },
-    meta: { size: '17.5px', line: '27.5px' },
+    lead: { size: '17.5px', line: '30px' },
     panel: { size: '20px', line: '30px' },
     caption: { size: '15px', line: '25px' },
   })
@@ -175,7 +176,7 @@ test('the scale follows the reader root font size: size AND leading, as a pair',
   expect((await measure()).title).toEqual({ size: '12px', line: '18px' })
 })
 
-test('the banner subject is the top step, 36/44, and the page title is one below it', async ({
+test('the banner subject is 36/44, and the date heading above it is the display step', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 1000 })
@@ -196,8 +197,9 @@ test('the banner subject is the top step, 36/44, and the page title is one below
       return { size: s.fontSize, line: s.lineHeight, weight: s.fontWeight }
     })
   expect(subject).toEqual({ size: '36px', line: '44px', weight: '600' })
-  // The thing being done right now outranks the name of the page it is on.
-  expect(await pair(page, 'h1')).toEqual({ size: '24px', line: '32px', weight: '600' })
+  // The page's own heading is the date, one step above the banner: on this page the day is the
+  // subject, and the one thing being done in it is the next thing said. The display step, at 500.
+  expect(await pair(page, 'h1')).toEqual({ size: '48px', line: '56px', weight: '500' })
 })
 
 // -------------------------------------------------------------------- 400 and 600, and no 500
@@ -267,10 +269,7 @@ test('text-autospace is asked for, and actually moves the glyphs', async ({ page
   // (Chromium computes `no-autospace` unless asked), so the app has to opt in -- and it must opt
   // in on the INHERITED root, not per component, which is what the heading shows.
   await expect(page.locator('body')).toHaveCSS('text-autospace', 'normal')
-  await expect(page.getByRole('heading', { level: 1, name: 'Today' })).toHaveCSS(
-    'text-autospace',
-    'normal',
-  )
+  await expect(page.locator('#today-heading')).toHaveCSS('text-autospace', 'normal')
 })
 
 test('numeric columns keep tabular figures', async ({ page }) => {
@@ -284,7 +283,7 @@ test('numeric columns keep tabular figures', async ({ page }) => {
 
   // antd's one positive numeric rule, adopted here. The row's date column and the banner's
   // counts are the places a column of digits has to line up.
-  await expect(page.locator('[data-due-text]').first()).toHaveCSS(
+  await expect(page.locator('[data-row-lead-text]').first()).toHaveCSS(
     'font-variant-numeric',
     'tabular-nums',
   )
