@@ -1,13 +1,50 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { searchProviders } from '../modules/registry'
-import { federate, type FederatedHit, type ProviderResult } from '../modules/search'
+import { allChords, kinds, pinnedPages, searchProviders } from '../modules/registry'
+import { federate, type ProviderResult } from '../modules/search'
+import { recentList } from '../recent'
 import { Modal } from './Modal'
 import { useComposing } from '../composition'
 import { BUTTON } from './buttonStyles'
 
 /** Long enough that typing a word does not fire a request per letter, short enough to feel live. */
 const DEBOUNCE_MS = 150
+
+/** One row of the list, whatever it is: a recent thing, a place, or a module's hit. */
+type Row = {
+  key: string
+  to: string
+  title: string
+  meta?: ReactNode
+  mark?: ReactNode
+  rail?: ReactNode
+  /** The `g` key that goes straight there, for a place. */
+  hint?: string
+  /** A module hit's id, its test handle. */
+  hit?: string
+  group: 'recent' | 'place' | 'hit'
+}
+
+const GROUP_LABEL: Partial<Record<Row['group'], string>> = { recent: 'Recent', place: 'Go to' }
+
+/**
+ * EVERY PLACE: the pinned pages, Things, and every kind. With no row per kind in the rail this is
+ * one of the two ways to a kind's page that skip Things -- the other being its `g` key, which is
+ * shown here so it is learned by being seen.
+ */
+function places(): Row[] {
+  const keys = new Map(allChords().map((c) => [c.id, c.key]))
+  const all = [
+    ...pinnedPages().map((p) => ({ label: p.label, to: p.to, chord: p.id })),
+    { label: 'Things', to: '/things', chord: undefined },
+    ...kinds().map((k) => ({ label: k.label, to: k.to, chord: k.chord })),
+  ]
+  return all.map(({ label, to, chord }) => {
+    const key = chord ? keys.get(chord) : undefined
+    const place: Row = { key: `place:${label}`, to, title: label, group: 'place' }
+    return key ? { ...place, hint: `g ${key}` } : place
+  })
+}
 
 /**
  * FEDERATED search. Reached with `f` from anywhere, or the Search button in the header.
@@ -67,18 +104,55 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
     ...p.useHits(debounced),
   }))
   const results = federate(parts)
-  const rows = debounced.length > 0 ? results.rows : []
+  // Read once when the dialog opens: the list must not reshuffle under the reader.
+  const [recent] = useState(recentList)
+  const everywhere = useMemo(places, [])
+  const typed = debounced.toLocaleLowerCase()
+  // BEFORE TYPING: what was opened lately, then every place. WHILE TYPING: the places whose name
+  // matches, then every module's hits.
+  const rows: Row[] =
+    debounced.length === 0
+      ? [
+          ...recent.map((r) => ({
+            key: `recent:${r.type}:${r.id}`,
+            to: r.to,
+            title: r.title,
+            meta: r.kind,
+            group: 'recent' as const,
+          })),
+          ...everywhere,
+        ]
+      : [
+          ...everywhere.filter((p) => p.title.toLocaleLowerCase().includes(typed)),
+          ...results.rows.map((hit) => ({
+            key: `${hit.moduleId}:${hit.id}`,
+            to: hit.to,
+            title: hit.title,
+            // The same breadcrumb the today and completed lists show, prefixed by the module it
+            // came from once there is more than one module to tell apart.
+            meta: (
+              <>
+                {results.showModule && `${hit.moduleLabel} · `}
+                {hit.meta}
+              </>
+            ),
+            mark: hit.mark,
+            rail: hit.rail,
+            hit: hit.id,
+            group: 'hit' as const,
+          })),
+        ]
   // A shorter result set must not leave the selection pointing past the end.
   const at = Math.min(active, Math.max(rows.length - 1, 0))
 
   useEffect(() => setActive(0), [debounced])
   useEffect(() => {
-    list.current?.children[at]?.scrollIntoView({ block: 'nearest' })
+    document.getElementById(optionId(at))?.scrollIntoView({ block: 'nearest' })
   }, [at])
 
-  const choose = (hit: FederatedHit) => {
+  const choose = (row: Row) => {
     onClose()
-    navigate(hit.to)
+    navigate(row.to)
   }
 
   return (
@@ -168,9 +242,6 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
           </button>
         </div>
       )}
-      {debounced.length === 0 && (
-        <p className="px-4 py-3 text-sm text-fg-muted">Type to search tasks across every project</p>
-      )}
       {/* `role="listbox"` on the list and `role="option"` on each row, which is what makes
           `aria-activedescendant` above mean anything: an id pointing at an element with no `option`
           role names nothing a reader can place in a list. The rows are `<li>`s and not buttons on
@@ -183,38 +254,72 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
         aria-label="Search results"
         className="max-h-[52vh] overflow-y-auto"
       >
-        {rows.map((hit, i) => (
-          <li
-            key={`${hit.moduleId}:${hit.id}`}
+        {rows.map((row, i) => (
+          <SearchRow
+            key={row.key}
+            row={row}
             id={optionId(i)}
-            role="option"
-            data-search-result={hit.id}
-            // `aria-selected`, not `aria-current`: in a listbox the selected option is what
-            // `aria-selected` says, and it is the attribute `aria-activedescendant` is read with.
-            aria-selected={i === at}
-            onClick={() => choose(hit)}
-            onMouseEnter={() => setActive(i)}
-            // Same row system as the lists: the module's identity rail at x=0, then the marker
-            // and the title at a fixed x. A result's project is a glance, not a read.
-            className={`relative flex w-full cursor-pointer items-start gap-2 py-2 pr-4 pl-5 text-left ${
-              i === at ? 'bg-surface-hover' : ''
-            }`}
-          >
-            {hit.rail}
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center">{hit.mark}</span>
-            <span className="flex min-w-0 flex-col">
-              <span className="truncate text-fg">{hit.title}</span>
-              {/* The same breadcrumb the today and completed lists show, so a result is
-                  actionable without opening it -- prefixed by the module it came from once
-                  there is more than one module to tell apart. */}
-              <span className="truncate text-sm text-fg-muted">
-                {results.showModule && `${hit.moduleLabel} · `}
-                {hit.meta}
-              </span>
-            </span>
-          </li>
+            selected={i === at}
+            heading={row.group !== rows[i - 1]?.group ? GROUP_LABEL[row.group] : undefined}
+            onChoose={() => choose(row)}
+            onHover={() => setActive(i)}
+          />
         ))}
       </ul>
     </Modal>
+  )
+}
+
+function SearchRow({
+  row,
+  id,
+  selected,
+  heading,
+  onChoose,
+  onHover,
+}: {
+  row: Row
+  id: string
+  selected: boolean
+  heading: string | undefined
+  onChoose: () => void
+  onHover: () => void
+}) {
+  return (
+    <>
+      {/* A group's name, outside the options so the keyboard walks only what can be chosen. */}
+      {heading && (
+        <li role="presentation" className="px-5 pt-3 pb-1 text-xs font-semibold text-fg-subtle">
+          {heading}
+        </li>
+      )}
+      <li
+        id={id}
+        role="option"
+        data-search-result={row.hit}
+        // `aria-selected`, not `aria-current`: in a listbox the selected option is what
+        // `aria-selected` says, and it is the attribute `aria-activedescendant` is read with.
+        aria-selected={selected}
+        onClick={onChoose}
+        onMouseEnter={onHover}
+        // Same row system as the lists: the module's identity rail at x=0, then the marker
+        // and the title at a fixed x. A result's project is a glance, not a read.
+        className={`relative flex w-full cursor-pointer items-start gap-2 py-2 pr-4 pl-5 text-left ${
+          selected ? 'bg-surface-hover' : ''
+        }`}
+      >
+        {row.rail}
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center">{row.mark}</span>
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="truncate text-fg">{row.title}</span>
+          {row.meta && <span className="truncate text-sm text-fg-muted">{row.meta}</span>}
+        </span>
+        {row.hint && (
+          <kbd className="mt-0.5 shrink-0 rounded border border-border-subtle px-1.5 text-xs leading-5 text-fg-subtle">
+            {row.hint}
+          </kbd>
+        )}
+      </li>
+    </>
   )
 }

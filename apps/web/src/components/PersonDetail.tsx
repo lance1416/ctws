@@ -20,6 +20,7 @@ import { DetailHead, DetailPane } from './DetailPane'
 import { Link } from 'react-router-dom'
 import { LinkedSection } from './Links'
 import { PickMany, PickOne } from './inline'
+import { useRecordRecent } from '../recent'
 
 /**
  * ONE PERSON, in the shell's detail pane.
@@ -36,6 +37,13 @@ import { PickMany, PickOne } from './inline'
  * no frame around them (`relations.Head`). One editor, two places -- a second copy drifts.
  */
 export function PersonDetail({ person, onClose }: { person: PersonResponse; onClose: () => void }) {
+  useRecordRecent({
+    type: 'person',
+    id: person.id,
+    title: person.name,
+    to: `/people/${person.id}`,
+    kind: 'Person',
+  })
   return (
     <DetailPane label="People" onClose={onClose}>
       <PersonFields person={person} onClose={onClose} />

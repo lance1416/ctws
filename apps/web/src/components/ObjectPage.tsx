@@ -8,6 +8,7 @@ import { ViewTabs } from './ViewTabs'
 import { useCrumbs } from './Location'
 import { useQuery } from '@tanstack/react-query'
 import { listProjects } from '../api/projects'
+import { useRecordRecent } from '../recent'
 
 /**
  * A PAGE FOR A THING THAT IS A PLACE.
@@ -45,6 +46,11 @@ export function ObjectPage({ type }: { type: ObjectType }) {
   })
   const name = projects.data?.find((p) => p.id === id)?.name ?? ''
   useCrumbs(type === 'project' ? [{ label: 'Projects', to: '/projects' }, { label: name }] : null)
+  useRecordRecent(
+    type === 'project' && id && name
+      ? { type: 'project', id, title: name, to: `/projects/${id}`, kind: 'Project' }
+      : null,
+  )
 
   if (!id) return null
   const Head = where?.Head

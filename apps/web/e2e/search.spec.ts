@@ -162,9 +162,10 @@ test('the search selection is announceable: combobox, listbox, activedescendant'
 
   const box = searchBox(page)
   await expect(box).toHaveRole('combobox')
-  // Before anything is typed there is no list, and the box says so rather than pointing at nothing.
-  await expect(box).toHaveAttribute('aria-expanded', 'false')
-  expect(await box.getAttribute('aria-activedescendant')).toBeNull()
+  // Before anything is typed the list holds the places, and the box says so: it is expanded and
+  // points at the first one, rather than claiming an empty list while showing a full one.
+  await expect(box).toHaveAttribute('aria-expanded', 'true')
+  expect(await box.getAttribute('aria-activedescendant')).toBeTruthy()
   const listId = await box.getAttribute('aria-controls')
   expect(listId).toBeTruthy()
 
@@ -284,4 +285,38 @@ test('no Tab reaches outside the search dialog while it is open', async ({ page 
   await page.keyboard.press('Escape')
   await expect(searchBox(page)).toHaveCount(0)
   await expect(handle(page, '第一条')).toBeFocused()
+})
+
+// ------------------------------------------------------------------------- places and recents
+/**
+ * With no row per kind in the rail, search is also how you get to a place: before anything is
+ * typed it lists what was opened lately and every place, and typing narrows places too.
+ */
+test('search goes to places: before typing, and by name', async ({ page }) => {
+  await registerFreshUser(page, '/')
+  await page.getByRole('banner').getByRole('button', { name: 'Search' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Search' })
+  // Nothing typed yet: the places are all there, each with the key that goes straight to it.
+  await expect(dialog.getByRole('option', { name: /^Things/ })).toBeVisible()
+  await expect(dialog.getByRole('option', { name: /^People/ })).toContainText('g n')
+
+  await searchBox(page).fill('thin')
+  await expect(dialog.getByRole('option').first()).toContainText('Things')
+  await searchBox(page).press('Enter')
+  await expect(page).toHaveURL(/\/things$/)
+})
+
+test('what was opened lately is first, before anything is typed', async ({ page }) => {
+  await registerFreshUser(page, '/')
+  const made = await page.request.post('/api/v1/people', { headers: WEB, data: { name: '陈颖' } })
+  const { id } = (await made.json()) as { id: string }
+  await page.goto(`/people/${id}`)
+  await expect(page.getByRole('dialog').getByRole('heading', { name: '陈颖' })).toBeVisible()
+
+  await page.getByRole('banner').getByRole('button', { name: 'Search' }).click()
+  const first = page.getByRole('dialog', { name: 'Search' }).getByRole('option').first()
+  await expect(first).toContainText('陈颖')
+  await expect(first).toContainText('Person')
+  await searchBox(page).press('Enter')
+  await expect(page).toHaveURL(new RegExp(`/people/${id}$`))
 })

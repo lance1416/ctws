@@ -15,6 +15,7 @@ import { Field } from './Field'
 import { CHIP, field, label } from './formStyles'
 import { PickOne } from './inline'
 import { LinkedSection } from './Links'
+import { useRecordRecent } from '../recent'
 
 /**
  * ONE THING TO READ, ON ITS OWN LAYER.
@@ -55,6 +56,13 @@ export function ReadingDetail({
   item: ReadingItemResponse
   onClose: () => void
 }) {
+  useRecordRecent({
+    type: 'reading',
+    id: item.id,
+    title: item.title ?? item.url ?? '',
+    to: `/reading/${item.id}`,
+    kind: 'Reading',
+  })
   return (
     <DetailPane label="Reading" onClose={onClose}>
       <ReadingFields item={item} onClose={onClose} />

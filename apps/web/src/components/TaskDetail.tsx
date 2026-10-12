@@ -41,6 +41,7 @@ import { StatusPicker } from './StatusPicker'
 import { STATUS_LABEL } from './statusLabel'
 import { detailTaskForm, PATCH_KEYS, type DetailTaskForm, type DetailTaskValues } from './taskForm'
 import { useTimeZone } from '../useMe'
+import { useRecordRecent } from '../recent'
 
 /**
  * The exact field, for the days the three named decisions do not cover. Quieter than them on
@@ -107,6 +108,13 @@ function CloseButton({ onClick }: { onClick: () => void }) {
 
 export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
   const qc = useQueryClient()
+  useRecordRecent({
+    type: 'task',
+    id: task.id,
+    title: task.title,
+    to: `/projects/${projectId}?reveal=${task.id}`,
+    kind: 'Task',
+  })
   /**
    * THE ACCOUNT'S ZONE, for every day and clock on this panel -- including the exact
    * `datetime-local` field, whose value is bare wall-clock text with no zone in it. Reading that

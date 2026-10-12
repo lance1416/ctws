@@ -25,6 +25,7 @@ import { boxed, CHIP, field, label } from './formStyles'
 import { PickMany, PickOne } from './inline'
 import { ScopeAsk } from './ScopeAsk'
 import { BUTTON } from './buttonStyles'
+import { useRecordRecent } from '../recent'
 
 /**
  * ONE MEETING, in the shell's detail pane -- the same pane a task and a person open in.
@@ -59,6 +60,13 @@ export function MeetingDetail({
   accountZone: string
   onClose: () => void
 }) {
+  useRecordRecent({
+    type: 'meeting',
+    id: meeting.meetingId,
+    title: meeting.title,
+    to: `/meetings/${meeting.meetingId}`,
+    kind: 'Meeting',
+  })
   return (
     <DetailPane label="Meetings" onClose={onClose}>
       <MeetingFields meeting={meeting} accountZone={accountZone} onClose={onClose} />
