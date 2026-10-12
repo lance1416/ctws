@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { registerFreshUser } from './helpers'
+import { makeProject, makeTask, registerFreshUser, WEB } from './helpers'
 
 test('the app shell routes between today, projects and a project', async ({ page }) => {
   await registerFreshUser(page)
@@ -141,7 +141,9 @@ test('the header names where you are', async ({ page }) => {
 test('capture is in the header, and / reaches it from anywhere', async ({ page }) => {
   await registerFreshUser(page, '/')
   const box = page.getByRole('banner').getByRole('textbox', { name: 'Capture' })
-  await expect(box).toBeVisible()
+  // Usable first: until the inbox has loaded there is nowhere to capture to, and a disabled box
+  // cannot take the focus.
+  await expect(box).toBeEnabled()
   await page.keyboard.press('/')
   await expect(box).toBeFocused()
 })
@@ -291,4 +293,40 @@ test('the rail marks Things while you are on a kind of thing', async ({ page }) 
     'aria-current',
     'page',
   )
+})
+
+test("on a phone, the Today tab says how much is on today's plate", async ({ page }) => {
+  await page.setViewportSize(PHONE)
+  await registerFreshUser(page, '/')
+  const pid = await makeProject(page, 'P')
+  await makeTask(page, pid, 'Late one', { dueAt: '2020-01-01T09:00:00.000Z' })
+  await page.reload()
+  const today = page
+    .getByRole('navigation', { name: 'Main navigation' })
+    .getByRole('link', { name: /^Today/ })
+  await expect(today.locator('[data-count]')).toHaveText('1')
+})
+
+test('at 320px what capture says stays on the screen, however long the name', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 700 })
+  await registerFreshUser(page, '/')
+  const all = await page.request.get('/api/v1/projects', { headers: WEB })
+  const { projects } = (await all.json()) as { projects: { id: string; isInbox: boolean }[] }
+  const inbox = projects.find((p) => p.isInbox)!
+  const renamed = await page.request.patch(`/api/v1/projects/${inbox.id}`, {
+    headers: WEB,
+    data: { name: '一个名字很长很长的求职项目与面试准备' },
+  })
+  expect(renamed.ok(), await renamed.text()).toBe(true)
+  await page.reload()
+
+  const capture = page.getByRole('banner').getByRole('textbox', { name: 'Capture' })
+  await expect(capture).toBeEnabled()
+  await capture.fill('Buy milk')
+  await capture.press('Enter')
+  const said = page.getByRole('banner').getByRole('status').filter({ hasText: 'Added to' })
+  await expect(said).toBeVisible()
+  const box = (await said.boundingBox())!
+  expect(box.x).toBeGreaterThanOrEqual(0)
+  expect(box.x + box.width).toBeLessThanOrEqual(320)
 })

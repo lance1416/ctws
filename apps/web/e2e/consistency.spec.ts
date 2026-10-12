@@ -77,7 +77,18 @@ test('任务面板里 Linked 在笔记后面，和别的面板同一个位置', 
 
 /** `a` sits to the left of `b` on the same line. */
 async function leftOf(a: Locator, b: Locator) {
-  const [ra, rb] = [(await a.boundingBox())!, (await b.boundingBox())!]
+  // Both read in ONE frame. Two reads can straddle a reflow or a scroll as a dialog settles, and
+  // then two buttons on one line are measured six pixels apart.
+  const [ra, rb] = await a.evaluate(
+    (x, y) => {
+      const box = (el: Element) => {
+        const r = el.getBoundingClientRect()
+        return { x: r.x, y: r.y, width: r.width }
+      }
+      return [box(x), box(y!)] as const
+    },
+    await b.elementHandle(),
+  )
   expect(Math.abs(ra.y - rb.y), 'on one line').toBeLessThanOrEqual(2)
   expect(ra.x + ra.width).toBeLessThanOrEqual(rb.x)
 }

@@ -16,6 +16,7 @@ import { kinds, pinnedPages, WORKBENCH_PATH } from '../modules/registry'
 export function BottomBar({ onSearch }: { onSearch: () => void }) {
   const pinned = new Map(pinnedPages().map((p) => [p.key, p]))
   const today = pinned.get('tasks:today')
+  const TodayCount = today?.Count
   const calendar = pinned.get('shell:calendar')
   // The shell's own kind, always there and always first.
   const projects = kinds()[0]!
@@ -44,7 +45,11 @@ export function BottomBar({ onSearch }: { onSearch: () => void }) {
             <circle cx="11" cy="11" r="7.5" />
             <path d="M11 5.5a5.5 5.5 0 0 1 0 11z" fill="currentColor" stroke="none" />
           </Icon>
-          {today.label}
+          {/* The same count the rail gives it: how much is on today's plate. */}
+          <span className="flex items-center">
+            {today.label}
+            {TodayCount && <TodayCount />}
+          </span>
         </NavLink>
       )}
       <NavLink to={projects.to} className={link}>
