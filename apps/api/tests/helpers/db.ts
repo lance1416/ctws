@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { migrate } from 'drizzle-orm/node-postgres/migrator'
@@ -64,6 +64,7 @@ export async function migratedTo(tag: string) {
     migrateRest: () => migrate(db, { migrationsFolder: MIGRATIONS }),
     stop: async () => {
       await closeDb(db)
+      rmSync(partial, { recursive: true, force: true })
     },
   }
 }

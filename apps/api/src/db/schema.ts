@@ -282,9 +282,9 @@ export const readingItems = pgTable(
 /**
  * PEOPLE -- THE THIRD MODULE's own tables, modelled on vCard 4.0 (RFC 6350).
  *
- * Like reading items, a person carries `workspace_id` directly and its project is optional: a
- * person you know is not a line of work. ON DELETE SET NULL on the project for the same reason --
- * deleting a project must not delete the people.
+ * Like reading items, a person carries `workspace_id` directly and has no project column: a
+ * person you know is not a line of work. Filing one under projects is a link (see `links`), so
+ * deleting a project never deletes the people in it.
  */
 export const people = pgTable(
   'people',
