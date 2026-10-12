@@ -11,7 +11,7 @@ import { useTimeZone } from '../useMe'
 import { useProjectRail } from '../projectColor'
 import { flatten } from '../tree/flatten'
 import { MAX_DEPTH } from '../tree/drop'
-import { decision, field, label } from './formStyles'
+import { decision, field, label, STATUS_CHIP } from './formStyles'
 import { PickOne } from './inline'
 import { Modal } from './Modal'
 import { DeadlineMark, PlanMark } from './RowParts'
@@ -24,7 +24,7 @@ import {
   type CreateTaskForm,
   type CreateTaskValues,
 } from './taskForm'
-import { BUTTON } from './buttonStyles'
+import { DialogFooter } from './DialogFooter'
 
 /**
  * NEW TASK: a task created WITH its details, in one request.
@@ -251,12 +251,9 @@ export function CreateTaskDialog({
           <span id="create-status-label" className={label}>
             Status
           </span>
-          <div className="mt-1.5 grid grid-cols-3 gap-1">
+          <div className="mt-1.5 flex flex-wrap gap-1">
             {TASK_STATUSES.map((s) => (
-              <label
-                key={s}
-                className="relative flex min-h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-border-subtle py-1 pr-2 pl-1.5 text-sm text-fg-muted hover:bg-surface has-[:checked]:border-border-strong has-[:checked]:bg-surface has-[:checked]:font-semibold has-[:checked]:text-fg has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent"
-              >
+              <label key={s} className={STATUS_CHIP}>
                 <input
                   type="radio"
                   value={s}
@@ -360,23 +357,22 @@ export function CreateTaskDialog({
           </p>
         )}
 
-        <div className="flex flex-wrap items-center gap-2 border-t border-border-subtle pt-4">
-          <button type="submit" className={BUTTON.primary}>
-            Create
-          </button>
-          <button type="button" onClick={onClose} className={BUTTON.secondary}>
-            Cancel
-          </button>
-          {/* Both chords, not one guessed from the user agent: the keys are what the hint is for,
-              and a wrong guess teaches the wrong key. */}
-          <p className="ml-auto text-xs text-fg-muted">
-            <kbd className="rounded border border-border-strong px-1.5 text-xs leading-5">⌘↵</kbd> /{' '}
-            <kbd className="rounded border border-border-strong px-1.5 text-xs leading-5">
-              Ctrl↵
-            </kbd>{' '}
-            Create and add another
-          </p>
-        </div>
+        <DialogFooter
+          submit="Create"
+          onCancel={onClose}
+          hint={
+            // Both chords, not one guessed from the user agent: the keys are what the hint is
+            // for, and a wrong guess teaches the wrong key.
+            <p className="text-xs text-fg-muted">
+              <kbd className="rounded border border-border-strong px-1.5 text-xs leading-5">⌘↵</kbd>{' '}
+              /{' '}
+              <kbd className="rounded border border-border-strong px-1.5 text-xs leading-5">
+                Ctrl↵
+              </kbd>{' '}
+              Create and add another
+            </p>
+          }
+        />
       </form>
     </Modal>
   )

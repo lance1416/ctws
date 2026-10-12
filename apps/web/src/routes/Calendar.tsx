@@ -265,7 +265,7 @@ function Step({
       type="button"
       aria-label={label}
       onClick={onClick}
-      className="flex h-7 min-w-7 items-center justify-center rounded-lg border border-border-subtle px-1.5 text-xs text-fg-muted hover:bg-surface hover:text-fg"
+      className="flex h-7 min-w-7 items-center justify-center rounded-lg border border-border-subtle px-1.5 text-xs text-fg-muted hover:bg-surface-hover hover:text-fg"
     >
       {children}
     </button>

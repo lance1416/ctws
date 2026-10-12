@@ -318,7 +318,10 @@ export function Today() {
 
       <div
         data-workbench-grid
-        className={`grid min-w-0 items-start gap-4 ${rightColumn ? 'lg:grid-cols-[repeat(3,minmax(0,1fr))]' : ''}`}
+        // `auto 1fr` rows: the right column spans both, and a grid shares a spanning item's extra
+        // height across every row it spans -- so when that column was the taller, part of the
+        // difference opened up as a gap under Working on. All of it now goes to the last row.
+        className={`grid min-w-0 items-start gap-4 ${rightColumn ? 'lg:grid-cols-[repeat(3,minmax(0,1fr))] lg:grid-rows-[auto_1fr]' : ''}`}
       >
         {/*
           Working on -- the first thing the eye should land on, and the only

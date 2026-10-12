@@ -1,6 +1,7 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useComposing } from '../composition'
+import { CHIP } from './formStyles'
 import { MENU_ITEM, MENU_SURFACE } from './menuSurface'
 
 /**
@@ -141,10 +142,7 @@ export function PickMany({
   return (
     <span className="flex min-w-0 flex-wrap items-center gap-1.5 py-0.5">
       {shown.map((c) => (
-        <span
-          key={c.value}
-          className="flex h-7 min-w-0 items-center gap-1.5 rounded-lg bg-surface-hover px-2 text-xs text-fg"
-        >
+        <span key={c.value} className={CHIP}>
           {c.mark && (
             <span aria-hidden="true" className="flex shrink-0">
               {c.mark}

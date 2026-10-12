@@ -215,7 +215,7 @@ export function ReadingRow({
           // OPACITY, never `hidden`: a display:none button is not in the tab order at all, so
           // the one action on this row would be unreachable without a mouse. On a touch screen
           // there is no hover, so it is simply always there -- the same rule the task row keeps.
-          className="h-7 shrink-0 rounded-lg border border-border-subtle px-2 text-xs text-fg opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-surface [@media(hover:none)]:opacity-100"
+          className="h-7 shrink-0 rounded-lg border border-border-subtle px-2 text-xs text-fg opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-surface-hover [@media(hover:none)]:opacity-100"
         >
           {next.label}
         </button>
@@ -224,7 +224,7 @@ export function ReadingRow({
       <DropdownMenu.Root>
         <DropdownMenu.Trigger
           aria-label={`More for “${label}”`}
-          className="h-7 w-7 shrink-0 rounded-lg text-fg-subtle hover:bg-surface hover:text-fg"
+          className="h-7 w-7 shrink-0 rounded-lg text-fg-subtle hover:bg-surface-hover hover:text-fg"
         >
           <svg aria-hidden="true" viewBox="0 0 16 16" className="mx-auto h-4 w-4">
             <circle cx="3.5" cy="8" r="1.25" fill="currentColor" />

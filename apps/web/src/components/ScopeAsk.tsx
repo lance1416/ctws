@@ -16,28 +16,50 @@ export function ScopeAsk({
   what,
   onPick,
   onCancel,
+  destroys = false,
+  back = 'Cancel',
 }: {
   /** What the change is, in the question: "Move this meeting to …". */
   what: string
   onPick: (scope: EditScope) => void
   onCancel: () => void
+  /**
+   * The answer CANCELS occurrences, rather than changing them: both answers wear the danger
+   * colour, as every press that destroys does (`DangerZone`'s second rule).
+   */
+  destroys?: boolean
+  /** The way out's word. "Cancel" is wrong when the question is itself about cancelling. */
+  back?: string
 }) {
+  const answer = destroys ? BUTTON.destructive : BUTTON.secondary
   return (
+    /*
+      DRAWN LIKE THE DELETE QUESTION (`DeleteConfirm`): the sentence, then the way out, then the
+      answers. It used to be a box in the page's ground colour -- a darker block inside the pane,
+      and the one question of the two that looked unlike the other.
+    */
     <div
       role="alertdialog"
       aria-label="This meeting repeats"
-      className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-border-subtle bg-surface px-2.5 py-2 text-sm"
+      className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm"
     >
       <p className="w-full text-fg">{what}</p>
-      <button autoFocus type="button" onClick={() => onPick('one')} className={BUTTON.secondary}>
-        Just this one
-      </button>
-      <button type="button" onClick={() => onPick('following')} className={BUTTON.secondary}>
-        This and all later
-      </button>
-      <button type="button" onClick={onCancel} className={BUTTON.quiet}>
-        Cancel
-      </button>
+      <span className="flex flex-wrap items-center gap-2">
+        <button type="button" onClick={onCancel} className={BUTTON.secondary}>
+          {back}
+        </button>
+        {/* The two answers are one pair and wrap as one: in a 22rem pane the three buttons do
+            not fit a line, and splitting the pair put "This and all later" alone under the way
+            out. */}
+        <span className="flex items-center gap-2">
+          <button autoFocus type="button" onClick={() => onPick('one')} className={answer}>
+            Just this one
+          </button>
+          <button type="button" onClick={() => onPick('following')} className={answer}>
+            This and all later
+          </button>
+        </span>
+      </span>
     </div>
   )
 }

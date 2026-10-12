@@ -5,7 +5,7 @@ import { listProjects } from '../api/projects'
 import { useProjectRail } from '../projectColor'
 import { DangerAction, DangerZone } from './DangerZone'
 import { useEffect, useState, type ReactNode } from 'react'
-import { BirthdayEditor, BirthdayFields, plainDate } from './BirthdayFields'
+import { BirthdayEditor, BirthdayFields, givenDate, plainDate } from './BirthdayFields'
 import { CIRCLE_LABELS } from './BirthdayRow'
 import { BUTTON } from './buttonStyles'
 import { byKind, channelLabel, channelPlaceholder, KIND_CHOICES, KIND_LABEL } from '../channels'
@@ -13,12 +13,12 @@ import { usePhone } from '../usePhone'
 import { Field } from './Field'
 import { PickCity } from './PickCity'
 import { useComposing } from '../composition'
-import { boxed, field, label } from './formStyles'
+import { boxed, CHIP, field, label } from './formStyles'
 import { NoteBody } from '../notes/NoteBody'
 import { WritingMode } from '../notes/WritingMode'
 import { DetailHead, DetailPane } from './DetailPane'
 import { Link } from 'react-router-dom'
-import { Links } from './Links'
+import { LinkedSection } from './Links'
 import { PickMany, PickOne } from './inline'
 
 /**
@@ -49,10 +49,7 @@ export function ContactDetail({
           call. None of it is written on the person: the edges are, and this reads them from the
           other end. The edges are the SHELL's, so they sit BESIDE this module's fields rather
           than inside them -- the person's own page composes the same two halves. */}
-      <section aria-label="Linked" className="mt-4 border-t border-border-subtle pt-3">
-        <span className="block px-2 pb-1 text-xs text-fg-muted">Linked</span>
-        <Links of={{ type: 'contact', id: contact.id }} />
-      </section>
+      <LinkedSection of={{ type: 'contact', id: contact.id }} className="mt-4" />
 
       {/*
         最后一个东西，底下再没有别的控件。
@@ -212,10 +209,7 @@ export function ContactFields({
             ) : (
               <ul className="flex flex-wrap gap-1.5">
                 {contact.projects.map((p) => (
-                  <li
-                    key={p.id}
-                    className="flex min-w-0 items-center gap-1.5 rounded-lg border border-border-subtle bg-surface-raised px-2 py-1 text-sm text-fg"
-                  >
+                  <li key={p.id} className={CHIP}>
                     {chip(p.id)}
                     <span className="truncate">{p.name}</span>
                   </li>
@@ -418,6 +412,16 @@ function ContactForm({
   // 服务端说这个日子不存在：保存必然 400，所以按钮关着。
   const [badDay, setBadDay] = useState(false)
   const composing = useComposing()
+  // What the button says. Untouched (`undefined`), it is the birthday already saved -- it used to
+  // say `Not set` here for a person whose pane, one press earlier, read `Oct 17, 1991`.
+  const dayText =
+    birthday === undefined
+      ? contact.birthday
+        ? givenDate(contact.birthday)
+        : null
+      : birthday
+        ? plainDate(birthday)
+        : null
 
   const submit = () => {
     if (busy || badDay || badChannel || name.trim() === '') return
@@ -569,13 +573,13 @@ function ContactForm({
               type="button"
               aria-expanded={pickingDay}
               // 自己的名字：屏幕上写的是 `Not set`，而性别和 circle 空着时也写 `Not set`。
-              aria-label={birthday ? `Birthday, ${plainDate(birthday)}` : 'Birthday, not set'}
+              aria-label={dayText ? `Birthday, ${dayText}` : 'Birthday, not set'}
               onClick={() => setPickingDay(!pickingDay)}
               className={`-mx-1.5 flex min-w-0 items-center gap-1.5 rounded-lg px-1.5 py-0.5 text-left text-sm hover:bg-surface-hover ${
-                birthday ? 'text-fg' : 'text-fg-subtle'
+                dayText ? 'text-fg' : 'text-fg-subtle'
               }`}
             >
-              <span className="truncate">{birthday ? plainDate(birthday) : 'Not set'}</span>
+              <span className="truncate">{dayText ?? 'Not set'}</span>
               <svg
                 aria-hidden="true"
                 viewBox="0 0 16 16"

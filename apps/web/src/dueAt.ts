@@ -115,9 +115,16 @@ export function dayPhrase(day: string, today: string): string {
  * row the reader has to hold two of.
  */
 export function shortDay(day: string, today: string): string {
+  return today.slice(0, 4) === day.slice(0, 4) ? fullDay(day).replace(/, \d+$/, '') : fullDay(day)
+}
+
+/**
+ * `Oct 17, 1991`: a day that is always read with its year -- a birthday, the day a person was
+ * born. The same words `shortDay` uses, so a date never appears as `1991-10-17` beside them.
+ */
+export function fullDay(day: string): string {
   const [y, m, d] = day.split('-').map(Number) as [number, number, number]
-  const short = `${MONTHS[m - 1]} ${d}`
-  return today.slice(0, 4) === day.slice(0, 4) ? short : `${short}, ${y}`
+  return `${MONTHS[m - 1]} ${d}, ${y}`
 }
 
 /** How far off something is: `today`, `tomorrow`, `in 23 days`. */

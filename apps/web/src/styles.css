@@ -188,9 +188,14 @@
   --color-surface-panel: #ffffff;
   --color-surface-raised: #ffffff;
   --color-surface-sunken: #e9ecf1;
-  /* What a row goes to under the pointer. Its own token rather than `sunken`, because in dark
-     a hover has to go UP (the panel is already dark) and in light it goes down onto the tint. */
-  --color-surface-hover: #e9ecf1;
+  /* What a row goes to under the pointer: THE INK AT 8%, LAID OVER WHATEVER PLANE IT IS ON.
+     Material 3's hover state layer (8% of the content colour), and the reason it is a layer
+     rather than a colour: an opaque hover is one plane, and the app has four. The opaque one this
+     replaces was `#e9ecf1` here and `#1c1c1f` in dark -- exactly `sunken` in light and exactly
+     `raised` in dark -- so a hover on the rail (sunken) and a highlighted search result, a menu
+     item or a row in the overlay pane (raised) changed nothing at all. Ink over the plane goes
+     DOWN in light and UP in dark, from any plane, by construction. */
+  --color-surface-hover: rgb(26 29 35 / 0.08);
   --color-fg: #1a1d23;
   --color-fg-muted: #4a515c;
   --color-fg-subtle: #616876;
@@ -281,7 +286,7 @@
     --color-surface-panel: #141416;
     --color-surface-raised: #1c1c1f;
     --color-surface-sunken: #0f0f11;
-    --color-surface-hover: #1c1c1f;
+    --color-surface-hover: rgb(232 232 234 / 0.08);
     --color-fg: #e8e8ea;
     --color-fg-muted: #a8a8ad;
     --color-fg-subtle: #86868c;
@@ -342,7 +347,7 @@
   --color-surface-panel: #141416;
   --color-surface-raised: #1c1c1f;
   --color-surface-sunken: #0f0f11;
-  --color-surface-hover: #1c1c1f;
+  --color-surface-hover: rgb(232 232 234 / 0.08);
   --color-fg: #e8e8ea;
   --color-fg-muted: #a8a8ad;
   --color-fg-subtle: #86868c;

@@ -31,7 +31,7 @@ export function Links({
    * same rows twice -- which is the thing a reader has to hold two of in their head. The edges
    * are still there; this page just does not say them twice.
    */
-  except?: readonly ObjectType[]
+  except?: readonly ObjectType[] | undefined
   className?: string
 }) {
   const qc = useQueryClient()
@@ -120,6 +120,35 @@ export function Links({
       ))}
       {add}
     </div>
+  )
+}
+
+/**
+ * LINKED AS A SECTION OF A DETAIL PANE -- the same markup in all four panes, so it lives once.
+ *
+ * Every row here carries 8px of padding for its hover plane, and so did the heading to match.
+ * In a pane that put the whole block 8px in from every other label above it (`Your time`,
+ * `Notes`), so the edge of the text wandered. `-mx-2` gives the padding back to the margin: the
+ * words sit on the pane's edge with everything else, and a hover plane bleeds out past it -- what
+ * `DangerAction` does with its own padding for the same reason. On a project page the block sits
+ * in a `Panel`, whose gutter already accounts for the padding, so it uses `Links` directly.
+ */
+export function LinkedSection({
+  of,
+  except,
+  className = '',
+}: {
+  of: Endpoint
+  except?: readonly ObjectType[] | undefined
+  className?: string
+}) {
+  return (
+    <section aria-label="Linked" className={`border-t border-border-subtle pt-3 ${className}`}>
+      <div className="-mx-2">
+        <span className="block px-2 pb-1 text-xs text-fg-muted">Linked</span>
+        <Links of={of} except={except} />
+      </div>
+    </section>
   )
 }
 

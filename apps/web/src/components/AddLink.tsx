@@ -105,7 +105,7 @@ export function AddLink({ of, onClose }: { of: Endpoint; onClose: () => void }) 
                 type="button"
                 disabled={make.isPending}
                 onClick={() => make.mutate(k.kind)}
-                className="h-9 rounded-lg border border-border-subtle px-3 text-sm text-fg hover:border-border-strong hover:bg-surface disabled:opacity-50"
+                className="h-9 rounded-lg border border-border-subtle px-3 text-sm text-fg hover:border-border-strong hover:bg-surface-hover disabled:opacity-50"
               >
                 {/* The phrase read along the edge, which is the one this object's page will
                     show. `belongs` says nothing out loud, so it is named here instead. */}

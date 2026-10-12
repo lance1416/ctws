@@ -179,7 +179,8 @@ test('写一个农历生日，输入时就看见换算与回退', async ({ page 
   await pickOne(page, 'Lunar day', '三十')
   // 预览是服务端算的，所以这里等的是一次请求的结果，不是一个本地字符串。
   const preview = page.getByTestId('birthday-preview')
-  await expect(preview).toContainText('1945-02-12')
+  // The solar day in the app's own words, never the wire format.
+  await expect(preview).toContainText('Feb 12, 1945')
   await expect(preview).toContainText('猴')
   await expect(preview).toContainText('has 29 days')
   await page.getByRole('button', { name: 'Save' }).click()

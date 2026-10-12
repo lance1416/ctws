@@ -85,7 +85,7 @@ export function TriageControl({ groupLabel, triggerLabel, sections, onRan }: Pro
           e.stopPropagation()
           setOpen(!open)
         }}
-        className="flex h-7 w-7 items-center justify-center rounded-md text-fg-muted hover:bg-surface hover:text-fg aria-expanded:bg-surface aria-expanded:text-fg"
+        className="flex h-7 w-7 items-center justify-center rounded-md text-fg-muted hover:bg-surface-hover hover:text-fg aria-expanded:bg-surface-hover aria-expanded:text-fg"
       >
         <svg
           viewBox="0 0 16 16"
@@ -138,7 +138,7 @@ export function TriageControl({ groupLabel, triggerLabel, sections, onRan }: Pro
                     if (onRan) onRan()
                     else queueMicrotask(() => trigger.current?.focus())
                   }}
-                  className="rounded-md border border-border-subtle px-2 py-1 text-fg hover:border-border-strong hover:bg-surface"
+                  className="rounded-md border border-border-subtle px-2 py-1 text-fg hover:border-border-strong hover:bg-surface-hover"
                 >
                   {action.label}
                 </button>

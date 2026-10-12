@@ -8,7 +8,7 @@ import { LAYER } from './layers'
  */
 export const MENU_SURFACE =
   `${LAYER.menu} max-h-80 min-w-36 overflow-y-auto rounded-xl border border-border-subtle ` +
-  'bg-surface-panel p-1 shadow-panel'
+  'bg-surface-raised p-1 shadow-panel'
 
 const MENU_ROW =
   'flex h-9 min-w-0 cursor-default items-center gap-2 rounded-lg px-2 text-sm outline-none'

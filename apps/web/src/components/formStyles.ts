@@ -32,6 +32,24 @@ export const label = 'block text-xs text-fg-muted'
 export const textbox =
   'h-9 rounded-lg border border-border-strong px-3 text-sm text-fg placeholder:text-fg-muted aria-invalid:border-danger'
 
+/**
+ * A VALUE THAT IS A THING -- a person at a meeting, a project someone is on. The same chip when it
+ * is read and when it is being edited: a meeting's attendees were bordered 14px chips in the
+ * reading pane and borderless 12px ones in the form, and a project was a chip in a person's pane
+ * but bare text in a meeting's. The form's chip adds only its ×.
+ */
+export const CHIP =
+  'flex h-7 min-w-0 items-center gap-1.5 rounded-lg bg-surface-hover px-2 text-sm text-fg'
+
+/**
+ * One status, as a chip over its own radio -- the pane's form and the New task dialog both draw
+ * the five of them, and the two copies had drifted (one could wrap a label inside its chip). The
+ * row they sit in is `flex flex-wrap`, sized to the words: a fixed three-column grid cut the
+ * longest label in half.
+ */
+export const STATUS_CHIP =
+  'relative flex min-h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-border-subtle py-1 pr-2 pl-1.5 text-sm whitespace-nowrap text-fg-muted hover:bg-surface-hover has-[:checked]:border-border-strong has-[:checked]:bg-surface has-[:checked]:font-semibold has-[:checked]:text-fg has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent'
+
 /** A named decision: the same shape as the row's triage buttons, so the two speak one language. */
 export const decision =
-  'flex h-9 items-center rounded-lg border border-border-subtle px-2.5 text-sm text-fg hover:border-border-strong hover:bg-surface'
+  'flex h-9 items-center rounded-lg border border-border-subtle px-2.5 text-sm text-fg hover:border-border-strong hover:bg-surface-hover'

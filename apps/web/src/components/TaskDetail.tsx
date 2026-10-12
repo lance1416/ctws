@@ -30,10 +30,10 @@ import { DangerAction, DangerZone } from './DangerZone'
 import { DetailPane } from './DetailPane'
 import { PickOne } from './inline'
 import { Dependencies } from './Dependencies'
-import { Links } from './Links'
+import { LinkedSection } from './Links'
 import { BUTTON } from './buttonStyles'
 // The shared editing vocabulary, which the New task dialog types into a task with as well.
-import { decision, field, label } from './formStyles'
+import { decision, field, label, STATUS_CHIP } from './formStyles'
 import { useUnsavedGuard } from './unsavedGuard'
 import { DeadlineMark, PlanMark } from './RowParts'
 import { StatusMark } from './StatusMark'
@@ -469,19 +469,6 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                 parking it behind Save would make adding a dependency wait on a form it is not part of. */}
             <Dependencies taskId={task.id} projectId={task.projectId} />
 
-            {/*
-              AND WHO OR WHAT IT IS ABOUT: 「这个活要跟陈颖对接」「这本书是她推荐的」。
-
-              边早就收得下这些（`about` 两端都不限），缺的只是任务这一侧没把它画出来 —— 于是一件
-              活和一个人之间的那句话，只有 curl 写得进去。和依赖一样住在阅读态：说出一条边的那一
-              刻它就成立，不该等一张它不属于的表单。
-            */}
-            <section aria-label="Linked" className="border-t border-border-subtle pt-3">
-              <span className="block px-2 pb-1 text-xs text-fg-muted">Linked</span>
-              {/* 项目不在这里重复：面板抬头那一行写的就是它，而一行东西读两遍是这个 app 一直在躲的那件事。 */}
-              <Links of={{ type: 'task', id: task.id }} except={['project']} />
-            </section>
-
             <div>
               <span className={label}>Notes</span>
               {/* THE NOTE, RENDERED AS MARKDOWN. Kept at the 68ch reading measure the
@@ -497,6 +484,20 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                 <p className="mt-1 text-sm text-fg-subtle">No notes yet</p>
               )}
             </div>
+
+            {/*
+              AND WHO OR WHAT IT IS ABOUT: 「这个活要跟陈颖对接」「这本书是她推荐的」。
+
+              边早就收得下这些（`about` 两端都不限），缺的只是任务这一侧没把它画出来 —— 于是一件
+              活和一个人之间的那句话，只有 curl 写得进去。和依赖一样住在阅读态：说出一条边的那一
+              刻它就成立，不该等一张它不属于的表单。
+
+              排在笔记后面，和一个人、一场会、一本书的那一层同一个位置：这个东西自己的字段在上，
+              它连着什么在下，最底下才是删除。
+
+              项目不在这里重复：面板抬头那一行写的就是它，而一行东西读两遍是这个 app 一直在躲的那件事。
+            */}
+            <LinkedSection of={{ type: 'task', id: task.id }} except={['project']} />
           </div>
         )}
 
@@ -557,7 +558,26 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                     .map((p) => ({ value: p.id, label: p.name }))}
                   onPick={(id) => setValue('projectId', id, { shouldDirty: true })}
                 />
-                <span className="-mt-1 ml-auto shrink-0">
+                {/* SAVE IS WHERE EDIT WAS, the way the other three panes have it: Cancel, then
+                    Save, at the top. It used to be at the foot of the form, Save first, so a long
+                    note pushed it off the screen and a person had to learn two layouts. */}
+                <span className="-mt-1 ml-auto flex shrink-0 items-center gap-1">
+                  <span className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => guard.leave(stopEditing)}
+                      className={BUTTON.secondary}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={save.isPending || !title?.trim()}
+                      className={BUTTON.primary}
+                    >
+                      Save
+                    </button>
+                  </span>
                   <CloseButton onClick={requestClose} />
                 </span>
               </div>
@@ -574,6 +594,36 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
               />
             </div>
 
+            {/* Under the buttons that raised them, not at the foot of the form: a Cancel pressed
+                at the top must not ask its question somewhere below a long note. */}
+            {guard.asking && (
+              <div role="alert" className="rounded-lg border border-border-strong p-3 text-sm">
+                <p className="text-fg">
+                  {guard.leaving
+                    ? 'You have unsaved changes. Leaving will discard them.'
+                    : 'You have unsaved changes. Closing will discard them.'}
+                </p>
+                <div className="mt-2 flex gap-2">
+                  <button type="button" onClick={guard.discard} className={BUTTON.secondary}>
+                    Discard changes
+                  </button>
+                  <button
+                    ref={guard.focusOn}
+                    type="button"
+                    onClick={guard.keep}
+                    className={BUTTON.primary}
+                  >
+                    Keep editing
+                  </button>
+                </div>
+              </div>
+            )}
+            {save.isError && (
+              <p role="alert" className="text-sm text-danger">
+                {save.error instanceof Error ? save.error.message : "Couldn't save it"}
+              </p>
+            )}
+
             {/* Status speaks the vocabulary the rows speak: the same five marker shapes, named.
               A dropdown of words made the app's core semantic something you had to open a menu
               to read. Native radios on purpose -- the group is one tab stop and the arrow keys
@@ -588,10 +638,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                  reading as one control. Wrapping lands on 3 + 2 by itself. */}
               <div className="mt-1.5 flex flex-wrap gap-1">
                 {TASK_STATUSES.map((s) => (
-                  <label
-                    key={s}
-                    className="relative flex min-h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-border-subtle py-1 pr-2 pl-1.5 text-sm whitespace-nowrap text-fg-muted hover:bg-surface has-[:checked]:border-border-strong has-[:checked]:bg-surface has-[:checked]:font-semibold has-[:checked]:text-fg has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent"
-                  >
+                  <label key={s} className={STATUS_CHIP}>
                     <input
                       type="radio"
                       value={s}
@@ -748,49 +795,6 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                 onClose={() => setWriting(false)}
               />
             )}
-            {guard.asking && (
-              <div role="alert" className="rounded-lg border border-border-strong p-3 text-sm">
-                <p className="text-fg">
-                  {guard.leaving
-                    ? 'You have unsaved changes. Leaving will discard them.'
-                    : 'You have unsaved changes. Closing will discard them.'}
-                </p>
-                <div className="mt-2 flex gap-2">
-                  <button
-                    ref={guard.focusOn}
-                    type="button"
-                    onClick={guard.keep}
-                    className={BUTTON.primary}
-                  >
-                    Keep editing
-                  </button>
-                  <button type="button" onClick={guard.discard} className={BUTTON.secondary}>
-                    Discard changes
-                  </button>
-                </div>
-              </div>
-            )}
-            {save.isError && (
-              <p role="alert" className="text-sm text-danger">
-                {save.error instanceof Error ? save.error.message : "Couldn't save it"}
-              </p>
-            )}
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                disabled={save.isPending || !title?.trim()}
-                className={BUTTON.primary}
-              >
-                Save
-              </button>
-              <button
-                type="button"
-                onClick={() => guard.leave(stopEditing)}
-                className={BUTTON.secondary}
-              >
-                Cancel
-              </button>
-            </div>
           </form>
         )}
         {/*

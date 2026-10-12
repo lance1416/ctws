@@ -47,6 +47,8 @@ export function DangerAction({
   busy = false,
   onAsk,
   onConfirm,
+  confirm,
+  back,
   children,
 }: {
   /** The button's words, e.g. “Delete task”. */
@@ -59,6 +61,9 @@ export function DangerAction({
   /** Run when the question opens, for a count that is too expensive to fetch on every render. */
   onAsk?: (() => void) | undefined
   onConfirm: () => void
+  /** The two answers' words, when the thing is not deleted (`DeleteConfirm`). */
+  confirm?: string | undefined
+  back?: string | undefined
   /** Asked instead of the plain question, for a thing that needs a scope (a repeating meeting). */
   children?: ((close: () => void) => ReactNode) | undefined
 }) {
@@ -122,6 +127,8 @@ export function DangerAction({
           busy={busy || message === null}
           onConfirm={onConfirm}
           onCancel={close}
+          confirm={confirm}
+          back={back}
         />
       )}
     </div>

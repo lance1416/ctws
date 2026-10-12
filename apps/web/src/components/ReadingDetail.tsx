@@ -12,9 +12,9 @@ import { BUTTON } from './buttonStyles'
 import { DangerAction, DangerZone } from './DangerZone'
 import { DetailHead, DetailPane } from './DetailPane'
 import { Field } from './Field'
-import { field, label } from './formStyles'
+import { CHIP, field, label } from './formStyles'
 import { PickOne } from './inline'
-import { Links } from './Links'
+import { LinkedSection } from './Links'
 
 /**
  * ONE THING TO READ, ON ITS OWN LAYER.
@@ -59,10 +59,7 @@ export function ReadingDetail({
     <DetailPane label="Reading" onClose={onClose}>
       <ReadingFields item={item} onClose={onClose} />
 
-      <section aria-label="Linked" className="mt-4 border-t border-border-subtle pt-3">
-        <span className="block px-2 pb-1 text-xs text-fg-muted">Linked</span>
-        <Links of={{ type: 'reading', id: item.id }} />
-      </section>
+      <LinkedSection of={{ type: 'reading', id: item.id }} className="mt-4" />
 
       {/* 最后一个东西，底下再没有别的控件 —— 和删一个人、删一条任务同一个位置。 */}
       <DangerZone>
@@ -170,9 +167,17 @@ function ReadingFields({ item, onClose }: { item: ReadingItemResponse; onClose: 
             </span>
           </Field>
           <Field label="Projects" shape="above">
-            <span className={`text-sm ${item.projectName ? 'text-fg' : 'text-fg-subtle'}`}>
-              {item.projectName ?? 'Not on any project'}
-            </span>
+            {/* A chip, like a person's projects and a meeting's. */}
+            {item.projectId && item.projectName ? (
+              <span className="flex">
+                <span className={CHIP}>
+                  {chip(item.projectId)}
+                  <span className="truncate">{item.projectName}</span>
+                </span>
+              </span>
+            ) : (
+              <span className="text-sm text-fg-subtle">Not on any project</span>
+            )}
           </Field>
         </div>
       </div>

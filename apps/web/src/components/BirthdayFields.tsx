@@ -8,7 +8,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { ApiError } from '../api'
 import { previewBirthday, type BirthdayDraft } from '../api/contacts'
-import { countdownPhrase, shortDay, todayIn } from '../dueAt'
+import { countdownPhrase, fullDay, MONTHS, shortDay, todayIn } from '../dueAt'
 import { useTimeZone } from '../useMe'
 import { Field } from './Field'
 import { PickOne } from './inline'
@@ -168,18 +168,24 @@ export function BirthdayFields({ contact }: { contact: ContactResponse }) {
  * 手里只有输入的那几个数。
  */
 export function plainDate(d: BirthdayDraft): string {
-  const month =
-    d.calendar === 'lunar'
-      ? `${d.leapMonth ? '闰' : ''}${LUNAR_MONTHS[d.month - 1]}`
-      : SOLAR_MONTHS[d.month - 1]
-  const day = d.calendar === 'lunar' ? LUNAR_DAYS[d.day - 1] : String(d.day)
-  return [d.year === null ? null : `${d.year}`, month, day].filter(Boolean).join(' ')
+  // 公历和读的时候一个写法（`Oct 17, 1991`）：同一天在阅读态和表里写成两种样子，读的人得在
+  // 心里换算一次。
+  if (d.calendar === 'solar') return solarDay(d.year, d.month, d.day)
+  const month = `${d.leapMonth ? '闰' : ''}${LUNAR_MONTHS[d.month - 1]}`
+  return [d.year === null ? null : `${d.year}`, month, LUNAR_DAYS[d.day - 1]]
+    .filter(Boolean)
+    .join(' ')
 }
 
 /** 当初写下的那一天，照它被写下时的历法。年份不知道就只说月日。 */
-function givenDate(b: BirthdayResponse): string {
+export function givenDate(b: BirthdayResponse): string {
   if (b.calendar === 'lunar') return b.bornLunar ?? b.lunarDate ?? ''
-  return b.bornSolar ?? `${SOLAR_MONTHS[b.month - 1]} ${b.day}`
+  return b.bornSolar ? fullDay(b.bornSolar) : solarDay(null, b.month, b.day)
+}
+
+/** A solar day in the app's own words: `Oct 17, 1991`, or `Oct 17` with no year. */
+function solarDay(year: number | null, month: number, day: number): string {
+  return year === null ? `${MONTHS[month - 1]} ${day}` : `${MONTHS[month - 1]} ${day}, ${year}`
 }
 
 /**
@@ -425,7 +431,7 @@ export function BirthdayEditor({
 function PreviewLine({ facts }: { facts: BirthdayPreviewResponse }) {
   const parts = [
     facts.lunarDate ?? facts.bornLunar,
-    facts.bornSolar,
+    facts.bornSolar && fullDay(facts.bornSolar),
     facts.zodiac,
     facts.sign,
     facts.hour,

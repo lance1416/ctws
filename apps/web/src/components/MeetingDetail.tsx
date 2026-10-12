@@ -13,14 +13,15 @@ import {
 import { listProjects } from '../api/projects'
 import { useProjectRail } from '../projectColor'
 import { ZONES, zoneLabel } from '../timeZones'
+import { shortDay, todayIn } from '../dueAt'
 import { DangerAction, DangerZone } from './DangerZone'
 import { meetingLink } from '../meetingPlace'
 import { Field } from './Field'
 import { Link } from 'react-router-dom'
 import { DetailHead, DetailPane } from './DetailPane'
-import { Links } from './Links'
+import { LinkedSection } from './Links'
 import { useComposing } from '../composition'
-import { boxed, field, label } from './formStyles'
+import { boxed, CHIP, field, label } from './formStyles'
 import { PickMany, PickOne } from './inline'
 import { ScopeAsk } from './ScopeAsk'
 import { BUTTON } from './buttonStyles'
@@ -64,10 +65,11 @@ export function MeetingDetail({
 
       {/* 这场会连着什么：谁在场是写在这场会上的，而「这件活是这次会之后才有的」是从另一端写的。
           一个人的那一层、一条任务的面板早就有这一块，会议是最后一个补上的。 */}
-      <section aria-label="Linked" className="mt-4 border-t border-border-subtle pt-3">
-        <span className="block px-2 pb-1 text-xs text-fg-muted">Linked</span>
-        <Links of={{ type: 'meeting', id: meeting.meetingId }} except={['contact']} />
-      </section>
+      <LinkedSection
+        of={{ type: 'meeting', id: meeting.meetingId }}
+        except={['contact']}
+        className="mt-4"
+      />
       {/*
         取消留在面板里，而删一个人不留 —— 两者不是一回事。
 
@@ -191,6 +193,28 @@ export function MeetingFields({
     <div className="flex flex-col gap-4">
       {head}
 
+      {/* Above the form, beside the Save that raised them: the form's Cancel / Save sit at its
+          top, and a question asked below the notes was a screen away from the press. */}
+      {asking && (
+        <ScopeAsk
+          what={asking.what}
+          onPick={(scope) => {
+            save.mutate({ ...asking.patch, scope, recurrenceId: meeting.recurrenceId })
+            setAsking(null)
+            setEditing(false)
+          }}
+          onCancel={() => setAsking(null)}
+          // Back to the form, which is still open under it -- and the form has a Cancel of its
+          // own two rows down, which this must not be confused with.
+          back="Keep editing"
+        />
+      )}
+      {failed && (
+        <p role="alert" className="text-sm text-danger">
+          {failed}
+        </p>
+      )}
+
       {editing ? (
         <MeetingForm
           meeting={meeting}
@@ -203,23 +227,6 @@ export function MeetingFields({
         />
       ) : (
         <MeetingRead meeting={meeting} accountZone={accountZone} onEdit={() => setEditing(true)} />
-      )}
-
-      {asking && (
-        <ScopeAsk
-          what={asking.what}
-          onPick={(scope) => {
-            save.mutate({ ...asking.patch, scope, recurrenceId: meeting.recurrenceId })
-            setAsking(null)
-            setEditing(false)
-          }}
-          onCancel={() => setAsking(null)}
-        />
-      )}
-      {failed && (
-        <p role="alert" className="text-sm text-danger">
-          {failed}
-        </p>
       )}
     </div>
   )
@@ -239,10 +246,16 @@ function MeetingRead({
   accountZone: string
   onEdit: () => void
 }) {
+  const rail = useProjectRail()
   const elsewhere = meeting.timeZone !== accountZone
   const place = meetingLink(meeting.location)
   const bare = meeting.rrule ? withUntil(meeting.rrule, null) : null
   const until = untilOf(meeting.rrule)
+  // The meeting's own wall clock and its last day, in the words every other date in the app
+  // uses (`Oct 19, 18:00`) -- not `2026-10-19 18:00`, the wire format, beside a "Your time" that
+  // already says it the other way.
+  const today = todayIn(accountZone)
+  const when = `${shortDay(meeting.startsLocal.slice(0, 10), today)}, ${meeting.startsLocal.slice(11, 16)}`
 
   return (
     <>
@@ -252,7 +265,7 @@ function MeetingRead({
             {meeting.title}
           </h2>
           <p className="truncate text-sm text-fg-muted tabular-nums">
-            {meeting.startsLocal.replace('T', ' ')} · {zoneLabel(meeting.timeZone)}
+            {when} · {zoneLabel(meeting.timeZone)}
           </p>
         </div>
         <button type="button" className={BUTTON.secondary} onClick={onEdit}>
@@ -288,11 +301,25 @@ function MeetingRead({
           </Field>
           {bare && (
             <Field label="Ends" shape="above">
-              <span className="text-sm tabular-nums text-fg">{until ?? 'Never'}</span>
+              <span className="text-sm tabular-nums text-fg">
+                {until ? shortDay(until, today) : 'Never'}
+              </span>
             </Field>
           )}
           <Field label="Projects" shape="above">
-            <span className="text-sm text-fg">{meeting.projectName ?? 'No project'}</span>
+            {/* A chip, like a person's projects, and the same words for none. */}
+            {meeting.projectId && meeting.projectName ? (
+              <span className="flex">
+                <span className={CHIP}>
+                  <span
+                    className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(meeting.projectId)}`}
+                  />
+                  <span className="truncate">{meeting.projectName}</span>
+                </span>
+              </span>
+            ) : (
+              <span className="text-sm text-fg-subtle">Not on any project</span>
+            )}
           </Field>
         </div>
       </div>
@@ -324,10 +351,7 @@ function MeetingRead({
             <span className="text-sm text-fg-subtle">Nobody yet</span>
           ) : (
             meeting.attendees.map((p) => (
-              <span
-                key={p.id}
-                className="rounded-lg border border-border-subtle bg-surface-raised px-2 py-1 text-sm text-fg"
-              >
+              <span key={p.id} className={CHIP}>
                 {p.name}
               </span>
             ))
@@ -597,6 +621,10 @@ export function CancelMeeting({
       label="Cancel meeting"
       confirmLabel="Confirm cancelling this meeting"
       message={`Cancel “${meeting.title}”? This cannot be undone.`}
+      // A meeting is cancelled, not deleted, and a way out called "Cancel" next to it would say
+      // the opposite of what it does.
+      confirm="Cancel meeting"
+      back="Keep it"
       busy={drop.isPending}
       onConfirm={() => drop.mutate('all')}
     >
@@ -606,6 +634,8 @@ export function CancelMeeting({
               what={`Cancel which occurrences of “${meeting.title}”?`}
               onPick={(scope) => drop.mutate(scope)}
               onCancel={close}
+              destroys
+              back="Keep it"
             />
           )
         : undefined}
