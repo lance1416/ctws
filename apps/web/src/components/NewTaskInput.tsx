@@ -81,8 +81,8 @@ export function NewTaskInput({ depth, leadSlot, onCommit, onCancel, error }: Pro
           aria-label="Add a task"
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? describedBy : undefined}
-          className={`h-8 w-full border-b bg-transparent text-base text-fg placeholder:text-fg-muted ${
-            error ? 'border-danger' : 'border-border-strong'
+          className={`h-8 w-full border-b bg-transparent text-base text-ink placeholder:text-ink-muted ${
+            error ? 'border-danger' : 'border-rule-strong'
           }`}
         />
       </div>

@@ -19,7 +19,7 @@ export function ProjectHead({ id }: { id: string }) {
   const project = projects.data?.find((p) => p.id === id)
   if (!project) {
     return projects.isSuccess ? (
-      <p className="text-sm text-fg-muted">This project is not here any more.</p>
+      <p className="text-sm text-ink-muted">This project is not here any more.</p>
     ) : null
   }
   return (

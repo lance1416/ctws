@@ -14,7 +14,7 @@ import { useProjectRail } from '../projectColor'
 import { zoneLabel } from '../timeZones'
 import { LIST_MEASURE } from '../rowLead'
 import { useTimeZone } from '../useMe'
-import { BUTTON } from '../components/buttonStyles'
+import { BUTTON, LINK } from '../components/buttonStyles'
 import { useCrumbs } from '../components/Location'
 
 /**
@@ -105,7 +105,7 @@ export function Meetings() {
         </button>
       </div>
 
-      {ahead.isPending && <p className="mt-6 text-fg-muted">Loading…</p>}
+      {ahead.isPending && <p className="mt-6 text-ink-muted">Loading…</p>}
       {ahead.isError && (
         <p role="alert" className="mt-6 text-danger">
           {ahead.error instanceof Error
@@ -162,7 +162,7 @@ export function Meetings() {
       )}
       {/* 链接指向的会已经不在了（或者取消了）：说出来，别只留一个列表。 */}
       {gone && (
-        <p role="alert" className="mt-4 text-sm text-fg-muted">
+        <p role="alert" className="mt-4 text-sm text-ink-muted">
           This meeting is not here any more.
         </p>
       )}
@@ -218,10 +218,10 @@ function Section({
 
   return (
     <section aria-label={title} className="mt-6">
-      <h2 className="text-sm font-semibold text-fg-muted">{title}</h2>
+      <h2 className="text-sm font-semibold text-ink-muted">{title}</h2>
       {[...days].map(([day, list]) => (
         <div key={day} className="mt-4">
-          <h3 className="px-2 text-xs font-semibold text-fg-subtle">
+          <h3 className="px-2 text-xs font-semibold text-ink-subtle">
             {day === today ? 'Today' : heading.format(new Date(`${day}T12:00:00Z`))}
           </h3>
           <ul className="mt-1 flex flex-col">
@@ -229,20 +229,20 @@ function Section({
               <li
                 key={`${m.meetingId}:${m.recurrenceId}`}
                 data-meeting-row={m.meetingId}
-                className="flex min-h-9 min-w-0 items-center gap-2 rounded-lg px-2 hover:bg-surface-hover"
+                className="flex min-h-9 min-w-0 items-center gap-2 rounded-lg px-2 hover:bg-hover"
               >
                 <span
                   aria-hidden="true"
                   className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(m.projectId ?? '')}`}
                 />
                 {/* YOUR clock first, because that is when you have to be somewhere. */}
-                <span className="shrink-0 text-sm tabular-nums text-fg-muted">
+                <span className="shrink-0 text-sm tabular-nums text-ink-muted">
                   {clock.format(new Date(m.startsAt))}
                 </span>
                 <button
                   type="button"
                   onClick={() => onOpen({ meetingId: m.meetingId, recurrenceId: m.recurrenceId })}
-                  className="min-w-0 max-w-full truncate rounded text-left text-sm text-fg hover:underline"
+                  className="min-w-0 max-w-full truncate rounded text-left text-sm text-ink hover:underline"
                 >
                   {m.title}
                 </button>
@@ -251,19 +251,19 @@ function Section({
                 {m.timeZone !== accountZone && (
                   <span
                     data-meeting-zone
-                    className="min-w-0 shrink truncate text-xs text-fg-subtle"
+                    className="min-w-0 shrink truncate text-xs text-ink-subtle"
                   >
                     {m.startsLocal.slice(11)} {zoneLabel(m.timeZone, new Date(m.startsAt))}
                   </span>
                 )}
                 <span className="flex-1" />
                 {m.attendees.length > 0 && (
-                  <span className="min-w-0 shrink truncate text-xs text-fg-subtle">
+                  <span className="min-w-0 shrink truncate text-xs text-ink-subtle">
                     {m.attendees.map((p) => p.name).join(', ')}
                   </span>
                 )}
                 {m.rrule && (
-                  <span className="shrink-0 text-xs text-fg-subtle">
+                  <span className="shrink-0 text-xs text-ink-subtle">
                     {repeatLabel(m.rrule, m.startsLocal, today)}
                   </span>
                 )}
@@ -274,7 +274,7 @@ function Section({
                     href={meetingLink(m.location)!}
                     target="_blank"
                     rel="noreferrer"
-                    className="shrink-0 rounded-md px-1.5 py-0.5 text-xs font-semibold text-accent hover:bg-surface-hover"
+                    className={`shrink-0 rounded-md px-1.5 py-0.5 text-xs font-semibold ${LINK} hover:bg-hover`}
                   >
                     Join
                   </a>

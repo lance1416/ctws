@@ -44,20 +44,23 @@ describe.each([
 ])('the %s project palette', (_name, block, mode) => {
   const pal = palette(block)
 
-  // Every surface a chip can land on, not just the page background: the sidebar is a panel and a
-  // hovered row is raised, and a colour that passes on one can fail on another.
-  it.each(hexes(block, 'surface'))('passes every check on surface %s', (surface) => {
-    // `pairs: 'all'` and not the default 'adjacent': any two projects can sit next to each other
-    // in the sidebar, and any two can be compared across a cross-project list.
-    const { report, ok } = validate(pal, { mode, surface, pairs: 'all' })
-    const fails = (report as [string, boolean | 'fail', string][])
-      .filter(([, status]) => status === 'fail')
-      .map(([name, , detail]) => `${name}: ${detail}`)
-    // The one WARN this palette ships with is contrast below 3:1. It is dischargeable, and
-    // discharged: a chip is never alone, it always sits beside the project's name (WCAG 1.4.1).
-    expect(fails, `${mode} on ${surface}`).toEqual([])
-    expect(ok).toBe(true)
-  })
+  // Every surface a chip can land on, not just the page: the rail is chrome, a pane floats and a
+  // board column is desk, and a colour that passes on one can fail on another.
+  it.each(hexes(block, '(?:sheet|chrome|desk|float)'))(
+    'passes every check on surface %s',
+    (surface) => {
+      // `pairs: 'all'` and not the default 'adjacent': any two projects can sit next to each other
+      // in the sidebar, and any two can be compared across a cross-project list.
+      const { report, ok } = validate(pal, { mode, surface, pairs: 'all' })
+      const fails = (report as [string, boolean | 'fail', string][])
+        .filter(([, status]) => status === 'fail')
+        .map(([name, , detail]) => `${name}: ${detail}`)
+      // The one WARN this palette ships with is contrast below 3:1. It is dischargeable, and
+      // discharged: a chip is never alone, it always sits beside the project's name (WCAG 1.4.1).
+      expect(fails, `${mode} on ${surface}`).toEqual([])
+      expect(ok).toBe(true)
+    },
+  )
 })
 
 it('a slot is the same hue in both schemes, so a project does not change colour with the theme', () => {

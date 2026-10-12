@@ -1,3 +1,4 @@
+import { LINK } from './buttonStyles'
 import type { CompletedTaskResponse } from '@ctws/contracts'
 import { Link } from 'react-router-dom'
 import { DONE_ROW_GRID, ProjectRail } from './RowParts'
@@ -28,7 +29,7 @@ export function DoneTodayPanel({
       label="Done today"
       count={tasks.length}
       action={
-        <Link to="/tasks/completed" className="text-sm text-accent hover:underline">
+        <Link to="/tasks/completed" className={`text-sm ${LINK}`}>
           All
         </Link>
       }
@@ -43,10 +44,10 @@ export function DoneTodayPanel({
             <span className="col-start-1 flex items-center justify-center">
               <StatusMark status={t.status} />
             </span>
-            <span className="col-start-2 min-w-0 truncate text-fg-muted">{t.title}</span>
+            <span className="col-start-2 min-w-0 truncate text-ink-muted">{t.title}</span>
             <time
               dateTime={t.completedAt ?? undefined}
-              className="col-start-3 text-sm text-fg-subtle tabular-nums"
+              className="col-start-3 text-sm text-ink-subtle tabular-nums"
             >
               {t.completedAt ? clock.format(new Date(t.completedAt)) : ''}
             </time>

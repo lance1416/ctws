@@ -1,3 +1,4 @@
+import { LINK } from './buttonStyles'
 import type { PersonResponse } from '@ctws/contracts'
 import { channelHref } from '../api/people'
 import { byKind, channelLabel } from '../channels'
@@ -44,7 +45,7 @@ export function PeopleList({
           <li
             key={person.id}
             onClick={() => onOpen(person)}
-            className="group cursor-pointer rounded-lg px-2 py-1.5 hover:bg-surface-hover"
+            className="group cursor-pointer rounded-lg px-2 py-1.5 hover:bg-hover"
           >
             {/* The app's row anatomy: who they are on the first line, how to reach them on the
                 second. */}
@@ -58,13 +59,13 @@ export function PeopleList({
                   onOpen(person)
                 }}
                 data-person-name
-                className="truncate rounded text-left text-sm font-semibold text-fg group-hover:underline"
+                className="truncate rounded text-left text-sm font-semibold text-ink group-hover:underline"
               >
                 {person.name}
               </button>
-              {person.org && <span className="truncate text-xs text-fg-subtle">{person.org}</span>}
+              {person.org && <span className="truncate text-xs text-ink-subtle">{person.org}</span>}
               {elsewhere.map((p) => (
-                <span key={p.id} className="flex items-baseline gap-1 text-xs text-fg-subtle">
+                <span key={p.id} className="flex items-baseline gap-1 text-xs text-ink-subtle">
                   <span
                     aria-hidden="true"
                     className={`relative top-0.5 h-3 w-[3px] shrink-0 rounded-full ${rail(p.id)}`}
@@ -82,13 +83,13 @@ export function PeopleList({
                       href={channelHref(c.kind, c.value)!}
                       // The address is its own target: writing to someone is not opening them.
                       onClick={(e) => e.stopPropagation()}
-                      className={`truncate text-sm text-accent hover:underline ${
+                      className={`truncate text-sm ${LINK} ${
                         c.kind === 'phone' ? 'tabular-nums' : ''
                       }`}
                     >
                       {channelLabel(c.kind, c.value, phone?.displayPhone)}
                     </a>
-                    {c.label && <span className="text-xs text-fg-subtle">{c.label}</span>}
+                    {c.label && <span className="text-xs text-ink-subtle">{c.label}</span>}
                   </span>
                 ))}
               </div>

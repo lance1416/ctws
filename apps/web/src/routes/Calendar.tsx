@@ -103,7 +103,7 @@ export function Calendar() {
         <h1 ref={heading} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
           Calendar
         </h1>
-        <span className="text-sm text-fg-muted tabular-nums">{monthTitle(cursor)}</span>
+        <span className="text-sm text-ink-muted tabular-nums">{monthTitle(cursor)}</span>
         <span className="flex items-center gap-1">
           <Step label="Previous month" onClick={() => setCursor(shiftMonth(cursor, -1))}>
             ‹
@@ -128,15 +128,15 @@ export function Calendar() {
         </p>
       )}
 
-      <div className="mt-4 min-w-0 overflow-hidden rounded-xl border border-border-subtle bg-surface-panel shadow-panel">
+      <div className="mt-4 min-w-0 overflow-hidden rounded-xl border border-rule bg-sheet">
         <div className="grid grid-cols-7">
           {WEEKDAYS.map((w) => (
-            <div key={w} className="px-2 py-1.5 text-xs text-fg-subtle">
+            <div key={w} className="px-2 py-1.5 text-xs text-ink-subtle">
               {w}
             </div>
           ))}
         </div>
-        <div className="grid grid-cols-7 border-t border-border-subtle">
+        <div className="grid grid-cols-7 border-t border-rule">
           {squares.map(({ day, inMonth }, i) => {
             const entries = byDay.get(day) ?? []
             const isToday = day === today
@@ -145,24 +145,24 @@ export function Calendar() {
                 key={day}
                 aria-label={day}
                 data-day={day}
-                className={`group relative min-h-24 min-w-0 border-border-subtle p-1 ${
+                className={`group relative min-h-24 min-w-0 border-rule p-1 ${
                   i % 7 === 6 ? '' : 'border-r'
-                } ${i < squares.length - 7 ? 'border-b' : ''} ${inMonth ? '' : 'bg-surface'}`}
+                } ${i < squares.length - 7 ? 'border-b' : ''} ${inMonth ? '' : 'bg-desk'}`}
               >
                 <div
                   className={`px-1 text-xs tabular-nums ${
                     isToday
-                      ? 'font-semibold text-accent'
+                      ? 'font-semibold text-ink'
                       : inMonth
-                        ? 'text-fg-muted'
-                        : 'text-fg-subtle'
+                        ? 'text-ink-muted'
+                        : 'text-ink-subtle'
                   }`}
                 >
                   {Number(day.slice(8))}
                   {lunar.data?.[day] && (
                     <span
                       data-lunar-day
-                      className={`ml-1.5 text-[11px] ${inMonth ? 'text-fg-subtle' : 'text-fg-subtle/70'}`}
+                      className={`ml-1.5 text-[11px] ${inMonth ? 'text-ink-subtle' : 'text-ink-subtle/70'}`}
                     >
                       {lunar.data[day]}
                     </span>
@@ -191,21 +191,21 @@ export function Calendar() {
                           }`}
                         />
                         {entry.time && (
-                          <span className="shrink-0 text-xs tabular-nums text-fg-muted">
+                          <span className="shrink-0 text-xs tabular-nums text-ink-muted">
                             {entry.time}
                           </span>
                         )}
-                        <span className="truncate text-xs text-fg">{entry.title}</span>
+                        <span className="truncate text-xs text-ink">{entry.title}</span>
                         {/* The zone it was AGREED in, when that is not the one the clock above is
                             in. The time says when to turn up; this says what was actually said. */}
                         {entry.zone && (
-                          <span className="shrink-0 text-[10px] text-fg-subtle">{entry.zone}</span>
+                          <span className="shrink-0 text-[10px] text-ink-subtle">{entry.zone}</span>
                         )}
                       </EntryLink>
                     </li>
                   ))}
                   {entries.length > PER_SQUARE && (
-                    <li className="px-1 text-xs text-fg-subtle">+{entries.length - PER_SQUARE}</li>
+                    <li className="px-1 text-xs text-ink-subtle">+{entries.length - PER_SQUARE}</li>
                   )}
                 </ul>
               </div>
@@ -241,7 +241,7 @@ function EntryLink({
 }) {
   const title = `${entry.kind} · ${entry.title}`
   const className =
-    'flex w-full min-w-0 items-center gap-1 rounded px-1 py-0.5 text-left hover:bg-surface-hover'
+    'flex w-full min-w-0 items-center gap-1 rounded px-1 py-0.5 text-left hover:bg-hover'
   return opens ? (
     <button type="button" onClick={onOpen} title={title} className={className}>
       {children}
@@ -267,7 +267,7 @@ function Step({
       type="button"
       aria-label={label}
       onClick={onClick}
-      className="flex h-7 min-w-7 items-center justify-center rounded-lg border border-border-subtle px-1.5 text-xs text-fg-muted hover:bg-surface-hover hover:text-fg"
+      className="flex h-7 min-w-7 items-center justify-center rounded-lg border border-rule px-1.5 text-xs text-ink-muted hover:bg-hover hover:text-ink"
     >
       {children}
     </button>

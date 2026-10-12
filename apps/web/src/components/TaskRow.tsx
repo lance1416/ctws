@@ -164,12 +164,12 @@ export function TaskRow({
       // = 10 + 24 + 10 and 66 = 10 + 24 + 22 + 10, from the type scale: the title is 16/24 and the
       // second line is 14/22. 44 is the single-line row metric every list keeps, so only the rows
       // that carry a second line are taller than it.
-      className={`group relative flex min-h-11 cursor-pointer items-start rounded-lg hover:bg-surface-hover ${
-        isDragging ? 'bg-surface-raised opacity-70' : ''
+      className={`group relative flex min-h-11 cursor-pointer items-start rounded-lg hover:bg-hover ${
+        isDragging ? 'bg-float opacity-70' : ''
       } ${
-        // A selected row wears the hover plane permanently plus an accent edge: the plane alone
-        // would be indistinguishable from whatever the pointer happens to be over.
-        selected ? 'bg-surface-hover shadow-[inset_2px_0_0_0_var(--color-accent)]' : ''
+        // A selected row wears the select layer plus an ink edge: a layer alone would be hard to
+        // tell from whatever the pointer happens to be over.
+        selected ? 'bg-select shadow-[inset_2px_0_0_0_var(--color-ink)]' : ''
       } ${
         // BLOCKED ROWS DIM, THEY DO NOT DISAPPEAR. A list that loses tasks is a list you
         // cannot trust, and what is in the way is named on the line under the title -- the point
@@ -184,7 +184,7 @@ export function TaskRow({
         <span
           key={i}
           aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 w-px bg-border-subtle"
+          className="pointer-events-none absolute inset-y-0 w-px bg-rule"
           style={{ left: RAIL_GUTTER_PX + i * INDENT_PX + HANDLE_PX + CHEVRON_PX / 2 }}
         />
       ))}
@@ -203,7 +203,7 @@ export function TaskRow({
         onFocus={onFocus}
         onKeyDown={onKeyDown}
         style={{ width: HANDLE_PX }}
-        className="flex h-11 shrink-0 cursor-grab touch-none items-center justify-center text-fg-muted opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
+        className="flex h-11 shrink-0 cursor-grab touch-none items-center justify-center text-ink-muted opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
       >
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="currentColor">
           {[5.5, 10.5].flatMap((x) =>
@@ -220,7 +220,7 @@ export function TaskRow({
           aria-expanded={!row.collapsed}
           onClick={onToggle}
           style={{ width: CHEVRON_PX }}
-          className="flex h-11 shrink-0 items-center justify-center text-fg-muted hover:text-fg"
+          className="flex h-11 shrink-0 items-center justify-center text-ink-muted hover:text-ink"
         >
           <Icon d={row.collapsed ? 'M6 3.5l4.5 4.5L6 12.5' : 'M3.5 6l4.5 4.5L12.5 6'} />
         </button>
@@ -259,7 +259,7 @@ export function TaskRow({
             data-row-title
             className={`truncate text-base ${
               status === 'in_progress' ? 'font-semibold' : ''
-            } ${inactive ? 'text-fg-muted' : 'text-fg'} ${status === 'cancelled' ? 'line-through' : ''}`}
+            } ${inactive ? 'text-ink-muted' : 'text-ink'} ${status === 'cancelled' ? 'line-through' : ''}`}
           >
             {title}
             {saved && <SavedMark />}
@@ -267,7 +267,7 @@ export function TaskRow({
           {/* There is something to read in this one, and a date took the leading slot. `shrink-0`,
               so it costs the row no height and reserves no width on the rows without it. */}
           {hasNotes && icon !== 'notes' && (
-            <span className="ml-2 flex shrink-0 items-center text-fg-subtle">
+            <span className="ml-2 flex shrink-0 items-center text-ink-subtle">
               <NotesMark />
             </span>
           )}
@@ -290,7 +290,7 @@ export function TaskRow({
           not sit on top of the text.
           Pinned to the FIRST line (`top-0 h-11`), so a row with a second line does not drag them
           down to its middle. */}
-      <span className="absolute top-0 right-1 flex h-11 shrink-0 items-center bg-surface-hover opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:static [@media(hover:none)]:bg-transparent [@media(hover:none)]:opacity-100">
+      <span className="absolute top-0 right-1 flex h-11 shrink-0 items-center bg-hover opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:static [@media(hover:none)]:bg-transparent [@media(hover:none)]:opacity-100">
         <StartButton
           status={status}
           title={title}
@@ -303,7 +303,7 @@ export function TaskRow({
           tabIndex={-1}
           aria-label={`Add a subtask to “${title}”`}
           onClick={onAddChild}
-          className="flex h-9 w-8 shrink-0 items-center justify-center rounded-lg text-fg-muted hover:text-fg"
+          className="flex h-9 w-8 shrink-0 items-center justify-center rounded-lg text-ink-muted hover:text-ink"
         >
           <Icon d="M8 3v10M3 8h10" />
         </button>

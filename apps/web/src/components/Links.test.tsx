@@ -90,7 +90,7 @@ describe('what one thing is connected to', () => {
     // reading "Projects / Job hunt / in" would say the same thing twice.
     const projectRow = /data-linked="p1".*?<\/a>/.exec(html)![0]
     expect(projectRow).toContain('Job hunt')
-    expect(projectRow).not.toContain('text-fg-subtle')
+    expect(projectRow).not.toContain('text-ink-subtle')
     expect(html).toContain('America/Toronto')
   })
 

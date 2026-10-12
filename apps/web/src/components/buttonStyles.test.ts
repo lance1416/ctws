@@ -24,11 +24,10 @@ describe('the button vocabulary', () => {
   })
 
   it('leaves no filled button written by hand', () => {
-    // A filled button is the loudest thing on a surface and was spelled five ways. Read off the
-    // source: a component nobody rendered in a test leaves no trace in the DOM.
-    const offenders = walk(SRC).filter((f) =>
-      /text-(accent|danger)-fg/.test(readFileSync(f, 'utf8')),
-    )
+    // A filled button is the loudest thing on a surface and was spelled five ways. Its text is
+    // `on-ink` or `on-danger`, and only `BUTTON` may say so. Read off the source: a component
+    // nobody rendered in a test leaves no trace in the DOM.
+    const offenders = walk(SRC).filter((f) => /text-on-(ink|danger)/.test(readFileSync(f, 'utf8')))
     expect(offenders.map((f) => f.slice(SRC.length + 1))).toEqual([])
   })
 })

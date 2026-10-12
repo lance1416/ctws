@@ -58,14 +58,14 @@ export function PickOne<T extends string>({
       <DropdownMenu.Trigger
         disabled={disabled}
         aria-label={`${label}: ${current?.label ?? placeholder}`}
-        className="-mx-1.5 flex h-8 min-w-0 items-center gap-2 rounded-lg px-1.5 text-sm text-fg hover:bg-surface-hover disabled:opacity-50"
+        className="-mx-1.5 flex h-8 min-w-0 items-center gap-2 rounded-lg px-1.5 text-sm text-ink hover:bg-hover disabled:opacity-50"
       >
         {current?.mark && (
           <span aria-hidden="true" className="flex shrink-0">
             {current.mark}
           </span>
         )}
-        <span className={`truncate ${current ? '' : 'text-fg-subtle'}`}>
+        <span className={`truncate ${current ? '' : 'text-ink-subtle'}`}>
           {current?.label ?? placeholder}
         </span>
         <Chevron />
@@ -86,7 +86,9 @@ export function PickOne<T extends string>({
                 </span>
               )}
               <span className="truncate">{c.label}</span>
-              {c.value === value && <span className="ml-auto text-xs text-fg-subtle">Current</span>}
+              {c.value === value && (
+                <span className="ml-auto text-xs text-ink-subtle">Current</span>
+              )}
             </DropdownMenu.Item>
           ))}
         </DropdownMenu.Content>
@@ -153,7 +155,7 @@ export function PickMany({
             type="button"
             aria-label={`Remove ${label} “${c.label}”`}
             onClick={() => change(live.filter((v) => v !== c.value))}
-            className="-mr-1 flex h-5 w-5 shrink-0 items-center justify-center rounded text-fg-subtle hover:text-fg"
+            className="-mr-1 flex h-5 w-5 shrink-0 items-center justify-center rounded text-ink-subtle hover:text-ink"
           >
             <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3 w-3">
               <path
@@ -167,12 +169,12 @@ export function PickMany({
           </button>
         </span>
       ))}
-      {shown.length === 0 && <span className="text-sm text-fg-subtle">{empty}</span>}
+      {shown.length === 0 && <span className="text-sm text-ink-subtle">{empty}</span>}
       {rest.length > 0 && (
         <DropdownMenu.Root modal={false}>
           <DropdownMenu.Trigger
             aria-label={`Add ${label}`}
-            className="flex h-7 w-7 items-center justify-center rounded-lg border border-dashed border-border-strong text-fg-subtle hover:bg-surface-hover hover:text-fg"
+            className="flex h-7 w-7 items-center justify-center rounded-lg border border-dashed border-rule-strong text-ink-subtle hover:bg-hover hover:text-ink"
           >
             <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3 w-3">
               <path
@@ -275,8 +277,8 @@ export function InlineText({
         // max-w-full 不是多余的：<button> 是表单控件，就算写了 display:block，它的宽度仍然
         // 按内容算（fit-content），于是一条长地址会从按钮底下穿出去，调用者写的 truncate 永远
         // 没机会生效。上限给到格子的宽度，短值照旧只占自己那么宽。
-        className={`-mx-1.5 min-w-0 max-w-full rounded-lg px-1.5 py-0.5 text-left hover:bg-surface-hover ${
-          value ? '' : 'text-fg-subtle'
+        className={`-mx-1.5 min-w-0 max-w-full rounded-lg px-1.5 py-0.5 text-left hover:bg-hover ${
+          value ? '' : 'text-ink-subtle'
         } ${className}`}
       >
         {value || placeholder}
@@ -295,7 +297,7 @@ export function InlineText({
     placeholder,
     onChange: (e: { target: { value: string } }) => setDraft(e.target.value),
     onBlur: commit,
-    className: `-mx-1.5 w-full rounded-lg border border-border-strong bg-surface px-1.5 py-0.5 text-fg ${className}`,
+    className: `-mx-1.5 w-full rounded-lg border border-rule-strong bg-sheet px-1.5 py-0.5 text-ink ${className}`,
   }
   const onKeyDown = (e: {
     key: string
@@ -327,7 +329,7 @@ export function InlineText({
 
 function Chevron() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3 w-3 shrink-0 text-fg-subtle">
+    <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3 w-3 shrink-0 text-ink-subtle">
       <path
         d="M4 6.5l4 4 4-4"
         fill="none"

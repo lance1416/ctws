@@ -47,7 +47,7 @@ export function PickCity({
 
   return (
     <div className="relative">
-      <label htmlFor={id} className="mb-1 block text-xs text-fg-muted">
+      <label htmlFor={id} className="mb-1 block text-xs text-ink-muted">
         {label}
       </label>
       <input
@@ -72,7 +72,7 @@ export function PickCity({
       {typing && cities.length > 0 && !exact && (
         <ul
           id={listId}
-          className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-border-strong bg-surface-raised py-1 shadow-panel"
+          className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-rule-strong bg-float py-1 shadow-float"
         >
           {cities.map((c: City) => (
             <li key={c.label}>
@@ -84,7 +84,7 @@ export function PickCity({
                   onChange(c.label)
                   setTyping(false)
                 }}
-                className="block w-full truncate px-3 py-1.5 text-left text-sm text-fg hover:bg-surface-hover"
+                className="block w-full truncate px-3 py-1.5 text-left text-sm text-ink hover:bg-hover"
               >
                 {c.label}
               </button>
@@ -94,7 +94,7 @@ export function PickCity({
       )}
 
       {unknown && (
-        <p className="mt-1 text-xs text-fg-muted">
+        <p className="mt-1 text-xs text-ink-muted">
           No city by that name. It will be saved as written.
         </p>
       )}

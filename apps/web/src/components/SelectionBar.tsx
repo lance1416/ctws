@@ -35,18 +35,18 @@ export function SelectionBar({
       role="group"
       aria-label="Selected tasks"
       data-selection-bar
-      className="mb-1 ml-3 flex w-[calc(100%-1.5rem)] flex-wrap items-center gap-2 rounded-lg border border-border-strong bg-surface px-3 py-2"
+      className="mb-1 ml-3 flex w-[calc(100%-1.5rem)] flex-wrap items-center gap-2 rounded-lg border border-rule-strong bg-sheet px-3 py-2"
     >
-      <span className="text-sm text-fg">{count} selected</span>
+      <span className="text-sm text-ink">{count} selected</span>
       <button
         type="button"
         onClick={onFinish}
         disabled={busy}
-        className="h-8 rounded-lg border border-border-strong px-2.5 text-sm text-fg hover:bg-surface-hover disabled:opacity-50"
+        className="h-8 rounded-lg border border-rule-strong px-2.5 text-sm text-ink hover:bg-hover disabled:opacity-50"
       >
         Mark done
       </button>
-      <span className="flex items-center gap-1.5 text-sm text-fg-muted">
+      <span className="flex items-center gap-1.5 text-sm text-ink-muted">
         Move to
         {/* The app's own picker, not a native `<select>`: the OS draws that popup and does not
             know this palette. It holds no value -- picking IS the act. */}
@@ -64,7 +64,7 @@ export function SelectionBar({
       <button
         type="button"
         onClick={onClear}
-        className="ml-auto h-8 rounded-lg px-2 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
+        className="ml-auto h-8 rounded-lg px-2 text-sm text-ink-muted hover:bg-hover hover:text-ink"
       >
         Clear selection
       </button>

@@ -5,7 +5,7 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { WORKBENCH_PATH } from '../modules/registry'
 import { apiFetch } from '../api'
 import { useMe } from '../useMe'
-import { BUTTON } from '../components/buttonStyles'
+import { BUTTON, LINK } from '../components/buttonStyles'
 import { textbox } from '../components/formStyles'
 
 export function Login() {
@@ -49,10 +49,10 @@ export function Login() {
         {/* The identity mark is the app's own rail: the 3px bar that means "a project" on every
             other screen, here at the size of a wordmark. It is the only ornament on the page. */}
         <div className="flex items-center gap-2.5">
-          <span aria-hidden="true" className="h-7 w-[3px] rounded-full bg-accent" />
+          <span aria-hidden="true" className="h-7 w-[3px] rounded-full bg-ink" />
           <h1 className="text-xl font-semibold">CTWS</h1>
         </div>
-        <p className="mt-2 text-sm text-fg-muted">Your personal workbench</p>
+        <p className="mt-2 text-sm text-ink-muted">Your personal workbench</p>
 
         {/* A real form, so Enter from either field signs in -- the thing a daily tool should not
             make you reach for the mouse to do. Register is a deliberate second press. */}
@@ -64,27 +64,27 @@ export function Login() {
           }}
         >
           <div>
-            <label htmlFor="login-email" className="block text-xs text-fg-muted">
+            <label htmlFor="login-email" className="block text-xs text-ink-muted">
               Email
             </label>
             <input
               id="login-email"
               type="email"
               autoComplete="username"
-              className={`mt-1.5 w-full bg-surface-raised ${textbox}`}
+              className={`mt-1.5 w-full bg-float ${textbox}`}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
           <div>
-            <label htmlFor="login-password" className="block text-xs text-fg-muted">
+            <label htmlFor="login-password" className="block text-xs text-ink-muted">
               Password
             </label>
             <input
               id="login-password"
               type="password"
               autoComplete="current-password"
-              className={`mt-1.5 w-full bg-surface-raised ${textbox}`}
+              className={`mt-1.5 w-full bg-float ${textbox}`}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
@@ -101,12 +101,12 @@ export function Login() {
           >
             Sign in
           </button>
-          <div className="flex items-baseline gap-2 text-sm text-fg-muted">
+          <div className="flex items-baseline gap-2 text-sm text-ink-muted">
             First time?
             <button
               type="button"
               disabled={act.isPending}
-              className="-mx-1 rounded-md px-1 py-0.5 text-fg underline underline-offset-4 hover:text-accent disabled:opacity-50"
+              className={`-mx-1 rounded-md px-1 py-0.5 ${LINK} disabled:opacity-50`}
               onClick={() => act.mutate('/auth/register')}
             >
               Create an account

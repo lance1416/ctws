@@ -149,13 +149,13 @@ export function Modal({
                 initialFocus.current?.focus()
               })
             }
-            className={`h-fit w-full max-w-[68ch] border border-border-strong bg-surface-raised ${className}`}
+            className={`h-fit w-full max-w-[68ch] border border-rule-strong bg-float ${className}`}
           >
-            <div className="flex items-center justify-between border-b border-border-subtle px-5 py-3">
+            <div className="flex items-center justify-between border-b border-rule px-5 py-3">
               {/* Radix renders this as the h2 it was, and wires `aria-labelledby` to it -- so the
                   layer's accessible name is its visible heading rather than a second copy of the
                   same words in an `aria-label`. */}
-              <Dialog.Title className="font-semibold text-fg">{title}</Dialog.Title>
+              <Dialog.Title className="font-semibold text-ink">{title}</Dialog.Title>
               {dismissLabel !== null && (
                 <Dialog.Close className={BUTTON.inline}>{dismissLabel}</Dialog.Close>
               )}

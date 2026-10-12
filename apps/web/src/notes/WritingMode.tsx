@@ -71,21 +71,21 @@ export function WritingMode({
           that nothing else is on screen, and z-40 is above the sticky top bar (z-30) -- the one
           layer in this app that deliberately covers it.
         */}
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-surface" />
+        <Dialog.Overlay className="fixed inset-0 z-40 bg-sheet" />
         <Dialog.Content
           aria-describedby={undefined}
           onOpenAutoFocus={(e) => {
             e.preventDefault()
             area.current?.focus()
           }}
-          className="fixed inset-0 z-40 flex flex-col bg-surface text-fg focus:outline-none"
+          className="fixed inset-0 z-40 flex flex-col bg-sheet text-ink focus:outline-none"
         >
-          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border-subtle px-4 py-3">
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-rule px-4 py-3">
             <div className="min-w-0">
               <Dialog.Title className="truncate text-lg font-semibold">{heading}</Dialog.Title>
               {/* The hint costs two lines of a phone's writing area, which is the scarcest space
                   this layer has; the two controls it describes are both on screen anyway. */}
-              <p className="text-xs text-fg-muted max-sm:hidden">
+              <p className="text-xs text-ink-muted max-sm:hidden">
                 Leave full screen to go back. Saving still happens in the pane.
               </p>
             </div>
@@ -106,8 +106,8 @@ export function WritingMode({
             needs: half the window is always the thing being typed.
           */}
           <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-2 lg:grid-cols-2 lg:grid-rows-1">
-            <div className="flex min-h-0 flex-col border-border-subtle max-lg:border-b lg:border-r">
-              <label htmlFor="writing-source" className="px-4 pt-3 text-xs text-fg-muted">
+            <div className="flex min-h-0 flex-col border-rule max-lg:border-b lg:border-r">
+              <label htmlFor="writing-source" className="px-4 pt-3 text-xs text-ink-muted">
                 {/* “Markdown source” and not “Notes”: the pane's own textarea is still mounted behind
                     this layer, accessible names share one flat namespace, and an exact match for
                     Notes must keep meaning the one field it has always meant. */}
@@ -124,14 +124,14 @@ export function WritingMode({
                 spellCheck={false}
                 // `font-mono` is the `--font-mono` token: this pane shows Markdown
                 // SOURCE, where a fence's alignment and a table's pipes are the thing being read.
-                className="min-h-0 flex-1 resize-none bg-surface px-4 py-3 font-mono text-sm text-fg focus:outline-none"
+                className="min-h-0 flex-1 resize-none bg-sheet px-4 py-3 font-mono text-sm text-ink focus:outline-none"
               />
             </div>
             <div className="min-h-0 overflow-y-auto px-4 py-3">
-              <span className="text-xs text-fg-muted">Preview</span>
+              <span className="text-xs text-ink-muted">Preview</span>
               <div data-writing-preview className="mt-1 max-w-[68ch]">
                 {preview.trim() === '' ? (
-                  <p className="text-sm text-fg-subtle">No notes yet</p>
+                  <p className="text-sm text-ink-subtle">No notes yet</p>
                 ) : (
                   <NoteBody source={preview} />
                 )}

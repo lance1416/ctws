@@ -51,11 +51,11 @@ export function People() {
 
       {/* 链接指向的人已经不在了：说出来。静静地只剩一个列表，读起来像链接坏了。 */}
       {gone && (
-        <p role="alert" className="mt-4 text-sm text-fg-muted">
+        <p role="alert" className="mt-4 text-sm text-ink-muted">
           This person is not here any more.
         </p>
       )}
-      {people.isPending && <p className="mt-6 text-fg-muted">Loading…</p>}
+      {people.isPending && <p className="mt-6 text-ink-muted">Loading…</p>}
       {people.isError && (
         <p role="alert" className="mt-6 text-danger">
           {people.error instanceof Error

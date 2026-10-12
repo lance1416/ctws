@@ -71,7 +71,7 @@ export function Completed({ heading: showHeading = true }: { heading?: boolean }
           Done
         </h2>
       )}
-      {completed.isPending && <p className="mt-6 text-fg-muted">Loading…</p>}
+      {completed.isPending && <p className="mt-6 text-ink-muted">Loading…</p>}
       {completed.isError && (
         <p role="alert" className="mt-6 text-danger">
           {completed.error instanceof Error
@@ -82,7 +82,7 @@ export function Completed({ heading: showHeading = true }: { heading?: boolean }
       {completed.isSuccess && rows.length === 0 && <EmptyState title="Nothing finished yet" />}
       {days.map(({ day, tasks }) => (
         <section key={day} aria-label={dayHeading(day, today)} className="mt-8">
-          <h2 className="text-sm font-semibold text-fg-muted">
+          <h2 className="text-sm font-semibold text-ink-muted">
             {dayHeading(day, today)} <span className="tabular-nums">{tasks.length}</span>
           </h2>
           <ul className={`mt-1 flex flex-col ${DONE_LIST_MEASURE}`}>
@@ -118,13 +118,13 @@ export function Completed({ heading: showHeading = true }: { heading?: boolean }
                   className="col-start-2 row-start-1 flex min-w-0 flex-col text-left"
                 >
                   <span className="truncate">{t.title}</span>
-                  <span className="truncate text-sm text-fg-muted">
+                  <span className="truncate text-sm text-ink-muted">
                     {t.parentTitle === null ? t.projectName : `${t.projectName} › ${t.parentTitle}`}
                   </span>
                 </button>
                 <time
                   dateTime={t.completedAt ?? undefined}
-                  className="col-start-3 row-start-1 flex h-6 items-center text-sm tabular-nums text-fg-muted"
+                  className="col-start-3 row-start-1 flex h-6 items-center text-sm tabular-nums text-ink-muted"
                 >
                   {t.completedAt ? clock.format(new Date(t.completedAt)) : ''}
                 </time>
@@ -139,7 +139,7 @@ export function Completed({ heading: showHeading = true }: { heading?: boolean }
           changes. And it names where the rest is, because it is not lost -- Review takes any
           week and has no cap. */}
       {completed.data?.truncated && (
-        <p className="mt-8 text-sm text-fg-muted">
+        <p className="mt-8 text-sm text-ink-muted">
           Showing the most recent {rows.length}. Older work is in Review, week by week.
         </p>
       )}

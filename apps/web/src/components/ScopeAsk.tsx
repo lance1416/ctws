@@ -43,7 +43,7 @@ export function ScopeAsk({
       aria-label="This meeting repeats"
       className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm"
     >
-      <p className="w-full text-fg">{what}</p>
+      <p className="w-full text-ink">{what}</p>
       <span className="flex flex-wrap items-center gap-2">
         <button type="button" onClick={onCancel} className={BUTTON.secondary}>
           {back}

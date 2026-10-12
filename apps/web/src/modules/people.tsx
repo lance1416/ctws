@@ -1,3 +1,4 @@
+import { LINK } from '../components/buttonStyles'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { birthdayCalendar, birthdaysKey, listBirthdays } from '../api/birthdays'
@@ -67,7 +68,7 @@ function BirthdayCard() {
         {next ? (
           <>
             Nobody to greet yet.{' '}
-            <Link to={`/${ID}/birthdays`} className="text-accent">
+            <Link to={`/${ID}/birthdays`} className={LINK}>
               {next.name} is next, {countdownPhrase(next.inDays)}.
             </Link>
           </>

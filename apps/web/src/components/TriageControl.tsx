@@ -85,7 +85,7 @@ export function TriageControl({ groupLabel, triggerLabel, sections, onRan }: Pro
           e.stopPropagation()
           setOpen(!open)
         }}
-        className="flex h-7 w-7 items-center justify-center rounded-md text-fg-muted hover:bg-surface-hover hover:text-fg aria-expanded:bg-surface-hover aria-expanded:text-fg"
+        className="flex h-7 w-7 items-center justify-center rounded-md text-ink-muted hover:bg-hover hover:text-ink aria-expanded:bg-hover aria-expanded:text-ink"
       >
         <svg
           viewBox="0 0 16 16"
@@ -114,7 +114,7 @@ export function TriageControl({ groupLabel, triggerLabel, sections, onRan }: Pro
           }}
           // `w-max` so the clusters stay on one line where there is room, capped to the viewport
           // so a narrow phone wraps them instead of growing a horizontal scrollbar.
-          className="absolute top-full right-0 z-20 mt-1 flex w-max max-w-[calc(100vw-2rem)] flex-col gap-1 rounded-md border border-border-strong bg-surface-raised p-2 text-sm"
+          className="absolute top-full right-0 z-20 mt-1 flex w-max max-w-[calc(100vw-2rem)] flex-col gap-1 rounded-md border border-rule-strong bg-float p-2 text-sm"
         >
           {sections.map((section) => (
             <div
@@ -122,7 +122,7 @@ export function TriageControl({ groupLabel, triggerLabel, sections, onRan }: Pro
               className="flex flex-wrap items-center gap-1 whitespace-nowrap"
             >
               {section.heading && (
-                <span className="pr-1 text-xs text-fg-muted">{section.heading}</span>
+                <span className="pr-1 text-xs text-ink-muted">{section.heading}</span>
               )}
               {section.actions.map((action) => (
                 <button
@@ -138,7 +138,7 @@ export function TriageControl({ groupLabel, triggerLabel, sections, onRan }: Pro
                     if (onRan) onRan()
                     else queueMicrotask(() => trigger.current?.focus())
                   }}
-                  className="rounded-md border border-border-subtle px-2 py-1 text-fg hover:border-border-strong hover:bg-surface-hover"
+                  className="rounded-md border border-rule px-2 py-1 text-ink hover:border-rule-strong hover:bg-hover"
                 >
                   {action.label}
                 </button>

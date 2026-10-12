@@ -23,7 +23,7 @@ export function Field({
   if (shape === 'above') {
     return (
       <div>
-        <span className="block text-xs text-fg-muted">{label}</span>
+        <span className="block text-xs text-ink-muted">{label}</span>
         <div className="mt-1">{children}</div>
       </div>
     )
@@ -31,7 +31,7 @@ export function Field({
   const top = shape === 'beside-top'
   return (
     <div className={`flex gap-2 ${top ? 'items-start' : 'items-center'}`}>
-      <span className={`w-20 shrink-0 text-xs text-fg-muted ${top ? 'pt-2' : ''}`}>{label}</span>
+      <span className={`w-20 shrink-0 text-xs text-ink-muted ${top ? 'pt-2' : ''}`}>{label}</span>
       <span className="min-w-0 flex-1">{children}</span>
     </div>
   )

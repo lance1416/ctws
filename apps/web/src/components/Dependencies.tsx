@@ -35,21 +35,21 @@ function Row({
 }) {
   return (
     <li className="flex min-h-8 items-center gap-2 text-sm">
-      <span className={`truncate ${task.done ? 'text-fg-subtle line-through' : 'text-fg'}`}>
+      <span className={`truncate ${task.done ? 'text-ink-subtle line-through' : 'text-ink'}`}>
         {task.title}
       </span>
       {/* The project only when it is a DIFFERENT one. Dependencies usually stay inside a project,
           and repeating the name of the project you are already looking at is the same noise the
           tree's rows leave out for the same reason. */}
       {task.projectId !== here && (
-        <span className="truncate text-xs text-fg-subtle">{task.projectName}</span>
+        <span className="truncate text-xs text-ink-subtle">{task.projectName}</span>
       )}
       {onRemove && (
         <button
           type="button"
           onClick={onRemove}
           aria-label={`Remove dependency “${task.title}”`}
-          className="ml-auto h-7 w-7 shrink-0 rounded-lg text-fg-subtle hover:bg-surface-hover hover:text-fg"
+          className="ml-auto h-7 w-7 shrink-0 rounded-lg text-ink-subtle hover:bg-hover hover:text-ink"
         >
           <svg aria-hidden="true" viewBox="0 0 16 16" className="mx-auto h-3.5 w-3.5">
             <path
@@ -70,7 +70,7 @@ function Row({
 function Group({ tag, children }: { tag: string; children: ReactNode }) {
   return (
     <div className="flex gap-2">
-      <span className="w-8 shrink-0 pt-1.5 text-xs text-fg-subtle">{tag}</span>
+      <span className="w-8 shrink-0 pt-1.5 text-xs text-ink-subtle">{tag}</span>
       <div className="min-w-0 flex-1">{children}</div>
     </div>
   )
@@ -132,7 +132,7 @@ export function Dependencies({ taskId, projectId }: { taskId: string; projectId:
         <button
           type="button"
           onClick={() => setAdding((v) => !v)}
-          className="-mx-1 rounded-lg px-1 text-xs text-fg-muted hover:text-fg"
+          className="-mx-1 rounded-lg px-1 text-xs text-ink-muted hover:text-ink"
         >
           {adding ? 'Cancel' : 'Add'}
         </button>
@@ -160,10 +160,10 @@ export function Dependencies({ taskId, projectId }: { taskId: string; projectId:
                 <button
                   type="button"
                   onClick={() => add.mutate(t.id)}
-                  className="flex min-h-8 w-full items-center gap-2 rounded-lg px-2 text-left text-sm hover:bg-surface-hover"
+                  className="flex min-h-8 w-full items-center gap-2 rounded-lg px-2 text-left text-sm hover:bg-hover"
                 >
-                  <span className="truncate text-fg">{t.title}</span>
-                  <span className="ml-auto shrink-0 text-xs text-fg-subtle">{t.projectName}</span>
+                  <span className="truncate text-ink">{t.title}</span>
+                  <span className="ml-auto shrink-0 text-xs text-ink-subtle">{t.projectName}</span>
                 </button>
               </li>
             ))}
@@ -200,7 +200,7 @@ export function Dependencies({ taskId, projectId }: { taskId: string; projectId:
       )}
 
       {!adding && blockedBy.length === 0 && blocks.length === 0 && (
-        <p className="text-sm text-fg-subtle">None</p>
+        <p className="text-sm text-ink-subtle">None</p>
       )}
     </div>
   )

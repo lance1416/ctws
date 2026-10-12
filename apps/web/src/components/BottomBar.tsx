@@ -21,14 +21,14 @@ export function BottomBar({ onSearch }: { onSearch: () => void }) {
   // The shell's own kind, always there and always first.
   const projects = kinds()[0]!
   const tab =
-    'flex min-w-0 flex-col items-center justify-center gap-0.5 text-xs leading-4 text-fg-muted'
+    'flex min-w-0 flex-col items-center justify-center gap-0.5 text-xs leading-4 text-ink-muted'
   const link = ({ isActive }: { isActive: boolean }) =>
-    `${tab} ${isActive ? 'font-semibold text-fg' : ''}`
+    `${tab} ${isActive ? 'font-semibold text-ink' : ''}`
 
   return (
     <nav
       aria-label="Main navigation"
-      className="fixed inset-x-0 bottom-0 z-30 grid h-16 grid-cols-5 border-t border-border-subtle bg-surface-sunken lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-30 grid h-16 grid-cols-5 border-t border-rule bg-chrome lg:hidden"
     >
       <NavLink to={WORKBENCH_PATH} end className={link}>
         <Icon>

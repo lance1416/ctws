@@ -45,13 +45,13 @@ function Card({ task, parentTitle }: { task: TaskResponse; parentTitle: string |
         {...attributes}
         type="button"
         data-board-card={task.id}
-        className={`w-full rounded-lg border border-border-subtle bg-surface-raised px-2.5 py-2 text-left hover:border-border-strong ${
+        className={`w-full rounded-lg border border-rule bg-float px-2.5 py-2 text-left hover:border-rule-strong ${
           isDragging ? 'opacity-40' : ''
         }`}
       >
-        <span className="block text-sm text-fg">{task.title}</span>
+        <span className="block text-sm text-ink">{task.title}</span>
         {parentTitle && (
-          <span className="mt-0.5 block truncate text-xs text-fg-subtle">{parentTitle}</span>
+          <span className="mt-0.5 block truncate text-xs text-ink-subtle">{parentTitle}</span>
         )}
       </button>
     </li>
@@ -73,14 +73,12 @@ function Column({
       ref={setNodeRef}
       aria-label={STATUS_LABEL[status]}
       data-board-column={status}
-      className={`flex min-w-0 flex-col rounded-xl p-2 ${
-        isOver ? 'bg-surface-hover' : 'bg-surface-sunken'
-      }`}
+      className={`flex min-w-0 flex-col rounded-xl p-2 ${isOver ? 'bg-hover' : 'bg-desk'}`}
     >
-      <h3 className="flex items-baseline gap-2 px-1 pb-1.5 text-sm font-semibold text-fg-muted">
+      <h3 className="flex items-baseline gap-2 px-1 pb-1.5 text-sm font-semibold text-ink-muted">
         {STATUS_LABEL[status]}
         {tasks.length > 0 && (
-          <span data-count className="text-xs text-fg-subtle tabular-nums">
+          <span data-count className="text-xs text-ink-subtle tabular-nums">
             {tasks.length}
           </span>
         )}

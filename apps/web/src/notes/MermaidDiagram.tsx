@@ -21,19 +21,19 @@ function themeVariables(): Record<string, string> {
   const css = getComputedStyle(document.documentElement)
   const token = (name: string) => css.getPropertyValue(name).trim()
   return {
-    background: token('--color-surface-panel'),
-    primaryColor: token('--color-surface-sunken'),
-    primaryTextColor: token('--color-fg'),
-    primaryBorderColor: token('--color-border-strong'),
-    secondaryColor: token('--color-surface-hover'),
-    tertiaryColor: token('--color-surface'),
-    lineColor: token('--color-border-strong'),
-    textColor: token('--color-fg'),
-    mainBkg: token('--color-surface-sunken'),
-    nodeBorder: token('--color-border-strong'),
-    clusterBkg: token('--color-surface'),
-    clusterBorder: token('--color-border-subtle'),
-    edgeLabelBackground: token('--color-surface-panel'),
+    background: token('--color-desk'),
+    primaryColor: token('--color-sheet'),
+    primaryTextColor: token('--color-ink'),
+    primaryBorderColor: token('--color-rule-strong'),
+    secondaryColor: token('--color-hover'),
+    tertiaryColor: token('--color-chrome'),
+    lineColor: token('--color-rule-strong'),
+    textColor: token('--color-ink'),
+    mainBkg: token('--color-sheet'),
+    nodeBorder: token('--color-rule-strong'),
+    clusterBkg: token('--color-chrome'),
+    clusterBorder: token('--color-rule'),
+    edgeLabelBackground: token('--color-desk'),
     fontFamily: token('--font-sans'),
     fontSize: '14px',
   }
@@ -106,11 +106,11 @@ export default function MermaidDiagram({ source }: { source: string }) {
 
   return (
     <>
-      {state === 'drawing' && <p className="my-3 text-sm text-fg-subtle">Drawing…</p>}
+      {state === 'drawing' && <p className="my-3 text-sm text-ink-subtle">Drawing…</p>}
       {state === 'failed' && (
         <div className="my-3">
           <p className="text-sm text-missed">Couldn't draw the diagram: {failure}</p>
-          <pre className="mt-1 overflow-x-auto rounded-lg bg-surface-sunken p-3 text-sm">
+          <pre className="mt-1 overflow-x-auto rounded-lg bg-desk p-3 text-sm">
             <code>{source}</code>
           </pre>
         </div>

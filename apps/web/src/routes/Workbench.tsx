@@ -56,7 +56,7 @@ export function Workbench() {
 
 function SeeAll({ to }: { to: string }) {
   return (
-    <Link to={to} className="rounded-lg text-sm text-fg-muted hover:text-fg">
+    <Link to={to} className="rounded-lg text-sm text-ink-muted hover:text-ink">
       See all
     </Link>
   )
@@ -91,11 +91,11 @@ function ProjectsWidget() {
               aria-hidden="true"
               className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(p.id)}`}
             />
-            <Link to={`/projects/${p.id}`} className="truncate text-sm text-fg hover:underline">
+            <Link to={`/projects/${p.id}`} className="truncate text-sm text-ink hover:underline">
               {p.name}
             </Link>
             {p.openTasks > 0 && (
-              <span className="text-xs text-fg-subtle tabular-nums">{p.openTasks}</span>
+              <span className="text-xs text-ink-subtle tabular-nums">{p.openTasks}</span>
             )}
           </li>
         ))}

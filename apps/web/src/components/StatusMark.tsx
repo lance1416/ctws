@@ -38,7 +38,7 @@ export function StatusMark({ status }: { status: TaskStatus }) {
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={`shrink-0 ${live ? 'text-fg' : 'text-fg-muted'}`}
+      className={`shrink-0 ${live ? 'text-ink' : 'text-ink-muted'}`}
     >
       <title>{LABEL[status]}</title>
       <circle
@@ -59,7 +59,7 @@ export function StatusMark({ status }: { status: TaskStatus }) {
       />
       <path
         d="M6.6 10.2l2.3 2.3 4.5-4.8"
-        className={`stroke-surface-panel transition-opacity duration-120 ${status === 'done' ? 'opacity-100' : 'opacity-0'}`}
+        className={`stroke-on-ink transition-opacity duration-120 ${status === 'done' ? 'opacity-100' : 'opacity-0'}`}
       />
       {status === 'cancelled' && <path d="M6.2 10h7.6" stroke="currentColor" />}
     </svg>

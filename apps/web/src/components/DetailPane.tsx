@@ -115,15 +115,14 @@ export function DetailPane({
         style={{ top: wide ? top + 16 : top }}
         // A COLUMN, so the one irreversible action (`DangerZone`, `mt-auto`) can be pushed to the
         // pane's floor when what is above it is short, instead of hanging under the last field.
-        className={`fixed z-20 flex flex-col overflow-y-auto p-5 text-fg focus:outline-none ${
-          // A COLUMN is a PANEL in the page's right-hand column: the same surface, radius and
-          // hairline every other panel wears, so it reads as part of the page rather than a form
-          // bolted to the window's edge. Its 22rem plus the two 16px gutters is the 24rem track
-          // Layout takes out of the grid.
-          // A LAYER is above the page: flush with the edges, raised surface, scrim beneath.
+        className={`fixed z-20 flex flex-col overflow-y-auto p-5 text-ink focus:outline-none ${
+          // A COLUMN floats beside the page in its right-hand track: a `float`, lifted, so it reads
+          // as a sheet laid on the desk rather than a form bolted to the window's edge. Its 22rem
+          // plus the two 16px gutters is the 24rem track Layout takes out of the grid.
+          // A LAYER is above the page: flush with the edges, a `float`, scrim beneath.
           wide
-            ? 'right-4 bottom-4 w-[22rem] rounded-xl border border-border-subtle bg-surface-panel shadow-panel'
-            : 'right-0 bottom-0 w-full max-w-md border-l border-border-subtle bg-surface-raised max-lg:bottom-16'
+            ? 'right-4 bottom-4 w-[22rem] rounded-xl border border-rule bg-float shadow-float'
+            : 'right-0 bottom-0 w-full max-w-md border-l border-rule bg-float max-lg:bottom-16'
         }`}
       >
         {children}
@@ -156,7 +155,7 @@ export function DetailHead({
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-fg-muted hover:bg-surface-hover hover:text-fg"
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-ink-muted hover:bg-hover hover:text-ink"
         >
           <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4">
             <path

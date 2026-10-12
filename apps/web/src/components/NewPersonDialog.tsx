@@ -148,7 +148,7 @@ export function NewPersonDialog({
                 submit()
               }
             }}
-            className="w-full rounded-lg bg-transparent py-0.5 text-lg font-semibold text-fg"
+            className="w-full rounded-lg bg-transparent py-0.5 text-lg font-semibold text-ink"
           />
         </div>
 
@@ -177,7 +177,7 @@ export function NewPersonDialog({
                 <button
                   type="button"
                   onClick={() => setBirthday(null)}
-                  className="mt-1 text-sm text-fg-muted hover:text-fg"
+                  className="mt-1 text-sm text-ink-muted hover:text-ink"
                 >
                   Not now
                 </button>
@@ -186,7 +186,7 @@ export function NewPersonDialog({
               <button
                 type="button"
                 onClick={() => setBirthday({ draft: birthdayDraftOf(null), refused: false })}
-                className="h-9 rounded-lg border border-dashed border-border-strong px-3 text-sm text-fg-muted hover:border-border-strong hover:text-fg"
+                className="h-9 rounded-lg border border-dashed border-rule-strong px-3 text-sm text-ink-muted hover:border-rule-strong hover:text-ink"
               >
                 Add a birthday
               </button>

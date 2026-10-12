@@ -24,23 +24,23 @@ export function Things() {
             <li key={label} data-kind={label} className="flex items-start gap-4 py-3">
               <div className="flex min-w-0 flex-1 flex-col">
                 <div className="flex items-baseline gap-2.5">
-                  <Link to={to} className="text-lg font-semibold text-fg hover:underline">
+                  <Link to={to} className="text-lg font-semibold text-ink hover:underline">
                     {label}
                   </Link>
                   {Count && (
-                    <span className="text-sm text-fg-muted tabular-nums">
+                    <span className="text-sm text-ink-muted tabular-nums">
                       <Count />
                     </span>
                   )}
                 </div>
                 {Status && (
-                  <span className="text-sm text-fg-subtle">
+                  <span className="text-sm text-ink-subtle">
                     <Status />
                   </span>
                 )}
               </div>
               {key && (
-                <KeyHint className="mt-1 shrink-0 rounded border border-border-strong px-1.5 text-xs text-fg-subtle">
+                <KeyHint className="mt-1 shrink-0 rounded border border-rule-strong px-1.5 text-xs text-ink-subtle">
                   g {key}
                 </KeyHint>
               )}

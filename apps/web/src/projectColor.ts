@@ -31,7 +31,7 @@ const RAIL: Record<ProjectColor, string> = {
  * showing no colour for a moment is honest, where showing the wrong one and correcting it is a
  * visible flicker that teaches the user the colours are not reliable.
  */
-const UNKNOWN_RAIL = 'bg-border-subtle'
+const UNKNOWN_RAIL = 'bg-rule'
 
 /** A Tailwind class for a slot. A lookup, not a template: Tailwind only emits classes it can see. */
 export function railClass(color: ProjectColor | null | undefined): string {

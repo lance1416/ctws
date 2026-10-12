@@ -47,12 +47,12 @@ export function AddReading({ projectId }: { projectId?: string } = {}) {
         }}
         placeholder="Paste a link, or type a book title"
         aria-label="Add to the reading list"
-        className={`w-full bg-surface ${textbox}`}
+        className={`w-full bg-sheet ${textbox}`}
       />
       {/* Said BEFORE Enter, not after: this is the one place the link/book rule is visible, and a
           rule you can see is one you can work with. */}
       {trimmed !== '' && (
-        <p className="mt-1 text-xs text-fg-subtle">
+        <p className="mt-1 text-xs text-ink-subtle">
           {isLink ? 'Enter saves it as a link' : 'Enter saves it as a book'}
         </p>
       )}

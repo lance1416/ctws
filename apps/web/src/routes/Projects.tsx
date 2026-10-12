@@ -43,7 +43,7 @@ export function Projects() {
         }}
         placeholder="New project"
         aria-label="New project"
-        className={`mt-5 w-full max-w-[40ch] bg-surface ${textbox}`}
+        className={`mt-5 w-full max-w-[40ch] bg-sheet ${textbox}`}
       />
       {projects.isError && (
         <p role="alert" className="mt-4 text-sm text-danger">
@@ -72,7 +72,7 @@ export function Projects() {
           >
             <Link
               to={`/projects/${p.id}`}
-              className="-mx-2 flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-2 hover:bg-surface-hover"
+              className="-mx-2 flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-2 hover:bg-hover"
             >
               {/* The identity rail, same meaning and same width as in the left column and (from
                   stage 2) on every task row. Never alone: the name is right beside it. */}
@@ -89,7 +89,7 @@ export function Projects() {
                 Zero is drawn as NOTHING, the way the left rail draws it: a column whose job is
                 "how much is waiting here" is silent when nothing is, or the emptiest row is the
                 loudest thing on the page. */}
-            <span data-count className="justify-self-end text-xs text-fg-muted">
+            <span data-count className="justify-self-end text-xs text-ink-muted">
               {p.openTasks > 0 ? `${p.openTasks} open` : ''}
             </span>
             {/* NO DELETE IN THE ROW. It lives at the foot of the project's own page, where every

@@ -35,7 +35,7 @@ export function DeleteConfirm({
       aria-label={label}
       className={`flex flex-wrap items-center gap-x-3 gap-y-1 text-sm ${className}`}
     >
-      <p className="text-fg">{message}</p>
+      <p className="text-ink">{message}</p>
       {/* The way out first and the action last, as every pair of buttons in the app is ordered
           (`DialogFooter`, a pane's Cancel / Save) -- which also keeps the press that destroys
           the furthest from where the hand was. */}

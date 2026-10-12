@@ -214,7 +214,7 @@ export function Today() {
         onClick={(e) => {
           if (!(e.target as HTMLElement).closest('button')) setOpenId(t.id)
         }}
-        className={`group relative flex min-h-[46px] cursor-pointer items-start gap-x-2 rounded-lg py-2 pr-2 pl-3 hover:bg-surface-hover ${
+        className={`group relative flex min-h-[46px] cursor-pointer items-start gap-x-2 rounded-lg py-2 pr-2 pl-3 hover:bg-hover ${
           // BLOCKED ROWS DIM AND STAY. This is the page the feature is for: Today stops
           // answering what is due and answers what can be worked on. Hiding them would be the
           // other mistake -- a list that loses tasks cannot be trusted.
@@ -304,7 +304,7 @@ export function Today() {
 
   return (
     <>
-      {today.isPending && <p className="text-fg-muted">Loading…</p>}
+      {today.isPending && <p className="text-ink-muted">Loading…</p>}
       {today.isError && (
         <p role="alert" className="text-danger">
           {today.error instanceof Error
@@ -326,8 +326,7 @@ export function Today() {
         className={`grid min-w-0 items-start gap-4 ${rightColumn ? 'lg:grid-cols-[repeat(3,minmax(0,1fr))] lg:grid-rows-[auto_1fr]' : ''}`}
       >
         {/*
-          Working on -- the first thing the eye should land on, and the only
-          block carrying the accent across its full height.
+          Working on -- the first thing the eye should land on.
 
           THE SIZE ANSWERS "HOW MANY". One thing in progress is THE thing, and it gets the type
           scale's top step; five are a LIST, and five 24px lines are a wall rather than a focal
@@ -340,8 +339,8 @@ export function Today() {
         */}
         <Panel
           label="Working on"
-          className={`border-l-4 border-l-accent ${rightColumn ? 'lg:col-span-2 lg:row-start-1' : ''}`}
-          heading={<h2 className="text-xs font-semibold text-fg-subtle">Working on</h2>}
+          className={`${rightColumn ? 'lg:col-span-2 lg:row-start-1' : ''}`}
+          heading={<h2 className="text-xs font-semibold text-ink-subtle">Working on</h2>}
         >
           {inProgress.length === 0 ? (
             <PanelEmpty>Nothing in progress</PanelEmpty>
@@ -353,7 +352,7 @@ export function Today() {
                   onClick={(e) => {
                     if (!(e.target as HTMLElement).closest('button')) setOpenId(t.id)
                   }}
-                  className="flex min-w-0 cursor-pointer flex-wrap items-center gap-x-3 gap-y-2 rounded-lg px-2 py-1.5 hover:bg-surface-hover"
+                  className="flex min-w-0 cursor-pointer flex-wrap items-center gap-x-3 gap-y-2 rounded-lg px-2 py-1.5 hover:bg-hover"
                 >
                   <StatusMark status={t.status} />
                   <button
@@ -372,7 +371,7 @@ export function Today() {
                       </span>
                       {savedId === t.id && <SavedMark />}
                     </span>
-                    <span className={`truncate text-fg-muted ${alone ? 'text-sm' : 'text-xs'}`}>
+                    <span className={`truncate text-ink-muted ${alone ? 'text-sm' : 'text-xs'}`}>
                       {breadcrumb(t)}
                     </span>
                   </button>
@@ -418,11 +417,11 @@ export function Today() {
                 Today
               </h1>
               {queue.length > 0 && (
-                <span data-count className="text-sm text-fg-subtle tabular-nums">
+                <span data-count className="text-sm text-ink-subtle tabular-nums">
                   {queue.length}
                 </span>
               )}
-              <p className="text-sm text-fg-muted">{dateLabel}</p>
+              <p className="text-sm text-ink-muted">{dateLabel}</p>
             </>
           }
         >

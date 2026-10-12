@@ -103,7 +103,7 @@ function ReadingFields({ item, onClose }: { item: ReadingItemResponse; onClose: 
         kind={
           <Link
             to="/reading"
-            className="rounded text-sm text-fg-muted hover:text-fg hover:underline"
+            className="rounded text-sm text-ink-muted hover:text-ink hover:underline"
           >
             ← Reading
           </Link>
@@ -143,15 +143,15 @@ function ReadingFields({ item, onClose }: { item: ReadingItemResponse; onClose: 
               href={item.url}
               target="_blank"
               rel="noreferrer noopener"
-              className="block truncate text-lg font-semibold text-fg hover:underline"
+              className="block truncate text-lg font-semibold text-ink hover:underline"
             >
               {readingLabel(item)}
             </a>
           ) : (
-            <h2 className="truncate text-lg font-semibold text-fg">{readingLabel(item)}</h2>
+            <h2 className="truncate text-lg font-semibold text-ink">{readingLabel(item)}</h2>
           )}
           {/* 第二行写的是「这是什么」：一本书的作者，或者一条链接的出处。 */}
-          <p className="truncate text-sm text-fg-muted">
+          <p className="truncate text-sm text-ink-muted">
             {item.kind === 'book' ? (item.author ?? 'Book') : (item.url ?? 'Link')}
           </p>
         </div>
@@ -161,16 +161,16 @@ function ReadingFields({ item, onClose }: { item: ReadingItemResponse; onClose: 
       </div>
 
       {item.fetchedSummary && !item.title && (
-        <p className="max-w-[68ch] text-sm text-fg-muted">{item.fetchedSummary}</p>
+        <p className="max-w-[68ch] text-sm text-ink-muted">{item.fetchedSummary}</p>
       )}
 
       <div className="@container">
         <div className="grid items-start gap-x-6 gap-y-4 @xl:grid-cols-2 @2xl:grid-cols-3">
           <Field label="Status" shape="above">
-            <span className="text-sm text-fg">{STATUS_LABEL[item.status]}</span>
+            <span className="text-sm text-ink">{STATUS_LABEL[item.status]}</span>
           </Field>
           <Field label="Finish by" shape="above">
-            <span className={`text-sm ${item.planOn ? 'text-fg' : 'text-fg-subtle'}`}>
+            <span className={`text-sm ${item.planOn ? 'text-ink' : 'text-ink-subtle'}`}>
               {item.planOn ? dayPhrase(item.planOn, today) : 'Not set'}
             </span>
           </Field>
@@ -184,7 +184,7 @@ function ReadingFields({ item, onClose }: { item: ReadingItemResponse; onClose: 
                 </span>
               </span>
             ) : (
-              <span className="text-sm text-fg-subtle">Not on any project</span>
+              <span className="text-sm text-ink-subtle">Not on any project</span>
             )}
           </Field>
         </div>
@@ -249,7 +249,7 @@ function ReadingForm({
       className="flex flex-col gap-4"
     >
       <div className="flex items-center gap-2">
-        <span className="flex-1 text-xs text-fg-muted">Editing</span>
+        <span className="flex-1 text-xs text-ink-muted">Editing</span>
         <button type="button" className={BUTTON.secondary} onClick={onCancel}>
           Cancel
         </button>

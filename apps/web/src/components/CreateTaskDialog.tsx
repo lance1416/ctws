@@ -221,7 +221,7 @@ export function CreateTaskDialog({
             }}
             aria-label="Title"
             aria-invalid={errors.title ? true : undefined}
-            className="mt-0.5 w-full rounded-lg bg-transparent py-0.5 text-lg font-semibold text-fg"
+            className="mt-0.5 w-full rounded-lg bg-transparent py-0.5 text-lg font-semibold text-ink"
           />
         </div>
 
@@ -295,7 +295,7 @@ export function CreateTaskDialog({
               Clear the deadline
             </button>
           </div>
-          {dueEcho && <p className="mt-1 text-xs tabular-nums text-fg-muted">{dueEcho}</p>}
+          {dueEcho && <p className="mt-1 text-xs tabular-nums text-ink-muted">{dueEcho}</p>}
         </div>
 
         <div>
@@ -323,7 +323,7 @@ export function CreateTaskDialog({
               Clear the plan
             </button>
           </div>
-          {planEcho && <p className="mt-1 text-xs tabular-nums text-fg-muted">{planEcho}</p>}
+          {planEcho && <p className="mt-1 text-xs tabular-nums text-ink-muted">{planEcho}</p>}
         </div>
 
         {/* `htmlFor` rather than a wrapping label, for the reason the detail pane records: React
@@ -363,10 +363,9 @@ export function CreateTaskDialog({
           hint={
             // Both chords, not one guessed from the user agent: the keys are what the hint is
             // for, and a wrong guess teaches the wrong key.
-            <p className="text-xs text-fg-muted">
-              <kbd className="rounded border border-border-strong px-1.5 text-xs leading-5">⌘↵</kbd>{' '}
-              /{' '}
-              <kbd className="rounded border border-border-strong px-1.5 text-xs leading-5">
+            <p className="text-xs text-ink-muted">
+              <kbd className="rounded border border-rule-strong px-1.5 text-xs leading-5">⌘↵</kbd> /{' '}
+              <kbd className="rounded border border-rule-strong px-1.5 text-xs leading-5">
                 Ctrl↵
               </kbd>{' '}
               Create and add another

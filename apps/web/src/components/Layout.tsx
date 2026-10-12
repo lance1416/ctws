@@ -35,13 +35,13 @@ export function Layout() {
     },
   })
 
-  if (me.isLoading) return <div className="min-h-screen bg-surface" />
+  if (me.isLoading) return <div className="min-h-screen bg-sheet" />
   // A SERVER THAT IS DOWN IS NOT A SIGNED-OUT VISITOR. Redirecting here would land the reader on
   // a login page that cannot reach the server either, which reads as "my password stopped
   // working" rather than "the server is down".
   if (me.isError) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-surface p-6">
+      <div className="flex min-h-screen items-center justify-center bg-sheet p-6">
         <p role="alert" className="max-w-prose text-sm text-danger">
           Can't reach the server. Your session is fine -- try again once it is back.
         </p>
@@ -58,9 +58,9 @@ export function Layout() {
           those are the rail's, and a bar of them runs out of room at five. Capture is here and
           not in the rail because it is the same box at every width, phone included.
           Nothing here knows what a task is, which is the test a shell has to pass. */}
-        <header className="sticky top-0 z-30 border-b border-border-subtle bg-surface-sunken">
+        <header className="sticky top-0 z-30 border-b border-rule bg-chrome">
           <div className="flex min-h-13 items-center gap-x-3 px-4 py-2 sm:gap-x-4">
-            <Link to="/" className="shrink-0 font-semibold tracking-tight text-fg">
+            <Link to="/" className="shrink-0 font-semibold tracking-tight text-ink">
               CTWS
             </Link>
             <Location />
@@ -102,7 +102,7 @@ export function Layout() {
           {/* 至少一屏高：`DangerZone` 靠 `mt-auto` 把自己推到它所在那个纵向 flex 盒子的底，而一个
             比视口矮的盒子没有「底」可推 —— 删除于是会吊在半空。顶栏 3.25rem，这里补上。 */}
           {/* Below 1024 the page ends above the tab bar, never under it. */}
-          <main className="flex min-h-[calc(100vh-3.25rem)] min-w-0 flex-col bg-surface px-4 pt-4 max-lg:pb-20 sm:px-6">
+          <main className="flex min-h-[calc(100vh-3.25rem)] min-w-0 flex-col bg-sheet px-4 pt-4 max-lg:pb-20 sm:px-6">
             {/* NO WIDTH CAP. The capped 51rem centre column is what put one clump of rows left of
               centre at 1440 with half the screen empty beside it. The width is now carried by the
               PANEL GRID the page lays out inside it, and each list keeps its own measure

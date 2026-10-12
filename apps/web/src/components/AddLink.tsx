@@ -49,7 +49,7 @@ export function AddLink({ of, onClose }: { of: Endpoint; onClose: () => void }) 
     >
       {chosen === null ? (
         <div className="flex flex-col">
-          <div className="border-b border-border-subtle px-4 py-2">
+          <div className="border-b border-rule px-4 py-2">
             <input
               ref={box}
               value={typed}
@@ -57,7 +57,7 @@ export function AddLink({ of, onClose }: { of: Endpoint; onClose: () => void }) 
               placeholder="Search for anything"
               onChange={(e) => setTyped(e.target.value)}
               {...composing.bind}
-              className="h-9 w-full bg-transparent text-fg placeholder:text-fg-muted"
+              className="h-9 w-full bg-transparent text-ink placeholder:text-ink-muted"
             />
           </div>
           {candidates.isError && (
@@ -66,7 +66,7 @@ export function AddLink({ of, onClose }: { of: Endpoint; onClose: () => void }) 
             </p>
           )}
           {candidates.isSuccess && candidates.data.length === 0 && (
-            <p className="px-4 py-3 text-sm text-fg-muted">Nothing matches</p>
+            <p className="px-4 py-3 text-sm text-ink-muted">Nothing matches</p>
           )}
           <ul className="max-h-80 overflow-y-auto py-1">
             {(candidates.data ?? []).map((c) => (
@@ -75,17 +75,17 @@ export function AddLink({ of, onClose }: { of: Endpoint; onClose: () => void }) 
                   type="button"
                   onClick={() => setChosen(c)}
                   data-candidate={c.id}
-                  className="flex w-full min-w-0 items-baseline gap-2 px-4 py-1.5 text-left text-sm text-fg hover:bg-surface-hover"
+                  className="flex w-full min-w-0 items-baseline gap-2 px-4 py-1.5 text-left text-sm text-ink hover:bg-hover"
                 >
                   <span className="min-w-0 flex-1 truncate">{c.title}</span>
                   {c.detail && (
-                    <span className="min-w-0 shrink truncate text-xs text-fg-muted">
+                    <span className="min-w-0 shrink truncate text-xs text-ink-muted">
                       {c.detail}
                     </span>
                   )}
                   {/* WHICH KIND OF THING it is, because one list holds four of them and two
                       titles can read the same. */}
-                  <span className="shrink-0 text-xs text-fg-subtle">
+                  <span className="shrink-0 text-xs text-ink-subtle">
                     {relationFor(c.type)?.kind}
                   </span>
                 </button>
@@ -95,8 +95,8 @@ export function AddLink({ of, onClose }: { of: Endpoint; onClose: () => void }) 
         </div>
       ) : (
         <div className="flex flex-col gap-4 px-5 py-4">
-          <p className="text-sm text-fg-muted">
-            <span className="font-semibold text-fg">{chosen.title}</span>
+          <p className="text-sm text-ink-muted">
+            <span className="font-semibold text-ink">{chosen.title}</span>
           </p>
           <div className="flex flex-wrap gap-2">
             {kinds.map((k) => (
@@ -105,7 +105,7 @@ export function AddLink({ of, onClose }: { of: Endpoint; onClose: () => void }) 
                 type="button"
                 disabled={make.isPending}
                 onClick={() => make.mutate(k.kind)}
-                className="h-9 rounded-lg border border-border-subtle px-3 text-sm text-fg hover:border-border-strong hover:bg-surface-hover disabled:opacity-50"
+                className="h-9 rounded-lg border border-rule px-3 text-sm text-ink hover:border-rule-strong hover:bg-hover disabled:opacity-50"
               >
                 {/* The phrase read along the edge, which is the one this object's page will
                     show. `belongs` says nothing out loud, so it is named here instead. */}

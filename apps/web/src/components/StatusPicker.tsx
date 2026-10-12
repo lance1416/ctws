@@ -37,13 +37,13 @@ export function StatusPicker({
         // is as well as what the control does -- this one button is both.
         aria-label={`Status: ${STATUS_LABEL[status]}`}
         data-status-picker
-        className="-mx-1.5 flex h-8 items-center gap-2 rounded-lg px-1.5 text-sm text-fg hover:bg-surface-hover disabled:opacity-50"
+        className="-mx-1.5 flex h-8 items-center gap-2 rounded-lg px-1.5 text-sm text-ink hover:bg-hover disabled:opacity-50"
       >
         <span aria-hidden="true" className="flex">
           <StatusMark status={status} />
         </span>
         {STATUS_LABEL[status]}
-        <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3 w-3 text-fg-subtle">
+        <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3 w-3 text-ink-subtle">
           <path
             d="M4 6.5l4 4 4-4"
             fill="none"
@@ -70,7 +70,7 @@ export function StatusPicker({
                 <StatusMark status={s} />
               </span>
               {STATUS_LABEL[s]}
-              {s === status && <span className="ml-auto text-xs text-fg-subtle">Current</span>}
+              {s === status && <span className="ml-auto text-xs text-ink-subtle">Current</span>}
             </DropdownMenu.Item>
           ))}
         </DropdownMenu.Content>

@@ -16,35 +16,35 @@ export function BirthdayRow({ row, today }: { row: BirthdayListRow; today: strin
   return (
     <li
       data-birthday-row={row.personId}
-      className="flex h-11 min-w-0 items-center gap-2.5 rounded-lg px-2 hover:bg-surface-hover"
+      className="flex h-11 min-w-0 items-center gap-2.5 rounded-lg px-2 hover:bg-hover"
     >
       <Link
         to={`/people/${row.personId}`}
-        className="min-w-0 shrink truncate rounded text-base text-fg hover:underline"
+        className="min-w-0 shrink truncate rounded text-base text-ink hover:underline"
       >
         {row.name}
       </Link>
       {row.turns === null ? (
-        <span className="shrink-0 text-sm text-fg-subtle">year unknown</span>
+        <span className="shrink-0 text-sm text-ink-subtle">year unknown</span>
       ) : (
-        <span className="shrink-0 text-sm text-fg-muted">turns {row.turns}</span>
+        <span className="shrink-0 text-sm text-ink-muted">turns {row.turns}</span>
       )}
       {row.circle && (
-        <span className="shrink-0 text-xs text-fg-subtle">{CIRCLE_LABELS[row.circle]}</span>
+        <span className="shrink-0 text-xs text-ink-subtle">{CIRCLE_LABELS[row.circle]}</span>
       )}
       <span className="flex-1" />
       {row.lunarDate && (
-        <span className="min-w-0 shrink truncate text-xs text-fg-subtle">{row.lunarDate}</span>
+        <span className="min-w-0 shrink truncate text-xs text-ink-subtle">{row.lunarDate}</span>
       )}
       {/* The year had no such day and it was moved. The sentence that explains it is on the
           person's own page, which has room for it. */}
-      {row.kept.length > 0 && <span className="shrink-0 text-xs text-fg-subtle">moved</span>}
-      <span className="shrink-0 text-sm text-fg-muted tabular-nums">
+      {row.kept.length > 0 && <span className="shrink-0 text-xs text-ink-subtle">moved</span>}
+      <span className="shrink-0 text-sm text-ink-muted tabular-nums">
         {shortDay(row.day, today)}
       </span>
       <span
         className={`w-20 shrink-0 text-right text-sm tabular-nums ${
-          row.inDays === 0 ? 'font-semibold text-deadline' : 'text-fg-muted'
+          row.inDays === 0 ? 'font-semibold text-deadline' : 'text-ink-muted'
         }`}
       >
         {countdownPhrase(row.inDays)}

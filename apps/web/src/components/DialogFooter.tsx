@@ -43,7 +43,7 @@ export function DialogFooter({
             : "Couldn't create it. Your answers are still here — try again."}
         </p>
       )}
-      <div className="flex flex-wrap items-center gap-2 border-t border-border-subtle pt-4">
+      <div className="flex flex-wrap items-center gap-2 border-t border-rule pt-4">
         {hint}
         <span className="ml-auto flex items-center gap-2">
           <button type="button" onClick={onCancel} className={BUTTON.secondary}>

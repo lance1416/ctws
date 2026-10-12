@@ -24,7 +24,7 @@ import { useComposing } from '../composition'
 import { boxed, CHIP, field, label } from './formStyles'
 import { PickMany, PickOne } from './inline'
 import { ScopeAsk } from './ScopeAsk'
-import { BUTTON } from './buttonStyles'
+import { BUTTON, LINK } from './buttonStyles'
 import { useForgetRecent, useRecordRecent } from '../recent'
 
 /**
@@ -163,11 +163,11 @@ export function MeetingFields({
       {onClose ? (
         <DetailHead
           kind={
-            <span className="flex min-w-0 items-center gap-1.5 text-sm text-fg-muted">
-              <Link to="/meetings" className="rounded hover:text-fg hover:underline">
+            <span className="flex min-w-0 items-center gap-1.5 text-sm text-ink-muted">
+              <Link to="/meetings" className="rounded hover:text-ink hover:underline">
                 ← Meetings
               </Link>
-              {meeting.overridden && <span className="text-xs text-fg-subtle">Edited</span>}
+              {meeting.overridden && <span className="text-xs text-ink-subtle">Edited</span>}
             </span>
           }
           trailing={
@@ -175,7 +175,7 @@ export function MeetingFields({
               to={`/meetings/${meeting.meetingId}`}
               aria-label="Open as a page"
               title="Open as a page"
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-fg-muted hover:bg-surface-hover hover:text-fg"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-ink-muted hover:bg-hover hover:text-ink"
             >
               <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4">
                 <path
@@ -192,7 +192,7 @@ export function MeetingFields({
           onClose={onClose}
         />
       ) : (
-        meeting.overridden && <span className="text-xs text-fg-subtle">Edited</span>
+        meeting.overridden && <span className="text-xs text-ink-subtle">Edited</span>
       )}
     </div>
   )
@@ -270,10 +270,10 @@ function MeetingRead({
     <>
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
-          <h2 data-detail-title className="truncate text-lg font-semibold text-fg">
+          <h2 data-detail-title className="truncate text-lg font-semibold text-ink">
             {meeting.title}
           </h2>
-          <p className="truncate text-sm text-fg-muted tabular-nums">
+          <p className="truncate text-sm text-ink-muted tabular-nums">
             {when} · {zoneLabel(meeting.timeZone, new Date(meeting.startsAt))}
           </p>
         </div>
@@ -288,7 +288,7 @@ function MeetingRead({
             <Field label="Your time" shape="above">
               {/* 同一场会在你自己的钟上 —— 你得到场的那个时刻。改不了：时间是在对方那个时区
                   谈定的，在这里改它等于改一个换算。 */}
-              <span data-local-clock className="text-sm tabular-nums text-fg-muted">
+              <span data-local-clock className="text-sm tabular-nums text-ink-muted">
                 {new Intl.DateTimeFormat('en-US', {
                   timeZone: accountZone,
                   month: 'short',
@@ -301,16 +301,16 @@ function MeetingRead({
             </Field>
           )}
           <Field label="Length" shape="above">
-            <span className="text-sm text-fg">{lengthLabel(meeting.durationMinutes)}</span>
+            <span className="text-sm text-ink">{lengthLabel(meeting.durationMinutes)}</span>
           </Field>
           <Field label="Repeats" shape="above">
-            <span className="text-sm text-fg">
+            <span className="text-sm text-ink">
               {bare ? repeatLabel(bare, meeting.startsLocal, today) : 'Once'}
             </span>
           </Field>
           {bare && (
             <Field label="Ends" shape="above">
-              <span className="text-sm tabular-nums text-fg">
+              <span className="text-sm tabular-nums text-ink">
                 {until ? shortDay(until, today) : 'Never'}
               </span>
             </Field>
@@ -327,7 +327,7 @@ function MeetingRead({
                 </span>
               </span>
             ) : (
-              <span className="text-sm text-fg-subtle">Not on any project</span>
+              <span className="text-sm text-ink-subtle">Not on any project</span>
             )}
           </Field>
         </div>
@@ -341,15 +341,15 @@ function MeetingRead({
                 href={place}
                 target="_blank"
                 rel="noreferrer"
-                className="min-w-0 flex-1 truncate text-sm text-accent hover:underline"
+                className={`min-w-0 flex-1 truncate text-sm ${LINK}`}
               >
                 {meeting.location}
               </a>
             ) : (
-              <span className="min-w-0 flex-1 truncate text-sm text-fg">{meeting.location}</span>
+              <span className="min-w-0 flex-1 truncate text-sm text-ink">{meeting.location}</span>
             )
           ) : (
-            <span className="text-sm text-fg-subtle">Not set</span>
+            <span className="text-sm text-ink-subtle">Not set</span>
           )}
         </span>
       </Field>
@@ -357,7 +357,7 @@ function MeetingRead({
       <Field label="Attendees" shape="above">
         <div data-attendees className="flex flex-wrap gap-1.5">
           {meeting.attendees.length === 0 ? (
-            <span className="text-sm text-fg-subtle">Nobody yet</span>
+            <span className="text-sm text-ink-subtle">Nobody yet</span>
           ) : (
             meeting.attendees.map((p) => (
               <span key={p.id} className={CHIP}>
@@ -370,9 +370,9 @@ function MeetingRead({
 
       <Field label="Notes" shape="above">
         {meeting.note ? (
-          <p className="max-w-[68ch] text-sm whitespace-pre-wrap text-fg">{meeting.note}</p>
+          <p className="max-w-[68ch] text-sm whitespace-pre-wrap text-ink">{meeting.note}</p>
         ) : (
-          <p className="text-sm text-fg-subtle">No notes yet</p>
+          <p className="text-sm text-ink-subtle">No notes yet</p>
         )}
       </Field>
     </>
@@ -452,7 +452,7 @@ function MeetingForm({
       className="flex flex-col gap-4"
     >
       <div className="flex items-center gap-2">
-        <span className="flex-1 text-xs text-fg-muted">Editing</span>
+        <span className="flex-1 text-xs text-ink-muted">Editing</span>
         <button type="button" className={BUTTON.secondary} onClick={onCancel}>
           Cancel
         </button>
@@ -540,7 +540,7 @@ function MeetingForm({
                     Never
                   </button>
                 ) : (
-                  <span className="text-sm text-fg-subtle">Never</span>
+                  <span className="text-sm text-ink-subtle">Never</span>
                 )}
               </span>
             </Field>

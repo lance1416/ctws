@@ -65,16 +65,16 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
       <div className="px-5 py-4">
         {GROUPS.map((group) => (
           <section key={group.title} className="mt-4 first:mt-0">
-            <h3 className="text-sm font-semibold text-fg-muted">{group.title}</h3>
+            <h3 className="text-sm font-semibold text-ink-muted">{group.title}</h3>
             <dl className="mt-1">
               {group.keys.map(([key, what]) => (
                 <div key={`${group.title}-${key}`} className="flex items-baseline gap-3 py-0.5">
                   <dt className="w-[14ch] shrink-0">
-                    <kbd className="rounded border border-border-strong px-1.5 text-xs leading-5 text-fg-muted">
+                    <kbd className="rounded border border-rule-strong px-1.5 text-xs leading-5 text-ink-muted">
                       {key}
                     </kbd>
                   </dt>
-                  <dd className="text-sm text-fg">{what}</dd>
+                  <dd className="text-sm text-ink">{what}</dd>
                 </div>
               ))}
             </dl>
@@ -84,16 +84,16 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
             technology, so they have to be refusable. Arrow keys, Enter, Escape and the Alt
             combinations are NOT turned off -- those are how a treeview is operated at all, and a
             tree with no arrow keys and one tab stop would be unreachable. */}
-        <label className="mt-6 flex items-start gap-2 border-t border-border-subtle pt-4 text-sm text-fg">
+        <label className="mt-6 flex items-start gap-2 border-t border-rule pt-4 text-sm text-ink">
           <input
             type="checkbox"
             checked={enabled}
             onChange={(e) => setShortcutsEnabled(e.target.checked)}
-            className="mt-1 h-4 w-4 accent-accent"
+            className="mt-1 h-4 w-4 accent-ink"
           />
           <span>
             Single-key shortcuts
-            <span className="block text-fg-muted">
+            <span className="block text-ink-muted">
               With this off, /, f, ?, the g chords, s, x, j and k stop responding. Arrow keys,
               Enter, Esc and the Alt combinations are unaffected. This browser only.
             </span>

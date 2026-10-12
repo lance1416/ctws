@@ -10,12 +10,10 @@
    @theme inside @media out of the query, which would make the dark values apply always.
 
    Colour discipline:
-   - The two defects the previous palette had are both fixed here.
-     The dark accents sat at lightness 0.72-0.78 and chroma 0.11-0.15, which GLOWS on a
-     near-black ground; everything that carries meaning is now in the 0.60-0.70 band. And the
-     accent (`#4ebceb`) and the plan colour (`#46c6cd`) were nearly the same hue -- two
-     different meanings wearing one face. `plan` is now a TEAL-GREEN, separated from the blue
-     accent in hue and in lightness alike.
+   - Everything that carries meaning sits in the 0.60-0.70 lightness band in dark: the first
+     palette's 0.72-0.78 at chroma 0.11-0.15 GLOWED on a near-black ground. And with the accent
+     now ink, no hue is spent on chrome: the old blue accent and the plan colour were once nearly
+     one hue, two meanings wearing one face.
    - `plan` (teal-green) and `deadline` (warm amber) are two different FAMILIES, because they
      are two different promises: "the day I mean to do it" against "the moment it has to be
      finished". The shapes differ too (RowParts): colour is never the only channel.
@@ -26,55 +24,61 @@
    - Colour carries CATEGORY and URGENCY only. Task status is carried by the SHAPE of its
      marker and by font weight, never by hue.
 
-   FIGURE AND GROUND ARE TWO DIFFERENT TECHNIQUES, NOT ONE INVERTED:
-   - Dark layers by SURFACE LIGHTNESS and uses no shadows at all. ground < chrome < panel <
-     raised, each step a few percent. A shadow on a near-black ground is invisible anyway, and
-     a scrim-like overlay there lightens the page instead of lifting the panel.
-   - Light puts WHITE panels on a tinted ground and lifts them with one hair of shadow,
-     `0 1px 2px rgba(26,29,35,.05)`. The ground is the tint; the panel is the paper.
-   `--shadow-panel` carries that difference, so a panel says `shadow-panel` once and is right in
-   both schemes.
+   FOUR SURFACES, NAMED FOR WHAT THEY ARE rather than for how high they sit -- the old names
+   (`surface`, `-panel`, `-raised`, `-sunken`) meant the page in one place and a field in another:
+   - `sheet`   the page you write on, and the fill of a field on it.
+   - `chrome`  the header and the rail: the frame round the sheet, one step off it.
+   - `desk`    a ground that tiles sit on -- the Workbench, board columns, code fences, diagrams.
+   - `float`   anything above the page: the detail sheet, menus, dialogs, popovers.
+   Dark layers by LIGHTNESS and uses no shadows: desk < chrome < sheet < float, a few percent a
+   step, because a shadow on a near-black ground is invisible anyway. Light cannot -- sheet and
+   float are both white paper -- so a floating thing is lifted by `shadow-float`: one hairline ring
+   and one soft fall. In dark that token is nothing, so a floating thing says `shadow-float` once
+   and is right in both schemes.
 
-   CONTRAST. WCAG 2.1 ratios MEASURED on the surfaces each token actually appears on, not
-   inferred from hue -- the previous redesign wrote its palette against hues and shipped three
-   values that failed AA as text. Everything that carries meaning clears AA 4.5 as text; chips
-   and borders clear the 3:1 non-text threshold, EXCEPT the three project colours named below.
+   THE ACCENT IS INK. There is no blue: the primary fill, the focus ring, the selected tab and a
+   link are all `ink`, and a link is told from text by its underline rather than its hue. Colour is
+   left for what MEANS something here -- a plan, a deadline, a miss, a danger, a project.
 
-     dark    ground  panel  chrome  raised        light   ground  panel  chrome
-     fg      16.17   15.04  15.65   13.89         fg      15.46   16.88  14.26
-     fg-mutd  8.36    7.77   8.09    7.18         fg-mutd  7.33    8.01   6.76
-     fg-sbtl  5.47    5.08   5.29    4.70         fg-sbtl  5.13    5.60   4.73
-     accent   7.03    6.54   6.81    6.04         accent   5.31    5.80   4.90
-     plan     7.01    6.52   6.79    6.03         plan     4.51    4.92   4.16*
-     deadline 8.60    8.00   8.32    7.39         deadline 5.41    5.91   4.99
-     missed   6.53    6.07   6.32    5.61         missed   5.92    6.47   5.46
-     brd-strg 3.90    3.63   3.78    3.35         brd-strg 3.75    4.10   3.46
-     projects 2.65-5.55 on raised                 projects 4.48-5.38 / 4.13-4.97 on chrome
-   (The dark column was re-measured when the surfaces went neutral; every ink gained a little.)
+   STATES ARE INK LAYERS over whatever plane they sit on (Material's state layers): `hover` at 8%,
+   `select` at 12% (Material 2's "activated"). A layer goes down in light and up in dark from any
+   plane by construction; an opaque state colour would be exactly one of the four planes somewhere,
+   and a hover on that plane would change nothing.
 
-   THREE DARK PROJECT COLOURS DO NOT CLEAR 3:1, and the earlier version of this table said they
-   did: slots 4, 5 and 6 (#a52f76, #006895, #835900) measure 2.65, 2.76 and 2.75 on the raised
-   plane -- 2.52, 2.63 and 2.61 before the surfaces went neutral, so this change improved them
-   without fixing them. They are never the only channel (a chip always sits beside the project's
-   name, WCAG 1.4.1), so nothing is unreadable; but the claim above was wrong and the fix is to
-   re-step those three, which is the colour search this file's dark block records, not a tweak.
-   (* `plan`, `deadline` and `missed` are row text inside a panel; they never appear on the
-    chrome plane, so the chrome column is informational for them.)
+   CONTRAST. WCAG 2.1 relative-luminance ratios, MEASURED on every surface (a scratch script, not
+   shipped) rather than inferred from hue. Text clears 4.5:1, and a control's only edge and the
+   focus ring clear 3:1, on every surface they appear on.
 
-   FOUR VALUES DEPART FROM THE SPEC'S HEX TABLE, each because the spec's own rule -- "take the
-   MEASURED ratio as the authority, not the hue" -- rejects the literal value:
-     - control border, light: `#c3cad5` measures 1.51 on the ground and 1.65 on a white panel.
-       An input whose only affordance is its edge needs 3:1 (WCAG 1.4.11). `#737e91` -> 3.75 / 4.10.
-     - control border, dark: `#2d333c` measures 1.37 on a panel. `#687283` -> 3.59.
-     - tertiary text, light: `#6b7280` measures 4.43 on the ground and 4.08 on the chrome plane,
-       i.e. it fails AA as text in the two places it is used. `#616876` -> 5.13 / 4.73.
-     - tertiary text, dark: `#717a86` measures 4.01 on a panel. `#838c99` -> 5.13.
-     - accent, light: `#3a6cc4` measures 4.30 against the capture bar, where the capture
-       confirmation's link sits. `#3364b4` -> 4.90, one step darker, same hue.
-   Every other value in the spec's table is used exactly as written.
-   `border-subtle` (1.19-1.30) is a decorative hairline only: panel edges, tree guides and
-   column rules, where the SURFACE step already carries the separation. Anything that identifies
-   a control (input edges, markers) uses `border-strong` or `fg-muted`. */
+     light    sheet chrome  desk  float        dark     sheet chrome  desk  float
+     ink      16.88  15.60 14.39  16.88        ink      14.52  15.32 16.00  13.31
+     muted     8.01   7.40  6.83   8.01        muted     7.50   7.92  8.27   6.88
+     subtle    5.60   5.18  4.77   5.60        subtle    5.04   5.32  5.56   4.62
+     plan      4.92   4.55  4.20*  4.92        plan      6.30   6.64  6.94   5.77
+     deadline  5.91   5.46  5.04   5.91        deadline  7.72   8.15  8.51   7.08
+     missed    6.47   5.98  5.51   6.47        missed    5.86   6.18  6.46   5.37
+     rule-str  4.10   3.79  3.50   4.10        rule-str  3.50   3.70  3.86   3.21
+     select    1.27   1.27  1.27   1.27        select    1.36   1.34  1.30   1.39  (layer : plane)
+     on-ink 16.88 on ink, on-danger 6.47 on danger   on-ink 14.52 on ink, on-danger 5.86 on danger
+     code fences 4.77-6.83 on desk                   code fences 5.76-10.49 on desk
+   (* `plan` is row text, and a row sits on the sheet or a float, never straight on the desk.)
+   `rule` (1.05-1.30) is a decorative hairline only, where the surface step already separates;
+   anything that identifies a control uses `rule-strong` or `ink-muted`. `select` is never the only
+   sign either: the selected entry is also set in `ink` at weight 600.
+
+   THE PROJECT COLOURS DO NOT ALL CLEAR 3:1, and an earlier version of this table said the light
+   ones did. Measured on the sheet: light 5.19, 3.87, 3.42, 3.06, 2.31, 2.25 (slots 1-6; on the
+   desk 5 and 6 fall to 1.97 and 1.92); dark slots 4-6 measure 2.54-3.05, 2.65-3.18 and
+   2.63-3.16 across the four surfaces. They are never the only channel -- a chip always sits beside
+   the project's name (WCAG 1.4.1), so nothing is unreadable -- but re-stepping them is a colour
+   search of its own, not a token rename.
+
+   THREE VALUES DEPART FROM THE SPEC'S HEX TABLE, each because the spec's own rule -- take the
+   MEASURED ratio as the authority, not the hue -- rejects the literal value:
+     - `rule-strong`, light: `#c3cad5` measures 1.51-1.65. An input whose only affordance is its
+       edge needs 3:1 (WCAG 1.4.11). `#737e91` -> 3.50 at worst.
+     - `ink-subtle`, light: `#6b7280` fails AA as text on the chrome. `#616876` -> 4.77 at worst.
+     - `ink-subtle`, dark: `#86868c` measures 4.50 on a float, a pass by a rounding; the next
+       change to `float` would break it. `#88888e` -> 4.62. */
 
 /* The CJK face, self-hosted. ONE variable woff2 (wght 400-700), subset to all of GB2312 -- its
    6,763 han and its punctuation rows -- plus any Chinese left in the app's own source (none, since
@@ -183,26 +187,21 @@
   --text-2xl: 2.25rem;
   --text-2xl--line-height: 2.75rem;
 
-  /* The four planes, light. White paper on a tinted ground. */
-  --color-surface: #f3f5f8;
-  --color-surface-panel: #ffffff;
-  --color-surface-raised: #ffffff;
-  --color-surface-sunken: #e9ecf1;
-  /* What a row goes to under the pointer: THE INK AT 8%, LAID OVER WHATEVER PLANE IT IS ON.
-     Material 3's hover state layer (8% of the content colour), and the reason it is a layer
-     rather than a colour: an opaque hover is one plane, and the app has four. The opaque one this
-     replaces was `#e9ecf1` here and `#1c1c1f` in dark -- exactly `sunken` in light and exactly
-     `raised` in dark -- so a hover on the rail (sunken) and a highlighted search result, a menu
-     item or a row in the overlay pane (raised) changed nothing at all. Ink over the plane goes
-     DOWN in light and UP in dark, from any plane, by construction. */
-  --color-surface-hover: rgb(26 29 35 / 0.08);
-  --color-fg: #1a1d23;
-  --color-fg-muted: #4a515c;
-  --color-fg-subtle: #616876;
-  --color-border-subtle: #dde2ea;
-  --color-border-strong: #737e91;
-  --color-accent: #3364b4;
-  --color-accent-fg: #ffffff;
+  /* The four surfaces, light. The sheet is white paper; chrome and desk are two tints of the
+     table it lies on; a float is paper too, lifted by `shadow-float`. */
+  --color-sheet: #ffffff;
+  --color-chrome: #f5f6f7;
+  --color-desk: #ebedf0;
+  --color-float: #ffffff;
+  /* THE INK AT 8% AND 12%, LAID OVER WHATEVER SURFACE IT IS ON (see the note at the top). */
+  --color-hover: rgb(26 29 35 / 0.08);
+  --color-select: rgb(26 29 35 / 0.12);
+  --color-ink: #1a1d23;
+  --color-ink-muted: #4a515c;
+  --color-ink-subtle: #616876;
+  --color-on-ink: #ffffff;
+  --color-rule: #dde2ea;
+  --color-rule-strong: #737e91;
   /* The two date semantics: a teal-green plan against a warm amber deadline. */
   --color-plan: #2f7d6b;
   --color-deadline: #8a5a12;
@@ -210,7 +209,7 @@
   /* `danger` is the same red as `missed` but a separate name on purpose: they mean different
      things (a deadline that has gone / an action that destroys data) and could diverge. */
   --color-danger: #a53a30;
-  --color-danger-fg: #ffffff;
+  --color-on-danger: #ffffff;
   /* Categorical project identity -- rails and chips only, never alone (see the note at the top).
      These six are OKABE-ITO, the colourblind-safe qualitative set, not a palette picked here. The
      earlier one WAS picked here -- six evenly spread hue angles at one lightness -- and it failed
@@ -231,12 +230,12 @@
        5   #56B4E9   73.5% 0.117 236          sky blue
        6   #E69F00   75.3% 0.158  77          orange */
   /* SYNTAX COLOURS, for highlighted code fences only (D-none; feature request 2026-10-07). They
-     are their own family rather than borrowed from `accent` / `plan` / `deadline` / `missed`:
-     those four MEAN something in this app (a link, a plan, a deadline, a miss), and a keyword
+     are their own family rather than borrowed from `plan` / `deadline` / `missed`: those MEAN
+     something in this app, and a keyword
      wearing “Due”'s colour would be the one thing the colour rules here forbid.
 
-     Measured on `surface-sunken`, which is the only background a code block has, in each scheme:
-     light 5.1-6.8:1, dark 5.3-9.6:1 -- every one of them clears AA as body text, which matters
+     Measured on `desk`, which is the only ground a code block has, in each scheme: light
+     4.77-6.83:1, dark 5.76-10.49:1 -- every one of them clears AA as body text, which matters
      because this IS body text, at 14px, read character by character.
 
      Not a highlight.js theme: importing one would bring a whole second palette with its own
@@ -255,12 +254,12 @@
   --color-project-5: #56b4e9;
   --color-project-6: #e69f00;
   /* The wash behind an overlay. It carries its own alpha, and it is a token of its own rather
-     than `fg` at an opacity: `fg` is near-white in dark mode, so `bg-fg/20` LIGHTENS the page it
-     is meant to dim. A scrim has to darken in both schemes. */
+     than `ink` at an opacity: `ink` is near-white in dark mode, so `bg-ink/20` LIGHTENS the page
+     it is meant to dim. A scrim has to darken in both schemes. */
   --color-scrim: rgb(26 29 35 / 0.32);
-  /* One hair of lift under a white panel; see the figure/ground note above. Dark replaces it
-     with nothing, so a panel carries this class in both schemes and is right in both. */
-  --shadow-panel: 0 1px 2px rgb(26 29 35 / 0.05);
+  /* The lift under a floating thing: a hairline ring, so its edge is there even on white, and
+     one soft fall. Dark replaces it with nothing (see the note at the top). */
+  --shadow-float: 0 0 0 1px rgb(26 29 35 / 0.06), 0 16px 40px -12px rgb(26 29 35 / 0.22);
 }
 
 /*
@@ -280,25 +279,24 @@
     /* NEUTRAL, AND DARKER. The first dark set carried a blue cast -- every surface had 6 to 10
        more blue than red (#0f1115 is R15 G17 B21), which reads as navy on a big screen rather
        than as a dark room. These are grey: 1 to 3 points of blue over red, and the ground is
-       five steps nearer black. Every ink gains contrast from it rather than losing any; the
-       table below is re-measured, not carried over. */
-    --color-surface: #0a0a0b;
-    --color-surface-panel: #141416;
-    --color-surface-raised: #1c1c1f;
-    --color-surface-sunken: #0f0f11;
-    --color-surface-hover: rgb(232 232 234 / 0.08);
-    --color-fg: #e8e8ea;
-    --color-fg-muted: #a8a8ad;
-    --color-fg-subtle: #86868c;
-    --color-border-subtle: #242427;
-    --color-border-strong: #6e6e73;
-    --color-accent: #6f9ae8;
-    --color-accent-fg: #0a0a0b;
+       nearer black still. The table at the top is measured on these, not carried over. */
+    --color-sheet: #17181a;
+    --color-chrome: #111214;
+    --color-desk: #0b0c0d;
+    --color-float: #1f2023;
+    --color-hover: rgb(232 232 234 / 0.08);
+    --color-select: rgb(232 232 234 / 0.12);
+    --color-ink: #e8e8ea;
+    --color-ink-muted: #a8a8ad;
+    --color-ink-subtle: #88888e;
+    --color-on-ink: #17181a;
+    --color-rule: #242427;
+    --color-rule-strong: #6e6e73;
     --color-plan: #58a894;
     --color-deadline: #d9a05b;
     --color-missed: #e0756b;
     --color-danger: #e0756b;
-    --color-danger-fg: #0a0a0b;
+    --color-on-danger: #17181a;
     /* THE SAME SIX HUES, RE-STEPPED FOR DARK -- not the light set lightened or inverted. Dark mode
        has a narrower usable lightness band (L 0.48-0.67 against light's 0.43-0.77), and Okabe-Ito
        leans on lightness for two of its pairs: blue/sky share a hue within 8°, as do
@@ -333,7 +331,7 @@
     --color-project-6: #835900;
     --color-scrim: rgb(5 6 8 / 0.62);
     /* No shadows in dark: the layering is done by surface lightness. */
-    --shadow-panel: 0 0 #0000;
+    --shadow-float: 0 0 #0000;
   }
 }
 
@@ -341,25 +339,24 @@
   /* NEUTRAL, AND DARKER. The first dark set carried a blue cast -- every surface had 6 to 10
        more blue than red (#0f1115 is R15 G17 B21), which reads as navy on a big screen rather
        than as a dark room. These are grey: 1 to 3 points of blue over red, and the ground is
-       five steps nearer black. Every ink gains contrast from it rather than losing any; the
-       table below is re-measured, not carried over. */
-  --color-surface: #0a0a0b;
-  --color-surface-panel: #141416;
-  --color-surface-raised: #1c1c1f;
-  --color-surface-sunken: #0f0f11;
-  --color-surface-hover: rgb(232 232 234 / 0.08);
-  --color-fg: #e8e8ea;
-  --color-fg-muted: #a8a8ad;
-  --color-fg-subtle: #86868c;
-  --color-border-subtle: #242427;
-  --color-border-strong: #6e6e73;
-  --color-accent: #6f9ae8;
-  --color-accent-fg: #0a0a0b;
+       nearer black still. The table at the top is measured on these, not carried over. */
+  --color-sheet: #17181a;
+  --color-chrome: #111214;
+  --color-desk: #0b0c0d;
+  --color-float: #1f2023;
+  --color-hover: rgb(232 232 234 / 0.08);
+  --color-select: rgb(232 232 234 / 0.12);
+  --color-ink: #e8e8ea;
+  --color-ink-muted: #a8a8ad;
+  --color-ink-subtle: #88888e;
+  --color-on-ink: #17181a;
+  --color-rule: #242427;
+  --color-rule-strong: #6e6e73;
   --color-plan: #58a894;
   --color-deadline: #d9a05b;
   --color-missed: #e0756b;
   --color-danger: #e0756b;
-  --color-danger-fg: #0a0a0b;
+  --color-on-danger: #17181a;
   /* THE SAME SIX HUES, RE-STEPPED FOR DARK -- not the light set lightened or inverted. Dark mode
        has a narrower usable lightness band (L 0.48-0.67 against light's 0.43-0.77), and Okabe-Ito
        leans on lightness for two of its pairs: blue/sky share a hue within 8°, as do
@@ -394,7 +391,7 @@
   --color-project-6: #835900;
   --color-scrim: rgb(5 6 8 / 0.62);
   /* No shadows in dark: the layering is done by surface lightness. */
-  --shadow-panel: 0 0 #0000;
+  --shadow-float: 0 0 #0000;
 }
 
 /* Native controls (date pickers, scrollbars) follow the scheme too. */
@@ -436,7 +433,7 @@
    NO LETTER-SPACING ON HAN, ever: zero `letter-spacing` tokens across all five token files, which
    makes the rule this app already had the unanimous prior art. */
 body {
-  @apply bg-surface text-base text-fg;
+  @apply bg-sheet text-base text-ink;
   font-family: var(--font-sans);
   text-autospace: normal;
   -webkit-font-smoothing: antialiased;
@@ -453,9 +450,9 @@ kbd,
   font-variant-numeric: tabular-nums;
 }
 
-/* One focus ring for everything focusable: accent, 2px, 2px offset. */
+/* One focus ring for everything focusable: ink, 2px, 2px offset -- 13.31:1 at its worst. */
 :focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-ink);
   outline-offset: 2px;
 }
 
@@ -555,20 +552,22 @@ kbd,
 }
 
 [data-note-md] blockquote {
-  border-inline-start: 2px solid var(--color-border-subtle);
+  border-inline-start: 2px solid var(--color-rule);
   padding-inline-start: 0.875rem;
-  color: var(--color-fg-muted);
+  color: var(--color-ink-muted);
 }
 
+/* A link is ink with an underline, as everywhere else: the underline is what tells it apart. */
 [data-note-md] a {
-  color: var(--color-accent);
+  color: var(--color-ink);
   text-decoration: underline;
-  text-underline-offset: 2px;
+  text-decoration-color: var(--color-rule-strong);
+  text-underline-offset: 3px;
 }
 
 [data-note-md] hr {
   border: 0;
-  border-top: 1px solid var(--color-border-subtle);
+  border-top: 1px solid var(--color-rule);
   margin-block: 1.25rem;
 }
 
@@ -578,7 +577,7 @@ kbd,
 
 [data-note-md] del {
   text-decoration: line-through;
-  color: var(--color-fg-muted);
+  color: var(--color-ink-muted);
 }
 
 /* CODE IS `--font-mono` (Ant Design 5's `fontFamilyCode` verbatim).
@@ -598,23 +597,22 @@ kbd,
   font-variant-ligatures: none;
 }
 
-/* THE HAIRLINE IS WHAT MAKES CODE A BLOCK IN DARK, not the fill. `surface-sunken` is a step DOWN
-   from the panel, which reads clearly on white paper and almost not at all against #171a1f -- the
-   first dark screenshot showed a fence that was a rectangle of nothing. A border in
-   `border-subtle` steps the other way in dark (#242932 is lighter than both) and is a hairline on
-   the tint in light, so one rule is right in both schemes. The same reason the four surfaces have a
-   `surface-hover` token of their own: in dark a plane has to go up. */
+/* THE HAIRLINE IS WHAT MAKES CODE A BLOCK IN DARK, not the fill. `desk` is a step DOWN from the
+   sheet, which reads clearly on white paper and almost not at all on a near-black one -- the first
+   dark screenshot showed a fence that was a rectangle of nothing. A `rule` steps the other way in
+   dark (it is lighter than both) and is a hairline on the tint in light, so one rule is right in
+   both schemes. The same reason the hover is an ink layer: in dark a plane has to go up. */
 [data-note-md] code {
   font-size: 0.875em;
-  background: var(--color-surface-sunken);
-  border: 1px solid var(--color-border-subtle);
+  background: var(--color-desk);
+  border: 1px solid var(--color-rule);
   border-radius: 0.25rem;
   padding: 0.0625rem 0.25rem;
 }
 
 [data-note-md] pre {
-  background: var(--color-surface-sunken);
-  border: 1px solid var(--color-border-subtle);
+  background: var(--color-desk);
+  border: 1px solid var(--color-rule);
   border-radius: 0.5rem;
   padding: 0.75rem;
   overflow-x: auto;
@@ -638,14 +636,14 @@ kbd,
 
 [data-note-md] th,
 [data-note-md] td {
-  border: 1px solid var(--color-border-subtle);
+  border: 1px solid var(--color-rule);
   padding: 0.25rem 0.5rem;
   text-align: start;
 }
 
 [data-note-md] th {
   font-weight: 600;
-  background: var(--color-surface-sunken);
+  background: var(--color-desk);
 }
 
 /* KaTeX sets its own type; all this does is keep a long display formula from widening the pane. */

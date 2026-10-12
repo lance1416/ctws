@@ -31,7 +31,7 @@ export function DangerZone({ children }: { children: ReactNode }) {
       没有底色：它属于它所在的面，那条线已经说明它不是正文。
     */
     <div data-danger-zone className="mt-auto pt-6">
-      <div className="border-t border-border-subtle py-3">{children}</div>
+      <div className="border-t border-rule py-3">{children}</div>
     </div>
   )
 }

@@ -26,8 +26,8 @@ export function EmptyState({
 }) {
   return (
     <div className="mt-8 max-w-[44ch]">
-      <p className="text-fg">{title}</p>
-      {hint && <p className="mt-1 text-sm text-fg-muted">{hint}</p>}
+      <p className="text-ink">{title}</p>
+      {hint && <p className="mt-1 text-sm text-ink-muted">{hint}</p>}
       {action && <div className="mt-4">{action}</div>}
     </div>
   )

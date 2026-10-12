@@ -63,7 +63,7 @@ export function Reading() {
         <AddReading />
       </div>
 
-      {items.isPending && <p className="mt-6 text-fg-muted">Loading…</p>}
+      {items.isPending && <p className="mt-6 text-ink-muted">Loading…</p>}
       {items.isError && (
         <p role="alert" className="mt-6 text-danger">
           {items.error instanceof Error
@@ -78,7 +78,7 @@ export function Reading() {
         if (section.length === 0) return null
         return (
           <section key={status} aria-label={label} className="mt-8">
-            <h2 className="text-sm font-semibold text-fg-muted">
+            <h2 className="text-sm font-semibold text-ink-muted">
               {label} <span className="tabular-nums">{section.length}</span>
             </h2>
             <ul className={`mt-1 ${LIST_MEASURE}`}>
@@ -104,7 +104,7 @@ export function Reading() {
           if (open) return <ReadingDetail item={open} onClose={() => navigate('/reading')} />
           // 链接指向的东西已经不在了：说出来，别只留一张清单。
           return items.isSuccess ? (
-            <p role="alert" className="mt-4 text-sm text-fg-muted">
+            <p role="alert" className="mt-4 text-sm text-ink-muted">
               This item is not here any more.
             </p>
           ) : null
@@ -116,7 +116,7 @@ export function Reading() {
             type="button"
             aria-pressed={showFinished}
             onClick={() => setShowFinished((v) => !v)}
-            className="rounded-lg text-sm text-fg-muted hover:text-fg"
+            className="rounded-lg text-sm text-ink-muted hover:text-ink"
           >
             Finished <span className="tabular-nums">{finished.length}</span>
           </button>
@@ -136,7 +136,7 @@ export function Reading() {
       )}
 
       {items.isSuccess && rows.length > 0 && open.length === 0 && finished.length > 0 && (
-        <p className="mt-8 text-fg-muted">You are through the list.</p>
+        <p className="mt-8 text-ink-muted">You are through the list.</p>
       )}
     </>
   )

@@ -67,12 +67,11 @@ export function SideRail() {
   }
 
   return (
-    // Chrome, not work: the rail, the top bar and the detail pane share ONE surface (`sunken`),
-    // and the centre column keeps `surface`. That is the whole figure/ground device -- no cards,
-    // no shadows, no hairline round everything, just two planes. It reads in both schemes
-    // because `sunken` is darker than `surface` in each.
+    // Chrome, not work: the rail and the header share ONE surface (`chrome`), and the page is the
+    // `sheet`. That is the figure/ground device -- a frame round the paper, one step off it in
+    // both schemes.
     // Wide screens only: below 1024 the bottom bar is the navigation (BottomBar).
-    <div className="hidden flex-col border-border-subtle bg-surface-sunken lg:flex lg:h-[calc(100vh-3.25rem)] lg:overflow-y-auto lg:border-r lg:py-4 lg:pr-3 lg:pl-4">
+    <div className="hidden flex-col border-rule bg-chrome lg:flex lg:h-[calc(100vh-3.25rem)] lg:overflow-y-auto lg:border-r lg:py-4 lg:pr-3 lg:pl-4">
       <nav aria-label="Main navigation" className="flex flex-col">
         {/* THREE TIERS, each with a rule for what may enter it.
 
@@ -87,7 +86,7 @@ export function SideRail() {
             end={end ?? false}
             className={({ isActive }) =>
               `flex min-h-9 shrink-0 items-center gap-2 rounded-lg px-2.5 py-1 whitespace-nowrap ${
-                isActive ? 'bg-surface-panel font-semibold text-fg' : 'text-fg-muted hover:text-fg'
+                isActive ? 'bg-select font-semibold text-ink' : 'text-ink-muted hover:text-ink'
               }`
             }
           >
@@ -102,7 +101,7 @@ export function SideRail() {
           to="/things"
           aria-current={inThings ? 'page' : undefined}
           className={`flex min-h-9 shrink-0 items-center gap-2 rounded-lg px-2.5 py-1 whitespace-nowrap ${
-            inThings ? 'bg-surface-panel font-semibold text-fg' : 'text-fg-muted hover:text-fg'
+            inThings ? 'bg-select font-semibold text-ink' : 'text-ink-muted hover:text-ink'
           }`}
         >
           Things
@@ -115,7 +114,7 @@ export function SideRail() {
             to="/projects"
             className={({ isActive }) =>
               `rounded-lg px-2.5 py-1 font-semibold whitespace-nowrap lg:text-xs ${
-                isActive ? 'text-fg' : 'text-fg-muted hover:text-fg'
+                isActive ? 'text-ink' : 'text-ink-muted hover:text-ink'
               }`
             }
           >
@@ -125,7 +124,7 @@ export function SideRail() {
             type="button"
             onClick={() => setNaming(true)}
             aria-label="New project"
-            className="flex h-6 w-6 items-center justify-center rounded-md text-fg-subtle hover:bg-surface-hover hover:text-fg"
+            className="flex h-6 w-6 items-center justify-center rounded-md text-ink-subtle hover:bg-hover hover:text-ink"
           >
             <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3.5 w-3.5">
               <path
@@ -157,8 +156,8 @@ export function SideRail() {
             }}
             aria-label="New project"
             aria-invalid={create.isError ? true : undefined}
-            className={`mx-2.5 block h-8 rounded-md border bg-surface px-2 text-sm text-fg ${
-              create.isError ? 'border-danger' : 'border-border-strong'
+            className={`mx-2.5 block h-8 rounded-md border bg-sheet px-2 text-sm text-ink ${
+              create.isError ? 'border-danger' : 'border-rule-strong'
             }`}
           />
         )}
@@ -173,7 +172,7 @@ export function SideRail() {
                 `flex min-h-11 items-center gap-2.5 rounded-lg py-1 pr-2 pl-2.5 ${
                   // The current page wears the WORK surface, so the rail says "you are over
                   // there" with the same two planes the layout already uses.
-                  isActive ? 'bg-surface-panel text-fg' : 'text-fg-muted hover:text-fg'
+                  isActive ? 'bg-select text-ink' : 'text-ink-muted hover:text-ink'
                 }`
               }
             >
@@ -183,7 +182,7 @@ export function SideRail() {
               />
               <span className="truncate">{p.name}</span>
               {p.openTasks > 0 && (
-                <span data-count className="ml-auto pl-1 text-sm text-fg-subtle tabular-nums">
+                <span data-count className="ml-auto pl-1 text-sm text-ink-subtle tabular-nums">
                   {p.openTasks}
                 </span>
               )}

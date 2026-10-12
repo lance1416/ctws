@@ -11,9 +11,9 @@ import { SearchDialog } from './SearchDialog'
 import { ShortcutHelp } from './ShortcutHelp'
 
 const button =
-  'rounded-md px-2 py-1.5 text-sm text-fg-muted hover:text-fg whitespace-nowrap flex items-center gap-1.5'
+  'rounded-md px-2 py-1.5 text-sm text-ink-muted hover:text-ink whitespace-nowrap flex items-center gap-1.5'
 const hint =
-  'pointer-events-none rounded border border-border-strong px-1.5 text-xs leading-5 max-sm:hidden'
+  'pointer-events-none rounded border border-rule-strong px-1.5 text-xs leading-5 max-sm:hidden'
 
 /**
  * The document-level keys, and the two buttons that do the same jobs with a mouse.

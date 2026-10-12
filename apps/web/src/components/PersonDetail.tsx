@@ -7,7 +7,7 @@ import { DangerAction, DangerZone } from './DangerZone'
 import { useEffect, useState, type ReactNode } from 'react'
 import { BirthdayEditor, BirthdayFields, givenDate, plainDate } from './BirthdayFields'
 import { CIRCLE_LABELS } from './BirthdayRow'
-import { BUTTON } from './buttonStyles'
+import { BUTTON, LINK } from './buttonStyles'
 import { byKind, channelLabel, channelPlaceholder, KIND_CHOICES, KIND_LABEL } from '../channels'
 import { usePhone } from '../usePhone'
 import { Field } from './Field'
@@ -104,7 +104,7 @@ export function PersonFields({
           kind={
             <Link
               to="/people"
-              className="rounded text-sm text-fg-muted hover:text-fg hover:underline"
+              className="rounded text-sm text-ink-muted hover:text-ink hover:underline"
             >
               ← People
             </Link>
@@ -147,15 +147,15 @@ export function PersonFields({
       */}
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
-          <h2 className="truncate text-lg font-semibold text-fg">{person.name}</h2>
+          <h2 className="truncate text-lg font-semibold text-ink">{person.name}</h2>
           {(person.title || person.org) && (
-            <p className="truncate text-sm text-fg-muted">
+            <p className="truncate text-sm text-ink-muted">
               {[person.title, person.org].filter(Boolean).join(' · ')}
             </p>
           )}
         </div>
         {person.circle && (
-          <span className="shrink-0 rounded-full border border-border-subtle bg-surface-raised px-2.5 py-1 text-xs text-fg-muted">
+          <span className="shrink-0 rounded-full border border-rule bg-float px-2.5 py-1 text-xs text-ink-muted">
             {CIRCLE_LABELS[person.circle]}
           </span>
         )}
@@ -170,11 +170,11 @@ export function PersonFields({
           <ul data-channels className="flex flex-col gap-0.5">
             {byKind(person.channels).map((c, i) => (
               <li key={i} className="flex min-w-0 items-center gap-1.5">
-                <span className="w-12 shrink-0 text-xs text-fg-muted">{KIND_LABEL[c.kind]}</span>
+                <span className="w-12 shrink-0 text-xs text-ink-muted">{KIND_LABEL[c.kind]}</span>
                 <a
                   href={channelHref(c.kind, c.value)!}
                   // 电话用等宽数字：一串号码是用来读和对的，不是一句话。
-                  className={`min-w-0 flex-1 truncate text-sm text-accent hover:underline ${
+                  className={`min-w-0 flex-1 truncate text-sm ${LINK} ${
                     c.kind === 'phone' ? 'tabular-nums' : ''
                   }`}
                 >
@@ -207,7 +207,7 @@ export function PersonFields({
           <Reads label="Circle" value={person.circle ? CIRCLE_LABELS[person.circle] : null} />
           <Field label="Projects" shape="above">
             {person.projects.length === 0 ? (
-              <p className="text-sm text-fg-subtle">Not on any project</p>
+              <p className="text-sm text-ink-subtle">Not on any project</p>
             ) : (
               <ul className="flex flex-wrap gap-1.5">
                 {person.projects.map((p) => (
@@ -230,16 +230,16 @@ export function PersonFields({
       */}
       <div>
         <div className="flex items-center gap-2">
-          <span className="flex-1 text-xs text-fg-muted">Notes</span>
+          <span className="flex-1 text-xs text-ink-muted">Notes</span>
           <button type="button" className={BUTTON.secondary} onClick={() => setWriting(true)}>
             Edit notes
           </button>
         </div>
-        <div data-person-notes className="mt-1.5 max-w-[68ch] text-fg">
+        <div data-person-notes className="mt-1.5 max-w-[68ch] text-ink">
           {person.note ? (
             <NoteBody source={person.note} />
           ) : (
-            <p className="text-sm text-fg-subtle">No notes yet</p>
+            <p className="text-sm text-ink-subtle">No notes yet</p>
           )}
         </div>
       </div>
@@ -293,7 +293,7 @@ function Writes({
 function Reads({ label, value }: { label: string; value: string | null }) {
   return (
     <Field label={label} shape="above">
-      <p className={`truncate text-sm ${value ? 'text-fg' : 'text-fg-subtle'}`}>
+      <p className={`truncate text-sm ${value ? 'text-ink' : 'text-ink-subtle'}`}>
         {value || 'Not set'}
       </p>
     </Field>
@@ -462,7 +462,7 @@ function PersonForm({
       className="flex flex-col gap-4"
     >
       <div className="flex items-center gap-2">
-        <span className="flex-1 text-xs text-fg-muted">Editing</span>
+        <span className="flex-1 text-xs text-ink-muted">Editing</span>
         <button type="button" className={BUTTON.secondary} onClick={onCancel}>
           Cancel
         </button>
@@ -525,7 +525,7 @@ function PersonForm({
                 type="button"
                 aria-label={`Remove item ${i + 1}`}
                 onClick={() => setChannels((rows) => rows.filter((_, at) => at !== i))}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-fg-subtle hover:bg-surface-hover hover:text-fg"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-ink-subtle hover:bg-hover hover:text-ink"
               >
                 <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3.5 w-3.5">
                   <path
@@ -547,7 +547,7 @@ function PersonForm({
           onClick={() =>
             setChannels((rows) => [...rows, { kind: 'email', value: '', label: null }])
           }
-          className="mt-1.5 flex h-8 items-center gap-1.5 rounded-lg border border-dashed border-border-strong px-2.5 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
+          className="mt-1.5 flex h-8 items-center gap-1.5 rounded-lg border border-dashed border-rule-strong px-2.5 text-sm text-ink-muted hover:bg-hover hover:text-ink"
         >
           <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3 w-3">
             <path
@@ -577,15 +577,15 @@ function PersonForm({
               // 自己的名字：屏幕上写的是 `Not set`，而性别和 circle 空着时也写 `Not set`。
               aria-label={dayText ? `Birthday, ${dayText}` : 'Birthday, not set'}
               onClick={() => setPickingDay(!pickingDay)}
-              className={`-mx-1.5 flex min-w-0 items-center gap-1.5 rounded-lg px-1.5 py-0.5 text-left text-sm hover:bg-surface-hover ${
-                dayText ? 'text-fg' : 'text-fg-subtle'
+              className={`-mx-1.5 flex min-w-0 items-center gap-1.5 rounded-lg px-1.5 py-0.5 text-left text-sm hover:bg-hover ${
+                dayText ? 'text-ink' : 'text-ink-subtle'
               }`}
             >
               <span className="truncate">{dayText ?? 'Not set'}</span>
               <svg
                 aria-hidden="true"
                 viewBox="0 0 16 16"
-                className="h-3 w-3 shrink-0 text-fg-subtle"
+                className="h-3 w-3 shrink-0 text-ink-subtle"
               >
                 <path
                   d="M4 6.5l4 4 4-4"
@@ -599,7 +599,7 @@ function PersonForm({
             </button>
           </Field>
           {pickingDay && (
-            <div className="col-span-full rounded-lg border border-border-strong bg-surface-raised p-3">
+            <div className="col-span-full rounded-lg border border-rule-strong bg-float p-3">
               <BirthdayEditor
                 birthday={person.birthday}
                 onChange={(draft, refused) => {

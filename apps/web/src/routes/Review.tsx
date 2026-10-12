@@ -41,12 +41,12 @@ type Project = ReviewResponse['projects'][number]
  */
 function Row({ title, status }: { title: string; status: 'done' | 'in_progress' | 'cancelled' }) {
   return (
-    <li className="flex min-h-8 min-w-0 items-center gap-2 rounded-lg px-2 hover:bg-surface-hover">
+    <li className="flex min-h-8 min-w-0 items-center gap-2 rounded-lg px-2 hover:bg-hover">
       <span className="flex h-5 w-5 shrink-0 items-center justify-center">
         <StatusMark status={status} />
       </span>
       <span
-        className={`min-w-0 truncate text-sm ${status === 'done' ? 'text-fg' : 'text-fg-muted'}`}
+        className={`min-w-0 truncate text-sm ${status === 'done' ? 'text-ink' : 'text-ink-muted'}`}
       >
         {title}
       </span>
@@ -121,7 +121,7 @@ export function Review() {
             >
               ‹
             </Step>
-            <span className="min-w-[8.5rem] text-center text-sm tabular-nums text-fg-muted">
+            <span className="min-w-[8.5rem] text-center text-sm tabular-nums text-ink-muted">
               {dayLabel(data.from)} – {dayLabel(data.to)}
             </span>
             {/* FORWARD STOPS AT THIS WEEK. Next week has not happened, so the only thing the
@@ -137,7 +137,7 @@ export function Review() {
               <button
                 type="button"
                 onClick={() => setRange(null)}
-                className="ml-1 h-8 rounded-lg px-2.5 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
+                className="ml-1 h-8 rounded-lg px-2.5 text-sm text-ink-muted hover:bg-hover hover:text-ink"
               >
                 This week
               </button>
@@ -156,9 +156,9 @@ export function Review() {
 
       {view === 'week' && data && (
         <>
-          {/* HOW THE WEEK WENT, in the same shape the project page and the workbench use: one
-              accent edge, and the numbers that say where things stand. */}
-          <Panel label="The week" className="mt-4 border-l-4 border-l-accent">
+          {/* HOW THE WEEK WENT, in the same shape the project page and the workbench use: the
+              numbers that say where things stand. */}
+          <Panel label="The week" className="mt-4">
             <div className="px-2 pb-1">
               <StatRow>
                 <Stat label="Done" value={total.done} />
@@ -180,7 +180,7 @@ export function Review() {
                   label={p.projectName}
                   count={counted(p)}
                   heading={
-                    <h2 className="flex min-w-0 items-center gap-2 text-lg font-semibold text-fg">
+                    <h2 className="flex min-w-0 items-center gap-2 text-lg font-semibold text-ink">
                       {/* A chip, never alone: the project's NAME is right beside it (WCAG 1.4.1). */}
                       <span
                         aria-hidden="true"
@@ -230,7 +230,7 @@ function Step({
       onClick={onClick}
       disabled={disabled}
       aria-label={label}
-      className="flex h-8 w-8 items-center justify-center rounded-lg text-fg-muted hover:bg-surface-hover hover:text-fg disabled:opacity-30 disabled:hover:bg-transparent"
+      className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-muted hover:bg-hover hover:text-ink disabled:opacity-30 disabled:hover:bg-transparent"
     >
       <span aria-hidden="true">{children}</span>
     </button>

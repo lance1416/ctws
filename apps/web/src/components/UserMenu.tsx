@@ -30,21 +30,21 @@ export function UserMenu({ email, onLogout }: { email: string; onLogout: () => v
       <DropdownMenu.Trigger
         data-testid="current-user"
         aria-label={`Account: ${email}`}
-        className="flex h-8 w-8 items-center justify-center rounded-full border border-border-strong text-sm font-semibold text-fg-muted uppercase hover:bg-surface-hover hover:text-fg"
+        className="flex h-8 w-8 items-center justify-center rounded-full border border-rule-strong text-sm font-semibold text-ink-muted uppercase hover:bg-hover hover:text-ink"
       >
         {email.slice(0, 1)}
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content align="end" sideOffset={6} className={MENU_SURFACE}>
-          <div className="truncate px-2 py-1.5 text-sm text-fg-muted">{email}</div>
-          <DropdownMenu.Separator className="my-1 h-px bg-border-subtle" />
+          <div className="truncate px-2 py-1.5 text-sm text-ink-muted">{email}</div>
+          <DropdownMenu.Separator className="my-1 h-px bg-rule" />
 
           {/*
             THEME, here and not in a settings page: there is no settings page, and this is the
             one menu that is on every screen. Three choices and not a switch -- "follow the
             system" is a real answer, and a two-state toggle cannot say it.
           */}
-          <DropdownMenu.Label className="px-2 pt-1 pb-0.5 text-xs text-fg-subtle">
+          <DropdownMenu.Label className="px-2 pt-1 pb-0.5 text-xs text-ink-subtle">
             Theme
           </DropdownMenu.Label>
           <DropdownMenu.RadioGroup
@@ -62,7 +62,7 @@ export function UserMenu({ email, onLogout }: { email: string; onLogout: () => v
               </DropdownMenu.RadioItem>
             ))}
           </DropdownMenu.RadioGroup>
-          <DropdownMenu.Separator className="my-1 h-px bg-border-subtle" />
+          <DropdownMenu.Separator className="my-1 h-px bg-rule" />
           <DropdownMenu.Item onSelect={onLogout} className={MENU_ITEM}>
             Sign out
           </DropdownMenu.Item>

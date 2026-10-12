@@ -179,7 +179,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
      * neither.
      */
     <Modal title="Search" onClose={onClose} initialFocus={box} className="rounded-lg">
-      <div className="border-b border-border-subtle px-4 py-3">
+      <div className="border-b border-rule px-4 py-3">
         {/**
          * THE ARIA 1.2 COMBOBOX CONTRACT. Without these five attributes the selection the keyboard
          * really has was invisible to a screen reader: the box was a bare `<input aria-label>`, the
@@ -221,7 +221,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
           }}
           placeholder="Search…"
           aria-label="Search"
-          className="h-9 w-full bg-transparent px-0.5 text-fg placeholder:text-fg-muted"
+          className="h-9 w-full bg-transparent px-0.5 text-ink placeholder:text-ink-muted"
         />
       </div>
       {results.isError && (
@@ -231,7 +231,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
       )}
       {debounced.length > 0 && results.isSuccess && rows.length === 0 && (
         <div className="px-4 py-3">
-          <p className="text-sm text-fg">Nothing matches</p>
+          <p className="text-sm text-ink">Nothing matches</p>
           <button
             type="button"
             // The one action here is to search for something else, so this does the clearing and
@@ -276,7 +276,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
           const heading = `${base}-${run.group}`
           return (
             <li key={run.group} role="presentation">
-              <div id={heading} className="px-5 pt-3 pb-1 text-xs font-semibold text-fg-subtle">
+              <div id={heading} className="px-5 pt-3 pb-1 text-xs font-semibold text-ink-subtle">
                 {label}
               </div>
               <ul role="group" aria-labelledby={heading}>
@@ -328,17 +328,17 @@ function SearchRow({
         // Same row system as the lists: the module's identity rail at x=0, then the marker
         // and the title at a fixed x. A result's project is a glance, not a read.
         className={`relative flex w-full cursor-pointer items-start gap-2 py-2 pr-4 pl-5 text-left ${
-          selected ? 'bg-surface-hover' : ''
+          selected ? 'bg-hover' : ''
         }`}
       >
         {row.rail}
         <span className="flex h-6 w-6 shrink-0 items-center justify-center">{row.mark}</span>
         <span className="flex min-w-0 flex-1 flex-col">
-          <span className="truncate text-fg">{row.title}</span>
-          {row.meta && <span className="truncate text-sm text-fg-muted">{row.meta}</span>}
+          <span className="truncate text-ink">{row.title}</span>
+          {row.meta && <span className="truncate text-sm text-ink-muted">{row.meta}</span>}
         </span>
         {row.hint && (
-          <KeyHint className="mt-0.5 shrink-0 rounded border border-border-subtle px-1.5 text-xs leading-5 text-fg-subtle">
+          <KeyHint className="mt-0.5 shrink-0 rounded border border-rule px-1.5 text-xs leading-5 text-ink-subtle">
             {row.hint}
           </KeyHint>
         )}

@@ -64,6 +64,21 @@ test('叠层面板上打开的菜单不比面板暗', async ({ page }) => {
   expect(await lum(menu)).toBeGreaterThanOrEqual(await lum(pane))
 })
 
+test('深色下，浮起来的东西比它下面的纸亮', async ({ page }) => {
+  // Dark has no shadows: a float is told from the sheet under it by being lighter, and by
+  // nothing else. A float the colour of the page is a pane with no edge.
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'IQBank')
+  await makeTask(page, pid, 'Ship the importer')
+  await dark(page)
+  await page.goto(`/projects/${pid}`)
+  await page.getByRole('listitem').filter({ hasText: 'Ship the importer' }).first().click()
+  const pane = page.locator('[role="dialog"][aria-label="Task details"]')
+  await expect(pane).toBeVisible()
+  expect(await lum(pane)).toBeGreaterThan(await lum(page.getByRole('main')))
+})
+
 for (const scheme of ['light', 'dark'] as const) {
   test(`看板的卡片比它的列亮（${scheme}）`, async ({ page }) => {
     await registerFreshUser(page)

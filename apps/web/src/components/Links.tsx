@@ -74,7 +74,7 @@ export function Links({
     <div className={`flex flex-col gap-4 ${className}`}>
       {groups.map((group) => (
         <section key={group.type} aria-label={group.label} className="flex flex-col gap-1">
-          <h3 className="flex items-baseline gap-2 px-2 text-xs font-semibold text-fg-subtle">
+          <h3 className="flex items-baseline gap-2 px-2 text-xs font-semibold text-ink-subtle">
             {group.label}
             <span className="tabular-nums font-normal">{group.items.length}</span>
           </h3>
@@ -100,7 +100,7 @@ export function Links({
                     disabled={unlink.isPending}
                     onClick={() => unlink.mutate(item)}
                     aria-label={`Unlink ${item.title}`}
-                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-fg-subtle opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-surface-hover hover:text-fg disabled:opacity-50 [@media(hover:none)]:opacity-100"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-ink-subtle opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-hover hover:text-ink disabled:opacity-50 [@media(hover:none)]:opacity-100"
                   >
                     <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3 w-3">
                       <path
@@ -143,9 +143,9 @@ export function LinkedSection({
   className?: string
 }) {
   return (
-    <section aria-label="Linked" className={`border-t border-border-subtle pt-3 ${className}`}>
+    <section aria-label="Linked" className={`border-t border-rule pt-3 ${className}`}>
       <div className="-mx-2">
-        <span className="block px-2 pb-1 text-xs text-fg-muted">Linked</span>
+        <span className="block px-2 pb-1 text-xs text-ink-muted">Linked</span>
         <Links of={of} except={except} />
       </div>
     </section>
@@ -176,17 +176,17 @@ function LinkedRow({
   const body = (
     <>
       <span className="min-w-0 flex-[2] truncate">{title}</span>
-      {detail && <span className="min-w-0 shrink truncate text-xs text-fg-muted">{detail}</span>}
-      {label && <span className="shrink-0 text-xs text-fg-subtle">{label}</span>}
+      {detail && <span className="min-w-0 shrink truncate text-xs text-ink-muted">{detail}</span>}
+      {label && <span className="shrink-0 text-xs text-ink-subtle">{label}</span>}
     </>
   )
-  const shape = 'flex min-w-0 flex-1 items-baseline gap-2 rounded-lg px-2 py-1.5 text-sm text-fg'
+  const shape = 'flex min-w-0 flex-1 items-baseline gap-2 rounded-lg px-2 py-1.5 text-sm text-ink'
   // No module answers for this type: a row that cannot be opened, rather than no row at all. The
   // registry test makes this unreachable; it is here because dropping the row silently would hide
   // a real relationship behind a registration mistake.
   if (!where) return <span className={shape}>{body}</span>
   return (
-    <Link to={where.to(id)} data-linked={id} className={`${shape} hover:bg-surface-hover`}>
+    <Link to={where.to(id)} data-linked={id} className={`${shape} hover:bg-hover`}>
       {body}
     </Link>
   )

@@ -130,12 +130,16 @@ export function BirthdayFields({ person }: { person: PersonResponse }) {
           disabled={!b}
           onClick={() => setOpen(!open)}
           className={`-mx-1.5 flex min-w-0 items-center gap-1.5 rounded-lg px-1.5 py-0.5 text-left text-sm ${
-            b ? 'text-fg hover:bg-surface-hover' : 'text-fg-subtle'
+            b ? 'text-ink hover:bg-hover' : 'text-ink-subtle'
           }`}
         >
           <span className="truncate">{b ? givenDate(b) : 'Not set'}</span>
           {b && (
-            <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3 w-3 shrink-0 text-fg-subtle">
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 16 16"
+              className="h-3 w-3 shrink-0 text-ink-subtle"
+            >
               <path
                 d="M4 6.5l4 4 4-4"
                 fill="none"
@@ -152,7 +156,7 @@ export function BirthdayFields({ person }: { person: PersonResponse }) {
       {open && b && (
         <div
           data-birthday-more
-          className="col-span-full rounded-lg border border-border-strong bg-surface-raised p-3"
+          className="col-span-full rounded-lg border border-rule-strong bg-float p-3"
         >
           <BirthdayRead birthday={b} />
         </div>
@@ -197,13 +201,13 @@ function BirthdayRead({ birthday: b }: { birthday: BirthdayResponse }) {
   const today = todayIn(useTimeZone())
   return (
     <div data-birthday className="flex flex-col gap-2">
-      <p className="text-sm text-fg-muted tabular-nums">
-        Next <span className="font-medium text-fg">{shortDay(b.next.day, today)}</span>
-        <span className="text-fg-subtle"> · </span>
+      <p className="text-sm text-ink-muted tabular-nums">
+        Next <span className="font-medium text-ink">{shortDay(b.next.day, today)}</span>
+        <span className="text-ink-subtle"> · </span>
         {countdownPhrase(b.next.inDays)}
         {b.next.turns !== null && (
           <>
-            <span className="text-fg-subtle"> · </span>turns {b.next.turns}
+            <span className="text-ink-subtle"> · </span>turns {b.next.turns}
           </>
         )}
       </p>
@@ -221,9 +225,9 @@ function BirthdayRead({ birthday: b }: { birthday: BirthdayResponse }) {
 
       {b.next.keptNote && <p className="text-xs text-plan">{b.next.keptNote}</p>}
 
-      <div className="mt-1 flex flex-wrap items-center gap-2 border-t border-border-subtle pt-2">
-        <span className="text-xs text-fg-muted">Tell me</span>
-        <span className="text-sm text-fg">{leadLabel(b.remindLead)}</span>
+      <div className="mt-1 flex flex-wrap items-center gap-2 border-t border-rule pt-2">
+        <span className="text-xs text-ink-muted">Tell me</span>
+        <span className="text-sm text-ink">{leadLabel(b.remindLead)}</span>
       </div>
     </div>
   )
@@ -233,7 +237,7 @@ function Chip({ children }: { children: React.ReactNode }) {
   return (
     <span
       data-birthday-chip
-      className="inline-flex h-[22px] items-center rounded-md border border-border-subtle px-2 text-xs text-fg-muted"
+      className="inline-flex h-[22px] items-center rounded-md border border-rule px-2 text-xs text-ink-muted"
     >
       {children}
     </span>
@@ -320,7 +324,7 @@ export function BirthdayEditor({
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
         <div
-          className="inline-flex h-9 overflow-hidden rounded-lg border border-border-strong"
+          className="inline-flex h-9 overflow-hidden rounded-lg border border-rule-strong"
           role="group"
           aria-label="Which calendar"
         >
@@ -334,7 +338,7 @@ export function BirthdayEditor({
                 if (c === 'solar') setLeapMonth(false)
               }}
               className={`h-[34px] px-3.5 text-sm ${
-                calendar === c ? 'bg-surface-raised font-semibold text-fg' : 'text-fg-muted'
+                calendar === c ? 'bg-float font-semibold text-ink' : 'text-ink-muted'
               }`}
             >
               {c === 'solar' ? 'Solar' : 'Lunar'}
@@ -349,7 +353,7 @@ export function BirthdayEditor({
           placeholder="Year"
           aria-label="Year"
           aria-invalid={!yearOk}
-          className={`w-20 bg-surface-panel tabular-nums ${textbox}`}
+          className={`w-20 bg-sheet tabular-nums ${textbox}`}
         />
 
         {calendar === 'lunar' ? (
@@ -366,7 +370,7 @@ export function BirthdayEditor({
               choices={LUNAR_DAYS.map((name, i) => ({ value: String(i + 1), label: name }))}
               onPick={(next) => setDay(Number(next))}
             />
-            <label className="inline-flex items-center gap-1.5 text-sm text-fg">
+            <label className="inline-flex items-center gap-1.5 text-sm text-ink">
               <input
                 type="checkbox"
                 checked={leapMonth}
@@ -415,7 +419,7 @@ export function BirthdayEditor({
       </div>
 
       {/* What it MEANS, answered by the server so the rules have one implementation. */}
-      <p data-testid="birthday-preview" className="min-h-5 text-xs text-fg-muted">
+      <p data-testid="birthday-preview" className="min-h-5 text-xs text-ink-muted">
         {preview.isSuccess ? <PreviewLine facts={preview.data} /> : null}
         {/* 服务端那一句（「正月 has 29 days in 2021…」）比「不是个日子」有用：它说的是哪一条不成立。 */}
         {preview.isError && (

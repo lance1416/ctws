@@ -41,7 +41,7 @@ export function Location() {
   const crumbs = useContext(Crumbs)
   if (crumbs.length === 0) return null
   return (
-    <nav aria-label="Location" className="flex min-w-0 items-center gap-2 text-fg-muted">
+    <nav aria-label="Location" className="flex min-w-0 items-center gap-2 text-ink-muted">
       {crumbs.map((c, i) => {
         const last = i === crumbs.length - 1
         return (
@@ -52,7 +52,7 @@ export function Location() {
             className={`flex items-center gap-2 ${last ? 'min-w-0' : 'shrink-0 max-sm:hidden'}`}
           >
             {i > 0 && (
-              <span aria-hidden="true" className="text-fg-subtle max-sm:hidden">
+              <span aria-hidden="true" className="text-ink-subtle max-sm:hidden">
                 /
               </span>
             )}
@@ -60,12 +60,12 @@ export function Location() {
               // The page itself: named, never a link to where you already are.
               <span
                 aria-current={last ? 'page' : undefined}
-                className="truncate font-semibold text-fg"
+                className="truncate font-semibold text-ink"
               >
                 {c.label}
               </span>
             ) : (
-              <Link to={c.to} className="hover:text-fg">
+              <Link to={c.to} className="hover:text-ink">
                 {c.label}
               </Link>
             )}

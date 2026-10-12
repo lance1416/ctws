@@ -52,10 +52,10 @@ export function Birthdays() {
           type="search"
           placeholder="Find a person"
           aria-label="Find a person"
-          className={`w-60 bg-surface-panel ${textbox}`}
+          className={`w-60 bg-sheet ${textbox}`}
         />
         {total > 0 && (
-          <span data-birthday-count className="text-sm text-fg-subtle tabular-nums">
+          <span data-birthday-count className="text-sm text-ink-subtle tabular-nums">
             {total} {total === 1 ? 'person' : 'people'} · {coming.length} in the next week
           </span>
         )}
@@ -109,14 +109,14 @@ export function Birthdays() {
                     type="button"
                     aria-pressed={picked}
                     onClick={() => setMonth(picked ? null : n)}
-                    className={`flex h-8 items-center justify-between rounded-lg px-2 text-left text-sm hover:bg-surface-hover ${
-                      picked ? 'bg-surface-raised font-semibold text-fg' : 'text-fg-muted'
+                    className={`flex h-8 items-center justify-between rounded-lg px-2 text-left text-sm hover:bg-hover ${
+                      picked ? 'bg-float font-semibold text-ink' : 'text-ink-muted'
                     }`}
                   >
                     {MONTH_NAMES[i]}
                     {/* Zero is drawn as NOTHING, the way `Panel`'s own count is. */}
                     {count > 0 && (
-                      <span className="text-xs text-fg-subtle tabular-nums">{count}</span>
+                      <span className="text-xs text-ink-subtle tabular-nums">{count}</span>
                     )}
                   </button>
                 )
@@ -135,13 +135,13 @@ export function Birthdays() {
                     type="button"
                     aria-pressed={picked}
                     onClick={() => setCircle(picked ? null : key)}
-                    className={`flex h-8 items-center justify-between rounded-lg px-2 text-left text-sm hover:bg-surface-hover ${
-                      picked ? 'bg-surface-raised font-semibold text-fg' : 'text-fg-muted'
+                    className={`flex h-8 items-center justify-between rounded-lg px-2 text-left text-sm hover:bg-hover ${
+                      picked ? 'bg-float font-semibold text-ink' : 'text-ink-muted'
                     }`}
                   >
                     {CIRCLE_LABELS[key]}
                     {count > 0 && (
-                      <span className="text-xs text-fg-subtle tabular-nums">{count}</span>
+                      <span className="text-xs text-ink-subtle tabular-nums">{count}</span>
                     )}
                   </button>
                 )

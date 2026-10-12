@@ -42,7 +42,7 @@ export function MovementPanel({
           <li key={r.projectId} className="min-w-0">
             <Link
               to={`/projects/${r.projectId}`}
-              className="flex min-h-11 items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-surface-hover"
+              className="flex min-h-11 items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-hover"
             >
               {/* A chip, never a text colour and never alone: the project's NAME is right here
                   beside it (WCAG 1.4.1). Deliberately not the row system's `data-project-rail`,
@@ -52,16 +52,16 @@ export function MovementPanel({
                 data-project-chip={r.projectId}
                 className={`h-4 w-[3px] shrink-0 rounded-full ${rail(r.projectId)}`}
               />
-              <span className="min-w-0 flex-1 truncate text-fg">{r.projectName}</span>
+              <span className="min-w-0 flex-1 truncate text-ink">{r.projectName}</span>
               {/* Two numbers, both of them things that can move. Tabular, so a column of
                   projects reads as a column of numbers. */}
               {/* Weight and value tell the two numbers apart, not hue: `plan`, `deadline` and
                   `missed` mean particular things about DATES, and spending one of them on a
                   count would make the palette say two things at once. */}
-              <span className="shrink-0 text-sm font-semibold text-fg tabular-nums">
+              <span className="shrink-0 text-sm font-semibold text-ink tabular-nums">
                 +{r.doneThisWeek} this week
               </span>
-              <span className="shrink-0 text-sm text-fg-subtle tabular-nums">
+              <span className="shrink-0 text-sm text-ink-subtle tabular-nums">
                 {r.remaining} left
               </span>
             </Link>
@@ -73,11 +73,11 @@ export function MovementPanel({
            semantic, and `deadline` / `missed` already mean particular things about dates. */
         <p
           data-stagnant={quiet.projectId}
-          className="mt-2 rounded-lg bg-surface px-3 py-2 text-sm text-fg-muted"
+          className="mt-2 rounded-lg bg-desk px-3 py-2 text-sm text-ink-muted"
         >
-          <span className="font-semibold text-fg">{quiet.projectName}</span> last moved{' '}
+          <span className="font-semibold text-ink">{quiet.projectName}</span> last moved{' '}
           {activityLabel(quiet.lastActivityOn!, today)} —{' '}
-          <span className="font-semibold text-fg tabular-nums">{quiet.quietDays}</span> days ago.
+          <span className="font-semibold text-ink tabular-nums">{quiet.quietDays}</span> days ago.
         </p>
       )}
     </Panel>

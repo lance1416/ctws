@@ -22,7 +22,7 @@ const NoteMarkdown = lazy(() => import('./NoteMarkdown'))
 
 export function NoteBody({ source }: { source: string }) {
   return (
-    <Suspense fallback={<p className="whitespace-pre-wrap text-fg">{source}</p>}>
+    <Suspense fallback={<p className="whitespace-pre-wrap text-ink">{source}</p>}>
       <NoteMarkdown source={source} />
     </Suspense>
   )

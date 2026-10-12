@@ -13,7 +13,7 @@ import type { ReactNode } from 'react'
  * Figure and ground are done in two different ways here, which is the whole point of the token
  * pair (styles.css): in light the panel is white paper on a tinted ground with one hair of
  * shadow; in dark there is no shadow at all and the panel is simply a lighter plane than the
- * ground it sits on. `bg-surface-panel shadow-panel` says both at once.
+ * ground it sits on. `bg-sheet` and its rule say both at once.
  */
 export function Panel({
   label,
@@ -41,12 +41,12 @@ export function Panel({
     <section
       aria-label={label}
       data-panel={label}
-      className={`flex min-w-0 flex-col rounded-xl border border-border-subtle bg-surface-panel shadow-panel ${className}`}
+      className={`flex min-w-0 flex-col rounded-xl border border-rule bg-sheet ${className}`}
     >
       <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1 px-4 pt-3.5 pb-1.5">
-        {heading ?? <h2 className="text-lg font-semibold text-fg">{label}</h2>}
+        {heading ?? <h2 className="text-lg font-semibold text-ink">{label}</h2>}
         {count !== undefined && count > 0 && (
-          <span data-count className="text-sm text-fg-subtle tabular-nums">
+          <span data-count className="text-sm text-ink-subtle tabular-nums">
             {count}
           </span>
         )}
@@ -66,5 +66,5 @@ export function Panel({
 
 /** What a panel says when it has nothing in it. One quiet line; never an apology or a graphic. */
 export function PanelEmpty({ children }: { children: ReactNode }) {
-  return <p className="px-2 py-1.5 text-sm text-fg-subtle">{children}</p>
+  return <p className="px-2 py-1.5 text-sm text-ink-subtle">{children}</p>
 }

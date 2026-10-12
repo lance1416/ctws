@@ -187,7 +187,7 @@ const LEAD_TONE: Record<LeadIcon, string> = {
   missed: 'text-missed',
   deadline: 'text-deadline',
   plan: 'text-plan',
-  notes: 'text-fg-subtle',
+  notes: 'text-ink-subtle',
 }
 
 /**
@@ -294,7 +294,7 @@ export function RowMeta({
       blocked
         ? {
             node: (
-              <span key="blocked" data-row-blocked className="whitespace-nowrap text-fg-subtle">
+              <span key="blocked" data-row-blocked className="whitespace-nowrap text-ink-subtle">
                 {blocked}
               </span>
             ),
@@ -376,7 +376,7 @@ export function RowMeta({
       age && !breadcrumb && !due && !plan && !rollup && !blocked
         ? {
             node: (
-              <span key="age" data-row-age className="whitespace-nowrap text-fg-subtle">
+              <span key="age" data-row-age className="whitespace-nowrap text-ink-subtle">
                 {age}
               </span>
             ),
@@ -393,7 +393,7 @@ export function RowMeta({
     // words themselves (WCAG 1.4.1).
     <span
       data-row-meta
-      className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 text-sm text-fg-muted"
+      className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 text-sm text-ink-muted"
     >
       {parts.map((part, i) => (
         // The separator travels WITH the phrase it follows, inside one flex item: loose, it can be
@@ -405,7 +405,7 @@ export function RowMeta({
           >
             {part.node}
             {i < parts.length - 1 && (
-              <span aria-hidden="true" className="text-fg-subtle">
+              <span aria-hidden="true" className="text-ink-subtle">
                 ·
               </span>
             )}
@@ -420,7 +420,7 @@ export function RowMeta({
  * than in a column, so it never reserves width and never moves one. */
 export function SavedMark() {
   return (
-    <span role="status" className="ml-2 shrink-0 text-sm font-normal text-fg-muted">
+    <span role="status" className="ml-2 shrink-0 text-sm font-normal text-ink-muted">
       Saved
     </span>
   )

@@ -239,7 +239,7 @@ export function NewMeetingDialog({
                     Never
                   </button>
                 ) : (
-                  <span className="text-sm text-fg-subtle">Never</span>
+                  <span className="text-sm text-ink-subtle">Never</span>
                 )}
               </div>
             </div>

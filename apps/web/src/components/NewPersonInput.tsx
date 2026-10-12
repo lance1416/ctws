@@ -51,7 +51,7 @@ export function NewPersonInput({
         }}
         placeholder={placeholder}
         aria-label={placeholder}
-        className={`w-full bg-surface ${textbox}`}
+        className={`w-full bg-sheet ${textbox}`}
       />
       {create.isError && (
         <p role="alert" className="mt-1 text-sm text-danger">

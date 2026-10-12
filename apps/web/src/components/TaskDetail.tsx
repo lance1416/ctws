@@ -50,7 +50,7 @@ import { useForgetRecent, useRecordRecent } from '../recent'
  * "this is a control", so it keeps `border-strong` (styles.css: border-subtle is decorative only).
  */
 const exact =
-  'h-9 w-full max-w-[14rem] rounded-lg border border-border-strong bg-surface px-2 text-sm text-fg'
+  'h-9 w-full max-w-[14rem] rounded-lg border border-rule-strong bg-sheet px-2 text-sm text-ink'
 
 /**
  * The exact local day and time, said the way the rest of the app says it ("Tomorrow, 14:30"),
@@ -64,7 +64,7 @@ const exact =
  */
 function DateEcho({ text }: { text: string | null }) {
   if (!text) return null
-  return <p className="mt-1 text-xs tabular-nums text-fg-muted">{text}</p>
+  return <p className="mt-1 text-xs tabular-nums text-ink-muted">{text}</p>
 }
 
 type Props = {
@@ -91,7 +91,7 @@ function CloseButton({ onClick }: { onClick: () => void }) {
       onClick={onClick}
       aria-label="Close"
       data-detail-close
-      className="flex h-9 w-9 items-center justify-center rounded-lg text-fg-muted hover:bg-surface-hover hover:text-fg"
+      className="flex h-9 w-9 items-center justify-center rounded-lg text-ink-muted hover:bg-hover hover:text-ink"
     >
       <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4">
         <path
@@ -424,7 +424,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                     aria-hidden="true"
                     className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(task.projectId)}`}
                   />
-                  <span className="truncate text-sm text-fg-muted">{projectName}</span>
+                  <span className="truncate text-sm text-ink-muted">{projectName}</span>
                 </div>
                 {/* “Edit” and not “Edit task”: accessible names share one flat namespace and are
                     matched by substring, and the guard's “Keep editing” already contains it -- a longer
@@ -438,7 +438,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
               </div>
               {/* The task's name, at the top of the pane's type scale: the pane opens with the
                   TASK, exactly as the editing form does. */}
-              <h2 data-detail-title className="mt-0.5 text-lg font-semibold text-fg">
+              <h2 data-detail-title className="mt-0.5 text-lg font-semibold text-ink">
                 {task.title}
               </h2>
             </div>
@@ -461,7 +461,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                   <DeadlineMark filled={false} />
                   Due
                 </span>
-                <span className={`text-sm tabular-nums ${dueOverdue ? 'text-missed' : 'text-fg'}`}>
+                <span className={`text-sm tabular-nums ${dueOverdue ? 'text-missed' : 'text-ink'}`}>
                   {dueReading ?? 'Not set'}
                 </span>
               </div>
@@ -470,7 +470,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                   <PlanMark />
                   Plan
                 </span>
-                <span className="text-sm tabular-nums text-fg">{planReading ?? 'Not set'}</span>
+                <span className="text-sm tabular-nums text-ink">{planReading ?? 'Not set'}</span>
               </div>
             </div>
 
@@ -487,11 +487,11 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                   diagram. `NoteBody`'s fallback is the plain `whitespace-pre-wrap` paragraph this
                   used to be, so the words are on screen before the renderer has even loaded. */}
               {task.notes ? (
-                <div data-detail-notes className="mt-1 max-w-[68ch] text-fg">
+                <div data-detail-notes className="mt-1 max-w-[68ch] text-ink">
                   <NoteBody source={task.notes} />
                 </div>
               ) : (
-                <p className="mt-1 text-sm text-fg-subtle">No notes yet</p>
+                <p className="mt-1 text-sm text-ink-subtle">No notes yet</p>
               )}
             </div>
 
@@ -600,15 +600,15 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                   titleField.current = el
                 }}
                 aria-label="Title"
-                className="mt-0.5 w-full rounded-lg bg-transparent py-0.5 text-lg font-semibold text-fg"
+                className="mt-0.5 w-full rounded-lg bg-transparent py-0.5 text-lg font-semibold text-ink"
               />
             </div>
 
             {/* Under the buttons that raised them, not at the foot of the form: a Cancel pressed
                 at the top must not ask its question somewhere below a long note. */}
             {guard.asking && (
-              <div role="alert" className="rounded-lg border border-border-strong p-3 text-sm">
-                <p className="text-fg">
+              <div role="alert" className="rounded-lg border border-rule-strong p-3 text-sm">
+                <p className="text-ink">
                   {guard.leaving
                     ? 'You have unsaved changes. Leaving will discard them.'
                     : 'You have unsaved changes. Closing will discard them.'}
@@ -774,7 +774,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                 <button
                   type="button"
                   onClick={() => setWriting(true)}
-                  className="-mb-0.5 h-7 rounded-md border border-border-subtle px-2 text-xs text-fg-muted hover:border-border-strong hover:text-fg"
+                  className="-mb-0.5 h-7 rounded-md border border-rule px-2 text-xs text-ink-muted hover:border-rule-strong hover:text-ink"
                 >
                   Full screen
                 </button>

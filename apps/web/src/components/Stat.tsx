@@ -31,10 +31,10 @@ export function Stat({
 }) {
   return (
     <div data-stat={label} className="min-w-0">
-      <dt className="text-xs whitespace-nowrap text-fg-subtle">{label}</dt>
+      <dt className="text-xs whitespace-nowrap text-ink-subtle">{label}</dt>
       <dd
         className={`text-lg font-semibold tabular-nums ${
-          tone === 'missed' ? 'text-missed' : 'text-fg'
+          tone === 'missed' ? 'text-missed' : 'text-ink'
         }`}
       >
         {value}

@@ -157,18 +157,18 @@ function TodayMeetings() {
             key={`${m.meetingId}:${m.recurrenceId}`}
             className="flex min-h-9 min-w-0 items-center gap-2 px-2"
           >
-            <span className="shrink-0 text-sm tabular-nums text-fg-muted">
+            <span className="shrink-0 text-sm tabular-nums text-ink-muted">
               {clock.format(new Date(m.startsAt))}
             </span>
             <button
               type="button"
               onClick={() => setOpen({ meetingId: m.meetingId, recurrenceId: m.recurrenceId })}
-              className="min-w-0 flex-1 truncate rounded text-left text-sm text-fg hover:underline"
+              className="min-w-0 flex-1 truncate rounded text-left text-sm text-ink hover:underline"
             >
               {m.title}
             </button>
             {m.attendees.length > 0 && (
-              <span className="shrink-0 truncate text-xs text-fg-subtle">
+              <span className="shrink-0 truncate text-xs text-ink-subtle">
                 {m.attendees.map((p) => p.name).join(', ')}
               </span>
             )}

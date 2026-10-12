@@ -314,9 +314,9 @@ test('the status chip wears the app’s focus ring when the keyboard reaches it'
     const s = getComputedStyle(el)
     return { width: s.outlineWidth, style: s.outlineStyle, color: s.outlineColor }
   })
-  const accent = await page.evaluate(() => {
+  const ink = await page.evaluate(() => {
     const probe = document.createElement('span')
-    probe.style.color = 'var(--color-accent)'
+    probe.style.color = 'var(--color-ink)'
     document.body.append(probe)
     const c = getComputedStyle(probe).color
     probe.remove()
@@ -324,7 +324,7 @@ test('the status chip wears the app’s focus ring when the keyboard reaches it'
   })
   expect(ring.style).toBe('solid')
   expect(parseFloat(ring.width)).toBeGreaterThanOrEqual(2)
-  expect(ring.color).toBe(accent)
+  expect(ring.color).toBe(ink)
 })
 
 // -------------------------------------------------------------------------- rank and the task

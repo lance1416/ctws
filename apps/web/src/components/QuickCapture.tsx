@@ -1,3 +1,4 @@
+import { LINK } from './buttonStyles'
 import { KeyHint } from './KeyHint'
 import { useMutation } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
@@ -103,11 +104,11 @@ export function QuickCapture() {
           placeholder="Capture…"
           disabled={!fallback.target}
           aria-label="Capture"
-          className={`w-full bg-surface-panel pr-8 disabled:opacity-50 ${textbox}`}
+          className={`w-full bg-sheet pr-8 disabled:opacity-50 ${textbox}`}
         />
         <KeyHint
           hidden
-          className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border border-border-subtle px-1 text-xs leading-5 text-fg-subtle"
+          className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border border-rule px-1 text-xs leading-5 text-ink-subtle"
         >
           /
         </KeyHint>
@@ -119,7 +120,7 @@ export function QuickCapture() {
         {missing && (
           <p
             role="alert"
-            className="rounded-lg bg-surface-raised px-3 py-1.5 text-sm text-danger shadow-panel"
+            className="rounded-lg bg-float px-3 py-1.5 text-sm text-danger shadow-float"
           >
             No inbox to capture into
           </p>
@@ -129,7 +130,7 @@ export function QuickCapture() {
         {unavailable && (
           <p
             role="status"
-            className="rounded-lg bg-surface-raised px-3 py-1.5 text-sm text-danger shadow-panel"
+            className="rounded-lg bg-float px-3 py-1.5 text-sm text-danger shadow-float"
           >
             Inbox unavailable
           </p>
@@ -137,10 +138,10 @@ export function QuickCapture() {
         {landed && (
           <p
             role="status"
-            className="truncate rounded-lg bg-surface-raised px-3 py-1.5 text-sm text-fg-muted shadow-panel"
+            className="truncate rounded-lg bg-float px-3 py-1.5 text-sm text-ink-muted shadow-float"
           >
             Added to{' '}
-            <Link to={landed.to} className="text-accent underline">
+            <Link to={landed.to} className={LINK}>
               {landed.name}
             </Link>
           </p>
@@ -148,7 +149,7 @@ export function QuickCapture() {
         {capture.isError && (
           <p
             role="alert"
-            className="rounded-lg bg-surface-raised px-3 py-1.5 text-sm text-danger shadow-panel"
+            className="rounded-lg bg-float px-3 py-1.5 text-sm text-danger shadow-float"
           >
             Couldn't save. Press Enter to try again.
           </p>

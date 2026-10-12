@@ -80,12 +80,11 @@ export function ObjectPage({ type }: { type: ObjectType }) {
       */}
       <>
         <>
-          {/* The banner: one accent edge and the top step of the type scale spent on its subject,
-          the same language the workbench's own strip speaks. */}
+          {/* The banner: the top step of the type scale spent on its subject, the same language
+          the workbench's own strip speaks. */}
           <Panel
             label={`${where?.kind ?? 'Thing'} at a glance`}
-            className="border-l-4 border-l-accent"
-            heading={<h2 className="text-xs font-semibold text-fg-subtle">{where?.kind}</h2>}
+            heading={<h2 className="text-xs font-semibold text-ink-subtle">{where?.kind}</h2>}
           >
             {Head ? (
               <div className="px-2 pb-1">

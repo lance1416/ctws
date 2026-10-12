@@ -43,7 +43,7 @@ function TodayCount() {
   const count = today.data?.length ?? null
   if (count === null || count <= 0) return null
   return (
-    <span data-count className="ml-auto pl-1 text-xs text-fg-muted">
+    <span data-count className="ml-auto pl-1 text-xs text-ink-muted">
       {count}
     </span>
   )
@@ -105,8 +105,8 @@ function DoingWidget() {
             className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(t.projectId)}`}
           />
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm text-fg">{t.title}</span>
-            <span className="block truncate text-xs text-fg-subtle">{t.projectName}</span>
+            <span className="block truncate text-sm text-ink">{t.title}</span>
+            <span className="block truncate text-xs text-ink-subtle">{t.projectName}</span>
           </span>
         </li>
       ))}
@@ -147,12 +147,12 @@ function DueWidget() {
             aria-hidden="true"
             className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(t.projectId)}`}
           />
-          <span className="min-w-0 flex-1 truncate text-sm text-fg">{t.title}</span>
+          <span className="min-w-0 flex-1 truncate text-sm text-ink">{t.title}</span>
           {t.segment === 'overdue' && <span className="shrink-0 text-xs text-missed">Overdue</span>}
         </li>
       ))}
       {rows.length > WIDGET_ROWS && (
-        <li className="px-2 py-1 text-xs text-fg-subtle">{rows.length - WIDGET_ROWS} more</li>
+        <li className="px-2 py-1 text-xs text-ink-subtle">{rows.length - WIDGET_ROWS} more</li>
       )}
     </ul>
   )
@@ -314,12 +314,12 @@ function NewTaskAction({ projectId }: { projectId: string }) {
       <button
         type="button"
         onClick={() => setCreating(true)}
-        className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-2 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
+        className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-2 text-sm text-ink-muted hover:bg-hover hover:text-ink"
       >
         New…
         <kbd
           aria-hidden="true"
-          className="pointer-events-none rounded border border-border-subtle px-1.5 text-xs leading-5 text-fg-subtle max-sm:hidden"
+          className="pointer-events-none rounded border border-rule px-1.5 text-xs leading-5 text-ink-subtle max-sm:hidden"
         >
           n
         </kbd>
@@ -370,7 +370,7 @@ function ProjectTasks({ projectId, view }: { projectId: string; view: string }) 
           // Inside the panel now, so it leads the rows rather than hanging under a page heading.
           // The border follows `aria-invalid` (see `textbox`), so the colour and the state the
           // screen reader is told cannot disagree.
-          className={`min-w-0 flex-1 basis-[22ch] bg-surface ${textbox}`}
+          className={`min-w-0 flex-1 basis-[22ch] bg-sheet ${textbox}`}
         />
       </div>
       {/* THE FAILURE SITS UNDER ITS OWN BOX, inside the same block and at the same left
