@@ -5,6 +5,8 @@ import { listMeetings, meetingCalendar, meetingsKey } from '../api/meetings'
 import { MeetingDetail } from '../components/MeetingDetail'
 import { Meetings } from '../routes/Meetings'
 import { PanelEmpty } from '../components/Panel'
+import { ProjectRail } from '../components/RowParts'
+import { useProjectRail } from '../projectColor'
 import { todayIn } from '../dueAt'
 import { useTimeZone } from '../useMe'
 import type { WorkspaceModule } from './contract'
@@ -124,7 +126,16 @@ function NextMeetingLine() {
   )
 }
 
-/** THE WORKBENCH CARD: today's meetings, a question about the next eight hours. */
+/** The hours the Workbench's line spans: the working day and its evening. */
+const LINE_FROM = 8
+const LINE_TO = 22
+
+/**
+ * THE WORKBENCH'S MEETINGS: today as a line, 08:00 to 22:00, with each meeting a block on it and
+ * NOW across it -- the one moment in the app a flat list of meetings is the wrong shape -- and
+ * then the meetings as rows. A meeting outside those hours is in the rows all the same, and in the
+ * line's name: the line is a picture of the working day, not a filter on it.
+ */
 function TodayMeetings() {
   const accountZone = useTimeZone()
   const day = todayIn(accountZone)
@@ -134,11 +145,12 @@ function TodayMeetings() {
   })
   const rows = meetings.data ?? []
   const { setOpen, pane } = useOpenMeeting(rows)
+  const rail = useProjectRail()
   const clock = new Intl.DateTimeFormat('en-US', {
     timeZone: accountZone,
     hour: '2-digit',
     minute: '2-digit',
-    hour12: false,
+    hourCycle: 'h23',
   })
 
   if (meetings.isError) {
@@ -149,35 +161,122 @@ function TodayMeetings() {
     )
   }
   if (meetings.isSuccess && rows.length === 0) return <PanelEmpty>No meetings today</PanelEmpty>
+
+  const now = new Date()
+  const at = (d: Date) => clock.format(d)
+  const minutes = (d: Date) => {
+    const [h, m] = at(d).split(':').map(Number) as [number, number]
+    return h * 60 + m
+  }
+  const pct = (min: number) => ((min - LINE_FROM * 60) / ((LINE_TO - LINE_FROM) * 60)) * 100
+  const within = (min: number) => min >= LINE_FROM * 60 && min <= LINE_TO * 60
+  const onLine = rows.filter((m) => within(minutes(new Date(m.startsAt))))
+  const offLine = rows.filter((m) => !within(minutes(new Date(m.startsAt))))
+  const said = (list: typeof rows) =>
+    list.map((m) => `${m.title} at ${at(new Date(m.startsAt))}`).join(', ')
+  const name = [
+    `Today from ${String(LINE_FROM).padStart(2, '0')}:00 to ${LINE_TO}:00`,
+    onLine.length > 0 ? `: ${said(onLine)}.` : ': nothing.',
+    offLine.length > 0 ? ` Outside those hours: ${said(offLine)}.` : '',
+    ` It is ${at(now)}.`,
+  ].join('')
+  const nowMin = minutes(now)
+
   return (
     <>
-      <ul className="min-w-0">
-        {rows.map((m) => (
-          <li
-            key={`${m.meetingId}:${m.recurrenceId}`}
-            className="flex min-h-9 min-w-0 items-center gap-2 px-2"
-          >
-            <span className="shrink-0 text-sm tabular-nums text-ink-muted">
-              {clock.format(new Date(m.startsAt))}
-            </span>
-            <button
-              type="button"
-              onClick={() => setOpen({ meetingId: m.meetingId, recurrenceId: m.recurrenceId })}
-              className="min-w-0 flex-1 truncate rounded text-left text-sm text-ink hover:underline"
-            >
-              {m.title}
-            </button>
-            {m.attendees.length > 0 && (
-              <span className="shrink-0 truncate text-xs text-ink-subtle">
-                {m.attendees.map((p) => p.name).join(', ')}
+      {/* ONE PICTURE, ONE NAME. To a screen reader the line is the sentence that says what it
+          shows; the rows under it carry the same meetings as things to press. */}
+      <div role="img" aria-label={name} className="relative mx-1 mb-2 h-[54px]">
+        <span className="absolute inset-x-0 top-[30px] h-px bg-rule" />
+        {Array.from({ length: (LINE_TO - LINE_FROM) / 2 + 1 }, (_, i) => LINE_FROM + i * 2).map(
+          (h) => (
+            <span key={h}>
+              <span
+                className="absolute top-[27px] h-[7px] w-px bg-rule-strong"
+                style={{ left: `${pct(h * 60)}%` }}
+              />
+              <span
+                className="absolute top-9 -translate-x-1/2 text-xs text-ink-subtle tabular-nums"
+                style={{ left: `${pct(h * 60)}%` }}
+              >
+                {String(h).padStart(2, '0')}
               </span>
-            )}
-          </li>
-        ))}
+            </span>
+          ),
+        )}
+        {onLine.map((m) => {
+          const from = minutes(new Date(m.startsAt))
+          const to = Math.min(minutes(new Date(m.endsAt)) || LINE_TO * 60, LINE_TO * 60)
+          const past = new Date(m.endsAt).getTime() <= now.getTime()
+          return (
+            <span
+              key={`${m.meetingId}:${m.recurrenceId}`}
+              className={`absolute top-3 h-[18px] bg-select ${past ? 'opacity-55' : ''}`}
+              style={{ left: `${pct(from)}%`, width: `${Math.max(pct(to) - pct(from), 1)}%` }}
+            >
+              <span
+                className={`absolute inset-x-0 top-0 h-0.5 ${m.projectId ? rail(m.projectId) : 'bg-ink-subtle'}`}
+              />
+            </span>
+          )
+        })}
+        {within(nowMin) && (
+          <>
+            <span
+              className="absolute top-0 bottom-[18px] -ml-px w-0.5 bg-ink"
+              style={{ left: `${pct(nowMin)}%` }}
+            />
+            <span
+              className="absolute -top-1 ml-1.5 text-xs font-semibold tabular-nums"
+              style={{ left: `${pct(nowMin)}%` }}
+            >
+              {at(now)}
+            </span>
+          </>
+        )}
+      </div>
+      <ul className="min-w-0">
+        {rows.map((m) => {
+          const past = new Date(m.endsAt).getTime() <= now.getTime()
+          return (
+            <li
+              key={`${m.meetingId}:${m.recurrenceId}`}
+              className="flex min-h-[38px] min-w-0 items-stretch hover:bg-hover"
+            >
+              <span
+                className={`flex w-16 shrink-0 items-center justify-end pr-3 text-sm tabular-nums ${
+                  past ? 'text-ink-subtle' : 'text-ink-muted'
+                }`}
+              >
+                {at(new Date(m.startsAt))}
+              </span>
+              <ProjectRail projectId={m.projectId} />
+              <button
+                type="button"
+                onClick={() => setOpen({ meetingId: m.meetingId, recurrenceId: m.recurrenceId })}
+                className={`min-w-0 flex-1 truncate pl-3 text-left ${past ? 'text-ink-subtle' : 'text-ink'}`}
+              >
+                {m.title}
+              </button>
+              {m.attendees.length > 0 && (
+                <span className="flex shrink-0 items-center truncate pl-3 text-sm text-ink-subtle">
+                  {m.attendees.map((p) => p.name).join(', ')}
+                </span>
+              )}
+            </li>
+          )
+        })}
       </ul>
       {pane}
     </>
   )
+}
+
+/** The Meetings card's note: how many today. */
+function MeetingsAside() {
+  const today = useTodaysMeetings()
+  if (!today.data) return null
+  return <span className="text-sm text-ink-subtle">{today.data.length} today</span>
 }
 
 /**
@@ -209,7 +308,17 @@ export const meetingModule: WorkspaceModule = {
     { id: 'meetings', key: 'm', label: 'Go to Meetings', resolve: () => `/${ID}`, order: 16 },
   ],
   calendar: { label: 'Meetings', useEntries: useMeetingEntries, Detail: CalendarDetail },
-  widgets: [{ id: 'today', label: "Today's meetings", to: '/calendar', Component: TodayMeetings }],
+  widgets: [
+    {
+      id: 'today',
+      label: 'Meetings',
+      to: `/${ID}`,
+      Component: TodayMeetings,
+      Aside: MeetingsAside,
+      order: 20,
+      span: 6,
+    },
+  ],
   relations: [
     {
       type: 'meeting',

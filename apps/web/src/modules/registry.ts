@@ -224,11 +224,11 @@ export function calendarProviders(
 
 export type RegisteredWidget = Widget & { moduleId: string; moduleLabel: string }
 
-/** Every module's workbench cards, in registration order. */
+/** Every module's workbench cards, in their stated order (registration order breaks a tie). */
 export function moduleWidgets(modules: readonly WorkspaceModule[] = MODULES): RegisteredWidget[] {
-  return modules.flatMap((m) =>
-    (m.widgets ?? []).map((w) => ({ ...w, moduleId: m.id, moduleLabel: m.label })),
-  )
+  return modules
+    .flatMap((m) => (m.widgets ?? []).map((w) => ({ ...w, moduleId: m.id, moduleLabel: m.label })))
+    .sort((a, b) => (a.order ?? 50) - (b.order ?? 50))
 }
 
 export type RegisteredRelation = RelationContribution & { moduleId: string }

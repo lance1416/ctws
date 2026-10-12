@@ -1,6 +1,8 @@
 import type { ProjectMovementResponse } from '@ctws/contracts'
 import { execFileSync } from 'node:child_process'
 import { expect, type Locator, type Page } from '@playwright/test'
+import { TZDate } from '@date-fns/tz'
+import { format } from 'date-fns'
 
 /**
  * Registers a brand-new user through the UI and waits until the signed-in shell is showing.
@@ -373,4 +375,36 @@ export async function sidewaysScroll(page: Page): Promise<{ doc: number; body: n
     doc: document.documentElement.scrollWidth - document.documentElement.clientWidth,
     body: document.body.scrollWidth - document.body.clientWidth,
   }))
+}
+
+/** The account's zone, as the server holds it. */
+export async function accountZone(page: Page): Promise<string> {
+  const me = await page.request.get('/api/v1/auth/me', { headers: WEB })
+  return ((await me.json()) as { timezone: string }).timezone
+}
+
+/** Today, in `timeZone`. */
+export const dayInZone = (timeZone: string) => new Date().toLocaleDateString('en-CA', { timeZone })
+
+/**
+ * A meeting at `hhmm` TODAY on the account's clock, agreed in `zone` -- which may be another one,
+ * so the same instant is a different wall time where it was agreed.
+ */
+export async function meetingToday(
+  page: Page,
+  title: string,
+  hhmm: string,
+  zone: string,
+  durationMinutes = 30,
+): Promise<void> {
+  const account = await accountZone(page)
+  const [y, m, d] = dayInZone(account).split('-').map(Number) as [number, number, number]
+  const [hh, mm] = hhmm.split(':').map(Number) as [number, number]
+  const instant = new TZDate(y, m - 1, d, hh, mm, 0, 0, account)
+  const startsLocal = format(new TZDate(instant.getTime(), zone), "yyyy-MM-dd'T'HH:mm")
+  const res = await page.request.post('/api/v1/meetings', {
+    headers: WEB,
+    data: { title, startsLocal, timeZone: zone, durationMinutes },
+  })
+  expect(res.ok(), await res.text()).toBe(true)
 }

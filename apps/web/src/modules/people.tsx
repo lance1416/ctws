@@ -3,9 +3,8 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { birthdayCalendar, birthdaysKey, listBirthdays } from '../api/birthdays'
 import { listPeople, peopleKey, searchPeople } from '../api/people'
-import { BirthdayRow } from '../components/BirthdayRow'
 import { PanelEmpty } from '../components/Panel'
-import { countdownPhrase } from '../dueAt'
+import { countdownPhrase, shortDay } from '../dueAt'
 import { Birthdays } from '../routes/Birthdays'
 import { People } from '../routes/People'
 import type { SearchHit, WorkspaceModule } from './contract'
@@ -51,8 +50,11 @@ function useBirthdayEntries(range: { from: string; to: string }) {
  */
 function BirthdayCard() {
   const view = useQuery({ queryKey: birthdaysKey(), queryFn: listBirthdays })
+  // Who the card is FOR: the people whose reminder lead has come round. Everyone else is on the
+  // Birthdays page; the card is what finds you, not all of them.
   const rows = view.data?.card ?? []
   const next = view.data?.coming[0] ?? view.data?.later[0]
+  const today = view.data?.today ?? ''
   if (view.isError) {
     return (
       <p role="alert" className="px-2 py-1.5 text-sm text-danger">
@@ -78,14 +80,43 @@ function BirthdayCard() {
       </PanelEmpty>
     )
   }
+  const [first, ...more] = rows
   return (
-    <ul className="flex flex-col">
-      {rows.map((row) => (
-        <BirthdayRow key={row.personId} row={row} today={view.data?.today ?? ''} />
-      ))}
-    </ul>
+    <div className="px-2">
+      {/* THE ONE TO GREET, large: a name and when, the way you would say it. */}
+      <Link to={`/${ID}/${first!.personId}`} data-birthday-row className="block">
+        <span className="block text-xl font-semibold">{first!.name}</span>
+        <span className="mt-0.5 block">
+          {weekdayOf(first!.day)}, {shortDay(first!.day, today)}, {countdownPhrase(first!.inDays)}
+        </span>
+        {first!.calendar === 'lunar' && first!.lunarDate && (
+          <span className="block text-sm text-ink-subtle">{first!.lunarDate}</span>
+        )}
+      </Link>
+      {more.length > 0 && (
+        <ul className="mt-3.5 flex flex-col">
+          {more.slice(0, 2).map((r) => (
+            <li key={r.personId}>
+              <Link
+                to={`/${ID}/${r.personId}`}
+                data-birthday-row
+                className="flex min-h-[30px] items-baseline gap-2.5 pt-1 text-sm hover:bg-hover"
+              >
+                <span className="min-w-0 truncate">{r.name}</span>
+                <span className="ml-auto shrink-0 text-ink-subtle tabular-nums">
+                  {r.inDays === 0 ? 'today' : shortDay(r.day, today)}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   )
 }
+
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
+const weekdayOf = (day: string) => WEEKDAYS[new Date(`${day}T00:00:00Z`).getUTCDay()]!
 
 /** Things' count for people: how many there are. The kind's name already says what of. */
 function PeopleCount() {
@@ -164,7 +195,14 @@ export const peopleModule: WorkspaceModule = {
   search: { useHits: usePeopleHits },
   calendar: { label: 'Birthdays', useEntries: useBirthdayEntries },
   widgets: [
-    { id: 'birthdays', label: 'Birthdays', to: `/${ID}/birthdays`, Component: BirthdayCard },
+    {
+      id: 'birthdays',
+      label: 'Birthdays',
+      to: `/${ID}/birthdays`,
+      Component: BirthdayCard,
+      order: 40,
+      span: 4,
+    },
   ],
   // `n` for name. One keyspace across modules, so this is checked against every other chord.
   chords: [

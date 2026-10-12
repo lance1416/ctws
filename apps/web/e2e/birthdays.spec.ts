@@ -76,25 +76,44 @@ test('月份索引是日期检索：点一个月，列表只剩那个月的人',
  */
 test('页头的人数跟着筛选走', async ({ page }) => {
   await registerFreshUser(page)
-  await person(page, '四月的人', { calendar: 'solar', year: 1996, month: 4, day: 15 })
-  await person(page, '十月的人', { calendar: 'solar', year: 1996, month: 10, day: 20 })
+  // 两个生日都离今天远（两个月、五个月之后），而且不在同一个月：这条测试说的是筛选，不该在
+  // 某一周因为哪天碰巧临近而变红 -- 日子从今天推，不写死。
+  const far = monthDay(150)
+  const near = monthDay(60)
+  await person(page, '远的人', { calendar: 'solar', year: 1996, ...far })
+  await person(page, '近些的人', { calendar: 'solar', year: 1996, ...near })
   await page.goto('/people/birthdays')
   const count = page.locator('[data-birthday-count]')
   await expect(count).toHaveText('2 people · 0 in the next week')
 
-  const april = page
+  const month = page
     .getByRole('region', { name: 'By month' })
-    .getByRole('button', { name: /^April/ })
-  await april.click()
+    .getByRole('button', { name: new RegExp(`^${MONTH_NAMES[far.month - 1]}`) })
+  await month.click()
   await expect(rows(page)).toHaveCount(1)
   await expect(count).toHaveText('1 person · 0 in the next week')
 
   // 搜索框是同一套筛选，所以它也得带着这个数走。
-  await april.click()
-  await page.getByRole('searchbox', { name: 'Find a person' }).fill('十月')
+  await month.click()
+  await page.getByRole('searchbox', { name: 'Find a person' }).fill('近些')
   await expect(rows(page)).toHaveCount(1)
   await expect(count).toHaveText('1 person · 0 in the next week')
 })
+
+const MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+]
 
 test('名字搜索按输入过滤', async ({ page }) => {
   await registerFreshUser(page)
@@ -343,7 +362,7 @@ test('工作台上有一张卡，没人要提醒时说下一个是谁', async ({
   await page.reload()
   await expect(card.locator('[data-birthday-row]')).toHaveCount(1)
   await expect(card).toContainText('today')
-  await card.getByRole('link', { name: 'See all' }).click()
+  await card.getByRole('heading').getByRole('link').click()
   await expect(page).toHaveURL(/\/people\/birthdays$/)
   await expect(page.getByRole('heading', { level: 1, name: 'People' })).toBeVisible()
 })

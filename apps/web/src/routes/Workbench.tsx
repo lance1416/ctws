@@ -1,9 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import { useRef } from 'react'
 import { Link } from 'react-router-dom'
+import { listMovement } from '../api/movement'
 import { listProjects } from '../api/projects'
+import { shortDay, todayIn } from '../dueAt'
+import { movedLine } from '../movement'
+import { ProjectRail } from '../components/RowParts'
+import { useTimeZone } from '../useMe'
 import { Panel, PanelEmpty } from '../components/Panel'
-import { useProjectRail } from '../projectColor'
 import { moduleWidgets } from '../modules/registry'
 import { useCrumbs } from '../components/Location'
 import { useGround } from '../components/ground'
@@ -27,44 +31,44 @@ export function Workbench() {
   const widgets = moduleWidgets()
 
   return (
-    <>
-      <h1 ref={heading} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
+    <div className="mx-auto w-full max-w-[73.75rem]">
+      {/* The location in the header already names this page; the heading is for a screen reader's
+          list of headings, and the cards are what the eye lands on. */}
+      <h1 ref={heading} tabIndex={-1} className="sr-only">
         Workbench
       </h1>
 
-      {/* Two columns where there is room for two, one where there is not. The modules' cards come
-          first and in registration order; the shell's own card sits under them, because Projects is
-          the thing you go INTO and the rest is what is already in front of you. */}
-      {/* `items-start`: each card is as tall as what is in it. Stretching them to match the
-          tallest leaves the shorter one with a pane of empty paper under it, which reads as
-          something failing to load. */}
-      <div className="mt-4 grid min-w-0 grid-cols-1 items-start gap-4 lg:grid-cols-2">
-        {widgets.map(({ moduleId, id, label, to, Component }) => (
+      {/* TWELVE COLUMNS from 1024 up, each card as wide as its shape wants -- three counts and a
+          list of rows are not the same width -- and one column below. The modules' cards in their
+          stated order; the shell's Projects across the bottom, because Projects is the thing you go
+          INTO and the rest is what is already in front of you. `items-start`, and a card stretches
+          only to its row: a short card does not hang a pane of empty paper under itself. */}
+      <div className="grid min-w-0 grid-cols-1 items-start gap-4 pt-2 lg:grid-cols-12">
+        {widgets.map(({ moduleId, id, label, to, Component, Aside, span }) => (
           <Panel
             key={`${moduleId}:${id}`}
             variant="tile"
             label={label}
-            action={to ? <SeeAll to={to} /> : undefined}
+            to={to}
+            action={Aside ? <Aside /> : undefined}
+            className={`lg:self-stretch ${SPAN[span ?? 6]}`}
           >
             <Component />
           </Panel>
         ))}
-      </div>
-
-      <div className="mt-4 min-w-0">
         <ProjectsWidget />
       </div>
-    </>
+    </div>
   )
 }
 
-function SeeAll({ to }: { to: string }) {
-  return (
-    <Link to={to} className="rounded-lg text-sm text-ink-muted hover:text-ink">
-      See all
-    </Link>
-  )
-}
+/** Tailwind sees whole class names only: one literal per width a card can ask for. */
+const SPAN = {
+  4: 'lg:col-span-4',
+  6: 'lg:col-span-6',
+  8: 'lg:col-span-8',
+  12: 'lg:col-span-12',
+} as const
 
 /**
  * The shell's own card: the lines of work, and how much is open on each.
@@ -74,35 +78,46 @@ function SeeAll({ to }: { to: string }) {
  */
 function ProjectsWidget() {
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
-  const rail = useProjectRail()
+  // The same entry Today's This week reads: what each line did and when it last moved.
+  const movement = useQuery({ queryKey: ['movement'], queryFn: listMovement })
+  const today = todayIn(useTimeZone())
   const rows = (projects.data ?? []).filter((p) => !p.archivedAt)
+  const moved = new Map((movement.data ?? []).map((m) => [m.projectId, m]))
 
   return (
-    <Panel variant="tile" label="Projects" action={<SeeAll to="/projects" />}>
+    <Panel variant="tile" label="Projects" to="/projects" className="lg:col-span-12">
       {projects.isError && (
         <p role="alert" className="px-2 py-1.5 text-sm text-danger">
           Couldn't load projects
         </p>
       )}
       {projects.isSuccess && rows.length === 0 && <PanelEmpty>No projects yet</PanelEmpty>}
-      <ul className="flex flex-wrap gap-x-5 gap-y-1 px-2">
-        {rows.map((p) => (
-          <li key={p.id} className="flex min-w-0 items-center gap-1.5">
-            {/* The identity chip, inline rather than the rows' absolute rail: this is a chip
-                beside a name, not the left edge of a row. Never alone -- the name is right there
-                (WCAG 1.4.1). */}
-            <span
-              aria-hidden="true"
-              className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(p.id)}`}
-            />
-            <Link to={`/projects/${p.id}`} className="truncate text-sm text-ink hover:underline">
-              {p.name}
-            </Link>
-            {p.openTasks > 0 && (
-              <span className="text-xs text-ink-subtle tabular-nums">{p.openTasks}</span>
-            )}
-          </li>
-        ))}
+      {/* EVERY LINE OF WORK AT ONCE, none louder than the rest: six equal columns of the same
+          four lines -- what is open, what is late or due next, when it moved. */}
+      <ul className="grid grid-cols-2 gap-x-6 gap-y-5 px-2 pb-1 sm:grid-cols-3 lg:grid-cols-6">
+        {rows.map((p) => {
+          const m = moved.get(p.id)
+          return (
+            <li key={p.id} className="min-w-0">
+              <Link
+                to={`/projects/${p.id}`}
+                className="flex min-w-0 items-stretch gap-3 pt-0.5 pr-1 pb-1 hover:bg-hover"
+              >
+                <ProjectRail projectId={p.id} />
+                <span className="flex min-w-0 flex-col text-sm">
+                  <span className="truncate text-base font-semibold text-ink">{p.name}</span>
+                  <span className="text-ink-muted tabular-nums">{p.openTasks} open</span>
+                  {m && m.overdue > 0 ? (
+                    <span className="text-missed">{m.overdue} overdue</span>
+                  ) : m?.nextDueOn ? (
+                    <span className="text-deadline">Due {shortDay(m.nextDueOn, today)}</span>
+                  ) : null}
+                  {m && <span className="text-ink-subtle">{movedLine(m, today)}</span>}
+                </span>
+              </Link>
+            </li>
+          )
+        })}
       </ul>
     </Panel>
   )

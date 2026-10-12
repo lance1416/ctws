@@ -7,12 +7,12 @@ import {
   readingLabel,
   searchReading,
 } from '../api/reading'
+import { Link } from 'react-router-dom'
 import { PanelEmpty } from '../components/Panel'
-import { ReadingRow } from '../components/ReadingRow'
+import { ProjectRail } from '../components/RowParts'
 import { Stat, StatRow } from '../components/Stat'
 import { isReadingUrl } from '../readingUrl'
 import { Reading } from '../routes/Reading'
-import { useTimeZone } from '../useMe'
 import type { CaptureTargetState, SearchHit, WorkspaceModule } from './contract'
 
 /**
@@ -111,7 +111,6 @@ function ReadingWidget() {
     queryKey: readingKey({ unfiled: true }),
     queryFn: () => listReading({ unfiled: true }),
   })
-  const timeZone = useTimeZone()
   const rows = (items.data ?? []).filter((i) => i.status === 'todo' || i.status === 'reading')
 
   if (items.isError) {
@@ -124,13 +123,83 @@ function ReadingWidget() {
   if (items.isSuccess && rows.length === 0) return <PanelEmpty>Nothing unfiled</PanelEmpty>
   return (
     <ul className="min-w-0">
-      {/* A glance, not a list: five rows, and See all for the rest. A card that grows without
+      {/* A glance, not a list: five rows, and the heading for the rest. A card that grows without
           bound stops being a card and starts being a second copy of the page. */}
       {rows.slice(0, WIDGET_ROWS).map((item) => (
-        <ReadingRow key={item.id} item={item} timeZone={timeZone} />
+        <li key={item.id}>
+          <Link
+            to={`/${ID}/${item.id}`}
+            className="flex min-h-[42px] min-w-0 items-stretch gap-2.5 hover:bg-hover"
+          >
+            <ProjectRail projectId={item.projectId} />
+            <span className="flex shrink-0 items-center text-ink-muted">
+              {item.kind === 'book' ? <BookGlyph /> : <LinkGlyph />}
+            </span>
+            <span className="flex min-w-0 flex-1 items-baseline gap-3 self-center">
+              <span className="min-w-0 truncate text-ink">{readingLabel(item)}</span>
+              <span className="ml-auto min-w-0 shrink truncate text-sm text-ink-subtle">
+                {item.kind === 'book' ? (item.author ?? '') : hostOf(item.url)}
+              </span>
+            </span>
+          </Link>
+        </li>
       ))}
     </ul>
   )
+}
+
+/** Where a link is from, as a person says it: `w3.org`, not the whole URL. */
+function hostOf(url: string | null): string {
+  if (!url) return ''
+  try {
+    return new URL(url).host.replace(/^www\./, '')
+  } catch {
+    return ''
+  }
+}
+
+function BookGlyph() {
+  return (
+    <svg
+      role="img"
+      aria-label="Book"
+      width="18"
+      height="18"
+      viewBox="0 0 18 18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinejoin="round"
+    >
+      <path d="M3.5 3.5h4.2c.9 0 1.3.5 1.3 1.3v9.7c0-.8-.6-1.3-1.4-1.3H3.5zM14.5 3.5h-4.2c-.9 0-1.3.5-1.3 1.3v9.7c0-.8.6-1.3 1.4-1.3h4.1z" />
+    </svg>
+  )
+}
+
+function LinkGlyph() {
+  return (
+    <svg
+      role="img"
+      aria-label="Link"
+      width="18"
+      height="18"
+      viewBox="0 0 20 20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+    >
+      <path d="M8.6 11.4l2.8-2.8M7.4 9.2L5.8 10.8a2.4 2.4 0 0 0 3.4 3.4l1.6-1.6M12.6 10.8l1.6-1.6a2.4 2.4 0 0 0-3.4-3.4L9.2 7.4" />
+    </svg>
+  )
+}
+
+/** The Reading card's note: how much is waiting to be read, filed or not. */
+function ReadingAside() {
+  const all = useAll()
+  if (!all.data) return null
+  const n = all.data.filter((i) => i.status === 'todo' || i.status === 'reading').length
+  return <span className="text-sm text-ink-subtle">{n} to read</span>
 }
 
 /** How many rows a workbench card shows before it defers to its page. */
@@ -182,7 +251,17 @@ export const readingModule: WorkspaceModule = {
   // second module cannot take a key that is already spoken for.
   chords: [{ id: 'reading', key: 'l', label: 'Go to Reading', resolve: () => `/${ID}`, order: 15 }],
   calendar: { label: 'Reading', useEntries: useReadingEntries },
-  widgets: [{ id: 'unfiled', label: 'Reading · unfiled', to: `/${ID}`, Component: ReadingWidget }],
+  widgets: [
+    {
+      id: 'unfiled',
+      label: 'Reading',
+      to: `/${ID}`,
+      Component: ReadingWidget,
+      Aside: ReadingAside,
+      order: 30,
+      span: 8,
+    },
+  ],
   ProjectHeadline: ReadingHeadline,
   // No page of its own: a thing to read is a title, a link and a status, and a page per item
   // would be a page holding one line. The list IS where one is read.

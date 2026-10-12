@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useId, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { listCompleted } from '../api/completed'
 import { listMovement } from '../api/movement'
 import { inboxOf, listProjects } from '../api/projects'
 import { searchTasks } from '../api/search'
@@ -10,7 +12,6 @@ import { CreateTaskDialog } from '../components/CreateTaskDialog'
 import { TaskBoard } from '../components/TaskBoard'
 import { isOverlayOpen } from '../components/overlayState'
 import { ProjectRail } from '../components/RowParts'
-import { useProjectRail } from '../projectColor'
 import { PanelEmpty } from '../components/Panel'
 import { Stat, StatRow } from '../components/Stat'
 import { StatusMark } from '../components/StatusMark'
@@ -77,16 +78,17 @@ function useTaskEntries(range: { from: string; to: string }) {
 }
 
 /**
- * THE WORKBENCH CARD: what is being worked on right now.
+ * THE WORKBENCH'S TODAY: a glance, not a second Today.
  *
- * A GLANCE, not a second Today: no detail pane, no status controls, no dates. The workbench asks
- * what is in front of you and this answers it in one line each; everything you can DO with a task
- * is one click away on the page the card links to.
+ * Three counts -- what is late, what is planned, what is done -- each the way to where it is
+ * dealt with, then what is in progress, one line each. No dates, no controls: everything you can
+ * DO with a task is one click away on the page the heading links to.
  */
-function DoingWidget() {
+function TodayGlance() {
   const today = useQuery({ queryKey: ['today'], queryFn: listToday })
-  const rail = useProjectRail()
-  const doing = (today.data ?? []).filter((t) => t.status === 'in_progress')
+  // The same entry the Done page and Today's own Done section read.
+  const completed = useQuery({ queryKey: ['completed'], queryFn: listCompleted })
+  const localToday = todayIn(useTimeZone())
 
   if (today.isError) {
     return (
@@ -95,71 +97,72 @@ function DoingWidget() {
       </p>
     )
   }
-  if (today.isSuccess && doing.length === 0) return <PanelEmpty>Nothing in progress</PanelEmpty>
+  const rows = today.data ?? []
+  const overdue = rows.filter((t) => t.segment === 'overdue').length
+  const planned = rows.filter((t) => t.segment === 'today').length
+  const done = (completed.data?.tasks ?? []).filter((t) => t.completedOn === localToday).length
+  const doing = rows.filter((t) => t.status === 'in_progress')
   return (
-    <ul className="min-w-0">
-      {doing.map((t) => (
-        <li key={t.id} className="flex min-h-9 min-w-0 items-center gap-2 px-2">
-          <span
-            aria-hidden="true"
-            className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(t.projectId)}`}
-          />
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm text-ink">{t.title}</span>
-            <span className="block truncate text-xs text-ink-subtle">{t.projectName}</span>
-          </span>
-        </li>
-      ))}
-    </ul>
-  )
-}
-
-/**
- * THE SECOND WORKBENCH CARD: what is actually due.
- *
- * Without it the workbench says what you are DOING and never what is late, so finding out that
- * something had slipped would mean opening Today -- the opposite of a page that exists so you do
- * not have to decide where to look first.
- *
- * Overdue leads and is marked; the rest is what is due or planned for today. Both come from the
- * list Today already draws, so this is a second reader of one answer, not a second question.
- */
-function DueWidget() {
-  const today = useQuery({ queryKey: ['today'], queryFn: listToday })
-  const rail = useProjectRail()
-  const rows = (today.data ?? []).filter((t) => t.segment !== 'in_progress')
-  const late = rows.filter((t) => t.segment === 'overdue')
-  const rest = rows.filter((t) => t.segment !== 'overdue')
-
-  if (today.isError) {
-    return (
-      <p role="alert" className="px-2 py-1.5 text-sm text-danger">
-        Couldn't load today's tasks
-      </p>
-    )
-  }
-  if (today.isSuccess && rows.length === 0) return <PanelEmpty>Nothing due today</PanelEmpty>
-  return (
-    <ul className="min-w-0">
-      {[...late, ...rest].slice(0, WIDGET_ROWS).map((t) => (
-        <li key={t.id} className="flex min-h-9 min-w-0 items-center gap-2 px-2">
-          <span
-            aria-hidden="true"
-            className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(t.projectId)}`}
-          />
-          <span className="min-w-0 flex-1 truncate text-sm text-ink">{t.title}</span>
-          {t.segment === 'overdue' && <span className="shrink-0 text-xs text-missed">Overdue</span>}
-        </li>
-      ))}
-      {rows.length > WIDGET_ROWS && (
-        <li className="px-2 py-1 text-xs text-ink-subtle">{rows.length - WIDGET_ROWS} more</li>
+    <>
+      <div className="mb-4 flex flex-wrap gap-1">
+        {/* Late is the one that bites, in the miss colour -- and only when there is any. */}
+        <GlanceCount
+          to={at('today')}
+          n={overdue}
+          word="overdue"
+          tone={overdue > 0 ? 'text-missed' : 'text-ink-subtle'}
+        />
+        <GlanceCount to={at('today')} n={planned} word="planned" tone="text-ink" />
+        <GlanceCount to={at('completed')} n={done} word="done" tone="text-ink-subtle" />
+      </div>
+      <p className="mb-1 px-2 text-xs text-ink-subtle">In progress</p>
+      {today.isSuccess && doing.length === 0 ? (
+        <PanelEmpty>Nothing in progress</PanelEmpty>
+      ) : (
+        <ul className="min-w-0">
+          {doing.map((t) => (
+            <li key={t.id}>
+              <Link
+                to={`/projects/${t.projectId}?reveal=${t.id}`}
+                className="flex min-h-10 min-w-0 items-stretch gap-3 hover:bg-hover"
+              >
+                <ProjectRail projectId={t.projectId} />
+                <span className="flex shrink-0 items-center">
+                  <StatusMark status={t.status} />
+                </span>
+                <span className="flex min-w-0 items-center truncate text-ink">{t.title}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
       )}
-    </ul>
+    </>
   )
 }
 
-/** How many rows a workbench card shows before it defers to its page. */
-const WIDGET_ROWS = 5
+/** One count: the number large, its word beside it, the whole of it the way there. */
+function GlanceCount({ to, n, word, tone }: { to: string; n: number; word: string; tone: string }) {
+  return (
+    <Link to={to} className={`flex items-baseline gap-2 px-2 py-0.5 hover:bg-hover ${tone}`}>
+      <span className="text-xl font-medium tabular-nums">{n}</span> <span>{word}</span>
+    </Link>
+  )
+}
+
+/** The Today card's note: which day it is, in the account's zone. */
+function TodayDate() {
+  const timeZone = useTimeZone()
+  return (
+    <span className="text-sm text-ink-subtle">
+      {new Intl.DateTimeFormat('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        timeZone,
+      }).format(new Date())}
+    </span>
+  )
+}
 
 /**
  * Quick capture's destination: the workspace inbox. Found by the `isInbox` flag, never by name.
@@ -438,8 +441,15 @@ export const taskModule: WorkspaceModule = {
   ],
   calendar: { label: 'Tasks', useEntries: useTaskEntries },
   widgets: [
-    { id: 'doing', label: 'Working on', to: at('today'), Component: DoingWidget },
-    { id: 'due', label: 'Due today', to: at('today'), Component: DueWidget },
+    {
+      id: 'today',
+      label: 'Today',
+      to: at('today'),
+      Component: TodayGlance,
+      Aside: TodayDate,
+      order: 10,
+      span: 6,
+    },
   ],
   projectBlock: { Component: ProjectTasks, views: PROJECT_VIEWS, Action: NewTaskAction },
   ProjectHeadline: ProjectNumbers,

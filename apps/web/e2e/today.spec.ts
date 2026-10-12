@@ -1,20 +1,19 @@
 import { expect, test, type Page } from '@playwright/test'
 import { TZDate } from '@date-fns/tz'
-import { format } from 'date-fns'
 import {
+  accountZone,
   apiPost,
+  dayInZone,
   editDetail,
   makeProject,
   makeTask,
+  meetingToday,
   openProject,
   registerFreshUser,
   setDetailStatus,
   submitCreate,
   WEB,
 } from './helpers'
-
-/** Today, in `timeZone`. */
-const dayInZone = (timeZone: string) => new Date().toLocaleDateString('en-CA', { timeZone })
 
 async function captureAndOpen(page: Page, title: string) {
   await submitCreate(page, 'Capture…', title)
@@ -310,29 +309,6 @@ test('做一件事时 Done 是那一下，做五件时它只是一行上的按�
 })
 
 // ------------------------------------------------------------------------------- the day's line
-
-/** The account's zone, as the server holds it. */
-async function accountZone(page: Page): Promise<string> {
-  const me = await page.request.get('/api/v1/auth/me', { headers: WEB })
-  return ((await me.json()) as { timezone: string }).timezone
-}
-
-/** A meeting at `hh:mm` today on the ACCOUNT's clock, agreed in `zone`. */
-async function meetingToday(page: Page, title: string, hhmm: string, zone: string) {
-  const account = await accountZone(page)
-  const [y, m, d] = new Date()
-    .toLocaleDateString('en-CA', { timeZone: account })
-    .split('-')
-    .map(Number) as [number, number, number]
-  const [hh, mm] = hhmm.split(':').map(Number) as [number, number]
-  const instant = new TZDate(y, m - 1, d, hh, mm, 0, 0, account)
-  const startsLocal = format(new TZDate(instant.getTime(), zone), "yyyy-MM-dd'T'HH:mm")
-  const res = await page.request.post('/api/v1/meetings', {
-    headers: WEB,
-    data: { title, startsLocal, timeZone: zone, durationMinutes: 30 },
-  })
-  expect(res.ok(), await res.text()).toBe(true)
-}
 
 test('a meeting sits on the day at your own time, and says the zone it was agreed in', async ({
   page,

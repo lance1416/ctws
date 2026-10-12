@@ -29,6 +29,12 @@ export type ProjectMovement = {
   lastActivityOn: string | null
   /** Whole days from that day to today, in the user's timezone. Null when there is no activity. */
   quietDays: number | null
+  /**
+   * The day the next deadline still standing falls on, in the user's timezone: the earliest open
+   * task's deadline from the start of today on. Null when nothing open has one. What a project
+   * line says when nothing in it is late yet.
+   */
+  nextDueOn: string | null
 }
 
 /**
@@ -110,6 +116,13 @@ export async function listProjectMovement(
       quietDays: sql<
         number | null
       >`(${today} - ((${lastActivity}) at time zone ${timezone})::date)`,
+      nextDueOn: sql<string | null>`(((
+        select min(next_t.due_at) from tasks next_t
+        where next_t.project_id = projects.id
+          and next_t.deleted_at is null
+          and next_t.status not in ('done', 'cancelled')
+          and next_t.due_at >= ${dayStart}
+      ) at time zone ${timezone})::date)::text`,
     })
     .from(projects)
     .where(and(visibleProjects(workspaceId), isNull(projects.archivedAt)))
@@ -124,5 +137,6 @@ export async function listProjectMovement(
     overdue: r.overdue,
     lastActivityOn: r.lastActivityOn ?? null,
     quietDays: r.quietDays === null || r.quietDays === undefined ? null : Number(r.quietDays),
+    nextDueOn: r.nextDueOn ?? null,
   }))
 }

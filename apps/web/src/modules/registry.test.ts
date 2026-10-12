@@ -130,6 +130,27 @@ describe('the workbench widgets', () => {
     ])
   })
 
+  it('lays the cards out in their stated order, not in the order modules registered', () => {
+    const first = {
+      ...notes,
+      widgets: [{ id: 'late', label: 'Late', order: 20, Component: () => null }],
+    }
+    const second = {
+      ...files,
+      widgets: [{ id: 'early', label: 'Early', order: 10, Component: () => null }],
+    }
+    expect(moduleWidgets([first, second]).map((w) => w.label)).toEqual(['Early', 'Late'])
+  })
+
+  it('puts this workspace’s cards in the Workbench’s order', () => {
+    expect(moduleWidgets().map((w) => w.label)).toEqual([
+      'Today',
+      'Meetings',
+      'Reading',
+      'Birthdays',
+    ])
+  })
+
   it('is empty for a module that contributes none, rather than inventing one', () => {
     const { widgets: _dropped, ...noWidgets } = notes
     expect(moduleWidgets([noWidgets, files])).toHaveLength(1)

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 
 /**
  * A panel: one question, one block.
@@ -17,6 +18,7 @@ export function Panel({
   label,
   count,
   heading,
+  to,
   action,
   tabs,
   children,
@@ -29,6 +31,8 @@ export function Panel({
   count?: number | undefined
   /** Replaces the default <h2>, for the one panel whose heading is the page's <h1>. */
   heading?: ReactNode
+  /** The block's page: the heading becomes the link there, rather than a "See all" beside it. */
+  to?: string | undefined
   /** A control that belongs to the panel as a whole, pushed to the end of the heading row. */
   action?: ReactNode
   /** The block's views, as tabs. Fewer than two draws nothing. */
@@ -48,7 +52,17 @@ export function Panel({
           variant === 'tile' ? 'px-4 pt-3.5' : 'px-2 pt-1'
         }`}
       >
-        {heading ?? <h2 className="text-base font-semibold text-ink">{label}</h2>}
+        {heading ?? (
+          <h2 className="text-base font-semibold text-ink">
+            {to ? (
+              <Link to={to} className="underline-offset-[3px] hover:underline">
+                {label}
+              </Link>
+            ) : (
+              label
+            )}
+          </h2>
+        )}
         {count !== undefined && count > 0 && (
           <span data-count className="text-sm text-ink-subtle tabular-nums">
             {count}

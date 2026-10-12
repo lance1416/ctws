@@ -436,6 +436,8 @@ export const projectMovementResponse = z
     // Null when the project has no logged activity at all, which is only ever an empty project.
     lastActivityOn: calendarDate.nullable(),
     quietDays: z.number().int().nonnegative().nullable(),
+    /** The day the next deadline still standing falls on, in the user's zone; null when none. */
+    nextDueOn: calendarDate.nullable(),
   })
   .strict()
 export type ProjectMovementResponse = z.infer<typeof projectMovementResponse>

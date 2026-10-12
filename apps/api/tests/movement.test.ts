@@ -51,6 +51,7 @@ type Row = {
   overdue: number
   lastActivityOn: string | null
   quietDays: number | null
+  nextDueOn: string | null
 }
 
 async function movement(headers = ctx.authed): Promise<Row[]> {
@@ -309,6 +310,35 @@ describe('GET /tasks/movement', () => {
    * answering one question. This asserts they agree, per project, rather than asserting each
    * against a constant -- which is the only way a drift between them would ever be noticed.
    */
+  /**
+   * THE NEXT DEADLINE STILL STANDING, as the day it falls on in the user's zone: what a project
+   * line says when nothing in it is late yet. Earliest of the open ones; never one already past
+   * (that is `overdue`'s), never a finished or deleted one.
+   */
+  it('names the next deadline still standing, as a day in the user’s timezone', async () => {
+    const pid = await createProject(ctx, 'next due')
+    const quiet = await createProject(ctx, 'nothing due')
+    await createTask(ctx, quiet, 'no deadline')
+    await dueAt(await createTask(ctx, pid, 'already late'), '2026-10-01T09:00:00Z')
+    await dueAt(await createTask(ctx, pid, 'later'), '2026-10-21T09:00:00Z')
+    // 2026-10-09 17:00Z is 2026-10-10 01:00 in Shanghai: the day is the reader's, not the server's.
+    await dueAt(await createTask(ctx, pid, 'soonest'), '2026-10-09T17:00:00Z')
+    const done = await createTask(ctx, pid, 'finished early one')
+    await dueAt(done, '2026-10-08T09:00:00Z')
+    await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/v1/tasks/${done}`,
+      headers: ctx.authed,
+      payload: { status: 'done' },
+    })
+    const now = new Date('2026-10-07T04:00:00Z')
+    const rows = (await listProjectMovement(ctx.db, workspaceId, 'Asia/Shanghai', now)) as Row[]
+    expect(rowFor(rows, pid).nextDueOn).toBe('2026-10-10')
+    expect(rowFor(rows, quiet).nextDueOn).toBeNull()
+    // And over the wire, in the contract's shape.
+    expect(rowFor(await movement(), quiet).nextDueOn).toBeNull()
+  })
+
   it('agrees with the overdue segment of today, project by project', async () => {
     const a = await createProject(ctx, 'agree a')
     const b = await createProject(ctx, 'agree b')

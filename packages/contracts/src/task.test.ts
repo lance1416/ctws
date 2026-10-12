@@ -214,6 +214,7 @@ describe('projectMovementResponse', () => {
     overdue: 1,
     lastActivityOn: '2026-09-28',
     quietDays: 7,
+    nextDueOn: '2026-10-21',
   }
 
   it('carries counts and movement', () => {

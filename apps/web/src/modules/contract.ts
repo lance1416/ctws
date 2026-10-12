@@ -161,10 +161,20 @@ export type Widget = {
   id: string
   /** The card's heading. */
   label: string
-  /** Where “See all” goes, when there is more than the card shows. */
+  /** The card's page: its heading is the link there, so there is no separate "See all". */
   to?: string
   /** The card's contents. The shell gives it no props: a widget is about the workspace, not a row. */
   Component: ComponentType
+  /** A short note at the end of the heading row: the date, "2 today", "5 to read". */
+  Aside?: ComponentType
+  /** Its place on the Workbench. An editorial order, not registration order. */
+  order?: number
+  /**
+   * How many of the Workbench's twelve columns it takes from 1024 up. Its natural size is the
+   * module's to say -- a glance of three counts and a list of rows want different widths -- and
+   * the arrangement round it is the shell's.
+   */
+  span?: 4 | 6 | 8 | 12
 }
 
 /** A page a module owns that the shell may pin to the top of the rail. */

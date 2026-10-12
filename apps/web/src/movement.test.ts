@@ -15,6 +15,7 @@ const row = (p: Partial<ProjectMovementResponse> = {}): ProjectMovementResponse 
   overdue: p.overdue ?? 0,
   lastActivityOn: p.lastActivityOn ?? null,
   quietDays: p.quietDays ?? null,
+  nextDueOn: p.nextDueOn ?? null,
 })
 
 describe('hasMovement', () => {
