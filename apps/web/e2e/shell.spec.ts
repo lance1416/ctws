@@ -330,3 +330,34 @@ test('at 320px what capture says stays on the screen, however long the name', as
   expect(box.x).toBeGreaterThanOrEqual(0)
   expect(box.x + box.width).toBeLessThanOrEqual(320)
 })
+
+test('the rail stays beside the page as a long page scrolls', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 700 })
+  await registerFreshUser(page, '/')
+  const pid = await makeProject(page, 'P')
+  for (let i = 0; i < 30; i++) await makeTask(page, pid, `一条 ${i}`)
+  await page.goto(`/projects/${pid}`)
+  await expect(page.locator('[data-task-tree] li[data-depth]')).toHaveCount(30)
+  const rail = page.getByRole('navigation', { name: 'Main navigation' })
+  const before = (await rail.boundingBox())!
+  await page.mouse.wheel(0, 900)
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(300)
+  // The frame round the sheet does not scroll away and leave white beside it.
+  expect(Math.round((await rail.boundingBox())!.y)).toBe(Math.round(before.y))
+})
+
+test('on a phone, several things in progress are rows, not a column of empty space', async ({
+  page,
+}) => {
+  await page.setViewportSize(PHONE)
+  await registerFreshUser(page, '/')
+  const pid = await makeProject(page, 'P')
+  for (const t of ['一', '二', '三']) await makeTask(page, pid, t, { status: 'in_progress' })
+  await page.goto('/tasks/today')
+  const rows = page.locator('[data-panel="In progress"] li')
+  await expect(rows).toHaveCount(3)
+  for (const h of await rows.evaluateAll((els) =>
+    els.map((el) => el.getBoundingClientRect().height),
+  ))
+    expect(h).toBeLessThanOrEqual(66)
+})

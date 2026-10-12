@@ -71,7 +71,9 @@ export function SideRail() {
     // `sheet`. That is the figure/ground device -- a frame round the paper, one step off it in
     // both schemes.
     // Wide screens only: below 1024 the bottom bar is the navigation (BottomBar).
-    <div className="hidden flex-col border-rule bg-chrome lg:flex lg:h-[calc(100vh-3.25rem)] lg:overflow-y-auto lg:border-r lg:py-4 lg:pr-3 lg:pl-4">
+    // STICKY under the header, so a long page scrolls past it rather than taking it away and
+    // leaving white beside the sheet: the frame stays a frame.
+    <div className="hidden flex-col border-rule bg-chrome lg:sticky lg:top-[calc(3.25rem+1px)] lg:flex lg:h-[calc(100vh-3.25rem-1px)] lg:overflow-y-auto lg:border-r lg:py-4 lg:pr-3 lg:pl-4">
       <nav aria-label="Main navigation" className="flex flex-col">
         {/* THREE TIERS, each with a rule for what may enter it.
 

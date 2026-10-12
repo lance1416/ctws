@@ -407,12 +407,22 @@ export function Today() {
                       <RowLead lead={lead} />
                       <ProjectRail projectId={t.projectId} />
                       <div
-                        className={`flex min-w-0 flex-1 flex-wrap items-start gap-x-2.5 gap-y-2 pr-2 pl-3.5 group-hover:bg-hover ${
-                          alone ? 'py-2' : 'min-h-11'
+                        className={`relative flex min-w-0 flex-1 items-start gap-x-2.5 pr-2 pl-3.5 group-hover:bg-hover ${
+                          alone ? 'flex-wrap gap-y-2 py-2' : 'min-h-11'
                         }`}
                       >
-                        <span className={`flex shrink-0 items-center ${alone ? 'h-11' : 'h-11'}`}>
-                          <StatusMark status={t.status} />
+                        {/* One: the mark, and Done beside it. Several: the mark IS the Done control,
+                            which is all a touch screen gets -- Pause and the rest are in the sheet. */}
+                        <span className="flex h-11 shrink-0 items-center">
+                          {alone ? (
+                            <StatusMark status={t.status} />
+                          ) : (
+                            <StatusButton
+                              status={t.status}
+                              title={t.title}
+                              onClick={() => setStatus(t.id, toggleDoneTarget(t.status))}
+                            />
+                          )}
                         </span>
                         <button
                           type="button"
@@ -438,19 +448,23 @@ export function Today() {
                           className={`flex shrink-0 items-center gap-2 ${
                             alone
                               ? 'self-center'
-                              : 'h-11 opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100'
+                              : // Over the row, not in it: they take no width from the title.
+                                'absolute top-0 right-1 h-11 bg-hover opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:hidden'
                           }`}
                         >
-                          <button
-                            type="button"
-                            aria-label={`Complete “${t.title}”`}
-                            onClick={() => setStatus(t.id, toggleDoneTarget(t.status))}
-                            // One thing: the one press the page is for, filled. Several: none of
-                            // them is the focus, so none is filled.
-                            className={alone ? BUTTON.primary : BUTTON.secondary}
-                          >
-                            Done
-                          </button>
+                          {/* One thing: the one press the page is for, filled. Several: the mark
+                              at the row's start is Done, so a second Done would be one action
+                              with two names. */}
+                          {alone && (
+                            <button
+                              type="button"
+                              aria-label={`Complete “${t.title}”`}
+                              onClick={() => setStatus(t.id, toggleDoneTarget(t.status))}
+                              className={BUTTON.primary}
+                            >
+                              Done
+                            </button>
+                          )}
                           <button
                             type="button"
                             aria-label={`Pause “${t.title}”`}
