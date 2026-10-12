@@ -90,8 +90,8 @@ export function Layout() {
         }`}
       >
         <SideRail />
-        {/* 至少一屏高：贴底那条带子（`DangerZone`）只在它所在的盒子里生效，而一个比视口矮的
-            盒子没有「底部」可贴 —— 删除于是会吊在半空。顶栏 3.25rem，这里补上。 */}
+        {/* 至少一屏高：`DangerZone` 靠 `mt-auto` 把自己推到它所在那个纵向 flex 盒子的底，而一个
+            比视口矮的盒子没有「底」可推 —— 删除于是会吊在半空。顶栏 3.25rem，这里补上。 */}
         <main className="flex min-h-[calc(100vh-3.25rem)] min-w-0 flex-col bg-surface px-4 pt-4 sm:px-6">
           {/* NO WIDTH CAP. The capped 51rem centre column is what put one clump of rows left of
               centre at 1440 with half the screen empty beside it. The width is now carried by the

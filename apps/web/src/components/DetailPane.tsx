@@ -112,7 +112,9 @@ export function DetailPane({
         // top as well -- a panel flush with the top bar but with air on three sides would read as
         // a sheet that had slid down out of it.
         style={{ top: wide ? top + 16 : top }}
-        className={`fixed z-20 overflow-y-auto p-5 text-fg focus:outline-none ${
+        // A COLUMN, so the one irreversible action (`DangerZone`, `mt-auto`) can be pushed to the
+        // pane's floor when what is above it is short, instead of hanging under the last field.
+        className={`fixed z-20 flex flex-col overflow-y-auto p-5 text-fg focus:outline-none ${
           // A COLUMN is a PANEL in the page's right-hand column: the same surface, radius and
           // hairline every other panel wears, so it reads as part of the page rather than a form
           // bolted to the window's edge. Its 22rem plus the two 16px gutters is the 24rem track

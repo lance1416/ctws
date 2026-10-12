@@ -391,7 +391,14 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
 
   return (
     <DetailPane label="Task details" onClose={requestClose}>
-      <div ref={panel} tabIndex={-1} onKeyDown={onKeyDown} className="focus:outline-none">
+      {/* `flex-1 flex-col`: the pane's height reaches down through this box to `DangerZone`, which
+          needs a floor to be pushed to. */}
+      <div
+        ref={panel}
+        tabIndex={-1}
+        onKeyDown={onKeyDown}
+        className="flex flex-1 flex-col focus:outline-none"
+      >
         {/* ---------------------------------------------------------------- READING MODE
             Title, the status and the two dates read-only, the notes as prose, and Edit. Nothing
             on this screen changes the task, which is the whole point:

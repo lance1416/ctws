@@ -6,11 +6,11 @@ import { DeleteConfirm } from './DeleteConfirm'
  *
  * Three rules, and they are the whole component:
  *
- * 1. **LAST, AND AT THE BOTTOM OF THE SCREEN.** It sits at the end of the surface that owns the
- *    thing and STICKS to the foot of it, so on a short page it is a band along the bottom of the
- *    window rather than a red word hanging in the middle of the empty half. Nothing is reached by
- *    passing over it, which is what stops a mis-aimed press, and the band's own fill plus the
- *    rule above it say that it is not part of the body.
+ * 1. **BELOW EVERYTHING, AND NEVER ABOVE THE FLOOR.** It is the last thing on the surface that
+ *    owns the thing, under a rule. On a surface shorter than the screen it is pushed down to the
+ *    foot of it rather than hanging in the middle of the empty half; on a longer one it comes
+ *    after the last line, and you scroll to reach it. Nothing is reached by passing over it, and
+ *    nothing ever slides under it -- which is what stops a mis-aimed press.
  * 2. **RED.** `danger`, the same token an overdue deadline and a failed save use. An action that
  *    cannot be undone must not wear the colour of the ones that can.
  * 3. **IT ASKS.** Always, and the question names what is lost. The press that destroys is the
@@ -21,16 +21,17 @@ import { DeleteConfirm } from './DeleteConfirm'
  */
 export function DangerZone({ children }: { children: ReactNode }) {
   return (
-    <div
-      data-danger-zone
-      /*
-        `sticky bottom-0` 而不是 `fixed`：它仍然属于这个面，跟着这个面滚；短页面上它停在视口底，
-        长页面上滚到底才是它的真位置。`-mx-*`/`px-*` 把这条带子撑到面的边 —— 一条只有文字宽的
-        分界线不是分界。
-      */
-      className="sticky bottom-0 z-10 mt-auto border-t border-border-subtle bg-surface py-3"
-    >
-      {children}
+    /*
+      `mt-auto`，不是 `sticky`。在一个纵向 flex 的面里（页面的 main、详情面板），自动外边距吃掉
+      剩下的空，短的面上它就落到底；长的面上没有剩的空，它就排在最后一行后面。`sticky` 那一版
+      在长面上浮在正文上面、正文从它底下滚过去，还得给自己涂一层底色去盖住 —— 而那层底色和它
+      所在的面不是同一个颜色。
+
+      两层是因为自动外边距在内容够长时会塌成 0：外层的 `pt-6` 是它和正文之间至少留的那段距离。
+      没有底色：它属于它所在的面，那条线已经说明它不是正文。
+    */
+    <div data-danger-zone className="mt-auto pt-6">
+      <div className="border-t border-border-subtle py-3">{children}</div>
     </div>
   )
 }
