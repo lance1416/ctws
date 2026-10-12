@@ -9,6 +9,7 @@ import { NewPersonDialog } from '../components/NewPersonDialog'
 import { NewPersonInput } from '../components/NewPersonInput'
 import { LIST_MEASURE } from '../rowLead'
 import { BUTTON } from '../components/buttonStyles'
+import { PeopleViews } from '../components/PeopleViews'
 import { CIRCLE_LABELS } from '../components/BirthdayRow'
 
 /**
@@ -51,6 +52,7 @@ export function People() {
           New person
         </button>
       </div>
+      <PeopleViews />
 
       <div className={`mt-4 ${LIST_MEASURE}`}>
         <NewPersonInput onCreated={(c: PersonResponse) => setOpenId(c.id)} />

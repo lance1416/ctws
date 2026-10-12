@@ -1,5 +1,6 @@
 import type { ObjectType } from '@ctws/contracts'
 import { DeleteProject } from '../components/DeleteProject'
+import { ProjectsCount, ProjectsStatus } from '../components/ProjectKind'
 import { ProjectHead } from '../components/ProjectHead'
 import type { ComponentType } from 'react'
 import type { RouteObject } from 'react-router-dom'
@@ -7,7 +8,8 @@ import type {
   CalendarContribution,
   CaptureContribution,
   Chord,
-  Destination,
+  KindEntry,
+  ModulePage,
   RelationContribution,
   Widget,
   WorkspaceModule,
@@ -58,70 +60,56 @@ const SHELL_CHORDS: Chord[] = [
   { id: 'projects', key: 'p', label: 'Go to Projects', resolve: () => '/projects', order: 20 },
 ]
 
+/** The shell's own pages: they are about every kind at once, so no module owns them. */
+export const SHELL_PAGES: readonly ModulePage[] = [
+  { id: 'workbench', to: WORKBENCH_PATH, label: 'Workbench', end: true },
+  { id: 'calendar', to: '/calendar', label: 'Calendar' },
+]
+
 /**
- * WHERE A DESTINATION SITS IN THE RAIL -- by what the person is trying to do, not by which module
- * owns it.
+ * THE RAIL'S TOP TIER, in reading order: the pages that cut across every kind, organised by time
+ * and routine (home, the day, the month, the week), never by kind.
  *
- * Grouping by owner is what the rail did before, and it put “Today”(one module's view) beside
- * “Reading”(a whole module) with nothing to tell them apart. Past five or six rows a flat list has
- * to be grouped, and the grouping that helps is the reader's: what is in front of me, what I keep,
- * what I look back at.
+ * At most five, which is where every surveyed system puts the always-visible tier. A new kind
+ * never comes in here; it gets one row in Things. That rule is what keeps the rail from growing
+ * with the software: the only part of it that grows is the project list, which is the person's own.
+ *
+ * Keys are `<module id or 'shell'>:<page id>`. A key whose module is not registered is skipped.
  */
-const RAIL_ZONES = ['now', 'things', 'views'] as const
-export type RailZone = (typeof RAIL_ZONES)[number]
+export const PINNED = ['shell:workbench', 'tasks:today', 'shell:calendar', 'tasks:review'] as const
 
-/**
- * What a group is CALLED, where it is worth saying. The first needs no name -- it is the top of
- * the rail and what is in it is obvious -- and naming it too would be a label on every group,
- * which is more chrome than the rows.
- */
-export const ZONE_LABEL: Partial<Record<RailZone, string>> = {
-  things: 'Things',
-  views: 'Views',
-}
-
-export type RegisteredDestination = Destination & { moduleId: string }
+export type PinnedPage = ModulePage & { key: string }
+export type RegisteredKind = KindEntry & { moduleId: string }
 export type RegisteredChord = Chord & { moduleId: string | null }
 
-/** Every module's rail rows, in registration order. */
-export function moduleDestinations(
-  modules: readonly WorkspaceModule[] = MODULES,
-): RegisteredDestination[] {
-  return modules.flatMap((m) => m.destinations.map((d) => ({ ...d, moduleId: m.id })))
+export function pinnedPages(modules: readonly WorkspaceModule[] = MODULES): PinnedPage[] {
+  const offered = new Map<string, ModulePage>([
+    ...SHELL_PAGES.map((p) => [`shell:${p.id}`, p] as const),
+    ...modules.flatMap((m) => (m.pages ?? []).map((p) => [`${m.id}:${p.id}`, p] as const)),
+  ])
+  return PINNED.flatMap((key) => {
+    const page = offered.get(key)
+    return page ? [{ ...page, key }] : []
+  })
 }
 
 /**
- * The rail's rows, grouped and in reading order.
- *
- * The shell's own surfaces are in here too: the workbench and the calendar answer "what now" as
- * much as Today does, and a rail listing the modules' rows and then the shell's would be grouping
- * by owner again.
+ * EVERY KIND OF THING, one entry each, for Things. Projects is the shell's own kind and leads: it
+ * is the kind the others cross at. Then the modules' kinds in their stated order.
  */
-export function railGroups(
-  modules: readonly WorkspaceModule[] = MODULES,
-): { zone: RailZone; rows: RegisteredDestination[] }[] {
-  const shell: RegisteredDestination[] = [
-    {
-      moduleId: '',
-      id: 'workbench',
-      to: WORKBENCH_PATH,
-      label: 'Workbench',
-      end: true,
-      zone: 'now',
-      order: 10,
-    },
-    { moduleId: '', id: 'calendar', to: '/calendar', label: 'Calendar', zone: 'views', order: 10 },
-  ]
-  const all = [...shell, ...moduleDestinations(modules)]
-  return RAIL_ZONES.map((zone) => ({
-    zone,
-    // Workbench, Today, Calendar: the shell's home leads, and the module's daily list sits between
-    // the two shell surfaces, because that is the order they are reached in rather than the order
-    // the modules happened to be registered in.
-    rows: all
-      .filter((d) => (d.zone ?? 'now') === zone)
-      .sort((a, b) => (a.order ?? 50) - (b.order ?? 50)),
-  })).filter((g) => g.rows.length > 0)
+export function kinds(modules: readonly WorkspaceModule[] = MODULES): RegisteredKind[] {
+  const own: RegisteredKind = {
+    moduleId: '',
+    label: 'Projects',
+    to: '/projects',
+    Count: ProjectsCount,
+    Status: ProjectsStatus,
+    chord: 'projects',
+  }
+  const theirs = modules
+    .flatMap((m) => (m.kind ? [{ ...m.kind, moduleId: m.id }] : []))
+    .sort((a, b) => (a.order ?? 50) - (b.order ?? 50))
+  return [own, ...theirs]
 }
 
 /** Every module's pages, mounted under its own namespace. */

@@ -99,11 +99,9 @@ test('the rail counts what is waiting, not the size of the pile', async ({ page 
     data: { status: 'done' },
   })
 
-  await page.goto('/reading')
-  const rail = page
-    .getByRole('navigation', { name: 'Main navigation' })
-    .getByRole('link', { name: /Reading/ })
-  await expect(rail.locator('[data-count]')).toHaveText('1')
+  // The count lives where every kind is listed, in the kind's own words.
+  await page.goto('/things')
+  await expect(page.locator('[data-kind="Reading"] [data-count]')).toHaveText('1 to read')
 })
 
 test('g l goes to Reading, in one keyspace with the task module', async ({ page }) => {

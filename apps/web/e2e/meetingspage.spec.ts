@@ -14,12 +14,14 @@ import { pickOne, registerFreshUser, WEB } from './helpers'
 const dialog = (page: Page) => page.getByRole('dialog', { name: 'New meeting' })
 const pane = (page: Page) => page.getByRole('dialog', { name: 'Meetings' })
 
-test('the rail reaches meetings, and the page says when there are none', async ({ page }) => {
+test('Things reaches meetings, and the page says when there are none', async ({ page }) => {
+  // Kinds sit behind Things, not one row each in the rail.
   await registerFreshUser(page)
   await page
     .getByRole('navigation', { name: 'Main navigation' })
-    .getByRole('link', { name: 'Meetings' })
+    .getByRole('link', { name: 'Things' })
     .click()
+  await page.locator('[data-kind="Meetings"]').getByRole('link', { name: 'Meetings' }).click()
   await expect(page).toHaveURL(/\/meetings$/)
   await expect(page.getByRole('heading', { level: 1, name: 'Meetings' })).toBeVisible()
   await expect(page.getByText('Nothing in the next month')).toBeVisible()

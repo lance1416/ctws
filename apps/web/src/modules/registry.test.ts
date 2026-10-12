@@ -6,13 +6,15 @@ import {
   allChords,
   MODULES,
   captureContribution,
-  moduleDestinations,
+  kinds,
   moduleRoutes,
   moduleWidgets,
   projectHeadlines,
   projectBlocks,
   relationFor,
   relations,
+  PINNED,
+  pinnedPages,
   resolveChord,
   searchProviders,
 } from './registry'
@@ -31,10 +33,9 @@ const NotesProjectNumbers = () => null
 const notes: WorkspaceModule = {
   id: 'notes',
   label: 'Notes',
-  destinations: [
-    { id: 'recent', to: '/notes/recent', label: 'Recent' },
-    { id: 'all', to: '/notes/all', label: 'All' },
-  ],
+  // Offered, never pinned: only the shell's PINNED list decides what is at the top of the rail.
+  pages: [{ id: 'recent', to: '/notes/recent', label: 'Recent' }],
+  kind: { label: 'Notes', to: '/notes/all', order: 25 },
   routes: [{ path: 'recent' }, { path: 'all' }],
   capture: { useTarget: () => ({ target: null, missing: false, unavailable: false }) },
   search: { useHits: () => ({ hits: [], isError: false, isSuccess: true }) },
@@ -49,23 +50,47 @@ const notes: WorkspaceModule = {
 const files: WorkspaceModule = {
   id: 'files',
   label: 'Files',
-  destinations: [{ id: 'drive', to: '/files/drive', label: 'Drive' }],
+  kind: { label: 'Files', to: '/files/drive', order: 5 },
   routes: [{ path: 'drive' }],
   capture: { useTarget: () => ({ target: null, missing: true, unavailable: false }) },
   widgets: [{ id: 'big', label: 'Bulky', Component: () => null }],
   projectBlock: { Component: () => null },
 }
 
-describe('destinations', () => {
-  it('puts a module contribution in the rail, tagged with the module it came from', () => {
-    const rail = moduleDestinations([notes, files])
-    expect(rail.map((d) => d.label)).toEqual(['Recent', 'All', 'Drive'])
-    expect(rail.map((d) => d.moduleId)).toEqual(['notes', 'notes', 'files'])
-    expect(rail.map((d) => d.to)).toEqual(['/notes/recent', '/notes/all', '/files/drive'])
+describe("the rail's pinned pages", () => {
+  it('are the four that cut across every kind, in reading order', () => {
+    expect(pinnedPages().map((p) => p.label)).toEqual(['Workbench', 'Today', 'Calendar', 'Review'])
   })
 
-  it('contributes nothing when no module is registered', () => {
-    expect(moduleDestinations([])).toEqual([])
+  it('never number more than five', () => {
+    // Every surveyed system puts the always-visible tier at three to five; past that it stops
+    // being the tier that is always visible.
+    expect(PINNED.length).toBeLessThanOrEqual(5)
+  })
+
+  it('are chosen by the shell, not offered into place by a module', () => {
+    // The fakes offer a page and are not in PINNED, so only the shell's own two remain.
+    expect(pinnedPages([notes, files]).map((p) => p.label)).toEqual(['Workbench', 'Calendar'])
+  })
+})
+
+describe('the kinds of thing', () => {
+  it("are every kind this workspace has, the shell's Projects first", () => {
+    expect(kinds().map((k) => k.label)).toEqual([
+      'Projects',
+      'Tasks',
+      'People',
+      'Meetings',
+      'Reading',
+    ])
+  })
+
+  it('take one entry per module, in their stated order', () => {
+    expect(kinds([notes, files]).map((k) => [k.moduleId, k.label])).toEqual([
+      ['', 'Projects'],
+      ['files', 'Files'],
+      ['notes', 'Notes'],
+    ])
   })
 })
 

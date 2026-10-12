@@ -9,6 +9,7 @@ import { NewPersonDialog } from '../components/NewPersonDialog'
 import { Panel, PanelEmpty } from '../components/Panel'
 import { MONTHS } from '../dueAt'
 import type { Circle } from '@ctws/contracts'
+import { PeopleViews } from '../components/PeopleViews'
 
 /**
  * BIRTHDAYS -- a LENS. It owns nobody: this page only reads, and a person is made by the people
@@ -48,7 +49,7 @@ export function Birthdays() {
     <>
       <div className="flex flex-wrap items-center gap-3">
         <h1 ref={heading} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
-          Birthdays
+          People
         </h1>
         {total > 0 && (
           <span data-birthday-count className="text-sm text-fg-subtle tabular-nums">
@@ -70,6 +71,8 @@ export function Birthdays() {
           New person
         </button>
       </div>
+
+      <PeopleViews />
 
       {view.isError && (
         <p role="alert" className="mt-4 text-sm text-danger">

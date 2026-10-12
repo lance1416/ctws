@@ -21,8 +21,18 @@ export type WorkspaceModule = {
   id: string
   /** How the module names itself where a result says where it came from. Text, never a colour. */
   label: string
-  /** Places in the left rail this module offers to go to. */
-  destinations: Destination[]
+  /**
+   * Pages this module OFFERS for the top of the rail. Offering is all a module can do: the shell's
+   * `PINNED` list decides which few are always visible, because that tier holds pages that cut
+   * across every kind (Today, Review) and a module only knows about its own.
+   */
+  pages?: readonly ModulePage[]
+  /**
+   * THE ONE ENTRY this kind of thing gets in Things, and the only place a kind appears in the
+   * chrome. A module never adds rows to the rail: the rail would grow with every kind until it
+   * stopped being scannable. More surfaces for one kind (Birthdays) are tabs on the kind's page.
+   */
+  kind?: KindEntry
   /** The module's own pages, mounted by the shell under `/<id>/`. Paths are RELATIVE. */
   routes: RouteObject[]
   /** Where a captured line lands, if this module can take one. */
@@ -157,26 +167,10 @@ export type Widget = {
   Component: ComponentType
 }
 
-/** A row in the left rail. */
-export type Destination = {
-  /** Unique within the module. */
+/** A page a module owns that the shell may pin to the top of the rail. */
+export type ModulePage = {
+  /** Unique within the module; `PINNED` names it as `<module id>:<page id>`. */
   id: string
-  /**
-   * WHICH GROUP OF THE RAIL this row belongs in, by what the person is trying to do:
-   *
-   * - `now` (the default): what is in front of me today.
-   * - `things`: a KIND of object, listed. Each is where one of that kind is made.
-   * - `views`: a way of looking ACROSS the kinds. A view owns nothing and makes nothing.
-   *
-   * The module declares it because only the module knows what its page is FOR; the shell draws
-   * the groups.
-   */
-  zone?: 'now' | 'things' | 'views'
-  /**
-   * The row's place within its zone. Explicit, so the reading order is an editorial decision
-   * rather than an accident of which module was registered first.
-   */
-  order?: number
   /** Absolute path, inside the module's own namespace. */
   to: string
   label: string
@@ -188,6 +182,22 @@ export type Destination = {
    * nothing to say.
    */
   Count?: ComponentType
+}
+
+/** A kind of thing, as Things lists it: one row, whatever the kind. */
+export type KindEntry = {
+  /** The kind's name, plural: "People", "Meetings". */
+  label: string
+  /** Where the kind's own page is. */
+  to: string
+  /** The count in the kind's own words ("5 to read"), zero included. */
+  Count?: ComponentType
+  /** One line of what is current ("Next birthday: …"). Renders nothing when there is nothing. */
+  Status?: ComponentType
+  /** The id of the chord that goes here, so Things can show its key. */
+  chord?: string
+  /** Its place in Things. An editorial order, not registration order. */
+  order?: number
 }
 
 /**

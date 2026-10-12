@@ -15,6 +15,7 @@ import { Login } from './routes/Login'
 import { Calendar } from './routes/Calendar'
 import { ObjectPage } from './components/ObjectPage'
 import { Projects } from './routes/Projects'
+import { Things } from './routes/Things'
 import { Workbench } from './routes/Workbench'
 // IBM Plex Sans, self-hosted and LATIN SUBSET ONLY: no Google Fonts link, because this app is
 // private and self-hosted and has no business making a third-party request on every load. TWO
@@ -65,6 +66,8 @@ const router = createBrowserRouter([
       { path: '/calendar', element: <Calendar /> },
       { path: '/projects', element: <Projects /> },
       { path: '/projects/:id', element: <ObjectPage type="project" /> },
+      // Every kind of thing, one row each: the shell's, because it is about all the kinds at once.
+      { path: '/things', element: <Things /> },
       ...moduleRoutes(),
       ...MOVED.map(({ from, to }) => ({ path: from, element: <Moved to={to} /> })),
       { path: '*', element: <Navigate to={WORKBENCH_PATH} replace /> },

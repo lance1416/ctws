@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { birthdayCalendar, birthdaysKey, listBirthdays } from '../api/birthdays'
-import { searchPeople } from '../api/people'
+import { listPeople, peopleKey, searchPeople } from '../api/people'
 import { BirthdayRow } from '../components/BirthdayRow'
 import { PanelEmpty } from '../components/Panel'
-import { countdownPhrase } from '../dueAt'
+import { countdownPhrase, dayPhrase } from '../dueAt'
 import { Birthdays } from '../routes/Birthdays'
 import { People } from '../routes/People'
 import type { SearchHit, WorkspaceModule } from './contract'
@@ -86,14 +86,21 @@ function BirthdayCard() {
   )
 }
 
-/** The rail's count: how many birthdays the next week holds. Shares the page's cache entry. */
-function BirthdayCount() {
+/** Things' count for people: how many there are. The kind's name already says what of. */
+function PeopleCount() {
+  const people = useQuery({ queryKey: peopleKey(), queryFn: () => listPeople() })
+  if (!people.data) return null
+  return <span data-count>{people.data.length}</span>
+}
+
+/** Whose birthday is next, when anyone's is coming. */
+function NextBirthdayLine() {
   const view = useQuery({ queryKey: birthdaysKey(), queryFn: listBirthdays })
-  const count = view.data?.coming.length ?? 0
-  if (count <= 0) return null
+  const next = view.data ? [...view.data.coming, ...view.data.later][0] : undefined
+  if (!view.data || !next) return null
   return (
-    <span data-count className="ml-auto pl-1 text-xs text-fg-muted">
-      {count}
+    <span data-status>
+      Next birthday: {next.name}, {dayPhrase(next.day, view.data.today)}
     </span>
   )
 }
@@ -129,20 +136,15 @@ function usePeopleHits(query: string) {
 export const peopleModule: WorkspaceModule = {
   id: ID,
   label: 'People',
-  destinations: [
-    { id: 'list', to: `/${ID}`, label: 'People', zone: 'things', order: 30 },
-    // A VIEW, not a thing: it looks at people through their dates and makes nobody.
-    {
-      id: 'birthdays',
-      to: `/${ID}/birthdays`,
-      label: 'Birthdays',
-      zone: 'views',
-      // Between the calendar and the review: those two look forward and back, and whose birthday
-      // is next is the forward-looking one.
-      order: 15,
-      Count: BirthdayCount,
-    },
-  ],
+  // Birthdays is a view of people, so it is a tab on their page and not a second entry here.
+  kind: {
+    label: 'People',
+    to: `/${ID}`,
+    Count: PeopleCount,
+    Status: NextBirthdayLine,
+    chord: 'people',
+    order: 20,
+  },
   routes: [
     { index: true, element: <People /> },
     // Before `:id`, so a reader need not know that react-router ranks a static segment higher.

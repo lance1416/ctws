@@ -29,16 +29,23 @@ const ID = 'reading'
 /** The whole list, in one cache entry the page and the rail share. */
 const useAll = () => useQuery({ queryKey: readingKey(), queryFn: () => listReading() })
 
-/** The rail's count: what is actually waiting to be read, never the pile's total size. */
+/** Things' count for reading: what is actually waiting to be read, never the pile's size. */
 function ReadingCount() {
   const items = useAll()
-  const count = items.data?.filter((i) => i.status === 'todo' || i.status === 'reading').length ?? 0
-  if (count <= 0) return null
-  return (
-    <span data-count className="ml-auto pl-1 text-xs text-fg-muted">
-      {count}
-    </span>
-  )
+  if (!items.data) return null
+  const count = items.data.filter((i) => i.status === 'todo' || i.status === 'reading').length
+  return <span data-count>{count} to read</span>
+}
+
+/** How much of it belongs to no line of work yet: the reading that still needs a home. */
+function UnfiledLine() {
+  const unfiled = useQuery({
+    queryKey: readingKey({ unfiled: true }),
+    queryFn: () => listReading({ unfiled: true }),
+  })
+  const count =
+    unfiled.data?.filter((i) => i.status === 'todo' || i.status === 'reading').length ?? 0
+  return count > 0 ? <span data-status>{count} not in a project</span> : null
 }
 
 /**
@@ -156,9 +163,14 @@ function ReadingHeadline({ projectId }: { projectId: string }) {
 export const readingModule: WorkspaceModule = {
   id: ID,
   label: 'Reading',
-  destinations: [
-    { id: 'list', to: `/${ID}`, label: 'Reading', Count: ReadingCount, zone: 'things', order: 40 },
-  ],
+  kind: {
+    label: 'Reading',
+    to: `/${ID}`,
+    Count: ReadingCount,
+    Status: UnfiledLine,
+    chord: 'reading',
+    order: 40,
+  },
   routes: [
     { index: true, element: <Reading /> },
     // 一条读物没有自己的页：这条路渲染的是列表加它的那一层。

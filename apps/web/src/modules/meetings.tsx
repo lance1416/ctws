@@ -89,6 +89,41 @@ function splitEntryId(id: string): [string, string] {
   return [id.slice(0, 36), id.slice(37)]
 }
 
+/** Today's meetings, shared by Things' count and status line. */
+function useTodaysMeetings() {
+  const day = todayIn(useTimeZone())
+  return useQuery({
+    queryKey: meetingsKey({ from: day, to: day }),
+    queryFn: () => listMeetings({ from: day, to: day }),
+  })
+}
+
+/** Things' count for meetings: how many are today, zero included. */
+function MeetingsTodayCount() {
+  const today = useTodaysMeetings()
+  if (!today.data) return null
+  return <span data-count>{today.data.length} today</span>
+}
+
+/** The next one still to come today, on the account's clock. */
+function NextMeetingLine() {
+  const accountZone = useTimeZone()
+  const today = useTodaysMeetings()
+  const next = today.data?.find((m) => new Date(m.startsAt).getTime() > Date.now())
+  if (!next) return null
+  const at = new Intl.DateTimeFormat('en-US', {
+    timeZone: accountZone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(new Date(next.startsAt))
+  return (
+    <span data-status>
+      Next: {next.title} at {at}
+    </span>
+  )
+}
+
 /** THE WORKBENCH CARD: today's meetings, a question about the next eight hours. */
 function TodayMeetings() {
   const accountZone = useTimeZone()
@@ -156,7 +191,14 @@ function TodayMeetings() {
 export const meetingModule: WorkspaceModule = {
   id: ID,
   label: 'Meetings',
-  destinations: [{ id: 'list', to: `/${ID}`, label: 'Meetings', zone: 'things', order: 20 }],
+  kind: {
+    label: 'Meetings',
+    to: `/${ID}`,
+    Count: MeetingsTodayCount,
+    Status: NextMeetingLine,
+    chord: 'meetings',
+    order: 30,
+  },
   routes: [
     { index: true, element: <Meetings /> },
     // 一场会没有自己的页：这条路渲染的是列表加它的那一层（`Meetings` 从 URL 读开着的是哪一场）。

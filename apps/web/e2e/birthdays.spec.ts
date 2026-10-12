@@ -151,17 +151,23 @@ test('1440 下列表占两栏，索引在第三栏', async ({ page }) => {
   expect(list!.width).toBeGreaterThan(index!.width * 1.5)
 })
 
-test('rail 上有它，并且数的是未来一周', async ({ page }) => {
+test('People 页上的 Birthdays 一栏数的是未来一周', async ({ page }) => {
+  // Birthdays is a view of people, so it is a tab on their page and not a row in the rail.
   await registerFreshUser(page)
   await person(page, '今天的', { calendar: 'solar', year: 1990, ...monthDay(0) })
   await person(page, '很久以后的', { calendar: 'solar', year: 1990, ...monthDay(60) })
-  await page.goto('/today')
-  const row = page
-    .getByRole('navigation', { name: 'Main navigation' })
-    .getByRole('link', { name: /Birthdays/ })
-  await expect(row).toContainText('1')
-  await row.click()
-  await expect(page.getByRole('heading', { level: 1, name: 'Birthdays' })).toBeVisible()
+  await page.goto('/people')
+  const views = page.getByRole('navigation', { name: 'People views' })
+  await expect(views.getByRole('link', { name: 'All people' })).toHaveAttribute(
+    'aria-current',
+    'page',
+  )
+  const tab = views.getByRole('link', { name: /Birthdays/ })
+  await expect(tab.locator('[data-count]')).toHaveText('1')
+  await tab.click()
+  await expect(page).toHaveURL(/\/people\/birthdays$/)
+  await expect(tab).toHaveAttribute('aria-current', 'page')
+  await expect(page.getByRole('heading', { level: 1, name: 'People' })).toBeVisible()
 })
 
 test('人物页上生日是只读的派生值，改在一个地方', async ({ page }) => {
@@ -338,7 +344,8 @@ test('工作台上有一张卡，没人要提醒时说下一个是谁', async ({
   await expect(card.locator('[data-birthday-row]')).toHaveCount(1)
   await expect(card).toContainText('today')
   await card.getByRole('link', { name: 'See all' }).click()
-  await expect(page.getByRole('heading', { level: 1, name: 'Birthdays' })).toBeVisible()
+  await expect(page).toHaveURL(/\/people\/birthdays$/)
+  await expect(page.getByRole('heading', { level: 1, name: 'People' })).toBeVisible()
 })
 
 test('卡片空着时说的是没人要提醒，不是一周之内没人', async ({ page }) => {

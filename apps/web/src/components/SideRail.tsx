@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Fragment, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { createProject, listProjects } from '../api/projects'
 import { refreshProjects } from '../api/taskCache'
-import { railGroups, ZONE_LABEL } from '../modules/registry'
+import { pinnedPages } from '../modules/registry'
 import { QuickCapture } from './QuickCapture'
 import { railClass } from '../projectColor'
 import { useComposing } from '../composition'
@@ -16,9 +16,10 @@ import { useComposing } from '../composition'
  * a top bar has no room for numbers. The project list carries its open-task count and its
  * identity chip.
  *
- * The destinations are not written in here: each MODULE contributes its own, and the rail renders
- * whatever is registered. The project list below them is the shell's own -- the user's life is
- * organised by line of work, and a note about CTWS belongs to CTWS as much as a task does.
+ * The pinned pages are not written in here: the registry's `PINNED` names them, and a module only
+ * offers its pages. Kinds of thing never get a row of their own -- they are behind Things -- so the
+ * rail does not grow with the software. The project list is the shell's own and the only part that
+ * grows: the user's life is organised by line of work, and that list is theirs.
  *
  * Deliberately NOT a <ul>/<li>: the pages below render their own lists, and a second set of
  * listitems in the chrome would make "how many rows does this page have" unanswerable, for the
@@ -76,40 +77,41 @@ export function SideRail() {
         aria-label="Main navigation"
         className="flex flex-col gap-1 max-lg:flex-row max-lg:items-center max-lg:overflow-x-auto max-lg:px-4 max-lg:py-2 lg:gap-0"
       >
-        {/* THREE GROUPS AND THE PROJECTS, by what you are trying to do rather than by which
-          module owns a row: what is in front of me now, the kinds of thing I keep, and the ways
-          of looking across them. The first needs no name -- it is the top of the rail and the two
-          rows in it say what they are -- so it gets the hairline alone.
+        {/* THREE TIERS, each with a rule for what may enter it.
 
-          One hook per registered count, over a frozen module list: see MODULES on why the list
-          must not change at runtime. */}
-        {railGroups().map((group, at) => (
-          <Fragment key={group.zone}>
-            {at > 0 && <span aria-hidden="true" className="my-1.5 h-px bg-border-subtle lg:mx-2" />}
-            {ZONE_LABEL[group.zone] && (
-              <span className="hidden shrink-0 px-2.5 py-1 text-xs font-semibold text-fg-subtle lg:block">
-                {ZONE_LABEL[group.zone]}
-              </span>
-            )}
-            {group.rows.map(({ moduleId, id, to, label, end, Count }) => (
-              <NavLink
-                key={`${moduleId}:${id}`}
-                to={to}
-                end={end ?? false}
-                className={({ isActive }) =>
-                  `flex min-h-9 shrink-0 items-center gap-2 rounded-lg px-2.5 py-1 whitespace-nowrap ${
-                    isActive
-                      ? 'bg-surface-panel font-semibold text-fg'
-                      : 'text-fg-muted hover:text-fg'
-                  }`
-                }
-              >
-                <span>{label}</span>
-                {Count && <Count />}
-              </NavLink>
-            ))}
-          </Fragment>
+          The pinned pages cut across every kind and are organised by time and routine; the shell
+          picks them (`PINNED`) and there are never more than five. Every kind of thing sits behind
+          the single Things row, so a new kind adds a row THERE and nothing here. Only the project
+          list grows, and it is the person's own.
+
+          One hook per pinned count, over a frozen list: see MODULES on why it must not change at
+          runtime. */}
+        {pinnedPages().map(({ key, to, label, end, Count }) => (
+          <NavLink
+            key={key}
+            to={to}
+            end={end ?? false}
+            className={({ isActive }) =>
+              `flex min-h-9 shrink-0 items-center gap-2 rounded-lg px-2.5 py-1 whitespace-nowrap ${
+                isActive ? 'bg-surface-panel font-semibold text-fg' : 'text-fg-muted hover:text-fg'
+              }`
+            }
+          >
+            <span>{label}</span>
+            {Count && <Count />}
+          </NavLink>
         ))}
+        <span aria-hidden="true" className="h-3 shrink-0" />
+        <NavLink
+          to="/things"
+          className={({ isActive }) =>
+            `flex min-h-9 shrink-0 items-center gap-2 rounded-lg px-2.5 py-1 whitespace-nowrap ${
+              isActive ? 'bg-surface-panel font-semibold text-fg' : 'text-fg-muted hover:text-fg'
+            }`
+          }
+        >
+          Things
+        </NavLink>
 
         {/* The group label is the link to the full project page; the `+` beside it is the only
           other thing in this row, so there is still no label that merely looks clickable. */}

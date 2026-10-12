@@ -49,6 +49,24 @@ function TodayCount() {
   )
 }
 
+/** Things' count for tasks: how many are open across every line of work, zero included. */
+function OpenTaskCount() {
+  const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
+  if (!projects.data) return null
+  const open = projects.data.filter((p) => !p.archivedAt).reduce((n, p) => n + p.openTasks, 0)
+  return <span data-count>{open} open</span>
+}
+
+/** What is pressing among them, from Today's own list: what is late and what is planned. */
+function TaskStatusLine() {
+  const today = useQuery({ queryKey: ['today'], queryFn: listToday })
+  const late = today.data?.filter((t) => t.segment === 'overdue').length ?? 0
+  const planned = today.data?.filter((t) => t.segment === 'today').length ?? 0
+  const parts = [late > 0 && `${late} overdue`, planned > 0 && `${planned} planned for today`]
+  const line = parts.filter(Boolean).join(', ')
+  return line ? <span data-status>{line}</span> : null
+}
+
 /** This module's dated things: a plan day and a deadline day, both decided by the server. */
 function useTaskEntries(range: { from: string; to: string }) {
   const result = useQuery({
@@ -377,11 +395,20 @@ function ProjectTasks({ projectId, view }: { projectId: string; view: string }) 
 export const taskModule: WorkspaceModule = {
   id: ID,
   label: 'Tasks',
-  destinations: [
-    { id: 'today', to: at('today'), label: 'Today', end: true, Count: TodayCount, order: 20 },
-    // Done is a VIEW of Review, not a destination of its own: both answer what I did.
-    { id: 'review', to: at('review'), label: 'Review', end: false, zone: 'views', order: 20 },
+  pages: [
+    { id: 'today', to: at('today'), label: 'Today', end: true, Count: TodayCount },
+    // Done is a VIEW of Review, not a page of its own: both answer what I did.
+    { id: 'review', to: at('review'), label: 'Review', end: false },
   ],
+  // Tasks have no list page of their own yet: they are dealt with on Today and live in their
+  // projects, so that is where this kind's row goes.
+  kind: {
+    label: 'Tasks',
+    to: at('today'),
+    Count: OpenTaskCount,
+    Status: TaskStatusLine,
+    order: 10,
+  },
   routes: [
     { path: 'today', element: <Today /> },
     { path: 'completed', element: <Completed /> },
