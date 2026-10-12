@@ -1,17 +1,17 @@
 import type { Circle, PersonResponse } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { peopleKey, listPeople } from '../api/people'
 import { PersonDetail } from '../components/PersonDetail'
 import { PeopleList } from '../components/PeopleList'
-import { NewPersonDialog } from '../components/NewPersonDialog'
 import { NewPersonInput } from '../components/NewPersonInput'
 import { LIST_MEASURE } from '../rowLead'
 import { BUTTON } from '../components/buttonStyles'
-import { PeopleViews } from '../components/PeopleViews'
+import { PeopleHead } from '../components/PeopleViews'
 import { CIRCLE_LABELS } from '../components/BirthdayRow'
 import { useCrumbs } from '../components/Location'
+import { useForgetWhenGone } from '../recent'
 
 /**
  * PEOPLE.
@@ -33,35 +33,24 @@ export function People() {
   const { id: openId = null } = useParams()
   const navigate = useNavigate()
   const setOpenId = (next: string | null) => navigate(next ? `/people/${next}` : '/people')
-  const heading = useRef<HTMLHeadingElement>(null)
-  const [making, setMaking] = useState(false)
   const [circle, setCircle] = useState<Circle | null>(null)
 
   // Looked up by id rather than held: the open person has to follow the list's refetches, or an
   // edit made in the pane would leave the pane showing what it said before.
   const open = people.data?.find((c) => c.id === openId) ?? null
+  const gone = openId !== null && people.isSuccess && open === null
+  useForgetWhenGone('person', openId, gone)
 
   return (
     <>
-      <div className="flex items-center justify-between gap-3">
-        <h1 ref={heading} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
-          People
-        </h1>
-        {/* TWO WAYS IN, because there are two moments. The box takes a name when a name is all
-            you have; the button opens the form for when you are writing somebody down properly
-            and already know where they work and how to reach them. */}
-        <button type="button" onClick={() => setMaking(true)} className={BUTTON.secondary}>
-          New person
-        </button>
-      </div>
-      <PeopleViews />
+      <PeopleHead />
 
       <div className={`mt-4 ${LIST_MEASURE}`}>
         <NewPersonInput onCreated={(c: PersonResponse) => setOpenId(c.id)} />
       </div>
 
       {/* 链接指向的人已经不在了：说出来。静静地只剩一个列表，读起来像链接坏了。 */}
-      {openId !== null && people.isSuccess && open === null && (
+      {gone && (
         <p role="alert" className="mt-4 text-sm text-fg-muted">
           This person is not here any more.
         </p>
@@ -104,15 +93,6 @@ export function People() {
         </div>
       )}
 
-      {making && (
-        <NewPersonDialog
-          onClose={() => setMaking(false)}
-          onMade={(made) => {
-            setMaking(false)
-            setOpenId(made.id)
-          }}
-        />
-      )}
       {open && <PersonDetail person={open} onClose={() => setOpenId(null)} />}
     </>
   )

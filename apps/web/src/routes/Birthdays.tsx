@@ -1,15 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
-import { useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
 import { birthdaysKey, listBirthdays } from '../api/birthdays'
 import { BirthdayRow, CIRCLE_LABELS } from '../components/BirthdayRow'
-import { BUTTON } from '../components/buttonStyles'
 import { textbox } from '../components/formStyles'
-import { NewPersonDialog } from '../components/NewPersonDialog'
 import { Panel, PanelEmpty } from '../components/Panel'
 import { MONTHS } from '../dueAt'
 import type { Circle } from '@ctws/contracts'
-import { PeopleViews } from '../components/PeopleViews'
+import { PeopleHead } from '../components/PeopleViews'
 import { useCrumbs } from '../components/Location'
 
 /**
@@ -26,10 +23,7 @@ import { useCrumbs } from '../components/Location'
  */
 export function Birthdays() {
   useCrumbs([{ label: 'Things', to: '/things' }, { label: 'People' }])
-  const heading = useRef<HTMLHeadingElement>(null)
-  const navigate = useNavigate()
   const [find, setFind] = useState('')
-  const [making, setMaking] = useState(false)
   const [month, setMonth] = useState<number | null>(null)
   const [circle, setCircle] = useState<Circle | null>(null)
   const view = useQuery({ queryKey: birthdaysKey(), queryFn: listBirthdays })
@@ -49,16 +43,9 @@ export function Birthdays() {
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 ref={heading} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
-          People
-        </h1>
-        {total > 0 && (
-          <span data-birthday-count className="text-sm text-fg-subtle tabular-nums">
-            {total} {total === 1 ? 'person' : 'people'} · {coming.length} in the next week
-          </span>
-        )}
-        <span className="flex-1" />
+      <PeopleHead />
+
+      <div className="mt-4 flex flex-wrap items-center gap-3">
         <input
           value={find}
           onChange={(e) => setFind(e.target.value)}
@@ -67,14 +54,12 @@ export function Birthdays() {
           aria-label="Find a person"
           className={`w-60 bg-surface-panel ${textbox}`}
         />
-        {/* This lens makes nothing: the button opens the people module's own dialog, so a
-            person still has exactly one place to be born. */}
-        <button type="button" onClick={() => setMaking(true)} className={BUTTON.primary}>
-          New person
-        </button>
+        {total > 0 && (
+          <span data-birthday-count className="text-sm text-fg-subtle tabular-nums">
+            {total} {total === 1 ? 'person' : 'people'} · {coming.length} in the next week
+          </span>
+        )}
       </div>
-
-      <PeopleViews />
 
       {view.isError && (
         <p role="alert" className="mt-4 text-sm text-danger">
@@ -165,16 +150,6 @@ export function Birthdays() {
           </Panel>
         </div>
       </div>
-
-      {making && (
-        <NewPersonDialog
-          onClose={() => setMaking(false)}
-          onMade={(made) => {
-            setMaking(false)
-            navigate(`/people/${made.id}`)
-          }}
-        />
-      )}
     </>
   )
 }

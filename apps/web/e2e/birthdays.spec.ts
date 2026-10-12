@@ -387,3 +387,28 @@ test('提前量决定谁上卡片：只要当天的人，五天前不出现', as
   await page.goto('/people/birthdays')
   await expect(page.locator('[data-birthday-row]')).toHaveCount(2)
 })
+
+test('People and Birthdays share one page head', async ({ page }) => {
+  await registerFreshUser(page, '/people')
+  const head = async () => {
+    const make = page.getByRole('main').getByRole('button', { name: 'New person', exact: true })
+    await expect(make).toBeVisible()
+    return {
+      box: await make.boundingBox(),
+      fill: await make.evaluate((el) => getComputedStyle(el).backgroundColor),
+    }
+  }
+  const onPeople = await head()
+  await page
+    .getByRole('navigation', { name: 'People views' })
+    .getByRole('link', { name: /Birthdays/ })
+    .click()
+  await expect(page).toHaveURL(/\/people\/birthdays$/)
+  // The view has drawn, so the head being measured is this view's and not the one leaving.
+  await expect(page.getByRole('searchbox', { name: 'Find a person' })).toBeVisible()
+  expect(await head()).toEqual(onPeople)
+  // What only this view has sits in the view, under its tabs, not in the head they share.
+  const views = (await page.getByRole('navigation', { name: 'People views' }).boundingBox())!
+  const find = (await page.getByRole('searchbox', { name: 'Find a person' }).boundingBox())!
+  expect(find.y).toBeGreaterThanOrEqual(views.y + views.height)
+})

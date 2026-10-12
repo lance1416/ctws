@@ -90,7 +90,12 @@ function BirthdayCard() {
 function PeopleCount() {
   const people = useQuery({ queryKey: peopleKey(), queryFn: () => listPeople() })
   if (!people.data) return null
-  return <span data-count>{people.data.length}</span>
+  const n = people.data.length
+  return (
+    <span data-count>
+      {n} {n === 1 ? 'person' : 'people'}
+    </span>
+  )
 }
 
 /** Whose birthday is next, when anyone's is coming. */
