@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { allChords, kinds } from '../modules/registry'
 import { useCrumbs } from '../components/Location'
+import { KeyHint } from '../components/KeyHint'
 
 /**
  * THINGS: every kind of thing, one row each.
@@ -39,9 +40,9 @@ export function Things() {
                 )}
               </div>
               {key && (
-                <kbd className="mt-1 shrink-0 rounded border border-border-strong px-1.5 text-xs text-fg-subtle">
+                <KeyHint className="mt-1 shrink-0 rounded border border-border-strong px-1.5 text-xs text-fg-subtle">
                   g {key}
-                </kbd>
+                </KeyHint>
               )}
             </li>
           )

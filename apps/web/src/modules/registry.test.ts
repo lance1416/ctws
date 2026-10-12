@@ -68,6 +68,16 @@ describe("the rail's pinned pages", () => {
     expect(PINNED.length).toBeLessThanOrEqual(5)
   })
 
+  it('each name the chord that goes there, so its key can be shown beside it', () => {
+    const keys = new Map(allChords().map((c) => [c.id, c.key]))
+    expect(pinnedPages().map((p) => (p.chord ? keys.get(p.chord) : undefined))).toEqual([
+      'w',
+      't',
+      'c',
+      'r',
+    ])
+  })
+
   it('are chosen by the shell, not offered into place by a module', () => {
     // The fakes offer a page and are not in PINNED, so only the shell's own two remain.
     expect(pinnedPages([notes, files]).map((p) => p.label)).toEqual(['Workbench', 'Calendar'])

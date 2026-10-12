@@ -396,9 +396,9 @@ export const taskModule: WorkspaceModule = {
   id: ID,
   label: 'Tasks',
   pages: [
-    { id: 'today', to: at('today'), label: 'Today', end: true, Count: TodayCount },
+    { id: 'today', to: at('today'), label: 'Today', end: true, chord: 'today', Count: TodayCount },
     // Done is a VIEW of Review, not a page of its own: both answer what I did.
-    { id: 'review', to: at('review'), label: 'Review', end: false },
+    { id: 'review', to: at('review'), label: 'Review', end: false, chord: 'review' },
   ],
   // Tasks have no list page of their own yet: they are dealt with on Today and live in their
   // projects, so that is where this kind's row goes.

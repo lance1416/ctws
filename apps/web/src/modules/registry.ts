@@ -62,8 +62,8 @@ const SHELL_CHORDS: Chord[] = [
 
 /** The shell's own pages: they are about every kind at once, so no module owns them. */
 export const SHELL_PAGES: readonly ModulePage[] = [
-  { id: 'workbench', to: WORKBENCH_PATH, label: 'Workbench', end: true },
-  { id: 'calendar', to: '/calendar', label: 'Calendar' },
+  { id: 'workbench', to: WORKBENCH_PATH, label: 'Workbench', end: true, chord: 'workbench' },
+  { id: 'calendar', to: '/calendar', label: 'Calendar', chord: 'calendar' },
 ]
 
 /**

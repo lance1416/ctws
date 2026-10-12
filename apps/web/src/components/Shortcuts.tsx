@@ -1,3 +1,4 @@
+import { KeyHint } from './KeyHint'
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -100,9 +101,9 @@ export function Shortcuts({
       {/* Below 1024 search is a tab in the bottom bar, and the key list is for keyboards. */}
       <button type="button" onClick={() => setSearch(true)} className={`max-lg:hidden ${button}`}>
         Search
-        <kbd aria-hidden="true" className={hint}>
+        <KeyHint hidden className={hint}>
           f
-        </kbd>
+        </KeyHint>
       </button>
       {capture}
       <button

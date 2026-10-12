@@ -79,3 +79,45 @@ test('People says whose birthday is next, as a countdown', async ({ page }) => {
     'Next birthday: 妈妈 in 3 days',
   )
 })
+
+test('People counts in its own words, as every other kind does', async ({ page }) => {
+  await registerFreshUser(page, '/things')
+  await expect(kind(page, 'People').locator('[data-count]')).toHaveText('0 people')
+  const res = await page.request.post('/api/v1/people', { headers: WEB, data: { name: '陈颖' } })
+  expect(res.status(), await res.text()).toBe(201)
+  await page.reload()
+  await expect(kind(page, 'People').locator('[data-count]')).toHaveText('1 person')
+})
+
+test('key hints are shown only where the keys work', async ({ page }) => {
+  await registerFreshUser(page, '/things')
+  await expect(kind(page, 'People').locator('kbd')).toBeVisible()
+
+  // With single-key shortcuts switched off, a `g n` beside People would be a promise the page
+  // does not keep.
+  await page.evaluate(() => localStorage.setItem('ctws.shortcuts.enabled', '0'))
+  await page.reload()
+  await expect(kind(page, 'People')).toBeVisible()
+  await expect(page.locator('main kbd')).toHaveCount(0)
+  await expect(page.getByRole('banner').locator('kbd', { hasText: '/' })).toHaveCount(0)
+  await page.getByRole('banner').getByRole('button', { name: 'Search' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Search' })
+  await expect(dialog.getByRole('option', { name: /^People/ })).toBeVisible()
+  await expect(dialog.locator('kbd')).toHaveCount(0)
+})
+
+test('on a phone, where there is no keyboard to press them, no key hints show', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await registerFreshUser(page, '/things')
+  await expect(kind(page, 'People')).toBeVisible()
+  await expect(page.locator('kbd:visible')).toHaveCount(0)
+  await page
+    .getByRole('navigation', { name: 'Main navigation' })
+    .getByRole('button', { name: 'Search' })
+    .click()
+  const dialog = page.getByRole('dialog', { name: 'Search' })
+  await expect(dialog.getByRole('option', { name: /^People/ })).toBeVisible()
+  await expect(dialog.locator('kbd:visible')).toHaveCount(0)
+})

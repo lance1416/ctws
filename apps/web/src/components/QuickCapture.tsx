@@ -1,3 +1,4 @@
+import { KeyHint } from './KeyHint'
 import { useMutation } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
@@ -104,14 +105,17 @@ export function QuickCapture() {
           aria-label="Capture"
           className={`w-full bg-surface-panel pr-8 disabled:opacity-50 ${textbox}`}
         />
-        <kbd
-          aria-hidden="true"
+        <KeyHint
+          hidden
           className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border border-border-subtle px-1 text-xs leading-5 text-fg-subtle"
         >
           /
-        </kbd>
+        </KeyHint>
       </div>
-      <div className="absolute top-full right-0 z-40 mt-1 flex w-max max-w-[20rem] flex-col empty:hidden">
+      {/* Under the box, right-aligned to it. Below 640 the box is too near the left edge for that:
+          a long project name would run off the screen, so the message spans the width under the
+          header instead. */}
+      <div className="absolute top-full right-0 z-40 mt-1 flex w-max max-w-[20rem] flex-col empty:hidden max-sm:fixed max-sm:inset-x-4 max-sm:top-14 max-sm:mt-0 max-sm:w-auto max-sm:max-w-none">
         {missing && (
           <p
             role="alert"

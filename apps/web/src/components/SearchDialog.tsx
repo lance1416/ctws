@@ -1,3 +1,4 @@
+import { KeyHint } from './KeyHint'
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { allChords, kinds, pinnedPages, searchProviders } from '../modules/registry'
@@ -36,7 +37,7 @@ const GROUP_LABEL: Partial<Record<Row['group'], string>> = { recent: 'Recent', p
 function places(): Row[] {
   const keys = new Map(allChords().map((c) => [c.id, c.key]))
   const all = [
-    ...pinnedPages().map((p) => ({ label: p.label, to: p.to, chord: p.id })),
+    ...pinnedPages().map((p) => ({ label: p.label, to: p.to, chord: p.chord })),
     { label: 'Things', to: '/things', chord: undefined },
     ...kinds().map((k) => ({ label: k.label, to: k.to, chord: k.chord })),
   ]
@@ -337,9 +338,9 @@ function SearchRow({
           {row.meta && <span className="truncate text-sm text-fg-muted">{row.meta}</span>}
         </span>
         {row.hint && (
-          <kbd className="mt-0.5 shrink-0 rounded border border-border-subtle px-1.5 text-xs leading-5 text-fg-subtle">
+          <KeyHint className="mt-0.5 shrink-0 rounded border border-border-subtle px-1.5 text-xs leading-5 text-fg-subtle">
             {row.hint}
-          </kbd>
+          </KeyHint>
         )}
       </li>
     </>

@@ -176,6 +176,8 @@ export type ModulePage = {
   label: string
   /** NavLink's exact match, for a path that is a prefix of another. */
   end?: boolean
+  /** The id of the chord that goes here, so search can show its key. */
+  chord?: string
   /**
    * The count beside the label. A COMPONENT rather than a number, because the count is the
    * module's own query and the rail must not know which one. It renders nothing when there is
