@@ -72,7 +72,8 @@ lunar, leap months included; the year may be left out, because knowing the day a
 the normal case; the hour can be recorded too. Each person carries how early to be told: a week,
 three days, a day, or the day itself.
 
-One page answers whose birthday is coming, nearest first. Birthdays also show up in the calendar.
+Birthdays is a view of People that answers whose birthday is coming, nearest first. Birthdays also
+show up in the calendar.
 
 A date that does not exist is refused before it is stored, and the refusal says why — "there is no
 leap fourth month this year", not "invalid input". Hometown and city are chosen from a real list of
@@ -93,10 +94,21 @@ post. Finished reading folds away, and the count stays visible: it is the way ba
 
 ## The pages that cut across
 
+**Getting around.** The header says where you are, and holds what works from every page: search,
+the capture box, the list of keys and the account. The rail on the left holds the pages that cut
+across every kind (Workbench, Today, Calendar, Review), then Things, then your projects. A kind of
+thing never gets a row of its own there, so the project list is the only part of the rail that
+grows. On a phone, five tabs at the bottom take the rail's place: Workbench, Today, Projects,
+Calendar and Search.
+
+**Things** lists every kind of thing, one row each, with how many there are, what is current, and
+the key that goes straight there. A kind with nothing in it is listed all the same.
+
 **One capture box.** Everything is written down in the same place. A link lands in Reading, a
-sentence lands in the Inbox, and the box says where it went. It is in reach from every page.
+sentence lands in the Inbox, and the box says where it went. It sits in the header of every page.
 
 **One search box.** One query across everything, and each result says what kind of thing it is.
+Before anything is typed it lists what was opened lately and every place you can go.
 
 **Today** answers what to move next. Three parts: what is in progress, what is planned for today,
 and what is overdue. When one thing is in progress it is the focus of the page; when several are,
@@ -140,9 +152,10 @@ around only moves the design decision onto the person using the tool.
 
 ## Room for the next kind of thing
 
-There are five kinds of thing today and there will be more. Adding one means it appears in the
-rail, takes a captured line, turns up in search, hangs a block on a project page, hands its dates
-to the calendar and puts a card on the workbench — without the kinds already there being touched.
+There are five kinds of thing today and there will be more. Adding one means it takes a row in
+Things, takes a captured line, turns up in search, hangs a block on a project page, hands its dates
+to the calendar and puts a card on the workbench — without the kinds already there being touched,
+and without the header, the rail or the phone's tabs changing.
 
 The other direction holds too: none of those shared surfaces may serve one kind of thing only. A
 design that works only because the thing is a task has mistaken a part for the whole.

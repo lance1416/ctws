@@ -15,7 +15,7 @@ const GROUPS: { title: string; keys: [string, string][] }[] = [
     title: 'Anywhere',
     keys: [
       ['/', 'Jump to the capture box'],
-      ['f', 'Search tasks across every project'],
+      ['f', 'Search, or go to a page'],
       ['?', 'This list of shortcuts'],
       // The jump chords come from the key table, so a module that adds one cannot add it
       // without the help overlay saying so -- an undiscoverable key is no key at all.
