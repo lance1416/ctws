@@ -1,5 +1,5 @@
 import type { CalendarEntry, Circle } from '@ctws/contracts'
-import { factsOf, nextOccurrence, type Birthday } from '@ctws/core'
+import { factsOf, type Kept, nextOccurrence, type Birthday } from '@ctws/core'
 import { and, asc, eq, isNotNull, isNull } from 'drizzle-orm'
 import type { Queryable } from '../db/client'
 import { contacts } from '../db/schema'
@@ -28,7 +28,8 @@ export type BirthdayRow = {
   turns: number | null
   /** Only for someone tracked by the lunar calendar: for everyone else it is trivia that drifts. */
   lunarDate: string | null
-  kept: string[]
+  /** Which fallbacks moved the day, in `@ctws/core`'s own words -- never a loose string. */
+  kept: Kept[]
   remindLead: number
 }
 
