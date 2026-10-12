@@ -1,3 +1,4 @@
+import { keptNote, nextOccurrence, type Birthday } from '@ctws/core'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { listBirthdays } from '../src/contacts/birthdays'
@@ -225,16 +226,26 @@ describe('GET /contacts/birthdays/preview', () => {
   })
 
   /**
-   * 下一次从「今天」算，所以这条的 `kept` 取决于日历：闰六月的年份很稀（2017、2025、2036），
-   * 而下一次总在一年之内，所以从 2026 到 2036 这条都成立。
+   * 哪一条回退会触发，取决于「今天」落在哪一年：闰六月的年份是 2017 / 2025 / 2036 …，而下一次总在
+   * 一年之内，所以在有闰六月的那些年里这个人过的是真的闰六月，没有回退。写成 `toContain('leap-month')`
+   * 的那个版本因此会在 2025 年前八个月、以及 2036 年前八个月变红 —— 和它要证的事无关。
+   *
+   * 所以这里钉的是路由的活：给它一个闰月生日，它得用账户的「今天」走同一套库，并把整组答案（哪一天、
+   * 按哪条回退、那句话）原样送上线。哪一年走哪条分支、话怎么说，由
+   * `packages/core/src/birthday.test.ts` 在固定的「今天」上逐条钉死。
    */
   it('闰月输入把回退说出来', async () => {
     const ctx = await setup()
+    const today = (await view(ctx)).today
+    const born: Birthday = { calendar: 'lunar', year: 2017, month: 6, day: 15, leapMonth: true }
     const res = await preview(ctx, 'calendar=lunar&year=2017&month=6&day=15&leap=true')
     expect(res.statusCode, res.body).toBe(200)
     const body = res.json()
     expect(body.lunarDate).toBe('农历闰六月十五')
-    expect(body.next.kept).toContain('leap-month')
+    const next = nextOccurrence(born, today)
+    expect(body.next.day).toBe(next.day)
+    expect(body.next.kept).toEqual(next.kept)
+    expect(body.next.keptNote).toBe(keptNote(born, next))
   })
 
   it('没有年份的农历输入没有星座', async () => {
@@ -264,22 +275,30 @@ describe('GET /contacts/birthdays/preview', () => {
 })
 
 describe('被挪动的日子', () => {
+  /**
+   * 那句话是库写的，这里钉的是它原样走到了线上。话的内容和哪条回退该说话，在
+   * `packages/core/src/birthday.test.ts` 里按固定的「今天」逐条钉死；这里不再写死正则，因为一个
+   * 闰六月生日在有闰六月的年份根本没被挪过，那条正则会在 2036 年起变红。
+   */
   it('回退带着一句写给人看的话，没挪过就是 null', async () => {
     const ctx = await setup()
+    const today = (await view(ctx)).today
+    const born: Birthday = { calendar: 'lunar', year: 2017, month: 6, day: 15, leapMonth: true }
     const moved = await ctx.app.inject({
       method: 'GET',
       url: '/api/v1/contacts/birthdays/preview?calendar=lunar&year=2017&month=6&day=15&leap=true',
       headers: ctx.authed,
     })
     expect(moved.statusCode, moved.body).toBe(200)
-    // 具体那句话在 `@ctws/core` 的单测里按固定的「今天」钉住；这里钉的是它确实走到了线上。
-    expect(moved.json().next.keptNote).toMatch(/^No 闰六月 in \d{4}, so it is kept on 六月十五\.$/)
+    expect(moved.json().next.keptNote).toBe(keptNote(born, nextOccurrence(born, today)))
 
+    // 公历四月十五每一年都在，所以这一半不靠任何年份：没挪过就是 null，永远。
     const still = await ctx.app.inject({
       method: 'GET',
       url: '/api/v1/contacts/birthdays/preview?calendar=solar&year=1996&month=4&day=15',
       headers: ctx.authed,
     })
+    expect(still.json().next.kept).toEqual([])
     expect(still.json().next.keptNote).toBeNull()
   })
 })
