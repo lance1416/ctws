@@ -154,10 +154,7 @@ export function BirthdayFields({ person }: { person: PersonResponse }) {
       </Field>
 
       {open && b && (
-        <div
-          data-birthday-more
-          className="col-span-full rounded-lg border border-rule-strong bg-float p-3"
-        >
+        <div data-birthday-more className="col-span-full rounded-md border border-rule-strong p-3">
           <BirthdayRead birthday={b} />
         </div>
       )}
@@ -338,7 +335,7 @@ export function BirthdayEditor({
                 if (c === 'solar') setLeapMonth(false)
               }}
               className={`h-[34px] px-3.5 text-sm ${
-                calendar === c ? 'bg-float font-semibold text-ink' : 'text-ink-muted'
+                calendar === c ? 'bg-select font-semibold text-ink' : 'text-ink-muted'
               }`}
             >
               {c === 'solar' ? 'Solar' : 'Lunar'}

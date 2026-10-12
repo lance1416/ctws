@@ -155,7 +155,7 @@ export function PersonFields({
           )}
         </div>
         {person.circle && (
-          <span className="shrink-0 rounded-full border border-rule bg-float px-2.5 py-1 text-xs text-ink-muted">
+          <span className="shrink-0 rounded-full border border-rule px-2.5 py-1 text-xs text-ink-muted">
             {CIRCLE_LABELS[person.circle]}
           </span>
         )}
@@ -599,7 +599,7 @@ function PersonForm({
             </button>
           </Field>
           {pickingDay && (
-            <div className="col-span-full rounded-lg border border-rule-strong bg-float p-3">
+            <div className="col-span-full rounded-md border border-rule-strong p-3">
               <BirthdayEditor
                 birthday={person.birthday}
                 onChange={(draft, refused) => {

@@ -198,13 +198,22 @@ test('the tree is a panel spanning two columns and the detail is the third, at 1
   // claim is unchanged: the OTHER row's task is now in the same pane, with no closing step in
   // between.
   await expect(dialog.locator('[data-detail-title]')).toHaveText('旁边的任务')
-  // ...and the detail wears the page's own panel surface rather than a chrome plane, which is what
-  // makes it read as part of the page instead of a form bolted to the window's edge.
-  const [paneBg, panelBg] = await Promise.all([
+  // ...and the detail is a sheet laid over the page -- the `float` surface -- while the tree's
+  // section is no box at all, so the one thing that floats is the one thing that looks it.
+  const [paneBg, panelBg, float] = await Promise.all([
     dialog.evaluate((el) => getComputedStyle(el).backgroundColor),
     treePanel.evaluate((el) => getComputedStyle(el).backgroundColor),
+    page.evaluate(() => {
+      const probe = document.createElement('div')
+      probe.style.backgroundColor = 'var(--color-float)'
+      document.body.appendChild(probe)
+      const c = getComputedStyle(probe).backgroundColor
+      probe.remove()
+      return c
+    }),
   ])
-  expect(paneBg).toBe(panelBg)
+  expect(paneBg).toBe(float)
+  expect(panelBg).toBe('rgba(0, 0, 0, 0)')
 })
 
 /**

@@ -6,6 +6,7 @@ import { Panel, PanelEmpty } from '../components/Panel'
 import { useProjectRail } from '../projectColor'
 import { moduleWidgets } from '../modules/registry'
 import { useCrumbs } from '../components/Location'
+import { useGround } from '../components/ground'
 
 /**
  * THE WORKBENCH -- THE SHELL'S OWN FRONT PAGE, and the first surface that is nobody's module.
@@ -20,6 +21,8 @@ import { useCrumbs } from '../components/Location'
  */
 export function Workbench() {
   useCrumbs([{ label: 'Workbench' }])
+  // The one page that is a desk: its cards are tiles of paper on it.
+  useGround('desk')
   const heading = useRef<HTMLHeadingElement>(null)
   const widgets = moduleWidgets()
 
@@ -39,6 +42,7 @@ export function Workbench() {
         {widgets.map(({ moduleId, id, label, to, Component }) => (
           <Panel
             key={`${moduleId}:${id}`}
+            variant="tile"
             label={label}
             action={to ? <SeeAll to={to} /> : undefined}
           >
@@ -74,7 +78,7 @@ function ProjectsWidget() {
   const rows = (projects.data ?? []).filter((p) => !p.archivedAt)
 
   return (
-    <Panel label="Projects" action={<SeeAll to="/projects" />}>
+    <Panel variant="tile" label="Projects" action={<SeeAll to="/projects" />}>
       {projects.isError && (
         <p role="alert" className="px-2 py-1.5 text-sm text-danger">
           Couldn't load projects

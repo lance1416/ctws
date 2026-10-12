@@ -109,20 +109,19 @@ export function DetailPane({
         aria-label={label}
         data-detail-mode={wide ? 'pane' : 'overlay'}
         onKeyDown={onKeyDown}
-        // In the column the panel is inset by the grid's own gutter, so the 16px is added to the
-        // top as well -- a panel flush with the top bar but with air on three sides would read as
-        // a sheet that had slid down out of it.
-        style={{ top: wide ? top + 16 : top }}
+        // 12px under the header as well as in from the window's edges, in both modes: a sheet flush
+        // with the header but with air on three sides would read as having slid down out of it.
+        style={{ top: top + 12 }}
         // A COLUMN, so the one irreversible action (`DangerZone`, `mt-auto`) can be pushed to the
         // pane's floor when what is above it is short, instead of hanging under the last field.
         className={`fixed z-20 flex flex-col overflow-y-auto p-5 text-ink focus:outline-none ${
-          // A COLUMN floats beside the page in its right-hand track: a `float`, lifted, so it reads
-          // as a sheet laid on the desk rather than a form bolted to the window's edge. Its 22rem
-          // plus the two 16px gutters is the 24rem track Layout takes out of the grid.
-          // A LAYER is above the page: flush with the edges, a `float`, scrim beneath.
-          wide
-            ? 'right-4 bottom-4 w-[22rem] rounded-xl border border-rule bg-float shadow-float'
-            : 'right-0 bottom-0 w-full max-w-md border-l border-rule bg-float max-lg:bottom-16'
+          // THE SHEET, the same object in both modes: a `float`, 10px round, lifted, 12px in from
+          // every edge it is near. As a COLUMN it sits in the right-hand track Layout takes out of
+          // the grid (22rem inside 24rem); as a LAYER it is over the page with the scrim beneath,
+          // and below 1024 it stops 12px above the tab bar rather than under it.
+          `right-3 bottom-3 rounded-[10px] bg-float shadow-float ${
+            wide ? 'w-[22rem]' : 'w-[calc(100%-1.5rem)] max-w-md max-lg:bottom-19'
+          }`
         }`}
       >
         {children}

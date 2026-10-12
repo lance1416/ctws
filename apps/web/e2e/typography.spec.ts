@@ -150,7 +150,10 @@ test('the scale follows the reader root font size: size AND leading, as a pair',
     h1: { size: '24px', line: '32px' },
     title: { size: '16px', line: '24px' },
     meta: { size: '14px', line: '22px' },
-    panel: { size: '20px', line: '28px' },
+    // A section's heading is body size in semibold: with no box round it, the heading is the
+    // only thing that says where a section starts, and a 20px heading over every block made a
+    // page of shouting.
+    panel: { size: '16px', line: '24px' },
     caption: { size: '12px', line: '20px' },
   })
 
@@ -163,7 +166,7 @@ test('the scale follows the reader root font size: size AND leading, as a pair',
     h1: { size: '30px', line: '40px' },
     title: { size: '20px', line: '30px' },
     meta: { size: '17.5px', line: '27.5px' },
-    panel: { size: '25px', line: '35px' },
+    panel: { size: '20px', line: '30px' },
     caption: { size: '15px', line: '25px' },
   })
 

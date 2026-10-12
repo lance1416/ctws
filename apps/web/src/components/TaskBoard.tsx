@@ -45,7 +45,7 @@ function Card({ task, parentTitle }: { task: TaskResponse; parentTitle: string |
         {...attributes}
         type="button"
         data-board-card={task.id}
-        className={`w-full rounded-lg border border-rule bg-float px-2.5 py-2 text-left hover:border-rule-strong ${
+        className={`w-full rounded-[10px] border border-transparent bg-sheet px-2.5 py-2 text-left hover:border-rule-strong ${
           isDragging ? 'opacity-40' : ''
         }`}
       >

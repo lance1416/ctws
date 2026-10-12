@@ -114,7 +114,7 @@ export function TriageControl({ groupLabel, triggerLabel, sections, onRan }: Pro
           }}
           // `w-max` so the clusters stay on one line where there is room, capped to the viewport
           // so a narrow phone wraps them instead of growing a horizontal scrollbar.
-          className="absolute top-full right-0 z-20 mt-1 flex w-max max-w-[calc(100vw-2rem)] flex-col gap-1 rounded-md border border-rule-strong bg-float p-2 text-sm"
+          className="absolute top-full right-0 z-20 mt-1 flex w-max max-w-[calc(100vw-2rem)] flex-col gap-1 rounded-[10px] bg-float p-2 text-sm shadow-float"
         >
           {sections.map((section) => (
             <div

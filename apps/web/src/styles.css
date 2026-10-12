@@ -33,8 +33,8 @@
    Dark layers by LIGHTNESS and uses no shadows: desk < chrome < sheet < float, a few percent a
    step, because a shadow on a near-black ground is invisible anyway. Light cannot -- sheet and
    float are both white paper -- so a floating thing is lifted by `shadow-float`: one hairline ring
-   and one soft fall. In dark that token is nothing, so a floating thing says `shadow-float` once
-   and is right in both schemes.
+   and one soft fall. In dark the same token is a 1px `rule` edge and no fall, so a floating thing
+   says `shadow-float` once and is right in both schemes.
 
    THE ACCENT IS INK. There is no blue: the primary fill, the focus ring, the selected tab and a
    link are all `ink`, and a link is told from text by its underline rather than its hue. Colour is
@@ -258,8 +258,14 @@
      it is meant to dim. A scrim has to darken in both schemes. */
   --color-scrim: rgb(26 29 35 / 0.32);
   /* The lift under a floating thing: a hairline ring, so its edge is there even on white, and
-     one soft fall. Dark replaces it with nothing (see the note at the top). */
-  --shadow-float: 0 0 0 1px rgb(26 29 35 / 0.06), 0 16px 40px -12px rgb(26 29 35 / 0.22);
+     one soft fall. Dark swaps the fall for a 1px `rule` edge (see the note at the top).
+
+     THROUGH A VARIABLE, because Tailwind writes a shadow token's VALUE into the utility at build
+     time: `shadow-float` compiled to the light shadow itself, so a dark block redefining
+     `--shadow-float` changed nothing and every float in dark wore the light shadow. The utility
+     now holds `var(--float-lift)`, which each scheme sets. */
+  --shadow-float: var(--float-lift);
+  --float-lift: 0 0 0 1px rgb(26 29 35 / 0.06), 0 16px 40px -12px rgb(26 29 35 / 0.22);
 }
 
 /*
@@ -330,8 +336,8 @@
     --color-project-5: #006895;
     --color-project-6: #835900;
     --color-scrim: rgb(5 6 8 / 0.62);
-    /* No shadows in dark: the layering is done by surface lightness. */
-    --shadow-float: 0 0 #0000;
+    /* No fall in dark: the layering is done by surface lightness, and a float's edge is a rule. */
+    --float-lift: 0 0 0 1px var(--color-rule);
   }
 }
 
@@ -390,8 +396,8 @@
   --color-project-5: #006895;
   --color-project-6: #835900;
   --color-scrim: rgb(5 6 8 / 0.62);
-  /* No shadows in dark: the layering is done by surface lightness. */
-  --shadow-float: 0 0 #0000;
+  /* No fall in dark: the layering is done by surface lightness, and a float's edge is a rule. */
+  --float-lift: 0 0 0 1px var(--color-rule);
 }
 
 /* Native controls (date pickers, scrollbars) follow the scheme too. */

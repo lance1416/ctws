@@ -15,6 +15,12 @@
  *
  * `inline` is the exception that proves the size: a control that sits INSIDE a row or a field,
  * where a 36px button would push the line apart.
+ *
+ * RADIUS BY ROLE, across the app -- the shape says what kind of thing it is:
+ * - 0: structure. Sections, rows, a row's hover.
+ * - 6px (`rounded-md`): controls. Buttons, fields, chips.
+ * - 10px: floating things (the sheet, menus, dialogs, popovers) and the Workbench's tiles.
+ * - full: markers and avatars.
  */
 /**
  * A LINK IN RUNNING TEXT: ink, told from the words round it by its underline, never by a hue --
@@ -26,13 +32,13 @@ export const LINK =
 
 export const BUTTON = {
   primary:
-    'h-9 rounded-lg bg-ink px-3 text-sm font-semibold text-on-ink hover:opacity-90 disabled:opacity-50',
+    'h-9 rounded-md bg-ink px-3 text-sm font-semibold text-on-ink hover:opacity-90 disabled:opacity-50',
   secondary:
-    'h-9 rounded-lg border border-rule-strong px-3 text-sm text-ink hover:bg-hover disabled:opacity-50',
+    'h-9 rounded-md border border-rule-strong px-3 text-sm text-ink hover:bg-hover disabled:opacity-50',
   quiet:
-    'h-9 rounded-lg px-2.5 text-sm text-ink-muted hover:bg-hover hover:text-ink disabled:opacity-50',
+    'h-9 rounded-md px-2.5 text-sm text-ink-muted hover:bg-hover hover:text-ink disabled:opacity-50',
   destructive:
-    'h-9 rounded-lg bg-danger px-3 text-sm font-semibold text-on-danger hover:opacity-90 disabled:opacity-50',
+    'h-9 rounded-md bg-danger px-3 text-sm font-semibold text-on-danger hover:opacity-90 disabled:opacity-50',
   inline: 'rounded-md px-2 py-1 text-sm text-ink-muted hover:bg-hover hover:text-ink',
   /** The same size, as a link: an offer to add something, not a command. */
   link: `rounded-md px-2 py-1 text-sm ${LINK} hover:bg-hover`,

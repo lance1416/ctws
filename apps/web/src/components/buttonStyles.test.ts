@@ -19,7 +19,8 @@ describe('the button vocabulary', () => {
   it('gives the standalone tones one height and one radius', () => {
     for (const tone of ['primary', 'secondary', 'quiet', 'destructive'] as const) {
       expect(BUTTON[tone], tone).toContain('h-9')
-      expect(BUTTON[tone], tone).toContain('rounded-lg')
+      // A control's radius: 6px, by the role table above `BUTTON`.
+      expect(BUTTON[tone], tone).toContain('rounded-md')
     }
   })
 

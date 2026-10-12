@@ -149,7 +149,7 @@ export function Modal({
                 initialFocus.current?.focus()
               })
             }
-            className={`h-fit w-full max-w-[68ch] border border-rule-strong bg-float ${className}`}
+            className={`h-fit w-full max-w-[68ch] rounded-[10px] bg-float shadow-float ${className}`}
           >
             <div className="flex items-center justify-between border-b border-rule px-5 py-3">
               {/* Radix renders this as the h2 it was, and wires `aria-labelledby` to it -- so the

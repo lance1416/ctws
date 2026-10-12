@@ -7,11 +7,10 @@ import { LAYER } from './layers'
  * is how a menu ended up painting underneath the pane that opened it.
  */
 export const MENU_SURFACE =
-  `${LAYER.menu} max-h-80 min-w-36 overflow-y-auto rounded-xl border border-rule ` +
-  'bg-float p-1 shadow-float'
+  `${LAYER.menu} max-h-80 min-w-36 overflow-y-auto rounded-[10px] ` + 'bg-float p-1 shadow-float'
 
 const MENU_ROW =
-  'flex h-9 min-w-0 cursor-default items-center gap-2 rounded-lg px-2 text-sm outline-none'
+  'flex h-9 min-w-0 cursor-default items-center gap-2 rounded-md px-2 text-sm outline-none'
 
 /** One row of a menu. Five menus had four heights between them before this was shared. */
 export const MENU_ITEM = `${MENU_ROW} text-ink data-[highlighted]:bg-hover`

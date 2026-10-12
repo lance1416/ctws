@@ -3,17 +3,15 @@ import type { ReactNode } from 'react'
 /**
  * A panel: one question, one block.
  *
- * The workbench is made of these, and their arrangement is fixed by design: there is no drag, no
- * resize and no "add panel" control, because one user has one taste and a free grid only moves the
- * design decision onto the person using the tool.
- *
  * It is a SHELL piece, not the task module's, for the same reason `EmptyState` is: a second
- * module's workbench block has to look like this one or the page stops being one surface.
+ * module's block has to look like this one or the page stops being one surface.
  *
- * Figure and ground are done in two different ways here, which is the whole point of the token
- * pair (styles.css): in light the panel is white paper on a tinted ground with one hair of
- * shadow; in dark there is no shadow at all and the panel is simply a lighter plane than the
- * ground it sits on. `bg-sheet` and its rule say both at once.
+ * TWO KINDS, and neither is a card:
+ * - `section`, the default: a part of a page. No box at all -- no fill, edge, radius or shadow.
+ *   Its heading is the only thing that says where it starts, which is why every block on a page
+ *   no longer looks the same as every other.
+ * - `tile`: a card on the Workbench's desk. Paper on the desk, rounded, and still no edge or
+ *   shadow -- the step from desk to sheet is the edge.
  */
 export function Panel({
   label,
@@ -22,6 +20,7 @@ export function Panel({
   action,
   tabs,
   children,
+  variant = 'section',
   className = '',
 }: {
   /** The panel's accessible name, and its visible heading unless `heading` replaces it. */
@@ -35,16 +34,21 @@ export function Panel({
   /** The block's views, as tabs. Fewer than two draws nothing. */
   tabs?: ReactNode
   children: ReactNode
+  variant?: 'section' | 'tile'
   className?: string
 }) {
   return (
     <section
       aria-label={label}
       data-panel={label}
-      className={`flex min-w-0 flex-col rounded-xl border border-rule bg-sheet ${className}`}
+      className={`flex min-w-0 flex-col ${variant === 'tile' ? 'rounded-[10px] bg-sheet' : ''} ${className}`}
     >
-      <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1 px-4 pt-3.5 pb-1.5">
-        {heading ?? <h2 className="text-lg font-semibold text-ink">{label}</h2>}
+      <div
+        className={`flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1 pb-1.5 ${
+          variant === 'tile' ? 'px-4 pt-3.5' : 'px-2 pt-1'
+        }`}
+      >
+        {heading ?? <h2 className="text-base font-semibold text-ink">{label}</h2>}
         {count !== undefined && count > 0 && (
           <span data-count className="text-sm text-ink-subtle tabular-nums">
             {count}

@@ -71,7 +71,7 @@ export function Login() {
               id="login-email"
               type="email"
               autoComplete="username"
-              className={`mt-1.5 w-full bg-float ${textbox}`}
+              className={`mt-1.5 w-full bg-sheet ${textbox}`}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
@@ -84,7 +84,7 @@ export function Login() {
               id="login-password"
               type="password"
               autoComplete="current-password"
-              className={`mt-1.5 w-full bg-float ${textbox}`}
+              className={`mt-1.5 w-full bg-sheet ${textbox}`}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />

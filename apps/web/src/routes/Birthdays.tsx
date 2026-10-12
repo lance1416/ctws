@@ -110,7 +110,7 @@ export function Birthdays() {
                     aria-pressed={picked}
                     onClick={() => setMonth(picked ? null : n)}
                     className={`flex h-8 items-center justify-between rounded-lg px-2 text-left text-sm hover:bg-hover ${
-                      picked ? 'bg-float font-semibold text-ink' : 'text-ink-muted'
+                      picked ? 'bg-select font-semibold text-ink' : 'text-ink-muted'
                     }`}
                   >
                     {MONTH_NAMES[i]}
@@ -136,7 +136,7 @@ export function Birthdays() {
                     aria-pressed={picked}
                     onClick={() => setCircle(picked ? null : key)}
                     className={`flex h-8 items-center justify-between rounded-lg px-2 text-left text-sm hover:bg-hover ${
-                      picked ? 'bg-float font-semibold text-ink' : 'text-ink-muted'
+                      picked ? 'bg-select font-semibold text-ink' : 'text-ink-muted'
                     }`}
                   >
                     {CIRCLE_LABELS[key]}

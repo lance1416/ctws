@@ -8,6 +8,7 @@ import { DetailPaneContext, useWidePane } from './paneLayout'
 import { QuickCapture } from './QuickCapture'
 import { BottomBar } from './BottomBar'
 import { LeaveGuardContext, type LeaveGuard } from './leaveGuard'
+import { SetGround, type Ground } from './ground'
 import { Shortcuts } from './Shortcuts'
 import { SideRail } from './SideRail'
 import { UserMenu } from './UserMenu'
@@ -23,6 +24,8 @@ export function Layout() {
   const [paneOpen, setPaneOpen] = useState(false)
   // Opened from the header's button, the `f` key, or the phone's tab bar.
   const [searching, setSearching] = useState(false)
+  // The sheet, unless the page says it is a desk (`useGround`).
+  const [ground, setGround] = useState<Ground>('sheet')
   const wide = useWidePane()
 
   const logout = useMutation({
@@ -89,10 +92,10 @@ export function Layout() {
         <div
           className={`lg:grid lg:items-start ${
             // 24rem for the detail: at 1440 that leaves the work 800px against the detail's 384, so
-            // the content area really is three columns with the work spanning two of them The pane's
-            // own box is 22rem inside it, with a 16px gutter on either side so it reads as a PANEL in
-            // that column rather than a slab bolted to the edge of the window. TaskDetail holds the
-            // matching numbers; they are two places and must agree.
+            // the content area really is three columns with the work spanning two of them. The pane's
+            // own box is 22rem inside it, 12px in from the window's edge, so it reads as a sheet laid
+            // in that column rather than a slab bolted to the edge of the window. DetailPane holds
+            // the matching numbers; they are two places and must agree.
             paneOpen && wide
               ? 'lg:grid-cols-[16rem_minmax(0,1fr)_24rem]'
               : 'lg:grid-cols-[16rem_minmax(0,1fr)]'
@@ -102,7 +105,11 @@ export function Layout() {
           {/* 至少一屏高：`DangerZone` 靠 `mt-auto` 把自己推到它所在那个纵向 flex 盒子的底，而一个
             比视口矮的盒子没有「底」可推 —— 删除于是会吊在半空。顶栏 3.25rem，这里补上。 */}
           {/* Below 1024 the page ends above the tab bar, never under it. */}
-          <main className="flex min-h-[calc(100vh-3.25rem)] min-w-0 flex-col bg-sheet px-4 pt-4 max-lg:pb-20 sm:px-6">
+          <main
+            className={`flex min-h-[calc(100vh-3.25rem)] min-w-0 flex-col px-4 pt-4 max-lg:pb-20 sm:px-6 ${
+              ground === 'desk' ? 'bg-desk' : 'bg-sheet'
+            }`}
+          >
             {/* NO WIDTH CAP. The capped 51rem centre column is what put one clump of rows left of
               centre at 1440 with half the screen empty beside it. The width is now carried by the
               PANEL GRID the page lays out inside it, and each list keeps its own measure
@@ -110,7 +117,9 @@ export function Layout() {
             <div className="flex min-w-0 flex-1 flex-col">
               <DetailPaneContext.Provider value={setPaneOpen}>
                 <LeaveGuardContext.Provider value={leaveGuard}>
-                  <Outlet />
+                  <SetGround.Provider value={setGround}>
+                    <Outlet />
+                  </SetGround.Provider>
                 </LeaveGuardContext.Provider>
               </DetailPaneContext.Provider>
             </div>

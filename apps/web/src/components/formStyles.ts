@@ -13,7 +13,7 @@
  * that owns its line takes `field` below; composing `field` with a fixed width would leave
  * whichever of `w-full` and `w-20` Tailwind happened to emit last.
  */
-export const boxed = 'rounded-lg border border-rule-strong bg-sheet px-3 py-2 text-sm text-ink'
+export const boxed = 'rounded-md border border-rule-strong bg-sheet px-3 py-2 text-sm text-ink'
 
 export const field = `w-full ${boxed}`
 
@@ -30,7 +30,7 @@ export const label = 'block text-xs text-ink-muted'
  * page lifts its fields off a plane the panels do not have.
  */
 export const textbox =
-  'h-9 rounded-lg border border-rule-strong px-3 text-sm text-ink placeholder:text-ink-muted aria-invalid:border-danger'
+  'h-9 rounded-md border border-rule-strong px-3 text-sm text-ink placeholder:text-ink-muted aria-invalid:border-danger'
 
 /**
  * A VALUE THAT IS A THING -- a person at a meeting, a project someone is on. The same chip when it
@@ -39,7 +39,7 @@ export const textbox =
  * but bare text in a meeting's. The form's chip adds only its ×.
  */
 export const CHIP =
-  'flex h-7 min-w-0 items-center gap-1.5 rounded-lg bg-hover px-2 text-sm text-ink'
+  'flex h-7 min-w-0 items-center gap-1.5 rounded-md bg-hover px-2 text-sm text-ink'
 
 /**
  * One status, as a chip over its own radio -- the pane's form and the New task dialog both draw
@@ -48,8 +48,8 @@ export const CHIP =
  * longest label in half.
  */
 export const STATUS_CHIP =
-  'relative flex min-h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-rule py-1 pr-2 pl-1.5 text-sm whitespace-nowrap text-ink-muted hover:bg-hover has-[:checked]:border-rule-strong has-[:checked]:bg-select has-[:checked]:font-semibold has-[:checked]:text-ink has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink'
+  'relative flex min-h-9 cursor-pointer items-center gap-1.5 rounded-md border border-rule py-1 pr-2 pl-1.5 text-sm whitespace-nowrap text-ink-muted hover:bg-hover has-[:checked]:border-rule-strong has-[:checked]:bg-select has-[:checked]:font-semibold has-[:checked]:text-ink has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink'
 
 /** A named decision: the same shape as the row's triage buttons, so the two speak one language. */
 export const decision =
-  'flex h-9 items-center rounded-lg border border-rule px-2.5 text-sm text-ink hover:border-rule-strong hover:bg-hover'
+  'flex h-9 items-center rounded-md border border-rule px-2.5 text-sm text-ink hover:border-rule-strong hover:bg-hover'

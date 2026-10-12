@@ -72,7 +72,7 @@ export function PickCity({
       {typing && cities.length > 0 && !exact && (
         <ul
           id={listId}
-          className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-rule-strong bg-float py-1 shadow-float"
+          className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded-[10px] bg-float py-1 shadow-float"
         >
           {cities.map((c: City) => (
             <li key={c.label}>

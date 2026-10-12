@@ -120,7 +120,7 @@ export function QuickCapture() {
         {missing && (
           <p
             role="alert"
-            className="rounded-lg bg-float px-3 py-1.5 text-sm text-danger shadow-float"
+            className="rounded-[10px] bg-float px-3 py-1.5 text-sm text-danger shadow-float"
           >
             No inbox to capture into
           </p>
@@ -130,7 +130,7 @@ export function QuickCapture() {
         {unavailable && (
           <p
             role="status"
-            className="rounded-lg bg-float px-3 py-1.5 text-sm text-danger shadow-float"
+            className="rounded-[10px] bg-float px-3 py-1.5 text-sm text-danger shadow-float"
           >
             Inbox unavailable
           </p>
@@ -138,7 +138,7 @@ export function QuickCapture() {
         {landed && (
           <p
             role="status"
-            className="truncate rounded-lg bg-float px-3 py-1.5 text-sm text-ink-muted shadow-float"
+            className="truncate rounded-[10px] bg-float px-3 py-1.5 text-sm text-ink-muted shadow-float"
           >
             Added to{' '}
             <Link to={landed.to} className={LINK}>
@@ -149,7 +149,7 @@ export function QuickCapture() {
         {capture.isError && (
           <p
             role="alert"
-            className="rounded-lg bg-float px-3 py-1.5 text-sm text-danger shadow-float"
+            className="rounded-[10px] bg-float px-3 py-1.5 text-sm text-danger shadow-float"
           >
             Couldn't save. Press Enter to try again.
           </p>
