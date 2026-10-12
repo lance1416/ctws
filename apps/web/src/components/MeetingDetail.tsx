@@ -1,7 +1,7 @@
 import type { EditScope, MeetingOccurrence, UpdateMeetingInput } from '@ctws/contracts'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type ReactNode } from 'react'
-import { listContacts } from '../api/contacts'
+import { listPeople } from '../api/people'
 import {
   cancelMeeting,
   patchMeeting,
@@ -67,7 +67,7 @@ export function MeetingDetail({
           一个人的那一层、一条任务的面板早就有这一块，会议是最后一个补上的。 */}
       <LinkedSection
         of={{ type: 'meeting', id: meeting.meetingId }}
-        except={['contact']}
+        except={['person']}
         className="mt-4"
       />
       {/*
@@ -101,7 +101,7 @@ export function MeetingFields({
   /** A change waiting on "this one / from here on". Null when nothing is being asked. */
   const [asking, setAsking] = useState<{ what: string; patch: UpdateMeetingInput } | null>(null)
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
-  const contacts = useQuery({ queryKey: ['contacts', null, false], queryFn: () => listContacts() })
+  const people = useQuery({ queryKey: ['people', null, false], queryFn: () => listPeople() })
 
   const repeats = meeting.rrule !== null
   const refresh = async () => {
@@ -220,7 +220,7 @@ export function MeetingFields({
           meeting={meeting}
           accountZone={accountZone}
           projects={projects.data ?? []}
-          contacts={contacts.data ?? []}
+          people={people.data ?? []}
           chip={chip}
           busy={save.isPending}
           onCancel={() => setEditing(false)}
@@ -236,7 +236,7 @@ export function MeetingFields({
 /**
  * 读一场会：每个值都是文字，整块里只有一个 Edit 可以按。
  *
- * 和一个人那一层同一套（`ContactFields`），因为它们是同一个人在同一块屏幕上读的两种东西。
+ * 和一个人那一层同一套（`PersonFields`），因为它们是同一个人在同一块屏幕上读的两种东西。
  */
 function MeetingRead({
   meeting,
@@ -385,7 +385,7 @@ function MeetingForm({
   meeting,
   accountZone,
   projects,
-  contacts,
+  people,
   chip,
   busy,
   onCancel,
@@ -395,7 +395,7 @@ function MeetingForm({
   /** The reader's own zone, for the one date this form has to WORD rather than take as input. */
   accountZone: string
   projects: { id: string; name: string; archivedAt: string | null }[]
-  contacts: { id: string; name: string }[]
+  people: { id: string; name: string }[]
   chip: (id: string) => ReactNode
   busy: boolean
   onCancel: () => void
@@ -574,9 +574,9 @@ function MeetingForm({
             label="Attendees"
             chosen={attendeeIds.map((id) => ({
               value: id,
-              label: contacts.find((c) => c.id === id)?.name ?? '',
+              label: people.find((c) => c.id === id)?.name ?? '',
             }))}
-            choices={contacts.map((p) => ({ value: p.id, label: p.name }))}
+            choices={people.map((p) => ({ value: p.id, label: p.name }))}
             onChange={setAttendees}
             empty="Nobody yet"
           />

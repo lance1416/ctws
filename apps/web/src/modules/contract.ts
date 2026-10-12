@@ -107,7 +107,7 @@ export type RelationContribution = {
    * THE OBJECT'S OWN FIELDS, at the head of its page.
    *
    * The page is the shell's — a project, a person and a meeting are read the same way — but what
-   * a person IS is the contacts module's to say. The shell draws the frame and what the object is
+   * a person IS is the people module's to say. The shell draws the frame and what the object is
    * connected to; this fills the top.
    *
    * A type with no `Head` has no page of its own, and the shell routes to its module's list.

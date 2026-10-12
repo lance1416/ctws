@@ -18,7 +18,7 @@ describe('jump chords', () => {
       'today',
       'reading',
       'meetings',
-      'contacts',
+      'people',
       'calendar',
       'birthdays',
       'projects',

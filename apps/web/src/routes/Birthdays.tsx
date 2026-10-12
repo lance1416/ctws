@@ -5,13 +5,13 @@ import { birthdaysKey, listBirthdays } from '../api/birthdays'
 import { BirthdayRow, CIRCLE_LABELS } from '../components/BirthdayRow'
 import { BUTTON } from '../components/buttonStyles'
 import { textbox } from '../components/formStyles'
-import { NewContactDialog } from '../components/NewContactDialog'
+import { NewPersonDialog } from '../components/NewPersonDialog'
 import { Panel, PanelEmpty } from '../components/Panel'
 import { MONTHS } from '../dueAt'
 import type { Circle } from '@ctws/contracts'
 
 /**
- * BIRTHDAYS -- a LENS. It owns nobody: this page only reads, and a person is made by the contacts
+ * BIRTHDAYS -- a LENS. It owns nobody: this page only reads, and a person is made by the people
  * module itself, the same way the calendar owns no kind of thing.
  *
  * A PANEL GRID rather than one capped column, for the reason `Today.tsx` writes down: at 1440 a
@@ -64,7 +64,7 @@ export function Birthdays() {
           aria-label="Find a person"
           className={`w-60 bg-surface-panel ${textbox}`}
         />
-        {/* This lens makes nothing: the button opens the contacts module's own dialog, so a
+        {/* This lens makes nothing: the button opens the people module's own dialog, so a
             person still has exactly one place to be born. */}
         <button type="button" onClick={() => setMaking(true)} className={BUTTON.primary}>
           New person
@@ -85,7 +85,7 @@ export function Birthdays() {
             ) : (
               <ul className="flex flex-col">
                 {coming.map((row) => (
-                  <BirthdayRow key={row.contactId} row={row} today={data?.today ?? ''} />
+                  <BirthdayRow key={row.personId} row={row} today={data?.today ?? ''} />
                 ))}
               </ul>
             )}
@@ -99,7 +99,7 @@ export function Birthdays() {
             ) : (
               <ul className="flex flex-col">
                 {later.map((row) => (
-                  <BirthdayRow key={row.contactId} row={row} today={data?.today ?? ''} />
+                  <BirthdayRow key={row.personId} row={row} today={data?.today ?? ''} />
                 ))}
               </ul>
             )}
@@ -162,11 +162,11 @@ export function Birthdays() {
       </div>
 
       {making && (
-        <NewContactDialog
+        <NewPersonDialog
           onClose={() => setMaking(false)}
           onMade={(made) => {
             setMaking(false)
-            navigate(`/contacts/${made.id}`)
+            navigate(`/people/${made.id}`)
           }}
         />
       )}

@@ -1,7 +1,14 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom'
+import {
+  createBrowserRouter,
+  generatePath,
+  Navigate,
+  RouterProvider,
+  useLocation,
+  useParams,
+} from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { moduleRoutes, WORKBENCH_PATH } from './modules/registry'
 import { Login } from './routes/Login'
@@ -25,9 +32,22 @@ import './styles.css'
  * container restarted, must not meet a blank page because the code was reorganised. Redirect, do
  * not break.
  *
- * COMPATIBILITY, not contract: deletable once nothing points at them.
+ * COMPATIBILITY, not contract: deletable once nothing points at them. A `:param` in `from` is
+ * carried into `to`, so an address that named one thing still names it.
  */
-const MOVED: { from: string; to: string }[] = [{ from: '/completed', to: '/tasks/completed' }]
+const MOVED: { from: string; to: string }[] = [
+  { from: '/completed', to: '/tasks/completed' },
+  // People had an older name; these are its addresses.
+  { from: '/contacts', to: '/people' },
+  { from: '/contacts/birthdays', to: '/people/birthdays' },
+  { from: '/contacts/:id', to: '/people/:id' },
+]
+
+function Moved({ to }: { to: string }) {
+  const params = useParams()
+  const { search } = useLocation()
+  return <Navigate to={generatePath(to, params) + search} replace />
+}
 
 const router = createBrowserRouter([
   { path: '/login', element: <Login /> },
@@ -46,7 +66,7 @@ const router = createBrowserRouter([
       { path: '/projects', element: <Projects /> },
       { path: '/projects/:id', element: <ObjectPage type="project" /> },
       ...moduleRoutes(),
-      ...MOVED.map(({ from, to }) => ({ path: from, element: <Navigate to={to} replace /> })),
+      ...MOVED.map(({ from, to }) => ({ path: from, element: <Moved to={to} /> })),
       { path: '*', element: <Navigate to={WORKBENCH_PATH} replace /> },
     ],
   },

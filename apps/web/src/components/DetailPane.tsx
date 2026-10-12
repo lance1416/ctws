@@ -13,7 +13,7 @@ import { useReservePane, useWidePane } from './paneLayout'
  * THE DETAIL PANE, and it belongs to the SHELL.
  *
  * ONE SURFACE for looking at one thing, whatever module the thing came from. A pane for a task,
- * a row menu for a reading item and a dialog for a contact would be three editing models in one
+ * a row menu for a reading item and a dialog for a person would be three editing models in one
  * app, which means learning it three times.
  *
  * What this component owns is the FRAME -- where it sits, how wide, the escape, the focus trap,
@@ -29,7 +29,7 @@ export function DetailPane({
   onClose,
   children,
 }: {
-  /** The pane's accessible name: what KIND of thing is open -- “Task”, “Contacts”. */
+  /** The pane's accessible name: what KIND of thing is open -- “Task”, “People”. */
   label: string
   onClose: () => void
   children: ReactNode

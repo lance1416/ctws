@@ -1,7 +1,7 @@
 import type { CreateMeetingBody, MeetingOccurrence } from '@ctws/contracts'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
-import { contactsKey, listContacts } from '../api/contacts'
+import { peopleKey, listPeople } from '../api/people'
 import {
   createMeeting,
   DEFAULT_HOUR,
@@ -64,7 +64,7 @@ export function NewMeetingDialog({
   const [attendeeIds, setAttendees] = useState<string[]>([])
 
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
-  const contacts = useQuery({ queryKey: contactsKey(), queryFn: () => listContacts() })
+  const people = useQuery({ queryKey: peopleKey(), queryFn: () => listPeople() })
   const startsLocal = `${day}T${clock}`
   // Named after the day it falls on, so "Weekly on Tuesday" says Tuesday once the date is picked.
   const repeats = repeatChoices(startsLocal)
@@ -268,9 +268,9 @@ export function NewMeetingDialog({
               label="Attendees"
               chosen={attendeeIds.map((id) => ({
                 value: id,
-                label: contacts.data?.find((c) => c.id === id)?.name ?? '',
+                label: people.data?.find((c) => c.id === id)?.name ?? '',
               }))}
-              choices={(contacts.data ?? []).map((p) => ({ value: p.id, label: p.name }))}
+              choices={(people.data ?? []).map((p) => ({ value: p.id, label: p.name }))}
               onChange={setAttendees}
               empty="Nobody yet"
             />

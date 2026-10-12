@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { sortByName } from './contactOrder'
+import { sortByName } from './peopleOrder'
 
 const person = (name: string, id = name) =>
   ({ id, name }) as unknown as Parameters<typeof sortByName>[0][number]

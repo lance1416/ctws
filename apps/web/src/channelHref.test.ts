@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { channelHref } from './api/contacts'
+import { channelHref } from './api/people'
 
 /**
- * An address in a contact list is a LINK. Getting the scheme wrong means the person copies the
+ * An address in a person list is a LINK. Getting the scheme wrong means the person copies the
  * address by hand, which is the whole cost the list existed to remove.
  */
 describe('channelHref', () => {

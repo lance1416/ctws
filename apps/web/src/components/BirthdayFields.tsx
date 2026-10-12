@@ -1,13 +1,13 @@
 import type {
   BirthdayPreviewResponse,
   BirthdayResponse,
-  ContactResponse,
+  PersonResponse,
   RemindLead,
 } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { ApiError } from '../api'
-import { previewBirthday, type BirthdayDraft } from '../api/contacts'
+import { previewBirthday, type BirthdayDraft } from '../api/people'
 import { countdownPhrase, fullDay, MONTHS, shortDay, todayIn } from '../dueAt'
 import { useTimeZone } from '../useMe'
 import { Field } from './Field'
@@ -116,9 +116,9 @@ const leadLabel = (lead: number) => LEADS.find(([n]) => n === lead)?.[1] ?? `${l
  *
  * 这里只读：改生日和改别的字段走同一条路（那张表里的 `Birthday`），一个人不该有两个编辑入口。
  */
-export function BirthdayFields({ contact }: { contact: ContactResponse }) {
+export function BirthdayFields({ person }: { person: PersonResponse }) {
   const [open, setOpen] = useState(false)
-  const b = contact.birthday
+  const b = person.birthday
 
   return (
     <>

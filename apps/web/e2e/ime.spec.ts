@@ -6,7 +6,7 @@ import { registerFreshUser, WEB } from './helpers'
  *
  * Typing English inside a Chinese IME and pressing Enter is how a lot of people type English: the
  * Enter commits the letters out of the candidate buffer. It must not also file the task, save the
- * contact or close the editor -- and it did, on every input in this app.
+ * person or close the editor -- and it did, on every input in this app.
  *
  * The composition is driven here the way SAFARI dispatches it -- `compositionend` BEFORE the
  * `keydown` that caused it -- because that ordering is what defeats `KeyboardEvent.isComposing`
@@ -66,14 +66,14 @@ test('committing English out of an IME does not create a task', async ({ page })
 })
 
 test('committing English out of an IME does not submit the form', async ({ page }) => {
-  await registerFreshUser(page, '/contacts')
-  await page.request.post('/api/v1/contacts', {
+  await registerFreshUser(page, '/people')
+  await page.request.post('/api/v1/people', {
     headers: WEB,
     data: { name: '陈颖' },
   })
   await page.reload()
   await page.getByRole('button', { name: '陈颖' }).click()
-  const pane = page.getByRole('dialog', { name: 'Contacts' })
+  const pane = page.getByRole('dialog', { name: 'People' })
   await pane.getByRole('button', { name: 'Edit', exact: true }).click()
 
   // 表里的输入框由 <label for> 命名，不是 aria-label：这里按 id 取，别去给它加第二个名字。

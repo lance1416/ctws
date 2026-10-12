@@ -12,7 +12,7 @@ import { pickOne, registerFreshUser, WEB } from './helpers'
 
 /** Writes a person down, birthday and all. Returns their id. */
 async function person(page: Page, name: string, birthday?: unknown, circle?: string) {
-  const res = await page.request.post('/api/v1/contacts', {
+  const res = await page.request.post('/api/v1/people', {
     headers: WEB,
     data: { name, ...(birthday ? { birthday } : {}), ...(circle ? { circle } : {}) },
   })
@@ -34,7 +34,7 @@ test('七天内的人在 Coming up，其余在 Later，并且每个人只出现�
   await person(page, '林哲', { calendar: 'solar', year: 1985, ...monthDay(3) }, 'work')
   await person(page, '李雷', { calendar: 'solar', year: 1996, ...monthDay(40) })
 
-  await page.goto('/contacts/birthdays')
+  await page.goto('/people/birthdays')
   const coming = page.getByRole('region', { name: 'Coming up' })
   const later = page.getByRole('region', { name: 'Later' })
   await expect(coming.locator('[data-birthday-row]')).toHaveCount(2)
@@ -49,7 +49,7 @@ test('农历生日落在它自己的那一天，并带着农历回显', async ({
   await registerFreshUser(page)
   // 1991 年农历九月初三 = 公历 1991-10-10，但复发按农历走。
   await person(page, '周楠', { calendar: 'lunar', year: 1991, month: 9, day: 3 })
-  await page.goto('/contacts/birthdays')
+  await page.goto('/people/birthdays')
   const row = rows(page).filter({ hasText: '周楠' })
   await expect(row).toContainText('农历九月初三')
   await expect(row).toContainText('turns')
@@ -59,7 +59,7 @@ test('月份索引是日期检索：点一个月，列表只剩那个月的人',
   await registerFreshUser(page)
   await person(page, '四月的人', { calendar: 'solar', year: 1996, month: 4, day: 15 })
   await person(page, '十月的人', { calendar: 'solar', year: 1996, month: 10, day: 20 })
-  await page.goto('/contacts/birthdays')
+  await page.goto('/people/birthdays')
   const byMonth = page.getByRole('region', { name: 'By month' })
   const april = byMonth.getByRole('button', { name: /^April/ })
   await expect(april).toContainText('1')
@@ -78,7 +78,7 @@ test('页头的人数跟着筛选走', async ({ page }) => {
   await registerFreshUser(page)
   await person(page, '四月的人', { calendar: 'solar', year: 1996, month: 4, day: 15 })
   await person(page, '十月的人', { calendar: 'solar', year: 1996, month: 10, day: 20 })
-  await page.goto('/contacts/birthdays')
+  await page.goto('/people/birthdays')
   const count = page.locator('[data-birthday-count]')
   await expect(count).toHaveText('2 people · 0 in the next week')
 
@@ -100,23 +100,23 @@ test('名字搜索按输入过滤', async ({ page }) => {
   await registerFreshUser(page)
   await person(page, '周楠', { calendar: 'solar', year: 1991, ...monthDay(1) })
   await person(page, 'Priya Raman', { calendar: 'solar', year: 1988, ...monthDay(2) })
-  await page.goto('/contacts/birthdays')
+  await page.goto('/people/birthdays')
   await page.getByRole('searchbox', { name: 'Find a person' }).fill('priya')
   await expect(rows(page)).toHaveCount(1)
   await expect(rows(page)).toContainText('Priya Raman')
 })
 
-test('在这一页写下一个人，用的是 contacts 自己的那个对话框', async ({ page }) => {
+test('在这一页写下一个人，用的是 people 自己的那个对话框', async ({ page }) => {
   await registerFreshUser(page)
-  await page.goto('/contacts/birthdays')
+  await page.goto('/people/birthdays')
   await page.getByRole('button', { name: 'New person' }).click()
-  const dialog = page.getByRole('dialog', { name: 'New contact' })
+  const dialog = page.getByRole('dialog', { name: 'New person' })
   await expect(dialog).toBeVisible()
   await dialog.getByRole('textbox', { name: 'Name' }).fill('新来的')
   await dialog.getByRole('button', { name: 'Create' }).click()
   // It lands on the person's own page -- the shell's, the same one every kind of thing gets.
-  await expect(page).toHaveURL(new RegExp('/contacts/[0-9a-f-]{36}$'))
-  await expect(page.getByRole('dialog', { name: 'Contacts' })).toContainText('新来的')
+  await expect(page).toHaveURL(new RegExp('/people/[0-9a-f-]{36}$'))
+  await expect(page.getByRole('dialog', { name: 'People' })).toContainText('新来的')
 })
 
 test('这一页在 375 下没有横向滚动', async ({ page }) => {
@@ -128,7 +128,7 @@ test('这一页在 375 下没有横向滚动', async ({ page }) => {
     month: 12,
     day: 30,
   })
-  await page.goto('/contacts/birthdays')
+  await page.goto('/people/birthdays')
   await expect(rows(page)).toHaveCount(1)
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -140,7 +140,7 @@ test('1440 下列表占两栏，索引在第三栏', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await registerFreshUser(page)
   await person(page, '王颖', { calendar: 'solar', year: 1993, ...monthDay(0) })
-  await page.goto('/contacts/birthdays')
+  await page.goto('/people/birthdays')
   const coming = page.getByRole('region', { name: 'Coming up' })
   const byMonth = page.getByRole('region', { name: 'By month' })
   const [list, index] = await Promise.all([coming.boundingBox(), byMonth.boundingBox()])
@@ -173,8 +173,8 @@ test('人物页上生日是只读的派生值，改在一个地方', async ({ pa
     day: 3,
     hourBranch: 6,
   })
-  await page.goto(`/contacts/${id}`)
-  const glance = page.getByRole('dialog', { name: 'Contacts' })
+  await page.goto(`/people/${id}`)
+  const glance = page.getByRole('dialog', { name: 'People' })
   // 页面上只有日期本身：农历、生肖、星座、时辰、下一次都是第二层的东西。
   await expect(glance).toContainText('农历辛未年九月初三')
   await expect(glance).not.toContainText('turns')
@@ -193,7 +193,7 @@ test('人物页上生日是只读的派生值，改在一个地方', async ({ pa
 test('写一个农历生日，输入时就看见换算与回退', async ({ page }) => {
   await registerFreshUser(page)
   const id = await person(page, '外婆')
-  await page.goto(`/contacts/${id}`)
+  await page.goto(`/people/${id}`)
   // 改生日和改别的字段同一条路：一个 Edit 进表，生日那一格点开是那排控件。
   await page.getByRole('button', { name: 'Edit', exact: true }).click()
   await page.getByRole('button', { name: 'Birthday, not set' }).click()
@@ -212,13 +212,13 @@ test('写一个农历生日，输入时就看见换算与回退', async ({ page 
   await expect(preview).toContainText('猴')
   await expect(preview).toContainText('has 29 days')
   await page.getByRole('button', { name: 'Save' }).click()
-  await expect(page.getByRole('dialog', { name: 'Contacts' })).toContainText('农历甲申年十二月三十')
+  await expect(page.getByRole('dialog', { name: 'People' })).toContainText('农历甲申年十二月三十')
 })
 
 test('选了那一年没有的日子，预览就说是哪一条不成立', async ({ page }) => {
   await registerFreshUser(page)
   const id = await person(page, '赵姨')
-  await page.goto(`/contacts/${id}`)
+  await page.goto(`/people/${id}`)
   await page.getByRole('button', { name: 'Edit', exact: true }).click()
   await page.getByRole('button', { name: 'Birthday, not set' }).click()
   await page
@@ -242,7 +242,7 @@ test('联系人列表能按 circle 筛，而且不默认藏人', async ({ page }
   await registerFreshUser(page)
   await person(page, '妈妈', undefined, 'family')
   await person(page, '同事老张', undefined, 'work')
-  await page.goto('/contacts')
+  await page.goto('/people')
   const list = page.getByRole('listitem')
   await expect(list).toHaveCount(2)
   await page.getByRole('button', { name: 'Family' }).click()
@@ -256,8 +256,8 @@ test('只知月日的农历生日，一个 chip 都不画', async ({ page }) => 
   await registerFreshUser(page)
   // 农历月日对应的公历日期逐年移动，所以星座不唯一；生肖要年份。两个都没有，就什么都别画。
   const id = await person(page, '蒋老师', { calendar: 'lunar', month: 9, day: 3 })
-  await page.goto(`/contacts/${id}`)
-  const glance = page.getByRole('dialog', { name: 'Contacts' })
+  await page.goto(`/people/${id}`)
+  const glance = page.getByRole('dialog', { name: 'People' })
   await expect(glance).toContainText('农历九月初三')
   await glance.getByRole('button', { name: /^Birthday,/ }).click()
   await expect(glance.locator('[data-birthday-chip]')).toHaveCount(0)
@@ -266,8 +266,8 @@ test('只知月日的农历生日，一个 chip 都不画', async ({ page }) => 
 test('知道年份的人，生肖与星座各一个 chip', async ({ page }) => {
   await registerFreshUser(page)
   const id = await person(page, '周楠', { calendar: 'lunar', year: 1991, month: 9, day: 3 })
-  await page.goto(`/contacts/${id}`)
-  const glance = page.getByRole('dialog', { name: 'Contacts' })
+  await page.goto(`/people/${id}`)
+  const glance = page.getByRole('dialog', { name: 'People' })
   await glance.getByRole('button', { name: /^Birthday,/ }).click()
   await expect(glance.locator('[data-birthday-chip]')).toHaveCount(2)
 })
@@ -276,8 +276,8 @@ test('公历但不知年份：有星座，没有生肖，所以只有一个 chip
   await registerFreshUser(page)
   // 这一条是两个 chip 各自的守卫唯一管用的地方：两个都空时外层就不画了。
   const id = await person(page, '蒋老师', { calendar: 'solar', month: 11, day: 2 })
-  await page.goto(`/contacts/${id}`)
-  const glance = page.getByRole('dialog', { name: 'Contacts' })
+  await page.goto(`/people/${id}`)
+  const glance = page.getByRole('dialog', { name: 'People' })
   await glance.getByRole('button', { name: /^Birthday,/ }).click()
   const chips = glance.locator('[data-birthday-chip]')
   await expect(chips).toHaveCount(1)
@@ -287,7 +287,7 @@ test('公历但不知年份：有星座，没有生肖，所以只有一个 chip
 test('一个人的备注是 Markdown，和任务备注同一条管线', async ({ page }) => {
   await registerFreshUser(page)
   const id = await person(page, '周楠')
-  await page.request.patch(`/api/v1/contacts/${id}`, {
+  await page.request.patch(`/api/v1/people/${id}`, {
     headers: WEB,
     data: {
       note: [
@@ -300,8 +300,8 @@ test('一个人的备注是 Markdown，和任务备注同一条管线', async ({
       ].join('\n'),
     },
   })
-  await page.goto(`/contacts/${id}`)
-  const notes = page.locator('[data-contact-notes]')
+  await page.goto(`/people/${id}`)
+  const notes = page.locator('[data-person-notes]')
   // 等渲染器到场：fallback 是备注原文的纯文本，断言在它上面会测到错的那一帧（notes.spec.ts 栽过）。
   await expect(notes.locator('[data-note-md]')).toBeVisible()
   await expect(notes.locator('strong')).toHaveText('冷萃')
@@ -313,14 +313,14 @@ test('一个人的备注是 Markdown，和任务备注同一条管线', async ({
 test('备注在写作模式里改，关掉就落库', async ({ page }) => {
   await registerFreshUser(page)
   const id = await person(page, '周楠')
-  await page.goto(`/contacts/${id}`)
+  await page.goto(`/people/${id}`)
   // 改备注不必先进整张表：阅读态里它自己有一个入口。
   await page.getByRole('button', { name: 'Edit notes' }).click()
   // The writing layer is driven the way `notes.spec.ts` drives it: its textarea is labelled
   // `Markdown source`, and Escape is how it closes everywhere in this app.
   await page.getByLabel('Markdown source').fill('# 标题\n\n正文一行')
   await page.keyboard.press('Escape')
-  const notes = page.locator('[data-contact-notes]')
+  const notes = page.locator('[data-person-notes]')
   await expect(notes.locator('[data-note-md]')).toBeVisible()
   await expect(notes.locator('h1')).toHaveText('标题')
 })
@@ -377,6 +377,6 @@ test('提前量决定谁上卡片：只要当天的人，五天前不出现', as
   await expect(card).toContainText('要一周的')
   await expect(card).not.toContainText('只要当天的')
   // 两个人都在那一页上：卡片是「会找上你的」，不是「全部」。
-  await page.goto('/contacts/birthdays')
+  await page.goto('/people/birthdays')
   await expect(page.locator('[data-birthday-row]')).toHaveCount(2)
 })

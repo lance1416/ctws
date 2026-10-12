@@ -48,7 +48,7 @@ test('the rail is grouped by what you are doing, in a fixed reading order', asyn
     'Workbench',
     'Today',
     'Meetings',
-    'Contacts',
+    'People',
     'Reading',
     'Calendar',
     'Birthdays',
@@ -60,7 +60,7 @@ test('the rail is grouped by what you are doing, in a fixed reading order', asyn
   // across them. Two hairlines divide them; Projects is divided off by its own label instead,
   // because what is under it is the person's own and it grows.
   await expect(rail.locator('span[aria-hidden="true"].h-px')).toHaveCount(2)
-  // The first group needs no name; the other two carry one, because "Meetings, Contacts,
+  // The first group needs no name; the other two carry one, because "Meetings, People,
   // Reading" and "Calendar, Birthdays, Review" are not self-evidently two different kinds of row.
   await expect(rail.getByText('Things', { exact: true })).toBeVisible()
   await expect(rail.getByText('Views', { exact: true })).toBeVisible()

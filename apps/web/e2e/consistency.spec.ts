@@ -22,7 +22,7 @@ async function panes(page: Page) {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'IQBank')
   await makeTask(page, pid, 'Ship the importer', { notes: 'Parse, then validate.' })
-  const person = await apiPost(page, '/contacts', { name: 'Ying Chen', org: 'Acme' })
+  const person = await apiPost(page, '/people', { name: 'Ying Chen', org: 'Acme' })
   const book = await apiPost(page, '/reading', { kind: 'book', title: 'The C book' })
   const meeting = await apiPost(page, '/meetings', {
     title: 'Weekly',
@@ -47,7 +47,7 @@ test('每个面板里，Linked 的字和别的标签左边对齐', async ({ page
       'Notes',
     ],
     ['Meetings', () => page.goto(`/meetings/${w.meeting.meetingId}`), 'Notes'],
-    ['Contacts', () => page.goto(`/contacts/${w.person.id}`), 'Notes'],
+    ['People', () => page.goto(`/people/${w.person.id}`), 'Notes'],
     ['Reading', () => page.goto(`/reading/${w.book.id}`), 'Status'],
   ]
   for (const [name, go, other] of open) {
@@ -94,7 +94,7 @@ test('四个面板的编辑态：Cancel 在左、Save 在右，都在最上面',
       },
     ],
     ['Meetings', () => page.goto(`/meetings/${w.meeting.meetingId}`)],
-    ['Contacts', () => page.goto(`/contacts/${w.person.id}`)],
+    ['People', () => page.goto(`/people/${w.person.id}`)],
     ['Reading', () => page.goto(`/reading/${w.book.id}`)],
   ]
   for (const [name, go] of open) {
@@ -133,10 +133,10 @@ test('新建对话框：Cancel 在左、Create 在右，靠右边', async ({ pag
       },
     ],
     [
-      'contact',
+      'person',
       async () => {
-        await page.goto('/contacts')
-        await page.getByRole('button', { name: 'New contact' }).click()
+        await page.goto('/people')
+        await page.getByRole('button', { name: 'New person' }).click()
       },
     ],
   ]
@@ -246,7 +246,7 @@ test('改一场重复的会时，问「哪几次」就在 Save 旁边，不在�
 
 test('面板里的日子用 app 自己的写法，不出现 2026-10-19 这种线上格式', async ({ page }) => {
   await registerFreshUser(page)
-  const person = await apiPost(page, '/contacts', {
+  const person = await apiPost(page, '/people', {
     name: 'Ying Chen',
     birthday: { calendar: 'solar', year: 1991, month: 10, day: 17 },
   })
@@ -281,8 +281,8 @@ test('面板里的日子用 app 自己的写法，不出现 2026-10-19 这种线
   await expect(mp).toContainText(`${said}, 18:00 · Toronto`)
   await expect(mp.getByText(wire)).toHaveCount(0)
 
-  await page.goto(`/contacts/${person.id}`)
-  const cp = page.getByRole('dialog', { name: 'Contacts' })
+  await page.goto(`/people/${person.id}`)
+  const cp = page.getByRole('dialog', { name: 'People' })
   await expect(cp.getByRole('button', { name: /^Birthday,/ })).toContainText('Oct 17, 1991')
   await expect(cp.getByText(wire)).toHaveCount(0)
   // The form says the same day the same way.
@@ -293,7 +293,7 @@ test('面板里的日子用 app 自己的写法，不出现 2026-10-19 这种线
 test('同一种东西一种芯片：读的时候和改的时候一样，项目在每个面板里都是芯片', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'IQBank')
-  const person = await apiPost(page, '/contacts', { name: 'Ying Chen', projectIds: [pid] })
+  const person = await apiPost(page, '/people', { name: 'Ying Chen', projectIds: [pid] })
   const meeting = await apiPost(page, '/meetings', {
     title: 'Weekly',
     startsLocal: `${dayOffset(1)}T18:00`,
@@ -320,8 +320,8 @@ test('同一种东西一种芯片：读的时候和改的时候一样，项目�
   const editing = mp.getByRole('button', { name: /^Remove .*Ying Chen/ }).locator('..')
   expect(await look(editing)).toBe(read)
 
-  await page.goto(`/contacts/${person.id}`)
-  const cp = page.getByRole('dialog', { name: 'Contacts' })
+  await page.goto(`/people/${person.id}`)
+  const cp = page.getByRole('dialog', { name: 'People' })
   expect(await look(cp.getByText('IQBank', { exact: true }).first().locator('..'))).toBe(read)
 })
 

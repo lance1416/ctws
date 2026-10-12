@@ -8,15 +8,13 @@ import { apiFetch } from '../api'
 export const birthdaysKey = () => ['birthdays'] as const
 
 export function listBirthdays(): Promise<BirthdaysResponse> {
-  return apiFetch('/contacts/birthdays')
+  return apiFetch('/people/birthdays')
 }
 
 /** This module's dated things, for the shell's grid. */
 export function birthdayCalendar(range: { from: string; to: string }): Promise<CalendarEntry[]> {
   const params = new URLSearchParams(range)
-  return apiFetch<{ entries: CalendarEntry[] }>(`/contacts/calendar?${params}`).then(
-    (r) => r.entries,
-  )
+  return apiFetch<{ entries: CalendarEntry[] }>(`/people/calendar?${params}`).then((r) => r.entries)
 }
 
 /**

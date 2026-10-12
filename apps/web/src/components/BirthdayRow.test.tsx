@@ -9,7 +9,7 @@ import { BirthdayRow } from './BirthdayRow'
  */
 
 const row = (over: Partial<BirthdayListRow> = {}): BirthdayListRow => ({
-  contactId: '00000000-0000-0000-0000-000000000001',
+  personId: '00000000-0000-0000-0000-000000000001',
   name: '周楠',
   circle: null,
   calendar: 'lunar',
@@ -66,6 +66,6 @@ describe('BirthdayRow', () => {
   })
 
   it('链接指向那个人自己的页', () => {
-    expect(render(row())).toContain('href="/contacts/00000000-0000-0000-0000-000000000001"')
+    expect(render(row())).toContain('href="/people/00000000-0000-0000-0000-000000000001"')
   })
 })

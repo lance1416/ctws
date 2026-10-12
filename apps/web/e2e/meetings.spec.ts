@@ -112,9 +112,9 @@ test('cancelling one week leaves the series alone', async ({ page }) => {
   await expect(square(page, '2026-10-20')).toContainText('周会')
 })
 
-test('the people in the room come out of the contacts module', async ({ page }) => {
+test('the people in the room come out of the people module', async ({ page }) => {
   await inLondon(page)
-  await page.request.post('/api/v1/contacts', { headers: WEB, data: { name: '陈颖' } })
+  await page.request.post('/api/v1/people', { headers: WEB, data: { name: '陈颖' } })
   await arrange(page, { ...WEEKLY_IN_TORONTO, rrule: null })
   await page.goto('/calendar')
   await openOctober(page)

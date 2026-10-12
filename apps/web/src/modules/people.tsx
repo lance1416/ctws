@@ -1,16 +1,16 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { birthdayCalendar, birthdaysKey, listBirthdays } from '../api/birthdays'
-import { searchContacts } from '../api/contacts'
+import { searchPeople } from '../api/people'
 import { BirthdayRow } from '../components/BirthdayRow'
 import { PanelEmpty } from '../components/Panel'
 import { countdownPhrase } from '../dueAt'
 import { Birthdays } from '../routes/Birthdays'
-import { Contacts } from '../routes/Contacts'
+import { People } from '../routes/People'
 import type { SearchHit, WorkspaceModule } from './contract'
 
 /**
- * THE CONTACTS MODULE -- the third, and the first one that contributes NOTHING new to the seam.
+ * THE PEOPLE MODULE -- the third, and the first one that contributes NOTHING new to the seam.
  *
  * That is the point of it being third: a seam a new module can be built against without changing
  * it is a seam that has stopped being a draft.
@@ -26,7 +26,7 @@ import type { SearchHit, WorkspaceModule } from './contract'
  * - no CAPTURE rule. A pasted email address is far likelier to be a note about someone than a
  *   person to file, and a wrong guess here would be silently filing things in the wrong module.
  */
-const ID = 'contacts'
+const ID = 'people'
 
 /**
  * This module's dated things. No `Detail`: a birthday belongs to a person, and that person has a
@@ -80,7 +80,7 @@ function BirthdayCard() {
   return (
     <ul className="flex flex-col">
       {rows.map((row) => (
-        <BirthdayRow key={row.contactId} row={row} today={view.data?.today ?? ''} />
+        <BirthdayRow key={row.personId} row={row} today={view.data?.today ?? ''} />
       ))}
     </ul>
   )
@@ -99,10 +99,10 @@ function BirthdayCount() {
 }
 
 /** This module's half of federated search: names, organisations and addresses. */
-function useContactHits(query: string) {
+function usePeopleHits(query: string) {
   const results = useQuery({
-    queryKey: ['contact-search', query],
-    queryFn: () => searchContacts(query),
+    queryKey: ['person-search', query],
+    queryFn: () => searchPeople(query),
     enabled: query.length > 0,
   })
   const hits: SearchHit[] = (results.data ?? []).map((person) => ({
@@ -126,11 +126,11 @@ function useContactHits(query: string) {
  * a project page.
  */
 
-export const contactModule: WorkspaceModule = {
+export const peopleModule: WorkspaceModule = {
   id: ID,
-  label: 'Contacts',
+  label: 'People',
   destinations: [
-    { id: 'list', to: `/${ID}`, label: 'Contacts', zone: 'things', order: 30 },
+    { id: 'list', to: `/${ID}`, label: 'People', zone: 'things', order: 30 },
     // A VIEW, not a thing: it looks at people through their dates and makes nobody.
     {
       id: 'birthdays',
@@ -144,21 +144,21 @@ export const contactModule: WorkspaceModule = {
     },
   ],
   routes: [
-    { index: true, element: <Contacts /> },
+    { index: true, element: <People /> },
     // Before `:id`, so a reader need not know that react-router ranks a static segment higher.
     { path: 'birthdays', element: <Birthdays /> },
-    // 一个人没有自己的页：这条路渲染的是列表加他的那一层（`Contacts` 从 URL 读开着的是谁）。
+    // 一个人没有自己的页：这条路渲染的是列表加他的那一层（`People` 从 URL 读开着的是谁）。
     // 任务也是这样接的，而项目保留整页 —— 它有任务树，那是真的需要一整页的东西。
-    { path: ':id', element: <Contacts /> },
+    { path: ':id', element: <People /> },
   ],
-  search: { useHits: useContactHits },
+  search: { useHits: usePeopleHits },
   calendar: { label: 'Birthdays', useEntries: useBirthdayEntries },
   widgets: [
     { id: 'birthdays', label: 'Birthdays', to: `/${ID}/birthdays`, Component: BirthdayCard },
   ],
   // `n` for name. One keyspace across modules, so this is checked against every other chord.
   chords: [
-    { id: 'contacts', key: 'n', label: 'Go to Contacts', resolve: () => `/${ID}`, order: 17 },
+    { id: 'people', key: 'n', label: 'Go to People', resolve: () => `/${ID}`, order: 17 },
     {
       id: 'birthdays',
       key: 'b',
@@ -171,7 +171,7 @@ export const contactModule: WorkspaceModule = {
   ],
   relations: [
     {
-      type: 'contact',
+      type: 'person',
       kind: 'Person',
       to: (id) => `/${ID}/${id}`,
     },

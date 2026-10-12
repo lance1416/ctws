@@ -1,7 +1,7 @@
-import type { ContactResponse } from '@ctws/contracts'
+import type { PersonResponse } from '@ctws/contracts'
 
 /**
- * A CONTACT LIST IN THE READER'S ORDER.
+ * A PERSON LIST IN THE READER'S ORDER.
  *
  * The server returns them ordered by name so a page is deterministic, but a plain byte order puts
  * Chinese names in code-point order rather than pinyin order, and all of them after every Latin
@@ -15,8 +15,8 @@ import type { ContactResponse } from '@ctws/contracts'
  */
 const collator = new Intl.Collator('zh-Hans', { sensitivity: 'base', numeric: true })
 
-export function sortByName(contacts: readonly ContactResponse[]): ContactResponse[] {
+export function sortByName(people: readonly PersonResponse[]): PersonResponse[] {
   // A copy: the array belongs to the query cache, and sorting it in place would mutate what
   // every other reader of that cache entry sees.
-  return [...contacts].sort((a, b) => collator.compare(a.name, b.name) || a.id.localeCompare(b.id))
+  return [...people].sort((a, b) => collator.compare(a.name, b.name) || a.id.localeCompare(b.id))
 }

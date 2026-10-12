@@ -20,7 +20,7 @@ const read = (value: string, region?: string) =>
  * 分组是按国家来的 —— 中国的手机是 3-4-4，英国的固话是 3-4-4 但区号长短不一，美国是 3-3-4 带
  * 括号。自己写的正则只在自己那个国家对，所以这件事交给 libphonenumber-js（MIT，和本仓库一致）。
  *
- * 用的是 `/min` 那套元数据，而且这个模块只在**编辑联系方式**时才被加载（`ContactForm` 动态
+ * 用的是 `/min` 那套元数据，而且这个模块只在**编辑联系方式**时才被加载（`PersonForm` 动态
  * import），所以它不在首屏那一包里 —— 和 Markdown 渲染器、Mermaid 一样的待遇。
  *
  * `AsYouType` 而不是 `parsePhoneNumber`：一个人是一位一位打进来的，排版要跟着打到哪儿，而不是

@@ -1,6 +1,6 @@
-import { channelProblem, type ChannelKind, type ContactResponse } from '@ctws/contracts'
+import { channelProblem, type ChannelKind, type PersonResponse } from '@ctws/contracts'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { channelHref, deleteContact, patchContact, type BirthdayDraft } from '../api/contacts'
+import { channelHref, deletePerson, patchPerson, type BirthdayDraft } from '../api/people'
 import { listProjects } from '../api/projects'
 import { useProjectRail } from '../projectColor'
 import { DangerAction, DangerZone } from './DangerZone'
@@ -35,40 +35,34 @@ import { PickMany, PickOne } from './inline'
  * The FIELDS are a component of their own because the person's own page shows the same ones with
  * no frame around them (`relations.Head`). One editor, two places -- a second copy drifts.
  */
-export function ContactDetail({
-  contact,
-  onClose,
-}: {
-  contact: ContactResponse
-  onClose: () => void
-}) {
+export function PersonDetail({ person, onClose }: { person: PersonResponse; onClose: () => void }) {
   return (
-    <DetailPane label="Contacts" onClose={onClose}>
-      <ContactFields contact={contact} onClose={onClose} />
+    <DetailPane label="People" onClose={onClose}>
+      <PersonFields person={person} onClose={onClose} />
       {/* Linked -- the meetings they are in, what they recommended, the task that came out of a
           call. None of it is written on the person: the edges are, and this reads them from the
           other end. The edges are the SHELL's, so they sit BESIDE this module's fields rather
           than inside them -- the person's own page composes the same two halves. */}
-      <LinkedSection of={{ type: 'contact', id: contact.id }} className="mt-4" />
+      <LinkedSection of={{ type: 'person', id: person.id }} className="mt-4" />
 
       {/*
         最后一个东西，底下再没有别的控件。
 
-        一个人没有自己的页了（这一层就是 `/contacts/<id>`），所以删除没有别处可放。它排在
+        一个人没有自己的页了（这一层就是 `/people/<id>`），所以删除没有别处可放。它排在
         Linked 之后、要滚到底才看得见，按下去还先问一次 —— 距离加一次确认，是这里能给的全部。
       */}
       <DangerZone>
-        <DeleteContact contact={contact} onDeleted={onClose} />
+        <DeletePerson person={person} onDeleted={onClose} />
       </DangerZone>
     </DetailPane>
   )
 }
 
-export function ContactFields({
-  contact,
+export function PersonFields({
+  person,
   onClose,
 }: {
-  contact: ContactResponse
+  person: PersonResponse
   /** Where to go when this person is deleted. Not every surface has somewhere to close TO. */
   onClose?: () => void
 }) {
@@ -82,11 +76,11 @@ export function ContactFields({
 
   // 项目是一条边：改了它，读边的那一块（Linked）也要跟着重读，否则刚去掉的那条线还在下面挂着。
   const refresh = () => {
-    void qc.invalidateQueries({ queryKey: ['contacts'] })
+    void qc.invalidateQueries({ queryKey: ['people'] })
     void qc.invalidateQueries({ queryKey: ['links'] })
   }
   const save = useMutation({
-    mutationFn: (patch: Parameters<typeof patchContact>[1]) => patchContact(contact.id, patch),
+    mutationFn: (patch: Parameters<typeof patchPerson>[1]) => patchPerson(person.id, patch),
     onSettled: refresh,
   })
 
@@ -101,10 +95,10 @@ export function ContactFields({
           // 回列表。没有第二个地方可去了：这一层就是这个人的地址。
           kind={
             <Link
-              to="/contacts"
+              to="/people"
               className="rounded text-sm text-fg-muted hover:text-fg hover:underline"
             >
-              ← Contacts
+              ← People
             </Link>
           }
           onClose={onClose}
@@ -117,8 +111,8 @@ export function ContactFields({
     return (
       <div className="flex flex-col gap-4">
         {head}
-        <ContactForm
-          contact={contact}
+        <PersonForm
+          person={person}
           projects={projects.data ?? []}
           chip={chip}
           busy={save.isPending}
@@ -145,16 +139,16 @@ export function ContactFields({
       */}
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
-          <h2 className="truncate text-lg font-semibold text-fg">{contact.name}</h2>
-          {(contact.title || contact.org) && (
+          <h2 className="truncate text-lg font-semibold text-fg">{person.name}</h2>
+          {(person.title || person.org) && (
             <p className="truncate text-sm text-fg-muted">
-              {[contact.title, contact.org].filter(Boolean).join(' · ')}
+              {[person.title, person.org].filter(Boolean).join(' · ')}
             </p>
           )}
         </div>
-        {contact.circle && (
+        {person.circle && (
           <span className="shrink-0 rounded-full border border-border-subtle bg-surface-raised px-2.5 py-1 text-xs text-fg-muted">
-            {CIRCLE_LABELS[contact.circle]}
+            {CIRCLE_LABELS[person.circle]}
           </span>
         )}
         <button type="button" className={BUTTON.secondary} onClick={() => setEditing(true)}>
@@ -163,10 +157,10 @@ export function ContactFields({
       </div>
 
       {/* 先是怎么找到这个人：一张联系人页存在的理由就是这个。 */}
-      {contact.channels.length > 0 && (
-        <Field label="Contact" shape="above">
+      {person.channels.length > 0 && (
+        <Field label="Person" shape="above">
           <ul data-channels className="flex flex-col gap-0.5">
-            {byKind(contact.channels).map((c, i) => (
+            {byKind(person.channels).map((c, i) => (
               <li key={i} className="flex min-w-0 items-center gap-1.5">
                 <span className="w-12 shrink-0 text-xs text-fg-muted">{KIND_LABEL[c.kind]}</span>
                 <a
@@ -190,25 +184,25 @@ export function ContactFields({
       */}
       <div className="@container">
         <div
-          data-contact-fields
+          data-person-fields
           className="grid items-start gap-x-6 gap-y-4 @xl:grid-cols-2 @2xl:grid-cols-3"
         >
-          <BirthdayFields contact={contact} />
-          <Reads label="Hometown" value={contact.hometown} />
-          <Reads label="Lives in" value={contact.city} />
-          <Reads label="Company" value={contact.org} />
-          <Reads label="Title" value={contact.title} />
+          <BirthdayFields person={person} />
+          <Reads label="Hometown" value={person.hometown} />
+          <Reads label="Lives in" value={person.city} />
+          <Reads label="Company" value={person.org} />
+          <Reads label="Title" value={person.title} />
           <Reads
             label="Gender"
-            value={contact.gender ? (GENDER_LABELS[contact.gender] ?? null) : null}
+            value={person.gender ? (GENDER_LABELS[person.gender] ?? null) : null}
           />
-          <Reads label="Circle" value={contact.circle ? CIRCLE_LABELS[contact.circle] : null} />
+          <Reads label="Circle" value={person.circle ? CIRCLE_LABELS[person.circle] : null} />
           <Field label="Projects" shape="above">
-            {contact.projects.length === 0 ? (
+            {person.projects.length === 0 ? (
               <p className="text-sm text-fg-subtle">Not on any project</p>
             ) : (
               <ul className="flex flex-wrap gap-1.5">
-                {contact.projects.map((p) => (
+                {person.projects.map((p) => (
                   <li key={p.id} className={CHIP}>
                     {chip(p.id)}
                     <span className="truncate">{p.name}</span>
@@ -233,9 +227,9 @@ export function ContactFields({
             Edit notes
           </button>
         </div>
-        <div data-contact-notes className="mt-1.5 max-w-[68ch] text-fg">
-          {contact.note ? (
-            <NoteBody source={contact.note} />
+        <div data-person-notes className="mt-1.5 max-w-[68ch] text-fg">
+          {person.note ? (
+            <NoteBody source={person.note} />
           ) : (
             <p className="text-sm text-fg-subtle">No notes yet</p>
           )}
@@ -243,8 +237,8 @@ export function ContactFields({
       </div>
       {writing && (
         <WritingMode
-          heading={contact.name}
-          source={contact.note ?? ''}
+          heading={person.name}
+          source={person.note ?? ''}
           onChange={(next) => save.mutate({ note: next.trim() === '' ? null : next })}
           onClose={() => setWriting(false)}
         />
@@ -305,7 +299,7 @@ function Reads({ label, value }: { label: string; value: string | null }) {
  * `seed`：框里那个国家码是这张表自己放进去的，不是人写的。人没在它后面接着打，这一行就还是
  * 空的 —— 加了一行又改主意是常事，不该因此按不动 Save。
  */
-type Row = ContactResponse['channels'][number] & { touched?: boolean; seed?: string }
+type Row = PersonResponse['channels'][number] & { touched?: boolean; seed?: string }
 
 /** 这一行上有人写过东西吗？自己放的那个国家码不算。 */
 const written = (c: Row) => c.value.trim() !== '' && c.value !== c.seed
@@ -318,30 +312,30 @@ const written = (c: Row) => c.value.trim() !== '' && c.value !== c.seed
  * 把表撑回原来那副样子，所以它仍然是那一格加一个二级面板；**Linked** 是边，加一条边当场就成立，
  * 不该等一个它不属于的表单 —— 任务那边的依赖也是这条规矩。
  */
-function ContactForm({
-  contact,
+function PersonForm({
+  person,
   projects,
   chip,
   busy,
   onCancel,
   onSave,
 }: {
-  contact: ContactResponse
+  person: PersonResponse
   projects: { id: string; name: string; archivedAt: string | null }[]
   chip: (id: string) => ReactNode
   busy: boolean
   onCancel: () => void
-  onSave: (patch: Parameters<typeof patchContact>[1]) => void
+  onSave: (patch: Parameters<typeof patchPerson>[1]) => void
 }) {
-  const [name, setName] = useState(contact.name)
-  const [org, setOrg] = useState(contact.org ?? '')
-  const [title, setTitle] = useState(contact.title ?? '')
-  const [hometown, setHometown] = useState(contact.hometown ?? '')
-  const [city, setCity] = useState(contact.city ?? '')
-  const [gender, setGender] = useState(contact.gender ?? '')
-  const [circle, setCircle] = useState(contact.circle ?? '')
-  const [projectIds, setProjectIds] = useState(contact.projects.map((p) => p.id))
-  const [channels, setChannels] = useState<Row[]>(() => byKind(contact.channels))
+  const [name, setName] = useState(person.name)
+  const [org, setOrg] = useState(person.org ?? '')
+  const [title, setTitle] = useState(person.title ?? '')
+  const [hometown, setHometown] = useState(person.hometown ?? '')
+  const [city, setCity] = useState(person.city ?? '')
+  const [gender, setGender] = useState(person.gender ?? '')
+  const [circle, setCircle] = useState(person.circle ?? '')
+  const [projectIds, setProjectIds] = useState(person.projects.map((p) => p.id))
+  const [channels, setChannels] = useState<Row[]>(() => byKind(person.channels))
   const phone = usePhone()
   const region = phone?.currentRegion()
   /**
@@ -404,7 +398,7 @@ function ContactForm({
   // 说出来的只有离开过的那几行。Save 按不按得动看的是全部 —— 挡住一次必然的 400，和当着人的面
   // 数落他还没打完的字，是两件事。
   const shown = problems.map((p, i) => (channels[i]?.touched ? p : undefined))
-  const [note, setNote] = useState(contact.note ?? '')
+  const [note, setNote] = useState(person.note ?? '')
   const [writing, setWriting] = useState(false)
   const [pickingDay, setPickingDay] = useState(false)
   // 没点开就是不动它：undefined 表示「这次没改生日」，null 表示「去掉」。
@@ -416,8 +410,8 @@ function ContactForm({
   // say `Not set` here for a person whose pane, one press earlier, read `Oct 17, 1991`.
   const dayText =
     birthday === undefined
-      ? contact.birthday
-        ? givenDate(contact.birthday)
+      ? person.birthday
+        ? givenDate(person.birthday)
         : null
       : birthday
         ? plainDate(birthday)
@@ -487,7 +481,7 @@ function ContactForm({
       </div>
 
       <div>
-        <span className={label}>Contact</span>
+        <span className={label}>Person</span>
         <ul className="mt-1.5 flex flex-col gap-2">
           {channels.map((c, i) => (
             <li key={i} className="flex min-w-0 flex-wrap items-center gap-1.5">
@@ -599,13 +593,13 @@ function ContactForm({
           {pickingDay && (
             <div className="col-span-full rounded-lg border border-border-strong bg-surface-raised p-3">
               <BirthdayEditor
-                birthday={contact.birthday}
+                birthday={person.birthday}
                 onChange={(draft, refused) => {
                   setBirthday(draft)
                   setBadDay(refused)
                 }}
               />
-              {contact.birthday && (
+              {person.birthday && (
                 <button
                   type="button"
                   className={`mt-2 ${BUTTON.quiet}`}
@@ -688,7 +682,7 @@ function ContactForm({
       </div>
       {writing && (
         <WritingMode
-          heading={name || contact.name}
+          heading={name || person.name}
           source={note}
           onChange={setNote}
           onClose={() => setWriting(false)}
@@ -706,26 +700,26 @@ function ContactForm({
  * The fields are also shown on the object page, which has panels of its own below them -- a delete
  * drawn inside the fields would land in the middle of that page.
  */
-export function DeleteContact({
-  contact,
+export function DeletePerson({
+  person,
   onDeleted,
 }: {
-  contact: ContactResponse
+  person: PersonResponse
   onDeleted?: () => void
 }) {
   const qc = useQueryClient()
   const drop = useMutation({
-    mutationFn: () => deleteContact(contact.id),
+    mutationFn: () => deletePerson(person.id),
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ['contacts'] })
+      await qc.invalidateQueries({ queryKey: ['people'] })
       onDeleted?.()
     },
   })
   return (
     <DangerAction
-      label="Delete contact"
-      confirmLabel="Confirm deleting this contact"
-      message={`Delete “${contact.name}”? This cannot be undone.`}
+      label="Delete person"
+      confirmLabel="Confirm deleting this person"
+      message={`Delete “${person.name}”? This cannot be undone.`}
       busy={drop.isPending}
       onConfirm={() => drop.mutate()}
     />

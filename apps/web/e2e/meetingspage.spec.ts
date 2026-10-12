@@ -32,7 +32,7 @@ test('a meeting is filled in once: title, time, zone, repeat and the people', as
     data: { name: 'Job hunt' },
   })
   const projectId = ((await project.json()) as { id: string }).id
-  await page.request.post('/api/v1/contacts', { headers: WEB, data: { name: 'Ying Chen' } })
+  await page.request.post('/api/v1/people', { headers: WEB, data: { name: 'Ying Chen' } })
 
   await page.goto('/meetings')
   await page.getByRole('button', { name: 'New meeting' }).click()

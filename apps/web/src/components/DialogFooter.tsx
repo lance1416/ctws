@@ -4,7 +4,7 @@ import { BUTTON } from './buttonStyles'
 /**
  * HOW A "NEW THING" DIALOG ENDS: what went wrong, then the two ways out.
  *
- * Written twice, identically, for the new contact and the new meeting -- thirty lines each of
+ * Written twice, identically, for the new person and the new meeting -- thirty lines each of
  * error paragraph, submit button and cancel button, down to the class strings. The third one
  * would have been a third copy, and the first thing to drift between them is the wording of a
  * failure, which is the sentence a person reads at the worst moment.

@@ -1,4 +1,4 @@
-import { CHANNEL_KINDS, type ChannelKind, type ContactChannel } from '@ctws/contracts'
+import { CHANNEL_KINDS, type ChannelKind, type PersonChannel } from '@ctws/contracts'
 import { linkLabel } from './url'
 
 /**
@@ -53,4 +53,4 @@ export const KIND_LABEL: Record<ChannelKind, string> = {
 
 export const KIND_CHOICES = CHANNEL_KINDS.map((k) => ({ value: k, label: KIND_LABEL[k] }))
 
-export type { ContactChannel }
+export type { PersonChannel }

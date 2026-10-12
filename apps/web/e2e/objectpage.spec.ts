@@ -4,7 +4,7 @@ import { apiPost, registerFreshUser } from './helpers'
 /**
  * ONE PAGE FOR EVERY KIND OF THING.
  *
- * A person's page did not exist: a contact was a row with a pane over it, and the meetings they
+ * A person's page did not exist: a person was a row with a pane over it, and the meetings they
  * were in, the book they recommended and the task that came out of a call with them had nowhere
  * to be shown. What is tested here is that the shell draws ONE page for a project, a person and a
  * meeting alike -- the module fills the top, the shell fills the rest from the edge table -- and
@@ -14,7 +14,7 @@ import { apiPost, registerFreshUser } from './helpers'
 async function world(page: Page) {
   await registerFreshUser(page)
   const project = await apiPost(page, '/projects', { name: 'Job hunt' })
-  const person = await apiPost(page, '/contacts', {
+  const person = await apiPost(page, '/people', {
     name: 'Ying Chen',
     org: 'Acme recruiting',
     projectIds: [project.id],
@@ -26,7 +26,7 @@ async function world(page: Page) {
     title: 'The Design of Everyday Things',
   })
   await apiPost(page, '/links', {
-    from: { type: 'contact', id: person.id },
+    from: { type: 'person', id: person.id },
     to: { type: 'reading', id: book.id },
     kind: 'recommends',
   })
@@ -49,9 +49,9 @@ async function world(page: Page) {
  */
 test('一个人的那一层里，模块写字段、shell 写边', async ({ page }) => {
   const { person } = await world(page)
-  await page.goto(`/contacts/${person.id}`)
+  await page.goto(`/people/${person.id}`)
 
-  const layer = page.getByRole('dialog', { name: 'Contacts' })
+  const layer = page.getByRole('dialog', { name: 'People' })
   await expect(layer).toContainText('Ying Chen')
   await expect(layer).toContainText('Acme recruiting')
 
@@ -66,7 +66,7 @@ test('一个人的那一层里，模块写字段、shell 写边', async ({ page 
 
 test('从一个人跟着边走到一场会，落点是会议的那一层', async ({ page }) => {
   const { person, meeting } = await world(page)
-  await page.goto(`/contacts/${person.id}`)
+  await page.goto(`/people/${person.id}`)
   await page.getByRole('link', { name: /Second interview/ }).click()
 
   await expect(page).toHaveURL(new RegExp(`/meetings/${meeting.meetingId}$`))
@@ -77,7 +77,7 @@ test('从一个人跟着边走到一场会，落点是会议的那一层', async
 
 test('指向一个已经不在的人，说出来而不是空着', async ({ page }) => {
   await registerFreshUser(page)
-  await page.goto('/contacts/99999999-9999-4999-8999-999999999999')
+  await page.goto('/people/99999999-9999-4999-8999-999999999999')
   await expect(page.getByText('This person is not here any more.')).toBeVisible()
 })
 

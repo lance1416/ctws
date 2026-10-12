@@ -12,7 +12,7 @@ import type {
   Widget,
   WorkspaceModule,
 } from './contract'
-import { contactModule } from './contacts'
+import { peopleModule } from './people'
 import { meetingModule } from './meetings'
 import { readingModule } from './reading'
 import { taskModule } from './tasks'
@@ -28,7 +28,7 @@ import { taskModule } from './tasks'
 export const MODULES: readonly WorkspaceModule[] = Object.freeze([
   taskModule,
   readingModule,
-  contactModule,
+  peopleModule,
   meetingModule,
 ])
 

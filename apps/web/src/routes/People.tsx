@@ -1,27 +1,27 @@
-import type { Circle, ContactResponse } from '@ctws/contracts'
+import type { Circle, PersonResponse } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { contactsKey, listContacts } from '../api/contacts'
-import { ContactDetail } from '../components/ContactDetail'
-import { ContactList } from '../components/ContactList'
-import { NewContactDialog } from '../components/NewContactDialog'
-import { NewContactInput } from '../components/NewContactInput'
+import { peopleKey, listPeople } from '../api/people'
+import { PersonDetail } from '../components/PersonDetail'
+import { PeopleList } from '../components/PeopleList'
+import { NewPersonDialog } from '../components/NewPersonDialog'
+import { NewPersonInput } from '../components/NewPersonInput'
 import { LIST_MEASURE } from '../rowLead'
 import { BUTTON } from '../components/buttonStyles'
 import { CIRCLE_LABELS } from '../components/BirthdayRow'
 
 /**
- * CONTACTS.
+ * PEOPLE.
  *
  * One flat list, by name. No groups, no favourites, no letter index: this is one person's address
  * book, and at the size it will ever reach, sorting it by name and letting search do the rest is
- * what every contact app does before it starts adding structure nobody asked for.
+ * what every person app does before it starts adding structure nobody asked for.
  */
-export function Contacts() {
-  const contacts = useQuery({ queryKey: contactsKey(), queryFn: () => listContacts() })
+export function People() {
+  const people = useQuery({ queryKey: peopleKey(), queryFn: () => listPeople() })
   /**
-   * 开着的是谁，写在 URL 里 —— 这一层就是 `/contacts/<id>` 本身。
+   * 开着的是谁，写在 URL 里 —— 这一层就是 `/people/<id>` 本身。
    *
    * 一个人没有自己的页：任务也没有（`relations.to` 指的是 `/projects?task=<id>`）。URL 留着，
    * 反向链接和粘进来的链接才有地方可去；列表留在后面，筛选和滚动位置不会因为看一眼某个人就丢。
@@ -29,44 +29,44 @@ export function Contacts() {
    */
   const { id: openId = null } = useParams()
   const navigate = useNavigate()
-  const setOpenId = (next: string | null) => navigate(next ? `/contacts/${next}` : '/contacts')
+  const setOpenId = (next: string | null) => navigate(next ? `/people/${next}` : '/people')
   const heading = useRef<HTMLHeadingElement>(null)
   const [making, setMaking] = useState(false)
   const [circle, setCircle] = useState<Circle | null>(null)
 
   // Looked up by id rather than held: the open person has to follow the list's refetches, or an
   // edit made in the pane would leave the pane showing what it said before.
-  const open = contacts.data?.find((c) => c.id === openId) ?? null
+  const open = people.data?.find((c) => c.id === openId) ?? null
 
   return (
     <>
       <div className="flex items-center justify-between gap-3">
         <h1 ref={heading} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
-          Contacts
+          People
         </h1>
         {/* TWO WAYS IN, because there are two moments. The box takes a name when a name is all
             you have; the button opens the form for when you are writing somebody down properly
             and already know where they work and how to reach them. */}
         <button type="button" onClick={() => setMaking(true)} className={BUTTON.secondary}>
-          New contact
+          New person
         </button>
       </div>
 
       <div className={`mt-4 ${LIST_MEASURE}`}>
-        <NewContactInput onCreated={(c: ContactResponse) => setOpenId(c.id)} />
+        <NewPersonInput onCreated={(c: PersonResponse) => setOpenId(c.id)} />
       </div>
 
       {/* 链接指向的人已经不在了：说出来。静静地只剩一个列表，读起来像链接坏了。 */}
-      {openId !== null && contacts.isSuccess && open === null && (
+      {openId !== null && people.isSuccess && open === null && (
         <p role="alert" className="mt-4 text-sm text-fg-muted">
           This person is not here any more.
         </p>
       )}
-      {contacts.isPending && <p className="mt-6 text-fg-muted">Loading…</p>}
-      {contacts.isError && (
+      {people.isPending && <p className="mt-6 text-fg-muted">Loading…</p>}
+      {people.isError && (
         <p role="alert" className="mt-6 text-danger">
-          {contacts.error instanceof Error
-            ? contacts.error.message
+          {people.error instanceof Error
+            ? people.error.message
             : "Couldn't load. Check that the server is running."}
         </p>
       )}
@@ -90,18 +90,18 @@ export function Contacts() {
         })}
       </div>
 
-      {contacts.isSuccess && (
+      {people.isSuccess && (
         <div className={`mt-3 ${LIST_MEASURE}`}>
-          <ContactList
-            contacts={contacts.data.filter((c) => circle === null || c.circle === circle)}
-            emptyLine="No contacts yet"
+          <PeopleList
+            people={people.data.filter((c) => circle === null || c.circle === circle)}
+            emptyLine="No people yet"
             onOpen={(c) => setOpenId(c.id)}
           />
         </div>
       )}
 
       {making && (
-        <NewContactDialog
+        <NewPersonDialog
           onClose={() => setMaking(false)}
           onMade={(made) => {
             setMaking(false)
@@ -109,7 +109,7 @@ export function Contacts() {
           }}
         />
       )}
-      {open && <ContactDetail contact={open} onClose={() => setOpenId(null)} />}
+      {open && <PersonDetail person={open} onClose={() => setOpenId(null)} />}
     </>
   )
 }

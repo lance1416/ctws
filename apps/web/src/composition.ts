@@ -5,7 +5,7 @@ import { useRef } from 'react'
  *
  * Typing English inside a Chinese IME and pressing Enter is how a lot of people type English --
  * the Enter commits the letters out of the candidate buffer. It must not also file the task,
- * save the contact or close the editor, and it did.
+ * save the person or close the editor, and it did.
  *
  * `KeyboardEvent.isComposing` is the standard signal and is not enough on its own: in Safari (and
  * so on most Macs) `compositionend` is dispatched BEFORE the `keydown` for the very Enter that

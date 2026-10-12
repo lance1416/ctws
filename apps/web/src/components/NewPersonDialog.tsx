@@ -2,11 +2,11 @@ import {
   CHANNEL_KINDS,
   channelProblem,
   type ChannelKind,
-  type ContactResponse,
+  type PersonResponse,
 } from '@ctws/contracts'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
-import { createContact, type BirthdayDraft } from '../api/contacts'
+import { createPerson, type BirthdayDraft } from '../api/people'
 import { listProjects } from '../api/projects'
 import { useComposing } from '../composition'
 import { channelPlaceholder } from '../channels'
@@ -19,7 +19,7 @@ import { DialogFooter } from './DialogFooter'
 import { Modal } from './Modal'
 
 /**
- * NEW CONTACT, filled in once.
+ * NEW PERSON, filled in once.
  *
  * A name alone is never all you know about somebody. The line-of-text box this stands beside is
  * right for the moment you only have a name -- and wrong every other time, because it then makes
@@ -28,12 +28,12 @@ import { Modal } from './Modal'
  */
 const KIND_LABEL: Record<ChannelKind, string> = { email: 'Email', phone: 'Phone', url: 'Link' }
 
-export function NewContactDialog({
+export function NewPersonDialog({
   onClose,
   onMade,
 }: {
   onClose: () => void
-  onMade: (made: ContactResponse) => void
+  onMade: (made: PersonResponse) => void
 }) {
   const qc = useQueryClient()
   const nameField = useRef<HTMLInputElement>(null)
@@ -86,9 +86,9 @@ export function NewContactDialog({
 
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
   const make = useMutation({
-    mutationFn: createContact,
+    mutationFn: createPerson,
     onSuccess: async (made) => {
-      await qc.invalidateQueries({ queryKey: ['contacts'] })
+      await qc.invalidateQueries({ queryKey: ['people'] })
       onMade(made)
     },
   })
@@ -120,7 +120,7 @@ export function NewContactDialog({
 
   return (
     <Modal
-      title="New contact"
+      title="New person"
       onClose={onClose}
       initialFocus={nameField}
       dismissLabel={null}
@@ -153,11 +153,11 @@ export function NewContactDialog({
         </div>
 
         <div>
-          <label htmlFor="contact-org" className={label}>
+          <label htmlFor="person-org" className={label}>
             Company
           </label>
           <input
-            id="contact-org"
+            id="person-org"
             value={org}
             onChange={(e) => setOrg(e.target.value)}
             className={`${field} mt-1.5`}
@@ -215,7 +215,7 @@ export function NewContactDialog({
         {/* ONE address, because one is what you have when you are writing someone down. The rest
             are added on their page, where the list of them belongs. */}
         <div>
-          <span className={label}>Contact</span>
+          <span className={label}>Person</span>
           <div className="mt-1.5 flex flex-wrap gap-2">
             {/* The app's own picker, not a native `<select>`: the OS draws that popup and
                 does not know this palette -- on Windows it came up white with the page's
@@ -281,11 +281,11 @@ export function NewContactDialog({
         </div>
 
         <div>
-          <label htmlFor="contact-note" className={label}>
+          <label htmlFor="person-note" className={label}>
             Notes
           </label>
           <textarea
-            id="contact-note"
+            id="person-note"
             value={note}
             onChange={(e) => setNote(e.target.value)}
             rows={3}

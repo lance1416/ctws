@@ -1,9 +1,9 @@
 import type {
   BirthdayPreviewResponse,
-  ContactResponse,
+  PersonResponse,
   RemindLead,
-  CreateContactBody,
-  UpdateContactBody,
+  CreatePersonBody,
+  UpdatePersonBody,
 } from '@ctws/contracts'
 import { apiFetch } from '../api'
 
@@ -31,44 +31,44 @@ export function previewBirthday(draft: BirthdayDraft): Promise<BirthdayPreviewRe
   if (draft.year !== null) params.set('year', String(draft.year))
   if (draft.leapMonth) params.set('leap', 'true')
   if (draft.hourBranch !== null) params.set('hour', String(draft.hourBranch))
-  return apiFetch(`/contacts/birthdays/preview?${params}`)
+  return apiFetch(`/people/birthdays/preview?${params}`)
 }
 
-/** The contacts module's own namespace. */
-const BASE = '/contacts'
+/** The people module's own namespace. */
+const BASE = '/people'
 
-export type ContactQuery = { projectId?: string; unfiled?: boolean }
+export type PeopleQuery = { projectId?: string; unfiled?: boolean }
 
-export const contactsKey = (query: ContactQuery = {}) =>
-  ['contacts', query.projectId ?? null, query.unfiled ?? false] as const
+export const peopleKey = (query: PeopleQuery = {}) =>
+  ['people', query.projectId ?? null, query.unfiled ?? false] as const
 
-export async function listContacts(query: ContactQuery = {}): Promise<ContactResponse[]> {
+export async function listPeople(query: PeopleQuery = {}): Promise<PersonResponse[]> {
   const params = new URLSearchParams()
   if (query.projectId) params.set('projectId', query.projectId)
   if (query.unfiled) params.set('unfiled', 'true')
   const suffix = params.size > 0 ? `?${params}` : ''
-  return (await apiFetch<{ contacts: ContactResponse[] }>(`${BASE}${suffix}`)).contacts
+  return (await apiFetch<{ people: PersonResponse[] }>(`${BASE}${suffix}`)).people
 }
 
-export async function searchContacts(query: string): Promise<ContactResponse[]> {
+export async function searchPeople(query: string): Promise<PersonResponse[]> {
   const path = `${BASE}/search?q=${encodeURIComponent(query)}`
-  return (await apiFetch<{ contacts: ContactResponse[] }>(path)).contacts
+  return (await apiFetch<{ people: PersonResponse[] }>(path)).people
 }
 
-export function createContact(body: CreateContactBody): Promise<ContactResponse> {
+export function createPerson(body: CreatePersonBody): Promise<PersonResponse> {
   return apiFetch(BASE, { method: 'POST', body: JSON.stringify(body) })
 }
 
-export function patchContact(id: string, body: UpdateContactBody): Promise<ContactResponse> {
+export function patchPerson(id: string, body: UpdatePersonBody): Promise<PersonResponse> {
   return apiFetch(`${BASE}/${id}`, { method: 'PATCH', body: JSON.stringify(body) })
 }
 
-export function deleteContact(id: string): Promise<void> {
+export function deletePerson(id: string): Promise<void> {
   return apiFetch(`${BASE}/${id}`, { method: 'DELETE' })
 }
 
 /**
- * How a channel is OPENED. `mailto:` and `tel:` are what a contact list is for -- a person looks
+ * How a channel is OPENED. `mailto:` and `tel:` are what a person list is for -- a person looks
  * someone up in order to write to them, and making them copy the address by hand is the whole
  * cost the list was supposed to remove.
  */

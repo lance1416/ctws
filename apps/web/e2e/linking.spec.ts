@@ -13,7 +13,7 @@ const picker = (page: Page) => page.getByRole('dialog').filter({ hasText: 'Link 
 
 async function world(page: Page) {
   await registerFreshUser(page)
-  const person = await apiPost(page, '/contacts', { name: 'Ying Chen', org: 'Acme recruiting' })
+  const person = await apiPost(page, '/people', { name: 'Ying Chen', org: 'Acme recruiting' })
   const book = await apiPost(page, '/reading', {
     kind: 'book',
     title: 'The Design of Everyday Things',
@@ -23,7 +23,7 @@ async function world(page: Page) {
 
 test('a book can be marked as the one someone recommended', async ({ page }) => {
   const { person, book } = await world(page)
-  await page.goto(`/contacts/${person.id}`)
+  await page.goto(`/people/${person.id}`)
   await expect(page.getByRole('region', { name: 'Linked' })).toContainText('Nothing linked yet')
 
   await page.getByRole('button', { name: '+ Link' }).click()
@@ -39,7 +39,7 @@ test('a book can be marked as the one someone recommended', async ({ page }) => 
   )
   await page.getByRole('button', { name: 'recommended', exact: true }).click()
   expect((await made).request().postDataJSON()).toEqual({
-    from: { type: 'contact', id: person.id },
+    from: { type: 'person', id: person.id },
     to: { type: 'reading', id: book.id },
     kind: 'recommends',
   })
@@ -53,14 +53,14 @@ test('a book can be marked as the one someone recommended', async ({ page }) => 
 test('the edge reads from both ends, written once', async ({ page }) => {
   const { person, book } = await world(page)
   await apiPost(page, '/links', {
-    from: { type: 'contact', id: person.id },
+    from: { type: 'person', id: person.id },
     to: { type: 'reading', id: book.id },
     kind: 'recommends',
   })
 
   // Nothing was written on the BOOK, and the book's module has no page of its own -- so this is
   // read on the person, and on the reading list the item simply exists. One row, two readings.
-  await page.goto(`/contacts/${person.id}`)
+  await page.goto(`/people/${person.id}`)
   const row = page.getByRole('region', { name: 'Reading' })
   await expect(row).toContainText('The Design of Everyday Things')
   await expect(row).toContainText('recommended')
@@ -72,7 +72,7 @@ test('an edge is taken off from either end, whichever way it was written', async
   // them, or it deletes nothing and the row comes back on the next read.
   const { person, book } = await world(page)
   await apiPost(page, '/links', {
-    from: { type: 'contact', id: person.id },
+    from: { type: 'person', id: person.id },
     to: { type: 'reading', id: book.id },
     kind: 'recommends',
   })
@@ -84,7 +84,7 @@ test('an edge is taken off from either end, whichever way it was written', async
     attendeeIds: [person.id],
   })
 
-  await page.goto(`/contacts/${person.id}`)
+  await page.goto(`/people/${person.id}`)
   // INCOMING: the guest list was written on the meeting.
   await page.getByRole('button', { name: 'Unlink Second interview' }).click()
   await expect(page.getByRole('region', { name: 'Meetings' })).toHaveCount(0)
@@ -101,13 +101,13 @@ test('an edge can be taken off again, and the one a module owns cannot', async (
   const { person, book } = await world(page)
   const project = await apiPost(page, '/projects', { name: 'Job hunt' })
   await apiPost(page, '/links', {
-    from: { type: 'contact', id: person.id },
+    from: { type: 'person', id: person.id },
     to: { type: 'reading', id: book.id },
     kind: 'recommends',
   })
   await apiPost(page, '/tasks', { projectId: project.id, title: 'Rewrite the CV', parentId: null })
 
-  await page.goto(`/contacts/${person.id}`)
+  await page.goto(`/people/${person.id}`)
   const gone = page.waitForResponse(
     (r) => r.request().method() === 'DELETE' && /\/api\/v1\/links\?/.test(r.url()),
   )
@@ -132,7 +132,7 @@ test('the picker offers every kind of thing, and never the object itself', async
     durationMinutes: 60,
   })
 
-  await page.goto(`/contacts/${person.id}`)
+  await page.goto(`/people/${person.id}`)
   await page.getByRole('button', { name: '+ Link' }).click()
   const list = picker(page).getByRole('listitem')
   // One box, four kinds of thing, each saying which it is -- two titles can read the same.
@@ -169,8 +169,8 @@ test('一件活可以连到一个人，两头都读得到', async ({ page }) => 
   await expect(pane.getByRole('region', { name: 'Linked' })).toContainText('Ying Chen')
 
   // 从人那一头也看得见：边是从两端读的。
-  await page.goto(`/contacts/${person.id}`)
+  await page.goto(`/people/${person.id}`)
   await expect(
-    page.getByRole('dialog', { name: 'Contacts' }).getByRole('region', { name: 'Linked' }),
+    page.getByRole('dialog', { name: 'People' }).getByRole('region', { name: 'Linked' }),
   ).toContainText('准备一面')
 })

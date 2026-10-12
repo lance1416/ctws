@@ -10,7 +10,7 @@ import { ViewTabs } from './ViewTabs'
  * A PAGE FOR A THING THAT IS A PLACE.
  *
  * Only a project has one now. A person and a meeting are RECORDS: you glance at them from
- * wherever you were, so each is a layer over its own list (`/contacts/<id>`, `/meetings/<id>`),
+ * wherever you were, so each is a layer over its own list (`/people/<id>`, `/meetings/<id>`),
  * the way a task has always been a layer over its project. A record that took the whole window
  * away made you leave the list to read six fields and then find your way back.
  *

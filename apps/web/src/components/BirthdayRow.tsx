@@ -15,11 +15,11 @@ import { countdownPhrase, shortDay } from '../dueAt'
 export function BirthdayRow({ row, today }: { row: BirthdayListRow; today: string }) {
   return (
     <li
-      data-birthday-row={row.contactId}
+      data-birthday-row={row.personId}
       className="flex h-11 min-w-0 items-center gap-2.5 rounded-lg px-2 hover:bg-surface-hover"
     >
       <Link
-        to={`/contacts/${row.contactId}`}
+        to={`/people/${row.personId}`}
         className="min-w-0 shrink truncate rounded text-base text-fg hover:underline"
       >
         {row.name}

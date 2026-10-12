@@ -1,39 +1,39 @@
-import type { ContactResponse } from '@ctws/contracts'
-import { channelHref } from '../api/contacts'
+import type { PersonResponse } from '@ctws/contracts'
+import { channelHref } from '../api/people'
 import { byKind, channelLabel } from '../channels'
 import { useProjectRail } from '../projectColor'
-import { sortByName } from '../contactOrder'
+import { sortByName } from '../peopleOrder'
 import { usePhone } from '../usePhone'
 import { PanelEmpty } from './Panel'
 
 /**
  * A LIST OF PEOPLE, with their addresses live.
  *
- * The addresses are LINKS, not text to copy: a contact list is opened in order to write to
+ * The addresses are LINKS, not text to copy: a person list is opened in order to write to
  * someone, and making them select an address by hand is the whole cost the list existed to
  * remove. Everything else on the row opens the person, because a card whose only target is its
  * title makes you aim at four characters. Changing anything about them happens in the pane,
  * which is where changing anything about anything happens.
  */
-export function ContactList({
-  contacts,
+export function PeopleList({
+  people,
   here,
   emptyLine,
   onOpen,
 }: {
-  contacts: readonly ContactResponse[]
+  people: readonly PersonResponse[]
   /** The project this list is already inside, if any -- it is then not repeated on a row. */
   here?: string | undefined
   emptyLine: string
-  onOpen: (contact: ContactResponse) => void
+  onOpen: (person: PersonResponse) => void
 }) {
   const rail = useProjectRail()
   const phone = usePhone()
 
-  if (contacts.length === 0) return <PanelEmpty>{emptyLine}</PanelEmpty>
+  if (people.length === 0) return <PanelEmpty>{emptyLine}</PanelEmpty>
   return (
     <ul className="flex flex-col">
-      {sortByName(contacts).map((person) => {
+      {sortByName(people).map((person) => {
         const elsewhere = person.projects.filter((p) => p.id !== here)
         return (
           /* THE WHOLE ROW OPENS THE PERSON -- a card whose only target is its title makes you
@@ -57,7 +57,7 @@ export function ContactList({
                   e.stopPropagation()
                   onOpen(person)
                 }}
-                data-contact-name
+                data-person-name
                 className="truncate rounded text-left text-sm font-semibold text-fg group-hover:underline"
               >
                 {person.name}

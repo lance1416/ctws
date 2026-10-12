@@ -34,7 +34,7 @@ async function dark(page: Page) {
 
 test('深色下，搜索里被选中的那一条看得出来', async ({ page }) => {
   await registerFreshUser(page)
-  await apiPost(page, '/contacts', { name: 'Sam Patel', org: 'IQBank' })
+  await apiPost(page, '/people', { name: 'Sam Patel', org: 'IQBank' })
   await dark(page)
   await page.getByRole('button', { name: 'Search' }).click()
   await page.getByRole('combobox', { name: 'Search' }).fill('Sam')

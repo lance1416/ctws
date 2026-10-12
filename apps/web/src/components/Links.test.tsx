@@ -51,7 +51,7 @@ const groups: LinksResponse['groups'] = [
   },
 ]
 
-function render(of: { type: 'contact'; id: string }, data?: LinksResponse['groups']) {
+function render(of: { type: 'person'; id: string }, data?: LinksResponse['groups']) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   if (data) client.setQueryData(linksKey(of), data)
   return renderToStaticMarkup(
@@ -63,7 +63,7 @@ function render(of: { type: 'contact'; id: string }, data?: LinksResponse['group
   )
 }
 
-const of = { type: 'contact', id: 'c1' } as const
+const of = { type: 'person', id: 'c1' } as const
 
 describe('what one thing is connected to', () => {
   it('names each group and counts what is in it', () => {

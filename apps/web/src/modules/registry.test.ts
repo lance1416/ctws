@@ -83,7 +83,7 @@ describe('this workspace', () => {
     // A module that is imported and never added to the list is invisible: no rail row, no
     // calendar entries, no card -- and nothing else fails, so it looks like the module is broken
     // rather than absent. It has happened.
-    expect(MODULES.map((m) => m.id)).toEqual(['tasks', 'reading', 'contacts', 'meetings'])
+    expect(MODULES.map((m) => m.id)).toEqual(['tasks', 'reading', 'people', 'meetings'])
   })
 })
 
@@ -201,6 +201,6 @@ describe('where another module keeps its things', () => {
   })
 
   it('has no answer for a type no module claims', () => {
-    expect(relationFor('contact', [notes])).toBeNull()
+    expect(relationFor('person', [notes])).toBeNull()
   })
 })
