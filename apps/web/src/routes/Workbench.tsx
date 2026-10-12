@@ -5,6 +5,7 @@ import { listProjects } from '../api/projects'
 import { Panel, PanelEmpty } from '../components/Panel'
 import { useProjectRail } from '../projectColor'
 import { moduleWidgets } from '../modules/registry'
+import { useCrumbs } from '../components/Location'
 
 /**
  * THE WORKBENCH -- THE SHELL'S OWN FRONT PAGE, and the first surface that is nobody's module.
@@ -18,6 +19,7 @@ import { moduleWidgets } from '../modules/registry'
  * the wrong place, that is a decision to make here, in the code, once.
  */
 export function Workbench() {
+  useCrumbs([{ label: 'Workbench' }])
   const heading = useRef<HTMLHeadingElement>(null)
   const widgets = moduleWidgets()
 

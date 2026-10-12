@@ -117,7 +117,10 @@ test('an inbox row says how long it has been sitting there, and only when it mus
 }) => {
   await registerFreshUser(page)
   await submitCreate(page, 'Capture…', '查一下 Cloudflare Tunnel')
-  await page.getByRole('link', { name: 'Projects' }).click()
+  await page
+    .getByRole('navigation', { name: 'Main navigation' })
+    .getByRole('link', { name: 'Projects' })
+    .click()
   await openProject(page, 'Inbox')
 
   await expect(row(page, '查一下 Cloudflare Tunnel').locator('[data-row-age]')).toHaveText(

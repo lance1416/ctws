@@ -58,7 +58,10 @@ async function reopen(page: Page, title: string, edit = true) {
 }
 
 async function seedOneTask(page: Page, edit = true) {
-  await page.getByRole('link', { name: 'Projects' }).click()
+  await page
+    .getByRole('navigation', { name: 'Main navigation' })
+    .getByRole('link', { name: 'Projects' })
+    .click()
   await submitCreate(page, 'New project', 'P')
   await openProject(page, 'P', true)
   await submitCreate(page, 'New task', '写方案')
@@ -109,7 +112,10 @@ test('moves a task to another project', async ({ page }) => {
   await expect(row(page, '写方案')).toHaveCount(0)
   await expect(page.getByRole('dialog')).toHaveCount(0)
   // ...and arrives in the other one.
-  await page.getByRole('link', { name: 'Projects' }).click()
+  await page
+    .getByRole('navigation', { name: 'Main navigation' })
+    .getByRole('link', { name: 'Projects' })
+    .click()
   await openProject(page, 'Inbox')
   await expect(row(page, '写方案')).toBeVisible()
 })
@@ -277,7 +283,10 @@ test('a rejected move is reported and nothing changes', async ({ page }) => {
   await page.unroute(MOVE_URL)
   await page.goto(url)
   await expect(row(page, '写方案')).toHaveCount(1)
-  await page.getByRole('link', { name: 'Projects' }).click()
+  await page
+    .getByRole('navigation', { name: 'Main navigation' })
+    .getByRole('link', { name: 'Projects' })
+    .click()
   await openProject(page, 'Inbox')
   await expect(row(page, '写方案')).toHaveCount(0)
 })

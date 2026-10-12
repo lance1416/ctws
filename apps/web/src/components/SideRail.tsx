@@ -4,7 +4,6 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { createProject, listProjects } from '../api/projects'
 import { refreshProjects } from '../api/taskCache'
 import { pinnedPages } from '../modules/registry'
-import { QuickCapture } from './QuickCapture'
 import { railClass } from '../projectColor'
 import { useComposing } from '../composition'
 
@@ -66,17 +65,9 @@ export function SideRail() {
     // and the centre column keeps `surface`. That is the whole figure/ground device -- no cards,
     // no shadows, no hairline round everything, just two planes. It reads in both schemes
     // because `sunken` is darker than `surface` in each.
-    <div className="flex flex-col border-border-subtle bg-surface-sunken max-lg:border-b lg:h-[calc(100vh-3.25rem)] lg:overflow-y-auto lg:border-r lg:py-4 lg:pr-3 lg:pl-4">
-      {/* CAPTURE LIVES HERE, not in the top bar. It is one of the two things this column is for
-          -- where you go, and what you make -- and in the bar it was a single module's action
-          taking up half the shell's chrome. `/` still reaches it from anywhere. */}
-      <div className="max-lg:px-4 max-lg:pt-2 lg:mb-3">
-        <QuickCapture />
-      </div>
-      <nav
-        aria-label="Main navigation"
-        className="flex flex-col gap-1 max-lg:flex-row max-lg:items-center max-lg:overflow-x-auto max-lg:px-4 max-lg:py-2 lg:gap-0"
-      >
+    // Wide screens only: below 1024 the bottom bar is the navigation (BottomBar).
+    <div className="hidden flex-col border-border-subtle bg-surface-sunken lg:flex lg:h-[calc(100vh-3.25rem)] lg:overflow-y-auto lg:border-r lg:py-4 lg:pr-3 lg:pl-4">
+      <nav aria-label="Main navigation" className="flex flex-col">
         {/* THREE TIERS, each with a rule for what may enter it.
 
           The pinned pages cut across every kind and are organised by time and routine; the shell
@@ -130,7 +121,7 @@ export function SideRail() {
             type="button"
             onClick={() => setNaming(true)}
             aria-label="New project"
-            className="hidden h-6 w-6 items-center justify-center rounded-md text-fg-subtle hover:bg-surface-hover hover:text-fg lg:flex"
+            className="flex h-6 w-6 items-center justify-center rounded-md text-fg-subtle hover:bg-surface-hover hover:text-fg"
           >
             <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3.5 w-3.5">
               <path
@@ -162,16 +153,14 @@ export function SideRail() {
             }}
             aria-label="New project"
             aria-invalid={create.isError ? true : undefined}
-            className={`mx-2.5 hidden h-8 rounded-md border bg-surface px-2 text-sm text-fg lg:block ${
+            className={`mx-2.5 block h-8 rounded-md border bg-surface px-2 text-sm text-fg ${
               create.isError ? 'border-danger' : 'border-border-strong'
             }`}
           />
         )}
 
-        {/* The project list belongs to wide screens: below 1024 the rail is a single row of
-          destinations and the projects are one tap away on their own page, which is also where
-          they can be created and deleted. */}
-        <div className="hidden flex-col lg:flex">
+        {/* The person's own lines of work: the only part of the rail that grows. */}
+        <div className="flex flex-col">
           {projects.data?.map((p) => (
             <NavLink
               key={p.id}

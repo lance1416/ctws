@@ -10,7 +10,7 @@ import { useComposing } from '../composition'
 import { textbox } from './formStyles'
 
 /**
- * One input on every page.
+ * One input on every page, in the header: the same place on every page and at every width.
  *
  * THE DESTINATION IS NOT ALWAYS THE INBOX: every module that can take a line is asked whether it
  * claims this one, in registration order, and the line falls to the registry's named default when
@@ -84,15 +84,9 @@ export function QuickCapture() {
   }, [shortcuts])
 
   return (
-    <>
-      {/* At the top of the rail: the first thing in the column you make things from. */}
-      <div className="relative w-full min-w-0">
-        {/* The rail, at the same fixed x position the project rails use, so the bar reads as
-            part of the same system rather than a floating search box. */}
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 left-0 h-4 w-[3px] -translate-y-1/2 rounded-full bg-accent"
-        />
+    // The answer to a line pops under the box, so typing never moves anything in the header.
+    <div className="relative w-36 min-w-0 shrink sm:w-60">
+      <div className="relative">
         <input
           ref={input}
           value={title}
@@ -117,31 +111,45 @@ export function QuickCapture() {
           /
         </kbd>
       </div>
-      {missing && (
-        <p role="alert" className="w-full text-sm text-danger">
-          No inbox to capture into
-        </p>
-      )}
-      {/* role="status", not "alert": on the projects page the list already raises its own alert
+      <div className="absolute top-full right-0 z-40 mt-1 flex w-max max-w-[20rem] flex-col empty:hidden">
+        {missing && (
+          <p
+            role="alert"
+            className="rounded-lg bg-surface-raised px-3 py-1.5 text-sm text-danger shadow-panel"
+          >
+            No inbox to capture into
+          </p>
+        )}
+        {/* role="status", not "alert": on the projects page the list already raises its own alert
           for the same failed fetch, and two alerts would be announced (and matched) twice. */}
-      {unavailable && (
-        <p role="status" className="w-full text-sm text-danger">
-          Inbox unavailable
-        </p>
-      )}
-      {landed && (
-        <p role="status" className="w-full truncate text-sm text-fg-muted">
-          Added to{' '}
-          <Link to={landed.to} className="text-accent underline">
-            {landed.name}
-          </Link>
-        </p>
-      )}
-      {capture.isError && (
-        <p role="alert" className="w-full text-sm text-danger">
-          Couldn't save. Press Enter to try again.
-        </p>
-      )}
-    </>
+        {unavailable && (
+          <p
+            role="status"
+            className="rounded-lg bg-surface-raised px-3 py-1.5 text-sm text-danger shadow-panel"
+          >
+            Inbox unavailable
+          </p>
+        )}
+        {landed && (
+          <p
+            role="status"
+            className="truncate rounded-lg bg-surface-raised px-3 py-1.5 text-sm text-fg-muted shadow-panel"
+          >
+            Added to{' '}
+            <Link to={landed.to} className="text-accent underline">
+              {landed.name}
+            </Link>
+          </p>
+        )}
+        {capture.isError && (
+          <p
+            role="alert"
+            className="rounded-lg bg-surface-raised px-3 py-1.5 text-sm text-danger shadow-panel"
+          >
+            Couldn't save. Press Enter to try again.
+          </p>
+        )}
+      </div>
+    </div>
   )
 }

@@ -6,8 +6,10 @@ import { createProject, listProjects } from '../api/projects'
 import { railClass } from '../projectColor'
 import { useComposing } from '../composition'
 import { textbox } from '../components/formStyles'
+import { useCrumbs } from '../components/Location'
 
 export function Projects() {
+  useCrumbs([{ label: 'Projects' }])
   const qc = useQueryClient()
   const composing = useComposing()
   const [name, setName] = useState('')

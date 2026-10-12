@@ -10,6 +10,7 @@ import { Panel, PanelEmpty } from '../components/Panel'
 import { MONTHS } from '../dueAt'
 import type { Circle } from '@ctws/contracts'
 import { PeopleViews } from '../components/PeopleViews'
+import { useCrumbs } from '../components/Location'
 
 /**
  * BIRTHDAYS -- a LENS. It owns nobody: this page only reads, and a person is made by the people
@@ -24,6 +25,7 @@ import { PeopleViews } from '../components/PeopleViews'
  * trip per keystroke would make the search feel worse than the list.
  */
 export function Birthdays() {
+  useCrumbs([{ label: 'Things', to: '/things' }, { label: 'People' }])
   const heading = useRef<HTMLHeadingElement>(null)
   const navigate = useNavigate()
   const [find, setFind] = useState('')

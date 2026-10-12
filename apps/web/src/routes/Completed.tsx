@@ -9,6 +9,7 @@ import { StatusButton } from '../components/StatusControls'
 import { TaskDetail } from '../components/TaskDetail'
 import { addDays, MONTHS, todayIn } from '../dueAt'
 import { useTimeZone } from '../useMe'
+import { useCrumbs } from '../components/Location'
 
 const WEEKDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
@@ -27,6 +28,7 @@ function dayHeading(day: string, today: string): string {
  * task belongs to (in the account timezone); this only partitions the list by that day.
  */
 export function Completed({ heading: showHeading = true }: { heading?: boolean } = {}) {
+  useCrumbs(showHeading ? [{ label: 'Review', to: '/tasks/review' }, { label: 'Done' }] : null)
   const completed = useQuery({ queryKey: ['completed'], queryFn: listCompleted })
   const [openId, setOpenId] = useState<string | null>(null)
   const qc = useQueryClient()

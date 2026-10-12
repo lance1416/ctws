@@ -9,6 +9,7 @@ import { calendarProviders } from '../modules/registry'
 import { monthRange, monthSquares, monthTitle, shiftMonth, WEEKDAYS } from '../monthGrid'
 import { useProjectRail } from '../projectColor'
 import { useTimeZone } from '../useMe'
+import { useCrumbs } from '../components/Location'
 
 /**
  * THE CALENDAR -- a SHELL SURFACE, and the first one that is about every module at once.
@@ -35,6 +36,7 @@ import { useTimeZone } from '../useMe'
 const PER_SQUARE = 3
 
 export function Calendar() {
+  useCrumbs([{ label: 'Calendar' }])
   const timeZone = useTimeZone()
   const today = todayIn(timeZone)
   const [cursor, setCursor] = useState(today)

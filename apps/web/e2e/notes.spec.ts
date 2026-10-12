@@ -419,7 +419,10 @@ test('the unsaved-edit guard fires from the writing mode, and the question is vi
    * route in is the app's own links, which is what the guard can act on.
    */
   await page.keyboard.press('Escape')
-  await page.getByRole('link', { name: 'Projects' }).click()
+  await page
+    .getByRole('navigation', { name: 'Main navigation' })
+    .getByRole('link', { name: 'Projects' })
+    .click()
   await openProject(page, 'P', true)
   await page.getByRole('listitem').filter({ hasText: '读一下' }).first().click()
   await editDetail(page)

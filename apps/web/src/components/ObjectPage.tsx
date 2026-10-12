@@ -5,6 +5,9 @@ import { DangerZone } from './DangerZone'
 import { Links } from './Links'
 import { Panel } from './Panel'
 import { ViewTabs } from './ViewTabs'
+import { useCrumbs } from './Location'
+import { useQuery } from '@tanstack/react-query'
+import { listProjects } from '../api/projects'
 
 /**
  * A PAGE FOR A THING THAT IS A PLACE.
@@ -35,6 +38,13 @@ export function ObjectPage({ type }: { type: ObjectType }) {
   const { id } = useParams()
   const where = relationFor(type)
   const views = useBlockViews()
+  const projects = useQuery({
+    queryKey: ['projects'],
+    queryFn: listProjects,
+    enabled: type === 'project',
+  })
+  const name = projects.data?.find((p) => p.id === id)?.name ?? ''
+  useCrumbs(type === 'project' ? [{ label: 'Projects', to: '/projects' }, { label: name }] : null)
 
   if (!id) return null
   const Head = where?.Head

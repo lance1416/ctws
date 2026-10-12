@@ -22,6 +22,7 @@ import { useShortcutsEnabled } from '../shortcuts/enabled'
 import { triageSections } from '../triage'
 import { useTimeZone } from '../useMe'
 import { BUTTON } from '../components/buttonStyles'
+import { useCrumbs } from '../components/Location'
 
 /**
  * TODAY. Panels, each answering one question, in a fixed arrangement.
@@ -46,6 +47,7 @@ import { BUTTON } from '../components/buttonStyles'
  * rendering it twice reads as "did I create this twice?").
  */
 export function Today() {
+  useCrumbs([{ label: 'Today' }])
   const today = useQuery({ queryKey: ['today'], queryFn: listToday })
   // Shares the ['completed'] cache entry with the Done page that owns it, so the panel costs
   // one request per session rather than one per visit.

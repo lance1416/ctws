@@ -21,7 +21,10 @@ test('the inbox sorts first, and is the one project with nothing to delete it wi
   page,
 }) => {
   await registerFreshUser(page)
-  await page.getByRole('link', { name: 'Projects' }).click()
+  await page
+    .getByRole('navigation', { name: 'Main navigation' })
+    .getByRole('link', { name: 'Projects' })
+    .click()
   await submitCreate(page, 'New project', 'aaa')
 
   const items = page.getByRole('listitem')
@@ -106,7 +109,10 @@ test('a failed project fetch tells the capture box user why it is disabled', asy
 
 test('a project is deleted from its own page, and the list loses it', async ({ page }) => {
   await registerFreshUser(page)
-  await page.getByRole('link', { name: 'Projects' }).click()
+  await page
+    .getByRole('navigation', { name: 'Main navigation' })
+    .getByRole('link', { name: 'Projects' })
+    .click()
   await submitCreate(page, 'New project', '待删除')
   const doomed = page.getByRole('listitem').filter({ hasText: '待删除' })
   await expect(doomed).toHaveCount(1)

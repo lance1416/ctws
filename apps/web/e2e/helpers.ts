@@ -265,7 +265,10 @@ export async function openTree(page: Page, projectId: string): Promise<void> {
 
 /** Makes a project THROUGH THE UI and lands on its page, for tests about that route in. */
 export async function startProject(page: Page, name = 'P'): Promise<string> {
-  await page.getByRole('link', { name: 'Projects' }).click()
+  await page
+    .getByRole('navigation', { name: 'Main navigation' })
+    .getByRole('link', { name: 'Projects' })
+    .click()
   await submitCreate(page, 'New project', name)
   await openProject(page, name, true)
   return page.url()

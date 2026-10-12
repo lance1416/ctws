@@ -10,7 +10,10 @@ import {
 
 async function captureAndOpen(page: Page, title: string) {
   await submitCreate(page, 'Capture…', title)
-  await page.getByRole('link', { name: 'Projects' }).click()
+  await page
+    .getByRole('navigation', { name: 'Main navigation' })
+    .getByRole('link', { name: 'Projects' })
+    .click()
   await openProject(page, 'Inbox')
   await page.getByRole('listitem').filter({ hasText: title }).click()
   // The pane opens in reading mode; every test here is about an edit.
@@ -171,7 +174,10 @@ test('an edit made from the today page is reflected without a reload', async ({ 
 test('a nested task shows both its project and its parent in the breadcrumb', async ({ page }) => {
   await registerFreshUser(page)
   await submitCreate(page, 'Capture…', '父任务')
-  await page.getByRole('link', { name: 'Projects' }).click()
+  await page
+    .getByRole('navigation', { name: 'Main navigation' })
+    .getByRole('link', { name: 'Projects' })
+    .click()
   await openProject(page, 'Inbox')
   await submitCreate(page, 'Capture…', '子任务')
   await expect(page.getByRole('listitem')).toHaveCount(2)

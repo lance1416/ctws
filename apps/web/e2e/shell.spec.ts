@@ -12,7 +12,10 @@ test('the app shell routes between today, projects and a project', async ({ page
   const inbox = projects.find((p) => p.name === 'Inbox')
   expect(inbox).toBeDefined()
 
-  await page.getByRole('link', { name: 'Projects' }).click()
+  await page
+    .getByRole('navigation', { name: 'Main navigation' })
+    .getByRole('link', { name: 'Projects' })
+    .click()
   await expect(page).toHaveURL(/\/projects$/)
   await expect(page.getByRole('heading', { name: 'Projects' })).toBeVisible()
   // Registration creates the inbox, so the project list is never empty. Scoped to <main>: the
@@ -51,7 +54,10 @@ test('a failed project list shows an error, not an empty list', async ({ page })
     route.fulfill({ status: 500, contentType: 'application/json', body: '{"title":"boom"}' }),
   )
 
-  await page.getByRole('link', { name: 'Projects' }).click()
+  await page
+    .getByRole('navigation', { name: 'Main navigation' })
+    .getByRole('link', { name: 'Projects' })
+    .click()
 
   const alert = page.getByRole('alert')
   await expect(alert).toBeVisible()
@@ -107,4 +113,113 @@ test('主题在账号菜单里选，刷新之后还是它', async ({ page }) => 
   await page.getByRole('menuitemradio', { name: 'System' }).click()
   expect(await page.evaluate(() => document.documentElement.dataset.theme)).toBeUndefined()
   expect(await ground()).toBe(dark)
+})
+
+/**
+ * THE HEADER SAYS WHERE YOU ARE. One canonical path, not history: a kind's page sits under Things
+ * and a project page under Projects. The page you are on is named, not linked to itself.
+ */
+test('the header names where you are', async ({ page }) => {
+  await registerFreshUser(page, '/people')
+  const where = page.getByRole('banner').getByRole('navigation', { name: 'Location' })
+  await expect(where.getByRole('link')).toHaveText(['Things'])
+  await expect(where.getByRole('link', { name: 'Things' })).toHaveAttribute('href', '/things')
+  await expect(where.locator('[aria-current="page"]')).toHaveText('People')
+
+  await page.goto('/')
+  await expect(where.locator('[aria-current="page"]')).toHaveText('Workbench')
+  await expect(where.getByRole('link')).toHaveCount(0)
+
+  const res = await page.request.get('/api/v1/projects')
+  const { projects } = (await res.json()) as { projects: { id: string; name: string }[] }
+  const inbox = projects.find((p) => p.name === 'Inbox')!
+  await page.goto(`/projects/${inbox.id}`)
+  await expect(where.getByRole('link')).toHaveText(['Projects'])
+  await expect(where.locator('[aria-current="page"]')).toHaveText('Inbox')
+})
+
+test('capture is in the header, and / reaches it from anywhere', async ({ page }) => {
+  await registerFreshUser(page, '/')
+  const box = page.getByRole('banner').getByRole('textbox', { name: 'Capture' })
+  await expect(box).toBeVisible()
+  await page.keyboard.press('/')
+  await expect(box).toBeFocused()
+})
+
+test('the header reads in order from the keyboard', async ({ page }) => {
+  await registerFreshUser(page, '/people')
+  // Capture is disabled until it knows where a line would land, and a disabled box is skipped.
+  await expect(page.getByRole('banner').getByRole('textbox', { name: 'Capture' })).toBeEnabled()
+  await page.getByRole('banner').getByRole('link', { name: 'CTWS' }).focus()
+  const reached: string[] = []
+  for (let i = 0; i < 5; i++) {
+    await page.keyboard.press('Tab')
+    reached.push(
+      await page.evaluate(() => {
+        const el = document.activeElement as HTMLElement
+        return el.getAttribute('aria-label') ?? el.innerText.split(/\s/)[0]!
+      }),
+    )
+  }
+  expect(reached.slice(0, 4)).toEqual(['Things', 'Search', 'Capture', 'Keyboard shortcuts'])
+  expect(reached[4]).toMatch(/^Account/)
+})
+
+// -------------------------------------------------------------------------------------- phone
+const PHONE = { width: 375, height: 812 }
+
+test('on a phone, five tabs replace the rail', async ({ page }) => {
+  await page.setViewportSize(PHONE)
+  await registerFreshUser(page, '/')
+  // Exactly one navigation of that name is visible at any width: the rail and the bar are never
+  // both in the accessibility tree.
+  const nav = page.getByRole('navigation', { name: 'Main navigation' })
+  await expect(nav).toHaveCount(1)
+  await expect(nav.getByRole('link')).toHaveText(['Workbench', 'Today', 'Projects', 'Calendar'])
+  await nav.getByRole('button', { name: 'Search' }).click()
+  await expect(page.getByRole('dialog', { name: 'Search' })).toBeVisible()
+})
+
+test('nothing scrolls sideways on a phone, whatever the page', async ({ page }) => {
+  await page.setViewportSize(PHONE)
+  await registerFreshUser(page, '/')
+  const res = await page.request.post('/api/v1/projects', {
+    headers: { 'x-ctws-client': 'web' },
+    data: { name: '一个名字很长很长的求职项目与面试准备' },
+  })
+  const { id } = (await res.json()) as { id: string }
+  for (const path of ['/', '/things', `/projects/${id}`, '/people']) {
+    await page.goto(path)
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth),
+      `${path} scrolls sideways`,
+    ).toBeLessThanOrEqual(PHONE.width)
+  }
+  // The long name truncates in the header rather than pushing it onto a second line.
+  const banner = await page.getByRole('banner').boundingBox()
+  expect(banner!.height).toBeLessThanOrEqual(60)
+})
+
+test('the tab bar never covers the end of the page', async ({ page }) => {
+  await page.setViewportSize(PHONE)
+  await registerFreshUser(page, '/')
+  // Not the inbox: it cannot be deleted, so its page has no delete button to end on.
+  const made = await page.request.post('/api/v1/projects', {
+    headers: { 'x-ctws-client': 'web' },
+    data: { name: '长清单' },
+  })
+  const { id } = (await made.json()) as { id: string }
+  for (let i = 0; i < 14; i++) {
+    await page.request.post('/api/v1/tasks', {
+      headers: { 'x-ctws-client': 'web' },
+      data: { projectId: id, title: `第 ${i + 1} 件` },
+    })
+  }
+  await page.goto(`/projects/${id}`)
+  await expect(page.getByText('第 14 件')).toBeVisible()
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+  const bar = await page.getByRole('navigation', { name: 'Main navigation' }).boundingBox()
+  const last = await page.getByRole('button', { name: 'Delete project' }).boundingBox()
+  expect(last!.y + last!.height).toBeLessThanOrEqual(bar!.y)
 })

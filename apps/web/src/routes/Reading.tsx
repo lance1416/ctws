@@ -9,6 +9,7 @@ import { AddReading } from '../components/AddReading'
 import { ReadingDetail } from '../components/ReadingDetail'
 import { ReadingRow } from '../components/ReadingRow'
 import { useTimeZone } from '../useMe'
+import { useCrumbs } from '../components/Location'
 
 /**
  * THE READING LIST.
@@ -24,6 +25,7 @@ const SECTIONS: { status: ReadingStatus; label: string }[] = [
 ]
 
 export function Reading() {
+  useCrumbs([{ label: 'Things', to: '/things' }, { label: 'Reading' }])
   const items = useQuery({ queryKey: readingKey(), queryFn: () => listReading() })
   /**
    * 开着的是哪一条，写在 URL 里 —— 这一层就是 `/reading/<id>` 本身。

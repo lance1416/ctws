@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { resolveChord } from '../modules/registry'
 import { CHORD_TIMEOUT_MS, JUMP_PREFIX } from '../shortcuts/chords'
@@ -26,8 +26,19 @@ const hint =
  * WHERE the `g` chords go is not written in here: the shell and each module contribute to one key
  * table and this component only runs it.
  */
-export function Shortcuts() {
-  const [search, setSearch] = useState(false)
+/**
+ * `capture` sits between Search and the key list, so the header reads search, write, help.
+ * Whether search is open is the layout's: the phone's tab bar opens the same dialog.
+ */
+export function Shortcuts({
+  capture,
+  search,
+  setSearch,
+}: {
+  capture?: ReactNode
+  search: boolean
+  setSearch: (open: boolean) => void
+}) {
   const [help, setHelp] = useState(false)
   const enabled = useShortcutsEnabled()
   const navigate = useNavigate()
@@ -86,22 +97,23 @@ export function Shortcuts() {
 
   return (
     <>
-      <button type="button" onClick={() => setSearch(true)} className={button}>
+      {/* Below 1024 search is a tab in the bottom bar, and the key list is for keyboards. */}
+      <button type="button" onClick={() => setSearch(true)} className={`max-lg:hidden ${button}`}>
         Search
         <kbd aria-hidden="true" className={hint}>
           f
         </kbd>
       </button>
+      {capture}
       <button
         type="button"
         onClick={() => setHelp(true)}
         aria-label="Keyboard shortcuts"
-        className={button}
+        className={`max-lg:hidden ${button}`}
       >
         <kbd aria-hidden="true" className={hint}>
           ?
         </kbd>
-        <span className="sm:hidden">Shortcuts</span>
       </button>
       {search && <SearchDialog onClose={() => setSearch(false)} />}
       {help && <ShortcutHelp onClose={() => setHelp(false)} />}

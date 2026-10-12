@@ -11,6 +11,7 @@ import { ViewTabs } from '../components/ViewTabs'
 import { Completed } from './Completed'
 import { MONTHS } from '../dueAt'
 import { useProjectRail } from '../projectColor'
+import { useCrumbs } from '../components/Location'
 
 /** "Oct 2" -- the month and the day; the window itself carries the year. */
 function dayLabel(day: string): string {
@@ -75,6 +76,7 @@ const VIEWS = [
 ]
 
 export function Review() {
+  useCrumbs([{ label: 'Review' }])
   const [params, setParams] = useSearchParams()
   const view = VIEWS.find((v) => v.id === params.get('view'))?.id ?? 'week'
   const pickView = (next: string) => {

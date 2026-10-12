@@ -56,7 +56,10 @@ test('today means today in the account zone, for the list and the caption alike'
   await registerFreshUser(page)
   await submitCreate(page, 'Capture…', '按账户时区排的')
 
-  await page.getByRole('link', { name: 'Projects' }).click()
+  await page
+    .getByRole('navigation', { name: 'Main navigation' })
+    .getByRole('link', { name: 'Projects' })
+    .click()
   await openProject(page, 'Inbox')
   await page.getByRole('listitem').filter({ hasText: '按账户时区排的' }).click()
   await editDetail(page)
@@ -86,7 +89,10 @@ test('the runner’s today is some OTHER day, and the page says which', async ({
   await registerFreshUser(page)
   await submitCreate(page, 'Capture…', '按进程时区排的')
 
-  await page.getByRole('link', { name: 'Projects' }).click()
+  await page
+    .getByRole('navigation', { name: 'Main navigation' })
+    .getByRole('link', { name: 'Projects' })
+    .click()
   await openProject(page, 'Inbox')
   await page.getByRole('listitem').filter({ hasText: '按进程时区排的' }).click()
   await editDetail(page)

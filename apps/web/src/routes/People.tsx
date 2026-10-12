@@ -11,6 +11,7 @@ import { LIST_MEASURE } from '../rowLead'
 import { BUTTON } from '../components/buttonStyles'
 import { PeopleViews } from '../components/PeopleViews'
 import { CIRCLE_LABELS } from '../components/BirthdayRow'
+import { useCrumbs } from '../components/Location'
 
 /**
  * PEOPLE.
@@ -20,6 +21,7 @@ import { CIRCLE_LABELS } from '../components/BirthdayRow'
  * what every person app does before it starts adding structure nobody asked for.
  */
 export function People() {
+  useCrumbs([{ label: 'Things', to: '/things' }, { label: 'People' }])
   const people = useQuery({ queryKey: peopleKey(), queryFn: () => listPeople() })
   /**
    * 开着的是谁，写在 URL 里 —— 这一层就是 `/people/<id>` 本身。

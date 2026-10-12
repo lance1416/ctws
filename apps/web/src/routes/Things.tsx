@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { allChords, kinds } from '../modules/registry'
+import { useCrumbs } from '../components/Location'
 
 /**
  * THINGS: every kind of thing, one row each.
@@ -10,6 +11,7 @@ import { allChords, kinds } from '../modules/registry'
  * hidden until it has content is a kind nobody learns they have.
  */
 export function Things() {
+  useCrumbs([{ label: 'Things' }])
   const keys = new Map(allChords().map((c) => [c.id, c.key]))
   return (
     <>

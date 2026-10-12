@@ -37,7 +37,10 @@ async function shape(page: Page) {
 /** A project holding A (children a1, a2) and a root B. Returns its id. */
 async function seed(page: Page): Promise<string> {
   await registerFreshUser(page)
-  await page.getByRole('link', { name: 'Projects' }).click()
+  await page
+    .getByRole('navigation', { name: 'Main navigation' })
+    .getByRole('link', { name: 'Projects' })
+    .click()
   await submitCreate(page, 'New project', 'P')
   await openProject(page, 'P', true)
   const projectId = page.url().split('/').pop()!
@@ -300,7 +303,10 @@ test('the capture line goes when the user navigates away', async ({ page }) => {
   await submitCreate(page, 'Capture…', '问问房东')
   const line = page.getByRole('status').filter({ hasText: 'Added to' })
   await expect(line).toBeVisible()
-  await page.getByRole('link', { name: 'Projects' }).click()
+  await page
+    .getByRole('navigation', { name: 'Main navigation' })
+    .getByRole('link', { name: 'Projects' })
+    .click()
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
   await expect(line).toHaveCount(0)
 })

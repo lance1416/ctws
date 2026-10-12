@@ -14,6 +14,7 @@ import { zoneLabel } from '../timeZones'
 import { LIST_MEASURE } from '../rowLead'
 import { useTimeZone } from '../useMe'
 import { BUTTON } from '../components/buttonStyles'
+import { useCrumbs } from '../components/Location'
 
 /**
  * MEETINGS -- the module's own page.
@@ -42,6 +43,7 @@ function nextOfEach(rows: readonly MeetingOccurrence[]): MeetingOccurrence[] {
 const WINDOW_DAYS = 31
 
 export function Meetings() {
+  useCrumbs([{ label: 'Things', to: '/things' }, { label: 'Meetings' }])
   const accountZone = useTimeZone()
   const today = todayIn(accountZone)
   const heading = useRef<HTMLHeadingElement>(null)
