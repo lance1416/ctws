@@ -49,8 +49,8 @@ export const CAPTURE_MODULE_ID = 'tasks'
 export const WORKBENCH_PATH = '/'
 
 /**
- * The shell's OWN chords. Projects and the workbench are shell concepts (contract §3), so these
- * are not a module's to contribute -- they would survive every module being removed.
+ * The shell's OWN chords. Projects and the workbench are shell concepts, so these are not a
+ * module's to contribute -- they would survive every module being removed.
  */
 const SHELL_CHORDS: Chord[] = [
   { id: 'workbench', key: 'w', label: 'Go to Workbench', resolve: () => WORKBENCH_PATH, order: 5 },

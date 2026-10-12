@@ -132,9 +132,9 @@ const WIDGET_ROWS = 5
 /**
  * NO BLOCK ON A PROJECT PAGE.
  *
- * This module's rows reach a project as edges, and the shell draws every kind of edge the same
- * way (framing §2). One of these is made on its own page and filed there, or dropped into the
- * capture box, never from a project page.
+ * This module's rows reach a project as edges, and the shell draws every kind of edge the same way.
+ * One of these is made on its own page and filed there, or dropped into the capture box, never from
+ * a project page.
  */
 
 /** This module's numbers in the project banner, beside the task module's. */

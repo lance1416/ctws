@@ -31,7 +31,7 @@ describe('createTaskBody', () => {
 
   it('defaults the status to todo, so the rollup can see the task at all', () => {
     // It was `backlog` until 2026-10-07. The rollup excludes a backlog node BEFORE looking at
-    // its children (design spec §7.2), so with that default every parent reported no progress
+    // its children, so with that default every parent reported no progress
     // however much was finished under it. `backlog` is now a bucket somebody puts work INTO.
     expect(createTaskBody.parse(valid).status).toBe('todo')
   })
@@ -56,7 +56,7 @@ describe('createTaskBody', () => {
     expect(createTaskBody.safeParse({ ...valid, rank: 'a0' }).success).toBe(false)
   })
 
-  // rank is server-computed (spec section 8.3): the client never supplies or guesses one.
+  // rank is server-computed: the client never supplies or guesses one.
   it('has no rank field at all', () => {
     expect(Object.keys(createTaskBody.shape)).not.toContain('rank')
   })
@@ -83,7 +83,7 @@ describe('updateTaskBody', () => {
   })
 
   // Reparenting and reordering go through POST /tasks/:id/move, never a generic PATCH,
-  // because they carry invariants a PATCH must not silently take on (spec section 8.3).
+  // because they carry invariants a PATCH must not silently take on.
   it('cannot change parentId, projectId or rank', () => {
     for (const key of ['parentId', 'projectId', 'rank']) {
       expect(

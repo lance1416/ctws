@@ -8,9 +8,8 @@ import { accountToday } from '../db/today'
 /**
  * THE BIRTHDAYS PAGE's data, worked out in one go.
  *
- * Segmenting and ordering live here rather than in the client for the reason the design spec gives
- * (section 8.4): two clients would each do it themselves, and two answers that disagree is one
- * person appearing twice.
+ * Segmenting and ordering live here rather than in the client: two clients would each do it
+ * themselves, and two answers that disagree is one person appearing twice.
  *
  * TWO SEGMENTS, NOT THREE. An "earlier this year" section would hold the same people `later`
  * already holds -- 李雷's birthday this year has gone and next year's has not arrived -- and

@@ -220,9 +220,9 @@ export type DateHints = {
   /**
    * The deadline, worded in full and in TWO phrases: when it is, and -- once its day has gone --
    * how late it is. Two, not one string, because the row prints them as separate phrases: a single
-   * "Due Oct 4, 12:30 · 2 days late" could not be broken anywhere, and inside a 375px row at
-   * depth 3 an unbreakable 230px phrase is a horizontal scrollbar. Read in order they are the one
-   * sentence §2 asks for.
+   * "Due Oct 4, 12:30 · 2 days late" could not be broken anywhere, and inside a 375px row at depth
+   * 3 an unbreakable 230px phrase is a horizontal scrollbar. Read in order they are the one
+   * sentence the row asks for.
    */
   due: { text: string; late: string | null; overdue: boolean } | null
 }
@@ -237,10 +237,10 @@ export type DateHints = {
  * disagree whenever they differ -- the server filing a task under Overdue while the row beneath its
  * own heading read "Due tomorrow". Same zone, same answer.
  *
- * THE WORDING IS COMPLETE, TO THE MINUTE (rows-and-reading §2). It lives on a line of its own
- * under the title, not in an 8rem cell, so there is nothing to compress for: an overdue deadline
- * says WHEN it was -- "Due Oct 4, 12:30 · 2 days late" -- and not only how long ago, because "2
- * days late" cannot answer "due when?".
+ * THE WORDING IS COMPLETE, TO THE MINUTE. It lives on a line of its own under the title, not in an
+ * 8rem cell, so there is nothing to compress for: an overdue deadline says WHEN it was -- "Due Oct
+ * 4, 12:30 · 2 days late" -- and not only how long ago, because "2 days late" cannot answer "due
+ * when?".
  */
 export function dateHints(
   t: { status: string; dueAt: string | null; scheduledOn: string | null },

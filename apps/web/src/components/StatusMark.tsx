@@ -9,10 +9,9 @@ import type { TaskStatus } from '@ctws/contracts'
 // That is weight by stroke, size and value -- still no hue, so the rule that status is carried by
 // shape is intact.
 //
-// The 2px stroke is the workbench spec's (section 4). The SIZE is 20 and not the 17 that section
-// names: 17 is derived from a 16px mark, and this one is 18, so stepping it up by the one step
-// the rest of section 4 asks for gives 20. Taking 17 literally would shrink the core semantic and
-// leave a 20px glyph-well sitting in a 46px row.
+// The stroke is 2px and the SIZE is 20. 20 and not 17: 17 is what a 16px mark steps up to, and
+// this one is 18, so the same one step up gives 20. 17 would shrink the core semantic and leave a
+// 20px glyph-well sitting in a 46px row.
 // The disc and the check are always rendered and scale/fade in, so the 120ms echo of a status
 // change is a transition on a persistent element rather than a mount.
 const LABEL: Record<TaskStatus, string> = {

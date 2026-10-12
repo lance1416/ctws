@@ -24,7 +24,7 @@ import { textbox } from './formStyles'
  *
  * THE LABELS BELOW ARE THIS FILE'S OWN, not `@ctws/core`'s. Importing core would drag `tyme4ts`
  * into the browser bundle, and keeping those 750 KB on the server is the whole reason the
- * conversions happen there (birthdays spec §3).
+ * conversions happen there.
  */
 
 const LUNAR_MONTHS = [

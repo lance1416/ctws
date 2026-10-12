@@ -21,10 +21,10 @@ import {
 } from './store'
 
 /**
- * Projects are a SHELL surface, not the task module's (module-boundary contract §3): the user's
- * life is organised by line of work, and a note about CTWS belongs to CTWS just as a task does.
- * So these four endpoints keep their flat `/api/v1/projects` paths while the task module moved
- * under `/api/v1/tasks/`; a module contributes counts and rows to a project, it does not own it.
+ * Projects are a SHELL surface, not the task module's: the user's life is organised by line of
+ * work, and a note about CTWS belongs to CTWS just as a task does. So these four endpoints keep
+ * their flat `/api/v1/projects` paths while the task module moved under `/api/v1/tasks/`; a module
+ * contributes counts and rows to a project, it does not own it.
  */
 
 function toProjectResponse(p: Project): z.infer<typeof projectResponse> {

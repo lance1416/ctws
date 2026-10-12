@@ -1,16 +1,16 @@
 /**
- * PROGRESS ROLLUP (design spec §7). The one place that answers how far along something is.
+ * PROGRESS ROLLUP. The one place that answers how far along something is.
  *
- * It lives here, as a pure fold over a flat list, for the reason §7.5 gives: the recursive mean is
- * awkward in SQL and a dozen lines in TypeScript, and in TypeScript it can be covered case by case
- * against §7.2's edge list. Nothing in this file touches a clock, a timezone or a database -- the
- * two time-dependent counts arrive as booleans already decided in the account's zone, where the
+ * It lives here, as a pure fold over a flat list, because the recursive mean is awkward in SQL and
+ * a dozen lines in TypeScript, and in TypeScript it can be covered case by case against the edge
+ * list `rollup` spells out below. Nothing in this file touches a clock, a timezone or a database --
+ * the two time-dependent counts arrive as booleans already decided in the account's zone, where the
  * rest of this app's day arithmetic lives.
  */
 
 export type RollupStatus = 'backlog' | 'todo' | 'in_progress' | 'done' | 'cancelled'
 
-/** One live task, flat. Deleted rows are filtered out before this (§7.2's first `filter`). */
+/** One live task, flat. Deleted rows are filtered out before this. */
 export type RollupNode = {
   id: string
   parentId: string | null
@@ -37,7 +37,7 @@ export type RollupCounts = Record<RollupStatus, number>
 
 export type Rollup = {
   /**
-   * 0..1, or null for a node §7.2 EXCLUDES (`backlog` and `cancelled`): those are not work in
+   * 0..1, or null for an EXCLUDED node (`backlog` and `cancelled`): those are not work in
    * flight, and averaging them in would drag every parent's number toward zero for things nobody
    * has started or has abandoned. Null is the sentinel rather than 0 because the difference
    * between "no progress" and "not counted" is the whole point of the rule.
@@ -49,7 +49,7 @@ export type Rollup = {
   overdue: number
   dueSoon: number
   /**
-   * The most recent change ANYWHERE in the subtree (§7.4). The point of it is not progress: a
+   * The most recent change ANYWHERE in the subtree. The point of it is not progress: a
    * line at 60% and a line at 60% that nobody has touched for three weeks are the same number
    * and completely different situations, and the second one is what actually goes wrong when
    * several lines of work run at once.
@@ -150,7 +150,7 @@ export function rollup(nodes: readonly RollupNode[]): Map<string, Rollup> {
 }
 
 /**
- * §7.2, exactly:
+ * THE RULE, exactly:
  *
  * - `backlog` and `cancelled` are EXCLUDED, whatever is under them.
  * - The mean is over DIRECT children, not over subtree leaves. Leaf counting would punish
@@ -159,7 +159,7 @@ export function rollup(nodes: readonly RollupNode[]): Map<string, Rollup> {
  *   mean's failure mode is a static weighting error instead, which does not move with behaviour.
  *   It is also the only version a person can predict from what is on screen: a parent's number is
  *   the average of the numbers under it, and a number nobody can predict stops being believed.
- * - A node with children takes the derived value over its own status (§6.4).
+ * - A node with children takes the derived value over its own status.
  * - When every child is excluded it degrades to a leaf and falls back to its own status.
  * - A leaf that is `in_progress` scores 0, not 0.5. 0.5 is a number nobody entered.
  *   `manualProgress` is the only way to say "half done", and it is not cross-checked against the

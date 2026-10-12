@@ -9,8 +9,8 @@
    The dark block must be a plain :root override, not a nested @theme: Tailwind hoists an
    @theme inside @media out of the query, which would make the dark values apply always.
 
-   Colour discipline (docs/superpowers/specs/2026-10-06-ctws-workbench.md section 3):
-   - The two defects the previous palette had are named in the spec and both are fixed here.
+   Colour discipline:
+   - The two defects the previous palette had are both fixed here.
      The dark accents sat at lightness 0.72-0.78 and chroma 0.11-0.15, which GLOWS on a
      near-black ground; everything that carries meaning is now in the 0.60-0.70 band. And the
      accent (`#4ebceb`) and the plan colour (`#46c6cd`) were nearly the same hue -- two
@@ -26,7 +26,7 @@
    - Colour carries CATEGORY and URGENCY only. Task status is carried by the SHAPE of its
      marker and by font weight, never by hue.
 
-   FIGURE AND GROUND ARE TWO DIFFERENT TECHNIQUES, NOT ONE INVERTED (spec section 3):
+   FIGURE AND GROUND ARE TWO DIFFERENT TECHNIQUES, NOT ONE INVERTED:
    - Dark layers by SURFACE LIGHTNESS and uses no shadows at all. ground < chrome < panel <
      raised, each step a few percent. A shadow on a near-black ground is invisible anyway, and
      a scrim-like overlay there lightens the page instead of lifting the panel.
@@ -116,7 +116,7 @@
 }
 
 @theme static {
-  /* THE STACK IS SEMI DESIGN'S, SPLICED (typography spec section 1). Everything from
+  /* THE STACK IS SEMI DESIGN'S, SPLICED. Everything from
      `-apple-system` onward is Semi's `$font-family-regular` verbatim
      (packages/semi-theme-default/scss/variables.scss) -- it is the only surveyed string that has
      both the `-apple-system` preamble Element Plus lacks and the explicit CJK fallbacks Ant
@@ -142,7 +142,7 @@
      adopts the surveyed answer instead of inventing a stack. */
   --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
 
-  /* THE SCALE IS TDESIGN'S PAIRS (typography spec section 2): 12/20, 14/22, 16/24, 20/28, 24/32,
+  /* THE SCALE IS TDESIGN'S PAIRS: 12/20, 14/22, 16/24, 20/28, 24/32,
      36/44, read off `style/web/theme/_font.less` and written in REM. TDesign is the only surveyed
      system that publishes size AND line-height as a pair per semantic step, and three of the six
      steps are agreed to the pixel by Ant Design independently (14/22, 20/28, 24/32).
@@ -413,16 +413,17 @@
 
 /* The body carries `text-base`, so its leading is the scale's own 24px pair -- there is no
    `line-height` here and none on the headings any more, because a rule outside the scale is
-   exactly the unitless leading section 2 forbids. Every heading in the app names a step.
+   exactly the unitless leading a published pair exists to replace. Every heading in the app
+   names a step.
 
-   `text-autospace` IS THE HAN/LATIN SPACING, AND THE ONLY ONE (spec section 4). W3C CLREQ asks
+   `text-autospace` IS THE HAN/LATIN SPACING, AND THE ONLY ONE. W3C CLREQ asks
    for no more than a quarter of a Han character's width between Han and Latin letters or digits.
    Hand-inserted spaces and tracking are the other two ways to get it; this is the engine's job,
    and `normal` is NOT the initial value in the browsers this ships to (measured: Chromium 153 computes `no-autospace` unless
    asked), so it has to be asked for. Chromium spends 1/8 em at each join, inside CLREQ's ceiling,
    and spends nothing where the author already typed a space.
 
-   NO `size-adjust` AND NO `font-size-adjust` (spec section 4): zero occurrences across the five
+   NO `size-adjust` AND NO `font-size-adjust`: zero occurrences across the five
    surveyed token files, and `size-adjust`'s documented purpose is fallback-metric matching for
    CLS, not script pairing. The pairing is handled by choosing a pair and pinning the leading in
    px, which is what the scale above does.
@@ -481,10 +482,10 @@ kbd,
    No typography PLUGIN. `@tailwindcss/typography` ships its own grey ramp and its own measure, both
    of which this project has tokens for; adopting it would mean either accepting its palette (which
    the palette grep forbids) or overriding every variable it defines. Everything below is the type
-   scale from the typography spec and the four surfaces.
+   scale and the four surfaces.
 
    THE MEASURE IS THE CALLER'S. Reading mode and the writing preview each wrap this in
-   `max-w-[68ch]` -- the same measure the notes textarea has had since the rows-and-reading spec. */
+   `max-w-[68ch]` -- the same measure the notes textarea has always had. */
 [data-note-md] {
   overflow-wrap: break-word;
 }
@@ -575,7 +576,7 @@ kbd,
   color: var(--color-fg-muted);
 }
 
-/* CODE IS `--font-mono` (the typography spec's token, Ant Design 5's `fontFamilyCode` verbatim).
+/* CODE IS `--font-mono` (Ant Design 5's `fontFamilyCode` verbatim).
    NO MONO WEBFONT IS SHIPPED: the stack already names a face that exists on every platform this
    app runs on, and a second self-hosted family would be a second subsetting pipeline and another
    megabyte for a feature that appears in a minority of notes. The CJK subset is behind it in the

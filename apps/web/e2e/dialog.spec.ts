@@ -3,7 +3,7 @@ import { makeProject, makeTask, pickOne, registerFreshUser, sidewaysScroll } fro
 import { dayOffset, ymd } from './days'
 
 /**
- * THE NEW-TASK LAYER, and the overlays that sit on Radix (radix-and-create spec §3 and §2).
+ * THE NEW-TASK LAYER, and the overlays that sit on Radix.
  *
  * The point of the migration half is that NOTHING the user can observe changed, so the five
  * behaviours `ShortcutHelp` had before are asserted here item by item -- including the one nothing

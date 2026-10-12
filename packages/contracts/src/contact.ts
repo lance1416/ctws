@@ -90,7 +90,7 @@ export function channelProblem(kind: ChannelKind, value: string): string | null 
 }
 export type ContactChannel = z.infer<typeof contactChannel>
 
-/** The calendar a birthday was GIVEN in. Entered once; the other one is derived (birthdays spec §2). */
+/** The calendar a birthday was GIVEN in. Entered once; the other one is derived. */
 export const BIRTHDAY_CALENDARS = ['solar', 'lunar'] as const
 export const GENDERS = ['male', 'female', 'other'] as const
 /** Where a person sits in your life. The birthdays page groups by it; the contact list filters by it. */
@@ -202,7 +202,7 @@ export const birthdayPreviewResponse = birthdayResponse.omit({
   remindLead: true,
 })
 
-/** One row on the birthdays page. The segmenting and the counting are the server's (spec §8.4). */
+/** One row on the birthdays page. The segmenting and the counting are the server's. */
 export const birthdayListRow = z
   .object({
     contactId: z.uuid(),

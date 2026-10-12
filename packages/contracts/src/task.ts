@@ -101,12 +101,12 @@ export const createTaskBody = z
     /**
      * `todo` BY DEFAULT, never `backlog`.
      *
-     * The rollup drops a `backlog` node BEFORE looking at its children (§7.2), so a `backlog`
+     * The rollup drops a `backlog` node BEFORE looking at its children, so a `backlog`
      * default would make a parent report no progress even with every child finished. Pinned in
      * `apps/api/tests/rollup.test.ts`.
      *
-     * `backlog` still exists for §6.3's reason -- an idea that is only recorded should not drag a
-     * number down -- as a bucket a person puts something INTO.
+     * `backlog` still exists because capturing a line has to cost nothing -- an idea that is only
+     * recorded should not drag a number down -- as a bucket a person puts something INTO.
      */
     status: taskStatus.default('todo'),
     scheduledOn: calendarDate.nullish(),
@@ -158,7 +158,7 @@ export const taskResponse = z
   .strict()
 
 /**
- * ROLLUP METRICS (design spec §7.3), returned beside the flat task list rather than embedded in
+ * ROLLUP METRICS, returned beside the flat task list rather than embedded in
  * each task: they are DERIVED from the whole subtree, not stored on the row, and keeping them
  * apart stops anyone from PATCHing one back.
  */
@@ -181,7 +181,7 @@ export const rollupResponse = z
       .strict(),
     overdue: z.number().int().min(0),
     dueSoon: z.number().int().min(0),
-    /** The most recent logged change anywhere in the subtree (§7.4), or null. */
+    /** The most recent logged change anywhere in the subtree, or null. */
     lastActivityAt: instant.nullable(),
   })
   .strict()
@@ -191,7 +191,7 @@ export type RollupResponse = z.infer<typeof rollupResponse>
 export const rollupsResponse = z.record(z.uuid(), rollupResponse)
 
 /**
- * THE WEEKLY REVIEW (design spec §8). What HAPPENED in a window, read off the event log and
+ * THE WEEKLY REVIEW. What HAPPENED in a window, read off the event log and
  * grouped by project -- as against Done, which lists what is finished right now.
  */
 export const reviewTask = z.object({ id: z.uuid(), title: z.string(), at: instant }).strict()
@@ -463,8 +463,8 @@ export type SearchTaskResponse = z.infer<typeof searchTaskResponse>
 
 // ---- events ----
 
-// There is intentionally no event type for reordering: a pure rank change is not logged
-// (spec section 9.1), or tidy-ups would flood the log and poison last_activity_at.
+// There is intentionally no event type for reordering: a pure rank change is not logged, or
+// tidy-ups would flood the log and poison last_activity_at.
 export const TASK_EVENT_TYPES = [
   'created',
   'status_changed',

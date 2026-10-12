@@ -18,8 +18,7 @@ import { PanelEmpty } from './Panel'
 import { STATUS_LABEL } from './statusLabel'
 
 /**
- * THE BOARD: the task block's second view (design spec §2's third v1 view, and the first user of
- * the block-header tabs).
+ * THE BOARD: the task block's second view, and the first user of the block-header tabs.
  *
  * IT IS NOT A SECOND PAGE. A board is another way to look at the block that is already on the
  * project page, which is how Notion's databases and Linear's issue lists carry their views. That

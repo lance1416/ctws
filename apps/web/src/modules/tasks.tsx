@@ -31,7 +31,7 @@ import { textbox } from '../components/formStyles'
  *
  * “Today”and “Done”live here, not in the shell: they are defined by task semantics (overdue,
  * scheduled, in progress). A cross-module "today" is a separate idea and is not borrowed against
- * here (module-boundary contract §3). The shell only offers the SLOT.
+ * here. The shell only offers the SLOT.
  */
 const ID = 'tasks'
 const at = (page: string) => `/${ID}/${page}`
@@ -198,8 +198,7 @@ function useTaskHits(query: string) {
 }
 
 /**
- * THE FOUR NUMBERS in the project header banner (workbench spec §2): Open, Done this week,
- * Overdue, Last activity.
+ * THE FOUR NUMBERS in the project header banner: Open, Done this week, Overdue, Last activity.
  *
  * Every one of them is the SERVER's, from the one `['movement']` cache entry that panel already
  * loads -- so a project page costs no extra request, and the banner cannot disagree with that
@@ -207,7 +206,7 @@ function useTaskHits(query: string) {
  * boundary and the day count are all decided in the user's timezone by the query, and this only
  * formats them.
  *
- * NO RATIO AND NO BAR (§5). There are four counts and a date, which are things that can move;
+ * NO RATIO AND NO BAR. There are four counts and a date, which are things that can move;
  * `manual_progress` is written by nothing in the codebase, so a percentage would be a number the
  * backend cannot cash.
  */
@@ -219,10 +218,10 @@ function ProjectNumbers({ projectId }: { projectId: string }) {
    * THE PROJECT'S OWN PROGRESS, derived here from the rollups the task list already carries --
    * no extra request, no extra column.
    *
-   * A project is the parent of its root tasks, so it gets the SAME rule §7.2 gives a parent: the
-   * mean of its direct children, skipping the ones the rollup excludes. A project whose roots are
-   * all `backlog` or `cancelled` has no number, and shows none rather than a 0 that would read as
-   * "nothing done".
+   * A project is the parent of its root tasks, so it gets the SAME rule the fold gives a parent:
+   * the mean of its direct children, skipping the ones the rollup excludes. A project whose roots
+   * are all `backlog` or `cancelled` has no number, and shows none rather than a 0 that would read
+   * as "nothing done".
    */
   const tasks = useQuery({
     queryKey: tasksKey(projectId),
@@ -245,9 +244,9 @@ function ProjectNumbers({ projectId }: { projectId: string }) {
   const today = todayIn(timeZone)
   return (
     <StatRow>
-      {/* NO BAR, only the number (workbench spec §5 still stands). A 60% line and a 60% line that
-          nobody has touched for three weeks draw the same bar; Last activity beside it is the metric
-          §7.4 calls the valuable one, and it is already in this row. */}
+      {/* NO BAR, only the number. A 60% line and a 60% line that nobody has touched for three
+          weeks draw the same bar; Last activity beside it is the one that tells them apart, and it
+          is already in this row. */}
       {progress !== null && <Stat label="Progress" value={`${Math.round(progress * 100)}%`} />}
       <Stat label="Open" value={row.remaining} />
       <Stat label="Done this week" value={row.doneThisWeek} />

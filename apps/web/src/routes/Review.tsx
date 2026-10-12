@@ -56,7 +56,7 @@ function Row({ title, status }: { title: string; status: 'done' | 'in_progress' 
 const counted = (p: Project) => p.finished.length + p.started.length + p.dropped.length
 
 /**
- * WHAT I DID -- the third of the spec's v1 views (§2), and the one the other two cannot answer.
+ * WHAT I DID -- the third of the v1 views, and the one the other two cannot answer.
  *
  * Done lists what is finished RIGHT NOW. This lists what HAPPENED in a window, read off the event
  * log: finished, started, dropped, grouped by line of work. A task finished on Tuesday and

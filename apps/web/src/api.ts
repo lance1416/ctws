@@ -24,8 +24,8 @@ export class ApiError extends Error {
 
 export async function apiFetch<T = unknown>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers)
-  // The custom header is the client half of the CSRF scheme (spec section 10.3):
-  // the API rejects unsafe-method requests that do not carry it.
+  // The custom header is the client half of the CSRF scheme: the API rejects unsafe-method
+  // requests that do not carry it.
   headers.set('x-ctws-client', 'web')
   if (init.body) headers.set('content-type', 'application/json')
 

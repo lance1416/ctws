@@ -155,9 +155,9 @@ export async function expectBlockedByTreeLock<T>(ctx: TaskCtx, fire: () => Promi
 }
 
 /**
- * THE HEADERS A BROWSER SENDS. The guard refuses a cookie-authenticated write without them
- * (CSRF, spec §10.4), so every test that writes through the app has to send them -- and seven
- * test files wrote this same line out to do it.
+ * THE HEADERS A BROWSER SENDS. The guard refuses a cookie-authenticated write without them (CSRF),
+ * so every test that writes through the app has to send them -- and seven test files wrote this
+ * same line out to do it.
  */
 export const web = (ctx: TaskCtx) => ({ ...ctx.authed, 'x-ctws-client': 'web' })
 

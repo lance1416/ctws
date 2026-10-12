@@ -19,8 +19,8 @@ import { BUTTON } from '../components/buttonStyles'
  * MEETINGS -- the module's own page.
  *
  * A meeting is reached and MADE here, not on the calendar: the calendar is a LENS over everything
- * with a date, and a lens does not own a kind of thing (framing §2). A meeting is something you
- * arrange, so it is arranged here, and the grid answers what is on this month.
+ * with a date, and a lens does not own a kind of thing. A meeting is something you arrange, so it
+ * is arranged here, and the grid answers what is on this month.
  *
  * COMING UP FIRST, and the past behind a toggle, like the reading pile's finished section: a list
  * of meetings is read to find out what is about to happen to you.

@@ -32,8 +32,8 @@ import {
  * THE SECOND MODULE's API, under its own namespace at `/api/v1/reading/`.
  *
  * The task module moved under `/api/v1/tasks/` precisely so this could exist beside it without
- * either knowing the other's paths (module-boundary contract §3). Projects stay flat at
- * `/api/v1/projects`, because they are the shell's.
+ * either knowing the other's paths. Projects stay flat at `/api/v1/projects`, because they are the
+ * shell's.
  */
 
 function toResponse(r: ReadingItemRow): z.infer<typeof readingItemResponse> {

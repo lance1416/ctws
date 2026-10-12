@@ -13,7 +13,7 @@ async function captureAndOpen(page: Page, title: string) {
   await page.getByRole('link', { name: 'Projects' }).click()
   await openProject(page, 'Inbox')
   await page.getByRole('listitem').filter({ hasText: title }).click()
-  // The pane opens in reading mode (rows-and-reading §5); every test here is about an edit.
+  // The pane opens in reading mode; every test here is about an edit.
   await editDetail(page)
 }
 
@@ -78,12 +78,12 @@ test('a task that is both overdue and in progress is shown once', async ({ page 
 
 /**
  * Since the workbench, the three segments go to three DIFFERENT panels rather than three sections
- * of one column, and the panel order is the design's (workbench spec §1) rather than anything
- * derived from a list inside the page. So this pins two things instead of one:
- *   - the panel order of the workbench itself, including the panels that are not segments; and
- *   - that each segment's task lands in its own panel AND IN NO OTHER, which is the assertion the
- *     old section-order test was really protecting (a task matching several segments rendering
- *     twice reads as "did I create this twice?").
+ * of one column, and the panel order is the design's rather than anything derived from a list
+ * inside the page. So this pins two things instead of one: - the panel order of the workbench
+ * itself, including the panels that are not segments; and - that each segment's task lands in its
+ * own panel AND IN NO OTHER, which is the assertion the old section-order test was really
+ * protecting (a task matching several segments rendering twice reads as "did I create this
+ * twice?").
  */
 test('each segment goes to its own panel, in the workbench order, and to only one', async ({
   page,

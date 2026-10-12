@@ -21,7 +21,7 @@ describe('leadIcon', () => {
     expect(leadIcon({ due: true, plan: false, notes: false, overdue: true })).toBe('missed')
   })
 
-  it('shows the DEADLINE on a row that has a plan as well -- the one that bites (§2)', () => {
+  it('shows the DEADLINE on a row that has a plan as well -- the one that bites', () => {
     expect(leadIcon({ due: true, plan: true, notes: false })).toBe('deadline')
     expect(leadIcon({ due: true, plan: true, notes: true, overdue: true })).toBe('missed')
   })
@@ -97,8 +97,8 @@ describe('the geometry', () => {
    */
   it('is a single literal', () => {
     expect(LIST_MEASURE).toBe('max-w-[64rem]')
-    // Not a function of anything: a module that exports a measure PER CASE is the mechanism §3
-    // deleted, and this is the test that notices it coming back.
+    // Not a function of anything: a module that exports a measure PER CASE is the mechanism the
+    // row system deleted, and this is the test that notices it coming back.
     expect(typeof LIST_MEASURE).toBe('string')
   })
 })

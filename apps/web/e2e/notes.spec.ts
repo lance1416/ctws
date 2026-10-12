@@ -82,8 +82,8 @@ test('inline code and a code fence are set in the mono stack, with ligatures off
       const s = getComputedStyle(el)
       return { family: s.fontFamily, ligatures: s.fontVariantLigatures }
     })
-  // The typography spec's `--font-mono` token is Ant Design 5's `fontFamilyCode` verbatim; its head
-  // entry is what a built stylesheet must still name.
+  // The `--font-mono` token is Ant Design 5's `fontFamilyCode` verbatim; its head entry is what a
+  // built stylesheet must still name.
   expect(mono.family).toContain('SFMono-Regular')
   // A coding ligature redraws `!=` as a single glyph, and a note quotes shell commands.
   expect(mono.ligatures).toBe('none')

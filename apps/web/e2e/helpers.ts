@@ -88,9 +88,9 @@ export async function openProject(page: Page, name: string, exact = false): Prom
 /**
  * Puts the OPEN detail pane into editing mode.
  *
- * The pane opens in READING mode (rows-and-reading spec §5): title, read-only status and dates and
- * the notes as prose, with not one control on screen that can change a value. Everything that can
- * be typed into lives behind Edit.
+ * The pane opens in READING mode: title, read-only status and dates and the notes as prose, with
+ * not one control on screen that can change a value. Everything that can be typed into lives behind
+ * Edit.
  *
  * `exact` is not optional here: accessible names share one flat namespace and Playwright matches
  * them by substring, and the unsaved-edit guard's "Keep editing" contains "Edit".

@@ -6,9 +6,8 @@ import { setupWith, type TaskCtx, web } from './helpers/tasks'
 /**
  * THE BIRTHDAYS VIEW -- one page's worth of data, segmented and counted by the server.
  *
- * The segmenting lives on this side for the reason the design spec gives (section 8.4): two
- * clients would each segment it themselves, and two segmentings that disagree is one person
- * showing up twice.
+ * The segmenting lives on this side because two clients would each segment it themselves, and two
+ * segmentings that disagree is one person showing up twice.
  */
 
 const cleanups: (() => Promise<void>)[] = []

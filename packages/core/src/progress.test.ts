@@ -15,7 +15,7 @@ const node = (id: string, parentId: string | null, over: Partial<RollupNode> = {
 
 const progressOf = (nodes: RollupNode[], id: string) => rollup(nodes).get(id)!.progress
 
-describe('progress, per spec §7.2', () => {
+describe('progress', () => {
   it.each<[RollupStatus, number | null]>([
     ['backlog', null],
     ['cancelled', null],
@@ -32,7 +32,7 @@ describe('progress, per spec §7.2', () => {
   })
 
   it('takes a leaf manual value even on a status that did not ask for one', () => {
-    // Deliberately not cross-checked against the status (§7.2): an explicit value the person set
+    // Deliberately not cross-checked against the status: an explicit value the person set
     // is not the system's to overrule.
     const nodes = [node('a', null, { status: 'todo', manualProgress: 0.4 })]
     expect(progressOf(nodes, 'a')).toBe(0.4)
@@ -59,7 +59,7 @@ describe('progress, per spec §7.2', () => {
   })
 
   it("lets the derived value override the parent's own status", () => {
-    // The parent says done; its children do not agree, and the children win (§6.4).
+    // The parent says done; its children do not agree, and the children win.
     const nodes = [
       node('a', null, { status: 'done' }),
       node('b', 'a', { status: 'done' }),
@@ -112,7 +112,7 @@ describe('progress, per spec §7.2', () => {
   })
 })
 
-describe('the counts beside the percentage, per spec §7.3', () => {
+describe('the counts beside the percentage', () => {
   it('counts the subtree including the node itself', () => {
     const nodes = [
       node('a', null, { status: 'in_progress' }),
@@ -152,7 +152,7 @@ describe('the counts beside the percentage, per spec §7.3', () => {
   })
 })
 
-describe('last activity, per spec §7.4', () => {
+describe('last activity', () => {
   it('reports the most recent change anywhere in the subtree', () => {
     const nodes = [
       node('a', null, { lastActivityAt: '2026-09-01T10:00:00.000Z' }),

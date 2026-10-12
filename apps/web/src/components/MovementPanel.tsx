@@ -8,10 +8,10 @@ import { Panel } from './Panel'
  * MOVEMENT: COUNTS, NEVER A PERCENTAGE.
  *
  * There is deliberately no progress bar and no ratio on this panel, and that is a decision about
- * honesty rather than taste (workbench spec §5). Rollup is M3 work and nothing in the entire
- * codebase writes `manual_progress`, so a bar would be drawn against a column that is null for
- * every row in the database: a number the backend cannot cash. What a person can act on is what
- * MOVED -- how many finished this week, how many are left -- and what did NOT move.
+ * honesty rather than taste. Rollup is M3 work and nothing in the entire codebase writes
+ * `manual_progress`, so a bar would be drawn against a column that is null for every row in the
+ * database: a number the backend cannot cash. What a person can act on is what MOVED -- how many
+ * finished this week, how many are left -- and what did NOT move.
  *
  * The stagnation line is the part that is hard to get from anywhere else. A project with open
  * work and no logged change for a week does not announce itself: it just quietly stops being

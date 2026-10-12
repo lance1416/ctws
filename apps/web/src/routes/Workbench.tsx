@@ -14,8 +14,8 @@ import { moduleWidgets } from '../modules/registry'
  * project page -- the workbench is where the things belonging to no line of work live.
  *
  * The arrangement is FIXED. No drag, no resize, no way to add a panel: one person has one taste,
- * and a free grid only moves the design decision onto the person using the tool (workbench §1).
- * If a card is in the wrong place, that is a decision to make here, in the code, once.
+ * and a free grid only moves the design decision onto the person using the tool. If a card is in
+ * the wrong place, that is a decision to make here, in the code, once.
  */
 export function Workbench() {
   const heading = useRef<HTMLHeadingElement>(null)
@@ -63,8 +63,8 @@ function SeeAll({ to }: { to: string }) {
 /**
  * The shell's own card: the lines of work, and how much is open on each.
  *
- * Projects are the shell's dimension (module-boundary contract §3), so this one is not
- * contributed -- it would survive every module being removed.
+ * Projects are the shell's dimension, so this one is not contributed -- it would survive every
+ * module being removed.
  */
 function ProjectsWidget() {
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })

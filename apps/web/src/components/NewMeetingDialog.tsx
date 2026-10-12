@@ -29,8 +29,8 @@ import { BUTTON } from './buttonStyles'
  * most of them. Everything it needs is here, so making one is one act rather than "create, then
  * open it and fill in the rest".
  *
- * THE CALENDAR DOES NOT MAKE ONE. A lens is not a creation affordance (framing §2): the grid
- * answers what is on this month, and the making happens here.
+ * THE CALENDAR DOES NOT MAKE ONE. A lens is not a creation affordance: the grid answers what is on
+ * this month, and the making happens here.
  */
 /** `PickOne` has no null value, so "does not repeat" needs a value of its own. */
 const NO_REPEAT = '__none'

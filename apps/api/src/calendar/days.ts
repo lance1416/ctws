@@ -10,8 +10,8 @@ import { requireUser } from '../auth/require-user'
  * THE SHELL'S, not a module's: "what is 2026-10-10 in the lunar calendar" is a property of the
  * day, and asking contacts would be asking a module a question that has nothing to do with it.
  *
- * Answered here for the same reason every other conversion is (birthdays spec section 3): the
- * library that knows is 750 KB, and a month of labels is a few hundred bytes and one request.
+ * Answered here for the same reason every other calendar conversion is: the library that knows is
+ * 750 KB, and a month of labels is a few hundred bytes and one request.
  */
 export const calendarDayRoutes: FastifyPluginAsync = async (app) => {
   const typed = app.withTypeProvider<ZodTypeProvider>()

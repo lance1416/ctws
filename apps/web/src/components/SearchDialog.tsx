@@ -13,10 +13,10 @@ const DEBOUNCE_MS = 150
  * FEDERATED search. Reached with `f` from anywhere, or the Search button in the header.
  *
  * Every module that can be searched contributes a provider and the dialog merges their answers
- * (module-boundary contract §3). With one module registered the list is exactly the task list it
- * always was, and no row says which module it came from -- there is only one, so a module name
- * would be noise. From two providers on, every row carries its module as TEXT, never as a colour
- * (WCAG 1.4.1, the rule the redesign follows).
+ * answers. With one module registered the list is exactly the task list it always was, and no row
+ * says which module it came from -- there is only one, so a module name would be noise. From two
+ * providers on, every row carries its module as TEXT, never as a colour (WCAG 1.4.1, the rule the
+ * redesign follows).
  *
  * Where a hit goes is the module's business; the dialog only lays the pieces out, so results from
  * two modules line up in one list instead of each bringing their own row design.
@@ -93,10 +93,10 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
      * first tabbable thing in the panel is the header's Close -- the box is what is being typed
      * into, so it is named explicitly.
      *
-     * “Search” and not “Search tasks”: this is a SHELL surface and it merges every module's hits
-     * (module-boundary contract §3), so naming it after one module would be the shell knowing a
-     * module by name. The placeholder names no fields for the same reason: a title and notes are a
-     * task's fields, and a book has neither.
+     * “Search” and not “Search tasks”: this is a SHELL surface and it merges every module's hits,
+     * so naming it after one module would be the shell knowing a module by name. The placeholder
+     * names no fields for the same reason: a title and notes are a task's fields, and a book has
+     * neither.
      */
     <Modal title="Search" onClose={onClose} initialFocus={box} className="rounded-lg">
       <div className="border-b border-border-subtle px-4 py-3">

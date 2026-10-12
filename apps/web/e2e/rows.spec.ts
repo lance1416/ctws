@@ -6,7 +6,7 @@ import { dayOffset, nextMondayYmd, ymd } from './days'
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 /**
- * The row system (rows-and-reading, second edition): the project rail at x=0, the status marker, a
+ * THE ROW SYSTEM: the project rail at x=0, the status marker, a
  * LEADING ICON SLOT, and a title that owns the whole line -- with the dates spelled out in full on
  * a second line under it.
  *
@@ -53,9 +53,9 @@ async function xs(page: Page, selector: string): Promise<number[]> {
 /** Every x of a set of elements, rounded to the pixel: sub-pixel layout noise is not a column break. */
 
 /**
- * §6: EVERY ROW PUTS ITS LEADING ICON AT THE SAME x. On a flat list that is literally every row, whatever
- * its title length and whatever glyph it wears -- which is the whole point of a fixed slot, and the
- * claim the deleted date columns used to carry.
+ * EVERY ROW PUTS ITS LEADING ICON AT THE SAME x. On a flat list that is literally every row,
+ * whatever its title length and whatever glyph it wears -- which is the whole point of a fixed
+ * slot, and the claim the deleted date columns used to carry.
  */
 test('on Today, every row puts its leading icon at the same x', async ({ page }) => {
   await registerFreshUser(page)
@@ -109,10 +109,10 @@ test('one list, one x, however many kinds of glyph are in it', async ({ page }) 
 
 /**
  * In the tree the row is indented, so the slot travels with its row's own level: that is the one
- * place §6's "the same x" cannot mean the window's x, because §2 puts the slot AFTER the status
- * marker and the marker has always moved with depth (the titles are deliberately not in one column
- * here either). What must hold -- and what the scan actually needs -- is that the slot's x depends
- * on the row's DEPTH and on nothing else: not on the title, not on the glyph, not on the date.
+ * place "the same x" cannot mean the window's x, because the slot sits AFTER the status marker and
+ * the marker has always moved with depth (the titles are deliberately not in one column here
+ * either). What must hold -- and what the scan actually needs -- is that the slot's x depends on
+ * the row's DEPTH and on nothing else: not on the title, not on the glyph, not on the date.
  */
 test('in the project tree the icon slot moves with depth and with nothing else', async ({
   page,
@@ -147,13 +147,12 @@ test('in the project tree the icon slot moves with depth and with nothing else',
   expect(child[0]! - top[0]!, `depth 1 -> 2: ${top[0]} -> ${child[0]}`).toBe(20)
 })
 
-// ------------------------------------------------- the slot collapses, per WHOLE LIST (§2, §6)
+// ------------------------------------------------------- the slot collapses, per WHOLE LIST
 
 /**
- * §6: A LIST WHERE NO ROW HAS AN ICON SPENDS NOTHING ON THE SLOT. Measured against a list that
- * DOES have the slot, not merely
- * counted: a reserved-but-empty box is invisible to a glyph count while taking 1.5rem off every
- * title in the list.
+ * A LIST WHERE NO ROW HAS AN ICON SPENDS NOTHING ON THE SLOT. Measured against a list that DOES
+ * have the slot, not merely counted: a reserved-but-empty box is invisible to a glyph count while
+ * taking 1.5rem off every title in the list.
  */
 test('a list where no row has an icon spends nothing on the slot', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 })
@@ -186,8 +185,8 @@ test('a list where no row has an icon spends nothing on the slot', async ({ page
     without.cell - withSlot.cell,
     `title cell ${without.cell}px with no slot, ${withSlot.cell}px with one`,
   ).toBe(28)
-  // The LIST did not change width: one measure for every list now (§3's third deletion), so a list
-  // that gains an icon does not gain or lose width.
+  // The LIST did not change width: there is one measure for every list now, so a list that gains
+  // an icon does not gain or lose width.
   expect(withSlot.list, `list ${without.list}px -> ${withSlot.list}px`).toBe(without.list)
 })
 
@@ -383,7 +382,7 @@ async function mixedProject(page: Page, name: string): Promise<string> {
 }
 
 /**
- * §6: A REAL LONG TITLE IS NOT CUT OFF, at 1440 WITH THE DETAIL COLUMN OPEN -- the ≈734px panel,
+ * A REAL LONG TITLE IS NOT CUT OFF, at 1440 WITH THE DETAIL COLUMN OPEN -- the ≈734px panel,
  * which is the hardest case. It holds with no width threshold: the dates are always on the second
  * line and the title always owns the first.
  *
@@ -417,10 +416,9 @@ test('a real long title is not truncated at 1440, detail open or closed', async 
 })
 
 /**
- * §6: a dated row has a second line, complete to the minute, and a row with no date and no note
- * stays one line -- both halves on ONE
- * list, since "a second line" passes trivially if every row has one and "one line" passes trivially
- * if none does.
+ * A dated row has a second line, complete to the minute, and a row with no date and no note stays
+ * one line -- both halves on ONE list, since "a second line" passes trivially if every row has one
+ * and "one line" passes trivially if none does.
  *
  * The minute is the assertion that matters: the mechanism this edition deleted compressed
  * "Due Oct 4, 12:30" into "2 days late" to fit an 8rem cell, which cannot answer "due when?".
@@ -459,7 +457,7 @@ test('a dated row has a second line, complete to the minute; a bare row stays on
   //
   // BOTH NUMBERS ARE DERIVED FROM THE TYPE SCALE, not read off the browser and pasted back. The
   // cell is `py-2.5` (10px each side); the title is 16/24 and the second line is the meta step
-  // 14/22 (typography spec §2, TDesign's px pairs). So 10 + 24 + 10 = 44 and 10 + 24 + 22 + 10 =
+  // 14/22 (TDesign's px pairs). So 10 + 24 + 10 = 44 and 10 + 24 + 22 + 10 =
   // 66. The 44 is the SAME number the 15/20 title produced (12 + 20 + 8), which is why the
   // workbench's single-line row metric is untouched by a scale on which every step from the body
   // up got bigger -- the padding absorbed the four extra pixels of leading. Only the rows that
@@ -490,9 +488,9 @@ test('a dated row has a second line, complete to the minute; a bare row stays on
 })
 
 /**
- * §2: a task with BOTH a deadline and a plan wears the deadline at the row start -- the one that
- * bites -- and the second line lists both. Three channels, no colour among them: which glyph, and
- * two phrases of words.
+ * A task with BOTH a deadline and a plan wears the deadline at the row start -- the one that bites
+ * -- and the second line lists both. Three channels, no colour among them: which glyph, and two
+ * phrases of words.
  */
 test('a row with both dates wears the deadline, and says both in words', async ({ page }) => {
   await registerFreshUser(page)
@@ -511,16 +509,16 @@ test('a row with both dates wears the deadline, and says both in words', async (
 })
 
 /**
- * §2: the TREE's second line carries no breadcrumb (the project is known and the hierarchy is in
- * the indentation), while Today's carries one -- and there the breadcrumb and the date share that
- * one line rather than taking two.
+ * The TREE's second line carries no breadcrumb (the project is known and the hierarchy is in the
+ * indentation), while Today's carries one -- and there the breadcrumb and the date share that one
+ * line rather than taking two.
  */
 test('the tree has no breadcrumb on its second line; Today shares one line with the date', async ({
   page,
 }) => {
   // 1920, so the one-third Overdue panel is wide enough to hold the crumb and the date side by side:
-  // the claim is that they SHARE a line where there is room, not that the line never wraps -- §2
-  // keeps the wording whole, so a cramped panel wraps it rather than cutting it.
+  // the claim is that they SHARE a line where there is room, not that the line never wraps -- the
+  // wording is kept whole, so a cramped panel wraps it rather than cutting it.
   await page.setViewportSize({ width: 1920, height: 1000 })
   await registerFreshUser(page)
   const pid = await makeProject(page, '面包屑')
@@ -749,8 +747,8 @@ test('the status marker is the heaviest mark on the row, and still hue-free', as
   await page.goto('/tasks/today')
 
   const mark = (name: string) => page.getByRole('img', { name })
-  // 20px at 2px of stroke: the mark is the app's core semantic, and
-  // the workbench stepped every size up again (spec section 4) around 46px rows.
+  // 20px at 2px of stroke: the mark is the app's core semantic, and the workbench stepped every
+  // size up again around 46px rows.
   for (const name of ['In progress', 'To do', 'Backlog'])
     expect(await mark(name).evaluate((el) => el.getBoundingClientRect().width)).toBe(20)
 

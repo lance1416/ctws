@@ -122,7 +122,7 @@ export function WritingMode({
                   onChange(e.target.value)
                 }}
                 spellCheck={false}
-                // `font-mono` is the typography spec's `--font-mono` token: this pane shows Markdown
+                // `font-mono` is the `--font-mono` token: this pane shows Markdown
                 // SOURCE, where a fence's alignment and a table's pipes are the thing being read.
                 className="min-h-0 flex-1 resize-none bg-surface px-4 py-3 font-mono text-sm text-fg focus:outline-none"
               />

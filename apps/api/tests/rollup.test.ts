@@ -7,7 +7,7 @@ import { listProjectTasks } from '../src/tasks/tasks'
 import { appWithUser, createProject, createTask, type TaskCtx } from './helpers/tasks'
 
 /**
- * THE HALF OF §7 THAT IS NOT IN `@ctws/core`.
+ * THE HALF OF THE ROLLUP THAT IS NOT IN `@ctws/core`.
  *
  * The fold is covered case by case in `packages/core/src/progress.test.ts`. What only the real
  * database can answer is the part written in SQL: the two deadline flags, decided in the ACCOUNT's
@@ -150,9 +150,9 @@ describe('the exclusion rule on a tree built the normal way', () => {
     const kid = await createTask(ctx, pid, '子', root)
     await setStatus(ctx, kid, 'done')
 
-    // WHY THE DEFAULT IS `todo`. §7.2 excludes a `backlog` node before it looks at its children,
-    // so a backlog default makes this read null however much is finished underneath -- for every
-    // tree, everywhere.
+    // WHY THE DEFAULT IS `todo`. The fold excludes a `backlog` node before it looks at its
+    // children, so a backlog default makes this read null however much is finished underneath --
+    // for every tree, everywhere.
     expect((await rollups(ctx, pid))[root]!.progress).toBe(1)
   })
 

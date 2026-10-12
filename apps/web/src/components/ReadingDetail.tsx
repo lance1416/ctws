@@ -24,8 +24,8 @@ import { Links } from './Links'
  * author, a plan, a line of work and whoever recommended it; that is more than a row, and the
  * edge saying who recommended it could only be read from the other end.
  *
- * The anatomy is the one every other thing wears (framing §2): read first, one Edit, a form with
- * Save and Cancel, what it is linked to below, and the one irreversible action at the foot.
+ * The anatomy is the one every other thing wears: read first, one Edit, a form with Save and
+ * Cancel, what it is linked to below, and the one irreversible action at the foot.
  */
 
 const STATUS_LABEL: Record<ReadingStatus, string> = {

@@ -16,10 +16,9 @@ import { useComposing } from '../composition'
  * a top bar has no room for numbers. The project list carries its open-task count and its
  * identity chip.
  *
- * The destinations are not written in here: each MODULE contributes its own, and the rail
- * renders whatever is registered (module-boundary contract §3). The project list below them is
- * the shell's own -- the user's life is organised by line of work, and a note about CTWS belongs
- * to CTWS as much as a task does.
+ * The destinations are not written in here: each MODULE contributes its own, and the rail renders
+ * whatever is registered. The project list below them is the shell's own -- the user's life is
+ * organised by line of work, and a note about CTWS belongs to CTWS as much as a task does.
  *
  * Deliberately NOT a <ul>/<li>: the pages below render their own lists, and a second set of
  * listitems in the chrome would make "how many rows does this page have" unanswerable, for the

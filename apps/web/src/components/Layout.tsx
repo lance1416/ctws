@@ -72,18 +72,17 @@ export function Layout() {
         </div>
       </header>
       {/* The workbench: destinations, the work itself, and the detail beside it rather than on
-          top of it. The rail is 256px (workbench spec §2): it has to hold a project name at 15px
+          top of it. The rail is 256px: it has to hold a project name at 15px
           without truncating every one of them. `minmax(0,1fr)` and not `1fr`: a grid track sized
           `1fr` takes its minimum from its content, so one long untruncated title would push the
           centre column wider than the viewport and bring back the horizontal scrollbar at 375px. */}
       <div
         className={`lg:grid lg:items-start ${
-          // 24rem for the detail: at 1440 that leaves the work 800px against the detail's 384,
-          // so the content area really is three columns with the work spanning two of them
-          // (workbench spec §2). The pane's own box is 22rem inside it, with a 16px gutter on
-          // either side so it reads as a PANEL in that column rather than a slab bolted to the
-          // edge of the window. TaskDetail holds the matching numbers; they are two places and
-          // must agree.
+          // 24rem for the detail: at 1440 that leaves the work 800px against the detail's 384, so
+          // the content area really is three columns with the work spanning two of them The pane's
+          // own box is 22rem inside it, with a 16px gutter on either side so it reads as a PANEL in
+          // that column rather than a slab bolted to the edge of the window. TaskDetail holds the
+          // matching numbers; they are two places and must agree.
           paneOpen && wide
             ? 'lg:grid-cols-[16rem_minmax(0,1fr)_24rem]'
             : 'lg:grid-cols-[16rem_minmax(0,1fr)]'

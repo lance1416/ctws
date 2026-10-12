@@ -144,9 +144,9 @@ describe('search providers', () => {
 })
 
 /**
- * The project page is the SHELL's (contract §3) and the rows on it are a module's. These two
- * helpers are the seam that keeps it that way: without them the page would import the task
- * module's tree by name, and a second module's rows could never appear on a project at all.
+ * The project page is the SHELL's and the rows on it are a module's. These two helpers are the seam
+ * that keeps it that way: without them the page would import the task module's tree by name, and a
+ * second module's rows could never appear on a project at all.
  *
  * Both are asserted with modules that do not exist, because the real registry holds exactly one
  * module and a one-module assertion passes just as well against a hardwired page.

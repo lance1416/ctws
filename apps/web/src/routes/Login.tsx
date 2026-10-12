@@ -119,7 +119,7 @@ export function Login() {
 }
 
 function browserTimezone(): string {
-  // Only a default for registration. All "today"/"this week" logic runs server-side
-  // against users.timezone (spec section 8.4); the browser clock decides nothing.
+  // Only a default for registration. All "today"/"this week" logic runs server-side against
+  // users.timezone; the browser clock decides nothing.
   return Intl.DateTimeFormat().resolvedOptions().timeZone
 }

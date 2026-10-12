@@ -14,8 +14,8 @@ import type { WorkspaceModule } from './contract'
  *
  * IT HAS A PAGE OF ITS OWN, and the calendar does not make one. In a calendar app an event is the
  * only entity, so a "+" on a day square is where one is made; here the calendar is a lens over
- * everything with a date -- a deadline, a day you mean to finish something, a meeting -- and a
- * lens does not own a kind of thing (framing §2). The grid answers what is on this month.
+ * everything with a date -- a deadline, a day you mean to finish something, a meeting -- and a lens
+ * does not own a kind of thing. The grid answers what is on this month.
  *
  * It contributes:
  *
@@ -148,9 +148,9 @@ function TodayMeetings() {
 /**
  * NO BLOCK ON A PROJECT PAGE.
  *
- * This module's rows reach a project as edges, and the shell draws every kind of edge the same
- * way (framing §2). One of these is made on its own page and filed there, or dropped into the
- * capture box, never from a project page.
+ * This module's rows reach a project as edges, and the shell draws every kind of edge the same way.
+ * One of these is made on its own page and filed there, or dropped into the capture box, never from
+ * a project page.
  */
 
 export const meetingModule: WorkspaceModule = {

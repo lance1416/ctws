@@ -14,8 +14,7 @@ import { textbox } from './formStyles'
  *
  * THE DESTINATION IS NOT ALWAYS THE INBOX: every module that can take a line is asked whether it
  * claims this one, in registration order, and the line falls to the registry's named default when
- * nobody does (module-boundary contract §3). A pasted url goes to Reading; a sentence goes to the
- * inbox.
+ * nobody does. A pasted url goes to Reading; a sentence goes to the inbox.
  *
  * Typing a line and leaving is a success criterion, so routing must not cost a keystroke -- and it
  * does not: `accepts` is a pure function of the line. When the guess is wrong you can SEE it,

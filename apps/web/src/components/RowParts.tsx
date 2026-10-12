@@ -10,11 +10,11 @@ import type { LeadIcon } from '../rowLead'
  *   [project rail][status marker 1.75rem][icon slot 1.5rem][title -- the whole line]
  *                                                          [second line: breadcrumb · the dates]
  *
- * WHY AN ICON AND A SECOND LINE, and not two date columns (rows-and-reading §2). Columns scan
- * well and cost 19rem of every row: inside a 734px panel that leaves no width for a title, so the
- * dates drop to a second line below a threshold anyway -- two layouts, one cramped and one wide.
- * An icon at the row start plus the full wording underneath is ONE layout at every width, and the
- * wording is never compressed into a cell.
+ * WHY AN ICON AND A SECOND LINE, and not two date columns. Columns scan well and cost 19rem of
+ * every row: inside a 734px panel that leaves no width for a title, so the dates drop to a second
+ * line below a threshold anyway -- two layouts, one cramped and one wide. An icon at the row start
+ * plus the full wording underneath is ONE layout at every width, and the wording is never
+ * compressed into a cell.
  *
  * The icons are the column now: a fixed slot at a fixed x on every row of a list, reserved for the
  * whole list or not at all (`../rowLead`). The second line is deliberately NOT a column -- it is
@@ -161,16 +161,16 @@ export function NotesMark() {
 }
 
 /**
- * The names the leading icons answer to. Every icon has one (spec §2): an icon with no name
- * is a WCAG 1.1.1 failure, and here it would also leave a reader who cannot see the colour without
- * the one thing the glyph is for.
+ * The names the leading icons answer to. Every icon has one: an icon with no name is a WCAG 1.1.1
+ * failure, and here it would also leave a reader who cannot see the colour without the one thing
+ * the glyph is for.
  *
  * “Has notes” and not “Notes”, on purpose: accessible names share ONE FLAT NAMESPACE and are
  * matched by substring, so a bare “Notes” would collide with the detail pane's own Notes field on
- * the very page both appear on. For the same reason the missed deadline is “Overdue” and not
- * “Has a deadline, overdue”: a name CONTAINING “Has a deadline” makes every by-name query for the
- * un-missed flag match the missed one too. The plan's name is §2's own word, “Has a plan”, which
- * is also the one that does NOT contain the pane's Plan field.
+ * the very page both appear on. For the same reason the missed deadline is “Overdue” and not “Has a
+ * deadline, overdue”: a name CONTAINING “Has a deadline” makes every by-name query for the
+ * un-missed flag match the missed one too. The plan's name is the row's own word, “Has a plan”,
+ * which is also the one that does NOT contain the pane's Plan field.
  *
  * “Has a deadline” does contain the pane's Due field, and no word for a deadline in this app's
  * vocabulary avoids it; the queries that mean that FIELD say `{ exact: true }`.
@@ -219,15 +219,15 @@ export function LeadMark({ icon }: { icon: LeadIcon }) {
 /**
  * THE SECOND LINE: the breadcrumb and the dates, in full words.
  *
- * This is where the information actually lives (spec §2). The icon at the row start says
- * there IS a deadline and whether it has been missed; this says which one and when, to the minute,
- * and it says it in TEXT -- so colour is never the only carrier (WCAG 1.4.1) and a screen reader
- * reaching the row gets the date from the words rather than from a hue.
+ * This is where the information actually lives. The icon at the row start says there IS a deadline
+ * and whether it has been missed; this says which one and when, to the minute, and it says it in
+ * TEXT -- so colour is never the only carrier (WCAG 1.4.1) and a screen reader reaching the row
+ * gets the date from the words rather than from a hue.
  *
  * It renders NOTHING when there is nothing to say, so a row with no date, no plan and no breadcrumb
  * stays one line (44px) and only the rows that carry information pay for the second one (58px).
  *
- * No alignment, no truncated dates: this line is read, not scanned (§2). Each phrase is kept whole
+ * No alignment, no truncated dates: this line is read, not scanned. Each phrase is kept whole
  * (`whitespace-nowrap` per part) so a narrow panel breaks the line BETWEEN phrases rather than
  * inside a phrase like "2 days late".
  */
@@ -242,8 +242,8 @@ export function RowMeta({
   rollup = null,
   blocked = null,
 }: {
-  /** The project (and parent) a cross-project list shows. The tree passes none: §2 says the
-   *  project is known there and the hierarchy is visible from the indentation. */
+  /** The project (and parent) a cross-project list shows. The tree passes none: the project is
+   *  known there and the hierarchy is visible from the indentation. */
   breadcrumb?: string | null
   due?: DateHints['due']
   /** The plan, worded: "Planned for tomorrow", or "Was Sep 28, carried" once carried. */
@@ -259,7 +259,7 @@ export function RowMeta({
    */
   age?: string | null
   /**
-   * "60% · 2 in progress · 1 overdue" for a row that HAS CHILDREN (design spec §7.3).
+   * "60% · 2 in progress · 1 overdue" for a row that HAS CHILDREN.
    *
    * Only for a parent. A leaf's "progress" is just its own status, already drawn as the marker
    * at the head of the row, and saying it again in words is noise.
@@ -278,13 +278,13 @@ export function RowMeta({
   /**
    * A SUMMARY SURFACE's line: the project and how late, nothing else.
    *
-   * This is a per-surface editorial choice, not a compression of the row's vocabulary (spec §2
-   * stands: wherever the full line is shown it is whole, to the minute). The Overdue panel is a
-   * one-third-width summary of "what is late, and how late"; with the absolute deadline and the
-   * plan added, every row wraps to three lines and the titles truncate anyway. The absolute
-   * deadline is NOT lost: it is on the same task's row in the main Today queue, in the detail
-   * pane, and in this line's tooltip (`exact`). A deadline not yet past a whole day has no "late"
-   * phrase to show, so it falls back to the full wording rather than to nothing.
+   * This is a per-surface editorial choice, not a compression of the row's vocabulary (wherever the
+   * full line is shown it is whole, to the minute). The Overdue panel is a one-third-width summary
+   * of "what is late, and how late"; with the absolute deadline and the plan added, every row wraps
+   * to three lines and the titles truncate anyway. The absolute deadline is NOT lost: it is on the
+   * same task's row in the main Today queue, in the detail pane, and in this line's tooltip
+   * (`exact`). A deadline not yet past a whole day has no "late" phrase to show, so it falls back
+   * to the full wording rather than to nothing.
    */
   summary?: boolean
 }) {
@@ -386,11 +386,11 @@ export function RowMeta({
   ).filter((part): part is Part => part !== null)
   if (parts.length === 0) return null
   return (
-    // META: 14/22, weight 400, from the typography spec's scale -- 400 for EVERY phrase on this
-    // line, the overdue date and the lateness phrase included. The scale publishes no 600 step at
-    // 14/22, and 500 is a no-op on the Microsoft YaHei fallback path, so weight carries nothing
-    // here: the deadline is told apart by `missed` against `deadline`, by the row's leading glyph,
-    // and by the words themselves (WCAG 1.4.1).
+    // META: 14/22, weight 400, from the type scale -- 400 for EVERY phrase on this line, the
+    // overdue date and the lateness phrase included. The scale publishes no 600 step at 14/22, and
+    // 500 is a no-op on the Microsoft YaHei fallback path, so weight carries nothing here: the
+    // deadline is told apart by `missed` against `deadline`, by the row's leading glyph, and by the
+    // words themselves (WCAG 1.4.1).
     <span
       data-row-meta
       className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 text-sm text-fg-muted"

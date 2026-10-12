@@ -1,8 +1,8 @@
 /**
  * The tabs in a block's head, and in the calendar's.
  *
- * A SHELL piece. The views are the MODULES' to name and the shell's to draw (module-boundary
- * contract §3), so the drawing lives with the shell's other generic pieces, not in one page.
+ * A SHELL piece. The views are the MODULES' to name and the shell's to draw, so the drawing lives
+ * with the shell's other generic pieces, not in one page.
  */
 export function ViewTabs({
   views,

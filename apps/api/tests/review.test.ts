@@ -185,7 +185,7 @@ describe('the weekly review', () => {
     expect(theirBody.projects.map((p) => p.projectName)).toEqual(['别人的'])
 
     const body = await review(ctx)
-    // The deleted task's history stays in the log (§5.4); it just is not part of the recount.
+    // The deleted task's history stays in the log; it just is not part of the recount.
     expect(body.projects[0]!.finished.map((t) => t.title)).toEqual(['留下的'])
     expect(body.projects.map((p) => p.projectName)).toEqual(['改版'])
   })

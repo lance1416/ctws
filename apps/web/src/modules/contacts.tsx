@@ -44,9 +44,9 @@ function useBirthdayEntries(range: { from: string; to: string }) {
  * THE WORKBENCH CARD: the few birthdays that come TO you.
  *
  * WHO appears is the server's answer (each person by their own lead), not a filter written again
- * here. This card is the only place in the app that comes looking for you -- a real push would
- * need a scheduler, and v1 deliberately has no background anything (design spec section 2). So the
- * cost is stated plainly: a week you never open CTWS is a week it cannot tell you.
+ * here. This card is the only place in the app that comes looking for you -- a real push would need
+ * a scheduler, and v1 deliberately has no background anything. So the cost is stated plainly: a
+ * week you never open CTWS is a week it cannot tell you.
  */
 function BirthdayCard() {
   const view = useQuery({ queryKey: birthdaysKey(), queryFn: listBirthdays })
@@ -121,9 +121,9 @@ function useContactHits(query: string) {
 /**
  * NO BLOCK ON A PROJECT PAGE.
  *
- * This module's rows reach a project as edges, and the shell draws every kind of edge the same
- * way (framing §2). One of these is made on its own page and filed there, or dropped into the
- * capture box, never from a project page.
+ * This module's rows reach a project as edges, and the shell draws every kind of edge the same way.
+ * One of these is made on its own page and filed there, or dropped into the capture box, never from
+ * a project page.
  */
 
 export const contactModule: WorkspaceModule = {

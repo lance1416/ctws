@@ -99,9 +99,9 @@ export function ProjectIdentity({
           className="min-w-0 flex-1 rounded-lg border border-border-strong bg-surface px-2 py-0.5 text-xl font-semibold text-fg"
         />
       ) : (
-        // The TYPE lives on the <h1>, not on the button inside it: the heading is what the
-        // typography spec measures, and a button that carried the pair would leave the h1
-        // reading as body text to anything inspecting it. Preflight gives the button `font:
+        // The TYPE lives on the <h1>, not on the button inside it: the heading is what the type
+        // scale measures, and a button that carried the pair would leave the h1 reading as body
+        // text to anything inspecting it. Preflight gives the button `font:
         // inherit`, so it wears the heading's pair without naming it.
         <h1
           id="project-heading"

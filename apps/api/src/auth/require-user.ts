@@ -39,12 +39,11 @@ export const requireUser: preHandlerAsyncHookHandler = async function (req, repl
   const session = await findValidSession(this.db, id, this.env.sessionTtlDays)
   if (!session) return sendProblem(reply, 401, 'Authentication required')
 
-  // Workspace scoping is injected here, once, so route handlers never need
-  // to remember to scope their own queries -- see design spec §10.5. The
-  // actual lookup lives in service.ts so both this preHandler and the login
-  // route share one implementation. It returns null for a disabled user (401
-  // even with a valid session) and supplies the instance role, read fresh on
-  // every request so a demotion applies immediately.
+  // Workspace scoping is injected here, once, so route handlers never need to remember to scope
+  // their own queries. The actual lookup lives in service.ts so both this preHandler and the login
+  // route share one implementation. It returns null for a disabled user (401 even with a valid
+  // session) and supplies the instance role, read fresh on every request so a demotion applies
+  // immediately.
   const ctx = await getAuthContext(this.db, session.userId)
   if (!ctx) return sendProblem(reply, 401, 'Authentication required')
 

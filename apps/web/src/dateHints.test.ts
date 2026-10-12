@@ -67,8 +67,8 @@ describe('dateHints', () => {
     // 2026-10-01 09:00 local is two calendar days before the 3rd.
     const due = new Date(2026, 9, 1, 9, 0).toISOString()
     // BOTH HALVES. "2 days late" alone is what fits an 8rem cell; the words are on a line of
-    // their own (spec §2), and the lateness on its own cannot
-    // answer "due when?" -- which is the compression the user rejected.
+    // their own, and the lateness on its own cannot answer "due when?" -- which is the
+    // compression the user rejected.
     expect(dateHints(task({ dueAt: due }), TZ, NOW()).due).toEqual({
       text: 'Due Oct 1, 09:00',
       late: '2 days late',
@@ -91,8 +91,8 @@ describe('dateHints', () => {
     const due = new Date(2026, 9, 8, 9, 0).toISOString()
     expect(dateHints(task({ dueAt: due, scheduledOn: '2026-10-04' }), TZ, NOW())).toEqual({
       scheduled: 'Planned for tomorrow',
-      // A day with no time ("Due Oct 8") is not complete to the
-      // minute, and §6 asks for the minute.
+      // A day with no time ("Due Oct 8") is not complete to the minute, and the row says the
+      // minute.
       due: { text: 'Due Oct 8, 09:00', late: null, overdue: false },
     })
   })
@@ -100,7 +100,8 @@ describe('dateHints', () => {
   it('a deadline a minute before midnight still says 23:59, not the next day', async () => {
     const { dateHints } = await load()
     // A clock printed from a UTC getter in +05:30 would read 18:29 here, and a rounded one 00:00
-    // of the 9th. The minute is the thing §6 pins, so it is pinned at the hardest minute there is.
+    // of the 9th. The minute is the thing being pinned, so it is pinned at the hardest minute
+    // there is.
     const due = new Date(2026, 9, 8, 23, 59).toISOString()
     expect(dateHints(task({ dueAt: due }), TZ, NOW()).due!.text).toBe('Due Oct 8, 23:59')
   })

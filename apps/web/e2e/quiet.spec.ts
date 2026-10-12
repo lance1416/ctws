@@ -279,8 +279,8 @@ test('a parent row says how its subtree stands, and a quiet one says nothing', a
   expect(done).toBeTruthy()
 
   await openTree(page, pid)
-  // §7.3's line, on the parent that has something to report: half its children are done and one
-  // of them is running.
+  // The rollup line, on the parent that has something to report: half its children are done and
+  // one of them is running.
   await expect(row(page, '接入 KaTeX').locator('[data-row-rollup]')).toHaveText(
     '50% · 1 in progress',
   )

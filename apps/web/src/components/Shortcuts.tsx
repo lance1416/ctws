@@ -24,7 +24,7 @@ const hint =
  * `?` cannot be the only route to the setting that disabled them.
  *
  * WHERE the `g` chords go is not written in here: the shell and each module contribute to one key
- * table and this component only runs it (module-boundary contract §3).
+ * table and this component only runs it.
  */
 export function Shortcuts() {
   const [search, setSearch] = useState(false)

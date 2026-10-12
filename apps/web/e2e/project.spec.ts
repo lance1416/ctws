@@ -12,7 +12,7 @@ import {
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 /**
- * THE PROJECT PAGE as a workbench (workbench spec §2): the header banner carrying this line of
+ * THE PROJECT PAGE as a workbench: the header banner carrying this line of
  * work's state, the tree in a panel, and the detail as the third column rather than a layer.
  *
  * What these guards are for, in order of how easy each would be to fake:
@@ -122,7 +122,7 @@ test('the header’s numbers follow a task added on the page, without a reload',
 /**
  * Separate from the counts on purpose: the test above passes unchanged with a bar sitting beside
  * them. Rollup is M3 and nothing writes `manual_progress`, so a ratio in this banner would be a
- * number the backend cannot cash (spec §5).
+ * number the backend cannot cash.
  */
 test('the project header draws a percentage but never a progress bar', async ({ page }) => {
   await registerFreshUser(page)
@@ -137,10 +137,10 @@ test('the project header draws a percentage but never a progress bar', async ({ 
   await expect(stat(page, 'Done this week')).toHaveText('2')
 
   // A NUMBER, AND NO BAR. It is the mean of the four root tasks (1 + 1 + 0 + 0.5) / 4, the same
-  // §7.2 rule a parent gets.
+  // rule a parent gets.
   await expect(stat(page, 'Progress')).toHaveText('63%')
   // A BAR is still refused: a 60% line and a 60% line nobody has touched for three weeks draw
-  // the same bar, and Last activity beside it is the metric §7.4 calls the valuable one.
+  // the same bar, and Last activity beside it is the one that tells them apart.
   await expect(banner.getByRole('progressbar')).toHaveCount(0)
   await expect(banner.locator('progress, meter')).toHaveCount(0)
   // A bar built by hand: an element whose width is a fraction of its parent.
@@ -194,9 +194,9 @@ test('the tree is a panel spanning two columns and the detail is the third, at 1
   // It coexists: the tree is still operable, and clicking another row loads it into the same
   // column with no closing step in between.
   await page.getByRole('listitem').filter({ hasText: '旁边的任务' }).click()
-  // Reading mode, so the task's name is the pane's heading rather than the value of an
-  // input (rows-and-reading §5). The claim is unchanged: the OTHER row's task is now in the
-  // same pane, with no closing step in between.
+  // Reading mode, so the task's name is the pane's heading rather than the value of an input. The
+  // claim is unchanged: the OTHER row's task is now in the same pane, with no closing step in
+  // between.
   await expect(dialog.locator('[data-detail-title]')).toHaveText('旁边的任务')
   // ...and the detail wears the page's own panel surface rather than a chrome plane, which is what
   // makes it read as part of the page instead of a form bolted to the window's edge.
@@ -368,9 +368,9 @@ test('the tree’s rail reads as one continuous spine, not one dash per row', as
 
 /**
  * The workbench's row metric, on the densest list in the app. 44px for a single-line row is the
- * size stage 1 settled on (spec §4's band, measured against what had actually shipped rather than
- * against the 28-30 the section quotes); the tree is the page where a row being too small to
- * read at a glance was worst.
+ * size the first stage settled on, measured against what had actually shipped rather than against
+ * the 28-30 the surveyed systems quote; the tree is the page where a row being too small to read at
+ * a glance was worst.
  */
 test('a single-line tree row is 44px tall, at every depth', async ({ page }) => {
   await registerFreshUser(page)

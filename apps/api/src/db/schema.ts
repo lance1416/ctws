@@ -33,7 +33,7 @@ export const users = pgTable(
     id: uuid('id').primaryKey(),
     email: text('email').notNull(),
     passwordHash: text('password_hash').notNull(),
-    // IANA timezone identifier; see spec §5 / Global Constraints
+    // IANA timezone identifier. Every day boundary in this app is decided in it.
     timezone: text('timezone').notNull(),
     // Instance role (who may administer the instance), not a workspace role. See auth/roles.ts.
     role: text('role').notNull().default('member'),
@@ -217,10 +217,10 @@ export const taskDependencies = pgTable(
 /**
  * READING -- the SECOND module's own table.
  *
- * It belongs to the reading module and nothing in the task module may read it (module-boundary
- * contract §3). What it shares with tasks is only what the SHELL owns: the workspace, and an
- * optional project, because a project is the shell's organising dimension and an article about
- * CTWS belongs to CTWS exactly as a task does.
+ * It belongs to the reading module and nothing in the task module may read it. What it shares with
+ * tasks is only what the SHELL owns: the workspace, and an optional project, because a project is
+ * the shell's organising dimension and an article about CTWS belongs to CTWS exactly as a task
+ * does.
  *
  * It carries `workspace_id` directly rather than reaching one through a project, because a
  * reading item NEED NOT have a project: a book you are reading is not a line of work.
@@ -299,7 +299,7 @@ export const contacts = pgTable(
     /** vCard's `NOTE`. */
     note: text('note'),
     /**
-     * THE BIRTHDAY, stored in the calendar it was GIVEN in (birthdays spec section 2). A GROUP of
+     * THE BIRTHDAY, stored in the calendar it was GIVEN in. A GROUP of
      * columns, all present or all absent: the CHECK below is what holds that, because half a
      * birthday read back blows up in the conversion rather than being quietly wrong.
      */

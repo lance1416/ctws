@@ -2,15 +2,16 @@ import { expect, test, type Page } from '@playwright/test'
 import { makeProject, makeTask, registerFreshUser } from './helpers'
 
 /**
- * The typography specification (docs/superpowers/specs/2026-10-06-ctws-typography.md), pinned.
+ * THE TYPOGRAPHY RULES, pinned: the font stack, the scale as pairs, the two weights, and the
+ * Han/Latin spacing.
  *
- * Every rule in that spec is ADOPTED from a published design system, so every guard here is a
- * guard against drifting off someone else's answer, not against drifting off a taste. What makes
- * each one hard to fake:
+ * Every one of them is ADOPTED from a published design system, so every guard here is a guard
+ * against drifting off someone else's answer, not against drifting off a taste. What makes each one
+ * hard to fake:
  *
  * - The stack is checked ENTRY BY ENTRY in order. `toContain('PingFang SC')` would pass on a
  *   stack that had lost `-apple-system`, or that had put the CJK face in front of the Latin one --
- *   which is the one ordering §1 explicitly refuses.
+ *   which is the one ordering the stack explicitly refuses.
  * - `text-autospace` is checked by RENDERED GEOMETRY, not by computed style. A property can be
  *   set and ignored: the value parses in a browser that does nothing with it, and
  *   `getComputedStyle` would report it happily. Two spans of the same text at the same size, one
@@ -23,7 +24,7 @@ import { makeProject, makeTask, registerFreshUser } from './helpers'
  *   properties would only prove the tokens exist, not that anything uses them.
  */
 
-/** §1, verbatim. Everything from `-apple-system` on is Semi Design's string. */
+/** The stack, verbatim. Everything from `-apple-system` on is Semi Design's string. */
 const FONT_SANS = [
   'IBM Plex Sans',
   'CTWS Noto Sans SC',
@@ -39,7 +40,7 @@ const FONT_SANS = [
   'sans-serif',
 ]
 
-/** §1, verbatim: Ant Design 5's `fontFamilyCode`. */
+/** Verbatim: Ant Design 5's `fontFamilyCode`. */
 const FONT_MONO = ['SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', 'Courier', 'monospace']
 
 /** A font-family or custom-property value as an ordered list of family names, quoting removed. */
@@ -59,7 +60,7 @@ const pair = (page: Page, selector: string) =>
       return { size: s.fontSize, line: s.lineHeight, weight: s.fontWeight }
     })
 
-// ----------------------------------------------------------------------------- §1, the font stack
+// -------------------------------------------------------------------------------- the font stack
 
 test('the computed font stack is the spec string, entry for entry and in order', async ({
   page,
@@ -72,8 +73,8 @@ test('the computed font stack is the spec string, entry for entry and in order',
   // and an exact-list assertion placed in front would swallow both: every mutation would report
   // "the list differs" and neither reason would ever get to say what it is about.
   //
-  // Latin FIRST. §1 refuses Apple's CJK-first ordering, because handing Latin to Noto would throw
-  // away the reason IBM Plex Sans is self-hosted at all.
+  // Latin FIRST. The stack refuses Apple's CJK-first ordering, because handing Latin to Noto would
+  // throw away the reason IBM Plex Sans is self-hosted at all.
   expect(sans.indexOf('IBM Plex Sans'), `Latin must lead: ${sans}`).toBeLessThan(
     sans.indexOf('CTWS Noto Sans SC'),
   )
@@ -82,8 +83,8 @@ test('the computed font stack is the spec string, entry for entry and in order',
     `the webfont must precede the system CJK faces: ${sans}`,
   ).toBeLessThan(sans.indexOf('PingFang SC'))
 
-  // §5: no serif display step, and §1 names no serif family. The terminal `sans-serif` is the only
-  // place the word may appear, so a `Songti`/`Source Han Serif` step cannot be slipped in.
+  // No serif display step, and the stack names no serif family. The terminal `sans-serif` is the
+  // only place the word may appear, so a `Songti`/`Source Han Serif` step cannot be slipped in.
   expect(
     sans.filter((name) => /serif/i.test(name)),
     `a serif family appeared in the stack: ${sans}`,
@@ -98,7 +99,7 @@ test('the computed font stack is the spec string, entry for entry and in order',
   expect(families(mono)).toEqual(FONT_MONO)
 })
 
-// ------------------------------------------------------------------ §2, the scale, as rem pairs
+// --------------------------------------------------------------------- the scale, as rem pairs
 
 /** The browser's own default font-size setting (Chrome: Settings > Appearance > Font size). */
 async function setBrowserDefaultFontSize(page: Page, px: number) {
@@ -111,13 +112,13 @@ async function setBrowserDefaultFontSize(page: Page, px: number) {
 test('the scale follows the reader root font size: size AND leading, as a pair', async ({
   page,
 }) => {
-  // §2: the pairs are rem so that raising the browser's default font size raises the type. A px
-  // scale -- or `calc(12px)`, or a token string that merely looks right -- computes to the same
-  // numbers at the default size and cannot be told apart there; only a different root can. 125%
-  // is what a reader who set their browser default to 20px gives the root. It is applied as that
-  // setting, through the browser (CDP `Page.setFontSizes`), NOT by writing a `font-size` rule onto
-  // <html>: a rule would override whatever the app itself put there, so an app that pinned
-  // `html { font-size: 16px }` would pass. This way it is the same lever the reader pulls.
+  // The pairs are rem so that raising the browser's default font size raises the type. A px scale
+  // -- or `calc(12px)`, or a token string that merely looks right -- computes to the same numbers
+  // at the default size and cannot be told apart there; only a different root can. 125% is what a
+  // reader who set their browser default to 20px gives the root. It is applied as that setting,
+  // through the browser (CDP `Page.setFontSizes`), NOT by writing a `font-size` rule onto <html>: a
+  // rule would override whatever the app itself put there, so an app that pinned `html { font-size:
+  // 16px }` would pass. This way it is the same lever the reader pulls.
   await page.setViewportSize({ width: 1440, height: 1000 })
   await registerFreshUser(page)
   const pid = await makeProject(page, '大字号')
@@ -196,9 +197,9 @@ test('the banner subject is the top step, 36/44, and the page title is one below
   expect(await pair(page, 'h1')).toEqual({ size: '24px', line: '32px', weight: '600' })
 })
 
-// --------------------------------------------------------------- §3, 400 and 600, and no 500
+// -------------------------------------------------------------------- 400 and 600, and no 500
 
-// --------------------------------------------------------- §4, mixed script: text-autospace
+// ------------------------------------------------------------ mixed script: text-autospace
 
 test('text-autospace is asked for, and actually moves the glyphs', async ({ page }) => {
   await registerFreshUser(page)
@@ -278,7 +279,7 @@ test('numeric columns keep tabular figures', async ({ page }) => {
   })
   await page.goto(`/projects/${pid}`)
 
-  // antd's one positive numeric rule, adopted in §4. The row's date column and the banner's
+  // antd's one positive numeric rule, adopted here. The row's date column and the banner's
   // counts are the places a column of digits has to line up.
   await expect(page.locator('[data-due-text]').first()).toHaveCSS(
     'font-variant-numeric',

@@ -36,15 +36,15 @@ type Props = {
   hasNotes: boolean
   /** When this was captured, for the inbox's age line. Every other list passes null. */
   capturedAt?: string | null
-  /** This row's subtree, said in words (§7.3). Only a row with children gets one. */
+  /** This row's subtree, said in words. Only a row with children gets one. */
   rollup?: string | null
   /** What is still in the way. The row dims; it does not disappear. */
   blockedBy?: readonly { id: string; title: string }[] | undefined
   /**
    * Whether THIS LIST reserves the leading icon slot at all -- decided once for the whole tree,
    * never per row: a slot that exists on some rows and not others puts the first glyph of each row
-   * at a different x, and these icons are the only column this layout has (spec §2). When no row
-   * in the tree would carry an icon the slot is not rendered, and the title gets the width back.
+   * at a different x, and these icons are the only column this layout has. When no row in the tree
+   * would carry an icon the slot is not rendered, and the title gets the width back.
    */
   leadSlot: boolean
   /** True for a moment after a save from the detail panel: the panel closed, this says it worked. */
@@ -157,13 +157,13 @@ export function TaskRow({
         transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
         transition,
       }}
-      // 44px for a row with nothing to say and 66px for one with a second line: the height is not
-      // a class but the sum of what the row carries, so only the rows that carry information pay
-      // for the extra line. `items-start`, because the glyphs belong to the FIRST line: every one
-      // of them is 44px tall, so they centre on the title whether or not a second line follows it.
-      // 44 = 10 + 24 + 10 and 66 = 10 + 24 + 22 + 10, from the typography spec's px pairs: the
-      // title is 16/24 and the second line is 14/22. 44 is the workbench spec's single-line row
-      // metric, so only the rows that carry a second line are taller than it.
+      // 44px for a row with nothing to say and 66px for one with a second line: the height is not a
+      // class but the sum of what the row carries, so only the rows that carry information pay for
+      // the extra line. `items-start`, because the glyphs belong to the FIRST line: every one of
+      // them is 44px tall, so they centre on the title whether or not a second line follows it. 44
+      // = 10 + 24 + 10 and 66 = 10 + 24 + 22 + 10, from the type scale: the title is 16/24 and the
+      // second line is 14/22. 44 is the single-line row metric every list keeps, so only the rows
+      // that carry a second line are taller than it.
       className={`group relative flex min-h-11 cursor-pointer items-start rounded-lg hover:bg-surface-hover ${
         isDragging ? 'bg-surface-raised opacity-70' : ''
       } ${
@@ -236,7 +236,7 @@ export function TaskRow({
       </span>
       {/* THE LEADING ICON SLOT: 1.5rem, fixed, reserved for the whole list or not at all, so every
           row's glyph lands at one x however deeply the row is indented. It holds a PURE ICON and
-          never text (spec §2) -- the words are on the second line, where they fit whole. */}
+          never text -- the words are on the second line, where they fit whole. */}
       {leadSlot && (
         <span
           data-lead-slot
@@ -249,7 +249,7 @@ export function TaskRow({
       {/* The title owns the whole first line: there is nothing to its right to reserve width for
           any more. Under it, the dates in full words -- and NOT a breadcrumb: in a project tree the
           project is known and the hierarchy is visible from the indentation, so writing it again
-          would spend vertical space on zero information (spec §2).
+          would spend vertical space on zero information.
           `py-2.5` around a 24px title line puts its centre at 22px, which is the centre of the
           44px glyphs beside it, and makes the row exactly 44px with no second line and 66px with
           one. Symmetric now, where the old 15/20 title needed `pt-3 pb-2` to land on 22. */}
@@ -283,9 +283,9 @@ export function TaskRow({
       {/* THE TWO HOVER CONTROLS RESERVE NO WIDTH. They are invisible until the row is hovered, so
           holding 64px of every row for them was the last thing taking width off the titles: with
           them in the flow the user's own long title still did not fit the 734px panel the detail
-          column leaves (spec §6), and it does with 48px of slack now. Over the page rather than in
-          it, they appear on the hovered row's own background, so a truncated title's ellipsis is
-          covered rather than jostled -- the row does not reflow when the pointer arrives.
+          column leaves, and it does with 48px of slack now. Over the page rather than in it, they
+          appear on the hovered row's own background, so a truncated title's ellipsis is covered
+          rather than jostled -- the row does not reflow when the pointer arrives.
           `static` again where there is no hover, since there they are shown permanently and must
           not sit on top of the text.
           Pinned to the FIRST line (`top-0 h-11`), so a row with a second line does not drag them

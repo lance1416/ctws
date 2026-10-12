@@ -1,11 +1,11 @@
 /**
  * THE ROW'S LEADING ICON, and how wide a list is.
  *
- * NO RIGHT-HAND DATE COLUMNS (rows-and-reading §3). A row is
- * `[status marker 1.75rem][icon slot 1.5rem][title -- the whole line]`, with the full date wording
- * on a second line under the title. So there is no deadline or plan column, no stack threshold
- * and no container query -- the cramped panel and the wide one are THE SAME LAYOUT -- and no list
- * measure derived from a column makeup, because the title competes with nothing on its right.
+ * NO RIGHT-HAND DATE COLUMNS. A row is `[status marker 1.75rem][icon slot 1.5rem][title -- the
+ * whole line]`, with the full date wording on a second line under the title. So there is no
+ * deadline or plan column, no stack threshold and no container query -- the cramped panel and the
+ * wide one are THE SAME LAYOUT -- and no list measure derived from a column makeup, because the
+ * title competes with nothing on its right.
  *
  * THE ONE RULE THAT REMAINS: a slot is reserved FOR THE WHOLE LIST or not at all. A slot that exists on some rows and not others puts the first glyph of every row at a
  * different x, and the leading icons are the only column this layout still has.
@@ -25,10 +25,10 @@ export type RowMarks = { due: boolean; plan: boolean; notes: boolean }
 /**
  * The ONE icon a row shows at its start.
  *
- * A deadline beats a plan because it is the one that bites (spec §2), and either beats the notes
- * mark: the slot answers whether there is a date and whether it bites, and a note is neither.
- * The row does not LOSE the note when a date wins the slot -- the `≡` stays beside the title
- * (`TaskRow`) -- and the second line lists both dates in full either way.
+ * A deadline beats a plan because it is the one that bites, and either beats the notes mark: the
+ * slot answers whether there is a date and whether it bites, and a note is neither. The row does
+ * not LOSE the note when a date wins the slot -- the `≡` stays beside the title (`TaskRow`) -- and
+ * the second line lists both dates in full either way.
  */
 export function leadIcon(r: RowMarks & { overdue?: boolean }): LeadIcon | null {
   if (r.due) return r.overdue ? 'missed' : 'deadline'

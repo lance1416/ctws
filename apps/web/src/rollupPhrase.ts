@@ -1,10 +1,10 @@
 import type { RollupResponse } from '@ctws/contracts'
 
 /**
- * "60% · 2 in progress · 1 overdue" -- a parent row's subtree, in words (design spec §7.3).
+ * "60% · 2 in progress · 1 overdue" -- a parent row's subtree, in words.
  *
- * THE PERCENTAGE ALONE DOES NOT ANSWER “Movement”, which is why the spec writes the line this
- * way and not as a bar. Each part is dropped when it has nothing to say, so a parent whose
+ * THE PERCENTAGE ALONE DOES NOT ANSWER “Movement”, which is why this is a line of words and not
+ * a bar. Each part is dropped when it has nothing to say, so a parent whose
  * children are merely unstarted gets "0%" and no tail, rather than a row of zeroes.
  *
  * `null` when there is nothing worth a second line -- and A LONE "0%" COUNTS AS NOTHING.

@@ -12,7 +12,7 @@ import type { Circle } from '@ctws/contracts'
 
 /**
  * BIRTHDAYS -- a LENS. It owns nobody: this page only reads, and a person is made by the contacts
- * module itself (framing §2, the same way the calendar owns no kind of thing).
+ * module itself, the same way the calendar owns no kind of thing.
  *
  * A PANEL GRID rather than one capped column, for the reason `Today.tsx` writes down: at 1440 a
  * single column puts one clump of rows left of centre with half the screen empty beside it. The

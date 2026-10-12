@@ -32,10 +32,9 @@ import { BUTTON } from '../components/buttonStyles'
  *   Movement    (right)       where did I get to
  *   Done today  (right)       what did I do
  *
- * The arrangement is fixed by design (workbench spec §1) and there is deliberately no drag,
- * resize or add-panel affordance. The reason is not that it would be hard: one user has one
- * taste, and a rearrangeable grid only hands the design decision back to the person using the
- * tool, every time they open it.
+ * The arrangement is fixed by design and there is deliberately no drag, resize or add-panel
+ * affordance. The reason is not that it would be hard: one user has one taste, and a rearrangeable
+ * grid only hands the design decision back to the person using the tool, every time they open it.
  *
  * A panel grid rather than one capped centre column: at 1440 a single column puts one clump of
  * rows left of centre with half the screen empty beside it. Below `lg` the panels stack into one
@@ -183,9 +182,9 @@ export function Today() {
       }
     })
   /**
-   * Whether ONE PANEL's list reserves the leading icon slot. Per list and never per row (spec §2):
-   * the Today queue and the Overdue panel are two lists in two columns of the page, so each
-   * answers for itself, while within either one the icons stay at a single x.
+   * Whether ONE PANEL's list reserves the leading icon slot. Per list and never per row: the Today
+   * queue and the Overdue panel are two lists in two columns of the page, so each answers for
+   * itself, while within either one the icons stay at a single x.
    */
   const leadSlotOf = (list: Prepared[]): boolean =>
     hasLeadSlot(list.map((p) => ({ due: p.t.dueAt !== null, plan: p.plan !== null, notes: false })))
@@ -198,9 +197,9 @@ export function Today() {
    */
   const row = ({ t, hints, carried, plan }: Prepared, leadSlot: boolean): ReactNode => {
     const sections = triageSections(t, carried, todayYmd, timezone, patch)
-    // One glyph at the row start, the words on the second line (spec §2). A row whose plan is
-    // today's shows no plan text, so it must not claim a plan icon either -- hence `plan`, the
-    // wording this row actually renders, rather than `t.scheduledOn`.
+    // One glyph at the row start, the words on the second line. A row whose plan is today's shows
+    // no plan text, so it must not claim a plan icon either -- hence `plan`, the wording this row
+    // actually renders, rather than `t.scheduledOn`.
     const icon = leadIcon({
       due: hints.due !== null,
       overdue: hints.due?.overdue === true,
@@ -254,7 +253,7 @@ export function Today() {
           </span>
           {/* Breadcrumb and dates share ONE line here, in full words: this is the line the user
               reads, and it is not a column, so nothing on it is compressed to line up with the row
-              above (spec §2). The deadline keeps its date and its time to the minute. */}
+              above. The deadline keeps its date and its time to the minute. */}
           <RowMeta
             breadcrumb={breadcrumb(t)}
             due={hints.due}
@@ -322,7 +321,7 @@ export function Today() {
         className={`grid min-w-0 items-start gap-4 ${rightColumn ? 'lg:grid-cols-[repeat(3,minmax(0,1fr))]' : ''}`}
       >
         {/*
-          Working on -- the first thing the eye should land on (workbench spec §1), and the only
+          Working on -- the first thing the eye should land on, and the only
           block carrying the accent across its full height.
 
           THE SIZE ANSWERS "HOW MANY". One thing in progress is THE thing, and it gets the type

@@ -26,7 +26,7 @@ test('register, stay signed in across a reload, then log out', async ({ page, co
   expect(session).toBeDefined()
   expect(session!.httpOnly).toBe(true)
 
-  // ...yet page JavaScript cannot read it (spec section 10.2).
+  // ...yet page JavaScript cannot read it.
   expect(await page.evaluate(() => document.cookie)).not.toContain('ctws_session')
 
   await logOut(page)

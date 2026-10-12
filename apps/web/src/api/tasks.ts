@@ -9,9 +9,9 @@ import type {
 import { apiFetch } from '../api'
 
 /**
- * A project's flat task list AND its rollups, which the endpoint returns side by side (design
- * spec §8). They are kept together in one cache entry because they are one answer about one
- * moment: a list whose numbers came from a different fetch could disagree with itself.
+ * A project's flat task list AND its rollups, which the endpoint returns side by side. They are
+ * kept together in one cache entry because they are one answer about one moment: a list whose
+ * numbers came from a different fetch could disagree with itself.
  */
 export type ProjectTasks = {
   tasks: TaskResponse[]
@@ -46,10 +46,10 @@ export function removeDependency(id: string, blockerId: string): Promise<void> {
 
 /**
  * `status` is omitted rather than defaulted here: the contract defaults it to `backlog`, which is
- * what capturing a line costs nothing means (spec §6.3), and the New task dialog is the one caller
- * that has an opinion about it. The input type is the contract's own, so every field the server
- * accepts at creation -- status, the two dates, the notes -- can be written in ONE request instead
- * of a POST followed by a PATCH.
+ * what capturing a line costs nothing means, and the New task dialog is the one caller that has an
+ * opinion about it. The input type is the contract's own, so every field the server accepts at
+ * creation -- status, the two dates, the notes -- can be written in ONE request instead of a POST
+ * followed by a PATCH.
  */
 export type NewTask = Omit<CreateTaskBody, 'status'> & { status?: CreateTaskBody['status'] }
 

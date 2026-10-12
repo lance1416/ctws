@@ -168,10 +168,9 @@ export async function authenticate(
 
 export type AuthContext = { workspaceId: string; role: Role; timezone: string }
 
-// Shared by the login route and `requireUser` so the workspace-membership
-// lookup lives in one place instead of being duplicated across the routing
-// layer -- see design spec §10.5 (queries are scoped by workspace in the
-// service layer, not left to route handlers to remember).
+// Shared by the login route and `requireUser` so the workspace-membership lookup lives in one place
+// instead of being duplicated across the routing layer: queries are scoped by workspace in the
+// service layer, not left to route handlers to remember.
 //
 // One query for membership and instance role. Returns null for a disabled user, so a valid
 // session stops working the moment an admin disables the account. The role is read here on

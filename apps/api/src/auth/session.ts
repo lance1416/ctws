@@ -40,7 +40,7 @@ export async function createSession(
   ttlDays: number,
 ): Promise<{ token: string; expiresAt: Date }> {
   /**
-   * The token is opaque bearer credential material (design spec §10.1), not an entity. It used
+   * The token is opaque bearer credential material, not an entity. It used
    * to be a uuid v4 -- chosen over v7 precisely because v7 embeds a 48-bit creation timestamp
    * and would make the token partly predictable. It is now 32 raw random bytes, which is the
    * same decision carried further: 256 bits of entropy with no structure at all, and no version

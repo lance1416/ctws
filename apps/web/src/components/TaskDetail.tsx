@@ -168,8 +168,8 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
   const dueAt = watch('dueAt')
   const nextProjectId = watch('projectId')
   /**
-   * READING MODE IS THE DEFAULT (spec §5): everything about the task is on the first screen, and
-   * nothing on it can be changed by a mis-aimed click.
+   * READING MODE IS THE DEFAULT: everything about the task is on the first screen, and nothing on
+   * it can be changed by a mis-aimed click.
    *
    * Looking something up costs nothing and risks nothing, because there is not one control on
    * screen that can change a value. The editing controls are all behind Edit, which is also where

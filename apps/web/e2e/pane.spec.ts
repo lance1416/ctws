@@ -48,9 +48,9 @@ async function saveBody(page: Page): Promise<Record<string, unknown>> {
 }
 
 /**
- * Opens a task's pane. `edit` presses Edit, because under rows-and-reading §5 the pane opens in
- * READING mode and the controls these tests are about exist only in editing mode. What each control
- * WRITES is asserted exactly as before, on the request body.
+ * Opens a task's pane. `edit` presses Edit, because the pane opens in READING mode and the controls
+ * these tests are about exist only in editing mode. What each control WRITES is asserted exactly as
+ * before, on the request body.
  */
 async function openPane(page: Page, projectId: string, title: string, edit = true) {
   await page.goto(`/projects/${projectId}`)

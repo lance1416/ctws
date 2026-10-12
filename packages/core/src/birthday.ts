@@ -1,7 +1,7 @@
 import { LunarDay, LunarMonth, LunarYear, SolarDay } from 'tyme4ts'
 
 /**
- * 生日的算术（生日 spec §3）。本文件不碰时钟、不碰时区、不碰数据库：「今天」是调用方给的一个
+ * 生日的算术。本文件不碰时钟、不碰时区、不碰数据库：「今天」是调用方给的一个
  * `YYYY-MM-DD`，由 Postgres 在账户时区算出来，和 `today.ts` 同一套办法。
  *
  * 为什么是一个库而不是一张表：农历需要每年的月长与闰月数据，手写就是抄一份年表。`tyme4ts` 是

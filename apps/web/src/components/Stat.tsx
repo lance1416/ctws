@@ -7,9 +7,9 @@ import type { ReactNode } from 'react'
  * numbers in a project header come from whichever module is reporting them (the task module
  * today), and if each module set its own they would not line up in one banner.
  *
- * NEVER A RATIO (workbench spec §5). There is no `of` or `total` prop and no bar: rollup is M3
- * and nothing writes `manual_progress`, so a proportion here would be a number the backend cannot
- * cash. A `Stat` holds a count or a date phrase -- a thing that can MOVE -- and nothing else.
+ * NEVER A RATIO. There is no `of` or `total` prop and no bar: rollup is M3 and nothing writes
+ * `manual_progress`, so a proportion here would be a number the backend cannot cash. A `Stat` holds
+ * a count or a date phrase -- a thing that can MOVE -- and nothing else.
  *
  * The label is above the number rather than beside it: four stats in a row read as a row of
  * numbers that way, and as a sentence the other way.

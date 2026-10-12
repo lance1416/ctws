@@ -137,7 +137,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
   const byId = useMemo(() => new Map((tasks.data?.tasks ?? []).map((t) => [t.id, t])), [tasks.data])
   /**
    * Whether this TREE reserves the leading icon slot -- one decision for the whole list, taken from
-   * the rows that are actually on screen (spec §2). Deciding per group would put the first glyph of
+   * the rows that are actually on screen. Deciding per group would put the first glyph of
    * a row at one x under one parent and another x under the next, which is the scanning the slot
    * exists for; deciding from folded-away rows would hold 1.5rem for icons nobody can see.
    *
@@ -191,7 +191,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
       const previous = qc.getQueryData<ProjectTasks>(key)
       // Only the rows move optimistically. The ROLLUPS are the server's arithmetic over the whole
       // subtree and are left as they are until the refetch: re-deriving them here would be a
-      // second implementation of §7 living in the browser, free to disagree with the first.
+      // second implementation of the rollup living in the browser, free to disagree with the first.
       qc.setQueryData<ProjectTasks>(key, (old) =>
         old ? { ...old, tasks: applyMove(old.tasks, id, body) } : old,
       )

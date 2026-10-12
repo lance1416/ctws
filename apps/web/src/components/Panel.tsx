@@ -3,9 +3,9 @@ import type { ReactNode } from 'react'
 /**
  * A panel: one question, one block.
  *
- * The workbench is made of these, and their arrangement is fixed by design (workbench spec §1):
- * there is no drag, no resize and no "add panel" control, because one user has one taste and a
- * free grid only moves the design decision onto the person using the tool.
+ * The workbench is made of these, and their arrangement is fixed by design: there is no drag, no
+ * resize and no "add panel" control, because one user has one taste and a free grid only moves the
+ * design decision onto the person using the tool.
  *
  * It is a SHELL piece, not the task module's, for the same reason `EmptyState` is: a second
  * module's workbench block has to look like this one or the page stops being one surface.

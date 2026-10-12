@@ -423,9 +423,9 @@ test('the tree shows dates only where they mean something', async ({ page }) => 
   await openTree(page, pid)
 
   const hints = (title: string) => treeRow(page, title).locator('[data-date-hint]')
-  // The second line now carries the WHOLE wording (rows-and-reading §2, second edition): an
-  // overdue row says which deadline it was and when, to the minute, as well as how late it is. The
-  // previous edition showed only "5 days late" because the label had to fit an 8rem cell.
+  // The second line carries the WHOLE wording: an overdue row says which deadline it was and
+  // when, to the minute, as well as how late it is. The row used to show only "5 days late",
+  // because the label had to fit an 8rem cell.
   const line = (title: string) => treeRow(page, title).locator('[data-row-meta]')
   const d = new Date(lateDue)
   const clock = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`

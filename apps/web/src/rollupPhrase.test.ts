@@ -12,7 +12,7 @@ const roll = (over: Partial<RollupResponse> = {}): RollupResponse => ({
 })
 
 describe('rollupPhrase', () => {
-  it('writes the spec §7.3 line when there is all of it to say', () => {
+  it('writes the whole line when there is all of it to say', () => {
     const r = roll({
       progress: 0.42,
       counts: { backlog: 0, todo: 3, in_progress: 2, done: 4, cancelled: 0 },

@@ -13,11 +13,11 @@ import { useTimeZone } from '../useMe'
 /**
  * THE CALENDAR -- a SHELL SURFACE, and the first one that is about every module at once.
  *
- * A LENS, not a place things live. It answers what is on this month by laying every module's
- * dated things on one grid; it owns none of them, and it is not where any of them is made. In a
- * calendar app an event is the only entity, so a "+" on the day square is the obvious way to make
- * one; here a meeting has its own page and a deadline is a property of a task, so making anything
- * from the grid would be a lens claiming a kind of thing (framing §2).
+ * A LENS, not a place things live. It answers what is on this month by laying every module's dated
+ * things on one grid; it owns none of them, and it is not where any of them is made. In a calendar
+ * app an event is the only entity, so a "+" on the day square is the obvious way to make one; here
+ * a meeting has its own page and a deadline is a property of a task, so making anything from the
+ * grid would be a lens claiming a kind of thing.
  *
  * The shell draws the grid; each module says what it has on which day. The shell does not know
  * what a deadline is, nor how it differs from a day you mean to finish something: a module hands

@@ -3,10 +3,9 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { appWithUser, createProject, createTask, type TaskCtx } from './helpers/tasks'
 
 /**
- * The API half of the module seam (module-boundary contract §3): the task module answers under
- * `/api/v1/tasks/`, the shell's own surfaces stay flat, the paths the module used to occupy still
- * answer by redirect, and moving `projects` into the shell did not take the tenant chokepoint
- * with it.
+ * The API half of the module seam: the task module answers under `/api/v1/tasks/`, the shell's own
+ * surfaces stay flat, the paths the module used to occupy still answer by redirect, and moving
+ * `projects` into the shell did not take the tenant chokepoint with it.
  *
  * None of these assertions can pass against the pre-seam code: there was no `/api/v1/tasks/today`
  * and `/api/v1/today` was a 200, not a redirect.

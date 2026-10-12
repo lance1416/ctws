@@ -72,7 +72,7 @@ export function Contacts() {
       )}
       {/* ONE LIST, FILTERED -- never a second list. The circle is how an address book that also
           holds fifty relatives stays readable, and nothing is hidden by default: a row that has
-          vanished is worse than a long list (birthdays spec §1). */}
+          vanished is worse than a long list. */}
       <div className="mt-4 flex flex-wrap gap-1.5">
         {([null, 'family', 'friend', 'work'] as const).map((key) => {
           const picked = circle === key

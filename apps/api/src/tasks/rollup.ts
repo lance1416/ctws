@@ -3,11 +3,10 @@ import { sql } from 'drizzle-orm'
 import type { Queryable } from '../db/client'
 
 /**
- * THE NUMBERS BEHIND “Movement” (design spec §7), for one project's whole tree.
+ * THE NUMBERS BEHIND “Movement”, for one project's whole tree.
  *
- * The split is the one §7.5 argues for: this file asks the database for a flat list and nothing
- * else, and `@ctws/core`'s `rollup` folds it. The recursive mean is awkward in SQL and a dozen
- * testable lines in TypeScript.
+ * The split: this file asks the database for a flat list and nothing else, and `@ctws/core`'s
+ * `rollup` folds it. The recursive mean is awkward in SQL and a dozen testable lines in TypeScript.
  *
  * What SQL DOES decide here is the two time-dependent flags, because deciding them anywhere else
  * would be a second notion of "what day is it". Every day boundary in this app is `at time zone
@@ -48,13 +47,13 @@ export async function projectRollups(
     with bounds as (
       select
         ${dayStart} as t0,
-        -- THE NEAR WINDOW: the end of TOMORROW in the account's zone, not a rolling 48 hours.
-        -- The spec (§15) suggests 48 hours and says the length is adjustable; this is that span
-        -- said in the vocabulary the rest of the app already speaks. A rolling window would make
-        -- a deadline "soon" at 23:00 and not soon at 23:01 of the same evening, which a
-        -- day-shaped interface cannot explain to the person reading it. Like every other day
-        -- boundary here, the "+ 2 days" is added to the NAIVE local timestamp before converting
-        -- back, so a DST day is 23 or 25 hours and nothing falls out of the window.
+        -- THE NEAR WINDOW: the end of TOMORROW in the account's zone, not a rolling 48 hours. 48
+        -- hours was the first shape of it; this is that span said in the vocabulary the rest of the
+        -- app already speaks. A rolling window would make a deadline "soon" at 23:00 and not soon
+        -- at 23:01 of the same evening, which a day-shaped interface cannot explain to the person
+        -- reading it. Like every other day boundary here, the "+ 2 days" is added to the NAIVE
+        -- local timestamp before converting back, so a DST day is 23 or 25 hours and nothing falls
+        -- out of the window.
         ((date_trunc('day', ${clock} at time zone ${timezone}) + interval '2 days')
           at time zone ${timezone}) as soon_end
     )

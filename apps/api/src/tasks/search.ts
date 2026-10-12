@@ -1,7 +1,7 @@
 import { SEARCH_LIMIT } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import type { Queryable } from '../db/client'
-// The shell's, not this module's: a second module needed the same escaping (contract §3).
+// The shell's, not this module's: a second module needed the same escaping.
 import { textMatches } from '../db/like'
 import type { Task } from './tasks'
 import { taskRowOf } from './rows'

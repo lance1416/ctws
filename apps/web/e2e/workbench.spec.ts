@@ -55,9 +55,9 @@ test('the task detail is a coexisting pane at 1280 and up, and an overlay below 
   // The proof that it coexists: the list is still operable while the detail is open. Clicking
   // the OTHER row loads that task into the same pane, with no closing step in between.
   await page.getByRole('listitem').filter({ hasText: '旁边的任务' }).click()
-  // Reading mode, so the task's name is the pane's heading rather than the value of an
-  // input (rows-and-reading §5). The claim is unchanged: the OTHER row's task is now in the
-  // same pane, with no closing step in between.
+  // Reading mode, so the task's name is the pane's heading rather than the value of an input. The
+  // claim is unchanged: the OTHER row's task is now in the same pane, with no closing step in
+  // between.
   await expect(dialog.locator('[data-detail-title]')).toHaveText('旁边的任务')
 
   // --- below the threshold: a layer ---

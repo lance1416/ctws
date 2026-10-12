@@ -2,7 +2,7 @@ import { sql } from 'drizzle-orm'
 import type { Queryable } from '../db/client'
 
 /**
- * THE WEEKLY REVIEW (design spec §8, §9.3). The view that answers what I did.
+ * THE WEEKLY REVIEW. The view that answers what I did.
  *
  * IT READS THE EVENT LOG, NOT THE TASKS. That is the whole difference between this and Done.
  * Done lists what is finished RIGHT NOW; this lists what HAPPENED in a window. A task finished
@@ -11,9 +11,9 @@ import type { Queryable } from '../db/client'
  * that makes a review not worth opening.
  *
  * THREE TRANSITIONS, not every event. “Done”, “Start” and “Dropped” are the ones a person recounts
- * about a week. A title edit and a reparent are in the log and are deliberately not here: a
- * review that lists every keystroke is a diff, not a review. (§9.3 already keeps pure reordering
- * out of the log entirely, for the same reason.)
+ * about a week. A title edit and a reparent are in the log and are deliberately not here: a review
+ * that lists every keystroke is a diff, not a review. (A pure reorder is kept out of the log
+ * entirely, for the same reason.)
  */
 
 type ReviewTask = {
@@ -104,8 +104,8 @@ export async function listReview(
       and ev.payload ->> 'to' in ('done', 'in_progress', 'cancelled')
       and ev.occurred_at >= b.t0
       and ev.occurred_at < b.t1
-      -- A deleted task's history stays in the log (§5.4) but does not belong in a recount of the
-      -- week; the same is true of a project that has been deleted out from under it.
+      -- A deleted task's history stays in the log but does not belong in a recount of the week; the
+      -- same is true of a project that has been deleted out from under it.
       and t.deleted_at is null
       and p.deleted_at is null
     order by p.rank, p.id, ev.occurred_at desc, ev.id
