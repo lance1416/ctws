@@ -68,6 +68,34 @@ test('月份索引是日期检索：点一个月，列表只剩那个月的人',
   await expect(rows(page)).toContainText('四月的人')
 })
 
+/**
+ * 页头那两个数说的是**屏幕上这些人**，不是库里所有人。
+ *
+ * 筛了之后下面的列表变短、上面的数不动，是两个互相矛盾的答案摆在同一屏上：按下 April 之后写着
+ * 「2 people」而列表里只有一个人，读的人只能二选一相信。
+ */
+test('页头的人数跟着筛选走', async ({ page }) => {
+  await registerFreshUser(page)
+  await person(page, '四月的人', { calendar: 'solar', year: 1996, month: 4, day: 15 })
+  await person(page, '十月的人', { calendar: 'solar', year: 1996, month: 10, day: 20 })
+  await page.goto('/contacts/birthdays')
+  const count = page.locator('[data-birthday-count]')
+  await expect(count).toHaveText('2 people · 0 in the next week')
+
+  const april = page
+    .getByRole('region', { name: 'By month' })
+    .getByRole('button', { name: /^April/ })
+  await april.click()
+  await expect(rows(page)).toHaveCount(1)
+  await expect(count).toHaveText('1 person · 0 in the next week')
+
+  // 搜索框是同一套筛选，所以它也得带着这个数走。
+  await april.click()
+  await page.getByRole('searchbox', { name: 'Find a person' }).fill('十月')
+  await expect(rows(page)).toHaveCount(1)
+  await expect(count).toHaveText('1 person · 0 in the next week')
+})
+
 test('名字搜索按输入过滤', async ({ page }) => {
   await registerFreshUser(page)
   await person(page, '周楠', { calendar: 'solar', year: 1991, ...monthDay(1) })

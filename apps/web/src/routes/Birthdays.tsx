@@ -39,7 +39,10 @@ export function Birthdays() {
 
   const coming = (data?.coming ?? []).filter(matches)
   const later = (data?.later ?? []).filter(matches)
-  const total = (data?.coming.length ?? 0) + (data?.later.length ?? 0)
+  // THE COUNTS DESCRIBE WHAT IS ON SCREEN. They used to count the unfiltered answer while the
+  // lists below showed the filtered one, so pressing Family left a page saying "48 people" above
+  // three rows -- two answers to one question, and the reader has to pick which to believe.
+  const total = coming.length + later.length
 
   return (
     <>
@@ -48,8 +51,8 @@ export function Birthdays() {
           Birthdays
         </h1>
         {total > 0 && (
-          <span className="text-sm text-fg-subtle tabular-nums">
-            {total} people · {data?.coming.length ?? 0} in the next week
+          <span data-birthday-count className="text-sm text-fg-subtle tabular-nums">
+            {total} {total === 1 ? 'person' : 'people'} · {coming.length} in the next week
           </span>
         )}
         <span className="flex-1" />
