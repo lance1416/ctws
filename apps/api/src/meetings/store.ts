@@ -196,7 +196,7 @@ export async function listOccurrences(
     .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
 }
 
-/** The window to search for one named occurrence: its own local time, surrounded. */
+/** The window to search for one occurrence near a local time: that time, surrounded. */
 function around(recurrenceId: LocalTime): { from: Date; to: Date } {
   const at = Date.parse(`${recurrenceId}:00Z`)
   return { from: new Date(at - 2 * DAY), to: new Date(at + 2 * DAY) }
@@ -212,7 +212,10 @@ export async function getOccurrence(
   const [series] = await seriesOf(q, workspaceId, { id })
   if (!series) throw new MeetingNotFoundError()
   const want = recurrenceId ?? series.startsLocal
-  const one = expand(series, around(want)).find((o) => o.recurrenceId === want)
+  // Searched for where it IS: an override can move Tuesday's meeting to Friday, out of the days
+  // around Tuesday, and the expansion keeps only what overlaps the window it is asked about.
+  const at = series.exceptions.find((e) => e.recurrenceId === want)?.startsLocal ?? want
+  const one = expand(series, around(at)).find((o) => o.recurrenceId === want)
   if (!one) throw new OccurrenceNotFoundError()
   return one
 }

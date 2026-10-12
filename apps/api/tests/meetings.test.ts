@@ -210,6 +210,31 @@ describe('editing one occurrence', () => {
     ])
   })
 
+  it('moves one days away, and still finds it by the time the rule gave it', async () => {
+    // Tuesday's meeting moved to Friday is still Tuesday's: an override is found by its
+    // RECURRENCE-ID, not by looking near where it ended up.
+    const ctx = await setup()
+    const series = await arrange(ctx)
+    const res = await patch(ctx, series.meetingId, {
+      scope: 'one',
+      recurrenceId: '2026-10-27T09:00',
+      startsLocal: '2026-10-30T09:00',
+    })
+    expect(res.statusCode, res.body).toBe(200)
+    expect(res.json()).toMatchObject({
+      recurrenceId: '2026-10-27T09:00',
+      startsLocal: '2026-10-30T09:00',
+    })
+
+    const got = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/meetings/${series.meetingId}?recurrenceId=2026-10-27T09:00`,
+      headers: ctx.authed,
+    })
+    expect(got.statusCode, got.body).toBe(200)
+    expect((got.json() as MeetingOccurrence).startsLocal).toBe('2026-10-30T09:00')
+  })
+
   it('refuses to change what belongs to the whole series', async () => {
     // A title, a place and a guest list are the SERIES'. Moving one week's meeting is not a
     // reason for it to have two titles, and a calendar that allowed it would quietly fork.
