@@ -95,5 +95,12 @@ describe('the people migration', () => {
              count(*) filter (where from_type = 'contact' or to_type = 'contact')::int as old
       from links`)
     expect(ends.rows[0]).toEqual({ near: 1, far: 1, old: 0 })
+
+    // Postgres 18 names NOT NULL constraints too; none of them may keep the old name.
+    const stale = await at.db.execute<{ conname: string }>(sql`
+      select conname from pg_constraint
+      where conrelid in ('people'::regclass, 'person_channels'::regclass)
+        and conname like 'contact%'`)
+    expect(stale.rows.map((r) => r.conname)).toEqual([])
   })
 })
