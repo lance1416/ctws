@@ -85,7 +85,7 @@ export function QuickCapture() {
 
   return (
     // The answer to a line pops under the box, so typing never moves anything in the header.
-    <div className="relative w-36 min-w-0 shrink sm:w-60">
+    <div className="relative w-28 min-w-0 shrink sm:w-60">
       <div className="relative">
         <input
           ref={input}
