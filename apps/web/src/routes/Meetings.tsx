@@ -1,6 +1,7 @@
 import type { MeetingOccurrence } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
+import { useForgetWhenGone } from '../recent'
 import { useNavigate, useParams } from 'react-router-dom'
 import { listMeetings, meetingsKey, repeatLabel } from '../api/meetings'
 import { EmptyState } from '../components/EmptyState'
@@ -90,6 +91,8 @@ export function Meetings() {
     enabled: openId !== null && !inWindow,
   })
   const found = inWindow ?? far.data ?? null
+  const gone = openId !== null && !found && far.isSuccess
+  useForgetWhenGone('meeting', openId, gone)
 
   return (
     <>
@@ -158,7 +161,7 @@ export function Meetings() {
         <MeetingDetail meeting={found} accountZone={accountZone} onClose={() => setOpen(null)} />
       )}
       {/* 链接指向的会已经不在了（或者取消了）：说出来，别只留一个列表。 */}
-      {openId !== null && !found && far.isSuccess && (
+      {gone && (
         <p role="alert" className="mt-4 text-sm text-fg-muted">
           This meeting is not here any more.
         </p>

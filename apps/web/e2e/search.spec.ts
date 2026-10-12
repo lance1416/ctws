@@ -337,3 +337,47 @@ test('the groups before typing are named for a screen reader', async ({ page }) 
   const goTo = page.getByRole('dialog', { name: 'Search' }).getByRole('group', { name: 'Go to' })
   await expect(goTo.getByRole('option', { name: /^Things/ })).toBeVisible()
 })
+
+test('a person deleted here leaves Recent at once', async ({ page }) => {
+  await registerFreshUser(page, '/')
+  const made = await page.request.post('/api/v1/people', { headers: WEB, data: { name: '陈颖' } })
+  const { id } = (await made.json()) as { id: string }
+  await page.goto(`/people/${id}`)
+  const pane = page.getByRole('dialog', { name: 'People' })
+  await expect(pane.getByRole('heading', { name: '陈颖' })).toBeVisible()
+  await pane.getByRole('button', { name: 'Delete person' }).click()
+  await page
+    .getByRole('alertdialog', { name: 'Confirm deleting this person' })
+    .getByRole('button', { name: 'Confirm delete' })
+    .click()
+  await expect(pane).toHaveCount(0)
+
+  await page.getByRole('banner').getByRole('button', { name: 'Search' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Search' })
+  await expect(dialog.getByRole('option', { name: /^Things/ })).toBeVisible()
+  await expect(dialog.getByRole('option', { name: /陈颖/ })).toHaveCount(0)
+})
+
+test('a project deleted elsewhere leaves Recent once its page finds it gone', async ({ page }) => {
+  await registerFreshUser(page, '/')
+  const made = await page.request.post('/api/v1/projects', {
+    headers: WEB,
+    data: { name: 'Job hunt' },
+  })
+  const { id } = (await made.json()) as { id: string }
+  await page.goto(`/projects/${id}`)
+  const here = page.getByRole('banner').locator('[aria-current="page"]')
+  await expect(here).toHaveText('Job hunt')
+
+  const gone = await page.request.delete(`/api/v1/projects/${id}`, { headers: WEB })
+  expect(gone.ok(), await gone.text()).toBe(true)
+  await page.goto(`/projects/${id}`)
+  await expect(page.getByText('This project is not here any more.')).toBeVisible()
+  // The header still says where this is, rather than an empty name.
+  await expect(here).toHaveText('Not found')
+
+  await page.getByRole('banner').getByRole('button', { name: 'Search' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Search' })
+  await expect(dialog.getByRole('option', { name: /^Things/ })).toBeVisible()
+  await expect(dialog.getByRole('option', { name: /Job hunt/ })).toHaveCount(0)
+})

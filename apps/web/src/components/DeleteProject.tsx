@@ -4,6 +4,7 @@ import { deleteProject, listProjects } from '../api/projects'
 import { listProjectTasks } from '../api/tasks'
 import { refreshProjects, tasksKey } from '../api/taskCache'
 import { DangerAction } from './DangerZone'
+import { useForgetRecent } from '../recent'
 
 /**
  * DESTROYING A PROJECT, from the project's own page and nowhere else.
@@ -25,9 +26,11 @@ export function DeleteProject({ id }: { id: string }) {
     queryFn: () => listProjectTasks(id),
     enabled: false,
   })
+  const forget = useForgetRecent()
   const remove = useMutation({
     mutationFn: () => deleteProject(id),
     onSuccess: async () => {
+      forget('project', id)
       await refreshProjects(qc)
       navigate('/projects')
     },

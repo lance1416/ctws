@@ -15,7 +15,7 @@ import { Field } from './Field'
 import { CHIP, field, label } from './formStyles'
 import { PickOne } from './inline'
 import { LinkedSection } from './Links'
-import { useRecordRecent } from '../recent'
+import { useForgetRecent, useRecordRecent } from '../recent'
 
 /**
  * ONE THING TO READ, ON ITS OWN LAYER.
@@ -349,9 +349,11 @@ export function DeleteReading({
   onDeleted: () => void
 }) {
   const qc = useQueryClient()
+  const forget = useForgetRecent()
   const drop = useMutation({
     mutationFn: () => deleteReadingItem(item.id),
     onSuccess: async () => {
+      forget('reading', item.id)
       await qc.invalidateQueries({ queryKey: readingKey() })
       onDeleted()
     },

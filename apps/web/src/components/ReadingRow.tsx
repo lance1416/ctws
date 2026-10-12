@@ -3,6 +3,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { deleteReadingItem, patchReadingItem, readingLabel } from '../api/reading'
+import { useForgetRecent } from '../recent'
 import { addDays, dayPhrase, daysAgoIn, nextMonday, todayIn } from '../dueAt'
 import { useComposing } from '../composition'
 import { DeleteConfirm } from './DeleteConfirm'
@@ -84,9 +85,13 @@ export function ReadingRow({
       await refresh()
     },
   })
+  const forget = useForgetRecent()
   const drop = useMutation({
     mutationFn: () => deleteReadingItem(item.id),
-    onSuccess: refresh,
+    onSuccess: async () => {
+      forget('reading', item.id)
+      await refresh()
+    },
   })
 
   const label = readingLabel(item)

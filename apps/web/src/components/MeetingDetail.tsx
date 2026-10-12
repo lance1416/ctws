@@ -25,7 +25,7 @@ import { boxed, CHIP, field, label } from './formStyles'
 import { PickMany, PickOne } from './inline'
 import { ScopeAsk } from './ScopeAsk'
 import { BUTTON } from './buttonStyles'
-import { useRecordRecent } from '../recent'
+import { useForgetRecent, useRecordRecent } from '../recent'
 
 /**
  * ONE MEETING, in the shell's detail pane -- the same pane a task and a person open in.
@@ -622,10 +622,13 @@ export function CancelMeeting({
   onCancelled?: () => void
 }) {
   const qc = useQueryClient()
+  const forget = useForgetRecent()
   const drop = useMutation({
     mutationFn: (scope: EditScope) =>
       cancelMeeting(meeting.meetingId, { scope, recurrenceId: meeting.recurrenceId }),
-    onSuccess: async () => {
+    onSuccess: async (_, scope) => {
+      // One week of a series cancelled leaves the series; the whole of it does not.
+      if (scope === 'all') forget('meeting', meeting.meetingId)
       await qc.invalidateQueries({ queryKey: ['meetings'] })
       await qc.invalidateQueries({ queryKey: ['meeting-calendar'] })
       onCancelled?.()

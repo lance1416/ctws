@@ -1,6 +1,7 @@
 import type { ReadingStatus } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
+import { useForgetWhenGone } from '../recent'
 import { useNavigate, useParams } from 'react-router-dom'
 import { listReading, readingKey } from '../api/reading'
 import { EmptyState } from '../components/EmptyState'
@@ -40,6 +41,8 @@ export function Reading() {
   const timeZone = useTimeZone()
 
   const rows = items.data ?? []
+  const gone = openId !== null && items.isSuccess && !rows.some((i) => i.id === openId)
+  useForgetWhenGone('reading', openId, gone)
   const of = (status: ReadingStatus) => rows.filter((i) => i.status === status)
   // Finished and dropped are both off the list. They share a section because the difference
   // matters when you decide, not afterwards.

@@ -8,7 +8,7 @@ import { ViewTabs } from './ViewTabs'
 import { useCrumbs } from './Location'
 import { useQuery } from '@tanstack/react-query'
 import { listProjects } from '../api/projects'
-import { useRecordRecent } from '../recent'
+import { useForgetWhenGone, useRecordRecent } from '../recent'
 
 /**
  * A PAGE FOR A THING THAT IS A PLACE.
@@ -44,11 +44,22 @@ export function ObjectPage({ type }: { type: ObjectType }) {
     queryFn: listProjects,
     enabled: type === 'project',
   })
-  const name = projects.data?.find((p) => p.id === id)?.name ?? ''
-  useCrumbs(type === 'project' ? [{ label: 'Projects', to: '/projects' }, { label: name }] : null)
+  const project = projects.data?.find((p) => p.id === id)
+  const gone = type === 'project' && projects.isSuccess && !project
+  // Until the list is in there is no name to give; once it is, a project that is not in it is
+  // named for what the page says about it, never left blank.
+  const name = project?.name ?? (gone ? 'Not found' : null)
+  useCrumbs(
+    type === 'project'
+      ? name
+        ? [{ label: 'Projects', to: '/projects' }, { label: name }]
+        : []
+      : null,
+  )
+  useForgetWhenGone('project', id ?? null, gone)
   useRecordRecent(
-    type === 'project' && id && name
-      ? { type: 'project', id, title: name, to: `/projects/${id}`, kind: 'Project' }
+    type === 'project' && id && project
+      ? { type: 'project', id, title: project.name, to: `/projects/${id}`, kind: 'Project' }
       : null,
   )
 

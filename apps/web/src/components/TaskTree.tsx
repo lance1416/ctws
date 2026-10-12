@@ -21,6 +21,7 @@ import { loadCollapsed, loadShowDone, saveCollapsed, saveShowDone } from '../tre
 import { MAX_DEPTH, planDrop, type DropPlan } from '../tree/drop'
 import { useTaskActions } from '../api/taskActions'
 import { useShortcutsEnabled } from '../shortcuts/enabled'
+import { useForgetRecent } from '../recent'
 import { EMPTY_ACTION, EmptyState } from './EmptyState'
 import { SelectionBar } from './SelectionBar'
 import { TaskDetail } from './TaskDetail'
@@ -466,13 +467,17 @@ export function TaskTree({ projectId }: { projectId: string }) {
    */
   const [params, setParams] = useSearchParams()
   const reveal = params.get('reveal')
+  const forget = useForgetRecent()
   const pendingReveal = useRef<string | null>(null)
   useEffect(() => {
     if (!reveal || !tasks.data) return
     // Not in this project: leave the parameter alone rather than claiming a focus target that
     // does not exist. A wrong id is a dead link, not a hijacked focus.
     const target = tasks.data.tasks.find((t) => t.id === reveal)
-    if (!target) return
+    if (!target) {
+      forget('task', reveal)
+      return
+    }
     // Unfolding is not enough when the row is FINISHED and finished rows are hidden:
     // search would route here and focus nothing. Arriving at a task is a request to see it.
     if (!showDone && (target.status === 'done' || target.status === 'cancelled')) {
@@ -495,7 +500,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
       },
       { replace: true },
     )
-  }, [reveal, tasks.data, collapsed, showDone, projectId, setParams])
+  }, [reveal, tasks.data, collapsed, showDone, projectId, setParams, forget])
 
   // The row only exists after the unfold has rendered, so the focus waits for that render rather
   // than running inside the effect above.

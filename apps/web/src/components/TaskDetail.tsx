@@ -41,7 +41,7 @@ import { StatusPicker } from './StatusPicker'
 import { STATUS_LABEL } from './statusLabel'
 import { detailTaskForm, PATCH_KEYS, type DetailTaskForm, type DetailTaskValues } from './taskForm'
 import { useTimeZone } from '../useMe'
-import { useRecordRecent } from '../recent'
+import { useForgetRecent, useRecordRecent } from '../recent'
 
 /**
  * The exact field, for the days the three named decisions do not cover. Quieter than them on
@@ -233,8 +233,10 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
       setDescendants(-1)
     }
   }
+  const forget = useForgetRecent()
   const remove = useMutation({
     mutationFn: () => deleteTask(task.id),
+    onSuccess: () => forget('task', task.id),
     // Settled, not success: a failed delete may still have changed what the lists should show.
     onSettled: async () => {
       await qc.invalidateQueries({ queryKey: ['today'] })

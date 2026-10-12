@@ -20,7 +20,7 @@ import { DetailHead, DetailPane } from './DetailPane'
 import { Link } from 'react-router-dom'
 import { LinkedSection } from './Links'
 import { PickMany, PickOne } from './inline'
-import { useRecordRecent } from '../recent'
+import { useForgetRecent, useRecordRecent } from '../recent'
 
 /**
  * ONE PERSON, in the shell's detail pane.
@@ -716,9 +716,11 @@ export function DeletePerson({
   onDeleted?: () => void
 }) {
   const qc = useQueryClient()
+  const forget = useForgetRecent()
   const drop = useMutation({
     mutationFn: () => deletePerson(person.id),
     onSuccess: async () => {
+      forget('person', person.id)
       await qc.invalidateQueries({ queryKey: ['people'] })
       onDeleted?.()
     },

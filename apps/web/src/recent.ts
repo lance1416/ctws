@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useCallback, useEffect } from 'react'
 import { useMe } from './useMe'
 
 /** One thing that was opened, enough to list it and go back to it. */
@@ -47,8 +47,19 @@ export function recentList(userId: string): Recent[] {
 
 export function recordRecent(userId: string, entry: Recent): void {
   const others = recentList(userId).filter((r) => !(r.type === entry.type && r.id === entry.id))
+  save(userId, [entry, ...others].slice(0, KEEP))
+}
+
+/** Drops a thing that is gone: a row nobody can open is worse than one row fewer. */
+export function forgetRecent(userId: string, type: string, id: string): void {
+  const list = recentList(userId)
+  const kept = list.filter((r) => !(r.type === type && r.id === id))
+  if (kept.length !== list.length) save(userId, kept)
+}
+
+function save(userId: string, list: Recent[]): void {
   try {
-    localStorage.setItem(keyFor(userId), JSON.stringify([entry, ...others].slice(0, KEEP)))
+    localStorage.setItem(keyFor(userId), JSON.stringify(list))
   } catch {
     // Recent things simply stop being remembered.
   }
@@ -61,4 +72,26 @@ export function useRecordRecent(entry: Recent | null): void {
   useEffect(() => {
     if (key && userId) recordRecent(userId, JSON.parse(key) as Recent)
   }, [key, userId])
+}
+
+/** For whatever deletes a thing: forgets it for whoever is signed in. */
+export function useForgetRecent(): (type: string, id: string) => void {
+  const userId = useMe().data?.id
+  return useCallback(
+    (type: string, id: string) => {
+      if (userId) forgetRecent(userId, type, id)
+    },
+    [userId],
+  )
+}
+
+/**
+ * For a page that finds its thing GONE -- deleted on another device, or before this list knew --
+ * which is the one place that learns it.
+ */
+export function useForgetWhenGone(type: string, id: string | null, gone: boolean): void {
+  const forget = useForgetRecent()
+  useEffect(() => {
+    if (gone && id) forget(type, id)
+  }, [forget, gone, id, type])
 }
