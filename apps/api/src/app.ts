@@ -30,7 +30,7 @@ import { sendProblem } from './problem'
 import { unfurl, type Unfurl } from './reading/unfurl'
 import { projectRoutes } from './projects/routes'
 import { cityRoutes } from './cities/routes'
-import { contactRoutes } from './contacts/routes'
+import { personRoutes } from './people/routes'
 import { meetingRoutes } from './meetings/routes'
 import { readingRoutes } from './reading/routes'
 import { taskRoutes } from './tasks/routes'
@@ -111,7 +111,7 @@ export async function buildApp(opts: {
   await app.register(cityRoutes, { prefix: '/api/v1' })
   await app.register(taskRoutes, { prefix: '/api/v1/tasks' })
   await app.register(readingRoutes, { prefix: '/api/v1/reading' })
-  await app.register(contactRoutes, { prefix: '/api/v1/contacts' })
+  await app.register(personRoutes, { prefix: '/api/v1/people' })
   await app.register(meetingRoutes, { prefix: '/api/v1/meetings' })
   // Registered last: a legacy path must never shadow a real one.
   await app.register(movedRoutes, { prefix: '/api/v1' })

@@ -6,11 +6,11 @@ import {
   birthdaysResponse,
   calendarEntriesResponse,
   calendarQuery,
-  contactListQuery,
-  contactResponse,
-  createContactBody,
+  personListQuery,
+  personResponse,
+  createPersonBody,
   searchQuery,
-  updateContactBody,
+  updatePersonBody,
 } from '@ctws/contracts'
 import type { FastifyPluginAsync, FastifyReply } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
@@ -21,20 +21,20 @@ import { accountToday } from '../db/today'
 import { sendProblem } from '../problem'
 import { ProjectNotFoundError } from '../projects/errors'
 import { listBirthdayEntries, listBirthdays } from './birthdays'
-import { ContactNotFoundError } from './errors'
+import { PersonNotFoundError } from './errors'
 import {
-  createContact,
-  listContacts,
-  searchContacts,
-  softDeleteContact,
-  updateContact,
-  type ContactRow,
+  createPerson,
+  listPeople,
+  searchPeople,
+  softDeletePerson,
+  updatePerson,
+  type PersonRow,
   type StoredBirthday,
 } from './store'
 
-/** THE THIRD MODULE's API, under its own namespace at `/api/v1/contacts/`. */
+/** THE THIRD MODULE's API, under its own namespace at `/api/v1/people/`. */
 
-function toResponse(c: ContactRow, today: string): z.infer<typeof contactResponse> {
+function toResponse(c: PersonRow, today: string): z.infer<typeof personResponse> {
   return {
     id: c.id,
     name: c.name,
@@ -43,11 +43,11 @@ function toResponse(c: ContactRow, today: string): z.infer<typeof contactRespons
     projects: c.projects,
     channels: c.channels,
     birthday: c.birthday ? withFacts(c.birthday, today) : null,
-    gender: c.gender as z.infer<typeof contactResponse>['gender'],
+    gender: c.gender as z.infer<typeof personResponse>['gender'],
     hometown: c.hometown,
     city: c.city,
     title: c.title,
-    circle: c.circle as z.infer<typeof contactResponse>['circle'],
+    circle: c.circle as z.infer<typeof personResponse>['circle'],
     createdAt: c.createdAt.toISOString(),
     updatedAt: c.updatedAt.toISOString(),
   }
@@ -75,7 +75,7 @@ function withFacts(b: StoredBirthday, today: string): z.infer<typeof birthdayRes
 }
 
 const idParams = z.object({ id: z.uuid() }).strict()
-const listResponse = z.object({ contacts: z.array(contactResponse) }).strict()
+const listResponse = z.object({ people: z.array(personResponse) }).strict()
 
 /**
  * 历法那道门：没发生过的日子进不来。
@@ -98,33 +98,33 @@ function sendImpossibleDay(reply: FastifyReply, b: BirthdayInput | null | undefi
   return true
 }
 
-function sendContactProblem(reply: FastifyReply, error: unknown): void {
+function sendPersonProblem(reply: FastifyReply, error: unknown): void {
   // A project from another workspace reads as "not found" too, never as a refusal that would
   // confirm the id exists.
-  if (error instanceof ContactNotFoundError) return sendProblem(reply, 404, 'Not Found')
+  if (error instanceof PersonNotFoundError) return sendProblem(reply, 404, 'Not Found')
   if (error instanceof ProjectNotFoundError) return sendProblem(reply, 404, 'Not Found')
   throw error
 }
 
-export const contactRoutes: FastifyPluginAsync = async (app) => {
+export const personRoutes: FastifyPluginAsync = async (app) => {
   const typed = app.withTypeProvider<ZodTypeProvider>()
 
   typed.get(
     '/',
     {
       preHandler: requireUser,
-      schema: { querystring: contactListQuery, response: { 200: listResponse } },
+      schema: { querystring: personListQuery, response: { 200: listResponse } },
     },
     async (req) => {
       const user = authedUser(req)
       // One ask per request: every birthday's countdown is measured from the same day.
       const today = await accountToday(app.db, user.timezone)
       const { projectId, unfiled } = req.query
-      const rows = await listContacts(app.db, authedUser(req).workspaceId, {
+      const rows = await listPeople(app.db, authedUser(req).workspaceId, {
         ...(projectId ? { projectId } : {}),
         ...(unfiled === 'true' ? { unfiled: true } : {}),
       })
-      return { contacts: rows.map((c) => toResponse(c, today)) }
+      return { people: rows.map((c) => toResponse(c, today)) }
     },
   )
 
@@ -199,8 +199,8 @@ export const contactRoutes: FastifyPluginAsync = async (app) => {
     async (req) => {
       const user = authedUser(req)
       const today = await accountToday(app.db, user.timezone)
-      const rows = await searchContacts(app.db, user.workspaceId, req.query.q)
-      return { contacts: rows.map((c) => toResponse(c, today)) }
+      const rows = await searchPeople(app.db, user.workspaceId, req.query.q)
+      return { people: rows.map((c) => toResponse(c, today)) }
     },
   )
 
@@ -208,20 +208,20 @@ export const contactRoutes: FastifyPluginAsync = async (app) => {
     '/',
     {
       preHandler: requireUser,
-      schema: { body: createContactBody, response: { 201: contactResponse } },
+      schema: { body: createPersonBody, response: { 201: personResponse } },
     },
     async (req, reply) => {
       if (sendImpossibleDay(reply, req.body.birthday)) return reply
       try {
-        // One transaction: a contact and its addresses are one thing, and a half-written person
+        // One transaction: a person and its addresses are one thing, and a half-written person
         // with no way to reach them is worse than a refusal.
         const created = await app.db.transaction((tx) =>
-          createContact(tx, authedUser(req).workspaceId, req.body),
+          createPerson(tx, authedUser(req).workspaceId, req.body),
         )
         const today = await accountToday(app.db, authedUser(req).timezone)
         return reply.code(201).send(toResponse(created, today))
       } catch (error) {
-        return sendContactProblem(reply, error)
+        return sendPersonProblem(reply, error)
       }
     },
   )
@@ -230,18 +230,18 @@ export const contactRoutes: FastifyPluginAsync = async (app) => {
     '/:id',
     {
       preHandler: requireUser,
-      schema: { params: idParams, body: updateContactBody, response: { 200: contactResponse } },
+      schema: { params: idParams, body: updatePersonBody, response: { 200: personResponse } },
     },
     async (req, reply) => {
       if (sendImpossibleDay(reply, req.body.birthday)) return reply
       try {
         const updated = await app.db.transaction((tx) =>
-          updateContact(tx, authedUser(req).workspaceId, req.params.id, req.body),
+          updatePerson(tx, authedUser(req).workspaceId, req.params.id, req.body),
         )
         const today = await accountToday(app.db, authedUser(req).timezone)
         return toResponse(updated, today)
       } catch (error) {
-        return sendContactProblem(reply, error)
+        return sendPersonProblem(reply, error)
       }
     },
   )
@@ -251,10 +251,10 @@ export const contactRoutes: FastifyPluginAsync = async (app) => {
     { preHandler: requireUser, schema: { params: idParams } },
     async (req, reply) => {
       try {
-        await softDeleteContact(app.db, authedUser(req).workspaceId, req.params.id)
+        await softDeletePerson(app.db, authedUser(req).workspaceId, req.params.id)
         return reply.code(204).send()
       } catch (error) {
-        return sendContactProblem(reply, error)
+        return sendPersonProblem(reply, error)
       }
     },
   )

@@ -1,7 +1,7 @@
 import {
   OBJECT_TYPES,
   type CandidatesResponse,
-  type ContactResponse,
+  type PersonResponse,
   type LinksResponse,
 } from '@ctws/contracts'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -52,7 +52,7 @@ describe('every kind of thing has a module that answers for it', () => {
 describe('opening a thing shows what it is connected to', () => {
   it('shows a person the meetings they are in, without anything written on their record', async () => {
     const ctx = await setup('back@example.com')
-    const person = await post<ContactResponse>(ctx, '/api/v1/contacts', {
+    const person = await post<PersonResponse>(ctx, '/api/v1/people', {
       name: '陈颖',
       org: 'Acme 招聘',
     })
@@ -70,7 +70,7 @@ describe('opening a thing shows what it is connected to', () => {
       })
     }
 
-    const groups = await linksOf(ctx, 'contact', person.id)
+    const groups = await linksOf(ctx, 'person', person.id)
     expect(titles(groups, 'meeting')).toEqual(['一面', '二面'])
     const meetings = groups.find((g) => g.type === 'meeting')!
     expect(meetings.label).toBe('Meetings')
@@ -89,7 +89,7 @@ describe('opening a thing shows what it is connected to', () => {
     const ctx = await setup('project@example.com')
     const project = await createProject(ctx, '找工作')
     await createTask(ctx, project, '改简历')
-    const person = await post<ContactResponse>(ctx, '/api/v1/contacts', {
+    const person = await post<PersonResponse>(ctx, '/api/v1/people', {
       name: '陈颖',
       projectIds: [project],
     })
@@ -110,17 +110,17 @@ describe('opening a thing shows what it is connected to', () => {
 
     const groups = await linksOf(ctx, 'project', project)
     // Groups come out in registry order, not in whatever order the edges were stored.
-    expect(groups.map((g) => g.type)).toEqual(['task', 'meeting', 'contact', 'reading'])
+    expect(groups.map((g) => g.type)).toEqual(['task', 'meeting', 'person', 'reading'])
     // The task's project is still a COLUMN; the page cannot tell, which is the point.
     expect(titles(groups, 'task')).toEqual(['改简历'])
     expect(titles(groups, 'meeting')).toEqual(['二面'])
-    expect(titles(groups, 'contact')).toEqual(['陈颖'])
+    expect(titles(groups, 'person')).toEqual(['陈颖'])
     expect(titles(groups, 'reading')).toEqual(['面试准备'])
   })
 
   it('leaves out what was deleted, rather than drawing a row nobody can open', async () => {
     const ctx = await setup('gone@example.com')
-    const person = await post<ContactResponse>(ctx, '/api/v1/contacts', { name: '陈颖' })
+    const person = await post<PersonResponse>(ctx, '/api/v1/people', { name: '陈颖' })
     const meeting = await post<{ meetingId: string }>(ctx, '/api/v1/meetings', {
       title: '二面',
       startsLocal: '2026-10-20T21:00',
@@ -128,7 +128,7 @@ describe('opening a thing shows what it is connected to', () => {
       durationMinutes: 60,
       attendeeIds: [person.id],
     })
-    expect(titles(await linksOf(ctx, 'contact', person.id), 'meeting')).toEqual(['二面'])
+    expect(titles(await linksOf(ctx, 'person', person.id), 'meeting')).toEqual(['二面'])
 
     const dropped = await ctx.app.inject({
       method: 'DELETE',
@@ -136,7 +136,7 @@ describe('opening a thing shows what it is connected to', () => {
       headers: web(ctx),
     })
     expect(dropped.statusCode, dropped.body).toBe(204)
-    expect(await linksOf(ctx, 'contact', person.id)).toEqual([])
+    expect(await linksOf(ctx, 'person', person.id)).toEqual([])
   })
 
   it('refuses a page for a thing this workspace cannot see', async () => {
@@ -152,11 +152,11 @@ describe('opening a thing shows what it is connected to', () => {
       'x-ctws-client': 'web',
       cookie: String(them.headers['set-cookie']).split(';')[0]!,
     }
-    const myPerson = await post<ContactResponse>(ctx, '/api/v1/contacts', { name: '陈颖' })
+    const myPerson = await post<PersonResponse>(ctx, '/api/v1/people', { name: '陈颖' })
 
     const reached = await ctx.app.inject({
       method: 'GET',
-      url: `/api/v1/links/contact/${myPerson.id}`,
+      url: `/api/v1/links/person/${myPerson.id}`,
       headers: theirHeaders,
     })
     expect(reached.statusCode, reached.body).toBe(404)
@@ -166,7 +166,7 @@ describe('opening a thing shows what it is connected to', () => {
 describe('making and removing one edge by hand', () => {
   it('accepts a kind the model allows, and reads it back from both ends', async () => {
     const ctx = await setup('edge@example.com')
-    const person = await post<ContactResponse>(ctx, '/api/v1/contacts', { name: '陈颖' })
+    const person = await post<PersonResponse>(ctx, '/api/v1/people', { name: '陈颖' })
     const reading = await post<{ id: string }>(ctx, '/api/v1/reading', {
       kind: 'book',
       title: '设计心理学',
@@ -177,7 +177,7 @@ describe('making and removing one edge by hand', () => {
       url: '/api/v1/links',
       headers: web(ctx),
       payload: {
-        from: { type: 'contact', id: person.id },
+        from: { type: 'person', id: person.id },
         to: { type: 'reading', id: reading.id },
         kind: 'recommends',
       },
@@ -185,14 +185,14 @@ describe('making and removing one edge by hand', () => {
     expect(made.statusCode, made.body).toBe(201)
 
     // "she recommended this book" and "this book was recommended by her" are one row, read twice.
-    const theirs = await linksOf(ctx, 'contact', person.id)
+    const theirs = await linksOf(ctx, 'person', person.id)
     expect(theirs.find((g) => g.type === 'reading')!.items[0]).toMatchObject({
       title: '设计心理学',
       label: 'recommended',
       outgoing: true,
     })
     const books = await linksOf(ctx, 'reading', reading.id)
-    expect(books.find((g) => g.type === 'contact')!.items[0]).toMatchObject({
+    expect(books.find((g) => g.type === 'person')!.items[0]).toMatchObject({
       title: '陈颖',
       label: 'recommended by',
       outgoing: false,
@@ -203,7 +203,7 @@ describe('making and removing one edge by hand', () => {
       url:
         '/api/v1/links?' +
         new URLSearchParams({
-          fromType: 'contact',
+          fromType: 'person',
           fromId: person.id,
           toType: 'reading',
           toId: reading.id,
@@ -212,36 +212,36 @@ describe('making and removing one edge by hand', () => {
       headers: web(ctx),
     })
     expect(removed.statusCode, removed.body).toBe(204)
-    expect(await linksOf(ctx, 'contact', person.id)).toEqual([])
+    expect(await linksOf(ctx, 'person', person.id)).toEqual([])
   })
 
   it('refuses a kind the model does not allow, and an end that is not there', async () => {
     const ctx = await setup('bad@example.com')
-    const person = await post<ContactResponse>(ctx, '/api/v1/contacts', { name: '陈颖' })
-    const other = await post<ContactResponse>(ctx, '/api/v1/contacts', { name: '另一个人' })
+    const person = await post<PersonResponse>(ctx, '/api/v1/people', { name: '陈颖' })
+    const other = await post<PersonResponse>(ctx, '/api/v1/people', { name: '另一个人' })
 
     const make = (payload: Record<string, unknown>) =>
       ctx.app.inject({ method: 'POST', url: '/api/v1/links', headers: web(ctx), payload })
 
     // `recommends` runs from a person to something to read, never between two people.
     const wrongEnds = await make({
-      from: { type: 'contact', id: person.id },
-      to: { type: 'contact', id: other.id },
+      from: { type: 'person', id: person.id },
+      to: { type: 'person', id: other.id },
       kind: 'recommends',
     })
     expect(wrongEnds.statusCode).toBe(400)
 
     // A thing cannot be related to itself, whatever the kind.
     const itself = await make({
-      from: { type: 'contact', id: person.id },
-      to: { type: 'contact', id: person.id },
+      from: { type: 'person', id: person.id },
+      to: { type: 'person', id: person.id },
       kind: 'about',
     })
     expect(itself.statusCode).toBe(400)
 
     // An id of the right shape that names nothing is a 404, not a stored edge.
     const nowhere = await make({
-      from: { type: 'contact', id: person.id },
+      from: { type: 'person', id: person.id },
       to: { type: 'reading', id: '99999999-9999-4999-8999-999999999999' },
       kind: 'recommends',
     })
@@ -262,11 +262,11 @@ describe('an edge a module stores itself', () => {
     const ctx = await setup('own@example.com')
     const project = await createProject(ctx, '找工作')
     await createTask(ctx, project, '改简历')
-    await post<ContactResponse>(ctx, '/api/v1/contacts', { name: '陈颖', projectIds: [project] })
+    await post<PersonResponse>(ctx, '/api/v1/people', { name: '陈颖', projectIds: [project] })
 
     const groups = await linksOf(ctx, 'project', project)
     const task = groups.find((g) => g.type === 'task')!.items[0]!
-    const person = groups.find((g) => g.type === 'contact')!.items[0]!
+    const person = groups.find((g) => g.type === 'person')!.items[0]!
 
     // The task's project is a column the task module keeps; the person's is a row in `links`.
     expect(task).toMatchObject({ title: '改简历', removable: false })
@@ -297,8 +297,8 @@ describe('what can go at the other end', () => {
     const ctx = await setup('cand@example.com')
     const project = await createProject(ctx, '找工作')
     await createTask(ctx, project, '改简历')
-    const person = await post<ContactResponse>(ctx, '/api/v1/contacts', { name: '陈颖' })
-    const other = await post<ContactResponse>(ctx, '/api/v1/contacts', { name: '老王' })
+    const person = await post<PersonResponse>(ctx, '/api/v1/people', { name: '陈颖' })
+    const other = await post<PersonResponse>(ctx, '/api/v1/people', { name: '老王' })
     await post(ctx, '/api/v1/reading', { kind: 'book', title: '设计心理学' })
     await post(ctx, '/api/v1/meetings', {
       title: '二面',
@@ -307,11 +307,11 @@ describe('what can go at the other end', () => {
       durationMinutes: 60,
     })
 
-    const offered = await candidatesFor(ctx, 'contact', person.id)
+    const offered = await candidatesFor(ctx, 'person', person.id)
     // One box, every kind of thing, each out of its own module's table.
     expect([...new Set(offered.map((c) => c.type))].sort()).toEqual([
-      'contact',
       'meeting',
+      'person',
       'project',
       'reading',
       'task',
@@ -332,34 +332,34 @@ describe('what can go at the other end', () => {
       headers: web(ctx),
       payload: { status: 'done' },
     })
-    const after = await candidatesFor(ctx, 'contact', person.id)
+    const after = await candidatesFor(ctx, 'person', person.id)
     expect(after.find((c) => c.id === done)?.detail).toBe('找工作 · Done')
   })
 
   it('narrows to what was typed, across the modules at once', async () => {
     const ctx = await setup('candq@example.com')
-    const person = await post<ContactResponse>(ctx, '/api/v1/contacts', { name: '陈颖' })
+    const person = await post<PersonResponse>(ctx, '/api/v1/people', { name: '陈颖' })
     await post(ctx, '/api/v1/reading', { kind: 'book', title: '设计心理学' })
     await post(ctx, '/api/v1/reading', { kind: 'book', title: '代码整洁之道' })
     await createProject(ctx, '设计系统')
 
-    const found = await candidatesFor(ctx, 'contact', person.id, '设计')
+    const found = await candidatesFor(ctx, 'person', person.id, '设计')
     expect(found.map((c) => [c.type, c.title]).sort()).toEqual([
       ['project', '设计系统'],
       ['reading', '设计心理学'],
     ])
     expect(found.some((c) => c.title === '代码整洁之道')).toBe(false)
     // And the wildcards are characters, not patterns: `_` would match any one character.
-    expect(await candidatesFor(ctx, 'contact', person.id, '设_系统')).toEqual([])
+    expect(await candidatesFor(ctx, 'person', person.id, '设_系统')).toEqual([])
   })
 
   it('offers nothing from another workspace, and nothing deleted', async () => {
     const ctx = await setup('candiso@example.com')
-    const mine = await post<ContactResponse>(ctx, '/api/v1/contacts', { name: '陈颖' })
-    const doomed = await post<ContactResponse>(ctx, '/api/v1/contacts', { name: '要删掉的' })
+    const mine = await post<PersonResponse>(ctx, '/api/v1/people', { name: '陈颖' })
+    const doomed = await post<PersonResponse>(ctx, '/api/v1/people', { name: '要删掉的' })
     await ctx.app.inject({
       method: 'DELETE',
-      url: `/api/v1/contacts/${doomed.id}`,
+      url: `/api/v1/people/${doomed.id}`,
       headers: web(ctx),
     })
 
@@ -376,25 +376,25 @@ describe('what can go at the other end', () => {
     }
     await ctx.app.inject({
       method: 'POST',
-      url: '/api/v1/contacts',
+      url: '/api/v1/people',
       headers: theirs,
       payload: { name: '别人的人' },
     })
 
-    const offered = await candidatesFor(ctx, 'contact', mine.id)
+    const offered = await candidatesFor(ctx, 'person', mine.id)
     expect(offered.map((c) => c.title)).not.toContain('别人的人')
     expect(offered.map((c) => c.title)).not.toContain('要删掉的')
 
     // And the other workspace's object is not even a thing to ask about.
     const theirPerson = await ctx.app.inject({
       method: 'GET',
-      url: '/api/v1/contacts',
+      url: '/api/v1/people',
       headers: theirs,
     })
-    const theirId = (theirPerson.json() as { contacts: { id: string }[] }).contacts[0]!.id
+    const theirId = (theirPerson.json() as { people: { id: string }[] }).people[0]!.id
     const refused = await ctx.app.inject({
       method: 'GET',
-      url: `/api/v1/links/candidates?type=contact&id=${theirId}`,
+      url: `/api/v1/links/candidates?type=person&id=${theirId}`,
       headers: web(ctx),
     })
     expect(refused.statusCode).toBe(404)

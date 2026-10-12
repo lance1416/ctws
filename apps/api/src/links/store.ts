@@ -1,7 +1,7 @@
 import type { LinkKind, ObjectType } from '@ctws/contracts'
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import type { Queryable } from '../db/client'
-import { contacts, links, projects } from '../db/schema'
+import { people, links, projects } from '../db/schema'
 
 /**
  * EDGES -- the shell's own store, and the one way anything reaches anything else.
@@ -152,7 +152,7 @@ export async function projectsLinkedFrom(
  * A person deleted since the edge was made is left OUT rather than named: the address book is
  * where a name comes from, and a name nobody can look up is not one.
  */
-export async function contactsLinkedFrom(
+export async function peopleLinkedFrom(
   q: Queryable,
   workspaceId: string,
   fromType: ObjectType,
@@ -162,20 +162,20 @@ export async function contactsLinkedFrom(
   const by = new Map<string, { id: string; name: string }[]>()
   if (fromIds.length === 0) return by
   const rows = await q
-    .select({ fromId: links.fromId, id: contacts.id, name: contacts.name })
+    .select({ fromId: links.fromId, id: people.id, name: people.name })
     .from(links)
-    .innerJoin(contacts, eq(contacts.id, links.toId))
+    .innerJoin(people, eq(people.id, links.toId))
     .where(
       and(
         eq(links.workspaceId, workspaceId),
         eq(links.fromType, fromType),
         inArray(links.fromId, [...fromIds]),
-        eq(links.toType, 'contact'),
+        eq(links.toType, 'person'),
         eq(links.kind, kind),
-        isNull(contacts.deletedAt),
+        isNull(people.deletedAt),
       ),
     )
-    .orderBy(asc(contacts.name), asc(contacts.id))
+    .orderBy(asc(people.name), asc(people.id))
   for (const row of rows) {
     const person = { id: row.id, name: row.name }
     const list = by.get(row.fromId)

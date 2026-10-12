@@ -2,7 +2,7 @@ import type { CalendarEntry, Circle } from '@ctws/contracts'
 import { factsOf, type Kept, nextOccurrence, type Birthday } from '@ctws/core'
 import { and, asc, eq, isNotNull, isNull } from 'drizzle-orm'
 import type { Queryable } from '../db/client'
-import { contacts } from '../db/schema'
+import { people } from '../db/schema'
 import { accountToday } from '../db/today'
 
 /**
@@ -18,7 +18,7 @@ import { accountToday } from '../db/today'
  */
 
 export type BirthdayRow = {
-  contactId: string
+  personId: string
   name: string
   /** The column is text with a CHECK; the union is what the wire promises. */
   circle: Circle | null
@@ -50,26 +50,26 @@ const COMING_DAYS = 7
 async function peopleWithBirthdays(q: Queryable, workspaceId: string) {
   return q
     .select({
-      id: contacts.id,
-      name: contacts.name,
-      circle: contacts.circle,
-      calendar: contacts.birthdayCalendar,
-      year: contacts.birthdayYear,
-      month: contacts.birthdayMonth,
-      day: contacts.birthdayDay,
-      leapMonth: contacts.birthdayLeapMonth,
-      hourBranch: contacts.birthdayHourBranch,
-      remindLead: contacts.birthdayRemindLead,
+      id: people.id,
+      name: people.name,
+      circle: people.circle,
+      calendar: people.birthdayCalendar,
+      year: people.birthdayYear,
+      month: people.birthdayMonth,
+      day: people.birthdayDay,
+      leapMonth: people.birthdayLeapMonth,
+      hourBranch: people.birthdayHourBranch,
+      remindLead: people.birthdayRemindLead,
     })
-    .from(contacts)
+    .from(people)
     .where(
       and(
-        eq(contacts.workspaceId, workspaceId),
-        isNull(contacts.deletedAt),
-        isNotNull(contacts.birthdayMonth),
+        eq(people.workspaceId, workspaceId),
+        isNull(people.deletedAt),
+        isNotNull(people.birthdayMonth),
       ),
     )
-    .orderBy(asc(contacts.name))
+    .orderBy(asc(people.name))
 }
 
 type Person = Awaited<ReturnType<typeof peopleWithBirthdays>>[number]
@@ -93,7 +93,7 @@ export function birthdayOf(p: Person): Birthday {
  * and an age instead of a clock.
  *
  * One person can appear TWICE in one window (a window that spans a year), so the id carries the
- * day as well as the contact.
+ * day as well as the person.
  */
 export async function listBirthdayEntries(
   q: Queryable,
@@ -114,7 +114,7 @@ export async function listBirthdayEntries(
         id: `${p.id}:${next.day}`,
         day: next.day,
         title: next.turns === null ? p.name : `${p.name} ${next.turns}`,
-        to: `/contacts/${p.id}`,
+        to: `/people/${p.id}`,
         kind: 'Birthday',
         time: null,
         zone: null,
@@ -147,7 +147,7 @@ export async function listBirthdays(
     const birthday = birthdayOf(p)
     const next = nextOccurrence(birthday, today)
     return {
-      contactId: p.id,
+      personId: p.id,
       name: p.name,
       circle: p.circle as Circle | null,
       calendar: birthday.calendar,

@@ -1,28 +1,28 @@
 import {
   type BirthdayInput,
-  type ContactChannel,
-  type CreateContactBody,
+  type PersonChannel,
+  type CreatePersonBody,
   REMIND_LEAD_DEFAULT,
-  type UpdateContactBody,
+  type UpdatePersonBody,
 } from '@ctws/contracts'
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import type { Queryable } from '../db/client'
 import { textMatches } from '../db/like'
-import { contactChannels, contacts, projects } from '../db/schema'
+import { personChannels, people, projects } from '../db/schema'
 import { filedUnder, projectsLinkedFrom, putLinks, unfiled } from '../links/store'
 import { ProjectNotFoundError } from '../projects/errors'
 import { visibleProjects } from '../projects/store'
-import { ContactNotFoundError } from './errors'
+import { PersonNotFoundError } from './errors'
 
 /**
- * CONTACTS' storage. vCard's shape (RFC 6350), cut to what one person needs.
+ * PEOPLE' storage. vCard's shape (RFC 6350), cut to what one person needs.
  *
  * Like the reading module it borrows exactly two things from the shell -- the workspace and
  * `visibleProjects` -- and nothing at all from the other two modules.
  */
 
-type ContactProject = { id: string; name: string }
+type PersonProject = { id: string; name: string }
 
 /**
  * The stored half of a birthday. The derived half (the other calendar, the zodiac, the sign, the
@@ -38,13 +38,13 @@ export type StoredBirthday = {
   remindLead: number
 }
 
-export type ContactRow = {
+export type PersonRow = {
   id: string
   name: string
   org: string | null
   note: string | null
-  projects: ContactProject[]
-  channels: ContactChannel[]
+  projects: PersonProject[]
+  channels: PersonChannel[]
   birthday: StoredBirthday | null
   gender: string | null
   hometown: string | null
@@ -56,11 +56,11 @@ export type ContactRow = {
 }
 
 /** THE TENANT CHOKEPOINT. Every read and write below goes through it. */
-function visibleContacts(workspaceId: string) {
-  return and(eq(contacts.workspaceId, workspaceId), isNull(contacts.deletedAt))
+function visiblePeople(workspaceId: string) {
+  return and(eq(people.workspaceId, workspaceId), isNull(people.deletedAt))
 }
 
-type Selected = typeof contacts.$inferSelect
+type Selected = typeof people.$inferSelect
 
 /** A birthday is a GROUP of columns: all present or all absent (the table's own CHECK says so). */
 const birthdayOf = (row: Selected): StoredBirthday | null =>
@@ -114,48 +114,48 @@ const birthdayColumns = (b: BirthdayInput | null | undefined) =>
  *
  * Only projects the person can still SEE: projects are soft-deleted, so a row in the association
  * table can outlive the project it points at, and a name nobody can navigate to is worse than no
- * name. A query per contact would be the N+1 this codebase refuses everywhere else.
+ * name. A query per person would be the N+1 this codebase refuses everywhere else.
  */
-async function hydrate(q: Queryable, workspaceId: string, rows: Selected[]): Promise<ContactRow[]> {
+async function hydrate(q: Queryable, workspaceId: string, rows: Selected[]): Promise<PersonRow[]> {
   const ids = rows.map((r) => r.id)
-  let byContact = new Map<string, ContactProject[]>()
-  const channelsOf = new Map<string, ContactChannel[]>()
+  let byPerson = new Map<string, PersonProject[]>()
+  const channelsOf = new Map<string, PersonChannel[]>()
   if (ids.length > 0) {
     const [linked, found] = await Promise.all([
-      projectsLinkedFrom(q, workspaceId, 'contact', ids),
+      projectsLinkedFrom(q, workspaceId, 'person', ids),
       q
         .select()
-        .from(contactChannels)
-        .where(inArray(contactChannels.contactId, ids))
-        .orderBy(asc(contactChannels.rank), asc(contactChannels.id)),
+        .from(personChannels)
+        .where(inArray(personChannels.personId, ids))
+        .orderBy(asc(personChannels.rank), asc(personChannels.id)),
     ])
-    byContact = linked
+    byPerson = linked
     for (const c of found) {
-      const channel: ContactChannel = {
-        kind: c.kind as ContactChannel['kind'],
+      const channel: PersonChannel = {
+        kind: c.kind as PersonChannel['kind'],
         value: c.value,
         label: c.label,
       }
-      const list = channelsOf.get(c.contactId)
+      const list = channelsOf.get(c.personId)
       if (list) list.push(channel)
-      else channelsOf.set(c.contactId, [channel])
+      else channelsOf.set(c.personId, [channel])
     }
   }
-  return rows.map((contact) => ({
-    id: contact.id,
-    name: contact.name,
-    org: contact.org,
-    note: contact.note,
-    projects: byContact.get(contact.id) ?? [],
-    channels: channelsOf.get(contact.id) ?? [],
-    birthday: birthdayOf(contact),
-    gender: contact.gender,
-    hometown: contact.hometown,
-    city: contact.city,
-    title: contact.title,
-    circle: contact.circle,
-    createdAt: contact.createdAt,
-    updatedAt: contact.updatedAt,
+  return rows.map((person) => ({
+    id: person.id,
+    name: person.name,
+    org: person.org,
+    note: person.note,
+    projects: byPerson.get(person.id) ?? [],
+    channels: channelsOf.get(person.id) ?? [],
+    birthday: birthdayOf(person),
+    gender: person.gender,
+    hometown: person.hometown,
+    city: person.city,
+    title: person.title,
+    circle: person.circle,
+    createdAt: person.createdAt,
+    updatedAt: person.updatedAt,
   }))
 }
 
@@ -174,18 +174,18 @@ async function assertProjects(
   if (rows.length !== new Set(projectIds).size) throw new ProjectNotFoundError()
 }
 
-/** Replaces a contact's whole channel set. Called inside the caller's transaction. */
+/** Replaces a person's whole channel set. Called inside the caller's transaction. */
 async function putChannels(
   q: Queryable,
-  contactId: string,
-  channels: readonly ContactChannel[],
+  personId: string,
+  channels: readonly PersonChannel[],
 ): Promise<void> {
-  await q.delete(contactChannels).where(eq(contactChannels.contactId, contactId))
+  await q.delete(personChannels).where(eq(personChannels.personId, personId))
   if (channels.length === 0) return
-  await q.insert(contactChannels).values(
+  await q.insert(personChannels).values(
     channels.map((c, rank) => ({
       id: uuidv7(),
-      contactId,
+      personId,
       kind: c.kind,
       value: c.value,
       label: c.label ?? null,
@@ -194,47 +194,47 @@ async function putChannels(
   )
 }
 
-export async function listContacts(
+export async function listPeople(
   q: Queryable,
   workspaceId: string,
   opts: { projectId?: string; unfiled?: boolean } = {},
-): Promise<ContactRow[]> {
+): Promise<PersonRow[]> {
   const rows = await q
     .select()
-    .from(contacts)
+    .from(people)
     .where(
       and(
-        visibleContacts(workspaceId),
+        visiblePeople(workspaceId),
         // Only VISIBLE projects: an edge to a soft-deleted project is an edge to nothing, so it
         // must not make a person count as filed either.
-        opts.projectId ? filedUnder('contact', 'contacts', opts.projectId) : undefined,
-        opts.unfiled ? unfiled('contact', 'contacts') : undefined,
+        opts.projectId ? filedUnder('person', 'people', opts.projectId) : undefined,
+        opts.unfiled ? unfiled('person', 'people') : undefined,
       ),
     )
-    // By name. A contact list is looked at to FIND someone, and alphabetical is where a person
+    // By name. A person list is looked at to FIND someone, and alphabetical is where a person
     // expects to find them -- unlike the reading pile, where the newest thing is the point.
-    .orderBy(asc(contacts.name), asc(contacts.id))
+    .orderBy(asc(people.name), asc(people.id))
   return hydrate(q, workspaceId, rows)
 }
 
-async function getContact(q: Queryable, workspaceId: string, id: string): Promise<ContactRow> {
+async function getPerson(q: Queryable, workspaceId: string, id: string): Promise<PersonRow> {
   const rows = await q
     .select()
-    .from(contacts)
-    .where(and(visibleContacts(workspaceId), eq(contacts.id, id)))
-  if (rows.length === 0) throw new ContactNotFoundError()
+    .from(people)
+    .where(and(visiblePeople(workspaceId), eq(people.id, id)))
+  if (rows.length === 0) throw new PersonNotFoundError()
   const [row] = await hydrate(q, workspaceId, rows)
   return row!
 }
 
-export async function createContact(
+export async function createPerson(
   q: Queryable,
   workspaceId: string,
-  body: CreateContactBody,
-): Promise<ContactRow> {
+  body: CreatePersonBody,
+): Promise<PersonRow> {
   await assertProjects(q, workspaceId, body.projectIds ?? [])
   const id = uuidv7()
-  await q.insert(contacts).values({
+  await q.insert(people).values({
     id,
     workspaceId,
     name: body.name,
@@ -250,80 +250,80 @@ export async function createContact(
   await putLinks(
     q,
     workspaceId,
-    { type: 'contact', id },
+    { type: 'person', id },
     'project',
     'belongs',
     body.projectIds ?? [],
   )
   await putChannels(q, id, body.channels ?? [])
-  return getContact(q, workspaceId, id)
+  return getPerson(q, workspaceId, id)
 }
 
-export async function updateContact(
+export async function updatePerson(
   q: Queryable,
   workspaceId: string,
   id: string,
-  patch: UpdateContactBody,
-): Promise<ContactRow> {
+  patch: UpdatePersonBody,
+): Promise<PersonRow> {
   // Reads first, so an id from another workspace is "not found" before anything is written.
-  await getContact(q, workspaceId, id)
+  await getPerson(q, workspaceId, id)
   if (patch.projectIds) await assertProjects(q, workspaceId, patch.projectIds)
 
   const { channels, projectIds, birthday, ...fields } = patch
   // An update of only the channels (or only the projects) must still touch the row, or
-  // `updated_at` would say the contact has not changed when their phone number just did.
+  // `updated_at` would say the person has not changed when their phone number just did.
   await q
-    .update(contacts)
+    .update(people)
     .set({ ...fields, ...birthdayColumns(birthday), updatedAt: new Date() })
-    .where(and(visibleContacts(workspaceId), eq(contacts.id, id)))
+    .where(and(visiblePeople(workspaceId), eq(people.id, id)))
   if (projectIds) {
-    await putLinks(q, workspaceId, { type: 'contact', id }, 'project', 'belongs', projectIds)
+    await putLinks(q, workspaceId, { type: 'person', id }, 'project', 'belongs', projectIds)
   }
   if (channels) await putChannels(q, id, channels)
-  return getContact(q, workspaceId, id)
+  return getPerson(q, workspaceId, id)
 }
 
-export async function softDeleteContact(
+export async function softDeletePerson(
   q: Queryable,
   workspaceId: string,
   id: string,
 ): Promise<void> {
   const deleted = await q
-    .update(contacts)
+    .update(people)
     .set({ deletedAt: new Date() })
-    .where(and(visibleContacts(workspaceId), eq(contacts.id, id)))
-    .returning({ id: contacts.id })
-  if (deleted.length === 0) throw new ContactNotFoundError()
+    .where(and(visiblePeople(workspaceId), eq(people.id, id)))
+    .returning({ id: people.id })
+  if (deleted.length === 0) throw new PersonNotFoundError()
 }
 
 /**
  * This module's half of federated search: the name, the organisation, and every address.
  *
  * Searching the addresses is the point as often as the name is: "who was the one at
- * @example.com" is exactly the question a contact list answers.
+ * @example.com" is exactly the question a person list answers.
  */
-export async function searchContacts(
+export async function searchPeople(
   q: Queryable,
   workspaceId: string,
   query: string,
   limit = 20,
-): Promise<ContactRow[]> {
+): Promise<PersonRow[]> {
   const rows = await q
     .select()
-    .from(contacts)
+    .from(people)
     .where(
       and(
-        visibleContacts(workspaceId),
+        visiblePeople(workspaceId),
         sql`(
-          ${textMatches(['contacts.name', 'contacts.org'], query)}
+          ${textMatches(['people.name', 'people.org'], query)}
           or exists (
-            select 1 from contact_channels ch
-            where ch.contact_id = contacts.id and ${textMatches(['ch.value'], query)}
+            select 1 from person_channels ch
+            where ch.person_id = people.id and ${textMatches(['ch.value'], query)}
           )
         )`,
       ),
     )
-    .orderBy(asc(contacts.name), asc(contacts.id))
+    .orderBy(asc(people.name), asc(people.id))
     .limit(limit)
   return hydrate(q, workspaceId, rows)
 }

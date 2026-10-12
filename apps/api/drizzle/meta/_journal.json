@@ -141,6 +141,13 @@
       "when": 1791811513004,
       "tag": "0019_contact_birthday_daymonth",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1791832434060,
+      "tag": "0020_people",
+      "breakpoints": true
     }
   ]
 }

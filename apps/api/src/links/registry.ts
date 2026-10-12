@@ -1,5 +1,5 @@
 import { OBJECT_TYPES, type ObjectType } from '@ctws/contracts'
-import { contactLinkable } from '../contacts/linkable'
+import { personLinkable } from '../people/linkable'
 import { meetingLinkable } from '../meetings/linkable'
 import { projectLinkable } from '../projects/linkable'
 import { readingLinkable } from '../reading/linkable'
@@ -19,7 +19,7 @@ import type { Linkable } from './linkable'
 export const LINKABLES: readonly Linkable[] = Object.freeze([
   taskLinkable,
   meetingLinkable,
-  contactLinkable,
+  personLinkable,
   readingLinkable,
   projectLinkable,
 ])

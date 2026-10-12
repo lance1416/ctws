@@ -197,7 +197,7 @@ export async function softDeleteProject(
 /**
  * A PROJECT THIS WORKSPACE MAY FILE SOMETHING UNDER, or a refusal.
  *
- * Three modules wrote this out: reading, meetings and contacts all have to check a project id
+ * Three modules wrote this out: reading, meetings and people all have to check a project id
  * before storing it, and all three checked it the same four lines. Projects are the shell's own, so
  * the question "may this workspace use this project" is the shell's to answer -- a module copying
  * it is a module that could answer it differently.

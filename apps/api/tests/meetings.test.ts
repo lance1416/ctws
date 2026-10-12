@@ -1,4 +1,4 @@
-import type { CalendarEntry, ContactResponse, MeetingOccurrence } from '@ctws/contracts'
+import type { CalendarEntry, PersonResponse, MeetingOccurrence } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createProject, setupWith, type TaskCtx, web } from './helpers/tasks'
@@ -68,15 +68,15 @@ async function entries(ctx: TaskCtx, from: string, to: string): Promise<Calendar
   return (res.json() as { entries: CalendarEntry[] }).entries
 }
 
-async function person(ctx: TaskCtx, name: string): Promise<ContactResponse> {
+async function person(ctx: TaskCtx, name: string): Promise<PersonResponse> {
   const res = await ctx.app.inject({
     method: 'POST',
-    url: '/api/v1/contacts',
+    url: '/api/v1/people',
     headers: web(ctx),
     payload: { name },
   })
   expect(res.statusCode, res.body).toBe(201)
-  return res.json() as ContactResponse
+  return res.json() as PersonResponse
 }
 
 const days = (got: { startsLocal: string }[]) => got.map((o) => o.startsLocal.slice(0, 10))
@@ -140,7 +140,7 @@ describe('arranging a meeting', () => {
     expect(res.statusCode).toBe(400)
   })
 
-  it('holds the people in the room, out of the contacts module', async () => {
+  it('holds the people in the room, out of the people module', async () => {
     const ctx = await setup()
     const a = await person(ctx, '陈颖')
     const b = await person(ctx, '李雷')
@@ -534,7 +534,7 @@ describe('windows, projects and tenants', () => {
     const ctx = await setup()
     const a = await person(ctx, '走了的人')
     const series = await arrange(ctx, { ...WEEKLY, rrule: null, attendeeIds: [a.id] })
-    await ctx.app.inject({ method: 'DELETE', url: `/api/v1/contacts/${a.id}`, headers: web(ctx) })
+    await ctx.app.inject({ method: 'DELETE', url: `/api/v1/people/${a.id}`, headers: web(ctx) })
 
     const res = await ctx.app.inject({
       method: 'GET',

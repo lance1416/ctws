@@ -9,7 +9,7 @@ import { z } from 'zod'
  */
 
 /** Every kind of thing that can be at either end of a link. */
-export const OBJECT_TYPES = ['task', 'reading', 'contact', 'meeting', 'project'] as const
+export const OBJECT_TYPES = ['task', 'reading', 'person', 'meeting', 'project'] as const
 export const objectType = z.enum(OBJECT_TYPES)
 export type ObjectType = z.infer<typeof objectType>
 
@@ -26,10 +26,10 @@ export const LINK_KINDS = [
   // `belongs` says nothing out loud: the group it lands in is already called Projects, and a
   // row reading "Projects / Job hunt / in" says the same thing twice.
   { kind: 'belongs', from: null, to: 'project', label: '', inverse: '' },
-  { kind: 'attends', from: 'meeting', to: 'contact', label: 'attendee', inverse: 'attended' },
+  { kind: 'attends', from: 'meeting', to: 'person', label: 'attendee', inverse: 'attended' },
   {
     kind: 'recommends',
-    from: 'contact',
+    from: 'person',
     to: 'reading',
     label: 'recommended',
     inverse: 'recommended by',

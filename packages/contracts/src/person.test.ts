@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { contactChannel } from './contact'
+import { personChannel } from './person'
 /**
  * 三种地址各自是什么样子。
  *
  * 以前 `value` 只要求非空：一个电话字段里可以放 `to fill in`，一个邮箱里可以放一句话。它们是三种
  * 不同的结构化文本，规则写在契约里，服务端和界面才是同一套 —— 而且报错要说清是哪一条不成立。
  */
-describe('contactChannel 按 kind 校验', () => {
-  const ok = (kind: string, value: string) => contactChannel.safeParse({ kind, value }).success
+describe('personChannel 按 kind 校验', () => {
+  const ok = (kind: string, value: string) => personChannel.safeParse({ kind, value }).success
   const says = (kind: string, value: string) =>
-    contactChannel.safeParse({ kind, value }).error?.issues[0]?.message
+    personChannel.safeParse({ kind, value }).error?.issues[0]?.message
 
   it('邮箱要像个邮箱', () => {
     expect(ok('email', 'ying@acme.test')).toBe(true)
@@ -52,7 +52,7 @@ describe('contactChannel 按 kind 校验', () => {
   })
 
   it('说清是哪一条不成立', () => {
-    const bad = contactChannel.safeParse({ kind: 'phone', value: 'to fill in' })
+    const bad = personChannel.safeParse({ kind: 'phone', value: 'to fill in' })
     expect(bad.success).toBe(false)
     expect(bad.error?.issues[0]?.message).toBe(
       'a phone number is digits, spaces, dashes and brackets',

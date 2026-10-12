@@ -1,10 +1,10 @@
 import type { CreateMeetingBody, EditScope, UpdateMeetingBody } from '@ctws/contracts'
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
-import { ContactNotFoundError } from '../contacts/errors'
+import { PersonNotFoundError } from '../people/errors'
 import type { Queryable } from '../db/client'
-import { contacts, meetingExceptions, meetings } from '../db/schema'
-import { contactsLinkedFrom, filedUnder, oneProjectOf, putLinks } from '../links/store'
+import { people, meetingExceptions, meetings } from '../db/schema'
+import { peopleLinkedFrom, filedUnder, oneProjectOf, putLinks } from '../links/store'
 import { assertProjectVisible } from '../projects/store'
 import {
   BadRuleError,
@@ -27,7 +27,7 @@ import {
  * A row here is a SERIES, not a meeting: one row plus its rule and its exceptions describes every
  * occurrence of it. Nothing below ever stores an instant -- `occurrences.ts` has the argument.
  *
- * It borrows the workspace and `visibleProjects` from the shell, and reads the CONTACTS table,
+ * It borrows the workspace and `visibleProjects` from the shell, and reads the PEOPLE table,
  * because `ATTENDEE` points at people and the address book is the list you pick them out of.
  */
 
@@ -77,7 +77,7 @@ async function hydrate(q: Queryable, workspaceId: string, rows: Selected[]): Pro
   const skips = new Map<string, Exception[]>()
   if (ids.length > 0) {
     const [guests, found] = await Promise.all([
-      contactsLinkedFrom(q, workspaceId, 'meeting', ids, 'attends'),
+      peopleLinkedFrom(q, workspaceId, 'meeting', ids, 'attends'),
       q.select().from(meetingExceptions).where(inArray(meetingExceptions.meetingId, ids)),
     ])
     people = guests
@@ -131,21 +131,21 @@ function expand(series: SeriesRow, window: { from: Date; to: Date }): Occurrence
 async function assertAttendees(
   q: Queryable,
   workspaceId: string,
-  contactIds: readonly string[],
+  personIds: readonly string[],
 ): Promise<void> {
-  if (contactIds.length === 0) return
-  const unique = [...new Set(contactIds)]
+  if (personIds.length === 0) return
+  const unique = [...new Set(personIds)]
   const rows = await q
-    .select({ id: contacts.id })
-    .from(contacts)
+    .select({ id: people.id })
+    .from(people)
     .where(
       and(
-        eq(contacts.workspaceId, workspaceId),
-        isNull(contacts.deletedAt),
-        inArray(contacts.id, unique),
+        eq(people.workspaceId, workspaceId),
+        isNull(people.deletedAt),
+        inArray(people.id, unique),
       ),
     )
-  if (rows.length !== unique.length) throw new ContactNotFoundError()
+  if (rows.length !== unique.length) throw new PersonNotFoundError()
 }
 
 /**
@@ -260,7 +260,7 @@ export async function createMeeting(
     q,
     workspaceId,
     { type: 'meeting', id },
-    'contact',
+    'person',
     'attends',
     body.attendeeIds ?? [],
   )
@@ -362,7 +362,7 @@ export async function updateMeeting(
       q,
       workspaceId,
       { type: 'meeting', id: newId },
-      'contact',
+      'person',
       'attends',
       attendeeIds ?? series.attendees.map((p) => p.id),
     )
@@ -389,7 +389,7 @@ export async function updateMeeting(
     .set({ ...fields, updatedAt: new Date() })
     .where(and(visibleMeetings(workspaceId), eq(meetings.id, id)))
   if (attendeeIds) {
-    await putLinks(q, workspaceId, { type: 'meeting', id }, 'contact', 'attends', attendeeIds)
+    await putLinks(q, workspaceId, { type: 'meeting', id }, 'person', 'attends', attendeeIds)
   }
   // `projectId: null` and an absent `projectId` are different answers: one unfiles the meeting,
   // the other leaves it where it is.

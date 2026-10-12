@@ -131,7 +131,7 @@ export async function linksOf(
         // By title: a group is read to FIND something in it, and the order edges were made in is
         // not an order anybody remembers. Compared by CODE POINT, not by locale: every other list
         // in this app is ordered by the database, and a second collation here would mean the same
-        // two names read in one order on a project page and the other on Contacts.
+        // two names read in one order on a project page and the other on People.
         .sort((a, b) => (a.title < b.title ? -1 : a.title > b.title ? 1 : a.id < b.id ? -1 : 1))
         .slice(0, PER_GROUP),
     })),

@@ -11,7 +11,7 @@ import type { FastifyPluginAsync, FastifyReply } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 import { authedUser, requireUser } from '../auth/require-user'
-import { ContactNotFoundError } from '../contacts/errors'
+import { PersonNotFoundError } from '../people/errors'
 import { sendProblem } from '../problem'
 import { ProjectNotFoundError } from '../projects/errors'
 import {
@@ -78,7 +78,7 @@ function sendMeetingProblem(reply: FastifyReply, error: unknown): void {
   if (error instanceof MeetingNotFoundError) return sendProblem(reply, 404, 'Not Found')
   if (error instanceof OccurrenceNotFoundError) return sendProblem(reply, 404, 'Not Found')
   if (error instanceof ProjectNotFoundError) return sendProblem(reply, 404, 'Not Found')
-  if (error instanceof ContactNotFoundError) return sendProblem(reply, 404, 'Not Found')
+  if (error instanceof PersonNotFoundError) return sendProblem(reply, 404, 'Not Found')
   if (error instanceof BadRuleError) {
     return sendProblem(reply, 422, 'Unprocessable Entity', error.message)
   }

@@ -1,7 +1,7 @@
 import { keptNote, nextOccurrence, type Birthday } from '@ctws/core'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
-import { listBirthdays } from '../src/contacts/birthdays'
+import { listBirthdays } from '../src/people/birthdays'
 import { setupWith, type TaskCtx, web } from './helpers/tasks'
 
 /**
@@ -30,7 +30,7 @@ async function workspaceOf(ctx: TaskCtx): Promise<string> {
 async function add(ctx: TaskCtx, name: string, birthday?: unknown, circle?: string) {
   const res = await ctx.app.inject({
     method: 'POST',
-    url: '/api/v1/contacts',
+    url: '/api/v1/people',
     headers: web(ctx),
     payload: { name, ...(birthday ? { birthday } : {}), ...(circle ? { circle } : {}) },
   })
@@ -48,7 +48,7 @@ type Row = {
 async function view(ctx: TaskCtx) {
   const res = await ctx.app.inject({
     method: 'GET',
-    url: '/api/v1/contacts/birthdays',
+    url: '/api/v1/people/birthdays',
     headers: ctx.authed,
   })
   expect(res.statusCode, res.body).toBe(200)
@@ -69,7 +69,7 @@ function monthDay(today: string, n: number): { month: number; day: number } {
   return { month: d.getUTCMonth() + 1, day: d.getUTCDate() }
 }
 
-describe('GET /contacts/birthdays', () => {
+describe('GET /people/birthdays', () => {
   it('七天内的进 coming，其余按倒数排进 later，没有生日的人不出现', async () => {
     const ctx = await setup()
     const today = (await view(ctx)).today
@@ -142,7 +142,7 @@ describe('GET /contacts/birthdays', () => {
 
   it('没登录就没有', async () => {
     const ctx = await setup()
-    const res = await ctx.app.inject({ method: 'GET', url: '/api/v1/contacts/birthdays' })
+    const res = await ctx.app.inject({ method: 'GET', url: '/api/v1/people/birthdays' })
     expect(res.statusCode).toBe(401)
   })
 })
@@ -159,14 +159,14 @@ type Entry = {
 async function entries(ctx: TaskCtx, from: string, to: string): Promise<Entry[]> {
   const res = await ctx.app.inject({
     method: 'GET',
-    url: `/api/v1/contacts/calendar?from=${from}&to=${to}`,
+    url: `/api/v1/people/calendar?from=${from}&to=${to}`,
     headers: ctx.authed,
   })
   expect(res.statusCode, res.body).toBe(200)
   return (res.json() as { entries: Entry[] }).entries
 }
 
-describe('GET /contacts/calendar', () => {
+describe('GET /people/calendar', () => {
   it('窗口里的生日各一条，带名字与年龄，没有时刻', async () => {
     const ctx = await setup()
     await add(ctx, '王颖', { calendar: 'solar', year: 1993, month: 10, day: 10 })
@@ -180,7 +180,7 @@ describe('GET /contacts/calendar', () => {
       kind: 'Birthday',
       time: null,
     })
-    expect(王颖?.to).toMatch(/^\/contacts\/[0-9a-f-]{36}$/)
+    expect(王颖?.to).toMatch(/^\/people\/[0-9a-f-]{36}$/)
     // 农历追的人落在他自己的那天，不是公历的 10-10。
     expect(rows.find((r) => r.title.startsWith('周楠'))?.day).toBe('2026-10-12')
   })
@@ -205,11 +205,11 @@ describe('GET /contacts/calendar', () => {
   })
 })
 
-describe('GET /contacts/birthdays/preview', () => {
+describe('GET /people/birthdays/preview', () => {
   const preview = (ctx: TaskCtx, query: string) =>
     ctx.app.inject({
       method: 'GET',
-      url: `/api/v1/contacts/birthdays/preview?${query}`,
+      url: `/api/v1/people/birthdays/preview?${query}`,
       headers: ctx.authed,
     })
 
@@ -268,7 +268,7 @@ describe('GET /contacts/birthdays/preview', () => {
     const ctx = await setup()
     const res = await ctx.app.inject({
       method: 'GET',
-      url: '/api/v1/contacts/birthdays/preview?calendar=solar&month=4&day=15',
+      url: '/api/v1/people/birthdays/preview?calendar=solar&month=4&day=15',
     })
     expect(res.statusCode).toBe(401)
   })
@@ -286,7 +286,7 @@ describe('被挪动的日子', () => {
     const born: Birthday = { calendar: 'lunar', year: 2017, month: 6, day: 15, leapMonth: true }
     const moved = await ctx.app.inject({
       method: 'GET',
-      url: '/api/v1/contacts/birthdays/preview?calendar=lunar&year=2017&month=6&day=15&leap=true',
+      url: '/api/v1/people/birthdays/preview?calendar=lunar&year=2017&month=6&day=15&leap=true',
       headers: ctx.authed,
     })
     expect(moved.statusCode, moved.body).toBe(200)
@@ -295,7 +295,7 @@ describe('被挪动的日子', () => {
     // 公历四月十五每一年都在，所以这一半不靠任何年份：没挪过就是 null，永远。
     const still = await ctx.app.inject({
       method: 'GET',
-      url: '/api/v1/contacts/birthdays/preview?calendar=solar&year=1996&month=4&day=15',
+      url: '/api/v1/people/birthdays/preview?calendar=solar&year=1996&month=4&day=15',
       headers: ctx.authed,
     })
     expect(still.json().next.kept).toEqual([])
@@ -350,7 +350,7 @@ describe('农历里没发生过的日子进不来', () => {
   const post = (ctx: TaskCtx, birthday: unknown) =>
     ctx.app.inject({
       method: 'POST',
-      url: '/api/v1/contacts',
+      url: '/api/v1/people',
       headers: web(ctx),
       payload: { name: '张三', birthday },
     })
@@ -358,7 +358,7 @@ describe('农历里没发生过的日子进不来', () => {
   const preview = (ctx: TaskCtx, query: string) =>
     ctx.app.inject({
       method: 'GET',
-      url: `/api/v1/contacts/birthdays/preview?${query}`,
+      url: `/api/v1/people/birthdays/preview?${query}`,
       headers: ctx.authed,
     })
 
@@ -395,7 +395,7 @@ describe('农历里没发生过的日子进不来', () => {
     expect(created.statusCode, created.body).toBe(201)
     const res = await ctx.app.inject({
       method: 'PATCH',
-      url: `/api/v1/contacts/${created.json().id}`,
+      url: `/api/v1/people/${created.json().id}`,
       headers: web(ctx),
       payload: { birthday: { calendar: 'lunar', year: 2021, month: 1, day: 30 } },
     })

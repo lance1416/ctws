@@ -1,12 +1,12 @@
-import type { ContactResponse } from '@ctws/contracts'
+import type { PersonResponse } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createProject, setupWith, type TaskCtx, web } from './helpers/tasks'
 
 /**
- * CONTACTS -- THE THIRD MODULE, on vCard 4.0's model (RFC 6350).
+ * PEOPLE -- THE THIRD MODULE, on vCard 4.0's model (RFC 6350).
  *
- * The claim that matters is the one a hand-rolled contact model always gets wrong: a person has
+ * The claim that matters is the one a hand-rolled person model always gets wrong: a person has
  * SEVERAL ways to be reached, not one. Everything else here is the usual tenant and lifecycle
  * work, plus the one thing a replace-the-set write can break -- leaving the old rows behind.
  */
@@ -18,31 +18,31 @@ afterEach(async () => {
   for (const stop of cleanups.splice(0)) await stop()
 })
 
-async function add(ctx: TaskCtx, payload: Record<string, unknown>): Promise<ContactResponse> {
+async function add(ctx: TaskCtx, payload: Record<string, unknown>): Promise<PersonResponse> {
   const res = await ctx.app.inject({
     method: 'POST',
-    url: '/api/v1/contacts',
+    url: '/api/v1/people',
     headers: web(ctx),
     payload,
   })
   if (res.statusCode !== 201) throw new Error(`add: ${res.statusCode} ${res.body}`)
-  return res.json() as ContactResponse
+  return res.json() as PersonResponse
 }
 
 const patch = (ctx: TaskCtx, id: string, payload: Record<string, unknown>) =>
-  ctx.app.inject({ method: 'PATCH', url: `/api/v1/contacts/${id}`, headers: web(ctx), payload })
+  ctx.app.inject({ method: 'PATCH', url: `/api/v1/people/${id}`, headers: web(ctx), payload })
 
-async function list(ctx: TaskCtx, query = ''): Promise<ContactResponse[]> {
+async function list(ctx: TaskCtx, query = ''): Promise<PersonResponse[]> {
   const res = await ctx.app.inject({
     method: 'GET',
-    url: `/api/v1/contacts${query}`,
+    url: `/api/v1/people${query}`,
     headers: ctx.authed,
   })
   expect(res.statusCode, res.body).toBe(200)
-  return (res.json() as { contacts: ContactResponse[] }).contacts
+  return (res.json() as { people: PersonResponse[] }).people
 }
 
-describe('contacts', () => {
+describe('people', () => {
   it('keeps several ways to reach one person, in the order they were given', async () => {
     // THE WHOLE REASON TO FOLLOW vCARD. A single `email` column is wrong the first time somebody
     // has a work address and a personal one.
@@ -83,13 +83,13 @@ describe('contacts', () => {
       channels: [{ kind: 'email', value: 'new@acme.test' }],
     })
     expect(res.statusCode).toBe(200)
-    expect((res.json() as ContactResponse).channels).toEqual([
+    expect((res.json() as PersonResponse).channels).toEqual([
       { kind: 'email', value: 'new@acme.test', label: null },
     ])
 
     // And an empty set really empties it.
     const emptied = await patch(ctx, person.id, { channels: [] })
-    expect((emptied.json() as ContactResponse).channels).toEqual([])
+    expect((emptied.json() as PersonResponse).channels).toEqual([])
   })
 
   it('counts a channel-only edit as a change to the person', async () => {
@@ -100,7 +100,7 @@ describe('contacts', () => {
     const after = await patch(ctx, person.id, {
       channels: [{ kind: 'phone', value: '+8613800000000' }],
     })
-    expect(new Date((after.json() as ContactResponse).updatedAt).getTime()).toBeGreaterThan(
+    expect(new Date((after.json() as PersonResponse).updatedAt).getTime()).toBeGreaterThan(
       new Date(person.updatedAt).getTime(),
     )
   })
@@ -110,7 +110,7 @@ describe('contacts', () => {
     const bad = (channels: unknown) =>
       ctx.app.inject({
         method: 'POST',
-        url: '/api/v1/contacts',
+        url: '/api/v1/people',
         headers: web(ctx),
         payload: { name: '某人', channels },
       })
@@ -118,7 +118,7 @@ describe('contacts', () => {
     expect((await bad([{ kind: 'email', value: '   ' }])).statusCode).toBe(400)
   })
 
-  it('lists by name, because a contact list is read to FIND someone', async () => {
+  it('lists by name, because a person list is read to FIND someone', async () => {
     const ctx = await setup()
     await add(ctx, { name: 'Zoe' })
     await add(ctx, { name: 'Adam' })
@@ -149,7 +149,7 @@ describe('contacts', () => {
     const person = await add(ctx, { name: '换了线的人', projectIds: [a] })
     const res = await patch(ctx, person.id, { projectIds: [b] })
     expect(res.statusCode).toBe(200)
-    expect((res.json() as ContactResponse).projects.map((p) => p.name)).toEqual(['B'])
+    expect((res.json() as PersonResponse).projects.map((p) => p.name)).toEqual(['B'])
     expect(await list(ctx, `?projectId=${a}`)).toEqual([])
 
     // And an empty set really takes them off every line.
@@ -172,7 +172,7 @@ describe('contacts', () => {
   })
 
   it('finds a person by their address, not only by their name', async () => {
-    // "who was the one at @acme.test" is exactly the question a contact list answers.
+    // "who was the one at @acme.test" is exactly the question a person list answers.
     const ctx = await setup()
     await add(ctx, {
       name: '李雷',
@@ -184,11 +184,11 @@ describe('contacts', () => {
     const hits = async (q: string) => {
       const res = await ctx.app.inject({
         method: 'GET',
-        url: `/api/v1/contacts/search?q=${encodeURIComponent(q)}`,
+        url: `/api/v1/people/search?q=${encodeURIComponent(q)}`,
         headers: ctx.authed,
       })
       expect(res.statusCode).toBe(200)
-      return (res.json() as { contacts: ContactResponse[] }).contacts.map((c) => c.name)
+      return (res.json() as { people: PersonResponse[] }).people.map((c) => c.name)
     }
     expect(await hits('acme.test')).toEqual(['李雷'])
     expect(await hits('Acme')).toEqual(['李雷'])
@@ -201,7 +201,7 @@ describe('contacts', () => {
     const ctx = await setup()
     const person = await add(ctx, { name: '删掉的' })
     const del = () =>
-      ctx.app.inject({ method: 'DELETE', url: `/api/v1/contacts/${person.id}`, headers: web(ctx) })
+      ctx.app.inject({ method: 'DELETE', url: `/api/v1/people/${person.id}`, headers: web(ctx) })
     expect((await del()).statusCode).toBe(204)
     expect((await del()).statusCode).toBe(404)
     expect(await list(ctx)).toEqual([])
@@ -251,7 +251,7 @@ describe('contacts', () => {
 
     const res = await ctx.app.inject({
       method: 'POST',
-      url: '/api/v1/contacts',
+      url: '/api/v1/people',
       headers: web(ctx),
       payload: {
         name: '某人',
@@ -317,7 +317,7 @@ describe('一个人的生日', () => {
     const ctx = await setup()
     const res = await ctx.app.inject({
       method: 'POST',
-      url: '/api/v1/contacts',
+      url: '/api/v1/people',
       headers: web(ctx),
       payload: {
         name: '谁',
@@ -333,7 +333,7 @@ describe('一个人的生日', () => {
     const ctx = await setup()
     const bad = await ctx.app.inject({
       method: 'POST',
-      url: '/api/v1/contacts',
+      url: '/api/v1/people',
       headers: web(ctx),
       payload: { name: '谁', birthday: { calendar: 'solar', year: 1996, month: 2, day: 30 } },
     })
@@ -359,7 +359,7 @@ describe('一个人的生日', () => {
     })
     const cleared = await patch(ctx, person.id, { birthday: null })
     expect(cleared.statusCode, cleared.body).toBe(200)
-    const body = cleared.json() as ContactResponse
+    const body = cleared.json() as PersonResponse
     expect(body.birthday).toBeNull()
     expect(body.circle).toBe('friend')
     expect(body.hometown).toBe('杭州')
@@ -373,7 +373,7 @@ describe('一个人的生日', () => {
     const ctx = await setup()
     const person = await add(ctx, { name: '半个' })
     await expect(
-      ctx.db.execute(sql`update contacts set birthday_month = 4 where id = ${person.id}`),
+      ctx.db.execute(sql`update people set birthday_month = 4 where id = ${person.id}`),
     ).rejects.toThrow()
   })
 
@@ -393,7 +393,7 @@ describe('一个人的生日', () => {
       birthday: { calendar: 'solar', year: 1991, month: 10, day: 18 },
     })
     expect(moved.statusCode, moved.body).toBe(200)
-    expect((moved.json() as ContactResponse).birthday).toMatchObject({ day: 18, remindLead: 1 })
+    expect((moved.json() as PersonResponse).birthday).toMatchObject({ day: 18, remindLead: 1 })
   })
 
   /**
@@ -412,7 +412,7 @@ describe('一个人的生日', () => {
       birthday: { calendar: 'solar', year: 1991, month: 10, day: 17 },
     })
     expect(again.statusCode, again.body).toBe(200)
-    expect((again.json() as ContactResponse).birthday?.remindLead).toBe(7)
+    expect((again.json() as PersonResponse).birthday?.remindLead).toBe(7)
   })
 
   /**
@@ -424,18 +424,18 @@ describe('一个人的生日', () => {
     const person = await add(ctx, { name: '四月三十一' })
     await expect(
       ctx.db.execute(
-        sql`update contacts set birthday_calendar = 'solar', birthday_month = 4, birthday_day = 31
+        sql`update people set birthday_calendar = 'solar', birthday_month = 4, birthday_day = 31
             where id = ${person.id}`,
       ),
     ).rejects.toThrow()
     // ...and the days that DO exist still go in, by the same route.
     await ctx.db.execute(
-      sql`update contacts set birthday_calendar = 'solar', birthday_month = 4, birthday_day = 30
+      sql`update people set birthday_calendar = 'solar', birthday_month = 4, birthday_day = 30
           where id = ${person.id}`,
     )
     // A lunar month has at most 30 days, and the 30th of a lunar month is a real birthday.
     await ctx.db.execute(
-      sql`update contacts set birthday_calendar = 'lunar', birthday_month = 6, birthday_day = 30
+      sql`update people set birthday_calendar = 'lunar', birthday_month = 6, birthday_day = 30
           where id = ${person.id}`,
     )
   })
@@ -444,7 +444,7 @@ describe('一个人的生日', () => {
     const ctx = await setup()
     const res = await ctx.app.inject({
       method: 'POST',
-      url: '/api/v1/contacts',
+      url: '/api/v1/people',
       headers: web(ctx),
       payload: {
         name: '谁',

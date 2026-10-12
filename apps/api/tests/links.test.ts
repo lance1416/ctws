@@ -1,4 +1,4 @@
-import type { ContactResponse, MeetingOccurrence, ReadingItemResponse } from '@ctws/contracts'
+import type { PersonResponse, MeetingOccurrence, ReadingItemResponse } from '@ctws/contracts'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createProject, setupWith, type TaskCtx, web } from './helpers/tasks'
 
@@ -32,7 +32,7 @@ describe('one object, several kinds of edge', () => {
   it('replaces only the kind being written, and leaves the others where they are', async () => {
     const ctx = await setup('edges@example.com')
     const project = await createProject(ctx, '找工作')
-    const person = await post<ContactResponse>(ctx, '/api/v1/contacts', { name: '陈颖' })
+    const person = await post<PersonResponse>(ctx, '/api/v1/people', { name: '陈颖' })
     const meeting = await post<MeetingOccurrence>(ctx, '/api/v1/meetings', {
       title: '二面',
       startsLocal: '2026-10-20T21:00',
@@ -45,7 +45,7 @@ describe('one object, several kinds of edge', () => {
     expect(meeting.attendees.map((a) => a.id)).toEqual([person.id])
 
     // Writing the guest list must not unfile the meeting.
-    const other = await post<ContactResponse>(ctx, '/api/v1/contacts', { name: '另一个人' })
+    const other = await post<PersonResponse>(ctx, '/api/v1/people', { name: '另一个人' })
     const guests = await patch(ctx, `/api/v1/meetings/${meeting.meetingId}`, {
       scope: 'all',
       attendeeIds: [person.id, other.id],
@@ -120,7 +120,7 @@ describe('one object, several kinds of edge', () => {
     }
 
     const myProject = await createProject(ctx, '找工作')
-    const myPerson = await post<ContactResponse>(ctx, '/api/v1/contacts', {
+    const myPerson = await post<PersonResponse>(ctx, '/api/v1/people', {
       name: '陈颖',
       projectIds: [myProject],
     })
@@ -128,32 +128,32 @@ describe('one object, several kinds of edge', () => {
     // Their list is their own, and names none of my edges.
     const theirList = await ctx.app.inject({
       method: 'GET',
-      url: '/api/v1/contacts',
+      url: '/api/v1/people',
       headers: theirHeaders,
     })
     expect(theirList.statusCode, theirList.body).toBe(200)
-    expect((theirList.json() as { contacts: ContactResponse[] }).contacts).toEqual([])
+    expect((theirList.json() as { people: PersonResponse[] }).people).toEqual([])
 
     // My project id is a real id; filtering THEIR list by it must still find nothing rather than
     // reaching across through an edge that carries no workspace of its own.
     const reached = await ctx.app.inject({
       method: 'GET',
-      url: `/api/v1/contacts?projectId=${myProject}`,
+      url: `/api/v1/people?projectId=${myProject}`,
       headers: theirHeaders,
     })
     expect([200, 404]).toContain(reached.statusCode)
     if (reached.statusCode === 200) {
-      expect((reached.json() as { contacts: ContactResponse[] }).contacts).toEqual([])
+      expect((reached.json() as { people: PersonResponse[] }).people).toEqual([])
     }
 
     // And mine is exactly as I left it.
     const after = await ctx.app.inject({
       method: 'GET',
-      url: '/api/v1/contacts',
+      url: '/api/v1/people',
       headers: web(ctx),
     })
     expect(after.statusCode, after.body).toBe(200)
-    const mine = (after.json() as { contacts: ContactResponse[] }).contacts
+    const mine = (after.json() as { people: PersonResponse[] }).people
     expect(mine.map((c) => c.id)).toEqual([myPerson.id])
     expect(mine[0]!.projects.map((p) => p.id)).toEqual([myProject])
   })

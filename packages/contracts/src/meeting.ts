@@ -99,7 +99,7 @@ export const createMeetingBody = z
     location: location.nullish(),
     note: note.nullish(),
     projectId: z.uuid().nullish(),
-    /** The people in the room, out of the contacts module. */
+    /** The people in the room, out of the people module. */
     attendeeIds: z.array(z.uuid()).max(50).optional(),
   })
   .strict()

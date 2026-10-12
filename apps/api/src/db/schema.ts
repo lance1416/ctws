@@ -280,14 +280,14 @@ export const readingItems = pgTable(
 )
 
 /**
- * CONTACTS -- THE THIRD MODULE's own tables, modelled on vCard 4.0 (RFC 6350).
+ * PEOPLE -- THE THIRD MODULE's own tables, modelled on vCard 4.0 (RFC 6350).
  *
- * Like reading items, a contact carries `workspace_id` directly and its project is optional: a
+ * Like reading items, a person carries `workspace_id` directly and its project is optional: a
  * person you know is not a line of work. ON DELETE SET NULL on the project for the same reason --
  * deleting a project must not delete the people.
  */
-export const contacts = pgTable(
-  'contacts',
+export const people = pgTable(
+  'people',
   {
     id: uuid('id').primaryKey(),
     workspaceId: uuid('workspace_id')
@@ -329,23 +329,23 @@ export const contacts = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    index('contacts_workspace_name_idx').on(t.workspaceId, t.name),
-    check('contacts_birthday_calendar_check', inList(t.birthdayCalendar, BIRTHDAY_CALENDARS)),
-    check('contacts_gender_check', inList(t.gender, GENDERS)),
-    check('contacts_circle_check', inList(t.circle, CIRCLES)),
+    index('people_workspace_name_idx').on(t.workspaceId, t.name),
+    check('people_birthday_calendar_check', inList(t.birthdayCalendar, BIRTHDAY_CALENDARS)),
+    check('people_gender_check', inList(t.gender, GENDERS)),
+    check('people_circle_check', inList(t.circle, CIRCLES)),
     check(
-      'contacts_birthday_month_check',
+      'people_birthday_month_check',
       sql`${t.birthdayMonth} is null or ${t.birthdayMonth} between 1 and 12`,
     ),
     check(
-      'contacts_birthday_day_check',
+      'people_birthday_day_check',
       sql`${t.birthdayDay} is null or ${t.birthdayDay} between 1 and 31`,
     ),
     check(
-      'contacts_birthday_hour_check',
+      'people_birthday_hour_check',
       sql`${t.birthdayHourBranch} is null or ${t.birthdayHourBranch} between 0 and 11`,
     ),
-    check('contacts_birthday_lead_check', sql`${t.birthdayRemindLead} in (0, 1, 3, 7)`),
+    check('people_birthday_lead_check', sql`${t.birthdayRemindLead} in (0, 1, 3, 7)`),
     /**
      * THE DAY HAS TO EXIST IN THE MONTH. `month between 1 and 12` and `day between 1 and 31`
      * are independent, so April 31st satisfied both and only the contract stood between it and
@@ -353,7 +353,7 @@ export const contacts = pgTable(
      * lunar month has at most 30 days.
      */
     check(
-      'contacts_birthday_daymonth_check',
+      'people_birthday_daymonth_check',
       sql`${t.birthdayDay} is null
           or (${t.birthdayCalendar} = 'lunar' and ${t.birthdayDay} <= 30)
           or (${t.birthdayCalendar} = 'solar' and ${t.birthdayDay} <=
@@ -361,29 +361,29 @@ export const contacts = pgTable(
     ),
     // A group, not a field (the same reason `reading_items_shape_check` exists).
     check(
-      'contacts_birthday_group_check',
+      'people_birthday_group_check',
       sql`(${t.birthdayCalendar} is null and ${t.birthdayMonth} is null and ${t.birthdayDay} is null)
           or (${t.birthdayCalendar} is not null and ${t.birthdayMonth} is not null and ${t.birthdayDay} is not null)`,
     ),
-    index('contacts_birthday_idx').on(t.workspaceId, t.birthdayMonth, t.birthdayDay),
+    index('people_birthday_idx').on(t.workspaceId, t.birthdayMonth, t.birthdayDay),
   ],
 )
 
 /**
  * vCard's `EMAIL` / `TEL` / `URL`, which are REPEATABLE properties.
  *
- * A table and not two columns on `contacts`: one address per person is wrong the first time
+ * A table and not two columns on `people`: one address per person is wrong the first time
  * somebody has a work address and a personal one, which is why vCard has allowed several since
- * 1996. Rows are replaced as a set by the contact's own endpoint; they have no endpoints of their
+ * 1996. Rows are replaced as a set by the person's own endpoint; they have no endpoints of their
  * own, because a person's addresses are read, shown and edited together.
  */
-export const contactChannels = pgTable(
-  'contact_channels',
+export const personChannels = pgTable(
+  'person_channels',
   {
     id: uuid('id').primaryKey(),
-    contactId: uuid('contact_id')
+    personId: uuid('person_id')
       .notNull()
-      .references(() => contacts.id, { onDelete: 'cascade' }),
+      .references(() => people.id, { onDelete: 'cascade' }),
     kind: text('kind').notNull(),
     value: text('value').notNull(),
     /** vCard's TYPE parameter, as free text: a label of your own beats any fixed list. */
@@ -392,8 +392,8 @@ export const contactChannels = pgTable(
     rank: integer('rank').notNull(),
   },
   (t) => [
-    index('contact_channels_contact_idx').on(t.contactId, t.rank),
-    check('contact_channels_kind_check', inList(t.kind, CHANNEL_KINDS)),
+    index('person_channels_person_idx').on(t.personId, t.rank),
+    check('person_channels_kind_check', inList(t.kind, CHANNEL_KINDS)),
   ],
 )
 

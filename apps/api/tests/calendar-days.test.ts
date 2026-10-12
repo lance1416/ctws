@@ -5,7 +5,7 @@ import { setupWith, type TaskCtx } from './helpers/tasks'
  * WHAT DAY IT IS IN THE OLD CALENDAR.
  *
  * A SHELL endpoint rather than a module's: "what is 2026-10-10 in the lunar calendar" is a property
- * of the day, not of contacts or of anything else. It is answered here rather than in the browser
+ * of the day, not of people or of anything else. It is answered here rather than in the browser
  * because the library that knows is 750 KB.
  */
 

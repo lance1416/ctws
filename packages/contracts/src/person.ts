@@ -2,14 +2,14 @@ import { z } from 'zod'
 import { calendarDate } from './task'
 
 /**
- * CONTACTS -- THE THIRD MODULE.
+ * PEOPLE -- THE THIRD MODULE.
  *
  * The model is vCard 4.0's (RFC 6350), cut down to what one person needs: a formatted name (`FN`),
  * an organisation (`ORG`), free notes (`NOTE`), and a REPEATABLE set of ways to reach someone
  * (`EMAIL` / `TEL` / `URL`), each with an optional type label.
  *
  * The repeatable part is the whole reason to follow the standard rather than invent: a single
- * `email` column is the mistake every hand-rolled contact model makes, and it is wrong the first
+ * `email` column is the mistake every hand-rolled person model makes, and it is wrong the first
  * time somebody has a work address and a personal one. vCard has said so since 1996.
  *
  * What is deliberately NOT modelled, because a personal workbench is not a CRM: organisations as
@@ -70,7 +70,7 @@ const CHANNEL_SHAPES: Record<ChannelKind, (v: string) => string | null> = {
   },
 }
 
-export const contactChannel = z
+export const personChannel = z
   .object({
     kind: channelKind,
     value: z.string().trim().min(1).max(500),
@@ -88,12 +88,12 @@ export function channelProblem(kind: ChannelKind, value: string): string | null 
   if (trimmed === '') return 'an address cannot be empty'
   return CHANNEL_SHAPES[kind](trimmed)
 }
-export type ContactChannel = z.infer<typeof contactChannel>
+export type PersonChannel = z.infer<typeof personChannel>
 
 /** The calendar a birthday was GIVEN in. Entered once; the other one is derived. */
 export const BIRTHDAY_CALENDARS = ['solar', 'lunar'] as const
 export const GENDERS = ['male', 'female', 'other'] as const
-/** Where a person sits in your life. The birthdays page groups by it; the contact list filters by it. */
+/** Where a person sits in your life. The birthdays page groups by it; the person list filters by it. */
 export const CIRCLES = ['family', 'friend', 'work'] as const
 export type Circle = (typeof CIRCLES)[number]
 /** How early to put someone on the workbench card. 0 is the day itself. */
@@ -220,7 +220,7 @@ export const birthdayPreviewResponse = birthdayResponse.omit({
 /** One row on the birthdays page. The segmenting and the counting are the server's. */
 export const birthdayListRow = z
   .object({
-    contactId: z.uuid(),
+    personId: z.uuid(),
     name: z.string(),
     circle: z.enum(CIRCLES).nullable(),
     calendar: z.enum(BIRTHDAY_CALENDARS),
@@ -248,21 +248,21 @@ export const birthdaysResponse = z
   .strict()
 export type BirthdaysResponse = z.infer<typeof birthdaysResponse>
 
-const contactName = z.string().trim().min(1).max(200)
+const personName = z.string().trim().min(1).max(200)
 const org = z.string().trim().min(1).max(200)
 const note = z.string().max(10_000)
 
 /**
  * Channels are written as a WHOLE LIST, never one at a time.
  *
- * A contact's addresses are read, shown and edited together, so endpoints per channel would be
+ * A person's addresses are read, shown and edited together, so endpoints per channel would be
  * three more routes and a client that has to sequence them. The server replaces the set.
  */
-const channels = z.array(contactChannel).max(20)
+const channels = z.array(personChannel).max(20)
 
-export const createContactBody = z
+export const createPersonBody = z
   .object({
-    name: contactName,
+    name: personName,
     org: org.nullish(),
     note: note.nullish(),
     /** The lines of work this person is on. A person is often on several. */
@@ -276,11 +276,11 @@ export const createContactBody = z
     circle: z.enum(CIRCLES).nullish(),
   })
   .strict()
-export type CreateContactBody = z.infer<typeof createContactBody>
+export type CreatePersonBody = z.infer<typeof createPersonBody>
 
-export const updateContactBody = z
+export const updatePersonBody = z
   .object({
-    name: contactName.optional(),
+    name: personName.optional(),
     org: org.nullable().optional(),
     note: note.nullable().optional(),
     projectIds: z.array(z.uuid()).max(20).optional(),
@@ -294,9 +294,9 @@ export const updateContactBody = z
   })
   .strict()
   .refine((b) => Object.keys(b).length > 0, { message: 'expected at least one field' })
-export type UpdateContactBody = z.infer<typeof updateContactBody>
+export type UpdatePersonBody = z.infer<typeof updatePersonBody>
 
-export const contactResponse = z
+export const personResponse = z
   .object({
     id: z.uuid(),
     name: z.string(),
@@ -309,7 +309,7 @@ export const contactResponse = z
      * recruiter holding two roles open.
      */
     projects: z.array(z.object({ id: z.uuid(), name: z.string() }).strict()),
-    channels: z.array(contactChannel),
+    channels: z.array(personChannel),
     birthday: birthdayResponse.nullable(),
     gender: z.enum(GENDERS).nullable(),
     hometown: z.string().nullable(),
@@ -320,9 +320,9 @@ export const contactResponse = z
     updatedAt: z.iso.datetime({ offset: true }),
   })
   .strict()
-export type ContactResponse = z.infer<typeof contactResponse>
+export type PersonResponse = z.infer<typeof personResponse>
 
-export const contactListQuery = z
+export const personListQuery = z
   .object({
     projectId: z.uuid().optional(),
     /** Only the people who are on no project at all. */
