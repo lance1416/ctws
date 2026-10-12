@@ -15,7 +15,7 @@ import type { SearchHit, WorkspaceModule } from './contract'
  * That is the point of it being third: a seam a new module can be built against without changing
  * it is a seam that has stopped being a draft.
  *
- * It contributes a rail row, a chord, a search provider, a project block and where one of its
+ * It contributes a row in Things, a chord, a search provider, a project block and where one of its
  * people lives. And nothing else:
  * - a WORKBENCH card, but only for BIRTHDAYS. An address book is not something in front of you,
  *   and a card listing people would be decoration on the one page that is supposed to hold only

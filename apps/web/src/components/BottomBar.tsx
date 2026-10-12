@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
-import { pinnedPages } from '../modules/registry'
+import { kinds, pinnedPages, WORKBENCH_PATH } from '../modules/registry'
 
 /**
  * THE PHONE'S NAVIGATION: five tabs where the rail does not fit.
@@ -16,6 +16,9 @@ import { pinnedPages } from '../modules/registry'
 export function BottomBar({ onSearch }: { onSearch: () => void }) {
   const pinned = new Map(pinnedPages().map((p) => [p.key, p]))
   const today = pinned.get('tasks:today')
+  const calendar = pinned.get('shell:calendar')
+  // The shell's own kind, always there and always first.
+  const projects = kinds()[0]!
   const tab =
     'flex min-w-0 flex-col items-center justify-center gap-0.5 text-xs leading-4 text-fg-muted'
   const link = ({ isActive }: { isActive: boolean }) =>
@@ -26,7 +29,7 @@ export function BottomBar({ onSearch }: { onSearch: () => void }) {
       aria-label="Main navigation"
       className="fixed inset-x-0 bottom-0 z-30 grid h-16 grid-cols-5 border-t border-border-subtle bg-surface-sunken lg:hidden"
     >
-      <NavLink to="/" end className={link}>
+      <NavLink to={WORKBENCH_PATH} end className={link}>
         <Icon>
           <rect x="3.5" y="3.5" width="6" height="6" rx="1.2" />
           <rect x="12.5" y="3.5" width="6" height="6" rx="1.2" />
@@ -44,19 +47,21 @@ export function BottomBar({ onSearch }: { onSearch: () => void }) {
           {today.label}
         </NavLink>
       )}
-      <NavLink to="/projects" className={link}>
+      <NavLink to={projects.to} className={link}>
         <Icon>
           <path d="M4 4.5v13M8 6h10M8 11h10M8 16h7" />
         </Icon>
-        Projects
+        {projects.label}
       </NavLink>
-      <NavLink to="/calendar" className={link}>
-        <Icon>
-          <rect x="3.5" y="5" width="15" height="13.5" rx="2" />
-          <path d="M3.5 9h15M7.5 3v4M14.5 3v4" />
-        </Icon>
-        Calendar
-      </NavLink>
+      {calendar && (
+        <NavLink to={calendar.to} className={link}>
+          <Icon>
+            <rect x="3.5" y="5" width="15" height="13.5" rx="2" />
+            <path d="M3.5 9h15M7.5 3v4M14.5 3v4" />
+          </Icon>
+          {calendar.label}
+        </NavLink>
+      )}
       <button type="button" onClick={onSearch} className={tab}>
         <Icon>
           <circle cx="10" cy="10" r="6" />

@@ -19,7 +19,7 @@ import type { WorkspaceModule } from './contract'
  *
  * It contributes:
  *
- * - its own PAGE and rail row, where a meeting is arranged in one act;
+ * - its own PAGE and a row in Things, where a meeting is arranged in one act;
  * - CALENDAR entries, with a time, and the pane one opens in;
  * - a WORKBENCH card for today, the one moment a flat list of meetings is the right shape --
  *   what is in the next eight hours is not a question about a month;
