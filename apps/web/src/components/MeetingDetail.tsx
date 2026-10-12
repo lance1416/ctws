@@ -218,6 +218,7 @@ export function MeetingFields({
       {editing ? (
         <MeetingForm
           meeting={meeting}
+          accountZone={accountZone}
           projects={projects.data ?? []}
           contacts={contacts.data ?? []}
           chip={chip}
@@ -265,7 +266,7 @@ function MeetingRead({
             {meeting.title}
           </h2>
           <p className="truncate text-sm text-fg-muted tabular-nums">
-            {when} · {zoneLabel(meeting.timeZone)}
+            {when} · {zoneLabel(meeting.timeZone, new Date(meeting.startsAt))}
           </p>
         </div>
         <button type="button" className={BUTTON.secondary} onClick={onEdit}>
@@ -296,7 +297,7 @@ function MeetingRead({
           </Field>
           <Field label="Repeats" shape="above">
             <span className="text-sm text-fg">
-              {bare ? repeatLabel(bare, meeting.startsLocal) : 'Once'}
+              {bare ? repeatLabel(bare, meeting.startsLocal, today) : 'Once'}
             </span>
           </Field>
           {bare && (
@@ -382,6 +383,7 @@ function lengthLabel(minutes: number): string {
  */
 function MeetingForm({
   meeting,
+  accountZone,
   projects,
   contacts,
   chip,
@@ -390,6 +392,8 @@ function MeetingForm({
   onSave,
 }: {
   meeting: MeetingOccurrence
+  /** The reader's own zone, for the one date this form has to WORD rather than take as input. */
+  accountZone: string
   projects: { id: string; name: string; archivedAt: string | null }[]
   contacts: { id: string; name: string }[]
   chip: (id: string) => ReactNode
@@ -397,6 +401,7 @@ function MeetingForm({
   onCancel: () => void
   onSave: (patch: UpdateMeetingInput) => void
 }) {
+  const today = todayIn(accountZone)
   const [title, setTitle] = useState(meeting.title)
   const [startsLocal, setStartsLocal] = useState(meeting.startsLocal)
   const [timeZone, setTimeZone] = useState(meeting.timeZone)
@@ -473,11 +478,13 @@ function MeetingForm({
                   onChange={(e) => setStartsLocal(e.target.value)}
                   className={`${boxed} h-8 py-0 text-sm tabular-nums`}
                 />
-                {/* 时区是这场会的：「多伦多时间九点」是谈定的那件事，不管你这儿的钟怎么说。 */}
+                {/* 时区是这场会的：「多伦多时间九点」是谈定的那件事，不管你这儿的钟怎么说。
+                    这张单子里的缩写按**现在**读：这一列是在给时区起名字，而不是在说这场会是
+                    哪个缩写 —— 那一句在上面标题下的那行，按会议自己的那一刻算。 */}
                 <PickOne
                   label="Time zone"
                   value={timeZone}
-                  choices={ZONES.map((z) => ({ value: z, label: zoneLabel(z) }))}
+                  choices={ZONES.map((z) => ({ value: z, label: zoneLabel(z, new Date()) }))}
                   onPick={setTimeZone}
                 />
               </div>
@@ -503,7 +510,7 @@ function MeetingForm({
               choices={[
                 ...choices.map((c) => ({ value: c.value ?? NO_REPEAT, label: c.label })),
                 ...(rule !== NO_REPEAT && !choices.some((c) => c.value === rule)
-                  ? [{ value: rule, label: repeatLabel(rule, meeting.startsLocal) }]
+                  ? [{ value: rule, label: repeatLabel(rule, meeting.startsLocal, today) }]
                   : []),
               ]}
               onPick={setRule}

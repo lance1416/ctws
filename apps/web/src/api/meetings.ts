@@ -5,7 +5,7 @@ import type {
   UpdateMeetingInput,
 } from '@ctws/contracts'
 import { apiFetch, calendarOf } from '../api'
-import { MONTHS } from '../dueAt'
+import { shortDay } from '../dueAt'
 
 /** The meetings module's own namespace. */
 const BASE = '/meetings'
@@ -99,13 +99,6 @@ const FREQ_NAME: Record<string, string> = {
   YEARLY: 'year',
 }
 
-/** "Dec 31", or "Dec 31, 2027" when it is not this year -- the same shape every date here takes. */
-function shortDay(day: string): string {
-  const [y, m, d] = day.split('-').map(Number) as [number, number, number]
-  const short = `${MONTHS[m - 1]} ${d}`
-  return y === new Date().getFullYear() ? short : `${short}, ${y}`
-}
-
 /** 1st, 2nd, 3rd, 4th -- for the day of the month a monthly rule falls on. */
 function ordinal(d: number): string {
   const teen = d % 100 >= 11 && d % 100 <= 13
@@ -120,11 +113,14 @@ function ordinal(d: number): string {
  * column accepts rules this interface does not offer, and an RFC string on screen is the data
  * model leaking into the page.
  */
-export function repeatLabel(rule: string | null, startsLocal: string): string {
+export function repeatLabel(rule: string | null, startsLocal: string, today: string): string {
   if (!rule) return 'Does not repeat'
-  // The ending is said separately, so a named rule is still recognised once it has one.
+  // The ending is said separately, so a named rule is still recognised once it has one. It wears
+  // the app's one date wording, against the ACCOUNT's day: this file used to carry a second
+  // `shortDay` that compared the year against the browser's clock, which is the one clock nothing
+  // else in this app asks.
   const ends = untilOf(rule)
-  const tail = ends ? `, until ${shortDay(ends)}` : ''
+  const tail = ends ? `, until ${shortDay(ends, today)}` : ''
   const named = repeatChoices(startsLocal).find((c) => c.value === withUntil(rule, null))
   if (named) return `${named.label}${tail}`
   const freq = /FREQ=([A-Z]+)/i.exec(rule)?.[1]?.toUpperCase()

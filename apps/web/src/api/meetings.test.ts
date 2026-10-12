@@ -10,32 +10,34 @@ import { repeatChoices, repeatLabel, untilOf, withUntil } from './meetings'
  */
 /** A Tuesday, so the weekly choices are named after it. */
 const TUESDAY = '2026-10-20T09:00'
+/** The reader's own day, handed in rather than read off the clock, so every case runs on every run. */
+const TODAY = '2026-10-10'
 
 describe('repeatLabel', () => {
   it('uses the picker own wording for a rule the picker offers', () => {
     for (const choice of repeatChoices(TUESDAY)) {
-      expect(repeatLabel(choice.value, TUESDAY)).toBe(choice.label)
+      expect(repeatLabel(choice.value, TUESDAY, TODAY)).toBe(choice.label)
     }
   })
 
   it('says nothing repeats when nothing does', () => {
-    expect(repeatLabel(null, TUESDAY)).toBe('Does not repeat')
+    expect(repeatLabel(null, TUESDAY, TODAY)).toBe('Does not repeat')
   })
 
   it('names the days of a weekly rule that lists several', () => {
     // "Every week" is true of this rule and useless about the meeting: a weekday standup does not
     // happen weekly, it happens five times a week.
-    expect(repeatLabel('FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR', TUESDAY)).toBe(
+    expect(repeatLabel('FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR', TUESDAY, TODAY)).toBe(
       'Weekly on Mon, Tue, Wed, Thu, Fri',
     )
-    expect(repeatLabel('FREQ=WEEKLY;BYDAY=TU,TH', TUESDAY)).toBe('Weekly on Tue, Thu')
+    expect(repeatLabel('FREQ=WEEKLY;BYDAY=TU,TH', TUESDAY, TODAY)).toBe('Weekly on Tue, Thu')
   })
 
   it('falls back to the interval, and to one plain word when it cannot read the rule', () => {
-    expect(repeatLabel('FREQ=DAILY;INTERVAL=3', TUESDAY)).toBe('Every 3 days')
-    expect(repeatLabel('FREQ=YEARLY', TUESDAY)).toBe('Every year')
+    expect(repeatLabel('FREQ=DAILY;INTERVAL=3', TUESDAY, TODAY)).toBe('Every 3 days')
+    expect(repeatLabel('FREQ=YEARLY', TUESDAY, TODAY)).toBe('Every year')
     // A frequency this interface has no word for is still not shown as an RFC string.
-    expect(repeatLabel('FREQ=HOURLY', TUESDAY)).toBe('Custom')
+    expect(repeatLabel('FREQ=HOURLY', TUESDAY, TODAY)).toBe('Custom')
   })
 })
 
@@ -93,11 +95,27 @@ describe('until', () => {
   it('still names a rule that has an ending', () => {
     // Without this the picker's own wording is lost the moment a rule stops: the label falls
     // through to the generic branch and a weekly meeting reads as "Every week".
-    expect(repeatLabel(withUntil('FREQ=WEEKLY;BYDAY=TU', '2026-12-31'), TUESDAY)).toBe(
+    expect(repeatLabel(withUntil('FREQ=WEEKLY;BYDAY=TU', '2026-12-31'), TUESDAY, TODAY)).toBe(
       'Weekly on Tuesday, until Dec 31',
     )
-    expect(repeatLabel(withUntil('FREQ=DAILY', '2027-03-01'), TUESDAY)).toBe(
+    expect(repeatLabel(withUntil('FREQ=DAILY', '2027-03-01'), TUESDAY, TODAY)).toBe(
       'Daily, until Mar 1, 2027',
     )
+  })
+
+  /**
+   * THE ENDING IS WORDED AGAINST A DAY THAT IS HANDED IN, not against the process clock.
+   *
+   * The year is dropped when the ending falls in the reader's own year, which is the rule every
+   * other date in this app follows -- and that rule needs to know which year the READER is in.
+   * `repeatLabel` used to answer it with `new Date().getFullYear()`, so this very test had to be
+   * rewritten each January, and the browser's year was consulted where the ACCOUNT's zone decides
+   * every other day boundary. Both assertions below are true forever, which is the point.
+   */
+  it('drops the year of an ending in the given year and keeps any other', () => {
+    const rule = withUntil('FREQ=WEEKLY;BYDAY=TU', '2026-12-31')
+    expect(repeatLabel(rule, TUESDAY, '2026-10-10')).toBe('Weekly on Tuesday, until Dec 31')
+    expect(repeatLabel(rule, TUESDAY, '2027-01-04')).toBe('Weekly on Tuesday, until Dec 31, 2026')
+    expect(repeatLabel(rule, TUESDAY, '2025-12-30')).toBe('Weekly on Tuesday, until Dec 31, 2026')
   })
 })

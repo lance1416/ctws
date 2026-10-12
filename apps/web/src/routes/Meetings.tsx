@@ -248,7 +248,7 @@ function Section({
                     data-meeting-zone
                     className="min-w-0 shrink truncate text-xs text-fg-subtle"
                   >
-                    {m.startsLocal.slice(11)} {zoneLabel(m.timeZone)}
+                    {m.startsLocal.slice(11)} {zoneLabel(m.timeZone, new Date(m.startsAt))}
                   </span>
                 )}
                 <span className="flex-1" />
@@ -259,7 +259,7 @@ function Section({
                 )}
                 {m.rrule && (
                   <span className="shrink-0 text-xs text-fg-subtle">
-                    {repeatLabel(m.rrule, m.startsLocal)}
+                    {repeatLabel(m.rrule, m.startsLocal, today)}
                   </span>
                 )}
                 {/* JOIN, from the list. At 09:29 the useful thing about a meeting link is a

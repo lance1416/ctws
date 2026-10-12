@@ -173,7 +173,11 @@ export function NewMeetingDialog({
         </div>
 
         {/* The zone is the MEETING's, not yours: "09:00 Toronto time" is what was agreed, and it
-            stays 09:00 in Toronto whichever city you read it in. */}
+            stays 09:00 in Toronto whichever city you read it in.
+
+            The abbreviations in this list are read at NOW: the column is naming zones, not saying
+            which abbreviation this meeting will wear. That is said on the meeting itself, at the
+            meeting's own instant. */}
         <div className="flex flex-wrap gap-3">
           <div className="min-w-[12rem]">
             <span className={label}>Time zone</span>
@@ -181,7 +185,7 @@ export function NewMeetingDialog({
               <PickOne
                 label="Time zone"
                 value={timeZone}
-                choices={ZONES.map((z) => ({ value: z, label: zoneLabel(z) }))}
+                choices={ZONES.map((z) => ({ value: z, label: zoneLabel(z, new Date()) }))}
                 onPick={setTimeZone}
               />
             </div>
