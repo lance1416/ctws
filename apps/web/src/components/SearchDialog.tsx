@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { allChords, kinds, pinnedPages, searchProviders } from '../modules/registry'
 import { federate, type ProviderResult } from '../modules/search'
 import { recentList } from '../recent'
+import { useMe } from '../useMe'
 import { Modal } from './Modal'
 import { useComposing } from '../composition'
 import { BUTTON } from './buttonStyles'
@@ -105,13 +106,17 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
   }))
   const results = federate(parts)
   // Read once when the dialog opens: the list must not reshuffle under the reader.
-  const [recent] = useState(recentList)
+  const userId = useMe().data?.id
+  const [recent] = useState(() => (userId ? recentList(userId) : []))
   const everywhere = useMemo(places, [])
-  const typed = debounced.toLocaleLowerCase()
+  // PLACES FOLLOW THE TYPING AT ONCE; only the modules' hits wait for the debounce. Otherwise an
+  // Enter pressed before the debounce fires chooses from the list as it was before the typing.
+  const typing = query.trim()
+  const typed = typing.toLocaleLowerCase()
   // BEFORE TYPING: what was opened lately, then every place. WHILE TYPING: the places whose name
   // matches, then every module's hits.
   const rows: Row[] =
-    debounced.length === 0
+    typing.length === 0
       ? [
           ...recent.map((r) => ({
             key: `recent:${r.type}:${r.id}`,
@@ -124,7 +129,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
         ]
       : [
           ...everywhere.filter((p) => p.title.toLocaleLowerCase().includes(typed)),
-          ...results.rows.map((hit) => ({
+          ...(debounced.length > 0 ? results.rows : []).map((hit) => ({
             key: `${hit.moduleId}:${hit.id}`,
             to: hit.to,
             title: hit.title,
@@ -145,7 +150,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
   // A shorter result set must not leave the selection pointing past the end.
   const at = Math.min(active, Math.max(rows.length - 1, 0))
 
-  useEffect(() => setActive(0), [debounced])
+  useEffect(() => setActive(0), [typing, debounced])
   useEffect(() => {
     document.getElementById(optionId(at))?.scrollIntoView({ block: 'nearest' })
   }, [at])
@@ -208,8 +213,9 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
               setActive(Math.max(at - 1, 0))
             } else if (e.key === 'Enter' && !composing.composingNow(e)) {
               e.preventDefault()
-              const hit = rows[at]
-              if (hit) choose(hit)
+              const row = rows[at]
+              // A module's hit for words not yet sent would be the previous word's: wait.
+              if (row && !(row.group === 'hit' && typing !== debounced)) choose(row)
             }
           }}
           placeholder="Search…"
@@ -224,10 +230,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
       )}
       {debounced.length > 0 && results.isSuccess && rows.length === 0 && (
         <div className="px-4 py-3">
-          <p className="text-sm text-fg">No matching tasks</p>
-          <p className="mt-1 text-sm text-fg-muted">
-            Searches titles and notes across every project, archived ones included.
-          </p>
+          <p className="text-sm text-fg">Nothing matches</p>
           <button
             type="button"
             // The one action here is to search for something else, so this does the clearing and
@@ -254,45 +257,64 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
         aria-label="Search results"
         className="max-h-[52vh] overflow-y-auto"
       >
-        {rows.map((row, i) => (
-          <SearchRow
-            key={row.key}
-            row={row}
-            id={optionId(i)}
-            selected={i === at}
-            heading={row.group !== rows[i - 1]?.group ? GROUP_LABEL[row.group] : undefined}
-            onChoose={() => choose(row)}
-            onHover={() => setActive(i)}
-          />
-        ))}
+        {runs(rows).map((run) => {
+          const options = run.rows.map((row, j) => (
+            <SearchRow
+              key={row.key}
+              row={row}
+              id={optionId(run.start + j)}
+              selected={run.start + j === at}
+              onChoose={() => choose(row)}
+              onHover={() => setActive(run.start + j)}
+            />
+          ))
+          const label = GROUP_LABEL[run.group]
+          if (!label) return options
+          // APG's grouped listbox: a named group, so "Recent" and "Go to" are announced, and the
+          // keyboard still walks only the options.
+          const heading = `${base}-${run.group}`
+          return (
+            <li key={run.group} role="presentation">
+              <div id={heading} className="px-5 pt-3 pb-1 text-xs font-semibold text-fg-subtle">
+                {label}
+              </div>
+              <ul role="group" aria-labelledby={heading}>
+                {options}
+              </ul>
+            </li>
+          )
+        })}
       </ul>
     </Modal>
   )
+}
+
+/** Consecutive rows of one group, and where the run starts in the flat list. */
+function runs(rows: Row[]): { group: Row['group']; start: number; rows: Row[] }[] {
+  const out: { group: Row['group']; start: number; rows: Row[] }[] = []
+  rows.forEach((row, i) => {
+    const last = out[out.length - 1]
+    if (last && last.group === row.group) last.rows.push(row)
+    else out.push({ group: row.group, start: i, rows: [row] })
+  })
+  return out
 }
 
 function SearchRow({
   row,
   id,
   selected,
-  heading,
   onChoose,
   onHover,
 }: {
   row: Row
   id: string
   selected: boolean
-  heading: string | undefined
   onChoose: () => void
   onHover: () => void
 }) {
   return (
     <>
-      {/* A group's name, outside the options so the keyboard walks only what can be chosen. */}
-      {heading && (
-        <li role="presentation" className="px-5 pt-3 pb-1 text-xs font-semibold text-fg-subtle">
-          {heading}
-        </li>
-      )}
       <li
         id={id}
         role="option"

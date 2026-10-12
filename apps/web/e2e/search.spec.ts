@@ -320,3 +320,20 @@ test('what was opened lately is first, before anything is typed', async ({ page 
   await searchBox(page).press('Enter')
   await expect(page).toHaveURL(new RegExp(`/people/${id}$`))
 })
+
+test('Enter straight after typing goes where the typing points', async ({ page }) => {
+  // Before anything was typed the list held other places; Enter must not choose from that list
+  // because the typing has not been read yet.
+  await registerFreshUser(page, '/')
+  await page.getByRole('banner').getByRole('button', { name: 'Search' }).click()
+  await searchBox(page).pressSequentially('peo')
+  await searchBox(page).press('Enter')
+  await expect(page).toHaveURL(/\/people$/)
+})
+
+test('the groups before typing are named for a screen reader', async ({ page }) => {
+  await registerFreshUser(page, '/')
+  await page.getByRole('banner').getByRole('button', { name: 'Search' }).click()
+  const goTo = page.getByRole('dialog', { name: 'Search' }).getByRole('group', { name: 'Go to' })
+  await expect(goTo.getByRole('option', { name: /^Things/ })).toBeVisible()
+})

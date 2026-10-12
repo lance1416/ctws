@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useMe } from './useMe'
 
 /** One thing that was opened, enough to list it and go back to it. */
 export type Recent = {
@@ -12,7 +13,8 @@ export type Recent = {
   kind: string
 }
 
-const KEY = 'ctws.recent'
+/** Per account: two people sharing a browser must never see each other's things. */
+const keyFor = (userId: string) => `ctws.recent.${userId}`
 /** As many as fit above the fold of the search dialog's first screen. */
 const KEEP = 8
 
@@ -24,9 +26,9 @@ const KEEP = 8
  * because in a private window or with site data cleared localStorage throws, and remembering
  * recent things is not worth a blank page.
  */
-export function recentList(): Recent[] {
+export function recentList(userId: string): Recent[] {
   try {
-    const raw = localStorage.getItem(KEY)
+    const raw = localStorage.getItem(keyFor(userId))
     if (!raw) return []
     const parsed: unknown = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
@@ -43,10 +45,10 @@ export function recentList(): Recent[] {
   }
 }
 
-export function recordRecent(entry: Recent): void {
-  const others = recentList().filter((r) => !(r.type === entry.type && r.id === entry.id))
+export function recordRecent(userId: string, entry: Recent): void {
+  const others = recentList(userId).filter((r) => !(r.type === entry.type && r.id === entry.id))
   try {
-    localStorage.setItem(KEY, JSON.stringify([entry, ...others].slice(0, KEEP)))
+    localStorage.setItem(keyFor(userId), JSON.stringify([entry, ...others].slice(0, KEEP)))
   } catch {
     // Recent things simply stop being remembered.
   }
@@ -54,8 +56,9 @@ export function recordRecent(entry: Recent): void {
 
 /** Records `entry` when it is shown, and again if what it says changes (a rename). */
 export function useRecordRecent(entry: Recent | null): void {
+  const userId = useMe().data?.id
   const key = entry ? JSON.stringify(entry) : null
   useEffect(() => {
-    if (key) recordRecent(JSON.parse(key) as Recent)
-  }, [key])
+    if (key && userId) recordRecent(userId, JSON.parse(key) as Recent)
+  }, [key, userId])
 }

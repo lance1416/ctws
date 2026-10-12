@@ -91,23 +91,21 @@ test('a search with no match says what search covers and clears itself', async (
   const missed = page.waitForResponse((r) => r.url().includes('/api/v1/tasks/search?q=') && r.ok())
   await box.fill('绝不存在的词')
   await missed
-  await expect(page.getByText('No matching tasks')).toBeVisible()
-  await expect(
-    page.getByText('Searches titles and notes across every project, archived ones included.'),
-  ).toBeVisible()
+  // One line: search now covers places and every searchable kind, so it does not say "tasks".
+  await expect(page.getByText('Nothing matches')).toBeVisible()
   await expect(page.locator('[data-search-result]')).toHaveCount(0)
 
   // The one action: empty the box and hand the cursor back, so the next word can just be typed.
   await page.getByRole('button', { name: 'Try another word' }).click()
   await expect(box).toHaveValue('')
   await expect(box).toBeFocused()
-  await expect(page.getByText('No matching tasks')).toHaveCount(0)
+  await expect(page.getByText('Nothing matches')).toHaveCount(0)
 
   // The other half: with a match, none of the empty state is on screen.
   const found = page.waitForResponse((r) => r.url().includes('/api/v1/tasks/search?q=') && r.ok())
   await page.keyboard.type('找得到')
   await found
   await expect(page.locator('[data-search-result]')).toHaveCount(1)
-  await expect(page.getByText('No matching tasks')).toHaveCount(0)
+  await expect(page.getByText('Nothing matches')).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Try another word' })).toHaveCount(0)
 })
