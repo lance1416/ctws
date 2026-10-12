@@ -107,6 +107,28 @@ describe('arranging a meeting', () => {
     expect(res.statusCode).toBe(422)
   })
 
+  it('refuses a start its repeat rule does not fall on, and says where the rule does', async () => {
+    // RFC 5545 makes the start the first occurrence, and calls the set undefined when the rule
+    // does not land on it. Everything here finds a series by its start, so it is refused.
+    const ctx = await setup()
+    for (const [startsLocal, rrule, first] of [
+      // A Tuesday, in a Monday series.
+      ['2026-10-13T18:00', 'FREQ=WEEKLY;BYDAY=MO', '2026-10-19T18:00'],
+      // The 19th, in a series on the 13th.
+      ['2026-10-19T18:00', 'FREQ=MONTHLY;BYMONTHDAY=13', '2026-11-13T18:00'],
+    ]) {
+      const res = await ctx.app.inject({
+        method: 'POST',
+        url: '/api/v1/meetings',
+        headers: web(ctx),
+        payload: { ...WEEKLY, startsLocal, rrule },
+      })
+      expect(res.statusCode, res.body).toBe(422)
+      expect(res.json().detail).toContain(first)
+    }
+    expect(await listed(ctx, '?from=2026-10-01&to=2026-11-30')).toEqual([])
+  })
+
   it('refuses a zone this system does not know', async () => {
     const ctx = await setup()
     const res = await ctx.app.inject({
@@ -249,6 +271,49 @@ describe('editing from one occurrence on', () => {
     ])
   })
 
+  it('refuses to move the rest onto a day the rule does not fall on', async () => {
+    // Wednesdays from here on, with the rule still saying Tuesday. The rule has to move with the
+    // start, as it does above.
+    const ctx = await setup()
+    const series = await arrange(ctx)
+    const res = await patch(ctx, series.meetingId, {
+      scope: 'following',
+      recurrenceId: '2026-11-03T09:00',
+      startsLocal: '2026-11-04T09:00',
+    })
+    expect(res.statusCode, res.body).toBe(422)
+    expect(res.json().detail).toContain('2026-11-10T09:00')
+    // Nothing was split.
+    expect(days(await listed(ctx, '?from=2026-10-20&to=2026-11-10'))).toEqual([
+      '2026-10-20',
+      '2026-10-27',
+      '2026-11-03',
+      '2026-11-10',
+    ])
+  })
+
+  it('checks the new rule against where the new series starts, not where the old one did', async () => {
+    // Daily from a Monday, then weekly on Tuesdays from the first Tuesday on.
+    const ctx = await setup()
+    const series = await arrange(ctx, {
+      ...WEEKLY,
+      startsLocal: '2026-10-19T09:00',
+      rrule: 'FREQ=DAILY',
+    })
+    const res = await patch(ctx, series.meetingId, {
+      scope: 'following',
+      recurrenceId: '2026-10-20T09:00',
+      rrule: 'FREQ=WEEKLY;BYDAY=TU',
+    })
+    expect(res.statusCode, res.body).toBe(200)
+    expect(days(await listed(ctx, '?from=2026-10-19&to=2026-11-03'))).toEqual([
+      '2026-10-19',
+      '2026-10-20',
+      '2026-10-27',
+      '2026-11-03',
+    ])
+  })
+
   it('carries the guest list into the new series', async () => {
     const ctx = await setup()
     const a = await person(ctx, '陈颖')
@@ -337,6 +402,26 @@ describe('editing the whole series', () => {
     ).toBe(200)
     const got = await listed(ctx, '?from=2026-10-20&to=2026-11-10')
     expect(new Set(got.map((o) => o.startsLocal.slice(11)))).toEqual(new Set(['11:00']))
+  })
+
+  it('refuses to move the start onto a day the rule does not fall on', async () => {
+    const ctx = await setup()
+    const series = await arrange(ctx)
+    // A Wednesday, in a Tuesday series.
+    const res = await patch(ctx, series.meetingId, { startsLocal: '2026-10-21T09:00' })
+    expect(res.statusCode, res.body).toBe(422)
+    expect(res.json().detail).toContain('2026-10-27T09:00')
+    // With the rule moved too, it is the same series on another day.
+    const moved = await patch(ctx, series.meetingId, {
+      startsLocal: '2026-10-21T09:00',
+      rrule: 'FREQ=WEEKLY;BYDAY=WE',
+    })
+    expect(moved.statusCode, moved.body).toBe(200)
+    expect(days(await listed(ctx, '?from=2026-10-20&to=2026-11-04'))).toEqual([
+      '2026-10-21',
+      '2026-10-28',
+      '2026-11-04',
+    ])
   })
 
   it('takes a scope it cannot honour on a one-off and does the only thing there is', async () => {

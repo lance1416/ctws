@@ -238,7 +238,7 @@ export async function createMeeting(
   // The expander is what has to understand a rule, so it is what decides whether one is usable:
   // a schema that accepted what the expansion then ignored would store a schedule that never
   // happens.
-  const wrong = body.rrule ? ruleProblem(body.rrule) : null
+  const wrong = body.rrule ? ruleProblem(body.rrule, body.startsLocal) : null
   if (wrong) throw new BadRuleError(wrong)
 
   const id = uuidv7()
@@ -282,12 +282,23 @@ export async function updateMeeting(
   if (!series) throw new MeetingNotFoundError()
   if (patch.projectId) await assertProjectVisible(q, workspaceId, patch.projectId)
   if (patch.attendeeIds) await assertAttendees(q, workspaceId, patch.attendeeIds)
-  const wrong = patch.rrule ? ruleProblem(patch.rrule) : null
-  if (wrong) throw new BadRuleError(wrong)
 
   const { scope: asked, recurrenceId, attendeeIds, projectId, ...fields } = patch
   // A meeting that happens once has one occurrence, so the three scopes are the same thing.
   const scope: EditScope = series.rrule ? asked : 'all'
+
+  /**
+   * The rule is checked against the start it will have AFTER the edit, not alone: moving a
+   * Monday series onto a Tuesday without its rule is the same mismatch as arranging one. One
+   * occurrence carries no rule of its own, so `one` has nothing here to check.
+   */
+  if (scope !== 'one' && (fields.startsLocal !== undefined || fields.rrule !== undefined)) {
+    const rule = fields.rrule !== undefined ? fields.rrule : series.rrule
+    const startsLocal =
+      fields.startsLocal ?? (scope === 'following' ? recurrenceId! : series.startsLocal)
+    const wrong = rule ? ruleProblem(rule, startsLocal) : null
+    if (wrong) throw new BadRuleError(wrong)
+  }
 
   if (scope === 'one') {
     assertOccurs(series, recurrenceId!)

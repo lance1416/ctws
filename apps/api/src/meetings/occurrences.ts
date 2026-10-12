@@ -109,7 +109,7 @@ export type Occurrence = {
 const HARD_LIMIT = 2000
 
 /**
- * WHAT IS WRONG WITH A RULE, or null.
+ * WHAT IS WRONG WITH A RULE FOR A SERIES STARTING AT `startsLocal`, or null.
  *
  * Decided by PARSING it with the same library that will expand it, and reading the parsed
  * options -- never by matching the string. A regex and a parser disagree about things like
@@ -128,18 +128,32 @@ const SUB_DAILY = new Set([RRule.SECONDLY, RRule.MINUTELY, RRule.HOURLY])
 const MAX_COUNT = 1000
 const MAX_INTERVAL = 1000
 
-export function ruleProblem(rule: string): string | null {
+export function ruleProblem(rule: string, startsLocal: LocalTime): string | null {
   if (!isOneLine(rule)) return 'that repeat rule cannot be read'
   let parsed: Rule
   try {
-    parsed = RRule.fromString(withDtstart(rule, '2026-01-01T00:00'))
+    parsed = RRule.fromString(withDtstart(rule, startsLocal))
   } catch {
     return 'that repeat rule cannot be read'
   }
   const problem = optionsProblem(parsed)
   if (problem) return problem
+  const [first] = parsed.all((_, i) => i < 1)
   // A rule that produces nothing is not a schedule, it is a typo that happens to parse.
-  return parsed.all((_, i) => i < 1).length > 0 ? null : 'that repeat rule never happens'
+  if (!first) return 'that repeat rule never happens'
+  /**
+   * THE START IS THE FIRST OCCURRENCE.
+   *
+   * RFC 5545 §3.8.5.3: the start "defines the first instance", SHOULD be synchronized with the
+   * rule, and a set built from one that is not "is undefined". Readers do disagree -- `rrule`
+   * leaves such a start out, others keep it as one extra meeting -- and everything here finds a
+   * series by its start. So a rule that does not land on it is refused, and the refusal says
+   * where it does land.
+   */
+  if (first.getTime() !== asNaive(startsLocal).getTime()) {
+    return `that repeat rule does not fall on the start; it first falls on ${fromNaive(first)}`
+  }
+  return null
 }
 
 /** The same checks against an ALREADY PARSED rule, for the expansion's own guard. */

@@ -29,6 +29,9 @@ const weekly = (overrides: Partial<Series> = {}): Series => ({
   ...overrides,
 })
 
+/** A Tuesday, which the weekly rules below fall on. */
+const START = '2026-10-20T09:00'
+
 const window = (from: string, to: string) => ({ from: new Date(from), to: new Date(to) })
 const none: Exception[] = []
 
@@ -203,41 +206,60 @@ describe('exceptions', () => {
 
 describe('rules', () => {
   it('takes the shapes a person actually schedules', () => {
-    for (const rule of [
-      'FREQ=DAILY',
-      'FREQ=WEEKLY;BYDAY=TU',
-      'FREQ=WEEKLY;INTERVAL=2;BYDAY=TU',
-      'FREQ=MONTHLY;BYMONTHDAY=8',
-      'FREQ=MONTHLY;BYDAY=-1FR',
-      'FREQ=WEEKLY;BYDAY=MO,WE,FR;COUNT=10',
-    ]) {
-      expect(ruleProblem(rule), rule).toBeNull()
+    for (const [rule, startsLocal] of [
+      ['FREQ=DAILY', START],
+      ['FREQ=WEEKLY;BYDAY=TU', START],
+      ['FREQ=WEEKLY;INTERVAL=2;BYDAY=TU', START],
+      ['FREQ=MONTHLY;BYMONTHDAY=8', '2026-10-08T09:00'],
+      // The last Friday of October.
+      ['FREQ=MONTHLY;BYDAY=-1FR', '2026-10-30T09:00'],
+      ['FREQ=WEEKLY;BYDAY=MO,WE,FR;COUNT=10', '2026-10-30T09:00'],
+    ] as const) {
+      expect(ruleProblem(rule, startsLocal), rule).toBeNull()
     }
   })
 
+  it('refuses a start the rule does not fall on, and says where it first does', () => {
+    // RFC 5545 makes the start the first occurrence and calls a set whose rule misses it
+    // undefined -- and `rrule`, which expands it here, simply leaves the start out.
+    expect(ruleProblem('FREQ=WEEKLY;BYDAY=MO', '2026-10-13T18:00')).toContain('2026-10-19T18:00')
+    // The clock counts as much as the day.
+    expect(ruleProblem('FREQ=DAILY;BYHOUR=9', '2026-10-13T18:00')).toContain('2026-10-14T09:00')
+    // A rule that ended before the meeting starts does not happen at all.
+    expect(ruleProblem('FREQ=WEEKLY;UNTIL=20260601T235959Z', START)).toBe(
+      'that repeat rule never happens',
+    )
+  })
+
   it('refuses a rule that parses but schedules nothing, and one that does not parse', () => {
-    expect(ruleProblem('FREQ=WEEKLY;COUNT=0')).not.toBeNull()
-    expect(ruleProblem('every other tuesday')).not.toBeNull()
-    expect(ruleProblem('')).not.toBeNull()
+    expect(ruleProblem('FREQ=WEEKLY;COUNT=0', START)).not.toBeNull()
+    expect(ruleProblem('every other tuesday', START)).not.toBeNull()
+    expect(ruleProblem('', START)).not.toBeNull()
   })
 
   it('refuses, BY PARSING, what one request cannot be made to compute', () => {
     // Each measured. The decision is the parser's, not a regex's, because a regex and a parser
     // disagree about whitespace and number formats and the parser is the one that expands.
-    expect(ruleProblem('FREQ=SECONDLY')).toBe('a meeting cannot repeat more often than daily')
-    expect(ruleProblem('FREQ=MINUTELY;INTERVAL=1')).toBe(
+    expect(ruleProblem('FREQ=SECONDLY', START)).toBe(
+      'a meeting cannot repeat more often than daily',
+    )
+    expect(ruleProblem('FREQ=MINUTELY;INTERVAL=1', START)).toBe(
       'a meeting cannot repeat more often than daily',
     )
     // COUNT=5000000 costs 3.2s even when the window holds 31 of them.
-    expect(ruleProblem('FREQ=DAILY;COUNT=5000000')).toBe('that repeats too many times')
-    expect(ruleProblem('FREQ=DAILY;INTERVAL=999999')).toBe('that interval is not a schedule')
+    expect(ruleProblem('FREQ=DAILY;COUNT=5000000', START)).toBe('that repeats too many times')
+    expect(ruleProblem('FREQ=DAILY;INTERVAL=999999', START)).toBe('that interval is not a schedule')
   })
 
   it('refuses the spellings a regex and a parser disagree about', () => {
     // `rrule` is lenient about case and about an RRULE: prefix inside the body. Whatever it
     // accepts, the check sees the same thing it does -- which is the whole point of parsing.
-    expect(ruleProblem('freq=secondly')).toBe('a meeting cannot repeat more often than daily')
-    expect(ruleProblem('RRULE:FREQ=HOURLY')).toBe('a meeting cannot repeat more often than daily')
+    expect(ruleProblem('freq=secondly', START)).toBe(
+      'a meeting cannot repeat more often than daily',
+    )
+    expect(ruleProblem('RRULE:FREQ=HOURLY', START)).toBe(
+      'a meeting cannot repeat more often than daily',
+    )
   })
 
   it('refuses a rule carrying a second line, whatever that line says', () => {
@@ -252,7 +274,7 @@ describe('rules', () => {
       `FREQ=DAILY${NEWLINE}DTSTART:00010101T000000Z`,
     ]
     for (const rule of smuggled) {
-      expect(ruleProblem(rule), JSON.stringify(rule)).not.toBeNull()
+      expect(ruleProblem(rule, START), JSON.stringify(rule)).not.toBeNull()
       // And the expansion refuses it too, for a row written before the check existed.
       expect(
         occurrencesIn(
