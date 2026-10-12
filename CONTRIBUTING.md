@@ -56,7 +56,7 @@ pnpm build
 
 ## One rule about numbers
 
-**Every number in a spec, a comment or a commit message is either measured — with the measurement
+**Every number in a comment, a test or a commit message is either measured — with the measurement
 written next to it — or marked as not yet measured.** No "roughly", no "on the order of", no
 "still fine": whoever implements it will build to the number, and a guess dressed as a constraint
 costs more in rework than the measurement would have cost.
