@@ -4,7 +4,7 @@ import { birthdayCalendar, birthdaysKey, listBirthdays } from '../api/birthdays'
 import { listPeople, peopleKey, searchPeople } from '../api/people'
 import { BirthdayRow } from '../components/BirthdayRow'
 import { PanelEmpty } from '../components/Panel'
-import { countdownPhrase, dayPhrase } from '../dueAt'
+import { countdownPhrase } from '../dueAt'
 import { Birthdays } from '../routes/Birthdays'
 import { People } from '../routes/People'
 import type { SearchHit, WorkspaceModule } from './contract'
@@ -97,10 +97,12 @@ function PeopleCount() {
 function NextBirthdayLine() {
   const view = useQuery({ queryKey: birthdaysKey(), queryFn: listBirthdays })
   const next = view.data ? [...view.data.coming, ...view.data.later][0] : undefined
-  if (!view.data || !next) return null
+  if (!next) return null
+  // A countdown and not a date: no punctuation after the name, which may be Han, where the
+  // engine's Han-Latin spacing would put a gap before a comma.
   return (
     <span data-status>
-      Next birthday: {next.name}, {dayPhrase(next.day, view.data.today)}
+      Next birthday: {next.name} {countdownPhrase(next.inDays)}
     </span>
   )
 }

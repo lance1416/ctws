@@ -61,3 +61,21 @@ test('the rail entry for Things goes there', async ({ page }) => {
   await expect(page).toHaveURL(/\/things$/)
   await expect(page.getByRole('heading', { level: 1, name: 'Things' })).toBeVisible()
 })
+
+test('People says whose birthday is next, as a countdown', async ({ page }) => {
+  await registerFreshUser(page, '/things')
+  const soon = new Date()
+  soon.setDate(soon.getDate() + 3)
+  const res = await page.request.post('/api/v1/people', {
+    headers: WEB,
+    data: {
+      name: '妈妈',
+      birthday: { calendar: 'solar', month: soon.getMonth() + 1, day: soon.getDate() },
+    },
+  })
+  expect(res.status(), await res.text()).toBe(201)
+  await page.reload()
+  await expect(kind(page, 'People').locator('[data-status]')).toHaveText(
+    'Next birthday: 妈妈 in 3 days',
+  )
+})
