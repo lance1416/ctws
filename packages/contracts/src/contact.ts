@@ -99,6 +99,14 @@ export type Circle = (typeof CIRCLES)[number]
 /** How early to put someone on the workbench card. 0 is the day itself. */
 export const REMIND_LEADS = [7, 3, 1, 0] as const
 export type RemindLead = (typeof REMIND_LEADS)[number]
+/**
+ * WHERE A BIRTHDAY STARTS: a week's notice, until the person says otherwise.
+ *
+ * One statement of it, because two places need it and they must not drift: the column's own
+ * default (a birthday written for the first time) and the write that clears a birthday (which
+ * puts the lead back rather than leaving one behind for the next birthday to inherit).
+ */
+export const REMIND_LEAD_DEFAULT: RemindLead = 7
 
 const SOLAR_MONTH_LENGTHS = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 const remindLead = z.union([z.literal(7), z.literal(3), z.literal(1), z.literal(0)])
@@ -120,8 +128,15 @@ export const birthdayInput = z
     leapMonth: z.boolean().default(false),
     /** 0..11, 子 to 亥. A branch and not a clock: people know 「午时」, not 14:05. */
     hourBranch: z.number().int().min(0).max(11).nullish(),
-    /** How early, not which days: one choice of four. See the workbench card. */
-    remindLead: remindLead.default(7),
+    /**
+     * How early, not which days: one choice of four. See the workbench card.
+     *
+     * OPTIONAL, NOT DEFAULTED. This shape is shared by create and edit, so a `.default(7)` here
+     * made a PATCH that only moves the month and day reset a lead the person had chosen -- a
+     * value they never touched, changed by the write. The 7 lives on the column instead, where it
+     * applies to a birthday being written for the first time and to nothing else.
+     */
+    remindLead: remindLead.optional(),
   })
   .strict()
   .refine((b) => b.calendar === 'lunar' || !b.leapMonth, {

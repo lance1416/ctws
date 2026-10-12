@@ -1,8 +1,9 @@
-import type {
-  BirthdayInput,
-  ContactChannel,
-  CreateContactBody,
-  UpdateContactBody,
+import {
+  type BirthdayInput,
+  type ContactChannel,
+  type CreateContactBody,
+  REMIND_LEAD_DEFAULT,
+  type UpdateContactBody,
 } from '@ctws/contracts'
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
@@ -90,6 +91,11 @@ const birthdayColumns = (b: BirthdayInput | null | undefined) =>
           birthdayDay: null,
           birthdayLeapMonth: false,
           birthdayHourBranch: null,
+          // BACK TO THE DEFAULT, not left as it was: the lead means nothing without a birthday,
+          // and a value left behind here is inherited by the next birthday written for this
+          // person -- a lead they never chose, with nothing on screen saying so. The column is
+          // NOT NULL, so "cleared" is the 7 it starts at.
+          birthdayRemindLead: REMIND_LEAD_DEFAULT,
         }
       : {
           birthdayCalendar: b.calendar,
@@ -98,7 +104,9 @@ const birthdayColumns = (b: BirthdayInput | null | undefined) =>
           birthdayDay: b.day,
           birthdayLeapMonth: b.leapMonth,
           birthdayHourBranch: b.hourBranch ?? null,
-          birthdayRemindLead: b.remindLead,
+          // Only when it was SAID. Omitted on an edit, the column keeps the person's own choice;
+          // omitted on a create, the column's default puts the 7 there.
+          ...(b.remindLead === undefined ? {} : { birthdayRemindLead: b.remindLead }),
         }
 
 /**

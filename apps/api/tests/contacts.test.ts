@@ -377,6 +377,69 @@ describe('一个人的生日', () => {
     ).rejects.toThrow()
   })
 
+  /**
+   * 改月日不该动提前量。契约里 `remindLead` 原来写的是 `.default(7)`，而创建和修改共用同一个
+   * 形状，所以一个只想改月日的 PATCH 会把这个人设过的 1 天悄悄改回 7 —— 用户没碰的东西被改了。
+   */
+  it('只改月日不动提前量', async () => {
+    const ctx = await setup()
+    const person = await add(ctx, {
+      name: '李雷',
+      birthday: { calendar: 'solar', year: 1991, month: 10, day: 17, remindLead: 1 },
+    })
+    expect(person.birthday?.remindLead).toBe(1)
+
+    const moved = await patch(ctx, person.id, {
+      birthday: { calendar: 'solar', year: 1991, month: 10, day: 18 },
+    })
+    expect(moved.statusCode, moved.body).toBe(200)
+    expect((moved.json() as ContactResponse).birthday).toMatchObject({ day: 18, remindLead: 1 })
+  })
+
+  /**
+   * 清掉生日要连提前量一起清。这一列是 NOT NULL DEFAULT 7，所以「清掉」就是回到 7：下次给这个人
+   * 填生日时，他会继承一个自己从没设过的提前量，而界面上没有任何地方说过这件事。
+   */
+  it('清掉生日时提前量回到默认', async () => {
+    const ctx = await setup()
+    const person = await add(ctx, {
+      name: '韩梅梅',
+      birthday: { calendar: 'solar', year: 1991, month: 10, day: 17, remindLead: 0 },
+    })
+    expect((await patch(ctx, person.id, { birthday: null })).statusCode).toBe(200)
+
+    const again = await patch(ctx, person.id, {
+      birthday: { calendar: 'solar', year: 1991, month: 10, day: 17 },
+    })
+    expect(again.statusCode, again.body).toBe(200)
+    expect((again.json() as ContactResponse).birthday?.remindLead).toBe(7)
+  })
+
+  /**
+   * 月和日各自 `between` 检查互不相关，所以 4 月 31 日在数据库层面是合法的 —— 挡住它的只有契约
+   * 那一层。走 API 进不来，直连数据库能进来，而数据库是数据真正在的地方。
+   */
+  it('数据库拒绝一个月里不存在的那一天', async () => {
+    const ctx = await setup()
+    const person = await add(ctx, { name: '四月三十一' })
+    await expect(
+      ctx.db.execute(
+        sql`update contacts set birthday_calendar = 'solar', birthday_month = 4, birthday_day = 31
+            where id = ${person.id}`,
+      ),
+    ).rejects.toThrow()
+    // ...and the days that DO exist still go in, by the same route.
+    await ctx.db.execute(
+      sql`update contacts set birthday_calendar = 'solar', birthday_month = 4, birthday_day = 30
+          where id = ${person.id}`,
+    )
+    // A lunar month has at most 30 days, and the 30th of a lunar month is a real birthday.
+    await ctx.db.execute(
+      sql`update contacts set birthday_calendar = 'lunar', birthday_month = 6, birthday_day = 30
+          where id = ${person.id}`,
+    )
+  })
+
   it('提前量只收 0 / 1 / 3 / 7', async () => {
     const ctx = await setup()
     const res = await ctx.app.inject({

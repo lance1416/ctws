@@ -7,6 +7,7 @@ import {
   OBJECT_TYPES,
   READING_KINDS,
   READING_STATUSES,
+  REMIND_LEAD_DEFAULT,
   TASK_STATUSES,
 } from '@ctws/contracts'
 import { relations, sql } from 'drizzle-orm'
@@ -313,7 +314,7 @@ export const contacts = pgTable(
     /** 0..11, 子 to 亥. A branch and not a clock. */
     birthdayHourBranch: integer('birthday_hour_branch'),
     /** How early to surface this person: 7 / 3 / 1 / 0 days. One choice, not four switches. */
-    birthdayRemindLead: integer('birthday_remind_lead').notNull().default(7),
+    birthdayRemindLead: integer('birthday_remind_lead').notNull().default(REMIND_LEAD_DEFAULT),
     /** vCard's `GENDER`. */
     gender: text('gender'),
     /** A place name, not an `ADR`: a city is not something you can post a letter to. */
@@ -345,6 +346,19 @@ export const contacts = pgTable(
       sql`${t.birthdayHourBranch} is null or ${t.birthdayHourBranch} between 0 and 11`,
     ),
     check('contacts_birthday_lead_check', sql`${t.birthdayRemindLead} in (0, 1, 3, 7)`),
+    /**
+     * THE DAY HAS TO EXIST IN THE MONTH. `month between 1 and 12` and `day between 1 and 31`
+     * are independent, so April 31st satisfied both and only the contract stood between it and
+     * the table. February allows 29 because the YEAR may be absent (RFC 6350's `--0229`), and a
+     * lunar month has at most 30 days.
+     */
+    check(
+      'contacts_birthday_daymonth_check',
+      sql`${t.birthdayDay} is null
+          or (${t.birthdayCalendar} = 'lunar' and ${t.birthdayDay} <= 30)
+          or (${t.birthdayCalendar} = 'solar' and ${t.birthdayDay} <=
+              (array[31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])[${t.birthdayMonth}])`,
+    ),
     // A group, not a field (the same reason `reading_items_shape_check` exists).
     check(
       'contacts_birthday_group_check',
