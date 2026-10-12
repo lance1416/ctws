@@ -23,6 +23,7 @@ export function Panel({
   tabs,
   children,
   variant = 'section',
+  hang = false,
   className = '',
 }: {
   /** The panel's accessible name, and its visible heading unless `heading` replaces it. */
@@ -39,6 +40,11 @@ export function Panel({
   tabs?: ReactNode
   children: ReactNode
   variant?: 'section' | 'tile'
+  /**
+   * A section of ROWS: its heading hangs where the rows' thread hangs -- after their margin -- and
+   * its body is flush, so the rows' own margin is the page's margin.
+   */
+  hang?: boolean
   className?: string
 }) {
   return (
@@ -49,7 +55,7 @@ export function Panel({
     >
       <div
         className={`flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1 pb-1.5 ${
-          variant === 'tile' ? 'px-4 pt-3.5' : 'px-2 pt-1'
+          variant === 'tile' ? 'px-4 pt-3.5' : hang ? 'ml-15 pt-1 pr-2 sm:ml-18' : 'px-2 pt-1'
         }`}
       >
         {heading ?? (
@@ -77,7 +83,7 @@ export function Panel({
           page's own, and a deep tree row has only what is left after the indent, the handle, the
           chevron, the marker and the two row buttons. Four pixels a side there is the difference
           between a title and an ellipsis. */}
-      <div className="min-w-0 px-1 pt-0.5 pb-3 sm:px-2">{children}</div>
+      <div className={`min-w-0 pt-0.5 pb-3 ${hang ? '' : 'px-1 sm:px-2'}`}>{children}</div>
     </section>
   )
 }

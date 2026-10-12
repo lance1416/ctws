@@ -1,4 +1,4 @@
-import { kindsBetween, type LinkCandidate, type LinkKind } from '@ctws/contracts'
+import { kindsBetween, type LinkCandidate, type LinkKind, type ObjectType } from '@ctws/contracts'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { candidatesKey, createLink, linkCandidates, type Endpoint } from '../api/links'
@@ -15,7 +15,16 @@ import { BUTTON } from './buttonStyles'
  * person, and nothing of the sort between two books), so the second list cannot be drawn until
  * the first is answered.
  */
-export function AddLink({ of, onClose }: { of: Endpoint; onClose: () => void }) {
+export function AddLink({
+  of,
+  only,
+  onClose,
+}: {
+  of: Endpoint
+  /** Offer things of this one kind: the `+` on a kind's own block links one of that kind. */
+  only?: ObjectType | undefined
+  onClose: () => void
+}) {
   const qc = useQueryClient()
   const box = useRef<HTMLInputElement>(null)
   const composing = useComposing()
@@ -36,6 +45,7 @@ export function AddLink({ of, onClose }: { of: Endpoint; onClose: () => void }) 
     },
   })
 
+  const offered = (candidates.data ?? []).filter((c) => !only || c.type === only)
   // Read FROM this object, so the words are the ones its own page will show on the new row.
   const kinds = chosen ? kindsBetween(of.type, chosen.type) : []
 
@@ -65,11 +75,11 @@ export function AddLink({ of, onClose }: { of: Endpoint; onClose: () => void }) 
               Couldn't search. Check that the server is running.
             </p>
           )}
-          {candidates.isSuccess && candidates.data.length === 0 && (
+          {candidates.isSuccess && offered.length === 0 && (
             <p className="px-4 py-3 text-sm text-ink-muted">Nothing matches</p>
           )}
           <ul className="max-h-80 overflow-y-auto py-1">
-            {(candidates.data ?? []).map((c) => (
+            {offered.map((c) => (
               <li key={`${c.type}:${c.id}`}>
                 <button
                   type="button"

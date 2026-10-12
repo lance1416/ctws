@@ -58,7 +58,7 @@ export function ProjectIdentity({
         <DropdownMenu.Trigger
           aria-label="Project colour"
           data-project-chip={projectId}
-          className={`h-7 w-[4px] shrink-0 rounded-full ${railClass(color)}`}
+          className={`h-9 w-[4px] shrink-0 rounded-full ${railClass(color)}`}
         />
         <DropdownMenu.Portal>
           <DropdownMenu.Content align="start" sideOffset={8} className={MENU_SURFACE}>
@@ -96,7 +96,7 @@ export function ProjectIdentity({
             }
           }}
           aria-label="Project name"
-          className="min-w-0 flex-1 rounded-lg border border-rule-strong bg-sheet px-2 py-0.5 text-xl font-semibold text-ink"
+          className="min-w-0 flex-1 rounded-lg border border-rule-strong bg-sheet px-2 py-0.5 text-2xl font-semibold tracking-[-0.02em] text-ink"
         />
       ) : (
         // The TYPE lives on the <h1>, not on the button inside it: the heading is what the type
@@ -106,7 +106,7 @@ export function ProjectIdentity({
         <h1
           id="project-heading"
           tabIndex={-1}
-          className="min-w-0 flex-1 truncate text-xl font-semibold text-ink focus:outline-none"
+          className="min-w-0 flex-1 truncate text-2xl font-semibold tracking-[-0.02em] text-ink focus:outline-none"
         >
           <button
             type="button"

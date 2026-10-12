@@ -278,9 +278,9 @@ async function mixedProject(page: Page, name: string): Promise<string> {
 }
 
 /**
- * A REAL LONG TITLE KEEPS THE LINE, at 1440: whole with the detail closed, and with the detail
- * column open -- the ≈734px panel, the hardest case -- it gives up exactly the width the column
- * took and nothing else: the margin, the thread and the note do not grow to take more.
+ * A REAL LONG TITLE KEEPS THE LINE, at 1440, with the detail closed (Linked beside the tree) and
+ * open (the detail the third column, Linked under the tree): the title has most of the row either
+ * way, and the margin, the thread and the note never take more than their own width.
  *
  * Asserted at both panel widths, from the same page, with the window never changing: the closed
  * panel is 1118px and the open one 734px, and a guard that only checked the easy one would pass
@@ -296,8 +296,12 @@ test('a real long title is not truncated at 1440, detail open or closed', async 
   await expect(page.locator('[data-task-tree] [data-row-lead-text]')).toHaveCount(2)
 
   const closed = await firstRow(page)
-  expect(closed.fits, `detail closed: title needs ${closed.needs}px of ${closed.cell}px`).toBe(true)
   expect(closed.needs, 'the title really is a long one').toBeGreaterThan(500)
+  // With the detail closed, Linked sits beside the tree: the title keeps most of the row.
+  expect(
+    closed.cell / closed.list,
+    `title cell ${closed.cell}px of ${closed.list}px`,
+  ).toBeGreaterThan(0.6)
 
   // Open the pane from ANOTHER row, so the row being measured is not the one that is selected.
   await page.locator('[data-task-tree] li[data-depth]').nth(1).click()
@@ -305,10 +309,10 @@ test('a real long title is not truncated at 1440, detail open or closed', async 
   const open = await firstRow(page)
   expect(await page.evaluate(() => window.innerWidth), 'the window did not change').toBe(1440)
   expect(open.list, `list with the detail open: ${open.list}px`).toBeLessThan(800)
-  // Every pixel the list lost came out of the title, and the title still has most of the row.
-  expect(closed.cell - open.cell, 'the title gives up what the list gave up').toBe(
-    closed.list - open.list,
-  )
+  // Every pixel the list changed by came out of (or went to) the title: the margin, the thread and
+  // the note do not grow or shrink with it. (Opening the detail moves Linked under the tree, so
+  // the list is about as wide either way.)
+  expect(closed.cell - open.cell, 'the title moves with the list').toBe(closed.list - open.list)
   expect(open.cell / open.list, `title cell ${open.cell}px of ${open.list}px`).toBeGreaterThan(0.6)
 })
 

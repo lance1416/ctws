@@ -133,7 +133,7 @@ test('the scale follows the reader root font size: size AND leading, as a pair',
     // The margin: the meta size, on the TITLE's leading, so its word sits on the title's line.
     lead: '[data-row-lead-text]',
     panel: '[data-panel="Tasks"] h2',
-    caption: '[data-stat] dt',
+    caption: 'nav[aria-label="Main navigation"] a[href="/tasks/today"] [data-count]',
   } as const
   const measure = async () =>
     Object.fromEntries(
@@ -148,7 +148,8 @@ test('the scale follows the reader root font size: size AND leading, as a pair',
   const base = await measure()
   expect(base).toEqual({
     body: { size: '16px', line: '24px' },
-    h1: { size: '24px', line: '32px' },
+    // The project's name: the scale's 2xl step, the head of a page that is a place.
+    h1: { size: '36px', line: '44px' },
     title: { size: '16px', line: '24px' },
     lead: { size: '14px', line: '24px' },
     // A section's heading is body size in semibold: with no box round it, the heading is the
@@ -164,7 +165,7 @@ test('the scale follows the reader root font size: size AND leading, as a pair',
   )
   expect(await measure()).toEqual({
     body: { size: '20px', line: '30px' },
-    h1: { size: '30px', line: '40px' },
+    h1: { size: '45px', line: '55px' },
     title: { size: '20px', line: '30px' },
     lead: { size: '17.5px', line: '30px' },
     panel: { size: '20px', line: '30px' },
@@ -287,7 +288,7 @@ test('numeric columns keep tabular figures', async ({ page }) => {
     'font-variant-numeric',
     'tabular-nums',
   )
-  await expect(page.locator('[data-stat] dd').first()).toHaveCSS(
+  await expect(page.locator('nav[aria-label="Main navigation"] [data-count]').first()).toHaveCSS(
     'font-variant-numeric',
     'tabular-nums',
   )

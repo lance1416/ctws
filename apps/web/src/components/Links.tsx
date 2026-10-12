@@ -7,6 +7,7 @@ import { relationFor } from '../modules/registry'
 import { AddLink } from './AddLink'
 import { PanelEmpty } from './Panel'
 import { BUTTON } from './buttonStyles'
+import { ProjectRail } from './RowParts'
 
 /**
  * LINKED -- everything one thing is connected to, grouped by kind.
@@ -21,6 +22,7 @@ import { BUTTON } from './buttonStyles'
 export function Links({
   of,
   except,
+  variant = 'list',
   className = '',
 }: {
   of: Endpoint
@@ -32,10 +34,16 @@ export function Links({
    * are still there; this page just does not say them twice.
    */
   except?: readonly ObjectType[] | undefined
+  /**
+   * `aside`: each kind a block of its own -- its name, how many, a `+` that links one more of that
+   * kind, then its rows on a thread -- for a page where Linked sits beside the page's own block.
+   */
+  variant?: 'list' | 'aside'
   className?: string
 }) {
   const qc = useQueryClient()
-  const [adding, setAdding] = useState(false)
+  // Which kind the picker is for: any kind from "+ Link", one kind from a block's own `+`.
+  const [adding, setAdding] = useState<ObjectType | 'any' | null>(null)
   const links = useQuery({ queryKey: linksKey(of), queryFn: () => listLinks(of) })
   const groups = (links.data ?? []).filter((g) => !except?.includes(g.type))
   const unlink = useMutation({
@@ -48,10 +56,20 @@ export function Links({
   })
   const add = (
     <>
-      <button type="button" onClick={() => setAdding(true)} className={`self-start ${BUTTON.link}`}>
+      <button
+        type="button"
+        onClick={() => setAdding('any')}
+        className={`self-start ${BUTTON.link}`}
+      >
         + Link
       </button>
-      {adding && <AddLink of={of} onClose={() => setAdding(false)} />}
+      {adding && (
+        <AddLink
+          of={of}
+          only={adding === 'any' ? undefined : adding}
+          onClose={() => setAdding(null)}
+        />
+      )}
     </>
   )
 
@@ -65,6 +83,86 @@ export function Links({
     return (
       <div className="flex flex-col gap-1">
         <PanelEmpty>Nothing linked yet.</PanelEmpty>
+        {add}
+      </div>
+    )
+  }
+
+  if (variant === 'aside') {
+    // On a project's page every row here met THIS project, so its thread is this project's.
+    const thread = of.type === 'project' ? of.id : null
+    return (
+      <div className={`flex flex-col gap-8 ${className}`}>
+        {groups.map((group) => {
+          const kind = relationFor(group.type)?.kind.toLowerCase() ?? 'thing'
+          return (
+            <section key={group.type} aria-label={group.label} className="min-w-0">
+              <div className="mb-1 flex items-center gap-2">
+                <h3 className="flex items-baseline gap-2 text-base font-semibold text-ink">
+                  {group.label}
+                  <span data-count className="text-sm font-normal text-ink-subtle tabular-nums">
+                    {group.items.length}
+                  </span>
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setAdding(group.type)}
+                  aria-label={`Link another ${kind}`}
+                  className="ml-auto flex size-[30px] items-center justify-center rounded-md text-ink-subtle hover:bg-hover hover:text-ink"
+                >
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 16 16"
+                    className="size-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                    strokeLinecap="round"
+                  >
+                    <path d="M8 3v10M3 8h10" />
+                  </svg>
+                </button>
+              </div>
+              <ul className="flex flex-col">
+                {group.items.map((item) => (
+                  <li
+                    key={`${item.id}:${item.kind}:${String(item.outgoing)}`}
+                    className="group flex min-w-0 items-stretch"
+                  >
+                    <ProjectRail projectId={thread} />
+                    <LinkedRow
+                      type={item.type}
+                      id={item.id}
+                      title={item.title}
+                      detail={item.detail}
+                      label={item.label}
+                      stacked
+                    />
+                    {item.removable && (
+                      <button
+                        type="button"
+                        disabled={unlink.isPending}
+                        onClick={() => unlink.mutate(item)}
+                        aria-label={`Unlink ${item.title}`}
+                        className="flex w-7 shrink-0 items-center justify-center text-ink-subtle opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-ink disabled:opacity-50 [@media(hover:none)]:opacity-100"
+                      >
+                        <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3 w-3">
+                          <path
+                            d="M4 4l8 8M12 4l-8 8"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )
+        })}
         {add}
       </div>
     )
@@ -165,14 +263,35 @@ function LinkedRow({
   title,
   detail,
   label,
+  stacked = false,
 }: {
   type: ObjectType
   id: string
   title: string
   detail: string | null
   label: string
+  /** Title over its detail, as the rows of a kind's block are: a block is narrow. */
+  stacked?: boolean
 }) {
   const where = relationFor(type)
+  if (stacked) {
+    const body = (
+      <>
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="truncate text-ink">{title}</span>
+          {detail && <span className="truncate text-sm text-ink-subtle">{detail}</span>}
+        </span>
+        {label && <span className="shrink-0 text-sm text-ink-muted">{label}</span>}
+      </>
+    )
+    const shape = 'flex min-w-0 flex-1 items-start gap-3 py-2 pr-1 pl-3'
+    if (!where) return <span className={shape}>{body}</span>
+    return (
+      <Link to={where.to(id)} data-linked={id} className={`${shape} hover:bg-hover`}>
+        {body}
+      </Link>
+    )
+  }
   const body = (
     <>
       <span className="min-w-0 flex-[2] truncate">{title}</span>

@@ -10,7 +10,6 @@ import {
 import { Link } from 'react-router-dom'
 import { PanelEmpty } from '../components/Panel'
 import { ProjectRail } from '../components/RowParts'
-import { Stat, StatRow } from '../components/Stat'
 import { isReadingUrl } from '../readingUrl'
 import { Reading } from '../routes/Reading'
 import type { CaptureTargetState, SearchHit, WorkspaceModule } from './contract'
@@ -213,22 +212,6 @@ const WIDGET_ROWS = 5
  * a project page.
  */
 
-/** This module's numbers in the project banner, beside the task module's. */
-function ReadingHeadline({ projectId }: { projectId: string }) {
-  const items = useQuery({
-    queryKey: readingKey({ projectId }),
-    queryFn: () => listReading({ projectId }),
-  })
-  const rows = items.data ?? []
-  if (rows.length === 0) return null
-  const open = rows.filter((i) => i.status === 'todo' || i.status === 'reading').length
-  return (
-    <StatRow>
-      <Stat label="Reading" value={String(open)} />
-    </StatRow>
-  )
-}
-
 export const readingModule: WorkspaceModule = {
   id: ID,
   label: 'Reading',
@@ -262,7 +245,6 @@ export const readingModule: WorkspaceModule = {
       span: 8,
     },
   ],
-  ProjectHeadline: ReadingHeadline,
   // No page of its own: a thing to read is a title, a link and a status, and a page per item
   // would be a page holding one line. The list IS where one is read.
   relations: [{ type: 'reading', kind: 'Reading', to: (id) => `/${ID}/${id}` }],

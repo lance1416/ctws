@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useId, useState } from 'react'
+import { Fragment, useEffect, useId, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { listCompleted } from '../api/completed'
 import { listMovement } from '../api/movement'
@@ -13,7 +13,6 @@ import { TaskBoard } from '../components/TaskBoard'
 import { isOverlayOpen } from '../components/overlayState'
 import { ProjectRail } from '../components/RowParts'
 import { PanelEmpty } from '../components/Panel'
-import { Stat, StatRow } from '../components/Stat'
 import { StatusMark } from '../components/StatusMark'
 import { TaskTree } from '../components/TaskTree'
 import { dayPhrase, todayIn } from '../dueAt'
@@ -261,24 +260,34 @@ function ProjectNumbers({ projectId }: { projectId: string }) {
   // rather than reporting that it has been quiet for forty days.
   if (!row) return null
   // The account's own calendar day, for reading the server's `lastActivityOn` back as a phrase.
-  // Never a browser-local date: the server already decided which day that was.
   const today = todayIn(timeZone)
+  const moved = row.lastActivityOn ? dayPhrase(row.lastActivityOn, today) : null
+  /**
+   * ONE SENTENCE, NOT FOUR TILES: "6 open, 1 overdue, 63% done. Last moved today."
+   *
+   * Open first, because it is what is left. Overdue only when there is any -- "0 overdue" is not
+   * news -- and in the miss colour, the one number allowed a hue. Done as a percentage and NO BAR:
+   * a 60% line and a 60% line nobody has touched for three weeks draw the same bar, and "Last
+   * moved" is what tells them apart.
+   */
+  const parts: ReactNode[] = [`${row.remaining} open`]
+  if (row.overdue > 0) parts.push(<span className="text-missed">{row.overdue} overdue</span>)
+  // 0% is no more news than "0 overdue": a line with nothing done yet says how much is open.
+  if (progress !== null && Math.round(progress * 100) > 0)
+    parts.push(`${Math.round(progress * 100)}% done`)
   return (
-    <StatRow>
-      {/* NO BAR, only the number. A 60% line and a 60% line that nobody has touched for three
-          weeks draw the same bar; Last activity beside it is the one that tells them apart, and it
-          is already in this row. */}
-      {progress !== null && <Stat label="Progress" value={`${Math.round(progress * 100)}%`} />}
-      <Stat label="Open" value={row.remaining} />
-      <Stat label="Done this week" value={row.doneThisWeek} />
-      {/* The one number that is allowed a hue, and it is the row system's own `missed`: a deadline
-          that has gone. Zero stays plain, because "0 overdue" is not a warning. */}
-      <Stat label="Overdue" value={row.overdue} tone={row.overdue > 0 ? 'missed' : 'fg'} />
-      <Stat
-        label="Last activity"
-        value={row.lastActivityOn ? dayPhrase(row.lastActivityOn, today) : 'None yet'}
-      />
-    </StatRow>
+    <p data-project-sentence className="mt-1.5 text-ink-muted tabular-nums">
+      {parts.map((p, i) => (
+        <Fragment key={i}>
+          {i > 0 && ', '}
+          {p}
+        </Fragment>
+      ))}
+      .{' '}
+      {moved
+        ? `Last moved ${/^(Today|Yesterday)$/.test(moved) ? moved.toLowerCase() : moved}.`
+        : 'Nothing has moved yet.'}
+    </p>
   )
 }
 
@@ -358,7 +367,9 @@ function ProjectTasks({ projectId, view }: { projectId: string; view: string }) 
           for, you reached to the same place. The full form is the BLOCK's action now and lives in
           the block's head (`NewTaskAction`), where every block's "new" is. A line typed here and
           filed with Enter is this project's success criterion, so it keeps the position. */}
-      <div className="mb-1 ml-3 flex w-[calc(100%-1.5rem)] max-w-[52ch] flex-wrap items-center gap-2">
+      {/* Where the rows' bodies start: past the margin (3.75 / 4.5rem), the thread and the body's
+          gutter (8 / 14px), so the box reads as the first row's place. */}
+      <div className="mb-1 ml-[71px] flex max-w-[52ch] flex-wrap items-center gap-2 pr-2 sm:ml-[89px]">
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -380,7 +391,7 @@ function ProjectTasks({ projectId, view }: { projectId: string; view: string }) 
           edge, rather than as a line of page chrome below the whole control group. The typed
           title is still in the box: what was typed is the user's, not the request's. */}
       {create.isError && (
-        <p id={failureId} role="alert" className="mt-1 ml-3 text-sm text-danger">
+        <p id={failureId} role="alert" className="mt-1 ml-[71px] text-sm text-danger sm:ml-[89px]">
           Couldn't create. Press Enter to try again.
         </p>
       )}

@@ -23,10 +23,11 @@ export function ProjectHead({ id }: { id: string }) {
     ) : null
   }
   return (
-    <div className="flex min-w-0 flex-wrap items-end justify-between gap-x-8 gap-y-3">
+    <div className="flex min-w-0 flex-col">
       {/* The chip is the colour PICKER and the name is editable in place. The chip is never
           alone -- the name is right beside it (WCAG 1.4.1). */}
       <ProjectIdentity projectId={id} name={project.name} color={project.color} />
+      {/* Each module's numbers, said as a sentence under the name. */}
       {projectHeadlines().map(({ moduleId, Component }) => (
         <Component key={moduleId} projectId={id} />
       ))}

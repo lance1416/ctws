@@ -71,32 +71,29 @@ export function ObjectPage({ type }: { type: ObjectType }) {
 
   return (
     <>
-      {/*
-        ONE COLUMN, and no grid around it. The three-column version existed for a person's page
-        and a meeting's page; those are layers over their own lists now, so nothing was left for
-        it to lay out. A project page spends its width in the module's own block -- the tree and
-        the task pane at 2:1 (`project.spec.ts` pins that) -- and a second grid around that one
-        would halve the pane.
-      */}
-      <>
-        <>
-          {/* The banner: the top step of the type scale spent on its subject, the same language
-          the workbench's own strip speaks. */}
-          <Panel
-            label={`${where?.kind ?? 'Thing'} at a glance`}
-            heading={<h2 className="text-xs font-semibold text-ink-subtle">{where?.kind}</h2>}
-          >
-            {Head ? (
-              <div className="px-2 pb-1">
-                <Head id={id} />
-              </div>
-            ) : null}
-          </Panel>
+      {/* THE HEAD: the name at the scale's 2xl step and one sentence of numbers -- no tiles, no
+          bar. Hung where the rows' thread hangs, like every heading on a page of rows. */}
+      <section
+        aria-label={`${where?.kind ?? 'Thing'} at a glance`}
+        className="mb-8 ml-15 min-w-0 pt-2 sm:ml-18"
+      >
+        {Head ? <Head id={id} /> : null}
+      </section>
 
-          {/* A module's own editor for this kind of thing, where it has one. */}
-          {type === 'project' && (
-            <div className="mt-4 flex min-w-0 flex-col gap-4">
-              {projectBlocks().map(({ moduleId, moduleLabel, Component, views: offered = [] }) => {
+      {/*
+        A CROSSING POINT: the project's own block -- the task tree -- takes the main column, and
+        every other kind that meets this project sits beside it, each in a block of its own.
+
+        BESIDE ONLY WHERE THERE IS ROOM, by the column's own width (a container query), not the
+        window's: with the task detail open at 1440 the third column is the detail's, the main
+        column is 750px, and a 20rem aside beside the tree as well would leave it a sliver. There
+        Linked goes under the tree, as it does on a phone.
+      */}
+      <div className="@container">
+        <div className="grid min-w-0 grid-cols-1 items-start gap-10 @5xl:grid-cols-[minmax(0,1fr)_20rem] @5xl:gap-14">
+          <div className="flex min-w-0 flex-col gap-4">
+            {type === 'project' &&
+              projectBlocks().map(({ moduleId, moduleLabel, Component, views: offered = [] }) => {
                 const chosen =
                   offered.find((v) => v.id === views.picked.get(moduleId))?.id ??
                   offered[0]?.id ??
@@ -106,8 +103,9 @@ export function ObjectPage({ type }: { type: ObjectType }) {
                   <Panel
                     key={moduleId}
                     label={moduleLabel}
+                    hang
                     /* `ViewTabs` draws nothing for a single view, so a block with one is not given
-                   a tab bar that decides nothing. */
+                       a tab bar that decides nothing. */
                     tabs={
                       <ViewTabs
                         views={offered}
@@ -121,24 +119,18 @@ export function ObjectPage({ type }: { type: ObjectType }) {
                   </Panel>
                 )
               })}
-            </div>
-          )}
-        </>
-
-        <>
+          </div>
           {/* AND WHAT IT IS CONNECTED TO: the people, the reading and the meetings -- everything
-          except the tasks, which the tree above already draws. Saying a row twice is the one
-          thing a reader has to hold two of in their head. */}
-          <Panel label="Linked" className="mt-4">
-            <Links of={{ type, id }} except={covered} />
-          </Panel>
-        </>
-      </>
+              except the tasks, which the tree already draws. Saying a row twice is the one thing a
+              reader has to hold two of in their head. */}
+          <section aria-label="Linked" data-panel="Linked" className="min-w-0 @5xl:pt-1">
+            <Links of={{ type, id }} except={covered} variant="aside" />
+          </section>
+        </div>
+      </div>
 
       {/* LAST ON THE PAGE, below everything, in the danger colour: the one action here that
-          cannot be undone, where nothing is reached by passing over it (`DangerZone`). The shell
-          owns WHERE it goes -- the same place for every kind of thing -- and the module owns what
-          destroying one of its things means. */}
+          cannot be undone, where nothing is reached by passing over it (`DangerZone`). */}
       {Destroy && (
         <DangerZone>
           <Destroy id={id} />

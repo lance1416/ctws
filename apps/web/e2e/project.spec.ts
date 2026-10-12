@@ -38,93 +38,83 @@ const MEDIUM = { width: 1024, height: 800 }
 const dueAgo = (n: number) => new Date(Date.now() - n * DAY).toISOString()
 const header = (page: Page) =>
   page.getByRole('region', { name: 'Project at a glance', exact: true })
-const stat = (page: Page, label: string) => header(page).locator(`[data-stat="${label}"] dd`)
+const sentence = (page: Page) => header(page).locator('[data-project-sentence]')
 
-// ------------------------------------------------------------------ the four numbers in the banner
+// ------------------------------------------------------------------ the numbers, in one sentence
 
-test('the project header shows the four numbers the server reports, for THIS project', async ({
-  page,
-}) => {
+test('the project head says the numbers the server reports, for THIS project', async ({ page }) => {
   await registerFreshUser(page)
   await page.setViewportSize(WIDE)
   const busy = await makeProject(page, '很忙的线')
   const calm = await makeProject(page, '很闲的线')
 
-  // 很忙的线: four open, two of them overdue, two finished this week.
+  // 很忙的线: four open, two of them overdue. 很闲的线: one open, none late. Different in every
+  // number, so a head showing workspace-wide totals (or the other project's) fails on this page.
   await makeTask(page, busy, '忙一', { dueAt: dueAgo(3) })
   await makeTask(page, busy, '忙二', { dueAt: dueAgo(1) })
   await makeTask(page, busy, '忙三')
   await makeTask(page, busy, '忙四')
-  for (const t of ['忙五', '忙六']) await makeTask(page, busy, t, { status: 'done' })
-  // 很闲的线: one open, none late, none finished. Different in every one of the four numbers, so
-  // a banner showing workspace-wide totals (or the other project's) fails on this page.
   await makeTask(page, calm, '闲一')
 
   const server = await movementOf(page)
   const expected = (id: string) => server.find((r) => r.projectId === id)!
-  expect([expected(busy).remaining, expected(busy).doneThisWeek, expected(busy).overdue]).toEqual([
-    4, 2, 2,
-  ])
-  expect([expected(calm).remaining, expected(calm).doneThisWeek, expected(calm).overdue]).toEqual([
-    1, 0, 0,
-  ])
+  expect([expected(busy).remaining, expected(busy).overdue]).toEqual([4, 2])
+  expect([expected(calm).remaining, expected(calm).overdue]).toEqual([1, 0])
 
   for (const id of [busy, calm]) {
     const row = expected(id)
     await page.goto(`/projects/${id}`)
     await expect(page.getByRole('heading', { level: 1, name: row.projectName })).toBeVisible()
     // The chip beside the name is never the only carrier: the NAME is right there (WCAG 1.4.1).
-    // It is a CONTROL (it opens the colour picker), so it is named rather than hidden --
-    // the rule it has to keep is that colour is not the only thing saying which project this is.
     await expect(header(page).locator(`[data-project-chip="${id}"]`)).toHaveAccessibleName(
       'Project colour',
     )
-    await expect(stat(page, 'Open'), row.projectName).toHaveText(String(row.remaining))
-    await expect(stat(page, 'Done this week'), row.projectName).toHaveText(String(row.doneThisWeek))
-    await expect(stat(page, 'Overdue'), row.projectName).toHaveText(String(row.overdue))
-    // The day is the SERVER's, read back in the app's words. `quietDays` is the server's own
-    // arithmetic in the user's timezone, so nothing here depends on this machine's clock.
+    await expect(sentence(page), row.projectName).toContainText(`${row.remaining} open`)
+    // "0 overdue" is not news, so a line with none says nothing about it.
+    if (row.overdue > 0)
+      await expect(sentence(page), row.projectName).toContainText(`${row.overdue} overdue`)
+    else await expect(sentence(page), row.projectName).not.toContainText('overdue')
+    // The day is the SERVER's, read back in the app's words.
     expect(row.quietDays).toBe(0)
-    await expect(stat(page, 'Last activity'), row.projectName).toHaveText('Today')
+    await expect(sentence(page), row.projectName).toContainText('Last moved today.')
   }
 
-  // A quiet line says the DAY it last moved, not "Today" -- which is the number's whole point.
+  // A quiet line says the DAY it last moved -- which is the sentence's whole point.
   backdateProjectActivity(calm, '9 days')
   await page.goto(`/projects/${calm}`)
   const quiet = (await movementOf(page)).find((r) => r.projectId === calm)!
   expect(quiet.quietDays).toBe(9)
   const [, month, day] = quiet.lastActivityOn!.split('-').map(Number)
-  await expect(stat(page, 'Last activity')).toHaveText(`${MONTHS[month! - 1]} ${day}`)
+  await expect(sentence(page)).toContainText(`Last moved ${MONTHS[month! - 1]} ${day}.`)
 })
 
 /**
- * The banner is a live number, not a page-load snapshot. It is also the reason the movement
+ * The head is a live number, not a page-load snapshot. It is also the reason the movement
  * refetch is no longer awaited by the create path (api/taskCache.ts): the typist waits for the
  * row, not for the count. That change would be invisible if nothing asserted the count still
  * catches up -- and silently stale is exactly how a number stops being worth reading.
  */
-test('the header’s numbers follow a task added on the page, without a reload', async ({ page }) => {
+test('the head’s numbers follow a task added on the page, without a reload', async ({ page }) => {
   await registerFreshUser(page)
   await page.setViewportSize(WIDE)
   const pid = await makeProject(page, '会变的线')
   await makeTask(page, pid, '本来就有的')
   await page.goto(`/projects/${pid}`)
-  await expect(stat(page, 'Open')).toHaveText('1')
+  await expect(sentence(page)).toContainText('1 open')
 
   await page.getByRole('textbox', { name: 'New task' }).fill('刚加的')
   await page.getByRole('textbox', { name: 'New task' }).press('Enter')
   await expect(page.getByRole('button', { name: 'Task: 刚加的', exact: true })).toBeVisible()
-  await expect(stat(page, 'Open')).toHaveText('2')
+  await expect(sentence(page)).toContainText('2 open')
   // ...and the server agrees, so this is not a count the page made up on its own.
   expect((await movementOf(page)).find((r) => r.projectId === pid)!.remaining).toBe(2)
 })
 
 /**
- * Separate from the counts on purpose: the test above passes unchanged with a bar sitting beside
- * them. Rollup is M3 and nothing writes `manual_progress`, so a ratio in this banner would be a
- * number the backend cannot cash.
+ * A percentage, never a bar: a 60% line and a 60% line nobody has touched for three weeks draw
+ * the same bar, and the sentence's "Last moved" is what tells them apart.
  */
-test('the project header draws a percentage but never a progress bar', async ({ page }) => {
+test('the project head says how much is done in words, and never draws a bar', async ({ page }) => {
   await registerFreshUser(page)
   await page.setViewportSize(WIDE)
   const pid = await makeProject(page, '有进展的线')
@@ -133,25 +123,20 @@ test('the project header draws a percentage but never a progress bar', async ({ 
   await makeTask(page, pid, '写了进度的', { manualProgress: 0.5 })
 
   await page.goto(`/projects/${pid}`)
-  const banner = header(page)
-  await expect(stat(page, 'Done this week')).toHaveText('2')
-
-  // A NUMBER, AND NO BAR. It is the mean of the four root tasks (1 + 1 + 0 + 0.5) / 4, the same
-  // rule a parent gets.
-  await expect(stat(page, 'Progress')).toHaveText('63%')
-  // A BAR is still refused: a 60% line and a 60% line nobody has touched for three weeks draw
-  // the same bar, and Last activity beside it is the one that tells them apart.
-  await expect(banner.getByRole('progressbar')).toHaveCount(0)
-  await expect(banner.locator('progress, meter')).toHaveCount(0)
-  // A bar built by hand: an element whose width is a fraction of its parent.
-  const proportional = await banner.evaluate(
+  // The mean of the four root tasks, (1 + 1 + 0 + 0.5) / 4: the same rule a parent gets, and the
+  // same number the old Progress tile showed.
+  await expect(sentence(page)).toContainText('63% done')
+  const head = header(page)
+  await expect(head.getByRole('progressbar')).toHaveCount(0)
+  await expect(head.locator('progress, meter')).toHaveCount(0)
+  const proportional = await head.evaluate(
     (el) =>
       [...el.querySelectorAll<HTMLElement>('*')].filter((n) => {
         const width = n.style.width || getComputedStyle(n).getPropertyValue('--progress')
         return width.includes('%')
       }).length,
   )
-  expect(proportional, 'elements sized by a percentage inside the project header').toBe(0)
+  expect(proportional, 'elements sized by a percentage inside the project head').toBe(0)
 })
 
 // -------------------------------------------------------- the tree in a panel, the detail beside it
@@ -169,11 +154,12 @@ test('the tree is a panel spanning two columns and the detail is the third, at 1
   const treePanel = page.getByRole('region', { name: 'Tasks', exact: true })
   // The tree is INSIDE the panel, not beside it: a panel drawn around nothing would otherwise pass.
   await expect(treePanel.locator('[data-task-tree]')).toHaveCount(1)
-  // The banner is above it and the full width of the content area.
+  // The head is above it; beside it, with the detail closed, is what the project meets.
   const bannerBox = (await header(page).boundingBox())!
   const closedBox = (await treePanel.boundingBox())!
   expect(bannerBox.y + bannerBox.height).toBeLessThanOrEqual(closedBox.y + 1)
-  expect(Math.round(bannerBox.width)).toBe(Math.round(closedBox.width))
+  const aside = (await page.locator('[data-panel="Linked"]').boundingBox())!
+  expect(aside.x).toBeGreaterThanOrEqual(closedBox.x + closedBox.width)
 
   await openDetail(page, '被打开的任务')
   const dialog = page.getByRole('dialog', { name: 'Task details' })

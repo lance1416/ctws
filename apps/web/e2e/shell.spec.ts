@@ -50,6 +50,11 @@ test('light and dark colour schemes produce different page backgrounds', async (
 // Assert the exact text: a garbled string would still satisfy a bare "an alert exists".
 test('a failed project list shows an error, not an empty list', async ({ page }) => {
   await registerFreshUser(page)
+  // Nothing in flight before the server starts failing: signing in fetches the list more than
+  // once (the rail, then each card on the Workbench), and a request already on its way when the
+  // route is installed is not intercepted -- it succeeds, the page mounts onto it, and there is
+  // nothing left to fail.
+  await page.waitForLoadState('networkidle')
   await page.route('**/api/v1/projects', (route) =>
     route.fulfill({ status: 500, contentType: 'application/json', body: '{"title":"boom"}' }),
   )

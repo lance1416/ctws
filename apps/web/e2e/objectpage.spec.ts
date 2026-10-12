@@ -81,26 +81,39 @@ test('指向一个已经不在的人，说出来而不是空着', async ({ page 
   await expect(page.getByText('This person is not here any more.')).toBeVisible()
 })
 
-test('项目页是单栏：Linked 在正文下面', async ({ page }) => {
+test('Linked sits beside Tasks where the page has room, and below it on a phone', async ({
+  page,
+}) => {
   const { project } = await world(page)
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto(`/projects/${project.id}`)
-  const glance = await page.getByRole('region', { name: 'Project at a glance' }).boundingBox()
-  const linked = await page.getByRole('region', { name: 'Linked' }).boundingBox()
-  expect(linked!.y).toBeGreaterThan(glance!.y)
-  // 一栏：两块左边对齐，宽度一样。
-  expect(Math.round(linked!.x)).toBe(Math.round(glance!.x))
-  expect(Math.round(linked!.width)).toBe(Math.round(glance!.width))
+  const tasks = (await page.getByRole('region', { name: 'Tasks', exact: true }).boundingBox())!
+  const linked = (await page.locator('[data-panel="Linked"]').boundingBox())!
+  // Beside: to the right of the tasks, and starting level with them.
+  expect(linked.x).toBeGreaterThanOrEqual(tasks.x + tasks.width)
+  expect(Math.abs(linked.y - tasks.y)).toBeLessThan(40)
+  expect(Math.round(linked.width)).toBe(320)
+
+  await page.setViewportSize({ width: 375, height: 800 })
+  const narrowTasks = (await page
+    .getByRole('region', { name: 'Tasks', exact: true })
+    .boundingBox())!
+  const narrowLinked = (await page.locator('[data-panel="Linked"]').boundingBox())!
+  expect(narrowLinked.y).toBeGreaterThan(narrowTasks.y + narrowTasks.height - 4)
 })
 
-test('项目页不被改成两栏：它自己的块已经把宽度用掉了', async ({ page }) => {
+test('with the detail open the third column is the detail’s, and Linked goes below', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await registerFreshUser(page)
   const pid = (await apiPost(page, '/projects', { name: '求职' })).id as string
+  await apiPost(page, '/tasks', { projectId: pid, title: '打开的那条', parentId: null })
   await page.goto(`/projects/${pid}`)
-  const glance = (await page.getByRole('region', { name: 'Project at a glance' }).boundingBox())!
-  const linked = (await page.getByRole('region', { name: 'Linked' }).boundingBox())!
-  // Below, and the same width: the third column on this page belongs to the task detail pane.
-  expect(linked.y).toBeGreaterThan(glance.y + glance.height - 4)
-  expect(Math.round(linked.width)).toBe(Math.round(glance.width))
+  await page.getByRole('listitem').filter({ hasText: '打开的那条' }).click()
+  await expect(page.getByRole('dialog', { name: 'Task details' })).toBeVisible()
+  const tasks = (await page.getByRole('region', { name: 'Tasks', exact: true }).boundingBox())!
+  const linked = (await page.locator('[data-panel="Linked"]').boundingBox())!
+  expect(linked.y).toBeGreaterThan(tasks.y + tasks.height - 4)
+  expect(Math.round(linked.x)).toBe(Math.round(tasks.x))
 })
