@@ -1,5 +1,5 @@
 import { and, eq, sql } from 'drizzle-orm'
-import type { Queryable } from '../../platform/db/client'
+import type { Db, Queryable } from '../../platform/db/client'
 import { taskDependencies } from './tables'
 import { DependencyCycleError } from './errors'
 import { visibleTask } from './queries/scope'
@@ -53,54 +53,59 @@ async function wouldCycle(
  * the first. It is also what a double-click produces.
  */
 export async function addDependency(
-  q: Queryable,
+  db: Db,
   ctx: TaskCtx,
   blockedId: string,
   blockerId: string,
 ): Promise<void> {
   if (blockedId === blockerId) throw new DependencyCycleError()
-  // Both ends are checked, and both against THIS workspace: an id from somewhere else must read
-  // as "no such task", never as a refusal that confirms it exists.
-  await visibleTask(q, ctx.workspaceId, blockedId)
-  await visibleTask(q, ctx.workspaceId, blockerId)
-  if (await wouldCycle(q, ctx.workspaceId, blockerId, blockedId)) throw new DependencyCycleError()
+  await db.transaction(async (tx) => {
+    // Both ends are checked, and both against THIS workspace: an id from somewhere else must read
+    // as "no such task", never as a refusal that confirms it exists.
+    await visibleTask(tx, ctx.workspaceId, blockedId)
+    await visibleTask(tx, ctx.workspaceId, blockerId)
+    if (await wouldCycle(tx, ctx.workspaceId, blockerId, blockedId))
+      throw new DependencyCycleError()
 
-  await q
-    .insert(taskDependencies)
-    .values({ blockerId, blockedId, workspaceId: ctx.workspaceId })
-    .onConflictDoNothing()
-  await appendEvent(q, {
-    taskId: blockedId,
-    workspaceId: ctx.workspaceId,
-    actorUserId: ctx.actorUserId,
-    type: 'dependency_added',
-    payload: { blockerId },
+    await tx
+      .insert(taskDependencies)
+      .values({ blockerId, blockedId, workspaceId: ctx.workspaceId })
+      .onConflictDoNothing()
+    await appendEvent(tx, {
+      taskId: blockedId,
+      workspaceId: ctx.workspaceId,
+      actorUserId: ctx.actorUserId,
+      type: 'dependency_added',
+      payload: { blockerId },
+    })
   })
 }
 
 /** Forgets that `blockedId` waits for `blockerId`. Also idempotent. */
 export async function removeDependency(
-  q: Queryable,
+  db: Db,
   ctx: TaskCtx,
   blockedId: string,
   blockerId: string,
 ): Promise<void> {
-  const removed = await q
-    .delete(taskDependencies)
-    .where(
-      and(
-        eq(taskDependencies.blockedId, blockedId),
-        eq(taskDependencies.blockerId, blockerId),
-        eq(taskDependencies.workspaceId, ctx.workspaceId),
-      ),
-    )
-    .returning({ blockerId: taskDependencies.blockerId })
-  if (removed.length === 0) return
-  await appendEvent(q, {
-    taskId: blockedId,
-    workspaceId: ctx.workspaceId,
-    actorUserId: ctx.actorUserId,
-    type: 'dependency_removed',
-    payload: { blockerId },
+  await db.transaction(async (tx) => {
+    const removed = await tx
+      .delete(taskDependencies)
+      .where(
+        and(
+          eq(taskDependencies.blockedId, blockedId),
+          eq(taskDependencies.blockerId, blockerId),
+          eq(taskDependencies.workspaceId, ctx.workspaceId),
+        ),
+      )
+      .returning({ blockerId: taskDependencies.blockerId })
+    if (removed.length === 0) return
+    await appendEvent(tx, {
+      taskId: blockedId,
+      workspaceId: ctx.workspaceId,
+      actorUserId: ctx.actorUserId,
+      type: 'dependency_removed',
+      payload: { blockerId },
+    })
   })
 }

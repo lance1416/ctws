@@ -1,4 +1,5 @@
 import type { DependencyRef } from '@ctws/contracts'
+import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createProject, createTask, setupWith, type TaskCtx, web } from './helpers/tasks'
 
@@ -240,5 +241,30 @@ describe('task dependencies', () => {
     expect(body.blockers[ship]!.map((r) => r.title)).toEqual(['跑通 CI'])
     // A task with nothing in its way is absent rather than present-and-empty.
     expect(body.blockers[ci]).toBeUndefined()
+  })
+
+  it('records the edge and its event together or not at all', async () => {
+    const ctx = await setup()
+    const pid = await createProject(ctx, 'Atomic')
+    const waits = await createTask(ctx, pid, 'waits')
+    const first = await createTask(ctx, pid, 'first')
+    // The event insert fails; the edge must not survive it.
+    await ctx.db.execute(sql`
+      create function refuse_dependency_event() returns trigger language plpgsql as $$
+      begin
+        if new.type = 'dependency_added' then raise exception 'refused for the test'; end if;
+        return new;
+      end $$
+    `)
+    await ctx.db.execute(sql`
+      create trigger refuse_dependency_event before insert on task_events
+        for each row execute function refuse_dependency_event()
+    `)
+
+    expect((await dependOn(ctx, waits, first)).statusCode).toBe(500)
+    const edges = await ctx.db.execute(
+      sql`select 1 from task_dependencies where blocked_id = ${waits} and blocker_id = ${first}`,
+    )
+    expect(edges.rows).toEqual([])
   })
 })
