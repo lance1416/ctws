@@ -1,6 +1,5 @@
 import type { ProjectColor } from '@ctws/contracts'
-import { useQuery } from '@tanstack/react-query'
-import { listProjects } from './api/projects'
+import { useEveryProject } from './api/projects'
 
 /**
  * The project identity rail: which of the six categorical slots a project wears.
@@ -46,7 +45,8 @@ export function railClass(color: ProjectColor | null | undefined): string {
  * needed anyway.
  */
 export function useProjectRail(): (projectId: string) => string {
-  const { data } = useQuery({ queryKey: ['projects'], queryFn: listProjects })
+  // Live and archived both: a row on an archived project keeps its colour (the shelf, a search).
+  const { data } = useEveryProject()
   const byId = new Map(data?.map((p) => [p.id, p.color]) ?? [])
   return (projectId) => railClass(byId.get(projectId))
 }

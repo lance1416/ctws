@@ -12,6 +12,8 @@ import { ReadingRow } from '../components/ReadingRow'
 import { DaySection } from '../components/DaySection'
 import { ROW_LIST } from '../components/RowParts'
 import { useTimeZone } from '../useMe'
+import { useNow } from '../useNow'
+import { todayIn } from '../dueAt'
 import { useCrumbs } from '../components/Location'
 
 /**
@@ -41,6 +43,8 @@ export function Reading() {
   const [showFinished, setShowFinished] = useState(false)
   const heading = useRef<HTMLHeadingElement>(null)
   const timeZone = useTimeZone()
+  // Kept current while the page is open, and handed to every row (`useNow`).
+  const today = todayIn(timeZone, useNow())
 
   const rows = items.data ?? []
   const gone = openId !== null && items.isSuccess && !rows.some((i) => i.id === openId)
@@ -75,7 +79,7 @@ export function Reading() {
             : "Couldn't load. Check that the server is running."}
         </p>
       )}
-      {items.isSuccess && rows.length === 0 && <EmptyState title="The list is empty" />}
+      {items.isSuccess && rows.length === 0 && <EmptyState hang title="The list is empty" />}
 
       {SECTIONS.map(({ status, label }) => {
         const section = of(status)
@@ -93,6 +97,7 @@ export function Reading() {
                   key={item.id}
                   item={item}
                   timeZone={timeZone}
+                  today={today}
                   onOpen={() => navigate(`/reading/${item.id}`)}
                 />
               ))}
@@ -133,6 +138,7 @@ export function Reading() {
                   key={item.id}
                   item={item}
                   timeZone={timeZone}
+                  today={today}
                   onOpen={() => navigate(`/reading/${item.id}`)}
                 />
               ))}

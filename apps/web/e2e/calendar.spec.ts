@@ -182,7 +182,9 @@ test('the calendar grid keeps to the type scale and the thread shape', async ({ 
         if (!el.childNodes.length || ![...el.childNodes].some((n) => n.nodeType === 3)) continue
         const s = getComputedStyle(el)
         sizes.add(s.fontSize)
-        if (/rgba\(.*,\s*0?\.\d+\)$/.test(s.color)) faded.push(el.textContent ?? '')
+        // Any alpha below 1, whatever the colour space: Tailwind v4 writes `text-x/70` as a
+        // color-mix that the browser reports as `oklab(... / 0.7)`, not as rgba.
+        if (/\/\s*0?\.\d+\)$|rgba\(.*,\s*0?\.\d+\)$/.test(s.color)) faded.push(el.textContent ?? '')
       }
     return { sizes: [...sizes], faded }
   })
@@ -193,4 +195,8 @@ test('the calendar grid keeps to the type scale and the thread shape', async ({ 
   expect(found.faded).toEqual([])
   const mark = page.locator('[data-entry-mark]').first()
   await expect(mark).toHaveCSS('border-radius', '0px')
+  // The colour is never without the project's name: the entry is named with it.
+  await expect(
+    page.locator('[data-day]').getByRole('link', { name: /交材料/ }),
+  ).toHaveAccessibleName(/找工作/)
 })

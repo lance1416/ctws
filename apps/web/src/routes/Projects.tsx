@@ -189,7 +189,7 @@ function ProjectRow({
         <span data-project-meta className="truncate text-sm text-ink-muted tabular-nums">
           {said.map((part, i) => (
             <Fragment key={i}>
-              {i > 0 && ' · '}
+              {i > 0 && <span aria-hidden="true"> · </span>}
               {part}
             </Fragment>
           ))}

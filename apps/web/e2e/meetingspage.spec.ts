@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { TZDate } from '@date-fns/tz'
 import { dayOffset } from './days'
 import { accountZone, pickOne, registerFreshUser, WEB } from './helpers'
 
@@ -319,4 +320,30 @@ test('meetings hang on the margin: the time, the thread, then the meeting', asyn
   expect(Math.round(h1.x)).toBe(threads[0])
   const day = (await page.getByRole('heading', { level: 2, name: 'Tomorrow' }).boundingBox())!
   expect(Math.round(day.x)).toBe(threads[0])
+})
+
+/**
+ * A SERIES' ROW CARRIES ITS NEXT TIME. At 15:00 a daily 09:00 standup's next one is tomorrow's,
+ * not this morning's, which is over; the row sits under Tomorrow. The clock is the test's own.
+ */
+test('a repeating meeting shows its next occurrence, not one already over', async ({ page }) => {
+  await registerFreshUser(page)
+  const zone = await accountZone(page)
+  const res = await page.request.post('/api/v1/meetings', {
+    headers: WEB,
+    data: {
+      title: 'Standup',
+      startsLocal: `${dayOffset(0)}T09:00`,
+      timeZone: zone,
+      durationMinutes: 15,
+      rrule: 'FREQ=DAILY',
+    },
+  })
+  expect(res.ok(), await res.text()).toBe(true)
+  const [y, m, d] = dayOffset(0).split('-').map(Number) as [number, number, number]
+  await page.clock.install({ time: new TZDate(y, m - 1, d, 15, 0, 0, 0, zone) })
+  await page.goto('/meetings')
+  const tomorrow = page.getByRole('region', { name: 'Tomorrow' })
+  await expect(tomorrow.locator('[data-meeting-row]')).toHaveCount(1)
+  await expect(page.getByRole('region', { name: 'Today' })).toHaveCount(0)
 })

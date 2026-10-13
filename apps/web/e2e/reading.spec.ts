@@ -1,6 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { TZDate } from '@date-fns/tz'
-import { accountZone, dayInZone, holdFirstRead, registerFreshUser, WEB } from './helpers'
+import { holdFirstRead, registerFreshUser, WEB } from './helpers'
 
 /**
  * THE READING LIST -- THE SECOND MODULE, through the browser.
@@ -275,7 +274,6 @@ test('the reading list hangs on the margin: the plan, the thread, then the item'
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await registerFreshUser(page)
-  const zone = await accountZone(page)
   const project = await page.request.post('/api/v1/projects', {
     headers: WEB,
     data: { name: 'CTWS' },
@@ -287,10 +285,8 @@ test('the reading list hangs on the margin: the plan, the thread, then the item'
   })
   expect(made.status(), await made.text()).toBe(201)
   const { id } = (await made.json()) as { id: string }
-  // Three days out on the ACCOUNT's calendar: the margin names it by its weekday.
-  const [y, m, d] = dayInZone(zone).split('-').map(Number) as [number, number, number]
-  const plan = new TZDate(y, m - 1, d + 3, 12, 0, 0, 0, zone)
-  const planOn = `${plan.getFullYear()}-${String(plan.getMonth() + 1).padStart(2, '0')}-${String(plan.getDate()).padStart(2, '0')}`
+  // A fixed day years out, so the margin's word does not depend on today: its date.
+  const planOn = '2030-05-28'
   const planned = await page.request.patch(`/api/v1/reading/${id}`, {
     headers: WEB,
     data: { planOn },
@@ -303,8 +299,7 @@ test('the reading list hangs on the margin: the plan, the thread, then the item'
   await page.goto('/reading')
 
   const row = page.locator(`[data-reading-row="${id}"]`)
-  const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-  await expect(row.locator('[data-row-lead-text]')).toHaveText(WEEKDAYS[plan.getDay()]!)
+  await expect(row.locator('[data-row-lead-text]')).toHaveText('May 28')
   await expect(row.locator('[data-row-lead]')).toHaveAttribute('data-row-lead', 'plan')
   await expect(row.locator('[data-project-rail]')).toHaveAttribute('data-project-rail', projectId)
   await expect(row).toContainText('CTWS')

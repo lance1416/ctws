@@ -65,7 +65,9 @@ export function BirthdayLead({ next }: { next: { day: string; inDays: number } |
   return (
     <span
       data-birthday-lead
-      className={`flex shrink-0 items-center justify-end gap-1.5 pr-2 text-sm whitespace-nowrap tabular-nums sm:pr-3.5 ${MARGIN} ${
+      // The cake 2px from its date on a phone (6px up): "May 28" with its cake is 59px there, and
+      // the phone's margin leaves 52 -- the rest runs into the page's gutter, half of it at most.
+      className={`flex shrink-0 items-center justify-end gap-0.5 pr-2 text-sm whitespace-nowrap tabular-nums sm:gap-1.5 sm:pr-3.5 ${MARGIN} ${
         next?.inDays === 0 ? 'font-semibold text-deadline' : 'text-ink-muted'
       }`}
     >

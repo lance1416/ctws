@@ -36,11 +36,21 @@ import { useCrumbs } from '../components/Location'
  * time, because that is the part of a series anybody is asking about.
  */
 
-/** The next occurrence of each series, in time order. A series says so on its row. */
-function nextOfEach(rows: readonly MeetingOccurrence[]): MeetingOccurrence[] {
+/**
+ * The next occurrence of each series, in time order. A series says so on its row.
+ *
+ * NEXT MEANS NOT YET OVER: at 15:00 a daily 09:00 standup's next one is tomorrow's, and showing
+ * this morning's -- greyed, under Today -- hid the one time anybody is asking about. Only a series
+ * with nothing later in the window falls back to the one that has ended.
+ */
+function nextOfEach(rows: readonly MeetingOccurrence[], now: Date): MeetingOccurrence[] {
   const first = new Map<string, MeetingOccurrence>()
-  for (const m of rows) if (!first.has(m.meetingId)) first.set(m.meetingId, m)
-  return [...first.values()]
+  for (const m of rows) {
+    const held = first.get(m.meetingId)
+    const over = (o: MeetingOccurrence) => new Date(o.endsAt).getTime() <= now.getTime()
+    if (!held || (over(held) && !over(m))) first.set(m.meetingId, m)
+  }
+  return [...first.values()].sort((a, b) => a.startsAt.localeCompare(b.startsAt))
 }
 
 /** How far either way the two sections reach. A personal calendar, not an archive. */
@@ -78,9 +88,9 @@ export function Meetings() {
   })
 
   // The server returns occurrences in time order, so the first of each series is its next one.
-  const coming = nextOfEach(ahead.data ?? [])
+  const coming = nextOfEach(ahead.data ?? [], now)
   // Backwards, the MOST RECENT of each series is the one worth showing.
-  const past = nextOfEach([...(behind.data ?? [])].reverse())
+  const past = nextOfEach([...(behind.data ?? [])].reverse(), now)
   const inWindow = [...coming, ...past].find((m) => m.meetingId === openId)
   // 窗口之外的那些：一条链接可以指向半年前开过的会，而列表只看前后 31 天。往前一年找，
   // 找不到再往回一年 —— 已经结束的系列也还有地址，而指向过去的一次性会议最常见。
@@ -103,7 +113,7 @@ export function Meetings() {
   return (
     <>
       {/* The title on the margin's edge, where the rows' threads and the days' headings hang. */}
-      <div className="ml-15 flex items-center justify-between gap-3 sm:ml-18">
+      <div className="ml-15 flex flex-wrap items-center justify-between gap-3 sm:ml-18">
         <h1
           ref={heading}
           tabIndex={-1}
@@ -111,7 +121,11 @@ export function Meetings() {
         >
           Meetings
         </h1>
-        <button type="button" onClick={() => setMaking(true)} className={BUTTON.secondary}>
+        <button
+          type="button"
+          onClick={() => setMaking(true)}
+          className={`whitespace-nowrap ${BUTTON.secondary}`}
+        >
           New meeting
         </button>
       </div>
@@ -124,7 +138,9 @@ export function Meetings() {
             : "Couldn't load. Check that the server is running."}
         </p>
       )}
-      {ahead.isSuccess && coming.length === 0 && <EmptyState title="Nothing in the next month" />}
+      {ahead.isSuccess && coming.length === 0 && (
+        <EmptyState hang title="Nothing in the next month" />
+      )}
 
       <div className={`mt-6 ${LIST_MEASURE}`}>
         {coming.length > 0 && (
@@ -295,6 +311,9 @@ function MeetingRow({
   const over = new Date(m.endsAt).getTime() <= now.getTime()
   const join = meetingLink(m.location)
   const said: ReactNode[] = []
+  // The thread is the project's colour; its name LEADS the line, so a clipped line still names
+  // it (WCAG 1.4.1).
+  if (m.projectName) said.push(<span key="project">{m.projectName}</span>)
   // What was actually AGREED, when that is not your clock: "09:30 London" is what the other
   // people in the room said, and it is not 04:30 anywhere.
   if (m.timeZone !== accountZone)
@@ -303,8 +322,6 @@ function MeetingRow({
         {m.startsLocal.slice(11)} {zoneLabel(m.timeZone, new Date(m.startsAt))}
       </span>,
     )
-  // The thread is the project's colour; its name is here (WCAG 1.4.1).
-  if (m.projectName) said.push(<span key="project">{m.projectName}</span>)
   if (m.attendees.length > 0)
     said.push(<span key="who">{m.attendees.map((p) => p.name).join(', ')}</span>)
   if (m.rrule) said.push(<span key="repeat">{repeatLabel(m.rrule, m.startsLocal, today)}</span>)
@@ -331,13 +348,14 @@ function MeetingRow({
               over ? 'text-ink-subtle' : 'text-ink'
             }`}
           >
+            {over && <span className="sr-only">Ended: </span>}
             {m.title}
           </button>
           {said.length > 0 && (
             <span className="truncate text-sm text-ink-muted">
               {said.map((part, i) => (
                 <Fragment key={i}>
-                  {i > 0 && ' · '}
+                  {i > 0 && <span aria-hidden="true"> · </span>}
                   {part}
                 </Fragment>
               ))}

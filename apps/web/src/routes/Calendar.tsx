@@ -204,6 +204,9 @@ export function Calendar() {
                           </span>
                         )}
                         <span className="truncate text-xs text-ink">{entry.title}</span>
+                        {entry.projectName && (
+                          <span className="sr-only">, {entry.projectName}</span>
+                        )}
                         {/* The zone it was AGREED in, when that is not the one the clock above is
                             in. The time says when to turn up; this says what was actually said. */}
                         {entry.zone && (
@@ -247,7 +250,9 @@ function EntryLink({
   onOpen: () => void
   children: ReactNode
 }) {
-  const title = `${entry.kind} · ${entry.title}`
+  // The project by name, beside the colour the entry wears (WCAG 1.4.1): in the tooltip, and
+  // in the entry's own name, which a square has no room to print.
+  const title = [entry.kind, entry.title, entry.projectName].filter(Boolean).join(' · ')
   const className =
     'flex w-full min-w-0 items-center gap-1 rounded-md px-1 py-0.5 text-left hover:bg-hover'
   return opens ? (

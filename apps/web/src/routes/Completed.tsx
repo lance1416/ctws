@@ -86,7 +86,7 @@ export function Completed({ heading: showHeading = true }: { heading?: boolean }
             : "Couldn't load. Check that the server is running."}
         </p>
       )}
-      {completed.isSuccess && rows.length === 0 && <EmptyState title="Nothing finished yet" />}
+      {completed.isSuccess && rows.length === 0 && <EmptyState hang title="Nothing finished yet" />}
       {days.map(({ day, tasks }) => (
         <DaySection
           key={day}
@@ -153,7 +153,7 @@ export function Completed({ heading: showHeading = true }: { heading?: boolean }
           changes. And it names where the rest is, because it is not lost -- Review takes any
           week and has no cap. */}
       {completed.data?.truncated && (
-        <p className="mt-8 text-sm text-ink-muted">
+        <p className="mt-8 ml-15 text-sm text-ink-muted sm:ml-18">
           Showing the most recent {rows.length}. Older work is in Review, week by week.
         </p>
       )}

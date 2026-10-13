@@ -31,7 +31,7 @@ const item = (over: Partial<ReadingItemResponse> = {}): ReadingItemResponse => (
 const render = (i: ReadingItemResponse) =>
   renderToStaticMarkup(
     <QueryClientProvider client={new QueryClient()}>
-      <ReadingRow item={i} timeZone="UTC" />
+      <ReadingRow item={i} timeZone="UTC" today="2026-10-12" />
     </QueryClientProvider>,
   )
 

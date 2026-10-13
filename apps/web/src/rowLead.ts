@@ -60,8 +60,9 @@ export function leadFor(
   }
   if (row.scheduledOn) {
     const day = row.scheduledOn
-    const text =
-      day === today ? 'Today' : day === addDays(today, 1) ? 'Tomorrow' : weekdayOrDate(day, today)
+    // Tomorrow by its weekday, as a deadline is: "Tomorrow" is the widest word the margin could
+    // hold (63.7px at 14px, measured), and a phone's margin leaves it 52.
+    const text = day === today ? 'Today' : weekdayOrDate(day, today)
     return { text, tone: 'plan', flag: false, exact: `Planned for ${fullDay(day)}` }
   }
   if (row.at) {
@@ -82,6 +83,18 @@ export function deadlineDayLead(day: string, today: string): Lead {
     flag: true,
     exact: `Next due ${fullDay(day)}`,
   }
+}
+
+/**
+ * A DAY IN A WEEK UNDER REVIEW: Today, else its weekday from the window's first day on -- so every
+ * day of last week reads Mon to Sun, not its Monday as a date and the rest by weekday -- and its
+ * date before the window.
+ */
+export function weekDayWord(day: string, today: string, from: string): string {
+  if (day === today) return 'Today'
+  return day >= from && day < today
+    ? WEEKDAYS[new Date(`${day}T00:00:00Z`).getUTCDay()]!
+    : monthDay(day)
 }
 
 /**

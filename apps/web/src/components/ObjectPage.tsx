@@ -6,8 +6,7 @@ import { Links } from './Links'
 import { Panel } from './Panel'
 import { ViewTabs } from './ViewTabs'
 import { useCrumbs } from './Location'
-import { useQuery } from '@tanstack/react-query'
-import { listProjects } from '../api/projects'
+import { useEveryProject } from '../api/projects'
 import { useForgetWhenGone, useRecordRecent } from '../recent'
 
 /**
@@ -39,11 +38,8 @@ export function ObjectPage({ type }: { type: ObjectType }) {
   const { id } = useParams()
   const where = relationFor(type)
   const views = useBlockViews()
-  const projects = useQuery({
-    queryKey: ['projects'],
-    queryFn: listProjects,
-    enabled: type === 'project',
-  })
+  // Live or archived: an archived project still has its page.
+  const projects = useEveryProject()
   const project = projects.data?.find((p) => p.id === id)
   const gone = type === 'project' && projects.isSuccess && !project
   // Until the list is in there is no name to give; once it is, a project that is not in it is

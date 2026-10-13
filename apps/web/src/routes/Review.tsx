@@ -10,8 +10,8 @@ import { BODY_GUTTER, ProjectRail, ROW_LIST } from '../components/RowParts'
 import { StatusMark } from '../components/StatusMark'
 import { ViewTabs } from '../components/ViewTabs'
 import { Completed } from './Completed'
-import { addDays, MONTHS, todayIn, ymd } from '../dueAt'
-import { LIST_MEASURE } from '../rowLead'
+import { MONTHS, todayIn, ymd } from '../dueAt'
+import { LIST_MEASURE, weekDayWord } from '../rowLead'
 import { useTimeZone } from '../useMe'
 import { useNow } from '../useNow'
 import { useCrumbs } from '../components/Location'
@@ -34,8 +34,6 @@ function shiftWeek(from: string, to: string, weeks: number): { from: string; to:
 
 type Project = ReviewResponse['projects'][number]
 
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
-
 /**
  * WHAT HAPPENED TO ONE TASK, on the app's row: the day it happened in the margin, the project's
  * thread, then the mark and the title.
@@ -43,8 +41,8 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
  * The three groups are told apart by the MARK, not by three sub-headings with a grey count each
  * -- "Done 2", "Start 1", "Dropped 1" is three labels to read before the first title. It is the
  * same glyph the task carries everywhere else, so a finished task looks finished here too and
- * the list is one list. The day is the ACCOUNT's (the event's instant in its zone): Today, else
- * the weekday -- a review covers a week, and in a week the weekday is the name a day goes by.
+ * the list is one list. The day is the ACCOUNT's (the event's instant in its zone), named as a
+ * day of the week under review (`weekDayWord`).
  */
 function Row({
   title,
@@ -52,6 +50,7 @@ function Row({
   at,
   projectId,
   today,
+  from,
   timeZone,
 }: {
   title: string
@@ -59,16 +58,11 @@ function Row({
   at: string
   projectId: string
   today: string
+  /** The first day of the week under review. */
+  from: string
   timeZone: string
 }) {
-  const day = ymd(new Date(at), timeZone)
-  const [, m, d] = day.split('-').map(Number) as [number, number, number]
-  const text =
-    day === today
-      ? 'Today'
-      : day >= addDays(today, -6)
-        ? WEEKDAYS[new Date(`${day}T12:00:00Z`).getUTCDay()]!
-        : `${MONTHS[m - 1]} ${d}`
+  const text = weekDayWord(ymd(new Date(at), timeZone), today, from)
   return (
     <li data-review-row className="flex min-h-11 min-w-0">
       <RowLead lead={{ text, tone: 'quiet', flag: false }} dateTime={at} />
@@ -167,14 +161,15 @@ export function Review() {
             "Last week" button pushed to the far right -- two halves of one idea, dressed as two
             unrelated things, and no way forward once you had gone back. */}
         {view === 'week' && data && (
-          <div className="ml-auto flex items-center gap-1">
+          // Its own line when the title row has no room (a phone): it wraps, never overflows.
+          <div className="ml-auto flex flex-wrap items-center gap-1">
             <Step
               label="The week before"
               onClick={() => setRange(shiftWeek(data.from, data.to, -1))}
             >
               ‹
             </Step>
-            <span className="min-w-[8.5rem] text-center text-sm tabular-nums text-ink-muted">
+            <span className="text-center text-sm whitespace-nowrap text-ink-muted tabular-nums">
               {dayLabel(data.from)} – {dayLabel(data.to)}
             </span>
             {/* FORWARD STOPS AT THIS WEEK. Next week has not happened, so the only thing the
@@ -190,7 +185,7 @@ export function Review() {
               <button
                 type="button"
                 onClick={() => setRange(null)}
-                className="ml-1 h-8 rounded-md px-2.5 text-sm text-ink-muted hover:bg-hover hover:text-ink"
+                className="ml-1 h-8 rounded-md px-2.5 text-sm whitespace-nowrap text-ink-muted hover:bg-hover hover:text-ink"
               >
                 This week
               </button>
@@ -216,7 +211,7 @@ export function Review() {
           )}
 
           {projects.length === 0 ? (
-            <EmptyState title="Nothing happened this week" />
+            <EmptyState hang title="Nothing happened this week" />
           ) : (
             /* ONE COLUMN, a section per line of work, like every other list in the app: the
                threads at one x, and the day each thing happened in the margin. */
@@ -232,6 +227,7 @@ export function Review() {
                         at={t.at}
                         projectId={p.projectId}
                         today={today}
+                        from={data.from}
                         timeZone={timeZone}
                       />
                     ))}
@@ -243,6 +239,7 @@ export function Review() {
                         at={t.at}
                         projectId={p.projectId}
                         today={today}
+                        from={data.from}
                         timeZone={timeZone}
                       />
                     ))}
@@ -254,6 +251,7 @@ export function Review() {
                         at={t.at}
                         projectId={p.projectId}
                         today={today}
+                        from={data.from}
                         timeZone={timeZone}
                       />
                     ))}

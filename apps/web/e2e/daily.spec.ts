@@ -435,7 +435,13 @@ test('the tree shows dates only where they mean something', async ({ page }) => 
   await expect(lead('今天截止')).toHaveAttribute('data-row-lead', 'deadline')
   await expect(lead('今天截止').locator('[data-row-lead-text]')).toHaveText('23:30')
   await expect(lead('只排期')).toHaveAttribute('data-row-lead', 'plan')
-  await expect(lead('只排期').locator('[data-row-lead-text]')).toHaveText('Tomorrow')
+  // Tomorrow by its weekday, as a deadline is: "Tomorrow" is wider than a phone's margin.
+  const planned = ymd(new Date(now.getTime() + DAY))
+  await expect(lead('只排期').locator('[data-row-lead-text]')).toHaveText(
+    ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][
+      new Date(`${planned}T12:00:00Z`).getUTCDay()
+    ]!,
+  )
   // A dateless row and a finished row say nothing in the margin: the row is still a row.
   await expect(lead('没日期').locator('[data-row-lead-text]')).toHaveCount(0)
   await expect(lead('已完成逾期').locator('[data-row-lead-text]')).toHaveCount(0)

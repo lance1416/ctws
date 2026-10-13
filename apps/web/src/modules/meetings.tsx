@@ -170,7 +170,10 @@ function TodayMeetings() {
       </p>
     )
   }
-  if (meetings.isSuccess && rows.length === 0) return <PanelEmpty>No meetings today</PanelEmpty>
+  // Nothing until the day's meetings are in: a line drawn before then is named "nothing", which
+  // tells anyone glancing (or listening) that a day with meetings in it is empty.
+  if (!meetings.isSuccess) return null
+  if (rows.length === 0) return <PanelEmpty>No meetings today</PanelEmpty>
 
   const at = (d: Date) => clock.format(d)
   const minutes = (d: Date) => {

@@ -2,8 +2,6 @@ import { expect, test } from '@playwright/test'
 import { TZDate } from '@date-fns/tz'
 import { accountZone, dayInZone, makeProject, makeTask, registerFreshUser, WEB } from './helpers'
 
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-
 /**
  * THE PROJECT LIST, ON THE APP'S ROW: the margin says when the next deadline falls, the thread is
  * the project's colour, and the body names it and says what is open, what is late and when it last
@@ -17,10 +15,10 @@ test('the project list hangs on the margin: next deadline, thread, then the line
   const zone = await accountZone(page)
   const job = await makeProject(page, '找工作')
   const old = await makeProject(page, 'Old thing')
-  // On the ACCOUNT's clock: a deadline three days out, and one two days gone.
+  // A deadline on a fixed day years out -- so the margin's word does not depend on today -- and
+  // one two days gone on the ACCOUNT's clock.
   const [y, m, d] = dayInZone(zone).split('-').map(Number) as [number, number, number]
-  const next = new TZDate(y, m - 1, d + 3, 17, 0, 0, 0, zone)
-  await makeTask(page, job, 'Mock interview', { dueAt: next.toISOString() })
+  await makeTask(page, job, 'Mock interview', { dueAt: '2030-05-28T12:00:00Z' })
   await makeTask(page, job, 'Update the résumé', {
     dueAt: new TZDate(y, m - 1, d - 2, 12, 0, 0, 0, zone).toISOString(),
   })
@@ -32,9 +30,9 @@ test('the project list hangs on the margin: next deadline, thread, then the line
   await page.goto('/projects')
 
   const row = page.locator(`[data-project-row="${job}"]`)
-  // The margin: the next deadline still standing, as the margin words any deadline in the week
-  // ahead -- its weekday -- with the flag.
-  await expect(row.locator('[data-row-lead-text]')).toHaveText(WEEKDAYS[next.getDay()]!)
+  // The margin: the next deadline still standing, as the margin words a deadline beyond this
+  // week -- its date -- with the flag.
+  await expect(row.locator('[data-row-lead-text]')).toHaveText('May 28')
   await expect(row.locator('[data-flag]')).toHaveCount(1)
   // The thread is its colour; its name is the link, and only the name.
   await expect(row.locator('[data-project-rail]')).toHaveAttribute('data-project-rail', job)
@@ -63,4 +61,24 @@ test('the project list hangs on the margin: next deadline, thread, then the line
   // middle -- over its meta line, which the name's link is stretched across -- opens the project.
   await row.click()
   await expect(page).toHaveURL(new RegExp(`/projects/${job}$`))
+})
+
+/** An archived project's row opens its page, which says it is archived -- not that it is gone. */
+test('an archived project opens as itself, marked archived', async ({ page }) => {
+  await registerFreshUser(page)
+  const old = await makeProject(page, 'Old thing')
+  await makeTask(page, old, 'Something left in it')
+  const res = await page.request.patch(`/api/v1/projects/${old}`, {
+    headers: WEB,
+    data: { archived: true },
+  })
+  expect(res.ok(), await res.text()).toBe(true)
+  await page.goto('/projects')
+  await page.locator(`[data-project-row="${old}"]`).click()
+  await expect(page).toHaveURL(new RegExp(`/projects/${old}$`))
+  await expect(page.getByRole('heading', { level: 1, name: 'Old thing' })).toBeVisible()
+  await expect(page.locator('[data-project-archived]')).toHaveText('Archived')
+  await expect(page.getByText('This project is not here any more.')).toHaveCount(0)
+  await expect(page.getByRole('navigation', { name: 'Location' })).not.toContainText('Not found')
+  await expect(page.getByText('Something left in it')).toBeVisible()
 })

@@ -16,6 +16,7 @@ export function EmptyState({
   title,
   hint,
   action,
+  hang = false,
 }: {
   /** One line, the state itself. Plain, present tense. */
   title: string
@@ -23,9 +24,11 @@ export function EmptyState({
   hint?: string
   /** The one action that fills it. */
   action?: ReactNode
+  /** On a page of rows: on the margin's edge, where the page's title and its headings hang. */
+  hang?: boolean
 }) {
   return (
-    <div className="mt-8 max-w-[44ch]">
+    <div className={`mt-8 max-w-[44ch] ${hang ? 'ml-15 sm:ml-18' : ''}`}>
       <p className="text-ink">{title}</p>
       {hint && <p className="mt-1 text-sm text-ink-muted">{hint}</p>}
       {action && <div className="mt-4">{action}</div>}

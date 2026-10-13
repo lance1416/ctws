@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { deadlineDayLead, leadFor } from './rowLead'
+import { deadlineDayLead, leadFor, weekDayWord } from './rowLead'
 
 /**
  * THE MARGIN: what a row says about WHEN, before anything else on it.
@@ -38,9 +38,9 @@ describe('the margin', () => {
     expect(leadFor(row({ dueAt: '2026-10-13T03:59:00.000Z' }), TODAY, TZ)?.text).toBe('Today')
   })
 
-  it('names a plan for tomorrow, unflagged', () => {
+  it('names a plan for tomorrow by its weekday, unflagged -- "Tomorrow" is wider than the margin', () => {
     expect(leadFor(row({ scheduledOn: '2026-10-13' }), TODAY, TZ)).toMatchObject({
-      text: 'Tomorrow',
+      text: 'Tue',
       tone: 'plan',
       flag: false,
     })
@@ -100,5 +100,24 @@ describe('a deadline day', () => {
   })
   it('carries the whole date, year included, for the title', () => {
     expect(deadlineDayLead('2026-10-15', TODAY).exact).toBe('Next due Oct 15, 2026')
+  })
+})
+
+/**
+ * A DAY IN A REVIEWED WEEK: Today, else its weekday while it is inside the week being reviewed --
+ * every day of last week reads Mon to Sun, not Mon as a date and the rest as weekdays -- and its
+ * date before the week starts.
+ */
+describe('a day in the week under review', () => {
+  it('says today as Today', () => {
+    expect(weekDayWord(TODAY, TODAY, '2026-10-12')).toBe('Today')
+  })
+  it('names every day of the week by its weekday, the first included', () => {
+    // Reviewing the week of Oct 5 on Monday Oct 12: its Monday is a weekday, not "Oct 5".
+    expect(weekDayWord('2026-10-05', TODAY, '2026-10-05')).toBe('Mon')
+    expect(weekDayWord('2026-10-11', TODAY, '2026-10-05')).toBe('Sun')
+  })
+  it('names a day before the week by its date', () => {
+    expect(weekDayWord('2026-10-04', TODAY, '2026-10-05')).toBe('Oct 4')
   })
 })

@@ -1,4 +1,5 @@
 import type { ProjectColor, ProjectListItem, ProjectResponse } from '@ctws/contracts'
+import { useQuery } from '@tanstack/react-query'
 import { apiFetch } from '../api'
 
 /**
@@ -18,6 +19,19 @@ export async function listProjects(): Promise<ProjectListItem[]> {
 export const archivedProjectsKey = ['projects', 'archived'] as const
 export async function listArchivedProjects(): Promise<ProjectListItem[]> {
   return (await apiFetch<{ projects: ProjectListItem[] }>('/projects?archived=true')).projects
+}
+
+/**
+ * EVERY PROJECT, live or put away: what a project's own page and its colour are looked up in. A
+ * page that looked only among the live ones said an archived project was "not here any more".
+ */
+export function useEveryProject(): { data: ProjectListItem[] | undefined; isSuccess: boolean } {
+  const live = useQuery({ queryKey: ['projects'], queryFn: listProjects })
+  const shelf = useQuery({ queryKey: archivedProjectsKey, queryFn: listArchivedProjects })
+  return {
+    data: live.data && shelf.data ? [...live.data, ...shelf.data] : undefined,
+    isSuccess: live.isSuccess && shelf.isSuccess,
+  }
 }
 
 export function createProject(body: { name: string }): Promise<ProjectResponse> {

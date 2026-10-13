@@ -1,5 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
-import { listProjects } from '../api/projects'
+import { useEveryProject } from '../api/projects'
 import { projectHeadlines } from '../modules/registry'
 import { ProjectIdentity } from './ProjectIdentity'
 
@@ -13,9 +12,8 @@ import { ProjectIdentity } from './ProjectIdentity'
  * banner no second module could ever appear in.
  */
 export function ProjectHead({ id }: { id: string }) {
-  // Same query function as every other reader of ['projects']: they share one cache entry, so
-  // they must agree on its shape.
-  const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
+  // Live or archived: an archived project's page is its page, marked as set aside.
+  const projects = useEveryProject()
   const project = projects.data?.find((p) => p.id === id)
   if (!project) {
     return projects.isSuccess ? (
@@ -27,6 +25,11 @@ export function ProjectHead({ id }: { id: string }) {
       {/* The chip is the colour PICKER and the name is editable in place. The chip is never
           alone -- the name is right beside it (WCAG 1.4.1). */}
       <ProjectIdentity projectId={id} name={project.name} color={project.color} />
+      {project.archivedAt && (
+        <p data-project-archived className="mt-1.5 text-sm font-semibold text-ink-muted">
+          Archived
+        </p>
+      )}
       {/* Each module's numbers, said as a sentence under the name. */}
       {projectHeadlines().map(({ moduleId, Component }) => (
         <Component key={moduleId} projectId={id} />

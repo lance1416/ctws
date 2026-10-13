@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { deleteReadingItem, patchReadingItem, readingLabel } from '../api/reading'
 import { useForgetRecent } from '../recent'
-import { addDays, daysAgoIn, nextMonday, todayIn } from '../dueAt'
+import { addDays, daysAgoIn, nextMonday } from '../dueAt'
 import { useComposing } from '../composition'
 import { leadFor } from '../rowLead'
 import { DeleteConfirm } from './DeleteConfirm'
@@ -59,11 +59,14 @@ const MARK: Record<ReadingStatus, string> = {
 export function ReadingRow({
   item,
   timeZone,
+  today,
   here,
   onOpen,
 }: {
   item: ReadingItemResponse
   timeZone: string
+  /** The account's today, from the page (`useNow`): a row does not read the clock for itself. */
+  today: string
   /** The project this list is already inside, if any. Its name is then not worth repeating -- the
    *  same rule the dependency pane keeps, and why the task tree shows no breadcrumb. */
   here?: string
@@ -71,7 +74,6 @@ export function ReadingRow({
   onOpen?: () => void
 }) {
   const qc = useQueryClient()
-  const today = todayIn(timeZone)
   const composing = useComposing()
   const [renaming, setRenaming] = useState(false)
   const [deleting, setDeleting] = useState(false)

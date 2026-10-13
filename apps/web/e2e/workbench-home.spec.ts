@@ -3,6 +3,7 @@ import { TZDate } from '@date-fns/tz'
 import {
   accountZone,
   dayInZone,
+  holdFirstRead,
   makeProject,
   makeTask,
   meetingToday,
@@ -223,9 +224,9 @@ test('the meetings line keeps late hours and long meetings inside the card', asy
   await expect(line).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBe(0)
   // 07:30–09:00 overlaps the line, so it is on it -- not listed as outside its hours.
+  await expect(line).toHaveAttribute('aria-label', /Early run at 07:30/)
   const name = (await line.getAttribute('aria-label'))!
   expect(name).not.toContain('Outside those hours')
-  expect(name).toContain('Early run at 07:30')
   // 21:00 to past midnight is drawn from 21:00 to the line's end: 1 of its 14 hours.
   const share = await line.evaluate((el) => {
     const late = [...el.querySelectorAll<HTMLElement>('[data-line-meeting]')].find(
@@ -255,4 +256,23 @@ test('a meeting on a project names it beside its colour', async ({ page }) => {
   await page.goto('/')
   const row = card(page, 'Meetings').getByRole('listitem').filter({ hasText: 'Second interview' })
   await expect(row).toContainText('找工作')
+})
+
+/**
+ * NOT A PICTURE OF NOTHING WHILE IT LOADS. Before the day's meetings arrive the card draws no line:
+ * a line drawn empty is named "nothing", and a screen reader (or anyone glancing) is told a day
+ * with meetings in it is empty.
+ */
+test('the meetings line is not drawn until the meetings are in', async ({ page }) => {
+  await registerFreshUser(page, '/')
+  await meetingToday(page, 'Call home', '20:00', await accountZone(page))
+  const release = await holdFirstRead(page, '**/api/v1/meetings?*')
+  await page.goto('/')
+  await expect(card(page, 'Meetings')).toBeVisible()
+  await expect(card(page, 'Meetings').getByRole('img')).toHaveCount(0)
+  release()
+  await expect(card(page, 'Meetings').getByRole('img')).toHaveAttribute(
+    'aria-label',
+    /Call home at 20:00/,
+  )
 })

@@ -120,12 +120,7 @@ export function NewPersonDialog({
   }
 
   return (
-    <Modal
-      title="New person"
-      onClose={onClose}
-      initialFocus={nameField}
-      dismissLabel={null}
-    >
+    <Modal title="New person" onClose={onClose} initialFocus={nameField} dismissLabel={null}>
       <form
         onSubmit={(e) => {
           e.preventDefault()
