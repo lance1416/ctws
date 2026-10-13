@@ -200,3 +200,62 @@ test('the calendar grid keeps to the type scale and the thread shape', async ({ 
     page.locator('[data-day]').getByRole('link', { name: /交材料/ }),
   ).toHaveAccessibleName(/找工作/)
 })
+
+/*
+  THE KEY. A square has no room for a project's name, so on the grid an entry's colour would be
+  the only sign of its project (WCAG 1.4.1). One line under the month names them once: every
+  project whose colour is on the grid, its mark and its name, in the rail's order.
+*/
+test('a key under the month names each project whose colour is on the grid', async ({ page }) => {
+  await registerFreshUser(page, '/')
+  const job = await makeProject(page, '找工作')
+  const ctws = await makeProject(page, 'CTWS')
+  // CTWS is met first on the grid; the key still follows the rail.
+  await makeTask(page, ctws, '发版', { scheduledOn: dayOffset(1) })
+  await makeTask(page, job, '交材料', { scheduledOn: dayOffset(2) })
+  await page.goto('/calendar')
+
+  const key = page.getByRole('list', { name: 'Projects on this calendar' })
+  await expect(key.getByRole('listitem')).toHaveText(['找工作', 'CTWS'])
+  const colour = (el: Element) => getComputedStyle(el).backgroundColor
+  for (const [name, title] of [
+    ['找工作', '交材料'],
+    ['CTWS', '发版'],
+  ] as const) {
+    const onEntry = await page
+      .locator('[data-day]')
+      .getByRole('link', { name: new RegExp(title) })
+      .locator('[data-entry-mark]')
+      .evaluate(colour)
+    const inKey = await key
+      .getByRole('listitem')
+      .filter({ hasText: name })
+      .locator('[data-key-mark]')
+      .evaluate(colour)
+    expect(inKey, name).toBe(onEntry)
+  }
+})
+
+test('an entry folded into "+N" puts no project in the key', async ({ page }) => {
+  // The key names the colours ON the grid; a project whose only entry is not drawn has none there.
+  await registerFreshUser(page, '/')
+  const shown = await makeProject(page, 'Shown')
+  const folded = await makeProject(page, 'Folded')
+  for (const title of ['a1', 'a2', 'a3'])
+    await makeTask(page, shown, title, { scheduledOn: dayOffset(1) })
+  await makeTask(page, folded, 'z9', { scheduledOn: dayOffset(1) })
+  await page.goto('/calendar')
+
+  await expect(square(page, dayOffset(1))).toContainText('+1')
+  await expect(
+    page.getByRole('list', { name: 'Projects on this calendar' }).getByRole('listitem'),
+  ).toHaveText(['Shown'])
+})
+
+test('with no project colour on the grid there is no key', async ({ page }) => {
+  await registerFreshUser(page, '/')
+  await book(page, '设计心理学', dayOffset(1))
+  await page.goto('/calendar')
+  await expect(square(page, dayOffset(1))).toContainText('设计心理学')
+  await expect(page.getByRole('list', { name: 'Projects on this calendar' })).toHaveCount(0)
+})

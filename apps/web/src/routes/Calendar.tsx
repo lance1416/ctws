@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { ViewTabs } from '../components/ViewTabs'
 import { useQuery } from '@tanstack/react-query'
 import { calendarDays } from '../api/birthdays'
+import { useEveryProject } from '../api/projects'
 import { todayIn } from '../dueAt'
 import { calendarProviders } from '../modules/registry'
 import { monthRange, monthSquares, monthTitle, shiftMonth, WEEKDAYS } from '../monthGrid'
@@ -45,6 +46,7 @@ export function Calendar() {
   const [params, setParams] = useSearchParams()
   const heading = useRef<HTMLHeadingElement>(null)
   const rail = useProjectRail()
+  const projects = useEveryProject()
 
   const providers = calendarProviders()
   const range = monthRange(cursor)
@@ -97,6 +99,20 @@ export function Calendar() {
 
   const squares = monthSquares(cursor)
 
+  /**
+   * THE KEY: each project whose colour is on the grid, named once. A square has no room for a
+   * project's name, so without it an entry's mark would be the only sign of its project (WCAG
+   * 1.4.1). Only what is DRAWN counts -- an entry folded into "+N" puts no colour on the grid --
+   * and the order is the rail's, so a project sits where it always does.
+   */
+  const order = new Map(projects.data?.map((p, i) => [p.id, i]))
+  const keyed = new Map<string, string>()
+  for (const { day } of squares)
+    for (const entry of (byDay.get(day) ?? []).slice(0, PER_SQUARE))
+      if (entry.projectId && entry.projectName && !keyed.has(entry.projectId))
+        keyed.set(entry.projectId, entry.projectName)
+  const key = [...keyed].sort(([a], [b]) => (order.get(a) ?? Infinity) - (order.get(b) ?? Infinity))
+
   return (
     <>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -130,6 +146,21 @@ export function Calendar() {
         <p role="alert" className="mt-3 text-sm text-danger">
           Some entries failed to load
         </p>
+      )}
+
+      {key.length > 0 && (
+        <ul aria-label="Projects on this calendar" className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
+          {key.map(([id, name]) => (
+            <li key={id} className="flex min-w-0 items-center gap-1.5 text-xs text-ink-muted">
+              <span
+                aria-hidden="true"
+                data-key-mark
+                className={`h-3 w-[3px] shrink-0 ${rail(id)}`}
+              />
+              {name}
+            </li>
+          ))}
+        </ul>
       )}
 
       <div className="mt-4 min-w-0 overflow-hidden border border-rule bg-sheet">
@@ -186,7 +217,7 @@ export function Calendar() {
                       >
                         {/* The project's identity colour. A calendar is cross-project by nature,
                             which is exactly where this chip earns its place -- and it is never
-                            alone, because the title is beside it (WCAG 1.4.1). */}
+                            alone: the key above the grid names it (WCAG 1.4.1). */}
                         {/* The slot is reserved whether or not the entry has a project, so every
                             title in a square starts at the same x -- the rule the task rows keep
                             about their leading glyph. */}
