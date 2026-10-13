@@ -149,7 +149,9 @@ test('with the detail open the third column is the detail’s, and Linked goes b
   // And on a phone, where it is below for want of room.
   await page.setViewportSize({ width: 375, height: 800 })
   await page.goto(`/projects/${project.id}`)
+  // Both reads, not just Linked's: the tree's can land second, and then it has no thread to measure.
   await expect(page.locator('[data-panel="Linked"]')).toContainText('Ying Chen')
+  await expect(page.getByRole('listitem').filter({ hasText: 'Rewrite the CV' })).toBeVisible()
   const phone = await edges()
   expect(phone.below).toBe(true)
   expect(phone.linkedThread).toBe(phone.treeThread)
