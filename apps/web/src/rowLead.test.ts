@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { leadFor } from './rowLead'
+import { deadlineDayLead, leadFor } from './rowLead'
 
 /**
  * THE MARGIN: what a row says about WHEN, before anything else on it.
@@ -79,5 +79,26 @@ describe('the margin', () => {
       tone: 'time',
       flag: false,
     })
+  })
+})
+
+/**
+ * A DEADLINE KNOWN ONLY BY ITS DAY -- a project's next one -- in the words the margin gives any
+ * deadline: Today, a weekday in the week ahead, else its date. Flagged, in the deadline tone.
+ */
+describe('a deadline day', () => {
+  it('says today as Today', () => {
+    expect(deadlineDayLead(TODAY, TODAY)).toMatchObject({
+      text: 'Today',
+      tone: 'deadline',
+      flag: true,
+    })
+  })
+  it('names a day in the week ahead by its weekday, and one beyond it by its date', () => {
+    expect(deadlineDayLead('2026-10-15', TODAY).text).toBe('Thu')
+    expect(deadlineDayLead('2026-10-20', TODAY).text).toBe('Oct 20')
+  })
+  it('carries the whole date, year included, for the title', () => {
+    expect(deadlineDayLead('2026-10-15', TODAY).exact).toBe('Next due Oct 15, 2026')
   })
 })

@@ -10,6 +10,16 @@ export async function listProjects(): Promise<ProjectListItem[]> {
   return (await apiFetch<{ projects: ProjectListItem[] }>('/projects')).projects
 }
 
+/**
+ * The projects that have been put away. The server lists ONLY the live ones unless asked, so an
+ * archived project is in no list above -- this is the one way to see one. Under ['projects'], so a
+ * refresh of the projects reaches it too.
+ */
+export const archivedProjectsKey = ['projects', 'archived'] as const
+export async function listArchivedProjects(): Promise<ProjectListItem[]> {
+  return (await apiFetch<{ projects: ProjectListItem[] }>('/projects?archived=true')).projects
+}
+
 export function createProject(body: { name: string }): Promise<ProjectResponse> {
   return apiFetch<ProjectResponse>('/projects', { method: 'POST', body: JSON.stringify(body) })
 }

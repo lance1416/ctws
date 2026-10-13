@@ -168,3 +168,18 @@ test('on a phone, where there is no keyboard to press them, no key hints show', 
   await expect(dialog.getByRole('option', { name: /^People/ })).toBeVisible()
   await expect(dialog.locator('kbd:visible')).toHaveCount(0)
 })
+
+/** Projects says how many lines of work are live, and how many are set aside. */
+test('Projects counts the archived ones apart', async ({ page }) => {
+  await registerFreshUser(page, '/things')
+  const made = await page.request.post('/api/v1/projects', { headers: WEB, data: { name: '旧的' } })
+  const { id } = (await made.json()) as { id: string }
+  const res = await page.request.patch(`/api/v1/projects/${id}`, {
+    headers: WEB,
+    data: { archived: true },
+  })
+  expect(res.ok(), await res.text()).toBe(true)
+  await page.reload()
+  await expect(kind(page, 'Projects').locator('[data-count]')).toHaveText('1 active')
+  await expect(kind(page, 'Projects').locator('[data-status]')).toHaveText('1 archived')
+})

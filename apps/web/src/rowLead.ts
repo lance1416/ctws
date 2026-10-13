@@ -71,6 +71,20 @@ export function leadFor(
 }
 
 /**
+ * A DEADLINE KNOWN ONLY BY ITS DAY -- a project's next one, which the server answers as a day in
+ * the account's zone -- in the words the margin gives any deadline: Today, a weekday in the week
+ * ahead, else its date. There is no time to give, so a deadline today is "Today".
+ */
+export function deadlineDayLead(day: string, today: string): Lead {
+  return {
+    text: day === today ? 'Today' : weekdayOrDate(day, today),
+    tone: 'deadline',
+    flag: true,
+    exact: `Next due ${fullDay(day)}`,
+  }
+}
+
+/**
  * HOW WIDE A LIST IS -- one value, for every list of tasks.
  *
  * The title competes with nothing on its right but a short note, so there is one measure; 64rem is
