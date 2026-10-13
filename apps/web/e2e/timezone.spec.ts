@@ -123,9 +123,10 @@ test('the runner’s today is some OTHER day, and the page says which', async ({
     await expect(row).toBeVisible()
     // Carried, and the day it was planned for is the account's yesterday -- a day only the
     // account's zone can name.
-    await expect(row.locator('[data-date-hint="carried"]')).toBeVisible()
     const [, m, d] = runnerDay().split('-').map(Number) as [number, number, number]
-    await expect(row.locator('[data-row-lead-text]')).toHaveText(`${MONTHS[m - 1]} ${d}`)
+    await expect(row.locator('[data-date-hint="carried"]')).toHaveText(
+      `Carried over from ${MONTHS[m - 1]} ${d}`,
+    )
   } else {
     // The account is behind the runner, so this day has not arrived yet for the account and
     // nothing may surface it as due now.
