@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { requiresCsrfHeader } from '../src/guards'
+import { requiresCsrfHeader } from '../src/platform/http/guards'
 import { withApp } from './helpers/app'
 
 const ORIGIN = 'https://app.test'

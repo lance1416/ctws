@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
-import { TaskNotFoundError } from '../src/tasks/errors'
-import { moveTask } from '../src/tasks/move'
-import { softDeleteTask, updateTask } from '../src/tasks/tasks'
+import { TaskNotFoundError } from '../src/modules/tasks/errors'
+import { moveTask } from '../src/modules/tasks/move'
+import { softDeleteTask, updateTask } from '../src/modules/tasks/tasks'
 import {
   createChain,
   createProject,

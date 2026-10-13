@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { appendEvent } from '../src/tasks/events'
+import { appendEvent } from '../src/modules/tasks/events'
 import { withDatabase } from './helpers/db'
 
 let ctx: Awaited<ReturnType<typeof withDatabase>>

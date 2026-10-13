@@ -1,7 +1,7 @@
 import { keptNote, nextOccurrence, type Birthday } from '@ctws/core'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
-import { listBirthdays } from '../src/people/birthdays'
+import { listBirthdays } from '../src/modules/people/birthdays'
 import { setupWith, type TaskCtx, web } from './helpers/tasks'
 
 /**

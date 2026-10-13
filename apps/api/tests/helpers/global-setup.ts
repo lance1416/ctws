@@ -1,7 +1,7 @@
 import { PostgreSqlContainer } from '@testcontainers/postgresql'
 import { Client } from 'pg'
 import type { TestProject } from 'vitest/node'
-import { runMigrations } from '../../src/db/migrate'
+import { runMigrations } from '../../src/platform/db/migrate'
 import { databaseUrl } from './database-url'
 
 declare module 'vitest' {

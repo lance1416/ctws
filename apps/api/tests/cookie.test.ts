@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { cookieOptions } from '../src/auth/cookie'
-import { parseEnv } from '../src/env'
+import { cookieOptions } from '../src/shell/auth/cookie'
+import { parseEnv } from '../src/platform/config'
 
 const base = { DATABASE_URL: 'postgres://u:p@h:5432/d', CORS_ORIGINS: 'https://app.test' }
 

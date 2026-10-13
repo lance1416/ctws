@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
-import { listToday } from '../src/tasks/today'
+import { listToday } from '../src/modules/tasks/today'
 import { appWithUser, createProject, createTask, type TaskCtx } from './helpers/tasks'
 
 const cleanups: (() => Promise<void>)[] = []

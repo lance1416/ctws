@@ -1,6 +1,6 @@
 import { buildApp } from '../../src/app'
-import type { Unfurl } from '../../src/reading/unfurl'
-import { parseEnv, type Env } from '../../src/env'
+import type { Unfurl } from '../../src/modules/reading/unfurl'
+import { parseEnv, type Env } from '../../src/platform/config'
 import { withDatabase } from './db'
 
 export async function withApp(overrides: Partial<Env> = {}, deps: { unfurl?: Unfurl } = {}) {

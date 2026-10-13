@@ -3,7 +3,7 @@ import type { LinksResponse, PersonResponse } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { buildApp } from '../src/app'
-import { parseEnv } from '../src/env'
+import { parseEnv } from '../src/platform/config'
 import { migratedTo } from './helpers/db'
 
 /**

@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import type { Queryable } from '../src/db/client'
+import type { Queryable } from '../src/platform/db/client'
 import { withDatabase } from './helpers/db'
 
 let ctx: Awaited<ReturnType<typeof withDatabase>>

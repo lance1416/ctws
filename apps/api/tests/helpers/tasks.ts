@@ -1,8 +1,8 @@
 import { sql } from 'drizzle-orm'
 import { expect } from 'vitest'
-import { LOCK_TASK_TREE } from '../../src/tasks/tasks'
-import type { Env } from '../../src/env'
-import type { Unfurl } from '../../src/reading/unfurl'
+import { LOCK_TASK_TREE } from '../../src/modules/tasks/tasks'
+import type { Env } from '../../src/platform/config'
+import type { Unfurl } from '../../src/modules/reading/unfurl'
 import { withApp } from './app'
 
 export type TaskCtx = Awaited<ReturnType<typeof withApp>> & {

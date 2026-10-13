@@ -71,7 +71,7 @@ docker compose -f compose.prod.yaml pull && docker compose -f compose.prod.yaml 
 
 ## 3. Migrations
 
-Automatic. The container runs `node dist/db/migrate.js` and then starts the server, so a new image
+Automatic. The container runs `node dist/platform/db/migrate.js` and then starts the server, so a new image
 or a fresh volume is migrated before the API listens. If migrations fail the container exits
 and restarts; check `docker compose -f compose.prod.yaml logs api`.
 

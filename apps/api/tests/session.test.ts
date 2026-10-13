@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { createSession, findValidSession, hashMatches, revokeSession } from '../src/auth/session'
+import { createSession, findValidSession, hashMatches, revokeSession } from '../src/shell/auth/session'
 
 import { withDatabase } from './helpers/db'
 

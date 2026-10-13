@@ -1,7 +1,7 @@
 import { defineConfig } from 'tsup'
 
 export default defineConfig({
-  entry: ['src/server.ts', 'src/db/migrate.ts'],
+  entry: ['src/server.ts', 'src/platform/db/migrate.ts'],
   format: ['esm'],
   outDir: 'dist',
   // Stale chunks from an earlier build otherwise linger in dist and are dead but confusing:

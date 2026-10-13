@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { occurrencesIn } from '../src/meetings/occurrences'
+import { occurrencesIn } from '../src/modules/meetings/occurrences'
 
 /** The measured ceiling, as a test: a hostile rule must cost about what a real one costs. */
 describe('a hostile rule costs what a real one costs', () => {

@@ -35,4 +35,4 @@ COPY --from=build /app/apps/web/dist ./apps/web/dist
 USER node
 EXPOSE 3000
 # Single instance: apply migrations, then listen.
-CMD ["sh", "-c", "node dist/db/migrate.js && exec node dist/server.js"]
+CMD ["sh", "-c", "node dist/platform/db/migrate.js && exec node dist/server.js"]

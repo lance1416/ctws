@@ -1,6 +1,6 @@
 import { buildApp } from './app'
-import { createDb } from './db/client'
-import { parseEnv } from './env'
+import { createDb } from './platform/db/client'
+import { parseEnv } from './platform/config'
 
 const env = parseEnv(process.env)
 const db = createDb(env.databaseUrl)

@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { SEARCH_LIMIT } from '@ctws/contracts'
-import { likePattern } from '../src/db/like'
+import { likePattern } from '../src/platform/db/sql'
 import { appWithUser, createProject, createTask, type TaskCtx } from './helpers/tasks'
 
 const cleanups: (() => Promise<void>)[] = []

@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { migrate } from 'drizzle-orm/node-postgres/migrator'
 import { Client } from 'pg'
 import { inject } from 'vitest'
-import { closeDb, createDb } from '../../src/db/client'
+import { closeDb, createDb } from '../../src/platform/db/client'
 import { databaseUrl } from './database-url'
 
 const MIGRATIONS = join(import.meta.dirname, '../../drizzle')

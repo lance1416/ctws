@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { listProjectMovement } from '../src/tasks/movement'
+import { listProjectMovement } from '../src/modules/tasks/movement'
 import { appWithUser, createProject, createTask, type TaskCtx } from './helpers/tasks'
 
 /**

@@ -2,7 +2,7 @@ import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import type { ReadingItemResponse } from '@ctws/contracts'
 import { afterEach, describe, expect, it } from 'vitest'
-import { unfurl } from '../src/reading/unfurl'
+import { unfurl } from '../src/modules/reading/unfurl'
 import { setupWith, type TaskCtx, web } from './helpers/tasks'
 
 /**

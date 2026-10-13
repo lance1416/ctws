@@ -1,9 +1,9 @@
 import type { RollupResponse } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
-import { BOARD_TX } from '../src/tasks/board'
-import { projectRollups } from '../src/tasks/rollup'
-import { listProjectTasks } from '../src/tasks/tasks'
+import { BOARD_TX } from '../src/modules/tasks/board'
+import { projectRollups } from '../src/modules/tasks/rollup'
+import { listProjectTasks } from '../src/modules/tasks/tasks'
 import { appWithUser, createProject, createTask, type TaskCtx } from './helpers/tasks'
 
 /**

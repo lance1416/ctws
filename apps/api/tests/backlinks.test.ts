@@ -5,7 +5,7 @@ import {
   type LinksResponse,
 } from '@ctws/contracts'
 import { afterEach, describe, expect, it } from 'vitest'
-import { EVERY_TYPE_ANSWERED, LINKABLES } from '../src/links/registry'
+import { EVERY_TYPE_ANSWERED, LINKABLES } from '../src/shell/links/registry'
 import { createProject, createTask, setupWith, type TaskCtx, web } from './helpers/tasks'
 
 /**

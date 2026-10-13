@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isUniqueViolation } from '../src/auth/service'
+import { isUniqueViolation } from '../src/shell/auth/service'
 
 describe('isUniqueViolation', () => {
   it('matches the SQLSTATE on the error itself', () => {
