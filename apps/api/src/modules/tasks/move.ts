@@ -7,42 +7,16 @@ import { tasks } from './tables'
 import { appendEvent } from './events'
 import { ProjectNotFoundError } from '../../shell/projects/errors'
 import { visibleProjects } from '../../shell/projects/store'
+import { DepthLimitError, InvalidNeighbourError, MoveCycleError } from './errors'
+import { MAX_DEPTH } from './tree'
 import {
-  DepthLimitError,
   LOCK_TASK_TREE,
-  MAX_DEPTH,
   clearLeafProgress,
   depthOf,
   lockVisibleTask,
   type Task,
   type TaskCtx,
 } from './tasks'
-
-/**
- * Raised when the destination parent is the moved task itself or one of its descendants
- * (spec 5.2). This is the invariant that most needs an explicit guard: Postgres recursive CTEs
- * have no cycle detection, so a cycle is not an error anyone sees -- every later subtree query
- * simply recurses until it exhausts memory and takes the database with it.
- */
-export class CycleError extends Error {
-  constructor() {
-    super('A task cannot be moved under itself or one of its own descendants')
-    this.name = 'CycleError'
-  }
-}
-
-/**
- * Raised when the requested position is not expressible: both neighbours given at once, or a
- * neighbour that is not a live sibling at the destination. A client bug, hence 400 rather than
- * 404: unlike a task id, a neighbour id is already known to the caller, so saying so leaks
- * nothing.
- */
-export class InvalidNeighbourError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'InvalidNeighbourError'
-  }
-}
 
 type Descendant = { id: string; depth: number; live: boolean }
 
@@ -75,7 +49,7 @@ type Descendant = { id: string; depth: number; live: boolean }
  * whose destination sits deeper than MAX_DEPTH -- which is exactly the region the truncation
  * cannot see. The two checks are coupled: reordering them, relaxing the depth check, or adding a
  * second caller of `descendantsOf` that is not followed by a depth check reopens the gap. Note
- * that the refusal surfaces as DepthLimitError, not CycleError; that is correct, since the depth
+ * that the refusal surfaces as DepthLimitError, not MoveCycleError; that is correct, since the depth
  * limit is the rule actually being broken.
  *
  * Do NOT turn the bound into an assertion on relative depth. A soft-deleted descendant may
@@ -148,7 +122,8 @@ export async function moveTask(
     const destParentId = parent ? parent.id : null
 
     const subtree = await descendantsOf(tx, id)
-    if (destParentId !== null && subtree.some((d) => d.id === destParentId)) throw new CycleError()
+    if (destParentId !== null && subtree.some((d) => d.id === destParentId))
+      throw new MoveCycleError()
 
     // Depth of the destination parent (a root is 1, so a move to the project root gives 0) plus
     // the HEIGHT of the moved subtree -- the longest live path through it, not the number of rows

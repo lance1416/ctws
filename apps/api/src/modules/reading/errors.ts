@@ -1,20 +1,14 @@
-/** The item is not in this workspace, is soft-deleted, or does not exist. One answer for all three. */
-export class ReadingItemNotFoundError extends Error {
+import { DomainError } from '../../platform/errors'
+
+export class ReadingItemNotFoundError extends DomainError {
   constructor() {
-    super('No such reading item')
-    this.name = 'ReadingItemNotFoundError'
+    super('not-found', 'No such reading item')
   }
 }
 
-/**
- * A field that belongs to the other kind: a url on a book, an author on a link.
- *
- * `kind` is not patchable (a link does not become a book), so this is the client asking for a row
- * shape that cannot exist rather than a transition that is merely unsupported.
- */
-export class WrongKindError extends Error {
+/** A field of the other kind: a url on a book, an author on a link. */
+export class WrongKindError extends DomainError {
   constructor(field: string, kind: string) {
-    super(`A ${kind} has no ${field}`)
-    this.name = 'WrongKindError'
+    super('conflict', `A ${kind} has no ${field}`)
   }
 }

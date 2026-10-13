@@ -5,7 +5,7 @@ import type { Queryable } from '../../platform/db/client'
 import { projects } from '../../shell/projects/tables'
 import { taskEvents, tasks } from './tables'
 import { visibleProjects } from '../../shell/projects/store'
-import { TaskNotFoundError } from './errors'
+import { InvalidCursorError, TaskNotFoundError } from './errors'
 
 const COALESCE_WINDOW_MS = 5 * 60 * 1000
 
@@ -86,13 +86,6 @@ async function coalesce(q: Queryable, e: AppendEventInput): Promise<boolean> {
 
 export const DEFAULT_EVENT_LIMIT = 50
 export const MAX_EVENT_LIMIT = 100
-
-export class InvalidCursorError extends Error {
-  constructor() {
-    super('Invalid cursor')
-    this.name = 'InvalidCursorError'
-  }
-}
 
 // Postgres timestamps carry microseconds but a JS Date only milliseconds, so the cursor holds the
 // timestamp as text straight from the database. Round-tripping through Date would truncate it and

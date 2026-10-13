@@ -7,19 +7,10 @@ import {
   meetingOccurrence,
   updateMeetingBody,
 } from '@ctws/contracts'
-import type { FastifyPluginAsync, FastifyReply } from 'fastify'
+import type { FastifyPluginAsync } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 import { authedUser, requireUser } from '../../shell/auth/require-user'
-import { PersonNotFoundError } from '../people/errors'
-import { sendProblem } from '../../platform/http/problem'
-import { ProjectNotFoundError } from '../../shell/projects/errors'
-import {
-  BadRuleError,
-  MeetingNotFoundError,
-  OccurrenceNotFoundError,
-  OneOccurrenceLimitError,
-} from './errors'
 import { instantOf, localOf } from './occurrences'
 import {
   cancelMeeting,
@@ -70,22 +61,6 @@ function windowOf(from: string, to: string, timezone: string): { from: Date; to:
     // inside a window that names that day.
     to: new Date(instantOf(`${to}T00:00`, timezone).getTime() + DAY),
   }
-}
-
-function sendMeetingProblem(reply: FastifyReply, error: unknown): void {
-  // A project or a person from another workspace reads as "not found" too, never as a refusal
-  // that would confirm the id exists.
-  if (error instanceof MeetingNotFoundError) return sendProblem(reply, 404, 'Not Found')
-  if (error instanceof OccurrenceNotFoundError) return sendProblem(reply, 404, 'Not Found')
-  if (error instanceof ProjectNotFoundError) return sendProblem(reply, 404, 'Not Found')
-  if (error instanceof PersonNotFoundError) return sendProblem(reply, 404, 'Not Found')
-  if (error instanceof BadRuleError) {
-    return sendProblem(reply, 422, 'Unprocessable Entity', error.message)
-  }
-  if (error instanceof OneOccurrenceLimitError) {
-    return sendProblem(reply, 409, 'Conflict', error.message)
-  }
-  throw error
 }
 
 /** "EST" / "BST": the zone's own short name at that moment, which is what a person says. */
@@ -183,18 +158,14 @@ export const meetingRoutes: FastifyPluginAsync = async (app) => {
         response: { 200: meetingOccurrence },
       },
     },
-    async (req, reply) => {
-      try {
-        const one = await getOccurrence(
-          app.db,
-          authedUser(req).workspaceId,
-          req.params.id,
-          req.query.recurrenceId,
-        )
-        return toResponse(one)
-      } catch (error) {
-        return sendMeetingProblem(reply, error)
-      }
+    async (req) => {
+      const one = await getOccurrence(
+        app.db,
+        authedUser(req).workspaceId,
+        req.params.id,
+        req.query.recurrenceId,
+      )
+      return toResponse(one)
     },
   )
 
@@ -205,15 +176,11 @@ export const meetingRoutes: FastifyPluginAsync = async (app) => {
       schema: { body: createMeetingBody, response: { 201: meetingOccurrence } },
     },
     async (req, reply) => {
-      try {
-        // One transaction: a meeting and who is in it are one thing to arrange.
-        const created = await app.db.transaction((tx) =>
-          createMeeting(tx, authedUser(req).workspaceId, req.body),
-        )
-        return reply.code(201).send(toResponse(created))
-      } catch (error) {
-        return sendMeetingProblem(reply, error)
-      }
+      // One transaction: a meeting and who is in it are one thing to arrange.
+      const created = await app.db.transaction((tx) =>
+        createMeeting(tx, authedUser(req).workspaceId, req.body),
+      )
+      return reply.code(201).send(toResponse(created))
     },
   )
 
@@ -223,15 +190,11 @@ export const meetingRoutes: FastifyPluginAsync = async (app) => {
       preHandler: requireUser,
       schema: { params: idParams, body: updateMeetingBody, response: { 200: meetingOccurrence } },
     },
-    async (req, reply) => {
-      try {
-        const updated = await app.db.transaction((tx) =>
-          updateMeeting(tx, authedUser(req).workspaceId, req.params.id, req.body),
-        )
-        return toResponse(updated)
-      } catch (error) {
-        return sendMeetingProblem(reply, error)
-      }
+    async (req) => {
+      const updated = await app.db.transaction((tx) =>
+        updateMeeting(tx, authedUser(req).workspaceId, req.params.id, req.body),
+      )
+      return toResponse(updated)
     },
   )
 
@@ -239,14 +202,10 @@ export const meetingRoutes: FastifyPluginAsync = async (app) => {
     '/:id',
     { preHandler: requireUser, schema: { params: idParams, querystring: deleteMeetingQuery } },
     async (req, reply) => {
-      try {
-        await app.db.transaction((tx) =>
-          cancelMeeting(tx, authedUser(req).workspaceId, req.params.id, req.query),
-        )
-        return reply.code(204).send()
-      } catch (error) {
-        return sendMeetingProblem(reply, error)
-      }
+      await app.db.transaction((tx) =>
+        cancelMeeting(tx, authedUser(req).workspaceId, req.params.id, req.query),
+      )
+      return reply.code(204).send()
     },
   )
 }

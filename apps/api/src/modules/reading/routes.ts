@@ -7,13 +7,10 @@ import {
   searchQuery,
   updateReadingItemBody,
 } from '@ctws/contracts'
-import type { FastifyPluginAsync, FastifyReply } from 'fastify'
+import type { FastifyPluginAsync } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 import { authedUser, requireUser } from '../../shell/auth/require-user'
-import { sendProblem } from '../../platform/http/problem'
-import { ProjectNotFoundError } from '../../shell/projects/errors'
-import { ReadingItemNotFoundError, WrongKindError } from './errors'
 import { listReadingCalendar } from './calendar'
 import type { Queryable } from '../../platform/db/client'
 import type { Env } from '../../platform/config'
@@ -79,15 +76,6 @@ async function withFetched(
 
 const idParams = z.object({ id: z.uuid() }).strict()
 const itemsResponse = z.object({ items: z.array(readingItemResponse) }).strict()
-
-function sendReadingProblem(reply: FastifyReply, error: unknown): void {
-  // A project from another workspace, like an item from another workspace, is "not found" and
-  // never a refusal that would confirm the id exists.
-  if (error instanceof ReadingItemNotFoundError) return sendProblem(reply, 404, 'Not Found')
-  if (error instanceof ProjectNotFoundError) return sendProblem(reply, 404, 'Not Found')
-  if (error instanceof WrongKindError) return sendProblem(reply, 409, 'Conflict', error.message)
-  throw error
-}
 
 export const readingRoutes: FastifyPluginAsync = async (app) => {
   const typed = app.withTypeProvider<ZodTypeProvider>()
@@ -162,13 +150,9 @@ export const readingRoutes: FastifyPluginAsync = async (app) => {
       schema: { body: createReadingItemBody, response: { 201: readingItemResponse } },
     },
     async (req, reply) => {
-      try {
-        const workspaceId = authedUser(req).workspaceId
-        const created = await createReadingItem(app.db, workspaceId, req.body)
-        return reply.code(201).send(toResponse(await withFetched(app, workspaceId, created)))
-      } catch (error) {
-        return sendReadingProblem(reply, error)
-      }
+      const workspaceId = authedUser(req).workspaceId
+      const created = await createReadingItem(app.db, workspaceId, req.body)
+      return reply.code(201).send(toResponse(await withFetched(app, workspaceId, created)))
     },
   )
 
@@ -182,18 +166,14 @@ export const readingRoutes: FastifyPluginAsync = async (app) => {
         response: { 200: readingItemResponse },
       },
     },
-    async (req, reply) => {
-      try {
-        const updated = await updateReadingItem(
-          app.db,
-          authedUser(req).workspaceId,
-          req.params.id,
-          req.body,
-        )
-        return toResponse(updated)
-      } catch (error) {
-        return sendReadingProblem(reply, error)
-      }
+    async (req) => {
+      const updated = await updateReadingItem(
+        app.db,
+        authedUser(req).workspaceId,
+        req.params.id,
+        req.body,
+      )
+      return toResponse(updated)
     },
   )
 
@@ -201,12 +181,8 @@ export const readingRoutes: FastifyPluginAsync = async (app) => {
     '/:id',
     { preHandler: requireUser, schema: { params: idParams } },
     async (req, reply) => {
-      try {
-        await softDeleteReadingItem(app.db, authedUser(req).workspaceId, req.params.id)
-        return reply.code(204).send()
-      } catch (error) {
-        return sendReadingProblem(reply, error)
-      }
+      await softDeleteReadingItem(app.db, authedUser(req).workspaceId, req.params.id)
+      return reply.code(204).send()
     },
   )
 }

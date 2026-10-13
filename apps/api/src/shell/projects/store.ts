@@ -10,7 +10,7 @@ import type { PgUpdateSetSource } from 'drizzle-orm/pg-core'
 import { v7 as uuidv7 } from 'uuid'
 import type { Queryable } from '../../platform/db/client'
 import { projects } from './tables'
-import { InboxNotDeletableError, ProjectNotFoundError } from './errors'
+import { InboxProtectedError, ProjectNotFoundError } from './errors'
 
 /** The quick-capture destination. One per workspace; see schema.ts and the 0003 migration. */
 export const INBOX_NAME = 'Inbox'
@@ -141,7 +141,7 @@ export async function updateProject(
       .select({ isInbox: projects.isInbox })
       .from(projects)
       .where(and(visibleProjects(workspaceId), eq(projects.id, id)))
-    if (existing?.isInbox) throw new InboxNotDeletableError()
+    if (existing?.isInbox) throw new InboxProtectedError()
   }
 
   const set: PgUpdateSetSource<typeof projects> = {}
@@ -189,7 +189,7 @@ export async function softDeleteProject(
       .select({ isInbox: projects.isInbox })
       .from(projects)
       .where(and(visibleProjects(workspaceId), eq(projects.id, id)))
-    if (existing?.isInbox) throw new InboxNotDeletableError()
+    if (existing?.isInbox) throw new InboxProtectedError()
     throw new ProjectNotFoundError()
   }
 }

@@ -5,12 +5,10 @@ import {
   projectResponse,
   updateProjectBody,
 } from '@ctws/contracts'
-import type { FastifyPluginAsync, FastifyReply } from 'fastify'
+import type { FastifyPluginAsync } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 import { authedUser, requireUser } from '../auth/require-user'
-import { sendProblem } from '../../platform/http/problem'
-import { InboxNotDeletableError, ProjectNotFoundError } from './errors'
 import {
   createProject,
   listProjects,
@@ -50,16 +48,6 @@ function toProjectListItem(p: ProjectListRow): z.infer<typeof projectListItem> {
 const idParams = z.object({ id: z.uuid() }).strict()
 const listQuery = z.object({ archived: z.enum(['true', 'false']).optional() }).strict()
 
-// Same mapping the task routes use for the same two errors, so a project failure reads the same
-// whichever surface raised it.
-function sendProjectProblem(reply: FastifyReply, error: unknown): void {
-  if (error instanceof ProjectNotFoundError) return sendProblem(reply, 404, 'Not Found')
-  if (error instanceof InboxNotDeletableError) {
-    return sendProblem(reply, 409, 'Conflict', error.message)
-  }
-  throw error
-}
-
 export const projectRoutes: FastifyPluginAsync = async (app) => {
   const typed = app.withTypeProvider<ZodTypeProvider>()
 
@@ -98,18 +86,9 @@ export const projectRoutes: FastifyPluginAsync = async (app) => {
       preHandler: requireUser,
       schema: { params: idParams, body: updateProjectBody, response: { 200: projectResponse } },
     },
-    async (req, reply) => {
-      try {
-        const row = await updateProject(
-          app.db,
-          authedUser(req).workspaceId,
-          req.params.id,
-          req.body,
-        )
-        return toProjectResponse(row)
-      } catch (error) {
-        return sendProjectProblem(reply, error)
-      }
+    async (req) => {
+      const row = await updateProject(app.db, authedUser(req).workspaceId, req.params.id, req.body)
+      return toProjectResponse(row)
     },
   )
 
@@ -117,12 +96,8 @@ export const projectRoutes: FastifyPluginAsync = async (app) => {
     '/projects/:id',
     { preHandler: requireUser, schema: { params: idParams } },
     async (req, reply) => {
-      try {
-        await softDeleteProject(app.db, authedUser(req).workspaceId, req.params.id)
-        return reply.status(204).send()
-      } catch (error) {
-        return sendProjectProblem(reply, error)
-      }
+      await softDeleteProject(app.db, authedUser(req).workspaceId, req.params.id)
+      return reply.status(204).send()
     },
   )
 }

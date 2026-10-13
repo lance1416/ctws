@@ -1,22 +1,15 @@
-/**
- * Raised when a project does not exist, is soft-deleted, or belongs to another workspace. The
- * three cases are deliberately one error: telling them apart would let a caller probe which
- * project ids exist in workspaces they cannot see.
- */
-export class ProjectNotFoundError extends Error {
+import { DomainError } from '../../platform/errors'
+
+/** Missing, deleted or in another workspace: the three read the same so ids cannot be probed. */
+export class ProjectNotFoundError extends DomainError {
   constructor() {
-    super('Project not found')
-    this.name = 'ProjectNotFoundError'
+    super('not-found', 'Project not found')
   }
 }
 
-/**
- * The inbox is quick capture's destination; deleting or archiving it would break capture for the
- * workspace.
- */
-export class InboxNotDeletableError extends Error {
+/** The inbox is where capture lands, so it is never deleted or archived. */
+export class InboxProtectedError extends DomainError {
   constructor() {
-    super('The inbox cannot be removed')
-    this.name = 'InboxNotDeletableError'
+    super('conflict', 'The inbox cannot be removed')
   }
 }

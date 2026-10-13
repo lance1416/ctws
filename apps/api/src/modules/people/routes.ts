@@ -12,16 +12,14 @@ import {
   searchQuery,
   updatePersonBody,
 } from '@ctws/contracts'
-import type { FastifyPluginAsync, FastifyReply } from 'fastify'
+import type { FastifyPluginAsync } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 import { birthdayProblem, factsOf, keptNote, nextOccurrence, type Birthday } from '@ctws/core'
 import { authedUser, requireUser } from '../../shell/auth/require-user'
 import { accountToday } from '../../platform/db/time'
-import { sendProblem } from '../../platform/http/problem'
-import { ProjectNotFoundError } from '../../shell/projects/errors'
 import { listBirthdayEntries, listBirthdays } from './birthdays'
-import { PersonNotFoundError } from './errors'
+import { ImpossibleBirthdayError } from './errors'
 import {
   createPerson,
   listPeople,
@@ -78,14 +76,12 @@ const idParams = z.object({ id: z.uuid() }).strict()
 const listResponse = z.object({ people: z.array(personResponse) }).strict()
 
 /**
- * 历法那道门：没发生过的日子进不来。
- *
- * 字段各自合法，凑起来可以不存在，而那取决于年份——那一年的正月没有三十，那一年不闰六月，平年
- * 没有 2 月 29 日。校验因此不在 contract 里：contract 要跟着界面进浏览器，而只有历法库知道答案，
- * 它有 750 KB。写进去就晚了——派生值在读取时才算，一行坏数据会让列表、搜索、生日页一起 500。
+ * Refuses a birthday on a day that never happens in its year (no 30th of that lunar month, no
+ * leap month that year). Only the calendar library knows, so the check is here, not in the
+ * contract.
  */
-function sendImpossibleDay(reply: FastifyReply, b: BirthdayInput | null | undefined): boolean {
-  if (!b) return false
+function assertPossibleBirthday(b: BirthdayInput | null | undefined): void {
+  if (!b) return
   const problem = birthdayProblem({
     calendar: b.calendar,
     year: b.year ?? null,
@@ -93,17 +89,7 @@ function sendImpossibleDay(reply: FastifyReply, b: BirthdayInput | null | undefi
     day: b.day,
     leapMonth: b.leapMonth,
   })
-  if (problem === null) return false
-  sendProblem(reply, 400, 'Bad Request', problem)
-  return true
-}
-
-function sendPersonProblem(reply: FastifyReply, error: unknown): void {
-  // A project from another workspace reads as "not found" too, never as a refusal that would
-  // confirm the id exists.
-  if (error instanceof PersonNotFoundError) return sendProblem(reply, 404, 'Not Found')
-  if (error instanceof ProjectNotFoundError) return sendProblem(reply, 404, 'Not Found')
-  throw error
+  if (problem !== null) throw new ImpossibleBirthdayError(problem)
 }
 
 export const personRoutes: FastifyPluginAsync = async (app) => {
@@ -167,7 +153,7 @@ export const personRoutes: FastifyPluginAsync = async (app) => {
       preHandler: requireUser,
       schema: { querystring: birthdayPreviewQuery, response: { 200: birthdayPreviewResponse } },
     },
-    async (req, reply) => {
+    async (req) => {
       const user = authedUser(req)
       const today = await accountToday(app.db, user.timezone)
       const birthday: Birthday = {
@@ -178,7 +164,7 @@ export const personRoutes: FastifyPluginAsync = async (app) => {
         leapMonth: req.query.leap === 'true',
       }
       const problem = birthdayProblem(birthday)
-      if (problem !== null) return sendProblem(reply, 400, 'Bad Request', problem)
+      if (problem !== null) throw new ImpossibleBirthdayError(problem)
       const next = nextOccurrence(birthday, today)
       return {
         ...factsOf(birthday, req.query.hour ?? null),
@@ -211,18 +197,13 @@ export const personRoutes: FastifyPluginAsync = async (app) => {
       schema: { body: createPersonBody, response: { 201: personResponse } },
     },
     async (req, reply) => {
-      if (sendImpossibleDay(reply, req.body.birthday)) return reply
-      try {
-        // One transaction: a person and its addresses are one thing, and a half-written person
-        // with no way to reach them is worse than a refusal.
-        const created = await app.db.transaction((tx) =>
-          createPerson(tx, authedUser(req).workspaceId, req.body),
-        )
-        const today = await accountToday(app.db, authedUser(req).timezone)
-        return reply.code(201).send(toResponse(created, today))
-      } catch (error) {
-        return sendPersonProblem(reply, error)
-      }
+      assertPossibleBirthday(req.body.birthday)
+      // One transaction: a person and its addresses are one thing.
+      const created = await app.db.transaction((tx) =>
+        createPerson(tx, authedUser(req).workspaceId, req.body),
+      )
+      const today = await accountToday(app.db, authedUser(req).timezone)
+      return reply.code(201).send(toResponse(created, today))
     },
   )
 
@@ -232,17 +213,13 @@ export const personRoutes: FastifyPluginAsync = async (app) => {
       preHandler: requireUser,
       schema: { params: idParams, body: updatePersonBody, response: { 200: personResponse } },
     },
-    async (req, reply) => {
-      if (sendImpossibleDay(reply, req.body.birthday)) return reply
-      try {
-        const updated = await app.db.transaction((tx) =>
-          updatePerson(tx, authedUser(req).workspaceId, req.params.id, req.body),
-        )
-        const today = await accountToday(app.db, authedUser(req).timezone)
-        return toResponse(updated, today)
-      } catch (error) {
-        return sendPersonProblem(reply, error)
-      }
+    async (req) => {
+      assertPossibleBirthday(req.body.birthday)
+      const updated = await app.db.transaction((tx) =>
+        updatePerson(tx, authedUser(req).workspaceId, req.params.id, req.body),
+      )
+      const today = await accountToday(app.db, authedUser(req).timezone)
+      return toResponse(updated, today)
     },
   )
 
@@ -250,12 +227,8 @@ export const personRoutes: FastifyPluginAsync = async (app) => {
     '/:id',
     { preHandler: requireUser, schema: { params: idParams } },
     async (req, reply) => {
-      try {
-        await softDeletePerson(app.db, authedUser(req).workspaceId, req.params.id)
-        return reply.code(204).send()
-      } catch (error) {
-        return sendPersonProblem(reply, error)
-      }
+      await softDeletePerson(app.db, authedUser(req).workspaceId, req.params.id)
+      return reply.code(204).send()
     },
   )
 }

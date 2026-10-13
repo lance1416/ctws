@@ -1,6 +1,7 @@
 import type { Role } from '@ctws/contracts'
 import type { FastifyRequest, preHandlerAsyncHookHandler } from 'fastify'
-import { sendProblem } from '../../platform/http/problem'
+import { AdminRequiredError } from '../admin/errors'
+import { SessionRequiredError } from './errors'
 import { SESSION_COOKIE } from './cookie'
 import { hasRole } from './roles'
 import { getAuthContext } from './service'
@@ -30,14 +31,14 @@ export function authedUser(req: FastifyRequest): AuthedUser {
 // and `this.db` would throw. Keeping it a plain function (rather than
 // restructuring into an app/db factory) matches how Task 5/6 hooks are
 // already written in this codebase.
-export const requireUser: preHandlerAsyncHookHandler = async function (req, reply) {
+export const requireUser: preHandlerAsyncHookHandler = async function (req) {
   const id = req.cookies[SESSION_COOKIE]
-  if (!id) return sendProblem(reply, 401, 'Authentication required')
+  if (!id) throw new SessionRequiredError()
 
   // The ttl is handed in because the lookup WINDS THE CLOCK ON: a session that is used stays
   // alive, and one left alone for the whole window expires.
   const session = await findValidSession(this.db, id, this.env.sessionTtlDays)
-  if (!session) return sendProblem(reply, 401, 'Authentication required')
+  if (!session) throw new SessionRequiredError()
 
   // Workspace scoping is injected here, once, so route handlers never need to remember to scope
   // their own queries. The actual lookup lives in service.ts so both this preHandler and the login
@@ -45,15 +46,15 @@ export const requireUser: preHandlerAsyncHookHandler = async function (req, repl
   // session) and supplies the instance role, read fresh on every request so a demotion applies
   // immediately.
   const ctx = await getAuthContext(this.db, session.userId)
-  if (!ctx) return sendProblem(reply, 401, 'Authentication required')
+  if (!ctx) throw new SessionRequiredError()
 
   req.user = { id: session.userId, ...ctx }
 }
 
 // Use as `preHandler: [requireUser, requireAdmin]`.
-export const requireAdmin: preHandlerAsyncHookHandler = async function (req, reply) {
-  if (!req.user) return sendProblem(reply, 401, 'Authentication required')
-  if (!hasRole(req.user.role, 'admin')) return sendProblem(reply, 403, 'Admin role required')
+export const requireAdmin: preHandlerAsyncHookHandler = async function (req) {
+  if (!req.user) throw new SessionRequiredError()
+  if (!hasRole(req.user.role, 'admin')) throw new AdminRequiredError()
 }
 
 declare module 'fastify' {

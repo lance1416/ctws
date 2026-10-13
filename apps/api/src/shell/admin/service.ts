@@ -3,18 +3,7 @@ import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 import { LOCK_ADMIN_SET } from '../auth/service'
 import type { Db, Queryable } from '../../platform/db/client'
 import { sessions, users } from '../auth/tables'
-
-export class UserNotFoundError extends Error {
-  constructor() {
-    super('user not found')
-  }
-}
-
-export class LastAdminError extends Error {
-  constructor() {
-    super('at least one enabled admin must remain')
-  }
-}
+import { LastAdminError, UserNotFoundError } from './errors'
 
 // Explicit columns, never the whole row: the password hash must not be selectable from here.
 const adminColumns = {

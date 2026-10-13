@@ -20,23 +20,18 @@ import {
   todayTaskResponse,
   updateTaskBody,
 } from '@ctws/contracts'
-import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify'
+import type { FastifyPluginAsync, FastifyRequest } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 import { authedUser, requireUser } from '../../shell/auth/require-user'
-import { sendProblem } from '../../platform/http/problem'
-import { InboxNotDeletableError, ProjectNotFoundError } from '../../shell/projects/errors'
-import { DependencyCycleError, TaskNotFoundError } from './errors'
-import { DEFAULT_EVENT_LIMIT, InvalidCursorError, listTaskEvents, MAX_EVENT_LIMIT } from './events'
+import { DEFAULT_EVENT_LIMIT, listTaskEvents, MAX_EVENT_LIMIT } from './events'
 import { listCompleted, type CompletedTask } from './completed'
 import { searchTasks, type SearchTask } from './search'
 import { listProjectMovement } from './movement'
 import { listToday, type TodayTask } from './today'
-import { CycleError, InvalidNeighbourError, moveTask } from './move'
+import { moveTask } from './move'
 import {
   createTask,
-  DepthLimitError,
-  ManualProgressOnParentError,
   softDeleteTask,
   updateTask,
   visibleTask,
@@ -107,33 +102,10 @@ const eventsQuery = z
   })
   .strict()
 
-// Domain failures map to problem responses; anything else is a bug and propagates to the
-// global error handler. Not-found covers a missing task, parent, or project alike (no probing).
 /** Who is writing, for the services that log an event against the task they change. */
 const actor = (req: FastifyRequest): TaskCtx => {
   const user = authedUser(req)
   return { workspaceId: user.workspaceId, actorUserId: user.id }
-}
-
-function sendTaskProblem(reply: FastifyReply, error: unknown): void {
-  if (error instanceof TaskNotFoundError || error instanceof ProjectNotFoundError) {
-    return sendProblem(reply, 404, 'Not Found')
-  }
-  if (
-    error instanceof DepthLimitError ||
-    error instanceof ManualProgressOnParentError ||
-    error instanceof CycleError ||
-    error instanceof DependencyCycleError ||
-    error instanceof InboxNotDeletableError
-  ) {
-    return sendProblem(reply, 409, 'Conflict', error.message)
-  }
-  // A malformed position is the caller's own mistake, and naming a neighbour they already hold
-  // leaks nothing, so it is told apart from a not-found.
-  if (error instanceof InvalidNeighbourError || error instanceof InvalidCursorError) {
-    return sendProblem(reply, 400, 'Bad Request', error.message)
-  }
-  throw error
 }
 
 export const taskRoutes: FastifyPluginAsync = async (app) => {
@@ -273,23 +245,14 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
         },
       },
     },
-    async (req, reply) => {
-      try {
-        const user = authedUser(req)
-        // Three reads, ONE snapshot -- `board.ts` has why that matters and how it is held.
-        const board = await projectBoard(
-          app.db,
-          user.workspaceId,
-          req.query.projectId,
-          user.timezone,
-        )
-        return {
-          tasks: board.tasks.map(toTaskResponse),
-          rollups: Object.fromEntries(board.rollups),
-          blockers: Object.fromEntries(board.blockers),
-        }
-      } catch (error) {
-        return sendTaskProblem(reply, error)
+    async (req) => {
+      const user = authedUser(req)
+      // Three reads, ONE snapshot -- `board.ts` has why that matters and how it is held.
+      const board = await projectBoard(app.db, user.workspaceId, req.query.projectId, user.timezone)
+      return {
+        tasks: board.tasks.map(toTaskResponse),
+        rollups: Object.fromEntries(board.rollups),
+        blockers: Object.fromEntries(board.blockers),
       }
     },
   )
@@ -301,12 +264,8 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
       schema: { body: createTaskBody, response: { 201: taskResponse } },
     },
     async (req, reply) => {
-      try {
-        const row = await createTask(app.db, actor(req), req.body)
-        return reply.status(201).send(toTaskResponse(row))
-      } catch (error) {
-        return sendTaskProblem(reply, error)
-      }
+      const row = await createTask(app.db, actor(req), req.body)
+      return reply.status(201).send(toTaskResponse(row))
     },
   )
 
@@ -314,12 +273,8 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
   typed.get(
     '/:id',
     { preHandler: requireUser, schema: { params: idParams, response: { 200: taskResponse } } },
-    async (req, reply) => {
-      try {
-        return toTaskResponse(await visibleTask(app.db, actor(req).workspaceId, req.params.id))
-      } catch (error) {
-        return sendTaskProblem(reply, error)
-      }
+    async (req) => {
+      return toTaskResponse(await visibleTask(app.db, actor(req).workspaceId, req.params.id))
     },
   )
 
@@ -329,13 +284,9 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
       preHandler: requireUser,
       schema: { params: idParams, body: updateTaskBody, response: { 200: taskResponse } },
     },
-    async (req, reply) => {
-      try {
-        const row = await updateTask(app.db, actor(req), req.params.id, req.body)
-        return toTaskResponse(row)
-      } catch (error) {
-        return sendTaskProblem(reply, error)
-      }
+    async (req) => {
+      const row = await updateTask(app.db, actor(req), req.params.id, req.body)
+      return toTaskResponse(row)
     },
   )
 
@@ -348,13 +299,9 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
       preHandler: requireUser,
       schema: { params: idParams, body: moveTaskBody, response: { 200: taskResponse } },
     },
-    async (req, reply) => {
-      try {
-        const row = await moveTask(app.db, actor(req), req.params.id, req.body)
-        return toTaskResponse(row)
-      } catch (error) {
-        return sendTaskProblem(reply, error)
-      }
+    async (req) => {
+      const row = await moveTask(app.db, actor(req), req.params.id, req.body)
+      return toTaskResponse(row)
     },
   )
 
@@ -362,12 +309,8 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
     '/:id',
     { preHandler: requireUser, schema: { params: idParams } },
     async (req, reply) => {
-      try {
-        await softDeleteTask(app.db, actor(req), req.params.id)
-        return reply.status(204).send()
-      } catch (error) {
-        return sendTaskProblem(reply, error)
-      }
+      await softDeleteTask(app.db, actor(req), req.params.id)
+      return reply.status(204).send()
     },
   )
 
@@ -383,12 +326,8 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
       preHandler: requireUser,
       schema: { params: idParams, response: { 200: dependencyLists } },
     },
-    async (req, reply) => {
-      try {
-        return await taskDependencyLists(app.db, authedUser(req).workspaceId, req.params.id)
-      } catch (error) {
-        return sendTaskProblem(reply, error)
-      }
+    async (req) => {
+      return await taskDependencyLists(app.db, authedUser(req).workspaceId, req.params.id)
     },
   )
 
@@ -401,14 +340,10 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
       schema: { params: idParams, body: addDependencyBody },
     },
     async (req, reply) => {
-      try {
-        // `:id` is the task that WAITS. The body names what it waits for, which reads the way
-        // the sentence does: this task depends on that one.
-        await addDependency(app.db, actor(req), req.params.id, req.body.blockerId)
-        return reply.status(204).send()
-      } catch (error) {
-        return sendTaskProblem(reply, error)
-      }
+      // `:id` is the task that WAITS. The body names what it waits for, which reads the way
+      // the sentence does: this task depends on that one.
+      await addDependency(app.db, actor(req), req.params.id, req.body.blockerId)
+      return reply.status(204).send()
     },
   )
 
@@ -419,12 +354,8 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
       schema: { params: z.object({ id: z.uuid(), blockerId: z.uuid() }).strict() },
     },
     async (req, reply) => {
-      try {
-        await removeDependency(app.db, actor(req), req.params.id, req.params.blockerId)
-        return reply.status(204).send()
-      } catch (error) {
-        return sendTaskProblem(reply, error)
-      }
+      await removeDependency(app.db, actor(req), req.params.id, req.params.blockerId)
+      return reply.status(204).send()
     },
   )
 
@@ -445,12 +376,8 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
         },
       },
     },
-    async (req, reply) => {
-      try {
-        return await listTaskEvents(app.db, authedUser(req).workspaceId, req.params.id, req.query)
-      } catch (error) {
-        return sendTaskProblem(reply, error)
-      }
+    async (req) => {
+      return await listTaskEvents(app.db, authedUser(req).workspaceId, req.params.id, req.query)
     },
   )
 }

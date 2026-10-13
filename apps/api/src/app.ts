@@ -3,13 +3,8 @@ import { resolve } from 'node:path'
 import fastifyCookie from '@fastify/cookie'
 import fastifyStatic from '@fastify/static'
 import fastifySwagger from '@fastify/swagger'
-import Fastify, {
-  type FastifyError,
-  type FastifyInstance,
-  type onRequestHookHandler,
-} from 'fastify'
+import Fastify, { type FastifyInstance, type onRequestHookHandler } from 'fastify'
 import {
-  hasZodFastifySchemaValidationErrors,
   jsonSchemaTransform,
   jsonSchemaTransformObject,
   serializerCompiler,
@@ -26,6 +21,7 @@ import { documentRefusals } from './platform/http/openapi'
 import { calendarDayRoutes } from './shell/calendar/routes'
 import { registerGuards } from './platform/http/guards'
 import { linkRoutes } from './shell/links/routes'
+import { handleError } from './platform/http/errors'
 import { sendProblem } from './platform/http/problem'
 import { unfurl, type Unfurl } from './modules/reading/unfurl'
 import { projectRoutes } from './shell/projects/routes'
@@ -75,25 +71,7 @@ export async function buildApp(opts: {
   // `reply.clearCookie` are available inside them.
   await app.register(fastifyCookie)
 
-  app.setErrorHandler((error: FastifyError, _req, reply) => {
-    // The zod type provider raises validation failures as a Fastify error carrying Zod
-    // issues in `error.validation` -- these are client errors (bad request bodies/params)
-    // and must map to 400, not the generic 500 path below.
-    if (hasZodFastifySchemaValidationErrors(error)) {
-      sendProblem(reply, 400, 'Bad Request', error.message)
-      return
-    }
-
-    const status = error.statusCode ?? 500
-
-    if (status >= 500) {
-      // Never leak internal error text or stack traces for server errors.
-      sendProblem(reply, status, 'Internal Server Error')
-      return
-    }
-
-    sendProblem(reply, status, error.message)
-  })
+  app.setErrorHandler(handleError)
 
   app.get('/api/v1/health', { schema: { hide: true } }, async () => ({ status: 'ok' }))
 

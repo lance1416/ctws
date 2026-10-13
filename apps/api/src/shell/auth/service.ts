@@ -6,13 +6,8 @@ import type { Db, Queryable } from '../../platform/db/client'
 import { projects } from '../projects/tables'
 import { users, workspaceMembers, workspaces } from './tables'
 import { INBOX_NAME } from '../projects/store'
+import { EmailTakenError, RegistrationClosedError } from './errors'
 import { hashPassword, verifyPassword } from './password'
-
-export class EmailTakenError extends Error {
-  constructor() {
-    super('email already registered')
-  }
-}
 
 const UNIQUE_VIOLATION = '23505'
 const MAX_CAUSE_DEPTH = 5
@@ -46,12 +41,6 @@ export function isUniqueViolation(error: unknown): boolean {
   return false
 }
 
-export class RegistrationClosedError extends Error {
-  constructor() {
-    super('registration is closed')
-  }
-}
-
 // Arbitrary constants naming transaction-scoped advisory locks. They serialise the places where
 // "look at the users table, then write based on what you saw" must not interleave.
 const LOCK_FIRST_USER = 7_301_001
@@ -59,13 +48,13 @@ export const LOCK_ADMIN_SET = 7_301_002
 
 // `explicitRole` is for admin-created users. Without it the role is decided by the database in
 // the same statement as the insert: the first user ever becomes admin, everyone else member.
-// `onlyIfFirst` refuses (RegistrationClosedError) unless the users table is empty -- it is how
-// a closed or invite-only instance still lets the very first account through.
+// `onlyIfFirst` refuses (RegistrationClosedError, worded for that mode) unless the users table is
+// empty -- it is how a closed or invite-only instance still lets the very first account through.
 // Takes `Db`, not `Queryable`: it opens its own transaction, which a `Queryable` cannot promise.
 export async function registerUser(
   db: Db,
   input: { email: string; password: string; timezone: string },
-  opts: { explicitRole?: Role; onlyIfFirst?: boolean } = {},
+  opts: { explicitRole?: Role; onlyIfFirst?: 'closed' | 'invite' } = {},
 ): Promise<{ userId: string; workspaceId: string }> {
   const userId = uuidv7()
   const workspaceId = uuidv7()
@@ -86,7 +75,7 @@ export async function registerUser(
         await tx.execute(sql`select pg_advisory_xact_lock(${LOCK_FIRST_USER})`)
         if (opts.onlyIfFirst) {
           const existing = await tx.select({ id: users.id }).from(users).limit(1)
-          if (existing.length > 0) throw new RegistrationClosedError()
+          if (existing.length > 0) throw new RegistrationClosedError(opts.onlyIfFirst)
         }
       }
       await tx.insert(users).values({

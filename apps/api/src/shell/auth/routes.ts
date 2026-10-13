@@ -1,18 +1,11 @@
 import { loginBody, registerBody, userResponse } from '@ctws/contracts'
 import type { FastifyPluginAsync } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
-import { sendProblem } from '../../platform/http/problem'
 import { clearSessionCookie, SESSION_COOKIE, setSessionCookie } from './cookie'
 import { authedUser, requireUser } from './require-user'
+import { InvalidCredentialsError, SessionRequiredError } from './errors'
 import { createSession, revokeSession } from './session'
-import {
-  authenticate,
-  EmailTakenError,
-  getAuthContext,
-  loadUser,
-  RegistrationClosedError,
-  registerUser,
-} from './service'
+import { authenticate, getAuthContext, loadUser, registerUser } from './service'
 
 export const authRoutes: FastifyPluginAsync = async (app) => {
   const typed = app.withTypeProvider<ZodTypeProvider>()
@@ -35,36 +28,22 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
         env.authRegistration === 'open' ||
         (env.authRegistration === 'invite' && req.body.inviteCode === env.authInviteCode)
 
-      try {
-        const { userId, workspaceId } = await registerUser(db, req.body, {
-          onlyIfFirst: !openToAll,
-        })
-        const ctx = await getAuthContext(db, userId)
-        if (!ctx) throw new Error('freshly registered user has no auth context')
-        const session = await createSession(db, userId, env.sessionTtlDays)
-        setSessionCookie(reply, env, session.token, session.expiresAt)
-        return reply.status(201).send({
-          id: userId,
-          email: req.body.email,
-          timezone: req.body.timezone,
-          workspaceId,
-          role: ctx.role,
-        })
-      } catch (error) {
-        if (error instanceof RegistrationClosedError) {
-          return sendProblem(
-            reply,
-            403,
-            env.authRegistration === 'invite'
-              ? 'A valid invite code is required'
-              : 'Registration is closed',
-          )
-        }
-        if (error instanceof EmailTakenError) {
-          return sendProblem(reply, 409, 'That email is already registered')
-        }
-        throw error
-      }
+      const { userId, workspaceId } = await registerUser(
+        db,
+        req.body,
+        openToAll ? {} : { onlyIfFirst: env.authRegistration === 'invite' ? 'invite' : 'closed' },
+      )
+      const ctx = await getAuthContext(db, userId)
+      if (!ctx) throw new Error('freshly registered user has no auth context')
+      const session = await createSession(db, userId, env.sessionTtlDays)
+      setSessionCookie(reply, env, session.token, session.expiresAt)
+      return reply.status(201).send({
+        id: userId,
+        email: req.body.email,
+        timezone: req.body.timezone,
+        workspaceId,
+        role: ctx.role,
+      })
     },
   )
 
@@ -81,7 +60,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       const { env, db } = app
       const result = await authenticate(db, req.body.email, req.body.password)
       // Same status and title as an unknown email -- see authenticate().
-      if (!result) return sendProblem(reply, 401, 'Invalid email or password')
+      if (!result) throw new InvalidCredentialsError()
 
       // Resolve everything needed for a 200 BEFORE minting a session or
       // setting the cookie. A session must never be created, and a cookie
@@ -90,10 +69,10 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       // a live, usable session (see Fix round 1, Important #1).
       // Also null for a disabled user: refuse the login rather than mint a dead session.
       const ctx = await getAuthContext(db, result.userId)
-      if (!ctx) return sendProblem(reply, 401, 'Invalid email or password')
+      if (!ctx) throw new InvalidCredentialsError()
 
       const user = await loadUser(db, result.userId, ctx)
-      if (!user) return sendProblem(reply, 401, 'Invalid email or password')
+      if (!user) throw new InvalidCredentialsError()
 
       const session = await createSession(db, result.userId, env.sessionTtlDays)
       setSessionCookie(reply, env, session.token, session.expiresAt)
@@ -107,7 +86,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     async (req, reply) => {
       const { id, workspaceId, role, timezone } = authedUser(req)
       const user = await loadUser(app.db, id, { workspaceId, role, timezone })
-      if (!user) return sendProblem(reply, 401, 'Authentication required')
+      if (!user) throw new SessionRequiredError()
       return reply.send(user)
     },
   )

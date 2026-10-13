@@ -7,14 +7,12 @@ import type { Db, Queryable } from '../../platform/db/client'
 import { projects } from '../../shell/projects/tables'
 import { tasks } from './tables'
 import { appendEvent, type AppendEventInput } from './events'
-import { TaskNotFoundError } from './errors'
+import { DepthLimitError, ManualProgressOnParentError, TaskNotFoundError } from './errors'
+import { MAX_DEPTH } from './tree'
 import { ProjectNotFoundError } from '../../shell/projects/errors'
 import { visibleProjects } from '../../shell/projects/store'
 
 export type Task = typeof tasks.$inferSelect
-
-/** Spec 5.2: the deepest allowed nesting. A root task is at depth 1. */
-export const MAX_DEPTH = 10
 
 /** Who is acting, and in which workspace. Every service function takes it, never a bare id. */
 export type TaskCtx = { workspaceId: string; actorUserId: string }
@@ -51,20 +49,6 @@ export type TaskCtx = { workspaceId: string; actorUserId: string }
  * a new mutator added without one.
  */
 export const LOCK_TASK_TREE = 7_301_003
-
-export class DepthLimitError extends Error {
-  constructor() {
-    super(`Tasks can be nested at most ${MAX_DEPTH} levels deep`)
-    this.name = 'DepthLimitError'
-  }
-}
-
-export class ManualProgressOnParentError extends Error {
-  constructor() {
-    super('Manual progress can only be set on a task without children')
-    this.name = 'ManualProgressOnParentError'
-  }
-}
 
 /**
  * Number of tasks on the path from `taskId` up to its root, itself included, so a root is 1.

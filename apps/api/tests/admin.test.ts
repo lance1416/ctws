@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
-import { LastAdminError, updateUser } from '../src/shell/admin/service'
+import { LastAdminError } from '../src/shell/admin/errors'
+import { updateUser } from '../src/shell/admin/service'
 import { withApp } from './helpers/app'
 
 type Ctx = Awaited<ReturnType<typeof withApp>>
