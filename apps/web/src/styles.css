@@ -463,6 +463,12 @@ kbd,
   font-variant-numeric: tabular-nums;
 }
 
+/* A key is a letter in the app's own face, in its box. The browser's monospace default reads as
+   code, and these are the same letters the rail and the search name. */
+kbd {
+  font-family: inherit;
+}
+
 /* One focus ring for everything focusable: ink, 2px, 2px offset -- 13.31:1 at its worst. */
 :focus-visible {
   outline: 2px solid var(--color-ink);

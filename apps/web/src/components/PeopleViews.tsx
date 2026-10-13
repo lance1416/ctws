@@ -18,7 +18,10 @@ export function PeopleHead() {
   return (
     <>
       <div className="flex items-center justify-between gap-3">
-        <h1 tabIndex={-1} className="text-xl font-semibold focus:outline-none">
+        <h1
+          tabIndex={-1}
+          className="ml-15 text-2xl font-semibold tracking-[-0.02em] focus:outline-none sm:ml-18"
+        >
           People
         </h1>
         {/* Secondary, because All people also has the quicker way in: the box under the tabs
@@ -58,7 +61,7 @@ function PeopleViews() {
         : 'text-ink-muted hover:text-ink'
     }`
   return (
-    <nav aria-label="People views" className="mt-3 flex gap-5 border-b border-rule">
+    <nav aria-label="People views" className="mt-4 ml-15 flex gap-5 border-b border-rule sm:ml-18">
       <Link
         to="/people"
         aria-current={onBirthdays ? undefined : 'page'}

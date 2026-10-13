@@ -87,19 +87,30 @@ test('Linked sits beside Tasks where the page has room, and below it on a phone'
   const { project } = await world(page)
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto(`/projects/${project.id}`)
-  const tasks = (await page.getByRole('region', { name: 'Tasks', exact: true }).boundingBox())!
-  const linked = (await page.locator('[data-panel="Linked"]').boundingBox())!
+  // Both boxes in ONE frame, once the head above them has its name: two reads either side of the
+  // name arriving put the two blocks 44px apart -- the name's own line -- and blamed the layout.
+  await expect(page.locator('[data-project-sentence]')).toBeVisible()
+  await expect(page.locator('[data-panel="Linked"]')).toContainText('Ying Chen')
+  const boxes = () =>
+    page.evaluate(() =>
+      ['Tasks', 'Linked'].map((name) => {
+        const r = document.querySelector(`[data-panel="${name}"]`)!.getBoundingClientRect()
+        return { x: r.x, y: r.y, width: r.width, height: r.height }
+      }),
+    )
+  const [tasks, linked] = await boxes()
   // Beside: to the right of the tasks, and starting level with them.
-  expect(linked.x).toBeGreaterThanOrEqual(tasks.x + tasks.width)
-  expect(Math.abs(linked.y - tasks.y)).toBeLessThan(40)
-  expect(Math.round(linked.width)).toBe(320)
+  expect(linked!.x).toBeGreaterThanOrEqual(tasks!.x + tasks!.width)
+  expect(Math.abs(linked!.y - tasks!.y)).toBeLessThan(40)
+  expect(Math.round(linked!.width)).toBe(320)
 
   await page.setViewportSize({ width: 375, height: 800 })
-  const narrowTasks = (await page
-    .getByRole('region', { name: 'Tasks', exact: true })
-    .boundingBox())!
-  const narrowLinked = (await page.locator('[data-panel="Linked"]').boundingBox())!
-  expect(narrowLinked.y).toBeGreaterThan(narrowTasks.y + narrowTasks.height - 4)
+  await expect
+    .poll(async () => {
+      const [narrowTasks, narrowLinked] = await boxes()
+      return narrowLinked!.y - (narrowTasks!.y + narrowTasks!.height)
+    })
+    .toBeGreaterThan(-4)
 })
 
 test('with the detail open the third column is the detail’s, and Linked goes below', async ({

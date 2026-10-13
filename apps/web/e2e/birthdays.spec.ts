@@ -28,6 +28,62 @@ function monthDay(offset: number): { month: number; day: number } {
 
 const rows = (page: Page) => page.locator('[data-birthday-row]')
 
+/** The month names the app prints, so a spec can build the string the page will show. */
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+/**
+ * A BIRTHDAY'S ROW IS A PERSON'S ROW: the day in the margin with the cake, the thread, then who,
+ * how old, and how far off at the far end. The heading above hangs where the threads do.
+ */
+test('a birthday row hangs on the margin: the day and its cake, then who, then how far off', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await person(page, '王颖', { calendar: 'solar', year: 1993, ...monthDay(0) }, 'friend')
+  await person(page, '林哲', { calendar: 'solar', year: 1985, ...monthDay(3) }, 'work')
+  const view = (await (
+    await page.request.get('/api/v1/people/birthdays', { headers: WEB })
+  ).json()) as { coming: { name: string; day: string }[] }
+  await page.goto('/people/birthdays')
+
+  // The margin says the SERVER's day, as a month and a day, beside the cake.
+  const said = (name: string) => {
+    const [, m, d] = view.coming
+      .find((r) => r.name === name)!
+      .day.split('-')
+      .map(Number)
+    return `${MONTHS[m! - 1]} ${d}`
+  }
+  const lin = rows(page).filter({ hasText: '林哲' })
+  const wang = rows(page).filter({ hasText: '王颖' })
+  await expect(lin.locator('[data-birthday-lead] time')).toHaveText(said('林哲'))
+  await expect(wang.locator('[data-birthday-lead] time')).toHaveText(said('王颖'))
+  await expect(lin.locator('[data-birthday-lead] [data-cake]')).toHaveCount(1)
+  // Today's is in a colour of its own; the far end already says "today" in words.
+  const colour = (row: typeof lin) =>
+    row.locator('[data-birthday-lead]').evaluate((el) => getComputedStyle(el).color)
+  expect(await colour(wang)).not.toBe(await colour(lin))
+
+  // How far off is at the far end, after who.
+  const end = (await lin.getByRole('link').boundingBox())!
+  const off = (await lin.getByText('in 3 days').boundingBox())!
+  expect(end.x + end.width - (off.x + off.width)).toBeLessThan(12)
+
+  // One x for the threads, and the page's heading hangs on it.
+  const threads = await page
+    .locator('[data-birthday-row] [data-thread]')
+    .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().x)))
+  expect(threads).toHaveLength(2)
+  expect(new Set(threads).size).toBe(1)
+  const h1 = (await page.getByRole('heading', { level: 1, name: 'People' }).boundingBox())!
+  expect(Math.round(h1.x)).toBe(threads[0])
+
+  // The whole body is the way to the person.
+  await lin.getByText('in 3 days').click()
+  await expect(page.getByRole('dialog', { name: 'People' })).toContainText('林哲')
+})
+
 test('七天内的人在 Coming up，其余在 Later，并且每个人只出现一次', async ({ page }) => {
   await registerFreshUser(page)
   await person(page, '王颖', { calendar: 'solar', year: 1993, ...monthDay(0) }, 'friend')

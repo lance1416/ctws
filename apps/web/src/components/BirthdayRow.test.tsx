@@ -1,4 +1,5 @@
 import type { BirthdayListRow } from '@ctws/contracts'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
@@ -24,9 +25,12 @@ const row = (over: Partial<BirthdayListRow> = {}): BirthdayListRow => ({
 
 const render = (r: BirthdayListRow) =>
   renderToStaticMarkup(
-    <MemoryRouter>
-      <BirthdayRow row={r} today="2026-10-10" />
-    </MemoryRouter>,
+    // The thread asks for the projects' colours; nothing is fetched in a static render.
+    <QueryClientProvider client={new QueryClient()}>
+      <MemoryRouter>
+        <BirthdayRow row={r} />
+      </MemoryRouter>
+    </QueryClientProvider>,
   )
 
 describe('BirthdayRow', () => {
@@ -53,6 +57,14 @@ describe('BirthdayRow', () => {
   it('日子被挪过时说一声', () => {
     expect(render(row({ kept: ['short-month'] }))).toContain('moved')
     expect(render(row({ kept: [] }))).not.toContain('moved')
+  })
+
+  it('日子在页边：只有月和日，旁边一个蛋糕', () => {
+    // 下一次生日在明年也不写年份：下一次总在一年之内，页边只有一行。
+    const html = render(row({ day: '2027-01-05' }))
+    expect(html).toContain('Jan 5')
+    expect(html).not.toContain('2027</time>')
+    expect(html).toContain('data-cake')
   })
 
   it('今天的生日穿 deadline 色、加粗，其余是 muted', () => {

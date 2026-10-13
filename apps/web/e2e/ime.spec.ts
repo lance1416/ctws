@@ -72,7 +72,7 @@ test('committing English out of an IME does not submit the form', async ({ page 
     data: { name: '陈颖' },
   })
   await page.reload()
-  await page.getByRole('button', { name: '陈颖' }).click()
+  await page.locator('[data-person-row]').filter({ hasText: '陈颖' }).getByRole('link').click()
   const pane = page.getByRole('dialog', { name: 'People' })
   await pane.getByRole('button', { name: 'Edit', exact: true }).click()
 

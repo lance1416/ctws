@@ -88,7 +88,14 @@ export function Panel({
   )
 }
 
-/** What a panel says when it has nothing in it. One quiet line; never an apology or a graphic. */
-export function PanelEmpty({ children }: { children: ReactNode }) {
-  return <p className="px-2 py-1.5 text-sm text-ink-subtle">{children}</p>
+/**
+ * What a panel says when it has nothing in it. One quiet line; never an apology or a graphic.
+ * `hang`: in a list of rows, on the titles' edge -- past the margin, the thread and the gutter.
+ */
+export function PanelEmpty({ children, hang = false }: { children: ReactNode; hang?: boolean }) {
+  return (
+    <p className={`py-1.5 text-sm text-ink-subtle ${hang ? 'ml-15 pl-[17px] sm:ml-18' : 'px-2'}`}>
+      {children}
+    </p>
+  )
 }

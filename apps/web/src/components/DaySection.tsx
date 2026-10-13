@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { PanelEmpty } from './Panel'
 
 /**
  * A SECTION OF A DAY: a heading, then its rows, and no box.
@@ -43,5 +44,5 @@ export function DaySection({
 
 /** What a section says when it has nothing in it: one quiet line, on the titles' edge. */
 export function DayEmpty({ children }: { children: ReactNode }) {
-  return <p className="ml-15 py-1.5 pl-[17px] text-sm text-ink-subtle sm:ml-18">{children}</p>
+  return <PanelEmpty hang>{children}</PanelEmpty>
 }

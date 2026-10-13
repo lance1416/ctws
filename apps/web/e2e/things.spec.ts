@@ -33,6 +33,53 @@ test('lists every kind of thing in order, each linking to its own page', async (
   await expect(kind(page, 'Reading').locator('kbd')).toHaveText('g l')
 })
 
+/**
+ * A KIND'S ROW IS THE APP'S ROW: its key in the margin, a thread, then its name, its count and its
+ * line. The threads are one x, and the page's heading hangs on it.
+ */
+test('each kind hangs on the margin: its key, a thread, then its name and its line', async ({
+  page,
+}) => {
+  await registerFreshUser(page, '/things')
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await expect(page.locator('[data-kind]')).toHaveCount(5)
+  const rows = await page.locator('[data-kind]').evaluateAll((els) =>
+    els.map((el) => {
+      const key = el.querySelector('kbd')?.getBoundingClientRect()
+      const thread = el.querySelector('[data-thread]')!.getBoundingClientRect()
+      const body = el.querySelector('a')!.getBoundingClientRect()
+      return {
+        key: key ? Math.round(key.right) : null,
+        thread: Math.round(thread.x),
+        threadHeight: Math.round(thread.height),
+        height: Math.round(el.getBoundingClientRect().height),
+        body: Math.round(body.x),
+      }
+    }),
+  )
+  expect(new Set(rows.map((r) => r.thread)).size, 'one x for every thread').toBe(1)
+  const h1 = (await page.getByRole('heading', { level: 1, name: 'Things' }).boundingBox())!
+  expect(Math.round(h1.x)).toBe(rows[0]!.thread)
+  for (const r of rows) {
+    // The key is in the margin, before the thread; the body after it.
+    if (r.key !== null) expect(r.key).toBeLessThanOrEqual(r.thread)
+    expect(r.body).toBeGreaterThan(r.thread)
+    // The thread runs the row's height.
+    expect(r.threadHeight).toBe(r.height)
+  }
+  expect(rows.filter((r) => r.key !== null).length, 'kinds with a key show it').toBeGreaterThan(2)
+  // The key is in the app's own face, not the browser's monospace.
+  const face = (sel: string) =>
+    page
+      .locator(sel)
+      .first()
+      .evaluate((el) => getComputedStyle(el).fontFamily)
+  expect(await face('[data-kind] kbd')).toBe(await face('h1'))
+  // The whole body is the way in, not only the name.
+  await kind(page, 'Reading').locator('[data-count]').click()
+  await expect(page).toHaveURL(/\/reading$/)
+})
+
 test('a kind with nothing in it is still listed', async ({ page }) => {
   await registerFreshUser(page, '/things')
   await expect(kind(page, 'Reading')).toBeVisible()

@@ -56,6 +56,7 @@ export function ProjectRail({ projectId }: { projectId: string | null }) {
   return (
     <span
       aria-hidden="true"
+      data-thread
       data-project-rail={projectId ?? undefined}
       // A thing in no project still has its strand, in the hairline's colour, so every row of a
       // list has the same parts at the same x.

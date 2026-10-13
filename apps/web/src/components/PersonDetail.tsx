@@ -180,6 +180,7 @@ export function PersonFields({
                 >
                   {channelLabel(c.kind, c.value, phone?.displayPhone)}
                 </a>
+                {c.label && <span className="shrink-0 text-xs text-ink-subtle">{c.label}</span>}
               </li>
             ))}
           </ul>

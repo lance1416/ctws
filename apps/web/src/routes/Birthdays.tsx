@@ -45,7 +45,7 @@ export function Birthdays() {
     <>
       <PeopleHead />
 
-      <div className="mt-4 flex flex-wrap items-center gap-3">
+      <div className="mt-4 ml-15 flex flex-wrap items-center gap-3 sm:ml-18">
         <input
           value={find}
           onChange={(e) => setFind(e.target.value)}
@@ -62,34 +62,34 @@ export function Birthdays() {
       </div>
 
       {view.isError && (
-        <p role="alert" className="mt-4 text-sm text-danger">
+        <p role="alert" className="mt-4 ml-15 text-sm text-danger sm:ml-18">
           Couldn&apos;t load birthdays
         </p>
       )}
 
       <div className="mt-4 grid min-w-0 items-start gap-4 lg:grid-cols-[repeat(3,minmax(0,1fr))]">
         <div className="flex min-w-0 flex-col gap-4 lg:col-span-2">
-          <Panel label="Coming up">
+          <Panel label="Coming up" hang>
             {coming.length === 0 ? (
-              <PanelEmpty>Nobody in the next week</PanelEmpty>
+              <PanelEmpty hang>Nobody in the next week</PanelEmpty>
             ) : (
               <ul className="flex flex-col">
                 {coming.map((row) => (
-                  <BirthdayRow key={row.personId} row={row} today={data?.today ?? ''} />
+                  <BirthdayRow key={row.personId} row={row} />
                 ))}
               </ul>
             )}
           </Panel>
 
-          <Panel label="Later">
+          <Panel label="Later" hang>
             {later.length === 0 ? (
-              <PanelEmpty>
+              <PanelEmpty hang>
                 {total === 0 ? 'No birthdays written down yet' : 'Nobody else'}
               </PanelEmpty>
             ) : (
               <ul className="flex flex-col">
                 {later.map((row) => (
-                  <BirthdayRow key={row.personId} row={row} today={data?.today ?? ''} />
+                  <BirthdayRow key={row.personId} row={row} />
                 ))}
               </ul>
             )}

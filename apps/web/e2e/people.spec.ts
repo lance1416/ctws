@@ -12,6 +12,13 @@ import { makeProject, pickOne, registerFreshUser, WEB } from './helpers'
 const row = (page: Page, name: string) =>
   page.getByRole('listitem').filter({ hasText: name }).first()
 
+/** The row's body: one link, to the person's own address. */
+const personLink = (page: Page, name: string) =>
+  page.locator('[data-person-row]').filter({ hasText: name }).getByRole('link')
+
+/** The month names the app prints, so a spec can build the string the page will show. */
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
 async function add(page: Page, data: Record<string, unknown>) {
   const res = await page.request.post('/api/v1/people', { headers: WEB, data })
   // Asserted, because a payload the contract refused used to leave the test looking at an empty
@@ -22,7 +29,7 @@ async function add(page: Page, data: Record<string, unknown>) {
 
 test('a person keeps several addresses, and each one is a link', async ({ page }) => {
   await registerFreshUser(page, '/people')
-  await add(page, {
+  const made = await add(page, {
     name: '陈颖',
     org: 'Acme 招聘',
     channels: [
@@ -31,9 +38,11 @@ test('a person keeps several addresses, and each one is a link', async ({ page }
       { kind: 'url', value: 'github.com/ying' },
     ],
   })
-  await page.reload()
+  const id = ((await made.json()) as { id: string }).id
+  await page.goto(`/people/${id}`)
 
-  const person = row(page, '陈颖')
+  // In the person's sheet: the list row says who they are, and the sheet how to reach them.
+  const person = page.getByRole('dialog', { name: 'People' })
   await expect(person.getByRole('link', { name: 'ying@acme.test' })).toHaveAttribute(
     'href',
     'mailto:ying@acme.test',
@@ -69,7 +78,7 @@ test('a person is made by typing a name, and finished in the pane', async ({ pag
   await pane.getByRole('textbox', { name: 'Item 1' }).fill('lilei@acme.test')
   await pane.getByRole('button', { name: 'Save' }).click()
 
-  await expect(row(page, '李雷')).toContainText('lilei@acme.test')
+  await expect(pane).toContainText('lilei@acme.test')
   // 存完回到阅读态：刚写下的东西就在眼前，而不是停在一张表上。
   await expect(pane.getByRole('button', { name: 'Save' })).toHaveCount(0)
   await expect(pane.getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
@@ -82,7 +91,7 @@ test('a person can be on several lines of work at once', async ({ page }) => {
   await add(page, { name: '陈颖' })
   await page.goto('/people')
 
-  await page.getByRole('button', { name: '陈颖' }).click()
+  await personLink(page, '陈颖').click()
   const pane = page.getByRole('dialog', { name: 'People' })
   await pane.getByRole('button', { name: 'Edit', exact: true }).click()
   // 连着挑两个，中间不等：一次保存写回去的是两个，不是最后那一个。
@@ -111,7 +120,7 @@ test('a line of work is taken off without touching the others', async ({ page })
   await add(page, { name: '陈颖', projectIds: [hunt, ctws] })
   await page.goto('/people')
 
-  await page.getByRole('button', { name: '陈颖' }).click()
+  await personLink(page, '陈颖').click()
   const pane = page.getByRole('dialog', { name: 'People' })
   await pane.getByRole('button', { name: 'Edit', exact: true }).click()
   await pane.getByRole('button', { name: 'Remove Projects “找工作”' }).click()
@@ -135,14 +144,85 @@ test('an address removed in the pane is really gone', async ({ page }) => {
   })
   await page.reload()
 
-  await page.getByRole('button', { name: '韩梅梅' }).click()
+  await personLink(page, '韩梅梅').click()
   const pane = page.getByRole('dialog', { name: 'People' })
   await pane.getByRole('button', { name: 'Edit', exact: true }).click()
   await pane.getByRole('button', { name: 'Remove item 1' }).click()
   await pane.getByRole('button', { name: 'Save' }).click()
 
-  await expect(row(page, '韩梅梅')).toContainText('keep@acme.test')
-  await expect(row(page, '韩梅梅')).not.toContainText('old@acme.test')
+  await expect(pane).toContainText('keep@acme.test')
+  await expect(pane).not.toContainText('old@acme.test')
+})
+
+// ------------------------------------------------------------------ the row: margin, thread, body
+
+/**
+ * A PERSON'S ROW IS THE APP'S ROW: the margin says when (their next birthday, with a cake), the
+ * thread is their first line of work, and the body says who -- an initial, the name, what they do
+ * and where, and the city at the far end. The same margin and thread x as the page's heading, which
+ * is what makes it one page and not a list dropped under a title.
+ */
+test('a person row hangs on the margin: next birthday, first project, then who they are', async ({
+  page,
+}) => {
+  await registerFreshUser(page, '/')
+  await page.setViewportSize({ width: 1440, height: 900 })
+  const hunt = await makeProject(page, '找工作')
+  const made = await add(page, {
+    name: '陈颖',
+    title: 'Engineering manager',
+    org: 'Acme',
+    city: 'Toronto',
+    projectIds: [hunt],
+    birthday: { calendar: 'solar', month: 3, day: 9 },
+  })
+  const ying = (await made.json()) as {
+    id: string
+    projects: { id: string }[]
+    birthday: { next: { day: string } }
+  }
+  await add(page, { name: 'Lena Fischer', circle: 'friend' })
+  await page.goto('/people')
+
+  const yRow = page.locator(`[data-person-row="${ying.id}"]`)
+  // The margin: the SERVER's next birthday, month and day, beside the cake.
+  const [, m, d] = ying.birthday.next.day.split('-').map(Number)
+  await expect(yRow.locator('[data-birthday-lead] time')).toHaveText(`${MONTHS[m! - 1]} ${d}`)
+  await expect(yRow.locator('[data-birthday-lead] [data-cake]')).toHaveCount(1)
+  // The thread: their first line of work's.
+  await expect(yRow.locator('[data-project-rail]')).toHaveAttribute(
+    'data-project-rail',
+    ying.projects[0]!.id,
+  )
+  // The body: one link to them, the initial, the name, what they do, and the city.
+  const body = yRow.getByRole('link')
+  await expect(body).toHaveAttribute('href', `/people/${ying.id}`)
+  await expect(body.locator('[data-person-initial]')).toHaveText('陈')
+  await expect(body.locator('[data-person-name]')).toHaveText('陈颖')
+  await expect(body.locator('[data-person-meta]')).toHaveText('Engineering manager, Acme')
+  const end = (await body.boundingBox())!
+  const city = (await body.getByText('Toronto').boundingBox())!
+  expect(end.x + end.width - (city.x + city.width), 'the city is at the far end').toBeLessThan(12)
+
+  // Nothing to say is said with nothing: no birthday, no project, no job -- their circle instead.
+  const lRow = page.locator('[data-person-row]').filter({ hasText: 'Lena Fischer' })
+  await expect(lRow.locator('[data-birthday-lead] time')).toHaveCount(0)
+  await expect(lRow.locator('[data-project-rail]')).toHaveCount(0)
+  await expect(lRow.locator('[data-person-meta]')).toHaveText('Friend')
+
+  // ONE x for the threads, and the page's heading hangs there too.
+  const threads = await page
+    .locator('[data-person-row] [data-thread]')
+    .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().x)))
+  expect(threads).toHaveLength(2)
+  expect(new Set(threads).size).toBe(1)
+  const h1 = (await page.getByRole('heading', { level: 1, name: 'People' }).boundingBox())!
+  expect(Math.round(h1.x)).toBe(threads[0])
+
+  // The open person's row says so.
+  await body.click()
+  await expect(page.getByRole('dialog', { name: 'People' })).toBeVisible()
+  await expect(body).toHaveAttribute('aria-current', 'page')
 })
 
 test('the list is in pinyin order, not byte order', async ({ page }) => {
@@ -216,7 +296,7 @@ test('Cancel 丢掉改动，一个字节都不写', async ({ page }) => {
   await registerFreshUser(page, '/people')
   await add(page, { name: '陈颖', org: 'Acme 招聘' })
   await page.reload()
-  await page.getByRole('button', { name: '陈颖' }).click()
+  await personLink(page, '陈颖').click()
   const pane = page.getByRole('dialog', { name: 'People' })
 
   const writes: string[] = []
@@ -239,7 +319,7 @@ test('改完一次保存，读到的就是刚写下的', async ({ page }) => {
   await registerFreshUser(page, '/people')
   await add(page, { name: '陈颖', org: 'Acme 招聘' })
   await page.reload()
-  await page.getByRole('button', { name: '陈颖' }).click()
+  await personLink(page, '陈颖').click()
   const pane = page.getByRole('dialog', { name: 'People' })
 
   await pane.getByRole('button', { name: 'Edit', exact: true }).click()
@@ -291,10 +371,11 @@ test('a person is written down properly in one form, not created then edited', a
     projectIds: [projectId],
     channels: [{ kind: 'email', value: 'ying@acme.test', label: null }],
   })
-  await expect(row(page, 'Ying Chen')).toContainText('ying@acme.test')
+  await expect(row(page, 'Ying Chen')).toContainText('Acme recruiting')
+  await expect(page.getByRole('dialog', { name: 'People' })).toContainText('ying@acme.test')
 })
 
-test('the whole row opens the person, and the addresses stay links', async ({ page }) => {
+test('the whole row opens the person', async ({ page }) => {
   // The whole row is the target, not just the four characters of a name.
   await registerFreshUser(page, '/people')
   await add(page, { name: 'Ying Chen', org: 'Acme recruiting' })
@@ -515,7 +596,7 @@ test('粘一条链接进来，落点是列表加这个人的那一层', async ({
   await expect(pane).toContainText('陈颖')
   // 列表就在后面，不是一个空页。
   await expect(page.getByRole('heading', { level: 1, name: 'People' })).toBeVisible()
-  await expect(page.getByRole('button', { name: '周楠' })).toBeVisible()
+  await expect(personLink(page, '周楠')).toBeVisible()
   // 整页那一套没有了：没有第二个地方可去。
   await expect(page.getByRole('link', { name: 'Open as a page' })).toHaveCount(0)
 
@@ -530,7 +611,7 @@ test('从列表点开一个人，URL 就是他的地址', async ({ page }) => {
   const made = await page.request.post('/api/v1/people', { headers: WEB, data: { name: '陈颖' } })
   const id = ((await made.json()) as { id: string }).id
   await page.reload()
-  await page.getByRole('button', { name: '陈颖' }).click()
+  await personLink(page, '陈颖').click()
   await expect(page).toHaveURL(new RegExp(`/people/${id}$`))
   // 退回去是浏览器的后退，因为这一层本来就是一次导航。
   await page.goBack()
@@ -607,7 +688,7 @@ test('新加一行是空的，而且说清这一类长什么样', async ({ page 
   await registerFreshUser(page, '/people')
   await add(page, { name: '陈颖' })
   await page.reload()
-  await page.getByRole('button', { name: '陈颖' }).click()
+  await personLink(page, '陈颖').click()
   const pane = page.getByRole('dialog', { name: 'People' })
   await pane.getByRole('button', { name: 'Edit', exact: true }).click()
   await pane.getByRole('button', { name: 'Add one' }).click()
@@ -631,7 +712,7 @@ test('写得不像那一类，保存之前就说出来', async ({ page }) => {
   await registerFreshUser(page, '/people')
   await add(page, { name: '陈颖' })
   await page.reload()
-  await page.getByRole('button', { name: '陈颖' }).click()
+  await personLink(page, '陈颖').click()
   const pane = page.getByRole('dialog', { name: 'People' })
   await pane.getByRole('button', { name: 'Edit', exact: true }).click()
   await pane.getByRole('button', { name: 'Add one' }).click()
@@ -677,7 +758,7 @@ test('电话一边打一边排好，存下来的就是排好的', async ({ page 
   await registerFreshUser(page, '/people')
   await add(page, { name: '陈颖' })
   await page.reload()
-  await page.getByRole('button', { name: '陈颖' }).click()
+  await personLink(page, '陈颖').click()
   const pane = page.getByRole('dialog', { name: 'People' })
   await pane.getByRole('button', { name: 'Edit', exact: true }).click()
   await pane.getByRole('button', { name: 'Add one' }).click()
@@ -718,7 +799,7 @@ test('城市打几个字母就有候选，选中存的是标准写法', async ({
   await registerFreshUser(page, '/people')
   await add(page, { name: '陈颖' })
   await page.reload()
-  await page.getByRole('button', { name: '陈颖' }).click()
+  await personLink(page, '陈颖').click()
   const pane = page.getByRole('dialog', { name: 'People' })
   await pane.getByRole('button', { name: 'Edit', exact: true }).click()
 
@@ -741,7 +822,7 @@ test('打错一个字母看得出来，但还是存得下', async ({ page }) => 
   await registerFreshUser(page, '/people')
   await add(page, { name: '陈颖' })
   await page.reload()
-  await page.getByRole('button', { name: '陈颖' }).click()
+  await personLink(page, '陈颖').click()
   const pane = page.getByRole('dialog', { name: 'People' })
   await pane.getByRole('button', { name: 'Edit', exact: true }).click()
 
@@ -781,7 +862,7 @@ test('新建对话框里的号码也排好，存的也是同一条', async ({ pa
 
   // 列表上、那一层里，都是分好组的那一串。
   await expect(page.getByRole('link', { name: '+86 138 0000 0000' }).first()).toBeVisible()
-  await page.getByRole('button', { name: '陈颖' }).click()
+  await personLink(page, '陈颖').click()
   const pane = page.getByRole('dialog', { name: 'People' })
   await expect(pane.getByRole('link', { name: '+86 138 0000 0000' })).toBeVisible()
 })
@@ -817,7 +898,7 @@ test('老号码打开编辑就补上国家码', async ({ page }) => {
   })
   expect(made.ok()).toBe(true)
   await page.reload()
-  await page.getByRole('button', { name: '陈颖' }).click()
+  await personLink(page, '陈颖').click()
   const pane = page.getByRole('dialog', { name: 'People' })
   await pane.getByRole('button', { name: 'Edit', exact: true }).click()
 

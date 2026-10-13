@@ -6,7 +6,6 @@ import { peopleKey, listPeople } from '../api/people'
 import { PersonDetail } from '../components/PersonDetail'
 import { PeopleList } from '../components/PeopleList'
 import { NewPersonInput } from '../components/NewPersonInput'
-import { LIST_MEASURE } from '../rowLead'
 import { BUTTON } from '../components/buttonStyles'
 import { PeopleHead } from '../components/PeopleViews'
 import { CIRCLE_LABELS } from '../components/BirthdayRow'
@@ -45,19 +44,20 @@ export function People() {
     <>
       <PeopleHead />
 
-      <div className={`mt-4 ${LIST_MEASURE}`}>
+      {/* On the heading's edge, where the threads hang: the page's controls are one column. */}
+      <div className="mt-4 ml-15 max-w-[52ch] sm:ml-18">
         <NewPersonInput onCreated={(c: PersonResponse) => setOpenId(c.id)} />
       </div>
 
       {/* 链接指向的人已经不在了：说出来。静静地只剩一个列表，读起来像链接坏了。 */}
       {gone && (
-        <p role="alert" className="mt-4 text-sm text-ink-muted">
+        <p role="alert" className="mt-4 ml-15 text-sm text-ink-muted sm:ml-18">
           This person is not here any more.
         </p>
       )}
-      {people.isPending && <p className="mt-6 text-ink-muted">Loading…</p>}
+      {people.isPending && <p className="mt-6 ml-15 text-ink-muted sm:ml-18">Loading…</p>}
       {people.isError && (
-        <p role="alert" className="mt-6 text-danger">
+        <p role="alert" className="mt-6 ml-15 text-danger sm:ml-18">
           {people.error instanceof Error
             ? people.error.message
             : "Couldn't load. Check that the server is running."}
@@ -66,7 +66,8 @@ export function People() {
       {/* ONE LIST, FILTERED -- never a second list. The circle is how an address book that also
           holds fifty relatives stays readable, and nothing is hidden by default: a row that has
           vanished is worse than a long list. */}
-      <div className="mt-4 flex flex-wrap gap-1.5">
+      {/* The buttons' labels on the heading's edge: each button's own padding hangs left of it. */}
+      <div className="mt-4 ml-[50px] flex flex-wrap gap-1 sm:ml-[62px]">
         {([null, 'family', 'friend', 'work'] as const).map((key) => {
           const picked = circle === key
           return (
@@ -75,7 +76,13 @@ export function People() {
               type="button"
               aria-pressed={picked}
               onClick={() => setCircle(key)}
-              className={picked ? BUTTON.secondary : BUTTON.quiet}
+              // Picked is a filled chip, as the Birthdays index marks its pick: a border would
+              // make one of four equal filters look like the page's button.
+              className={
+                picked
+                  ? 'h-9 rounded-md bg-select px-2.5 text-sm font-semibold text-ink'
+                  : BUTTON.quiet
+              }
             >
               {key === null ? 'Everyone' : CIRCLE_LABELS[key]}
             </button>
@@ -84,11 +91,12 @@ export function People() {
       </div>
 
       {people.isSuccess && (
-        <div className={`mt-3 ${LIST_MEASURE}`}>
+        // A person's city is read against their name: at the task lists' measure it sat 900px away.
+        <div className="mt-3 max-w-[48rem]">
           <PeopleList
             people={people.data.filter((c) => circle === null || c.circle === circle)}
+            openId={openId}
             emptyLine="No people yet"
-            onOpen={(c) => setOpenId(c.id)}
           />
         </div>
       )}

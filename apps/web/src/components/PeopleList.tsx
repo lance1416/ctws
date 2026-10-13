@@ -1,102 +1,99 @@
-import { LINK } from './buttonStyles'
-import type { PersonResponse } from '@ctws/contracts'
-import { channelHref } from '../api/people'
-import { byKind, channelLabel } from '../channels'
-import { useProjectRail } from '../projectColor'
+import type { Circle, PersonResponse } from '@ctws/contracts'
+import { Link } from 'react-router-dom'
 import { sortByName } from '../peopleOrder'
-import { usePhone } from '../usePhone'
+import { BirthdayLead } from './BirthdayRow'
 import { PanelEmpty } from './Panel'
+import { BODY_GUTTER, ProjectRail } from './RowParts'
 
 /**
- * A LIST OF PEOPLE, with their addresses live.
+ * A LIST OF PEOPLE, on the app's row: `[margin][thread][body]`.
  *
- * The addresses are LINKS, not text to copy: a person list is opened in order to write to
- * someone, and making them select an address by hand is the whole cost the list existed to
- * remove. Everything else on the row opens the person, because a card whose only target is its
- * title makes you aim at four characters. Changing anything about them happens in the pane,
- * which is where changing anything about anything happens.
+ * - The MARGIN is the one date a person has: their next birthday, beside a cake.
+ * - The THREAD is their first line of work's colour, so a list of people reads against the rail's
+ *   projects the way a list of tasks does.
+ * - The BODY says who: an initial, the name, what they do and for whom, and the city at the far
+ *   end. One link, to their address -- the whole row is the target, not four characters of a name.
+ *
+ * How to reach them is in their sheet, a click away: a row that also carried every address was
+ * two rows' worth of text per person, and the list is read to find someone, not to write to them.
  */
 export function PeopleList({
   people,
-  here,
+  openId,
   emptyLine,
-  onOpen,
 }: {
   people: readonly PersonResponse[]
-  /** The project this list is already inside, if any -- it is then not repeated on a row. */
-  here?: string | undefined
+  /** The person whose sheet is open: their row says so. */
+  openId: string | null
   emptyLine: string
-  onOpen: (person: PersonResponse) => void
 }) {
-  const rail = useProjectRail()
-  const phone = usePhone()
-
   if (people.length === 0) return <PanelEmpty>{emptyLine}</PanelEmpty>
   return (
     <ul className="flex flex-col">
       {sortByName(people).map((person) => {
-        const elsewhere = person.projects.filter((p) => p.id !== here)
+        const open = person.id === openId
+        const meta = metaOf(person)
         return (
-          /* THE WHOLE ROW OPENS THE PERSON -- a card whose only target is its title makes you
-             aim at four characters. The click is on the row; the NAME is
-             still a real button, which is what the keyboard reaches and what a screen reader
-             announces. A row that were itself a button could not contain the address links. */
-          // eslint-disable-next-line jsx-a11y/click-events-have-key-events
-          <li
-            key={person.id}
-            onClick={() => onOpen(person)}
-            className="group cursor-pointer rounded-lg px-2 py-1.5 hover:bg-hover"
-          >
-            {/* The app's row anatomy: who they are on the first line, how to reach them on the
-                second. */}
-            <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
-              <button
-                type="button"
-                // 行本身也开这个人：不拦住冒泡的话，点名字会开两次 —— 以前两次写的是同一个
-                // 局部状态，看不出来；现在开一次就是一次导航，历史里会多出一条一模一样的记录。
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onOpen(person)
-                }}
-                data-person-name
-                className="truncate rounded text-left text-sm font-semibold text-ink group-hover:underline"
+          <li key={person.id} data-person-row={person.id} className="flex min-h-14 min-w-0">
+            <BirthdayLead next={person.birthday?.next ?? null} />
+            <ProjectRail projectId={person.projects[0]?.id ?? null} />
+            <Link
+              to={`/people/${person.id}`}
+              aria-current={open ? 'page' : undefined}
+              className={`flex min-w-0 flex-1 items-center gap-3.5 py-2 pr-2 pl-[var(--gutter)] hover:bg-hover ${BODY_GUTTER} ${
+                open ? 'bg-select' : ''
+              }`}
+            >
+              <span
+                aria-hidden="true"
+                data-person-initial
+                className="flex size-8 shrink-0 items-center justify-center rounded-full bg-select text-sm font-semibold text-ink-muted"
               >
-                {person.name}
-              </button>
-              {person.org && <span className="truncate text-xs text-ink-subtle">{person.org}</span>}
-              {elsewhere.map((p) => (
-                <span key={p.id} className="flex items-baseline gap-1 text-xs text-ink-subtle">
-                  <span
-                    aria-hidden="true"
-                    className={`relative top-0.5 h-3 w-[3px] shrink-0 rounded-full ${rail(p.id)}`}
-                  />
-                  {p.name}
+                {initialOf(person.name)}
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span data-person-name className={`truncate text-ink ${open ? 'font-medium' : ''}`}>
+                  {person.name}
                 </span>
-              ))}
-            </div>
-            {person.channels.length > 0 && (
-              <div className="flex min-w-0 flex-wrap items-baseline gap-x-3">
-                {/* 归堆、按类型写：和那一层里是同一套规则，一个人不该在两处看见两种写法。 */}
-                {byKind(person.channels).map((c, i) => (
-                  <span key={i} className="flex min-w-0 items-baseline gap-1">
-                    <a
-                      href={channelHref(c.kind, c.value)!}
-                      // The address is its own target: writing to someone is not opening them.
-                      onClick={(e) => e.stopPropagation()}
-                      className={`truncate text-sm ${LINK} ${
-                        c.kind === 'phone' ? 'tabular-nums' : ''
-                      }`}
-                    >
-                      {channelLabel(c.kind, c.value, phone?.displayPhone)}
-                    </a>
-                    {c.label && <span className="text-xs text-ink-subtle">{c.label}</span>}
+                {meta && (
+                  <span data-person-meta className="truncate text-sm text-ink-subtle">
+                    {meta}
                   </span>
-                ))}
-              </div>
-            )}
+                )}
+              </span>
+              {/* The thread says which line of work by colour alone; a screen reader is told. */}
+              {person.projects.length > 0 && (
+                <span className="sr-only">
+                  , on {person.projects.map((p) => p.name).join(', ')}
+                </span>
+              )}
+              {person.city && (
+                <span className="max-w-[40%] shrink-0 truncate text-sm text-ink-subtle">
+                  {person.city}
+                </span>
+              )}
+            </Link>
           </li>
         )
       })}
     </ul>
   )
+}
+
+/**
+ * What they do, and for whom: "Engineering manager, Acme". Someone with neither -- a relative, a
+ * friend -- is said by their circle instead, which is what they are to you.
+ */
+function metaOf(person: PersonResponse): string {
+  const work = [person.title, person.org].filter(Boolean).join(', ')
+  if (work) return work
+  return person.circle ? ONE_OF[person.circle] : ''
+}
+
+/** One person's circle, singular: the filter's labels are plural because they name groups. */
+const ONE_OF: Record<Circle, string> = { family: 'Family', friend: 'Friend', work: 'Work' }
+
+/** The first character as a reader counts them (not a UTF-16 half), capitalised if it has a case. */
+function initialOf(name: string): string {
+  return (Array.from(name.trim())[0] ?? '').toUpperCase()
 }
