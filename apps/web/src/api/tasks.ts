@@ -57,6 +57,11 @@ export function createTask(body: NewTask): Promise<TaskResponse> {
   return apiFetch<TaskResponse>('/tasks', { method: 'POST', body: JSON.stringify(body) })
 }
 
+/** One task by its id: what a link to a task asks to find the project it lives in. */
+export function getTask(id: string): Promise<TaskResponse> {
+  return apiFetch<TaskResponse>(`/tasks/${id}`)
+}
+
 export function patchTask(id: string, body: UpdateTaskBody): Promise<TaskResponse> {
   return apiFetch<TaskResponse>(`/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(body) })
 }

@@ -39,6 +39,7 @@ import {
   ManualProgressOnParentError,
   softDeleteTask,
   updateTask,
+  visibleTask,
   type Task,
   type TaskCtx,
 } from './tasks'
@@ -302,6 +303,19 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
       try {
         const row = await createTask(app.db, actor(req), req.body)
         return reply.status(201).send(toTaskResponse(row))
+      } catch (error) {
+        return sendTaskProblem(reply, error)
+      }
+    },
+  )
+
+  // One task by its id: where a link to it finds the project it lives in.
+  typed.get(
+    '/:id',
+    { preHandler: requireUser, schema: { params: idParams, response: { 200: taskResponse } } },
+    async (req, reply) => {
+      try {
+        return toTaskResponse(await visibleTask(app.db, actor(req).workspaceId, req.params.id))
       } catch (error) {
         return sendTaskProblem(reply, error)
       }

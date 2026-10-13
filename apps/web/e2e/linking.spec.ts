@@ -174,3 +174,60 @@ test('一件活可以连到一个人，两头都读得到', async ({ page }) => 
     page.getByRole('dialog', { name: 'People' }).getByRole('region', { name: 'Linked' }),
   ).toContainText('准备一面')
 })
+
+// ------------------------------------------------------------------- a task's sheet has an address
+
+test('opening a task puts it in the address, and a reload opens it again', async ({ page }) => {
+  await registerFreshUser(page)
+  const project = await apiPost(page, '/projects', { name: '找工作' })
+  const task = await apiPost(page, '/tasks', { title: '准备一面', projectId: project.id })
+  await page.goto(`/projects/${project.id as string}`)
+  await page.getByRole('listitem').filter({ hasText: '准备一面' }).first().click()
+  await expect(page.getByRole('dialog', { name: 'Task details' })).toBeVisible()
+  await expect(page).toHaveURL(
+    new RegExp(`/projects/${project.id as string}\\?.*task=${task.id as string}`),
+  )
+
+  await page.reload()
+  await expect(page.getByRole('dialog', { name: 'Task details' })).toBeVisible()
+  await expect(page.getByRole('dialog', { name: 'Task details' })).toContainText('准备一面')
+
+  // Closing takes it out of the address, and Back brings the sheet back.
+  await page
+    .getByRole('dialog', { name: 'Task details' })
+    .getByRole('button', { name: 'Close' })
+    .click()
+  await expect(page.getByRole('dialog', { name: 'Task details' })).toHaveCount(0)
+  await expect(page).not.toHaveURL(/task=/)
+  await page.goBack()
+  await expect(page.getByRole('dialog', { name: 'Task details' })).toBeVisible()
+})
+
+test('a task linked to a person opens on its own sheet, and Back returns to the person', async ({
+  page,
+}) => {
+  const { person } = await world(page)
+  const project = await apiPost(page, '/projects', { name: '找工作' })
+  const task = await apiPost(page, '/tasks', { title: '准备一面', projectId: project.id })
+  await apiPost(page, '/links', {
+    from: { type: 'task', id: task.id },
+    to: { type: 'person', id: person.id },
+    kind: 'about',
+  })
+  await page.goto(`/people/${person.id}`)
+  const personPane = page.getByRole('dialog', { name: 'People' })
+  await personPane
+    .getByRole('region', { name: 'Linked' })
+    .getByRole('link', { name: /准备一面/ })
+    .click()
+
+  // Its project's page, with the task's sheet open -- not the list of projects.
+  await expect(page).toHaveURL(
+    new RegExp(`/projects/${project.id as string}\\?.*task=${task.id as string}`),
+  )
+  await expect(page.getByRole('dialog', { name: 'Task details' })).toContainText('准备一面')
+
+  await page.goBack()
+  await expect(page).toHaveURL(new RegExp(`/people/${person.id}$`))
+  await expect(page.getByRole('dialog', { name: 'People' })).toBeVisible()
+})

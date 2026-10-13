@@ -179,7 +179,12 @@ test('the PATCH names the fields that changed, and only those', async ({ page })
 
   // And the server still holds everything the three saves never mentioned.
   const listed = await (
-    await page.request.get(page.url().replace(/\/projects\//, '/api/v1/tasks?projectId='))
+    await page.request.get(
+      page
+        .url()
+        .replace(/\?.*$/, '')
+        .replace(/\/projects\//, '/api/v1/tasks?projectId='),
+    )
   ).json()
   const task = (listed.tasks as Record<string, unknown>[])[0]!
   expect(task.scheduledOn).toBe('2026-10-02')

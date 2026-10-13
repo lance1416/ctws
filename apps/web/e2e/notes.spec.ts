@@ -432,7 +432,7 @@ test('the unsaved-edit guard fires from the writing mode, and the question is vi
   // The browser's back button is the one way out of a layer that covers the whole window.
   await page.goBack()
   // Still here, and the layer stood down so the question is where the answer has to be given.
-  await expect(page).toHaveURL(new RegExp(`/projects/${pid}$`))
+  await expect(page).toHaveURL(new RegExp(`/projects/${pid}(\\?|$)`))
   await expect(writingSource(page)).toHaveCount(0)
   await expect(page.getByRole('dialog', { name: 'Task details' })).toContainText(
     'You have unsaved changes. Leaving will discard them',
@@ -440,10 +440,12 @@ test('the unsaved-edit guard fires from the writing mode, and the question is vi
   await page.getByRole('button', { name: 'Keep editing' }).click()
   // The typing survived the question.
   await expect(page.getByLabel('Notes', { exact: true })).toHaveValue('原文，又写了一段')
-  // And Discard really does leave, which is what makes the question a question.
+  // And Discard really does leave, which is what makes the question a question. Opening the task
+  // was a step in the history of its own, so Back leaves the task's sheet, onto its project.
   await page.goBack()
   await page.getByRole('button', { name: 'Discard changes' }).click()
-  await expect(page).toHaveURL(/\/projects$/)
+  await expect(page).toHaveURL(new RegExp(`/projects/${pid}$`))
+  await expect(page.getByRole('dialog', { name: 'Task details' })).toHaveCount(0)
 })
 
 test('the writing mode stands the single-key shortcuts down', async ({ page }) => {

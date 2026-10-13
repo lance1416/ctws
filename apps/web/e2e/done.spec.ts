@@ -289,7 +289,7 @@ test('navigating away from a dirty panel asks first; keep editing stays, discard
 
   await nav(page).getByRole('link', { name: 'Today' }).click()
   // Still here: same page, panel open, the typing intact, and it says why.
-  await expect(page).toHaveURL(new RegExp(`/projects/${pid}$`))
+  await expect(page).toHaveURL(new RegExp(`/projects/${pid}(\\?|$)`))
   await expect(page.getByRole('dialog')).toContainText(
     'You have unsaved changes. Leaving will discard them',
   )
@@ -297,7 +297,7 @@ test('navigating away from a dirty panel asks first; keep editing stays, discard
 
   await page.getByRole('button', { name: 'Keep editing' }).click()
   await expect(page.getByRole('dialog').getByText('You have unsaved changes')).toHaveCount(0)
-  await expect(page).toHaveURL(new RegExp(`/projects/${pid}$`))
+  await expect(page).toHaveURL(new RegExp(`/projects/${pid}(\\?|$)`))
   await expect(page.getByLabel('Title')).toHaveValue('写方案 v2')
 
   // The browser's back button is a navigation too.
@@ -305,7 +305,7 @@ test('navigating away from a dirty panel asks first; keep editing stays, discard
   await expect(page.getByRole('dialog')).toContainText(
     'You have unsaved changes. Leaving will discard them',
   )
-  await expect(page).toHaveURL(new RegExp(`/projects/${pid}$`))
+  await expect(page).toHaveURL(new RegExp(`/projects/${pid}(\\?|$)`))
   await page.getByRole('button', { name: 'Keep editing' }).click()
 
   await nav(page).getByRole('link', { name: 'Review' }).click()

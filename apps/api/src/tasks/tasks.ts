@@ -113,6 +113,20 @@ export async function lockVisibleTask(
   return row.task
 }
 
+/**
+ * The same task, the same predicate, READ rather than locked: for a link that knows a task's id and
+ * has to ask where it lives. Deleted, in a deleted project or in another workspace, it is not found.
+ */
+export async function visibleTask(q: Queryable, workspaceId: string, id: string): Promise<Task> {
+  const [row] = await q
+    .select({ task: tasks })
+    .from(tasks)
+    .innerJoin(projects, eq(projects.id, tasks.projectId))
+    .where(and(eq(tasks.id, id), isNull(tasks.deletedAt), visibleProjects(workspaceId)))
+  if (!row) throw new TaskNotFoundError()
+  return row.task
+}
+
 /** Numeric columns come back as strings; normalise so comparisons and payloads use numbers. */
 function progressOf(raw: string | null): number | null {
   return raw === null ? null : Number(raw)

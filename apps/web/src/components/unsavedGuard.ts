@@ -32,7 +32,16 @@ export function useUnsavedGuard(dirty: boolean, onLeave: () => void): UnsavedGua
   const [askDiscard, setAskDiscard] = useState(false)
   const [logoutVia, setLogoutVia] = useState<(() => void) | null>(null)
   const [exitVia, setExitVia] = useState<(() => void) | null>(null)
-  const blocker = useBlocker(dirty)
+  // Read through refs, so the router asks the CURRENT answer at the moment it navigates.
+  const dirtyNow = useRef(dirty)
+  dirtyNow.current = dirty
+  /**
+   * Set once the person has said Discard: the way out they chose may itself be a navigation (a
+   * task's sheet closing drops `?task` from the address), and blocking it with the form still
+   * dirty would ask the question they have just answered.
+   */
+  const released = useRef(false)
+  const blocker = useBlocker(() => dirtyNow.current && !released.current)
   const leaving = blocker.state === 'blocked' || logoutVia !== null
   const asking = askDiscard || leaving
 
@@ -41,10 +50,8 @@ export function useUnsavedGuard(dirty: boolean, onLeave: () => void): UnsavedGua
     if (asking) focusOn.current?.focus()
   }, [asking])
 
-  // Read through a ref, because the layout registers the handler ONCE: a closure over `dirty`
+  // The layout registers its handler ONCE, so it too reads `dirtyNow`: a closure over `dirty`
   // would answer with whatever it was at registration time, which is always false.
-  const dirtyNow = useRef(dirty)
-  dirtyNow.current = dirty
   const guard = useContext(LeaveGuardContext)
   useEffect(() => {
     if (!guard) return
@@ -74,6 +81,7 @@ export function useUnsavedGuard(dirty: boolean, onLeave: () => void): UnsavedGua
       if (blocker.state === 'blocked') blocker.reset()
     },
     discard: () => {
+      released.current = true
       if (blocker.state === 'blocked') blocker.proceed()
       else if (logoutVia) logoutVia()
       else if (exitVia) exitVia()

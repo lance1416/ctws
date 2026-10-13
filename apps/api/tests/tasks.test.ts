@@ -299,6 +299,57 @@ describe('update', () => {
   })
 })
 
+/**
+ * ONE TASK, BY ITS ID: what a link to a task needs to find where the task lives. A task has no page
+ * of its own, so its address is its project's page with the task's sheet open over it -- and a
+ * link that knows only the task's id has to be able to ask which project that is.
+ */
+describe('read one', () => {
+  it('answers with the task, its project included', async () => {
+    const ctx = await setup()
+    const projectId = await createProject(ctx, 'p')
+    const id = await createTask(ctx, projectId, '一条')
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/tasks/${id}`,
+      headers: ctx.authed,
+    })
+    expect(res.statusCode, res.body).toBe(200)
+    expect(res.json()).toMatchObject({ id, projectId, title: '一条' })
+  })
+
+  it('does not find a deleted task, or one that never existed', async () => {
+    const ctx = await setup()
+    const projectId = await createProject(ctx, 'p')
+    const id = await createTask(ctx, projectId, 'gone')
+    expect((await del(ctx, id)).statusCode).toBe(204)
+    for (const at of [id, randomUUID()]) {
+      const res = await ctx.app.inject({
+        method: 'GET',
+        url: `/api/v1/tasks/${at}`,
+        headers: ctx.authed,
+      })
+      expect(res.statusCode).toBe(404)
+    }
+  })
+
+  it('does not find another workspace’s task', async () => {
+    const a = await setup()
+    const id = await createTask(a, await createProject(a, 'mine'), 'not yours')
+    const res = await a.app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      headers,
+      payload: { email: 'reader@example.com', password: 'correct horse battery', timezone: 'UTC' },
+    })
+    const other = { ...headers, cookie: String(res.headers['set-cookie']).split(';')[0]! }
+    expect(
+      (await a.app.inject({ method: 'GET', url: `/api/v1/tasks/${id}`, headers: other }))
+        .statusCode,
+    ).toBe(404)
+  })
+})
+
 describe('delete', () => {
   // The listing endpoint arrives in Task 8, so "stops being listed" is checked here through the
   // two things it will rest on: the deleted_at column and the task becoming unaddressable.

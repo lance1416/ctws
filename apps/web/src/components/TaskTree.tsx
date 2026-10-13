@@ -93,7 +93,24 @@ export function TaskTree({ projectId }: { projectId: string }) {
   // screen, so it is said next to that input; everything else here -- a refused move, a depth
   // limit -- has no single row to sit beside and stays in the banner above the tree.
   const [createError, setCreateError] = useState<string | null>(null)
-  const [openId, setOpenId] = useState<string | null>(null)
+  /**
+   * THE OPEN TASK IS IN THE ADDRESS, as `?task=<id>`: a task has no page of its own, so its
+   * address is its project's page with its sheet open. A reload opens it again, a link to it lands
+   * on it, and Back steps out of it -- opening and closing are each a step in the history, so the
+   * sheet you just closed is one Back away.
+   */
+  const [taskParams, setTaskParams] = useSearchParams()
+  const openId = taskParams.get('task')
+  const setOpenId = (id: string | null, { replace = false }: { replace?: boolean } = {}) =>
+    setTaskParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        if (id) next.set('task', id)
+        else next.delete('task')
+        return next
+      },
+      { replace },
+    )
   // Where an inline create input is showing: the parent whose children it appends to (null is
   // the root level) and the row whose handle gets focus back when it is cancelled. The server
   // appends a new task to the END of its parent's children, so that is where the input sits.
@@ -415,7 +432,9 @@ export function TaskTree({ projectId }: { projectId: string }) {
   // <body> (WCAG 2.4.3). Return it to the tree instead.
   useEffect(() => {
     if (openId && tasks.isSuccess && !openTask) {
-      setOpenId(null)
+      // Not a step anyone took: the task left this list (moved, deleted), so the address is put
+      // right in place rather than leaving a Back that reopens nothing.
+      setOpenId(null, { replace: true })
       queueMicrotask(() => document.querySelector<HTMLElement>('[data-handle-id]')?.focus())
     }
   }, [openId, openTask, tasks.isSuccess])

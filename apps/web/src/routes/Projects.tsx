@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { getTask } from '../api/tasks'
 import { refreshProjects } from '../api/taskCache'
 import { createProject, listProjects } from '../api/projects'
 import { railClass } from '../projectColor'
@@ -14,6 +15,24 @@ export function Projects() {
   const composing = useComposing()
   const [name, setName] = useState('')
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
+  /**
+   * `/projects?task=<id>` is where a link to a task goes when all it knows is the task (a person's
+   * Linked, a pasted address): ask which project the task lives in and go there, sheet open. In
+   * place of this step in the history, so Back returns to wherever the link was.
+   */
+  const [params] = useSearchParams()
+  const linkedTask = params.get('task')
+  const navigate = useNavigate()
+  const found = useQuery({
+    queryKey: ['task', linkedTask],
+    queryFn: () => getTask(linkedTask!),
+    enabled: linkedTask !== null,
+    retry: false,
+  })
+  useEffect(() => {
+    if (found.data)
+      navigate(`/projects/${found.data.projectId}?task=${found.data.id}`, { replace: true })
+  }, [found.data, navigate])
 
   const create = useMutation({
     mutationFn: createProject,
@@ -45,6 +64,11 @@ export function Projects() {
         aria-label="New project"
         className={`mt-5 w-full max-w-[40ch] bg-sheet ${textbox}`}
       />
+      {linkedTask && found.isError && (
+        <p role="alert" className="mt-4 text-sm text-ink-muted">
+          This task is not here any more.
+        </p>
+      )}
       {projects.isError && (
         <p role="alert" className="mt-4 text-sm text-danger">
           Couldn't load projects
