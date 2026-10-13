@@ -58,6 +58,10 @@ describe('every kind of thing has a module that answers for it', () => {
   it('refuses a set that leaves a type unanswered', () => {
     expect(() => linkRegistry(registry.all.slice(1))).toThrow(/missing: task/)
   })
+
+  it('refuses a set that answers for a type twice, and names it', () => {
+    expect(() => linkRegistry([...registry.all, projectLinkable])).toThrow(/duplicated: project/)
+  })
 })
 
 describe('opening a thing shows what it is connected to', () => {
