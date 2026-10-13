@@ -81,7 +81,7 @@ export async function softDeleteReadingItem(
  * Stores what a fetch found, even nothing: `fetched_at` says it was tried, so no list read tries
  * again.
  */
-export async function recordFetched(
+async function recordFetched(
   q: Queryable,
   workspaceId: string,
   id: string,

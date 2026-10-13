@@ -86,7 +86,7 @@ export async function authenticate(
   return (await verifyPassword(row.passwordHash, password)) ? { userId: row.id } : null
 }
 
-export type AuthContext = { workspaceId: string; role: Role; timezone: string }
+type AuthContext = { workspaceId: string; role: Role; timezone: string }
 
 /**
  * The workspace and instance role of an enabled user, read on every request so disabling or

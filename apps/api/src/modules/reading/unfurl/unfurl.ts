@@ -18,7 +18,7 @@ import { checkLinkUrl, isPublicAddress, literalAddress } from './safe-url'
  *   shows the host and path.
  */
 
-export type Unfurled = { title: string | null; summary: string | null }
+type Unfurled = { title: string | null; summary: string | null }
 
 /**
  * What routes take instead of the function itself: tests pass a version that may reach

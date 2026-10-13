@@ -1,9 +1,9 @@
 import type { FlatRow } from './flatten'
 
 /**
- * Must match `MAX_DEPTH` in apps/api/src/tasks/tasks.ts. Duplicated rather than fetched because
- * it is a product rule, not configuration -- but if the API's value ever changes, this one has
- * to change with it, and the clamp below is what would otherwise silently start handing the
+ * Must match `MAX_DEPTH` in apps/api/src/modules/tasks/tree.ts. Duplicated rather than fetched
+ * because it is a product rule, not configuration -- but if the API's value ever changes, this one
+ * has to change with it, and the clamp below is what would otherwise silently start handing the
  * server drops it rejects.
  */
 export const MAX_DEPTH = 10

@@ -21,7 +21,7 @@ import { people } from './tables'
  * The birthdays page, segmented here so every client agrees. Two segments: someone whose birthday
  * has passed this year is already in `later`, for next year.
  */
-export type BirthdayRow = {
+type BirthdayRow = {
   personId: string
   name: string
   circle: Circle | null
@@ -35,7 +35,7 @@ export type BirthdayRow = {
   remindLead: number
 }
 
-export type BirthdaysView = {
+type BirthdaysView = {
   today: string
   coming: BirthdayRow[]
   later: BirthdayRow[]

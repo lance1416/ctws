@@ -27,7 +27,7 @@ export async function listProjectTasks(
  */
 export const BOARD_TX = { isolationLevel: 'repeatable read', accessMode: 'read only' } as const
 
-export type ProjectBoard = {
+type ProjectBoard = {
   tasks: Task[]
   rollups: Map<string, Rollup>
   blockers: Map<string, DependencyRef[]>

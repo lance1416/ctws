@@ -7,7 +7,7 @@ import { hasRole } from './roles'
 import { getAuthContext } from './service'
 import { findValidSession } from './session'
 
-export type CurrentUser = { id: string; workspaceId: string; role: Role; timezone: string }
+type CurrentUser = { id: string; workspaceId: string; role: Role; timezone: string }
 
 declare module 'fastify' {
   interface FastifyRequest {

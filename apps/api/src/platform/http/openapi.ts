@@ -1,11 +1,6 @@
 import { problem } from '@ctws/contracts'
 import { z } from 'zod'
 
-/**
- * Adds the refusals every operation can meet, derived from how the route is registered: 400 when
- * it takes input, 401 when it sits in the authenticated scope (it declares `security`), 429 when
- * it is rate limited. 404 and 409 depend on the handler and are not derived.
- */
 type Operation = {
   parameters?: unknown[]
   requestBody?: unknown
@@ -24,6 +19,11 @@ const refusal = (description: string) => ({
   content: { 'application/problem+json': { schema: PROBLEM_REF } },
 })
 
+/**
+ * Adds the refusals every operation can meet, derived from how the route is registered: 400 when
+ * it takes input, 401 when it sits in the authenticated scope (it declares `security`), 429 when
+ * it is rate limited. 404 and 409 depend on the handler and are not derived.
+ */
 export function documentRefusals<T extends object>(spec: T): T {
   const doc = spec as T & Spec
   doc.components ??= {}

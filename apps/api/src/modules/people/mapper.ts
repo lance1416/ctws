@@ -3,7 +3,7 @@ import { derivedFacts } from './birthdays'
 import type { PersonRow, StoredBirthday } from './queries'
 
 /** The stored birthday with everything derived from it against `today`. */
-export function withFacts(b: StoredBirthday, today: string): BirthdayResponse {
+function withFacts(b: StoredBirthday, today: string): BirthdayResponse {
   return { ...b, ...derivedFacts(b, b.hourBranch, today) }
 }
 
