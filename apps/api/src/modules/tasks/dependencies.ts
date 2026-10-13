@@ -5,6 +5,7 @@ import { DependencyCycleError } from './errors'
 import { visibleTask } from './queries/scope'
 import { appendEvent } from './events'
 import type { TaskCtx } from './tasks'
+import { lockTaskTree } from './tree'
 
 /**
  * WHAT HAS TO HAPPEN FIRST.
@@ -60,6 +61,8 @@ export async function addDependency(
 ): Promise<void> {
   if (blockedId === blockerId) throw new DependencyCycleError()
   await db.transaction(async (tx) => {
+    // The loop check is read-then-write: two opposite adds must not both pass it.
+    await lockTaskTree(tx, ctx.workspaceId)
     // Both ends are checked, and both against THIS workspace: an id from somewhere else must read
     // as "no such task", never as a refusal that confirms it exists.
     await visibleTask(tx, ctx.workspaceId, blockedId)
@@ -67,10 +70,12 @@ export async function addDependency(
     if (await wouldCycle(tx, ctx.workspaceId, blockerId, blockedId))
       throw new DependencyCycleError()
 
-    await tx
+    const added = await tx
       .insert(taskDependencies)
       .values({ blockerId, blockedId, workspaceId: ctx.workspaceId })
       .onConflictDoNothing()
+      .returning({ blockerId: taskDependencies.blockerId })
+    if (added.length === 0) return
     await appendEvent(tx, {
       taskId: blockedId,
       workspaceId: ctx.workspaceId,

@@ -1,7 +1,15 @@
 import type { DependencyRef } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
-import { createProject, createTask, setupWith, type TaskCtx, web } from './helpers/tasks'
+import {
+  createProject,
+  createTask,
+  eventsOf,
+  expectBlockedByTreeLock,
+  setupWith,
+  type TaskCtx,
+  web,
+} from './helpers/tasks'
 
 /**
  * ONE TASK WAITING FOR ANOTHER.
@@ -158,6 +166,35 @@ describe('task dependencies', () => {
     expect((await undepend(ctx, b, a)).statusCode).toBe(204)
     expect((await undepend(ctx, b, a)).statusCode).toBe(204)
     expect((await lists(ctx, b)).blockedBy).toEqual([])
+  })
+
+  it('logs a repeated add or remove once', async () => {
+    const ctx = await setup()
+    const pid = await createProject(ctx, '改版')
+    const a = await createTask(ctx, pid, 'A')
+    const b = await createTask(ctx, pid, 'B')
+    await dependOn(ctx, b, a)
+    await dependOn(ctx, b, a)
+    await undepend(ctx, b, a)
+    await undepend(ctx, b, a)
+
+    const types = (await eventsOf(ctx, b)).map((e) => e.type)
+    expect(types.filter((t) => t.startsWith('dependency_'))).toEqual([
+      'dependency_added',
+      'dependency_removed',
+    ])
+  })
+
+  // Two opposite adds could each pass their own loop check; the tree lock serialises them.
+  it('contends on the workspace-keyed tree lock', async () => {
+    const ctx = await setup()
+    const pid = await createProject(ctx, '改版')
+    const a = await createTask(ctx, pid, 'A')
+    const b = await createTask(ctx, pid, 'B')
+
+    const res = await expectBlockedByTreeLock(ctx, () => dependOn(ctx, b, a))
+    expect(res.statusCode).toBe(204)
+    expect((await lists(ctx, b)).blockedBy).toHaveLength(1)
   })
 
   it('leaves a deleted task out of what is in the way', async () => {
