@@ -44,6 +44,8 @@ export async function registerGuards(app: FastifyInstance): Promise<void> {
    */
   await app.register(fastifyRateLimit, {
     global: false,
+    max: app.env.authRateLimitMax,
+    timeWindow: '1 minute',
     hook: 'preValidation',
     keyGenerator: (req) => {
       const body: unknown = req.body

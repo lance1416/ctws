@@ -8,11 +8,8 @@ import { createSession, revokeSession } from './session'
 
 /** Registration, sign-in and sign-out: reachable without a session. */
 export const publicAuthRoutes: FastifyPluginAsyncZod = async (app) => {
-  // Per email for this route, plus the instance-wide ceiling on all sign-in traffic.
-  const authLimit = {
-    config: { rateLimit: { max: app.env.authRateLimitMax, timeWindow: '1 minute' } },
-    onRequest: app.authCeiling,
-  }
+  // The guards' per-email limit, plus the instance-wide ceiling on all sign-in traffic.
+  const authLimit = { config: { rateLimit: {} }, onRequest: app.authCeiling }
 
   app.post(
     '/auth/register',
