@@ -20,7 +20,7 @@ export type DayItem = {
    * this has gone by: at 10:30 the 10:00–11:00 meeting is the one you are in, not one that is over.
    */
   until?: string | null | undefined
-  /** Whether the row says something in its margin already (a carried day, a deadline's word). */
+  /** Whether the row says something in its margin already (a deadline's word). */
   hasLead: boolean
   row: (state: { past: boolean; anyTime: boolean }) => ReactNode
 }

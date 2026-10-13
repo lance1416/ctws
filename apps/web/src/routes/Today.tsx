@@ -195,11 +195,18 @@ export function Today() {
     const sections = triageSections(t, carried ? 'Carried over' : null, todayYmd, timezone, patch)
     const lead =
       leadFor(
-        // A plan for TODAY says nothing on a page called Today, so it does not take the margin.
-        { dueAt: t.dueAt, scheduledOn: t.scheduledOn === todayYmd ? null : t.scheduledOn },
+        // A plan for TODAY says nothing on a page called Today, so it does not take the margin --
+        // and nor does a carried one: it is today's now, at no time in particular, and the margin
+        // of the day's line is its times. The day it was first meant for is said on the right.
+        {
+          dueAt: t.dueAt,
+          scheduledOn: t.scheduledOn === todayYmd || carried ? null : t.scheduledOn,
+        },
         todayYmd,
         timezone,
       ) ?? (anyTime ? { text: 'Any time', tone: 'quiet' as const, flag: false } : null)
+    const carriedFrom =
+      carried && leadFor({ dueAt: null, scheduledOn: t.scheduledOn }, todayYmd, timezone)?.text
     return (
       <li
         key={t.id}
@@ -247,7 +254,7 @@ export function Today() {
               data-date-hint="carried"
               className="shrink-0 pt-2.5 pl-3 text-sm leading-6 whitespace-nowrap text-plan max-sm:hidden"
             >
-              Carried over
+              Carried over from {carriedFrom}
             </span>
           )}
           <span className="flex h-11 shrink-0 items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100">
@@ -331,8 +338,12 @@ export function Today() {
       // A task is ON the line when it is due today at a time; the end of the day is not a time.
       const lead = leadFor({ dueAt: t.dueAt, scheduledOn: null }, todayYmd, timezone)
       const at = lead?.tone === 'deadline' && /^\d{2}:\d{2}$/.test(lead.text) ? lead.text : null
-      const own = lead !== null || (t.scheduledOn !== null && t.scheduledOn !== todayYmd)
-      return { key: `task:${t.id}`, at, hasLead: own, row: ({ anyTime }) => row(t, anyTime) }
+      return {
+        key: `task:${t.id}`,
+        at,
+        hasLead: lead !== null,
+        row: ({ anyTime }) => row(t, anyTime),
+      }
     }),
     ...entries.map((e): DayItem => ({
       key: `${e.moduleId}:${e.id}`,

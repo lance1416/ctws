@@ -735,7 +735,12 @@ async function todaySegment(page: Page, id: string): Promise<string> {
   return tasks.find((t) => t.id === id)?.segment ?? 'absent'
 }
 
-test('a plan carried over from days ago is marked on Today with its day; a plan for today is not', async ({
+/*
+  A carried plan is for TODAY now, at no particular time: it belongs under Any time, and the day it
+  was first meant for is said on the right. It used to take the margin, and the day's line -- whose
+  margin is times -- read "Oct 2, Any time, Oct 12, Oct 12": a list of old dates, not today.
+*/
+test('a plan carried over from days ago says so on Today, under Any time; a plan for today does not', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -748,16 +753,19 @@ test('a plan carried over from days ago is marked on Today with its day; a plan 
   const section = page.getByRole('region', { name: 'Today', exact: true })
   await expect(section.getByText('今天的计划')).toBeVisible()
 
-  // The planned day is the margin, in the plan's colour; that it was carried is said on the right.
-  const [, m, d] = old.split('-').map(Number)
-  await expect(rowOf(page, '搁置的计划').locator('[data-row-lead-text]')).toHaveText(
-    `${MONTHS[m! - 1]} ${d}`,
-  )
+  // The margin is the day's: "Any time" once, on the first row, and no old date anywhere on it.
+  await expect(section.locator('[data-row-lead-text]')).toHaveText(['Any time'])
+  await expect(section.locator('li').first()).toContainText('Any time')
+  // The day it was meant for is on the right.
+  const day = (ymd: string) => {
+    const [, m, d] = ymd.split('-').map(Number)
+    return `${MONTHS[m! - 1]} ${d}`
+  }
   await expect(rowOf(page, '搁置的计划').locator('[data-date-hint="carried"]')).toHaveText(
-    'Carried over',
+    `Carried over from ${day(old)}`,
   )
   await expect(rowOf(page, '昨天的计划').locator('[data-date-hint="carried"]')).toHaveText(
-    'Carried over',
+    `Carried over from ${day(dayOffset(-1))}`,
   )
   // Today's own plan carries no mark and no triage group.
   await expect(rowOf(page, '今天的计划').locator('[data-date-hint]')).toHaveCount(0)
