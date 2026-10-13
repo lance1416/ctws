@@ -14,17 +14,13 @@ const adminColumns = {
   createdAt: users.createdAt,
 }
 
-function toAdminUser(row: {
-  id: string
-  email: string
-  role: string
-  disabledAt: Date | null
-  createdAt: Date
-}): AdminUser {
+function toAdminUser(
+  row: Pick<typeof users.$inferSelect, 'id' | 'email' | 'role' | 'disabledAt' | 'createdAt'>,
+): AdminUser {
   return {
     id: row.id,
     email: row.email,
-    role: row.role as Role,
+    role: row.role,
     disabledAt: row.disabledAt ? row.disabledAt.toISOString() : null,
     createdAt: row.createdAt.toISOString(),
   }
@@ -40,7 +36,6 @@ export async function getAdminUser(db: Queryable, id: string): Promise<AdminUser
   return rows[0] ? toAdminUser(rows[0]) : null
 }
 
-// Takes `Db`, not `Queryable`: it opens its own transaction, which a `Queryable` cannot promise.
 export async function updateUser(
   db: Db,
   id: string,

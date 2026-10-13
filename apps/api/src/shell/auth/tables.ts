@@ -1,3 +1,4 @@
+import type { Role } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import {
   check,
@@ -19,7 +20,7 @@ export const users = pgTable(
     // IANA zone; every day boundary in the app is decided in it.
     timezone: text('timezone').notNull(),
     // Instance role, not a workspace role.
-    role: text('role').notNull().default('member'),
+    role: text('role').$type<Role>().notNull().default('member'),
     // Set means the account cannot sign in; its data stays.
     disabledAt: timestamp('disabled_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

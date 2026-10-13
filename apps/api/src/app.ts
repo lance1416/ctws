@@ -1,7 +1,4 @@
-import { existsSync } from 'node:fs'
-import { resolve } from 'node:path'
 import fastifyCookie from '@fastify/cookie'
-import fastifyStatic from '@fastify/static'
 import fastifySwagger from '@fastify/swagger'
 import Fastify, { type FastifyInstance, type onRequestHookHandler } from 'fastify'
 import {
@@ -23,7 +20,7 @@ import { calendarDayRoutes } from './shell/calendar/routes'
 import { registerGuards } from './platform/http/guards'
 import { linkRoutes } from './shell/links/routes'
 import { handleError } from './platform/http/errors'
-import { sendProblem } from './platform/http/problem'
+import { serveWeb } from './platform/http/web'
 import { apiModules } from './modules'
 import { unfurl, type Unfurl } from './modules/reading'
 import { linkRegistry } from './shell/links/registry'
@@ -38,9 +35,7 @@ export async function buildApp(opts: {
   unfurl?: Unfurl
   clock?: () => Date
 }): Promise<FastifyInstance> {
-  // Resolve the login timing-equalisation hash before the app is ready, so
-  // the very first login request -- known or unknown email -- never pays
-  // for hashing it. See auth/service.ts `warmDummyHash`.
+  // Ready before the first sign-in, so no request pays for hashing it.
   await warmDummyHash()
 
   const app = Fastify({ logger: false }).withTypeProvider<ZodTypeProvider>()
@@ -72,8 +67,7 @@ export async function buildApp(opts: {
   // CORS, CSRF and rate limiting; must precede the routes they guard.
   await registerGuards(app)
 
-  // Must be registered before the auth routes so `reply.setCookie` /
-  // `reply.clearCookie` are available inside them.
+  // Before the auth routes, which set and clear the cookie.
   await app.register(fastifyCookie)
 
   app.setErrorHandler(handleError)
@@ -106,38 +100,7 @@ export async function buildApp(opts: {
     { prefix: '/api/v1' },
   )
 
-  // Serve the built web app, if configured. Registered after the API routes on purpose: API
-  // routes must win over static files, and anything that misses falls to the not-found handler.
-  const webDist = opts.env.webDist && existsSync(opts.env.webDist) ? opts.env.webDist : undefined
-  if (webDist)
-    await app.register(fastifyStatic, {
-      root: resolve(webDist),
-      // Two different caching rules, and the distinction is the whole point:
-      //
-      // `/assets/*` is Vite's output and every filename in it carries a content hash, so a file at
-      // a given URL can never change. It gets a year and `immutable`, which means the browser does
-      // not even revalidate. Without this the server answered `max-age=0` for everything and the
-      // webfonts came back 200 with full bodies on EVERY navigation -- 1.8 MiB of CJK font
-      // re-downloaded twenty times a day. `immutable` on hashed assets is what makes a self-hosted
-      // webfont a one-time cost instead of a per-load one.
-      //
-      // `index.html` (and anything else unhashed) must NOT be cached that way: its URL never
-      // changes, so an immutable copy would pin the browser to the deployed-before version for a
-      // year and no deploy would ever be picked up. It gets `no-cache`, which still allows a
-      // conditional request and a cheap 304 -- it means "revalidate", not "do not store".
-      cacheControl: false,
-      setHeaders(reply, path) {
-        const hashed = /[/\\]assets[/\\]/.test(path)
-        reply.header('cache-control', hashed ? 'public, max-age=31536000, immutable' : 'no-cache')
-      },
-    })
-
-  app.setNotFoundHandler((req, reply) => {
-    // Browser navigations to client-side routes get the SPA shell; API paths keep their 404.
-    const navigation = req.method === 'GET' && (req.headers.accept ?? '').includes('text/html')
-    if (webDist && navigation && !req.url.startsWith('/api/')) return reply.sendFile('index.html')
-    return sendProblem(reply, 404, 'Not Found')
-  })
+  await serveWeb(app, opts.env.webDist)
 
   return app
 }

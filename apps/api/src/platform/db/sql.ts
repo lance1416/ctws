@@ -26,6 +26,27 @@ export function ident(name: string): SQL {
   return sql.raw(name)
 }
 
+const MAX_CAUSE_DEPTH = 5
+
+/**
+ * An error and its `cause`s, capped so a cycle cannot loop. drizzle wraps the driver error, so
+ * the Postgres SQLSTATE sits on a `cause`.
+ */
+export function causeChain(error: unknown): { code?: unknown; cause?: unknown }[] {
+  const chain: { code?: unknown; cause?: unknown }[] = []
+  let current = error
+  while (chain.length < MAX_CAUSE_DEPTH && typeof current === 'object' && current !== null) {
+    const link = current as { code?: unknown; cause?: unknown }
+    chain.push(link)
+    current = link.cause
+  }
+  return chain
+}
+
+/** A unique violation (SQLSTATE 23505) anywhere in the cause chain. */
+export const isUniqueViolation = (error: unknown): boolean =>
+  causeChain(error).some((e) => e.code === '23505')
+
 /** `<column> in (...)` over literal values, for CHECK constraints built from a contract's list. */
 export const inList = (column: AnyPgColumn, values: readonly string[]): SQL =>
   sql`${column} in (${sql.join(

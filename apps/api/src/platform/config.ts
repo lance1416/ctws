@@ -12,20 +12,10 @@ const raw = z.object({
   SESSION_TTL_DAYS: z.coerce.number().int().positive().default(30),
   AUTH_REGISTRATION: z.enum(['open', 'invite', 'closed']).default('closed'),
   AUTH_INVITE_CODE: z.string().optional(),
-  // Per-EMAIL attempts per minute on register and login: one account under attack must not lock
-  // out the others, and an IP is the wrong key (a tunnel, NAT and the e2e suite all share one).
-  // Tunable; `guards.ts` has why it is keyed this way and what the instance ceiling below adds.
+  // Register and sign-in attempts per email per minute.
   AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(20),
-  /**
-   * The INSTANCE-WIDE ceiling on auth requests per minute (guards.ts).
-   *
-   * 600, AND THAT NUMBER IS MEASURED. A rejected sign-in costs ~13 ms of CPU here (sustained
-   * 314/s pegged 4.2 cores on this machine, 2026-10-08), so 600/min bounds a flood to about 13%
-   * of ONE core -- the box stays usable -- while being far above anything a person does. The
-   * first version of this was 60, which was a guess: it bought a further 10x reduction of
-   * something already small, and paid for it in how easily an ordinary retry storm could lock
-   * the owner out of signing in.
-   */
+  // Sign-in requests per minute for the whole instance: 600/min ≈ 13% of one core at 13 ms per
+  // refused sign-in, measured 2026-10-08 (sustained 314/s pegged 4.2 cores).
   AUTH_CEILING: z.coerce.number().int().positive().default(600),
   COOKIE_SAMESITE: z.enum(['lax', 'none']).default('lax'),
   COOKIE_SECURE: bool(true),
@@ -46,23 +36,19 @@ export type Env = {
   authRegistration: 'open' | 'invite' | 'closed'
   authInviteCode: string | undefined
   authRateLimitMax: number
-  /** The instance-wide ceiling on auth traffic; see guards.ts. */
   authCeiling: number
   cookieSameSite: 'lax' | 'none'
   cookieSecure: boolean
   cookieDomain: string | undefined
   corsOrigins: string[]
   webDist: string | undefined
-  /** 粘链接时去不去读对面的标题。关掉之后这个 API 一个出站请求都不发。 */
   readingUnfurl: boolean
 }
 
 export function parseEnv(source: Record<string, string | undefined>): Env {
   const parsed = raw.parse(source)
 
-  // A SameSite=None cookie without Secure is silently dropped by browsers -- login would
-  // appear to "succeed" but every subsequent request would be unauthenticated. Reject this
-  // at startup instead of debugging it in production.
+  // Browsers drop a SameSite=None cookie without Secure, so sign-in would silently not stick.
   if (parsed.COOKIE_SAMESITE === 'none' && !parsed.COOKIE_SECURE) {
     throw new Error('SameSite=None requires Secure cookies; set COOKIE_SECURE=true')
   }
@@ -70,11 +56,8 @@ export function parseEnv(source: Record<string, string | undefined>): Env {
     throw new Error('AUTH_INVITE_CODE is required when AUTH_REGISTRATION=invite')
   }
 
-  // An unparseable DATABASE_URL otherwise surfaces far from its cause: `pg` redacts the
-  // connection string and throws `ERR_INVALID_URL` from inside a query, so the stack says
-  // nothing about which character broke it. The usual culprit is a password assembled into
-  // the URL by a deployment template: `/`, `+`, `=`, `#` and `?` make the URL invalid, while
-  // `@` and `:` parse but silently yield a different password than intended.
+  // Otherwise `pg` fails inside the first query with the URL redacted. The usual cause is a
+  // password with unencoded URL characters.
   try {
     new URL(parsed.DATABASE_URL)
   } catch {

@@ -3,36 +3,31 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { currentUser } from './authenticated'
 import { clearSessionCookie, SESSION_COOKIE, setSessionCookie } from './cookie'
 import { InvalidCredentialsError, SessionRequiredError } from './errors'
-import { createSession, revokeSession } from './session'
 import { authenticate, getAuthContext, loadUser, registerUser } from './service'
+import { createSession, revokeSession } from './session'
 
 /** Registration, sign-in and sign-out: reachable without a session. */
 export const publicAuthRoutes: FastifyPluginAsyncZod = async (app) => {
+  // Per email for this route, plus the instance-wide ceiling on all sign-in traffic.
+  const authLimit = {
+    config: { rateLimit: { max: app.env.authRateLimitMax, timeWindow: '1 minute' } },
+    onRequest: app.authCeiling,
+  }
+
   app.post(
     '/auth/register',
-    {
-      // Two limits: the route's own, bucketed by EMAIL, and the instance-wide ceiling on auth
-      // connection (guards.ts). Per-email alone has no ceiling on the whole box.
-      config: { rateLimit: { max: app.env.authRateLimitMax, timeWindow: '1 minute' } },
-      onRequest: app.authCeiling,
-      schema: { body: registerBody, response: { 201: userResponse } },
-    },
+    { ...authLimit, schema: { body: registerBody, response: { 201: userResponse } } },
     async (req, reply) => {
       const { env, db } = app
-      // Closed, or invite-only without a matching code: refused unless the users table is empty,
-      // so a fresh instance can always create its first account (which becomes admin). The
-      // emptiness check runs inside registerUser's transaction.
+      // Closed, or invite-only without the code: only the first account gets through.
       const openToAll =
         env.authRegistration === 'open' ||
         (env.authRegistration === 'invite' && req.body.inviteCode === env.authInviteCode)
-
-      const { userId, workspaceId } = await registerUser(
+      const { userId, workspaceId, role } = await registerUser(
         db,
         req.body,
         openToAll ? {} : { onlyIfFirst: env.authRegistration === 'invite' ? 'invite' : 'closed' },
       )
-      const ctx = await getAuthContext(db, userId)
-      if (!ctx) throw new Error('freshly registered user has no auth context')
       const session = await createSession(db, userId, env.sessionTtlDays)
       setSessionCookie(reply, env, session.token, session.expiresAt)
       return reply.status(201).send({
@@ -40,35 +35,22 @@ export const publicAuthRoutes: FastifyPluginAsyncZod = async (app) => {
         email: req.body.email,
         timezone: req.body.timezone,
         workspaceId,
-        role: ctx.role,
+        role,
       })
     },
   )
 
   app.post(
     '/auth/login',
-    {
-      // Two limits: the route's own, bucketed by EMAIL, and the instance-wide ceiling on auth
-      // connection (guards.ts). Per-email alone has no ceiling on the whole box.
-      config: { rateLimit: { max: app.env.authRateLimitMax, timeWindow: '1 minute' } },
-      onRequest: app.authCeiling,
-      schema: { body: loginBody, response: { 200: userResponse } },
-    },
+    { ...authLimit, schema: { body: loginBody, response: { 200: userResponse } } },
     async (req, reply) => {
       const { env, db } = app
+      // An unknown email, a wrong password and a disabled account all read the same.
       const result = await authenticate(db, req.body.email, req.body.password)
-      // Same status and title as an unknown email -- see authenticate().
       if (!result) throw new InvalidCredentialsError()
-
-      // Resolve everything needed for a 200 BEFORE minting a session or
-      // setting the cookie. A session must never be created, and a cookie
-      // must never be handed out, for a request we are about to reject --
-      // otherwise a caller who gets a 401 here would still be left holding
-      // a live, usable session (see Fix round 1, Important #1).
-      // Also null for a disabled user: refuse the login rather than mint a dead session.
+      // Everything a 200 needs is read before a session exists, so a refusal never leaves one.
       const ctx = await getAuthContext(db, result.userId)
       if (!ctx) throw new InvalidCredentialsError()
-
       const user = await loadUser(db, result.userId, ctx)
       if (!user) throw new InvalidCredentialsError()
 
@@ -79,8 +61,8 @@ export const publicAuthRoutes: FastifyPluginAsyncZod = async (app) => {
   )
 
   app.post('/auth/logout', { schema: { hide: true } }, async (req, reply) => {
-    const id = req.cookies[SESSION_COOKIE]
-    if (id) await revokeSession(app.db, id)
+    const token = req.cookies[SESSION_COOKIE]
+    if (token) await revokeSession(app.db, token)
     clearSessionCookie(reply, app.env)
     return reply.status(204).send()
   })

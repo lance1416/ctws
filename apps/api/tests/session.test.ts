@@ -1,13 +1,10 @@
+import { createHash } from 'node:crypto'
 import { sql } from 'drizzle-orm'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import {
-  createSession,
-  findValidSession,
-  hashMatches,
-  revokeSession,
-} from '../src/shell/auth/session'
-
+import { createSession, findValidSession, revokeSession } from '../src/shell/auth/session'
 import { withDatabase } from './helpers/db'
+
+const sha256 = (token: string) => createHash('sha256').update(token).digest('hex')
 
 /** The window a session lives in, and the one it is extended by when it is used. */
 const TTL_DAYS = 30
@@ -32,8 +29,8 @@ afterAll(async () => {
 /** What the database holds for a token, read raw. */
 async function storedFor(token: string): Promise<{ id: string; token_hash: string } | undefined> {
   const rows = await ctx.db.execute(sql`select id, token_hash from sessions`)
-  return (rows.rows as { id: string; token_hash: string }[]).find((r) =>
-    hashMatches(token, r.token_hash),
+  return (rows.rows as { id: string; token_hash: string }[]).find(
+    (r) => sha256(token) === r.token_hash,
   )
 }
 
@@ -51,8 +48,8 @@ describe('session', () => {
   it('stores no copy of the token anywhere in the row', async () => {
     const session = await createSession(ctx.db, userId, 30)
     const rows = await ctx.db.execute(sql`select * from sessions`)
-    const row = (rows.rows as Record<string, unknown>[]).find((r) =>
-      hashMatches(session.token, String(r.token_hash)),
+    const row = (rows.rows as Record<string, unknown>[]).find(
+      (r) => sha256(session.token) === String(r.token_hash),
     )
     expect(row, 'the session was written').toBeDefined()
     for (const [column, value] of Object.entries(row!)) {
