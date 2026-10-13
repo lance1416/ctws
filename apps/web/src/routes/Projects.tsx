@@ -50,7 +50,11 @@ export function Projects() {
 
   return (
     <>
-      <h1 ref={heading} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
+      <h1
+        ref={heading}
+        tabIndex={-1}
+        className="text-2xl font-semibold tracking-[-0.02em] focus:outline-none"
+      >
         Projects
       </h1>
       <input

@@ -60,7 +60,12 @@ export function Completed({ heading: showHeading = true }: { heading?: boolean }
           and still the thing focus lands on after a restore: a heading nobody can see is better
           than focus falling to <body>. */}
       {showHeading ? (
-        <h1 ref={heading} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
+        <h1
+          ref={heading}
+          tabIndex={-1}
+          // On the margin's edge, where the rows' threads hang: the page is one column of rows.
+          className="ml-15 text-2xl font-semibold tracking-[-0.02em] focus:outline-none sm:ml-18"
+        >
           Done
         </h1>
       ) : (
@@ -72,9 +77,9 @@ export function Completed({ heading: showHeading = true }: { heading?: boolean }
           Done
         </h2>
       )}
-      {completed.isPending && <p className="mt-6 text-ink-muted">Loading…</p>}
+      {completed.isPending && <p className="mt-6 ml-15 text-ink-muted sm:ml-18">Loading…</p>}
       {completed.isError && (
-        <p role="alert" className="mt-6 text-danger">
+        <p role="alert" className="mt-6 ml-15 text-danger sm:ml-18">
           {completed.error instanceof Error
             ? completed.error.message
             : "Couldn't load. Check that the server is running."}
@@ -83,7 +88,7 @@ export function Completed({ heading: showHeading = true }: { heading?: boolean }
       {completed.isSuccess && rows.length === 0 && <EmptyState title="Nothing finished yet" />}
       {days.map(({ day, tasks }) => (
         <section key={day} aria-label={dayHeading(day, today)} className="mt-8">
-          <h2 className="text-sm font-semibold text-ink-muted">
+          <h2 className="ml-15 text-sm font-semibold text-ink-muted sm:ml-18">
             {dayHeading(day, today)} <span className="tabular-nums">{tasks.length}</span>
           </h2>
           <ul className={`mt-1 flex flex-col ${DONE_LIST_MEASURE}`}>

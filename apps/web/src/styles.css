@@ -167,10 +167,11 @@
      The role map, same table:
        xs   12/20  captions: date echoes, kbd chips, counts, the deliberately demoted labels
        sm   14/22  meta, breadcrumbs, labels: the row's second line, field labels, panel counts
-       base 16/24  body and row titles (600 when the row is in progress), notes, fields
-       lg   20/28  panel headings: Panel's own heading, the detail pane's subject, a banner Stat
-       xl   24/32  page titles: every <h1>
-       2xl  36/44  the banner subject: the one thing being done right now, on Today
+       base 16/24  body and row titles (600 when the row is in progress), notes, fields, and a
+                   section's heading (Panel's own, in 600)
+       lg   20/28  a sheet's or a dialog's subject, a kind's name on Things, a banner Stat
+       xl   24/32  the Workbench cards' one big thing (a count, a name), Today's date on a phone
+       2xl  36/44  page titles: every page's own <h1>, and the one thing in progress on Today
        display 48/56  the date at the head of Today, at 500
      Every step from `base` up is LARGER than the scale it replaces (15/17/23 -> 16/20/24 with a
      new 36 on top), because the controls were too small to read at a glance. `xs` goes 13 -> 12
@@ -190,7 +191,7 @@
   /* DISPLAY 48/56, one step above the scale's top: TDesign's Display Medium
      (`font-size-display-medium` / `font-line-height-display-medium`), the only one of its display
      steps this app uses. It sets ONE thing -- the date at the head of Today, where the page IS a
-     day and says which first -- at weight 500, the one 500 in the app. */
+     day and says which first -- at weight 500. */
   --text-display: 3rem;
   --text-display--line-height: 3.5rem;
 

@@ -203,6 +203,34 @@ test('the banner subject is 36/44, and the date heading above it is the display 
   expect(await pair(page, 'h1')).toEqual({ size: '48px', line: '56px', weight: '500' })
 })
 
+/**
+ * ONE PAGE-TITLE STEP. Every page's own heading is the scale's 2xl (36/44, 600) -- the step the
+ * project page, People and Things were redrawn at. A page left on the old 24/32 reads as a
+ * section of some other page; Today's date (display) and the Workbench's hidden heading are the
+ * two that are something else on purpose.
+ */
+test('every page names itself at one step', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '一条线')
+  for (const path of [
+    '/projects',
+    `/projects/${pid}`,
+    '/tasks/review',
+    '/tasks/completed',
+    '/calendar',
+    '/meetings',
+    '/reading',
+    '/people',
+    '/people/birthdays',
+    '/things',
+  ]) {
+    await page.goto(path)
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+    expect(await pair(page, 'h1'), path).toEqual({ size: '36px', line: '44px', weight: '600' })
+  }
+})
+
 // -------------------------------------------------------------------- 400 and 600, and no 500
 
 // ------------------------------------------------------------ mixed script: text-autospace

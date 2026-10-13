@@ -97,7 +97,11 @@ export function Meetings() {
   return (
     <>
       <div className="flex items-center justify-between gap-3">
-        <h1 ref={heading} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
+        <h1
+          ref={heading}
+          tabIndex={-1}
+          className="text-2xl font-semibold tracking-[-0.02em] focus:outline-none"
+        >
           Meetings
         </h1>
         <button type="button" onClick={() => setMaking(true)} className={BUTTON.secondary}>

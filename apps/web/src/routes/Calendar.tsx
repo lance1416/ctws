@@ -100,7 +100,11 @@ export function Calendar() {
   return (
     <>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <h1 ref={heading} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
+        <h1
+          ref={heading}
+          tabIndex={-1}
+          className="text-2xl font-semibold tracking-[-0.02em] focus:outline-none"
+        >
           Calendar
         </h1>
         <span className="text-sm text-ink-muted tabular-nums">{monthTitle(cursor)}</span>
