@@ -1,27 +1,17 @@
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
-import * as schema from './schema'
 
-export type Db = NodePgDatabase<typeof schema> & { $client: Pool }
+export type Db = NodePgDatabase & { $client: Pool }
 
 export function createDb(connectionString: string): Db {
-  return drizzle(new Pool({ connectionString }), { schema })
+  return drizzle(new Pool({ connectionString }))
 }
 
 export async function closeDb(db: Db): Promise<void> {
   await db.$client.end()
 }
 
-/**
- * The transaction handle drizzle hands to a `db.transaction` callback.
- * Derived from drizzle's own signature so it cannot drift from the installed version.
- */
 type Tx = Parameters<Parameters<Db['transaction']>[0]>[0]
 
-/**
- * What every service function takes. A service must work both standalone and composed inside a
- * caller's transaction, because every write appends its event in the same transaction as the
- * mutation. `Db` alone cannot express that: a `Tx` is not assignable to `Db`, which carries
- * `$client: Pool`.
- */
+/** A service works the same on the pool and inside a caller's transaction. */
 export type Queryable = Db | Tx

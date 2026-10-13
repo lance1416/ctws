@@ -1,6 +1,6 @@
 import { and, asc, desc, isNull, sql } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
-import { projects } from '../../platform/db/schema'
+import { projects } from '../../shell/projects/tables'
 import { visibleProjects } from '../../shell/projects/store'
 
 /**

@@ -1,7 +1,8 @@
 import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
 import { textMatches } from '../../platform/db/sql'
-import { projects, tasks } from '../../platform/db/schema'
+import { projects } from '../../shell/projects/tables'
+import { tasks } from './tables'
 import type { Linkable, StoredEdge } from '../../shell/links/linkable'
 import { visibleProjects } from '../../shell/projects/store'
 

@@ -1,6 +1,6 @@
 import { and, asc, inArray } from 'drizzle-orm'
 import { textMatches } from '../../platform/db/sql'
-import { projects } from '../../platform/db/schema'
+import { projects } from './tables'
 import type { Linkable } from '../links/linkable'
 import { visibleProjects } from './store'
 

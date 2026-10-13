@@ -2,7 +2,7 @@ import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
 import { and, eq, gt, lt } from 'drizzle-orm'
 import { v4 as uuidv4 } from 'uuid'
 import type { Queryable } from '../../platform/db/client'
-import { sessions } from '../../platform/db/schema'
+import { sessions } from './tables'
 
 /**
  * SESSIONS. The cookie carries a token; the database holds only its SHA-256.

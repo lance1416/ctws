@@ -4,7 +4,7 @@ import { v7 as uuidv7 } from 'uuid'
 import type { Queryable } from '../../platform/db/client'
 import { filedUnder, oneProjectOf, putLinks, unfiled } from '../../shell/links/store'
 import { textMatches } from '../../platform/db/sql'
-import { readingItems } from '../../platform/db/schema'
+import { readingItems } from './tables'
 import { assertProjectVisible } from '../../shell/projects/store'
 import { ReadingItemNotFoundError, WrongKindError } from './errors'
 

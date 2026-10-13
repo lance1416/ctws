@@ -2,7 +2,7 @@ import type { CalendarEntry, Circle } from '@ctws/contracts'
 import { factsOf, type Kept, nextOccurrence, type Birthday } from '@ctws/core'
 import { and, asc, eq, isNotNull, isNull } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
-import { people } from '../../platform/db/schema'
+import { people } from './tables'
 import { accountToday } from '../../platform/db/time'
 
 /**

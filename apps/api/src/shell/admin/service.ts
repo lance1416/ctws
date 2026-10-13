@@ -2,7 +2,7 @@ import type { AdminUser, Role } from '@ctws/contracts'
 import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 import { LOCK_ADMIN_SET } from '../auth/service'
 import type { Db, Queryable } from '../../platform/db/client'
-import { sessions, users } from '../../platform/db/schema'
+import { sessions, users } from '../auth/tables'
 
 export class UserNotFoundError extends Error {
   constructor() {

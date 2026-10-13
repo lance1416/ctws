@@ -1,7 +1,9 @@
 import type { LinkKind, ObjectType } from '@ctws/contracts'
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
-import { people, links, projects } from '../../platform/db/schema'
+import { people } from '../../modules/people/tables'
+import { links } from './tables'
+import { projects } from '../projects/tables'
 
 /**
  * EDGES -- the shell's own store, and the one way anything reaches anything else.

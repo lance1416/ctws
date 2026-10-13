@@ -1,5 +1,5 @@
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
-import { people } from '../../platform/db/schema'
+import { people } from './tables'
 import { textMatches } from '../../platform/db/sql'
 import type { Linkable } from '../../shell/links/linkable'
 

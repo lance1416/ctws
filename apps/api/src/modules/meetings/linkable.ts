@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
 import { textMatches } from '../../platform/db/sql'
-import { meetings } from '../../platform/db/schema'
+import { meetings } from './tables'
 import type { Linkable } from '../../shell/links/linkable'
 import { instantOf } from './occurrences'
 import { zoneLabel } from './routes'

@@ -8,7 +8,9 @@ function resolveMigrationsFolder(): string {
   const override = process.env.MIGRATIONS_DIR
   if (override) return override
   const dir = fileURLToPath(new URL('../../../drizzle', import.meta.url))
-  if (!existsSync(dir)) throw new Error(`Migrations folder not found at ${dir}. Set MIGRATIONS_DIR.`)
+  if (!existsSync(dir)) {
+    throw new Error(`Migrations folder not found at ${dir}. Set MIGRATIONS_DIR.`)
+  }
   return dir
 }
 

@@ -1,0 +1,22 @@
+import { boolean, index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { workspaces } from '../auth/tables'
+
+export const projects = pgTable(
+  'projects',
+  {
+    id: uuid('id').primaryKey(),
+    workspaceId: uuid('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    color: text('color'),
+    // One per workspace, by a partial unique index in the migration SQL.
+    isInbox: boolean('is_inbox').notNull().default(false),
+    // COLLATE "C" is added in the migration SQL so fractional ranks compare bytewise; not unique.
+    rank: text('rank').notNull(),
+    archivedAt: timestamp('archived_at', { withTimezone: true }),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('projects_workspace_idx').on(t.workspaceId)],
+)

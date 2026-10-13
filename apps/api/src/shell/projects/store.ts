@@ -9,7 +9,7 @@ import { and, asc, desc, eq, isNotNull, isNull, sql } from 'drizzle-orm'
 import type { PgUpdateSetSource } from 'drizzle-orm/pg-core'
 import { v7 as uuidv7 } from 'uuid'
 import type { Queryable } from '../../platform/db/client'
-import { projects } from '../../platform/db/schema'
+import { projects } from './tables'
 import { InboxNotDeletableError, ProjectNotFoundError } from './errors'
 
 /** The quick-capture destination. One per workspace; see schema.ts and the 0003 migration. */

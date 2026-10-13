@@ -9,7 +9,7 @@ import {
 } from '@ctws/contracts'
 import { and, eq, or } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
-import { links } from '../../platform/db/schema'
+import { links } from './tables'
 import type { Endpoint } from './store'
 import type { StoredEdge } from './linkable'
 import { LINKABLES, linkableFor, TYPE_ORDER } from './registry'

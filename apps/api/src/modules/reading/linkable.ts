@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
 import { textMatches } from '../../platform/db/sql'
-import { readingItems } from '../../platform/db/schema'
+import { readingItems } from './tables'
 import type { Linkable } from '../../shell/links/linkable'
 
 /** Reading names its own items for the shell. See `links/linkable.ts` for why this exists. */

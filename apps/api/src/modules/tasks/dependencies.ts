@@ -1,6 +1,6 @@
 import { and, eq, sql } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
-import { taskDependencies } from '../../platform/db/schema'
+import { taskDependencies } from './tables'
 import { DependencyCycleError, TaskNotFoundError } from './errors'
 import { appendEvent } from './events'
 import type { TaskCtx } from './tasks'
