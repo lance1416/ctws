@@ -218,10 +218,7 @@ describe('POST /tasks/:id/move', () => {
       payload: { projectId: p, parentId: deep[7] },
     })
     expect(res.statusCode).toBe(409)
-    // THE DEPTH LIMIT, said as the depth limit. This is the path where the bounded cycle walk
-    // cannot see the destination, so the depth check is the rule doing the refusing -- and a
-    // refusal that blamed a cycle instead would send the reader looking for a loop that is not
-    // there (`move.ts`).
+    // The depth check refuses it, not the cycle check: the bounded walk cannot see this far down.
     expect(res.json().detail).toMatch(/nested at most/)
   })
 

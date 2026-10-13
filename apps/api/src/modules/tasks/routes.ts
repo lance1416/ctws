@@ -24,7 +24,12 @@ import {
 import type { FastifyRequest } from 'fastify'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { currentUser } from '../../shell/auth/authenticated'
-import { addDependency, removeDependency } from './dependencies'
+import { createTask } from './commands/create'
+import { addDependency, removeDependency } from './commands/dependencies'
+import { moveTask } from './commands/move'
+import { softDeleteTask } from './commands/remove'
+import { updateTask } from './commands/update'
+import type { TaskCtx } from './log'
 import {
   toCalendarEntry,
   toCompletedResponse,
@@ -32,7 +37,6 @@ import {
   toTaskResponse,
   toTodayResponse,
 } from './mapper'
-import { moveTask } from './move'
 import { listTaskCalendar } from './queries/calendar'
 import { listCompleted } from './queries/completed'
 import { blockersFor, taskDependencyLists } from './queries/dependencies'
@@ -43,7 +47,6 @@ import { listReview } from './queries/review'
 import { visibleTask } from './queries/scope'
 import { searchTasks } from './queries/search'
 import { listToday } from './queries/today'
-import { createTask, softDeleteTask, type TaskCtx, updateTask } from './tasks'
 
 /** Who is writing, for the commands that log against the task they change. */
 const actor = (req: FastifyRequest): TaskCtx => {

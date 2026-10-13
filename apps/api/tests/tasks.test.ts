@@ -2,8 +2,9 @@ import { randomUUID } from 'node:crypto'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { TaskNotFoundError } from '../src/modules/tasks/errors'
-import { moveTask } from '../src/modules/tasks/move'
-import { softDeleteTask, updateTask } from '../src/modules/tasks/tasks'
+import { moveTask } from '../src/modules/tasks/commands/move'
+import { softDeleteTask } from '../src/modules/tasks/commands/remove'
+import { updateTask } from '../src/modules/tasks/commands/update'
 import {
   createChain,
   createProject,
@@ -549,10 +550,7 @@ describe('guards that must not be silently dropped', () => {
     expect(res.json().completedAt).toEqual(expect.any(String))
   })
 
-  // Both of these pin LOCK_TASK_TREE, which two comments in tasks.ts call load-bearing and which
-  // nothing used to pin: it could be deleted with the whole suite staying green. A create or a
-  // cascading delete that did not take it would be invisible to a concurrent cascade's statement
-  // snapshot -- see LOCK_TASK_TREE for the two silent states that produces.
+  // A create or a cascading delete without the tree lock is invisible to a concurrent cascade.
   it('creating a task contends on the workspace-keyed tree lock', async () => {
     const ctx = await setup()
     const projectId = await createProject(ctx, 'P')

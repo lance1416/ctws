@@ -108,19 +108,19 @@ export async function eventsOf(
 }
 
 /**
- * Fires a request while LOCK_TASK_TREE is held on another transaction, asserts the request is
+ * Fires a request while the tree lock is held on another transaction, asserts the request is
  * still in flight after a moment, then releases the lock and returns the response.
  *
  * This is a MECHANISM test, not a race test. Reproducing the interleaving the lock prevents needs
- * a pause point inside the service transaction -- a hook in production code -- and an attempt at
+ * a pause point inside the command transaction -- a hook in production code -- and an attempt at
  * it without one passed with the lock removed, which is the definition of a vacuous test. Holding
  * the lock from outside instead is deterministic in the safe direction: a blocked request stays
  * blocked indefinitely, so the wait cannot end early by luck; it could only ever be too short,
  * and an unblocked request finishes in single-digit milliseconds.
  *
  * What it does NOT prove is where in the transaction the lock is taken. A caller that took it last
- * would contend identically here and be useless, so "first statement" rests on the comments in the
- * services, not on this helper.
+ * would contend identically here and be useless, so "first statement" rests on the commands, not
+ * on this helper.
  */
 export async function expectBlockedByTreeLock<T>(ctx: TaskCtx, fire: () => Promise<T>): Promise<T> {
   const { workspaceId } = (
