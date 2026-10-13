@@ -6,15 +6,13 @@ import {
 } from '../../../src/modules/reading/unfurl/safe-url'
 
 /**
- * 出站抓取那道门。
- *
- * 抓的地址是别人粘进来的任意字符串，所以这不是一个「尽量」的检查：一条指向 169.254.169.254 的
- * 链接会让 API 替人去读云元数据，一条指向 10.x 的链接会让它替人探内网。判断在这里写成纯函数，
- * 是因为它是这块里唯一一处写错就出事的地方，而纯函数可以把每一段都钉死。
+ * Which addresses an outbound fetch may reach. The address is any string someone pasted, so a
+ * link to 169.254.169.254 would read cloud metadata and one to 10.x would probe the internal
+ * network; every range is pinned here.
  */
 
 describe('isPublicAddress', () => {
-  it('挡掉本机、私网、链路本地与云元数据', () => {
+  it('refuses loopback, private, link-local and cloud metadata addresses', () => {
     for (const ip of [
       '127.0.0.1',
       '127.9.9.9',
@@ -33,13 +31,13 @@ describe('isPublicAddress', () => {
     }
   })
 
-  it('放行真正在外面的地址', () => {
+  it('allows public addresses', () => {
     for (const ip of ['1.1.1.1', '8.8.8.8', '140.82.121.4', '172.32.0.1', '192.167.1.1']) {
       expect(isPublicAddress(ip, 4), ip).toBe(true)
     }
   })
 
-  it('IPv6 也要挡：回环、ULA、链路本地，以及把 v4 包起来的那几种写法', () => {
+  it('refuses IPv6 loopback, ULA and link-local, and IPv4 wrapped in IPv6', () => {
     for (const ip of [
       '::1',
       '::',
@@ -59,37 +57,34 @@ describe('isPublicAddress', () => {
 })
 
 describe('checkLinkUrl', () => {
-  it('只认 http(s)', () => {
+  it('accepts only http and https', () => {
     expect(checkLinkUrl('file:///etc/passwd')).toBeNull()
     expect(checkLinkUrl('gopher://a.test/1')).toBeNull()
     expect(checkLinkUrl('javascript:alert(1)')).toBeNull()
     expect(checkLinkUrl('不是地址')).toBeNull()
   })
 
-  it('端口不管：真有网页住在 8443 上，而内网是地址的事', () => {
+  it('allows any port; reachability is decided by address', () => {
     expect(checkLinkUrl('https://a.test:8443/x')?.port).toBe('8443')
   })
 
-  it('不认带用户名密码的地址', () => {
+  it('refuses a URL with credentials', () => {
     expect(checkLinkUrl('http://user:pw@a.test/')).toBeNull()
   })
 
-  it('正常的地址过得去', () => {
+  it('accepts an ordinary URL', () => {
     expect(checkLinkUrl('https://github.com/lance1416/ctws')?.host).toBe('github.com')
   })
 })
 
-/**
- * 地址写成数字时根本不经过 DNS —— Node 直接就连上去了，那道 lookup 的门一次都不会被调用。
- * 所以这种主机名要在别处当场问，这个函数就是把它认出来。
- */
+/** A numeric host skips DNS and the lookup guard, so it must be recognised and checked directly. */
 describe('literalAddress', () => {
-  it('认出数字地址，包括方括号里的 IPv6', () => {
+  it('recognises a numeric host, bracketed IPv6 included', () => {
     expect(literalAddress('169.254.169.254')).toEqual({ ip: '169.254.169.254', family: 4 })
     expect(literalAddress('[::1]')).toEqual({ ip: '::1', family: 6 })
   })
 
-  it('域名不是地址', () => {
+  it('does not treat a domain name as an address', () => {
     expect(literalAddress('github.com')).toBeNull()
     expect(literalAddress('1.1.1.1.example.com')).toBeNull()
   })

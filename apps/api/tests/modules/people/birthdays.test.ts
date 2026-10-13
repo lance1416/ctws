@@ -70,7 +70,7 @@ function monthDay(today: string, n: number): { month: number; day: number } {
 }
 
 describe('GET /people/birthdays', () => {
-  it('七天内的进 coming，其余按倒数排进 later，没有生日的人不出现', async () => {
+  it('puts the next seven days in coming, the rest in later by countdown, and leaves out people without a birthday', async () => {
     const ctx = await setup()
     const today = (await view(ctx)).today
     const year = Number(today.slice(0, 4))
@@ -86,7 +86,7 @@ describe('GET /people/birthdays', () => {
     expect(body.coming[1]?.inDays).toBe(7)
   })
 
-  it('农历追的人带农历回显，公历追的人没有', async () => {
+  it('shows the lunar date only for a lunar birthday', async () => {
     const ctx = await setup()
     await add(ctx, '周楠', { calendar: 'lunar', year: 1991, month: 9, day: 3 })
     await add(ctx, '王颖', { calendar: 'solar', year: 1993, month: 10, day: 10 })
@@ -96,7 +96,7 @@ describe('GET /people/birthdays', () => {
     expect(rows.find((r) => r.name === '王颖')?.lunarDate).toBeNull()
   })
 
-  it('月份索引按下一次的公历月计数，circle 一并数出来', async () => {
+  it('counts people by the solar month of their next birthday, and by circle', async () => {
     const ctx = await setup()
     await add(ctx, '王颖', { calendar: 'solar', year: 1993, month: 10, day: 10 }, 'friend')
     await add(ctx, 'Priya', { calendar: 'solar', year: 1988, month: 10, day: 15 }, 'work')
@@ -104,14 +104,14 @@ describe('GET /people/birthdays', () => {
     const body = await view(ctx)
     expect(body.byMonth['10']).toBe(2)
     expect(body.byMonth['4']).toBe(1)
-    // 零不画成 0：没有人的月份根本不在这张表里（`Panel` 的 count 同一个规矩）。
+    // A month with nobody is absent, not 0.
     expect(body.byMonth['7']).toBeUndefined()
     expect(body.circles).toEqual({ friend: 2, work: 1 })
   })
 
-  /** Review Focus 5：当天的生日在账户时区里一整天都是「今天」。 */
-  it('「今天」是账户时区的今天，不是 UTC 的', async () => {
-    // 2026-10-10T22:00Z：上海已是 10-11，洛杉矶还是 10-10。
+  /** A birthday is today for the whole of the account's day. */
+  it("decides today in the account's zone, not UTC", async () => {
+    // 2026-10-10T22:00Z is already 10-11 in Shanghai and still 10-10 in Los Angeles.
     const clock = new Date('2026-10-10T22:00:00Z')
     const shanghai = await setup('Asia/Shanghai')
     await add(shanghai, '十一号生的', { calendar: 'solar', year: 1990, month: 10, day: 11 })
@@ -131,7 +131,7 @@ describe('GET /people/birthdays', () => {
     expect(inLa.coming[0]?.inDays).toBe(1)
   })
 
-  it('别人 workspace 的人不出现', async () => {
+  it("leaves out another workspace's people", async () => {
     const mine = await setup()
     await add(mine, '我的人', { calendar: 'solar', year: 1990, month: 10, day: 12 })
     const theirs = await setup()
@@ -140,7 +140,7 @@ describe('GET /people/birthdays', () => {
     expect([...body.coming, ...body.later].map((r) => r.name)).toEqual(['我的人'])
   })
 
-  it('没登录就没有', async () => {
+  it('requires a session', async () => {
     const ctx = await setup()
     const res = await ctx.app.inject({ method: 'GET', url: '/api/v1/people/birthdays' })
     expect(res.statusCode).toBe(401)
@@ -168,7 +168,7 @@ async function entries(ctx: Harness, from: string, to: string): Promise<Entry[]>
 }
 
 describe('GET /people/calendar', () => {
-  it('窗口里的生日各一条，带名字与年龄，没有时刻', async () => {
+  it('gives one entry per birthday in the window, with name and age and no time', async () => {
     const ctx = await setup()
     await add(ctx, '王颖', { calendar: 'solar', year: 1993, month: 10, day: 10 })
     await add(ctx, '周楠', { calendar: 'lunar', year: 1991, month: 9, day: 3 })
@@ -183,11 +183,11 @@ describe('GET /people/calendar', () => {
       endTime: null,
     })
     expect(王颖?.to).toMatch(/^\/people\/[0-9a-f-]{36}$/)
-    // 农历追的人落在他自己的那天，不是公历的 10-10。
+    // A lunar birthday falls on its own day, not on the solar 10-10.
     expect(rows.find((r) => r.title.startsWith('周楠'))?.day).toBe('2026-10-12')
   })
 
-  it('窗口外的人不出现，没有年份的人只有名字', async () => {
+  it('leaves out birthdays outside the window, and shows only the name without a year', async () => {
     const ctx = await setup()
     await add(ctx, '李雷', { calendar: 'solar', year: 1996, month: 4, day: 15 })
     await add(ctx, '蒋老师', { calendar: 'solar', year: null, month: 10, day: 20 })
@@ -195,11 +195,10 @@ describe('GET /people/calendar', () => {
     expect(rows.map((r) => r.title)).toEqual(['蒋老师'])
   })
 
-  it('条目 id 带日期，所以跨年的窗口里同一个人不会撞 id', async () => {
+  it('carries the day in the entry id, so a window spanning a year has distinct ids', async () => {
     const ctx = await setup()
     await add(ctx, '王颖', { calendar: 'solar', year: 1993, month: 10, day: 10 })
-    // 367 天：在 `MAX_CALENDAR_SPAN_DAYS`（370）之内，而两次 10-10 之间隔着 365 天，所以窗口
-    // 必须跨过那一整年才装得下两次。
+    // 367 days: inside `MAX_CALENDAR_SPAN_DAYS` (370), and long enough to hold two 10-10s.
     const rows = await entries(ctx, '2026-10-09', '2027-10-11')
     expect(rows).toHaveLength(2)
     expect(new Set(rows.map((r) => r.id)).size).toBe(2)
@@ -215,7 +214,7 @@ describe('GET /people/birthdays/preview', () => {
       headers: ctx.authed,
     })
 
-  it('公历输入回答农历、生肖、星座与下一次', async () => {
+  it('answers the lunar date, zodiac, sign and next occurrence for a solar birthday', async () => {
     const ctx = await setup()
     const res = await preview(ctx, 'calendar=solar&year=1996&month=4&day=15&hour=6')
     expect(res.statusCode, res.body).toBe(200)
@@ -228,15 +227,11 @@ describe('GET /people/birthdays/preview', () => {
   })
 
   /**
-   * 哪一条回退会触发，取决于「今天」落在哪一年：闰六月的年份是 2017 / 2025 / 2036 …，而下一次总在
-   * 一年之内，所以在有闰六月的那些年里这个人过的是真的闰六月，没有回退。写成 `toContain('leap-month')`
-   * 的那个版本因此会在 2025 年前八个月、以及 2036 年前八个月变红 —— 和它要证的事无关。
-   *
-   * 所以这里钉的是路由的活：给它一个闰月生日，它得用账户的「今天」走同一套库，并把整组答案（哪一天、
-   * 按哪条回退、那句话）原样送上线。哪一年走哪条分支、话怎么说，由
-   * `packages/core/src/birthday.test.ts` 在固定的「今天」上逐条钉死。
+   * Which fallback applies depends on the year today falls in (a leap 六月 year has none), so this
+   * pins the route's job only: the library's answer for the account's today, passed through whole.
+   * The branches themselves are pinned in core's birthday tests on a fixed today.
    */
-  it('闰月输入把回退说出来', async () => {
+  it('passes the fallback for a leap-month birthday through', async () => {
     const ctx = await setup()
     const today = (await view(ctx)).today
     const born: Birthday = { calendar: 'lunar', year: 2017, month: 6, day: 15, leapMonth: true }
@@ -250,7 +245,7 @@ describe('GET /people/birthdays/preview', () => {
     expect(body.next.keptNote).toBe(keptNote(born, next))
   })
 
-  it('没有年份的农历输入没有星座', async () => {
+  it('gives no sign for a lunar birthday without a year', async () => {
     const ctx = await setup()
     const res = await preview(ctx, 'calendar=lunar&month=9&day=3')
     expect(res.statusCode, res.body).toBe(200)
@@ -259,14 +254,14 @@ describe('GET /people/birthdays/preview', () => {
     expect(res.json().lunarDate).toBe('农历九月初三')
   })
 
-  it('公历里不存在的日子是 400', async () => {
+  it('refuses a solar day that does not exist with 400', async () => {
     const ctx = await setup()
     const res = await preview(ctx, 'calendar=solar&year=1996&month=2&day=30')
     expect(res.statusCode).toBe(400)
     expect(res.json().detail).toContain('does not exist')
   })
 
-  it('没登录就没有', async () => {
+  it('requires a session', async () => {
     const ctx = await setup()
     const res = await ctx.app.inject({
       method: 'GET',
@@ -276,13 +271,12 @@ describe('GET /people/birthdays/preview', () => {
   })
 })
 
-describe('被挪动的日子', () => {
+describe('a moved birthday', () => {
   /**
-   * 那句话是库写的，这里钉的是它原样走到了线上。话的内容和哪条回退该说话，在
-   * `packages/core/src/birthday.test.ts` 里按固定的「今天」逐条钉死；这里不再写死正则，因为一个
-   * 闰六月生日在有闰六月的年份根本没被挪过，那条正则会在 2036 年起变红。
+   * The note is the library's; this pins that it reaches the wire unchanged. Its wording is pinned
+   * in core's birthday tests on a fixed today.
    */
-  it('回退带着一句写给人看的话，没挪过就是 null', async () => {
+  it('explains a fallback in a sentence, and is null when nothing moved', async () => {
     const ctx = await setup()
     const today = (await view(ctx)).today
     const born: Birthday = { calendar: 'lunar', year: 2017, month: 6, day: 15, leapMonth: true }
@@ -294,7 +288,7 @@ describe('被挪动的日子', () => {
     expect(moved.statusCode, moved.body).toBe(200)
     expect(moved.json().next.keptNote).toBe(keptNote(born, nextOccurrence(born, today)))
 
-    // 公历四月十五每一年都在，所以这一半不靠任何年份：没挪过就是 null，永远。
+    // April 15 exists every year, so this half is null in any year.
     const still = await ctx.app.inject({
       method: 'GET',
       url: '/api/v1/people/birthdays/preview?calendar=solar&year=1996&month=4&day=15',
@@ -305,11 +299,11 @@ describe('被挪动的日子', () => {
   })
 })
 
-describe('工作台卡片', () => {
-  it('按每个人自己的提前量决定谁出现', async () => {
+describe('the workbench card', () => {
+  it('shows each person by their own lead', async () => {
     const ctx = await setup()
     const today = (await view(ctx)).today
-    // 提前一周的人，第 5 天就该出现；只要当天的人，第 5 天不该出现。
+    // Five days out: a one-week lead shows, a same-day lead does not.
     await add(ctx, '要一周的', {
       calendar: 'solar',
       year: 1990,
@@ -333,7 +327,7 @@ describe('工作台卡片', () => {
     expect(body.card.map((r) => r.name)).toEqual(['今天的', '要一周的'])
   })
 
-  it('默认是一周', async () => {
+  it('defaults to a week', async () => {
     const ctx = await setup()
     await add(ctx, '没说的', { calendar: 'solar', year: 1990, month: 10, day: 10 })
     const body = await view(ctx)
@@ -342,13 +336,10 @@ describe('工作台卡片', () => {
 })
 
 /**
- * 一个没发生过的日子。
- *
- * 每个字段自己都合法 -- 农历有三十，有的年份闰六月 -- 凑起来可以不存在，而那取决于年份，所以
- * contract 看不见它（历法库 750 KB，不进浏览器）。门必须在写入之前关上：写进去的话，派生值要在
- * 读取时才算，联系人列表、搜索、生日页会一起 500，而且 app 里没有改它的地方。
+ * Each field can be valid while the date never happened, depending on the year, which only the
+ * calendar library knows. Stored, it would break every read that derives from it.
  */
-describe('农历里没发生过的日子进不来', () => {
+describe('a lunar day that never happened', () => {
   const post = (ctx: Harness, birthday: unknown) =>
     ctx.app.inject({
       method: 'POST',
@@ -364,14 +355,14 @@ describe('农历里没发生过的日子进不来', () => {
       headers: ctx.authed,
     })
 
-  it('那一年的正月没有三十，新建是 400 并说出理由', async () => {
+  it('refuses the 30th of a 29-day month on create, saying why', async () => {
     const ctx = await setup()
     const res = await post(ctx, { calendar: 'lunar', year: 2021, month: 1, day: 30 })
     expect(res.statusCode, res.body).toBe(400)
     expect(res.json().detail).toBe('正月 has 29 days in 2021, so there is no 三十.')
   })
 
-  it('那一年不闰六月，新建是 400', async () => {
+  it('refuses a leap month that year does not have on create', async () => {
     const ctx = await setup()
     const res = await post(ctx, {
       calendar: 'lunar',
@@ -384,14 +375,14 @@ describe('农历里没发生过的日子进不来', () => {
     expect(res.json().detail).toBe('There was no 闰六月 in 2018.')
   })
 
-  it('平年没有 2 月 29 日，新建是 400', async () => {
+  it('refuses February 29 in a common year on create', async () => {
     const ctx = await setup()
     const res = await post(ctx, { calendar: 'solar', year: 2001, month: 2, day: 29 })
     expect(res.statusCode, res.body).toBe(400)
     expect(res.json().detail).toBe('February has 28 days in 2001, so there is no 29th.')
   })
 
-  it('改也进不来', async () => {
+  it('refuses the same on update', async () => {
     const ctx = await setup()
     const created = await post(ctx, { calendar: 'lunar', year: 1996, month: 2, day: 28 })
     expect(created.statusCode, created.body).toBe(201)
@@ -405,14 +396,14 @@ describe('农历里没发生过的日子进不来', () => {
     expect(res.json().detail).toBe('正月 has 29 days in 2021, so there is no 三十.')
   })
 
-  it('preview 先说，所以人在按保存之前就看见了', async () => {
+  it('refuses it in the preview too, before anything is saved', async () => {
     const ctx = await setup()
     const res = await preview(ctx, 'calendar=lunar&year=2021&month=1&day=30')
     expect(res.statusCode, res.body).toBe(400)
     expect(res.json().detail).toBe('正月 has 29 days in 2021, so there is no 三十.')
   })
 
-  it('没有年份就无从不存在：正月三十作为复发日是对的', async () => {
+  it('accepts a lunar 30th without a year, which cannot be checked', async () => {
     const ctx = await setup()
     const res = await preview(ctx, 'calendar=lunar&month=1&day=30')
     expect(res.statusCode, res.body).toBe(200)

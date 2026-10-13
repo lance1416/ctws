@@ -224,7 +224,7 @@ describe('projects', () => {
     expect(withArchived.json().projects).toHaveLength(1)
   })
 
-  // Workspace scoping lives in the service layer (spec 10.5). Another user's project must be
+  // Workspace scoping lives in the service layer. Another user's project must be
   // invisible and unmodifiable, and must read as 404 rather than 403 so its existence is not
   // disclosed.
   it('cannot see or touch another workspace projects', async () => {

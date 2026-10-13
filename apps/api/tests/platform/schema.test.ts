@@ -23,7 +23,7 @@ async function columns(table: string) {
 }
 
 describe('migrations', () => {
-  it('creates the four M1 tables', async () => {
+  it('creates the auth tables', async () => {
     const rows = await ctx.db.execute(sql`
       select table_name from information_schema.tables
       where table_schema = 'public' and table_type = 'BASE TABLE'
@@ -89,7 +89,7 @@ describe('migrations', () => {
     ).rejects.toMatchObject({ cause: { constraint: 'workspace_members_role_check' } })
   })
 
-  // timestamptz is a project-wide constraint (M3 timezone correctness depends on it).
+  // Every day boundary is computed from these, so none may be a naive timestamp.
   it('stores every timestamp column as timestamptz and non-null', async () => {
     const expected = {
       users: ['created_at'],

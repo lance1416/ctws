@@ -77,7 +77,7 @@ describe('inbox project', () => {
     ).toBe(UNIQUE_VIOLATION)
   })
 
-  // Review Focus 1. The deployed instance's workspace predates this column; without the
+  // A deployed instance's workspace predates this column; without the
   // migration's backfill its first quick capture 500s. The backfill statement must also be
   // idempotent, because a re-run must not create a second inbox.
   it('backfills a workspace that has no inbox, and is idempotent', async () => {

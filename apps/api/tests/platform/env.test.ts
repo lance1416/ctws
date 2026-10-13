@@ -43,7 +43,7 @@ describe('parseEnv', () => {
     expect(parseEnv({ ...base, WEB_DIST: '/app/apps/web/dist' }).webDist).toBe('/app/apps/web/dist')
   })
 
-  // Review Focus #1 -- SameSite=None without Secure is silently dropped by browsers
+  // SameSite=None without Secure is silently dropped by browsers.
   it('rejects COOKIE_SAMESITE=none without secure cookies', () => {
     expect(() => parseEnv({ ...base, COOKIE_SAMESITE: 'none', COOKIE_SECURE: 'false' })).toThrow(
       /SameSite=None requires Secure/i,

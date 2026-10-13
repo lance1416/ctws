@@ -273,8 +273,8 @@ describe('people', () => {
  * occurrence) is computed on the way out and never stored, so these tests are also what pins
  * `@ctws/core`'s arithmetic to the wire.
  */
-describe('一个人的生日', () => {
-  it('公历生日连派生值一起读回来', async () => {
+describe("a person's birthday", () => {
+  it('reads a solar birthday back with everything derived from it', async () => {
     const ctx = await setup()
     const person = await add(ctx, {
       name: '李雷',
@@ -298,7 +298,7 @@ describe('一个人的生日', () => {
     expect(person.birthday?.next.day).toMatch(/^\d{4}-04-15$/)
   })
 
-  it('农历生日记住闰月，并给出复发日', async () => {
+  it('keeps the leap month of a lunar birthday and gives its next occurrence', async () => {
     const ctx = await setup()
     const person = await add(ctx, {
       name: '周宇',
@@ -313,7 +313,7 @@ describe('一个人的生日', () => {
     })
   })
 
-  it('闰月只有农历有，公历生日带闰月是 400', async () => {
+  it('refuses a leap month on a solar birthday with 400', async () => {
     const ctx = await setup()
     const res = await ctx.app.inject({
       method: 'POST',
@@ -325,11 +325,11 @@ describe('一个人的生日', () => {
       },
     })
     expect(res.statusCode).toBe(400)
-    // 不是因为这个键没人认识才 400 —— 是因为公历没有闰月。
+    // Refused because the solar calendar has no leap month, not because the key is unknown.
     expect(res.json().detail).toContain('leap month')
   })
 
-  it('公历里不存在的日子是 400，农历三十可以', async () => {
+  it('refuses a solar day that does not exist, and allows a lunar 30th', async () => {
     const ctx = await setup()
     const bad = await ctx.app.inject({
       method: 'POST',
@@ -346,7 +346,7 @@ describe('一个人的生日', () => {
     expect(ok.birthday?.bornSolar).toBe('1945-02-12')
   })
 
-  it('生日可以清掉，其余字段不受影响', async () => {
+  it('clears a birthday without touching the other fields', async () => {
     const ctx = await setup()
     const person = await add(ctx, {
       name: '王颖',
@@ -368,8 +368,8 @@ describe('一个人的生日', () => {
     expect(body.gender).toBe('female')
   })
 
-  /** 约束要在数据真正在的那一层也成立：契约是边界，边界不是对别的写入者的保证。 */
-  it('数据库拒绝半个生日', async () => {
+  /** The constraint holds where the data lives; the contract binds only the API. */
+  it('lets the database refuse half a birthday', async () => {
     const ctx = await setup()
     const person = await add(ctx, { name: '半个' })
     await expect(
@@ -378,10 +378,10 @@ describe('一个人的生日', () => {
   })
 
   /**
-   * 改月日不该动提前量。契约里 `remindLead` 原来写的是 `.default(7)`，而创建和修改共用同一个
-   * 形状，所以一个只想改月日的 PATCH 会把这个人设过的 1 天悄悄改回 7 —— 用户没碰的东西被改了。
+   * Create and update share one shape, so a defaulted `remindLead` would silently reset a lead
+   * the person chose whenever only the date is patched.
    */
-  it('只改月日不动提前量', async () => {
+  it('keeps the lead when only the date changes', async () => {
     const ctx = await setup()
     const person = await add(ctx, {
       name: '李雷',
@@ -397,10 +397,10 @@ describe('一个人的生日', () => {
   })
 
   /**
-   * 清掉生日要连提前量一起清。这一列是 NOT NULL DEFAULT 7，所以「清掉」就是回到 7：下次给这个人
-   * 填生日时，他会继承一个自己从没设过的提前量，而界面上没有任何地方说过这件事。
+   * Clearing a birthday resets the lead to its default 7, or the next birthday written would
+   * inherit a lead nobody chose.
    */
-  it('清掉生日时提前量回到默认', async () => {
+  it('resets the lead when the birthday is cleared', async () => {
     const ctx = await setup()
     const person = await add(ctx, {
       name: '韩梅梅',
@@ -416,10 +416,10 @@ describe('一个人的生日', () => {
   })
 
   /**
-   * 月和日各自 `between` 检查互不相关，所以 4 月 31 日在数据库层面是合法的 —— 挡住它的只有契约
-   * 那一层。走 API 进不来，直连数据库能进来，而数据库是数据真正在的地方。
+   * Separate month and day ranges would allow April 31 in the database; the day-in-month check
+   * keeps it out even for a write that skips the API.
    */
-  it('数据库拒绝一个月里不存在的那一天', async () => {
+  it('lets the database refuse a day its month does not have', async () => {
     const ctx = await setup()
     const person = await add(ctx, { name: '四月三十一' })
     await expect(
@@ -440,7 +440,7 @@ describe('一个人的生日', () => {
     )
   })
 
-  it('提前量只收 0 / 1 / 3 / 7', async () => {
+  it('accepts only 0, 1, 3 or 7 as the lead', async () => {
     const ctx = await setup()
     const res = await ctx.app.inject({
       method: 'POST',

@@ -150,7 +150,7 @@ describe('task tables', () => {
     expect((r.rows as { confdeltype: string }[])[0]!.confdeltype).toBe('c')
   })
 
-  // Hard-deleting a task must not silently erase its history (spec 5.4): refuse it loudly.
+  // Hard-deleting a task must not silently erase its history: refuse it loudly.
   it('refuses a hard delete of a task that has events', async () => {
     const { taskId } = await seed()
     expect(await sqlStateOf(ctx.db.execute(sql`delete from tasks where id = ${taskId}`))).toBe(

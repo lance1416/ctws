@@ -53,7 +53,7 @@ describe('POST /api/v1/auth/register', () => {
     expect(me.json()).toMatchObject({ email: 'new@example.com' })
   })
 
-  // Review Focus #5 -- a duplicate email must be 409, not 500
+  // A duplicate email must be 409, not 500.
   it('returns 409 for a duplicate email', async () => {
     const ctx = await app()
     const first = { method: 'POST' as const, url: '/api/v1/auth/register', headers, payload: body }
@@ -64,7 +64,7 @@ describe('POST /api/v1/auth/register', () => {
     expect(res.headers['content-type']).toContain('application/problem+json')
   })
 
-  // Review Focus #5 -- a failure must not leave orphan data behind
+  // A failure must not leave orphan data behind.
   it('leaves no orphan workspace when the email is taken', async () => {
     const ctx = await app()
     const req = { method: 'POST' as const, url: '/api/v1/auth/register', headers, payload: body }
@@ -75,7 +75,7 @@ describe('POST /api/v1/auth/register', () => {
     expect((rows.rows as { n: number }[])[0]!.n).toBe(1)
   })
 
-  // Review Focus #3 -- an invalid timezone must also be rejected at the endpoint layer
+  // An invalid timezone must also be rejected at the endpoint layer.
   it('returns 400 for an invalid timezone', async () => {
     const ctx = await app()
     const res = await ctx.app.inject({

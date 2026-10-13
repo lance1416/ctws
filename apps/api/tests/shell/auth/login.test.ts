@@ -99,7 +99,7 @@ describe('GET /api/v1/auth/me', () => {
 })
 
 describe('POST /api/v1/auth/logout', () => {
-  // Review Focus #4 -- the session must be invalidated immediately on logout.
+  // The session must be invalidated immediately on logout.
   it('invalidates the session it was called with', async () => {
     const ctx = await appWithUser()
     const authed = { ...headers, cookie: ctx.cookie }

@@ -22,7 +22,7 @@ afterEach(async () => {
   for (const s of servers.splice(0)) await new Promise((done) => s.close(done))
 })
 
-/** 真的去抓，只是把「准不准连」放开到本机。 */
+/** The real fetch, allowed to reach this machine. */
 const fetchAnywhere = (url: string) => unfurl(url, { allow: () => true })
 
 async function page(body: string): Promise<string> {
@@ -51,8 +51,8 @@ const list = async (ctx: Harness): Promise<ReadingItemResponse[]> => {
   return (res.json() as { items: ReadingItemResponse[] }).items
 }
 
-describe('粘一条链接时把对面的标题读回来', () => {
-  it('抓到的标题和那句话存下来，而且读得回去', async () => {
+describe('a pasted link reads back its own title', () => {
+  it('stores the fetched title and summary, and reads them back', async () => {
     const ctx = await setupWith(cleanups, undefined, { unfurl: fetchAnywhere })
     const url = await page(
       `<html><head><meta property="og:title" content="Linear 怎么重做 issue">
@@ -61,21 +61,21 @@ describe('粘一条链接时把对面的标题读回来', () => {
     const made = await add(ctx, { kind: 'link', url })
     expect(made.fetchedTitle).toBe('Linear 怎么重做 issue')
     expect(made.fetchedSummary).toBe('我们把 issue 拆成了三件事。')
-    // 存下来了，不是只在这一次响应里。
+    // Stored, not only in this response.
     expect((await list(ctx))[0]?.fetchedTitle).toBe('Linear 怎么重做 issue')
   })
 
-  it('抓不到也要有这一条：捕获不能因为对面没回话就失败', async () => {
+  it('keeps the item when the site does not answer', async () => {
     const ctx = await setupWith(cleanups, undefined, { unfurl: fetchAnywhere })
-    // 这个端口上什么都没有。
+    // Nothing listens on this port.
     const made = await add(ctx, { kind: 'link', url: 'http://127.0.0.1:9/nothing' })
     expect(made.fetchedTitle).toBeNull()
     expect(made.url).toBe('http://127.0.0.1:9/nothing')
     expect(await list(ctx)).toHaveLength(1)
   })
 
-  /** 对面不回话是一回事，抓取这段代码自己抛了是另一回事 —— 两种都不能把这一条弄丢。 */
-  it('抓取抛错也要有这一条', async () => {
+  /** A silent site and a fetch that throws are different failures; neither may lose the item. */
+  it('keeps the item when the fetch throws', async () => {
     const ctx = await setupWith(cleanups, undefined, {
       unfurl: () => Promise.reject(new Error('boom')),
     })
@@ -84,7 +84,7 @@ describe('粘一条链接时把对面的标题读回来', () => {
     expect(await list(ctx)).toHaveLength(1)
   })
 
-  it('人自己写了标题就不去抓：他已经说了这是什么', async () => {
+  it('does not fetch when the person wrote a title', async () => {
     const ctx = await setupWith(cleanups, undefined, { unfurl: fetchAnywhere })
     const url = await page('<title>对面说的</title>')
     const made = await add(ctx, { kind: 'link', url, title: '我自己说的' })
@@ -92,13 +92,13 @@ describe('粘一条链接时把对面的标题读回来', () => {
     expect(made.fetchedTitle).toBeNull()
   })
 
-  it('书不抓：它没有地址', async () => {
+  it('does not fetch for a book, which has no address', async () => {
     const ctx = await setupWith(cleanups, undefined, { unfurl: fetchAnywhere })
     const made = await add(ctx, { kind: 'book', title: '人月神话' })
     expect(made.fetchedTitle).toBeNull()
   })
 
-  it('关掉之后一次都不抓', async () => {
+  it('never fetches when turned off', async () => {
     const ctx = await setupWith(cleanups, undefined, {
       env: { readingUnfurl: false },
       unfurl: fetchAnywhere,

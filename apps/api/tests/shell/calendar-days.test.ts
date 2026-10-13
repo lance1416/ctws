@@ -17,7 +17,7 @@ afterEach(async () => {
 const setup = (): Promise<Harness> => setupWith(cleanups)
 
 describe('GET /calendar/days', () => {
-  it('每一天一个农历标签，月初写月名', async () => {
+  it('labels every day in the lunar calendar, naming the month on its first day', async () => {
     const ctx = await setup()
     const res = await ctx.app.inject({
       method: 'GET',
@@ -32,7 +32,7 @@ describe('GET /calendar/days', () => {
     })
   })
 
-  it('窗口有界，和别的日历查询同一条规矩', async () => {
+  it('bounds the window by the same rule as the other calendar reads', async () => {
     const ctx = await setup()
     const res = await ctx.app.inject({
       method: 'GET',
@@ -42,7 +42,7 @@ describe('GET /calendar/days', () => {
     expect(res.statusCode).toBe(400)
   })
 
-  it('没登录就没有', async () => {
+  it('requires a session', async () => {
     const ctx = await setup()
     const res = await ctx.app.inject({
       method: 'GET',

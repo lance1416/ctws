@@ -274,9 +274,8 @@ describe('update', () => {
     expect((await rowOf(ctx, id)).completed_at).toBeNull()
   })
 
-  // Spec 6.4: a parent's status is set independently and never cascades to or from its
-  // children. Forcing them to agree breaks down as soon as the parent itself carries work.
-  // M3 surfaces the contradiction in the UI; the data must keep it rather than resolve it.
+  // A parent's status is set independently and never cascades to or from its children:
+  // forcing them to agree breaks down as soon as the parent itself carries work.
   it('marking a parent done leaves its children untouched', async () => {
     const ctx = await setup()
     const projectId = await createProject(ctx, 'P')
@@ -352,8 +351,8 @@ describe('read one', () => {
 })
 
 describe('delete', () => {
-  // The listing endpoint arrives in Task 8, so "stops being listed" is checked here through the
-  // two things it will rest on: the deleted_at column and the task becoming unaddressable.
+  // Checked through the two things "stops being listed" rests on: the deleted_at column and the
+  // task becoming unaddressable.
   it('soft-deletes a task: row kept, flagged, and no longer addressable', async () => {
     const ctx = await setup()
     const projectId = await createProject(ctx, 'P')
@@ -385,7 +384,7 @@ describe('delete', () => {
 })
 
 describe('depth limit', () => {
-  // Review Focus 5: the depth limit must be enforced on create as well as move, or a shallow
+  // The depth limit must be enforced on create as well as move, or a shallow
   // tree can be built and then moved into a deep one.
   it('allows a chain exactly MAX_DEPTH deep', async () => {
     const ctx = await setup()

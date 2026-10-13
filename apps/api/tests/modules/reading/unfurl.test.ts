@@ -4,11 +4,8 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { unfurl } from '../../../src/modules/reading/unfurl/unfurl'
 
 /**
- * 抓一个网页的标题。
- *
- * 测试对着本机起的服务器跑，而本机地址正是那道门要挡的 —— 所以这里把「准不准连」这件事作为参数
- * 传进去（`allow`），路由上接的是真的那一个。最后一条反过来：不传 `allow` 时，127.0.0.1 必须连
- * 都没连过，服务器一个请求都收不到。
+ * Fetching a page's title. The test servers run on this machine, which the real guard refuses,
+ * so these tests pass `allow`; the ones without it check that 127.0.0.1 is never even reached.
  */
 
 const servers: Server[] = []
@@ -18,7 +15,7 @@ afterEach(async () => {
 
 const anywhere = () => true
 
-/** 起一个服务器，返回它的地址。`handler` 决定每个请求回什么。 */
+/** Starts a server whose `handler` answers every request, and returns its address. */
 async function serve(
   handler: (req: IncomingMessage, res: ServerResponse) => void,
 ): Promise<{ url: string; port: number; hits: string[] }> {
@@ -28,7 +25,7 @@ async function serve(
     handler(req, res)
   })
   servers.push(server)
-  // 双栈：`localhost` 在不同机器上先给 ::1 或先给 127.0.0.1，而那道门两个都该挡。
+  // Dual stack: `localhost` resolves to ::1 or 127.0.0.1 first depending on the machine.
   await new Promise<void>((ready) => server.listen(0, ready))
   const { port } = server.address() as AddressInfo
   return { url: `http://127.0.0.1:${port}`, port, hits }
@@ -40,7 +37,7 @@ const html = (body: string) => (_req: IncomingMessage, res: ServerResponse) => {
 }
 
 describe('unfurl', () => {
-  it('og:title 与 og:description 就是那条预览', async () => {
+  it('reads og:title and og:description', async () => {
     const { url } = await serve(
       html(`<html><head><title>站名 | 频道</title>
         <meta property="og:title" content="Linear 怎么重做 issue">
@@ -53,15 +50,15 @@ describe('unfurl', () => {
     })
   })
 
-  it('没有 og 就用 <title>，并且把实体还原成字符', async () => {
+  it('falls back to <title> and decodes entities', async () => {
     const { url } = await serve(
       html('<html><head><title>A &amp; B &#8212; C</title></head></html>'),
     )
     expect(await unfurl(url, { allow: anywhere })).toEqual({ title: 'A & B — C', summary: null })
   })
 
-  it('页面不是 UTF-8 也读得对', async () => {
-    // 中文站点里 GBK 还活着，按 UTF-8 读会得到一行乱码当标题。
+  it('decodes a page that is not UTF-8', async () => {
+    // GBK is still common, and read as UTF-8 it makes a garbled title.
     const { url } = await serve((_req, res) => {
       res.writeHead(200, { 'content-type': 'text/html; charset=gbk' })
       res.end(Buffer.from('3c7469746c653ebabab2c0b2e9b5c43c2f7469746c653e', 'hex'))
@@ -69,8 +66,8 @@ describe('unfurl', () => {
     expect((await unfurl(url, { allow: anywhere }))?.title).toBe('汉怖查的')
   })
 
-  it('不是网页就不读它', async () => {
-    // 正文里就放着一个标题：读了它就会露馅，所以这一条测的是「根本没读」。
+  it('does not read a response that is not a page', async () => {
+    // The body holds a title, so reading it at all would show.
     const { url } = await serve((_req, res) => {
       res.writeHead(200, { 'content-type': 'application/json' })
       res.end('{"html": "<title>不该读这个</title>"}')
@@ -78,7 +75,7 @@ describe('unfurl', () => {
     expect(await unfurl(url, { allow: anywhere })).toBeNull()
   })
 
-  it('跟着跳转走，但不无限跟', async () => {
+  it('follows redirects, up to a limit', async () => {
     const { url, hits } = await serve((req, res) => {
       const n = Number(req.url?.slice(1) ?? 0)
       if (n >= 2) return html('<title>到了</title>')(req, res)
@@ -97,7 +94,7 @@ describe('unfurl', () => {
     expect(hits.length).toBe(3)
   })
 
-  it('跳转的下一跳要重新问那道门，不是只问第一跳', async () => {
+  it('checks every redirect hop, not only the first', async () => {
     const { url, hits } = await serve((req, res) => {
       if (req.url === '/go') {
         res.writeHead(302, { location: 'http://10.0.0.5/internal' })
@@ -106,15 +103,15 @@ describe('unfurl', () => {
       }
       html('<title>内网</title>')(req, res)
     })
-    // 只放行测试服务器自己那个地址：302 指向的 10.0.0.5 必须在连之前就被拒掉。
+    // Only the test server is allowed: the redirect to 10.0.0.5 must be refused before connecting.
     const onlyHere = (ip: string) => ip === '127.0.0.1'
     expect(await unfurl(`${url}/go`, { allow: onlyHere })).toBeNull()
     expect(hits).toEqual(['/go'])
   })
 
-  it('对面不回话就放弃，而不是把捕获卡在那里', async () => {
+  it('gives up on a site that never answers', async () => {
     const { url } = await serve(() => {
-      // 一个字节都不回：捕获要在预算之内回来。
+      // Not a byte: the capture must come back within the budget.
     })
     const began = Date.now()
     expect(await unfurl(url, { allow: anywhere, timeoutMs: 300 })).toBeNull()
@@ -122,61 +119,54 @@ describe('unfurl', () => {
   })
 
   /**
-   * 只读开头那一段。
-   *
-   * 判据不是时间也不是字节数（loopback 上这两样都不老实），而是**读到了什么**：og:title 放在上限
-   * 之后，读过头的话它会盖掉 <title> —— 所以这一条红起来的意思就是「整页都拉下来了」。
+   * Judged by what was read, not by time or bytes, which loopback makes unreliable: an og:title
+   * past the cap would replace <title> if the whole page were read.
    */
-  it('只读开头那一段：上限之后的东西根本没被看见', async () => {
+  it('reads only the start of the page', async () => {
     const { url } = await serve((_req, res) => {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
       res.write('<html><head><title>开头就有</title></head><body>')
       res.write('x'.repeat(200 * 1024))
-      // 128 KB 之外：真读到这里，标题就会变成下面这句。
+      // Past 128 KB: reading this far would change the title.
       res.end('<meta property="og:title" content="读过头了"></body></html>')
     })
     expect((await unfurl(url, { allow: anywhere }))?.title).toBe('开头就有')
   })
 
-  /** 这一条是那道门本身：不传 allow 时用真的那一个，本机地址连都不会被连。 */
-  it('默认不许连本机，而且是连都没连', async () => {
+  /** The real guard: without `allow`, this machine is never connected to. */
+  it('refuses this machine by default, without connecting', async () => {
     const { url, hits } = await serve(html('<title>内网</title>'))
     expect(await unfurl(url)).toBeNull()
     expect(hits).toEqual([])
   })
 
-  it('不是 http(s) 的地址直接就不碰', async () => {
+  it('ignores anything but http and https', async () => {
     expect(await unfurl('file:///etc/passwd', { allow: anywhere })).toBeNull()
     expect(await unfurl('http://user:pw@example.test/', { allow: anywhere })).toBeNull()
   })
 
   /**
-   * 地址是域名时真的抓得到。
-   *
-   * 这一条看着像废话，但它盯的是 `lookup` 的那个约定：Node 的 happy-eyeballs 会带着
-   * `{ all: true }` 来问，要的是一个数组；回单个地址的话，每一个域名都会死在
-   * 「Invalid IP address: undefined」上 —— 而上面所有用数字地址的用例都照样绿，因为数字地址
-   * 根本不走 DNS。
+   * Pins the `lookup` contract: happy-eyeballs asks with `{ all: true }` and wants an array, and
+   * a single address fails every domain with "Invalid IP address: undefined". The numeric-host
+   * tests above skip DNS and cannot catch it.
    */
-  it('地址是域名时也抓得到', async () => {
+  it('fetches a page by domain name', async () => {
     const { port } = await serve(html('<title>域名也行</title>'))
     expect((await unfurl(`http://localhost:${port}/`, { allow: anywhere }))?.title).toBe('域名也行')
   })
 
   /**
-   * 解析出来的地址要一个个问过，而不是拿第一个就连。
-   *
-   * `localhost` 是域名，所以它走 DNS；它解析出来的 ::1 和 127.0.0.1 都在门外。先给哪一个因机器
-   * 而异，所以上面那个服务器是双栈的 —— 两个地址里随便连上哪一个，这一条都该红。
+   * Every resolved address is checked, not just the first. `localhost` resolves to ::1 and
+   * 127.0.0.1, both refused, in an order that varies; the server listens on both.
    */
-  it('域名解析出来的地址逐个问过，本机解析出来的也不许连', async () => {
+  it('refuses a domain that resolves to this machine', async () => {
     const { port, hits } = await serve(html('<title>本机</title>'))
     expect(await unfurl(`http://localhost:${port}/`)).toBeNull()
     expect(hits).toEqual([])
   })
 
-  /** 跳转之后那个地址要从头走一遍规则，不只是问地址在不在门外。 */
-  it('跳到一个带用户名密码的地址就不跟了', async () => {
+  /** A redirect target goes through every rule again, not only the address check. */
+  it('does not follow a redirect to a URL with credentials', async () => {
     const { url, port, hits } = await serve((req, res) => {
       if (req.url === '/go') {
         res.writeHead(302, { location: `http://user:pw@127.0.0.1:${port}/secret` })
@@ -189,8 +179,8 @@ describe('unfurl', () => {
     expect(hits).toEqual(['/go'])
   })
 
-  /** 写成数字的地址不经过 DNS，所以它要在别的地方被问住 —— 这一条就是问住了没有。 */
-  it('默认也不许连写成数字的内网地址', async () => {
+  /** A numeric host skips DNS, so it is checked separately; this pins that check. */
+  it('refuses a numeric private address by default', async () => {
     const { hits } = await serve(html('<title>元数据</title>'))
     expect(await unfurl('http://169.254.169.254/latest/meta-data/')).toBeNull()
     expect(hits).toEqual([])

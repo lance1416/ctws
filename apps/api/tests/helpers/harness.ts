@@ -16,9 +16,8 @@ const clientHeader = { 'x-ctws-client': 'web' }
  * Boots an app with open registration and registers one user. The caller owns `ctx.stop()`.
  * `authed` is a ready-to-use header bag carrying the session cookie.
  *
- * EACH CALL BOOTS ITS OWN POSTGRES CONTAINER. Two calls give two unrelated databases, so a test
- * of workspace isolation built from two `appWithUser()`s passes trivially. Create the second
- * user through `ctx.app.inject` (POST /api/v1/auth/register) on the same app instead.
+ * Each call gets its own database, so a workspace-isolation test built from two calls passes
+ * trivially. Register the second user on the same app instead.
  */
 export async function appWithUser(email = 'p@example.com', opts: Opts = {}): Promise<Harness> {
   const ctx = await withApp(
@@ -82,7 +81,7 @@ export async function createChain(
   return ids
 }
 
-/** Needs the listing endpoint from Task 8; Task 7's own tests do not use it. */
+/** A project's tasks through the listing endpoint. */
 export async function tasksOf(
   ctx: Harness,
   projectId: string,
@@ -96,7 +95,7 @@ export async function tasksOf(
   return res.json().tasks
 }
 
-/** Reads the log directly: the endpoint that serves it only arrives in Task 10. */
+/** A task's events read straight from the log. */
 export async function eventsOf(
   ctx: Harness,
   taskId: string,
@@ -164,21 +163,10 @@ export async function expectBlockedByTreeLock<T>(ctx: Harness, fire: () => Promi
   return pending
 }
 
-/**
- * THE HEADERS A BROWSER SENDS. The guard refuses a cookie-authenticated write without them (CSRF),
- * so every test that writes through the app has to send them -- and seven test files wrote this
- * same line out to do it.
- */
+/** The headers a browser sends; the CSRF guard refuses a write without them. */
 export const web = (ctx: Harness) => ({ ...ctx.authed, 'x-ctws-client': 'web' })
 
-/**
- * An app with one user, registered, whose teardown the CALLER owns.
- *
- * Nineteen test files wrote the same four lines: boot, push the stop onto a list, return. The
- * list is the caller's because `afterEach` is where it has to be drained, and a helper that
- * owned it would be a second lifetime to reason about.
- */
-/** 一次性换掉的东西：出站抓取，以及想盖掉的几个 env 值。 */
+/** What a test may replace: the outbound fetch, env values, the clock and the user's zone. */
 export type Opts = {
   unfurl?: Unfurl
   env?: Partial<Env>
@@ -186,6 +174,7 @@ export type Opts = {
   timezone?: string
 }
 
+/** `appWithUser`, with its teardown pushed onto the caller's list for `afterEach` to drain. */
 export async function setupWith(
   cleanups: (() => Promise<void>)[],
   email?: string,

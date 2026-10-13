@@ -50,7 +50,7 @@ describe('POST /tasks/:id/move', () => {
     expect(res.statusCode).toBe(200)
 
     const after = await tasksOf(ctx, p)
-    // spec 5.3: only the moved row is written, no bulk reordering of the siblings.
+    // Only the moved row is written, never its siblings.
     expect(after.find((t) => t.id === a)!.rank).toBe(ranksBefore.get(a))
     expect(after.find((t) => t.id === b)!.rank).toBe(ranksBefore.get(b))
     expect(after.find((t) => t.id === c)!.rank).not.toBe(ranksBefore.get(c))
@@ -81,7 +81,7 @@ describe('POST /tasks/:id/move', () => {
     expect((await tasksOf(ctx, p)).find((t) => t.id === chain[1])!.parentId).toBeNull()
   })
 
-  // Review Focus 1. Postgres recursive CTEs have no cycle detection: once a cycle exists, any
+  // Postgres recursive CTEs have no cycle detection: once a cycle exists, any
   // later subtree query recurses until memory runs out. This is not an error, it takes the
   // database down.
   it.each([
@@ -158,7 +158,7 @@ describe('POST /tasks/:id/move', () => {
     expect(await tasksOf(ctx, b)).toEqual([])
   })
 
-  // Review Focus 2. Silent corruption: no error, just a permanently wrong answer to
+  // Silent corruption: no error, just a permanently wrong answer to
   // "all tasks of this project".
   it('cascades project_id to the whole moved subtree, not just the moved row', async () => {
     const ctx = await setup()
@@ -203,7 +203,7 @@ describe('POST /tasks/:id/move', () => {
     expect((rows.rows[0] as { project_id: string }).project_id).toBe(to)
   })
 
-  // Review Focus 5. Must account for the moved subtree's own height, not just the node.
+  // Must account for the moved subtree's own height, not just the node.
   it('refuses a move that would push the subtree past MAX_DEPTH', async () => {
     const ctx = await setup()
     const p = await createProject(ctx, 'p')
@@ -311,8 +311,8 @@ describe('POST /tasks/:id/move', () => {
     })
   })
 
-  // One drag is one event. A per-descendant event would be exactly the log noise spec 9.1
-  // rejects, and it would also make a reparent look like progress on every child.
+  // One drag is one event: an event per descendant would be log noise, and would make a
+  // reparent look like progress on every child.
   it('records no event on the descendants a cascade touched', async () => {
     const ctx = await setup()
     const from = await createProject(ctx, 'from')
@@ -327,7 +327,7 @@ describe('POST /tasks/:id/move', () => {
     expect((await eventsOf(ctx, chain[2]!)).filter((e) => e.type === 'moved')).toEqual([])
   })
 
-  // Review Focus 3. Spec 9.1: a pure reorder is not progress. 20 drags during a tidy-up must
+  // A pure reorder is not progress. 20 drags during a tidy-up must
   // not become 20 events, or the weekly review and last_activity_at are both wrong.
   it('records no event when only the rank changes', async () => {
     const ctx = await setup()
@@ -472,7 +472,7 @@ describe('POST /tasks/:id/move', () => {
     expect((await tasksOf(ctx, p)).map((t) => t.id)).toEqual([b, c, a])
   })
 
-  // spec 5.2: manual progress is leaf-only. A parent gains a child by move just as it does by
+  // Manual progress is leaf-only. A parent gains a child by move just as it does by
   // create, so move must clear it too, or move becomes a second way to break the invariant.
   it('clears the new parent manual progress and logs it', async () => {
     const ctx = await setup()

@@ -64,7 +64,7 @@ describe('GET /today', () => {
     expect(await today(ctx)).toEqual([])
   })
 
-  // Review Focus 2. A task that is both overdue and in_progress must appear ONCE.
+  // A task that is both overdue and in_progress must appear ONCE.
   // The query labels every row that is not overdue or today as in_progress, relying on its WHERE
   // to let only in-progress rows reach that arm. A `todo` task is the status most likely to be
   // added to that WHERE later, so pin that it is neither listed nor mislabelled today.
@@ -96,7 +96,7 @@ describe('GET /today', () => {
   it('carries the project name and the parent title for the breadcrumb', async () => {
     const ctx = await setup()
     const p = await createProject(ctx, 'CTWS')
-    const parent = await createTask(ctx, p, 'M2b')
+    const parent = await createTask(ctx, p, 'Release')
     const child = await createTask(ctx, p, 'tree component', parent)
     await schedule(ctx, child, { status: 'in_progress' })
     await schedule(ctx, parent, { status: 'in_progress' })
@@ -104,7 +104,7 @@ describe('GET /today', () => {
     const rows = await today(ctx)
     expect(rows.find((r) => r.id === child)).toMatchObject({
       projectName: 'CTWS',
-      parentTitle: 'M2b',
+      parentTitle: 'Release',
     })
     expect(rows.find((r) => r.id === parent)!.parentTitle).toBeNull()
   })
@@ -211,7 +211,7 @@ describe('GET /today', () => {
   })
 })
 
-// Review Focus 3. A UTC-or-server-local implementation passes every test above and fails here.
+// A UTC-or-server-local implementation passes every test above and fails here.
 // These call listToday with a fixed clock, so every case runs on every run, whatever time the
 // suite starts, and each asserts the EXACT segment rather than "not today".
 describe('listToday timezone and DST', () => {
