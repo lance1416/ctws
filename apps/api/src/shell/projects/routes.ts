@@ -8,6 +8,7 @@ import {
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 import { currentUser } from '../auth/authenticated'
+import type { ProjectColumns } from '../module'
 import {
   createProject,
   listProjects,
@@ -40,14 +41,18 @@ function toProjectResponse(p: Project): z.infer<typeof projectResponse> {
   }
 }
 
-function toProjectListItem(p: ProjectListRow): z.infer<typeof projectListItem> {
-  return { ...toProjectResponse(p), openTasks: p.openTasks }
+function toProjectListItem(row: ProjectListRow): z.infer<typeof projectListItem> {
+  // Module columns fill the remaining fields; the response schema checks they are there.
+  return { ...toProjectResponse(row.project), ...row.columns } as z.infer<typeof projectListItem>
 }
 
 const idParams = z.object({ id: z.uuid() }).strict()
 const listQuery = z.object({ archived: z.enum(['true', 'false']).optional() }).strict()
 
-export const projectRoutes: FastifyPluginAsyncZod = async (app) => {
+export const projectRoutes: FastifyPluginAsyncZod<{ columns: ProjectColumns }> = async (
+  app,
+  { columns },
+) => {
   app.get(
     '/projects',
     {
@@ -57,9 +62,12 @@ export const projectRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     },
     async (req) => {
-      const rows = await listProjects(app.db, currentUser(req).workspaceId, {
-        archived: req.query.archived === 'true',
-      })
+      const rows = await listProjects(
+        app.db,
+        currentUser(req).workspaceId,
+        { archived: req.query.archived === 'true' },
+        columns,
+      )
       return { projects: rows.map(toProjectListItem) }
     },
   )

@@ -12,6 +12,7 @@ import { z } from 'zod'
 import { currentUser } from '../auth/authenticated'
 import { LinkEndNotFoundError, UnknownLinkError } from './errors'
 import { candidatesFor, exists, linksOf } from './read'
+import type { LinkRegistry } from './registry'
 import { addLink, removeLink } from './store'
 
 /**
@@ -21,7 +22,10 @@ import { addLink, removeLink } from './store'
  * about another. What each module owns is the NAME of its own things, which it hands over through
  * `links/linkable.ts`.
  */
-export const linkRoutes: FastifyPluginAsyncZod = async (app) => {
+export const linkRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = async (
+  app,
+  { registry },
+) => {
   app.get(
     '/links/:type/:id',
     {
@@ -32,8 +36,8 @@ export const linkRoutes: FastifyPluginAsyncZod = async (app) => {
       const of = req.params
       // A page of something that is gone is a 404, not an empty page: an id from another
       // workspace must read the same as one that never existed.
-      if (!(await exists(app.db, workspaceId, of))) throw new LinkEndNotFoundError()
-      return linksOf(app.db, workspaceId, of)
+      if (!(await exists(registry, app.db, workspaceId, of))) throw new LinkEndNotFoundError()
+      return linksOf(registry, app.db, workspaceId, of)
     },
   )
 
@@ -52,10 +56,17 @@ export const linkRoutes: FastifyPluginAsyncZod = async (app) => {
     async (req) => {
       const { workspaceId } = currentUser(req)
       const of = { type: req.query.type, id: req.query.id }
-      if (!(await exists(app.db, workspaceId, of))) throw new LinkEndNotFoundError()
+      if (!(await exists(registry, app.db, workspaceId, of))) throw new LinkEndNotFoundError()
       // PER TYPE, not in total: a box that filled with twenty tasks and showed no people would
       // look like there are no people.
-      const candidates = await candidatesFor(app.db, workspaceId, of, req.query.q ?? '', 8)
+      const candidates = await candidatesFor(
+        registry,
+        app.db,
+        workspaceId,
+        of,
+        req.query.q ?? '',
+        8,
+      )
       return { candidates }
     },
   )
@@ -74,8 +85,8 @@ export const linkRoutes: FastifyPluginAsyncZod = async (app) => {
       // BOTH ends, and in this workspace. The edge table has no foreign key to either -- there is
       // no one table to point at -- so this is the check that stands in for one.
       const [hasFrom, hasTo] = await Promise.all([
-        exists(app.db, workspaceId, from),
-        exists(app.db, workspaceId, to),
+        exists(registry, app.db, workspaceId, from),
+        exists(registry, app.db, workspaceId, to),
       ])
       if (!hasFrom || !hasTo) throw new LinkEndNotFoundError()
       await addLink(app.db, workspaceId, from, to, kind)

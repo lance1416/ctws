@@ -5,7 +5,9 @@ import {
   type LinksResponse,
 } from '@ctws/contracts'
 import { afterEach, describe, expect, it } from 'vitest'
-import { EVERY_TYPE_ANSWERED, LINKABLES } from '../src/shell/links/registry'
+import { apiModules } from '../src/modules'
+import { linkRegistry } from '../src/shell/links/registry'
+import { projectLinkable } from '../src/shell/projects/linkable'
 import { createProject, createTask, setupWith, type TaskCtx, web } from './helpers/tasks'
 
 /**
@@ -43,9 +45,18 @@ const titles = (groups: LinksResponse['groups'], type: string) =>
   groups.find((g) => g.type === type)?.items.map((i) => i.title) ?? []
 
 describe('every kind of thing has a module that answers for it', () => {
-  it('covers the contract exactly, so no group can go silently missing', () => {
-    expect(EVERY_TYPE_ANSWERED).toBe(true)
-    expect([...LINKABLES].map((l) => l.type).sort()).toEqual([...OBJECT_TYPES].sort())
+  const registry = linkRegistry([
+    ...apiModules({ unfurl: async () => null, unfurlEnabled: false }).map((m) => m.linkable),
+    projectLinkable,
+  ])
+
+  it('answers for every object type, in page order', () => {
+    expect(registry.order).toEqual(['task', 'meeting', 'person', 'reading', 'project'])
+    expect([...registry.order].sort()).toEqual([...OBJECT_TYPES].sort())
+  })
+
+  it('refuses a set that leaves a type unanswered', () => {
+    expect(() => linkRegistry(registry.all.slice(1))).toThrow(/missing: task/)
   })
 })
 

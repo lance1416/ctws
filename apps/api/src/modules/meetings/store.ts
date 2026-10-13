@@ -1,11 +1,10 @@
 import type { CreateMeetingBody, EditScope, UpdateMeetingBody } from '@ctws/contracts'
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
-import { PersonNotFoundError } from '../people/errors'
 import type { Queryable } from '../../platform/db/client'
-import { people } from '../people/tables'
 import { meetingExceptions, meetings } from './tables'
-import { peopleLinkedFrom, filedUnder, oneProjectOf, putLinks } from '../../shell/links/store'
+import { filedUnder, oneProjectOf, putLinks } from '../../shell/links/store'
+import { assertPeopleVisible, attendeesOf } from '../people'
 import { assertProjectVisible } from '../../shell/projects/store'
 import {
   BadRuleError,
@@ -78,7 +77,7 @@ async function hydrate(q: Queryable, workspaceId: string, rows: Selected[]): Pro
   const skips = new Map<string, Exception[]>()
   if (ids.length > 0) {
     const [guests, found] = await Promise.all([
-      peopleLinkedFrom(q, workspaceId, 'meeting', ids, 'attends'),
+      attendeesOf(q, workspaceId, ids),
       q.select().from(meetingExceptions).where(inArray(meetingExceptions.meetingId, ids)),
     ])
     attending = guests
@@ -126,27 +125,6 @@ function expand(series: SeriesRow, window: { from: Date; to: Date }): Occurrence
     projectName: series.projectName,
     attendees: series.attendees,
   }))
-}
-
-/** Every named person has to be one of THIS workspace's, and all of them or none. */
-async function assertAttendees(
-  q: Queryable,
-  workspaceId: string,
-  personIds: readonly string[],
-): Promise<void> {
-  if (personIds.length === 0) return
-  const unique = [...new Set(personIds)]
-  const rows = await q
-    .select({ id: people.id })
-    .from(people)
-    .where(
-      and(
-        eq(people.workspaceId, workspaceId),
-        isNull(people.deletedAt),
-        inArray(people.id, unique),
-      ),
-    )
-  if (rows.length !== unique.length) throw new PersonNotFoundError()
 }
 
 /**
@@ -238,7 +216,7 @@ export async function createMeeting(
   body: CreateMeetingBody,
 ): Promise<OccurrenceRow> {
   if (body.projectId) await assertProjectVisible(q, workspaceId, body.projectId)
-  await assertAttendees(q, workspaceId, body.attendeeIds ?? [])
+  await assertPeopleVisible(q, workspaceId, body.attendeeIds ?? [])
   // The expander is what has to understand a rule, so it is what decides whether one is usable:
   // a schema that accepted what the expansion then ignored would store a schedule that never
   // happens.
@@ -285,7 +263,7 @@ export async function updateMeeting(
   const [series] = await seriesOf(q, workspaceId, { id })
   if (!series) throw new MeetingNotFoundError()
   if (patch.projectId) await assertProjectVisible(q, workspaceId, patch.projectId)
-  if (patch.attendeeIds) await assertAttendees(q, workspaceId, patch.attendeeIds)
+  if (patch.attendeeIds) await assertPeopleVisible(q, workspaceId, patch.attendeeIds)
 
   const { scope: asked, recurrenceId, attendeeIds, projectId, ...fields } = patch
   // A meeting that happens once has one occurrence, so the three scopes are the same thing.

@@ -12,7 +12,7 @@ import type { Queryable } from '../../platform/db/client'
 import { links } from './tables'
 import type { Endpoint } from './store'
 import type { StoredEdge } from './linkable'
-import { LINKABLES, linkableFor, TYPE_ORDER } from './registry'
+import type { LinkRegistry } from './registry'
 
 /**
  * EVERYTHING ONE THING IS CONNECTED TO -- the shell's read, and the whole point of the edge table.
@@ -58,6 +58,7 @@ async function storedEdges(q: Queryable, workspaceId: string, of: Endpoint): Pro
 }
 
 export async function linksOf(
+  registry: LinkRegistry,
   q: Queryable,
   workspaceId: string,
   of: Endpoint,
@@ -66,7 +67,7 @@ export async function linksOf(
   // edge: a module that stores nothing of its own costs nothing here.
   const [stored, ...own] = await Promise.all([
     storedEdges(q, workspaceId, of),
-    ...LINKABLES.filter((l) => l.own).map((l) => l.own!(q, workspaceId, of)),
+    ...registry.all.filter((l) => l.own).map((l) => l.own!(q, workspaceId, of)),
   ])
   // WHICH EDGES ARE THE SHELL'S TO REMOVE. One stored in a module's own column is not: a task's
   // project is NOT NULL, so "unlink" on it would mean a task belonging to nothing.
@@ -90,7 +91,7 @@ export async function linksOf(
   const named = new Map<ObjectType, Map<string, { title: string; detail: string | null }>>()
   await Promise.all(
     [...wanted].map(async ([type, ids]) => {
-      const rows = await linkableFor(type).rows(q, workspaceId, { ids: [...ids] })
+      const rows = await registry.of(type).rows(q, workspaceId, { ids: [...ids] })
       named.set(type, new Map(rows.map((r) => [r.id, { title: r.title, detail: r.detail }])))
     }),
   )
@@ -123,18 +124,20 @@ export async function linksOf(
   }
 
   return {
-    groups: TYPE_ORDER.filter((type) => groups.has(type)).map((type) => ({
-      label: linkableFor(type).label,
-      type,
-      items: groups
-        .get(type)!
-        // By title: a group is read to FIND something in it, and the order edges were made in is
-        // not an order anybody remembers. Compared by CODE POINT, not by locale: every other list
-        // in this app is ordered by the database, and a second collation here would mean the same
-        // two names read in one order on a project page and the other on People.
-        .sort((a, b) => (a.title < b.title ? -1 : a.title > b.title ? 1 : a.id < b.id ? -1 : 1))
-        .slice(0, PER_GROUP),
-    })),
+    groups: registry.order
+      .filter((type) => groups.has(type))
+      .map((type) => ({
+        label: registry.of(type).label,
+        type,
+        items: groups
+          .get(type)!
+          // By title: a group is read to FIND something in it, and the order edges were made in is
+          // not an order anybody remembers. Compared by CODE POINT, not by locale: every other list
+          // in this app is ordered by the database, and a second collation here would mean the same
+          // two names read in one order on a project page and the other on People.
+          .sort((a, b) => (a.title < b.title ? -1 : a.title > b.title ? 1 : a.id < b.id ? -1 : 1))
+          .slice(0, PER_GROUP),
+      })),
   }
 }
 
@@ -146,20 +149,21 @@ export async function linksOf(
  * same split as `name` and the reason the picker can offer four kinds of thing at once.
  */
 export async function candidatesFor(
+  registry: LinkRegistry,
   q: Queryable,
   workspaceId: string,
   of: Endpoint,
   text: string,
   perType: number,
 ): Promise<LinkCandidate[]> {
-  const joinable = TYPE_ORDER.filter((type) =>
+  const joinable = registry.order.filter((type) =>
     LINK_KINDS.some(
       (k) => linkIsAllowed(k.kind, of.type, type) || linkIsAllowed(k.kind, type, of.type),
     ),
   )
   const found = await Promise.all(
     joinable.map(async (type) => {
-      const rows = await linkableFor(type).rows(q, workspaceId, { text, limit: perType })
+      const rows = await registry.of(type).rows(q, workspaceId, { text, limit: perType })
       return rows
         .filter((r) => !(type === of.type && r.id === of.id))
         .map((r) => ({ type, id: r.id, title: r.title, detail: r.detail }))
@@ -169,7 +173,12 @@ export async function candidatesFor(
 }
 
 /** Whether a thing exists and this workspace may see it -- both ends of a write go through here. */
-export async function exists(q: Queryable, workspaceId: string, end: Endpoint): Promise<boolean> {
-  const rows = await linkableFor(end.type).rows(q, workspaceId, { ids: [end.id] })
+export async function exists(
+  registry: LinkRegistry,
+  q: Queryable,
+  workspaceId: string,
+  end: Endpoint,
+): Promise<boolean> {
+  const rows = await registry.of(end.type).rows(q, workspaceId, { ids: [end.id] })
   return rows.length > 0
 }

@@ -12,7 +12,6 @@ import { z } from 'zod'
 import { currentUser } from '../../shell/auth/authenticated'
 import { listReadingCalendar } from './calendar'
 import type { Queryable } from '../../platform/db/client'
-import type { Env } from '../../platform/config'
 import type { Unfurl } from './unfurl'
 import {
   createReadingItem,
@@ -50,24 +49,23 @@ function toResponse(r: ReadingItemRow): z.infer<typeof readingItemResponse> {
   }
 }
 
+/** How the reading module reaches the outside world. */
+export type ReadingDeps = { unfurl: Unfurl; enabled: boolean }
+
 /**
- * 粘一条链接之后，去读对面自己说的那句话。
- *
- * 条目**先落库**再抓：对面不回话、进程被杀，这一条都还在，而捕获从来不该因为别人的服务器而失败。
- * 抓取是同步等的（预算 2 秒），所以粘一条链接最慢多两秒 —— 换掉的是一个后台任务，而 v1 里没有
- * 任何后台（设计里就这么定的）。代价写在这里：慢的那两秒是看得见的。
- *
- * 人自己写了标题就不抓：他已经说了这是什么。书也不抓，它没有地址。
+ * Fetches the page's own title for an untitled link, after the item is saved, so a slow or silent
+ * site never loses the capture. Books and named links are left alone.
  */
 async function withFetched(
-  app: { db: Queryable; env: Env; unfurl: Unfurl },
+  deps: ReadingDeps,
+  db: Queryable,
   workspaceId: string,
   row: ReadingItemRow,
 ): Promise<ReadingItemRow> {
-  if (!app.env.readingUnfurl) return row
+  if (!deps.enabled) return row
   if (row.kind !== 'link' || row.url === null || row.title !== null) return row
-  const facts = await app.unfurl(row.url).catch(() => null)
-  return recordFetched(app.db, workspaceId, row.id, {
+  const facts = await deps.unfurl(row.url).catch(() => null)
+  return recordFetched(db, workspaceId, row.id, {
     title: facts?.title ?? null,
     summary: facts?.summary ?? null,
   })
@@ -76,101 +74,105 @@ async function withFetched(
 const idParams = z.object({ id: z.uuid() }).strict()
 const itemsResponse = z.object({ items: z.array(readingItemResponse) }).strict()
 
-export const readingRoutes: FastifyPluginAsyncZod = async (app) => {
-  app.get(
-    '/',
-    {
-      schema: { querystring: readingListQuery, response: { 200: itemsResponse } },
-    },
-    async (req) => {
-      const { projectId, unfiled, status } = req.query
-      const rows = await listReadingItems(app.db, currentUser(req).workspaceId, {
-        ...(projectId ? { projectId } : {}),
-        ...(unfiled === 'true' ? { unfiled: true } : {}),
-        // Fastify gives one value for `?status=todo` and an array for a repeated key; the
-        // contract accepts both and the store wants one shape.
-        ...(status ? { statuses: Array.isArray(status) ? status : [status] } : {}),
-      })
-      return { items: rows.map(toResponse) }
-    },
-  )
-
-  app.get(
-    '/calendar',
-    {
-      schema: {
-        querystring: calendarQuery,
-        response: { 200: calendarEntriesResponse },
+export const readingRoutes =
+  (deps: ReadingDeps): FastifyPluginAsyncZod =>
+  async (app) => {
+    app.get(
+      '/',
+      {
+        schema: { querystring: readingListQuery, response: { 200: itemsResponse } },
       },
-    },
-    async (req) => {
-      const rows = await listReadingCalendar(app.db, currentUser(req).workspaceId, req.query)
-      return {
-        entries: rows.map((r) => ({
-          id: r.id,
-          day: r.day,
-          title: r.title,
-          to: '/reading',
-          kind: r.kind,
-          // A plan and a deadline are about the DAY; nobody reads one as "by 15:30".
-          time: null,
-          endTime: null,
-          zone: null,
-          projectId: r.project_id,
-          projectName: r.project_name,
-        })),
-      }
-    },
-  )
-
-  app.get(
-    '/search',
-    {
-      schema: {
-        querystring: searchQuery,
-        response: { 200: itemsResponse },
+      async (req) => {
+        const { projectId, unfiled, status } = req.query
+        const rows = await listReadingItems(app.db, currentUser(req).workspaceId, {
+          ...(projectId ? { projectId } : {}),
+          ...(unfiled === 'true' ? { unfiled: true } : {}),
+          // Fastify gives one value for `?status=todo` and an array for a repeated key; the
+          // contract accepts both and the store wants one shape.
+          ...(status ? { statuses: Array.isArray(status) ? status : [status] } : {}),
+        })
+        return { items: rows.map(toResponse) }
       },
-    },
-    async (req) => {
-      const rows = await searchReadingItems(app.db, currentUser(req).workspaceId, req.query.q)
-      return { items: rows.map(toResponse) }
-    },
-  )
+    )
 
-  app.post(
-    '/',
-    {
-      schema: { body: createReadingItemBody, response: { 201: readingItemResponse } },
-    },
-    async (req, reply) => {
-      const workspaceId = currentUser(req).workspaceId
-      const created = await createReadingItem(app.db, workspaceId, req.body)
-      return reply.code(201).send(toResponse(await withFetched(app, workspaceId, created)))
-    },
-  )
-
-  app.patch(
-    '/:id',
-    {
-      schema: {
-        params: idParams,
-        body: updateReadingItemBody,
-        response: { 200: readingItemResponse },
+    app.get(
+      '/calendar',
+      {
+        schema: {
+          querystring: calendarQuery,
+          response: { 200: calendarEntriesResponse },
+        },
       },
-    },
-    async (req) => {
-      const updated = await updateReadingItem(
-        app.db,
-        currentUser(req).workspaceId,
-        req.params.id,
-        req.body,
-      )
-      return toResponse(updated)
-    },
-  )
+      async (req) => {
+        const rows = await listReadingCalendar(app.db, currentUser(req).workspaceId, req.query)
+        return {
+          entries: rows.map((r) => ({
+            id: r.id,
+            day: r.day,
+            title: r.title,
+            to: '/reading',
+            kind: r.kind,
+            // A plan and a deadline are about the DAY; nobody reads one as "by 15:30".
+            time: null,
+            endTime: null,
+            zone: null,
+            projectId: r.project_id,
+            projectName: r.project_name,
+          })),
+        }
+      },
+    )
 
-  app.delete('/:id', { schema: { params: idParams } }, async (req, reply) => {
-    await softDeleteReadingItem(app.db, currentUser(req).workspaceId, req.params.id)
-    return reply.code(204).send()
-  })
-}
+    app.get(
+      '/search',
+      {
+        schema: {
+          querystring: searchQuery,
+          response: { 200: itemsResponse },
+        },
+      },
+      async (req) => {
+        const rows = await searchReadingItems(app.db, currentUser(req).workspaceId, req.query.q)
+        return { items: rows.map(toResponse) }
+      },
+    )
+
+    app.post(
+      '/',
+      {
+        schema: { body: createReadingItemBody, response: { 201: readingItemResponse } },
+      },
+      async (req, reply) => {
+        const workspaceId = currentUser(req).workspaceId
+        const created = await createReadingItem(app.db, workspaceId, req.body)
+        return reply
+          .code(201)
+          .send(toResponse(await withFetched(deps, app.db, workspaceId, created)))
+      },
+    )
+
+    app.patch(
+      '/:id',
+      {
+        schema: {
+          params: idParams,
+          body: updateReadingItemBody,
+          response: { 200: readingItemResponse },
+        },
+      },
+      async (req) => {
+        const updated = await updateReadingItem(
+          app.db,
+          currentUser(req).workspaceId,
+          req.params.id,
+          req.body,
+        )
+        return toResponse(updated)
+      },
+    )
+
+    app.delete('/:id', { schema: { params: idParams } }, async (req, reply) => {
+      await softDeleteReadingItem(app.db, currentUser(req).workspaceId, req.params.id)
+      return reply.code(204).send()
+    })
+  }

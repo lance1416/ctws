@@ -9,6 +9,7 @@ import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import type { Queryable } from '../../platform/db/client'
 import { textMatches } from '../../platform/db/sql'
+import { links } from '../../shell/links/tables'
 import { personChannels, people } from './tables'
 import { projects } from '../../shell/projects/tables'
 import { filedUnder, projectsLinkedFrom, putLinks, unfiled } from '../../shell/links/store'
@@ -327,4 +328,51 @@ export async function searchPeople(
     .orderBy(asc(people.name), asc(people.id))
     .limit(limit)
   return hydrate(q, workspaceId, rows)
+}
+
+/** Every id names a live person in this workspace, or none of them is used. */
+export async function assertPeopleVisible(
+  q: Queryable,
+  workspaceId: string,
+  personIds: readonly string[],
+): Promise<void> {
+  if (personIds.length === 0) return
+  const unique = [...new Set(personIds)]
+  const rows = await q
+    .select({ id: people.id })
+    .from(people)
+    .where(and(visiblePeople(workspaceId), inArray(people.id, unique)))
+  if (rows.length !== unique.length) throw new PersonNotFoundError()
+}
+
+/** The people attending each meeting, by name, in one query; deleted people are left out. */
+export async function attendeesOf(
+  q: Queryable,
+  workspaceId: string,
+  meetingIds: readonly string[],
+): Promise<Map<string, { id: string; name: string }[]>> {
+  const by = new Map<string, { id: string; name: string }[]>()
+  if (meetingIds.length === 0) return by
+  const rows = await q
+    .select({ meetingId: links.fromId, id: people.id, name: people.name })
+    .from(links)
+    .innerJoin(people, eq(people.id, links.toId))
+    .where(
+      and(
+        eq(links.workspaceId, workspaceId),
+        eq(links.fromType, 'meeting'),
+        inArray(links.fromId, [...meetingIds]),
+        eq(links.toType, 'person'),
+        eq(links.kind, 'attends'),
+        isNull(people.deletedAt),
+      ),
+    )
+    .orderBy(asc(people.name), asc(people.id))
+  for (const row of rows) {
+    const person = { id: row.id, name: row.name }
+    const list = by.get(row.meetingId)
+    if (list) list.push(person)
+    else by.set(row.meetingId, [person])
+  }
+  return by
 }

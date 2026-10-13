@@ -1,7 +1,6 @@
 import type { LinkKind, ObjectType } from '@ctws/contracts'
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
-import { people } from '../../modules/people/tables'
 import { links } from './tables'
 import { projects } from '../projects/tables'
 
@@ -144,45 +143,6 @@ export async function projectsLinkedFrom(
     const list = by.get(row.fromId)
     if (list) list.push(project)
     else by.set(row.fromId, [project])
-  }
-  return by
-}
-
-/**
- * The people a batch of objects point at, in ONE query for the whole page.
- *
- * A person deleted since the edge was made is left OUT rather than named: the address book is
- * where a name comes from, and a name nobody can look up is not one.
- */
-export async function peopleLinkedFrom(
-  q: Queryable,
-  workspaceId: string,
-  fromType: ObjectType,
-  fromIds: readonly string[],
-  kind: LinkKind,
-): Promise<Map<string, { id: string; name: string }[]>> {
-  const by = new Map<string, { id: string; name: string }[]>()
-  if (fromIds.length === 0) return by
-  const rows = await q
-    .select({ fromId: links.fromId, id: people.id, name: people.name })
-    .from(links)
-    .innerJoin(people, eq(people.id, links.toId))
-    .where(
-      and(
-        eq(links.workspaceId, workspaceId),
-        eq(links.fromType, fromType),
-        inArray(links.fromId, [...fromIds]),
-        eq(links.toType, 'person'),
-        eq(links.kind, kind),
-        isNull(people.deletedAt),
-      ),
-    )
-    .orderBy(asc(people.name), asc(people.id))
-  for (const row of rows) {
-    const person = { id: row.id, name: row.name }
-    const list = by.get(row.fromId)
-    if (list) list.push(person)
-    else by.set(row.fromId, [person])
   }
   return by
 }

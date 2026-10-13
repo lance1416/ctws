@@ -24,18 +24,14 @@ import { registerGuards } from './platform/http/guards'
 import { linkRoutes } from './shell/links/routes'
 import { handleError } from './platform/http/errors'
 import { sendProblem } from './platform/http/problem'
-import { unfurl, type Unfurl } from './modules/reading/unfurl'
+import { apiModules } from './modules'
+import { unfurl, type Unfurl } from './modules/reading'
+import { linkRegistry } from './shell/links/registry'
+import { projectLinkable } from './shell/projects/linkable'
 import { projectRoutes } from './shell/projects/routes'
 import { cityRoutes } from './shell/cities/routes'
-import { personRoutes } from './modules/people/routes'
-import { meetingRoutes } from './modules/meetings/routes'
-import { readingRoutes } from './modules/reading/routes'
-import { taskRoutes } from './modules/tasks/routes'
 
-/**
- * `unfurl` 可以换掉：测试里的服务器住在 127.0.0.1 上，而那正是线上要挡的地址。生产这条路上没有
- * 任何开关 —— 整个关掉是 env 的事（`READING_UNFURL`），不是把那道门放开。
- */
+/** `unfurl` and `clock` are replaceable for tests; production uses the defaults. */
 export async function buildApp(opts: {
   env: Env
   db: Db
@@ -54,7 +50,6 @@ export async function buildApp(opts: {
 
   app.decorate('db', opts.db)
   app.decorate('env', opts.env)
-  app.decorate('unfurl', opts.unfurl ?? unfurl)
   app.decorate('clock', opts.clock ?? (() => new Date()))
 
   await app.register(fastifySwagger, {
@@ -87,6 +82,13 @@ export async function buildApp(opts: {
 
   app.get('/api/v1/openapi.json', { schema: { hide: true } }, async () => app.swagger())
 
+  const modules = apiModules({
+    unfurl: opts.unfurl ?? unfurl,
+    unfurlEnabled: opts.env.readingUnfurl,
+  })
+  const registry = linkRegistry([...modules.map((m) => m.linkable), projectLinkable])
+  const columns = Object.assign({}, ...modules.map((m) => m.projectColumns ?? {}))
+
   await app.register(
     async (api) => {
       await api.register(publicAuthRoutes)
@@ -94,14 +96,11 @@ export async function buildApp(opts: {
         authenticated(authed)
         await authed.register(sessionRoutes)
         await authed.register(adminRoutes)
-        await authed.register(projectRoutes)
-        await authed.register(linkRoutes)
+        await authed.register(projectRoutes, { columns })
+        await authed.register(linkRoutes, { registry })
         await authed.register(calendarDayRoutes)
         await authed.register(cityRoutes)
-        await authed.register(taskRoutes, { prefix: '/tasks' })
-        await authed.register(readingRoutes, { prefix: '/reading' })
-        await authed.register(personRoutes, { prefix: '/people' })
-        await authed.register(meetingRoutes, { prefix: '/meetings' })
+        for (const m of modules) await authed.register(m.routes, { prefix: `/${m.id}` })
       })
     },
     { prefix: '/api/v1' },
@@ -147,8 +146,6 @@ declare module 'fastify' {
   interface FastifyInstance {
     db: Db
     env: Env
-    /** 去读一条链接对面说的那句话；见 reading/unfurl.ts。 */
-    unfurl: Unfurl
     /** The current instant; tests pin it. */
     clock: () => Date
     /** The instance-wide ceiling on auth traffic; see guards.ts. */

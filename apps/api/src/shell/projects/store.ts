@@ -10,6 +10,7 @@ import type { PgUpdateSetSource } from 'drizzle-orm/pg-core'
 import { v7 as uuidv7 } from 'uuid'
 import type { Queryable } from '../../platform/db/client'
 import { projects } from './tables'
+import type { ProjectColumns } from '../module'
 import { InboxProtectedError, ProjectNotFoundError } from './errors'
 
 /** The quick-capture destination. One per workspace; see schema.ts and the 0003 migration. */
@@ -17,12 +18,8 @@ export const INBOX_NAME = 'Inbox'
 
 export type Project = typeof projects.$inferSelect
 
-/**
- * A project as the LIST returns it: the row plus `openTasks`, the number of its tasks that are
- * neither finished, cancelled nor deleted. It is what the left rail puts beside each
- * destination.
- */
-export type ProjectListRow = Project & { openTasks: number }
+/** A project as the list returns it: the row and the columns modules add to it. */
+export type ProjectListRow = { project: Project; columns: Record<string, number> }
 
 /**
  * THE TENANT CHOKEPOINT. Every query that reads or writes a project goes through this predicate,
@@ -45,27 +42,10 @@ export async function listProjects(
   q: Queryable,
   workspaceId: string,
   opts: { archived: boolean },
+  columns: ProjectColumns,
 ): Promise<ProjectListRow[]> {
   const rows = await q
-    .select({
-      project: projects,
-      // A correlated subquery, so this is still ONE round trip for the whole list -- the same
-      // rule `listToday` and `listCompleted` hold to. Counting in the client would mean
-      // fetching every task of every project just to render a number.
-      // "Open" is defined by exclusion: a status this app has not invented yet is open until
-      // someone says otherwise, which is the safe direction for a count of outstanding work.
-      // Written with literal, ALIASED table names rather than `${tasks.projectId}` and the
-      // like (the style the raw queries in today.ts and completed.ts already use): drizzle
-      // interpolates a column reference UNQUALIFIED, so `${tasks.projectId} = ${projects.id}`
-      // renders as `"project_id" = "id"`, where `"id"` binds to the subquery's own `tasks`
-      // row. That correlates a task to itself, is always false, and silently counts zero.
-      openTasks: sql<number>`(
-        select count(*) from tasks open_t
-        where open_t.project_id = projects.id
-          and open_t.deleted_at is null
-          and open_t.status not in ('done', 'cancelled')
-      )`.mapWith(Number),
-    })
+    .select({ project: projects, ...columns })
     .from(projects)
     .where(
       and(
@@ -75,7 +55,10 @@ export async function listProjects(
     )
     // Inbox first, then the user's own order. `desc` on a boolean puts true first.
     .orderBy(desc(projects.isInbox), asc(projects.rank), asc(projects.id))
-  return rows.map(({ project, openTasks }) => ({ ...project, openTasks }))
+  return rows.map(({ project, ...values }) => ({
+    project,
+    columns: values as Record<string, number>,
+  }))
 }
 
 /**
