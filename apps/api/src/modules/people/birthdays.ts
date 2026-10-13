@@ -1,34 +1,36 @@
-import type { CalendarEntry, Circle } from '@ctws/contracts'
-import { addDays, factsOf, type Kept, nextOccurrence, type Birthday } from '@ctws/core'
-import { and, asc, eq, isNotNull, isNull } from 'drizzle-orm'
+import type { BirthdayPreviewResponse, CalendarEntry, Circle } from '@ctws/contracts'
+import {
+  addDays,
+  type Birthday,
+  type BirthdayCalendar,
+  birthdayProblem,
+  factsOf,
+  type Kept,
+  keptNote,
+  nextOccurrence,
+} from '@ctws/core'
+import { and, asc, isNotNull } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
-import { people } from './tables'
 import { accountToday } from '../../platform/db/time'
+import { dayEntry } from '../../shell/calendar/entry'
+import { ImpossibleBirthdayError } from './errors'
+import { visiblePeople } from './queries'
+import { people } from './tables'
 
 /**
- * THE BIRTHDAYS PAGE's data, worked out in one go.
- *
- * Segmenting and ordering live here rather than in the client: two clients would each do it
- * themselves, and two answers that disagree is one person appearing twice.
- *
- * TWO SEGMENTS, NOT THREE. An "earlier this year" section would hold the same people `later`
- * already holds -- 李雷's birthday this year has gone and next year's has not arrived -- and
- * saying a row twice is the one thing a reader has to hold two of in their head (`ObjectPage`).
- * Who has just gone past is answered by the month index instead.
+ * The birthdays page, segmented here so every client agrees. Two segments: someone whose birthday
+ * has passed this year is already in `later`, for next year.
  */
-
 export type BirthdayRow = {
   personId: string
   name: string
-  /** The column is text with a CHECK; the union is what the wire promises. */
   circle: Circle | null
-  calendar: 'solar' | 'lunar'
+  calendar: BirthdayCalendar
   day: string
   inDays: number
   turns: number | null
-  /** Only for someone tracked by the lunar calendar: for everyone else it is trivia that drifts. */
+  /** Only for a lunar birthday. */
   lunarDate: string | null
-  /** Which fallbacks moved the day, in `@ctws/core`'s own words -- never a loose string. */
   kept: Kept[]
   remindLead: number
 }
@@ -37,16 +39,37 @@ export type BirthdaysView = {
   today: string
   coming: BirthdayRow[]
   later: BirthdayRow[]
-  /** The few who come TO you, each by their own lead. The workbench card draws exactly this. */
+  /** Each person once their own lead reaches today; the workbench card draws exactly this. */
   card: BirthdayRow[]
   byMonth: Record<string, number>
   circles: Record<string, number>
 }
 
-/** Seven days: the longest lead there is, and what "coming up" means on this page. */
+/** The longest lead there is, and what "coming up" means on the page. */
 const COMING_DAYS = 7
 
-/** Everyone with a birthday, with the columns it is stored in. The only read in this file. */
+/** Refuses a day its year does not have, which only the calendar library knows. */
+export function assertPossibleBirthday(b: Birthday): void {
+  const problem = birthdayProblem(b)
+  if (problem !== null) throw new ImpossibleBirthdayError(problem)
+}
+
+/** Everything derived from a birthday against today. None of it is stored. */
+export function derivedFacts(b: Birthday, hourBranch: number | null, today: string) {
+  const next = nextOccurrence(b, today)
+  return { ...factsOf(b, hourBranch), next: { ...next, keptNote: keptNote(b, next) } }
+}
+
+/** What a birthday would mean, before it is saved. */
+export function previewBirthday(
+  b: Birthday,
+  hourBranch: number | null,
+  today: string,
+): BirthdayPreviewResponse {
+  assertPossibleBirthday(b)
+  return derivedFacts(b, hourBranch, today)
+}
+
 async function peopleWithBirthdays(q: Queryable, workspaceId: string) {
   return q
     .select({
@@ -62,66 +85,51 @@ async function peopleWithBirthdays(q: Queryable, workspaceId: string) {
       remindLead: people.birthdayRemindLead,
     })
     .from(people)
-    .where(
-      and(
-        eq(people.workspaceId, workspaceId),
-        isNull(people.deletedAt),
-        isNotNull(people.birthdayMonth),
-      ),
-    )
+    .where(and(visiblePeople(workspaceId), isNotNull(people.birthdayMonth)))
     .orderBy(asc(people.name))
 }
 
-type Person = Awaited<ReturnType<typeof peopleWithBirthdays>>[number]
+type WithBirthday = Awaited<ReturnType<typeof peopleWithBirthdays>>[number]
 
-/** The stored columns, in the shape the arithmetic takes. */
-export function birthdayOf(p: Person): Birthday {
+/** The selected columns as core's `Birthday`; the query only returns people who have one. */
+function toBirthday(p: WithBirthday): Birthday {
   return {
-    calendar: p.calendar as 'solar' | 'lunar',
+    calendar: p.calendar!,
     year: p.year,
-    month: p.month as number,
-    day: p.day as number,
+    month: p.month!,
+    day: p.day!,
     leapMonth: p.leapMonth,
   }
 }
 
 /**
- * THIS MODULE'S DATED THINGS, for the shell's calendar.
- *
- * A birthday has NO TIME (`time: null`) and wears no colour: colour in this app carries category
- * and urgency, and a birthday is neither. It is told apart from a meeting by leading with a name
- * and an age instead of a clock.
- *
- * One person can appear TWICE in one window (a window that spans a year), so the id carries the
- * day as well as the person.
+ * Birthdays for the shell's calendar. A window across a new year can hold one person twice, so
+ * the id carries the day.
  */
-export async function listBirthdayEntries(
+export async function birthdayEntries(
   q: Queryable,
   workspaceId: string,
-  from: string,
-  to: string,
+  range: { from: string; to: string },
 ): Promise<CalendarEntry[]> {
-  const people = await peopleWithBirthdays(q, workspaceId)
+  const rows = await peopleWithBirthdays(q, workspaceId)
   const entries: CalendarEntry[] = []
-  for (const p of people) {
-    const birthday = birthdayOf(p)
-    let cursor = from
-    // The window is bounded (`calendarQuery` refines it), so this turns at most a few times.
-    for (;;) {
+  for (const p of rows) {
+    const birthday = toBirthday(p)
+    // The window is bounded by `calendarQuery`, so this turns at most a few times.
+    for (let cursor = range.from; ;) {
       const next = nextOccurrence(birthday, cursor)
-      if (next.day > to) break
-      entries.push({
-        id: `${p.id}:${next.day}`,
-        day: next.day,
-        title: next.turns === null ? p.name : `${p.name} ${next.turns}`,
-        to: `/people/${p.id}`,
-        kind: 'Birthday',
-        time: null,
-        endTime: null,
-        zone: null,
-        projectId: null,
-        projectName: null,
-      })
+      if (next.day > range.to) break
+      entries.push(
+        dayEntry({
+          id: `${p.id}:${next.day}`,
+          day: next.day,
+          title: next.turns === null ? p.name : `${p.name} ${next.turns}`,
+          to: `/people/${p.id}`,
+          kind: 'Birthday',
+          projectId: null,
+          projectName: null,
+        }),
+      )
       cursor = addDays(next.day, 1)
     }
   }
@@ -135,15 +143,15 @@ export async function listBirthdays(
   now: Date,
 ): Promise<BirthdaysView> {
   const today = await accountToday(q, timezone, now)
-  const people = await peopleWithBirthdays(q, workspaceId)
+  const rows = await peopleWithBirthdays(q, workspaceId)
 
-  const all: BirthdayRow[] = people.map((p) => {
-    const birthday = birthdayOf(p)
+  const all: BirthdayRow[] = rows.map((p) => {
+    const birthday = toBirthday(p)
     const next = nextOccurrence(birthday, today)
     return {
       personId: p.id,
       name: p.name,
-      circle: p.circle as Circle | null,
+      circle: p.circle,
       calendar: birthday.calendar,
       day: next.day,
       inDays: next.inDays,
@@ -153,9 +161,7 @@ export async function listBirthdays(
       remindLead: p.remindLead,
     }
   })
-
-  // The name order is already the query's, so this sort is stable: two people on one day read
-  // alphabetically.
+  // Stable over the query's name order, so one day's people read alphabetically.
   all.sort((a, b) => a.inDays - b.inDays)
 
   const byMonth: Record<string, number> = {}
@@ -170,8 +176,7 @@ export async function listBirthdays(
     today,
     coming: all.filter((r) => r.inDays <= COMING_DAYS),
     later: all.filter((r) => r.inDays > COMING_DAYS),
-    // `<=`, never `===`: a person who showed up seven days out and vanished on the sixth would
-    // read as a bug. The lead is how early, not which day.
+    // `<=`: the lead is how early to start, not the one day to show.
     card: all.filter((r) => r.inDays <= r.remindLead),
     byMonth,
     circles,

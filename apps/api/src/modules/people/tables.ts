@@ -23,7 +23,7 @@ export const people = pgTable(
     org: text('org'),
     note: text('note'),
     /** The birthday in the calendar it was given in; the group check keeps it whole. */
-    birthdayCalendar: text('birthday_calendar'),
+    birthdayCalendar: text('birthday_calendar').$type<(typeof BIRTHDAY_CALENDARS)[number]>(),
     /** Null when only the month and day are known (`BDAY:--0415`). */
     birthdayYear: integer('birthday_year'),
     birthdayMonth: integer('birthday_month'),
@@ -34,11 +34,11 @@ export const people = pgTable(
     birthdayHourBranch: integer('birthday_hour_branch'),
     /** Days ahead to surface the birthday: 7, 3, 1 or 0. */
     birthdayRemindLead: integer('birthday_remind_lead').notNull().default(REMIND_LEAD_DEFAULT),
-    gender: text('gender'),
+    gender: text('gender').$type<(typeof GENDERS)[number]>(),
     hometown: text('hometown'),
     city: text('city'),
     title: text('title'),
-    circle: text('circle'),
+    circle: text('circle').$type<(typeof CIRCLES)[number]>(),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -86,7 +86,7 @@ export const personChannels = pgTable(
     personId: uuid('person_id')
       .notNull()
       .references(() => people.id, { onDelete: 'cascade' }),
-    kind: text('kind').notNull(),
+    kind: text('kind').$type<(typeof CHANNEL_KINDS)[number]>().notNull(),
     value: text('value').notNull(),
     /** vCard's `TYPE`, as free text. */
     label: text('label'),

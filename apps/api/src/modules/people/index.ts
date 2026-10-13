@@ -8,4 +8,4 @@ export const peopleModule: ApiModule = {
   linkable: personLinkable,
 }
 
-export { assertPeopleVisible, attendeesOf } from './store'
+export { assertPeopleVisible, attendeesOf } from './queries'

@@ -1,6 +1,6 @@
 import { and, asc } from 'drizzle-orm'
 import { wanted, type Linkable } from '../../shell/links/linkable'
-import { visiblePeople } from './store'
+import { visiblePeople } from './queries'
 import { people } from './tables'
 
 export const personLinkable: Linkable = {
