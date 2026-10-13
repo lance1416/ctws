@@ -131,10 +131,17 @@ export async function expectBlockedByTreeLock<T>(ctx: Harness, fire: () => Promi
   const held = new Promise<void>((resolve) => {
     release = resolve
   })
+  let locked!: () => void
+  const lockTaken = new Promise<void>((resolve) => {
+    locked = resolve
+  })
   const holding = ctx.db.transaction(async (tx) => {
     await lockTaskTree(tx, workspaceId)
+    locked()
     await held
   })
+  // The request goes out only once the lock is held, or it could take the lock first.
+  await lockTaken
 
   let settled = false
   const pending = fire().then((res) => {
