@@ -434,7 +434,13 @@ export function Today() {
                           <span className="flex min-w-0 items-baseline">
                             <span
                               data-doing-title
-                              className={`truncate font-semibold ${alone ? 'text-2xl' : 'text-base'}`}
+                              // One: said in full, on as many lines as it takes -- it is the line
+                              // the page is for. Several: a list, one line each.
+                              className={`font-semibold ${
+                                alone
+                                  ? 'min-w-0 text-2xl [overflow-wrap:anywhere] max-sm:text-xl'
+                                  : 'truncate text-base'
+                              }`}
                             >
                               {t.title}
                             </span>

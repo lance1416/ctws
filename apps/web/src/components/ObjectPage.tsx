@@ -122,8 +122,15 @@ export function ObjectPage({ type }: { type: ObjectType }) {
           </div>
           {/* AND WHAT IT IS CONNECTED TO: the people, the reading and the meetings -- everything
               except the tasks, which the tree already draws. Saying a row twice is the one thing a
-              reader has to hold two of in their head. */}
-          <section aria-label="Linked" data-panel="Linked" className="min-w-0 @5xl:pt-1">
+              reader has to hold two of in their head.
+              Below the tree it is one column with it: on the tree's edge, past its margin, so its
+              threads and headings are the tree's and not a margin's width to the left of them.
+              Beside it, it is a column of its own and starts at its own edge. */}
+          <section
+            aria-label="Linked"
+            data-panel="Linked"
+            className="min-w-0 @max-5xl:ml-15 sm:@max-5xl:ml-18 @5xl:pt-1"
+          >
             <Links of={{ type, id }} except={covered} variant="aside" />
           </section>
         </div>

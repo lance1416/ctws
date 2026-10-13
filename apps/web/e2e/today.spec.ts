@@ -287,6 +287,28 @@ test('正在做的只有一条时是焦点，多条时是清单', async ({ page 
   expect(Math.round(doing!.x + doing!.width)).toBe(Math.round(today!.x + today!.width))
 })
 
+/**
+ * The one thing being done is the line this page is for: on a phone it is said in full, on as
+ * many lines as it takes, not cut to the dozen characters a 36px line leaves beside its mark.
+ */
+test('on a phone the one thing in progress is said in full', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await registerFreshUser(page)
+  const p = await apiPost(page, '/projects', { name: 'P' })
+  const title = 'Ship the Daybook redesign and redraw the canvas'
+  await apiPost(page, '/tasks', { title, projectId: p.id as string, status: 'in_progress' })
+  await page.goto('/tasks/today')
+  const subject = page.locator('[data-doing-title]')
+  await expect(subject).toHaveText(title)
+  const cut = await subject.evaluate((el) => el.scrollWidth > el.clientWidth)
+  expect(cut, 'the title runs past its box').toBe(false)
+  // And on more than one line, which is what saying it in full takes at this width.
+  const lines = await subject.evaluate(
+    (el) => el.getBoundingClientRect().height / parseFloat(getComputedStyle(el).lineHeight),
+  )
+  expect(lines).toBeGreaterThanOrEqual(2)
+})
+
 test('做一件事时 Done 是那一下，做五件时它只是一行上的按钮', async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 1000 })
   await registerFreshUser(page)

@@ -113,18 +113,45 @@ test('Linked sits beside Tasks where the page has room, and below it on a phone'
     .toBeGreaterThan(-4)
 })
 
-test('with the detail open the third column is the detail’s, and Linked goes below', async ({
+/**
+ * BELOW THE TASKS, ON THEIR EDGE. With the detail open (the third column is the detail's) and on a
+ * phone, Linked goes under the tree -- and it is then one column with it: its rows' threads at the
+ * tree's thread x and its headings where the Tasks heading hangs, not 72px to the left of them.
+ */
+test('with the detail open the third column is the detail’s, and Linked goes below on the tree’s edge', async ({
   page,
 }) => {
+  const { project } = await world(page)
   await page.setViewportSize({ width: 1440, height: 900 })
-  await registerFreshUser(page)
-  const pid = (await apiPost(page, '/projects', { name: '求职' })).id as string
-  await apiPost(page, '/tasks', { projectId: pid, title: '打开的那条', parentId: null })
-  await page.goto(`/projects/${pid}`)
-  await page.getByRole('listitem').filter({ hasText: '打开的那条' }).click()
+  await page.goto(`/projects/${project.id}`)
+  await page.getByRole('listitem').filter({ hasText: 'Rewrite the CV' }).click()
   await expect(page.getByRole('dialog', { name: 'Task details' })).toBeVisible()
-  const tasks = (await page.getByRole('region', { name: 'Tasks', exact: true }).boundingBox())!
-  const linked = (await page.locator('[data-panel="Linked"]').boundingBox())!
-  expect(linked.y).toBeGreaterThan(tasks.y + tasks.height - 4)
-  expect(Math.round(linked.x)).toBe(Math.round(tasks.x))
+  await expect(page.locator('[data-panel="Linked"]')).toContainText('Ying Chen')
+  // One frame for every box: see the test above.
+  const edges = () =>
+    page.evaluate(() => {
+      const box = (sel: string) => document.querySelector(sel)!.getBoundingClientRect()
+      const tasks = box('[data-panel="Tasks"]')
+      const linked = box('[data-panel="Linked"]')
+      return {
+        below: linked.y > tasks.y + tasks.height - 4,
+        treeThread: Math.round(box('[data-task-tree] [data-thread]').x),
+        linkedThread: Math.round(box('[data-panel="Linked"] [data-thread]').x),
+        tasksHeading: Math.round(box('[data-panel="Tasks"] h2').x),
+        linkedHeading: Math.round(box('[data-panel="Linked"] h3').x),
+      }
+    })
+  const wide = await edges()
+  expect(wide.below).toBe(true)
+  expect(wide.linkedThread).toBe(wide.treeThread)
+  expect(wide.linkedHeading).toBe(wide.tasksHeading)
+
+  // And on a phone, where it is below for want of room.
+  await page.setViewportSize({ width: 375, height: 800 })
+  await page.goto(`/projects/${project.id}`)
+  await expect(page.locator('[data-panel="Linked"]')).toContainText('Ying Chen')
+  const phone = await edges()
+  expect(phone.below).toBe(true)
+  expect(phone.linkedThread).toBe(phone.treeThread)
+  expect(phone.linkedHeading).toBe(phone.tasksHeading)
 })
