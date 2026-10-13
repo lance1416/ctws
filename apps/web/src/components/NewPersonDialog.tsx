@@ -8,6 +8,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { createPerson, type BirthdayDraft } from '../api/people'
 import { listProjects } from '../api/projects'
+import { refreshList } from '../api/taskCache'
 import { useComposing } from '../composition'
 import { channelPlaceholder } from '../channels'
 import { useProjectRail } from '../projectColor'
@@ -88,7 +89,7 @@ export function NewPersonDialog({
   const make = useMutation({
     mutationFn: createPerson,
     onSuccess: async (made) => {
-      await qc.invalidateQueries({ queryKey: ['people'] })
+      await refreshList(qc, ['people'])
       onMade(made)
     },
   })

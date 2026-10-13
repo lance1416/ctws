@@ -16,7 +16,7 @@ const movementKey = ['movement']
  * Cancelling first drops the stale in-flight fetch, so the invalidation that follows starts a new
  * request. Every list whose creator can race its own first load goes through here.
  */
-async function refreshList(qc: QueryClient, queryKey: QueryKey): Promise<void> {
+export async function refreshList(qc: QueryClient, queryKey: QueryKey): Promise<void> {
   await qc.cancelQueries({ queryKey })
   await qc.invalidateQueries({ queryKey })
 }

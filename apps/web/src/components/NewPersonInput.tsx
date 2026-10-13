@@ -2,6 +2,7 @@ import type { PersonResponse } from '@ctws/contracts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { createPerson } from '../api/people'
+import { refreshList } from '../api/taskCache'
 import { useComposing } from '../composition'
 import { textbox } from './formStyles'
 
@@ -31,7 +32,7 @@ export function NewPersonInput({
       createPerson({ name: value, ...(projectId ? { projectIds: [projectId] } : {}) }),
     onSuccess: async (person) => {
       setName('')
-      await qc.invalidateQueries({ queryKey: ['people'] })
+      await refreshList(qc, ['people'])
       // Straight into the pane: a name on its own is never the whole of what you know about
       // somebody, and this is the moment you have the rest of it to hand.
       onCreated(person)

@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { createReadingItem } from '../api/reading'
+import { refreshList } from '../api/taskCache'
 import { isReadingUrl } from '../readingUrl'
 import { useComposing } from '../composition'
 import { textbox } from './formStyles'
@@ -29,7 +30,7 @@ export function AddReading({ projectId }: { projectId?: string } = {}) {
       ),
     onSuccess: async () => {
       setLine('')
-      await qc.invalidateQueries({ queryKey: ['reading'] })
+      await refreshList(qc, ['reading'])
     },
   })
 

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { registerFreshUser, WEB } from './helpers'
+import { holdFirstRead, registerFreshUser, WEB } from './helpers'
 
 /**
  * THE READING LIST -- THE SECOND MODULE, through the browser.
@@ -37,6 +37,25 @@ test('a pasted link goes to Reading; a sentence still goes to the inbox', async 
   const toInbox = await captureLine(page, '看看这篇 https://linear.invalid/now/redesign')
   expect(new URL(toInbox.url()).pathname).toBe('/api/v1/tasks')
   await expect(page.getByText('Added to')).toContainText('Inbox')
+})
+
+/**
+ * Added while the list's first read is still out: it is on the list when that read lands. The
+ * refetch after the write used to be handed the read that left before it, and the book was in the
+ * database and nowhere on the screen.
+ */
+test('a book added while the list is still loading is on the list', async ({ page }) => {
+  await registerFreshUser(page, '/')
+  const release = await holdFirstRead(page, '**/api/v1/reading')
+  await page.goto('/reading')
+  const made = page.waitForResponse(
+    (r) => r.request().method() === 'POST' && /\/api\/v1\/reading$/.test(r.url()),
+  )
+  await page.getByLabel('Add to the reading list').fill('The Elements of Typographic Style')
+  await page.getByLabel('Add to the reading list').press('Enter')
+  await made
+  release()
+  await expect(page.getByRole('main')).toContainText('The Elements of Typographic Style')
 })
 
 test('an untitled link is listed by host and path', async ({ page }) => {

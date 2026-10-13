@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { makeProject, pickOne, registerFreshUser, WEB } from './helpers'
+import { holdFirstRead, makeProject, pickOne, registerFreshUser, WEB } from './helpers'
 
 /**
  * PEOPLE -- THE THIRD MODULE.
@@ -58,6 +58,26 @@ test('a person keeps several addresses, and each one is a link', async ({ page }
     'https://github.com/ying',
   )
   await expect(person).toContainText('工作')
+})
+
+/**
+ * Made while the list's first read is still out: the person opens as themselves. The refetch after
+ * the write used to be handed that read -- which left before the write -- so the new person's own
+ * sheet said they were "not here any more".
+ */
+test('a person made while the list is still loading opens as themselves', async ({ page }) => {
+  await registerFreshUser(page, '/')
+  const release = await holdFirstRead(page, '**/api/v1/people')
+  await page.goto('/people')
+  const made = page.waitForResponse(
+    (r) => r.request().method() === 'POST' && /\/api\/v1\/people$/.test(r.url()),
+  )
+  await page.getByLabel('Add a name').fill('李雷')
+  await page.getByLabel('Add a name').press('Enter')
+  await made
+  release()
+  await expect(page.getByRole('dialog', { name: 'People' })).toContainText('李雷')
+  await expect(page.getByText('This person is not here any more.')).toHaveCount(0)
 })
 
 test('a person is made by typing a name, and finished in the pane', async ({ page }) => {
