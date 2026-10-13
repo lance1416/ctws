@@ -1,7 +1,10 @@
 import {
   createProjectBody,
+  idParams,
   projectColor,
   projectListItem,
+  projectListQuery,
+  projectListResponse,
   projectResponse,
   updateProjectBody,
 } from '@ctws/contracts'
@@ -46,9 +49,6 @@ function toProjectListItem(row: ProjectListRow): z.infer<typeof projectListItem>
   return { ...toProjectResponse(row.project), ...row.columns } as z.infer<typeof projectListItem>
 }
 
-const idParams = z.object({ id: z.uuid() }).strict()
-const listQuery = z.object({ archived: z.enum(['true', 'false']).optional() }).strict()
-
 export const projectRoutes: FastifyPluginAsyncZod<{ columns: ProjectColumns }> = async (
   app,
   { columns },
@@ -57,8 +57,8 @@ export const projectRoutes: FastifyPluginAsyncZod<{ columns: ProjectColumns }> =
     '/projects',
     {
       schema: {
-        querystring: listQuery,
-        response: { 200: z.object({ projects: z.array(projectListItem) }).strict() },
+        querystring: projectListQuery,
+        response: { 200: projectListResponse },
       },
     },
     async (req) => {

@@ -2,13 +2,13 @@ import {
   candidatesQuery,
   candidatesResponse,
   createLinkBody,
+  createLinkResponse,
   linkIsAllowed,
   linkParams,
   linkQuery,
   linksResponse,
 } from '@ctws/contracts'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
-import { z } from 'zod'
 import { currentUser } from '../auth/authenticated'
 import { LinkEndNotFoundError, UnknownLinkError } from './errors'
 import { candidatesFor, exists, linksOf } from './read'
@@ -76,7 +76,7 @@ export const linkRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = asy
     {
       schema: {
         body: createLinkBody,
-        response: { 201: z.object({ created: z.boolean() }).strict() },
+        response: { 201: createLinkResponse },
       },
     },
     async (req, reply) => {

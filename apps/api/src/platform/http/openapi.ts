@@ -1,3 +1,6 @@
+import { problem } from '@ctws/contracts'
+import { z } from 'zod'
+
 /**
  * Adds the refusals every operation can meet, derived from how the route is registered: 400 when
  * it takes input, 401 when it sits in the authenticated scope (it declares `security`), 429 when
@@ -25,19 +28,7 @@ export function documentRefusals<T extends object>(spec: T): T {
   const doc = spec as T & Spec
   doc.components ??= {}
   doc.components.schemas ??= {}
-  doc.components.schemas.Problem = {
-    type: 'object',
-    description:
-      'RFC 9457 problem details. Every refusal this API makes has this shape and is sent as application/problem+json.',
-    required: ['type', 'title', 'status'],
-    additionalProperties: false,
-    properties: {
-      type: { type: 'string', example: 'about:blank' },
-      title: { type: 'string', example: 'Not Found' },
-      status: { type: 'integer', example: 404 },
-      detail: { type: 'string' },
-    },
-  }
+  doc.components.schemas.Problem = z.toJSONSchema(problem, { target: 'openapi-3.0' })
 
   for (const methods of Object.values(doc.paths ?? {})) {
     for (const operation of Object.values(methods)) {

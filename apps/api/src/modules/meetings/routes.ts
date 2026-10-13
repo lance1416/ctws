@@ -2,9 +2,13 @@ import {
   calendarEntriesResponse,
   calendarQuery,
   createMeetingBody,
+  DAY_MS,
   deleteMeetingQuery,
+  idParams,
   meetingListQuery,
   meetingOccurrence,
+  meetingsResponse,
+  occurrenceQuery,
   updateMeetingBody,
 } from '@ctws/contracts'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
@@ -42,10 +46,6 @@ function toResponse(o: OccurrenceRow): z.infer<typeof meetingOccurrence> {
   }
 }
 
-const idParams = z.object({ id: z.uuid() }).strict()
-const listResponse = z.object({ meetings: z.array(meetingOccurrence) }).strict()
-const DAY = 86_400_000
-
 /**
  * A pair of ACCOUNT calendar days as the pair of instants the expansion needs.
  *
@@ -58,7 +58,7 @@ function windowOf(from: string, to: string, timezone: string): { from: Date; to:
     from: instantOf(`${from}T00:00`, timezone),
     // The END of `to`, i.e. the start of the day after: a meeting at 23:30 on the last day is
     // inside a window that names that day.
-    to: new Date(instantOf(`${to}T00:00`, timezone).getTime() + DAY),
+    to: new Date(instantOf(`${to}T00:00`, timezone).getTime() + DAY_MS),
   }
 }
 
@@ -75,7 +75,7 @@ export const meetingRoutes: FastifyPluginAsyncZod = async (app) => {
   app.get(
     '/',
     {
-      schema: { querystring: meetingListQuery, response: { 200: listResponse } },
+      schema: { querystring: meetingListQuery, response: { 200: meetingsResponse } },
     },
     async (req) => {
       const user = currentUser(req)
@@ -84,7 +84,7 @@ export const meetingRoutes: FastifyPluginAsyncZod = async (app) => {
       const now = app.clock()
       const from = req.query.from ?? localOf(now, user.timezone).slice(0, 10)
       const to =
-        req.query.to ?? localOf(new Date(now.getTime() + 31 * DAY), user.timezone).slice(0, 10)
+        req.query.to ?? localOf(new Date(now.getTime() + 31 * DAY_MS), user.timezone).slice(0, 10)
       const rows = await listOccurrences(
         app.db,
         user.workspaceId,
@@ -149,7 +149,7 @@ export const meetingRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         params: idParams,
-        querystring: z.object({ recurrenceId: z.string().optional() }).strict(),
+        querystring: occurrenceQuery,
         response: { 200: meetingOccurrence },
       },
     },

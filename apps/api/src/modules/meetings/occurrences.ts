@@ -1,3 +1,4 @@
+import { DAY_MS } from '@ctws/contracts'
 import { TZDate } from '@date-fns/tz'
 // A DEFAULT IMPORT, destructured. `rrule` ships CommonJS, and a named import of it survives the
 // test runner's transform and then fails at startup in the bundled ESM the image actually runs --
@@ -249,9 +250,8 @@ export function occurrencesIn(
    * filtered against the real window afterwards, so the slack costs a few extra candidates and
    * can never include or drop a wrong one.
    */
-  const DAY = 86_400_000
-  const fromNaiveTime = asNaive(localOf(new Date(window.from.getTime() - DAY), series.timeZone))
-  const toNaiveTime = asNaive(localOf(new Date(window.to.getTime() + DAY), series.timeZone))
+  const fromNaiveTime = asNaive(localOf(new Date(window.from.getTime() - DAY_MS), series.timeZone))
+  const toNaiveTime = asNaive(localOf(new Date(window.to.getTime() + DAY_MS), series.timeZone))
 
   let rule: Rule
   try {

@@ -1,3 +1,4 @@
+import { DAY_MS } from '@ctws/contracts'
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
 import { and, eq, gt, lt } from 'drizzle-orm'
 import { v4 as uuidv4 } from 'uuid'
@@ -47,7 +48,7 @@ export async function createSession(
    * nibble for anyone to reason from. Do not "fix" either of these back to v7.
    */
   const token = newToken()
-  const expiresAt = new Date(Date.now() + ttlDays * 86_400_000)
+  const expiresAt = new Date(Date.now() + ttlDays * DAY_MS)
   // Signing in leaves a row and nothing ever removed one, so the table grew by one per login
   // forever. Swept HERE rather than on a schedule: it is the one moment this user is certainly
   // writing to this table anyway, the work is bounded by their own expired rows, and a personal
@@ -90,7 +91,7 @@ export async function findValidSession(
   if (now.getTime() - found.lastSeenAt.getTime() >= TOUCH_AFTER_MS) {
     await db
       .update(sessions)
-      .set({ lastSeenAt: now, expiresAt: new Date(now.getTime() + ttlDays * 86_400_000) })
+      .set({ lastSeenAt: now, expiresAt: new Date(now.getTime() + ttlDays * DAY_MS) })
       .where(eq(sessions.tokenHash, hash))
   }
   return { userId: found.userId }

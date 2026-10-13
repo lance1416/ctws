@@ -1,22 +1,27 @@
 import {
   addDependencyBody,
-  blockersResponse,
   calendarEntriesResponse,
   calendarQuery,
   completedResponse,
   completedTaskResponse,
   createTaskBody,
   dependencyLists,
+  dependencyParams,
   type DependencyRef,
+  idParams,
   moveTaskBody,
-  projectMovementResponse,
+  movementResponse,
+  projectTasksQuery,
+  projectTasksResponse,
   reviewQuery,
   reviewResponse,
-  rollupsResponse,
   searchQuery,
   searchTaskResponse,
-  taskEventResponse,
+  searchTasksResponse,
+  taskEventsQuery,
+  taskEventsResponse,
   taskResponse,
+  todayResponse,
   todayTaskResponse,
   updateTaskBody,
 } from '@ctws/contracts'
@@ -24,7 +29,7 @@ import type { FastifyRequest } from 'fastify'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 import { currentUser } from '../../shell/auth/authenticated'
-import { DEFAULT_EVENT_LIMIT, listTaskEvents, MAX_EVENT_LIMIT } from './events'
+import { listTaskEvents } from './events'
 import { listCompleted, type CompletedTask } from './completed'
 import { searchTasks, type SearchTask } from './search'
 import { listProjectMovement } from './movement'
@@ -92,16 +97,6 @@ function toSearchResponse(t: SearchTask): z.infer<typeof searchTaskResponse> {
   }
 }
 
-const idParams = z.object({ id: z.uuid() }).strict()
-const byProjectQuery = z.object({ projectId: z.uuid() }).strict()
-
-const eventsQuery = z
-  .object({
-    cursor: z.string().max(256).optional(),
-    limit: z.coerce.number().int().min(1).max(MAX_EVENT_LIMIT).default(DEFAULT_EVENT_LIMIT),
-  })
-  .strict()
-
 /** Who is writing, for the services that log an event against the task they change. */
 const actor = (req: FastifyRequest): TaskCtx => {
   const user = currentUser(req)
@@ -144,7 +139,7 @@ export const taskRoutes: FastifyPluginAsyncZod = async (app) => {
   app.get(
     '/today',
     {
-      schema: { response: { 200: z.object({ tasks: z.array(todayTaskResponse) }).strict() } },
+      schema: { response: { 200: todayResponse } },
     },
     async (req) => {
       const user = currentUser(req)
@@ -191,7 +186,7 @@ export const taskRoutes: FastifyPluginAsyncZod = async (app) => {
     '/movement',
     {
       schema: {
-        response: { 200: z.object({ projects: z.array(projectMovementResponse) }).strict() },
+        response: { 200: movementResponse },
       },
     },
     async (req) => {
@@ -208,7 +203,7 @@ export const taskRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         querystring: searchQuery,
-        response: { 200: z.object({ tasks: z.array(searchTaskResponse) }).strict() },
+        response: { 200: searchTasksResponse },
       },
     },
     async (req) => {
@@ -217,23 +212,13 @@ export const taskRoutes: FastifyPluginAsyncZod = async (app) => {
     },
   )
 
-  // The project is the shell's and the tasks under it are the module's, so the project is a
-  // FILTER on the module's own collection rather than a parent path segment the module hangs its
-  // routes off. `GET /api/v1/projects/:id/tasks` still answers, by redirect (`compat.ts`).
+  // The project is a filter on the module's own collection, not a path segment.
   app.get(
     '/',
     {
       schema: {
-        querystring: byProjectQuery,
-        response: {
-          200: z
-            .object({
-              tasks: z.array(taskResponse),
-              rollups: rollupsResponse,
-              blockers: blockersResponse,
-            })
-            .strict(),
-        },
+        querystring: projectTasksQuery,
+        response: { 200: projectTasksResponse },
       },
     },
     async (req) => {
@@ -338,7 +323,7 @@ export const taskRoutes: FastifyPluginAsyncZod = async (app) => {
   app.delete(
     '/:id/dependencies/:blockerId',
     {
-      schema: { params: z.object({ id: z.uuid(), blockerId: z.uuid() }).strict() },
+      schema: { params: dependencyParams },
     },
     async (req, reply) => {
       await removeDependency(app.db, actor(req), req.params.id, req.params.blockerId)
@@ -351,15 +336,8 @@ export const taskRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         params: idParams,
-        querystring: eventsQuery,
-        response: {
-          200: z
-            .object({
-              events: z.array(taskEventResponse),
-              nextCursor: z.string().nullable(),
-            })
-            .strict(),
-        },
+        querystring: taskEventsQuery,
+        response: { 200: taskEventsResponse },
       },
     },
     async (req) => {

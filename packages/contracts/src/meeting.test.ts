@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { calendarQuery, reviewQuery } from './task'
+import { calendarQuery } from './calendar'
+import { reviewQuery } from './task'
 import { createMeetingBody, meetingListQuery } from './meeting'
 
 /**

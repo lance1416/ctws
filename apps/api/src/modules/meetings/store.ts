@@ -1,4 +1,9 @@
-import type { CreateMeetingBody, EditScope, UpdateMeetingBody } from '@ctws/contracts'
+import {
+  type CreateMeetingBody,
+  DAY_MS,
+  type EditScope,
+  type UpdateMeetingBody,
+} from '@ctws/contracts'
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import type { Queryable } from '../../platform/db/client'
@@ -52,8 +57,6 @@ export type OccurrenceRow = Occurrence & {
   projectName: string | null
   attendees: MeetingAttendee[]
 }
-
-const DAY = 86_400_000
 
 /** THE TENANT CHOKEPOINT. Every read and write below goes through it. */
 function visibleMeetings(workspaceId: string) {
@@ -178,7 +181,7 @@ export async function listOccurrences(
 /** The window to search for one occurrence near a local time: that time, surrounded. */
 function around(recurrenceId: LocalTime): { from: Date; to: Date } {
   const at = Date.parse(`${recurrenceId}:00Z`)
-  return { from: new Date(at - 2 * DAY), to: new Date(at + 2 * DAY) }
+  return { from: new Date(at - 2 * DAY_MS), to: new Date(at + 2 * DAY_MS) }
 }
 
 /** One occurrence by its series and its recurrence id. */

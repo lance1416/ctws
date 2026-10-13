@@ -1,4 +1,4 @@
-import type { TaskEventResponse, TaskEventType } from '@ctws/contracts'
+import { TASK_EVENTS_PAGE, type TaskEventResponse, type TaskEventType } from '@ctws/contracts'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import type { Queryable } from '../../platform/db/client'
@@ -84,9 +84,6 @@ async function coalesce(q: Queryable, e: AppendEventInput): Promise<boolean> {
   return result.rows.length > 0
 }
 
-export const DEFAULT_EVENT_LIMIT = 50
-export const MAX_EVENT_LIMIT = 100
-
 // Postgres timestamps carry microseconds but a JS Date only milliseconds, so the cursor holds the
 // timestamp as text straight from the database. Round-tripping through Date would truncate it and
 // make the row comparison skip or repeat rows that differ only below the millisecond.
@@ -128,7 +125,7 @@ export async function listTaskEvents(
   taskId: string,
   opts: { cursor?: string | undefined; limit?: number } = {},
 ): Promise<{ events: TaskEventResponse[]; nextCursor: string | null }> {
-  const limit = opts.limit ?? DEFAULT_EVENT_LIMIT
+  const limit = opts.limit ?? TASK_EVENTS_PAGE.default
   const after = opts.cursor === undefined ? null : decodeCursor(opts.cursor)
 
   // Same predicate as lockVisibleTask (scoped through projects), without the row lock.

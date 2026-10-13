@@ -2,7 +2,9 @@ import {
   calendarEntriesResponse,
   calendarQuery,
   createReadingItemBody,
+  idParams,
   readingItemResponse,
+  readingItemsResponse,
   readingListQuery,
   searchQuery,
   updateReadingItemBody,
@@ -71,16 +73,13 @@ async function withFetched(
   })
 }
 
-const idParams = z.object({ id: z.uuid() }).strict()
-const itemsResponse = z.object({ items: z.array(readingItemResponse) }).strict()
-
 export const readingRoutes =
   (deps: ReadingDeps): FastifyPluginAsyncZod =>
   async (app) => {
     app.get(
       '/',
       {
-        schema: { querystring: readingListQuery, response: { 200: itemsResponse } },
+        schema: { querystring: readingListQuery, response: { 200: readingItemsResponse } },
       },
       async (req) => {
         const { projectId, unfiled, status } = req.query
@@ -128,7 +127,7 @@ export const readingRoutes =
       {
         schema: {
           querystring: searchQuery,
-          response: { 200: itemsResponse },
+          response: { 200: readingItemsResponse },
         },
       },
       async (req) => {

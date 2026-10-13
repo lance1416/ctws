@@ -1,46 +1,32 @@
 import { z } from 'zod'
-import { calendarDate } from './task'
+import { calendarDate, instant } from './common'
 
 /**
- * THE READING LIST -- THE SECOND MODULE.
- *
- * One entity, two kinds. A tweet is not modelled separately: it is a link whose host is x.com,
- * and three types for two behaviours is a type system built for a taxonomy nobody asked for.
- *
- * What a LINK has is a url; what a BOOK has is an author and no url. A link's title may be
- * absent, because capturing one is pasting a url and nothing else -- the list shows the host
- * until someone types a title. A book with no title is not a book, so there it is required.
+ * Reading comes in two kinds: a link has a url, a book has an author and no url. A link's title
+ * may be absent, since capturing one is pasting a url; the list shows the address until it is
+ * named.
  */
 
 export const READING_KINDS = ['link', 'book'] as const
-export const readingKind = z.enum(READING_KINDS)
-export type ReadingKind = z.infer<typeof readingKind>
 
-/** To read / reading / finished / dropped. No page numbers: nobody keeps them up to date. */
+/** To read, reading, finished, dropped. */
 export const READING_STATUSES = ['todo', 'reading', 'done', 'dropped'] as const
-export const readingStatus = z.enum(READING_STATUSES)
+const readingStatus = z.enum(READING_STATUSES)
 export type ReadingStatus = z.infer<typeof readingStatus>
 
 const readingTitle = z.string().trim().min(1).max(500)
-// http(s) only. A `javascript:` or `data:` url in an href is the whole reason this is not a bare
-// string: the list renders it as a link someone will click.
+// http(s) only: the list renders the url as a link someone will click.
 const readingUrl = z
   .url()
   .max(2000)
   .refine((u) => /^https?:\/\//i.test(u), { message: 'expected an http(s) url' })
 const author = z.string().trim().min(1).max(200)
 
-/**
- * The two shapes, as a discriminated union rather than one object with four optional fields: a
- * book with a url and a link with an author are both nonsense, and a union says so at the edge
- * instead of leaving the database's CHECK constraint to be the only thing that knows.
- */
 export const createReadingItemBody = z.discriminatedUnion('kind', [
   z
     .object({
       kind: z.literal('link'),
       url: readingUrl,
-      /** Absent when the line was just a pasted url; the list shows the host instead. */
       title: readingTitle.nullish(),
       projectId: z.uuid().nullish(),
     })
@@ -56,10 +42,7 @@ export const createReadingItemBody = z.discriminatedUnion('kind', [
 ])
 export type CreateReadingItemBody = z.infer<typeof createReadingItemBody>
 
-/**
- * Every field optional, and `kind` is NOT among them: a link does not become a book. Changing
- * what something is means making the other one.
- */
+/** `kind` cannot change: a link does not become a book. */
 export const updateReadingItemBody = z
   .object({
     title: readingTitle.nullable().optional(),
@@ -67,7 +50,6 @@ export const updateReadingItemBody = z
     author: author.nullable().optional(),
     status: readingStatus.optional(),
     projectId: z.uuid().nullable().optional(),
-    /** The day you mean to finish it by. A calendar day, like a task's plan -- never an instant. */
     planOn: calendarDate.nullable().optional(),
   })
   .strict()
@@ -77,48 +59,30 @@ export type UpdateReadingItemBody = z.infer<typeof updateReadingItemBody>
 export const readingItemResponse = z
   .object({
     id: z.uuid(),
-    kind: readingKind,
+    kind: z.enum(READING_KINDS),
     title: z.string().nullable(),
     url: z.string().nullable(),
     author: z.string().nullable(),
     status: readingStatus,
-    /**
-     * The day you mean to finish it by, or null.
-     *
-     * A PLAN, not a deadline: nothing goes overdue here and nothing nags. It exists because a
-     * reading list with no dates at all cannot say which book this week is for, and because the calendar
-     * needs a second module's worth of dated things or its contribution point would be shaped
-     * around the task module alone.
-     */
+    /** The day you mean to finish it by: a plan, not a deadline. */
     planOn: calendarDate.nullable(),
     projectId: z.uuid().nullable(),
-    /** The project's name, so a cross-project list need not fetch them separately. */
     projectName: z.string().nullable(),
-    /**
-     * 对面自己说的那句话，抓回来存着的。
-     *
-     * 和 `title` 分开放，不是抓到就往 `title` 里写：人改过的标题不能被一次重抓盖掉，而两者
-     * 混在一个字段里之后就再也分不出哪个是谁写的。显示时人写的优先。
-     */
+    /** What the page itself says, kept apart from `title`; a title someone typed wins. */
     fetchedTitle: z.string().nullable(),
     fetchedSummary: z.string().nullable(),
-    /** What "added 17 days ago" is counted from. */
-    createdAt: z.iso.datetime({ offset: true }),
-    updatedAt: z.iso.datetime({ offset: true }),
+    createdAt: instant,
+    updatedAt: instant,
   })
   .strict()
 export type ReadingItemResponse = z.infer<typeof readingItemResponse>
 
+export const readingItemsResponse = z.object({ items: z.array(readingItemResponse) }).strict()
+
 export const readingListQuery = z
   .object({
     projectId: z.uuid().optional(),
-    /**
-     * Only the items that belong to NO project.
-     *
-     * A separate flag rather than `projectId=none`, because it is not a project id and typing one
-     * where a uuid is expected is how a filter silently becomes no filter. It is also the
-     * complement of `projectId`, so asking for both is a contradiction and is refused below.
-     */
+    /** Only the items on no project. */
     unfiled: z.enum(['true', 'false']).optional(),
     /** Repeatable: `?status=todo&status=reading`. Absent means every status. */
     status: z.union([readingStatus, z.array(readingStatus)]).optional(),
@@ -127,4 +91,3 @@ export const readingListQuery = z
   .refine((q) => !(q.projectId && q.unfiled === 'true'), {
     message: 'unfiled and projectId cannot both be asked for',
   })
-export type ReadingListQuery = z.infer<typeof readingListQuery>

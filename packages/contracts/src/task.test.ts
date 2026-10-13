@@ -1,18 +1,22 @@
 import { describe, expect, it } from 'vitest'
-import { projectMovementResponse } from './task'
 import {
   createTaskBody,
   moveTaskBody,
+  projectMovementResponse,
   searchTaskResponse,
-  taskStatus,
-  TASK_EVENT_TYPES,
+  taskEventResponse,
+  taskResponse,
   TASK_STATUSES,
-  TODAY_SEGMENTS,
+  todayTaskResponse,
   updateTaskBody,
 } from './task'
 
-describe('taskStatus', () => {
-  it('accepts exactly the five spec statuses', () => {
+const taskStatus = taskResponse.shape.status
+const TASK_EVENT_TYPES = taskEventResponse.shape.type.options
+const TODAY_SEGMENTS = todayTaskResponse.shape.segment.options
+
+describe('task status', () => {
+  it('accepts exactly the five statuses', () => {
     expect([...TASK_STATUSES]).toEqual(['backlog', 'todo', 'in_progress', 'done', 'cancelled'])
     for (const s of TASK_STATUSES) expect(taskStatus.safeParse(s).success).toBe(true)
   })
@@ -109,8 +113,8 @@ describe('moveTaskBody', () => {
   })
 })
 
-describe('TASK_EVENT_TYPES', () => {
-  it('is exactly the ten types the spec lists', () => {
+describe('task event types', () => {
+  it('are exactly these', () => {
     expect([...TASK_EVENT_TYPES].sort()).toEqual(
       [
         'created',
@@ -129,9 +133,8 @@ describe('TASK_EVENT_TYPES', () => {
     )
   })
 
-  // Spec section 9.1: a pure rank change must never produce an event, or dragging 20 items
-  // during a tidy-up floods the log and poisons last_activity_at.
-  it('has no event type for reordering', () => {
+  // A pure rank change is never logged, so a tidy-up does not read as activity.
+  it('have none for reordering', () => {
     expect([...TASK_EVENT_TYPES]).not.toContain('rank_changed')
     expect([...TASK_EVENT_TYPES]).not.toContain('reordered')
   })
@@ -146,9 +149,8 @@ describe('scheduledOn calendar validation', () => {
   })
 })
 
-describe('TODAY_SEGMENTS', () => {
-  // Pins the display order; the SQL CASE in listToday hard-codes the same precedence.
-  it('is exactly the three segments in display order', () => {
+describe('today segments', () => {
+  it('are the three segments in display order', () => {
     expect([...TODAY_SEGMENTS]).toEqual(['overdue', 'today', 'in_progress'])
   })
 })
@@ -230,12 +232,7 @@ describe('projectMovementResponse', () => {
     expect(parsed.quietDays).toBeNull()
   })
 
-  /**
-   * The shape is `.strict()` on purpose and this is the assertion that keeps it honest: there is
-   * no rollup (M3) and nothing writes `manual_progress`, so a ratio on this line would be a
-   * number the backend cannot cash. Adding one has to be a deliberate change to the contract, not
-   * something that slips in beside the counts.
-   */
+  // Movement is counts; a ratio would have to be added to the contract on purpose.
   it('refuses a percentage, however it is spelled', () => {
     for (const extra of [{ progress: 0.5 }, { percent: 50 }, { manualProgress: 0.5 }]) {
       expect(

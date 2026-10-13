@@ -1,14 +1,16 @@
 import {
+  type BirthdayInput,
   birthdayPreviewQuery,
   birthdayPreviewResponse,
   birthdayResponse,
-  type BirthdayInput,
   birthdaysResponse,
   calendarEntriesResponse,
   calendarQuery,
+  createPersonBody,
+  idParams,
+  peopleResponse,
   personListQuery,
   personResponse,
-  createPersonBody,
   searchQuery,
   updatePersonBody,
 } from '@ctws/contracts'
@@ -71,9 +73,6 @@ function withFacts(b: StoredBirthday, today: string): z.infer<typeof birthdayRes
   }
 }
 
-const idParams = z.object({ id: z.uuid() }).strict()
-const listResponse = z.object({ people: z.array(personResponse) }).strict()
-
 /**
  * Refuses a birthday on a day that never happens in its year (no 30th of that lunar month, no
  * leap month that year). Only the calendar library knows, so the check is here, not in the
@@ -95,7 +94,7 @@ export const personRoutes: FastifyPluginAsyncZod = async (app) => {
   app.get(
     '/',
     {
-      schema: { querystring: personListQuery, response: { 200: listResponse } },
+      schema: { querystring: personListQuery, response: { 200: peopleResponse } },
     },
     async (req) => {
       const user = currentUser(req)
@@ -168,7 +167,7 @@ export const personRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         querystring: searchQuery,
-        response: { 200: listResponse },
+        response: { 200: peopleResponse },
       },
     },
     async (req) => {

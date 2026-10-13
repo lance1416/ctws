@@ -1,0 +1,75 @@
+import { z } from 'zod'
+
+export const DAY_MS = 86_400_000
+
+/** The years a plan, a deadline or a meeting may fall in. */
+export const EVENT_YEARS = { min: 1970, max: 2200 } as const
+
+/**
+ * A calendar day, `YYYY-MM-DD`, that exists. Not an instant: `z.coerce.date()` would accept a
+ * timestamp and silently turn the day into one.
+ */
+export const calendarDate = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'expected a date in YYYY-MM-DD form')
+  .refine(
+    (value) => {
+      const [y, m, d] = value.split('-').map(Number) as [number, number, number]
+      const date = new Date(Date.UTC(y, m - 1, d))
+      return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d
+    },
+    { message: 'not a real calendar date' },
+  )
+
+/** An instant with an offset. */
+export const instant = z.iso.datetime({ offset: true })
+
+export const idParams = z.object({ id: z.uuid() }).strict()
+
+/** The zone an account is stored in: an IANA name, in its canonical spelling. */
+export const canonicalTimeZone = z.string().superRefine((value, ctx) => {
+  if (value !== value.trim() || value.length === 0) {
+    ctx.addIssue({ code: 'custom', message: 'timezone must not be empty or padded' })
+    return
+  }
+  let canonical: string
+  try {
+    canonical = new Intl.DateTimeFormat('en-US', { timeZone: value }).resolvedOptions().timeZone
+  } catch {
+    ctx.addIssue({ code: 'custom', message: `unknown IANA timezone: ${value}` })
+    return
+  }
+  if (value !== canonical) {
+    ctx.addIssue({ code: 'custom', message: `timezone must be canonically cased: ${canonical}` })
+  }
+})
+
+/** The zone an event was agreed in: any IANA name the platform knows, aliases included. */
+export const eventTimeZone = z
+  .string()
+  .min(1)
+  .max(100)
+  .refine((tz) => {
+    try {
+      new Intl.DateTimeFormat('en', { timeZone: tz })
+      return true
+    } catch {
+      return false
+    }
+  }, 'not a time zone this system knows')
+
+/** RFC 9457 problem details: the shape of every refusal. */
+export const problem = z
+  .object({
+    type: z.string().meta({ example: 'about:blank' }),
+    title: z.string().meta({ example: 'Not Found' }),
+    status: z.number().int().meta({ example: 404 }),
+    detail: z.string().optional(),
+  })
+  .strict()
+  .meta({
+    description:
+      'RFC 9457 problem details. Every refusal this API makes has this shape and is sent as application/problem+json.',
+  })
+
+export type Problem = z.infer<typeof problem>

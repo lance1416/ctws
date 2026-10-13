@@ -1,32 +1,19 @@
 import { z } from 'zod'
-import { calendarDate, windowIsBounded, WINDOW_REFUSED } from './task'
+import { WINDOW_REFUSED, windowIsBounded } from './calendar'
+import { calendarDate, EVENT_YEARS, eventTimeZone, instant } from './common'
 
 /**
- * MEETINGS -- the fourth module, on iCalendar's `VEVENT` (RFC 5545).
- *
- * A meeting is a WALL CLOCK PLUS A ZONE, not an instant: every Tuesday at 09:00 Toronto time is
- * at 09:00 in Toronto forever, and its UTC instant moves twice a year. A series stored as an instant and
- * advanced by seven days would hold the instant still and move the meeting for the people in the
- * room. A duration rather than an end, for the same reason.
- *
- * `RRULE` is kept as the RFC's own string, so an ics export and a rule the interface does not yet
- * offer both cost nothing in the data. Single occurrences are cancelled (`EXDATE`) or overridden
- * (`RECURRENCE-ID`) one at a time.
- *
- * Not modelled: invitations and replies (`PARTSTAT` -- mail, delivery, a second party's calendar),
- * free/busy lookup, and alarms. Each is a product of its own.
+ * A meeting, after iCalendar's `VEVENT` (RFC 5545): a wall clock plus a zone and a duration, so a
+ * weekly meeting stays at its local time across DST. `RRULE` is kept as the RFC's own string;
+ * single occurrences are cancelled (`EXDATE`) or overridden (`RECURRENCE-ID`).
  */
 
-const instant = z.iso.datetime({ offset: true })
 const title = z.string().trim().min(1).max(500)
 const location = z.string().trim().min(1).max(500)
 const note = z.string().max(10_000)
 
-/**
- * A wall clock with no zone: `YYYY-MM-DDTHH:mm`. The shape a `datetime-local` control produces,
- * and deliberately NOT an instant -- an instant would have had to pick a zone to be written in.
- */
-export const localTime = z
+/** A wall clock with no zone, `YYYY-MM-DDTHH:mm`, as a `datetime-local` control produces. */
+const localTime = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/, 'expected a local time like 2026-10-20T09:00')
   .refine((v) => {
@@ -42,91 +29,52 @@ export const localTime = z
       mm < 60
     )
   }, 'not a real local time')
-  /**
-   * A MEETING IS SOMETHING YOU SCHEDULE, so it starts within a human range.
-   *
-   * Not tidiness: a daily series starting in year 1 makes the expansion walk from there to the
-   * window on every read -- measured at 64ms for one series against 3ms for a normal one, and it
-   * is paid per series per request.
-   */
+  // A series is expanded from its start, so a start far from now is work on every read.
   .refine((v) => {
     const year = Number(v.slice(0, 4))
-    return year >= 1970 && year <= 2200
+    return year >= EVENT_YEARS.min && year <= EVENT_YEARS.max
   }, 'that is not a date anybody is meeting on')
 
-/**
- * An IANA zone name, checked by asking the platform rather than against a list that would rot.
- * Every runtime this project uses ships a full tz database.
- */
-export const timeZone = z
-  .string()
-  .min(1)
-  .max(100)
-  .refine((tz) => {
-    try {
-      new Intl.DateTimeFormat('en', { timeZone: tz })
-      return true
-    } catch {
-      return false
-    }
-  }, 'not a time zone this system knows')
-
-/** Minutes. A meeting of no length is a typo; a day and a half is as long as this allows. */
+/** Minutes; at most a day and a half. */
 const durationMinutes = z
   .number()
   .int()
   .min(1)
   .max(60 * 36)
 
-/**
- * The `RRULE` body, without its `RRULE:` prefix. LENGTH ONLY.
- *
- * It deliberately does not inspect the rule. An earlier version matched `FREQ=(SECONDLY|…)` and
- * `INTERVAL=(\d+)` with regexes, which is a second parser beside the real one -- and two parsers
- * disagree about whitespace, repeated parts and number formats, so a string can be refused here
- * and accepted there, or the reverse. The server decides with the library that will expand it,
- * and says why (422).
- */
+/** The `RRULE` body, length only: the server checks it with the library that expands it (422). */
 const rrule = z.string().trim().min(1).max(500)
 
 export const createMeetingBody = z
   .object({
     title,
     startsLocal: localTime,
-    timeZone,
+    timeZone: eventTimeZone,
     durationMinutes,
     rrule: rrule.nullish(),
     location: location.nullish(),
     note: note.nullish(),
     projectId: z.uuid().nullish(),
-    /** The people in the room, out of the people module. */
     attendeeIds: z.array(z.uuid()).max(50).optional(),
   })
   .strict()
 export type CreateMeetingBody = z.infer<typeof createMeetingBody>
 
 /**
- * WHICH OCCURRENCES AN EDIT TOUCHES.
- *
- * - `one`: this one only (`RECURRENCE-ID` override, or `EXDATE` for a delete).
- * - `following`: this one and every one after it -- the series is split, which is what every
- *   calendar does because RFC 5545 has no "change from here" and the past must stay as it was.
- * - `all`: the whole series.
- *
- * A meeting that happens once takes `all` whatever is asked, because the three are the same thing.
+ * Which occurrences an edit touches: `one`, `following` (the series is split there), or `all`. A
+ * meeting that happens once takes `all` whatever is asked.
  */
-export const EDIT_SCOPES = ['one', 'following', 'all'] as const
-export const editScope = z.enum(EDIT_SCOPES)
+const editScope = z.enum(['one', 'following', 'all'])
 export type EditScope = z.infer<typeof editScope>
 
 export const updateMeetingBody = z
   .object({
-    /** Which occurrence the edit is aimed at. Required for anything but `all`. */
+    /** Required for anything but `all`. */
     scope: editScope.default('all'),
     recurrenceId: localTime.optional(),
     title: title.optional(),
     startsLocal: localTime.optional(),
-    timeZone: timeZone.optional(),
+    timeZone: eventTimeZone.optional(),
     durationMinutes: durationMinutes.optional(),
     rrule: rrule.nullable().optional(),
     location: location.nullable().optional(),
@@ -143,32 +91,23 @@ export const updateMeetingBody = z
     path: ['recurrenceId'],
   })
 export type UpdateMeetingBody = z.infer<typeof updateMeetingBody>
-/**
- * What a CLIENT sends: `scope` is optional here because the schema defaults it. The server's own
- * type has it present, which is the whole point of a default -- one side may leave it out and the
- * other never has to wonder whether it is there.
- */
+/** What a client sends: `scope` may be left out because the schema defaults it. */
 export type UpdateMeetingInput = z.input<typeof updateMeetingBody>
 
 /** One occurrence of a meeting, as every read returns it. */
 export const meetingOccurrence = z
   .object({
-    /** The series. Several occurrences share it. */
+    /** The series. */
     meetingId: z.uuid(),
-    /**
-     * Which occurrence: the local time the RULE put it at. It does not change when the occurrence
-     * is moved, which is what makes it the occurrence's identity.
-     */
+    /** The local time the rule gave this occurrence; it does not change when the occurrence moves. */
     recurrenceId: localTime,
     title: z.string(),
     /** Where it actually is, after an override: a wall clock in `timeZone`. */
     startsLocal: localTime,
-    timeZone,
+    timeZone: eventTimeZone,
     durationMinutes: z.number().int(),
-    /** The instants, so a client never has to do zone arithmetic to sort or compare. */
     startsAt: instant,
     endsAt: instant,
-    /** The series' rule, so an occurrence can say how it repeats without a second request. */
     rrule: z.string().nullable(),
     /** True when this occurrence differs from its series. */
     overridden: z.boolean(),
@@ -181,19 +120,22 @@ export const meetingOccurrence = z
   .strict()
 export type MeetingOccurrence = z.infer<typeof meetingOccurrence>
 
+export const meetingsResponse = z.object({ meetings: z.array(meetingOccurrence) }).strict()
+
 export const meetingListQuery = z
   .object({
     projectId: z.uuid().optional(),
-    /** Inclusive calendar days in the ACCOUNT's zone. Absent means a window the server picks. */
+    /** Inclusive days in the account's zone; absent means a window the server picks. */
     from: calendarDate.optional(),
     to: calendarDate.optional(),
   })
   .strict()
-  // THE SAME CHECK the calendar uses, not a copy of it: this is that question with the days
-  // named differently, and two copies drift apart.
   .refine(windowIsBounded, { message: WINDOW_REFUSED, path: ['to'] })
 
-/** Deleting takes a scope too: cancelling one week is not cancelling the series. */
+/** Which occurrence of a series; absent means its first. */
+export const occurrenceQuery = z.object({ recurrenceId: z.string().optional() }).strict()
+
+/** Cancelling one occurrence is not cancelling the series. */
 export const deleteMeetingQuery = z
   .object({ scope: editScope.default('all'), recurrenceId: localTime.optional() })
   .strict()

@@ -1,13 +1,14 @@
 import { z } from 'zod'
-import { email, ianaTimezone, roleSchema } from './auth'
+import { email, roleSchema } from './auth'
+import { canonicalTimeZone, instant } from './common'
 
 export const adminUser = z
   .object({
     id: z.uuid(),
     email: z.email(),
     role: roleSchema,
-    disabledAt: z.iso.datetime({ offset: true }).nullable(),
-    createdAt: z.iso.datetime({ offset: true }),
+    disabledAt: instant.nullable(),
+    createdAt: instant,
   })
   .strict()
 
@@ -17,7 +18,7 @@ export const adminCreateUserBody = z
   .object({
     email,
     password: z.string().min(12).max(1024),
-    timezone: ianaTimezone,
+    timezone: canonicalTimeZone,
     role: roleSchema,
   })
   .strict()
@@ -32,8 +33,4 @@ export const adminUpdateUserBody = z
     message: 'provide role and/or disabled',
   })
 
-export const adminUserParams = z.object({ id: z.uuid() }).strict()
-
 export type AdminUser = z.infer<typeof adminUser>
-export type AdminCreateUserBody = z.infer<typeof adminCreateUserBody>
-export type AdminUpdateUserBody = z.infer<typeof adminUpdateUserBody>

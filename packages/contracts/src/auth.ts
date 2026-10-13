@@ -1,29 +1,8 @@
 import { z } from 'zod'
+import { canonicalTimeZone } from './common'
 
-// IANA identifiers are case-sensitive and must be recognised by the runtime.
-// Intl.supportedValuesOf('timeZone') only returns canonical names (no aliases like
-// Asia/Calcutta), so we validate by constructing a DateTimeFormat, then require that
-// the resolved canonical name matches the input exactly (rejecting deprecated aliases
-// and case variants).
-export const ianaTimezone = z.string().superRefine((value, ctx) => {
-  if (value !== value.trim() || value.length === 0) {
-    ctx.addIssue({ code: 'custom', message: 'timezone must not be empty or padded' })
-    return
-  }
-  let canonical: string
-  try {
-    canonical = new Intl.DateTimeFormat('en-US', { timeZone: value }).resolvedOptions().timeZone
-  } catch {
-    ctx.addIssue({ code: 'custom', message: `unknown IANA timezone: ${value}` })
-    return
-  }
-  if (value !== canonical) {
-    ctx.addIssue({ code: 'custom', message: `timezone must be canonically cased: ${canonical}` })
-  }
-})
-
-// Instance-level roles, ordered admin > maintainer > member. See apps/api/src/auth/roles.ts.
-export const ROLES = ['admin', 'maintainer', 'member'] as const
+/** Instance roles, admin > maintainer > member. */
+const ROLES = ['admin', 'maintainer', 'member'] as const
 export const roleSchema = z.enum(ROLES)
 export type Role = z.infer<typeof roleSchema>
 
@@ -33,7 +12,7 @@ export const registerBody = z
   .object({
     email,
     password: z.string().min(12).max(1024),
-    timezone: ianaTimezone,
+    timezone: canonicalTimeZone,
     inviteCode: z.string().optional(),
   })
   .strict()
@@ -55,6 +34,4 @@ export const userResponse = z
   })
   .strict()
 
-export type RegisterBody = z.infer<typeof registerBody>
-export type LoginBody = z.infer<typeof loginBody>
 export type UserResponse = z.infer<typeof userResponse>
