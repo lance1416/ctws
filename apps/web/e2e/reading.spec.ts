@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
-import { holdFirstRead, registerFreshUser, WEB } from './helpers'
+import { TZDate } from '@date-fns/tz'
+import { accountZone, dayInZone, holdFirstRead, registerFreshUser, WEB } from './helpers'
 
 /**
  * THE READING LIST -- THE SECOND MODULE, through the browser.
@@ -91,7 +92,7 @@ test('a book moves to read → reading → finished, and the finished pile folds
   await page.goto('/reading')
 
   const section = (name: string) => page.getByRole('region', { name })
-  await expect(section('Reading').getByText('设计心理学')).toBeVisible()
+  await expect(section('To read').getByText('设计心理学')).toBeVisible()
 
   await rowOf(page, '设计心理学').getByRole('button', { name: 'Start reading' }).click()
   await expect(section('Reading now').getByText('设计心理学')).toBeVisible()
@@ -100,7 +101,7 @@ test('a book moves to read → reading → finished, and the finished pile folds
   // Gone from both open sections, and not gone from the app: the count is the way back, which is
   // the rule the task tree already keeps about finished work.
   await expect(section('Reading now')).toHaveCount(0)
-  await expect(section('Reading')).toHaveCount(0)
+  await expect(section('To read')).toHaveCount(0)
   const toggle = page.getByRole('button', { name: 'Finished 1' })
   await expect(toggle).toHaveAttribute('aria-pressed', 'false')
   await toggle.click()
@@ -262,4 +263,60 @@ test('一条读物在它那一层里改，不在下拉菜单里改', async ({ pa
 
   await expect(layer.getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
   await expect(page.getByText('Linear 怎么重做 issue').first()).toBeVisible()
+})
+
+/**
+ * A READING ROW IS THE APP'S ROW: the day you mean to finish it in the margin (a plan, so no flag),
+ * its project's colour as the thread, then the kind, the title and a line naming the project. The
+ * sections are headed where the threads hang, as the page's title is.
+ */
+test('the reading list hangs on the margin: the plan, the thread, then the item', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await registerFreshUser(page)
+  const zone = await accountZone(page)
+  const project = await page.request.post('/api/v1/projects', {
+    headers: WEB,
+    data: { name: 'CTWS' },
+  })
+  const projectId = ((await project.json()) as { id: string }).id
+  const made = await page.request.post('/api/v1/reading', {
+    headers: WEB,
+    data: { kind: 'book', title: 'The Elements of Typographic Style', projectId },
+  })
+  expect(made.status(), await made.text()).toBe(201)
+  const { id } = (await made.json()) as { id: string }
+  // Three days out on the ACCOUNT's calendar: the margin names it by its weekday.
+  const [y, m, d] = dayInZone(zone).split('-').map(Number) as [number, number, number]
+  const plan = new TZDate(y, m - 1, d + 3, 12, 0, 0, 0, zone)
+  const planOn = `${plan.getFullYear()}-${String(plan.getMonth() + 1).padStart(2, '0')}-${String(plan.getDate()).padStart(2, '0')}`
+  const planned = await page.request.patch(`/api/v1/reading/${id}`, {
+    headers: WEB,
+    data: { planOn },
+  })
+  expect(planned.ok(), await planned.text()).toBe(true)
+  await page.request.post('/api/v1/reading', {
+    headers: WEB,
+    data: { kind: 'book', title: 'Designing Data-Intensive Applications' },
+  })
+  await page.goto('/reading')
+
+  const row = page.locator(`[data-reading-row="${id}"]`)
+  const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  await expect(row.locator('[data-row-lead-text]')).toHaveText(WEEKDAYS[plan.getDay()]!)
+  await expect(row.locator('[data-row-lead]')).toHaveAttribute('data-row-lead', 'plan')
+  await expect(row.locator('[data-project-rail]')).toHaveAttribute('data-project-rail', projectId)
+  await expect(row).toContainText('CTWS')
+
+  // ONE x for the threads; the title and the section's heading hang on it.
+  const threads = await page
+    .locator('[data-reading-row] [data-thread]')
+    .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().x)))
+  expect(threads).toHaveLength(2)
+  expect(new Set(threads).size).toBe(1)
+  const h1 = (await page.getByRole('heading', { level: 1, name: 'Reading' }).boundingBox())!
+  expect(Math.round(h1.x)).toBe(threads[0])
+  const section = (await page.getByRole('heading', { level: 2, name: 'To read' }).boundingBox())!
+  expect(Math.round(section.x)).toBe(threads[0])
 })

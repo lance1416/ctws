@@ -9,6 +9,8 @@ import { LIST_MEASURE } from '../rowLead'
 import { AddReading } from '../components/AddReading'
 import { ReadingDetail } from '../components/ReadingDetail'
 import { ReadingRow } from '../components/ReadingRow'
+import { DaySection } from '../components/DaySection'
+import { ROW_LIST } from '../components/RowParts'
 import { useTimeZone } from '../useMe'
 import { useCrumbs } from '../components/Location'
 
@@ -22,7 +24,7 @@ import { useCrumbs } from '../components/Location'
  */
 const SECTIONS: { status: ReadingStatus; label: string }[] = [
   { status: 'reading', label: 'Reading now' },
-  { status: 'todo', label: 'Reading' },
+  { status: 'todo', label: 'To read' },
 ]
 
 export function Reading() {
@@ -51,25 +53,23 @@ export function Reading() {
 
   return (
     <>
-      <div className="flex items-center justify-between gap-3">
-        <h1
-          ref={heading}
-          tabIndex={-1}
-          className="text-2xl font-semibold tracking-[-0.02em] focus:outline-none"
-        >
-          Reading
-        </h1>
-      </div>
+      {/* The title on the margin's edge, where the rows' threads and the sections' headings hang. */}
+      <h1
+        ref={heading}
+        tabIndex={-1}
+        className="ml-15 text-2xl font-semibold tracking-[-0.02em] focus:outline-none sm:ml-18"
+      >
+        Reading
+      </h1>
 
-      {/* The same measure the task lists keep: a row whose menu sits 900px from its title is not
-          using the width, it is spending it. */}
-      <div className={`mt-4 ${LIST_MEASURE}`}>
+      {/* On the same edge, as wide as a line of title is worth. */}
+      <div className="mt-4 ml-15 max-w-[52ch] sm:ml-18">
         <AddReading />
       </div>
 
-      {items.isPending && <p className="mt-6 text-ink-muted">Loading…</p>}
+      {items.isPending && <p className="mt-6 ml-15 text-ink-muted sm:ml-18">Loading…</p>}
       {items.isError && (
-        <p role="alert" className="mt-6 text-danger">
+        <p role="alert" className="mt-6 ml-15 text-danger sm:ml-18">
           {items.error instanceof Error
             ? items.error.message
             : "Couldn't load. Check that the server is running."}
@@ -81,11 +81,13 @@ export function Reading() {
         const section = of(status)
         if (section.length === 0) return null
         return (
-          <section key={status} aria-label={label} className="mt-8">
-            <h2 className="text-sm font-semibold text-ink-muted">
-              {label} <span className="tabular-nums">{section.length}</span>
-            </h2>
-            <ul className={`mt-1 ${LIST_MEASURE}`}>
+          <DaySection
+            key={status}
+            label={label}
+            count={section.length}
+            className={`mt-8 ${LIST_MEASURE}`}
+          >
+            <ul className={ROW_LIST}>
               {section.map((item) => (
                 <ReadingRow
                   key={item.id}
@@ -95,7 +97,7 @@ export function Reading() {
                 />
               ))}
             </ul>
-          </section>
+          </DaySection>
         )
       })}
 
@@ -108,24 +110,24 @@ export function Reading() {
           if (open) return <ReadingDetail item={open} onClose={() => navigate('/reading')} />
           // 链接指向的东西已经不在了：说出来，别只留一张清单。
           return items.isSuccess ? (
-            <p role="alert" className="mt-4 text-sm text-ink-muted">
+            <p role="alert" className="mt-4 ml-15 text-sm text-ink-muted sm:ml-18">
               This item is not here any more.
             </p>
           ) : null
         })()}
 
       {finished.length > 0 && (
-        <div className="mt-8">
+        <div className={`mt-8 ${LIST_MEASURE}`}>
           <button
             type="button"
             aria-pressed={showFinished}
             onClick={() => setShowFinished((v) => !v)}
-            className="rounded-md text-sm text-ink-muted hover:text-ink"
+            className="ml-15 rounded-md text-sm text-ink-muted hover:text-ink sm:ml-18"
           >
             Finished <span className="tabular-nums">{finished.length}</span>
           </button>
           {showFinished && (
-            <ul className={`mt-1 ${LIST_MEASURE}`}>
+            <ul className={`mt-1 ${ROW_LIST}`}>
               {finished.map((item) => (
                 <ReadingRow
                   key={item.id}
@@ -140,7 +142,7 @@ export function Reading() {
       )}
 
       {items.isSuccess && rows.length > 0 && open.length === 0 && finished.length > 0 && (
-        <p className="mt-8 text-ink-muted">You are through the list.</p>
+        <p className="mt-8 ml-15 text-ink-muted sm:ml-18">You are through the list.</p>
       )}
     </>
   )
