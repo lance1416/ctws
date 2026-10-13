@@ -171,6 +171,7 @@ describe('a recurring meeting on the calendar', () => {
     expect(got.map((e) => e.endTime)).toEqual(['14:00', '14:00', '15:00', '15:00'])
     expect(got[0]!.kind).toBe('meeting · EDT 09:00')
     expect(got[2]!.kind).toBe('meeting · EST 09:00')
+    expect(got.map((e) => e.zone)).toEqual(['EDT', 'EDT', 'EST', 'EST'])
   })
 
   it('keeps a Toronto meeting and a London one apart in the week between their changes', async () => {

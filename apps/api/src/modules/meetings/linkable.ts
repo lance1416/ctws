@@ -1,9 +1,9 @@
 import { and, desc } from 'drizzle-orm'
 import { wanted, type Linkable } from '../../shell/links/linkable'
 import { instantOf } from './occurrences'
-import { zoneLabel } from './routes'
-import { visibleMeetings } from './store'
+import { visibleMeetings } from './queries'
 import { meetings } from './tables'
+import { zoneLabel } from './zone'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 

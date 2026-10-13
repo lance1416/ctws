@@ -1,0 +1,216 @@
+import { type CalendarEntry, DAY_MS } from '@ctws/contracts'
+import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
+import type { Queryable } from '../../platform/db/client'
+import { filing } from '../../shell/links/filing'
+import { attendeesOf } from '../people'
+import { MeetingNotFoundError, OccurrenceNotFoundError } from './errors'
+import {
+  type Exception,
+  type LocalTime,
+  localOf,
+  type Occurrence,
+  occurrencesIn,
+} from './occurrences'
+import { meetingExceptions, meetings } from './tables'
+import { clockTime, windowOf, zoneLabel } from './zone'
+
+type Attendee = { id: string; name: string }
+
+/** A row is a series: with its rule and exceptions it describes every occurrence. */
+export type SeriesRow = typeof meetings.$inferSelect & {
+  projectId: string | null
+  projectName: string | null
+  attendees: Attendee[]
+  exceptions: Exception[]
+}
+
+/** One occurrence, with what a reader needs of its series. */
+export type OccurrenceRow = Occurrence & {
+  meetingId: string
+  title: string
+  rrule: string | null
+  overridden: boolean
+  location: string | null
+  note: string | null
+  projectId: string | null
+  projectName: string | null
+  attendees: Attendee[]
+}
+
+/** A live meeting in this workspace; every read and write goes through it. */
+export function visibleMeetings(workspaceId: string) {
+  return and(eq(meetings.workspaceId, workspaceId), isNull(meetings.deletedAt))
+}
+
+export const meetingFiling = filing('meeting', meetings)
+
+/** A ceiling on series expanded per request, far above a personal calendar's month. */
+const MAX_SERIES_PER_REQUEST = 500
+
+type Selected = {
+  meeting: typeof meetings.$inferSelect
+  projectId: string | null
+  projectName: string | null
+}
+
+/** Attaches attendees and exceptions to a page of series, one query each. */
+async function hydrate(q: Queryable, workspaceId: string, rows: Selected[]): Promise<SeriesRow[]> {
+  const ids = rows.map((r) => r.meeting.id)
+  let attending = new Map<string, Attendee[]>()
+  const exceptionsOf = new Map<string, Exception[]>()
+  if (ids.length > 0) {
+    const [guests, found] = await Promise.all([
+      attendeesOf(q, workspaceId, ids),
+      q.select().from(meetingExceptions).where(inArray(meetingExceptions.meetingId, ids)),
+    ])
+    attending = guests
+    for (const e of found) {
+      const one: Exception = {
+        recurrenceId: e.recurrenceId,
+        cancelled: e.cancelled,
+        startsLocal: e.startsLocal,
+        durationMinutes: e.durationMinutes,
+      }
+      const list = exceptionsOf.get(e.meetingId)
+      if (list) list.push(one)
+      else exceptionsOf.set(e.meetingId, [one])
+    }
+  }
+  return rows.map(({ meeting, projectId, projectName }) => ({
+    ...meeting,
+    projectId,
+    projectName,
+    attendees: attending.get(meeting.id) ?? [],
+    exceptions: exceptionsOf.get(meeting.id) ?? [],
+  }))
+}
+
+const asSeries = (s: SeriesRow) => ({
+  startsLocal: s.startsLocal,
+  timeZone: s.timeZone,
+  durationMinutes: s.durationMinutes,
+  rrule: s.rrule,
+})
+
+function expand(series: SeriesRow, window: { from: Date; to: Date }): OccurrenceRow[] {
+  const overridden = new Set(
+    series.exceptions.filter((e) => !e.cancelled).map((e) => e.recurrenceId),
+  )
+  return occurrencesIn(asSeries(series), series.exceptions, window).map((o) => ({
+    ...o,
+    meetingId: series.id,
+    title: series.title,
+    rrule: series.rrule,
+    overridden: overridden.has(o.recurrenceId),
+    location: series.location,
+    note: series.note,
+    projectId: series.projectId,
+    projectName: series.projectName,
+    attendees: series.attendees,
+  }))
+}
+
+async function seriesOf(
+  q: Queryable,
+  workspaceId: string,
+  opts: { projectId?: string | undefined; id?: string | undefined } = {},
+): Promise<SeriesRow[]> {
+  const rows = await q
+    .select({ meeting: meetings, ...meetingFiling.project })
+    .from(meetings)
+    .where(
+      and(
+        visibleMeetings(workspaceId),
+        opts.projectId ? meetingFiling.filedUnder(opts.projectId) : undefined,
+        opts.id ? eq(meetings.id, opts.id) : undefined,
+      ),
+    )
+    .orderBy(asc(meetings.startsLocal), asc(meetings.id))
+    .limit(MAX_SERIES_PER_REQUEST)
+  return hydrate(q, workspaceId, rows)
+}
+
+export async function seriesById(
+  q: Queryable,
+  workspaceId: string,
+  id: string,
+): Promise<SeriesRow> {
+  const [series] = await seriesOf(q, workspaceId, { id })
+  if (!series) throw new MeetingNotFoundError()
+  return series
+}
+
+/** Every occurrence between two instants, which is how events in many zones are compared. */
+export async function listOccurrences(
+  q: Queryable,
+  workspaceId: string,
+  window: { from: Date; to: Date },
+  opts: { projectId?: string | undefined } = {},
+): Promise<OccurrenceRow[]> {
+  const series = await seriesOf(q, workspaceId, opts)
+  return series
+    .flatMap((s) => expand(s, window))
+    .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
+}
+
+/** A window around a local time, wide enough for any zone. */
+function around(recurrenceId: LocalTime): { from: Date; to: Date } {
+  const at = Date.parse(`${recurrenceId}:00Z`)
+  return { from: new Date(at - 2 * DAY_MS), to: new Date(at + 2 * DAY_MS) }
+}
+
+/** One occurrence by its series and recurrence id; the series' first by default. */
+export async function getOccurrence(
+  q: Queryable,
+  workspaceId: string,
+  id: string,
+  recurrenceId?: LocalTime,
+): Promise<OccurrenceRow> {
+  const series = await seriesById(q, workspaceId, id)
+  const want = recurrenceId ?? series.startsLocal
+  // Searched where it is now: an override can move it out of the days around its original slot.
+  const at = series.exceptions.find((e) => e.recurrenceId === want)?.startsLocal ?? want
+  const one = expand(series, around(at)).find((o) => o.recurrenceId === want)
+  if (!one) throw new OccurrenceNotFoundError()
+  return one
+}
+
+/**
+ * Only a recurrence id the rule produces names an occurrence. Exceptions are ignored, so a moved
+ * or cancelled occurrence can still be edited again.
+ */
+export function assertOccurs(series: SeriesRow, recurrenceId: LocalTime): void {
+  const found = occurrencesIn(asSeries(series), [], around(recurrenceId))
+  if (!found.some((o) => o.recurrenceId === recurrenceId)) throw new OccurrenceNotFoundError()
+}
+
+/**
+ * Occurrences for the shell's calendar, on the account's clock. A meeting in another zone also
+ * carries its own time there.
+ */
+export async function meetingEntries(
+  q: Queryable,
+  workspaceId: string,
+  range: { from: string; to: string },
+  zone: string,
+): Promise<CalendarEntry[]> {
+  const rows = await listOccurrences(q, workspaceId, windowOf(range.from, range.to, zone))
+  return rows.map((m) => {
+    const elsewhere = m.timeZone !== zone
+    return {
+      // A series shows several times on one grid.
+      id: `${m.meetingId}:${m.recurrenceId}`,
+      day: localOf(m.startsAt, zone).slice(0, 10),
+      title: m.title,
+      to: '/calendar',
+      kind: elsewhere
+        ? `meeting · ${zoneLabel(m.startsAt, m.timeZone)} ${localOf(m.startsAt, m.timeZone).slice(11)}`
+        : 'Meetings',
+      time: clockTime(m.startsAt, zone),
+      endTime: clockTime(m.endsAt, zone),
+      zone: elsewhere ? zoneLabel(m.startsAt, m.timeZone) : null,
+      projectId: m.projectId,
+      projectName: m.projectName,
+    }
+  })
+}
