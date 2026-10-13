@@ -1,4 +1,5 @@
 import type { ReadingItemResponse } from '@ctws/contracts'
+import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createProject, setupWith, type TaskCtx, web } from './helpers/tasks'
 
@@ -250,5 +251,27 @@ describe('reading list', () => {
     const theirProject = await createProject(theirs, '别人的项目')
     const res = await add(ctx, { kind: 'book', title: 'Book', projectId: theirProject })
     expect(res.statusCode).toBe(404)
+  })
+
+  it('leaves no item behind when filing it under a project fails', async () => {
+    const ctx = await setup()
+    const projectId = await createProject(ctx, 'Shelf')
+    // Filing the item fails; the item must not survive it.
+    await ctx.db.execute(sql`
+      create function refuse_reading_filing() returns trigger language plpgsql as $$
+      begin
+        if new.from_type = 'reading' then raise exception 'refused for the test'; end if;
+        return new;
+      end $$
+    `)
+    await ctx.db.execute(sql`
+      create trigger refuse_reading_filing before insert on links
+        for each row execute function refuse_reading_filing()
+    `)
+
+    const res = await add(ctx, { kind: 'book', title: 'Orphan', projectId })
+    expect(res.statusCode).toBe(500)
+    const left = await ctx.db.execute(sql`select 1 from reading_items where title = 'Orphan'`)
+    expect(left.rows).toEqual([])
   })
 })

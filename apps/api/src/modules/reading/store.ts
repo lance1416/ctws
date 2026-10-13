@@ -1,7 +1,7 @@
 import type { CreateReadingItemBody, UpdateReadingItemBody } from '@ctws/contracts'
 import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
-import type { Queryable } from '../../platform/db/client'
+import type { Db, Queryable } from '../../platform/db/client'
 import { textMatches } from '../../platform/db/sql'
 import { filing } from '../../shell/links/filing'
 import { assertProjectsVisible } from '../../shell/projects/queries'
@@ -97,32 +97,43 @@ async function getReadingItem(
 }
 
 export async function createReadingItem(
-  q: Queryable,
+  db: Db,
   workspaceId: string,
   body: CreateReadingItemBody,
 ): Promise<ReadingItemRow> {
-  if (body.projectId) await assertProjectsVisible(q, workspaceId, [body.projectId])
-  const values =
-    body.kind === 'link'
-      ? { kind: 'link' as const, url: body.url, title: body.title ?? null, author: null }
-      : { kind: 'book' as const, url: null, title: body.title, author: body.author ?? null }
-  const [created] = await q
-    .insert(readingItems)
-    .values({
-      id: uuidv7(),
-      workspaceId,
-      // To read is where everything starts. There is no separate inbox for reading: the list IS the
-      // inbox, which is why the age of a row is worth showing on it.
-      status: 'todo',
-      ...values,
-    })
-    .returning({ id: readingItems.id })
-  const id = created!.id
-  await filed.put(q, workspaceId, id, body.projectId ? [body.projectId] : [])
-  return getReadingItem(q, workspaceId, id)
+  return db.transaction(async (q) => {
+    if (body.projectId) await assertProjectsVisible(q, workspaceId, [body.projectId])
+    const values =
+      body.kind === 'link'
+        ? { kind: 'link' as const, url: body.url, title: body.title ?? null, author: null }
+        : { kind: 'book' as const, url: null, title: body.title, author: body.author ?? null }
+    const [created] = await q
+      .insert(readingItems)
+      .values({
+        id: uuidv7(),
+        workspaceId,
+        // To read is where everything starts. There is no separate inbox for reading: the list IS the
+        // inbox, which is why the age of a row is worth showing on it.
+        status: 'todo',
+        ...values,
+      })
+      .returning({ id: readingItems.id })
+    const id = created!.id
+    await filed.put(q, workspaceId, id, body.projectId ? [body.projectId] : [])
+    return getReadingItem(q, workspaceId, id)
+  })
 }
 
 export async function updateReadingItem(
+  db: Db,
+  workspaceId: string,
+  id: string,
+  patch: UpdateReadingItemBody,
+): Promise<ReadingItemRow> {
+  return db.transaction((q) => updateIn(q, workspaceId, id, patch))
+}
+
+async function updateIn(
   q: Queryable,
   workspaceId: string,
   id: string,
