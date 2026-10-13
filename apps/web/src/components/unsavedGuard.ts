@@ -39,8 +39,13 @@ export function useUnsavedGuard(dirty: boolean, onLeave: () => void): UnsavedGua
    * Set once the person has said Discard: the way out they chose may itself be a navigation (a
    * task's sheet closing drops `?task` from the address), and blocking it with the form still
    * dirty would ask the question they have just answered.
+   *
+   * ONE DISCARD ANSWERS ONE QUESTION: once the form is clean again (the discarded edit reset, or
+   * the sheet left), the release is spent, and the next edit in the same sheet is guarded afresh.
+   * Left set, every later edit in that sheet would be dropped by a navigation without a word.
    */
   const released = useRef(false)
+  if (!dirty) released.current = false
   const blocker = useBlocker(() => dirtyNow.current && !released.current)
   const leaving = blocker.state === 'blocked' || logoutVia !== null
   const asking = askDiscard || leaving
@@ -82,6 +87,10 @@ export function useUnsavedGuard(dirty: boolean, onLeave: () => void): UnsavedGua
     },
     discard: () => {
       released.current = true
+      // The question is answered: none of it may still be open when the next edit starts.
+      setAskDiscard(false)
+      setLogoutVia(null)
+      setExitVia(null)
       if (blocker.state === 'blocked') blocker.proceed()
       else if (logoutVia) logoutVia()
       else if (exitVia) exitVia()

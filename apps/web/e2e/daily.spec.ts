@@ -937,3 +937,38 @@ test('making a deadline a plan moves the row out of Overdue into Today, with due
   )
   await expect(overdue.getByText('还逾期')).toBeVisible()
 })
+
+/**
+ * ONE DISCARD ANSWERS ONE QUESTION. Discarding lets the way out it was asked about go through
+ * unasked -- and only that one: the next edit in the same sheet is protected again, and its own
+ * question is not already open when Edit is pressed.
+ */
+test('after one Discard, the next unsaved edit in the same sheet is still asked about', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'P')
+  await makeTask(page, pid, '写方案')
+  await makeTask(page, pid, '另一条')
+  await openTree(page, pid)
+  await page.getByRole('listitem').filter({ hasText: '写方案' }).click()
+  const dialog = page.getByRole('dialog')
+
+  await editDetail(page)
+  await page.getByLabel('Title').fill('写方案 v2')
+  await page.getByRole('button', { name: 'Cancel' }).click()
+  await page.getByRole('button', { name: 'Discard changes' }).click()
+  // Back to reading, the sheet still open on the same task.
+  await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
+
+  await editDetail(page)
+  await expect(dialog.getByText('You have unsaved changes')).toHaveCount(0)
+  await page.getByLabel('Title').fill('写方案 v3')
+  const here = page.url()
+  // Opening another task is a navigation now (`?task=`): it must ask, not drop the typing.
+  await page.getByRole('listitem').filter({ hasText: '另一条' }).click()
+  await expect(dialog).toContainText('You have unsaved changes')
+  expect(page.url()).toBe(here)
+  await page.getByRole('button', { name: 'Keep editing' }).click()
+  await expect(page.getByLabel('Title')).toHaveValue('写方案 v3')
+})
