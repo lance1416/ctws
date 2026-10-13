@@ -52,13 +52,14 @@ describe.each([
       // `pairs: 'all'` and not the default 'adjacent': any two projects can sit next to each other
       // in the sidebar, and any two can be compared across a cross-project list.
       const { report, ok } = validate(pal, { mode, surface, pairs: 'all' })
-      const fails = (report as [string, boolean | 'fail', string][])
-        .filter(([, status]) => status === 'fail')
-        .map(([name, , detail]) => `${name}: ${detail}`)
-      // The one WARN this palette ships with is contrast below 3:1. It is dischargeable, and
-      // discharged: a chip or a thread is never alone -- the project's name is on the same row,
-      // or the page itself is the project (WCAG 1.4.1). e2e pins the rows that once broke it.
-      expect(fails, `${mode} on ${surface}`).toEqual([])
+      // Every check PASSES -- not merely "does not fail". The validator lets contrast under 3:1
+      // through as a WARN when a label sits beside the colour, and it always does here; this
+      // palette used to ship on that. It does not need to: a thread is 3px wide, and at 1.92:1
+      // the orange one was hard to see at all.
+      const short = (report as [string, boolean | string, string][])
+        .filter(([, status]) => status !== true && status !== 'pass')
+        .map(([name, status, detail]) => `${name} (${String(status)}): ${detail}`)
+      expect(short, `${mode} on ${surface}`).toEqual([])
       expect(ok).toBe(true)
     },
   )
