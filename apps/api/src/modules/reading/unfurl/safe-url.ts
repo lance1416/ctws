@@ -1,16 +1,11 @@
 /**
- * 出站抓取那道门：哪些地址可以去连。
- *
- * 这是 API 第一次主动往外发请求，而目标地址是别人粘进来的任意字符串。没有这道门，一条
- * `http://169.254.169.254/` 的链接就是让服务器替人去读云元数据，一条 `http://10.0.0.5:6379/`
- * 就是让它替人探内网 —— 粘链接的人甚至不必知道自己在做这件事，页面上的一次跳转就够了。
- *
- * 判断写成纯函数，是因为它是这块里唯一一处写错就出事的地方。真正去连的那一步（`unfurl.ts`）
- * 把 DNS 解析出来的每个地址都拿到这里问一遍，并且连的就是问过的那个地址 —— 问完再解析一次会
- * 给 DNS rebinding 留一条缝。
+ * Which addresses an outbound fetch may reach. Without this, a pasted `http://169.254.169.254/`
+ * reads cloud metadata and `http://10.0.0.5:6379/` probes the internal network, one redirect
+ * away from any page. `unfurl.ts` asks about every resolved address and connects to that same
+ * address, so a second resolution cannot slip past (DNS rebinding).
  */
 
-/** 一个 IPv4 文本地址的四个字节；不是四段十进制就返回 null。 */
+/** The four bytes of an IPv4 address, or null if it is not four decimal parts. */
 function v4Bytes(ip: string): [number, number, number, number] | null {
   const parts = ip.split('.')
   if (parts.length !== 4) return null
@@ -19,26 +14,26 @@ function v4Bytes(ip: string): [number, number, number, number] | null {
   return bytes as [number, number, number, number]
 }
 
-/** IANA 的特殊用途地址，外加 CGNAT 与组播、保留段。 */
+/** IANA's special-purpose ranges, plus CGNAT, multicast and reserved. */
 function publicV4(ip: string): boolean {
   const b = v4Bytes(ip)
   if (!b) return false
   const [a, c] = b
   if (a === 0 || a === 10 || a === 127) return false
-  if (a === 169 && c === 254) return false // 链路本地，云元数据就在这里
+  if (a === 169 && c === 254) return false // link-local, where cloud metadata lives
   if (a === 172 && c >= 16 && c <= 31) return false
   if (a === 192 && c === 168) return false
   if (a === 100 && c >= 64 && c <= 127) return false // CGNAT
-  if (a === 198 && (c === 18 || c === 19)) return false // 基准测试网段
+  if (a === 198 && (c === 18 || c === 19)) return false // benchmarking
   if (a === 192 && c === 0 && (b[2] === 0 || b[2] === 2)) return false
-  if (a === 192 && c === 88 && b[2] === 99) return false // 6to4 中继
+  if (a === 192 && c === 88 && b[2] === 99) return false // 6to4 relay
   if (a === 198 && c === 51 && b[2] === 100) return false // TEST-NET-2
   if (a === 203 && c === 0 && b[2] === 113) return false // TEST-NET-3
-  if (a >= 224) return false // 组播与保留，含 255.255.255.255
+  if (a >= 224) return false // multicast and reserved, broadcast included
   return true
 }
 
-/** 把 IPv6 文本地址展开成 16 个字节；`::` 与末尾的点分 v4 都认。 */
+/** The 16 bytes of an IPv6 address; `::` and a trailing dotted IPv4 are accepted. */
 function v6Bytes(ip: string): number[] | null {
   const zone = ip.indexOf('%')
   const text = zone < 0 ? ip : ip.slice(0, zone)
@@ -52,7 +47,7 @@ function v6Bytes(ip: string): number[] | null {
     for (let i = 0; i < groups.length; i++) {
       const g = groups[i]!
       if (g.includes('.')) {
-        // 结尾那一段可以写成点分十进制（`::ffff:127.0.0.1`）。
+        // Only the last group may be dotted IPv4 (`::ffff:127.0.0.1`).
         if (i !== groups.length - 1) return null
         const v4 = v4Bytes(g)
         if (!v4) return null
@@ -80,31 +75,29 @@ function publicV6(ip: string): boolean {
   if (!b) return false
   if (b.every((x) => x === 0)) return false // ::
   if (b.slice(0, 15).every((x) => x === 0) && b[15] === 1) return false // ::1
-  if ((b[0]! & 0xfe) === 0xfc) return false // fc00::/7，唯一本地地址
-  if (b[0] === 0xfe && (b[1]! & 0xc0) === 0x80) return false // fe80::/10，链路本地
-  if (b[0] === 0xff) return false // ff00::/8，组播
-  if (b[0] === 0x01 && b.slice(1, 8).every((x) => x === 0)) return false // 100::/64，丢弃前缀
+  if ((b[0]! & 0xfe) === 0xfc) return false // fc00::/7, unique local
+  if (b[0] === 0xfe && (b[1]! & 0xc0) === 0x80) return false // fe80::/10, link-local
+  if (b[0] === 0xff) return false // ff00::/8, multicast
+  if (b[0] === 0x01 && b.slice(1, 8).every((x) => x === 0)) return false // 100::/64, discard
 
-  // 把 v4 包在里面的三种写法：裹着的地址本身也要问一遍，否则 ::ffff:10.0.0.1 就是一条绕路。
+  // IPv4 embedded three ways: the inner address is checked too, or ::ffff:10.0.0.1 gets through.
   const asV4 = (bytes: number[]) => bytes.join('.')
   const mapped = b.slice(0, 10).every((x) => x === 0) && b[10] === 0xff && b[11] === 0xff
   if (mapped) return publicV4(asV4(b.slice(12)))
   const nat64 = b[0] === 0x00 && b[1] === 0x64 && b[2] === 0xff && b[3] === 0x9b
   if (nat64) return publicV4(asV4(b.slice(12)))
-  if (b[0] === 0x20 && b[1] === 0x02) return publicV4(asV4(b.slice(2, 6))) // 2002::/16，6to4
+  if (b[0] === 0x20 && b[1] === 0x02) return publicV4(asV4(b.slice(2, 6))) // 2002::/16, 6to4
   return true
 }
 
-/** 这个地址在外面吗？解析出来的每一个候选地址都要过这一关。 */
+/** Whether an address is on the public internet; every resolved candidate is checked. */
 export function isPublicAddress(ip: string, family: number): boolean {
   return family === 6 ? publicV6(ip) : publicV4(ip)
 }
 
 /**
- * 这个链接可以去抓吗？可以就把 URL 给出来，不可以就是 null。
- *
- * 只管协议与用户名密码：端口不管（真有网页住在 :8443 上），内网地址交给 `isPublicAddress` ——
- * 挡住哪些地址才是这道门的内容，而端口挡不住任何一件已经被地址挡住的事。
+ * The URL if it may be fetched: http or https, without credentials. Ports are not restricted;
+ * which hosts are reachable is `isPublicAddress`'s job.
  */
 export function checkLinkUrl(raw: string): URL | null {
   let u: URL
@@ -114,19 +107,14 @@ export function checkLinkUrl(raw: string): URL | null {
     return null
   }
   if (u.protocol !== 'http:' && u.protocol !== 'https:') return null
-  // 用户名密码只会被原样发给对面，而粘进来的链接里带着它们多半是意外。
+  // Credentials would be sent as they are, and in a pasted link they are usually an accident.
   if (u.username !== '' || u.password !== '') return null
   return u
 }
 
-/**
- * 主机名本身就是一个 IP 吗？是的话给出它，好当场问那道门。
- *
- * 这一条不是多余的小心：主机名是数字地址时，Node 根本不会去解析 DNS，于是 `lookup` 那道门
- * 一次都不会被调用 —— 一条 `http://169.254.169.254/` 会直接连上去。
- */
+/** The host's IP when the host is one: Node skips DNS for it, so the lookup guard never runs. */
 export function literalAddress(hostname: string): { ip: string; family: number } | null {
-  // URL 里的 IPv6 带着方括号。
+  // A URL brackets an IPv6 host.
   if (hostname.startsWith('[') && hostname.endsWith(']')) {
     return { ip: hostname.slice(1, -1), family: 6 }
   }

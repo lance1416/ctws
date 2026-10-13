@@ -11,7 +11,7 @@ export const readingItems = pgTable(
     workspaceId: uuid('workspace_id')
       .notNull()
       .references(() => workspaces.id, { onDelete: 'cascade' }),
-    kind: text('kind').notNull(),
+    kind: text('kind').$type<(typeof READING_KINDS)[number]>().notNull(),
     /** Null for a link until someone names it; the list shows the address meanwhile. */
     title: text('title'),
     /** What the page itself says, kept apart from `title` so a refetch never overwrites a name. */
@@ -21,7 +21,7 @@ export const readingItems = pgTable(
     fetchedAt: timestamp('fetched_at', { withTimezone: true }),
     url: text('url'),
     author: text('author'),
-    status: text('status').notNull(),
+    status: text('status').$type<(typeof READING_STATUSES)[number]>().notNull(),
     /** The day you mean to finish it by. */
     planOn: date('plan_on'),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),

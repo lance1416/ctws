@@ -1,5 +1,5 @@
 import { buildApp } from '../../src/app'
-import type { Unfurl } from '../../src/modules/reading/unfurl'
+import type { Unfurl } from '../../src/modules/reading/unfurl/unfurl'
 import { parseEnv, type Env } from '../../src/platform/config'
 import { withDatabase } from './db'
 

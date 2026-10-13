@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { checkLinkUrl, isPublicAddress, literalAddress } from './safeUrl'
+import { checkLinkUrl, isPublicAddress, literalAddress } from './safe-url'
 
 /**
  * 出站抓取那道门。

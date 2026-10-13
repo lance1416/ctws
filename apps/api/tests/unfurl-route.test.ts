@@ -2,18 +2,17 @@ import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import type { ReadingItemResponse } from '@ctws/contracts'
 import { afterEach, describe, expect, it } from 'vitest'
-import { unfurl } from '../src/modules/reading/unfurl'
+import { unfurl } from '../src/modules/reading/unfurl/unfurl'
 import { setupWith, type TaskCtx, web } from './helpers/tasks'
 
 /**
- * 粘一条链接进来，这一行写的是对面自己说的那句话。
+ * A pasted link shows what its own page says. The fetch itself is tested in
+ * `src/modules/reading/unfurl/unfurl.test.ts`; this covers the wiring: what is fetched is stored
+ * and read back, a failed fetch never loses the item, and a title the person wrote is never
+ * overwritten.
  *
- * 抓取本身在 `src/reading/unfurl.test.ts` 里测透了（那道门、跳转、上限、编码）。这里测的是接起来
- * 之后的三件事：抓到的东西存下来并且读得回去；**抓不到不能把这一条弄丢**；人自己写的标题不许被
- * 覆盖。
- *
- * 测试里的服务器住在 127.0.0.1 上，而那正是线上要挡的地址，所以抓取函数是从外面传进去的 ——
- * 生产的那条路里没有任何开关。
+ * The test server is on 127.0.0.1, which production refuses, so the fetch is passed in from
+ * outside; the production path has no switch.
  */
 
 const cleanups: (() => Promise<void>)[] = []

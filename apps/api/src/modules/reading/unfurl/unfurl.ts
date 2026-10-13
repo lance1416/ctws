@@ -2,44 +2,40 @@ import { lookup as dnsLookup } from 'node:dns'
 import type { LookupFunction } from 'node:net'
 import { request as httpRequest, type IncomingMessage } from 'node:http'
 import { request as httpsRequest } from 'node:https'
-import { checkLinkUrl, isPublicAddress, literalAddress } from './safeUrl'
+import { checkLinkUrl, isPublicAddress, literalAddress } from './safe-url'
 
 /**
- * 一条链接的标题，抓回来的那一个。
+ * A link's title and summary as its own page states them. This is the API's only outbound
+ * request, so it is shaped around what can go wrong:
  *
- * 粘一个 url 进来的时候，这一行本来只能写 `github.com/lance1416/ctws` —— 对面自己说的那句话要
- * 好得多。Discord 那套就是这个：服务端去读目标页面的 og 标签，缓存下来。
- *
- * 这是整个 API 唯一一处主动往外发请求，所以它的形状是围着「会出什么事」长的：
- *
- * - **地址是别人给的**，所以每个解析出来的 IP 都要过 `safeUrl` 那道门，而且连的就是问过的那个
- *   地址（`lookup` 直接把它交回去），中间不再解析第二次 —— 否则 DNS rebinding 有缝可钻。
- * - **跳转每一跳都重来一遍**：一个公网地址 302 到 127.0.0.1 是最老的那条绕路。
- * - **对面可能不回话、可能回 2GB**，所以有总预算和体积上限；标题在 \`<head>\` 里，读到上限就够。
- * - **抓不到不是错**。很多站点对没登录的爬虫什么都不给（x.com 就是），所以失败一律是 null，
- *   调用者退回 host 加路径那条路。
+ * - The address is someone else's: every resolved IP must pass `isPublicAddress`, and the
+ *   connection uses the address that was checked.
+ * - Every redirect hop is checked again: a public page redirecting to 127.0.0.1 is the oldest
+ *   detour.
+ * - The far end may never answer, or send gigabytes: there is a total budget and a size cap, and
+ *   the title is in `<head>`.
+ * - Failing is not an error: many sites give crawlers nothing, so failure is null and the caller
+ *   shows the host and path.
  */
 
 export type Unfurled = { title: string | null; summary: string | null }
 
 /**
- * 去抓这一条链接。
- *
- * 路由拿的是这个类型而不是下面那个函数本身：测试里的服务器住在 127.0.0.1 上，而那正是线上要挡
- * 的地址，所以测试传一个放开了那道门的版本进去 —— 生产的那条路上没有任何开关。
+ * What routes take instead of the function itself: tests pass a version that may reach
+ * 127.0.0.1, which production must refuse.
  */
 export type Unfurl = (url: string) => Promise<Unfurled | null>
 
-/** 总预算。捕获是同步等它的，所以这个数字就是「粘一条链接最慢多久回来」。 */
+/** The total budget; capture waits for it, so it is the slowest a pasted link comes back. */
 const BUDGET_MS = 2000
-/** 只读开头这么多：og 标签与 <title> 都在 <head> 里，正文一个字都不需要。 */
+/** Only the start is read: the og tags and <title> are in <head>. */
 const MAX_BYTES = 128 * 1024
 const MAX_REDIRECTS = 3
 const MAX_SUMMARY = 300
 
 type Options = {
   timeoutMs?: number
-  /** 这个地址准不准连。默认是真的那道门；测试对着本机跑，所以它是参数。 */
+  /** Which addresses may be reached; a parameter so tests can run against localhost. */
   allow?: (ip: string, family: number) => boolean
 }
 
@@ -53,7 +49,7 @@ export async function unfurl(raw: string, opts: Options = {}): Promise<Unfurled 
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
     const left = deadline - Date.now()
     if (left <= 0) return null
-    // 地址直接写成数字时不经过 DNS，那道 lookup 的门一次都不会被调用 —— 这里当场问。
+    // A numeric host skips DNS, and so the lookup guard: it is checked here.
     const literal = literalAddress(url.hostname)
     if (literal && !allow(literal.ip, literal.family)) return null
     const got = await fetchHead(url, allow, left).catch(() => null)
@@ -69,15 +65,15 @@ export async function unfurl(raw: string, opts: Options = {}): Promise<Unfurled 
 type Fetched =
   { kind: 'page'; body: Buffer; charset: string } | { kind: 'redirect'; location: string }
 
-/** 一跳。拿到的是开头那一段字节，或者下一个地址。 */
+/** One hop: the first bytes of a page, or the next address. */
 function fetchHead(
   url: URL,
   allow: (ip: string, family: number) => boolean,
   budgetMs: number,
 ): Promise<Fetched | null> {
   return new Promise((resolve, reject) => {
-    // 掐断自己的连接会冒出一个 ECONNRESET：那是「够了」，不是「出错了」。两者必须分开，否则读满
-    // 上限这条正常路径会被当成失败。先回答的人说了算。
+    // Cutting our own connection raises ECONNRESET, which means "enough", not failure; the first
+    // answer wins.
     let settled = false
     const done = (value: Fetched | null) => {
       if (settled) return
@@ -95,13 +91,12 @@ function fetchHead(
       url,
       {
         method: 'GET',
-        // 对面要知道是谁在敲门：没有 UA 的请求有不少站点直接拒绝。
+        // Some sites refuse a request with no user agent.
         headers: {
           'user-agent': 'CTWS/1.0 (+https://github.com/lance1416/ctws)',
           accept: 'text/html,application/xhtml+xml',
           'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
         },
-        // 解析与校验在同一步，连的就是问过的那个地址。
         lookup: guardedLookup(allow),
       },
       (res: IncomingMessage) => {
@@ -113,7 +108,7 @@ function fetchHead(
           return
         }
         const type = String(res.headers['content-type'] ?? '')
-        // 只认网页：一条指向 2GB 视频的链接，连下载都不该开始。
+        // Pages only: a link to a video should not start downloading it.
         if (status !== 200 || !/^\s*(text\/html|application\/xhtml\+xml)/i.test(type)) {
           done(null)
           res.destroy()
@@ -127,7 +122,7 @@ function fetchHead(
         res.on('data', (chunk: Buffer) => {
           chunks.push(chunk)
           size += chunk.length
-          // 够了就先交卷再掐连接：标题在 <head> 里，正文一个字都不需要，而对面可能永远写不完。
+          // Enough: answer, then cut the connection, since the far end may never finish.
           if (size >= MAX_BYTES) {
             page()
             res.destroy()
@@ -146,15 +141,9 @@ function fetchHead(
 }
 
 /**
- * 解析地址并当场判断。
- *
- * 问过的地址直接交回给连接，不让它自己再解析一次：先问 DNS、再连一次 DNS，中间那一瞬可以换一个
- * 答案（DNS rebinding），而那正是这道门要挡的事。
- *
- * `all` 必须照着答。Node 的 happy-eyeballs 会带着 `{ all: true }` 来问、要的是一个数组，回单个
- * 地址的话每一个域名都会死在「Invalid IP address: undefined」上 —— 而数字地址根本不走 DNS，所以
- * 这件事不会在用数字地址的用例里露出来。过关的地址全给回去，happy-eyeballs 照常挑，挑到的每一个
- * 都是问过的。
+ * Resolves and checks in one step and hands the checked addresses to the connection, so a second
+ * resolution cannot answer differently (DNS rebinding). `all` must be honoured: happy-eyeballs
+ * asks with `{ all: true }` and wants an array.
  */
 function guardedLookup(allow: (ip: string, family: number) => boolean): LookupFunction {
   return (hostname, options, cb) => {
@@ -173,7 +162,7 @@ function charsetOf(contentType: string): string {
   return /charset=["']?([\w-]+)/i.exec(contentType)?.[1]?.toLowerCase() ?? 'utf-8'
 }
 
-/** og:title 胜过 <title>：站点自己为分享写的那一句，没有「| 频道名」那种尾巴。 */
+/** og:title over <title>: the site's own line for sharing, without a "| Channel" tail. */
 function readFacts(body: Buffer, headerCharset: string): Unfurled | null {
   const head = decode(body, headerCharset)
   const title = meta(head, 'og:title') ?? tag(head) ?? null
@@ -183,10 +172,8 @@ function readFacts(body: Buffer, headerCharset: string): Unfurled | null {
 }
 
 /**
- * 字节变字符串。
- *
- * 编码先信响应头，没有就信页面自己的 <meta charset>（中文站点里 GBK 还活着，按 UTF-8 读会得到
- * 一行乱码当标题）。为了读那个 meta，先按 latin1 看一眼 —— ASCII 那一段在任何编码里都一样。
+ * Decodes with the header's charset, else the page's own <meta charset> (GBK is still common),
+ * read through latin1 because its ASCII prefix is the same in every encoding.
  */
 function decode(body: Buffer, headerCharset: string): string {
   const declared =
@@ -206,7 +193,7 @@ function tag(head: string): string | null {
   return raw === undefined ? null : clean(raw)
 }
 
-/** `property` 与 `name` 都认，属性顺序也都认：这两种写法真实世界里一样多。 */
+/** Matches `property` or `name`, with `content` before or after it. */
 function meta(head: string, key: string): string | null {
   const pattern = new RegExp(
     `<meta[^>]+(?:property|name)=["']${key}["'][^>]*>|<meta[^>]+content=["']([^"']*)["'][^>]+(?:property|name)=["']${key}["'][^>]*>`,
@@ -227,7 +214,7 @@ const ENTITIES: Record<string, string> = {
   nbsp: ' ',
 }
 
-/** 实体还原、空白收拢。标题里的换行与缩进是源码的排版，不是那句话的一部分。 */
+/** Decodes entities and collapses the source's line breaks and indentation. */
 function clean(text: string): string {
   return text
     .replace(/&#x([0-9a-f]+);/gi, (_, hex: string) =>

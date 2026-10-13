@@ -34,12 +34,8 @@ const raw = z.object({
   CORS_ORIGINS: z.string().default(''),
   // Built web app to serve (apps/web/dist). Unset or missing: the API serves no frontend.
   WEB_DIST: z.string().optional(),
-  /**
-   * 粘一条链接时去不去读对面的标题。
-   *
-   * 这是这个 API 唯一一处主动往外发请求，所以它可以整个关掉 —— 关掉之后链接照样存，只是那一行
-   * 写的是 host 加路径。e2e 的那套栈把它关着：那些用例粘的是真实域名，抓起来既慢又要看网络。
-   */
+  // Whether a pasted link's own title is fetched: the API's only outbound request. Off, a link
+  // shows its host and path. The e2e stack turns it off, since its links name real sites.
   READING_UNFURL: bool(true),
 })
 

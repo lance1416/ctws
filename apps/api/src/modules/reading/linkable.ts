@@ -1,6 +1,6 @@
 import { and, desc } from 'drizzle-orm'
 import { wanted, type Linkable } from '../../shell/links/linkable'
-import { visibleItems } from './store'
+import { visibleItems } from './queries'
 import { readingItems } from './tables'
 
 export const readingLinkable: Linkable = {
