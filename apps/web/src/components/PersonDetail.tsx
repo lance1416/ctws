@@ -307,8 +307,13 @@ function Reads({ label, value }: { label: string; value: string | null }) {
  * `touched`：这一行被离开过 —— 还在打字的那一行不挑错。
  * `seed`：框里那个国家码是这张表自己放进去的，不是人写的。人没在它后面接着打，这一行就还是
  * 空的 —— 加了一行又改主意是常事，不该因此按不动 Save。
+ * `saved`：还是存下来的那个样子，这次没人改过它。
  */
-type Row = PersonResponse['channels'][number] & { touched?: boolean; seed?: string }
+type Row = PersonResponse['channels'][number] & {
+  touched?: boolean
+  seed?: string
+  saved?: boolean
+}
 
 /** 这一行上有人写过东西吗？自己放的那个国家码不算。 */
 const written = (c: Row) => c.value.trim() !== '' && c.value !== c.seed
@@ -344,14 +349,17 @@ function PersonForm({
   const [gender, setGender] = useState(person.gender ?? '')
   const [circle, setCircle] = useState(person.circle ?? '')
   const [projectIds, setProjectIds] = useState(person.projects.map((p) => p.id))
-  const [channels, setChannels] = useState<Row[]>(() => byKind(person.channels))
+  const [channels, setChannels] = useState<Row[]>(() =>
+    byKind(person.channels).map((c) => ({ ...c, saved: true })),
+  )
   const phone = usePhone()
   const region = phone?.currentRegion()
   /**
    * 号码那一包到了之后，把这张表里的电话过一遍。
    *
-   * 写了字的：补上国家码再排好。存下来的老号码可能是 `(730) 197-4443`，而现在没有国家码的号码
-   * 过不了校验 —— 不补的话，改他的名字也会被一个他从没打开过的框卡住。
+   * 存下来的：补上国家码再排好。老号码可能是 `(730) 197-4443`，而现在没有国家码的号码
+   * 过不了校验 —— 不补的话，改他的名字也会被一个他从没打开过的框卡住。人这次打的不碰：国家码
+   * 是按本机地区猜的，`139 0000 1234` 会被补成 `+1 390 000 1234`，而他还在等那句「缺国家码」。
    *
    * 空着的：放上本地的国家码。这件事挑号码那一下也做，两处都要：那一包有八十来 KB，而一个人
    * 完全可能在它到达之前就把那一行改成了电话 —— 先挑的那一下没有国家码可放，这里补上。
@@ -365,7 +373,9 @@ function PersonForm({
           ? row
           : row.value.trim() === ''
             ? { ...row, value: code, seed: code }
-            : { ...row, value: phone.formatPhone(phone.toE164(row.value, region), region) },
+            : row.saved
+              ? { ...row, value: phone.formatPhone(phone.toE164(row.value, region), region) }
+              : row,
       ),
     )
   }, [phone, region])
@@ -515,6 +525,7 @@ function PersonForm({
                     ...row,
                     value: typed(row.kind, row.value, now),
                     touched: false,
+                    saved: false,
                   }))
                 }}
                 // 离开这一行才挑错。一个人打到 `+44` 的时候那还不是一个号码，而红字说的是

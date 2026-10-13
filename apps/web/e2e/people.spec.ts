@@ -769,6 +769,51 @@ test('写得不像那一类，保存之前就说出来', async ({ page }) => {
   await expect(pane.getByRole('button', { name: 'Save' })).toBeEnabled()
 })
 
+test.describe(() => {
+  // The pass below guesses a country code from the browser's region; pinned, so the guess is
+  // the same on every machine.
+  test.use({ locale: 'en-US' })
+
+  /*
+    号码那一包晚到，人打的字不被改写。
+
+    它到了之后会把表里的电话过一遍，那是给存下来的号码准备的。以前人这次打的也在其中：
+    `139 0000 1234` 被按本机地区补成 `+1 390 000 1234`，红字没了，Save 亮了，存下的是另一个号码。
+  */
+  test('号码那一包晚到，人打的字不被改写', async ({ page }) => {
+    await registerFreshUser(page, '/people')
+    await add(page, {
+      name: '陈颖',
+      channels: [
+        { kind: 'phone', value: '+8613900001234' },
+        { kind: 'phone', value: '+8613800000000' },
+      ],
+    })
+    let release = () => {}
+    const held = new Promise<void>((resolve) => (release = resolve))
+    await page.route('**/assets/phone-*.js', async (route) => {
+      await held
+      await route.continue()
+    })
+    await page.reload()
+    await personLink(page, '陈颖').click()
+    const pane = page.getByRole('dialog', { name: 'People' })
+    await pane.getByRole('button', { name: 'Edit', exact: true }).click()
+    // 存下来的那条，重打一遍：打过就是人的字了。
+    const box = pane.getByRole('textbox', { name: 'Item 2' })
+    await box.fill('139 0000 1234')
+    await box.blur()
+    await expect(pane).toContainText('start with the country code, like +86')
+
+    release()
+    // 到了：存下来的那条排好了。
+    await expect(pane.getByRole('textbox', { name: 'Item 1' })).toHaveValue('+86 139 0000 1234')
+    await expect(box).toHaveValue('139 0000 1234')
+    await expect(pane).toContainText('start with the country code, like +86')
+    await expect(pane.getByRole('button', { name: 'Save' })).toBeDisabled()
+  })
+})
+
 /**
  * 打进去的号码当场排好。
  *
