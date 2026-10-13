@@ -79,7 +79,8 @@ export async function listProjectMovement(
     remaining: r.remaining,
     overdue: r.overdue,
     lastActivityOn: r.lastActivityOn ?? null,
-    quietDays: r.quietDays === null || r.quietDays === undefined ? null : Number(r.quietDays),
+    // At least 0: the database stamps events, and its clock may run past the app's today.
+    quietDays: r.quietDays == null ? null : Math.max(0, Number(r.quietDays)),
     nextDueOn: r.nextDueOn ?? null,
   }))
 }
