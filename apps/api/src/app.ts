@@ -12,8 +12,9 @@ import {
   type ZodTypeProvider,
 } from 'fastify-type-provider-zod'
 import { adminRoutes } from './shell/admin/routes'
-import { authRoutes } from './shell/auth/routes'
-import { movedRoutes } from './compat'
+import { authenticated } from './shell/auth/authenticated'
+import { SESSION_COOKIE } from './shell/auth/cookie'
+import { publicAuthRoutes, sessionRoutes } from './shell/auth/routes'
 import { warmDummyHash } from './shell/auth/service'
 import type { Db } from './platform/db/client'
 import type { Env } from './platform/config'
@@ -55,12 +56,19 @@ export async function buildApp(opts: {
   app.decorate('unfurl', opts.unfurl ?? unfurl)
 
   await app.register(fastifySwagger, {
-    openapi: { info: { title: 'CTWS API', version: '1' } },
-    transform: jsonSchemaTransform,
-    // Every refusal this API makes is one shape, so the document says it ONCE and every
-    // operation points at it. Written as a post-pass rather than on each route: the statuses
-    // below are true of every route by construction (the auth hook, the validator, the
-    // limiter), and repeating them on forty routes is forty chances to leave one out.
+    openapi: {
+      info: { title: 'CTWS API', version: '1' },
+      components: {
+        securitySchemes: { session: { type: 'apiKey', in: 'cookie', name: SESSION_COOKIE } },
+      },
+    },
+    transform: (input) => {
+      const out = jsonSchemaTransform(input)
+      // Carried to the operation so the refusal pass can add a 429.
+      return input.route.config?.rateLimit
+        ? { ...out, schema: { ...out.schema, 'x-rate-limited': true } }
+        : out
+    },
     transformObject: (spec) => documentRefusals(jsonSchemaTransformObject(spec)),
   })
 
@@ -77,22 +85,25 @@ export async function buildApp(opts: {
 
   app.get('/api/v1/openapi.json', { schema: { hide: true } }, async () => app.swagger())
 
-  await app.register(authRoutes, { prefix: '/api/v1' })
-  // The shell's own surfaces stay flat under /api/v1; a MODULE gets a namespace of its own, so
-  // the second module can be added without either one having to know the other's paths.
-  await app.register(projectRoutes, { prefix: '/api/v1' })
-  await app.register(adminRoutes, { prefix: '/api/v1' })
-  // The edge table is the shell's, like projects: an edge joins two modules' things, so no
-  // module could own it without learning about another.
-  await app.register(linkRoutes, { prefix: '/api/v1' })
-  await app.register(calendarDayRoutes, { prefix: '/api/v1' })
-  await app.register(cityRoutes, { prefix: '/api/v1' })
-  await app.register(taskRoutes, { prefix: '/api/v1/tasks' })
-  await app.register(readingRoutes, { prefix: '/api/v1/reading' })
-  await app.register(personRoutes, { prefix: '/api/v1/people' })
-  await app.register(meetingRoutes, { prefix: '/api/v1/meetings' })
-  // Registered last: a legacy path must never shadow a real one.
-  await app.register(movedRoutes, { prefix: '/api/v1' })
+  await app.register(
+    async (api) => {
+      await api.register(publicAuthRoutes)
+      await api.register(async (authed) => {
+        authenticated(authed)
+        await authed.register(sessionRoutes)
+        await authed.register(adminRoutes)
+        await authed.register(projectRoutes)
+        await authed.register(linkRoutes)
+        await authed.register(calendarDayRoutes)
+        await authed.register(cityRoutes)
+        await authed.register(taskRoutes, { prefix: '/tasks' })
+        await authed.register(readingRoutes, { prefix: '/reading' })
+        await authed.register(personRoutes, { prefix: '/people' })
+        await authed.register(meetingRoutes, { prefix: '/meetings' })
+      })
+    },
+    { prefix: '/api/v1' },
+  )
 
   // Serve the built web app, if configured. Registered after the API routes on purpose: API
   // routes must win over static files, and anything that misses falls to the not-found handler.

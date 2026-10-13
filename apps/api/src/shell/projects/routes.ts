@@ -5,10 +5,9 @@ import {
   projectResponse,
   updateProjectBody,
 } from '@ctws/contracts'
-import type { FastifyPluginAsync } from 'fastify'
-import type { ZodTypeProvider } from 'fastify-type-provider-zod'
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
-import { authedUser, requireUser } from '../auth/require-user'
+import { currentUser } from '../auth/authenticated'
 import {
   createProject,
   listProjects,
@@ -48,56 +47,47 @@ function toProjectListItem(p: ProjectListRow): z.infer<typeof projectListItem> {
 const idParams = z.object({ id: z.uuid() }).strict()
 const listQuery = z.object({ archived: z.enum(['true', 'false']).optional() }).strict()
 
-export const projectRoutes: FastifyPluginAsync = async (app) => {
-  const typed = app.withTypeProvider<ZodTypeProvider>()
-
-  typed.get(
+export const projectRoutes: FastifyPluginAsyncZod = async (app) => {
+  app.get(
     '/projects',
     {
-      preHandler: requireUser,
       schema: {
         querystring: listQuery,
         response: { 200: z.object({ projects: z.array(projectListItem) }).strict() },
       },
     },
     async (req) => {
-      const rows = await listProjects(app.db, authedUser(req).workspaceId, {
+      const rows = await listProjects(app.db, currentUser(req).workspaceId, {
         archived: req.query.archived === 'true',
       })
       return { projects: rows.map(toProjectListItem) }
     },
   )
 
-  typed.post(
+  app.post(
     '/projects',
     {
-      preHandler: requireUser,
       schema: { body: createProjectBody, response: { 201: projectResponse } },
     },
     async (req, reply) => {
-      const row = await createProject(app.db, authedUser(req).workspaceId, req.body)
+      const row = await createProject(app.db, currentUser(req).workspaceId, req.body)
       return reply.status(201).send(toProjectResponse(row))
     },
   )
 
-  typed.patch(
+  app.patch(
     '/projects/:id',
     {
-      preHandler: requireUser,
       schema: { params: idParams, body: updateProjectBody, response: { 200: projectResponse } },
     },
     async (req) => {
-      const row = await updateProject(app.db, authedUser(req).workspaceId, req.params.id, req.body)
+      const row = await updateProject(app.db, currentUser(req).workspaceId, req.params.id, req.body)
       return toProjectResponse(row)
     },
   )
 
-  typed.delete(
-    '/projects/:id',
-    { preHandler: requireUser, schema: { params: idParams } },
-    async (req, reply) => {
-      await softDeleteProject(app.db, authedUser(req).workspaceId, req.params.id)
-      return reply.status(204).send()
-    },
-  )
+  app.delete('/projects/:id', { schema: { params: idParams } }, async (req, reply) => {
+    await softDeleteProject(app.db, currentUser(req).workspaceId, req.params.id)
+    return reply.status(204).send()
+  })
 }

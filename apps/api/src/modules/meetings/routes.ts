@@ -7,10 +7,9 @@ import {
   meetingOccurrence,
   updateMeetingBody,
 } from '@ctws/contracts'
-import type { FastifyPluginAsync } from 'fastify'
-import type { ZodTypeProvider } from 'fastify-type-provider-zod'
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
-import { authedUser, requireUser } from '../../shell/auth/require-user'
+import { currentUser } from '../../shell/auth/authenticated'
 import { instantOf, localOf } from './occurrences'
 import {
   cancelMeeting,
@@ -72,17 +71,14 @@ export function zoneLabel(at: Date, timeZone: string): string {
   return parts.find((p) => p.type === 'timeZoneName')?.value ?? timeZone
 }
 
-export const meetingRoutes: FastifyPluginAsync = async (app) => {
-  const typed = app.withTypeProvider<ZodTypeProvider>()
-
-  typed.get(
+export const meetingRoutes: FastifyPluginAsyncZod = async (app) => {
+  app.get(
     '/',
     {
-      preHandler: requireUser,
       schema: { querystring: meetingListQuery, response: { 200: listResponse } },
     },
     async (req) => {
-      const user = authedUser(req)
+      const user = currentUser(req)
       // A list with no window means the month ahead: a recurring meeting has no last occurrence,
       // so "everything" is not an answer anyone can be given.
       const from = req.query.from ?? localOf(new Date(), user.timezone).slice(0, 10)
@@ -105,17 +101,16 @@ export const meetingRoutes: FastifyPluginAsync = async (app) => {
    * there is the question a calendar answers -- and the event's own zone travels alongside, so a
    * meeting agreed as 09:00 in Toronto can still say so.
    */
-  typed.get(
+  app.get(
     '/calendar',
     {
-      preHandler: requireUser,
       schema: {
         querystring: calendarQuery,
         response: { 200: calendarEntriesResponse },
       },
     },
     async (req) => {
-      const user = authedUser(req)
+      const user = currentUser(req)
       const rows = await listOccurrences(
         app.db,
         user.workspaceId,
@@ -148,10 +143,9 @@ export const meetingRoutes: FastifyPluginAsync = async (app) => {
     },
   )
 
-  typed.get(
+  app.get(
     '/:id',
     {
-      preHandler: requireUser,
       schema: {
         params: idParams,
         querystring: z.object({ recurrenceId: z.string().optional() }).strict(),
@@ -161,7 +155,7 @@ export const meetingRoutes: FastifyPluginAsync = async (app) => {
     async (req) => {
       const one = await getOccurrence(
         app.db,
-        authedUser(req).workspaceId,
+        currentUser(req).workspaceId,
         req.params.id,
         req.query.recurrenceId,
       )
@@ -169,41 +163,39 @@ export const meetingRoutes: FastifyPluginAsync = async (app) => {
     },
   )
 
-  typed.post(
+  app.post(
     '/',
     {
-      preHandler: requireUser,
       schema: { body: createMeetingBody, response: { 201: meetingOccurrence } },
     },
     async (req, reply) => {
       // One transaction: a meeting and who is in it are one thing to arrange.
       const created = await app.db.transaction((tx) =>
-        createMeeting(tx, authedUser(req).workspaceId, req.body),
+        createMeeting(tx, currentUser(req).workspaceId, req.body),
       )
       return reply.code(201).send(toResponse(created))
     },
   )
 
-  typed.patch(
+  app.patch(
     '/:id',
     {
-      preHandler: requireUser,
       schema: { params: idParams, body: updateMeetingBody, response: { 200: meetingOccurrence } },
     },
     async (req) => {
       const updated = await app.db.transaction((tx) =>
-        updateMeeting(tx, authedUser(req).workspaceId, req.params.id, req.body),
+        updateMeeting(tx, currentUser(req).workspaceId, req.params.id, req.body),
       )
       return toResponse(updated)
     },
   )
 
-  typed.delete(
+  app.delete(
     '/:id',
-    { preHandler: requireUser, schema: { params: idParams, querystring: deleteMeetingQuery } },
+    { schema: { params: idParams, querystring: deleteMeetingQuery } },
     async (req, reply) => {
       await app.db.transaction((tx) =>
-        cancelMeeting(tx, authedUser(req).workspaceId, req.params.id, req.query),
+        cancelMeeting(tx, currentUser(req).workspaceId, req.params.id, req.query),
       )
       return reply.code(204).send()
     },

@@ -1,8 +1,6 @@
 import { calendarDaysResponse, calendarQuery } from '@ctws/contracts'
 import { lunarDayLabel } from '@ctws/core'
-import type { FastifyPluginAsync } from 'fastify'
-import type { ZodTypeProvider } from 'fastify-type-provider-zod'
-import { requireUser } from '../auth/require-user'
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 
 /**
  * WHAT DAY IT IS IN THE OLD CALENDAR, for the grid's squares.
@@ -13,12 +11,10 @@ import { requireUser } from '../auth/require-user'
  * Answered here for the same reason every other calendar conversion is: the library that knows is
  * 750 KB, and a month of labels is a few hundred bytes and one request.
  */
-export const calendarDayRoutes: FastifyPluginAsync = async (app) => {
-  const typed = app.withTypeProvider<ZodTypeProvider>()
-  typed.get(
+export const calendarDayRoutes: FastifyPluginAsyncZod = async (app) => {
+  app.get(
     '/calendar/days',
     {
-      preHandler: requireUser,
       schema: { querystring: calendarQuery, response: { 200: calendarDaysResponse } },
     },
     async (req) => {

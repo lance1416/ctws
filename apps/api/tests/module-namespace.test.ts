@@ -3,12 +3,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { appWithUser, createProject, createTask, type TaskCtx } from './helpers/tasks'
 
 /**
- * The API half of the module seam: the task module answers under `/api/v1/tasks/`, the shell's own
- * surfaces stay flat, the paths the module used to occupy still answer by redirect, and moving
- * `projects` into the shell did not take the tenant chokepoint with it.
- *
- * None of these assertions can pass against the pre-seam code: there was no `/api/v1/tasks/today`
- * and `/api/v1/today` was a 200, not a redirect.
+ * The task module answers under `/api/v1/tasks/`, the shell's own surfaces stay flat, and the
+ * project tenant check holds on every project route.
  */
 let ctx: TaskCtx
 let projectId: string
@@ -53,35 +49,6 @@ describe('the task module answers under its own namespace', () => {
     expect((await get('/api/v1/projects')).statusCode).toBe(200)
     expect((await get('/api/v1/auth/me')).statusCode).toBe(200)
     expect((await get('/api/v1/health')).statusCode).toBe(200)
-  })
-})
-
-describe('the paths the module used to occupy still answer', () => {
-  // A deployed app: a bookmark, or a tab still running the previous bundle, must not meet a 404
-  // because the code was reorganised. 308 preserves the method and the body.
-  it.each([
-    ['/api/v1/today', '/api/v1/tasks/today'],
-    ['/api/v1/completed', '/api/v1/tasks/completed'],
-  ])('redirects %s to %s', async (from, to) => {
-    const res = await get(from)
-    expect(res.statusCode).toBe(308)
-    expect(res.headers.location).toBe(to)
-  })
-
-  it('carries the querystring through the search redirect', async () => {
-    const res = await get('/api/v1/search?q=in%20side')
-    expect(res.statusCode).toBe(308)
-    expect(res.headers.location).toBe('/api/v1/tasks/search?q=in%20side')
-  })
-
-  it('redirects the old project-tasks path onto the module collection', async () => {
-    const res = await get(`/api/v1/projects/${projectId}/tasks`)
-    expect(res.statusCode).toBe(308)
-    expect(res.headers.location).toBe(`/api/v1/tasks?projectId=${projectId}`)
-  })
-
-  it('still 404s a path that never existed', async () => {
-    expect((await get('/api/v1/notes/today')).statusCode).toBe(404)
   })
 })
 

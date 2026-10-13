@@ -1,16 +1,14 @@
 import { loginBody, registerBody, userResponse } from '@ctws/contracts'
-import type { FastifyPluginAsync } from 'fastify'
-import type { ZodTypeProvider } from 'fastify-type-provider-zod'
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
+import { currentUser } from './authenticated'
 import { clearSessionCookie, SESSION_COOKIE, setSessionCookie } from './cookie'
-import { authedUser, requireUser } from './require-user'
 import { InvalidCredentialsError, SessionRequiredError } from './errors'
 import { createSession, revokeSession } from './session'
 import { authenticate, getAuthContext, loadUser, registerUser } from './service'
 
-export const authRoutes: FastifyPluginAsync = async (app) => {
-  const typed = app.withTypeProvider<ZodTypeProvider>()
-
-  typed.post(
+/** Registration, sign-in and sign-out: reachable without a session. */
+export const publicAuthRoutes: FastifyPluginAsyncZod = async (app) => {
+  app.post(
     '/auth/register',
     {
       // Two limits: the route's own, bucketed by EMAIL, and the instance-wide ceiling on auth
@@ -47,7 +45,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     },
   )
 
-  typed.post(
+  app.post(
     '/auth/login',
     {
       // Two limits: the route's own, bucketed by EMAIL, and the instance-wide ceiling on auth
@@ -80,21 +78,20 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     },
   )
 
-  typed.get(
-    '/auth/me',
-    { preHandler: requireUser, schema: { response: { 200: userResponse } } },
-    async (req, reply) => {
-      const { id, workspaceId, role, timezone } = authedUser(req)
-      const user = await loadUser(app.db, id, { workspaceId, role, timezone })
-      if (!user) throw new SessionRequiredError()
-      return reply.send(user)
-    },
-  )
-
-  typed.post('/auth/logout', { schema: { hide: true } }, async (req, reply) => {
+  app.post('/auth/logout', { schema: { hide: true } }, async (req, reply) => {
     const id = req.cookies[SESSION_COOKIE]
     if (id) await revokeSession(app.db, id)
     clearSessionCookie(reply, app.env)
     return reply.status(204).send()
+  })
+}
+
+/** The signed-in account; registered inside the authenticated scope. */
+export const sessionRoutes: FastifyPluginAsyncZod = async (app) => {
+  app.get('/auth/me', { schema: { response: { 200: userResponse } } }, async (req, reply) => {
+    const { id, workspaceId, role, timezone } = currentUser(req)
+    const user = await loadUser(app.db, id, { workspaceId, role, timezone })
+    if (!user) throw new SessionRequiredError()
+    return reply.send(user)
   })
 }

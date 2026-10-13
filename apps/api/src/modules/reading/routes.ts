@@ -7,10 +7,9 @@ import {
   searchQuery,
   updateReadingItemBody,
 } from '@ctws/contracts'
-import type { FastifyPluginAsync } from 'fastify'
-import type { ZodTypeProvider } from 'fastify-type-provider-zod'
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
-import { authedUser, requireUser } from '../../shell/auth/require-user'
+import { currentUser } from '../../shell/auth/authenticated'
 import { listReadingCalendar } from './calendar'
 import type { Queryable } from '../../platform/db/client'
 import type { Env } from '../../platform/config'
@@ -77,18 +76,15 @@ async function withFetched(
 const idParams = z.object({ id: z.uuid() }).strict()
 const itemsResponse = z.object({ items: z.array(readingItemResponse) }).strict()
 
-export const readingRoutes: FastifyPluginAsync = async (app) => {
-  const typed = app.withTypeProvider<ZodTypeProvider>()
-
-  typed.get(
+export const readingRoutes: FastifyPluginAsyncZod = async (app) => {
+  app.get(
     '/',
     {
-      preHandler: requireUser,
       schema: { querystring: readingListQuery, response: { 200: itemsResponse } },
     },
     async (req) => {
       const { projectId, unfiled, status } = req.query
-      const rows = await listReadingItems(app.db, authedUser(req).workspaceId, {
+      const rows = await listReadingItems(app.db, currentUser(req).workspaceId, {
         ...(projectId ? { projectId } : {}),
         ...(unfiled === 'true' ? { unfiled: true } : {}),
         // Fastify gives one value for `?status=todo` and an array for a repeated key; the
@@ -99,17 +95,16 @@ export const readingRoutes: FastifyPluginAsync = async (app) => {
     },
   )
 
-  typed.get(
+  app.get(
     '/calendar',
     {
-      preHandler: requireUser,
       schema: {
         querystring: calendarQuery,
         response: { 200: calendarEntriesResponse },
       },
     },
     async (req) => {
-      const rows = await listReadingCalendar(app.db, authedUser(req).workspaceId, req.query)
+      const rows = await listReadingCalendar(app.db, currentUser(req).workspaceId, req.query)
       return {
         entries: rows.map((r) => ({
           id: r.id,
@@ -128,38 +123,35 @@ export const readingRoutes: FastifyPluginAsync = async (app) => {
     },
   )
 
-  typed.get(
+  app.get(
     '/search',
     {
-      preHandler: requireUser,
       schema: {
         querystring: searchQuery,
         response: { 200: itemsResponse },
       },
     },
     async (req) => {
-      const rows = await searchReadingItems(app.db, authedUser(req).workspaceId, req.query.q)
+      const rows = await searchReadingItems(app.db, currentUser(req).workspaceId, req.query.q)
       return { items: rows.map(toResponse) }
     },
   )
 
-  typed.post(
+  app.post(
     '/',
     {
-      preHandler: requireUser,
       schema: { body: createReadingItemBody, response: { 201: readingItemResponse } },
     },
     async (req, reply) => {
-      const workspaceId = authedUser(req).workspaceId
+      const workspaceId = currentUser(req).workspaceId
       const created = await createReadingItem(app.db, workspaceId, req.body)
       return reply.code(201).send(toResponse(await withFetched(app, workspaceId, created)))
     },
   )
 
-  typed.patch(
+  app.patch(
     '/:id',
     {
-      preHandler: requireUser,
       schema: {
         params: idParams,
         body: updateReadingItemBody,
@@ -169,7 +161,7 @@ export const readingRoutes: FastifyPluginAsync = async (app) => {
     async (req) => {
       const updated = await updateReadingItem(
         app.db,
-        authedUser(req).workspaceId,
+        currentUser(req).workspaceId,
         req.params.id,
         req.body,
       )
@@ -177,12 +169,8 @@ export const readingRoutes: FastifyPluginAsync = async (app) => {
     },
   )
 
-  typed.delete(
-    '/:id',
-    { preHandler: requireUser, schema: { params: idParams } },
-    async (req, reply) => {
-      await softDeleteReadingItem(app.db, authedUser(req).workspaceId, req.params.id)
-      return reply.code(204).send()
-    },
-  )
+  app.delete('/:id', { schema: { params: idParams } }, async (req, reply) => {
+    await softDeleteReadingItem(app.db, currentUser(req).workspaceId, req.params.id)
+    return reply.code(204).send()
+  })
 }

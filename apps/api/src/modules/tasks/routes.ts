@@ -20,10 +20,10 @@ import {
   todayTaskResponse,
   updateTaskBody,
 } from '@ctws/contracts'
-import type { FastifyPluginAsync, FastifyRequest } from 'fastify'
-import type { ZodTypeProvider } from 'fastify-type-provider-zod'
+import type { FastifyRequest } from 'fastify'
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
-import { authedUser, requireUser } from '../../shell/auth/require-user'
+import { currentUser } from '../../shell/auth/authenticated'
 import { DEFAULT_EVENT_LIMIT, listTaskEvents, MAX_EVENT_LIMIT } from './events'
 import { listCompleted, type CompletedTask } from './completed'
 import { searchTasks, type SearchTask } from './search'
@@ -104,24 +104,21 @@ const eventsQuery = z
 
 /** Who is writing, for the services that log an event against the task they change. */
 const actor = (req: FastifyRequest): TaskCtx => {
-  const user = authedUser(req)
+  const user = currentUser(req)
   return { workspaceId: user.workspaceId, actorUserId: user.id }
 }
 
-export const taskRoutes: FastifyPluginAsync = async (app) => {
-  const typed = app.withTypeProvider<ZodTypeProvider>()
-
-  typed.get(
+export const taskRoutes: FastifyPluginAsyncZod = async (app) => {
+  app.get(
     '/calendar',
     {
-      preHandler: requireUser,
       schema: {
         querystring: calendarQuery,
         response: { 200: calendarEntriesResponse },
       },
     },
     async (req) => {
-      const user = authedUser(req)
+      const user = currentUser(req)
       // The window is the client's; the DAY each thing falls on is the server's, in the account's
       // zone -- the same rule today / completed / review keep.
       const rows = await listTaskCalendar(app.db, user.workspaceId, user.timezone, req.query)
@@ -144,14 +141,13 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
     },
   )
 
-  typed.get(
+  app.get(
     '/today',
     {
-      preHandler: requireUser,
       schema: { response: { 200: z.object({ tasks: z.array(todayTaskResponse) }).strict() } },
     },
     async (req) => {
-      const user = authedUser(req)
+      const user = currentUser(req)
       // The timezone comes from the user record, not from a request header or the server clock.
       const rows = await listToday(app.db, user.workspaceId, user.timezone)
       // One query for the whole page, not one per row.
@@ -164,27 +160,25 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
     },
   )
 
-  typed.get(
+  app.get(
     '/review',
     {
-      preHandler: requireUser,
       schema: { querystring: reviewQuery, response: { 200: reviewResponse } },
     },
     async (req) => {
-      const user = authedUser(req)
+      const user = currentUser(req)
       // The week boundary is the SERVER's, in the account's zone, like every other boundary here.
       return listReview(app.db, user.workspaceId, user.timezone, req.query)
     },
   )
 
-  typed.get(
+  app.get(
     '/completed',
     {
-      preHandler: requireUser,
       schema: { response: { 200: completedResponse } },
     },
     async (req) => {
-      const user = authedUser(req)
+      const user = currentUser(req)
       const { tasks, truncated } = await listCompleted(app.db, user.workspaceId, user.timezone)
       return { tasks: tasks.map(toCompletedResponse), truncated }
     },
@@ -193,16 +187,15 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
   // Movement. Under the task module's namespace and not under `projects`: the numbers are task
   // semantics (finished, open, logged change) hung on a shell project, exactly as `today` and
   // `completed` are. The project itself stays the shell's.
-  typed.get(
+  app.get(
     '/movement',
     {
-      preHandler: requireUser,
       schema: {
         response: { 200: z.object({ projects: z.array(projectMovementResponse) }).strict() },
       },
     },
     async (req) => {
-      const user = authedUser(req)
+      const user = currentUser(req)
       // The week boundary and the day count come from the user record's timezone, never the
       // server clock's zone.
       const rows = await listProjectMovement(app.db, user.workspaceId, user.timezone)
@@ -210,17 +203,16 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
     },
   )
 
-  typed.get(
+  app.get(
     '/search',
     {
-      preHandler: requireUser,
       schema: {
         querystring: searchQuery,
         response: { 200: z.object({ tasks: z.array(searchTaskResponse) }).strict() },
       },
     },
     async (req) => {
-      const rows = await searchTasks(app.db, authedUser(req).workspaceId, req.query.q)
+      const rows = await searchTasks(app.db, currentUser(req).workspaceId, req.query.q)
       return { tasks: rows.map(toSearchResponse) }
     },
   )
@@ -228,10 +220,9 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
   // The project is the shell's and the tasks under it are the module's, so the project is a
   // FILTER on the module's own collection rather than a parent path segment the module hangs its
   // routes off. `GET /api/v1/projects/:id/tasks` still answers, by redirect (`compat.ts`).
-  typed.get(
+  app.get(
     '/',
     {
-      preHandler: requireUser,
       schema: {
         querystring: byProjectQuery,
         response: {
@@ -246,7 +237,7 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     async (req) => {
-      const user = authedUser(req)
+      const user = currentUser(req)
       // Three reads, ONE snapshot -- `board.ts` has why that matters and how it is held.
       const board = await projectBoard(app.db, user.workspaceId, req.query.projectId, user.timezone)
       return {
@@ -257,10 +248,9 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
     },
   )
 
-  typed.post(
+  app.post(
     '/',
     {
-      preHandler: requireUser,
       schema: { body: createTaskBody, response: { 201: taskResponse } },
     },
     async (req, reply) => {
@@ -270,18 +260,17 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
   )
 
   // One task by its id: where a link to it finds the project it lives in.
-  typed.get(
+  app.get(
     '/:id',
-    { preHandler: requireUser, schema: { params: idParams, response: { 200: taskResponse } } },
+    { schema: { params: idParams, response: { 200: taskResponse } } },
     async (req) => {
       return toTaskResponse(await visibleTask(app.db, actor(req).workspaceId, req.params.id))
     },
   )
 
-  typed.patch(
+  app.patch(
     '/:id',
     {
-      preHandler: requireUser,
       schema: { params: idParams, body: updateTaskBody, response: { 200: taskResponse } },
     },
     async (req) => {
@@ -293,10 +282,9 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
   // A separate endpoint rather than part of PATCH (spec 8.3): move carries a whole set of
   // invariants -- cycle, depth, project_id cascade, rank -- that a generic PATCH must not
   // quietly take on.
-  typed.post(
+  app.post(
     '/:id/move',
     {
-      preHandler: requireUser,
       schema: { params: idParams, body: moveTaskBody, response: { 200: taskResponse } },
     },
     async (req) => {
@@ -305,14 +293,10 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
     },
   )
 
-  typed.delete(
-    '/:id',
-    { preHandler: requireUser, schema: { params: idParams } },
-    async (req, reply) => {
-      await softDeleteTask(app.db, actor(req), req.params.id)
-      return reply.status(204).send()
-    },
-  )
+  app.delete('/:id', { schema: { params: idParams } }, async (req, reply) => {
+    await softDeleteTask(app.db, actor(req), req.params.id)
+    return reply.status(204).send()
+  })
 
   /**
    * ONE TASK WAITING FOR ANOTHER. Three routes, and the pair that writes is NOT a
@@ -320,21 +304,19 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
    * for this task's own independent scalar fields -- the same division `move` is on the other
    * side of.
    */
-  typed.get(
+  app.get(
     '/:id/dependencies',
     {
-      preHandler: requireUser,
       schema: { params: idParams, response: { 200: dependencyLists } },
     },
     async (req) => {
-      return await taskDependencyLists(app.db, authedUser(req).workspaceId, req.params.id)
+      return await taskDependencyLists(app.db, currentUser(req).workspaceId, req.params.id)
     },
   )
 
-  typed.post(
+  app.post(
     '/:id/dependencies',
     {
-      preHandler: requireUser,
       // No response schema: a 204 has no body, and declaring one makes the type provider
       // demand `send(null)`. The task delete above is written the same way.
       schema: { params: idParams, body: addDependencyBody },
@@ -347,10 +329,9 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
     },
   )
 
-  typed.delete(
+  app.delete(
     '/:id/dependencies/:blockerId',
     {
-      preHandler: requireUser,
       schema: { params: z.object({ id: z.uuid(), blockerId: z.uuid() }).strict() },
     },
     async (req, reply) => {
@@ -359,10 +340,9 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
     },
   )
 
-  typed.get(
+  app.get(
     '/:id/events',
     {
-      preHandler: requireUser,
       schema: {
         params: idParams,
         querystring: eventsQuery,
@@ -377,7 +357,7 @@ export const taskRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     async (req) => {
-      return await listTaskEvents(app.db, authedUser(req).workspaceId, req.params.id, req.query)
+      return await listTaskEvents(app.db, currentUser(req).workspaceId, req.params.id, req.query)
     },
   )
 }

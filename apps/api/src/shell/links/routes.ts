@@ -7,10 +7,9 @@ import {
   linkQuery,
   linksResponse,
 } from '@ctws/contracts'
-import type { FastifyPluginAsync } from 'fastify'
-import type { ZodTypeProvider } from 'fastify-type-provider-zod'
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
-import { authedUser, requireUser } from '../auth/require-user'
+import { currentUser } from '../auth/authenticated'
 import { LinkEndNotFoundError, UnknownLinkError } from './errors'
 import { candidatesFor, exists, linksOf } from './read'
 import { addLink, removeLink } from './store'
@@ -22,17 +21,14 @@ import { addLink, removeLink } from './store'
  * about another. What each module owns is the NAME of its own things, which it hands over through
  * `links/linkable.ts`.
  */
-export const linkRoutes: FastifyPluginAsync = async (app) => {
-  const typed = app.withTypeProvider<ZodTypeProvider>()
-
-  typed.get(
+export const linkRoutes: FastifyPluginAsyncZod = async (app) => {
+  app.get(
     '/links/:type/:id',
     {
-      preHandler: requireUser,
       schema: { params: linkParams, response: { 200: linksResponse } },
     },
     async (req) => {
-      const { workspaceId } = authedUser(req)
+      const { workspaceId } = currentUser(req)
       const of = req.params
       // A page of something that is gone is a 404, not an empty page: an id from another
       // workspace must read the same as one that never existed.
@@ -48,14 +44,13 @@ export const linkRoutes: FastifyPluginAsync = async (app) => {
    * shell merges the answers; each module searches its own table, which is the same split as
    * naming an edge's far end and the reason one box can offer four kinds of thing at once.
    */
-  typed.get(
+  app.get(
     '/links/candidates',
     {
-      preHandler: requireUser,
       schema: { querystring: candidatesQuery, response: { 200: candidatesResponse } },
     },
     async (req) => {
-      const { workspaceId } = authedUser(req)
+      const { workspaceId } = currentUser(req)
       const of = { type: req.query.type, id: req.query.id }
       if (!(await exists(app.db, workspaceId, of))) throw new LinkEndNotFoundError()
       // PER TYPE, not in total: a box that filled with twenty tasks and showed no people would
@@ -65,17 +60,16 @@ export const linkRoutes: FastifyPluginAsync = async (app) => {
     },
   )
 
-  typed.post(
+  app.post(
     '/links',
     {
-      preHandler: requireUser,
       schema: {
         body: createLinkBody,
         response: { 201: z.object({ created: z.boolean() }).strict() },
       },
     },
     async (req, reply) => {
-      const { workspaceId } = authedUser(req)
+      const { workspaceId } = currentUser(req)
       const { from, to, kind } = req.body
       // BOTH ends, and in this workspace. The edge table has no foreign key to either -- there is
       // no one table to point at -- so this is the check that stands in for one.
@@ -92,14 +86,13 @@ export const linkRoutes: FastifyPluginAsync = async (app) => {
     },
   )
 
-  typed.delete(
+  app.delete(
     '/links',
     {
-      preHandler: requireUser,
       schema: { querystring: linkQuery },
     },
     async (req, reply) => {
-      const { workspaceId } = authedUser(req)
+      const { workspaceId } = currentUser(req)
       const { fromType, fromId, toType, toId, kind } = req.query
       // A tuple the model never allowed cannot name a stored edge, so it is a bad request rather
       // than a 204, which would read as though something had been deleted.
