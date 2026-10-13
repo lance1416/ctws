@@ -1,7 +1,6 @@
-import { and, desc, eq, inArray } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
-import { textMatches } from '../../platform/db/sql'
-import type { Linkable, StoredEdge } from '../../shell/links/linkable'
+import { wanted, type Linkable, type StoredEdge } from '../../shell/links/linkable'
 import { projects } from '../../shell/projects/tables'
 import { visibleTasks } from './queries/scope'
 import { tasks } from './tables'
@@ -35,19 +34,11 @@ export const taskLinkable: Linkable = {
   type: 'task',
   label: 'Tasks',
   rows: async (q, workspaceId, want) => {
+    const { where, limit } = wanted(want, tasks.id, ['tasks.title'])
     const found = await taskRows(q)
-      .where(
-        and(
-          visibleTasks(workspaceId),
-          'ids' in want
-            ? inArray(tasks.id, [...want.ids])
-            : want.text === ''
-              ? undefined
-              : textMatches(['tasks.title'], want.text),
-        ),
-      )
+      .where(and(visibleTasks(workspaceId), where))
       .orderBy(desc(tasks.createdAt), desc(tasks.id))
-      .limit('ids' in want ? want.ids.length : want.limit)
+      .limit(limit)
     // Every reader is cross-project, so the detail names the project.
     return found.map((r) => ({
       id: r.id,

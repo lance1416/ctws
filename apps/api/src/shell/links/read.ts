@@ -14,16 +14,7 @@ import type { Endpoint } from './store'
 import type { StoredEdge } from './linkable'
 import type { LinkRegistry } from './registry'
 
-/**
- * EVERYTHING ONE THING IS CONNECTED TO -- the shell's read, and the whole point of the edge table.
- *
- * Read in BOTH directions, because an edge is one fact: who is at a meeting and which meetings a
- * person has been at are the same row, and neither side has to be kept in step with the other.
- * The reading side is where that pays off -- nothing was written on the person's record, and
- * their page still shows the meeting.
- */
-
-/** How many of one kind of thing a page shows before it stops. A personal workbench, not a CRM. */
+/** How many of one kind of object a page shows. */
 const PER_GROUP = 200
 
 const kindOf = new Map(LINK_KINDS.map((k) => [k.kind as LinkKind, k]))
@@ -57,20 +48,18 @@ async function storedEdges(q: Queryable, workspaceId: string, of: Endpoint): Pro
   return rows as StoredEdge[]
 }
 
+/** Everything one object is connected to, read in both directions: an edge is one fact. */
 export async function linksOf(
   registry: LinkRegistry,
   q: Queryable,
   workspaceId: string,
   of: Endpoint,
 ): Promise<LinksResponse> {
-  // The edge table plus whatever each module stores itself. One round of queries, not one per
-  // edge: a module that stores nothing of its own costs nothing here.
   const [stored, ...own] = await Promise.all([
     storedEdges(q, workspaceId, of),
     ...registry.all.filter((l) => l.own).map((l) => l.own!(q, workspaceId, of)),
   ])
-  // WHICH EDGES ARE THE SHELL'S TO REMOVE. One stored in a module's own column is not: a task's
-  // project is NOT NULL, so "unlink" on it would mean a task belonging to nothing.
+  // Only edge-table rows can be unlinked; a task's project is a NOT NULL column.
   const edges = [
     ...stored.map((e) => ({ ...e, removable: true })),
     ...own.flat().map((e) => ({ ...e, removable: false })),
@@ -100,12 +89,10 @@ export async function linksOf(
   const seen = new Set<string>()
   for (const edge of edges) {
     const end = far(edge)
-    // An edge whose far end did not come back points at something soft-deleted or in another
-    // workspace. Dropped rather than drawn blank -- the same answer every list in this app gives.
+    // A far end that did not come back is deleted or foreign: the edge is dropped.
     const name = named.get(end.type)?.get(end.id)
     if (!name) continue
-    // One row per thing per kind: two edges of the same kind between the same pair is the same
-    // fact twice, which `links`' primary key already refuses and a module's own edges might not.
+    // One row per object, kind and direction; a module's own edges may repeat one.
     const key = `${end.type}:${end.id}:${edge.kind}:${end.outgoing}`
     if (seen.has(key)) continue
     seen.add(key)
@@ -131,23 +118,14 @@ export async function linksOf(
         type,
         items: groups
           .get(type)!
-          // By title: a group is read to FIND something in it, and the order edges were made in is
-          // not an order anybody remembers. Compared by CODE POINT, not by locale: every other list
-          // in this app is ordered by the database, and a second collation here would mean the same
-          // two names read in one order on a project page and the other on People.
+          // By title, by code point rather than locale, so names sort as the database sorts them.
           .sort((a, b) => (a.title < b.title ? -1 : a.title > b.title ? 1 : a.id < b.id ? -1 : 1))
           .slice(0, PER_GROUP),
       })),
   }
 }
 
-/**
- * THINGS THAT COULD GO AT THE OTHER END, while the picker is being typed into.
- *
- * Only the types the model allows to be joined to this one, and never the object itself. Each
- * module searches its own table (`Linkable.find`); the shell merges the answers, which is the
- * same split as `name` and the reason the picker can offer four kinds of thing at once.
- */
+/** What the picker could link to: types the model allows here, never the object itself. */
 export async function candidatesFor(
   registry: LinkRegistry,
   q: Queryable,

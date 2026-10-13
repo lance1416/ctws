@@ -2,19 +2,11 @@ import type { CreateReadingItemBody, UpdateReadingItemBody } from '@ctws/contrac
 import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import type { Queryable } from '../../platform/db/client'
-import { filedUnder, oneProjectOf, putLinks, unfiled } from '../../shell/links/store'
 import { textMatches } from '../../platform/db/sql'
-import { readingItems } from './tables'
+import { filing } from '../../shell/links/filing'
 import { assertProjectsVisible } from '../../shell/projects/queries'
 import { ReadingItemNotFoundError, WrongKindError } from './errors'
-
-/**
- * THE READING LIST's storage -- THE SECOND MODULE's own.
- *
- * It borrows exactly two things from the shell: the workspace, and `visibleProjects` for deciding
- * which projects an item may be filed under. It borrows nothing from the task module, which is
- * the property the whole module seam exists to have.
- */
+import { readingItems } from './tables'
 
 type ReadingItem = typeof readingItems.$inferSelect
 /** A row as a list returns it: the item plus the shell project's name, so one round trip is enough. */
@@ -23,17 +15,13 @@ export type ReadingItemRow = ReadingItem & {
   projectName: string | null
 }
 
-/**
- * THE TENANT CHOKEPOINT, this module's own. Every read and write below goes through it, so
- * scoping and soft-delete filtering cannot be forgotten on one path.
- */
-function visibleItems(workspaceId: string) {
+/** A live item in this workspace; every read and write goes through it. */
+export function visibleItems(workspaceId: string) {
   return and(eq(readingItems.workspaceId, workspaceId), isNull(readingItems.deletedAt))
 }
 
-// The project is an EDGE now, not a column: `oneProjectOf` is the shell's, and every module that
-// shows one project reads it the same way.
-const withProject = { item: readingItems, ...oneProjectOf('reading', 'reading_items') }
+const filed = filing('reading', readingItems)
+const withProject = { item: readingItems, ...filed.project }
 
 const rowOf = ({
   item,
@@ -79,8 +67,8 @@ export async function listReadingItems(
     .where(
       and(
         visibleItems(workspaceId),
-        opts.projectId ? filedUnder('reading', 'reading_items', opts.projectId) : undefined,
-        opts.unfiled ? unfiled('reading', 'reading_items') : undefined,
+        opts.projectId ? filed.filedUnder(opts.projectId) : undefined,
+        opts.unfiled ? filed.unfiled() : undefined,
         // An empty list would mean "no status matches", which is never what a caller means; an
         // absent filter means every status.
         opts.statuses && opts.statuses.length > 0
@@ -130,14 +118,7 @@ export async function createReadingItem(
     })
     .returning({ id: readingItems.id })
   const id = created!.id
-  await putLinks(
-    q,
-    workspaceId,
-    { type: 'reading', id },
-    'project',
-    'belongs',
-    body.projectId ? [body.projectId] : [],
-  )
+  await filed.put(q, workspaceId, id, body.projectId ? [body.projectId] : [])
   return getReadingItem(q, workspaceId, id)
 }
 
@@ -167,16 +148,7 @@ export async function updateReadingItem(
     .where(and(visibleItems(workspaceId), eq(readingItems.id, id)))
   // `projectId: null` and an absent `projectId` are different answers: one unfiles the item, the
   // other leaves it where it is.
-  if (projectId !== undefined) {
-    await putLinks(
-      q,
-      workspaceId,
-      { type: 'reading', id },
-      'project',
-      'belongs',
-      projectId ? [projectId] : [],
-    )
-  }
+  if (projectId !== undefined) await filed.put(q, workspaceId, id, projectId ? [projectId] : [])
   return getReadingItem(q, workspaceId, id)
 }
 

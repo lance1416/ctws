@@ -1,9 +1,9 @@
-import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
-import { textMatches } from '../../platform/db/sql'
-import { meetings } from './tables'
-import type { Linkable } from '../../shell/links/linkable'
+import { and, desc } from 'drizzle-orm'
+import { wanted, type Linkable } from '../../shell/links/linkable'
 import { instantOf } from './occurrences'
 import { zoneLabel } from './routes'
+import { visibleMeetings } from './store'
+import { meetings } from './tables'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
@@ -14,11 +14,11 @@ function when(startsLocal: string, timeZone: string): string {
   return `${MONTHS[m - 1]} ${d}, ${clock} · ${zoneLabel(instantOf(startsLocal, timeZone), timeZone)}`
 }
 
-/** Meetings names its own meetings for the shell. See `links/linkable.ts` for why this exists. */
 export const meetingLinkable: Linkable = {
   type: 'meeting',
   label: 'Meetings',
   rows: async (q, workspaceId, want) => {
+    const { where, limit } = wanted(want, meetings.id, ['meetings.title'])
     const found = await q
       .select({
         id: meetings.id,
@@ -27,23 +27,11 @@ export const meetingLinkable: Linkable = {
         timeZone: meetings.timeZone,
       })
       .from(meetings)
-      .where(
-        and(
-          eq(meetings.workspaceId, workspaceId),
-          isNull(meetings.deletedAt),
-          'ids' in want
-            ? inArray(meetings.id, [...want.ids])
-            : want.text === ''
-              ? undefined
-              : textMatches(['meetings.title'], want.text),
-        ),
-      )
-      // The soonest first. A series shows once: this is the SERIES table, not its expansion.
+      .where(and(visibleMeetings(workspaceId), where))
+      // Latest start first; a series shows once, since this is the series table.
       .orderBy(desc(meetings.startsLocal), desc(meetings.id))
-      .limit('ids' in want ? want.ids.length : want.limit)
-    // The SERIES' own start, not an occurrence: an edge is to the series, and which occurrence a
-    // reader means is a question only the meeting's own page can answer. The zone is named the
-    // way a person says it ("EST"), not as the IANA id, which is a quarter of the row.
+      .limit(limit)
+    // The series' own start: an edge is to the series, not to one occurrence.
     return found.map((r) => ({
       id: r.id,
       title: r.title,

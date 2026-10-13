@@ -11,7 +11,7 @@ import type { Queryable } from '../../platform/db/client'
 import { textMatches } from '../../platform/db/sql'
 import { links } from '../../shell/links/tables'
 import { personChannels, people } from './tables'
-import { filedUnder, projectsLinkedFrom, putLinks, unfiled } from '../../shell/links/store'
+import { filing, projectsOf } from '../../shell/links/filing'
 import { assertProjectsVisible } from '../../shell/projects/queries'
 import { PersonNotFoundError } from './errors'
 
@@ -50,10 +50,12 @@ export type PersonRow = {
   updatedAt: Date
 }
 
-/** THE TENANT CHOKEPOINT. Every read and write below goes through it. */
-function visiblePeople(workspaceId: string) {
+/** A live person in this workspace; every read and write goes through it. */
+export function visiblePeople(workspaceId: string) {
   return and(eq(people.workspaceId, workspaceId), isNull(people.deletedAt))
 }
+
+const filed = filing('person', people)
 
 type Selected = typeof people.$inferSelect
 
@@ -117,7 +119,7 @@ async function hydrate(q: Queryable, workspaceId: string, rows: Selected[]): Pro
   const channelsOf = new Map<string, PersonChannel[]>()
   if (ids.length > 0) {
     const [linked, found] = await Promise.all([
-      projectsLinkedFrom(q, workspaceId, 'person', ids),
+      projectsOf(q, workspaceId, 'person', ids),
       q
         .select()
         .from(personChannels)
@@ -187,8 +189,8 @@ export async function listPeople(
         visiblePeople(workspaceId),
         // Only VISIBLE projects: an edge to a soft-deleted project is an edge to nothing, so it
         // must not make a person count as filed either.
-        opts.projectId ? filedUnder('person', 'people', opts.projectId) : undefined,
-        opts.unfiled ? unfiled('person', 'people') : undefined,
+        opts.projectId ? filed.filedUnder(opts.projectId) : undefined,
+        opts.unfiled ? filed.unfiled() : undefined,
       ),
     )
     // By name. A person list is looked at to FIND someone, and alphabetical is where a person
@@ -227,14 +229,7 @@ export async function createPerson(
     circle: body.circle ?? null,
     ...birthdayColumns(body.birthday ?? undefined),
   })
-  await putLinks(
-    q,
-    workspaceId,
-    { type: 'person', id },
-    'project',
-    'belongs',
-    body.projectIds ?? [],
-  )
+  await filed.put(q, workspaceId, id, body.projectIds ?? [])
   await putChannels(q, id, body.channels ?? [])
   return getPerson(q, workspaceId, id)
 }
@@ -256,9 +251,7 @@ export async function updatePerson(
     .update(people)
     .set({ ...fields, ...birthdayColumns(birthday), updatedAt: new Date() })
     .where(and(visiblePeople(workspaceId), eq(people.id, id)))
-  if (projectIds) {
-    await putLinks(q, workspaceId, { type: 'person', id }, 'project', 'belongs', projectIds)
-  }
+  if (projectIds) await filed.put(q, workspaceId, id, projectIds)
   if (channels) await putChannels(q, id, channels)
   return getPerson(q, workspaceId, id)
 }

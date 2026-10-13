@@ -1,32 +1,20 @@
-import { and, asc, inArray } from 'drizzle-orm'
-import { textMatches } from '../../platform/db/sql'
-import { projects } from './tables'
-import type { Linkable } from '../links/linkable'
+import { and, asc } from 'drizzle-orm'
+import { wanted, type Linkable } from '../links/linkable'
 import { visibleProjects } from './queries'
+import { projects } from './tables'
 
-/**
- * PROJECTS names itself. It is the SHELL's, not a module's -- which is the whole point of this
- * file: a project is one kind of object among five, not the thing everything hangs off.
- */
+/** Projects are the shell's own, one kind of object among the rest. */
 export const projectLinkable: Linkable = {
   type: 'project',
   label: 'Projects',
   rows: async (q, workspaceId, want) => {
+    const { where, limit } = wanted(want, projects.id, ['projects.name'])
     const found = await q
       .select({ id: projects.id, name: projects.name })
       .from(projects)
-      .where(
-        and(
-          visibleProjects(workspaceId),
-          'ids' in want
-            ? inArray(projects.id, [...want.ids])
-            : want.text === ''
-              ? undefined
-              : textMatches(['projects.name'], want.text),
-        ),
-      )
+      .where(and(visibleProjects(workspaceId), where))
       .orderBy(asc(projects.rank), asc(projects.id))
-      .limit('ids' in want ? want.ids.length : want.limit)
+      .limit(limit)
     return found.map((r) => ({ id: r.id, title: r.name, detail: null }))
   },
 }

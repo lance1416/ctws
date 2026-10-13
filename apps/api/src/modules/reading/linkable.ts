@@ -1,13 +1,17 @@
-import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
-import { textMatches } from '../../platform/db/sql'
+import { and, desc } from 'drizzle-orm'
+import { wanted, type Linkable } from '../../shell/links/linkable'
+import { visibleItems } from './store'
 import { readingItems } from './tables'
-import type { Linkable } from '../../shell/links/linkable'
 
-/** Reading names its own items for the shell. See `links/linkable.ts` for why this exists. */
 export const readingLinkable: Linkable = {
   type: 'reading',
   label: 'Reading',
   rows: async (q, workspaceId, want) => {
+    const { where, limit } = wanted(want, readingItems.id, [
+      'reading_items.title',
+      'reading_items.url',
+      'reading_items.author',
+    ])
     const found = await q
       .select({
         id: readingItems.id,
@@ -16,25 +20,11 @@ export const readingLinkable: Linkable = {
         author: readingItems.author,
       })
       .from(readingItems)
-      .where(
-        and(
-          eq(readingItems.workspaceId, workspaceId),
-          isNull(readingItems.deletedAt),
-          'ids' in want
-            ? inArray(readingItems.id, [...want.ids])
-            : want.text === ''
-              ? undefined
-              : textMatches(
-                  ['reading_items.title', 'reading_items.url', 'reading_items.author'],
-                  want.text,
-                ),
-        ),
-      )
-      // Newest first, like the pile itself: the thing you just saved is the one you are most
-      // likely to be reaching for.
+      .where(and(visibleItems(workspaceId), where))
+      // Newest first, like the pile: what you just saved is what you are reaching for.
       .orderBy(desc(readingItems.createdAt), desc(readingItems.id))
-      .limit('ids' in want ? want.ids.length : want.limit)
-    // An untitled link is shown by its url, the same fallback the list and the calendar use.
+      .limit(limit)
+    // An untitled link shows its url, as everywhere else.
     return found.map((r) => ({ id: r.id, title: r.title ?? r.url ?? '', detail: r.author }))
   },
 }

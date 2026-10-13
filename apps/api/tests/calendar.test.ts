@@ -159,6 +159,25 @@ describe('the reading calendar', () => {
     expect(await entries(ctx, 'reading', '2026-10-01', '2026-10-31')).toEqual([])
   })
 
+  it('names the project, and none once the project is deleted', async () => {
+    const ctx = await setup()
+    const pid = await createProject(ctx, 'CTWS')
+    const id = await add(ctx, { kind: 'book', title: '设计心理学', projectId: pid })
+    await plan(ctx, id, '2026-10-07')
+    expect((await entries(ctx, 'reading', '2026-10-01', '2026-10-31'))[0]?.projectName).toBe('CTWS')
+
+    const del = await ctx.app.inject({
+      method: 'DELETE',
+      url: `/api/v1/projects/${pid}`,
+      headers: web(ctx),
+    })
+    expect(del.statusCode).toBe(204)
+    expect((await entries(ctx, 'reading', '2026-10-01', '2026-10-31'))[0]).toMatchObject({
+      projectId: null,
+      projectName: null,
+    })
+  })
+
   it('refuses a window that is not a pair of calendar days', async () => {
     const ctx = await setup()
     const bad = await ctx.app.inject({

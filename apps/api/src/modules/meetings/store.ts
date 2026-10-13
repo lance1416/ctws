@@ -8,7 +8,8 @@ import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import type { Queryable } from '../../platform/db/client'
 import { meetingExceptions, meetings } from './tables'
-import { filedUnder, oneProjectOf, putLinks } from '../../shell/links/store'
+import { filing } from '../../shell/links/filing'
+import { putLinks } from '../../shell/links/store'
 import { assertPeopleVisible, attendeesOf } from '../people'
 import { assertProjectsVisible } from '../../shell/projects/queries'
 import {
@@ -58,14 +59,13 @@ export type OccurrenceRow = Occurrence & {
   attendees: MeetingAttendee[]
 }
 
-/** THE TENANT CHOKEPOINT. Every read and write below goes through it. */
-function visibleMeetings(workspaceId: string) {
+/** A live meeting in this workspace; every read and write goes through it. */
+export function visibleMeetings(workspaceId: string) {
   return and(eq(meetings.workspaceId, workspaceId), isNull(meetings.deletedAt))
 }
 
-// The project is an EDGE now, not a column: `oneProjectOf` is the shell's, and every module that
-// shows one project reads it the same way.
-const withProject = { meeting: meetings, ...oneProjectOf('meeting', 'meetings') }
+const filed = filing('meeting', meetings)
+const withProject = { meeting: meetings, ...filed.project }
 
 type Selected = {
   meeting: typeof meetings.$inferSelect
@@ -151,7 +151,7 @@ async function seriesOf(
     .where(
       and(
         visibleMeetings(workspaceId),
-        opts.projectId ? filedUnder('meeting', 'meetings', opts.projectId) : undefined,
+        opts.projectId ? filed.filedUnder(opts.projectId) : undefined,
         opts.id ? eq(meetings.id, opts.id) : undefined,
       ),
     )
@@ -246,14 +246,7 @@ export async function createMeeting(
     'attends',
     body.attendeeIds ?? [],
   )
-  await putLinks(
-    q,
-    workspaceId,
-    { type: 'meeting', id },
-    'project',
-    'belongs',
-    body.projectId ? [body.projectId] : [],
-  )
+  await filed.put(q, workspaceId, id, body.projectId ? [body.projectId] : [])
   return getOccurrence(q, workspaceId, id, body.startsLocal)
 }
 
@@ -348,14 +341,7 @@ export async function updateMeeting(
       'attends',
       attendeeIds ?? series.attendees.map((p) => p.id),
     )
-    await putLinks(
-      q,
-      workspaceId,
-      { type: 'meeting', id: newId },
-      'project',
-      'belongs',
-      carried ? [carried] : [],
-    )
+    await filed.put(q, workspaceId, newId, carried ? [carried] : [])
     // The overrides AT OR AFTER the split belong to the new series; the earlier ones stay with the
     // old one, because the past is still what happened.
     await q.execute(sql`
@@ -375,16 +361,7 @@ export async function updateMeeting(
   }
   // `projectId: null` and an absent `projectId` are different answers: one unfiles the meeting,
   // the other leaves it where it is.
-  if (projectId !== undefined) {
-    await putLinks(
-      q,
-      workspaceId,
-      { type: 'meeting', id },
-      'project',
-      'belongs',
-      projectId ? [projectId] : [],
-    )
-  }
+  if (projectId !== undefined) await filed.put(q, workspaceId, id, projectId ? [projectId] : [])
   /**
    * Moving the series' own start, or changing its rule, moves every occurrence -- so the overrides,
    * which are keyed by the OLD local times, no longer name anything. They are dropped rather than

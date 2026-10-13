@@ -1,80 +1,14 @@
 import type { LinkKind, ObjectType } from '@ctws/contracts'
-import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
 import { links } from './tables'
-import { projects } from '../projects/tables'
 
-/**
- * EDGES -- the shell's own store, and the one way anything reaches anything else.
- *
- * A module knows only its own type and the types it may link to; it does not learn about the
- * others, because every one of these helpers names both ends.
- *
- * The literal table names below are deliberate: drizzle interpolates a column reference
- * UNQUALIFIED inside raw SQL, which inside a correlated subquery would bind to the outer row.
- * The reading and projects stores carry the same warning for the same reason.
- */
-
-/** Where one object's edges hang: a type and an id, which is all either end ever is. */
+/** One end of an edge. */
 export type Endpoint = { type: ObjectType; id: string }
 
 /**
- * THE ONE PROJECT an object is filed under, as a pair of correlated subqueries.
- *
- * `links` permits many, and a module whose UI shows one picks the first by project rank rather
- * than an arbitrary row -- the same project every time, and the same one the project list puts
- * first. Both halves come from the same subquery, so an object never reports a project the person
- * cannot SEE: projects are soft-deleted, and a name nobody can navigate to is worse than none.
- */
-export function oneProjectOf(type: ObjectType, table: string) {
-  const pick = (column: 'id' | 'name') => sql`(
-    select p.${sql.raw(column)} from links l
-    join projects p on p.id = l.to_id
-    where l.from_type = ${type} and l.from_id = ${sql.raw(`${table}.id`)}
-      and l.to_type = 'project' and l.kind = 'belongs' and p.deleted_at is null
-    order by p.rank, p.id limit 1
-  )`
-  return {
-    projectId: pick('id') as ReturnType<typeof sql<string | null>>,
-    projectName: pick('name') as ReturnType<typeof sql<string | null>>,
-  }
-}
-
-/** Filed under one named project -- the filter behind `?projectId=`. */
-export function filedUnder(type: ObjectType, table: string, projectId: string) {
-  return sql`exists (
-    select 1 from links l join projects p on p.id = l.to_id
-    where l.from_type = ${type} and l.from_id = ${sql.raw(`${table}.id`)}
-      and l.to_type = 'project' and l.kind = 'belongs'
-      and p.id = ${projectId} and p.deleted_at is null
-  )`
-}
-
-/**
- * UNFILED: under no project the person can still SEE.
- *
- * An object whose project was deleted reads as having none everywhere else, so it has to read
- * that way here too -- otherwise it would belong to no list at all.
- */
-export function unfiled(type: ObjectType, table: string) {
-  return sql`not exists (
-    select 1 from links l join projects p on p.id = l.to_id
-    where l.from_type = ${type} and l.from_id = ${sql.raw(`${table}.id`)}
-      and l.to_type = 'project' and l.kind = 'belongs' and p.deleted_at is null
-  )`
-}
-
-/**
- * REPLACES one kind of edge leaving one object, which is how every module writes relationships.
- *
- * Delete-then-insert rather than a diff: the caller always sends the whole set, the row count is
- * a handful, and a diff would be three statements where this is two. Runs inside the caller's
- * transaction, so a half-written set is not a state anything can observe.
- *
- * THE DELETE NAMES BOTH the far type and the kind. Dropping both is what `links.test.ts` catches:
- * a write of one relationship would take the object's others with it. Either one alone happens to
- * be enough for today's four kinds, because no two of them share a far type -- which is exactly
- * the kind of coincidence a fifth kind ends, so both stay.
+ * Replaces one kind of edge leaving an object with `toIds`, inside the caller's transaction. The
+ * delete names both the far type and the kind, so writing one relationship leaves the others.
  */
 export async function putLinks(
   q: Queryable,
@@ -109,48 +43,7 @@ export async function putLinks(
   )
 }
 
-/**
- * The projects a batch of objects are filed under, in ONE query for the whole page.
- *
- * Only projects that are still visible, for the reason `oneProjectOf` gives; ordered by rank, so
- * every list of them reads in the same order as the project list itself.
- */
-export async function projectsLinkedFrom(
-  q: Queryable,
-  workspaceId: string,
-  fromType: ObjectType,
-  fromIds: readonly string[],
-): Promise<Map<string, { id: string; name: string }[]>> {
-  const by = new Map<string, { id: string; name: string }[]>()
-  if (fromIds.length === 0) return by
-  const rows = await q
-    .select({ fromId: links.fromId, id: projects.id, name: projects.name })
-    .from(links)
-    .innerJoin(projects, eq(projects.id, links.toId))
-    .where(
-      and(
-        eq(links.workspaceId, workspaceId),
-        eq(links.fromType, fromType),
-        inArray(links.fromId, [...fromIds]),
-        eq(links.toType, 'project'),
-        eq(links.kind, 'belongs'),
-        isNull(projects.deletedAt),
-      ),
-    )
-    .orderBy(asc(projects.rank), asc(projects.id))
-  for (const row of rows) {
-    const project = { id: row.id, name: row.name }
-    const list = by.get(row.fromId)
-    if (list) list.push(project)
-    else by.set(row.fromId, [project])
-  }
-  return by
-}
-
-/**
- * ADDS ONE EDGE. Already there is the state the caller asked for, so the conflict is ignored
- * rather than reported -- the primary key is the whole identity of an edge.
- */
+/** Adds one edge; one that is already there is the state asked for. */
 export async function addLink(
   q: Queryable,
   workspaceId: string,
@@ -171,7 +64,7 @@ export async function addLink(
     .onConflictDoNothing()
 }
 
-/** Removes one edge, named by both ends and the kind. Gone already is the same answer. */
+/** Removes one edge; one that is already gone is the same answer. */
 export async function removeLink(
   q: Queryable,
   workspaceId: string,

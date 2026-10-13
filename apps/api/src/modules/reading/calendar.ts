@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
+import { projectOfSql } from '../../shell/links/filing'
 
 /**
  * THE READING MODULE'S DATED THINGS: the day you mean to finish something by.
@@ -36,16 +37,8 @@ export async function listReadingCalendar(
       p.id as project_id,
       p.name as project_name
     from reading_items r
-    -- The project is an edge now. LATERAL rather than a join, because the edge table permits
-    -- many and the calendar square has room for one: the first by project rank, which is the one
-    -- the item's own row shows.
-    left join lateral (
-      select p.id, p.name from links l
-      join projects p on p.id = l.to_id and p.deleted_at is null
-      where l.from_type = 'reading' and l.from_id = r.id
-        and l.to_type = 'project' and l.kind = 'belongs'
-      order by p.rank, p.id limit 1
-    ) p on true
+    -- One project per square: the first by rank, as on the item's own row.
+    left join lateral ${projectOfSql('reading', 'r')} p on true
     where r.workspace_id = ${workspaceId}
       and r.deleted_at is null
       and r.plan_on is not null
