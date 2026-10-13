@@ -50,10 +50,13 @@ export function inboxOf<T extends ProjectResponse>(projects: T[]): T | undefined
   return projects.find((p) => p.isInbox)
 }
 
-/** Renames a project, or repaints it. Both are ordinary scalar fields on the project row. */
+/**
+ * Renames a project, repaints it, or sets it aside (`archived`) and brings it back. All ordinary
+ * fields on the project row; the server refuses to archive the inbox.
+ */
 export function updateProject(
   id: string,
-  body: { name?: string; color?: ProjectColor },
+  body: { name?: string; color?: ProjectColor; archived?: boolean },
 ): Promise<ProjectResponse> {
   return apiFetch<ProjectResponse>(`/projects/${id}`, {
     method: 'PATCH',

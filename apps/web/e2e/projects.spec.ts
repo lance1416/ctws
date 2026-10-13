@@ -82,3 +82,52 @@ test('an archived project opens as itself, marked archived', async ({ page }) =>
   await expect(page.getByRole('navigation', { name: 'Location' })).not.toContainText('Not found')
   await expect(page.getByText('Something left in it')).toBeVisible()
 })
+
+/**
+ * ARCHIVED FROM ITS OWN PAGE, AND BACK THE SAME WAY. Archive sets a line of work aside: it leaves
+ * the rail and the live lists, and its page stays open, marked Archived, with the way back right
+ * where the way out was.
+ */
+test('a project is archived from its own page, and brought back the same way', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '旧项目')
+  await makeTask(page, pid, '留下的')
+  await page.goto(`/projects/${pid}`)
+  const rail = page.getByRole('navigation', { name: 'Main navigation' })
+  await expect(rail.getByRole('link', { name: '旧项目' })).toBeVisible()
+
+  const patched = (archived: boolean) =>
+    page.waitForResponse(
+      (r) =>
+        r.request().method() === 'PATCH' &&
+        r.url().endsWith(`/api/v1/projects/${pid}`) &&
+        r.request().postDataJSON()?.archived === archived,
+    )
+  const archiving = patched(true)
+  await page.getByRole('button', { name: 'Archive', exact: true }).click()
+  expect((await archiving).ok()).toBe(true)
+  await expect(page.locator('[data-project-archived]')).toHaveText('Archived')
+  await expect(rail.getByRole('link', { name: '旧项目' })).toHaveCount(0)
+  // Still its page, with its tasks.
+  await expect(page.getByText('留下的')).toBeVisible()
+
+  const restoring = patched(false)
+  await page.getByRole('button', { name: 'Unarchive', exact: true }).click()
+  expect((await restoring).ok()).toBe(true)
+  await expect(page.locator('[data-project-archived]')).toHaveCount(0)
+  await expect(rail.getByRole('link', { name: '旧项目' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Archive', exact: true })).toBeVisible()
+})
+
+/** The inbox is where capture lands: it cannot be archived, so its page offers no Archive. */
+test('the inbox has no Archive', async ({ page }) => {
+  await registerFreshUser(page)
+  const listed = (await (await page.request.get('/api/v1/projects', { headers: WEB })).json()) as {
+    projects: { id: string; isInbox: boolean }[]
+  }
+  const inbox = listed.projects.find((p) => p.isInbox)!.id
+  await page.goto(`/projects/${inbox}`)
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Archive', exact: true })).toHaveCount(0)
+})
