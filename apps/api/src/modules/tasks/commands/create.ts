@@ -3,7 +3,7 @@ import { rankBetween } from '@ctws/core'
 import { and, desc, eq, isNull, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import type { Db } from '../../../platform/db/client'
-import { assertProjectVisible } from '../../../shell/projects/store'
+import { assertProjectsVisible } from '../../../shell/projects/queries'
 import { DepthLimitError } from '../errors'
 import { taskLog, type TaskCtx } from '../log'
 import { lockVisibleTask } from '../queries/scope'
@@ -18,7 +18,7 @@ export async function createTask(db: Db, ctx: TaskCtx, input: CreateTaskBody): P
   return db.transaction(async (tx) => {
     await lockTaskTree(tx, ctx.workspaceId)
     const log = taskLog(tx, ctx)
-    await assertProjectVisible(tx, ctx.workspaceId, input.projectId)
+    await assertProjectsVisible(tx, ctx.workspaceId, [input.projectId])
 
     let projectId = input.projectId
     if (input.parentId) {

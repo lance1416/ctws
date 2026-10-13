@@ -11,18 +11,11 @@ import type { Queryable } from '../../platform/db/client'
 import { textMatches } from '../../platform/db/sql'
 import { links } from '../../shell/links/tables'
 import { personChannels, people } from './tables'
-import { projects } from '../../shell/projects/tables'
 import { filedUnder, projectsLinkedFrom, putLinks, unfiled } from '../../shell/links/store'
-import { ProjectNotFoundError } from '../../shell/projects/errors'
-import { visibleProjects } from '../../shell/projects/queries'
+import { assertProjectsVisible } from '../../shell/projects/queries'
 import { PersonNotFoundError } from './errors'
 
-/**
- * PEOPLE' storage. vCard's shape (RFC 6350), cut to what one person needs.
- *
- * Like the reading module it borrows exactly two things from the shell -- the workspace and
- * `visibleProjects` -- and nothing at all from the other two modules.
- */
+/** People's storage: vCard's shape (RFC 6350), cut to what one person needs. */
 
 type PersonProject = { id: string; name: string }
 
@@ -161,21 +154,6 @@ async function hydrate(q: Queryable, workspaceId: string, rows: Selected[]): Pro
   }))
 }
 
-async function assertProjects(
-  q: Queryable,
-  workspaceId: string,
-  projectIds: readonly string[],
-): Promise<void> {
-  if (projectIds.length === 0) return
-  const rows = await q
-    .select({ id: projects.id })
-    .from(projects)
-    .where(and(visibleProjects(workspaceId), inArray(projects.id, [...projectIds])))
-  // Every one of them, not just one: a request naming four projects of which one is another
-  // workspace's must be refused whole.
-  if (rows.length !== new Set(projectIds).size) throw new ProjectNotFoundError()
-}
-
 /** Replaces a person's whole channel set. Called inside the caller's transaction. */
 async function putChannels(
   q: Queryable,
@@ -234,7 +212,7 @@ export async function createPerson(
   workspaceId: string,
   body: CreatePersonBody,
 ): Promise<PersonRow> {
-  await assertProjects(q, workspaceId, body.projectIds ?? [])
+  await assertProjectsVisible(q, workspaceId, body.projectIds ?? [])
   const id = uuidv7()
   await q.insert(people).values({
     id,
@@ -269,7 +247,7 @@ export async function updatePerson(
 ): Promise<PersonRow> {
   // Reads first, so an id from another workspace is "not found" before anything is written.
   await getPerson(q, workspaceId, id)
-  if (patch.projectIds) await assertProjects(q, workspaceId, patch.projectIds)
+  if (patch.projectIds) await assertProjectsVisible(q, workspaceId, patch.projectIds)
 
   const { channels, projectIds, birthday, ...fields } = patch
   // An update of only the channels (or only the projects) must still touch the row, or

@@ -20,3 +20,5 @@ export const projects = pgTable(
   },
   (t) => [index('projects_workspace_idx').on(t.workspaceId)],
 )
+
+export type Project = typeof projects.$inferSelect

@@ -2,7 +2,7 @@ import type { MoveTaskBody } from '@ctws/contracts'
 import { rankBetween } from '@ctws/core'
 import { and, asc, desc, eq, gt, isNull, lt, ne, sql } from 'drizzle-orm'
 import type { Db, Queryable } from '../../../platform/db/client'
-import { assertProjectVisible } from '../../../shell/projects/store'
+import { assertProjectsVisible } from '../../../shell/projects/queries'
 import { DepthLimitError, InvalidNeighbourError, MoveCycleError } from '../errors'
 import { taskLog, type TaskCtx } from '../log'
 import { lockVisibleTask } from '../queries/scope'
@@ -51,7 +51,7 @@ export async function moveTask(
     await lockTaskTree(tx, ctx.workspaceId)
     const log = taskLog(tx, ctx)
     const task = await lockVisibleTask(tx, ctx.workspaceId, id)
-    await assertProjectVisible(tx, ctx.workspaceId, input.projectId)
+    await assertProjectsVisible(tx, ctx.workspaceId, [input.projectId])
 
     // A deleted parent reads as not found.
     const parent = input.parentId

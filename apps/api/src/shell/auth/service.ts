@@ -1,12 +1,10 @@
-import { projectColors, type Role } from '@ctws/contracts'
-import { rankBetween } from '@ctws/core'
+import type { Role } from '@ctws/contracts'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import type { Db, Queryable } from '../../platform/db/client'
 import { LOCKS, lockFor } from '../../platform/db/locks'
-import { projects } from '../projects/tables'
+import { createInbox } from '../projects/service'
 import { users, workspaceMembers, workspaces } from './tables'
-import { INBOX_NAME } from '../projects/store'
 import { EmailTakenError, RegistrationClosedError } from './errors'
 import { hashPassword, verifyPassword } from './password'
 
@@ -85,18 +83,7 @@ export async function registerUser(
       })
       await tx.insert(workspaces).values({ id: workspaceId, name: 'My Workspace' })
       await tx.insert(workspaceMembers).values({ workspaceId, userId, role: 'owner' })
-      // The inbox is created with the workspace, not lazily on first capture: a lazy path needs
-      // its own check-then-insert race handling.
-      await tx.insert(projects).values({
-        id: uuidv7(),
-        workspaceId,
-        name: INBOX_NAME,
-        rank: rankBetween(null, null),
-        // Slot 1, the same one the backfill migration gives it: the inbox is always a workspace's
-        // first project, so `createProject`'s first-free-slot rule would hand it this anyway.
-        color: projectColors[0],
-        isInbox: true,
-      })
+      await createInbox(tx, workspaceId)
     })
   } catch (error) {
     if (isUniqueViolation(error)) throw new EmailTakenError()

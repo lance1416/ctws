@@ -2,7 +2,7 @@ import type { DependencyRef } from '@ctws/contracts'
 import type { Rollup } from '@ctws/core'
 import { and, asc, eq, isNull } from 'drizzle-orm'
 import type { Db, Queryable } from '../../../platform/db/client'
-import { assertProjectVisible } from '../../../shell/projects/store'
+import { assertProjectsVisible } from '../../../shell/projects/queries'
 import { tasks, type Task } from '../tables'
 import { blockersFor } from './dependencies'
 import { projectRollups } from './rollup'
@@ -13,7 +13,7 @@ export async function listProjectTasks(
   workspaceId: string,
   projectId: string,
 ): Promise<Task[]> {
-  await assertProjectVisible(q, workspaceId, projectId)
+  await assertProjectsVisible(q, workspaceId, [projectId])
   return q
     .select()
     .from(tasks)

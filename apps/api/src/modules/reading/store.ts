@@ -5,7 +5,7 @@ import type { Queryable } from '../../platform/db/client'
 import { filedUnder, oneProjectOf, putLinks, unfiled } from '../../shell/links/store'
 import { textMatches } from '../../platform/db/sql'
 import { readingItems } from './tables'
-import { assertProjectVisible } from '../../shell/projects/store'
+import { assertProjectsVisible } from '../../shell/projects/queries'
 import { ReadingItemNotFoundError, WrongKindError } from './errors'
 
 /**
@@ -113,7 +113,7 @@ export async function createReadingItem(
   workspaceId: string,
   body: CreateReadingItemBody,
 ): Promise<ReadingItemRow> {
-  if (body.projectId) await assertProjectVisible(q, workspaceId, body.projectId)
+  if (body.projectId) await assertProjectsVisible(q, workspaceId, [body.projectId])
   const values =
     body.kind === 'link'
       ? { kind: 'link' as const, url: body.url, title: body.title ?? null, author: null }
@@ -158,7 +158,7 @@ export async function updateReadingItem(
   if (patch.title === null && current.kind === 'book') {
     throw new WrongKindError('empty title', 'book')
   }
-  if (patch.projectId) await assertProjectVisible(q, workspaceId, patch.projectId)
+  if (patch.projectId) await assertProjectsVisible(q, workspaceId, [patch.projectId])
 
   const { projectId, ...fields } = patch
   await q

@@ -10,7 +10,7 @@ import type { Queryable } from '../../platform/db/client'
 import { meetingExceptions, meetings } from './tables'
 import { filedUnder, oneProjectOf, putLinks } from '../../shell/links/store'
 import { assertPeopleVisible, attendeesOf } from '../people'
-import { assertProjectVisible } from '../../shell/projects/store'
+import { assertProjectsVisible } from '../../shell/projects/queries'
 import {
   BadRuleError,
   MeetingNotFoundError,
@@ -218,7 +218,7 @@ export async function createMeeting(
   workspaceId: string,
   body: CreateMeetingBody,
 ): Promise<OccurrenceRow> {
-  if (body.projectId) await assertProjectVisible(q, workspaceId, body.projectId)
+  if (body.projectId) await assertProjectsVisible(q, workspaceId, [body.projectId])
   await assertPeopleVisible(q, workspaceId, body.attendeeIds ?? [])
   // The expander is what has to understand a rule, so it is what decides whether one is usable:
   // a schema that accepted what the expansion then ignored would store a schedule that never
@@ -265,7 +265,7 @@ export async function updateMeeting(
 ): Promise<OccurrenceRow> {
   const [series] = await seriesOf(q, workspaceId, { id })
   if (!series) throw new MeetingNotFoundError()
-  if (patch.projectId) await assertProjectVisible(q, workspaceId, patch.projectId)
+  if (patch.projectId) await assertProjectsVisible(q, workspaceId, [patch.projectId])
   if (patch.attendeeIds) await assertPeopleVisible(q, workspaceId, patch.attendeeIds)
 
   const { scope: asked, recurrenceId, attendeeIds, projectId, ...fields } = patch
