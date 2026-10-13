@@ -139,8 +139,9 @@ export async function expectBlockedByTreeLock<T>(ctx: Harness, fire: () => Promi
     locked()
     await held
   })
-  // The request goes out only once the lock is held, or it could take the lock first.
-  await lockTaken
+  // The request goes out only once the lock is held, or it could take the lock first. A holder
+  // that fails before taking it fails the test here.
+  await Promise.race([lockTaken, holding])
 
   let settled = false
   const pending = fire().then((res) => {
