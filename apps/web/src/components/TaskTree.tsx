@@ -641,39 +641,42 @@ export function TaskTree({ projectId }: { projectId: string }) {
           {/* One measure for every task list (rowLead): the title no longer competes with
               anything to its right, so there is nothing left for the measure to be derived from. */}
           <ul data-task-tree className={`${ROW_LIST} ${LIST_MEASURE}`}>
-            {rows.map((row, i) => (
-              <Fragment key={row.id}>
-                <TaskRow
-                  row={row}
-                  projectId={projectId}
-                  title={byId.get(row.id)?.title ?? ''}
-                  status={byId.get(row.id)?.status ?? 'todo'}
-                  dueAt={byId.get(row.id)?.dueAt ?? null}
-                  scheduledOn={byId.get(row.id)?.scheduledOn ?? null}
-                  hasNotes={(byId.get(row.id)?.notes ?? '') !== ''}
-                  capturedAt={inInbox ? (byId.get(row.id)?.createdAt ?? null) : null}
-                  rollup={row.hasChildren ? rollupPhrase(tasks.data?.rollups[row.id]) : null}
-                  blockedBy={tasks.data?.blockers[row.id]}
-                  saved={savedId === row.id}
-                  tabStop={row.id === tabId}
-                  onFocus={() => setActiveId(row.id)}
-                  onSetStatus={(status) => setStatus(row.id, status)}
-                  onToggle={() => toggle(row.id)}
-                  onKeyDown={(e) => onKeyDown(e, i)}
-                  onOpen={() => setOpenId(row.id)}
-                  selected={selected.has(row.id)}
-                  onToggleSelected={() =>
-                    setSelected((prev) => {
-                      const next = new Set(prev)
-                      if (!next.delete(row.id)) next.add(row.id)
-                      return next
-                    })
-                  }
-                  onAddChild={() => addChild(row)}
-                />
-                {inputSlot === i + 1 && input}
-              </Fragment>
-            ))}
+            {/* One flat list, the input keyed beside the rows rather than inside the one it
+                follows: when a created row lands, the input moves after it instead of being
+                rebuilt -- a rebuilt box is empty and focused while its create is still out, and
+                the Enter typed into it is dropped. */}
+            {rows.flatMap((row, i) => [
+              <TaskRow
+                key={row.id}
+                row={row}
+                projectId={projectId}
+                title={byId.get(row.id)?.title ?? ''}
+                status={byId.get(row.id)?.status ?? 'todo'}
+                dueAt={byId.get(row.id)?.dueAt ?? null}
+                scheduledOn={byId.get(row.id)?.scheduledOn ?? null}
+                hasNotes={(byId.get(row.id)?.notes ?? '') !== ''}
+                capturedAt={inInbox ? (byId.get(row.id)?.createdAt ?? null) : null}
+                rollup={row.hasChildren ? rollupPhrase(tasks.data?.rollups[row.id]) : null}
+                blockedBy={tasks.data?.blockers[row.id]}
+                saved={savedId === row.id}
+                tabStop={row.id === tabId}
+                onFocus={() => setActiveId(row.id)}
+                onSetStatus={(status) => setStatus(row.id, status)}
+                onToggle={() => toggle(row.id)}
+                onKeyDown={(e) => onKeyDown(e, i)}
+                onOpen={() => setOpenId(row.id)}
+                selected={selected.has(row.id)}
+                onToggleSelected={() =>
+                  setSelected((prev) => {
+                    const next = new Set(prev)
+                    if (!next.delete(row.id)) next.add(row.id)
+                    return next
+                  })
+                }
+                onAddChild={() => addChild(row)}
+              />,
+              ...(inputSlot === i + 1 ? [<Fragment key="new-task">{input}</Fragment>] : []),
+            ])}
           </ul>
         </SortableContext>
       </DndContext>

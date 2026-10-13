@@ -192,6 +192,54 @@ test('Enter commits and reopens the input, so tasks can be added in a row', asyn
   expect([parents.first, parents.second]).toEqual(['B', 'B'])
 })
 
+/*
+  The box is empty again only when its create is answered: an empty box says "type the next one",
+  and an Enter in it while the last create is still out is dropped. It used to be rebuilt the
+  moment the new row landed — empty, focused, and still busy — whenever the list refetched before
+  the create's own answer arrived. The second task of a quick run went nowhere, without a word.
+*/
+test('the box stays as typed until its create is answered, even if the row lands first', async ({
+  page,
+}) => {
+  await seed(page)
+  await handle(page, 'B').focus()
+  await page.keyboard.press('Alt+Enter')
+
+  // The create reaches the server; its answer is held.
+  let reached = () => {}
+  const atServer = new Promise<void>((resolve) => (reached = resolve))
+  let release = () => {}
+  const held = new Promise<void>((resolve) => (release = resolve))
+  await page.route(POST_TASK, async (route) => {
+    if (route.request().method() !== 'POST') return route.fallback()
+    const response = await route.fetch()
+    reached()
+    await held
+    await route.fulfill({ response })
+  })
+  await page.keyboard.type('first')
+  await page.keyboard.press('Enter')
+  await atServer
+
+  // Meanwhile the list refetches for its own reasons (here: coming back to the tab).
+  await page.evaluate(() => window.dispatchEvent(new Event('visibilitychange')))
+  await expect(row(page, 'first')).toBeVisible()
+  await expect(newInput(page)).toHaveValue('first')
+
+  const created = createdOk(page)
+  release()
+  await created
+  await expect(newInput(page)).toHaveValue('')
+  await expect(newInput(page)).toBeFocused()
+
+  const second = createdOk(page)
+  await page.keyboard.type('second')
+  await page.keyboard.press('Enter')
+  await second
+  await expect(row(page, 'second')).toBeVisible()
+  expect(await shape(page)).toEqual(['1:A', '2:a1', '2:a2', '1:B', '2:first', '2:second'])
+})
+
 test('Escape cancels without creating, and focus returns to the row', async ({ page }) => {
   const projectId = await seed(page)
   const posts = recordCreates(page)
