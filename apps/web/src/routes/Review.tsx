@@ -3,14 +3,17 @@ import { useQuery } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { listReview } from '../api/review'
+import { DaySection } from '../components/DaySection'
 import { EmptyState } from '../components/EmptyState'
-import { Panel, PanelEmpty } from '../components/Panel'
-import { Stat, StatRow } from '../components/Stat'
+import { RowLead } from '../components/RowLead'
+import { BODY_GUTTER, ProjectRail, ROW_LIST } from '../components/RowParts'
 import { StatusMark } from '../components/StatusMark'
 import { ViewTabs } from '../components/ViewTabs'
 import { Completed } from './Completed'
-import { MONTHS } from '../dueAt'
-import { useProjectRail } from '../projectColor'
+import { addDays, MONTHS, todayIn, ymd } from '../dueAt'
+import { LIST_MEASURE } from '../rowLead'
+import { useTimeZone } from '../useMe'
+import { useNow } from '../useNow'
 import { useCrumbs } from '../components/Location'
 
 /** "Oct 2" -- the month and the day; the window itself carries the year. */
@@ -31,27 +34,72 @@ function shiftWeek(from: string, to: string, weeks: number): { from: string; to:
 
 type Project = ReviewResponse['projects'][number]
 
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
+
 /**
- * WHAT HAPPENED TO ONE TASK, as a row of the app's own shape.
+ * WHAT HAPPENED TO ONE TASK, on the app's row: the day it happened in the margin, the project's
+ * thread, then the mark and the title.
  *
  * The three groups are told apart by the MARK, not by three sub-headings with a grey count each
  * -- "Done 2", "Start 1", "Dropped 1" is three labels to read before the first title. It is the
  * same glyph the task carries everywhere else, so a finished task looks finished here too and
- * the list is one list.
+ * the list is one list. The day is the ACCOUNT's (the event's instant in its zone): Today, else
+ * the weekday -- a review covers a week, and in a week the weekday is the name a day goes by.
  */
-function Row({ title, status }: { title: string; status: 'done' | 'in_progress' | 'cancelled' }) {
+function Row({
+  title,
+  status,
+  at,
+  projectId,
+  today,
+  timeZone,
+}: {
+  title: string
+  status: 'done' | 'in_progress' | 'cancelled'
+  at: string
+  projectId: string
+  today: string
+  timeZone: string
+}) {
+  const day = ymd(new Date(at), timeZone)
+  const [, m, d] = day.split('-').map(Number) as [number, number, number]
+  const text =
+    day === today
+      ? 'Today'
+      : day >= addDays(today, -6)
+        ? WEEKDAYS[new Date(`${day}T12:00:00Z`).getUTCDay()]!
+        : `${MONTHS[m - 1]} ${d}`
   return (
-    <li className="flex min-h-8 min-w-0 items-center gap-2 px-2 hover:bg-hover">
-      <span className="flex h-5 w-5 shrink-0 items-center justify-center">
-        <StatusMark status={status} />
-      </span>
-      <span
-        className={`min-w-0 truncate text-sm ${status === 'done' ? 'text-ink' : 'text-ink-muted'}`}
+    <li data-review-row className="flex min-h-11 min-w-0">
+      <RowLead lead={{ text, tone: 'quiet', flag: false }} dateTime={at} />
+      <ProjectRail projectId={projectId} />
+      <div
+        className={`flex min-w-0 flex-1 items-start gap-2.5 py-2.5 pr-2 pl-[var(--gutter)] ${BODY_GUTTER}`}
       >
-        {title}
-      </span>
+        <span className="flex h-6 shrink-0 items-center">
+          <StatusMark status={status} />
+        </span>
+        <span className={`min-w-0 truncate ${status === 'done' ? 'text-ink' : 'text-ink-muted'}`}>
+          {title}
+        </span>
+      </div>
     </li>
   )
+}
+
+/**
+ * HOW THE WEEK WENT, IN ONE SENTENCE: "2 done, 1 started and 1 dropped." -- the way a project's
+ * head says its numbers, not a row of tiles. A count of nothing is not news and is left out.
+ */
+function weekSentence(total: { done: number; started: number; dropped: number }): string | null {
+  const parts = [
+    total.done > 0 ? `${total.done} done` : null,
+    total.started > 0 ? `${total.started} started` : null,
+    total.dropped > 0 ? `${total.dropped} dropped` : null,
+  ].filter((p): p is string => p !== null)
+  if (parts.length === 0) return null
+  const last = parts.pop()!
+  return `${parts.length > 0 ? `${parts.join(', ')} and ` : ''}${last}.`
 }
 
 const counted = (p: Project) => p.finished.length + p.started.length + p.dropped.length
@@ -63,8 +111,8 @@ const counted = (p: Project) => p.finished.length + p.started.length + p.dropped
  * log: finished, started, dropped, grouped by line of work. A task finished on Tuesday and
  * reopened on Thursday is in neither place in Done and is in this one, which is the point.
  *
- * THE PAGE ANSWERS ONE QUESTION FIRST: how did the week go. That is three numbers, set as a row
- * of `Stat`s at the top; everything under them is the detail behind them.
+ * THE PAGE ANSWERS ONE QUESTION FIRST: how did the week go. That is three numbers, said as one
+ * sentence under the title; everything under it is the detail behind them.
  *
  * The window is the server's: it decides the week boundary in the account's zone and reports the
  * bounds it used. The stepper moves by whole weeks from there.
@@ -92,7 +140,8 @@ export function Review() {
     enabled: view === 'week',
   })
   const heading = useRef<HTMLHeadingElement>(null)
-  const rail = useProjectRail()
+  const timeZone = useTimeZone()
+  const today = todayIn(timeZone, useNow())
   const data = review.data
 
   const projects = data?.projects ?? []
@@ -104,7 +153,8 @@ export function Review() {
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+      {/* The title on the margin's edge, where the rows' threads and the sections' headings hang. */}
+      <div className="ml-15 flex flex-wrap items-center gap-x-3 gap-y-2 sm:ml-18">
         <h1
           ref={heading}
           tabIndex={-1}
@@ -152,60 +202,63 @@ export function Review() {
       {view === 'done' && <Completed heading={false} />}
 
       {view === 'week' && review.isError && (
-        <p role="alert" className="mt-4 text-sm text-danger">
+        <p role="alert" className="mt-4 ml-15 text-sm text-danger sm:ml-18">
           Couldn't load the review
         </p>
       )}
 
       {view === 'week' && data && (
         <>
-          {/* HOW THE WEEK WENT, in the same shape the project page and the workbench use: the
-              numbers that say where things stand. */}
-          <Panel label="The week" className="mt-4">
-            <div className="px-2 pb-1">
-              <StatRow>
-                <Stat label="Done" value={total.done} />
-                <Stat label="Started" value={total.started} />
-                <Stat label="Dropped" value={total.dropped} />
-              </StatRow>
-            </div>
-          </Panel>
+          {weekSentence(total) && (
+            <p data-review-sentence className="mt-1.5 ml-15 text-ink-muted tabular-nums sm:ml-18">
+              {weekSentence(total)}
+            </p>
+          )}
 
           {projects.length === 0 ? (
             <EmptyState title="Nothing happened this week" />
           ) : (
-            /* TWO COLUMNS where there is room. A weekly review is a page of short lists, and one
-               column of them left two thirds of a 1440 screen empty. */
-            <div className="mt-4 grid min-w-0 items-start gap-4 xl:grid-cols-2">
+            /* ONE COLUMN, a section per line of work, like every other list in the app: the
+               threads at one x, and the day each thing happened in the margin. */
+            <div className={`mt-8 flex flex-col gap-8 ${LIST_MEASURE}`}>
               {projects.map((p) => (
-                <Panel
-                  key={p.projectId}
-                  label={p.projectName}
-                  count={counted(p)}
-                  heading={
-                    <h2 className="flex min-w-0 items-center gap-2 text-lg font-semibold text-ink">
-                      {/* A chip, never alone: the project's NAME is right beside it (WCAG 1.4.1). */}
-                      <span
-                        aria-hidden="true"
-                        className={`h-4 w-[3px] shrink-0 rounded-full ${rail(p.projectId)}`}
-                      />
-                      <span className="truncate">{p.projectName}</span>
-                    </h2>
-                  }
-                >
-                  <ul className="flex flex-col">
+                <DaySection key={p.projectId} label={p.projectName} count={counted(p)}>
+                  <ul className={ROW_LIST}>
                     {p.finished.map((t) => (
-                      <Row key={t.id} title={t.title} status="done" />
+                      <Row
+                        key={t.id}
+                        title={t.title}
+                        status="done"
+                        at={t.at}
+                        projectId={p.projectId}
+                        today={today}
+                        timeZone={timeZone}
+                      />
                     ))}
                     {p.started.map((t) => (
-                      <Row key={t.id} title={t.title} status="in_progress" />
+                      <Row
+                        key={t.id}
+                        title={t.title}
+                        status="in_progress"
+                        at={t.at}
+                        projectId={p.projectId}
+                        today={today}
+                        timeZone={timeZone}
+                      />
                     ))}
                     {p.dropped.map((t) => (
-                      <Row key={t.id} title={t.title} status="cancelled" />
+                      <Row
+                        key={t.id}
+                        title={t.title}
+                        status="cancelled"
+                        at={t.at}
+                        projectId={p.projectId}
+                        today={today}
+                        timeZone={timeZone}
+                      />
                     ))}
                   </ul>
-                  {counted(p) === 0 && <PanelEmpty>Nothing this week</PanelEmpty>}
-                </Panel>
+                </DaySection>
               ))}
             </div>
           )}

@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { listCompleted } from '../api/completed'
 import { useTaskActions } from '../api/taskActions'
+import { DaySection } from '../components/DaySection'
 import { EmptyState } from '../components/EmptyState'
 import { DONE_LIST_MEASURE, ProjectRail } from '../components/RowParts'
 import { RowLead } from '../components/RowLead'
@@ -87,11 +88,13 @@ export function Completed({ heading: showHeading = true }: { heading?: boolean }
       )}
       {completed.isSuccess && rows.length === 0 && <EmptyState title="Nothing finished yet" />}
       {days.map(({ day, tasks }) => (
-        <section key={day} aria-label={dayHeading(day, today)} className="mt-8">
-          <h2 className="ml-15 text-sm font-semibold text-ink-muted sm:ml-18">
-            {dayHeading(day, today)} <span className="tabular-nums">{tasks.length}</span>
-          </h2>
-          <ul className={`mt-1 flex flex-col ${DONE_LIST_MEASURE}`}>
+        <DaySection
+          key={day}
+          label={dayHeading(day, today)}
+          count={tasks.length}
+          className={`mt-8 ${DONE_LIST_MEASURE}`}
+        >
+          <ul className="flex flex-col">
             {tasks.map((t) => (
               <li
                 key={t.id}
@@ -142,7 +145,7 @@ export function Completed({ heading: showHeading = true }: { heading?: boolean }
               </li>
             ))}
           </ul>
-        </section>
+        </DaySection>
       ))}
       {/* THE SERVER SAYS WHETHER THIS IS ALL OF IT. Counting the rows against a 200 written on
           this side duplicates the server's limit and gets it wrong in both directions: it lies

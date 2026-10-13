@@ -38,14 +38,11 @@ test('the week is summed up before it is listed', async ({ page }) => {
   await seed(page)
   await page.goto('/tasks/review')
 
-  const banner = page.getByRole('region', { name: 'The week' })
-  await expect(banner).toBeVisible()
-  // Two finished, one started, one dropped -- read off the banner, not counted off the rows.
-  await expect(banner.getByRole('term').filter({ hasText: 'Done' }).locator('..')).toContainText(
-    '2',
+  // Two finished, one started, one dropped -- said as one sentence under the title, the way a
+  // project's head says its numbers, not as a row of tiles; read off it, not counted off the rows.
+  await expect(page.locator('[data-review-sentence]')).toHaveText(
+    '2 done, 1 started and 1 dropped.',
   )
-  await expect(banner).toContainText('Started')
-  await expect(banner).toContainText('Dropped')
 })
 
 test('the week is one control, and it does not step into a week that has not happened', async ({
@@ -81,4 +78,29 @@ test('a line of work carries what happened to each task, by its own mark', async
   await expect(block.getByRole('img', { name: 'In progress' })).toHaveCount(1)
   await expect(block.getByRole('img', { name: 'Cancelled' })).toHaveCount(1)
   await expect(block.locator('[data-count]')).toHaveText('4')
+})
+
+/**
+ * A REVIEW ROW IS THE APP'S ROW: the day it happened in the margin, the project's thread, then the
+ * mark and the title. Each line of work is a section headed where the threads hang, as the page's
+ * title is -- one column, like every other list in the app.
+ */
+test('the week hangs on the margin: the day, the thread, then what happened', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await registerFreshUser(page)
+  await seed(page)
+  await page.goto('/tasks/review')
+
+  const block = page.getByRole('region', { name: 'Job hunt' })
+  // Everything in the seed happened just now, so its day is today.
+  await expect(block.locator('[data-row-lead-text]').first()).toHaveText('Today')
+  const threads = await page
+    .locator('[data-review-row] [data-thread]')
+    .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().x)))
+  expect(threads).toHaveLength(4)
+  expect(new Set(threads).size).toBe(1)
+  const h1 = (await page.getByRole('heading', { level: 1, name: 'Review' }).boundingBox())!
+  expect(Math.round(h1.x)).toBe(threads[0])
+  const head = (await page.getByRole('heading', { level: 2, name: 'Job hunt' }).boundingBox())!
+  expect(Math.round(head.x)).toBe(threads[0])
 })
