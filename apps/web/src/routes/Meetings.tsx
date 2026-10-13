@@ -1,19 +1,22 @@
 import type { MeetingOccurrence } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
-import { useRef, useState } from 'react'
+import { Fragment, useRef, useState, type ReactNode } from 'react'
 import { useForgetWhenGone } from '../recent'
 import { useNavigate, useParams } from 'react-router-dom'
 import { listMeetings, meetingsKey, repeatLabel } from '../api/meetings'
 import { EmptyState } from '../components/EmptyState'
 import { MeetingDetail } from '../components/MeetingDetail'
 import { NewMeetingDialog } from '../components/NewMeetingDialog'
+import { DaySection } from '../components/DaySection'
 import { PanelEmpty } from '../components/Panel'
+import { RowLead } from '../components/RowLead'
+import { BODY_GUTTER, ProjectRail, ROW_LIST } from '../components/RowParts'
 import { addDays, todayIn } from '../dueAt'
 import { meetingLink } from '../meetingPlace'
-import { useProjectRail } from '../projectColor'
 import { zoneLabel } from '../timeZones'
 import { LIST_MEASURE } from '../rowLead'
 import { useTimeZone } from '../useMe'
+import { useNow } from '../useNow'
 import { BUTTON, LINK } from '../components/buttonStyles'
 import { useCrumbs } from '../components/Location'
 
@@ -46,7 +49,10 @@ const WINDOW_DAYS = 31
 export function Meetings() {
   useCrumbs([{ label: 'Things', to: '/things' }, { label: 'Meetings' }])
   const accountZone = useTimeZone()
-  const today = todayIn(accountZone)
+  // Kept current while the page sits open (`useNow`): which day is today, and which meetings are
+  // over, follow the clock.
+  const now = useNow()
+  const today = todayIn(accountZone, now)
   const heading = useRef<HTMLHeadingElement>(null)
   const [making, setMaking] = useState(false)
   const [showPast, setShowPast] = useState(false)
@@ -96,7 +102,8 @@ export function Meetings() {
 
   return (
     <>
-      <div className="flex items-center justify-between gap-3">
+      {/* The title on the margin's edge, where the rows' threads and the days' headings hang. */}
+      <div className="ml-15 flex items-center justify-between gap-3 sm:ml-18">
         <h1
           ref={heading}
           tabIndex={-1}
@@ -109,9 +116,9 @@ export function Meetings() {
         </button>
       </div>
 
-      {ahead.isPending && <p className="mt-6 text-ink-muted">Loading…</p>}
+      {ahead.isPending && <p className="mt-6 ml-15 text-ink-muted sm:ml-18">Loading…</p>}
       {ahead.isError && (
-        <p role="alert" className="mt-6 text-danger">
+        <p role="alert" className="mt-6 ml-15 text-danger sm:ml-18">
           {ahead.error instanceof Error
             ? ahead.error.message
             : "Couldn't load. Check that the server is running."}
@@ -119,32 +126,41 @@ export function Meetings() {
       )}
       {ahead.isSuccess && coming.length === 0 && <EmptyState title="Nothing in the next month" />}
 
-      <div className={`mt-4 ${LIST_MEASURE}`}>
+      <div className={`mt-6 ${LIST_MEASURE}`}>
         {coming.length > 0 && (
-          <Section
-            title="Coming up"
+          <Days
+            label="Coming up"
             rows={coming}
             today={today}
+            now={now}
             accountZone={accountZone}
             onOpen={setOpen}
           />
         )}
 
         <div className="mt-8">
-          <button type="button" onClick={() => setShowPast((v) => !v)} className={BUTTON.inline}>
+          {/* The switch's word on the edge, where the headings are: its own padding hangs left. */}
+          <button
+            type="button"
+            onClick={() => setShowPast((v) => !v)}
+            className={`ml-13 sm:ml-16 ${BUTTON.inline}`}
+          >
             {showPast ? 'Hide earlier' : 'Earlier'}
           </button>
           {showPast &&
             (past.length === 0 ? (
-              <PanelEmpty>Nothing in the past month</PanelEmpty>
+              <PanelEmpty hang>Nothing in the past month</PanelEmpty>
             ) : (
-              <Section
-                title="Earlier"
-                rows={past}
-                today={today}
-                accountZone={accountZone}
-                onOpen={setOpen}
-              />
+              <div className="mt-4">
+                <Days
+                  label="Earlier"
+                  rows={past}
+                  today={today}
+                  now={now}
+                  accountZone={accountZone}
+                  onOpen={setOpen}
+                />
+              </div>
             ))}
         </div>
       </div>
@@ -166,7 +182,7 @@ export function Meetings() {
       )}
       {/* 链接指向的会已经不在了（或者取消了）：说出来，别只留一个列表。 */}
       {gone && (
-        <p role="alert" className="mt-4 text-sm text-ink-muted">
+        <p role="alert" className="mt-4 ml-15 text-sm text-ink-muted sm:ml-18">
           This meeting is not here any more.
         </p>
       )}
@@ -174,34 +190,31 @@ export function Meetings() {
   )
 }
 
-/** One stretch of the list, with its day headings. */
-function Section({
-  title,
+/**
+ * ONE STRETCH OF THE LIST -- coming up, or earlier -- as one section per day. The stretch has no
+ * heading of its own: the days are the headings, and "Coming up" over "Today" said one thing twice.
+ */
+function Days({
+  label,
   rows,
   today,
+  now,
   accountZone,
   onOpen,
 }: {
-  title: string
+  label: string
   rows: readonly MeetingOccurrence[]
   today: string
+  now: Date
   accountZone: string
   onOpen: (at: { meetingId: string; recurrenceId: string }) => void
 }) {
-  const rail = useProjectRail()
-  const clock = new Intl.DateTimeFormat('en-US', {
-    timeZone: accountZone,
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  })
-  const heading = new Intl.DateTimeFormat('en-US', {
+  const named = new Intl.DateTimeFormat('en-US', {
     timeZone: accountZone,
     weekday: 'short',
     month: 'short',
     day: 'numeric',
   })
-
   // THE DAY IS YOURS, NOT THE MEETING'S. `recurrenceId` carries the meeting's own local date, and
   // 01:00 Friday in London is Thursday evening where you are standing -- grouping by it would put
   // a meeting under a date no other screen in this app agrees with. Derived from the instant in
@@ -219,75 +232,129 @@ function Section({
     if (list) list.push(m)
     else days.set(day, [m])
   }
+  const dayName = (day: string) =>
+    day === today
+      ? 'Today'
+      : day === addDays(today, 1)
+        ? 'Tomorrow'
+        : day === addDays(today, -1)
+          ? 'Yesterday'
+          : named.format(new Date(`${day}T12:00:00Z`))
 
   return (
-    <section aria-label={title} className="mt-6">
-      <h2 className="text-sm font-semibold text-ink-muted">{title}</h2>
+    <section aria-label={label} className="flex flex-col gap-6">
       {[...days].map(([day, list]) => (
-        <div key={day} className="mt-4">
-          <h3 className="px-2 text-xs font-semibold text-ink-subtle">
-            {day === today ? 'Today' : heading.format(new Date(`${day}T12:00:00Z`))}
-          </h3>
-          <ul className="mt-1 flex flex-col">
+        <DaySection key={day} label={dayName(day)}>
+          <ul className={ROW_LIST}>
             {list.map((m) => (
-              <li
+              <MeetingRow
                 key={`${m.meetingId}:${m.recurrenceId}`}
-                data-meeting-row={m.meetingId}
-                className="flex min-h-9 min-w-0 items-center gap-2 px-2 hover:bg-hover"
-              >
-                <span
-                  aria-hidden="true"
-                  className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(m.projectId ?? '')}`}
-                />
-                {/* YOUR clock first, because that is when you have to be somewhere. */}
-                <span className="shrink-0 text-sm tabular-nums text-ink-muted">
-                  {clock.format(new Date(m.startsAt))}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => onOpen({ meetingId: m.meetingId, recurrenceId: m.recurrenceId })}
-                  className="min-w-0 max-w-full truncate rounded-md text-left text-sm text-ink hover:underline"
-                >
-                  {m.title}
-                </button>
-                {/* And what was actually AGREED, when that is not your clock: "09:30 London" is
-                    what the other people in the room said, and it is not 04:30 anywhere. */}
-                {m.timeZone !== accountZone && (
-                  <span
-                    data-meeting-zone
-                    className="min-w-0 shrink truncate text-xs text-ink-subtle"
-                  >
-                    {m.startsLocal.slice(11)} {zoneLabel(m.timeZone, new Date(m.startsAt))}
-                  </span>
-                )}
-                <span className="flex-1" />
-                {m.attendees.length > 0 && (
-                  <span className="min-w-0 shrink truncate text-xs text-ink-subtle">
-                    {m.attendees.map((p) => p.name).join(', ')}
-                  </span>
-                )}
-                {m.rrule && (
-                  <span className="shrink-0 text-xs text-ink-subtle">
-                    {repeatLabel(m.rrule, m.startsLocal, today)}
-                  </span>
-                )}
-                {/* JOIN, from the list. At 09:29 the useful thing about a meeting link is a
-                    control that opens it, not a string to go and find. */}
-                {meetingLink(m.location) && (
-                  <a
-                    href={meetingLink(m.location)!}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={`shrink-0 rounded-md px-1.5 py-0.5 text-xs font-semibold ${LINK} hover:bg-hover`}
-                  >
-                    Join
-                  </a>
-                )}
-              </li>
+                meeting={m}
+                today={today}
+                now={now}
+                accountZone={accountZone}
+                onOpen={onOpen}
+              />
             ))}
           </ul>
-        </div>
+        </DaySection>
       ))}
     </section>
+  )
+}
+
+/**
+ * ONE MEETING, on the app's row: the time on YOUR clock in the margin -- when you have to be
+ * somewhere -- quiet once it is over; its project's colour as the thread; then the title, and a
+ * line with the rest: what was agreed when that is another clock, the project by name, who is in
+ * it, how it repeats. Join stays on the row: at 09:29 the useful thing about a meeting link is a
+ * control that opens it.
+ *
+ * THE WHOLE ROW OPENS IT (the title's button is stretched over the row); Join sits above that and
+ * is its own target.
+ */
+function MeetingRow({
+  meeting: m,
+  today,
+  now,
+  accountZone,
+  onOpen,
+}: {
+  meeting: MeetingOccurrence
+  today: string
+  now: Date
+  accountZone: string
+  onOpen: (at: { meetingId: string; recurrenceId: string }) => void
+}) {
+  const clock = new Intl.DateTimeFormat('en-US', {
+    timeZone: accountZone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+  const over = new Date(m.endsAt).getTime() <= now.getTime()
+  const join = meetingLink(m.location)
+  const said: ReactNode[] = []
+  // What was actually AGREED, when that is not your clock: "09:30 London" is what the other
+  // people in the room said, and it is not 04:30 anywhere.
+  if (m.timeZone !== accountZone)
+    said.push(
+      <span key="zone" data-meeting-zone>
+        {m.startsLocal.slice(11)} {zoneLabel(m.timeZone, new Date(m.startsAt))}
+      </span>,
+    )
+  // The thread is the project's colour; its name is here (WCAG 1.4.1).
+  if (m.projectName) said.push(<span key="project">{m.projectName}</span>)
+  if (m.attendees.length > 0)
+    said.push(<span key="who">{m.attendees.map((p) => p.name).join(', ')}</span>)
+  if (m.rrule) said.push(<span key="repeat">{repeatLabel(m.rrule, m.startsLocal, today)}</span>)
+
+  return (
+    <li data-meeting-row={m.meetingId} className="group relative flex min-h-11 min-w-0">
+      <RowLead
+        lead={{
+          text: clock.format(new Date(m.startsAt)),
+          tone: over ? 'quiet' : 'time',
+          flag: false,
+        }}
+        dateTime={m.startsAt}
+      />
+      <ProjectRail projectId={m.projectId} />
+      <div
+        className={`flex min-w-0 flex-1 items-start gap-2 py-2.5 pr-2 pl-[var(--gutter)] group-hover:bg-hover ${BODY_GUTTER}`}
+      >
+        <span className="flex min-w-0 flex-1 flex-col">
+          <button
+            type="button"
+            onClick={() => onOpen({ meetingId: m.meetingId, recurrenceId: m.recurrenceId })}
+            className={`truncate text-left after:absolute after:inset-0 after:content-[''] ${
+              over ? 'text-ink-subtle' : 'text-ink'
+            }`}
+          >
+            {m.title}
+          </button>
+          {said.length > 0 && (
+            <span className="truncate text-sm text-ink-muted">
+              {said.map((part, i) => (
+                <Fragment key={i}>
+                  {i > 0 && ' · '}
+                  {part}
+                </Fragment>
+              ))}
+            </span>
+          )}
+        </span>
+        {join && (
+          <a
+            href={join}
+            target="_blank"
+            rel="noreferrer"
+            className={`relative z-10 shrink-0 rounded-md px-1.5 py-0.5 text-sm font-semibold ${LINK} hover:bg-hover`}
+          >
+            Join
+          </a>
+        )}
+      </div>
+    </li>
   )
 }

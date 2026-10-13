@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dayOffset } from './days'
-import { pickOne, registerFreshUser, WEB } from './helpers'
+import { accountZone, pickOne, registerFreshUser, WEB } from './helpers'
 
 /**
  * MEETINGS -- the module's own destination, and the form that fills one in once.
@@ -107,8 +107,8 @@ test('the list is grouped by day, and says what was agreed when that is not your
   await page.goto('/meetings')
   const coming = page.getByRole('region', { name: 'Coming up' })
   await expect(coming).toBeVisible()
-  // The nearest day is named Today; the rest carry their date.
-  await expect(coming.getByRole('heading', { level: 3 }).first()).toHaveText('Today')
+  // The nearest day is named Today; the rest carry their date. Each day is a section of the page.
+  await expect(coming.getByRole('heading', { level: 2 }).first()).toHaveText('Today')
   // The row leads with YOUR clock, and then says what was agreed -- when that is somewhere else.
   const row = (title: string) => coming.locator('[data-meeting-row]').filter({ hasText: title })
   await expect(row('Second interview').locator('[data-meeting-zone]')).toContainText(
@@ -261,4 +261,62 @@ test('会议面板也有 ↗ 通往那一页，字段也按自己的宽度排', 
 
   await pane.getByRole('link', { name: 'Open as a page' }).click()
   await expect(page).toHaveURL(new RegExp('/meetings/[0-9a-f-]{36}$'))
+})
+
+/**
+ * A MEETING'S ROW IS THE APP'S ROW: the time on your own clock in the margin, the thread in its
+ * project's colour, then the title and a line that says the rest -- the project BY NAME, who is in
+ * it. The days are sections whose headings hang where the threads do, as the page's title does.
+ */
+test('meetings hang on the margin: the time, the thread, then the meeting', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await registerFreshUser(page)
+  const project = await page.request.post('/api/v1/projects', {
+    headers: WEB,
+    data: { name: '找工作' },
+  })
+  const projectId = ((await project.json()) as { id: string }).id
+  const made = await page.request.post('/api/v1/meetings', {
+    headers: WEB,
+    data: {
+      title: 'Second interview',
+      startsLocal: `${dayOffset(1)}T14:00`,
+      // Agreed on the account's own clock, so the margin's 14:00 is the time agreed.
+      timeZone: await accountZone(page),
+      durationMinutes: 60,
+      projectId,
+    },
+  })
+  expect(made.ok(), await made.text()).toBe(true)
+  const { meetingId } = (await made.json()) as { meetingId: string }
+  await page.request.post('/api/v1/meetings', {
+    headers: WEB,
+    data: {
+      title: 'Standup',
+      startsLocal: `${dayOffset(2)}T09:30`,
+      timeZone: 'UTC',
+      durationMinutes: 15,
+    },
+  })
+  await page.goto('/meetings')
+
+  const row = page.locator(`[data-meeting-row="${meetingId}"]`)
+  await expect(row.locator('[data-row-lead-text]')).toHaveText('14:00')
+  await expect(row.locator('[data-project-rail]')).toHaveAttribute('data-project-rail', projectId)
+  // The colour is never alone: the project is named on the row.
+  await expect(row).toContainText('找工作')
+  await expect(
+    page.getByRole('region', { name: 'Coming up' }).getByRole('heading', { level: 2 }).first(),
+  ).toHaveText('Tomorrow')
+
+  // ONE x for the threads, and the page's title and the days' headings hang on it.
+  const threads = await page
+    .locator('[data-meeting-row] [data-thread]')
+    .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().x)))
+  expect(threads).toHaveLength(2)
+  expect(new Set(threads).size).toBe(1)
+  const h1 = (await page.getByRole('heading', { level: 1, name: 'Meetings' }).boundingBox())!
+  expect(Math.round(h1.x)).toBe(threads[0])
+  const day = (await page.getByRole('heading', { level: 2, name: 'Tomorrow' }).boundingBox())!
+  expect(Math.round(day.x)).toBe(threads[0])
 })
