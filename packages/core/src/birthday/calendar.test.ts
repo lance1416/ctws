@@ -1,18 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
-  factsOf,
-  HOUR_BRANCHES,
-  LUNAR_MONTHS,
-  lunarDayLabel,
   birthdayProblem,
+  factsOf,
   keptNote,
-  lunarFullLabel,
-  lunarMonthLength,
+  lunarDayLabel,
   nextOccurrence,
   type Birthday,
-} from './birthday'
+} from './calendar'
 
-/** 2026-10-10 是这些测试里的「今天」：农历丙午年九月初一。 */
+/** "Today" in these tests: 九月初一 of the lunar year 丙午. */
 const TODAY = '2026-10-10'
 
 const solar = (year: number | null, month: number, day: number): Birthday => ({
@@ -31,7 +27,7 @@ const lunar = (year: number | null, month: number, day: number, leapMonth = fals
 })
 
 describe('nextOccurrence', () => {
-  it('公历生日：今天就是生日时倒数为 0', () => {
+  it('a solar birthday today is 0 days away', () => {
     expect(nextOccurrence(solar(1993, 10, 10), TODAY)).toEqual({
       day: '2026-10-10',
       inDays: 0,
@@ -40,7 +36,7 @@ describe('nextOccurrence', () => {
     })
   })
 
-  it('公历生日：已经过了就排到明年', () => {
+  it('a solar birthday already past is next year', () => {
     expect(nextOccurrence(solar(1996, 4, 15), TODAY)).toEqual({
       day: '2027-04-15',
       inDays: 187,
@@ -49,8 +45,8 @@ describe('nextOccurrence', () => {
     })
   })
 
-  it('农历生日：按农历日复发，公历日期每年不同', () => {
-    // 1991 年农历九月初三 = 公历 1991-10-10；2026 年的九月初三是 10-12。
+  it('a lunar birthday recurs on its lunar day, a different solar day each year', () => {
+    // 九月初三 was 1991-10-10; in 2026 it is 10-12.
     expect(nextOccurrence(lunar(1991, 9, 3), TODAY)).toEqual({
       day: '2026-10-12',
       inDays: 2,
@@ -59,8 +55,8 @@ describe('nextOccurrence', () => {
     })
   })
 
-  /** Review Focus 1：跨农历新年，年龄按农历年算。按公历年减会得 83。 */
-  it('农历十二月的生日落在次年公历，年龄仍按农历年', () => {
+  // By solar year the age would be 83.
+  it('a 12th-month lunar birthday falls in the next solar year and counts age by lunar year', () => {
     expect(nextOccurrence(lunar(1944, 12, 30), TODAY)).toEqual({
       day: '2027-02-05',
       inDays: 118,
@@ -69,8 +65,8 @@ describe('nextOccurrence', () => {
     })
   })
 
-  it('闰月生的人，在没有该闰月的年份过正常月', () => {
-    // 2017 年有闰六月；2027 年没有，所以记在六月十五。
+  it('a leap-month birthday is kept in the ordinary month in a year without that leap month', () => {
+    // 2017 had a leap 6th month; 2027 does not.
     expect(nextOccurrence(lunar(2017, 6, 15, true), TODAY)).toEqual({
       day: '2027-07-18',
       inDays: 281,
@@ -79,8 +75,8 @@ describe('nextOccurrence', () => {
     })
   })
 
-  it('闰月生的人，遇上有该闰月的年份就过闰月', () => {
-    // 2017-08-06 是农历丁酉年闰六月十五本身。
+  it('a leap-month birthday falls in the leap month when the year has it', () => {
+    // 2017-08-06 is 闰六月十五 itself.
     expect(nextOccurrence(lunar(2017, 6, 15, true), '2017-01-01')).toEqual({
       day: '2017-08-06',
       inDays: 217,
@@ -89,8 +85,7 @@ describe('nextOccurrence', () => {
     })
   })
 
-  /** Review Focus 2：四年里三年没有 2 月 29 日。 */
-  it('2 月 29 日生的人，在平年记在 28 日', () => {
+  it('a 29 February birthday is kept on the 28th in a common year', () => {
     expect(nextOccurrence(solar(2000, 2, 29), '2026-03-01')).toEqual({
       day: '2027-02-28',
       inDays: 364,
@@ -99,7 +94,7 @@ describe('nextOccurrence', () => {
     })
   })
 
-  it('2 月 29 日生的人，在闰年就是 29 日', () => {
+  it('a 29 February birthday is the 29th in a leap year', () => {
     expect(nextOccurrence(solar(2000, 2, 29), '2028-01-01')).toEqual({
       day: '2028-02-29',
       inDays: 59,
@@ -108,7 +103,7 @@ describe('nextOccurrence', () => {
     })
   })
 
-  it('没有年份时不报年龄', () => {
+  it('gives no age without a year', () => {
     expect(nextOccurrence(solar(null, 11, 2), TODAY)).toEqual({
       day: '2026-11-02',
       inDays: 23,
@@ -119,14 +114,14 @@ describe('nextOccurrence', () => {
 })
 
 describe('factsOf', () => {
-  /** 本文件最重要的一条：生肖按农历年（正月初一换岁），不是干支年（立春换岁）。 */
-  it('正月初一出生的人就是新一年的属相', () => {
-    // 2025-01-29 是农历乙巳年正月初一；立春在 2 月 3 日。
+  // The zodiac turns at the lunar new year, not at 立春.
+  it('someone born on the lunar new year takes the new zodiac', () => {
+    // 2025-01-29 is 乙巳 正月初一; 立春 is on 3 February.
     expect(factsOf(solar(2025, 1, 29), null).zodiac).toBe('蛇')
     expect(factsOf(solar(2025, 1, 28), null).zodiac).toBe('龙')
   })
 
-  it('公历生日给出农历出生日、生肖与星座', () => {
+  it('derives the lunar birth date, zodiac and sign of a solar birthday', () => {
     expect(factsOf(solar(1996, 4, 15), 6)).toEqual({
       lunarDate: null,
       bornSolar: '1996-04-15',
@@ -137,7 +132,7 @@ describe('factsOf', () => {
     })
   })
 
-  it('农历生日给出它自己的复发日与公历出生日', () => {
+  it('derives the recurring date and solar birth day of a lunar birthday', () => {
     expect(factsOf(lunar(1991, 9, 3), null)).toEqual({
       lunarDate: '农历九月初三',
       bornSolar: '1991-10-10',
@@ -148,127 +143,99 @@ describe('factsOf', () => {
     })
   })
 
-  it('闰月生日的复发日写明闰字', () => {
+  it('marks a leap-month recurring date with 闰', () => {
     expect(factsOf(lunar(2017, 6, 15, true), null).lunarDate).toBe('农历闰六月十五')
   })
 
-  it('没有年份的公历生日仍有星座，但没有生肖', () => {
+  it('gives a solar birthday without a year a sign but no zodiac', () => {
     const facts = factsOf(solar(null, 11, 2), null)
     expect(facts.sign).toBe('天蝎')
     expect(facts.zodiac).toBeNull()
     expect(facts.bornSolar).toBeNull()
   })
 
-  /** Review Focus 3：农历月日对应的公历日期逐年移动，星座不唯一。 */
-  it('没有年份的农历生日连星座都没有', () => {
+  // Its solar date moves from year to year, across signs.
+  it('gives a lunar birthday without a year no sign either', () => {
     const facts = factsOf(lunar(null, 9, 3), null)
     expect(facts.sign).toBeNull()
     expect(facts.zodiac).toBeNull()
     expect(facts.lunarDate).toBe('农历九月初三')
   })
 
-  it('时辰是十二个地支，带钟点区间', () => {
-    expect(HOUR_BRANCHES).toHaveLength(12)
-    expect(HOUR_BRANCHES[0]).toBe('子时 · 23–01')
-    expect(HOUR_BRANCHES[11]).toBe('亥时 · 21–23')
+  it('names the double-hour with its clock span', () => {
     expect(factsOf(solar(1996, 4, 15), 0).hour).toBe('子时 · 23–01')
   })
 })
 
 describe('lunarDayLabel', () => {
-  it('月初写月名，其余只写日', () => {
+  it('names the month on its first day and only the day otherwise', () => {
     expect(lunarDayLabel('2026-10-10')).toBe('九月初一')
     expect(lunarDayLabel('2026-10-12')).toBe('初三')
   })
 })
 
-describe('lunarFullLabel 与 lunarMonthLength', () => {
-  it('完整的农历日写法带月名，不带年', () => {
-    // 2027-02-05 是农历丙午年十二月廿九。
-    expect(lunarFullLabel('2027-02-05')).toBe('十二月廿九')
-    expect(lunarFullLabel('2026-10-10')).toBe('九月初一')
-  })
-
-  it('月名表是十二个，正月在头上', () => {
-    expect(LUNAR_MONTHS).toHaveLength(12)
-    expect(LUNAR_MONTHS[0]).toBe('正月')
-    expect(LUNAR_MONTHS[11]).toBe('十二月')
-  })
-
-  it('说得出某个农历年里一个月有几天', () => {
-    // 外婆那一次落在 2027-02-05，所在农历年的十二月只有 29 天——这就是她被挪动的理由。
-    expect(lunarMonthLength('2027-02-05', 12)).toBe(29)
-  })
-})
-
 describe('keptNote', () => {
-  it('闰月回退说清是哪一年没有闰月，和记在了哪天', () => {
+  it('says which year lacks the leap month and where the day is kept', () => {
     const b = lunar(2017, 6, 15, true)
     expect(keptNote(b, nextOccurrence(b, TODAY))).toBe(
       'No 闰六月 in 2027, so it is kept on 六月十五.',
     )
   })
 
-  it('小月回退说清那个月有几天', () => {
+  it('says how many days the short month has', () => {
     const b = lunar(1944, 12, 30)
     expect(keptNote(b, nextOccurrence(b, TODAY))).toBe(
       '十二月 has 29 days in 2027, so it is kept on 十二月廿九.',
     )
   })
 
-  it('二月二十九的人，平年那一句说的是二月', () => {
+  it('says February for a 29 February birthday in a common year', () => {
     const b = solar(2000, 2, 29)
     expect(keptNote(b, nextOccurrence(b, '2026-03-01'))).toBe(
       'February has 28 days in 2027, so it is kept on the 28th.',
     )
   })
 
-  it('没有挪过就没有那句话', () => {
+  it('says nothing when the day did not move', () => {
     const b = solar(1996, 4, 15)
     expect(keptNote(b, nextOccurrence(b, TODAY))).toBeNull()
   })
 })
 
-/**
- * A DATE THAT NEVER HAPPENED.
- *
- * The contract cannot see this: whether 正月三十 exists depends on the YEAR, and so does whether a
- * year had a 闰六月 at all. The library answers by throwing, which used to reach the client as a
- * 500 -- after the row had already been written.
- */
+// Whether 正月三十 or a 闰六月 existed depends on the year, which only the library knows.
 describe('birthdayProblem', () => {
-  it('说出农历那一年没有三十', () => {
+  it('says the lunar month had no 30th that year', () => {
     expect(birthdayProblem(lunar(2021, 1, 30))).toBe(
       '正月 has 29 days in 2021, so there is no 三十.',
     )
   })
 
-  it('说出农历那一年没有闰月', () => {
+  it('says the year had no such leap month', () => {
     expect(birthdayProblem(lunar(2018, 6, 15, true))).toBe('There was no 闰六月 in 2018.')
   })
 
-  it('说出公历平年没有 2 月 29 日', () => {
+  it('says a common year has no 29 February', () => {
     expect(birthdayProblem(solar(2001, 2, 29))).toBe(
       'February has 28 days in 2001, so there is no 29th.',
     )
   })
 
-  it('过得去的日子没有问题', () => {
+  it('passes days that existed', () => {
     expect(birthdayProblem(lunar(1944, 12, 30))).toBeNull()
     expect(birthdayProblem(lunar(2017, 6, 30, true))).toBeNull()
     expect(birthdayProblem(solar(2000, 2, 29))).toBeNull()
     expect(birthdayProblem(solar(1996, 4, 15))).toBeNull()
   })
 
-  it('没有年份就无从不存在', () => {
+  it('passes any day without a year', () => {
     expect(birthdayProblem(lunar(null, 1, 30))).toBeNull()
     expect(birthdayProblem(solar(null, 2, 29))).toBeNull()
   })
 })
 
-describe('factsOf 对一个不可能的日子不抛错', () => {
-  /** 边界拦住了这种输入，但边界不是对已经在表里的行的保证：抛错会让整张联系人列表 500。 */
-  it('退化成没有派生值，而不是把读取整条路炸掉', () => {
+describe('factsOf on a day that never existed', () => {
+  // A stored row can predate the check; throwing would fail every list that shows it.
+  it('derives nothing rather than throwing', () => {
     const facts = factsOf(lunar(2021, 1, 30), null)
     expect(facts.bornSolar).toBeNull()
     expect(facts.bornLunar).toBeNull()
@@ -278,17 +245,17 @@ describe('factsOf 对一个不可能的日子不抛错', () => {
   })
 })
 
-describe('复发日的写法不借某一年的月长', () => {
-  it('三十就是三十', () => {
-    // 农历 2000 年的九月只有 29 天，但一个人的复发日里没有年份可言。
+describe('the recurring date', () => {
+  it('keeps a 30th as the 30th whatever a given year holds', () => {
+    // 九月 of lunar 2000 had 29 days, but a recurring date has no year.
     expect(factsOf(lunar(1990, 9, 30), null).lunarDate).toBe('农历九月三十')
     expect(factsOf(lunar(1944, 12, 30), null).lunarDate).toBe('农历十二月三十')
   })
 })
 
-describe('keptNote 把发生过的每一次挪动都说出来', () => {
-  it('闰月与小月同时发生时，两句都说', () => {
-    // 2017 年闰六月有 30 天，所以这是真实的生日；2027 年既没有闰六月、六月又只有 29 天。
+describe('keptNote names every move', () => {
+  it('says both when the leap month is missing and the month is short', () => {
+    // 闰六月 had 30 days in 2017; 2027 has no 闰六月 and its 六月 has 29.
     const b = lunar(2017, 6, 30, true)
     const occ = nextOccurrence(b, TODAY)
     expect(occ.kept).toEqual(['leap-month', 'short-month'])
@@ -297,8 +264,8 @@ describe('keptNote 把发生过的每一次挪动都说出来', () => {
     )
   })
 
-  it('落在闰月里时，说的是闰月，量的也是闰月', () => {
-    // 1979 年闰六月有 30 天；2025 年的闰六月只有 29 天，而同年的六月有 30 天。
+  it('measures the leap month when the day falls in it', () => {
+    // 闰六月 had 30 days in 1979; in 2025 it has 29 while 六月 has 30.
     const b = lunar(1979, 6, 30, true)
     const occ = nextOccurrence(b, '2025-03-01')
     expect(occ.kept).toEqual(['short-month'])

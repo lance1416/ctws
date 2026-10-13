@@ -21,7 +21,7 @@ describe('registerBody', () => {
     expect(registerBody.safeParse({ ...valid, password: 'short' }).success).toBe(false)
   })
 
-  // Review Focus #3 -- an invalid timezone must be rejected at the boundary
+  // An invalid timezone is refused at the boundary.
   it.each(['GMT+8', '', 'Not/AZone', 'UTC+08:00', 'asia/shanghai'])(
     'rejects invalid IANA timezone %j',
     (timezone) => {

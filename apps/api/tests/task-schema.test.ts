@@ -1,5 +1,5 @@
 import { TASK_STATUSES } from '@ctws/contracts'
-import { RANK_ALPHABET } from '@ctws/core'
+import { rankBetween } from '@ctws/core'
 import { sql } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { withDatabase } from './helpers/db'
@@ -125,13 +125,12 @@ describe('task tables', () => {
   // (COLLATE "C"). We assert the column's declared collation rather than an ordering, because the
   // Alpine test container's default collation already coincides with bytewise, so an ordering
   // assertion could not fail here while still being wrong on glibc Postgres.
-  // The other half of the same claim: bytewise comparison only yields the logical order if the
-  // alphabet is itself ASCII-sorted. The two assertions are deliberately adjacent -- either one
-  // alone can hold while ranks still sort wrongly.
-  it('generates ranks from an ASCII-sorted alphabet', () => {
-    expect(RANK_ALPHABET).toBe([...RANK_ALPHABET].sort().join(''))
-    expect(new Set(RANK_ALPHABET).size).toBe(RANK_ALPHABET.length)
-    expect(RANK_ALPHABET).toMatch(/^[0-9A-Za-z]+$/)
+  // The other half: the ranks themselves must sort bytewise in the order they were placed.
+  it('generates ranks that sort bytewise in placement order', () => {
+    const ranks: string[] = []
+    for (let i = 0; i < 100; i++) ranks.push(rankBetween(ranks.at(-1) ?? null, null))
+    for (let i = 0; i < 100; i++) ranks.unshift(rankBetween(null, ranks[0]!))
+    expect([...ranks].sort()).toEqual(ranks)
   })
 
   it.each(['tasks', 'projects'])('declares rank COLLATE "C" on %s', async (table) => {

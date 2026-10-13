@@ -1,5 +1,5 @@
 import type { CalendarEntry, Circle } from '@ctws/contracts'
-import { factsOf, type Kept, nextOccurrence, type Birthday } from '@ctws/core'
+import { addDays, factsOf, type Kept, nextOccurrence, type Birthday } from '@ctws/core'
 import { and, asc, eq, isNotNull, isNull } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
 import { people } from './tables'
@@ -122,17 +122,10 @@ export async function listBirthdayEntries(
         projectId: null,
         projectName: null,
       })
-      cursor = dayAfter(next.day)
+      cursor = addDays(next.day, 1)
     }
   }
   return entries.sort((a, b) => a.day.localeCompare(b.day) || a.title.localeCompare(b.title))
-}
-
-/** A calendar day plus one. Plain string arithmetic: there is no time of day here to shift. */
-function dayAfter(day: string): string {
-  const d = new Date(`${day}T00:00:00Z`)
-  d.setUTCDate(d.getUTCDate() + 1)
-  return d.toISOString().slice(0, 10)
 }
 
 export async function listBirthdays(

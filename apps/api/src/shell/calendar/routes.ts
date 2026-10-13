@@ -1,5 +1,5 @@
 import { calendarDaysResponse, calendarQuery } from '@ctws/contracts'
-import { lunarDayLabel } from '@ctws/core'
+import { addDays, lunarDayLabel } from '@ctws/core'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 
 /**
@@ -19,17 +19,10 @@ export const calendarDayRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (req) => {
       const days: Record<string, string> = {}
-      for (let day = req.query.from; day <= req.query.to; day = dayAfter(day)) {
+      for (let day = req.query.from; day <= req.query.to; day = addDays(day, 1)) {
         days[day] = lunarDayLabel(day)
       }
       return { days }
     },
   )
-}
-
-/** A calendar day plus one. Plain string arithmetic: there is no time of day in a square. */
-function dayAfter(day: string): string {
-  const d = new Date(`${day}T00:00:00Z`)
-  d.setUTCDate(d.getUTCDate() + 1)
-  return d.toISOString().slice(0, 10)
 }

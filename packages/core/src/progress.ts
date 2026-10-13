@@ -1,11 +1,6 @@
 /**
- * PROGRESS ROLLUP. The one place that answers how far along something is.
- *
- * It lives here, as a pure fold over a flat list, because the recursive mean is awkward in SQL and
- * a dozen lines in TypeScript, and in TypeScript it can be covered case by case against the edge
- * list `rollup` spells out below. Nothing in this file touches a clock, a timezone or a database --
- * the two time-dependent counts arrive as booleans already decided in the account's zone, where the
- * rest of this app's day arithmetic lives.
+ * How far along a task tree is: a pure fold over the flat task list. The two time-dependent flags
+ * arrive already decided in the account's zone.
  */
 
 export type RollupStatus = 'backlog' | 'todo' | 'in_progress' | 'done' | 'cancelled'
@@ -15,20 +10,15 @@ export type RollupNode = {
   id: string
   parentId: string | null
   status: RollupStatus
-  /** The manual escape hatch, 0..1, or null. Only ever consulted on a leaf. */
+  /** Set by hand, 0..1; only read on a leaf. */
   manualProgress: number | null
-  /** Its deadline has passed and it is not finished. Decided in the account's zone. */
+  /** Past its deadline and not finished. */
   overdue: boolean
-  /** Its deadline falls inside the near window. Decided in the account's zone. */
+  /** Due before the end of tomorrow. */
   dueSoon: boolean
   /**
-   * When this task itself last changed, from the event log, as a UTC ISO instant -- or null if
-   * nothing has ever been logged against it.
-   *
-   * UTC ISO AND NOTHING ELSE, because the fold takes the plain string MAXIMUM up the tree, and
-   * that equals the chronological maximum only for a fixed-width, fixed-offset format. A local
-   * time, or an offset other than `Z`, would sort wrong. The API formats it; the test below
-   * pins it.
+   * The task's last logged change as a fixed-width UTC ISO string, or null. The fold takes the
+   * string maximum, which is the latest instant only in that format.
    */
   lastActivityAt: string | null
 }
@@ -36,40 +26,23 @@ export type RollupNode = {
 export type RollupCounts = Record<RollupStatus, number>
 
 export type Rollup = {
-  /**
-   * 0..1, or null for an EXCLUDED node (`backlog` and `cancelled`): those are not work in
-   * flight, and averaging them in would drag every parent's number toward zero for things nobody
-   * has started or has abandoned. Null is the sentinel rather than 0 because the difference
-   * between "no progress" and "not counted" is the whole point of the rule.
-   */
+  /** 0..1, or null for a node left out (backlog, cancelled): not counted is not zero. */
   progress: number | null
-  /** The SUBTREE's statuses, this node included. */
+  /** Statuses across the subtree, this node included. */
   counts: RollupCounts
-  /** How many in the subtree are past their deadline, and how many are about to be. */
+  /** Across the subtree. */
   overdue: number
   dueSoon: number
-  /**
-   * The most recent change ANYWHERE in the subtree. The point of it is not progress: a
-   * line at 60% and a line at 60% that nobody has touched for three weeks are the same number
-   * and completely different situations, and the second one is what actually goes wrong when
-   * several lines of work run at once.
-   */
+  /** The latest change anywhere in the subtree: a stalled 60% reads differently from a live one. */
   lastActivityAt: string | null
 }
 
 const ZERO: RollupCounts = { backlog: 0, todo: 0, in_progress: 0, done: 0, cancelled: 0 }
 
 /**
- * Every node's rollup, keyed by id.
- *
- * ONE PASS, BOTTOM-UP, ITERATIVE. A node whose `parentId` names a row that is not in `nodes` is
- * treated as a root -- the same rule the web tree's `flatten` uses, and for the same reason: the
- * parent may have been soft-deleted between fetches, and silently dropping the child would make
- * the numbers quietly wrong rather than loudly wrong.
- *
- * A parent cycle cannot be produced by the API (`move` refuses one), but a cycle here would hang
- * the fold, so the ordering pass counts what it visits and anything it could not reach is folded
- * as a root. That is a defensive leaf, not a silent drop.
+ * Every node's rollup, keyed by id, in one iterative bottom-up pass. A node whose parent is not in
+ * `nodes` counts as a root, and a node a cycle keeps the walk from reaching folds as a leaf, so
+ * nothing is dropped.
  */
 export function rollup(nodes: readonly RollupNode[]): Map<string, Rollup> {
   const byId = new Map(nodes.map((n) => [n.id, n]))
@@ -131,8 +104,7 @@ export function rollup(nodes: readonly RollupNode[]): Map<string, Rollup> {
     })
   }
 
-  // Anything a cycle kept the walk from reaching. It has no reachable children here, so it folds
-  // as a leaf rather than vanishing from the result.
+  // Unreached because of a cycle: fold as a leaf.
   for (const node of nodes) {
     if (!out.has(node.id)) {
       const counts: RollupCounts = { ...ZERO }
@@ -150,20 +122,11 @@ export function rollup(nodes: readonly RollupNode[]): Map<string, Rollup> {
 }
 
 /**
- * THE RULE, exactly:
- *
- * - `backlog` and `cancelled` are EXCLUDED, whatever is under them.
- * - The mean is over DIRECT children, not over subtree leaves. Leaf counting would punish
- *   breaking work down -- a leaf worth 1/n becomes 4/(n+3) the moment someone writes out what it
- *   contains -- and breaking work down is the one habit this tool exists to encourage. The direct
- *   mean's failure mode is a static weighting error instead, which does not move with behaviour.
- *   It is also the only version a person can predict from what is on screen: a parent's number is
- *   the average of the numbers under it, and a number nobody can predict stops being believed.
- * - A node with children takes the derived value over its own status.
- * - When every child is excluded it degrades to a leaf and falls back to its own status.
- * - A leaf that is `in_progress` scores 0, not 0.5. 0.5 is a number nobody entered.
- *   `manualProgress` is the only way to say "half done", and it is not cross-checked against the
- *   status: an explicit value the person set is not the system's to overrule.
+ * - `backlog` and `cancelled` are left out, whatever is under them.
+ * - A parent is the mean of its direct children, not of the subtree's leaves, so breaking a task
+ *   down does not lower its number, and the number is the average of what is shown under it.
+ * - A parent whose children are all left out falls back to its own status, like a leaf.
+ * - A leaf scores 1 when done, else its manual progress, else 0 (`in_progress` is not 0.5).
  */
 function progressOf(node: RollupNode, children: readonly Rollup[]): number | null {
   if (node.status === 'backlog' || node.status === 'cancelled') return null

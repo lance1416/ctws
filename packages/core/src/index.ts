@@ -1,3 +1,5 @@
-export * from './birthday'
+export * from './birthday/calendar'
+export * from './birthday/names'
+export * from './day'
 export * from './rank'
 export * from './progress'
