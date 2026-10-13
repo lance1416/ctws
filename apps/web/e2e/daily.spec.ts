@@ -22,7 +22,7 @@ type ApiTask = {
 
 /** What the server holds for one task, read fresh. */
 async function serverTask(page: Page, projectId: string, title: string): Promise<ApiTask> {
-  const body = await (await page.request.get(`/api/v1/projects/${projectId}/tasks`)).json()
+  const body = await (await page.request.get(`/api/v1/tasks?projectId=${projectId}`)).json()
   const t = (body.tasks as ApiTask[]).find((x) => x.title === title)
   expect(t, `task ${title} on the server`).toBeDefined()
   return t!
@@ -262,7 +262,7 @@ test('pushing the deadline on an overdue row keeps its time of day and takes the
   await expect(page.getByText('推到明天')).toHaveCount(0)
   await expect(section.getByText('2 days late')).toHaveCount(2)
   // The server says so, from a fresh read, in its own segment arithmetic: not on the list at all.
-  const today = (await (await page.request.get('/api/v1/today')).json()).tasks as {
+  const today = (await (await page.request.get('/api/v1/tasks/today')).json()).tasks as {
     title: string
     segment: string
   }[]
@@ -318,7 +318,7 @@ test('only a deadline change takes a task out of Overdue: a bare scheduledOn doe
   const id = await makeTask(page, pid, '过期了', { dueAt: dueAgo(2) })
   const tomorrow = ymd(new Date(Date.now() + DAY))
   const segmentOf = async () => {
-    const tasks = (await (await page.request.get('/api/v1/today')).json()).tasks as {
+    const tasks = (await (await page.request.get('/api/v1/tasks/today')).json()).tasks as {
       id: string
       segment: string
     }[]
@@ -700,7 +700,7 @@ test('saving returns the panel to reading, says so on the row, and is on the ser
   await expect(treeRow(page, '写方案').getByRole('status')).toHaveText('Saved')
   // The confirmation is momentary, not a permanent badge.
   await expect(treeRow(page, '写方案').getByRole('status')).toHaveCount(0, { timeout: 6000 })
-  const body = await (await page.request.get(`/api/v1/projects/${pid}/tasks`)).json()
+  const body = await (await page.request.get(`/api/v1/tasks?projectId=${pid}`)).json()
   expect(body.tasks[0].notes).toBe('先问清需求')
 })
 
@@ -728,7 +728,7 @@ const rowOf = (page: Page, title: string) =>
     .filter({ has: page.locator('[data-today-row]') })
     .filter({ hasText: title })
 async function todaySegment(page: Page, id: string): Promise<string> {
-  const tasks = (await (await page.request.get('/api/v1/today')).json()).tasks as {
+  const tasks = (await (await page.request.get('/api/v1/tasks/today')).json()).tasks as {
     id: string
     segment: string
   }[]

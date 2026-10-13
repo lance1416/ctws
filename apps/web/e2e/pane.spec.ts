@@ -26,7 +26,7 @@ type ServerTask = {
   scheduledOn: string | null
 }
 async function serverTask(page: Page, projectId: string, id: string): Promise<ServerTask> {
-  const body = (await (await page.request.get(`/api/v1/projects/${projectId}/tasks`)).json()) as {
+  const body = (await (await page.request.get(`/api/v1/tasks?projectId=${projectId}`)).json()) as {
     tasks: ServerTask[]
   }
   const task = body.tasks.find((t) => t.id === id)

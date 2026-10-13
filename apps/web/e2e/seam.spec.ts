@@ -79,18 +79,8 @@ test('a path no module registered still resolves', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1, name: 'Workbench' })).toBeVisible()
 })
 
-test('the API answers the module namespace and redirects the old path to it', async ({ page }) => {
+test('the API answers under the module namespace', async ({ page }) => {
   await registerFreshUser(page)
-
   const now = await page.request.get('/api/v1/tasks/today')
   expect(now.status()).toBe(200)
-
-  // Followed by the client, so the old path is still usable and not merely present.
-  const then = await page.request.get('/api/v1/today')
-  expect(then.status()).toBe(200)
-  expect(new URL(then.url()).pathname).toBe('/api/v1/tasks/today')
-
-  const unredirected = await page.request.get('/api/v1/today', { maxRedirects: 0 })
-  expect(unredirected.status()).toBe(308)
-  expect(unredirected.headers()['location']).toBe('/api/v1/tasks/today')
 })

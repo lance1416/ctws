@@ -424,7 +424,7 @@ test('a stale collapsed id on a leaf draws no chevron', async ({ page }) => {
   const url = await startProject(page)
   await addTask(page, 'leaf')
   const projectId = url.split('/').pop()!
-  const tasks = await (await page.request.get(`/api/v1/projects/${projectId}/tasks`)).json()
+  const tasks = await (await page.request.get(`/api/v1/tasks?projectId=${projectId}`)).json()
   const leafId = tasks.tasks[0].id as string
   await page.evaluate(
     ([k, v]) => localStorage.setItem(k!, v!),

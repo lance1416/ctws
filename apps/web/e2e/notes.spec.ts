@@ -400,7 +400,7 @@ test('the full-screen writing mode round-trips the source unchanged', async ({ p
 
   // And the SOURCE is what the server kept -- never the rendered HTML.
   await page.goto(`/projects/${pid}`)
-  const stored = (await (await page.request.get(`/api/v1/projects/${pid}/tasks`)).json()) as {
+  const stored = (await (await page.request.get(`/api/v1/tasks?projectId=${pid}`)).json()) as {
     tasks: { notes: string | null }[]
   }
   expect(stored.tasks[0]?.notes).toBe(written)

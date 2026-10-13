@@ -443,7 +443,7 @@ test('making a deadline next week’s plan demotes it in one request', async ({ 
     dueAt: null,
     scheduledOn: nextMondayYmd(),
   })
-  const tasks = (await (await page.request.get(`/api/v1/projects/${pid}/tasks`)).json()).tasks as {
+  const tasks = (await (await page.request.get(`/api/v1/tasks?projectId=${pid}`)).json()).tasks as {
     title: string
     dueAt: string | null
     scheduledOn: string | null

@@ -13,7 +13,7 @@ test('capture from any page lands in the inbox', async ({ page }) => {
   // `page.request` shares the page's cookies, so this is the logged-in user's own inbox.
   const projects = await (await page.request.get('/api/v1/projects')).json()
   const inbox = projects.projects.find((p: { isInbox: boolean }) => p.isInbox)
-  const tasks = await (await page.request.get(`/api/v1/projects/${inbox.id}/tasks`)).json()
+  const tasks = await (await page.request.get(`/api/v1/tasks?projectId=${inbox.id}`)).json()
   expect(tasks.tasks.map((t: { title: string }) => t.title)).toContain('问问房东空调')
 })
 
@@ -70,7 +70,7 @@ test('capture still finds the inbox after it is renamed', async ({ page }) => {
   // below could race the request.
   await expect(page.getByPlaceholder('Capture…')).toHaveValue('')
   // Again through the API: the tree lands in Task 8.
-  const tasks = await (await page.request.get(`/api/v1/projects/${inbox.id}/tasks`)).json()
+  const tasks = await (await page.request.get(`/api/v1/tasks?projectId=${inbox.id}`)).json()
   expect(tasks.tasks.map((t: { title: string }) => t.title)).toContain('改名后仍然能捕获')
 })
 

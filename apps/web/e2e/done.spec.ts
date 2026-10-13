@@ -41,7 +41,7 @@ async function finish(page: Page, id: string, ago?: string) {
 }
 
 const serverTasks = async (page: Page, projectId: string): Promise<ApiTask[]> =>
-  (await (await page.request.get(`/api/v1/projects/${projectId}/tasks`)).json()).tasks
+  (await (await page.request.get(`/api/v1/tasks?projectId=${projectId}`)).json()).tasks
 
 const nav = (page: Page) => page.getByRole('navigation', { name: 'Main navigation' })
 
@@ -265,7 +265,7 @@ test('deleting a leaf does not claim descendants, and works from the Today panel
   await expect(page.getByText('在做的')).toHaveCount(0)
   await expect(page.getByText('另一个')).toBeVisible()
   expect((await serverTasks(page, pid)).map((t) => t.title)).toEqual(['另一个'])
-  const today = (await (await page.request.get('/api/v1/today')).json()).tasks as {
+  const today = (await (await page.request.get('/api/v1/tasks/today')).json()).tasks as {
     title: string
   }[]
   expect(today.map((t) => t.title)).toEqual(['另一个'])
