@@ -344,7 +344,7 @@ describe('one project page is one snapshot', () => {
       // Committed by the API, on the pool: a write on `tx` itself would be invisible to it
       // whatever the level, and would prove nothing.
       expect((await setStatus(ctx, child, 'done')).statusCode).toBe(200)
-      const rolled = await projectRollups(tx, workspaceId, pid, 'UTC')
+      const rolled = await projectRollups(tx, workspaceId, pid, 'UTC', new Date())
 
       expect(tasks.find((t) => t.id === child)!.status).toBe('todo')
       expect(rolled.get(parent)!.progress).toBe(0)

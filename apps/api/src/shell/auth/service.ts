@@ -3,6 +3,7 @@ import { rankBetween } from '@ctws/core'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import type { Db, Queryable } from '../../platform/db/client'
+import { LOCKS, lockFor } from '../../platform/db/locks'
 import { projects } from '../projects/tables'
 import { users, workspaceMembers, workspaces } from './tables'
 import { INBOX_NAME } from '../projects/store'
@@ -41,11 +42,6 @@ export function isUniqueViolation(error: unknown): boolean {
   return false
 }
 
-// Arbitrary constants naming transaction-scoped advisory locks. They serialise the places where
-// "look at the users table, then write based on what you saw" must not interleave.
-const LOCK_FIRST_USER = 7_301_001
-export const LOCK_ADMIN_SET = 7_301_002
-
 // `explicitRole` is for admin-created users. Without it the role is decided by the database in
 // the same statement as the insert: the first user ever becomes admin, everyone else member.
 // `onlyIfFirst` refuses (RegistrationClosedError, worded for that mode) unless the users table is
@@ -72,7 +68,7 @@ export async function registerUser(
         // READ COMMITTED lets two concurrent first registrations both see an empty table, so
         // the CASE below alone is not enough. The lock makes check-and-insert exclusive: the
         // second transaction waits, then sees the first user and becomes a member (or is refused).
-        await tx.execute(sql`select pg_advisory_xact_lock(${LOCK_FIRST_USER})`)
+        await lockFor(tx, LOCKS.firstUser)
         if (opts.onlyIfFirst) {
           const existing = await tx.select({ id: users.id }).from(users).limit(1)
           if (existing.length > 0) throw new RegistrationClosedError(opts.onlyIfFirst)

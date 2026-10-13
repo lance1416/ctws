@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
+import { localNow } from '../../platform/db/time'
 
 /**
  * THE WEEKLY REVIEW. The view that answers what I did.
@@ -56,22 +57,20 @@ export async function listReview(
   q: Queryable,
   workspaceId: string,
   timezone: string,
-  range?: { from?: string | undefined; to?: string | undefined },
-  // Exists only so the week boundary can be tested at fixed instants.
-  now?: Date,
+  range: { from?: string | undefined; to?: string | undefined },
+  now: Date,
 ): Promise<ReviewWindow> {
-  const clock = now ? sql`${now.toISOString()}::timestamptz` : sql`now()`
-  const localNow = sql`(${clock} at time zone ${timezone})`
+  const local = localNow(now, timezone)
   // Monday 00:00 of the current week, as a LOCAL timestamp; converted back at the end, like
   // `listMovement`'s. The named days arrive as days and become the same kind of local timestamp,
   // so one expression covers both cases.
-  const fromLocal = range?.from
+  const fromLocal = range.from
     ? sql`${range.from}::date::timestamp`
-    : sql`date_trunc('week', ${localNow})`
+    : sql`date_trunc('week', ${local})`
   // Inclusive at the far end: the window ends at the START of the day after `to`.
-  const toLocal = range?.to
+  const toLocal = range.to
     ? sql`(${range.to}::date + 1)::timestamp`
-    : sql`(date_trunc('day', ${localNow}) + interval '1 day')`
+    : sql`(date_trunc('day', ${local}) + interval '1 day')`
 
   // The window's own edges, asked for separately because they have to be reportable even when
   // nothing happened inside it -- a week with no events still has a heading.

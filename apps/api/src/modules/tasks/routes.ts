@@ -149,7 +149,7 @@ export const taskRoutes: FastifyPluginAsyncZod = async (app) => {
     async (req) => {
       const user = currentUser(req)
       // The timezone comes from the user record, not from a request header or the server clock.
-      const rows = await listToday(app.db, user.workspaceId, user.timezone)
+      const rows = await listToday(app.db, user.workspaceId, user.timezone, app.clock())
       // One query for the whole page, not one per row.
       const blockers = await blockersFor(
         app.db,
@@ -168,7 +168,7 @@ export const taskRoutes: FastifyPluginAsyncZod = async (app) => {
     async (req) => {
       const user = currentUser(req)
       // The week boundary is the SERVER's, in the account's zone, like every other boundary here.
-      return listReview(app.db, user.workspaceId, user.timezone, req.query)
+      return listReview(app.db, user.workspaceId, user.timezone, req.query, app.clock())
     },
   )
 
@@ -198,7 +198,7 @@ export const taskRoutes: FastifyPluginAsyncZod = async (app) => {
       const user = currentUser(req)
       // The week boundary and the day count come from the user record's timezone, never the
       // server clock's zone.
-      const rows = await listProjectMovement(app.db, user.workspaceId, user.timezone)
+      const rows = await listProjectMovement(app.db, user.workspaceId, user.timezone, app.clock())
       return { projects: rows }
     },
   )
@@ -239,7 +239,13 @@ export const taskRoutes: FastifyPluginAsyncZod = async (app) => {
     async (req) => {
       const user = currentUser(req)
       // Three reads, ONE snapshot -- `board.ts` has why that matters and how it is held.
-      const board = await projectBoard(app.db, user.workspaceId, req.query.projectId, user.timezone)
+      const board = await projectBoard(
+        app.db,
+        user.workspaceId,
+        req.query.projectId,
+        user.timezone,
+        app.clock(),
+      )
       return {
         tasks: board.tasks.map(toTaskResponse),
         rollups: Object.fromEntries(board.rollups),

@@ -1,25 +1,28 @@
-import { sql } from 'drizzle-orm'
+import { sql, type SQL } from 'drizzle-orm'
 import type { Queryable } from './client'
 
+const instant = (now: Date): SQL => sql`${now.toISOString()}::timestamptz`
+
+/** Wall-clock time in `zone` at `now`, as a naive timestamp. */
+export const localNow = (now: Date, zone: string): SQL =>
+  sql`(${instant(now)} at time zone ${zone})`
+
+/** The account's calendar day at `now`. */
+export const localDay = (now: Date, zone: string): SQL => sql`(${localNow(now, zone)})::date`
+
 /**
- * TODAY, IN THE ACCOUNT'S ZONE, as `YYYY-MM-DD`.
- *
- * Postgres does the arithmetic, not Node: the zone and DST rules have an authoritative answer in
- * the database, and getting "which day is it" wrong raises no error -- it just shows today's
- * birthday as "in 1 day" for half the world. `tasks/today.ts` carries an inline copy of the same
- * expression because its statement also needs the t0/t1 bounds from it.
- *
- * `clock` exists only so the zone behaviour can be tested at a fixed instant.
+ * The instant a local day starts, `offsetDays` after today. The days are added to the naive local
+ * timestamp, so a DST day keeps its 23 or 25 hours.
  */
-export async function accountToday(
-  q: Queryable,
-  timezone: string,
-  clock: Date = new Date(),
-): Promise<string> {
-  const result = await q.execute(
-    sql`select (${clock.toISOString()}::timestamptz at time zone ${timezone})::date::text as today`,
-  )
-  const row = (result.rows as { today: string }[])[0]
-  if (!row) throw new Error('postgres did not answer what day it is')
-  return row.today
+export const dayStart = (now: Date, zone: string, offsetDays = 0): SQL =>
+  sql`((date_trunc('day', ${localNow(now, zone)}) + make_interval(days => ${offsetDays}::int)) at time zone ${zone})`
+
+/** The instant this week's Monday starts in `zone`. */
+export const weekStart = (now: Date, zone: string): SQL =>
+  sql`(date_trunc('week', ${localNow(now, zone)}) at time zone ${zone})`
+
+/** Today in `zone` as `YYYY-MM-DD`. */
+export async function accountToday(q: Queryable, zone: string, now: Date): Promise<string> {
+  const result = await q.execute(sql`select ${localDay(now, zone)}::text as today`)
+  return (result.rows as { today: string }[])[0]!.today
 }

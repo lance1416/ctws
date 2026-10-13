@@ -139,9 +139,9 @@ export async function listBirthdays(
   q: Queryable,
   workspaceId: string,
   timezone: string,
-  clock: Date = new Date(),
+  now: Date,
 ): Promise<BirthdaysView> {
-  const today = await accountToday(q, timezone, clock)
+  const today = await accountToday(q, timezone, now)
   const people = await peopleWithBirthdays(q, workspaceId)
 
   const all: BirthdayRow[] = people.map((p) => {

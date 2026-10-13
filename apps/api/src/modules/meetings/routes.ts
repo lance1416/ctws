@@ -81,9 +81,10 @@ export const meetingRoutes: FastifyPluginAsyncZod = async (app) => {
       const user = currentUser(req)
       // A list with no window means the month ahead: a recurring meeting has no last occurrence,
       // so "everything" is not an answer anyone can be given.
-      const from = req.query.from ?? localOf(new Date(), user.timezone).slice(0, 10)
+      const now = app.clock()
+      const from = req.query.from ?? localOf(now, user.timezone).slice(0, 10)
       const to =
-        req.query.to ?? localOf(new Date(Date.now() + 31 * DAY), user.timezone).slice(0, 10)
+        req.query.to ?? localOf(new Date(now.getTime() + 31 * DAY), user.timezone).slice(0, 10)
       const rows = await listOccurrences(
         app.db,
         user.workspaceId,

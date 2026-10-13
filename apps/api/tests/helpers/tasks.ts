@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { expect } from 'vitest'
-import { LOCK_TASK_TREE } from '../../src/modules/tasks/tasks'
+import { lockTaskTree } from '../../src/modules/tasks/tree'
 import type { Env } from '../../src/platform/config'
 import type { Unfurl } from '../../src/modules/reading/unfurl'
 import { withApp } from './app'
@@ -23,13 +23,16 @@ const clientHeader = { 'x-ctws-client': 'web' }
 export async function appWithUser(email = 'p@example.com', opts: Opts = {}): Promise<TaskCtx> {
   const ctx = await withApp(
     { authRegistration: 'open', ...opts.env },
-    opts.unfurl ? { unfurl: opts.unfurl } : {},
+    {
+      ...(opts.unfurl ? { unfurl: opts.unfurl } : {}),
+      ...(opts.clock ? { clock: opts.clock } : {}),
+    },
   )
   const res = await ctx.app.inject({
     method: 'POST',
     url: '/api/v1/auth/register',
     headers: clientHeader,
-    payload: { email, password: 'correct horse battery', timezone: 'UTC' },
+    payload: { email, password: 'correct horse battery', timezone: opts.timezone ?? 'UTC' },
   })
   const cookie = String(res.headers['set-cookie']).split(';')[0]!
   return { ...ctx, cookie, authed: { ...clientHeader, cookie } }
@@ -129,7 +132,7 @@ export async function expectBlockedByTreeLock<T>(ctx: TaskCtx, fire: () => Promi
     release = resolve
   })
   const holding = ctx.db.transaction(async (tx) => {
-    await tx.execute(sql`select pg_advisory_xact_lock(${LOCK_TASK_TREE}, hashtext(${workspaceId}))`)
+    await lockTaskTree(tx, workspaceId)
     await held
   })
 
@@ -169,7 +172,12 @@ export const web = (ctx: TaskCtx) => ({ ...ctx.authed, 'x-ctws-client': 'web' })
  * owned it would be a second lifetime to reason about.
  */
 /** 一次性换掉的东西：出站抓取，以及想盖掉的几个 env 值。 */
-export type Opts = { unfurl?: Unfurl; env?: Partial<Env> }
+export type Opts = {
+  unfurl?: Unfurl
+  env?: Partial<Env>
+  clock?: () => Date
+  timezone?: string
+}
 
 export async function setupWith(
   cleanups: (() => Promise<void>)[],

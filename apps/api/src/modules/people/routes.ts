@@ -100,7 +100,7 @@ export const personRoutes: FastifyPluginAsyncZod = async (app) => {
     async (req) => {
       const user = currentUser(req)
       // One ask per request: every birthday's countdown is measured from the same day.
-      const today = await accountToday(app.db, user.timezone)
+      const today = await accountToday(app.db, user.timezone, app.clock())
       const { projectId, unfiled } = req.query
       const rows = await listPeople(app.db, currentUser(req).workspaceId, {
         ...(projectId ? { projectId } : {}),
@@ -118,7 +118,7 @@ export const personRoutes: FastifyPluginAsyncZod = async (app) => {
    */
   app.get('/birthdays', { schema: { response: { 200: birthdaysResponse } } }, async (req) => {
     const user = currentUser(req)
-    return listBirthdays(app.db, user.workspaceId, user.timezone)
+    return listBirthdays(app.db, user.workspaceId, user.timezone, app.clock())
   })
 
   /** This module's dated things, for the shell's calendar. A birthday has no time of day. */
@@ -145,7 +145,7 @@ export const personRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (req) => {
       const user = currentUser(req)
-      const today = await accountToday(app.db, user.timezone)
+      const today = await accountToday(app.db, user.timezone, app.clock())
       const birthday: Birthday = {
         calendar: req.query.calendar,
         year: req.query.year ?? null,
@@ -173,7 +173,7 @@ export const personRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (req) => {
       const user = currentUser(req)
-      const today = await accountToday(app.db, user.timezone)
+      const today = await accountToday(app.db, user.timezone, app.clock())
       const rows = await searchPeople(app.db, user.workspaceId, req.query.q)
       return { people: rows.map((c) => toResponse(c, today)) }
     },
@@ -190,7 +190,7 @@ export const personRoutes: FastifyPluginAsyncZod = async (app) => {
       const created = await app.db.transaction((tx) =>
         createPerson(tx, currentUser(req).workspaceId, req.body),
       )
-      const today = await accountToday(app.db, currentUser(req).timezone)
+      const today = await accountToday(app.db, currentUser(req).timezone, app.clock())
       return reply.code(201).send(toResponse(created, today))
     },
   )
@@ -205,7 +205,7 @@ export const personRoutes: FastifyPluginAsyncZod = async (app) => {
       const updated = await app.db.transaction((tx) =>
         updatePerson(tx, currentUser(req).workspaceId, req.params.id, req.body),
       )
-      const today = await accountToday(app.db, currentUser(req).timezone)
+      const today = await accountToday(app.db, currentUser(req).timezone, app.clock())
       return toResponse(updated, today)
     },
   )

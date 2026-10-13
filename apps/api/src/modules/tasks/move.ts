@@ -8,15 +8,8 @@ import { appendEvent } from './events'
 import { ProjectNotFoundError } from '../../shell/projects/errors'
 import { visibleProjects } from '../../shell/projects/store'
 import { DepthLimitError, InvalidNeighbourError, MoveCycleError } from './errors'
-import { MAX_DEPTH } from './tree'
-import {
-  LOCK_TASK_TREE,
-  clearLeafProgress,
-  depthOf,
-  lockVisibleTask,
-  type Task,
-  type TaskCtx,
-} from './tasks'
+import { lockTaskTree, MAX_DEPTH } from './tree'
+import { clearLeafProgress, depthOf, lockVisibleTask, type Task, type TaskCtx } from './tasks'
 
 type Descendant = { id: string; depth: number; live: boolean }
 
@@ -89,14 +82,8 @@ export async function moveTask(
   }
 
   return db.transaction(async (tx) => {
-    // First statement in the transaction, before anything is read. The cycle check below is
-    // read-then-write, so two concurrent moves -- A under B and B under A -- can each see a
-    // clean subtree and together commit a cycle; row locks alone only turn that into a deadlock.
-    // The trade is deliberately lopsided: serialising moves within one personal workspace costs
-    // nothing, a cycle costs the database. Do not remove this because the checks "look safe".
-    await tx.execute(
-      sql`select pg_advisory_xact_lock(${LOCK_TASK_TREE}, hashtext(${ctx.workspaceId}))`,
-    )
+    // Two concurrent moves (A under B, B under A) would each pass their own cycle check.
+    await lockTaskTree(tx, ctx.workspaceId)
 
     const task = await lockVisibleTask(tx, ctx.workspaceId, id)
 

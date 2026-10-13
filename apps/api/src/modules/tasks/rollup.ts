@@ -1,6 +1,7 @@
 import { rollup, type Rollup, type RollupNode, type RollupStatus } from '@ctws/core'
 import { sql } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
+import { dayStart } from '../../platform/db/time'
 
 /**
  * THE NUMBERS BEHIND “Movement”, for one project's whole tree.
@@ -38,24 +39,14 @@ export async function projectRollups(
   workspaceId: string,
   projectId: string,
   timezone: string,
-  // Exists only so the day arithmetic can be tested at fixed instants, like `listToday`'s.
-  now?: Date,
+  now: Date,
 ): Promise<Map<string, Rollup>> {
-  const clock = now ? sql`${now.toISOString()}::timestamptz` : sql`now()`
-  const dayStart = sql`(date_trunc('day', ${clock} at time zone ${timezone}) at time zone ${timezone})`
   const result = await q.execute(sql`
     with bounds as (
       select
-        ${dayStart} as t0,
-        -- THE NEAR WINDOW: the end of TOMORROW in the account's zone, not a rolling 48 hours. 48
-        -- hours was the first shape of it; this is that span said in the vocabulary the rest of the
-        -- app already speaks. A rolling window would make a deadline "soon" at 23:00 and not soon
-        -- at 23:01 of the same evening, which a day-shaped interface cannot explain to the person
-        -- reading it. Like every other day boundary here, the "+ 2 days" is added to the NAIVE
-        -- local timestamp before converting back, so a DST day is 23 or 25 hours and nothing falls
-        -- out of the window.
-        ((date_trunc('day', ${clock} at time zone ${timezone}) + interval '2 days')
-          at time zone ${timezone}) as soon_end
+        ${dayStart(now, timezone)} as t0,
+        -- Due soon ends with tomorrow in the account's zone, not a rolling 48 hours.
+        ${dayStart(now, timezone, 2)} as soon_end
     )
     select
       t.id,

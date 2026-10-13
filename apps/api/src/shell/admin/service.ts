@@ -1,7 +1,7 @@
 import type { AdminUser, Role } from '@ctws/contracts'
 import { and, asc, eq, isNull, sql } from 'drizzle-orm'
-import { LOCK_ADMIN_SET } from '../auth/service'
 import type { Db, Queryable } from '../../platform/db/client'
+import { LOCKS, lockFor } from '../../platform/db/locks'
 import { sessions, users } from '../auth/tables'
 import { LastAdminError, UserNotFoundError } from './errors'
 
@@ -49,7 +49,7 @@ export async function updateUser(
   await db.transaction(async (tx) => {
     // Serialise every change to the admin set. Without this, two admins demoting each other
     // concurrently would each see the other's row as still enabled (READ COMMITTED) and both commit.
-    await tx.execute(sql`select pg_advisory_xact_lock(${LOCK_ADMIN_SET})`)
+    await lockFor(tx, LOCKS.adminSet)
 
     const updated = await tx
       .update(users)

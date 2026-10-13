@@ -38,10 +38,11 @@ export async function projectBoard(
   workspaceId: string,
   projectId: string,
   timezone: string,
+  now: Date,
 ): Promise<ProjectBoard> {
   return db.transaction(async (tx) => {
     const tasks = await listProjectTasks(tx, workspaceId, projectId)
-    const rollups = await projectRollups(tx, workspaceId, projectId, timezone)
+    const rollups = await projectRollups(tx, workspaceId, projectId, timezone, now)
     const blockers = await blockersFor(
       tx,
       workspaceId,

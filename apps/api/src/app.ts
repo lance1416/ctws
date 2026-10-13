@@ -40,6 +40,7 @@ export async function buildApp(opts: {
   env: Env
   db: Db
   unfurl?: Unfurl
+  clock?: () => Date
 }): Promise<FastifyInstance> {
   // Resolve the login timing-equalisation hash before the app is ready, so
   // the very first login request -- known or unknown email -- never pays
@@ -54,6 +55,7 @@ export async function buildApp(opts: {
   app.decorate('db', opts.db)
   app.decorate('env', opts.env)
   app.decorate('unfurl', opts.unfurl ?? unfurl)
+  app.decorate('clock', opts.clock ?? (() => new Date()))
 
   await app.register(fastifySwagger, {
     openapi: {
@@ -147,6 +149,8 @@ declare module 'fastify' {
     env: Env
     /** 去读一条链接对面说的那句话；见 reading/unfurl.ts。 */
     unfurl: Unfurl
+    /** The current instant; tests pin it. */
+    clock: () => Date
     /** The instance-wide ceiling on auth traffic; see guards.ts. */
     authCeiling: onRequestHookHandler
   }

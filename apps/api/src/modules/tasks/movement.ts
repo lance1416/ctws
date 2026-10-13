@@ -1,5 +1,6 @@
 import { and, asc, desc, isNull, sql } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
+import { dayStart, localDay, weekStart } from '../../platform/db/time'
 import { projects } from '../../shell/projects/tables'
 import { visibleProjects } from '../../shell/projects/store'
 
@@ -64,19 +65,11 @@ export async function listProjectMovement(
   q: Queryable,
   workspaceId: string,
   timezone: string,
-  // Exists only so the week boundary and the day arithmetic can be tested at fixed instants.
-  // Production callers omit it and get the database's clock.
-  now?: Date,
+  now: Date,
 ): Promise<ProjectMovement[]> {
-  const clock = now ? sql`${now.toISOString()}::timestamptz` : sql`now()`
-  // Monday 00:00 of the current week, in the user's zone, as an instant. The "+ 1 day"-style trap
-  // `listToday` documents does not arise here (no interval is added to a timestamptz), but the
-  // conversion order is the same: truncate the LOCAL timestamp, then convert back.
-  const weekStart = sql`((date_trunc('week', ${clock} at time zone ${timezone})) at time zone ${timezone})`
-  const today = sql`((${clock} at time zone ${timezone})::date)`
-  // Midnight of the user's today, as an instant. Same expression `listToday` calls `t0`, and the
-  // same conversion order: truncate the LOCAL timestamp, then convert back.
-  const dayStart = sql`((date_trunc('day', ${clock} at time zone ${timezone})) at time zone ${timezone})`
+  const thisWeek = weekStart(now, timezone)
+  const today = localDay(now, timezone)
+  const todayStarts = dayStart(now, timezone)
   const lastActivity = sql`(
     select max(ev.occurred_at)
     from task_events ev
@@ -94,7 +87,7 @@ export async function listProjectMovement(
           and done_t.deleted_at is null
           and done_t.status = 'done'
           and done_t.completed_at is not null
-          and done_t.completed_at >= ${weekStart}
+          and done_t.completed_at >= ${thisWeek}
       )`.mapWith(Number),
       remaining: sql<number>`(
         select count(*) from tasks open_t
@@ -108,7 +101,7 @@ export async function listProjectMovement(
           and late_t.deleted_at is null
           and late_t.status not in ('done', 'cancelled')
           and late_t.due_at is not null
-          and late_t.due_at < ${dayStart}
+          and late_t.due_at < ${todayStarts}
       )`.mapWith(Number),
       lastActivityOn: sql<
         string | null
@@ -121,7 +114,7 @@ export async function listProjectMovement(
         where next_t.project_id = projects.id
           and next_t.deleted_at is null
           and next_t.status not in ('done', 'cancelled')
-          and next_t.due_at >= ${dayStart}
+          and next_t.due_at >= ${todayStarts}
       ) at time zone ${timezone})::date)::text`,
     })
     .from(projects)

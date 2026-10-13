@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 import type { TodaySegment } from '@ctws/contracts'
 import type { Queryable } from '../../platform/db/client'
+import { dayStart, localDay } from '../../platform/db/time'
 import type { Task } from './tasks'
 import { taskRowOf } from './rows'
 
@@ -34,25 +35,17 @@ export async function listToday(
   q: Queryable,
   workspaceId: string,
   timezone: string,
-  // Exists only so the timezone and DST arithmetic below can be tested at fixed instants.
-  // Production callers omit it and get the database's clock.
-  now?: Date,
+  now: Date,
 ): Promise<TodayTask[]> {
-  const clock = now ? sql`${now.toISOString()}::timestamptz` : sql`now()`
   // Columns are listed explicitly (not `t.*`) so `scheduled_on` can be cast to text: node-postgres
   // would otherwise parse a `date` into a JS Date at server-local midnight, the same timezone
   // bug this endpoint exists to avoid.
   const result = await q.execute(sql`
     with bounds as (
       select
-        (date_trunc('day', ${clock} at time zone ${timezone}) at time zone ${timezone}) as t0,
-        -- The "+ 1 day" MUST happen on the naive local timestamp, before converting back. Adding
-        -- the interval to the timestamptz instead does the arithmetic in the DB session's zone,
-        -- where a day is always 24h, so on a DST change day (23h or 25h in the user's zone) t1
-        -- lands an hour off and a task due in that hour drops out of "today".
-        ((date_trunc('day', ${clock} at time zone ${timezone}) + interval '1 day')
-          at time zone ${timezone}) as t1,
-        (${clock} at time zone ${timezone})::date as today
+        ${dayStart(now, timezone)} as t0,
+        ${dayStart(now, timezone, 1)} as t1,
+        ${localDay(now, timezone)} as today
     ),
     picked as (
       select
