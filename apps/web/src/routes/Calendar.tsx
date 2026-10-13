@@ -166,7 +166,9 @@ export function Calendar() {
                   {lunar.data?.[day] && (
                     <span
                       data-lunar-day
-                      className={`ml-1.5 text-[11px] ${inMonth ? 'text-ink-subtle' : 'text-ink-subtle/70'}`}
+                      // On the scale's caption step, in the tertiary ink whole: an out-of-month
+                      // square already sits on the desk, which is what says "not this month".
+                      className="ml-1.5 text-xs text-ink-subtle"
                     >
                       {lunar.data[day]}
                     </span>
@@ -190,7 +192,9 @@ export function Calendar() {
                             about their leading glyph. */}
                         <span
                           aria-hidden="true"
-                          className={`h-3 w-[3px] shrink-0 rounded-full ${
+                          data-entry-mark
+                          // Square: the thread's shape, the project's colour. Round is for markers.
+                          className={`h-3 w-[3px] shrink-0 ${
                             entry.projectId ? rail(entry.projectId) : ''
                           }`}
                         />
@@ -203,7 +207,7 @@ export function Calendar() {
                         {/* The zone it was AGREED in, when that is not the one the clock above is
                             in. The time says when to turn up; this says what was actually said. */}
                         {entry.zone && (
-                          <span className="shrink-0 text-[10px] text-ink-subtle">{entry.zone}</span>
+                          <span className="shrink-0 text-xs text-ink-subtle">{entry.zone}</span>
                         )}
                       </EntryLink>
                     </li>
@@ -271,7 +275,8 @@ function Step({
       type="button"
       aria-label={label}
       onClick={onClick}
-      className="flex h-7 min-w-7 items-center justify-center rounded-md border border-rule px-1.5 text-xs text-ink-muted hover:bg-hover hover:text-ink"
+      // The control shape Review's week stepper has: one stepper, one look across the app.
+      className="flex h-8 min-w-8 items-center justify-center rounded-md px-2 text-sm text-ink-muted hover:bg-hover hover:text-ink"
     >
       {children}
     </button>

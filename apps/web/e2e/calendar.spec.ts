@@ -149,3 +149,48 @@ test('格子里有农历日，和服务端说的一样', async ({ page }) => {
   await page.goto('/calendar')
   await expect(square(page, today).locator('[data-lunar-day]')).toHaveText(label!)
 })
+
+/**
+ * THE GRID KEEPS TO THE SCALE. Every size in a square is one of the scale's steps -- no 10px zone
+ * and no 11px lunar day -- every colour is a whole token (no faded `/70`), and an entry's project
+ * mark is square, the thread's shape, not a pill.
+ */
+test('the calendar grid keeps to the type scale and the thread shape', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '找工作')
+  await makeTask(page, pid, '交材料', { scheduledOn: dayOffset(0) })
+  // Agreed in another zone, so the square carries the zone beside the time.
+  await page.request.post('/api/v1/meetings', {
+    headers: WEB,
+    data: {
+      title: 'Call Tokyo',
+      startsLocal: `${dayOffset(0)}T12:00`,
+      timeZone: 'Asia/Tokyo',
+      durationMinutes: 30,
+      projectId: pid,
+    },
+  })
+  await page.goto('/calendar')
+  await expect(page.locator('[data-day]').getByText('交材料')).toBeVisible()
+
+  const found = await page.locator('[data-day]').evaluateAll((squares) => {
+    const sizes = new Set<string>()
+    const faded: string[] = []
+    for (const sq of squares)
+      for (const el of sq.querySelectorAll<HTMLElement>('*')) {
+        if (!el.childNodes.length || ![...el.childNodes].some((n) => n.nodeType === 3)) continue
+        const s = getComputedStyle(el)
+        sizes.add(s.fontSize)
+        if (/rgba\(.*,\s*0?\.\d+\)$/.test(s.color)) faded.push(el.textContent ?? '')
+      }
+    return { sizes: [...sizes], faded }
+  })
+  expect(
+    found.sizes.every((s) => ['12px', '14px', '16px'].includes(s)),
+    found.sizes.join(),
+  ).toBe(true)
+  expect(found.faded).toEqual([])
+  const mark = page.locator('[data-entry-mark]').first()
+  await expect(mark).toHaveCSS('border-radius', '0px')
+})
