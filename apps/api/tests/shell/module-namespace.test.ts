@@ -53,15 +53,14 @@ describe('the task module answers under its own namespace', () => {
 })
 
 describe('the OpenAPI document describes the namespaced API', () => {
-  it('documents the module paths and not the redirects', async () => {
+  it('documents the module paths and not the old flat ones', async () => {
     const doc = (await get('/api/v1/openapi.json')).json() as { paths: Record<string, unknown> }
     const paths = Object.keys(doc.paths)
     expect(paths).toContain('/api/v1/tasks/today')
     expect(paths).toContain('/api/v1/tasks/search')
     // The shell's own surface, still flat.
     expect(paths).toContain('/api/v1/projects')
-    // The compatibility redirects are hidden: the document describes the API as it is now, and
-    // listing every endpoint twice would make the namespace look optional.
+    // The old flat task paths are gone.
     expect(paths).not.toContain('/api/v1/today')
     expect(paths).not.toContain('/api/v1/completed')
     expect(paths).not.toContain('/api/v1/projects/{id}/tasks')

@@ -2,6 +2,7 @@ import type { DependencyRef } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import type { Queryable } from '../../../platform/db/client'
 import { ident } from '../../../platform/db/sql'
+import { groupBy } from '../../../platform/values'
 import { taskVisibleSql } from './scope'
 
 type RefRow = { id: string; title: string; project_id: string; project_name: string; done: boolean }
@@ -48,8 +49,7 @@ export async function blockersFor(
   workspaceId: string,
   taskIds: readonly string[],
 ): Promise<Map<string, DependencyRef[]>> {
-  const out = new Map<string, DependencyRef[]>()
-  if (taskIds.length === 0) return out
+  if (taskIds.length === 0) return new Map()
   const rows = await q.execute(sql`
     select
       d.blocked_id,
@@ -63,10 +63,5 @@ export async function blockersFor(
       and t.status not in ('done', 'cancelled')
     order by p.rank, t.rank, t.id
   `)
-  for (const row of rows.rows as (RefRow & { blocked_id: string })[]) {
-    const list = out.get(row.blocked_id)
-    if (list) list.push(toRef(row))
-    else out.set(row.blocked_id, [toRef(row)])
-  }
-  return out
+  return groupBy(rows.rows as (RefRow & { blocked_id: string })[], (r) => r.blocked_id, toRef)
 }

@@ -2,12 +2,11 @@ import type { TaskEventType, UpdateTaskBody } from '@ctws/contracts'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 import type { PgUpdateSetSource } from 'drizzle-orm/pg-core'
 import type { Db } from '../../../platform/db/client'
+import { isoOrNull } from '../../../platform/values'
 import { ManualProgressOnParentError } from '../errors'
 import { taskLog, type TaskCtx } from '../log'
 import { lockVisibleTask } from '../queries/scope'
 import { tasks, type Task } from '../tables'
-
-const iso = (d: Date | null): string | null => (d ? d.toISOString() : null)
 
 /** `numeric` comes back as a string. */
 const progressOf = (raw: string | null): number | null => (raw === null ? null : Number(raw))
@@ -53,7 +52,10 @@ export async function updateTask(
       const next = patch.dueAt === null ? null : new Date(patch.dueAt)
       if (next?.getTime() !== row.dueAt?.getTime()) {
         set.dueAt = next
-        events.push({ type: 'due_changed', payload: { from: iso(row.dueAt), to: iso(next) } })
+        events.push({
+          type: 'due_changed',
+          payload: { from: isoOrNull(row.dueAt), to: isoOrNull(next) },
+        })
       }
     }
     if (patch.manualProgress !== undefined) {

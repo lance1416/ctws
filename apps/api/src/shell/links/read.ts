@@ -19,7 +19,7 @@ const PER_GROUP = 200
 
 const kindOf = new Map(LINK_KINDS.map((k) => [k.kind as LinkKind, k]))
 
-/** The phrase for an edge read FROM the object whose page this is. */
+/** The phrase for an edge, read from the object whose page this is. */
 function phrase(kind: LinkKind, outgoing: boolean): string {
   const rule = kindOf.get(kind)
   if (!rule) return ''
@@ -65,7 +65,7 @@ export async function linksOf(
     ...own.flat().map((e) => ({ ...e, removable: false })),
   ]
 
-  // The far end of each edge, by type, so each module is asked ONCE for the whole page.
+  // The far end of each edge, by type, so each module is asked once for the whole page.
   const wanted = new Map<ObjectType, Set<string>>()
   const far = (e: StoredEdge) =>
     e.fromType === of.type && e.fromId === of.id

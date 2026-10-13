@@ -2,6 +2,7 @@ import type { AdminUser, Role } from '@ctws/contracts'
 import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 import type { Db, Queryable } from '../../platform/db/client'
 import { LOCKS, lockFor } from '../../platform/db/locks'
+import { isoOrNull } from '../../platform/values'
 import { sessions, users } from '../auth/tables'
 import { LastAdminError, UserNotFoundError } from './errors'
 
@@ -21,7 +22,7 @@ function toAdminUser(
     id: row.id,
     email: row.email,
     role: row.role,
-    disabledAt: row.disabledAt ? row.disabledAt.toISOString() : null,
+    disabledAt: isoOrNull(row.disabledAt),
     createdAt: row.createdAt.toISOString(),
   }
 }

@@ -6,14 +6,13 @@ import type {
   TaskResponse,
   TodayTaskResponse,
 } from '@ctws/contracts'
+import { isoOrNull } from '../../platform/values'
 import { dayEntry } from '../../shell/calendar/entry'
 import type { CalendarRow } from './queries/calendar'
 import type { CompletedTask } from './queries/completed'
 import type { SearchTask } from './queries/search'
 import type { TodayTask } from './queries/today'
 import type { Task } from './tables'
-
-const iso = (d: Date | null): string | null => (d ? d.toISOString() : null)
 
 export function toTaskResponse(t: Task): TaskResponse {
   return {
@@ -24,10 +23,10 @@ export function toTaskResponse(t: Task): TaskResponse {
     notes: t.notes,
     status: t.status,
     scheduledOn: t.scheduledOn,
-    dueAt: iso(t.dueAt),
+    dueAt: isoOrNull(t.dueAt),
     rank: t.rank,
     manualProgress: t.manualProgress === null ? null : Number(t.manualProgress),
-    completedAt: iso(t.completedAt),
+    completedAt: isoOrNull(t.completedAt),
     createdAt: t.createdAt.toISOString(),
     updatedAt: t.updatedAt.toISOString(),
   }

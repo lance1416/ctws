@@ -238,7 +238,7 @@ describe('PATCH /admin/users/:id', () => {
   })
 
   // Separate from the revocation above: even if a session row survives (e.g. one created some
-  // other way), requireUser itself must refuse a disabled user.
+  // other way), the session check itself must refuse a disabled user.
   it('rejects a still-valid session whose user is disabled', async () => {
     const { ctx, admin } = await setup()
     const m = await createUser(ctx, admin.cookie, 'm@example.com', 'member')

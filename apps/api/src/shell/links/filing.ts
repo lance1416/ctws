@@ -3,6 +3,7 @@ import { and, asc, eq, getTableName, inArray, isNull, sql, type SQL } from 'driz
 import type { AnyPgColumn, PgTable } from 'drizzle-orm/pg-core'
 import type { Queryable } from '../../platform/db/client'
 import { ident } from '../../platform/db/sql'
+import { groupBy } from '../../platform/values'
 import { projects } from '../projects/tables'
 import { putLinks } from './store'
 import { links } from './tables'
@@ -65,8 +66,7 @@ export async function projectsOf(
   type: ObjectType,
   ids: readonly string[],
 ): Promise<Map<string, Named[]>> {
-  const by = new Map<string, Named[]>()
-  if (ids.length === 0) return by
+  if (ids.length === 0) return new Map()
   const rows = await q
     .select({ fromId: links.fromId, id: projects.id, name: projects.name })
     .from(links)
@@ -82,10 +82,9 @@ export async function projectsOf(
       ),
     )
     .orderBy(asc(projects.rank), asc(projects.id))
-  for (const { fromId, id, name } of rows) {
-    const list = by.get(fromId)
-    if (list) list.push({ id, name })
-    else by.set(fromId, [{ id, name }])
-  }
-  return by
+  return groupBy(
+    rows,
+    (r) => r.fromId,
+    ({ id, name }) => ({ id, name }),
+  )
 }

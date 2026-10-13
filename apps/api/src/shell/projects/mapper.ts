@@ -1,4 +1,5 @@
 import { type ProjectListItem, projectColor, type ProjectResponse } from '@ctws/contracts'
+import { isoOrNull } from '../../platform/values'
 import type { ProjectListRow } from './queries'
 import type { Project } from './tables'
 
@@ -11,7 +12,7 @@ export function toProjectResponse(p: Project): ProjectResponse {
     color: projectColor.safeParse(p.color).data ?? null,
     isInbox: p.isInbox,
     rank: p.rank,
-    archivedAt: p.archivedAt ? p.archivedAt.toISOString() : null,
+    archivedAt: isoOrNull(p.archivedAt),
     createdAt: p.createdAt.toISOString(),
   }
 }

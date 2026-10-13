@@ -1,6 +1,7 @@
 import { type CalendarEntry, DAY_MS } from '@ctws/contracts'
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
+import { groupBy } from '../../platform/values'
 import { filing } from '../../shell/links/filing'
 import { attendeesOf } from '../people'
 import { MeetingNotFoundError, OccurrenceNotFoundError } from './errors'
@@ -57,24 +58,23 @@ type Selected = {
 async function hydrate(q: Queryable, workspaceId: string, rows: Selected[]): Promise<SeriesRow[]> {
   const ids = rows.map((r) => r.meeting.id)
   let attending = new Map<string, Attendee[]>()
-  const exceptionsOf = new Map<string, Exception[]>()
+  let exceptionsOf = new Map<string, Exception[]>()
   if (ids.length > 0) {
     const [guests, found] = await Promise.all([
       attendeesOf(q, workspaceId, ids),
       q.select().from(meetingExceptions).where(inArray(meetingExceptions.meetingId, ids)),
     ])
     attending = guests
-    for (const e of found) {
-      const one: Exception = {
+    exceptionsOf = groupBy(
+      found,
+      (e) => e.meetingId,
+      (e): Exception => ({
         recurrenceId: e.recurrenceId,
         cancelled: e.cancelled,
         startsLocal: e.startsLocal,
         durationMinutes: e.durationMinutes,
-      }
-      const list = exceptionsOf.get(e.meetingId)
-      if (list) list.push(one)
-      else exceptionsOf.set(e.meetingId, [one])
-    }
+      }),
+    )
   }
   return rows.map(({ meeting, projectId, projectName }) => ({
     ...meeting,

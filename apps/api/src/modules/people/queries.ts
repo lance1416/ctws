@@ -3,6 +3,7 @@ import type { BirthdayCalendar } from '@ctws/core'
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
 import { textMatches } from '../../platform/db/sql'
+import { groupBy } from '../../platform/values'
 import { filing, projectsOf } from '../../shell/links/filing'
 import { links } from '../../shell/links/tables'
 import { PersonNotFoundError } from './errors'
@@ -65,7 +66,7 @@ function storedBirthdayOf(p: Person): StoredBirthday | null {
 /** Attaches projects and channels to a page of people, one query each. */
 async function hydrate(q: Queryable, workspaceId: string, rows: Person[]): Promise<PersonRow[]> {
   const ids = rows.map((r) => r.id)
-  const channelsOf = new Map<string, PersonChannel[]>()
+  let channelsOf = new Map<string, PersonChannel[]>()
   let projectsOfPerson = new Map<string, Named[]>()
   if (ids.length > 0) {
     const [linked, channels] = await Promise.all([
@@ -77,12 +78,11 @@ async function hydrate(q: Queryable, workspaceId: string, rows: Person[]): Promi
         .orderBy(asc(personChannels.rank), asc(personChannels.id)),
     ])
     projectsOfPerson = linked
-    for (const c of channels) {
-      const channel: PersonChannel = { kind: c.kind, value: c.value, label: c.label }
-      const list = channelsOf.get(c.personId)
-      if (list) list.push(channel)
-      else channelsOf.set(c.personId, [channel])
-    }
+    channelsOf = groupBy(
+      channels,
+      (c) => c.personId,
+      (c): PersonChannel => ({ kind: c.kind, value: c.value, label: c.label }),
+    )
   }
   return rows.map((p) => ({
     id: p.id,
@@ -180,8 +180,7 @@ export async function attendeesOf(
   workspaceId: string,
   meetingIds: readonly string[],
 ): Promise<Map<string, Named[]>> {
-  const by = new Map<string, Named[]>()
-  if (meetingIds.length === 0) return by
+  if (meetingIds.length === 0) return new Map()
   const rows = await q
     .select({ meetingId: links.fromId, id: people.id, name: people.name })
     .from(links)
@@ -197,10 +196,9 @@ export async function attendeesOf(
       ),
     )
     .orderBy(asc(people.name), asc(people.id))
-  for (const { meetingId, id, name } of rows) {
-    const list = by.get(meetingId)
-    if (list) list.push({ id, name })
-    else by.set(meetingId, [{ id, name }])
-  }
-  return by
+  return groupBy(
+    rows,
+    (r) => r.meetingId,
+    ({ id, name }) => ({ id, name }),
+  )
 }

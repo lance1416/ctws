@@ -10,7 +10,7 @@ import { sessions } from './tables'
  * holds no working session. A fast digest suffices: the token is random, with nothing to guess.
  */
 
-/** 32 random bytes; the database keeps only its SHA-256. */
+/** 32 random bytes, base64url. */
 const newToken = (): string => randomBytes(32).toString('base64url')
 
 const digest = (token: string): string => createHash('sha256').update(token).digest('hex')
