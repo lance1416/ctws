@@ -1,5 +1,14 @@
 import { expect, test, type Page } from '@playwright/test'
-import { accountZone, makeProject, makeTask, meetingToday, registerFreshUser, WEB } from './helpers'
+import { TZDate } from '@date-fns/tz'
+import {
+  accountZone,
+  dayInZone,
+  makeProject,
+  makeTask,
+  meetingToday,
+  registerFreshUser,
+  WEB,
+} from './helpers'
 
 /**
  * THE WORKBENCH -- THE SHELL'S OWN FRONT PAGE.
@@ -82,6 +91,10 @@ test('the Today card shows what is in progress, across projects', async ({ page 
   await expect(doing).toContainText('配色重做')
   await expect(doing).toContainText('跑通 CI')
   await expect(doing).not.toContainText('还没开始的')
+  // Each row's thread is its project's colour, and the project is NAMED beside it: across
+  // projects, a colour alone would leave a reader matching hues against the rail (WCAG 1.4.1).
+  await expect(doing.getByRole('listitem').filter({ hasText: '配色重做' })).toContainText('CTWS')
+  await expect(doing.getByRole('listitem').filter({ hasText: '跑通 CI' })).toContainText('rrgen')
 })
 
 test('g w goes to the workbench, and it is the shell own key', async ({ page }) => {
@@ -131,7 +144,9 @@ test('the Today card counts what is late, planned and done, and each count goes 
   await registerFreshUser(page, '/')
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '晚了的', { dueAt: '2020-01-01T09:00:00.000Z' })
-  await makeTask(page, pid, '今天的', { scheduledOn: new Date().toLocaleDateString('en-CA') })
+  // Today on the ACCOUNT's calendar, which is the one the card counts by.
+  const day = dayInZone(await accountZone(page))
+  await makeTask(page, pid, '今天的', { scheduledOn: day })
   await makeTask(page, pid, '做完的', { status: 'done' })
   await page.goto('/')
   const today = card(page, 'Today')
@@ -185,4 +200,59 @@ test('a project line says what is open, what is late or due next, and when it mo
   await expect(line('晚了的线')).toContainText('Moved today')
   await expect(line('有下一个的线')).toContainText('1 open')
   await expect(line('有下一个的线')).toContainText('Due Mar 4, 2099')
+})
+
+/**
+ * THE MEETINGS LINE, LATE AND AT ITS EDGES. At 21:50 on a phone the now label stays inside its
+ * card; a meeting that starts before 08:00 and runs onto the line is drawn on it; one that runs
+ * past midnight is drawn to the line's end, not as a sliver.
+ */
+test('the meetings line keeps late hours and long meetings inside the card', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await registerFreshUser(page)
+  const zone = await accountZone(page)
+  await meetingToday(page, 'Early run', '07:30', zone, 90)
+  await meetingToday(page, 'Call home', '20:00', zone, 30)
+  await meetingToday(page, 'Late session', '21:00', zone, 240)
+  const day = dayInZone(zone)
+  const [y, m, d] = day.split('-').map(Number) as [number, number, number]
+  await page.clock.install({ time: new TZDate(y, m - 1, d, 21, 50, 0, 0, zone) })
+  await page.goto('/')
+
+  const line = page.getByRole('img', { name: /^Today from 08:00/ })
+  await expect(line).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBe(0)
+  // 07:30–09:00 overlaps the line, so it is on it -- not listed as outside its hours.
+  const name = (await line.getAttribute('aria-label'))!
+  expect(name).not.toContain('Outside those hours')
+  expect(name).toContain('Early run at 07:30')
+  // 21:00 to past midnight is drawn from 21:00 to the line's end: 1 of its 14 hours.
+  const share = await line.evaluate((el) => {
+    const late = [...el.querySelectorAll<HTMLElement>('[data-line-meeting]')].find(
+      (b) => b.dataset.lineMeeting === 'Late session',
+    )!
+    return late.getBoundingClientRect().width / el.getBoundingClientRect().width
+  })
+  expect(share).toBeGreaterThan(0.06)
+})
+
+test('a meeting on a project names it beside its colour', async ({ page }) => {
+  await registerFreshUser(page, '/')
+  const zone = await accountZone(page)
+  const pid = await makeProject(page, '找工作')
+  const day = dayInZone(zone)
+  const res = await page.request.post('/api/v1/meetings', {
+    headers: WEB,
+    data: {
+      title: 'Second interview',
+      startsLocal: `${day}T12:00`,
+      timeZone: zone,
+      durationMinutes: 60,
+      projectId: pid,
+    },
+  })
+  expect(res.ok(), await res.text()).toBe(true)
+  await page.goto('/')
+  const row = card(page, 'Meetings').getByRole('listitem').filter({ hasText: 'Second interview' })
+  await expect(row).toContainText('找工作')
 })

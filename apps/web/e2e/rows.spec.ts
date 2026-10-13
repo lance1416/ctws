@@ -1,5 +1,14 @@
 import { expect, test, type Page } from '@playwright/test'
-import { makeProject, makeTask, registerFreshUser, sidewaysScroll, WEB } from './helpers'
+import { TZDate } from '@date-fns/tz'
+import {
+  accountZone,
+  dayInZone,
+  makeProject,
+  makeTask,
+  registerFreshUser,
+  sidewaysScroll,
+  WEB,
+} from './helpers'
 import { dayOffset, nextMondayYmd, ymd } from './days'
 
 /** The month names the app prints, so a spec can build the string the page will show. */
@@ -207,8 +216,11 @@ test('overdue: the day in the margin, how late on the right, where on the second
   await page.setViewportSize({ width: 1440, height: 1000 })
   await registerFreshUser(page)
   const pid = await makeProject(page, '邮件服务')
-  const noon = new Date()
-  noon.setHours(12, 34, 0, 0)
+  // 12:34 on the ACCOUNT's clock, today and two days ago: the margin speaks the account's zone,
+  // so its expected words are built in that zone, not in whatever zone the runner is in.
+  const zone = await accountZone(page)
+  const [y, m, d] = dayInZone(zone).split('-').map(Number) as [number, number, number]
+  const noon = new TZDate(y, m - 1, d, 12, 34, 0, 0, zone)
   const TITLE = '核对退信率并给收件人分组'
   const id = await makeTask(page, pid, TITLE, { dueAt: noon.toISOString() })
 
@@ -220,8 +232,7 @@ test('overdue: the day in the margin, how late on the right, where on the second
   await expect(queueRow.locator('[data-row-lead-text]')).toHaveText('12:34')
   await expect(queueRow.locator('[data-row-note]')).toHaveCount(0)
 
-  const twoDaysAgo = new Date(noon.getTime() - 2 * DAY)
-  twoDaysAgo.setHours(12, 34, 0, 0)
+  const twoDaysAgo = new TZDate(y, m - 1, d - 2, 12, 34, 0, 0, zone)
   const res = await page.request.patch(`/api/v1/tasks/${id}`, {
     headers: WEB,
     data: { dueAt: twoDaysAgo.toISOString() },

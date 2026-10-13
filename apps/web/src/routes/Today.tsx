@@ -13,7 +13,14 @@ import { hasMovement } from '../movement'
 import { DayEmpty, DaySection } from '../components/DaySection'
 import { DayLine, type DayItem } from '../components/DayLine'
 import { blockedLabel } from '../blockedLabel'
-import { ProjectRail, RowMeta, RowNote, SavedMark, ROW_LIST } from '../components/RowParts'
+import {
+  OVER_ROW,
+  ProjectRail,
+  RowMeta,
+  RowNote,
+  SavedMark,
+  ROW_LIST,
+} from '../components/RowParts'
 import { RowLead } from '../components/RowLead'
 import { leadFor } from '../rowLead'
 import { StartButton, StatusButton, statusForKey } from '../components/StatusControls'
@@ -25,6 +32,7 @@ import { dateHints, todayIn } from '../dueAt'
 import { useShortcutsEnabled } from '../shortcuts/enabled'
 import { triageSections } from '../triage'
 import { useTimeZone } from '../useMe'
+import { useNow } from '../useNow'
 import { BUTTON } from '../components/buttonStyles'
 import { useCrumbs } from '../components/Location'
 
@@ -57,10 +65,13 @@ export function Today() {
   const completed = useQuery({ queryKey: ['completed'], queryFn: listCompleted })
   const movement = useQuery({ queryKey: ['movement'], queryFn: listMovement })
   const timezone = useTimeZone()
+  // The moment it is, kept current while the page sits open (`useNow`): the now line, the date
+  // and which day "today" is all follow it, and nothing below reads the clock for itself.
+  const nowAt = useNow()
   // The account's own calendar day, for matching the server's `completedOn`. Never a browser-local
   // date: the server already decided which day a task was finished on, and the two must agree.
   // `todayIn` is the ONE place that answers this, for this page, the rows and the panel alike.
-  const localToday = todayIn(timezone)
+  const localToday = todayIn(timezone, nowAt)
   const clock = new Intl.DateTimeFormat('en-US', {
     hour: '2-digit',
     minute: '2-digit',
@@ -314,7 +325,7 @@ export function Today() {
   const movementRows = (movement.data ?? []).filter(hasMovement)
 
   // THE DAY'S LINE: the queue and the other modules' entries, each with its time if it has one.
-  const now = clock.format(new Date())
+  const now = clock.format(nowAt)
   const items: DayItem[] = [
     ...queue.map((t): DayItem => {
       // A task is ON the line when it is due today at a time; the end of the day is not a time.
@@ -326,6 +337,7 @@ export function Today() {
     ...entries.map((e): DayItem => ({
       key: `${e.moduleId}:${e.id}`,
       at: e.time,
+      until: e.endTime,
       hasLead: e.time !== null,
       row: ({ past, anyTime }) => entryRow(e, past, anyTime),
     })),
@@ -336,7 +348,7 @@ export function Today() {
     month: 'long',
     day: 'numeric',
     timeZone: timezone,
-  }).format(new Date())
+  }).format(nowAt)
 
   return (
     <div className="mx-auto w-full max-w-[67.5rem] pt-4 sm:pt-6">
@@ -429,7 +441,11 @@ export function Today() {
                           data-today-row={t.id}
                           onClick={() => setOpenId(t.id)}
                           onKeyDown={(e) => onRowKeyDown(e, t.id, t.status)}
-                          className={`flex min-w-[12rem] flex-1 flex-col text-left ${alone ? '' : 'py-2.5'}`}
+                          // One: at least 12rem, so Done and Pause wrap under a short line rather
+                          // than squeeze it -- never more than the row has. Several: a row.
+                          className={`flex flex-1 flex-col text-left ${
+                            alone ? 'min-w-[min(12rem,100%)]' : 'min-w-0 py-2.5'
+                          }`}
                         >
                           <span className="flex min-w-0 items-baseline">
                             <span
@@ -455,7 +471,7 @@ export function Today() {
                             alone
                               ? 'self-center'
                               : // Over the row, not in it: they take no width from the title.
-                                'absolute top-0 right-1 h-11 bg-hover opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:hidden'
+                                `absolute top-0 right-1 h-11 opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:hidden ${OVER_ROW}`
                           }`}
                         >
                           {/* One thing: the one press the page is for, filled. Several: the mark

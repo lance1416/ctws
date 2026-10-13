@@ -56,7 +56,8 @@ describe.each([
         .filter(([, status]) => status === 'fail')
         .map(([name, , detail]) => `${name}: ${detail}`)
       // The one WARN this palette ships with is contrast below 3:1. It is dischargeable, and
-      // discharged: a chip is never alone, it always sits beside the project's name (WCAG 1.4.1).
+      // discharged: a chip or a thread is never alone -- the project's name is on the same row,
+      // or the page itself is the project (WCAG 1.4.1). e2e pins the rows that once broke it.
       expect(fails, `${mode} on ${surface}`).toEqual([])
       expect(ok).toBe(true)
     },

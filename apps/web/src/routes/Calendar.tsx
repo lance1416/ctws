@@ -132,7 +132,7 @@ export function Calendar() {
         </p>
       )}
 
-      <div className="mt-4 min-w-0 overflow-hidden rounded-xl border border-rule bg-sheet">
+      <div className="mt-4 min-w-0 overflow-hidden border border-rule bg-sheet">
         <div className="grid grid-cols-7">
           {WEEKDAYS.map((w) => (
             <div key={w} className="px-2 py-1.5 text-xs text-ink-subtle">
@@ -245,7 +245,7 @@ function EntryLink({
 }) {
   const title = `${entry.kind} · ${entry.title}`
   const className =
-    'flex w-full min-w-0 items-center gap-1 rounded px-1 py-0.5 text-left hover:bg-hover'
+    'flex w-full min-w-0 items-center gap-1 rounded-md px-1 py-0.5 text-left hover:bg-hover'
   return opens ? (
     <button type="button" onClick={onOpen} title={title} className={className}>
       {children}
@@ -271,7 +271,7 @@ function Step({
       type="button"
       aria-label={label}
       onClick={onClick}
-      className="flex h-7 min-w-7 items-center justify-center rounded-lg border border-rule px-1.5 text-xs text-ink-muted hover:bg-hover hover:text-ink"
+      className="flex h-7 min-w-7 items-center justify-center rounded-md border border-rule px-1.5 text-xs text-ink-muted hover:bg-hover hover:text-ink"
     >
       {children}
     </button>

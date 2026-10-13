@@ -219,7 +219,8 @@ test('a person row hangs on the margin: next birthday, first project, then who t
   await expect(body).toHaveAttribute('href', `/people/${ying.id}`)
   await expect(body.locator('[data-person-initial]')).toHaveText('陈')
   await expect(body.locator('[data-person-name]')).toHaveText('陈颖')
-  await expect(body.locator('[data-person-meta]')).toHaveText('Engineering manager, Acme')
+  // ...and the line of work the thread's colour stands for, by name: a colour is never alone.
+  await expect(body.locator('[data-person-meta]')).toHaveText('Engineering manager, Acme · 找工作')
   const end = (await body.boundingBox())!
   const city = (await body.getByText('Toronto').boundingBox())!
   expect(end.x + end.width - (city.x + city.width), 'the city is at the far end').toBeLessThan(12)
@@ -941,4 +942,16 @@ test('an old /contacts address still lands on that person', async ({ page }) => 
   await expect(page).toHaveURL(/\/people\/birthdays$/)
   await page.goto('/contacts')
   await expect(page).toHaveURL(/\/people$/)
+})
+
+/** On a phone the margin is 60px: a birthday's date stays inside it, and so the page's edge. */
+test('a birthday fits the phone margin', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await registerFreshUser(page, '/')
+  // May 28: the widest month-and-day the margin has to hold, on any day the suite runs.
+  await add(page, { name: '陈颖', birthday: { calendar: 'solar', month: 5, day: 28 } })
+  await page.goto('/people')
+  const lead = page.locator('[data-person-row] [data-birthday-lead]')
+  await expect(lead.locator('time')).toHaveText('May 28')
+  expect(await lead.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(0)
 })

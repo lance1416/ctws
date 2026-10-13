@@ -117,6 +117,7 @@ export async function listBirthdayEntries(
         to: `/people/${p.id}`,
         kind: 'Birthday',
         time: null,
+        endTime: null,
         zone: null,
         projectId: null,
         projectName: null,

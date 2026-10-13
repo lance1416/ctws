@@ -30,6 +30,14 @@ export const CHEVRON_PX = 20
  * the one value at either width (`gutterPlus`).
  */
 export const BODY_GUTTER = '[--gutter:8px] sm:[--gutter:14px]'
+
+/**
+ * THE GROUND UNDER CONTROLS THAT APPEAR OVER A HOVERED ROW'S END: the sheet, opaque, with the
+ * hover layer painted on it, so it matches the hovered row around it and HIDES the end of the
+ * title beneath. The hover layer alone is 8% ink: through it the title's last words were drawn
+ * under the buttons, both legible at once and neither. Rows that take this live on the sheet.
+ */
+export const OVER_ROW = 'bg-sheet shadow-[inset_0_0_0_100vmax_var(--color-hover)]'
 export const gutterPlus = (px: number) => `calc(var(--gutter) + ${px}px)`
 
 /** Every row list is a column of rows. No `@container`: nothing asks a list for its width. */
@@ -68,13 +76,6 @@ export function ProjectRail({ projectId }: { projectId: string | null }) {
 }
 
 /**
- * A deadline's glyph: a flag on a pole. Upright, with a vertical silhouette.
- *
- * The two date semantics must not differ by HUE ALONE (plan section 2). They differ in three
- * channels: the words ("due" against "planned"), the colour family (warm against cool) and -- this
- * -- the shape. A flag is a line you must not cross; it is filled once the line has been crossed.
- */
-/**
  * THE GLYPH BOX the date marks share: one 12-unit grid, one stroke weight, one size. Two marks
  * that differ by SILHOUETTE have to be drawn on the same canvas, or they differ by weight and
  * scale as well and the silhouette stops being the thing telling them apart.
@@ -98,6 +99,13 @@ function Glyph({ children }: { children: ReactNode }) {
   )
 }
 
+/**
+ * A deadline's glyph: a flag on a pole. Upright, with a vertical silhouette.
+ *
+ * The two date semantics must not differ by HUE ALONE. They differ in three
+ * channels: the words ("due" against "planned"), the colour family (warm against cool) and -- this
+ * -- the shape. A flag is a line you must not cross; it is filled once the line has been crossed.
+ */
 export function DeadlineMark({ filled }: { filled: boolean }) {
   return (
     <Glyph>

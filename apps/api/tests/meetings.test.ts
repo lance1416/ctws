@@ -166,6 +166,9 @@ describe('a recurring meeting on the calendar', () => {
     await arrange(ctx)
     const got = await entries(ctx, '2026-10-20', '2026-11-10')
     expect(got.map((e) => e.time)).toEqual(['13:00', '13:00', '14:00', '14:00'])
+    // And when it ends, on the same clock: a meeting that has started is not yet over, and the
+    // day's line can only tell the two apart with its end.
+    expect(got.map((e) => e.endTime)).toEqual(['14:00', '14:00', '15:00', '15:00'])
     expect(got[0]!.kind).toBe('meeting · EDT 09:00')
     expect(got[2]!.kind).toBe('meeting · EST 09:00')
   })

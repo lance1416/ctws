@@ -87,7 +87,7 @@ export function SideRail() {
             to={to}
             end={end ?? false}
             className={({ isActive }) =>
-              `flex min-h-9 shrink-0 items-center gap-2 rounded-lg px-2.5 py-1 whitespace-nowrap ${
+              `flex min-h-9 shrink-0 items-center gap-2 rounded-md px-2.5 py-1 whitespace-nowrap ${
                 isActive ? 'bg-select font-semibold text-ink' : 'text-ink-muted hover:text-ink'
               }`
             }
@@ -102,7 +102,7 @@ export function SideRail() {
         <Link
           to="/things"
           aria-current={inThings ? 'page' : undefined}
-          className={`flex min-h-9 shrink-0 items-center gap-2 rounded-lg px-2.5 py-1 whitespace-nowrap ${
+          className={`flex min-h-9 shrink-0 items-center gap-2 rounded-md px-2.5 py-1 whitespace-nowrap ${
             inThings ? 'bg-select font-semibold text-ink' : 'text-ink-muted hover:text-ink'
           }`}
         >
@@ -115,7 +115,7 @@ export function SideRail() {
           <NavLink
             to="/projects"
             className={({ isActive }) =>
-              `rounded-lg px-2.5 py-1 font-semibold whitespace-nowrap lg:text-xs ${
+              `rounded-md px-2.5 py-1 font-semibold whitespace-nowrap lg:text-xs ${
                 isActive ? 'text-ink' : 'text-ink-muted hover:text-ink'
               }`
             }
@@ -171,9 +171,9 @@ export function SideRail() {
               key={p.id}
               to={`/projects/${p.id}`}
               className={({ isActive }) =>
-                `flex min-h-11 items-center gap-2.5 rounded-lg py-1 pr-2 pl-2.5 ${
-                  // The current page wears the WORK surface, so the rail says "you are over
-                  // there" with the same two planes the layout already uses.
+                `flex min-h-11 items-center gap-2.5 rounded-md py-1 pr-2 pl-2.5 ${
+                  // The current page wears the select layer, with its name in ink: the same
+                  // mark of "you are here" as every other selected thing in the app.
                   isActive ? 'bg-select text-ink' : 'text-ink-muted hover:text-ink'
                 }`
               }

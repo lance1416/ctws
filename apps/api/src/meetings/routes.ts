@@ -164,6 +164,7 @@ export const meetingRoutes: FastifyPluginAsync = async (app) => {
               ? 'Meetings'
               : `meeting · ${zoneLabel(m.startsAt, m.timeZone)} ${localOf(m.startsAt, m.timeZone).slice(11)}`,
           time: clock.format(m.startsAt),
+          endTime: clock.format(new Date(m.startsAt.getTime() + m.durationMinutes * 60_000)),
           zone: m.timeZone === user.timezone ? null : zoneLabel(m.startsAt, m.timeZone),
           projectId: m.projectId,
           projectName: m.projectName,

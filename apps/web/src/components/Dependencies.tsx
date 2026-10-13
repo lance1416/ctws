@@ -49,7 +49,7 @@ function Row({
           type="button"
           onClick={onRemove}
           aria-label={`Remove dependency “${task.title}”`}
-          className="ml-auto h-7 w-7 shrink-0 rounded-lg text-ink-subtle hover:bg-hover hover:text-ink"
+          className="ml-auto h-7 w-7 shrink-0 rounded-md text-ink-subtle hover:bg-hover hover:text-ink"
         >
           <svg aria-hidden="true" viewBox="0 0 16 16" className="mx-auto h-3.5 w-3.5">
             <path
@@ -132,7 +132,7 @@ export function Dependencies({ taskId, projectId }: { taskId: string; projectId:
         <button
           type="button"
           onClick={() => setAdding((v) => !v)}
-          className="-mx-1 rounded-lg px-1 text-xs text-ink-muted hover:text-ink"
+          className="-mx-1 rounded-md px-1 text-xs text-ink-muted hover:text-ink"
         >
           {adding ? 'Cancel' : 'Add'}
         </button>
@@ -160,7 +160,7 @@ export function Dependencies({ taskId, projectId }: { taskId: string; projectId:
                 <button
                   type="button"
                   onClick={() => add.mutate(t.id)}
-                  className="flex min-h-8 w-full items-center gap-2 rounded-lg px-2 text-left text-sm hover:bg-hover"
+                  className="flex min-h-8 w-full items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-hover"
                 >
                   <span className="truncate text-ink">{t.title}</span>
                   <span className="ml-auto shrink-0 text-xs text-ink-subtle">{t.projectName}</span>

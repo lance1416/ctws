@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
-import { apiPost, makeProject, makeTask, registerFreshUser } from './helpers'
+import { apiPost, makeProject, makeTask, registerFreshUser, textContrast } from './helpers'
 
 /**
  * WHAT SITS ON A PLANE IS DRAWN ONE STEP FROM IT, IN BOTH SCHEMES.
@@ -91,5 +91,53 @@ for (const scheme of ['light', 'dark'] as const) {
     await expect(card).toBeVisible()
     const column = card.locator('xpath=ancestor::section[@data-board-column][1]')
     expect(await lum(card)).toBeGreaterThan(await lum(column))
+  })
+}
+
+/**
+ * A SELECTION IS A STATE THAT STAYS, so text on it is held to 4.5:1 like any other text. The
+ * tertiary ink clears that on every plane but not on the `select` layer over it, so what sits on a
+ * selected surface reads one step up. Light and dark, on each kind of selected surface.
+ */
+for (const scheme of ['light', 'dark'] as const) {
+  test(`${scheme}: text on a selected surface clears 4.5:1`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme: scheme })
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await registerFreshUser(page)
+    const pid = await makeProject(page, '找工作')
+    await makeTask(page, pid, '一条')
+    const made = await page.request.post('/api/v1/people', {
+      headers: { 'x-ctws-client': 'web' },
+      data: {
+        name: '陈颖',
+        title: 'Recruiter',
+        org: 'Acme',
+        city: 'Toronto',
+        birthday: { calendar: 'solar', month: 3, day: 9 },
+      },
+    })
+    const id = ((await made.json()) as { id: string }).id
+
+    // The rail's current project, and its count.
+    await page.goto(`/projects/${pid}`)
+    const count = page
+      .getByRole('navigation', { name: 'Main navigation' })
+      .locator(`a[href="/projects/${pid}"] [data-count]`)
+    expect(await textContrast(count), 'rail count').toBeGreaterThanOrEqual(4.5)
+
+    // The open person's row: what they do, and their city.
+    await page.goto(`/people/${id}`)
+    const row = page.locator(`[data-person-row="${id}"]`)
+    expect(await textContrast(row.locator('[data-person-meta]')), 'meta').toBeGreaterThanOrEqual(
+      4.5,
+    )
+    expect(await textContrast(row.getByText('Toronto')), 'city').toBeGreaterThanOrEqual(4.5)
+
+    // A picked month on Birthdays, and its count.
+    await page.goto('/people/birthdays')
+    await page.getByRole('button', { name: /^March/ }).click()
+    const month = page.getByRole('button', { name: /^March/ })
+    await expect(month).toHaveAttribute('aria-pressed', 'true')
+    expect(await textContrast(month.locator('span')), 'month count').toBeGreaterThanOrEqual(4.5)
   })
 }

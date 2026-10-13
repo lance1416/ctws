@@ -15,6 +15,11 @@ export type DayItem = {
   key: string
   /** "HH:mm" in the account's zone, or null for something with no time today. */
   at: string | null
+  /**
+   * When it ends, for a thing that lasts (a meeting); absent for a moment. It is past only once
+   * this has gone by: at 10:30 the 10:00–11:00 meeting is the one you are in, not one that is over.
+   */
+  until?: string | null | undefined
   /** Whether the row says something in its margin already (a carried day, a deadline's word). */
   hasLead: boolean
   row: (state: { past: boolean; anyTime: boolean }) => ReactNode
@@ -25,16 +30,21 @@ export function DayLine({ items, now }: { items: DayItem[]; now: string }) {
     .filter((i) => i.at !== null)
     .sort((a, b) => (a.at! < b.at! ? -1 : a.at! > b.at! ? 1 : 0))
   const untimed = items.filter((i) => i.at === null)
-  // Everything up to now is past; the line goes before the first thing still to come.
+  // What has started sits above the line, which goes before the first thing still to come; of
+  // those, what has also ENDED is past. An end before its start ran past midnight: it lasts the day.
   const cut = timed.findIndex((i) => i.at! > now)
-  const past = cut === -1 ? timed : timed.slice(0, cut)
+  const started = cut === -1 ? timed : timed.slice(0, cut)
   const ahead = cut === -1 ? [] : timed.slice(cut)
+  const over = (i: DayItem) => {
+    const end = i.until && i.until >= i.at! ? i.until : i.until ? '24:00' : i.at!
+    return end <= now
+  }
   // The first untimed row with nothing of its own in the margin says "Any time" there.
   const labelled = untimed.find((i) => !i.hasLead)?.key
   return (
     <ul className={ROW_LIST}>
-      {past.map((i) => (
-        <Fragment key={i.key}>{i.row({ past: true, anyTime: false })}</Fragment>
+      {started.map((i) => (
+        <Fragment key={i.key}>{i.row({ past: over(i), anyTime: false })}</Fragment>
       ))}
       {/* Only a line with times on it has a now: with nothing timed there is nothing to place it
           between, and a line across an untimed list would mean nothing. */}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ProjectMovementResponse } from '@ctws/contracts'
-import { activityLabel, hasMovement, movedLine, QUIET_DAYS, stagnant } from './movement'
+import { activityLabel, hasMovement, movedLine, QUIET_DAYS } from './movement'
 
 /**
  * The two judgements the Movement panel makes. Both are about what is NOT shown, which is why they are
@@ -26,40 +26,6 @@ describe('hasMovement', () => {
 
   it('drops a project with neither: "0 and 0" is not news', () => {
     expect(hasMovement(row())).toBe(false)
-  })
-})
-
-describe('stagnant', () => {
-  const quiet = (name: string, days: number | null, remaining = 1) =>
-    row({
-      projectId: name,
-      projectName: name,
-      quietDays: days,
-      remaining,
-      lastActivityOn: '2026-09-28',
-    })
-
-  it('says nothing when every project has been touched recently', () => {
-    expect(stagnant([quiet('甲', 0), quiet('乙', QUIET_DAYS - 1)])).toBeNull()
-  })
-
-  it('names a project that has been silent for a whole week', () => {
-    expect(stagnant([quiet('甲', 0), quiet('乙', QUIET_DAYS)])?.projectName).toBe('乙')
-  })
-
-  it('names the QUIETEST one, so the sentence does not depend on list order', () => {
-    expect(stagnant([quiet('甲', 9), quiet('乙', 30), quiet('丙', 12)])?.projectName).toBe('乙')
-    expect(stagnant([quiet('乙', 30), quiet('甲', 9)])?.projectName).toBe('乙')
-  })
-
-  it('ignores a project with nothing left to do: finished is not stagnant', () => {
-    expect(stagnant([quiet('做完的', 40, 0)])).toBeNull()
-    // ...and it does not hide a genuinely stalled one standing beside it.
-    expect(stagnant([quiet('做完的', 40, 0), quiet('停住的', 8)])?.projectName).toBe('停住的')
-  })
-
-  it('ignores a project that has never had any activity to be quiet about', () => {
-    expect(stagnant([row({ projectName: '空的', remaining: 3, quietDays: null })])).toBeNull()
   })
 })
 

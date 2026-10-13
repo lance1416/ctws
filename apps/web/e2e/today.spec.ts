@@ -407,3 +407,69 @@ test('a task due today at a time is on the line once, at its time', async ({ pag
   // Something is timed, so the day has a now.
   await expect(page.locator('[data-now-line]')).toHaveCount(1)
 })
+
+/**
+ * NOW MOVES, AND A MEETING IS OVER WHEN IT ENDS. A Today left open keeps its now line on the
+ * clock; and at 10:30 the 10:00–11:00 meeting is the one you are in, not one that has gone by.
+ * The clock is the test's own, set to the account's today: nothing here rides on the hour the
+ * suite happens to run at.
+ */
+test('the now line moves with the clock, and a meeting is past only once it has ended', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const zone = await accountZone(page)
+  await meetingToday(page, 'Morning sync', '08:00', zone, 60)
+  await meetingToday(page, 'Design review', '10:00', zone, 60)
+  const [y, m, d] = dayInZone(zone).split('-').map(Number) as [number, number, number]
+  await page.clock.install({ time: new TZDate(y, m - 1, d, 10, 30, 0, 0, zone) })
+  await page.goto('/tasks/today')
+
+  const tint = (title: string) =>
+    page
+      .locator('[data-day-entry]')
+      .filter({ hasText: title })
+      .locator('[data-row-title]')
+      .evaluate((el) => getComputedStyle(el).color)
+  await expect(page.locator('[data-now-line]')).toContainText('10:30')
+  // Over (08:00–09:00) and under way (10:00–11:00) are not drawn alike.
+  expect(await tint('Design review')).not.toBe(await tint('Morning sync'))
+
+  // An hour later, with nothing done on the page: the line has moved, and the review is over.
+  await page.clock.fastForward('01:00:00')
+  await expect(page.locator('[data-now-line]')).toContainText('11:30')
+  await expect.poll(() => tint('Design review')).toBe(await tint('Morning sync'))
+})
+
+/** Several things in progress are a list of rows: at 320px they fit, and nothing scrolls sideways. */
+test('several things in progress fit a 320px phone', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 700 })
+  await registerFreshUser(page)
+  const p = await apiPost(page, '/projects', { name: 'P' })
+  for (const title of ['第一件在做的', '第二件在做的'])
+    await apiPost(page, '/tasks', { title, projectId: p.id as string, status: 'in_progress' })
+  await page.goto('/tasks/today')
+  await expect(page.locator('[data-doing-title]')).toHaveCount(2)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBe(0)
+})
+
+/**
+ * The controls that appear over a row's end on hover sit on an OPAQUE ground: through a
+ * translucent one the end of the title is drawn under Pause, both legible at once and neither.
+ */
+test('the controls over a hovered row hide the title under them', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await registerFreshUser(page)
+  const p = await apiPost(page, '/projects', { name: 'P' })
+  for (const title of ['一件', '两件'])
+    await apiPost(page, '/tasks', { title, projectId: p.id as string, status: 'in_progress' })
+  await page.goto('/tasks/today')
+  const row = page.locator('[data-doing-title]').first()
+  await row.hover()
+  const ground = await page
+    .getByRole('button', { name: /^Pause/ })
+    .first()
+    .evaluate((el) => getComputedStyle(el.parentElement!).backgroundColor)
+  // rgb(...) is opaque; rgba(..., a) with a < 1 is not.
+  expect(ground).toMatch(/^rgb\(/)
+})

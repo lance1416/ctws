@@ -164,7 +164,7 @@ export function MeetingFields({
         <DetailHead
           kind={
             <span className="flex min-w-0 items-center gap-1.5 text-sm text-ink-muted">
-              <Link to="/meetings" className="rounded hover:text-ink hover:underline">
+              <Link to="/meetings" className="rounded-md hover:text-ink hover:underline">
                 ← Meetings
               </Link>
               {meeting.overridden && <span className="text-xs text-ink-subtle">Edited</span>}
@@ -175,7 +175,7 @@ export function MeetingFields({
               to={`/meetings/${meeting.meetingId}`}
               aria-label="Open as a page"
               title="Open as a page"
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-ink-muted hover:bg-hover hover:text-ink"
+              className="flex h-9 w-9 items-center justify-center rounded-md text-ink-muted hover:bg-hover hover:text-ink"
             >
               <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4">
                 <path

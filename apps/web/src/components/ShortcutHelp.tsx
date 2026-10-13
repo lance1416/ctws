@@ -61,7 +61,7 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
   return (
     // Radix owns Escape, the press outside, the focus trap and the focus restoration; this file
     // only says what is in the layer.
-    <Modal title="Keyboard shortcuts" onClose={onClose} className="rounded-lg">
+    <Modal title="Keyboard shortcuts" onClose={onClose}>
       <div className="px-5 py-4">
         {GROUPS.map((group) => (
           <section key={group.title} className="mt-4 first:mt-0">

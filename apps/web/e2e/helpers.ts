@@ -412,7 +412,7 @@ export async function meetingToday(
 /**
  * Holds a list's FIRST read until the returned `release` is called. The read is sent at once, so
  * its answer is the list as it was BEFORE whatever the test then writes: the stale answer that a
- * refetch after the write must not be handed (`refreshList` in api/taskCache.ts).
+ * refetch after the write must not be handed (`refreshList` in api/refresh.ts).
  */
 export async function holdFirstRead(page: Page, url: string): Promise<() => void> {
   let release!: () => void
@@ -426,4 +426,43 @@ export async function holdFirstRead(page: Page, url: string): Promise<() => void
     await route.fulfill({ response })
   })
   return release
+}
+
+/**
+ * WCAG 2.1 contrast of an element's text against what is really behind it: every background from
+ * the element up to the page, composited in order, so a translucent layer (hover, select) counts
+ * as the colour it makes on its plane rather than as itself.
+ */
+export async function textContrast(target: Locator): Promise<number> {
+  return target.evaluate((el) => {
+    const rgba = (c: string) => {
+      const n = c.match(/[\d.]+/g)!.map(Number)
+      return { r: n[0]!, g: n[1]!, b: n[2]!, a: n[3] ?? 1 }
+    }
+    const over = (
+      top: { r: number; g: number; b: number; a: number },
+      under: { r: number; g: number; b: number },
+    ) => ({
+      r: top.r * top.a + under.r * (1 - top.a),
+      g: top.g * top.a + under.g * (1 - top.a),
+      b: top.b * top.a + under.b * (1 - top.a),
+    })
+    const layers: { r: number; g: number; b: number; a: number }[] = []
+    for (let n: Element | null = el; n; n = n.parentElement) {
+      const bg = rgba(getComputedStyle(n).backgroundColor)
+      if (bg.a > 0) layers.push(bg)
+    }
+    let behind = { r: 255, g: 255, b: 255 }
+    for (const layer of layers.reverse()) behind = over(layer, behind)
+    const text = over(rgba(getComputedStyle(el).color), behind)
+    const lum = ({ r, g, b }: { r: number; g: number; b: number }) => {
+      const ch = (v: number) => {
+        const c = v / 255
+        return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+      }
+      return 0.2126 * ch(r) + 0.7152 * ch(g) + 0.0722 * ch(b)
+    }
+    const [hi, lo] = [lum(text), lum(behind)].sort((a, b) => b - a) as [number, number]
+    return (hi + 0.05) / (lo + 0.05)
+  })
 }

@@ -198,7 +198,7 @@ export function Links({
                     disabled={unlink.isPending}
                     onClick={() => unlink.mutate(item)}
                     aria-label={`Unlink ${item.title}`}
-                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-ink-subtle opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-hover hover:text-ink disabled:opacity-50 [@media(hover:none)]:opacity-100"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-subtle opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-hover hover:text-ink disabled:opacity-50 [@media(hover:none)]:opacity-100"
                   >
                     <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3 w-3">
                       <path
@@ -299,7 +299,7 @@ function LinkedRow({
       {label && <span className="shrink-0 text-xs text-ink-subtle">{label}</span>}
     </>
   )
-  const shape = 'flex min-w-0 flex-1 items-baseline gap-2 rounded-lg px-2 py-1.5 text-sm text-ink'
+  const shape = 'flex min-w-0 flex-1 items-baseline gap-2 rounded-md px-2 py-1.5 text-sm text-ink'
   // No module answers for this type: a row that cannot be opened, rather than no row at all. The
   // registry test makes this unreachable; it is here because dropping the row silently would hide
   // a real relationship behind a registration mistake.

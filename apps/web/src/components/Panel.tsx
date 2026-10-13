@@ -11,7 +11,7 @@ import { Link } from 'react-router-dom'
  * - `section`, the default: a part of a page. No box at all -- no fill, edge, radius or shadow.
  *   Its heading is the only thing that says where it starts, which is why every block on a page
  *   no longer looks the same as every other.
- * - `tile`: a card on the Workbench's desk. Paper on the desk, rounded, and still no edge or
+ * - `tile`: a card on the Workbench's desk. Paper on the desk, 10px corners, and still no edge or
  *   shadow -- the step from desk to sheet is the edge.
  */
 export function Panel({

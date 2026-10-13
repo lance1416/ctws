@@ -15,6 +15,7 @@ import {
   HANDLE_PX,
   INDENT_PX,
   NotesMark,
+  OVER_ROW,
   ProjectRail,
   RowMeta,
   RowNote,
@@ -253,10 +254,13 @@ export function TaskRow({
         {/* How late, on the right: the margin says which day it was due. */}
         {hints.due?.late && <RowNote tone="text-missed">{hints.due.late}</RowNote>}
         {/* THE TWO HOVER CONTROLS RESERVE NO WIDTH. Invisible until the row is hovered, over the
-            body rather than in it, so a truncated title's ellipsis is covered rather than jostled
-            when the pointer arrives. `static` again where there is no hover, since there they are
-            shown permanently and must not sit on top of the text. Pinned to the FIRST line. */}
-        <span className="absolute top-0 right-1 flex h-11 shrink-0 items-center bg-hover opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:static [@media(hover:none)]:bg-transparent [@media(hover:none)]:opacity-100">
+            body rather than in it, so a truncated title's end is covered (`OVER_ROW`, opaque) rather
+            than jostled when the pointer arrives. `static` again where there is no hover, since
+            there they are shown permanently and must not sit on top of the text. Pinned to the
+            FIRST line. */}
+        <span
+          className={`absolute top-0 right-1 flex h-11 shrink-0 items-center opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:static [@media(hover:none)]:bg-transparent [@media(hover:none)]:opacity-100 [@media(hover:none)]:shadow-none ${OVER_ROW}`}
+        >
           <StartButton
             status={status}
             title={title}

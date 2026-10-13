@@ -104,7 +104,7 @@ export function PersonFields({
           kind={
             <Link
               to="/people"
-              className="rounded text-sm text-ink-muted hover:text-ink hover:underline"
+              className="rounded-md text-sm text-ink-muted hover:text-ink hover:underline"
             >
               ← People
             </Link>
@@ -526,7 +526,7 @@ function PersonForm({
                 type="button"
                 aria-label={`Remove item ${i + 1}`}
                 onClick={() => setChannels((rows) => rows.filter((_, at) => at !== i))}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-ink-subtle hover:bg-hover hover:text-ink"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-subtle hover:bg-hover hover:text-ink"
               >
                 <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3.5 w-3.5">
                   <path
@@ -548,7 +548,7 @@ function PersonForm({
           onClick={() =>
             setChannels((rows) => [...rows, { kind: 'email', value: '', label: null }])
           }
-          className="mt-1.5 flex h-8 items-center gap-1.5 rounded-lg border border-dashed border-rule-strong px-2.5 text-sm text-ink-muted hover:bg-hover hover:text-ink"
+          className="mt-1.5 flex h-8 items-center gap-1.5 rounded-md border border-dashed border-rule-strong px-2.5 text-sm text-ink-muted hover:bg-hover hover:text-ink"
         >
           <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3 w-3">
             <path
@@ -578,7 +578,7 @@ function PersonForm({
               // 自己的名字：屏幕上写的是 `Not set`，而性别和 circle 空着时也写 `Not set`。
               aria-label={dayText ? `Birthday, ${dayText}` : 'Birthday, not set'}
               onClick={() => setPickingDay(!pickingDay)}
-              className={`-mx-1.5 flex min-w-0 items-center gap-1.5 rounded-lg px-1.5 py-0.5 text-left text-sm hover:bg-hover ${
+              className={`-mx-1.5 flex min-w-0 items-center gap-1.5 rounded-md px-1.5 py-0.5 text-left text-sm hover:bg-hover ${
                 dayText ? 'text-ink' : 'text-ink-subtle'
               }`}
             >

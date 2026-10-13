@@ -114,7 +114,7 @@ export function DangerAction({
           }}
           // The padding is the hover target; the negative margin takes it back out of the layout,
           // so the words line up with the content above them instead of sitting 10px in from it.
-          className="-ml-2.5 h-9 rounded-lg px-2.5 text-sm text-danger hover:bg-danger/10"
+          className="-ml-2.5 h-9 rounded-md px-2.5 text-sm text-danger hover:bg-danger/10"
         >
           {label}
         </button>

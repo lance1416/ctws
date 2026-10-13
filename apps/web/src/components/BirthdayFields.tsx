@@ -129,7 +129,7 @@ export function BirthdayFields({ person }: { person: PersonResponse }) {
           aria-label={b ? `Birthday, ${givenDate(b)}` : 'Birthday, not set'}
           disabled={!b}
           onClick={() => setOpen(!open)}
-          className={`-mx-1.5 flex min-w-0 items-center gap-1.5 rounded-lg px-1.5 py-0.5 text-left text-sm ${
+          className={`-mx-1.5 flex min-w-0 items-center gap-1.5 rounded-md px-1.5 py-0.5 text-left text-sm ${
             b ? 'text-ink hover:bg-hover' : 'text-ink-subtle'
           }`}
         >
@@ -321,7 +321,7 @@ export function BirthdayEditor({
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
         <div
-          className="inline-flex h-9 overflow-hidden rounded-lg border border-rule-strong"
+          className="inline-flex h-9 overflow-hidden rounded-md border border-rule-strong"
           role="group"
           aria-label="Which calendar"
         >

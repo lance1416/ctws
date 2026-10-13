@@ -8,7 +8,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { createPerson, type BirthdayDraft } from '../api/people'
 import { listProjects } from '../api/projects'
-import { refreshList } from '../api/taskCache'
+import { refreshList } from '../api/refresh'
 import { useComposing } from '../composition'
 import { channelPlaceholder } from '../channels'
 import { useProjectRail } from '../projectColor'
@@ -125,7 +125,6 @@ export function NewPersonDialog({
       onClose={onClose}
       initialFocus={nameField}
       dismissLabel={null}
-      className="rounded-lg"
     >
       <form
         onSubmit={(e) => {
@@ -149,7 +148,7 @@ export function NewPersonDialog({
                 submit()
               }
             }}
-            className="w-full rounded-lg bg-transparent py-0.5 text-lg font-semibold text-ink"
+            className="w-full rounded-md bg-transparent py-0.5 text-lg font-semibold text-ink"
           />
         </div>
 
@@ -187,7 +186,7 @@ export function NewPersonDialog({
               <button
                 type="button"
                 onClick={() => setBirthday({ draft: birthdayDraftOf(null), refused: false })}
-                className="h-9 rounded-lg border border-dashed border-rule-strong px-3 text-sm text-ink-muted hover:border-rule-strong hover:text-ink"
+                className="h-9 rounded-md border border-dashed border-rule-strong px-3 text-sm text-ink-muted hover:border-rule-strong hover:text-ink"
               >
                 Add a birthday
               </button>

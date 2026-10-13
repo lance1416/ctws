@@ -116,7 +116,7 @@ export function ReadingRow({
   // the page, and nothing else can be pressed by mistake while it is open.
   if (deleting) {
     return (
-      <li className="min-h-9 rounded-lg py-1">
+      <li className="min-h-9 py-1">
         <DeleteConfirm
           label="Confirm deleting this item"
           message={`Delete “${readingLabel(item)}”? This cannot be undone.`}
@@ -133,7 +133,7 @@ export function ReadingRow({
        一行是一个目标，而行里的地址是另一个。 */
     <li
       onClick={onOpen}
-      className={`group flex min-h-9 items-center gap-2 rounded-lg py-1 pr-1 hover:bg-hover ${
+      className={`group flex min-h-9 items-center gap-2 py-1 pr-1 hover:bg-hover ${
         onOpen ? 'cursor-pointer' : ''
       }`}
     >
@@ -163,7 +163,7 @@ export function ReadingRow({
               }
             }}
             aria-label="Title"
-            className="h-7 w-full rounded-lg border border-rule-strong bg-sheet px-2 text-sm text-ink"
+            className="h-7 w-full rounded-md border border-rule-strong bg-sheet px-2 text-sm text-ink"
           />
         ) : item.url ? (
           /* 标题是去读那篇东西的链接 —— 一张读物清单存在的理由就是点开去读。打开它自己那一层
@@ -187,7 +187,7 @@ export function ReadingRow({
               e.stopPropagation()
               onOpen()
             }}
-            className={`block max-w-full truncate rounded text-left text-sm hover:underline ${
+            className={`block max-w-full truncate rounded-md text-left text-sm hover:underline ${
               finished ? 'text-ink-subtle line-through' : 'text-ink'
             }`}
           >
@@ -220,7 +220,7 @@ export function ReadingRow({
           // OPACITY, never `hidden`: a display:none button is not in the tab order at all, so
           // the one action on this row would be unreachable without a mouse. On a touch screen
           // there is no hover, so it is simply always there -- the same rule the task row keeps.
-          className="h-7 shrink-0 rounded-lg border border-rule px-2 text-xs text-ink opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-hover [@media(hover:none)]:opacity-100"
+          className="h-7 shrink-0 rounded-md border border-rule px-2 text-xs text-ink opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-hover [@media(hover:none)]:opacity-100"
         >
           {next.label}
         </button>
@@ -229,7 +229,7 @@ export function ReadingRow({
       <DropdownMenu.Root>
         <DropdownMenu.Trigger
           aria-label={`More for “${label}”`}
-          className="h-7 w-7 shrink-0 rounded-lg text-ink-subtle hover:bg-hover hover:text-ink"
+          className="h-7 w-7 shrink-0 rounded-md text-ink-subtle hover:bg-hover hover:text-ink"
         >
           <svg aria-hidden="true" viewBox="0 0 16 16" className="mx-auto h-4 w-4">
             <circle cx="3.5" cy="8" r="1.25" fill="currentColor" />

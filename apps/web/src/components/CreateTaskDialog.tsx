@@ -170,7 +170,6 @@ export function CreateTaskDialog({
       // The footer already carries Cancel; a second dismiss in the header would be a third way
       // to leave one small form.
       dismissLabel={null}
-      className="rounded-lg"
     >
       <form
         onSubmit={(e) => {
@@ -221,7 +220,7 @@ export function CreateTaskDialog({
             }}
             aria-label="Title"
             aria-invalid={errors.title ? true : undefined}
-            className="mt-0.5 w-full rounded-lg bg-transparent py-0.5 text-lg font-semibold text-ink"
+            className="mt-0.5 w-full rounded-md bg-transparent py-0.5 text-lg font-semibold text-ink"
           />
         </div>
 

@@ -120,7 +120,7 @@ export function Reading() {
             type="button"
             aria-pressed={showFinished}
             onClick={() => setShowFinished((v) => !v)}
-            className="rounded-lg text-sm text-ink-muted hover:text-ink"
+            className="rounded-md text-sm text-ink-muted hover:text-ink"
           >
             Finished <span className="tabular-nums">{finished.length}</span>
           </button>

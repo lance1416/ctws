@@ -306,11 +306,6 @@ describe('GET /tasks/movement', () => {
   })
 
   /**
-   * The number on the project banner and the rows in the Overdue panel are two different queries
-   * answering one question. This asserts they agree, per project, rather than asserting each
-   * against a constant -- which is the only way a drift between them would ever be noticed.
-   */
-  /**
    * THE NEXT DEADLINE STILL STANDING, as the day it falls on in the user's zone: what a project
    * line says when nothing in it is late yet. Earliest of the open ones; never one already past
    * (that is `overdue`'s), never a finished or deleted one.
@@ -339,6 +334,11 @@ describe('GET /tasks/movement', () => {
     expect(rowFor(await movement(), quiet).nextDueOn).toBeNull()
   })
 
+  /**
+   * The number in the project's head and the rows in Today's Overdue section are two different
+   * queries answering one question. This asserts they agree, per project, rather than asserting
+   * each against a constant -- which is the only way a drift between them would ever be noticed.
+   */
   it('agrees with the overdue segment of today, project by project', async () => {
     const a = await createProject(ctx, 'agree a')
     const b = await createProject(ctx, 'agree b')

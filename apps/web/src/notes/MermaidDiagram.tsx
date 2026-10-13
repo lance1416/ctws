@@ -110,7 +110,7 @@ export default function MermaidDiagram({ source }: { source: string }) {
       {state === 'failed' && (
         <div className="my-3">
           <p className="text-sm text-missed">Couldn't draw the diagram: {failure}</p>
-          <pre className="mt-1 overflow-x-auto rounded-lg bg-desk p-3 text-sm">
+          <pre className="mt-1 overflow-x-auto rounded-md bg-desk p-3 text-sm">
             <code>{source}</code>
           </pre>
         </div>

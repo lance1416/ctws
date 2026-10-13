@@ -37,7 +37,7 @@ export function StatusPicker({
         // is as well as what the control does -- this one button is both.
         aria-label={`Status: ${STATUS_LABEL[status]}`}
         data-status-picker
-        className="-mx-1.5 flex h-8 items-center gap-2 rounded-lg px-1.5 text-sm text-ink hover:bg-hover disabled:opacity-50"
+        className="-mx-1.5 flex h-8 items-center gap-2 rounded-md px-1.5 text-sm text-ink hover:bg-hover disabled:opacity-50"
       >
         <span aria-hidden="true" className="flex">
           <StatusMark status={status} />

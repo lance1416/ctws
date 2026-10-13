@@ -10,7 +10,7 @@ import {
   withUntil,
 } from '../api/meetings'
 import { listProjects } from '../api/projects'
-import { refreshList } from '../api/taskCache'
+import { refreshList } from '../api/refresh'
 import { useComposing } from '../composition'
 import { todayIn } from '../dueAt'
 import { useProjectRail } from '../projectColor'
@@ -102,7 +102,6 @@ export function NewMeetingDialog({
       // The footer carries Cancel; a second dismiss in the header would be a third way out of one
       // small form.
       dismissLabel={null}
-      className="rounded-lg"
     >
       <form
         onSubmit={(e) => {

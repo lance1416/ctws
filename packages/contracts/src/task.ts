@@ -301,6 +301,12 @@ export const calendarEntry = z
      */
     time: z.string().nullable(),
     /**
+     * When it ENDS, on the same clock, for a thing that lasts (a meeting); null for a moment (a
+     * deadline) or a day (a birthday). A meeting that has started is not over: a line that greyed
+     * it at its start would call the meeting you are in a thing of the past.
+     */
+    endTime: z.string().nullable(),
+    /**
      * The zone this thing was agreed in, as people say it (“EDT”), and only when it is NOT the
      * account's. A meeting at 09:00 in Toronto shows on your own clock, which answers when to be
      * there; this is how it still says what was actually agreed.

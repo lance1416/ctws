@@ -178,7 +178,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
      * names no fields for the same reason: a title and notes are a task's fields, and a book has
      * neither.
      */
-    <Modal title="Search" onClose={onClose} initialFocus={box} className="rounded-lg">
+    <Modal title="Search" onClose={onClose} initialFocus={box}>
       <div className="border-b border-rule px-4 py-3">
         {/**
          * THE ARIA 1.2 COMBOBOX CONTRACT. Without these five attributes the selection the keyboard

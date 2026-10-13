@@ -41,7 +41,7 @@ type Project = ReviewResponse['projects'][number]
  */
 function Row({ title, status }: { title: string; status: 'done' | 'in_progress' | 'cancelled' }) {
   return (
-    <li className="flex min-h-8 min-w-0 items-center gap-2 rounded-lg px-2 hover:bg-hover">
+    <li className="flex min-h-8 min-w-0 items-center gap-2 px-2 hover:bg-hover">
       <span className="flex h-5 w-5 shrink-0 items-center justify-center">
         <StatusMark status={status} />
       </span>
@@ -63,9 +63,8 @@ const counted = (p: Project) => p.finished.length + p.started.length + p.dropped
  * log: finished, started, dropped, grouped by line of work. A task finished on Tuesday and
  * reopened on Thursday is in neither place in Done and is in this one, which is the point.
  *
- * THE PAGE ANSWERS ONE QUESTION FIRST: how did the week go. That is three numbers, and the banner
- * carries them the way the project page and the workbench carry theirs; everything under it is
- * the detail behind them.
+ * THE PAGE ANSWERS ONE QUESTION FIRST: how did the week go. That is three numbers, set as a row
+ * of `Stat`s at the top; everything under them is the detail behind them.
  *
  * The window is the server's: it decides the week boundary in the account's zone and reports the
  * bounds it used. The stepper moves by whole weeks from there.
@@ -141,7 +140,7 @@ export function Review() {
               <button
                 type="button"
                 onClick={() => setRange(null)}
-                className="ml-1 h-8 rounded-lg px-2.5 text-sm text-ink-muted hover:bg-hover hover:text-ink"
+                className="ml-1 h-8 rounded-md px-2.5 text-sm text-ink-muted hover:bg-hover hover:text-ink"
               >
                 This week
               </button>
@@ -234,7 +233,7 @@ function Step({
       onClick={onClick}
       disabled={disabled}
       aria-label={label}
-      className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-muted hover:bg-hover hover:text-ink disabled:opacity-30 disabled:hover:bg-transparent"
+      className="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted hover:bg-hover hover:text-ink disabled:opacity-30 disabled:hover:bg-transparent"
     >
       <span aria-hidden="true">{children}</span>
     </button>

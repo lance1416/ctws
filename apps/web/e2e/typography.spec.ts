@@ -321,3 +321,16 @@ test('numeric columns keep tabular figures', async ({ page }) => {
     'tabular-nums',
   )
 })
+
+/**
+ * NO LETTER-SPACING ON HAN. A project's name is the user's own words and often Chinese, so the
+ * page-title tracking the fixed English titles wear is not put on it.
+ */
+test('a project name is set without letter-spacing', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '找工作')
+  await page.goto(`/projects/${pid}`)
+  const h1 = page.getByRole('heading', { level: 1, name: '找工作' })
+  await expect(h1).toBeVisible()
+  expect(await h1.evaluate((el) => getComputedStyle(el).letterSpacing)).toBe('normal')
+})

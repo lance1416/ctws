@@ -35,14 +35,14 @@ export function SelectionBar({
       role="group"
       aria-label="Selected tasks"
       data-selection-bar
-      className="mb-1 ml-3 flex w-[calc(100%-1.5rem)] flex-wrap items-center gap-2 rounded-lg border border-rule-strong bg-sheet px-3 py-2"
+      className="mb-1 ml-3 flex w-[calc(100%-1.5rem)] flex-wrap items-center gap-2 rounded-md border border-rule-strong bg-sheet px-3 py-2"
     >
       <span className="text-sm text-ink">{count} selected</span>
       <button
         type="button"
         onClick={onFinish}
         disabled={busy}
-        className="h-8 rounded-lg border border-rule-strong px-2.5 text-sm text-ink hover:bg-hover disabled:opacity-50"
+        className="h-8 rounded-md border border-rule-strong px-2.5 text-sm text-ink hover:bg-hover disabled:opacity-50"
       >
         Mark done
       </button>
@@ -64,7 +64,7 @@ export function SelectionBar({
       <button
         type="button"
         onClick={onClear}
-        className="ml-auto h-8 rounded-lg px-2 text-sm text-ink-muted hover:bg-hover hover:text-ink"
+        className="ml-auto h-8 rounded-md px-2 text-sm text-ink-muted hover:bg-hover hover:text-ink"
       >
         Clear selection
       </button>

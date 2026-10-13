@@ -1,11 +1,8 @@
 import type { ReactNode } from 'react'
 
 /**
- * ONE NUMBER ON A BANNER: what it is, and how much of it there is.
- *
- * A shell generic piece, beside `Panel` and `EmptyState`, for the same reason those are: the
- * numbers in a project header come from whichever module is reporting them (the task module
- * today), and if each module set its own they would not line up in one banner.
+ * ONE NUMBER IN A ROW OF THEM: what it is, and how much of it there is. Review's week is the one
+ * row there is now (a project's head says its numbers in a sentence instead).
  *
  * NEVER A RATIO. There is no `of` or `total` prop and no bar: rollup is M3 and nothing writes
  * `manual_progress`, so a proportion here would be a number the backend cannot cash. A `Stat` holds

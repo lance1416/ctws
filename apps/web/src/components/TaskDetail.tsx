@@ -47,10 +47,10 @@ import { useForgetRecent, useRecordRecent } from '../recent'
  * The exact field, for the days the three named decisions do not cover. Quieter than them on
  * purpose -- it is the fallback, and a full-width boxed input made the rarer route the loudest
  * thing in the block -- but quieter by SIZE, not by a fainter edge: an input's edge is what says
- * "this is a control", so it keeps `border-strong` (styles.css: border-subtle is decorative only).
+ * "this is a control", so it keeps `rule-strong` (styles.css: `rule` is decorative only).
  */
 const exact =
-  'h-9 w-full max-w-[14rem] rounded-lg border border-rule-strong bg-sheet px-2 text-sm text-ink'
+  'h-9 w-full max-w-[14rem] rounded-md border border-rule-strong bg-sheet px-2 text-sm text-ink'
 
 /**
  * The exact local day and time, said the way the rest of the app says it ("Tomorrow, 14:30"),
@@ -91,7 +91,7 @@ function CloseButton({ onClick }: { onClick: () => void }) {
       onClick={onClick}
       aria-label="Close"
       data-detail-close
-      className="flex h-9 w-9 items-center justify-center rounded-lg text-ink-muted hover:bg-hover hover:text-ink"
+      className="flex h-9 w-9 items-center justify-center rounded-md text-ink-muted hover:bg-hover hover:text-ink"
     >
       <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4">
         <path
@@ -600,14 +600,14 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                   titleField.current = el
                 }}
                 aria-label="Title"
-                className="mt-0.5 w-full rounded-lg bg-transparent py-0.5 text-lg font-semibold text-ink"
+                className="mt-0.5 w-full rounded-md bg-transparent py-0.5 text-lg font-semibold text-ink"
               />
             </div>
 
             {/* Under the buttons that raised them, not at the foot of the form: a Cancel pressed
                 at the top must not ask its question somewhere below a long note. */}
             {guard.asking && (
-              <div role="alert" className="rounded-lg border border-rule-strong p-3 text-sm">
+              <div role="alert" className="rounded-md border border-rule-strong p-3 text-sm">
                 <p className="text-ink">
                   {guard.leaving
                     ? 'You have unsaved changes. Leaving will discard them.'

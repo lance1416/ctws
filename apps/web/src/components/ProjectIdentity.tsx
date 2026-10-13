@@ -96,7 +96,7 @@ export function ProjectIdentity({
             }
           }}
           aria-label="Project name"
-          className="min-w-0 flex-1 rounded-lg border border-rule-strong bg-sheet px-2 py-0.5 text-2xl font-semibold tracking-[-0.02em] text-ink"
+          className="min-w-0 flex-1 rounded-md border border-rule-strong bg-sheet px-2 py-0.5 text-2xl font-semibold text-ink"
         />
       ) : (
         // The TYPE lives on the <h1>, not on the button inside it: the heading is what the type
@@ -106,7 +106,7 @@ export function ProjectIdentity({
         <h1
           id="project-heading"
           tabIndex={-1}
-          className="min-w-0 flex-1 truncate text-2xl font-semibold tracking-[-0.02em] text-ink focus:outline-none"
+          className="min-w-0 flex-1 truncate text-2xl font-semibold text-ink focus:outline-none"
         >
           <button
             type="button"
@@ -114,7 +114,7 @@ export function ProjectIdentity({
               setDraft(name)
               setEditing(true)
             }}
-            className="-mx-1 max-w-full truncate rounded-lg px-1 hover:bg-hover"
+            className="-mx-1 max-w-full truncate rounded-md px-1 hover:bg-hover"
           >
             {name}
           </button>

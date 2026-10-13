@@ -103,7 +103,7 @@ function ReadingFields({ item, onClose }: { item: ReadingItemResponse; onClose: 
         kind={
           <Link
             to="/reading"
-            className="rounded text-sm text-ink-muted hover:text-ink hover:underline"
+            className="rounded-md text-sm text-ink-muted hover:text-ink hover:underline"
           >
             ← Reading
           </Link>

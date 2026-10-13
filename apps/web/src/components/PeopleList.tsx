@@ -61,12 +61,6 @@ export function PeopleList({
                   </span>
                 )}
               </span>
-              {/* The thread says which line of work by colour alone; a screen reader is told. */}
-              {person.projects.length > 0 && (
-                <span className="sr-only">
-                  , on {person.projects.map((p) => p.name).join(', ')}
-                </span>
-              )}
               {person.city && (
                 <span className="max-w-[40%] shrink-0 truncate text-sm text-ink-subtle">
                   {person.city}
@@ -83,11 +77,15 @@ export function PeopleList({
 /**
  * What they do, and for whom: "Engineering manager, Acme". Someone with neither -- a relative, a
  * friend -- is said by their circle instead, which is what they are to you.
+ *
+ * Then the lines of work they are on, BY NAME: the thread carries the first one's colour, and a
+ * project's colour never stands alone (WCAG 1.4.1) -- slots 4 to 6 are under 3:1 on the sheet.
  */
 function metaOf(person: PersonResponse): string {
   const work = [person.title, person.org].filter(Boolean).join(', ')
-  if (work) return work
-  return person.circle ? ONE_OF[person.circle] : ''
+  const who = work || (person.circle ? ONE_OF[person.circle] : '')
+  const on = person.projects.map((p) => p.name).join(', ')
+  return [who, on].filter(Boolean).join(' · ')
 }
 
 /** One person's circle, singular: the filter's labels are plural because they name groups. */

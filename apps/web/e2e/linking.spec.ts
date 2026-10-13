@@ -231,3 +231,20 @@ test('a task linked to a person opens on its own sheet, and Back returns to the 
   await expect(page).toHaveURL(new RegExp(`/people/${person.id}$`))
   await expect(page.getByRole('dialog', { name: 'People' })).toBeVisible()
 })
+
+/**
+ * A link to a task that cannot be followed says WHY: "not here any more" only when the server says
+ * there is no such task, and that it could not be reached when it could not.
+ */
+test('a task link that fails for another reason does not say the task is gone', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const id = '00000000-0000-4000-8000-000000000000'
+  await page.route(`**/api/v1/tasks/${id}`, (r) => r.fulfill({ status: 503, body: '{}' }))
+  await page.goto(`/projects?task=${id}`)
+  await expect(page.getByRole('alert')).toContainText("Couldn't open this task")
+  await page.unroute(`**/api/v1/tasks/${id}`)
+  await page.goto(`/projects?task=${id}`)
+  await expect(page.getByRole('alert')).toContainText('This task is not here any more.')
+})

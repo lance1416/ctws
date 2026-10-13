@@ -233,7 +233,7 @@ function Section({
               <li
                 key={`${m.meetingId}:${m.recurrenceId}`}
                 data-meeting-row={m.meetingId}
-                className="flex min-h-9 min-w-0 items-center gap-2 rounded-lg px-2 hover:bg-hover"
+                className="flex min-h-9 min-w-0 items-center gap-2 px-2 hover:bg-hover"
               >
                 <span
                   aria-hidden="true"
@@ -246,7 +246,7 @@ function Section({
                 <button
                   type="button"
                   onClick={() => onOpen({ meetingId: m.meetingId, recurrenceId: m.recurrenceId })}
-                  className="min-w-0 max-w-full truncate rounded text-left text-sm text-ink hover:underline"
+                  className="min-w-0 max-w-full truncate rounded-md text-left text-sm text-ink hover:underline"
                 >
                   {m.title}
                 </button>

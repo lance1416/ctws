@@ -9,6 +9,7 @@ import { ProjectRail } from '../components/RowParts'
 import { useProjectRail } from '../projectColor'
 import { todayIn } from '../dueAt'
 import { useTimeZone } from '../useMe'
+import { useNow } from '../useNow'
 import type { WorkspaceModule } from './contract'
 
 /**
@@ -129,6 +130,12 @@ function NextMeetingLine() {
 /** The hours the Workbench's line spans: the working day and its evening. */
 const LINE_FROM = 8
 const LINE_TO = 22
+/**
+ * Past this share of the line (in %) the now label sits to the LEFT of its mark. Not measured as a
+ * threshold: it is chosen so a 32px "21:50" plus its 6px gap fits inside a 320px phone's line
+ * (about 245px wide), and the 375px case is pinned by workbench-home.spec.
+ */
+const LABEL_FLIP = 80
 
 /**
  * THE WORKBENCH'S MEETINGS: today as a line, 08:00 to 22:00, with each meeting a block on it and
@@ -138,7 +145,10 @@ const LINE_TO = 22
  */
 function TodayMeetings() {
   const accountZone = useTimeZone()
-  const day = todayIn(accountZone)
+  // Kept current while the Workbench sits open: the now mark, the greyed meetings and which day
+  // is today all follow it (`useNow`).
+  const now = useNow()
+  const day = todayIn(accountZone, now)
   const meetings = useQuery({
     queryKey: meetingsKey({ from: day, to: day }),
     queryFn: () => listMeetings({ from: day, to: day }),
@@ -162,7 +172,6 @@ function TodayMeetings() {
   }
   if (meetings.isSuccess && rows.length === 0) return <PanelEmpty>No meetings today</PanelEmpty>
 
-  const now = new Date()
   const at = (d: Date) => clock.format(d)
   const minutes = (d: Date) => {
     const [h, m] = at(d).split(':').map(Number) as [number, number]
@@ -170,8 +179,24 @@ function TodayMeetings() {
   }
   const pct = (min: number) => ((min - LINE_FROM * 60) / ((LINE_TO - LINE_FROM) * 60)) * 100
   const within = (min: number) => min >= LINE_FROM * 60 && min <= LINE_TO * 60
-  const onLine = rows.filter((m) => within(minutes(new Date(m.startsAt))))
-  const offLine = rows.filter((m) => !within(minutes(new Date(m.startsAt))))
+  /**
+   * A meeting's span in minutes of today. One that ends tomorrow (its end reads earlier than its
+   * start) runs to the end of the day, rather than ending a few minutes after midnight -- which
+   * drew it as a sliver at its start.
+   */
+  const span = (m: (typeof rows)[number]) => {
+    const from = minutes(new Date(m.startsAt))
+    const to = minutes(new Date(m.endsAt))
+    return { from, to: to > from ? to : 24 * 60 }
+  }
+  // ON THE LINE is any meeting that OVERLAPS its hours, not only one that starts inside them: a
+  // run from 07:30 to 09:00 is on the line from 08:00.
+  const overlaps = (m: (typeof rows)[number]) => {
+    const { from, to } = span(m)
+    return from < LINE_TO * 60 && to > LINE_FROM * 60
+  }
+  const onLine = rows.filter(overlaps)
+  const offLine = rows.filter((m) => !overlaps(m))
   const said = (list: typeof rows) =>
     list.map((m) => `${m.title} at ${at(new Date(m.startsAt))}`).join(', ')
   const name = [
@@ -205,12 +230,14 @@ function TodayMeetings() {
           ),
         )}
         {onLine.map((m) => {
-          const from = minutes(new Date(m.startsAt))
-          const to = Math.min(minutes(new Date(m.endsAt)) || LINE_TO * 60, LINE_TO * 60)
+          // Clipped to the line's hours at both ends.
+          const from = Math.max(span(m).from, LINE_FROM * 60)
+          const to = Math.min(span(m).to, LINE_TO * 60)
           const past = new Date(m.endsAt).getTime() <= now.getTime()
           return (
             <span
               key={`${m.meetingId}:${m.recurrenceId}`}
+              data-line-meeting={m.title}
               className={`absolute top-3 h-[18px] bg-select ${past ? 'opacity-55' : ''}`}
               style={{ left: `${pct(from)}%`, width: `${Math.max(pct(to) - pct(from), 1)}%` }}
             >
@@ -226,8 +253,12 @@ function TodayMeetings() {
               className="absolute top-0 bottom-[18px] -ml-px w-0.5 bg-ink"
               style={{ left: `${pct(nowMin)}%` }}
             />
+            {/* The time beside the mark, on whichever side has room: past the last stretch of the
+                evening it goes to the left, or it would push the page sideways on a phone. */}
             <span
-              className="absolute -top-1 ml-1.5 text-xs font-semibold tabular-nums"
+              className={`absolute -top-1 text-xs font-semibold tabular-nums ${
+                pct(nowMin) > LABEL_FLIP ? '-ml-1.5 -translate-x-full' : 'ml-1.5'
+              }`}
               style={{ left: `${pct(nowMin)}%` }}
             >
               {at(now)}
@@ -258,9 +289,12 @@ function TodayMeetings() {
               >
                 {m.title}
               </button>
-              {m.attendees.length > 0 && (
-                <span className="flex shrink-0 items-center truncate pl-3 text-sm text-ink-subtle">
-                  {m.attendees.map((p) => p.name).join(', ')}
+              {/* Its project by name beside the thread's colour (WCAG 1.4.1), then who is in it. */}
+              {(m.projectName || m.attendees.length > 0) && (
+                <span className="flex max-w-[50%] shrink-0 items-center truncate pl-3 text-sm text-ink-subtle">
+                  {[m.projectName, m.attendees.map((p) => p.name).join(', ')]
+                    .filter(Boolean)
+                    .join(' · ')}
                 </span>
               )}
             </li>

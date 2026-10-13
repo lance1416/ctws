@@ -154,6 +154,7 @@ type Entry = {
   to: string
   kind: string
   time: string | null
+  endTime: string | null
 }
 
 async function entries(ctx: TaskCtx, from: string, to: string): Promise<Entry[]> {
@@ -179,6 +180,7 @@ describe('GET /people/calendar', () => {
       title: '王颖 33',
       kind: 'Birthday',
       time: null,
+      endTime: null,
     })
     expect(王颖?.to).toMatch(/^\/people\/[0-9a-f-]{36}$/)
     // 农历追的人落在他自己的那天，不是公历的 10-10。

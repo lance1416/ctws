@@ -85,11 +85,11 @@ export type WorkspaceModule = {
    */
   widgets?: readonly Widget[]
   /**
-   * This module's numbers in the project banner.
+   * This module's numbers under a project's name, said as a sentence ("6 open, 1 overdue, 63%
+   * done. Last moved today.").
    *
    * A component rather than a list of numbers: the numbers come from the module's own query and
-   * the shell must not know which endpoint that is. The shell owns the banner and the pieces the
-   * numbers are set in (`Stat`), so two modules' numbers sit in one banner.
+   * the shell must not know which endpoint that is. The shell owns the head they sit in.
    */
   ProjectHeadline?: ComponentType<{ projectId: string }>
   /**

@@ -55,7 +55,6 @@ export function AddLink({
       onClose={onClose}
       initialFocus={box}
       dismissLabel={null}
-      className="rounded-lg"
     >
       {chosen === null ? (
         <div className="flex flex-col">
@@ -115,7 +114,7 @@ export function AddLink({
                 type="button"
                 disabled={make.isPending}
                 onClick={() => make.mutate(k.kind)}
-                className="h-9 rounded-lg border border-rule px-3 text-sm text-ink hover:border-rule-strong hover:bg-hover disabled:opacity-50"
+                className="h-9 rounded-md border border-rule px-3 text-sm text-ink hover:border-rule-strong hover:bg-hover disabled:opacity-50"
               >
                 {/* The phrase read along the edge, which is the one this object's page will
                     show. `belongs` says nothing out loud, so it is named here instead. */}

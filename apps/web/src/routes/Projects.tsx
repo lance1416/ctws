@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { ApiError } from '../api'
 import { getTask } from '../api/tasks'
 import { refreshProjects } from '../api/taskCache'
 import { createProject, listProjects } from '../api/projects'
@@ -68,9 +69,13 @@ export function Projects() {
         aria-label="New project"
         className={`mt-5 w-full max-w-[40ch] bg-sheet ${textbox}`}
       />
+      {/* Gone is what the server SAYS (404); anything else is a failure to ask, and saying the
+          task is gone then would send someone looking for a task that is still there. */}
       {linkedTask && found.isError && (
         <p role="alert" className="mt-4 text-sm text-ink-muted">
-          This task is not here any more.
+          {found.error instanceof ApiError && found.error.status === 404
+            ? 'This task is not here any more.'
+            : "Couldn't open this task. Check that the server is running."}
         </p>
       )}
       {projects.isError && (
@@ -100,7 +105,7 @@ export function Projects() {
           >
             <Link
               to={`/projects/${p.id}`}
-              className="-mx-2 flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-2 hover:bg-hover"
+              className="-mx-2 flex min-w-0 flex-1 items-center gap-3 px-2 py-2 hover:bg-hover"
             >
               {/* The identity rail, same meaning and same width as in the left column and (from
                   stage 2) on every task row. Never alone: the name is right beside it. */}

@@ -73,7 +73,7 @@ function Column({
       ref={setNodeRef}
       aria-label={STATUS_LABEL[status]}
       data-board-column={status}
-      className={`flex min-w-0 flex-col rounded-xl p-2 ${isOver ? 'bg-hover' : 'bg-desk'}`}
+      className={`flex min-w-0 flex-col rounded-[10px] p-2 ${isOver ? 'bg-hover' : 'bg-desk'}`}
     >
       <h3 className="flex items-baseline gap-2 px-1 pb-1.5 text-sm font-semibold text-ink-muted">
         {STATUS_LABEL[status]}

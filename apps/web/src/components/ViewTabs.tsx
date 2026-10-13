@@ -23,7 +23,7 @@ export function ViewTabs({
           role="tab"
           aria-selected={v.id === current}
           onClick={() => onPick(v.id)}
-          className={`h-8 rounded-lg px-2.5 text-sm ${
+          className={`h-8 rounded-md px-2.5 text-sm ${
             v.id === current ? 'bg-select text-ink' : 'text-ink-muted hover:bg-hover hover:text-ink'
           }`}
         >

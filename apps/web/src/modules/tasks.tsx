@@ -129,7 +129,14 @@ function TodayGlance() {
                 <span className="flex shrink-0 items-center">
                   <StatusMark status={t.status} />
                 </span>
-                <span className="flex min-w-0 items-center truncate text-ink">{t.title}</span>
+                <span className="flex min-w-0 items-baseline gap-2 self-center">
+                  <span className="truncate text-ink">{t.title}</span>
+                  {/* The thread is the project's colour; its name is here, so the colour is
+                      never the only thing saying which line of work this is (WCAG 1.4.1). */}
+                  <span className="max-w-[40%] shrink-0 truncate text-sm text-ink-subtle">
+                    {t.projectName}
+                  </span>
+                </span>
               </Link>
             </li>
           ))}
@@ -326,7 +333,7 @@ function NewTaskAction({ projectId }: { projectId: string }) {
       <button
         type="button"
         onClick={() => setCreating(true)}
-        className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-2 text-sm text-ink-muted hover:bg-hover hover:text-ink"
+        className="flex h-8 shrink-0 items-center gap-1.5 rounded-md px-2 text-sm text-ink-muted hover:bg-hover hover:text-ink"
       >
         New…
         <kbd

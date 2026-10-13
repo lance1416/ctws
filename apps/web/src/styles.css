@@ -464,6 +464,19 @@ kbd,
   font-variant-numeric: tabular-nums;
 }
 
+/* TERTIARY TEXT ON A SELECTED SURFACE READS ONE STEP UP. A selection is a state that stays, so its
+   text is held to 4.5:1 like any other -- and `ink-subtle` clears that on every plane but not on
+   the `select` layer over it. Measured (WCAG 2.1, the layer composited on its plane): ink-subtle
+   light 4.41 sheet / 4.08 chrome / 4.41 float, dark 3.69 / 3.97 / 3.33; ink-muted light 6.30 /
+   5.84 / 6.30, dark 5.50 / 5.90 / 4.95. One rule for every selected thing -- the current page in
+   the rail, the open person, a picked filter, selected rows -- so a new one is covered by saying
+   it is selected, which it has to say for a screen reader anyway. */
+[aria-current='page'] .text-ink-subtle,
+[aria-pressed='true'] .text-ink-subtle,
+[aria-selected='true'] .text-ink-subtle {
+  color: var(--color-ink-muted);
+}
+
 /* A key is a letter in the app's own face, in its box. The browser's monospace default reads as
    code, and these are the same letters the rail and the search name. */
 kbd {

@@ -2,7 +2,7 @@ import type { PersonResponse } from '@ctws/contracts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { createPerson } from '../api/people'
-import { refreshList } from '../api/taskCache'
+import { refreshList } from '../api/refresh'
 import { useComposing } from '../composition'
 import { textbox } from './formStyles'
 
