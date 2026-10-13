@@ -6,10 +6,12 @@ import { projects } from '../../shell/projects/tables'
 import { tasks } from './tables'
 import { appendEvent } from './events'
 import { ProjectNotFoundError } from '../../shell/projects/errors'
-import { visibleProjects } from '../../shell/projects/store'
+import { visibleProjects } from '../../shell/projects/queries'
 import { DepthLimitError, InvalidNeighbourError, MoveCycleError } from './errors'
+import { lockVisibleTask } from './queries/scope'
+import type { Task } from './tables'
 import { lockTaskTree, MAX_DEPTH } from './tree'
-import { clearLeafProgress, depthOf, lockVisibleTask, type Task, type TaskCtx } from './tasks'
+import { clearLeafProgress, depthOf, type TaskCtx } from './tasks'
 
 type Descendant = { id: string; depth: number; live: boolean }
 

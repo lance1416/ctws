@@ -12,6 +12,7 @@ import type { Queryable } from '../../platform/db/client'
 import { projects } from './tables'
 import type { ProjectColumns } from '../module'
 import { InboxProtectedError, ProjectNotFoundError } from './errors'
+import { visibleProjects } from './queries'
 
 /** The quick-capture destination. One per workspace; see schema.ts and the 0003 migration. */
 export const INBOX_NAME = 'Inbox'
@@ -20,19 +21,6 @@ export type Project = typeof projects.$inferSelect
 
 /** A project as the list returns it: the row and the columns modules add to it. */
 export type ProjectListRow = { project: Project; columns: Record<string, number> }
-
-/**
- * THE TENANT CHOKEPOINT. Every query that reads or writes a project goes through this predicate,
- * so scoping and soft-delete filtering cannot be forgotten on one path. `workspaceId` is a
- * required parameter of every exported function here.
- *
- * It is exported because `tasks` reaches its workspace through a join to `projects` (spec 10.5:
- * `tasks` carries no workspace id of its own), so the task module needs this predicate too and
- * borrows the shell's one copy. A module does not define its own idea of what it may see.
- */
-export function visibleProjects(workspaceId: string) {
-  return and(eq(projects.workspaceId, workspaceId), isNull(projects.deletedAt))
-}
 
 /**
  * Lists a workspace's projects ordered inbox-first, then `(rank, id)`. By default archived projects are hidden;

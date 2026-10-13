@@ -1,29 +1,10 @@
 import { rollup, type Rollup, type RollupNode, type RollupStatus } from '@ctws/core'
 import { sql } from 'drizzle-orm'
-import type { Queryable } from '../../platform/db/client'
-import { dayStart } from '../../platform/db/time'
+import type { Queryable } from '../../../platform/db/client'
+import { dayStart } from '../../../platform/db/time'
+import { taskVisibleSql } from './scope'
 
-/**
- * THE NUMBERS BEHIND “Movement”, for one project's whole tree.
- *
- * The split: this file asks the database for a flat list and nothing else, and `@ctws/core`'s
- * `rollup` folds it. The recursive mean is awkward in SQL and a dozen testable lines in TypeScript.
- *
- * What SQL DOES decide here is the two time-dependent flags, because deciding them anywhere else
- * would be a second notion of "what day is it". Every day boundary in this app is `at time zone
- * users.timezone`, and the overdue cut is the SAME expression `listToday` and `listMovement` use
- * -- if the three disagreed, the project banner, the Overdue panel and Today would report
- * different numbers for the same task.
- *
- * SCOPING, AND WHO SAYS 404. The query is tenant-scoped in its own `where` (`p.workspace_id`), so
- * another workspace's project yields no rows and nothing leaks. It does NOT distinguish "no such
- * project" from "a project with no tasks", and deliberately does not try: the route calls
- * `listProjectTasks` first, that function owns the visibility check, and a second copy of it here
- * was unreachable -- a mutation test proved it by breaking it and watching every test still pass.
- * A future caller that uses this alone has to establish visibility the same way.
- */
-
-/** One row as the fold wants it, plus the task's own id for keying. */
+/** One task as `rollup` folds it. */
 type Row = {
   id: string
   parent_id: string | null
@@ -34,6 +15,10 @@ type Row = {
   last_activity_at: string | null
 }
 
+/**
+ * Each task's rollup across one project's tree. SQL decides the two day-dependent flags with the
+ * same day boundaries Today uses; `rollup` does the fold. The caller checks the project first.
+ */
 export async function projectRollups(
   q: Queryable,
   workspaceId: string,
@@ -64,20 +49,16 @@ export async function projectRollups(
         and t.due_at >= b.t0
         and t.due_at < b.soon_end
       ) as due_soon,
-      -- Fixed-width UTC, the same shape the events endpoint emits: the fold takes a plain string
-      -- maximum, which is the chronological maximum only while every value has this one shape.
+      -- Fixed-width UTC: the fold takes the string maximum.
       to_char(e.last_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as last_activity_at
     from tasks t
     join projects p on p.id = t.project_id
     join bounds b on true
-    -- Indexed by (task_id, occurred_at desc), so each max is a single index probe.
     left join lateral (
       select max(ev.occurred_at) as last_at from task_events ev where ev.task_id = t.id
     ) e on true
     where p.id = ${projectId}
-      and p.workspace_id = ${workspaceId}
-      and p.deleted_at is null
-      and t.deleted_at is null
+      and ${taskVisibleSql('t', 'p', workspaceId)}
   `)
 
   const rows = result.rows as Row[]

@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { SEARCH_LIMIT } from '@ctws/contracts'
-import { likePattern } from '../src/platform/db/sql'
+import { likePattern, textMatches } from '../src/platform/db/sql'
 import { appWithUser, createProject, createTask, type TaskCtx } from './helpers/tasks'
 
 const cleanups: (() => Promise<void>)[] = []
@@ -54,6 +54,14 @@ describe('likePattern', () => {
     expect(likePattern('a_b')).toBe('%a!_b%')
     expect(likePattern('a!b')).toBe('%a!!b%')
     expect(likePattern('plain')).toBe('%plain%')
+  })
+})
+
+describe('textMatches', () => {
+  it('refuses a column that is not a plain or table-qualified identifier', () => {
+    expect(() => textMatches(['t.title'], 'x')).not.toThrow()
+    expect(() => textMatches(['title; drop table tasks'], 'x')).toThrow('not an identifier')
+    expect(() => textMatches(['t.Title'], 'x')).toThrow('not an identifier')
   })
 })
 

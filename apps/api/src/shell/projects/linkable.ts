@@ -2,7 +2,7 @@ import { and, asc, inArray } from 'drizzle-orm'
 import { textMatches } from '../../platform/db/sql'
 import { projects } from './tables'
 import type { Linkable } from '../links/linkable'
-import { visibleProjects } from './store'
+import { visibleProjects } from './queries'
 
 /**
  * PROJECTS names itself. It is the SHELL's, not a module's -- which is the whole point of this

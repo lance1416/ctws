@@ -1,4 +1,4 @@
-import { TASK_STATUSES } from '@ctws/contracts'
+import { TASK_STATUSES, type TaskEventType, type TaskStatus } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import {
   type AnyPgColumn,
@@ -28,7 +28,7 @@ export const tasks = pgTable(
     parentId: uuid('parent_id').references((): AnyPgColumn => tasks.id, { onDelete: 'cascade' }),
     title: text('title').notNull(),
     notes: text('notes'),
-    status: text('status').notNull(),
+    status: text('status').$type<TaskStatus>().notNull(),
     // A calendar day, not an instant.
     scheduledOn: date('scheduled_on'),
     dueAt: timestamp('due_at', { withTimezone: true }),
@@ -85,7 +85,7 @@ export const taskEvents = pgTable(
     actorUserId: uuid('actor_user_id')
       .notNull()
       .references(() => users.id),
-    type: text('type').notNull(),
+    type: text('type').$type<TaskEventType>().notNull(),
     payload: jsonb('payload').notNull(),
     source: text('source').notNull().default('user'),
     occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull(),
@@ -96,3 +96,5 @@ export const taskEvents = pgTable(
     check('task_events_source_check', sql`${t.source} in ('user')`),
   ],
 )
+
+export type Task = typeof tasks.$inferSelect

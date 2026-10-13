@@ -1,11 +1,8 @@
-import { TASK_EVENTS_PAGE, type TaskEventResponse, type TaskEventType } from '@ctws/contracts'
-import { and, eq, isNull, sql } from 'drizzle-orm'
+import type { TaskEventType } from '@ctws/contracts'
+import { sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import type { Queryable } from '../../platform/db/client'
-import { projects } from '../../shell/projects/tables'
-import { taskEvents, tasks } from './tables'
-import { visibleProjects } from '../../shell/projects/store'
-import { InvalidCursorError, TaskNotFoundError } from './errors'
+import { taskEvents } from './tables'
 
 const COALESCE_WINDOW_MS = 5 * 60 * 1000
 
@@ -82,91 +79,4 @@ async function coalesce(q: Queryable, e: AppendEventInput): Promise<boolean> {
     returning id
   `)
   return result.rows.length > 0
-}
-
-// Postgres timestamps carry microseconds but a JS Date only milliseconds, so the cursor holds the
-// timestamp as text straight from the database. Round-tripping through Date would truncate it and
-// make the row comparison skip or repeat rows that differ only below the millisecond.
-const CURSOR_TS = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/
-const CURSOR_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
-
-function encodeCursor(ts: string, id: string): string {
-  return Buffer.from(`${ts}|${id}`, 'utf8').toString('base64url')
-}
-
-function decodeCursor(cursor: string): { ts: string; id: string } {
-  // Buffer.from is lenient about stray characters, so re-encode and compare to reject anything
-  // that is not exactly what encodeCursor would have produced.
-  const decoded = Buffer.from(cursor, 'base64url')
-  if (decoded.toString('base64url') !== cursor) throw new InvalidCursorError()
-  const [ts, id, ...rest] = decoded.toString('utf8').split('|')
-  if (rest.length > 0 || !ts || !id || !CURSOR_TS.test(ts) || !CURSOR_ID.test(id)) {
-    throw new InvalidCursorError()
-  }
-  return { ts, id }
-}
-
-/**
- * A task's history, newest first, one page at a time.
- *
- * Per-task history deliberately follows task visibility: a soft-deleted task, or one in another
- * workspace, is a 404 here like on every other read path. History is not lost -- the
- * workspace-wide event scan (M3) is where a deleted task's events stay reachable.
- *
- * Paging is keyset, not offset, because events keep arriving. The cursor is the last row's
- * (occurred_at, id) and the next page is a ROW comparison against it. Comparing occurred_at alone
- * would drop or repeat rows whenever two events share a timestamp; id is the tiebreaker.
- * limit + 1 rows are fetched so "is there more" is known rather than guessed: guessing from
- * rows.length === limit hands out a cursor to an empty page when the count is an exact multiple.
- */
-export async function listTaskEvents(
-  q: Queryable,
-  workspaceId: string,
-  taskId: string,
-  opts: { cursor?: string | undefined; limit?: number } = {},
-): Promise<{ events: TaskEventResponse[]; nextCursor: string | null }> {
-  const limit = opts.limit ?? TASK_EVENTS_PAGE.default
-  const after = opts.cursor === undefined ? null : decodeCursor(opts.cursor)
-
-  // Same predicate as lockVisibleTask (scoped through projects), without the row lock.
-  const [visible] = await q
-    .select({ id: tasks.id })
-    .from(tasks)
-    .innerJoin(projects, eq(projects.id, tasks.projectId))
-    .where(and(eq(tasks.id, taskId), isNull(tasks.deletedAt), visibleProjects(workspaceId)))
-  if (!visible) throw new TaskNotFoundError()
-
-  const result = await q.execute(sql`
-    select id, task_id, actor_user_id, type, payload, source,
-           to_char(occurred_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as ts
-    from task_events
-    where task_id = ${taskId}
-      ${after ? sql`and (occurred_at, id) < (${after.ts}::timestamptz, ${after.id}::uuid)` : sql``}
-    order by occurred_at desc, id desc
-    limit ${limit + 1}
-  `)
-  const rows = result.rows as {
-    id: string
-    task_id: string
-    actor_user_id: string
-    type: TaskEventType
-    payload: Record<string, unknown>
-    source: string
-    ts: string
-  }[]
-
-  const page = rows.slice(0, limit)
-  const last = page[page.length - 1]
-  return {
-    events: page.map((r) => ({
-      id: r.id,
-      taskId: r.task_id,
-      actorUserId: r.actor_user_id,
-      type: r.type,
-      payload: r.payload,
-      source: r.source,
-      occurredAt: new Date(r.ts).toISOString(),
-    })),
-    nextCursor: rows.length > limit && last ? encodeCursor(last.ts, last.id) : null,
-  }
 }

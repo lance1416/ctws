@@ -1,18 +1,17 @@
 import type { CreateTaskBody, UpdateTaskBody } from '@ctws/contracts'
 import { rankBetween } from '@ctws/core'
-import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm'
+import { and, desc, eq, isNull, sql } from 'drizzle-orm'
 import type { PgUpdateSetSource } from 'drizzle-orm/pg-core'
 import { v7 as uuidv7 } from 'uuid'
 import type { Db, Queryable } from '../../platform/db/client'
 import { projects } from '../../shell/projects/tables'
-import { tasks } from './tables'
+import { lockVisibleTask } from './queries/scope'
+import { tasks, type Task } from './tables'
 import { appendEvent, type AppendEventInput } from './events'
-import { DepthLimitError, ManualProgressOnParentError, TaskNotFoundError } from './errors'
+import { DepthLimitError, ManualProgressOnParentError } from './errors'
 import { lockTaskTree, MAX_DEPTH } from './tree'
 import { ProjectNotFoundError } from '../../shell/projects/errors'
-import { visibleProjects } from '../../shell/projects/store'
-
-export type Task = typeof tasks.$inferSelect
+import { visibleProjects } from '../../shell/projects/queries'
 
 /** Who is acting, and in which workspace. Every service function takes it, never a bare id. */
 export type TaskCtx = { workspaceId: string; actorUserId: string }
@@ -33,50 +32,6 @@ export async function depthOf(q: Queryable, taskId: string): Promise<number> {
     select count(*)::int as depth from ancestors
   `)
   return (result.rows[0] as { depth: number }).depth
-}
-
-/**
- * Loads a live task in the caller's workspace and locks it for the rest of the transaction.
- * The workspace is reached through one join to `projects` (spec 10.5: `tasks` carries no
- * `workspace_id` of its own), and a task in a deleted project is as invisible as a deleted task.
- *
- * Exported so `move` scopes identically rather than carrying a second copy of this predicate.
- */
-export async function lockVisibleTask(
-  q: Queryable,
-  workspaceId: string,
-  id: string,
-): Promise<Task> {
-  const [row] = await q
-    .select({ task: tasks })
-    .from(tasks)
-    .innerJoin(projects, eq(projects.id, tasks.projectId))
-    .where(
-      and(
-        eq(tasks.id, id),
-        isNull(tasks.deletedAt),
-        // The shell's tenant chokepoint, not a copy of it: a task is in this workspace exactly
-        // when the project it hangs on is.
-        visibleProjects(workspaceId),
-      ),
-    )
-    .for('update', { of: tasks })
-  if (!row) throw new TaskNotFoundError()
-  return row.task
-}
-
-/**
- * The same task, the same predicate, READ rather than locked: for a link that knows a task's id and
- * has to ask where it lives. Deleted, in a deleted project or in another workspace, it is not found.
- */
-export async function visibleTask(q: Queryable, workspaceId: string, id: string): Promise<Task> {
-  const [row] = await q
-    .select({ task: tasks })
-    .from(tasks)
-    .innerJoin(projects, eq(projects.id, tasks.projectId))
-    .where(and(eq(tasks.id, id), isNull(tasks.deletedAt), visibleProjects(workspaceId)))
-  if (!row) throw new TaskNotFoundError()
-  return row.task
 }
 
 /** Numeric columns come back as strings; normalise so comparisons and payloads use numbers. */
@@ -324,26 +279,4 @@ export async function softDeleteTask(db: Db, ctx: TaskCtx, id: string): Promise<
       })
     }
   })
-}
-
-/**
- * Every live task of a project as a flat list in sibling order; the client assembles the tree
- * (spec 8.1). Deliberately not recursive: `project_id` is denormalized onto each task (spec 5.1)
- * so this is one indexed scan. Ordered `(rank, id)` because ranks can collide (spec 5.3).
- */
-export async function listProjectTasks(
-  q: Queryable,
-  workspaceId: string,
-  projectId: string,
-): Promise<Task[]> {
-  const [project] = await q
-    .select({ id: projects.id })
-    .from(projects)
-    .where(and(eq(projects.id, projectId), visibleProjects(workspaceId)))
-  if (!project) throw new ProjectNotFoundError()
-  return q
-    .select()
-    .from(tasks)
-    .where(and(eq(tasks.projectId, projectId), isNull(tasks.deletedAt)))
-    .orderBy(asc(tasks.rank), asc(tasks.id))
 }

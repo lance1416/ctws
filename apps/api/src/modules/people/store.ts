@@ -14,7 +14,7 @@ import { personChannels, people } from './tables'
 import { projects } from '../../shell/projects/tables'
 import { filedUnder, projectsLinkedFrom, putLinks, unfiled } from '../../shell/links/store'
 import { ProjectNotFoundError } from '../../shell/projects/errors'
-import { visibleProjects } from '../../shell/projects/store'
+import { visibleProjects } from '../../shell/projects/queries'
 import { PersonNotFoundError } from './errors'
 
 /**

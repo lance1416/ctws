@@ -1,7 +1,8 @@
 import { and, eq, sql } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
 import { taskDependencies } from './tables'
-import { DependencyCycleError, TaskNotFoundError } from './errors'
+import { DependencyCycleError } from './errors'
+import { visibleTask } from './queries/scope'
 import { appendEvent } from './events'
 import type { TaskCtx } from './tasks'
 
@@ -13,44 +14,6 @@ import type { TaskCtx } from './tasks'
  * never disagree. Everything below is about keeping the EDGES honest -- the derived half is a
  * read, and it lives in the list queries.
  */
-
-/** Enough of a task to name it on the other task's row, across projects. */
-export type DependencyRef = {
-  id: string
-  title: string
-  projectId: string
-  projectName: string
-  done: boolean
-}
-
-type RefRow = {
-  id: string
-  title: string
-  project_id: string
-  project_name: string
-  done: boolean
-}
-
-const toRef = (r: RefRow): DependencyRef => ({
-  id: r.id,
-  title: r.title,
-  projectId: r.project_id,
-  projectName: r.project_name,
-  done: r.done,
-})
-
-/** The visible task, or null. Visibility is the same predicate every other read here uses. */
-async function visibleTask(q: Queryable, workspaceId: string, id: string): Promise<boolean> {
-  const rows = await q.execute(sql`
-    select 1 from tasks t
-    join projects p on p.id = t.project_id
-    where t.id = ${id}
-      and t.deleted_at is null
-      and p.workspace_id = ${workspaceId}
-      and p.deleted_at is null
-  `)
-  return rows.rows.length > 0
-}
 
 /**
  * Would `blocker -> blocked` close a loop?
@@ -98,8 +61,8 @@ export async function addDependency(
   if (blockedId === blockerId) throw new DependencyCycleError()
   // Both ends are checked, and both against THIS workspace: an id from somewhere else must read
   // as "no such task", never as a refusal that confirms it exists.
-  if (!(await visibleTask(q, ctx.workspaceId, blockedId))) throw new TaskNotFoundError()
-  if (!(await visibleTask(q, ctx.workspaceId, blockerId))) throw new TaskNotFoundError()
+  await visibleTask(q, ctx.workspaceId, blockedId)
+  await visibleTask(q, ctx.workspaceId, blockerId)
   if (await wouldCycle(q, ctx.workspaceId, blockerId, blockedId)) throw new DependencyCycleError()
 
   await q
@@ -140,75 +103,4 @@ export async function removeDependency(
     type: 'dependency_removed',
     payload: { blockerId },
   })
-}
-
-/**
- * Both directions for one task, FINISHED BLOCKERS INCLUDED.
- *
- * The pane shows the whole arrangement, not only what is still in the way: a blocker that is
- * already finished is a fact about this task worth seeing, and it is the only way to find the
- * edge in order to remove it.
- */
-export async function taskDependencyLists(
-  q: Queryable,
-  workspaceId: string,
-  taskId: string,
-): Promise<{ blockedBy: DependencyRef[]; blocks: DependencyRef[] }> {
-  const query = (column: 'blocker_id' | 'blocked_id', match: 'blocked_id' | 'blocker_id') => sql`
-    select
-      t.id, t.title, p.id as project_id, p.name as project_name,
-      (t.status in ('done', 'cancelled')) as done
-    from task_dependencies d
-    join tasks t on t.id = ${sql.raw(`d.${column}`)}
-    join projects p on p.id = t.project_id
-    where ${sql.raw(`d.${match}`)} = ${taskId}
-      and d.workspace_id = ${workspaceId}
-      and t.deleted_at is null
-      and p.deleted_at is null
-    order by p.rank, t.rank, t.id
-  `
-  const [up, down] = await Promise.all([
-    q.execute(query('blocker_id', 'blocked_id')),
-    q.execute(query('blocked_id', 'blocker_id')),
-  ])
-  return {
-    blockedBy: (up.rows as RefRow[]).map(toRef),
-    blocks: (down.rows as RefRow[]).map(toRef),
-  }
-}
-
-/**
- * WHAT IS STILL IN THE WAY, for a set of tasks at once -- the half the LISTS need.
- *
- * Only unfinished blockers: a row is drawn blocked or it is not, and a blocker that is done is
- * not blocking anything. Keyed by the waiting task's id; a task with nothing in its way is
- * absent rather than present-and-empty, so the caller's `?? []` is the only shape it needs.
- */
-export async function blockersFor(
-  q: Queryable,
-  workspaceId: string,
-  taskIds: readonly string[],
-): Promise<Map<string, DependencyRef[]>> {
-  const out = new Map<string, DependencyRef[]>()
-  if (taskIds.length === 0) return out
-  const rows = await q.execute(sql`
-    select
-      d.blocked_id,
-      t.id, t.title, p.id as project_id, p.name as project_name, false as done
-    from task_dependencies d
-    join tasks t on t.id = d.blocker_id
-    join projects p on p.id = t.project_id
-    where d.workspace_id = ${workspaceId}
-      and d.blocked_id in ${taskIds}
-      and t.deleted_at is null
-      and p.deleted_at is null
-      and t.status not in ('done', 'cancelled')
-    order by p.rank, t.rank, t.id
-  `)
-  for (const row of rows.rows as (RefRow & { blocked_id: string })[]) {
-    const list = out.get(row.blocked_id)
-    if (list) list.push(toRef(row))
-    else out.set(row.blocked_id, [toRef(row)])
-  }
-  return out
 }
