@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { createProject, listProjects } from '../projects/api'
 import { refreshProjects } from '../../modules/tasks/api/taskCache'
-import { kinds, pinnedPages } from '../registry'
+import { useRegistry } from '../registry'
 import { railClass } from '../projects/projectColor'
 import { useComposing } from '../../platform/keyboard/composition'
 
@@ -32,11 +32,14 @@ export function SideRail() {
   const navigate = useNavigate()
   const composing = useComposing()
   const { pathname } = useLocation()
-  const pinned = pinnedPages()
+  const registry = useRegistry()
+  const pinned = registry.pinned
   const within = (to: string) => pathname === to || pathname.startsWith(`${to}/`)
   const inThings =
     within('/things') ||
-    kinds().some((k) => k.moduleId !== '' && !pinned.some((p) => p.to === k.to) && within(k.to))
+    registry.kinds.some(
+      (k) => k.moduleId !== null && !pinned.some((p) => p.to === k.to) && within(k.to),
+    )
   const [naming, setNaming] = useState(false)
   const [name, setName] = useState('')
   const field = useRef<HTMLInputElement>(null)

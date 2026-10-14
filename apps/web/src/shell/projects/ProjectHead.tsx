@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { updateProject, useEveryProject } from './api'
 import { refreshProjects } from '../../modules/tasks/api/taskCache'
-import { projectHeadlines } from '../registry'
+import { useRegistry } from '../registry'
 import { BUTTON } from '../../platform/ui/buttonStyles'
 import { ProjectIdentity } from './ProjectIdentity'
 
@@ -15,6 +15,7 @@ import { ProjectIdentity } from './ProjectIdentity'
  * banner no second module could ever appear in.
  */
 export function ProjectHead({ id }: { id: string }) {
+  const registry = useRegistry()
   // Live or archived: an archived project's page is its page, marked as set aside.
   const projects = useEveryProject()
   const project = projects.data?.find((p) => p.id === id)
@@ -35,7 +36,7 @@ export function ProjectHead({ id }: { id: string }) {
           </p>
         )}
         {/* Each module's numbers, said as a sentence under the name. */}
-        {projectHeadlines().map(({ moduleId, Component }) => (
+        {registry.projectHeadlines.map(({ moduleId, Component }) => (
           <Component key={moduleId} projectId={id} />
         ))}
       </div>

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
-import { kinds, pinnedPages, WORKBENCH_PATH } from '../registry'
+import { useRegistry, WORKBENCH_PATH } from '../registry'
 
 /**
  * THE PHONE'S NAVIGATION: five tabs where the rail does not fit.
@@ -14,12 +14,13 @@ import { kinds, pinnedPages, WORKBENCH_PATH } from '../registry'
  * `display: none` below 1024 and this is above it.
  */
 export function BottomBar({ onSearch }: { onSearch: () => void }) {
-  const pinned = new Map(pinnedPages().map((p) => [p.key, p]))
+  const registry = useRegistry()
+  const pinned = new Map(registry.pinned.map((p) => [p.key, p]))
   const today = pinned.get('tasks:today')
   const TodayCount = today?.Count
   const calendar = pinned.get('shell:calendar')
   // The shell's own kind, always there and always first.
-  const projects = kinds()[0]!
+  const projects = registry.kinds[0]!
   const tab =
     'flex min-w-0 flex-col items-center justify-center gap-0.5 text-xs leading-4 text-ink-muted'
   const link = ({ isActive }: { isActive: boolean }) =>

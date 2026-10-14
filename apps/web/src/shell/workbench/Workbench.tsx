@@ -8,7 +8,7 @@ import { movedLine } from '../../modules/tasks/movement'
 import { ProjectRail } from '../rows/RowParts'
 import { useTimeZone } from '../auth/useMe'
 import { Panel, PanelEmpty } from '../../platform/ui/Panel'
-import { moduleWidgets } from '../registry'
+import { useRegistry } from '../registry'
 import { useCrumbs } from '../layout/Location'
 import { useGround } from '../layout/ground'
 
@@ -28,7 +28,7 @@ export function Workbench() {
   // The one page that is a desk: its cards are tiles of paper on it.
   useGround('desk')
   const heading = useRef<HTMLHeadingElement>(null)
-  const widgets = moduleWidgets()
+  const widgets = useRegistry().widgets
 
   return (
     <div className="mx-auto w-full max-w-[73.75rem]">

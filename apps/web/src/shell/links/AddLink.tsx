@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { candidatesKey, createLink, linkCandidates, type Endpoint } from './api'
 import { useComposing } from '../../platform/keyboard/composition'
-import { relationFor } from '../registry'
+import { useRegistry } from '../registry'
 import { Modal } from '../../platform/ui/Modal'
 import { BUTTON } from '../../platform/ui/buttonStyles'
 
@@ -26,6 +26,7 @@ export function AddLink({
   onClose: () => void
 }) {
   const qc = useQueryClient()
+  const registry = useRegistry()
   const box = useRef<HTMLInputElement>(null)
   const composing = useComposing()
   const [typed, setTyped] = useState('')
@@ -95,7 +96,7 @@ export function AddLink({
                   {/* WHICH KIND OF THING it is, because one list holds four of them and two
                       titles can read the same. */}
                   <span className="shrink-0 text-xs text-ink-subtle">
-                    {relationFor(c.type)?.kind}
+                    {registry.relationFor(c.type)?.kind}
                   </span>
                 </button>
               </li>

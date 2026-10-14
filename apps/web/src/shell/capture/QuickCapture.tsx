@@ -3,7 +3,7 @@ import { KeyHint } from '../../platform/ui/KeyHint'
 import { useMutation } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { CAPTURE_MODULE_ID, captureContributions } from '../registry'
+import { useRegistry } from '../registry'
 import type { CaptureTarget } from '../contract'
 import { useShortcutsEnabled } from '../../platform/keyboard/enabled'
 import { isBareKey, isTypingTarget } from '../../platform/keyboard/keys'
@@ -35,17 +35,15 @@ export function QuickCapture() {
   useEffect(() => setLanded(null), [pathname])
   const input = useRef<HTMLInputElement>(null)
 
-  // ONE HOOK PER REGISTERED MODULE, in the registry's frozen order -- which is why the registry
-  // says out loud that the list never changes at runtime.
-  const contributions = captureContributions()
-  const states = contributions.map(({ moduleId, capture }) => ({
+  // One hook per module that captures; the registry's list is fixed, so the hook order is too.
+  const registry = useRegistry()
+  const states = registry.captures.map(({ moduleId, capture }) => ({
     moduleId,
     accepts: capture.accepts,
     // eslint-disable-next-line react-hooks/rules-of-hooks -- fixed-length, fixed-order list
     ...capture.useTarget(),
   }))
-  const fallback = states.find((s) => s.moduleId === CAPTURE_MODULE_ID)
-  if (!fallback) throw new Error(`capture module "${CAPTURE_MODULE_ID}" is not registered`)
+  const fallback = states.find((s) => s.moduleId === registry.captureModuleId)!
   const { missing, unavailable } = fallback
 
   /** The first module that claims the line and can actually take it; otherwise the default. */

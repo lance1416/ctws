@@ -514,7 +514,7 @@ test('Done and the search results carry the same rail', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '归档测试')
   await makeTask(page, pid, '做完的事', { status: 'done' })
-  await page.goto('/completed')
+  await page.goto('/tasks/completed')
   await expect(page.getByText('做完的事')).toBeVisible()
   await expect(page.locator('[data-project-rail]').first()).toHaveAttribute(
     'data-project-rail',
@@ -564,7 +564,7 @@ test('the status marker is the heaviest mark on the row, and still hue-free', as
 
   // A finished one recedes. (On Done, where every row is settled.)
   await makeTask(page, pid, '收工', { status: 'done' })
-  await page.goto('/completed')
+  await page.goto('/tasks/completed')
   await expect(page.getByText('收工')).toBeVisible()
   expect(await colourOf(mark('Done'))).not.toBe(bodyColour)
   expect(await mark('Done').evaluate((el) => el.getBoundingClientRect().width)).toBe(20)

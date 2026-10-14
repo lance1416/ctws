@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { allChords, kinds } from '../registry'
+import { useRegistry } from '../registry'
 import { useCrumbs } from '../layout/Location'
 import { KeyHint } from '../../platform/ui/KeyHint'
 import { MARGIN } from '../rows/RowLead'
@@ -18,12 +18,13 @@ import { BODY_GUTTER, ProjectRail } from '../rows/RowParts'
  */
 export function Things() {
   useCrumbs([{ label: 'Things' }])
-  const keys = new Map(allChords().map((c) => [c.id, c.key]))
+  const registry = useRegistry()
+  const keys = new Map(registry.chords.map((c) => [c.id, c.key]))
   return (
     <>
       <h1 className="ml-15 text-2xl font-semibold tracking-[-0.02em] sm:ml-18">Things</h1>
       <ul className="mt-7 flex max-w-[48rem] flex-col">
-        {kinds().map(({ label, to, Count, Status, chord }) => {
+        {registry.kinds.map(({ label, to, Count, Status, chord }) => {
           const key = chord ? keys.get(chord) : undefined
           return (
             <li key={label} data-kind={label} className="flex min-h-19 min-w-0">

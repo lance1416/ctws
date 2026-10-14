@@ -146,7 +146,7 @@ test('nothing scrolls sideways at 375px', async ({ page }) => {
     ['Today', '/'],
     ['项目列表', '/projects'],
     ['Projects', `/projects/${pid}`],
-    ['Done', '/completed'],
+    ['Done', '/tasks/completed'],
   ] as const) {
     await page.goto(url)
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()

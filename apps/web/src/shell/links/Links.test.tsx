@@ -3,6 +3,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
+import { registry } from '../../app/registry'
+import { RegistryProvider } from '../registry'
 import { linksKey } from './api'
 import { Links } from './Links'
 
@@ -56,9 +58,11 @@ function render(of: { type: 'person'; id: string }, data?: LinksResponse['groups
   if (data) client.setQueryData(linksKey(of), data)
   return renderToStaticMarkup(
     <QueryClientProvider client={client}>
-      <MemoryRouter>
-        <Links of={of} />
-      </MemoryRouter>
+      <RegistryProvider value={registry}>
+        <MemoryRouter>
+          <Links of={of} />
+        </MemoryRouter>
+      </RegistryProvider>
     </QueryClientProvider>,
   )
 }

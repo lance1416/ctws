@@ -1,7 +1,7 @@
 import { KeyHint } from '../../platform/ui/KeyHint'
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { allChords, kinds, pinnedPages, searchProviders } from '../registry'
+import { useRegistry, type Registry } from '../registry'
 import { federate, type ProviderResult } from './federate'
 import { recentList } from './recent'
 import { useMe } from '../auth/useMe'
@@ -34,12 +34,12 @@ const GROUP_LABEL: Partial<Record<Row['group'], string>> = { recent: 'Recent', p
  * one of the two ways to a kind's page that skip Things -- the other being its `g` key, which is
  * shown here so it is learned by being seen.
  */
-function places(): Row[] {
-  const keys = new Map(allChords().map((c) => [c.id, c.key]))
+function places(registry: Registry): Row[] {
+  const keys = new Map(registry.chords.map((c) => [c.id, c.key]))
   const all = [
-    ...pinnedPages().map((p) => ({ label: p.label, to: p.to, chord: p.chord })),
+    ...registry.pinned.map((p) => ({ label: p.label, to: p.to, chord: p.chord })),
     { label: 'Things', to: '/things', chord: undefined },
-    ...kinds().map((k) => ({ label: k.label, to: k.to, chord: k.chord })),
+    ...registry.kinds.map((k) => ({ label: k.label, to: k.to, chord: k.chord })),
   ]
   return all.map(({ label, to, chord }) => {
     const key = chord ? keys.get(chord) : undefined
@@ -98,9 +98,9 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
     return () => clearTimeout(timer)
   }, [query])
 
-  // One hook per provider, over the frozen module list: see MODULES on why that list must not
-  // change at runtime.
-  const parts: ProviderResult[] = searchProviders().map((p) => ({
+  // One hook per provider; the registry's list is fixed, so the hook order is too.
+  const registry = useRegistry()
+  const parts: ProviderResult[] = registry.search.map((p) => ({
     moduleId: p.moduleId,
     moduleLabel: p.moduleLabel,
     ...p.useHits(debounced),
@@ -109,7 +109,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
   // Read once when the dialog opens: the list must not reshuffle under the reader.
   const userId = useMe().data?.id
   const [recent] = useState(() => (userId ? recentList(userId) : []))
-  const everywhere = useMemo(places, [])
+  const everywhere = useMemo(() => places(registry), [registry])
   // PLACES FOLLOW THE TYPING AT ONCE; only the modules' hits wait for the debounce. Otherwise an
   // Enter pressed before the debounce fires chooses from the list as it was before the typing.
   const typing = query.trim()

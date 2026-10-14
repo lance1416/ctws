@@ -3,10 +3,7 @@ import { registerFreshUser } from './helpers'
 
 /**
  * The module seam, through the real app: the task module's pages live under its own namespace, the
- * paths they used to live at still work, and a path nobody registered still lands somewhere.
- *
- * None of this could pass against the pre-seam app, where `/tasks/today` was a 404 page and `/`
- * was the today page rather than a redirect to it.
+ * workspace root is the shell's own page, and a path nobody registered still lands somewhere.
  */
 test('the module pages answer under the module namespace', async ({ page }) => {
   await registerFreshUser(page)
@@ -57,16 +54,9 @@ test('the rail holds the pinned pages, one Things entry and the projects', async
   await expect(rail.getByText('Views', { exact: true })).toHaveCount(0)
 })
 
-test('the paths from before the move still land on the same page', async ({ page }) => {
+test('the workspace root is the workbench', async ({ page }) => {
   await registerFreshUser(page)
 
-  // A bookmark, or a tab that was open when the container restarted.
-  await page.goto('/completed')
-  await expect(page).toHaveURL(/\/tasks\/completed$/)
-  await expect(page.getByRole('heading', { level: 1, name: 'Done' })).toBeVisible()
-
-  // The workspace root IS a page of its own now -- the workbench. It used to redirect into a
-  // module because the shell had nothing to show; with two modules it has their glances.
   await page.goto('/')
   await expect(page).toHaveURL(/\/$/)
   await expect(page.getByRole('heading', { level: 1, name: 'Workbench' })).toBeVisible()

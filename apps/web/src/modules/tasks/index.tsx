@@ -25,6 +25,7 @@ import { useTimeZone } from '../../shell/auth/useMe'
 import type { CaptureTargetState, SearchHit, WorkspaceModule } from '../../shell/contract'
 import { useComposing } from '../../platform/keyboard/composition'
 import { textbox } from '../../platform/ui/formStyles'
+import { TASKS_ID } from './id'
 
 /**
  * THE TASK MODULE.
@@ -33,7 +34,7 @@ import { textbox } from '../../platform/ui/formStyles'
  * scheduled, in progress). A cross-module "today" is a separate idea and is not borrowed against
  * here. The shell only offers the SLOT.
  */
-const ID = 'tasks'
+const ID = TASKS_ID
 const at = (page: string) => `/${ID}/${page}`
 
 /** The rail's count for Today. Shares the ['today'] cache entry with the page that owns it. */

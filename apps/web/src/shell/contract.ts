@@ -113,27 +113,6 @@ export type RelationContribution = {
   kind: string
   /** Where one of these lives. */
   to: (id: string) => string
-  /**
-   * THE OBJECT'S OWN FIELDS, at the head of its page.
-   *
-   * The page is the shell's — a project, a person and a meeting are read the same way — but what
-   * a person IS is the people module's to say. The shell draws the frame and what the object is
-   * connected to; this fills the top.
-   *
-   * A type with no `Head` has no page of its own, and the shell routes to its module's list.
-   */
-  Head?: ComponentType<{ id: string }>
-  /**
-   * HOW ONE OF THESE IS DESTROYED, for the shell's `DangerZone` at the foot of the page.
-   *
-   * The shell decides WHERE a destructive action goes, because "last, under a rule, in red" has
-   * to be the same answer for every kind of thing or the reader has to learn it twice. What it
-   * cannot know is what destroying one MEANS -- a project takes its tasks, a repeating meeting
-   * asks which occurrences -- so the module draws the control and the shell draws the frame.
-   *
-   * Absent for a type with nothing to destroy from a page of its own.
-   */
-  Destroy?: ComponentType<{ id: string }>
 }
 
 /** A module's half of the calendar. One provider per module; the shell merges them. */

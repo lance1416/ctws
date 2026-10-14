@@ -2,7 +2,7 @@ import { KeyHint } from '../../platform/ui/KeyHint'
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { resolveChord } from '../registry'
+import { useRegistry } from '../registry'
 import { CHORD_TIMEOUT_MS, JUMP_PREFIX } from './chords'
 import { useShortcutsEnabled } from '../../platform/keyboard/enabled'
 import { isBareKey, isTypingTarget } from '../../platform/keyboard/keys'
@@ -44,6 +44,7 @@ export function Shortcuts({
   const enabled = useShortcutsEnabled()
   const navigate = useNavigate()
   const qc = useQueryClient()
+  const registry = useRegistry()
   // A pending `g`, and the timer that forgets it. Without the timeout a stray `g` would turn the
   // next `t` typed anywhere outside a field into a navigation.
   const pending = useRef(false)
@@ -63,7 +64,7 @@ export function Shortcuts({
       }
       if (pending.current) {
         forget()
-        const chord = resolveChord(e.key)
+        const chord = registry.chordFor(e.key)
         if (chord) {
           // The key is consumed whether or not the destination can be resolved yet: a chord that
           // fell through to the page's own `t` handler would be worse than one that did nothing.
@@ -94,7 +95,7 @@ export function Shortcuts({
     }
     // Deliberately NOT re-run on every render: a re-render between `g` and its second key would
     // run the cleanup and forget the pending chord.
-  }, [enabled, navigate, qc])
+  }, [enabled, navigate, qc, registry])
 
   return (
     <>

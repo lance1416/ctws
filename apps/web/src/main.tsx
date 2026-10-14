@@ -1,90 +1,16 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import {
-  createBrowserRouter,
-  generatePath,
-  Navigate,
-  RouterProvider,
-  useLocation,
-  useParams,
-} from 'react-router-dom'
-import { Layout } from './shell/layout/Layout'
-import { moduleRoutes, WORKBENCH_PATH } from './shell/registry'
-import { Login } from './shell/auth/Login'
-import { Calendar } from './shell/calendar/Calendar'
-import { ObjectPage } from './shell/projects/ObjectPage'
-import { Projects } from './shell/projects/Projects'
-import { Things } from './shell/workbench/Things'
-import { Workbench } from './shell/workbench/Workbench'
-// IBM Plex Sans, self-hosted and LATIN SUBSET ONLY: no Google Fonts link, because this app is
-// private and self-hosted and has no business making a third-party request on every load. THREE
-// weights, ~24 KB of woff2 each: the scale's 400 and 600, and 500 -- the display date at the head
-// of Today, and the few words set between body and heading (the open person's name, the
-// Workbench's counts). Without the face a 500 silently renders as 400.
-// Chinese is served by a self-hosted subset of Noto Sans SC, declared as @font-face in styles.css
-// (not imported here, because it needs a `unicode-range` that keeps it off Latin).
+import { RouterProvider } from 'react-router-dom'
+import { Providers } from './app/providers'
+import { router } from './app/router'
+// IBM Plex Sans, self-hosted, Latin only, in the three weights the type scale uses. The Chinese
+// face is declared in styles.css, where it can carry a unicode-range.
 import '@fontsource/ibm-plex-sans/latin-400.css'
 import '@fontsource/ibm-plex-sans/latin-500.css'
 import '@fontsource/ibm-plex-sans/latin-600.css'
 import './styles/styles.css'
 
-/**
- * The paths the app answered on before its pages moved into module namespaces. This app is
- * deployed and the user has it open: a bookmark, or a tab that was sitting on /completed when the
- * container restarted, must not meet a blank page because the code was reorganised. Redirect, do
- * not break.
- *
- * COMPATIBILITY, not contract: deletable once nothing points at them. A `:param` in `from` is
- * carried into `to`, so an address that named one thing still names it.
- */
-const MOVED: { from: string; to: string }[] = [
-  { from: '/completed', to: '/tasks/completed' },
-  // People had an older name; these are its addresses.
-  { from: '/contacts', to: '/people' },
-  { from: '/contacts/birthdays', to: '/people/birthdays' },
-  { from: '/contacts/:id', to: '/people/:id' },
-]
-
-function Moved({ to }: { to: string }) {
-  const params = useParams()
-  const { search } = useLocation()
-  return <Navigate to={generatePath(to, params) + search} replace />
-}
-
-const router = createBrowserRouter([
-  { path: '/login', element: <Login /> },
-  {
-    // The catch-all lives under Layout too, so an unknown path redirects like any other
-    // unauthenticated visit (and falls back to the home destination once signed in).
-    element: <Layout />,
-    children: [
-      // The shell's own front page: every module's glance, side by side. Not a redirect into a
-      // module, which would make the front page depend on registration order.
-      { index: true, element: <Workbench /> },
-      // The shell's own pages stay at the top level; a MODULE's pages live under /<module>/.
-      // A SHELL page, like /projects: the calendar is about every module at once, so it is not
-      // under any module's namespace.
-      { path: '/calendar', element: <Calendar /> },
-      { path: '/projects', element: <Projects /> },
-      { path: '/projects/:id', element: <ObjectPage type="project" /> },
-      // Every kind of thing, one row each: the shell's, because it is about all the kinds at once.
-      { path: '/things', element: <Things /> },
-      ...moduleRoutes(),
-      ...MOVED.map(({ from, to }) => ({ path: from, element: <Moved to={to} /> })),
-      { path: '*', element: <Navigate to={WORKBENCH_PATH} replace /> },
-    ],
-  },
-])
-
-// One retry covers a genuine blip; the default three (with backoff) hide a down server behind a
-// spinner for about seven seconds, which is the wrong trade for a self-hosted personal app.
-const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1 } } })
-
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
-  </StrictMode>,
+  <Providers>
+    <RouterProvider router={router} />
+  </Providers>,
 )

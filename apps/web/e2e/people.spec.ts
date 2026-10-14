@@ -972,23 +972,6 @@ test('老号码打开编辑就补上国家码', async ({ page }) => {
   await expect(pane.getByRole('button', { name: 'Save' })).toBeEnabled()
 })
 
-test('an old /contacts address still lands on that person', async ({ page }) => {
-  // A bookmark made under the old name must not meet a blank page. The address moves; the
-  // person it named is still the one that opens.
-  await registerFreshUser(page, '/people')
-  const res = await add(page, { name: '旧书签' })
-  const { id } = (await res.json()) as { id: string }
-
-  await page.goto(`/contacts/${id}`)
-  await expect(page).toHaveURL(new RegExp(`/people/${id}$`))
-  await expect(page.getByRole('dialog').getByRole('heading', { name: '旧书签' })).toBeVisible()
-
-  await page.goto('/contacts/birthdays')
-  await expect(page).toHaveURL(/\/people\/birthdays$/)
-  await page.goto('/contacts')
-  await expect(page).toHaveURL(/\/people$/)
-})
-
 /** On a phone the margin is 60px: a birthday's date stays inside it, and so the page's edge. */
 test('a birthday fits the phone margin', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 })

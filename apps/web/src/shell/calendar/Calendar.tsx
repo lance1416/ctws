@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 import { calendarDays } from '../../modules/people/api/birthdays'
 import { useEveryProject } from '../projects/api'
 import { todayIn } from '../../platform/time/dueAt'
-import { calendarProviders } from '../registry'
+import { useRegistry } from '../registry'
 import { monthRange, monthSquares, monthTitle, shiftMonth, WEEKDAYS } from './monthGrid'
 import { useProjectRail } from '../projects/projectColor'
 import { useTimeZone } from '../auth/useMe'
@@ -48,7 +48,7 @@ export function Calendar() {
   const rail = useProjectRail()
   const projects = useEveryProject()
 
-  const providers = calendarProviders()
+  const providers = useRegistry().calendar
   const range = monthRange(cursor)
   /**
    * WHAT EACH DAY IS CALLED IN THE OLD CALENDAR. One request per month, from the shell's own

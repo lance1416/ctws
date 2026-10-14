@@ -1,4 +1,4 @@
-import { allChords } from '../registry'
+import { useRegistry, type Registry } from '../registry'
 import { setShortcutsEnabled, useShortcutsEnabled } from '../../platform/keyboard/enabled'
 import { JUMP_PREFIX } from './chords'
 import { Modal } from '../../platform/ui/Modal'
@@ -10,7 +10,7 @@ import { Modal } from '../../platform/ui/Modal'
  * Grouped by where the key works, because `s` on a task row and `g p` anywhere are not the same
  * kind of thing and a flat list of eleven rows reads as noise.
  */
-const GROUPS: { title: string; keys: [string, string][] }[] = [
+const groups = (registry: Registry): { title: string; keys: [string, string][] }[] => [
   {
     title: 'Anywhere',
     keys: [
@@ -19,7 +19,7 @@ const GROUPS: { title: string; keys: [string, string][] }[] = [
       ['?', 'This list of shortcuts'],
       // The jump chords come from the key table, so a module that adds one cannot add it
       // without the help overlay saying so -- an undiscoverable key is no key at all.
-      ...allChords().map((c): [string, string] => [`${JUMP_PREFIX} ${c.key}`, c.label]),
+      ...registry.chords.map((c): [string, string] => [`${JUMP_PREFIX} ${c.key}`, c.label]),
       ['Esc', 'Close the pane or overlay'],
     ],
   },
@@ -57,13 +57,14 @@ const GROUPS: { title: string; keys: [string, string][] }[] = [
 
 export function ShortcutHelp({ onClose }: { onClose: () => void }) {
   const enabled = useShortcutsEnabled()
+  const registry = useRegistry()
 
   return (
     // Radix owns Escape, the press outside, the focus trap and the focus restoration; this file
     // only says what is in the layer.
     <Modal title="Keyboard shortcuts" onClose={onClose}>
       <div className="px-5 py-4">
-        {GROUPS.map((group) => (
+        {groups(registry).map((group) => (
           <section key={group.title} className="mt-4 first:mt-0">
             <h3 className="text-sm font-semibold text-ink-muted">{group.title}</h3>
             <dl className="mt-1">

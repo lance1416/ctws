@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { deleteLink, linksKey, listLinks, type Endpoint } from './api'
-import { relationFor } from '../registry'
+import { useRegistry } from '../registry'
 import { AddLink } from './AddLink'
 import { PanelEmpty } from '../../platform/ui/Panel'
 import { BUTTON } from '../../platform/ui/buttonStyles'
@@ -42,6 +42,7 @@ export function Links({
   className?: string
 }) {
   const qc = useQueryClient()
+  const registry = useRegistry()
   // Which kind the picker is for: any kind from "+ Link", one kind from a block's own `+`.
   const [adding, setAdding] = useState<ObjectType | 'any' | null>(null)
   const links = useQuery({ queryKey: linksKey(of), queryFn: () => listLinks(of) })
@@ -94,7 +95,7 @@ export function Links({
     return (
       <div className={`flex flex-col gap-8 ${className}`}>
         {groups.map((group) => {
-          const kind = relationFor(group.type)?.kind.toLowerCase() ?? 'thing'
+          const kind = registry.relationFor(group.type)?.kind.toLowerCase() ?? 'thing'
           return (
             <section key={group.type} aria-label={group.label} className="min-w-0">
               <div className="mb-1 flex items-center gap-2">
@@ -273,7 +274,7 @@ function LinkedRow({
   /** Title over its detail, as the rows of a kind's block are: a block is narrow. */
   stacked?: boolean
 }) {
-  const where = relationFor(type)
+  const where = useRegistry().relationFor(type)
   if (stacked) {
     const body = (
       <>

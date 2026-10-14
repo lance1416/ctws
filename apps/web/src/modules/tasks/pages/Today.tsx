@@ -25,7 +25,8 @@ import { RowLead } from '../../../shell/rows/RowLead'
 import { leadFor } from '../../../shell/rows/leads'
 import { StartButton, StatusButton, statusForKey } from '../components/StatusControls'
 import { StatusMark } from '../components/StatusMark'
-import { calendarProviders } from '../../../shell/registry'
+import { useRegistry } from '../../../shell/registry'
+import { TASKS_ID } from '../id'
 import { TaskDetail } from '../components/TaskDetail'
 import { TriageControl } from '../components/TriageControl'
 import { dateHints, todayIn } from '../../../platform/time/dueAt'
@@ -78,10 +79,9 @@ export function Today() {
     hour12: false,
     timeZone: timezone,
   })
-  // THE OTHER MODULES' DATED THINGS FOR TODAY. One hook per provider, over the registry's frozen
-  // list -- which is why the registry says the list never changes at runtime.
-  const entries = calendarProviders()
-    .filter((p) => p.moduleId !== 'tasks')
+  // The other modules' dated things for today: one hook per provider, over the registry's fixed list.
+  const entries = useRegistry()
+    .calendar.filter((p) => p.moduleId !== TASKS_ID)
     .flatMap((p) =>
       p.useEntries({ from: localToday, to: localToday }).entries.map((e) => ({
         ...e,
