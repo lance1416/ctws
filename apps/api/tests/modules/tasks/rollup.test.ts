@@ -1,4 +1,4 @@
-import type { RollupResponse } from '@ctws/contracts'
+import { DAY_MS, type RollupResponse } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { BOARD_TX, listProjectTasks } from '../../../src/modules/tasks/queries/list'
@@ -18,10 +18,12 @@ afterEach(async () => {
   for (const stop of cleanups.splice(0)) await stop()
 })
 
-async function setup(timezone?: string): Promise<Harness> {
-  const ctx = await appWithUser()
+async function setup(timezone?: string, now?: Date): Promise<Harness> {
+  const ctx = await appWithUser(undefined, {
+    ...(timezone ? { timezone } : {}),
+    ...(now ? { clock: () => now } : {}),
+  })
   cleanups.push(ctx.stop)
-  if (timezone) await ctx.db.execute(sql`update users set timezone = ${timezone}`)
   return ctx
 }
 
@@ -175,14 +177,12 @@ describe('the two deadline flags, decided in the account timezone', () => {
   // UTC+14. Noon UTC is already the next calendar day here, which is what makes the two windows
   // below differ from the ones a server reading its own clock would build.
   const TZ = 'Pacific/Kiritimati'
-  const dayOffset = (days: number) => {
-    const d = new Date()
-    d.setUTCDate(d.getUTCDate() + days)
-    return d.toISOString()
-  }
+  // 02:00 on 2026-10-13 in Kiritimati, still the 12th in UTC.
+  const NOW = new Date('2026-10-12T12:00:00Z')
+  const dayOffset = (days: number) => new Date(NOW.getTime() + days * DAY_MS).toISOString()
 
   it('counts a past deadline as overdue and not as due soon', async () => {
-    const ctx = await setup(TZ)
+    const ctx = await setup(TZ, NOW)
     const pid = await createProject(ctx, 'P')
     const root = await createTask(ctx, pid, '根')
     const late = await createTask(ctx, pid, '逾期的', root)
@@ -194,7 +194,7 @@ describe('the two deadline flags, decided in the account timezone', () => {
   })
 
   it('counts tomorrow as due soon and the day after as neither', async () => {
-    const ctx = await setup(TZ)
+    const ctx = await setup(TZ, NOW)
     const pid = await createProject(ctx, 'P')
     const root = await createTask(ctx, pid, '根')
     const soon = await createTask(ctx, pid, '快到期', root)
@@ -209,7 +209,7 @@ describe('the two deadline flags, decided in the account timezone', () => {
   })
 
   it('stops counting a passed deadline once the task is finished', async () => {
-    const ctx = await setup(TZ)
+    const ctx = await setup(TZ, NOW)
     const pid = await createProject(ctx, 'P')
     const done = await createTask(ctx, pid, '做完了但逾期')
     await setDue(ctx, done, dayOffset(-3))
@@ -223,7 +223,7 @@ describe('the two deadline flags, decided in the account timezone', () => {
   it('stops counting a COMING deadline once the task is finished', async () => {
     // The same guard, on the other flag: the due-soon branch needs its own case, or it can lose
     // the status check while the overdue case above stays green.
-    const ctx = await setup(TZ)
+    const ctx = await setup(TZ, NOW)
     const pid = await createProject(ctx, 'P')
     const done = await createTask(ctx, pid, '提前做完了')
     await setDue(ctx, done, dayOffset(1))
@@ -237,17 +237,12 @@ describe('the two deadline flags, decided in the account timezone', () => {
     // THE CUT IS THE START OF TODAY, not `now()`. A deadline at 09:00 that it is now 14:00 past
     // has not "gone" in the sense this app means -- the day it was due is the day in progress,
     // and the Overdue panel would otherwise fill up with things the person is still working on.
-    const ctx = await setup(TZ)
+    const ctx = await setup(TZ, NOW)
     const pid = await createProject(ctx, 'P')
     const id = await createTask(ctx, pid, '今天早些时候到期')
 
-    // Strictly between the start of the account's day and now, whenever this runs.
-    const now = Date.now()
-    const local = new Date(new Date().toLocaleString('en-US', { timeZone: TZ }))
-    const sinceDayStart =
-      local.getHours() * 3600_000 + local.getMinutes() * 60_000 + local.getSeconds() * 1000
-    const midday = new Date(now - sinceDayStart / 2)
-    await setDue(ctx, id, midday.toISOString())
+    // 01:00 local: after the start of the account's day, an hour before now.
+    await setDue(ctx, id, new Date(NOW.getTime() - 3_600_000).toISOString())
 
     expect((await rollups(ctx, pid))[id]).toMatchObject({ overdue: 0, dueSoon: 1 })
   })
@@ -255,7 +250,7 @@ describe('the two deadline flags, decided in the account timezone', () => {
   it('agrees with the today view about which tasks are overdue', async () => {
     // The project banner and the Overdue panel must not disagree about the same task, which is why
     // both cut at the start of today in the account's zone rather than at `now()`.
-    const ctx = await setup(TZ)
+    const ctx = await setup(TZ, NOW)
     const pid = await createProject(ctx, 'P')
     const late = await createTask(ctx, pid, '逾期的')
     await setDue(ctx, late, dayOffset(-3))
