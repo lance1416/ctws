@@ -1,5 +1,5 @@
 import { kindsBetween, type LinkCandidate, type LinkKind, type ObjectType } from '@ctws/contracts'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { candidatesKey, createLink, linkCandidates, type Endpoint } from './api'
 import { useComposing } from '../../platform/keyboard/composition'
@@ -25,7 +25,6 @@ export function AddLink({
   only?: ObjectType | undefined
   onClose: () => void
 }) {
-  const qc = useQueryClient()
   const registry = useRegistry()
   const box = useRef<HTMLInputElement>(null)
   const composing = useComposing()
@@ -40,10 +39,8 @@ export function AddLink({
   const make = useMutation({
     mutationFn: (kind: LinkKind) =>
       createLink({ from: of, to: { type: chosen!.type, id: chosen!.id }, kind }),
-    onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ['links'] })
-      onClose()
-    },
+    meta: { awaits: [['links']] },
+    onSuccess: onClose,
   })
 
   const offered = (candidates.data ?? []).filter((c) => !only || c.type === only)

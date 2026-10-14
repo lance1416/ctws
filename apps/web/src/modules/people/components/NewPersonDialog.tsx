@@ -4,11 +4,10 @@ import {
   type ChannelKind,
   type PersonResponse,
 } from '@ctws/contracts'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { createPerson, type BirthdayDraft } from '../api/people'
 import { listProjects } from '../../../shell/projects/api'
-import { refreshList } from '../../../platform/http/refresh'
 import { useComposing } from '../../../platform/keyboard/composition'
 import { channelPlaceholder } from '../channels'
 import { useProjectRail } from '../../../shell/projects/projectColor'
@@ -36,7 +35,6 @@ export function NewPersonDialog({
   onClose: () => void
   onMade: (made: PersonResponse) => void
 }) {
-  const qc = useQueryClient()
   const nameField = useRef<HTMLInputElement>(null)
   const composing = useComposing()
   const rail = useProjectRail()
@@ -88,10 +86,8 @@ export function NewPersonDialog({
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
   const make = useMutation({
     mutationFn: createPerson,
-    onSuccess: async (made) => {
-      await refreshList(qc, ['people'])
-      onMade(made)
-    },
+    meta: { awaits: [['people']] },
+    onSuccess: (made) => onMade(made),
   })
 
   // 服务端已经说这个日子不存在了，Create 按下去只会 400，而这个对话框不画那条错误。

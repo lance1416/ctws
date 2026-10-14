@@ -192,6 +192,37 @@ test('Enter commits and reopens the input, so tasks can be added in a row', asyn
   expect([parents.first, parents.second]).toEqual(['B', 'B'])
 })
 
+test('five tasks typed one after another all land, in order', async ({ page }) => {
+  // The next title is typed the moment the last row shows: an input that stayed busy for longer
+  // than its own list takes to refetch would swallow it. Every other read is slowed down, as it
+  // is under load, so waiting on any of them shows.
+  await seed(page)
+  await page.route('**/api/v1/**', async (route) => {
+    const request = route.request()
+    const ownList = /\/api\/v1\/tasks\?projectId=/.test(request.url())
+    if (request.method() === 'GET' && !ownList) await new Promise((r) => setTimeout(r, 800))
+    await route.continue()
+  })
+  await handle(page, 'B').focus()
+  await page.keyboard.press('Alt+Enter')
+  const titles = ['one', 'two', 'three', 'four', 'five']
+  for (const title of titles) {
+    const created = createdOk(page)
+    await page.keyboard.type(title)
+    await page.keyboard.press('Enter')
+    await created
+    await expect(row(page, title)).toBeVisible()
+  }
+  for (const title of titles) await expect(row(page, title)).toBeVisible()
+  expect(await shape(page)).toEqual([
+    '1:A',
+    '2:a1',
+    '2:a2',
+    '1:B',
+    ...titles.map((t) => `2:${t}`),
+  ])
+})
+
 /*
   The box is empty again only when its create is answered: an empty box says "type the next one",
   and an Enter in it while the last create is still out is dropped. It used to be rebuilt the

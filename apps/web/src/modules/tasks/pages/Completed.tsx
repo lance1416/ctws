@@ -1,5 +1,5 @@
 import type { CompletedTaskResponse } from '@ctws/contracts'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { listCompleted } from '../api/completed'
 import { useTaskActions } from '../api/taskActions'
@@ -33,7 +33,6 @@ export function Completed({ heading: showHeading = true }: { heading?: boolean }
   useCrumbs(showHeading ? [{ label: 'Review', to: '/tasks/review' }, { label: 'Done' }] : null)
   const completed = useQuery({ queryKey: ['completed'], queryFn: listCompleted })
   const [openId, setOpenId] = useState<string | null>(null)
-  const qc = useQueryClient()
   const timezone = useTimeZone()
   const today = todayIn(timezone)
   const clock = new Intl.DateTimeFormat('en-US', {
@@ -163,9 +162,6 @@ export function Completed({ heading: showHeading = true }: { heading?: boolean }
           task={openTask}
           projectId={openTask.projectId}
           onClose={() => setOpenId(null)}
-          // A save can take the row off this page (restoring it, say), so the list is refetched;
-          // the pane itself stays open showing what was written, as it does everywhere else.
-          onSaved={() => void qc.invalidateQueries({ queryKey: ['completed'] })}
         />
       )}
     </>

@@ -245,6 +245,27 @@ test('People 页上的 Birthdays 一栏数的是未来一周', async ({ page }) 
   await expect(page.getByRole('heading', { level: 1, name: 'People' })).toBeVisible()
 })
 
+test('the Birthdays tab count follows a birthday set in the pane', async ({ page }) => {
+  await registerFreshUser(page)
+  await person(page, 'Already counted', { calendar: 'solar', year: 1990, ...monthDay(1) })
+  const id = await person(page, 'Born Soon')
+  await page.goto(`/people/${id}`)
+  const tab = page
+    .getByRole('navigation', { name: 'People views' })
+    .getByRole('link', { name: /Birthdays/ })
+  await expect(tab.locator('[data-count]')).toHaveText('1')
+
+  await page.getByRole('button', { name: 'Edit', exact: true }).click()
+  await page.getByRole('button', { name: 'Birthday, not set' }).click()
+  const { month, day } = monthDay(2)
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August']
+  const months = [...MONTHS, 'September', 'October', 'November', 'December']
+  await pickOne(page, 'Month', new RegExp(`^${months[month - 1]}$`))
+  await pickOne(page, 'Day', new RegExp(`^${day}$`))
+  await page.getByRole('button', { name: 'Save' }).click()
+  await expect(tab.locator('[data-count]')).toHaveText('2')
+})
+
 test('人物页上生日是只读的派生值，改在一个地方', async ({ page }) => {
   await registerFreshUser(page)
   const id = await person(page, '周楠', {

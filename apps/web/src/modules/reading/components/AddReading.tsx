@@ -1,7 +1,6 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 import { createReadingItem } from '../api/reading'
-import { refreshList } from '../../../platform/http/refresh'
 import { isReadingUrl } from '../readingUrl'
 import { useComposing } from '../../../platform/keyboard/composition'
 import { textbox } from '../../../platform/ui/formStyles'
@@ -15,7 +14,6 @@ import { textbox } from '../../../platform/ui/formStyles'
  * pressed. Everything else about the item (title, project, author) is edited on the row.
  */
 export function AddReading({ projectId }: { projectId?: string } = {}) {
-  const qc = useQueryClient()
   const composing = useComposing()
   const [line, setLine] = useState('')
   const trimmed = line.trim()
@@ -28,10 +26,8 @@ export function AddReading({ projectId }: { projectId?: string } = {}) {
           ? { kind: 'link', url: value, ...(projectId ? { projectId } : {}) }
           : { kind: 'book', title: value, ...(projectId ? { projectId } : {}) },
       ),
-    onSuccess: async () => {
-      setLine('')
-      await refreshList(qc, ['reading'])
-    },
+    meta: { awaits: [['reading']] },
+    onSuccess: () => setLine(''),
   })
 
   return (

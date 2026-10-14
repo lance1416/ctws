@@ -1,8 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { deleteProject, listProjects } from './api'
 import { listProjectTasks } from '../../modules/tasks/api/tasks'
-import { refreshProjects, tasksKey } from '../../modules/tasks/api/taskCache'
+import { tasksKey } from '../../modules/tasks/api/taskCache'
 import { DangerAction } from '../../platform/ui/DangerZone'
 import { useForgetRecent } from '../search/recent'
 
@@ -16,7 +16,6 @@ import { useForgetRecent } from '../search/recent'
  * The inbox has no delete at all: quick capture has to land somewhere, and the server refuses it.
  */
 export function DeleteProject({ id }: { id: string }) {
-  const qc = useQueryClient()
   const navigate = useNavigate()
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
   const project = projects.data?.find((p) => p.id === id)
@@ -29,9 +28,9 @@ export function DeleteProject({ id }: { id: string }) {
   const forget = useForgetRecent()
   const remove = useMutation({
     mutationFn: () => deleteProject(id),
-    onSuccess: async () => {
+    meta: { awaits: [['projects']] },
+    onSuccess: () => {
       forget('project', id)
-      await refreshProjects(qc)
       navigate('/projects')
     },
   })

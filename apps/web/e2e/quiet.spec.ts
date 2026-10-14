@@ -10,6 +10,7 @@ import {
   submitCreate,
   WEB,
 } from './helpers'
+import { dayOffset } from './days'
 
 /**
  * WHAT KEEPS THE APP USABLE AS IT FILLS UP.
@@ -392,6 +393,23 @@ test('shift-click picks rows, and the bar finishes them in one press', async ({ 
     (after.tasks as { title: string; status: string }[]).map((t) => [t.title, t.status]),
   )
   expect(byTitle).toMatchObject({ 写迁移: 'done', 补测试: 'done', 接好验证器: 'todo' })
+})
+
+test('the rail count follows tasks finished from the tree', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '今天的三件')
+  for (const t of ['一件', '两件', '三件']) await makeTask(page, pid, t, { scheduledOn: dayOffset(0) })
+  await openTree(page, pid)
+  const count = page
+    .getByRole('navigation', { name: 'Main navigation' })
+    .getByRole('link', { name: /Today/ })
+    .locator('[data-count]')
+  await expect(count).toHaveText('3')
+
+  for (const t of ['一件', '两件', '三件']) await row(page, t).click({ modifiers: ['Shift'] })
+  await page.getByRole('button', { name: 'Mark done' }).click()
+  await expect(page.locator('[data-selection-bar]')).toHaveCount(0)
+  await expect(count).toHaveCount(0)
 })
 
 test('the bar moves the picked rows to another project', async ({ page }) => {

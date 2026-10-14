@@ -1,6 +1,5 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { updateProject, useEveryProject } from './api'
-import { refreshProjects } from '../../modules/tasks/api/taskCache'
 import { useRegistry } from '../registry'
 import { BUTTON } from '../../platform/ui/buttonStyles'
 import { ProjectIdentity } from './ProjectIdentity'
@@ -53,16 +52,9 @@ export function ProjectHead({ id }: { id: string }) {
  * stays open on it, marked Archived, with Unarchive where Archive was.
  */
 function ArchiveToggle({ id, archived }: { id: string; archived: boolean }) {
-  const qc = useQueryClient()
   const toggle = useMutation({
     mutationFn: () => updateProject(id, { archived: !archived }),
-    onSuccess: async () => {
-      // The live and archived lists both sit under ['projects']; Today and This week leave
-      // archived projects out, so they change too.
-      await refreshProjects(qc)
-      void qc.invalidateQueries({ queryKey: ['today'] })
-      void qc.invalidateQueries({ queryKey: ['movement'] })
-    },
+    meta: { awaits: [['projects']] },
   })
   return (
     <div className="mt-1 flex shrink-0 flex-col items-end">

@@ -1,5 +1,5 @@
 import type { EditScope, MeetingOccurrence, UpdateMeetingInput } from '@ctws/contracts'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useState, type ReactNode } from 'react'
 import { listPeople } from '../../people/api/people'
 import {
@@ -102,7 +102,6 @@ export function MeetingFields({
   /** Where to go when the meeting is cancelled. A page has nowhere to close TO, so it may omit it. */
   onClose?: () => void
 }) {
-  const qc = useQueryClient()
   const rail = useProjectRail()
   const [editing, setEditing] = useState(false)
   const [failed, setFailed] = useState<string | null>(null)
@@ -112,17 +111,12 @@ export function MeetingFields({
   const people = useQuery({ queryKey: ['people', null, false], queryFn: () => listPeople() })
 
   const repeats = meeting.rrule !== null
-  const refresh = async () => {
-    await qc.invalidateQueries({ queryKey: ['meetings'] })
-    await qc.invalidateQueries({ queryKey: ['meeting-calendar'] })
-    await qc.invalidateQueries({ queryKey: ['links'] })
-  }
 
   const save = useMutation({
     mutationFn: (patch: UpdateMeetingInput) => patchMeeting(meeting.meetingId, patch),
+    meta: { awaits: [['meetings'], ['meeting-calendar'], ['links']] },
     onSuccess: () => setFailed(null),
     onError: (e) => setFailed(e instanceof Error ? e.message : "Couldn't save it"),
-    onSettled: refresh,
   })
 
   const chip = (id: string) => (
@@ -621,16 +615,14 @@ export function CancelMeeting({
   meeting: MeetingOccurrence
   onCancelled?: () => void
 }) {
-  const qc = useQueryClient()
   const forget = useForgetRecent()
   const drop = useMutation({
     mutationFn: (scope: EditScope) =>
       cancelMeeting(meeting.meetingId, { scope, recurrenceId: meeting.recurrenceId }),
-    onSuccess: async (_, scope) => {
+    meta: { awaits: [['meetings'], ['meeting-calendar']] },
+    onSuccess: (_, scope) => {
       // One week of a series cancelled leaves the series; the whole of it does not.
       if (scope === 'all') forget('meeting', meeting.meetingId)
-      await qc.invalidateQueries({ queryKey: ['meetings'] })
-      await qc.invalidateQueries({ queryKey: ['meeting-calendar'] })
       onCancelled?.()
     },
   })

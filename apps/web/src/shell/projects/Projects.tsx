@@ -1,11 +1,10 @@
 import type { ProjectListItem, ProjectMovementResponse } from '@ctws/contracts'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ApiError } from '../../platform/http/api'
 import { listMovement } from '../../modules/tasks/api/movement'
 import { getTask } from '../../modules/tasks/api/tasks'
-import { refreshProjects } from '../../modules/tasks/api/taskCache'
 import {
   archivedProjectsKey,
   createProject,
@@ -26,7 +25,6 @@ import { useNow } from '../../platform/time/useNow'
 
 export function Projects() {
   useCrumbs([{ label: 'Projects' }])
-  const qc = useQueryClient()
   const composing = useComposing()
   const [name, setName] = useState('')
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
@@ -56,10 +54,8 @@ export function Projects() {
 
   const create = useMutation({
     mutationFn: createProject,
-    onSuccess: () => {
-      setName('')
-      return refreshProjects(qc)
-    },
+    meta: { awaits: [['projects']] },
+    onSuccess: () => setName(''),
   })
   const heading = useRef<HTMLHeadingElement>(null)
 

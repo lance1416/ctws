@@ -52,13 +52,8 @@ function allowed(from: Layer, toPath: string): boolean {
 
 /** Known violations, each removed by the task that fixes it. Empty at the end. */
 const ALLOWED = new Set<string>([
-  // Task 5: refreshProjects lives in the tasks cache.
-  'shell/layout/SideRail.tsx -> modules/tasks/api/taskCache',
-  'shell/projects/DeleteProject.tsx -> modules/tasks/api/taskCache',
-  'shell/projects/ProjectHead.tsx -> modules/tasks/api/taskCache',
-  'shell/projects/ProjectIdentity.tsx -> modules/tasks/api/taskCache',
-  'shell/projects/Projects.tsx -> modules/tasks/api/taskCache',
   // Task 11: project facts, delete contents, the task address, calendar days.
+  'shell/projects/DeleteProject.tsx -> modules/tasks/api/taskCache',
   'shell/projects/DeleteProject.tsx -> modules/tasks/api/tasks',
   'shell/projects/Projects.tsx -> modules/tasks/api/movement',
   'shell/projects/Projects.tsx -> modules/tasks/api/tasks',

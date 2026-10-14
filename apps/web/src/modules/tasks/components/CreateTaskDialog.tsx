@@ -1,10 +1,10 @@
 import { TASK_STATUSES } from '@ctws/contracts'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { listProjects } from '../../../shell/projects/api'
-import { refreshTasks, tasksKey } from '../api/taskCache'
+import { tasksKey } from '../api/taskCache'
 import { createTask, listProjectTasks } from '../api/tasks'
 import { addDays, dayEndIso, dayPhrase, nextMonday, todayIn, ymd } from '../../../platform/time/dueAt'
 import { useTimeZone } from '../../../shell/auth/useMe'
@@ -64,7 +64,6 @@ export function CreateTaskDialog({
   onClose: () => void
 }) {
   const composing = useComposing()
-  const qc = useQueryClient()
   const titleField = useRef<HTMLInputElement>(null)
   const timeZone = useTimeZone()
   const todayYmd = todayIn(timeZone)
@@ -131,7 +130,7 @@ export function CreateTaskDialog({
 
   const create = useMutation({
     mutationFn: (body: CreateTaskValues) => createTask(body),
-    onSuccess: () => refreshTasks(qc, project),
+    meta: { awaits: [tasksKey(project)] },
   })
 
   /**

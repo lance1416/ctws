@@ -1,8 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { createProject, listProjects } from '../projects/api'
-import { refreshProjects } from '../../modules/tasks/api/taskCache'
 import { useRegistry } from '../registry'
 import { railClass } from '../projects/projectColor'
 import { useComposing } from '../../platform/keyboard/composition'
@@ -28,7 +27,6 @@ export function SideRail() {
   // Shares its cache entry with the pages that own it, so the rail costs one extra request per
   // session, not one per navigation.
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
-  const qc = useQueryClient()
   const navigate = useNavigate()
   const composing = useComposing()
   const { pathname } = useLocation()
@@ -56,10 +54,10 @@ export function SideRail() {
    */
   const create = useMutation({
     mutationFn: createProject,
-    onSuccess: async (made) => {
+    meta: { awaits: [['projects']] },
+    onSuccess: (made) => {
       setName('')
       setNaming(false)
-      await refreshProjects(qc)
       // Straight into it: naming a line of work is the start of putting something in it.
       navigate(`/projects/${made.id}`)
     },

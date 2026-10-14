@@ -26,6 +26,8 @@ export function Login() {
             : { email, password },
         ),
       }),
+    // The session is new and the cache empty; `me` is set below.
+    meta: { refresh: false },
     onSuccess: (user) => {
       setError('')
       // Seed the cache before navigating: Layout reads it and would bounce back to /login

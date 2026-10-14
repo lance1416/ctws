@@ -1,10 +1,10 @@
 import type { DependencyRef } from '@ctws/contracts'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useState, type ReactNode } from 'react'
 import { ApiError } from '../../../platform/http/api'
 import { searchTasks } from '../api/search'
 import { addDependency, removeDependency, taskDependencies } from '../api/tasks'
-import { refreshTasks } from '../api/taskCache'
+import { tasksKey } from '../api/taskCache'
 import { field, label } from '../../../platform/ui/formStyles'
 
 /**
@@ -77,7 +77,6 @@ function Group({ tag, children }: { tag: string; children: ReactNode }) {
 }
 
 export function Dependencies({ taskId, projectId }: { taskId: string; projectId: string }) {
-  const qc = useQueryClient()
   const [adding, setAdding] = useState(false)
   const [query, setQuery] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -92,18 +91,14 @@ export function Dependencies({ taskId, projectId }: { taskId: string; projectId:
     enabled: adding && query.trim().length > 0,
   })
 
-  const refresh = async () => {
-    await qc.invalidateQueries({ queryKey: ['dependencies', taskId] })
-    await refreshTasks(qc, projectId)
-    await qc.invalidateQueries({ queryKey: ['today'] })
-  }
+  const awaits = [['dependencies', taskId], tasksKey(projectId), ['today']]
   const add = useMutation({
     mutationFn: (blockerId: string) => addDependency(taskId, blockerId),
-    onSuccess: async () => {
+    meta: { awaits },
+    onSuccess: () => {
       setQuery('')
       setAdding(false)
       setError(null)
-      await refresh()
     },
     // Our own words, not the server's sentence: 409 is the one refusal a person can actually act
     // on, and "that would make two tasks wait for each other" is a developer's phrasing.
@@ -116,7 +111,7 @@ export function Dependencies({ taskId, projectId }: { taskId: string; projectId:
   })
   const drop = useMutation({
     mutationFn: (blockerId: string) => removeDependency(taskId, blockerId),
-    onSuccess: refresh,
+    meta: { awaits },
   })
 
   const blockedBy = lists.data?.blockedBy ?? []

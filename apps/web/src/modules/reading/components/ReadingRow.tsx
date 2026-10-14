@@ -1,6 +1,6 @@
 import type { ReadingItemResponse, ReadingStatus } from '@ctws/contracts'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { deleteReadingItem, patchReadingItem, readingLabel } from '../api/reading'
 import { useForgetRecent } from '../../../shell/search/recent'
@@ -73,7 +73,6 @@ export function ReadingRow({
   /** 打开它自己那一层。没有传就只是一行（项目页上的那份清单）。 */
   onOpen?: () => void
 }) {
-  const qc = useQueryClient()
   const composing = useComposing()
   const [renaming, setRenaming] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -83,22 +82,17 @@ export function ReadingRow({
   // moment it appears -- an inline rename that cannot be typed into.
   const takingFocus = useRef(false)
   const titleInput = useRef<HTMLInputElement>(null)
-  const refresh = () => qc.invalidateQueries({ queryKey: ['reading'] })
 
   const save = useMutation({
     mutationFn: (patch: Parameters<typeof patchReadingItem>[1]) => patchReadingItem(item.id, patch),
-    onSuccess: async () => {
-      setRenaming(false)
-      await refresh()
-    },
+    meta: { awaits: [['reading']] },
+    onSuccess: () => setRenaming(false),
   })
   const forget = useForgetRecent()
   const drop = useMutation({
     mutationFn: () => deleteReadingItem(item.id),
-    onSuccess: async () => {
-      forget('reading', item.id)
-      await refresh()
-    },
+    meta: { awaits: [['reading']] },
+    onSuccess: () => forget('reading', item.id),
   })
 
   const label = readingLabel(item)

@@ -6,7 +6,8 @@ import { listMovement } from './api/movement'
 import { inboxOf, listProjects } from '../../shell/projects/api'
 import { searchTasks } from './api/search'
 import { createTask, listProjectTasks } from './api/tasks'
-import { refreshTasks, tasksKey } from './api/taskCache'
+import { refreshQueries } from '../../platform/http/refresh'
+import { tasksKey } from './api/taskCache'
 import { listToday, taskCalendar } from './api/today'
 import { CreateTaskDialog } from './components/CreateTaskDialog'
 import { TaskBoard } from './components/TaskBoard'
@@ -188,7 +189,7 @@ function useInboxCapture(): CaptureTargetState {
           submit: async (title: string) => {
             await createTask({ projectId: inbox.id, title })
             // Awaited, so the input stays busy until the list that now holds the line is refreshed.
-            await refreshTasks(qc, inbox.id)
+            await refreshQueries(qc, [tasksKey(inbox.id)])
           },
         }
       : null,
@@ -351,16 +352,13 @@ function NewTaskAction({ projectId }: { projectId: string }) {
 
 /** The module's rows under a shell project: the tree, and the one input that adds a root task. */
 function ProjectTasks({ projectId, view }: { projectId: string; view: string }) {
-  const qc = useQueryClient()
   const composing = useComposing()
   const [title, setTitle] = useState('')
   const failureId = useId()
   const create = useMutation({
     mutationFn: (t: string) => createTask({ projectId, title: t, parentId: null }),
-    onSuccess: () => {
-      setTitle('')
-      return refreshTasks(qc, projectId)
-    },
+    meta: { awaits: [tasksKey(projectId)] },
+    onSuccess: () => setTitle(''),
   })
 
   const submit = () => {

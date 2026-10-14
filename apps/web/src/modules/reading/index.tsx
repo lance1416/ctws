@@ -8,6 +8,7 @@ import {
   searchReading,
 } from './api/reading'
 import { Link } from 'react-router-dom'
+import { refreshQueries } from '../../platform/http/refresh'
 import { PanelEmpty } from '../../platform/ui/Panel'
 import { ProjectRail } from '../../shell/rows/RowParts'
 import { isReadingUrl } from './readingUrl'
@@ -62,7 +63,7 @@ function useReadingCapture(): CaptureTargetState {
       submit: async (line: string) => {
         await createReadingItem({ kind: 'link', url: line.trim() })
         // Awaited, so the capture box stays busy until the list that now holds the line is fresh.
-        await qc.invalidateQueries({ queryKey: ['reading'] })
+        await refreshQueries(qc, [['reading']])
       },
     },
     missing: false,

@@ -1,8 +1,7 @@
 import type { PersonResponse } from '@ctws/contracts'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 import { createPerson } from '../api/people'
-import { refreshList } from '../../../platform/http/refresh'
 import { useComposing } from '../../../platform/keyboard/composition'
 import { textbox } from '../../../platform/ui/formStyles'
 
@@ -23,16 +22,15 @@ export function NewPersonInput({
   onCreated: (person: PersonResponse) => void
   placeholder?: string
 }) {
-  const qc = useQueryClient()
   const composing = useComposing()
   const [name, setName] = useState('')
 
   const create = useMutation({
     mutationFn: (value: string) =>
       createPerson({ name: value, ...(projectId ? { projectIds: [projectId] } : {}) }),
-    onSuccess: async (person) => {
+    meta: { awaits: [['people']] },
+    onSuccess: (person) => {
       setName('')
-      await refreshList(qc, ['people'])
       // Straight into the pane: a name on its own is never the whole of what you know about
       // somebody, and this is the moment you have the rest of it to hand.
       onCreated(person)

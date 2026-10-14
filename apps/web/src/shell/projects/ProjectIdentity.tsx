@@ -1,9 +1,8 @@
 import { projectColors, type ProjectColor } from '@ctws/contracts'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { updateProject } from './api'
-import { refreshProjects } from '../../modules/tasks/api/taskCache'
 import { railClass } from './projectColor'
 import { useComposing } from '../../platform/keyboard/composition'
 import { MENU_ITEM, MENU_SURFACE } from '../../platform/ui/menuSurface'
@@ -28,7 +27,6 @@ export function ProjectIdentity({
   name: string
   color: ProjectColor | null
 }) {
-  const qc = useQueryClient()
   const composing = useComposing()
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(name)
@@ -39,7 +37,7 @@ export function ProjectIdentity({
 
   const save = useMutation({
     mutationFn: (body: { name?: string; color?: ProjectColor }) => updateProject(projectId, body),
-    onSuccess: () => refreshProjects(qc),
+    meta: { awaits: [['projects']] },
   })
 
   const commit = () => {

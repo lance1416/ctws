@@ -13,7 +13,8 @@ import { Fragment, useEffect, useMemo, useRef, useState, type KeyboardEvent } fr
 import { useSearchParams } from 'react-router-dom'
 import { listProjects } from '../../../shell/projects/api'
 import { createTask, listProjectTasks, moveTask, patchTask, type ProjectTasks } from '../api/tasks'
-import { refreshTasks, tasksKey } from '../api/taskCache'
+import { refreshQueries } from '../../../platform/http/refresh'
+import { tasksKey } from '../api/taskCache'
 import { ancestorsOf } from '../tree/ancestors'
 import { flatten } from '../tree/flatten'
 import { rollupPhrase } from '../rollupPhrase'
@@ -205,7 +206,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
       }
       setError(error instanceof Error ? error.message : "Couldn't move it")
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: key }),
+    meta: { awaits: [key] },
   })
 
   const run = (draggedId: string, slot: number, wantedDepth: number) => {
@@ -265,7 +266,8 @@ export function TaskTree({ projectId }: { projectId: string }) {
     inFlight.current = true
     try {
       await createTask({ projectId, title, parentId: adding.parentId })
-      await refreshTasks(qc, projectId)
+      // Only this list is waited for: the next Enter must not wait on unrelated refetches.
+      await refreshQueries(qc, [key])
       setCreateError(null)
       return true
     } catch (e) {
@@ -531,7 +533,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
   const runOverSelection = async (
     act: (id: string) => Promise<unknown>,
     /** Given the ids that really succeeded, and run whether or not one of them failed. */
-    settle?: (done: ReadonlySet<string>) => void | Promise<void>,
+    settle?: (done: ReadonlySet<string>) => void,
   ) => {
     setBulkBusy(true)
     const done = new Set<string>()
@@ -546,8 +548,8 @@ export function TaskTree({ projectId }: { projectId: string }) {
     } finally {
       setSelected((prev) => new Set([...prev].filter((id) => !done.has(id))))
       setBulkBusy(false)
-      await settle?.(done)
-      await refreshTasks(qc, projectId)
+      settle?.(done)
+      await refreshQueries(qc, [key])
     }
   }
 
@@ -565,9 +567,6 @@ export function TaskTree({ projectId }: { projectId: string }) {
       // Keeping its parent would mean moving the parent too, which is a different request than
       // the one the person made.
       (id) => moveTask(id, { projectId: toProjectId, parentId: null }),
-      // Unconditionally: if three of five landed, the destination holds three and its cache has
-      // to say so.
-      () => refreshTasks(qc, toProjectId),
     )
 
   const toggleDone = () => {

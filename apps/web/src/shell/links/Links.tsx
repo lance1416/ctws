@@ -1,5 +1,5 @@
 import type { LinkedObject, ObjectType } from '@ctws/contracts'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { deleteLink, linksKey, listLinks, type Endpoint } from './api'
@@ -41,7 +41,6 @@ export function Links({
   variant?: 'list' | 'aside'
   className?: string
 }) {
-  const qc = useQueryClient()
   const registry = useRegistry()
   // Which kind the picker is for: any kind from "+ Link", one kind from a block's own `+`.
   const [adding, setAdding] = useState<ObjectType | 'any' | null>(null)
@@ -53,7 +52,7 @@ export function Links({
       row.outgoing
         ? deleteLink(of, { type: row.type, id: row.id }, row.kind)
         : deleteLink({ type: row.type, id: row.id }, of, row.kind),
-    onSettled: () => qc.invalidateQueries({ queryKey: ['links'] }),
+    meta: { awaits: [['links']] },
   })
   const add = (
     <>

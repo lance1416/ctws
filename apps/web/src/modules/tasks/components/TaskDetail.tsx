@@ -67,13 +67,16 @@ function DateEcho({ text }: { text: string | null }) {
   return <p className="mt-1 text-xs tabular-nums text-ink-muted">{text}</p>
 }
 
+/** What a write from this pane waits to see refetched: any edit can move a task between lists. */
+const WRITE_AWAITS = [['today'], ['completed'], ['movement'], ['tasks']]
+
 type Props = {
   task: TaskResponse
   projectId: string
   /** Dismissed without saving (and with nothing to lose, or after the user chose to discard). */
   onClose: () => void
   /** The save was accepted by the server; the owner closes the panel and acknowledges it. */
-  onSaved: () => void
+  onSaved?: () => void
 }
 
 /**
@@ -236,14 +239,8 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
   const forget = useForgetRecent()
   const remove = useMutation({
     mutationFn: () => deleteTask(task.id),
+    meta: { awaits: WRITE_AWAITS },
     onSuccess: () => forget('task', task.id),
-    // Settled, not success: a failed delete may still have changed what the lists should show.
-    onSettled: async () => {
-      await qc.invalidateQueries({ queryKey: ['today'] })
-      await qc.invalidateQueries({ queryKey: ['completed'] })
-      await qc.invalidateQueries({ queryKey: ['movement'] })
-      await qc.invalidateQueries({ queryKey: tasksKey(task.projectId) })
-    },
   })
 
   // The named decisions, the same three days the row's triage control offers (today, tomorrow,
@@ -290,22 +287,6 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
   const planReading = task.scheduledOn ? dayPhrase(task.scheduledOn, todayYmd) : null
   const projectName = projects.data?.find((p) => p.id === task.projectId)?.name ?? ''
 
-  /**
-   * WHAT EVERY WRITE FROM THIS PANE HAS TO REFRESH.
-   *
-   * The today list is cross-project and server-derived: any edit can move a task between segments
-   * or off the list, so it is always refetched. One copy, because there are two writers now (the
-   * form and the status picker) and a second copy is a second chance to forget a list.
-   */
-  const refreshAfterWrite = async () => {
-    await qc.invalidateQueries({ queryKey: ['today'] })
-    await qc.invalidateQueries({ queryKey: ['completed'] })
-    await qc.invalidateQueries({ queryKey: ['movement'] })
-    await qc.invalidateQueries({ queryKey: tasksKey(projectId) })
-    if (nextProjectId !== projectId)
-      await qc.invalidateQueries({ queryKey: tasksKey(nextProjectId) })
-  }
-
   const save = useMutation({
     mutationFn: async ({
       values,
@@ -337,20 +318,13 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
         await moveTask(task.id, { projectId: values.projectId, parentId: null })
       }
     },
-    // Settled, not success: if the move fails after the patch landed, the list is still stale.
-    onSettled: refreshAfterWrite,
+    meta: { awaits: WRITE_AWAITS },
   })
 
-  /**
-   * THE DIRECT STATUS WRITE. It lands at once, and the refetch set is the SAME one the
-   * form's save uses -- a status change moves a task between today's segments, on and off Done,
-   * and through the project's counts.
-   *
-   * It is outside the leave guard on purpose: nothing here is ever unsaved.
-   */
+  /** The direct status write: it lands at once, outside the leave guard, since nothing is unsaved. */
   const setStatus = useMutation({
     mutationFn: (status: TaskStatus) => patchTask(task.id, { status }),
-    onSettled: refreshAfterWrite,
+    meta: { awaits: WRITE_AWAITS },
   })
 
   /**
@@ -540,7 +514,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                     // opened and which is what listens for Escape. Without this it falls to
                     // <body> and the pane stops answering the keyboard entirely (WCAG 2.4.3).
                     queueMicrotask(() => panel.current?.focus())
-                    onSaved()
+                    onSaved?.()
                   },
                 },
               )

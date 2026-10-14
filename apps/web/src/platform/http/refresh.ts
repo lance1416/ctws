@@ -1,17 +1,51 @@
-import type { QueryClient, QueryKey } from '@tanstack/react-query'
+import {
+  matchQuery,
+  MutationCache,
+  type Mutation,
+  type Query,
+  type QueryClient,
+  type QueryKey,
+} from '@tanstack/react-query'
+
+declare module '@tanstack/react-query' {
+  interface Register {
+    mutationMeta: {
+      /** Query keys this write waits for; everything else refetches without being waited on. */
+      awaits?: readonly QueryKey[]
+      /** False for a write after which nothing should refetch (signing out). */
+      refresh?: false
+    }
+  }
+}
 
 /**
- * Makes a list refetch after something changed it on the server.
- *
- * A bare `invalidateQueries` is not enough on the FIRST load. TanStack Query only honours
- * `cancelRefetch` when the query already has data (`query.fetch` checks `state.data !== undefined`,
- * whatever the key); with no data yet, an in-flight fetch is reused instead of restarted. A row
- * created while that first fetch is still running would then be answered by the pre-create
- * response and nothing would refetch: the row is in the database and absent from the screen.
- * Cancelling first drops the stale in-flight fetch, so the invalidation that follows starts a new
- * request. Every list whose creator can race its own first load goes through here.
+ * After a write every query is stale: the watched ones refetch now, the rest on their next mount.
+ * Resolves once the `awaits` ones are back. In-flight reads are cancelled first, because
+ * invalidating a query that has no data yet reuses its in-flight fetch, whose answer predates
+ * the write.
  */
-export async function refreshList(qc: QueryClient, queryKey: QueryKey): Promise<void> {
-  await qc.cancelQueries({ queryKey })
-  await qc.invalidateQueries({ queryKey })
+export async function refreshQueries(
+  qc: QueryClient,
+  awaits: readonly QueryKey[] = [],
+): Promise<void> {
+  await qc.cancelQueries()
+  const isAwaited = (query: Query) => awaits.some((queryKey) => matchQuery({ queryKey }, query))
+  void qc.invalidateQueries({ predicate: (q) => !isAwaited(q) })
+  if (awaits.length > 0) await qc.invalidateQueries({ predicate: isAwaited })
+}
+
+/**
+ * Runs `refreshQueries` after every mutation. A success refreshes before the write's own
+ * onSuccess, so that sees fresh data; a failure refreshes after the write's onError has rolled
+ * back, since a write of two requests can fail after the first landed.
+ */
+export function refreshAfterWrites(client: () => QueryClient): MutationCache {
+  const refresh = async (meta: Mutation['meta']) => {
+    if (meta?.refresh !== false) await refreshQueries(client(), meta?.awaits)
+  }
+  return new MutationCache({
+    onSuccess: (_data, _variables, _context, mutation) => refresh(mutation.meta),
+    onSettled: (_data, error, _variables, _context, mutation) =>
+      error ? refresh(mutation.meta) : undefined,
+  })
 }

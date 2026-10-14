@@ -25,8 +25,8 @@ export const toggleStartTarget = (s: TaskStatus): TaskStatus =>
 /**
  * Mutations for the one-click edits made from a list row, without opening the detail panel.
  * Status changes are optimistic (the mark must answer the click now); date changes wait for the
- * server, since which segment a row belongs in is the server's decision. Both end by refetching
- * everything that could have been touched, and a failed request rolls the optimistic edit back.
+ * server, since which segment a row belongs in is the server's decision. A failed request rolls
+ * the optimistic edit back.
  */
 export function useTaskActions(onError: (message: string) => void) {
   const qc = useQueryClient()
@@ -58,13 +58,7 @@ export function useTaskActions(onError: (message: string) => void) {
       qc.setQueryData(['today'], ctx?.today)
       onError(e instanceof Error ? e.message : "Couldn't save the change")
     },
-    onSettled: async () => {
-      await qc.invalidateQueries({ queryKey: ['today'] })
-      await qc.invalidateQueries({ queryKey: ['tasks'] })
-      await qc.invalidateQueries({ queryKey: ['completed'] })
-      // Movement counts finished-this-week and last activity; a status change moves both.
-      await qc.invalidateQueries({ queryKey: ['movement'] })
-    },
+    meta: { awaits: [['today'], ['tasks'], ['completed'], ['movement']] },
   })
 
   return {

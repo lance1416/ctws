@@ -1,8 +1,8 @@
 import type { ReadingItemResponse, ReadingStatus } from '@ctws/contracts'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { deleteReadingItem, patchReadingItem, readingKey, readingLabel } from '../api/reading'
+import { deleteReadingItem, patchReadingItem, readingLabel } from '../api/reading'
 import { listProjects } from '../../../shell/projects/api'
 import { useComposing } from '../../../platform/keyboard/composition'
 import { addDays, dayPhrase, nextMonday, todayIn } from '../../../platform/time/dueAt'
@@ -78,7 +78,6 @@ export function ReadingDetail({
 }
 
 function ReadingFields({ item, onClose }: { item: ReadingItemResponse; onClose: () => void }) {
-  const qc = useQueryClient()
   const [editing, setEditing] = useState(false)
   const rail = useProjectRail()
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
@@ -87,10 +86,6 @@ function ReadingFields({ item, onClose }: { item: ReadingItemResponse; onClose: 
 
   const save = useMutation({
     mutationFn: (patch: Parameters<typeof patchReadingItem>[1]) => patchReadingItem(item.id, patch),
-    onSettled: () => {
-      void qc.invalidateQueries({ queryKey: ['reading'] })
-      void qc.invalidateQueries({ queryKey: ['links'] })
-    },
   })
 
   const chip = (id: string) => (
@@ -348,13 +343,12 @@ export function DeleteReading({
   item: ReadingItemResponse
   onDeleted: () => void
 }) {
-  const qc = useQueryClient()
   const forget = useForgetRecent()
   const drop = useMutation({
     mutationFn: () => deleteReadingItem(item.id),
-    onSuccess: async () => {
+    meta: { awaits: [['reading']] },
+    onSuccess: () => {
       forget('reading', item.id)
-      await qc.invalidateQueries({ queryKey: readingKey() })
       onDeleted()
     },
   })

@@ -1,5 +1,5 @@
 import type { CreateMeetingBody, MeetingOccurrence } from '@ctws/contracts'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { peopleKey, listPeople } from '../../people/api/people'
 import {
@@ -10,7 +10,6 @@ import {
   withUntil,
 } from '../api/meetings'
 import { listProjects } from '../../../shell/projects/api'
-import { refreshList } from '../../../platform/http/refresh'
 import { useComposing } from '../../../platform/keyboard/composition'
 import { todayIn } from '../../../platform/time/dueAt'
 import { useProjectRail } from '../../../shell/projects/projectColor'
@@ -46,7 +45,6 @@ export function NewMeetingDialog({
   onClose: () => void
   onMade: (made: MeetingOccurrence) => void
 }) {
-  const qc = useQueryClient()
   const accountZone = useTimeZone()
   const today = todayIn(accountZone)
   const titleField = useRef<HTMLInputElement>(null)
@@ -72,11 +70,8 @@ export function NewMeetingDialog({
 
   const make = useMutation({
     mutationFn: (body: CreateMeetingBody) => createMeeting(body),
-    onSuccess: async (made) => {
-      await refreshList(qc, ['meetings'])
-      await refreshList(qc, ['meeting-calendar'])
-      onMade(made)
-    },
+    meta: { awaits: [['meetings'], ['meeting-calendar']] },
+    onSuccess: (made) => onMade(made),
   })
 
   const ready = title.trim().length > 0 && day !== '' && clock !== ''

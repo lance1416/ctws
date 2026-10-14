@@ -1,5 +1,5 @@
 import { channelProblem, type ChannelKind, type PersonResponse } from '@ctws/contracts'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { channelHref, deletePerson, patchPerson, type BirthdayDraft } from '../api/people'
 import { listProjects } from '../../../shell/projects/api'
 import { useProjectRail } from '../../../shell/projects/projectColor'
@@ -74,7 +74,6 @@ export function PersonFields({
   /** Where to go when this person is deleted. Not every surface has somewhere to close TO. */
   onClose?: () => void
 }) {
-  const qc = useQueryClient()
   const [editing, setEditing] = useState(false)
   // 号码分组那一包：读的时候也要，不然同一个号码在列表里排好了而在这里挤成一条。
   const phone = usePhone()
@@ -82,14 +81,8 @@ export function PersonFields({
   const rail = useProjectRail()
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
 
-  // 项目是一条边：改了它，读边的那一块（Linked）也要跟着重读，否则刚去掉的那条线还在下面挂着。
-  const refresh = () => {
-    void qc.invalidateQueries({ queryKey: ['people'] })
-    void qc.invalidateQueries({ queryKey: ['links'] })
-  }
   const save = useMutation({
     mutationFn: (patch: Parameters<typeof patchPerson>[1]) => patchPerson(person.id, patch),
-    onSettled: refresh,
   })
 
   const chip = (id: string) => (
@@ -727,13 +720,12 @@ export function DeletePerson({
   person: PersonResponse
   onDeleted?: () => void
 }) {
-  const qc = useQueryClient()
   const forget = useForgetRecent()
   const drop = useMutation({
     mutationFn: () => deletePerson(person.id),
-    onSuccess: async () => {
+    meta: { awaits: [['people']] },
+    onSuccess: () => {
       forget('person', person.id)
-      await qc.invalidateQueries({ queryKey: ['people'] })
       onDeleted?.()
     },
   })

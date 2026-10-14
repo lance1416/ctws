@@ -30,6 +30,7 @@ export function Layout() {
 
   const logout = useMutation({
     mutationFn: () => apiFetch('/auth/logout', { method: 'POST' }),
+    meta: { refresh: false },
     onSuccess: () => {
       // Drop every cache, not just the session: the next sign-in may be a different user and
       // must never be shown the previous user's cached projects or tasks.
