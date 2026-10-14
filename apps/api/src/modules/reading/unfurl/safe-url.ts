@@ -80,10 +80,14 @@ function publicV6(ip: string): boolean {
   if (b[0] === 0xff) return false // ff00::/8, multicast
   if (b[0] === 0x01 && b.slice(1, 8).every((x) => x === 0)) return false // 100::/64, discard
 
-  // IPv4 embedded three ways: the inner address is checked too, or ::ffff:10.0.0.1 gets through.
+  // IPv4 embedded five ways: the inner address is checked too, or ::ffff:10.0.0.1 gets through.
   const asV4 = (bytes: number[]) => bytes.join('.')
-  const mapped = b.slice(0, 10).every((x) => x === 0) && b[10] === 0xff && b[11] === 0xff
+  const zeros = (from: number, to: number) => b.slice(from, to).every((x) => x === 0)
+  const mapped = zeros(0, 10) && b[10] === 0xff && b[11] === 0xff
   if (mapped) return publicV4(asV4(b.slice(12)))
+  if (zeros(0, 12)) return publicV4(asV4(b.slice(12))) // ::/96, IPv4-compatible
+  const translated = zeros(0, 8) && b[8] === 0xff && b[9] === 0xff && zeros(10, 12)
+  if (translated) return publicV4(asV4(b.slice(12))) // ::ffff:0:0/96
   const nat64 = b[0] === 0x00 && b[1] === 0x64 && b[2] === 0xff && b[3] === 0x9b
   if (nat64) return publicV4(asV4(b.slice(12)))
   if (b[0] === 0x20 && b[1] === 0x02) return publicV4(asV4(b.slice(2, 6))) // 2002::/16, 6to4

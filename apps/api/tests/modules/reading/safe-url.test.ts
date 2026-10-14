@@ -54,6 +54,18 @@ describe('isPublicAddress', () => {
     }
     expect(isPublicAddress('2606:4700:4700::1111', 6)).toBe(true)
   })
+
+  it('refuses the IPv4-compatible and IPv4-translated forms too', () => {
+    for (const ip of [
+      '::7f00:1',
+      '::127.0.0.1',
+      '::a9fe:a9fe',
+      '::ffff:0:7f00:1',
+      '::ffff:0:a00:1',
+    ]) {
+      expect(isPublicAddress(ip, 6), ip).toBe(false)
+    }
+  })
 })
 
 describe('checkLinkUrl', () => {
