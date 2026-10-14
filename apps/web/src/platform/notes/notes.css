@@ -1,0 +1,220 @@
+/* A rendered note: the one markup the app did not write, so Markdown's own tags get their type and
+   spacing here, scoped to the renderer's container. The measure is the caller's. */
+[data-note-md] {
+  overflow-wrap: break-word;
+}
+
+[data-note-md] > :first-child {
+  margin-top: 0;
+}
+
+[data-note-md] > :last-child {
+  margin-bottom: 0;
+}
+
+[data-note-md] p,
+[data-note-md] ul,
+[data-note-md] ol,
+[data-note-md] blockquote,
+[data-note-md] pre {
+  margin-block: 0.75rem;
+}
+
+/* The scale's own steps (20/28, 16/24), never a size of their own: a note's headings are headings
+   of a BLOCK inside a panel, so the panel-title step is the biggest one that can appear. */
+[data-note-md] h1,
+[data-note-md] h2 {
+  font-size: var(--text-lg);
+  line-height: var(--text-lg--line-height);
+  font-weight: 600;
+  margin-block: 1.25rem 0.5rem;
+}
+
+[data-note-md] h3,
+[data-note-md] h4,
+[data-note-md] h5,
+[data-note-md] h6 {
+  font-size: var(--text-base);
+  line-height: var(--text-base--line-height);
+  font-weight: 600;
+  margin-block: 1rem 0.375rem;
+}
+
+[data-note-md] ul,
+[data-note-md] ol {
+  padding-inline-start: 1.5rem;
+}
+
+[data-note-md] ul {
+  list-style: disc;
+}
+
+[data-note-md] ol {
+  list-style: decimal;
+}
+
+/* GFM's task list is not a bulleted list: the mark IS the bullet. */
+[data-note-md] ul.contains-task-list {
+  list-style: none;
+  padding-inline-start: 0;
+}
+
+[data-note-md] li {
+  margin-block: 0.25rem;
+}
+
+[data-note-md] blockquote {
+  border-inline-start: 2px solid var(--color-rule);
+  padding-inline-start: 0.875rem;
+  color: var(--color-ink-muted);
+}
+
+/* A link is ink with an underline, as everywhere else: the underline is what tells it apart. */
+[data-note-md] a {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--color-rule-strong);
+  text-underline-offset: 3px;
+}
+
+[data-note-md] hr {
+  border: 0;
+  border-top: 1px solid var(--color-rule);
+  margin-block: 1.25rem;
+}
+
+[data-note-md] strong {
+  font-weight: 600;
+}
+
+[data-note-md] del {
+  text-decoration: line-through;
+  color: var(--color-ink-muted);
+}
+
+/* CODE IS `--font-mono` (Ant Design 5's `fontFamilyCode` verbatim).
+   NO MONO WEBFONT IS SHIPPED: the stack already names a face that exists on every platform this
+   app runs on, and a second self-hosted family would be a second subsetting pipeline and another
+   megabyte for a feature that appears in a minority of notes. The CJK subset is behind it in the
+   stack so a Chinese identifier inside a fence still has a face.
+
+   LIGATURES OFF, EVERYWHERE MONO IS USED. `--font-mono`'s own entries have none, but the final
+   `monospace` fallback is whatever the reader's browser is set to, and a coding face maps `=>`,
+   `!=` and `<=` to single glyphs. A note quotes shell commands and comparisons; a renderer that
+   silently redraws `!=` as an unequal sign is showing something other than what was typed. */
+[data-note-md] code,
+[data-note-md] pre,
+.font-mono {
+  font-family: var(--font-mono);
+  font-variant-ligatures: none;
+}
+
+/* THE HAIRLINE IS WHAT MAKES CODE A BLOCK IN DARK, not the fill. `desk` is a step DOWN from the
+   sheet, which reads clearly on white paper and almost not at all on a near-black one -- the first
+   dark screenshot showed a fence that was a rectangle of nothing. A `rule` steps the other way in
+   dark (it is lighter than both) and is a hairline on the tint in light, so one rule is right in
+   both schemes. The same reason the hover is an ink layer: in dark a plane has to go up. */
+[data-note-md] code {
+  font-size: 0.875em;
+  background: var(--color-desk);
+  border: 1px solid var(--color-rule);
+  border-radius: 0.25rem;
+  padding: 0.0625rem 0.25rem;
+}
+
+[data-note-md] pre {
+  background: var(--color-desk);
+  border: 1px solid var(--color-rule);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  overflow-x: auto;
+  font-size: 0.875rem;
+  line-height: 1.375rem;
+}
+
+/* A fence is already in a `pre` with its own ground and edge: the inline chip would double both. */
+[data-note-md] pre code {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: inherit;
+}
+
+[data-note-md] table {
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  line-height: var(--text-sm--line-height);
+}
+
+[data-note-md] th,
+[data-note-md] td {
+  border: 1px solid var(--color-rule);
+  padding: 0.25rem 0.5rem;
+  text-align: start;
+}
+
+[data-note-md] th {
+  font-weight: 600;
+  background: var(--color-desk);
+}
+
+/* KaTeX sets its own type; all this does is keep a long display formula from widening the pane. */
+[data-note-md] .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* HIGHLIGHT.JS'S CLASSES, MAPPED ONTO THE SEVEN TOKENS ABOVE.
+   highlight.js emits ~40 class names; they collapse into these seven buckets, and a class that is
+   not listed simply inherits the block's own colour -- which is the right default, because an
+   unlisted token is one this app has no opinion about. */
+[data-note-md] .hljs-comment,
+[data-note-md] .hljs-quote {
+  color: var(--color-code-comment);
+  font-style: italic;
+}
+[data-note-md] .hljs-keyword,
+[data-note-md] .hljs-selector-tag,
+[data-note-md] .hljs-literal,
+[data-note-md] .hljs-doctag,
+[data-note-md] .hljs-meta {
+  color: var(--color-code-keyword);
+}
+[data-note-md] .hljs-string,
+[data-note-md] .hljs-regexp,
+[data-note-md] .hljs-addition,
+[data-note-md] .hljs-template-variable {
+  color: var(--color-code-string);
+}
+[data-note-md] .hljs-number,
+[data-note-md] .hljs-symbol,
+[data-note-md] .hljs-bullet,
+[data-note-md] .hljs-link {
+  color: var(--color-code-number);
+}
+[data-note-md] .hljs-title,
+[data-note-md] .hljs-title.class_,
+[data-note-md] .hljs-title.function_,
+[data-note-md] .hljs-section,
+[data-note-md] .hljs-name {
+  color: var(--color-code-fn);
+}
+[data-note-md] .hljs-attr,
+[data-note-md] .hljs-attribute,
+[data-note-md] .hljs-variable,
+[data-note-md] .hljs-type,
+[data-note-md] .hljs-selector-attr,
+[data-note-md] .hljs-selector-class {
+  color: var(--color-code-attr);
+}
+[data-note-md] .hljs-punctuation,
+[data-note-md] .hljs-operator,
+[data-note-md] .hljs-params {
+  color: var(--color-code-punct);
+}
+[data-note-md] .hljs-emphasis {
+  font-style: italic;
+}
+[data-note-md] .hljs-strong {
+  font-weight: 600;
+}

@@ -6,6 +6,7 @@ import remarkMath from 'remark-math'
 import type { PluggableList } from 'unified'
 import { MERMAID_LANG, noteFeatures } from './features'
 import { noteSchema } from './schema'
+import './notes.css'
 
 /**
  * A NOTE, RENDERED. Reading mode's half of the Markdown work.
