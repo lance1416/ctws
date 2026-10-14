@@ -136,7 +136,7 @@ describe('POST /tasks/:id/move', () => {
 
   // An accepted judgement call, pinned here because nothing else holds it: when a parent is
   // given, the PARENT's project wins and the client's `projectId` is ignored, exactly as in
-  // createTask. Spec 5.1 requires a child's project to equal its parent's, and making that
+  // createTask. A child's project must equal its parent's, and making that
   // unviolable beats validating it. Without this test the next reader can reasonably decide the
   // client's value should win and see a fully green suite.
   it('takes the project from the parent, ignoring the client projectId', async () => {

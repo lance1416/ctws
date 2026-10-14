@@ -92,7 +92,7 @@ describe('create', () => {
     expect(res.json()).toMatchObject({ parentId, projectId })
   })
 
-  // Spec 5.1: the child's project_id must equal the parent's. Trusting the client's projectId
+  // The child's project_id must equal the parent's. Trusting the client's projectId
   // here would let a caller plant a child whose project_id points elsewhere.
   it('ignores a projectId that disagrees with the parent and uses the parent project', async () => {
     const ctx = await setup()
@@ -223,7 +223,7 @@ describe('update', () => {
     expect(await eventsOf(ctx, id)).toHaveLength(before)
   })
 
-  // Spec 5.2: manual_progress is leaf-only, because a derived value and a hand-typed one would
+  // manual_progress is leaf-only, because a derived value and a hand-typed one would
   // contradict each other.
   it('refuses manual progress on a task that has children', async () => {
     const ctx = await setup()
@@ -589,7 +589,7 @@ describe('guards that must not be silently dropped', () => {
 })
 
 /**
- * SPEC 9.5: the event and the change it describes are one transaction.
+ * The event and the change it describes are one transaction.
  *
  * Two tests, pointing in OPPOSITE directions, because either alone is passed by an implementation
  * that writes the event after the commit:
@@ -674,13 +674,13 @@ describe('event and mutation share one transaction', () => {
 })
 
 /**
- * THE GUARD IS IN THE SERVICE, NOT ONLY IN THE ROUTE.
+ * The guard is in the command, not only in the route.
  *
  * Every cross-workspace test above goes through HTTP, so all of them pass against an app whose
- * only check is a route preHandler -- and the constraint the spec actually cares about is that a
- * guard cannot be skipped by reaching the work another way (a script, a job, a second route).
+ * only check is a route preHandler, while what matters is that a guard cannot be skipped by
+ * reaching the work another way (a script, a job, a second route).
  *
- * So these call the service functions DIRECTLY with a workspace id that does not own the task.
+ * So these call the commands directly with a workspace id that does not own the task.
  * They do not assert WHERE the check lives -- that would pin an implementation detail and get in
  * the way of honest refactoring -- only that the work itself refuses, whoever asks.
  */
