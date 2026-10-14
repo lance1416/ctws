@@ -8,8 +8,9 @@ import type { CaptureTarget } from '../contract'
 import { useShortcutsEnabled } from '../../platform/keyboard/enabled'
 import { isBareKey, isTypingTarget } from '../../platform/keyboard/keys'
 import { isOverlayOpen } from '../../platform/keyboard/overlayState'
-import { useComposing } from '../../platform/keyboard/composition'
+import { useInlineEdit } from '../../platform/ui/useInlineEdit'
 import { textbox } from '../../platform/ui/formStyles'
+import { LAYER } from '../../platform/ui/layers'
 
 /**
  * One input on every page, in the header: the same place on every page and at every width.
@@ -23,7 +24,6 @@ import { textbox } from '../../platform/ui/formStyles'
  * because the confirmation names where the line went.
  */
 export function QuickCapture() {
-  const composing = useComposing()
   const [title, setTitle] = useState('')
   // WHERE THE LAST LINE LANDED, or null. One line, never a queue. It names the destination but
   // not the title: the title would sit in the DOM of every page (this box is in the layout) and
@@ -67,6 +67,7 @@ export function QuickCapture() {
     if (!t || !routeOf(t) || capture.isPending) return
     capture.mutate(t)
   }
+  const lineKeys = useInlineEdit({ onCommit: submit })
 
   // `/` jumps to the capture box from anywhere that is not already a text field. The guard is
   // now shared with the other document-level keys (`f`, `?`, the `g` chords) rather than
@@ -94,11 +95,7 @@ export function QuickCapture() {
             setTitle(e.target.value)
             setLanded(null)
           }}
-          {...composing.bind}
-          onKeyDown={(e) => {
-            // isComposing: Enter confirms an IME candidate, it must not submit half a word.
-            if (e.key === 'Enter' && !composing.composingNow(e)) submit()
-          }}
+          {...lineKeys}
           placeholder="Capture…"
           disabled={!fallback.target}
           aria-label="Capture"
@@ -114,7 +111,9 @@ export function QuickCapture() {
       {/* Under the box, right-aligned to it. Below 640 the box is too near the left edge for that:
           a long project name would run off the screen, so the message spans the width under the
           header instead. */}
-      <div className="absolute top-full right-0 z-40 mt-1 flex w-max max-w-[20rem] flex-col empty:hidden max-sm:fixed max-sm:inset-x-4 max-sm:top-14 max-sm:mt-0 max-sm:w-auto max-sm:max-w-none">
+      <div
+        className={`absolute top-full right-0 ${LAYER.cover} mt-1 flex w-max max-w-[20rem] flex-col empty:hidden max-sm:fixed max-sm:inset-x-4 max-sm:top-14 max-sm:mt-0 max-sm:w-auto max-sm:max-w-none`}
+      >
         {missing && (
           <p
             role="alert"

@@ -9,6 +9,7 @@ import { useForgetWhenGone, useRecordRecent } from '../search/recent'
 import { useEveryProject } from './api'
 import { DeleteProject } from './DeleteProject'
 import { ProjectHead } from './ProjectHead'
+import { HANG } from '../../platform/ui/hang'
 
 /**
  * A project's page: its head, each module's block of rows, everything linked to it, and its
@@ -41,7 +42,7 @@ export function ProjectPage() {
 
   return (
     <>
-      <section aria-label="Project at a glance" className="mb-8 ml-15 min-w-0 pt-2 sm:ml-18">
+      <section aria-label="Project at a glance" className={`mb-8 ${HANG} min-w-0 pt-2`}>
         <ProjectHead id={id} />
       </section>
 

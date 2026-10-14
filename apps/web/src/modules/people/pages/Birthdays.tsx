@@ -8,6 +8,7 @@ import { MONTHS } from '../../../platform/time/dates'
 import type { Circle } from '@ctws/contracts'
 import { PeopleHead } from '../components/PeopleViews'
 import { useCrumbs } from '../../../shell/layout/Location'
+import { HANG } from '../../../platform/ui/hang'
 
 /**
  * BIRTHDAYS -- a LENS. It owns nobody: this page only reads, and a person is made by the people
@@ -45,7 +46,7 @@ export function Birthdays() {
     <>
       <PeopleHead />
 
-      <div className="mt-4 ml-15 flex flex-wrap items-center gap-3 sm:ml-18">
+      <div className={`mt-4 ${HANG} flex flex-wrap items-center gap-3`}>
         <input
           value={find}
           onChange={(e) => setFind(e.target.value)}
@@ -62,7 +63,7 @@ export function Birthdays() {
       </div>
 
       {view.isError && (
-        <p role="alert" className="mt-4 ml-15 text-sm text-danger sm:ml-18">
+        <p role="alert" className={`mt-4 ${HANG} text-sm text-danger`}>
           Couldn&apos;t load birthdays
         </p>
       )}

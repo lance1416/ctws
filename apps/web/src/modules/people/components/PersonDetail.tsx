@@ -21,6 +21,7 @@ import { Link } from 'react-router-dom'
 import { LinkedSection } from '../../../shell/links/Links'
 import { PickMany, PickOne } from '../../../platform/ui/inline'
 import { useForgetRecent, useRecordRecent } from '../../../shell/search/recent'
+import { CloseIcon, PlusIcon } from '../../../platform/ui/icons'
 
 /**
  * ONE PERSON, in the shell's detail pane.
@@ -532,15 +533,7 @@ function PersonForm({
                 onClick={() => setChannels((rows) => rows.filter((_, at) => at !== i))}
                 className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-subtle hover:bg-hover hover:text-ink"
               >
-                <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3.5 w-3.5">
-                  <path
-                    d="M4 4l8 8M12 4l-8 8"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                  />
-                </svg>
+                <CloseIcon className="h-3.5 w-3.5" strokeWidth={1.5} />
               </button>
               {/* 保存之前就说清是哪一条不成立：按下 Save 才被服务端拒，中间那段路是白走的。 */}
               {shown[i] !== undefined && <p className="w-full text-xs text-danger">{shown[i]}</p>}
@@ -554,15 +547,7 @@ function PersonForm({
           }
           className="mt-1.5 flex h-8 items-center gap-1.5 rounded-md border border-dashed border-rule-strong px-2.5 text-sm text-ink-muted hover:bg-hover hover:text-ink"
         >
-          <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3 w-3">
-            <path
-              d="M8 3.5v9M3.5 8h9"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-            />
-          </svg>
+          <PlusIcon className="h-3 w-3" strokeWidth={1.8} />
           Add one
         </button>
       </div>

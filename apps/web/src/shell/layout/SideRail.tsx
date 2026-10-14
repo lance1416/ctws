@@ -4,7 +4,8 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { createProject, listProjects } from '../projects/api'
 import { useRegistry } from '../registry'
 import { railClass } from '../projects/projectColor'
-import { useComposing } from '../../platform/keyboard/composition'
+import { useInlineEdit } from '../../platform/ui/useInlineEdit'
+import { PlusIcon } from '../../platform/ui/icons'
 
 /**
  * The left column: where you can go, and how much is waiting there.
@@ -28,7 +29,6 @@ export function SideRail() {
   // session, not one per navigation.
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
   const navigate = useNavigate()
-  const composing = useComposing()
   const { pathname } = useLocation()
   const registry = useRegistry()
   const pinned = registry.pinned
@@ -66,6 +66,13 @@ export function SideRail() {
     const t = name.trim()
     if (t && !create.isPending) create.mutate({ name: t })
   }
+  const nameKeys = useInlineEdit({
+    onCommit: submit,
+    onCancel: () => {
+      setName('')
+      setNaming(false)
+    },
+  })
 
   return (
     // Chrome, not work: the rail and the header share ONE surface (`chrome`), and the page is the
@@ -129,15 +136,7 @@ export function SideRail() {
             aria-label="New project"
             className="flex h-6 w-6 items-center justify-center rounded-md text-ink-subtle hover:bg-hover hover:text-ink"
           >
-            <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3.5 w-3.5">
-              <path
-                d="M8 3.5v9M3.5 8h9"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-              />
-            </svg>
+            <PlusIcon className="h-3.5 w-3.5" strokeWidth={1.6} />
           </button>
         </div>
         {naming && (
@@ -145,15 +144,7 @@ export function SideRail() {
             ref={field}
             value={name}
             onChange={(e) => setName(e.target.value)}
-            {...composing.bind}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !composing.composingNow(e)) submit()
-              else if (e.key === 'Escape') {
-                e.stopPropagation()
-                setName('')
-                setNaming(false)
-              }
-            }}
+            {...nameKeys}
             onBlur={() => {
               if (!name.trim()) setNaming(false)
             }}

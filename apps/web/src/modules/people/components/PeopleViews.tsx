@@ -4,6 +4,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { birthdaysKey, listBirthdays } from '../api/birthdays'
 import { BUTTON } from '../../../platform/ui/buttonStyles'
 import { NewPersonDialog } from './NewPersonDialog'
+import { PageHead } from '../../../platform/ui/PageHead'
+import { HANG } from '../../../platform/ui/hang'
 
 const BIRTHDAYS = '/people/birthdays'
 
@@ -18,12 +20,7 @@ export function PeopleHead() {
   return (
     <>
       <div className="flex items-center justify-between gap-3">
-        <h1
-          tabIndex={-1}
-          className="ml-15 text-2xl font-semibold tracking-[-0.02em] focus:outline-none sm:ml-18"
-        >
-          People
-        </h1>
+        <PageHead hang>People</PageHead>
         {/* Secondary, because All people also has the quicker way in: the box under the tabs
             takes a name when a name is all you have. This opens the form for when you already
             know where they work and how to reach them. */}
@@ -61,7 +58,7 @@ function PeopleViews() {
         : 'text-ink-muted hover:text-ink'
     }`
   return (
-    <nav aria-label="People views" className="mt-4 ml-15 flex gap-5 border-b border-rule sm:ml-18">
+    <nav aria-label="People views" className={`mt-4 ${HANG} flex gap-5 border-b border-rule`}>
       <Link
         to="/people"
         aria-current={onBirthdays ? undefined : 'page'}

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { PanelEmpty } from '../../platform/ui/Panel'
+import { HANG } from '../../platform/ui/hang'
 
 /**
  * A SECTION OF A DAY: a heading, then its rows, and no box.
@@ -28,7 +29,7 @@ export function DaySection({
 }) {
   return (
     <section aria-label={label} data-panel={label} className={`min-w-0 ${className}`}>
-      <div className="mb-1.5 ml-15 flex min-w-0 items-baseline gap-2 sm:ml-18">
+      <div className={`mb-1.5 ${HANG} flex min-w-0 items-baseline gap-2`}>
         {heading ?? <h2 className="text-base font-semibold text-ink">{label}</h2>}
         {count !== undefined && count > 0 && (
           <span data-count className="text-sm text-ink-subtle tabular-nums">

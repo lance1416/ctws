@@ -398,7 +398,8 @@ test('shift-click picks rows, and the bar finishes them in one press', async ({ 
 test('the rail count follows tasks finished from the tree', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '今天的三件')
-  for (const t of ['一件', '两件', '三件']) await makeTask(page, pid, t, { scheduledOn: dayOffset(0) })
+  for (const t of ['一件', '两件', '三件'])
+    await makeTask(page, pid, t, { scheduledOn: dayOffset(0) })
   await openTree(page, pid)
   const count = page
     .getByRole('navigation', { name: 'Main navigation' })

@@ -249,7 +249,9 @@ export function TaskRow({
           <RowMeta
             // An age is the absence of a decision: once there is a date, the margin has something
             // better to say and the age gets out of its way.
-            age={capturedAt && !dueAt && !scheduledOn ? capturedLabel(capturedAt, timeZone, now) : null}
+            age={
+              capturedAt && !dueAt && !scheduledOn ? capturedLabel(capturedAt, timeZone, now) : null
+            }
             rollup={rollup}
             blocked={blockedLabel(blockedBy)}
           />

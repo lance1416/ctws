@@ -5,6 +5,7 @@ import { apiFetch } from '../../platform/http/api'
 import { useMe } from '../auth/useMe'
 import { Location, LocationProvider } from './Location'
 import { DetailPaneContext, useWidePane } from '../../platform/ui/paneLayout'
+import { LAYER } from '../../platform/ui/layers'
 import { QuickCapture } from '../capture/QuickCapture'
 import { BottomBar } from './BottomBar'
 import { LeaveGuardContext, type LeaveGuard } from '../../platform/ui/leaveGuard'
@@ -62,7 +63,7 @@ export function Layout() {
           those are the rail's, and a bar of them runs out of room at five. Capture is here and
           not in the rail because it is the same box at every width, phone included.
           Nothing here knows what a task is, which is the test a shell has to pass. */}
-        <header className="sticky top-0 z-30 border-b border-rule bg-chrome">
+        <header className={`sticky top-0 ${LAYER.bar} border-b border-rule bg-chrome`}>
           <div className="flex min-h-13 items-center gap-x-3 px-4 py-2 sm:gap-x-4">
             <Link to="/" className="shrink-0 font-semibold tracking-tight text-ink">
               CTWS

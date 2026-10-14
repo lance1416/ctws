@@ -14,7 +14,12 @@ describe('this workspace', () => {
 
 describe("the rail's pinned pages", () => {
   it('are the four that cut across every kind, in reading order', () => {
-    expect(registry.pinned.map((p) => p.label)).toEqual(['Workbench', 'Today', 'Calendar', 'Review'])
+    expect(registry.pinned.map((p) => p.label)).toEqual([
+      'Workbench',
+      'Today',
+      'Calendar',
+      'Review',
+    ])
   })
 
   it('never number more than five', () => {

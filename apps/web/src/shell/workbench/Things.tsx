@@ -2,8 +2,9 @@ import { Link } from 'react-router-dom'
 import { useRegistry } from '../registry'
 import { useCrumbs } from '../layout/Location'
 import { KeyHint } from '../../platform/ui/KeyHint'
-import { MARGIN } from '../rows/RowLead'
+import { HANG_WIDTH } from '../../platform/ui/hang'
 import { BODY_GUTTER, ProjectRail } from '../rows/RowParts'
+import { HANG } from '../../platform/ui/hang'
 
 /**
  * THINGS: every kind of thing, one row each.
@@ -22,14 +23,14 @@ export function Things() {
   const keys = new Map(registry.chords.map((c) => [c.id, c.key]))
   return (
     <>
-      <h1 className="ml-15 text-2xl font-semibold tracking-[-0.02em] sm:ml-18">Things</h1>
+      <h1 className={`${HANG} text-2xl font-semibold tracking-[-0.02em]`}>Things</h1>
       <ul className="mt-7 flex max-w-[48rem] flex-col">
         {registry.kinds.map(({ label, to, Count, Status, chord }) => {
           const key = chord ? keys.get(chord) : undefined
           return (
             <li key={label} data-kind={label} className="flex min-h-19 min-w-0">
               <span
-                className={`flex shrink-0 items-start justify-end pt-3.5 pr-2 sm:pr-3.5 ${MARGIN}`}
+                className={`flex shrink-0 items-start justify-end pt-3.5 pr-2 sm:pr-3.5 ${HANG_WIDTH}`}
               >
                 {key && (
                   <KeyHint className="rounded border border-rule-strong px-1.5 text-xs whitespace-nowrap text-ink-subtle">

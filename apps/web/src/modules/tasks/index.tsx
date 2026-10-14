@@ -24,7 +24,7 @@ import { Review } from './pages/Review'
 import { Today } from './pages/Today'
 import { useTimeZone } from '../../shell/auth/useMe'
 import type { CaptureTargetState, SearchHit, WorkspaceModule } from '../../shell/contract'
-import { useComposing } from '../../platform/keyboard/composition'
+import { useInlineEdit } from '../../platform/ui/useInlineEdit'
 import { textbox } from '../../platform/ui/formStyles'
 import { TASKS_ID } from './id'
 import { useNow } from '../../platform/time/useNow'
@@ -355,7 +355,6 @@ function NewTaskAction({ projectId }: { projectId: string }) {
 
 /** The module's rows under a shell project: the tree, and the one input that adds a root task. */
 function ProjectTasks({ projectId, view }: { projectId: string; view: string }) {
-  const composing = useComposing()
   const [title, setTitle] = useState('')
   const failureId = useId()
   const create = useMutation({
@@ -368,6 +367,7 @@ function ProjectTasks({ projectId, view }: { projectId: string; view: string }) 
     const t = title.trim()
     if (t && !create.isPending) create.mutate(t)
   }
+  const titleKeys = useInlineEdit({ onCommit: submit })
 
   return (
     <>
@@ -382,10 +382,7 @@ function ProjectTasks({ projectId, view }: { projectId: string; view: string }) 
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          {...composing.bind}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !composing.composingNow(e)) submit()
-          }}
+          {...titleKeys}
           placeholder="New task"
           aria-label="New task"
           aria-invalid={create.isError ? true : undefined}

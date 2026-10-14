@@ -1,6 +1,6 @@
 import type { ReviewResponse } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { listReview } from '../api/review'
 import { DaySection } from '../../../shell/rows/DaySection'
@@ -15,6 +15,8 @@ import { LIST_MEASURE, weekDayWord } from '../../../shell/rows/leads'
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { useNow } from '../../../platform/time/useNow'
 import { useCrumbs } from '../../../shell/layout/Location'
+import { PageHead } from '../../../platform/ui/PageHead'
+import { HANG } from '../../../platform/ui/hang'
 
 /** "Oct 2" -- the month and the day; the window itself carries the year. */
 function dayLabel(day: string): string {
@@ -133,7 +135,6 @@ export function Review() {
     // The other view does not need it, and a request nobody reads is a request nobody should make.
     enabled: view === 'week',
   })
-  const heading = useRef<HTMLHeadingElement>(null)
   const timeZone = useTimeZone()
   const today = todayIn(timeZone, useNow())
   const data = review.data
@@ -148,14 +149,8 @@ export function Review() {
   return (
     <>
       {/* The title on the margin's edge, where the rows' threads and the sections' headings hang. */}
-      <div className="ml-15 flex flex-wrap items-center gap-x-3 gap-y-2 sm:ml-18">
-        <h1
-          ref={heading}
-          tabIndex={-1}
-          className="text-2xl font-semibold tracking-[-0.02em] focus:outline-none"
-        >
-          Review
-        </h1>
+      <div className={`${HANG} flex flex-wrap items-center gap-x-3 gap-y-2`}>
+        <PageHead>Review</PageHead>
         <ViewTabs views={VIEWS} current={view} onPick={pickView} />
         {/* THE WEEK, as one control. It used to be a date range printed as text with a lone
             "Last week" button pushed to the far right -- two halves of one idea, dressed as two
@@ -197,7 +192,7 @@ export function Review() {
       {view === 'done' && <Completed heading={false} />}
 
       {view === 'week' && review.isError && (
-        <p role="alert" className="mt-4 ml-15 text-sm text-danger sm:ml-18">
+        <p role="alert" className={`mt-4 ${HANG} text-sm text-danger`}>
           Couldn't load the review
         </p>
       )}
@@ -205,7 +200,7 @@ export function Review() {
       {view === 'week' && data && (
         <>
           {weekSentence(total) && (
-            <p data-review-sentence className="mt-1.5 ml-15 text-ink-muted tabular-nums sm:ml-18">
+            <p data-review-sentence className={`mt-1.5 ${HANG} text-ink-muted tabular-nums`}>
               {weekSentence(total)}
             </p>
           )}

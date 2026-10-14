@@ -12,6 +12,7 @@ import { MENU_ITEM, MENU_ITEM_DANGER, MENU_SURFACE } from '../../../platform/ui/
 import { RowLead } from '../../../shell/rows/RowLead'
 import { BODY_GUTTER, ProjectRail } from '../../../shell/rows/RowParts'
 import { useNow } from '../../../platform/time/useNow'
+import { HANG } from '../../../platform/ui/hang'
 
 /**
  * ONE ROW OF THE READING LIST.
@@ -116,7 +117,7 @@ export function ReadingRow({
   // the page, and nothing else can be pressed by mistake while it is open.
   if (deleting) {
     return (
-      <li className="ml-15 min-h-11 py-1 sm:ml-18">
+      <li className={`${HANG} min-h-11 py-1`}>
         <DeleteConfirm
           label="Confirm deleting this item"
           message={`Delete “${readingLabel(item)}”? This cannot be undone.`}

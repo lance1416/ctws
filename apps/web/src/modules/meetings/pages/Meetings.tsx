@@ -1,6 +1,6 @@
 import type { MeetingOccurrence } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
-import { Fragment, useRef, useState, type ReactNode } from 'react'
+import { Fragment, useState, type ReactNode } from 'react'
 import { useForgetWhenGone } from '../../../shell/search/recent'
 import { useNavigate, useParams } from 'react-router-dom'
 import { listMeetings, meetingsKey, repeatLabel } from '../api/meetings'
@@ -19,6 +19,9 @@ import { useTimeZone } from '../../../shell/auth/useMe'
 import { useNow } from '../../../platform/time/useNow'
 import { BUTTON, LINK } from '../../../platform/ui/buttonStyles'
 import { useCrumbs } from '../../../shell/layout/Location'
+import { QueryStatus } from '../../../platform/ui/QueryStatus'
+import { PageHead } from '../../../platform/ui/PageHead'
+import { HANG } from '../../../platform/ui/hang'
 
 /**
  * MEETINGS -- the module's own page.
@@ -63,7 +66,6 @@ export function Meetings() {
   // over, follow the clock.
   const now = useNow()
   const today = todayIn(accountZone, now)
-  const heading = useRef<HTMLHeadingElement>(null)
   const [making, setMaking] = useState(false)
   const [showPast, setShowPast] = useState(false)
   /**
@@ -113,14 +115,8 @@ export function Meetings() {
   return (
     <>
       {/* The title on the margin's edge, where the rows' threads and the days' headings hang. */}
-      <div className="ml-15 flex flex-wrap items-center justify-between gap-3 sm:ml-18">
-        <h1
-          ref={heading}
-          tabIndex={-1}
-          className="text-2xl font-semibold tracking-[-0.02em] focus:outline-none"
-        >
-          Meetings
-        </h1>
+      <div className={`${HANG} flex flex-wrap items-center justify-between gap-3`}>
+        <PageHead>Meetings</PageHead>
         <button
           type="button"
           onClick={() => setMaking(true)}
@@ -130,14 +126,7 @@ export function Meetings() {
         </button>
       </div>
 
-      {ahead.isPending && <p className="mt-6 ml-15 text-ink-muted sm:ml-18">Loading…</p>}
-      {ahead.isError && (
-        <p role="alert" className="mt-6 ml-15 text-danger sm:ml-18">
-          {ahead.error instanceof Error
-            ? ahead.error.message
-            : "Couldn't load. Check that the server is running."}
-        </p>
-      )}
+      <QueryStatus query={ahead} />
       {ahead.isSuccess && coming.length === 0 && (
         <EmptyState hang title="Nothing in the next month" />
       )}
@@ -198,7 +187,7 @@ export function Meetings() {
       )}
       {/* 链接指向的会已经不在了（或者取消了）：说出来，别只留一个列表。 */}
       {gone && (
-        <p role="alert" className="mt-4 ml-15 text-sm text-ink-muted sm:ml-18">
+        <p role="alert" className={`mt-4 ${HANG} text-sm text-ink-muted`}>
           This meeting is not here any more.
         </p>
       )}

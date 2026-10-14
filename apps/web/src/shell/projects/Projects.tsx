@@ -1,20 +1,15 @@
 import type { ProjectListItem, ProjectMovementResponse } from '@ctws/contracts'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
+import { Fragment, useEffect, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ApiError } from '../../platform/http/api'
 import { listMovement } from '../../modules/tasks/api/movement'
 import { getTask } from '../../modules/tasks/api/tasks'
-import {
-  archivedProjectsKey,
-  createProject,
-  listArchivedProjects,
-  listProjects,
-} from './api'
+import { archivedProjectsKey, createProject, listArchivedProjects, listProjects } from './api'
 import { todayIn } from '../../platform/time/dates'
 import { movedLine } from '../../modules/tasks/movement'
 import { deadlineDayLead, LIST_MEASURE } from '../rows/leads'
-import { useComposing } from '../../platform/keyboard/composition'
+import { useInlineEdit } from '../../platform/ui/useInlineEdit'
 import { DaySection } from '../rows/DaySection'
 import { textbox } from '../../platform/ui/formStyles'
 import { useCrumbs } from '../layout/Location'
@@ -22,10 +17,11 @@ import { RowLead } from '../rows/RowLead'
 import { BODY_GUTTER, ProjectRail, ROW_LIST } from '../rows/RowParts'
 import { useTimeZone } from '../auth/useMe'
 import { useNow } from '../../platform/time/useNow'
+import { PageHead } from '../../platform/ui/PageHead'
+import { HANG } from '../../platform/ui/hang'
 
 export function Projects() {
   useCrumbs([{ label: 'Projects' }])
-  const composing = useComposing()
   const [name, setName] = useState('')
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
   // The same entry Today's This week and the Workbench read: what is late, what is next, when
@@ -57,12 +53,12 @@ export function Projects() {
     meta: { awaits: [['projects']] },
     onSuccess: () => setName(''),
   })
-  const heading = useRef<HTMLHeadingElement>(null)
 
   const submit = () => {
     const n = name.trim()
     if (n && !create.isPending) create.mutate({ name: n })
   }
+  const nameKeys = useInlineEdit({ onCommit: submit })
 
   const moved = new Map((movement.data ?? []).map((m) => [m.projectId, m]))
   // Rendered in the order the server returns: it puts the inbox first. Sorting here too would
@@ -74,21 +70,12 @@ export function Projects() {
   return (
     <>
       {/* On the margin's edge, where the rows' threads hang: the page is one column of rows. */}
-      <h1
-        ref={heading}
-        tabIndex={-1}
-        className="ml-15 text-2xl font-semibold tracking-[-0.02em] focus:outline-none sm:ml-18"
-      >
-        Projects
-      </h1>
-      <div className="mt-5 ml-15 max-w-[40ch] sm:ml-18">
+      <PageHead hang>Projects</PageHead>
+      <div className={`mt-5 ${HANG} max-w-[40ch]`}>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          {...composing.bind}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !composing.composingNow(e)) submit()
-          }}
+          {...nameKeys}
           placeholder="New project"
           aria-label="New project"
           className={`w-full bg-sheet ${textbox}`}
@@ -97,19 +84,19 @@ export function Projects() {
       {/* Gone is what the server SAYS (404); anything else is a failure to ask, and saying the
           task is gone then would send someone looking for a task that is still there. */}
       {linkedTask && found.isError && (
-        <p role="alert" className="mt-4 ml-15 text-sm text-ink-muted sm:ml-18">
+        <p role="alert" className={`mt-4 ${HANG} text-sm text-ink-muted`}>
           {found.error instanceof ApiError && found.error.status === 404
             ? 'This task is not here any more.'
             : "Couldn't open this task. Check that the server is running."}
         </p>
       )}
       {projects.isError && (
-        <p role="alert" className="mt-4 ml-15 text-sm text-danger sm:ml-18">
+        <p role="alert" className={`mt-4 ${HANG} text-sm text-danger`}>
           Couldn't load projects
         </p>
       )}
       {create.isError && (
-        <p role="alert" className="mt-4 ml-15 text-sm text-danger sm:ml-18">
+        <p role="alert" className={`mt-4 ${HANG} text-sm text-danger`}>
           That didn't work. Try again.
         </p>
       )}

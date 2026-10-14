@@ -11,7 +11,16 @@ import { Controller, useForm } from 'react-hook-form'
 import { listProjects } from '../../../shell/projects/api'
 import { deleteTask, listProjectTasks, moveTask, patchTask } from '../api/tasks'
 import { tasksKey } from '../api/taskCache'
-import { addDays, dayEndIso, dayPhrase, fromDayTimeInput, nextMonday, toDayTimeInput, todayIn, ymd } from '../../../platform/time/dates'
+import {
+  addDays,
+  dayEndIso,
+  dayPhrase,
+  fromDayTimeInput,
+  nextMonday,
+  toDayTimeInput,
+  todayIn,
+  ymd,
+} from '../../../platform/time/dates'
 import { moveDueToDay, overdueLabel } from '../dueDates'
 import { NoteBody } from '../../../platform/notes/NoteBody'
 import { WritingMode } from '../../../platform/notes/WritingMode'
@@ -33,6 +42,7 @@ import { detailTaskForm, PATCH_KEYS, type DetailTaskForm, type DetailTaskValues 
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { useForgetRecent, useRecordRecent } from '../../../shell/search/recent'
 import { useNow } from '../../../platform/time/useNow'
+import { CloseIcon } from '../../../platform/ui/icons'
 
 /**
  * The exact field, for the days the three named decisions do not cover. Quieter than them on
@@ -87,15 +97,7 @@ function CloseButton({ onClick }: { onClick: () => void }) {
       data-detail-close
       className="flex h-9 w-9 items-center justify-center rounded-md text-ink-muted hover:bg-hover hover:text-ink"
     >
-      <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4">
-        <path
-          d="M4 4l8 8M12 4l-8 8"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-        />
-      </svg>
+      <CloseIcon className="h-4 w-4" strokeWidth={1.5} />
     </button>
   )
 }

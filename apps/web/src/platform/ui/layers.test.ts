@@ -23,10 +23,10 @@ const tsx = (at: string): string[] =>
   )
 
 describe('layers', () => {
-  it('puts a menu above the pane, a row, and a modal layer', () => {
-    expect(order(LAYER.menu)).toBeGreaterThan(order(LAYER.overlay))
-    expect(order(LAYER.overlay)).toBeGreaterThan(order(LAYER.row))
-    expect(order(LAYER.row)).toBeGreaterThan(order(LAYER.pane))
+  it('puts a menu above full-screen writing, the bars, and the pane', () => {
+    expect(order(LAYER.menu)).toBeGreaterThan(order(LAYER.cover))
+    expect(order(LAYER.cover)).toBeGreaterThan(order(LAYER.bar))
+    expect(order(LAYER.bar)).toBeGreaterThan(order(LAYER.pane))
   })
 
   it('gives every menu surface that layer', () => {

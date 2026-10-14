@@ -37,6 +37,7 @@ import { useTimeZone } from '../../../shell/auth/useMe'
 import { useNow } from '../../../platform/time/useNow'
 import { BUTTON } from '../../../platform/ui/buttonStyles'
 import { useCrumbs } from '../../../shell/layout/Location'
+import { HANG } from '../../../platform/ui/hang'
 
 /**
  * TODAY: one sheet, the day's line down it.
@@ -367,7 +368,7 @@ export function Today() {
       {/* THE DATE IS THE HEADING: this page is a day, and which one is the first thing it says.
           The display step, at 500, set back where the titles start. Beside it the day's lunar
           name, a step quieter. */}
-      <div className="mb-8 ml-15 flex flex-wrap items-baseline gap-x-4 sm:ml-18">
+      <div className={`mb-8 ${HANG} flex flex-wrap items-baseline gap-x-4`}>
         <h1
           id="today-heading"
           tabIndex={-1}
@@ -382,16 +383,16 @@ export function Today() {
         )}
       </div>
 
-      {today.isPending && <p className="ml-15 text-ink-muted sm:ml-18">Loading…</p>}
+      {today.isPending && <p className={`${HANG} text-ink-muted`}>Loading…</p>}
       {today.isError && (
-        <p role="alert" className="ml-15 text-danger sm:ml-18">
+        <p role="alert" className={`${HANG} text-danger`}>
           {today.error instanceof Error
             ? today.error.message
             : "Couldn't load. Check that the server is running."}
         </p>
       )}
       {error && (
-        <p role="alert" className="mb-3 ml-15 text-sm text-danger sm:ml-18">
+        <p role="alert" className={`mb-3 ${HANG} text-sm text-danger`}>
           {error}
         </p>
       )}

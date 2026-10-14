@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
+import { LAYER } from '../../platform/ui/layers'
 import { useRegistry, WORKBENCH_PATH } from '../registry'
 
 /**
@@ -29,7 +30,7 @@ export function BottomBar({ onSearch }: { onSearch: () => void }) {
   return (
     <nav
       aria-label="Main navigation"
-      className="fixed inset-x-0 bottom-0 z-30 grid h-16 grid-cols-5 border-t border-rule bg-chrome lg:hidden"
+      className={`fixed inset-x-0 bottom-0 ${LAYER.bar} grid h-16 grid-cols-5 border-t border-rule bg-chrome lg:hidden`}
     >
       <NavLink to={WORKBENCH_PATH} end className={link}>
         <Icon>

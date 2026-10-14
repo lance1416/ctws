@@ -1,16 +1,10 @@
+import { HANG_WIDTH } from '../../platform/ui/hang'
 import type { Lead, LeadTone } from './leads'
 
 /**
- * THE MARGIN, drawn: a row's first column, saying WHEN in one short word (`leadFor`).
- *
- * Right-aligned and tabular, so a list's times and dates end at one x and read down like a diary's
- * left margin; on the title's own line (`pt-2.5` and the title's 24px leading), so the word and the
- * title are read as one line. One line always: the words are short by construction, and the exact
- * moment is the title.
+ * A row's first column, saying when in one short word (`leadFor`). Right-aligned and tabular, so
+ * a list's dates end at one x; on the title's own line, so word and title read as one.
  */
-
-/** 3.75rem on a phone, 4.5rem from 640 up. The sheet passes its own (`w-19`). */
-export const MARGIN = 'w-15 sm:w-18'
 
 const TONE: Record<LeadTone, string> = {
   missed: 'text-missed',
@@ -34,11 +28,9 @@ const SAID: Record<LeadTone, string> = {
 
 export function RowLead({
   lead,
-  width = MARGIN,
   dateTime,
 }: {
   lead: Lead | null
-  width?: string
   /** The instant the word names, when it names one: the word is then a `<time>`. */
   dateTime?: string | undefined
 }) {
@@ -47,7 +39,7 @@ export function RowLead({
     <span
       data-row-lead={lead?.tone}
       title={lead?.exact}
-      className={`flex shrink-0 items-start justify-end gap-1 pt-2.5 pr-2 text-sm leading-6 whitespace-nowrap tabular-nums sm:pr-3.5 ${width} ${
+      className={`flex shrink-0 items-start justify-end gap-1 pt-2.5 pr-2 text-sm leading-6 whitespace-nowrap tabular-nums sm:pr-3.5 ${HANG_WIDTH} ${
         lead ? TONE[lead.tone] : ''
       }`}
     >

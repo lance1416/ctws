@@ -8,6 +8,8 @@ import {
 } from 'react'
 import { tabbable } from 'tabbable'
 import { useReservePane, useWidePane } from './paneLayout'
+import { CloseIcon } from './icons'
+import { LAYER } from './layers'
 
 /**
  * THE DETAIL PANE, and it belongs to the SHELL.
@@ -99,7 +101,7 @@ export function DetailPane({
           onClick={onClose}
           style={{ top }}
           // Below 1024 the tab bar is the screen's floor, so the scrim and the layer stop at it.
-          className="fixed inset-x-0 bottom-0 z-20 bg-scrim max-lg:bottom-16"
+          className={`fixed inset-x-0 bottom-0 ${LAYER.pane} bg-scrim max-lg:bottom-16`}
         />
       )}
       <div
@@ -114,7 +116,7 @@ export function DetailPane({
         style={{ top: top + 12 }}
         // A COLUMN, so the one irreversible action (`DangerZone`, `mt-auto`) can be pushed to the
         // pane's floor when what is above it is short, instead of hanging under the last field.
-        className={`fixed z-20 flex flex-col overflow-y-auto p-5 text-ink focus:outline-none ${
+        className={`fixed ${LAYER.pane} flex flex-col overflow-y-auto p-5 text-ink focus:outline-none ${
           // THE SHEET, the same object in both modes: a `float`, 10px round, lifted, 12px in from
           // every edge it is near. As a COLUMN it sits in the right-hand track Layout takes out of
           // the grid (22rem inside 24rem); as a LAYER it is over the page with the scrim beneath,
@@ -156,15 +158,7 @@ export function DetailHead({
           aria-label="Close"
           className="flex h-9 w-9 items-center justify-center rounded-md text-ink-muted hover:bg-hover hover:text-ink"
         >
-          <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4">
-            <path
-              d="M4 4l8 8M12 4l-8 8"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            />
-          </svg>
+          <CloseIcon className="h-4 w-4" strokeWidth={1.5} />
         </button>
       </div>
     </div>

@@ -214,13 +214,7 @@ test('five tasks typed one after another all land, in order', async ({ page }) =
     await expect(row(page, title)).toBeVisible()
   }
   for (const title of titles) await expect(row(page, title)).toBeVisible()
-  expect(await shape(page)).toEqual([
-    '1:A',
-    '2:a1',
-    '2:a2',
-    '1:B',
-    ...titles.map((t) => `2:${t}`),
-  ])
+  expect(await shape(page)).toEqual(['1:A', '2:a1', '2:a2', '1:B', ...titles.map((t) => `2:${t}`)])
 })
 
 /*

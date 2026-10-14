@@ -1,6 +1,12 @@
 import { useId, useRef, useState } from 'react'
-import { MARGIN } from '../../../shell/rows/RowLead'
-import { BODY_GUTTER, CHEVRON_PX, gutterPlus, HANDLE_PX, INDENT_PX } from '../../../shell/rows/RowParts'
+import { HANG_WIDTH } from '../../../platform/ui/hang'
+import {
+  BODY_GUTTER,
+  CHEVRON_PX,
+  gutterPlus,
+  HANDLE_PX,
+  INDENT_PX,
+} from '../../../shell/rows/RowParts'
 import { useComposing } from '../../../platform/keyboard/composition'
 
 // The status marker's COLUMN -- the width of `StatusButton`, not of the glyph inside it -- so the
@@ -39,7 +45,7 @@ export function NewTaskInput({ depth, onCommit, onCancel, error }: Props) {
     // The row's own anatomy, with the margin and the thread left empty: the cursor starts where
     // the titles start.
     <li data-depth={depth} data-new-task className="flex items-stretch">
-      <span aria-hidden="true" className={`shrink-0 ${MARGIN}`} />
+      <span aria-hidden="true" className={`shrink-0 ${HANG_WIDTH}`} />
       <span aria-hidden="true" className="w-[3px] shrink-0" />
       {/* A column, not a row: the failure message belongs UNDER the box it is about. */}
       <div

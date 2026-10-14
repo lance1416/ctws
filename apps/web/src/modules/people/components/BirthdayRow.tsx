@@ -1,7 +1,7 @@
 import type { BirthdayListRow, Circle } from '@ctws/contracts'
 import { Link } from 'react-router-dom'
 import { countdownPhrase, fullDay, MONTHS } from '../../../platform/time/dates'
-import { MARGIN } from '../../../shell/rows/RowLead'
+import { HANG_WIDTH } from '../../../platform/ui/hang'
 import { BODY_GUTTER, ProjectRail } from '../../../shell/rows/RowParts'
 
 /**
@@ -67,7 +67,7 @@ export function BirthdayLead({ next }: { next: { day: string; inDays: number } |
       data-birthday-lead
       // The cake 2px from its date on a phone (6px up): "May 28" with its cake is 59px there, and
       // the phone's margin leaves 52 -- the rest runs into the page's gutter, half of it at most.
-      className={`flex shrink-0 items-center justify-end gap-0.5 pr-2 text-sm whitespace-nowrap tabular-nums sm:gap-1.5 sm:pr-3.5 ${MARGIN} ${
+      className={`flex shrink-0 items-center justify-end gap-0.5 pr-2 text-sm whitespace-nowrap tabular-nums sm:gap-1.5 sm:pr-3.5 ${HANG_WIDTH} ${
         next?.inDays === 0 ? 'font-semibold text-deadline' : 'text-ink-muted'
       }`}
     >

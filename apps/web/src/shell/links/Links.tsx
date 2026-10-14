@@ -8,6 +8,7 @@ import { AddLink } from './AddLink'
 import { PanelEmpty } from '../../platform/ui/Panel'
 import { BUTTON } from '../../platform/ui/buttonStyles'
 import { ProjectRail } from '../rows/RowParts'
+import { CloseIcon } from '../../platform/ui/icons'
 
 /**
  * LINKED -- everything one thing is connected to, grouped by kind.
@@ -146,15 +147,7 @@ export function Links({
                         aria-label={`Unlink ${item.title}`}
                         className="flex w-7 shrink-0 items-center justify-center text-ink-subtle opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-ink disabled:opacity-50 [@media(hover:none)]:opacity-100"
                       >
-                        <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3 w-3">
-                          <path
-                            d="M4 4l8 8M12 4l-8 8"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.8"
-                            strokeLinecap="round"
-                          />
-                        </svg>
+                        <CloseIcon className="h-3 w-3" strokeWidth={1.8} />
                       </button>
                     )}
                   </li>
@@ -200,15 +193,7 @@ export function Links({
                     aria-label={`Unlink ${item.title}`}
                     className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-subtle opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-hover hover:text-ink disabled:opacity-50 [@media(hover:none)]:opacity-100"
                   >
-                    <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3 w-3">
-                      <path
-                        d="M4 4l8 8M12 4l-8 8"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                      />
-                    </svg>
+                    <CloseIcon className="h-3 w-3" strokeWidth={1.8} />
                   </button>
                 )}
               </li>

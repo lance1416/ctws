@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { enterOverlay, exitOverlay } from '../keyboard/overlayState'
 import { NoteBody } from './NoteBody'
 import { BUTTON } from '../ui/buttonStyles'
+import { LAYER } from '../ui/layers'
 
 /**
  * THE FULL-SCREEN WRITING MODE -- design artboard H, and the escape hatch of editing model A.
@@ -66,19 +67,15 @@ export function WritingMode({
       }}
     >
       <Dialog.Portal>
-        {/*
-          OPAQUE AND FULL-BLEED, not a scrim with a panel on it. A writing mode's whole claim is
-          that nothing else is on screen, and z-40 is above the sticky top bar (z-30) -- the one
-          layer in this app that deliberately covers it.
-        */}
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-sheet" />
+        {/* Opaque and full-bleed: nothing else is on screen, the top bar included. */}
+        <Dialog.Overlay className={`fixed inset-0 ${LAYER.cover} bg-sheet`} />
         <Dialog.Content
           aria-describedby={undefined}
           onOpenAutoFocus={(e) => {
             e.preventDefault()
             area.current?.focus()
           }}
-          className="fixed inset-0 z-40 flex flex-col bg-sheet text-ink focus:outline-none"
+          className={`fixed inset-0 ${LAYER.cover} flex flex-col bg-sheet text-ink focus:outline-none`}
         >
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-rule px-4 py-3">
             <div className="min-w-0">

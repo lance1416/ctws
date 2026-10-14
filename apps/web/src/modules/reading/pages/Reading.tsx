@@ -1,6 +1,6 @@
 import type { ReadingStatus } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { useForgetWhenGone } from '../../../shell/search/recent'
 import { useNavigate, useParams } from 'react-router-dom'
 import { listReading, readingKey } from '../api/reading'
@@ -15,6 +15,9 @@ import { useTimeZone } from '../../../shell/auth/useMe'
 import { useNow } from '../../../platform/time/useNow'
 import { todayIn } from '../../../platform/time/dates'
 import { useCrumbs } from '../../../shell/layout/Location'
+import { QueryStatus } from '../../../platform/ui/QueryStatus'
+import { PageHead } from '../../../platform/ui/PageHead'
+import { HANG } from '../../../platform/ui/hang'
 
 /**
  * THE READING LIST.
@@ -41,7 +44,6 @@ export function Reading() {
   const { id: openId = null } = useParams()
   const navigate = useNavigate()
   const [showFinished, setShowFinished] = useState(false)
-  const heading = useRef<HTMLHeadingElement>(null)
   const timeZone = useTimeZone()
   // Kept current while the page is open, and handed to every row (`useNow`).
   const today = todayIn(timeZone, useNow())
@@ -58,27 +60,14 @@ export function Reading() {
   return (
     <>
       {/* The title on the margin's edge, where the rows' threads and the sections' headings hang. */}
-      <h1
-        ref={heading}
-        tabIndex={-1}
-        className="ml-15 text-2xl font-semibold tracking-[-0.02em] focus:outline-none sm:ml-18"
-      >
-        Reading
-      </h1>
+      <PageHead hang>Reading</PageHead>
 
       {/* On the same edge, as wide as a line of title is worth. */}
-      <div className="mt-4 ml-15 max-w-[52ch] sm:ml-18">
+      <div className={`mt-4 ${HANG} max-w-[52ch]`}>
         <AddReading />
       </div>
 
-      {items.isPending && <p className="mt-6 ml-15 text-ink-muted sm:ml-18">Loading…</p>}
-      {items.isError && (
-        <p role="alert" className="mt-6 ml-15 text-danger sm:ml-18">
-          {items.error instanceof Error
-            ? items.error.message
-            : "Couldn't load. Check that the server is running."}
-        </p>
-      )}
+      <QueryStatus query={items} />
       {items.isSuccess && rows.length === 0 && <EmptyState hang title="The list is empty" />}
 
       {SECTIONS.map(({ status, label }) => {
@@ -115,7 +104,7 @@ export function Reading() {
           if (open) return <ReadingDetail item={open} onClose={() => navigate('/reading')} />
           // 链接指向的东西已经不在了：说出来，别只留一张清单。
           return items.isSuccess ? (
-            <p role="alert" className="mt-4 ml-15 text-sm text-ink-muted sm:ml-18">
+            <p role="alert" className={`mt-4 ${HANG} text-sm text-ink-muted`}>
               This item is not here any more.
             </p>
           ) : null
@@ -127,7 +116,7 @@ export function Reading() {
             type="button"
             aria-pressed={showFinished}
             onClick={() => setShowFinished((v) => !v)}
-            className="ml-15 rounded-md text-sm text-ink-muted hover:text-ink sm:ml-18"
+            className={`${HANG} rounded-md text-sm text-ink-muted hover:text-ink`}
           >
             Finished <span className="tabular-nums">{finished.length}</span>
           </button>
@@ -148,7 +137,7 @@ export function Reading() {
       )}
 
       {items.isSuccess && rows.length > 0 && open.length === 0 && finished.length > 0 && (
-        <p className="mt-8 ml-15 text-ink-muted sm:ml-18">You are through the list.</p>
+        <p className={`mt-8 ${HANG} text-ink-muted`}>You are through the list.</p>
       )}
     </>
   )

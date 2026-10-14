@@ -1,5 +1,5 @@
 import type { CalendarEntry } from '@ctws/contracts'
-import { useRef, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ViewTabs } from '../../platform/ui/ViewTabs'
 import { useQuery } from '@tanstack/react-query'
@@ -12,6 +12,7 @@ import { useProjectRail } from '../projects/projectColor'
 import { useTimeZone } from '../auth/useMe'
 import { useCrumbs } from '../layout/Location'
 import { useNow } from '../../platform/time/useNow'
+import { PageHead } from '../../platform/ui/PageHead'
 
 /**
  * THE CALENDAR -- a SHELL SURFACE, and the first one that is about every module at once.
@@ -45,7 +46,6 @@ export function Calendar() {
   /** Which entry is open, and whose it is -- the module renders it, the shell only remembers. */
   const [open, setOpen] = useState<{ moduleId: string; id: string } | null>(null)
   const [params, setParams] = useSearchParams()
-  const heading = useRef<HTMLHeadingElement>(null)
   const rail = useProjectRail()
   const projects = useEveryProject()
 
@@ -117,13 +117,7 @@ export function Calendar() {
   return (
     <>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <h1
-          ref={heading}
-          tabIndex={-1}
-          className="text-2xl font-semibold tracking-[-0.02em] focus:outline-none"
-        >
-          Calendar
-        </h1>
+        <PageHead>Calendar</PageHead>
         <span className="text-sm text-ink-muted tabular-nums">{monthTitle(cursor)}</span>
         <span className="flex items-center gap-1">
           <Step label="Previous month" onClick={() => setCursor(shiftMonth(cursor, -1))}>

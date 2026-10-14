@@ -6,6 +6,7 @@ import { searchTasks } from '../api/search'
 import { addDependency, removeDependency, taskDependencies } from '../api/tasks'
 import { tasksKey } from '../api/taskCache'
 import { field, label } from '../../../platform/ui/formStyles'
+import { CloseIcon } from '../../../platform/ui/icons'
 
 /**
  * ONE TASK WAITING FOR ANOTHER, in the detail pane.
@@ -51,15 +52,7 @@ function Row({
           aria-label={`Remove dependency “${task.title}”`}
           className="ml-auto h-7 w-7 shrink-0 rounded-md text-ink-subtle hover:bg-hover hover:text-ink"
         >
-          <svg aria-hidden="true" viewBox="0 0 16 16" className="mx-auto h-3.5 w-3.5">
-            <path
-              d="M4 4l8 8M12 4l-8 8"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            />
-          </svg>
+          <CloseIcon className="mx-auto h-3.5 w-3.5" strokeWidth={1.5} />
         </button>
       )}
     </li>

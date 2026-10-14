@@ -4,7 +4,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { updateProject } from './api'
 import { railClass } from './projectColor'
-import { useComposing } from '../../platform/keyboard/composition'
+import { useInlineEdit } from '../../platform/ui/useInlineEdit'
 import { MENU_ITEM, MENU_SURFACE } from '../../platform/ui/menuSurface'
 
 /**
@@ -27,7 +27,6 @@ export function ProjectIdentity({
   name: string
   color: ProjectColor | null
 }) {
-  const composing = useComposing()
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(name)
   const field = useRef<HTMLInputElement>(null)
@@ -46,6 +45,13 @@ export function ProjectIdentity({
     if (next && next !== name) save.mutate({ name: next })
     else setDraft(name)
   }
+  const nameKeys = useInlineEdit({
+    onCommit: commit,
+    onCancel: () => {
+      setDraft(name)
+      setEditing(false)
+    },
+  })
 
   return (
     // `flex-1`: the heading is a BUTTON inside the <h1> now, and a flex item sized from its
@@ -84,15 +90,7 @@ export function ProjectIdentity({
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onBlur={commit}
-          {...composing.bind}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !composing.composingNow(e)) commit()
-            else if (e.key === 'Escape') {
-              e.stopPropagation()
-              setDraft(name)
-              setEditing(false)
-            }
-          }}
+          {...nameKeys}
           aria-label="Project name"
           className="min-w-0 flex-1 rounded-md border border-rule-strong bg-sheet px-2 py-0.5 text-2xl font-semibold text-ink"
         />

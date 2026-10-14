@@ -13,6 +13,8 @@ import { addDays, MONTHS, todayIn } from '../../../platform/time/dates'
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { useCrumbs } from '../../../shell/layout/Location'
 import { useNow } from '../../../platform/time/useNow'
+import { QueryStatus } from '../../../platform/ui/QueryStatus'
+import { HANG } from '../../../platform/ui/hang'
 
 const WEEKDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
@@ -65,7 +67,7 @@ export function Completed({ heading: showHeading = true }: { heading?: boolean }
           ref={heading}
           tabIndex={-1}
           // On the margin's edge, where the rows' threads hang: the page is one column of rows.
-          className="ml-15 text-2xl font-semibold tracking-[-0.02em] focus:outline-none sm:ml-18"
+          className={`${HANG} text-2xl font-semibold tracking-[-0.02em] focus:outline-none`}
         >
           Done
         </h1>
@@ -78,14 +80,7 @@ export function Completed({ heading: showHeading = true }: { heading?: boolean }
           Done
         </h2>
       )}
-      {completed.isPending && <p className="mt-6 ml-15 text-ink-muted sm:ml-18">Loading…</p>}
-      {completed.isError && (
-        <p role="alert" className="mt-6 ml-15 text-danger sm:ml-18">
-          {completed.error instanceof Error
-            ? completed.error.message
-            : "Couldn't load. Check that the server is running."}
-        </p>
-      )}
+      <QueryStatus query={completed} />
       {completed.isSuccess && rows.length === 0 && <EmptyState hang title="Nothing finished yet" />}
       {days.map(({ day, tasks }) => (
         <DaySection
@@ -153,7 +148,7 @@ export function Completed({ heading: showHeading = true }: { heading?: boolean }
           changes. And it names where the rest is, because it is not lost -- Review takes any
           week and has no cap. */}
       {completed.data?.truncated && (
-        <p className="mt-8 ml-15 text-sm text-ink-muted sm:ml-18">
+        <p className={`mt-8 ${HANG} text-sm text-ink-muted`}>
           Showing the most recent {rows.length}. Older work is in Review, week by week.
         </p>
       )}

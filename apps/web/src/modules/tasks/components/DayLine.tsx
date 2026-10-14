@@ -1,5 +1,5 @@
 import { Fragment, type ReactNode } from 'react'
-import { MARGIN } from '../../../shell/rows/RowLead'
+import { HANG_WIDTH } from '../../../platform/ui/hang'
 import { ROW_LIST } from '../../../shell/rows/RowParts'
 
 /**
@@ -64,7 +64,7 @@ function NowLine({ at }: { at: string }) {
   return (
     <li data-now-line className="flex h-6 items-center">
       <span
-        className={`shrink-0 pr-2 text-right text-sm font-semibold text-ink tabular-nums sm:pr-3.5 ${MARGIN}`}
+        className={`shrink-0 pr-2 text-right text-sm font-semibold text-ink tabular-nums sm:pr-3.5 ${HANG_WIDTH}`}
       >
         <span className="sr-only">Now, </span>
         {at}

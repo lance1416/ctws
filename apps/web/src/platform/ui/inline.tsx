@@ -1,8 +1,8 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { useComposing } from '../keyboard/composition'
+import { useEffect, useState, type ReactNode } from 'react'
 import { CHIP } from './formStyles'
 import { MENU_ITEM, MENU_SURFACE } from './menuSurface'
+import { CloseIcon, PlusIcon } from './icons'
 
 /**
  * THE THREE WAYS TO CHANGE SOMETHING IN A DETAIL PANE, and every module uses the same three.
@@ -157,15 +157,7 @@ export function PickMany({
             onClick={() => change(live.filter((v) => v !== c.value))}
             className="-mr-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-ink-subtle hover:text-ink"
           >
-            <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3 w-3">
-              <path
-                d="M4 4l8 8M12 4l-8 8"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-              />
-            </svg>
+            <CloseIcon className="h-3 w-3" strokeWidth={1.8} />
           </button>
         </span>
       ))}
@@ -176,15 +168,7 @@ export function PickMany({
             aria-label={`Add ${label}`}
             className="flex h-7 w-7 items-center justify-center rounded-md border border-dashed border-rule-strong text-ink-subtle hover:bg-hover hover:text-ink"
           >
-            <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3 w-3">
-              <path
-                d="M8 3.5v9M3.5 8h9"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-              />
-            </svg>
+            <PlusIcon className="h-3 w-3" strokeWidth={1.8} />
           </DropdownMenu.Trigger>
           <DropdownMenu.Portal>
             <DropdownMenu.Content align="start" sideOffset={4} className={MENU_SURFACE}>
@@ -207,123 +191,6 @@ export function PickMany({
         </DropdownMenu.Root>
       )}
     </span>
-  )
-}
-
-/**
- * TEXT YOU COMPOSE: a title, a note, a company name.
- *
- * Click it and it becomes a field; leaving it writes what is there; Escape puts it back. There is
- * no Save, because the only thing a save could add is a second act to perform after you have
- * already finished typing.
- *
- * Escape STOPS PROPAGATING, so the first press cancels the edit and does not also close the pane
- * -- one key, one level at a time.
- */
-export function InlineText({
-  label,
-  value,
-  onSave,
-  placeholder,
-  multiline = false,
-  className = '',
-}: {
-  label: string
-  value: string
-  onSave: (next: string) => void
-  placeholder: string
-  multiline?: boolean
-  /** Styling for the READING state, so a title can be large and a note plain. */
-  className?: string
-}) {
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(value)
-  const box = useRef<HTMLInputElement & HTMLTextAreaElement>(null)
-  const trigger = useRef<HTMLButtonElement>(null)
-  const composing = useComposing()
-  // Focus goes back to the control that opened the field. Without it the field unmounts and
-  // focus falls to <body>: the next Escape reaches nothing, so backing out of an edit leaves the
-  // keyboard stranded outside the pane it was in (WCAG 2.4.3).
-  const returning = useRef(false)
-  useEffect(() => {
-    if (editing || !returning.current) return
-    returning.current = false
-    trigger.current?.focus()
-  }, [editing])
-
-  // A background refetch must not overwrite what is being typed, so the draft is only re-seeded
-  // while the field is closed.
-  useEffect(() => {
-    if (!editing) setDraft(value)
-  }, [value, editing])
-
-  const commit = () => {
-    returning.current = true
-    setEditing(false)
-    const next = draft.trim()
-    if (next !== value.trim()) onSave(next)
-  }
-
-  if (!editing) {
-    return (
-      <button
-        ref={trigger}
-        type="button"
-        aria-label={`Edit ${label}`}
-        onClick={() => {
-          setDraft(value)
-          setEditing(true)
-        }}
-        // max-w-full 不是多余的：<button> 是表单控件，就算写了 display:block，它的宽度仍然
-        // 按内容算（fit-content），于是一条长地址会从按钮底下穿出去，调用者写的 truncate 永远
-        // 没机会生效。上限给到格子的宽度，短值照旧只占自己那么宽。
-        className={`-mx-1.5 min-w-0 max-w-full rounded-md px-1.5 py-0.5 text-left hover:bg-hover ${
-          value ? '' : 'text-ink-subtle'
-        } ${className}`}
-      >
-        {value || placeholder}
-      </button>
-    )
-  }
-
-  const common = {
-    ref: box,
-    autoFocus: true,
-    // Without these the tracked half of the composition guard never arms, and Enter on a Mac
-    // committing English out of a Chinese IME would save and close the editor.
-    ...composing.bind,
-    value: draft,
-    'aria-label': label,
-    placeholder,
-    onChange: (e: { target: { value: string } }) => setDraft(e.target.value),
-    onBlur: commit,
-    className: `-mx-1.5 w-full rounded-md border border-rule-strong bg-sheet px-1.5 py-0.5 text-ink ${className}`,
-  }
-  const onKeyDown = (e: {
-    key: string
-    shiftKey: boolean
-    preventDefault: () => void
-    stopPropagation: () => void
-    nativeEvent: { isComposing?: boolean }
-  }) => {
-    if (e.key === 'Escape') {
-      e.stopPropagation()
-      setDraft(value)
-      returning.current = true
-      setEditing(false)
-      return
-    }
-    // Enter commits a single line; in a note it is a newline, and leaving the field commits.
-    if (e.key === 'Enter' && !multiline && !composing.composingNow(e)) {
-      e.preventDefault()
-      commit()
-    }
-  }
-
-  return multiline ? (
-    <textarea {...common} rows={4} onKeyDown={onKeyDown} />
-  ) : (
-    <input {...common} onKeyDown={onKeyDown} />
   )
 }
 

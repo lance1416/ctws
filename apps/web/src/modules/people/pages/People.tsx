@@ -11,6 +11,8 @@ import { PeopleHead } from '../components/PeopleViews'
 import { CIRCLE_LABELS } from '../components/BirthdayRow'
 import { useCrumbs } from '../../../shell/layout/Location'
 import { useForgetWhenGone } from '../../../shell/search/recent'
+import { QueryStatus } from '../../../platform/ui/QueryStatus'
+import { HANG } from '../../../platform/ui/hang'
 
 /**
  * PEOPLE.
@@ -45,24 +47,17 @@ export function People() {
       <PeopleHead />
 
       {/* On the heading's edge, where the threads hang: the page's controls are one column. */}
-      <div className="mt-4 ml-15 max-w-[52ch] sm:ml-18">
+      <div className={`mt-4 ${HANG} max-w-[52ch]`}>
         <NewPersonInput onCreated={(c: PersonResponse) => setOpenId(c.id)} />
       </div>
 
       {/* 链接指向的人已经不在了：说出来。静静地只剩一个列表，读起来像链接坏了。 */}
       {gone && (
-        <p role="alert" className="mt-4 ml-15 text-sm text-ink-muted sm:ml-18">
+        <p role="alert" className={`mt-4 ${HANG} text-sm text-ink-muted`}>
           This person is not here any more.
         </p>
       )}
-      {people.isPending && <p className="mt-6 ml-15 text-ink-muted sm:ml-18">Loading…</p>}
-      {people.isError && (
-        <p role="alert" className="mt-6 ml-15 text-danger sm:ml-18">
-          {people.error instanceof Error
-            ? people.error.message
-            : "Couldn't load. Check that the server is running."}
-        </p>
-      )}
+      <QueryStatus query={people} />
       {/* ONE LIST, FILTERED -- never a second list. The circle is how an address book that also
           holds fifty relatives stays readable, and nothing is hidden by default: a row that has
           vanished is worse than a long list. */}

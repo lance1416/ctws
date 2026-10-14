@@ -2,7 +2,6 @@ import { kindsBetween, type LinkCandidate, type LinkKind, type ObjectType } from
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { candidatesKey, createLink, linkCandidates, type Endpoint } from './api'
-import { useComposing } from '../../platform/keyboard/composition'
 import { useRegistry } from '../registry'
 import { Modal } from '../../platform/ui/Modal'
 import { BUTTON } from '../../platform/ui/buttonStyles'
@@ -27,7 +26,6 @@ export function AddLink({
 }) {
   const registry = useRegistry()
   const box = useRef<HTMLInputElement>(null)
-  const composing = useComposing()
   const [typed, setTyped] = useState('')
   const [chosen, setChosen] = useState<LinkCandidate | null>(null)
 
@@ -63,7 +61,6 @@ export function AddLink({
               aria-label="Search"
               placeholder="Search for anything"
               onChange={(e) => setTyped(e.target.value)}
-              {...composing.bind}
               className="h-9 w-full bg-transparent text-ink placeholder:text-ink-muted"
             />
           </div>
