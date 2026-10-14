@@ -279,9 +279,9 @@ describe('projects', () => {
   })
 })
 
-// `visible()` in src/tasks/projects.ts does two jobs, scoping to the workspace and hiding soft-deleted
-// rows, and every project query shares it. Each condition is crossed with every exported function that
-// goes through it, so removing either half of the predicate fails something on its own.
+// `visibleProjects` does two jobs, scoping to the workspace and hiding soft-deleted rows, and every
+// project read and write goes through it. Each condition is crossed with every route that uses it,
+// so removing either half of the predicate fails something on its own.
 describe('project visibility', () => {
   type Scenario = {
     name: string
@@ -355,8 +355,7 @@ describe('project visibility', () => {
       expect(await ids(ctx, scenario.caller(ctx, other), archived)).not.toContain(id)
     })
 
-    // updateProject: a rename, an empty patch (its own read-only path), and both archive directions
-    // (archiving has a pre-read before the update).
+    // updateProject: a rename, an empty patch and both archive directions.
     it.each([
       ['rename', { name: 'stolen' }],
       ['empty patch', {}],
