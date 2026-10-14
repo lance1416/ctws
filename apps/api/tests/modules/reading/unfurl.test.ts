@@ -140,6 +140,26 @@ describe('unfurl', () => {
     expect(Date.now() - began).toBeLessThan(2000)
   })
 
+  it('gives up on a site that trickles, at the same budget', async () => {
+    const open: { timer: NodeJS.Timeout; res: ServerResponse }[] = []
+    const { url } = await serve((_req, res) => {
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
+      // A byte now and then keeps an idle timeout from ever firing.
+      open.push({ timer: setInterval(() => res.write(' '), 100), res })
+    })
+    const began = Date.now()
+    const result = await Promise.race([
+      unfurl(url, { allow: anywhere, timeoutMs: 300 }),
+      new Promise((done) => setTimeout(() => done('still waiting'), 3000)),
+    ])
+    for (const { timer, res } of open) {
+      clearInterval(timer)
+      res.destroy()
+    }
+    expect(result).toBeNull()
+    expect(Date.now() - began).toBeLessThan(2000)
+  })
+
   /**
    * Judged by what was read, not by time or bytes, which loopback makes unreliable: an og:title
    * past the cap would replace <title> if the whole page were read.

@@ -75,14 +75,19 @@ function fetchHead(
     // Cutting our own connection raises ECONNRESET, which means "enough", not failure; the first
     // answer wins.
     let settled = false
+    let deadline: NodeJS.Timeout | undefined
+    const settle = () => {
+      settled = true
+      clearTimeout(deadline)
+    }
     const done = (value: Fetched | null) => {
       if (settled) return
-      settled = true
+      settle()
       resolve(value)
     }
     const failed = (error: Error) => {
       if (settled) return
-      settled = true
+      settle()
       reject(error)
     }
 
@@ -134,7 +139,11 @@ function fetchHead(
         res.on('error', failed)
       },
     )
-    req.setTimeout(budgetMs, () => req.destroy(new Error('took too long')))
+    // Absolute, not idle: a site that sends a byte now and then would never trip an idle timeout.
+    deadline = setTimeout(() => {
+      done(null)
+      req.destroy()
+    }, budgetMs)
     req.on('error', failed)
     req.end()
   })
