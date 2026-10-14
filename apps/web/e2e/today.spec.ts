@@ -360,8 +360,10 @@ test('a meeting sits on the day at your own time, and says the zone it was agree
 test('a meeting already over is drawn a step quieter, above the now line', async ({ page }) => {
   await registerFreshUser(page)
   const account = await accountZone(page)
-  // Midnight is past at every hour of the day, so this does not depend on when it runs.
   await meetingToday(page, 'Early call', '00:00', account)
+  // Read at 15:00, so the half-hour from midnight is over whenever this runs.
+  const [y, m, d] = dayInZone(account).split('-').map(Number) as [number, number, number]
+  await page.clock.setFixedTime(new TZDate(y, m - 1, d, 15, 0, 0, 0, account))
   await page.goto('/tasks/today')
   const row = page.locator('[data-day-entry]').filter({ hasText: 'Early call' })
   const subtle = await page.evaluate(() => {
