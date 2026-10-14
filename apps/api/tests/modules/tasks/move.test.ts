@@ -347,6 +347,23 @@ describe('POST /tasks/:id/move', () => {
     expect(await eventsOf(ctx, b)).toHaveLength(before)
   })
 
+  it('reads an upper-case project id as the same project', async () => {
+    const ctx = await setup()
+    const p = await createProject(ctx, 'p')
+    const a = await createTask(ctx, p, 'a')
+    const b = await createTask(ctx, p, 'b')
+    const before = (await eventsOf(ctx, b)).length
+
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/tasks/${b}/move`,
+      headers: ctx.authed,
+      payload: { projectId: p.toUpperCase(), parentId: null, beforeId: a },
+    })
+    expect(res.statusCode).toBe(200)
+    expect(await eventsOf(ctx, b)).toHaveLength(before)
+  })
+
   it('rolls back everything when the depth check fails', async () => {
     const ctx = await setup()
     const p = await createProject(ctx, 'p')

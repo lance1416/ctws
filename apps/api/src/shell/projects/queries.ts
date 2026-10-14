@@ -33,6 +33,20 @@ export async function assertProjectsVisible(
   if (rows.length !== unique.length) throw new ProjectNotFoundError()
 }
 
+/** The stored id of a live project in this workspace, so a differently cased id compares equal. */
+export async function visibleProjectId(
+  q: Queryable,
+  workspaceId: string,
+  id: string,
+): Promise<string> {
+  const [row] = await q
+    .select({ id: projects.id })
+    .from(projects)
+    .where(and(visibleProjects(workspaceId), eq(projects.id, id)))
+  if (!row) throw new ProjectNotFoundError()
+  return row.id
+}
+
 /** A project and the columns modules add to it. */
 export type ProjectListRow = { project: Project; columns: Record<string, number> }
 

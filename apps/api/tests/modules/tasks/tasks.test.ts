@@ -124,6 +124,15 @@ describe('create', () => {
     expect(events.map((e) => e.type)).toEqual(['created'])
   })
 
+  it('logs the stored project id, whatever case the client sent', async () => {
+    const ctx = await setup()
+    const projectId = await createProject(ctx, 'P')
+    const res = await post(ctx, { projectId: projectId.toUpperCase(), title: 'x' })
+    expect(res.statusCode).toBe(201)
+    const [created] = await eventsOf(ctx, res.json().id)
+    expect(created!.payload).toMatchObject({ to: { projectId } })
+  })
+
   it('rejects a client-supplied rank', async () => {
     const ctx = await setup()
     const projectId = await createProject(ctx, 'P')
