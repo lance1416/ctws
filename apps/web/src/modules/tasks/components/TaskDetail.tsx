@@ -11,18 +11,8 @@ import { Controller, useForm } from 'react-hook-form'
 import { listProjects } from '../../../shell/projects/api'
 import { deleteTask, listProjectTasks, moveTask, patchTask } from '../api/tasks'
 import { tasksKey } from '../api/taskCache'
-import {
-  addDays,
-  dayEndIso,
-  dayPhrase,
-  fromDayTimeInput,
-  moveDueToDay,
-  nextMonday,
-  overdueLabel,
-  toDayTimeInput,
-  todayIn,
-  ymd,
-} from '../../../platform/time/dueAt'
+import { addDays, dayEndIso, dayPhrase, fromDayTimeInput, nextMonday, toDayTimeInput, todayIn, ymd } from '../../../platform/time/dates'
+import { moveDueToDay, overdueLabel } from '../dueDates'
 import { NoteBody } from '../../../platform/notes/NoteBody'
 import { WritingMode } from '../../../platform/notes/WritingMode'
 import { useProjectRail } from '../../../shell/projects/projectColor'
@@ -42,6 +32,7 @@ import { STATUS_LABEL } from '../statusLabel'
 import { detailTaskForm, PATCH_KEYS, type DetailTaskForm, type DetailTaskValues } from '../taskForm'
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { useForgetRecent, useRecordRecent } from '../../../shell/search/recent'
+import { useNow } from '../../../platform/time/useNow'
 
 /**
  * The exact field, for the days the three named decisions do not cover. Quieter than them on
@@ -247,7 +238,8 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
   // next week)
   // plus the way out. They write the SAME fields the exact inputs write and are saved by the same
   // Save press -- they are a faster way to type a date, not a second way to change the task.
-  const todayYmd = todayIn(timeZone)
+  const now = useNow()
+  const todayYmd = todayIn(timeZone, now)
   const DAYS: [string, string][] = [
     ['Today', todayYmd],
     ['Tomorrow', addDays(todayYmd, 1)],
@@ -282,7 +274,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
   const dueReading = (() => {
     if (!task.dueAt) return null
     const exact = say(task.dueAt)
-    return dueOverdue ? `${exact} · ${overdueLabel(task.dueAt, timeZone)}` : exact
+    return dueOverdue ? `${exact} · ${overdueLabel(task.dueAt, timeZone, now)}` : exact
   })()
   const planReading = task.scheduledOn ? dayPhrase(task.scheduledOn, todayYmd) : null
   const projectName = projects.data?.find((p) => p.id === task.projectId)?.name ?? ''

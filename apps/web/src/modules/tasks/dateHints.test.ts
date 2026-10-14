@@ -6,9 +6,12 @@ beforeAll(() => {
   process.env.TZ = 'Asia/Kolkata'
 })
 
-const load = () => import('./dueAt')
-const loadActions = () => import('../../modules/tasks/api/taskActions')
-const loadControls = () => import('../../modules/tasks/components/StatusControls')
+const load = async () => ({
+  ...(await import('../../platform/time/dates')),
+  ...(await import('./dueDates')),
+})
+const loadActions = () => import('./api/taskActions')
+const loadControls = () => import('./components/StatusControls')
 
 // 2026-10-03 (a Saturday), 12:00 local.
 const NOW = () => new Date(2026, 9, 3, 12, 0)

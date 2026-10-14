@@ -7,7 +7,7 @@ import { Meetings } from './pages/Meetings'
 import { PanelEmpty } from '../../platform/ui/Panel'
 import { ProjectRail } from '../../shell/rows/RowParts'
 import { useProjectRail } from '../../shell/projects/projectColor'
-import { todayIn } from '../../platform/time/dueAt'
+import { todayIn } from '../../platform/time/dates'
 import { useTimeZone } from '../../shell/auth/useMe'
 import { useNow } from '../../platform/time/useNow'
 import type { WorkspaceModule } from '../../shell/contract'
@@ -94,7 +94,7 @@ function splitEntryId(id: string): [string, string] {
 
 /** Today's meetings, shared by Things' count and status line. */
 function useTodaysMeetings() {
-  const day = todayIn(useTimeZone())
+  const day = todayIn(useTimeZone(), useNow())
   return useQuery({
     queryKey: meetingsKey({ from: day, to: day }),
     queryFn: () => listMeetings({ from: day, to: day }),

@@ -16,7 +16,7 @@ import { ProjectRail } from '../../shell/rows/RowParts'
 import { PanelEmpty } from '../../platform/ui/Panel'
 import { StatusMark } from './components/StatusMark'
 import { TaskTree } from './components/TaskTree'
-import { dayPhrase, todayIn } from '../../platform/time/dueAt'
+import { dayPhrase, todayIn } from '../../platform/time/dates'
 import { useShortcutsEnabled } from '../../platform/keyboard/enabled'
 import { isBareKey, isTypingTarget } from '../../platform/keyboard/keys'
 import { Completed } from './pages/Completed'
@@ -27,6 +27,7 @@ import type { CaptureTargetState, SearchHit, WorkspaceModule } from '../../shell
 import { useComposing } from '../../platform/keyboard/composition'
 import { textbox } from '../../platform/ui/formStyles'
 import { TASKS_ID } from './id'
+import { useNow } from '../../platform/time/useNow'
 
 /**
  * THE TASK MODULE.
@@ -89,7 +90,7 @@ function TodayGlance() {
   const today = useQuery({ queryKey: ['today'], queryFn: listToday })
   // The same entry the Done page and Today's own Done section read.
   const completed = useQuery({ queryKey: ['completed'], queryFn: listCompleted })
-  const localToday = todayIn(useTimeZone())
+  const localToday = todayIn(useTimeZone(), useNow())
 
   if (today.isError) {
     return (
@@ -160,6 +161,7 @@ function GlanceCount({ to, n, word, tone }: { to: string; n: number; word: strin
 /** The Today card's note: which day it is, in the account's zone. */
 function TodayDate() {
   const timeZone = useTimeZone()
+  const now = useNow()
   return (
     <span className="text-sm text-ink-subtle">
       {new Intl.DateTimeFormat('en-US', {
@@ -167,7 +169,7 @@ function TodayDate() {
         month: 'short',
         day: 'numeric',
         timeZone,
-      }).format(new Date())}
+      }).format(now)}
     </span>
   )
 }
@@ -264,12 +266,13 @@ function ProjectNumbers({ projectId }: { projectId: string }) {
     if (scored.length === 0) return null
     return scored.reduce((a, b) => a + b, 0) / scored.length
   })()
+  const now = useNow()
   // Nothing rather than zeroes while the numbers are in flight, and nothing for an ARCHIVED
   // project: archiving sets a line of work aside, and the movement query leaves it out on purpose
   // rather than reporting that it has been quiet for forty days.
   if (!row) return null
   // The account's own calendar day, for reading the server's `lastActivityOn` back as a phrase.
-  const today = todayIn(timeZone)
+  const today = todayIn(timeZone, now)
   const moved = row.lastActivityOn ? dayPhrase(row.lastActivityOn, today) : null
   /**
    * ONE SENTENCE, NOT FOUR TILES: "6 open, 1 overdue, 63% done. Last moved today."

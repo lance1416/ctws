@@ -276,3 +276,16 @@ test('the meetings line is not drawn until the meetings are in', async ({ page }
     /Call home at 20:00/,
   )
 })
+
+test('an open workbench turns the day at midnight', async ({ page }) => {
+  await registerFreshUser(page, '/')
+  const zone = await accountZone(page)
+  const projectId = await makeProject(page, 'Night shift')
+  await makeTask(page, projectId, 'Moved just now')
+  const [y, m, d] = dayInZone(zone).split('-').map(Number) as [number, number, number]
+  await page.clock.install({ time: new TZDate(y, m - 1, d, 23, 59, 58, 0, zone) })
+  await page.goto('/')
+  await expect(page.getByText('Moved today')).toBeVisible()
+  await page.clock.runFor(5_000)
+  await expect(page.getByText('Moved yesterday')).toBeVisible()
+})

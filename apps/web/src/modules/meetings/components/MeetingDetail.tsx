@@ -13,7 +13,7 @@ import {
 import { listProjects } from '../../../shell/projects/api'
 import { useProjectRail } from '../../../shell/projects/projectColor'
 import { ZONES, zoneLabel } from '../timeZones'
-import { shortDay, todayIn } from '../../../platform/time/dueAt'
+import { shortDay, todayIn } from '../../../platform/time/dates'
 import { DangerAction, DangerZone } from '../../../platform/ui/DangerZone'
 import { meetingLink } from '../meetingPlace'
 import { Field } from '../../../platform/ui/Field'
@@ -26,6 +26,7 @@ import { PickMany, PickOne } from '../../../platform/ui/inline'
 import { ScopeAsk } from './ScopeAsk'
 import { BUTTON, LINK } from '../../../platform/ui/buttonStyles'
 import { useForgetRecent, useRecordRecent } from '../../../shell/search/recent'
+import { useNow } from '../../../platform/time/useNow'
 
 /**
  * ONE MEETING, in the shell's detail pane -- the same pane a task and a person open in.
@@ -257,7 +258,7 @@ function MeetingRead({
   // The meeting's own wall clock and its last day, in the words every other date in the app
   // uses (`Oct 19, 18:00`) -- not `2026-10-19 18:00`, the wire format, beside a "Your time" that
   // already says it the other way.
-  const today = todayIn(accountZone)
+  const today = todayIn(accountZone, useNow())
   const when = `${shortDay(meeting.startsLocal.slice(0, 10), today)}, ${meeting.startsLocal.slice(11, 16)}`
 
   return (
@@ -403,7 +404,7 @@ function MeetingForm({
   onCancel: () => void
   onSave: (patch: UpdateMeetingInput) => void
 }) {
-  const today = todayIn(accountZone)
+  const today = todayIn(accountZone, useNow())
   const [title, setTitle] = useState(meeting.title)
   const [startsLocal, setStartsLocal] = useState(meeting.startsLocal)
   const [timeZone, setTimeZone] = useState(meeting.timeZone)

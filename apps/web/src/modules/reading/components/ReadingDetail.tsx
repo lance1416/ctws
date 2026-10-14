@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom'
 import { deleteReadingItem, patchReadingItem, readingLabel } from '../api/reading'
 import { listProjects } from '../../../shell/projects/api'
 import { useComposing } from '../../../platform/keyboard/composition'
-import { addDays, dayPhrase, nextMonday, todayIn } from '../../../platform/time/dueAt'
+import { addDays, dayPhrase, nextMonday, todayIn } from '../../../platform/time/dates'
 import { useProjectRail } from '../../../shell/projects/projectColor'
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { BUTTON } from '../../../platform/ui/buttonStyles'
@@ -16,6 +16,7 @@ import { CHIP, field, label } from '../../../platform/ui/formStyles'
 import { PickOne } from '../../../platform/ui/inline'
 import { LinkedSection } from '../../../shell/links/Links'
 import { useForgetRecent, useRecordRecent } from '../../../shell/search/recent'
+import { useNow } from '../../../platform/time/useNow'
 
 /**
  * ONE THING TO READ, ON ITS OWN LAYER.
@@ -82,7 +83,7 @@ function ReadingFields({ item, onClose }: { item: ReadingItemResponse; onClose: 
   const rail = useProjectRail()
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
   const timeZone = useTimeZone()
-  const today = todayIn(timeZone)
+  const today = todayIn(timeZone, useNow())
 
   const save = useMutation({
     mutationFn: (patch: Parameters<typeof patchReadingItem>[1]) => patchReadingItem(item.id, patch),
@@ -216,7 +217,7 @@ function ReadingForm({
   const [planOn, setPlanOn] = useState(item.planOn)
   const [projectId, setProjectId] = useState(item.projectId ?? '')
   const timeZone = useTimeZone()
-  const today = todayIn(timeZone)
+  const today = todayIn(timeZone, useNow())
   const composing = useComposing()
 
   const submit = () => {

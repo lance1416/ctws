@@ -10,7 +10,7 @@ import { BODY_GUTTER, ProjectRail, ROW_LIST } from '../../../shell/rows/RowParts
 import { StatusMark } from '../components/StatusMark'
 import { ViewTabs } from '../../../platform/ui/ViewTabs'
 import { Completed } from './Completed'
-import { MONTHS, todayIn, ymd } from '../../../platform/time/dueAt'
+import { MONTHS, todayIn, ymd } from '../../../platform/time/dates'
 import { LIST_MEASURE, weekDayWord } from '../../../shell/rows/leads'
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { useNow } from '../../../platform/time/useNow'

@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form'
 import { listProjects } from '../../../shell/projects/api'
 import { tasksKey } from '../api/taskCache'
 import { createTask, listProjectTasks } from '../api/tasks'
-import { addDays, dayEndIso, dayPhrase, nextMonday, todayIn, ymd } from '../../../platform/time/dueAt'
+import { addDays, dayEndIso, dayPhrase, nextMonday, todayIn, ymd } from '../../../platform/time/dates'
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { useProjectRail } from '../../../shell/projects/projectColor'
 import { flatten } from '../tree/flatten'
@@ -25,6 +25,7 @@ import {
   type CreateTaskValues,
 } from '../taskForm'
 import { DialogFooter } from '../../../platform/ui/DialogFooter'
+import { useNow } from '../../../platform/time/useNow'
 
 /**
  * NEW TASK: a task created WITH its details, in one request.
@@ -66,7 +67,7 @@ export function CreateTaskDialog({
   const composing = useComposing()
   const titleField = useRef<HTMLInputElement>(null)
   const timeZone = useTimeZone()
-  const todayYmd = todayIn(timeZone)
+  const todayYmd = todayIn(timeZone, useNow())
 
   /**
    * The deadline is chosen as a DAY and held as the INSTANT the contract wants, assembled the

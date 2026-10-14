@@ -5,7 +5,7 @@ import type {
   UpdateMeetingInput,
 } from '@ctws/contracts'
 import { apiFetch, calendarOf } from '../../../platform/http/api'
-import { shortDay } from '../../../platform/time/dueAt'
+import { shortDay } from '../../../platform/time/dates'
 
 /** The meetings module's own namespace. */
 const BASE = '/meetings'

@@ -5,12 +5,13 @@ import { ViewTabs } from '../../platform/ui/ViewTabs'
 import { useQuery } from '@tanstack/react-query'
 import { calendarDays } from '../../modules/people/api/birthdays'
 import { useEveryProject } from '../projects/api'
-import { todayIn } from '../../platform/time/dueAt'
+import { todayIn } from '../../platform/time/dates'
 import { useRegistry } from '../registry'
 import { monthRange, monthSquares, monthTitle, shiftMonth, WEEKDAYS } from './monthGrid'
 import { useProjectRail } from '../projects/projectColor'
 import { useTimeZone } from '../auth/useMe'
 import { useCrumbs } from '../layout/Location'
+import { useNow } from '../../platform/time/useNow'
 
 /**
  * THE CALENDAR -- a SHELL SURFACE, and the first one that is about every module at once.
@@ -39,7 +40,7 @@ const PER_SQUARE = 3
 export function Calendar() {
   useCrumbs([{ label: 'Calendar' }])
   const timeZone = useTimeZone()
-  const today = todayIn(timeZone)
+  const today = todayIn(timeZone, useNow())
   const [cursor, setCursor] = useState(today)
   /** Which entry is open, and whose it is -- the module renders it, the shell only remembers. */
   const [open, setOpen] = useState<{ moduleId: string; id: string } | null>(null)

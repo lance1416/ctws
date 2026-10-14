@@ -4,7 +4,8 @@ import type { KeyboardEvent } from 'react'
 import type { FlatRow } from '../tree/flatten'
 import { toggleDoneTarget, toggleStartTarget } from '../api/taskActions'
 import { blockedLabel } from '../blockedLabel'
-import { capturedLabel, dateHints, todayIn } from '../../../platform/time/dueAt'
+import { todayIn } from '../../../platform/time/dates'
+import { capturedLabel, dateHints } from '../dueDates'
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { leadFor } from '../../../shell/rows/leads'
 import { RowLead } from '../../../shell/rows/RowLead'
@@ -22,6 +23,7 @@ import {
   SavedMark,
 } from '../../../shell/rows/RowParts'
 import { StartButton, StatusButton } from './StatusControls'
+import { useNow } from '../../../platform/time/useNow'
 
 type Props = {
   row: FlatRow
@@ -112,9 +114,10 @@ export function TaskRow({
   // row saying a task is due tomorrow when the server has already filed it as overdue would be
   // the page contradicting itself.
   const timeZone = useTimeZone()
-  const hints = dateHints({ status, dueAt, scheduledOn }, timeZone)
+  const now = useNow()
+  const hints = dateHints({ status, dueAt, scheduledOn }, timeZone, now)
   // A settled task's dates no longer tell the reader anything: its margin is empty.
-  const lead = inactive ? null : leadFor({ dueAt, scheduledOn }, todayIn(timeZone), timeZone)
+  const lead = inactive ? null : leadFor({ dueAt, scheduledOn }, todayIn(timeZone, now), timeZone)
 
   return (
     <li
@@ -246,7 +249,7 @@ export function TaskRow({
           <RowMeta
             // An age is the absence of a decision: once there is a date, the margin has something
             // better to say and the age gets out of its way.
-            age={capturedAt && !dueAt && !scheduledOn ? capturedLabel(capturedAt, timeZone) : null}
+            age={capturedAt && !dueAt && !scheduledOn ? capturedLabel(capturedAt, timeZone, now) : null}
             rollup={rollup}
             blocked={blockedLabel(blockedBy)}
           />

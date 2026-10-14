@@ -11,7 +11,7 @@ import {
   listArchivedProjects,
   listProjects,
 } from './api'
-import { todayIn } from '../../platform/time/dueAt'
+import { todayIn } from '../../platform/time/dates'
 import { movedLine } from '../../modules/tasks/movement'
 import { deadlineDayLead, LIST_MEASURE } from '../rows/leads'
 import { useComposing } from '../../platform/keyboard/composition'

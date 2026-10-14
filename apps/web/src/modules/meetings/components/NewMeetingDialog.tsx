@@ -11,7 +11,7 @@ import {
 } from '../api/meetings'
 import { listProjects } from '../../../shell/projects/api'
 import { useComposing } from '../../../platform/keyboard/composition'
-import { todayIn } from '../../../platform/time/dueAt'
+import { todayIn } from '../../../platform/time/dates'
 import { useProjectRail } from '../../../shell/projects/projectColor'
 import { ZONES, zoneLabel } from '../timeZones'
 import { useTimeZone } from '../../../shell/auth/useMe'
@@ -20,6 +20,7 @@ import { PickMany, PickOne } from '../../../platform/ui/inline'
 import { DialogFooter } from '../../../platform/ui/DialogFooter'
 import { Modal } from '../../../platform/ui/Modal'
 import { BUTTON } from '../../../platform/ui/buttonStyles'
+import { useNow } from '../../../platform/time/useNow'
 
 /**
  * NEW MEETING, filled in once.
@@ -46,7 +47,7 @@ export function NewMeetingDialog({
   onMade: (made: MeetingOccurrence) => void
 }) {
   const accountZone = useTimeZone()
-  const today = todayIn(accountZone)
+  const today = todayIn(accountZone, useNow())
   const titleField = useRef<HTMLInputElement>(null)
   const composing = useComposing()
   const rail = useProjectRail()

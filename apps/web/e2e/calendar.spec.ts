@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
-import { dayOffset } from './days'
-import { makeProject, makeTask, registerFreshUser, WEB } from './helpers'
+import { TZDate } from '@date-fns/tz'
+import { dayAfter, dayOffset } from './days'
+import { accountZone, dayInZone, makeProject, makeTask, registerFreshUser, WEB } from './helpers'
 
 /**
  * THE CALENDAR -- the shell surface that is about every module at once.
@@ -258,4 +259,18 @@ test('with no project colour on the grid there is no key', async ({ page }) => {
   await page.goto('/calendar')
   await expect(square(page, dayOffset(1))).toContainText('设计心理学')
   await expect(page.getByRole('list', { name: 'Projects on this calendar' })).toHaveCount(0)
+})
+
+test('an open calendar moves today past midnight', async ({ page }) => {
+  await registerFreshUser(page, '/')
+  const zone = await accountZone(page)
+  const today = dayInZone(zone)
+  const [y, m, d] = today.split('-').map(Number) as [number, number, number]
+  await page.clock.install({ time: new TZDate(y, m - 1, d, 23, 59, 58, 0, zone) })
+  await page.goto('/calendar')
+  const mark = (day: string) => page.locator(`[data-day="${day}"] > div`).first()
+  await expect(mark(today)).toHaveClass(/font-semibold/)
+  await page.clock.runFor(5_000)
+  await expect(mark(dayAfter(today))).toHaveClass(/font-semibold/)
+  await expect(mark(today)).not.toHaveClass(/font-semibold/)
 })

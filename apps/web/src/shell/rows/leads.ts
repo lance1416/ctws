@@ -1,6 +1,6 @@
 import { TZDate } from '@date-fns/tz'
 import { format } from 'date-fns'
-import { addDays, fullDay, MONTHS } from '../../platform/time/dueAt'
+import { addDays, fullDay, MONTHS } from '../../platform/time/dates'
 
 /**
  * THE MARGIN: what a row says about WHEN, in front of everything else on it.

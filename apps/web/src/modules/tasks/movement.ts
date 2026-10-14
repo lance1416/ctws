@@ -1,5 +1,5 @@
 import type { ProjectMovementResponse } from '@ctws/contracts'
-import { addDays, MONTHS } from '../../platform/time/dueAt'
+import { addDays, MONTHS } from '../../platform/time/dates'
 
 /**
  * The judgements the movement panel makes, kept out of the component so they can be tested as

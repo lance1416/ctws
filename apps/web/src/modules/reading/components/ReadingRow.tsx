@@ -4,13 +4,14 @@ import { useMutation } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { deleteReadingItem, patchReadingItem, readingLabel } from '../api/reading'
 import { useForgetRecent } from '../../../shell/search/recent'
-import { addDays, daysAgoIn, nextMonday } from '../../../platform/time/dueAt'
+import { addDays, daysAgoIn, nextMonday } from '../../../platform/time/dates'
 import { useComposing } from '../../../platform/keyboard/composition'
 import { leadFor } from '../../../shell/rows/leads'
 import { DeleteConfirm } from '../../../platform/ui/DeleteConfirm'
 import { MENU_ITEM, MENU_ITEM_DANGER, MENU_SURFACE } from '../../../platform/ui/menuSurface'
 import { RowLead } from '../../../shell/rows/RowLead'
 import { BODY_GUTTER, ProjectRail } from '../../../shell/rows/RowParts'
+import { useNow } from '../../../platform/time/useNow'
 
 /**
  * ONE ROW OF THE READING LIST.
@@ -26,7 +27,7 @@ import { BODY_GUTTER, ProjectRail } from '../../../shell/rows/RowParts'
  */
 
 /** "Added 17 days ago". A count, not a date: a pile is read to find what has gone stale. */
-export function addedLabel(createdAt: string, timeZone: string, now: Date = new Date()): string {
+export function addedLabel(createdAt: string, timeZone: string, now: Date): string {
   const days = daysAgoIn(createdAt, timeZone, now)
   if (days <= 0) return 'Added today'
   if (days === 1) return 'Added yesterday'
@@ -74,6 +75,7 @@ export function ReadingRow({
   onOpen?: () => void
 }) {
   const composing = useComposing()
+  const now = useNow()
   const [renaming, setRenaming] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [draft, setDraft] = useState('')
@@ -107,7 +109,7 @@ export function ReadingRow({
     // 没有标题时，标题那一行写的就是 host 加路径，第二行再写一遍 host 是重复。
     // 标题那一行写的是 host 加路径时，第二行再写一遍 host 是重复。
     item.kind === 'book' ? item.author : item.title || item.fetchedTitle ? host : null,
-    addedLabel(item.createdAt, timeZone),
+    addedLabel(item.createdAt, timeZone, now),
   ].filter(Boolean)
 
   // The question replaces the row, so it is read where the row was rather than somewhere else on

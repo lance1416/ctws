@@ -1,6 +1,6 @@
 import type { BirthdayListRow, Circle } from '@ctws/contracts'
 import { Link } from 'react-router-dom'
-import { countdownPhrase, fullDay, MONTHS } from '../../../platform/time/dueAt'
+import { countdownPhrase, fullDay, MONTHS } from '../../../platform/time/dates'
 import { MARGIN } from '../../../shell/rows/RowLead'
 import { BODY_GUTTER, ProjectRail } from '../../../shell/rows/RowParts'
 

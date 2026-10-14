@@ -8,11 +8,12 @@ import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { ApiError } from '../../../platform/http/api'
 import { previewBirthday, type BirthdayDraft } from '../api/people'
-import { countdownPhrase, fullDay, MONTHS, shortDay, todayIn } from '../../../platform/time/dueAt'
+import { countdownPhrase, fullDay, MONTHS, shortDay, todayIn } from '../../../platform/time/dates'
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { Field } from '../../../platform/ui/Field'
 import { PickOne } from '../../../platform/ui/inline'
 import { textbox } from '../../../platform/ui/formStyles'
+import { useNow } from '../../../platform/time/useNow'
 
 /**
  * A PERSON'S BIRTHDAY, on their own page.
@@ -195,7 +196,7 @@ function solarDay(year: number | null, month: number, day: number): string {
  * 一件事一行。这一段以前是跑在一起的一段话，而日期、距离、周岁、生肖、时辰是五种不同的东西。
  */
 function BirthdayRead({ birthday: b }: { birthday: BirthdayResponse }) {
-  const today = todayIn(useTimeZone())
+  const today = todayIn(useTimeZone(), useNow())
   return (
     <div data-birthday className="flex flex-col gap-2">
       <p className="text-sm text-ink-muted tabular-nums">

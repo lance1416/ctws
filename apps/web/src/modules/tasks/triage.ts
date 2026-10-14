@@ -1,6 +1,7 @@
 import type { TodayTaskResponse } from '@ctws/contracts'
 import type { TriageSection } from './components/TriageControl'
-import { addDays, moveDueToDay, nextMonday } from '../../platform/time/dueAt'
+import { addDays, nextMonday } from '../../platform/time/dates'
+import { moveDueToDay } from './dueDates'
 
 /** Only what the decisions read. Anything that can answer this is a row this page shows. */
 type Triageable = Pick<TodayTaskResponse, 'id' | 'segment' | 'dueAt'>

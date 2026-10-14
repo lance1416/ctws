@@ -29,7 +29,8 @@ import { useRegistry } from '../../../shell/registry'
 import { TASKS_ID } from '../id'
 import { TaskDetail } from '../components/TaskDetail'
 import { TriageControl } from '../components/TriageControl'
-import { dateHints, todayIn } from '../../../platform/time/dueAt'
+import { todayIn } from '../../../platform/time/dates'
+import { dateHints } from '../dueDates'
 import { useShortcutsEnabled } from '../../../platform/keyboard/enabled'
 import { triageSections } from '../triage'
 import { useTimeZone } from '../../../shell/auth/useMe'
@@ -189,7 +190,7 @@ export function Today() {
    * pointer or the keyboard. Where there is no hover they are always there.
    */
   const row = (t: TodayTaskResponse, anyTime = false): ReactNode => {
-    const hints = dateHints(t, timezone)
+    const hints = dateHints(t, timezone, nowAt)
     // A plan for a day already gone, still not done: carried over, and said so on the right.
     const carried = t.segment === 'today' && t.scheduledOn !== null && t.scheduledOn < todayYmd
     const sections = triageSections(t, carried ? 'Carried over' : null, todayYmd, timezone, patch)

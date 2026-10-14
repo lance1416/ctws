@@ -13,7 +13,7 @@ import { DaySection } from '../../../shell/rows/DaySection'
 import { ROW_LIST } from '../../../shell/rows/RowParts'
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { useNow } from '../../../platform/time/useNow'
-import { todayIn } from '../../../platform/time/dueAt'
+import { todayIn } from '../../../platform/time/dates'
 import { useCrumbs } from '../../../shell/layout/Location'
 
 /**

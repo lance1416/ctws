@@ -9,9 +9,10 @@ import { DONE_LIST_MEASURE, ProjectRail } from '../../../shell/rows/RowParts'
 import { RowLead } from '../../../shell/rows/RowLead'
 import { StatusButton } from '../components/StatusControls'
 import { TaskDetail } from '../components/TaskDetail'
-import { addDays, MONTHS, todayIn } from '../../../platform/time/dueAt'
+import { addDays, MONTHS, todayIn } from '../../../platform/time/dates'
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { useCrumbs } from '../../../shell/layout/Location'
+import { useNow } from '../../../platform/time/useNow'
 
 const WEEKDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
@@ -34,7 +35,7 @@ export function Completed({ heading: showHeading = true }: { heading?: boolean }
   const completed = useQuery({ queryKey: ['completed'], queryFn: listCompleted })
   const [openId, setOpenId] = useState<string | null>(null)
   const timezone = useTimeZone()
-  const today = todayIn(timezone)
+  const today = todayIn(timezone, useNow())
   const clock = new Intl.DateTimeFormat('en-US', {
     hour: '2-digit',
     minute: '2-digit',

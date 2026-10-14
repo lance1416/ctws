@@ -3,7 +3,7 @@ import { useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { listMovement } from '../../modules/tasks/api/movement'
 import { listProjects } from '../projects/api'
-import { shortDay, todayIn } from '../../platform/time/dueAt'
+import { shortDay, todayIn } from '../../platform/time/dates'
 import { movedLine } from '../../modules/tasks/movement'
 import { ProjectRail } from '../rows/RowParts'
 import { useTimeZone } from '../auth/useMe'
@@ -11,6 +11,7 @@ import { Panel, PanelEmpty } from '../../platform/ui/Panel'
 import { useRegistry } from '../registry'
 import { useCrumbs } from '../layout/Location'
 import { useGround } from '../layout/ground'
+import { useNow } from '../../platform/time/useNow'
 
 /**
  * THE WORKBENCH -- THE SHELL'S OWN FRONT PAGE, and the first surface that is nobody's module.
@@ -80,7 +81,7 @@ function ProjectsWidget() {
   const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
   // The same entry Today's This week reads: what each line did and when it last moved.
   const movement = useQuery({ queryKey: ['movement'], queryFn: listMovement })
-  const today = todayIn(useTimeZone())
+  const today = todayIn(useTimeZone(), useNow())
   const rows = (projects.data ?? []).filter((p) => !p.archivedAt)
   const moved = new Map((movement.data ?? []).map((m) => [m.projectId, m]))
 
