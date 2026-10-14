@@ -65,25 +65,21 @@ function storedBirthdayOf(p: Person): StoredBirthday | null {
 
 /** Attaches projects and channels to a page of people, one query each. */
 async function hydrate(q: Queryable, workspaceId: string, rows: Person[]): Promise<PersonRow[]> {
+  if (rows.length === 0) return []
   const ids = rows.map((r) => r.id)
-  let channelsOf = new Map<string, PersonChannel[]>()
-  let projectsOfPerson = new Map<string, Named[]>()
-  if (ids.length > 0) {
-    const [linked, channels] = await Promise.all([
-      projectsOf(q, workspaceId, 'person', ids),
-      q
-        .select()
-        .from(personChannels)
-        .where(inArray(personChannels.personId, ids))
-        .orderBy(asc(personChannels.rank), asc(personChannels.id)),
-    ])
-    projectsOfPerson = linked
-    channelsOf = groupBy(
-      channels,
-      (c) => c.personId,
-      (c): PersonChannel => ({ kind: c.kind, value: c.value, label: c.label }),
-    )
-  }
+  const [projectsOfPerson, channels] = await Promise.all([
+    projectsOf(q, workspaceId, 'person', ids),
+    q
+      .select()
+      .from(personChannels)
+      .where(inArray(personChannels.personId, ids))
+      .orderBy(asc(personChannels.rank), asc(personChannels.id)),
+  ])
+  const channelsOf = groupBy(
+    channels,
+    (c) => c.personId,
+    (c): PersonChannel => ({ kind: c.kind, value: c.value, label: c.label }),
+  )
   return rows.map((p) => ({
     id: p.id,
     name: p.name,

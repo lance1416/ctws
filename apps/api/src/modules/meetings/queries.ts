@@ -56,26 +56,22 @@ type Selected = {
 
 /** Attaches attendees and exceptions to a page of series, one query each. */
 async function hydrate(q: Queryable, workspaceId: string, rows: Selected[]): Promise<SeriesRow[]> {
+  if (rows.length === 0) return []
   const ids = rows.map((r) => r.meeting.id)
-  let attending = new Map<string, Attendee[]>()
-  let exceptionsOf = new Map<string, Exception[]>()
-  if (ids.length > 0) {
-    const [guests, found] = await Promise.all([
-      attendeesOf(q, workspaceId, ids),
-      q.select().from(meetingExceptions).where(inArray(meetingExceptions.meetingId, ids)),
-    ])
-    attending = guests
-    exceptionsOf = groupBy(
-      found,
-      (e) => e.meetingId,
-      (e): Exception => ({
-        recurrenceId: e.recurrenceId,
-        cancelled: e.cancelled,
-        startsLocal: e.startsLocal,
-        durationMinutes: e.durationMinutes,
-      }),
-    )
-  }
+  const [attending, found] = await Promise.all([
+    attendeesOf(q, workspaceId, ids),
+    q.select().from(meetingExceptions).where(inArray(meetingExceptions.meetingId, ids)),
+  ])
+  const exceptionsOf = groupBy(
+    found,
+    (e) => e.meetingId,
+    (e): Exception => ({
+      recurrenceId: e.recurrenceId,
+      cancelled: e.cancelled,
+      startsLocal: e.startsLocal,
+      durationMinutes: e.durationMinutes,
+    }),
+  )
   return rows.map(({ meeting, projectId, projectName }) => ({
     ...meeting,
     projectId,
