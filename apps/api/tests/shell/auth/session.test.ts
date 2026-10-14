@@ -37,7 +37,10 @@ async function storedFor(token: string): Promise<{ id: string; token_hash: strin
 describe('session', () => {
   it('creates a session that resolves to its user', async () => {
     const session = await createSession(ctx.db, userId, 30)
-    expect(await findValidSession(ctx.db, session.token, TTL_DAYS)).toEqual({ userId })
+    expect(await findValidSession(ctx.db, session.token, TTL_DAYS)).toEqual({
+      userId,
+      renewedUntil: null,
+    })
   })
 
   /**
@@ -167,10 +170,12 @@ describe('sliding expiry', () => {
           expires_at = ${new Date(Date.now() + 3_600_000).toISOString()}`,
     )
 
-    expect(await findValidSession(ctx.db, session.token, TTL_DAYS)).toEqual({ userId })
+    const found = await findValidSession(ctx.db, session.token, TTL_DAYS)
 
     const after = await ctx.db.execute(sql`select expires_at, last_seen_at from sessions`)
     const row = after.rows[0] as { expires_at: string; last_seen_at: string }
+    // The new expiry is reported, so the cookie can slide with it.
+    expect(found).toEqual({ userId, renewedUntil: new Date(row.expires_at) })
     // A full window from NOW, not an hour from now.
     const left = new Date(row.expires_at).getTime() - Date.now()
     expect(left).toBeGreaterThan((TTL_DAYS - 1) * 86_400_000)
@@ -214,8 +219,10 @@ describe('sliding expiry', () => {
     // Mine that was dead is gone. Mine that was alive stayed. Neither of theirs was touched --
     // not even the dead one, which is not this login's to tidy.
     expect(await findValidSession(ctx.db, myStale.token, TTL_DAYS)).toBeNull()
-    expect(await findValidSession(ctx.db, myLive.token, TTL_DAYS)).toEqual({ userId })
-    expect(await findValidSession(ctx.db, theirLive.token, TTL_DAYS)).toEqual({ userId: other })
+    expect(await findValidSession(ctx.db, myLive.token, TTL_DAYS)).toMatchObject({ userId })
+    expect(await findValidSession(ctx.db, theirLive.token, TTL_DAYS)).toMatchObject({
+      userId: other,
+    })
     expect(await storedFor(theirStale.token)).toBeDefined()
   })
 })

@@ -34,14 +34,15 @@ export async function createSession(
 }
 
 /**
- * The session behind a cookie. The expiry slides: it is an idle window, renewed by use. Any
- * cookie value hashes to well-formed hex, so none needs checking first.
+ * The session behind a cookie. The expiry slides: it is an idle window, renewed by use, and
+ * `renewedUntil` is the new expiry for the cookie when this read renewed it. Any cookie value
+ * hashes to well-formed hex, so none needs checking first.
  */
 export async function findValidSession(
   db: Queryable,
   token: string,
   ttlDays: number,
-): Promise<{ userId: string } | null> {
+): Promise<{ userId: string; renewedUntil: Date | null } | null> {
   const hash = digest(token)
   const now = new Date()
   const [found] = await db
@@ -50,13 +51,12 @@ export async function findValidSession(
     .where(and(eq(sessions.tokenHash, hash), gt(sessions.expiresAt, now)))
     .limit(1)
   if (!found) return null
-  if (now.getTime() - found.lastSeenAt.getTime() >= TOUCH_AFTER_MS) {
-    await db
-      .update(sessions)
-      .set({ lastSeenAt: now, expiresAt: new Date(now.getTime() + ttlDays * DAY_MS) })
-      .where(eq(sessions.tokenHash, hash))
+  if (now.getTime() - found.lastSeenAt.getTime() < TOUCH_AFTER_MS) {
+    return { userId: found.userId, renewedUntil: null }
   }
-  return { userId: found.userId }
+  const expiresAt = new Date(now.getTime() + ttlDays * DAY_MS)
+  await db.update(sessions).set({ lastSeenAt: now, expiresAt }).where(eq(sessions.tokenHash, hash))
+  return { userId: found.userId, renewedUntil: expiresAt }
 }
 
 export async function revokeSession(db: Queryable, token: string): Promise<void> {

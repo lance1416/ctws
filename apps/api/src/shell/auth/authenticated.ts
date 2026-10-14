@@ -1,7 +1,7 @@
 import type { Role } from '@ctws/contracts'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { AdminRequiredError } from '../admin/errors'
-import { SESSION_COOKIE } from './cookie'
+import { SESSION_COOKIE, setSessionCookie } from './cookie'
 import { SessionRequiredError } from './errors'
 import { hasRole } from './roles'
 import { getAuthContext } from './service'
@@ -21,12 +21,14 @@ export function authenticated(scope: FastifyInstance): void {
   scope.addHook('onRoute', (route) => {
     route.schema = { ...route.schema, security: [{ session: [] }] }
   })
-  scope.addHook('preHandler', async (req) => {
+  scope.addHook('preHandler', async (req, reply) => {
     const token = req.cookies[SESSION_COOKIE]
     const session = token ? await findValidSession(scope.db, token, scope.env.sessionTtlDays) : null
     // Read on every request, so disabling or demoting an account applies at once.
     const context = session ? await getAuthContext(scope.db, session.userId) : null
-    if (!session || !context) throw new SessionRequiredError()
+    if (!token || !session || !context) throw new SessionRequiredError()
+    // The browser drops the cookie at its own expiry, so it slides with the session.
+    if (session.renewedUntil) setSessionCookie(reply, scope.env, token, session.renewedUntil)
     req.user = { id: session.userId, ...context }
   })
 }

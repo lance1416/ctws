@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { withApp } from '../../helpers/app'
 
@@ -95,6 +96,36 @@ describe('GET /api/v1/auth/me', () => {
     })
     expect(res.statusCode).toBe(401)
     expect(res.headers['content-type']).toContain('application/problem+json')
+  })
+
+  it('renews the cookie when it renews the session, so daily use never signs out', async () => {
+    const ctx = await appWithUser()
+    // Last seen two hours ago: old enough for this request to renew the session.
+    await ctx.db.execute(sql`update sessions set last_seen_at = now() - interval '2 hours'`)
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/v1/auth/me',
+      headers: { ...headers, cookie: ctx.cookie },
+    })
+    expect(res.statusCode).toBe(200)
+    expect(sessionId(res.headers['set-cookie'])).toBe(ctx.cookie.split('=')[1])
+    const expires = /Expires=([^;]+)/.exec(String(res.headers['set-cookie']))?.[1]
+    const [row] = (await ctx.db.execute(sql`select expires_at from sessions`)).rows as {
+      expires_at: string
+    }[]
+    expect(new Date(expires!).getTime()).toBe(
+      Math.floor(new Date(row!.expires_at).getTime() / 1000) * 1000,
+    )
+  })
+
+  it('does not reissue the cookie on a request that renews nothing', async () => {
+    const ctx = await appWithUser()
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/v1/auth/me',
+      headers: { ...headers, cookie: ctx.cookie },
+    })
+    expect(res.headers['set-cookie']).toBeUndefined()
   })
 })
 
