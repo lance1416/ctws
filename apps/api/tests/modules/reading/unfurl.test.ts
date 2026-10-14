@@ -50,6 +50,28 @@ describe('unfurl', () => {
     })
   })
 
+  it('reads a name= tag in either attribute order and either quote', async () => {
+    const { url } = await serve(
+      html(`<html><head>
+        <META content='Content first' NAME='OG:TITLE'>
+        <meta name="og:description" content="Name, not property">
+        </head></html>`),
+    )
+    expect(await unfurl(url, { allow: anywhere })).toEqual({
+      title: 'Content first',
+      summary: 'Name, not property',
+    })
+  })
+
+  it('reads a page built to make a pattern backtrack, at once', async () => {
+    const { url } = await serve(
+      html(`<html><head>${'<meta content="'.repeat(1100)}<title>Still here</title></head></html>`),
+    )
+    const began = Date.now()
+    await unfurl(url, { allow: anywhere })
+    expect(Date.now() - began).toBeLessThan(500)
+  })
+
   it('falls back to <title> and decodes entities', async () => {
     const { url } = await serve(
       html('<html><head><title>A &amp; B &#8212; C</title></head></html>'),

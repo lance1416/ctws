@@ -162,10 +162,13 @@ function charsetOf(contentType: string): string {
   return /charset=["']?([\w-]+)/i.exec(contentType)?.[1]?.toLowerCase() ?? 'utf-8'
 }
 
-/** og:title over <title>: the site's own line for sharing, without a "| Channel" tail. */
+/**
+ * og:title over <title>: the site's own line for sharing, without a "| Channel" tail. The page is
+ * scanned, not matched with patterns that can backtrack, so no page can stall the process.
+ */
 function readFacts(body: Buffer, headerCharset: string): Unfurled | null {
   const head = decode(body, headerCharset)
-  const title = meta(head, 'og:title') ?? tag(head) ?? null
+  const title = meta(head, 'og:title') ?? titleOf(head)
   const summary = meta(head, 'og:description')
   if (!title && !summary) return null
   return { title, summary: summary === null ? null : summary.slice(0, MAX_SUMMARY) }
@@ -188,21 +191,74 @@ function decode(body: Buffer, headerCharset: string): string {
   }
 }
 
-function tag(head: string): string | null {
-  const raw = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(head)?.[1]
-  return raw === undefined ? null : clean(raw)
+function titleOf(head: string): string | null {
+  const open = /<title\b/i.exec(head)
+  if (!open) return null
+  const start = head.indexOf('>', open.index)
+  if (start < 0) return null
+  const close = /<\/title/gi
+  close.lastIndex = start + 1
+  const end = close.exec(head)
+  return end ? clean(head.slice(start + 1, end.index)) : null
 }
 
-/** Matches `property` or `name`, with `content` before or after it. */
+/** The `content` of the first <meta> whose `property` or `name` is `key`. */
 function meta(head: string, key: string): string | null {
-  const pattern = new RegExp(
-    `<meta[^>]+(?:property|name)=["']${key}["'][^>]*>|<meta[^>]+content=["']([^"']*)["'][^>]+(?:property|name)=["']${key}["'][^>]*>`,
-    'i',
-  )
-  const found = pattern.exec(head)
-  if (!found) return null
-  const content = found[1] ?? /content=["']([^"']*)["']/i.exec(found[0])?.[1]
-  return content === undefined ? null : clean(content) || null
+  for (const attrs of metaTags(head)) {
+    if ([attrs.get('property'), attrs.get('name')].some((v) => v?.toLowerCase() === key)) {
+      const content = attrs.get('content')
+      return content === undefined ? null : clean(content) || null
+    }
+  }
+  return null
+}
+
+/** Each <meta> tag's attributes, in document order. */
+function* metaTags(head: string): Generator<Map<string, string>> {
+  const opening = /<meta[\s/]/gi
+  for (let found = opening.exec(head); found; found = opening.exec(head)) {
+    const end = head.indexOf('>', found.index)
+    if (end < 0) return
+    yield attributes(head.slice(found.index + '<meta'.length, end))
+    opening.lastIndex = end
+  }
+}
+
+const isSpace = (c: string) => c === ' ' || c === '\t' || c === '\n' || c === '\r' || c === '\f'
+
+/** A tag's attributes by lower-cased name, read in one pass. */
+function attributes(tag: string): Map<string, string> {
+  const attrs = new Map<string, string>()
+  let i = 0
+  const skipSpace = () => {
+    while (i < tag.length && (isSpace(tag[i]!) || tag[i] === '/')) i++
+  }
+  while (i < tag.length) {
+    skipSpace()
+    const nameStart = i
+    while (i < tag.length && !isSpace(tag[i]!) && tag[i] !== '=' && tag[i] !== '/') i++
+    const name = tag.slice(nameStart, i).toLowerCase()
+    skipSpace()
+    if (tag[i] !== '=') {
+      if (name) attrs.set(name, '')
+      continue
+    }
+    i++
+    skipSpace()
+    const quote = tag[i]
+    let value: string
+    if (quote === '"' || quote === "'") {
+      const close = tag.indexOf(quote, i + 1)
+      value = tag.slice(i + 1, close < 0 ? tag.length : close)
+      i = close < 0 ? tag.length : close + 1
+    } else {
+      const valueStart = i
+      while (i < tag.length && !isSpace(tag[i]!)) i++
+      value = tag.slice(valueStart, i)
+    }
+    if (name && !attrs.has(name)) attrs.set(name, value)
+  }
+  return attrs
 }
 
 const ENTITIES: Record<string, string> = {
