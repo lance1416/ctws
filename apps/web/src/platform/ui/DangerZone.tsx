@@ -85,9 +85,8 @@ export function DangerAction({
       trigger.current?.focus()
       return
     }
-    // The question's own button takes focus when it can. While the count is still coming it is
-    // disabled and cannot, and the press that opened the question has just left the DOM, so the
-    // box takes focus instead -- Escape has to land somewhere.
+    // The question focuses its Cancel; a custom question that focuses nothing leaves focus on the
+    // box, since the press that opened it has just left the DOM and Escape has to land somewhere.
     const el = box.current
     if (el && !el.contains(document.activeElement)) el.focus()
   }, [asking])

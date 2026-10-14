@@ -1,5 +1,5 @@
 import { expect, test, type Locator } from '@playwright/test'
-import { apiPost, makeProject, makeTask, registerFreshUser } from './helpers'
+import { apiPost, makeProject, makeTask, registerFreshUser, WEB } from './helpers'
 
 /**
  * 删除（取消）在哪儿：在所有东西下面，而且不高于地板。
@@ -102,4 +102,20 @@ test('短的页面上，删除项目落在屏幕底', async ({ page }) => {
   expect(m.contentBottom).toBeLessThanOrEqual(m.top + 0.5)
   expect(m.fills).toEqual([CLEAR, CLEAR])
   expect(m.rule).toBeGreaterThan(0)
+})
+
+test('a held Enter on Delete does not also confirm it', async ({ page }) => {
+  await registerFreshUser(page)
+  const person = await apiPost(page, '/people', { name: 'Keep me' })
+  await page.goto(`/people/${person.id}`)
+  const ask = page.getByRole('button', { name: 'Delete person' })
+  await ask.focus()
+  // Key repeat: the second Enter lands on whatever took focus when the question opened.
+  await page.keyboard.press('Enter')
+  await page.keyboard.press('Enter')
+  await expect(page.getByRole('alertdialog')).toHaveCount(0)
+  await expect(ask).toBeFocused()
+  const res = await page.request.get('/api/v1/people', { headers: WEB })
+  const names = ((await res.json()) as { people: { name: string }[] }).people.map((p) => p.name)
+  expect(names).toContain('Keep me')
 })

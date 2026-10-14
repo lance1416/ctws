@@ -1,10 +1,8 @@
 import { BUTTON } from './buttonStyles'
 
 /**
- * The in-page confirmation for a destructive delete: says what is lost, then Confirm / Cancel.
- * Shared by projects and tasks so there is one treatment. In the page, never window.confirm: a
- * browser modal blocks this project's automation. The confirm button takes focus; the owner
- * decides where focus goes when it ends.
+ * The in-page question before a destructive action: what is lost, then Cancel and the action.
+ * Cancel takes focus, so a held or repeated Enter backs out instead of destroying.
  */
 export function DeleteConfirm({
   label,
@@ -12,7 +10,6 @@ export function DeleteConfirm({
   busy,
   onConfirm,
   onCancel,
-  className = '',
   confirm = 'Confirm delete',
   back = 'Cancel',
 }: {
@@ -23,33 +20,20 @@ export function DeleteConfirm({
   busy: boolean
   onConfirm: () => void
   onCancel: () => void
-  className?: string
   /** The destroying button's word, for a thing that is not deleted -- a meeting is cancelled. */
   confirm?: string | undefined
   /** The way out's word. "Cancel" beside "Cancel meeting" would mean its opposite. */
   back?: string | undefined
 }) {
   return (
-    <div
-      role="alertdialog"
-      aria-label={label}
-      className={`flex flex-wrap items-center gap-x-3 gap-y-1 text-sm ${className}`}
-    >
+    <div role="alertdialog" aria-label={label} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
       <p className="text-ink">{message}</p>
-      {/* The way out first and the action last, as every pair of buttons in the app is ordered
-          (`DialogFooter`, a pane's Cancel / Save) -- which also keeps the press that destroys
-          the furthest from where the hand was. */}
+      {/* The way out first and the action last, as every pair of buttons in the app is ordered. */}
       <span className="flex items-center gap-2">
-        <button type="button" onClick={onCancel} className={BUTTON.secondary}>
+        <button autoFocus type="button" onClick={onCancel} className={BUTTON.secondary}>
           {back}
         </button>
-        <button
-          autoFocus
-          type="button"
-          disabled={busy}
-          onClick={onConfirm}
-          className={BUTTON.destructive}
-        >
+        <button type="button" disabled={busy} onClick={onConfirm} className={BUTTON.destructive}>
           {confirm}
         </button>
       </span>
