@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { apiFetch } from './api'
+import { ApiError, apiFetch } from './api'
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -28,6 +28,16 @@ describe('apiFetch', () => {
       const init = call[1] as RequestInit
       expect(new Headers(init.headers).get('x-ctws-client')).toBe('web')
     }
+  })
+
+  it('keeps the status when an error body is not JSON', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('<html>Bad Gateway</html>', { status: 502 })),
+    )
+    const failure = await apiFetch('/tasks/today').catch((e: unknown) => e)
+    expect(failure).toBeInstanceOf(ApiError)
+    expect(failure).toMatchObject({ status: 502, message: 'HTTP 502' })
   })
 
   it('throws with the problem title when the response is a problem document', async () => {
