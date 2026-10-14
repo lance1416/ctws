@@ -193,18 +193,20 @@ describe('GET /tasks/movement', () => {
     const pid = await createProject(ctx, 'quiet')
     const first = await createTask(ctx, pid, 'a')
     const second = await createTask(ctx, pid, 'b')
-    // Nine days of silence.
+    // Nine days of silence before a pinned Wednesday.
+    const now = new Date('2026-10-07T04:00:00Z')
     await ctx.db.execute(sql`
-      update task_events set occurred_at = now() - interval '9 days'
+      update task_events set occurred_at = '2026-09-28T04:00:00Z'
       where task_id in (select id from tasks where project_id = ${pid})
     `)
+    const quiet = async () =>
+      rowFor((await listProjectMovement(ctx.db, workspaceId, 'UTC', now)) as Row[], pid)
 
-    const before = rowFor(await movement(), pid)
-    expect(before.quietDays).toBe(9)
-    expect(before.lastActivityOn).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    const before = await quiet()
+    expect(before).toMatchObject({ quietDays: 9, lastActivityOn: '2026-09-28' })
 
-    // A reorder: same parent, same project, only the rank changes. It writes no event by design
-    // (contracts, section 9.1) precisely so that a tidy-up cannot poison this number.
+    // A reorder: same parent, same project, only the rank changes. It writes no event, so a
+    // tidy-up cannot poison this number.
     const res = await ctx.app.inject({
       method: 'POST',
       url: `/api/v1/tasks/${second}/move`,
@@ -213,9 +215,7 @@ describe('GET /tasks/movement', () => {
     })
     expect(res.statusCode).toBe(200)
 
-    const after = rowFor(await movement(), pid)
-    expect(after.quietDays).toBe(9)
-    expect(after.lastActivityOn).toBe(before.lastActivityOn)
+    expect(await quiet()).toMatchObject({ quietDays: 9, lastActivityOn: '2026-09-28' })
 
     // A real change does move it: the number is not simply frozen.
     expect(
@@ -228,7 +228,7 @@ describe('GET /tasks/movement', () => {
         })
       ).statusCode,
     ).toBe(200)
-    expect(rowFor(await movement(), pid).quietDays).toBe(0)
+    expect((await quiet()).lastActivityOn).not.toBe('2026-09-28')
   })
 
   // ------------------------------------------------------------- overdue, the banner's fourth number

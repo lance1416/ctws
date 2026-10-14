@@ -15,10 +15,12 @@ afterEach(async () => {
   for (const stop of cleanups.splice(0)) await stop()
 })
 
-async function setup(timezone?: string): Promise<Harness> {
-  const ctx = await appWithUser()
+async function setup(timezone?: string, now?: Date): Promise<Harness> {
+  const ctx = await appWithUser(undefined, {
+    ...(timezone ? { timezone } : {}),
+    ...(now ? { clock: () => now } : {}),
+  })
   cleanups.push(ctx.stop)
-  if (timezone) await ctx.db.execute(sql`update users set timezone = ${timezone}`)
   return ctx
 }
 
@@ -139,12 +141,9 @@ describe('the weekly review', () => {
   })
 
   it('starts the default window on Monday in the ACCOUNT zone', async () => {
-    const ctx = await setup('Pacific/Kiritimati')
-    const body = await review(ctx)
-    const monday = await ctx.db.execute(
-      sql`select date_trunc('week', now() at time zone 'Pacific/Kiritimati')::date::text as d`,
-    )
-    expect(body.from).toBe((monday.rows[0] as { d: string }).d)
+    // Sunday noon in UTC is already Monday 02:00 in Kiritimati: a UTC week would start a week earlier.
+    const ctx = await setup('Pacific/Kiritimati', new Date('2026-10-04T12:00:00Z'))
+    expect((await review(ctx)).from).toBe('2026-10-05')
   })
 
   it('leaves out a deleted task, and another workspace entirely', async () => {
