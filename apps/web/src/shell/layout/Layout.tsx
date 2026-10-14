@@ -41,10 +41,9 @@ export function Layout() {
   })
 
   if (me.isLoading) return <div className="min-h-screen bg-sheet" />
-  // A SERVER THAT IS DOWN IS NOT A SIGNED-OUT VISITOR. Redirecting here would land the reader on
-  // a login page that cannot reach the server either, which reads as "my password stopped
-  // working" rather than "the server is down".
-  if (me.isError) {
+  // A server that is down is not a signed-out visitor, so this is not a redirect to /login. Only a
+  // first load that failed means there is no app to show; a later failed check keeps the page.
+  if (me.isLoadingError) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-sheet p-6">
         <p role="alert" className="max-w-prose text-sm text-danger">

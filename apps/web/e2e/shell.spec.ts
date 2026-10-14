@@ -1,5 +1,13 @@
 import { expect, test } from '@playwright/test'
-import { makeProject, makeTask, registerFreshUser, WEB } from './helpers'
+import {
+  editDetail,
+  makeProject,
+  makeTask,
+  openDetail,
+  openTree,
+  registerFreshUser,
+  WEB,
+} from './helpers'
 
 test('the app shell routes between today, projects and a project', async ({ page }) => {
   await registerFreshUser(page)
@@ -365,4 +373,24 @@ test('on a phone, several things in progress are rows, not a column of empty spa
     els.map((el) => el.getBoundingClientRect().height),
   ))
     expect(h).toBeLessThanOrEqual(66)
+})
+
+test('a failed background check of the session keeps the page and its unsaved edit', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const projectId = await makeProject(page, 'Offline')
+  await makeTask(page, projectId, 'Half written')
+  await openTree(page, projectId)
+  await openDetail(page, 'Half written')
+  await editDetail(page)
+  const title = page.getByRole('textbox', { name: 'Title' })
+  await title.fill('Half written, then more')
+  await page.route('**/api/v1/auth/me', (r) => r.fulfill({ status: 503, body: '{}' }))
+  // A tab coming back into view refetches the session.
+  const checked = page.waitForResponse('**/api/v1/auth/me')
+  await page.evaluate(() => window.dispatchEvent(new Event('visibilitychange')))
+  await checked
+  await expect(page.getByText("Can't reach the server")).toHaveCount(0)
+  await expect(title).toHaveValue('Half written, then more')
 })
