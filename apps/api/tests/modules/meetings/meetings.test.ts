@@ -1,7 +1,14 @@
 import type { CalendarEntry, PersonResponse, MeetingOccurrence } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
-import { createProject, setupWith, type Harness, web } from '../../helpers/harness'
+import type { Queryable } from '../../../src/platform/db/client'
+import {
+  createProject,
+  expectBlockedWhile,
+  setupWith,
+  type Harness,
+  web,
+} from '../../helpers/harness'
 
 /**
  * MEETINGS -- the fourth module, on iCalendar's `VEVENT` (RFC 5545).
@@ -572,5 +579,35 @@ describe('windows, projects and tenants', () => {
     expect(seen.statusCode).toBe(404)
     expect((await patch(theirs, series.meetingId, { title: '改名' })).statusCode).toBe(404)
     expect((await cancel(theirs, series.meetingId)).statusCode).toBe(404)
+  })
+})
+
+describe('an edit that meets a concurrent delete', () => {
+  // Each edit writes from the series it read, so it must read only once it holds the row: an edit
+  // that read first would act on a meeting deleted while it waited.
+  const deleteUncommitted = (id: string) => (tx: Queryable) =>
+    tx.execute(sql`update meetings set deleted_at = now() where id = ${id}`)
+
+  it('does not bring a deleted meeting back from one occurrence on', async () => {
+    const ctx = await setup()
+    const series = await arrange(ctx)
+    const res = await expectBlockedWhile(ctx, deleteUncommitted(series.meetingId), () =>
+      patch(ctx, series.meetingId, {
+        scope: 'following',
+        recurrenceId: '2026-11-03T09:00',
+        title: '新周会',
+      }),
+    )
+    expect(res.statusCode).toBe(404)
+    expect(await listed(ctx, '?from=2026-10-20&to=2026-12-31')).toEqual([])
+  })
+
+  it('does not cancel occurrences of a meeting deleted meanwhile', async () => {
+    const ctx = await setup()
+    const series = await arrange(ctx)
+    const res = await expectBlockedWhile(ctx, deleteUncommitted(series.meetingId), () =>
+      cancel(ctx, series.meetingId, '?scope=one&recurrenceId=2026-10-27T09:00'),
+    )
+    expect(res.statusCode).toBe(404)
   })
 })

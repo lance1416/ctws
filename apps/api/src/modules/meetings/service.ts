@@ -10,6 +10,7 @@ import { endedBefore, type LocalTime, ruleProblem } from './occurrences'
 import {
   assertOccurs,
   getOccurrence,
+  lockMeeting,
   meetingFiling,
   type OccurrenceRow,
   type SeriesRow,
@@ -231,6 +232,7 @@ export async function updateMeeting(
   patch: UpdateMeetingBody,
 ): Promise<OccurrenceRow> {
   return db.transaction(async (tx) => {
+    await lockMeeting(tx, workspaceId, id)
     const series = await seriesById(tx, workspaceId, id)
     if (patch.projectId) await assertProjectsVisible(tx, workspaceId, [patch.projectId])
     if (patch.attendeeIds) await assertPeopleVisible(tx, workspaceId, patch.attendeeIds)
@@ -249,6 +251,7 @@ export async function cancelMeeting(
   opts: { scope: EditScope; recurrenceId?: LocalTime | undefined },
 ): Promise<void> {
   await db.transaction(async (tx) => {
+    await lockMeeting(tx, workspaceId, id)
     const series = await seriesById(tx, workspaceId, id)
     const scope = scopeFor(series, opts.scope)
     await CANCELS[scope]({ tx, workspaceId, series, recurrenceId: opts.recurrenceId })

@@ -1,8 +1,9 @@
 import { sql } from 'drizzle-orm'
 import { expect } from 'vitest'
 import { lockTaskTree } from '../../src/modules/tasks/tree'
-import type { Env } from '../../src/platform/config'
 import type { Unfurl } from '../../src/modules/reading/unfurl/unfurl'
+import type { Env } from '../../src/platform/config'
+import type { Queryable } from '../../src/platform/db/client'
 import { withApp } from './app'
 
 export type Harness = Awaited<ReturnType<typeof withApp>> & {
@@ -106,9 +107,17 @@ export async function eventsOf(
   return r.rows as { type: string; payload: unknown }[]
 }
 
+/** `expectBlockedWhile` the workspace's task tree lock is held. */
+export async function expectBlockedByTreeLock<T>(ctx: Harness, fire: () => Promise<T>): Promise<T> {
+  const { workspaceId } = (
+    await ctx.app.inject({ method: 'GET', url: '/api/v1/auth/me', headers: ctx.authed })
+  ).json() as { workspaceId: string }
+  return expectBlockedWhile(ctx, (tx) => lockTaskTree(tx, workspaceId), fire)
+}
+
 /**
- * Fires a request while the tree lock is held on another transaction, asserts the request is
- * still in flight after a moment, then releases the lock and returns the response.
+ * Fires a request while `take` holds a lock on another transaction, asserts the request is still
+ * in flight after a moment, then releases the lock and returns the response.
  *
  * This is a MECHANISM test, not a race test. Reproducing the interleaving the lock prevents needs
  * a pause point inside the command transaction -- a hook in production code -- and an attempt at
@@ -121,11 +130,11 @@ export async function eventsOf(
  * would contend identically here and be useless, so "first statement" rests on the commands, not
  * on this helper.
  */
-export async function expectBlockedByTreeLock<T>(ctx: Harness, fire: () => Promise<T>): Promise<T> {
-  const { workspaceId } = (
-    await ctx.app.inject({ method: 'GET', url: '/api/v1/auth/me', headers: ctx.authed })
-  ).json() as { workspaceId: string }
-
+export async function expectBlockedWhile<T>(
+  ctx: Harness,
+  take: (tx: Queryable) => Promise<unknown>,
+  fire: () => Promise<T>,
+): Promise<T> {
   let release!: () => void
   const held = new Promise<void>((resolve) => {
     release = resolve
@@ -135,7 +144,7 @@ export async function expectBlockedByTreeLock<T>(ctx: Harness, fire: () => Promi
     locked = resolve
   })
   const holding = ctx.db.transaction(async (tx) => {
-    await lockTaskTree(tx, workspaceId)
+    await take(tx)
     locked()
     await held
   })

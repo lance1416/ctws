@@ -126,6 +126,16 @@ async function seriesOf(
   return hydrate(q, workspaceId, rows)
 }
 
+/** Locks a live meeting for the rest of the transaction, so an edit reads it only once it is held. */
+export async function lockMeeting(q: Queryable, workspaceId: string, id: string): Promise<void> {
+  const [row] = await q
+    .select({ id: meetings.id })
+    .from(meetings)
+    .where(and(visibleMeetings(workspaceId), eq(meetings.id, id)))
+    .for('update')
+  if (!row) throw new MeetingNotFoundError()
+}
+
 export async function seriesById(
   q: Queryable,
   workspaceId: string,
