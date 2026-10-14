@@ -205,26 +205,46 @@ describe('exceptions', () => {
 })
 
 describe('rules', () => {
-  it('takes the shapes a person actually schedules', () => {
+  it('takes the repeats the editor makes, ended or not', () => {
     for (const [rule, startsLocal] of [
       ['FREQ=DAILY', START],
       ['FREQ=WEEKLY;BYDAY=TU', START],
       ['FREQ=WEEKLY;INTERVAL=2;BYDAY=TU', START],
+      ['FREQ=WEEKLY;BYDAY=MO,WE,FR', '2026-10-30T09:00'],
       ['FREQ=MONTHLY;BYMONTHDAY=8', '2026-10-08T09:00'],
-      // The last Friday of October.
-      ['FREQ=MONTHLY;BYDAY=-1FR', '2026-10-30T09:00'],
-      ['FREQ=WEEKLY;BYDAY=MO,WE,FR;COUNT=10', '2026-10-30T09:00'],
+      ['FREQ=WEEKLY;BYDAY=TU;UNTIL=20261103T085900Z', START],
     ] as const) {
       expect(ruleProblem(rule, startsLocal), rule).toBeNull()
     }
+  })
+
+  it('refuses every other repeat without walking it', () => {
+    const began = Date.now()
+    for (const rule of [
+      // February 30th never comes, and finding that out walks every day to the year 9999.
+      'FREQ=DAILY;BYMONTH=2;BYMONTHDAY=30',
+      'FREQ=YEARLY;BYMONTH=2;BYMONTHDAY=30',
+      'FREQ=MONTHLY;BYDAY=-1FR',
+      'FREQ=MONTHLY;INTERVAL=12;BYMONTHDAY=31',
+      'FREQ=MONTHLY;BYMONTHDAY=8,9',
+      'FREQ=WEEKLY;BYDAY=TU;COUNT=10',
+      'FREQ=DAILY;BYHOUR=9',
+      'FREQ=HOURLY',
+    ]) {
+      expect(ruleProblem(rule, START), rule).toBe(
+        'a meeting repeats daily, weekly on given days, or monthly on a date',
+      )
+    }
+    expect(Date.now() - began).toBeLessThan(200)
   })
 
   it('refuses a start the rule does not fall on, and says where it first does', () => {
     // RFC 5545 makes the start the first occurrence and calls a set whose rule misses it
     // undefined -- and `rrule`, which expands it here, simply leaves the start out.
     expect(ruleProblem('FREQ=WEEKLY;BYDAY=MO', '2026-10-13T18:00')).toContain('2026-10-19T18:00')
-    // The clock counts as much as the day.
-    expect(ruleProblem('FREQ=DAILY;BYHOUR=9', '2026-10-13T18:00')).toContain('2026-10-14T09:00')
+    expect(ruleProblem('FREQ=MONTHLY;BYMONTHDAY=13', '2026-10-19T18:00')).toContain(
+      '2026-11-13T18:00',
+    )
     // A rule that ended before the meeting starts does not happen at all.
     expect(ruleProblem('FREQ=WEEKLY;UNTIL=20260601T235959Z', START)).toBe(
       'that repeat rule never happens',
@@ -237,28 +257,18 @@ describe('rules', () => {
     expect(ruleProblem('', START)).not.toBeNull()
   })
 
-  it('refuses, BY PARSING, what one request cannot be made to compute', () => {
-    // Each measured. The decision is the parser's, not a regex's, because a regex and a parser
-    // disagree about whitespace and number formats and the parser is the one that expands.
-    expect(ruleProblem('FREQ=SECONDLY', START)).toBe(
-      'a meeting cannot repeat more often than daily',
-    )
-    expect(ruleProblem('FREQ=MINUTELY;INTERVAL=1', START)).toBe(
-      'a meeting cannot repeat more often than daily',
-    )
-    // COUNT=5000000 costs 3.2s even when the window holds 31 of them.
-    expect(ruleProblem('FREQ=DAILY;COUNT=5000000', START)).toBe('that repeats too many times')
+  it('refuses an interval nobody means', () => {
     expect(ruleProblem('FREQ=DAILY;INTERVAL=999999', START)).toBe('that interval is not a schedule')
   })
 
   it('refuses the spellings a regex and a parser disagree about', () => {
-    // `rrule` is lenient about case and about an RRULE: prefix inside the body. Whatever it
-    // accepts, the check sees the same thing it does -- which is the whole point of parsing.
+    // `rrule` is lenient about case and about an RRULE: prefix inside the body. The check reads
+    // the parsed rule, so it sees whatever the expansion would.
     expect(ruleProblem('freq=secondly', START)).toBe(
-      'a meeting cannot repeat more often than daily',
+      'a meeting repeats daily, weekly on given days, or monthly on a date',
     )
     expect(ruleProblem('RRULE:FREQ=HOURLY', START)).toBe(
-      'a meeting cannot repeat more often than daily',
+      'a meeting repeats daily, weekly on given days, or monthly on a date',
     )
   })
 

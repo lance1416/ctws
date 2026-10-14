@@ -84,12 +84,44 @@ export type Occurrence = {
 const HARD_LIMIT = 2000
 
 /**
- * Limits on what one request can make the expander compute: FREQ=SECONDLY over a month costs
- * 5.5 s of one core, and COUNT=5000000 costs 3.2 s even for a window holding 31 of them.
+ * Limits on expanding a stored rule: FREQ=SECONDLY over a month costs 5.5 s of one core, and
+ * COUNT=5000000 costs 3.2 s even for a window holding 31 of them.
  */
 const SUB_DAILY = new Set([RRule.SECONDLY, RRule.MINUTELY, RRule.HOURLY])
 const MAX_COUNT = 1000
 const MAX_INTERVAL = 1000
+
+const SHAPE = 'a meeting repeats daily, weekly on given days, or monthly on a date'
+const SHAPE_PARTS = new Set(['dtstart', 'freq', 'interval', 'byweekday', 'bymonthday', 'until'])
+
+/**
+ * Only the repeats the editor makes are stored: daily, weekly on given days, monthly on one date,
+ * any of them ended. Each falls within a month of any start; a rule that never falls, such as
+ * February 30th, would be walked day by day to the year 9999 before that was known.
+ */
+function shapeProblem(o: Rule['origOptions']): string | null {
+  if (Object.entries(o).some(([part, value]) => value != null && !SHAPE_PARTS.has(part))) {
+    return SHAPE
+  }
+  const days = o.byweekday == null ? [] : [o.byweekday].flat()
+  const plainDays = days.every((d) => typeof d !== 'object' || d.n == null)
+  switch (o.freq) {
+    case RRule.DAILY:
+      return o.byweekday == null && o.bymonthday == null ? null : SHAPE
+    case RRule.WEEKLY:
+      return o.bymonthday == null && plainDays ? null : SHAPE
+    case RRule.MONTHLY:
+      return o.byweekday == null &&
+        o.interval == null &&
+        typeof o.bymonthday === 'number' &&
+        o.bymonthday >= 1 &&
+        o.bymonthday <= 31
+        ? null
+        : SHAPE
+    default:
+      return SHAPE
+  }
+}
 
 /**
  * What is wrong with a rule for a series starting at `startsLocal`, or null. The rule is parsed
@@ -104,8 +136,12 @@ export function ruleProblem(rule: string, startsLocal: LocalTime): string | null
   } catch {
     return 'that repeat rule cannot be read'
   }
-  const problem = optionsProblem(parsed)
-  if (problem) return problem
+  const shape = shapeProblem(parsed.origOptions)
+  if (shape) return shape
+  const { interval } = parsed.options
+  if (!Number.isInteger(interval) || interval < 1 || interval > MAX_INTERVAL) {
+    return 'that interval is not a schedule'
+  }
   const [first] = parsed.all((_, i) => i < 1)
   if (!first) return 'that repeat rule never happens'
   // RFC 5545 leaves a start the rule misses undefined, and series are found by their start.
@@ -115,17 +151,16 @@ export function ruleProblem(rule: string, startsLocal: LocalTime): string | null
   return null
 }
 
-/** The limits, checked on a parsed rule. */
-function optionsProblem(parsed: Rule): string | null {
+/** Whether a stored rule is cheap to expand. */
+function expandable(parsed: Rule): boolean {
   const { freq, interval, count } = parsed.options
-  if (SUB_DAILY.has(freq)) return 'a meeting cannot repeat more often than daily'
-  if (!Number.isInteger(interval) || interval < 1 || interval > MAX_INTERVAL) {
-    return 'that interval is not a schedule'
-  }
-  if (count !== null && count !== undefined && (!Number.isInteger(count) || count > MAX_COUNT)) {
-    return 'that repeats too many times'
-  }
-  return null
+  return (
+    !SUB_DAILY.has(freq) &&
+    Number.isInteger(interval) &&
+    interval >= 1 &&
+    interval <= MAX_INTERVAL &&
+    (count == null || (Number.isInteger(count) && count <= MAX_COUNT))
+  )
 }
 
 /**
@@ -201,8 +236,8 @@ export function occurrencesIn(
     const one = made(series.startsLocal)
     return one && overlaps(one) ? [one] : []
   }
-  // The same limits on rows stored before them or by another writer.
-  if (!isOneLine(series.rrule) || optionsProblem(rule)) {
+  // A row stored before these checks, or by another writer, may still be too costly to expand.
+  if (!isOneLine(series.rrule) || !expandable(rule)) {
     const one = made(series.startsLocal)
     return one && overlaps(one) ? [one] : []
   }
