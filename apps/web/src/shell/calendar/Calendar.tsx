@@ -10,7 +10,7 @@ import { useRegistry } from '../registry'
 import { monthRange, monthSquares, monthTitle, shiftMonth, WEEKDAYS } from './monthGrid'
 import { useProjectRail } from '../projects/projectColor'
 import { useTimeZone } from '../auth/useMe'
-import { useCrumbs } from '../layout/Location'
+import { useCrumbs } from '../layout/Breadcrumbs'
 import { useNow } from '../../platform/time/useNow'
 import { PageHead } from '../../platform/ui/PageHead'
 

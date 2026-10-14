@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useRegistry } from '../registry'
-import { useCrumbs } from '../layout/Location'
+import { useCrumbs } from '../layout/Breadcrumbs'
 import { KeyHint } from '../../platform/ui/KeyHint'
 import { HANG_WIDTH } from '../../platform/ui/hang'
 import { BODY_GUTTER, ProjectRail } from '../rows/RowParts'

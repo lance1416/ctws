@@ -7,7 +7,7 @@ import { Panel, PanelEmpty } from '../../../platform/ui/Panel'
 import { MONTHS } from '../../../platform/time/dates'
 import type { Circle } from '@ctws/contracts'
 import { PeopleHead } from '../components/PeopleViews'
-import { useCrumbs } from '../../../shell/layout/Location'
+import { useCrumbs } from '../../../shell/layout/Breadcrumbs'
 import { HANG } from '../../../platform/ui/hang'
 
 /**

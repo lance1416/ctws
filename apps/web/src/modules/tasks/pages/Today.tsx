@@ -36,7 +36,7 @@ import { triageSections } from '../triage'
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { useNow } from '../../../platform/time/useNow'
 import { BUTTON } from '../../../platform/ui/buttonStyles'
-import { useCrumbs } from '../../../shell/layout/Location'
+import { useCrumbs } from '../../../shell/layout/Breadcrumbs'
 import { HANG } from '../../../platform/ui/hang'
 
 /**

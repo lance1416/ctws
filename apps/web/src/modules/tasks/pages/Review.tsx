@@ -14,7 +14,7 @@ import { MONTHS, todayIn, ymd } from '../../../platform/time/dates'
 import { LIST_MEASURE, weekDayWord } from '../../../shell/rows/leads'
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { useNow } from '../../../platform/time/useNow'
-import { useCrumbs } from '../../../shell/layout/Location'
+import { useCrumbs } from '../../../shell/layout/Breadcrumbs'
 import { PageHead } from '../../../platform/ui/PageHead'
 import { HANG } from '../../../platform/ui/hang'
 

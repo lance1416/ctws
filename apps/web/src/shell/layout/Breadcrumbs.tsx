@@ -7,7 +7,7 @@ export type Crumb = { label: string; to?: string }
 const SetCrumbs = createContext<((crumbs: readonly Crumb[]) => void) | null>(null)
 const Crumbs = createContext<readonly Crumb[]>([])
 
-export function LocationProvider({ children }: { children: ReactNode }) {
+export function BreadcrumbsProvider({ children }: { children: ReactNode }) {
   const [crumbs, setCrumbs] = useState<readonly Crumb[]>([])
   return (
     <SetCrumbs.Provider value={setCrumbs}>
@@ -17,14 +17,8 @@ export function LocationProvider({ children }: { children: ReactNode }) {
 }
 
 /**
- * A page says where it is; the header draws it.
- *
- * HIERARCHY, NOT HISTORY (NN/g on breadcrumbs): a kind's page sits under Things, a project page
- * under Projects, and a page reached two ways still shows one path. The rail only marks the tier
- * a page belongs to, so on a kind's page this is the one place that names the page itself.
- *
- * `null` leaves the location alone: a page that is also drawn INSIDE another (Done, as a tab of
- * Review) must not clear its host's path when it comes and goes.
+ * A page says where it is and the header draws it: its place in the hierarchy, not the way it was
+ * reached. `null` leaves the path alone, for a page drawn inside another (Done, as a tab of Review).
  */
 export function useCrumbs(crumbs: readonly Crumb[] | null): void {
   const set = useContext(SetCrumbs)
@@ -37,7 +31,7 @@ export function useCrumbs(crumbs: readonly Crumb[] | null): void {
   }, [set, key])
 }
 
-export function Location() {
+export function Breadcrumbs() {
   const crumbs = useContext(Crumbs)
   if (crumbs.length === 0) return null
   return (

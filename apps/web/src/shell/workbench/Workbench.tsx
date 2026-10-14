@@ -9,7 +9,7 @@ import { ProjectRail } from '../rows/RowParts'
 import { useTimeZone } from '../auth/useMe'
 import { Panel, PanelEmpty } from '../../platform/ui/Panel'
 import { useRegistry } from '../registry'
-import { useCrumbs } from '../layout/Location'
+import { useCrumbs } from '../layout/Breadcrumbs'
 import { useGround } from '../layout/ground'
 import { useNow } from '../../platform/time/useNow'
 
