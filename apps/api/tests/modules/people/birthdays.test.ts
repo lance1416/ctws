@@ -1,5 +1,4 @@
 import { keptNote, nextOccurrence, type Birthday } from '@ctws/core'
-import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { listBirthdays } from '../../../src/modules/people/birthdays'
 import { setupWith, type Harness, web } from '../../helpers/harness'
@@ -16,11 +15,11 @@ afterEach(async () => {
   for (const stop of cleanups.splice(0)) await stop()
 })
 
-async function setup(timezone = 'Asia/Shanghai'): Promise<Harness> {
-  const ctx = await setupWith(cleanups)
-  await ctx.db.execute(sql`update users set timezone = ${timezone}`)
-  return ctx
-}
+/** Noon on 2026-10-13 in Shanghai: every "today" below is this day, whenever the suite runs. */
+const NOW = new Date('2026-10-13T04:00:00Z')
+
+const setup = (timezone = 'Asia/Shanghai'): Promise<Harness> =>
+  setupWith(cleanups, undefined, { timezone, clock: () => NOW })
 
 async function workspaceOf(ctx: Harness): Promise<string> {
   const res = await ctx.app.inject({ method: 'GET', url: '/api/v1/auth/me', headers: ctx.authed })
@@ -62,7 +61,7 @@ async function view(ctx: Harness) {
   }
 }
 
-/** The month and day `n` days from the view's own "today", so no test is pinned to a date. */
+/** The month and day `n` days after `today`. */
 function monthDay(today: string, n: number): { month: number; day: number } {
   const d = new Date(`${today}T00:00:00Z`)
   d.setUTCDate(d.getUTCDate() + n)
