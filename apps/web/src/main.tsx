@@ -9,14 +9,14 @@ import {
   useLocation,
   useParams,
 } from 'react-router-dom'
-import { Layout } from './components/Layout'
-import { moduleRoutes, WORKBENCH_PATH } from './modules/registry'
-import { Login } from './routes/Login'
-import { Calendar } from './routes/Calendar'
-import { ObjectPage } from './components/ObjectPage'
-import { Projects } from './routes/Projects'
-import { Things } from './routes/Things'
-import { Workbench } from './routes/Workbench'
+import { Layout } from './shell/layout/Layout'
+import { moduleRoutes, WORKBENCH_PATH } from './shell/registry'
+import { Login } from './shell/auth/Login'
+import { Calendar } from './shell/calendar/Calendar'
+import { ObjectPage } from './shell/projects/ObjectPage'
+import { Projects } from './shell/projects/Projects'
+import { Things } from './shell/workbench/Things'
+import { Workbench } from './shell/workbench/Workbench'
 // IBM Plex Sans, self-hosted and LATIN SUBSET ONLY: no Google Fonts link, because this app is
 // private and self-hosted and has no business making a third-party request on every load. THREE
 // weights, ~24 KB of woff2 each: the scale's 400 and 600, and 500 -- the display date at the head
@@ -27,7 +27,7 @@ import { Workbench } from './routes/Workbench'
 import '@fontsource/ibm-plex-sans/latin-400.css'
 import '@fontsource/ibm-plex-sans/latin-500.css'
 import '@fontsource/ibm-plex-sans/latin-600.css'
-import './styles.css'
+import './styles/styles.css'
 
 /**
  * The paths the app answered on before its pages moved into module namespaces. This app is
