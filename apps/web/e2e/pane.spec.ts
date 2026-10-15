@@ -469,6 +469,30 @@ test('the status is changed from reading mode, in one act and with no Save', asy
   await expect(dialog.getByRole('button', { name: 'Status: In progress' })).toBeVisible()
 })
 
+test('a status change that fails says so', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'Flaky')
+  const id = await makeTask(page, pid, 'Will not move')
+  await openPane(page, pid, 'Will not move', false)
+  const dialog = page.getByRole('dialog', { name: 'Task details' })
+  await page.route(`**/api/v1/tasks/${id}`, (r) =>
+    r.request().method() === 'PATCH' ? r.fulfill({ status: 500, body: '{}' }) : r.continue(),
+  )
+
+  await dialog.getByRole('button', { name: 'Status: To do' }).click()
+  await page.getByRole('menuitem', { name: 'In progress' }).click()
+  await expect(dialog.getByRole('alert')).toContainText("Couldn't change the status")
+  // Still what the server holds.
+  await expect(dialog.getByRole('button', { name: 'Status: To do' })).toBeVisible()
+
+  // The next change that lands takes the line away.
+  await page.unroute(`**/api/v1/tasks/${id}`)
+  await dialog.getByRole('button', { name: 'Status: To do' }).click()
+  await page.getByRole('menuitem', { name: 'In progress' }).click()
+  await expect(dialog.getByRole('button', { name: 'Status: In progress' })).toBeVisible()
+  await expect(dialog.getByRole('alert')).toHaveCount(0)
+})
+
 test('picking the status it already has writes nothing', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'Status')

@@ -416,6 +416,11 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
                   onPick={(next) => setStatus.mutate(next)}
                 />
               </div>
+              {setStatus.isError && (
+                <p role="alert" className="text-sm text-danger">
+                  Couldn't change the status
+                </p>
+              )}
               <div className="flex items-center gap-2">
                 <span className="flex items-center gap-1 text-sm text-deadline">
                   <DeadlineMark filled={false} />
