@@ -2,7 +2,7 @@ import type { ReadingItemResponse, ReadingStatus } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 import { deleteReadingItem, patchReadingItem } from '../api'
-import { readingLabel } from '../item'
+import { readingLabel, recentEntry } from '../item'
 import { ProjectChip, ProjectPicker } from '../../../shell/projects/ProjectPicker'
 import { useComposing } from '../../../platform/keyboard/composition'
 import { dayPhrase, todayIn } from '../../../platform/time/dates'
@@ -60,13 +60,7 @@ export function ReadingDetail({
   item: ReadingItemResponse
   onClose: () => void
 }) {
-  useRecordRecent({
-    type: 'reading',
-    id: item.id,
-    title: item.title ?? item.url ?? '',
-    to: `/reading/${item.id}`,
-    kind: 'Reading',
-  })
+  useRecordRecent(recentEntry(item))
   return (
     <DetailPane label="Reading" onClose={onClose}>
       <ReadingFields item={item} onClose={onClose} />
