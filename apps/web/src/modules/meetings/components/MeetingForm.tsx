@@ -55,8 +55,11 @@ export function MeetingForm({
       projectId,
       attendeeIds,
       note: note.trim() || null,
-      rrule: rule === null ? null : withUntil(rule, until),
     }
+    // Only when really changed: a rule in the patch makes the server drop the weeks moved or
+    // cancelled on their own.
+    const rrule = rule === null ? null : withUntil(rule, until)
+    if (rrule !== meeting.rrule) patch.rrule = rrule
     // Only when really changed: either one in the patch makes a repeating meeting ask its scope.
     if (startsLocal !== meeting.startsLocal) patch.startsLocal = startsLocal
     if (durationMinutes !== meeting.durationMinutes) patch.durationMinutes = durationMinutes

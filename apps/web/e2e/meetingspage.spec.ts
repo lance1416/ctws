@@ -436,3 +436,123 @@ test('a meeting edit the server refuses stays open and says why', async ({ page 
   await expect(pane(page).getByRole('alert')).toContainText('That title is too long')
   await expect(pane(page).getByLabel('Title')).toHaveValue('Refused again')
 })
+
+/** Moves the open meeting's start to `at` from its pane, answering the scope question if asked. */
+async function moveOpenMeeting(page: Page, at: string, scope?: 'This and all later') {
+  await editDetail(page)
+  await pane(page).getByLabel('Start').fill(at)
+  await pane(page).getByRole('button', { name: 'Save' }).click()
+  if (scope) await page.getByRole('button', { name: scope }).click()
+}
+
+test('a one-off meeting moved from its pane stays open at its new time', async ({ page }) => {
+  await registerFreshUser(page)
+  const day = dayOffset(1)
+  await apiPost(page, '/meetings', {
+    title: 'One-off',
+    startsLocal: `${day}T09:00`,
+    timeZone: await accountZone(page),
+    durationMinutes: 30,
+  })
+  await page.goto('/meetings')
+  await page.getByRole('button', { name: 'One-off' }).click()
+  await moveOpenMeeting(page, `${day}T11:00`)
+  await expect(page).toHaveURL(new RegExp(`at=${day}T11(%3A|:)00`))
+  await expect(pane(page)).toContainText('11:00')
+  await expect(page.getByText('This meeting is not here any more.')).toHaveCount(0)
+})
+
+test('this and all later, moved from the pane, stays open on the new series', async ({ page }) => {
+  await registerFreshUser(page)
+  const start = dayOffset(-7)
+  await apiPost(page, '/meetings', {
+    title: 'Weekly',
+    startsLocal: `${start}T09:00`,
+    timeZone: await accountZone(page),
+    durationMinutes: 30,
+    rrule: `FREQ=WEEKLY;BYDAY=${weekdayCode(start)}`,
+  })
+  const next = dayOffset(7)
+  await page.goto('/meetings')
+  await page
+    .getByRole('region', { name: 'Coming up' })
+    .getByRole('button', { name: 'Weekly' })
+    .click()
+  await moveOpenMeeting(page, `${next}T10:00`, 'This and all later')
+  await expect(page).toHaveURL(new RegExp(`at=${next}T10(%3A|:)00`))
+  await expect(pane(page)).toContainText('10:00')
+  await expect(page.getByText('This meeting is not here any more.')).toHaveCount(0)
+})
+
+test('an occurrence that ends while its pane is open keeps the edit in it', async ({ page }) => {
+  await registerFreshUser(page)
+  const today = dayOffset(0)
+  await apiPost(page, '/meetings', {
+    title: 'Standup',
+    startsLocal: `${today}T09:00`,
+    timeZone: await accountZone(page),
+    durationMinutes: 30,
+    rrule: 'FREQ=DAILY',
+  })
+  // The runner's day is the account's, so a local 09:10 is during the 09:00 standup.
+  await page.clock.install({ time: new Date(`${today}T09:10:00`) })
+  await page.goto('/meetings')
+  await page.getByRole('button', { name: 'Standup' }).click()
+  await editDetail(page)
+  await pane(page).getByLabel('Notes').fill('half a thought')
+  // Past its end, the list's row for the series becomes tomorrow's.
+  await page.clock.fastForward('25:00')
+  await expect(pane(page).getByLabel('Notes')).toHaveValue('half a thought')
+})
+
+test('a held Enter on Cancel meeting does not also cancel a repeating one', async ({ page }) => {
+  await registerFreshUser(page)
+  const day = dayOffset(1)
+  const made = await apiPost(page, '/meetings', {
+    title: 'Keep me',
+    startsLocal: `${day}T09:00`,
+    timeZone: await accountZone(page),
+    durationMinutes: 30,
+    rrule: `FREQ=WEEKLY;BYDAY=${weekdayCode(day)}`,
+  })
+  await page.goto(`/meetings/${made.meetingId}`)
+  await pane(page).getByRole('button', { name: 'Cancel meeting' }).focus()
+  // Key repeat: the second Enter lands on whatever took focus when the question opened.
+  await page.keyboard.press('Enter')
+  await page.keyboard.press('Enter')
+  await expect(page.getByRole('alertdialog')).toHaveCount(0)
+  const res = await page.request.get(`/api/v1/meetings?from=${day}&to=${day}`, { headers: WEB })
+  const titles = ((await res.json()) as { meetings: { title: string }[] }).meetings
+  expect(titles.map((m) => m.title)).toEqual(['Keep me'])
+})
+
+test('renaming a series keeps the week that was moved on its own', async ({ page }) => {
+  await registerFreshUser(page)
+  const day = dayOffset(1)
+  const later = addDaysYmd(day, 7)
+  const made = await apiPost(page, '/meetings', {
+    title: 'Sync',
+    startsLocal: `${day}T09:00`,
+    timeZone: await accountZone(page),
+    durationMinutes: 30,
+    rrule: `FREQ=WEEKLY;BYDAY=${weekdayCode(day)}`,
+  })
+  const moved = await page.request.patch(`/api/v1/meetings/${made.meetingId}`, {
+    headers: WEB,
+    data: { startsLocal: `${later}T15:00`, scope: 'one', recurrenceId: `${later}T09:00` },
+  })
+  expect(moved.ok(), await moved.text()).toBe(true)
+
+  await page.goto(`/meetings/${made.meetingId}`)
+  await editDetail(page)
+  await pane(page).getByLabel('Title').fill('Sync, renamed')
+  await pane(page).getByRole('button', { name: 'Save' }).click()
+  await expect(pane(page).getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
+
+  const res = await page.request.get(`/api/v1/meetings?from=${later}&to=${later}`, {
+    headers: WEB,
+  })
+  const held = ((await res.json()) as { meetings: { title: string; startsLocal: string }[] })
+    .meetings
+  expect(held.map((m) => [m.title, m.startsLocal])).toEqual([['Sync, renamed', `${later}T15:00`]])
+})
