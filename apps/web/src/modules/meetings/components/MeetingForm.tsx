@@ -1,0 +1,174 @@
+import type { MeetingOccurrence, UpdateMeetingInput } from '@ctws/contracts'
+import { useState } from 'react'
+import { useComposing } from '../../../platform/keyboard/composition'
+import { todayIn } from '../../../platform/time/dates'
+import { useNow } from '../../../platform/time/useNow'
+import { Field } from '../../../platform/ui/Field'
+import { boxed, field, label } from '../../../platform/ui/formStyles'
+import { FormBar } from '../../../shell/detail/FormBar'
+import { ProjectPicker } from '../../../shell/projects/ProjectPicker'
+import { untilOf, withUntil } from '../api'
+import {
+  AttendeesPicker,
+  EndsPicker,
+  LengthPicker,
+  RepeatPicker,
+  ZonePicker,
+} from './MeetingControls'
+
+/**
+ * A MEETING, EDITED: one form and one Save, the same way out as a person's. Cancelling the
+ * meeting is not here; it is at the foot of the pane.
+ */
+export function MeetingForm({
+  meeting,
+  accountZone,
+  busy,
+  onCancel,
+  onSave,
+}: {
+  meeting: MeetingOccurrence
+  /** The reader's own zone, for the one date this form has to WORD rather than take as input. */
+  accountZone: string
+  busy: boolean
+  onCancel: () => void
+  onSave: (patch: UpdateMeetingInput) => void
+}) {
+  const today = todayIn(accountZone, useNow())
+  const [title, setTitle] = useState(meeting.title)
+  const [startsLocal, setStartsLocal] = useState(meeting.startsLocal)
+  const [timeZone, setTimeZone] = useState(meeting.timeZone)
+  const [durationMinutes, setDuration] = useState(meeting.durationMinutes)
+  // The rule without its ending, which has a control of its own: a weekly meeting that stops in
+  // December is still "Weekly" in the menu.
+  const [rule, setRule] = useState(meeting.rrule ? withUntil(meeting.rrule, null) : null)
+  const [until, setUntil] = useState(untilOf(meeting.rrule))
+  const [location, setLocation] = useState(meeting.location ?? '')
+  const [projectId, setProjectId] = useState<string | null>(meeting.projectId)
+  const [attendeeIds, setAttendees] = useState(meeting.attendees.map((p) => p.id))
+  const [note, setNote] = useState(meeting.note ?? '')
+  const composing = useComposing()
+
+  const submit = () => {
+    if (busy || title.trim() === '' || startsLocal === '') return
+    const patch: UpdateMeetingInput = {
+      title: title.trim(),
+      timeZone,
+      location: location.trim() || null,
+      projectId,
+      attendeeIds,
+      note: note.trim() || null,
+      rrule: rule === null ? null : withUntil(rule, until),
+    }
+    // Only when really changed: either one in the patch makes a repeating meeting ask its scope.
+    if (startsLocal !== meeting.startsLocal) patch.startsLocal = startsLocal
+    if (durationMinutes !== meeting.durationMinutes) patch.durationMinutes = durationMinutes
+    onSave(patch)
+  }
+
+  return (
+    <form
+      aria-label="Edit meeting"
+      onSubmit={(e) => {
+        e.preventDefault()
+        submit()
+      }}
+      {...composing.bind}
+      className="flex flex-col gap-4"
+    >
+      <FormBar busy={busy} disabled={title.trim() === ''} onCancel={onCancel} />
+
+      <div>
+        <label htmlFor="m-title" className={label}>
+          Title
+        </label>
+        <input
+          id="m-title"
+          autoFocus
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className={`${field} mt-1.5 text-lg font-semibold`}
+        />
+      </div>
+
+      <div className="@container">
+        <div className="grid items-start gap-x-6 gap-y-4 @xl:grid-cols-2 @2xl:grid-cols-3">
+          <div className="col-span-full">
+            <Field label="Start" shape="above">
+              <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                <input
+                  type="datetime-local"
+                  aria-label="Start"
+                  value={startsLocal}
+                  onChange={(e) => setStartsLocal(e.target.value)}
+                  className={`${boxed} h-8 py-0 text-sm tabular-nums`}
+                />
+                <ZonePicker value={timeZone} onPick={setTimeZone} />
+              </div>
+            </Field>
+          </div>
+          <Field label="Length" shape="above">
+            <LengthPicker value={durationMinutes} onPick={setDuration} />
+          </Field>
+          <Field label="Repeats" shape="above">
+            <RepeatPicker
+              startsLocal={meeting.startsLocal}
+              today={today}
+              value={rule}
+              stored
+              onPick={setRule}
+            />
+          </Field>
+          {rule !== null && (
+            <Field label="Ends" shape="above">
+              <span className="flex items-center gap-2">
+                <EndsPicker
+                  label="Ends"
+                  until={until}
+                  min={meeting.startsLocal.slice(0, 10)}
+                  onChange={setUntil}
+                  className={`${boxed} text-sm`}
+                />
+              </span>
+            </Field>
+          )}
+          <Field label="Projects" shape="above">
+            <ProjectPicker value={projectId} onPick={setProjectId} none="No project" />
+          </Field>
+        </div>
+      </div>
+
+      <div>
+        <label htmlFor="m-place" className={label}>
+          Location
+        </label>
+        <input
+          id="m-place"
+          value={location}
+          placeholder="A room, an address, or a link"
+          onChange={(e) => setLocation(e.target.value)}
+          className={`${field} mt-1.5 text-sm`}
+        />
+      </div>
+
+      <Field label="Attendees" shape="above">
+        <div data-attendees>
+          <AttendeesPicker value={attendeeIds} onChange={setAttendees} />
+        </div>
+      </Field>
+
+      <div>
+        <label htmlFor="m-note" className={label}>
+          Notes
+        </label>
+        <textarea
+          id="m-note"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          rows={4}
+          className={`${field} mt-1.5 max-w-[68ch]`}
+        />
+      </div>
+    </form>
+  )
+}

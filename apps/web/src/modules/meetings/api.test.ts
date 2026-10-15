@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { repeatChoices, repeatLabel, untilOf, withUntil } from './meetings'
+import { repeatChoices, repeatLabel, untilOf, withUntil } from './api'
 
 /**
  * WHAT A STORED RULE IS CALLED.

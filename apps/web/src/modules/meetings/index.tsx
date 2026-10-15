@@ -1,13 +1,13 @@
 import type { MeetingOccurrence } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { listMeetings, meetingCalendar, meetingsKey } from './api/meetings'
+import { meetingCalendarQuery, meetingsQuery, occurrenceQuery } from './api'
 import { MeetingDetail } from './components/MeetingDetail'
 import { Meetings } from './pages/Meetings'
 import { PanelEmpty } from '../../platform/ui/Panel'
 import { ProjectRail } from '../../shell/rows/RowParts'
 import { useProjectRail } from '../../shell/projects/projectColor'
-import { todayIn } from '../../platform/time/dates'
+import { clockTime, todayIn } from '../../platform/time/dates'
 import { useTimeZone } from '../../shell/auth/useMe'
 import { useNow } from '../../platform/time/useNow'
 import type { WorkspaceModule } from '../../shell/contract'
@@ -25,8 +25,7 @@ import type { WorkspaceModule } from '../../shell/contract'
  * - its own PAGE and a row in Things, where a meeting is arranged in one act;
  * - CALENDAR entries, with a time, and the pane one opens in;
  * - a WORKBENCH card for today, the one moment a flat list of meetings is the right shape --
- *   what is in the next eight hours is not a question about a month;
- * - a PROJECT block, because a meeting about the job hunt belongs to it.
+ *   what is in the next eight hours is not a question about a month.
  *
  * No search provider, on purpose: a meeting is found by its date, and the same weekly title
  * repeats fifty times over.
@@ -54,10 +53,7 @@ function useOpenMeeting(pool: readonly MeetingOccurrence[]) {
 
 /** This module's dated things, and the only ones with a clock on them. */
 function useMeetingEntries(range: { from: string; to: string }) {
-  const result = useQuery({
-    queryKey: ['meeting-calendar', range.from, range.to],
-    queryFn: () => meetingCalendar(range),
-  })
+  const result = useQuery(meetingCalendarQuery(range))
   return { entries: result.data ?? [], isError: result.isError }
 }
 
@@ -70,19 +66,7 @@ function useMeetingEntries(range: { from: string; to: string }) {
 function CalendarDetail({ id, onClose }: { id: string; onClose: () => void }) {
   const accountZone = useTimeZone()
   const [meetingId, recurrenceId] = splitEntryId(id)
-  const found = useQuery({
-    // Under the SAME prefix every other meetings query uses, so the pane's own edit -- which
-    // invalidates `['meetings']` -- refetches this too. It did not, and an edit made here left the
-    // pane showing what it said before.
-    queryKey: ['meetings', 'one', meetingId, recurrenceId],
-    queryFn: async () => {
-      const got = await listMeetings({
-        from: recurrenceId.slice(0, 10),
-        to: recurrenceId.slice(0, 10),
-      })
-      return got.find((m) => m.meetingId === meetingId && m.recurrenceId === recurrenceId) ?? null
-    },
-  })
+  const found = useQuery(occurrenceQuery(meetingId, recurrenceId))
   if (!found.data) return null
   return <MeetingDetail meeting={found.data} accountZone={accountZone} onClose={onClose} />
 }
@@ -95,10 +79,7 @@ function splitEntryId(id: string): [string, string] {
 /** Today's meetings, shared by Things' count and status line. */
 function useTodaysMeetings() {
   const day = todayIn(useTimeZone(), useNow())
-  return useQuery({
-    queryKey: meetingsKey({ from: day, to: day }),
-    queryFn: () => listMeetings({ from: day, to: day }),
-  })
+  return useQuery(meetingsQuery({ from: day, to: day }))
 }
 
 /** Things' count for meetings: how many are today, zero included. */
@@ -114,12 +95,7 @@ function NextMeetingLine() {
   const today = useTodaysMeetings()
   const next = today.data?.find((m) => new Date(m.startsAt).getTime() > Date.now())
   if (!next) return null
-  const at = new Intl.DateTimeFormat('en-US', {
-    timeZone: accountZone,
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(new Date(next.startsAt))
+  const at = clockTime(accountZone).format(new Date(next.startsAt))
   return (
     <span data-status>
       Next: {next.title} at {at}
@@ -149,13 +125,12 @@ function TodayMeetings() {
   // is today all follow it (`useNow`).
   const now = useNow()
   const day = todayIn(accountZone, now)
-  const meetings = useQuery({
-    queryKey: meetingsKey({ from: day, to: day }),
-    queryFn: () => listMeetings({ from: day, to: day }),
-  })
+  const meetings = useQuery(meetingsQuery({ from: day, to: day }))
   const rows = meetings.data ?? []
   const { setOpen, pane } = useOpenMeeting(rows)
   const rail = useProjectRail()
+  // `h23`, not `clockTime`'s `hour12: false`: the line reads the hour back as a number, and some
+  // engines write midnight as 24 under `hour12: false`.
   const clock = new Intl.DateTimeFormat('en-US', {
     timeZone: accountZone,
     hour: '2-digit',
@@ -337,7 +312,7 @@ export const meetingModule: WorkspaceModule = {
   },
   routes: [
     { index: true, element: <Meetings /> },
-    // 一场会没有自己的页：这条路渲染的是列表加它的那一层（`Meetings` 从 URL 读开着的是哪一场）。
+    // A meeting has no page of its own: this is the list with its pane open.
     { path: ':id', element: <Meetings /> },
   ],
   // `m`. One keyspace across modules, so this is checked against every other chord.

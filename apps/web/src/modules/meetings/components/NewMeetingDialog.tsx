@@ -1,25 +1,22 @@
 import type { CreateMeetingBody, MeetingOccurrence } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
-import { usePeople } from '../../people'
-import {
-  createMeeting,
-  DEFAULT_HOUR,
-  DEFAULT_MINUTES,
-  repeatChoices,
-  withUntil,
-} from '../api/meetings'
+import { createMeeting, DEFAULT_HOUR, DEFAULT_MINUTES, withUntil } from '../api'
 import { ProjectPicker } from '../../../shell/projects/ProjectPicker'
 import { useComposing } from '../../../platform/keyboard/composition'
 import { todayIn } from '../../../platform/time/dates'
-import { ZONES, zoneLabel } from '../timeZones'
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { boxed, field, label } from '../../../platform/ui/formStyles'
-import { PickMany, PickOne } from '../../../platform/ui/inline'
 import { DialogFooter } from '../../../platform/ui/DialogFooter'
 import { Modal } from '../../../platform/ui/Modal'
-import { BUTTON } from '../../../platform/ui/buttonStyles'
 import { useNow } from '../../../platform/time/useNow'
+import {
+  AttendeesPicker,
+  EndsPicker,
+  LengthPicker,
+  RepeatPicker,
+  ZonePicker,
+} from './MeetingControls'
 
 /**
  * NEW MEETING, filled in once.
@@ -32,9 +29,6 @@ import { useNow } from '../../../platform/time/useNow'
  * THE CALENDAR DOES NOT MAKE ONE. A lens is not a creation affordance: the grid answers what is on
  * this month, and the making happens here.
  */
-/** `PickOne` has no null value, so "does not repeat" needs a value of its own. */
-const NO_REPEAT = '__none'
-
 export function NewMeetingDialog({
   onClose,
   onMade,
@@ -58,14 +52,11 @@ export function NewMeetingDialog({
   const [projectId, setProjectId] = useState<string | null>(null)
   const [attendeeIds, setAttendees] = useState<string[]>([])
 
-  const people = usePeople()
   const startsLocal = `${day}T${clock}`
-  // Named after the day it falls on, so "Weekly on Tuesday" says Tuesday once the date is picked.
-  const repeats = repeatChoices(startsLocal)
 
   const make = useMutation({
     mutationFn: (body: CreateMeetingBody) => createMeeting(body),
-    meta: { awaits: [['meetings'], ['meeting-calendar']] },
+    meta: { awaits: [['meetings']] },
     onSuccess: (made) => onMade(made),
   })
 
@@ -147,36 +138,17 @@ export function NewMeetingDialog({
           </div>
         </div>
 
-        {/* The zone is the MEETING's, not yours: "09:00 Toronto time" is what was agreed, and it
-            stays 09:00 in Toronto whichever city you read it in.
-
-            The abbreviations in this list are read at NOW: the column is naming zones, not saying
-            which abbreviation this meeting will wear. That is said on the meeting itself, at the
-            meeting's own instant. */}
         <div className="flex flex-wrap gap-3">
           <div className="min-w-[12rem]">
             <span className={label}>Time zone</span>
             <div className="mt-1.5">
-              <PickOne
-                label="Time zone"
-                value={timeZone}
-                choices={ZONES.map((z) => ({ value: z, label: zoneLabel(z, new Date()) }))}
-                onPick={setTimeZone}
-              />
+              <ZonePicker value={timeZone} onPick={setTimeZone} />
             </div>
           </div>
           <div className="min-w-[7.5rem]">
             <span className={label}>Length</span>
             <div className="mt-1.5">
-              <PickOne
-                label="Length"
-                value={String(durationMinutes)}
-                choices={[15, 30, 45, 60, 90, 120].map((m) => ({
-                  value: String(m),
-                  label: m >= 60 ? `${m / 60} h` : `${m} min`,
-                }))}
-                onPick={(m) => setDuration(Number(m))}
-              />
+              <LengthPicker value={durationMinutes} onPick={setDuration} />
             </div>
           </div>
         </div>
@@ -185,37 +157,29 @@ export function NewMeetingDialog({
           <div>
             <span className={label}>Repeats</span>
             <div className="mt-1.5">
-              <PickOne
-                label="Repeats"
-                value={rrule ?? NO_REPEAT}
-                choices={repeats.map((c) => ({ value: c.value ?? NO_REPEAT, label: c.label }))}
-                onPick={(v) => setRrule(v === NO_REPEAT ? null : v)}
+              {/* Named after the day it falls on, so "Weekly on Tuesday" follows the date. */}
+              <RepeatPicker
+                startsLocal={startsLocal}
+                today={today}
+                value={rrule}
+                onPick={setRrule}
               />
             </div>
           </div>
-          {/* WHEN IT STOPS. Only once it repeats -- an ending on a meeting that happens once is
-              a control with nothing to end. */}
+          {/* Only once it repeats: a meeting that happens once has nothing to end. */}
           {rrule && (
             <div>
               <label htmlFor="meeting-until" className={label}>
                 Ends
               </label>
               <div className="mt-1.5 flex items-center gap-2">
-                <input
+                <EndsPicker
                   id="meeting-until"
-                  type="date"
-                  value={until ?? ''}
+                  until={until}
                   min={day}
-                  onChange={(e) => setUntil(e.target.value || null)}
+                  onChange={setUntil}
                   className={boxed}
                 />
-                {until ? (
-                  <button type="button" onClick={() => setUntil(null)} className={BUTTON.inline}>
-                    Never
-                  </button>
-                ) : (
-                  <span className="text-sm text-ink-subtle">Never</span>
-                )}
               </div>
             </div>
           )}
@@ -239,16 +203,7 @@ export function NewMeetingDialog({
         <div>
           <span className={label}>Attendees</span>
           <div className="mt-1.5" data-attendees>
-            <PickMany
-              label="Attendees"
-              chosen={attendeeIds.map((id) => ({
-                value: id,
-                label: people.data?.find((c) => c.id === id)?.name ?? '',
-              }))}
-              choices={(people.data ?? []).map((p) => ({ value: p.id, label: p.name }))}
-              onChange={setAttendees}
-              empty="Nobody yet"
-            />
+            <AttendeesPicker value={attendeeIds} onChange={setAttendees} />
           </div>
         </div>
 

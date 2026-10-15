@@ -4,7 +4,7 @@ import { Fragment, useState, type ReactNode } from 'react'
 import { useForgetWhenGone } from '../../../shell/search/recent'
 import { GoneNotice } from '../../../shell/detail/GoneNotice'
 import { useNavigate, useParams } from 'react-router-dom'
-import { listMeetings, meetingsKey, repeatLabel } from '../api/meetings'
+import { meetingsQuery, repeatLabel, seriesQuery } from '../api'
 import { EmptyState } from '../../../platform/ui/EmptyState'
 import { MeetingDetail } from '../components/MeetingDetail'
 import { NewMeetingDialog } from '../components/NewMeetingDialog'
@@ -12,7 +12,7 @@ import { DaySection } from '../../../shell/rows/DaySection'
 import { PanelEmpty } from '../../../platform/ui/Panel'
 import { RowLead } from '../../../shell/rows/RowLead'
 import { BODY_GUTTER, ProjectRail, ROW_LIST } from '../../../shell/rows/RowParts'
-import { addDays, todayIn } from '../../../platform/time/dates'
+import { addDays, clockTime, todayIn } from '../../../platform/time/dates'
 import { meetingLink } from '../meetingPlace'
 import { zoneLabel } from '../timeZones'
 import { LIST_MEASURE } from '../../../shell/rows/leads'
@@ -70,23 +70,17 @@ export function Meetings() {
   const [making, setMaking] = useState(false)
   const [showPast, setShowPast] = useState(false)
   /**
-   * 开着的是哪一场，写在 URL 里 —— 这一层就是 `/meetings/<id>` 本身。
-   *
-   * 一场会没有自己的页：和人一样，URL 留着好让反向链接有地方可去，列表留在后面。一条指向会议的
-   * 边说的是一个系列，所以它落在这个系列**下一次**那一场上 —— 跟着链接过来的人想看的就是它。
+   * The open meeting is in the address, `/meetings/<id>`, with the list behind it. A link names a
+   * series, so it opens the series' next occurrence: the one someone following it wants.
    */
   const { id: openId = null } = useParams()
   const navigate = useNavigate()
   const setOpen = (next: { meetingId: string } | null) =>
     navigate(next ? `/meetings/${next.meetingId}` : '/meetings')
 
-  const ahead = useQuery({
-    queryKey: meetingsKey({ from: today, to: addDays(today, WINDOW_DAYS) }),
-    queryFn: () => listMeetings({ from: today, to: addDays(today, WINDOW_DAYS) }),
-  })
+  const ahead = useQuery(meetingsQuery({ from: today, to: addDays(today, WINDOW_DAYS) }))
   const behind = useQuery({
-    queryKey: meetingsKey({ from: addDays(today, -WINDOW_DAYS), to: addDays(today, -1) }),
-    queryFn: () => listMeetings({ from: addDays(today, -WINDOW_DAYS), to: addDays(today, -1) }),
+    ...meetingsQuery({ from: addDays(today, -WINDOW_DAYS), to: addDays(today, -1) }),
     enabled: showPast,
   })
 
@@ -95,18 +89,9 @@ export function Meetings() {
   // Backwards, the MOST RECENT of each series is the one worth showing.
   const past = nextOfEach([...(behind.data ?? [])].reverse(), now)
   const inWindow = [...coming, ...past].find((m) => m.meetingId === openId)
-  // 窗口之外的那些：一条链接可以指向半年前开过的会，而列表只看前后 31 天。往前一年找，
-  // 找不到再往回一年 —— 已经结束的系列也还有地址，而指向过去的一次性会议最常见。
+  // A link can name a meeting outside the list's two months.
   const far = useQuery({
-    queryKey: ['meetings', 'series', openId],
-    queryFn: async () => {
-      if (!openId) return null
-      const ahead = await listMeetings({ from: today, to: addDays(today, 370) })
-      const hit = ahead.find((m) => m.meetingId === openId)
-      if (hit) return hit
-      const behind = await listMeetings({ from: addDays(today, -370), to: today })
-      return [...behind].reverse().find((m) => m.meetingId === openId) ?? null
-    },
+    ...seriesQuery(openId ?? '', today),
     enabled: openId !== null && !inWindow,
   })
   const found = inWindow ?? far.data ?? null
@@ -288,12 +273,7 @@ function MeetingRow({
   accountZone: string
   onOpen: (at: { meetingId: string; recurrenceId: string }) => void
 }) {
-  const clock = new Intl.DateTimeFormat('en-US', {
-    timeZone: accountZone,
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  })
+  const clock = clockTime(accountZone)
   const over = new Date(m.endsAt).getTime() <= now.getTime()
   const join = meetingLink(m.location)
   const said: ReactNode[] = []

@@ -4,26 +4,65 @@ import type {
   MeetingOccurrence,
   UpdateMeetingInput,
 } from '@ctws/contracts'
-import { apiFetch, calendarOf } from '../../../platform/http/api'
-import { shortDay } from '../../../platform/time/dates'
+import { queryOptions } from '@tanstack/react-query'
+import { apiFetch, calendarOf } from '../../platform/http/api'
+import { addDays, shortDay } from '../../platform/time/dates'
 
 /** The meetings module's own namespace. */
 const BASE = '/meetings'
 
-export type MeetingQuery = { projectId?: string; from?: string; to?: string }
+type DayRange = { from: string; to: string }
 
-export const meetingsKey = (query: MeetingQuery = {}) =>
-  ['meetings', query.projectId ?? null, query.from ?? null, query.to ?? null] as const
-
-export async function listMeetings(query: MeetingQuery = {}): Promise<MeetingOccurrence[]> {
-  const params = new URLSearchParams()
-  for (const [k, v] of Object.entries(query)) if (v) params.set(k, v)
-  const suffix = params.size > 0 ? `?${params}` : ''
-  return (await apiFetch<{ meetings: MeetingOccurrence[] }>(`${BASE}${suffix}`)).meetings
+async function listMeetings(range: DayRange): Promise<MeetingOccurrence[]> {
+  const params = new URLSearchParams(range)
+  return (await apiFetch<{ meetings: MeetingOccurrence[] }>(`${BASE}?${params}`)).meetings
 }
 
+/*
+ * EVERY MEETINGS QUERY. Each key starts with `'meetings'`, so `[['meetings']]` awaits all of them,
+ * the calendar's entries included.
+ */
+
+/** The occurrences in a range of days, in time order. */
+export const meetingsQuery = (range: DayRange) =>
+  queryOptions({
+    queryKey: ['meetings', 'list', range.from, range.to],
+    queryFn: () => listMeetings(range),
+  })
+
+/** One occurrence of a series, found on its own day. Null when it is not there any more. */
+export const occurrenceQuery = (meetingId: string, recurrenceId: string) =>
+  queryOptions({
+    queryKey: ['meetings', 'one', meetingId, recurrenceId],
+    queryFn: async () => {
+      const day = recurrenceId.slice(0, 10)
+      const got = await listMeetings({ from: day, to: day })
+      return got.find((m) => m.meetingId === meetingId && m.recurrenceId === recurrenceId) ?? null
+    },
+  })
+
+/**
+ * A series' next occurrence within a year of `today`, else its latest one in the year before:
+ * a link can name a meeting long over, and a one-off in the past is the commonest such link.
+ */
+export const seriesQuery = (meetingId: string, today: string) =>
+  queryOptions({
+    queryKey: ['meetings', 'series', meetingId, today],
+    queryFn: async () => {
+      const ahead = await listMeetings({ from: today, to: addDays(today, 370) })
+      const hit = ahead.find((m) => m.meetingId === meetingId)
+      if (hit) return hit
+      const behind = await listMeetings({ from: addDays(today, -370), to: today })
+      return [...behind].reverse().find((m) => m.meetingId === meetingId) ?? null
+    },
+  })
+
 /** This module's dated things. The day, the clock and the origin zone are all the server's. */
-export const meetingCalendar = (range: { from: string; to: string }) => calendarOf(BASE, range)
+export const meetingCalendarQuery = (range: DayRange) =>
+  queryOptions({
+    queryKey: ['meetings', 'calendar', range.from, range.to],
+    queryFn: () => calendarOf(BASE, range),
+  })
 
 export function createMeeting(body: CreateMeetingBody): Promise<MeetingOccurrence> {
   return apiFetch(BASE, { method: 'POST', body: JSON.stringify(body) })
