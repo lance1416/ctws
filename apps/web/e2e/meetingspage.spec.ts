@@ -411,3 +411,33 @@ test('a past occurrence opens as itself, not as the next one', async ({ page }) 
   // The year is printed only when it is not this one, as in the first week of January.
   await expect(pane(page)).toContainText(new RegExp(`${MONTHS[m - 1]} ${d}(, \\d{4})?, 09:00`))
 })
+
+test('a meeting edit the server refuses stays open and says why', async ({ page }) => {
+  await registerFreshUser(page)
+  const made = await apiPost(page, '/meetings', {
+    title: 'Refused sync',
+    startsLocal: `${dayOffset(1)}T09:00`,
+    timeZone: await accountZone(page),
+    durationMinutes: 30,
+  })
+  await page.goto(`/meetings/${made.meetingId}`)
+  await editDetail(page)
+  await pane(page).getByLabel('Title').fill('Refused again')
+  await page.route(`**/api/v1/meetings/${made.meetingId}`, (r) =>
+    r.request().method() === 'PATCH'
+      ? r.fulfill({
+          status: 400,
+          contentType: 'application/problem+json',
+          body: JSON.stringify({
+            type: 'about:blank',
+            title: 'Bad Request',
+            status: 400,
+            detail: 'That title is too long',
+          }),
+        })
+      : r.continue(),
+  )
+  await pane(page).getByRole('button', { name: 'Save' }).click()
+  await expect(pane(page).getByRole('alert')).toContainText('That title is too long')
+  await expect(pane(page).getByLabel('Title')).toHaveValue('Refused again')
+})

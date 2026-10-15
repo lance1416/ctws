@@ -70,7 +70,10 @@ export function MeetingDetail({
             meeting={meeting}
             accountZone={accountZone}
             busy={edit.busy}
-            onCancel={() => setEditing(false)}
+            onCancel={() => {
+              edit.reset()
+              setEditing(false)
+            }}
             onSave={edit.submit}
           />
         ) : (
