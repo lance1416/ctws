@@ -126,7 +126,8 @@ export function PersonRead({ person, onEdit }: { person: PersonResponse; onEdit:
       {writing && (
         <WritingMode
           heading={person.name}
-          source={person.note ?? ''}
+          // Text the server refused is written on, not the copy it still has.
+          source={notes.unsaved() ?? person.note ?? ''}
           problem={unsaved}
           onChange={notes.change}
           onClose={() => {

@@ -13,6 +13,7 @@ export function createNoteAutosave(
 ) {
   let pending: string | null = null
   let saved: string | null = null
+  let refused = false
   let inFlight: Promise<void> | null = null
   let timer: ReturnType<typeof setTimeout> | null = null
 
@@ -27,11 +28,13 @@ export function createNoteAutosave(
     inFlight = save(text).then(
       () => {
         saved = text
+        refused = false
         onFailed(false)
       },
       () => {
         // Kept for the next pause or the close, unless newer text has arrived since.
         if (pending === null) pending = text
+        refused = true
         onFailed(true)
       },
     )
@@ -51,6 +54,8 @@ export function createNoteAutosave(
       timer = null
       await run()
     },
+    /** The text the server refused and nothing has saved since, to write on from. */
+    unsaved: () => (refused ? pending : null),
   }
 }
 

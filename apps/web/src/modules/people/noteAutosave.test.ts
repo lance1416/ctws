@@ -61,4 +61,15 @@ describe('saving a note while it is written', () => {
     expect(save).toHaveBeenLastCalledWith('do not lose me')
     expect(failed).toHaveBeenLastCalledWith(false)
   })
+
+  it('hands back refused text to write on from, until a save takes it', async () => {
+    const save = vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValue(undefined)
+    const notes = createNoteAutosave(save)
+    expect(notes.unsaved()).toBeNull()
+    notes.change('do not lose me')
+    await notes.flush()
+    expect(notes.unsaved()).toBe('do not lose me')
+    await notes.flush()
+    expect(notes.unsaved()).toBeNull()
+  })
 })
