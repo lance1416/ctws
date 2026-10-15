@@ -149,7 +149,7 @@ function usePeopleHits(query: string) {
   })
   const hits: SearchHit[] = (results.data ?? []).map((person) => ({
     id: person.id,
-    to: `/${ID}`,
+    to: `/${ID}/${person.id}`,
     title: person.name,
     // What identifies a person at a glance is where they are from and how to reach them.
     meta: [person.org, ...person.projects.map((p) => p.name), person.channels[0]?.value]

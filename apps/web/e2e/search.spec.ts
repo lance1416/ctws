@@ -321,6 +321,20 @@ test('what was opened lately is first, before anything is typed', async ({ page 
   await expect(page).toHaveURL(new RegExp(`/people/${id}$`))
 })
 
+test('choosing a person in search opens that person', async ({ page }) => {
+  await registerFreshUser(page, '/')
+  const made = await page.request.post('/api/v1/people', {
+    headers: WEB,
+    data: { name: 'Dana Search' },
+  })
+  const { id } = (await made.json()) as { id: string }
+  await page.getByRole('banner').getByRole('button', { name: 'Search' }).click()
+  await query(page, 'Dana')
+  await result(page, 'Dana Search').click()
+  await expect(page).toHaveURL(new RegExp(`/people/${id}$`))
+  await expect(page.getByRole('dialog', { name: 'People' })).toBeVisible()
+})
+
 test('Enter straight after typing goes where the typing points', async ({ page }) => {
   // Before anything was typed the list held other places; Enter must not choose from that list
   // because the typing has not been read yet.
