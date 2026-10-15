@@ -363,6 +363,24 @@ test('after one save, the pane reads what was just written', async ({ page }) =>
   await expect(pane).toContainText('技术负责人 · 新公司')
 })
 
+test('switching people with an edit open shows the other person, not that edit', async ({
+  page,
+}) => {
+  // Wide enough that the list stays usable beside the pane.
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await registerFreshUser(page, '/people')
+  await add(page, { name: 'Ann Alpha' })
+  await add(page, { name: 'Bea Beta' })
+  await page.goto('/people')
+  await personLink(page, 'Ann Alpha').click()
+  const pane = page.getByRole('dialog', { name: 'People' })
+  await pane.getByRole('button', { name: 'Edit', exact: true }).click()
+  await pane.getByLabel('Name', { exact: true }).fill('Ann changed')
+  await personLink(page, 'Bea Beta').click()
+  await expect(pane.getByRole('heading', { name: 'Bea Beta' })).toBeVisible()
+  await expect(pane.getByRole('form', { name: 'Edit person' })).toHaveCount(0)
+})
+
 test('a new person the server refuses says why, with the form still filled in', async ({
   page,
 }) => {

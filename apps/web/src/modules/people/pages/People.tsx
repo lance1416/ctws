@@ -71,7 +71,8 @@ export function People() {
         </div>
       )}
 
-      {open && <PersonDetail person={open} onClose={close} />}
+      {/* Keyed, so another person's pane starts clean: no edit or unsaved note carries over. */}
+      {open && <PersonDetail key={open.id} person={open} onClose={close} />}
     </>
   )
 }

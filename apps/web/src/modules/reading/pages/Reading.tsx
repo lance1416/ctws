@@ -82,7 +82,7 @@ export function Reading() {
         )
       })}
 
-      {open && <ReadingDetail item={open} onClose={close} />}
+      {open && <ReadingDetail key={open.id} item={open} onClose={close} />}
       {gone && <GoneNotice kind="item" />}
 
       {finished.length > 0 && (
