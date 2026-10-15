@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { addDaysYmd, ymd } from './days'
 import { registerFreshUser, WEB } from './helpers'
 
 /**
@@ -103,4 +104,27 @@ test('the week hangs on the margin: the day, the thread, then what happened', as
   expect(Math.round(h1.x)).toBe(threads[0])
   const head = (await page.getByRole('heading', { level: 2, name: 'Job hunt' }).boundingBox())!
   expect(Math.round(head.x)).toBe(threads[0])
+})
+
+const label = (day: string) =>
+  new Date(`${day}T12:00:00Z`).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  })
+
+test('the week before is a whole week, and forward comes back to this one', async ({ page }) => {
+  // The account takes the browser's zone, which is the runner's, so its Monday is the runner's.
+  await registerFreshUser(page, '/tasks/review')
+  const today = new Date()
+  const monday = new Date(today)
+  monday.setDate(today.getDate() - ((today.getDay() + 6) % 7))
+  const thisMonday = ymd(monday)
+  await page.getByRole('button', { name: 'The week before' }).click()
+  await expect(
+    page.getByText(`${label(addDaysYmd(thisMonday, -7))} – ${label(addDaysYmd(thisMonday, -1))}`),
+  ).toBeVisible()
+  await page.getByRole('button', { name: 'The week after' }).click()
+  await expect(page.getByRole('button', { name: 'The week after' })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'This week' })).toHaveCount(0)
 })

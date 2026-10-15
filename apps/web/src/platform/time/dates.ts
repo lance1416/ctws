@@ -65,6 +65,12 @@ export const MONTHS = [
 ] as const
 
 /** A day as the reader says it: Today / Tomorrow / Yesterday, else "Oct 8" (with the year if it differs). */
+/** `Oct 8`: the month and the day, for where the year is said elsewhere or not at all. */
+export function monthDay(day: string): string {
+  const [, m, d] = day.split('-').map(Number) as [number, number, number]
+  return `${MONTHS[m - 1]} ${d}`
+}
+
 export function dayPhrase(day: string, today: string): string {
   if (day === today) return 'Today'
   if (day === addDays(today, 1)) return 'Tomorrow'

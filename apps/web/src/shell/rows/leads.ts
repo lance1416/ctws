@@ -1,6 +1,6 @@
 import { TZDate } from '@date-fns/tz'
 import { format } from 'date-fns'
-import { addDays, fullDay, MONTHS } from '../../platform/time/dates'
+import { addDays, fullDay, monthDay } from '../../platform/time/dates'
 
 /**
  * THE MARGIN: what a row says about WHEN, in front of everything else on it.
@@ -25,12 +25,6 @@ export type LeadTone = 'missed' | 'deadline' | 'plan' | 'time' | 'quiet'
 export type Lead = { text: string; tone: LeadTone; flag: boolean; exact?: string }
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
-
-/** `Oct 8`. Never the year: the margin is one short line, and the exact moment carries it. */
-const monthDay = (day: string) => {
-  const [, m, d] = day.split('-').map(Number) as [number, number, number]
-  return `${MONTHS[m - 1]} ${d}`
-}
 
 /** A day in the week ahead is its weekday; anything else is its date. */
 const weekdayOrDate = (day: string, today: string) =>

@@ -30,9 +30,12 @@ export function nextMondayYmd(): string {
   return ymd(d)
 }
 
-/** The calendar day after `day`. Noon UTC, so no offset can push it across a boundary. */
-export function dayAfter(day: string): string {
+/** `n` days after `day` (negative is before). Noon UTC, so no offset can push it across a boundary. */
+export function addDaysYmd(day: string, n: number): string {
   const d = new Date(`${day}T12:00:00Z`)
-  d.setUTCDate(d.getUTCDate() + 1)
+  d.setUTCDate(d.getUTCDate() + n)
   return d.toISOString().slice(0, 10)
 }
+
+/** The calendar day after `day`. */
+export const dayAfter = (day: string): string => addDaysYmd(day, 1)

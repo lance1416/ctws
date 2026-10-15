@@ -10,29 +10,14 @@ import { BODY_GUTTER, ProjectRail, ROW_LIST } from '../../../shell/rows/RowParts
 import { StatusMark } from '../components/StatusMark'
 import { ViewTabs } from '../../../platform/ui/ViewTabs'
 import { Completed } from './Completed'
-import { MONTHS, todayIn, ymd } from '../../../platform/time/dates'
+import { addDays, monthDay, nextMonday, todayIn, ymd } from '../../../platform/time/dates'
+import { weekAfter, weekBefore } from '../review'
 import { LIST_MEASURE, weekDayWord } from '../../../shell/rows/leads'
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { useNow } from '../../../platform/time/useNow'
 import { useCrumbs } from '../../../shell/layout/Breadcrumbs'
 import { PageHead } from '../../../platform/ui/PageHead'
 import { HANG } from '../../../platform/ui/hang'
-
-/** "Oct 2" -- the month and the day; the window itself carries the year. */
-function dayLabel(day: string): string {
-  const [, m, d] = day.split('-').map(Number) as [number, number, number]
-  return `${MONTHS[m - 1]} ${d}`
-}
-
-/** The same window, `weeks` away. Negative is backwards. */
-function shiftWeek(from: string, to: string, weeks: number): { from: string; to: string } {
-  const move = (day: string) => {
-    const d = new Date(`${day}T12:00:00Z`)
-    d.setUTCDate(d.getUTCDate() + weeks * 7)
-    return d.toISOString().slice(0, 10)
-  }
-  return { from: move(from), to: move(to) }
-}
 
 type Project = ReviewResponse['projects'][number]
 
@@ -136,6 +121,8 @@ export function Review() {
   })
   const timeZone = useTimeZone()
   const today = todayIn(timeZone, useNow())
+  // The Monday this week began on, in the account's calendar -- the server's week too.
+  const thisMonday = addDays(nextMonday(today), -7)
   const data = review.data
 
   const projects = data?.projects ?? []
@@ -157,21 +144,18 @@ export function Review() {
         {view === 'week' && data && (
           // Its own line when the title row has no room (a phone): it wraps, never overflows.
           <div className="ml-auto flex flex-wrap items-center gap-1">
-            <Step
-              label="The week before"
-              onClick={() => setRange(shiftWeek(data.from, data.to, -1))}
-            >
+            <Step label="The week before" onClick={() => setRange(weekBefore(data.from))}>
               ‹
             </Step>
             <span className="text-center text-sm whitespace-nowrap text-ink-muted tabular-nums">
-              {dayLabel(data.from)} – {dayLabel(data.to)}
+              {monthDay(data.from)} – {monthDay(data.to)}
             </span>
             {/* FORWARD STOPS AT THIS WEEK. Next week has not happened, so the only thing the
                 step could produce is an empty page -- a control whose one outcome is nothing. */}
             <Step
               label="The week after"
               disabled={range === null}
-              onClick={() => setRange(shiftWeek(data.from, data.to, 1))}
+              onClick={() => setRange(weekAfter(data.from, thisMonday))}
             >
               ›
             </Step>
@@ -213,42 +197,26 @@ export function Review() {
               {projects.map((p) => (
                 <DaySection key={p.projectId} label={p.projectName} count={counted(p)}>
                   <ul className={ROW_LIST}>
-                    {p.finished.map((t) => (
-                      <Row
-                        key={t.id}
-                        title={t.title}
-                        status="done"
-                        at={t.at}
-                        projectId={p.projectId}
-                        today={today}
-                        from={data.from}
-                        timeZone={timeZone}
-                      />
-                    ))}
-                    {p.started.map((t) => (
-                      <Row
-                        key={t.id}
-                        title={t.title}
-                        status="in_progress"
-                        at={t.at}
-                        projectId={p.projectId}
-                        today={today}
-                        from={data.from}
-                        timeZone={timeZone}
-                      />
-                    ))}
-                    {p.dropped.map((t) => (
-                      <Row
-                        key={t.id}
-                        title={t.title}
-                        status="cancelled"
-                        at={t.at}
-                        projectId={p.projectId}
-                        today={today}
-                        from={data.from}
-                        timeZone={timeZone}
-                      />
-                    ))}
+                    {(
+                      [
+                        ['done', p.finished],
+                        ['in_progress', p.started],
+                        ['cancelled', p.dropped],
+                      ] as const
+                    ).flatMap(([status, events]) =>
+                      events.map((t) => (
+                        <Row
+                          key={t.id}
+                          title={t.title}
+                          status={status}
+                          at={t.at}
+                          projectId={p.projectId}
+                          today={today}
+                          from={data.from}
+                          timeZone={timeZone}
+                        />
+                      )),
+                    )}
                   </ul>
                 </DaySection>
               ))}
