@@ -50,9 +50,6 @@ function allowed(from: Layer, toPath: string): boolean {
   return false
 }
 
-/** Known violations, each removed by the task that fixes it. Empty at the end. */
-const ALLOWED = new Set<string>([])
-
 const production = files(SRC).filter((f) => !/\.test\.tsx?$/.test(f))
 const violations = () =>
   edges(production)
@@ -66,12 +63,7 @@ describe('dependency direction', () => {
   })
 
   it('imports only downwards: modules, then shell, then platform', () => {
-    expect(violations().filter((v) => !ALLOWED.has(v))).toEqual([])
-  })
-
-  it('lists no exception that is no longer needed', () => {
-    const found = new Set(violations())
-    expect([...ALLOWED].filter((v) => !found.has(v))).toEqual([])
+    expect(violations()).toEqual([])
   })
 
   it('catches a planted violation', () => {
