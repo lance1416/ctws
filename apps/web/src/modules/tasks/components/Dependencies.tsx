@@ -100,6 +100,8 @@ export function Dependencies({ taskId, projectId }: { taskId: string; projectId:
   const drop = useMutation({
     mutationFn: (blockerId: string) => removeDependency(taskId, blockerId),
     meta: { awaits },
+    onSuccess: () => setError(null),
+    onError: () => setError("Couldn't remove that dependency"),
   })
 
   const blockedBy = lists.data?.blockedBy ?? []

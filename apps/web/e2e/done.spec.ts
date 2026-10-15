@@ -176,6 +176,20 @@ test('with nothing finished, the view says so', async ({ page }) => {
   await expect(page.getByText('Nothing finished yet')).toBeVisible()
 })
 
+test('a restore that fails says so', async ({ page }) => {
+  await registerFreshUser(page)
+  const projectId = await makeProject(page, 'Undo')
+  const id = await makeTask(page, projectId, 'Bring me back', { status: 'done' })
+  await page.goto('/tasks/review?view=done')
+  await page.route(`**/api/v1/tasks/${id}`, (r) =>
+    r.request().method() === 'PATCH' ? r.fulfill({ status: 500, body: '{}' }) : r.continue(),
+  )
+  await page.getByRole('button', { name: 'Reopen “Bring me back”' }).click()
+  await expect(page.getByRole('alert')).toBeVisible()
+  // Still here: nothing moved on the server, so nothing moves on the screen.
+  await expect(page.getByText('Bring me back')).toBeVisible()
+})
+
 test('deleting a task from Done leaves focus on the list, not the page', async ({ page }) => {
   await registerFreshUser(page)
   const projectId = await makeProject(page, 'Finished')

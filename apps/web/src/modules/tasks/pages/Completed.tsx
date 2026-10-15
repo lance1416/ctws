@@ -42,7 +42,8 @@ export function Completed() {
   const today = todayIn(timezone, useNow())
   const clock = clockTime(timezone)
   const heading = useRef<HTMLHeadingElement>(null)
-  const actions = useTaskActions(() => {})
+  const [error, setError] = useState<string | null>(null)
+  const actions = useTaskActions(setError)
   // An open pane can delete its task or bring it back to work: either way its row leaves.
   useFocusAfterRemoval({
     ids: () =>
@@ -75,6 +76,11 @@ export function Completed() {
         Done
       </h2>
       <QueryStatus query={completed} />
+      {error && (
+        <p role="alert" className={`mb-3 ${HANG} text-sm text-danger`}>
+          {error}
+        </p>
+      )}
       {completed.isSuccess && rows.length === 0 && <EmptyState hang title="Nothing finished yet" />}
       {days.map(({ day, tasks }) => (
         <DaySection

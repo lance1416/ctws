@@ -125,6 +125,25 @@ test('a dependency is removed from the pane, and the row stops waiting', async (
   await expect(row(page, '发 v0.8.0').locator('[data-row-blocked]')).toHaveCount(0)
 })
 
+test('a dependency removal that fails says so', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'Stuck')
+  const ci = await makeTask(page, pid, 'Green CI')
+  const ship = await makeTask(page, pid, 'Ship it')
+  await page.request.post(`/api/v1/tasks/${ship}/dependencies`, {
+    headers: WEB,
+    data: { blockerId: ci },
+  })
+  await openTree(page, pid)
+  await openPane(page, 'Ship it')
+  await page.route('**/api/v1/tasks/*/dependencies/*', (r) =>
+    r.request().method() === 'DELETE' ? r.fulfill({ status: 500, body: '{}' }) : r.continue(),
+  )
+  await pane(page).getByRole('button', { name: 'Remove dependency “Green CI”' }).click()
+  await expect(pane(page).getByRole('alert')).toContainText("Couldn't remove that dependency")
+  await expect(waitingFor(page)).toHaveCount(1)
+})
+
 test('the other end shows the edge too, and offers no way to undo it from there', async ({
   page,
 }) => {
