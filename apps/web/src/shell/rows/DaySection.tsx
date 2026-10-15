@@ -13,24 +13,22 @@ export function DaySection({
   label,
   count,
   action,
-  heading,
   children,
   className = '',
 }: {
-  /** The section's accessible name, and its visible heading unless `heading` replaces it. */
+  /** The section's heading, and its accessible name. */
   label: string
   /** The number beside the heading. Zero and undefined both draw nothing. */
   count?: number | undefined
   /** A control for the section as a whole, at the end of the heading row. */
   action?: ReactNode
-  heading?: ReactNode
   children: ReactNode
   className?: string
 }) {
   return (
     <section aria-label={label} data-panel={label} className={`min-w-0 ${className}`}>
       <div className={`mb-1.5 ${HANG} flex min-w-0 items-baseline gap-2`}>
-        {heading ?? <h2 className="text-base font-semibold text-ink">{label}</h2>}
+        <h2 className="text-base font-semibold text-ink">{label}</h2>
         {count !== undefined && count > 0 && (
           <span data-count className="text-sm text-ink-subtle tabular-nums">
             {count}

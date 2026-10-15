@@ -1,7 +1,7 @@
 import type { City } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useId, useState } from 'react'
-import { findCities } from './api'
+import { citiesQuery } from './api'
 import { useComposing } from '../../platform/keyboard/composition'
 import { field } from '../../platform/ui/formStyles'
 
@@ -34,11 +34,8 @@ export function PickCity({
   const listId = useId()
 
   const hits = useQuery({
-    queryKey: ['cities', value],
-    queryFn: () => findCities(value),
+    ...citiesQuery(value),
     enabled: typing && value.trim().length >= 3,
-    // 城市不会改名：问过一次就记着，打字时来回退格不该一直发请求。
-    staleTime: Infinity,
   })
 
   const cities = hits.data ?? []

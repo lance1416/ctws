@@ -34,7 +34,7 @@ import { BUTTON } from '../../../platform/ui/buttonStyles'
 // The shared editing vocabulary, which the New task dialog types into a task with as well.
 import { decision, field, label, STATUS_CHIP } from '../../../platform/ui/formStyles'
 import { useUnsavedGuard } from '../../../platform/ui/unsavedGuard'
-import { DeadlineMark, PlanMark } from '../../../shell/rows/RowParts'
+import { DeadlineMark, PlanMark } from './TaskRowParts'
 import { StatusMark } from './StatusMark'
 import { StatusPicker } from './StatusPicker'
 import { STATUS_LABEL } from '../statusLabel'

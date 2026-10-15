@@ -1,12 +1,7 @@
 import { useId, useRef, useState } from 'react'
 import { HANG_WIDTH } from '../../../platform/ui/hang'
-import {
-  BODY_GUTTER,
-  CHEVRON_PX,
-  gutterPlus,
-  HANDLE_PX,
-  INDENT_PX,
-} from '../../../shell/rows/RowParts'
+import { BODY_GUTTER } from '../../../shell/rows/RowParts'
+import { CHEVRON_PX, gutterPlus, HANDLE_PX, INDENT_PX } from './TaskRowParts'
 import { useComposing } from '../../../platform/keyboard/composition'
 
 // The status marker's COLUMN -- the width of `StatusButton`, not of the glyph inside it -- so the

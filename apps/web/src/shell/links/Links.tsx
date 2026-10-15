@@ -2,7 +2,7 @@ import type { LinkedObject, ObjectType } from '@ctws/contracts'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { deleteLink, linksKey, listLinks, type Endpoint } from './api'
+import { deleteLink, linksQuery, type Endpoint } from './api'
 import { useRegistry } from '../registry'
 import { AddLink } from './AddLink'
 import { PanelEmpty } from '../../platform/ui/Panel'
@@ -45,7 +45,7 @@ export function Links({
   const registry = useRegistry()
   // Which kind the picker is for: any kind from "+ Link", one kind from a block's own `+`.
   const [adding, setAdding] = useState<ObjectType | 'any' | null>(null)
-  const links = useQuery({ queryKey: linksKey(of), queryFn: () => listLinks(of) })
+  const links = useQuery(linksQuery(of))
   const groups = (links.data ?? []).filter((g) => !except?.includes(g.type))
   const unlink = useMutation({
     mutationFn: (row: LinkedObject) =>

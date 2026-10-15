@@ -1,7 +1,7 @@
 import { kindsBetween, type LinkCandidate, type LinkKind, type ObjectType } from '@ctws/contracts'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
-import { candidatesKey, createLink, linkCandidates, type Endpoint } from './api'
+import { candidatesQuery, createLink, type Endpoint } from './api'
 import { useRegistry } from '../registry'
 import { Modal } from '../../platform/ui/Modal'
 import { BUTTON } from '../../platform/ui/buttonStyles'
@@ -30,8 +30,7 @@ export function AddLink({
   const [chosen, setChosen] = useState<LinkCandidate | null>(null)
 
   const candidates = useQuery({
-    queryKey: candidatesKey(of, typed),
-    queryFn: () => linkCandidates(of, typed),
+    ...candidatesQuery(of, typed),
     enabled: chosen === null,
   })
   const make = useMutation({

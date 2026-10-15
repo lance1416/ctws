@@ -13,14 +13,8 @@ import { hasMovement } from '../movement'
 import { DayEmpty, DaySection } from '../../../shell/rows/DaySection'
 import { DayLine, type DayItem } from '../components/DayLine'
 import { blockedLabel } from '../blockedLabel'
-import {
-  OVER_ROW,
-  ProjectRail,
-  RowMeta,
-  RowNote,
-  SavedMark,
-  ROW_LIST,
-} from '../../../shell/rows/RowParts'
+import { ProjectRail, ROW_LIST } from '../../../shell/rows/RowParts'
+import { OVER_ROW, RowMeta, RowNote, SavedMark } from '../components/TaskRowParts'
 import { RowLead } from '../../../shell/rows/RowLead'
 import { leadFor } from '../../../shell/rows/leads'
 import { StartButton, StatusButton, statusForKey } from '../components/StatusControls'

@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import { registry } from '../../app/registry'
 import { RegistryProvider } from '../registry'
-import { linksKey } from './api'
+import { linksQuery } from './api'
 import { Links } from './Links'
 
 /**
@@ -55,7 +55,7 @@ const groups: LinksResponse['groups'] = [
 
 function render(of: { type: 'person'; id: string }, data?: LinksResponse['groups']) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  if (data) client.setQueryData(linksKey(of), data)
+  if (data) client.setQueryData(linksQuery(of).queryKey, data)
   return renderToStaticMarkup(
     <QueryClientProvider client={client}>
       <RegistryProvider value={registry}>

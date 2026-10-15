@@ -9,19 +9,18 @@ import { capturedLabel, dateHints } from '../dueDates'
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { leadFor } from '../../../shell/rows/leads'
 import { RowLead } from '../../../shell/rows/RowLead'
+import { BODY_GUTTER, ProjectRail } from '../../../shell/rows/RowParts'
 import {
-  BODY_GUTTER,
   gutterPlus,
   CHEVRON_PX,
   HANDLE_PX,
   INDENT_PX,
   NotesMark,
   OVER_ROW,
-  ProjectRail,
   RowMeta,
   RowNote,
   SavedMark,
-} from '../../../shell/rows/RowParts'
+} from './TaskRowParts'
 import { StartButton, StatusButton } from './StatusControls'
 import { useNow } from '../../../platform/time/useNow'
 
