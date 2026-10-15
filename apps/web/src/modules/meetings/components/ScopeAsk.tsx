@@ -30,12 +30,19 @@ export function ScopeAsk({
     >
       <p className="w-full text-ink">{what}</p>
       <span className="flex flex-wrap items-center gap-2">
-        <button type="button" onClick={onCancel} className={BUTTON.secondary}>
+        {/* When the answer destroys, focus starts on the way out, as on every delete: a held
+            Enter that opened the question must not also answer it. */}
+        <button autoFocus={destroys} type="button" onClick={onCancel} className={BUTTON.secondary}>
           {back}
         </button>
         {/* The two answers wrap as one pair, so neither ends up alone under the way out. */}
         <span className="flex items-center gap-2">
-          <button autoFocus type="button" onClick={() => onPick('one')} className={answer}>
+          <button
+            autoFocus={!destroys}
+            type="button"
+            onClick={() => onPick('one')}
+            className={answer}
+          >
             Just this one
           </button>
           <button type="button" onClick={() => onPick('following')} className={answer}>
