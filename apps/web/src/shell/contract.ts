@@ -1,4 +1,4 @@
-import type { CalendarEntry, ObjectType } from '@ctws/contracts'
+import type { CalendarEntry, ObjectType, ProjectListItem } from '@ctws/contracts'
 import type { QueryClient } from '@tanstack/react-query'
 import type { ComponentType, ReactNode } from 'react'
 import type { RouteObject } from 'react-router-dom'
@@ -41,29 +41,10 @@ export type WorkspaceModule = {
   search?: SearchContribution
   /** Keys this module adds to the shell's key table. */
   chords?: Chord[]
-  /**
-   * WHAT THIS MODULE HANGS UNDER A PROJECT, if anything.
-   *
-   * Most modules hang nothing: their rows are edges, and the shell draws every kind of edge the
-   * same way. A block is for rows that need an editor a list of links cannot be — the task tree
-   * has drag, dependencies and an inline new row.
-   */
-  projectBlock?: {
-    Component: ComponentType<{ projectId: string; view: string }>
-    /**
-     * The views the block offers, as tabs in its head. Fewer than two draws nothing.
-     *
-     * THE MODULE NAMES THEM, THE SHELL DRAWS THEM, so a third view costs no layout work. The
-     * first entry is the default; the selected one is in the URL (`?view=<module>:<id>`), so a
-     * reload and a shared link both land where the person was.
-     */
-    views?: readonly { id: string; label: string }[]
-    /**
-     * A control in the block's head, beside its name — its own "new", typically. Only the module
-     * knows what making one of its things involves.
-     */
-    Action?: ComponentType<{ projectId: string }>
-  }
+  /** What this module adds to a project: its page, its row in the list, its card, its delete. */
+  project?: ProjectContribution
+  /** Sections this module adds to the keyboard help, in its order. */
+  help?: readonly HelpSection[]
   /**
    * This module's DATED THINGS, for the shell's calendar.
    *
@@ -85,14 +66,6 @@ export type WorkspaceModule = {
    */
   widgets?: readonly Widget[]
   /**
-   * This module's numbers under a project's name, said as a sentence ("6 open, 1 overdue, 63%
-   * done. Last moved today.").
-   *
-   * A component rather than a list of numbers: the numbers come from the module's own query and
-   * the shell must not know which endpoint that is. The shell owns the head they sit in.
-   */
-  ProjectHeadline?: ComponentType<{ projectId: string }>
-  /**
    * HOW THIS MODULE'S THINGS ARE REACHED FROM SOMEBODY ELSE'S PAGE.
    *
    * The edge table and the backlink panel are the shell's: opening a person and seeing the
@@ -103,6 +76,42 @@ export type WorkspaceModule = {
    * stays here, because a route is the web app's.
    */
   relations?: readonly RelationContribution[]
+}
+
+/**
+ * WHAT A MODULE ADDS TO A PROJECT. Components rather than numbers: the numbers come from the
+ * module's own queries, and the shell must not know which endpoints those are.
+ */
+export type ProjectContribution = {
+  /**
+   * Rows on the project's page. Most modules have none: their rows are edges, and the shell draws
+   * every kind of edge the same way. A block is for rows that need an editor a list of links
+   * cannot be — the task tree has drag, dependencies and an inline new row.
+   */
+  Block?: {
+    Component: ComponentType<{ projectId: string; view: string }>
+    /**
+     * The views the block offers, as tabs in its head. Fewer than two draws nothing. The first is
+     * the default; the selected one is in the URL (`?view=<module>:<id>`).
+     */
+    views?: readonly { id: string; label: string }[]
+    /** A control in the block's head, beside its name — its own "new", typically. */
+    Action?: ComponentType<{ projectId: string }>
+  }
+  /** Numbers under the project's name on its page, said as a sentence. */
+  Headline?: ComponentType<{ projectId: string }>
+  /** Numbers for a project's row in the list (`row`) or its Workbench card (`tile`). */
+  Facts?: ComponentType<{ project: ProjectListItem; place: 'row' | 'tile' }>
+  /** The day in the margin of a project's row in the list. At most one module gives one. */
+  Lead?: ComponentType<{ projectId: string }>
+  /** What deleting a project takes with it, as a phrase ("12 tasks"), or null for nothing. */
+  contents?: (qc: QueryClient, projectId: string) => Promise<string | null>
+}
+
+/** One group in the keyboard help: where the keys work, and what each does. */
+export type HelpSection = {
+  title: string
+  keys: readonly (readonly [key: string, what: string])[]
 }
 
 /** One object type this module answers for: where one lives, and what one looks like. */

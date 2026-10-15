@@ -16,12 +16,10 @@ import { useRegistry, WORKBENCH_PATH } from '../registry'
  */
 export function BottomBar({ onSearch }: { onSearch: () => void }) {
   const registry = useRegistry()
-  const pinned = new Map(registry.pinned.map((p) => [p.key, p]))
-  const today = pinned.get('tasks:today')
+  const today = registry.phoneTab
   const TodayCount = today?.Count
-  const calendar = pinned.get('shell:calendar')
-  // The shell's own kind, always there and always first.
-  const projects = registry.kinds[0]!
+  const calendar = registry.pinned.find((p) => p.key === 'shell:calendar')
+  const projects = registry.projectsKind
   const tab =
     'flex min-w-0 flex-col items-center justify-center gap-0.5 text-xs leading-4 text-ink-muted'
   const link = ({ isActive }: { isActive: boolean }) =>

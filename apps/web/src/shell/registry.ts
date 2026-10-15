@@ -5,8 +5,10 @@ import type {
   CalendarContribution,
   CaptureContribution,
   Chord,
+  HelpSection,
   KindEntry,
   ModulePage,
+  ProjectContribution,
   RelationContribution,
   Widget,
   WorkspaceModule,
@@ -43,6 +45,8 @@ const SHELL_RELATIONS: RelationContribution[] = [
 export type ShellConfig = {
   /** The rail's top tier, as `<module id or 'shell'>:<page id>`, at most five. */
   pinned: readonly string[]
+  /** The phone bar's day tab, as `<module id>:<page id>`: offered, pinned or not. */
+  phoneTab: string
   /** Where a captured line goes when no module claims it. */
   captureModuleId: string
 }
@@ -58,12 +62,15 @@ export type SearchProvider = { moduleId: string; moduleLabel: string } & NonNull
 >
 export type CalendarProvider = { moduleId: string } & CalendarContribution
 export type RegisteredProjectBlock = { moduleId: string; moduleLabel: string } & NonNullable<
-  WorkspaceModule['projectBlock']
+  ProjectContribution['Block']
 >
 
 export type Registry = {
   pinned: PinnedPage[]
+  phoneTab: PinnedPage | null
   kinds: RegisteredKind[]
+  /** The shell's own kind, also first in `kinds`. */
+  projectsKind: RegisteredKind
   chords: RegisteredChord[]
   chordFor: (key: string) => RegisteredChord | null
   captures: { moduleId: string; capture: CaptureContribution }[]
@@ -75,6 +82,10 @@ export type Registry = {
   relationFor: (type: ObjectType) => RegisteredRelation | null
   projectBlocks: RegisteredProjectBlock[]
   projectHeadlines: { moduleId: string; Component: ComponentType<{ projectId: string }> }[]
+  projectFacts: { moduleId: string; Facts: NonNullable<ProjectContribution['Facts']> }[]
+  projectLead: ComponentType<{ projectId: string }> | null
+  projectContents: NonNullable<ProjectContribution['contents']>[]
+  help: HelpSection[]
   routes: RouteObject[]
 }
 
@@ -103,14 +114,18 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
   if (!captures.some((c) => c.moduleId === config.captureModuleId)) {
     throw new Error(`capture module "${config.captureModuleId}" is not registered`)
   }
+  const projectsKind: RegisteredKind = { ...PROJECTS_KIND, moduleId: null }
+  const phoneTab = offered.get(config.phoneTab)
 
   return {
     pinned: config.pinned.flatMap((key) => {
       const page = offered.get(key)
       return page ? [{ ...page, key }] : []
     }),
+    phoneTab: phoneTab ? { ...phoneTab, key: config.phoneTab } : null,
+    projectsKind,
     kinds: [
-      { ...PROJECTS_KIND, moduleId: null },
+      projectsKind,
       ...modules.flatMap((m) => (m.kind ? [{ ...m.kind, moduleId: m.id }] : [])).sort(byOrder),
     ],
     chords,
@@ -129,11 +144,17 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
     relations,
     relationFor: (type) => relations.find((r) => r.type === type) ?? null,
     projectBlocks: modules.flatMap((m) =>
-      m.projectBlock ? [{ moduleId: m.id, moduleLabel: m.label, ...m.projectBlock }] : [],
+      m.project?.Block ? [{ moduleId: m.id, moduleLabel: m.label, ...m.project.Block }] : [],
     ),
     projectHeadlines: modules.flatMap((m) =>
-      m.ProjectHeadline ? [{ moduleId: m.id, Component: m.ProjectHeadline }] : [],
+      m.project?.Headline ? [{ moduleId: m.id, Component: m.project.Headline }] : [],
     ),
+    projectFacts: modules.flatMap((m) =>
+      m.project?.Facts ? [{ moduleId: m.id, Facts: m.project.Facts }] : [],
+    ),
+    projectLead: modules.find((m) => m.project?.Lead)?.project?.Lead ?? null,
+    projectContents: modules.flatMap((m) => (m.project?.contents ? [m.project.contents] : [])),
+    help: modules.flatMap((m) => m.help ?? []),
     routes: modules.map((m) => ({ path: `/${m.id}`, children: m.routes })),
   }
 }

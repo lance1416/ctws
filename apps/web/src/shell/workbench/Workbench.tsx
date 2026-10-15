@@ -1,17 +1,11 @@
-import { useQuery } from '@tanstack/react-query'
 import { useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { listMovement } from '../../modules/tasks/api/movement'
 import { useProjects } from '../projects/api'
-import { shortDay, todayIn } from '../../platform/time/dates'
-import { movedLine } from '../../modules/tasks/movement'
 import { ProjectRail } from '../rows/RowParts'
-import { useTimeZone } from '../auth/useMe'
 import { Panel, PanelEmpty } from '../../platform/ui/Panel'
 import { useRegistry } from '../registry'
 import { useCrumbs } from '../layout/Breadcrumbs'
 import { useGround } from '../layout/ground'
-import { useNow } from '../../platform/time/useNow'
 
 /**
  * THE WORKBENCH -- THE SHELL'S OWN FRONT PAGE, and the first surface that is nobody's module.
@@ -79,11 +73,8 @@ const SPAN = {
  */
 function ProjectsWidget() {
   const projects = useProjects()
-  // The same entry Today's This week reads: what each line did and when it last moved.
-  const movement = useQuery({ queryKey: ['movement'], queryFn: listMovement })
-  const today = todayIn(useTimeZone(), useNow())
+  const facts = useRegistry().projectFacts
   const rows = (projects.data ?? []).filter((p) => !p.archivedAt)
-  const moved = new Map((movement.data ?? []).map((m) => [m.projectId, m]))
 
   return (
     <Panel variant="tile" label="Projects" to="/projects" className="lg:col-span-12">
@@ -93,32 +84,25 @@ function ProjectsWidget() {
         </p>
       )}
       {projects.isSuccess && rows.length === 0 && <PanelEmpty>No projects yet</PanelEmpty>}
-      {/* EVERY LINE OF WORK AT ONCE, none louder than the rest: six equal columns of the same
-          four lines -- what is open, what is late or due next, when it moved. */}
+      {/* EVERY LINE OF WORK AT ONCE, none louder than the rest: six equal columns, each its
+          name and then the modules' lines for it. */}
       <ul className="grid grid-cols-2 gap-x-6 gap-y-5 px-2 pb-1 sm:grid-cols-3 lg:grid-cols-6">
-        {rows.map((p) => {
-          const m = moved.get(p.id)
-          return (
-            <li key={p.id} className="min-w-0">
-              <Link
-                to={`/projects/${p.id}`}
-                className="flex min-w-0 items-stretch gap-3 pt-0.5 pr-1 pb-1 hover:bg-hover"
-              >
-                <ProjectRail projectId={p.id} />
-                <span className="flex min-w-0 flex-col text-sm">
-                  <span className="truncate text-base font-semibold text-ink">{p.name}</span>
-                  <span className="text-ink-muted tabular-nums">{p.openTasks} open</span>
-                  {m && m.overdue > 0 ? (
-                    <span className="text-missed">{m.overdue} overdue</span>
-                  ) : m?.nextDueOn ? (
-                    <span className="text-deadline">Due {shortDay(m.nextDueOn, today)}</span>
-                  ) : null}
-                  {m && <span className="text-ink-subtle">{movedLine(m, today)}</span>}
-                </span>
-              </Link>
-            </li>
-          )
-        })}
+        {rows.map((p) => (
+          <li key={p.id} className="min-w-0">
+            <Link
+              to={`/projects/${p.id}`}
+              className="flex min-w-0 items-stretch gap-3 pt-0.5 pr-1 pb-1 hover:bg-hover"
+            >
+              <ProjectRail projectId={p.id} />
+              <span className="flex min-w-0 flex-col text-sm">
+                <span className="truncate text-base font-semibold text-ink">{p.name}</span>
+                {facts.map(({ moduleId, Facts }) => (
+                  <Facts key={moduleId} project={p} place="tile" />
+                ))}
+              </span>
+            </Link>
+          </li>
+        ))}
       </ul>
     </Panel>
   )

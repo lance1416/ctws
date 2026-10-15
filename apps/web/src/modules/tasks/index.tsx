@@ -10,6 +10,7 @@ import { refreshQueries } from '../../platform/http/refresh'
 import { tasksKey } from './api/taskCache'
 import { listToday, taskCalendar } from './api/today'
 import { CreateTaskDialog } from './components/CreateTaskDialog'
+import { ProjectFacts, ProjectLead } from './components/ProjectFacts'
 import { TaskBoard } from './components/TaskBoard'
 import { isOverlayOpen } from '../../platform/keyboard/overlayState'
 import { ProjectRail } from '../../shell/rows/RowParts'
@@ -20,6 +21,7 @@ import { dayPhrase, todayIn } from '../../platform/time/dates'
 import { useShortcutsEnabled } from '../../platform/keyboard/enabled'
 import { isBareKey, isTypingTarget } from '../../platform/keyboard/keys'
 import { Completed } from './pages/Completed'
+import { OpenTask } from './pages/OpenTask'
 import { Review } from './pages/Review'
 import { Today } from './pages/Today'
 import { useTimeZone } from '../../shell/auth/useMe'
@@ -433,6 +435,8 @@ export const taskModule: WorkspaceModule = {
     { path: 'today', element: <Today /> },
     { path: 'completed', element: <Completed /> },
     { path: 'review', element: <Review /> },
+    // After the pages: a static segment outranks `:id`, so `today` is never read as a task.
+    { path: ':id', element: <OpenTask /> },
   ],
   capture: { useTarget: useInboxCapture },
   search: { useHits: useTaskHits },
@@ -466,11 +470,48 @@ export const taskModule: WorkspaceModule = {
       span: 6,
     },
   ],
-  projectBlock: { Component: ProjectTasks, views: PROJECT_VIEWS, Action: NewTaskAction },
-  ProjectHeadline: ProjectNumbers,
-  // A task lives on its project's page, in the tree. There is nowhere else for one to be, which
-  // is why the project id is in the path: the tree is what gives a task its context.
-  // No page of its own: a task is read IN ITS TREE, which is where its siblings, its parent and
-  // its dependencies are. A page per task would be the tree with everything around it removed.
-  relations: [{ type: 'task', kind: 'Task', to: (id) => `/projects?task=${id}` }],
+  project: {
+    Block: { Component: ProjectTasks, views: PROJECT_VIEWS, Action: NewTaskAction },
+    Headline: ProjectNumbers,
+    Facts: ProjectFacts,
+    Lead: ProjectLead,
+    contents: async (qc, projectId) => {
+      const { tasks } = await qc.fetchQuery({
+        queryKey: tasksKey(projectId),
+        queryFn: () => listProjectTasks(projectId),
+      })
+      return tasks.length === 0 ? null : `${tasks.length} tasks`
+    },
+  },
+  help: [
+    // `n` needs a project to create into, so it exists only on a project page.
+    { title: 'On a project page', keys: [['n', 'Open the New dialog']] },
+    {
+      title: 'In the task tree (with a row focused)',
+      keys: [
+        ['↑ ↓ / j k', 'Move between rows'],
+        ['← →', 'Collapse / expand (when collapsed, jump to the parent / first child)'],
+        ['Home End', 'First row / last row'],
+        ['Tab', 'Leave the tree (the whole tree is one tab stop)'],
+        ['Enter', 'Open the details'],
+        ['Shift+Enter', 'Add a sibling'],
+        ['Alt+Enter', 'Add a subtask'],
+        ['Alt+↑ Alt+↓', 'Move this row up / down'],
+        ['Alt+← Alt+→', 'Outdent / indent'],
+        ['s', 'Start / pause'],
+        ['x', 'Complete / reopen'],
+      ],
+    },
+    {
+      title: 'On Today (with a row focused)',
+      keys: [
+        ['s', 'Start / pause'],
+        ['x', 'Complete / reopen'],
+        ['Enter', 'Open the details'],
+      ],
+    },
+  ],
+  // No page of its own: a task is read IN ITS TREE, where its siblings, its parent and its
+  // dependencies are. Its address finds the tree and opens it there.
+  relations: [{ type: 'task', kind: 'Task', to: (id) => at(id) }],
 }

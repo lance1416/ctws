@@ -1,3 +1,4 @@
+import type { HelpSection } from '../contract'
 import { useRegistry, type Registry } from '../registry'
 import { setShortcutsEnabled, useShortcutsEnabled } from '../../platform/keyboard/enabled'
 import { JUMP_PREFIX } from './chords'
@@ -10,7 +11,7 @@ import { Modal } from '../../platform/ui/Modal'
  * Grouped by where the key works, because `s` on a task row and `g p` anywhere are not the same
  * kind of thing and a flat list of eleven rows reads as noise.
  */
-const groups = (registry: Registry): { title: string; keys: [string, string][] }[] => [
+const groups = (registry: Registry): HelpSection[] => [
   {
     title: 'Anywhere',
     keys: [
@@ -19,40 +20,12 @@ const groups = (registry: Registry): { title: string; keys: [string, string][] }
       ['?', 'This list of shortcuts'],
       // The jump chords come from the key table, so a module that adds one cannot add it
       // without the help overlay saying so -- an undiscoverable key is no key at all.
-      ...registry.chords.map((c): [string, string] => [`${JUMP_PREFIX} ${c.key}`, c.label]),
+      ...registry.chords.map((c) => [`${JUMP_PREFIX} ${c.key}`, c.label] as const),
       ['Esc', 'Close the pane or overlay'],
     ],
   },
-  {
-    // `n` is not under Anywhere on purpose: it needs a project to create into, so it exists only
-    // on a project page. Listed because a key nobody can find is not a key.
-    title: 'On a project page',
-    keys: [['n', 'Open the New dialog']],
-  },
-  {
-    title: 'In the task tree (with a row focused)',
-    keys: [
-      ['↑ ↓ / j k', 'Move between rows'],
-      ['← →', 'Collapse / expand (when collapsed, jump to the parent / first child)'],
-      ['Home End', 'First row / last row'],
-      ['Tab', 'Leave the tree (the whole tree is one tab stop)'],
-      ['Enter', 'Open the details'],
-      ['Shift+Enter', 'Add a sibling'],
-      ['Alt+Enter', 'Add a subtask'],
-      ['Alt+↑ Alt+↓', 'Move this row up / down'],
-      ['Alt+← Alt+→', 'Outdent / indent'],
-      ['s', 'Start / pause'],
-      ['x', 'Complete / reopen'],
-    ],
-  },
-  {
-    title: 'On Today (with a row focused)',
-    keys: [
-      ['s', 'Start / pause'],
-      ['x', 'Complete / reopen'],
-      ['Enter', 'Open the details'],
-    ],
-  },
+  // Then the keys that work only somewhere, in each module's words.
+  ...registry.help,
 ]
 
 export function ShortcutHelp({ onClose }: { onClose: () => void }) {

@@ -16,12 +16,3 @@ export function birthdayCalendar(range: { from: string; to: string }): Promise<C
   const params = new URLSearchParams(range)
   return apiFetch<{ entries: CalendarEntry[] }>(`/people/calendar?${params}`).then((r) => r.entries)
 }
-
-/**
- * What each day in the window is called in the lunar calendar. The SHELL's endpoint, not this
- * module's: a day's own name belongs to the day.
- */
-export function calendarDays(range: { from: string; to: string }): Promise<Record<string, string>> {
-  const params = new URLSearchParams(range)
-  return apiFetch<{ days: Record<string, string> }>(`/calendar/days?${params}`).then((r) => r.days)
-}

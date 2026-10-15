@@ -3,7 +3,7 @@ import { useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ViewTabs } from '../../platform/ui/ViewTabs'
 import { useQuery } from '@tanstack/react-query'
-import { calendarDays } from '../../modules/people/api/birthdays'
+import { calendarDaysQuery } from './api'
 import { useEveryProject } from '../projects/api'
 import { todayIn } from '../../platform/time/dates'
 import { useRegistry } from '../registry'
@@ -56,10 +56,7 @@ export function Calendar() {
    * endpoint: a day's name belongs to the day, not to whichever module put something on it. A
    * square whose label has not arrived (or failed) simply has no label, and is still a square.
    */
-  const lunar = useQuery({
-    queryKey: ['calendar-days', range.from, range.to],
-    queryFn: () => calendarDays(range),
-  })
+  const lunar = useQuery(calendarDaysQuery(range))
   // ONE HOOK PER REGISTERED MODULE, over the registry's frozen list -- the same rule the capture
   // box and the rail counts follow.
   const results = providers.map((p) => ({ moduleId: p.moduleId, ...p.useEntries(range) }))

@@ -2,7 +2,7 @@ import type { CalendarEntry, TaskStatus, TodayTaskResponse } from '@ctws/contrac
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { calendarDays } from '../../people/api/birthdays'
+import { calendarDaysQuery } from '../../../shell/calendar/api'
 import { listCompleted } from '../api/completed'
 import { toggleDoneTarget, toggleStartTarget, useTaskActions } from '../api/taskActions'
 import { listToday } from '../api/today'
@@ -91,10 +91,7 @@ export function Today() {
       })),
     )
   // The day's own name in the lunar calendar, from the same source the Calendar grid uses.
-  const lunar = useQuery({
-    queryKey: ['calendar-days', localToday, localToday],
-    queryFn: () => calendarDays({ from: localToday, to: localToday }),
-  })
+  const lunar = useQuery(calendarDaysQuery({ from: localToday, to: localToday }))
   const [openId, setOpenId] = useState<string | null>(null)
   const rows = today.data ?? []
   const openTask = rows.find((t) => t.id === openId)

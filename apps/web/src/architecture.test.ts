@@ -52,16 +52,6 @@ function allowed(from: Layer, toPath: string): boolean {
 
 /** Known violations, each removed by the task that fixes it. Empty at the end. */
 const ALLOWED = new Set<string>([
-  // Task 11: project facts, delete contents, the task address, calendar days.
-  'shell/projects/DeleteProject.tsx -> modules/tasks/api/taskCache',
-  'shell/projects/DeleteProject.tsx -> modules/tasks/api/tasks',
-  'shell/projects/Projects.tsx -> modules/tasks/api/movement',
-  'shell/projects/Projects.tsx -> modules/tasks/api/tasks',
-  'shell/projects/Projects.tsx -> modules/tasks/movement',
-  'shell/workbench/Workbench.tsx -> modules/tasks/api/movement',
-  'shell/workbench/Workbench.tsx -> modules/tasks/movement',
-  'modules/tasks/pages/Today.tsx -> modules/people/api/birthdays',
-  'shell/calendar/Calendar.tsx -> modules/people/api/birthdays',
   // Task 19: meetings reach people through its index.
   'modules/meetings/components/MeetingDetail.tsx -> modules/people/api/people',
   'modules/meetings/components/NewMeetingDialog.tsx -> modules/people/api/people',

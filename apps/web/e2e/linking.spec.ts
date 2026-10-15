@@ -242,9 +242,28 @@ test('a task link that fails for another reason does not say the task is gone', 
   await registerFreshUser(page)
   const id = '00000000-0000-4000-8000-000000000000'
   await page.route(`**/api/v1/tasks/${id}`, (r) => r.fulfill({ status: 503, body: '{}' }))
-  await page.goto(`/projects?task=${id}`)
+  await page.goto(`/tasks/${id}`)
   await expect(page.getByRole('alert')).toContainText("Couldn't open this task")
   await page.unroute(`**/api/v1/tasks/${id}`)
-  await page.goto(`/projects?task=${id}`)
+  await page.goto(`/tasks/${id}`)
   await expect(page.getByRole('alert')).toContainText('This task is not here any more.')
+})
+
+test('a task address opens the task in its project', async ({ page }) => {
+  await registerFreshUser(page)
+  const project = await apiPost(page, '/projects', { name: 'Addressed' })
+  const task = await apiPost(page, '/tasks', { title: 'Find me', projectId: project.id })
+  await page.goto(`/tasks/${task.id as string}`)
+  await expect(page).toHaveURL(
+    new RegExp(`/projects/${project.id as string}\\?task=${task.id as string}$`),
+  )
+  await expect(page.getByRole('dialog', { name: 'Task details' })).toContainText('Find me')
+})
+
+test('the task pages still answer on their own addresses', async ({ page }) => {
+  await registerFreshUser(page)
+  await page.goto('/tasks/today')
+  await expect(page.locator('#today-heading')).toBeVisible()
+  await page.goto('/tasks/review')
+  await expect(page.getByRole('heading', { level: 1, name: 'Review' })).toBeVisible()
 })
