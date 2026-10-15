@@ -87,7 +87,7 @@ function BirthdayCard() {
       <Link to={`/${ID}/${first!.personId}`} data-birthday-row className="block">
         <span className="block text-xl font-semibold">{first!.name}</span>
         <span className="mt-0.5 block">
-          {weekdayOf(first!.day)}, {shortDay(first!.day, today)}, {countdownPhrase(first!.inDays)}
+          {weekdayOf(first!.day, true)}, {shortDay(first!.day, today)}, {countdownPhrase(first!.inDays)}
         </span>
         {first!.calendar === 'lunar' && first!.lunarDate && (
           <span className="block text-sm text-ink-subtle">{first!.lunarDate}</span>

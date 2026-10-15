@@ -39,6 +39,15 @@ describe('due time conversion', () => {
   })
 })
 
+describe('weekdayOf', () => {
+  it('names the weekday a day falls on, in full or short', async () => {
+    const { weekdayOf } = await load()
+    expect(weekdayOf('2026-10-19')).toBe('Monday')
+    expect(weekdayOf('2026-10-19', true)).toBe('Mon')
+    expect(weekdayOf('2026-10-18', true)).toBe('Sun')
+  })
+})
+
 describe('shortDay', () => {
   it('writes month and day within the year, and the year across it', async () => {
     const { shortDay } = await load()
