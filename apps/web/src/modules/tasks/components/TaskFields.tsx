@@ -7,10 +7,7 @@ import { STATUS_LABEL } from '../status'
 import { StatusMark } from './StatusMark'
 import { DeadlineMark, PlanMark } from './TaskRowParts'
 
-/**
- * The fields the task pane's form and the New task dialog both draw. They render and hold no
- * state: each form keeps its own values and says what a press does.
- */
+// Fields the pane's form and the New task dialog both draw; each form keeps its own values.
 
 /** The named days the date decisions offer, the same three the row's triage control offers. */
 export const namedDays = (today: string): readonly (readonly [word: string, day: string])[] => [
@@ -20,8 +17,8 @@ export const namedDays = (today: string): readonly (readonly [word: string, day:
 ]
 
 /**
- * The five marker shapes the rows speak, named, as native radios: one tab stop and the arrow keys
- * inside it, for free. Each input covers its whole chip, so the chip IS the radio.
+ * The statuses as native radios: one tab stop, arrow keys inside. Each input covers its whole
+ * chip, so the chip is the radio.
  */
 export function StatusRadios({ id, field }: { id: string; field: UseFormRegisterReturn }) {
   return (
@@ -29,8 +26,7 @@ export function StatusRadios({ id, field }: { id: string; field: UseFormRegister
       <span id={`${id}-status-label`} className={label}>
         Status
       </span>
-      {/* Sized to the words and wrapped where they run out (3 + 2): a fixed grid cut the longest
-          label in half, and a label wrapping inside its chip makes that chip the odd one out. */}
+      {/* Sized to the words and wrapped where they run out, so no label wraps inside its chip. */}
       <div className="mt-1.5 flex flex-wrap gap-1">
         {TASK_STATUSES.map((s) => (
           <label key={s} className={STATUS_CHIP}>
@@ -70,9 +66,8 @@ const DATE = {
 } as const
 
 /**
- * One date as named decisions -- today, tomorrow, next week and the way out -- wearing the glyph
- * and colour family the rows wear. `exact` is a field for every other day, under the buttons;
- * `htmlFor` names it from the heading. `pressed` marks the chosen day where the choice is a state.
+ * One date as named decisions and the way out. `exact` is a field for any other day, named from the
+ * heading by `htmlFor`; `pressed` marks the chosen day where the choice is a state.
  */
 export function DateDecisions({
   kind,
@@ -134,9 +129,8 @@ export function DateDecisions({
 }
 
 /**
- * The chosen day and time said back the way the app says it ("Tomorrow, 14:30"). A native date
- * input prints its format in the browser's UI language, which the page cannot set; this is the
- * app saying which day it understood, right whatever the field prints.
+ * The chosen day said back in the app's words ("Tomorrow, 14:30"): a native date input prints in
+ * the browser's language, which the page cannot set.
  */
 function DateEcho({ text }: { text: string | null }) {
   if (!text) return null

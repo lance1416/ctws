@@ -7,9 +7,8 @@ import { deleteTask } from '../api/tasks'
 import { WRITE_AWAITS } from './useTaskDetailForm'
 
 /**
- * DELETING A TASK takes its subtree and cannot be undone, so the question names what is lost. The
- * count is read live when the question opens: the page behind may never have loaded this tree.
- * `message` is null while counting.
+ * Deleting takes the subtree, so the question counts what is lost, read live because the page
+ * behind may never have loaded this tree. `message` is null while counting.
  */
 export function useDeleteTask(task: TaskResponse) {
   const qc = useQueryClient()

@@ -5,10 +5,7 @@ import { useForgetRecent } from '../../../shell/search/recent'
 import { cancelMeeting } from '../api'
 import { ScopeAsk } from './ScopeAsk'
 
-/**
- * CANCELLING A MEETING, at the foot of its pane. A repeating one is asked WHICH occurrences rather
- * than yes or no; a one-off has only itself, so it gets the plain question.
- */
+/** A repeating meeting asks which occurrences to cancel; a one-off gets the plain question. */
 export function CancelMeeting({
   meeting,
   onCancelled,
@@ -32,8 +29,7 @@ export function CancelMeeting({
       label="Cancel meeting"
       confirmLabel="Confirm cancelling this meeting"
       message={`Cancel “${meeting.title}”? This cannot be undone.`}
-      // A meeting is cancelled, not deleted, and a way out called "Cancel" next to it would say
-      // the opposite of what it does.
+      // A way out called "Cancel" would say the opposite of what it does here.
       confirm="Cancel meeting"
       back="Keep it"
       busy={drop.isPending}

@@ -5,9 +5,8 @@ import { problemText } from '../../../platform/http/api'
 import { patchMeeting } from '../api'
 
 /**
- * SAVING A MEETING'S FORM. When and how long belong to the occurrence; everything else is the
- * series'. Moving a repeating meeting asks once which occurrences change -- the one answer a
- * calendar cannot guess -- and only about what this Save really changed.
+ * Saves a meeting's form: when and how long belong to the occurrence, the rest to the series.
+ * Moving a repeating meeting first asks which occurrences change.
  */
 export function useScopedEdit(meeting: MeetingOccurrence, onSaved: () => void) {
   /** A Save that moved a repeating meeting, held whole until "this one / from here on". */
@@ -18,11 +17,7 @@ export function useScopedEdit(meeting: MeetingOccurrence, onSaved: () => void) {
     meta: { awaits: [['meetings'], ['links']] },
   })
 
-  /**
-   * The title, the place, who is in it and the rule are the series', written to all of it; then
-   * when and how long, to `scope`. The form closes once the server has both, and stays open with
-   * what was typed when it refuses.
-   */
+  // The series' fields go to all of it, then when and how long to `scope`.
   const write = async (patch: UpdateMeetingInput, scope: EditScope) => {
     const { startsLocal, durationMinutes, ...series } = patch
     try {
@@ -33,14 +28,13 @@ export function useScopedEdit(meeting: MeetingOccurrence, onSaved: () => void) {
       }
       onSaved()
     } catch {
-      // Said by `failed`.
+      // Shown through `failed`.
     }
   }
 
   const submit = (patch: UpdateMeetingInput) => {
     const moved = patch.startsLocal !== undefined || patch.durationMinutes !== undefined
-    // Only a repeating meeting has "this one or from here on" to ask, and nothing of the Save is
-    // written before the answer: backing out of the question leaves the meeting as it was.
+    // Nothing is written before the answer, so backing out leaves the meeting as it was.
     if (moved && meeting.rrule !== null) setAsking(patch)
     else void write(patch, 'all')
   }

@@ -12,26 +12,16 @@ import { CloseIcon } from './icons'
 import { LAYER } from './layers'
 
 /**
- * THE DETAIL PANE, and it belongs to the SHELL.
- *
- * ONE SURFACE for looking at one thing, whatever module the thing came from. A pane for a task,
- * a row menu for a reading item and a dialog for a person would be three editing models in one
- * app, which means learning it three times.
- *
- * What this component owns is the FRAME -- where it sits, how wide, the escape, the focus trap,
- * the scrim below 1280 -- and nothing about what is in it. A module renders its own body inside.
- *
- * At >=1280 it is a third COLUMN that coexists with the list it was opened from: no scrim, no
- * trap, the list stays usable beside it. Below that there is no room for both, so it becomes a
- * layer and takes the keyboard with it. That is also why it is not built on Radix's Dialog, whose
- * `aria-hidden` on the rest of the page fights a component that has to coexist.
+ * The shell's frame for one open item; the module renders the body. At >=1280 it is a column beside
+ * the list; below that, an overlay with a scrim and a focus trap. Not Radix Dialog, whose
+ * `aria-hidden` on the rest of the page would hide the list the column sits beside.
  */
 export function DetailPane({
   label,
   onClose,
   children,
 }: {
-  /** The pane's accessible name: what KIND of thing is open -- “Task”, “People”. */
+  /** The accessible name: what kind of thing is open, e.g. “Task”. */
   label: string
   onClose: () => void
   children: ReactNode
@@ -40,11 +30,10 @@ export function DetailPane({
   const wide = useWidePane()
   useReservePane()
 
-  // The panel is last in the DOM, so without this a keyboard user would tab past every row to
-  // reach it. Escape also only works while focus is inside.
+  // The panel is last in the DOM, and Escape only works while focus is inside.
   useEffect(() => panel.current?.focus(), [])
 
-  // It hangs below the top bar, whose height is a layout fact rather than a number to copy.
+  // Hang below the header, measured rather than hard-coded.
   const [top, setTop] = useState(0)
   useLayoutEffect(() => {
     const measure = () =>
@@ -56,26 +45,15 @@ export function DetailPane({
 
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Escape') {
-      /**
-       * ESCAPE UNWINDS ONE LEVEL, and the innermost level goes first.
-       *
-       * A module's body may have its own things to back out of before the pane itself -- a menu,
-       * an inline edit, a discard prompt. It handles Escape on the way up and calls
-       * `preventDefault`; this reads that as "already dealt with" and leaves the pane open. A
-       * body that does nothing leaves the press to here, which closes.
-       */
+      // A body that backs out of something of its own (a menu, an inline edit) calls
+      // `preventDefault`, and the pane stays open.
       if (e.defaultPrevented) return
       e.preventDefault()
       onClose()
       return
     }
     if (e.key !== 'Tab' || wide) return
-    /**
-     * THE TRAP, and only in overlay mode. A layer that claims the keyboard and then lets Tab walk
-     * out onto a page covered by a scrim is a WCAG 2.1.2 failure. `tabbable` decides both the
-     * ORDER and the MEMBERSHIP of the cycle, not a hand-written selector that would miss whatever
-     * a module puts in here next.
-     */
+    // Overlay mode traps Tab; `tabbable` decides the cycle's order and members.
     const items = panel.current ? tabbable(panel.current) : []
     const first = items[0]
     const last = items[items.length - 1]
@@ -92,15 +70,13 @@ export function DetailPane({
 
   return (
     <>
-      {/* Click-outside, and the wash that says the page behind is not the thing in hand. Only in
-          overlay mode: as a coexisting pane, a click on the list is a click on the list. */}
       {!wide && (
         <div
           aria-hidden="true"
           data-detail-backdrop
           onClick={onClose}
           style={{ top }}
-          // Below 1024 the tab bar is the screen's floor, so the scrim and the layer stop at it.
+          // Below 1024 the scrim stops at the tab bar.
           className={`fixed inset-x-0 bottom-0 ${LAYER.pane} bg-scrim max-lg:bottom-16`}
         />
       )}
@@ -111,16 +87,10 @@ export function DetailPane({
         aria-label={label}
         data-detail-mode={wide ? 'pane' : 'overlay'}
         onKeyDown={onKeyDown}
-        // 12px under the header as well as in from the window's edges, in both modes: a sheet flush
-        // with the header but with air on three sides would read as having slid down out of it.
         style={{ top: top + 12 }}
-        // A COLUMN, so the one irreversible action (`DangerZone`, `mt-auto`) can be pushed to the
-        // pane's floor when what is above it is short, instead of hanging under the last field.
+        // A flex column so `DangerZone` (`mt-auto`) sits on the pane's floor.
         className={`fixed ${LAYER.pane} flex flex-col overflow-y-auto p-5 text-ink focus:outline-none ${
-          // THE SHEET, the same object in both modes: a `float`, 10px round, lifted, 12px in from
-          // every edge it is near. As a COLUMN it sits in the right-hand track Layout takes out of
-          // the grid (22rem inside 24rem); as a LAYER it is over the page with the scrim beneath,
-          // and below 1024 it stops 12px above the tab bar rather than under it.
+          // Below 1024 the overlay stops 12px above the tab bar.
           `right-3 bottom-3 rounded-[10px] bg-float shadow-float ${
             wide ? 'w-[22rem]' : 'w-[calc(100%-1.5rem)] max-w-md max-lg:bottom-19'
           }`
@@ -132,12 +102,7 @@ export function DetailPane({
   )
 }
 
-/**
- * The pane's header: what kind of thing this is, and the way out.
- *
- * Every module's body starts with one, so the close control is in the same place whatever is
- * open. `trailing` is for the one or two controls that belong to the whole thing (Delete, Edit).
- */
+/** `trailing` holds controls for the whole item (Delete, Edit), before the close button. */
 export function DetailHead({
   kind,
   onClose,
@@ -158,7 +123,6 @@ export function DetailHead({
   )
 }
 
-/** The pane's ✕. An icon, not the word: closing is not something done TO the thing shown. */
 export function CloseButton({ onClick }: { onClick: () => void }) {
   return (
     <button

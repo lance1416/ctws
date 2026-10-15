@@ -13,22 +13,13 @@ import { textbox } from '../../platform/ui/formStyles'
 import { LAYER } from '../../platform/ui/layers'
 
 /**
- * One input on every page, in the header: the same place on every page and at every width.
- *
- * THE DESTINATION IS NOT ALWAYS THE INBOX: every module that can take a line is asked whether it
- * claims this one, in registration order, and the line falls to the registry's named default when
- * nobody does. A pasted url goes to Reading; a sentence goes to the inbox.
- *
- * Typing a line and leaving is a success criterion, so routing must not cost a keystroke -- and it
- * does not: `accepts` is a pure function of the line. When the guess is wrong you can SEE it,
- * because the confirmation names where the line went.
+ * The capture box in the header. The first module that claims the line takes it (a pasted url
+ * goes to Reading), else the registry's default; the confirmation names where it went.
  */
 export function QuickCapture() {
   const [title, setTitle] = useState('')
-  // WHERE THE LAST LINE LANDED, or null. One line, never a queue. It names the destination but
-  // not the title: the title would sit in the DOM of every page (this box is in the layout) and
-  // show up twice wherever that task is also listed. It holds the target rather than a boolean
-  // because with two modules the destination is not always the same place.
+  // Where the last line landed. Not its title: this box is on every page, so the title would
+  // show twice wherever that task is also listed.
   const [landed, setLanded] = useState<CaptureTarget | null>(null)
   const { pathname } = useLocation()
   const shortcuts = useShortcutsEnabled()
@@ -40,7 +31,6 @@ export function QuickCapture() {
   const states = registry.captures.map(({ moduleId, capture }) => ({
     moduleId,
     accepts: capture.accepts,
-    // eslint-disable-next-line react-hooks/rules-of-hooks -- fixed-length, fixed-order list
     ...capture.useTarget(),
   }))
   const fallback = states.find((s) => s.moduleId === registry.captureModuleId)!
@@ -69,9 +59,6 @@ export function QuickCapture() {
   }
   const lineKeys = useInlineEdit({ onCommit: submit })
 
-  // `/` jumps to the capture box from anywhere that is not already a text field. The guard is
-  // now shared with the other document-level keys (`f`, `?`, the `g` chords) rather than
-  // duplicated, and it also stands down while an overlay owns the keyboard.
   useEffect(() => {
     if (!shortcuts) return
     const onKey = (e: KeyboardEvent) => {
@@ -85,7 +72,7 @@ export function QuickCapture() {
   }, [shortcuts])
 
   return (
-    // The answer to a line pops under the box, so typing never moves anything in the header.
+    // Messages pop under the box, so typing never moves anything in the header.
     <div className="relative w-28 min-w-0 shrink sm:w-60">
       <div className="relative">
         <input
@@ -108,9 +95,8 @@ export function QuickCapture() {
           /
         </KeyHint>
       </div>
-      {/* Under the box, right-aligned to it. Below 640 the box is too near the left edge for that:
-          a long project name would run off the screen, so the message spans the width under the
-          header instead. */}
+      {/* Below 640 a long project name would run off the screen, so the message spans the width
+          under the header instead. */}
       <div
         className={`absolute top-full right-0 ${LAYER.cover} mt-1 flex w-max max-w-[20rem] flex-col empty:hidden max-sm:fixed max-sm:inset-x-4 max-sm:top-14 max-sm:mt-0 max-sm:w-auto max-sm:max-w-none`}
       >
@@ -122,8 +108,7 @@ export function QuickCapture() {
             No inbox to capture into
           </p>
         )}
-        {/* role="status", not "alert": on the projects page the list already raises its own alert
-          for the same failed fetch, and two alerts would be announced (and matched) twice. */}
+        {/* `status`, not `alert`: the projects page already alerts on the same failure. */}
         {unavailable && (
           <p
             role="status"

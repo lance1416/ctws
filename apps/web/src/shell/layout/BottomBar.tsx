@@ -4,15 +4,8 @@ import { LAYER } from '../../platform/ui/layers'
 import { useRegistry, WORKBENCH_PATH } from '../registry'
 
 /**
- * THE PHONE'S NAVIGATION: five tabs where the rail does not fit.
- *
- * Five, because that is the most a bottom bar holds before it needs a "More" tab (Apple, Material),
- * and More hides whatever is behind it. The four are the ones a phone is opened for: home, the
- * day, the lines of work and the month. Search is the fifth and the way to everything else,
- * Review and every kind included; it sits at the trailing end, where Apple puts a search tab.
- *
- * Same name as the rail, and the two are never both in the accessibility tree: the rail is
- * `display: none` below 1024 and this is above it.
+ * The phone's navigation: five tabs where the rail does not fit, Search being the way to the rest.
+ * It shares the rail's name, but only one of the two is ever displayed.
  */
 export function BottomBar({ onSearch }: { onSearch: () => void }) {
   const registry = useRegistry()
@@ -45,7 +38,6 @@ export function BottomBar({ onSearch }: { onSearch: () => void }) {
             <circle cx="11" cy="11" r="7.5" />
             <path d="M11 5.5a5.5 5.5 0 0 1 0 11z" fill="currentColor" stroke="none" />
           </Icon>
-          {/* The same count the rail gives it: how much is on today's plate. */}
           <span className="flex items-center">
             {today.label}
             {TodayCount && <TodayCount />}
@@ -78,7 +70,6 @@ export function BottomBar({ onSearch }: { onSearch: () => void }) {
   )
 }
 
-/** A tab's glyph: decoration only, the label beside it carries the name. */
 function Icon({ children }: { children: ReactNode }) {
   return (
     <svg

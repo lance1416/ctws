@@ -5,10 +5,6 @@ import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import { BirthdayRow } from './BirthdayRow'
 
-/**
- * ONE BIRTHDAY, AS A ROW. What the row must say, and what it must not say twice.
- */
-
 const row = (over: Partial<BirthdayListRow> = {}): BirthdayListRow => ({
   personId: '00000000-0000-0000-0000-000000000001',
   name: '周楠',
@@ -34,7 +30,7 @@ const render = (r: BirthdayListRow) =>
   )
 
 describe('BirthdayRow', () => {
-  it('说名字、年龄、日期与距离', () => {
+  it('says the name, the age, the date and how far off it is', () => {
     const html = render(row())
     expect(html).toContain('周楠')
     expect(html).toContain('turns 35')
@@ -42,42 +38,42 @@ describe('BirthdayRow', () => {
     expect(html).toContain('in 2 days')
   })
 
-  it('农历追的人带农历回显，公历追的人不带', () => {
+  it('shows the lunar date for a lunar birthday and not for a solar one', () => {
     expect(render(row())).toContain('农历九月初三')
     expect(render(row({ calendar: 'solar', lunarDate: null }))).not.toContain('农历')
   })
 
-  it('没有年份就不说年龄，而是说年份不知道', () => {
+  it('says the year is unknown instead of an age when there is no year', () => {
     const html = render(row({ turns: null }))
     expect(html).not.toContain('turns')
     expect(html).toContain('year unknown')
   })
 
-  /** 日子被挪过的那一行要能看出来；完整的那句话在人物页上。 */
-  it('日子被挪过时说一声', () => {
+  // The full explanation is on the person's page.
+  it('says when the day was moved', () => {
     expect(render(row({ kept: ['short-month'] }))).toContain('moved')
     expect(render(row({ kept: [] }))).not.toContain('moved')
   })
 
-  it('日子在页边：只有月和日，旁边一个蛋糕', () => {
-    // 下一次生日在明年也不写年份：下一次总在一年之内，页边只有一行。
+  it('puts only the month and day in the margin, beside a cake', () => {
+    // No year even when it falls next year: the next one is always within a year.
     const html = render(row({ day: '2027-01-05' }))
     expect(html).toContain('Jan 5')
     expect(html).not.toContain('2027</time>')
     expect(html).toContain('data-cake')
   })
 
-  it('今天的生日穿 deadline 色、加粗，其余是 muted', () => {
+  it("gives today's birthday the bold deadline colour and the rest a muted one", () => {
     expect(render(row({ inDays: 0 }))).toContain('text-deadline')
     expect(render(row({ inDays: 2 }))).not.toContain('text-deadline')
   })
 
-  it('circle 用英文名，因为它是枚举而不是人写的字', () => {
+  it('names the circle in English, since it is an enum and not text a person wrote', () => {
     expect(render(row({ circle: 'friend' }))).toContain('Friends')
     expect(render(row({ circle: null }))).not.toContain('Friends')
   })
 
-  it('链接指向那个人自己的页', () => {
+  it("links to the person's own page", () => {
     expect(render(row())).toContain('href="/people/00000000-0000-0000-0000-000000000001"')
   })
 })

@@ -16,10 +16,7 @@ import {
   ZonePicker,
 } from './MeetingControls'
 
-/**
- * A MEETING, EDITED: one form and one Save, the same way out as a person's. Cancelling the
- * meeting is not here; it is at the foot of the pane.
- */
+/** The meeting form, with one Save; cancelling the meeting is at the foot of the pane. */
 export function MeetingForm({
   meeting,
   accountZone,
@@ -28,7 +25,7 @@ export function MeetingForm({
   onSave,
 }: {
   meeting: MeetingOccurrence
-  /** The reader's own zone, for the one date this form has to WORD rather than take as input. */
+  /** The reader's own zone, for wording the ending's date. */
   accountZone: string
   busy: boolean
   onCancel: () => void

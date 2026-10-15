@@ -6,9 +6,6 @@ const n = (id: string, parentId: string | null) => ({ id, parentId })
 describe('ancestorsOf', () => {
   it('returns the parents nearest first', () => {
     const nodes = [n('a', null), n('b', 'a'), n('c', 'b'), n('d', 'c')]
-    // Nearest-first and complete: an order-insensitive assertion would pass for a function that
-    // returned the chain upside down, which would still unfold the right rows and so hide the bug
-    // from every caller except the next one.
     expect(ancestorsOf(nodes, 'd')).toEqual(['c', 'b', 'a'])
   })
 
@@ -21,8 +18,6 @@ describe('ancestorsOf', () => {
   })
 
   it('stops at a parent that is absent from the list, as flatten does', () => {
-    // `flatten` renders such a node as a root, so there is no row for the missing parent to
-    // unfold; carrying on up would ask the tree to expand something it never drew.
     expect(ancestorsOf([n('b', 'gone'), n('c', 'b')], 'c')).toEqual(['b'])
   })
 

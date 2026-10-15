@@ -7,10 +7,8 @@ import { RowMeta } from '../../components/TaskRowParts'
 export type Entry = CalendarEntry & { moduleId: string }
 
 /**
- * ONE ENTRY from another module -- a meeting, a birthday -- on the day's line. No marker (it is
- * not a task), but the marker's column is kept so its title lines up with the tasks', and it goes
- * where its module says. A meeting agreed in another zone names it beside the title: the margin is
- * your own clock, which answers when to be there.
+ * Another module's entry on the day's line. The marker's column stays empty so titles line up; a
+ * meeting agreed in another zone names that zone beside its title, the margin being your clock.
  */
 export function EntryRow({
   entry: e,

@@ -32,7 +32,7 @@ async function dark(page: Page) {
   await page.emulateMedia({ colorScheme: 'dark' })
 }
 
-test('深色下，搜索里被选中的那一条看得出来', async ({ page }) => {
+test('in dark, the selected search result stands out', async ({ page }) => {
   await registerFreshUser(page)
   await apiPost(page, '/people', { name: 'Sam Patel', org: 'IQBank' })
   await dark(page)
@@ -47,7 +47,7 @@ test('深色下，搜索里被选中的那一条看得出来', async ({ page }) 
   expect(await lum(chosen, panel)).toBeGreaterThan(await lum(panel))
 })
 
-test('叠层面板上打开的菜单不比面板暗', async ({ page }) => {
+test('a menu opened over the overlay pane is not darker than the pane', async ({ page }) => {
   await page.setViewportSize({ width: 1024, height: 800 })
   await registerFreshUser(page)
   const pid = await makeProject(page, 'IQBank')
@@ -64,7 +64,7 @@ test('叠层面板上打开的菜单不比面板暗', async ({ page }) => {
   expect(await lum(menu)).toBeGreaterThanOrEqual(await lum(pane))
 })
 
-test('深色下，浮起来的东西比它下面的纸亮', async ({ page }) => {
+test('in dark, a floating surface is lighter than the paper under it', async ({ page }) => {
   // Dark has no shadows: a float is told from the sheet under it by being lighter, and by
   // nothing else. A float the colour of the page is a pane with no edge.
   await page.setViewportSize({ width: 1440, height: 900 })
@@ -80,7 +80,7 @@ test('深色下，浮起来的东西比它下面的纸亮', async ({ page }) => 
 })
 
 for (const scheme of ['light', 'dark'] as const) {
-  test(`看板的卡片比它的列亮（${scheme}）`, async ({ page }) => {
+  test(`a board card is lighter than its column (${scheme})`, async ({ page }) => {
     await registerFreshUser(page)
     const pid = await makeProject(page, 'IQBank')
     await makeTask(page, pid, 'Write the migration', { status: 'todo' })

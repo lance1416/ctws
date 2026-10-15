@@ -196,13 +196,9 @@ test('a project page carries both modules, each with its own block and numbers',
   )
 })
 
-/**
- * 删一条读物在它自己那一层的最底下，和删一个人、一条任务、取消一场会同一个位置。
- *
- * 它以前只有一行加一个 ⋯ 菜单，于是 Rename 和 Delete 都住在菜单里 —— 全 app 唯一一个「在下拉
- * 菜单里改内容」的地方。现在它有自己的一层，菜单只留下「不用打开它就能做的事」。
- */
-test('删一条读物在它那一层的最底下，先问一次', async ({ page }) => {
+test('a reading item is deleted from the bottom of its layer, after one question', async ({
+  page,
+}) => {
   await registerFreshUser(page)
   await page.request.post('/api/v1/reading', {
     headers: WEB,
@@ -212,7 +208,7 @@ test('删一条读物在它那一层的最底下，先问一次', async ({ page 
   const deletes: string[] = []
   page.on('request', (r) => r.method() === 'DELETE' && deletes.push(r.url()))
 
-  // 菜单里没有改内容的东西了。
+  // The row menu keeps only what can be done without opening the item.
   await rowOf(page, '设计心理学')
     .getByRole('button', { name: /More for/ })
     .click()
@@ -226,7 +222,7 @@ test('删一条读物在它那一层的最底下，先问一次', async ({ page 
   await expect(page).toHaveURL(new RegExp('/reading/[0-9a-f-]{36}$'))
 
   const remove = layer.getByRole('button', { name: 'Delete item' })
-  // 最后一个东西：Linked 在它上面。
+  // The last thing in the layer: Linked is above it.
   const [box, linked] = await Promise.all([
     remove.boundingBox(),
     layer.getByText('Linked', { exact: true }).boundingBox(),
@@ -242,7 +238,7 @@ test('删一条读物在它那一层的最底下，先问一次', async ({ page 
   expect(deletes).toHaveLength(1)
 })
 
-test('一条读物在它那一层里改，不在下拉菜单里改', async ({ page }) => {
+test('a reading item is edited in its layer, not in a dropdown menu', async ({ page }) => {
   await registerFreshUser(page)
   await page.request.post('/api/v1/reading', {
     headers: WEB,
@@ -250,8 +246,7 @@ test('一条读物在它那一层里改，不在下拉菜单里改', async ({ pa
   })
   await page.goto('/reading')
 
-  // 标题那一行是去读它的链接（点它会开新标签页），所以这里点的是行上别的地方 —— 打开那一层
-  // 是整行的事，这正是两个目标分开的意思。
+  // The title is the link that opens the article in a new tab; the rest of the row opens the layer.
   await rowOf(page, 'linear.invalid/now/how-we-redesigned-issues')
     .getByText(/^Added/)
     .click()

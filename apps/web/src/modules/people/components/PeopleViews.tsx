@@ -9,11 +9,7 @@ import { HANG } from '../../../platform/ui/hang'
 
 const BIRTHDAYS = '/people/birthdays'
 
-/**
- * THE HEAD BOTH VIEWS OF PEOPLE SHARE: the name, the one way to write somebody down properly, and
- * the tabs. It is one component so that switching views moves nothing above the tabs; what only
- * one view has (Birthdays' find box) sits in that view, under them.
- */
+/** The head both people views share, so switching views moves nothing above the tabs. */
 export function PeopleHead() {
   const navigate = useNavigate()
   const [making, setMaking] = useState(false)
@@ -21,9 +17,7 @@ export function PeopleHead() {
     <>
       <div className="flex items-center justify-between gap-3">
         <PageHead hang>People</PageHead>
-        {/* Secondary, because All people also has the quicker way in: the box under the tabs
-            takes a name when a name is all you have. This opens the form for when you already
-            know where they work and how to reach them. */}
+        {/* Secondary: the box under the tabs is the quicker way in when a name is all you have. */}
         <button type="button" onClick={() => setMaking(true)} className={BUTTON.secondary}>
           New person
         </button>
@@ -42,13 +36,7 @@ export function PeopleHead() {
   )
 }
 
-/**
- * THE TWO VIEWS OF PEOPLE, under the page heading.
- *
- * Birthdays looks at people through their dates and makes nobody, so it is a view of this kind and
- * not a kind of its own: a tab here rather than a row in the rail. Links, because each view has an
- * address a bookmark can land on.
- */
+/** Birthdays is a view of people, so it is a tab here; links, so each view has an address. */
 function PeopleViews() {
   const onBirthdays = useLocation().pathname.startsWith(BIRTHDAYS)
   const tab = (current: boolean) =>
@@ -78,7 +66,6 @@ function PeopleViews() {
   )
 }
 
-/** How many birthdays the next week holds. Shares the Birthdays page's cache entry. */
 function BirthdayCount() {
   const view = useQuery(birthdaysQuery())
   const count = view.data?.coming.length ?? 0

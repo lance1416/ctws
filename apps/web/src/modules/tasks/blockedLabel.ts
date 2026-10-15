@@ -1,7 +1,4 @@
-/**
- * "Blocked by “<task>”" -- what a row waits for, in one phrase. Names the first and counts the
- * rest: the usual case is one, and naming it answers the question without opening the pane.
- */
+/** "Blocked by “<task>” and 2 more": names the first blocker and counts the rest. */
 export function blockedLabel(
   blockers: readonly { id: string; title: string }[] | undefined,
 ): string | null {

@@ -2,7 +2,6 @@ import type { City } from '@ctws/contracts'
 import { queryOptions } from '@tanstack/react-query'
 import { apiFetch } from '../../platform/http/api'
 
-/** Cities whose names match `q`. The table is the server's. */
 async function findCities(q: string): Promise<City[]> {
   const res = await apiFetch<{ cities: City[] }>(`/cities?q=${encodeURIComponent(q)}`)
   return res.cities

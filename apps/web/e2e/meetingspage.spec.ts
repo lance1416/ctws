@@ -229,12 +229,7 @@ test('a meeting with a link can be joined from the list', async ({ page }) => {
   await expect(page.getByText('In the room')).toBeVisible()
 })
 
-/**
- * 会议的面板和人的面板长成同一套。
- *
- * 同一个人在同一块屏幕上读这两种东西：字段的标签都在值上面、列数都看这一块自己有多宽、面板右上
- * 角都有一个 ↗ 通往那一页。会议这边以前连去那一页的路都没有 —— 左上角那两个字是个 span。
- */
+/** A meeting pane is laid out like a person's. */
 test('a meeting pane stacks its labels over its values, and has no page to open', async ({
   page,
 }) => {

@@ -13,11 +13,7 @@ import { PickOne } from '../../../platform/ui/inline'
 import { DialogFooter } from '../../../platform/ui/DialogFooter'
 import { Modal } from '../../../platform/ui/Modal'
 
-/**
- * NEW PERSON, filled in once: for when you know more than a name (the one-line box beside it is
- * for when you do not). ONE address, because one is what you have when you write someone down;
- * the rest are added on their pane. It follows the person form's rules for writing one.
- */
+/** New person, for when you know more than a name; one address here, the rest on their pane. */
 export function NewPersonDialog({
   onClose,
   onMade,
@@ -36,8 +32,7 @@ export function NewPersonDialog({
   const address = channels.rows[0]!
   const [projectIds, setProjects] = useState<string[]>([])
   const [circle, setCircle] = useState('')
-  // Folded until asked for: writing someone down is often a name alone, and an open empty date
-  // form reads as bad data.
+  // Folded until asked for: an open, empty date form reads as bad data.
   const [birthday, setBirthday] = useState<{ draft: BirthdayDraft; refused: boolean } | null>(null)
 
   const make = useMutation({
@@ -101,7 +96,6 @@ export function NewPersonDialog({
           />
         </div>
 
-        {/* 同一个编辑器，和他页面上那个是同一套规则：预览、闰月、以及服务端那句拒绝。 */}
         <div>
           <span className={label}>Birthday</span>
           <div className="mt-1.5">
@@ -131,7 +125,6 @@ export function NewPersonDialog({
           </div>
         </div>
 
-        {/* 谁是谁：列表按它分组，而且写下这个人的时候你就知道答案。 */}
         <div>
           <span className={label}>Circle</span>
           <div className="mt-1.5">

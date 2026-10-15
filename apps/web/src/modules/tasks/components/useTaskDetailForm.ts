@@ -11,13 +11,8 @@ import { detailTaskForm, PATCH_KEYS, type DetailTaskForm, type DetailTaskValues 
 export const WRITE_AWAITS = [['tasks']]
 
 /**
- * THE PANE'S EDIT FORM. `react-hook-form` for two things: `isDirty` (the leave guard's question)
- * and `dirtyFields` (the PATCH, read through the contract's own keys). The leave guard itself is
- * not a form concern and stays with the pane.
- *
- * The defaults are read once, at mount: a background refetch of `task` must not make an untouched
- * form look edited. The deadline is held as the instant the contract takes, normalised to the
- * field's minute precision, so an untouched one with seconds is not reported as changed.
+ * The pane's edit form. Defaults are read once, at mount, so a background refetch cannot make an
+ * untouched form look edited. The deadline is cut to the field's minute, so seconds are no edit.
  */
 export function useTaskDetailForm(task: TaskResponse) {
   const timeZone = useTimeZone()
@@ -44,8 +39,8 @@ export function useTaskDetailForm(task: TaskResponse) {
         if (changed.has(key)) Object.assign(patch, { [key]: values[key] })
       }
       if (Object.keys(patch).length > 0) await patchTask(task.id, patch)
-      // Crossing projects is the move endpoint's: it cascades to the subtree and keeps the
-      // invariants a PATCH would not. The old parent is not in the new project.
+      // Crossing projects is the move endpoint's job: it cascades to the subtree. The old parent
+      // is not in the new project.
       if (changed.has('projectId')) {
         await moveTask(task.id, { projectId: values.projectId, parentId: null })
       }

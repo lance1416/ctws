@@ -5,14 +5,8 @@ import { LAYER } from './layers'
 import { MENU_SURFACE } from './menuSurface'
 
 /**
- * A MENU PAINTS OVER WHATEVER OPENED IT.
- *
- * A menu opened inside the detail pane renders into a portal at `<body>`. The pane carries a
- * layer, so a menu with none is painted UNDERNEATH it -- in the DOM, answering clicks, and
- * invisible. A click cannot see that: `elementFromPoint` finds the element and reports it on
- * top whatever the paint order.
- *
- * So the invariant is checked where it is expressed: in the numbers.
+ * A portalled menu with no layer paints under the pane, invisible yet clickable, and
+ * `elementFromPoint` cannot tell. So the numbers are checked.
  */
 const order = (cls: string) => Number(/z-(\d+)/.exec(cls)?.[1] ?? '0')
 
@@ -55,12 +49,8 @@ describe('layers', () => {
 })
 
 /**
- * THE ONE LAYER THAT CANNOT BE SET IN JSX.
- *
- * Radix's popper wrapper makes its own stacking context, so the class on the menu content never
- * competes with a dialog's scrim. The rule that raises the wrapper is in the stylesheet, and the
- * number in it has to be the same one `LAYER.menu` names -- two places, so this holds them
- * together. Without the rule a menu opened inside a dialog is unclickable and closes the dialog.
+ * Radix's popper wrapper is its own stacking context, so its layer is set in the stylesheet.
+ * Without it a menu opened inside a dialog cannot be clicked.
  */
 describe('the popper wrapper is raised in CSS', () => {
   it('carries the same number LAYER.menu names', () => {
@@ -72,13 +62,8 @@ describe('the popper wrapper is raised in CSS', () => {
 })
 
 /**
- * NO NATIVE `<select>` IN THE APP.
- *
- * The OS draws a native select's popup, and it does not know this palette: on Windows in dark
- * mode the list came up white with the page's own light-grey text on it -- unreadable, and
- * nothing in CSS reaches inside it. `PickOne` is the app's picker and it is styled here.
- *
- * Read off the source, because a menu nobody opened in a test leaves no trace in the DOM.
+ * The OS draws a native select's popup and ignores the palette. Read off the source, because an
+ * unopened menu leaves nothing in the DOM.
  */
 describe('the pickers are the app own', () => {
   it('has no native select left in a component', () => {
@@ -87,8 +72,7 @@ describe('the pickers are the app own', () => {
       readdirSync(at, { withFileTypes: true }).flatMap((e) =>
         e.isDirectory() ? walk(join(at, e.name)) : /\.tsx$/.test(e.name) ? [join(at, e.name)] : [],
       )
-    // Comments are stripped first: the prose that records the removal names the thing it
-    // removed, and a guard that cannot tell those apart is answered by rewording a comment.
+    // Comments are stripped first, so one that names `<select>` is not an offender.
     const code = (text: string) =>
       text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ 	]*\/\/.*$/gm, '')
     const offenders = walk(dir).filter((f) => /<select[\s>]/.test(code(readFileSync(f, 'utf8'))))

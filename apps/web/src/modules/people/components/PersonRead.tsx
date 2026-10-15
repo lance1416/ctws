@@ -15,12 +15,10 @@ import { useNoteAutosave } from '../noteAutosave'
 import { usePhone } from '../usePhone'
 
 /**
- * A PERSON, READ: every value is text, and Edit is the one thing to press -- as on a task. The
- * notes are the exception: "Edit notes" opens the writing layer straight away, because a line
- * remembered about someone should not wait on a form about them.
+ * A person, read. Besides Edit, "Edit notes" opens the writing layer at once, so a line about
+ * someone does not wait on a form.
  */
 export function PersonRead({ person, onEdit }: { person: PersonResponse; onEdit: () => void }) {
-  // The phone library, for reading too: a number is grouped here as it is in the list.
   const phone = usePhone()
   const [writing, setWriting] = useState(false)
   // The note alone, waiting on no refetch: the writing layer keeps its own text.
@@ -51,7 +49,6 @@ export function PersonRead({ person, onEdit }: { person: PersonResponse; onEdit:
         </button>
       </div>
 
-      {/* How to reach them first: it is what a person's page is for. */}
       {person.channels.length > 0 && (
         <Field label="Person" shape="above">
           <ul data-channels className="flex flex-col gap-0.5">
@@ -60,7 +57,6 @@ export function PersonRead({ person, onEdit }: { person: PersonResponse; onEdit:
                 <span className="w-12 shrink-0 text-xs text-ink-muted">{KIND_LABEL[c.kind]}</span>
                 <a
                   href={channelHref(c.kind, c.value)!}
-                  // A number is read and checked, so its digits line up.
                   className={`min-w-0 flex-1 truncate text-sm ${LINK} ${
                     c.kind === 'phone' ? 'tabular-nums' : ''
                   }`}
@@ -74,8 +70,7 @@ export function PersonRead({ person, onEdit }: { person: PersonResponse; onEdit:
         </Field>
       )}
 
-      {/* The rest, one thing a cell; the columns follow this block's own width (`@container`),
-          since the pane is narrow whatever the window is. */}
+      {/* Columns follow this block's own width, since the pane is narrow whatever the window. */}
       <div className="@container">
         <div
           data-person-fields
@@ -108,7 +103,6 @@ export function PersonRead({ person, onEdit }: { person: PersonResponse; onEdit:
         </div>
       </div>
 
-      {/* The notes, through the task notes' Markdown and at their 68ch measure. */}
       <div>
         <div className="flex items-center gap-2">
           <span className="flex-1 text-xs text-ink-muted">Notes</span>
@@ -145,7 +139,6 @@ export function PersonRead({ person, onEdit }: { person: PersonResponse; onEdit:
   )
 }
 
-/** A read-only field: an empty one says Not set, like every other empty cell. */
 function Reads({ label, value }: { label: string; value: string | null }) {
   return (
     <Field label={label} shape="above">

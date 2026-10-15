@@ -2,16 +2,13 @@ import type { TaskStatus } from '@ctws/contracts'
 import { isFinished, STATUS_LABEL } from '../status'
 
 /**
- * A task's status, by SHAPE, never by hue (WCAG 1.4.1): a hollow ring not started, half filled in
- * progress, a disc with a check done, dashed for backlog, struck for cancelled. 20px at a 2px
- * stroke; a live task in full ink, a settled one muted. The parts are always drawn and fade or
- * scale in, so a change is a transition, not a remount.
+ * A task's status by shape, never by hue alone. Every part is always drawn and fades or scales in,
+ * so a change is a transition, not a remount.
  */
 export function StatusMark({ status }: { status: TaskStatus }) {
   const half = status === 'in_progress'
   const solid = status === 'done'
-  // Every task that is still open draws at full strength; only a settled one recedes. An open
-  // task is the thing the list exists to show, and backlog is open -- untriaged, not done.
+  // Only a settled task recedes; backlog is still open.
   const live = !isFinished(status)
   return (
     <svg

@@ -7,15 +7,8 @@ import { BODY_GUTTER, ProjectRail } from '../rows/RowParts'
 import { HANG } from '../../platform/ui/hang'
 
 /**
- * THINGS: every kind of thing, one row each.
- *
- * This is where the kinds live instead of the rail. The rail would otherwise grow by a row with
- * every kind added until it stopped being scannable; here a new kind is one more row on a page
- * that is about nothing else. A kind with nothing in it is listed all the same, because a kind
- * hidden until it has content is a kind nobody learns they have.
- *
- * On the app's row: the key that goes there in the margin, a thread in the hairline's colour (a
- * kind is no line of work), and the body -- the name, how many, and what is current -- one link.
+ * Every kind of thing, one row each with its `g` key in the margin. Empty kinds are listed too,
+ * or nobody would learn they exist.
  */
 export function Things() {
   useCrumbs([{ label: 'Things' }])

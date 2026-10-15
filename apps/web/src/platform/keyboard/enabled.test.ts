@@ -33,8 +33,8 @@ describe('shortcut enable setting', () => {
     fakeWindow()
     setShortcutsEnabled(false)
     expect(shortcutsEnabled()).toBe(false)
-    // Asserting the stored string, not just the getter: a getter that cached in a module variable
-    // would pass a read-back test and still come up enabled after a reload.
+    // The stored string, not just the getter: a getter that cached in memory would pass and still
+    // come up enabled after a reload.
     expect(store.get('ctws.shortcuts.enabled')).toBe('0')
   })
 

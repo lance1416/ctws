@@ -4,10 +4,7 @@ import { describe, expect, it } from 'vitest'
 import type { WorkspaceModule } from './contract'
 import { buildRegistry, useRegistry, type ShellConfig } from './registry'
 
-/**
- * The seam, exercised with modules that do not exist: one real module cannot show that a second
- * would be picked up, so these feed in a notes module and a files module.
- */
+/** Fake notes and files modules: one real module could not show that a second is picked up. */
 const NotesOnProject = () => null
 const NotesProjectNumbers = () => null
 const NotesFacts = () => null

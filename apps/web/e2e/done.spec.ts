@@ -208,12 +208,7 @@ test('deleting a task from Done leaves focus on the list, not the page', async (
 
 // ------------------------------------------------------------------------------ task deletion
 
-/**
- * 打开一行的详情，停在阅读态。
- *
- * 删除住在阅读态的最底下（和删一个人、取消一场会同一个位置），所以这里不再按 Edit —— 那一节
- * 讲的是「未保存的改动」那条守卫，它自己会进编辑态。
- */
+/** Opens a row's panel in reading mode, where Delete lives; the unsaved-edit tests press Edit. */
 async function openPanel(page: Page, title: string) {
   await page.getByRole('listitem').filter({ hasText: title }).first().click()
   await expect(page.getByRole('dialog')).toBeVisible()
@@ -421,13 +416,8 @@ test('pressing Save and then a nav link at once is not mistaken for losing edits
     .toBe('写方案 v2')
 })
 
-/**
- * 删一个任务在阅读态里就看得见，和删一个人、取消一场会同一个位置。
- *
- * 以前它藏在编辑态的表底：不先按 Edit 就找不到删除，而删除根本不是「改一个字段」的同类。全 app
- * 统一成一条：毁掉这一个东西的动作在它那个面的最底、阅读态、危险色、问一次。
- */
-test('删除在阅读态就在那儿，而且是面里最后一个东西', async ({ page }) => {
+/** Delete is at the bottom of reading mode, where it is for a person or a meeting too. */
+test('Delete is there in reading mode, and it is the last thing in the panel', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '写迁移')
@@ -436,12 +426,12 @@ test('删除在阅读态就在那儿，而且是面里最后一个东西', async
   const pane = page.getByRole('dialog')
   await expect(pane).toBeVisible()
 
-  // 没按 Edit：删除就在那儿。
+  // Without pressing Edit, Delete is already there.
   const remove = pane.getByRole('button', { name: 'Delete task' })
   await expect(remove).toBeVisible()
   await expect(pane.getByRole('button', { name: 'Save' })).toHaveCount(0)
 
-  // 而且是最后一个：它下面没有别的控件可以划过去碰到。
+  // And it is last: no other control below it to hit by accident.
   const [box, notes] = await Promise.all([
     remove.boundingBox(),
     pane.getByText('Notes', { exact: true }).boundingBox(),

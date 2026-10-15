@@ -8,15 +8,11 @@ import type {
 } from '@ctws/contracts'
 import { apiFetch } from '../../../platform/http/api'
 
-/**
- * A project's flat task list AND its rollups, which the endpoint returns side by side. They are
- * kept together in one cache entry because they are one answer about one moment: a list whose
- * numbers came from a different fetch could disagree with itself.
- */
+/** The list and its rollups share one cache entry, so the numbers always match the rows. */
 export type ProjectTasks = {
   tasks: TaskResponse[]
   rollups: Record<string, RollupResponse>
-  /** Keyed by the WAITING task's id; only what is still in the way. */
+  /** Keyed by the waiting task's id; only what is still in the way. */
   blockers: Record<string, DependencyRef[]>
 }
 
@@ -32,7 +28,7 @@ export function taskDependencies(
   return apiFetch(`/tasks/${id}/dependencies`)
 }
 
-/** `id` is the task that WAITS; `blockerId` is what it waits for. */
+/** `id` is the task that waits; `blockerId` is what it waits for. */
 export function addDependency(id: string, blockerId: string): Promise<void> {
   return apiFetch(`/tasks/${id}/dependencies`, {
     method: 'POST',
@@ -44,13 +40,7 @@ export function removeDependency(id: string, blockerId: string): Promise<void> {
   return apiFetch(`/tasks/${id}/dependencies/${blockerId}`, { method: 'DELETE' })
 }
 
-/**
- * `status` is omitted rather than defaulted here: the contract defaults it to `backlog`, which is
- * what capturing a line costs nothing means, and the New task dialog is the one caller that has an
- * opinion about it. The input type is the contract's own, so every field the server accepts at
- * creation -- status, the two dates, the notes -- can be written in ONE request instead of a POST
- * followed by a PATCH.
- */
+/** Without a `status` the server files the task under `backlog`. */
 export type NewTask = Omit<CreateTaskBody, 'status'> & { status?: CreateTaskBody['status'] }
 
 export function createTask(body: NewTask): Promise<TaskResponse> {

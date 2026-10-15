@@ -15,27 +15,11 @@ import { useNow } from '../../platform/time/useNow'
 import { PageHead } from '../../platform/ui/PageHead'
 
 /**
- * THE CALENDAR -- a SHELL SURFACE, and the first one that is about every module at once.
- *
- * A LENS, not a place things live. It answers what is on this month by laying every module's dated
- * things on one grid; it owns none of them, and it is not where any of them is made. In a calendar
- * app an event is the only entity, so a "+" on the day square is the obvious way to make one; here
- * a meeting has its own page and a deadline is a property of a task, so making anything from the
- * grid would be a lens claiming a kind of thing.
- *
- * The shell draws the grid; each module says what it has on which day. The shell does not know
- * what a deadline is, nor how it differs from a day you mean to finish something: a module hands
- * over entries that already carry their day and their own word for the date, and both are shown
- * as given.
- *
- * WHAT IT DOES NOT DO, deliberately: no drag to reschedule (dragging a deadline and dragging a
- * plan are not the same act, and that has to be decided before it can be built), no week view, no
- * time axis (this app has no concept of a time slot -- a task has a day and a deadline instant),
- * no ics export. Each of those is a real feature, and none is needed to answer what is on which
- * day this month.
+ * Every module's dated things on one month grid, each entry with the day and wording its module
+ * gave it. Nothing is made here: a meeting has its own page and a deadline belongs to a task.
  */
 
-/** How many entries a square shows before it says "+N". Three fits without scrolling. */
+/** Entries a square shows before it says "+N"; three fit without scrolling. */
 const PER_SQUARE = 3
 
 export function Calendar() {
@@ -43,7 +27,6 @@ export function Calendar() {
   const timeZone = useTimeZone()
   const today = todayIn(timeZone, useNow())
   const [cursor, setCursor] = useState(today)
-  /** Which entry is open, and whose it is -- the module renders it, the shell only remembers. */
   const [open, setOpen] = useState<{ moduleId: string; id: string } | null>(null)
   const [params, setParams] = useSearchParams()
   const rail = useProjectRail()
@@ -51,17 +34,10 @@ export function Calendar() {
 
   const providers = useRegistry().calendar
   const range = monthRange(cursor)
-  /**
-   * WHAT EACH DAY IS CALLED IN THE OLD CALENDAR. One request per month, from the shell's own
-   * endpoint: a day's name belongs to the day, not to whichever module put something on it. A
-   * square whose label has not arrived (or failed) simply has no label, and is still a square.
-   */
+  // Each day's lunar-calendar name; a square whose name failed to load simply has none.
   const lunar = useQuery(calendarDaysQuery(range))
-  // ONE HOOK PER REGISTERED MODULE, over the registry's frozen list -- the same rule the capture
-  // box and the rail counts follow.
+  // One hook per registered module; the registry's list is fixed, so the hook order is too.
   const results = providers.map((p) => ({ moduleId: p.moduleId, ...p.useEntries(range) }))
-  // All, plus one tab per module. A single module would mean a tab bar that decides nothing, so
-  // it is drawn only when there is a choice to make -- the same rule the project blocks keep.
   const views = [
     { id: 'all', label: 'All' },
     ...providers.map((p) => ({ id: p.moduleId, label: p.label })),
@@ -86,9 +62,7 @@ export function Calendar() {
       else byDay.set(entry.day, [placed])
     }
   }
-  // Inside a square: the things with a clock first and in clock order, then the things that are
-  // only about the day. A 14:00 meeting under a “Due” would be a square sorted by which module
-  // answered first.
+  // Timed entries first, in clock order; '99' puts the untimed ones after them.
   for (const list of byDay.values()) {
     list.sort(
       (a, b) => (a.time ?? '99').localeCompare(b.time ?? '99') || a.title.localeCompare(b.title),
@@ -97,12 +71,8 @@ export function Calendar() {
 
   const squares = monthSquares(cursor)
 
-  /**
-   * THE KEY: each project whose colour is on the grid, named once. A square has no room for a
-   * project's name, so without it an entry's mark would be the only sign of its project (WCAG
-   * 1.4.1). Only what is DRAWN counts -- an entry folded into "+N" puts no colour on the grid --
-   * and the order is the rail's, so a project sits where it always does.
-   */
+  // The key names each project whose colour is drawn, so the colour is never the only sign of it.
+  // An entry folded into "+N" draws none; the order is the rail's.
   const order = new Map(projects.data?.map((p, i) => [p.id, i]))
   const keyed = new Map<string, string>()
   for (const { day } of squares)
@@ -187,12 +157,7 @@ export function Calendar() {
                 >
                   {Number(day.slice(8))}
                   {lunar.data?.[day] && (
-                    <span
-                      data-lunar-day
-                      // On the scale's caption step, in the tertiary ink whole: an out-of-month
-                      // square already sits on the desk, which is what says "not this month".
-                      className="ml-1.5 text-xs text-ink-subtle"
-                    >
+                    <span data-lunar-day className="ml-1.5 text-xs text-ink-subtle">
                       {lunar.data[day]}
                     </span>
                   )}
@@ -207,16 +172,10 @@ export function Calendar() {
                           (p) => p.moduleId === entry.moduleId && p.Detail !== undefined,
                         )}
                       >
-                        {/* The project's identity colour. A calendar is cross-project by nature,
-                            which is exactly where this chip earns its place -- and it is never
-                            alone: the key above the grid names it (WCAG 1.4.1). */}
-                        {/* The slot is reserved whether or not the entry has a project, so every
-                            title in a square starts at the same x -- the rule the task rows keep
-                            about their leading glyph. */}
+                        {/* Kept with no project too, so every title starts at one x. */}
                         <span
                           aria-hidden="true"
                           data-entry-mark
-                          // Square: the thread's shape, the project's colour. Round is for markers.
                           className={`h-3 w-[3px] shrink-0 ${
                             entry.projectId ? rail(entry.projectId) : ''
                           }`}
@@ -230,8 +189,7 @@ export function Calendar() {
                         {entry.projectName && (
                           <span className="sr-only">, {entry.projectName}</span>
                         )}
-                        {/* The zone it was AGREED in, when that is not the one the clock above is
-                            in. The time says when to turn up; this says what was actually said. */}
+                        {/* The zone it was agreed in, when that differs from the account's. */}
                         {entry.zone && (
                           <span className="shrink-0 text-xs text-ink-subtle">{entry.zone}</span>
                         )}
@@ -257,11 +215,7 @@ export function Calendar() {
   )
 }
 
-/**
- * An entry on the grid: a BUTTON when its module opens it here, a LINK when the thing belongs
- * somewhere else. A deadline is a property of a task and the task's list is where you deal with
- * it; a meeting has nowhere else to be.
- */
+/** A button when the entry's module opens it here, a link when the thing lives elsewhere. */
 function EntryLink({
   entry,
   opens,
@@ -273,8 +227,6 @@ function EntryLink({
   onOpen: () => void
   children: ReactNode
 }) {
-  // The project by name, beside the colour the entry wears (WCAG 1.4.1): in the tooltip, and
-  // in the entry's own name, which a square has no room to print.
   const title = [entry.kind, entry.title, entry.projectName].filter(Boolean).join(' · ')
   const className =
     'flex w-full min-w-0 items-center gap-1 rounded-md px-1 py-0.5 text-left hover:bg-hover'
@@ -303,7 +255,6 @@ function Step({
       type="button"
       aria-label={label}
       onClick={onClick}
-      // The control shape Review's week stepper has: one stepper, one look across the app.
       className="flex h-8 min-w-8 items-center justify-center rounded-md px-2 text-sm text-ink-muted hover:bg-hover hover:text-ink"
     >
       {children}

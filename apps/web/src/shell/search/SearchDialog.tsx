@@ -12,7 +12,6 @@ import { BUTTON } from '../../platform/ui/buttonStyles'
 /** Long enough that typing a word does not fire a request per letter, short enough to feel live. */
 const DEBOUNCE_MS = 150
 
-/** One row of the list, whatever it is: a recent thing, a place, or a module's hit. */
 type Row = {
   key: string
   to: string
@@ -29,11 +28,7 @@ type Row = {
 
 const GROUP_LABEL: Partial<Record<Row['group'], string>> = { recent: 'Recent', place: 'Go to' }
 
-/**
- * EVERY PLACE: the pinned pages, Things, and every kind. With no row per kind in the rail this is
- * one of the two ways to a kind's page that skip Things -- the other being its `g` key, which is
- * shown here so it is learned by being seen.
- */
+/** The pinned pages, Things and every kind, each showing its `g` key so the key is learned. */
 function places(registry: Registry): Row[] {
   const keys = new Map(registry.chords.map((c) => [c.id, c.key]))
   const all = [
@@ -49,32 +44,8 @@ function places(registry: Registry): Row[] {
 }
 
 /**
- * FEDERATED search. Reached with `f` from anywhere, or the Search button in the header.
- *
- * Every module that can be searched contributes a provider and the dialog merges their answers
- * answers. With one module registered the list is exactly the task list it always was, and no row
- * says which module it came from -- there is only one, so a module name would be noise. From two
- * providers on, every row carries its module as TEXT, never as a colour (WCAG 1.4.1, the rule the
- * redesign follows).
- *
- * Where a hit goes is the module's business; the dialog only lays the pieces out, so results from
- * two modules line up in one list instead of each bringing their own row design.
- *
- * WHY THE COMBOBOX IS WRITTEN OUT HERE AND NOT `downshift`'S. The gap this dialog had was a
- * SEMANTICS gap, not a logic gap: no `role="combobox"`, no `aria-expanded`, no
- * `aria-activedescendant`, and results that were buttons instead of options. Those are attributes,
- * and the only state behind them is `at` -- one `Math.min` that keeps the highlight inside a result
- * set that may have shrunk. `useCombobox` would supply the same attributes and that same clamp, and
- * in exchange would take ownership of this input's keydown pipeline: the `Ctrl+N` / `Ctrl+P` pair
- * (not part of any pattern, so it would stay hand-written, only moved into a `stateReducer`), and
- * Escape -- which here must reach the Radix `Dialog` that phase 1 put this layer in and close the
- * whole thing, not merely collapse a menu. Buying twelve attributes and a `Math.min` by handing a
- * library the one seam the dialog's pinned behaviour runs through is not a good trade. It is also
- * the proportion this repo already applies elsewhere, where 27 lines of ranking and six lines of
- * hashing were kept for the same reason.
- *
- * Reverse it if the list grows what a library really does buy: grouped sections, inline
- * autocompletion of the box, or selection that must survive re-sorting. None of those exist here.
+ * Federated search, opened with `f` or the header's Search button. The combobox is written out
+ * rather than taken from a library so Escape reaches the dialog and closes the whole thing.
  */
 export function SearchDialog({ onClose }: { onClose: () => void }) {
   const composing = useComposing()
@@ -84,11 +55,6 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate()
   const list = useRef<HTMLUListElement>(null)
   const box = useRef<HTMLInputElement>(null)
-  /**
-   * The ids the ARIA 1.2 combobox pattern is built out of. `useId` rather than a literal, because
-   * two of these dialogs on one page would otherwise point `aria-activedescendant` at each other's
-   * options -- and an id that is wrong is worse than one that is missing.
-   */
   const base = useId()
   const listId = `${base}-results`
   const optionId = (i: number) => `${base}-option-${i}`
@@ -110,12 +76,10 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
   const userId = useMe().data?.id
   const [recent] = useState(() => (userId ? recentList(userId) : []))
   const everywhere = useMemo(() => places(registry), [registry])
-  // PLACES FOLLOW THE TYPING AT ONCE; only the modules' hits wait for the debounce. Otherwise an
-  // Enter pressed before the debounce fires chooses from the list as it was before the typing.
+  // Places follow the typing at once and only module hits wait for the debounce, so an early
+  // Enter does not choose from the list as it was before the typing.
   const typing = query.trim()
   const typed = typing.toLocaleLowerCase()
-  // BEFORE TYPING: what was opened lately, then every place. WHILE TYPING: the places whose name
-  // matches, then every module's hits.
   const rows: Row[] =
     typing.length === 0
       ? [
@@ -134,8 +98,6 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
             key: `${hit.moduleId}:${hit.id}`,
             to: hit.to,
             title: hit.title,
-            // The same breadcrumb the today and completed lists show, prefixed by the module it
-            // came from once there is more than one module to tell apart.
             meta: (
               <>
                 {results.showModule && `${hit.moduleLabel} · `}
@@ -162,44 +124,14 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    /**
-     * THE MODAL LAYER IS RADIX'S (`Modal`), never hand-built. `role="dialog" aria-modal="true"`
-     * with Escape, press-outside and focus restoration but no Tab handling promises assistive
-     * technology that the rest of the page is unreachable while the keyboard walks straight into
-     * the task tree underneath -- AT reads focus as being inside the dialog while it is in fact
-     * on a row nobody can see. Radix's `FocusScope` is the trap that claim needs.
-     *
-     * `initialFocus`, not `autoFocus`: Radix moves focus itself when the layer opens, and the
-     * first tabbable thing in the panel is the header's Close -- the box is what is being typed
-     * into, so it is named explicitly.
-     *
-     * “Search” and not “Search tasks”: this is a SHELL surface and it merges every module's hits,
-     * so naming it after one module would be the shell knowing a module by name. The placeholder
-     * names no fields for the same reason: a title and notes are a task's fields, and a book has
-     * neither.
-     */
+    // `initialFocus`, not `autoFocus`: Radix moves focus itself on open, and would land on Close.
     <Modal title="Search" onClose={onClose} initialFocus={box}>
       <div className="border-b border-rule px-4 py-3">
-        {/**
-         * THE ARIA 1.2 COMBOBOX CONTRACT. Without these five attributes the selection the keyboard
-         * really has was invisible to a screen reader: the box was a bare `<input aria-label>`, the
-         * results a plain `<ul>` of `<button aria-current>`, so ArrowDown moved a highlight that was
-         * announced as nothing at all -- no "list, 7 items", no "2 of 7", no title read out. The
-         * sighted keyboard user and the screen-reader user were being told different things about the
-         * same control, which is the same shape of defect as an `aria-modal` with no focus trap.
-         *
-         * `aria-activedescendant` and NOT DOM focus: that is the pattern's whole point. Focus stays
-         * in the box so typing keeps working while the highlight walks the list -- which is also why
-         * the options below are not buttons any more. They were tab stops, so a seven-result search
-         * put seven stops between the box and Close.
-         */}
         <input
           ref={box}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           role="combobox"
-          // The listbox exists whenever there is something in it; `aria-expanded` is the reader's
-          // only way to know that, since nothing moves focus when results appear.
           aria-expanded={rows.length > 0}
           aria-controls={listId}
           aria-autocomplete="list"
@@ -234,8 +166,6 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
           <p className="text-sm text-ink">Nothing matches</p>
           <button
             type="button"
-            // The one action here is to search for something else, so this does the clearing and
-            // puts the cursor back in the box rather than making the reader do both.
             onClick={() => {
               setQuery('')
               box.current?.focus()
@@ -246,11 +176,8 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
           </button>
         </div>
       )}
-      {/* `role="listbox"` on the list and `role="option"` on each row, which is what makes
-          `aria-activedescendant` above mean anything: an id pointing at an element with no `option`
-          role names nothing a reader can place in a list. The rows are `<li>`s and not buttons on
-          purpose -- in this pattern the keyboard reaches them through the box, and a focusable
-          option contradicts both `aria-activedescendant` and the one-tab-stop shape of the dialog. */}
+      {/* The options are not buttons: focus stays in the box, and `aria-activedescendant` walks
+          the list without adding a tab stop per result. */}
       <ul
         ref={list}
         id={listId}
@@ -271,8 +198,6 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
           ))
           const label = GROUP_LABEL[run.group]
           if (!label) return options
-          // APG's grouped listbox: a named group, so "Recent" and "Go to" are announced, and the
-          // keyboard still walks only the options.
           const heading = `${base}-${run.group}`
           return (
             <li key={run.group} role="presentation">
@@ -320,14 +245,10 @@ function SearchRow({
         id={id}
         role="option"
         data-search-result={row.hit}
-        // `aria-selected`, not `aria-current`: in a listbox the selected option is what
-        // `aria-selected` says, and it is the attribute `aria-activedescendant` is read with.
         aria-selected={selected}
         onClick={onChoose}
         onMouseEnter={onHover}
-        // Same anatomy as the lists, less the margin: the project's thread, then the marker and
-        // the title at a fixed x. A row with no project keeps the thread's 3px, so every marker
-        // lands at one x.
+        // A row with no rail keeps the rail's 3px, so every marker lands at one x.
         className={`relative flex w-full cursor-pointer items-start gap-2 py-2 pr-4 pl-2 text-left ${
           selected ? 'bg-hover' : ''
         }`}

@@ -7,11 +7,8 @@ import type { FlatRow } from '../../tree/flatten'
 import { MAX_DEPTH } from '../../tree/drop'
 
 /**
- * THE INLINE NEW ROW: where it shows (the end of a parent's children, which is where the server
- * appends), what it creates, and where focus goes when it is cancelled.
- *
- * Its failure is said next to the input (`error`); a refusal that has no row to sit beside --
- * too deep -- goes to the tree's banner through `onRefuse`.
+ * The inline new row, at the end of a parent's children, where the server appends. A refusal with
+ * no row to sit beside goes to the tree's banner through `onRefuse`.
  */
 export function useInlineAdd({
   projectId,

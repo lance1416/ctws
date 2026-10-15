@@ -28,15 +28,9 @@ import { useNow } from '../../../platform/time/useNow'
 const TOP_LEVEL = '__top'
 
 /**
- * NEW TASK: a task created with its details, in one request (the create contract takes status,
- * dates and notes, so no half-made task ever exists). Beside the one-line boxes, not instead of
- * them: this is for the task whose shape you already know.
- *
- * `⌘↵` / `Ctrl+↵` creates and STAYS: the title clears and takes focus, and everything else --
- * project, parent, status, dates, notes -- is kept, being what the next few tasks share. The form's
- * values are the contract's shape and the resolver is the only judge of them.
+ * A task created with its details in one request. `⌘↵` creates and stays: the title clears and
+ * takes focus, and everything else is kept for the next task.
  */
-
 export function CreateTaskDialog({
   projectId,
   onClose,
@@ -50,8 +44,8 @@ export function CreateTaskDialog({
   const timeZone = useTimeZone()
   const todayYmd = todayIn(timeZone, useNow())
 
-  // The deadline is chosen as a named day and held as the instant the contract takes: the end of
-  // that day, as in the pane. The exact minute belongs in the pane.
+  // The deadline is picked as a named day and held as the end of that day, the instant the
+  // contract takes.
   const {
     register,
     handleSubmit,
@@ -76,20 +70,12 @@ export function CreateTaskDialog({
   const dueAt = watch('dueAt')
 
   const projects = useProjects()
-  // The chosen project's tasks, for the parent picker. Shares the cache entry the tree filled on
-  // this page, so opening the dialog on the project you are looking at costs no request.
   const tasks = useQuery(projectTasksQuery(project))
 
-  /** Which named day the held instant IS, so the buttons can say which one is pressed. */
+  /** Which named day the held instant is, so the buttons can say which one is pressed. */
   const dueDay = dueAt ? ymd(new Date(dueAt), timeZone) : ''
 
-  /**
-   * The candidate parents, in the tree's own order and indented like it. Nothing is collapsed
-   * here: a collapse is a reading state of the tree, not a fact about where a task may go.
-   *
-   * Depth 10 is the API's limit, so a task already at it cannot take a child -- offering it would
-   * be offering a 409. The tree's inline add refuses the same thing in the same place.
-   */
+  /** The candidate parents in tree order, none collapsed and none already at the depth limit. */
   const parents = flatten(tasks.data?.tasks ?? [], new Set()).flatMap((row) => {
     if (row.depth >= MAX_DEPTH) return []
     const task = tasks.data?.tasks.find((t) => t.id === row.id)
@@ -101,14 +87,7 @@ export function CreateTaskDialog({
     meta: { awaits: [projectTasksQuery(project).queryKey] },
   })
 
-  /**
-   * `stay` is the `⌘↵` route: create, keep the layer, clear the title and go back to it.
-   *
-   * `handleSubmit` is what refuses an invalid form, and it refuses BOTH routes -- the press and the
-   * chord -- because both go through it. It also moves focus to the first field it refused
-   * (`shouldFocusError`, on by default), which is the behaviour the hand-written rule had to spell
-   * out with a ref.
-   */
+  /** `stay` is the `⌘↵` route. `handleSubmit` refuses an invalid form on both routes. */
   const submit = (stay: boolean) =>
     handleSubmit((values) => {
       if (create.isPending) return
@@ -121,8 +100,7 @@ export function CreateTaskDialog({
       })
     })
 
-  // register returns the ref the library needs; the dialog needs its own, both for `Modal`'s
-  // `initialFocus` and to go back to the field after a ⌘↵. Both get it.
+  // The dialog needs its own ref too, for `initialFocus` and for ⌘↵; both get the element.
   const { ref: registerTitle, ...titleRest } = register('title')
 
   const problem = titleProblem(errors.title?.type as string | undefined)
@@ -132,8 +110,7 @@ export function CreateTaskDialog({
       title="New task"
       onClose={onClose}
       initialFocus={titleField}
-      // The footer already carries Cancel; a second dismiss in the header would be a third way
-      // to leave one small form.
+      // The footer already carries Cancel.
       dismissLabel={null}
     >
       <form
@@ -146,21 +123,15 @@ export function CreateTaskDialog({
           // isComposing: Enter confirms an IME candidate, it must not submit half a word.
           if (e.key !== 'Enter' || composing.composingNow(e)) return
           if (!e.metaKey && !e.ctrlKey) return
-          // Caught here rather than on the title field so it works from the notes textarea too,
-          // where a plain Enter is a newline and `⌘↵` is the only way to commit without reaching
-          // for the mouse.
+          // Caught on the form so it also works from the notes, where a plain Enter is a newline.
           e.preventDefault()
           void submit(true)()
         }}
         className="flex flex-col gap-5 px-5 py-4"
       >
-        {/* The dialog opens with the TASK, in the detail pane's order: where it lives, then what
-            it is called. The chip is never alone -- the project's NAME is in the control beside
-            it (WCAG 1.4.1). */}
+        {/* The project's name sits beside its chip, so the colour is never the only signal. */}
         <div>
-          {/* The app's own picker, not a native `<select>`: the OS draws that popup and does
-              not know this palette -- on Windows it came up white with the page's light-grey text
-              on it, which is unreadable. */}
+          {/* Not a native `<select>`: the OS draws that popup and ignores this palette. */}
           <PickOne
             label="Projects"
             value={project}
@@ -195,8 +166,7 @@ export function CreateTaskDialog({
             <PickOne
               label="Put it under"
               value={parentId ?? TOP_LEVEL}
-              /* Indented with figure spaces: the shape of the tree has to be in the text, which
-                 is all one row of a picker renders. */
+              /* Indented with figure spaces: a picker row renders text only. */
               choices={[
                 { value: TOP_LEVEL, label: 'Top level' },
                 ...parents.map((p) => ({
@@ -211,8 +181,7 @@ export function CreateTaskDialog({
 
         <StatusRadios id="create" field={register('status')} />
 
-        {/* Named days only, no exact field: the dialog is the fast way in. Each button is a STATE
-            here (`pressed`), since nothing has been sent yet and the choice must be seen. */}
+        {/* Named days only. Each button shows a pressed state, since nothing is sent yet. */}
         <DateDecisions
           kind="due"
           today={todayYmd}
@@ -230,18 +199,16 @@ export function CreateTaskDialog({
           echo={scheduledOn ? dayPhrase(scheduledOn, todayYmd) : null}
         />
 
-        {/* `htmlFor` rather than a wrapping label, for the reason the detail pane records: React
-            writes a textarea's value into the element's text, so a wrapping label's name would be
-            “Notes” plus whatever had been typed. */}
+        {/* `htmlFor`, not a wrapping label: React writes a textarea's value into its text, which
+            a wrapping label would add to its name. */}
         <div>
           <label htmlFor="create-notes" className={label}>
             Notes
           </label>
           <textarea
             id="create-notes"
-            // An empty textarea is no notes, not the empty string the contract would reject.
-            // Guarded against the non-string the library hands this on the first render, before
-            // the element exists: the default value for "no notes" is null, not ''.
+            // Empty is null, not the '' the contract rejects; the first render hands this a
+            // non-string.
             {...register('notes', {
               setValueAs: (v: unknown) => (typeof v === 'string' && v.trim() !== '' ? v : null),
             })}
@@ -265,8 +232,7 @@ export function CreateTaskDialog({
           submit="Create"
           onCancel={onClose}
           hint={
-            // Both chords, not one guessed from the user agent: the keys are what the hint is
-            // for, and a wrong guess teaches the wrong key.
+            // Both chords: one guessed from the user agent could teach the wrong key.
             <p className="text-xs text-ink-muted">
               <kbd className="rounded border border-rule-strong px-1.5 text-xs leading-5">⌘↵</kbd> /{' '}
               <kbd className="rounded border border-rule-strong px-1.5 text-xs leading-5">

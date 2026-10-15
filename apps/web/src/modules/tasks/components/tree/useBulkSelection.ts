@@ -5,13 +5,8 @@ import { projectTasksQuery } from '../../api/queries'
 import { moveTask, patchTask } from '../../api/tasks'
 
 /**
- * THE ROWS SHIFT+CLICK HAS PICKED, and the two things done to them at once.
- *
- * A set of ids, never persisted: a row that leaves the tree simply stops matching. The bulk
- * actions go one request at a time -- `move` locks the tree's shape per workspace, so parallel
- * ones would queue anyway and a failure could not be pinned on a row -- and each id leaves the
- * selection as it succeeds, so after a partial failure what is still selected is exactly what
- * still needs doing, and the same button retries just that.
+ * The rows Shift+click has picked. Bulk actions go one request at a time and each id leaves the
+ * selection as it succeeds, so after a failure what is still selected is what is left to do.
  */
 export function useBulkSelection({
   projectId,

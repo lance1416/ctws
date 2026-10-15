@@ -14,13 +14,7 @@ import { useOpenFromUrl } from '../../../shell/detail/useOpenFromUrl'
 import { QueryStatus } from '../../../platform/ui/QueryStatus'
 import { HANG } from '../../../platform/ui/hang'
 
-/**
- * PEOPLE.
- *
- * One flat list, by name. No groups, no favourites, no letter index: this is one person's address
- * book, and at the size it will ever reach, sorting it by name and letting search do the rest is
- * what every person app does before it starts adding structure nobody asked for.
- */
+/** One flat list by name, filtered by circle; search does the rest. */
 export function People() {
   useCrumbs([{ label: 'Things', to: '/things' }, { label: 'People' }])
   const people = useQuery(peopleQuery())
@@ -37,17 +31,13 @@ export function People() {
     <>
       <PeopleHead />
 
-      {/* On the heading's edge, where the threads hang: the page's controls are one column. */}
       <div className={`mt-4 ${HANG} max-w-[52ch]`}>
         <NewPersonInput onCreated={(c: PersonResponse) => show(c.id)} />
       </div>
 
       {gone && <GoneNotice kind="person" />}
       <QueryStatus query={people} />
-      {/* ONE LIST, FILTERED -- never a second list. The circle is how an address book that also
-          holds fifty relatives stays readable, and nothing is hidden by default: a row that has
-          vanished is worse than a long list. */}
-      {/* The buttons' labels on the heading's edge: each button's own padding hangs left of it. */}
+      {/* One list, filtered by circle; nothing is hidden by default. */}
       <div className="mt-4 ml-[50px] flex flex-wrap gap-1 sm:ml-[62px]">
         {([null, 'family', 'friend', 'work'] as const).map((key) => {
           const picked = circle === key
@@ -57,8 +47,7 @@ export function People() {
               type="button"
               aria-pressed={picked}
               onClick={() => setCircle(key)}
-              // Picked is a filled chip, as the Birthdays index marks its pick: a border would
-              // make one of four equal filters look like the page's button.
+              // Filled, not bordered, so a picked filter does not look like the page's button.
               className={
                 picked
                   ? 'h-9 rounded-md bg-select px-2.5 text-sm font-semibold text-ink'
@@ -72,7 +61,7 @@ export function People() {
       </div>
 
       {people.isSuccess && (
-        // A person's city is read against their name: at the task lists' measure it sat 900px away.
+        // Narrower than the task lists, so a person's city stays near their name.
         <div className="mt-3 max-w-[48rem]">
           <PeopleList
             people={people.data.filter((c) => circle === null || c.circle === circle)}

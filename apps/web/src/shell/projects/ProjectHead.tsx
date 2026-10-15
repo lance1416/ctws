@@ -4,18 +4,10 @@ import { useRegistry } from '../registry'
 import { BUTTON } from '../../platform/ui/buttonStyles'
 import { ProjectIdentity } from './ProjectIdentity'
 
-/**
- * A PROJECT'S OWN FIELDS, at the head of its page: its name and colour, and the numbers each
- * module keeps about it.
- *
- * The SHELL's, not a module's -- a project is one kind of object among five now, but it is still
- * the organising dimension the user's life runs in, so nobody else owns it. The numbers beside
- * the name come from the registry: a banner that imported the task module's counts would be a
- * banner no second module could ever appear in.
- */
+/** The head of a project's page: its name and colour, and each module's numbers about it. */
 export function ProjectHead({ id }: { id: string }) {
   const registry = useRegistry()
-  // Live or archived: an archived project's page is its page, marked as set aside.
+  // Live or archived: an archived project still has its page, marked as such.
   const projects = useEveryProject()
   const project = projects.data?.find((p) => p.id === id)
   if (!project) {
@@ -26,15 +18,12 @@ export function ProjectHead({ id }: { id: string }) {
   return (
     <div className="flex min-w-0 items-start gap-3">
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* The chip is the colour PICKER and the name is editable in place. The chip is never
-            alone -- the name is right beside it (WCAG 1.4.1). */}
         <ProjectIdentity projectId={id} name={project.name} color={project.color} />
         {project.archivedAt && (
           <p data-project-archived className="mt-1.5 text-sm font-semibold text-ink-muted">
             Archived
           </p>
         )}
-        {/* Each module's numbers, said as a sentence under the name. */}
         {registry.projectHeadlines.map(({ moduleId, Component }) => (
           <Component key={moduleId} projectId={id} />
         ))}
@@ -46,10 +35,8 @@ export function ProjectHead({ id }: { id: string }) {
 }
 
 /**
- * SET ASIDE, AND BACK. Archive takes a line of work out of the rail, Today and the live lists, and
- * keeps it -- its tasks, its links, its page. It is undone in one press, so it lives in the head
- * beside the name, not at the foot with Delete, where only what cannot be undone goes. The page
- * stays open on it, marked Archived, with Unarchive where Archive was.
+ * Archive hides a project from the rail and live lists but keeps everything. It is undone in one
+ * press, so it sits in the head; only what cannot be undone goes at the foot with Delete.
  */
 function ArchiveToggle({ id, archived }: { id: string; archived: boolean }) {
   const toggle = useMutation({

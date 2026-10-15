@@ -11,23 +11,16 @@ export const HANDLE_PX = 16
 export const CHEVRON_PX = 20
 
 /**
- * The ground under controls shown over a hovered row's end: opaque sheet with the hover layer on
- * it, so it matches the row and HIDES the title's end beneath (the 8% layer alone let it through).
+ * The ground under controls over a hovered row's end: an opaque sheet under the hover layer, which
+ * alone is translucent and would let the title show through.
  */
 export const OVER_ROW = 'bg-sheet shadow-[inset_0_0_0_100vmax_var(--color-hover)]'
 export const gutterPlus = (px: number) => `calc(var(--gutter) + ${px}px)`
 
-/**
- * How wide the Done view's list is. Its rows carry nothing on the right, so at 1440 an unbounded one puts
- * the end of a short title a long way from the margin it hangs on.
- */
+/** The Done view's rows carry nothing on the right, so its list is kept narrow. */
 export const DONE_LIST_MEASURE = 'max-w-[36rem]'
 
-/**
- * THE GLYPH BOX the date marks share: one 12-unit grid, one stroke weight, one size. Two marks
- * that differ by SILHOUETTE have to be drawn on the same canvas, or they differ by weight and
- * scale as well and the silhouette stops being the thing telling them apart.
- */
+/** The date marks share one canvas, stroke and size, so only their silhouettes differ. */
 function Glyph({ children }: { children: ReactNode }) {
   return (
     <svg
@@ -60,10 +53,7 @@ export function DeadlineMark({ filled }: { filled: boolean }) {
   )
 }
 
-/**
- * A plan's glyph: a tick on a timeline. Deliberately HORIZONTAL, so in a grey screenshot (or to a
- * colourblind reader) a plan and a deadline are told apart by silhouette alone.
- */
+/** A plan's glyph: a tick on a timeline, horizontal so it differs from the flag by silhouette. */
 export function PlanMark() {
   return (
     <Glyph>
@@ -73,10 +63,7 @@ export function PlanMark() {
   )
 }
 
-/**
- * A notes glyph: three ruled lines, the shortest last. Prose, at a glance, and nothing like either
- * date glyph (an upright flag, a wide timeline tick) it shares the slot with.
- */
+/** A notes glyph: three ruled lines, the shortest last, unlike either date glyph. */
 export function NotesMark() {
   return (
     <svg
@@ -99,13 +86,8 @@ export function NotesMark() {
 }
 
 /**
- * THE SECOND LINE: where a row came from, in words -- never when; that is the margin's.
- *
- * It renders NOTHING when there is nothing to say, so a row with no breadcrumb stays one line
- * (44px) and only the rows that carry information pay for the second one (66px).
- *
- * No alignment, no truncated phrases: this line is read, not scanned. Each phrase is kept whole
- * (`whitespace-nowrap` per part) so a narrow panel breaks the line BETWEEN phrases.
+ * A row's second line, rendered only when it has something to say. Each phrase is kept whole, so
+ * a narrow panel breaks the line between phrases.
  */
 export function RowMeta({
   breadcrumb = null,
@@ -113,17 +95,13 @@ export function RowMeta({
   rollup = null,
   blocked = null,
 }: {
-  /** The project (and parent) a cross-project list shows. The tree passes none: the project is
-   *  known there and the hierarchy is visible from the indentation. */
+  /** The project (and parent) a cross-project list shows; the tree passes none. */
   breadcrumb?: string | null
-  /**
-   * HOW LONG THIS HAS BEEN SITTING HERE, worded: "Captured 3 days ago". The inbox is the only list
-   * that passes one, and it is dropped when the line has anything else to say.
-   */
+  /** "Captured 3 days ago": only the inbox passes one, dropped when the line has more to say. */
   age?: string | null
-  /** "60% · 2 in progress · 1 overdue" for a row that HAS CHILDREN. */
+  /** "60% · 2 in progress · 1 overdue" for a row with children. */
   rollup?: string | null
-  /** "Blocked by …": first on the line and never dropped -- it says whether the row can be worked on. */
+  /** "Blocked by …": first on the line and never dropped. */
   blocked?: string | null
 }) {
   const parts = [
@@ -142,8 +120,7 @@ export function RowMeta({
         {rollup}
       </span>
     ) : null,
-    // Only on a line that would otherwise be empty, a step quieter: an age is the one phrase here
-    // that nobody chose.
+    // Only on a line that would otherwise be empty.
     age && !breadcrumb && !rollup && !blocked ? (
       <span key="age" data-row-age className="whitespace-nowrap text-ink-subtle">
         {age}
@@ -152,14 +129,12 @@ export function RowMeta({
   ].filter((part) => part !== null)
   if (parts.length === 0) return null
   return (
-    // META: 14/22, weight 400, from the type scale.
     <span
       data-row-meta
       className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 text-sm text-ink-muted"
     >
       {parts.map((part, i) => (
-        // The separator travels WITH the phrase it follows, inside one flex item: loose, it can be
-        // pushed onto the next line and start it with a stray ·. Hidden from assistive technology.
+        // The separator travels with the phrase it follows, so no wrapped line starts with a ·.
         <Fragment key={i}>
           <span className="flex min-w-0 items-baseline gap-x-1.5">
             {part}
@@ -175,7 +150,7 @@ export function RowMeta({
   )
 }
 
-/** THE NOTE ON THE RIGHT: one short phrase at the end of the title's line -- how late. Never wraps. */
+/** One short phrase at the end of the title's line, such as how late. Never wraps. */
 export function RowNote({
   children,
   tone = 'text-ink-subtle',
@@ -186,7 +161,7 @@ export function RowNote({
   return (
     <span
       data-row-note
-      // Not on a phone: there the margin's word and its colour say it, and the title needs the room.
+      // Not on a phone: the margin's word and colour say it there, and the title needs the room.
       className={`shrink-0 pt-2.5 pl-3 text-sm leading-6 whitespace-nowrap tabular-nums max-sm:hidden ${tone}`}
     >
       {children}

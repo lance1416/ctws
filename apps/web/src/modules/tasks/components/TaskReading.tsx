@@ -17,11 +17,7 @@ import { StatusPicker } from './StatusPicker'
 import { DeadlineMark, PlanMark } from './TaskRowParts'
 import { WRITE_AWAITS } from './useTaskDetailForm'
 
-/**
- * READING MODE, the pane's default: everything about the task on the first screen, and nothing on
- * it that a mis-aimed click can change. The status is the exception, behind a menu: one value out
- * of five is a decision with nothing for a Save to mean.
- */
+/** The pane's default: the whole task, nothing a stray click can change but the status menu. */
 export function TaskReading({
   task,
   onEdit,
@@ -36,14 +32,13 @@ export function TaskReading({
   const today = todayIn(timeZone, now)
   const projectName = useProjects().data?.find((p) => p.id === task.projectId)?.name ?? ''
 
-  /** The direct status write: it lands at once, outside the leave guard, since nothing is unsaved. */
+  /** The status writes at once, outside the leave guard: nothing is ever unsaved. */
   const setStatus = useMutation({
     mutationFn: (status: TaskStatus) => patchTask(task.id, { status }),
     meta: { awaits: WRITE_AWAITS },
   })
 
-  // The server's values in the app's words. A deadline whose day has gone says how late, in the
-  // row's own words and `missed` colour: this is where someone goes to look that up.
+  // A deadline whose day has gone says how late, in the row's words and `missed` colour.
   const dueOverdue = task.dueAt !== null && ymd(new Date(task.dueAt), timeZone) < today
   const dueReading = (() => {
     if (!task.dueAt) return null
@@ -108,8 +103,7 @@ export function TaskReading({
         </div>
       </div>
 
-      {/* Here and not in the form: an edge is written the moment it is named, and parking it
-          behind Save would make it wait on a form it is not part of. */}
+      {/* Here, not in the form: an edge is written the moment it is named. */}
       <Dependencies taskId={task.id} projectId={task.projectId} />
 
       <div>

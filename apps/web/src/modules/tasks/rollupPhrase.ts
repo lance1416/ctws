@@ -1,9 +1,8 @@
 import type { RollupResponse } from '@ctws/contracts'
 
 /**
- * "60% · 2 in progress · 1 overdue" -- a parent row's subtree, in words, each part dropped when it
- * has nothing to say. A LONE "0%" IS NOTHING (null): a second line saying only that would tax every
- * unstarted parent to repeat what its children show. Beside "2 in progress" a 0 is context.
+ * "60% · 2 in progress · 1 overdue", each part dropped when it has nothing to say. A lone "0%" is
+ * dropped too: every unstarted parent would repeat what its children already show.
  */
 export function rollupPhrase(r: RollupResponse | undefined): string | null {
   if (!r) return null

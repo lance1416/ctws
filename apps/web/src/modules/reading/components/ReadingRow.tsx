@@ -12,19 +12,6 @@ import { RowLead } from '../../../shell/rows/RowLead'
 import { BODY_GUTTER, ProjectRail } from '../../../shell/rows/RowParts'
 import { useNow } from '../../../platform/time/useNow'
 
-/**
- * ONE ROW OF THE READING LIST.
- *
- * It wears the app's row -- the margin, the thread, then a mark, a title and one muted second
- * line -- because it is read by the same person on the same screen as a task, and a second module
- * that invented its own row shape would make the workspace look like two products stapled
- * together. The margin is the day you mean to finish it (a plan: no flag); the thread is its
- * project's colour, and the project is named on the second line.
- *
- * What it does NOT borrow is behaviour: this row has no drag handle, no tree, no dates. A reading
- * list is a pile, and the only question it answers is what to read next.
- */
-
 /** "Added 17 days ago". A count, not a date: a pile is read to find what has gone stale. */
 export function addedLabel(createdAt: string, timeZone: string, now: Date): string {
   const days = daysAgoIn(createdAt, timeZone, now)
@@ -56,7 +43,7 @@ export function ReadingRow({
 }: {
   item: ReadingItemResponse
   timeZone: string
-  /** The account's today, from the page (`useNow`): a row does not read the clock for itself. */
+  /** The account's today, from the page. */
   today: string
   /** Opens its pane. Without it the row is only a row. */
   onOpen?: () => void
@@ -70,9 +57,7 @@ export function ReadingRow({
   const label = readingLabel(item)
   const finished = item.status === 'done' || item.status === 'dropped'
   const next = NEXT[item.status]
-  // The second line, in the order a person scans it: what it is about, then where it came from,
-  // then how long it has been waiting. Each part is dropped when it has nothing to say -- and the
-  // host is dropped when it is ALREADY the title, which is what an untitled link shows.
+  // Empty parts are dropped, and the host too when it is already the title (an untitled link).
   const meta = [
     item.projectName,
     item.kind === 'book' ? item.author : item.title || item.fetchedTitle ? hostOf(item.url) : null,
@@ -80,15 +65,13 @@ export function ReadingRow({
   ].filter(Boolean)
 
   return (
-    /* The whole row opens its pane; the links and buttons in it stop the click on their way,
-       as on the people list: a row is one target, and an address in it is another. */
+    /* The whole row opens its pane; the links and buttons in it stop the click. */
     <li
       data-reading-row={item.id}
       onClick={onOpen}
       className={`group flex min-h-11 min-w-0 ${onOpen ? 'cursor-pointer' : ''}`}
     >
-      {/* WHEN: the day you mean to finish it, in the words the margin gives any plan. A finished
-          item's plan is history, and the margin is about what is still to come. */}
+      {/* The day you mean to finish it; a finished item's plan is no longer shown. */}
       <RowLead
         lead={
           item.planOn && !finished
@@ -104,7 +87,6 @@ export function ReadingRow({
 
         <div className="min-w-0 flex-1">
           {item.url ? (
-            /* The title goes to the thing itself: a reading list is there to be clicked through. */
             <a
               href={item.url}
               target="_blank"
@@ -138,7 +120,6 @@ export function ReadingRow({
             </span>
           )}
           {meta.length > 0 && <p className="truncate text-sm text-ink-muted">{meta.join(' · ')}</p>}
-          {/* The page's own one line about itself, to recognise it by, not to read. */}
           {item.fetchedSummary && !item.title && (
             <p data-reading-summary className="truncate text-sm text-ink-muted">
               {item.fetchedSummary}
@@ -146,15 +127,11 @@ export function ReadingRow({
           )}
         </div>
 
-        {/* One visible action, named by what it does. Everything rarer is behind the menu: a row
-          with five buttons on it is a row nobody reads. */}
         {next && (
           <button
             type="button"
             onClick={() => save.mutate({ status: next.status })}
-            // OPACITY, never `hidden`: a display:none button is not in the tab order at all, so
-            // the one action on this row would be unreachable without a mouse. On a touch screen
-            // there is no hover, so it is simply always there -- the same rule the task row keeps.
+            // Opacity, never `hidden`, which leaves the tab order. Always shown on touch.
             className="h-7 shrink-0 rounded-md border border-rule-strong px-2 text-sm text-ink opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-hover [@media(hover:none)]:opacity-100"
           >
             {next.label}
@@ -173,13 +150,9 @@ export function ReadingRow({
             </svg>
           </DropdownMenu.Trigger>
           <DropdownMenu.Portal>
-            {/* What can be done without opening it: its status and its plan. Its content is
-                edited in its pane, since a dropdown is not an editor. */}
             <DropdownMenu.Content align="end" sideOffset={4} className={MENU_SURFACE}>
               {onOpen && <Item onSelect={onOpen}>Open</Item>}
-              {/* The day you mean to finish it, as NAMED DECISIONS rather than a date picker -- the
-                same choice the overdue row's triage made, and for the same reason: a calendar
-                makes you compute the date, where "this weekend" is the thought you actually had. */}
+              {/* Named plans, not a date picker: "this week" is the thought a person has. */}
               {PLAN_DAYS.map(({ id, day }) => (
                 <Item key={id} onSelect={() => save.mutate({ planOn: day(today) })}>
                   {FINISH[id]}

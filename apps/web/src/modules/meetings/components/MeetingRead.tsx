@@ -10,7 +10,6 @@ import { meetingLink } from '../meetingPlace'
 import { zoneLabel } from '../timeZones'
 import { lengthLabel } from './MeetingControls'
 
-/** A MEETING, READ: every value is text, and Edit is the one thing to press -- as on a person. */
 export function MeetingRead({
   meeting,
   accountZone,
@@ -24,9 +23,7 @@ export function MeetingRead({
   const place = meetingLink(meeting.location)
   const bare = meeting.rrule ? withUntil(meeting.rrule, null) : null
   const until = untilOf(meeting.rrule)
-  // The meeting's own wall clock and its last day, in the words every other date in the app
-  // uses (`Oct 19, 18:00`) -- not `2026-10-19 18:00`, the wire format, beside a "Your time" that
-  // already says it the other way.
+  // The meeting's own wall clock in the app's date wording (`Oct 19, 18:00`), not the wire format.
   const today = todayIn(accountZone, useNow())
   const when = `${shortDay(meeting.startsLocal.slice(0, 10), today)}, ${meeting.startsLocal.slice(11, 16)}`
 
@@ -50,8 +47,7 @@ export function MeetingRead({
         <div className="grid items-start gap-x-6 gap-y-4 @xl:grid-cols-2 @2xl:grid-cols-3">
           {elsewhere && (
             <Field label="Your time" shape="above">
-              {/* When you have to be there. Not editable: the time was agreed in the meeting's
-                  zone, and changing it here would be changing a conversion. */}
+              {/* Not editable: the time was agreed in the meeting's zone; this is a conversion. */}
               <span data-local-clock className="text-sm tabular-nums text-ink-muted">
                 {new Intl.DateTimeFormat('en-US', {
                   timeZone: accountZone,
@@ -80,7 +76,6 @@ export function MeetingRead({
             </Field>
           )}
           <Field label="Projects" shape="above">
-            {/* A chip, like a person's projects, and the same words for none. */}
             {meeting.projectId && meeting.projectName ? (
               <span className="flex">
                 <span className={CHIP}>

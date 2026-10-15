@@ -2,11 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { HANG } from '../../../../platform/ui/hang'
 import { calendarDaysQuery } from '../../../../shell/calendar/api'
 
-/**
- * THE DATE IS THE HEADING: this page is a day, and which one is the first thing it says. The
- * display step at 500, set back where the titles start; beside it the day's lunar name, a step
- * quieter, from the source the Calendar grid uses.
- */
+/** The date is the page's heading, with the day's lunar name beside it. */
 export function DayHeading({
   now,
   today,

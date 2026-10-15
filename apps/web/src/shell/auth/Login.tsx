@@ -42,22 +42,14 @@ export function Login() {
   if (me.data) return <Navigate to={WORKBENCH_PATH} replace />
 
   return (
-    // One plane, centred. An earlier pass stood the workbench's two surfaces on end here, which
-    // only produced a pale column with a grey sliver down each side at 375 -- figure/ground needs
-    // something to be the figure, and on a page with one block there is nothing. The design is
-    // the type, the rhythm and the mark.
     <main className="flex min-h-screen items-center justify-center px-4 py-10">
       <div className="w-full max-w-[20rem]">
-        {/* The identity mark is the app's own rail: the 3px bar that means "a project" on every
-            other screen, here at the size of a wordmark. It is the only ornament on the page. */}
         <div className="flex items-center gap-2.5">
           <span aria-hidden="true" className="h-7 w-[3px] rounded-full bg-ink" />
           <h1 className="text-xl font-semibold">CTWS</h1>
         </div>
         <p className="mt-2 text-sm text-ink-muted">Your personal workbench</p>
 
-        {/* A real form, so Enter from either field signs in -- the thing a daily tool should not
-            make you reach for the mouse to do. Register is a deliberate second press. */}
         <form
           className="mt-10 flex flex-col gap-4"
           onSubmit={(e) => {
@@ -121,7 +113,6 @@ export function Login() {
 }
 
 function browserTimezone(): string {
-  // Only a default for registration. All "today"/"this week" logic runs server-side against
-  // users.timezone; the browser clock decides nothing.
+  // Only the new account's starting zone; from then on `users.timezone` decides.
   return Intl.DateTimeFormat().resolvedOptions().timeZone
 }

@@ -55,13 +55,12 @@ export function Panel({
           <span className={tabs ? 'flex items-center' : 'ml-auto flex items-center'}>{action}</span>
         )}
       </div>
-      {/* The body's gutter halves on a phone, where a deep tree row needs every pixel. */}
       <div className={`min-w-0 pt-0.5 pb-3 ${hang ? '' : 'px-1 sm:px-2'}`}>{children}</div>
     </section>
   )
 }
 
-/** What a panel says when it has nothing in it: one quiet line. `hang` puts it on the titles' edge. */
+/** A panel's one quiet empty line. `hang` puts it on the titles' edge. */
 export function PanelEmpty({ children, hang = false }: { children: ReactNode; hang?: boolean }) {
   return (
     <p className={`py-1.5 text-sm text-ink-subtle ${hang ? `${HANG} pl-[17px]` : 'px-2'}`}>

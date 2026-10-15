@@ -10,11 +10,6 @@ export function hostOf(url: string | null): string | null {
   }
 }
 
-/*
- * TWO DRAWINGS OF EACH KIND, on purpose: the Workbench card's are 18px and named, since nothing
- * beside them says the kind; the list row's are 16px and decoration, since its second line does.
- */
-
 /** The Workbench card's mark for a book or a link, named for a screen reader. */
 export function KindGlyph({ kind }: { kind: ReadingItemResponse['kind'] }) {
   return kind === 'book' ? (
@@ -55,10 +50,7 @@ const TONE: Record<ReadingStatus, string> = {
   dropped: 'text-ink-subtle',
 }
 
-/**
- * The list row's mark: the kind as a shape, toned by how far along it is. Never alone -- a book
- * names its author and a link its host on the line below -- so it is decoration (WCAG 1.4.1).
- */
+/** The list row's mark, toned by status; decoration, since the line below says the kind. */
 export function StatusMark({ item }: { item: Pick<ReadingItemResponse, 'kind' | 'status'> }) {
   return (
     <span aria-hidden="true" className={`flex h-6 shrink-0 items-center ${TONE[item.status]}`}>
@@ -67,7 +59,6 @@ export function StatusMark({ item }: { item: Pick<ReadingItemResponse, 'kind' | 
   )
 }
 
-/** An open book: two leaves and a spine. */
 function BookMark() {
   return (
     <svg viewBox="0 0 16 16" className="h-4 w-4">
@@ -82,7 +73,6 @@ function BookMark() {
   )
 }
 
-/** A link: the chain idiom every browser uses for the same thing. */
 function LinkMark() {
   return (
     <svg viewBox="0 0 16 16" className="h-4 w-4">

@@ -12,16 +12,8 @@ import { useCrumbs } from '../../../shell/layout/Breadcrumbs'
 import { HANG } from '../../../platform/ui/hang'
 
 /**
- * BIRTHDAYS -- a LENS. It owns nobody: this page only reads, and a person is made by the people
- * module itself, the same way the calendar owns no kind of thing.
- *
- * A PANEL GRID rather than one capped column, for the reason `Today.tsx` writes down: at 1440 a
- * single column puts one clump of rows left of centre with half the screen empty beside it. The
- * lists take two thirds; the third column answers the two questions a list cannot -- which month
- * (this IS the date search) and which kind of person.
- *
- * Finding and filtering happen in the browser: one person's book is a few dozen rows, and a round
- * trip per keystroke would make the search feel worse than the list.
+ * Birthdays, read-only: the lists take two thirds, the third column filters by month and circle.
+ * Filtering happens in the browser, since one person's book is a few dozen rows.
  */
 export function Birthdays() {
   useCrumbs([{ label: 'Things', to: '/things' }, { label: 'People' }])
@@ -38,9 +30,7 @@ export function Birthdays() {
 
   const coming = (data?.coming ?? []).filter(matches)
   const later = (data?.later ?? []).filter(matches)
-  // THE COUNTS DESCRIBE WHAT IS ON SCREEN. They used to count the unfiltered answer while the
-  // lists below showed the filtered one, so pressing Family left a page saying "48 people" above
-  // three rows -- two answers to one question, and the reader has to pick which to believe.
+  // The counts describe the filtered lists on screen, not the whole book.
   const total = coming.length + later.length
 
   return (
@@ -116,7 +106,6 @@ export function Birthdays() {
                     }`}
                   >
                     {MONTH_NAMES[i]}
-                    {/* Zero is drawn as NOTHING, the way `Panel`'s own count is. */}
                     {count > 0 && (
                       <span className="text-xs text-ink-subtle tabular-nums">{count}</span>
                     )}

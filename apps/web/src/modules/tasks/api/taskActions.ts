@@ -7,29 +7,18 @@ import { patchTask, type ProjectTasks } from './tasks'
 const TODAY = todayQuery().queryKey
 
 /**
- * What the status mark does when clicked (or `x` on a focused row): finish the task, or, if it is
- * already finished or cancelled, bring it back.
- *
- * DELIBERATE SIMPLIFICATION: bringing a task back lands on `backlog`, not on whatever it was
- * before it was finished. Restoring the previous status needs a read of the task's event log
- * (or a stored prior status), which is a larger change than this loop needs; the user is one
- * click from `todo` or `in_progress` anyway. Revisit if "un-complete" turns out to be a frequent,
- * precise action.
+ * Finish the task, or bring a finished one back. It comes back to `backlog`, not its earlier
+ * status, which only the event log knows.
  */
 export const toggleDoneTarget = (s: TaskStatus): TaskStatus => (isFinished(s) ? 'backlog' : 'done')
 
-/**
- * The cheap route to "Working on": start, or stop. Stopping lands on `todo` (it is still something to
- * do), again a simplification: it does not remember a `backlog` it may have come from.
- */
+/** Start, or stop. Stopping lands on `todo`, even if the task came from `backlog`. */
 export const toggleStartTarget = (s: TaskStatus): TaskStatus =>
   s === 'in_progress' ? 'todo' : 'in_progress'
 
 /**
- * Mutations for the one-click edits made from a list row, without opening the detail panel.
- * Status changes are optimistic (the mark must answer the click now); date changes wait for the
- * server, since which segment a row belongs in is the server's decision. A failed request rolls
- * the optimistic edit back.
+ * One-click edits from a list row. Status changes are optimistic; date changes wait for the
+ * server, which decides the segment a row belongs in.
  */
 export function useTaskActions(onError: (message: string) => void) {
   const qc = useQueryClient()
@@ -43,7 +32,7 @@ export function useTaskActions(onError: (message: string) => void) {
       const today = qc.getQueryData(TODAY)
       const status = body.status
       if (status) {
-        // The row answers at once; the rollups wait for the refetch (see the note in TaskTree).
+        // The row answers at once; the rollups wait for the refetch.
         qc.setQueriesData<ProjectTasks>({ queryKey: PROJECT_TASKS }, (old) =>
           old ? { ...old, tasks: old.tasks.map((t) => (t.id === id ? { ...t, status } : t)) } : old,
         )

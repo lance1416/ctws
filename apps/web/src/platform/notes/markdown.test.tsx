@@ -5,19 +5,8 @@ import NoteMarkdown from './NoteMarkdown'
 import { noteSchema } from './schema'
 
 /**
- * RENDERING A NOTE, AND REFUSING TO RENDER AN ATTACK.
- *
- * Markdown is the one place in this app where text becomes DOM, so the interesting tests are not
- * "a heading becomes an h2" but "this specific injection does not become an element". There are two
- * defences (see `schema.ts`) and they are tested SEPARATELY, because the first one masks the second:
- *
- *   `describe("a note's own Markdown")` goes through the real component, which has no `rehype-raw`,
- *   so an HTML tag in the source is printed as characters.
- *
- *   `describe('the sanitiser itself')` hands the schema a hast tree that ALREADY contains the
- *   elements, which is what the pipeline would look like the day `rehype-raw` is added for one
- *   convenience or another. Without this half the schema could be empty and every test above
- *   would still pass, so the file would claim a coverage it does not have.
+ * Two defences, tested separately because the first masks the second: the component never turns
+ * source HTML into elements, and the schema alone strips a tree that already contains them.
  */
 
 const render = (source: string) => renderToStaticMarkup(<NoteMarkdown source={source} />)
@@ -39,8 +28,7 @@ describe("a note's own Markdown", () => {
     expect(html).toContain('<table>')
     expect(html).toContain('<th>项</th>')
     expect(html).toContain('<del>删掉</del>')
-    // GFM's `<input type=checkbox disabled>` is replaced by a labelled mark: reading mode is
-    // pinned to contain NOT ONE control, and that must not become conditional on a note's text.
+    // GFM's checkbox becomes a labelled mark: reading mode holds no controls.
     expect(html).not.toContain('<input')
     expect(html).toContain('aria-label="Checked"')
     expect(html).toContain('aria-label="Empty"')
@@ -53,30 +41,15 @@ describe("a note's own Markdown", () => {
   })
 
   it('leaves maths for KaTeX to pick up, tagged the way rehype-katex looks for it', () => {
-    /**
-     * KaTeX itself is not loaded here (it arrives in an effect, and this is a static render), so
-     * what is pinned is the HANDOFF: the class `rehype-katex` keys on survived the sanitiser. Lose
-     * it and maths renders as inline code forever, silently.
-     *
-     * `language-math` AND NOT `math-inline`. `rehype-katex` takes `language-math` on its own and
-     * reads display mode from the `pre > code` structure, so naming `math-inline` as well would
-     * fail on a tree KaTeX typesets perfectly well -- an implementation detail, not the claim.
-     */
+    // KaTeX is not loaded in a static render; this pins the class `rehype-katex` keys on.
     const html = render('面积是 $\\pi r^2$ 。')
     expect(html).toContain('language-math')
   })
 
-  /**
-   * WHAT ACTUALLY HAPPENS TO RAW HTML, measured rather than assumed. `remark` parses `<script>` into
-   * an mdast `html` node, and `mdast-util-to-hast` without `allowDangerousHtml` DROPS those nodes --
-   * so the tag is not escaped into `&lt;script&gt;`, it is gone, and only the text that sat between
-   * the two tags remains as prose. An earlier draft of these tests asserted the escaped form and
-   * failed, which is the only reason this comment can state the behaviour instead of guessing it.
-   */
+  // Raw HTML is dropped, not escaped: only the text between the tags remains, as prose.
   it('drops a script tag in the source, tag and all', () => {
     const html = render('看这个 <script>alert(1)</script> 结束')
     expect(html).not.toContain('script')
-    // The characters between the tags are prose now, not code: nothing can run them.
     expect(html).toContain('看这个 alert(1) 结束')
   })
 
@@ -101,7 +74,6 @@ describe("a note's own Markdown", () => {
   it('drops a javascript: href from a Markdown link', () => {
     const html = render('[点我](javascript:alert(1))')
     expect(html).not.toContain('javascript:')
-    // The link text survives -- the note is still readable, it just has nothing to navigate to.
     expect(html).toContain('点我')
   })
 
@@ -112,7 +84,7 @@ describe("a note's own Markdown", () => {
   })
 })
 
-/** Walks a hast tree and reports every tag name and every attribute name in it. */
+/** Every tag name, attribute name and href in a hast tree. */
 function shape(tree: unknown): { tags: string[]; attrs: string[]; hrefs: string[] } {
   const tags: string[] = []
   const attrs: string[] = []
@@ -205,7 +177,6 @@ describe('the sanitiser itself', () => {
       el('code', { className: ['fixed', 'inset-0', 'bg-scrim'] }),
     ])
     const json = JSON.stringify(out)
-    // What KaTeX and the code-fence styling both need.
     expect(json).toContain('language-math')
     // A pasted note must not get to wear the app's own layout classes.
     expect(json).not.toContain('inset-0')

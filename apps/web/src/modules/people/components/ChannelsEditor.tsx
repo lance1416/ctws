@@ -13,21 +13,19 @@ import { usePhone } from '../usePhone'
  */
 export type ChannelRow = PersonChannel & { touched?: boolean; seed?: string; saved?: boolean }
 
-/** Has anyone written on this row? The country code the form put there does not count. */
+/** A row holding only the seeded country code is not written on. */
 const written = (c: ChannelRow) => c.value.trim() !== '' && c.value !== c.seed
 
 /**
- * THE RULES FOR WRITING ADDRESSES, for every form that takes one: a phone is grouped as it is
- * typed and stored as E.164; an empty phone row starts with the local country code; a row is
- * judged by the contract's rule and the number's real length, and only after it has been left.
+ * A form's channel rows: phones grouped as typed and saved as E.164, an empty phone row seeded with
+ * the local code, and each row judged only once it has been left.
  */
 export function useChannelRows(initial: () => ChannelRow[]) {
   const [rows, setRows] = useState<ChannelRow[]>(initial)
   const phone = usePhone()
   const region = phone?.currentRegion()
-  // The phone library arrives late (about 80 KB). Then: stored numbers get their country code and
-  // grouping -- an old `(730) 197-4443` would otherwise fail the check and block any save -- and
-  // empty phone rows get the local code. Numbers typed this time are left alone.
+  // Once the phone module arrives, stored numbers are normalised (an old `(730) 197-4443` would
+  // otherwise fail the check and block Save) and empty phone rows get the local code.
   useEffect(() => {
     if (!phone) return
     const code = phone.callingCodeFor(region) ?? ''
@@ -83,7 +81,7 @@ export function useChannelRows(initial: () => ChannelRow[]) {
     leave: (at: number) => edit(at, (row) => ({ ...row, touched: true })),
     add: () => setRows((all) => [...all, { kind: 'email', value: '', label: null }]),
     remove: (at: number) => setRows((all) => all.filter((_, i) => i !== at)),
-    /** The rows worth saving, in kind order, phones as E.164 -- one spelling everywhere. */
+    /** The rows worth saving, in kind order, phones as E.164. */
     toSave: (): PersonChannel[] =>
       byKind(rows)
         .filter(written)
@@ -95,7 +93,6 @@ export function useChannelRows(initial: () => ChannelRow[]) {
   }
 }
 
-/** The person form's addresses: a row each, kind and address, removable, and one more to add. */
 export function ChannelsEditor({ channels }: { channels: ReturnType<typeof useChannelRows> }) {
   return (
     <>
@@ -111,7 +108,6 @@ export function ChannelsEditor({ channels }: { channels: ReturnType<typeof useCh
             <input
               aria-label={`Item ${i + 1}`}
               value={c.value}
-              // What this kind looks like, never a "to fill" note: a placeholder is not saved.
               placeholder={channelPlaceholder(c.kind)}
               type={c.kind === 'phone' ? 'tel' : 'text'}
               inputMode={c.kind === 'phone' ? 'tel' : 'text'}

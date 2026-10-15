@@ -13,31 +13,14 @@ import { useNow } from '../../platform/time/useNow'
 import type { WorkspaceModule } from '../../shell/contract'
 
 /**
- * THE MEETINGS MODULE -- the fourth.
- *
- * IT HAS A PAGE OF ITS OWN, and the calendar does not make one. In a calendar app an event is the
- * only entity, so a "+" on a day square is where one is made; here the calendar is a lens over
- * everything with a date -- a deadline, a day you mean to finish something, a meeting -- and a lens
- * does not own a kind of thing. The grid answers what is on this month.
- *
- * It contributes:
- *
- * - its own PAGE and a row in Things, where a meeting is arranged in one act;
- * - CALENDAR entries, with a time, and the pane one opens in;
- * - a WORKBENCH card for today, the one moment a flat list of meetings is the right shape --
- *   what is in the next eight hours is not a question about a month.
- *
- * No search provider, on purpose: a meeting is found by its date, and the same weekly title
- * repeats fifty times over.
+ * Meetings: a page of its own, timed calendar entries, and a Workbench card for today. No search
+ * provider: a meeting is found by its date, and a weekly title repeats many times over.
  */
 const ID = 'meetings'
 
 /**
- * The open occurrence, shared by every surface this module draws.
- *
- * Held as a pair of ids and looked up again on each render, so an edit made in the pane follows
- * the list's refetch instead of leaving the pane showing what it said before. A series has many
- * occurrences, so the series id alone does not name one.
+ * The open occurrence, held as ids and looked up on each render so the pane follows the list's
+ * refetch. A series has many occurrences, so the series id alone does not name one.
  */
 function useOpenMeeting(pool: readonly MeetingOccurrence[]) {
   const [open, setOpen] = useState<{ meetingId: string; recurrenceId: string } | null>(null)
@@ -51,18 +34,12 @@ function useOpenMeeting(pool: readonly MeetingOccurrence[]) {
   return { setOpen, pane }
 }
 
-/** This module's dated things, and the only ones with a clock on them. */
 function useMeetingEntries(range: { from: string; to: string }) {
   const result = useQuery(meetingCalendarQuery(range))
   return { entries: result.data ?? [], isError: result.isError }
 }
 
-/**
- * What opens when one of this module's entries is clicked on the grid.
- *
- * The shell hands back the entry's id, which for a meeting is `<series>:<occurrence>` -- a series
- * shows several times on one grid, so the series alone does not say which one was clicked.
- */
+/** The pane for a clicked calendar entry, whose id names one occurrence of a series. */
 function CalendarDetail({ id, onClose }: { id: string; onClose: () => void }) {
   const accountZone = useTimeZone()
   const [meetingId, recurrenceId] = splitEntryId(id)
@@ -82,14 +59,12 @@ function useTodaysMeetings() {
   return useQuery(meetingsQuery({ from: day, to: day }))
 }
 
-/** Things' count for meetings: how many are today, zero included. */
 function MeetingsTodayCount() {
   const today = useTodaysMeetings()
   if (!today.data) return null
   return <span data-count>{today.data.length} today</span>
 }
 
-/** The next one still to come today, on the account's clock. */
 function NextMeetingLine() {
   const accountZone = useTimeZone()
   const today = useTodaysMeetings()
@@ -103,26 +78,18 @@ function NextMeetingLine() {
   )
 }
 
-/** The hours the Workbench's line spans: the working day and its evening. */
+/** The hours the Workbench's day line spans. */
 const LINE_FROM = 8
 const LINE_TO = 22
-/**
- * Past this share of the line (in %) the now label sits to the LEFT of its mark. Not measured as a
- * threshold: it is chosen so a 32px "21:50" plus its 6px gap fits inside a 320px phone's line
- * (about 245px wide), and the 375px case is pinned by workbench-home.spec.
- */
+/** Past this share of the line (%), the now label sits left of its mark so it fits on a phone. */
 const LABEL_FLIP = 80
 
 /**
- * THE WORKBENCH'S MEETINGS: today as a line, 08:00 to 22:00, with each meeting a block on it and
- * NOW across it -- the one moment in the app a flat list of meetings is the wrong shape -- and
- * then the meetings as rows. A meeting outside those hours is in the rows all the same, and in the
- * line's name: the line is a picture of the working day, not a filter on it.
+ * Today as a line from 08:00 to 22:00, each meeting a block and a mark for now, then the meetings
+ * as rows. A meeting outside those hours is still in the rows and in the line's spoken name.
  */
 function TodayMeetings() {
   const accountZone = useTimeZone()
-  // Kept current while the Workbench sits open: the now mark, the greyed meetings and which day
-  // is today all follow it (`useNow`).
   const now = useNow()
   const day = todayIn(accountZone, now)
   const meetings = useQuery(meetingsQuery({ from: day, to: day }))
@@ -145,8 +112,7 @@ function TodayMeetings() {
       </p>
     )
   }
-  // Nothing until the day's meetings are in: a line drawn before then is named "nothing", which
-  // tells anyone glancing (or listening) that a day with meetings in it is empty.
+  // Nothing until loaded: a line drawn before then would announce an empty day.
   if (!meetings.isSuccess) return null
   if (rows.length === 0) return <PanelEmpty>No meetings today</PanelEmpty>
 
@@ -157,18 +123,13 @@ function TodayMeetings() {
   }
   const pct = (min: number) => ((min - LINE_FROM * 60) / ((LINE_TO - LINE_FROM) * 60)) * 100
   const within = (min: number) => min >= LINE_FROM * 60 && min <= LINE_TO * 60
-  /**
-   * A meeting's span in minutes of today. One that ends tomorrow (its end reads earlier than its
-   * start) runs to the end of the day, rather than ending a few minutes after midnight -- which
-   * drew it as a sliver at its start.
-   */
+  // Minutes of today; a meeting that ends tomorrow (its end reads earlier) runs to midnight.
   const span = (m: (typeof rows)[number]) => {
     const from = minutes(new Date(m.startsAt))
     const to = minutes(new Date(m.endsAt))
     return { from, to: to > from ? to : 24 * 60 }
   }
-  // ON THE LINE is any meeting that OVERLAPS its hours, not only one that starts inside them: a
-  // run from 07:30 to 09:00 is on the line from 08:00.
+  // On the line means overlapping its hours: 07:30 to 09:00 shows from 08:00.
   const overlaps = (m: (typeof rows)[number]) => {
     const { from, to } = span(m)
     return from < LINE_TO * 60 && to > LINE_FROM * 60
@@ -187,8 +148,7 @@ function TodayMeetings() {
 
   return (
     <>
-      {/* ONE PICTURE, ONE NAME. To a screen reader the line is the sentence that says what it
-          shows; the rows under it carry the same meetings as things to press. */}
+      {/* To a screen reader the line is one sentence; the rows below are what to press. */}
       <div role="img" aria-label={name} className="relative mx-1 mb-2 h-[54px]">
         <span className="absolute inset-x-0 top-[30px] h-px bg-rule" />
         {Array.from({ length: (LINE_TO - LINE_FROM) / 2 + 1 }, (_, i) => LINE_FROM + i * 2).map(
@@ -208,7 +168,6 @@ function TodayMeetings() {
           ),
         )}
         {onLine.map((m) => {
-          // Clipped to the line's hours at both ends.
           const from = Math.max(span(m).from, LINE_FROM * 60)
           const to = Math.min(span(m).to, LINE_TO * 60)
           const past = new Date(m.endsAt).getTime() <= now.getTime()
@@ -231,8 +190,6 @@ function TodayMeetings() {
               className="absolute top-0 bottom-[18px] -ml-px w-0.5 bg-ink"
               style={{ left: `${pct(nowMin)}%` }}
             />
-            {/* The time beside the mark, on whichever side has room: past the last stretch of the
-                evening it goes to the left, or it would push the page sideways on a phone. */}
             <span
               className={`absolute -top-1 text-xs font-semibold tabular-nums ${
                 pct(nowMin) > LABEL_FLIP ? '-ml-1.5 -translate-x-full' : 'ml-1.5'
@@ -267,7 +224,7 @@ function TodayMeetings() {
               >
                 {m.title}
               </button>
-              {/* Its project by name beside the thread's colour (WCAG 1.4.1), then who is in it. */}
+              {/* The project by name, so its colour is never the only signal, then who attends. */}
               {(m.projectName || m.attendees.length > 0) && (
                 <span className="flex max-w-[50%] shrink-0 items-center truncate pl-3 text-sm text-ink-subtle">
                   {[m.projectName, m.attendees.map((p) => p.name).join(', ')]
@@ -284,21 +241,13 @@ function TodayMeetings() {
   )
 }
 
-/** The Meetings card's note: how many today. */
 function MeetingsAside() {
   const today = useTodaysMeetings()
   if (!today.data) return null
   return <span className="text-sm text-ink-subtle">{today.data.length} today</span>
 }
 
-/**
- * NO BLOCK ON A PROJECT PAGE.
- *
- * This module's rows reach a project as edges, and the shell draws every kind of edge the same way.
- * One of these is made on its own page and filed there, or dropped into the capture box, never from
- * a project page.
- */
-
+// No project-page block: meetings reach a project as edges, which the shell draws for every kind.
 export const meetingModule: WorkspaceModule = {
   id: ID,
   label: 'Meetings',
@@ -315,7 +264,6 @@ export const meetingModule: WorkspaceModule = {
     // A meeting has no page of its own: this is the list with its pane open.
     { path: ':id', element: <Meetings /> },
   ],
-  // `m`. One keyspace across modules, so this is checked against every other chord.
   chords: [
     { id: 'meetings', key: 'm', label: 'Go to Meetings', resolve: () => `/${ID}`, order: 16 },
   ],

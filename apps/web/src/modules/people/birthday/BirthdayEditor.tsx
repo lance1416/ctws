@@ -23,9 +23,8 @@ export function birthdayDraftOf(birthday: BirthdayResponse | null): BirthdayDraf
 }
 
 /**
- * The day itself, with no buttons: the person's form and the New person dialog both write a
- * birthday, by the same rules (the preview, the leap month, the server's refusal), and each keeps
- * its own Save or Create. What it MEANS is the server's answer, so the lunar rules live once.
+ * The birthday controls, without buttons, shared by the person form and New person. What a day
+ * means is the server's answer, so the lunar rules live in one place.
  */
 export function BirthdayEditor({
   birthday,
@@ -59,8 +58,8 @@ export function BirthdayEditor({
     enabled: yearOk,
   })
 
-  // The server saying this day does not exist (400) -- not the preview failing to arrive. The
-  // first would make a save fail too, silently; the second passes and must not lock the form.
+  // A 400 says the day does not exist, so Save would fail too; a preview that merely failed to
+  // arrive must not lock the form.
   const refused =
     preview.isError && preview.error instanceof ApiError && preview.error.status === 400
 
@@ -121,7 +120,7 @@ export function BirthdayEditor({
               choices={LUNAR_DAYS.map((name, i) => ({ value: String(i + 1), label: name }))}
               onPick={(next) => setDay(Number(next))}
             />
-            {/* 闰月 and 时辰 are lunar terms, kept as the month and day names are. */}
+            {/* Leap month and hour stay in Chinese, like the lunar month and day names. */}
             <label className="inline-flex items-center gap-1.5 text-sm text-ink">
               <input
                 type="checkbox"
@@ -172,7 +171,7 @@ export function BirthdayEditor({
 
       <p data-testid="birthday-preview" className="min-h-5 text-xs text-ink-muted">
         {preview.isSuccess ? <PreviewLine facts={preview.data} /> : null}
-        {/* The server's sentence ("正月 has 29 days in 2021…") says which rule failed. */}
+        {/* The server's own sentence says which rule failed. */}
         {preview.isError && (
           <span className="text-danger">
             {(preview.error instanceof ApiError && preview.error.detail) || 'That is not a date'}
@@ -194,7 +193,6 @@ function PreviewLine({ facts }: { facts: BirthdayPreviewResponse }) {
   return (
     <>
       <span className="tabular-nums">{parts.join(' · ')}</span>
-      {/* Why it moved is a sentence, on its own line. */}
       {facts.next.keptNote && <span className="block text-plan">{facts.next.keptNote}</span>}
     </>
   )

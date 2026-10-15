@@ -9,7 +9,7 @@ import type {
 import { queryOptions } from '@tanstack/react-query'
 import { apiFetch } from '../../platform/http/api'
 
-/** The edge table is the SHELL's, like projects: flat, not under a module's namespace. */
+/** The edge table is the shell's, like projects: flat, not under a module's namespace. */
 const BASE = '/links'
 
 export type Endpoint = { type: ObjectType; id: string }

@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { isReadingUrl } from './readingUrl'
 
-/**
- * THE CAPTURE ROUTING RULE. It decides where a typed line goes, so a wrong answer here sends work
- * to the wrong module -- and it is used in two places (capture and the reading input) that must
- * agree.
- */
 describe('isReadingUrl', () => {
   it('claims a bare http(s) url', () => {
     expect(isReadingUrl('https://linear.app/now/redesign')).toBe(true)
@@ -14,9 +9,7 @@ describe('isReadingUrl', () => {
   })
 
   it('leaves a sentence that merely contains a url to the task module', () => {
-    // "read this https://…" is a note ABOUT a link, which is a task. A rule that claimed it
-    // would quietly swallow sentences, and the only defence against a wrong guess is seeing
-    // where the line went.
+    // "read this https://…" is a note about a link, which is a task.
     expect(isReadingUrl('看看这篇 https://example.com')).toBe(false)
     expect(isReadingUrl('https://example.com 读完写个总结')).toBe(false)
   })

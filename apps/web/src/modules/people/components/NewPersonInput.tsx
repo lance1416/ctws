@@ -5,13 +5,7 @@ import { createPerson } from '../api'
 import { useComposing } from '../../../platform/keyboard/composition'
 import { textbox } from '../../../platform/ui/formStyles'
 
-/**
- * MAKING A PERSON: type a name, press Enter.
- *
- * The same shape as the new-task and add-to-reading boxes, which is the point: this app makes
- * things by typing one line into a box. Everything else about the person is filled in
- * afterwards, in the pane that opens.
- */
+/** Type a name and press Enter; the rest is filled in on the pane that opens. */
 export function NewPersonInput({
   projectId,
   onCreated,
@@ -31,8 +25,6 @@ export function NewPersonInput({
     meta: { awaits: [['people']] },
     onSuccess: (person) => {
       setName('')
-      // Straight into the pane: a name on its own is never the whole of what you know about
-      // somebody, and this is the moment you have the rest of it to hand.
       onCreated(person)
     },
   })

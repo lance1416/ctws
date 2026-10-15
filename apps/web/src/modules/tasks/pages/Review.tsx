@@ -22,14 +22,8 @@ import { HANG } from '../../../platform/ui/hang'
 type Project = ReviewResponse['projects'][number]
 
 /**
- * WHAT HAPPENED TO ONE TASK, on the app's row: the day it happened in the margin, the project's
- * thread, then the mark and the title.
- *
- * The three groups are told apart by the MARK, not by three sub-headings with a grey count each
- * -- "Done 2", "Start 1", "Dropped 1" is three labels to read before the first title. It is the
- * same glyph the task carries everywhere else, so a finished task looks finished here too and
- * the list is one list. The day is the ACCOUNT's (the event's instant in its zone), named as a
- * day of the week under review (`weekDayWord`).
+ * What happened to one task: its day in the margin, the project's thread, the mark and the title.
+ * The mark, not a sub-heading, tells done, started and dropped apart.
  */
 function Row({
   title,
@@ -68,10 +62,7 @@ function Row({
   )
 }
 
-/**
- * HOW THE WEEK WENT, IN ONE SENTENCE: "2 done, 1 started and 1 dropped." -- the way a project's
- * head says its numbers, not a row of tiles. A count of nothing is not news and is left out.
- */
+/** "2 done, 1 started and 1 dropped.", leaving out a count of nothing. */
 function weekSentence(total: { done: number; started: number; dropped: number }): string | null {
   const parts = [
     total.done > 0 ? `${total.done} done` : null,
@@ -85,19 +76,8 @@ function weekSentence(total: { done: number; started: number; dropped: number })
 
 const counted = (p: Project) => p.finished.length + p.started.length + p.dropped.length
 
-/**
- * WHAT I DID -- the third of the v1 views, and the one the other two cannot answer.
- *
- * Done lists what is finished RIGHT NOW. This lists what HAPPENED in a window, read off the event
- * log: finished, started, dropped, grouped by line of work. A task finished on Tuesday and
- * reopened on Thursday is in neither place in Done and is in this one, which is the point.
- *
- * THE PAGE ANSWERS ONE QUESTION FIRST: how did the week go. That is three numbers, said as one
- * sentence under the title; everything under it is the detail behind them.
- *
- * The window is the server's: it decides the week boundary in the account's zone and reports the
- * bounds it used. The stepper moves by whole weeks from there.
- */
+// Done lists what is finished now; the week view lists what happened in a window, off the event
+// log, so a task finished on Tuesday and reopened on Thursday shows only here.
 const VIEWS = [
   { id: 'week', label: 'This week' },
   { id: 'done', label: 'Done' },
@@ -116,7 +96,7 @@ export function Review() {
   const [range, setRange] = useState<{ from: string; to: string } | null>(null)
   const review = useQuery({
     ...reviewQuery(range),
-    // The other view does not need it, and a request nobody reads is a request nobody should make.
+    // Only the week view reads it.
     enabled: view === 'week',
   })
   const timeZone = useTimeZone()
@@ -134,11 +114,11 @@ export function Review() {
 
   return (
     <>
-      {/* The title on the margin's edge, where the rows' threads and the sections' headings hang. */}
+      {/* The title on the margin's edge, where the rows' threads and headings hang. */}
       <div className={`${HANG} flex flex-wrap items-center gap-x-3 gap-y-2`}>
         <PageHead>Review</PageHead>
         <ViewTabs views={VIEWS} current={view} onPick={pickView} />
-        {/* THE WEEK, as one control: back, the window, forward (which stops at this week). */}
+        {/* The week as one control: back, the window, forward. */}
         {view === 'week' && data && (
           // Its own line when the title row has no room (a phone): it wraps, never overflows.
           <div className="ml-auto flex flex-wrap items-center gap-1">
@@ -148,8 +128,7 @@ export function Review() {
             <span className="text-center text-sm whitespace-nowrap text-ink-muted tabular-nums">
               {monthDay(data.from)} – {monthDay(data.to)}
             </span>
-            {/* FORWARD STOPS AT THIS WEEK. Next week has not happened, so the only thing the
-                step could produce is an empty page -- a control whose one outcome is nothing. */}
+            {/* Forward stops at this week: next week has not happened. */}
             <Step
               label="The week after"
               disabled={range === null}
@@ -189,8 +168,7 @@ export function Review() {
           {projects.length === 0 ? (
             <EmptyState hang title="Nothing happened this week" />
           ) : (
-            /* ONE COLUMN, a section per line of work, like every other list in the app: the
-               threads at one x, and the day each thing happened in the margin. */
+            /* A section per line of work, the threads at one x. */
             <div className={`mt-8 flex flex-col gap-8 ${LIST_MEASURE}`}>
               {projects.map((p) => (
                 <DaySection key={p.projectId} label={p.projectName} count={counted(p)}>

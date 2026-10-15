@@ -6,10 +6,7 @@ import { searchTasks } from './search'
 import { getTask, listProjectTasks, taskDependencies } from './tasks'
 import { listToday, taskCalendar } from './today'
 
-/**
- * EVERY TASK QUERY, declared once. Each key starts with `'tasks'`, so `[['tasks']]` awaits all of
- * them and nothing else.
- */
+// Every key starts with `'tasks'`, so `[['tasks']]` awaits all of them and nothing else.
 type Range = { from: string; to: string }
 
 export const todayQuery = () => queryOptions({ queryKey: ['tasks', 'today'], queryFn: listToday })

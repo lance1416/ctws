@@ -8,9 +8,9 @@ export type TriageSection = {
 }
 
 type Props = {
-  /** The panel's accessible name. Unchanged from the inline group it replaces. */
+  /** The panel's accessible name. */
   groupLabel: string
-  /** The trigger's accessible name. Must not CONTAIN `groupLabel`, or role lookups collide. */
+  /** The trigger's accessible name. Must not contain `groupLabel`, or role lookups collide. */
   triggerLabel: string
   sections: TriageSection[]
   /** Called after an action ran, so the page can put focus back on the row it belongs to. */
@@ -18,20 +18,16 @@ type Props = {
 }
 
 /**
- * The way out of an overdue or carried row, as ONE control: a disclosure of named decisions ("push
- * the deadline to next Monday", "make it a plan instead"), not a cluster of links on every late row
- * and not a date picker, which cannot say "make this a plan" at all. The exact date is in the pane.
- *
- * The trigger keeps a fixed slot and the panel is positioned over the row, so nothing moves when it
- * opens; Escape and tabbing out close it, and focus never lands on <body>.
+ * The way out of an overdue or carried row: one disclosure of named decisions. The trigger keeps a
+ * fixed slot and the panel sits over the row, so nothing moves when it opens.
  */
 export function TriageControl({ groupLabel, triggerLabel, sections, onRan }: Props) {
   const [open, setOpen] = useState(false)
   const trigger = useRef<HTMLButtonElement>(null)
   const wrap = useRef<HTMLSpanElement>(null)
 
-  // A pointer press anywhere else closes it. Capture phase, so a click that lands on another row
-  // closes this panel AND does its own job in one press.
+  // A press anywhere else closes it. Capture phase, so a click on another row closes this panel
+  // and still does its own job.
   useEffect(() => {
     if (!open) return
     const onDown = (e: Event) => {
@@ -44,14 +40,12 @@ export function TriageControl({ groupLabel, triggerLabel, sections, onRan }: Pro
   return (
     <span
       ref={wrap}
-      // Escape lives on the WRAPPER, not on the panel: after the trigger opens the panel focus is
-      // still on the trigger, which is outside it, so a handler on the panel alone would never see
-      // the key. Here it closes the panel wherever focus sits inside this control.
+      // Escape lives on the wrapper: after opening, focus is still on the trigger, outside the
+      // panel, so a handler on the panel alone would never see the key.
       onKeyDown={(e) => {
         if (!open || e.key !== 'Escape') return
         e.preventDefault()
-        // The page's own Escape handlers (the detail panel, the shortcut overlay) must not also
-        // fire: this press belongs to the panel that is open.
+        // The page's own Escape handlers must not also fire.
         e.stopPropagation()
         setOpen(false)
         trigger.current?.focus()
@@ -91,8 +85,7 @@ export function TriageControl({ groupLabel, triggerLabel, sections, onRan }: Pro
           role="group"
           aria-label={groupLabel}
           onClick={(e) => e.stopPropagation()}
-          // Tabbing or clicking out of the panel closes it, so a forgotten panel cannot sit open
-          // over the row below.
+          // Tabbing or clicking out of the panel closes it.
           onBlur={(e) => {
             if (!wrap.current?.contains(e.relatedTarget as Node | null)) setOpen(false)
           }}
@@ -115,10 +108,8 @@ export function TriageControl({ groupLabel, triggerLabel, sections, onRan }: Pro
                   onClick={() => {
                     action.run()
                     setOpen(false)
-                    // The button that was clicked is about to unmount with the panel, and so,
-                    // usually, is this whole control: every one of these actions removes the
-                    // condition that put it on the row. So focus goes to the ROW, not back to the
-                    // trigger. Letting it fall to <body> loses the user's place (WCAG 2.4.3).
+                    // The action usually removes this whole control with the condition that put
+                    // it on the row, so focus goes to the row rather than the trigger.
                     if (onRan) onRan()
                     else queueMicrotask(() => trigger.current?.focus())
                   }}

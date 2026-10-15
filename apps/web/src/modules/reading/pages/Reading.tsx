@@ -20,14 +20,7 @@ import { QueryStatus } from '../../../platform/ui/QueryStatus'
 import { PageHead } from '../../../platform/ui/PageHead'
 import { HANG } from '../../../platform/ui/hang'
 
-/**
- * THE READING LIST.
- *
- * ONE LIST, split by what you have done with each thing rather than by what it is: a book and an
- * article are read the same way, and a list sorted by type would make you look in two places to
- * find what to read next. What you are reading now comes first: it is the shortest section and
- * the one with a claim on today.
- */
+/** Sections by status, not by kind; what you are reading now comes first. */
 const SECTIONS: { status: ReadingStatus; label: string }[] = [
   { status: 'reading', label: 'Reading now' },
   { status: 'todo', label: 'To read' },
@@ -45,22 +38,18 @@ export function Reading() {
   })
   const [showFinished, setShowFinished] = useState(false)
   const timeZone = useTimeZone()
-  // Kept current while the page is open, and handed to every row (`useNow`).
   const today = todayIn(timeZone, useNow())
 
   const rows = items.data ?? []
   const of = (status: ReadingStatus) => rows.filter((i) => i.status === status)
-  // Finished and dropped are both off the list. They share a section because the difference
-  // matters when you decide, not afterwards.
+  // Finished and dropped share a section: the difference matters when deciding, not afterwards.
   const finished = rows.filter((i) => !isToRead(i))
   const unfinished = rows.filter(isToRead)
 
   return (
     <>
-      {/* The title on the margin's edge, where the rows' threads and the sections' headings hang. */}
       <PageHead hang>Reading</PageHead>
 
-      {/* On the same edge, as wide as a line of title is worth. */}
       <div className={`mt-4 ${HANG} max-w-[52ch]`}>
         <AddReading />
       </div>
@@ -96,9 +85,6 @@ export function Reading() {
       {open && <ReadingDetail item={open} onClose={close} />}
       {gone && <GoneNotice kind="item" />}
 
-      {/* The finished pile, behind a switch -- the same rule the task tree learned: a list
-          that keeps everything forever gets worse the longer it is used, and a list that drops
-          things cannot be trusted. The count is the way back to them. */}
       {finished.length > 0 && (
         <div className={`mt-8 ${LIST_MEASURE}`}>
           <button

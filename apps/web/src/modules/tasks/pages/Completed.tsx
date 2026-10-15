@@ -18,7 +18,7 @@ import { useNow } from '../../../platform/time/useNow'
 import { QueryStatus } from '../../../platform/ui/QueryStatus'
 import { HANG } from '../../../platform/ui/hang'
 
-/** "Fri, Oct 2", with the year when it is not this year; the day is a calendar day, not an instant. */
+/** "Fri, Oct 2", with the year when not this year. `day` is a calendar day, not an instant. */
 function dayHeading(day: string, today: string): string {
   const [y, m, d] = day.split('-').map(Number) as [number, number, number]
   const weekday = weekdayOf(day, true)
@@ -28,11 +28,7 @@ function dayHeading(day: string, today: string): string {
   return `${near}${weekday}, ${date}`
 }
 
-/**
- * What I finished, newest first, across projects: Review's Done view. The server decided the
- * order and which day each task belongs to (in the account timezone); this only partitions the
- * list by that day.
- */
+/** Review's Done view, newest first. The server decides each task's day; this only groups by it. */
 export function Completed() {
   const completed = useQuery(completedQuery())
   const [openId, setOpenId] = useState<string | null>(null)
@@ -68,8 +64,7 @@ export function Completed() {
 
   return (
     <>
-      {/* An h2: Review's own heading is the h1. Unseen, and still where focus lands after a
-          restore -- a heading nobody can see is better than focus falling to <body>. */}
+      {/* Unseen, but where focus lands after a restore rather than falling to <body>. */}
       <h2
         ref={heading}
         tabIndex={-1}
@@ -95,8 +90,7 @@ export function Completed() {
             {tasks.map((t) => (
               <li
                 key={t.id}
-                // The same anatomy as Today and the tree: when it was finished is the margin, so a
-                // day's clocks end at one x and the list is scanned rather than read.
+                // When it was finished is the margin, so a day's clocks end at one x.
                 className="flex items-stretch"
               >
                 <RowLead
@@ -109,8 +103,7 @@ export function Completed() {
                 />
                 <ProjectRail projectId={t.projectId} />
                 <span className="flex min-w-0 flex-1 items-start gap-2.5 pr-2 pl-3.5">
-                  {/* Restoring is the one way back from a mis-click: a finished task has no other
-                    way off this list, and there is deliberately no general undo. */}
+                  {/* Restoring is the way back from a mis-click: there is no general undo. */}
                   <span className="flex h-11 shrink-0 items-center">
                     <StatusButton
                       status={t.status}
@@ -123,9 +116,6 @@ export function Completed() {
                       }
                     />
                   </span>
-                  {/* THE ROW OPENS. Until now a finished task could be restored from here
-                    and nothing else -- not read, not corrected, not deleted -- so the only way
-                    to look at one was to find it again in its project's tree. */}
                   <button
                     type="button"
                     data-done-row={t.id}
@@ -141,11 +131,7 @@ export function Completed() {
           </ul>
         </DaySection>
       ))}
-      {/* THE SERVER SAYS WHETHER THIS IS ALL OF IT. Counting the rows against a 200 written on
-          this side duplicates the server's limit and gets it wrong in both directions: it lies
-          when exactly 200 tasks have ever been finished, and goes quiet if the server's cap ever
-          changes. And it names where the rest is, because it is not lost -- Review takes any
-          week and has no cap. */}
+      {/* The server says whether this is all of it, so no cap is counted here. */}
       {completed.data?.truncated && (
         <p className={`mt-8 ${HANG} text-sm text-ink-muted`}>
           Showing the most recent {rows.length}. Older work is in Review, week by week.

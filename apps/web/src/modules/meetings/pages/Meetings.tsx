@@ -25,27 +25,8 @@ import { PageHead } from '../../../platform/ui/PageHead'
 import { HANG } from '../../../platform/ui/hang'
 
 /**
- * MEETINGS -- the module's own page.
- *
- * A meeting is reached and MADE here, not on the calendar: the calendar is a LENS over everything
- * with a date, and a lens does not own a kind of thing. A meeting is something you arrange, so it
- * is arranged here, and the grid answers what is on this month.
- *
- * COMING UP FIRST, and the past behind a toggle, like the reading pile's finished section: a list
- * of meetings is read to find out what is about to happen to you.
- *
- * ONE ROW PER SERIES, not per occurrence. A daily standup has twenty-three occurrences in a
- * month, and a page that listed them all would BE the standup -- the list answers which meetings
- * you have, and the calendar answers what falls on which day. The row carries the next one's
- * time, because that is the part of a series anybody is asking about.
- */
-
-/**
- * The next occurrence of each series, in time order. A series says so on its row.
- *
- * NEXT MEANS NOT YET OVER: at 15:00 a daily 09:00 standup's next one is tomorrow's, and showing
- * this morning's -- greyed, under Today -- hid the one time anybody is asking about. Only a series
- * with nothing later in the window falls back to the one that has ended.
+ * The next occurrence of each series, in time order. Next means not yet over: at 15:00 a daily
+ * 09:00 standup's is tomorrow's; only a series with nothing later falls back to one that ended.
  */
 function nextOfEach(rows: readonly MeetingOccurrence[], now: Date): MeetingOccurrence[] {
   const first = new Map<string, MeetingOccurrence>()
@@ -57,26 +38,22 @@ function nextOfEach(rows: readonly MeetingOccurrence[], now: Date): MeetingOccur
   return [...first.values()].sort((a, b) => a.startsAt.localeCompare(b.startsAt))
 }
 
-/** How far either way the two sections reach. A personal calendar, not an archive. */
+/** How far either way the two sections reach. */
 const WINDOW_DAYS = 31
 
 /** An occurrence by its two ids: a series has many, so its id alone does not name one. */
 type Occurrence = { meetingId: string; recurrenceId: string }
 
+/** One row per series, showing its next occurrence; coming up first, the past behind a toggle. */
 export function Meetings() {
   useCrumbs([{ label: 'Things', to: '/things' }, { label: 'Meetings' }])
   const accountZone = useTimeZone()
-  // Kept current while the page sits open (`useNow`): which day is today, and which meetings are
-  // over, follow the clock.
   const now = useNow()
   const today = todayIn(accountZone, now)
   const [making, setMaking] = useState(false)
   const [showPast, setShowPast] = useState(false)
-  /**
-   * The open meeting is in the address, with the list behind it: `/meetings/<id>?at=<occurrence>`
-   * for the one a row opened. A link names only the series, so it opens the series' next
-   * occurrence: the one someone following it wants.
-   */
+  // The open meeting is in the address as `/meetings/<id>?at=<occurrence>`. Without `at` the link
+  // names only the series, so it opens the series' next occurrence.
   const { id: openId = null } = useParams()
   const at = useSearchParams()[0].get('at')
   const navigate = useNavigate()
@@ -93,9 +70,8 @@ export function Meetings() {
     enabled: showPast,
   })
 
-  // The server returns occurrences in time order, so the first of each series is its next one.
   const coming = nextOfEach(ahead.data ?? [], now)
-  // Backwards, the MOST RECENT of each series is the one worth showing.
+  // Reversed, so the most recent of each series is the one shown.
   const past = nextOfEach([...(behind.data ?? [])].reverse(), now)
   const listed = [...coming, ...past].find(
     (m) => m.meetingId === openId && (at === null || m.recurrenceId === at),
@@ -115,7 +91,6 @@ export function Meetings() {
 
   return (
     <>
-      {/* The title on the margin's edge, where the rows' threads and the days' headings hang. */}
       <div className={`${HANG} flex flex-wrap items-center justify-between gap-3`}>
         <PageHead>Meetings</PageHead>
         <button
@@ -145,7 +120,6 @@ export function Meetings() {
         )}
 
         <div className="mt-8">
-          {/* The switch's word on the edge, where the headings are: its own padding hangs left. */}
           <button
             type="button"
             onClick={() => setShowPast((v) => !v)}
@@ -176,9 +150,7 @@ export function Meetings() {
           onClose={() => setMaking(false)}
           onMade={(made) => {
             setMaking(false)
-            // Straight into the pane, where the parts a form cannot hold -- a note, a place, an
-            // exception to one week -- are edited. The server hands back the occurrence, so this
-            // names the one that was just made rather than guessing which of a series it is.
+            // Straight into the pane, where what the form cannot hold (a note, a place) is edited.
             setOpen(made)
           }}
         />
@@ -192,10 +164,7 @@ export function Meetings() {
   )
 }
 
-/**
- * ONE STRETCH OF THE LIST -- coming up, or earlier -- as one section per day. The stretch has no
- * heading of its own: the days are the headings, and "Coming up" over "Today" said one thing twice.
- */
+/** One stretch of the list, coming up or earlier, as a section per day. */
 function Days({
   label,
   rows,
@@ -217,10 +186,8 @@ function Days({
     month: 'short',
     day: 'numeric',
   })
-  // THE DAY IS YOURS, NOT THE MEETING'S. `recurrenceId` carries the meeting's own local date, and
-  // 01:00 Friday in London is Thursday evening where you are standing -- grouping by it would put
-  // a meeting under a date no other screen in this app agrees with. Derived from the instant in
-  // the account's zone, the same rule the calendar squares and the Today page follow.
+  // Grouped by the account's day, not `recurrenceId`'s meeting-local date: 01:00 Friday in London
+  // can be Thursday evening here, and every other screen groups by the account's zone.
   const dayOf = new Intl.DateTimeFormat('en-CA', {
     timeZone: accountZone,
     year: 'numeric',
@@ -266,14 +233,8 @@ function Days({
 }
 
 /**
- * ONE MEETING, on the app's row: the time on YOUR clock in the margin -- when you have to be
- * somewhere -- quiet once it is over; its project's colour as the thread; then the title, and a
- * line with the rest: what was agreed when that is another clock, the project by name, who is in
- * it, how it repeats. Join stays on the row: at 09:29 the useful thing about a meeting link is a
- * control that opens it.
- *
- * THE WHOLE ROW OPENS IT (the title's button is stretched over the row); Join sits above that and
- * is its own target.
+ * A meeting's row: the time on the account's clock, the project thread, the title and a line with
+ * the rest. The title's button stretches over the row; Join sits above it as its own target.
  */
 function MeetingRow({
   meeting: m,
@@ -292,11 +253,9 @@ function MeetingRow({
   const over = new Date(m.endsAt).getTime() <= now.getTime()
   const join = meetingLink(m.location)
   const said: ReactNode[] = []
-  // The thread is the project's colour; its name LEADS the line, so a clipped line still names
-  // it (WCAG 1.4.1).
+  // The project's name leads, so a clipped line still names it and colour is not the only signal.
   if (m.projectName) said.push(<span key="project">{m.projectName}</span>)
-  // What was actually AGREED, when that is not your clock: "09:30 London" is what the other
-  // people in the room said, and it is not 04:30 anywhere.
+  // The agreed time when it is another zone: "09:30 London" is what the others in the room said.
   if (m.timeZone !== accountZone)
     said.push(
       <span key="zone" data-meeting-zone>

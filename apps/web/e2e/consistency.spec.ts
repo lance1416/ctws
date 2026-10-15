@@ -2,15 +2,9 @@ import { expect, test, type Locator, type Page } from '@playwright/test'
 import { dayOffset } from './days'
 import { apiPost, makeProject, makeTask, registerFreshUser } from './helpers'
 
-/**
- * THE SAME THING IN THE SAME PLACE, DRAWN THE SAME WAY.
- *
- * What a UI audit found drifting between surfaces that are meant to be one design: a block whose
- * text sat 8px in from every other label in the pane, the same section in a different place in one
- * of the four panes, and a gap that opened under one panel because of a neighbour's height.
- */
+/** The same thing in the same place, drawn the same way, across the panes and dialogs. */
 
-/** Where the WORDS start: the text's own box, not the element's, which may carry padding. */
+/** Where the words start: the text's own box, not the element's, which may carry padding. */
 const textLeft = (l: Locator) =>
   l.evaluate((el) => {
     const r = document.createRange()
@@ -34,7 +28,7 @@ async function panes(page: Page) {
   return { pid, person, book, meeting }
 }
 
-test('每个面板里，Linked 的字和别的标签左边对齐', async ({ page }) => {
+test('in every pane, Linked lines up on the left with the other labels', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   const w = await panes(page)
   const open: [string, () => Promise<unknown>, string][] = [
@@ -65,7 +59,7 @@ test('每个面板里，Linked 的字和别的标签左边对齐', async ({ page
   }
 })
 
-test('任务面板里 Linked 在笔记后面，和别的面板同一个位置', async ({ page }) => {
+test('in the task pane Linked follows the notes, as in the other panes', async ({ page }) => {
   const w = await panes(page)
   await page.goto(`/projects/${w.pid}`)
   await page.getByRole('listitem').filter({ hasText: 'Ship the importer' }).first().click()
@@ -77,7 +71,7 @@ test('任务面板里 Linked 在笔记后面，和别的面板同一个位置', 
 
 /** `a` sits to the left of `b` on the same line. */
 async function leftOf(a: Locator, b: Locator) {
-  // Both read in ONE frame. Two reads can straddle a reflow or a scroll as a dialog settles, and
+  // Both read in one frame. Two reads can straddle a reflow or a scroll as a dialog settles, and
   // then two buttons on one line are measured six pixels apart.
   const [ra, rb] = await a.evaluate(
     (x, y) => {
@@ -93,7 +87,7 @@ async function leftOf(a: Locator, b: Locator) {
   expect(ra.x + ra.width).toBeLessThanOrEqual(rb.x)
 }
 
-test('四个面板的编辑态：Cancel 在左、Save 在右，都在最上面', async ({ page }) => {
+test('all four panes edit with Cancel left, Save right, both at the top', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   const w = await panes(page)
   const open: [string, () => Promise<unknown>][] = [
@@ -125,7 +119,7 @@ test('四个面板的编辑态：Cancel 在左、Save 在右，都在最上面',
   }
 })
 
-test('新建对话框：Cancel 在左、Create 在右，靠右边', async ({ page }) => {
+test('new-item dialogs: Cancel left, Create right, at the right edge', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   const w = await panes(page)
   const dialogs: [string, () => Promise<unknown>][] = [
@@ -167,7 +161,7 @@ test('新建对话框：Cancel 在左、Create 在右，靠右边', async ({ pag
   }
 })
 
-test('删除的提问：Cancel 在左，确认在右', async ({ page }) => {
+test('the delete question: Cancel on the left, the confirm on the right', async ({ page }) => {
   const w = await panes(page)
   await page.goto(`/projects/${w.pid}`)
   await page.getByRole('listitem').filter({ hasText: 'Ship the importer' }).first().click()
@@ -209,7 +203,7 @@ async function meetingIn(page: Page, rrule: string | null) {
   return page.getByRole('dialog', { name: 'Meetings' })
 }
 
-test('取消一场重复的会：和删除同一种提问，答案是红的，退出叫 Keep it', async ({ page }) => {
+test('cancelling a series asks like delete: red answers, Keep it to leave', async ({ page }) => {
   const pane = await meetingIn(page, 'FREQ=WEEKLY;BYDAY=MO')
   await pane.getByRole('button', { name: 'Cancel meeting' }).click()
   const ask = pane.getByRole('alertdialog', { name: 'This meeting repeats' })
@@ -229,7 +223,7 @@ test('取消一场重复的会：和删除同一种提问，答案是红的，�
   await expect(ask.getByRole('button', { name: 'Cancel', exact: true })).toHaveCount(0)
 })
 
-test('取消一场只开一次的会：确认写 Cancel meeting，退出写 Keep it', async ({ page }) => {
+test('a one-off meeting cancels with Cancel meeting, or Keep it to leave', async ({ page }) => {
   const pane = await meetingIn(page, null)
   await pane.getByRole('button', { name: 'Cancel meeting' }).click()
   const confirm = pane.getByRole('button', { name: 'Cancel meeting' })
@@ -239,7 +233,7 @@ test('取消一场只开一次的会：确认写 Cancel meeting，退出写 Keep
   await expect(pane.getByRole('button', { name: 'Confirm delete' })).toHaveCount(0)
 })
 
-test('改一场重复的会时，问「哪几次」就在 Save 旁边，不在表单底下', async ({ page }) => {
+test('editing a series asks which occurrences next to Save, not below', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   const pane = await meetingIn(page, 'FREQ=WEEKLY;BYDAY=MO')
   await pane.getByRole('button', { name: 'Edit', exact: true }).click()
@@ -255,7 +249,7 @@ test('改一场重复的会时，问「哪几次」就在 Save 旁边，不在�
   await expect(ask.getByRole('button', { name: 'Just this one' })).toBeInViewport()
 })
 
-test('面板里的日子用 app 自己的写法，不出现 2026-10-19 这种线上格式', async ({ page }) => {
+test("panes write days the app's way, never in a wire format like 2026-10-19", async ({ page }) => {
   await registerFreshUser(page)
   const person = await apiPost(page, '/people', {
     name: 'Ying Chen',
@@ -301,7 +295,7 @@ test('面板里的日子用 app 自己的写法，不出现 2026-10-19 这种线
   await expect(cp.getByRole('button', { name: /^Birthday,/ })).toContainText('Oct 17, 1991')
 })
 
-test('同一种东西一种芯片：读的时候和改的时候一样，项目在每个面板里都是芯片', async ({ page }) => {
+test('one kind, one chip: the same reading and editing, in every pane', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'IQBank')
   const person = await apiPost(page, '/people', { name: 'Ying Chen', projectIds: [pid] })
@@ -336,7 +330,7 @@ test('同一种东西一种芯片：读的时候和改的时候一样，项目�
   expect(await look(cp.getByText('IQBank', { exact: true }).first().locator('..'))).toBe(read)
 })
 
-test('新建任务对话框的状态按字宽排，和面板里一样', async ({ page }) => {
+test('the new task dialog sizes status chips to their words, like the pane', async ({ page }) => {
   const w = await panes(page)
   await page.goto(`/projects/${w.pid}`)
   await page.getByRole('button', { name: /^New…/ }).click()
@@ -348,13 +342,13 @@ test('新建任务对话框的状态按字宽排，和面板里一样', async ({
   expect(new Set(widths).size, 'five chips, five widths: sized to the words').toBeGreaterThan(1)
 })
 
-test('Today：右栏再高，Working on 下面也只是一格间距', async ({ page }) => {
+test('Today: one gap under In progress, however tall the right column is', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await registerFreshUser(page)
   const pid = await makeProject(page, 'IQBank')
   await makeTask(page, pid, 'Review the pricing page', { status: 'in_progress' })
   await makeTask(page, pid, 'Rewrite the CV', { scheduledOn: dayOffset(0) })
-  // A tall right column: enough overdue rows to outgrow Working on and Today together.
+  // A tall right column: enough overdue rows to outgrow In progress and Today together.
   for (let i = 0; i < 8; i++)
     await makeTask(page, pid, `Overdue ${i}`, { dueAt: `${dayOffset(-2)}T09:00:00.000Z` })
   await page.goto('/tasks/today')

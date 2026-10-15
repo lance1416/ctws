@@ -14,7 +14,6 @@ describe('blockedLabel', () => {
   })
 
   it('names the first and COUNTS THEM ALL, not the ones it did not name', () => {
-    // "Waiting on 3 things" with three blockers; an off-by-one here would read as two.
     expect(blockedLabel([b('跑通 CI'), b('写迁移'), b('补测试')])).toBe(
       'Blocked by “跑通 CI” and 2 more',
     )

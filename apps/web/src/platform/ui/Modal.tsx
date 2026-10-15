@@ -44,8 +44,8 @@ export function Modal({
       <Dialog.Portal>
         {/* The scrim is the scroll container, so a tall panel scrolls the layer, not the page. */}
         <Dialog.Overlay
-          // Closed on the press, and only one that starts on the scrim: Radix's own outside click is
-          // armed a macrotask after mount and can miss a press made as the layer opens.
+          // Closed on the press, and only one that starts on the scrim: Radix's own outside click
+          // is armed a macrotask after mount and can miss a press made as the layer opens.
           onMouseDown={(e) => {
             if (e.target === e.currentTarget) onClose()
           }}

@@ -9,45 +9,23 @@ import { People } from './pages/People'
 import type { SearchHit, WorkspaceModule } from '../../shell/contract'
 
 /**
- * THE PEOPLE MODULE -- the third, and the first one that contributes NOTHING new to the seam.
- *
- * That is the point of it being third: a seam a new module can be built against without changing
- * it is a seam that has stopped being a draft.
- *
- * It contributes a row in Things, a chord, a search provider, a project block and where one of its
- * people lives. And nothing else:
- * - a WORKBENCH card, but only for BIRTHDAYS. An address book is not something in front of you,
- *   and a card listing people would be decoration on the one page that is supposed to hold only
- *   what is live -- but whose birthday it is this week is exactly that.
- * - CALENDAR entries: birthdays. They are here because somebody ASKED for them, not because a
- *   slot was empty -- which is what the previous version of this comment refused, and rightly,
- *   until the asking happened. A birthday has no time of day and wears no colour.
- * - no CAPTURE rule. A pasted email address is far likelier to be a note about someone than a
- *   person to file, and a wrong guess here would be silently filing things in the wrong module.
+ * People, with Birthdays as a tab, search, birthday calendar entries and a birthday card.
+ * No capture rule: a pasted address is likelier a note about someone than a person to file.
  */
 const ID = 'people'
 
-/**
- * This module's dated things. No `Detail`: a birthday belongs to a person, and that person has a
- * page of their own, so the entry is a link rather than something that opens here.
- */
+/** No `Detail`: a birthday's entry links to its person's page. */
 function useBirthdayEntries(range: { from: string; to: string }) {
   const result = useQuery(birthdayCalendarQuery(range))
   return { entries: result.data ?? [], isError: result.isError }
 }
 
 /**
- * THE WORKBENCH CARD: the few birthdays that come TO you.
- *
- * WHO appears is the server's answer (each person by their own lead), not a filter written again
- * here. This card is the only place in the app that comes looking for you -- a real push would need
- * a scheduler, and v1 deliberately has no background anything. So the cost is stated plainly: a
- * week you never open CTWS is a week it cannot tell you.
+ * The people whose reminder lead has come round, as the server decides. Nothing pushes, so a week
+ * the app is never opened is a week it cannot tell you.
  */
 function BirthdayCard() {
   const view = useQuery(birthdaysQuery())
-  // Who the card is FOR: the people whose reminder lead has come round. Everyone else is on the
-  // Birthdays page; the card is what finds you, not all of them.
   const rows = view.data?.card ?? []
   const next = view.data?.coming[0] ?? view.data?.later[0]
   const today = view.data?.today ?? ''
@@ -59,8 +37,8 @@ function BirthdayCard() {
     )
   }
   if (rows.length === 0) {
-    // 空着的意思是没人到提前量，不是一周之内没人 -- 三天后生日、只要当天提醒的人同时满足两者，
-    // 说「一周没人」就是在当面说错话。没有下一个人，才是真的一个生日都没记。
+    // Empty means no lead has come round, not that nobody is due this week: a birthday in three
+    // days with a same-day reminder is both. Only with no next person is no birthday recorded.
     return (
       <PanelEmpty>
         {next ? (
@@ -79,7 +57,6 @@ function BirthdayCard() {
   const [first, ...more] = rows
   return (
     <div className="px-2">
-      {/* THE ONE TO GREET, large: a name and when, the way you would say it. */}
       <Link to={`/${ID}/${first!.personId}`} data-birthday-row className="block">
         <span className="block text-xl font-semibold">{first!.name}</span>
         <span className="mt-0.5 block">
@@ -115,7 +92,6 @@ function BirthdayCard() {
 /** Everyone, by name: the list other modules pick people from (a meeting's attendees). */
 export const usePeople = () => useQuery(peopleQuery())
 
-/** Things' count for people: how many there are. The kind's name already says what of. */
 function PeopleCount() {
   const people = usePeople()
   if (!people.data) return null
@@ -127,13 +103,11 @@ function PeopleCount() {
   )
 }
 
-/** Whose birthday is next, when anyone's is coming. */
 function NextBirthdayLine() {
   const view = useQuery(birthdaysQuery())
   const next = view.data ? [...view.data.coming, ...view.data.later][0] : undefined
   if (!next) return null
-  // A countdown and not a date: no punctuation after the name, which may be Han, where the
-  // engine's Han-Latin spacing would put a gap before a comma.
+  // No punctuation after the name: a Han name would get the engine's Han-Latin gap before a comma.
   return (
     <span data-status>
       Next birthday: {next.name} {countdownPhrase(next.inDays)}
@@ -141,7 +115,6 @@ function NextBirthdayLine() {
   )
 }
 
-/** This module's half of federated search: names, organisations and addresses. */
 function usePeopleHits(query: string) {
   const results = useQuery({
     ...personSearchQuery(query),
@@ -151,7 +124,6 @@ function usePeopleHits(query: string) {
     id: person.id,
     to: `/${ID}/${person.id}`,
     title: person.name,
-    // What identifies a person at a glance is where they are from and how to reach them.
     meta: [person.org, ...person.projects.map((p) => p.name), person.channels[0]?.value]
       .filter(Boolean)
       .join(' · '),
@@ -160,14 +132,7 @@ function usePeopleHits(query: string) {
   return { hits, isError: results.isError, isSuccess: results.isSuccess }
 }
 
-/**
- * NO BLOCK ON A PROJECT PAGE.
- *
- * This module's rows reach a project as edges, and the shell draws every kind of edge the same way.
- * One of these is made on its own page and filed there, or dropped into the capture box, never from
- * a project page.
- */
-
+// No project-page block: people reach a project as edges, which the shell draws for every kind.
 export const peopleModule: WorkspaceModule = {
   id: ID,
   label: 'People',
@@ -184,8 +149,7 @@ export const peopleModule: WorkspaceModule = {
     { index: true, element: <People /> },
     // Before `:id`, so a reader need not know that react-router ranks a static segment higher.
     { path: 'birthdays', element: <Birthdays /> },
-    // 一个人没有自己的页：这条路渲染的是列表加他的那一层（`People` 从 URL 读开着的是谁）。
-    // 任务也是这样接的，而项目保留整页 —— 它有任务树，那是真的需要一整页的东西。
+    // A person has no page of their own: this is the list with their pane open.
     { path: ':id', element: <People /> },
   ],
   search: { useHits: usePeopleHits },
@@ -200,7 +164,6 @@ export const peopleModule: WorkspaceModule = {
       span: 4,
     },
   ],
-  // `n` for name. One keyspace across modules, so this is checked against every other chord.
   chords: [
     { id: 'people', key: 'n', label: 'Go to People', resolve: () => `/${ID}`, order: 17 },
     {
@@ -208,8 +171,7 @@ export const peopleModule: WorkspaceModule = {
       key: 'b',
       label: 'Go to Birthdays',
       resolve: () => `/${ID}/birthdays`,
-      // 19 and not 18: the shell's Calendar already holds 18, and two chords with one order leave
-      // the teaching order to whichever list was spread first.
+      // Not 18: the shell's Calendar holds it, and a shared order sorts by spread order.
       order: 19,
     },
   ],

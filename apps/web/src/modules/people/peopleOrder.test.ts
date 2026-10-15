@@ -6,8 +6,7 @@ const person = (name: string, id = name) =>
 
 describe('sortByName', () => {
   it('puts Chinese names in pinyin order, not byte order', () => {
-    // Chen is c, Lao is l, A is a. A plain sort orders them by code point -- 陈(9648) 老(32769)
-    // 阿(38463) -- which looks right here and is wrong as soon as Wang comes before Li.
+    // By code point Zhang sorts before Li and Wang; in pinyin it is Li, Wang, Zhang.
     const sorted = sortByName([person('王五'), person('李四'), person('张三')])
     expect(sorted.map((p) => p.name)).toEqual(['李四', '王五', '张三'])
   })

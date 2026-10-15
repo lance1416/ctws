@@ -26,7 +26,6 @@ export function Layout() {
   const [paneOpen, setPaneOpen] = useState(false)
   // Opened from the header's button, the `f` key, or the phone's tab bar.
   const [searching, setSearching] = useState(false)
-  // The sheet, unless the page says it is a desk (`useGround`).
   const [ground, setGround] = useState<Ground>('sheet')
   const wide = useWidePane()
 
@@ -57,7 +56,6 @@ export function Layout() {
   return (
     <BreadcrumbsProvider>
       <div className="min-h-screen">
-        {/* Where you are, and what works from every page; no destinations, those are the rail's. */}
         <header className={`sticky top-0 ${LAYER.bar} border-b border-rule bg-chrome`}>
           <div className="flex min-h-13 items-center gap-x-3 px-4 py-2 sm:gap-x-4">
             <Link to="/" className="shrink-0 font-semibold tracking-tight text-ink">
@@ -80,7 +78,7 @@ export function Layout() {
           </div>
         </header>
         {/* `minmax(0,1fr)`, not `1fr`: one long title would otherwise widen the page past 375px.
-            The detail's 24rem column matches the numbers in DetailPane. */}
+            The 24rem column matches DetailPane's width. */}
         <div
           className={`lg:grid lg:items-start ${
             paneOpen && wide

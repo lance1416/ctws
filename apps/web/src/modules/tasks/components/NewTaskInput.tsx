@@ -4,8 +4,7 @@ import { BODY_GUTTER } from '../../../shell/rows/RowParts'
 import { CHEVRON_PX, gutterPlus, HANDLE_PX, INDENT_PX } from './TaskRowParts'
 import { useComposing } from '../../../platform/keyboard/composition'
 
-// The status marker's COLUMN -- the width of `StatusButton`, not of the glyph inside it -- so the
-// input lines up with the TITLE of the rows around it rather than with the marker.
+// The width of `StatusButton`, not of its glyph, so the input lines up with the rows' titles.
 const MARK_PX = 28
 
 type Props = {
@@ -13,7 +12,7 @@ type Props = {
   depth: number
   /** Resolves true when the task was created, so the input can clear and stay open. */
   onCommit: (title: string) => Promise<boolean>
-  /** Why the last attempt failed, said HERE rather than above the whole tree. */
+  /** Why the last attempt failed, said under the box rather than above the whole tree. */
   error?: string | null
   /** `restoreFocus` is false when the user left by clicking elsewhere. */
   onCancel: (restoreFocus: boolean) => void
@@ -37,12 +36,11 @@ export function NewTaskInput({ depth, onCommit, onCancel, error }: Props) {
   }
 
   return (
-    // The row's own anatomy, with the margin and the thread left empty: the cursor starts where
-    // the titles start.
+    // The row's anatomy with the margin and thread left empty: the cursor starts where titles do.
     <li data-depth={depth} data-new-task className="flex items-stretch">
       <span aria-hidden="true" className={`shrink-0 ${HANG_WIDTH}`} />
       <span aria-hidden="true" className="w-[3px] shrink-0" />
-      {/* A column, not a row: the failure message belongs UNDER the box it is about. */}
+      {/* A column, so the failure message sits under the box it is about. */}
       <div
         style={{
           paddingLeft: gutterPlus((depth - 1) * INDENT_PX + HANDLE_PX + CHEVRON_PX + MARK_PX + 8),
@@ -79,8 +77,7 @@ export function NewTaskInput({ depth, onCommit, onCancel, error }: Props) {
             }`}
           />
         </div>
-        {/* The typed title is deliberately still in the box above: what was typed is the user's,
-          not the request's, and retyping it is the cost of a failure they did not cause. */}
+        {/* The typed title stays in the box after a failure. */}
         {error && (
           <p id={describedBy} role="alert" className="pb-1 text-sm text-danger">
             {error}

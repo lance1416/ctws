@@ -4,98 +4,45 @@ import type { ComponentType, ReactNode } from 'react'
 import type { RouteObject } from 'react-router-dom'
 
 /**
- * WHAT A MODULE DECLARES.
- *
- * The shell owns authentication and workspace isolation, the three-pane frame, the tokens and
- * type scale, the focus model, overlays, the leave guard, the generic pieces, projects, the edge
- * table, and the cross-module surfaces: capture, federated search and the key table.
- *
- * A module owns its own tables, its routes under `/api/v1/<id>/` and `/<id>/…`, its own body
- * inside the detail pane, and what it contributes back to those shell surfaces.
+ * What a module declares. The shell owns auth, the frame, overlays, projects, the edge table and
+ * the cross-module surfaces; a module owns its tables, its routes and what it adds to those.
  */
 export type WorkspaceModule = {
-  /**
-   * The namespace: the module's SPA routes live under `/<id>/…` and its API routes under
-   * `/api/v1/<id>/…`. Stable; it is in URLs that may be bookmarked.
-   */
+  /** The namespace for `/<id>/…` and `/api/v1/<id>/…`. Stable: it is in bookmarked URLs. */
   id: string
   /** How the module names itself where a result says where it came from. Text, never a colour. */
   label: string
-  /**
-   * Pages this module OFFERS for the top of the rail. Offering is all a module can do: the shell's
-   * `PINNED` list decides which few are always visible, because that tier holds pages that cut
-   * across every kind (Today, Review) and a module only knows about its own.
-   */
+  /** Pages offered for the top of the rail; the app's `pinned` config picks which are shown. */
   pages?: readonly ModulePage[]
-  /**
-   * THE ONE ENTRY this kind of thing gets in Things, and the only place a kind appears in the
-   * chrome. A module never adds rows to the rail: the rail would grow with every kind until it
-   * stopped being scannable. More surfaces for one kind (Birthdays) are tabs on the kind's page.
-   */
+  /** The kind's one entry in Things. A module never adds rows to the rail; more pages are tabs. */
   kind?: KindEntry
-  /** The module's own pages, mounted by the shell under `/<id>/`. Paths are RELATIVE. */
+  /** Mounted by the shell under `/<id>/`, so the paths are relative. */
   routes: RouteObject[]
-  /** Where a captured line lands, if this module can take one. */
   capture?: CaptureContribution
-  /** This module's half of federated search. */
   search?: SearchContribution
-  /** Keys this module adds to the shell's key table. */
   chords?: Chord[]
-  /** What this module adds to a project: its page, its row in the list, its card, its delete. */
   project?: ProjectContribution
   /** Sections this module adds to the keyboard help, in its order. */
   help?: readonly HelpSection[]
   /**
-   * This module's DATED THINGS, for the shell's calendar.
-   *
-   * The shell draws the grid and knows nothing about what each date MEANS: a module supplies
-   * entries carrying their day and their own word for it. The day is decided by the server in
-   * the account's zone — a client turning an instant into a day would put a 23:00 deadline on
-   * the wrong square for half the world.
+   * Dated things for the shell's calendar. The server decides each entry's day in the account's
+   * zone; a client turning an instant into a day would put a 23:00 deadline on the wrong square.
    */
   calendar?: CalendarContribution
-  /**
-   * This module's cards on the workbench.
-   *
-   * A glance in this module's terms, not a second copy of its page. The shell draws the card and
-   * decides nothing about the contents.
-   *
-   * A WIDGET MUST NOT SHOW what already has a home on a project page: the workbench is for the
-   * things belonging to no line of work, and two surfaces showing the same rows is two places to
-   * keep in your head.
-   */
+  /** Cards on the workbench. A card must not show rows that already live on a project page. */
   widgets?: readonly Widget[]
-  /**
-   * HOW THIS MODULE'S THINGS ARE REACHED FROM SOMEBODY ELSE'S PAGE.
-   *
-   * The edge table and the backlink panel are the shell's: opening a person and seeing the
-   * meetings they are in is one read of one table, and no module could own it without learning
-   * about another. What the shell cannot know is where another module's thing lives.
-   *
-   * The API half is `links/linkable.ts`, where a module says what its things are CALLED. Routing
-   * stays here, because a route is the web app's.
-   */
+  /** Where this module's things live, for the shell's edge table and backlinks. */
   relations?: readonly RelationContribution[]
 }
 
-/**
- * WHAT A MODULE ADDS TO A PROJECT. Components rather than numbers: the numbers come from the
- * module's own queries, and the shell must not know which endpoints those are.
- */
+/** What a module adds to a project. Components, so the shell never knows the module's endpoints. */
 export type ProjectContribution = {
-  /**
-   * Rows on the project's page. Most modules have none: their rows are edges, and the shell draws
-   * every kind of edge the same way. A block is for rows that need an editor a list of links
-   * cannot be — the task tree has drag, dependencies and an inline new row.
-   */
+  /** Rows on the project's page that need more than a list of edges, like the task tree. */
   Block?: {
     Component: ComponentType<{ projectId: string; view: string }>
-    /**
-     * The views the block offers, as tabs in its head. Fewer than two draws nothing. The first is
-     * the default; the selected one is in the URL (`?view=<module>:<id>`).
-     */
+    /** Tabs in the block's head, drawn from two up; the first is the default. */
     views?: readonly { id: string; label: string }[]
-    /** A control in the block's head, beside its name — its own "new", typically. */
+    /** A control in the block's head, typically its own "new". */
     Action?: ComponentType<{ projectId: string }>
   }
   /** Numbers under the project's name on its page, said as a sentence. */
@@ -108,113 +55,83 @@ export type ProjectContribution = {
   contents?: (qc: QueryClient, projectId: string) => Promise<string | null>
 }
 
-/** One group in the keyboard help: where the keys work, and what each does. */
 export type HelpSection = {
   title: string
   keys: readonly (readonly [key: string, what: string])[]
 }
 
-/** One object type this module answers for: where one lives, and what one looks like. */
 export type RelationContribution = {
-  /** The type as the contract names it. Exactly one module answers for each. */
+  /** Exactly one module answers for each type. */
   type: ObjectType
-  /** ONE of them, named. The API supplies the plural for a group heading; this is the eyebrow. */
+  /** One of them, named, for the eyebrow; the API supplies the plural. */
   kind: string
-  /** Where one of these lives. */
   to: (id: string) => string
 }
 
-/** A module's half of the calendar. One provider per module; the shell merges them. */
+/** A module's half of the calendar; the shell merges them. */
 export type CalendarContribution = {
-  /** How this module's entries are named in the grid's view tabs. */
+  /** The name in the grid's view tabs. */
   label: string
   /** A hook: this module's entries for an inclusive day range. */
   useEntries: (range: { from: string; to: string }) => {
     entries: CalendarEntry[]
     isError: boolean
   }
-  /**
-   * WHAT OPENS when one of this module's entries is clicked on the grid.
-   *
-   * Without it an entry is a link to wherever `to` points, which is right for a deadline: it
-   * belongs to a task, and the task's own list is where you deal with it. A meeting has nowhere
-   * else to be, so it opens here.
-   */
+  /** What opens when an entry is clicked; without it the entry links to its `to`. */
   Detail?: ComponentType<{ id: string; onClose: () => void }>
 }
 
-/** One card on the workbench. */
 export type Widget = {
-  /** Unique within the module. Also the card's test handle. */
+  /** Unique within the module; also the card's test handle. */
   id: string
-  /** The card's heading. */
   label: string
-  /** The card's page: its heading is the link there, so there is no separate "See all". */
+  /** The heading links here, so there is no separate "See all". */
   to?: string
-  /** The card's contents. The shell gives it no props: a widget is about the workspace, not a row. */
+  /** Takes no props: a widget is about the workspace, not a row. */
   Component: ComponentType
   /** A short note at the end of the heading row: the date, "2 today", "5 to read". */
   Aside?: ComponentType
-  /** Its place on the Workbench. An editorial order, not registration order. */
+  /** An editorial order, not registration order. */
   order?: number
-  /**
-   * How many of the Workbench's twelve columns it takes from 1024 up. Its natural size is the
-   * module's to say -- a glance of three counts and a list of rows want different widths -- and
-   * the arrangement round it is the shell's.
-   */
+  /** How many of the Workbench's twelve columns it takes from 1024px up. */
   span?: 4 | 6 | 8 | 12
 }
 
-/** A page a module owns that the shell may pin to the top of the rail. */
 export type ModulePage = {
-  /** Unique within the module; `PINNED` names it as `<module id>:<page id>`. */
+  /** Unique within the module; `pinned` names it as `<module id>:<page id>`. */
   id: string
-  /** Absolute path, inside the module's own namespace. */
+  /** Absolute, inside the module's own namespace. */
   to: string
   label: string
   /** NavLink's exact match, for a path that is a prefix of another. */
   end?: boolean
   /** The id of the chord that goes here, so search can show its key. */
   chord?: string
-  /**
-   * The count beside the label. A COMPONENT rather than a number, because the count is the
-   * module's own query and the rail must not know which one. It renders nothing when there is
-   * nothing to say.
-   */
+  /** The count beside the label. A component, so the rail never knows the module's query. */
   Count?: ComponentType
 }
 
-/** A kind of thing, as Things lists it: one row, whatever the kind. */
+/** A kind of thing, as Things lists it. */
 export type KindEntry = {
-  /** The kind's name, plural: "People", "Meetings". */
+  /** Plural: "People", "Meetings". */
   label: string
-  /** Where the kind's own page is. */
   to: string
   /** The count in the kind's own words ("5 to read"), zero included. */
   Count?: ComponentType
-  /** One line of what is current ("Next birthday: …"). Renders nothing when there is nothing. */
+  /** One line of what is current ("Next birthday: …"); renders nothing when there is nothing. */
   Status?: ComponentType
   /** The id of the chord that goes here, so Things can show its key. */
   chord?: string
-  /** Its place in Things. An editorial order, not registration order. */
+  /** An editorial order, not registration order. */
   order?: number
 }
 
-/**
- * Where a captured line goes. The shell names one default explicitly rather than falling through
- * to whichever module happens to be registered. Capture stays a line and a keystroke: resolving
- * the target costs no interaction.
- */
 export type CaptureContribution = {
   /** A hook: the module's default capture target, and why there is none when there is none. */
   useTarget: () => CaptureTargetState
   /**
-   * Does this module claim the line? Asked in registration order; the first claimer takes it, and
-   * when nobody claims it the line goes to `CAPTURE_MODULE_ID`.
-   *
-   * NOT A HOOK, and deliberately pure: it runs on every keystroke, and a rule needing a query
-   * could not answer before Enter is pressed. A wrong guess is visible, because the confirmation
-   * names where the line went.
+   * Whether this module claims the line; the first claimer in registration order takes it, else
+   * the configured `captureModuleId`. Pure rather than a hook: it runs on every keystroke.
    */
   accepts?: (line: string) => boolean
 }
@@ -222,7 +139,7 @@ export type CaptureContribution = {
 export type CaptureTargetState = {
   /** null while unknown, or when this module cannot capture right now. */
   target: CaptureTarget | null
-  /** The destination is genuinely absent — a broken install, not a slow network. */
+  /** The destination is genuinely absent: a broken install, not a slow network. */
   missing: boolean
   /** The destination could not be loaded; retrying may work. */
   unavailable: boolean
@@ -237,20 +154,15 @@ export type CaptureTarget = {
   submit: (title: string) => Promise<unknown>
 }
 
-/** A module's half of federated search. One provider per module; the shell merges them. */
 type SearchContribution = {
   /** A hook: this module's hits for `query`. An empty query means idle, not "match everything". */
   useHits: (query: string) => { hits: SearchHit[]; isError: boolean; isSuccess: boolean }
 }
 
-/**
- * One search result, in the pieces the dialog lays out. The module decides what its hit SAYS; the
- * shell decides where those pieces sit, so results from two modules line up in one list.
- */
+/** One search result. The module decides what it says; the shell lays it out so modules line up. */
 export type SearchHit = {
-  /** Unique across modules in practice (a uuid); also the row's test handle. */
+  /** A uuid in practice, so unique across modules; also the row's test handle. */
   id: string
-  /** Where choosing this hit goes. */
   to: string
   title: string
   /** The second line: a breadcrumb in the module's own wording. */
@@ -269,15 +181,11 @@ export type Chord = {
   /** The help overlay's wording. */
   label: string
   /**
-   * Where this chord goes, or null when it cannot be resolved yet (a destination that is a row in
-   * the database, not a route literal). NOT a hook: it runs on the keypress, so a chord costs no
-   * query while nobody presses it.
+   * Where this chord goes, or null when that cannot be resolved yet. Not a hook: it runs on the
+   * keypress, so a chord costs no query while nobody presses it.
    */
   resolve: (ctx: ChordContext) => string | null
-  /**
-   * The chord's place in the key table, which the help overlay teaches in this order. Explicit,
-   * so the order is not an accident of which module was registered first.
-   */
+  /** The order the help overlay teaches; explicit, so it does not follow registration order. */
   order: number
 }
 

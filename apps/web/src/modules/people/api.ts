@@ -9,7 +9,6 @@ import type {
 import { queryOptions } from '@tanstack/react-query'
 import { apiFetch, calendarOf } from '../../platform/http/api'
 
-/** The people module's own namespace. Every query key starts with it, too. */
 const BASE = '/people'
 
 /** A birthday as the form holds it, before the server works out what it means. */
@@ -32,10 +31,7 @@ async function searchPeople(query: string): Promise<PersonResponse[]> {
   return (await apiFetch<{ people: PersonResponse[] }>(path)).people
 }
 
-/**
- * What this birthday WOULD mean, while it is being typed. The server answers, so the lunar rules
- * have one implementation and the browser never loads the library that decides them.
- */
+/** What a birthday being typed would mean; the server answers, so the lunar rules live once. */
 function previewBirthday(draft: BirthdayDraft): Promise<BirthdayPreviewResponse> {
   const params = new URLSearchParams({
     calendar: draft.calendar,
@@ -57,7 +53,6 @@ export const birthdaysQuery = () =>
     queryFn: (): Promise<BirthdaysResponse> => apiFetch(`${BASE}/birthdays`),
   })
 
-/** This module's dated things, for the shell's grid. */
 export const birthdayCalendarQuery = (range: { from: string; to: string }) =>
   queryOptions({
     queryKey: ['people', 'calendar', range.from, range.to],

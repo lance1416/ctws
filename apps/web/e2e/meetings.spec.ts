@@ -83,11 +83,11 @@ test('a repeating meeting asks which occurrences a move touches', async ({ page 
   await square(page, '2026-10-27').getByRole('button', { name: /周会/ }).click()
   await expect(pane(page)).toBeVisible()
 
-  // 改一场会和改一个人、一条任务同一条路：一个 Edit 进表，Save 一次写回。
+  // Edited like a person or a task: Edit opens the form, and one Save writes it back.
   await pane(page).getByRole('button', { name: 'Edit', exact: true }).click()
   await pane(page).getByLabel('Start').fill('2026-10-27T15:00')
   await pane(page).getByRole('button', { name: 'Save' }).click()
-  // 问的是数据模型本来就有的那个问题，不是为这一刻发明的对话框；一张表只问一次。
+  // The repeat question is asked once for the whole form.
   await expect(page.getByRole('alertdialog', { name: 'This meeting repeats' })).toBeVisible()
   await page.getByRole('button', { name: 'Just this one' }).click()
 
@@ -142,7 +142,7 @@ test('the people in the room come out of the people module', async ({ page }) =>
   await pane(page).getByRole('button', { name: 'Add Attendees' }).click()
   await page.getByRole('menuitem', { name: '陈颖' }).click()
   await pane(page).getByRole('button', { name: 'Save' }).click()
-  // 存完回到阅读态：在场的人就写在那儿。
+  // Saved and back in reading mode, the attendees are listed.
   await expect(pane(page).locator('[data-attendees]')).toContainText('陈颖')
 })
 

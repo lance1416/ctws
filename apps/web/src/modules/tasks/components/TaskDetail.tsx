@@ -18,11 +18,7 @@ type Props = {
   onSaved?: () => void
 }
 
-/**
- * ONE TASK, in the shell's detail pane: reading by default, the form behind Edit, and the one
- * irreversible action at the foot. Saving returns to reading -- reading back what was just written
- * is the next thing a person does.
- */
+/** One task in the pane: reading by default, the form behind Edit. Saving returns to reading. */
 export function TaskDetail({ task, onClose, onSaved }: Props) {
   useRecordRecent({
     type: 'task',
@@ -31,7 +27,7 @@ export function TaskDetail({ task, onClose, onSaved }: Props) {
     to: revealHref(task.projectId, task.id),
     kind: 'Task',
   })
-  /** The pane's body: where focus goes back to, rather than <body> (WCAG 2.4.3). */
+  /** The pane's body: where focus goes back to, rather than <body>. */
   const panel = useRef<HTMLDivElement>(null)
   const [editing, setEditing] = useState(false)
   const edit = useTaskDetailForm(task)
@@ -49,8 +45,8 @@ export function TaskDetail({ task, onClose, onSaved }: Props) {
   const requestClose = () => guard.leave(onClose)
 
   /**
-   * ESCAPE UNWINDS ONE LEVEL: the discard question, then editing. The pane itself is the shell's
-   * to close, so a press handled here says so with `preventDefault` and anything else travels on.
+   * Escape unwinds one level: the discard question, then editing. Closing the pane is the shell's
+   * job, so only a press handled here is marked with `preventDefault`.
    */
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.key !== 'Escape' || e.defaultPrevented) return
@@ -62,7 +58,7 @@ export function TaskDetail({ task, onClose, onSaved }: Props) {
 
   return (
     <DetailPane label="Task details" onClose={requestClose}>
-      {/* `flex-1 flex-col`: the pane's height reaches down to `DangerZone`, which needs a floor. */}
+      {/* `flex-1 flex-col`: the height reaches down to `DangerZone`, which needs a floor. */}
       <div
         ref={panel}
         tabIndex={-1}
@@ -86,7 +82,7 @@ export function TaskDetail({ task, onClose, onSaved }: Props) {
         ) : (
           <>
             <TaskReading task={task} onEdit={() => setEditing(true)} onClose={requestClose} />
-            {/* Last, under a rule, in reading mode: destroying the task is not a peer of saving it. */}
+            {/* Last, under a rule: destroying the task is not a peer of saving it. */}
             <DangerZone>
               <DangerAction
                 label="Delete task"

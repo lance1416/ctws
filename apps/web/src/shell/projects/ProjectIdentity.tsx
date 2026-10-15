@@ -8,15 +8,8 @@ import { useInlineEdit } from '../../platform/ui/useInlineEdit'
 import { MENU_ITEM, MENU_SURFACE } from '../../platform/ui/menuSurface'
 
 /**
- * A PROJECT'S NAME AND COLOUR, EDITABLE WHERE THEY ARE SHOWN.
- *
- * The server has taken both since M2a and nothing in the interface could write either: the inbox
- * was stuck being called "Inbox" in an otherwise Chinese app, and a project's identity colour was
- * whichever slot it happened to be handed. This is the whole of the missing half -- a name you
- * can click, and the six slots behind the chip.
- *
- * The chip stays a chip: it is still never alone, the name is always beside it (WCAG 1.4.1), and
- * the menu's items carry the slot's number in words rather than relying on the swatch.
+ * A project's name and colour, editable where they are shown. The menu names each slot in words,
+ * so the swatch is never the only signal.
  */
 export function ProjectIdentity({
   projectId,
@@ -54,9 +47,8 @@ export function ProjectIdentity({
   })
 
   return (
-    // `flex-1`: the heading is a BUTTON inside the <h1> now, and a flex item sized from its
-    // content collapses to nothing once `min-w-0` lets it, truncating the title to a few
-    // characters at full width. An e2e cannot see it: truncation is CSS, and the name is whole.
+    // `flex-1`: sized from its content, the heading would collapse under `min-w-0` and truncate
+    // the name to a few characters even at full width.
     <div className="flex min-w-0 flex-1 items-center gap-2.5">
       <DropdownMenu.Root>
         <DropdownMenu.Trigger
@@ -95,10 +87,7 @@ export function ProjectIdentity({
           className="min-w-0 flex-1 rounded-md border border-rule-strong bg-sheet px-2 py-0.5 text-2xl font-semibold text-ink"
         />
       ) : (
-        // The TYPE lives on the <h1>, not on the button inside it: the heading is what the type
-        // scale measures, and a button that carried the pair would leave the h1 reading as body
-        // text to anything inspecting it. Preflight gives the button `font:
-        // inherit`, so it wears the heading's pair without naming it.
+        // The type size sits on the <h1>, not the button; Preflight's `font: inherit` passes it on.
         <h1
           id="project-heading"
           tabIndex={-1}

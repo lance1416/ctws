@@ -27,7 +27,6 @@ describe('planDrop', () => {
       ['b', 1],
       ['c', 1],
     ])
-    // Dropping 'a' after the last row, at root depth: it becomes the last root.
     expect(planDrop({ rows, draggedId: 'a', slot: 3, wantedDepth: 1 })).toEqual({
       ok: true,
       parentId: null,
@@ -42,8 +41,7 @@ describe('planDrop', () => {
       ['existing', 2],
       ['dragged', 1],
     ])
-    // Slot 1 is directly under `parent`, indented one level: dragged becomes parent's FIRST
-    // child, so it must land before the child that is already there.
+    // As parent's first child, it lands before the child already there.
     expect(planDrop({ rows, draggedId: 'dragged', slot: 1, wantedDepth: 2 })).toEqual({
       ok: true,
       parentId: 'parent',
@@ -94,9 +92,8 @@ describe('planDrop', () => {
   })
 
   it('clamps a depth shallower than the following row allows', () => {
-    // `b` must be a child of `a`, NOT of the dragged row: a descendant of the dragged row travels
-    // with the drag and is never a candidate neighbour, which would leave the lower bound at 1 and
-    // make this test pass for the wrong reason.
+    // `b` is a child of `a`, not of the dragged row: the dragged row's own descendants travel with
+    // it and would leave the lower bound at 1.
     const rows = rowsOf([
       ['a', 1],
       ['b', 2],
@@ -111,7 +108,6 @@ describe('planDrop', () => {
     })
   })
 
-  // Review Focus 4. The arithmetic mirrors the API's `parentDepth + liveHeight > MAX_DEPTH`.
   // Off by one here either rejects a legal drag or hands an illegal one to the server.
   it('lets a leaf reach exactly MAX_DEPTH', () => {
     const spec: [string, number, number?][] = []
@@ -132,7 +128,7 @@ describe('planDrop', () => {
     for (let d = 1; d <= MAX_DEPTH; d++) spec.push([`d${d}`, d])
     spec.push(['leaf', 1, 1])
     const rows = rowsOf(spec)
-    // The gesture asks for MAX_DEPTH + 1 under the deepest row; the deepest legal depth is MAX_DEPTH.
+    // The gesture asks for MAX_DEPTH + 1 under the deepest row; the deepest legal is MAX_DEPTH.
     expect(
       planDrop({ rows, draggedId: 'leaf', slot: MAX_DEPTH, wantedDepth: MAX_DEPTH + 1 }),
     ).toEqual({
@@ -149,8 +145,7 @@ describe('planDrop', () => {
     const spec: [string, number, number?][] = []
     for (let d = 1; d <= 8; d++) spec.push([`d${d}`, d])
     spec.push(['tall', 1, 3])
-    // `tall` is a FOLDED node: height 3 with none of its descendants among the visible rows. The
-    // clamp has to use the real height that flatten reports, never the visible count.
+    // `tall` is folded: none of its descendants are visible, but the clamp uses its real height.
     const rows = fold(rowsOf(spec), 'tall')
     expect(planDrop({ rows, draggedId: 'tall', slot: 8, wantedDepth: 9 })).toEqual({
       ok: true,
@@ -161,10 +156,8 @@ describe('planDrop', () => {
   })
 
   it('rejects a drop where no depth can fit the subtree', () => {
-    // The lower bound comes from the row AFTER the slot, so there has to be one: with nothing
-    // below, the bound is 1 and the drop would merely clamp instead of being refused. Two sibling
-    // rows at depth 9 give a slot whose lower bound is 9, against an upper bound of
-    // MAX_DEPTH - 2 = 8 for a height-3 subtree -- so no depth fits.
+    // The row after the slot sets a lower bound of 9; a height-3 subtree's upper bound is
+    // MAX_DEPTH - 2 = 8.
     const spec: [string, number, number?][] = []
     for (let d = 1; d <= 9; d++) spec.push([`d${d}`, d])
     spec.push(['d9b', 9])
@@ -318,8 +311,7 @@ describe('planDrop', () => {
   })
 
   it('never returns both beforeId and afterId', () => {
-    // The API rejects a body carrying both with a 400, so a plan with both is a bug the server
-    // would only catch after the optimistic update had already been applied.
+    // The API rejects a body carrying both, but only after the optimistic update has landed.
     const rows = rowsOf([
       ['a', 1],
       ['b', 1],

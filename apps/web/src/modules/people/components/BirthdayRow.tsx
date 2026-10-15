@@ -6,15 +6,8 @@ import { CIRCLE_LABELS } from '../labels'
 import { BODY_GUTTER, ProjectRail } from '../../../shell/rows/RowParts'
 
 /**
- * ONE BIRTHDAY, on the app's row: the day in the margin, then who, how old, and how far off at the
- * far end. The day and the distance are on one line, read as the row's two ends, the way a task's
- * date and its lateness are.
- *
- * No thread colour: a birthday is a person's, not a line of work's, and this list does not know
- * their projects. The thread is the hairline's, so the rows still have the same parts at the same x.
- *
- * COLOUR ONLY FOR TODAY. A birthday is neither a category nor a deadline, and the one thing worth
- * a colour here is that it is happening now.
+ * A birthday on the app's row: the day in the margin, then who, how old and how far off. The thread
+ * stays neutral, since this list does not know their projects; only today's gets a colour.
  */
 export function BirthdayRow({ row }: { row: BirthdayListRow }) {
   return (
@@ -38,8 +31,7 @@ export function BirthdayRow({ row }: { row: BirthdayListRow }) {
         {row.lunarDate && (
           <span className="min-w-0 shrink truncate text-xs text-ink-subtle">{row.lunarDate}</span>
         )}
-        {/* The year had no such day and it was moved. The sentence that explains it is on the
-            person's own page, which has room for it. */}
+        {/* The year had no such day, so it was moved; the person's page explains. */}
         {row.kept.length > 0 && <span className="shrink-0 text-xs text-ink-subtle">moved</span>}
         <span
           className={`w-20 shrink-0 text-right text-sm tabular-nums ${
@@ -53,21 +45,13 @@ export function BirthdayRow({ row }: { row: BirthdayListRow }) {
   )
 }
 
-/**
- * THE MARGIN OF A PERSON'S ROW: their next birthday, beside a cake -- the one date a person has.
- *
- * Month and day, never the year: the next one is always within a year, and the margin is one
- * short line. In the margin's own type and place (`RowLead`), centred on the row, because a
- * person's row is two lines and the date belongs to the whole of it. Today's is in the one colour
- * a birthday is allowed.
- */
+/** A row margin's next birthday: month and day only, since the next is always within a year. */
 export function BirthdayLead({ next }: { next: { day: string; inDays: number } | null }) {
   const [, m, d] = next ? next.day.split('-').map(Number) : []
   return (
     <span
       data-birthday-lead
-      // The cake 2px from its date on a phone (6px up): "May 28" with its cake is 59px there, and
-      // the phone's margin leaves 52 -- the rest runs into the page's gutter, half of it at most.
+      // A 2px gap on a phone: "May 28" with its cake is 59px there, and the margin leaves 52.
       className={`flex shrink-0 items-center justify-end gap-0.5 pr-2 text-sm whitespace-nowrap tabular-nums sm:gap-1.5 sm:pr-3.5 ${HANG_WIDTH} ${
         next?.inDays === 0 ? 'font-semibold text-deadline' : 'text-ink-muted'
       }`}
@@ -85,7 +69,6 @@ export function BirthdayLead({ next }: { next: { day: string; inDays: number } |
   )
 }
 
-/** A cake with one candle: what a birthday is, in the margin's glyph size. */
 function CakeMark() {
   return (
     <svg

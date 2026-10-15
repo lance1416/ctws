@@ -23,17 +23,11 @@ import { instantPhrase, moveDueToDay } from '../dueDates'
 import { DateDecisions, StatusRadios } from './TaskFields'
 import type { useTaskDetailForm } from './useTaskDetailForm'
 
-/**
- * The exact field, for the days the named decisions do not cover: quieter than them by SIZE, not
- * by a fainter edge -- an input's edge is what says "this is a control".
- */
+/** For days the named ones miss: quieter by size, not by a fainter edge, which says "control". */
 const exact =
   'h-9 w-full max-w-[14rem] rounded-md border border-rule-strong bg-sheet px-2 text-sm text-ink'
 
-/**
- * EDITING MODE: the task's fields behind Edit, saved by one Save, with the leave guard's question
- * under the buttons that raised it. The named days write the same fields the exact inputs write.
- */
+/** The task's fields behind Edit, saved by one Save, with the leave guard's question inline. */
 export function TaskEditForm({
   task,
   edit,
@@ -60,7 +54,7 @@ export function TaskEditForm({
   const dueAt = watch('dueAt')
   const projectId = watch('projectId')
 
-  // Edit is a request to type: the title takes focus, rather than <body> (WCAG 2.4.3).
+  // Edit is a request to type, so the title takes focus.
   const titleField = useRef<HTMLInputElement | null>(null)
   const { ref: registerTitle, ...titleRest } = register('title')
   useEffect(() => titleField.current?.focus(), [])
@@ -80,8 +74,7 @@ export function TaskEditForm({
 
   return (
     <form onSubmit={submit(onSaved)} className="flex flex-col gap-5">
-      {/* Where it lives, then what it is called: the project is the identity line AND the
-          control that moves it. Save is where Edit was, at the top. */}
+      {/* The project line is also the control that moves the task; Save is where Edit was. */}
       <div>
         <div className="flex items-center gap-1.5">
           <ProjectChip projectId={projectId} />
@@ -158,8 +151,7 @@ export function TaskEditForm({
         onClear={() => setValue('dueAt', null, dirty)}
         htmlFor="detail-due"
         exact={
-          // The form holds the INSTANT; the field shows bare wall-clock text. The account's zone
-          // converts between them -- the zone the reading line, the row and the server all use.
+          // The form holds the instant; the field shows wall-clock text in the account's zone.
           <Controller
             name="dueAt"
             control={control}

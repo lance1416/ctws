@@ -12,10 +12,9 @@ import { revealHref } from './crumb'
 import { taskPage } from './id'
 import { todaySegments } from './today'
 
-/** The rail's count for Today. Shares `todayQuery` with the page that owns it. */
+/** The rail's count for Today. */
 export function TodayCount() {
   const today = useQuery(todayQuery())
-  // Only tasks that are actually on today's plate; the rail must not claim work that is not due.
   const count = today.data?.length ?? null
   if (count === null || count <= 0) return null
   return (
@@ -47,11 +46,8 @@ export function TaskStatusLine() {
 }
 
 /**
- * THE WORKBENCH'S TODAY: a glance, not a second Today.
- *
- * Three counts -- what is late, what is planned, what is done -- each the way to where it is
- * dealt with, then what is in progress, one line each. No dates, no controls: everything you can
- * DO with a task is one click away on the page the heading links to.
+ * The workbench's glance at Today, not a second Today: three counts, each linking to where it is
+ * dealt with, then what is in progress. No controls.
  */
 export function TodayGlance() {
   const today = useQuery(todayQuery())
@@ -75,7 +71,7 @@ export function TodayGlance() {
   return (
     <>
       <div className="mb-4 flex flex-wrap gap-1">
-        {/* Late is the one that bites, in the miss colour -- and only when there is any. */}
+        {/* Late takes the miss colour, only when there is any. */}
         <GlanceCount
           to={taskPage('today')}
           n={overdue}
@@ -107,8 +103,7 @@ export function TodayGlance() {
                 </span>
                 <span className="flex min-w-0 items-baseline gap-2 self-center">
                   <span className="truncate text-ink">{t.title}</span>
-                  {/* The thread is the project's colour; its name is here, so the colour is
-                      never the only thing saying which line of work this is (WCAG 1.4.1). */}
+                  {/* The name beside the rail, so the colour is never the only signal. */}
                   <span className="max-w-[40%] shrink-0 truncate text-sm text-ink-subtle">
                     {t.projectName}
                   </span>

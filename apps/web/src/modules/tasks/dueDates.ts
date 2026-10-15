@@ -20,7 +20,7 @@ export function overdueLabel(dueIso: string, timeZone: string, now: Date): strin
   return `${days} day${days === 1 ? '' : 's'} late`
 }
 
-/** How long something has sat in the inbox, as a count: "17 days" is what a stale inbox asks. */
+/** How long a task has sat in the inbox, counted in days. */
 export function capturedLabel(createdIso: string, timeZone: string, now: Date): string {
   const days = daysAgoIn(createdIso, timeZone, now)
   if (days <= 0) return 'Captured today'

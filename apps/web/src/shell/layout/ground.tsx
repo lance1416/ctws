@@ -1,11 +1,8 @@
 import { createContext, useContext, useEffect } from 'react'
 
 /**
- * WHAT A PAGE IS DRAWN ON: the sheet, as almost every page is, or the desk.
- *
- * The Workbench is the one desk: a ground its tiles sit on, a step darker than paper. The page
- * says so and the layout paints `main`, rather than the page painting a slab of its own inside
- * `main` that would have to know the layout's padding to reach its edges.
+ * What a page is drawn on: the sheet, or the desk the Workbench's tiles sit on. The layout paints
+ * `main`, so a page need not know the layout's padding to reach its edges.
  */
 export type Ground = 'sheet' | 'desk'
 

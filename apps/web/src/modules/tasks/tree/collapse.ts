@@ -1,10 +1,8 @@
 const keyFor = (projectId: string) => `ctws.collapsed.${projectId}`
 
 /**
- * Which rows are folded, per project. A per-viewer convenience, so it lives in localStorage
- * rather than on the server -- but every accessor is wrapped, because in a private window, with
- * site data cleared, or with storage disabled, `localStorage` THROWS on access. An uncaught throw
- * here blanks the whole page, which is an absurd price for remembering folded rows.
+ * Which rows are folded, per project. Every access is wrapped: `localStorage` throws in a private
+ * window or with storage disabled, and an uncaught throw here would blank the page.
  */
 export function loadCollapsed(projectId: string): Set<string> {
   try {
@@ -28,14 +26,7 @@ export function saveCollapsed(projectId: string, ids: ReadonlySet<string>): void
 
 const doneKeyFor = (projectId: string) => `ctws.showDone.${projectId}`
 
-/**
- * Whether this project's tree shows its finished rows. Hidden is the default: a tree is
- * what is left to do, and after a few weeks the done rows outnumber the live ones.
- *
- * Same storage and the same reasoning as the folds above -- a per-viewer convenience, every
- * accessor wrapped. It is a separate key rather than a field beside them so that reading one
- * cannot be broken by the other's shape changing.
- */
+/** Whether this project's tree shows its finished rows; hidden by default. Wrapped as above. */
 export function loadShowDone(projectId: string): boolean {
   try {
     return localStorage.getItem(doneKeyFor(projectId)) === '1'

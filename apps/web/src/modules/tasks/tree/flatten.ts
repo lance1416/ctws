@@ -1,12 +1,6 @@
 /**
- * Turns the API's flat task array into the ordered, indented rows the tree renders -- the
- * Workflowy/Notion shape. Deliberately NOT a recursive component tree: in recursive components
- * every node is a drag source and three separate drop targets at once, whereas on a
- * one-dimensional row list a drop is just "between which two rows, and how far indented". Task 6
- * (`drop.ts`) consumes these rows.
- *
- * Pure, and imports no React, so the ordering and height arithmetic are tested densely without
- * rendering anything.
+ * Turns the flat task array into the ordered, indented rows the tree renders. On a flat row list a
+ * drop is just "between which two rows, how far indented", which `drop.ts` works out.
  */
 export type TaskNode = {
   id: string
@@ -21,7 +15,7 @@ export type FlatRow = {
   parentId: string | null
   /** A root task is depth 1, matching the API's depth accounting. */
   depth: number
-  /** A leaf is 1. Counts the REAL subtree, including descendants hidden by a collapse. */
+  /** A leaf is 1. Counts the whole subtree, including descendants hidden by a collapse. */
   subtreeHeight: number
   hasChildren: boolean
   collapsed: boolean
@@ -90,9 +84,8 @@ export function flatten(nodes: readonly TaskNode[], collapsed: ReadonlySet<strin
 
   const visit = (parent: string | null, depth: number, onPath: Set<string>) => {
     for (const n of children.get(parent) ?? []) {
-      // onPath guards against cycles, but is currently unreachable: a cycle has no entry from the
-      // root list, so visit is never called on a cycle node. It stays as insurance against a future
-      // change that descends from unreachable nodes (which would hang the page without this guard).
+      // Unreachable while a cycle has no entry from the roots; it keeps a walk into one from
+      // hanging the page.
       if (onPath.has(n.id)) continue
       pushRow(n, depth, parentOf(n))
       if (!collapsed.has(n.id)) {
@@ -100,9 +93,7 @@ export function flatten(nodes: readonly TaskNode[], collapsed: ReadonlySet<strin
         visit(n.id, depth + 1, onPath)
         onPath.delete(n.id)
       } else {
-        // A collapsed node's descendants are reached by the walk; they just do not produce rows.
-        // Marking them visited is what keeps the leftover pass from mistaking "hidden" for
-        // "unreachable" -- the bug that made folding a row move its children to the top level.
+        // Hidden, not unreachable: without this the leftover pass below would emit them as roots.
         for (const k of children.get(n.id) ?? []) markVisited(k.id)
       }
     }
@@ -110,16 +101,8 @@ export function flatten(nodes: readonly TaskNode[], collapsed: ReadonlySet<strin
 
   visit(null, 1, new Set())
 
-  // Only nodes the walk never reached at all, which means they sit on a parent cycle: a cycle has
-  // no entry from the root list. A collapsed node's descendants were reached and deliberately not
-  // emitted, which is a different thing -- see markVisited.
-  //
-  // These rows are emitted FLAT, each at depth 1, with no descent. That is deliberate: descending
-  // from them gave a second emission path with its own rules, which produced duplicate rows and
-  // ignored the collapse state. Corrupt data therefore renders as an obviously odd flat list,
-  // which is visible and fixable -- the same trade the orphan case above makes.
-  // Flat-emitted rows are rendered as roots (parentId: null, depth: 1); drop.ts relies on this
-  // invariant to find siblings at the root level.
+  // What the walk never reached sits on a parent cycle. Each is emitted flat, as a root with no
+  // descent, so corrupt data shows as an odd flat list; `drop.ts` relies on them being roots.
   for (const n of [...nodes].sort(byRankThenId)) {
     if (visited.has(n.id)) continue
     pushRow(n, 1, null)

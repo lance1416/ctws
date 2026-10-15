@@ -22,11 +22,6 @@ import { useRecordRecent } from '../../../shell/search/recent'
 import { useDestroy } from '../../../shell/detail/useDestroy'
 import { useNow } from '../../../platform/time/useNow'
 
-/**
- * ONE THING TO READ, in the shell's detail pane, with the anatomy every other thing wears: read
- * first, one Edit, a form with Save and Cancel, what it is linked to, and the delete at the foot.
- */
-
 const STATUS_LABEL: Record<ReadingStatus, string> = {
   todo: 'To read',
   reading: 'Reading',
@@ -39,7 +34,6 @@ const STATUS_CHOICES = (Object.keys(STATUS_LABEL) as ReadingStatus[]).map((s) =>
   label: STATUS_LABEL[s],
 }))
 
-/** When to finish it -- the same named days the row's menu offers. */
 const PLAN_LABELS: Record<PlanDay, string> = {
   today: 'Today',
   tomorrow: 'Tomorrow',
@@ -61,7 +55,6 @@ export function ReadingDetail({
 
       <LinkedSection of={{ type: 'reading', id: item.id }} className="mt-4" />
 
-      {/* Last in the pane, where deleting a person or a task is. */}
       <DangerZone>
         <DeleteReading item={item} onDeleted={onClose} />
       </DangerZone>
@@ -118,7 +111,6 @@ function ReadingFields({ item, onClose }: { item: ReadingItemResponse; onClose: 
           ) : (
             <h2 className="truncate text-lg font-semibold text-ink">{readingLabel(item)}</h2>
           )}
-          {/* What it is: a book's author, or where a link is from. */}
           <p className="truncate text-sm text-ink-muted">
             {item.kind === 'book' ? (item.author ?? 'Book') : (item.url ?? 'Link')}
           </p>
@@ -143,7 +135,6 @@ function ReadingFields({ item, onClose }: { item: ReadingItemResponse; onClose: 
             </span>
           </Field>
           <Field label="Projects" shape="above">
-            {/* A chip, like a person's projects and a meeting's. */}
             {item.projectId && item.projectName ? (
               <span className="flex">
                 <span className={CHIP}>
@@ -161,10 +152,7 @@ function ReadingFields({ item, onClose }: { item: ReadingItemResponse; onClose: 
   )
 }
 
-/**
- * AN ITEM, EDITED: one form and one Save. A link has its address and a book its author; the kind
- * is not here, because a link never becomes a book (`updateReadingItemBody` says the same).
- */
+/** The edit form. The kind is not editable: a link never becomes a book. */
 function ReadingForm({
   item,
   busy,
@@ -290,7 +278,6 @@ function ReadingForm({
   )
 }
 
-/** Deleting an item: at the foot of its pane, asked once. */
 function DeleteReading({ item, onDeleted }: { item: ReadingItemResponse; onDeleted: () => void }) {
   const drop = useDestroy({
     type: 'reading',

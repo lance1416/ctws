@@ -7,9 +7,8 @@ import {
 } from 'date-fns'
 
 /**
- * Dates in the account's zone. Callers pass the account's zone (`useTimeZone`), never the
- * browser's: the server decides which day a thing falls on in that zone, and the page has to agree.
- * Arithmetic is date-fns with `TZDate`, so a 23- or 25-hour day across DST is still one day.
+ * Dates in the account's zone, never the browser's: the server decides a thing's day in that zone.
+ * `TZDate` keeps a 23- or 25-hour DST day one day long.
  */
 
 /** A calendar day as "YYYY-MM-DD": the shape days are stored and sent in. */
@@ -25,7 +24,7 @@ export function ymd(instant: Date, timeZone: string): string {
   return format(new TZDate(instant, timeZone), DAY)
 }
 
-/** Today in `timeZone`: the same day the server's `date_trunc('day', now at time zone tz)` picks. */
+/** Today in `timeZone`: the day the server's `date_trunc('day', now at time zone tz)` picks. */
 export function todayIn(timeZone: string, now: Date): string {
   return ymd(now, timeZone)
 }
@@ -64,8 +63,7 @@ export const MONTHS = [
   'Dec',
 ] as const
 
-/** A day as the reader says it: Today / Tomorrow / Yesterday, else "Oct 8" (with the year if it differs). */
-/** `Oct 8`: the month and the day, for where the year is said elsewhere or not at all. */
+/** `Oct 8`, without the year. */
 export function monthDay(day: string): string {
   const [, m, d] = day.split('-').map(Number) as [number, number, number]
   return `${MONTHS[m - 1]} ${d}`
@@ -79,6 +77,7 @@ export function weekdayOf(day: string, short = false): string {
   return short ? name.slice(0, 3) : name
 }
 
+/** Today, Tomorrow or Yesterday, else `shortDay`. */
 export function dayPhrase(day: string, today: string): string {
   if (day === today) return 'Today'
   if (day === addDays(today, 1)) return 'Tomorrow'
@@ -86,7 +85,7 @@ export function dayPhrase(day: string, today: string): string {
   return shortDay(day, today)
 }
 
-/** `Oct 12`, or `Apr 15, 2027` outside this year. Never "Today": the column beside it says the distance. */
+/** `Oct 12`, or `Apr 15, 2027` outside this year. */
 export function shortDay(day: string, today: string): string {
   return today.slice(0, 4) === day.slice(0, 4) ? fullDay(day).replace(/, \d+$/, '') : fullDay(day)
 }
@@ -110,7 +109,6 @@ export function dayEndIso(day: string, timeZone: string): string {
   return utcIso(new TZDate(y, m - 1, d, 23, 59, 0, 0, timeZone))
 }
 
-/** How many calendar days ago an instant was, in `timeZone`. */
 export function daysAgoIn(iso: string, timeZone: string, now: Date): number {
   return differenceInCalendarDays(new TZDate(now, timeZone), new TZDate(new Date(iso), timeZone))
 }

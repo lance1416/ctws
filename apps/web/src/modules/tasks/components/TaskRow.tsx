@@ -44,23 +44,15 @@ type Props = {
   blockedBy: readonly { id: string; title: string }[] | undefined
   /** True for a moment after a save from the pane: the row says it worked. */
   saved: boolean
-  /**
-   * The roving tabindex: exactly one row in the tree carries it, so the whole tree is ONE tab
-   * stop and Tab leaves it in a single press no matter how many rows there are. The arrow
-   * keys and j/k move between rows; Tab stays unbound (WCAG 2.1.2).
-   */
+  /** The roving tabindex: one row carries it, so the tree is one tab stop and Tab leaves it. */
   tabStop: boolean
   onFocus: () => void
   onSetStatus: (status: TaskStatus) => void
   onToggle: () => void
   onKeyDown: (e: KeyboardEvent<HTMLButtonElement>) => void
   onOpen: () => void
-  /**
-   * Shift+click toggles this row's membership of the selection. Plain click still opens
-   * the detail, so the one gesture people already use is untouched.
-   */
+  /** Shift+click toggles this row in the selection; a plain click still opens the detail. */
   onToggleSelected: () => void
-  /** Whether this row is in the selection. */
   selected: boolean
   onAddChild: () => void
 }
@@ -111,9 +103,7 @@ export function TaskRow({
     id: row.id,
   })
   const inactive = isFinished(status)
-  // The ACCOUNT's zone, not the browser's: the server decides what is overdue in that zone, and a
-  // row saying a task is due tomorrow when the server has already filed it as overdue would be
-  // the page contradicting itself.
+  // The account's zone, not the browser's: the server decides what is overdue in that zone.
   const timeZone = useTimeZone()
   const now = useNow()
   const late = lateNote({ status, dueAt }, timeZone, now)
@@ -129,8 +119,7 @@ export function TaskRow({
       // their own jobs. A drag starts on the handle, so it never reaches here as a row click.
       onClick={(e) => {
         if (!opensOnClick(e)) return
-        // Shift picks rows instead of opening one. A plain click is unchanged, which is what
-        // keeps the gesture people already use from becoming a mode.
+        // Shift picks rows instead of opening one.
         if (e.shiftKey) {
           e.preventDefault()
           onToggleSelected()
@@ -142,22 +131,16 @@ export function TaskRow({
         transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
         transition,
       }}
-      // THE ANATOMY (RowParts): the margin, the thread, then the body. `items-stretch`, so the
-      // thread runs the row's height.
+      // The margin, the thread, then the body; `items-stretch` so the thread runs the row's height.
       className={`group relative flex cursor-pointer items-stretch ${isDragging ? 'opacity-70' : ''} ${
-        // BLOCKED ROWS DIM, THEY DO NOT DISAPPEAR. A list that loses tasks is a list you
-        // cannot trust, and what is in the way is named on the line under the title -- the point
-        // is to answer "why not this one" without opening anything.
+        // Blocked rows dim but stay; what is in the way is named under the title.
         blockedBy && blockedBy.length > 0 ? 'opacity-60' : ''
       }`}
     >
       <RowLead lead={lead} />
       <ProjectRail projectId={projectId} />
-      {/* THE BODY: the only part that is indented, hovered and selected. 44px for a row with
-          nothing under its title and 66px for one with a second line -- 10 + 24 + 10 and
-          10 + 24 + 22 + 10 from the type scale. `items-start`, because the glyphs belong to the
-          FIRST line: each is 44px tall, so it centres on the title whether or not a second line
-          follows. Square: rows are structure, and structure has no radius. */}
+      {/* The body is the only part indented, hovered and selected. `items-start`: each glyph is
+          44px tall, so it centres on the title whether or not a second line follows. */}
       <div
         data-row-body
         style={{ paddingLeft: gutterPlus((row.depth - 1) * INDENT_PX) }}
@@ -179,9 +162,8 @@ export function TaskRow({
             style={{ left: gutterPlus(i * INDENT_PX + HANDLE_PX + CHEVRON_PX / 2) }}
           />
         ))}
-        {/* The focus carrier and the pointer drag handle. Only the pointer sensor is registered,
-            so `listeners` is just onPointerDown and our own onKeyDown owns the keyboard. Invisible
-            at rest, shown on hover and on keyboard focus; always shown where there is no hover. */}
+        {/* The focus carrier and drag handle. Only the pointer sensor is registered, so
+            `listeners` is just onPointerDown and our own onKeyDown owns the keyboard. */}
         <button
           type="button"
           aria-label={`Task: ${title}`}
@@ -225,8 +207,7 @@ export function TaskRow({
             onClick={() => onSetStatus(toggleDoneTarget(status))}
           />
         </span>
-        {/* The title owns the line; under it, what the row waits on, its children, or its age --
-            never a breadcrumb in a tree, where the project is known and the depth is visible. */}
+        {/* Under the title: what it waits on, its children, or its age; never a breadcrumb. */}
         <span data-row-cell className="flex min-w-0 flex-1 flex-col py-2.5">
           <span className="flex min-w-0 items-center">
             <span
@@ -240,8 +221,6 @@ export function TaskRow({
             </span>
             {/* The select layer is drawn; this says it. A list item cannot carry aria-selected. */}
             {selected && <span className="sr-only">Selected</span>}
-            {/* There is something to read in this one. `shrink-0`, so it costs the row no height
-                and reserves no width on the rows without it. */}
             {hasNotes && (
               <span className="ml-2 flex shrink-0 items-center text-ink-subtle">
                 <NotesMark />
@@ -249,8 +228,7 @@ export function TaskRow({
             )}
           </span>
           <RowMeta
-            // An age is the absence of a decision: once there is a date, the margin has something
-            // better to say and the age gets out of its way.
+            // An age only while there is no date: a date says more.
             age={
               capturedAt && !dueAt && !scheduledOn ? capturedLabel(capturedAt, timeZone, now) : null
             }
@@ -260,11 +238,8 @@ export function TaskRow({
         </span>
         {/* How late, on the right: the margin says which day it was due. */}
         {late && <RowNote tone="text-missed">{late}</RowNote>}
-        {/* THE TWO HOVER CONTROLS RESERVE NO WIDTH. Invisible until the row is hovered, over the
-            body rather than in it, so a truncated title's end is covered (`OVER_ROW`, opaque) rather
-            than jostled when the pointer arrives. `static` again where there is no hover, since
-            there they are shown permanently and must not sit on top of the text. Pinned to the
-            FIRST line. */}
+        {/* The hover controls sit over the body (`OVER_ROW` is opaque), reserving no width.
+            Without hover they always show, so they go `static` and stay off the text. */}
         <span
           className={`absolute top-0 right-1 flex h-11 shrink-0 items-center opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:static [@media(hover:none)]:bg-transparent [@media(hover:none)]:opacity-100 [@media(hover:none)]:shadow-none ${OVER_ROW}`}
         >
@@ -273,8 +248,7 @@ export function TaskRow({
             title={title}
             onClick={() => onSetStatus(toggleStartTarget(status))}
           />
-          {/* Mouse path to "add under this": the keyboard has Alt+Enter, so this stays out of the
-            tab order. Shown on row hover; always shown where there is no hover. */}
+          {/* The pointer's way to add a subtask; the keyboard has Alt+Enter. */}
           <button
             type="button"
             tabIndex={-1}

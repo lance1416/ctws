@@ -6,14 +6,8 @@ import { isFinished } from '../../status'
 import { ancestorsOf } from '../../tree/ancestors'
 
 /**
- * WHAT THE ADDRESS ASKS OF THE TREE.
- *
- * `?task=<id>` is the open task: a task has no page of its own, so its address is its project's
- * page with its sheet open -- a reload reopens it and Back steps out of it.
- *
- * `?reveal=<id>` is an arrival from search: "this task, visible". Every ancestor is unfolded, a
- * hidden finished row is shown, and the row takes focus (and so the tab stop). The parameter is
- * then dropped, in place, so a later fold is not fought on every render.
+ * `?task=<id>` is the open task. `?reveal=<id>` unfolds the task's ancestors, shows it if hidden
+ * and focuses it, then is dropped so a later fold is not fought on every render.
  */
 export function useTreeParams({
   tasks,

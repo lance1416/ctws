@@ -20,7 +20,7 @@ export function DeleteConfirm({
   busy: boolean
   onConfirm: () => void
   onCancel: () => void
-  /** The destroying button's word, for a thing that is not deleted -- a meeting is cancelled. */
+  /** The destroying button's word, for a thing that is not deleted (a meeting is cancelled). */
   confirm?: string | undefined
   /** The way out's word. "Cancel" beside "Cancel meeting" would mean its opposite. */
   back?: string | undefined
@@ -32,7 +32,6 @@ export function DeleteConfirm({
       className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm"
     >
       <p className="text-ink">{message}</p>
-      {/* The way out first and the action last, as every pair of buttons in the app is ordered. */}
       <span className="flex items-center gap-2">
         <button autoFocus type="button" onClick={onCancel} className={BUTTON.secondary}>
           {back}

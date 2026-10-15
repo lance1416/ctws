@@ -10,8 +10,7 @@ describe('isTypingTarget', () => {
   })
 
   it('is true for a contenteditable host that is not a form field', () => {
-    // The case a tag-name-only guard misses: a rich text area is an input that is not an <input>,
-    // and getting this wrong means a shortcut eats a letter the person was typing.
+    // A rich text area is an input that is not an <input>; a tag-name-only guard misses it.
     expect(isTypingTarget(el('DIV', true))).toBe(true)
   })
 
@@ -27,8 +26,7 @@ describe('isTypingTarget', () => {
 describe('isBareKey', () => {
   it('rejects Ctrl, Meta and Alt but allows Shift', () => {
     const base = { ctrlKey: false, metaKey: false, altKey: false }
-    // Shift must pass: `?` IS Shift+/ on every layout, so rejecting Shift would make the help
-    // overlay unreachable while looking like a stricter guard.
+    // `?` is Shift+/, so rejecting Shift would make the help overlay unreachable.
     expect(isBareKey(base)).toBe(true)
     expect(isBareKey({ ...base, ctrlKey: true })).toBe(false)
     expect(isBareKey({ ...base, metaKey: true })).toBe(false)

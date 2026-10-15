@@ -12,11 +12,7 @@ import { taskCrumb } from '../../crumb'
 import { lateNote } from '../../dueDates'
 import { triageSections, type TriagePatch } from '../../triage'
 
-/**
- * ONE TASK ROW on Today, on the anatomy: the margin, the thread, then the body -- marker, title
- * and where it came from, a note on the right, then the controls, which wait for the pointer or
- * the keyboard. Where there is no hover they are always there.
- */
+/** A task row on Today. Its controls wait for the pointer or keyboard, except without hover. */
 export function TodayRow({
   task: t,
   anyTime = false,
@@ -50,8 +46,8 @@ export function TodayRow({
   const sections = triageSections(t, carried ? 'Carried over' : null, today, timeZone, onPatch)
   const lead =
     leadFor(
-      // A plan for TODAY says nothing on a page called Today, and nor does a carried one: the
-      // margin of the day's line is its times. The day it was first meant for is said on the right.
+      // A plan for today, or a carried one, leaves the margin to the line's times; a carried
+      // plan's first day is said on the right.
       { dueAt: t.dueAt, scheduledOn: t.scheduledOn === today || carried ? null : t.scheduledOn },
       today,
       timeZone,
@@ -64,8 +60,7 @@ export function TodayRow({
         if (opensOnClick(e)) onOpen()
       }}
       className={`group relative flex cursor-pointer items-stretch ${
-        // BLOCKED ROWS DIM AND STAY: Today answers what can be worked on, and a list that loses
-        // tasks cannot be trusted.
+        // Blocked rows dim but stay: a list that loses tasks cannot be trusted.
         t.blockedBy.length > 0 ? 'opacity-60' : ''
       }`}
     >

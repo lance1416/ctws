@@ -17,9 +17,8 @@ import { CIRCLE_CHOICES, GENDER_CHOICES } from '../labels'
 import { ChannelsEditor, useChannelRows } from './ChannelsEditor'
 
 /**
- * A PERSON, EDITED: one form and one Save; Cancel as if nothing happened. Two things are not in
- * it: the birthday's own controls open in a second layer of their cell, and Linked edges are
- * written the moment they are named, as a task's dependencies are.
+ * The person form, with one Save. Linked edges are not in it: they are saved the moment they are
+ * named.
  */
 export function PersonForm({
   person,
@@ -52,7 +51,7 @@ export function PersonForm({
   // The server has said the day does not exist: Save would only get a 400.
   const [badDay, setBadDay] = useState(false)
   const composing = useComposing()
-  // What the birthday button says: untouched, the birthday already saved.
+  // Untouched, the button shows the saved birthday.
   const dayText =
     birthday === undefined
       ? person.birthday
@@ -120,13 +119,11 @@ export function PersonForm({
 
       <div className="@container">
         <div className="grid items-start gap-x-6 gap-y-4 @xl:grid-cols-2 @2xl:grid-cols-3">
-          {/* The birthday is saved with this form, but its controls are many, so they open on
-              request, across the row -- in a third of it they would fold into four lines. */}
+          {/* Its controls are many, so they open on request across the whole row. */}
           <Field label="Birthday" shape="above">
             <button
               type="button"
               aria-expanded={pickingDay}
-              // Its own name: on screen it says `Not set`, as an empty gender or circle does.
               aria-label={dayText ? `Birthday, ${dayText}` : 'Birthday, not set'}
               onClick={() => setPickingDay(!pickingDay)}
               className={`-mx-1.5 flex min-w-0 items-center gap-1.5 rounded-md px-1.5 py-0.5 text-left text-sm hover:bg-hover ${
@@ -174,8 +171,7 @@ export function PersonForm({
               )}
             </div>
           )}
-          {/* A city is picked, so it is stored one way: not "Oxford" for one and "oxford, uk"
-              for another. */}
+          {/* Picked, not typed, so a city is stored one way. */}
           <PickCity label="Hometown" id="c-home" value={hometown} onChange={setHometown} />
           <PickCity label="Lives in" id="c-city" value={city} onChange={setCity} />
           <Writes label="Company" id="c-org" value={org} onChange={setOrg} />
@@ -221,7 +217,6 @@ export function PersonForm({
   )
 }
 
-/** A short field of the form: the label above, the input below. */
 function Writes({
   label: text,
   id,

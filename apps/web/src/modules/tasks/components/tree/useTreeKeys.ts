@@ -5,10 +5,8 @@ import type { FlatRow } from '../../tree/flatten'
 import { statusForKey } from '../StatusControls'
 
 /**
- * THE TREE'S KEYS, on a focused row. The modifier is the whole distinction: bare ↑/↓ (j/k) move
- * the FOCUS and Alt+↑/↓ move the ROW; bare ←/→ fold and unfold (the ARIA treeview's keys) and
- * Alt+←/→ change the depth. Tab is bound to nothing: the roving tabindex makes one Tab leave the
- * tree (WCAG 2.1.2).
+ * The tree's keys on a focused row: bare arrows move focus and fold, Alt+arrows move the row and
+ * change its depth. Tab is unbound, so one Tab leaves the tree.
  */
 export function useTreeKeys({
   rows,

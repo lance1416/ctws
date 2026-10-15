@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { federate, type ProviderResult } from './federate'
 
-/**
- * Federation, exercised with two providers -- which is the only way to show it federates. Against
- * the single-module dialog this replaced, every one of these would be unanswerable.
- */
 const hit = (id: string) => ({ id, to: `/x/${id}`, title: id, meta: id, mark: null })
 
 const tasks = (ids: string[], over: Partial<ProviderResult> = {}): ProviderResult => ({
@@ -30,8 +26,7 @@ describe('federate', () => {
     const { rows } = federate([tasks(['a', 'b']), notes(['c'])])
     expect(rows.map((r) => r.id)).toEqual(['a', 'b', 'c'])
     expect(rows.map((r) => r.moduleId)).toEqual(['tasks', 'tasks', 'notes'])
-    // The module is carried as its own NAME, so a row can say where it came from in text. Nothing
-    // here is a colour: WCAG 1.4.1, the rule the redesign follows.
+    // The module is carried by name, so a row can say where it came from in text.
     expect(rows.map((r) => r.moduleLabel)).toEqual(['Tasks', 'Tasks', 'Notes'])
   })
 

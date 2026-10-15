@@ -1,17 +1,7 @@
 import type { ProjectListItem } from '@ctws/contracts'
 import { PickOne } from '../../../platform/ui/inline'
 
-/**
- * WHAT TO DO WITH THE ROWS YOU PICKED.
- *
- * MULTI-SELECT IS NOT ONLY A TEAM TOOL: one person with sixty open tasks across four lines of
- * work finishes five at once and moves a handful to another project as ordinary weekly
- * maintenance, and doing it one row at a time is the chore this exists to remove.
- *
- * It appears only with a selection, so a tree nobody is picking from carries no chrome for it.
- * Two actions and a way out -- not a toolbar: anything else a person wants to do to five tasks
- * at once can be argued for when it is actually wanted.
- */
+/** What to do with the picked rows; shown only while something is selected. */
 export function SelectionBar({
   count,
   projects,
@@ -48,8 +38,8 @@ export function SelectionBar({
       </button>
       <span className="flex items-center gap-1.5 text-sm text-ink-muted">
         Move to
-        {/* The app's own picker, not a native `<select>`: the OS draws that popup and does not
-            know this palette. It holds no value -- picking IS the act. */}
+        {/* Not a native `<select>`, whose OS-drawn popup ignores this palette. It holds no value:
+            picking is the act. */}
         <PickOne
           label="Move to project"
           value={null}

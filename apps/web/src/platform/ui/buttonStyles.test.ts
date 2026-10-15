@@ -11,23 +11,20 @@ const walk = (at: string): string[] =>
 
 describe('the button vocabulary', () => {
   it('sets the text size on every tone', () => {
-    // This is the defect the vocabulary exists for: half the hand-written copies had no size, so
-    // they inherited 16px and sat a line taller than the 14px fields they were submitting.
+    // Without it a button inherits 16px and stands taller than the 14px fields beside it.
     for (const [tone, cls] of Object.entries(BUTTON)) expect(cls, tone).toContain('text-sm')
   })
 
   it('gives the standalone tones one height and one radius', () => {
     for (const tone of ['primary', 'secondary', 'quiet', 'destructive'] as const) {
       expect(BUTTON[tone], tone).toContain('h-9')
-      // A control's radius: 6px, by the role table above `BUTTON`.
       expect(BUTTON[tone], tone).toContain('rounded-md')
     }
   })
 
   it('leaves no filled button written by hand', () => {
-    // A filled button is the loudest thing on a surface and was spelled five ways. Its text is
-    // `on-ink` or `on-danger`, and only `BUTTON` may say so. Read off the source: a component
-    // nobody rendered in a test leaves no trace in the DOM.
+    // A filled button's text is `on-ink` or `on-danger`, and only `BUTTON` may say so. Read off
+    // the source, because a component no test renders leaves nothing in the DOM.
     const offenders = walk(SRC).filter((f) => /text-on-(ink|danger)/.test(readFileSync(f, 'utf8')))
     expect(offenders.map((f) => f.slice(SRC.length + 1))).toEqual([])
   })

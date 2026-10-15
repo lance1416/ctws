@@ -1,9 +1,6 @@
 /**
- * How many overlays are open. The document-level single-key handlers (`/`, `f`, `?`, the jump
- * chords) live outside the overlays and would otherwise keep firing underneath them -- pressing
- * `f` while the shortcut list is up would stack a search dialog on top of it.
- *
- * A counter rather than a boolean so a future second layer cannot clear the flag of the first.
+ * How many overlays are open; the document-level single-key handlers stand down while any is. A
+ * counter, so one layer closing cannot clear another's.
  */
 let open = 0
 

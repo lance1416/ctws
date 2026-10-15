@@ -32,15 +32,12 @@ export function Projects() {
   }
   const nameKeys = useInlineEdit({ onCommit: submit })
 
-  // Rendered in the order the server returns: it puts the inbox first. Sorting here too would
-  // give two sorts that drift apart. The server lists only the live ones; the shelf asks for its
-  // own (`archivedProjectsQuery`).
+  // In the server's order, which puts the inbox first; a second sort here would drift from it.
   const active = projects.data ?? []
   const archived = archivedList.data ?? []
 
   return (
     <>
-      {/* On the margin's edge, where the rows' threads hang: the page is one column of rows. */}
       <PageHead hang>Projects</PageHead>
       <div className={`mt-5 ${HANG} max-w-[40ch]`}>
         <input
@@ -71,8 +68,6 @@ export function Projects() {
         </ul>
       </section>
 
-      {/* SET ASIDE, NOT GONE: an archived line of work is still here, under its own heading, so
-          the live ones are the list and the shelf is one look further down. */}
       {archived.length > 0 && (
         <DaySection label="Archived" count={archived.length} className={`mt-8 ${LIST_MEASURE}`}>
           <ul className={ROW_LIST}>
@@ -87,13 +82,8 @@ export function Projects() {
 }
 
 /**
- * ONE LINE OF WORK, on the app's row: a day in the margin, its colour as the thread, and the body
- * -- its name, then the modules' numbers for it.
- *
- * THE NAME IS THE LINK, AND ONLY THE NAME: the row is the target (the link is stretched over it),
- * but the link's name is the project's, so "P" is still the name of the link to P. NO DELETE IN
- * THE ROW: that lives at the foot of the project's own page, with every other action that cannot
- * be undone.
+ * One project on the app's row. The link is stretched over the whole row but named by the project
+ * alone; delete lives on the project's own page.
  */
 function ProjectRow({ project: p }: { project: ProjectListItem }) {
   const { projectLead: Lead, projectFacts } = useRegistry()

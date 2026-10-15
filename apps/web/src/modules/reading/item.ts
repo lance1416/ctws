@@ -3,9 +3,8 @@ import { linkLabel } from '../../platform/ui/url'
 import type { Recent } from '../../shell/search/recent'
 
 /**
- * What an item is CALLED: the title a person wrote, else the one fetched from the page, else the
- * link's host and path. In that order, so a refetch never overwrites a title someone typed --
- * which is why the fetched one has a column of its own.
+ * The title typed, else the one fetched from the page, else the link's host and path. The fetched
+ * title has its own column so a refetch never overwrites a typed one.
  */
 export function readingLabel(
   item: Pick<ReadingItemResponse, 'title' | 'url'> & { fetchedTitle?: string | null },
@@ -16,7 +15,6 @@ export function readingLabel(
   return linkLabel(item.url)
 }
 
-/** How an item is listed in Recent: by the name every list gives it. */
 export function recentEntry(
   item: Pick<ReadingItemResponse, 'id' | 'title' | 'url'> & { fetchedTitle?: string | null },
 ): Recent {
@@ -29,6 +27,5 @@ export function recentEntry(
   }
 }
 
-/** Still to read: neither finished nor dropped. */
 export const isToRead = (item: Pick<ReadingItemResponse, 'status'>) =>
   item.status === 'todo' || item.status === 'reading'

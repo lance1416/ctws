@@ -9,8 +9,8 @@ export function solarDay(year: number | null, month: number, day: number): strin
 }
 
 /**
- * A draft, as one line: what the form's button says. Unlike `givenDate` it has only the numbers
- * typed so far -- nothing the server has worked out yet. A solar day reads as it does everywhere.
+ * A draft as one line, for the form's button: unlike `givenDate`, only what was typed so far,
+ * nothing the server has worked out.
  */
 export function plainDate(d: BirthdayDraft): string {
   if (d.calendar === 'solar') return solarDay(d.year, d.month, d.day)

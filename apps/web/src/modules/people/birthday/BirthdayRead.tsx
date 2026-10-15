@@ -8,9 +8,8 @@ import { leadLabel } from '../labels'
 import { givenDate } from './text'
 
 /**
- * A person's birthday on their pane: one field, as wide as Hometown and City, because the pane is
- * for knowing someone. The lunar date, zodiac, sign, hour and the next one open below it on request
- * (`aria-expanded`), across the row. Read only: a birthday is edited with the rest of the person.
+ * A person's birthday field; the lunar date, zodiac, sign, hour and next one open across the row
+ * below it. Read only: a birthday is edited with the rest of the person.
  */
 export function BirthdayField({ person }: { person: PersonResponse }) {
   const [open, setOpen] = useState(false)
@@ -58,7 +57,6 @@ export function BirthdayField({ person }: { person: PersonResponse }) {
   )
 }
 
-/** The expansion: the next one, what follows from the day, why it moved, and the lead. One a line. */
 function BirthdayRead({ birthday: b }: { birthday: BirthdayResponse }) {
   const today = todayIn(useTimeZone(), useNow())
   return (

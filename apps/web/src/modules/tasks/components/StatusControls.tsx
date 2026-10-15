@@ -4,10 +4,8 @@ import { toggleDoneTarget, toggleStartTarget } from '../api/taskActions'
 import { StatusMark } from './StatusMark'
 
 /**
- * The status mark as a control: one click finishes the task (or restores a finished one). The
- * shape of the mark still says what state it is in; the aria-label says what the click will do.
- * Out of the tab order on purpose: the keyboard route is `x` on the focused row, so a list of N
- * rows does not grow N more tab stops.
+ * The status mark as a control: one click finishes the task, or restores a finished one. Out of
+ * the tab order: `x` on the focused row is the keyboard route, so rows add no tab stops.
  */
 export function StatusButton({
   status,
@@ -70,7 +68,7 @@ export function StartButton({
   )
 }
 
-/** The key route shared by the tree and the Today page: `x` finishes / restores, `s` starts / stops. */
+/** The keys for the tree and Today: `x` finishes or restores, `s` starts or stops. */
 export function statusForKey(
   e: { key: string; altKey: boolean; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean },
   status: TaskStatus,

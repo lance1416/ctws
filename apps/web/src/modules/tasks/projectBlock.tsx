@@ -14,14 +14,9 @@ import { CreateTaskDialog } from './components/CreateTaskDialog'
 import { TaskBoard } from './components/TaskBoard'
 import { TaskTree } from './components/TaskTree'
 
-/** What the tasks module hangs on a project page: its numbers, its rows, and its New. */
-
 /**
- * THE PROJECT'S NUMBERS under its name, as one sentence: "6 open, 1 overdue, 63% done. Last moved
- * today." Open, overdue and the last move are the server's (`movementQuery`, in the account's
- * zone); the percentage is the mean of the root tasks' rollups -- the rule a parent gets -- and is
- * left out when nothing is scored or nothing is done. No bar: two 60% lines look alike, and "Last
- * moved" is what tells them apart.
+ * "6 open, 1 overdue, 63% done. Last moved today." The percentage is the mean of the root tasks'
+ * rollups, left out when nothing is scored or nothing is done.
  */
 export function ProjectNumbers({ projectId }: { projectId: string }) {
   const movement = useQuery(movementQuery())
@@ -37,12 +32,11 @@ export function ProjectNumbers({ projectId }: { projectId: string }) {
     return scored.reduce((a, b) => a + b, 0) / scored.length
   })()
   const now = useNow()
-  // Nothing while in flight, and nothing for an archived project, which the movement query leaves
-  // out rather than calling it quiet.
+  // Nothing while in flight, nor for an archived project, which the movement query leaves out.
   if (!row) return null
   const today = todayIn(timeZone, now)
   const moved = row.lastActivityOn ? dayPhrase(row.lastActivityOn, today) : null
-  // Overdue only when there is any, in the miss colour -- the one number allowed a hue.
+  // Overdue only when there is any, in the miss colour.
   const parts: ReactNode[] = [`${row.remaining} open`]
   if (row.overdue > 0) parts.push(<span className="text-missed">{row.overdue} overdue</span>)
   // 0% is no more news than "0 overdue": a line with nothing done yet says how much is open.
@@ -71,9 +65,8 @@ export const PROJECT_VIEWS = [
 ] as const
 
 /**
- * THE TASK BLOCK'S OWN NEW BUTTON, in the block's head. It carries the `n` key, which lives here
- * rather than in the shell's table because it needs a project to create into; it obeys the guards
- * every single key obeys -- the off switch, not while typing, not under an open layer.
+ * The task block's New button. It carries the `n` key, which needs a project to create into, under
+ * the guards every single key obeys.
  */
 export function NewTaskAction({ projectId }: { projectId: string }) {
   const [creating, setCreating] = useState(false)
@@ -129,9 +122,7 @@ export function ProjectTasks({ projectId, view }: { projectId: string; view: str
 
   return (
     <>
-      {/* THE FAST PATH: a line and Enter. The full form is the block's own New, in its head.
-          Inset to where the rows' bodies start (margin, thread, gutter), so the box reads as the
-          first row's place. */}
+      {/* A line and Enter, inset to where the rows' bodies start. */}
       <div className="mb-1 ml-[71px] flex max-w-[52ch] flex-wrap items-center gap-2 pr-2 sm:ml-[89px]">
         <input
           value={title}
@@ -141,22 +132,17 @@ export function ProjectTasks({ projectId, view }: { projectId: string; view: str
           aria-label="New task"
           aria-invalid={create.isError ? true : undefined}
           aria-describedby={create.isError ? failureId : undefined}
-          // Inside the panel now, so it leads the rows rather than hanging under a page heading.
-          // The border follows `aria-invalid` (see `textbox`), so the colour and the state the
-          // screen reader is told cannot disagree.
+          // The border follows `aria-invalid` (see `textbox`), so colour and announced state agree.
           className={`min-w-0 flex-1 basis-[22ch] bg-sheet ${textbox}`}
         />
       </div>
-      {/* THE FAILURE SITS UNDER ITS OWN BOX, inside the same block and at the same left
-          edge, rather than as a line of page chrome below the whole control group. The typed
-          title is still in the box: what was typed is the user's, not the request's. */}
+      {/* The typed title stays in the box after a failure. */}
       {create.isError && (
         <p id={failureId} role="alert" className="mt-1 ml-[71px] text-sm text-danger sm:ml-[89px]">
           Couldn't create. Press Enter to try again.
         </p>
       )}
-      {/* The board is a VIEW of this block, not a page: the one-line box above stays, because
-          capturing into this project is the same action whichever way the rows are drawn. */}
+      {/* The board is a view of this block, so the box above stays either way. */}
       {view === 'board' ? (
         <TaskBoard key={projectId} projectId={projectId} />
       ) : (

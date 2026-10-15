@@ -250,15 +250,10 @@ test('the status dot has a text alternative', async ({ page }) => {
 })
 
 /**
- * 「Working on」一条和五条不是同一件事。
- *
- * 一条时它是这一页的焦点，顶一级字号花在它身上；五条时没有哪一条是「那一件」，它就是一份清单，
- * 于是字号落回行的那一级 —— 五行 24px 是一堵墙，不是重点。
- *
- * 它也和 Today 同宽：原来它横跨整页而下面的清单只有两栏，于是 Done 和 Pause 被甩到一千九百像素
- * 开外，离它们作用的那一行比离窗口边还远。
+ * One task in progress is the page's focus and gets the largest type; several are a list at row
+ * size, since five 24px lines are a wall rather than an emphasis.
  */
-test('正在做的只有一条时是焦点，多条时是清单', async ({ page }) => {
+test('one task in progress is the focus, several are a list', async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 1000 })
   await registerFreshUser(page)
   const p = await apiPost(page, '/projects', { name: 'P' })
@@ -279,7 +274,7 @@ test('正在做的只有一条时是焦点，多条时是清单', async ({ page 
   const crowded = await size('[data-doing-title]')
   expect(crowded, '五条时落回行的字号').toBeLessThan(alone)
 
-  // 和 Today 那一栏同宽：按钮就在内容旁边，不在窗口边上。
+  // As wide as the Today column, so the buttons sit beside the content, not at the window edge.
   const [doing, today] = await Promise.all([
     page.getByRole('region', { name: 'In progress' }).boundingBox(),
     page.getByRole('region', { name: 'Today' }).boundingBox(),
@@ -309,7 +304,9 @@ test('on a phone the one thing in progress is said in full', async ({ page }) =>
   expect(lines).toBeGreaterThanOrEqual(2)
 })
 
-test('做一件事时 Done 是那一下，做五件时它只是一行上的按钮', async ({ page }) => {
+test('with one task in progress Done is the main action, with several it is a button on a row', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1600, height: 1000 })
   await registerFreshUser(page)
   const p = await apiPost(page, '/projects', { name: 'P' })

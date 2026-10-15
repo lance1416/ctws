@@ -9,13 +9,8 @@ import { linksQuery } from './api'
 import { Links } from './Links'
 
 /**
- * LINKED -- the panel that reads an edge from the OTHER end.
- *
- * What is worth testing here is not that a list renders: it is that the shell routes a row it
- * knows nothing about. The panel is handed a type and an id by the server and has to turn that
- * into a link, which it can only do by asking the module registry -- so these assertions fail if
- * a module stops declaring where its things live, which is the one way this panel can break
- * without anything else noticing.
+ * The panel turns a type and id from the server into a link only through the registry, so these
+ * fail if a module stops declaring where its things live.
  */
 
 const groups: LinksResponse['groups'] = [
@@ -79,7 +74,7 @@ describe('what one thing is connected to', () => {
 
   it('routes a row through the module that owns its type, not through a path of its own', () => {
     const html = render(of, groups)
-    // The meetings module says where a meeting lives; the shell does not know and must not guess.
+    // The meetings module says where a meeting lives; the shell must not guess.
     expect(html).toContain('href="/meetings/m1"')
     // A project is the shell's own, and it has a page per project.
     expect(html).toContain('href="/projects/p1"')
@@ -87,11 +82,9 @@ describe('what one thing is connected to', () => {
 
   it("shows the edge's own word, read from this end", () => {
     const html = render(of, groups)
-    // "attended" is the INVERSE: the stored row says the MEETING has this person, and this is
-    // the person's end of it.
+    // "attended" is the inverse: the stored row says the meeting has this person.
     expect(html).toContain('attended')
-    // `belongs` carries no word of its own: the group is already called Projects, and a row
-    // reading "Projects / Job hunt / in" would say the same thing twice.
+    // `belongs` carries no word of its own: the group is already called Projects.
     const projectRow = /data-linked="p1".*?<\/a>/.exec(html)![0]
     expect(projectRow).toContain('Job hunt')
     expect(projectRow).not.toContain('text-ink-subtle')
@@ -103,8 +96,6 @@ describe('what one thing is connected to', () => {
   })
 
   it('renders nothing at all while it is still loading', () => {
-    // A skeleton would flash on every pane that opens, and the panel sits BELOW the thing's own
-    // fields rather than in place of them -- so there is nothing to hold a place for.
     expect(render(of)).toBe('')
   })
 })

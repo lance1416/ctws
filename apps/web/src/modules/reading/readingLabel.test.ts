@@ -9,10 +9,7 @@ describe('readingLabel', () => {
     expect(readingLabel({ title: '重做配色', url: 'https://example.com' })).toBe('重做配色')
   })
 
-  /**
-   * Untitled, it is the host and the path: `github.com` alone does not say which repo. The query
-   * string is left off -- utm tags are noise, and a row has no width to spare.
-   */
+  // The query string is left off: utm tags are noise, and a row has no width to spare.
   it('names an untitled link by host and path, since a host alone says too little', () => {
     expect(readingLabel({ title: null, url: 'https://www.linear.app/now/a/b?c=1' })).toBe(
       'linear.app/now/a/b',
@@ -38,8 +35,7 @@ describe('addedLabel', () => {
   })
 
   it("counts in the account's zone, not the browser's", () => {
-    // The SAME two instants, a day apart in one zone and the same day in another: 01:00 UTC on
-    // the 8th is still the 7th in Los Angeles, while 09:00 UTC is the 8th there.
+    // 01:00 UTC on the 8th is still the 7th in Los Angeles, while 09:00 UTC is the 8th there.
     const now = at('2026-10-08T09:00:00Z')
     const added = '2026-10-08T01:00:00Z'
     expect(addedLabel(added, 'UTC', now)).toBe('Added today')

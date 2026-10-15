@@ -2,11 +2,8 @@ import { expect, test, type Locator } from '@playwright/test'
 import { apiPost, makeProject, makeTask, registerFreshUser, WEB } from './helpers'
 
 /**
- * 删除（取消）在哪儿：在所有东西下面，而且不高于地板。
- *
- * 一个比屏幕矮的面上，它被推到这个面的底；一个比屏幕高的面上，它排在最后一行后面，要滚到底才
- * 看得见。它前一版是 `sticky`：长的面上浮在正文上面、正文从它底下滚过去，短的面板里又根本推不到
- * 底，还涂了一层和所在面板不同的底色。这里量的就是这三件事。
+ * The delete (or cancel) zone sits below everything else and never above the floor: pushed to the
+ * bottom of a surface shorter than the screen, after the last line of a taller one.
  */
 
 /** The zone, where it sits, and everything on the same surface that is not part of it. */
@@ -16,7 +13,7 @@ function measure(zone: Locator, surface: string) {
     const b = box.getBoundingClientRect()
     const s = getComputedStyle(box)
     const z = el.getBoundingClientRect()
-    // 同一个面上、不属于删除这一块、也不是它的祖先的每一个元素：它们的下沿都得在删除的上沿之上。
+    // The lowest edge of everything on the surface outside the zone and its ancestors.
     const above = Array.from(box.querySelectorAll('*'))
       .filter((n) => !el.contains(n) && !n.contains(el))
       .map((n) => n.getBoundingClientRect())
@@ -26,7 +23,7 @@ function measure(zone: Locator, surface: string) {
     return {
       top: z.top,
       bottom: z.bottom,
-      // 这个面能放东西的最低处：面板减去它自己的内边距和边框。
+      // The lowest point the surface can hold content: its bottom less padding and border.
       floor: b.bottom - parseFloat(s.paddingBottom) - parseFloat(s.borderBottomWidth),
       contentBottom: above,
       fills: [getComputedStyle(el).backgroundColor, getComputedStyle(inner).backgroundColor],
@@ -37,7 +34,9 @@ function measure(zone: Locator, surface: string) {
 
 const CLEAR = 'rgba(0, 0, 0, 0)'
 
-test('短的面板里，取消会议落在面板底，和面板同一个底色', async ({ page }) => {
+test('in a short panel, Cancel meeting sits at the bottom on the same background as the panel', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await registerFreshUser(page)
   const meeting = await apiPost(page, '/meetings', {
@@ -51,15 +50,17 @@ test('短的面板里，取消会议落在面板底，和面板同一个底色',
   await expect(zone.getByRole('button', { name: 'Cancel meeting' })).toBeVisible()
 
   const m = await measure(zone, '[role="dialog"]')
-  // 推到底：它的下沿就是面板的地板，而不是挂在 Linked 下面。
+  // Pushed down to the panel's floor, not hanging under Linked.
   expect(Math.abs(m.floor - m.bottom)).toBeLessThanOrEqual(1)
   expect(m.contentBottom).toBeLessThanOrEqual(m.top + 0.5)
-  // 没有自己的底色：它属于这个面板，那条线说明它不是正文。
+  // No fill of its own: it belongs to the panel, and the rule sets it apart from the content.
   expect(m.fills).toEqual([CLEAR, CLEAR])
   expect(m.rule).toBeGreaterThan(0)
 })
 
-test('笔记很长时，删除排在最后一行后面，不浮在正文上', async ({ page }) => {
+test('with long notes, Delete follows the last line instead of floating over the text', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await registerFreshUser(page)
   const pid = await makeProject(page, 'Reading list')
@@ -75,12 +76,12 @@ test('笔记很长时，删除排在最后一行后面，不浮在正文上', as
   const zone = dialog.locator('[data-danger-zone]')
   await expect(zone.getByRole('button', { name: 'Delete task' })).toBeAttached()
 
-  // 没滚的时候它不在屏幕上 —— 它在笔记后面，不是贴在面板底、盖着笔记。
+  // Before scrolling it is off screen, after the notes rather than pinned over them.
   const atTop = await measure(zone, '[role="dialog"]')
   expect(atTop.top).toBeGreaterThan(atTop.floor)
   expect(atTop.contentBottom).toBeLessThanOrEqual(atTop.top + 0.5)
 
-  // 滚到底，它就在地板上，正文全在它上面。
+  // Scrolled to the end, it sits on the floor with all the content above it.
   await dialog.evaluate((el) => (el.scrollTop = el.scrollHeight))
   const atEnd = await measure(zone, '[role="dialog"]')
   expect(Math.abs(atEnd.floor - atEnd.bottom)).toBeLessThanOrEqual(1)
@@ -88,7 +89,7 @@ test('笔记很长时，删除排在最后一行后面，不浮在正文上', as
   expect(atEnd.fills).toEqual([CLEAR, CLEAR])
 })
 
-test('短的页面上，删除项目落在屏幕底', async ({ page }) => {
+test('on a short page, Delete project sits at the bottom of the screen', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 })
   await registerFreshUser(page)
   const pid = await makeProject(page, 'Job hunt')

@@ -2,44 +2,19 @@ import { useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode }
 import { DeleteConfirm } from './DeleteConfirm'
 
 /**
- * THE ONE PLACE A THING IS DESTROYED FROM, and it looks the same everywhere.
- *
- * Three rules, and they are the whole component:
- *
- * 1. **BELOW EVERYTHING, AND NEVER ABOVE THE FLOOR.** It is the last thing on the surface that
- *    owns the thing, under a rule. On a surface shorter than the screen it is pushed down to the
- *    foot of it rather than hanging in the middle of the empty half; on a longer one it comes
- *    after the last line, and you scroll to reach it. Nothing is reached by passing over it, and
- *    nothing ever slides under it -- which is what stops a mis-aimed press.
- * 2. **RED.** `danger`, the same token an overdue deadline and a failed save use. An action that
- *    cannot be undone must not wear the colour of the ones that can.
- * 3. **IT ASKS.** Always, and the question names what is lost. The press that destroys is the
- *    SECOND one, and it is never the one your hand was already moving towards.
- *
- * A thing with no page or pane of its own (a reading item) has nowhere to put a zone; its menu
- * carries the same red and the same question instead.
+ * Where a thing is destroyed from: last on its surface, under a rule, in red, and it always asks.
  */
 export function DangerZone({ children }: { children: ReactNode }) {
   return (
-    /*
-      `mt-auto`，不是 `sticky`。在一个纵向 flex 的面里（页面的 main、详情面板），自动外边距吃掉
-      剩下的空，短的面上它就落到底；长的面上没有剩的空，它就排在最后一行后面。`sticky` 那一版
-      在长面上浮在正文上面、正文从它底下滚过去，还得给自己涂一层底色去盖住 —— 而那层底色和它
-      所在的面不是同一个颜色。
-
-      两层是因为自动外边距在内容够长时会塌成 0：外层的 `pt-6` 是它和正文之间至少留的那段距离。
-      没有底色：它属于它所在的面，那条线已经说明它不是正文。
-    */
+    // `mt-auto`, not `sticky`: in a flex column it drops to the floor of a short surface and
+    // follows the last line of a long one. `pt-6` is the minimum gap once the margin collapses.
     <div data-danger-zone className="mt-auto pt-6">
       <div className="border-t border-rule py-3">{children}</div>
     </div>
   )
 }
 
-/**
- * The trigger and its question, which are one control: pressing it replaces it with the question,
- * in place, so the answer is where the hand already is.
- */
+/** The trigger and its question in one place: pressing it replaces it with the question. */
 export function DangerAction({
   label,
   message,
@@ -51,7 +26,6 @@ export function DangerAction({
   back,
   children,
 }: {
-  /** The button's words, e.g. “Delete task”. */
   label: string
   /** The question, naming what goes. Null while it is still being counted. */
   message: string | null
@@ -85,16 +59,13 @@ export function DangerAction({
       trigger.current?.focus()
       return
     }
-    // The question focuses its Cancel; a custom question that focuses nothing leaves focus on the
-    // box, since the press that opened it has just left the DOM and Escape has to land somewhere.
+    // A custom question that focuses nothing leaves focus on the box: the trigger has left the DOM
+    // and Escape needs somewhere to land.
     const el = box.current
     if (el && !el.contains(document.activeElement)) el.focus()
   }, [asking])
 
-  /**
-   * ESCAPE IS ALSO "NO". `preventDefault` says the press was spent here, so a pane this sits in
-   * reads it as handled and stays open -- the rule `DetailPane` states for every inner layer.
-   */
+  // Escape cancels; `preventDefault` keeps an enclosing pane open.
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (!asking || e.key !== 'Escape') return
     e.preventDefault()
@@ -111,8 +82,6 @@ export function DangerAction({
             onAsk?.()
             setAsking(true)
           }}
-          // The padding is the hover target; the negative margin takes it back out of the layout,
-          // so the words line up with the content above them instead of sitting 10px in from it.
           className="-ml-2.5 h-9 rounded-md px-2.5 text-sm text-danger hover:bg-danger/10"
         >
           {label}

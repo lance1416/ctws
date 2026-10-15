@@ -19,15 +19,8 @@ import {
 } from './MeetingControls'
 
 /**
- * NEW MEETING, filled in once.
- *
- * A meeting is the one thing in this app that cannot be made from a line of text: a title with no
- * time is not a meeting, and the time needs a zone, and the people in the room are the point of
- * most of them. Everything it needs is here, so making one is one act rather than "create, then
- * open it and fill in the rest".
- *
- * THE CALENDAR DOES NOT MAKE ONE. A lens is not a creation affordance: the grid answers what is on
- * this month, and the making happens here.
+ * A new meeting in one act: it needs a time, a zone and usually people, so unlike the rest of the
+ * app it cannot be made from a line of text.
  */
 export function NewMeetingDialog({
   onClose,
@@ -80,8 +73,7 @@ export function NewMeetingDialog({
       title="New meeting"
       onClose={onClose}
       initialFocus={titleField}
-      // The footer carries Cancel; a second dismiss in the header would be a third way out of one
-      // small form.
+      // The footer carries Cancel, so the header has no second dismiss.
       dismissLabel={null}
     >
       <form
@@ -95,9 +87,6 @@ export function NewMeetingDialog({
         <div>
           {/* "No project" is a choice, not only the placeholder, so a picked project can be undone. */}
           <ProjectPicker value={projectId} onPick={setProjectId} none="No project" />
-          {/* A PLACEHOLDER, and a field you can see. Borderless and empty, this read as a gap
-              between the project and the date -- there was nothing on screen to say a title was
-              wanted. */}
           <input
             ref={titleField}
             aria-label="Title"
@@ -115,9 +104,8 @@ export function NewMeetingDialog({
           />
         </div>
 
-        {/* Two controls under one heading, each with its own name: accessible names are matched
-            by substring in one flat namespace, so a bare "Time" here would also answer to the
-            "Time zone" below it. */}
+        {/* Each control has its own name: names are matched by substring, so a bare "Time" would
+            also answer to "Time zone". */}
         <div>
           <span className={label}>Starts</span>
           <div className="mt-1.5 flex flex-wrap gap-2">
@@ -166,7 +154,6 @@ export function NewMeetingDialog({
               />
             </div>
           </div>
-          {/* Only once it repeats: a meeting that happens once has nothing to end. */}
           {rrule && (
             <div>
               <label htmlFor="meeting-until" className={label}>
@@ -185,8 +172,6 @@ export function NewMeetingDialog({
           )}
         </div>
 
-        {/* WHERE, which for most of these is a link. A meeting you cannot join from the thing
-            that reminded you of it is a meeting you go looking for in your mail. */}
         <div>
           <label htmlFor="meeting-place" className={label}>
             Location

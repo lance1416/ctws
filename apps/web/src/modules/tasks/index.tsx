@@ -15,12 +15,7 @@ import { Today } from './pages/Today'
 import { NewTaskAction, PROJECT_VIEWS, ProjectNumbers, ProjectTasks } from './projectBlock'
 import { OpenTaskCount, TaskStatusLine, TodayCount, TodayDate, TodayGlance } from './widgets'
 
-/**
- * THE TASK MODULE.
- *
- * Today and Review live here, not in the shell: they are defined by task semantics (overdue,
- * planned, in progress). The shell only offers the slot.
- */
+// Today and Review live here, not in the shell: they are defined by task semantics.
 
 /** This module's dated things: a plan day and a deadline day, both decided by the server. */
 function useTaskEntries(range: { from: string; to: string }) {
@@ -28,13 +23,9 @@ function useTaskEntries(range: { from: string; to: string }) {
   return { entries: result.data ?? [], isError: result.isError }
 }
 
-/**
- * Quick capture's destination: the workspace inbox. Found by the `isInbox` flag, never by name.
- * The shell asks for this once per render and nothing here costs the typist a keystroke.
- */
+/** Quick capture lands in the workspace inbox, found by its `isInbox` flag, never by name. */
 function useInboxCapture(): CaptureTargetState {
   const qc = useQueryClient()
-  // Shares the ['projects'] cache entry with every other reader, so capture costs no extra request.
   const projects = useProjects()
   const inbox = projects.data ? inboxOf(projects.data) : undefined
   return {
@@ -63,10 +54,7 @@ function useTaskHits(query: string) {
   const rows = query.length > 0 ? (results.data ?? []) : []
   const hits: SearchHit[] = rows.map((t) => ({
     id: t.id,
-    // Choosing a result goes to the task's project with `?reveal=<id>`, which `TaskTree` consumes
-    // by unfolding the ancestors and putting focus on that row. Routing alone is not enough: the
-    // row may sit in a collapsed subtree, and arriving at a folded parent is the failure this is
-    // for.
+    // `?reveal=` makes `TaskTree` unfold the ancestors and focus the row, which may be folded away.
     to: revealHref(t.projectId, t.id),
     title: t.title,
     meta: (
@@ -93,7 +81,7 @@ export const taskModule: WorkspaceModule = {
       chord: 'today',
       Count: TodayCount,
     },
-    // Done is a VIEW of Review, not a page of its own: both answer what I did.
+    // Done is a view of Review, not a page of its own: both answer what I did.
     { id: 'review', to: taskPage('review'), label: 'Review', end: false, chord: 'review' },
   ],
   // Tasks have no list page of their own yet: they are dealt with on Today and live in their
@@ -120,9 +108,7 @@ export const taskModule: WorkspaceModule = {
       id: 'inbox',
       key: 'i',
       label: 'Go to Inbox',
-      // Read from the cache at keypress time rather than through a hook: the inbox is a row in the
-      // database, and the rail and the capture box have both already loaded ['projects'] by the
-      // time anyone can press a key. Unresolved means "do nothing", exactly as before.
+      // Read from the cache at keypress time: the rail has loaded ['projects'] by then.
       resolve: ({ queryClient }) => {
         const projects = queryClient.getQueryData(projectsQuery().queryKey)
         const inbox = projects ? inboxOf(projects) : undefined
@@ -181,7 +167,6 @@ export const taskModule: WorkspaceModule = {
       ],
     },
   ],
-  // No page of its own: a task is read IN ITS TREE, where its siblings, its parent and its
-  // dependencies are. Its address finds the tree and opens it there.
+  // No page of its own: a task's address opens its tree, where its parent and siblings are.
   relations: [{ type: 'task', kind: 'Task', to: taskPage }],
 }

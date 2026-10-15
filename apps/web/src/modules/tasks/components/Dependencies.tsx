@@ -7,29 +7,17 @@ import { dependenciesQuery, taskSearchQuery } from '../api/queries'
 import { field, label } from '../../../platform/ui/formStyles'
 import { CloseIcon } from '../../../platform/ui/icons'
 
-/**
- * ONE TASK WAITING FOR ANOTHER, in the detail pane.
- *
- * BOTH DIRECTIONS, AND FINISHED BLOCKERS TOO. The row outside shows only what is still in the
- * way, because a row answers whether this can be worked on now. The pane shows the arrangement:
- * a blocker that is already finished is a fact about this task worth seeing, and it is also the
- * only way to find an edge in order to remove it.
- *
- * ADDING GOES THROUGH SEARCH, not a dropdown of every task in the workspace. A dependency
- * reaches across projects by design, so the candidate list is "everything", and a select of
- * everything is a list nobody can use. Search is the control this app already has for finding a
- * task by name.
- */
+// The pane shows both directions and finished blockers too, the only place to remove such an
+// edge. Adding goes through search: a dependency can reach any task in any project.
 
-// `item`, not `ref`: React reserves that name in JSX, and a prop that only works by accident of
-// the current version is not a prop.
+// `item`, not `ref`: React reserves that name in JSX.
 function Row({
   item: task,
   here,
   onRemove,
 }: {
   item: DependencyRef
-  /** The project the OPEN task is in. */
+  /** The project the open task is in. */
   here: string
   onRemove?: () => void
 }) {
@@ -38,9 +26,7 @@ function Row({
       <span className={`truncate ${task.done ? 'text-ink-subtle line-through' : 'text-ink'}`}>
         {task.title}
       </span>
-      {/* The project only when it is a DIFFERENT one. Dependencies usually stay inside a project,
-          and repeating the name of the project you are already looking at is the same noise the
-          tree's rows leave out for the same reason. */}
+      {/* The project only when it is not the open task's. */}
       {task.projectId !== here && (
         <span className="truncate text-xs text-ink-subtle">{task.projectName}</span>
       )}
@@ -88,8 +74,7 @@ export function Dependencies({ taskId, projectId }: { taskId: string; projectId:
       setAdding(false)
       setError(null)
     },
-    // Our own words, not the server's sentence: 409 is the one refusal a person can actually act
-    // on, and "that would make two tasks wait for each other" is a developer's phrasing.
+    // Our own words for a 409, the one refusal a person can act on.
     onError: (e) =>
       setError(
         e instanceof ApiError && e.status === 409
@@ -106,8 +91,7 @@ export function Dependencies({ taskId, projectId }: { taskId: string; projectId:
 
   const blockedBy = lists.data?.blockedBy ?? []
   const blocks = lists.data?.blocks ?? []
-  // Never offer this task itself: it is the one edge the server refuses outright, and offering
-  // it would be the interface proposing something it knows is impossible.
+  // Never offer this task itself: the server refuses that edge outright.
   const candidates = (hits.data ?? []).filter((t) => t.id !== taskId).slice(0, 6)
 
   return (
@@ -174,8 +158,7 @@ export function Dependencies({ taskId, projectId }: { taskId: string; projectId:
 
       {blocks.length > 0 && (
         <Group tag="Blocks">
-          {/* No remove button on this side: the edge belongs to the OTHER task's "waiting for"
-              list, and removing it from here would be editing a task that is not open. */}
+          {/* No remove on this side: the edge belongs to the other task, which is not open. */}
           <ul data-blocks className="flex flex-col">
             {blocks.map((t) => (
               <Row key={t.id} item={t} here={projectId} />

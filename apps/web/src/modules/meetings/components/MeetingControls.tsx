@@ -5,10 +5,7 @@ import { useNow } from '../../../platform/time/useNow'
 import { repeatChoices, repeatLabel } from '../api'
 import { ZONES, zoneLabel } from '../timeZones'
 
-/*
- * THE CONTROLS NEW MEETING AND THE PANE'S FORM SHARE. Each is the bare control: the label and
- * layout around it are the caller's, because a dialog and a 22rem pane lay them out differently.
- */
+// Bare controls shared by New meeting and the pane's form; label and layout are the caller's.
 
 /** How long a meeting is, as a person says it: `1 h`, `45 min`. */
 export function lengthLabel(minutes: number): string {
@@ -34,10 +31,7 @@ export function LengthPicker({
   )
 }
 
-/**
- * The MEETING's zone, not the reader's: "09:00 Toronto time" is what was agreed. The list names
- * each zone by its abbreviation now; the meeting itself says the one it wears at its own instant.
- */
+/** The meeting's zone, not the reader's; the menu names each by the abbreviation it uses now. */
 export function ZonePicker({ value, onPick }: { value: string; onPick: (zone: string) => void }) {
   const now = useNow()
   return (
@@ -65,10 +59,7 @@ export function RepeatPicker({
   today: string
   /** The rule without its ending, or null for once. */
   value: string | null
-  /**
-   * The value is a saved meeting's, which may be a rule the menu does not offer: it stays a
-   * choice while it is the value, or the control would show a placeholder for it.
-   */
+  /** A saved meeting's value, which may be a rule the menu does not offer; it stays a choice. */
   stored?: boolean
   onPick: (rule: string | null) => void
 }) {
@@ -125,7 +116,6 @@ export function EndsPicker({
   )
 }
 
-/** Who is in it, picked from everyone in People. */
 export function AttendeesPicker({
   value,
   onChange,

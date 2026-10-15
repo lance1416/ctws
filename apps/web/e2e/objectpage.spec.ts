@@ -42,12 +42,10 @@ async function world(page: Page) {
 }
 
 /**
- * 一个人、一场会：**一层**，不是一个地方。
- *
- * 模块写它是什么，shell 写它连着什么 —— 这两半还是原来那两半，只是不再占掉整个窗口。项目保留
- * 整页：它是你工作的地方，有一棵会拖会折的任务树，而人和会议是你瞥一眼的记录。
+ * A person or a meeting opens as a layer over its list, not a page of its own: the module draws
+ * the fields and the shell draws the links. A project keeps a whole page.
  */
-test('一个人的那一层里，模块写字段、shell 写边', async ({ page }) => {
+test('a person’s layer shows the module’s fields and the shell’s links', async ({ page }) => {
   const { person } = await world(page)
   await page.goto(`/people/${person.id}`)
 
@@ -55,7 +53,7 @@ test('一个人的那一层里，模块写字段、shell 写边', async ({ page 
   await expect(layer).toContainText('Ying Chen')
   await expect(layer).toContainText('Acme recruiting')
 
-  // 边是从另一端读出来的：客人名单写在会议上，推荐写在一张表的一行里。
+  // Read from the other end: attendees are stored on the meeting, the recommendation as a link.
   const linked = layer.getByRole('region', { name: 'Linked' })
   await expect(linked.getByRole('region', { name: 'Meetings' })).toContainText('Second interview')
   await expect(linked.getByRole('region', { name: 'Reading' })).toContainText(
@@ -64,18 +62,20 @@ test('一个人的那一层里，模块写字段、shell 写边', async ({ page 
   await expect(linked.getByRole('region', { name: 'Projects' })).toContainText('Job hunt')
 })
 
-test('从一个人跟着边走到一场会，落点是会议的那一层', async ({ page }) => {
+test('following a link from a person to a meeting lands on the meeting’s layer', async ({
+  page,
+}) => {
   const { person, meeting } = await world(page)
   await page.goto(`/people/${person.id}`)
   await page.getByRole('link', { name: /Second interview/ }).click()
 
   await expect(page).toHaveURL(new RegExp(`/meetings/${meeting.meetingId}$`))
   await expect(page.getByRole('dialog', { name: 'Meetings' })).toContainText('Second interview')
-  // 列表就在后面：从一条边过来的人，下一步多半还在这个列表里。
+  // The list stays behind the layer: after following a link, the next step is likely in it.
   await expect(page.getByRole('heading', { level: 1, name: 'Meetings' })).toBeVisible()
 })
 
-test('指向一个已经不在的人，说出来而不是空着', async ({ page }) => {
+test('the address of a person who is gone says so instead of showing nothing', async ({ page }) => {
   await registerFreshUser(page)
   await page.goto('/people/99999999-9999-4999-8999-999999999999')
   await expect(page.getByText('This person is not here any more.')).toBeVisible()

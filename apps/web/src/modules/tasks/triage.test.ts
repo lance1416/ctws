@@ -1,13 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { triageSections, type TriagePatch } from './triage'
 
-/**
- * The named decisions a late or carried row offers, and what each one WRITES.
- *
- * Covered here rather than only through the browser because what matters is the request body: a
- * decision that touches two fields has to send both, and one that moves a deadline has to keep
- * its time of day. Both are invisible in a screenshot and both have been wrong before.
- */
+// What each decision writes: one touching two fields sends both; a moved deadline keeps its time.
 const TODAY = '2026-10-10' // a Saturday
 const ZONE = 'America/Toronto'
 
@@ -42,12 +36,12 @@ describe('an overdue row', () => {
   })
 
   it('pushes the deadline to a new DAY and keeps the time of day', () => {
-    // 13:30Z is 09:30 in Toronto. Tomorrow at 09:30 there is 13:30Z again -- the wall clock is
-    // what a person agreed, and moving the instant by 24h would be right only outside a DST week.
+    // 13:30Z is 09:30 in Toronto. The wall clock is kept: moving the instant by 24h would be right
+    // only outside a DST week.
     expect(run('Push the deadline', 'To tomorrow')).toEqual({
       dueAt: '2026-10-11T13:30:00.000Z',
     })
-    // Next week is the following MONDAY, not seven days on.
+    // Next week is the following Monday, not seven days on.
     expect(run('Push the deadline', 'To next week')).toEqual({
       dueAt: '2026-10-12T13:30:00.000Z',
     })
@@ -113,8 +107,7 @@ describe('a row with nothing to triage', () => {
         () => {},
       ),
     ).toBeNull()
-    // Overdue is decided by the SERVER's segment, not by the date: a row the server did not call
-    // overdue gets no deadline actions, however old its deadline looks here.
+    // Overdue is the server's segment, not the date: however old the deadline looks, no actions.
     expect(
       sectionsFor(
         { id: 't5', segment: 'today', dueAt: '2020-01-01T00:00:00.000Z' },

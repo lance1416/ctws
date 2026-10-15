@@ -4,11 +4,8 @@ import { isFinished } from '../../status'
 import { loadShowDone, saveShowDone } from '../../tree/collapse'
 
 /**
- * WHAT IS LEFT TO DO. A finished row leaves the tree unless the person asks for it back, with two
- * exceptions. A finished PARENT with unfinished children stays, dimmed: hiding it would take its
- * children with it, and a list that loses tasks cannot be trusted. And a row finished RIGHT HERE
- * stays for this mount (`keep`), so `x` does not pull it from under the cursor and a second `x`
- * still has a row to undo on.
+ * A finished row leaves the tree unless asked back, except a finished parent with unfinished
+ * children, and a row finished right here, kept for this mount so a second `x` can undo it.
  */
 export function useTreeVisibility(projectId: string, all: readonly TaskResponse[]) {
   const [showDone, setShowDone] = useState(() => loadShowDone(projectId))

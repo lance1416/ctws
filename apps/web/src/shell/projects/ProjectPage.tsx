@@ -12,9 +12,8 @@ import { ProjectHead } from './ProjectHead'
 import { HANG } from '../../platform/ui/hang'
 
 /**
- * A project's page: its head, each module's block of rows, everything linked to it, and its
- * delete at the foot. A project is a place you work in, so it has a page; other records open as a
- * pane over their list.
+ * A project's page: its head, each module's block, everything linked to it, and delete at the
+ * foot. A project is worked in, so it has a page; other records open as a pane over their list.
  */
 export function ProjectPage() {
   const { id } = useParams()

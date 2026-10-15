@@ -2,13 +2,7 @@ import type { ReactNode } from 'react'
 import { PanelEmpty } from '../../platform/ui/Panel'
 import { HANG } from '../../platform/ui/hang'
 
-/**
- * A SECTION OF A DAY: a heading, then its rows, and no box.
- *
- * The heading hangs where the thread hangs -- after the margin, not over it -- so on a page of
- * rows the eye runs down two edges: the margin's words on the left, the headings and titles on
- * the right. That alignment is the whole structure; a box round each section would only repeat it.
- */
+/** A heading, then its rows, and no box. The heading hangs on the titles' edge. */
 export function DaySection({
   label,
   count,
@@ -16,11 +10,10 @@ export function DaySection({
   children,
   className = '',
 }: {
-  /** The section's heading, and its accessible name. */
   label: string
-  /** The number beside the heading. Zero and undefined both draw nothing. */
+  /** Zero and undefined both draw nothing. */
   count?: number | undefined
-  /** A control for the section as a whole, at the end of the heading row. */
+  /** A control for the whole section, at the end of the heading row. */
   action?: ReactNode
   children: ReactNode
   className?: string
@@ -41,7 +34,6 @@ export function DaySection({
   )
 }
 
-/** What a section says when it has nothing in it: one quiet line, on the titles' edge. */
 export function DayEmpty({ children }: { children: ReactNode }) {
   return <PanelEmpty hang>{children}</PanelEmpty>
 }

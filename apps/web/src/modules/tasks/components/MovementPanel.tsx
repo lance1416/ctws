@@ -4,16 +4,8 @@ import { hasMovement, movedLine, QUIET_DAYS } from '../movement'
 import { useProjectRail } from '../../../shell/projects/projectColor'
 
 /**
- * THIS WEEK: where each line of work got to. COUNTS, NEVER A PERCENTAGE.
- *
- * There is deliberately no progress bar and no ratio here, and that is a decision about honesty
- * rather than taste: nothing in the codebase writes `manual_progress`, so a bar would be drawn
- * against a column that is null for every row. What a person can act on is what MOVED -- what got
- * done, and when the line last changed -- and what did NOT.
- *
- * A project that has gone quiet says so on its own line ("Quiet for 12 days"), its name a step
- * quieter, rather than in a sentence of its own: one line per project, and the silent one is
- * found where the reader is already looking.
+ * Where each line of work got to this week, in counts, never a percentage: nothing stores the
+ * progress a bar would need. A project gone quiet says so on its own line.
  */
 export function MovementPanel({
   rows: all,
@@ -38,9 +30,8 @@ export function MovementPanel({
                 data-stagnant={quiet ? r.projectId : undefined}
                 className="grid grid-cols-[3px_minmax(0,1fr)_auto] items-start gap-x-3 py-[7px] pr-1 hover:bg-hover"
               >
-                {/* The project's strand, never alone: the NAME is right beside it (WCAG 1.4.1).
-                    Not the row system's `data-project-rail`: this is not a task row and must not
-                    be measured as one. */}
+                {/* Not `data-project-rail`: this is not a task row and must not be measured as
+                    one. The name beside it keeps the colour from being the only signal. */}
                 <span
                   aria-hidden="true"
                   data-project-chip={r.projectId}

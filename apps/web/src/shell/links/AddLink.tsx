@@ -6,14 +6,7 @@ import { useRegistry } from '../registry'
 import { Modal } from '../../platform/ui/Modal'
 import { BUTTON } from '../../platform/ui/buttonStyles'
 
-/**
- * SAYING THAT TWO THINGS ARE CONNECTED.
- *
- * TWO STEPS, because there are two questions and neither can be guessed: WHAT, then HOW. The
- * kinds offered depend on both ends (the model allows an attendee between a meeting and a
- * person, and nothing of the sort between two books), so the second list cannot be drawn until
- * the first is answered.
- */
+/** Links two things in two steps, what and then how: the kinds of link depend on both ends. */
 export function AddLink({
   of,
   only,
@@ -41,7 +34,7 @@ export function AddLink({
   })
 
   const offered = (candidates.data ?? []).filter((c) => !only || c.type === only)
-  // Read FROM this object, so the words are the ones its own page will show on the new row.
+  // Read from this object, so the words are the ones its own page will show on the new row.
   const kinds = chosen ? kindsBetween(of.type, chosen.type) : []
 
   return (
@@ -86,8 +79,6 @@ export function AddLink({
                       {c.detail}
                     </span>
                   )}
-                  {/* WHICH KIND OF THING it is, because one list holds four of them and two
-                      titles can read the same. */}
                   <span className="shrink-0 text-xs text-ink-subtle">
                     {registry.relationFor(c.type)?.kind}
                   </span>
@@ -110,8 +101,7 @@ export function AddLink({
                 onClick={() => make.mutate(k.kind)}
                 className="h-9 rounded-md border border-rule px-3 text-sm text-ink hover:border-rule-strong hover:bg-hover disabled:opacity-50"
               >
-                {/* The phrase read along the edge, which is the one this object's page will
-                    show. `belongs` says nothing out loud, so it is named here instead. */}
+                {/* `belongs` has no phrase of its own, so it is named here. */}
                 {k.label || 'Part of'}
               </button>
             ))}

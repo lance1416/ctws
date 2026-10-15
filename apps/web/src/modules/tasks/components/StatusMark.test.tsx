@@ -3,13 +3,8 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { StatusMark } from './StatusMark'
 
-/**
- * THE STATUS MARK, by shape: a ring not started, a half-filled ring in progress, a disc with a
- * check done.
- *
- * Every part is always in the markup -- a status change is a 120ms transition on an element that
- * is already there, not a mount -- so what this reads is which parts are SHOWN.
- */
+// Every part is always in the markup, so a status change is a transition, not a mount; this reads
+// which parts are shown.
 const shown = (status: TaskStatus) => {
   const html = renderToStaticMarkup(<StatusMark status={status} />)
   const part = (name: string) => {

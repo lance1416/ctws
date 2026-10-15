@@ -12,10 +12,6 @@ import { deletePerson, patchPerson } from '../api'
 import { PersonForm } from './PersonForm'
 import { PersonRead } from './PersonRead'
 
-/**
- * ONE PERSON, in the shell's detail pane: read, or edited behind Edit; then what links to them,
- * and last, the delete.
- */
 export function PersonDetail({ person, onClose }: { person: PersonResponse; onClose: () => void }) {
   useRecordRecent({
     type: 'person',
@@ -50,8 +46,6 @@ export function PersonDetail({ person, onClose }: { person: PersonResponse; onCl
           <PersonRead person={person} onEdit={() => setEditing(true)} />
         )}
       </div>
-      {/* What links to them -- the meetings they are in, what they recommended. The edges are the
-          shell's, so they sit beside this module's fields, not inside them. */}
       <LinkedSection of={{ type: 'person', id: person.id }} className="mt-4" />
       <DangerZone>
         <DeletePerson person={person} onDeleted={onClose} />
@@ -60,7 +54,6 @@ export function PersonDetail({ person, onClose }: { person: PersonResponse; onCl
   )
 }
 
-/** Destroying this person: last in the pane, under a rule, asked once. */
 function DeletePerson({ person, onDeleted }: { person: PersonResponse; onDeleted: () => void }) {
   const drop = useDestroy({
     type: 'person',

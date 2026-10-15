@@ -39,8 +39,7 @@ export function Breadcrumbs() {
       {crumbs.map((c, i) => {
         const last = i === crumbs.length - 1
         return (
-          // Below 640 there is room for the page's own name and nothing above it: the ancestors
-          // are the tab bar's and Things' to show there.
+          // Below 640 only the page's own name fits.
           <span
             key={i}
             className={`flex items-center gap-2 ${last ? 'min-w-0' : 'shrink-0 max-sm:hidden'}`}
@@ -51,7 +50,6 @@ export function Breadcrumbs() {
               </span>
             )}
             {last || !c.to ? (
-              // The page itself: named, never a link to where you already are.
               <span
                 aria-current={last ? 'page' : undefined}
                 className="truncate font-semibold text-ink"

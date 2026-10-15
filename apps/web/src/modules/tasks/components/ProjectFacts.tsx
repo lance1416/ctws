@@ -9,7 +9,7 @@ import { useTimeZone } from '../../../shell/auth/useMe'
 import { deadlineDayLead } from '../../../shell/rows/leads'
 import { RowLead } from '../../../shell/rows/RowLead'
 
-/** One project's movement: what is late, what is next, when it last moved. Archived ones have none. */
+/** One project's movement: what is late, what is next, when it last moved. */
 function useMoved(projectId: string) {
   const movement = useQuery(movementQuery())
   return movement.data?.find((m) => m.projectId === projectId)
@@ -48,7 +48,7 @@ export function ProjectFacts({
       {p.openTasks} open
     </span>,
   ]
-  // "0 overdue" is not news; the one number allowed the miss colour, when there is one.
+  // "0 overdue" is not news.
   if (m && m.overdue > 0)
     said.push(
       <span key="late" className="text-missed">

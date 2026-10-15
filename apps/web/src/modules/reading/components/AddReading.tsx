@@ -6,12 +6,8 @@ import { useComposing } from '../../../platform/keyboard/composition'
 import { textbox } from '../../../platform/ui/formStyles'
 
 /**
- * ONE INPUT, both kinds.
- *
- * Paste a url and it is a link; type anything else and it is a book. The person already knows
- * which one they are adding, so a Link / Book toggle would be asking them to say it twice --
- * and the rule is visible in the field itself, which says what will happen before Enter is
- * pressed. Everything else about the item (title, project, author) is edited on the row.
+ * One input for both kinds: a url becomes a link, anything else a book, and the field says which
+ * before Enter is pressed.
  */
 export function AddReading({ projectId }: { projectId?: string } = {}) {
   const composing = useComposing()
@@ -46,8 +42,6 @@ export function AddReading({ projectId }: { projectId?: string } = {}) {
         aria-label="Add to the reading list"
         className={`w-full bg-sheet ${textbox}`}
       />
-      {/* Said BEFORE Enter, not after: this is the one place the link/book rule is visible, and a
-          rule you can see is one you can work with. */}
       {trimmed !== '' && (
         <p className="mt-1 text-xs text-ink-subtle">
           {isLink ? 'Enter saves it as a link' : 'Enter saves it as a book'}

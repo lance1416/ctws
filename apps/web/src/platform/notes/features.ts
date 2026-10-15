@@ -4,41 +4,22 @@ import remarkParse from 'remark-parse'
 import { unified } from 'unified'
 
 /**
- * WHICH OF THE TWO EXPENSIVE FEATURES A NOTE ACTUALLY USES.
- *
- * Loaded on demand: `mermaid` and `katex` load ON DEMAND ONLY. This app is opened twenty
- * times a day and most notes are two lines of prose; a note that contains no diagram and no maths
- * must not pay for the renderers of either. So the source is asked first, and the renderer is
- * fetched afterwards -- which means the answer has to come from a CHEAP, SYNCHRONOUS read of the
- * text, before anything is loaded.
- *
- * IT IS NOT A REGEX. A regex over the source would be a SECOND notion of what counts as maths,
- * living next to `remark-math`'s, and the two would disagree -- a `$5 and $7` line fetching 300 KB
- * of KaTeX for nothing, or a real `$\frac12$` quietly rendering as literal text because the regex
- * missed it. The scan parses with THE SAME `remark-math` the renderer uses, and asks the syntax
- * tree. `remark-math` is the small half of the pair (the micromark extension, no typesetting), so
- * it is affordable in the always-loaded path; `rehype-katex` and `katex` are the expensive half and
- * are the ones held back.
- *
- * `remark-gfm` is in the scanner for the same reason: GFM changes what is a code fence and what is
- * a table cell, so a scanner without it could read a different tree than the renderer does.
+ * Which on-demand renderers a note needs, answered before any is loaded. It parses with the same
+ * `remark-math` and `remark-gfm` the renderer uses, because a regex would disagree with them.
  */
 export type NoteFeatures = {
-  /** The note contains `$...$` or `$$...$$` as `remark-math` understands it. */
+  /** `$...$` or `$$...$$`, as `remark-math` reads it. */
   math: boolean
-  /** The note contains a fenced block whose info string is `mermaid`. */
   mermaid: boolean
-  /** The note contains a fenced block with any OTHER language on it, so it wants highlighting. */
+  /** A fence with any other language on it. */
   highlight: boolean
 }
 
-/** The info string a fence has to carry to be a diagram. Also what `NoteMarkdown` matches on. */
 export const MERMAID_LANG = 'mermaid'
 
-// Parser only -- `.parse()` never runs a transformer, so no rehype, no stringify, no renderer.
+// Parser only: `.parse()` never runs a transformer.
 const scanner = unified().use(remarkParse).use(remarkGfm).use(remarkMath)
 
-/** The slice of mdast this walk cares about. Everything else is just `children`. */
 type ScanNode = { type: string; lang?: string | null; children?: ScanNode[] }
 
 export function noteFeatures(source: string | null | undefined): NoteFeatures {
@@ -48,8 +29,7 @@ export function noteFeatures(source: string | null | undefined): NoteFeatures {
     if (node.type === 'math' || node.type === 'inlineMath') found.math = true
     else if (node.type === 'code') {
       const lang = node.lang?.trim().toLowerCase()
-      // A fence with NO language is left alone: highlight.js would guess, and a wrong guess
-      // paints shell output or a log file in the colours of whatever language it decided on.
+      // A fence with no language stays plain: highlight.js would guess.
       if (lang === MERMAID_LANG) found.mermaid = true
       else if (lang) found.highlight = true
     }

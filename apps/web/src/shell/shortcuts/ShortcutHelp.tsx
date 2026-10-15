@@ -4,13 +4,7 @@ import { setShortcutsEnabled, useShortcutsEnabled } from '../../platform/keyboar
 import { JUMP_PREFIX } from './chords'
 import { Modal } from '../../platform/ui/Modal'
 
-/**
- * The `?` overlay. Nothing in this app announced its own keys before; a keyboard-first tool whose
- * keys are undiscoverable is a keyboard-first tool for the person who wrote it.
- *
- * Grouped by where the key works, because `s` on a task row and `g p` anywhere are not the same
- * kind of thing and a flat list of eleven rows reads as noise.
- */
+/** The `?` overlay's keys, grouped by where they work. */
 const groups = (registry: Registry): HelpSection[] => [
   {
     title: 'Anywhere',
@@ -18,13 +12,11 @@ const groups = (registry: Registry): HelpSection[] => [
       ['/', 'Jump to the capture box'],
       ['f', 'Search, or go to a page'],
       ['?', 'This list of shortcuts'],
-      // The jump chords come from the key table, so a module that adds one cannot add it
-      // without the help overlay saying so -- an undiscoverable key is no key at all.
+      // From the key table, so a module cannot add a chord this list does not show.
       ...registry.chords.map((c) => [`${JUMP_PREFIX} ${c.key}`, c.label] as const),
       ['Esc', 'Close the pane or overlay'],
     ],
   },
-  // Then the keys that work only somewhere, in each module's words.
   ...registry.help,
 ]
 
@@ -33,8 +25,6 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
   const registry = useRegistry()
 
   return (
-    // Radix owns Escape, the press outside, the focus trap and the focus restoration; this file
-    // only says what is in the layer.
     <Modal title="Keyboard shortcuts" onClose={onClose}>
       <div className="px-5 py-4">
         {groups(registry).map((group) => (
@@ -54,10 +44,8 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
             </dl>
           </section>
         ))}
-        {/* The OpenProject 16.2 lesson: single-key shortcuts take keystrokes away from assistive
-            technology, so they have to be refusable. Arrow keys, Enter, Escape and the Alt
-            combinations are NOT turned off -- those are how a treeview is operated at all, and a
-            tree with no arrow keys and one tab stop would be unreachable. */}
+        {/* Single-key shortcuts take keys from assistive technology, so they can be turned off.
+            Arrows, Enter, Esc and Alt combinations stay: a treeview cannot work without them. */}
         <label className="mt-6 flex items-start gap-2 border-t border-rule pt-4 text-sm text-ink">
           <input
             type="checkbox"

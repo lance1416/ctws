@@ -3,12 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useForgetWhenGone } from '../search/recent'
 
 /**
- * THE ITEM AN ADDRESS OPENS over its list (`<base>/<id>`). The list stays behind, so its filters
- * and scroll survive a look at one item, and the address is the only state: Back, Forward and
- * reload need nothing more.
- *
- * Looked up in the list rather than held, so the pane follows the list's refetches. Gone once the
- * list has loaded without it; then Recent forgets it too.
+ * The item `<base>/<id>` opens over its list, which keeps its filters and scroll behind it. Looked
+ * up in the list rather than held, so the pane follows the list's refetches.
  */
 export function useOpenFromUrl<T>({
   list,

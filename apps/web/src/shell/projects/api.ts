@@ -16,7 +16,6 @@ export const projectsQuery = () => queryOptions({ queryKey: ['projects'], queryF
 export const archivedProjectsQuery = () =>
   queryOptions({ queryKey: ['projects', 'archived'], queryFn: listArchivedProjects })
 
-/** The live projects, in the rail's order. */
 export const useProjects = (): UseQueryResult<ProjectListItem[]> => useQuery(projectsQuery())
 
 /** Live and archived together: an archived project still has its page and its colour. */
@@ -37,18 +36,12 @@ export function deleteProject(id: string): Promise<void> {
   return apiFetch<void>(`/projects/${id}`, { method: 'DELETE' })
 }
 
-/**
- * The quick-capture destination. Found by the `isInbox` flag, never by name: the name is just a
- * label the user may change, and a name match would also break under any other language.
- */
+/** The quick-capture destination, found by the `isInbox` flag: the user may rename it. */
 export function inboxOf<T extends ProjectResponse>(projects: T[]): T | undefined {
   return projects.find((p) => p.isInbox)
 }
 
-/**
- * Renames a project, repaints it, or sets it aside (`archived`) and brings it back. All ordinary
- * fields on the project row; the server refuses to archive the inbox.
- */
+/** Renames, recolours, archives or unarchives a project; the inbox cannot be archived. */
 export function updateProject(
   id: string,
   body: { name?: string; color?: ProjectColor; archived?: boolean },

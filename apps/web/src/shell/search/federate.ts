@@ -13,23 +13,15 @@ export type FederatedHit = SearchHit & { moduleId: string; moduleLabel: string }
 export type Federated = {
   /** Every module's hits in one flat list, in provider order; the keyboard walks this list. */
   rows: FederatedHit[]
-  /** Any provider failed. One failure is reported; the dialog does not pretend it is complete. */
+  /** Any provider failed; the dialog does not pretend the list is complete. */
   isError: boolean
-  /** Every provider answered. A half-answered search must not say "No matching tasks". */
+  /** Every provider answered. A half-answered search must not say "Nothing matches". */
   isSuccess: boolean
-  /**
-   * Whether a row has to name the module it came from. With one provider the name would be noise
-   * (and a pixel the redesign did not ask for); with two it is the only thing telling the rows
-   * apart -- as TEXT, never as a colour (WCAG 1.4.1).
-   */
+  /** With one provider a module name is noise; with two, the name in text tells rows apart. */
   showModule: boolean
 }
 
-/**
- * Merges the search providers' answers. Pure, so the federation can be tested without a browser:
- * the shape has to admit a second provider, and that is exactly what cannot be proven by looking
- * at a one-module app on screen.
- */
+/** Merges the search providers' answers. Pure, so a second provider can be tested without one. */
 export function federate(parts: ProviderResult[]): Federated {
   return {
     rows: parts.flatMap((p) =>

@@ -5,28 +5,13 @@ import { MENU_ITEM, MENU_SURFACE } from './menuSurface'
 import { CloseIcon, PlusIcon } from './icons'
 
 /**
- * THE THREE WAYS TO CHANGE SOMETHING IN A DETAIL PANE, and every module uses the same three.
- *
- * The rule the audit settled on: a value you can only pick is picked where it is shown and
- * written at once; a value you compose is clicked into and written when you leave it; a set is
- * added to and removed from in place. There is no edit mode and no Save button anywhere, because
- * neither means anything for a decision -- they are the shape of a FORM, and a form is for
- * composing several things at once and committing them together.
- *
- * A mis-click cannot change anything, because of the controls themselves: a menu has to be
- * opened, and text has to be clicked into.
+ * The three ways a detail pane changes a value: a pick is written at once, composed text when it is
+ * left, a set is added to and removed from in place. No edit mode, no Save button.
  */
 
-/** One option in a `PickOne`. */
 export type Choice<T extends string> = { value: T; label: string; mark?: ReactNode }
 
-/**
- * A value chosen from a short list: status, kind, a project.
- *
- * It shows the current value and writes the moment one is chosen. Picking the one it already has
- * writes nothing -- a request that changes nothing, followed by a refetch that shows the same
- * thing, is a flicker with no meaning.
- */
+/** A value chosen from a short list, written on pick; picking the current value writes nothing. */
 export function PickOne<T extends string>({
   label,
   value,
@@ -35,7 +20,7 @@ export function PickOne<T extends string>({
   disabled = false,
   placeholder = 'Not set',
 }: {
-  /** What this value IS, for the accessible name: “Status”. The control is both label and value. */
+  /** The value's name, for the accessible name: “Status”. */
   label: string
   value: T | null
   choices: readonly Choice<T>[]
@@ -45,15 +30,8 @@ export function PickOne<T extends string>({
 }) {
   const current = choices.find((c) => c.value === value)
   return (
-    /**
-     * NOT MODAL. A modal menu puts `pointer-events: none` on everything behind it, so inside a
-     * dialog EVERY press -- on a label, on a field, on the panel -- lands on the dialog's own
-     * scrim instead of where it was aimed, and the dialog closes under the cursor while someone
-     * is picking. It also `aria-hidden`s the dialog that contains it.
-     *
-     * A picker is not a modal act: it closes on an outside press and on Escape either way. What
-     * it must not do is take the page hostage.
-     */
+    // Not modal: a modal menu inside a dialog makes every press land on the dialog's scrim, and
+    // `aria-hidden`s the dialog itself.
     <DropdownMenu.Root modal={false}>
       <DropdownMenu.Trigger
         disabled={disabled}
@@ -97,13 +75,7 @@ export function PickOne<T extends string>({
   )
 }
 
-/**
- * SEVERAL values out of a list, shown as chips with a “+” that offers the rest.
- *
- * A multi-select and not a second dropdown, because what it answers is which lines of work
- * somebody is on, and a list of two or three names IS the answer -- hiding them behind a closed control would mean
- * opening it to read what you already asked for.
- */
+/** Several values from a list, shown as chips, with a “+” menu that offers the rest. */
 export function PickMany({
   label,
   chosen,
@@ -118,15 +90,8 @@ export function PickMany({
   /** What to say when nothing is chosen. */
   empty: string
 }) {
-  /**
-   * WHAT HAS BEEN PICKED, INCLUDING WHAT IS STILL IN FLIGHT.
-   *
-   * `chosen` is the server's answer, and it arrives a request later. Picking two things quickly
-   * computes both new sets from the SAME stale list, so the second write drops the first -- a
-   * lost update that reads on screen as one of the two never having been added.
-   *
-   * The optimistic list leads, and is dropped the moment the server's answer agrees with it.
-   */
+  // `chosen` lags a request behind, so two quick picks would both build on the same stale list
+  // and the second would drop the first. The optimistic list leads until the server agrees.
   const [pending, setPending] = useState<string[] | null>(null)
   const settled = chosen.map((c) => c.value)
   useEffect(() => {

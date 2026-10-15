@@ -1,13 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { repeatChoices, repeatLabel, untilOf, withUntil } from './api'
 
-/**
- * WHAT A STORED RULE IS CALLED.
- *
- * The column takes any valid `RRULE`, and the picker offers five. Everything else still has to be
- * said in words: an RFC string on screen is the data model leaking into the page, and a rule
- * described wrongly is worse than one described generically.
- */
 /** A Tuesday, so the weekly choices are named after it. */
 const TUESDAY = '2026-10-20T09:00'
 /** The reader's own day, handed in rather than read off the clock, so every case runs on every run. */
@@ -25,8 +18,7 @@ describe('repeatLabel', () => {
   })
 
   it('names the days of a weekly rule that lists several', () => {
-    // "Every week" is true of this rule and useless about the meeting: a weekday standup does not
-    // happen weekly, it happens five times a week.
+    // A weekday standup happens five times a week, which "Every week" does not say.
     expect(repeatLabel('FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR', TUESDAY, TODAY)).toBe(
       'Weekly on Mon, Tue, Wed, Thu, Fri',
     )
@@ -59,19 +51,12 @@ describe('repeatChoices', () => {
   })
 })
 
-/**
- * WHEN A REPEAT STOPS.
- *
- * `UNTIL` lives in the same naive space as the series' own start, which `occurrences.ts` builds
- * from the wall clock and stamps `Z`. These pin the two halves of that: the stamp written, and
- * the day read back out of it.
- */
+// `UNTIL` is in the series start's naive wall-clock space, stamped `Z`.
 describe('until', () => {
   const WEEKLY = 'FREQ=WEEKLY;BYDAY=TU'
 
   it('ends on the END of the chosen day, where the meeting is', () => {
-    // 23:59:59 and not 00:00:00: a person picking the 31st means the 31st included. Midnight
-    // would drop the last occurrence of a series that meets in the afternoon.
+    // Not midnight: picking the 31st means the 31st included, afternoon meeting and all.
     expect(withUntil(WEEKLY, '2026-12-31')).toBe('FREQ=WEEKLY;BYDAY=TU;UNTIL=20261231T235959Z')
   })
 
@@ -93,8 +78,7 @@ describe('until', () => {
   })
 
   it('still names a rule that has an ending', () => {
-    // Without this the picker's own wording is lost the moment a rule stops: the label falls
-    // through to the generic branch and a weekly meeting reads as "Every week".
+    // Otherwise a rule with an ending loses the picker's wording and reads as "Every week".
     expect(repeatLabel(withUntil('FREQ=WEEKLY;BYDAY=TU', '2026-12-31'), TUESDAY, TODAY)).toBe(
       'Weekly on Tuesday, until Dec 31',
     )
@@ -103,15 +87,7 @@ describe('until', () => {
     )
   })
 
-  /**
-   * THE ENDING IS WORDED AGAINST A DAY THAT IS HANDED IN, not against the process clock.
-   *
-   * The year is dropped when the ending falls in the reader's own year, which is the rule every
-   * other date in this app follows -- and that rule needs to know which year the READER is in.
-   * `repeatLabel` used to answer it with `new Date().getFullYear()`, so this very test had to be
-   * rewritten each January, and the browser's year was consulted where the ACCOUNT's zone decides
-   * every other day boundary. Both assertions below are true forever, which is the point.
-   */
+  // The year is judged against the day handed in, not the process clock, so these hold every year.
   it('drops the year of an ending in the given year and keeps any other', () => {
     const rule = withUntil('FREQ=WEEKLY;BYDAY=TU', '2026-12-31')
     expect(repeatLabel(rule, TUESDAY, '2026-10-10')).toBe('Weekly on Tuesday, until Dec 31')

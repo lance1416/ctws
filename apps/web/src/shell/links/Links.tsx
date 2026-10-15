@@ -11,14 +11,8 @@ import { ProjectRail } from '../rows/RowParts'
 import { CloseIcon } from '../../platform/ui/icons'
 
 /**
- * LINKED -- everything one thing is connected to, grouped by kind.
- *
- * A SHELL piece. The edges are the shell's: one row of one table says who is at a meeting and
- * which meetings a person has been at, and the second reading is this panel -- the meetings
- * somebody is in, what they recommended, the task that came out of a call with them.
- *
- * The shell knows the kinds and the phrases, because they are the contract's. What it does not
- * know is where another module's thing LIVES, so it asks the registry (`relations`).
+ * Everything one thing is linked to, grouped by kind. The edges are the shell's; where another
+ * module's thing lives comes from the registry's `relations`.
  */
 export function Links({
   of,
@@ -27,18 +21,9 @@ export function Links({
   className = '',
 }: {
   of: Endpoint
-  /**
-   * Kinds this page ALREADY SHOWS, in a module's own block.
-   *
-   * A project page carries the task tree, and a flat list of the same tasks under it would be the
-   * same rows twice -- which is the thing a reader has to hold two of in their head. The edges
-   * are still there; this page just does not say them twice.
-   */
+  /** Kinds the page already shows in a module's own block, so they are not listed twice. */
   except?: readonly ObjectType[] | undefined
-  /**
-   * `aside`: each kind a block of its own -- its name, how many, a `+` that links one more of that
-   * kind, then its rows on a thread -- for a page where Linked sits beside the page's own block.
-   */
+  /** `aside`: each kind its own block with a count and a `+`, beside a page's own block. */
   variant?: 'list' | 'aside'
   className?: string
 }) {
@@ -77,8 +62,7 @@ export function Links({
   if (links.isError) {
     return <PanelEmpty>Couldn't load the links.</PanelEmpty>
   }
-  // Nothing at all while loading: a skeleton here would flash on every pane that opens, and the
-  // panel is below the thing's own fields rather than in place of them.
+  // Nothing at all while loading: a skeleton would flash on every pane that opens.
   if (groups.length === 0) {
     if (links.isLoading) return null
     return (
@@ -90,7 +74,7 @@ export function Links({
   }
 
   if (variant === 'aside') {
-    // On a project's page every row here met THIS project, so its thread is this project's.
+    // On a project's page every row here is linked to this project, so it wears its thread.
     const thread = of.type === 'project' ? of.id : null
     return (
       <div className={`flex flex-col gap-8 ${className}`}>
@@ -182,9 +166,7 @@ export function Links({
                   detail={item.detail}
                   label={item.label}
                 />
-                {/* UNLINKING, on the rows that are this panel's to unlink. An edge a module
-                    stores in a column of its own is not: a task's project is NOT NULL, so
-                    "unlink" there would mean a task belonging to nothing. */}
+                {/* Only edges in the shell's table unlink; a task's project is required. */}
                 {item.removable && (
                   <button
                     type="button"
@@ -207,14 +189,8 @@ export function Links({
 }
 
 /**
- * LINKED AS A SECTION OF A DETAIL PANE -- the same markup in all four panes, so it lives once.
- *
- * Every row here carries 8px of padding for its hover plane, and so did the heading to match.
- * In a pane that put the whole block 8px in from every other label above it (`Your time`,
- * `Notes`), so the edge of the text wandered. `-mx-2` gives the padding back to the margin: the
- * words sit on the pane's edge with everything else, and a hover plane bleeds out past it -- what
- * `DangerAction` does with its own padding for the same reason. On a project page the block sits
- * in a `Panel`, whose gutter already accounts for the padding, so it uses `Links` directly.
+ * Linked as a section of a detail pane. `-mx-2` gives the rows' hover padding back to the margin,
+ * so their words line up with the pane's other labels.
  */
 export function LinkedSection({
   of,
@@ -235,13 +211,7 @@ export function LinkedSection({
   )
 }
 
-/**
- * One thing at the far end of an edge.
- *
- * The EDGE's own word sits at the end of the line rather than grouping the rows: a person's
- * meetings all read "attended", so a heading per phrase would be a heading per row. Where it
- * earns its place is the mixed group -- a project with a task in it and another about it.
- */
+/** One thing at the far end of an edge, with the edge's own word at the end of the line. */
 function LinkedRow({
   type,
   id,
@@ -255,7 +225,7 @@ function LinkedRow({
   title: string
   detail: string | null
   label: string
-  /** Title over its detail, as the rows of a kind's block are: a block is narrow. */
+  /** Title over its detail, for a narrow block. */
   stacked?: boolean
 }) {
   const where = useRegistry().relationFor(type)
@@ -285,9 +255,7 @@ function LinkedRow({
     </>
   )
   const shape = 'flex min-w-0 flex-1 items-baseline gap-2 rounded-md px-2 py-1.5 text-sm text-ink'
-  // No module answers for this type: a row that cannot be opened, rather than no row at all. The
-  // registry test makes this unreachable; it is here because dropping the row silently would hide
-  // a real relationship behind a registration mistake.
+  // No module answers for this type: still a row, so a registration mistake hides no real link.
   if (!where) return <span className={shape}>{body}</span>
   return (
     <Link to={where.to(id)} data-linked={id} className={`${shape} hover:bg-hover`}>

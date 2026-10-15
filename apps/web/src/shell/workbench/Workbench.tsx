@@ -8,36 +8,23 @@ import { useCrumbs } from '../layout/Breadcrumbs'
 import { useGround } from '../layout/ground'
 
 /**
- * THE WORKBENCH -- THE SHELL'S OWN FRONT PAGE, and the first surface that is nobody's module.
- *
- * It answers one question: what is in front of me. Every card on it is a glance contributed by a
- * module, and what the cards deliberately leave out is anything that already has a home on a
- * project page -- the workbench is where the things belonging to no line of work live.
- *
- * The arrangement is FIXED. No drag, no resize, no way to add a panel: one person has one taste,
- * and a free grid only moves the design decision onto the person using the tool. If a card is in
- * the wrong place, that is a decision to make here, in the code, once.
+ * The shell's front page: a fixed arrangement of the cards modules contribute, for the things that
+ * belong to no project.
  */
 export function Workbench() {
   useCrumbs([{ label: 'Workbench' }])
-  // The one page that is a desk: its cards are tiles of paper on it.
   useGround('desk')
   const heading = useRef<HTMLHeadingElement>(null)
   const widgets = useRegistry().widgets
 
   return (
     <div className="mx-auto w-full max-w-[73.75rem]">
-      {/* The location in the header already names this page; the heading is for a screen reader's
-          list of headings, and the cards are what the eye lands on. */}
+      {/* The header already names this page; the heading is for a screen reader's list. */}
       <h1 ref={heading} tabIndex={-1} className="sr-only">
         Workbench
       </h1>
 
-      {/* TWELVE COLUMNS from 1024 up, each card as wide as its shape wants -- three counts and a
-          list of rows are not the same width -- and one column below. The modules' cards in their
-          stated order; the shell's Projects across the bottom, because Projects is the thing you go
-          INTO and the rest is what is already in front of you. `items-start`, and a card stretches
-          only to its row: a short card does not hang a pane of empty paper under itself. */}
+      {/* Twelve columns from 1024 up, one below; the shell's Projects card goes last. */}
       <div className="grid min-w-0 grid-cols-1 items-start gap-4 pt-2 lg:grid-cols-12">
         {widgets.map(({ moduleId, id, label, to, Component, Aside, span }) => (
           <Panel
@@ -65,12 +52,7 @@ const SPAN = {
   12: 'lg:col-span-12',
 } as const
 
-/**
- * The shell's own card: the lines of work, and how much is open on each.
- *
- * Projects are the shell's dimension, so this one is not contributed -- it would survive every
- * module being removed.
- */
+/** The shell's own card, not contributed by a module: every project and its numbers. */
 function ProjectsWidget() {
   const projects = useProjects()
   const facts = useRegistry().projectFacts
@@ -84,8 +66,6 @@ function ProjectsWidget() {
         </p>
       )}
       {projects.isSuccess && rows.length === 0 && <PanelEmpty>No projects yet</PanelEmpty>}
-      {/* EVERY LINE OF WORK AT ONCE, none louder than the rest: six equal columns, each its
-          name and then the modules' lines for it. */}
       <ul className="grid grid-cols-2 gap-x-6 gap-y-5 px-2 pb-1 sm:grid-cols-3 lg:grid-cols-6">
         {rows.map((p) => (
           <li key={p.id} className="min-w-0">

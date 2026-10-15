@@ -3,9 +3,8 @@ import { useEffect, useRef, useState } from 'react'
 const PAUSE_MS = 1000
 
 /**
- * SAVES A NOTE WHILE IT IS BEING WRITTEN: a second after typing stops, and at once on `flush`.
- * One save is in flight at a time and the latest text wins; text whose save failed is kept and
- * tried again, so nothing typed is lost to one bad request.
+ * Saves a note a second after typing stops, and at once on `flush`. One save runs at a time and the
+ * latest text wins; text whose save failed is kept and tried again.
  */
 export function createNoteAutosave(
   save: (text: string) => Promise<unknown>,

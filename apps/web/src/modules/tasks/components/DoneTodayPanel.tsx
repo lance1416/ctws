@@ -7,11 +7,8 @@ import { StatusMark } from './StatusMark'
 import { DaySection } from '../../../shell/rows/DaySection'
 
 /**
- * DONE TODAY: what I did. The same list as Review's Done view, on the day the SERVER filed each
- * task under (`completedOn`, in the account's zone) -- never a day re-derived from the browser.
- *
- * The rows are not interactive: a mis-aimed click on a glance should not un-finish work. "All", in
- * the heading, is the way to the Done view, where a task can be restored.
+ * What I finished today. The rows are not interactive, so a stray click cannot un-finish work;
+ * "All" leads to the Done view, where a task can be restored.
  */
 export function DoneTodayPanel({
   tasks,
@@ -33,7 +30,7 @@ export function DoneTodayPanel({
     >
       <ul className="flex flex-col">
         {tasks.map((t) => (
-          // The anatomy (RowParts): when it was finished is the margin.
+          // When it was finished is the margin.
           <li key={t.id} className="flex items-stretch">
             <RowLead
               lead={

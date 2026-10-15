@@ -10,8 +10,7 @@ describe('meetingLink', () => {
   })
 
   it('leaves a place alone, even one that looks like a domain', () => {
-    // A room is not a link, and guessing one would send a person to a site that may exist and
-    // may not be anybody's.
+    // A room is not a link, and a guessed domain may be anybody's.
     expect(meetingLink('Acme HQ, 3F')).toBeNull()
     expect(meetingLink('acme.com office')).toBeNull()
     expect(meetingLink('meet.google.com/abc')).toBeNull()

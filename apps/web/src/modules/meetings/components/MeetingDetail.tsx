@@ -11,13 +11,7 @@ import { MeetingRead } from './MeetingRead'
 import { ScopeAsk } from './ScopeAsk'
 import { useScopedEdit } from './useScopedEdit'
 
-/**
- * ONE MEETING, in the shell's detail pane: read, or edited behind Edit; then what links to it,
- * and last, cancelling it.
- *
- * What is open is an OCCURRENCE, not a series -- this Tuesday's one. Changing when it is asks
- * which occurrences you mean; everything else is the series', and changes all of them.
- */
+/** One occurrence in the detail pane; changing when it is asks which occurrences you mean. */
 export function MeetingDetail({
   meeting,
   accountZone,
@@ -48,8 +42,7 @@ export function MeetingDetail({
           note={meeting.overridden && <span className="text-xs text-ink-subtle">Edited</span>}
         />
 
-        {/* Above the form, beside the Save that raised it: the form's Cancel and Save sit at its
-            top, and a question asked below the notes was a screen away from the press. */}
+        {/* Above the form, beside the Save that raised it. */}
         {edit.asking && (
           <ScopeAsk
             what="This meeting repeats. Which occurrences does this change?"
@@ -85,14 +78,12 @@ export function MeetingDetail({
         )}
       </div>
 
-      {/* What it is linked to. Who is in it is written on the meeting itself, so people are left
-          out here. */}
+      {/* People are left out: attendees are written on the meeting itself. */}
       <LinkedSection
         of={{ type: 'meeting', id: meeting.meetingId }}
         except={['person']}
         className="mt-4"
       />
-      {/* Cancelling is a scheduling act, made while looking at the week, so it is here too. */}
       <DangerZone>
         <CancelMeeting meeting={meeting} onCancelled={onClose} />
       </DangerZone>

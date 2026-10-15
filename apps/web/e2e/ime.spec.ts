@@ -76,9 +76,9 @@ test('committing English out of an IME does not submit the form', async ({ page 
   const pane = page.getByRole('dialog', { name: 'People' })
   await pane.getByRole('button', { name: 'Edit', exact: true }).click()
 
-  // 表里的输入框由 <label for> 命名，不是 aria-label：这里按 id 取，别去给它加第二个名字。
+  // The form's inputs are named by <label for>, so pick by id instead of adding an aria-label.
   await commitWithIme(page, 'input#c-org', 'Acme')
-  // 表还开着，刚打的字还在：那个 Enter 是 IME 的，不是提交。
+  // The form is still open with the text in it: that Enter belonged to the IME, not a submit.
   await expect(pane.getByRole('textbox', { name: 'Company' })).toHaveValue('Acme')
   await expect(pane.getByRole('button', { name: 'Save' })).toBeVisible()
 })

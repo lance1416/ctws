@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { BUTTON } from './buttonStyles'
 import { HANG } from './hang'
 
-/** What a screen says when it has nothing on it: one line, and an action only where one is obvious. */
+/** A screen's empty line, with an action only where one is obvious. */
 export function EmptyState({
   title,
   action,
@@ -23,5 +23,5 @@ export function EmptyState({
   )
 }
 
-/** The one action an empty state offers, as a button: an invitation, not a demand. */
+/** The one action an empty state offers, as a button. */
 export const EMPTY_ACTION = `inline-flex items-center ${BUTTON.secondary}`

@@ -1,20 +1,13 @@
-/**
- * The task forms' schemas are the wire contracts themselves, so the forms refuse exactly what the
- * server would. What stays here is the wording (`titleProblem`).
- */
+// The forms' schemas are the wire contracts, so they refuse exactly what the server would.
 import { createTaskBody, updateTaskBody, type UpdateTaskBody } from '@ctws/contracts'
 import { z } from 'zod'
 
-/** The New task dialog's schema: the create contract, unchanged. */
 export const createTaskForm = createTaskBody
 /** What the form holds (the schema's input) and what the resolver hands over (its output). */
 export type CreateTaskForm = z.input<typeof createTaskBody>
 export type CreateTaskValues = z.output<typeof createTaskBody>
 
-/**
- * The pane's schema: the update contract plus the project, which the pane edits in the same form
- * but which no PATCH carries -- moving a task is the move endpoint's job.
- */
+/** The update contract plus the project, which no PATCH carries: the move endpoint changes it. */
 export const detailTaskForm = updateTaskBody.extend({ projectId: z.uuid() })
 export type DetailTaskForm = z.input<typeof detailTaskForm>
 export type DetailTaskValues = z.output<typeof detailTaskForm>

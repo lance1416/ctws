@@ -2,11 +2,6 @@ import { describe, expect, it } from 'vitest'
 import type { ProjectMovementResponse } from '@ctws/contracts'
 import { hasMovement, movedLine, QUIET_DAYS } from './movement'
 
-/**
- * The two judgements the Movement panel makes. Both are about what is NOT shown, which is why they are
- * worth their own tests: a panel that always prints a stagnation line and one that never prints
- * one both pass a test that only checks the sentence's wording.
- */
 const row = (p: Partial<ProjectMovementResponse> = {}): ProjectMovementResponse => ({
   projectId: p.projectId ?? 'p',
   projectName: p.projectName ?? 'Projects',
@@ -29,10 +24,6 @@ describe('hasMovement', () => {
   })
 })
 
-/**
- * THIS WEEK'S LINE FOR ONE PROJECT: what moved and when, in words, and a project gone quiet said
- * as such on its own line rather than in a sentence of its own. Pinned to a fixed today.
- */
 describe('movedLine', () => {
   const TODAY = '2026-10-12' // a Monday
 

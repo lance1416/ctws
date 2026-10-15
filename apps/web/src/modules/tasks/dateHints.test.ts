@@ -17,12 +17,8 @@ const loadControls = () => import('./components/StatusControls')
 // 2026-10-03 (a Saturday), 12:00 local.
 const NOW = () => new Date(2026, 9, 3, 12, 0)
 
-/**
- * THE ACCOUNT'S ZONE -- which these tests pass EXPLICITLY, because the account's is the only zone
- * the date helpers know. Here it is the same as the process `TZ`, so the literals above read as
- * they always did; the block at the bottom of this file is the one that pulls the two apart, and
- * it is the one that would have failed before this change.
- */
+// The account's zone, passed explicitly. Here it matches the process `TZ`; the block at the
+// bottom of this file pulls the two apart.
 const TZ = 'Asia/Kolkata'
 
 describe('calendar arithmetic', () => {
@@ -88,7 +84,7 @@ describe('instantPhrase', () => {
   it('a deadline a minute before midnight still says 23:59, not the next day', async () => {
     const { instantPhrase } = await load()
     // A clock printed from a UTC getter in +05:30 would read 18:29 here, and a rounded one 00:00
-    // of the 9th. The minute is the thing being pinned, so it is pinned at the hardest minute.
+    // of the 9th.
     expect(instantPhrase(new Date(2026, 9, 8, 23, 59).toISOString(), '2026-10-03', TZ)).toBe(
       'Oct 8, 23:59',
     )
@@ -101,7 +97,7 @@ describe('status targets', () => {
     expect(toggleDoneTarget('todo')).toBe('done')
     expect(toggleDoneTarget('backlog')).toBe('done')
     expect(toggleDoneTarget('in_progress')).toBe('done')
-    // Restoring cannot know the previous status: backlog is the deliberate simplification.
+    // Restoring cannot know the previous status, so it lands on backlog.
     expect(toggleDoneTarget('done')).toBe('backlog')
     expect(toggleDoneTarget('cancelled')).toBe('backlog')
   })
@@ -143,8 +139,8 @@ describe('moveDueToDay', () => {
 
   it('keeps a late-evening time on the chosen LOCAL day (not the UTC day)', async () => {
     const { moveDueToDay } = await load()
-    // 23:30 local in +05:30 is 18:00 UTC: the same calendar day either way, but 00:15 local is
-    // 18:45 UTC of the day BEFORE, which is where a UTC-based implementation goes wrong.
+    // 00:15 local in +05:30 is 18:45 UTC of the day before, where a UTC-based implementation
+    // goes wrong.
     const due = new Date(2026, 9, 1, 0, 15).toISOString()
     const moved = new Date(moveDueToDay(due, '2026-10-05', TZ))
     expect([moved.getDate(), moved.getHours(), moved.getMinutes()]).toEqual([5, 0, 15])
@@ -152,43 +148,25 @@ describe('moveDueToDay', () => {
 })
 
 /**
- * THE ACCOUNT'S TODAY IS THE ONLY TODAY -- the guard the whole timezone change exists for.
- *
- * The process `TZ` here is Asia/Kolkata (+05:30) and the ACCOUNT is in New York (-04:00 in
- * October). Every other test in this repo, unit and e2e alike, keeps the two equal: the e2e
- * registers its users with `browserTimezone()`, and the unit tests only ever had one zone. So
- * nothing could catch the defect these cases are about, which is why they fix the two to DIFFERENT
- * zones on purpose.
- *
- * What it would have caught: the previous date cues read the day off `getFullYear()/getMonth()/
- * getDate()`, i.e. the BROWSER's zone, and took no timezone argument at all -- `TaskRow` had none
- * to pass. At the instant below the browser's calendar has already turned over and New York's has
- * not, so reading it in the browser's zone calls this deadline yesterday's, one day late, while the server --
- * which segments with `at time zone 'America/New_York'` -- had it as today's and not overdue. The
- * row and the heading it sat under contradicted each other.
+ * The account's today is the only today. The browser is in Kolkata and the account in New York,
+ * which disagree about the day at the instant below; every other test keeps the two zones equal.
  */
 describe('the account timezone decides, even when the browser is in another one', () => {
   const ACCOUNT = 'America/New_York'
-  // 02:00 UTC on the 5th: 07:30 on the 5th in Kolkata, but still 22:00 on the FOURTH in New York.
+  // 02:00 UTC on the 5th: 07:30 on the 5th in Kolkata, but still 22:00 on the 4th in New York.
   const NOW_CROSS = new Date('2026-10-05T02:00:00.000Z')
   // 00:30 on the 4th in New York -- today, there. In Kolkata it is 10:00 on the 4th, which the
   // browser's own calendar (now the 5th) calls yesterday.
   const DUE = '2026-10-04T04:30:00.000Z'
 
-  /**
-   * The SERVER's rule, written out independently of the code under test: `date_trunc('day', clock
-   * at time zone $tz)` compared against the deadline in the same zone. `en-CA` is the formatter the
-   * three pages that needed a calendar day already used, so this is the API's answer rather than a
-   * second copy of `dueAt.ts`.
-   */
+  /** The server's rule, written apart from the code under test: both days in the account zone. */
   const serverDay = (instant: Date) =>
     new Intl.DateTimeFormat('en-CA', { timeZone: ACCOUNT }).format(instant)
   const serverSaysOverdue = (dueIso: string, now: Date) =>
     serverDay(new Date(dueIso)) < serverDay(now)
 
   it('the browser and the account really are on different days at this instant', () => {
-    // Guards the fixture itself: if these ever stopped differing, the cases below would pass for
-    // the wrong reason and prove nothing.
+    // Guards the fixture: if these stopped differing, the cases below would prove nothing.
     expect(new Intl.DateTimeFormat('en-CA').format(NOW_CROSS)).toBe('2026-10-05')
     expect(serverDay(NOW_CROSS)).toBe('2026-10-04')
   })
@@ -196,8 +174,7 @@ describe('the account timezone decides, even when the browser is in another one'
   it('the row wording and the server segment agree', async () => {
     const { instantPhrase, lateNote, todayIn } = await load()
     expect(serverSaysOverdue(DUE, NOW_CROSS)).toBe(false)
-    // Not late, because the server does not think so either -- the assertion the old
-    // browser-zone implementation failed.
+    // Not late, because the server does not think so either.
     expect(lateNote({ status: 'todo', dueAt: DUE }, ACCOUNT, NOW_CROSS)).toBeNull()
     // And the words are New York's day and New York's clock, not Kolkata's.
     expect(instantPhrase(DUE, todayIn(ACCOUNT, NOW_CROSS), ACCOUNT)).toBe('Today, 00:30')
@@ -216,8 +193,8 @@ describe('the account timezone decides, even when the browser is in another one'
     const { todayIn, addDays, nextMonday } = await load()
     expect(todayIn(ACCOUNT, NOW_CROSS)).toBe('2026-10-04')
     expect(addDays(todayIn(ACCOUNT, NOW_CROSS), 1)).toBe('2026-10-05')
-    // The 4th is a Sunday in New York while the browser is already on Monday the 5th: “Next week” from
-    // there is the 5th, and from the browser's day it would have been the 12th.
+    // The 4th is a Sunday in New York while the browser is on Monday the 5th: next week from
+    // there is the 5th, not the 12th.
     expect(nextMonday(todayIn(ACCOUNT, NOW_CROSS))).toBe('2026-10-05')
   })
 
@@ -233,10 +210,8 @@ describe('the account timezone decides, even when the browser is in another one'
       hour12: false,
     })
     expect(clock.format(new Date(moved))).toBe('00:30')
-    // AND A DEADLINE WHOSE TWO ZONES DISAGREE ABOUT WHICH DAY IT IS ON: 22:00 on the 3rd in New
-    // York is already 07:30 on the 4th in Kolkata. Setting the date on the browser's calendar
-    // lands this on the 8th in New York, not the 9th. The case above cannot see it: its two
-    // zones share a day, so either calendar gives the same answer there.
+    // 22:00 on the 3rd in New York is 07:30 on the 4th in Kolkata; setting the date on the
+    // browser's calendar would land this on the 8th in New York.
     const crossMoved = moveDueToDay('2026-10-04T02:00:00.000Z', '2026-10-09', ACCOUNT)
     expect(serverDay(new Date(crossMoved))).toBe('2026-10-09')
     expect(clock.format(new Date(crossMoved))).toBe('22:00')
@@ -250,11 +225,7 @@ describe('the account timezone decides, even when the browser is in another one'
   })
 })
 
-/**
- * ACROSS A DST BOUNDARY, where a local day is 23 or 25 hours long and elapsed time stops being
- * the same question as calendar days. The arithmetic is a library's, so what is pinned here is
- * the ANSWER, on both sides of both transitions, in a zone that actually has them.
- */
+// Across a DST boundary a local day is 23 or 25 hours long: elapsed time is not calendar days.
 describe('date helpers across a DST boundary', () => {
   const NY = 'America/New_York'
 
@@ -274,10 +245,8 @@ describe('date helpers across a DST boundary', () => {
     expect(overdueLabel('2026-03-08T07:30:00.000Z', NY, new Date('2026-03-09T14:00:00.000Z'))).toBe(
       '1 day late',
     )
-    // THE DST CASE THAT ONLY CALENDAR COUNTING GETS RIGHT. Due 23:30 on the 7th, read at 00:30 on
-    // the 9th: two calendar days, across the 23-hour day -- and EXACTLY 24 elapsed hours, because
-    // the short day ate one. Subtracting milliseconds says one day however it rounds, so this is
-    // the case that separates calendar counting from elapsed time.
+    // Due 23:30 on the 7th, read at 00:30 on the 9th: two calendar days but exactly 24 elapsed
+    // hours, since the short day ate one. Subtracting milliseconds says one day.
     expect(overdueLabel('2026-03-08T04:30:00.000Z', NY, new Date('2026-03-09T04:30:00.000Z'))).toBe(
       '2 days late',
     )

@@ -16,20 +16,8 @@ const hint =
   'pointer-events-none rounded border border-rule-strong px-1.5 text-xs leading-5 max-sm:hidden'
 
 /**
- * The document-level keys, and the two buttons that do the same jobs with a mouse.
- *
- * `f` for search, not `/`: `/` already goes to the capture box and moving it would retrain a
- * habit the user already has. `Ctrl+K` was rejected because Chrome gives it to the address bar.
- * `?` lists everything, and is also the only way to find the switch that turns these off -- which
- * is why both overlays have a visible button as well: with the single-key shortcuts disabled,
- * `?` cannot be the only route to the setting that disabled them.
- *
- * WHERE the `g` chords go is not written in here: the shell and each module contribute to one key
- * table and this component only runs it.
- */
-/**
- * `capture` sits between Search and the key list, so the header reads search, write, help.
- * Whether search is open is the layout's: the phone's tab bar opens the same dialog.
+ * The document-level keys, and buttons for the same jobs: the `?` overlay holds the switch that
+ * turns the keys off, so it cannot be reachable only by a key. Search state is the layout's.
  */
 export function Shortcuts({
   capture,
@@ -45,8 +33,7 @@ export function Shortcuts({
   const navigate = useNavigate()
   const qc = useQueryClient()
   const registry = useRegistry()
-  // A pending `g`, and the timer that forgets it. Without the timeout a stray `g` would turn the
-  // next `t` typed anywhere outside a field into a navigation.
+  // A pending `g`, forgotten after a timeout so a stray `g` does not make a later `t` navigate.
   const pending = useRef(false)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -57,7 +44,6 @@ export function Shortcuts({
       if (timer.current) clearTimeout(timer.current)
     }
     const onKey = (e: KeyboardEvent) => {
-      // A chord must never fire out of a text field: `g` then `t` is two letters of a word.
       if (isTypingTarget(e.target) || !isBareKey(e)) {
         forget()
         return
@@ -66,16 +52,13 @@ export function Shortcuts({
         forget()
         const chord = registry.chordFor(e.key)
         if (chord) {
-          // The key is consumed whether or not the destination can be resolved yet: a chord that
-          // fell through to the page's own `t` handler would be worse than one that did nothing.
+          // Consumed even when unresolved, so it never falls through to the page's own handler.
           e.preventDefault()
           const to = chord.resolve({ queryClient: qc })
           if (to) navigate(to)
         }
         return
       }
-      // An open overlay owns the keyboard; otherwise `f` on the shortcut list would stack a
-      // search dialog over it.
       if (isOverlayOpen()) return
       if (e.key === JUMP_PREFIX) {
         pending.current = true
@@ -93,8 +76,7 @@ export function Shortcuts({
       document.removeEventListener('keydown', onKey)
       forget()
     }
-    // Deliberately NOT re-run on every render: a re-render between `g` and its second key would
-    // run the cleanup and forget the pending chord.
+    // Deliberately narrow: re-running between `g` and its second key would forget the chord.
   }, [enabled, navigate, qc, registry])
 
   return (

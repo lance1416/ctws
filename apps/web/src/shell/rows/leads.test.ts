@@ -1,13 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { deadlineDayLead, leadFor, weekDayWord } from './leads'
 
-/**
- * THE MARGIN: what a row says about WHEN, before anything else on it.
- *
- * Every expectation here is pinned to a fixed today and a fixed zone, never to the clock this runs
- * on: the words change at midnight, and a test whose answer depends on the hour is a test that is
- * right for part of the day.
- */
 const TODAY = '2026-10-12' // a Monday
 const TZ = 'America/Toronto' // EDT, UTC-4, all of this month
 
@@ -73,10 +66,6 @@ describe('the margin', () => {
   })
 })
 
-/**
- * A DEADLINE KNOWN ONLY BY ITS DAY -- a project's next one -- in the words the margin gives any
- * deadline: Today, a weekday in the week ahead, else its date. Flagged, in the deadline tone.
- */
 describe('a deadline day', () => {
   it('says today as Today', () => {
     expect(deadlineDayLead(TODAY, TODAY)).toMatchObject({
@@ -94,11 +83,6 @@ describe('a deadline day', () => {
   })
 })
 
-/**
- * A DAY IN A REVIEWED WEEK: Today, else its weekday while it is inside the week being reviewed --
- * every day of last week reads Mon to Sun, not Mon as a date and the rest as weekdays -- and its
- * date before the week starts.
- */
 describe('a day in the week under review', () => {
   it('says today as Today', () => {
     expect(weekDayWord(TODAY, TODAY, '2026-10-12')).toBe('Today')

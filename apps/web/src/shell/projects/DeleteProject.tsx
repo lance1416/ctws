@@ -7,13 +7,8 @@ import { useRegistry } from '../registry'
 import { useForgetRecent } from '../search/recent'
 
 /**
- * DESTROYING A PROJECT, from the project's own page and nowhere else.
- *
- * It takes everything in it, so the question says what -- asked of the modules when the question
- * opens, because a count nobody asked for is a request on every page load, and confirming blind is
- * worse than waiting a moment for the number.
- *
- * The inbox has no delete at all: quick capture has to land somewhere, and the server refuses it.
+ * Deletes a project and everything in it. What goes with it is asked of the modules when the
+ * question opens, not on every page load. The inbox has none: capture has to land somewhere.
  */
 export function DeleteProject({ id }: { id: string }) {
   const navigate = useNavigate()

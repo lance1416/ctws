@@ -100,12 +100,10 @@ test('a server that cannot be reached says so instead of showing the login page'
 })
 
 /**
- * 明暗由人选，不只由系统说了算。
- *
- * 选择写在 `<html>` 的 `data-theme` 上，并且在 React 之前就写好（`index.html` 里那小段脚本），
- * 所以刷新不会先闪一下系统主题。「跟系统」是第三个真答案 —— 一个两态开关说不出它。
+ * The theme is written to `data-theme` on `<html>` by a script in `index.html` that runs before
+ * React, so a reload never flashes the system theme first.
  */
-test('主题在账号菜单里选，刷新之后还是它', async ({ page }) => {
+test('the theme is picked in the account menu and survives a reload', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark' })
   await registerFreshUser(page)
   const ground = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor)
@@ -116,12 +114,12 @@ test('主题在账号菜单里选，刷新之后还是它', async ({ page }) => 
   const light = await ground()
   expect(light).not.toBe(dark)
 
-  // 刷新之后仍然是浅色，而且没有先闪一下系统的暗色 —— 属性在第一帧之前就在了。
+  // Still light after a reload, with no flash of dark: the attribute is set before the first frame.
   await page.reload()
   expect(await page.evaluate(() => document.documentElement.dataset.theme)).toBe('light')
   expect(await ground()).toBe(light)
 
-  // 回到「跟系统」：属性去掉，系统说暗就暗。
+  // Back to System: the attribute goes, and the system's dark applies again.
   await page.getByTestId('current-user').click()
   await page.getByRole('menuitemradio', { name: 'System' }).click()
   expect(await page.evaluate(() => document.documentElement.dataset.theme)).toBeUndefined()

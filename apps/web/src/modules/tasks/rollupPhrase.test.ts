@@ -22,17 +22,13 @@ describe('rollupPhrase', () => {
   })
 
   it('ROUNDS the percentage, rather than truncating it', () => {
-    // 2/3 is the case that tells the two apart: rounding says 67, truncation says 66. Truncating
-    // would report 99% for a parent whose every child is done but one is 0.995.
+    // 2/3 tells the two apart: rounding says 67, truncation says 66.
     expect(rollupPhrase(roll({ progress: 2 / 3 }))).toBe('67%')
     expect(rollupPhrase(roll({ progress: 1 / 3 }))).toBe('33%')
     expect(rollupPhrase(roll({ progress: 1 }))).toBe('100%')
   })
 
   it('drops a LONE 0%, which is what most parents in a fresh tree would show', () => {
-    // Every task starts on todo, so every parent has a number. Without this, half the rows in
-    // any tree grow a second line to say "0%" -- which the children listed under them already
-    // say, in more detail.
     expect(rollupPhrase(roll({ progress: 0 }))).toBeNull()
   })
 
@@ -51,8 +47,7 @@ describe('rollupPhrase', () => {
   })
 
   it('says nothing at all when the subtree is merely unstarted', () => {
-    // Every child excluded (all backlog), nothing running, nothing late. The marker at the head
-    // of the row already says this; a second line of nothing is noise.
+    // Every child is in the backlog, so there is no percentage, and nothing runs or is late.
     expect(
       rollupPhrase(roll({ progress: null, counts: { ...roll().counts, backlog: 3 } })),
     ).toBeNull()
@@ -63,8 +58,6 @@ describe('rollupPhrase', () => {
   })
 
   it('leaves dueSoon off the row', () => {
-    // It is in the rollup for the banner and the board; on a row it would be a fourth number
-    // next to the row's own deadline, which is already shown to the minute.
     expect(rollupPhrase(roll({ progress: 0.5, dueSoon: 3 }))).toBe('50%')
   })
 

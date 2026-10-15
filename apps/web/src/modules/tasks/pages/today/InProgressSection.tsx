@@ -12,11 +12,8 @@ import { opensOnClick, OVER_ROW, SavedMark } from '../../components/TaskRowParts
 import { taskCrumb } from '../../crumb'
 
 /**
- * IN PROGRESS -- the first thing the eye should land on.
- *
- * THE SIZE ANSWERS "HOW MANY". One thing in progress is THE thing: its title takes the scale's
- * 36/44 step, with Done and Pause beside it. Several are a list -- several 36px lines are a wall,
- * not a focal point -- so they step down to rows.
+ * One task in progress is the focal point, in large type with Done and Pause beside it; several
+ * step down to rows.
  */
 export function InProgressSection({
   tasks,
@@ -63,8 +60,7 @@ export function InProgressSection({
                     alone ? 'flex-wrap gap-y-2 py-2' : 'min-h-11'
                   }`}
                 >
-                  {/* One: the mark, and Done beside it. Several: the mark IS the Done control,
-                      which is all a touch screen gets -- Pause and the rest are in the sheet. */}
+                  {/* Several: the mark is the Done control, and on a touch screen the only one. */}
                   <span className="flex h-11 shrink-0 items-center">
                     {alone ? (
                       <StatusMark status={t.status} />
@@ -81,8 +77,8 @@ export function InProgressSection({
                     data-today-row={t.id}
                     onClick={() => onOpen(t.id)}
                     onKeyDown={(e) => onKeyDown(e, t)}
-                    // One: at least 12rem, so Done and Pause wrap under a short line rather than
-                    // squeeze it -- never more than the row has. Several: a row.
+                    // One: at least 12rem, so Done and Pause wrap under a short title rather than
+                    // squeeze it.
                     className={`flex flex-1 flex-col text-left ${
                       alone ? 'min-w-[min(12rem,100%)]' : 'min-w-0 py-2.5'
                     }`}
@@ -90,8 +86,7 @@ export function InProgressSection({
                     <span className="flex min-w-0 items-baseline">
                       <span
                         data-doing-title
-                        // One: in full, on as many lines as it takes -- it is the line the page
-                        // is for. Several: a list, one line each.
+                        // One: in full, on as many lines as it takes. Several: one line each.
                         className={`font-semibold ${
                           alone
                             ? 'min-w-0 text-2xl [overflow-wrap:anywhere] max-sm:text-xl'
@@ -104,8 +99,7 @@ export function InProgressSection({
                     </span>
                     <span className="truncate text-sm text-ink-muted">{taskCrumb(t)}</span>
                   </button>
-                  {/* The visible word is in the accessible name (WCAG 2.5.3): "Done" in
-                      “Complete “Title””. On a list they wait for the pointer. */}
+                  {/* The visible word is in the accessible name: "Done" in “Complete “Title””. */}
                   <span
                     className={`flex shrink-0 items-center gap-2 ${
                       alone
@@ -114,8 +108,7 @@ export function InProgressSection({
                           `absolute top-0 right-1 h-11 opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:hidden ${OVER_ROW}`
                     }`}
                   >
-                    {/* One thing: the one press the page is for, filled. Several: the mark at the
-                        row's start is Done, so a second Done would be one action with two names. */}
+                    {/* Several: the mark is already Done, so a second Done is not drawn. */}
                     {alone && (
                       <button
                         type="button"

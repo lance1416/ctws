@@ -1,14 +1,10 @@
 import { MONTHS } from '../../platform/time/dates'
 
 /**
- * THE MONTH GRID's arithmetic, kept away from the component that draws it.
- *
- * Every date here is a `YYYY-MM-DD` string in the ACCOUNT's zone, never a `Date`: a Date is an
- * instant, and an instant turned into a day by the browser is the browser's day, not the user's.
- * The same rule the rest of this app keeps about calendar days.
+ * The month grid's arithmetic. Every date is a `YYYY-MM-DD` day in the account's zone, never a
+ * `Date`: an instant turned into a day by the browser is the browser's day, not the user's.
  */
 
-/** Monday-first, like the weekly review's week. */
 export const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const
 
 const parse = (day: string): [number, number, number] =>
@@ -39,19 +35,15 @@ function weekdayOf(day: string): number {
 
 const monthOf = (day: string): string => day.slice(0, 7)
 
-/** "October 2026". */
+/** "Oct 2026". */
 export function monthTitle(day: string): string {
   const [y, m] = parse(day)
   return `${MONTHS[m - 1]} ${y}`
 }
 
 /**
- * THE SQUARES a month is drawn on: whole weeks, Monday-first, so the grid is always rectangular
- * and the first row never starts with a gap.
- *
- * It deliberately returns the LEADING and TRAILING days of the neighbouring months rather than
- * blanks. A blank square says "nothing here"; a dimmed Sep 30 says "this is last month", which is
- * the truth and is also where a Monday deadline at the start of a month actually lives.
+ * Whole Monday-first weeks, with the neighbouring months' days rather than blanks: a dimmed Sep 30
+ * is still a day a deadline can fall on.
  */
 export function monthSquares(anyDayInMonth: string): { day: string; inMonth: boolean }[] {
   const month = monthOf(anyDayInMonth)
@@ -59,9 +51,7 @@ export function monthSquares(anyDayInMonth: string): { day: string; inMonth: boo
   const lead = weekdayOf(first)
   const start = shiftDay(first, -lead)
   const days = Number(shiftDay(shiftMonth(first, 1), -1).slice(8))
-  // AS MANY WHOLE WEEKS AS THE MONTH NEEDS -- five or six. A fixed six would be steadier, but on
-  // a month like 2026-10 the sixth row is entirely next month: an empty band under the grid that
-  // reads as something failing to load. Whole weeks, never a ragged last row.
+  // Five or six weeks as the month needs: a fixed six can leave a whole row of next month.
   const weeks = Math.ceil((lead + days) / 7)
   return Array.from({ length: weeks * 7 }, (_, i) => {
     const day = shiftDay(start, i)

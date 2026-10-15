@@ -6,17 +6,9 @@ import { useComposing } from '../../platform/keyboard/composition'
 import { field } from '../../platform/ui/formStyles'
 
 /**
- * 一个城市。
- *
- * 打字找城市，选中之后存下来的是一个标准写法（`Oxford, England, United Kingdom`）—— 所以两个
- * 人的「现居」不会一个写 Oxford 一个写 oxford, uk。表在服务端（一万五千人以上的三万四千个城市，
- * 打进镜像），打三个字母才去问一次。
- *
- * 认不出来也存得下：世界上有的是不到一万五千人的地方，而这是一个人自己的通讯录 —— 挡住他写
- * 「外婆家那个镇」不是校验，是添堵。认不出来的时候只说一句，不拦着。
- *
- * 用 `<input list>` 那套原生 datalist 不行：它在 Windows 上由系统画，不认这套配色，和原生
- * `<select>` 被挡下的理由一样（`layers.test.ts`）。所以这里是一个自己画的候选列表。
+ * A city, saved in the canonical spelling picked from the server's list; a name it does not know
+ * is still saved as written. The list is drawn here because Windows draws a native `<datalist>`
+ * itself, ignoring the theme.
  */
 export function PickCity({
   label,
@@ -40,7 +32,6 @@ export function PickCity({
 
   const cities = hits.data ?? []
   const exact = cities.some((c) => c.label === value)
-  // The list, and what the box says about it, are one condition.
   const listed = typing && cities.length > 0 && !exact
   const unknown = typing && value.trim().length >= 3 && hits.isSuccess && cities.length === 0
 
@@ -62,7 +53,7 @@ export function PickCity({
           onChange(e.target.value)
         }}
         onBlur={() => {
-          // 候选列表上的点击先发生在 blur 之后，所以晚一拍再收起来。
+          // A click on the list lands after this blur, so the list closes a beat later.
           window.setTimeout(() => setTyping(false), 120)
         }}
         className={`${field} text-sm`}
@@ -77,7 +68,7 @@ export function PickCity({
             <li key={c.label}>
               <button
                 type="button"
-                // onMouseDown：click 发生在 blur 之后，那时列表已经在收起来了。
+                // `onMouseDown`: a click comes after the blur, when the list is already closing.
                 onMouseDown={(e) => {
                   e.preventDefault()
                   onChange(c.label)

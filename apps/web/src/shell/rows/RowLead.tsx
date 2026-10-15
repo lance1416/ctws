@@ -14,10 +14,7 @@ const TONE: Record<LeadTone, string> = {
   quiet: 'text-ink-subtle',
 }
 
-/**
- * What kind of date it is, for a screen reader: the colour and the flag say it to the eye, and
- * neither reaches a reader who cannot see them (WCAG 1.4.1).
- */
+/** The kind of date in words, for a screen reader: the colour and the flag only reach the eye. */
 const SAID: Record<LeadTone, string> = {
   missed: 'Overdue, due ',
   deadline: 'Due ',
@@ -56,11 +53,7 @@ export function RowLead({
   )
 }
 
-/**
- * A deadline's flag, upright beside its word. Filled once the line has been crossed. It is the
- * margin's one shape: a plan has none, so a deadline and a plan differ by silhouette as well as by
- * colour family.
- */
+/** A deadline's flag, filled once missed. A plan has none, so the two differ by shape too. */
 function FlagMark({ filled }: { filled: boolean }) {
   return (
     <svg

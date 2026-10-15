@@ -143,13 +143,7 @@ test('the picker offers every kind of thing, and never the object itself', async
   await expect(list.filter({ hasText: 'Ying Chen' })).toHaveCount(0)
 })
 
-/**
- * 一件活连到一个人。
- *
- * 「这个活要跟 xxx 对接」「这个活是 xxx 推荐的」—— 边早就允许了（`about` 两端都不限，`recommends`
- * 从一个人出发），缺的只是任务那一侧没有画出来。连完两头都读得到：人的那一层里也看得见这件活。
- */
-test('一件活可以连到一个人，两头都读得到', async ({ page }) => {
+test('a task can be linked to a person, and both ends show the link', async ({ page }) => {
   const { person } = await world(page)
   const project = await apiPost(page, '/projects', { name: '找工作' })
   await apiPost(page, '/tasks', { title: '准备一面', projectId: project.id })
@@ -168,7 +162,7 @@ test('一件活可以连到一个人，两头都读得到', async ({ page }) => 
 
   await expect(pane.getByRole('region', { name: 'Linked' })).toContainText('Ying Chen')
 
-  // 从人那一头也看得见：边是从两端读的。
+  // The person's side shows it too: a link is read from both ends.
   await page.goto(`/people/${person.id}`)
   await expect(
     page.getByRole('dialog', { name: 'People' }).getByRole('region', { name: 'Linked' }),

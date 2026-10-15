@@ -4,8 +4,6 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { ReadingRow } from './ReadingRow'
 
-/** What a link's row says: the title typed, else the one fetched, else host and path. */
-
 const item = (over: Partial<ReadingItemResponse> = {}): ReadingItemResponse => ({
   id: '00000000-0000-0000-0000-000000000001',
   kind: 'link',

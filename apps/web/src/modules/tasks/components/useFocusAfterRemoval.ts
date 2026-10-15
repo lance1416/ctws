@@ -1,14 +1,9 @@
 import { useEffect, useRef } from 'react'
 
 /**
- * WHERE FOCUS GOES WHEN A ROW LEAVES A LIST: the nearest row after it, else before it, else the
- * list's heading -- never <body> (WCAG 2.4.3).
- *
- * `expect(id)` is said before something that may take the row away (a status change); `drop(id)`
- * once that has settled with the row still there. `open` is the task whose pane is open: it can
- * move or delete its task, so its row is expected too, and acted on once the pane has closed --
- * the page closes it when its task leaves. The neighbours are read on every render the row is
- * still on screen, so rows that arrived since are counted.
+ * When a row leaves a list, focus goes to the nearest row after it, else before it, else the
+ * heading. `expect(id)` before a change that may remove the row, `drop(id)` once it settled with
+ * the row still there; the open pane's row is expected until the pane closes.
  */
 export function useFocusAfterRemoval({
   ids,

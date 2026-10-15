@@ -4,7 +4,7 @@ import { useProjectRail } from './projectColor'
 
 const NONE = '__no-project'
 
-/** A project's colour, as the 3px mark beside its name. Never alone: the name says it (WCAG 1.4.1). */
+/** A project's colour as the 3px mark beside its name, which is always shown with it. */
 export function ProjectChip({ projectId }: { projectId: string }) {
   const rail = useProjectRail()
   return (

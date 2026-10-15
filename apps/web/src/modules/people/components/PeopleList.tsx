@@ -7,16 +7,8 @@ import { PanelEmpty } from '../../../platform/ui/Panel'
 import { BODY_GUTTER, ProjectRail } from '../../../shell/rows/RowParts'
 
 /**
- * A LIST OF PEOPLE, on the app's row: `[margin][thread][body]`.
- *
- * - The MARGIN is the one date a person has: their next birthday, beside a cake.
- * - The THREAD is their first line of work's colour, so a list of people reads against the rail's
- *   projects the way a list of tasks does.
- * - The BODY says who: an initial, the name, what they do and for whom, and the city at the far
- *   end. One link, to their address -- the whole row is the target, not four characters of a name.
- *
- * How to reach them is in their sheet, a click away: a row that also carried every address was
- * two rows' worth of text per person, and the list is read to find someone, not to write to them.
+ * People on the app's row: the next birthday in the margin, the first project's colour as the
+ * thread, then who they are. The whole row is one link to their sheet.
  */
 export function PeopleList({
   people,
@@ -76,11 +68,8 @@ export function PeopleList({
 }
 
 /**
- * What they do, and for whom: "Engineering manager, Acme". Someone with neither -- a relative, a
- * friend -- is said by their circle instead, which is what they are to you.
- *
- * Then the lines of work they are on, BY NAME: the thread carries the first one's colour, and a
- * project's colour never stands alone (WCAG 1.4.1) -- slots 4 to 6 are under 3:1 on the sheet.
+ * Their work ("Engineering manager, Acme"), or their circle when there is none, then their projects
+ * by name so the thread's colour is never the only signal.
  */
 function metaOf(person: PersonResponse): string {
   const work = [person.title, person.org].filter(Boolean).join(', ')
@@ -88,8 +77,6 @@ function metaOf(person: PersonResponse): string {
   const on = person.projects.map((p) => p.name).join(', ')
   return [who, on].filter(Boolean).join(' · ')
 }
-
-/** One person's circle, singular: the filter's labels are plural because they name groups. */
 
 /** The first character as a reader counts them (not a UTF-16 half), capitalised if it has a case. */
 function initialOf(name: string): string {

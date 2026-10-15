@@ -1,9 +1,8 @@
 import type { MoveTaskBody, TaskResponse } from '@ctws/contracts'
 
 /**
- * The optimistic result of a move. The server computes the real rank, so this only has to put the
- * row where it was dropped until the refetch replaces it: the new parent's children get stand-in
- * ranks in the intended order. They are never sent anywhere.
+ * The optimistic result of a move: stand-in ranks that hold the dropped order until the refetch
+ * brings the server's. They are never sent anywhere.
  */
 export function applyMove(old: TaskResponse[], id: string, body: MoveTaskBody): TaskResponse[] {
   const moved = old.find((t) => t.id === id)

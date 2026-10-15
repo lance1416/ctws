@@ -22,8 +22,7 @@ export function OpenTask() {
   }, [found.data, navigate])
 
   if (isId && !found.isError) return null
-  // Gone is what the server SAYS (404); anything else is a failure to ask, and saying the task is
-  // gone then would send someone looking for a task that is still there.
+  // Gone only on the server's 404; anything else is a failure to ask, and the task may still exist.
   const gone = !isId || (found.error instanceof ApiError && found.error.status === 404)
   return (
     <p role="alert" className={`mt-4 ${HANG} text-sm text-ink-muted`}>

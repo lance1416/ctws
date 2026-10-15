@@ -1,11 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { monthRange, monthSquares, monthTitle, shiftDay, shiftMonth } from './monthGrid'
 
-/**
- * Date arithmetic done on strings, because a `Date` is an instant and an instant turned into a
- * day is the BROWSER's day. The cases below are the ones that break a naive implementation:
- * month ends, leap days, and the DST changeovers where a local day is 23 or 25 hours long.
- */
+/** The cases that break naive date arithmetic: month ends, leap days and DST changeovers. */
 describe('shiftDay', () => {
   it('crosses a month and a year', () => {
     expect(shiftDay('2026-10-31', 1)).toBe('2026-11-01')

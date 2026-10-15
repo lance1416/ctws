@@ -1,10 +1,7 @@
 import type { Circle, RemindLead } from '@ctws/contracts'
 
-/** The words for the people module's enums. The UI is English; the values are the contract's. */
-
 const CIRCLES = ['family', 'friend', 'work'] as const
 
-/** A circle as the list groups by it. */
 export const CIRCLE_LABELS: Record<Circle, string> = {
   family: 'Family',
   friend: 'Friends',
@@ -34,7 +31,7 @@ export const GENDER_CHOICES = [
   ...Object.entries(GENDER_LABELS).map(([value, label]) => ({ value, label })),
 ]
 
-/** How early to be told of a birthday: one choice of four, not four switches. */
+/** How early to be told of a birthday. */
 export const LEADS: readonly [RemindLead, string][] = [
   [7, '1 week before'],
   [3, '3 days before'],
@@ -45,10 +42,7 @@ export const LEADS: readonly [RemindLead, string][] = [
 export const leadLabel = (lead: number) =>
   LEADS.find(([n]) => n === lead)?.[1] ?? `${lead} days before`
 
-/**
- * The months spelled out, for a list read down (the birthdays index, the month picker) rather
- * than a date beside a name, which takes the short `MONTHS`.
- */
+/** Months spelled out, for lists read down; a date beside a name takes the short `MONTHS`. */
 export const MONTH_NAMES = [
   'January',
   'February',

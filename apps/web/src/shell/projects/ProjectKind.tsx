@@ -8,10 +8,7 @@ export function ProjectsCount() {
   return <span data-count>{projects.data.length} active</span>
 }
 
-/**
- * How many have been put away, when any have. Its own request: the list above holds only the live
- * ones, so counting the archived there always said none.
- */
+/** How many are archived, if any. Its own request: the live list leaves them out. */
 export function ProjectsStatus() {
   const archived = useQuery(archivedProjectsQuery())
   const n = archived.data?.length ?? 0

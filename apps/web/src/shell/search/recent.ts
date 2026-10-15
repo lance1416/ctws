@@ -1,15 +1,12 @@
 import { useCallback, useEffect } from 'react'
 import { useMe } from '../auth/useMe'
 
-/** One thing that was opened, enough to list it and go back to it. */
 export type Recent = {
-  /** The object's type, which with `id` makes it one thing. */
   type: string
   id: string
   title: string
-  /** Where opening it again goes. */
   to: string
-  /** What kind of thing it is, as a word a row can show ("Person"). */
+  /** As a word a row can show ("Person"). */
   kind: string
 }
 
@@ -19,12 +16,8 @@ const keyFor = (userId: string) => `ctws.recent.${userId}`
 const KEEP = 8
 
 /**
- * WHAT WAS OPENED LATELY, newest first: what search shows before anything is typed. With no row
- * per kind in the rail, the way back to the person or meeting from a minute ago is this list.
- *
- * A per-viewer convenience, so localStorage and not the server; and every access is wrapped,
- * because in a private window or with site data cleared localStorage throws, and remembering
- * recent things is not worth a blank page.
+ * What was opened lately, newest first, for search before anything is typed. Every localStorage
+ * access is wrapped: it throws in a private window or with site data cleared.
  */
 export function recentList(userId: string): Recent[] {
   try {
@@ -50,7 +43,6 @@ export function recordRecent(userId: string, entry: Recent): void {
   save(userId, [entry, ...others].slice(0, KEEP))
 }
 
-/** Drops a thing that is gone: a row nobody can open is worse than one row fewer. */
 export function forgetRecent(userId: string, type: string, id: string): void {
   const list = recentList(userId)
   const kept = list.filter((r) => !(r.type === type && r.id === id))
@@ -74,7 +66,6 @@ export function useRecordRecent(entry: Recent | null): void {
   }, [key, userId])
 }
 
-/** For whatever deletes a thing: forgets it for whoever is signed in. */
 export function useForgetRecent(): (type: string, id: string) => void {
   const userId = useMe().data?.id
   return useCallback(
@@ -85,10 +76,7 @@ export function useForgetRecent(): (type: string, id: string) => void {
   )
 }
 
-/**
- * For a page that finds its thing GONE -- deleted on another device, or before this list knew --
- * which is the one place that learns it.
- */
+/** For a page that finds its thing gone, deleted elsewhere: the one place that learns it. */
 export function useForgetWhenGone(type: string, id: string | null, gone: boolean): void {
   const forget = useForgetRecent()
   useEffect(() => {

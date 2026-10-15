@@ -10,37 +10,21 @@ import { isReadingUrl } from './readingUrl'
 import { Reading } from './pages/Reading'
 import type { CaptureTargetState, SearchHit, WorkspaceModule } from '../../shell/contract'
 
-/**
- * THE READING MODULE -- the second one, and the first real test of the seam.
- *
- * Everything below is a CONTRIBUTION, not a change to the shell: the Things row, the chord, the
- * search provider, the calendar, the Workbench card and the capture rule all arrive through the
- * contract, and the shell was not edited to make room for it. The one thing the contract gained is
- * `accepts` -- there was no way to route a captured line while only one module could take one,
- * and that is exactly the kind of gap a second module is supposed to find.
- */
 const ID = 'reading'
 
-/** Things' count for reading: what is actually waiting to be read, never the pile's size. */
 function ReadingCount() {
   const items = useQuery(readingQuery())
   if (!items.data) return null
   return <span data-count>{items.data.filter(isToRead).length} to read</span>
 }
 
-/** How much of it belongs to no line of work yet: the reading that still needs a home. */
 function UnfiledLine() {
   const unfiled = useQuery(readingQuery({ unfiled: true }))
   const count = unfiled.data?.filter(isToRead).length ?? 0
   return count > 0 ? <span data-status>{count} not in a project</span> : null
 }
 
-/**
- * Capture's reading half: a pasted url lands here instead of in the inbox.
- *
- * Unlike the task module's, this target needs nothing fetched -- the destination is the list
- * itself -- so it is never missing and never unavailable.
- */
+/** A pasted url lands here instead of the inbox; nothing is fetched, so it is never missing. */
 function useReadingCapture(): CaptureTargetState {
   const qc = useQueryClient()
   return {
@@ -58,13 +42,11 @@ function useReadingCapture(): CaptureTargetState {
   }
 }
 
-/** This module's half of federated search: titles, authors and hosts. */
 function useReadingHits(query: string) {
   const results = useQuery({ ...readingSearchQuery(query), enabled: query.length > 0 })
   const hits: SearchHit[] = (results.data ?? []).map((item) => ({
     id: item.id,
-    // Its pane, not its url: a search result goes somewhere in this app, and an external link
-    // from a search dialog would take the person out of the workspace mid-search.
+    // Its pane, not its url: a search result should not take the person out of the app.
     to: `/${ID}/${item.id}`,
     title: readingLabel(item),
     meta: [item.projectName, item.kind === 'book' ? 'Book' : 'Link'].filter(Boolean).join(' · '),
@@ -73,19 +55,13 @@ function useReadingHits(query: string) {
   return { hits, isError: results.isError, isSuccess: results.isSuccess }
 }
 
-/** This module's dated things: when to finish one, already a day in the account's zone. */
+/** Finish-by days, already in the account's zone. */
 function useReadingEntries(range: { from: string; to: string }) {
   const result = useQuery(readingCalendarQuery(range))
   return { entries: result.data ?? [], isError: result.isError }
 }
 
-/**
- * THE WORKBENCH CARD: what belongs to NO project.
- *
- * Deliberately not the whole list. Anything filed under a project is on that project's page, and
- * a card that repeated it would make two places to keep in your head. What is left is exactly
- * what has nowhere else to appear: a book, a link you saved on the way past.
- */
+/** The Workbench card: reading in no project, since anything filed shows on its project's page. */
 function ReadingWidget() {
   const items = useQuery(readingQuery({ unfiled: true }))
   const rows = (items.data ?? []).filter(isToRead)
@@ -100,8 +76,6 @@ function ReadingWidget() {
   if (items.isSuccess && rows.length === 0) return <PanelEmpty>Nothing unfiled</PanelEmpty>
   return (
     <ul className="min-w-0">
-      {/* A glance, not a list: five rows, and the heading for the rest. A card that grows without
-          bound stops being a card and starts being a second copy of the page. */}
       {rows.slice(0, WIDGET_ROWS).map((item) => (
         <li key={item.id}>
           <Link
@@ -125,7 +99,6 @@ function ReadingWidget() {
   )
 }
 
-/** The Reading card's note: how much is waiting to be read, filed or not. */
 function ReadingAside() {
   const all = useQuery(readingQuery())
   if (!all.data) return null
@@ -135,14 +108,7 @@ function ReadingAside() {
 /** How many rows a workbench card shows before it defers to its page. */
 const WIDGET_ROWS = 5
 
-/**
- * NO BLOCK ON A PROJECT PAGE.
- *
- * This module's rows reach a project as edges, and the shell draws every kind of edge the same way.
- * One of these is made on its own page and filed there, or dropped into the capture box, never from
- * a project page.
- */
-
+// No project-page block: reading reaches a project as edges, which the shell draws for every kind.
 export const readingModule: WorkspaceModule = {
   id: ID,
   label: 'Reading',
@@ -161,8 +127,7 @@ export const readingModule: WorkspaceModule = {
   ],
   capture: { useTarget: useReadingCapture, accepts: isReadingUrl },
   search: { useHits: useReadingHits },
-  // `l` for list. `r` is the task module's Review and one keyspace is shared across modules, so a
-  // second module cannot take a key that is already spoken for.
+  // `l` for list: `r` is the task module's Review, and the keyspace is shared across modules.
   chords: [{ id: 'reading', key: 'l', label: 'Go to Reading', resolve: () => `/${ID}`, order: 15 }],
   calendar: { label: 'Reading', useEntries: useReadingEntries },
   widgets: [
@@ -176,7 +141,5 @@ export const readingModule: WorkspaceModule = {
       span: 8,
     },
   ],
-  // No page of its own: a thing to read is a title, a link and a status, and a page per item
-  // would be a page holding one line. The list IS where one is read.
   relations: [{ type: 'reading', kind: 'Reading', to: (id) => `/${ID}/${id}` }],
 }

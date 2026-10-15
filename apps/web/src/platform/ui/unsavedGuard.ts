@@ -3,18 +3,10 @@ import { useBlocker } from 'react-router-dom'
 import { LeaveGuardContext } from './leaveGuard'
 
 /**
- * THREE WAYS TO LOSE A FORM, ONE PROMPT.
- *
- * A pane with unsaved edits can be left by closing it, by navigating away (the router blocker
- * catches the browser's back button too), or by logging out -- which is not a navigation at all:
- * it clears the session and the layout swaps the whole page, so the layout asks the pane first
- * through `LeaveGuardContext`.
- *
- * The question is asked IN THE PANE. A browser `confirm()` would block the automation this app is
- * tested with, and without any question the typing is lost without a word.
+ * One in-pane question for every way to lose an edit: closing, navigating, or logging out (asked
+ * through `LeaveGuardContext`). Not `confirm()`, which would block the test automation.
  */
 export type UnsavedGuard = {
-  /** True while the person is being asked whether to discard. */
   asking: boolean
   /** The way out is a navigation or a sign-out, rather than just closing the pane. */
   leaving: boolean
@@ -32,18 +24,11 @@ export function useUnsavedGuard(dirty: boolean, onLeave: () => void): UnsavedGua
   const [askDiscard, setAskDiscard] = useState(false)
   const [logoutVia, setLogoutVia] = useState<(() => void) | null>(null)
   const [exitVia, setExitVia] = useState<(() => void) | null>(null)
-  // Read through refs, so the router asks the CURRENT answer at the moment it navigates.
+  // A ref, so the router reads the current answer at the moment it navigates.
   const dirtyNow = useRef(dirty)
   dirtyNow.current = dirty
-  /**
-   * Set once the person has said Discard: the way out they chose may itself be a navigation (a
-   * task's sheet closing drops `?task` from the address), and blocking it with the form still
-   * dirty would ask the question they have just answered.
-   *
-   * ONE DISCARD ANSWERS ONE QUESTION: once the form is clean again (the discarded edit reset, or
-   * the sheet left), the release is spent, and the next edit in the same sheet is guarded afresh.
-   * Left set, every later edit in that sheet would be dropped by a navigation without a word.
-   */
+  // Set by Discard, so the navigation it causes is not blocked again; spent once the form is
+  // clean, so the next edit in the same sheet is guarded afresh.
   const released = useRef(false)
   if (!dirty) released.current = false
   const blocker = useBlocker(() => dirtyNow.current && !released.current)
@@ -55,8 +40,7 @@ export function useUnsavedGuard(dirty: boolean, onLeave: () => void): UnsavedGua
     if (asking) focusOn.current?.focus()
   }, [asking])
 
-  // The layout registers its handler ONCE, so it too reads `dirtyNow`: a closure over `dirty`
-  // would answer with whatever it was at registration time, which is always false.
+  // Registered once, so it reads `dirtyNow`: a closure over `dirty` would always answer false.
   const guard = useContext(LeaveGuardContext)
   useEffect(() => {
     if (!guard) return
@@ -87,7 +71,6 @@ export function useUnsavedGuard(dirty: boolean, onLeave: () => void): UnsavedGua
     },
     discard: () => {
       released.current = true
-      // The question is answered: none of it may still be open when the next edit starts.
       setAskDiscard(false)
       setLogoutVia(null)
       setExitVia(null)

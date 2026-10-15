@@ -15,7 +15,6 @@ import type {
 } from './contract'
 import { ProjectsCount, ProjectsStatus } from './projects/ProjectKind'
 
-/** The shell's front page: every module's glance side by side. */
 export const WORKBENCH_PATH = '/'
 
 const SHELL_CHORDS: Chord[] = [

@@ -120,10 +120,12 @@ test('g c goes to the calendar', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Calendar', level: 1 })).toBeVisible()
 })
 
-test('生日落在服务端说的那一天，点它开那个人的那一层', async ({ page }) => {
+test('a birthday sits on the day the server gives, and clicking it opens the person', async ({
+  page,
+}) => {
   await registerFreshUser(page)
-  // 公历的今天：格子一定在这个月的视图里。农历落在自己那天这件事，由 core 的单测和
-  // `/people/calendar` 的 API 测试用固定日期钉住 —— 这里验的是格子把它画在服务端说的那天。
+  // A solar birthday today is always on this month's grid. Lunar dates are pinned by the core and
+  // API tests; this checks the grid draws the day the server gives.
   const [, month, day] = dayOffset(0).split('-').map(Number) as [number, number, number]
   const res = await page.request.post('/api/v1/people', {
     headers: WEB,
@@ -137,7 +139,7 @@ test('生日落在服务端说的那一天，点它开那个人的那一层', as
   await expect(page.getByRole('dialog', { name: 'People' })).toContainText('周楠')
 })
 
-test('格子里有农历日，和服务端说的一样', async ({ page }) => {
+test('a square shows the lunar day the server gives', async ({ page }) => {
   await registerFreshUser(page)
   const today = dayOffset(0)
   const answer = await page.request.get(`/api/v1/calendar/days?from=${today}&to=${today}`, {

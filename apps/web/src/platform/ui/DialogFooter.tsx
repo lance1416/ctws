@@ -2,19 +2,7 @@ import type { ReactNode } from 'react'
 import { problemText } from '../http/api'
 import { BUTTON } from './buttonStyles'
 
-/**
- * HOW A "NEW THING" DIALOG ENDS: what went wrong, then the two ways out.
- *
- * Written twice, identically, for the new person and the new meeting -- thirty lines each of
- * error paragraph, submit button and cancel button, down to the class strings. The third one
- * would have been a third copy, and the first thing to drift between them is the wording of a
- * failure, which is the sentence a person reads at the worst moment.
- *
- * THE SAME TWO BUTTONS IN THE SAME ORDER AS A PANE'S EDIT: Cancel, then the action, at the right.
- * The new task dialog had its own footer with the action first, so a dialog and a pane put Save
- * and Cancel in opposite places; and the way out was `quiet` here and `secondary` everywhere else.
- * The primary sits last, at the edge, wherever there is one.
- */
+/** How a “new thing” dialog ends: the failure, then Cancel and the action, primary at the edge. */
 export function DialogFooter({
   submit,
   error = null,
@@ -23,7 +11,6 @@ export function DialogFooter({
   onCancel,
   hint,
 }: {
-  /** The submit button's word. An action keeps the same name through the whole flow. */
   submit: string
   /** Whatever the write failed with, or null. A dialog with its own wording passes nothing. */
   error?: unknown
@@ -37,8 +24,6 @@ export function DialogFooter({
     <>
       {error != null && (
         <p role="alert" className="text-sm text-danger">
-          {/* The form is still filled in -- saying so is the difference between "try again" and
-              "type it all again". */}
           {error instanceof Error
             ? problemText(error)
             : "Couldn't create it. Your answers are still here — try again."}

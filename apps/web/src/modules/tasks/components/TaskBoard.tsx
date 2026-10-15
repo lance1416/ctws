@@ -19,25 +19,12 @@ import { TaskDetail } from './TaskDetail'
 import { useTaskParam } from './tree/useTreeParams'
 import { useFocusAfterRemoval } from './useFocusAfterRemoval'
 
-/**
- * THE BOARD: the task block's second view, and the first user of the block-header tabs.
- *
- * IT IS NOT A SECOND PAGE. A board is another way to look at the block that is already on the
- * project page, which is how Notion's databases and Linear's issue lists carry their views. That
- * is also why it has no route of its own and no row in the rail: adding a third view later costs
- * one entry in the module's `views`.
- *
- * IT IS FLAT, AND THAT IS THE POINT. The tree answers what a piece of work is made of; the board
- * answers what is stuck at which step, and nesting cannot be drawn in a column without turning it
- * back into a tree.
- * Every task appears exactly once, under its own status, with its parent named beneath it so a
- * card is never orphaned from the work it belongs to.
- */
+// The board is flat: every task once, under its own status, with its parent named beneath it.
 
 /** Left to right in the status model's own order; `cancelled` is not a step of the work. */
 const COLUMNS: TaskStatus[] = ['backlog', 'todo', 'in_progress', 'done']
 
-/** A card opens its task in the pane -- a click, Enter or Space -- and is dragged by the pointer. */
+/** A card opens its task in the pane on click, Enter or Space, and is dragged by the pointer. */
 function Card({
   task,
   parentTitle,
@@ -147,8 +134,7 @@ export function TaskBoard({ projectId }: { projectId: string }) {
     const task = byId.get(String(active.id))
     if (!task || task.status === status) return
     setError(null)
-    // The same mutation the row markers use, so a card and a marker cannot disagree about what
-    // moving to “Done” means (it stamps `completed_at`, among other things).
+    // The same mutation the row markers use, so a card and a marker agree on what “Done” means.
     actions.setStatus(task.id, status)
   }
 
@@ -170,9 +156,7 @@ export function TaskBoard({ projectId }: { projectId: string }) {
         </p>
       )}
       <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragEnd={onDragEnd}>
-        {/* Four columns at desk width; on a phone they stack, because four 90px columns are four
-            columns of ellipsis. No horizontal scroller: the row system's rule is that nothing
-            scrolls sideways. */}
+        {/* Four columns at desk width, stacked on a phone: nothing scrolls sideways. */}
         <div className="grid min-w-0 grid-cols-1 gap-2 px-1 sm:grid-cols-2 lg:grid-cols-4">
           {COLUMNS.map((status) => (
             <Column
@@ -185,9 +169,7 @@ export function TaskBoard({ projectId }: { projectId: string }) {
           ))}
         </div>
       </DndContext>
-      {/* `cancelled` has no column: it is not a step of the work, and a fifth column of things
-          nobody is doing would take a quarter of the width to say so. Those tasks are in the
-          tree, where they can be restored. */}
+      {/* Cancelled tasks have no column; they stay in the tree, where they can be restored. */}
       {openTask && <TaskDetail key={openTask.id} task={openTask} onClose={closeDetail} />}
     </>
   )

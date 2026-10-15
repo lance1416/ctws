@@ -30,36 +30,20 @@ import { InProgressSection } from './today/InProgressSection'
 import { TodayRow } from './today/TodayRow'
 
 /**
- * TODAY: one sheet, the day's line down it.
- *
- *   Monday, October 12   九月初三          the date is the heading: this page is a day
- *   In progress                           what am I doing right now -- one is a banner
- *   Today                                 the day in time order, NOW across it, then Any time
- *   Overdue                               what was due and was not done
- *   Done today                            what I did
- *                              This week  where each line of work got to, beside or below
- *
- * Sections, not panels: one column of rows hung on one margin, so the times and dates of every
- * section read down a single edge, the way a diary's do.
- *
- * The day's line is EVERY KIND OF DATED THING: a meeting at 10:30 sits between the tasks due at
- * 09:00 and 16:00. Other modules come in through the calendar seam; tasks come from `todayQuery`
- * with their segments. The SERVER decides which segment a task is in, in the account's zone, and
- * the order within it; no task is in two places.
+ * The day as one sheet: in progress, the day's line in time order, overdue, done today, and the
+ * week beside them. The line holds every module's dated things; the server files each task.
  */
 export function Today() {
   useCrumbs([{ label: 'Today' }])
   const today = useQuery(todayQuery())
-  // Shares `completedQuery` with Review's Done view: one request per session, not per visit.
   const completed = useQuery(completedQuery())
   const movement = useQuery(movementQuery())
   const timeZone = useTimeZone()
-  // The moment it is, kept current while the page sits open: the now line, the date and which
-  // day "today" is all follow it, in the account's calendar -- the one the server files by.
+  // Kept current while the page sits open: the now line, the date and which day is today follow it.
   const now = useNow()
   const day = todayIn(timeZone, now)
   const clock = clockTime(timeZone)
-  // The other modules' dated things for today: one hook per provider, over the registry's fixed list.
+  // Other modules' dated things for today: one hook per provider, over the registry's fixed list.
   const entries = useRegistry()
     .calendar.filter((p) => p.moduleId !== TASKS_ID)
     .flatMap((p) =>
@@ -74,8 +58,7 @@ export function Today() {
   const actions = useTaskActions(setError)
   const [savedId, setSavedId] = useSavedFlash()
 
-  // A change can take its row off this page (finished; stopped with no date; deadline cleared),
-  // and so can the open pane. The order is DOM order across every section, the way the page reads.
+  // A change, or the open pane, can take its row off this page; focus moves on in DOM order.
   const focus = useFocusAfterRemoval({
     ids: () =>
       [...document.querySelectorAll<HTMLElement>('[data-today-row]')].map(
@@ -95,8 +78,8 @@ export function Today() {
     focus.expect(id)
     actions.patch(id, body, () => focus.drop(id))
   }
-  // After a triage action its menu unmounts, so focus goes back to the row (WCAG 2.4.3); if the
-  // change then takes the row off the page, `focus` moves it on again.
+  // A triage menu unmounts after its action, so focus goes back to the row; if the row then
+  // leaves the page, `focus` moves it on again.
   const focusRow = (id: string) =>
     queueMicrotask(() => document.querySelector<HTMLElement>(`[data-today-row="${id}"]`)?.focus())
   const onRowKeyDown = (e: KeyboardEvent, t: TodayTaskResponse) => {
@@ -148,10 +131,10 @@ export function Today() {
   const doneToday = (completed.data?.tasks ?? []).filter((t) => t.completedOn === day)
   const movementRows = (movement.data ?? []).filter(hasMovement)
 
-  // THE DAY'S LINE: the planned tasks and the other modules' entries, each with its time if any.
+  // The day's line: the planned tasks and the other modules' entries, each with its time if any.
   const items: DayItem[] = [
     ...planned.map((t): DayItem => {
-      // A task is ON the line when it is due today at a time; the end of the day is not a time.
+      // A task is on the line when it is due today at a time; the end of the day is not a time.
       const lead = leadFor({ dueAt: t.dueAt, scheduledOn: null }, day, timeZone)
       const at = lead?.tone === 'deadline' && /^\d{2}:\d{2}$/.test(lead.text) ? lead.text : null
       return {
@@ -206,7 +189,7 @@ export function Today() {
             <DayLine items={items} now={clock.format(now)} />
           </DaySection>
 
-          {/* Only when something IS overdue: a section reading "0" every day is noise. */}
+          {/* Only when something is overdue: a section reading "0" every day is noise. */}
           {overdue.length > 0 && (
             <DaySection label="Overdue" count={overdue.length}>
               <ul className={ROW_LIST}>{overdue.map((t) => taskRow(t))}</ul>
@@ -224,8 +207,7 @@ export function Today() {
           key={openTask.id}
           task={openTask}
           onClose={closeDetail}
-          // Marks the row; the pane stays open, reading back what was written -- even when the
-          // save took the row off this page.
+          // Marks the row; the pane stays open even when the save took the row off this page.
           onSaved={() => setSavedId(openTask.id)}
         />
       )}

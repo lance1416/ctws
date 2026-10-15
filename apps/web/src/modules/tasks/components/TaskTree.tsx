@@ -41,8 +41,7 @@ const NONE: readonly TaskResponse[] = []
 export function TaskTree({ projectId }: { projectId: string }) {
   const qc = useQueryClient()
   const allProjects = useProjects()
-  // Only the INBOX dates its rows: quick capture makes it the one list that grows without anyone
-  // deciding anything, so "how long has this sat here" is its question and no other project's.
+  // Only the inbox dates its rows: quick capture makes it the one list that grows undecided.
   const inInbox = allProjects.data?.find((p) => p.id === projectId)?.isInbox === true
   const key = projectTasksQuery(projectId).queryKey
   // The cache holds exactly what the server returns; the rows are derived, never cached.
@@ -59,8 +58,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
     [shown.visible, folds.collapsed],
   )
 
-  // Which row holds the tree's single tab stop. It follows focus, so Tab comes back to the row
-  // last used; if that row has gone, the first row -- a tree with no tab stop is unreachable.
+  // The tree's single tab stop follows focus; if that row has gone, the first row takes it.
   const [activeId, setActiveId] = useState<string | null>(null)
   const tabId = rows.some((r) => r.id === activeId) ? activeId : (rows[0]?.id ?? null)
 
@@ -102,8 +100,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
       return { previous, unfolded }
     },
     onError: (e, _vars, context) => {
-      // Back to what the database holds -- and the parent the drop unfolded folds again: nothing
-      // landed there, so nothing should be left open.
+      // Back to what the database holds, and the parent the drop unfolded folds again.
       if (context?.previous) qc.setQueryData(key, context.previous)
       if (context?.unfolded) folds.fold(context.unfolded)
       setError(e instanceof Error ? e.message : "Couldn't move it")
@@ -204,8 +201,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
 
   return (
     <>
-      {/* Absent until there is something to say. `aria-pressed`: a view toggle, not a field,
-          and the count IS the label. */}
+      {/* Absent until there is something to say; the count is the label. */}
       {(shown.hiddenDone > 0 || shown.showDone) && (
         <div className="mt-2 flex justify-end">
           <button
@@ -247,7 +243,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
             <button
               type="button"
               className={EMPTY_ACTION}
-              // The input already on this page is the one way to fill it; this puts the cursor there.
+              // Puts the cursor in the input already on this page.
               onClick={() =>
                 document.querySelector<HTMLElement>('input[aria-label="New task"]')?.focus()
               }

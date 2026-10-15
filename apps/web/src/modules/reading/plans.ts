@@ -1,9 +1,6 @@
 import { addDays, dayPhrase, nextMonday } from '../../platform/time/dates'
 
-/**
- * WHEN TO FINISH SOMETHING, as named days rather than a date picker: nobody plans reading to the
- * day, and "this weekend" is the thought a person actually has.
- */
+/** When to finish something, as named days rather than a date picker. */
 export type PlanDay = 'today' | 'tomorrow' | 'thisWeek' | 'nextWeek'
 
 export const PLAN_DAYS: readonly { id: PlanDay; day: (today: string) => string }[] = [
@@ -15,8 +12,8 @@ export const PLAN_DAYS: readonly { id: PlanDay; day: (today: string) => string }
 ]
 
 /**
- * The named days to finish by, one per distinct day -- on a Saturday "this week" is tomorrow --
- * with the day already set kept first when it is none of them, so a picker can still show it.
+ * The named days to finish by, one per distinct day (on a Saturday "this week" is tomorrow), with
+ * a day already set that is none of them kept first so a picker can still show it.
  */
 export function planChoices(
   today: string,

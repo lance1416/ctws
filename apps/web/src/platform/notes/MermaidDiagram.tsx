@@ -1,22 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { purifyDiagram, scopeDiagramStyles, sizeDiagram } from './mermaidSvg'
 
-/**
- * ONE MERMAID FENCE, RENDERED.
- *
- * This module is the LAZY half of the diagram feature: nothing here, and nothing it imports, is
- * reachable from the app's entry graph except through `import('./MermaidDiagram')`, which
- * `NoteMarkdown` only ever evaluates for a note that really contains a `mermaid` fence. The
- * containment story -- all four layers of it, and the one layer that is missing -- is written at the
- * top of `mermaidSvg.ts`.
- */
-
-/** Ids have to be valid CSS selectors (mermaid builds its own stylesheet out of them), so this is
- * a plain counter rather than `useId`, whose output contains `:` and `«»`. */
+/** A counter, not `useId`: mermaid builds CSS selectors from the id, and `useId` emits `:`. */
 let seq = 0
 
-/** The app's own theme, read off the live custom properties, so a diagram is not the one thing on
- * the page that ignores light/dark. `theme: 'base'` is the only mermaid theme that takes these. */
+/** The app's theme, read off its custom properties; only mermaid's `base` theme takes these. */
 function themeVariables(): Record<string, string> {
   const css = getComputedStyle(document.documentElement)
   const token = (name: string) => css.getPropertyValue(name).trim()
@@ -43,8 +31,7 @@ export default function MermaidDiagram({ source }: { source: string }) {
   const host = useRef<HTMLDivElement | null>(null)
   const [state, setState] = useState<'drawing' | 'ready' | 'failed'>('drawing')
   const [failure, setFailure] = useState('')
-  // A diagram drawn in light-mode colours and then looked at in dark mode is unreadable, and the
-  // colours are baked into the svg at render time, so the scheme is a render input.
+  // Colours are baked into the svg, so the colour scheme is a render input.
   const [dark, setDark] = useState(() => window.matchMedia('(prefers-color-scheme: dark)').matches)
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
@@ -60,40 +47,31 @@ export default function MermaidDiagram({ source }: { source: string }) {
       try {
         const { default: mermaid } = await import('mermaid')
         mermaid.initialize({
-          // Layer 2 of the containment. `strict` is mermaid's own default, and it is written out
-          // here because this is the one setting whose default must never drift silently.
+          // Mermaid's default, written out so it cannot drift.
           securityLevel: 'strict',
           startOnLoad: false,
-          // `htmlLabels: false` on every family that offers it: a label rendered as HTML is a
-          // `<foreignObject>` full of markup, and DOMPurify's svg profile drops `foreignObject`
-          // outright -- so a label asked for in HTML would simply vanish. SVG `<text>` survives.
+          // An HTML label is a `<foreignObject>`, which the sanitiser drops; SVG `<text>` survives.
           htmlLabels: false,
           flowchart: { htmlLabels: false },
           class: { htmlLabels: false },
-          // Bounds on how much work one note can ask for. Mermaid's own defaults are 50000/500, and
-          // both keys are in mermaid's `secure` list, so a diagram cannot raise them back.
+          // Bounds on one note's work. Both keys are in mermaid's `secure` list, so a diagram
+          // cannot raise them.
           maxTextSize: 20000,
           maxEdges: 200,
           theme: 'base',
           themeVariables: themeVariables(),
         })
         const { svg } = await mermaid.render(id, source)
-        // `bindFunctions` is NOT called, on purpose: that is what turns a diagram's `click`
-        // directives into live listeners. See mermaidSvg.ts, layer 2.
+        // `bindFunctions` is never called: it turns a diagram's `click` directives into listeners.
         if (!live) return
         const node = host.current
         if (!node) return
-        // Adopted as NODES, never as a string: `purifyDiagram` returns the fragment DOMPurify
-        // built, so nothing is serialised and re-parsed between sanitising and displaying. The
-        // stylesheet is narrowed once the fragment is in the document, which is when it has a
-        // `.sheet` to narrow.
+        // Adopted as nodes, never re-parsed from a string; styles are scoped once in the document.
         node.replaceChildren(purifyDiagram(svg))
         scopeDiagramStyles(node, id)
         sizeDiagram(node)
         setState('ready')
       } catch (err) {
-        // A diagram that does not parse is a typo in a note, not a broken app. Say so, and keep
-        // the source visible so the typo can be found.
         if (!live) return
         setFailure(err instanceof Error ? err.message : "Couldn't draw the diagram")
         setState('failed')
@@ -115,9 +93,7 @@ export default function MermaidDiagram({ source }: { source: string }) {
           </pre>
         </div>
       )}
-      {/* Always mounted, and always empty as far as React is concerned: its children are the
-          sanitised fragment, put there by the effect above. React never renders into it, so the
-          two cannot fight over it. */}
+      {/* Empty to React: the effect fills it, so the two never fight over it. */}
       <div
         ref={host}
         data-note-diagram={state}

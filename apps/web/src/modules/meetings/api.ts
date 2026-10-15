@@ -8,7 +8,6 @@ import { queryOptions } from '@tanstack/react-query'
 import { ApiError, apiFetch, calendarOf } from '../../platform/http/api'
 import { addDays, shortDay } from '../../platform/time/dates'
 
-/** The meetings module's own namespace. */
 const BASE = '/meetings'
 
 type DayRange = { from: string; to: string }
@@ -18,10 +17,7 @@ async function listMeetings(range: DayRange): Promise<MeetingOccurrence[]> {
   return (await apiFetch<{ meetings: MeetingOccurrence[] }>(`${BASE}?${params}`)).meetings
 }
 
-/*
- * EVERY MEETINGS QUERY. Each key starts with `'meetings'`, so `[['meetings']]` awaits all of them,
- * the calendar's entries included.
- */
+// Every key starts with `'meetings'`, so `[['meetings']]` awaits all of them, calendar included.
 
 /** The occurrences in a range of days, in time order. */
 export const meetingsQuery = (range: DayRange) =>
@@ -64,7 +60,7 @@ export const seriesQuery = (meetingId: string, today: string) =>
     },
   })
 
-/** This module's dated things. The day, the clock and the origin zone are all the server's. */
+/** Calendar entries; the day, the clock and the origin zone are all the server's. */
 export const meetingCalendarQuery = (range: DayRange) =>
   queryOptions({
     queryKey: ['meetings', 'calendar', range.from, range.to],
@@ -92,12 +88,7 @@ export function cancelMeeting(
 export const DEFAULT_HOUR = 10
 export const DEFAULT_MINUTES = 60
 
-/**
- * THE REPEATS THE INTERFACE OFFERS, as the RFC strings they are.
- *
- * A small list, because these are the ones a person actually schedules; the column holds any
- * valid `RRULE`, so a rule this list does not name costs nothing in the data when it is wanted.
- */
+/** A repeat the interface offers, as its RFC string; the column holds any valid `RRULE`. */
 export type RepeatChoice = { value: string | null; label: string }
 
 const WEEKDAYS = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'] as const
@@ -127,7 +118,6 @@ export function repeatChoices(startsLocal: string): RepeatChoice[] {
   ]
 }
 
-/** `BYDAY`'s two-letter codes, as a person says them. */
 const DAY_NAME: Record<string, string> = {
   MO: 'Mon',
   TU: 'Tue',
@@ -145,26 +135,16 @@ const FREQ_NAME: Record<string, string> = {
   YEARLY: 'year',
 }
 
-/** 1st, 2nd, 3rd, 4th -- for the day of the month a monthly rule falls on. */
 function ordinal(d: number): string {
   const teen = d % 100 >= 11 && d % 100 <= 13
   const suffix = teen ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[d % 10] ?? 'th')
   return `${d}${suffix}`
 }
 
-/**
- * What a stored rule is CALLED.
- *
- * A rule the menu does not name is still said in words rather than shown as `FREQ=WEEKLY`: the
- * column accepts rules this interface does not offer, and an RFC string on screen is the data
- * model leaking into the page.
- */
+/** What a stored rule is called; one the menu does not offer is still said in words. */
 export function repeatLabel(rule: string | null, startsLocal: string, today: string): string {
   if (!rule) return 'Does not repeat'
-  // The ending is said separately, so a named rule is still recognised once it has one. It wears
-  // the app's one date wording, against the ACCOUNT's day: this file used to carry a second
-  // `shortDay` that compared the year against the browser's clock, which is the one clock nothing
-  // else in this app asks.
+  // The ending is said separately, so a named rule is still recognised once it has one.
   const ends = untilOf(rule)
   const tail = ends ? `, until ${shortDay(ends, today)}` : ''
   const named = repeatChoices(startsLocal).find((c) => c.value === withUntil(rule, null))
@@ -173,8 +153,7 @@ export function repeatLabel(rule: string | null, startsLocal: string, today: str
   const unit = freq ? FREQ_NAME[freq] : undefined
   if (!unit) return `Custom${tail}`
   const every = Number(/INTERVAL=(\d+)/i.exec(rule)?.[1] ?? 1)
-  // A weekly rule that names its days SAYS them: "Every week" for MO,TU,WE,TH,FR is true of the
-  // rule and useless about the meeting, which is the one thing the row is there to say.
+  // A weekly rule on several days names them: "Every week" for MO,TU,WE,TH,FR says nothing useful.
   const byDay = /BYDAY=([A-Z,]+)/i.exec(rule)?.[1]
   if (freq === 'WEEKLY' && byDay && byDay.includes(',')) {
     const named = byDay
@@ -187,14 +166,8 @@ export function repeatLabel(rule: string | null, startsLocal: string, today: str
 }
 
 /**
- * WHEN A REPEAT STOPS.
- *
- * `UNTIL` is stored in the SAME naive space as the series' own start (`occurrences.ts` builds
- * `DTSTART` from the wall clock and stamps it `Z`, then converts the results into the meeting's
- * zone afterwards). So the stamp here is the chosen LOCAL day at 23:59:59 with a `Z` on it: it
- * means "through the end of that day where the meeting is", which is what a person picking a
- * date means. A real UTC instant would end the series an evening early for anybody west of
- * Greenwich.
+ * `UNTIL` is in the same naive wall-clock space as the series' start, stamped `Z`: the chosen local
+ * day at 23:59:59. A real UTC instant would end the series an evening early west of Greenwich.
  */
 const UNTIL = /;?UNTIL=\d{8}T\d{6}Z/i
 

@@ -1,11 +1,6 @@
 import type { FlatRow } from './flatten'
 
-/**
- * Must match `MAX_DEPTH` in apps/api/src/modules/tasks/tree.ts. Duplicated rather than fetched
- * because it is a product rule, not configuration -- but if the API's value ever changes, this one
- * has to change with it, and the clamp below is what would otherwise silently start handing the
- * server drops it rejects.
- */
+/** Must match `MAX_DEPTH` in apps/api/src/modules/tasks/tree.ts, or the server refuses drops. */
 export const MAX_DEPTH = 10
 
 export type DropRequest = {
@@ -23,12 +18,8 @@ export type DropPlan =
   | { ok: false; reason: 'own-subtree' | 'too-deep' | 'unchanged' }
 
 /**
- * Translates a gesture into the arguments of one `POST /tasks/:id/move` call. Over flat rows a drop
- * is "between which two rows, how far indented" -- arithmetic, testable without a browser; the drag
- * UI only produces `slot` and `wantedDepth`.
- *
- * The guards are for the experience: the API enforces cycles, depth and project and answers 409,
- * but a gesture that is allowed and then snaps back is worse than one refused up front.
+ * Translates a drag into one move call. The API enforces the same rules, but a drop refused up
+ * front is better than one that is allowed and then snaps back.
  */
 export function planDrop(req: DropRequest): DropPlan {
   const { rows, draggedId, slot, wantedDepth } = req
@@ -36,8 +27,7 @@ export function planDrop(req: DropRequest): DropPlan {
   if (index < 0) return { ok: false, reason: 'unchanged' }
   const dragged = rows[index]!
 
-  // The dragged row's visible block: itself plus the contiguous rows deeper than it. Those
-  // travel with it, so they are not candidate neighbours.
+  // The dragged row's block, itself and the deeper rows right after it, travels with it.
   let end = index + 1
   while (end < rows.length && rows[end]!.depth > dragged.depth) end++
 
@@ -62,10 +52,8 @@ export function planDrop(req: DropRequest): DropPlan {
 
   // Upper bound from the row above: you may become its child, never deeper in one gesture.
   const maxByPrev = prev ? prev.depth + 1 : 1
-  // Upper bound from the subtree's own height. Mirrors the API's rule
-  // `parentDepth + liveHeight > MAX_DEPTH` -> rejected; the dragged row's new depth is
-  // `parentDepth + 1`, hence `MAX_DEPTH - (height - 1)`. A leaf (height 1) may reach MAX_DEPTH;
-  // a height-3 subtree may reach MAX_DEPTH - 2.
+  // Upper bound from the subtree's height, mirroring the API's `parentDepth + liveHeight >
+  // MAX_DEPTH` rejection: a leaf may reach MAX_DEPTH, a height-3 subtree MAX_DEPTH - 2.
   const maxByHeight = MAX_DEPTH - (dragged.subtreeHeight - 1)
   // Lower bound from the row below: going shallower would silently re-parent that row.
   const minDepth = next ? next.depth : 1
@@ -82,8 +70,7 @@ export function planDrop(req: DropRequest): DropPlan {
     return { ok: false, reason: 'unchanged' }
   }
 
-  // Position among the new parent's children. Exactly one of beforeId/afterId, or neither: the
-  // API rejects a body carrying both.
+  // Exactly one of beforeId/afterId, or neither: the API rejects a body carrying both.
   if (prev && prev.depth >= depth) {
     // The row follows whichever of prev's ancestors-or-self sits at the new depth.
     const afterId = ancestorAtDepth(rows, prev, depth)

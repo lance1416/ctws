@@ -9,40 +9,20 @@ import { noteSchema } from './schema'
 import './notes.css'
 
 /**
- * A NOTE, RENDERED. Reading mode's half of the Markdown work.
- *
- * WHAT IS IN THIS CHUNK AND WHAT IS NOT. This module is itself behind a dynamic import (see
- * `NoteBody`), so the app's first paint pays nothing for Markdown. Opening a task pays for THIS:
- * `react-markdown`, `remark-gfm`, `remark-math`'s parser and `rehype-sanitize`. The two expensive
- * renderers are held back one level further and are fetched per NOTE, not per app:
- *
- *   - `rehype-katex` + `katex` + KaTeX's stylesheet: only when `noteFeatures` finds maths.
- *   - `mermaid`: only when `noteFeatures` finds a `mermaid` fence.
- *   - `rehype-highlight` (highlight.js's common grammars): only when a fence carries a language.
- *
- * That split is asserted on the NETWORK in `notes.spec.ts`, not on
- * a flag -- a boolean that says "lazy" is exactly the thing that can be true while the bytes still
- * ship.
- *
- * `remark-math` is in the always-loaded half on purpose. It is the micromark extension (the
- * grammar), not the typesetter, and having it here is what lets `noteFeatures` answer "does this
- * note contain maths" with the SAME parser that will render it, instead of with a regex that would
- * drift. See `features.ts`.
+ * A note in reading mode. KaTeX, mermaid and highlight.js are fetched per note, only when
+ * `noteFeatures` finds maths, a mermaid fence or a fenced language.
  */
 
 const MermaidDiagram = lazy(() => import('./MermaidDiagram'))
 
-/** `rehype-sanitize` first, ALWAYS, and KaTeX after it. The order is argued in `schema.ts`. */
+/** `rehype-sanitize` always runs first, before KaTeX and highlight.js. */
 const BASE_REHYPE: PluggableList = [[rehypeSanitize, noteSchema]]
 const REMARK: PluggableList = [remarkGfm, remarkMath]
 
 const components: Components = {
   /**
-   * A FENCE. `pre` and not `code`, because a diagram replaces the whole block: a `<div>` returned
-   * from the `code` slot would be flow content inside `<pre>`, which is phrasing-only.
-   *
-   * The fence's text is read off the hast node rather than from `children`, because `children` is
-   * already React elements by the time this runs and mermaid needs the source.
+   * `pre`, not `code`: a diagram replaces the whole block, and a `<div>` inside `<pre>` is invalid.
+   * The source is read off the hast node because `children` are already React elements.
    */
   pre({ node, children }) {
     const first = node?.children?.[0]
@@ -63,15 +43,8 @@ const components: Components = {
     return <pre>{children}</pre>
   },
   /**
-   * GFM'S TASK-LIST CHECKBOX, AS A MARK RATHER THAN A CONTROL.
-   *
-   * GFM renders `- [x]` as `<input type="checkbox" disabled>`, and reading mode is pinned by
-   * `pane.spec.ts` to contain NOT ONE control, so nothing on screen can be changed by a mis-aimed
-   * click. A disabled checkbox would make that conditional on what a note happens to contain. It is also a control that does nothing, which is worse for a screen
-   * reader than a labelled image. Shape plus an accessible name, like `StatusMark`.
-   *
-   * “Checked” / “Empty” and not “Done” / “Not done”: accessible names share one flat namespace
-   * and are matched by substring, and Done is already a task STATUS on this very panel.
+   * GFM's task-list checkbox, drawn as a mark: reading mode holds no controls. Named Checked/Empty
+   * because accessible names match by substring, and Done is already a task status on this panel.
    */
   input({ checked }) {
     return (
@@ -94,8 +67,7 @@ const components: Components = {
       </span>
     )
   },
-  /** A link in a note goes OUT of the app, so it opens beside it and carries no referrer. The
-   * schema has already refused anything but http/https/mailto/irc/xmpp. */
+  /** A link in a note leaves the app, so it opens in a new tab with no referrer. */
   a({ href, children }) {
     return (
       <a href={href} target="_blank" rel="noreferrer noopener">
@@ -103,8 +75,7 @@ const components: Components = {
       </a>
     )
   },
-  /** A wide table scrolls itself rather than the pane: the pane's own measure must not grow, and
-   * no horizontal scrolling at 375px is pinned app-wide. */
+  /** A wide table scrolls itself, so the pane never scrolls sideways. */
   table({ children }) {
     return (
       <div className="max-w-full overflow-x-auto">
@@ -125,9 +96,7 @@ export default function NoteMarkdown({ source }: { source: string }): ReactNode 
     void (async () => {
       const [mod] = await Promise.all([
         import('rehype-katex'),
-        // KaTeX's own stylesheet, self-hosted like every other asset in this app: Vite emits it (and
-        // its faces) as content-hashed files served from this origin, never from a CDN. It is a
-        // dynamic import so it lands in THIS chunk and is requested with it.
+        // KaTeX's self-hosted stylesheet, fetched only with this chunk.
         import('katex/dist/katex.min.css'),
       ])
       if (live) setKatex([mod.default])
@@ -147,11 +116,8 @@ export default function NoteMarkdown({ source }: { source: string }): ReactNode 
           [
             mod.default,
             {
-              // Never guess. A fence with no language stays plain text (`features.ts` does not
-              // even flag it), and one whose language highlight.js does not know stays plain
-              // rather than being painted as whatever scored highest.
+              // Never guess: an unknown language stays plain text.
               detect: false,
-              // An unknown info string is not an error worth throwing a note's rendering away for.
               ignoreMissing: true,
             },
           ],
@@ -163,8 +129,7 @@ export default function NoteMarkdown({ source }: { source: string }): ReactNode 
     }
   }, [features.highlight, hljs])
 
-  // Until a renderer arrives, the block shows the author's own characters -- a flicker of plain
-  // text, which is honest and cheaper than a spinner. Sanitise FIRST in both cases: see schema.ts.
+  // Until a renderer arrives, the block shows the note's plain text.
   const rehypePlugins = [...BASE_REHYPE, ...(katex ?? []), ...(hljs ?? [])]
 
   return (

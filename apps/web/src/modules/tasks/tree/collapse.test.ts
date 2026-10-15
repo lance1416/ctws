@@ -28,9 +28,6 @@ describe('collapse state', () => {
     expect(loadCollapsed('p2').size).toBe(0)
   })
 
-  // Review Focus 6. In a private window, with site data cleared, or with storage disabled these
-  // accessors THROW. An uncaught throw blanks the whole page -- an absurd price for remembering
-  // which rows were folded.
   it('loadCollapsed returns an empty set when getItem throws', () => {
     vi.stubGlobal('localStorage', {
       getItem: () => {
@@ -61,7 +58,6 @@ describe('collapse state', () => {
       configurable: true,
     })
     expect(loadCollapsed('p1').size).toBe(0)
-    // Restore original descriptor
     if (originalDescriptor) {
       Object.defineProperty(globalThis, 'localStorage', originalDescriptor)
     } else {

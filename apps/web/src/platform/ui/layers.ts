@@ -1,8 +1,6 @@
 /**
- * What paints over what, in one place. A menu is always on top, since it paints over whatever
- * opened it. Radix wraps floating content in a positioned wrapper that is its own stacking context,
- * so the menu's number is also set on that wrapper in `styles.css`; `layers.test.ts` holds the two
- * together.
+ * What paints over what. Radix's popper wrapper is its own stacking context, so the menu's number
+ * is also set on it in `styles.css`.
  */
 export const LAYER = {
   /** The detail pane and modal dialogs, with their scrims. */
