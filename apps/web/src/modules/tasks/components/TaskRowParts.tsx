@@ -11,16 +11,14 @@ export const HANDLE_PX = 16
 export const CHEVRON_PX = 20
 
 /**
- * THE GROUND UNDER CONTROLS THAT APPEAR OVER A HOVERED ROW'S END: the sheet, opaque, with the
- * hover layer painted on it, so it matches the hovered row around it and HIDES the end of the
- * title beneath. The hover layer alone is 8% ink: through it the title's last words were drawn
- * under the buttons, both legible at once and neither. Rows that take this live on the sheet.
+ * The ground under controls shown over a hovered row's end: opaque sheet with the hover layer on
+ * it, so it matches the row and HIDES the title's end beneath (the 8% layer alone let it through).
  */
 export const OVER_ROW = 'bg-sheet shadow-[inset_0_0_0_100vmax_var(--color-hover)]'
 export const gutterPlus = (px: number) => `calc(var(--gutter) + ${px}px)`
 
 /**
- * How wide Done's list is. Its rows carry nothing on the right, so at 1440 an unbounded one puts
+ * How wide the Done view's list is. Its rows carry nothing on the right, so at 1440 an unbounded one puts
  * the end of a short title a long way from the margin it hangs on.
  */
 export const DONE_LIST_MEASURE = 'max-w-[36rem]'
@@ -50,11 +48,8 @@ function Glyph({ children }: { children: ReactNode }) {
 }
 
 /**
- * A deadline's glyph: a flag on a pole. Upright, with a vertical silhouette.
- *
- * The two date semantics must not differ by HUE ALONE. They differ in three
- * channels: the words ("due" against "planned"), the colour family (warm against cool) and -- this
- * -- the shape. A flag is a line you must not cross; it is filled once the line has been crossed.
+ * A deadline's glyph: an upright flag, filled once the line has been crossed. A deadline and a plan
+ * differ by word, by colour family and by this silhouette, never by hue alone.
  */
 export function DeadlineMark({ filled }: { filled: boolean }) {
   return (
@@ -128,10 +123,7 @@ export function RowMeta({
   age?: string | null
   /** "60% · 2 in progress · 1 overdue" for a row that HAS CHILDREN. */
   rollup?: string | null
-  /**
-   * "Waiting on <task>" -- what this row is waiting for, named. FIRST ON THE LINE, and never
-   * dropped: it says whether the row can be worked on at all.
-   */
+  /** "Blocked by …": first on the line and never dropped -- it says whether the row can be worked on. */
   blocked?: string | null
 }) {
   const parts = [
@@ -183,10 +175,7 @@ export function RowMeta({
   )
 }
 
-/**
- * THE NOTE ON THE RIGHT: one short phrase at the end of the title's line -- how late, how far
- * along, where a meeting is in its own zone. Never wraps; never more than one.
- */
+/** THE NOTE ON THE RIGHT: one short phrase at the end of the title's line -- how late. Never wraps. */
 export function RowNote({
   children,
   tone = 'text-ink-subtle',
@@ -205,8 +194,7 @@ export function RowNote({
   )
 }
 
-/** A momentary "Saved" after a save from the detail panel. It sits inline after the title rather
- * than in a column, so it never reserves width and never moves one. */
+/** A momentary "Saved" after a save from the pane, inline after the title: it reserves no width. */
 export function SavedMark() {
   return (
     <span role="status" className="ml-2 shrink-0 text-sm font-normal text-ink-muted">

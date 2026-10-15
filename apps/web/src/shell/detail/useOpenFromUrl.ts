@@ -23,8 +23,7 @@ export function useOpenFromUrl<T>({
 }) {
   const { id: openId = null } = useParams()
   const navigate = useNavigate()
-  const open =
-    openId === null ? null : (list.data?.find((item) => idOf(item) === openId) ?? null)
+  const open = openId === null ? null : (list.data?.find((item) => idOf(item) === openId) ?? null)
   const gone = openId !== null && list.isSuccess && open === null
   useForgetWhenGone(type, openId, gone)
   return {

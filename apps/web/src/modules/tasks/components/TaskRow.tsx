@@ -6,7 +6,7 @@ import type { FlatRow } from '../tree/flatten'
 import { toggleDoneTarget, toggleStartTarget } from '../api/taskActions'
 import { blockedLabel } from '../blockedLabel'
 import { todayIn } from '../../../platform/time/dates'
-import { capturedLabel, dateHints } from '../dueDates'
+import { capturedLabel, lateNote } from '../dueDates'
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { leadFor } from '../../../shell/rows/leads'
 import { RowLead } from '../../../shell/rows/RowLead'
@@ -42,7 +42,7 @@ type Props = {
   rollup: string | null
   /** What is still in the way. The row dims; it does not disappear. */
   blockedBy: readonly { id: string; title: string }[] | undefined
-  /** True for a moment after a save from the detail panel: the panel closed, this says it worked. */
+  /** True for a moment after a save from the pane: the row says it worked. */
   saved: boolean
   /**
    * The roving tabindex: exactly one row in the tree carries it, so the whole tree is ONE tab
@@ -116,7 +116,7 @@ export function TaskRow({
   // the page contradicting itself.
   const timeZone = useTimeZone()
   const now = useNow()
-  const hints = dateHints({ status, dueAt, scheduledOn }, timeZone, now)
+  const late = lateNote({ status, dueAt }, timeZone, now)
   // A settled task's dates no longer tell the reader anything: its margin is empty.
   const lead = inactive ? null : leadFor({ dueAt, scheduledOn }, todayIn(timeZone, now), timeZone)
 
@@ -259,7 +259,7 @@ export function TaskRow({
           />
         </span>
         {/* How late, on the right: the margin says which day it was due. */}
-        {hints.due?.late && <RowNote tone="text-missed">{hints.due.late}</RowNote>}
+        {late && <RowNote tone="text-missed">{late}</RowNote>}
         {/* THE TWO HOVER CONTROLS RESERVE NO WIDTH. Invisible until the row is hovered, over the
             body rather than in it, so a truncated title's end is covered (`OVER_ROW`, opaque) rather
             than jostled when the pointer arrives. `static` again where there is no hover, since

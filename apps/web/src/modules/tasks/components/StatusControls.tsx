@@ -13,12 +13,10 @@ export function StatusButton({
   status,
   title,
   onClick,
-  className = '',
 }: {
   status: TaskStatus
   title: string
   onClick: () => void
-  className?: string
 }) {
   const inactive = isFinished(status)
   return (
@@ -28,7 +26,7 @@ export function StatusButton({
       data-status-button
       aria-label={inactive ? `Reopen “${title}”` : `Complete “${title}”`}
       onClick={onClick}
-      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md hover:bg-hover ${className}`}
+      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md hover:bg-hover`}
     >
       <StatusMark status={status} />
     </button>
@@ -40,12 +38,10 @@ export function StartButton({
   status,
   title,
   onClick,
-  className = '',
 }: {
   status: TaskStatus
   title: string
   onClick: () => void
-  className?: string
 }) {
   const running = status === 'in_progress'
   return (
@@ -55,7 +51,7 @@ export function StartButton({
       data-start-button
       aria-label={running ? `Pause “${title}”` : `Start “${title}”`}
       onClick={onClick}
-      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-muted hover:bg-hover hover:text-ink ${className}`}
+      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-muted hover:bg-hover hover:text-ink`}
     >
       <svg
         viewBox="0 0 16 16"

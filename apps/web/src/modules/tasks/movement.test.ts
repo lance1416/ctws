@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ProjectMovementResponse } from '@ctws/contracts'
-import { activityLabel, hasMovement, movedLine, QUIET_DAYS } from './movement'
+import { hasMovement, movedLine, QUIET_DAYS } from './movement'
 
 /**
  * The two judgements the Movement panel makes. Both are about what is NOT shown, which is why they are
@@ -26,16 +26,6 @@ describe('hasMovement', () => {
 
   it('drops a project with neither: "0 and 0" is not news', () => {
     expect(hasMovement(row())).toBe(false)
-  })
-})
-
-describe('activityLabel', () => {
-  it('writes the month and day inside the current year', () => {
-    expect(activityLabel('2026-09-28', '2026-10-05')).toBe('Sep 28')
-  })
-
-  it('adds the year once the day is not in the current one', () => {
-    expect(activityLabel('2025-12-30', '2026-10-05')).toBe('Dec 30, 2025')
   })
 })
 

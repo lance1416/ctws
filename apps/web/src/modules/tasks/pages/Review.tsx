@@ -138,9 +138,7 @@ export function Review() {
       <div className={`${HANG} flex flex-wrap items-center gap-x-3 gap-y-2`}>
         <PageHead>Review</PageHead>
         <ViewTabs views={VIEWS} current={view} onPick={pickView} />
-        {/* THE WEEK, as one control. It used to be a date range printed as text with a lone
-            "Last week" button pushed to the far right -- two halves of one idea, dressed as two
-            unrelated things, and no way forward once you had gone back. */}
+        {/* THE WEEK, as one control: back, the window, forward (which stops at this week). */}
         {view === 'week' && data && (
           // Its own line when the title row has no room (a phone): it wraps, never overflows.
           <div className="ml-auto flex flex-wrap items-center gap-1">

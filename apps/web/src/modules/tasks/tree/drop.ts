@@ -23,17 +23,12 @@ export type DropPlan =
   | { ok: false; reason: 'own-subtree' | 'too-deep' | 'unchanged' }
 
 /**
- * Translates a gesture into the arguments of one `POST /tasks/:id/move` call.
+ * Translates a gesture into the arguments of one `POST /tasks/:id/move` call. Over flat rows a drop
+ * is "between which two rows, how far indented" -- arithmetic, testable without a browser; the drag
+ * UI only produces `slot` and `wantedDepth`.
  *
- * This is the whole reason the tree renders as flat rows: a drop becomes "between which two rows,
- * and how far indented", which is arithmetic that can be tested exhaustively without a browser.
- * The drag UI's only job is to produce `slot` and `wantedDepth`.
- *
- * **The guards here are about the experience, not about correctness.** The API enforces the
- * cycle, depth and project_id invariants and will answer 409; M2a's final review found a real
- * defect precisely because something assumed an upper layer had already checked. But a UI that
- * lets you make an illegal gesture and then snaps back is bad, so the illegal ones are refused
- * before they are attempted.
+ * The guards are for the experience: the API enforces cycles, depth and project and answers 409,
+ * but a gesture that is allowed and then snaps back is worse than one refused up front.
  */
 export function planDrop(req: DropRequest): DropPlan {
   const { rows, draggedId, slot, wantedDepth } = req

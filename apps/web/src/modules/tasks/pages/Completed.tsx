@@ -12,18 +12,16 @@ import { RowLead } from '../../../shell/rows/RowLead'
 import { StatusButton } from '../components/StatusControls'
 import { TaskDetail } from '../components/TaskDetail'
 import { useFocusAfterRemoval } from '../components/useFocusAfterRemoval'
-import { addDays, clockTime, MONTHS, todayIn } from '../../../platform/time/dates'
+import { addDays, clockTime, MONTHS, todayIn, weekdayOf } from '../../../platform/time/dates'
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { useNow } from '../../../platform/time/useNow'
 import { QueryStatus } from '../../../platform/ui/QueryStatus'
 import { HANG } from '../../../platform/ui/hang'
 
-const WEEKDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-
 /** "Fri, Oct 2", with the year when it is not this year; the day is a calendar day, not an instant. */
 function dayHeading(day: string, today: string): string {
   const [y, m, d] = day.split('-').map(Number) as [number, number, number]
-  const weekday = WEEKDAY[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]
+  const weekday = weekdayOf(day, true)
   const date =
     today.slice(0, 4) === day.slice(0, 4) ? `${MONTHS[m - 1]} ${d}` : `${MONTHS[m - 1]} ${d}, ${y}`
   const near = day === today ? 'Today · ' : day === addDays(today, -1) ? 'Yesterday · ' : ''

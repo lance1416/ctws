@@ -1,9 +1,6 @@
 /**
- * "Waiting on <task>" — what a row is waiting for, in one phrase.
- *
- * NAMES THE FIRST ONE, counts the rest. A row that only said "waiting on 3 things" would send the
- * reader into the detail pane to learn anything at all, and the usual case is one blocker, where
- * naming it answers the question on the spot. The pane has the full list.
+ * "Blocked by “<task>”" -- what a row waits for, in one phrase. Names the first and counts the
+ * rest: the usual case is one, and naming it answers the question without opening the pane.
  */
 export function blockedLabel(
   blockers: readonly { id: string; title: string }[] | undefined,

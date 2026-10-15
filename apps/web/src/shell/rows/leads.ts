@@ -1,6 +1,6 @@
 import { TZDate } from '@date-fns/tz'
 import { format } from 'date-fns'
-import { addDays, fullDay, monthDay } from '../../platform/time/dates'
+import { addDays, fullDay, monthDay, weekdayOf } from '../../platform/time/dates'
 
 /**
  * THE MARGIN: what a row says about WHEN, in front of everything else on it.
@@ -24,16 +24,12 @@ export type LeadTone = 'missed' | 'deadline' | 'plan' | 'time' | 'quiet'
 /** What goes in the margin. `exact` is the moment in full, for the title. */
 export type Lead = { text: string; tone: LeadTone; flag: boolean; exact?: string }
 
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
-
 /** A day in the week ahead is its weekday; anything else is its date. */
 const weekdayOrDate = (day: string, today: string) =>
-  day > today && day <= addDays(today, 6)
-    ? WEEKDAYS[new Date(`${day}T00:00:00Z`).getUTCDay()]!
-    : monthDay(day)
+  day > today && day <= addDays(today, 6) ? weekdayOf(day, true) : monthDay(day)
 
 export function leadFor(
-  row: { dueAt: string | null; scheduledOn: string | null; at?: string | null },
+  row: { dueAt: string | null; scheduledOn: string | null },
   today: string,
   tz: string,
 ): Lead | null {
@@ -59,9 +55,6 @@ export function leadFor(
     const text = day === today ? 'Today' : weekdayOrDate(day, today)
     return { text, tone: 'plan', flag: false, exact: `Planned for ${fullDay(day)}` }
   }
-  if (row.at) {
-    return { text: format(new TZDate(new Date(row.at), tz), 'HH:mm'), tone: 'time', flag: false }
-  }
   return null
 }
 
@@ -86,9 +79,7 @@ export function deadlineDayLead(day: string, today: string): Lead {
  */
 export function weekDayWord(day: string, today: string, from: string): string {
   if (day === today) return 'Today'
-  return day >= from && day < today
-    ? WEEKDAYS[new Date(`${day}T00:00:00Z`).getUTCDay()]!
-    : monthDay(day)
+  return day >= from && day < today ? weekdayOf(day, true) : monthDay(day)
 }
 
 /**

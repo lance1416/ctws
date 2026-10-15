@@ -1,22 +1,12 @@
 import type { TaskStatus } from '@ctws/contracts'
 import { isFinished, STATUS_LABEL } from '../status'
 
-// Status is told apart by shape, not colour (WCAG 1.4.1): a hollow ring has not started, a ring
-// filled on its right half is being worked on -- half way, which is what "in progress" says -- and
-// a disc with a check is done. Backlog is a dashed ring, cancelled a struck ring. Only ink and
-// ink-muted are used, so no status needs a hue of its own.
-//
-// The mark is the app's core semantic, so it carries weight: 20px of 2px stroke, with a LIVE task
-// (To do / In progress) drawn in full `ink` while a settled one (Done / Cancelled) stays muted.
-// That is weight by stroke, size and value -- still no hue, so the rule that status is carried by
-// shape is intact.
-//
-// The stroke is 2px and the SIZE is 20. 20 and not 17: 17 is what a 16px mark steps up to, and
-// this one is 18, so the same one step up gives 20. 17 would shrink the core semantic and leave a
-// 20px glyph-well sitting in a 46px row.
-// The half, the disc and the check are always rendered and fade or scale in, so the 120ms echo of
-// a status change is a transition on a persistent element rather than a mount.
-
+/**
+ * A task's status, by SHAPE, never by hue (WCAG 1.4.1): a hollow ring not started, half filled in
+ * progress, a disc with a check done, dashed for backlog, struck for cancelled. 20px at a 2px
+ * stroke; a live task in full ink, a settled one muted. The parts are always drawn and fade or
+ * scale in, so a change is a transition, not a remount.
+ */
 export function StatusMark({ status }: { status: TaskStatus }) {
   const half = status === 'in_progress'
   const solid = status === 'done'

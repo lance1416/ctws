@@ -71,6 +71,14 @@ export function monthDay(day: string): string {
   return `${MONTHS[m - 1]} ${d}`
 }
 
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+/** The weekday `day` falls on: "Monday", or "Mon" when `short`. */
+export function weekdayOf(day: string, short = false): string {
+  const name = WEEKDAYS[new Date(`${day}T12:00:00Z`).getUTCDay()]!
+  return short ? name.slice(0, 3) : name
+}
+
 export function dayPhrase(day: string, today: string): string {
   if (day === today) return 'Today'
   if (day === addDays(today, 1)) return 'Tomorrow'

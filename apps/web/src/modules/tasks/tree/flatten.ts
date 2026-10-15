@@ -45,7 +45,7 @@ export function flatten(nodes: readonly TaskNode[], collapsed: ReadonlySet<strin
   const byRankThenId = (a: TaskNode, b: TaskNode) =>
     a.rank < b.rank ? -1 : a.rank > b.rank ? 1 : a.id < b.id ? -1 : 1
 
-  // (rank, id): ranks are not unique, and id is the documented tiebreak (spec 5.3).
+  // (rank, id): ranks are not unique, and the id breaks ties, as the server orders them.
   for (const list of children.values()) {
     list.sort(byRankThenId)
   }

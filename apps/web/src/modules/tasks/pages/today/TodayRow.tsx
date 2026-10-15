@@ -9,7 +9,7 @@ import { StartButton, StatusButton } from '../../components/StatusControls'
 import { opensOnClick, RowMeta, RowNote, SavedMark } from '../../components/TaskRowParts'
 import { TriageControl } from '../../components/TriageControl'
 import { taskCrumb } from '../../crumb'
-import { dateHints } from '../../dueDates'
+import { lateNote } from '../../dueDates'
 import { triageSections, type TriagePatch } from '../../triage'
 
 /**
@@ -44,7 +44,7 @@ export function TodayRow({
   /** A triage action ran; its menu is gone, so focus needs somewhere to go. */
   onRan: () => void
 }) {
-  const hints = dateHints(t, timeZone, now)
+  const late = lateNote(t, timeZone, now)
   // A plan for a day already gone, still not done: carried over, and said so on the right.
   const carried = t.segment === 'today' && t.scheduledOn !== null && t.scheduledOn < today
   const sections = triageSections(t, carried ? 'Carried over' : null, today, timeZone, onPatch)
@@ -97,7 +97,7 @@ export function TodayRow({
           </span>
           <RowMeta breadcrumb={taskCrumb(t)} blocked={blockedLabel(t.blockedBy)} />
         </button>
-        {hints.due?.late && <RowNote tone="text-missed">{hints.due.late}</RowNote>}
+        {late && <RowNote tone="text-missed">{late}</RowNote>}
         {carried && (
           <span
             data-date-hint="carried"

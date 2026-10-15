@@ -24,34 +24,18 @@ import {
 import { DialogFooter } from '../../../platform/ui/DialogFooter'
 import { useNow } from '../../../platform/time/useNow'
 
-/**
- * NEW TASK: a task created WITH its details, in one request.
- *
- * It is an ADDITION, never a replacement. Typing one line and pressing Enter is a success
- * criterion of this project, so the quick-capture box and the project page's new-task box are
- * untouched: this is the other half of the same job -- the task you already know the shape of,
- * which otherwise costs a create, a click into the pane, an edit and a save.
- *
- * ONE request, not a POST then a PATCH: the create contract already accepts status, both dates and
- * the notes, so a half-made task never exists on the server and nothing has to be rolled back if
- * the second call fails.
- *
- * `⌘↵` / `Ctrl+↵` creates and STAYS, with the title cleared and refocused. Adding several in a row
- * is the real use of a dialog like this, and the rest of the form (project, parent, status, the
- * dates) is deliberately kept: they are what the next few tasks have in common. The notes are kept
- * too, and visibly so -- the textarea still shows them -- because the spec says the title is what
- * clears and a field quietly emptying itself is worse than one that did not.
- *
- * THE FORM IS `react-hook-form`'S, AND THE VALIDATION IS THE CONTRACT'S. Seven `useState`s, a
- * hand-written “Title is required” rule and a hand-assembled request body are gone: the form's values ARE
- * `createTaskBody`'s shape, `zodResolver(createTaskForm)` is the only thing that decides whether
- * they may be sent, and what `handleSubmit` hands over is the schema's own parsed output -- already
- * trimmed, already defaulted -- so the body is passed on rather than built a second time. The two
- * date buttons' values go through `setValue` rather than an input, because a named day is a
- * DECISION pressed, not a field typed into; that is what `Controller`/`setValue` exist for.
- */
 /** `PickOne` has no null value, and the contract takes a uuid or null -- never the empty string. */
 const TOP_LEVEL = '__top'
+
+/**
+ * NEW TASK: a task created with its details, in one request (the create contract takes status,
+ * dates and notes, so no half-made task ever exists). Beside the one-line boxes, not instead of
+ * them: this is for the task whose shape you already know.
+ *
+ * `⌘↵` / `Ctrl+↵` creates and STAYS: the title clears and takes focus, and everything else --
+ * project, parent, status, dates, notes -- is kept, being what the next few tasks share. The form's
+ * values are the contract's shape and the resolver is the only judge of them.
+ */
 
 export function CreateTaskDialog({
   projectId,
@@ -66,13 +50,8 @@ export function CreateTaskDialog({
   const timeZone = useTimeZone()
   const todayYmd = todayIn(timeZone, useNow())
 
-  /**
-   * The deadline is chosen as a DAY and held as the INSTANT the contract wants, assembled the
-   * moment the day is pressed instead of on submit. The dialog offers named days only (an exact
-   * minute belongs in the detail pane), and a new deadline means "by the end of that day" -- the
-   * same 23:59 the pane picks when there was no time to keep. Holding the instant is what lets the
-   * form's values be the request body with nothing left to assemble.
-   */
+  // The deadline is chosen as a named day and held as the instant the contract takes: the end of
+  // that day, as in the pane. The exact minute belongs in the pane.
   const {
     register,
     handleSubmit,

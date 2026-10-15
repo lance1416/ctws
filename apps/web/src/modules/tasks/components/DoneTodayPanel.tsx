@@ -7,15 +7,11 @@ import { StatusMark } from './StatusMark'
 import { DaySection } from '../../../shell/rows/DaySection'
 
 /**
- * DONE TODAY: the fourth question the workbench answers -- "what did I do".
+ * DONE TODAY: what I did. The same list as Review's Done view, on the day the SERVER filed each
+ * task under (`completedOn`, in the account's zone) -- never a day re-derived from the browser.
  *
- * It reads the SAME list as Review's Done view (`completedQuery`), and takes the day the SERVER
- * assigned (`completedOn`, computed in the account's timezone). It does not re-derive "today"
- * from the browser clock: a task finished at 23:30 local must not fall off this panel because
- * the database runs in UTC, and that decision already exists one layer down.
- *
- * The rows are not interactive here. Restoring a task is a Done-page action and a mis-aimed
- * click on a glance panel should not un-finish work; the panel's footer link is the way through.
+ * The rows are not interactive: a mis-aimed click on a glance should not un-finish work. "All", in
+ * the heading, is the way to the Done view, where a task can be restored.
  */
 export function DoneTodayPanel({
   tasks,

@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import { birthdayCalendar, birthdaysKey, listBirthdays } from './api/birthdays'
 import { listPeople, peopleKey, searchPeople } from './api/people'
 import { PanelEmpty } from '../../platform/ui/Panel'
-import { countdownPhrase, shortDay } from '../../platform/time/dates'
+import { countdownPhrase, shortDay, weekdayOf } from '../../platform/time/dates'
 import { Birthdays } from './pages/Birthdays'
 import { People } from './pages/People'
 import type { SearchHit, WorkspaceModule } from '../../shell/contract'
@@ -114,9 +114,6 @@ function BirthdayCard() {
     </div>
   )
 }
-
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
-const weekdayOf = (day: string) => WEEKDAYS[new Date(`${day}T00:00:00Z`).getUTCDay()]!
 
 /** Things' count for people: how many there are. The kind's name already says what of. */
 function PeopleCount() {

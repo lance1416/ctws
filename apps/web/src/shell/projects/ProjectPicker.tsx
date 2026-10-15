@@ -8,10 +8,7 @@ const NONE = '__no-project'
 export function ProjectChip({ projectId }: { projectId: string }) {
   const rail = useProjectRail()
   return (
-    <span
-      aria-hidden="true"
-      className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(projectId)}`}
-    />
+    <span aria-hidden="true" className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(projectId)}`} />
   )
 }
 

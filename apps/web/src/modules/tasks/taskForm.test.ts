@@ -53,7 +53,7 @@ describe('the create form validates with the create CONTRACT', () => {
   it('refuses an empty title, and a whitespace-only one, with the contract’s own code', async () => {
     for (const title of ['', '   ', '　']) {
       const out = await resolveCreate(draft({ title }))
-      expect(out.values, `「${title}」 must not become a request body`).toEqual({})
+      expect(out.values, `"${title}" must not become a request body`).toEqual({})
       // `too_small` is the code the contract's `.trim().min(1)` produces. The app's sentence is
       // keyed on it rather than hard-wired beside it.
       expect(out.errors.title?.type).toBe('too_small')

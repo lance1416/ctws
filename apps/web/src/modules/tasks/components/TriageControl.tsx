@@ -18,28 +18,12 @@ type Props = {
 }
 
 /**
- * The way out of an overdue or carried row, as ONE control.
+ * The way out of an overdue or carried row, as ONE control: a disclosure of named decisions ("push
+ * the deadline to next Monday", "make it a plan instead"), not a cluster of links on every late row
+ * and not a date picker, which cannot say "make this a plan" at all. The exact date is in the pane.
  *
- * ONE TRIGGER, not seven inline text links (push to tomorrow, to next week, clear the deadline,
- * turn it into a plan for today, tomorrow or next week) on an overdue row and five more on a
- * carried one. Those are the app's capabilities tipped onto the row, which is what the redesign
- * plan names as making a screen look like a demo.
- *
- * Why a disclosure and not a revealed cluster or a native date picker:
- * - A cluster revealed on hover or focus would still be six controls wide once revealed, and on a
- *   screen where ten rows are overdue it would mean sixty live controls one mouse-move away. The
- *   row has to be CALM at rest; the triage is a deliberate act, not an ambient one.
- * - A date picker is the wrong shape for this job. Every one of these actions is a named decision
- *   ("push the deadline to next Monday", "this deadline is not a deadline any more, it is a plan")
- *   and two of them change two fields in one request. A calendar makes the user compute the date
- *   and cannot express "make this a plan instead" at all. The exact date is in the detail panel.
- *
- * Constraints it meets:
- * - The trigger occupies a FIXED slot that is reserved whether or not the row has triage, and the
- *   panel is absolutely positioned, so nothing on the row moves when it opens.
- * - It is keyboard-reachable (the trigger is in the tab order), Escape closes it and returns focus
- *   to the trigger, tabbing out of it closes it, and focus never lands on <body>.
- * - No browser modal: `window.confirm` and friends block this project's automation.
+ * The trigger keeps a fixed slot and the panel is positioned over the row, so nothing moves when it
+ * opens; Escape and tabbing out close it, and focus never lands on <body>.
  */
 export function TriageControl({ groupLabel, triggerLabel, sections, onRan }: Props) {
   const [open, setOpen] = useState(false)

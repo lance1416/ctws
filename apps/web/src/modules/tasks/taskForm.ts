@@ -1,61 +1,28 @@
 /**
- * The two editing surfaces' FORM SCHEMAS -- which are the wire contracts themselves, not a second
- * copy of them.
- *
- * `@ctws/contracts` already owns what a task may be: `createTaskBody` trims and bounds the title,
- * shapes a calendar day, demands an offset-bearing instant, and is `.strict()`. A hand-written
- * rule beside it in the form (`if (!title.trim()) …`) is a second place for the two to disagree,
- * and the disagreement shows up as a 400 from the server rather than as a word in the form.
- * Handing the SAME schema to `zodResolver` means widening or narrowing the contract and having
- * both forms follow on the next render, with no edit here.
- *
- * What stays ours is the WORDING. A resolver reports `too_small`; “Title is required” is a product
- * decision and no schema will make it. So the schema decides WHETHER, and `titleProblem` decides
- * WHAT IT SAYS -- keyed on the issue code the schema produced, so a new kind of refusal cannot
- * silently inherit the wrong sentence.
+ * The task forms' schemas are the wire contracts themselves, so the forms refuse exactly what the
+ * server would. What stays here is the wording (`titleProblem`).
  */
 import { createTaskBody, updateTaskBody, type UpdateTaskBody } from '@ctws/contracts'
 import { z } from 'zod'
 
-/**
- * The New task dialog's schema. The create contract unchanged: `manualProgress` is simply never in the
- * form's values, and `.strict()` is what guarantees a field added to the form without being added
- * to the contract fails loudly here instead of quietly on the server.
- */
+/** The New task dialog's schema: the create contract, unchanged. */
 export const createTaskForm = createTaskBody
-
-/**
- * The INPUT type, not the output: `status` carries `.default('backlog')` and the title is trimmed
- * by a transform, so what the form holds and what the resolver hands to the submit handler are two
- * different types. React Hook Form holds the former.
- */
+/** What the form holds (the schema's input) and what the resolver hands over (its output). */
 export type CreateTaskForm = z.input<typeof createTaskBody>
-/** What the resolver produces once the schema has run: trimmed title, defaulted status. */
 export type CreateTaskValues = z.output<typeof createTaskBody>
 
 /**
- * The detail pane's schema: the update contract (`.partial()`, but the form always holds every
- * field, so the title's `min(1)` always applies) PLUS the one thing the pane edits that a PATCH
- * cannot carry. `updateTaskBody` omits `projectId` on purpose -- moving a task across projects
- * cascades to its subtree and is the MOVE endpoint's job -- but the pane edits the project in the
- * same form and saves it with the same press, so the FORM has a field the BODY does not. Extending
- * the contract rather than restating it keeps that one difference visible and one line long.
+ * The pane's schema: the update contract plus the project, which the pane edits in the same form
+ * but which no PATCH carries -- moving a task is the move endpoint's job.
  */
 export const detailTaskForm = updateTaskBody.extend({ projectId: z.uuid() })
 export type DetailTaskForm = z.input<typeof detailTaskForm>
 export type DetailTaskValues = z.output<typeof detailTaskForm>
 
-/**
- * The keys a PATCH may carry, read off the contract rather than listed again. This is what turns
- * `dirtyFields` into a request body, so a field added to the form does not also have to be added
- * to a hand-written comparison in the pane.
- */
+/** The keys a PATCH may carry, read off the contract: what turns `dirtyFields` into a body. */
 export const PATCH_KEYS = Object.keys(updateTaskBody.shape) as (keyof UpdateTaskBody)[]
 
-/**
- * The app's own sentence for a title the SCHEMA refused, keyed on the issue code it refused with.
- * `undefined` in, `null` out: no refusal, nothing to say.
- */
+/** The app's sentence for a title the schema refused, keyed on the issue code. */
 export function titleProblem(code: string | undefined): string | null {
   if (code === undefined) return null
   if (code === 'too_big') return 'Title is too long'

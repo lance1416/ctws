@@ -50,78 +50,48 @@ describe('calendar arithmetic', () => {
   })
 })
 
-describe('dateHints', () => {
-  const task = (over: Partial<{ status: TaskStatus; dueAt: string; scheduledOn: string }>) => ({
+describe('lateNote', () => {
+  const task = (over: Partial<{ status: TaskStatus; dueAt: string }>) => ({
     status: 'todo' as TaskStatus,
     dueAt: null,
-    scheduledOn: null,
     ...over,
   })
 
-  it('shows nothing for a dateless task and for finished ones, however overdue', async () => {
-    const { dateHints } = await load()
-    expect(dateHints(task({}), TZ, NOW())).toEqual({ scheduled: null, due: null })
+  it('says nothing for a dateless task, nor for finished ones however late', async () => {
+    const { lateNote } = await load()
+    expect(lateNote(task({}), TZ, NOW())).toBeNull()
     const old = '2026-09-01T00:00:00.000Z'
     for (const status of ['done', 'cancelled'] as const)
-      expect(dateHints(task({ status, dueAt: old, scheduledOn: '2026-10-04' }), TZ, NOW())).toEqual(
-        {
-          scheduled: null,
-          due: null,
-        },
-      )
+      expect(lateNote(task({ status, dueAt: old }), TZ, NOW())).toBeNull()
   })
 
-  it('an overdue deadline says WHICH one it was, to the minute, and how late it is', async () => {
-    const { dateHints } = await load()
+  it('an overdue deadline says how late it is, in calendar days', async () => {
+    const { lateNote } = await load()
     // 2026-10-01 09:00 local is two calendar days before the 3rd.
-    const due = new Date(2026, 9, 1, 9, 0).toISOString()
-    // BOTH HALVES. "2 days late" alone is what fits an 8rem cell; the words are on a line of
-    // their own, and the lateness on its own cannot answer "due when?" -- which is the
-    // compression the user rejected.
-    expect(dateHints(task({ dueAt: due }), TZ, NOW()).due).toEqual({
-      text: 'Due Oct 1, 09:00',
-      late: '2 days late',
-      overdue: true,
-    })
+    expect(lateNote(task({ dueAt: new Date(2026, 9, 1, 9, 0).toISOString() }), TZ, NOW())).toBe(
+      '2 days late',
+    )
   })
 
-  it('a deadline earlier today is not overdue (the server cascade only tests the day boundary)', async () => {
-    const { dateHints } = await load()
-    const due = new Date(2026, 9, 3, 8, 0).toISOString()
-    expect(dateHints(task({ dueAt: due }), TZ, NOW()).due).toEqual({
-      text: 'Due today, 08:00',
-      late: null,
-      overdue: false,
-    })
+  it('a deadline earlier today is not late (the server only tests the day boundary)', async () => {
+    const { lateNote } = await load()
+    expect(
+      lateNote(task({ dueAt: new Date(2026, 9, 3, 8, 0).toISOString() }), TZ, NOW()),
+    ).toBeNull()
+    expect(
+      lateNote(task({ dueAt: new Date(2026, 9, 8, 9, 0).toISOString() }), TZ, NOW()),
+    ).toBeNull()
   })
+})
 
-  it('a future deadline keeps its clock too, and a scheduled day gets its own phrase', async () => {
-    const { dateHints } = await load()
-    const due = new Date(2026, 9, 8, 9, 0).toISOString()
-    expect(dateHints(task({ dueAt: due, scheduledOn: '2026-10-04' }), TZ, NOW())).toEqual({
-      scheduled: 'Planned for tomorrow',
-      // A day with no time ("Due Oct 8") is not complete to the minute, and the row says the
-      // minute.
-      due: { text: 'Due Oct 8, 09:00', late: null, overdue: false },
-    })
-  })
-
+describe('instantPhrase', () => {
   it('a deadline a minute before midnight still says 23:59, not the next day', async () => {
-    const { dateHints } = await load()
+    const { instantPhrase } = await load()
     // A clock printed from a UTC getter in +05:30 would read 18:29 here, and a rounded one 00:00
-    // of the 9th. The minute is the thing being pinned, so it is pinned at the hardest minute
-    // there is.
-    const due = new Date(2026, 9, 8, 23, 59).toISOString()
-    expect(dateHints(task({ dueAt: due }), TZ, NOW()).due!.text).toBe('Due Oct 8, 23:59')
-  })
-
-  it('an overdue task that has been rescheduled shows both', async () => {
-    const { dateHints } = await load()
-    const due = new Date(2026, 9, 1, 9, 0).toISOString()
-    expect(dateHints(task({ dueAt: due, scheduledOn: '2026-10-04' }), TZ, NOW())).toEqual({
-      scheduled: 'Planned for tomorrow',
-      due: { text: 'Due Oct 1, 09:00', late: '2 days late', overdue: true },
-    })
+    // of the 9th. The minute is the thing being pinned, so it is pinned at the hardest minute.
+    expect(instantPhrase(new Date(2026, 9, 8, 23, 59).toISOString(), '2026-10-03', TZ)).toBe(
+      'Oct 8, 23:59',
+    )
   })
 })
 
@@ -190,7 +160,7 @@ describe('moveDueToDay', () => {
  * nothing could catch the defect these cases are about, which is why they fix the two to DIFFERENT
  * zones on purpose.
  *
- * What it would have caught: the previous `dateHints` read the day off `getFullYear()/getMonth()/
+ * What it would have caught: the previous date cues read the day off `getFullYear()/getMonth()/
  * getDate()`, i.e. the BROWSER's zone, and took no timezone argument at all -- `TaskRow` had none
  * to pass. At the instant below the browser's calendar has already turned over and New York's has
  * not, so reading it in the browser's zone calls this deadline yesterday's, one day late, while the server --
@@ -224,23 +194,22 @@ describe('the account timezone decides, even when the browser is in another one'
   })
 
   it('the row wording and the server segment agree', async () => {
-    const { dateHints } = await load()
+    const { instantPhrase, lateNote, todayIn } = await load()
     expect(serverSaysOverdue(DUE, NOW_CROSS)).toBe(false)
-    const hints = dateHints({ status: 'todo', dueAt: DUE, scheduledOn: null }, ACCOUNT, NOW_CROSS)
-    // Not overdue, because the server does not think so either -- and this is the assertion the
-    // old browser-zone implementation failed: it answered `true`.
-    expect(hints.due!.overdue).toBe(serverSaysOverdue(DUE, NOW_CROSS))
+    // Not late, because the server does not think so either -- the assertion the old
+    // browser-zone implementation failed.
+    expect(lateNote({ status: 'todo', dueAt: DUE }, ACCOUNT, NOW_CROSS)).toBeNull()
     // And the words are New York's day and New York's clock, not Kolkata's.
-    expect(hints.due).toEqual({ text: 'Due today, 00:30', late: null, overdue: false })
+    expect(instantPhrase(DUE, todayIn(ACCOUNT, NOW_CROSS), ACCOUNT)).toBe('Today, 00:30')
   })
 
   it('when the account really is late, both say so, with the account day count', async () => {
-    const { dateHints } = await load()
+    const { instantPhrase, lateNote, todayIn } = await load()
     // 23:00 on the 1st in New York: three calendar days before the 4th, there.
     const late = '2026-10-02T03:00:00.000Z'
     expect(serverSaysOverdue(late, NOW_CROSS)).toBe(true)
-    const hints = dateHints({ status: 'todo', dueAt: late, scheduledOn: null }, ACCOUNT, NOW_CROSS)
-    expect(hints.due).toEqual({ text: 'Due Oct 1, 23:00', late: '3 days late', overdue: true })
+    expect(lateNote({ status: 'todo', dueAt: late }, ACCOUNT, NOW_CROSS)).toBe('3 days late')
+    expect(instantPhrase(late, todayIn(ACCOUNT, NOW_CROSS), ACCOUNT)).toBe('Oct 1, 23:00')
   })
 
   it('today, tomorrow and next Monday are the account days', async () => {
@@ -326,13 +295,10 @@ describe('date helpers across a DST boundary', () => {
   })
 
   it('prints the wall clock on either side of the jump, not a shifted one', async () => {
-    const { dateHints } = await load()
-    const at = new Date('2026-03-10T12:00:00.000Z')
-    const hint = (dueIso: string) =>
-      dateHints({ status: 'todo', dueAt: dueIso, scheduledOn: null }, NY, at).due!.text
+    const { instantPhrase } = await load()
     // 06:30 UTC on the 8th is 01:30 EST (before the jump); 07:30 UTC is 03:30 EDT (after it).
-    expect(hint('2026-03-08T06:30:00.000Z')).toBe('Due Mar 8, 01:30')
-    expect(hint('2026-03-08T07:30:00.000Z')).toBe('Due Mar 8, 03:30')
+    expect(instantPhrase('2026-03-08T06:30:00.000Z', '2026-03-10', NY)).toBe('Mar 8, 01:30')
+    expect(instantPhrase('2026-03-08T07:30:00.000Z', '2026-03-10', NY)).toBe('Mar 8, 03:30')
   })
 
   it('moving a deadline keeps its wall clock across the jump, not its offset', async () => {

@@ -11,10 +11,9 @@ import { deadlineDayLead, leadFor, weekDayWord } from './leads'
 const TODAY = '2026-10-12' // a Monday
 const TZ = 'America/Toronto' // EDT, UTC-4, all of this month
 
-const row = (o: { dueAt?: string; scheduledOn?: string; at?: string }) => ({
+const row = (o: { dueAt?: string; scheduledOn?: string }) => ({
   dueAt: o.dueAt ?? null,
   scheduledOn: o.scheduledOn ?? null,
-  at: o.at ?? null,
 })
 
 describe('the margin', () => {
@@ -71,14 +70,6 @@ describe('the margin', () => {
     expect(leadFor(row({ dueAt: '2027-01-05T14:30:00.000Z' }), TODAY, TZ)?.exact).toBe(
       'Due Jan 5, 2027, 09:30',
     )
-  })
-
-  it('gives a timed entry its time when there is no date to keep', () => {
-    expect(leadFor(row({ at: '2026-10-12T14:30:00.000Z' }), TODAY, TZ)).toMatchObject({
-      text: '10:30',
-      tone: 'time',
-      flag: false,
-    })
   })
 })
 
