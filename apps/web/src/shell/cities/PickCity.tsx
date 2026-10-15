@@ -40,6 +40,8 @@ export function PickCity({
 
   const cities = hits.data ?? []
   const exact = cities.some((c) => c.label === value)
+  // The list, and what the box says about it, are one condition.
+  const listed = typing && cities.length > 0 && !exact
   const unknown = typing && value.trim().length >= 3 && hits.isSuccess && cities.length === 0
 
   return (
@@ -52,7 +54,7 @@ export function PickCity({
         value={value}
         autoComplete="off"
         role="combobox"
-        aria-expanded={cities.length > 0 && !exact}
+        aria-expanded={listed}
         aria-controls={listId}
         {...composing.bind}
         onChange={(e) => {
@@ -66,7 +68,7 @@ export function PickCity({
         className={`${field} text-sm`}
       />
 
-      {typing && cities.length > 0 && !exact && (
+      {listed && (
         <ul
           id={listId}
           className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded-[10px] bg-float py-1 shadow-float"

@@ -884,6 +884,25 @@ test('城市打几个字母就有候选，选中存的是标准写法', async ({
   })
 })
 
+test('the city box says its list is open only while it is', async ({ page }) => {
+  await registerFreshUser(page, '/people')
+  await add(page, { name: 'Ying' })
+  await page.reload()
+  await personLink(page, 'Ying').click()
+  const pane = page.getByRole('dialog', { name: 'People' })
+  await pane.getByRole('button', { name: 'Edit', exact: true }).click()
+  const box = pane.getByRole('combobox', { name: 'Lives in' })
+
+  await expect(box).toHaveAttribute('aria-expanded', 'false')
+  await box.fill('oxfo')
+  await expect(pane.getByRole('button', { name: 'Oxford, England, United Kingdom' })).toBeVisible()
+  await expect(box).toHaveAttribute('aria-expanded', 'true')
+  // Leaving the box puts the list away; the box must say so too.
+  await box.press('Tab')
+  await expect(pane.getByRole('button', { name: 'Oxford, England, United Kingdom' })).toHaveCount(0)
+  await expect(box).toHaveAttribute('aria-expanded', 'false')
+})
+
 test('打错一个字母看得出来，但还是存得下', async ({ page }) => {
   await registerFreshUser(page, '/people')
   await add(page, { name: '陈颖' })
