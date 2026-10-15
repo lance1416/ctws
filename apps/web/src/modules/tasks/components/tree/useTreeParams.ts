@@ -29,18 +29,8 @@ export function useTreeParams({
   onRevealed: (id: string) => void
 }) {
   const [params, setParams] = useSearchParams()
-  const openId = params.get('task')
+  const { openId, setOpenId } = useTaskParam()
   const reveal = params.get('reveal')
-  const setOpenId = (id: string | null, { replace = false }: { replace?: boolean } = {}) =>
-    setParams(
-      (prev) => {
-        const next = new URLSearchParams(prev)
-        if (id) next.set('task', id)
-        else next.delete('task')
-        return next
-      },
-      { replace },
-    )
 
   const forget = useForgetRecent()
   const pending = useRef<string | null>(null)
@@ -79,4 +69,20 @@ export function useTreeParams({
   })
 
   return { openId, setOpenId }
+}
+
+/** The open task, `?task=<id>`, on a project page: the tree's and the board's alike. */
+export function useTaskParam() {
+  const [params, setParams] = useSearchParams()
+  const setOpenId = (id: string | null, { replace = false }: { replace?: boolean } = {}) =>
+    setParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        if (id) next.set('task', id)
+        else next.delete('task')
+        return next
+      },
+      { replace },
+    )
+  return { openId: params.get('task'), setOpenId }
 }

@@ -1,5 +1,6 @@
 import { TASK_STATUSES, type TaskStatus } from '@ctws/contracts'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
+import { useState } from 'react'
 import { STATUS_LABEL } from '../status'
 import { StatusMark } from './StatusMark'
 import { MENU_ITEM, MENU_SURFACE } from '../../../platform/ui/menuSurface'
@@ -23,21 +24,25 @@ import { MENU_ITEM, MENU_SURFACE } from '../../../platform/ui/menuSurface'
 export function StatusPicker({
   status,
   onPick,
-  disabled = false,
+  busy = false,
 }: {
   status: TaskStatus
   onPick: (next: TaskStatus) => void
-  disabled?: boolean
+  /** A pick is being written: the menu will not open again until it lands. */
+  busy?: boolean
 }) {
+  const [open, setOpen] = useState(false)
   return (
-    <DropdownMenu.Root>
+    <DropdownMenu.Root open={open} onOpenChange={(next) => setOpen(next && !busy)}>
       <DropdownMenu.Trigger
-        disabled={disabled}
+        // Not `disabled`: the closing menu hands focus back to this button, and a disabled one
+        // drops it to <body> (WCAG 2.4.3).
+        aria-disabled={busy || undefined}
         // The accessible name carries the CURRENT value, so a screen reader hears what the status
         // is as well as what the control does -- this one button is both.
         aria-label={`Status: ${STATUS_LABEL[status]}`}
         data-status-picker
-        className="-mx-1.5 flex h-8 items-center gap-2 rounded-md px-1.5 text-sm text-ink hover:bg-hover disabled:opacity-50"
+        className="-mx-1.5 flex h-8 items-center gap-2 rounded-md px-1.5 text-sm text-ink hover:bg-hover aria-disabled:opacity-50"
       >
         <span aria-hidden="true" className="flex">
           <StatusMark status={status} />

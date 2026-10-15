@@ -109,6 +109,25 @@ test('an empty project says so once, not four times', async ({ page }) => {
   await expect(page.locator('[data-board-column]')).toHaveCount(0)
 })
 
+test('a card opens its task, from the keyboard as from the pointer', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'Keys')
+  await makeTask(page, pid, 'Open me')
+  await openBoard(page, pid)
+  const pane = page.getByRole('dialog', { name: 'Task details' })
+
+  await card(page, 'Open me').focus()
+  await page.keyboard.press('Enter')
+  await expect(pane.locator('[data-detail-title]')).toHaveText('Open me')
+  await expect(page).toHaveURL(/[?&]task=/)
+  await pane.getByRole('button', { name: 'Close' }).click()
+  await expect(pane).toHaveCount(0)
+  await expect(card(page, 'Open me')).toBeFocused()
+
+  await card(page, 'Open me').click()
+  await expect(pane.locator('[data-detail-title]')).toHaveText('Open me')
+})
+
 test('a board that cannot load says so, instead of four empty columns', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'Down')

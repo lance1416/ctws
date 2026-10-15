@@ -1,7 +1,7 @@
 import { taskCrumb } from '../crumb'
 import type { CompletedTaskResponse } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { completedQuery } from '../api/queries'
 import { useTaskActions } from '../api/taskActions'
 import { DaySection } from '../../../shell/rows/DaySection'
@@ -57,6 +57,10 @@ export function Completed() {
 
   const rows = completed.data?.tasks ?? []
   const openTask = rows.find((t) => t.id === openId)
+  // A pane whose task has left this list (deleted, brought back to work) closes itself.
+  useEffect(() => {
+    if (openId && completed.isSuccess && !openTask) setOpenId(null)
+  }, [openId, openTask, completed.isSuccess])
   const days: { day: string; tasks: CompletedTaskResponse[] }[] = []
   for (const t of rows) {
     const last = days[days.length - 1]

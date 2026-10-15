@@ -10,11 +10,14 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core'
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { projectTasksQuery } from '../api/queries'
 import { useTaskActions } from '../api/taskActions'
 import { PanelEmpty } from '../../../platform/ui/Panel'
 import { STATUS_LABEL } from '../status'
+import { TaskDetail } from './TaskDetail'
+import { useTaskParam } from './tree/useTreeParams'
+import { useFocusAfterRemoval } from './useFocusAfterRemoval'
 
 /**
  * THE BOARD: the task block's second view, and the first user of the block-header tabs.
@@ -34,7 +37,16 @@ import { STATUS_LABEL } from '../status'
 /** Left to right in the status model's own order; `cancelled` is not a step of the work. */
 const COLUMNS: TaskStatus[] = ['backlog', 'todo', 'in_progress', 'done']
 
-function Card({ task, parentTitle }: { task: TaskResponse; parentTitle: string | null }) {
+/** A card opens its task in the pane -- a click, Enter or Space -- and is dragged by the pointer. */
+function Card({
+  task,
+  parentTitle,
+  onOpen,
+}: {
+  task: TaskResponse
+  parentTitle: string | null
+  onOpen: () => void
+}) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: task.id })
   return (
     <li>
@@ -44,6 +56,7 @@ function Card({ task, parentTitle }: { task: TaskResponse; parentTitle: string |
         {...attributes}
         type="button"
         data-board-card={task.id}
+        onClick={onOpen}
         className={`w-full rounded-[10px] border border-transparent bg-sheet px-2.5 py-2 text-left hover:border-rule-strong ${
           isDragging ? 'opacity-40' : ''
         }`}
@@ -61,10 +74,12 @@ function Column({
   status,
   tasks,
   parentOf,
+  onOpen,
 }: {
   status: TaskStatus
   tasks: TaskResponse[]
   parentOf: (t: TaskResponse) => string | null
+  onOpen: (id: string) => void
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status })
   return (
@@ -84,7 +99,7 @@ function Column({
       </h3>
       <ul className="flex min-h-11 flex-col gap-1.5">
         {tasks.map((t) => (
-          <Card key={t.id} task={t} parentTitle={parentOf(t)} />
+          <Card key={t.id} task={t} parentTitle={parentOf(t)} onOpen={() => onOpen(t.id)} />
         ))}
       </ul>
     </section>
@@ -102,6 +117,29 @@ export function TaskBoard({ projectId }: { projectId: string }) {
   const byId = new Map(rows.map((t) => [t.id, t]))
   const parentOf = (t: TaskResponse) =>
     t.parentId === null ? null : (byId.get(t.parentId)?.title ?? null)
+
+  // The same pane and address as the tree's. Closed, focus goes back to the card; if the pane
+  // takes its task away (deleted), to a neighbouring card.
+  const { openId, setOpenId } = useTaskParam()
+  const openTask = rows.find((t) => t.id === openId)
+  const cardFor = (id: string) => document.querySelector<HTMLElement>(`[data-board-card="${id}"]`)
+  useFocusAfterRemoval({
+    ids: () =>
+      [...document.querySelectorAll<HTMLElement>('[data-board-card]')].map(
+        (el) => el.dataset.boardCard!,
+      ),
+    rowFor: cardFor,
+    heading: () => document.querySelector<HTMLElement>('h1'),
+    open: openId,
+  })
+  useEffect(() => {
+    if (openId && tasks.isSuccess && !openTask) setOpenId(null, { replace: true })
+  }, [openId, openTask, tasks.isSuccess])
+  const closeDetail = () => {
+    const id = openId
+    setOpenId(null)
+    if (id) cardFor(id)?.focus()
+  }
 
   const onDragEnd = ({ active, over }: DragEndEvent) => {
     if (!over) return
@@ -142,6 +180,7 @@ export function TaskBoard({ projectId }: { projectId: string }) {
               status={status}
               tasks={rows.filter((t) => t.status === status)}
               parentOf={parentOf}
+              onOpen={setOpenId}
             />
           ))}
         </div>
@@ -149,6 +188,7 @@ export function TaskBoard({ projectId }: { projectId: string }) {
       {/* `cancelled` has no column: it is not a step of the work, and a fifth column of things
           nobody is doing would take a quarter of the width to say so. Those tasks are in the
           tree, where they can be restored. */}
+      {openTask && <TaskDetail key={openTask.id} task={openTask} onClose={closeDetail} />}
     </>
   )
 }

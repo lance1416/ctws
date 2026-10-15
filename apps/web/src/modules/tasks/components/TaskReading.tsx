@@ -81,7 +81,7 @@ export function TaskReading({
           <span className={label}>Status</span>
           <StatusPicker
             status={task.status}
-            disabled={setStatus.isPending}
+            busy={setStatus.isPending}
             onPick={(next) => setStatus.mutate(next)}
           />
         </div>

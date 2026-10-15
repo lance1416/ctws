@@ -469,6 +469,23 @@ test('the status is changed from reading mode, in one act and with no Save', asy
   await expect(dialog.getByRole('button', { name: 'Status: In progress' })).toBeVisible()
 })
 
+test('finishing a task from its pane keeps focus in the pane', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'Stay')
+  await makeTask(page, pid, 'Finish me')
+  await makeTask(page, pid, 'Neighbour')
+  await openPane(page, pid, 'Finish me', false)
+  const dialog = page.getByRole('dialog', { name: 'Task details' })
+
+  await dialog.getByRole('button', { name: 'Status: To do' }).click()
+  await page.getByRole('menuitem', { name: 'Done' }).click()
+  // Its row leaves the tree (finished rows are hidden), but the pane is still open and being read.
+  await expect(page.getByRole('button', { name: 'Task: Finish me', exact: true })).toHaveCount(0)
+  await expect(dialog.getByRole('button', { name: 'Status: Done' })).toBeVisible()
+  await page.waitForTimeout(300)
+  expect(await page.evaluate(() => !!document.activeElement?.closest('[role="dialog"]'))).toBe(true)
+})
+
 test('a status change that fails says so', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'Flaky')

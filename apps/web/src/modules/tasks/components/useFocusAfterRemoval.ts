@@ -6,8 +6,9 @@ import { useEffect, useRef } from 'react'
  *
  * `expect(id)` is said before something that may take the row away (a status change); `drop(id)`
  * once that has settled with the row still there. `open` is the task whose pane is open: it can
- * move or delete its task, so it is expected for as long as it is open. The neighbours are read
- * on every render the row is still on screen, so rows that arrived since are counted.
+ * move or delete its task, so its row is expected too, and acted on once the pane has closed --
+ * the page closes it when its task leaves. The neighbours are read on every render the row is
+ * still on screen, so rows that arrived since are counted.
  */
 export function useFocusAfterRemoval({
   ids,
@@ -25,8 +26,10 @@ export function useFocusAfterRemoval({
 
   useEffect(() => {
     for (const [self, plan] of plans.current) {
-      if (rowFor(self)) {
-        plan.order = ids()
+      // While its pane is open, focus is the pane's: the row may be hidden behind it (a task
+      // finished from the pane) and the person is still reading.
+      if (rowFor(self) || self === open) {
+        if (rowFor(self)) plan.order = ids()
         continue
       }
       plans.current.delete(self)
