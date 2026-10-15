@@ -176,6 +176,22 @@ test('with nothing finished, the view says so', async ({ page }) => {
   await expect(page.getByText('Nothing finished yet')).toBeVisible()
 })
 
+test('deleting a task from Done leaves focus on the list, not the page', async ({ page }) => {
+  await registerFreshUser(page)
+  const projectId = await makeProject(page, 'Finished')
+  await makeTask(page, projectId, 'First done', { status: 'done' })
+  await makeTask(page, projectId, 'Second done', { status: 'done' })
+  await page.goto('/tasks/review?view=done')
+  await page.getByText('First done').click()
+  await page.getByRole('button', { name: 'Delete task' }).click()
+  await page
+    .getByRole('alertdialog', { name: 'Confirm deleting this task' })
+    .getByRole('button', { name: 'Delete' })
+    .click()
+  await expect(page.getByText('First done')).toHaveCount(0)
+  await expect.poll(() => page.evaluate(() => document.activeElement?.tagName)).not.toBe('BODY')
+})
+
 // ------------------------------------------------------------------------------ task deletion
 
 /**

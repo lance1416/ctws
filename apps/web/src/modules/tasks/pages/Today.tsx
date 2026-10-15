@@ -1,7 +1,7 @@
 import { taskCrumb } from '../crumb'
 import type { CalendarEntry, TaskStatus, TodayTaskResponse } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { useEffect, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { calendarDaysQuery } from '../../../shell/calendar/api'
 import { completedQuery, movementQuery, todayQuery } from '../api/queries'
@@ -21,6 +21,7 @@ import { StatusMark } from '../components/StatusMark'
 import { useRegistry } from '../../../shell/registry'
 import { TASKS_ID } from '../id'
 import { TaskDetail } from '../components/TaskDetail'
+import { useFocusAfterRemoval } from '../components/useFocusAfterRemoval'
 import { TriageControl } from '../components/TriageControl'
 import { clockTime, todayIn } from '../../../platform/time/dates'
 import { dateHints } from '../dueDates'
@@ -95,40 +96,30 @@ export function Today() {
     return () => clearTimeout(timer)
   }, [savedId])
 
-  // A change can take its row off this page (finished; stopped with no date; deadline cleared).
-  // Whoever had focus on that row would drop to <body>, so the destination is chosen before the
-  // change: the next row, else the previous one, else the heading. The order is DOM order across
-  // every panel, which is what a reader following the page would expect.
-  const focusPlan = useRef<{ self: string; next: string | null } | null>(null)
-  const planFocus = (id: string) => {
-    const ids = [...document.querySelectorAll<HTMLElement>('[data-today-row]')].map(
-      (el) => el.dataset.todayRow!,
-    )
-    const at = ids.indexOf(id)
-    focusPlan.current = { self: id, next: ids[at + 1] ?? ids[at - 1] ?? null }
-  }
-  const clearPlan = () => void setTimeout(() => (focusPlan.current = null), 0)
-  useEffect(() => {
-    const plan = focusPlan.current
-    if (!plan || document.querySelector(`[data-today-row="${plan.self}"]`)) return
-    focusPlan.current = null
-    document
-      .querySelector<HTMLElement>(plan.next ? `[data-today-row="${plan.next}"]` : '#today-heading')
-      ?.focus()
+  // A change can take its row off this page (finished; stopped with no date; deadline cleared),
+  // and so can the open pane. The order is DOM order across every section, the way the page reads.
+  const focus = useFocusAfterRemoval({
+    ids: () =>
+      [...document.querySelectorAll<HTMLElement>('[data-today-row]')].map(
+        (el) => el.dataset.todayRow!,
+      ),
+    rowFor: (id) => document.querySelector<HTMLElement>(`[data-today-row="${id}"]`),
+    heading: () => document.getElementById('today-heading'),
+    open: openId,
   })
   const setStatus = (id: string, status: TaskStatus) => {
     setError(null)
-    planFocus(id)
-    actions.setStatus(id, status, clearPlan)
+    focus.expect(id)
+    actions.setStatus(id, status, () => focus.drop(id))
   }
   const patch = (id: string, body: Parameters<typeof actions.patch>[1]) => {
     setError(null)
-    planFocus(id)
-    actions.patch(id, body, clearPlan)
+    focus.expect(id)
+    actions.patch(id, body, () => focus.drop(id))
   }
   // Where focus goes once a triage action has run. The panel and the button inside it unmount, so
   // without this focus would fall to <body> (WCAG 2.4.3). The row is still on screen at this
-  // moment; if the change then takes it off the page, `planFocus` above moves focus on again.
+  // moment; if the change then takes it off the page, `focus` above moves focus on again.
   const focusRow = (id: string) =>
     queueMicrotask(() => document.querySelector<HTMLElement>(`[data-today-row="${id}"]`)?.focus())
   const onRowKeyDown = (e: KeyboardEvent, id: string, status: TaskStatus) => {
@@ -154,15 +145,10 @@ export function Today() {
     }
   }
 
-  // The panel unmounts without onClose when an edit moves its task off this page; return focus
-  // to the page's first row (or the heading, when none is left) rather than losing it to <body> (WCAG 2.4.3).
+  // The pane unmounts without onClose when an edit takes its task off this page; `focus` has
+  // already moved on to a neighbour.
   useEffect(() => {
-    if (openId && today.isSuccess && !openTask) {
-      setOpenId(null)
-      queueMicrotask(() =>
-        document.querySelector<HTMLElement>('[data-today-row], #today-heading')?.focus(),
-      )
-    }
+    if (openId && today.isSuccess && !openTask) setOpenId(null)
   }, [openId, openTask, today.isSuccess])
 
   type Entry = CalendarEntry & { moduleId: string }

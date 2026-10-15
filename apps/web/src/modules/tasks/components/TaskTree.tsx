@@ -26,6 +26,7 @@ import { NewTaskInput } from './NewTaskInput'
 import { SelectionBar } from './SelectionBar'
 import { TaskDetail } from './TaskDetail'
 import { TaskRow } from './TaskRow'
+import { useFocusAfterRemoval } from './useFocusAfterRemoval'
 import { INDENT_PX } from './TaskRowParts'
 import { useBulkSelection } from './tree/useBulkSelection'
 import { useCollapsed } from './tree/useCollapsed'
@@ -191,13 +192,19 @@ export function TaskTree({ projectId }: { projectId: string }) {
     if (id) document.querySelector<HTMLElement>(`[data-handle-id="${id}"]`)?.focus()
   }
 
-  // The pane also unmounts without onClose when its task leaves the list. Nobody took that step,
-  // so the address is put right in place, and focus goes to the tree, not to <body>.
+  // The pane can move or delete its task: focus then goes to a neighbouring row, not to <body>.
+  useFocusAfterRemoval({
+    ids: () =>
+      [...document.querySelectorAll<HTMLElement>('[data-handle-id]')].map(
+        (el) => el.dataset.handleId!,
+      ),
+    rowFor: (id) => document.querySelector<HTMLElement>(`[data-handle-id="${id}"]`),
+    heading: () => document.querySelector<HTMLElement>('h1'),
+    open: openId,
+  })
+  // And it unmounts without onClose. Nobody took that step, so the address is put right in place.
   useEffect(() => {
-    if (openId && tasks.isSuccess && !openTask) {
-      setOpenId(null, { replace: true })
-      queueMicrotask(() => document.querySelector<HTMLElement>('[data-handle-id]')?.focus())
-    }
+    if (openId && tasks.isSuccess && !openTask) setOpenId(null, { replace: true })
   }, [openId, openTask, tasks.isSuccess])
 
   return (

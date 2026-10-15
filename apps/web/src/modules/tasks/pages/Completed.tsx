@@ -11,6 +11,7 @@ import { DONE_LIST_MEASURE } from '../components/TaskRowParts'
 import { RowLead } from '../../../shell/rows/RowLead'
 import { StatusButton } from '../components/StatusControls'
 import { TaskDetail } from '../components/TaskDetail'
+import { useFocusAfterRemoval } from '../components/useFocusAfterRemoval'
 import { addDays, clockTime, MONTHS, todayIn } from '../../../platform/time/dates'
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { useNow } from '../../../platform/time/useNow'
@@ -42,6 +43,16 @@ export function Completed() {
   const clock = clockTime(timezone)
   const heading = useRef<HTMLHeadingElement>(null)
   const actions = useTaskActions(() => {})
+  // An open pane can delete its task or bring it back to work: either way its row leaves.
+  useFocusAfterRemoval({
+    ids: () =>
+      [...document.querySelectorAll<HTMLElement>('[data-done-row]')].map(
+        (el) => el.dataset.doneRow!,
+      ),
+    rowFor: (id) => document.querySelector<HTMLElement>(`[data-done-row="${id}"]`),
+    heading: () => heading.current,
+    open: openId,
+  })
 
   const rows = completed.data?.tasks ?? []
   const openTask = rows.find((t) => t.id === openId)
@@ -109,6 +120,7 @@ export function Completed() {
                     to look at one was to find it again in its project's tree. */}
                   <button
                     type="button"
+                    data-done-row={t.id}
                     onClick={() => setOpenId(t.id)}
                     className="flex min-w-0 flex-1 flex-col py-2.5 text-left"
                   >
