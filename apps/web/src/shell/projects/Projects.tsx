@@ -5,7 +5,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ApiError } from '../../platform/http/api'
 import { listMovement } from '../../modules/tasks/api/movement'
 import { getTask } from '../../modules/tasks/api/tasks'
-import { archivedProjectsKey, createProject, listArchivedProjects, listProjects } from './api'
+import { archivedProjectsQuery, createProject, useProjects } from './api'
 import { todayIn } from '../../platform/time/dates'
 import { movedLine } from '../../modules/tasks/movement'
 import { deadlineDayLead, LIST_MEASURE } from '../rows/leads'
@@ -23,11 +23,11 @@ import { HANG } from '../../platform/ui/hang'
 export function Projects() {
   useCrumbs([{ label: 'Projects' }])
   const [name, setName] = useState('')
-  const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
+  const projects = useProjects()
   // The same entry Today's This week and the Workbench read: what is late, what is next, when
   // each line of work last moved. Archived projects are not in it, on purpose.
   const movement = useQuery({ queryKey: ['movement'], queryFn: listMovement })
-  const archivedList = useQuery({ queryKey: archivedProjectsKey, queryFn: listArchivedProjects })
+  const archivedList = useQuery(archivedProjectsQuery())
   const today = todayIn(useTimeZone(), useNow())
   /**
    * `/projects?task=<id>` is where a link to a task goes when all it knows is the task (a person's
@@ -63,7 +63,7 @@ export function Projects() {
   const moved = new Map((movement.data ?? []).map((m) => [m.projectId, m]))
   // Rendered in the order the server returns: it puts the inbox first. Sorting here too would
   // give two sorts that drift apart. The server lists only the live ones; the shelf asks for its
-  // own (`listArchivedProjects`).
+  // own (`archivedProjectsQuery`).
   const active = projects.data ?? []
   const archived = archivedList.data ?? []
 

@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
-import { archivedProjectsKey, listArchivedProjects, listProjects } from './api'
+import { archivedProjectsQuery, useProjects } from './api'
 
 /** Things' count for projects: the lines of work still running. */
 export function ProjectsCount() {
-  const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
+  const projects = useProjects()
   if (!projects.data) return null
   return <span data-count>{projects.data.length} active</span>
 }
@@ -13,7 +13,7 @@ export function ProjectsCount() {
  * ones, so counting the archived there always said none.
  */
 export function ProjectsStatus() {
-  const archived = useQuery({ queryKey: archivedProjectsKey, queryFn: listArchivedProjects })
+  const archived = useQuery(archivedProjectsQuery())
   const n = archived.data?.length ?? 0
   return n > 0 ? <span data-status>{n} archived</span> : null
 }

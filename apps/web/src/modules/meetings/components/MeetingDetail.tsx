@@ -1,6 +1,6 @@
 import type { EditScope, MeetingOccurrence, UpdateMeetingInput } from '@ctws/contracts'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { useState, type ReactNode } from 'react'
+import { useState } from 'react'
 import { listPeople } from '../../people/api/people'
 import {
   cancelMeeting,
@@ -10,8 +10,7 @@ import {
   untilOf,
   withUntil,
 } from '../api/meetings'
-import { listProjects } from '../../../shell/projects/api'
-import { useProjectRail } from '../../../shell/projects/projectColor'
+import { ProjectChip, ProjectPicker } from '../../../shell/projects/ProjectPicker'
 import { ZONES, zoneLabel } from '../timeZones'
 import { shortDay, todayIn } from '../../../platform/time/dates'
 import { DangerAction, DangerZone } from '../../../platform/ui/DangerZone'
@@ -45,10 +44,7 @@ import { useNow } from '../../../platform/time/useNow'
  * The FIELDS are a component of their own because the meeting's own page shows the same ones with
  * no frame around them (`relations.Head`). One editor, two places -- a second copy drifts.
  */
-/** `PickOne` has no null value, so "belongs to nothing" needs a value of its own. */
-const NO_PROJECT = '__no-project'
-
-/** The same, for a meeting that happens once. */
+/** `PickOne` has no null value, so "does not repeat" needs a value of its own. */
 const NO_REPEAT = '__none'
 
 export function MeetingDetail({
@@ -103,12 +99,10 @@ export function MeetingFields({
   /** Where to go when the meeting is cancelled. A page has nowhere to close TO, so it may omit it. */
   onClose?: () => void
 }) {
-  const rail = useProjectRail()
   const [editing, setEditing] = useState(false)
   const [failed, setFailed] = useState<string | null>(null)
   /** A change waiting on "this one / from here on". Null when nothing is being asked. */
   const [asking, setAsking] = useState<{ what: string; patch: UpdateMeetingInput } | null>(null)
-  const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
   const people = useQuery({ queryKey: ['people', null, false], queryFn: () => listPeople() })
 
   const repeats = meeting.rrule !== null
@@ -120,9 +114,6 @@ export function MeetingFields({
     onError: (e) => setFailed(e instanceof Error ? e.message : "Couldn't save it"),
   })
 
-  const chip = (id: string) => (
-    <span className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(id)}`} />
-  )
 
   /**
    * 存这一张表。
@@ -222,9 +213,7 @@ export function MeetingFields({
         <MeetingForm
           meeting={meeting}
           accountZone={accountZone}
-          projects={projects.data ?? []}
           people={people.data ?? []}
-          chip={chip}
           busy={save.isPending}
           onCancel={() => setEditing(false)}
           onSave={submit}
@@ -250,7 +239,6 @@ function MeetingRead({
   accountZone: string
   onEdit: () => void
 }) {
-  const rail = useProjectRail()
   const elsewhere = meeting.timeZone !== accountZone
   const place = meetingLink(meeting.location)
   const bare = meeting.rrule ? withUntil(meeting.rrule, null) : null
@@ -315,9 +303,7 @@ function MeetingRead({
             {meeting.projectId && meeting.projectName ? (
               <span className="flex">
                 <span className={CHIP}>
-                  <span
-                    className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(meeting.projectId)}`}
-                  />
+                  <ProjectChip projectId={meeting.projectId} />
                   <span className="truncate">{meeting.projectName}</span>
                 </span>
               </span>
@@ -387,9 +373,7 @@ function lengthLabel(minutes: number): string {
 function MeetingForm({
   meeting,
   accountZone,
-  projects,
   people,
-  chip,
   busy,
   onCancel,
   onSave,
@@ -397,9 +381,7 @@ function MeetingForm({
   meeting: MeetingOccurrence
   /** The reader's own zone, for the one date this form has to WORD rather than take as input. */
   accountZone: string
-  projects: { id: string; name: string; archivedAt: string | null }[]
   people: { id: string; name: string }[]
-  chip: (id: string) => ReactNode
   busy: boolean
   onCancel: () => void
   onSave: (patch: UpdateMeetingInput) => void
@@ -412,7 +394,7 @@ function MeetingForm({
   const [rule, setRule] = useState(meeting.rrule ? withUntil(meeting.rrule, null) : NO_REPEAT)
   const [until, setUntil] = useState(untilOf(meeting.rrule))
   const [location, setLocation] = useState(meeting.location ?? '')
-  const [projectId, setProjectId] = useState(meeting.projectId ?? NO_PROJECT)
+  const [projectId, setProjectId] = useState<string | null>(meeting.projectId)
   const [attendeeIds, setAttendees] = useState(meeting.attendees.map((p) => p.id))
   const [note, setNote] = useState(meeting.note ?? '')
   const composing = useComposing()
@@ -425,7 +407,7 @@ function MeetingForm({
       title: title.trim(),
       timeZone,
       location: location.trim() || null,
-      projectId: projectId === NO_PROJECT ? null : projectId,
+      projectId,
       attendeeIds,
       note: note.trim() || null,
       rrule,
@@ -541,19 +523,7 @@ function MeetingForm({
             </Field>
           )}
           <Field label="Projects" shape="above">
-            <PickOne
-              label="Projects"
-              value={projectId}
-              /* 「No project」是一个选项，不只是占位符：归错了项目的会可以被挪走，但从前挪不回
-                 「没有」。 */
-              choices={[
-                { value: NO_PROJECT, label: 'No project' },
-                ...projects
-                  .filter((p) => !p.archivedAt)
-                  .map((p) => ({ value: p.id, label: p.name, mark: chip(p.id) })),
-              ]}
-              onPick={setProjectId}
-            />
+            <ProjectPicker value={projectId} onPick={setProjectId} none="No project" />
           </Field>
         </div>
       </div>

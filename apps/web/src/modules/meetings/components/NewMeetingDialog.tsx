@@ -9,10 +9,9 @@ import {
   repeatChoices,
   withUntil,
 } from '../api/meetings'
-import { listProjects } from '../../../shell/projects/api'
+import { ProjectPicker } from '../../../shell/projects/ProjectPicker'
 import { useComposing } from '../../../platform/keyboard/composition'
 import { todayIn } from '../../../platform/time/dates'
-import { useProjectRail } from '../../../shell/projects/projectColor'
 import { ZONES, zoneLabel } from '../timeZones'
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { boxed, field, label } from '../../../platform/ui/formStyles'
@@ -36,9 +35,6 @@ import { useNow } from '../../../platform/time/useNow'
 /** `PickOne` has no null value, so "does not repeat" needs a value of its own. */
 const NO_REPEAT = '__none'
 
-/** The same, for a meeting that belongs to no line of work. */
-const NO_PROJECT = '__no-project'
-
 export function NewMeetingDialog({
   onClose,
   onMade,
@@ -50,7 +46,6 @@ export function NewMeetingDialog({
   const today = todayIn(accountZone, useNow())
   const titleField = useRef<HTMLInputElement>(null)
   const composing = useComposing()
-  const rail = useProjectRail()
 
   const [title, setTitle] = useState('')
   const [day, setDay] = useState(today)
@@ -63,7 +58,6 @@ export function NewMeetingDialog({
   const [projectId, setProjectId] = useState<string | null>(null)
   const [attendeeIds, setAttendees] = useState<string[]>([])
 
-  const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
   const people = useQuery({ queryKey: peopleKey(), queryFn: () => listPeople() })
   const startsLocal = `${day}T${clock}`
   // Named after the day it falls on, so "Weekly on Tuesday" says Tuesday once the date is picked.
@@ -108,23 +102,8 @@ export function NewMeetingDialog({
         className="flex flex-col gap-5 px-5 py-4"
       >
         <div>
-          <PickOne
-            label="Projects"
-            value={projectId ?? NO_PROJECT}
-            /* "No project" is a CHOICE, not only the placeholder: a picker you can enter and
-               never leave is a one-way door. */
-            choices={[
-              { value: NO_PROJECT, label: 'No project' },
-              ...(projects.data ?? [])
-                .filter((p) => !p.archivedAt)
-                .map((p) => ({
-                  value: p.id,
-                  label: p.name,
-                  mark: <span className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(p.id)}`} />,
-                })),
-            ]}
-            onPick={(v) => setProjectId(v === NO_PROJECT ? null : v)}
-          />
+          {/* "No project" is a choice, not only the placeholder, so a picked project can be undone. */}
+          <ProjectPicker value={projectId} onPick={setProjectId} none="No project" />
           {/* A PLACEHOLDER, and a field you can see. Borderless and empty, this read as a gap
               between the project and the date -- there was nothing on screen to say a title was
               wanted. */}

@@ -1,33 +1,28 @@
 import type { ProjectColor, ProjectListItem, ProjectResponse } from '@ctws/contracts'
-import { useQuery } from '@tanstack/react-query'
+import { queryOptions, useQuery, type UseQueryResult } from '@tanstack/react-query'
 import { apiFetch } from '../../platform/http/api'
 
-/**
- * Every reader of the ['projects'] cache entry goes through this one function, so they all see
- * the same shape -- including `openTasks`, which the server counts in the same query that lists
- * the projects. Nothing here recounts anything client-side.
- */
+/** The live projects, with the server's own `openTasks` counts. */
 export async function listProjects(): Promise<ProjectListItem[]> {
   return (await apiFetch<{ projects: ProjectListItem[] }>('/projects')).projects
 }
 
-/**
- * The projects that have been put away. The server lists ONLY the live ones unless asked, so an
- * archived project is in no list above -- this is the one way to see one. Under ['projects'], so a
- * refresh of the projects reaches it too.
- */
-export const archivedProjectsKey = ['projects', 'archived'] as const
+/** The archived projects: the server leaves them out of the list above unless asked. */
 export async function listArchivedProjects(): Promise<ProjectListItem[]> {
   return (await apiFetch<{ projects: ProjectListItem[] }>('/projects?archived=true')).projects
 }
 
-/**
- * EVERY PROJECT, live or put away: what a project's own page and its colour are looked up in. A
- * page that looked only among the live ones said an archived project was "not here any more".
- */
+export const projectsQuery = () => queryOptions({ queryKey: ['projects'], queryFn: listProjects })
+export const archivedProjectsQuery = () =>
+  queryOptions({ queryKey: ['projects', 'archived'], queryFn: listArchivedProjects })
+
+/** The live projects, in the rail's order. */
+export const useProjects = (): UseQueryResult<ProjectListItem[]> => useQuery(projectsQuery())
+
+/** Live and archived together: an archived project still has its page and its colour. */
 export function useEveryProject(): { data: ProjectListItem[] | undefined; isSuccess: boolean } {
-  const live = useQuery({ queryKey: ['projects'], queryFn: listProjects })
-  const shelf = useQuery({ queryKey: archivedProjectsKey, queryFn: listArchivedProjects })
+  const live = useProjects()
+  const shelf = useQuery(archivedProjectsQuery())
   return {
     data: live.data && shelf.data ? [...live.data, ...shelf.data] : undefined,
     isSuccess: live.isSuccess && shelf.isSuccess,

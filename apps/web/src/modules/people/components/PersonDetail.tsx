@@ -1,10 +1,9 @@
 import { channelProblem, type ChannelKind, type PersonResponse } from '@ctws/contracts'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { channelHref, deletePerson, patchPerson, type BirthdayDraft } from '../api/people'
-import { listProjects } from '../../../shell/projects/api'
-import { useProjectRail } from '../../../shell/projects/projectColor'
+import { ProjectChip, ProjectsPicker } from '../../../shell/projects/ProjectPicker'
 import { DangerAction, DangerZone } from '../../../platform/ui/DangerZone'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import { BirthdayEditor, BirthdayFields, givenDate, plainDate } from './BirthdayFields'
 import { CIRCLE_LABELS } from './BirthdayRow'
 import { BUTTON, LINK } from '../../../platform/ui/buttonStyles'
@@ -19,7 +18,7 @@ import { WritingMode } from '../../../platform/notes/WritingMode'
 import { DetailHead, DetailPane } from '../../../platform/ui/DetailPane'
 import { Link } from 'react-router-dom'
 import { LinkedSection } from '../../../shell/links/Links'
-import { PickMany, PickOne } from '../../../platform/ui/inline'
+import { PickOne } from '../../../platform/ui/inline'
 import { useForgetRecent, useRecordRecent } from '../../../shell/search/recent'
 import { CloseIcon, PlusIcon } from '../../../platform/ui/icons'
 
@@ -79,16 +78,10 @@ export function PersonFields({
   // 号码分组那一包：读的时候也要，不然同一个号码在列表里排好了而在这里挤成一条。
   const phone = usePhone()
   const [writing, setWriting] = useState(false)
-  const rail = useProjectRail()
-  const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
 
   const save = useMutation({
     mutationFn: (patch: Parameters<typeof patchPerson>[1]) => patchPerson(person.id, patch),
   })
-
-  const chip = (id: string) => (
-    <span className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(id)}`} />
-  )
 
   const head = (
     <div>
@@ -115,8 +108,6 @@ export function PersonFields({
         {head}
         <PersonForm
           person={person}
-          projects={projects.data ?? []}
-          chip={chip}
           busy={save.isPending}
           onCancel={() => setEditing(false)}
           onSave={(patch) => {
@@ -207,7 +198,7 @@ export function PersonFields({
               <ul className="flex flex-wrap gap-1.5">
                 {person.projects.map((p) => (
                   <li key={p.id} className={CHIP}>
-                    {chip(p.id)}
+                    <ProjectChip projectId={p.id} />
                     <span className="truncate">{p.name}</span>
                   </li>
                 ))}
@@ -322,15 +313,11 @@ const written = (c: Row) => c.value.trim() !== '' && c.value !== c.seed
  */
 function PersonForm({
   person,
-  projects,
-  chip,
   busy,
   onCancel,
   onSave,
 }: {
   person: PersonResponse
-  projects: { id: string; name: string; archivedAt: string | null }[]
-  chip: (id: string) => ReactNode
   busy: boolean
   onCancel: () => void
   onSave: (patch: Parameters<typeof patchPerson>[1]) => void
@@ -644,19 +631,7 @@ function PersonForm({
             />
           </Field>
           <Field label="Projects" shape="above">
-            <PickMany
-              label="Projects"
-              chosen={projectIds.map((id) => ({
-                value: id,
-                label: projects.find((p) => p.id === id)?.name ?? '',
-                mark: chip(id),
-              }))}
-              choices={projects
-                .filter((p) => !p.archivedAt)
-                .map((p) => ({ value: p.id, label: p.name, mark: chip(p.id) }))}
-              onChange={setProjectIds}
-              empty="Not on any project"
-            />
+            <ProjectsPicker chosen={projectIds} onChange={setProjectIds} />
           </Field>
         </div>
       </div>

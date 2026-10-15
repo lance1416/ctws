@@ -3,7 +3,7 @@ import { Fragment, useEffect, useId, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { listCompleted } from './api/completed'
 import { listMovement } from './api/movement'
-import { inboxOf, listProjects } from '../../shell/projects/api'
+import { inboxOf, projectsQuery, useProjects } from '../../shell/projects/api'
 import { searchTasks } from './api/search'
 import { createTask, listProjectTasks } from './api/tasks'
 import { refreshQueries } from '../../platform/http/refresh'
@@ -54,7 +54,7 @@ function TodayCount() {
 
 /** Things' count for tasks: how many are open across every line of work, zero included. */
 function OpenTaskCount() {
-  const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
+  const projects = useProjects()
   if (!projects.data) return null
   const open = projects.data.filter((p) => !p.archivedAt).reduce((n, p) => n + p.openTasks, 0)
   return <span data-count>{open} open</span>
@@ -181,7 +181,7 @@ function TodayDate() {
 function useInboxCapture(): CaptureTargetState {
   const qc = useQueryClient()
   // Shares the ['projects'] cache entry with every other reader, so capture costs no extra request.
-  const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
+  const projects = useProjects()
   const inbox = projects.data ? inboxOf(projects.data) : undefined
   return {
     target: inbox
@@ -447,9 +447,7 @@ export const taskModule: WorkspaceModule = {
       // database, and the rail and the capture box have both already loaded ['projects'] by the
       // time anyone can press a key. Unresolved means "do nothing", exactly as before.
       resolve: ({ queryClient }) => {
-        const projects = queryClient.getQueryData<Awaited<ReturnType<typeof listProjects>>>([
-          'projects',
-        ])
+        const projects = queryClient.getQueryData(projectsQuery().queryKey)
         const inbox = projects ? inboxOf(projects) : undefined
         return inbox ? `/projects/${inbox.id}` : null
       },

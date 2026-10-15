@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { listMovement } from '../../modules/tasks/api/movement'
-import { listProjects } from '../projects/api'
+import { useProjects } from '../projects/api'
 import { shortDay, todayIn } from '../../platform/time/dates'
 import { movedLine } from '../../modules/tasks/movement'
 import { ProjectRail } from '../rows/RowParts'
@@ -78,7 +78,7 @@ const SPAN = {
  * module being removed.
  */
 function ProjectsWidget() {
-  const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
+  const projects = useProjects()
   // The same entry Today's This week reads: what each line did and when it last moved.
   const movement = useQuery({ queryKey: ['movement'], queryFn: listMovement })
   const today = todayIn(useTimeZone(), useNow())

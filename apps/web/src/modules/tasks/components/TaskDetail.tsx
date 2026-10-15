@@ -5,10 +5,10 @@ import {
   type UpdateTaskBody,
 } from '@ctws/contracts'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { Controller, useForm } from 'react-hook-form'
-import { listProjects } from '../../../shell/projects/api'
+import { useProjects } from '../../../shell/projects/api'
 import { deleteTask, listProjectTasks, moveTask, patchTask } from '../api/tasks'
 import { tasksKey } from '../api/taskCache'
 import {
@@ -24,7 +24,7 @@ import {
 import { moveDueToDay, overdueLabel } from '../dueDates'
 import { NoteBody } from '../../../platform/notes/NoteBody'
 import { WritingMode } from '../../../platform/notes/WritingMode'
-import { useProjectRail } from '../../../shell/projects/projectColor'
+import { ProjectChip } from '../../../shell/projects/ProjectPicker'
 import { DangerAction, DangerZone } from '../../../platform/ui/DangerZone'
 import { DetailPane } from '../../../platform/ui/DetailPane'
 import { PickOne } from '../../../platform/ui/inline'
@@ -123,8 +123,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
    * is the thing inside it that a cancelled edit returns to, rather than <body> (WCAG 2.4.3).
    */
   const panel = useRef<HTMLDivElement>(null)
-  const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
-  const rail = useProjectRail()
+  const projects = useProjects()
   /**
    * THE FORM IS `react-hook-form`'S, FOR TWO THINGS AND NOT A THIRD.
    *
@@ -387,11 +386,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
             <div>
               <div className="flex min-w-0 items-start justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-1.5">
-                  {/* A chip, never alone: the project's NAME is beside it (WCAG 1.4.1). */}
-                  <span
-                    aria-hidden="true"
-                    className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(task.projectId)}`}
-                  />
+                  <ProjectChip projectId={task.projectId} />
                   <span className="truncate text-sm text-ink-muted">{projectName}</span>
                 </div>
                 {/* “Edit” and not “Edit task”: accessible names share one flat namespace and are
@@ -522,10 +517,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
               never alone: the project's NAME is right there (WCAG 1.4.1). */}
             <div>
               <div className="flex items-center gap-1.5">
-                <span
-                  aria-hidden="true"
-                  className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(nextProjectId)}`}
-                />
+                <ProjectChip projectId={nextProjectId} />
                 {/* The app's own picker, not a native `<select>`: the OS draws that popup and
                     does not know this palette. */}
                 <PickOne

@@ -1,12 +1,11 @@
 import type { ReadingItemResponse, ReadingStatus } from '@ctws/contracts'
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { useState, type ReactNode } from 'react'
+import { useMutation } from '@tanstack/react-query'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { deleteReadingItem, patchReadingItem, readingLabel } from '../api/reading'
-import { listProjects } from '../../../shell/projects/api'
+import { ProjectChip, ProjectPicker } from '../../../shell/projects/ProjectPicker'
 import { useComposing } from '../../../platform/keyboard/composition'
 import { addDays, dayPhrase, nextMonday, todayIn } from '../../../platform/time/dates'
-import { useProjectRail } from '../../../shell/projects/projectColor'
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { BUTTON } from '../../../platform/ui/buttonStyles'
 import { DangerAction, DangerZone } from '../../../platform/ui/DangerZone'
@@ -80,18 +79,12 @@ export function ReadingDetail({
 
 function ReadingFields({ item, onClose }: { item: ReadingItemResponse; onClose: () => void }) {
   const [editing, setEditing] = useState(false)
-  const rail = useProjectRail()
-  const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
   const timeZone = useTimeZone()
   const today = todayIn(timeZone, useNow())
 
   const save = useMutation({
     mutationFn: (patch: Parameters<typeof patchReadingItem>[1]) => patchReadingItem(item.id, patch),
   })
-
-  const chip = (id: string) => (
-    <span className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(id)}`} />
-  )
 
   const head = (
     <div>
@@ -115,8 +108,6 @@ function ReadingFields({ item, onClose }: { item: ReadingItemResponse; onClose: 
         {head}
         <ReadingForm
           item={item}
-          projects={projects.data ?? []}
-          chip={chip}
           busy={save.isPending}
           onCancel={() => setEditing(false)}
           onSave={(patch) => {
@@ -175,7 +166,7 @@ function ReadingFields({ item, onClose }: { item: ReadingItemResponse; onClose: 
             {item.projectId && item.projectName ? (
               <span className="flex">
                 <span className={CHIP}>
-                  {chip(item.projectId)}
+                  <ProjectChip projectId={item.projectId} />
                   <span className="truncate">{item.projectName}</span>
                 </span>
               </span>
@@ -197,15 +188,11 @@ function ReadingFields({ item, onClose }: { item: ReadingItemResponse; onClose: 
  */
 function ReadingForm({
   item,
-  projects,
-  chip,
   busy,
   onCancel,
   onSave,
 }: {
   item: ReadingItemResponse
-  projects: { id: string; name: string; archivedAt: string | null }[]
-  chip: (id: string) => ReactNode
   busy: boolean
   onCancel: () => void
   onSave: (patch: Parameters<typeof patchReadingItem>[1]) => void
@@ -215,7 +202,7 @@ function ReadingForm({
   const [author, setAuthor] = useState(item.author ?? '')
   const [status, setStatus] = useState<ReadingStatus>(item.status)
   const [planOn, setPlanOn] = useState(item.planOn)
-  const [projectId, setProjectId] = useState(item.projectId ?? '')
+  const [projectId, setProjectId] = useState<string | null>(item.projectId)
   const timeZone = useTimeZone()
   const today = todayIn(timeZone, useNow())
   const composing = useComposing()
@@ -230,7 +217,7 @@ function ReadingForm({
       ...(item.kind === 'book' ? { author: author.trim() || null } : {}),
       status,
       planOn,
-      projectId: projectId === '' ? null : projectId,
+      projectId,
     })
   }
 
@@ -318,17 +305,7 @@ function ReadingForm({
             />
           </Field>
           <Field label="Projects" shape="above">
-            <PickOne
-              label="Projects"
-              value={projectId}
-              choices={[
-                { value: '', label: 'Not on any project' },
-                ...projects
-                  .filter((p) => !p.archivedAt)
-                  .map((p) => ({ value: p.id, label: p.name, mark: chip(p.id) })),
-              ]}
-              onPick={setProjectId}
-            />
+            <ProjectPicker value={projectId} onPick={setProjectId} none="Not on any project" />
           </Field>
         </div>
       </div>

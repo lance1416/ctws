@@ -4,17 +4,16 @@ import {
   type ChannelKind,
   type PersonResponse,
 } from '@ctws/contracts'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { createPerson, type BirthdayDraft } from '../api/people'
-import { listProjects } from '../../../shell/projects/api'
+import { ProjectsPicker } from '../../../shell/projects/ProjectPicker'
 import { useComposing } from '../../../platform/keyboard/composition'
 import { channelPlaceholder } from '../channels'
-import { useProjectRail } from '../../../shell/projects/projectColor'
 import { usePhone } from '../usePhone'
 import { BirthdayEditor, birthdayDraftOf } from './BirthdayFields'
 import { boxed, field, label } from '../../../platform/ui/formStyles'
-import { PickMany, PickOne } from '../../../platform/ui/inline'
+import { PickOne } from '../../../platform/ui/inline'
 import { DialogFooter } from '../../../platform/ui/DialogFooter'
 import { Modal } from '../../../platform/ui/Modal'
 
@@ -37,7 +36,6 @@ export function NewPersonDialog({
 }) {
   const nameField = useRef<HTMLInputElement>(null)
   const composing = useComposing()
-  const rail = useProjectRail()
 
   const [name, setName] = useState('')
   const [org, setOrg] = useState('')
@@ -83,7 +81,6 @@ export function NewPersonDialog({
    */
   const [birthday, setBirthday] = useState<{ draft: BirthdayDraft; refused: boolean } | null>(null)
 
-  const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
   const make = useMutation({
     mutationFn: createPerson,
     meta: { awaits: [['people']] },
@@ -251,23 +248,7 @@ export function NewPersonDialog({
         <div>
           <span className={label}>Projects</span>
           <div className="mt-1.5">
-            <PickMany
-              label="Projects"
-              chosen={projectIds.map((id) => ({
-                value: id,
-                label: projects.data?.find((p) => p.id === id)?.name ?? '',
-                mark: <span className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(id)}`} />,
-              }))}
-              choices={(projects.data ?? [])
-                .filter((p) => !p.archivedAt)
-                .map((p) => ({
-                  value: p.id,
-                  label: p.name,
-                  mark: <span className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(p.id)}`} />,
-                }))}
-              onChange={setProjects}
-              empty="Not on any project"
-            />
+            <ProjectsPicker chosen={projectIds} onChange={setProjects} />
           </div>
         </div>
 

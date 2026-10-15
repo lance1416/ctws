@@ -3,7 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useRef } from 'react'
 import { useForm } from 'react-hook-form'
-import { listProjects } from '../../../shell/projects/api'
+import { useProjects } from '../../../shell/projects/api'
 import { tasksKey } from '../api/taskCache'
 import { createTask, listProjectTasks } from '../api/tasks'
 import {
@@ -15,7 +15,7 @@ import {
   ymd,
 } from '../../../platform/time/dates'
 import { useTimeZone } from '../../../shell/auth/useMe'
-import { useProjectRail } from '../../../shell/projects/projectColor'
+import { ProjectChip } from '../../../shell/projects/ProjectPicker'
 import { flatten } from '../tree/flatten'
 import { MAX_DEPTH } from '../tree/drop'
 import { decision, field, label, STATUS_CHIP } from '../../../platform/ui/formStyles'
@@ -103,11 +103,10 @@ export function CreateTaskDialog({
   })
   const project = watch('projectId')
   const parentId = watch('parentId')
-  const rail = useProjectRail()
   const scheduledOn = watch('scheduledOn')
   const dueAt = watch('dueAt')
 
-  const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
+  const projects = useProjects()
   // The chosen project's tasks, for the parent picker. Shares the cache entry the tree filled on
   // this page, so opening the dialog on the project you are looking at costs no request.
   const tasks = useQuery({
@@ -211,7 +210,7 @@ export function CreateTaskDialog({
               .map((p) => ({
                 value: p.id,
                 label: p.name,
-                mark: <span className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(p.id)}`} />,
+                mark: <ProjectChip projectId={p.id} />,
               }))}
             onPick={(id) => {
               setValue('projectId', id)

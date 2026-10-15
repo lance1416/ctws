@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { deleteProject, listProjects } from './api'
+import { deleteProject, useProjects } from './api'
 import { listProjectTasks } from '../../modules/tasks/api/tasks'
 import { tasksKey } from '../../modules/tasks/api/taskCache'
 import { DangerAction } from '../../platform/ui/DangerZone'
@@ -17,7 +17,7 @@ import { useForgetRecent } from '../search/recent'
  */
 export function DeleteProject({ id }: { id: string }) {
   const navigate = useNavigate()
-  const projects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
+  const projects = useProjects()
   const project = projects.data?.find((p) => p.id === id)
 
   const counted = useQuery({

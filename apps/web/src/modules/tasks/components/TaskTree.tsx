@@ -11,7 +11,7 @@ import type { MoveTaskBody, TaskResponse, TaskStatus } from '@ctws/contracts'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Fragment, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { listProjects } from '../../../shell/projects/api'
+import { useProjects } from '../../../shell/projects/api'
 import { createTask, listProjectTasks, moveTask, patchTask, type ProjectTasks } from '../api/tasks'
 import { refreshQueries } from '../../../platform/http/refresh'
 import { tasksKey } from '../api/taskCache'
@@ -63,7 +63,7 @@ function applyMove(old: TaskResponse[], id: string, body: MoveTaskBody): TaskRes
 
 export function TaskTree({ projectId }: { projectId: string }) {
   const qc = useQueryClient()
-  const allProjects = useQuery({ queryKey: ['projects'], queryFn: listProjects })
+  const allProjects = useProjects()
   // Only the INBOX dates its rows. Quick capture makes the inbox the one list that grows
   // without anyone deciding anything, so "how long has this been sitting here" is the question
   // it raises and no other project does; and since most rows in an ordinary tree carry no date
