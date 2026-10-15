@@ -3,8 +3,8 @@ import { useQuery } from '@tanstack/react-query'
 import { Fragment, useState, type ReactNode } from 'react'
 import { useForgetWhenGone } from '../../../shell/search/recent'
 import { GoneNotice } from '../../../shell/detail/GoneNotice'
-import { useNavigate, useParams } from 'react-router-dom'
-import { meetingsQuery, repeatLabel, seriesQuery } from '../api'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { meetingsQuery, occurrenceQuery, repeatLabel, seriesQuery } from '../api'
 import { EmptyState } from '../../../platform/ui/EmptyState'
 import { MeetingDetail } from '../components/MeetingDetail'
 import { NewMeetingDialog } from '../components/NewMeetingDialog'
@@ -60,6 +60,9 @@ function nextOfEach(rows: readonly MeetingOccurrence[], now: Date): MeetingOccur
 /** How far either way the two sections reach. A personal calendar, not an archive. */
 const WINDOW_DAYS = 31
 
+/** An occurrence by its two ids: a series has many, so its id alone does not name one. */
+type Occurrence = { meetingId: string; recurrenceId: string }
+
 export function Meetings() {
   useCrumbs([{ label: 'Things', to: '/things' }, { label: 'Meetings' }])
   const accountZone = useTimeZone()
@@ -70,13 +73,19 @@ export function Meetings() {
   const [making, setMaking] = useState(false)
   const [showPast, setShowPast] = useState(false)
   /**
-   * The open meeting is in the address, `/meetings/<id>`, with the list behind it. A link names a
-   * series, so it opens the series' next occurrence: the one someone following it wants.
+   * The open meeting is in the address, with the list behind it: `/meetings/<id>?at=<occurrence>`
+   * for the one a row opened. A link names only the series, so it opens the series' next
+   * occurrence: the one someone following it wants.
    */
   const { id: openId = null } = useParams()
+  const at = useSearchParams()[0].get('at')
   const navigate = useNavigate()
-  const setOpen = (next: { meetingId: string } | null) =>
-    navigate(next ? `/meetings/${next.meetingId}` : '/meetings')
+  const setOpen = (next: Occurrence | null) =>
+    navigate(
+      next
+        ? `/meetings/${next.meetingId}?${new URLSearchParams({ at: next.recurrenceId })}`
+        : '/meetings',
+    )
 
   const ahead = useQuery(meetingsQuery({ from: today, to: addDays(today, WINDOW_DAYS) }))
   const behind = useQuery({
@@ -88,15 +97,21 @@ export function Meetings() {
   const coming = nextOfEach(ahead.data ?? [], now)
   // Backwards, the MOST RECENT of each series is the one worth showing.
   const past = nextOfEach([...(behind.data ?? [])].reverse(), now)
-  const inWindow = [...coming, ...past].find((m) => m.meetingId === openId)
-  // A link can name a meeting outside the list's two months.
-  const far = useQuery({
-    ...seriesQuery(openId ?? '', today),
-    enabled: openId !== null && !inWindow,
+  const listed = [...coming, ...past].find(
+    (m) => m.meetingId === openId && (at === null || m.recurrenceId === at),
+  )
+  // Asked for only once the list is in and does not have it.
+  const missing = openId !== null && ahead.isSuccess && !listed
+  const one = useQuery({
+    ...occurrenceQuery(openId ?? '', at ?? ''),
+    enabled: missing && at !== null,
   })
-  const found = inWindow ?? far.data ?? null
-  const gone = openId !== null && !found && far.isSuccess
-  useForgetWhenGone('meeting', openId, gone)
+  const far = useQuery({ ...seriesQuery(openId ?? '', today), enabled: missing && at === null })
+  const fetched = at === null ? far : one
+  const found = listed ?? fetched.data ?? null
+  const gone = openId !== null && !found && fetched.isSuccess
+  // One occurrence gone is not the series gone, so only a series is forgotten.
+  useForgetWhenGone('meeting', openId, gone && at === null)
 
   return (
     <>
@@ -164,7 +179,7 @@ export function Meetings() {
             // Straight into the pane, where the parts a form cannot hold -- a note, a place, an
             // exception to one week -- are edited. The server hands back the occurrence, so this
             // names the one that was just made rather than guessing which of a series it is.
-            setOpen({ meetingId: made.meetingId })
+            setOpen(made)
           }}
         />
       )}
@@ -194,7 +209,7 @@ function Days({
   today: string
   now: Date
   accountZone: string
-  onOpen: (at: { meetingId: string; recurrenceId: string }) => void
+  onOpen: (at: Occurrence) => void
 }) {
   const named = new Intl.DateTimeFormat('en-US', {
     timeZone: accountZone,
@@ -271,7 +286,7 @@ function MeetingRow({
   today: string
   now: Date
   accountZone: string
-  onOpen: (at: { meetingId: string; recurrenceId: string }) => void
+  onOpen: (at: Occurrence) => void
 }) {
   const clock = clockTime(accountZone)
   const over = new Date(m.endsAt).getTime() <= now.getTime()
@@ -309,7 +324,7 @@ function MeetingRow({
         <span className="flex min-w-0 flex-1 flex-col">
           <button
             type="button"
-            onClick={() => onOpen({ meetingId: m.meetingId, recurrenceId: m.recurrenceId })}
+            onClick={() => onOpen(m)}
             className={`truncate text-left after:absolute after:inset-0 after:content-[''] ${
               over ? 'text-ink-subtle' : 'text-ink'
             }`}

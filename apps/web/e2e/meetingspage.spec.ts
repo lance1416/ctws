@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { TZDate } from '@date-fns/tz'
-import { dayOffset } from './days'
+import { addDaysYmd, dayOffset } from './days'
 import { accountZone, apiPost, editDetail, pickOne, registerFreshUser, WEB } from './helpers'
 
 /**
@@ -14,6 +14,9 @@ import { accountZone, apiPost, editDetail, pickOne, registerFreshUser, WEB } fro
 
 const dialog = (page: Page) => page.getByRole('dialog', { name: 'New meeting' })
 const pane = (page: Page) => page.getByRole('dialog', { name: 'Meetings' })
+
+/** The month names the app prints, so a spec can build the string the page will show. */
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 test('Things reaches meetings, and the page says when there are none', async ({ page }) => {
   // Kinds sit behind Things, not one row each in the rail.
@@ -263,7 +266,7 @@ test('a meeting pane stacks its labels over its values, and has no page to open'
   expect(stacked).toBe(true)
 
   // The pane is at the meeting's own address already: there is nowhere else to open it.
-  await expect(page).toHaveURL(new RegExp('/meetings/[0-9a-f-]{36}$'))
+  await expect(page).toHaveURL(new RegExp('/meetings/[0-9a-f-]{36}\\?at='))
   await expect(pane.getByRole('link', { name: 'Open as a page' })).toHaveCount(0)
 })
 
@@ -382,4 +385,29 @@ test('backing out of the scope question saves nothing from that edit', async ({ 
   const held = ((await res.json()) as { meetings: { title: string; startsLocal: string }[] })
     .meetings
   expect(held.map((m) => [m.title, m.startsLocal])).toEqual([['Weekly sync', `${today}T09:00`]])
+})
+
+test('a past occurrence opens as itself, not as the next one', async ({ page }) => {
+  await registerFreshUser(page)
+  const today = dayOffset(0)
+  const start = addDaysYmd(today, -14)
+  await apiPost(page, '/meetings', {
+    title: 'Standing call',
+    startsLocal: `${start}T09:00`,
+    timeZone: await accountZone(page),
+    durationMinutes: 30,
+    rrule: `FREQ=WEEKLY;BYDAY=${weekdayCode(start)}`,
+  })
+  await page.goto('/meetings')
+  await page.getByRole('button', { name: 'Earlier', exact: true }).click()
+  // Earlier shows each series' latest occurrence: last week's.
+  const lastWeek = addDaysYmd(today, -7)
+  await page
+    .getByRole('region', { name: 'Earlier' })
+    .getByRole('button', { name: /Standing call/ })
+    .click()
+  await expect(page).toHaveURL(new RegExp(`at=${lastWeek}T09(%3A|:)00`))
+  const [, m, d] = lastWeek.split('-').map(Number) as [number, number, number]
+  // The year is printed only when it is not this one, as in the first week of January.
+  await expect(pane(page)).toContainText(new RegExp(`${MONTHS[m - 1]} ${d}(, \\d{4})?, 09:00`))
 })
