@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { TZDate } from '@date-fns/tz'
 import { dayOffset } from './days'
-import { accountZone, pickOne, registerFreshUser, WEB } from './helpers'
+import { accountZone, apiPost, editDetail, pickOne, registerFreshUser, WEB } from './helpers'
 
 /**
  * MEETINGS -- the module's own destination, and the form that fills one in once.
@@ -349,4 +349,37 @@ test('a repeating meeting shows its next occurrence, not one already over', asyn
   const tomorrow = page.getByRole('region', { name: 'Tomorrow' })
   await expect(tomorrow.locator('[data-meeting-row]')).toHaveCount(1)
   await expect(page.getByRole('region', { name: 'Today' })).toHaveCount(0)
+})
+
+/** `BYDAY`'s code for the weekday `day` falls on. */
+const weekdayCode = (day: string) =>
+  ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'][new Date(`${day}T12:00:00Z`).getUTCDay()]!
+
+test('backing out of the scope question saves nothing from that edit', async ({ page }) => {
+  await registerFreshUser(page)
+  const today = dayOffset(0)
+  const made = await apiPost(page, '/meetings', {
+    title: 'Weekly sync',
+    startsLocal: `${today}T09:00`,
+    timeZone: await accountZone(page),
+    durationMinutes: 30,
+    rrule: `FREQ=WEEKLY;BYDAY=${weekdayCode(today)}`,
+  })
+  await page.goto(`/meetings/${made.meetingId}`)
+  await editDetail(page)
+  await pane(page).getByLabel('Title').fill('Renamed sync')
+  await pane(page).getByLabel('Start').fill(`${today}T10:00`)
+  await pane(page).getByRole('button', { name: 'Save' }).click()
+  await expect(page.getByRole('alertdialog', { name: 'This meeting repeats' })).toBeVisible()
+  await page.getByRole('button', { name: 'Keep editing' }).click()
+  // Nothing in flight: a write sent before the question would still hold Save down.
+  await expect(pane(page).getByRole('button', { name: 'Save' })).toBeEnabled()
+  await pane(page).getByRole('button', { name: 'Cancel', exact: true }).click()
+
+  const res = await page.request.get(`/api/v1/meetings?from=${today}&to=${today}`, {
+    headers: WEB,
+  })
+  const held = ((await res.json()) as { meetings: { title: string; startsLocal: string }[] })
+    .meetings
+  expect(held.map((m) => [m.title, m.startsLocal])).toEqual([['Weekly sync', `${today}T09:00`]])
 })

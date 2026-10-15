@@ -10,7 +10,7 @@ import { patchMeeting } from '../api'
  */
 export function useScopedEdit(meeting: MeetingOccurrence, onSaved: () => void) {
   const [failed, setFailed] = useState<string | null>(null)
-  /** The when-part of a Save, waiting on "this one / from here on". */
+  /** A Save that moved a repeating meeting, held whole until "this one / from here on". */
   const [asking, setAsking] = useState<UpdateMeetingInput | null>(null)
 
   const save = useMutation({
@@ -20,34 +20,34 @@ export function useScopedEdit(meeting: MeetingOccurrence, onSaved: () => void) {
     onError: (e) => setFailed(e instanceof Error ? e.message : "Couldn't save it"),
   })
 
-  const submit = (patch: UpdateMeetingInput) => {
+  /**
+   * The title, the place, who is in it and the rule are the series', written to all of it; when
+   * and how long go to `scope`.
+   */
+  const write = (patch: UpdateMeetingInput, scope: EditScope) => {
     const { startsLocal, durationMinutes, ...series } = patch
-    const when: UpdateMeetingInput = {}
-    if (startsLocal !== undefined) when.startsLocal = startsLocal
-    if (durationMinutes !== undefined) when.durationMinutes = durationMinutes
-
-    // The title, the place, who is in it and the rule itself are the series', never asked about.
     save.mutate({ ...series, scope: 'all' })
-    if (Object.keys(when).length === 0) {
-      onSaved()
-      return
+    if (startsLocal !== undefined || durationMinutes !== undefined) {
+      const recurrenceId = scope === 'all' ? undefined : meeting.recurrenceId
+      save.mutate({ startsLocal, durationMinutes, scope, recurrenceId })
     }
-    // Only a repeating meeting has "this one or from here on" to ask.
-    if (meeting.rrule === null) {
-      save.mutate({ ...when, scope: 'all' })
-      onSaved()
-      return
-    }
-    setAsking(when)
+    onSaved()
+  }
+
+  const submit = (patch: UpdateMeetingInput) => {
+    const moved = patch.startsLocal !== undefined || patch.durationMinutes !== undefined
+    // Only a repeating meeting has "this one or from here on" to ask, and nothing of the Save is
+    // written before the answer: backing out of the question leaves the meeting as it was.
+    if (moved && meeting.rrule !== null) setAsking(patch)
+    else write(patch, 'all')
   }
 
   return {
     submit,
     asking: asking !== null,
     pick: (scope: EditScope) => {
-      save.mutate({ ...asking, scope, recurrenceId: meeting.recurrenceId })
+      if (asking) write(asking, scope)
       setAsking(null)
-      onSaved()
     },
     /** Back to the form, which is still open under the question. */
     back: () => setAsking(null),
