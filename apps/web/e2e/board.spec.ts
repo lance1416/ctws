@@ -108,3 +108,13 @@ test('an empty project says so once, not four times', async ({ page }) => {
   await expect(page.getByText('No tasks in this project yet')).toHaveCount(1)
   await expect(page.locator('[data-board-column]')).toHaveCount(0)
 })
+
+test('a board that cannot load says so, instead of four empty columns', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'Down')
+  await makeTask(page, pid, 'Somewhere')
+  await page.route('**/api/v1/tasks?projectId=*', (r) => r.fulfill({ status: 503, body: '{}' }))
+  await page.goto(`/projects/${pid}?view=tasks:board`)
+  await expect(page.getByRole('alert')).toContainText("Couldn't load tasks")
+  await expect(page.locator('[data-board-column]')).toHaveCount(0)
+})

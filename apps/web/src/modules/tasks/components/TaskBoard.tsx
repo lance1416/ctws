@@ -114,8 +114,15 @@ export function TaskBoard({ projectId }: { projectId: string }) {
     actions.setStatus(task.id, status)
   }
 
-  if (tasks.isSuccess && rows.length === 0)
-    return <PanelEmpty>No tasks in this project yet</PanelEmpty>
+  // As the tree does: nothing while loading, and a failure said rather than four empty columns.
+  if (tasks.isError)
+    return (
+      <p role="alert" className="mt-4 text-sm text-danger">
+        Couldn't load tasks
+      </p>
+    )
+  if (!tasks.isSuccess) return null
+  if (rows.length === 0) return <PanelEmpty>No tasks in this project yet</PanelEmpty>
 
   return (
     <>
