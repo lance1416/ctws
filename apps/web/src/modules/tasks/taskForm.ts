@@ -34,15 +34,8 @@ export type CreateTaskForm = z.input<typeof createTaskBody>
 export type CreateTaskValues = z.output<typeof createTaskBody>
 
 /**
- * The detail pane's schema: the UPDATE contract, which is `.partial()` and therefore already says
- * "a PATCH names only what changed". Every field of the pane's form is present in its values, so
- * the partiality does not relax the title -- `title` is still `min(1)` whenever it is there, and
- * the form always has it.
- */
-export const updateTaskForm = updateTaskBody
-
-/**
- * The detail pane's schema: the update contract PLUS the one thing the pane edits that a PATCH
+ * The detail pane's schema: the update contract (`.partial()`, but the form always holds every
+ * field, so the title's `min(1)` always applies) PLUS the one thing the pane edits that a PATCH
  * cannot carry. `updateTaskBody` omits `projectId` on purpose -- moving a task across projects
  * cascades to its subtree and is the MOVE endpoint's job -- but the pane edits the project in the
  * same form and saves it with the same press, so the FORM has a field the BODY does not. Extending

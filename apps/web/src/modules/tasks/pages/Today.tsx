@@ -521,7 +521,6 @@ export function Today() {
         <TaskDetail
           key={openTask.id}
           task={openTask}
-          projectId={openTask.projectId}
           onClose={closeDetail}
           onSaved={() => {
             // Marks the row; the pane stays open in reading mode. The save may have taken the

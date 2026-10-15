@@ -152,15 +152,23 @@ export function DetailHead({
       <div className="flex min-w-0 items-center gap-1.5">{kind}</div>
       <div className="-mt-1 flex shrink-0 items-center gap-1">
         {trailing}
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close"
-          className="flex h-9 w-9 items-center justify-center rounded-md text-ink-muted hover:bg-hover hover:text-ink"
-        >
-          <CloseIcon className="h-4 w-4" strokeWidth={1.5} />
-        </button>
+        <CloseButton onClick={onClose} />
       </div>
     </div>
+  )
+}
+
+/** The pane's ✕. An icon, not the word: closing is not something done TO the thing shown. */
+export function CloseButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Close"
+      data-detail-close
+      className="flex h-9 w-9 items-center justify-center rounded-md text-ink-muted hover:bg-hover hover:text-ink"
+    >
+      <CloseIcon className="h-4 w-4" strokeWidth={1.5} />
+    </button>
   )
 }

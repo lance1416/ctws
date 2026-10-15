@@ -131,14 +131,7 @@ export function Completed() {
           Showing the most recent {rows.length}. Older work is in Review, week by week.
         </p>
       )}
-      {openTask && (
-        <TaskDetail
-          key={openTask.id}
-          task={openTask}
-          projectId={openTask.projectId}
-          onClose={() => setOpenId(null)}
-        />
-      )}
+      {openTask && <TaskDetail key={openTask.id} task={openTask} onClose={() => setOpenId(null)} />}
     </>
   )
 }

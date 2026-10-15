@@ -1,4 +1,3 @@
-import { TASK_STATUSES } from '@ctws/contracts'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useRef } from 'react'
@@ -6,24 +5,15 @@ import { useForm } from 'react-hook-form'
 import { useProjects } from '../../../shell/projects/api'
 import { projectTasksQuery } from '../api/queries'
 import { createTask } from '../api/tasks'
-import {
-  addDays,
-  dayEndIso,
-  dayPhrase,
-  nextMonday,
-  todayIn,
-  ymd,
-} from '../../../platform/time/dates'
+import { dayEndIso, dayPhrase, todayIn, ymd } from '../../../platform/time/dates'
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { ProjectChip } from '../../../shell/projects/ProjectPicker'
 import { flatten } from '../tree/flatten'
 import { MAX_DEPTH } from '../tree/drop'
-import { decision, field, label, STATUS_CHIP } from '../../../platform/ui/formStyles'
+import { field, label } from '../../../platform/ui/formStyles'
 import { PickOne } from '../../../platform/ui/inline'
 import { Modal } from '../../../platform/ui/Modal'
-import { DeadlineMark, PlanMark } from './TaskRowParts'
-import { STATUS_LABEL } from '../status'
-import { StatusMark } from './StatusMark'
+import { DateDecisions, StatusRadios } from './TaskFields'
 import { useComposing } from '../../../platform/keyboard/composition'
 import {
   createTaskForm,
@@ -111,11 +101,6 @@ export function CreateTaskDialog({
   // this page, so opening the dialog on the project you are looking at costs no request.
   const tasks = useQuery(projectTasksQuery(project))
 
-  const DAYS: [string, string][] = [
-    ['Today', todayYmd],
-    ['Tomorrow', addDays(todayYmd, 1)],
-    ['Next week', nextMonday(todayYmd)],
-  ]
   /** Which named day the held instant IS, so the buttons can say which one is pressed. */
   const dueDay = dueAt ? ymd(new Date(dueAt), timeZone) : ''
 
@@ -161,8 +146,6 @@ export function CreateTaskDialog({
   // `initialFocus` and to go back to the field after a ⌘↵. Both get it.
   const { ref: registerTitle, ...titleRest } = register('title')
 
-  const dueEcho = dueDay === '' ? null : `${dayPhrase(dueDay, todayYmd)} 23:59`
-  const planEcho = !scheduledOn ? null : dayPhrase(scheduledOn, todayYmd)
   const problem = titleProblem(errors.title?.type as string | undefined)
 
   return (
@@ -247,86 +230,26 @@ export function CreateTaskDialog({
           </div>
         </div>
 
-        {/* The same five marker shapes the rows speak, named, as native radios: one tab stop and
-            the arrow keys inside it, for free and correctly. */}
-        <div role="radiogroup" aria-labelledby="create-status-label">
-          <span id="create-status-label" className={label}>
-            Status
-          </span>
-          <div className="mt-1.5 flex flex-wrap gap-1">
-            {TASK_STATUSES.map((s) => (
-              <label key={s} className={STATUS_CHIP}>
-                <input
-                  type="radio"
-                  value={s}
-                  {...register('status')}
-                  className="absolute inset-0 cursor-pointer appearance-none opacity-0"
-                />
-                <span aria-hidden="true" className="flex">
-                  <StatusMark status={s} />
-                </span>
-                {STATUS_LABEL[s]}
-              </label>
-            ))}
-          </div>
-        </div>
+        <StatusRadios id="create" field={register('status')} />
 
-        {/* The two dates, wearing the glyph and the colour family the rows wear. One row of named
-            decisions each and no exact field: the dialog is the fast way in, and the three days
-            plus the way out are what a task being created actually knows. `aria-pressed`, because
-            each button is a STATE here and not a one-shot action -- the form has not been sent
-            yet, so the person has to be able to see (and hear) what is currently chosen. */}
-        <div>
-          <span className="flex items-center gap-1 text-sm text-deadline">
-            <DeadlineMark filled={false} />
-            Due
-          </span>
-          <div className="mt-1.5 flex flex-wrap gap-1">
-            {DAYS.map(([word, day]) => (
-              <button
-                key={word}
-                type="button"
-                aria-pressed={dueDay === day}
-                onClick={() => setValue('dueAt', dayEndIso(day, timeZone))}
-                className={decision}
-              >
-                Due {word.toLowerCase()}
-              </button>
-            ))}
-            <button type="button" onClick={() => setValue('dueAt', null)} className={decision}>
-              Clear the deadline
-            </button>
-          </div>
-          {dueEcho && <p className="mt-1 text-xs tabular-nums text-ink-muted">{dueEcho}</p>}
-        </div>
-
-        <div>
-          <span className="flex items-center gap-1 text-sm text-plan">
-            <PlanMark />
-            Plan
-          </span>
-          <div className="mt-1.5 flex flex-wrap gap-1">
-            {DAYS.map(([word, day]) => (
-              <button
-                key={word}
-                type="button"
-                aria-pressed={scheduledOn === day}
-                onClick={() => setValue('scheduledOn', day)}
-                className={decision}
-              >
-                Plan for {word.toLowerCase()}
-              </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => setValue('scheduledOn', null)}
-              className={decision}
-            >
-              Clear the plan
-            </button>
-          </div>
-          {planEcho && <p className="mt-1 text-xs tabular-nums text-ink-muted">{planEcho}</p>}
-        </div>
+        {/* Named days only, no exact field: the dialog is the fast way in. Each button is a STATE
+            here (`pressed`), since nothing has been sent yet and the choice must be seen. */}
+        <DateDecisions
+          kind="due"
+          today={todayYmd}
+          pressed={(day) => dueDay === day}
+          onDay={(day) => setValue('dueAt', dayEndIso(day, timeZone))}
+          onClear={() => setValue('dueAt', null)}
+          echo={dueDay === '' ? null : `${dayPhrase(dueDay, todayYmd)} 23:59`}
+        />
+        <DateDecisions
+          kind="plan"
+          today={todayYmd}
+          pressed={(day) => scheduledOn === day}
+          onDay={(day) => setValue('scheduledOn', day)}
+          onClear={() => setValue('scheduledOn', null)}
+          echo={scheduledOn ? dayPhrase(scheduledOn, todayYmd) : null}
+        />
 
         {/* `htmlFor` rather than a wrapping label, for the reason the detail pane records: React
             writes a textarea's value into the element's text, so a wrapping label's name would be

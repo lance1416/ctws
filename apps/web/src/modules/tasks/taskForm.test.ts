@@ -1,7 +1,7 @@
 import { createTaskBody, updateTaskBody } from '@ctws/contracts'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { describe, expect, it } from 'vitest'
-import { createTaskForm, titleProblem, updateTaskForm } from './taskForm'
+import { createTaskForm, detailTaskForm, PATCH_KEYS, titleProblem } from './taskForm'
 
 /**
  * What these pin is the REASON `react-hook-form` + `@hookform/resolvers` is the right pairing here
@@ -15,8 +15,8 @@ import { createTaskForm, titleProblem, updateTaskForm } from './taskForm'
 const CONTEXT = { fields: {}, shouldUseNativeValidation: false }
 const resolveCreate = (values: unknown) =>
   zodResolver(createTaskForm)(values as never, undefined, CONTEXT as never)
-const resolveUpdate = (values: unknown) =>
-  zodResolver(updateTaskForm)(values as never, undefined, CONTEXT as never)
+const resolveDetail = (values: unknown) =>
+  zodResolver(detailTaskForm)(values as never, undefined, CONTEXT as never)
 
 const PROJECT = '018f7b2c-0000-7000-8000-000000000001'
 const draft = (over: Record<string, unknown> = {}) => ({
@@ -33,7 +33,13 @@ const draft = (over: Record<string, unknown> = {}) => ({
 describe('the create form validates with the create CONTRACT', () => {
   it('is the contract object itself, so the two cannot drift', () => {
     expect(createTaskForm).toBe(createTaskBody)
-    expect(updateTaskForm).toBe(updateTaskBody)
+  })
+
+  it('makes the detail form the update contract plus the project, which no PATCH carries', () => {
+    expect(Object.keys(detailTaskForm.shape).sort()).toEqual(
+      [...Object.keys(updateTaskBody.shape), 'projectId'].sort(),
+    )
+    expect(PATCH_KEYS).not.toContain('projectId')
   })
 
   it('accepts a draft the contract accepts, and hands back the schema’s parsed values', async () => {
@@ -87,20 +93,30 @@ describe('the create form validates with the create CONTRACT', () => {
 
 describe('the detail form validates with the UPDATE contract', () => {
   it('accepts a PATCH naming only some fields, because the contract is partial', async () => {
-    const out = await resolveUpdate({ title: '写方案 v2' })
+    const out = await resolveDetail({ projectId: PROJECT, title: '写方案 v2' })
     expect(out.errors).toEqual({})
-    expect(out.values).toEqual({ title: '写方案 v2' })
+    expect(out.values).toEqual({ projectId: PROJECT, title: '写方案 v2' })
   })
 
   it('still refuses an empty title when the title IS named', async () => {
-    const out = await resolveUpdate({ title: '  ', notes: null })
+    const out = await resolveDetail({ projectId: PROJECT, title: '  ', notes: null })
     expect(out.errors.title?.type).toBe('too_small')
     expect(out.values).toEqual({})
   })
 
   it('takes null for the two dates and the notes, which is how a PATCH clears them', async () => {
-    const out = await resolveUpdate({ scheduledOn: null, dueAt: null, notes: null })
+    const out = await resolveDetail({
+      projectId: PROJECT,
+      scheduledOn: null,
+      dueAt: null,
+      notes: null,
+    })
     expect(out.errors).toEqual({})
-    expect(out.values).toEqual({ scheduledOn: null, dueAt: null, notes: null })
+    expect(out.values).toEqual({ projectId: PROJECT, scheduledOn: null, dueAt: null, notes: null })
+  })
+
+  it('refuses a project that is not an id', async () => {
+    const out = await resolveDetail({ projectId: 'inbox', title: '写方案' })
+    expect(out.errors.projectId).toBeTruthy()
   })
 })

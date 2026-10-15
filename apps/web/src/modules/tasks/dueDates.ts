@@ -2,7 +2,14 @@ import type { TaskStatus } from '@ctws/contracts'
 import { isFinished } from './status'
 import { TZDate } from '@date-fns/tz'
 import { differenceInCalendarDays, format, set } from 'date-fns'
-import { dayPhrase, daysAgoIn, todayIn, utcIso, ymd } from '../../platform/time/dates'
+import {
+  dayPhrase,
+  daysAgoIn,
+  toDayTimeInput,
+  todayIn,
+  utcIso,
+  ymd,
+} from '../../platform/time/dates'
 
 /** "N days late", in calendar days: a task due late yesterday is 1 day late, whatever the hour. */
 export function overdueLabel(dueIso: string, timeZone: string, now: Date): string {
@@ -19,6 +26,12 @@ export function capturedLabel(createdIso: string, timeZone: string, now: Date): 
   if (days <= 0) return 'Captured today'
   if (days === 1) return 'Captured yesterday'
   return `Captured ${days} days ago`
+}
+
+/** An instant in the app's own words, "Tomorrow, 14:30", on the account's calendar and clock. */
+export function instantPhrase(iso: string, today: string, timeZone: string): string {
+  const [day, clock] = toDayTimeInput(iso, timeZone).split('T') as [string, string]
+  return `${dayPhrase(day, today)}, ${clock}`
 }
 
 /** A deadline moved to another day, keeping its time of day in `timeZone`. */

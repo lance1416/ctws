@@ -681,13 +681,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
         </SortableContext>
       </DndContext>
       {openTask && (
-        <TaskDetail
-          key={openTask.id}
-          task={openTask}
-          projectId={projectId}
-          onClose={closeDetail}
-          onSaved={savedClose}
-        />
+        <TaskDetail key={openTask.id} task={openTask} onClose={closeDetail} onSaved={savedClose} />
       )}
     </>
   )
