@@ -17,6 +17,7 @@ import {
   HANDLE_PX,
   INDENT_PX,
   NotesMark,
+  opensOnClick,
   OVER_ROW,
   RowMeta,
   RowNote,
@@ -127,7 +128,7 @@ export function TaskRow({
       // A click on the row body opens the detail; the chevron and the handle are buttons with
       // their own jobs. A drag starts on the handle, so it never reaches here as a row click.
       onClick={(e) => {
-        if ((e.target as HTMLElement).closest('button')) return
+        if (!opensOnClick(e)) return
         // Shift picks rows instead of opening one. A plain click is unchanged, which is what
         // keeps the gesture people already use from becoming a mode.
         if (e.shiftKey) {

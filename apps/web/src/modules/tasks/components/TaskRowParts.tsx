@@ -1,6 +1,9 @@
-import { Fragment, type ReactNode } from 'react'
+import { Fragment, type MouseEvent, type ReactNode } from 'react'
 
 /** The row parts only the task lists use; the shared anatomy is `shell/rows/RowParts`. */
+
+/** A click on a row opens it unless it landed on one of the row's own buttons. */
+export const opensOnClick = (e: MouseEvent) => !(e.target as HTMLElement).closest('button')
 
 /** Tree geometry, shared by the tree row and the inline new-task input so they stay aligned. */
 export const INDENT_PX = 20

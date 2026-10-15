@@ -1,4 +1,5 @@
 import { revealHref, taskCrumb } from './crumb'
+import { todaySegments } from './today'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Fragment, useEffect, useId, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
@@ -68,9 +69,12 @@ function OpenTaskCount() {
 /** What is pressing among them, from Today's own list: what is late and what is planned. */
 function TaskStatusLine() {
   const today = useQuery(todayQuery())
-  const late = today.data?.filter((t) => t.segment === 'overdue').length ?? 0
-  const planned = today.data?.filter((t) => t.segment === 'today').length ?? 0
-  const parts = [late > 0 && `${late} overdue`, planned > 0 && `${planned} planned for today`]
+  const { overdue, planned } = todaySegments(today.data ?? [])
+  const late = overdue.length
+  const parts = [
+    late > 0 && `${late} overdue`,
+    planned.length > 0 && `${planned.length} planned for today`,
+  ]
   const line = parts.filter(Boolean).join(', ')
   return line ? <span data-status>{line}</span> : null
 }
@@ -102,8 +106,9 @@ function TodayGlance() {
     )
   }
   const rows = today.data ?? []
-  const overdue = rows.filter((t) => t.segment === 'overdue').length
-  const planned = rows.filter((t) => t.segment === 'today').length
+  const segments = todaySegments(rows)
+  const overdue = segments.overdue.length
+  const planned = segments.planned.length
   const done = (completed.data?.tasks ?? []).filter((t) => t.completedOn === localToday).length
   const doing = rows.filter((t) => t.status === 'in_progress')
   return (

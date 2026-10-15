@@ -27,6 +27,7 @@ import { SelectionBar } from './SelectionBar'
 import { TaskDetail } from './TaskDetail'
 import { TaskRow } from './TaskRow'
 import { useFocusAfterRemoval } from './useFocusAfterRemoval'
+import { useSavedFlash } from './useSavedFlash'
 import { INDENT_PX } from './TaskRowParts'
 import { useBulkSelection } from './tree/useBulkSelection'
 import { useCollapsed } from './tree/useCollapsed'
@@ -73,13 +74,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
   // Looked up each render, so a task that has left this project closes its own pane.
   const openTask = tasks.data?.tasks.find((t) => t.id === openId)
 
-  // The row that just saved from the pane says so for a moment.
-  const [savedId, setSavedId] = useState<string | null>(null)
-  useEffect(() => {
-    if (!savedId) return
-    const timer = setTimeout(() => setSavedId(null), 2000)
-    return () => clearTimeout(timer)
-  }, [savedId])
+  const [savedId, setSavedId] = useSavedFlash()
 
   const actions = useTaskActions(setError)
   /** Every status change the tree makes: a row finished here stays on screen, however it was. */
