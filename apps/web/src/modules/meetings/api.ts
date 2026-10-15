@@ -5,7 +5,7 @@ import type {
   UpdateMeetingInput,
 } from '@ctws/contracts'
 import { queryOptions } from '@tanstack/react-query'
-import { apiFetch, calendarOf } from '../../platform/http/api'
+import { ApiError, apiFetch, calendarOf } from '../../platform/http/api'
 import { addDays, shortDay } from '../../platform/time/dates'
 
 /** The meetings module's own namespace. */
@@ -30,14 +30,21 @@ export const meetingsQuery = (range: DayRange) =>
     queryFn: () => listMeetings(range),
   })
 
-/** One occurrence of a series, found on its own day. Null when it is not there any more. */
+/**
+ * One occurrence of a series, wherever it falls now -- an evening in Toronto is the next day
+ * here, and one week can be moved to another day. Null when it is cancelled or gone.
+ */
 export const occurrenceQuery = (meetingId: string, recurrenceId: string) =>
   queryOptions({
     queryKey: ['meetings', 'one', meetingId, recurrenceId],
     queryFn: async () => {
-      const day = recurrenceId.slice(0, 10)
-      const got = await listMeetings({ from: day, to: day })
-      return got.find((m) => m.meetingId === meetingId && m.recurrenceId === recurrenceId) ?? null
+      const at = new URLSearchParams({ recurrenceId })
+      try {
+        return await apiFetch<MeetingOccurrence>(`${BASE}/${meetingId}?${at}`)
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 404) return null
+        throw e
+      }
     },
   })
 

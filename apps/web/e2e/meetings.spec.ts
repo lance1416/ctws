@@ -98,6 +98,24 @@ test('a repeating meeting asks which occurrences a move touches', async ({ page 
   await expect(square(page, '2026-10-20')).toContainText('14:00')
 })
 
+test('a meeting late in its own zone opens from the next day here', async ({ page }) => {
+  await inLondon(page)
+  await arrange(page, {
+    ...WEEKLY_IN_TORONTO,
+    title: 'Late call',
+    startsLocal: '2026-10-20T21:00',
+    rrule: null,
+  })
+  await page.goto('/calendar')
+  await openOctober(page)
+
+  // 21:00 on the 20th in Toronto is 02:00 on the 21st in London.
+  await square(page, '2026-10-21')
+    .getByRole('button', { name: /Late call/ })
+    .click()
+  await expect(pane(page)).toContainText('Late call')
+})
+
 test('cancelling one week leaves the series alone', async ({ page }) => {
   await inLondon(page)
   await arrange(page, WEEKLY_IN_TORONTO)
