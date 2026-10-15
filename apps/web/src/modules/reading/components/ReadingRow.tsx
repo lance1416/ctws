@@ -4,7 +4,8 @@ import { useMutation } from '@tanstack/react-query'
 import { patchReadingItem } from '../api'
 import { readingLabel } from '../item'
 import { hostOf, StatusMark } from '../marks'
-import { addDays, daysAgoIn, nextMonday } from '../../../platform/time/dates'
+import { PLAN_DAYS, type PlanDay } from '../plans'
+import { daysAgoIn } from '../../../platform/time/dates'
 import { leadFor } from '../../../shell/rows/leads'
 import { MENU_ITEM, MENU_SURFACE } from '../../../platform/ui/menuSurface'
 import { RowLead } from '../../../shell/rows/RowLead'
@@ -32,13 +33,12 @@ export function addedLabel(createdAt: string, timeZone: string, now: Date): stri
   return `Added ${days} days ago`
 }
 
-/** When to finish it, as named days. No exact date: nobody plans reading to the day. */
-const PLANS: { label: string; day: (today: string) => string }[] = [
-  { label: 'Finish today', day: (t) => t },
-  { label: 'Finish tomorrow', day: (t) => addDays(t, 1) },
-  { label: 'Finish this week', day: (t) => addDays(nextMonday(t), -1) },
-  { label: 'Finish next week', day: (t) => nextMonday(t) },
-]
+const FINISH: Record<PlanDay, string> = {
+  today: 'Finish today',
+  tomorrow: 'Finish tomorrow',
+  thisWeek: 'Finish this week',
+  nextWeek: 'Finish next week',
+}
 
 /** What the one visible button does next, by where the item is now. */
 const NEXT: Record<ReadingStatus, { status: ReadingStatus; label: string } | null> = {
@@ -180,9 +180,9 @@ export function ReadingRow({
               {/* The day you mean to finish it, as NAMED DECISIONS rather than a date picker -- the
                 same choice the overdue row's triage made, and for the same reason: a calendar
                 makes you compute the date, where "this weekend" is the thought you actually had. */}
-              {PLANS.map(({ label, day }) => (
-                <Item key={label} onSelect={() => save.mutate({ planOn: day(today) })}>
-                  {label}
+              {PLAN_DAYS.map(({ id, day }) => (
+                <Item key={id} onSelect={() => save.mutate({ planOn: day(today) })}>
+                  {FINISH[id]}
                 </Item>
               ))}
               {item.planOn && (

@@ -5,7 +5,8 @@ import { deleteReadingItem, patchReadingItem } from '../api'
 import { readingLabel } from '../item'
 import { ProjectChip, ProjectPicker } from '../../../shell/projects/ProjectPicker'
 import { useComposing } from '../../../platform/keyboard/composition'
-import { addDays, dayPhrase, nextMonday, todayIn } from '../../../platform/time/dates'
+import { dayPhrase, todayIn } from '../../../platform/time/dates'
+import { planChoices, type PlanDay } from '../plans'
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { BUTTON } from '../../../platform/ui/buttonStyles'
 import { DangerAction, DangerZone } from '../../../platform/ui/DangerZone'
@@ -44,13 +45,13 @@ const STATUS_CHOICES = (Object.keys(STATUS_LABEL) as ReadingStatus[]).map((s) =>
   label: STATUS_LABEL[s],
 }))
 
-/** When to finish it, as named days -- the same four the row's menu offers. */
-const PLANS: { label: string; day: (today: string) => string }[] = [
-  { label: 'Today', day: (t) => t },
-  { label: 'Tomorrow', day: (t) => addDays(t, 1) },
-  { label: 'This week', day: (t) => addDays(nextMonday(t), -1) },
-  { label: 'Next week', day: (t) => nextMonday(t) },
-]
+/** When to finish it -- the same named days the row's menu offers. */
+const PLAN_LABELS: Record<PlanDay, string> = {
+  today: 'Today',
+  tomorrow: 'Tomorrow',
+  thisWeek: 'This week',
+  nextWeek: 'Next week',
+}
 
 export function ReadingDetail({
   item,
@@ -278,7 +279,7 @@ function ReadingForm({
               value={planOn ?? ''}
               choices={[
                 { value: '', label: 'Not set' },
-                ...PLANS.map((p) => ({ value: p.day(today), label: p.label })),
+                ...planChoices(today, item.planOn, PLAN_LABELS),
               ]}
               onPick={(v) => setPlanOn(v === '' ? null : v)}
             />
