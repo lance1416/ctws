@@ -1,7 +1,7 @@
 import type { EditScope, MeetingOccurrence, UpdateMeetingInput } from '@ctws/contracts'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
-import { listPeople } from '../../people/api/people'
+import { usePeople } from '../../people'
 import {
   cancelMeeting,
   patchMeeting,
@@ -104,7 +104,7 @@ export function MeetingFields({
   const [failed, setFailed] = useState<string | null>(null)
   /** A change waiting on "this one / from here on". Null when nothing is being asked. */
   const [asking, setAsking] = useState<{ what: string; patch: UpdateMeetingInput } | null>(null)
-  const people = useQuery({ queryKey: ['people', null, false], queryFn: () => listPeople() })
+  const people = usePeople()
 
   const repeats = meeting.rrule !== null
 

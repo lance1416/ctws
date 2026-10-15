@@ -6,7 +6,7 @@ import {
 } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
-import { createPerson, type BirthdayDraft } from '../api/people'
+import { createPerson, type BirthdayDraft } from '../api'
 import { ProjectsPicker } from '../../../shell/projects/ProjectPicker'
 import { useComposing } from '../../../platform/keyboard/composition'
 import { channelPlaceholder } from '../channels'

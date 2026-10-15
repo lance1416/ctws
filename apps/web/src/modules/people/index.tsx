@@ -1,8 +1,7 @@
 import { LINK } from '../../platform/ui/buttonStyles'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { birthdayCalendar, birthdaysKey, listBirthdays } from './api/birthdays'
-import { listPeople, peopleKey, searchPeople } from './api/people'
+import { birthdayCalendarQuery, birthdaysQuery, peopleQuery, personSearchQuery } from './api'
 import { PanelEmpty } from '../../platform/ui/Panel'
 import { countdownPhrase, shortDay, weekdayOf } from '../../platform/time/dates'
 import { Birthdays } from './pages/Birthdays'
@@ -33,10 +32,7 @@ const ID = 'people'
  * page of their own, so the entry is a link rather than something that opens here.
  */
 function useBirthdayEntries(range: { from: string; to: string }) {
-  const result = useQuery({
-    queryKey: ['birthday-calendar', range.from, range.to],
-    queryFn: () => birthdayCalendar(range),
-  })
+  const result = useQuery(birthdayCalendarQuery(range))
   return { entries: result.data ?? [], isError: result.isError }
 }
 
@@ -49,7 +45,7 @@ function useBirthdayEntries(range: { from: string; to: string }) {
  * week you never open CTWS is a week it cannot tell you.
  */
 function BirthdayCard() {
-  const view = useQuery({ queryKey: birthdaysKey(), queryFn: listBirthdays })
+  const view = useQuery(birthdaysQuery())
   // Who the card is FOR: the people whose reminder lead has come round. Everyone else is on the
   // Birthdays page; the card is what finds you, not all of them.
   const rows = view.data?.card ?? []
@@ -87,7 +83,8 @@ function BirthdayCard() {
       <Link to={`/${ID}/${first!.personId}`} data-birthday-row className="block">
         <span className="block text-xl font-semibold">{first!.name}</span>
         <span className="mt-0.5 block">
-          {weekdayOf(first!.day, true)}, {shortDay(first!.day, today)}, {countdownPhrase(first!.inDays)}
+          {weekdayOf(first!.day, true)}, {shortDay(first!.day, today)},{' '}
+          {countdownPhrase(first!.inDays)}
         </span>
         {first!.calendar === 'lunar' && first!.lunarDate && (
           <span className="block text-sm text-ink-subtle">{first!.lunarDate}</span>
@@ -115,9 +112,12 @@ function BirthdayCard() {
   )
 }
 
+/** Everyone, by name: the list other modules pick people from (a meeting's attendees). */
+export const usePeople = () => useQuery(peopleQuery())
+
 /** Things' count for people: how many there are. The kind's name already says what of. */
 function PeopleCount() {
-  const people = useQuery({ queryKey: peopleKey(), queryFn: () => listPeople() })
+  const people = usePeople()
   if (!people.data) return null
   const n = people.data.length
   return (
@@ -129,7 +129,7 @@ function PeopleCount() {
 
 /** Whose birthday is next, when anyone's is coming. */
 function NextBirthdayLine() {
-  const view = useQuery({ queryKey: birthdaysKey(), queryFn: listBirthdays })
+  const view = useQuery(birthdaysQuery())
   const next = view.data ? [...view.data.coming, ...view.data.later][0] : undefined
   if (!next) return null
   // A countdown and not a date: no punctuation after the name, which may be Han, where the
@@ -144,8 +144,7 @@ function NextBirthdayLine() {
 /** This module's half of federated search: names, organisations and addresses. */
 function usePeopleHits(query: string) {
   const results = useQuery({
-    queryKey: ['person-search', query],
-    queryFn: () => searchPeople(query),
+    ...personSearchQuery(query),
     enabled: query.length > 0,
   })
   const hits: SearchHit[] = (results.data ?? []).map((person) => ({

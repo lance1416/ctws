@@ -54,3 +54,15 @@ export const KIND_LABEL: Record<ChannelKind, string> = {
 export const KIND_CHOICES = CHANNEL_KINDS.map((k) => ({ value: k, label: KIND_LABEL[k] }))
 
 export type { PersonChannel }
+
+/**
+ * How a channel is OPENED: `mailto:` and `tel:` are what a person list is for -- copying an
+ * address by hand is the cost the list exists to remove.
+ */
+export function channelHref(kind: string, value: string): string | null {
+  if (kind === 'email') return `mailto:${value}`
+  // Spaces and dashes are how a person writes a number and not how a dialler takes one.
+  if (kind === 'phone') return `tel:${value.replace(/[\s-]/g, '')}`
+  if (kind === 'url') return /^https?:\/\//i.test(value) ? value : `https://${value}`
+  return null
+}

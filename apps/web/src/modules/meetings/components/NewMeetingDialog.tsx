@@ -1,7 +1,7 @@
 import type { CreateMeetingBody, MeetingOccurrence } from '@ctws/contracts'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
-import { peopleKey, listPeople } from '../../people/api/people'
+import { usePeople } from '../../people'
 import {
   createMeeting,
   DEFAULT_HOUR,
@@ -58,7 +58,7 @@ export function NewMeetingDialog({
   const [projectId, setProjectId] = useState<string | null>(null)
   const [attendeeIds, setAttendees] = useState<string[]>([])
 
-  const people = useQuery({ queryKey: peopleKey(), queryFn: () => listPeople() })
+  const people = usePeople()
   const startsLocal = `${day}T${clock}`
   // Named after the day it falls on, so "Weekly on Tuesday" says Tuesday once the date is picked.
   const repeats = repeatChoices(startsLocal)

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { birthdaysKey, listBirthdays } from '../api/birthdays'
+import { birthdaysQuery } from '../api'
 import { BirthdayRow, CIRCLE_LABELS } from '../components/BirthdayRow'
 import { textbox } from '../../../platform/ui/formStyles'
 import { Panel, PanelEmpty } from '../../../platform/ui/Panel'
@@ -27,7 +27,7 @@ export function Birthdays() {
   const [find, setFind] = useState('')
   const [month, setMonth] = useState<number | null>(null)
   const [circle, setCircle] = useState<Circle | null>(null)
-  const view = useQuery({ queryKey: birthdaysKey(), queryFn: listBirthdays })
+  const view = useQuery(birthdaysQuery())
 
   const data = view.data
   const matches = (row: { name: string; day: string; circle: Circle | null }) =>

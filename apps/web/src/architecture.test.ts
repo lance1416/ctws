@@ -51,11 +51,7 @@ function allowed(from: Layer, toPath: string): boolean {
 }
 
 /** Known violations, each removed by the task that fixes it. Empty at the end. */
-const ALLOWED = new Set<string>([
-  // Task 19: meetings reach people through its index.
-  'modules/meetings/components/MeetingDetail.tsx -> modules/people/api/people',
-  'modules/meetings/components/NewMeetingDialog.tsx -> modules/people/api/people',
-])
+const ALLOWED = new Set<string>([])
 
 const production = files(SRC).filter((f) => !/\.test\.tsx?$/.test(f))
 const violations = () =>

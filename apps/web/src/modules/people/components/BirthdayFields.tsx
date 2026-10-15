@@ -7,7 +7,7 @@ import type {
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { ApiError } from '../../../platform/http/api'
-import { previewBirthday, type BirthdayDraft } from '../api/people'
+import { birthdayPreviewQuery, type BirthdayDraft } from '../api'
 import { countdownPhrase, fullDay, MONTHS, shortDay, todayIn } from '../../../platform/time/dates'
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { Field } from '../../../platform/ui/Field'
@@ -296,8 +296,7 @@ export function BirthdayEditor({
   const yearOk = draft.year === null || (draft.year >= 1850 && draft.year <= 2200)
 
   const preview = useQuery({
-    queryKey: ['birthday-preview', calendar, draft.year, month, day, draft.leapMonth, hourBranch],
-    queryFn: () => previewBirthday(draft),
+    ...birthdayPreviewQuery(draft),
     enabled: yearOk,
   })
 

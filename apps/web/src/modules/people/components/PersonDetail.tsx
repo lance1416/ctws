@@ -1,13 +1,20 @@
 import { channelProblem, type ChannelKind, type PersonResponse } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
-import { channelHref, deletePerson, patchPerson, type BirthdayDraft } from '../api/people'
+import { deletePerson, patchPerson, type BirthdayDraft } from '../api'
 import { ProjectChip, ProjectsPicker } from '../../../shell/projects/ProjectPicker'
 import { DangerAction, DangerZone } from '../../../platform/ui/DangerZone'
 import { useEffect, useState } from 'react'
 import { BirthdayEditor, BirthdayFields, givenDate, plainDate } from './BirthdayFields'
 import { CIRCLE_LABELS } from './BirthdayRow'
 import { BUTTON, LINK } from '../../../platform/ui/buttonStyles'
-import { byKind, channelLabel, channelPlaceholder, KIND_CHOICES, KIND_LABEL } from '../channels'
+import {
+  byKind,
+  channelHref,
+  channelLabel,
+  channelPlaceholder,
+  KIND_CHOICES,
+  KIND_LABEL,
+} from '../channels'
 import { usePhone } from '../usePhone'
 import { Field } from '../../../platform/ui/Field'
 import { PickCity } from '../../../shell/cities/PickCity'

@@ -1,7 +1,7 @@
 import type { PersonResponse } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
-import { createPerson } from '../api/people'
+import { createPerson } from '../api'
 import { useComposing } from '../../../platform/keyboard/composition'
 import { textbox } from '../../../platform/ui/formStyles'
 

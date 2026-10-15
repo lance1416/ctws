@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { birthdaysKey, listBirthdays } from '../api/birthdays'
+import { birthdaysQuery } from '../api'
 import { BUTTON } from '../../../platform/ui/buttonStyles'
 import { NewPersonDialog } from './NewPersonDialog'
 import { PageHead } from '../../../platform/ui/PageHead'
@@ -80,7 +80,7 @@ function PeopleViews() {
 
 /** How many birthdays the next week holds. Shares the Birthdays page's cache entry. */
 function BirthdayCount() {
-  const view = useQuery({ queryKey: birthdaysKey(), queryFn: listBirthdays })
+  const view = useQuery(birthdaysQuery())
   const count = view.data?.coming.length ?? 0
   if (count <= 0) return null
   return (

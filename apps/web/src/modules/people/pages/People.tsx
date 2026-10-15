@@ -1,7 +1,7 @@
 import type { Circle, PersonResponse } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { peopleKey, listPeople } from '../api/people'
+import { peopleQuery } from '../api'
 import { PersonDetail } from '../components/PersonDetail'
 import { PeopleList } from '../components/PeopleList'
 import { NewPersonInput } from '../components/NewPersonInput'
@@ -23,7 +23,7 @@ import { HANG } from '../../../platform/ui/hang'
  */
 export function People() {
   useCrumbs([{ label: 'Things', to: '/things' }, { label: 'People' }])
-  const people = useQuery({ queryKey: peopleKey(), queryFn: () => listPeople() })
+  const people = useQuery(peopleQuery())
   // A person has no page of their own: `/people/<id>` opens them over this list.
   const { openId, open, gone, show, close } = useOpenFromUrl({
     list: people,
