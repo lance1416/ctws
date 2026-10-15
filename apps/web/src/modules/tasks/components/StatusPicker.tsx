@@ -1,6 +1,6 @@
 import { TASK_STATUSES, type TaskStatus } from '@ctws/contracts'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-import { STATUS_LABEL } from '../statusLabel'
+import { STATUS_LABEL } from '../status'
 import { StatusMark } from './StatusMark'
 import { MENU_ITEM, MENU_SURFACE } from '../../../platform/ui/menuSurface'
 

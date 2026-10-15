@@ -1,4 +1,5 @@
 // @vitest-environment node
+import type { TaskStatus } from '@ctws/contracts'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 // Fixed zone with a half-hour offset and no DST, so a UTC-assuming implementation fails here.
@@ -50,13 +51,18 @@ describe('calendar arithmetic', () => {
 })
 
 describe('dateHints', () => {
-  const task = (over: object) => ({ status: 'todo', dueAt: null, scheduledOn: null, ...over })
+  const task = (over: Partial<{ status: TaskStatus; dueAt: string; scheduledOn: string }>) => ({
+    status: 'todo' as TaskStatus,
+    dueAt: null,
+    scheduledOn: null,
+    ...over,
+  })
 
   it('shows nothing for a dateless task and for finished ones, however overdue', async () => {
     const { dateHints } = await load()
     expect(dateHints(task({}), TZ, NOW())).toEqual({ scheduled: null, due: null })
     const old = '2026-09-01T00:00:00.000Z'
-    for (const status of ['done', 'cancelled'])
+    for (const status of ['done', 'cancelled'] as const)
       expect(dateHints(task({ status, dueAt: old, scheduledOn: '2026-10-04' }), TZ, NOW())).toEqual(
         {
           scheduled: null,

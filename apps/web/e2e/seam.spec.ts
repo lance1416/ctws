@@ -12,9 +12,9 @@ test('the module pages answer under the module namespace', async ({ page }) => {
   await expect(page).toHaveURL(/\/tasks\/today$/)
   await expect(page.locator('#today-heading')).toBeVisible()
 
-  await page.goto('/tasks/completed')
-  await expect(page).toHaveURL(/\/tasks\/completed$/)
-  await expect(page.getByRole('heading', { level: 1, name: 'Done' })).toBeVisible()
+  await page.goto('/tasks/review?view=done')
+  await expect(page).toHaveURL(/\/tasks\/review\?view=done$/)
+  await expect(page.getByRole('tab', { name: 'Done', selected: true })).toBeVisible()
 })
 
 test('the rail is built from the pinned pages', async ({ page }) => {

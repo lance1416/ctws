@@ -351,7 +351,7 @@ test('a finished task opens from the Done list, not only restored from it', asyn
     data: { status: 'done', notes: '先问清需求' },
   })
 
-  await page.goto('/tasks/completed')
+  await page.goto('/tasks/review?view=done')
   await page.getByRole('button', { name: '写迁移 改版' }).click()
   const pane = page.getByRole('dialog', { name: 'Task details' })
   await expect(pane).toBeVisible()

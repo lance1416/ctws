@@ -2,9 +2,8 @@ import type { DependencyRef } from '@ctws/contracts'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useState, type ReactNode } from 'react'
 import { ApiError } from '../../../platform/http/api'
-import { searchTasks } from '../api/search'
-import { addDependency, removeDependency, taskDependencies } from '../api/tasks'
-import { tasksKey } from '../api/taskCache'
+import { addDependency, removeDependency } from '../api/tasks'
+import { dependenciesQuery, taskSearchQuery } from '../api/queries'
 import { field, label } from '../../../platform/ui/formStyles'
 import { CloseIcon } from '../../../platform/ui/icons'
 
@@ -74,17 +73,13 @@ export function Dependencies({ taskId, projectId }: { taskId: string; projectId:
   const [query, setQuery] = useState('')
   const [error, setError] = useState<string | null>(null)
 
-  const lists = useQuery({
-    queryKey: ['dependencies', taskId],
-    queryFn: () => taskDependencies(taskId),
-  })
+  const lists = useQuery(dependenciesQuery(taskId))
   const hits = useQuery({
-    queryKey: ['search', query],
-    queryFn: () => searchTasks(query),
+    ...taskSearchQuery(query),
     enabled: adding && query.trim().length > 0,
   })
 
-  const awaits = [['dependencies', taskId], tasksKey(projectId), ['today']]
+  const awaits = [dependenciesQuery(taskId).queryKey]
   const add = useMutation({
     mutationFn: (blockerId: string) => addDependency(taskId, blockerId),
     meta: { awaits },

@@ -260,6 +260,20 @@ test('a task address opens the task in its project', async ({ page }) => {
   await expect(page.getByRole('dialog', { name: 'Task details' })).toContainText('Find me')
 })
 
+test('an address that is no task id says so, and asks the server nothing', async ({ page }) => {
+  // Not Today: its Done panel reads that very list.
+  await registerFreshUser(page, '/projects')
+  const asked: string[] = []
+  page.on('request', (r) => {
+    if (/\/api\/v1\/tasks\/completed/.test(r.url())) asked.push(r.url())
+  })
+  // The old Done page's address: under /api/v1/tasks it names a list, not a task.
+  await page.goto('/tasks/completed')
+  await expect(page.getByRole('alert')).toContainText('This task is not here any more.')
+  await expect(page).toHaveURL(/\/tasks\/completed$/)
+  expect(asked).toEqual([])
+})
+
 test('the task pages still answer on their own addresses', async ({ page }) => {
   await registerFreshUser(page)
   await page.goto('/tasks/today')

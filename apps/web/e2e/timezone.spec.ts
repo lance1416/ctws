@@ -175,7 +175,7 @@ test('a deadline inside the account day counts as today on another UTC date', as
   expect(patched.ok()).toBe(true)
 
   // A fresh load, not a click: the three writes above went straight to the API, behind the app's
-  // back, so the cached ['today'] from registration knows nothing about them.
+  // back, so the today list cached at registration knows nothing about them.
   const listed = page.waitForResponse(
     (r) => r.request().method() === 'GET' && new URL(r.url()).pathname === '/api/v1/tasks/today',
   )

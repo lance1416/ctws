@@ -1,3 +1,4 @@
+import { revealHref } from '../crumb'
 import {
   TASK_STATUSES,
   type TaskResponse,
@@ -9,8 +10,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { useProjects } from '../../../shell/projects/api'
-import { deleteTask, listProjectTasks, moveTask, patchTask } from '../api/tasks'
-import { tasksKey } from '../api/taskCache'
+import { deleteTask, moveTask, patchTask } from '../api/tasks'
+import { projectTasksQuery } from '../api/queries'
 import {
   addDays,
   dayEndIso,
@@ -37,7 +38,7 @@ import { useUnsavedGuard } from '../../../platform/ui/unsavedGuard'
 import { DeadlineMark, PlanMark } from './TaskRowParts'
 import { StatusMark } from './StatusMark'
 import { StatusPicker } from './StatusPicker'
-import { STATUS_LABEL } from '../statusLabel'
+import { STATUS_LABEL } from '../status'
 import { detailTaskForm, PATCH_KEYS, type DetailTaskForm, type DetailTaskValues } from '../taskForm'
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { useForgetRecent, useRecordRecent } from '../../../shell/search/recent'
@@ -69,7 +70,7 @@ function DateEcho({ text }: { text: string | null }) {
 }
 
 /** What a write from this pane waits to see refetched: any edit can move a task between lists. */
-const WRITE_AWAITS = [['today'], ['completed'], ['movement'], ['tasks']]
+const WRITE_AWAITS = [['tasks']]
 
 type Props = {
   task: TaskResponse
@@ -108,7 +109,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
     type: 'task',
     id: task.id,
     title: task.title,
-    to: `/projects/${projectId}?reveal=${task.id}`,
+    to: revealHref(projectId, task.id),
     kind: 'Task',
   })
   /**
@@ -210,11 +211,7 @@ export function TaskDetail({ task, projectId, onClose, onSaved }: Props) {
   const countDescendants = async () => {
     setDescendants(null)
     try {
-      const all = await qc.fetchQuery({
-        queryKey: tasksKey(task.projectId),
-        queryFn: () => listProjectTasks(task.projectId),
-        staleTime: 0,
-      })
+      const all = await qc.fetchQuery({ ...projectTasksQuery(task.projectId), staleTime: 0 })
       let count = 0
       let frontier = [task.id]
       while (frontier.length > 0) {

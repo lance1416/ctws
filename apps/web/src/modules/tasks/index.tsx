@@ -1,14 +1,18 @@
+import { revealHref, taskCrumb } from './crumb'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Fragment, useEffect, useId, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { listCompleted } from './api/completed'
-import { listMovement } from './api/movement'
 import { inboxOf, projectsQuery, useProjects } from '../../shell/projects/api'
-import { searchTasks } from './api/search'
-import { createTask, listProjectTasks } from './api/tasks'
+import {
+  completedQuery,
+  movementQuery,
+  projectTasksQuery,
+  taskCalendarQuery,
+  taskSearchQuery,
+  todayQuery,
+} from './api/queries'
+import { createTask } from './api/tasks'
 import { refreshQueries } from '../../platform/http/refresh'
-import { tasksKey } from './api/taskCache'
-import { listToday, taskCalendar } from './api/today'
 import { CreateTaskDialog } from './components/CreateTaskDialog'
 import { ProjectFacts, ProjectLead } from './components/ProjectFacts'
 import { TaskBoard } from './components/TaskBoard'
@@ -20,7 +24,6 @@ import { TaskTree } from './components/TaskTree'
 import { dayPhrase, todayIn } from '../../platform/time/dates'
 import { useShortcutsEnabled } from '../../platform/keyboard/enabled'
 import { isBareKey, isTypingTarget } from '../../platform/keyboard/keys'
-import { Completed } from './pages/Completed'
 import { OpenTask } from './pages/OpenTask'
 import { Review } from './pages/Review'
 import { Today } from './pages/Today'
@@ -41,9 +44,9 @@ import { useNow } from '../../platform/time/useNow'
 const ID = TASKS_ID
 const at = (page: string) => `/${ID}/${page}`
 
-/** The rail's count for Today. Shares the ['today'] cache entry with the page that owns it. */
+/** The rail's count for Today. Shares `todayQuery` with the page that owns it. */
 function TodayCount() {
-  const today = useQuery({ queryKey: ['today'], queryFn: listToday })
+  const today = useQuery(todayQuery())
   // Only tasks that are actually on today's plate; the rail must not claim work that is not due.
   const count = today.data?.length ?? null
   if (count === null || count <= 0) return null
@@ -64,7 +67,7 @@ function OpenTaskCount() {
 
 /** What is pressing among them, from Today's own list: what is late and what is planned. */
 function TaskStatusLine() {
-  const today = useQuery({ queryKey: ['today'], queryFn: listToday })
+  const today = useQuery(todayQuery())
   const late = today.data?.filter((t) => t.segment === 'overdue').length ?? 0
   const planned = today.data?.filter((t) => t.segment === 'today').length ?? 0
   const parts = [late > 0 && `${late} overdue`, planned > 0 && `${planned} planned for today`]
@@ -74,10 +77,7 @@ function TaskStatusLine() {
 
 /** This module's dated things: a plan day and a deadline day, both decided by the server. */
 function useTaskEntries(range: { from: string; to: string }) {
-  const result = useQuery({
-    queryKey: ['task-calendar', range.from, range.to],
-    queryFn: () => taskCalendar(range),
-  })
+  const result = useQuery(taskCalendarQuery(range))
   return { entries: result.data ?? [], isError: result.isError }
 }
 
@@ -89,9 +89,9 @@ function useTaskEntries(range: { from: string; to: string }) {
  * DO with a task is one click away on the page the heading links to.
  */
 function TodayGlance() {
-  const today = useQuery({ queryKey: ['today'], queryFn: listToday })
+  const today = useQuery(todayQuery())
   // The same entry the Done page and Today's own Done section read.
-  const completed = useQuery({ queryKey: ['completed'], queryFn: listCompleted })
+  const completed = useQuery(completedQuery())
   const localToday = todayIn(useTimeZone(), useNow())
 
   if (today.isError) {
@@ -117,7 +117,7 @@ function TodayGlance() {
           tone={overdue > 0 ? 'text-missed' : 'text-ink-subtle'}
         />
         <GlanceCount to={at('today')} n={planned} word="planned" tone="text-ink" />
-        <GlanceCount to={at('completed')} n={done} word="done" tone="text-ink-subtle" />
+        <GlanceCount to={`${at('review')}?view=done`} n={done} word="done" tone="text-ink-subtle" />
       </div>
       <p className="mb-1 px-2 text-xs text-ink-subtle">In progress</p>
       {today.isSuccess && doing.length === 0 ? (
@@ -127,7 +127,7 @@ function TodayGlance() {
           {doing.map((t) => (
             <li key={t.id}>
               <Link
-                to={`/projects/${t.projectId}?reveal=${t.id}`}
+                to={revealHref(t.projectId, t.id)}
                 className="flex min-h-10 min-w-0 items-stretch gap-3 hover:bg-hover"
               >
                 <ProjectRail projectId={t.projectId} />
@@ -193,7 +193,7 @@ function useInboxCapture(): CaptureTargetState {
           submit: async (title: string) => {
             await createTask({ projectId: inbox.id, title })
             // Awaited, so the input stays busy until the list that now holds the line is refreshed.
-            await refreshQueries(qc, [tasksKey(inbox.id)])
+            await refreshQueries(qc, [projectTasksQuery(inbox.id).queryKey])
           },
         }
       : null,
@@ -205,8 +205,7 @@ function useInboxCapture(): CaptureTargetState {
 /** This module's half of federated search: titles and notes, across every project. */
 function useTaskHits(query: string) {
   const results = useQuery({
-    queryKey: ['search', query],
-    queryFn: () => searchTasks(query),
+    ...taskSearchQuery(query),
     enabled: query.length > 0,
   })
   const rows = query.length > 0 ? (results.data ?? []) : []
@@ -216,11 +215,11 @@ function useTaskHits(query: string) {
     // by unfolding the ancestors and putting focus on that row. Routing alone is not enough: the
     // row may sit in a collapsed subtree, and arriving at a folded parent is the failure this is
     // for.
-    to: `/projects/${t.projectId}?reveal=${t.id}`,
+    to: revealHref(t.projectId, t.id),
     title: t.title,
     meta: (
       <>
-        {t.parentTitle === null ? t.projectName : `${t.projectName} › ${t.parentTitle}`}
+        {taskCrumb(t)}
         {t.projectArchived && ' · archived'}
       </>
     ),
@@ -233,7 +232,7 @@ function useTaskHits(query: string) {
 /**
  * THE FOUR NUMBERS in the project header banner: Open, Done this week, Overdue, Last activity.
  *
- * Every one of them is the SERVER's, from the one `['movement']` cache entry that panel already
+ * Every one of them is the SERVER's, from the one `movementQuery` entry that panel already
  * loads -- so a project page costs no extra request, and the banner cannot disagree with that
  * panel about the same line of work. Nothing is re-derived here: the week boundary, the overdue
  * boundary and the day count are all decided in the user's timezone by the query, and this only
@@ -244,7 +243,7 @@ function useTaskHits(query: string) {
  * backend cannot cash.
  */
 function ProjectNumbers({ projectId }: { projectId: string }) {
-  const movement = useQuery({ queryKey: ['movement'], queryFn: listMovement })
+  const movement = useQuery(movementQuery())
   const timeZone = useTimeZone()
   const row = movement.data?.find((r) => r.projectId === projectId)
   /**
@@ -256,10 +255,7 @@ function ProjectNumbers({ projectId }: { projectId: string }) {
    * are all `backlog` or `cancelled` has no number, and shows none rather than a 0 that would read
    * as "nothing done".
    */
-  const tasks = useQuery({
-    queryKey: tasksKey(projectId),
-    queryFn: () => listProjectTasks(projectId),
-  })
+  const tasks = useQuery(projectTasksQuery(projectId))
   const progress = (() => {
     const data = tasks.data
     if (!data) return null
@@ -361,7 +357,7 @@ function ProjectTasks({ projectId, view }: { projectId: string; view: string }) 
   const failureId = useId()
   const create = useMutation({
     mutationFn: (t: string) => createTask({ projectId, title: t, parentId: null }),
-    meta: { awaits: [tasksKey(projectId)] },
+    meta: { awaits: [projectTasksQuery(projectId).queryKey] },
     onSuccess: () => setTitle(''),
   })
 
@@ -433,7 +429,6 @@ export const taskModule: WorkspaceModule = {
   },
   routes: [
     { path: 'today', element: <Today /> },
-    { path: 'completed', element: <Completed /> },
     { path: 'review', element: <Review /> },
     // After the pages: a static segment outranks `:id`, so `today` is never read as a task.
     { path: ':id', element: <OpenTask /> },
@@ -476,10 +471,7 @@ export const taskModule: WorkspaceModule = {
     Facts: ProjectFacts,
     Lead: ProjectLead,
     contents: async (qc, projectId) => {
-      const { tasks } = await qc.fetchQuery({
-        queryKey: tasksKey(projectId),
-        queryFn: () => listProjectTasks(projectId),
-      })
+      const { tasks } = await qc.fetchQuery(projectTasksQuery(projectId))
       return tasks.length === 0 ? null : `${tasks.length} tasks`
     },
   },

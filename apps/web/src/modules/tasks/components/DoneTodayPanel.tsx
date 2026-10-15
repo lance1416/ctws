@@ -9,7 +9,7 @@ import { DaySection } from '../../../shell/rows/DaySection'
 /**
  * DONE TODAY: the fourth question the workbench answers -- "what did I do".
  *
- * It reads the SAME ['completed'] list the Done page owns, and takes the day the SERVER
+ * It reads the SAME list as Review's Done view (`completedQuery`), and takes the day the SERVER
  * assigned (`completedOn`, computed in the account's timezone). It does not re-derive "today"
  * from the browser clock: a task finished at 23:30 local must not fall off this panel because
  * the database runs in UTC, and that decision already exists one layer down.
@@ -30,7 +30,7 @@ export function DoneTodayPanel({
       label="Done today"
       count={tasks.length}
       action={
-        <Link to="/tasks/completed" className={`text-sm ${LINK}`}>
+        <Link to="/tasks/review?view=done" className={`text-sm ${LINK}`}>
           All
         </Link>
       }

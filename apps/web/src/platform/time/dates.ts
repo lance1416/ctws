@@ -36,6 +36,10 @@ const dayStart = (day: string) => new TZDate(`${day}T00:00:00Z`, 'UTC')
 /** An instant in the wire's `…Z` form; `TZDate#toISOString` would keep the zone's offset. */
 export const utcIso = (d: Date) => new Date(d.getTime()).toISOString()
 
+/** "09:05" in `timeZone`, on a 24-hour clock. */
+export const clockTime = (timeZone: string) =>
+  new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone })
+
 export function addDays(day: string, n: number): string {
   return format(addDaysFn(dayStart(day), n), DAY)
 }

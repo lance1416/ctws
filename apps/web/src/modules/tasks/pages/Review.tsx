@@ -2,7 +2,7 @@ import type { ReviewResponse } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { listReview } from '../api/review'
+import { reviewQuery } from '../api/queries'
 import { DaySection } from '../../../shell/rows/DaySection'
 import { EmptyState } from '../../../platform/ui/EmptyState'
 import { RowLead } from '../../../shell/rows/RowLead'
@@ -130,8 +130,7 @@ export function Review() {
   }
   const [range, setRange] = useState<{ from: string; to: string } | null>(null)
   const review = useQuery({
-    queryKey: ['review', range?.from ?? 'week', range?.to ?? ''],
-    queryFn: () => listReview(range ?? undefined),
+    ...reviewQuery(range),
     // The other view does not need it, and a request nobody reads is a request nobody should make.
     enabled: view === 'week',
   })
@@ -189,7 +188,7 @@ export function Review() {
         )}
       </div>
 
-      {view === 'done' && <Completed heading={false} />}
+      {view === 'done' && <Completed />}
 
       {view === 'week' && review.isError && (
         <p role="alert" className={`mt-4 ${HANG} text-sm text-danger`}>

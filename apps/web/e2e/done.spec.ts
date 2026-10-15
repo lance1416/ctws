@@ -120,8 +120,8 @@ test('the completed list is grouped by day, newest day and newest task first', a
   await finish(page, olderA, `${hoursBackToNoon(5)} hours`)
   await finish(page, olderB, `${hoursBackToNoon(5) - 6} hours`)
 
-  await page.goto('/tasks/completed')
-  const headings = page.getByRole('heading', { level: 2 })
+  await page.goto('/tasks/review?view=done')
+  const headings = page.locator('section[data-panel]').getByRole('heading', { level: 2 })
   // Three days, newest first; the nearest two are told apart as Today / Yesterday.
   await expect(headings).toHaveCount(3)
   await expect(headings.nth(0)).toContainText('Today')
@@ -172,7 +172,7 @@ test('a finished task can be restored from the completed list, and the server ag
 
 test('with nothing finished, the view says so', async ({ page }) => {
   await registerFreshUser(page)
-  await page.goto('/tasks/completed')
+  await page.goto('/tasks/review?view=done')
   await expect(page.getByText('Nothing finished yet')).toBeVisible()
 })
 

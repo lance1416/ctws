@@ -4,8 +4,8 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { useProjects } from '../../../shell/projects/api'
-import { tasksKey } from '../api/taskCache'
-import { createTask, listProjectTasks } from '../api/tasks'
+import { projectTasksQuery } from '../api/queries'
+import { createTask } from '../api/tasks'
 import {
   addDays,
   dayEndIso,
@@ -22,7 +22,7 @@ import { decision, field, label, STATUS_CHIP } from '../../../platform/ui/formSt
 import { PickOne } from '../../../platform/ui/inline'
 import { Modal } from '../../../platform/ui/Modal'
 import { DeadlineMark, PlanMark } from './TaskRowParts'
-import { STATUS_LABEL } from '../statusLabel'
+import { STATUS_LABEL } from '../status'
 import { StatusMark } from './StatusMark'
 import { useComposing } from '../../../platform/keyboard/composition'
 import {
@@ -109,10 +109,7 @@ export function CreateTaskDialog({
   const projects = useProjects()
   // The chosen project's tasks, for the parent picker. Shares the cache entry the tree filled on
   // this page, so opening the dialog on the project you are looking at costs no request.
-  const tasks = useQuery({
-    queryKey: tasksKey(project),
-    queryFn: () => listProjectTasks(project),
-  })
+  const tasks = useQuery(projectTasksQuery(project))
 
   const DAYS: [string, string][] = [
     ['Today', todayYmd],
@@ -137,7 +134,7 @@ export function CreateTaskDialog({
 
   const create = useMutation({
     mutationFn: (body: CreateTaskValues) => createTask(body),
-    meta: { awaits: [tasksKey(project)] },
+    meta: { awaits: [projectTasksQuery(project).queryKey] },
   })
 
   /**

@@ -71,7 +71,7 @@ for (const width of [320, 375]) {
       '/meetings',
       '/reading',
       '/tasks/review',
-      '/tasks/completed',
+      '/tasks/review?view=done',
       '/people',
     ]) {
       await page.goto(path)

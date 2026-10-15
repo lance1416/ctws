@@ -11,11 +11,10 @@ import {
 } from '@dnd-kit/core'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { listProjectTasks } from '../api/tasks'
-import { tasksKey } from '../api/taskCache'
+import { projectTasksQuery } from '../api/queries'
 import { useTaskActions } from '../api/taskActions'
 import { PanelEmpty } from '../../../platform/ui/Panel'
-import { STATUS_LABEL } from '../statusLabel'
+import { STATUS_LABEL } from '../status'
 
 /**
  * THE BOARD: the task block's second view, and the first user of the block-header tabs.
@@ -93,10 +92,7 @@ function Column({
 }
 
 export function TaskBoard({ projectId }: { projectId: string }) {
-  const tasks = useQuery({
-    queryKey: tasksKey(projectId),
-    queryFn: () => listProjectTasks(projectId),
-  })
+  const tasks = useQuery(projectTasksQuery(projectId))
   const [error, setError] = useState<string | null>(null)
   const actions = useTaskActions(setError)
   // The same 5px threshold the tree uses, so a click on a card is a click and not a one-pixel drag.

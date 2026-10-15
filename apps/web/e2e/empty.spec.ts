@@ -64,14 +64,14 @@ test('an empty project says what the tree is for and puts the cursor in the inpu
 test('an empty Done is one line too', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
-  await page.goto('/tasks/completed')
+  await page.goto('/tasks/review?view=done')
 
   await expect(page.getByText('Nothing finished yet')).toBeVisible()
   // A "back to this month" link would point at a destination the rail already carries.
   await expect(page.getByRole('link', { name: 'Back to this month' })).toHaveCount(0)
 
   await makeTask(page, pid, '做完的事', { status: 'done' })
-  await page.goto('/tasks/completed')
+  await page.goto('/tasks/review?view=done')
   await expect(page.getByText('做完的事')).toBeVisible()
   await expect(page.getByText('Nothing finished yet')).toHaveCount(0)
 })

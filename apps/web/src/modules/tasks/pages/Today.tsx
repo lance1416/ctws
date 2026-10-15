@@ -1,12 +1,11 @@
+import { taskCrumb } from '../crumb'
 import type { CalendarEntry, TaskStatus, TodayTaskResponse } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { calendarDaysQuery } from '../../../shell/calendar/api'
-import { listCompleted } from '../api/completed'
+import { completedQuery, movementQuery, todayQuery } from '../api/queries'
 import { toggleDoneTarget, toggleStartTarget, useTaskActions } from '../api/taskActions'
-import { listToday } from '../api/today'
-import { listMovement } from '../api/movement'
 import { DoneTodayPanel } from '../components/DoneTodayPanel'
 import { MovementPanel } from '../components/MovementPanel'
 import { hasMovement } from '../movement'
@@ -23,7 +22,7 @@ import { useRegistry } from '../../../shell/registry'
 import { TASKS_ID } from '../id'
 import { TaskDetail } from '../components/TaskDetail'
 import { TriageControl } from '../components/TriageControl'
-import { todayIn } from '../../../platform/time/dates'
+import { clockTime, todayIn } from '../../../platform/time/dates'
 import { dateHints } from '../dueDates'
 import { useShortcutsEnabled } from '../../../platform/keyboard/enabled'
 import { triageSections } from '../triage'
@@ -49,18 +48,18 @@ import { HANG } from '../../../platform/ui/hang'
  * TODAY'S LINE IS EVERY KIND OF DATED THING, not only tasks: a meeting at 10:30 sits between the
  * task due at 09:00 and the one due at 16:00. It reads the other modules through the calendar
  * seam (`calendarProviders`), so a new dated kind joins the line without this page changing --
- * and the TASKS provider is left out, because tasks come from `['today']` with their segments.
+ * and the TASKS provider is left out, because tasks come from `todayQuery` with their segments.
  *
  * The SERVER still decides which segment a task belongs to, in the account's zone, and the order
  * within it. No task is in two places: a task both overdue and in progress is shown once.
  */
 export function Today() {
   useCrumbs([{ label: 'Today' }])
-  const today = useQuery({ queryKey: ['today'], queryFn: listToday })
-  // Shares the ['completed'] cache entry with the Done page that owns it, so the panel costs
+  const today = useQuery(todayQuery())
+  // Shares `completedQuery` with Review's Done view, so the panel costs
   // one request per session rather than one per visit.
-  const completed = useQuery({ queryKey: ['completed'], queryFn: listCompleted })
-  const movement = useQuery({ queryKey: ['movement'], queryFn: listMovement })
+  const completed = useQuery(completedQuery())
+  const movement = useQuery(movementQuery())
   const timezone = useTimeZone()
   // The moment it is, kept current while the page sits open (`useNow`): the now line, the date
   // and which day "today" is all follow it, and nothing below reads the clock for itself.
@@ -69,12 +68,7 @@ export function Today() {
   // date: the server already decided which day a task was finished on, and the two must agree.
   // `todayIn` is the ONE place that answers this, for this page, the rows and the panel alike.
   const localToday = todayIn(timezone, nowAt)
-  const clock = new Intl.DateTimeFormat('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-    timeZone: timezone,
-  })
+  const clock = clockTime(timezone)
   // The other modules' dated things for today: one hook per provider, over the registry's fixed list.
   const entries = useRegistry()
     .calendar.filter((p) => p.moduleId !== TASKS_ID)
@@ -171,9 +165,6 @@ export function Today() {
     }
   }, [openId, openTask, today.isSuccess])
 
-  const breadcrumb = (t: TodayTaskResponse) =>
-    t.parentTitle === null ? t.projectName : `${t.projectName} › ${t.parentTitle}`
-
   type Entry = CalendarEntry & { moduleId: string }
 
   /**
@@ -239,7 +230,7 @@ export function Today() {
               </span>
               {savedId === t.id && <SavedMark />}
             </span>
-            <RowMeta breadcrumb={breadcrumb(t)} blocked={blockedLabel(t.blockedBy)} />
+            <RowMeta breadcrumb={taskCrumb(t)} blocked={blockedLabel(t.blockedBy)} />
           </button>
           {hints.due?.late && <RowNote tone="text-missed">{hints.due.late}</RowNote>}
           {carried && (
@@ -466,7 +457,7 @@ export function Today() {
                             </span>
                             {savedId === t.id && <SavedMark />}
                           </span>
-                          <span className="truncate text-sm text-ink-muted">{breadcrumb(t)}</span>
+                          <span className="truncate text-sm text-ink-muted">{taskCrumb(t)}</span>
                         </button>
                         {/* The visible word is contained in the accessible name (WCAG 2.5.3):
                             "Done" in “Complete “Title””. On a list they wait for the pointer. */}

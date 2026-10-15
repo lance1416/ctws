@@ -1,6 +1,10 @@
-import type { TaskStatus, TodayTaskResponse, UpdateTaskBody } from '@ctws/contracts'
+import type { TaskStatus, UpdateTaskBody } from '@ctws/contracts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { isFinished } from '../status'
+import { PROJECT_TASKS, todayQuery } from './queries'
 import { patchTask, type ProjectTasks } from './tasks'
+
+const TODAY = todayQuery().queryKey
 
 /**
  * What the status mark does when clicked (or `x` on a focused row): finish the task, or, if it is
@@ -12,8 +16,7 @@ import { patchTask, type ProjectTasks } from './tasks'
  * click from `todo` or `in_progress` anyway. Revisit if "un-complete" turns out to be a frequent,
  * precise action.
  */
-export const toggleDoneTarget = (s: TaskStatus): TaskStatus =>
-  s === 'done' || s === 'cancelled' ? 'backlog' : 'done'
+export const toggleDoneTarget = (s: TaskStatus): TaskStatus => (isFinished(s) ? 'backlog' : 'done')
 
 /**
  * The cheap route to "Working on": start, or stop. Stopping lands on `todo` (it is still something to
@@ -34,31 +37,31 @@ export function useTaskActions(onError: (message: string) => void) {
   const run = useMutation({
     mutationFn: ({ id, body }: { id: string; body: UpdateTaskBody }) => patchTask(id, body),
     onMutate: async ({ id, body }) => {
-      await qc.cancelQueries({ queryKey: ['tasks'] })
-      await qc.cancelQueries({ queryKey: ['today'] })
-      const tasks = qc.getQueriesData<ProjectTasks>({ queryKey: ['tasks'] })
-      const today = qc.getQueryData<TodayTaskResponse[]>(['today'])
+      await qc.cancelQueries({ queryKey: PROJECT_TASKS })
+      await qc.cancelQueries({ queryKey: TODAY })
+      const tasks = qc.getQueriesData<ProjectTasks>({ queryKey: PROJECT_TASKS })
+      const today = qc.getQueryData(TODAY)
       const status = body.status
       if (status) {
         // The row answers at once; the rollups wait for the refetch (see the note in TaskTree).
-        qc.setQueriesData<ProjectTasks>({ queryKey: ['tasks'] }, (old) =>
+        qc.setQueriesData<ProjectTasks>({ queryKey: PROJECT_TASKS }, (old) =>
           old ? { ...old, tasks: old.tasks.map((t) => (t.id === id ? { ...t, status } : t)) } : old,
         )
-        qc.setQueryData<TodayTaskResponse[]>(['today'], (old) =>
+        qc.setQueryData(TODAY, (old) =>
           old
             ?.map((t) => (t.id === id ? { ...t, status } : t))
             // The list never holds finished work, so a finished row leaves at once.
-            .filter((t) => t.status !== 'done' && t.status !== 'cancelled'),
+            .filter((t) => !isFinished(t.status)),
         )
       }
       return { tasks, today }
     },
     onError: (e, _vars, ctx) => {
       ctx?.tasks.forEach(([key, data]) => qc.setQueryData(key, data))
-      qc.setQueryData(['today'], ctx?.today)
+      qc.setQueryData(TODAY, ctx?.today)
       onError(e instanceof Error ? e.message : "Couldn't save the change")
     },
-    meta: { awaits: [['today'], ['tasks'], ['completed'], ['movement']] },
+    meta: { awaits: [['tasks']] },
   })
 
   return {

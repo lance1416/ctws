@@ -217,7 +217,7 @@ test('every page names itself at one step', async ({ page }) => {
     '/projects',
     `/projects/${pid}`,
     '/tasks/review',
-    '/tasks/completed',
+    '/tasks/review?view=done',
     '/calendar',
     '/meetings',
     '/reading',

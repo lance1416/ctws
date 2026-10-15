@@ -1,3 +1,4 @@
+import { isFinished } from '../status'
 import {
   DndContext,
   PointerSensor,
@@ -12,9 +13,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Fragment, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useProjects } from '../../../shell/projects/api'
-import { createTask, listProjectTasks, moveTask, patchTask, type ProjectTasks } from '../api/tasks'
+import { createTask, moveTask, patchTask, type ProjectTasks } from '../api/tasks'
 import { refreshQueries } from '../../../platform/http/refresh'
-import { tasksKey } from '../api/taskCache'
+import { projectTasksQuery } from '../api/queries'
 import { ancestorsOf } from '../tree/ancestors'
 import { flatten } from '../tree/flatten'
 import { rollupPhrase } from '../rollupPhrase'
@@ -70,7 +71,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
   // it raises and no other project does; and since most rows in an ordinary tree carry no date
   // at all, putting an age on them would give every one of them a second line.
   const inInbox = allProjects.data?.find((p) => p.id === projectId)?.isInbox === true
-  const key = tasksKey(projectId)
+  const key = projectTasksQuery(projectId).queryKey
   const [collapsed, setCollapsed] = useState(() => loadCollapsed(projectId))
   const [showDone, setShowDone] = useState(() => loadShowDone(projectId))
   /**
@@ -124,7 +125,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
   const singleKeys = useShortcutsEnabled()
 
   // The cache holds exactly what listProjectTasks returns; the rows are derived, never cached.
-  const tasks = useQuery({ queryKey: key, queryFn: () => listProjectTasks(projectId) })
+  const tasks = useQuery(projectTasksQuery(projectId))
   /**
    * WHAT IS LEFT TO DO. A finished row leaves the tree unless the person asks for it back.
    *
@@ -139,7 +140,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
     const index = new Map(all.map((t) => [t.id, t]))
     const live = new Set<string>()
     for (const t of all) {
-      if (t.status === 'done' || t.status === 'cancelled') continue
+      if (isFinished(t.status)) continue
       // Walk up marking ancestors: an unfinished task keeps every parent above it on screen.
       // `live.has` stops the walk, so each chain is climbed once and the whole pass is O(n).
       for (let at = t as TaskResponse | undefined; at && !live.has(at.id);) {
@@ -305,8 +306,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
    */
   const setStatus = (id: string, status: TaskStatus) => {
     setError(null)
-    if (status === 'done' || status === 'cancelled')
-      setKeptFinished((prev) => new Set(prev).add(id))
+    if (isFinished(status)) setKeptFinished((prev) => new Set(prev).add(id))
     actions.setStatus(id, status)
   }
 
@@ -474,7 +474,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
     }
     // Unfolding is not enough when the row is FINISHED and finished rows are hidden:
     // search would route here and focus nothing. Arriving at a task is a request to see it.
-    if (!showDone && (target.status === 'done' || target.status === 'cancelled')) {
+    if (!showDone && isFinished(target.status)) {
       setShowDone(true)
       saveShowDone(projectId, true)
     }

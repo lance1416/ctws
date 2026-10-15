@@ -1,7 +1,7 @@
 import type { ProjectListItem } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { Fragment, type ReactNode } from 'react'
-import { listMovement } from '../api/movement'
+import { movementQuery } from '../api/queries'
 import { movedLine } from '../movement'
 import { shortDay, todayIn } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
@@ -11,7 +11,7 @@ import { RowLead } from '../../../shell/rows/RowLead'
 
 /** One project's movement: what is late, what is next, when it last moved. Archived ones have none. */
 function useMoved(projectId: string) {
-  const movement = useQuery({ queryKey: ['movement'], queryFn: listMovement })
+  const movement = useQuery(movementQuery())
   return movement.data?.find((m) => m.projectId === projectId)
 }
 

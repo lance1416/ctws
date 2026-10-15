@@ -161,7 +161,7 @@ test('the Today card counts what is late, planned and done, and each count goes 
   )
   await expect(today.getByRole('link', { name: '1 done' })).toHaveAttribute(
     'href',
-    '/tasks/completed',
+    '/tasks/review?view=done',
   )
 })
 

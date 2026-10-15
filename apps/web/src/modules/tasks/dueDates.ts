@@ -1,3 +1,5 @@
+import type { TaskStatus } from '@ctws/contracts'
+import { isFinished } from './status'
 import { TZDate } from '@date-fns/tz'
 import { differenceInCalendarDays, format, set } from 'date-fns'
 import { dayPhrase, daysAgoIn, todayIn, utcIso, ymd } from '../../platform/time/dates'
@@ -44,11 +46,11 @@ export type DateHints = {
  * today, the server's rule, in the account's zone.
  */
 export function dateHints(
-  t: { status: string; dueAt: string | null; scheduledOn: string | null },
+  t: { status: TaskStatus; dueAt: string | null; scheduledOn: string | null },
   timeZone: string,
   now: Date,
 ): DateHints {
-  if (t.status === 'done' || t.status === 'cancelled') return { scheduled: null, due: null }
+  if (isFinished(t.status)) return { scheduled: null, due: null }
   const today = todayIn(timeZone, now)
   const scheduled = t.scheduledOn ? `Planned for ${lower(dayPhrase(t.scheduledOn, today))}` : null
   if (!t.dueAt) return { scheduled, due: null }

@@ -1,3 +1,4 @@
+import { isFinished } from '../status'
 import { useSortable } from '@dnd-kit/sortable'
 import type { TaskStatus } from '@ctws/contracts'
 import type { KeyboardEvent } from 'react'
@@ -108,7 +109,7 @@ export function TaskRow({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: row.id,
   })
-  const inactive = status === 'done' || status === 'cancelled'
+  const inactive = isFinished(status)
   // The ACCOUNT's zone, not the browser's: the server decides what is overdue in that zone, and a
   // row saying a task is due tomorrow when the server has already filed it as overdue would be
   // the page contradicting itself.

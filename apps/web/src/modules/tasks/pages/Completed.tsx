@@ -1,7 +1,8 @@
+import { taskCrumb } from '../crumb'
 import type { CompletedTaskResponse } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
-import { listCompleted } from '../api/completed'
+import { completedQuery } from '../api/queries'
 import { useTaskActions } from '../api/taskActions'
 import { DaySection } from '../../../shell/rows/DaySection'
 import { EmptyState } from '../../../platform/ui/EmptyState'
@@ -10,9 +11,8 @@ import { DONE_LIST_MEASURE } from '../components/TaskRowParts'
 import { RowLead } from '../../../shell/rows/RowLead'
 import { StatusButton } from '../components/StatusControls'
 import { TaskDetail } from '../components/TaskDetail'
-import { addDays, MONTHS, todayIn } from '../../../platform/time/dates'
+import { addDays, clockTime, MONTHS, todayIn } from '../../../platform/time/dates'
 import { useTimeZone } from '../../../shell/auth/useMe'
-import { useCrumbs } from '../../../shell/layout/Breadcrumbs'
 import { useNow } from '../../../platform/time/useNow'
 import { QueryStatus } from '../../../platform/ui/QueryStatus'
 import { HANG } from '../../../platform/ui/hang'
@@ -30,21 +30,16 @@ function dayHeading(day: string, today: string): string {
 }
 
 /**
- * What I finished, newest first, across projects. The server decided the order and which day each
- * task belongs to (in the account timezone); this only partitions the list by that day.
+ * What I finished, newest first, across projects: Review's Done view. The server decided the
+ * order and which day each task belongs to (in the account timezone); this only partitions the
+ * list by that day.
  */
-export function Completed({ heading: showHeading = true }: { heading?: boolean } = {}) {
-  useCrumbs(showHeading ? [{ label: 'Review', to: '/tasks/review' }, { label: 'Done' }] : null)
-  const completed = useQuery({ queryKey: ['completed'], queryFn: listCompleted })
+export function Completed() {
+  const completed = useQuery(completedQuery())
   const [openId, setOpenId] = useState<string | null>(null)
   const timezone = useTimeZone()
   const today = todayIn(timezone, useNow())
-  const clock = new Intl.DateTimeFormat('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-    timeZone: timezone,
-  })
+  const clock = clockTime(timezone)
   const heading = useRef<HTMLHeadingElement>(null)
   const actions = useTaskActions(() => {})
 
@@ -59,28 +54,15 @@ export function Completed({ heading: showHeading = true }: { heading?: boolean }
 
   return (
     <>
-      {/* As a VIEW of Review this is an h2 and not an h1 -- that page's own heading is the h1, and
-          two of them would tell a screen reader the page had two titles. It is still rendered,
-          and still the thing focus lands on after a restore: a heading nobody can see is better
-          than focus falling to <body>. */}
-      {showHeading ? (
-        <h1
-          ref={heading}
-          tabIndex={-1}
-          // On the margin's edge, where the rows' threads hang: the page is one column of rows.
-          className={`${HANG} text-2xl font-semibold tracking-[-0.02em] focus:outline-none`}
-        >
-          Done
-        </h1>
-      ) : (
-        <h2
-          ref={heading as unknown as React.RefObject<HTMLHeadingElement>}
-          tabIndex={-1}
-          className="absolute h-px w-px overflow-hidden whitespace-nowrap focus:outline-none"
-        >
-          Done
-        </h2>
-      )}
+      {/* An h2: Review's own heading is the h1. Unseen, and still where focus lands after a
+          restore -- a heading nobody can see is better than focus falling to <body>. */}
+      <h2
+        ref={heading}
+        tabIndex={-1}
+        className="absolute h-px w-px overflow-hidden whitespace-nowrap focus:outline-none"
+      >
+        Done
+      </h2>
       <QueryStatus query={completed} />
       {completed.isSuccess && rows.length === 0 && <EmptyState hang title="Nothing finished yet" />}
       {days.map(({ day, tasks }) => (
@@ -131,11 +113,7 @@ export function Completed({ heading: showHeading = true }: { heading?: boolean }
                     className="flex min-w-0 flex-1 flex-col py-2.5 text-left"
                   >
                     <span className="truncate">{t.title}</span>
-                    <span className="truncate text-sm text-ink-muted">
-                      {t.parentTitle === null
-                        ? t.projectName
-                        : `${t.projectName} › ${t.parentTitle}`}
-                    </span>
+                    <span className="truncate text-sm text-ink-muted">{taskCrumb(t)}</span>
                   </button>
                 </span>
               </li>

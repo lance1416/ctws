@@ -1,4 +1,5 @@
 import type { TaskStatus } from '@ctws/contracts'
+import { isFinished, STATUS_LABEL } from '../status'
 
 // Status is told apart by shape, not colour (WCAG 1.4.1): a hollow ring has not started, a ring
 // filled on its right half is being worked on -- half way, which is what "in progress" says -- and
@@ -15,24 +16,17 @@ import type { TaskStatus } from '@ctws/contracts'
 // 20px glyph-well sitting in a 46px row.
 // The half, the disc and the check are always rendered and fade or scale in, so the 120ms echo of
 // a status change is a transition on a persistent element rather than a mount.
-const LABEL: Record<TaskStatus, string> = {
-  backlog: 'Backlog',
-  todo: 'To do',
-  in_progress: 'In progress',
-  done: 'Done',
-  cancelled: 'Cancelled',
-}
 
 export function StatusMark({ status }: { status: TaskStatus }) {
   const half = status === 'in_progress'
   const solid = status === 'done'
   // Every task that is still open draws at full strength; only a settled one recedes. An open
   // task is the thing the list exists to show, and backlog is open -- untriaged, not done.
-  const live = status !== 'done' && status !== 'cancelled'
+  const live = !isFinished(status)
   return (
     <svg
       role="img"
-      aria-label={LABEL[status]}
+      aria-label={STATUS_LABEL[status]}
       viewBox="0 0 20 20"
       width="20"
       height="20"
@@ -42,7 +36,7 @@ export function StatusMark({ status }: { status: TaskStatus }) {
       strokeLinejoin="round"
       className={`shrink-0 ${live ? 'text-ink' : 'text-ink-muted'}`}
     >
-      <title>{LABEL[status]}</title>
+      <title>{STATUS_LABEL[status]}</title>
       <circle
         cx="10"
         cy="10"

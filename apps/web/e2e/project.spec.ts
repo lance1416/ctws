@@ -89,10 +89,10 @@ test('the project head says the numbers the server reports, for THIS project', a
 })
 
 /**
- * The head is a live number, not a page-load snapshot. It is also the reason the movement
- * refetch is no longer awaited by the create path (api/taskCache.ts): the typist waits for the
- * row, not for the count. That change would be invisible if nothing asserted the count still
- * catches up -- and silently stale is exactly how a number stops being worth reading.
+ * The head is a live number, not a page-load snapshot. It is also the reason the create path
+ * awaits only its project's list, not the movement refetch: the typist waits for the row, not for
+ * the count. That change would be invisible if nothing asserted the count still catches up -- and
+ * silently stale is exactly how a number stops being worth reading.
  */
 test('the head’s numbers follow a task added on the page, without a reload', async ({ page }) => {
   await registerFreshUser(page)
