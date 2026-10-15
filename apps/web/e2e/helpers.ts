@@ -218,6 +218,14 @@ export async function pickOne(
  * neither. That is what copying a helper does: every copy is free to drift, and the drift is
  * invisible until you read two specs side by side.
  */
+/** Holds every GET matching `url` for a while, so whatever waits on that read waits visibly. */
+export async function slowReads(page: Page, url: string, ms = 400): Promise<void> {
+  await page.route(url, async (r) => {
+    if (r.request().method() === 'GET') await new Promise((done) => setTimeout(done, ms))
+    await r.continue()
+  })
+}
+
 export async function makeProject(page: Page, name: string): Promise<string> {
   const res = await page.request.post('/api/v1/projects', {
     headers: { 'x-ctws-client': 'web' },

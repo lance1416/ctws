@@ -109,9 +109,14 @@ export function ProjectTasks({ projectId, view }: { projectId: string; view: str
   const [title, setTitle] = useState('')
   const failureId = useId()
   const create = useMutation({
-    mutationFn: (t: string) => createTask({ projectId, title: t, parentId: null }),
+    mutationFn: async (t: string) => {
+      const made = await createTask({ projectId, title: t, parentId: null })
+      // Emptied once the server has it, not after the list is read again: what is typed in the
+      // meantime is the next title.
+      setTitle('')
+      return made
+    },
     meta: { awaits: [projectTasksQuery(projectId).queryKey] },
-    onSuccess: () => setTitle(''),
   })
 
   const submit = () => {

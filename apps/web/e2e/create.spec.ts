@@ -1,5 +1,13 @@
 import { expect, test, type Page } from '@playwright/test'
-import { openProject, registerFreshUser, serverParents, submitCreate, WEB } from './helpers'
+import {
+  makeProject,
+  openProject,
+  registerFreshUser,
+  serverParents,
+  slowReads,
+  submitCreate,
+  WEB,
+} from './helpers'
 
 const POST_TASK = /\/api\/v1\/tasks$/
 
@@ -382,4 +390,23 @@ test('the capture line goes when the user navigates away', async ({ page }) => {
     .click()
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
   await expect(line).toHaveCount(0)
+})
+
+test('the New task box is empty for the next title once the server has the last', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  await page.goto(`/projects/${await makeProject(page, 'Rapid')}`)
+  const box = page.getByRole('textbox', { name: 'New task', exact: true })
+  await box.waitFor()
+  // The list read after the save is slow; the box must not wait for it.
+  await slowReads(page, '**/api/v1/tasks?projectId=*')
+  const posted = page.waitForResponse(
+    (r) => r.request().method() === 'POST' && POST_TASK.test(new URL(r.url()).pathname),
+  )
+  await box.fill('first')
+  await box.press('Enter')
+  await posted
+  await box.pressSequentially('second', { delay: 20 })
+  await expect(box).toHaveValue('second')
 })

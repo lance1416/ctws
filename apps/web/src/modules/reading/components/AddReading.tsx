@@ -16,14 +16,18 @@ export function AddReading({ projectId }: { projectId?: string } = {}) {
   const isLink = isReadingUrl(trimmed)
 
   const add = useMutation({
-    mutationFn: (value: string) =>
-      createReadingItem(
+    mutationFn: async (value: string) => {
+      const made = await createReadingItem(
         isReadingUrl(value)
           ? { kind: 'link', url: value, ...(projectId ? { projectId } : {}) }
           : { kind: 'book', title: value, ...(projectId ? { projectId } : {}) },
-      ),
+      )
+      // Emptied once the server has it, not after the list is read again: what is typed in the
+      // meantime is the next one.
+      setLine('')
+      return made
+    },
     meta: { awaits: [['reading']] },
-    onSuccess: () => setLine(''),
   })
 
   return (

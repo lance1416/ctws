@@ -21,9 +21,14 @@ export function Projects() {
   const archivedList = useQuery(archivedProjectsQuery())
 
   const create = useMutation({
-    mutationFn: createProject,
+    mutationFn: async (body: Parameters<typeof createProject>[0]) => {
+      const made = await createProject(body)
+      // Emptied once the server has it, not after the list is read again: what is typed in the
+      // meantime is the next name.
+      setName('')
+      return made
+    },
     meta: { awaits: [['projects']] },
-    onSuccess: () => setName(''),
   })
 
   const submit = () => {

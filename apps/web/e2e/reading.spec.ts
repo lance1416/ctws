@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { holdFirstRead, registerFreshUser, WEB } from './helpers'
+import { holdFirstRead, registerFreshUser, slowReads, WEB } from './helpers'
 
 /**
  * THE READING LIST -- THE SECOND MODULE, through the browser.
@@ -339,4 +339,21 @@ test('the reading list hangs on the margin: the plan, the thread, then the item'
   expect(Math.round(h1.x)).toBe(threads[0])
   const section = (await page.getByRole('heading', { level: 2, name: 'To read' }).boundingBox())!
   expect(Math.round(section.x)).toBe(threads[0])
+})
+
+test('the add box is empty for the next title once the server has the last', async ({ page }) => {
+  await registerFreshUser(page)
+  await page.goto('/reading')
+  const box = page.getByLabel('Add to the reading list')
+  await box.waitFor()
+  // The list read after the save is slow; the box must not wait for it.
+  await slowReads(page, '**/api/v1/reading*')
+  const posted = page.waitForResponse(
+    (r) => r.request().method() === 'POST' && new URL(r.url()).pathname === '/api/v1/reading',
+  )
+  await box.fill('A first book')
+  await box.press('Enter')
+  await posted
+  await box.pressSequentially('A second', { delay: 20 })
+  await expect(box).toHaveValue('A second')
 })

@@ -1,6 +1,14 @@
 import { expect, test } from '@playwright/test'
 import { TZDate } from '@date-fns/tz'
-import { accountZone, dayInZone, makeProject, makeTask, registerFreshUser, WEB } from './helpers'
+import {
+  accountZone,
+  dayInZone,
+  makeProject,
+  makeTask,
+  registerFreshUser,
+  slowReads,
+  WEB,
+} from './helpers'
 
 /**
  * THE PROJECT LIST, ON THE APP'S ROW: the margin says when the next deadline falls, the thread is
@@ -130,4 +138,23 @@ test('the inbox has no Archive', async ({ page }) => {
   await page.goto(`/projects/${inbox}`)
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Archive', exact: true })).toHaveCount(0)
+})
+
+test('the New project box is empty for the next name once the server has the last', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  await page.goto('/projects')
+  const box = page.getByRole('textbox', { name: 'New project', exact: true })
+  await box.waitFor()
+  // The list read after the save is slow; the box must not wait for it.
+  await slowReads(page, '**/api/v1/projects*')
+  const posted = page.waitForResponse(
+    (r) => r.request().method() === 'POST' && new URL(r.url()).pathname === '/api/v1/projects',
+  )
+  await box.fill('First line')
+  await box.press('Enter')
+  await posted
+  await box.pressSequentially('Second', { delay: 20 })
+  await expect(box).toHaveValue('Second')
 })
