@@ -1,6 +1,9 @@
 import { expect, test, type Page } from '@playwright/test'
 import {
+  makeProject,
+  makeTask,
   MOVE_URL,
+  openTree,
   openProject,
   recordMoves,
   registerFreshUser,
@@ -556,4 +559,22 @@ test('a refused move puts the fold it opened back', async ({ page }) => {
   // And the fold is remembered that way, not just drawn that way.
   await page.reload()
   await expect(rows).toHaveText([/aa/, /bb/])
+})
+
+test('a selected row says it is selected', async ({ page }) => {
+  await registerFreshUser(page)
+  const projectId = await makeProject(page, 'Pick')
+  await makeTask(page, projectId, 'One')
+  await makeTask(page, projectId, 'Two')
+  await openTree(page, projectId)
+  const rowOf = (title: string) =>
+    page
+      .locator('li[data-depth]')
+      .filter({ has: page.getByRole('button', { name: `Task: ${title}`, exact: true }) })
+  await rowOf('Two').click({ modifiers: ['Shift'] })
+  await expect(page.locator('[data-selection-bar]')).toContainText('1 selected')
+  // Said in words a screen reader reads: a list item cannot carry aria-selected.
+  await expect(rowOf('Two')).toContainText('Selected')
+  await expect(rowOf('One')).not.toContainText('Selected')
+  await expect(page.locator('li[aria-selected]')).toHaveCount(0)
 })

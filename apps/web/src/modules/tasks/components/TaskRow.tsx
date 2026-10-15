@@ -36,11 +36,11 @@ type Props = {
   /** Whether the task has notes: the notes mark sits beside the title. */
   hasNotes: boolean
   /** When this was captured, for the inbox's age line. Every other list passes null. */
-  capturedAt?: string | null
+  capturedAt: string | null
   /** This row's subtree, said in words. Only a row with children gets one. */
-  rollup?: string | null
+  rollup: string | null
   /** What is still in the way. The row dims; it does not disappear. */
-  blockedBy?: readonly { id: string; title: string }[] | undefined
+  blockedBy: readonly { id: string; title: string }[] | undefined
   /** True for a moment after a save from the detail panel: the panel closed, this says it worked. */
   saved: boolean
   /**
@@ -58,9 +58,9 @@ type Props = {
    * Shift+click toggles this row's membership of the selection. Plain click still opens
    * the detail, so the one gesture people already use is untouched.
    */
-  onToggleSelected?: () => void
+  onToggleSelected: () => void
   /** Whether this row is in the selection. */
-  selected?: boolean
+  selected: boolean
   onAddChild: () => void
 }
 
@@ -92,8 +92,8 @@ export function TaskRow({
   dueAt,
   scheduledOn,
   hasNotes,
-  capturedAt = null,
-  rollup = null,
+  capturedAt,
+  rollup,
   blockedBy,
   saved,
   tabStop,
@@ -103,7 +103,7 @@ export function TaskRow({
   onKeyDown,
   onOpen,
   onToggleSelected,
-  selected = false,
+  selected,
   onAddChild,
 }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -126,12 +126,11 @@ export function TaskRow({
       data-depth={row.depth}
       // A click on the row body opens the detail; the chevron and the handle are buttons with
       // their own jobs. A drag starts on the handle, so it never reaches here as a row click.
-      aria-selected={onToggleSelected ? selected : undefined}
       onClick={(e) => {
         if ((e.target as HTMLElement).closest('button')) return
         // Shift picks rows instead of opening one. A plain click is unchanged, which is what
         // keeps the gesture people already use from becoming a mode.
-        if (e.shiftKey && onToggleSelected) {
+        if (e.shiftKey) {
           e.preventDefault()
           onToggleSelected()
           return
@@ -238,6 +237,8 @@ export function TaskRow({
               {title}
               {saved && <SavedMark />}
             </span>
+            {/* The select layer is drawn; this says it. A list item cannot carry aria-selected. */}
+            {selected && <span className="sr-only">Selected</span>}
             {/* There is something to read in this one. `shrink-0`, so it costs the row no height
                 and reserves no width on the rows without it. */}
             {hasNotes && (
