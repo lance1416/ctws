@@ -15,6 +15,12 @@ export class ApiError extends Error {
   }
 }
 
+/** What to tell a person about a failed write: the server's sentence for them, else its title. */
+export function problemText(error: Error | null): string | null {
+  if (!error) return null
+  return error instanceof ApiError ? (error.detail ?? error.message) : error.message
+}
+
 export async function apiFetch<T = unknown>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers)
   // The client half of the CSRF check: the API refuses unsafe methods without it.

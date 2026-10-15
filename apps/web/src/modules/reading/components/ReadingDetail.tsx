@@ -1,6 +1,7 @@
 import type { ReadingItemResponse, ReadingStatus } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
+import { problemText } from '../../../platform/http/api'
 import { deleteReadingItem, patchReadingItem } from '../api'
 import { readingLabel, recentEntry } from '../item'
 import { ProjectChip, ProjectPicker } from '../../../shell/projects/ProjectPicker'
@@ -80,8 +81,10 @@ function ReadingFields({ item, onClose }: { item: ReadingItemResponse; onClose: 
   const timeZone = useTimeZone()
   const today = todayIn(timeZone, useNow())
 
+  // Waits for the list, so the reading that replaces the form already shows the edit.
   const save = useMutation({
     mutationFn: (patch: Parameters<typeof patchReadingItem>[1]) => patchReadingItem(item.id, patch),
+    meta: { awaits: [['reading']] },
   })
 
   const head = <BackHead to="/reading" label="Reading" onClose={onClose} />
@@ -93,11 +96,12 @@ function ReadingFields({ item, onClose }: { item: ReadingItemResponse; onClose: 
         <ReadingForm
           item={item}
           busy={save.isPending}
-          onCancel={() => setEditing(false)}
-          onSave={(patch) => {
-            save.mutate(patch)
+          error={problemText(save.error)}
+          onCancel={() => {
+            save.reset()
             setEditing(false)
           }}
+          onSave={(patch) => save.mutate(patch, { onSuccess: () => setEditing(false) })}
         />
       </div>
     )
@@ -173,11 +177,14 @@ function ReadingFields({ item, onClose }: { item: ReadingItemResponse; onClose: 
 function ReadingForm({
   item,
   busy,
+  error,
   onCancel,
   onSave,
 }: {
   item: ReadingItemResponse
   busy: boolean
+  /** Why the server refused the last Save; the form stays open with what was typed. */
+  error: string | null
   onCancel: () => void
   onSave: (patch: Parameters<typeof patchReadingItem>[1]) => void
 }) {
@@ -216,6 +223,11 @@ function ReadingForm({
       className="flex flex-col gap-4"
     >
       <FormBar busy={busy} onCancel={onCancel} />
+      {error && (
+        <p role="alert" className="text-sm text-danger">
+          {error}
+        </p>
+      )}
 
       <div>
         <label htmlFor="r-title" className={label}>

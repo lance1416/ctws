@@ -264,6 +264,36 @@ test('一条读物在它那一层里改，不在下拉菜单里改', async ({ pa
   await expect(page.getByText('Linear 怎么重做 issue').first()).toBeVisible()
 })
 
+test('a reading edit the server refuses stays open and says why', async ({ page }) => {
+  await registerFreshUser(page)
+  const made = await page.request.post('/api/v1/reading', {
+    headers: WEB,
+    data: { kind: 'book', title: 'Refused book' },
+  })
+  const id = ((await made.json()) as { id: string }).id
+  await page.goto(`/reading/${id}`)
+  const layer = page.getByRole('dialog', { name: 'Reading' })
+  await layer.getByRole('button', { name: 'Edit', exact: true }).click()
+  await layer.getByLabel('Title').fill('Refused again')
+  await page.route(`**/api/v1/reading/${id}`, (r) =>
+    r.request().method() === 'PATCH'
+      ? r.fulfill({
+          status: 400,
+          contentType: 'application/problem+json',
+          body: JSON.stringify({
+            type: 'about:blank',
+            title: 'Bad Request',
+            status: 400,
+            detail: 'That title is too long',
+          }),
+        })
+      : r.continue(),
+  )
+  await layer.getByRole('button', { name: 'Save' }).click()
+  await expect(layer.getByRole('alert')).toContainText('That title is too long')
+  await expect(layer.getByLabel('Title')).toHaveValue('Refused again')
+})
+
 /**
  * A READING ROW IS THE APP'S ROW: the day you mean to finish it in the margin (a plan, so no flag),
  * its project's colour as the thread, then the kind, the title and a line naming the project. The
