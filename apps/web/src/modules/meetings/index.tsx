@@ -1,5 +1,5 @@
 import type { MeetingOccurrence } from '@ctws/contracts'
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { meetingCalendarQuery, meetingsQuery, occurrenceQuery } from './api'
 import { MeetingDetail } from './components/MeetingDetail'
@@ -29,7 +29,13 @@ function useOpenMeeting(pool: readonly MeetingOccurrence[]) {
     (m) => m.meetingId === open?.meetingId && m.recurrenceId === open.recurrenceId,
   )
   const pane = found ? (
-    <MeetingDetail meeting={found} accountZone={accountZone} onClose={() => setOpen(null)} />
+    <MeetingDetail
+      key={`${found.meetingId}:${found.recurrenceId}`}
+      meeting={found}
+      accountZone={accountZone}
+      onClose={() => setOpen(null)}
+      onMoved={(moved) => setOpen({ meetingId: moved.meetingId, recurrenceId: moved.recurrenceId })}
+    />
   ) : null
   return { setOpen, pane }
 }
@@ -39,13 +45,30 @@ function useMeetingEntries(range: { from: string; to: string }) {
   return { entries: result.data ?? [], isError: result.isError }
 }
 
-/** The pane for a clicked calendar entry, whose id names one occurrence of a series. */
+/**
+ * The pane for a clicked calendar entry, whose id names one occurrence of a series. A save that
+ * moves it renames it, so the pane follows the name the server gives back, keeping the last one
+ * on screen while it reads the new.
+ */
 function CalendarDetail({ id, onClose }: { id: string; onClose: () => void }) {
   const accountZone = useTimeZone()
-  const [meetingId, recurrenceId] = splitEntryId(id)
-  const found = useQuery(occurrenceQuery(meetingId, recurrenceId))
+  const [moved, setMoved] = useState<{ from: string; to: MeetingOccurrence } | null>(null)
+  const [meetingId, recurrenceId] =
+    moved?.from === id ? [moved.to.meetingId, moved.to.recurrenceId] : splitEntryId(id)
+  const found = useQuery({
+    ...occurrenceQuery(meetingId, recurrenceId),
+    placeholderData: keepPreviousData,
+  })
   if (!found.data) return null
-  return <MeetingDetail meeting={found.data} accountZone={accountZone} onClose={onClose} />
+  return (
+    <MeetingDetail
+      key={`${found.data.meetingId}:${found.data.recurrenceId}`}
+      meeting={found.data}
+      accountZone={accountZone}
+      onClose={onClose}
+      onMoved={(to) => setMoved({ from: id, to })}
+    />
+  )
 }
 
 /** `<series uuid>:<recurrence id>`. The uuid has a fixed length, so the split is unambiguous. */

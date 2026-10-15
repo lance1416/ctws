@@ -16,11 +16,14 @@ export function MeetingDetail({
   meeting,
   accountZone,
   onClose,
+  onMoved,
 }: {
   meeting: MeetingOccurrence
   /** The account's own zone: what the clock beside the meeting's own is in. */
   accountZone: string
   onClose: () => void
+  /** A save moved it, and so may have renamed it: this is the occurrence the server now has. */
+  onMoved: (occurrence: MeetingOccurrence) => void
 }) {
   useRecordRecent({
     type: 'meeting',
@@ -30,7 +33,10 @@ export function MeetingDetail({
     kind: 'Meeting',
   })
   const [editing, setEditing] = useState(false)
-  const edit = useScopedEdit(meeting, () => setEditing(false))
+  const edit = useScopedEdit(meeting, (moved) => {
+    setEditing(false)
+    if (moved) onMoved(moved)
+  })
 
   return (
     <DetailPane label="Meetings" onClose={onClose}>

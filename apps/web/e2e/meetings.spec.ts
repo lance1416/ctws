@@ -116,6 +116,19 @@ test('a meeting late in its own zone opens from the next day here', async ({ pag
   await expect(pane(page)).toContainText('Late call')
 })
 
+test('a one-off meeting moved from the calendar stays open at its new time', async ({ page }) => {
+  await inLondon(page)
+  await arrange(page, { ...WEEKLY_IN_TORONTO, title: 'Once', rrule: null })
+  await page.goto('/calendar')
+  await openOctober(page)
+  await square(page, '2026-10-20').getByRole('button', { name: /Once/ }).click()
+  await pane(page).getByRole('button', { name: 'Edit', exact: true }).click()
+  await pane(page).getByLabel('Start').fill('2026-10-20T11:00')
+  await pane(page).getByRole('button', { name: 'Save' }).click()
+  await expect(pane(page).getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
+  await expect(pane(page)).toContainText('Oct 20, 11:00')
+})
+
 test('cancelling one week leaves the series alone', async ({ page }) => {
   await inLondon(page)
   await arrange(page, WEEKLY_IN_TORONTO)

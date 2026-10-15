@@ -8,7 +8,11 @@ import { patchMeeting } from '../api'
  * Saves a meeting's form: when and how long belong to the occurrence, the rest to the series.
  * Moving a repeating meeting first asks which occurrences change.
  */
-export function useScopedEdit(meeting: MeetingOccurrence, onSaved: () => void) {
+export function useScopedEdit(
+  meeting: MeetingOccurrence,
+  /** `moved` is the occurrence the server wrote when the save changed when it is or its length. */
+  onSaved: (moved: MeetingOccurrence | null) => void,
+) {
   /** A Save that moved a repeating meeting, held whole until "this one / from here on". */
   const [asking, setAsking] = useState<UpdateMeetingInput | null>(null)
 
@@ -22,11 +26,12 @@ export function useScopedEdit(meeting: MeetingOccurrence, onSaved: () => void) {
     const { startsLocal, durationMinutes, ...series } = patch
     try {
       await save.mutateAsync({ ...series, scope: 'all' })
+      let moved: MeetingOccurrence | null = null
       if (startsLocal !== undefined || durationMinutes !== undefined) {
         const recurrenceId = scope === 'all' ? undefined : meeting.recurrenceId
-        await save.mutateAsync({ startsLocal, durationMinutes, scope, recurrenceId })
+        moved = await save.mutateAsync({ startsLocal, durationMinutes, scope, recurrenceId })
       }
-      onSaved()
+      onSaved(moved)
     } catch {
       // Shown through `failed`.
     }

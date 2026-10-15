@@ -57,11 +57,12 @@ export function Meetings() {
   const { id: openId = null } = useParams()
   const at = useSearchParams()[0].get('at')
   const navigate = useNavigate()
-  const setOpen = (next: Occurrence | null) =>
+  const setOpen = (next: Occurrence | null, options?: { replace: boolean }) =>
     navigate(
       next
         ? `/meetings/${next.meetingId}?${new URLSearchParams({ at: next.recurrenceId })}`
         : '/meetings',
+      options,
     )
 
   const ahead = useQuery(meetingsQuery({ from: today, to: addDays(today, WINDOW_DAYS) }))
@@ -73,9 +74,14 @@ export function Meetings() {
   const coming = nextOfEach(ahead.data ?? [], now)
   // Reversed, so the most recent of each series is the one shown.
   const past = nextOfEach([...(behind.data ?? [])].reverse(), now)
-  const listed = [...coming, ...past].find(
-    (m) => m.meetingId === openId && (at === null || m.recurrenceId === at),
-  )
+  // A named occurrence is any of the listed ones, not only the row's: today's stays open after it
+  // ends and the row moves on to tomorrow's.
+  const listed =
+    at === null
+      ? [...coming, ...past].find((m) => m.meetingId === openId)
+      : [...(ahead.data ?? []), ...(behind.data ?? [])].find(
+          (m) => m.meetingId === openId && m.recurrenceId === at,
+        )
   // Asked for only once the list is in and does not have it.
   const missing = openId !== null && ahead.isSuccess && !listed
   const one = useQuery({
@@ -88,6 +94,12 @@ export function Meetings() {
   const gone = openId !== null && !found && fetched.isSuccess
   // One occurrence gone is not the series gone, so only a series is forgotten.
   useForgetWhenGone('meeting', openId, gone && at === null)
+  // While the address's occurrence is looked up, the pane keeps the one it showed: a save that
+  // moves a meeting renames it, and the pane must not close in between.
+  const [shown, setShown] = useState<MeetingOccurrence | null>(null)
+  if (found && found !== shown) setShown(found)
+  if (openId === null && shown) setShown(null)
+  const pane = openId === null || gone ? null : (found ?? shown)
 
   return (
     <>
@@ -155,8 +167,14 @@ export function Meetings() {
           }}
         />
       )}
-      {found && (
-        <MeetingDetail meeting={found} accountZone={accountZone} onClose={() => setOpen(null)} />
+      {pane && (
+        <MeetingDetail
+          key={`${pane.meetingId}:${pane.recurrenceId}`}
+          meeting={pane}
+          accountZone={accountZone}
+          onClose={() => setOpen(null)}
+          onMoved={(moved) => setOpen(moved, { replace: true })}
+        />
       )}
       {/* Gone, or cancelled. */}
       {gone && <GoneNotice kind="meeting" />}
