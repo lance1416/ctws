@@ -387,6 +387,32 @@ test('改完一次保存，读到的就是刚写下的', async ({ page }) => {
   await expect(pane).toContainText('技术负责人 · 新公司')
 })
 
+test('a new person the server refuses says why, with the form still filled in', async ({
+  page,
+}) => {
+  await registerFreshUser(page, '/people')
+  await page.route('**/api/v1/people', (r) =>
+    r.request().method() === 'POST'
+      ? r.fulfill({
+          status: 400,
+          contentType: 'application/problem+json',
+          body: JSON.stringify({
+            type: 'about:blank',
+            title: 'Bad Request',
+            status: 400,
+            detail: 'That name is too long',
+          }),
+        })
+      : r.continue(),
+  )
+  await page.getByRole('button', { name: 'New person' }).click()
+  const form = page.getByRole('dialog', { name: 'New person' })
+  await form.getByLabel('Name').fill('Refused person')
+  await form.getByRole('button', { name: 'Create' }).click()
+  await expect(form.getByRole('alert')).toContainText('That name is too long')
+  await expect(form.getByLabel('Name')).toHaveValue('Refused person')
+})
+
 test('a person is written down properly in one form, not created then edited', async ({ page }) => {
   // A name alone is rarely all you know. The one-line box stays for the moment it is; this is
   // the other moment, and it must not mean create-then-open-to-edit.

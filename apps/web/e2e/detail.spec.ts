@@ -195,15 +195,27 @@ test('the PATCH names the fields that changed, and only those', async ({ page })
   )
 })
 
-test('a rejected save is reported and leaves the panel open', async ({ page }) => {
+test('a rejected save says why and leaves the panel open', async ({ page }) => {
   await registerFreshUser(page)
   await seedOneTask(page)
   await page.route(PATCH_URL, (r) =>
-    r.request().method() === 'PATCH' ? r.fulfill({ status: 500, body: '{}' }) : r.continue(),
+    r.request().method() === 'PATCH'
+      ? r.fulfill({
+          status: 400,
+          contentType: 'application/problem+json',
+          body: JSON.stringify({
+            type: 'about:blank',
+            title: 'Bad Request',
+            status: 400,
+            detail: 'Those notes are too long',
+          }),
+        })
+      : r.continue(),
   )
   await page.getByLabel('Notes', { exact: true }).fill('x')
   await page.getByRole('button', { name: 'Save' }).click()
-  await expect(page.getByRole('alert')).toBeVisible()
+  // The server's sentence for the person, not its status title.
+  await expect(page.getByRole('alert')).toContainText('Those notes are too long')
   await expect(page.getByRole('dialog')).toBeVisible()
 })
 

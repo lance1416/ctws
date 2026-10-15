@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { problemText } from '../http/api'
 import { BUTTON } from './buttonStyles'
 
 /**
@@ -39,7 +40,7 @@ export function DialogFooter({
           {/* The form is still filled in -- saying so is the difference between "try again" and
               "type it all again". */}
           {error instanceof Error
-            ? error.message
+            ? problemText(error)
             : "Couldn't create it. Your answers are still here — try again."}
         </p>
       )}

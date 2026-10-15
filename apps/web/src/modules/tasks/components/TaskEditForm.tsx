@@ -1,6 +1,7 @@
 import type { TaskResponse } from '@ctws/contracts'
 import { useEffect, useRef, useState } from 'react'
 import { Controller } from 'react-hook-form'
+import { problemText } from '../../../platform/http/api'
 import { WritingMode } from '../../../platform/notes/WritingMode'
 import {
   dayEndIso,
@@ -144,7 +145,7 @@ export function TaskEditForm({
       )}
       {save.isError && (
         <p role="alert" className="text-sm text-danger">
-          {save.error instanceof Error ? save.error.message : "Couldn't save it"}
+          {problemText(save.error)}
         </p>
       )}
 
