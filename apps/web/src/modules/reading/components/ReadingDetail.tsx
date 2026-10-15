@@ -23,15 +23,8 @@ import { useDestroy } from '../../../shell/detail/useDestroy'
 import { useNow } from '../../../platform/time/useNow'
 
 /**
- * ONE THING TO READ, ON ITS OWN LAYER.
- *
- * It used to have no surface at all: a row and a `⋯` menu, with Rename and Delete inside the menu
- * — the only thing in the app whose content was edited from a dropdown. A book has a title, an
- * author, a plan, a line of work and whoever recommended it; that is more than a row, and the
- * edge saying who recommended it could only be read from the other end.
- *
- * The anatomy is the one every other thing wears: read first, one Edit, a form with Save and
- * Cancel, what it is linked to below, and the one irreversible action at the foot.
+ * ONE THING TO READ, in the shell's detail pane, with the anatomy every other thing wears: read
+ * first, one Edit, a form with Save and Cancel, what it is linked to, and the delete at the foot.
  */
 
 const STATUS_LABEL: Record<ReadingStatus, string> = {
@@ -68,7 +61,7 @@ export function ReadingDetail({
 
       <LinkedSection of={{ type: 'reading', id: item.id }} className="mt-4" />
 
-      {/* 最后一个东西，底下再没有别的控件 —— 和删一个人、删一条任务同一个位置。 */}
+      {/* Last in the pane, where deleting a person or a task is. */}
       <DangerZone>
         <DeleteReading item={item} onDeleted={onClose} />
       </DangerZone>
@@ -125,7 +118,7 @@ function ReadingFields({ item, onClose }: { item: ReadingItemResponse; onClose: 
           ) : (
             <h2 className="truncate text-lg font-semibold text-ink">{readingLabel(item)}</h2>
           )}
-          {/* 第二行写的是「这是什么」：一本书的作者，或者一条链接的出处。 */}
+          {/* What it is: a book's author, or where a link is from. */}
           <p className="truncate text-sm text-ink-muted">
             {item.kind === 'book' ? (item.author ?? 'Book') : (item.url ?? 'Link')}
           </p>
@@ -169,10 +162,8 @@ function ReadingFields({ item, onClose }: { item: ReadingItemResponse; onClose: 
 }
 
 /**
- * 改一条读物：一张表，一次保存。
- *
- * 一条链接改的是地址，一本书改的是作者 —— 两种东西各有各的那一格，而 `kind` 不在表里：一条链接
- * 不会变成一本书，要换种类就是另记一条（契约里 `updateReadingItemBody` 也是这么说的）。
+ * AN ITEM, EDITED: one form and one Save. A link has its address and a book its author; the kind
+ * is not here, because a link never becomes a book (`updateReadingItemBody` says the same).
  */
 function ReadingForm({
   item,
@@ -299,7 +290,7 @@ function ReadingForm({
   )
 }
 
-/** 删掉一条读物。位置和别的东西一样：这个面的最底下，问一次。 */
+/** Deleting an item: at the foot of its pane, asked once. */
 function DeleteReading({ item, onDeleted }: { item: ReadingItemResponse; onDeleted: () => void }) {
   const drop = useDestroy({
     type: 'reading',

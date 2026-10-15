@@ -14,8 +14,8 @@ import type { CaptureTargetState, SearchHit, WorkspaceModule } from '../../shell
  * THE READING MODULE -- the second one, and the first real test of the seam.
  *
  * Everything below is a CONTRIBUTION, not a change to the shell: the Things row, the chord, the
- * search provider, the project block and the capture rule all arrive through the contract, and
- * the shell was not edited to make room for it. The one thing the contract gained is
+ * search provider, the calendar, the Workbench card and the capture rule all arrive through the
+ * contract, and the shell was not edited to make room for it. The one thing the contract gained is
  * `accepts` -- there was no way to route a captured line while only one module could take one,
  * and that is exactly the kind of gap a second module is supposed to find.
  */

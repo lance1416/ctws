@@ -10,19 +10,17 @@ describe('readingLabel', () => {
   })
 
   /**
-   * 没有标题时写 host + 路径。
-   *
-   * 只写 host，一行就是 `github.com`、`x.com` —— 认不出是哪个 repo、哪条推，这一行等于没有信息。
-   * 查询串不写：utm 之类是噪音，而行宽本来就不够。
+   * Untitled, it is the host and the path: `github.com` alone does not say which repo. The query
+   * string is left off -- utm tags are noise, and a row has no width to spare.
    */
-  it('没有标题时写到路径，因为 host 自己认不出是哪一个', () => {
+  it('names an untitled link by host and path, since a host alone says too little', () => {
     expect(readingLabel({ title: null, url: 'https://www.linear.app/now/a/b?c=1' })).toBe(
       'linear.app/now/a/b',
     )
     expect(readingLabel({ title: null, url: 'https://github.com/lance1416/ctws' })).toBe(
       'github.com/lance1416/ctws',
     )
-    // 根路径就是 host 本身，不留一条光秃秃的斜杠。
+    // The root path is the host itself, with no bare slash.
     expect(readingLabel({ title: null, url: 'https://example.com/' })).toBe('example.com')
   })
 
