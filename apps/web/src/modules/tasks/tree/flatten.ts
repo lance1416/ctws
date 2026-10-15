@@ -27,7 +27,7 @@ export type FlatRow = {
   collapsed: boolean
 }
 
-export function flatten(nodes: TaskNode[], collapsed: ReadonlySet<string>): FlatRow[] {
+export function flatten(nodes: readonly TaskNode[], collapsed: ReadonlySet<string>): FlatRow[] {
   const byId = new Map(nodes.map((n) => [n.id, n]))
   // A node whose parent is absent from this list becomes a root: the parent may have been
   // soft-deleted between fetches, and losing the child silently would be worse.
