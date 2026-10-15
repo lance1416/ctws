@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
-import { createReadingItem } from '../api/reading'
+import { createReadingItem } from '../api'
 import { isReadingUrl } from '../readingUrl'
 import { useComposing } from '../../../platform/keyboard/composition'
 import { textbox } from '../../../platform/ui/formStyles'

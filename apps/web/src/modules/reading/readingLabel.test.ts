@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { readingLabel } from './api/reading'
+import { readingLabel } from './item'
 import { addedLabel } from './components/ReadingRow'
 
 const at = (iso: string) => new Date(iso)

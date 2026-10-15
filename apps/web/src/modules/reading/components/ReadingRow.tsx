@@ -1,18 +1,15 @@
 import type { ReadingItemResponse, ReadingStatus } from '@ctws/contracts'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { useMutation } from '@tanstack/react-query'
-import { useRef, useState } from 'react'
-import { deleteReadingItem, patchReadingItem, readingLabel } from '../api/reading'
-import { useForgetRecent } from '../../../shell/search/recent'
+import { patchReadingItem } from '../api'
+import { readingLabel } from '../item'
+import { hostOf, StatusMark } from '../marks'
 import { addDays, daysAgoIn, nextMonday } from '../../../platform/time/dates'
-import { useComposing } from '../../../platform/keyboard/composition'
 import { leadFor } from '../../../shell/rows/leads'
-import { DeleteConfirm } from '../../../platform/ui/DeleteConfirm'
-import { MENU_ITEM, MENU_ITEM_DANGER, MENU_SURFACE } from '../../../platform/ui/menuSurface'
+import { MENU_ITEM, MENU_SURFACE } from '../../../platform/ui/menuSurface'
 import { RowLead } from '../../../shell/rows/RowLead'
 import { BODY_GUTTER, ProjectRail } from '../../../shell/rows/RowParts'
 import { useNow } from '../../../platform/time/useNow'
-import { HANG } from '../../../platform/ui/hang'
 
 /**
  * ONE ROW OF THE READING LIST.
@@ -51,87 +48,40 @@ const NEXT: Record<ReadingStatus, { status: ReadingStatus; label: string } | nul
   dropped: null,
 }
 
-const MARK: Record<ReadingStatus, string> = {
-  todo: 'text-ink-muted',
-  reading: 'text-ink',
-  done: 'text-ink-subtle',
-  dropped: 'text-ink-subtle',
-}
-
 export function ReadingRow({
   item,
   timeZone,
   today,
-  here,
   onOpen,
 }: {
   item: ReadingItemResponse
   timeZone: string
   /** The account's today, from the page (`useNow`): a row does not read the clock for itself. */
   today: string
-  /** The project this list is already inside, if any. Its name is then not worth repeating -- the
-   *  same rule the dependency pane keeps, and why the task tree shows no breadcrumb. */
-  here?: string
-  /** 打开它自己那一层。没有传就只是一行（项目页上的那份清单）。 */
+  /** Opens its pane. Without it the row is only a row. */
   onOpen?: () => void
 }) {
-  const composing = useComposing()
   const now = useNow()
-  const [renaming, setRenaming] = useState(false)
-  const [deleting, setDeleting] = useState(false)
-  const [draft, setDraft] = useState('')
-  // Set when Rename is chosen, so the menu's closing hands focus to the NEW INPUT instead of back
-  // to its own trigger. Radix restores focus on close by default, which blurs the editor the
-  // moment it appears -- an inline rename that cannot be typed into.
-  const takingFocus = useRef(false)
-  const titleInput = useRef<HTMLInputElement>(null)
-
   const save = useMutation({
     mutationFn: (patch: Parameters<typeof patchReadingItem>[1]) => patchReadingItem(item.id, patch),
     meta: { awaits: [['reading']] },
-    onSuccess: () => setRenaming(false),
-  })
-  const forget = useForgetRecent()
-  const drop = useMutation({
-    mutationFn: () => deleteReadingItem(item.id),
-    meta: { awaits: [['reading']] },
-    onSuccess: () => forget('reading', item.id),
   })
 
   const label = readingLabel(item)
   const finished = item.status === 'done' || item.status === 'dropped'
   const next = NEXT[item.status]
-  const host = hostOf(item.url)
   // The second line, in the order a person scans it: what it is about, then where it came from,
   // then how long it has been waiting. Each part is dropped when it has nothing to say -- and the
   // host is dropped when it is ALREADY the title, which is what an untitled link shows.
   const meta = [
-    item.projectId === here ? null : item.projectName,
-    // 没有标题时，标题那一行写的就是 host 加路径，第二行再写一遍 host 是重复。
-    // 标题那一行写的是 host 加路径时，第二行再写一遍 host 是重复。
-    item.kind === 'book' ? item.author : item.title || item.fetchedTitle ? host : null,
+    item.projectName,
+    item.kind === 'book' ? item.author : item.title || item.fetchedTitle ? hostOf(item.url) : null,
     addedLabel(item.createdAt, timeZone, now),
   ].filter(Boolean)
 
-  // The question replaces the row, so it is read where the row was rather than somewhere else on
-  // the page, and nothing else can be pressed by mistake while it is open.
-  if (deleting) {
-    return (
-      <li className={`${HANG} min-h-11 py-1`}>
-        <DeleteConfirm
-          label="Confirm deleting this item"
-          message={`Delete “${readingLabel(item)}”? This cannot be undone.`}
-          busy={drop.isPending}
-          onConfirm={() => drop.mutate()}
-          onCancel={() => setDeleting(false)}
-        />
-      </li>
-    )
-  }
-
   return (
-    /* 整行打开它自己那一层；行里的链接、按钮各自拦住冒泡 —— 和联系人列表同一条规矩：
-       一行是一个目标，而行里的地址是另一个。 */
+    /* The whole row opens its pane; the links and buttons in it stop the click on their way,
+       as on the people list: a row is one target, and an address in it is another. */
     <li
       data-reading-row={item.id}
       onClick={onOpen}
@@ -150,37 +100,11 @@ export function ReadingRow({
       <div
         className={`flex min-w-0 flex-1 items-start gap-2.5 py-2.5 pr-1 pl-[var(--gutter)] group-hover:bg-hover ${BODY_GUTTER}`}
       >
-        {/* The kind, as a shape. Never alone: a book names its author and a link names its host on
-          the line below, so the glyph is decoration over information (WCAG 1.4.1). */}
-        <span aria-hidden="true" className={`flex h-6 shrink-0 items-center ${MARK[item.status]}`}>
-          {item.kind === 'book' ? <BookMark /> : <LinkMark />}
-        </span>
+        <StatusMark item={item} />
 
         <div className="min-w-0 flex-1">
-          {renaming ? (
-            <input
-              ref={titleInput}
-              autoFocus
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              {...composing.bind}
-              onKeyDown={(e) => {
-                // Escape cancels and Enter saves. Clicking away does NEITHER: a blur that threw the
-                // typed title away is a keystroke-eating trap, and an editor left open is visible.
-                if (e.key === 'Escape') setRenaming(false)
-                if (e.key === 'Enter' && !composing.composingNow(e)) {
-                  const t = draft.trim()
-                  // An emptied title is a cleared title for a link (it goes back to showing its
-                  // host) and is refused for a book, which is the server's rule, not this row's.
-                  save.mutate({ title: t === '' ? null : t })
-                }
-              }}
-              aria-label="Title"
-              className="h-7 w-full rounded-md border border-rule-strong bg-sheet px-2 text-sm text-ink"
-            />
-          ) : item.url ? (
-            /* 标题是去读那篇东西的链接 —— 一张读物清单存在的理由就是点开去读。打开它自己那一层
-             是另一件事，由整行承担（下面那个 onClick），所以这里要拦住冒泡。 */
+          {item.url ? (
+            /* The title goes to the thing itself: a reading list is there to be clicked through. */
             <a
               href={item.url}
               target="_blank"
@@ -193,7 +117,7 @@ export function ReadingRow({
               {label}
             </a>
           ) : onOpen ? (
-            /* 一本书没有地址可去，所以它的标题就是打开它自己那一层。 */
+            /* A book has nowhere to go, so its title opens its pane. */
             <button
               type="button"
               onClick={(e) => {
@@ -214,7 +138,7 @@ export function ReadingRow({
             </span>
           )}
           {meta.length > 0 && <p className="truncate text-sm text-ink-muted">{meta.join(' · ')}</p>}
-          {/* 对面自己写的那一句，一行为止 —— 它是用来认出这是什么的，不是用来读的。 */}
+          {/* The page's own one line about itself, to recognise it by, not to read. */}
           {item.fetchedSummary && !item.title && (
             <p data-reading-summary className="truncate text-sm text-ink-muted">
               {item.fetchedSummary}
@@ -249,28 +173,13 @@ export function ReadingRow({
             </svg>
           </DropdownMenu.Trigger>
           <DropdownMenu.Portal>
-            <DropdownMenu.Content
-              align="end"
-              sideOffset={4}
-              // THE MOMENT THE MENU HANDS FOCUS BACK. By default that is its own trigger, which
-              // would blur the editor that just appeared; `autoFocus` on the input is not enough,
-              // because this runs after the input has mounted. So we take the hand-off and put
-              // focus where the person is about to type.
-              onCloseAutoFocus={(e) => {
-                if (!takingFocus.current) return
-                e.preventDefault()
-                takingFocus.current = false
-                titleInput.current?.focus()
-              }}
-              className={MENU_SURFACE}
-            >
-              {/* 改内容的事在它自己那一层里做（`ReadingDetail`）：一个下拉菜单不是编辑器。
-                这里只留「不用打开它就能做的事」—— 状态和计划。 */}
+            {/* What can be done without opening it: its status and its plan. Its content is
+                edited in its pane, since a dropdown is not an editor. */}
+            <DropdownMenu.Content align="end" sideOffset={4} className={MENU_SURFACE}>
               {onOpen && <Item onSelect={onOpen}>Open</Item>}
-              {/* The day you mean to finish it, as NAMED DECISIONS rather than a date picker -- the same choice
-                the overdue row's triage made, and for the same reason: a calendar makes you
-                compute the date, where "this weekend" is the thought you actually had. The exact day
-                is not offered because nobody plans reading to the day. */}
+              {/* The day you mean to finish it, as NAMED DECISIONS rather than a date picker -- the
+                same choice the overdue row's triage made, and for the same reason: a calendar
+                makes you compute the date, where "this weekend" is the thought you actually had. */}
               {PLANS.map(({ label, day }) => (
                 <Item key={label} onSelect={() => save.mutate({ planOn: day(today) })}>
                   {label}
@@ -293,58 +202,10 @@ export function ReadingRow({
   )
 }
 
-function Item({
-  children,
-  onSelect,
-  danger = false,
-}: {
-  children: string
-  onSelect: () => void
-  /** An item that destroys something: the danger colour, like every other one in the app. */
-  danger?: boolean
-}) {
+function Item({ children, onSelect }: { children: string; onSelect: () => void }) {
   return (
-    <DropdownMenu.Item onSelect={onSelect} className={danger ? MENU_ITEM_DANGER : MENU_ITEM}>
+    <DropdownMenu.Item onSelect={onSelect} className={MENU_ITEM}>
       {children}
     </DropdownMenu.Item>
-  )
-}
-
-function hostOf(url: string | null): string | null {
-  if (!url) return null
-  try {
-    return new URL(url).host.replace(/^www\./, '')
-  } catch {
-    return null
-  }
-}
-
-/** An open book: two leaves and a spine. */
-function BookMark() {
-  return (
-    <svg viewBox="0 0 16 16" className="h-4 w-4">
-      <path
-        d="M8 4.2C6.8 3.4 5.4 3.2 3.5 3.3v8c1.9-.1 3.3.1 4.5.9 1.2-.8 2.6-1 4.5-.9v-8c-1.9-.1-3.3.1-4.5.9Zm0 0v9"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
-
-/** A link: the chain idiom every browser uses for the same thing. */
-function LinkMark() {
-  return (
-    <svg viewBox="0 0 16 16" className="h-4 w-4">
-      <path
-        d="M6.5 9.5a2.8 2.8 0 0 0 4 0l2-2a2.8 2.8 0 0 0-4-4l-.8.8M9.5 6.5a2.8 2.8 0 0 0-4 0l-2 2a2.8 2.8 0 0 0 4 4l.8-.8"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-      />
-    </svg>
   )
 }

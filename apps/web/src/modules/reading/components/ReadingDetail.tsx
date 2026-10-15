@@ -1,7 +1,8 @@
 import type { ReadingItemResponse, ReadingStatus } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
-import { deleteReadingItem, patchReadingItem, readingLabel } from '../api/reading'
+import { deleteReadingItem, patchReadingItem } from '../api'
+import { readingLabel } from '../item'
 import { ProjectChip, ProjectPicker } from '../../../shell/projects/ProjectPicker'
 import { useComposing } from '../../../platform/keyboard/composition'
 import { addDays, dayPhrase, nextMonday, todayIn } from '../../../platform/time/dates'
@@ -196,11 +197,11 @@ function ReadingForm({
   const composing = useComposing()
 
   const submit = () => {
-    if (busy) return
-    if (item.kind === 'book' && title.trim() === '') return
+    // A link's title can be cleared, and it goes back to showing its address; a book without a
+    // title is not a book.
+    if (busy || (item.kind === 'book' && title.trim() === '')) return
     onSave({
-      // 一条链接的标题可以清空：清掉就回到 host 加路径。一本书不行，没有标题的书不是书。
-      title: title.trim() === '' ? (item.kind === 'link' ? null : item.title) : title.trim(),
+      title: title.trim() || null,
       ...(item.kind === 'link' && url.trim() !== '' ? { url: url.trim() } : {}),
       ...(item.kind === 'book' ? { author: author.trim() || null } : {}),
       status,
@@ -275,8 +276,6 @@ function ReadingForm({
             <PickOne
               label="Finish by"
               value={planOn ?? ''}
-              /* 命名的日子，不是一个日期选择器：没有人把读书计划排到某一天，而「这周末」才是
-                 真正想过的那件事 —— 行上的菜单给的也是这四个。 */
               choices={[
                 { value: '', label: 'Not set' },
                 ...PLANS.map((p) => ({ value: p.day(today), label: p.label })),

@@ -3,7 +3,8 @@ import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { GoneNotice } from '../../../shell/detail/GoneNotice'
 import { useOpenFromUrl } from '../../../shell/detail/useOpenFromUrl'
-import { listReading, readingKey } from '../api/reading'
+import { readingQuery } from '../api'
+import { isToRead } from '../item'
 import { EmptyState } from '../../../platform/ui/EmptyState'
 import { LIST_MEASURE } from '../../../shell/rows/leads'
 import { AddReading } from '../components/AddReading'
@@ -34,7 +35,7 @@ const SECTIONS: { status: ReadingStatus; label: string }[] = [
 
 export function Reading() {
   useCrumbs([{ label: 'Things', to: '/things' }, { label: 'Reading' }])
-  const items = useQuery({ queryKey: readingKey(), queryFn: () => listReading() })
+  const items = useQuery(readingQuery())
   // An item has no page of its own: `/reading/<id>` opens it over this list.
   const { open, gone, show, close } = useOpenFromUrl({
     list: items,
@@ -51,8 +52,8 @@ export function Reading() {
   const of = (status: ReadingStatus) => rows.filter((i) => i.status === status)
   // Finished and dropped are both off the list. They share a section because the difference
   // matters when you decide, not afterwards.
-  const finished = rows.filter((i) => i.status === 'done' || i.status === 'dropped')
-  const unfinished = rows.filter((i) => i.status === 'todo' || i.status === 'reading')
+  const finished = rows.filter((i) => !isToRead(i))
+  const unfinished = rows.filter(isToRead)
 
   return (
     <>

@@ -1,12 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import {
-  createReadingItem,
-  listReading,
-  readingCalendar,
-  readingKey,
-  readingLabel,
-  searchReading,
-} from './api/reading'
+import { createReadingItem, readingCalendarQuery, readingQuery, readingSearchQuery } from './api'
+import { isToRead, readingLabel } from './item'
+import { hostOf, KindGlyph } from './marks'
 import { Link } from 'react-router-dom'
 import { refreshQueries } from '../../platform/http/refresh'
 import { PanelEmpty } from '../../platform/ui/Panel'
@@ -26,25 +21,17 @@ import type { CaptureTargetState, SearchHit, WorkspaceModule } from '../../shell
  */
 const ID = 'reading'
 
-/** The whole list, in one cache entry the page and its Things row share. */
-const useAll = () => useQuery({ queryKey: readingKey(), queryFn: () => listReading() })
-
 /** Things' count for reading: what is actually waiting to be read, never the pile's size. */
 function ReadingCount() {
-  const items = useAll()
+  const items = useQuery(readingQuery())
   if (!items.data) return null
-  const count = items.data.filter((i) => i.status === 'todo' || i.status === 'reading').length
-  return <span data-count>{count} to read</span>
+  return <span data-count>{items.data.filter(isToRead).length} to read</span>
 }
 
 /** How much of it belongs to no line of work yet: the reading that still needs a home. */
 function UnfiledLine() {
-  const unfiled = useQuery({
-    queryKey: readingKey({ unfiled: true }),
-    queryFn: () => listReading({ unfiled: true }),
-  })
-  const count =
-    unfiled.data?.filter((i) => i.status === 'todo' || i.status === 'reading').length ?? 0
+  const unfiled = useQuery(readingQuery({ unfiled: true }))
+  const count = unfiled.data?.filter(isToRead).length ?? 0
   return count > 0 ? <span data-status>{count} not in a project</span> : null
 }
 
@@ -73,11 +60,7 @@ function useReadingCapture(): CaptureTargetState {
 
 /** This module's half of federated search: titles, authors and hosts. */
 function useReadingHits(query: string) {
-  const results = useQuery({
-    queryKey: ['reading-search', query],
-    queryFn: () => searchReading(query),
-    enabled: query.length > 0,
-  })
+  const results = useQuery({ ...readingSearchQuery(query), enabled: query.length > 0 })
   const hits: SearchHit[] = (results.data ?? []).map((item) => ({
     id: item.id,
     // The list, not the url: a search result goes somewhere in this app, and an external link
@@ -92,10 +75,7 @@ function useReadingHits(query: string) {
 
 /** This module's dated things: when to finish one, already a day in the account's zone. */
 function useReadingEntries(range: { from: string; to: string }) {
-  const result = useQuery({
-    queryKey: ['reading-calendar', range.from, range.to],
-    queryFn: () => readingCalendar(range),
-  })
+  const result = useQuery(readingCalendarQuery(range))
   return { entries: result.data ?? [], isError: result.isError }
 }
 
@@ -107,11 +87,8 @@ function useReadingEntries(range: { from: string; to: string }) {
  * what has nowhere else to appear: a book, a link you saved on the way past.
  */
 function ReadingWidget() {
-  const items = useQuery({
-    queryKey: readingKey({ unfiled: true }),
-    queryFn: () => listReading({ unfiled: true }),
-  })
-  const rows = (items.data ?? []).filter((i) => i.status === 'todo' || i.status === 'reading')
+  const items = useQuery(readingQuery({ unfiled: true }))
+  const rows = (items.data ?? []).filter(isToRead)
 
   if (items.isError) {
     return (
@@ -133,12 +110,12 @@ function ReadingWidget() {
           >
             <ProjectRail projectId={item.projectId} />
             <span className="flex shrink-0 items-center text-ink-muted">
-              {item.kind === 'book' ? <BookGlyph /> : <LinkGlyph />}
+              <KindGlyph kind={item.kind} />
             </span>
             <span className="flex min-w-0 flex-1 items-baseline gap-3 self-center">
               <span className="min-w-0 truncate text-ink">{readingLabel(item)}</span>
               <span className="ml-auto min-w-0 shrink truncate text-sm text-ink-subtle">
-                {item.kind === 'book' ? (item.author ?? '') : hostOf(item.url)}
+                {item.kind === 'book' ? (item.author ?? '') : (hostOf(item.url) ?? '')}
               </span>
             </span>
           </Link>
@@ -148,58 +125,11 @@ function ReadingWidget() {
   )
 }
 
-/** Where a link is from, as a person says it: `w3.org`, not the whole URL. */
-function hostOf(url: string | null): string {
-  if (!url) return ''
-  try {
-    return new URL(url).host.replace(/^www\./, '')
-  } catch {
-    return ''
-  }
-}
-
-function BookGlyph() {
-  return (
-    <svg
-      role="img"
-      aria-label="Book"
-      width="18"
-      height="18"
-      viewBox="0 0 18 18"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinejoin="round"
-    >
-      <path d="M3.5 3.5h4.2c.9 0 1.3.5 1.3 1.3v9.7c0-.8-.6-1.3-1.4-1.3H3.5zM14.5 3.5h-4.2c-.9 0-1.3.5-1.3 1.3v9.7c0-.8.6-1.3 1.4-1.3h4.1z" />
-    </svg>
-  )
-}
-
-function LinkGlyph() {
-  return (
-    <svg
-      role="img"
-      aria-label="Link"
-      width="18"
-      height="18"
-      viewBox="0 0 20 20"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-    >
-      <path d="M8.6 11.4l2.8-2.8M7.4 9.2L5.8 10.8a2.4 2.4 0 0 0 3.4 3.4l1.6-1.6M12.6 10.8l1.6-1.6a2.4 2.4 0 0 0-3.4-3.4L9.2 7.4" />
-    </svg>
-  )
-}
-
 /** The Reading card's note: how much is waiting to be read, filed or not. */
 function ReadingAside() {
-  const all = useAll()
+  const all = useQuery(readingQuery())
   if (!all.data) return null
-  const n = all.data.filter((i) => i.status === 'todo' || i.status === 'reading').length
-  return <span className="text-sm text-ink-subtle">{n} to read</span>
+  return <span className="text-sm text-ink-subtle">{all.data.filter(isToRead).length} to read</span>
 }
 
 /** How many rows a workbench card shows before it defers to its page. */
@@ -226,7 +156,7 @@ export const readingModule: WorkspaceModule = {
   },
   routes: [
     { index: true, element: <Reading /> },
-    // 一条读物没有自己的页：这条路渲染的是列表加它的那一层。
+    // An item has no page of its own: this is the list with its pane open.
     { path: ':id', element: <Reading /> },
   ],
   capture: { useTarget: useReadingCapture, accepts: isReadingUrl },
