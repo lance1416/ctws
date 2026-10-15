@@ -1,3 +1,4 @@
+import { HOUR_BRANCHES, LUNAR_DAYS, LUNAR_MONTHS } from '@ctws/core/lunar-names'
 import type {
   BirthdayPreviewResponse,
   BirthdayResponse,
@@ -14,82 +15,6 @@ import { Field } from '../../../platform/ui/Field'
 import { PickOne } from '../../../platform/ui/inline'
 import { textbox } from '../../../platform/ui/formStyles'
 import { useNow } from '../../../platform/time/useNow'
-
-/**
- * A PERSON'S BIRTHDAY, on their own page.
- *
- * This is the ONE place a birthday can be written (Google and Apple have the same shape: the date
- * is a field on the person and the calendar is a derived, read-only view). The zodiac, the sign,
- * the age and the other calendar are DERIVED, so they are not editable -- giving them an input
- * would be inviting someone to make them disagree with the date they come from.
- *
- * THE LABELS BELOW ARE THIS FILE'S OWN, not `@ctws/core`'s. Importing core would drag `tyme4ts`
- * into the browser bundle, and keeping those 750 KB on the server is the whole reason the
- * conversions happen there.
- */
-
-const LUNAR_MONTHS = [
-  '正月',
-  '二月',
-  '三月',
-  '四月',
-  '五月',
-  '六月',
-  '七月',
-  '八月',
-  '九月',
-  '十月',
-  '十一月',
-  '十二月',
-]
-
-const LUNAR_DAYS = [
-  '初一',
-  '初二',
-  '初三',
-  '初四',
-  '初五',
-  '初六',
-  '初七',
-  '初八',
-  '初九',
-  '初十',
-  '十一',
-  '十二',
-  '十三',
-  '十四',
-  '十五',
-  '十六',
-  '十七',
-  '十八',
-  '十九',
-  '二十',
-  '廿一',
-  '廿二',
-  '廿三',
-  '廿四',
-  '廿五',
-  '廿六',
-  '廿七',
-  '廿八',
-  '廿九',
-  '三十',
-]
-
-const HOURS = [
-  '子时 · 23–01',
-  '丑时 · 01–03',
-  '寅时 · 03–05',
-  '卯时 · 05–07',
-  '辰时 · 07–09',
-  '巳时 · 09–11',
-  '午时 · 11–13',
-  '未时 · 13–15',
-  '申时 · 15–17',
-  '酉时 · 17–19',
-  '戌时 · 19–21',
-  '亥时 · 21–23',
-]
 
 /** How early to be told. ONE choice of four, not four switches: see the workbench card. */
 const LEADS: readonly [RemindLead, string][] = [
@@ -403,7 +328,7 @@ export function BirthdayEditor({
           value={hourBranch === null ? '' : String(hourBranch)}
           choices={[
             { value: '', label: '时辰 — not known' },
-            ...HOURS.map((name, i) => ({ value: String(i), label: name })),
+            ...HOUR_BRANCHES.map((name, i) => ({ value: String(i), label: name })),
           ]}
           onPick={(next) => setHourBranch(next === '' ? null : Number(next))}
         />
