@@ -63,9 +63,9 @@ function useReadingHits(query: string) {
   const results = useQuery({ ...readingSearchQuery(query), enabled: query.length > 0 })
   const hits: SearchHit[] = (results.data ?? []).map((item) => ({
     id: item.id,
-    // The list, not the url: a search result goes somewhere in this app, and an external link
+    // Its pane, not its url: a search result goes somewhere in this app, and an external link
     // from a search dialog would take the person out of the workspace mid-search.
-    to: `/${ID}`,
+    to: `/${ID}/${item.id}`,
     title: readingLabel(item),
     meta: [item.projectName, item.kind === 'book' ? 'Book' : 'Link'].filter(Boolean).join(' · '),
     mark: null,
