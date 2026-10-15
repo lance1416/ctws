@@ -1,7 +1,6 @@
 import type { Circle, PersonResponse } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
 import { peopleKey, listPeople } from '../api/people'
 import { PersonDetail } from '../components/PersonDetail'
 import { PeopleList } from '../components/PeopleList'
@@ -10,7 +9,8 @@ import { BUTTON } from '../../../platform/ui/buttonStyles'
 import { PeopleHead } from '../components/PeopleViews'
 import { CIRCLE_LABELS } from '../components/BirthdayRow'
 import { useCrumbs } from '../../../shell/layout/Breadcrumbs'
-import { useForgetWhenGone } from '../../../shell/search/recent'
+import { GoneNotice } from '../../../shell/detail/GoneNotice'
+import { useOpenFromUrl } from '../../../shell/detail/useOpenFromUrl'
 import { QueryStatus } from '../../../platform/ui/QueryStatus'
 import { HANG } from '../../../platform/ui/hang'
 
@@ -24,23 +24,14 @@ import { HANG } from '../../../platform/ui/hang'
 export function People() {
   useCrumbs([{ label: 'Things', to: '/things' }, { label: 'People' }])
   const people = useQuery({ queryKey: peopleKey(), queryFn: () => listPeople() })
-  /**
-   * 开着的是谁，写在 URL 里 —— 这一层就是 `/people/<id>` 本身。
-   *
-   * 一个人没有自己的页：任务也没有（`relations.to` 指的是 `/tasks/<id>`）。URL 留着，
-   * 反向链接和粘进来的链接才有地方可去；列表留在后面，筛选和滚动位置不会因为看一眼某个人就丢。
-   * 状态只有一处（地址栏），所以后退、前进、刷新都不必另外伺候。
-   */
-  const { id: openId = null } = useParams()
-  const navigate = useNavigate()
-  const setOpenId = (next: string | null) => navigate(next ? `/people/${next}` : '/people')
+  // A person has no page of their own: `/people/<id>` opens them over this list.
+  const { openId, open, gone, show, close } = useOpenFromUrl({
+    list: people,
+    idOf: (c) => c.id,
+    type: 'person',
+    base: '/people',
+  })
   const [circle, setCircle] = useState<Circle | null>(null)
-
-  // Looked up by id rather than held: the open person has to follow the list's refetches, or an
-  // edit made in the pane would leave the pane showing what it said before.
-  const open = people.data?.find((c) => c.id === openId) ?? null
-  const gone = openId !== null && people.isSuccess && open === null
-  useForgetWhenGone('person', openId, gone)
 
   return (
     <>
@@ -48,15 +39,10 @@ export function People() {
 
       {/* On the heading's edge, where the threads hang: the page's controls are one column. */}
       <div className={`mt-4 ${HANG} max-w-[52ch]`}>
-        <NewPersonInput onCreated={(c: PersonResponse) => setOpenId(c.id)} />
+        <NewPersonInput onCreated={(c: PersonResponse) => show(c.id)} />
       </div>
 
-      {/* 链接指向的人已经不在了：说出来。静静地只剩一个列表，读起来像链接坏了。 */}
-      {gone && (
-        <p role="alert" className={`mt-4 ${HANG} text-sm text-ink-muted`}>
-          This person is not here any more.
-        </p>
-      )}
+      {gone && <GoneNotice kind="person" />}
       <QueryStatus query={people} />
       {/* ONE LIST, FILTERED -- never a second list. The circle is how an address book that also
           holds fifty relatives stays readable, and nothing is hidden by default: a row that has
@@ -96,7 +82,7 @@ export function People() {
         </div>
       )}
 
-      {open && <PersonDetail person={open} onClose={() => setOpenId(null)} />}
+      {open && <PersonDetail person={open} onClose={close} />}
     </>
   )
 }

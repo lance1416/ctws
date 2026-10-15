@@ -18,6 +18,7 @@ import { meetingLink } from '../meetingPlace'
 import { Field } from '../../../platform/ui/Field'
 import { Link } from 'react-router-dom'
 import { DetailHead, DetailPane } from '../../../platform/ui/DetailPane'
+import { FormBar } from '../../../shell/detail/FormBar'
 import { LinkedSection } from '../../../shell/links/Links'
 import { useComposing } from '../../../platform/keyboard/composition'
 import { boxed, CHIP, field, label } from '../../../platform/ui/formStyles'
@@ -428,15 +429,7 @@ function MeetingForm({
       {...composing.bind}
       className="flex flex-col gap-4"
     >
-      <div className="flex items-center gap-2">
-        <span className="flex-1 text-xs text-ink-muted">Editing</span>
-        <button type="button" className={BUTTON.secondary} onClick={onCancel}>
-          Cancel
-        </button>
-        <button type="submit" className={BUTTON.primary} disabled={busy || title.trim() === ''}>
-          Save
-        </button>
-      </div>
+      <FormBar busy={busy} disabled={title.trim() === ''} onCancel={onCancel} />
 
       <div>
         <label htmlFor="m-title" className={label}>

@@ -1,8 +1,8 @@
 import type { ReadingStatus } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { useForgetWhenGone } from '../../../shell/search/recent'
-import { useNavigate, useParams } from 'react-router-dom'
+import { GoneNotice } from '../../../shell/detail/GoneNotice'
+import { useOpenFromUrl } from '../../../shell/detail/useOpenFromUrl'
 import { listReading, readingKey } from '../api/reading'
 import { EmptyState } from '../../../platform/ui/EmptyState'
 import { LIST_MEASURE } from '../../../shell/rows/leads'
@@ -35,27 +35,24 @@ const SECTIONS: { status: ReadingStatus; label: string }[] = [
 export function Reading() {
   useCrumbs([{ label: 'Things', to: '/things' }, { label: 'Reading' }])
   const items = useQuery({ queryKey: readingKey(), queryFn: () => listReading() })
-  /**
-   * 开着的是哪一条，写在 URL 里 —— 这一层就是 `/reading/<id>` 本身。
-   *
-   * 和人、和会议同一条路：一条读物没有自己的页，URL 留着好让「谁推荐的」那条边有地方可去
-   * （以前它只能落到整张清单上），列表留在后面。
-   */
-  const { id: openId = null } = useParams()
-  const navigate = useNavigate()
+  // An item has no page of its own: `/reading/<id>` opens it over this list.
+  const { open, gone, show, close } = useOpenFromUrl({
+    list: items,
+    idOf: (i) => i.id,
+    type: 'reading',
+    base: '/reading',
+  })
   const [showFinished, setShowFinished] = useState(false)
   const timeZone = useTimeZone()
   // Kept current while the page is open, and handed to every row (`useNow`).
   const today = todayIn(timeZone, useNow())
 
   const rows = items.data ?? []
-  const gone = openId !== null && items.isSuccess && !rows.some((i) => i.id === openId)
-  useForgetWhenGone('reading', openId, gone)
   const of = (status: ReadingStatus) => rows.filter((i) => i.status === status)
   // Finished and dropped are both off the list. They share a section because the difference
   // matters when you decide, not afterwards.
   const finished = rows.filter((i) => i.status === 'done' || i.status === 'dropped')
-  const open = rows.filter((i) => i.status === 'todo' || i.status === 'reading')
+  const unfinished = rows.filter((i) => i.status === 'todo' || i.status === 'reading')
 
   return (
     <>
@@ -87,7 +84,7 @@ export function Reading() {
                   item={item}
                   timeZone={timeZone}
                   today={today}
-                  onOpen={() => navigate(`/reading/${item.id}`)}
+                  onOpen={() => show(item.id)}
                 />
               ))}
             </ul>
@@ -95,21 +92,12 @@ export function Reading() {
         )
       })}
 
+      {open && <ReadingDetail item={open} onClose={close} />}
+      {gone && <GoneNotice kind="item" />}
+
       {/* The finished pile, behind a switch -- the same rule the task tree learned: a list
           that keeps everything forever gets worse the longer it is used, and a list that drops
           things cannot be trusted. The count is the way back to them. */}
-      {openId !== null &&
-        (() => {
-          const open = rows.find((i) => i.id === openId)
-          if (open) return <ReadingDetail item={open} onClose={() => navigate('/reading')} />
-          // 链接指向的东西已经不在了：说出来，别只留一张清单。
-          return items.isSuccess ? (
-            <p role="alert" className={`mt-4 ${HANG} text-sm text-ink-muted`}>
-              This item is not here any more.
-            </p>
-          ) : null
-        })()}
-
       {finished.length > 0 && (
         <div className={`mt-8 ${LIST_MEASURE}`}>
           <button
@@ -128,7 +116,7 @@ export function Reading() {
                   item={item}
                   timeZone={timeZone}
                   today={today}
-                  onOpen={() => navigate(`/reading/${item.id}`)}
+                  onOpen={() => show(item.id)}
                 />
               ))}
             </ul>
@@ -136,7 +124,7 @@ export function Reading() {
         </div>
       )}
 
-      {items.isSuccess && rows.length > 0 && open.length === 0 && finished.length > 0 && (
+      {items.isSuccess && rows.length > 0 && unfinished.length === 0 && finished.length > 0 && (
         <p className={`mt-8 ${HANG} text-ink-muted`}>You are through the list.</p>
       )}
     </>

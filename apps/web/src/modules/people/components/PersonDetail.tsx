@@ -15,11 +15,13 @@ import { useComposing } from '../../../platform/keyboard/composition'
 import { boxed, CHIP, field, label } from '../../../platform/ui/formStyles'
 import { NoteBody } from '../../../platform/notes/NoteBody'
 import { WritingMode } from '../../../platform/notes/WritingMode'
-import { DetailHead, DetailPane } from '../../../platform/ui/DetailPane'
-import { Link } from 'react-router-dom'
+import { DetailPane } from '../../../platform/ui/DetailPane'
+import { BackHead } from '../../../shell/detail/BackHead'
+import { FormBar } from '../../../shell/detail/FormBar'
 import { LinkedSection } from '../../../shell/links/Links'
 import { PickOne } from '../../../platform/ui/inline'
-import { useForgetRecent, useRecordRecent } from '../../../shell/search/recent'
+import { useRecordRecent } from '../../../shell/search/recent'
+import { useDestroy } from '../../../shell/detail/useDestroy'
 import { CloseIcon, PlusIcon } from '../../../platform/ui/icons'
 
 /**
@@ -83,24 +85,7 @@ export function PersonFields({
     mutationFn: (patch: Parameters<typeof patchPerson>[1]) => patchPerson(person.id, patch),
   })
 
-  const head = (
-    <div>
-      {onClose && (
-        <DetailHead
-          // 回列表。没有第二个地方可去了：这一层就是这个人的地址。
-          kind={
-            <Link
-              to="/people"
-              className="rounded-md text-sm text-ink-muted hover:text-ink hover:underline"
-            >
-              ← People
-            </Link>
-          }
-          onClose={onClose}
-        />
-      )}
-    </div>
-  )
+  const head = onClose ? <BackHead to="/people" label="People" onClose={onClose} /> : <div />
 
   if (editing) {
     return (
@@ -453,19 +438,11 @@ function PersonForm({
       {...composing.bind}
       className="flex flex-col gap-4"
     >
-      <div className="flex items-center gap-2">
-        <span className="flex-1 text-xs text-ink-muted">Editing</span>
-        <button type="button" className={BUTTON.secondary} onClick={onCancel}>
-          Cancel
-        </button>
-        <button
-          type="submit"
-          className={BUTTON.primary}
-          disabled={busy || badDay || badChannel || name.trim() === ''}
-        >
-          Save
-        </button>
-      </div>
+      <FormBar
+        busy={busy}
+        disabled={badDay || badChannel || name.trim() === ''}
+        onCancel={onCancel}
+      />
 
       <div>
         <label htmlFor="c-name" className={label}>
@@ -665,29 +642,14 @@ function PersonForm({
   )
 }
 
-/**
- * DESTROYING THIS PERSON, for whichever surface is showing them.
- *
- * Exported on its own rather than drawn at the end of the fields above, because WHERE it goes is
- * the surface's to decide and it is the same answer every time: last, under a rule (`DangerZone`).
- * The fields are also shown on the object page, which has panels of its own below them -- a delete
- * drawn inside the fields would land in the middle of that page.
- */
-export function DeletePerson({
-  person,
-  onDeleted,
-}: {
-  person: PersonResponse
-  onDeleted?: () => void
-}) {
-  const forget = useForgetRecent()
-  const drop = useMutation({
-    mutationFn: () => deletePerson(person.id),
-    meta: { awaits: [['people']] },
-    onSuccess: () => {
-      forget('person', person.id)
-      onDeleted?.()
-    },
+/** Destroying this person: last in the pane, under a rule (`DangerZone`). */
+function DeletePerson({ person, onDeleted }: { person: PersonResponse; onDeleted: () => void }) {
+  const drop = useDestroy({
+    type: 'person',
+    id: person.id,
+    remove: () => deletePerson(person.id),
+    awaits: [['people']],
+    onDone: onDeleted,
   })
   return (
     <DangerAction

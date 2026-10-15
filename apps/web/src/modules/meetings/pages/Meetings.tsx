@@ -2,6 +2,7 @@ import type { MeetingOccurrence } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { Fragment, useState, type ReactNode } from 'react'
 import { useForgetWhenGone } from '../../../shell/search/recent'
+import { GoneNotice } from '../../../shell/detail/GoneNotice'
 import { useNavigate, useParams } from 'react-router-dom'
 import { listMeetings, meetingsKey, repeatLabel } from '../api/meetings'
 import { EmptyState } from '../../../platform/ui/EmptyState'
@@ -185,12 +186,8 @@ export function Meetings() {
       {found && (
         <MeetingDetail meeting={found} accountZone={accountZone} onClose={() => setOpen(null)} />
       )}
-      {/* 链接指向的会已经不在了（或者取消了）：说出来，别只留一个列表。 */}
-      {gone && (
-        <p role="alert" className={`mt-4 ${HANG} text-sm text-ink-muted`}>
-          This meeting is not here any more.
-        </p>
-      )}
+      {/* Gone, or cancelled. */}
+      {gone && <GoneNotice kind="meeting" />}
     </>
   )
 }

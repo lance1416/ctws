@@ -1,7 +1,6 @@
 import type { ReadingItemResponse, ReadingStatus } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { deleteReadingItem, patchReadingItem, readingLabel } from '../api/reading'
 import { ProjectChip, ProjectPicker } from '../../../shell/projects/ProjectPicker'
 import { useComposing } from '../../../platform/keyboard/composition'
@@ -9,12 +8,15 @@ import { addDays, dayPhrase, nextMonday, todayIn } from '../../../platform/time/
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { BUTTON } from '../../../platform/ui/buttonStyles'
 import { DangerAction, DangerZone } from '../../../platform/ui/DangerZone'
-import { DetailHead, DetailPane } from '../../../platform/ui/DetailPane'
+import { DetailPane } from '../../../platform/ui/DetailPane'
+import { BackHead } from '../../../shell/detail/BackHead'
+import { FormBar } from '../../../shell/detail/FormBar'
 import { Field } from '../../../platform/ui/Field'
 import { CHIP, field, label } from '../../../platform/ui/formStyles'
 import { PickOne } from '../../../platform/ui/inline'
 import { LinkedSection } from '../../../shell/links/Links'
-import { useForgetRecent, useRecordRecent } from '../../../shell/search/recent'
+import { useRecordRecent } from '../../../shell/search/recent'
+import { useDestroy } from '../../../shell/detail/useDestroy'
 import { useNow } from '../../../platform/time/useNow'
 
 /**
@@ -86,21 +88,7 @@ function ReadingFields({ item, onClose }: { item: ReadingItemResponse; onClose: 
     mutationFn: (patch: Parameters<typeof patchReadingItem>[1]) => patchReadingItem(item.id, patch),
   })
 
-  const head = (
-    <div>
-      <DetailHead
-        kind={
-          <Link
-            to="/reading"
-            className="rounded-md text-sm text-ink-muted hover:text-ink hover:underline"
-          >
-            ← Reading
-          </Link>
-        }
-        onClose={onClose}
-      />
-    </div>
-  )
+  const head = <BackHead to="/reading" label="Reading" onClose={onClose} />
 
   if (editing) {
     return (
@@ -231,15 +219,7 @@ function ReadingForm({
       {...composing.bind}
       className="flex flex-col gap-4"
     >
-      <div className="flex items-center gap-2">
-        <span className="flex-1 text-xs text-ink-muted">Editing</span>
-        <button type="button" className={BUTTON.secondary} onClick={onCancel}>
-          Cancel
-        </button>
-        <button type="submit" className={BUTTON.primary} disabled={busy}>
-          Save
-        </button>
-      </div>
+      <FormBar busy={busy} onCancel={onCancel} />
 
       <div>
         <label htmlFor="r-title" className={label}>
@@ -314,21 +294,13 @@ function ReadingForm({
 }
 
 /** 删掉一条读物。位置和别的东西一样：这个面的最底下，问一次。 */
-export function DeleteReading({
-  item,
-  onDeleted,
-}: {
-  item: ReadingItemResponse
-  onDeleted: () => void
-}) {
-  const forget = useForgetRecent()
-  const drop = useMutation({
-    mutationFn: () => deleteReadingItem(item.id),
-    meta: { awaits: [['reading']] },
-    onSuccess: () => {
-      forget('reading', item.id)
-      onDeleted()
-    },
+function DeleteReading({ item, onDeleted }: { item: ReadingItemResponse; onDeleted: () => void }) {
+  const drop = useDestroy({
+    type: 'reading',
+    id: item.id,
+    remove: () => deleteReadingItem(item.id),
+    awaits: [['reading']],
+    onDone: onDeleted,
   })
   return (
     <DangerAction
