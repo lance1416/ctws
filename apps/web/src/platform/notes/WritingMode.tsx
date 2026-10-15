@@ -30,11 +30,15 @@ import { LAYER } from '../ui/layers'
 export function WritingMode({
   heading,
   source,
+  problem = null,
   onChange,
   onClose,
 }: {
   heading: string
+  /** Read once, on opening: a refetch behind the layer never replaces what is being typed. */
   source: string
+  /** Why the text is not saved, when a caller saves it from in here. */
+  problem?: string | null
   onChange: (next: string) => void
   onClose: () => void
 }) {
@@ -85,6 +89,11 @@ export function WritingMode({
               <p className="text-xs text-ink-muted max-sm:hidden">
                 Leave full screen to go back. Saving still happens in the pane.
               </p>
+              {problem && (
+                <p role="alert" className="text-xs text-danger">
+                  {problem}
+                </p>
+              )}
             </div>
             <Dialog.Close className={`shrink-0 ${BUTTON.secondary}`}>
               Leave full screen

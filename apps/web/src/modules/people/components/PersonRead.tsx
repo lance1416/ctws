@@ -1,4 +1,5 @@
 import type { PersonResponse } from '@ctws/contracts'
+import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 import { NoteBody } from '../../../platform/notes/NoteBody'
 import { WritingMode } from '../../../platform/notes/WritingMode'
@@ -6,9 +7,11 @@ import { BUTTON, LINK } from '../../../platform/ui/buttonStyles'
 import { Field } from '../../../platform/ui/Field'
 import { CHIP } from '../../../platform/ui/formStyles'
 import { ProjectChip } from '../../../shell/projects/ProjectPicker'
+import { patchPerson } from '../api'
 import { BirthdayField } from '../birthday/BirthdayRead'
 import { byKind, channelHref, channelLabel, KIND_LABEL } from '../channels'
 import { CIRCLE_LABELS, GENDER_LABELS } from '../labels'
+import { useNoteAutosave } from '../noteAutosave'
 import { usePhone } from '../usePhone'
 
 /**
@@ -16,19 +19,16 @@ import { usePhone } from '../usePhone'
  * notes are the exception: "Edit notes" opens the writing layer straight away, because a line
  * remembered about someone should not wait on a form about them.
  */
-export function PersonRead({
-  person,
-  onEdit,
-  onNote,
-}: {
-  person: PersonResponse
-  onEdit: () => void
-  /** A note written in the writing layer. */
-  onNote: (next: string) => void
-}) {
+export function PersonRead({ person, onEdit }: { person: PersonResponse; onEdit: () => void }) {
   // The phone library, for reading too: a number is grouped here as it is in the list.
   const phone = usePhone()
   const [writing, setWriting] = useState(false)
+  // The note alone, waiting on no refetch: the writing layer keeps its own text.
+  const saveNote = useMutation({
+    mutationFn: (note: string | null) => patchPerson(person.id, { note }),
+  })
+  const notes = useNoteAutosave((next) => saveNote.mutateAsync(next.trim() === '' ? null : next))
+  const unsaved = notes.failed ? "Couldn't save the note" : null
 
   return (
     <>
@@ -123,13 +123,22 @@ export function PersonRead({
             <p className="text-sm text-ink-subtle">No notes yet</p>
           )}
         </div>
+        {unsaved && (
+          <p role="alert" className="mt-1.5 text-sm text-danger">
+            {unsaved}
+          </p>
+        )}
       </div>
       {writing && (
         <WritingMode
           heading={person.name}
           source={person.note ?? ''}
-          onChange={onNote}
-          onClose={() => setWriting(false)}
+          problem={unsaved}
+          onChange={notes.change}
+          onClose={() => {
+            void notes.flush()
+            setWriting(false)
+          }}
         />
       )}
     </>

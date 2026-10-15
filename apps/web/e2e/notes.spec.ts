@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import {
+  apiPost,
   editDetail,
   makeProject,
   openProject,
@@ -457,6 +458,66 @@ test('the writing mode stands the single-key shortcuts down', async ({ page }) =
   // `/` is the capture shortcut. Typed into a note it is a slash.
   await expect(writingSource(page)).toHaveValue('/')
   await expect(page.getByRole('dialog', { name: 'Search' })).toHaveCount(0)
+})
+
+/** A person's note as the server holds it. There is no one-person read, so it comes from the list. */
+async function savedNote(page: Page, id: string): Promise<string | null> {
+  const res = await page.request.get('/api/v1/people', { headers: WEB })
+  const { people } = (await res.json()) as { people: { id: string; note: string | null }[] }
+  return people.find((p) => p.id === id)?.note ?? null
+}
+
+test('a person note written in the writing mode is saved without losing what is typed after', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const person = await apiPost(page, '/people', { name: 'Noted' })
+  const patches: string[] = []
+  page.on('request', (r) => {
+    if (r.method() === 'PATCH' && r.url().endsWith(`/api/v1/people/${person.id}`)) {
+      patches.push(r.postData() ?? '')
+    }
+  })
+  await page.goto(`/people/${person.id}`)
+  await page.getByRole('button', { name: 'Edit notes' }).click()
+  const firstSave = page.waitForResponse(
+    (r) => r.request().method() === 'PATCH' && r.url().endsWith(`/people/${person.id}`),
+  )
+  await writingSource(page).pressSequentially('first part', { delay: 20 })
+  await firstSave
+  await writingSource(page).pressSequentially(' and the rest', { delay: 20 })
+  await expect(writingSource(page)).toHaveValue('first part and the rest')
+  await page.keyboard.press('Escape')
+  await expect.poll(() => savedNote(page, person.id!)).toBe('first part and the rest')
+  // Once after the pause and once on closing, not once a key.
+  expect(patches.length).toBeLessThan(5)
+})
+
+test('a person note that cannot be saved says so, and is saved once it can be', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const person = await apiPost(page, '/people', { name: 'Unsaved' })
+  const at = `**/api/v1/people/${person.id}`
+  await page.route(at, (r) =>
+    r.request().method() === 'PATCH'
+      ? r.fulfill({
+          status: 500,
+          contentType: 'application/problem+json',
+          body: JSON.stringify({ type: 'about:blank', title: 'Server error', status: 500 }),
+        })
+      : r.continue(),
+  )
+  await page.goto(`/people/${person.id}`)
+  await page.getByRole('button', { name: 'Edit notes' }).click()
+  await writingSource(page).pressSequentially('kept', { delay: 20 })
+  await expect(page.getByRole('dialog').getByRole('alert')).toHaveText("Couldn't save the note")
+
+  await page.unroute(at)
+  await page.keyboard.press('Escape')
+  await expect.poll(() => savedNote(page, person.id!)).toBe('kept')
+  await expect(page.locator('[data-person-notes]')).toContainText('kept')
+  await expect(page.getByRole('alert').filter({ hasText: "Couldn't save" })).toHaveCount(0)
 })
 
 // ------------------------------------------------------------------------------- 375px, both modes

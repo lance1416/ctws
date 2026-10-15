@@ -43,11 +43,7 @@ export function PersonDetail({ person, onClose }: { person: PersonResponse; onCl
             }}
           />
         ) : (
-          <PersonRead
-            person={person}
-            onEdit={() => setEditing(true)}
-            onNote={(next) => save.mutate({ note: next.trim() === '' ? null : next })}
-          />
+          <PersonRead person={person} onEdit={() => setEditing(true)} />
         )}
       </div>
       {/* What links to them -- the meetings they are in, what they recommended. The edges are the
