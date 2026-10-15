@@ -1,7 +1,8 @@
-import type { BirthdayListRow, Circle } from '@ctws/contracts'
+import type { BirthdayListRow } from '@ctws/contracts'
 import { Link } from 'react-router-dom'
 import { countdownPhrase, fullDay, MONTHS } from '../../../platform/time/dates'
 import { HANG_WIDTH } from '../../../platform/ui/hang'
+import { CIRCLE_LABELS } from '../labels'
 import { BODY_GUTTER, ProjectRail } from '../../../shell/rows/RowParts'
 
 /**
@@ -103,11 +104,4 @@ function CakeMark() {
       <path d="M1.5 11h8M2 11V6.5h7V11M5.5 6.5V4.2M5.5 2.8c-.6-.5-.6-1.1 0-1.8.6.7.6 1.3 0 1.8z" />
     </svg>
   )
-}
-
-/** The UI is English and a circle is an enum rather than something a person typed, so it has one. */
-export const CIRCLE_LABELS: Record<Circle, string> = {
-  family: 'Family',
-  friend: 'Friends',
-  work: 'Work',
 }

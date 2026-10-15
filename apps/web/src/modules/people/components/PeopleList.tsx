@@ -1,7 +1,8 @@
-import type { Circle, PersonResponse } from '@ctws/contracts'
+import type { PersonResponse } from '@ctws/contracts'
 import { Link } from 'react-router-dom'
 import { sortByName } from '../peopleOrder'
 import { BirthdayLead } from './BirthdayRow'
+import { CIRCLE_OF_ONE } from '../labels'
 import { PanelEmpty } from '../../../platform/ui/Panel'
 import { BODY_GUTTER, ProjectRail } from '../../../shell/rows/RowParts'
 
@@ -83,13 +84,12 @@ export function PeopleList({
  */
 function metaOf(person: PersonResponse): string {
   const work = [person.title, person.org].filter(Boolean).join(', ')
-  const who = work || (person.circle ? ONE_OF[person.circle] : '')
+  const who = work || (person.circle ? CIRCLE_OF_ONE[person.circle] : '')
   const on = person.projects.map((p) => p.name).join(', ')
   return [who, on].filter(Boolean).join(' · ')
 }
 
 /** One person's circle, singular: the filter's labels are plural because they name groups. */
-const ONE_OF: Record<Circle, string> = { family: 'Family', friend: 'Friend', work: 'Work' }
 
 /** The first character as a reader counts them (not a UTF-16 half), capitalised if it has a case. */
 function initialOf(name: string): string {

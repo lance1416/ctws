@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { birthdaysQuery } from '../api'
-import { BirthdayRow, CIRCLE_LABELS } from '../components/BirthdayRow'
+import { BirthdayRow } from '../components/BirthdayRow'
+import { CIRCLE_LABELS, MONTH_NAMES } from '../labels'
 import { textbox } from '../../../platform/ui/formStyles'
 import { Panel, PanelEmpty } from '../../../platform/ui/Panel'
 import { MONTHS } from '../../../platform/time/dates'
@@ -154,22 +155,3 @@ export function Birthdays() {
     </>
   )
 }
-
-/**
- * The months spelled out, because this is an index somebody reads down rather than a date beside
- * a name. `MONTHS` stays the short form every row in the app uses.
- */
-const MONTH_NAMES = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-] as const

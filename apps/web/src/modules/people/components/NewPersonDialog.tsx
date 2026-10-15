@@ -1,32 +1,23 @@
-import {
-  CHANNEL_KINDS,
-  channelProblem,
-  type ChannelKind,
-  type PersonResponse,
-} from '@ctws/contracts'
+import type { PersonResponse } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { createPerson, type BirthdayDraft } from '../api'
 import { ProjectsPicker } from '../../../shell/projects/ProjectPicker'
 import { useComposing } from '../../../platform/keyboard/composition'
-import { channelPlaceholder } from '../channels'
-import { usePhone } from '../usePhone'
-import { BirthdayEditor, birthdayDraftOf } from './BirthdayFields'
+import { channelPlaceholder, KIND_CHOICES } from '../channels'
+import { useChannelRows } from './ChannelsEditor'
+import { BirthdayEditor, birthdayDraftOf } from '../birthday/BirthdayEditor'
+import { CIRCLE_CHOICES } from '../labels'
 import { boxed, field, label } from '../../../platform/ui/formStyles'
 import { PickOne } from '../../../platform/ui/inline'
 import { DialogFooter } from '../../../platform/ui/DialogFooter'
 import { Modal } from '../../../platform/ui/Modal'
 
 /**
- * NEW PERSON, filled in once.
- *
- * A name alone is never all you know about somebody. The line-of-text box this stands beside is
- * right for the moment you only have a name -- and wrong every other time, because it then makes
- * you create the person and open them again to say anything else. Both ways in stay: the box for
- * a name, this for a person.
+ * NEW PERSON, filled in once: for when you know more than a name (the one-line box beside it is
+ * for when you do not). ONE address, because one is what you have when you write someone down;
+ * the rest are added on their pane. It follows the person form's rules for writing one.
  */
-const KIND_LABEL: Record<ChannelKind, string> = { email: 'Email', phone: 'Phone', url: 'Link' }
-
 export function NewPersonDialog({
   onClose,
   onMade,
@@ -40,45 +31,13 @@ export function NewPersonDialog({
   const [name, setName] = useState('')
   const [org, setOrg] = useState('')
   const [note, setNote] = useState('')
-  const [kind, setKind] = useState<ChannelKind>('email')
-  const [address, setAddress] = useState('')
-  const [left, setLeft] = useState(false)
-  // 框里那个国家码是这张表自己放的。人没在它后面接着打，这一格就还是空的。
-  const [seed, setSeed] = useState('')
-  /**
-   * 这里也排号码。
-   *
-   * 以前只有联系人那一层的表排，于是从这个对话框写下的号码存成了打字时的那一串，在任何地方都
-   * 挤成一条 —— 同一个号码长什么样，取决于它当初是从哪个框进来的。现在两边同一套：排给人看，
-   * 存成 E.164。
-   */
-  const phone = usePhone()
-  const region = phone?.currentRegion()
-  /**
-   * 选了 Phone 而框还空着，就放上本地的国家码。
-   *
-   * 放在 effect 里而不是挑类型那一下：那一包有八十来 KB，一个人完全可能在它到达之前就选了
-   * Phone —— 那一下没有国家码可放。这里 `phone` 和 `kind` 哪个后到都补得上。
-   */
-  useEffect(() => {
-    if (!phone || kind !== 'phone') return
-    const code = phone.callingCodeFor(region) ?? ''
-    setSeed(code)
-    setAddress((a) => (a.trim() === '' ? code : a))
-  }, [phone, region, kind])
-  const wrote = address.trim() !== '' && address !== seed
-  const problem = !wrote
-    ? null
-    : (channelProblem(kind, address) ??
-      (kind === 'phone' ? (phone?.phoneProblem(address) ?? null) : null))
+  // One row: the dialog takes a single address.
+  const channels = useChannelRows(() => [{ kind: 'email', value: '', label: null }])
+  const address = channels.rows[0]!
   const [projectIds, setProjects] = useState<string[]>([])
   const [circle, setCircle] = useState('')
-  /**
-   * 不摊开，直到有人说有。
-   *
-   * 写下一个人常常只有一个名字，一张摊开的空日期表单读起来像坏数据——他的页面上也是这条规则
-   * （没有生日时那里是一个「Add a birthday」，不是一行空字段）。
-   */
+  // Folded until asked for: writing someone down is often a name alone, and an open empty date
+  // form reads as bad data.
   const [birthday, setBirthday] = useState<{ draft: BirthdayDraft; refused: boolean } | null>(null)
 
   const make = useMutation({
@@ -87,8 +46,8 @@ export function NewPersonDialog({
     onSuccess: (made) => onMade(made),
   })
 
-  // 服务端已经说这个日子不存在了，Create 按下去只会 400，而这个对话框不画那条错误。
-  const ready = name.trim().length > 0 && !birthday?.refused && problem === null
+  // A day the server refused would only get a 400 from Create.
+  const ready = name.trim().length > 0 && !birthday?.refused && !channels.bad
   const submit = () => {
     if (!ready || make.isPending) return
     make.mutate({
@@ -96,17 +55,7 @@ export function NewPersonDialog({
       ...(org.trim() ? { org: org.trim() } : {}),
       ...(note.trim() ? { note: note.trim() } : {}),
       ...(projectIds.length > 0 ? { projectIds } : {}),
-      ...(wrote
-        ? {
-            channels: [
-              {
-                kind,
-                value: kind === 'phone' && phone ? phone.toE164(address, region) : address.trim(),
-                label: null,
-              },
-            ],
-          }
-        : {}),
+      ...(channels.toSave().length > 0 ? { channels: channels.toSave() } : {}),
       ...(circle ? { circle: circle as 'family' } : {}),
       ...(birthday ? { birthday: birthday.draft } : {}),
     })
@@ -186,63 +135,36 @@ export function NewPersonDialog({
         <div>
           <span className={label}>Circle</span>
           <div className="mt-1.5">
-            <PickOne
-              label="Circle"
-              value={circle}
-              choices={[
-                { value: '', label: 'Not set' },
-                { value: 'family', label: 'Family' },
-                { value: 'friend', label: 'Friends' },
-                { value: 'work', label: 'Work' },
-              ]}
-              onPick={setCircle}
-            />
+            <PickOne label="Circle" value={circle} choices={CIRCLE_CHOICES} onPick={setCircle} />
           </div>
         </div>
 
-        {/* ONE address, because one is what you have when you are writing someone down. The rest
-            are added on their page, where the list of them belongs. */}
         <div>
           <span className={label}>Person</span>
           <div className="mt-1.5 flex flex-wrap gap-2">
-            {/* The app's own picker, not a native `<select>`: the OS draws that popup and
-                does not know this palette -- on Windows it came up white with the page's
-                light-grey text on it. */}
             <div className="flex min-w-[6.5rem] items-center">
               <PickOne
                 label="Kind"
-                value={kind}
-                choices={CHANNEL_KINDS.map((k) => ({ value: k, label: KIND_LABEL[k] }))}
-                onPick={(next) => {
-                  setKind(next)
-                  // 自己放进去的那个国家码跟着类型走：它不是人写的东西，改成 Email 之后它留在
-                  // 那儿就成了一个过不了校验的邮箱地址。
-                  if (next !== 'phone' && address === seed) setAddress('')
-                }}
+                value={address.kind}
+                choices={KIND_CHOICES}
+                onPick={(next) => channels.setKind(0, next)}
               />
             </div>
             <input
               aria-label="Address"
-              value={address}
-              placeholder={channelPlaceholder(kind)}
-              type={kind === 'phone' ? 'tel' : 'text'}
-              inputMode={kind === 'phone' ? 'tel' : 'text'}
-              aria-invalid={left && problem !== null}
-              onChange={(e) => {
-                const now = e.target.value
-                // updater 而不是闭包里那个 `address`：`retype` 要的就是「上一次是什么」。
-                setAddress((was) =>
-                  kind === 'phone' && phone ? phone.retype(was, now, region) : now,
-                )
-                // 又开始打了，红字就收回去：改对了要当场看得见。
-                setLeft(false)
-              }}
-              // 离开这个框才挑错：打到 `+44` 还不是一个号码，而红字说的是「你写错了」。
-              onBlur={() => setLeft(true)}
-              className={`min-w-[12rem] flex-1 ${boxed} ${kind === 'phone' ? 'tabular-nums' : ''}`}
+              value={address.value}
+              placeholder={channelPlaceholder(address.kind)}
+              type={address.kind === 'phone' ? 'tel' : 'text'}
+              inputMode={address.kind === 'phone' ? 'tel' : 'text'}
+              aria-invalid={channels.shown[0] !== undefined}
+              onChange={(e) => channels.type(0, e.target.value)}
+              onBlur={() => channels.leave(0)}
+              className={`min-w-[12rem] flex-1 ${boxed} ${address.kind === 'phone' ? 'tabular-nums' : ''}`}
             />
           </div>
-          {left && problem !== null && <p className="mt-1.5 text-xs text-danger">{problem}</p>}
+          {channels.shown[0] !== undefined && (
+            <p className="mt-1.5 text-xs text-danger">{channels.shown[0]}</p>
+          )}
         </div>
 
         <div>
