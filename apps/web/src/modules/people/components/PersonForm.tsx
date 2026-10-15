@@ -24,11 +24,14 @@ import { ChannelsEditor, useChannelRows } from './ChannelsEditor'
 export function PersonForm({
   person,
   busy,
+  error,
   onCancel,
   onSave,
 }: {
   person: PersonResponse
   busy: boolean
+  /** Why the server refused the last Save; the form stays open with what was typed. */
+  error: string | null
   onCancel: () => void
   onSave: (patch: Parameters<typeof patchPerson>[1]) => void
 }) {
@@ -91,6 +94,11 @@ export function PersonForm({
         disabled={badDay || channels.bad || name.trim() === ''}
         onCancel={onCancel}
       />
+      {error && (
+        <p role="alert" className="text-sm text-danger">
+          {error}
+        </p>
+      )}
 
       <div>
         <label htmlFor="c-name" className={label}>

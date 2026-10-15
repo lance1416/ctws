@@ -1,6 +1,7 @@
 import type { PersonResponse } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
+import { ApiError } from '../../../platform/http/api'
 import { DangerAction, DangerZone } from '../../../platform/ui/DangerZone'
 import { DetailPane } from '../../../platform/ui/DetailPane'
 import { BackHead } from '../../../shell/detail/BackHead'
@@ -24,9 +25,15 @@ export function PersonDetail({ person, onClose }: { person: PersonResponse; onCl
     kind: 'Person',
   })
   const [editing, setEditing] = useState(false)
+  // Waits for the list, so the reading that replaces the form already shows the edit.
   const save = useMutation({
     mutationFn: (patch: Parameters<typeof patchPerson>[1]) => patchPerson(person.id, patch),
+    meta: { awaits: [['people']] },
   })
+  const refusal =
+    save.error instanceof ApiError
+      ? (save.error.detail ?? save.error.message)
+      : (save.error?.message ?? null)
 
   return (
     <DetailPane label="People" onClose={onClose}>
@@ -36,11 +43,12 @@ export function PersonDetail({ person, onClose }: { person: PersonResponse; onCl
           <PersonForm
             person={person}
             busy={save.isPending}
-            onCancel={() => setEditing(false)}
-            onSave={(patch) => {
-              save.mutate(patch)
+            error={refusal}
+            onCancel={() => {
+              save.reset()
               setEditing(false)
             }}
+            onSave={(patch) => save.mutate(patch, { onSuccess: () => setEditing(false) })}
           />
         ) : (
           <PersonRead person={person} onEdit={() => setEditing(true)} />

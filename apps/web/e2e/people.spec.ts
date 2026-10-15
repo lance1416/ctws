@@ -104,6 +104,33 @@ test('a person is made by typing a name, and finished in the pane', async ({ pag
   await expect(pane.getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
 })
 
+test('an edit the server refuses stays open and says why', async ({ page }) => {
+  await registerFreshUser(page, '/people')
+  const made = await add(page, { name: 'Refused' })
+  const id = ((await made.json()) as { id: string }).id
+  await page.goto(`/people/${id}`)
+  const pane = page.getByRole('dialog', { name: 'People' })
+  await pane.getByRole('button', { name: 'Edit', exact: true }).click()
+  await pane.getByLabel('Name', { exact: true }).fill('Refused again')
+  await page.route(`**/api/v1/people/${id}`, (r) =>
+    r.request().method() === 'PATCH'
+      ? r.fulfill({
+          status: 400,
+          contentType: 'application/problem+json',
+          body: JSON.stringify({
+            type: 'about:blank',
+            title: 'Bad Request',
+            status: 400,
+            detail: 'That name is too long',
+          }),
+        })
+      : r.continue(),
+  )
+  await pane.getByRole('button', { name: 'Save' }).click()
+  await expect(pane.getByRole('alert')).toContainText('That name is too long')
+  await expect(pane.getByLabel('Name', { exact: true })).toHaveValue('Refused again')
+})
+
 test('a person can be on several lines of work at once', async ({ page }) => {
   await registerFreshUser(page, '/')
   const hunt = await makeProject(page, '找工作')
