@@ -526,6 +526,21 @@ describe('windows, projects and tenants', () => {
     expect(await entries(ctx, '2026-10-08', '2026-10-08')).toEqual([])
   })
 
+  it('reaches the end of a day the clocks fall back on', async () => {
+    const ctx = await setup('dst@example.com')
+    await ctx.db.execute(sql`update users set timezone = 'America/Toronto'`)
+    await arrange(ctx, {
+      title: '晚班',
+      startsLocal: '2026-11-01T23:15',
+      timeZone: 'America/Toronto',
+      durationMinutes: 30,
+      rrule: null,
+    })
+    expect((await listed(ctx, '?from=2026-11-01&to=2026-11-01')).map((m) => m.title)).toEqual([
+      '晚班',
+    ])
+  })
+
   it('files a meeting under a project, and keeps it when the project goes', async () => {
     const ctx = await setup()
     const pid = await createProject(ctx, '找工作')

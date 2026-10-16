@@ -1,4 +1,5 @@
 import { DAY_MS } from '@ctws/contracts'
+import { addDays } from '@ctws/core'
 import { instantOf, localOf } from './occurrences'
 
 /** How far ahead a list with no window reaches; a series has no last occurrence. */
@@ -27,7 +28,7 @@ export function clockTime(at: Date, zone: string): string {
 export function windowOf(from: string, to: string, zone: string): { from: Date; to: Date } {
   return {
     from: instantOf(`${from}T00:00`, zone),
-    to: new Date(instantOf(`${to}T00:00`, zone).getTime() + DAY_MS),
+    to: instantOf(`${addDays(to, 1)}T00:00`, zone),
   }
 }
 
