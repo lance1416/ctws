@@ -104,10 +104,12 @@ function assertRuleFits(
  */
 async function editOne({ tx, workspaceId, now, series, fields, recurrenceId }: Edit) {
   assertOccurs(series, recurrenceId!)
-  // The body allows nothing else: title, place and guests are the series'.
+  // The body allows nothing else: title, place and guests are the series'. What it leaves out
+  // keeps the override it already has.
+  const { startsLocal, durationMinutes } = fields
   const moved = {
-    startsLocal: fields.startsLocal ?? null,
-    durationMinutes: fields.durationMinutes ?? null,
+    ...(startsLocal !== undefined && { startsLocal }),
+    ...(durationMinutes !== undefined && { durationMinutes }),
   }
   await tx
     .insert(meetingExceptions)

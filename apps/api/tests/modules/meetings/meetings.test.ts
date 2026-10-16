@@ -254,6 +254,17 @@ describe('editing one occurrence', () => {
     expect((got.json() as MeetingOccurrence).startsLocal).toBe('2026-10-30T09:00')
   })
 
+  it('keeps an earlier move when only the length changes, and the other way round', async () => {
+    const ctx = await setup()
+    const series = await arrange(ctx)
+    const at = '2026-10-27T09:00'
+    await editOne(ctx, series.meetingId, at, { startsLocal: '2026-10-27T14:00' })
+    const longer = await editOne(ctx, series.meetingId, at, { durationMinutes: 90 })
+    expect(longer.json()).toMatchObject({ startsLocal: '2026-10-27T14:00', durationMinutes: 90 })
+    const moved = await editOne(ctx, series.meetingId, at, { startsLocal: '2026-10-27T15:00' })
+    expect(moved.json()).toMatchObject({ startsLocal: '2026-10-27T15:00', durationMinutes: 90 })
+  })
+
   it('refuses to change what belongs to the whole series', async () => {
     // A title, a place and a guest list are the SERIES'. Moving one week's meeting is not a
     // reason for it to have two titles, and a calendar that allowed it would quietly fork.
