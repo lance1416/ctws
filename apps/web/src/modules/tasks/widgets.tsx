@@ -10,6 +10,7 @@ import { completedQuery, todayQuery } from './api/queries'
 import { StatusMark } from './components/StatusMark'
 import { revealHref } from './crumb'
 import { taskPage } from './id'
+import { openTasksOf } from './openTasks'
 import { todaySegments } from './today'
 
 /** The rail's count for Today. */
@@ -28,7 +29,7 @@ export function TodayCount() {
 export function OpenTaskCount() {
   const projects = useProjects()
   if (!projects.data) return null
-  const open = projects.data.reduce((n, p) => n + p.openTasks, 0)
+  const open = projects.data.reduce((n, p) => n + openTasksOf(p), 0)
   return <span data-count>{open} open</span>
 }
 

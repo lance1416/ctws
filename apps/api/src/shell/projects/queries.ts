@@ -88,11 +88,6 @@ export async function lockProject(
 /** A project and the columns modules add to it. */
 export type ProjectListRow = { project: Project; columns: Record<string, number> }
 
-const listRowOf = ({ project, ...values }: { project: Project } & Record<string, unknown>) => ({
-  project,
-  columns: values as Record<string, number>,
-})
-
 /** One project, archived or not, with the columns modules add to it. */
 export async function getProjectRow(
   q: Queryable,
@@ -101,11 +96,11 @@ export async function getProjectRow(
   columns: ProjectColumns,
 ): Promise<ProjectListRow> {
   const [row] = await q
-    .select({ project: projects, ...columns })
+    .select({ project: projects, columns })
     .from(projects)
     .where(within(scoped(projects, workspaceId), eq(projects.id, id)))
   if (!row) throw new NotFound('Project')
-  return listRowOf(row)
+  return row
 }
 
 /** Inbox first, then the person's own order; archived projects only when asked for. */
@@ -118,7 +113,7 @@ export async function listProjects(
 ): Promise<Page<ProjectListRow>> {
   const span = spanOf(asked)
   const rows = await q
-    .select({ project: projects, ...columns })
+    .select({ project: projects, columns })
     .from(projects)
     .where(
       within(
@@ -130,5 +125,5 @@ export async function listProjects(
     .limit(span.limit)
     .offset(span.offset)
   const { rows: page, ...info } = pageOf(rows, asked)
-  return { rows: page.map(listRowOf), ...info }
+  return { rows: page, ...info }
 }

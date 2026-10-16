@@ -15,7 +15,7 @@ const project = (id: string, name: string, archivedAt: string | null): ProjectLi
   rank: 'a0',
   archivedAt,
   createdAt: '2026-10-01T00:00:00.000Z',
-  openTasks: 0,
+  columns: {},
 })
 
 function render(node: ReactNode) {

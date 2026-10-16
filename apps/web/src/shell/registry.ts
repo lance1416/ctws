@@ -1,4 +1,4 @@
-import { type ObjectType, type ProjectId } from '@ctws/contracts'
+import { type ObjectType, type ProjectId, type ProjectListItem } from '@ctws/contracts'
 import { createContext, useContext, type ComponentType } from 'react'
 import type { RouteObject } from 'react-router-dom'
 import type {
@@ -105,6 +105,7 @@ export type Registry = {
   projectHeadlines: { moduleId: string; Component: ComponentType<{ projectId: ProjectId }> }[]
   projectFacts: { moduleId: string; Facts: NonNullable<ProjectContribution['Facts']> }[]
   projectLead: ComponentType<{ projectId: ProjectId }> | null
+  projectCount: ((project: ProjectListItem) => number) | null
   projectContents: NonNullable<ProjectContribution['contents']>[]
   help: HelpSection[]
   routes: RouteObject[]
@@ -174,6 +175,7 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
       m.project?.Facts ? [{ moduleId: m.id, Facts: m.project.Facts }] : [],
     ),
     projectLead: modules.find((m) => m.project?.Lead)?.project?.Lead ?? null,
+    projectCount: modules.find((m) => m.project?.count)?.project?.count ?? null,
     projectContents: modules.flatMap((m) => (m.project?.contents ? [m.project.contents] : [])),
     help: modules.flatMap((m) => m.help ?? []),
     routes: modules.map((m) => ({ path: `/${m.id}`, children: m.routes })),

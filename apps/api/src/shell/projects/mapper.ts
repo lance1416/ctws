@@ -16,7 +16,6 @@ export function toProjectResponse(p: Project): ProjectResponse {
   }
 }
 
-/** The response schema checks that the module columns cover the remaining fields. */
 export function toProjectListItem(row: ProjectListRow): ProjectListItem {
-  return { ...toProjectResponse(row.project), ...row.columns } as ProjectListItem
+  return { ...toProjectResponse(row.project), columns: row.columns }
 }

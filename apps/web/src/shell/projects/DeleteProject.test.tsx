@@ -17,7 +17,7 @@ const project = (id: string, over: Partial<ProjectListItem> = {}): ProjectListIt
   rank: 'a0',
   archivedAt: null,
   createdAt: '2026-10-01T00:00:00.000Z',
-  openTasks: 0,
+  columns: {},
   ...over,
 })
 

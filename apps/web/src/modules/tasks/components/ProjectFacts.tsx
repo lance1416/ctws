@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Fragment, type ReactNode } from 'react'
 import { movementQuery } from '../api/queries'
 import { movedLine } from '../movement'
+import { openTasksOf } from '../openTasks'
 import { shortDay, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { useTimeZone } from '../../../shell/auth'
@@ -31,7 +32,7 @@ export function ProjectFacts({
   if (place === 'tile') {
     return (
       <>
-        <span className="text-ink-muted tabular-nums">{p.openTasks} open</span>
+        <span className="text-ink-muted tabular-nums">{openTasksOf(p)} open</span>
         {m && m.overdue > 0 ? (
           <span className="text-missed">{m.overdue} overdue</span>
         ) : m?.nextDueOn ? (
@@ -44,7 +45,7 @@ export function ProjectFacts({
 
   const said: ReactNode[] = [
     <span key="open" data-count>
-      {p.openTasks} open
+      {openTasksOf(p)} open
     </span>,
   ]
   // "0 overdue" is not news.

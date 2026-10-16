@@ -24,7 +24,7 @@ const project = (id: string, name: string, archivedAt: string | null): ProjectLi
   isInbox: false,
   archivedAt,
   createdAt: '2026-10-01T00:00:00Z',
-  openTasks: 0,
+  columns: {},
 })
 
 const task: TaskResponse = {

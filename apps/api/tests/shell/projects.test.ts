@@ -429,8 +429,9 @@ describe('project visibility', () => {
 })
 
 // The project list returns more than nothing but names, so the left rail had nothing to show
-// beside a destination. `openTasks` is counted by the server in the same query that lists the
-// projects -- never in the client, which would have to fetch every task of every project.
+// beside a destination. The tasks module's `openTasks` column is counted by the server in the
+// same query that lists the projects -- never in the client, which would have to fetch every task
+// of every project.
 describe('project open-task counts', () => {
   const listed = async (ctx: Harness, archived = false) => {
     const res = await ctx.app.inject({
@@ -439,8 +440,8 @@ describe('project open-task counts', () => {
       headers: ctx.authed,
     })
     expect(res.statusCode).toBe(200)
-    const body = res.json() as { projects: { name: string; openTasks: number }[] }
-    return Object.fromEntries(body.projects.map((p) => [p.name, p.openTasks]))
+    const body = res.json() as { projects: { name: string; columns: { openTasks: number } }[] }
+    return Object.fromEntries(body.projects.map((p) => [p.name, p.columns.openTasks]))
   }
 
   const patch = async (ctx: Harness, id: string, payload: Record<string, unknown>) => {
@@ -512,9 +513,9 @@ describe('project open-task counts', () => {
       url: '/api/v1/projects',
       headers: theirs,
     })
-    const body = other.json() as { projects: { name: string; openTasks: number }[] }
+    const body = other.json() as { projects: { name: string; columns: { openTasks: number } }[] }
     // They see only their own inbox, and it is empty -- our two tasks are not in anyone else's count.
-    expect(body.projects.map((p) => [p.name, p.openTasks])).toEqual([['Inbox', 0]])
+    expect(body.projects.map((p) => [p.name, p.columns.openTasks])).toEqual([['Inbox', 0]])
   })
 
   it('carries the count on the archived list too', async () => {

@@ -17,6 +17,12 @@ export const UNCOUNTED_TASK_STATUSES = [
   'cancelled',
 ] as const satisfies readonly TaskStatus[]
 
+/**
+ * The count tasks adds to each project in the list: its tasks neither finished, cancelled nor
+ * deleted.
+ */
+export const OPEN_TASKS_COLUMN = 'openTasks'
+
 /** The board's columns, left to right; `cancelled` is not a step of the work. */
 export const BOARD_TASK_STATUSES = TASK_STATUSES.filter(
   (s): s is Exclude<TaskStatus, 'cancelled'> => s !== 'cancelled',

@@ -121,28 +121,31 @@ export function SideRail() {
         )}
 
         <div className="flex flex-col">
-          {projects.data?.map((p) => (
-            <NavLink
-              key={p.id}
-              to={`/projects/${p.id}`}
-              className={({ isActive }) =>
-                `flex min-h-11 items-center gap-2.5 rounded-md py-1 pr-2 pl-2.5 ${
-                  isActive ? 'bg-select text-ink' : 'text-ink-muted hover:text-ink'
-                }`
-              }
-            >
-              <span
-                aria-hidden="true"
-                className={`h-4 w-[3px] shrink-0 rounded-full ${railClass(p.color)}`}
-              />
-              <span className="truncate">{p.name}</span>
-              {p.openTasks > 0 && (
-                <span data-count className="ml-auto pl-1 text-sm text-ink-subtle tabular-nums">
-                  {p.openTasks}
-                </span>
-              )}
-            </NavLink>
-          ))}
+          {projects.data?.map((p) => {
+            const count = registry.projectCount?.(p) ?? 0
+            return (
+              <NavLink
+                key={p.id}
+                to={`/projects/${p.id}`}
+                className={({ isActive }) =>
+                  `flex min-h-11 items-center gap-2.5 rounded-md py-1 pr-2 pl-2.5 ${
+                    isActive ? 'bg-select text-ink' : 'text-ink-muted hover:text-ink'
+                  }`
+                }
+              >
+                <span
+                  aria-hidden="true"
+                  className={`h-4 w-[3px] shrink-0 rounded-full ${railClass(p.color)}`}
+                />
+                <span className="truncate">{p.name}</span>
+                {count > 0 && (
+                  <span data-count className="ml-auto pl-1 text-sm text-ink-subtle tabular-nums">
+                    {count}
+                  </span>
+                )}
+              </NavLink>
+            )
+          })}
         </div>
       </nav>
     </div>

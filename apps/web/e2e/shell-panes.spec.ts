@@ -26,9 +26,9 @@ test('the left rail shows each project the open-task count the server reports', 
 
   await page.goto('/tasks/today')
   const { projects } = (await (await page.request.get('/api/v1/projects')).json()) as {
-    projects: { id: string; name: string; openTasks: number }[]
+    projects: { id: string; name: string; columns: { openTasks: number } }[]
   }
-  expect(projects.map((p) => [p.name, p.openTasks])).toEqual([
+  expect(projects.map((p) => [p.name, p.columns.openTasks])).toEqual([
     ['Inbox', 0],
     ['安静的', 0],
     ['很忙的', 3],
@@ -37,9 +37,9 @@ test('the left rail shows each project the open-task count the server reports', 
   for (const p of projects) {
     const link = rail(page).getByRole('link', { name: p.name, exact: false })
     await expect(link).toHaveCount(1)
-    if (p.openTasks > 0) {
+    if (p.columns.openTasks > 0) {
       // The count sits in the link, so it is read out with the destination it belongs to.
-      await expect(link.locator('[data-count]')).toHaveText(String(p.openTasks))
+      await expect(link.locator('[data-count]')).toHaveText(String(p.columns.openTasks))
     } else {
       // Zero is written as nothing: a column of "0"s is noise, and an empty project is not news.
       await expect(link.locator('[data-count]')).toHaveCount(0)

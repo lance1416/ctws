@@ -45,9 +45,12 @@ export const projectResponse = z
   })
   .strict()
 
-/** A project in the list: the row plus the count of tasks neither finished, cancelled nor deleted. */
+/**
+ * A project in the list: the row, plus the counts modules add to it, each under the name its
+ * module registered.
+ */
 export const projectListItem = projectResponse
-  .extend({ openTasks: z.number().int().nonnegative() })
+  .extend({ columns: z.record(z.string(), z.number().int().nonnegative()) })
   .strict()
 
 export const projectListQuery = z

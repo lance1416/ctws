@@ -8,7 +8,7 @@ import {
 import { queryOptions, useQuery, type UseQueryResult } from '@tanstack/react-query'
 import { call, everyPage } from '../../platform/http/api'
 
-/** The live projects, with the server's own `openTasks` counts. */
+/** The live projects, with the counts the server's modules add to each. */
 async function listProjects(): Promise<ProjectListItem[]> {
   const pages = await everyPage((cursor) => call(api.projects.list, { query: { cursor } }))
   return pages.flatMap((p) => p.projects)

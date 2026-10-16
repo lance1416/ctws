@@ -56,6 +56,11 @@ export type ProjectContribution = {
   Facts?: ComponentType<{ project: ProjectListItem; place: 'row' | 'tile' }>
   /** The day in the margin of a project's row in the list. At most one module gives one. */
   Lead?: ComponentType<{ projectId: ProjectId }>
+  /**
+   * How many of this module's things wait in a project, beside its name in the rail. At most one
+   * module gives one; zero is shown as nothing.
+   */
+  count?: (project: ProjectListItem) => number
   /** What deleting a project takes with it, as a phrase ("12 tasks"), or null for nothing. */
   contents?: (qc: QueryClient, projectId: ProjectId) => Promise<string | null>
 }

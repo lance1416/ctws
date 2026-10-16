@@ -9,6 +9,7 @@ import { ProjectFacts, ProjectLead } from './components/ProjectFacts'
 import { StatusMark } from './components/StatusMark'
 import { revealHref, taskCrumb } from './crumb'
 import { TASKS_ID, taskPage } from './id'
+import { openTasksOf } from './openTasks'
 import { OpenTask } from './pages/OpenTask'
 import { Review } from './pages/Review'
 import { Today } from './pages/Today'
@@ -140,6 +141,7 @@ export const taskModule: WorkspaceModule = {
     Headline: ProjectNumbers,
     Facts: ProjectFacts,
     Lead: ProjectLead,
+    count: openTasksOf,
     contents: async (qc, projectId) => {
       const { tasks } = await qc.fetchQuery(projectTasksQuery(projectId))
       return tasks.length === 0 ? null : `${tasks.length} tasks`
