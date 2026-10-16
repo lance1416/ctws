@@ -1,5 +1,5 @@
 import { problemText } from '../../../platform/http/api'
-import { type TodayTaskResponse, type TaskId } from '@ctws/contracts'
+import type { TodayTaskResponse } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { clockTime } from '@ctws/core/clock'
@@ -13,6 +13,7 @@ import { DayLine, type DayItem } from '../components/DayLine'
 import { DoneTodayPanel } from '../components/DoneTodayPanel'
 import { MovementPanel } from '../components/MovementPanel'
 import { TaskDetail } from '../components/TaskDetail'
+import { useTaskParam } from '../components/tree/useTreeParams'
 import { useSavedFlash } from '../components/useSavedFlash'
 import { hasMovement } from '../logic/movement'
 import { todaySegments } from '../logic/today'
@@ -35,7 +36,9 @@ export function Today() {
   const now = useNow()
   const day = ymd(now, timeZone)
   const entries = useOthersToday(day)
-  const [openId, setOpenId] = useState<TaskId | null>(null)
+  // In the address, as on a project page: opening another row is a navigation, which the open
+  // pane's unsaved-edit guard sees.
+  const { openId, setOpenId } = useTaskParam()
   const rows = today.data ?? []
 
   const [error, setError] = useState<string | null>(null)

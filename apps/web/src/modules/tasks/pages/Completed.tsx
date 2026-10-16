@@ -1,5 +1,5 @@
 import { taskCrumb } from '../logic/crumb'
-import { type CompletedTaskResponse, type TaskId } from '@ctws/contracts'
+import type { CompletedTaskResponse } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { completedQuery } from '../api'
@@ -9,6 +9,7 @@ import { EmptyState } from '../../../platform/ui/EmptyState'
 import { DONE_LIST_MEASURE } from '../components/TaskRowParts'
 import { StatusButton } from '../components/StatusControls'
 import { TaskDetail } from '../components/TaskDetail'
+import { useTaskParam } from '../components/tree/useTreeParams'
 import { useRowPane, useRowRefs } from '../components/useRowPane'
 import { clockTime } from '@ctws/core/clock'
 import { nearDay, weekdayDay, ymd } from '../../../platform/time/dates'
@@ -26,7 +27,8 @@ function dayHeading(day: string, today: string): string {
 /** Review's Done view, newest first. The server decides each task's day; this only groups by it. */
 export function Completed() {
   const completed = useQuery(completedQuery())
-  const [openId, setOpenId] = useState<TaskId | null>(null)
+  // In the address, so opening another row passes the open pane's unsaved-edit guard.
+  const { openId, setOpenId } = useTaskParam()
   const timezone = useTimeZone()
   const today = ymd(useNow(), timezone)
   const heading = useRef<HTMLHeadingElement>(null)
