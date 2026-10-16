@@ -66,4 +66,19 @@ describe('shortcut enable setting', () => {
     expect(shortcutsEnabled()).toBe(true)
     expect(() => setShortcutsEnabled(false)).not.toThrow()
   })
+
+  it('stays off in this tab once turned off, where localStorage throws', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: () => {
+        throw new Error('denied')
+      },
+      setItem: () => {
+        throw new Error('denied')
+      },
+    })
+    fakeWindow()
+    setShortcutsEnabled(false)
+    expect(shortcutsEnabled()).toBe(false)
+    setShortcutsEnabled(true)
+  })
 })
