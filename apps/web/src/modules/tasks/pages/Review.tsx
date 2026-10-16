@@ -1,9 +1,4 @@
-import {
-  REVIEW_TRANSITIONS,
-  type ReviewList,
-  type ReviewResponse,
-  type ProjectId,
-} from '@ctws/contracts'
+import { REVIEW_TRANSITIONS, type ReviewList, type ProjectId } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { reviewQuery } from '../api'
@@ -22,13 +17,11 @@ import { useViewParam, ViewTabs } from '../../../platform/ui/ViewTabs'
 import { Completed } from './Completed'
 import { addDays } from '@ctws/core/day'
 import { monthDay, nextMonday, ymd } from '../../../platform/time/dates'
-import { weekAfter, weekBefore } from '../logic/review'
+import { reviewRows, weekAfter, weekBefore } from '../logic/review'
 import { useTimeZone } from '../../../shell/auth'
 import { useNow } from '../../../platform/time/useNow'
 import { PageHead } from '../../../platform/ui/PageHead'
 import { HANG } from '../../../platform/ui/hang'
-
-type Project = ReviewResponse['projects'][number]
 
 /**
  * What happened to one task: its day in the margin, the project's thread, the mark and the title.
@@ -79,11 +72,6 @@ function weekSentence(total: { done: number; started: number; dropped: number })
   const last = parts.pop()!
   return `${parts.length > 0 ? `${parts.join(', ')} and ` : ''}${last}.`
 }
-
-/** The lists in the order a project shows them. */
-const LISTS = Object.keys(REVIEW_TRANSITIONS) as ReviewList[]
-
-const counted = (p: Project) => LISTS.reduce((n, list) => n + p[list].length, 0)
 
 // Done lists what is finished now; the week view lists what happened in a window, off the event
 // log, so a task finished on Tuesday and reopened on Thursday shows only here.
@@ -172,21 +160,19 @@ export function Review() {
             /* A section per line of work, the threads at one x. */
             <div className={`mt-8 flex flex-col gap-8 ${LIST_MEASURE}`}>
               {projects.map((p) => (
-                <DaySection key={p.projectId} label={p.projectName} count={counted(p)}>
+                <DaySection key={p.projectId} label={p.projectName} count={reviewRows(p).length}>
                   <ul className={ROW_LIST}>
-                    {LISTS.flatMap((list) =>
-                      p[list].map((t) => (
-                        <Row
-                          key={t.id}
-                          title={t.title}
-                          status={REVIEW_TRANSITIONS[list]}
-                          at={t.at}
-                          projectId={p.projectId}
-                          today={today}
-                          from={data.from}
-                        />
-                      )),
-                    )}
+                    {reviewRows(p).map(({ key, list, task: t }) => (
+                      <Row
+                        key={key}
+                        title={t.title}
+                        status={REVIEW_TRANSITIONS[list]}
+                        at={t.at}
+                        projectId={p.projectId}
+                        today={today}
+                        from={data.from}
+                      />
+                    ))}
                   </ul>
                 </DaySection>
               ))}
