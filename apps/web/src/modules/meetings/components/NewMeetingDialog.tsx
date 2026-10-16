@@ -1,12 +1,8 @@
-import {
-  type CreateMeetingBody,
-  type MeetingOccurrence,
-  type PersonId,
-  type ProjectId,
-} from '@ctws/contracts'
+import { type CreateMeetingBody, type MeetingOccurrence } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
-import { useRef, useState } from 'react'
-import { createMeeting, DEFAULT_HOUR, DEFAULT_MINUTES, withUntil } from '../api'
+import { useRef } from 'react'
+import { createMeeting } from '../api'
+import { createBody, newMeeting, useMeetingForm } from '../hooks/useMeetingForm'
 import { ProjectPicker } from '../../../shell/projects'
 import { useComposing } from '../../../platform/keyboard/composition'
 import { ymd } from '../../../platform/time/dates'
@@ -39,18 +35,13 @@ export function NewMeetingDialog({
   const titleField = useRef<HTMLInputElement>(null)
   const composing = useComposing()
 
-  const [title, setTitle] = useState('')
-  const [day, setDay] = useState(today)
-  const [clock, setClock] = useState(`${String(DEFAULT_HOUR).padStart(2, '0')}:00`)
-  const [timeZone, setTimeZone] = useState(accountZone)
-  const [durationMinutes, setDuration] = useState(DEFAULT_MINUTES)
-  const [rrule, setRrule] = useState<string | null>(null)
-  const [until, setUntil] = useState<string | null>(null)
-  const [location, setLocation] = useState('')
-  const [projectId, setProjectId] = useState<ProjectId | null>(null)
-  const [attendeeIds, setAttendees] = useState<PersonId[]>([])
-
-  const startsLocal = `${day}T${clock}`
+  const { form, values, ready } = useMeetingForm(newMeeting(today, accountZone))
+  const dirty = { shouldDirty: true }
+  const title = form.register('title')
+  // The dialog's two boxes are the halves of one start.
+  const [day = '', clock = ''] = values.startsLocal.split('T')
+  const setStart = (nextDay: string, nextClock: string) =>
+    form.setValue('startsLocal', `${nextDay}T${nextClock}`, dirty)
 
   const make = useMutation({
     mutationFn: (body: CreateMeetingBody) => createMeeting(body),
@@ -58,20 +49,9 @@ export function NewMeetingDialog({
     onSuccess: (made) => onMade(made),
   })
 
-  const ready = title.trim().length > 0 && day !== '' && clock !== ''
-  const submit = () => {
-    if (!ready || make.isPending) return
-    make.mutate({
-      title: title.trim(),
-      startsLocal,
-      timeZone,
-      durationMinutes,
-      ...(rrule ? { rrule: withUntil(rrule, until) } : {}),
-      ...(location.trim() ? { location: location.trim() } : {}),
-      ...(projectId ? { projectId } : {}),
-      ...(attendeeIds.length > 0 ? { attendeeIds } : {}),
-    })
-  }
+  const submit = form.handleSubmit((v) => {
+    if (!make.isPending) make.mutate(createBody(v))
+  })
 
   return (
     <Modal
@@ -82,27 +62,30 @@ export function NewMeetingDialog({
       dismissLabel={null}
     >
       <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          submit()
-        }}
+        onSubmit={(e) => void submit(e)}
         {...composing.bind}
         className="flex flex-col gap-5 px-5 py-4"
       >
         <div>
           {/* "No project" is a choice, not only the placeholder, so a picked project can be undone. */}
-          <ProjectPicker value={projectId} onPick={setProjectId} none="No project" />
+          <ProjectPicker
+            value={values.projectId}
+            onPick={(id) => form.setValue('projectId', id, dirty)}
+            none="No project"
+          />
           <input
-            ref={titleField}
+            {...title}
+            ref={(el) => {
+              title.ref(el)
+              titleField.current = el
+            }}
             aria-label="Title"
-            value={title}
             placeholder="What is this meeting?"
-            onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => {
               // isComposing: Enter confirms an IME candidate, it must not submit half a word.
               if (e.key === 'Enter' && !composing.composingNow(e)) {
                 e.preventDefault()
-                submit()
+                void submit()
               }
             }}
             className={`${field} mt-1.5 text-lg font-semibold`}
@@ -118,14 +101,14 @@ export function NewMeetingDialog({
               aria-label="Date"
               type="date"
               value={day}
-              onChange={(e) => setDay(e.target.value)}
+              onChange={(e) => setStart(e.target.value, clock)}
               className={`${boxed} min-w-[9rem] flex-1`}
             />
             <input
               aria-label="Start time"
               type="time"
               value={clock}
-              onChange={(e) => setClock(e.target.value)}
+              onChange={(e) => setStart(day, e.target.value)}
               className={`${boxed} min-w-[7rem] flex-1`}
             />
           </div>
@@ -135,13 +118,19 @@ export function NewMeetingDialog({
           <div className="min-w-[12rem]">
             <span className={label}>Time zone</span>
             <div className="mt-1.5">
-              <ZonePicker value={timeZone} onPick={setTimeZone} />
+              <ZonePicker
+                value={values.timeZone}
+                onPick={(zone) => form.setValue('timeZone', zone, dirty)}
+              />
             </div>
           </div>
           <div className="min-w-[7.5rem]">
             <span className={label}>Length</span>
             <div className="mt-1.5">
-              <LengthPicker value={durationMinutes} onPick={setDuration} />
+              <LengthPicker
+                value={values.durationMinutes}
+                onPick={(minutes) => form.setValue('durationMinutes', minutes, dirty)}
+              />
             </div>
           </div>
         </div>
@@ -152,14 +141,14 @@ export function NewMeetingDialog({
             <div className="mt-1.5">
               {/* Named after the day it falls on, so "Weekly on Tuesday" follows the date. */}
               <RepeatPicker
-                startsLocal={startsLocal}
+                startsLocal={values.startsLocal}
                 today={today}
-                value={rrule}
-                onPick={setRrule}
+                value={values.rule}
+                onPick={(rule) => form.setValue('rule', rule, dirty)}
               />
             </div>
           </div>
-          {rrule && (
+          {values.rule && (
             <div>
               <label htmlFor="meeting-until" className={label}>
                 Ends
@@ -167,9 +156,9 @@ export function NewMeetingDialog({
               <div className="mt-1.5 flex items-center gap-2">
                 <EndsPicker
                   id="meeting-until"
-                  until={until}
+                  until={values.until}
                   min={day}
-                  onChange={setUntil}
+                  onChange={(end) => form.setValue('until', end, dirty)}
                   className={boxed}
                 />
               </div>
@@ -183,9 +172,8 @@ export function NewMeetingDialog({
           </label>
           <input
             id="meeting-place"
-            value={location}
+            {...form.register('location')}
             placeholder="A room, an address, or a link"
-            onChange={(e) => setLocation(e.target.value)}
             className={`${field} mt-1.5`}
           />
         </div>
@@ -193,7 +181,10 @@ export function NewMeetingDialog({
         <div>
           <span className={label}>Attendees</span>
           <div className="mt-1.5" data-attendees>
-            <AttendeesPicker value={attendeeIds} onChange={setAttendees} />
+            <AttendeesPicker
+              value={values.attendeeIds}
+              onChange={(ids) => form.setValue('attendeeIds', ids, dirty)}
+            />
           </div>
         </div>
 

@@ -1,7 +1,8 @@
-import { type Circle, type PersonResponse, type ProjectId } from '@ctws/contracts'
+import { type PersonResponse } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
-import { createPerson, type BirthdayDraft } from '../api'
+import { createPerson } from '../api'
+import { createBody, newPerson, usePersonForm } from '../hooks/usePersonForm'
 import { ProjectsPicker } from '../../../shell/projects'
 import { useComposing } from '../../../platform/keyboard/composition'
 import { channelPlaceholder, KIND_CHOICES } from '../logic/channels'
@@ -24,16 +25,15 @@ export function NewPersonDialog({
   const nameField = useRef<HTMLInputElement>(null)
   const composing = useComposing()
 
-  const [name, setName] = useState('')
-  const [org, setOrg] = useState('')
-  const [note, setNote] = useState('')
+  const { form, values, named } = usePersonForm(newPerson)
+  const dirty = { shouldDirty: true }
+  const name = form.register('name')
   // One row: the dialog takes a single address.
   const channels = useChannelRows(() => [{ kind: 'email', value: '', label: null }])
   const address = channels.rows[0]!
-  const [projectIds, setProjects] = useState<ProjectId[]>([])
-  const [circle, setCircle] = useState<Circle | null>(null)
   // Folded until asked for: an open, empty date form reads as bad data.
-  const [birthday, setBirthday] = useState<{ draft: BirthdayDraft; refused: boolean } | null>(null)
+  const { birthday } = values
+  const [refusedDay, setRefusedDay] = useState(false)
 
   const make = useMutation({
     mutationFn: createPerson,
@@ -42,42 +42,32 @@ export function NewPersonDialog({
   })
 
   // A day the server refused would only get a 400 from Create.
-  const ready = name.trim().length > 0 && !birthday?.refused && !channels.bad
-  const submit = () => {
-    if (!ready || make.isPending) return
-    make.mutate({
-      name: name.trim(),
-      ...(org.trim() ? { org: org.trim() } : {}),
-      ...(note.trim() ? { note: note.trim() } : {}),
-      ...(projectIds.length > 0 ? { projectIds } : {}),
-      ...(channels.toSave().length > 0 ? { channels: channels.toSave() } : {}),
-      ...(circle ? { circle } : {}),
-      ...(birthday ? { birthday: birthday.draft } : {}),
-    })
-  }
+  const ready = named && !(birthday && refusedDay) && !channels.bad
+  const submit = form.handleSubmit((v) => {
+    if (ready && !make.isPending) make.mutate(createBody(v, channels.toSave()))
+  })
 
   return (
     <Modal title="New person" onClose={onClose} initialFocus={nameField} dismissLabel={null}>
       <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          submit()
-        }}
+        onSubmit={(e) => void submit(e)}
         {...composing.bind}
         className="flex flex-col gap-5 px-5 py-4"
       >
         <div>
           <input
-            ref={nameField}
+            {...name}
+            ref={(el) => {
+              name.ref(el)
+              nameField.current = el
+            }}
             aria-label="Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
             placeholder="Who is this?"
             onKeyDown={(e) => {
               // isComposing: Enter confirms an IME candidate, it must not submit half a word.
               if (e.key === 'Enter' && !composing.composingNow(e)) {
                 e.preventDefault()
-                submit()
+                void submit()
               }
             }}
             className="w-full rounded-md bg-transparent py-0.5 text-lg font-semibold text-ink"
@@ -88,12 +78,7 @@ export function NewPersonDialog({
           <label htmlFor="person-org" className={label}>
             Company
           </label>
-          <input
-            id="person-org"
-            value={org}
-            onChange={(e) => setOrg(e.target.value)}
-            className={`${field} mt-1.5`}
-          />
+          <input id="person-org" {...form.register('org')} className={`${field} mt-1.5`} />
         </div>
 
         <div>
@@ -103,11 +88,17 @@ export function NewPersonDialog({
               <>
                 <BirthdayEditor
                   birthday={null}
-                  onChange={(draft, refused) => setBirthday({ draft, refused })}
+                  onChange={(draft, refused) => {
+                    form.setValue('birthday', draft, dirty)
+                    setRefusedDay(refused)
+                  }}
                 />
                 <button
                   type="button"
-                  onClick={() => setBirthday(null)}
+                  onClick={() => {
+                    form.setValue('birthday', undefined, dirty)
+                    setRefusedDay(false)
+                  }}
                   className="mt-1 text-sm text-ink-muted hover:text-ink"
                 >
                   Not now
@@ -116,7 +107,7 @@ export function NewPersonDialog({
             ) : (
               <button
                 type="button"
-                onClick={() => setBirthday({ draft: birthdayDraftOf(null), refused: false })}
+                onClick={() => form.setValue('birthday', birthdayDraftOf(null), dirty)}
                 className="h-9 rounded-md border border-dashed border-rule-strong px-3 text-sm text-ink-muted hover:border-rule-strong hover:text-ink"
               >
                 Add a birthday
@@ -128,7 +119,12 @@ export function NewPersonDialog({
         <div>
           <span className={label}>Circle</span>
           <div className="mt-1.5">
-            <PickOne label="Circle" value={circle} choices={CIRCLE_CHOICES} onPick={setCircle} />
+            <PickOne
+              label="Circle"
+              value={values.circle}
+              choices={CIRCLE_CHOICES}
+              onPick={(next) => form.setValue('circle', next, dirty)}
+            />
           </div>
         </div>
 
@@ -163,7 +159,10 @@ export function NewPersonDialog({
         <div>
           <span className={label}>Projects</span>
           <div className="mt-1.5">
-            <ProjectsPicker chosen={projectIds} onChange={setProjects} />
+            <ProjectsPicker
+              chosen={values.projectIds}
+              onChange={(ids) => form.setValue('projectIds', ids, dirty)}
+            />
           </div>
         </div>
 
@@ -173,8 +172,7 @@ export function NewPersonDialog({
           </label>
           <textarea
             id="person-note"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
+            {...form.register('note')}
             rows={3}
             className={`${field} mt-1.5`}
           />

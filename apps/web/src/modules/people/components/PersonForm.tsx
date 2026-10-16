@@ -1,5 +1,6 @@
-import type { Circle, Gender, PersonResponse } from '@ctws/contracts'
+import type { PersonResponse, UpdatePersonBody } from '@ctws/contracts'
 import { useState } from 'react'
+import type { UseFormRegisterReturn } from 'react-hook-form'
 import { WritingMode } from '../../../platform/notes/WritingMode'
 import { BUTTON } from '../../../platform/ui/buttonStyles'
 import { Field } from '../../../platform/ui/Field'
@@ -9,11 +10,11 @@ import { useReportUnsaved } from '../../../platform/ui/unsavedGuard'
 import { PickCity } from '../../../shell/cities'
 import { FormBar } from '../../../shell/detail'
 import { ProjectsPicker } from '../../../shell/projects'
-import type { BirthdayDraft, patchPerson } from '../api'
 import { BirthdayEditor } from '../birthday/BirthdayEditor'
 import { givenDate, plainDate } from '../birthday/text'
 import { byKind } from '../logic/channels'
 import { CIRCLE_CHOICES, GENDER_CHOICES } from '../logic/labels'
+import { personPatch, personValues, usePersonForm } from '../hooks/usePersonForm'
 import { ChannelsEditor, useChannelRows } from './ChannelsEditor'
 
 /**
@@ -33,41 +34,21 @@ export function PersonForm({
   /** Why the server refused the last Save; the form stays open with what was typed. */
   error: string | null
   onCancel: () => void
-  onSave: (patch: Parameters<typeof patchPerson>[1]) => void
+  onSave: (patch: UpdatePersonBody) => void
   /** Whether anything differs from what the form opened on, for the pane's leave guard. */
   onUnsaved?: (unsaved: boolean) => void
 }) {
-  const [name, setName] = useState(person.name)
-  const [org, setOrg] = useState(person.org ?? '')
-  const [title, setTitle] = useState(person.title ?? '')
-  const [hometown, setHometown] = useState(person.hometown ?? '')
-  const [city, setCity] = useState(person.city ?? '')
-  const [gender, setGender] = useState<Gender | null>(person.gender)
-  const [circle, setCircle] = useState<Circle | null>(person.circle)
-  const [projectIds, setProjectIds] = useState(person.projects.map((p) => p.id))
+  const { form, values, named } = usePersonForm(personValues(person))
+  const dirty = { shouldDirty: true }
   const channels = useChannelRows(() => byKind(person.channels).map((c) => ({ ...c, saved: true })))
-  const [note, setNote] = useState(person.note ?? '')
+  const [openedChannels] = useState(() => JSON.stringify(channels.toSave()))
   const [writing, setWriting] = useState(false)
   const [pickingDay, setPickingDay] = useState(false)
-  // Untouched is `undefined` (leave the birthday be); `null` removes it.
-  const [birthday, setBirthday] = useState<BirthdayDraft | null | undefined>(undefined)
   // The server has said the day does not exist: Save would only get a 400.
   const [badDay, setBadDay] = useState(false)
+  const { birthday } = values
   useReportUnsaved(
-    [
-      name,
-      org,
-      title,
-      hometown,
-      city,
-      gender,
-      circle,
-      projectIds,
-      channels.toSave(),
-      note,
-      birthday,
-    ],
-    busy,
+    (form.formState.isDirty || JSON.stringify(channels.toSave()) !== openedChannels) && !busy,
     onUnsaved,
   )
   // Untouched, the button shows the saved birthday.
@@ -80,37 +61,17 @@ export function PersonForm({
         ? plainDate(birthday)
         : null
 
-  const submit = () => {
-    if (busy || badDay || channels.bad || name.trim() === '') return
-    onSave({
-      name: name.trim(),
-      org: org.trim() || null,
-      title: title.trim() || null,
-      hometown: hometown.trim() || null,
-      city: city.trim() || null,
-      gender,
-      circle,
-      projectIds,
-      channels: channels.toSave(),
-      note: note.trim() || null,
-      ...(birthday === undefined ? {} : { birthday }),
-    })
-  }
+  const ready = named && !badDay && !channels.bad
 
   return (
     <form
       aria-label="Edit person"
-      onSubmit={(e) => {
-        e.preventDefault()
-        submit()
-      }}
+      onSubmit={form.handleSubmit((v) => {
+        if (!busy && ready) onSave(personPatch(v, channels.toSave()))
+      })}
       className="flex flex-col gap-4"
     >
-      <FormBar
-        busy={busy}
-        disabled={badDay || channels.bad || name.trim() === ''}
-        onCancel={onCancel}
-      />
+      <FormBar busy={busy} disabled={!ready} onCancel={onCancel} />
       {error && (
         <p role="alert" className="text-sm text-danger">
           {error}
@@ -124,8 +85,7 @@ export function PersonForm({
         <input
           id="c-name"
           autoFocus
-          value={name}
-          onChange={(e) => setName(e.target.value)}
+          {...form.register('name')}
           className={`${field} mt-1.5 text-lg font-semibold`}
         />
       </div>
@@ -170,7 +130,7 @@ export function PersonForm({
               <BirthdayEditor
                 birthday={person.birthday}
                 onChange={(draft, refused) => {
-                  setBirthday(draft)
+                  form.setValue('birthday', draft, dirty)
                   setBadDay(refused)
                 }}
               />
@@ -179,7 +139,7 @@ export function PersonForm({
                   type="button"
                   className={`mt-2 ${BUTTON.quiet}`}
                   onClick={() => {
-                    setBirthday(null)
+                    form.setValue('birthday', null, dirty)
                     setBadDay(false)
                     setPickingDay(false)
                   }}
@@ -190,18 +150,41 @@ export function PersonForm({
             </div>
           )}
           {/* Picked, not typed, so a city is stored one way. */}
-          <PickCity label="Hometown" id="c-home" value={hometown} onChange={setHometown} />
-          <PickCity label="Lives in" id="c-city" value={city} onChange={setCity} />
-          <Writes label="Company" id="c-org" value={org} onChange={setOrg} />
-          <Writes label="Title" id="c-title" value={title} onChange={setTitle} />
+          <PickCity
+            label="Hometown"
+            id="c-home"
+            value={values.hometown}
+            onChange={(next) => form.setValue('hometown', next, dirty)}
+          />
+          <PickCity
+            label="Lives in"
+            id="c-city"
+            value={values.city}
+            onChange={(next) => form.setValue('city', next, dirty)}
+          />
+          <Writes label="Company" id="c-org" field={form.register('org')} />
+          <Writes label="Title" id="c-title" field={form.register('title')} />
           <Field label="Gender">
-            <PickOne label="Gender" value={gender} choices={GENDER_CHOICES} onPick={setGender} />
+            <PickOne
+              label="Gender"
+              value={values.gender}
+              choices={GENDER_CHOICES}
+              onPick={(next) => form.setValue('gender', next, dirty)}
+            />
           </Field>
           <Field label="Circle">
-            <PickOne label="Circle" value={circle} choices={CIRCLE_CHOICES} onPick={setCircle} />
+            <PickOne
+              label="Circle"
+              value={values.circle}
+              choices={CIRCLE_CHOICES}
+              onPick={(next) => form.setValue('circle', next, dirty)}
+            />
           </Field>
           <Field label="Projects">
-            <ProjectsPicker chosen={projectIds} onChange={setProjectIds} />
+            <ProjectsPicker
+              chosen={values.projectIds}
+              onChange={(ids) => form.setValue('projectIds', ids, dirty)}
+            />
           </Field>
         </div>
       </div>
@@ -217,17 +200,16 @@ export function PersonForm({
         </div>
         <textarea
           id="c-note"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
+          {...form.register('note')}
           rows={4}
           className={`${field} mt-1.5 max-w-[68ch]`}
         />
       </div>
       {writing && (
         <WritingMode
-          heading={name || person.name}
-          source={note}
-          onChange={setNote}
+          heading={values.name || person.name}
+          source={values.note}
+          onChange={(next) => form.setValue('note', next, dirty)}
           onClose={() => setWriting(false)}
         />
       )}
@@ -238,25 +220,18 @@ export function PersonForm({
 function Writes({
   label: text,
   id,
-  value,
-  onChange,
+  field: registered,
 }: {
   label: string
   id: string
-  value: string
-  onChange: (next: string) => void
+  field: UseFormRegisterReturn
 }) {
   return (
     <div className="min-w-0">
       <label htmlFor={id} className={label}>
         {text}
       </label>
-      <input
-        id={id}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={`${field} mt-1 text-sm`}
-      />
+      <input id={id} {...registered} className={`${field} mt-1 text-sm`} />
     </div>
   )
 }
