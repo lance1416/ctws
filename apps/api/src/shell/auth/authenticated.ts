@@ -22,7 +22,8 @@ export function authenticated(scope: FastifyInstance): void {
   })
   scope.addHook('onRequest', async (req, reply) => {
     const token = req.cookies[SESSION_COOKIE]
-    const session = token ? await findValidSession(scope.db, token, scope.env.sessionTtlDays) : null
+    const window = { ttlDays: scope.env.sessionTtlDays, now: scope.clock() }
+    const session = token ? await findValidSession(scope.db, token, window) : null
     // Read on every request, so disabling or demoting an account applies at once.
     const context = session ? await getAuthContext(scope.db, session.userId) : null
     if (!token || !session || !context) throw new SessionRequiredError()

@@ -20,7 +20,10 @@ export const publicAuthRoutes: FastifyPluginAsyncZod = async (app) => {
       const { userId, workspaceId, role } = await registerUser(db, req.body, {
         onlyIfFirst: env.authRegistration === 'closed',
       })
-      const session = await createSession(db, userId, env.sessionTtlDays)
+      const session = await createSession(db, userId, {
+        ttlDays: env.sessionTtlDays,
+        now: app.clock(),
+      })
       setSessionCookie(reply, env, session.token, session.expiresAt)
       return reply.status(201).send({
         id: userId,
@@ -45,7 +48,10 @@ export const publicAuthRoutes: FastifyPluginAsyncZod = async (app) => {
       if (!ctx) throw new InvalidCredentialsError()
       const user = await loadUser(db, result.userId, ctx)
 
-      const session = await createSession(db, result.userId, env.sessionTtlDays)
+      const session = await createSession(db, result.userId, {
+        ttlDays: env.sessionTtlDays,
+        now: app.clock(),
+      })
       setSessionCookie(reply, env, session.token, session.expiresAt)
       return reply.send(user)
     },

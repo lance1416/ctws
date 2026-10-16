@@ -10,6 +10,9 @@ const sha256 = (token: string) => createHash('sha256').update(token).digest('hex
 /** The window a session lives in, and the one it is extended by when it is used. */
 const TTL_DAYS = 30
 
+/** The window as of the moment of the call, as a request would read it from the clock. */
+const at = (ttlDays = TTL_DAYS) => ({ ttlDays, now: new Date() })
+
 let ctx: Awaited<ReturnType<typeof withDatabase>>
 let userId: UserId
 
@@ -37,8 +40,8 @@ async function storedFor(token: string): Promise<{ id: string; token_hash: strin
 
 describe('session', () => {
   it('creates a session that resolves to its user', async () => {
-    const session = await createSession(ctx.db, userId, 30)
-    expect(await findValidSession(ctx.db, session.token, TTL_DAYS)).toEqual({
+    const session = await createSession(ctx.db, userId, at())
+    expect(await findValidSession(ctx.db, session.token, at())).toEqual({
       userId,
       renewedUntil: null,
     })
@@ -50,7 +53,7 @@ describe('session', () => {
    * credential -- the difference between seeing someone's tasks and being able to act as them.
    */
   it('stores no copy of the token anywhere in the row', async () => {
-    const session = await createSession(ctx.db, userId, 30)
+    const session = await createSession(ctx.db, userId, at())
     const rows = await ctx.db.execute(sql`select * from sessions`)
     const row = (rows.rows as Record<string, unknown>[]).find(
       (r) => sha256(session.token) === String(r.token_hash),
@@ -66,47 +69,45 @@ describe('session', () => {
   it('does not let the stored value be used as the cookie', async () => {
     // The obvious attack after hashing: present the hash. It is not the token, so it hashes to
     // something else and matches nothing.
-    const session = await createSession(ctx.db, userId, 30)
+    const session = await createSession(ctx.db, userId, at())
     const stored = await storedFor(session.token)
-    expect(await findValidSession(ctx.db, stored!.token_hash, TTL_DAYS)).toBeNull()
+    expect(await findValidSession(ctx.db, stored!.token_hash, at())).toBeNull()
     // Nor is the internal row id a credential.
-    expect(await findValidSession(ctx.db, stored!.id, TTL_DAYS)).toBeNull()
+    expect(await findValidSession(ctx.db, stored!.id, at())).toBeNull()
   })
 
   it('returns null for an unknown token', async () => {
-    expect(await findValidSession(ctx.db, 'not-a-session-at-all', TTL_DAYS)).toBeNull()
+    expect(await findValidSession(ctx.db, 'not-a-session-at-all', at())).toBeNull()
   })
 
   it('rejects an expired session', async () => {
-    const session = await createSession(ctx.db, userId, 30)
+    const session = await createSession(ctx.db, userId, at())
     const stored = await storedFor(session.token)
     await ctx.db.execute(sql`
       update sessions set expires_at = now() - interval '1 second' where id = ${stored!.id}
     `)
-    expect(await findValidSession(ctx.db, session.token, TTL_DAYS)).toBeNull()
+    expect(await findValidSession(ctx.db, session.token, at())).toBeNull()
   })
 
   it('rejects a revoked session', async () => {
-    const session = await createSession(ctx.db, userId, 30)
+    const session = await createSession(ctx.db, userId, at())
     await revokeSession(ctx.db, session.token)
-    expect(await findValidSession(ctx.db, session.token, TTL_DAYS)).toBeNull()
+    expect(await findValidSession(ctx.db, session.token, at())).toBeNull()
   })
 
   it('tolerates revoking a session that does not exist', async () => {
     await expect(revokeSession(ctx.db, 'nothing-like-a-token')).resolves.toBeUndefined()
   })
 
-  it('sets expiry from the ttl it is given', async () => {
-    const before = Date.now()
-    const session = await createSession(ctx.db, userId, 7)
-    const days = (session.expiresAt.getTime() - before) / 86_400_000
-    expect(days).toBeGreaterThan(6.9)
-    expect(days).toBeLessThan(7.1)
+  it('sets expiry from the ttl and the clock it is given', async () => {
+    const now = new Date('2026-05-01T12:00:00Z')
+    const session = await createSession(ctx.db, userId, { ttlDays: 7, now })
+    expect(session.expiresAt).toEqual(new Date('2026-05-08T12:00:00Z'))
   })
 
   it('mints a token with no structure to reason from', async () => {
-    const a = await createSession(ctx.db, userId, 30)
-    const b = await createSession(ctx.db, userId, 30)
+    const a = await createSession(ctx.db, userId, at())
+    const b = await createSession(ctx.db, userId, at())
 
     // 32 bytes, base64url: no dashes, no version nibble, nothing a uuid would carry. The old
     // token was a uuid v4 -- chosen over v7 so the id would not embed a creation timestamp;
@@ -129,7 +130,7 @@ describe('session', () => {
 
     for (const value of bad) {
       it(`findValidSession returns null for ${JSON.stringify(value.slice(0, 20))}`, async () => {
-        expect(await findValidSession(ctx.db, value, TTL_DAYS)).toBeNull()
+        expect(await findValidSession(ctx.db, value, at())).toBeNull()
       })
 
       it(`revokeSession resolves for ${JSON.stringify(value.slice(0, 20))}`, async () => {
@@ -164,14 +165,14 @@ describe('sliding expiry', () => {
 
   it('winds the clock on when a session is used after a while', async () => {
     const userId = await makeUser(`u-${crypto.randomUUID()}@example.com`)
-    const session = await createSession(ctx.db, userId, TTL_DAYS)
+    const session = await createSession(ctx.db, userId, at())
     // Two hours since it was last seen, which is past the write-back threshold.
     await ctx.db.execute(
       sql`update sessions set last_seen_at = ${hoursAgo(2).toISOString()},
           expires_at = ${new Date(Date.now() + 3_600_000).toISOString()}`,
     )
 
-    const found = await findValidSession(ctx.db, session.token, TTL_DAYS)
+    const found = await findValidSession(ctx.db, session.token, at())
 
     const after = await ctx.db.execute(sql`select expires_at, last_seen_at from sessions`)
     const row = after.rows[0] as { expires_at: string; last_seen_at: string }
@@ -185,10 +186,10 @@ describe('sliding expiry', () => {
 
   it('does not write on every request, only once the last write has gone stale', async () => {
     const userId = await makeUser(`u-${crypto.randomUUID()}@example.com`)
-    const session = await createSession(ctx.db, userId, TTL_DAYS)
+    const session = await createSession(ctx.db, userId, at())
     const before = await ctx.db.execute(sql`select last_seen_at from sessions`)
 
-    await findValidSession(ctx.db, session.token, TTL_DAYS)
+    await findValidSession(ctx.db, session.token, at())
 
     const after = await ctx.db.execute(sql`select last_seen_at from sessions`)
     expect((after.rows[0] as { last_seen_at: string }).last_seen_at).toBe(
@@ -201,10 +202,10 @@ describe('sliding expiry', () => {
     const other = await makeUser(`o-${crypto.randomUUID()}@example.com`)
     // FOUR sessions, one of each kind, because the sweep has two conditions and a fixture with
     // only the obvious row passes whichever of them is dropped.
-    const myStale = await createSession(ctx.db, userId, TTL_DAYS)
-    const myLive = await createSession(ctx.db, userId, TTL_DAYS)
-    const theirStale = await createSession(ctx.db, other, TTL_DAYS)
-    const theirLive = await createSession(ctx.db, other, TTL_DAYS)
+    const myStale = await createSession(ctx.db, userId, at())
+    const myLive = await createSession(ctx.db, userId, at())
+    const theirStale = await createSession(ctx.db, other, at())
+    const theirLive = await createSession(ctx.db, other, at())
     const expire = async (token: string) => {
       const row = await storedFor(token)
       await ctx.db.execute(
@@ -215,13 +216,13 @@ describe('sliding expiry', () => {
     await expire(myStale.token)
     await expire(theirStale.token)
 
-    await createSession(ctx.db, userId, TTL_DAYS)
+    await createSession(ctx.db, userId, at())
 
     // Mine that was dead is gone. Mine that was alive stayed. Neither of theirs was touched --
     // not even the dead one, which is not this login's to tidy.
-    expect(await findValidSession(ctx.db, myStale.token, TTL_DAYS)).toBeNull()
-    expect(await findValidSession(ctx.db, myLive.token, TTL_DAYS)).toMatchObject({ userId })
-    expect(await findValidSession(ctx.db, theirLive.token, TTL_DAYS)).toMatchObject({
+    expect(await findValidSession(ctx.db, myStale.token, at())).toBeNull()
+    expect(await findValidSession(ctx.db, myLive.token, at())).toMatchObject({ userId })
+    expect(await findValidSession(ctx.db, theirLive.token, at())).toMatchObject({
       userId: other,
     })
     expect(await storedFor(theirStale.token)).toBeDefined()

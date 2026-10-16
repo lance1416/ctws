@@ -18,18 +18,26 @@ const digest = (token: string): string => createHash('sha256').update(token).dig
 /** A live session is written back at most this often, not on every request. */
 const TOUCH_AFTER_MS = 3_600_000
 
+/** How long a session lives unused, and the instant it is asked at. */
+type Window = { ttlDays: number; now: Date }
+
 export async function createSession(
   db: Queryable,
   userId: UserId,
-  ttlDays: number,
+  { ttlDays, now }: Window,
 ): Promise<{ token: string; expiresAt: Date }> {
   const token = newToken()
-  const expiresAt = new Date(Date.now() + ttlDays * DAY_MS)
+  const expiresAt = new Date(now.getTime() + ttlDays * DAY_MS)
   // The user's expired sessions are swept here, the one moment they are certainly writing.
-  await db
-    .delete(sessions)
-    .where(and(eq(sessions.userId, userId), lt(sessions.expiresAt, new Date())))
-  await db.insert(sessions).values({ id: uuidv4(), userId, tokenHash: digest(token), expiresAt })
+  await db.delete(sessions).where(and(eq(sessions.userId, userId), lt(sessions.expiresAt, now)))
+  await db.insert(sessions).values({
+    id: uuidv4(),
+    userId,
+    tokenHash: digest(token),
+    expiresAt,
+    createdAt: now,
+    lastSeenAt: now,
+  })
   return { token, expiresAt }
 }
 
@@ -41,10 +49,9 @@ export async function createSession(
 export async function findValidSession(
   db: Queryable,
   token: string,
-  ttlDays: number,
+  { ttlDays, now }: Window,
 ): Promise<{ userId: UserId; renewedUntil: Date | null } | null> {
   const hash = digest(token)
-  const now = new Date()
   const [found] = await db
     .select({ userId: sessions.userId, lastSeenAt: sessions.lastSeenAt })
     .from(sessions)
