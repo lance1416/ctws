@@ -4,7 +4,7 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { createProject, useProjects } from '../projects/api'
 import { useRegistry } from '../registry'
 import { railClass } from '../projects/projectColor'
-import { useInlineEdit } from '../../platform/ui/useInlineEdit'
+import { useLineEntry } from '../../platform/ui/useLineEntry'
 import { PlusIcon } from '../../platform/ui/icons'
 
 /**
@@ -24,30 +24,19 @@ export function SideRail() {
       (k) => k.moduleId !== null && !pinned.some((p) => p.to === k.to) && within(k.to),
     )
   const [naming, setNaming] = useState(false)
-  const [name, setName] = useState('')
+  const name = useLineEntry()
   const field = useRef<HTMLInputElement>(null)
   useEffect(() => {
     if (naming) field.current?.focus()
   }, [naming])
 
+  const send = name.sends((text) => createProject({ name: text }))
   const create = useMutation({
-    mutationFn: createProject,
+    mutationFn: send,
     meta: { awaits: [['projects']] },
     onSuccess: (made) => {
-      setName('')
       setNaming(false)
       navigate(`/projects/${made.id}`)
-    },
-  })
-  const submit = () => {
-    const t = name.trim()
-    if (t && !create.isPending) create.mutate({ name: t })
-  }
-  const nameKeys = useInlineEdit({
-    onCommit: submit,
-    onCancel: () => {
-      setName('')
-      setNaming(false)
     },
   })
 
@@ -106,11 +95,16 @@ export function SideRail() {
         {naming && (
           <input
             ref={field}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            {...nameKeys}
+            {...name.field({
+              onSubmit: create.mutate,
+              busy: create.isPending,
+              onCancel: () => {
+                name.setValue('')
+                setNaming(false)
+              },
+            })}
             onBlur={() => {
-              if (!name.trim()) setNaming(false)
+              if (!name.value.trim()) setNaming(false)
             }}
             aria-label="New project"
             aria-invalid={create.isError ? true : undefined}

@@ -1,10 +1,9 @@
 import type { ProjectListItem } from '@ctws/contracts'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { archivedProjectsQuery, createProject, useProjects } from './api'
 import { LIST_MEASURE } from '../rows/leads'
-import { useInlineEdit } from '../../platform/ui/useInlineEdit'
+import { useLineEntry } from '../../platform/ui/useLineEntry'
 import { DaySection } from '../rows/DaySection'
 import { textbox } from '../../platform/ui/formStyles'
 import { BODY_GUTTER, ProjectRail, ROW_LIST } from '../rows/RowParts'
@@ -13,26 +12,15 @@ import { HANG } from '../../platform/ui/hang'
 import { useRegistry } from '../registry'
 
 export function Projects() {
-  const [name, setName] = useState('')
+  const name = useLineEntry()
   const projects = useProjects()
   const archivedList = useQuery(archivedProjectsQuery())
 
+  const send = name.sends((text) => createProject({ name: text }))
   const create = useMutation({
-    mutationFn: async (body: Parameters<typeof createProject>[0]) => {
-      const made = await createProject(body)
-      // Emptied once the server has it, not after the list is read again: what is typed in the
-      // meantime is the next name.
-      setName('')
-      return made
-    },
+    mutationFn: send,
     meta: { awaits: [['projects']], ownsError: true },
   })
-
-  const submit = () => {
-    const n = name.trim()
-    if (n && !create.isPending) create.mutate({ name: n })
-  }
-  const nameKeys = useInlineEdit({ onCommit: submit })
 
   // In the server's order, which puts the inbox first; a second sort here would drift from it.
   const active = projects.data ?? []
@@ -43,9 +31,7 @@ export function Projects() {
       <PageHead hang>Projects</PageHead>
       <div className={`mt-5 ${HANG} max-w-[40ch]`}>
         <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          {...nameKeys}
+          {...name.field({ onSubmit: create.mutate, busy: create.isPending })}
           placeholder="New project"
           aria-label="New project"
           className={`w-full bg-sheet ${textbox}`}

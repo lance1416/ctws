@@ -1,8 +1,8 @@
-import { useId, useRef, useState } from 'react'
+import { useId, useRef } from 'react'
 import { HANG_WIDTH } from '../../../platform/ui/hang'
 import { BODY_GUTTER } from '../../../shell/rows'
 import { CHEVRON_PX, gutterPlus, HANDLE_PX, INDENT_PX } from './TaskRowParts'
-import { useComposing } from '../../../platform/keyboard/composition'
+import { useLineEntry } from '../../../platform/ui/useLineEntry'
 
 // The width of `StatusButton`, not of its glyph, so the input lines up with the rows' titles.
 const MARK_PX = 28
@@ -10,7 +10,7 @@ const MARK_PX = 28
 type Props = {
   /** Depth of the task this input creates; a root task is 1. Indents it into place. */
   depth: number
-  /** Resolves true when the task was created, so the input can clear and stay open. */
+  /** Resolves true when the task was created and the list has it, so the box can take the next. */
   onCommit: (title: string) => Promise<boolean>
   /** Why the last attempt failed, said under the box rather than above the whole tree. */
   error: string | null
@@ -21,19 +21,9 @@ type Props = {
 // One input at the end of a sibling group. Enter creates and stays open for the next one;
 // Escape, Enter on an empty box, or blurring an empty box leaves.
 export function NewTaskInput({ depth, onCommit, onCancel, error }: Props) {
-  const composing = useComposing()
-  const [title, setTitle] = useState('')
+  const title = useLineEntry()
   const input = useRef<HTMLInputElement>(null)
   const describedBy = useId()
-
-  const submit = async () => {
-    const t = title.trim()
-    if (!t) return onCancel(true)
-    if (await onCommit(t)) {
-      setTitle('')
-      input.current?.focus()
-    }
-  }
 
   return (
     // The row's anatomy with the margin and thread left empty: the cursor starts where titles do.
@@ -51,22 +41,19 @@ export function NewTaskInput({ depth, onCommit, onCancel, error }: Props) {
           <input
             ref={input}
             autoFocus
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            {...composing.bind}
-            onKeyDown={(e) => {
-              // isComposing: Enter confirms an IME candidate, it must not submit half a word.
-              if (e.key === 'Enter' && !composing.composingNow(e)) {
-                e.preventDefault()
-                void submit()
-              } else if (e.key === 'Escape') {
-                e.preventDefault()
-                e.stopPropagation()
-                onCancel(true)
-              }
-            }}
+            {...title.field({
+              // Emptied only once the create is through: an Enter before then is dropped.
+              onSubmit: (text) =>
+                void onCommit(text).then((made) => {
+                  if (!made) return
+                  title.sent(text)
+                  input.current?.focus()
+                }),
+              onEmpty: () => onCancel(true),
+              onCancel: () => onCancel(true),
+            })}
             onBlur={() => {
-              if (!title.trim()) onCancel(false)
+              if (!title.value.trim()) onCancel(false)
             }}
             placeholder="Enter to add, Esc to cancel"
             aria-label="Add a task"

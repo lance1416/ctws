@@ -1,9 +1,8 @@
 import { problemText } from '../../../platform/http/api'
 import { useMutation } from '@tanstack/react-query'
-import { useState } from 'react'
 import { createReadingItem } from '../api'
 import { isReadingUrl } from '../logic/readingUrl'
-import { useComposing } from '../../../platform/keyboard/composition'
+import { useLineEntry } from '../../../platform/ui/useLineEntry'
 import { textbox } from '../../../platform/ui/formStyles'
 
 /**
@@ -11,36 +10,24 @@ import { textbox } from '../../../platform/ui/formStyles'
  * before Enter is pressed.
  */
 export function AddReading() {
-  const composing = useComposing()
-  const [line, setLine] = useState('')
-  const trimmed = line.trim()
+  const line = useLineEntry()
+  const trimmed = line.value.trim()
   const isLink = isReadingUrl(trimmed)
 
+  const send = line.sends((text) =>
+    createReadingItem(
+      isReadingUrl(text) ? { kind: 'link', url: text } : { kind: 'book', title: text },
+    ),
+  )
   const add = useMutation({
-    mutationFn: async (value: string) => {
-      const made = await createReadingItem(
-        isReadingUrl(value) ? { kind: 'link', url: value } : { kind: 'book', title: value },
-      )
-      // Emptied once the server has it, not after the list is read again: what is typed in the
-      // meantime is the next one.
-      setLine('')
-      return made
-    },
+    mutationFn: send,
     meta: { awaits: [['reading']], ownsError: true },
   })
 
   return (
     <div>
       <input
-        value={line}
-        onChange={(e) => setLine(e.target.value)}
-        {...composing.bind}
-        onKeyDown={(e) => {
-          // isComposing: Enter confirms an IME candidate, it must not submit half a word.
-          if (e.key !== 'Enter' || composing.composingNow(e)) return
-          if (trimmed === '' || add.isPending) return
-          add.mutate(trimmed)
-        }}
+        {...line.field({ onSubmit: add.mutate, busy: add.isPending })}
         placeholder="Paste a link, or type a book title"
         aria-label="Add to the reading list"
         className={`w-full bg-sheet ${textbox}`}

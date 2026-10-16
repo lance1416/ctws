@@ -6,7 +6,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { useRegistry } from '../registry'
 import type { CaptureTarget } from '../contract'
 import { useDocumentKeys } from '../../platform/keyboard/keyTable'
-import { useInlineEdit } from '../../platform/ui/useInlineEdit'
+import { useLineEntry } from '../../platform/ui/useLineEntry'
 import { textbox } from '../../platform/ui/formStyles'
 import { LAYER } from '../../platform/ui/layers'
 
@@ -15,7 +15,7 @@ import { LAYER } from '../../platform/ui/layers'
  * goes to Reading), else the registry's default; the confirmation names where it went.
  */
 export function QuickCapture() {
-  const [title, setTitle] = useState('')
+  const line = useLineEntry()
   // Where the last line landed, and the page it was said on: another page has moved on. Not its
   // title: this box is on every page, so the title would show twice wherever that task is listed.
   const [said, setLanded] = useState<{ target: CaptureTarget; on: string } | null>(null)
@@ -37,26 +37,17 @@ export function QuickCapture() {
   const routeOf = (line: string): CaptureTarget | null =>
     states.find((s) => s.accepts?.(line) && s.target)?.target ?? fallback.target
 
+  const send = line.sends(async (text) => {
+    const target = routeOf(text)
+    await target!.submit(text)
+    return target!
+  })
   const capture = useMutation({
-    mutationFn: async (line: string) => {
-      const target = routeOf(line)
-      await target!.submit(line)
-      return target!
-    },
+    mutationFn: send,
     // `submit` refreshes the lists that now hold the line itself.
     meta: { refresh: false, ownsError: true },
-    onSuccess: (target) => {
-      setTitle('')
-      setLanded({ target, on: pathname })
-    },
+    onSuccess: (target) => setLanded({ target, on: pathname }),
   })
-
-  const submit = () => {
-    const t = title.trim()
-    if (!t || !routeOf(t) || capture.isPending) return
-    capture.mutate(t)
-  }
-  const lineKeys = useInlineEdit({ onCommit: submit })
 
   useDocumentKeys(registry.anywhere, { capture: () => input.current?.focus() })
 
@@ -66,12 +57,16 @@ export function QuickCapture() {
       <div className="relative">
         <input
           ref={input}
-          value={title}
+          {...line.field({
+            onSubmit: (text) => {
+              if (routeOf(text)) capture.mutate(text)
+            },
+            busy: capture.isPending,
+          })}
           onChange={(e) => {
-            setTitle(e.target.value)
+            line.setValue(e.target.value)
             setLanded(null)
           }}
-          {...lineKeys}
           placeholder="Capture…"
           disabled={!fallback.target}
           aria-label="Capture"

@@ -5,7 +5,7 @@ import { useDocumentKeys } from '../../../platform/keyboard/keyTable'
 import { dayPhrase, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { textbox } from '../../../platform/ui/formStyles'
-import { useInlineEdit } from '../../../platform/ui/useInlineEdit'
+import { useLineEntry } from '../../../platform/ui/useLineEntry'
 import { useTimeZone } from '../../../shell/auth'
 import { createTask, movementQuery, projectTasksQuery } from '../api'
 import { PROJECT_PAGE_KEYS } from '../logic/keys'
@@ -93,33 +93,20 @@ export function NewTaskAction({ projectId }: { projectId: ProjectId }) {
 
 /** The module's rows under a shell project: the tree, and the one input that adds a root task. */
 export function ProjectTasks({ projectId, view }: { projectId: ProjectId; view: string }) {
-  const [title, setTitle] = useState('')
+  const title = useLineEntry()
   const failureId = useId()
+  const send = title.sends((text) => createTask({ projectId, title: text, parentId: null }))
   const create = useMutation({
-    mutationFn: async (t: string) => {
-      const made = await createTask({ projectId, title: t, parentId: null })
-      // Emptied once the server has it, not after the list is read again: what is typed in the
-      // meantime is the next title.
-      setTitle('')
-      return made
-    },
+    mutationFn: send,
     meta: { awaits: [projectTasksQuery(projectId).queryKey], ownsError: true },
   })
-
-  const submit = () => {
-    const t = title.trim()
-    if (t && !create.isPending) create.mutate(t)
-  }
-  const titleKeys = useInlineEdit({ onCommit: submit })
 
   return (
     <>
       {/* A line and Enter, inset to where the rows' bodies start. */}
       <div className="mb-1 ml-[71px] flex max-w-[52ch] flex-wrap items-center gap-2 pr-2 sm:ml-[89px]">
         <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          {...titleKeys}
+          {...title.field({ onSubmit: create.mutate, busy: create.isPending })}
           placeholder="New task"
           aria-label="New task"
           aria-invalid={create.isError ? true : undefined}
