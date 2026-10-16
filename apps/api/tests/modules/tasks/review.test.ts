@@ -132,6 +132,16 @@ describe('the weekly review', () => {
     expect((await review(ctx, `&from=${b}&to=${b}`)).projects).toEqual([])
   })
 
+  it('refuses a start after the default end, as it refuses one after an explicit end', async () => {
+    const ctx = await setup('UTC', new Date('2026-10-04T12:00:00Z'))
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/v1/tasks?view=review&from=2027-01-01',
+      headers: ctx.authed,
+    })
+    expect(res.statusCode, res.body).toBe(400)
+  })
+
   it('reports the window even when nothing happened in it', async () => {
     const ctx = await setup()
     const body = await review(ctx)

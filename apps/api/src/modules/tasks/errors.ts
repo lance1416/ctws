@@ -1,4 +1,4 @@
-import { MAX_TASK_DEPTH } from '@ctws/contracts'
+import { MAX_TASK_DEPTH, WINDOW_REFUSED } from '@ctws/contracts'
 import { DomainError } from '../../platform/errors'
 
 /** The new edge would close a loop; a task waiting for itself is the shortest one. */
@@ -36,5 +36,12 @@ export class InvalidNeighbourError extends DomainError {
     super('unprocessable', {
       detail: 'The neighbour is not a live sibling at the destination',
     })
+  }
+}
+
+/** A review window whose start falls after its end, the default end included. */
+export class InvertedWindowError extends DomainError {
+  constructor() {
+    super('invalid', { detail: WINDOW_REFUSED })
   }
 }
