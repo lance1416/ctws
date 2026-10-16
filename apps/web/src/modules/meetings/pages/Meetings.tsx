@@ -7,27 +7,31 @@ import {
 } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { Fragment, useState, type ReactNode } from 'react'
-import { useForgetWhenGone } from '../../../shell/search/recent'
-import { GoneNotice } from '../../../shell/detail/GoneNotice'
+import { useForgetWhenGone } from '../../../shell/search'
+import { GoneNotice } from '../../../shell/detail'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { meetingsQuery, occurrenceQuery, repeatLabel, seriesQuery } from '../api'
 import { EmptyState } from '../../../platform/ui/EmptyState'
 import { MeetingDetail } from '../components/MeetingDetail'
 import { NewMeetingDialog } from '../components/NewMeetingDialog'
-import { DaySection } from '../../../shell/rows/DaySection'
+import {
+  BODY_GUTTER,
+  DaySection,
+  LIST_MEASURE,
+  ProjectRail,
+  ROW_LIST,
+  RowLead,
+} from '../../../shell/rows'
 import { PanelEmpty } from '../../../platform/ui/Panel'
-import { RowLead } from '../../../shell/rows/RowLead'
-import { BODY_GUTTER, ProjectRail, ROW_LIST } from '../../../shell/rows/RowParts'
 import { addDays } from '@ctws/core/day'
 import { clockTime } from '@ctws/core/clock'
 import { ymd } from '../../../platform/time/dates'
 import { meetingLink } from '../meetingPlace'
 import { cityAndZone } from '../timeZones'
-import { LIST_MEASURE } from '../../../shell/rows/leads'
-import { useTimeZone } from '../../../shell/auth/useMe'
+import { useTimeZone } from '../../../shell/auth'
 import { useNow } from '../../../platform/time/useNow'
 import { BUTTON, LINK } from '../../../platform/ui/buttonStyles'
-import { useCrumbs } from '../../../shell/layout/Breadcrumbs'
+import { useCrumbs } from '../../../shell/layout'
 import { QueryStatus } from '../../../platform/ui/QueryStatus'
 import { PageHead } from '../../../platform/ui/PageHead'
 import { HANG } from '../../../platform/ui/hang'

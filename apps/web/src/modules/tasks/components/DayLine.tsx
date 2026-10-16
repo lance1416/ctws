@@ -1,6 +1,6 @@
 import { Fragment, type ReactNode } from 'react'
 import { HANG_WIDTH } from '../../../platform/ui/hang'
-import { ROW_LIST } from '../../../shell/rows/RowParts'
+import { ROW_LIST } from '../../../shell/rows'
 
 /**
  * The day's line: what has a time today, in order, with now drawn across it, then the untimed

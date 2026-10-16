@@ -7,20 +7,25 @@ import {
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { reviewQuery } from '../api/queries'
-import { DaySection } from '../../../shell/rows/DaySection'
+import {
+  BODY_GUTTER,
+  DaySection,
+  LIST_MEASURE,
+  ProjectRail,
+  ROW_LIST,
+  RowLead,
+  weekDayWord,
+} from '../../../shell/rows'
 import { EmptyState } from '../../../platform/ui/EmptyState'
-import { RowLead } from '../../../shell/rows/RowLead'
-import { BODY_GUTTER, ProjectRail, ROW_LIST } from '../../../shell/rows/RowParts'
 import { StatusMark } from '../components/StatusMark'
 import { useViewParam, ViewTabs } from '../../../platform/ui/ViewTabs'
 import { Completed } from './Completed'
 import { addDays } from '@ctws/core/day'
 import { monthDay, nextMonday, ymd } from '../../../platform/time/dates'
 import { weekAfter, weekBefore } from '../review'
-import { LIST_MEASURE, weekDayWord } from '../../../shell/rows/leads'
-import { useTimeZone } from '../../../shell/auth/useMe'
+import { useTimeZone } from '../../../shell/auth'
 import { useNow } from '../../../platform/time/useNow'
-import { useCrumbs } from '../../../shell/layout/Breadcrumbs'
+import { useCrumbs } from '../../../shell/layout'
 import { PageHead } from '../../../platform/ui/PageHead'
 import { HANG } from '../../../platform/ui/hang'
 

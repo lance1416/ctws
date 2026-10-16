@@ -1,12 +1,10 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
-import { Login } from '../shell/auth/Login'
-import { Calendar } from '../shell/calendar/Calendar'
-import { Layout } from '../shell/layout/Layout'
-import { ProjectPage } from '../shell/projects/ProjectPage'
-import { Projects } from '../shell/projects/Projects'
+import { Login } from '../shell/auth'
+import { Calendar } from '../shell/calendar'
+import { Layout } from '../shell/layout'
+import { ProjectPage, Projects } from '../shell/projects'
 import { WORKBENCH_PATH } from '../shell/registry'
-import { Things } from '../shell/workbench/Things'
-import { Workbench } from '../shell/workbench/Workbench'
+import { Things, Workbench } from '../shell/workbench'
 import { registry } from './registry'
 
 export const router = createBrowserRouter([

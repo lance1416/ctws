@@ -2,7 +2,7 @@ import type { MeetingOccurrence } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { problemText } from '../../../platform/http/api'
 import { DangerAction } from '../../../platform/ui/DangerZone'
-import { useForgetRecent } from '../../../shell/search/recent'
+import { useForgetRecent } from '../../../shell/search'
 import { cancelMeeting, type EditScope } from '../api'
 import { ScopeAsk } from './ScopeAsk'
 

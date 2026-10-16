@@ -7,10 +7,8 @@ import { toggleDoneTarget, toggleStartTarget } from '../api/taskActions'
 import { blockedLabel } from '../blockedLabel'
 import { ymd } from '../../../platform/time/dates'
 import { capturedLabel, lateNote } from '../dueDates'
-import { useTimeZone } from '../../../shell/auth/useMe'
-import { leadFor } from '../../../shell/rows/leads'
-import { RowLead } from '../../../shell/rows/RowLead'
-import { BODY_GUTTER, ProjectRail } from '../../../shell/rows/RowParts'
+import { useTimeZone } from '../../../shell/auth'
+import { BODY_GUTTER, leadFor, ProjectRail, RowLead } from '../../../shell/rows'
 import {
   gutterPlus,
   CHEVRON_PX,

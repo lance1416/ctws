@@ -7,10 +7,8 @@ import { readingLabel } from '../item'
 import { hostOf, StatusMark } from '../marks'
 import { PLAN_DAYS, type PlanDay } from '../plans'
 import { daysAgoIn } from '../../../platform/time/dates'
-import { leadFor } from '../../../shell/rows/leads'
+import { BODY_GUTTER, leadFor, ProjectRail, RowLead } from '../../../shell/rows'
 import { MENU_ITEM, MENU_SURFACE } from '../../../platform/ui/menuSurface'
-import { RowLead } from '../../../shell/rows/RowLead'
-import { BODY_GUTTER, ProjectRail } from '../../../shell/rows/RowParts'
 import { useNow } from '../../../platform/time/useNow'
 
 /** "Added 17 days ago". A count, not a date: a pile is read to find what has gone stale. */

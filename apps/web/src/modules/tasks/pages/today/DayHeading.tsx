@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { HANG } from '../../../../platform/ui/hang'
-import { calendarDaysQuery } from '../../../../shell/calendar/api'
+import { calendarDaysQuery } from '../../../../shell/calendar'
 
 /** The date is the page's heading, with the day's lunar name beside it. */
 export function DayHeading({

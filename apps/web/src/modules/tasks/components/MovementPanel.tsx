@@ -1,7 +1,7 @@
 import type { ProjectMovementResponse } from '@ctws/contracts'
 import { Link } from 'react-router-dom'
 import { isQuiet, movedLine } from '../movement'
-import { useProjectRail } from '../../../shell/projects/projectColor'
+import { useProjectRail } from '../../../shell/projects'
 
 /**
  * Where each line of work got to this week, in counts, never a percentage: nothing stores the

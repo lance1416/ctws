@@ -2,7 +2,7 @@ import { type Circle, type PersonResponse, type ProjectId } from '@ctws/contract
 import { useMutation } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { createPerson, type BirthdayDraft } from '../api'
-import { ProjectsPicker } from '../../../shell/projects/ProjectPicker'
+import { ProjectsPicker } from '../../../shell/projects'
 import { useComposing } from '../../../platform/keyboard/composition'
 import { channelPlaceholder, KIND_CHOICES } from '../channels'
 import { useChannelRows } from './ChannelsEditor'

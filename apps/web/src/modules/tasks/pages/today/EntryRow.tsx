@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { ShownEntry } from '../../../../shell/contract'
-import { RowLead } from '../../../../shell/rows/RowLead'
-import { ProjectRail } from '../../../../shell/rows/RowParts'
+import { ProjectRail, RowLead } from '../../../../shell/rows'
 import { RowMeta } from '../../components/TaskRowParts'
 
 type Entry = ShownEntry & { moduleId: string }

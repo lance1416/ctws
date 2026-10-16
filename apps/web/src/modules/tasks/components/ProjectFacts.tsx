@@ -5,9 +5,8 @@ import { movementQuery } from '../api/queries'
 import { movedLine } from '../movement'
 import { shortDay, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
-import { useTimeZone } from '../../../shell/auth/useMe'
-import { deadlineDayLead } from '../../../shell/rows/leads'
-import { RowLead } from '../../../shell/rows/RowLead'
+import { useTimeZone } from '../../../shell/auth'
+import { deadlineDayLead, RowLead } from '../../../shell/rows'
 
 /** One project's movement: what is late, what is next, when it last moved. */
 function useMoved(projectId: ProjectId) {

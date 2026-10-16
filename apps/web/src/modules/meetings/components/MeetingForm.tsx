@@ -10,8 +10,8 @@ import { useNow } from '../../../platform/time/useNow'
 import { Field } from '../../../platform/ui/Field'
 import { boxed, field, label } from '../../../platform/ui/formStyles'
 import { useReportUnsaved } from '../../../platform/ui/unsavedGuard'
-import { FormBar } from '../../../shell/detail/FormBar'
-import { ProjectPicker } from '../../../shell/projects/ProjectPicker'
+import { FormBar } from '../../../shell/detail'
+import { ProjectPicker } from '../../../shell/projects'
 import { withUntil } from '../api'
 import {
   AttendeesPicker,

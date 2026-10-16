@@ -3,7 +3,7 @@ import { useState, type ReactNode } from 'react'
 import { countdownPhrase, shortDay, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { Field } from '../../../platform/ui/Field'
-import { useTimeZone } from '../../../shell/auth/useMe'
+import { useTimeZone } from '../../../shell/auth'
 import { LEAD_LABELS } from '../labels'
 import { givenDate } from './text'
 

@@ -4,7 +4,7 @@ import { sortByName } from '../peopleOrder'
 import { BirthdayLead } from './BirthdayRow'
 import { CIRCLE_OF_ONE } from '../labels'
 import { PanelEmpty } from '../../../platform/ui/Panel'
-import { BODY_GUTTER, ProjectRail } from '../../../shell/rows/RowParts'
+import { BODY_GUTTER, ProjectRail } from '../../../shell/rows'
 
 /**
  * People on the app's row: the next birthday in the margin, the first project's colour as the

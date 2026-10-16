@@ -1,10 +1,14 @@
 import { type TaskStatus, type TodayTaskResponse, type TaskId } from '@ctws/contracts'
 import type { KeyboardEvent } from 'react'
 import { BUTTON } from '../../../../platform/ui/buttonStyles'
-import { DayEmpty, DaySection } from '../../../../shell/rows/DaySection'
-import { RowLead } from '../../../../shell/rows/RowLead'
-import { ProjectRail, ROW_LIST } from '../../../../shell/rows/RowParts'
-import { leadFor } from '../../../../shell/rows/leads'
+import {
+  DayEmpty,
+  DaySection,
+  leadFor,
+  ProjectRail,
+  ROW_LIST,
+  RowLead,
+} from '../../../../shell/rows'
 import { toggleDoneTarget, toggleStartTarget } from '../../api/taskActions'
 import { StatusButton } from '../../components/StatusControls'
 import { StatusMark } from '../../components/StatusMark'

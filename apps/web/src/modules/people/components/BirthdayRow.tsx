@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { countdownPhrase, fullDay, MONTHS } from '../../../platform/time/dates'
 import { HANG_WIDTH } from '../../../platform/ui/hang'
 import { CIRCLE_LABELS } from '../labels'
-import { BODY_GUTTER, ProjectRail } from '../../../shell/rows/RowParts'
+import { BODY_GUTTER, ProjectRail } from '../../../shell/rows'
 
 /**
  * A birthday on the app's row: the day in the margin, then who, how old and how far off. The thread

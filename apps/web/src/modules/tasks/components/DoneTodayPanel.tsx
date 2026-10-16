@@ -2,10 +2,8 @@ import { clockTime } from '@ctws/core/clock'
 import { LINK } from '../../../platform/ui/buttonStyles'
 import type { CompletedTaskResponse } from '@ctws/contracts'
 import { Link } from 'react-router-dom'
-import { ProjectRail } from '../../../shell/rows/RowParts'
-import { RowLead } from '../../../shell/rows/RowLead'
+import { DaySection, ProjectRail, RowLead } from '../../../shell/rows'
 import { StatusMark } from './StatusMark'
-import { DaySection } from '../../../shell/rows/DaySection'
 
 /**
  * What I finished today. The rows are not interactive, so a stray click cannot un-finish work;

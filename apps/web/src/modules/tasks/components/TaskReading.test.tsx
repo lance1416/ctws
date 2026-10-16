@@ -12,7 +12,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import { registry } from '../../../app/registry'
 import { RegistryProvider } from '../../../shell/registry'
-import { archivedProjectsQuery, projectsQuery } from '../../../shell/projects/api'
+import { archivedProjectsQuery, projectsQuery } from '../../../shell/projects'
 import { TaskReading } from './TaskReading'
 
 const project = (id: string, name: string, archivedAt: string | null): ProjectListItem => ({

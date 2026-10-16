@@ -3,7 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { fromDayTimeInput, toDayTimeInput } from '../../../platform/time/dates'
-import { useTimeZone } from '../../../shell/auth/useMe'
+import { useTimeZone } from '../../../shell/auth'
 import { patchTask } from '../api/tasks'
 import { detailTaskForm, PATCH_KEYS, type DetailTaskForm, type DetailTaskValues } from '../taskForm'
 

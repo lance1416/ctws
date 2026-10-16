@@ -1,6 +1,6 @@
 import { OBJECT_TYPES } from '@ctws/contracts'
 import { describe, expect, it } from 'vitest'
-import { JUMP_PREFIX } from '../shell/shortcuts/chords'
+import { JUMP_PREFIX } from '../shell/shortcuts'
 import { SHELL_CONFIG } from './config'
 import { MODULES } from './modules'
 import { registry } from './registry'

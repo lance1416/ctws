@@ -1,7 +1,7 @@
 import { idFrom, taskId, type TaskResponse, type TaskId } from '@ctws/contracts'
 import { useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { useForgetRecent } from '../../../../shell/search/recent'
+import { useForgetRecent } from '../../../../shell/search'
 import { isFinished } from '../../status'
 import { ancestorsOf } from '../../tree/ancestors'
 

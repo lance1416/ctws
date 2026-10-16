@@ -1,6 +1,6 @@
 import { readingIsFinished, type ReadingItemResponse } from '@ctws/contracts'
 import { linkLabel } from '../../platform/ui/url'
-import type { Recent } from '../../shell/search/recent'
+import type { Recent } from '../../shell/search'
 
 /**
  * The title typed, else the one fetched from the page, else the link's host and path. The fetched
