@@ -17,7 +17,7 @@ import { dayOffset } from './days'
  *
  * The tree shows what is left to do and counts the rest; an inbox row says how long it has been
  * sitting there; a refused creation reports itself at the row it failed on; and a save with
- * nothing to save still closes the pane. Each one is about a screen that has been lived in, not
+ * nothing to save still leaves editing. Each one is about a screen that has been lived in, not
  * a screen with three rows on it.
  */
 
@@ -187,7 +187,7 @@ test('a refused creation is reported at the input, which keeps what was typed', 
 
 // ------------------------------------------------------------ a save that changed nothing
 
-test('saving an untouched task sends nothing and still closes the pane', async ({ page }) => {
+test('saving an untouched task sends nothing and still leaves editing', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '改版')
   await makeTask(page, pid, '配色重做')
@@ -203,8 +203,9 @@ test('saving an untouched task sends nothing and still closes the pane', async (
   await page.getByRole('button', { name: 'Save' }).click()
 
   // Save on an untouched task means "I am done here": no request, and the pane returns to
-  // reading. The press has to DO something visible, or the person cannot tell it worked.
-  await expect(page.getByRole('button', { name: 'Edit', exact: true })).toHaveCount(0)
+  // reading. The press has to DO something visible, or the person cannot tell it worked. Edit
+  // coming back is that: while editing it is not there, so its absence proves nothing.
+  await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
   await expect(page.getByRole('textbox', { name: 'Title' })).toHaveCount(0)
   expect(writes).toEqual([])
 })
