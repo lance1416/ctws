@@ -7,12 +7,16 @@ export const personLinkable: Linkable = {
   type: 'person',
   label: 'People',
   rows: async (q, workspaceId, want) => {
-    const { where, limit } = wanted(want, people.id, ['people.name', 'people.org'])
+    const { where, orderBy, limit } = wanted(
+      want,
+      { id: people.id, title: people.name, text: ['people.name', 'people.org'] },
+      [asc(people.name), asc(people.id)],
+    )
     const found = await q
       .select({ id: people.id, name: people.name, org: people.org })
       .from(people)
       .where(within(scoped(people, workspaceId), where))
-      .orderBy(asc(people.name), asc(people.id))
+      .orderBy(...orderBy)
       .limit(limit)
     return found.map((r) => ({ id: r.id, title: r.name, detail: r.org }))
   },

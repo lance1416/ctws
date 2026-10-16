@@ -8,12 +8,11 @@ import {
   type ObjectType,
   type WorkspaceId,
 } from '@ctws/contracts'
-import { and, eq, or } from 'drizzle-orm'
+import { and, eq, inArray, or } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
 import { scoped, within } from '../../platform/db/scope'
 import { links } from './tables'
 import type { Endpoint } from './store'
-import type { StoredEdge } from './linkable'
 import type { LinkRegistry } from './registry'
 
 /** How many of one kind of object a page shows. */
@@ -28,12 +27,14 @@ function phrase(kind: LinkKind, outgoing: boolean): string {
   return outgoing ? rule.label : rule.inverse
 }
 
+/** The edge-table rows at `of`, by the far end each points at, of the kinds asked for. */
 async function storedEdges(
   q: Queryable,
   workspaceId: WorkspaceId,
   of: Endpoint,
-): Promise<(StoredEdge & { id: LinkId })[]> {
-  return q
+  types: readonly ObjectType[],
+): Promise<{ id: LinkId; type: ObjectType; farId: string; kind: LinkKind; outgoing: boolean }[]> {
+  const rows = await q
     .select({
       id: links.id,
       fromType: links.fromType,
@@ -47,84 +48,100 @@ async function storedEdges(
       within(
         scoped(links, workspaceId),
         or(
-          and(eq(links.fromType, of.type), eq(links.fromId, of.id)),
-          and(eq(links.toType, of.type), eq(links.toId, of.id)),
+          and(
+            eq(links.fromType, of.type),
+            eq(links.fromId, of.id),
+            inArray(links.toType, [...types]),
+          ),
+          and(
+            eq(links.toType, of.type),
+            eq(links.toId, of.id),
+            inArray(links.fromType, [...types]),
+          ),
         ),
       ),
     )
+  return rows.map((e) =>
+    e.fromType === of.type && e.fromId === of.id
+      ? { id: e.id, type: e.toType, farId: e.toId, kind: e.kind, outgoing: true }
+      : { id: e.id, type: e.fromType, farId: e.fromId, kind: e.kind, outgoing: false },
+  )
 }
 
-/** Everything one object is connected to, read in both directions: an edge is one fact. */
+/**
+ * Everything one object is connected to, read in both directions since an edge is one fact, among
+ * the kinds of thing asked for.
+ */
 export async function linksOf(
   registry: LinkRegistry,
   q: Queryable,
   workspaceId: WorkspaceId,
   of: Endpoint,
+  types: readonly ObjectType[] = registry.order,
 ): Promise<LinksResponse> {
-  const [stored, ...own] = await Promise.all([
-    storedEdges(q, workspaceId, of),
-    ...registry.all.filter((l) => l.own).map((l) => l.own!(q, workspaceId, of)),
-  ])
-  // Only edge-table rows can be unlinked; a task's project is a NOT NULL column.
-  const edges = [...stored, ...own.flat().map((e) => ({ ...e, id: null }))]
+  const stored = await storedEdges(q, workspaceId, of, types)
 
-  // The far end of each edge, by type, so each module is asked once for the whole page.
-  const wanted = new Map<ObjectType, Set<string>>()
-  const far = (e: StoredEdge) =>
-    e.fromType === of.type && e.fromId === of.id
-      ? ({ type: e.toType, id: e.toId, outgoing: true } as const)
-      : ({ type: e.fromType, id: e.fromId, outgoing: false } as const)
-  for (const edge of edges) {
-    const end = far(edge)
-    const set = wanted.get(end.type)
-    if (set) set.add(end.id)
-    else wanted.set(end.type, new Set([end.id]))
+  // The far ends, named by their modules a kind at a time, and the edges modules keep themselves,
+  // named already; only edge-table rows can be unlinked, since a task's project is a NOT NULL column.
+  const byType = new Map<ObjectType, LinkedObject[]>()
+  const add = (type: ObjectType, items: LinkedObject[]) => {
+    if (items.length > 0) byType.set(type, [...(byType.get(type) ?? []), ...items])
   }
-  const named = new Map<ObjectType, Map<string, { title: string; detail: string | null }>>()
-  await Promise.all(
-    [...wanted].map(async ([type, ids]) => {
-      const rows = await registry.of(type).rows(q, workspaceId, { ids: [...ids] })
-      named.set(type, new Map(rows.map((r) => [r.id, { title: r.title, detail: r.detail }])))
+  await Promise.all([
+    ...types.map(async (type) => {
+      const edges = stored.filter((e) => e.type === type)
+      if (edges.length === 0) return
+      const ids = [...new Set(edges.map((e) => e.farId))]
+      const rows = await registry.of(type).rows(q, workspaceId, { ids, limit: PER_GROUP })
+      const named = new Map(rows.map((r) => [r.id, r]))
+      // A far end that did not come back is deleted, foreign or past the group's end: dropped.
+      add(
+        type,
+        edges.flatMap((e) => {
+          const name = named.get(e.farId)
+          if (!name) return []
+          const { kind, outgoing } = e
+          return [{ type, ...name, kind, label: phrase(kind, outgoing), outgoing, linkId: e.id }]
+        }),
+      )
     }),
-  )
-
-  const groups = new Map<ObjectType, LinkedObject[]>()
-  const seen = new Set<string>()
-  for (const edge of edges) {
-    const end = far(edge)
-    // A far end that did not come back is deleted or foreign: the edge is dropped.
-    const name = named.get(end.type)?.get(end.id)
-    if (!name) continue
-    // One row per object, kind and direction; a module's own edges may repeat one.
-    const key = `${end.type}:${end.id}:${edge.kind}:${end.outgoing}`
-    if (seen.has(key)) continue
-    seen.add(key)
-    const list = groups.get(end.type) ?? []
-    list.push({
-      type: end.type,
-      id: end.id,
-      title: name.title,
-      detail: name.detail,
-      kind: edge.kind,
-      label: phrase(edge.kind, end.outgoing),
-      outgoing: end.outgoing,
-      linkId: edge.id,
-    })
-    groups.set(end.type, list)
-  }
+    ...registry.all.flatMap((l) =>
+      types.flatMap((type) => {
+        const read = l.own?.[type]
+        if (!read) return []
+        return [
+          read(q, workspaceId, of, PER_GROUP).then((rows) =>
+            add(
+              type,
+              rows.map((r) => ({ type, ...r, label: phrase(r.kind, r.outgoing), linkId: null })),
+            ),
+          ),
+        ]
+      }),
+    ),
+  ])
 
   return {
     groups: registry.order
-      .filter((type) => groups.has(type))
-      .map((type) => ({
-        label: registry.of(type).label,
-        type,
-        items: groups
-          .get(type)!
-          // By title, by code point rather than locale, so names sort as the database sorts them.
-          .sort((a, b) => (a.title < b.title ? -1 : a.title > b.title ? 1 : a.id < b.id ? -1 : 1))
-          .slice(0, PER_GROUP),
-      })),
+      .filter((type) => byType.has(type))
+      .map((type) => {
+        // One row per object, kind and direction; a module's own edges may repeat one.
+        const seen = new Set<string>()
+        const items = byType.get(type)!.filter((o) => {
+          const key = `${o.id}:${o.kind}:${o.outgoing}`
+          if (seen.has(key)) return false
+          seen.add(key)
+          return true
+        })
+        return {
+          label: registry.of(type).label,
+          type,
+          items: items
+            // By title, by code point rather than locale, so names sort as the database sorts them.
+            .sort((a, b) => (a.title < b.title ? -1 : a.title > b.title ? 1 : a.id < b.id ? -1 : 1))
+            .slice(0, PER_GROUP),
+        }
+      }),
   }
 }
 
@@ -155,6 +172,6 @@ export async function exists(
   workspaceId: WorkspaceId,
   end: Endpoint,
 ): Promise<boolean> {
-  const rows = await registry.of(end.type).rows(q, workspaceId, { ids: [end.id] })
+  const rows = await registry.of(end.type).rows(q, workspaceId, { ids: [end.id], limit: 1 })
   return rows.length > 0
 }

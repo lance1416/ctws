@@ -18,7 +18,12 @@ export const meetingLinkable: Linkable = {
   type: 'meeting',
   label: 'Meetings',
   rows: async (q, workspaceId, want) => {
-    const { where, limit } = wanted(want, meetings.id, ['meetings.title'])
+    const { where, orderBy, limit } = wanted(
+      want,
+      { id: meetings.id, title: meetings.title, text: ['meetings.title'] },
+      // Latest start first; a series shows once, since this is the series table.
+      [desc(meetings.startsLocal), desc(meetings.id)],
+    )
     const found = await q
       .select({
         id: meetings.id,
@@ -28,8 +33,7 @@ export const meetingLinkable: Linkable = {
       })
       .from(meetings)
       .where(within(scoped(meetings, workspaceId), where))
-      // Latest start first; a series shows once, since this is the series table.
-      .orderBy(desc(meetings.startsLocal), desc(meetings.id))
+      .orderBy(...orderBy)
       .limit(limit)
     // The series' own start: an edge is to the series, not to one occurrence.
     return found.map((r) => ({
