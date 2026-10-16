@@ -1,6 +1,16 @@
 import { z } from 'zod'
 import { idFrom, meetingId, personId, projectId } from './id'
-import { EVENT_YEARS, eventTimeZone, instant, noteText, titleText } from './common'
+import {
+  calendarDate,
+  EVENT_YEARS,
+  eventTimeZone,
+  instant,
+  noteText,
+  titleText,
+  viewQuery,
+} from './common'
+import { calendarEntriesResponse, WINDOW_REFUSED, windowIsBounded } from './calendar'
+import { pageInfo, pageQuery } from './page'
 
 /**
  * A meeting, after iCalendar's `VEVENT` (RFC 5545): a wall clock plus a zone and a duration, so a
@@ -166,7 +176,30 @@ export function parseOccurrenceKey(key: string): OccurrenceName {
   return { meetingId: idFrom(meetingId, key.slice(0, at)), recurrenceId: key.slice(at + 1) }
 }
 
-export const meetingsResponse = z.object({ meetings: z.array(meetingOccurrence) }).strict()
+/**
+ * Series expanded per page. A page holds every occurrence in the window of up to this many series,
+ * so occurrences are in time order within a page, not across pages.
+ */
+const MEETING_SERIES_PAGE = 500
+
+const meetingWindow = { from: calendarDate, to: calendarDate, ...pageQuery(MEETING_SERIES_PAGE) }
+
+/** Inclusive at both ends. */
+export const meetingsQuery = z
+  .object(meetingWindow)
+  .strict()
+  .refine(windowIsBounded, { message: WINDOW_REFUSED, path: ['to'] })
+
+export const meetingCalendarView = viewQuery('calendar', meetingWindow).refine(windowIsBounded, {
+  message: WINDOW_REFUSED,
+  path: ['to'],
+})
+
+export const meetingsResponse = z
+  .object({ meetings: z.array(meetingOccurrence), page: pageInfo })
+  .strict()
+
+export const meetingEntriesResponse = calendarEntriesResponse.extend({ page: pageInfo })
 
 /** Which occurrence of a series. */
 export const occurrenceQuery = z.object({ recurrenceId: localTime }).strict()

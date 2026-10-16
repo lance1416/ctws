@@ -1,6 +1,6 @@
 import { api } from '@ctws/contracts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ApiError, call } from './api'
+import { ApiError, call, everyPage } from './api'
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -81,5 +81,25 @@ describe('call', () => {
   it('returns undefined for a 204 instead of failing to parse JSON', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 204 })))
     await expect(call(api.auth.logout)).resolves.toBeUndefined()
+  })
+})
+
+describe('everyPage', () => {
+  it('reads from the first page until one says there is no next', async () => {
+    const page = (nextCursor: string | null) => ({ page: { limit: 2, nextCursor } })
+    const read = vi
+      .fn<(cursor: string | undefined) => Promise<ReturnType<typeof page> & { rows: number[] }>>()
+      .mockResolvedValueOnce({ ...page('2'), rows: [1, 2] })
+      .mockResolvedValueOnce({ ...page('4'), rows: [3, 4] })
+      .mockResolvedValueOnce({ ...page(null), rows: [5] })
+    const pages = await everyPage(read)
+    expect(pages.flatMap((p) => p.rows)).toEqual([1, 2, 3, 4, 5])
+    expect(read.mock.calls).toEqual([[undefined], ['2'], ['4']])
+  })
+
+  it('asks once when the first page is the whole list', async () => {
+    const read = vi.fn().mockResolvedValue({ page: { limit: 200, nextCursor: null }, rows: [] })
+    expect(await everyPage(read)).toHaveLength(1)
+    expect(read).toHaveBeenCalledTimes(1)
   })
 })

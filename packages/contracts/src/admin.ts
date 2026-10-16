@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { userId } from './id'
 import { email, newPassword, roleSchema } from './auth'
 import { canonicalTimeZone, instant, patchOf } from './common'
+import { LIST_PAGE, pageInfo, pageQuery } from './page'
 
 export const adminUser = z
   .object({
@@ -15,7 +16,11 @@ export const adminUser = z
 
 export const userParams = z.object({ id: userId }).strict()
 
-export const adminUserListResponse = z.object({ users: z.array(adminUser) }).strict()
+export const adminUserListQuery = z.object(pageQuery(LIST_PAGE)).strict()
+
+export const adminUserListResponse = z
+  .object({ users: z.array(adminUser), page: pageInfo })
+  .strict()
 
 export const adminCreateUserBody = z
   .object({

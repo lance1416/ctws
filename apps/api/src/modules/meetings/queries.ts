@@ -24,6 +24,7 @@ import {
 import { meetingExceptions, meetings } from './tables'
 import { windowOf } from './zone'
 import { NotFound } from '../../platform/errors'
+import { type Page, type PageAsked, pageOf, spanOf } from '../../platform/db/page'
 
 type Attendee = { id: PersonId; name: string }
 
@@ -49,9 +50,6 @@ export type OccurrenceRow = Occurrence & {
 }
 
 export const meetingFiling = filing('meeting', meetings)
-
-/** A ceiling on series expanded per request, far above a personal calendar's month. */
-const MAX_SERIES_PER_REQUEST = 500
 
 type Selected = {
   meeting: typeof meetings.$inferSelect
@@ -115,18 +113,23 @@ function expand(series: SeriesRow, window: { from: Date; to: Date }): Occurrence
   }))
 }
 
-async function seriesOf(
-  q: Queryable,
-  workspaceId: WorkspaceId,
-  id?: MeetingId,
-): Promise<SeriesRow[]> {
-  const rows = await q
+const selectSeries = (q: Queryable, workspaceId: WorkspaceId, id?: MeetingId) =>
+  q
     .select({ meeting: meetings, ...meetingFiling.project })
     .from(meetings)
     .where(within(scoped(meetings, workspaceId), id ? eq(meetings.id, id) : undefined))
     .orderBy(asc(meetings.startsLocal), asc(meetings.id))
-    .limit(MAX_SERIES_PER_REQUEST)
-  return hydrate(q, workspaceId, rows)
+
+/** A page of series, each to be expanded over a window whole. */
+async function seriesPage(
+  q: Queryable,
+  workspaceId: WorkspaceId,
+  asked: PageAsked,
+): Promise<Page<SeriesRow>> {
+  const span = spanOf(asked)
+  const rows = await selectSeries(q, workspaceId).limit(span.limit).offset(span.offset)
+  const { rows: page, ...info } = pageOf(rows, asked)
+  return { rows: await hydrate(q, workspaceId, page), ...info }
 }
 
 /** One live series in this workspace. Missing, deleted and foreign ids all read as not found. */
@@ -135,7 +138,7 @@ export async function getMeeting(
   workspaceId: WorkspaceId,
   id: MeetingId,
 ): Promise<SeriesRow> {
-  const [series] = await seriesOf(q, workspaceId, id)
+  const [series] = await hydrate(q, workspaceId, await selectSeries(q, workspaceId, id))
   if (!series) throw new NotFound('Meeting')
   return series
 }
@@ -155,16 +158,21 @@ export async function lockMeeting(
   return getMeeting(tx, workspaceId, id)
 }
 
-/** Every occurrence between two instants, which is how events in many zones are compared. */
+/**
+ * Every occurrence between two instants of a page of series, which is how events in many zones
+ * are compared. In time order within the page.
+ */
 export async function listOccurrences(
   q: Queryable,
   workspaceId: WorkspaceId,
   window: { from: Date; to: Date },
-): Promise<OccurrenceRow[]> {
-  const series = await seriesOf(q, workspaceId)
-  return series
+  asked: PageAsked,
+): Promise<Page<OccurrenceRow>> {
+  const { rows, page } = await seriesPage(q, workspaceId, asked)
+  const occurrences = rows
     .flatMap((s) => expand(s, window))
     .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
+  return { rows: occurrences, page }
 }
 
 /** A window around a local time, wide enough for any zone. */
@@ -207,9 +215,15 @@ export async function meetingEntries(
   workspaceId: WorkspaceId,
   range: { from: string; to: string },
   zone: string,
-): Promise<CalendarEntry[]> {
-  const rows = await listOccurrences(q, workspaceId, windowOf(range.from, range.to, zone))
-  return rows.map((m) => {
+  asked: PageAsked,
+): Promise<Page<CalendarEntry>> {
+  const { rows, page } = await listOccurrences(
+    q,
+    workspaceId,
+    windowOf(range.from, range.to, zone),
+    asked,
+  )
+  const entries = rows.map((m): CalendarEntry => {
     const elsewhere = m.timeZone !== zone
     return {
       id: occurrenceKey(m),
@@ -226,4 +240,5 @@ export async function meetingEntries(
       projectName: m.projectName,
     }
   })
+  return { rows: entries, page }
 }

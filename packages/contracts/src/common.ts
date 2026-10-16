@@ -11,9 +11,6 @@ export const viewQuery = <const V extends string, S extends z.ZodRawShape = Reco
   extra: S = {} as S,
 ) => z.object({ view: z.literal(view), ...extra }).strict()
 
-/** A collection read with no filter: nothing in the query. */
-export const noQuery = z.object({}).strict()
-
 /** What a thing is called where it is listed: a task, a meeting, a book. */
 export const titleText = z.string().trim().min(1).max(500)
 

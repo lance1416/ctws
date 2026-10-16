@@ -23,14 +23,15 @@ type Row = {
   completedOn: string
   completedAt: string
 }
-async function body(ctx: Ctx): Promise<{ tasks: Row[]; truncated: boolean }> {
+type Body = { tasks: Row[]; page: { limit: number; nextCursor: string | null } }
+async function body(ctx: Ctx, query = ''): Promise<Body> {
   const res = await ctx.app.inject({
     method: 'GET',
-    url: '/api/v1/tasks?view=completed',
+    url: `/api/v1/tasks?view=completed${query}`,
     headers: ctx.authed,
   })
   expect(res.statusCode).toBe(200)
-  return res.json() as { tasks: Row[]; truncated: boolean }
+  return res.json() as Body
 }
 
 const completed = async (ctx: Ctx): Promise<Row[]> => (await body(ctx)).tasks
@@ -152,12 +153,12 @@ describe('GET /completed', () => {
  * WHETHER THIS IS ALL OF IT.
  *
  * The list is capped: it answers "what did I do lately", and the archive is the weekly review,
- * which takes any window. `truncated` is the server saying so, instead of the page counting rows
+ * which takes any window. A next cursor is the server saying so, instead of the page counting rows
  * against a limit written on the client -- which lies when exactly the limit has been finished
  * and goes quiet the day the limit changes.
  */
 describe('the finished list says whether it is complete', () => {
-  it('reports truncated only once there is more than it returns', async () => {
+  it('gives a next cursor only once there is more than it returns', async () => {
     const ctx = await setup()
     const pid = await createProject(ctx, 'P')
     // One under the cap: a full page that happens to be the whole history is NOT truncated.
@@ -169,7 +170,7 @@ describe('the finished list says whether it is complete', () => {
     `)
     const full = await body(ctx)
     expect(full.tasks).toHaveLength(200)
-    expect(full.truncated).toBe(false)
+    expect(full.page).toEqual({ limit: 200, nextCursor: null })
 
     // One more, and the answer says there is more than it shows.
     await ctx.db.execute(sql`
@@ -180,8 +181,12 @@ describe('the finished list says whether it is complete', () => {
     `)
     const capped = await body(ctx)
     expect(capped.tasks).toHaveLength(200)
-    expect(capped.truncated).toBe(true)
-    // The cap drops the OLDEST, so the extra row is the one missing.
+    expect(capped.page.nextCursor).not.toBeNull()
+    // The cap drops the OLDEST, so the extra row is the one missing...
     expect(capped.tasks.map((t) => t.title)).not.toContain('one more')
+    // ...and is what the next page holds.
+    const older = await body(ctx, `&cursor=${capped.page.nextCursor}`)
+    expect(older.tasks.map((t) => t.title)).toEqual(['one more'])
+    expect(older.page.nextCursor).toBeNull()
   })
 })

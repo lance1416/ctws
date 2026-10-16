@@ -1,4 +1,4 @@
-import { SEARCH_LIMIT, type WorkspaceId } from '@ctws/contracts'
+import type { WorkspaceId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Queryable } from '../../../platform/db/client'
@@ -6,6 +6,7 @@ import { rowsOf } from '../../../platform/db/raw'
 import { textMatches } from '../../../platform/db/sql'
 import { TASK_COLUMNS, taskRow } from './rows'
 import { visibleTasks } from './scope'
+import { type Page, type PageAsked, pageOf, spanOf } from '../../../platform/db/page'
 
 const searchRow = taskRow.extend({ projectArchived: z.boolean() })
 export type SearchTask = z.output<typeof searchRow>
@@ -18,7 +19,9 @@ export async function searchTasks(
   q: Queryable,
   workspaceId: WorkspaceId,
   query: string,
-): Promise<SearchTask[]> {
+  asked: PageAsked,
+): Promise<Page<SearchTask>> {
+  const span = spanOf(asked)
   const result = await q.execute(sql`
     select
       ${TASK_COLUMNS},
@@ -34,7 +37,7 @@ export async function searchTasks(
       case when ${textMatches(['t.title'], query)} then 0 else 1 end,
       t.updated_at desc,
       t.id
-    limit ${SEARCH_LIMIT}
+    limit ${span.limit} offset ${span.offset}
   `)
-  return rowsOf(result, searchRow)
+  return pageOf(rowsOf(result, searchRow), asked)
 }

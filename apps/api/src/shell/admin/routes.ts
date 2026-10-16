@@ -20,7 +20,10 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
   adminOnly(app)
 
   serve(app, [
-    on(api.admin.listUsers, async () => ({ users: await listUsers(app.db) })),
+    on(api.admin.listUsers, async (req) => {
+      const { rows, page } = await listUsers(app.db, req.query)
+      return { users: rows, page }
+    }),
 
     on(api.admin.createUser, async (req) => {
       const { role, ...credentials } = req.body

@@ -5,6 +5,7 @@ import type { Queryable } from '../../../platform/db/client'
 import { rowsOf } from '../../../platform/db/raw'
 import { TASK_COLUMNS, taskRow } from './rows'
 import { visibleTasks } from './scope'
+import { type Page, type PageAsked, pageOf, spanOf } from '../../../platform/db/page'
 
 const completedRow = taskRow.extend({
   /** Read as every task column is, and never null here: the query keeps finished tasks only. */
@@ -14,18 +15,14 @@ const completedRow = taskRow.extend({
 })
 export type CompletedTask = z.output<typeof completedRow>
 
-/** How many finished tasks the list shows; the weekly review covers older ones. */
-const COMPLETED_LIMIT = 200
-
-/**
- * Finished tasks, newest first, archived projects included. One extra row is read so the answer
- * can say whether the list was cut short.
- */
+/** Finished tasks, newest first, archived projects included, a page at a time. */
 export async function listCompleted(
   q: Queryable,
   workspaceId: WorkspaceId,
   timezone: string,
-): Promise<{ tasks: CompletedTask[]; truncated: boolean }> {
+  asked: PageAsked,
+): Promise<Page<CompletedTask>> {
+  const span = spanOf(asked)
   const result = await q.execute(sql`
     select
       ${TASK_COLUMNS},
@@ -39,8 +36,7 @@ export async function listCompleted(
       and t.status = 'done'
       and t.completed_at is not null
     order by t.completed_at desc, t.id
-    limit ${COMPLETED_LIMIT + 1}
+    limit ${span.limit} offset ${span.offset}
   `)
-  const rows = rowsOf(result, completedRow)
-  return { tasks: rows.slice(0, COMPLETED_LIMIT), truncated: rows.length > COMPLETED_LIMIT }
+  return pageOf(rowsOf(result, completedRow), asked)
 }

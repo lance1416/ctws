@@ -6,7 +6,7 @@ import {
   type ReadingId,
 } from '@ctws/contracts'
 import { queryOptions } from '@tanstack/react-query'
-import { call } from '../../platform/http/api'
+import { call, everyPage } from '../../platform/http/api'
 
 // Every key starts with `'reading'`, so `[['reading']]` awaits all of them.
 
@@ -15,7 +15,11 @@ export const readingQuery = ({ unfiled = false }: { unfiled?: boolean } = {}) =>
   queryOptions({
     queryKey: ['reading', 'list', unfiled ? 'unfiled' : 'all'],
     queryFn: async () =>
-      (await call(api.reading.list, { query: unfiled ? { unfiled: 'true' } : {} })).reading,
+      (
+        await everyPage((cursor) =>
+          call(api.reading.list, { query: { ...(unfiled ? { unfiled: 'true' } : {}), cursor } }),
+        )
+      ).flatMap((p) => p.reading),
   })
 
 export const readingSearchQuery = (q: string) =>

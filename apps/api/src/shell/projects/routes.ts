@@ -14,13 +14,14 @@ export const projectRoutes: FastifyPluginAsyncZod<{ columns: ProjectColumns }> =
 ) => {
   serve(app, [
     on(api.projects.list, async (req) => {
-      const rows = await listProjects(
+      const { rows, page } = await listProjects(
         app.db,
         currentUser(req).workspaceId,
         { archived: req.query.archived === 'true' },
         columns,
+        req.query,
       )
-      return { projects: rows.map(toProjectListItem) }
+      return { projects: rows.map(toProjectListItem), page }
     }),
 
     on(api.projects.get, async (req) =>

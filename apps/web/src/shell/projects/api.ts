@@ -6,16 +6,20 @@ import {
   type ProjectId,
 } from '@ctws/contracts'
 import { queryOptions, useQuery, type UseQueryResult } from '@tanstack/react-query'
-import { call } from '../../platform/http/api'
+import { call, everyPage } from '../../platform/http/api'
 
 /** The live projects, with the server's own `openTasks` counts. */
 async function listProjects(): Promise<ProjectListItem[]> {
-  return (await call(api.projects.list)).projects
+  const pages = await everyPage((cursor) => call(api.projects.list, { query: { cursor } }))
+  return pages.flatMap((p) => p.projects)
 }
 
 /** The archived projects: the server leaves them out of the list above unless asked. */
 async function listArchivedProjects(): Promise<ProjectListItem[]> {
-  return (await call(api.projects.list, { query: { archived: 'true' } })).projects
+  const pages = await everyPage((cursor) =>
+    call(api.projects.list, { query: { archived: 'true', cursor } }),
+  )
+  return pages.flatMap((p) => p.projects)
 }
 
 export const projectsQuery = () => queryOptions({ queryKey: ['projects'], queryFn: listProjects })

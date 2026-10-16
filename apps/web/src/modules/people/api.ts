@@ -8,7 +8,7 @@ import {
   type PersonId,
 } from '@ctws/contracts'
 import { queryOptions } from '@tanstack/react-query'
-import { call } from '../../platform/http/api'
+import { call, everyPage } from '../../platform/http/api'
 
 /** A birthday as the form holds it, before the server works out what it means. */
 export type BirthdayDraft = {
@@ -22,7 +22,8 @@ export type BirthdayDraft = {
 }
 
 async function listPeople(): Promise<PersonResponse[]> {
-  return (await call(api.people.list)).people
+  const pages = await everyPage((cursor) => call(api.people.list, { query: { cursor } }))
+  return pages.flatMap((p) => p.people)
 }
 
 async function searchPeople(q: string): Promise<PersonResponse[]> {

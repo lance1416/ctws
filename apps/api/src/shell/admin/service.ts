@@ -6,6 +6,7 @@ import { instant } from '../../platform/db/time'
 import { isoOrNull } from '../../platform/values'
 import { sessions, users } from '../auth/tables'
 import { LastAdminError } from './errors'
+import { type Page, type PageAsked, pageOf, spanOf } from '../../platform/db/page'
 import { NotFound } from '../../platform/errors'
 
 // Explicit columns, never the whole row: the password hash must not be selectable from here.
@@ -29,12 +30,16 @@ function toAdminUser(
   }
 }
 
-export async function listUsers(db: Queryable): Promise<AdminUser[]> {
+export async function listUsers(db: Queryable, asked: PageAsked): Promise<Page<AdminUser>> {
+  const span = spanOf(asked)
   const rows = await db
     .select(adminColumns)
     .from(users)
     .orderBy(asc(users.createdAt), asc(users.id))
-  return rows.map(toAdminUser)
+    .limit(span.limit)
+    .offset(span.offset)
+  const { rows: page, ...info } = pageOf(rows, asked)
+  return { rows: page.map(toAdminUser), ...info }
 }
 
 export async function getAdminUser(db: Queryable, id: UserId): Promise<AdminUser> {

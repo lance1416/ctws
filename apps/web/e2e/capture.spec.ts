@@ -93,7 +93,9 @@ test('a blank line is not sent', async ({ page }) => {
 
 test('without an inbox the box is disabled and says what to do', async ({ page }) => {
   await registerFreshUser(page)
-  await page.route('**/api/v1/projects', (route) => route.fulfill({ json: { projects: [] } }))
+  await page.route('**/api/v1/projects', (route) =>
+    route.fulfill({ json: { projects: [], page: { limit: 200, nextCursor: null } } }),
+  )
   await page.reload()
   await expect(page.getByPlaceholder('Capture…')).toBeDisabled()
   await expect(page.getByRole('alert')).toContainText('No inbox to capture into')

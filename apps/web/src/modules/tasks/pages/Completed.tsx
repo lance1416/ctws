@@ -133,7 +133,7 @@ export function Completed() {
         </DaySection>
       ))}
       {/* The server says whether this is all of it, so no cap is counted here. */}
-      {completed.data?.truncated && (
+      {completed.data && completed.data.page.nextCursor !== null && (
         <p className={`mt-8 ${HANG} text-sm text-ink-muted`}>
           Showing the most recent {rows.length}. Older work is in Review, week by week.
         </p>

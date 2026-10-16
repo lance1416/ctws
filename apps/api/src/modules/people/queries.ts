@@ -16,6 +16,7 @@ import { filing, projectsOf } from '../../shell/links/filing'
 import { links } from '../../shell/links/tables'
 import { people, personChannels } from './tables'
 import { NotFound } from '../../platform/errors'
+import { type Page, type PageAsked, pageOf, spanOf } from '../../platform/db/page'
 
 type Person = typeof people.$inferSelect
 type Named<Id> = { id: Id; name: string }
@@ -106,13 +107,21 @@ async function hydrate(
 }
 
 /** By name: a person list is read to find someone. */
-export async function listPeople(q: Queryable, workspaceId: WorkspaceId): Promise<PersonRow[]> {
+export async function listPeople(
+  q: Queryable,
+  workspaceId: WorkspaceId,
+  asked: PageAsked,
+): Promise<Page<PersonRow>> {
+  const span = spanOf(asked)
   const rows = await q
     .select()
     .from(people)
     .where(scoped(people, workspaceId))
     .orderBy(asc(people.name), asc(people.id))
-  return hydrate(q, workspaceId, rows)
+    .limit(span.limit)
+    .offset(span.offset)
+  const { rows: page, ...info } = pageOf(rows, asked)
+  return { rows: await hydrate(q, workspaceId, page), ...info }
 }
 
 /** One live person in this workspace. Missing, deleted and foreign ids all read as not found. */
@@ -148,15 +157,14 @@ export async function lockPerson(
   return getPerson(tx, workspaceId, id)
 }
 
-/** How many people a search returns. */
-const SEARCH_LIMIT = 20
-
 /** By name, organisation or any address: "the one at @example.com" is a common question. */
 export async function searchPeople(
   q: Queryable,
   workspaceId: WorkspaceId,
   query: string,
-): Promise<PersonRow[]> {
+  asked: PageAsked,
+): Promise<Page<PersonRow>> {
+  const span = spanOf(asked)
   const rows = await q
     .select()
     .from(people)
@@ -173,8 +181,10 @@ export async function searchPeople(
       ),
     )
     .orderBy(asc(people.name), asc(people.id))
-    .limit(SEARCH_LIMIT)
-  return hydrate(q, workspaceId, rows)
+    .limit(span.limit)
+    .offset(span.offset)
+  const { rows: page, ...info } = pageOf(rows, asked)
+  return { rows: await hydrate(q, workspaceId, page), ...info }
 }
 
 /** Every id names a live person in this workspace, or none is used. */

@@ -17,12 +17,13 @@ export const readingRoutes =
   async (app) => {
     serve(app, [
       on(api.reading.list, async (req) => {
-        const rows = await listReadingItems(
+        const { rows, page } = await listReadingItems(
           app.db,
           currentUser(req).workspaceId,
           req.query.unfiled === 'true',
+          req.query,
         )
-        return { reading: rows.map(toReadingItemResponse) }
+        return { reading: rows.map(toReadingItemResponse), page }
       }),
 
       on(api.reading.calendar, async (req) => ({
@@ -30,8 +31,13 @@ export const readingRoutes =
       })),
 
       on(api.reading.search, async (req) => {
-        const rows = await searchReadingItems(app.db, currentUser(req).workspaceId, req.query.q)
-        return { reading: rows.map(toReadingItemResponse) }
+        const { rows, page } = await searchReadingItems(
+          app.db,
+          currentUser(req).workspaceId,
+          req.query.q,
+          req.query,
+        )
+        return { reading: rows.map(toReadingItemResponse), page }
       }),
 
       on(api.reading.get, async (req) =>

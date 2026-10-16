@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { personId, projectId } from './id'
 import { birthdayInput, birthdayResponse } from './birthday'
 import { calendarDate, instant, nameText, noteText, patchOf } from './common'
+import { LIST_PAGE, pageInfo, pageQuery } from './page'
 
 /**
  * A person, after vCard 4.0 (RFC 6350): a formatted name, an organisation, notes, and a
@@ -116,7 +117,9 @@ export const personResponse = z
   .strict()
 export type PersonResponse = z.infer<typeof personResponse>
 
-export const peopleResponse = z.object({ people: z.array(personResponse) }).strict()
+export const peopleListQuery = z.object(pageQuery(LIST_PAGE)).strict()
+
+export const peopleResponse = z.object({ people: z.array(personResponse), page: pageInfo }).strict()
 
 /** One row on the birthdays page. */
 const birthdayListRow = z

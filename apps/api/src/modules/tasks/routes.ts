@@ -49,8 +49,8 @@ export const taskRoutes: FastifyPluginAsyncZod = async (app) => {
 
     on(api.tasks.completed, async (req) => {
       const user = currentUser(req)
-      const { tasks, truncated } = await listCompleted(app.db, user.workspaceId, user.timezone)
-      return { tasks: tasks.map(toCompletedResponse), truncated }
+      const { rows, page } = await listCompleted(app.db, user.workspaceId, user.timezone, req.query)
+      return { tasks: rows.map(toCompletedResponse), page }
     }),
 
     on(api.tasks.movement, async (req) => {
@@ -65,8 +65,13 @@ export const taskRoutes: FastifyPluginAsyncZod = async (app) => {
     }),
 
     on(api.tasks.search, async (req) => {
-      const rows = await searchTasks(app.db, currentUser(req).workspaceId, req.query.q)
-      return { tasks: rows.map(toSearchResponse) }
+      const { rows, page } = await searchTasks(
+        app.db,
+        currentUser(req).workspaceId,
+        req.query.q,
+        req.query,
+      )
+      return { tasks: rows.map(toSearchResponse), page }
     }),
 
     // A project's tasks: the project is a filter on this collection, not a path segment.

@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { projectId, workspaceId } from './id'
 import { instant, nameText, patchOf } from './common'
+import { LIST_PAGE, pageInfo, pageQuery } from './page'
 
 /**
  * A project's colour is a slot naming a `--color-project-N` token, not a colour value: each token
@@ -50,10 +51,12 @@ export const projectListItem = projectResponse
   .strict()
 
 export const projectListQuery = z
-  .object({ archived: z.enum(['true', 'false']).optional() })
+  .object({ archived: z.enum(['true', 'false']).optional(), ...pageQuery(LIST_PAGE) })
   .strict()
 
-export const projectListResponse = z.object({ projects: z.array(projectListItem) }).strict()
+export const projectListResponse = z
+  .object({ projects: z.array(projectListItem), page: pageInfo })
+  .strict()
 
 export type CreateProjectBody = z.infer<typeof createProjectBody>
 export type UpdateProjectBody = z.infer<typeof updateProjectBody>

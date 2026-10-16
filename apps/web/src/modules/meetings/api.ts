@@ -10,14 +10,20 @@ import {
   type MeetingId,
 } from '@ctws/contracts'
 import { queryOptions, skipToken } from '@tanstack/react-query'
-import { ApiError, call } from '../../platform/http/api'
+import { ApiError, call, everyPage } from '../../platform/http/api'
 import { addDays } from '@ctws/core/day'
 import { shortDay } from '../../platform/time/dates'
 
 type DayRange = { from: string; to: string }
 
+/** Each page is a page of series, in time order within itself; the pages are merged here. */
 async function listMeetings(range: DayRange): Promise<MeetingOccurrence[]> {
-  return (await call(api.meetings.list, { query: range })).meetings
+  const pages = await everyPage((cursor) =>
+    call(api.meetings.list, { query: { ...range, cursor } }),
+  )
+  return pages
+    .flatMap((p) => p.meetings)
+    .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))
 }
 
 // Every key starts with `'meetings'`, so `[['meetings']]` awaits all of them, calendar included.
@@ -83,7 +89,11 @@ export const meetingCalendarQuery = (range: DayRange) =>
   queryOptions({
     queryKey: ['meetings', 'calendar', range.from, range.to],
     queryFn: async () =>
-      (await call(api.meetings.calendar, { query: { view: 'calendar', ...range } })).entries,
+      (
+        await everyPage((cursor) =>
+          call(api.meetings.calendar, { query: { view: 'calendar', ...range, cursor } }),
+        )
+      ).flatMap((p) => p.entries),
   })
 
 export function createMeeting(body: CreateMeetingBody): Promise<MeetingOccurrence> {

@@ -1,4 +1,11 @@
-import { API_BASE, type Endpoint, href, type RequestOf, type ResponseOf } from '@ctws/contracts'
+import {
+  API_BASE,
+  type Endpoint,
+  href,
+  type PageInfo,
+  type RequestOf,
+  type ResponseOf,
+} from '@ctws/contracts'
 import { z } from 'zod'
 
 /** A failed request. `status` says which refusal it was; `message` is the server's title. */
@@ -53,6 +60,23 @@ export async function call<E extends Endpoint>(
   return (
     endpoint.response ? endpoint.response.parse(JSON.parse(text)) : undefined
   ) as ResponseOf<E>
+}
+
+/**
+ * Every page of a list, read in turn from the first: what a screen showing the whole list asks
+ * for, so a list longer than one page is never cut short without anyone saying so.
+ */
+export async function everyPage<P extends { page: PageInfo }>(
+  read: (cursor: string | undefined) => Promise<P>,
+): Promise<P[]> {
+  const pages: P[] = []
+  let cursor: string | undefined
+  do {
+    const one = await read(cursor)
+    pages.push(one)
+    cursor = one.page.nextCursor ?? undefined
+  } while (cursor !== undefined)
+  return pages
 }
 
 /**

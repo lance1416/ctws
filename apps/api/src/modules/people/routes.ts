@@ -16,9 +16,9 @@ export const personRoutes: FastifyPluginAsyncZod = async (app) => {
 
   serve(app, [
     on(api.people.list, async (req) => {
-      const rows = await listPeople(app.db, currentUser(req).workspaceId)
+      const { rows, page } = await listPeople(app.db, currentUser(req).workspaceId, req.query)
       const today = await todayFor(req)
-      return { people: rows.map((p) => toPersonResponse(p, today)) }
+      return { people: rows.map((p) => toPersonResponse(p, today)), page }
     }),
 
     on(api.people.birthdays, async (req) => {
@@ -40,9 +40,14 @@ export const personRoutes: FastifyPluginAsyncZod = async (app) => {
     }),
 
     on(api.people.search, async (req) => {
-      const rows = await searchPeople(app.db, currentUser(req).workspaceId, req.query.q)
+      const { rows, page } = await searchPeople(
+        app.db,
+        currentUser(req).workspaceId,
+        req.query.q,
+        req.query,
+      )
       const today = await todayFor(req)
-      return { people: rows.map((p) => toPersonResponse(p, today)) }
+      return { people: rows.map((p) => toPersonResponse(p, today)), page }
     }),
 
     on(api.people.get, async (req) => {

@@ -4,6 +4,7 @@ import type { Queryable, Tx } from '../../platform/db/client'
 import { scoped, within } from '../../platform/db/scope'
 import type { ProjectColumns } from '../module'
 import { projects, type Project } from './tables'
+import { type Page, type PageAsked, pageOf, spanOf } from '../../platform/db/page'
 import { NotFound } from '../../platform/errors'
 
 /**
@@ -82,7 +83,9 @@ export async function listProjects(
   workspaceId: WorkspaceId,
   opts: { archived: boolean },
   columns: ProjectColumns,
-): Promise<ProjectListRow[]> {
+  asked: PageAsked,
+): Promise<Page<ProjectListRow>> {
+  const span = spanOf(asked)
   const rows = await q
     .select({ project: projects, ...columns })
     .from(projects)
@@ -94,5 +97,8 @@ export async function listProjects(
     )
     // `desc` on a boolean puts true first.
     .orderBy(desc(projects.isInbox), asc(projects.rank), asc(projects.id))
-  return rows.map(listRowOf)
+    .limit(span.limit)
+    .offset(span.offset)
+  const { rows: page, ...info } = pageOf(rows, asked)
+  return { rows: page.map(listRowOf), ...info }
 }

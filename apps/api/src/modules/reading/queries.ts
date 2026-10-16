@@ -18,6 +18,7 @@ import { dayEntry } from '../../shell/calendar/entry'
 import { filing, projectOfSql } from '../../shell/links/filing'
 import { readingItems } from './tables'
 import { NotFound } from '../../platform/errors'
+import { type Page, type PageAsked, pageOf, spanOf } from '../../platform/db/page'
 
 type ReadingItem = typeof readingItems.$inferSelect
 
@@ -42,13 +43,18 @@ export async function listReadingItems(
   q: Queryable,
   workspaceId: WorkspaceId,
   unfiled: boolean,
-): Promise<ReadingItemRow[]> {
+  asked: PageAsked,
+): Promise<Page<ReadingItemRow>> {
+  const span = spanOf(asked)
   const rows = await q
     .select(withProject)
     .from(readingItems)
     .where(within(scoped(readingItems, workspaceId), unfiled ? readingFiling.unfiled() : undefined))
     .orderBy(desc(readingItems.createdAt), desc(readingItems.id))
-  return rows.map(rowOf)
+    .limit(span.limit)
+    .offset(span.offset)
+  const { rows: page, ...info } = pageOf(rows, asked)
+  return { rows: page.map(rowOf), ...info }
 }
 
 /** One live item in this workspace. Missing, deleted and foreign ids all read as not found. */
@@ -80,15 +86,14 @@ export async function lockReadingItem(
   return getReadingItem(tx, workspaceId, id)
 }
 
-/** How many items a search returns. */
-const SEARCH_LIMIT = 20
-
 /** By title, author or url: an untitled link is remembered by its host. */
 export async function searchReadingItems(
   q: Queryable,
   workspaceId: WorkspaceId,
   query: string,
-): Promise<ReadingItemRow[]> {
+  asked: PageAsked,
+): Promise<Page<ReadingItemRow>> {
+  const span = spanOf(asked)
   const rows = await q
     .select(withProject)
     .from(readingItems)
@@ -99,8 +104,10 @@ export async function searchReadingItems(
       ),
     )
     .orderBy(desc(readingItems.createdAt), desc(readingItems.id))
-    .limit(SEARCH_LIMIT)
-  return rows.map(rowOf)
+    .limit(span.limit)
+    .offset(span.offset)
+  const { rows: page, ...info } = pageOf(rows, asked)
+  return { rows: page.map(rowOf), ...info }
 }
 
 /** Unfinished items on the day they are planned for, for the shell's calendar. */

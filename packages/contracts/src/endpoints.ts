@@ -2,6 +2,7 @@ import {
   adminCreateUserBody,
   adminUpdateUserBody,
   adminUser,
+  adminUserListQuery,
   adminUserListResponse,
   userParams,
 } from './admin'
@@ -13,7 +14,7 @@ import {
   calendarQuery,
   calendarView,
 } from './calendar'
-import { noQuery, viewQuery } from './common'
+import { viewQuery } from './common'
 import { citiesResponse, citySearchQuery } from './city'
 import { endpoint, href } from './endpoint'
 import {
@@ -30,6 +31,9 @@ import {
   deleteMeetingQuery,
   meetingOccurrence,
   meetingParams,
+  meetingCalendarView,
+  meetingEntriesResponse,
+  meetingsQuery,
   meetingsResponse,
   occurrenceQuery,
   updateMeetingBody,
@@ -37,6 +41,7 @@ import {
 import {
   birthdaysResponse,
   createPersonBody,
+  peopleListQuery,
   peopleResponse,
   personParams,
   personResponse,
@@ -59,8 +64,9 @@ import {
   readingParams,
   updateReadingItemBody,
 } from './reading'
-import { searchQuery } from './search'
+import { SEARCH_LIMIT, searchQueryOf } from './search'
 import {
+  completedQuery,
   completedResponse,
   createTaskBody,
   dependencyLists,
@@ -76,6 +82,9 @@ import {
   todayResponse,
   updateTaskBody,
 } from './task'
+
+/** People and reading search a page of this many unless asked for more: a name is found early. */
+const SHORT_SEARCH = 20
 
 /** Where a thing created with an `id` is read: `path` with that id in it. */
 const itemAt =
@@ -128,7 +137,8 @@ export const api = {
     listUsers: endpoint({
       method: 'GET',
       path: '/admin/users',
-      summary: 'Every account.',
+      summary: 'Every account, a page at a time.',
+      query: adminUserListQuery,
       ok: 200,
       response: adminUserListResponse,
       refusals: [403],
@@ -168,7 +178,7 @@ export const api = {
     list: endpoint({
       method: 'GET',
       path: '/projects',
-      summary: 'The live projects, or the archived ones.',
+      summary: 'The live projects, or the archived ones, a page at a time.',
       query: projectListQuery,
       ok: 200,
       response: projectListResponse,
@@ -319,8 +329,8 @@ export const api = {
     completed: endpoint({
       method: 'GET',
       path: '/tasks',
-      summary: 'The latest finished tasks (view=completed).',
-      query: viewQuery('completed'),
+      summary: 'The latest finished tasks, newest first (view=completed).',
+      query: completedQuery,
       ok: 200,
       response: completedResponse,
     }),
@@ -336,7 +346,7 @@ export const api = {
       method: 'GET',
       path: '/tasks',
       summary: 'Tasks whose title or notes match q.',
-      query: searchQuery,
+      query: searchQueryOf(SEARCH_LIMIT),
       ok: 200,
       response: searchTasksResponse,
     }),
@@ -407,8 +417,8 @@ export const api = {
     list: endpoint({
       method: 'GET',
       path: '/meetings',
-      summary: 'Every occurrence in a window of days, in time order.',
-      query: calendarQuery,
+      summary: 'Every occurrence in a window of days, in time order within a page of series.',
+      query: meetingsQuery,
       ok: 200,
       response: meetingsResponse,
     }),
@@ -416,9 +426,9 @@ export const api = {
       method: 'GET',
       path: '/meetings',
       summary: 'Occurrences on the days they fall on in the account zone (view=calendar).',
-      query: calendarView,
+      query: meetingCalendarView,
       ok: 200,
-      response: calendarEntriesResponse,
+      response: meetingEntriesResponse,
     }),
     occurrence: endpoint({
       method: 'GET',
@@ -466,8 +476,8 @@ export const api = {
     list: endpoint({
       method: 'GET',
       path: '/people',
-      summary: 'Everyone.',
-      query: noQuery,
+      summary: 'Everyone, a page at a time.',
+      query: peopleListQuery,
       ok: 200,
       response: peopleResponse,
     }),
@@ -500,7 +510,7 @@ export const api = {
       method: 'GET',
       path: '/people',
       summary: 'People whose name, organisation or notes match q.',
-      query: searchQuery,
+      query: searchQueryOf(SHORT_SEARCH),
       ok: 200,
       response: peopleResponse,
     }),
@@ -547,7 +557,7 @@ export const api = {
     list: endpoint({
       method: 'GET',
       path: '/reading',
-      summary: 'The reading list, or only what is on no project.',
+      summary: 'The reading list, or only what is on no project, a page at a time.',
       query: readingListQuery,
       ok: 200,
       response: readingItemsResponse,
@@ -564,7 +574,7 @@ export const api = {
       method: 'GET',
       path: '/reading',
       summary: 'Items whose title, author or address match q.',
-      query: searchQuery,
+      query: searchQueryOf(SHORT_SEARCH),
       ok: 200,
       response: readingItemsResponse,
     }),

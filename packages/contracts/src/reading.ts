@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { projectId, readingId } from './id'
 import { calendarDate, instant, nameText, patchOf, titleText } from './common'
+import { LIST_PAGE, pageInfo, pageQuery } from './page'
 
 /**
  * Reading comes in two kinds: a link has a url, a book has an author and no url. A link's title
@@ -74,11 +75,14 @@ export const readingItemResponse = z
   .strict()
 export type ReadingItemResponse = z.infer<typeof readingItemResponse>
 
-export const readingItemsResponse = z.object({ reading: z.array(readingItemResponse) }).strict()
+export const readingItemsResponse = z
+  .object({ reading: z.array(readingItemResponse), page: pageInfo })
+  .strict()
 
 export const readingListQuery = z
   .object({
     /** Only the items on no project. */
     unfiled: z.enum(['true', 'false']).optional(),
+    ...pageQuery(LIST_PAGE),
   })
   .strict()

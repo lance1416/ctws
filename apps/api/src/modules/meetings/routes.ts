@@ -11,17 +11,25 @@ export const meetingRoutes: FastifyPluginAsyncZod = async (app) => {
   serve(app, [
     on(api.meetings.list, async (req) => {
       const user = currentUser(req)
-      const rows = await listOccurrences(
+      const { rows, page } = await listOccurrences(
         app.db,
         user.workspaceId,
         windowOf(req.query.from, req.query.to, user.timezone),
+        req.query,
       )
-      return { meetings: rows.map(toOccurrenceResponse) }
+      return { meetings: rows.map(toOccurrenceResponse), page }
     }),
 
     on(api.meetings.calendar, async (req) => {
       const user = currentUser(req)
-      return { entries: await meetingEntries(app.db, user.workspaceId, req.query, user.timezone) }
+      const { rows, page } = await meetingEntries(
+        app.db,
+        user.workspaceId,
+        req.query,
+        user.timezone,
+        req.query,
+      )
+      return { entries: rows, page }
     }),
 
     on(api.meetings.occurrence, async (req) => {

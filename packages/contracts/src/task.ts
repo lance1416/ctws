@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { projectId, type ProjectId, taskId, type TaskId } from './id'
 import { WINDOW_REFUSED, windowIsBounded } from './calendar'
 import { calendarDate, documentText, instant, patchOf, titleText, viewQuery } from './common'
+import { pageInfo, pageQuery } from './page'
 
 export const TASK_STATUSES = ['backlog', 'todo', 'in_progress', 'done', 'cancelled'] as const
 const taskStatus = z.enum(TASK_STATUSES)
@@ -204,9 +205,14 @@ export const completedTaskResponse = taskResponse
   .strict()
 export type CompletedTaskResponse = z.infer<typeof completedTaskResponse>
 
-/** The latest finished tasks; `truncated` says older ones exist. */
+/** How many finished tasks one page holds; the weekly review covers older ones. */
+const COMPLETED_PAGE = 200
+
+export const completedQuery = viewQuery('completed', pageQuery(COMPLETED_PAGE))
+
+/** The latest finished tasks, newest first; a next cursor says older ones exist. */
 export const completedResponse = z
-  .object({ tasks: z.array(completedTaskResponse), truncated: z.boolean() })
+  .object({ tasks: z.array(completedTaskResponse), page: pageInfo })
   .strict()
 
 /** One project's movement: counts, never a ratio. Days are in the account's zone. */
@@ -238,7 +244,9 @@ export const searchTaskResponse = taskResponse
   .strict()
 export type SearchTaskResponse = z.infer<typeof searchTaskResponse>
 
-export const searchTasksResponse = z.object({ tasks: z.array(searchTaskResponse) }).strict()
+export const searchTasksResponse = z
+  .object({ tasks: z.array(searchTaskResponse), page: pageInfo })
+  .strict()
 
 // No reorder event: a pure rank change is not logged.
 export const TASK_EVENT_TYPES = [
