@@ -4,7 +4,7 @@ import { birthdaysQuery } from '../api'
 import { BirthdayRow } from '../components/BirthdayRow'
 import { CIRCLE_LABELS, MONTH_NAMES } from '../logic/labels'
 import { textbox } from '../../../platform/ui/formStyles'
-import { Panel, PanelEmpty } from '../../../platform/ui/Panel'
+import { Panel, PanelEmpty, RowsPanel } from '../../../platform/ui/Panel'
 import { MONTHS } from '../../../platform/time/dates'
 import { type Circle, CIRCLES } from '@ctws/contracts'
 import { PeopleHead } from '../components/PeopleViews'
@@ -59,7 +59,7 @@ export function Birthdays() {
 
       <div className="mt-4 grid min-w-0 items-start gap-4 lg:grid-cols-[repeat(3,minmax(0,1fr))]">
         <div className="flex min-w-0 flex-col gap-4 lg:col-span-2">
-          <Panel label="Coming up" hang>
+          <RowsPanel label="Coming up">
             {coming.length === 0 ? (
               <PanelEmpty hang>Nobody in the next week</PanelEmpty>
             ) : (
@@ -69,9 +69,9 @@ export function Birthdays() {
                 ))}
               </ul>
             )}
-          </Panel>
+          </RowsPanel>
 
-          <Panel label="Later" hang>
+          <RowsPanel label="Later">
             {later.length === 0 ? (
               <PanelEmpty hang>
                 {total === 0 ? 'No birthdays written down yet' : 'Nobody else'}
@@ -83,7 +83,7 @@ export function Birthdays() {
                 ))}
               </ul>
             )}
-          </Panel>
+          </RowsPanel>
         </div>
 
         <div className="flex min-w-0 flex-col gap-4">

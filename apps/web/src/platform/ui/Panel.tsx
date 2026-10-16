@@ -2,20 +2,7 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { HANG } from './hang'
 
-/**
- * A block of a page, with its heading. `section` has no box at all; `tile` is a card on the
- * Workbench's desk, whose step from desk to sheet is its only edge.
- */
-export function Panel({
-  label,
-  to,
-  action,
-  tabs,
-  children,
-  variant = 'section',
-  hang = false,
-  className = '',
-}: {
+type Block = {
   /** The panel's accessible name and its visible heading. */
   label: string
   /** The block's page: the heading becomes the link there, rather than a "See all" beside it. */
@@ -25,22 +12,42 @@ export function Panel({
   /** The block's views, as tabs. Fewer than two draws nothing. */
   tabs?: ReactNode
   children: ReactNode
-  variant?: 'section' | 'tile'
-  /** A section of rows: the heading hangs on the rows' thread and the body is flush. */
-  hang?: boolean
   className?: string
-}) {
+}
+
+/** A block of a page, with its heading and no box at all. */
+export function Panel(props: Block) {
+  return <Frame {...props} box="" head="px-2 pt-1" body="px-1 sm:px-2" />
+}
+
+/** A section of rows: the heading hangs on the rows' thread and the body is flush. */
+export function RowsPanel(props: Block) {
+  return <Frame {...props} box="" head={`${HANG} pt-1 pr-2`} body="" />
+}
+
+/** A card on the Workbench's desk, whose step from desk to sheet is its only edge. */
+export function Tile(props: Block) {
+  return <Frame {...props} box="rounded-[10px] bg-sheet" head="px-4 pt-3.5" body="px-1 sm:px-2" />
+}
+
+function Frame({
+  label,
+  to,
+  action,
+  tabs,
+  children,
+  className = '',
+  box,
+  head,
+  body,
+}: Block & { box: string; head: string; body: string }) {
   return (
     <section
       aria-label={label}
       data-panel={label}
-      className={`flex min-w-0 flex-col ${variant === 'tile' ? 'rounded-[10px] bg-sheet' : ''} ${className}`}
+      className={`flex min-w-0 flex-col ${box} ${className}`}
     >
-      <div
-        className={`flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1 pb-1.5 ${
-          variant === 'tile' ? 'px-4 pt-3.5' : hang ? `${HANG} pt-1 pr-2` : 'px-2 pt-1'
-        }`}
-      >
+      <div className={`flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1 pb-1.5 ${head}`}>
         <h2 className="text-base font-semibold text-ink">
           {to ? (
             <Link to={to} className="underline-offset-[3px] hover:underline">
@@ -55,7 +62,7 @@ export function Panel({
           <span className={tabs ? 'flex items-center' : 'ml-auto flex items-center'}>{action}</span>
         )}
       </div>
-      <div className={`min-w-0 pt-0.5 pb-3 ${hang ? '' : 'px-1 sm:px-2'}`}>{children}</div>
+      <div className={`min-w-0 pt-0.5 pb-3 ${body}`}>{children}</div>
     </section>
   )
 }

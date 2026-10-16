@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useProjects } from '../projects/api'
 import { ProjectRail } from '../rows/RowParts'
-import { Panel, PanelEmpty } from '../../platform/ui/Panel'
+import { PanelEmpty, Tile } from '../../platform/ui/Panel'
 import { useRegistry } from '../registry'
 
 /**
@@ -21,16 +21,15 @@ export function Workbench() {
       {/* Twelve columns from 1024 up, one below; the shell's Projects card goes last. */}
       <div className="grid min-w-0 grid-cols-1 items-start gap-4 pt-2 lg:grid-cols-12">
         {widgets.map(({ moduleId, id, label, to, Component, Aside, span }) => (
-          <Panel
+          <Tile
             key={`${moduleId}:${id}`}
-            variant="tile"
             label={label}
             to={to}
             action={Aside ? <Aside /> : undefined}
             className={`lg:self-stretch ${SPAN[span]}`}
           >
             <Component />
-          </Panel>
+          </Tile>
         ))}
         <ProjectsWidget />
       </div>
@@ -52,7 +51,7 @@ function ProjectsWidget() {
   const rows = projects.data ?? []
 
   return (
-    <Panel variant="tile" label="Projects" to="/projects" className="lg:col-span-12">
+    <Tile label="Projects" to="/projects" className="lg:col-span-12">
       {projects.isError && (
         <p role="alert" className="px-2 py-1.5 text-sm text-danger">
           Couldn't load projects
@@ -77,6 +76,6 @@ function ProjectsWidget() {
           </li>
         ))}
       </ul>
-    </Panel>
+    </Tile>
   )
 }

@@ -1,7 +1,7 @@
 import { idFrom, projectId } from '@ctws/contracts'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { DangerZone } from '../../platform/ui/DangerZone'
-import { Panel } from '../../platform/ui/Panel'
+import { RowsPanel } from '../../platform/ui/Panel'
 import { ViewTabs } from '../../platform/ui/ViewTabs'
 import type { Crumbs } from '../layout/page'
 import { Links } from '../links/Links'
@@ -66,10 +66,9 @@ export function ProjectPage() {
                 const chosen =
                   offered.find((v) => v.id === views.picked.get(moduleId))?.id ?? offered[0].id
                 return (
-                  <Panel
+                  <RowsPanel
                     key={moduleId}
                     label={moduleLabel}
-                    hang
                     tabs={
                       <ViewTabs
                         views={offered}
@@ -80,7 +79,7 @@ export function ProjectPage() {
                     action={Action ? <Action projectId={id} /> : undefined}
                   >
                     <Component projectId={id} view={chosen} />
-                  </Panel>
+                  </RowsPanel>
                 )
               },
             )}
