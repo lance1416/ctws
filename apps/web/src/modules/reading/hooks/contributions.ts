@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import type { CaptureTargetState, SearchHit } from '../../../shell/contract'
 import { useRefresh } from '../../../shell/registry'
 import { createReadingItem, readingCalendarQuery, readingKeys, readingSearchQuery } from '../api'
@@ -36,6 +36,7 @@ export function useReadingHits(query: string) {
 
 /** Finish-by days, already in the account's zone. */
 export function useReadingEntries(range: { from: string; to: string }) {
-  const result = useQuery(readingCalendarQuery(range))
+  // The month stepped away from stays drawn until the next one is in.
+  const result = useQuery({ ...readingCalendarQuery(range), placeholderData: keepPreviousData })
   return { entries: result.data ?? [], isError: result.isError }
 }

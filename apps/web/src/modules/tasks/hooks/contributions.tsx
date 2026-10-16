@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import type { CaptureTargetState, SearchHit } from '../../../shell/contract'
 import { useRefresh } from '../../../shell/registry'
 import { inboxOf, useProjects } from '../../../shell/projects'
@@ -9,7 +9,8 @@ import { revealHref, taskCrumb } from '../logic/crumb'
 
 /** This module's dated things: a plan day and a deadline day, both decided by the server. */
 export function useTaskEntries(range: { from: string; to: string }) {
-  const result = useQuery(taskCalendarQuery(range))
+  // The month stepped away from stays drawn until the next one is in.
+  const result = useQuery({ ...taskCalendarQuery(range), placeholderData: keepPreviousData })
   return { entries: result.data ?? [], isError: result.isError }
 }
 

@@ -1,11 +1,12 @@
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import type { SearchHit } from '../../../shell/contract'
 import { birthdayCalendarQuery, personSearchQuery } from '../api'
 import { PEOPLE_ID } from '../logic/id'
 
 /** No `opens`: a birthday's entry links to its person's page. */
 export function useBirthdayEntries(range: { from: string; to: string }) {
-  const result = useQuery(birthdayCalendarQuery(range))
+  // The month stepped away from stays drawn until the next one is in.
+  const result = useQuery({ ...birthdayCalendarQuery(range), placeholderData: keepPreviousData })
   return { entries: result.data ?? [], isError: result.isError }
 }
 

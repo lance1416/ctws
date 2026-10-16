@@ -3,7 +3,7 @@ import type { ShownEntry } from '../contract'
 import { useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useViewParam, ViewTabs } from '../../platform/ui/ViewTabs'
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { calendarDaysQuery } from './api'
 import { useEveryProject } from '../projects/api'
 import { ymd } from '../../platform/time/dates'
@@ -31,8 +31,9 @@ export function Calendar() {
 
   const providers = useRegistry().calendar
   const range = monthRange(cursor)
-  // Each day's lunar-calendar name; a square whose name failed to load simply has none.
-  const lunar = useQuery(calendarDaysQuery(range))
+  // Each day's lunar-calendar name; a square whose name failed to load simply has none. Like every
+  // module's entries, the month stepped away from stays drawn until the next one is in.
+  const lunar = useQuery({ ...calendarDaysQuery(range), placeholderData: keepPreviousData })
   // One hook per registered module; the registry's list is fixed, so the hook order is too.
   const results = providers.map((p) => ({ moduleId: p.moduleId, ...p.useEntries(range) }))
   const views = [
