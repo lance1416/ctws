@@ -28,7 +28,7 @@ import {
   MoveCycleError,
 } from './errors'
 import { taskLog } from './log'
-import { getTask, lockTask } from './queries'
+import { getTask, lockTask, visibleTasks } from './queries'
 import { type Task, taskDependencies, tasks } from './tables'
 import { depthOf, lockTaskTree } from './tree'
 
@@ -340,7 +340,8 @@ type Edge = { blockedId: TaskId; blockerId: TaskId }
 
 /**
  * Would `blocker -> blocked` close a loop, i.e. is `blocked` already upstream of `blocker`?
- * `union` keeps a diamond from being walked once per path.
+ * `union` keeps a diamond from being walked once per path. The walk goes through live tasks only,
+ * as the reads do: a deleted task's edges stay stored but hold nobody up.
  */
 async function wouldCycle(
   q: Queryable,
@@ -354,7 +355,10 @@ async function wouldCycle(
       select d.blocker_id
       from task_dependencies d
       join upstream u on u.id = d.blocked_id
+      join tasks t on t.id = d.blocker_id
+      join projects p on p.id = t.project_id
       where ${scoped(taskDependencies, workspaceId, 'd')}
+        and ${visibleTasks(workspaceId, { task: 't', project: 'p' })}
     )
     select 1 from upstream where id = ${blockedId}::uuid
   `)

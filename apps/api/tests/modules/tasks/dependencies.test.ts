@@ -130,6 +130,19 @@ describe('task dependencies', () => {
     expect((await lists(ctx, a)).blockedBy).toEqual([])
   })
 
+  it('does not count a loop through a deleted task', async () => {
+    const ctx = await setup()
+    const pid = await createProject(ctx, '改版')
+    const a = await createTask(ctx, pid, 'A')
+    const b = await createTask(ctx, pid, 'B')
+    const c = await createTask(ctx, pid, 'C')
+    await dependOn(ctx, b, a) // B waits for A
+    await dependOn(ctx, c, b) // C waits for B
+    await ctx.app.inject({ method: 'DELETE', url: `/api/v1/tasks/${b}`, headers: web(ctx) })
+
+    expect((await dependOn(ctx, a, c)).statusCode).toBe(204)
+  })
+
   it('refuses the shortest loop of all', async () => {
     const ctx = await setup()
     const pid = await createProject(ctx, '改版')
