@@ -75,6 +75,8 @@ test('after a session ends, signing in again goes back to the page, and shows no
   await expect(page.getByRole('navigation', { name: 'Main navigation' })).toContainText('Only mine')
 
   // The session ends behind the page's back; it finds out the next time it asks who is signed in.
+  // Not while a read is out: one sent before the end still answers for the session it carried.
+  await page.waitForLoadState('networkidle')
   await context.clearCookies()
   await page.evaluate(() => window.dispatchEvent(new Event('visibilitychange')))
   await expect(page.getByLabel('Email')).toBeVisible()
