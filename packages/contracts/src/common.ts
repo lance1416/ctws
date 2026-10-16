@@ -56,12 +56,23 @@ export const canonicalTimeZone = z.string().transform((value, ctx) => {
     ctx.addIssue({ code: 'custom', message: 'timezone must not be empty or padded' })
     return z.NEVER
   }
+  let resolved: string
   try {
-    return new Intl.DateTimeFormat('en-US', { timeZone: value }).resolvedOptions().timeZone
+    resolved = new Intl.DateTimeFormat('en-US', { timeZone: value }).resolvedOptions().timeZone
   } catch {
     ctx.addIssue({ code: 'custom', message: `unknown IANA timezone: ${value}` })
     return z.NEVER
   }
+  // Intl takes a bare offset too, but Postgres reads `+05:30` with POSIX's sign, the other way
+  // round, so the database and this code would draw the day in different places.
+  if (/^[+-]/.test(resolved)) {
+    ctx.addIssue({
+      code: 'custom',
+      message: `timezone must be an IANA name, not an offset: ${value}`,
+    })
+    return z.NEVER
+  }
+  return resolved
 })
 
 /** The zone an event was agreed in: any IANA name the platform knows, aliases included. */
