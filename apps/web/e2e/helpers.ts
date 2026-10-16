@@ -185,11 +185,15 @@ export async function pickOne(
   // trigger and the field is left empty, which a field that speaks up when it is left reads as
   // the person leaving it. Return only once the hand-back has happened -- or once there is no
   // trigger to hand it back to, for a pick that takes its own control away.
+  // A trigger counted a moment ago may be gone by the time it is asked about; asking a gone one
+  // would wait for it to come back, so the question is short and the next poll counts again.
   await expect
     .poll(
       async () =>
         (await trigger.count()) === 0 ||
-        (await trigger.evaluate((el) => el === document.activeElement)),
+        (await trigger
+          .evaluate((el) => el === document.activeElement, undefined, { timeout: 250 })
+          .catch(() => false)),
     )
     .toBe(true)
 }
