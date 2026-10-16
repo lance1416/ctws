@@ -240,6 +240,15 @@ describe('task dependencies', () => {
     expect((await dependOn(ctx, mine, theirTask)).statusCode).toBe(404)
     expect((await dependOn(ctx, theirTask, mine)).statusCode).toBe(404)
     expect((await lists(ctx, mine)).blockedBy).toEqual([])
+    const read = (id: string) =>
+      ctx.app.inject({
+        method: 'GET',
+        url: `/api/v1/tasks/${id}/dependencies`,
+        headers: ctx.authed,
+      })
+    // Reading follows GET /tasks/:id: someone else's task, or none at all, is not found.
+    expect((await read(theirTask)).statusCode).toBe(404)
+    expect((await read('99999999-9999-4999-8999-999999999999')).statusCode).toBe(404)
   })
 
   it('writes the arrival and the departure into the task history', async () => {

@@ -3,7 +3,7 @@ import { sql } from 'drizzle-orm'
 import type { Queryable } from '../../../platform/db/client'
 import { ident } from '../../../platform/db/sql'
 import { groupBy } from '../../../platform/values'
-import { taskVisibleSql } from './scope'
+import { taskVisibleSql, visibleTask } from './scope'
 
 type RefRow = { id: string; title: string; project_id: string; project_name: string; done: boolean }
 
@@ -21,6 +21,7 @@ export async function taskDependencyLists(
   workspaceId: string,
   taskId: string,
 ): Promise<{ blockedBy: DependencyRef[]; blocks: DependencyRef[] }> {
+  await visibleTask(q, workspaceId, taskId)
   const query = (other: 'blocker_id' | 'blocked_id', self: 'blocked_id' | 'blocker_id') => sql`
     select
       t.id, t.title, p.id as project_id, p.name as project_name,
