@@ -3,8 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { NotFound } from '../../../src/platform/errors'
-import { softDeleteTask } from '../../../src/modules/tasks/commands/remove'
-import { updateTask } from '../../../src/modules/tasks/commands/update'
+import { softDeleteTask, updateTask } from '../../../src/modules/tasks/service'
 import {
   createChain,
   createProject,

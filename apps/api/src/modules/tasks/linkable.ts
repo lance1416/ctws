@@ -5,7 +5,7 @@ import { within } from '../../platform/db/scope'
 import { ident } from '../../platform/db/sql'
 import { wanted, type Linkable, type StoredEdge } from '../../shell/links'
 import { projectNameOf } from '../../shell/projects'
-import { visibleTask } from './queries/scope'
+import { visibleTask } from './queries'
 import { tasks } from './tables'
 
 const taskRows = (q: Queryable) =>

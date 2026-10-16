@@ -2,10 +2,7 @@ import { api } from '@ctws/contracts'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { on, serve } from '../../platform/http/serve'
 import { actorOf, currentUser } from '../../shell/auth'
-import { createTask } from './commands/create'
-import { addDependency, removeDependency } from './commands/dependencies'
-import { softDeleteTask } from './commands/remove'
-import { updateTask } from './commands/update'
+import { addDependency, createTask, removeDependency, softDeleteTask, updateTask } from './service'
 import {
   toCalendarEntry,
   toCompletedResponse,
@@ -13,15 +10,18 @@ import {
   toTaskResponse,
   toTodayResponse,
 } from './mapper'
-import { listTaskCalendar } from './queries/calendar'
-import { listCompleted } from './queries/completed'
-import { blockersFor, taskDependencyLists } from './queries/dependencies'
-import { projectBoard } from './queries/list'
-import { listProjectMovement } from './queries/movement'
-import { listReview } from './queries/review'
-import { getTask } from './queries/scope'
-import { searchTasks } from './queries/search'
-import { listToday } from './queries/today'
+import {
+  blockersFor,
+  getTask,
+  listCompleted,
+  listProjectMovement,
+  listReview,
+  listTaskCalendar,
+  listToday,
+  projectBoard,
+  searchTasks,
+  taskDependencyLists,
+} from './queries'
 
 export const taskRoutes: FastifyPluginAsyncZod = async (app) => {
   serve(app, [

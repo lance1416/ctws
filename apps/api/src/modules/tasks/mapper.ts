@@ -9,10 +9,7 @@ import type {
 } from '@ctws/contracts'
 import { isoOrNull } from '../../platform/values'
 import { dayEntry } from '../../shell/calendar'
-import type { CalendarRow } from './queries/calendar'
-import type { CompletedTask } from './queries/completed'
-import type { SearchTask } from './queries/search'
-import type { TodayTask } from './queries/today'
+import type { CalendarRow, CompletedTask, SearchTask, TodayTask } from './queries'
 import type { Task } from './tables'
 
 export function toTaskResponse(t: Task): TaskResponse {
