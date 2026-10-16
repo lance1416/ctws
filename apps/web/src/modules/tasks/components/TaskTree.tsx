@@ -10,7 +10,7 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import {
   taskId,
   idFrom,
-  type MoveTaskBody,
+  type TaskPosition,
   type TaskResponse,
   type TaskStatus,
   type ProjectId,
@@ -101,7 +101,7 @@ export function TaskTree({ projectId }: { projectId: ProjectId }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
   const move = useMutation({
-    mutationFn: ({ id, body }: { id: TaskId; body: MoveTaskBody; unfolded?: TaskId }) =>
+    mutationFn: ({ id, body }: { id: TaskId; body: TaskPosition; unfolded?: TaskId }) =>
       moveTask(id, body),
     onMutate: async ({ id, body, unfolded }) => {
       await qc.cancelQueries({ queryKey: key })
@@ -138,7 +138,7 @@ export function TaskTree({ projectId }: { projectId: ProjectId }) {
       folds.unfold([plan.parentId])
       unfolded = plan.parentId
     }
-    const body: MoveTaskBody = { projectId, parentId: plan.parentId }
+    const body: TaskPosition = { projectId, parentId: plan.parentId }
     if (plan.beforeId) body.beforeId = plan.beforeId
     if (plan.afterId) body.afterId = plan.afterId
     move.mutate({ id: draggedId, body, ...(unfolded ? { unfolded } : {}) })

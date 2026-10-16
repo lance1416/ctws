@@ -4,7 +4,6 @@ import { on, serve } from '../../platform/http/serve'
 import { actorOf, currentUser } from '../../shell/auth/authenticated'
 import { createTask } from './commands/create'
 import { addDependency, removeDependency } from './commands/dependencies'
-import { moveTask } from './commands/move'
 import { softDeleteTask } from './commands/remove'
 import { updateTask } from './commands/update'
 import {
@@ -97,11 +96,6 @@ export const taskRoutes: FastifyPluginAsyncZod = async (app) => {
 
     on(api.tasks.update, async (req) =>
       toTaskResponse(await updateTask(app.db, actorOf(req), req.params.id, req.body)),
-    ),
-
-    // Not part of PATCH: a move must keep the tree acyclic, within depth, and on one project.
-    on(api.tasks.move, async (req) =>
-      toTaskResponse(await moveTask(app.db, actorOf(req), req.params.id, req.body)),
     ),
 
     on(api.tasks.remove, async (req) => {

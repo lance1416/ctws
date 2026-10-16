@@ -2,7 +2,8 @@ import { expect, test, type Page } from '@playwright/test'
 import {
   makeProject,
   makeTask,
-  MOVE_URL,
+  isMove,
+  routeMoves,
   openProject,
   openTree,
   recordMoves,
@@ -30,7 +31,7 @@ const handle = (page: Page, title: string) =>
 
 /** Resolves when a move request has been answered successfully, i.e. it is persisted. */
 function movePersisted(page: Page) {
-  return page.waitForResponse((r) => MOVE_URL.test(r.url()) && r.ok())
+  return page.waitForResponse((r) => isMove(r.request()) && r.ok())
 }
 
 /** Adds a root task through the new-task box and waits until it shows. */
@@ -157,7 +158,7 @@ test('a move shows at once, and a rejected one rolls back visibly', async ({ pag
 
   let releaseMove!: () => void
   const moveGate = new Promise<void>((resolve) => (releaseMove = resolve))
-  await page.route('**/api/v1/tasks/*/move', async (route) => {
+  const unrouteMoves = await routeMoves(page, async (route) => {
     await moveGate
     await route.fulfill({
       status: 409,
@@ -179,7 +180,7 @@ test('a move shows at once, and a rejected one rolls back visibly', async ({ pag
   await expect(page.getByRole('alert')).toBeVisible()
   await expect(rows).toHaveText([/one/, /two/, /three/])
 
-  await page.unroute('**/api/v1/tasks/*/move')
+  await unrouteMoves()
   releaseList()
   await page.goto(url)
   await expect(page.getByRole('listitem')).toHaveText([/one/, /two/, /three/])
@@ -554,7 +555,7 @@ test('a refused move puts the fold it opened back', async ({ page }) => {
   await expect(rows).toHaveText([/aa/, /bb/])
 
   // The drop unfolds `aa` so the moved row lands somewhere visible. The server then refuses it.
-  await page.route('**/api/v1/tasks/*/move', (r) => r.fulfill({ status: 500, body: '{}' }))
+  const unrouteMoves = await routeMoves(page, (r) => r.fulfill({ status: 500, body: '{}' }))
   const box = (await handle(page, 'bb').boundingBox())!
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
   await page.mouse.down()
@@ -564,7 +565,7 @@ test('a refused move puts the fold it opened back', async ({ page }) => {
 
   // Nothing landed there, so nothing should have been opened: the tree is exactly as it was.
   await expect(rows).toHaveText([/aa/, /bb/])
-  await page.unroute('**/api/v1/tasks/*/move')
+  await unrouteMoves()
   // And the fold is remembered that way, not just drawn that way.
   await page.reload()
   await expect(rows).toHaveText([/aa/, /bb/])

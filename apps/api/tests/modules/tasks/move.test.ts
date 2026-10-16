@@ -28,14 +28,14 @@ function move(
   auth: Record<string, string> = ctx.authed,
 ) {
   return ctx.app.inject({
-    method: 'POST',
-    url: `/api/v1/tasks/${id}/move`,
+    method: 'PATCH',
+    url: `/api/v1/tasks/${id}`,
     headers: auth,
     payload,
   })
 }
 
-describe('POST /tasks/:id/move', () => {
+describe('moving a task: PATCH /tasks/:id with a position', () => {
   it('reorders among siblings and only writes the moved row', async () => {
     const ctx = await setup()
     const p = await createProject(ctx, 'p')
@@ -95,8 +95,8 @@ describe('POST /tasks/:id/move', () => {
     const target = depthBelow === 0 ? chain[0]! : chain[depthBelow]!
 
     const res = await ctx.app.inject({
-      method: 'POST',
-      url: `/api/v1/tasks/${chain[0]}/move`,
+      method: 'PATCH',
+      url: `/api/v1/tasks/${chain[0]}`,
       headers: ctx.authed,
       payload: { projectId: p, parentId: target },
     })
@@ -167,8 +167,8 @@ describe('POST /tasks/:id/move', () => {
     const chain = await createChain(ctx, from, 3) // root -> child -> grandchild
 
     const res = await ctx.app.inject({
-      method: 'POST',
-      url: `/api/v1/tasks/${chain[0]}/move`,
+      method: 'PATCH',
+      url: `/api/v1/tasks/${chain[0]}`,
       headers: ctx.authed,
       payload: { projectId: to, parentId: null },
     })
@@ -212,8 +212,8 @@ describe('POST /tasks/:id/move', () => {
 
     // 8 + 1 + 2 = 11 > MAX_TASK_DEPTH. Checking only the moved node's own depth (9) would pass.
     const res = await ctx.app.inject({
-      method: 'POST',
-      url: `/api/v1/tasks/${subtree[0]}/move`,
+      method: 'PATCH',
+      url: `/api/v1/tasks/${subtree[0]}`,
       headers: ctx.authed,
       payload: { projectId: p, parentId: deep[7] },
     })
@@ -229,8 +229,8 @@ describe('POST /tasks/:id/move', () => {
     const subtree = await createChain(ctx, p, 2) // height 2: 8 + 1 + 1 = 10
 
     const res = await ctx.app.inject({
-      method: 'POST',
-      url: `/api/v1/tasks/${subtree[0]}/move`,
+      method: 'PATCH',
+      url: `/api/v1/tasks/${subtree[0]}`,
       headers: ctx.authed,
       payload: { projectId: p, parentId: deep[7] },
     })
@@ -283,8 +283,8 @@ describe('POST /tasks/:id/move', () => {
     const b = await createTask(ctx, p, 'b')
 
     await ctx.app.inject({
-      method: 'POST',
-      url: `/api/v1/tasks/${b}/move`,
+      method: 'PATCH',
+      url: `/api/v1/tasks/${b}`,
       headers: ctx.authed,
       payload: { projectId: p, parentId: a },
     })
@@ -338,8 +338,8 @@ describe('POST /tasks/:id/move', () => {
 
     // Reorder b ahead of a: same parent, same project, only the rank moves.
     const res = await ctx.app.inject({
-      method: 'POST',
-      url: `/api/v1/tasks/${b}/move`,
+      method: 'PATCH',
+      url: `/api/v1/tasks/${b}`,
       headers: ctx.authed,
       payload: { projectId: p, parentId: null, beforeId: a },
     })
@@ -355,8 +355,8 @@ describe('POST /tasks/:id/move', () => {
     const before = (await eventsOf(ctx, b)).length
 
     const res = await ctx.app.inject({
-      method: 'POST',
-      url: `/api/v1/tasks/${b}/move`,
+      method: 'PATCH',
+      url: `/api/v1/tasks/${b}`,
       headers: ctx.authed,
       payload: { projectId: p.toUpperCase(), parentId: null, beforeId: a },
     })
@@ -556,5 +556,38 @@ describe('move workspace isolation', () => {
     const res = await move(ctx, id, { projectId: bProject, parentId: null })
     expect(res.statusCode).toBe(404)
     expect((await tasksOf(ctx, p)).map((t) => t.id)).toEqual([id])
+  })
+})
+
+describe('a move and an edit in one PATCH', () => {
+  it('applies both', async () => {
+    const ctx = await setup()
+    const from = await createProject(ctx, 'from')
+    const to = await createProject(ctx, 'to')
+    const id = await createTask(ctx, from, 'old')
+
+    const res = await move(ctx, id, { projectId: to, parentId: null, title: 'new' })
+    expect(res.statusCode).toBe(200)
+    expect(res.json()).toMatchObject({ projectId: to, title: 'new' })
+  })
+
+  it('applies neither when the move is refused', async () => {
+    const ctx = await setup()
+    const p = await createProject(ctx, 'p')
+    const [root, child] = await createChain(ctx, p, 2)
+
+    // Under its own child: a cycle.
+    const res = await move(ctx, root!, { projectId: p, parentId: child!, title: 'renamed' })
+    expect(res.statusCode).toBe(409)
+    const row = await ctx.db.execute(sql`select title, parent_id from tasks where id = ${root!}`)
+    expect(row.rows[0]).toEqual({ title: 'n0', parent_id: null })
+  })
+
+  it('refuses half a position', async () => {
+    const ctx = await setup()
+    const p = await createProject(ctx, 'p')
+    const id = await createTask(ctx, p, 'x')
+    expect((await move(ctx, id, { projectId: p })).statusCode).toBe(400)
+    expect((await move(ctx, id, { parentId: null })).statusCode).toBe(400)
   })
 })

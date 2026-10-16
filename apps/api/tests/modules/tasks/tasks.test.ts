@@ -3,7 +3,6 @@ import { randomUUID } from 'node:crypto'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { NotFound } from '../../../src/platform/errors'
-import { moveTask } from '../../../src/modules/tasks/commands/move'
 import { softDeleteTask } from '../../../src/modules/tasks/commands/remove'
 import { updateTask } from '../../../src/modules/tasks/commands/update'
 import {
@@ -674,9 +673,9 @@ describe('a write refuses a foreign workspace without going through a route', ()
     }
 
     await expect(updateTask(ctx.db, stranger, id, { title: 'stolen' })).rejects.toThrow(NotFound)
-    await expect(moveTask(ctx.db, stranger, id, { projectId, parentId: sibling })).rejects.toThrow(
-      NotFound,
-    )
+    await expect(
+      updateTask(ctx.db, stranger, id, { projectId, parentId: sibling }),
+    ).rejects.toThrow(NotFound)
     await expect(softDeleteTask(ctx.db, stranger, id)).rejects.toThrow(NotFound)
 
     // Nothing moved, nothing was flagged, and no event was logged against any of it.

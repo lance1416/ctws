@@ -4,7 +4,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { fromDayTimeInput, toDayTimeInput } from '../../../platform/time/dates'
 import { useTimeZone } from '../../../shell/auth/useMe'
-import { moveTask, patchTask } from '../api/tasks'
+import { patchTask } from '../api/tasks'
 import { detailTaskForm, PATCH_KEYS, type DetailTaskForm, type DetailTaskValues } from '../taskForm'
 
 /** What a write from the pane waits to see refetched: any edit can move a task between lists. */
@@ -40,12 +40,11 @@ export function useTaskDetailForm(task: TaskResponse) {
       for (const key of PATCH_KEYS) {
         if (changed.has(key)) Object.assign(patch, { [key]: values[key] })
       }
+      // Crossing projects is a move, which carries the subtree along; the old parent is not in
+      // the new project. It goes in the same PATCH, so a refused move changes nothing else.
+      if (changed.has('projectId'))
+        Object.assign(patch, { projectId: values.projectId, parentId: null })
       if (Object.keys(patch).length > 0) await patchTask(task.id, patch)
-      // Crossing projects is the move endpoint's job: it cascades to the subtree. The old parent
-      // is not in the new project.
-      if (changed.has('projectId')) {
-        await moveTask(task.id, { projectId: values.projectId, parentId: null })
-      }
     },
     meta: { awaits: WRITE_AWAITS },
   })

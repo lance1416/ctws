@@ -1,7 +1,7 @@
 import {
   api,
-  type MoveTaskBody,
   type ResponseOf,
+  type TaskPosition,
   type TaskResponse,
   type UpdateTaskBody,
   type ProjectId,
@@ -45,8 +45,9 @@ export function patchTask(id: TaskId, body: UpdateTaskBody): Promise<TaskRespons
   return call(api.tasks.update, { params: { id }, body })
 }
 
-export function moveTask(id: TaskId, body: MoveTaskBody): Promise<TaskResponse> {
-  return call(api.tasks.move, { params: { id }, body })
+/** A move is a PATCH that names where the task lands; the server keeps the tree whole. */
+export function moveTask(id: TaskId, position: TaskPosition): Promise<TaskResponse> {
+  return call(api.tasks.update, { params: { id }, body: position })
 }
 
 export function deleteTask(id: TaskId): Promise<void> {

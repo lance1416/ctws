@@ -3,7 +3,7 @@ import {
   editDetail,
   makeProject,
   makeTask,
-  MOVE_URL,
+  routeMoves,
   openProject,
   pickOne,
   registerFreshUser,
@@ -107,7 +107,7 @@ test('moves a task to another project', async ({ page }) => {
   await seedOneTask(page)
 
   await pickOne(page, 'Projects', 'Inbox')
-  await save(page, MOVE_URL)
+  await save(page)
 
   // It leaves the project it was in...
   await expect(row(page, '写方案')).toHaveCount(0)
@@ -287,7 +287,7 @@ test('a rejected move is reported and nothing changes', async ({ page }) => {
   await registerFreshUser(page)
   await seedOneTask(page)
   const url = page.url()
-  await page.route(MOVE_URL, (r) => r.fulfill({ status: 500, body: '{}' }))
+  const unrouteMoves = await routeMoves(page, (r) => r.fulfill({ status: 500, body: '{}' }))
   await pickOne(page, 'Projects', 'Inbox')
   await page.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByRole('alert')).toBeVisible()
@@ -295,7 +295,7 @@ test('a rejected move is reported and nothing changes', async ({ page }) => {
   await expect(row(page, '写方案')).toHaveCount(1)
 
   // The server agrees: the task is still in P, and Inbox has nothing.
-  await page.unroute(MOVE_URL)
+  await unrouteMoves()
   await page.goto(url)
   await expect(row(page, '写方案')).toHaveCount(1)
   await page
@@ -317,7 +317,7 @@ test('moving a task away returns focus to a remaining row', async ({ page }) => 
   await expect(page.getByRole('dialog')).toBeVisible()
 
   await pickOne(page, 'Projects', 'Inbox')
-  await save(page, MOVE_URL)
+  await save(page)
 
   await expect(row(page, '写方案')).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Task: 留下', exact: true })).toBeFocused()

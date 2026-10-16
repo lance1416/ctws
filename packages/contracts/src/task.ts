@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { projectId, taskId } from './id'
+import { projectId, type ProjectId, taskId, type TaskId } from './id'
 import { WINDOW_REFUSED, windowIsBounded } from './calendar'
 import { calendarDate, documentText, instant, patchOf, titleText } from './common'
 
@@ -56,24 +56,39 @@ export const createTaskBody = z
   })
   .strict()
 
-// No parentId, projectId or rank: those change through move, which guards the tree.
-export const updateTaskBody = patchOf({
+/**
+ * Where a task lands: the project and parent it goes under, and at most one neighbour it goes
+ * next to (at the end without one). The server computes the rank.
+ */
+const taskPosition = {
+  projectId,
+  parentId: taskId.nullable(),
+  beforeId: taskId,
+  afterId: taskId,
+}
+const POSITION_KEYS = Object.keys(taskPosition)
+
+/** A task's own fields, as an update writes them: null clears one. */
+export const taskFields = {
   title,
   notes: notes.nullable(),
   status: taskStatus,
   scheduledOn: calendarDate.nullable(),
   dueAt: instant.nullable(),
-})
+}
 
-/** The neighbours the task lands between; the server computes the rank. */
-export const moveTaskBody = z
-  .object({
-    projectId: projectId,
-    parentId: taskId.nullable(),
-    beforeId: taskId.optional(),
-    afterId: taskId.optional(),
-  })
-  .strict()
+/**
+ * A task's own fields, and its position. A position is checked as a whole: the tree stays
+ * acyclic, within depth, and on one project. No rank: the server computes it.
+ */
+export const updateTaskBody = patchOf({ ...taskFields, ...taskPosition }).refine(
+  (b) =>
+    !POSITION_KEYS.some((k) => k in b) || (b.projectId !== undefined && b.parentId !== undefined),
+  {
+    message: 'a move names both the projectId and the parentId it lands under',
+    path: ['parentId'],
+  },
+)
 
 export const taskResponse = z
   .object({
@@ -245,5 +260,10 @@ export type TaskEventType = (typeof TASK_EVENT_TYPES)[number]
 
 export type CreateTaskBody = z.infer<typeof createTaskBody>
 export type UpdateTaskBody = z.infer<typeof updateTaskBody>
-export type MoveTaskBody = z.infer<typeof moveTaskBody>
+export type TaskPosition = {
+  projectId: ProjectId
+  parentId: TaskId | null
+  beforeId?: TaskId | undefined
+  afterId?: TaskId | undefined
+}
 export type TaskResponse = z.infer<typeof taskResponse>

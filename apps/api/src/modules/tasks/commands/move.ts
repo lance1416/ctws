@@ -1,14 +1,14 @@
 import {
   MAX_TASK_DEPTH,
   taskId,
-  type MoveTaskBody,
   type ProjectId,
   type TaskId,
+  type TaskPosition,
 } from '@ctws/contracts'
 import { rankBetween } from '@ctws/core'
 import { and, asc, desc, eq, gt, isNull, lt, ne, sql } from 'drizzle-orm'
 import { z } from 'zod'
-import type { Db, Queryable } from '../../../platform/db/client'
+import type { Queryable, Tx } from '../../../platform/db/client'
 import { rowsOf } from '../../../platform/db/raw'
 import { instant } from '../../../platform/db/time'
 import { getProject } from '../../../shell/projects/queries'
@@ -52,67 +52,66 @@ async function descendantsOf(q: Queryable, rootId: TaskId): Promise<Descendant[]
 
 /**
  * Moves a task to a new parent, possibly in another project, at the slot next to the neighbour
- * the client names. Under a parent the parent's project wins, as on create.
+ * the client names. Under a parent the parent's project wins, as on create. The caller's
+ * transaction must not have written yet: the tree lock is its first statement.
  */
-export async function moveTask(db: Db, ctx: Actor, id: TaskId, input: MoveTaskBody): Promise<Task> {
+export async function moveTask(tx: Tx, ctx: Actor, id: TaskId, input: TaskPosition): Promise<Task> {
   if (input.beforeId !== undefined && input.afterId !== undefined) {
     throw new BothNeighboursError()
   }
 
-  return db.transaction(async (tx) => {
-    await lockTaskTree(tx, ctx.workspaceId)
-    const task = await lockTask(tx, ctx.workspaceId, id)
-    const projectId = (await getProject(tx, ctx.workspaceId, input.projectId)).id
+  await lockTaskTree(tx, ctx.workspaceId)
+  const task = await lockTask(tx, ctx.workspaceId, id)
+  const projectId = (await getProject(tx, ctx.workspaceId, input.projectId)).id
 
-    // A deleted parent reads as not found.
-    const parent = input.parentId ? await lockTask(tx, ctx.workspaceId, input.parentId) : null
-    const destProjectId = parent ? parent.projectId : projectId
-    const destParentId = parent ? parent.id : null
+  // A deleted parent reads as not found.
+  const parent = input.parentId ? await lockTask(tx, ctx.workspaceId, input.parentId) : null
+  const destProjectId = parent ? parent.projectId : projectId
+  const destParentId = parent ? parent.id : null
 
-    const subtree = await descendantsOf(tx, id)
-    if (destParentId !== null && subtree.some((d) => d.id === destParentId))
-      throw new MoveCycleError()
+  const subtree = await descendantsOf(tx, id)
+  if (destParentId !== null && subtree.some((d) => d.id === destParentId))
+    throw new MoveCycleError()
 
-    // The parent's depth plus the moved subtree's live height, not its row count.
-    const parentDepth = destParentId === null ? 0 : await depthOf(tx, destParentId)
-    const liveHeight = Math.max(...subtree.filter((d) => d.live).map((d) => d.depth)) + 1
-    if (parentDepth + liveHeight > MAX_TASK_DEPTH) throw new DepthLimitError()
+  // The parent's depth plus the moved subtree's live height, not its row count.
+  const parentDepth = destParentId === null ? 0 : await depthOf(tx, destParentId)
+  const liveHeight = Math.max(...subtree.filter((d) => d.live).map((d) => d.depth)) + 1
+  if (parentDepth + liveHeight > MAX_TASK_DEPTH) throw new DepthLimitError()
 
-    const rank = await rankFor(tx, { id, destProjectId, destParentId, input })
+  const rank = await rankFor(tx, { id, destProjectId, destParentId, input })
 
-    const [updated] = await tx
-      .update(tasks)
-      .set({ parentId: destParentId, projectId: destProjectId, rank, updatedAt: ctx.now })
-      .where(eq(tasks.id, id))
-      .returning()
+  const [updated] = await tx
+    .update(tasks)
+    .set({ parentId: destParentId, projectId: destProjectId, rank, updatedAt: ctx.now })
+    .where(eq(tasks.id, id))
+    .returning()
 
-    const parentChanged = destParentId !== task.parentId
-    const projectChanged = destProjectId !== task.projectId
+  const parentChanged = destParentId !== task.parentId
+  const projectChanged = destProjectId !== task.projectId
 
-    if (projectChanged) {
-      // Deleted rows too: their logged history is counted by the project they sit in.
-      await tx.execute(sql`
-        with recursive subtree(id) as (
-          select ${id}::uuid
-          union
-          select t.id from tasks t join subtree s on t.parent_id = s.id
-        )
-        update tasks set project_id = ${destProjectId}, updated_at = ${instant(ctx.now)}
-        where id in (select id from subtree) and project_id <> ${destProjectId}
-      `)
-    }
+  if (projectChanged) {
+    // Deleted rows too: their logged history is counted by the project they sit in.
+    await tx.execute(sql`
+      with recursive subtree(id) as (
+        select ${id}::uuid
+        union
+        select t.id from tasks t join subtree s on t.parent_id = s.id
+      )
+      update tasks set project_id = ${destProjectId}, updated_at = ${instant(ctx.now)}
+      where id in (select id from subtree) and project_id <> ${destProjectId}
+    `)
+  }
 
-    // A pure reorder is not logged, so tidying up never reads as progress. The descendants the
-    // cascade carried along get no event of their own.
-    if (parentChanged || projectChanged) {
-      await taskLog(tx, ctx).append(id, 'moved', {
-        from: { parentId: task.parentId, ...(projectChanged ? { projectId: task.projectId } : {}) },
-        to: { parentId: destParentId, ...(projectChanged ? { projectId: destProjectId } : {}) },
-      })
-    }
+  // A pure reorder is not logged, so tidying up never reads as progress. The descendants the
+  // cascade carried along get no event of their own.
+  if (parentChanged || projectChanged) {
+    await taskLog(tx, ctx).append(id, 'moved', {
+      from: { parentId: task.parentId, ...(projectChanged ? { projectId: task.projectId } : {}) },
+      to: { parentId: destParentId, ...(projectChanged ? { projectId: destProjectId } : {}) },
+    })
+  }
 
-    return updated!
-  })
+  return updated!
 }
 
 /**
@@ -121,7 +120,7 @@ export async function moveTask(db: Db, ctx: Actor, id: TaskId, input: MoveTaskBo
  */
 async function rankFor(
   tx: Queryable,
-  args: { id: TaskId; destProjectId: ProjectId; destParentId: TaskId | null; input: MoveTaskBody },
+  args: { id: TaskId; destProjectId: ProjectId; destParentId: TaskId | null; input: TaskPosition },
 ): Promise<string> {
   const { id, destProjectId, destParentId, input } = args
   const siblings = and(

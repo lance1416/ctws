@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import {
   completedTaskResponse,
   createTaskBody,
-  moveTaskBody,
   projectMovementResponse,
   searchTaskResponse,
   TASK_EVENT_TYPES,
@@ -78,9 +77,8 @@ describe('updateTaskBody', () => {
     expect(updateTaskBody.safeParse({ dueAt: '2026-10-15T23:59:00Z' }).success).toBe(true)
   })
 
-  // Reparenting and reordering go through POST /tasks/:id/move, never a generic PATCH,
-  // because they carry invariants a PATCH must not silently take on.
-  it('cannot change parentId, projectId or rank', () => {
+  // A parent or project alone is half a position, and a rank is never the client's.
+  it('cannot change parentId, projectId or rank on their own', () => {
     for (const key of ['parentId', 'projectId', 'rank']) {
       expect(
         updateTaskBody.safeParse({ [key]: '01931b9c-5d7e-7c3a-8f2e-1a2b3c4d5e6f' }).success,
@@ -89,19 +87,30 @@ describe('updateTaskBody', () => {
   })
 })
 
-describe('moveTaskBody', () => {
+describe('a position in updateTaskBody', () => {
   const pid = '01931b9c-5d7e-7c3a-8f2e-1a2b3c4d5e6f'
 
-  it('takes a target project and an optional parent', () => {
-    expect(moveTaskBody.safeParse({ projectId: pid, parentId: null }).success).toBe(true)
+  it('takes a target project and parent, with the task fields or without', () => {
+    expect(updateTaskBody.safeParse({ projectId: pid, parentId: null }).success).toBe(true)
+    expect(updateTaskBody.safeParse({ projectId: pid, parentId: pid, title: 'x' }).success).toBe(
+      true,
+    )
+  })
+
+  it('is whole: a project without a parent, or a neighbour alone, is not a place', () => {
+    expect(updateTaskBody.safeParse({ projectId: pid }).success).toBe(false)
+    expect(updateTaskBody.safeParse({ parentId: null }).success).toBe(false)
+    expect(updateTaskBody.safeParse({ afterId: pid }).success).toBe(false)
   })
 
   // The client reports which neighbours the task lands between; the server computes the rank.
   it('takes neighbour ids rather than a rank', () => {
-    expect(moveTaskBody.safeParse({ projectId: pid, parentId: null, afterId: pid }).success).toBe(
+    expect(updateTaskBody.safeParse({ projectId: pid, parentId: null, afterId: pid }).success).toBe(
       true,
     )
-    expect(moveTaskBody.safeParse({ projectId: pid, rank: 'a0' }).success).toBe(false)
+    expect(updateTaskBody.safeParse({ projectId: pid, parentId: null, rank: 'a0' }).success).toBe(
+      false,
+    )
   })
 })
 

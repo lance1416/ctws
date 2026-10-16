@@ -1,6 +1,6 @@
 import type { ProjectMovementResponse } from '@ctws/contracts'
 import { execFileSync } from 'node:child_process'
-import { expect, type Locator, type Page } from '@playwright/test'
+import { expect, type Locator, type Page, type Request, type Route } from '@playwright/test'
 import { TZDate } from '@date-fns/tz'
 import { format } from 'date-fns'
 
@@ -230,20 +230,35 @@ export async function makeTask(
   return id
 }
 
-/** The move endpoint. Tests that count writes to it share one spelling. */
-export const MOVE_URL = /\/tasks\/[^/]+\/move$/
+/** One task's own address. */
+const TASK_URL = /\/api\/v1\/tasks\/[^/?]+$/
+
+/** A move: a PATCH of a task that says where it lands. Tests that count moves share this. */
+export const isMove = (r: Request): boolean =>
+  r.method() === 'PATCH' &&
+  TASK_URL.test(r.url()) &&
+  'parentId' in ((r.postDataJSON() as object | null) ?? {})
 
 /** Waits for a move the server accepted. */
-export const taskMoved = (page: Page) =>
-  page.waitForResponse((r) => MOVE_URL.test(r.url()) && r.ok())
+export const taskMoved = (page: Page) => page.waitForResponse((r) => isMove(r.request()) && r.ok())
 
 /** Records every move request the page sends, so a test can assert that none was. */
 export function recordMoves(page: Page): string[] {
   const moves: string[] = []
   page.on('request', (r) => {
-    if (MOVE_URL.test(r.url())) moves.push(r.url())
+    if (isMove(r)) moves.push(r.url())
   })
   return moves
+}
+
+/** Answers every move with `handler`, letting other requests to a task through. */
+export async function routeMoves(
+  page: Page,
+  handler: (route: Route) => Promise<void> | void,
+): Promise<() => Promise<void>> {
+  const route = (r: Route) => (isMove(r.request()) ? handler(r) : r.fallback())
+  await page.route(TASK_URL, route)
+  return () => page.unroute(TASK_URL, route)
 }
 
 /**

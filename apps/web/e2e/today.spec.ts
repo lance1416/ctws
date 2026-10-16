@@ -5,6 +5,7 @@ import {
   apiPost,
   dayInZone,
   editDetail,
+  isMove,
   makeProject,
   makeTask,
   meetingToday,
@@ -173,7 +174,7 @@ test('a nested task shows both its project and its parent in the breadcrumb', as
   await submitCreate(page, 'Capture…', '子任务')
   await expect(page.getByRole('listitem')).toHaveCount(2)
 
-  const moved = page.waitForResponse((r) => r.url().includes('/move') && r.ok())
+  const moved = page.waitForResponse((r) => isMove(r.request()) && r.ok())
   await page.getByRole('button', { name: 'Task: 子任务' }).focus()
   await page.keyboard.press('Alt+ArrowRight')
   await moved

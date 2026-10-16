@@ -209,8 +209,8 @@ describe('GET /tasks/movement', () => {
     // A reorder: same parent, same project, only the rank changes. It writes no event, so a
     // tidy-up cannot poison this number.
     const res = await ctx.app.inject({
-      method: 'POST',
-      url: `/api/v1/tasks/${second}/move`,
+      method: 'PATCH',
+      url: `/api/v1/tasks/${second}`,
       headers: ctx.authed,
       payload: { projectId: pid, parentId: null, beforeId: first },
     })

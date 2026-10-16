@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { MOVE_URL, recordMoves, registerFreshUser, seedTasks, startProject } from './helpers'
+import { isMove, recordMoves, registerFreshUser, seedTasks, startProject } from './helpers'
 
 const handle = (page: Page, title: string) =>
   page.getByRole('button', { name: `Task: ${title}`, exact: true })
@@ -158,13 +158,13 @@ test('Alt arrows still move and reparent rows, and Enter still opens the detail'
   await seedTasks(page, url, flat(3))
   const projectId = url.split('/').pop()!
 
-  const moved = page.waitForResponse((r) => MOVE_URL.test(r.url()) && r.ok())
+  const moved = page.waitForResponse((r) => isMove(r.request()) && r.ok())
   await handle(page, 'r2').focus()
   await page.keyboard.press('Alt+ArrowUp')
   await expect(page.getByRole('listitem')).toHaveText([/r0/, /r2/, /r1/])
   await moved
 
-  const indented = page.waitForResponse((r) => MOVE_URL.test(r.url()) && r.ok())
+  const indented = page.waitForResponse((r) => isMove(r.request()) && r.ok())
   await page.keyboard.press('Alt+ArrowRight')
   await indented
   await expect(row(page, 'r2')).toHaveAttribute('data-depth', '2')

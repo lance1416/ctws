@@ -1,5 +1,5 @@
 // The forms' schemas are the wire contracts, so they refuse exactly what the server would.
-import { createTaskBody, projectId, updateTaskBody, type UpdateTaskBody } from '@ctws/contracts'
+import { createTaskBody, projectId, taskFields } from '@ctws/contracts'
 import { z } from 'zod'
 
 export const createTaskForm = createTaskBody
@@ -7,13 +7,13 @@ export const createTaskForm = createTaskBody
 export type CreateTaskForm = z.input<typeof createTaskBody>
 export type CreateTaskValues = z.output<typeof createTaskBody>
 
-/** The update contract plus the project, which no PATCH carries: the move endpoint changes it. */
-export const detailTaskForm = updateTaskBody.extend({ projectId })
+/** A task's fields as the update contract takes them, and the project it is moved to. */
+export const detailTaskForm = z.object(taskFields).partial().extend({ projectId }).strict()
 export type DetailTaskForm = z.input<typeof detailTaskForm>
 export type DetailTaskValues = z.output<typeof detailTaskForm>
 
-/** The keys a PATCH may carry, read off the contract: what turns `dirtyFields` into a body. */
-export const PATCH_KEYS = Object.keys(updateTaskBody.shape) as (keyof UpdateTaskBody)[]
+/** A task's own fields, read off the contract: what turns `dirtyFields` into a body. */
+export const PATCH_KEYS = Object.keys(taskFields) as (keyof typeof taskFields)[]
 
 /** The app's sentence for a title the schema refused, keyed on the issue code. */
 export function titleProblem(code: string | undefined): string | null {

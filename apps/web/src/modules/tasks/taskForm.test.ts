@@ -1,4 +1,4 @@
-import { createTaskBody, updateTaskBody } from '@ctws/contracts'
+import { createTaskBody, taskFields, updateTaskBody } from '@ctws/contracts'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { describe, expect, it } from 'vitest'
 import { createTaskForm, detailTaskForm, PATCH_KEYS, titleProblem } from './taskForm'
@@ -27,10 +27,11 @@ describe('the create form validates with the create CONTRACT', () => {
     expect(createTaskForm).toBe(createTaskBody)
   })
 
-  it('makes the detail form the update contract plus the project, which no PATCH carries', () => {
+  it("makes the detail form the task's own fields plus the project it may move to", () => {
     expect(Object.keys(detailTaskForm.shape).sort()).toEqual(
-      [...Object.keys(updateTaskBody.shape), 'projectId'].sort(),
+      [...Object.keys(taskFields), 'projectId'].sort(),
     )
+    for (const key of PATCH_KEYS) expect(Object.keys(updateTaskBody.shape)).toContain(key)
     expect(PATCH_KEYS).not.toContain('projectId')
   })
 
