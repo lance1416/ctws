@@ -37,7 +37,7 @@ export async function registerGuards(app: FastifyInstance): Promise<void> {
    */
   let window = { count: 0, until: 0 }
   app.decorate('authCeiling', (async (_req, reply) => {
-    const now = Date.now()
+    const now = app.clock().getTime()
     if (now >= window.until) window = { count: 0, until: now + CEILING_WINDOW_MS }
     window.count += 1
     if (window.count > app.env.authCeiling) {
