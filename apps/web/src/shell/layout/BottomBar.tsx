@@ -33,10 +33,7 @@ export function BottomBar({ onSearch }: { onSearch: () => void }) {
         Workbench
       </NavLink>
       <NavLink to={today.to} end={today.end ?? false} className={link}>
-        <Icon>
-          <circle cx="11" cy="11" r="7.5" />
-          <path d="M11 5.5a5.5 5.5 0 0 1 0 11z" fill="currentColor" stroke="none" />
-        </Icon>
+        <Icon>{today.icon}</Icon>
         <span className="flex items-center">
           {today.label}
           {TodayCount && <TodayCount />}

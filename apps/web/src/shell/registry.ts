@@ -108,6 +108,8 @@ export type Registry = {
   projectCount: ((project: ProjectListItem) => number) | null
   projectContents: NonNullable<ProjectContribution['contents']>[]
   help: HelpSection[]
+  /** Every module's single keys, in module order. */
+  bareKeys: string[]
   routes: RouteObject[]
 }
 
@@ -178,6 +180,7 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
     projectCount: modules.find((m) => m.project?.count)?.project?.count ?? null,
     projectContents: modules.flatMap((m) => (m.project?.contents ? [m.project.contents] : [])),
     help: modules.flatMap((m) => m.help ?? []),
+    bareKeys: [...new Set(modules.flatMap((m) => m.bareKeys ?? []))],
     routes: modules.map((m) => ({ path: `/${m.id}`, children: m.routes })),
   }
 }

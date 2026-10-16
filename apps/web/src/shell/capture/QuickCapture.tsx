@@ -107,7 +107,7 @@ export function QuickCapture() {
             role="alert"
             className="rounded-[10px] bg-float px-3 py-1.5 text-sm text-danger shadow-float"
           >
-            No inbox to capture into
+            {missing}
           </p>
         )}
         {/* `status`, not `alert`: the projects page already alerts on the same failure. */}
@@ -116,7 +116,7 @@ export function QuickCapture() {
             role="status"
             className="rounded-[10px] bg-float px-3 py-1.5 text-sm text-danger shadow-float"
           >
-            Inbox unavailable
+            {unavailable}
           </p>
         )}
         {landed && (

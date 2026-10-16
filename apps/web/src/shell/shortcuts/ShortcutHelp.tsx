@@ -20,6 +20,10 @@ const groups = (registry: Registry): HelpSection[] => [
   ...registry.help,
 ]
 
+/** "a, b and c". */
+const listed = (items: readonly string[]): string =>
+  items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`
+
 export function ShortcutHelp({ onClose }: { onClose: () => void }) {
   const enabled = useShortcutsEnabled()
   const registry = useRegistry()
@@ -56,8 +60,10 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
           <span>
             Single-key shortcuts
             <span className="block text-ink-muted">
-              With this off, /, f, ?, the g chords, n, s, x, j and k stop responding. Arrow keys,
-              Enter, Esc and the Alt combinations are unaffected. This browser only.
+              With this off,{' '}
+              {listed(['/', 'f', '?', `the ${JUMP_PREFIX} chords`, ...registry.bareKeys])} stop
+              responding. Arrow keys, Enter, Esc and the Alt combinations are unaffected. This
+              browser only.
             </span>
           </span>
         </label>

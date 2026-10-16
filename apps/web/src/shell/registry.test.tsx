@@ -18,7 +18,7 @@ const notes: WorkspaceModule = {
   pages: [{ id: 'recent', to: '/notes/recent', label: 'Recent' }],
   kind: { label: 'Notes', to: '/notes/all', order: 25 },
   routes: [{ path: 'recent' }, { path: 'all' }],
-  capture: { useTarget: () => ({ target: null, missing: false, unavailable: false }) },
+  capture: { useTarget: () => ({ target: null }) },
   search: { useHits: () => ({ hits: [], isError: false, isSuccess: true }) },
   chords: [
     { id: 'recent', key: 'n', label: 'Go to Recent', resolve: () => '/notes/recent', order: 5 },
@@ -33,6 +33,7 @@ const notes: WorkspaceModule = {
     contents: async () => '3 notes',
   },
   help: [{ title: 'In a note', keys: [['e', 'Edit']] }],
+  bareKeys: ['e'],
 }
 
 const files: WorkspaceModule = {
@@ -40,14 +41,16 @@ const files: WorkspaceModule = {
   label: 'Files',
   kind: { label: 'Files', to: '/files/drive', order: 5 },
   routes: [{ path: 'drive' }],
-  capture: { useTarget: () => ({ target: null, missing: true, unavailable: false }) },
+  capture: { useTarget: () => ({ target: null, missing: 'No drive to file into' }) },
   widgets: [{ id: 'big', label: 'Bulky', Component: () => null, span: 8 }],
   project: {
     Block: { Component: () => null, views: [{ id: 'all', label: 'All' }] },
     Lead: FilesLead,
+    count: () => 4,
     contents: async () => null,
   },
   help: [{ title: 'In the drive', keys: [['u', 'Upload']] }],
+  bareKeys: ['u', 'e'],
 }
 
 const CONFIG: ShellConfig = {
@@ -195,6 +198,11 @@ describe('what a module hangs on a project page', () => {
     expect(build([notes]).projectLead).toBeNull()
   })
 
+  it("takes the rail's count from the first module that gives one", () => {
+    expect(build([notes, files]).projectCount).toBe(files.project!.count)
+    expect(build([notes]).projectCount).toBeNull()
+  })
+
   it('contributes nothing when only the capturing module is registered and hangs nothing', () => {
     const bare: WorkspaceModule = { id: 'bare', label: 'Bare', routes: [], capture: notes.capture! }
     const registry = build([bare], { captureModuleId: 'bare', phoneTab: 'shell:calendar' })
@@ -208,6 +216,10 @@ describe('what a module hangs on a project page', () => {
 describe('the keyboard help', () => {
   it('takes each module’s sections in registration order', () => {
     expect(build([notes, files]).help.map((s) => s.title)).toEqual(['In a note', 'In the drive'])
+  })
+
+  it('names every module’s single keys once, in registration order', () => {
+    expect(build([notes, files]).bareKeys).toEqual(['e', 'u'])
   })
 })
 

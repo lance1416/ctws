@@ -29,6 +29,8 @@ export type WorkspaceModule = {
   project?: ProjectContribution
   /** Sections this module adds to the keyboard help, in its order. */
   help?: readonly HelpSection[]
+  /** The single keys this module answers, which the help's switch turns off with the shell's. */
+  bareKeys?: readonly string[]
   /**
    * Dated things for the shell's calendar. The server decides each entry's day in the account's
    * zone; a client turning an instant into a day would put a 23:00 deadline on the wrong square.
@@ -133,6 +135,8 @@ export type ModulePage = {
   chord?: string
   /** The count beside the label. A component, so the rail never knows the module's query. */
   Count?: ComponentType
+  /** The glyph over the label where a phone shows the page as a tab: paths in a 22px box. */
+  icon?: ReactNode
 }
 
 /** A kind of thing, as Things lists it. */
@@ -163,10 +167,10 @@ export type CaptureContribution = {
 export type CaptureTargetState = {
   /** null while unknown, or when this module cannot capture right now. */
   target: CaptureTarget | null
-  /** The destination is genuinely absent: a broken install, not a slow network. */
-  missing?: boolean
-  /** The destination could not be loaded; retrying may work. */
-  unavailable?: boolean
+  /** The destination is genuinely absent, a broken install rather than a slow network: what to say. */
+  missing?: string | null
+  /** The destination could not be loaded and retrying may work: what to say. */
+  unavailable?: string | null
 }
 
 export type CaptureTarget = {

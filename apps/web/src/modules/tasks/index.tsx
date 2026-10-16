@@ -42,8 +42,8 @@ function useInboxCapture(): CaptureTargetState {
           },
         }
       : null,
-    missing: projects.isSuccess && !inbox,
-    unavailable: projects.isError,
+    missing: projects.isSuccess && !inbox ? 'No inbox to capture into' : null,
+    unavailable: projects.isError ? 'Inbox unavailable' : null,
   }
 }
 
@@ -82,6 +82,12 @@ export const taskModule: WorkspaceModule = {
       end: true,
       chord: 'today',
       Count: TodayCount,
+      icon: (
+        <>
+          <circle cx="11" cy="11" r="7.5" />
+          <path d="M11 5.5a5.5 5.5 0 0 1 0 11z" fill="currentColor" stroke="none" />
+        </>
+      ),
     },
     // Done is a view of Review, not a page of its own: both answer what I did.
     { id: 'review', to: taskPage('review'), label: 'Review', end: false, chord: 'review' },
@@ -147,6 +153,8 @@ export const taskModule: WorkspaceModule = {
       return tasks.length === 0 ? null : `${tasks.length} tasks`
     },
   },
+  // `n` on a project page; `s`, `x`, `j` and `k` on a focused row.
+  bareKeys: ['n', 's', 'x', 'j', 'k'],
   help: [
     // `n` needs a project to create into, so it exists only on a project page.
     { title: 'On a project page', keys: [['n', 'Open the New dialog']] },
