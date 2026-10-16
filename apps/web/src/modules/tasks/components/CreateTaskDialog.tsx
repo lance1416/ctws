@@ -209,7 +209,7 @@ export function CreateTaskDialog({
               setValueAs: (v: unknown) => (typeof v === 'string' && v.trim() !== '' ? v : null),
             })}
             rows={3}
-            className={`${field} mt-1.5 max-w-[68ch]`}
+            className={`${field} mt-1.5 max-w-reading`}
           />
         </div>
 

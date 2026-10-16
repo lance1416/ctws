@@ -35,7 +35,8 @@ export function People() {
       {gone && <GoneNotice kind="person" />}
       <QueryStatus query={people} />
       {/* One list, filtered by circle; nothing is hidden by default. */}
-      <div className="mt-4 ml-[50px] flex flex-wrap gap-1 sm:ml-[62px]">
+      {/* Less the pills' own `px-2.5`, so their words start on the hang. */}
+      <div className="mt-4 ml-[calc(var(--hang)-var(--spacing)*2.5)] flex flex-wrap gap-1">
         {[null, ...CIRCLES].map((key) => {
           const picked = circle === key
           return (

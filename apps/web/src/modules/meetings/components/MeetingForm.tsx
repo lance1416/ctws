@@ -145,7 +145,7 @@ export function MeetingForm({
           id="m-note"
           {...form.register('note')}
           rows={4}
-          className={`${field} mt-1.5 max-w-[68ch]`}
+          className={`${field} mt-1.5 max-w-reading`}
         />
       </div>
     </form>

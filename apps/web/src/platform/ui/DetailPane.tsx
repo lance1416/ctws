@@ -90,7 +90,7 @@ export function DetailPane({
         // A flex column so `DangerZone` (`mt-auto`) sits on the pane's floor.
         className={`fixed ${LAYER.pane} flex flex-col overflow-y-auto p-5 text-ink focus:outline-none ${
           // Below 1024 the overlay stops 12px above the tab bar.
-          `right-3 bottom-3 rounded-[10px] bg-float shadow-float ${
+          `right-3 bottom-3 rounded-card bg-float shadow-float ${
             wide ? 'w-[22rem]' : 'w-[calc(100%-1.5rem)] max-w-md max-lg:bottom-19'
           }`
         }`}

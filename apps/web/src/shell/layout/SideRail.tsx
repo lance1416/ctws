@@ -129,7 +129,7 @@ export function SideRail() {
               >
                 <span
                   aria-hidden="true"
-                  className={`h-4 w-[3px] shrink-0 rounded-full ${railClass(p.color)}`}
+                  className={`h-4 w-thread shrink-0 rounded-full ${railClass(p.color)}`}
                 />
                 <span className="truncate">{p.name}</span>
                 {count > 0 && (

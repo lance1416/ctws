@@ -59,7 +59,7 @@ function Card({
         type="button"
         data-board-card={task.id}
         onClick={onOpen}
-        className={`w-full rounded-[10px] border border-transparent bg-sheet px-2.5 py-2 text-left hover:border-rule-strong ${
+        className={`w-full rounded-card border border-transparent bg-sheet px-2.5 py-2 text-left hover:border-rule-strong ${
           isDragging ? 'opacity-40' : ''
         }`}
       >
@@ -91,7 +91,7 @@ function Column({
       ref={setNodeRef}
       aria-label={STATUS_LABEL[status]}
       data-board-column={status}
-      className={`flex min-w-0 flex-col rounded-[10px] p-2 ${isOver ? 'bg-hover' : 'bg-desk'}`}
+      className={`flex min-w-0 flex-col rounded-card p-2 ${isOver ? 'bg-hover' : 'bg-desk'}`}
     >
       <h3 className="flex items-baseline gap-2 px-1 pb-1.5 text-sm font-semibold text-ink-muted">
         {STATUS_LABEL[status]}

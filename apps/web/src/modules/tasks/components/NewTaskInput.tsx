@@ -29,7 +29,7 @@ export function NewTaskInput({ depth, onCommit, onCancel, error }: Props) {
     // The row's anatomy with the margin and thread left empty: the cursor starts where titles do.
     <li data-depth={depth} data-new-task className="flex items-stretch">
       <span aria-hidden="true" className={`shrink-0 ${HANG_WIDTH}`} />
-      <span aria-hidden="true" className="w-[3px] shrink-0" />
+      <span aria-hidden="true" className="w-thread shrink-0" />
       {/* A column, so the failure message sits under the box it is about. */}
       <div
         style={{

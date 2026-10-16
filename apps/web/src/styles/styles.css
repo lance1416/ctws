@@ -197,6 +197,13 @@
   --text-display: 3rem;
   --text-display--line-height: 3.5rem;
 
+  /* SIZES WITH A NAME. `rounded-card` is every floating surface's and card's corner: menus, panes,
+     dialogs, tiles. `max-w-reading` is the measure of running text. `w-thread` is the project
+     strand's width, and every mark that wears a project's colour beside a name. */
+  --radius-card: 10px;
+  --container-reading: 68ch;
+  --spacing-thread: 3px;
+
   /* The four surfaces, light. The sheet is white paper; chrome and desk are two tints of the
      table it lies on; a float is paper too, lifted by `shadow-float`. */
   --color-sheet: #ffffff;
@@ -386,6 +393,20 @@
 /* Native controls (date pickers, scrollbars) follow the scheme too. */
 :root {
   color-scheme: light dark;
+}
+
+/*
+ * THE HANG: the date margin's width, past which a list's rows and a page's headings hang. One
+ * value, so every indent that lines up with it (a row's text, a control's words) is computed from
+ * it rather than added up by hand. `sm` is 40rem.
+ */
+:root {
+  --hang: calc(var(--spacing) * 15);
+}
+@media (width >= 40rem) {
+  :root {
+    --hang: calc(var(--spacing) * 18);
+  }
 }
 
 /*

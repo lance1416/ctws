@@ -12,6 +12,7 @@ import { PROJECT_PAGE_KEYS } from '../logic/keys'
 import { CreateTaskDialog } from './CreateTaskDialog'
 import { TaskBoard } from './TaskBoard'
 import { TaskTree } from './TaskTree'
+import { BODY_START } from '../../../shell/rows'
 
 /**
  * "6 open, 1 overdue, 63% done. Last moved today." The percentage is the mean of the root tasks'
@@ -105,7 +106,7 @@ export function ProjectTasks({ projectId, view }: { projectId: ProjectId; view: 
   return (
     <>
       {/* A line and Enter, inset to where the rows' bodies start. */}
-      <div className="mb-1 ml-[71px] flex max-w-[52ch] flex-wrap items-center gap-2 pr-2 sm:ml-[89px]">
+      <div className={`mb-1 flex max-w-[52ch] flex-wrap items-center gap-2 pr-2 ${BODY_START}`}>
         <input
           ref={box}
           {...title.field({ onSubmit: create.mutate, busy: create.isPending })}
@@ -119,7 +120,7 @@ export function ProjectTasks({ projectId, view }: { projectId: ProjectId; view: 
       </div>
       {/* The typed title stays in the box after a failure. */}
       {create.isError && (
-        <p id={failureId} role="alert" className="mt-1 ml-[71px] text-sm text-danger sm:ml-[89px]">
+        <p id={failureId} role="alert" className={`mt-1 text-sm text-danger ${BODY_START}`}>
           Couldn't create. Press Enter to try again.
         </p>
       )}

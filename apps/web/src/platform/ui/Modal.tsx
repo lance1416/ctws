@@ -79,7 +79,7 @@ export function Modal({
                 initialFocus.current?.focus()
               })
             }
-            className="h-fit w-full max-w-[68ch] rounded-[10px] bg-float shadow-float"
+            className="h-fit w-full max-w-reading rounded-card bg-float shadow-float"
           >
             <div className="flex items-center justify-between border-b border-rule px-5 py-3">
               <Dialog.Title className="font-semibold text-ink">{title}</Dialog.Title>

@@ -23,6 +23,10 @@ const BODY_GUTTER = '[--gutter:8px] sm:[--gutter:14px]'
  */
 export const ROW_BODY = `flex min-w-0 flex-1 pl-[var(--gutter)] ${BODY_GUTTER}`
 
+/** Where a row's text starts, for something above the rows to line up with: past the margin, the
+ * thread and the gutter. */
+export const BODY_START = `${BODY_GUTTER} ml-[calc(var(--hang)+var(--spacing-thread)+var(--gutter))]`
+
 export const ROW_LIST = 'flex flex-col'
 
 /**
@@ -37,7 +41,7 @@ export function ProjectRail({ projectId }: { projectId: ProjectId | null }) {
       data-thread
       data-project-rail={projectId ?? undefined}
       // A thing in no project keeps its strand, in the hairline's colour.
-      className={`pointer-events-none w-[3px] shrink-0 self-stretch ${
+      className={`pointer-events-none w-thread shrink-0 self-stretch ${
         projectId ? rail(projectId) : 'bg-rule'
       }`}
     />

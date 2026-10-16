@@ -94,7 +94,7 @@ export function WritingMode({
             </div>
             <div className="min-h-0 overflow-y-auto px-4 py-3">
               <span className="text-xs text-ink-muted">Preview</span>
-              <div data-writing-preview className="mt-1 max-w-[68ch]">
+              <div data-writing-preview className="mt-1 max-w-reading">
                 {preview.trim() === '' ? (
                   <p className="text-sm text-ink-subtle">No notes yet</p>
                 ) : (

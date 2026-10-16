@@ -67,7 +67,7 @@ export function ProjectIdentity({
               >
                 <span
                   aria-hidden="true"
-                  className={`h-4 w-[3px] shrink-0 rounded-full ${railClass(slot)}`}
+                  className={`h-4 w-thread shrink-0 rounded-full ${railClass(slot)}`}
                 />
                 Colour {i + 1}
                 {slot === color && <span className="ml-auto pl-3 text-ink-subtle">Current</span>}

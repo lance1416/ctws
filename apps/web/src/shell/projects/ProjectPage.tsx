@@ -87,7 +87,7 @@ export function ProjectPage() {
           <section
             aria-label="Linked"
             data-panel="Linked"
-            className="min-w-0 @max-5xl:ml-15 sm:@max-5xl:ml-18 @5xl:pt-1"
+            className="min-w-0 @max-5xl:ml-[var(--hang)] @5xl:pt-1"
           >
             <LinkBlocks of={{ type: 'project', id }} except={covered} />
           </section>

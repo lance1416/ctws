@@ -21,7 +21,7 @@ export function MovementPanel({ rows, today }: { rows: ProjectMovementResponse[]
               <Link
                 to={`/projects/${r.projectId}`}
                 data-stagnant={quiet ? r.projectId : undefined}
-                className="grid grid-cols-[3px_minmax(0,1fr)_auto] items-start gap-x-3 py-[7px] pr-1 hover:bg-hover"
+                className="grid grid-cols-[var(--spacing-thread)_minmax(0,1fr)_auto] items-start gap-x-3 py-[7px] pr-1 hover:bg-hover"
               >
                 {/* Not `data-project-rail`: this is not a task row and must not be measured as
                     one. The name beside it keeps the colour from being the only signal. */}

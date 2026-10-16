@@ -42,7 +42,7 @@ export function Login() {
     <main className="flex min-h-screen items-center justify-center px-4 py-10">
       <div className="w-full max-w-[20rem]">
         <div className="flex items-center gap-2.5">
-          <span aria-hidden="true" className="h-7 w-[3px] rounded-full bg-ink" />
+          <span aria-hidden="true" className="h-7 w-thread rounded-full bg-ink" />
           <h1 className="text-xl font-semibold">CTWS</h1>
         </div>
         <p className="mt-2 text-sm text-ink-muted">Your personal workbench</p>

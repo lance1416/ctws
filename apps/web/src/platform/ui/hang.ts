@@ -1,4 +1,4 @@
-/** Past the date margin, where a list's rows and the page's headings hang. */
-export const HANG = 'ml-15 sm:ml-18'
+/** Past the date margin, where a list's rows and the page's headings hang (`--hang`). */
+export const HANG = 'ml-[var(--hang)]'
 /** The date margin itself. */
-export const HANG_WIDTH = 'w-15 sm:w-18'
+export const HANG_WIDTH = 'w-[var(--hang)]'

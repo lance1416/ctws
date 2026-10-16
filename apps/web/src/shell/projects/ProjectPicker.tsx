@@ -7,7 +7,10 @@ import { useProjectRail } from './projectColor'
 export function ProjectChip({ projectId }: { projectId: ProjectId }) {
   const rail = useProjectRail()
   return (
-    <span aria-hidden="true" className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(projectId)}`} />
+    <span
+      aria-hidden="true"
+      className={`h-3.5 w-thread shrink-0 rounded-full ${rail(projectId)}`}
+    />
   )
 }
 

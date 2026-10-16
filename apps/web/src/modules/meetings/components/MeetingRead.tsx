@@ -128,7 +128,7 @@ export function MeetingRead({
 
       <Field label="Notes">
         {meeting.note ? (
-          <p className="max-w-[68ch] text-sm whitespace-pre-wrap text-ink">{meeting.note}</p>
+          <p className="max-w-reading text-sm whitespace-pre-wrap text-ink">{meeting.note}</p>
         ) : (
           <p className="text-sm text-ink-subtle">No notes yet</p>
         )}

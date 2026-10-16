@@ -106,7 +106,7 @@ export function Calendar() {
               <span
                 aria-hidden="true"
                 data-key-mark
-                className={`h-3 w-[3px] shrink-0 ${rail(id)}`}
+                className={`h-3 w-thread shrink-0 ${rail(id)}`}
               />
               {name}
             </li>
@@ -173,7 +173,7 @@ export function Calendar() {
                           <span
                             aria-hidden="true"
                             data-entry-mark
-                            className={`h-3 w-[3px] shrink-0 ${
+                            className={`h-3 w-thread shrink-0 ${
                               entry.projectId ? rail(entry.projectId) : ''
                             }`}
                           />

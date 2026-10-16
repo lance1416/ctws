@@ -266,7 +266,7 @@ function SearchRow({
         selected ? 'bg-hover' : ''
       }`}
     >
-      {row.rail ?? <span aria-hidden="true" className="w-[3px] shrink-0" />}
+      {row.rail ?? <span aria-hidden="true" className="w-thread shrink-0" />}
       <span className="flex h-6 w-6 shrink-0 items-center justify-center">{row.mark}</span>
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate text-ink">{row.title}</span>

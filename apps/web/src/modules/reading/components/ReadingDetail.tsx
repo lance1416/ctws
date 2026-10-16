@@ -122,7 +122,7 @@ function ReadingFields({
       </div>
 
       {item.fetchedSummary && !item.title && (
-        <p className="max-w-[68ch] text-sm text-ink-muted">{item.fetchedSummary}</p>
+        <p className="max-w-reading text-sm text-ink-muted">{item.fetchedSummary}</p>
       )}
 
       <div className="@container">

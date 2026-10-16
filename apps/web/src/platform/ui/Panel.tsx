@@ -27,7 +27,7 @@ export function RowsPanel(props: Block) {
 
 /** A card on the Workbench's desk, whose step from desk to sheet is its only edge. */
 export function Tile(props: Block) {
-  return <Frame {...props} box="rounded-[10px] bg-sheet" head="px-4 pt-3.5" body="px-1 sm:px-2" />
+  return <Frame {...props} box="rounded-card bg-sheet" head="px-4 pt-3.5" body="px-1 sm:px-2" />
 }
 
 function Frame({
@@ -70,7 +70,9 @@ function Frame({
 /** A panel's one quiet empty line. `hang` puts it on the titles' edge. */
 export function PanelEmpty({ children, hang = false }: { children: ReactNode; hang?: boolean }) {
   return (
-    <p className={`py-1.5 text-sm text-ink-subtle ${hang ? `${HANG} pl-[17px]` : 'px-2'}`}>
+    <p
+      className={`py-1.5 text-sm text-ink-subtle ${hang ? `${HANG} pl-[calc(var(--spacing-thread)+var(--spacing)*3.5)]` : 'px-2'}`}
+    >
       {children}
     </p>
   )

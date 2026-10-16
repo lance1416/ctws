@@ -109,7 +109,7 @@ export function PersonRead({ person, onEdit }: { person: PersonResponse; onEdit:
             Edit notes
           </Button>
         </div>
-        <div data-person-notes className="mt-1.5 max-w-[68ch] text-ink">
+        <div data-person-notes className="mt-1.5 max-w-reading text-ink">
           {person.note ? (
             <NoteBody source={person.note} />
           ) : (

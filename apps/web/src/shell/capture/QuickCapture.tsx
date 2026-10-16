@@ -87,7 +87,7 @@ export function QuickCapture() {
         {missing && (
           <p
             role="alert"
-            className="rounded-[10px] bg-float px-3 py-1.5 text-sm text-danger shadow-float"
+            className="rounded-card bg-float px-3 py-1.5 text-sm text-danger shadow-float"
           >
             {missing}
           </p>
@@ -96,7 +96,7 @@ export function QuickCapture() {
         {unavailable && (
           <p
             role="status"
-            className="rounded-[10px] bg-float px-3 py-1.5 text-sm text-danger shadow-float"
+            className="rounded-card bg-float px-3 py-1.5 text-sm text-danger shadow-float"
           >
             {unavailable}
           </p>
@@ -104,7 +104,7 @@ export function QuickCapture() {
         {landed && (
           <p
             role="status"
-            className="truncate rounded-[10px] bg-float px-3 py-1.5 text-sm text-ink-muted shadow-float"
+            className="truncate rounded-card bg-float px-3 py-1.5 text-sm text-ink-muted shadow-float"
           >
             Added to{' '}
             <Link to={landed.to} className={LINK}>
@@ -115,7 +115,7 @@ export function QuickCapture() {
         {capture.isError && (
           <p
             role="alert"
-            className="rounded-[10px] bg-float px-3 py-1.5 text-sm text-danger shadow-float"
+            className="rounded-card bg-float px-3 py-1.5 text-sm text-danger shadow-float"
           >
             Couldn't save. Press Enter to try again.
           </p>

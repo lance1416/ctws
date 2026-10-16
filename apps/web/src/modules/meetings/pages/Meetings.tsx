@@ -83,7 +83,12 @@ export function Meetings() {
         )}
 
         <div className="mt-8">
-          <Button look="inline" onClick={() => setShowPast((v) => !v)} className="ml-13 sm:ml-16">
+          {/* Less the button's own `px-2`, so its word starts on the hang. */}
+          <Button
+            look="inline"
+            onClick={() => setShowPast((v) => !v)}
+            className="ml-[calc(var(--hang)-var(--spacing)*2)]"
+          >
             {showPast ? 'Hide earlier' : 'Earlier'}
           </Button>
           {showPast &&

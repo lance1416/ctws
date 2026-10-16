@@ -112,7 +112,7 @@ export function TaskReading({
         <span className={label}>Notes</span>
         {/* At the 68ch reading measure; `NoteBody` shows the plain text until Markdown loads. */}
         {task.notes ? (
-          <div data-detail-notes className="mt-1 max-w-[68ch] text-ink">
+          <div data-detail-notes className="mt-1 max-w-reading text-ink">
             <NoteBody source={task.notes} />
           </div>
         ) : (
