@@ -6,7 +6,7 @@ import {
   DaySection,
   leadFor,
   ProjectRail,
-  ROW_BODY,
+  ROW_BODY_WIDE,
   ROW_LIST,
   RowLead,
 } from '../../../../shell/rows'
@@ -180,7 +180,7 @@ function Row({
       <RowLead lead={lead} />
       <ProjectRail projectId={t.projectId} />
       <div
-        className={`${ROW_BODY} relative items-start gap-x-2.5 pr-2 group-hover:bg-hover ${body}`}
+        className={`${ROW_BODY_WIDE} relative items-start gap-x-2.5 pr-2 group-hover:bg-hover ${body}`}
       >
         {children}
       </div>

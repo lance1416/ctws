@@ -1,9 +1,11 @@
 import { expect, test, type Page } from '@playwright/test'
 import {
   accountZone,
+  dayInZone,
   makeProject,
   makeReading,
   makeTask,
+  meetingToday,
   registerFreshUser,
   sidewaysScroll,
   WEB,
@@ -96,3 +98,35 @@ for (const width of [320, 375]) {
     expect(await problems(page), 'review, a week back').toEqual([])
   })
 }
+
+/** How far in a row's body starts: the padding of the li's child that holds `title`. */
+const bodyStart = (page: Page, title: string) =>
+  page
+    .getByRole('main')
+    .getByText(title, { exact: true })
+    .first()
+    .evaluate((el) => {
+      let at: Element = el
+      while (at.parentElement && at.parentElement.tagName !== 'LI') at = at.parentElement
+      return getComputedStyle(at).paddingLeft
+    })
+
+test("Today's rows, Done today and Completed start 14px past the thread on a phone too", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 800 })
+  await registerFreshUser(page)
+  const zone = await accountZone(page)
+  const pid = await makeProject(page, 'Gutter')
+  await makeTask(page, pid, 'Planned today', { scheduledOn: dayInZone(zone) })
+  await makeTask(page, pid, 'Under way', { status: 'in_progress' })
+  await makeTask(page, pid, 'Finished', { status: 'done' })
+  await meetingToday(page, 'Standup', '23:59', zone)
+
+  await page.goto('/tasks/today')
+  for (const title of ['Planned today', 'Under way', 'Finished', 'Standup'])
+    expect(await bodyStart(page, title), title).toBe('14px')
+
+  await page.goto('/tasks/review?view=done')
+  expect(await bodyStart(page, 'Finished'), 'Completed').toBe('14px')
+})

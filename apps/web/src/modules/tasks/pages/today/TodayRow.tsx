@@ -1,6 +1,6 @@
 import { type TaskStatus, type TodayTaskResponse, type TaskId } from '@ctws/contracts'
 import type { KeyboardEvent } from 'react'
-import { leadFor, ProjectRail, ROW_BODY, RowLead } from '../../../../shell/rows'
+import { leadFor, ProjectRail, ROW_BODY_WIDE, RowLead } from '../../../../shell/rows'
 import { toggleDoneTarget, toggleStartTarget } from '../../logic/status'
 import { blockedLabel } from '../../logic/blockedLabel'
 import { StartButton, StatusButton } from '../../components/StatusControls'
@@ -67,7 +67,7 @@ export function TodayRow({
     >
       <RowLead lead={lead} />
       <ProjectRail projectId={t.projectId} />
-      <div className={`${ROW_BODY} min-h-11 items-start gap-x-2.5 pr-2 group-hover:bg-hover`}>
+      <div className={`${ROW_BODY_WIDE} min-h-11 items-start gap-x-2.5 pr-2 group-hover:bg-hover`}>
         <span className="flex h-11 shrink-0 items-center">
           <StatusButton
             status={t.status}
