@@ -6,6 +6,7 @@ import { call } from '../../platform/http/api'
 export const citiesQuery = (q: string) =>
   queryOptions({
     queryKey: ['cities', q],
-    queryFn: async () => (await call(api.cities.search, { query: { q } })).cities,
+    queryFn: async ({ signal }) =>
+      (await call(api.cities.search, { query: { q } }, { signal })).cities,
     staleTime: Infinity,
   })

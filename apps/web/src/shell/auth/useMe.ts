@@ -11,9 +11,9 @@ import { useNow } from '../../platform/time/useNow'
 export function useMe() {
   return useQuery<UserResponse | null>({
     queryKey: ['me'],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       try {
-        return await call(api.auth.me)
+        return await call(api.auth.me, {}, { signal })
       } catch (error) {
         if (error instanceof ApiError && error.status === 401) return null
         throw error

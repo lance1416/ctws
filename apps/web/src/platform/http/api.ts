@@ -45,6 +45,12 @@ export function problemText(error: unknown): string | null {
   return error instanceof ApiError ? (error.detail ?? error.message) : error.message
 }
 
+/** How a call is made, apart from what it sends. */
+type CallOptions = {
+  /** Aborts the request: a query passes its own, so a cancelled read stops on the wire too. */
+  signal?: AbortSignal | undefined
+}
+
 /**
  * Calls one endpoint of the table: the path is built from its params and query, the body is sent
  * as JSON, and the answer is parsed by the endpoint's own response schema, so what a caller gets
@@ -52,7 +58,9 @@ export function problemText(error: unknown): string | null {
  */
 export async function call<E extends Endpoint>(
   endpoint: E,
-  ...[input]: object extends RequestOf<E> ? [RequestOf<E>?] : [RequestOf<E>]
+  ...[input, options]: object extends RequestOf<E>
+    ? [RequestOf<E>?, CallOptions?]
+    : [RequestOf<E>, CallOptions?]
 ): Promise<ResponseOf<E>> {
   const { params, query, body } = (input ?? {}) as {
     params?: object
@@ -68,6 +76,7 @@ export async function call<E extends Endpoint>(
     method: endpoint.method,
     headers,
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+    ...(options?.signal ? { signal: options.signal } : {}),
   })
 
   const text = res.status === 204 ? '' : await res.text()
@@ -104,14 +113,17 @@ function readAnswer(schema: z.ZodType, data: unknown): { success: boolean; data?
 
 /**
  * Every page of a list, read in turn from the first: what a screen showing the whole list asks
- * for, so a list longer than one page is never cut short without anyone saying so.
+ * for, so a list longer than one page is never cut short without anyone saying so. Once `signal`
+ * aborts, no further page is asked for.
  */
 export async function everyPage<P extends { page: PageInfo }>(
   read: (cursor: string | undefined) => Promise<P>,
+  signal?: AbortSignal,
 ): Promise<P[]> {
   const pages: P[] = []
   let cursor: string | undefined
   do {
+    signal?.throwIfAborted()
     const one = await read(cursor)
     pages.push(one)
     cursor = one.page.nextCursor ?? undefined

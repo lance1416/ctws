@@ -14,10 +14,16 @@ import { call, everyPage } from '../../platform/http/api'
 export const readingQuery = ({ unfiled = false }: { unfiled?: boolean } = {}) =>
   queryOptions({
     queryKey: ['reading', 'list', unfiled ? 'unfiled' : 'all'],
-    queryFn: async () =>
+    queryFn: async ({ signal }) =>
       (
-        await everyPage((cursor) =>
-          call(api.reading.list, { query: { ...(unfiled ? { unfiled: 'true' } : {}), cursor } }),
+        await everyPage(
+          (cursor) =>
+            call(
+              api.reading.list,
+              { query: { ...(unfiled ? { unfiled: 'true' } : {}), cursor } },
+              { signal },
+            ),
+          signal,
         )
       ).flatMap((p) => p.reading),
   })
@@ -25,15 +31,17 @@ export const readingQuery = ({ unfiled = false }: { unfiled?: boolean } = {}) =>
 export const readingSearchQuery = (q: string) =>
   queryOptions({
     queryKey: ['reading', 'search', q],
-    queryFn: async () => (await call(api.reading.search, { query: { q } })).reading,
+    queryFn: async ({ signal }) =>
+      (await call(api.reading.search, { query: { q } }, { signal })).reading,
   })
 
 /** Calendar entries; the day is the server's, in the account's zone. */
 export const readingCalendarQuery = (range: { from: string; to: string }) =>
   queryOptions({
     queryKey: ['reading', 'calendar', range.from, range.to],
-    queryFn: async () =>
-      (await call(api.reading.calendar, { query: { view: 'calendar', ...range } })).entries,
+    queryFn: async ({ signal }) =>
+      (await call(api.reading.calendar, { query: { view: 'calendar', ...range } }, { signal }))
+        .entries,
   })
 
 export function createReadingItem(body: CreateReadingItemBody): Promise<ReadingItemResponse> {

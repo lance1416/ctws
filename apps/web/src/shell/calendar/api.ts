@@ -8,5 +8,6 @@ type Range = { from: string; to: string }
 export const calendarDaysQuery = (range: Range) =>
   queryOptions({
     queryKey: ['calendar', 'days', range.from, range.to],
-    queryFn: async () => (await call(api.calendar.days, { query: range })).days,
+    queryFn: async ({ signal }) =>
+      (await call(api.calendar.days, { query: range }, { signal })).days,
   })

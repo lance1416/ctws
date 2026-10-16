@@ -103,6 +103,22 @@ describe('call', () => {
     ).rejects.toThrow('Registration is closed')
   })
 
+  it('aborts the request when its signal does', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        (_url: string, init: RequestInit) =>
+          new Promise((_resolve, reject) =>
+            init.signal!.addEventListener('abort', () => reject(init.signal!.reason)),
+          ),
+      ),
+    )
+    const abort = new AbortController()
+    const pending = call(api.auth.me, {}, { signal: abort.signal })
+    abort.abort()
+    await expect(pending).rejects.toBe(abort.signal.reason)
+  })
+
   it('returns undefined for a 204 instead of failing to parse JSON', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 204 })))
     await expect(call(api.auth.logout)).resolves.toBeUndefined()
@@ -120,6 +136,16 @@ describe('everyPage', () => {
     const pages = await everyPage(read)
     expect(pages.flatMap((p) => p.rows)).toEqual([1, 2, 3, 4, 5])
     expect(read.mock.calls).toEqual([[undefined], ['2'], ['4']])
+  })
+
+  it('asks for no further page once its signal aborts', async () => {
+    const abort = new AbortController()
+    const read = vi.fn(async (cursor: string | undefined) => {
+      abort.abort()
+      return { page: { limit: 1, nextCursor: cursor ? null : '2' } }
+    })
+    await expect(everyPage(read, abort.signal)).rejects.toBe(abort.signal.reason)
+    expect(read).toHaveBeenCalledTimes(1)
   })
 
   it('asks once when the first page is the whole list', async () => {

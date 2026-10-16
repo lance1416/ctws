@@ -23,9 +23,10 @@ type DayRange = { from: string; to: string }
 export type EditScope = 'one' | 'following' | 'all'
 
 /** Each page is a page of series, in time order within itself; the pages are merged here. */
-async function listMeetings(range: DayRange): Promise<MeetingOccurrence[]> {
-  const pages = await everyPage((cursor) =>
-    call(api.meetings.list, { query: { ...range, cursor } }),
+async function listMeetings(range: DayRange, signal: AbortSignal): Promise<MeetingOccurrence[]> {
+  const pages = await everyPage(
+    (cursor) => call(api.meetings.list, { query: { ...range, cursor } }, { signal }),
+    signal,
   )
   return pages
     .flatMap((p) => p.meetings)
@@ -38,7 +39,7 @@ async function listMeetings(range: DayRange): Promise<MeetingOccurrence[]> {
 export const meetingsQuery = (range: DayRange) =>
   queryOptions({
     queryKey: ['meetings', 'list', range.from, range.to],
-    queryFn: () => listMeetings(range),
+    queryFn: ({ signal }) => listMeetings(range, signal),
   })
 
 /**
@@ -49,16 +50,20 @@ export const meetingsQuery = (range: DayRange) =>
 export const occurrenceQuery = (meetingId: MeetingId | null, recurrenceId: string) =>
   queryOptions({
     queryKey: ['meetings', 'one', meetingId, recurrenceId],
-    queryFn: meetingId === null ? skipToken : () => readOccurrence(meetingId, recurrenceId),
+    queryFn:
+      meetingId === null
+        ? skipToken
+        : ({ signal }) => readOccurrence(meetingId, recurrenceId, signal),
   })
 
 /** One occurrence, or null when it is cancelled or gone. */
 export async function readOccurrence(
   id: MeetingId,
   recurrenceId: string,
+  signal?: AbortSignal,
 ): Promise<MeetingOccurrence | null> {
   try {
-    return await call(api.meetings.occurrence, { params: { id, recurrenceId } })
+    return await call(api.meetings.occurrence, { params: { id, recurrenceId } }, { signal })
   } catch (e) {
     if (e instanceof ApiError && e.status === 404) return null
     throw e
@@ -75,17 +80,17 @@ export const seriesQuery = (meetingId: MeetingId | null, today: string) =>
     queryFn:
       meetingId === null
         ? skipToken
-        : async () => {
-            const ahead = await listMeetings({
-              from: today,
-              to: addDays(today, MAX_CALENDAR_SPAN_DAYS),
-            })
+        : async ({ signal }) => {
+            const ahead = await listMeetings(
+              { from: today, to: addDays(today, MAX_CALENDAR_SPAN_DAYS) },
+              signal,
+            )
             const hit = ahead.find((m) => m.meetingId === meetingId)
             if (hit) return hit
-            const behind = await listMeetings({
-              from: addDays(today, -MAX_CALENDAR_SPAN_DAYS),
-              to: today,
-            })
+            const behind = await listMeetings(
+              { from: addDays(today, -MAX_CALENDAR_SPAN_DAYS), to: today },
+              signal,
+            )
             return [...behind].reverse().find((m) => m.meetingId === meetingId) ?? null
           },
   })
@@ -94,10 +99,16 @@ export const seriesQuery = (meetingId: MeetingId | null, today: string) =>
 export const meetingCalendarQuery = (range: DayRange) =>
   queryOptions({
     queryKey: ['meetings', 'calendar', range.from, range.to],
-    queryFn: async () =>
+    queryFn: async ({ signal }) =>
       (
-        await everyPage((cursor) =>
-          call(api.meetings.calendar, { query: { view: 'calendar', ...range, cursor } }),
+        await everyPage(
+          (cursor) =>
+            call(
+              api.meetings.calendar,
+              { query: { view: 'calendar', ...range, cursor } },
+              { signal },
+            ),
+          signal,
         )
       ).flatMap((p) => p.entries),
   })

@@ -7,7 +7,7 @@ export type Endpoint = { type: ObjectType; id: string }
 export const linksQuery = (of: Endpoint) =>
   queryOptions({
     queryKey: ['links', of.type, of.id],
-    queryFn: async () => (await call(api.links.of, { query: of })).groups,
+    queryFn: async ({ signal }) => (await call(api.links.of, { query: of }, { signal })).groups,
   })
 
 export function createLink(body: CreateLinkBody) {
@@ -22,10 +22,12 @@ export function deleteLink(id: LinkId): Promise<void> {
 export const candidatesQuery = (of: Endpoint, q: string) =>
   queryOptions({
     queryKey: ['links', 'candidates', of.type, of.id, q],
-    queryFn: async () =>
+    queryFn: async ({ signal }) =>
       (
-        await call(api.links.candidates, {
-          query: { view: 'candidates', ...of, ...(q ? { q } : {}) },
-        })
+        await call(
+          api.links.candidates,
+          { query: { view: 'candidates', ...of, ...(q ? { q } : {}) } },
+          { signal },
+        )
       ).candidates,
   })

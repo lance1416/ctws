@@ -21,47 +21,60 @@ export type BirthdayDraft = {
   remindLead: RemindLead
 }
 
-async function listPeople(): Promise<PersonResponse[]> {
-  const pages = await everyPage((cursor) => call(api.people.list, { query: { cursor } }))
+async function listPeople(signal: AbortSignal): Promise<PersonResponse[]> {
+  const pages = await everyPage(
+    (cursor) => call(api.people.list, { query: { cursor } }, { signal }),
+    signal,
+  )
   return pages.flatMap((p) => p.people)
 }
 
-async function searchPeople(q: string): Promise<PersonResponse[]> {
-  return (await call(api.people.search, { query: { q } })).people
-}
-
 /** What a birthday being typed would mean; the server answers, so the lunar rules live once. */
-function previewBirthday(draft: BirthdayDraft): Promise<BirthdayPreviewResponse> {
-  return call(api.people.birthdayPreview, {
-    query: {
-      calendar: draft.calendar,
-      month: draft.month,
-      day: draft.day,
-      ...(draft.year !== null ? { year: draft.year } : {}),
-      ...(draft.leapMonth ? { leap: 'true' } : {}),
-      ...(draft.hourBranch !== null ? { hour: draft.hourBranch } : {}),
+function previewBirthday(
+  draft: BirthdayDraft,
+  signal: AbortSignal,
+): Promise<BirthdayPreviewResponse> {
+  return call(
+    api.people.birthdayPreview,
+    {
+      query: {
+        calendar: draft.calendar,
+        month: draft.month,
+        day: draft.day,
+        ...(draft.year !== null ? { year: draft.year } : {}),
+        ...(draft.leapMonth ? { leap: 'true' } : {}),
+        ...(draft.hourBranch !== null ? { hour: draft.hourBranch } : {}),
+      },
     },
-  })
+    { signal },
+  )
 }
 
-export const peopleQuery = () => queryOptions({ queryKey: ['people', 'list'], queryFn: listPeople })
+export const peopleQuery = () =>
+  queryOptions({ queryKey: ['people', 'list'], queryFn: ({ signal }) => listPeople(signal) })
 
 /** The birthdays page in one request: segments, month index and circle counts, all the server's. */
 export const birthdaysQuery = () =>
   queryOptions({
     queryKey: ['people', 'birthdays'],
-    queryFn: () => call(api.people.birthdays, { query: { view: 'birthdays' } }),
+    queryFn: ({ signal }) =>
+      call(api.people.birthdays, { query: { view: 'birthdays' } }, { signal }),
   })
 
 export const birthdayCalendarQuery = (range: { from: string; to: string }) =>
   queryOptions({
     queryKey: ['people', 'calendar', range.from, range.to],
-    queryFn: async () =>
-      (await call(api.people.calendar, { query: { view: 'calendar', ...range } })).entries,
+    queryFn: async ({ signal }) =>
+      (await call(api.people.calendar, { query: { view: 'calendar', ...range } }, { signal }))
+        .entries,
   })
 
 export const personSearchQuery = (q: string) =>
-  queryOptions({ queryKey: ['people', 'search', q], queryFn: () => searchPeople(q) })
+  queryOptions({
+    queryKey: ['people', 'search', q],
+    queryFn: async ({ signal }) =>
+      (await call(api.people.search, { query: { q } }, { signal })).people,
+  })
 
 export const birthdayPreviewQuery = (draft: BirthdayDraft) =>
   queryOptions({
@@ -75,7 +88,7 @@ export const birthdayPreviewQuery = (draft: BirthdayDraft) =>
       draft.leapMonth,
       draft.hourBranch,
     ],
-    queryFn: () => previewBirthday(draft),
+    queryFn: ({ signal }) => previewBirthday(draft, signal),
   })
 
 export function createPerson(body: CreatePersonBody): Promise<PersonResponse> {

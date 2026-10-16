@@ -8,23 +8,28 @@ import {
 import { queryOptions, useQuery, type UseQueryResult } from '@tanstack/react-query'
 import { call, everyPage } from '../../platform/http/api'
 
-/** The live projects, with the counts the server's modules add to each. */
-async function listProjects(): Promise<ProjectListItem[]> {
-  const pages = await everyPage((cursor) => call(api.projects.list, { query: { cursor } }))
-  return pages.flatMap((p) => p.projects)
-}
-
-/** The archived projects: the server leaves them out of the list above unless asked. */
-async function listArchivedProjects(): Promise<ProjectListItem[]> {
-  const pages = await everyPage((cursor) =>
-    call(api.projects.list, { query: { archived: 'true', cursor } }),
+/** Live or archived projects, with the counts the server's modules add to each. */
+async function listProjects(archived: boolean, signal: AbortSignal): Promise<ProjectListItem[]> {
+  const pages = await everyPage(
+    (cursor) =>
+      call(
+        api.projects.list,
+        { query: { ...(archived ? { archived: 'true' } : {}), cursor } },
+        { signal },
+      ),
+    signal,
   )
   return pages.flatMap((p) => p.projects)
 }
 
-export const projectsQuery = () => queryOptions({ queryKey: ['projects'], queryFn: listProjects })
+export const projectsQuery = () =>
+  queryOptions({ queryKey: ['projects'], queryFn: ({ signal }) => listProjects(false, signal) })
+/** The archived projects: the server leaves them out of the list above unless asked. */
 export const archivedProjectsQuery = () =>
-  queryOptions({ queryKey: ['projects', 'archived'], queryFn: listArchivedProjects })
+  queryOptions({
+    queryKey: ['projects', 'archived'],
+    queryFn: ({ signal }) => listProjects(true, signal),
+  })
 
 export const useProjects = (): UseQueryResult<ProjectListItem[]> => useQuery(projectsQuery())
 

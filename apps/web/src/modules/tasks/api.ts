@@ -17,24 +17,20 @@ type Range = { from: string; to: string }
 /** The list and its rollups share one cache entry, so the numbers always match the rows. */
 export type ProjectTasks = ResponseOf<typeof api.tasks.board>
 
-function listProjectTasks(projectId: ProjectId): Promise<ProjectTasks> {
-  return call(api.tasks.board, { query: { projectId } })
-}
-
 /** The prefix every project's task list shares, for optimistic edits across all of them. */
 export const PROJECT_TASKS = ['tasks', 'list'] as const
 
 export const projectTasksQuery = (projectId: ProjectId) =>
   queryOptions({
     queryKey: [...PROJECT_TASKS, projectId],
-    queryFn: () => listProjectTasks(projectId),
+    queryFn: ({ signal }) => call(api.tasks.board, { query: { projectId } }, { signal }),
   })
 
 /** One task by its id: what a link to a task asks to find the project it lives in. */
 export const taskQuery = (id: TaskId) =>
   queryOptions({
     queryKey: ['tasks', 'one', id],
-    queryFn: () => call(api.tasks.get, { params: { id } }),
+    queryFn: ({ signal }) => call(api.tasks.get, { params: { id } }, { signal }),
     retry: false,
   })
 
@@ -55,14 +51,16 @@ export const ROW_WRITES = { id: 'tasks:rows' }
 export const todayQuery = (day: string) =>
   queryOptions({
     queryKey: [...TODAY_TASKS, day],
-    queryFn: async () => (await call(api.tasks.today, { query: { view: 'today' } })).tasks,
+    queryFn: async ({ signal }) =>
+      (await call(api.tasks.today, { query: { view: 'today' } }, { signal })).tasks,
   })
 
 /** Newest first; the server decides each task's day and whether this is the whole history. */
 export const completedQuery = (day: string) =>
   queryOptions({
     queryKey: ['tasks', 'completed', day],
-    queryFn: () => call(api.tasks.completed, { query: { view: 'completed' } }),
+    queryFn: ({ signal }) =>
+      call(api.tasks.completed, { query: { view: 'completed' } }, { signal }),
   })
 
 /**
@@ -72,21 +70,24 @@ export const completedQuery = (day: string) =>
 export const movementQuery = (day: string) =>
   queryOptions({
     queryKey: ['tasks', 'movement', day],
-    queryFn: async () => (await call(api.tasks.movement, { query: { view: 'movement' } })).projects,
+    queryFn: async ({ signal }) =>
+      (await call(api.tasks.movement, { query: { view: 'movement' } }, { signal })).projects,
   })
 
 // The server owns the matching and the order; nothing here re-ranks or re-filters.
 export const taskSearchQuery = (q: string) =>
   queryOptions({
     queryKey: ['tasks', 'search', q],
-    queryFn: async () => (await call(api.tasks.search, { query: { q } })).tasks,
+    queryFn: async ({ signal }) =>
+      (await call(api.tasks.search, { query: { q } }, { signal })).tasks,
   })
 
 export const taskCalendarQuery = (range: Range) =>
   queryOptions({
     queryKey: ['tasks', 'calendar', range.from, range.to],
-    queryFn: async () =>
-      (await call(api.tasks.calendar, { query: { view: 'calendar', ...range } })).entries,
+    queryFn: async ({ signal }) =>
+      (await call(api.tasks.calendar, { query: { view: 'calendar', ...range } }, { signal }))
+        .entries,
   })
 
 /**
@@ -96,14 +97,15 @@ export const taskCalendarQuery = (range: Range) =>
 export const reviewQuery = (range: Range | null) =>
   queryOptions({
     queryKey: ['tasks', 'review', range?.from ?? 'week', range?.to ?? ''],
-    queryFn: () => call(api.tasks.review, { query: { view: 'review', ...range } }),
+    queryFn: ({ signal }) =>
+      call(api.tasks.review, { query: { view: 'review', ...range } }, { signal }),
   })
 
 /** Both directions for one task, finished blockers included -- what the detail pane shows. */
 export const dependenciesQuery = (id: TaskId) =>
   queryOptions({
     queryKey: ['tasks', 'dependencies', id],
-    queryFn: () => call(api.tasks.dependencies, { params: { id } }),
+    queryFn: ({ signal }) => call(api.tasks.dependencies, { params: { id } }, { signal }),
   })
 
 /** `id` is the task that waits; `blockerId` is what it waits for. */
