@@ -1,3 +1,4 @@
+import { LAYER } from '../../platform/ui/layers'
 import type { City } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useId, useState } from 'react'
@@ -59,7 +60,7 @@ export function PickCity({
       {listed && (
         <ul
           id={listId}
-          className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded-[10px] bg-float py-1 shadow-float"
+          className={`absolute ${LAYER.menu} mt-1 max-h-56 w-full overflow-y-auto rounded-card bg-float py-1 shadow-float`}
         >
           {cities.map((c: City) => (
             <li key={c.label}>

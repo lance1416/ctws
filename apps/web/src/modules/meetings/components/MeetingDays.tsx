@@ -1,3 +1,4 @@
+import { LAYER } from '../../../platform/ui/layers'
 import { occurrenceKey, type MeetingOccurrence } from '@ctws/contracts'
 import { clockTime } from '@ctws/core/clock'
 import { Fragment, type ReactNode } from 'react'
@@ -135,7 +136,7 @@ function MeetingRow({
             href={join}
             target="_blank"
             rel="noreferrer"
-            className={`relative z-10 shrink-0 rounded-md px-1.5 py-0.5 text-sm font-semibold ${LINK} hover:bg-hover`}
+            className={`relative ${LAYER.raised} shrink-0 rounded-md px-1.5 py-0.5 text-sm font-semibold ${LINK} hover:bg-hover`}
           >
             Join
           </a>

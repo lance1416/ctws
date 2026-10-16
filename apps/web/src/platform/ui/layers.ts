@@ -3,6 +3,8 @@
  * is also set on it in `styles.css`.
  */
 export const LAYER = {
+  /** Above its own row's stretched link, so a control in the row takes its own clicks. */
+  raised: 'z-10',
   /** The detail pane and modal dialogs, with their scrims. */
   pane: 'z-20',
   /** The top bar and the phone's tab bar. */
