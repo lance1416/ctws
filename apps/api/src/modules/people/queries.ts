@@ -1,4 +1,4 @@
-import type { PersonChannel } from '@ctws/contracts'
+import type { PersonChannel, RemindLead } from '@ctws/contracts'
 import type { BirthdayCalendar } from '@ctws/core'
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
@@ -20,7 +20,7 @@ export type StoredBirthday = {
   day: number
   leapMonth: boolean
   hourBranch: number | null
-  remindLead: number
+  remindLead: RemindLead
 }
 
 export type PersonRow = Omit<
@@ -99,21 +99,11 @@ async function hydrate(q: Queryable, workspaceId: string, rows: Person[]): Promi
 }
 
 /** By name: a person list is read to find someone. */
-export async function listPeople(
-  q: Queryable,
-  workspaceId: string,
-  opts: { projectId?: string; unfiled?: boolean } = {},
-): Promise<PersonRow[]> {
+export async function listPeople(q: Queryable, workspaceId: string): Promise<PersonRow[]> {
   const rows = await q
     .select()
     .from(people)
-    .where(
-      and(
-        visiblePeople(workspaceId),
-        opts.projectId ? personFiling.filedUnder(opts.projectId) : undefined,
-        opts.unfiled ? personFiling.unfiled() : undefined,
-      ),
-    )
+    .where(visiblePeople(workspaceId))
     .orderBy(asc(people.name), asc(people.id))
   return hydrate(q, workspaceId, rows)
 }
@@ -128,12 +118,14 @@ export async function getPerson(q: Queryable, workspaceId: string, id: string): 
   return row!
 }
 
+/** How many people a search returns. */
+const SEARCH_LIMIT = 20
+
 /** By name, organisation or any address: "the one at @example.com" is a common question. */
 export async function searchPeople(
   q: Queryable,
   workspaceId: string,
   query: string,
-  limit = 20,
 ): Promise<PersonRow[]> {
   const rows = await q
     .select()
@@ -151,7 +143,7 @@ export async function searchPeople(
       ),
     )
     .orderBy(asc(people.name), asc(people.id))
-    .limit(limit)
+    .limit(SEARCH_LIMIT)
   return hydrate(q, workspaceId, rows)
 }
 

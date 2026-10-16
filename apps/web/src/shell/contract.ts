@@ -140,9 +140,9 @@ export type CaptureTargetState = {
   /** null while unknown, or when this module cannot capture right now. */
   target: CaptureTarget | null
   /** The destination is genuinely absent: a broken install, not a slow network. */
-  missing: boolean
+  missing?: boolean
   /** The destination could not be loaded; retrying may work. */
-  unavailable: boolean
+  unavailable?: boolean
 }
 
 export type CaptureTarget = {

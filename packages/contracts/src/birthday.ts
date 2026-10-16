@@ -5,13 +5,14 @@ import { calendarDate } from './common'
 export const BIRTHDAY_CALENDARS = ['solar', 'lunar'] as const
 
 /** Days ahead to surface a birthday. 0 is the day itself. */
-const REMIND_LEADS = [7, 3, 1, 0] as const
+export const REMIND_LEADS = [7, 3, 1, 0] as const
 export type RemindLead = (typeof REMIND_LEADS)[number]
 
 /** A week's notice until the person says otherwise; also what clearing a birthday restores. */
 export const REMIND_LEAD_DEFAULT: RemindLead = 7
 
-const BIRTH_YEARS = { min: 1850, max: 2200 } as const
+/** The years a birth year may be given in. */
+export const BIRTH_YEARS = { min: 1850, max: 2200 } as const
 const SOLAR_MONTH_LENGTHS = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
 /** The day-and-month checks a birthday must pass in either calendar. */
@@ -43,7 +44,7 @@ export const birthdayInput = refineBirthday(
       /** 0..11, 子 to 亥. */
       hourBranch: z.number().int().min(0).max(11).nullish(),
       /** Optional rather than defaulted, so an edit that omits it keeps the person's choice. */
-      remindLead: z.union([z.literal(7), z.literal(3), z.literal(1), z.literal(0)]).optional(),
+      remindLead: z.literal(REMIND_LEADS).optional(),
     })
     .strict(),
   (b) => b.leapMonth,
@@ -59,7 +60,7 @@ export const birthdayResponse = z
     day: z.number(),
     leapMonth: z.boolean(),
     hourBranch: z.number().nullable(),
-    remindLead: z.number(),
+    remindLead: z.literal(REMIND_LEADS),
     lunarDate: z.string().nullable(),
     bornSolar: z.string().nullable(),
     bornLunar: z.string().nullable(),
@@ -71,8 +72,7 @@ export const birthdayResponse = z
         day: calendarDate,
         inDays: z.number(),
         turns: z.number().nullable(),
-        /** Which fallbacks moved the day this year. */
-        kept: z.array(z.string()),
+        /** Which fallback moved the day this year, in a sentence. */
         keptNote: z.string().nullable(),
       })
       .strict(),

@@ -24,7 +24,7 @@ const item = (over: Partial<ReadingItemResponse> = {}): ReadingItemResponse => (
 const render = (i: ReadingItemResponse) =>
   renderToStaticMarkup(
     <QueryClientProvider client={new QueryClient()}>
-      <ReadingRow item={i} timeZone="UTC" today="2026-10-12" />
+      <ReadingRow item={i} timeZone="UTC" today="2026-10-12" onOpen={() => {}} />
     </QueryClientProvider>,
   )
 
@@ -55,5 +55,10 @@ describe('ReadingRow', () => {
 
   it('without a summary there is no empty line', () => {
     expect(render(item({ fetchedTitle: '标题' }))).not.toContain('data-reading-summary')
+  })
+
+  it("a book's title is a button that opens its pane", () => {
+    const html = render(item({ kind: 'book', url: null, title: '设计心理学' }))
+    expect(html).toMatch(/<button type="button"[^>]*>设计心理学<\/button>/)
   })
 })

@@ -26,7 +26,6 @@ describe('the people migration', () => {
     stops.push(at.stop)
     const env = parseEnv({
       DATABASE_URL: at.connectionString,
-      CORS_ORIGINS: 'http://localhost:5173',
       AUTH_REGISTRATION: 'open',
     })
     const app = await buildApp({ env, db: at.db })

@@ -4,7 +4,7 @@ import { countdownPhrase, shortDay, todayIn } from '../../../platform/time/dates
 import { useNow } from '../../../platform/time/useNow'
 import { Field } from '../../../platform/ui/Field'
 import { useTimeZone } from '../../../shell/auth/useMe'
-import { leadLabel } from '../labels'
+import { LEAD_LABELS } from '../labels'
 import { givenDate } from './text'
 
 /**
@@ -17,7 +17,7 @@ export function BirthdayField({ person }: { person: PersonResponse }) {
 
   return (
     <>
-      <Field label="Birthday" shape="above">
+      <Field label="Birthday">
         <button
           type="button"
           aria-expanded={open}
@@ -72,11 +72,10 @@ function BirthdayRead({ birthday: b }: { birthday: BirthdayResponse }) {
         )}
       </p>
 
-      {(b.lunarDate || b.bornLunar || b.zodiac || b.sign || b.hour) && (
+      {/* A lunar birthday's lunar date is its given date, said above. */}
+      {((b.calendar === 'solar' && b.bornLunar) || b.zodiac || b.sign || b.hour) && (
         <div className="flex flex-wrap gap-1.5">
-          {b.calendar === 'solar' && (b.bornLunar || b.lunarDate) && (
-            <Chip>{b.bornLunar ?? b.lunarDate}</Chip>
-          )}
+          {b.calendar === 'solar' && b.bornLunar && <Chip>{b.bornLunar}</Chip>}
           {b.zodiac && <Chip>{b.zodiac}</Chip>}
           {b.sign && <Chip>{b.sign}</Chip>}
           {b.hour && <Chip>{b.hour}</Chip>}
@@ -87,7 +86,7 @@ function BirthdayRead({ birthday: b }: { birthday: BirthdayResponse }) {
 
       <div className="mt-1 flex flex-wrap items-center gap-2 border-t border-rule pt-2">
         <span className="text-xs text-ink-muted">Tell me</span>
-        <span className="text-sm text-ink">{leadLabel(b.remindLead)}</span>
+        <span className="text-sm text-ink">{LEAD_LABELS[b.remindLead]}</span>
       </div>
     </div>
   )

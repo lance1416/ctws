@@ -2,7 +2,6 @@ import type { City } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useId, useState } from 'react'
 import { citiesQuery } from './api'
-import { useComposing } from '../../platform/keyboard/composition'
 import { field } from '../../platform/ui/formStyles'
 
 /**
@@ -22,7 +21,6 @@ export function PickCity({
   onChange: (next: string) => void
 }) {
   const [typing, setTyping] = useState(false)
-  const composing = useComposing()
   const listId = useId()
 
   const hits = useQuery({
@@ -47,7 +45,6 @@ export function PickCity({
         role="combobox"
         aria-expanded={listed}
         aria-controls={listId}
-        {...composing.bind}
         onChange={(e) => {
           setTyping(true)
           onChange(e.target.value)

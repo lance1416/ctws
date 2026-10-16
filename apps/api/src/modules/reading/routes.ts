@@ -28,13 +28,11 @@ export const readingRoutes =
       '/',
       { schema: { querystring: readingListQuery, response: { 200: readingItemsResponse } } },
       async (req) => {
-        const { projectId, unfiled, status } = req.query
-        const rows = await listReadingItems(app.db, currentUser(req).workspaceId, {
-          ...(projectId ? { projectId } : {}),
-          ...(unfiled === 'true' ? { unfiled: true } : {}),
-          // A repeated `status` key arrives as an array, a single one as a value.
-          ...(status ? { statuses: Array.isArray(status) ? status : [status] } : {}),
-        })
+        const rows = await listReadingItems(
+          app.db,
+          currentUser(req).workspaceId,
+          req.query.unfiled === 'true',
+        )
         return { items: rows.map(toReadingItemResponse) }
       },
     )

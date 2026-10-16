@@ -59,8 +59,4 @@ describe('channelHref', () => {
     expect(channelHref('url', 'https://github.com/dana')).toBe('https://github.com/dana')
     expect(channelHref('url', 'HTTP://example.test')).toBe('HTTP://example.test')
   })
-
-  it('has no opinion about a kind it does not know', () => {
-    expect(channelHref('fax', '123')).toBeNull()
-  })
 })

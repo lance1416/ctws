@@ -1,6 +1,5 @@
 import type { MeetingOccurrence, UpdateMeetingInput } from '@ctws/contracts'
 import { useState } from 'react'
-import { useComposing } from '../../../platform/keyboard/composition'
 import { todayIn } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { Field } from '../../../platform/ui/Field'
@@ -48,7 +47,6 @@ export function MeetingForm({
   const [projectId, setProjectId] = useState<string | null>(meeting.projectId)
   const [attendeeIds, setAttendees] = useState(meeting.attendees.map((p) => p.id))
   const [note, setNote] = useState(meeting.note ?? '')
-  const composing = useComposing()
   useReportUnsaved(
     [
       title,
@@ -96,7 +94,6 @@ export function MeetingForm({
         e.preventDefault()
         submit()
       }}
-      {...composing.bind}
       className="flex flex-col gap-4"
     >
       <FormBar
@@ -121,7 +118,7 @@ export function MeetingForm({
       <div className="@container">
         <div className="grid items-start gap-x-6 gap-y-4 @xl:grid-cols-2 @2xl:grid-cols-3">
           <div className="col-span-full">
-            <Field label="Start" shape="above">
+            <Field label="Start">
               <div className="flex min-w-0 flex-wrap items-center gap-1.5">
                 <input
                   type="datetime-local"
@@ -134,10 +131,10 @@ export function MeetingForm({
               </div>
             </Field>
           </div>
-          <Field label="Length" shape="above">
+          <Field label="Length">
             <LengthPicker value={durationMinutes} onPick={setDuration} />
           </Field>
-          <Field label="Repeats" shape="above">
+          <Field label="Repeats">
             <RepeatPicker
               startsLocal={meeting.startsLocal}
               today={today}
@@ -147,7 +144,7 @@ export function MeetingForm({
             />
           </Field>
           {rule !== null && (
-            <Field label="Ends" shape="above">
+            <Field label="Ends">
               <span className="flex items-center gap-2">
                 <EndsPicker
                   label="Ends"
@@ -159,7 +156,7 @@ export function MeetingForm({
               </span>
             </Field>
           )}
-          <Field label="Projects" shape="above">
+          <Field label="Projects">
             <ProjectPicker value={projectId} onPick={setProjectId} none="No project" />
           </Field>
         </div>
@@ -178,7 +175,7 @@ export function MeetingForm({
         />
       </div>
 
-      <Field label="Attendees" shape="above">
+      <Field label="Attendees">
         <div data-attendees>
           <AttendeesPicker value={attendeeIds} onChange={setAttendees} />
         </div>

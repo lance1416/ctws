@@ -43,5 +43,5 @@ export function findCities(query: string): City[] {
 }
 
 function cityOf(row: Row): City {
-  return { label: labelOf(row), name: row[0], region: row[1] || null, country: row[2] }
+  return { label: labelOf(row) }
 }

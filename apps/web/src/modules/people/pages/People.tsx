@@ -1,4 +1,4 @@
-import type { Circle, PersonResponse } from '@ctws/contracts'
+import { type Circle, CIRCLES, type PersonResponse } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { peopleQuery } from '../api'
@@ -39,7 +39,7 @@ export function People() {
       <QueryStatus query={people} />
       {/* One list, filtered by circle; nothing is hidden by default. */}
       <div className="mt-4 ml-[50px] flex flex-wrap gap-1 sm:ml-[62px]">
-        {([null, 'family', 'friend', 'work'] as const).map((key) => {
+        {[null, ...CIRCLES].map((key) => {
           const picked = circle === key
           return (
             <button

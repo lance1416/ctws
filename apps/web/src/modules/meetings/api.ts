@@ -1,8 +1,9 @@
-import type {
-  CreateMeetingBody,
-  EditScope,
-  MeetingOccurrence,
-  UpdateMeetingInput,
+import {
+  type CreateMeetingBody,
+  type EditScope,
+  MAX_CALENDAR_SPAN_DAYS,
+  type MeetingOccurrence,
+  type UpdateMeetingInput,
 } from '@ctws/contracts'
 import { queryOptions } from '@tanstack/react-query'
 import { ApiError, apiFetch, calendarOf } from '../../platform/http/api'
@@ -52,10 +53,13 @@ export const seriesQuery = (meetingId: string, today: string) =>
   queryOptions({
     queryKey: ['meetings', 'series', meetingId, today],
     queryFn: async () => {
-      const ahead = await listMeetings({ from: today, to: addDays(today, 370) })
+      const ahead = await listMeetings({ from: today, to: addDays(today, MAX_CALENDAR_SPAN_DAYS) })
       const hit = ahead.find((m) => m.meetingId === meetingId)
       if (hit) return hit
-      const behind = await listMeetings({ from: addDays(today, -370), to: today })
+      const behind = await listMeetings({
+        from: addDays(today, -MAX_CALENDAR_SPAN_DAYS),
+        to: today,
+      })
       return [...behind].reverse().find((m) => m.meetingId === meetingId) ?? null
     },
   })
@@ -84,7 +88,7 @@ export function cancelMeeting(
   return apiFetch(`${BASE}/${id}?${params}`, { method: 'DELETE' })
 }
 
-/** The default a meeting made by clicking a day lands on: a plausible working hour, for an hour. */
+/** Where a new meeting lands by default: a plausible working hour, for an hour. */
 export const DEFAULT_HOUR = 10
 export const DEFAULT_MINUTES = 60
 

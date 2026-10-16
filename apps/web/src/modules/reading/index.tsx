@@ -12,10 +12,15 @@ import type { CaptureTargetState, SearchHit, WorkspaceModule } from '../../shell
 
 const ID = 'reading'
 
-function ReadingCount() {
+/** "4 to read", for Things' count and the Workbench card's corner; null until loaded. */
+function useToReadCount(): string | null {
   const items = useQuery(readingQuery())
-  if (!items.data) return null
-  return <span data-count>{items.data.filter(isToRead).length} to read</span>
+  return items.data ? `${items.data.filter(isToRead).length} to read` : null
+}
+
+function ReadingCount() {
+  const count = useToReadCount()
+  return count && <span data-count>{count}</span>
 }
 
 function UnfiledLine() {
@@ -24,7 +29,7 @@ function UnfiledLine() {
   return count > 0 ? <span data-status>{count} not in a project</span> : null
 }
 
-/** A pasted url lands here instead of the inbox; nothing is fetched, so it is never missing. */
+/** A pasted url lands here instead of the inbox; nothing is fetched, so it is always there. */
 function useReadingCapture(): CaptureTargetState {
   const qc = useQueryClient()
   return {
@@ -37,8 +42,6 @@ function useReadingCapture(): CaptureTargetState {
         void refreshQueries(qc, [['reading']])
       },
     },
-    missing: false,
-    unavailable: false,
   }
 }
 
@@ -100,9 +103,8 @@ function ReadingWidget() {
 }
 
 function ReadingAside() {
-  const all = useQuery(readingQuery())
-  if (!all.data) return null
-  return <span className="text-sm text-ink-subtle">{all.data.filter(isToRead).length} to read</span>
+  const count = useToReadCount()
+  return count && <span className="text-sm text-ink-subtle">{count}</span>
 }
 
 /** How many rows a workbench card shows before it defers to its page. */

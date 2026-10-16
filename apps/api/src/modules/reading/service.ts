@@ -1,7 +1,7 @@
 import type { CreateReadingItemBody, UpdateReadingItemBody } from '@ctws/contracts'
 import { and, eq, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
-import type { Db, Queryable } from '../../platform/db/client'
+import type { Db } from '../../platform/db/client'
 import { assertProjectsVisible } from '../../shell/projects/queries'
 import { ReadingItemNotFoundError, WrongKindError } from './errors'
 import { getReadingItem, readingFiling, type ReadingItemRow, visibleItems } from './queries'
@@ -16,20 +16,16 @@ export async function createReadingItem(
   workspaceId: string,
   body: CreateReadingItemBody,
 ): Promise<ReadingItemRow> {
-  return db.transaction(async (tx) => {
-    await assertProjectsVisible(tx, workspaceId, body.projectId ? [body.projectId] : [])
-    const values =
-      body.kind === 'link'
-        ? { kind: 'link' as const, url: body.url, title: body.title ?? null, author: null }
-        : { kind: 'book' as const, url: null, title: body.title, author: body.author ?? null }
-    const [created] = await tx
-      .insert(readingItems)
-      // The list itself is the inbox, so everything starts as to read.
-      .values({ id: uuidv7(), workspaceId, status: 'todo', ...values })
-      .returning({ id: readingItems.id })
-    await readingFiling.put(tx, workspaceId, created!.id, body.projectId ? [body.projectId] : [])
-    return getReadingItem(tx, workspaceId, created!.id)
-  })
+  const values =
+    body.kind === 'link'
+      ? { kind: 'link' as const, url: body.url, title: null }
+      : { kind: 'book' as const, url: null, title: body.title }
+  const [created] = await db
+    .insert(readingItems)
+    // The list itself is the inbox, so everything starts as to read.
+    .values({ id: uuidv7(), workspaceId, status: 'todo', ...values })
+    .returning({ id: readingItems.id })
+  return getReadingItem(db, workspaceId, created!.id)
 }
 
 export async function updateReadingItem(
@@ -78,25 +74,8 @@ export async function softDeleteReadingItem(
 }
 
 /**
- * Stores what a fetch found, even nothing: `fetched_at` says it was tried, so no list read tries
- * again.
- */
-async function recordFetched(
-  q: Queryable,
-  workspaceId: string,
-  id: string,
-  facts: { title: string | null; summary: string | null },
-): Promise<ReadingItemRow> {
-  await q
-    .update(readingItems)
-    .set({ fetchedTitle: facts.title, fetchedSummary: facts.summary, fetchedAt: sql`now()` })
-    .where(and(visibleItems(workspaceId), eq(readingItems.id, id)))
-  return getReadingItem(q, workspaceId, id)
-}
-
-/**
- * Fetches an untitled link's own title after the item is committed, so a slow or silent site
- * never loses the capture.
+ * Fetches a new link's own title after the item is committed, so a slow or silent site never loses
+ * the capture.
  */
 export async function withFetched(
   deps: ReadingDeps,
@@ -104,11 +83,13 @@ export async function withFetched(
   workspaceId: string,
   row: ReadingItemRow,
 ): Promise<ReadingItemRow> {
-  if (!deps.enabled) return row
-  if (row.kind !== 'link' || row.url === null || row.title !== null) return row
-  const facts = await deps.unfurl(row.url).catch(() => null)
-  return recordFetched(db, workspaceId, row.id, {
-    title: facts?.title ?? null,
-    summary: facts?.summary ?? null,
-  })
+  if (!deps.enabled || row.kind !== 'link') return row
+  // The table's shape check gives every link a url.
+  const facts = await deps.unfurl(row.url!).catch(() => null)
+  if (!facts) return row
+  await db
+    .update(readingItems)
+    .set({ fetchedTitle: facts.title, fetchedSummary: facts.summary })
+    .where(and(visibleItems(workspaceId), eq(readingItems.id, row.id)))
+  return getReadingItem(db, workspaceId, row.id)
 }

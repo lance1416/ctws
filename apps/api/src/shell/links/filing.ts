@@ -33,11 +33,6 @@ export function filing(type: ObjectType, table: PgTable & { id: AnyPgColumn }) {
     /** The first visible project by rank, the same one on every surface. */
     project: { projectId: pick('id'), projectName: pick('name') },
 
-    filedUnder: (projectId: string): SQL => sql`exists (
-      select 1 from links l join projects p on p.id = l.to_id
-      where ${belongsFrom(type, id)} and p.id = ${projectId} and p.deleted_at is null
-    )`,
-
     unfiled: (): SQL => sql`not exists (
       select 1 from links l join projects p on p.id = l.to_id
       where ${belongsFrom(type, id)} and p.deleted_at is null

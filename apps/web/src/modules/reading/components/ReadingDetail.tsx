@@ -5,7 +5,6 @@ import { problemText } from '../../../platform/http/api'
 import { deleteReadingItem, patchReadingItem } from '../api'
 import { readingLabel, recentEntry } from '../item'
 import { ProjectChip, ProjectPicker } from '../../../shell/projects/ProjectPicker'
-import { useComposing } from '../../../platform/keyboard/composition'
 import { dayPhrase, todayIn } from '../../../platform/time/dates'
 import { planChoices, type PlanDay } from '../plans'
 import { useTimeZone } from '../../../shell/auth/useMe'
@@ -150,15 +149,15 @@ function ReadingFields({
 
       <div className="@container">
         <div className="grid items-start gap-x-6 gap-y-4 @xl:grid-cols-2 @2xl:grid-cols-3">
-          <Field label="Status" shape="above">
+          <Field label="Status">
             <span className="text-sm text-ink">{STATUS_LABEL[item.status]}</span>
           </Field>
-          <Field label="Finish by" shape="above">
+          <Field label="Finish by">
             <span className={`text-sm ${item.planOn ? 'text-ink' : 'text-ink-subtle'}`}>
               {item.planOn ? dayPhrase(item.planOn, today) : 'Not set'}
             </span>
           </Field>
-          <Field label="Projects" shape="above">
+          <Field label="Projects">
             {item.projectId && item.projectName ? (
               <span className="flex">
                 <span className={CHIP}>
@@ -202,7 +201,6 @@ function ReadingForm({
   const [projectId, setProjectId] = useState<string | null>(item.projectId)
   const timeZone = useTimeZone()
   const today = todayIn(timeZone, useNow())
-  const composing = useComposing()
   useReportUnsaved([title, url, author, status, planOn, projectId], busy, onUnsaved)
 
   const submit = () => {
@@ -226,7 +224,6 @@ function ReadingForm({
         e.preventDefault()
         submit()
       }}
-      {...composing.bind}
       className="flex flex-col gap-4"
     >
       <FormBar busy={busy} onCancel={onCancel} />
@@ -278,7 +275,7 @@ function ReadingForm({
 
       <div className="@container">
         <div className="grid items-start gap-x-6 gap-y-4 @xl:grid-cols-2 @2xl:grid-cols-3">
-          <Field label="Status" shape="above">
+          <Field label="Status">
             <PickOne
               label="Status"
               value={status}
@@ -286,7 +283,7 @@ function ReadingForm({
               onPick={(s) => setStatus(s as ReadingStatus)}
             />
           </Field>
-          <Field label="Finish by" shape="above">
+          <Field label="Finish by">
             <PickOne
               label="Finish by"
               value={planOn ?? ''}
@@ -297,7 +294,7 @@ function ReadingForm({
               onPick={(v) => setPlanOn(v === '' ? null : v)}
             />
           </Field>
-          <Field label="Projects" shape="above">
+          <Field label="Projects">
             <ProjectPicker value={projectId} onPick={setProjectId} none="Not on any project" />
           </Field>
         </div>

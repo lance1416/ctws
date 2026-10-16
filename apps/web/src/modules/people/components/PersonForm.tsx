@@ -1,6 +1,5 @@
 import type { PersonResponse } from '@ctws/contracts'
 import { useState } from 'react'
-import { useComposing } from '../../../platform/keyboard/composition'
 import { WritingMode } from '../../../platform/notes/WritingMode'
 import { BUTTON } from '../../../platform/ui/buttonStyles'
 import { Field } from '../../../platform/ui/Field'
@@ -54,7 +53,6 @@ export function PersonForm({
   const [birthday, setBirthday] = useState<BirthdayDraft | null | undefined>(undefined)
   // The server has said the day does not exist: Save would only get a 400.
   const [badDay, setBadDay] = useState(false)
-  const composing = useComposing()
   useReportUnsaved(
     [
       name,
@@ -106,7 +104,6 @@ export function PersonForm({
         e.preventDefault()
         submit()
       }}
-      {...composing.bind}
       className="flex flex-col gap-4"
     >
       <FormBar
@@ -141,7 +138,7 @@ export function PersonForm({
       <div className="@container">
         <div className="grid items-start gap-x-6 gap-y-4 @xl:grid-cols-2 @2xl:grid-cols-3">
           {/* Its controls are many, so they open on request across the whole row. */}
-          <Field label="Birthday" shape="above">
+          <Field label="Birthday">
             <button
               type="button"
               aria-expanded={pickingDay}
@@ -197,13 +194,13 @@ export function PersonForm({
           <PickCity label="Lives in" id="c-city" value={city} onChange={setCity} />
           <Writes label="Company" id="c-org" value={org} onChange={setOrg} />
           <Writes label="Title" id="c-title" value={title} onChange={setTitle} />
-          <Field label="Gender" shape="above">
+          <Field label="Gender">
             <PickOne label="Gender" value={gender} choices={GENDER_CHOICES} onPick={setGender} />
           </Field>
-          <Field label="Circle" shape="above">
+          <Field label="Circle">
             <PickOne label="Circle" value={circle} choices={CIRCLE_CHOICES} onPick={setCircle} />
           </Field>
-          <Field label="Projects" shape="above">
+          <Field label="Projects">
             <ProjectsPicker chosen={projectIds} onChange={setProjectIds} />
           </Field>
         </div>

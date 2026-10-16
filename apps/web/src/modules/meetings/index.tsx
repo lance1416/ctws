@@ -96,10 +96,15 @@ function useTodaysMeetings() {
   return useQuery(meetingsQuery({ from: day, to: day }))
 }
 
-function MeetingsTodayCount() {
+/** "2 today", for Things' count and the Workbench card's corner; null until loaded. */
+function useTodayCount(): string | null {
   const today = useTodaysMeetings()
-  if (!today.data) return null
-  return <span data-count>{today.data.length} today</span>
+  return today.data ? `${today.data.length} today` : null
+}
+
+function MeetingsTodayCount() {
+  const count = useTodayCount()
+  return count && <span data-count>{count}</span>
 }
 
 function NextMeetingLine() {
@@ -288,9 +293,8 @@ function TodayMeetings() {
 }
 
 function MeetingsAside() {
-  const today = useTodaysMeetings()
-  if (!today.data) return null
-  return <span className="text-sm text-ink-subtle">{today.data.length} today</span>
+  const count = useTodayCount()
+  return count && <span className="text-sm text-ink-subtle">{count}</span>
 }
 
 // No project-page block: meetings reach a project as edges, which the shell draws for every kind.

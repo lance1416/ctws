@@ -9,13 +9,11 @@ const row = (over: Partial<BirthdayListRow> = {}): BirthdayListRow => ({
   personId: '00000000-0000-0000-0000-000000000001',
   name: '周楠',
   circle: null,
-  calendar: 'lunar',
   day: '2026-10-12',
   inDays: 2,
   turns: 35,
   lunarDate: '农历九月初三',
   kept: [],
-  remindLead: 7,
   ...over,
 })
 
@@ -40,7 +38,7 @@ describe('BirthdayRow', () => {
 
   it('shows the lunar date for a lunar birthday and not for a solar one', () => {
     expect(render(row())).toContain('农历九月初三')
-    expect(render(row({ calendar: 'solar', lunarDate: null }))).not.toContain('农历')
+    expect(render(row({ lunarDate: null }))).not.toContain('农历')
   })
 
   it('says the year is unknown instead of an age when there is no year', () => {

@@ -4,6 +4,7 @@ import {
   CIRCLES,
   GENDERS,
   REMIND_LEAD_DEFAULT,
+  type RemindLead,
 } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { boolean, check, index, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
@@ -33,7 +34,10 @@ export const people = pgTable(
     /** 0..11, 子 to 亥. */
     birthdayHourBranch: integer('birthday_hour_branch'),
     /** Days ahead to surface the birthday: 7, 3, 1 or 0. */
-    birthdayRemindLead: integer('birthday_remind_lead').notNull().default(REMIND_LEAD_DEFAULT),
+    birthdayRemindLead: integer('birthday_remind_lead')
+      .$type<RemindLead>()
+      .notNull()
+      .default(REMIND_LEAD_DEFAULT),
     gender: text('gender').$type<(typeof GENDERS)[number]>(),
     hometown: text('hometown'),
     city: text('city'),

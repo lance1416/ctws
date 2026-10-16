@@ -1,10 +1,10 @@
-import type { ReadingItemResponse } from '@ctws/contracts'
+import type { LinksResponse, ReadingItemResponse } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createProject, setupWith, type Harness, web } from '../../helpers/harness'
 
 /**
- * THE READING LIST -- THE SECOND MODULE.
+ * THE READING LIST.
  *
  * Most of what is worth testing here is not the CRUD: it is the two claims the module is built
  * on. A link may have no title, because capturing one is pasting a url and nothing else. And the
@@ -30,6 +30,18 @@ async function added(ctx: Harness, payload: Record<string, unknown>): Promise<Re
 
 const patch = (ctx: Harness, id: string, payload: Record<string, unknown>) =>
   ctx.app.inject({ method: 'PATCH', url: `/api/v1/reading/${id}`, headers: web(ctx), payload })
+
+/** Adds an item and files it under a project, as the pane does. */
+async function filed(
+  ctx: Harness,
+  payload: Record<string, unknown>,
+  projectId: string,
+): Promise<ReadingItemResponse> {
+  const item = await added(ctx, payload)
+  const res = await patch(ctx, item.id, { projectId })
+  expect(res.statusCode, res.body).toBe(200)
+  return res.json() as ReadingItemResponse
+}
 
 async function list(ctx: Harness, query = ''): Promise<ReadingItemResponse[]> {
   const res = await ctx.app.inject({
@@ -61,8 +73,8 @@ describe('reading list', () => {
       (await add(ctx, { kind: 'link', url: 'https://x.test', author: '某人' })).statusCode,
     ).toBe(400)
 
-    const book = await added(ctx, { kind: 'book', title: '设计心理学', author: 'Don Norman' })
-    expect(book).toMatchObject({ kind: 'book', url: null, author: 'Don Norman' })
+    const book = await added(ctx, { kind: 'book', title: '设计心理学' })
+    expect(book).toMatchObject({ kind: 'book', url: null, author: null })
   })
 
   it('refuses a url that is not http(s), because the list renders it as a link', async () => {
@@ -79,34 +91,28 @@ describe('reading list', () => {
     expect((await list(ctx)).map((i) => i.title)).toEqual(['第二本', '第一本'])
   })
 
-  it('filters by status, repeatably, so to-read and reading can be asked for together', async () => {
-    const ctx = await setup()
-    const a = await added(ctx, { kind: 'book', title: '在读的' })
-    const b = await added(ctx, { kind: 'book', title: 'Finished' })
-    await added(ctx, { kind: 'book', title: '待读的' })
-    expect((await patch(ctx, a.id, { status: 'reading' })).statusCode).toBe(200)
-    expect((await patch(ctx, b.id, { status: 'done' })).statusCode).toBe(200)
-
-    const open = await list(ctx, '?status=todo&status=reading')
-    expect(open.map((i) => i.title).sort()).toEqual(['在读的', '待读的'])
-  })
-
   it('files an item under a shell project, and says which', async () => {
     // A project is the SHELL's dimension: an article about CTWS belongs to CTWS exactly as a task
     // does, and the module hangs its rows on it without owning it.
     const ctx = await setup()
     const pid = await createProject(ctx, 'CTWS')
-    const item = await added(ctx, { kind: 'link', url: 'https://x.test/a', projectId: pid })
+    const item = await filed(ctx, { kind: 'link', url: 'https://x.test/a' }, pid)
     expect(item).toMatchObject({ projectId: pid, projectName: 'CTWS' })
-    expect((await list(ctx, `?projectId=${pid}`)).map((i) => i.id)).toEqual([item.id])
+    const page = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/links/project/${pid}`,
+      headers: web(ctx),
+    })
+    const groups = (page.json() as LinksResponse).groups
+    expect(groups.find((g) => g.type === 'reading')?.items.map((i) => i.id)).toEqual([item.id])
   })
 
   it('keeps an item when its project is deleted, rather than throwing a book away', async () => {
-    // Projects are SOFT-deleted, so the column's ON DELETE SET NULL never fires. What keeps this
-    // honest is that the module reports the project you can still SEE, on both fields at once.
+    // Projects are SOFT-deleted, so the edge stays; the module reports only the project you can
+    // still SEE, on both fields at once.
     const ctx = await setup()
     const pid = await createProject(ctx, '临时')
-    const item = await added(ctx, { kind: 'book', title: '留下来的书', projectId: pid })
+    const item = await filed(ctx, { kind: 'book', title: '留下来的书' }, pid)
     const del = await ctx.app.inject({
       method: 'DELETE',
       url: `/api/v1/projects/${pid}`,
@@ -123,7 +129,7 @@ describe('reading list', () => {
     // project's page, and a widget that repeated it would make two places to keep in your head.
     const ctx = await setup()
     const pid = await createProject(ctx, 'CTWS')
-    await added(ctx, { kind: 'link', url: 'https://x.test/filed', projectId: pid })
+    await filed(ctx, { kind: 'link', url: 'https://x.test/filed' }, pid)
     await added(ctx, { kind: 'book', title: '散的书' })
 
     const loose = await list(ctx, '?unfiled=true')
@@ -138,21 +144,10 @@ describe('reading list', () => {
     // no list at all: absent from every project page AND from the widget.
     const ctx = await setup()
     const pid = await createProject(ctx, '没了的项目')
-    await added(ctx, { kind: 'book', title: '留下来的书', projectId: pid })
+    await filed(ctx, { kind: 'book', title: '留下来的书' }, pid)
     await ctx.app.inject({ method: 'DELETE', url: `/api/v1/projects/${pid}`, headers: web(ctx) })
 
     expect((await list(ctx, '?unfiled=true')).map((i) => i.title)).toEqual(['留下来的书'])
-  })
-
-  it('refuses a filter that contradicts itself', async () => {
-    const ctx = await setup()
-    const pid = await createProject(ctx, 'CTWS')
-    const res = await ctx.app.inject({
-      method: 'GET',
-      url: `/api/v1/reading?projectId=${pid}&unfiled=true`,
-      headers: ctx.authed,
-    })
-    expect(res.statusCode).toBe(400)
   })
 
   it('refuses the fields of the other kind on a patch, as a conflict and not a crash', async () => {
@@ -175,7 +170,8 @@ describe('reading list', () => {
   it('finds an item by its url, because half of them have no title yet', async () => {
     const ctx = await setup()
     await added(ctx, { kind: 'link', url: 'https://linear.app/now/redesign' })
-    await added(ctx, { kind: 'book', title: '设计心理学', author: 'Don Norman' })
+    const book = await added(ctx, { kind: 'book', title: '设计心理学' })
+    expect((await patch(ctx, book.id, { author: 'Don Norman' })).statusCode).toBe(200)
 
     const hits = async (q: string) => {
       const res = await ctx.app.inject({
@@ -249,14 +245,15 @@ describe('reading list', () => {
       },
     }
     const theirProject = await createProject(theirs, '别人的项目')
-    const res = await add(ctx, { kind: 'book', title: 'Book', projectId: theirProject })
-    expect(res.statusCode).toBe(404)
+    const book = await added(ctx, { kind: 'book', title: 'Book' })
+    expect((await patch(ctx, book.id, { projectId: theirProject })).statusCode).toBe(404)
   })
 
-  it('leaves no item behind when filing it under a project fails', async () => {
+  it('leaves the item as it was when filing it under a project fails', async () => {
     const ctx = await setup()
     const projectId = await createProject(ctx, 'Shelf')
-    // Filing the item fails; the item must not survive it.
+    const book = await added(ctx, { kind: 'book', title: 'Orphan' })
+    // Filing the item fails; the rename in the same edit must not survive it.
     await ctx.db.execute(sql`
       create function refuse_reading_filing() returns trigger language plpgsql as $$
       begin
@@ -269,9 +266,8 @@ describe('reading list', () => {
         for each row execute function refuse_reading_filing()
     `)
 
-    const res = await add(ctx, { kind: 'book', title: 'Orphan', projectId })
+    const res = await patch(ctx, book.id, { title: 'Renamed', projectId })
     expect(res.statusCode).toBe(500)
-    const left = await ctx.db.execute(sql`select 1 from reading_items where title = 'Orphan'`)
-    expect(left.rows).toEqual([])
+    expect((await list(ctx)).map((i) => i.title)).toEqual(['Orphan'])
   })
 })

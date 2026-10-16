@@ -46,8 +46,8 @@ export function ReadingRow({
   timeZone: string
   /** The account's today, from the page. */
   today: string
-  /** Opens its pane. Without it the row is only a row. */
-  onOpen?: () => void
+  /** Opens its pane. */
+  onOpen: () => void
 }) {
   const now = useNow()
   const save = useMutation({
@@ -70,7 +70,7 @@ export function ReadingRow({
     <li
       data-reading-row={item.id}
       onClick={onOpen}
-      className={`group flex min-h-11 min-w-0 ${onOpen ? 'cursor-pointer' : ''}`}
+      className="group flex min-h-11 min-w-0 cursor-pointer"
     >
       {/* The day you mean to finish it; a finished item's plan is no longer shown. */}
       <RowLead
@@ -99,7 +99,7 @@ export function ReadingRow({
             >
               {label}
             </a>
-          ) : onOpen ? (
+          ) : (
             /* A book has nowhere to go, so its title opens its pane. */
             <button
               type="button"
@@ -113,12 +113,6 @@ export function ReadingRow({
             >
               {label}
             </button>
-          ) : (
-            <span
-              className={`block truncate ${finished ? 'text-ink-subtle line-through' : 'text-ink'}`}
-            >
-              {label}
-            </span>
           )}
           {meta.length > 0 && <p className="truncate text-sm text-ink-muted">{meta.join(' · ')}</p>}
           {item.fetchedSummary && !item.title && (
@@ -157,7 +151,7 @@ export function ReadingRow({
           </DropdownMenu.Trigger>
           <DropdownMenu.Portal>
             <DropdownMenu.Content align="end" sideOffset={4} className={MENU_SURFACE}>
-              {onOpen && <Item onSelect={onOpen}>Open</Item>}
+              <Item onSelect={onOpen}>Open</Item>
               {/* Named plans, not a date picker: "this week" is the thought a person has. */}
               {PLAN_DAYS.map(({ id, day }) => (
                 <Item key={id} onSelect={() => save.mutate({ planOn: day(today) })}>

@@ -1,6 +1,4 @@
-import type { Circle, RemindLead } from '@ctws/contracts'
-
-const CIRCLES = ['family', 'friend', 'work'] as const
+import { type Circle, CIRCLES, REMIND_LEADS, type RemindLead } from '@ctws/contracts'
 
 export const CIRCLE_LABELS: Record<Circle, string> = {
   family: 'Family',
@@ -32,15 +30,14 @@ export const GENDER_CHOICES = [
 ]
 
 /** How early to be told of a birthday. */
-export const LEADS: readonly [RemindLead, string][] = [
-  [7, '1 week before'],
-  [3, '3 days before'],
-  [1, '1 day before'],
-  [0, 'On the day'],
-]
+export const LEAD_LABELS: Record<RemindLead, string> = {
+  7: '1 week before',
+  3: '3 days before',
+  1: '1 day before',
+  0: 'On the day',
+}
 
-export const leadLabel = (lead: number) =>
-  LEADS.find(([n]) => n === lead)?.[1] ?? `${lead} days before`
+export const LEAD_CHOICES = REMIND_LEADS.map((n) => ({ value: String(n), label: LEAD_LABELS[n] }))
 
 /** Months spelled out, for lists read down; a date beside a name takes the short `MONTHS`. */
 export const MONTH_NAMES = [

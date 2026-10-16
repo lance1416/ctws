@@ -2,11 +2,11 @@ import type { BirthdayPreviewResponse, CalendarEntry, Circle } from '@ctws/contr
 import {
   addDays,
   type Birthday,
-  type BirthdayCalendar,
   birthdayProblem,
   factsOf,
   type Kept,
   keptNote,
+  lunarDateOf,
   nextOccurrence,
 } from '@ctws/core'
 import { and, asc, isNotNull } from 'drizzle-orm'
@@ -25,14 +25,12 @@ type BirthdayRow = {
   personId: string
   name: string
   circle: Circle | null
-  calendar: BirthdayCalendar
   day: string
   inDays: number
   turns: number | null
   /** Only for a lunar birthday. */
   lunarDate: string | null
   kept: Kept[]
-  remindLead: number
 }
 
 type BirthdaysView = {
@@ -57,7 +55,8 @@ export function assertPossibleBirthday(b: Birthday): void {
 /** Everything derived from a birthday against today. None of it is stored. */
 export function derivedFacts(b: Birthday, hourBranch: number | null, today: string) {
   const next = nextOccurrence(b, today)
-  return { ...factsOf(b, hourBranch), next: { ...next, keptNote: keptNote(b, next) } }
+  const { kept: _, ...shown } = next
+  return { ...factsOf(b, hourBranch), next: { ...shown, keptNote: keptNote(b, next) } }
 }
 
 /** What a birthday would mean, before it is saved. */
@@ -145,22 +144,23 @@ export async function listBirthdays(
   const today = await accountToday(q, timezone, now)
   const rows = await peopleWithBirthdays(q, workspaceId)
 
-  const all: BirthdayRow[] = rows.map((p) => {
+  // The lead decides the card and is not sent.
+  const all = rows.map((p): BirthdayRow & { remindLead: number } => {
     const birthday = toBirthday(p)
     const next = nextOccurrence(birthday, today)
     return {
       personId: p.id,
       name: p.name,
       circle: p.circle,
-      calendar: birthday.calendar,
       day: next.day,
       inDays: next.inDays,
       turns: next.turns,
-      lunarDate: factsOf(birthday, p.hourBranch).lunarDate,
+      lunarDate: lunarDateOf(birthday),
       kept: next.kept,
       remindLead: p.remindLead,
     }
   })
+  const sent = ({ remindLead: _, ...row }: (typeof all)[number]): BirthdayRow => row
   // Stable over the query's name order, so one day's people read alphabetically.
   all.sort((a, b) => a.inDays - b.inDays)
 
@@ -174,10 +174,10 @@ export async function listBirthdays(
 
   return {
     today,
-    coming: all.filter((r) => r.inDays <= COMING_DAYS),
-    later: all.filter((r) => r.inDays > COMING_DAYS),
+    coming: all.filter((r) => r.inDays <= COMING_DAYS).map(sent),
+    later: all.filter((r) => r.inDays > COMING_DAYS).map(sent),
     // `<=`: the lead is how early to start, not the one day to show.
-    card: all.filter((r) => r.inDays <= r.remindLead),
+    card: all.filter((r) => r.inDays <= r.remindLead).map(sent),
     byMonth,
     circles,
   }

@@ -4,7 +4,6 @@ import {
   createMeetingBody,
   deleteMeetingQuery,
   idParams,
-  meetingListQuery,
   meetingOccurrence,
   meetingsResponse,
   occurrenceQuery,
@@ -15,20 +14,18 @@ import { currentUser } from '../../shell/auth/authenticated'
 import { toOccurrenceResponse } from './mapper'
 import { getOccurrence, listOccurrences, meetingEntries } from './queries'
 import { cancelMeeting, createMeeting, updateMeeting } from './service'
-import { defaultWindow, windowOf } from './zone'
+import { windowOf } from './zone'
 
 export const meetingRoutes: FastifyPluginAsyncZod = async (app) => {
   app.get(
     '/',
-    { schema: { querystring: meetingListQuery, response: { 200: meetingsResponse } } },
+    { schema: { querystring: calendarQuery, response: { 200: meetingsResponse } } },
     async (req) => {
       const user = currentUser(req)
-      const fallback = defaultWindow(app.clock(), user.timezone)
       const rows = await listOccurrences(
         app.db,
         user.workspaceId,
-        windowOf(req.query.from ?? fallback.from, req.query.to ?? fallback.to, user.timezone),
-        req.query.projectId ? { projectId: req.query.projectId } : {},
+        windowOf(req.query.from, req.query.to, user.timezone),
       )
       return { meetings: rows.map(toOccurrenceResponse) }
     },

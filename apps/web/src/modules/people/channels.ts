@@ -1,4 +1,4 @@
-import { CHANNEL_KINDS, type ChannelKind, type PersonChannel } from '@ctws/contracts'
+import { CHANNEL_KINDS, type ChannelKind } from '@ctws/contracts'
 import { linkLabel } from '../../platform/ui/url'
 
 // How a person's channels look; whether a value is valid is the contract's `channelProblem`.
@@ -7,7 +7,7 @@ const ORDER = new Map<ChannelKind, number>(CHANNEL_KINDS.map((k, i) => [k, i]))
 
 /** Grouped by kind in `CHANNEL_KINDS` order, keeping the written order within each kind. */
 export function byKind<T extends { kind: ChannelKind }>(channels: readonly T[]): T[] {
-  return [...channels].sort((a, b) => (ORDER.get(a.kind) ?? 9) - (ORDER.get(b.kind) ?? 9))
+  return [...channels].sort((a, b) => ORDER.get(a.kind)! - ORDER.get(b.kind)!)
 }
 
 /**
@@ -39,13 +39,10 @@ export const KIND_LABEL: Record<ChannelKind, string> = {
 
 export const KIND_CHOICES = CHANNEL_KINDS.map((k) => ({ value: k, label: KIND_LABEL[k] }))
 
-export type { PersonChannel }
-
 /** The link that opens a channel: `mailto:`, `tel:` or the web address. */
-export function channelHref(kind: string, value: string): string | null {
+export function channelHref(kind: ChannelKind, value: string): string {
   if (kind === 'email') return `mailto:${value}`
   // Spaces and dashes are how a person writes a number and not how a dialler takes one.
   if (kind === 'phone') return `tel:${value.replace(/[\s-]/g, '')}`
-  if (kind === 'url') return /^https?:\/\//i.test(value) ? value : `https://${value}`
-  return null
+  return /^https?:\/\//i.test(value) ? value : `https://${value}`
 }

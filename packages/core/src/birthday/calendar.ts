@@ -117,10 +117,15 @@ export type BirthdayFacts = {
   hour: string | null
 }
 
+/** A lunar birthday's own recurring date, "农历九月初三"; null for a solar one. */
+export function lunarDateOf(b: Birthday): string | null {
+  return b.calendar === 'lunar' ? lunarDateLabel(b) : null
+}
+
 export function factsOf(b: Birthday, hourBranch: number | null): BirthdayFacts {
   const born = bornDay(b)
   return {
-    lunarDate: b.calendar === 'lunar' ? lunarDateLabel(b) : null,
+    lunarDate: lunarDateOf(b),
     bornSolar: born ? iso(born) : null,
     bornLunar: born ? born.getLunarDay().toString() : null,
     // The zodiac turns at the lunar new year, not at 立春, so it comes from the lunar year.

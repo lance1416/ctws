@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { BIRTHDAY_CALENDARS, birthdayInput, birthdayResponse } from './birthday'
+import { birthdayInput, birthdayResponse } from './birthday'
 import { calendarDate, instant } from './common'
 
 /**
@@ -126,30 +126,19 @@ export type PersonResponse = z.infer<typeof personResponse>
 
 export const peopleResponse = z.object({ people: z.array(personResponse) }).strict()
 
-export const personListQuery = z
-  .object({
-    projectId: z.uuid().optional(),
-    /** Only the people on no project. */
-    unfiled: z.enum(['true', 'false']).optional(),
-  })
-  .strict()
-  .refine((q) => !(q.projectId && q.unfiled === 'true'), {
-    message: 'unfiled and projectId cannot both be asked for',
-  })
-
 /** One row on the birthdays page. */
 const birthdayListRow = z
   .object({
     personId: z.uuid(),
     name: z.string(),
     circle: z.enum(CIRCLES).nullable(),
-    calendar: z.enum(BIRTHDAY_CALENDARS),
     day: calendarDate,
     inDays: z.number(),
     turns: z.number().nullable(),
+    /** Only for a lunar birthday. */
     lunarDate: z.string().nullable(),
+    /** Which fallbacks moved the day this year. */
     kept: z.array(z.string()),
-    remindLead: z.number(),
   })
   .strict()
 export type BirthdayListRow = z.infer<typeof birthdayListRow>

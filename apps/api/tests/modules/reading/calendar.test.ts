@@ -78,7 +78,13 @@ describe('the reading calendar', () => {
   it('names the project, and none once the project is deleted', async () => {
     const ctx = await setup()
     const pid = await createProject(ctx, 'CTWS')
-    const id = await add(ctx, { kind: 'book', title: '设计心理学', projectId: pid })
+    const id = await add(ctx, { kind: 'book', title: '设计心理学' })
+    await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/v1/reading/${id}`,
+      headers: web(ctx),
+      payload: { projectId: pid },
+    })
     await plan(ctx, id, '2026-10-07')
     expect((await entries(ctx, '2026-10-01', '2026-10-31'))[0]?.projectName).toBe('CTWS')
 

@@ -22,23 +22,10 @@ const readingUrl = z
   .refine((u) => /^https?:\/\//i.test(u), { message: 'expected an http(s) url' })
 const author = z.string().trim().min(1).max(200)
 
+/** What capture has: a pasted url, or a typed title. The rest is edited afterwards. */
 export const createReadingItemBody = z.discriminatedUnion('kind', [
-  z
-    .object({
-      kind: z.literal('link'),
-      url: readingUrl,
-      title: readingTitle.nullish(),
-      projectId: z.uuid().nullish(),
-    })
-    .strict(),
-  z
-    .object({
-      kind: z.literal('book'),
-      title: readingTitle,
-      author: author.nullish(),
-      projectId: z.uuid().nullish(),
-    })
-    .strict(),
+  z.object({ kind: z.literal('link'), url: readingUrl }).strict(),
+  z.object({ kind: z.literal('book'), title: readingTitle }).strict(),
 ])
 export type CreateReadingItemBody = z.infer<typeof createReadingItemBody>
 
@@ -81,13 +68,7 @@ export const readingItemsResponse = z.object({ items: z.array(readingItemRespons
 
 export const readingListQuery = z
   .object({
-    projectId: z.uuid().optional(),
     /** Only the items on no project. */
     unfiled: z.enum(['true', 'false']).optional(),
-    /** Repeatable: `?status=todo&status=reading`. Absent means every status. */
-    status: z.union([readingStatus, z.array(readingStatus)]).optional(),
   })
   .strict()
-  .refine((q) => !(q.projectId && q.unfiled === 'true'), {
-    message: 'unfiled and projectId cannot both be asked for',
-  })

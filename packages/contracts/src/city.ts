@@ -7,10 +7,6 @@ export const city = z
   .object({
     /** The stored spelling: `Oxford, England, United Kingdom`. */
     label: z.string(),
-    name: z.string(),
-    /** First-level region; null for city states. */
-    region: z.string().nullable(),
-    country: z.string(),
   })
   .strict()
 export type City = z.infer<typeof city>

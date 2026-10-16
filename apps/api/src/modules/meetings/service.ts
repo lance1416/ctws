@@ -5,7 +5,7 @@ import type { Db, Queryable } from '../../platform/db/client'
 import { putLinks } from '../../shell/links/store'
 import { assertProjectsVisible } from '../../shell/projects/queries'
 import { assertPeopleVisible } from '../people'
-import { BadRuleError, MeetingNotFoundError, OneOccurrenceLimitError } from './errors'
+import { BadRuleError, OneOccurrenceLimitError } from './errors'
 import { endedBefore, type LocalTime, ruleProblem } from './occurrences'
 import {
   assertOccurs,
@@ -186,12 +186,10 @@ async function cancelFollowing({ tx, workspaceId, series, recurrenceId }: Cancel
 }
 
 async function cancelAll({ tx, workspaceId, series }: Cancel) {
-  const deleted = await tx
+  await tx
     .update(meetings)
     .set({ deletedAt: sql`now()` })
     .where(and(visibleMeetings(workspaceId), eq(meetings.id, series.id)))
-    .returning({ id: meetings.id })
-  if (deleted.length === 0) throw new MeetingNotFoundError()
 }
 
 const EDITS: Record<EditScope, (e: Edit) => Promise<OccurrenceRow>> = {

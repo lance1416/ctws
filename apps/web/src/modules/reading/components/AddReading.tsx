@@ -9,7 +9,7 @@ import { textbox } from '../../../platform/ui/formStyles'
  * One input for both kinds: a url becomes a link, anything else a book, and the field says which
  * before Enter is pressed.
  */
-export function AddReading({ projectId }: { projectId?: string } = {}) {
+export function AddReading() {
   const composing = useComposing()
   const [line, setLine] = useState('')
   const trimmed = line.trim()
@@ -18,9 +18,7 @@ export function AddReading({ projectId }: { projectId?: string } = {}) {
   const add = useMutation({
     mutationFn: async (value: string) => {
       const made = await createReadingItem(
-        isReadingUrl(value)
-          ? { kind: 'link', url: value, ...(projectId ? { projectId } : {}) }
-          : { kind: 'book', title: value, ...(projectId ? { projectId } : {}) },
+        isReadingUrl(value) ? { kind: 'link', url: value } : { kind: 'book', title: value },
       )
       // Emptied once the server has it, not after the list is read again: what is typed in the
       // meantime is the next one.

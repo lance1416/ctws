@@ -33,7 +33,10 @@ describe('createReadingItemBody', () => {
 
   it('trims the title, so a line of spaces is not a title', () => {
     expect(createReadingItemBody.safeParse({ kind: 'book', title: '   ' }).success).toBe(false)
-    expect(createReadingItemBody.parse({ kind: 'book', title: '  读完它 ' }).title).toBe('读完它')
+    expect(createReadingItemBody.parse({ kind: 'book', title: '  读完它 ' })).toEqual({
+      kind: 'book',
+      title: '读完它',
+    })
   })
 })
 

@@ -63,7 +63,7 @@ function BirthdayCard() {
           {weekdayOf(first!.day, true)}, {shortDay(first!.day, today)},{' '}
           {countdownPhrase(first!.inDays)}
         </span>
-        {first!.calendar === 'lunar' && first!.lunarDate && (
+        {first!.lunarDate && (
           <span className="block text-sm text-ink-subtle">{first!.lunarDate}</span>
         )}
       </Link>

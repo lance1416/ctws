@@ -41,7 +41,6 @@ type Row = {
   inDays: number
   turns: number | null
   lunarDate: string | null
-  remindLead: number
 }
 
 async function view(ctx: Harness) {
@@ -240,7 +239,6 @@ describe('GET /people/birthdays/preview', () => {
     expect(body.lunarDate).toBe('农历闰六月十五')
     const next = nextOccurrence(born, today)
     expect(body.next.day).toBe(next.day)
-    expect(body.next.kept).toEqual(next.kept)
     expect(body.next.keptNote).toBe(keptNote(born, next))
   })
 
@@ -293,7 +291,6 @@ describe('a moved birthday', () => {
       url: '/api/v1/people/birthdays/preview?calendar=solar&year=1996&month=4&day=15',
       headers: ctx.authed,
     })
-    expect(still.json().next.kept).toEqual([])
     expect(still.json().next.keptNote).toBeNull()
   })
 })
@@ -328,9 +325,10 @@ describe('the workbench card', () => {
 
   it('defaults to a week', async () => {
     const ctx = await setup()
-    await add(ctx, '没说的', { calendar: 'solar', year: 1990, month: 10, day: 10 })
-    const body = await view(ctx)
-    expect([...body.coming, ...body.later][0]?.remindLead).toBe(7)
+    const today = (await view(ctx)).today
+    await add(ctx, '第七天的', { calendar: 'solar', year: 1990, ...monthDay(today, 7) })
+    await add(ctx, '第八天的', { calendar: 'solar', year: 1990, ...monthDay(today, 8) })
+    expect((await view(ctx)).card.map((r) => r.name)).toEqual(['第七天的'])
   })
 })
 

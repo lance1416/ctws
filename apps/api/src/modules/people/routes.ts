@@ -7,7 +7,6 @@ import {
   createPersonBody,
   idParams,
   peopleResponse,
-  personListQuery,
   personResponse,
   searchQuery,
   updatePersonBody,
@@ -26,19 +25,11 @@ export const personRoutes: FastifyPluginAsyncZod = async (app) => {
   const todayFor = (req: FastifyRequest) =>
     accountToday(app.db, currentUser(req).timezone, app.clock())
 
-  app.get(
-    '/',
-    { schema: { querystring: personListQuery, response: { 200: peopleResponse } } },
-    async (req) => {
-      const { projectId, unfiled } = req.query
-      const rows = await listPeople(app.db, currentUser(req).workspaceId, {
-        ...(projectId ? { projectId } : {}),
-        ...(unfiled === 'true' ? { unfiled: true } : {}),
-      })
-      const today = await todayFor(req)
-      return { people: rows.map((p) => toPersonResponse(p, today)) }
-    },
-  )
+  app.get('/', { schema: { response: { 200: peopleResponse } } }, async (req) => {
+    const rows = await listPeople(app.db, currentUser(req).workspaceId)
+    const today = await todayFor(req)
+    return { people: rows.map((p) => toPersonResponse(p, today)) }
+  })
 
   app.get('/birthdays', { schema: { response: { 200: birthdaysResponse } } }, async (req) => {
     const user = currentUser(req)

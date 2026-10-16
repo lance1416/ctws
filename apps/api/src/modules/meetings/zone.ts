@@ -1,9 +1,5 @@
-import { DAY_MS } from '@ctws/contracts'
 import { addDays } from '@ctws/core'
-import { instantOf, localOf } from './occurrences'
-
-/** How far ahead a list with no window reaches; a series has no last occurrence. */
-const DEFAULT_WINDOW_DAYS = 31
+import { instantOf } from './occurrences'
 
 /** "EST" / "BST": the zone's short name at that moment. */
 export function zoneLabel(at: Date, zone: string): string {
@@ -29,13 +25,5 @@ export function windowOf(from: string, to: string, zone: string): { from: Date; 
   return {
     from: instantOf(`${from}T00:00`, zone),
     to: instantOf(`${addDays(to, 1)}T00:00`, zone),
-  }
-}
-
-/** Today through a month ahead, in account days. */
-export function defaultWindow(now: Date, zone: string): { from: string; to: string } {
-  return {
-    from: localOf(now, zone).slice(0, 10),
-    to: localOf(new Date(now.getTime() + DEFAULT_WINDOW_DAYS * DAY_MS), zone).slice(0, 10),
   }
 }

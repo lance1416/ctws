@@ -1,5 +1,5 @@
-import type { CalendarEntry, ReadingStatus } from '@ctws/contracts'
-import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
+import type { CalendarEntry } from '@ctws/contracts'
+import { and, desc, eq, isNull, sql } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
 import { textMatches } from '../../platform/db/sql'
 import { dayEntry } from '../../shell/calendar/entry'
@@ -31,22 +31,12 @@ const rowOf = (r: {
 export async function listReadingItems(
   q: Queryable,
   workspaceId: string,
-  opts: { projectId?: string; unfiled?: boolean; statuses?: readonly ReadingStatus[] } = {},
+  unfiled: boolean,
 ): Promise<ReadingItemRow[]> {
   const rows = await q
     .select(withProject)
     .from(readingItems)
-    .where(
-      and(
-        visibleItems(workspaceId),
-        opts.projectId ? readingFiling.filedUnder(opts.projectId) : undefined,
-        opts.unfiled ? readingFiling.unfiled() : undefined,
-        // No statuses means every status, not none.
-        opts.statuses && opts.statuses.length > 0
-          ? inArray(readingItems.status, [...opts.statuses])
-          : undefined,
-      ),
-    )
+    .where(and(visibleItems(workspaceId), unfiled ? readingFiling.unfiled() : undefined))
     .orderBy(desc(readingItems.createdAt), desc(readingItems.id))
   return rows.map(rowOf)
 }
@@ -64,12 +54,14 @@ export async function getReadingItem(
   return rowOf(row)
 }
 
+/** How many items a search returns. */
+const SEARCH_LIMIT = 20
+
 /** By title, author or url: an untitled link is remembered by its host. */
 export async function searchReadingItems(
   q: Queryable,
   workspaceId: string,
   query: string,
-  limit = 20,
 ): Promise<ReadingItemRow[]> {
   const rows = await q
     .select(withProject)
@@ -81,7 +73,7 @@ export async function searchReadingItems(
       ),
     )
     .orderBy(desc(readingItems.createdAt), desc(readingItems.id))
-    .limit(limit)
+    .limit(SEARCH_LIMIT)
   return rows.map(rowOf)
 }
 

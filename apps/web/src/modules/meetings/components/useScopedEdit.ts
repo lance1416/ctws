@@ -4,6 +4,9 @@ import { useState } from 'react'
 import { problemText } from '../../../platform/http/api'
 import { patchMeeting } from '../api'
 
+const moves = (patch: UpdateMeetingInput) =>
+  patch.startsLocal !== undefined || patch.durationMinutes !== undefined
+
 /**
  * Saves a meeting's form: when and how long belong to the occurrence, the rest to the series.
  * Moving a repeating meeting first asks which occurrences change.
@@ -21,26 +24,27 @@ export function useScopedEdit(
     meta: { awaits: [['meetings'], ['links']] },
   })
 
-  // The series' fields go to all of it, then when and how long to `scope`.
+  // `all` is one write. Otherwise the series' fields go to all of it, then when and how long to
+  // `scope`, which is only asked when one of them changed.
   const write = async (patch: UpdateMeetingInput, scope: EditScope) => {
-    const { startsLocal, durationMinutes, ...series } = patch
     try {
-      await save.mutateAsync({ ...series, scope: 'all' })
-      let moved: MeetingOccurrence | null = null
-      if (startsLocal !== undefined || durationMinutes !== undefined) {
-        const recurrenceId = scope === 'all' ? undefined : meeting.recurrenceId
-        moved = await save.mutateAsync({ startsLocal, durationMinutes, scope, recurrenceId })
+      if (scope === 'all') {
+        const saved = await save.mutateAsync({ ...patch, scope })
+        onSaved(moves(patch) ? saved : null)
+      } else {
+        const { startsLocal, durationMinutes, ...series } = patch
+        await save.mutateAsync({ ...series, scope: 'all' })
+        const recurrenceId = meeting.recurrenceId
+        onSaved(await save.mutateAsync({ startsLocal, durationMinutes, scope, recurrenceId }))
       }
-      onSaved(moved)
     } catch {
       // Shown through `failed`.
     }
   }
 
   const submit = (patch: UpdateMeetingInput) => {
-    const moved = patch.startsLocal !== undefined || patch.durationMinutes !== undefined
     // Nothing is written before the answer, so backing out leaves the meeting as it was.
-    if (moved && meeting.rrule !== null) setAsking(patch)
+    if (moves(patch) && meeting.rrule !== null) setAsking(patch)
     else void write(patch, 'all')
   }
 

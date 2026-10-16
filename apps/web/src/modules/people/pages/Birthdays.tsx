@@ -6,7 +6,7 @@ import { CIRCLE_LABELS, MONTH_NAMES } from '../labels'
 import { textbox } from '../../../platform/ui/formStyles'
 import { Panel, PanelEmpty } from '../../../platform/ui/Panel'
 import { MONTHS } from '../../../platform/time/dates'
-import type { Circle } from '@ctws/contracts'
+import { type Circle, CIRCLES } from '@ctws/contracts'
 import { PeopleHead } from '../components/PeopleViews'
 import { useCrumbs } from '../../../shell/layout/Breadcrumbs'
 import { HANG } from '../../../platform/ui/hang'
@@ -117,7 +117,7 @@ export function Birthdays() {
 
           <Panel label="Circles">
             <div className="flex flex-col">
-              {(['family', 'friend', 'work'] as const).map((key) => {
+              {CIRCLES.map((key) => {
                 const picked = circle === key
                 const count = data?.circles[key] ?? 0
                 return (

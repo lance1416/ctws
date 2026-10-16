@@ -1,6 +1,5 @@
 import { z } from 'zod'
-import { WINDOW_REFUSED, windowIsBounded } from './calendar'
-import { calendarDate, EVENT_YEARS, eventTimeZone, instant } from './common'
+import { EVENT_YEARS, eventTimeZone, instant } from './common'
 
 /**
  * A meeting, after iCalendar's `VEVENT` (RFC 5545): a wall clock plus a zone and a duration, so a
@@ -122,18 +121,8 @@ export type MeetingOccurrence = z.infer<typeof meetingOccurrence>
 
 export const meetingsResponse = z.object({ meetings: z.array(meetingOccurrence) }).strict()
 
-export const meetingListQuery = z
-  .object({
-    projectId: z.uuid().optional(),
-    /** Inclusive days in the account's zone; absent means a window the server picks. */
-    from: calendarDate.optional(),
-    to: calendarDate.optional(),
-  })
-  .strict()
-  .refine(windowIsBounded, { message: WINDOW_REFUSED, path: ['to'] })
-
-/** Which occurrence of a series; absent means its first. */
-export const occurrenceQuery = z.object({ recurrenceId: z.string().optional() }).strict()
+/** Which occurrence of a series. */
+export const occurrenceQuery = z.object({ recurrenceId: localTime }).strict()
 
 /** Cancelling one occurrence is not cancelling the series. */
 export const deleteMeetingQuery = z

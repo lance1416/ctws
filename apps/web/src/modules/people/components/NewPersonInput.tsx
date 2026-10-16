@@ -6,25 +6,13 @@ import { useComposing } from '../../../platform/keyboard/composition'
 import { textbox } from '../../../platform/ui/formStyles'
 
 /** Type a name and press Enter; the rest is filled in on the pane that opens. */
-export function NewPersonInput({
-  projectId,
-  onCreated,
-  placeholder = 'Add a name',
-}: {
-  /** The project a person made here is on, when made from inside one. */
-  projectId?: string | undefined
-  onCreated: (person: PersonResponse) => void
-  placeholder?: string
-}) {
+export function NewPersonInput({ onCreated }: { onCreated: (person: PersonResponse) => void }) {
   const composing = useComposing()
   const [name, setName] = useState('')
 
   const create = useMutation({
     mutationFn: async (value: string) => {
-      const made = await createPerson({
-        name: value,
-        ...(projectId ? { projectIds: [projectId] } : {}),
-      })
+      const made = await createPerson({ name: value })
       // Emptied once the server has them, not after the list is read again: what is typed in the
       // meantime is the next name.
       setName('')
@@ -45,8 +33,8 @@ export function NewPersonInput({
           if (name.trim() === '' || create.isPending) return
           create.mutate(name.trim())
         }}
-        placeholder={placeholder}
-        aria-label={placeholder}
+        placeholder="Add a name"
+        aria-label="Add a name"
         className={`w-full bg-sheet ${textbox}`}
       />
       {create.isError && (

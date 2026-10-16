@@ -46,7 +46,7 @@ export function MeetingRead({
       <div className="@container">
         <div className="grid items-start gap-x-6 gap-y-4 @xl:grid-cols-2 @2xl:grid-cols-3">
           {elsewhere && (
-            <Field label="Your time" shape="above">
+            <Field label="Your time">
               {/* Not editable: the time was agreed in the meeting's zone; this is a conversion. */}
               <span data-local-clock className="text-sm tabular-nums text-ink-muted">
                 {new Intl.DateTimeFormat('en-US', {
@@ -60,22 +60,22 @@ export function MeetingRead({
               </span>
             </Field>
           )}
-          <Field label="Length" shape="above">
+          <Field label="Length">
             <span className="text-sm text-ink">{lengthLabel(meeting.durationMinutes)}</span>
           </Field>
-          <Field label="Repeats" shape="above">
+          <Field label="Repeats">
             <span className="text-sm text-ink">
               {bare ? repeatLabel(bare, meeting.startsLocal, today) : 'Once'}
             </span>
           </Field>
           {bare && (
-            <Field label="Ends" shape="above">
+            <Field label="Ends">
               <span className="text-sm tabular-nums text-ink">
                 {until ? shortDay(until, today) : 'Never'}
               </span>
             </Field>
           )}
-          <Field label="Projects" shape="above">
+          <Field label="Projects">
             {meeting.projectId && meeting.projectName ? (
               <span className="flex">
                 <span className={CHIP}>
@@ -90,7 +90,7 @@ export function MeetingRead({
         </div>
       </div>
 
-      <Field label="Location" shape="above">
+      <Field label="Location">
         <span className="flex min-w-0 items-center gap-1.5">
           {meeting.location ? (
             place ? (
@@ -111,7 +111,7 @@ export function MeetingRead({
         </span>
       </Field>
 
-      <Field label="Attendees" shape="above">
+      <Field label="Attendees">
         <div data-attendees className="flex flex-wrap gap-1.5">
           {meeting.attendees.length === 0 ? (
             <span className="text-sm text-ink-subtle">Nobody yet</span>
@@ -125,7 +125,7 @@ export function MeetingRead({
         </div>
       </Field>
 
-      <Field label="Notes" shape="above">
+      <Field label="Notes">
         {meeting.note ? (
           <p className="max-w-[68ch] text-sm whitespace-pre-wrap text-ink">{meeting.note}</p>
         ) : (

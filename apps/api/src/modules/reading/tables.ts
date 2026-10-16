@@ -17,8 +17,6 @@ export const readingItems = pgTable(
     /** What the page itself says, kept apart from `title` so a refetch never overwrites a name. */
     fetchedTitle: text('fetched_title'),
     fetchedSummary: text('fetched_summary'),
-    /** Set even when nothing came back, so "not fetched" and "fetched, empty" differ. */
-    fetchedAt: timestamp('fetched_at', { withTimezone: true }),
     url: text('url'),
     author: text('author'),
     status: text('status').$type<(typeof READING_STATUSES)[number]>().notNull(),

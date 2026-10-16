@@ -84,14 +84,6 @@ describe('a pasted link reads back its own title', () => {
     expect(await list(ctx)).toHaveLength(1)
   })
 
-  it('does not fetch when the person wrote a title', async () => {
-    const ctx = await setupWith(cleanups, undefined, { unfurl: fetchAnywhere })
-    const url = await page('<title>对面说的</title>')
-    const made = await add(ctx, { kind: 'link', url, title: '我自己说的' })
-    expect(made.title).toBe('我自己说的')
-    expect(made.fetchedTitle).toBeNull()
-  })
-
   it('does not fetch for a book, which has no address', async () => {
     const ctx = await setupWith(cleanups, undefined, { unfurl: fetchAnywhere })
     const made = await add(ctx, { kind: 'book', title: '人月神话' })

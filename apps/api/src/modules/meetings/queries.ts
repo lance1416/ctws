@@ -106,21 +106,11 @@ function expand(series: SeriesRow, window: { from: Date; to: Date }): Occurrence
   }))
 }
 
-async function seriesOf(
-  q: Queryable,
-  workspaceId: string,
-  opts: { projectId?: string | undefined; id?: string | undefined } = {},
-): Promise<SeriesRow[]> {
+async function seriesOf(q: Queryable, workspaceId: string, id?: string): Promise<SeriesRow[]> {
   const rows = await q
     .select({ meeting: meetings, ...meetingFiling.project })
     .from(meetings)
-    .where(
-      and(
-        visibleMeetings(workspaceId),
-        opts.projectId ? meetingFiling.filedUnder(opts.projectId) : undefined,
-        opts.id ? eq(meetings.id, opts.id) : undefined,
-      ),
-    )
+    .where(and(visibleMeetings(workspaceId), id ? eq(meetings.id, id) : undefined))
     .orderBy(asc(meetings.startsLocal), asc(meetings.id))
     .limit(MAX_SERIES_PER_REQUEST)
   return hydrate(q, workspaceId, rows)
@@ -141,7 +131,7 @@ export async function seriesById(
   workspaceId: string,
   id: string,
 ): Promise<SeriesRow> {
-  const [series] = await seriesOf(q, workspaceId, { id })
+  const [series] = await seriesOf(q, workspaceId, id)
   if (!series) throw new MeetingNotFoundError()
   return series
 }
@@ -151,9 +141,8 @@ export async function listOccurrences(
   q: Queryable,
   workspaceId: string,
   window: { from: Date; to: Date },
-  opts: { projectId?: string | undefined } = {},
 ): Promise<OccurrenceRow[]> {
-  const series = await seriesOf(q, workspaceId, opts)
+  const series = await seriesOf(q, workspaceId)
   return series
     .flatMap((s) => expand(s, window))
     .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
@@ -165,18 +154,18 @@ function around(recurrenceId: LocalTime): { from: Date; to: Date } {
   return { from: new Date(at - 2 * DAY_MS), to: new Date(at + 2 * DAY_MS) }
 }
 
-/** One occurrence by its series and recurrence id; the series' first by default. */
+/** One occurrence by its series and recurrence id. */
 export async function getOccurrence(
   q: Queryable,
   workspaceId: string,
   id: string,
-  recurrenceId?: LocalTime,
+  recurrenceId: LocalTime,
 ): Promise<OccurrenceRow> {
   const series = await seriesById(q, workspaceId, id)
-  const want = recurrenceId ?? series.startsLocal
   // Searched where it is now: an override can move it out of the days around its original slot.
-  const at = series.exceptions.find((e) => e.recurrenceId === want)?.startsLocal ?? want
-  const one = expand(series, around(at)).find((o) => o.recurrenceId === want)
+  const at =
+    series.exceptions.find((e) => e.recurrenceId === recurrenceId)?.startsLocal ?? recurrenceId
+  const one = expand(series, around(at)).find((o) => o.recurrenceId === recurrenceId)
   if (!one) throw new OccurrenceNotFoundError()
   return one
 }

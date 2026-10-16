@@ -1,10 +1,10 @@
-import type { PersonResponse } from '@ctws/contracts'
+import type { LinksResponse, PersonResponse } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createProject, setupWith, type Harness, web } from '../../helpers/harness'
 
 /**
- * PEOPLE -- THE THIRD MODULE, on vCard 4.0's model (RFC 6350).
+ * PEOPLE, on vCard 4.0's model (RFC 6350).
  *
  * The claim that matters is the one a hand-rolled person model always gets wrong: a person has
  * SEVERAL ways to be reached, not one. Everything else here is the usual tenant and lifecycle
@@ -32,15 +32,26 @@ async function add(ctx: Harness, payload: Record<string, unknown>): Promise<Pers
 const patch = (ctx: Harness, id: string, payload: Record<string, unknown>) =>
   ctx.app.inject({ method: 'PATCH', url: `/api/v1/people/${id}`, headers: web(ctx), payload })
 
-async function list(ctx: Harness, query = ''): Promise<PersonResponse[]> {
-  const res = await ctx.app.inject({
-    method: 'GET',
-    url: `/api/v1/people${query}`,
-    headers: ctx.authed,
-  })
+async function list(ctx: Harness): Promise<PersonResponse[]> {
+  const res = await ctx.app.inject({ method: 'GET', url: '/api/v1/people', headers: ctx.authed })
   expect(res.statusCode, res.body).toBe(200)
   return (res.json() as { people: PersonResponse[] }).people
 }
+
+/** The people on a project's page. */
+async function filedUnder(ctx: Harness, projectId: string): Promise<string[]> {
+  const res = await ctx.app.inject({
+    method: 'GET',
+    url: `/api/v1/links/project/${projectId}`,
+    headers: web(ctx),
+  })
+  expect(res.statusCode, res.body).toBe(200)
+  const groups = (res.json() as LinksResponse).groups
+  return groups.find((g) => g.type === 'person')?.items.map((i) => i.title) ?? []
+}
+
+const unfiled = async (ctx: Harness) =>
+  (await list(ctx)).filter((p) => p.projects.length === 0).map((p) => p.name)
 
 describe('people', () => {
   it('keeps several ways to reach one person, in the order they were given', async () => {
@@ -127,8 +138,7 @@ describe('people', () => {
   })
 
   it('puts one person on SEVERAL lines of work', async () => {
-    // A maintainer on two of your repos, a recruiter holding two roles open. The single column
-    // this replaced could only ever be half an answer.
+    // A maintainer on two of your repos, a recruiter holding two roles open.
     const ctx = await setup()
     const hunt = await createProject(ctx, '找工作')
     const rrgen = await createProject(ctx, 'rrgen')
@@ -137,9 +147,9 @@ describe('people', () => {
 
     expect(person.projects.map((p) => p.name).sort()).toEqual(['rrgen', '找工作'])
     // And they turn up standing on EITHER line.
-    expect((await list(ctx, `?projectId=${hunt}`)).map((c) => c.name)).toEqual(['某维护者'])
-    expect((await list(ctx, `?projectId=${rrgen}`)).map((c) => c.name)).toEqual(['某维护者'])
-    expect((await list(ctx, '?unfiled=true')).map((c) => c.name)).toEqual(['老朋友'])
+    expect(await filedUnder(ctx, hunt)).toEqual(['某维护者'])
+    expect(await filedUnder(ctx, rrgen)).toEqual(['某维护者'])
+    expect(await unfiled(ctx)).toEqual(['老朋友'])
   })
 
   it('replaces the whole set of projects, leaving none of the old links behind', async () => {
@@ -150,11 +160,11 @@ describe('people', () => {
     const res = await patch(ctx, person.id, { projectIds: [b] })
     expect(res.statusCode).toBe(200)
     expect((res.json() as PersonResponse).projects.map((p) => p.name)).toEqual(['B'])
-    expect(await list(ctx, `?projectId=${a}`)).toEqual([])
+    expect(await filedUnder(ctx, a)).toEqual([])
 
     // And an empty set really takes them off every line.
     expect((await patch(ctx, person.id, { projectIds: [] })).statusCode).toBe(200)
-    expect((await list(ctx, '?unfiled=true')).map((c) => c.name)).toEqual(['换了线的人'])
+    expect(await unfiled(ctx)).toEqual(['换了线的人'])
   })
 
   it('keeps a person when their project is deleted', async () => {
@@ -168,7 +178,7 @@ describe('people', () => {
     // can navigate to is worse than none.
     expect(kept).toMatchObject({ name: '留下来的人', projects: [] })
     // And they are findable again, as somebody who belongs to no project.
-    expect((await list(ctx, '?unfiled=true')).map((c) => c.name)).toEqual(['留下来的人'])
+    expect(await unfiled(ctx)).toEqual(['留下来的人'])
   })
 
   it('finds a person by their address, not only by their name', async () => {

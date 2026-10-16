@@ -1,4 +1,10 @@
-import type { BirthdayPreviewResponse, BirthdayResponse, RemindLead } from '@ctws/contracts'
+import {
+  BIRTH_YEARS,
+  type BirthdayPreviewResponse,
+  type BirthdayResponse,
+  REMIND_LEAD_DEFAULT,
+  type RemindLead,
+} from '@ctws/contracts'
 import { HOUR_BRANCHES, LUNAR_DAYS, LUNAR_MONTHS } from '@ctws/core/lunar-names'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
@@ -7,9 +13,9 @@ import { fullDay } from '../../../platform/time/dates'
 import { textbox } from '../../../platform/ui/formStyles'
 import { PickOne } from '../../../platform/ui/inline'
 import { birthdayPreviewQuery, type BirthdayDraft } from '../api'
-import { LEADS, MONTH_NAMES } from '../labels'
+import { LEAD_CHOICES, MONTH_NAMES } from '../labels'
 
-/** Where a draft starts. Writing a new person down needs one too, so it is not in the editor. */
+/** Where a draft starts: the editor's first state, and New person's before the editor reports. */
 export function birthdayDraftOf(birthday: BirthdayResponse | null): BirthdayDraft {
   return {
     calendar: birthday?.calendar ?? 'solar',
@@ -18,7 +24,7 @@ export function birthdayDraftOf(birthday: BirthdayResponse | null): BirthdayDraf
     day: birthday?.day ?? 1,
     leapMonth: birthday?.leapMonth ?? false,
     hourBranch: birthday?.hourBranch ?? null,
-    remindLead: (birthday?.remindLead ?? 7) as RemindLead,
+    remindLead: birthday?.remindLead ?? REMIND_LEAD_DEFAULT,
   }
 }
 
@@ -34,13 +40,14 @@ export function BirthdayEditor({
   /** Every change reports the draft, and whether the server has already refused it. */
   onChange: (draft: BirthdayDraft, refused: boolean) => void
 }) {
-  const [calendar, setCalendar] = useState<'solar' | 'lunar'>(birthday?.calendar ?? 'solar')
-  const [year, setYear] = useState<string>(birthday?.year ? String(birthday.year) : '')
-  const [month, setMonth] = useState(birthday?.month ?? 1)
-  const [day, setDay] = useState(birthday?.day ?? 1)
-  const [leapMonth, setLeapMonth] = useState(birthday?.leapMonth ?? false)
-  const [hourBranch, setHourBranch] = useState<number | null>(birthday?.hourBranch ?? null)
-  const [lead, setLead] = useState<RemindLead>((birthday?.remindLead ?? 7) as RemindLead)
+  const start = birthdayDraftOf(birthday)
+  const [calendar, setCalendar] = useState(start.calendar)
+  const [year, setYear] = useState(start.year === null ? '' : String(start.year))
+  const [month, setMonth] = useState(start.month)
+  const [day, setDay] = useState(start.day)
+  const [leapMonth, setLeapMonth] = useState(start.leapMonth)
+  const [hourBranch, setHourBranch] = useState(start.hourBranch)
+  const [lead, setLead] = useState(start.remindLead)
 
   const draft: BirthdayDraft = {
     calendar,
@@ -51,7 +58,8 @@ export function BirthdayEditor({
     hourBranch,
     remindLead: lead,
   }
-  const yearOk = draft.year === null || (draft.year >= 1850 && draft.year <= 2200)
+  const yearOk =
+    draft.year === null || (draft.year >= BIRTH_YEARS.min && draft.year <= BIRTH_YEARS.max)
 
   const preview = useQuery({
     ...birthdayPreviewQuery(draft),
@@ -172,7 +180,7 @@ export function BirthdayEditor({
         <PickOne
           label="Tell me"
           value={String(lead)}
-          choices={LEADS.map(([n, label]) => ({ value: String(n), label }))}
+          choices={LEAD_CHOICES}
           onPick={(next) => setLead(Number(next) as RemindLead)}
         />
       </div>

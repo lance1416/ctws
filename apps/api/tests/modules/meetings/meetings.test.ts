@@ -1,4 +1,9 @@
-import type { CalendarEntry, PersonResponse, MeetingOccurrence } from '@ctws/contracts'
+import type {
+  CalendarEntry,
+  LinksResponse,
+  MeetingOccurrence,
+  PersonResponse,
+} from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { Queryable } from '../../../src/platform/db/client'
@@ -11,7 +16,7 @@ import {
 } from '../../helpers/harness'
 
 /**
- * MEETINGS -- the fourth module, on iCalendar's `VEVENT` (RFC 5545).
+ * MEETINGS, on iCalendar's `VEVENT` (RFC 5545).
  *
  * `occurrences.test.ts` holds the recurrence and DST arithmetic, without a database. What is
  * tested here is everything that arithmetic has to be wired to: the three edit scopes, overrides
@@ -55,7 +60,7 @@ const patch = (ctx: Harness, id: string, payload: Record<string, unknown>) =>
 const cancel = (ctx: Harness, id: string, query = '') =>
   ctx.app.inject({ method: 'DELETE', url: `/api/v1/meetings/${id}${query}`, headers: web(ctx) })
 
-async function listed(ctx: Harness, query = ''): Promise<MeetingOccurrence[]> {
+async function listed(ctx: Harness, query: string): Promise<MeetingOccurrence[]> {
   const res = await ctx.app.inject({
     method: 'GET',
     url: `/api/v1/meetings${query}`,
@@ -546,7 +551,13 @@ describe('windows, projects and tenants', () => {
     const pid = await createProject(ctx, '找工作')
     const series = await arrange(ctx, { ...WEEKLY, rrule: null, projectId: pid })
     expect(series).toMatchObject({ projectId: pid, projectName: '找工作' })
-    expect(await listed(ctx, `?projectId=${pid}&from=2026-10-20&to=2026-10-21`)).toHaveLength(1)
+    const page = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/links/project/${pid}`,
+      headers: web(ctx),
+    })
+    const groups = (page.json() as LinksResponse).groups
+    expect(groups.find((g) => g.type === 'meeting')?.items.map((i) => i.title)).toEqual(['周会'])
 
     await ctx.app.inject({ method: 'DELETE', url: `/api/v1/projects/${pid}`, headers: web(ctx) })
     const after = await listed(ctx, '?from=2026-10-20&to=2026-10-21')
@@ -590,7 +601,7 @@ describe('windows, projects and tenants', () => {
 
     const res = await ctx.app.inject({
       method: 'GET',
-      url: `/api/v1/meetings/${series.meetingId}`,
+      url: `/api/v1/meetings/${series.meetingId}?recurrenceId=${series.recurrenceId}`,
       headers: ctx.authed,
     })
     expect((res.json() as MeetingOccurrence).attendees).toEqual([])
@@ -614,7 +625,7 @@ describe('windows, projects and tenants', () => {
     }
     const seen = await theirs.app.inject({
       method: 'GET',
-      url: `/api/v1/meetings/${series.meetingId}`,
+      url: `/api/v1/meetings/${series.meetingId}?recurrenceId=${series.recurrenceId}`,
       headers: theirs.authed,
     })
     expect(seen.statusCode).toBe(404)

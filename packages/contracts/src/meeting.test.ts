@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { calendarQuery } from './calendar'
 import { reviewQuery } from './task'
-import { createMeetingBody, meetingListQuery } from './meeting'
+import { createMeetingBody } from './meeting'
 
 /**
  * The edge's share of bounding what one request can cost. The expander bounds itself as well --
@@ -59,19 +59,15 @@ describe('windows', () => {
   it('refuses a window no screen shows and every series would be expanded over', () => {
     // A recurring thing has no last occurrence, so the window IS the bound.
     expect(calendarQuery.safeParse({ from: '2026-01-01', to: '3026-01-01' }).success).toBe(false)
-    expect(meetingListQuery.safeParse({ from: '2026-01-01', to: '3026-01-01' }).success).toBe(false)
   })
 
-  it('bounds the meeting list the SAME way, not its own way', () => {
-    // These two are one question with the days named differently, and they drifted apart once:
-    // the calendar was bounded and the list was not, so the walk one refused the other allowed.
+  it('bounds the review window the SAME way, not its own way', () => {
     for (const q of [
       { from: '9000-10-01', to: '9000-11-15' },
       { from: '2026-01-01', to: '3026-01-01' },
       { from: '2026-11-01', to: '2026-10-01' },
     ]) {
       expect(calendarQuery.safeParse(q).success, JSON.stringify(q)).toBe(false)
-      expect(meetingListQuery.safeParse(q).success, JSON.stringify(q)).toBe(false)
       expect(reviewQuery.safeParse(q).success, JSON.stringify(q)).toBe(false)
     }
   })

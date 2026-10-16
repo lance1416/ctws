@@ -50,13 +50,13 @@ export function PersonRead({ person, onEdit }: { person: PersonResponse; onEdit:
       </div>
 
       {person.channels.length > 0 && (
-        <Field label="Person" shape="above">
+        <Field label="Person">
           <ul data-channels className="flex flex-col gap-0.5">
             {byKind(person.channels).map((c, i) => (
               <li key={i} className="flex min-w-0 items-center gap-1.5">
                 <span className="w-12 shrink-0 text-xs text-ink-muted">{KIND_LABEL[c.kind]}</span>
                 <a
-                  href={channelHref(c.kind, c.value)!}
+                  href={channelHref(c.kind, c.value)}
                   className={`min-w-0 flex-1 truncate text-sm ${LINK} ${
                     c.kind === 'phone' ? 'tabular-nums' : ''
                   }`}
@@ -86,7 +86,7 @@ export function PersonRead({ person, onEdit }: { person: PersonResponse; onEdit:
             value={person.gender ? (GENDER_LABELS[person.gender] ?? null) : null}
           />
           <Reads label="Circle" value={person.circle ? CIRCLE_LABELS[person.circle] : null} />
-          <Field label="Projects" shape="above">
+          <Field label="Projects">
             {person.projects.length === 0 ? (
               <p className="text-sm text-ink-subtle">Not on any project</p>
             ) : (
@@ -142,7 +142,7 @@ export function PersonRead({ person, onEdit }: { person: PersonResponse; onEdit:
 
 function Reads({ label, value }: { label: string; value: string | null }) {
   return (
-    <Field label={label} shape="above">
+    <Field label={label}>
       <p className={`truncate text-sm ${value ? 'text-ink' : 'text-ink-subtle'}`}>
         {value || 'Not set'}
       </p>
