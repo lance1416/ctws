@@ -1,32 +1,26 @@
 import { problemText } from '../../../platform/http/api'
-import { type TaskStatus, type TodayTaskResponse, type TaskId } from '@ctws/contracts'
+import { type TodayTaskResponse, type TaskId } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
-import { useState, type KeyboardEvent } from 'react'
-import { useKeyTable } from '../../../platform/keyboard/keyTable'
+import { useState } from 'react'
 import { clockTime } from '@ctws/core/clock'
 import { ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { HANG } from '../../../platform/ui/hang'
 import { useTimeZone } from '../../../shell/auth'
-import { useRegistry } from '../../../shell/registry'
 import { DayEmpty, DaySection, dueTodayAt, leadFor, ROW_LIST } from '../../../shell/rows'
 import { completedQuery, movementQuery, todayQuery } from '../api'
-import { useTaskActions } from '../hooks/useTaskActions'
 import { DayLine, type DayItem } from '../components/DayLine'
 import { DoneTodayPanel } from '../components/DoneTodayPanel'
 import { MovementPanel } from '../components/MovementPanel'
 import { TaskDetail } from '../components/TaskDetail'
-import { useRowPane, useRowRefs } from '../components/useRowPane'
 import { useSavedFlash } from '../components/useSavedFlash'
-import { TASKS_ID } from '../logic/id'
-import { statusActions, TODAY_KEYS } from '../logic/keys'
 import { hasMovement } from '../logic/movement'
 import { todaySegments } from '../logic/today'
-import type { TriagePatch } from '../logic/triage'
 import { DayHeading } from './today/DayHeading'
 import { EntryRow } from './today/EntryRow'
 import { InProgressSection } from './today/InProgressSection'
 import { TodayRow } from './today/TodayRow'
+import { useOthersToday, useTodayRows } from './today/useTodayRows'
 
 /**
  * The day as one sheet: in progress, the day's line in time order, overdue, done today, and the
@@ -40,49 +34,20 @@ export function Today() {
   // Kept current while the page sits open: the now line, the date and which day is today follow it.
   const now = useNow()
   const day = ymd(now, timeZone)
-  // Other modules' dated things for today: one hook per provider, over the registry's fixed list.
-  const entries = useRegistry()
-    .calendar.filter((p) => p.moduleId !== TASKS_ID)
-    .flatMap((p) =>
-      p.useEntries({ from: day, to: day }).entries.map((e) => ({ ...e, moduleId: p.moduleId })),
-    )
+  const entries = useOthersToday(day)
   const [openId, setOpenId] = useState<TaskId | null>(null)
   const rows = today.data ?? []
 
   const [error, setError] = useState<string | null>(null)
-  const keys = useKeyTable(TODAY_KEYS)
-  const actions = useTaskActions(setError)
   const [savedId, setSavedId] = useSavedFlash()
-
-  // A change, or the open pane, can take its row off this page; focus moves on in reading order.
-  const titles = useRowRefs()
-  const pane = useRowPane({
-    rows: titles,
-    tasks: rows,
+  const { titles, pane, setStatus, patch, focusRow, onRowKeyDown } = useTodayRows({
+    rows,
     settled: today.isSuccess,
     openId,
     setOpenId,
-    heading: () => document.getElementById('today-heading'),
+    setError,
   })
-  const { focus, openTask } = pane
-  const setStatus = (id: TaskId, status: TaskStatus) => {
-    setError(null)
-    focus.expect(id)
-    actions.setStatus(id, status, () => focus.drop(id))
-  }
-  const patch = (id: TaskId, body: TriagePatch) => {
-    setError(null)
-    focus.expect(id)
-    actions.patch(id, body, () => focus.drop(id))
-  }
-  // A triage menu unmounts after its action, so focus goes back to the row; if the row then
-  // leaves the page, `focus` moves it on again.
-  const focusRow = (id: TaskId) => queueMicrotask(() => titles.get(id)?.focus())
-  const onRowKeyDown = (e: KeyboardEvent, t: TodayTaskResponse) =>
-    keys(
-      e,
-      statusActions(t.status, (next) => setStatus(t.id, next)),
-    )
+  const { openTask } = pane
 
   const taskRow = (t: TodayTaskResponse, anyTime = false) => (
     <TodayRow
