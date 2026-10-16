@@ -45,7 +45,7 @@ export const projectResponse = z
   .strict()
 
 /** A project in the list: the row plus the count of tasks neither finished, cancelled nor deleted. */
-export const projectListItem = projectResponse
+const projectListItem = projectResponse
   .extend({ openTasks: z.number().int().nonnegative() })
   .strict()
 

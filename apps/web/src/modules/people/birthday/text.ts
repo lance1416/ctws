@@ -4,7 +4,7 @@ import { fullDay, MONTHS } from '../../../platform/time/dates'
 import type { BirthdayDraft } from '../api'
 
 /** A solar day in the app's own words: `Oct 17, 1991`, or `Oct 17` with no year. */
-export function solarDay(year: number | null, month: number, day: number): string {
+function solarDay(year: number | null, month: number, day: number): string {
   return year === null ? `${MONTHS[month - 1]} ${day}` : `${MONTHS[month - 1]} ${day}, ${year}`
 }
 

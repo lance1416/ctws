@@ -7,7 +7,7 @@ import { unified } from 'unified'
  * Which on-demand renderers a note needs, answered before any is loaded. It parses with the same
  * `remark-math` and `remark-gfm` the renderer uses, because a regex would disagree with them.
  */
-export type NoteFeatures = {
+type NoteFeatures = {
   /** `$...$` or `$$...$$`, as `remark-math` reads it. */
   math: boolean
   mermaid: boolean

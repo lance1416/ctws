@@ -1,7 +1,7 @@
 import { MAX_TASK_DEPTH } from '@ctws/contracts'
 import type { FlatRow } from './flatten'
 
-export type DropRequest = {
+type DropRequest = {
   /** The visible rows, in display order. */
   rows: FlatRow[]
   draggedId: string
@@ -11,7 +11,7 @@ export type DropRequest = {
   wantedDepth: number
 }
 
-export type DropPlan =
+type DropPlan =
   | { ok: true; parentId: string | null; beforeId?: string; afterId?: string }
   | { ok: false; reason: 'own-subtree' | 'too-deep' | 'unchanged' }
 

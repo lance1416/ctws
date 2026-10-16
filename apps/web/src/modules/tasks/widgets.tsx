@@ -118,17 +118,7 @@ export function TodayGlance() {
 }
 
 /** One count: the number large, its word beside it, the whole of it the way there. */
-export function GlanceCount({
-  to,
-  n,
-  word,
-  tone,
-}: {
-  to: string
-  n: number
-  word: string
-  tone: string
-}) {
+function GlanceCount({ to, n, word, tone }: { to: string; n: number; word: string; tone: string }) {
   return (
     <Link to={to} className={`flex items-baseline gap-2 px-2 py-0.5 hover:bg-hover ${tone}`}>
       <span className="text-xl font-medium tabular-nums">{n}</span> <span>{word}</span>

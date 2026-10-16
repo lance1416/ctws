@@ -93,7 +93,7 @@ export const DEFAULT_HOUR = 10
 export const DEFAULT_MINUTES = 60
 
 /** A repeat the interface offers, as its RFC string; the column holds any valid `RRULE`. */
-export type RepeatChoice = { value: string | null; label: string }
+type RepeatChoice = { value: string | null; label: string }
 
 const WEEKDAYS = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'] as const
 const WEEKDAY_NAMES = [

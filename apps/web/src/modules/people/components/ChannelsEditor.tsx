@@ -11,7 +11,7 @@ import { usePhone } from '../usePhone'
  * being typed is not scolded. `seed`: the country code the form put there itself; a row holding
  * only that is still empty. `saved`: as stored, untouched this time.
  */
-export type ChannelRow = PersonChannel & { touched?: boolean; seed?: string; saved?: boolean }
+type ChannelRow = PersonChannel & { touched?: boolean; seed?: string; saved?: boolean }
 
 /** A row holding only the seeded country code is not written on. */
 const written = (c: ChannelRow) => c.value.trim() !== '' && c.value !== c.seed

@@ -26,7 +26,7 @@ export type Birthday = {
 /** Why this year's day moved. */
 export type Kept = 'leap-month' | 'short-month' | 'short-february'
 
-export type BirthdayOccurrence = {
+type BirthdayOccurrence = {
   /** The next birthday, a calendar day. */
   day: string
   /** 0 is today. */
@@ -103,7 +103,7 @@ function nextLunar(b: Birthday, from: SolarDay): BirthdayOccurrence {
   throw new Error('a lunar anniversary recurs within three lunar years')
 }
 
-export type BirthdayFacts = {
+type BirthdayFacts = {
   /** A lunar birthday's own recurring date, "农历九月初三"; null for a solar one. */
   lunarDate: string | null
   /** The solar day of birth; null without a year. */

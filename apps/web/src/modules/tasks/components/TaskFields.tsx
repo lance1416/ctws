@@ -10,7 +10,7 @@ import { DeadlineMark, PlanMark } from './TaskRowParts'
 // Fields the pane's form and the New task dialog both draw; each form keeps its own values.
 
 /** The named days the date decisions offer, the same three the row's triage control offers. */
-export const namedDays = (today: string): readonly (readonly [word: string, day: string])[] => [
+const namedDays = (today: string): readonly (readonly [word: string, day: string])[] => [
   ['Today', today],
   ['Tomorrow', addDays(today, 1)],
   ['Next week', nextMonday(today)],

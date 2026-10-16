@@ -8,7 +8,7 @@ export type ProviderResult = {
   isSuccess: boolean
 }
 
-export type FederatedHit = SearchHit & { moduleId: string; moduleLabel: string }
+type FederatedHit = SearchHit & { moduleId: string; moduleLabel: string }
 
 export type Federated = {
   /** Every module's hits in one flat list, in provider order; the keyboard walks this list. */

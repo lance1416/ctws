@@ -3,12 +3,12 @@ import { queryOptions, useQuery, type UseQueryResult } from '@tanstack/react-que
 import { apiFetch } from '../../platform/http/api'
 
 /** The live projects, with the server's own `openTasks` counts. */
-export async function listProjects(): Promise<ProjectListItem[]> {
+async function listProjects(): Promise<ProjectListItem[]> {
   return (await apiFetch<{ projects: ProjectListItem[] }>('/projects')).projects
 }
 
 /** The archived projects: the server leaves them out of the list above unless asked. */
-export async function listArchivedProjects(): Promise<ProjectListItem[]> {
+async function listArchivedProjects(): Promise<ProjectListItem[]> {
   return (await apiFetch<{ projects: ProjectListItem[] }>('/projects?archived=true')).projects
 }
 

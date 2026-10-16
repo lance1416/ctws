@@ -50,16 +50,16 @@ export type ShellConfig = {
   captureModuleId: string
 }
 
-export type PinnedPage = ModulePage & { key: string }
+type PinnedPage = ModulePage & { key: string }
 /** `moduleId` is null for the shell's own entries. */
-export type RegisteredKind = KindEntry & { moduleId: string | null }
-export type RegisteredRelation = RelationContribution & { moduleId: string | null }
-export type RegisteredWidget = Widget & { moduleId: string }
-export type SearchProvider = { moduleId: string; moduleLabel: string } & NonNullable<
+type RegisteredKind = KindEntry & { moduleId: string | null }
+type RegisteredRelation = RelationContribution & { moduleId: string | null }
+type RegisteredWidget = Widget & { moduleId: string }
+type SearchProvider = { moduleId: string; moduleLabel: string } & NonNullable<
   WorkspaceModule['search']
 >
-export type CalendarProvider = { moduleId: string } & CalendarContribution
-export type RegisteredProjectBlock = { moduleId: string; moduleLabel: string } & NonNullable<
+type CalendarProvider = { moduleId: string } & CalendarContribution
+type RegisteredProjectBlock = { moduleId: string; moduleLabel: string } & NonNullable<
   ProjectContribution['Block']
 >
 

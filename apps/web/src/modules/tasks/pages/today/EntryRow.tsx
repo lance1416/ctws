@@ -4,7 +4,7 @@ import { RowLead } from '../../../../shell/rows/RowLead'
 import { ProjectRail } from '../../../../shell/rows/RowParts'
 import { RowMeta } from '../../components/TaskRowParts'
 
-export type Entry = CalendarEntry & { moduleId: string }
+type Entry = CalendarEntry & { moduleId: string }
 
 /**
  * Another module's entry on the day's line. The marker's column stays empty so titles line up; a
