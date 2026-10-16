@@ -137,48 +137,44 @@ export const occurrenceParams = z.object({ id: meetingId, recurrenceId: localTim
 export const occurrencesFromQuery = z.object({ from: localTime }).strict()
 
 /** A series as it is stored: the rule and what every occurrence shares. */
-export const meetingSeries = z
-  .object({
-    id: meetingId,
-    title: z.string(),
-    /** The first occurrence: a wall clock in `timeZone`. */
-    startsLocal: localTime,
-    timeZone: eventTimeZone,
-    durationMinutes: z.number().int(),
-    rrule: z.string().nullable(),
-    location: z.string().nullable(),
-    note: z.string().nullable(),
-    projectId: projectId.nullable(),
-    projectName: z.string().nullable(),
-    attendees: z.array(z.object({ id: personId, name: z.string() }).strict()),
-  })
-  .strict()
+export const meetingSeries = z.object({
+  id: meetingId,
+  title: z.string(),
+  /** The first occurrence: a wall clock in `timeZone`. */
+  startsLocal: localTime,
+  timeZone: eventTimeZone,
+  durationMinutes: z.number().int(),
+  rrule: z.string().nullable(),
+  location: z.string().nullable(),
+  note: z.string().nullable(),
+  projectId: projectId.nullable(),
+  projectName: z.string().nullable(),
+  attendees: z.array(z.object({ id: personId, name: z.string() })),
+})
 export type MeetingSeries = z.infer<typeof meetingSeries>
 
 /** One occurrence of a meeting, as every read returns it. */
-export const meetingOccurrence = z
-  .object({
-    /** The series. */
-    meetingId,
-    /** The local time the rule gave this occurrence; it does not change when the occurrence moves. */
-    recurrenceId: localTime,
-    title: z.string(),
-    /** Where it actually is, after an override: a wall clock in `timeZone`. */
-    startsLocal: localTime,
-    timeZone: eventTimeZone,
-    durationMinutes: z.number().int(),
-    startsAt: instant,
-    endsAt: instant,
-    rrule: z.string().nullable(),
-    /** True when this occurrence differs from its series. */
-    overridden: z.boolean(),
-    location: z.string().nullable(),
-    note: z.string().nullable(),
-    projectId: projectId.nullable(),
-    projectName: z.string().nullable(),
-    attendees: z.array(z.object({ id: personId, name: z.string() }).strict()),
-  })
-  .strict()
+export const meetingOccurrence = z.object({
+  /** The series. */
+  meetingId,
+  /** The local time the rule gave this occurrence; it does not change when the occurrence moves. */
+  recurrenceId: localTime,
+  title: z.string(),
+  /** Where it actually is, after an override: a wall clock in `timeZone`. */
+  startsLocal: localTime,
+  timeZone: eventTimeZone,
+  durationMinutes: z.number().int(),
+  startsAt: instant,
+  endsAt: instant,
+  rrule: z.string().nullable(),
+  /** True when this occurrence differs from its series. */
+  overridden: z.boolean(),
+  location: z.string().nullable(),
+  note: z.string().nullable(),
+  projectId: projectId.nullable(),
+  projectName: z.string().nullable(),
+  attendees: z.array(z.object({ id: personId, name: z.string() })),
+})
 export type MeetingOccurrence = z.infer<typeof meetingOccurrence>
 
 type OccurrenceName = Pick<MeetingOccurrence, 'meetingId' | 'recurrenceId'>
@@ -214,8 +210,9 @@ export const meetingCalendarView = viewQuery('calendar', meetingWindow).refine(w
   path: ['to'],
 })
 
-export const meetingsResponse = z
-  .object({ meetings: z.array(meetingOccurrence), page: pageInfo })
-  .strict()
+export const meetingsResponse = z.object({
+  meetings: z.array(meetingOccurrence),
+  page: pageInfo,
+})
 
 export const meetingEntriesResponse = calendarEntriesResponse.extend({ page: pageInfo })

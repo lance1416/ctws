@@ -16,9 +16,10 @@ export const pageQuery = (max: number, fallback: number = max) => ({
 })
 
 /** What a page says about itself: the limit it was cut at, and the cursor of the next, if any. */
-export const pageInfo = z
-  .object({ limit: z.number().int().positive(), nextCursor: pageCursor.nullable() })
-  .strict()
+export const pageInfo = z.object({
+  limit: z.number().int().positive(),
+  nextCursor: pageCursor.nullable(),
+})
 export type PageInfo = z.infer<typeof pageInfo>
 
 /** A full list is read a page at a time; this is the most one page of it holds. */

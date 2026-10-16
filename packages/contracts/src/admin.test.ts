@@ -41,8 +41,7 @@ describe('adminUser', () => {
     disabledAt: null,
     createdAt: '2026-01-01T00:00:00.000Z',
   }
-  it('accepts a row and rejects extra fields such as a password hash', () => {
-    expect(adminUser.safeParse(row).success).toBe(true)
-    expect(adminUser.safeParse({ ...row, passwordHash: 'x' }).success).toBe(false)
+  it('reads a row and drops a field it does not name, such as a password hash', () => {
+    expect(adminUser.parse({ ...row, passwordHash: 'x' })).toEqual(row)
   })
 })

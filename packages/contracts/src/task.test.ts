@@ -249,16 +249,6 @@ describe('projectMovementResponse', () => {
     expect(parsed.quietDays).toBeNull()
   })
 
-  // Movement is counts; a ratio would have to be added to the contract on purpose.
-  it('refuses a percentage, however it is spelled', () => {
-    for (const extra of [{ progress: 0.5 }, { percent: 50 }]) {
-      expect(
-        projectMovementResponse.safeParse({ ...base, ...extra }).success,
-        JSON.stringify(extra),
-      ).toBe(false)
-    }
-  })
-
   it('refuses a last-activity day that is an instant rather than a calendar day', () => {
     // The day is the USER'S calendar day, decided by the server. A timestamp here would mean the
     // client was being asked to work out which day that was, in which timezone.

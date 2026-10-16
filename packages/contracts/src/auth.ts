@@ -27,14 +27,12 @@ export const loginBody = z
   })
   .strict()
 
-export const userResponse = z
-  .object({
-    id: userId,
-    email: z.email(),
-    timezone: z.string(),
-    workspaceId: workspaceId,
-    role: roleSchema,
-  })
-  .strict()
+export const userResponse = z.object({
+  id: userId,
+  email: z.email(),
+  timezone: z.string(),
+  workspaceId: workspaceId,
+  role: roleSchema,
+})
 
 export type UserResponse = z.infer<typeof userResponse>

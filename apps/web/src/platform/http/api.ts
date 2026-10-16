@@ -85,30 +85,11 @@ export async function call<E extends Endpoint>(
     throw new ApiError(res.status, refusal?.title ?? `HTTP ${res.status}`, refusal?.detail)
   }
   if (!endpoint.response) return undefined as ResponseOf<E>
-  const answer = readAnswer(endpoint.response, JSON.parse(text))
+  // A response schema drops fields it does not know: a page left open across a deploy meets fields
+  // added since it was built, and they are not a reason to fail. Any other mismatch is.
+  const answer = endpoint.response.safeParse(JSON.parse(text))
   if (!answer.success) throw new OutdatedPageError(endpoint.method !== 'GET')
   return answer.data as ResponseOf<E>
-}
-
-/**
- * Parses a success by its strict schema, dropping the fields it does not know: a page left open
- * across a deploy meets fields added since it was built, and they are not a reason to fail. Any
- * other mismatch is not read around.
- */
-function readAnswer(schema: z.ZodType, data: unknown): { success: boolean; data?: unknown } {
-  for (;;) {
-    const result = schema.safeParse(data)
-    if (result.success) return result
-    const issues = result.error.issues
-    if (!issues.every((i) => i.code === 'unrecognized_keys')) return result
-    for (const issue of issues) {
-      const at = issue.path.reduce<unknown>(
-        (o, key) => (o as Record<PropertyKey, unknown>)[key],
-        data,
-      )
-      for (const key of issue.keys) delete (at as Record<string, unknown>)[key]
-    }
-  }
 }
 
 /**

@@ -32,34 +32,33 @@ export const updateProjectBody = patchOf({
   archived: z.boolean(),
 })
 
-export const projectResponse = z
-  .object({
-    id: projectId,
-    workspaceId,
-    name: z.string(),
-    color: projectColor,
-    isInbox: z.boolean(),
-    rank: z.string(),
-    archivedAt: instant.nullable(),
-    createdAt: instant,
-  })
-  .strict()
+export const projectResponse = z.object({
+  id: projectId,
+  workspaceId,
+  name: z.string(),
+  color: projectColor,
+  isInbox: z.boolean(),
+  rank: z.string(),
+  archivedAt: instant.nullable(),
+  createdAt: instant,
+})
 
 /**
  * A project in the list: the row, plus the counts modules add to it, each under the name its
  * module registered.
  */
-export const projectListItem = projectResponse
-  .extend({ columns: z.record(z.string(), z.number().int().nonnegative()) })
-  .strict()
+export const projectListItem = projectResponse.extend({
+  columns: z.record(z.string(), z.number().int().nonnegative()),
+})
 
 export const projectListQuery = z
   .object({ archived: z.enum(['true', 'false']).optional(), ...pageQuery(LIST_PAGE) })
   .strict()
 
-export const projectListResponse = z
-  .object({ projects: z.array(projectListItem), page: pageInfo })
-  .strict()
+export const projectListResponse = z.object({
+  projects: z.array(projectListItem),
+  page: pageInfo,
+})
 
 export type CreateProjectBody = z.infer<typeof createProjectBody>
 export type UpdateProjectBody = z.infer<typeof updateProjectBody>

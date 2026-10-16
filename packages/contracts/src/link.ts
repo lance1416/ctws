@@ -100,28 +100,29 @@ export const createLinkBody = z
 export type CreateLinkBody = z.output<typeof createLinkBody>
 
 /** The thing at the other end of an edge, with enough to draw a row and go there. */
-const linkedObject = z
-  .object({
-    type: objectType,
-    id: objectId,
-    title: z.string(),
-    /** The second line: what that kind of thing says about itself. */
-    detail: z.string().nullable(),
-    /** The link, as read from the object whose page this is. */
-    kind: linkKind,
-    label: z.string(),
-    /** Which way the edge runs: whether it is read along the edge or against it. */
-    outgoing: z.boolean(),
-    /** The link to remove, or null for an edge a module stores itself, such as a task's project. */
-    linkId: linkId.nullable(),
-  })
-  .strict()
+const linkedObject = z.object({
+  type: objectType,
+  id: objectId,
+  title: z.string(),
+  /** The second line: what that kind of thing says about itself. */
+  detail: z.string().nullable(),
+  /** The link, as read from the object whose page this is. */
+  kind: linkKind,
+  label: z.string(),
+  /** Which way the edge runs: whether it is read along the edge or against it. */
+  outgoing: z.boolean(),
+  /** The link to remove, or null for an edge a module stores itself, such as a task's project. */
+  linkId: linkId.nullable(),
+})
 export type LinkedObject = z.infer<typeof linkedObject>
 
 /** Something that could go at the other end, while its name is being typed. */
-const linkCandidate = z
-  .object({ type: objectType, id: objectId, title: z.string(), detail: z.string().nullable() })
-  .strict()
+const linkCandidate = z.object({
+  type: objectType,
+  id: objectId,
+  title: z.string(),
+  detail: z.string().nullable(),
+})
 export type LinkCandidate = z.infer<typeof linkCandidate>
 
 export const candidatesQuery = z
@@ -135,7 +136,7 @@ export const candidatesQuery = z
   })
   .strict()
 
-export const candidatesResponse = z.object({ candidates: z.array(linkCandidate) }).strict()
+export const candidatesResponse = z.object({ candidates: z.array(linkCandidate) })
 export type CandidatesResponse = z.infer<typeof candidatesResponse>
 
 /** The kinds of edge allowed between two types, `about` last as the fallback. */
@@ -144,13 +145,9 @@ export function kindsBetween(from: ObjectType, to: ObjectType): typeof LINK_KIND
 }
 
 /** Everything linked to one object, grouped the way its page shows it. */
-export const linksResponse = z
-  .object({
-    groups: z.array(
-      z.object({ label: z.string(), type: objectType, items: z.array(linkedObject) }).strict(),
-    ),
-  })
-  .strict()
+export const linksResponse = z.object({
+  groups: z.array(z.object({ label: z.string(), type: objectType, items: z.array(linkedObject) })),
+})
 export type LinksResponse = z.infer<typeof linksResponse>
 
 /** The thing whose links are asked for. */
@@ -159,6 +156,9 @@ export const linksQuery = z.object({ type: objectType, id: objectId }).strict()
 export const linkParams = z.object({ id: linkId }).strict()
 
 /** One edge, as stored: its id, both ends and its kind. */
-export const linkResponse = z
-  .object({ id: linkId, from: endpoint, to: endpoint, kind: linkKind })
-  .strict()
+export const linkResponse = z.object({
+  id: linkId,
+  from: z.object(endpoint.shape),
+  to: z.object(endpoint.shape),
+  kind: linkKind,
+})

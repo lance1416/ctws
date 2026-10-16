@@ -54,30 +54,29 @@ export const updateReadingItemBody = patchOf({
 })
 export type UpdateReadingItemBody = z.infer<typeof updateReadingItemBody>
 
-export const readingItemResponse = z
-  .object({
-    id: readingId,
-    kind: z.enum(READING_KINDS),
-    title: z.string().nullable(),
-    url: z.string().nullable(),
-    author: z.string().nullable(),
-    status: readingStatus,
-    /** The day you mean to finish it by: a plan, not a deadline. */
-    planOn: calendarDate.nullable(),
-    projectId: projectId.nullable(),
-    projectName: z.string().nullable(),
-    /** What the page itself says, kept apart from `title`; a title someone typed wins. */
-    fetchedTitle: z.string().nullable(),
-    fetchedSummary: z.string().nullable(),
-    createdAt: instant,
-    updatedAt: instant,
-  })
-  .strict()
+export const readingItemResponse = z.object({
+  id: readingId,
+  kind: z.enum(READING_KINDS),
+  title: z.string().nullable(),
+  url: z.string().nullable(),
+  author: z.string().nullable(),
+  status: readingStatus,
+  /** The day you mean to finish it by: a plan, not a deadline. */
+  planOn: calendarDate.nullable(),
+  projectId: projectId.nullable(),
+  projectName: z.string().nullable(),
+  /** What the page itself says, kept apart from `title`; a title someone typed wins. */
+  fetchedTitle: z.string().nullable(),
+  fetchedSummary: z.string().nullable(),
+  createdAt: instant,
+  updatedAt: instant,
+})
 export type ReadingItemResponse = z.infer<typeof readingItemResponse>
 
-export const readingItemsResponse = z
-  .object({ reading: z.array(readingItemResponse), page: pageInfo })
-  .strict()
+export const readingItemsResponse = z.object({
+  reading: z.array(readingItemResponse),
+  page: pageInfo,
+})
 
 export const readingListQuery = z
   .object({

@@ -52,32 +52,28 @@ export const birthdayInput = refineBirthday(
 export type BirthdayInput = z.infer<typeof birthdayInput>
 
 /** A birthday read back: what is stored, plus everything derived from it. */
-export const birthdayResponse = z
-  .object({
-    calendar: z.enum(BIRTHDAY_CALENDARS),
-    year: z.number().nullable(),
-    month: z.number(),
-    day: z.number(),
-    leapMonth: z.boolean(),
-    hourBranch: z.number().nullable(),
-    remindLead: z.literal(REMIND_LEADS),
-    lunarDate: z.string().nullable(),
-    bornSolar: z.string().nullable(),
-    bornLunar: z.string().nullable(),
-    zodiac: z.string().nullable(),
-    sign: z.string().nullable(),
-    hour: z.string().nullable(),
-    next: z
-      .object({
-        day: calendarDate,
-        inDays: z.number(),
-        turns: z.number().nullable(),
-        /** Which fallback moved the day this year, in a sentence. */
-        keptNote: z.string().nullable(),
-      })
-      .strict(),
-  })
-  .strict()
+export const birthdayResponse = z.object({
+  calendar: z.enum(BIRTHDAY_CALENDARS),
+  year: z.number().nullable(),
+  month: z.number(),
+  day: z.number(),
+  leapMonth: z.boolean(),
+  hourBranch: z.number().nullable(),
+  remindLead: z.literal(REMIND_LEADS),
+  lunarDate: z.string().nullable(),
+  bornSolar: z.string().nullable(),
+  bornLunar: z.string().nullable(),
+  zodiac: z.string().nullable(),
+  sign: z.string().nullable(),
+  hour: z.string().nullable(),
+  next: z.object({
+    day: calendarDate,
+    inDays: z.number(),
+    turns: z.number().nullable(),
+    /** Which fallback moved the day this year, in a sentence. */
+    keptNote: z.string().nullable(),
+  }),
+})
 export type BirthdayResponse = z.infer<typeof birthdayResponse>
 
 /** What a birthday would mean, while it is being typed. */

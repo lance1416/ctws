@@ -57,6 +57,13 @@ const personChannel = z
     const problem = channelProblem(c.kind, c.value)
     if (problem !== null) ctx.addIssue({ code: 'custom', message: problem, path: ['value'] })
   })
+
+/** A channel read back: what was stored, which passed the checks above on the way in. */
+const channelResponse = z.object({
+  kind: z.enum(CHANNEL_KINDS),
+  value: z.string(),
+  label: z.string().nullish(),
+})
 export type PersonChannel = z.infer<typeof personChannel>
 
 export const GENDERS = ['male', 'female', 'other'] as const
@@ -97,56 +104,50 @@ export type CreatePersonBody = z.infer<typeof createPersonBody>
 export const updatePersonBody = patchOf(personFields)
 export type UpdatePersonBody = z.infer<typeof updatePersonBody>
 
-export const personResponse = z
-  .object({
-    id: personId,
-    name: z.string(),
-    org: z.string().nullable(),
-    note: z.string().nullable(),
-    projects: z.array(z.object({ id: projectId, name: z.string() }).strict()),
-    channels: z.array(personChannel),
-    birthday: birthdayResponse.nullable(),
-    gender: z.enum(GENDERS).nullable(),
-    hometown: z.string().nullable(),
-    city: z.string().nullable(),
-    title: z.string().nullable(),
-    circle: z.enum(CIRCLES).nullable(),
-    createdAt: instant,
-    updatedAt: instant,
-  })
-  .strict()
+export const personResponse = z.object({
+  id: personId,
+  name: z.string(),
+  org: z.string().nullable(),
+  note: z.string().nullable(),
+  projects: z.array(z.object({ id: projectId, name: z.string() })),
+  channels: z.array(channelResponse),
+  birthday: birthdayResponse.nullable(),
+  gender: z.enum(GENDERS).nullable(),
+  hometown: z.string().nullable(),
+  city: z.string().nullable(),
+  title: z.string().nullable(),
+  circle: z.enum(CIRCLES).nullable(),
+  createdAt: instant,
+  updatedAt: instant,
+})
 export type PersonResponse = z.infer<typeof personResponse>
 
 export const peopleListQuery = z.object(pageQuery(LIST_PAGE)).strict()
 
-export const peopleResponse = z.object({ people: z.array(personResponse), page: pageInfo }).strict()
+export const peopleResponse = z.object({ people: z.array(personResponse), page: pageInfo })
 
 /** One row on the birthdays page. */
-const birthdayListRow = z
-  .object({
-    personId,
-    name: z.string(),
-    circle: z.enum(CIRCLES).nullable(),
-    day: calendarDate,
-    inDays: z.number(),
-    turns: z.number().nullable(),
-    /** Only for a lunar birthday. */
-    lunarDate: z.string().nullable(),
-    /** Which fallbacks moved the day this year. */
-    kept: z.array(z.string()),
-  })
-  .strict()
+const birthdayListRow = z.object({
+  personId,
+  name: z.string(),
+  circle: z.enum(CIRCLES).nullable(),
+  day: calendarDate,
+  inDays: z.number(),
+  turns: z.number().nullable(),
+  /** Only for a lunar birthday. */
+  lunarDate: z.string().nullable(),
+  /** Which fallbacks moved the day this year. */
+  kept: z.array(z.string()),
+})
 export type BirthdayListRow = z.infer<typeof birthdayListRow>
 
-export const birthdaysResponse = z
-  .object({
-    today: calendarDate,
-    coming: z.array(birthdayListRow),
-    later: z.array(birthdayListRow),
-    /** Who the workbench card shows: each person by their own lead. */
-    card: z.array(birthdayListRow),
-    /** Only the months that have somebody. */
-    byMonth: z.record(z.string(), z.number()),
-    circles: z.record(z.string(), z.number()),
-  })
-  .strict()
+export const birthdaysResponse = z.object({
+  today: calendarDate,
+  coming: z.array(birthdayListRow),
+  later: z.array(birthdayListRow),
+  /** Who the workbench card shows: each person by their own lead. */
+  card: z.array(birthdayListRow),
+  /** Only the months that have somebody. */
+  byMonth: z.record(z.string(), z.number()),
+  circles: z.record(z.string(), z.number()),
+})

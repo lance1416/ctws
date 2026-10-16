@@ -108,7 +108,6 @@ export const problem = z
     status: z.number().int().meta({ example: 404 }),
     detail: z.string().optional(),
   })
-  .strict()
   .meta({
     description:
       'RFC 9457 problem details. Every refusal this API makes has this shape and is sent as application/problem+json.',

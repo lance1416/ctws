@@ -48,34 +48,32 @@ const CALENDAR_KINDS = ['planned', 'due', 'to-read', 'birthday', 'occurrence'] a
  * One dated thing on the calendar. The server puts it on its day in the account's zone and says
  * which thing it is; where it opens and what it is called are the web's.
  */
-const calendarEntry = z
-  .object({
-    type: objectType,
-    /** The thing's own id: a task, a reading item, a person, a meeting series. */
-    id: objectId,
-    kind: z.enum(CALENDAR_KINDS),
-    /** Which occurrence of a series, for a meeting; null for everything else. */
-    recurrenceId: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/)
-      .nullable(),
-    day: calendarDate,
-    title: z.string(),
-    /** The time of day in the account's zone, for a thing that has one; squares sort by it. */
-    time: z.string().nullable(),
-    /** When it ends on the same clock, for a thing that lasts. */
-    endTime: z.string().nullable(),
-    /** The zone it was agreed in ("EDT"), when that is not the account's. */
-    zone: z.string().nullable(),
-    /** Its time on that zone's clock, when the zone is not the account's. */
-    zoneTime: z.string().nullable(),
-    projectId: projectId.nullable(),
-    projectName: z.string().nullable(),
-  })
-  .strict()
+const calendarEntry = z.object({
+  type: objectType,
+  /** The thing's own id: a task, a reading item, a person, a meeting series. */
+  id: objectId,
+  kind: z.enum(CALENDAR_KINDS),
+  /** Which occurrence of a series, for a meeting; null for everything else. */
+  recurrenceId: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/)
+    .nullable(),
+  day: calendarDate,
+  title: z.string(),
+  /** The time of day in the account's zone, for a thing that has one; squares sort by it. */
+  time: z.string().nullable(),
+  /** When it ends on the same clock, for a thing that lasts. */
+  endTime: z.string().nullable(),
+  /** The zone it was agreed in ("EDT"), when that is not the account's. */
+  zone: z.string().nullable(),
+  /** Its time on that zone's clock, when the zone is not the account's. */
+  zoneTime: z.string().nullable(),
+  projectId: projectId.nullable(),
+  projectName: z.string().nullable(),
+})
 export type CalendarEntry = z.infer<typeof calendarEntry>
 
-export const calendarEntriesResponse = z.object({ entries: z.array(calendarEntry) }).strict()
+export const calendarEntriesResponse = z.object({ entries: z.array(calendarEntry) })
 
 /** Each day's lunar name, for the grid's squares. */
-export const calendarDaysResponse = z.object({ days: z.record(calendarDate, z.string()) }).strict()
+export const calendarDaysResponse = z.object({ days: z.record(calendarDate, z.string()) })
