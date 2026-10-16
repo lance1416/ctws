@@ -484,7 +484,7 @@ test('deleting a project asks first, names what is lost, and cancel deletes noth
 // The detail panel is an OVERLAY only below 1280px; at or above that width it is a coexisting
 // third column, where a scrim, a click-outside and a focus trap would all be wrong. These tests are
 // about the overlay, so they run at a width where it is one. The column's own contract is pinned in
-// project.spec.ts.
+// project-page.spec.ts.
 const OVERLAY_VIEWPORT = { width: 1024, height: 800 }
 
 test.describe('the panel as an overlay', () => {
