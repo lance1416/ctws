@@ -4,7 +4,7 @@ import type { ReadingItemResponse } from '@ctws/contracts'
 import { afterEach, describe, expect, it } from 'vitest'
 import { unfurl } from '../../../src/modules/reading/unfurl/unfurl'
 import { setupWith, type Harness } from '../../helpers/harness'
-import { createReading } from '../../helpers/builders'
+import { createProject, createReading } from '../../helpers/builders'
 
 /**
  * A pasted link shows what its own page says. The fetch itself is tested beside `unfurl`; this
@@ -52,6 +52,34 @@ describe('a pasted link reads back its own title', () => {
     expect(made.fetchedSummary).toBe('我们把 issue 拆成了三件事。')
     // Stored, not only in this response.
     expect((await list(ctx))[0]?.fetchedTitle).toBe('Linear 怎么重做 issue')
+  })
+
+  it('is found and named by the fetched title wherever a typed one would be', async () => {
+    const ctx = await setupWith(cleanups, undefined, { unfurl: fetchAnywhere })
+    const url = await page('<title>Designing Data-Intensive Apps</title>')
+    const made = await createReading(ctx, { kind: 'link', url })
+    const get = async (path: string) => {
+      const res = await ctx.app.inject({ method: 'GET', url: path, headers: ctx.authed })
+      expect(res.statusCode, res.body).toBe(200)
+      return res.json()
+    }
+    const titled = 'Designing Data-Intensive Apps'
+
+    const found = await get('/api/v1/reading?q=Designing')
+    expect(found.reading.map((i: ReadingItemResponse) => i.id)).toEqual([made.id])
+
+    await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/v1/reading/${made.id}`,
+      headers: ctx.authed,
+      payload: { planOn: '2026-11-02' },
+    })
+    const calendar = await get('/api/v1/reading?view=calendar&from=2026-11-01&to=2026-11-30')
+    expect(calendar.entries.map((e: { title: string }) => e.title)).toEqual([titled])
+
+    const pid = await createProject(ctx, '读书')
+    const candidates = await get(`/api/v1/links?view=candidates&type=project&id=${pid}&q=Designing`)
+    expect(candidates.candidates.map((c: { title: string }) => c.title)).toEqual([titled])
   })
 
   it('keeps the item when the site does not answer', async () => {
