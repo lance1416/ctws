@@ -12,7 +12,8 @@ import { currentUser } from '../auth/authenticated'
 import { LinkEndNotFoundError } from './errors'
 import { candidatesFor, exists, linksOf } from './read'
 import type { LinkRegistry } from './registry'
-import { addLink, removeLink } from './store'
+import { linkObjects } from './service'
+import { removeLink } from './store'
 
 /** Candidates per type, so a box full of tasks still shows people. */
 const CANDIDATES_PER_TYPE = 8
@@ -58,14 +59,7 @@ export const linkRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = asy
     { schema: { body: createLinkBody, response: { 201: createLinkResponse } } },
     async (req, reply) => {
       const { workspaceId } = currentUser(req)
-      const { from, to, kind } = req.body
-      // The edge table has no foreign keys, so this check stands in for them.
-      const [hasFrom, hasTo] = await Promise.all([
-        exists(registry, app.db, workspaceId, from),
-        exists(registry, app.db, workspaceId, to),
-      ])
-      if (!hasFrom || !hasTo) throw new LinkEndNotFoundError()
-      await addLink(app.db, { workspaceId, from, to, kind })
+      await linkObjects(registry, app.db, { workspaceId, ...req.body })
       // 201 whether or not the edge was already there.
       reply.code(201)
       return { created: true }
