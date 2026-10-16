@@ -1,3 +1,4 @@
+import { api, API_BASE, type Endpoint } from '@ctws/contracts'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { sql } from 'drizzle-orm'
 import { z } from 'zod'
@@ -133,13 +134,48 @@ describe('the OpenAPI document', () => {
       JSON.stringify(doc.paths[path]?.[method]?.responses[status] ?? null)
 
     // Authenticated, takes a body: both a 400 and a 401, each pointing at the one schema.
-    expect(ref('/api/v1/tasks/', 'post', '401')).toContain('#/components/schemas/Problem')
-    expect(ref('/api/v1/tasks/', 'post', '400')).toContain('application/problem+json')
-    // Rate-limited and public: a 429, and NO 401 -- nobody needs a session to be refused here.
+    expect(ref('/api/v1/tasks', 'post', '401')).toContain('#/components/schemas/Problem')
+    expect(ref('/api/v1/tasks', 'post', '400')).toContain('application/problem+json')
+    // Rate-limited and public: a 429, and the 401 a wrong password gets.
     expect(ref('/api/v1/auth/login', 'post', '429')).toContain('#/components/schemas/Problem')
-    expect(ref('/api/v1/auth/login', 'post', '401')).toBe('null')
+    expect(ref('/api/v1/auth/login', 'post', '401')).toContain('#/components/schemas/Problem')
     // Public and takes nothing: no error responses invented for it.
     expect(ref('/api/v1/health', 'get', '400')).toBe('null')
     expect(ref('/api/v1/health', 'get', '401')).toBe('null')
+    // What the handler can refuse with, declared by the endpoint.
+    expect(ref('/api/v1/tasks/{id}', 'get', '404')).toContain('#/components/schemas/Problem')
+    expect(ref('/api/v1/projects/{id}', 'delete', '409')).toContain('#/components/schemas/Problem')
+    // A write without the client header.
+    expect(ref('/api/v1/projects', 'post', '403')).toContain('#/components/schemas/Problem')
+  })
+
+  it('declares the success status each operation answers with', async () => {
+    const doc = (await ctx.app.inject({ method: 'GET', url: '/api/v1/openapi.json' })).json() as {
+      paths: Record<string, Record<string, { responses: Record<string, { content?: unknown }> }>>
+    }
+    const success = (path: string, method: string) =>
+      Object.keys(doc.paths[path]?.[method]?.responses ?? {}).filter((s) => s.startsWith('2'))
+
+    expect(success('/api/v1/tasks', 'post')).toEqual(['201'])
+    expect(success('/api/v1/tasks/{id}', 'delete')).toEqual(['204'])
+    expect(success('/api/v1/tasks/{id}', 'patch')).toEqual(['200'])
+    // A 204 has nothing to describe.
+    expect(doc.paths['/api/v1/tasks/{id}']!.delete!.responses['204']!.content).toBeUndefined()
+  })
+
+  it('documents every endpoint of the table at its own path and method', async () => {
+    const doc = (await ctx.app.inject({ method: 'GET', url: '/api/v1/openapi.json' })).json() as {
+      paths: Record<string, Record<string, unknown>>
+    }
+    const documented = Object.entries(doc.paths).flatMap(([path, methods]) =>
+      Object.keys(methods).map((m) => `${m.toUpperCase()} ${path}`),
+    )
+    const table = Object.values(api)
+      .flatMap((group) => Object.values(group) as Endpoint[])
+      .filter((e) => !e.hidden)
+      .map((e) => `${e.method} ${API_BASE}${e.path.replace(/:(\w+)/g, '{$1}')}`)
+    expect([...new Set(table)].sort()).toEqual(
+      documented.filter((d) => !d.endsWith('/health') && !d.endsWith('/openapi.json')).sort(),
+    )
   })
 })

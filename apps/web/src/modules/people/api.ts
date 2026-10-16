@@ -1,6 +1,6 @@
 import {
+  api,
   type BirthdayPreviewResponse,
-  type BirthdaysResponse,
   type CreatePersonBody,
   type PersonResponse,
   type RemindLead,
@@ -8,9 +8,7 @@ import {
   type PersonId,
 } from '@ctws/contracts'
 import { queryOptions } from '@tanstack/react-query'
-import { apiFetch, calendarOf } from '../../platform/http/api'
-
-const BASE = '/people'
+import { call } from '../../platform/http/api'
 
 /** A birthday as the form holds it, before the server works out what it means. */
 export type BirthdayDraft = {
@@ -24,25 +22,25 @@ export type BirthdayDraft = {
 }
 
 async function listPeople(): Promise<PersonResponse[]> {
-  return (await apiFetch<{ people: PersonResponse[] }>(BASE)).people
+  return (await call(api.people.list)).people
 }
 
-async function searchPeople(query: string): Promise<PersonResponse[]> {
-  const path = `${BASE}/search?q=${encodeURIComponent(query)}`
-  return (await apiFetch<{ people: PersonResponse[] }>(path)).people
+async function searchPeople(q: string): Promise<PersonResponse[]> {
+  return (await call(api.people.search, { query: { q } })).people
 }
 
 /** What a birthday being typed would mean; the server answers, so the lunar rules live once. */
 function previewBirthday(draft: BirthdayDraft): Promise<BirthdayPreviewResponse> {
-  const params = new URLSearchParams({
-    calendar: draft.calendar,
-    month: String(draft.month),
-    day: String(draft.day),
+  return call(api.people.birthdayPreview, {
+    query: {
+      calendar: draft.calendar,
+      month: draft.month,
+      day: draft.day,
+      ...(draft.year !== null ? { year: draft.year } : {}),
+      ...(draft.leapMonth ? { leap: 'true' } : {}),
+      ...(draft.hourBranch !== null ? { hour: draft.hourBranch } : {}),
+    },
   })
-  if (draft.year !== null) params.set('year', String(draft.year))
-  if (draft.leapMonth) params.set('leap', 'true')
-  if (draft.hourBranch !== null) params.set('hour', String(draft.hourBranch))
-  return apiFetch(`${BASE}/birthdays/preview?${params}`)
 }
 
 export const peopleQuery = () => queryOptions({ queryKey: ['people', 'list'], queryFn: listPeople })
@@ -51,13 +49,13 @@ export const peopleQuery = () => queryOptions({ queryKey: ['people', 'list'], qu
 export const birthdaysQuery = () =>
   queryOptions({
     queryKey: ['people', 'birthdays'],
-    queryFn: (): Promise<BirthdaysResponse> => apiFetch(`${BASE}/birthdays`),
+    queryFn: () => call(api.people.birthdays),
   })
 
 export const birthdayCalendarQuery = (range: { from: string; to: string }) =>
   queryOptions({
     queryKey: ['people', 'calendar', range.from, range.to],
-    queryFn: () => calendarOf(BASE, range),
+    queryFn: async () => (await call(api.people.calendar, { query: range })).entries,
   })
 
 export const personSearchQuery = (q: string) =>
@@ -79,13 +77,13 @@ export const birthdayPreviewQuery = (draft: BirthdayDraft) =>
   })
 
 export function createPerson(body: CreatePersonBody): Promise<PersonResponse> {
-  return apiFetch(BASE, { method: 'POST', body: JSON.stringify(body) })
+  return call(api.people.create, { body })
 }
 
 export function patchPerson(id: PersonId, body: UpdatePersonBody): Promise<PersonResponse> {
-  return apiFetch(`${BASE}/${id}`, { method: 'PATCH', body: JSON.stringify(body) })
+  return call(api.people.update, { params: { id }, body })
 }
 
 export function deletePerson(id: PersonId): Promise<void> {
-  return apiFetch(`${BASE}/${id}`, { method: 'DELETE' })
+  return call(api.people.remove, { params: { id } })
 }

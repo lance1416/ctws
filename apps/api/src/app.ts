@@ -56,10 +56,16 @@ export async function buildApp(opts: {
     },
     transform: (input) => {
       const out = jsonSchemaTransform(input)
-      // Carried to the operation so the refusal pass can add a 429.
-      return input.route.config?.rateLimit
-        ? { ...out, schema: { ...out.schema, 'x-rate-limited': true } }
-        : out
+      const config = input.route.config
+      // Carried to the operation for the refusal pass.
+      return {
+        ...out,
+        schema: {
+          ...out.schema,
+          ...(config?.rateLimit ? { 'x-rate-limited': true } : {}),
+          ...(config?.refusals ? { 'x-refusals': config.refusals } : {}),
+        },
+      }
     },
     transformObject: (spec) => documentRefusals(jsonSchemaTransformObject(spec)),
   })

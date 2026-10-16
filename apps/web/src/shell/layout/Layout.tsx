@@ -1,7 +1,8 @@
+import { api } from '@ctws/contracts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { Link, Navigate, Outlet } from 'react-router-dom'
-import { apiFetch, problemText } from '../../platform/http/api'
+import { call, problemText } from '../../platform/http/api'
 import { useMe } from '../auth/useMe'
 import { Breadcrumbs, BreadcrumbsProvider } from './Breadcrumbs'
 import { DetailPaneContext, useWidePane } from '../../platform/ui/paneLayout'
@@ -30,7 +31,7 @@ export function Layout() {
   const wide = useWidePane()
 
   const logout = useMutation({
-    mutationFn: () => apiFetch('/auth/logout', { method: 'POST' }),
+    mutationFn: () => call(api.auth.logout),
     meta: { refresh: false },
     onSuccess: () => {
       // Every cache, not just the session: the next sign-in may be someone else.

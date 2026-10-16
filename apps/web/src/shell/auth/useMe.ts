@@ -1,6 +1,6 @@
-import type { UserResponse } from '@ctws/contracts'
+import { api, type UserResponse } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
-import { ApiError, apiFetch } from '../../platform/http/api'
+import { ApiError, call } from '../../platform/http/api'
 import { browserZone } from '../../platform/time/dates'
 
 /**
@@ -12,7 +12,7 @@ export function useMe() {
     queryKey: ['me'],
     queryFn: async () => {
       try {
-        return await apiFetch<UserResponse>('/auth/me')
+        return await call(api.auth.me)
       } catch (error) {
         if (error instanceof ApiError && error.status === 401) return null
         throw error

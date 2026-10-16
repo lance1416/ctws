@@ -1,6 +1,5 @@
-import type { CalendarEntry, Problem } from '@ctws/contracts'
-
-const BASE = '/api/v1'
+import { API_BASE, type Endpoint, href, type RequestOf, type ResponseOf } from '@ctws/contracts'
+import { z } from 'zod'
 
 /** A failed request. `status` says which refusal it was; `message` is the server's title. */
 export class ApiError extends Error {
@@ -21,38 +20,51 @@ export function problemText(error: Error | null): string | null {
   return error instanceof ApiError ? (error.detail ?? error.message) : error.message
 }
 
-export async function apiFetch<T = unknown>(path: string, init: RequestInit = {}): Promise<T> {
-  const headers = new Headers(init.headers)
+/**
+ * Calls one endpoint of the table: the path is built from its params and query, the body is sent
+ * as JSON, and the answer is parsed by the endpoint's own response schema, so what a caller gets
+ * is what the contract says rather than what it is assumed to be.
+ */
+export async function call<E extends Endpoint>(
+  endpoint: E,
+  ...[input]: object extends RequestOf<E> ? [RequestOf<E>?] : [RequestOf<E>]
+): Promise<ResponseOf<E>> {
+  const { params, query, body } = (input ?? {}) as {
+    params?: object
+    query?: object
+    body?: unknown
+  }
+  const headers = new Headers()
   // The client half of the CSRF check: the API refuses unsafe methods without it.
   headers.set('x-ctws-client', 'web')
-  if (init.body) headers.set('content-type', 'application/json')
+  if (body !== undefined) headers.set('content-type', 'application/json')
 
-  const res = await fetch(`${BASE}${path}`, { ...init, headers })
+  const res = await fetch(`${API_BASE}${href(endpoint, params, query)}`, {
+    method: endpoint.method,
+    headers,
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+  })
 
-  if (res.status === 204) return undefined as T
-
-  const text = await res.text()
+  const text = res.status === 204 ? '' : await res.text()
   if (!res.ok) {
-    const problem = parseProblem(text)
-    throw new ApiError(res.status, problem?.title ?? `HTTP ${res.status}`, problem?.detail)
+    const refusal = parseProblem(text)
+    throw new ApiError(res.status, refusal?.title ?? `HTTP ${res.status}`, refusal?.detail)
   }
-  return (text ? JSON.parse(text) : undefined) as T
+  return (
+    endpoint.response ? endpoint.response.parse(JSON.parse(text)) : undefined
+  ) as ResponseOf<E>
 }
 
-/** An error body as problem+json, or null when a proxy answered with something else. */
-function parseProblem(text: string): Problem | null {
+/**
+ * What a refusal says: the title and detail of problem+json, read loosely, since a proxy in front
+ * of the API may answer with less. Null when the body is not JSON at all.
+ */
+const refusalText = z.object({ title: z.string().optional(), detail: z.string().optional() })
+
+function parseProblem(text: string): z.infer<typeof refusalText> | null {
   try {
-    return text ? (JSON.parse(text) as Problem) : null
+    return refusalText.safeParse(JSON.parse(text)).data ?? null
   } catch {
     return null
   }
-}
-
-/** A module's dated things for an inclusive day range; the server decides each entry's day. */
-export async function calendarOf(
-  base: string,
-  range: { from: string; to: string },
-): Promise<CalendarEntry[]> {
-  const path = `${base}/calendar?from=${range.from}&to=${range.to}`
-  return (await apiFetch<{ entries: CalendarEntry[] }>(path)).entries
 }

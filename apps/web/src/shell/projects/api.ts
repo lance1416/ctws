@@ -1,20 +1,21 @@
 import {
+  api,
   type ProjectColor,
   type ProjectListItem,
   type ProjectResponse,
   type ProjectId,
 } from '@ctws/contracts'
 import { queryOptions, useQuery, type UseQueryResult } from '@tanstack/react-query'
-import { apiFetch } from '../../platform/http/api'
+import { call } from '../../platform/http/api'
 
 /** The live projects, with the server's own `openTasks` counts. */
 async function listProjects(): Promise<ProjectListItem[]> {
-  return (await apiFetch<{ projects: ProjectListItem[] }>('/projects')).projects
+  return (await call(api.projects.list)).projects
 }
 
 /** The archived projects: the server leaves them out of the list above unless asked. */
 async function listArchivedProjects(): Promise<ProjectListItem[]> {
-  return (await apiFetch<{ projects: ProjectListItem[] }>('/projects?archived=true')).projects
+  return (await call(api.projects.list, { query: { archived: 'true' } })).projects
 }
 
 export const projectsQuery = () => queryOptions({ queryKey: ['projects'], queryFn: listProjects })
@@ -38,11 +39,11 @@ export function useEveryProject(): { data: ProjectListItem[] | undefined; isSucc
 }
 
 export function createProject(body: { name: string }): Promise<ProjectResponse> {
-  return apiFetch<ProjectResponse>('/projects', { method: 'POST', body: JSON.stringify(body) })
+  return call(api.projects.create, { body })
 }
 
 export function deleteProject(id: ProjectId): Promise<void> {
-  return apiFetch<void>(`/projects/${id}`, { method: 'DELETE' })
+  return call(api.projects.remove, { params: { id } })
 }
 
 /** The quick-capture destination, found by the `isInbox` flag: the user may rename it. */
@@ -55,8 +56,5 @@ export function updateProject(
   id: ProjectId,
   body: { name?: string; color?: ProjectColor; archived?: boolean },
 ): Promise<ProjectResponse> {
-  return apiFetch<ProjectResponse>(`/projects/${id}`, {
-    method: 'PATCH',
-    body: JSON.stringify(body),
-  })
+  return call(api.projects.update, { params: { id }, body })
 }

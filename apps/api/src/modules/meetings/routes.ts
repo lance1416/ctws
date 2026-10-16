@@ -1,15 +1,6 @@
-import {
-  calendarEntriesResponse,
-  calendarQuery,
-  createMeetingBody,
-  deleteMeetingQuery,
-  meetingParams,
-  meetingOccurrence,
-  meetingsResponse,
-  occurrenceQuery,
-  updateMeetingBody,
-} from '@ctws/contracts'
+import { api } from '@ctws/contracts'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
+import { on, serve } from '../../platform/http/serve'
 import { actorOf, currentUser } from '../../shell/auth/authenticated'
 import { toOccurrenceResponse } from './mapper'
 import { getOccurrence, listOccurrences, meetingEntries } from './queries'
@@ -17,10 +8,8 @@ import { cancelMeeting, createMeeting, updateMeeting } from './service'
 import { windowOf } from './zone'
 
 export const meetingRoutes: FastifyPluginAsyncZod = async (app) => {
-  app.get(
-    '/',
-    { schema: { querystring: calendarQuery, response: { 200: meetingsResponse } } },
-    async (req) => {
+  serve(app, [
+    on(api.meetings.list, async (req) => {
       const user = currentUser(req)
       const rows = await listOccurrences(
         app.db,
@@ -28,28 +17,14 @@ export const meetingRoutes: FastifyPluginAsyncZod = async (app) => {
         windowOf(req.query.from, req.query.to, user.timezone),
       )
       return { meetings: rows.map(toOccurrenceResponse) }
-    },
-  )
+    }),
 
-  app.get(
-    '/calendar',
-    { schema: { querystring: calendarQuery, response: { 200: calendarEntriesResponse } } },
-    async (req) => {
+    on(api.meetings.calendar, async (req) => {
       const user = currentUser(req)
       return { entries: await meetingEntries(app.db, user.workspaceId, req.query, user.timezone) }
-    },
-  )
+    }),
 
-  app.get(
-    '/:id',
-    {
-      schema: {
-        params: meetingParams,
-        querystring: occurrenceQuery,
-        response: { 200: meetingOccurrence },
-      },
-    },
-    async (req) => {
+    on(api.meetings.occurrence, async (req) => {
       const one = await getOccurrence(
         app.db,
         currentUser(req).workspaceId,
@@ -57,39 +32,18 @@ export const meetingRoutes: FastifyPluginAsyncZod = async (app) => {
         req.query.recurrenceId,
       )
       return toOccurrenceResponse(one)
-    },
-  )
+    }),
 
-  app.post(
-    '/',
-    { schema: { body: createMeetingBody, response: { 201: meetingOccurrence } } },
-    async (req, reply) => {
-      const created = await createMeeting(app.db, actorOf(req), req.body)
-      return reply.code(201).send(toOccurrenceResponse(created))
-    },
-  )
+    on(api.meetings.create, async (req) =>
+      toOccurrenceResponse(await createMeeting(app.db, actorOf(req), req.body)),
+    ),
 
-  app.patch(
-    '/:id',
-    {
-      schema: {
-        params: meetingParams,
-        body: updateMeetingBody,
-        response: { 200: meetingOccurrence },
-      },
-    },
-    async (req) => {
-      const updated = await updateMeeting(app.db, actorOf(req), req.params.id, req.body)
-      return toOccurrenceResponse(updated)
-    },
-  )
+    on(api.meetings.update, async (req) =>
+      toOccurrenceResponse(await updateMeeting(app.db, actorOf(req), req.params.id, req.body)),
+    ),
 
-  app.delete(
-    '/:id',
-    { schema: { params: meetingParams, querystring: deleteMeetingQuery } },
-    async (req, reply) => {
+    on(api.meetings.cancel, async (req) => {
       await cancelMeeting(app.db, actorOf(req), req.params.id, req.query)
-      return reply.code(204).send()
-    },
-  )
+    }),
+  ])
 }

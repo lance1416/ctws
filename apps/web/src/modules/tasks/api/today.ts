@@ -1,9 +1,8 @@
-import type { TodayTaskResponse } from '@ctws/contracts'
-import { apiFetch, calendarOf } from '../../../platform/http/api'
+import { api } from '@ctws/contracts'
+import { call } from '../../../platform/http/api'
 
 // The server owns the segments and their order; nothing here re-derives either.
-export async function listToday(): Promise<TodayTaskResponse[]> {
-  return (await apiFetch<{ tasks: TodayTaskResponse[] }>('/tasks/today')).tasks
-}
+export const listToday = async () => (await call(api.tasks.today)).tasks
 
-export const taskCalendar = (range: { from: string; to: string }) => calendarOf('/tasks', range)
+export const taskCalendar = async (range: { from: string; to: string }) =>
+  (await call(api.tasks.calendar, { query: range })).entries

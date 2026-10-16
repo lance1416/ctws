@@ -1,15 +1,6 @@
-import {
-  calendarEntriesResponse,
-  calendarQuery,
-  createReadingItemBody,
-  readingParams,
-  readingItemResponse,
-  readingItemsResponse,
-  readingListQuery,
-  searchQuery,
-  updateReadingItemBody,
-} from '@ctws/contracts'
+import { api } from '@ctws/contracts'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
+import { on, serve } from '../../platform/http/serve'
 import { actorOf, currentUser } from '../../shell/auth/authenticated'
 import { toReadingItemResponse } from './mapper'
 import { listReadingItems, readingEntries, searchReadingItems } from './queries'
@@ -24,64 +15,40 @@ import {
 export const readingRoutes =
   (deps: ReadingDeps): FastifyPluginAsyncZod =>
   async (app) => {
-    app.get(
-      '/',
-      { schema: { querystring: readingListQuery, response: { 200: readingItemsResponse } } },
-      async (req) => {
+    serve(app, [
+      on(api.reading.list, async (req) => {
         const rows = await listReadingItems(
           app.db,
           currentUser(req).workspaceId,
           req.query.unfiled === 'true',
         )
         return { items: rows.map(toReadingItemResponse) }
-      },
-    )
-
-    app.get(
-      '/calendar',
-      { schema: { querystring: calendarQuery, response: { 200: calendarEntriesResponse } } },
-      async (req) => ({
-        entries: await readingEntries(app.db, currentUser(req).workspaceId, req.query),
       }),
-    )
 
-    app.get(
-      '/search',
-      { schema: { querystring: searchQuery, response: { 200: readingItemsResponse } } },
-      async (req) => {
+      on(api.reading.calendar, async (req) => ({
+        entries: await readingEntries(app.db, currentUser(req).workspaceId, req.query),
+      })),
+
+      on(api.reading.search, async (req) => {
         const rows = await searchReadingItems(app.db, currentUser(req).workspaceId, req.query.q)
         return { items: rows.map(toReadingItemResponse) }
-      },
-    )
+      }),
 
-    app.post(
-      '/',
-      { schema: { body: createReadingItemBody, response: { 201: readingItemResponse } } },
-      async (req, reply) => {
+      on(api.reading.create, async (req) => {
         const actor = actorOf(req)
         const created = await createReadingItem(app.db, actor, req.body)
         const row = await withFetched(deps, app.db, actor.workspaceId, created)
-        return reply.code(201).send(toReadingItemResponse(row))
-      },
-    )
+        return toReadingItemResponse(row)
+      }),
 
-    app.patch(
-      '/:id',
-      {
-        schema: {
-          params: readingParams,
-          body: updateReadingItemBody,
-          response: { 200: readingItemResponse },
-        },
-      },
-      async (req) => {
-        const updated = await updateReadingItem(app.db, actorOf(req), req.params.id, req.body)
-        return toReadingItemResponse(updated)
-      },
-    )
+      on(api.reading.update, async (req) =>
+        toReadingItemResponse(
+          await updateReadingItem(app.db, actorOf(req), req.params.id, req.body),
+        ),
+      ),
 
-    app.delete('/:id', { schema: { params: readingParams } }, async (req, reply) => {
-      await softDeleteReadingItem(app.db, actorOf(req), req.params.id)
-      return reply.code(204).send()
-    })
+      on(api.reading.remove, async (req) => {
+        await softDeleteReadingItem(app.db, actorOf(req), req.params.id)
+      }),
+    ])
   }

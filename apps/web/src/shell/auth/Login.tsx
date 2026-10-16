@@ -1,9 +1,9 @@
-import type { UserResponse } from '@ctws/contracts'
+import { api } from '@ctws/contracts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { WORKBENCH_PATH } from '../registry'
-import { apiFetch, problemText } from '../../platform/http/api'
+import { call, problemText } from '../../platform/http/api'
 import { browserZone } from '../../platform/time/dates'
 import { useMe } from './useMe'
 import { BUTTON, LINK } from '../../platform/ui/buttonStyles'
@@ -18,15 +18,10 @@ export function Login() {
   const [error, setError] = useState('')
 
   const act = useMutation({
-    mutationFn: (path: '/auth/register' | '/auth/login') =>
-      apiFetch<UserResponse>(path, {
-        method: 'POST',
-        body: JSON.stringify(
-          path === '/auth/register'
-            ? { email, password, timezone: browserZone() }
-            : { email, password },
-        ),
-      }),
+    mutationFn: (how: 'register' | 'login') =>
+      how === 'register'
+        ? call(api.auth.register, { body: { email, password, timezone: browserZone() } })
+        : call(api.auth.login, { body: { email, password } }),
     // The session is new and the cache empty; `me` is set below.
     meta: { refresh: false },
     onSuccess: (user) => {
@@ -55,7 +50,7 @@ export function Login() {
           className="mt-10 flex flex-col gap-4"
           onSubmit={(e) => {
             e.preventDefault()
-            if (!act.isPending) act.mutate('/auth/login')
+            if (!act.isPending) act.mutate('login')
           }}
         >
           <div>
@@ -102,7 +97,7 @@ export function Login() {
               type="button"
               disabled={act.isPending}
               className={`-mx-1 rounded-md px-1 py-0.5 ${LINK} disabled:opacity-50`}
-              onClick={() => act.mutate('/auth/register')}
+              onClick={() => act.mutate('register')}
             >
               Create an account
             </button>

@@ -1,4 +1,5 @@
 import {
+  api,
   type CreateMeetingBody,
   type EditScope,
   MAX_CALENDAR_SPAN_DAYS,
@@ -9,17 +10,14 @@ import {
   type MeetingId,
 } from '@ctws/contracts'
 import { queryOptions, skipToken } from '@tanstack/react-query'
-import { ApiError, apiFetch, calendarOf } from '../../platform/http/api'
+import { ApiError, call } from '../../platform/http/api'
 import { addDays } from '@ctws/core/day'
 import { shortDay } from '../../platform/time/dates'
-
-const BASE = '/meetings'
 
 type DayRange = { from: string; to: string }
 
 async function listMeetings(range: DayRange): Promise<MeetingOccurrence[]> {
-  const params = new URLSearchParams(range)
-  return (await apiFetch<{ meetings: MeetingOccurrence[] }>(`${BASE}?${params}`)).meetings
+  return (await call(api.meetings.list, { query: range })).meetings
 }
 
 // Every key starts with `'meetings'`, so `[['meetings']]` awaits all of them, calendar included.
@@ -43,9 +41,11 @@ export const occurrenceQuery = (meetingId: MeetingId | null, recurrenceId: strin
       meetingId === null
         ? skipToken
         : async () => {
-            const at = new URLSearchParams({ recurrenceId })
             try {
-              return await apiFetch<MeetingOccurrence>(`${BASE}/${meetingId}?${at}`)
+              return await call(api.meetings.occurrence, {
+                params: { id: meetingId },
+                query: { recurrenceId },
+              })
             } catch (e) {
               if (e instanceof ApiError && e.status === 404) return null
               throw e
@@ -82,24 +82,22 @@ export const seriesQuery = (meetingId: MeetingId | null, today: string) =>
 export const meetingCalendarQuery = (range: DayRange) =>
   queryOptions({
     queryKey: ['meetings', 'calendar', range.from, range.to],
-    queryFn: () => calendarOf(BASE, range),
+    queryFn: async () => (await call(api.meetings.calendar, { query: range })).entries,
   })
 
 export function createMeeting(body: CreateMeetingBody): Promise<MeetingOccurrence> {
-  return apiFetch(BASE, { method: 'POST', body: JSON.stringify(body) })
+  return call(api.meetings.create, { body })
 }
 
 export function patchMeeting(id: MeetingId, body: UpdateMeetingInput): Promise<MeetingOccurrence> {
-  return apiFetch(`${BASE}/${id}`, { method: 'PATCH', body: JSON.stringify(body) })
+  return call(api.meetings.update, { params: { id }, body })
 }
 
 export function cancelMeeting(
   id: MeetingId,
   opts: { scope: EditScope; recurrenceId?: string },
 ): Promise<void> {
-  const params = new URLSearchParams({ scope: opts.scope })
-  if (opts.recurrenceId) params.set('recurrenceId', opts.recurrenceId)
-  return apiFetch(`${BASE}/${id}?${params}`, { method: 'DELETE' })
+  return call(api.meetings.cancel, { params: { id }, query: opts })
 }
 
 /** Where a new meeting lands by default: a plausible working hour, for an hour. */

@@ -1,12 +1,7 @@
-import {
-  adminCreateUserBody,
-  adminUpdateUserBody,
-  adminUser,
-  adminUserListResponse,
-  userParams,
-} from '@ctws/contracts'
+import { api } from '@ctws/contracts'
 import type { FastifyInstance } from 'fastify'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
+import { on, serve } from '../../platform/http/serve'
 import { currentUser } from '../auth/authenticated'
 import { registerUser } from '../auth/service'
 import { AdminRequiredError } from './errors'
@@ -24,31 +19,20 @@ function adminOnly(scope: FastifyInstance): void {
 export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
   adminOnly(app)
 
-  app.get(
-    '/admin/users',
-    { schema: { response: { 200: adminUserListResponse } } },
-    async (_req, reply) => reply.send({ users: await listUsers(app.db) }),
-  )
+  serve(app, [
+    on(api.admin.listUsers, async () => ({ users: await listUsers(app.db) })),
 
-  app.post(
-    '/admin/users',
-    { schema: { body: adminCreateUserBody, response: { 201: adminUser } } },
-    async (req, reply) => {
+    on(api.admin.createUser, async (req) => {
       const { role, ...credentials } = req.body
       const { userId } = await registerUser(app.db, credentials, {
         now: app.clock(),
         explicitRole: role,
       })
-      return reply.status(201).send(await getAdminUser(app.db, userId))
-    },
-  )
+      return getAdminUser(app.db, userId)
+    }),
 
-  app.patch(
-    '/admin/users/:id',
-    {
-      schema: { params: userParams, body: adminUpdateUserBody, response: { 200: adminUser } },
-    },
-    async (req, reply) =>
-      reply.send(await updateUser(app.db, req.params.id, req.body, app.clock())),
-  )
+    on(api.admin.updateUser, async (req) =>
+      updateUser(app.db, req.params.id, req.body, app.clock()),
+    ),
+  ])
 }

@@ -159,4 +159,3 @@ export const birthdaysResponse = z
     circles: z.record(z.string(), z.number()),
   })
   .strict()
-export type BirthdaysResponse = z.infer<typeof birthdaysResponse>

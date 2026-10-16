@@ -198,7 +198,6 @@ export type CompletedTaskResponse = z.infer<typeof completedTaskResponse>
 export const completedResponse = z
   .object({ tasks: z.array(completedTaskResponse), truncated: z.boolean() })
   .strict()
-export type CompletedResponse = z.infer<typeof completedResponse>
 
 /** One project's movement: counts, never a ratio. Days are in the account's zone. */
 export const projectMovementResponse = z

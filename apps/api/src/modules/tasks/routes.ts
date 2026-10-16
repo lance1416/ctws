@@ -1,25 +1,6 @@
-import {
-  addDependencyBody,
-  calendarEntriesResponse,
-  calendarQuery,
-  completedResponse,
-  createTaskBody,
-  dependencyLists,
-  dependencyParams,
-  taskParams,
-  moveTaskBody,
-  movementResponse,
-  projectTasksQuery,
-  projectTasksResponse,
-  reviewQuery,
-  reviewResponse,
-  searchQuery,
-  searchTasksResponse,
-  taskResponse,
-  todayResponse,
-  updateTaskBody,
-} from '@ctws/contracts'
+import { api } from '@ctws/contracts'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
+import { on, serve } from '../../platform/http/serve'
 import { actorOf, currentUser } from '../../shell/auth/authenticated'
 import { createTask } from './commands/create'
 import { addDependency, removeDependency } from './commands/dependencies'
@@ -44,62 +25,53 @@ import { searchTasks } from './queries/search'
 import { listToday } from './queries/today'
 
 export const taskRoutes: FastifyPluginAsyncZod = async (app) => {
-  app.get(
-    '/calendar',
-    { schema: { querystring: calendarQuery, response: { 200: calendarEntriesResponse } } },
-    async (req) => {
+  serve(app, [
+    on(api.tasks.calendar, async (req) => {
       const user = currentUser(req)
       const rows = await listTaskCalendar(app.db, user.workspaceId, user.timezone, req.query)
       return { entries: rows.map(toCalendarEntry) }
-    },
-  )
+    }),
 
-  app.get('/today', { schema: { response: { 200: todayResponse } } }, async (req) => {
-    const user = currentUser(req)
-    const rows = await listToday(app.db, user.workspaceId, user.timezone, app.clock())
-    const blockers = await blockersFor(
-      app.db,
-      user.workspaceId,
-      rows.map((t) => t.id),
-    )
-    return { tasks: rows.map((t) => toTodayResponse(t, blockers)) }
-  })
+    on(api.tasks.today, async (req) => {
+      const user = currentUser(req)
+      const rows = await listToday(app.db, user.workspaceId, user.timezone, app.clock())
+      const blockers = await blockersFor(
+        app.db,
+        user.workspaceId,
+        rows.map((t) => t.id),
+      )
+      return { tasks: rows.map((t) => toTodayResponse(t, blockers)) }
+    }),
 
-  app.get(
-    '/review',
-    { schema: { querystring: reviewQuery, response: { 200: reviewResponse } } },
-    async (req) => {
+    on(api.tasks.review, async (req) => {
       const user = currentUser(req)
       return listReview(app.db, user.workspaceId, user.timezone, req.query, app.clock())
-    },
-  )
+    }),
 
-  app.get('/completed', { schema: { response: { 200: completedResponse } } }, async (req) => {
-    const user = currentUser(req)
-    const { tasks, truncated } = await listCompleted(app.db, user.workspaceId, user.timezone)
-    return { tasks: tasks.map(toCompletedResponse), truncated }
-  })
+    on(api.tasks.completed, async (req) => {
+      const user = currentUser(req)
+      const { tasks, truncated } = await listCompleted(app.db, user.workspaceId, user.timezone)
+      return { tasks: tasks.map(toCompletedResponse), truncated }
+    }),
 
-  app.get('/movement', { schema: { response: { 200: movementResponse } } }, async (req) => {
-    const user = currentUser(req)
-    const projects = await listProjectMovement(app.db, user.workspaceId, user.timezone, app.clock())
-    return { projects }
-  })
+    on(api.tasks.movement, async (req) => {
+      const user = currentUser(req)
+      const projects = await listProjectMovement(
+        app.db,
+        user.workspaceId,
+        user.timezone,
+        app.clock(),
+      )
+      return { projects }
+    }),
 
-  app.get(
-    '/search',
-    { schema: { querystring: searchQuery, response: { 200: searchTasksResponse } } },
-    async (req) => {
+    on(api.tasks.search, async (req) => {
       const rows = await searchTasks(app.db, currentUser(req).workspaceId, req.query.q)
       return { tasks: rows.map(toSearchResponse) }
-    },
-  )
+    }),
 
-  // A project's tasks: the project is a filter on this collection, not a path segment.
-  app.get(
-    '/',
-    { schema: { querystring: projectTasksQuery, response: { 200: projectTasksResponse } } },
-    async (req) => {
+    // A project's tasks: the project is a filter on this collection, not a path segment.
+    on(api.tasks.board, async (req) => {
       const user = currentUser(req)
       const board = await projectBoard(
         app.db,
@@ -113,71 +85,46 @@ export const taskRoutes: FastifyPluginAsyncZod = async (app) => {
         rollups: Object.fromEntries(board.rollups),
         blockers: Object.fromEntries(board.blockers),
       }
-    },
-  )
+    }),
 
-  app.post(
-    '/',
-    { schema: { body: createTaskBody, response: { 201: taskResponse } } },
-    async (req, reply) => {
-      const row = await createTask(app.db, actorOf(req), req.body)
-      return reply.status(201).send(toTaskResponse(row))
-    },
-  )
+    on(api.tasks.create, async (req) =>
+      toTaskResponse(await createTask(app.db, actorOf(req), req.body)),
+    ),
 
-  app.get(
-    '/:id',
-    { schema: { params: taskParams, response: { 200: taskResponse } } },
-    async (req) =>
+    on(api.tasks.get, async (req) =>
       toTaskResponse(await getTask(app.db, currentUser(req).workspaceId, req.params.id)),
-  )
+    ),
 
-  app.patch(
-    '/:id',
-    { schema: { params: taskParams, body: updateTaskBody, response: { 200: taskResponse } } },
-    async (req) => toTaskResponse(await updateTask(app.db, actorOf(req), req.params.id, req.body)),
-  )
+    on(api.tasks.update, async (req) =>
+      toTaskResponse(await updateTask(app.db, actorOf(req), req.params.id, req.body)),
+    ),
 
-  // Not part of PATCH: a move must keep the tree acyclic, within depth, and on one project.
-  app.post(
-    '/:id/move',
-    { schema: { params: taskParams, body: moveTaskBody, response: { 200: taskResponse } } },
-    async (req) => toTaskResponse(await moveTask(app.db, actorOf(req), req.params.id, req.body)),
-  )
+    // Not part of PATCH: a move must keep the tree acyclic, within depth, and on one project.
+    on(api.tasks.move, async (req) =>
+      toTaskResponse(await moveTask(app.db, actorOf(req), req.params.id, req.body)),
+    ),
 
-  app.delete('/:id', { schema: { params: taskParams } }, async (req, reply) => {
-    await softDeleteTask(app.db, actorOf(req), req.params.id)
-    return reply.status(204).send()
-  })
+    on(api.tasks.remove, async (req) => {
+      await softDeleteTask(app.db, actorOf(req), req.params.id)
+    }),
 
-  app.get(
-    '/:id/dependencies',
-    { schema: { params: taskParams, response: { 200: dependencyLists } } },
-    async (req) => taskDependencyLists(app.db, currentUser(req).workspaceId, req.params.id),
-  )
+    on(api.tasks.dependencies, async (req) =>
+      taskDependencyLists(app.db, currentUser(req).workspaceId, req.params.id),
+    ),
 
-  // `:id` waits for the body's `blockerId`.
-  app.post(
-    '/:id/dependencies',
-    { schema: { params: taskParams, body: addDependencyBody } },
-    async (req, reply) => {
+    // `:id` waits for the body's `blockerId`.
+    on(api.tasks.addDependency, async (req) => {
       await addDependency(app.db, actorOf(req), {
         blockedId: req.params.id,
         blockerId: req.body.blockerId,
       })
-      return reply.status(204).send()
-    },
-  )
+    }),
 
-  app.delete(
-    '/:id/dependencies/:blockerId',
-    { schema: { params: dependencyParams } },
-    async (req, reply) => {
+    on(api.tasks.removeDependency, async (req) => {
       await removeDependency(app.db, actorOf(req), {
         blockedId: req.params.id,
         blockerId: req.params.blockerId,
       })
-      return reply.status(204).send()
-    },
-  )
+    }),
+  ])
 }

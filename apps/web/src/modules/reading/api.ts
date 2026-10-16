@@ -1,15 +1,12 @@
 import {
+  api,
   type CreateReadingItemBody,
   type ReadingItemResponse,
   type UpdateReadingItemBody,
   type ReadingId,
 } from '@ctws/contracts'
 import { queryOptions } from '@tanstack/react-query'
-import { apiFetch, calendarOf } from '../../platform/http/api'
-
-const BASE = '/reading'
-
-const items = async (path: string) => (await apiFetch<{ items: ReadingItemResponse[] }>(path)).items
+import { call } from '../../platform/http/api'
 
 // Every key starts with `'reading'`, so `[['reading']]` awaits all of them.
 
@@ -17,33 +14,34 @@ const items = async (path: string) => (await apiFetch<{ items: ReadingItemRespon
 export const readingQuery = ({ unfiled = false }: { unfiled?: boolean } = {}) =>
   queryOptions({
     queryKey: ['reading', 'list', unfiled ? 'unfiled' : 'all'],
-    queryFn: () => items(unfiled ? `${BASE}?unfiled=true` : BASE),
+    queryFn: async () =>
+      (await call(api.reading.list, { query: unfiled ? { unfiled: 'true' } : {} })).items,
   })
 
 export const readingSearchQuery = (q: string) =>
   queryOptions({
     queryKey: ['reading', 'search', q],
-    queryFn: () => items(`${BASE}/search?q=${encodeURIComponent(q)}`),
+    queryFn: async () => (await call(api.reading.search, { query: { q } })).items,
   })
 
 /** Calendar entries; the day is the server's, in the account's zone. */
 export const readingCalendarQuery = (range: { from: string; to: string }) =>
   queryOptions({
     queryKey: ['reading', 'calendar', range.from, range.to],
-    queryFn: () => calendarOf(BASE, range),
+    queryFn: async () => (await call(api.reading.calendar, { query: range })).entries,
   })
 
 export function createReadingItem(body: CreateReadingItemBody): Promise<ReadingItemResponse> {
-  return apiFetch(BASE, { method: 'POST', body: JSON.stringify(body) })
+  return call(api.reading.create, { body })
 }
 
 export function patchReadingItem(
   id: ReadingId,
   body: UpdateReadingItemBody,
 ): Promise<ReadingItemResponse> {
-  return apiFetch(`${BASE}/${id}`, { method: 'PATCH', body: JSON.stringify(body) })
+  return call(api.reading.update, { params: { id }, body })
 }
 
 export function deleteReadingItem(id: ReadingId): Promise<void> {
-  return apiFetch(`${BASE}/${id}`, { method: 'DELETE' })
+  return call(api.reading.remove, { params: { id } })
 }

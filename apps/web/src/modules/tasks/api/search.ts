@@ -1,8 +1,6 @@
-import type { SearchTaskResponse } from '@ctws/contracts'
-import { apiFetch } from '../../../platform/http/api'
+import { api } from '@ctws/contracts'
+import { call } from '../../../platform/http/api'
 
 // The server owns the matching and the order; nothing here re-ranks or re-filters.
-export async function searchTasks(query: string): Promise<SearchTaskResponse[]> {
-  const path = `/tasks/search?q=${encodeURIComponent(query)}`
-  return (await apiFetch<{ tasks: SearchTaskResponse[] }>(path)).tasks
-}
+export const searchTasks = async (q: string) =>
+  (await call(api.tasks.search, { query: { q } })).tasks

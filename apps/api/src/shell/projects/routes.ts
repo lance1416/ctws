@@ -1,12 +1,6 @@
-import {
-  createProjectBody,
-  projectParams,
-  projectListQuery,
-  projectListResponse,
-  projectResponse,
-  updateProjectBody,
-} from '@ctws/contracts'
+import { api } from '@ctws/contracts'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
+import { on, serve } from '../../platform/http/serve'
 import { actorOf, currentUser } from '../auth/authenticated'
 import type { ProjectColumns } from '../module'
 import { toProjectListItem, toProjectResponse } from './mapper'
@@ -18,10 +12,8 @@ export const projectRoutes: FastifyPluginAsyncZod<{ columns: ProjectColumns }> =
   app,
   { columns },
 ) => {
-  app.get(
-    '/projects',
-    { schema: { querystring: projectListQuery, response: { 200: projectListResponse } } },
-    async (req) => {
+  serve(app, [
+    on(api.projects.list, async (req) => {
       const rows = await listProjects(
         app.db,
         currentUser(req).workspaceId,
@@ -29,35 +21,18 @@ export const projectRoutes: FastifyPluginAsyncZod<{ columns: ProjectColumns }> =
         columns,
       )
       return { projects: rows.map(toProjectListItem) }
-    },
-  )
+    }),
 
-  app.post(
-    '/projects',
-    { schema: { body: createProjectBody, response: { 201: projectResponse } } },
-    async (req, reply) => {
-      const row = await createProject(app.db, actorOf(req), req.body)
-      return reply.status(201).send(toProjectResponse(row))
-    },
-  )
+    on(api.projects.create, async (req) =>
+      toProjectResponse(await createProject(app.db, actorOf(req), req.body)),
+    ),
 
-  app.patch(
-    '/projects/:id',
-    {
-      schema: {
-        params: projectParams,
-        body: updateProjectBody,
-        response: { 200: projectResponse },
-      },
-    },
-    async (req) => {
-      const row = await updateProject(app.db, actorOf(req), req.params.id, req.body)
-      return toProjectResponse(row)
-    },
-  )
+    on(api.projects.update, async (req) =>
+      toProjectResponse(await updateProject(app.db, actorOf(req), req.params.id, req.body)),
+    ),
 
-  app.delete('/projects/:id', { schema: { params: projectParams } }, async (req, reply) => {
-    await softDeleteProject(app.db, actorOf(req), req.params.id)
-    return reply.status(204).send()
-  })
+    on(api.projects.remove, async (req) => {
+      await softDeleteProject(app.db, actorOf(req), req.params.id)
+    }),
+  ])
 }
