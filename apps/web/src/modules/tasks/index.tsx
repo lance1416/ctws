@@ -78,8 +78,11 @@ export const taskModule: WorkspaceModule = {
   calendar: {
     label: 'Tasks',
     useEntries: useTaskEntries,
-    // `planned` and `due` are the words too.
-    show: (e) => ({ to: '/tasks/today', label: e.kind }),
+    // `planned` and `due` are the words too. A task opens in its project, where every task is.
+    show: (e) => ({
+      to: e.projectId ? `/projects/${e.projectId}?task=${e.id}` : taskPage(e.id),
+      label: e.kind,
+    }),
   },
   widgets: [
     {

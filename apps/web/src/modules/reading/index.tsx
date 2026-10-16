@@ -35,7 +35,7 @@ export const readingModule: WorkspaceModule = {
   calendar: {
     label: 'Reading',
     useEntries: useReadingEntries,
-    show: () => ({ to: '/reading', label: 'to read' }),
+    show: (e) => ({ to: `/${READING_ID}/${e.id}`, label: 'to read' }),
   },
   widgets: [
     {

@@ -266,3 +266,25 @@ test('an open calendar moves today past midnight', async ({ page }) => {
   await expect(mark(dayAfter(today))).toHaveClass(/font-semibold/)
   await expect(mark(today)).not.toHaveClass(/font-semibold/)
 })
+
+test('clicking a task or a reading item on the grid opens that one', async ({ page }) => {
+  await registerFreshUser(page, '/')
+  const pid = await makeProject(page, 'CTWS')
+  const today = dayInZone(await accountZone(page))
+  const task = await makeTask(page, pid, '配色重做', { scheduledOn: today })
+  const item = await book(page, '设计心理学', today)
+  await page.goto('/calendar')
+
+  await square(page, today)
+    .getByRole('link', { name: /配色重做/ })
+    .click()
+  await expect(page).toHaveURL(`/projects/${pid}?task=${task}`)
+  await expect(page.getByRole('dialog', { name: 'Task details' })).toContainText('配色重做')
+
+  await page.goto('/calendar')
+  await square(page, today)
+    .getByRole('link', { name: /设计心理学/ })
+    .click()
+  await expect(page).toHaveURL(`/reading/${item}`)
+  await expect(page.getByRole('dialog', { name: 'Reading' })).toContainText('设计心理学')
+})
