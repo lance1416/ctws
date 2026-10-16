@@ -21,21 +21,30 @@ const moves = (patch: UpdateSeriesBody) =>
  */
 export function useScopedEdit(
   meeting: MeetingOccurrence,
-  /** `moved` is the occurrence the server wrote when the save changed when it is or its length. */
-  onSaved: (moved: MeetingOccurrence | null) => void,
+  on: {
+    /**
+     * The occurrence the server wrote, when the save changed when it is or its length. Told as soon
+     * as the server answers, before the lists are read again: under its old name it reads as gone.
+     */
+    moved: (occurrence: MeetingOccurrence) => void
+    saved: () => void
+  },
 ) {
   /** A Save that moved a repeating meeting, held whole until "this one / from here on". */
   const [asking, setAsking] = useState<UpdateSeriesBody | null>(null)
 
   const save = useMutation({
-    mutationFn: ({ patch, scope }: { patch: UpdateSeriesBody; scope: EditScope }) =>
-      writeScoped(meeting, patch, scope),
+    mutationFn: async ({ patch, scope }: { patch: UpdateSeriesBody; scope: EditScope }) => {
+      const moved = await writeScoped(meeting, patch, scope)
+      if (moved) on.moved(moved)
+    },
     meta: { changes: ['meeting'], awaits: [meetingKeys.all, linkKeys.all], ownsError: true },
   })
 
   const write = async (patch: UpdateSeriesBody, scope: EditScope) => {
     try {
-      onSaved(await save.mutateAsync({ patch, scope }))
+      await save.mutateAsync({ patch, scope })
+      on.saved()
     } catch {
       // Shown through `failed`.
     }

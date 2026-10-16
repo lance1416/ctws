@@ -18,10 +18,7 @@ export function MeetingDetail({
   onMoved: (occurrence: MeetingOccurrence) => void
 }) {
   const pane = useItemPane(onClose)
-  const edit = useScopedEdit(meeting, (moved) => {
-    pane.setEditing(false)
-    if (moved) onMoved(moved)
-  })
+  const edit = useScopedEdit(meeting, { moved: onMoved, saved: () => pane.setEditing(false) })
 
   return (
     <ItemPane
