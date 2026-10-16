@@ -181,6 +181,22 @@ function withDtstart(rule: string, startsLocal: LocalTime): string {
   return `${dtstart}\nRRULE:${body}`
 }
 
+/**
+ * The series' rule, ready to expand; null for a series that happens once. An unreadable stored
+ * rule, or one too costly to expand (a row stored before the checks, or by another writer), is
+ * also null: it shows as the one meeting its start describes.
+ */
+function ruleOf(series: Series): Rule | null {
+  if (!series.rrule || !isOneLine(series.rrule)) return null
+  let rule: Rule
+  try {
+    rule = RRule.fromString(withDtstart(series.rrule, series.startsLocal))
+  } catch {
+    return null
+  }
+  return expandable(rule) ? rule : null
+}
+
 /** An override or cancellation of one occurrence, keyed by its RECURRENCE-ID. */
 export type Exception = {
   recurrenceId: LocalTime
@@ -218,7 +234,8 @@ export function occurrencesIn(
   const overlaps = (o: Occurrence) =>
     o.endsAt.getTime() > window.from.getTime() && o.startsAt.getTime() < window.to.getTime()
 
-  if (!series.rrule) {
+  const rule = ruleOf(series)
+  if (!rule) {
     const one = made(series.startsLocal)
     return one && overlaps(one) ? [one] : []
   }
@@ -227,20 +244,6 @@ export function occurrencesIn(
   // instants are filtered against the real window below.
   const fromNaiveTime = asNaive(localOf(new Date(window.from.getTime() - DAY_MS), series.timeZone))
   const toNaiveTime = asNaive(localOf(new Date(window.to.getTime() + DAY_MS), series.timeZone))
-
-  let rule: Rule
-  try {
-    rule = RRule.fromString(withDtstart(series.rrule, series.startsLocal))
-  } catch {
-    // An unreadable stored rule shows as the one meeting its start describes.
-    const one = made(series.startsLocal)
-    return one && overlaps(one) ? [one] : []
-  }
-  // A row stored before these checks, or by another writer, may still be too costly to expand.
-  if (!isOneLine(series.rrule) || !expandable(rule)) {
-    const one = made(series.startsLocal)
-    return one && overlaps(one) ? [one] : []
-  }
 
   // The fourth argument stops the walk; `len` is how many have been collected so far.
   const naive = rule.between(fromNaiveTime, toNaiveTime, true, (_, len) => len < HARD_LIMIT)
@@ -257,6 +260,41 @@ export function occurrencesIn(
     if (moved && overlaps(moved)) out.push(moved)
   }
   return out.sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
+}
+
+/** When a series' first occurrence starts and its last one ends; null when it never stops. */
+export type Bounds = { firstStartsAt: Date; lastEndsAt: Date | null }
+
+/**
+ * The span every occurrence of a series lies in, overrides included: a read skips a series whose
+ * span misses its window before expanding it. Never narrower than the occurrences, since a series
+ * outside it is not looked at; where the rule makes that costly to know exactly, it is wider.
+ */
+export function seriesBounds(series: Series, exceptions: readonly Exception[]): Bounds {
+  const at = (local: LocalTime) => instantOf(local, series.timeZone)
+  const endOf = (local: LocalTime, minutes: number) =>
+    new Date(at(local).getTime() + minutes * 60_000)
+
+  const rule = ruleOf(series)
+  // The rule's last start: its last occurrence for a count, `UNTIL` for an end date, which no
+  // start passes. A series that happens once starts and ends with its start.
+  const lastStart = !rule
+    ? series.startsLocal
+    : rule.options.count != null
+      ? fromNaive(rule.all().at(-1) ?? asNaive(series.startsLocal))
+      : rule.options.until
+        ? fromNaive(rule.options.until)
+        : null
+  let firstStartsAt = at(series.startsLocal)
+  let lastEndsAt = lastStart === null ? null : endOf(lastStart, series.durationMinutes)
+  for (const e of exceptions) {
+    if (e.cancelled) continue
+    const local = e.startsLocal ?? e.recurrenceId
+    if (at(local) < firstStartsAt) firstStartsAt = at(local)
+    const end = endOf(local, e.durationMinutes ?? series.durationMinutes)
+    if (lastEndsAt && end > lastEndsAt) lastEndsAt = end
+  }
+  return { firstStartsAt, lastEndsAt }
 }
 
 /**

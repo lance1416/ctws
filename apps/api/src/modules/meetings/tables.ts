@@ -35,12 +35,20 @@ export const meetings = pgTable(
     rrule: text('rrule'),
     location: text('location'),
     note: text('note'),
+    /**
+     * When the first occurrence starts and the last one ends, overrides included; the end is null
+     * for a rule that never stops. Kept by the service on every write, so a read of a window can
+     * skip the series that miss it before expanding any.
+     */
+    firstStartsAt: timestamp('first_starts_at', { withTimezone: true }).notNull(),
+    lastEndsAt: timestamp('last_ends_at', { withTimezone: true }),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     index('meetings_workspace_idx').on(t.workspaceId),
+    index('meetings_window_idx').on(t.workspaceId, t.lastEndsAt),
     check('meetings_duration_positive', sql`${t.durationMinutes} > 0`),
     check(
       'meetings_starts_local_shape',

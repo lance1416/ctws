@@ -16,7 +16,7 @@ import { putLinks } from '../../shell/links'
 import { assertProjectsVisible } from '../../shell/projects'
 import { assertPeopleVisible } from '../people'
 import { BadRuleError, OnceOnlyError } from './errors'
-import { endedBefore, type LocalTime, ruleProblem } from './occurrences'
+import { endedBefore, type LocalTime, ruleProblem, type Series, seriesBounds } from './occurrences'
 import {
   assertOccurs,
   getOccurrence,
@@ -75,6 +75,22 @@ const touch = (q: Queryable, { workspaceId, now }: Actor, id: MeetingId) =>
     .update(meetings)
     .set({ updatedAt: now })
     .where(within(scoped(meetings, workspaceId), eq(meetings.id, id)))
+
+/**
+ * Stores the span a series' occurrences lie in, as it is after a write to the series or its
+ * exceptions; every write ends with it, so a read of a window can trust the span to skip by.
+ */
+async function recomputeBounds(tx: Tx, id: MeetingId): Promise<void> {
+  const [series] = await tx.select().from(meetings).where(eq(meetings.id, id))
+  const exceptions = await tx
+    .select()
+    .from(meetingExceptions)
+    .where(eq(meetingExceptions.meetingId, id))
+  await tx.update(meetings).set(seriesBounds(series!, exceptions)).where(eq(meetings.id, id))
+}
+
+/** A new series' own columns, its span with them: it has no exceptions yet. */
+const newSeries = <S extends Series>(series: S) => ({ ...series, ...seriesBounds(series, []) })
 
 /** The expander decides whether a rule is usable, so a stored rule always happens. */
 function assertRule(rule: string | null | undefined, startsLocal: LocalTime): void {
@@ -142,10 +158,12 @@ async function editFollowing(e: Edit) {
     id: nextId,
     workspaceId,
     title: fields.title ?? series.title,
-    startsLocal,
-    timeZone: fields.timeZone ?? series.timeZone,
-    durationMinutes: fields.durationMinutes ?? series.durationMinutes,
-    rrule,
+    ...newSeries({
+      startsLocal,
+      timeZone: fields.timeZone ?? series.timeZone,
+      durationMinutes: fields.durationMinutes ?? series.durationMinutes,
+      rrule,
+    }),
     location: 'location' in fields ? (fields.location ?? null) : series.location,
     note: 'note' in fields ? (fields.note ?? null) : series.note,
     createdAt: now,
@@ -179,6 +197,7 @@ async function editFollowing(e: Edit) {
           where meeting_id = ${series.id} and recurrence_id >= ${recurrenceId}
         `,
   )
+  await recomputeBounds(tx, nextId)
   return getOccurrence(tx, workspaceId, nextId, startsLocal)
 }
 
@@ -254,10 +273,12 @@ export async function createMeeting(
       id,
       workspaceId,
       title: body.title,
-      startsLocal: body.startsLocal,
-      timeZone: body.timeZone,
-      durationMinutes: body.durationMinutes,
-      rrule: body.rrule ?? null,
+      ...newSeries({
+        startsLocal: body.startsLocal,
+        timeZone: body.timeZone,
+        durationMinutes: body.durationMinutes,
+        rrule: body.rrule ?? null,
+      }),
       location: body.location ?? null,
       note: body.note ?? null,
       createdAt: now,
@@ -294,6 +315,7 @@ export async function updateSeries(
     const { attendeeIds, projectId, ...fields } = patch
     const edit = { tx, workspaceId, now, series, fields, attendeeIds, projectId }
     await editAll({ ...edit, recurrenceId: undefined })
+    await recomputeBounds(tx, id)
     return getMeeting(tx, workspaceId, id)
   })
 }
@@ -313,11 +335,14 @@ export async function updateOccurrence(
     const series = await lockMeeting(tx, workspaceId, id)
     const edit = { tx, workspaceId, now, series, fields, recurrenceId }
     if (series.rrule) {
-      return editOne({ ...edit, attendeeIds: undefined, projectId: undefined })
+      const moved = await editOne({ ...edit, attendeeIds: undefined, projectId: undefined })
+      await recomputeBounds(tx, id)
+      return moved
     }
     assertOccurs(series, recurrenceId)
     assertRuleFits(series, 'all', fields)
     await editAll({ ...edit, attendeeIds: undefined, projectId: undefined })
+    await recomputeBounds(tx, id)
     const after = await getMeeting(tx, workspaceId, id)
     return getOccurrence(tx, workspaceId, id, after.startsLocal)
   })
@@ -351,9 +376,14 @@ export async function continueSeries(
     }
     // From the first occurrence on is the whole series, changed where it is: a split there would
     // leave the old one with nothing left to happen.
-    if (from !== series.startsLocal) return editFollowing(edit)
+    if (from !== series.startsLocal) {
+      const next = await editFollowing(edit)
+      await recomputeBounds(tx, id)
+      return next
+    }
     assertOccurs(series, from)
     await editAll(edit)
+    await recomputeBounds(tx, id)
     return getOccurrence(tx, workspaceId, id, fields.startsLocal ?? from)
   })
 }
@@ -380,5 +410,6 @@ export async function cancelMeeting(
     if (recurrenceId !== undefined && !series.rrule) assertOccurs(series, recurrenceId)
     const reach = series.rrule ? scope : 'all'
     await CANCELS[reach]({ tx, workspaceId, now, series, recurrenceId })
+    await recomputeBounds(tx, id)
   })
 }

@@ -5,6 +5,7 @@ import {
   ruleProblem,
   localOf,
   occurrencesIn,
+  seriesBounds,
   type Exception,
   type Series,
 } from './occurrences'
@@ -338,6 +339,65 @@ describe('rules', () => {
       window('2026-10-01T00:00Z', '2026-11-01T00:00Z'),
     )
     expect(got.map((o) => o.startsLocal)).toEqual(['2026-10-20T09:00'])
+  })
+})
+
+describe('seriesBounds', () => {
+  const at = (iso: string) => new Date(iso)
+
+  it('spans a one-off meeting from its start to its end', () => {
+    expect(seriesBounds(weekly({ rrule: null }), none)).toEqual({
+      firstStartsAt: at('2026-10-20T13:00:00Z'),
+      lastEndsAt: at('2026-10-20T14:00:00Z'),
+    })
+  })
+
+  it('has no end for a rule that never stops', () => {
+    expect(seriesBounds(weekly(), none).lastEndsAt).toBeNull()
+  })
+
+  it('ends a rule with an end date no later than a meeting starting on it would end', () => {
+    // UNTIL is the wall clock in the series' zone: 2026-11-10 23:59 in Toronto (EST, -05:00).
+    const ended = weekly({ rrule: 'FREQ=WEEKLY;BYDAY=TU;UNTIL=20261110T235959Z' })
+    expect(seriesBounds(ended, none).lastEndsAt).toEqual(at('2026-11-11T05:59:00Z'))
+    // Every occurrence lies inside it.
+    const all = occurrencesIn(ended, none, window('2026-10-01T00:00:00Z', '2027-01-01T00:00:00Z'))
+    expect(all.map((o) => o.recurrenceId).at(-1)).toBe('2026-11-10T09:00')
+  })
+
+  it('ends a counted rule with its last occurrence', () => {
+    const counted = weekly({ rrule: 'FREQ=WEEKLY;BYDAY=TU;COUNT=3' })
+    expect(seriesBounds(counted, none).lastEndsAt).toEqual(at('2026-11-03T15:00:00Z'))
+  })
+
+  it('reaches an occurrence an override moved before the start or past the end', () => {
+    const ended = weekly({ rrule: 'FREQ=WEEKLY;BYDAY=TU;UNTIL=20261027T235959Z' })
+    const moved: Exception[] = [
+      {
+        recurrenceId: START,
+        cancelled: false,
+        startsLocal: '2026-10-19T08:00',
+        durationMinutes: null,
+      },
+      {
+        recurrenceId: '2026-10-27T09:00',
+        cancelled: false,
+        startsLocal: '2026-11-05T09:00',
+        durationMinutes: 90,
+      },
+    ]
+    expect(seriesBounds(ended, moved)).toEqual({
+      firstStartsAt: at('2026-10-19T12:00:00Z'),
+      lastEndsAt: at('2026-11-05T15:30:00Z'),
+    })
+  })
+
+  it('leaves a cancelled occurrence out', () => {
+    const once = weekly({ rrule: null })
+    const cancelled: Exception[] = [
+      { recurrenceId: START, cancelled: true, startsLocal: null, durationMinutes: null },
+    ]
+    expect(seriesBounds(once, cancelled)).toEqual(seriesBounds(once, none))
   })
 })
 
