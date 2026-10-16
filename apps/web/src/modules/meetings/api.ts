@@ -1,12 +1,12 @@
 import {
   api,
   type CreateMeetingBody,
-  type EditScope,
   MAX_CALENDAR_SPAN_DAYS,
   type MeetingOccurrence,
+  type MeetingSeries,
   ruleEndDay,
   ruleEndingAt,
-  type UpdateMeetingInput,
+  type UpdateSeriesBody,
   type MeetingId,
 } from '@ctws/contracts'
 import { queryOptions, skipToken } from '@tanstack/react-query'
@@ -15,6 +15,12 @@ import { addDays } from '@ctws/core/day'
 import { shortDay } from '../../platform/time/dates'
 
 type DayRange = { from: string; to: string }
+
+/**
+ * Which occurrences a change to a repeating meeting reaches: this one, it and every later one, or
+ * the whole series. Each is its own resource on the server.
+ */
+export type EditScope = 'one' | 'following' | 'all'
 
 /** Each page is a page of series, in time order within itself; the pages are merged here. */
 async function listMeetings(range: DayRange): Promise<MeetingOccurrence[]> {
@@ -43,21 +49,21 @@ export const meetingsQuery = (range: DayRange) =>
 export const occurrenceQuery = (meetingId: MeetingId | null, recurrenceId: string) =>
   queryOptions({
     queryKey: ['meetings', 'one', meetingId, recurrenceId],
-    queryFn:
-      meetingId === null
-        ? skipToken
-        : async () => {
-            try {
-              return await call(api.meetings.occurrence, {
-                params: { id: meetingId },
-                query: { recurrenceId },
-              })
-            } catch (e) {
-              if (e instanceof ApiError && e.status === 404) return null
-              throw e
-            }
-          },
+    queryFn: meetingId === null ? skipToken : () => readOccurrence(meetingId, recurrenceId),
   })
+
+/** One occurrence, or null when it is cancelled or gone. */
+export async function readOccurrence(
+  id: MeetingId,
+  recurrenceId: string,
+): Promise<MeetingOccurrence | null> {
+  try {
+    return await call(api.meetings.occurrence, { params: { id, recurrenceId } })
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) return null
+    throw e
+  }
+}
 
 /**
  * A series' next occurrence within a year of `today`, else its latest one in the year before:
@@ -100,15 +106,40 @@ export function createMeeting(body: CreateMeetingBody): Promise<MeetingOccurrenc
   return call(api.meetings.create, { body })
 }
 
-export function patchMeeting(id: MeetingId, body: UpdateMeetingInput): Promise<MeetingOccurrence> {
+/** Changes the whole series. */
+export function patchSeries(id: MeetingId, body: UpdateSeriesBody): Promise<MeetingSeries> {
   return call(api.meetings.update, { params: { id }, body })
 }
 
+/** Moves one occurrence or changes its length. */
+export function patchOccurrence(
+  id: MeetingId,
+  recurrenceId: string,
+  body: Pick<UpdateSeriesBody, 'startsLocal' | 'durationMinutes'>,
+): Promise<MeetingOccurrence> {
+  return call(api.meetings.updateOccurrence, { params: { id, recurrenceId }, body })
+}
+
+/** Changes a series from one occurrence on: a new series takes over there. */
+export function continueSeries(
+  id: MeetingId,
+  from: string,
+  body: UpdateSeriesBody,
+): Promise<MeetingOccurrence> {
+  return call(api.meetings.continueAs, { params: { id }, body: { from, ...body } })
+}
+
+/** Cancels the series, one occurrence, or every occurrence from one on. */
 export function cancelMeeting(
   id: MeetingId,
-  opts: { scope: EditScope; recurrenceId?: string },
+  scope: EditScope,
+  recurrenceId: string,
 ): Promise<void> {
-  return call(api.meetings.cancel, { params: { id }, query: opts })
+  if (scope === 'one') return call(api.meetings.cancelOccurrence, { params: { id, recurrenceId } })
+  if (scope === 'following') {
+    return call(api.meetings.cancelFrom, { params: { id }, query: { from: recurrenceId } })
+  }
+  return call(api.meetings.cancel, { params: { id } })
 }
 
 /** Where a new meeting lands by default: a plausible working hour, for an hour. */

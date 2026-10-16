@@ -1,4 +1,4 @@
-import type { EditScope } from '@ctws/contracts'
+import type { EditScope } from '../api'
 import { BUTTON } from '../../../platform/ui/buttonStyles'
 
 /**

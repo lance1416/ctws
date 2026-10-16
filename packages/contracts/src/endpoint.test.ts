@@ -34,6 +34,10 @@ describe('href', () => {
     ).toBe('/a/x%20y/b/2?q=%C3%A9%26')
   })
 
+  it('leaves a colon in a path segment as it is, so an occurrence reads as its local time', () => {
+    expect(href({ path: '/m/:at' }, { at: '2026-10-20T09:00/x' })).toBe('/m/2026-10-20T09:00%2Fx')
+  })
+
   it('shares a method and path only between views that a query tells apart', () => {
     const byRoute = new Map<string, Endpoint[]>()
     for (const e of every) {

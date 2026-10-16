@@ -28,15 +28,18 @@ import {
 } from './link'
 import {
   createMeetingBody,
-  deleteMeetingQuery,
-  meetingOccurrence,
-  meetingParams,
   meetingCalendarView,
   meetingEntriesResponse,
+  meetingOccurrence,
+  meetingParams,
+  meetingSeries,
   meetingsQuery,
   meetingsResponse,
-  occurrenceQuery,
-  updateMeetingBody,
+  occurrenceParams,
+  occurrencesFromQuery,
+  successorBody,
+  updateOccurrenceBody,
+  updateSeriesBody,
 } from './meeting'
 import {
   birthdaysResponse,
@@ -82,6 +85,10 @@ import {
   todayResponse,
   updateTaskBody,
 } from './task'
+
+/** Where a meeting's occurrence is read, from the occurrence a create answers with. */
+const occurrenceAt = (o: { meetingId: string; recurrenceId: string }): string =>
+  href({ path: '/meetings/:id/occurrences/:recurrenceId' }, { id: o.meetingId, ...o })
 
 /** People and reading search a page of this many unless asked for more: a name is found early. */
 const SHORT_SEARCH = 20
@@ -430,12 +437,20 @@ export const api = {
       ok: 200,
       response: meetingEntriesResponse,
     }),
-    occurrence: endpoint({
+    series: endpoint({
       method: 'GET',
       path: '/meetings/:id',
-      summary: 'One occurrence of a series.',
+      summary: 'One series: its rule and what every occurrence shares.',
       params: meetingParams,
-      query: occurrenceQuery,
+      ok: 200,
+      response: meetingSeries,
+      refusals: [404],
+    }),
+    occurrence: endpoint({
+      method: 'GET',
+      path: '/meetings/:id/occurrences/:recurrenceId',
+      summary: 'One occurrence of a series, wherever it falls now.',
+      params: occurrenceParams,
       ok: 200,
       response: meetingOccurrence,
       refusals: [404],
@@ -443,30 +458,70 @@ export const api = {
     create: endpoint({
       method: 'POST',
       path: '/meetings',
-      summary: 'Create a meeting.',
+      summary: 'Create a meeting; the answer is its first occurrence.',
       body: createMeetingBody,
       ok: 201,
       response: meetingOccurrence,
-      location: (m: { meetingId: string; recurrenceId: string }) =>
-        href({ path: '/meetings/:id' }, { id: m.meetingId }, { recurrenceId: m.recurrenceId }),
+      location: occurrenceAt,
       refusals: [404, 422],
     }),
     update: endpoint({
       method: 'PATCH',
       path: '/meetings/:id',
-      summary: 'Edit one occurrence, the following ones, or the whole series.',
+      summary: 'Change the whole series. A new start or rule drops the occurrences moved alone.',
       params: meetingParams,
-      body: updateMeetingBody,
+      body: updateSeriesBody,
+      ok: 200,
+      response: meetingSeries,
+      refusals: [404, 422],
+    }),
+    updateOccurrence: endpoint({
+      method: 'PATCH',
+      path: '/meetings/:id/occurrences/:recurrenceId',
+      summary:
+        'Move one occurrence or change its length; nothing else of it may differ from its series. ' +
+        'A meeting that happens once moves itself.',
+      params: occurrenceParams,
+      body: updateOccurrenceBody,
       ok: 200,
       response: meetingOccurrence,
+      refusals: [404, 422],
+    }),
+    continueAs: endpoint({
+      method: 'POST',
+      path: '/meetings/:id/successors',
+      summary:
+        'Change a series from one occurrence on: it ends just before `from` and a new series ' +
+        'with the changes takes over there. The answer is its first occurrence.',
+      params: meetingParams,
+      body: successorBody,
+      ok: 201,
+      response: meetingOccurrence,
+      location: occurrenceAt,
       refusals: [404, 422],
     }),
     cancel: endpoint({
       method: 'DELETE',
       path: '/meetings/:id',
-      summary: 'Cancel one occurrence, the following ones, or the whole series.',
+      summary: 'Cancel the whole series.',
       params: meetingParams,
-      query: deleteMeetingQuery,
+      ok: 204,
+      refusals: [404],
+    }),
+    cancelOccurrence: endpoint({
+      method: 'DELETE',
+      path: '/meetings/:id/occurrences/:recurrenceId',
+      summary: 'Cancel one occurrence. A meeting that happens once is cancelled whole.',
+      params: occurrenceParams,
+      ok: 204,
+      refusals: [404],
+    }),
+    cancelFrom: endpoint({
+      method: 'DELETE',
+      path: '/meetings/:id/occurrences',
+      summary: 'Cancel every occurrence from `from` on: the series ends just before it.',
+      params: meetingParams,
+      query: occurrencesFromQuery,
       ok: 204,
       refusals: [404],
     }),

@@ -6,6 +6,7 @@ import {
   eventTimeZone,
   instant,
   noteText,
+  patchOf,
   titleText,
   viewQuery,
 } from './common'
@@ -110,31 +111,49 @@ export const createMeetingBody = z
   .strict()
 export type CreateMeetingBody = z.infer<typeof createMeetingBody>
 
-/**
- * Which occurrences an edit touches: `one`, `following` (the series is split there), or `all`. A
- * meeting that happens once takes `all` whatever is asked.
- */
-const editScope = z.enum(['one', 'following', 'all'])
-export type EditScope = z.infer<typeof editScope>
+/** The whole series: what a change to it changes for every occurrence. */
+export const updateSeriesBody = patchOf(meetingFields)
+export type UpdateSeriesBody = z.infer<typeof updateSeriesBody>
 
-export const updateMeetingBody = z
-  .object({
-    /** Required for anything but `all`. */
-    scope: editScope.default('all'),
-    recurrenceId: localTime.optional(),
-    ...z.object(meetingFields).partial().shape,
-  })
+/** One occurrence may differ from its series only in when it is and how long it lasts. */
+export const updateOccurrenceBody = patchOf({ startsLocal: localTime, durationMinutes })
+
+/**
+ * The series from one occurrence on, continued as a new series with these changes: the old one
+ * ends just before `from`, so the past stays as it happened.
+ */
+export const successorBody = z
+  .object({ from: localTime, ...z.object(meetingFields).partial().shape })
   .strict()
-  .refine((b) => Object.keys(b).some((k) => k !== 'scope' && k !== 'recurrenceId'), {
+  .refine((b) => Object.keys(b).some((k) => k !== 'from'), {
     message: 'expected at least one field',
   })
-  .refine((b) => b.scope === 'all' || b.recurrenceId !== undefined, {
-    message: 'editing one occurrence needs to say which',
-    path: ['recurrenceId'],
+export type SuccessorBody = z.infer<typeof successorBody>
+
+/** One occurrence, by its series and the local time the rule gave it. */
+export const occurrenceParams = z.object({ id: meetingId, recurrenceId: localTime }).strict()
+
+/** Every occurrence from one on: cancelling them ends the series there. */
+export const occurrencesFromQuery = z.object({ from: localTime }).strict()
+
+/** A series as it is stored: the rule and what every occurrence shares. */
+export const meetingSeries = z
+  .object({
+    id: meetingId,
+    title: z.string(),
+    /** The first occurrence: a wall clock in `timeZone`. */
+    startsLocal: localTime,
+    timeZone: eventTimeZone,
+    durationMinutes: z.number().int(),
+    rrule: z.string().nullable(),
+    location: z.string().nullable(),
+    note: z.string().nullable(),
+    projectId: projectId.nullable(),
+    projectName: z.string().nullable(),
+    attendees: z.array(z.object({ id: personId, name: z.string() }).strict()),
   })
-export type UpdateMeetingBody = z.infer<typeof updateMeetingBody>
-/** What a client sends: `scope` may be left out because the schema defaults it. */
-export type UpdateMeetingInput = z.input<typeof updateMeetingBody>
+  .strict()
+export type MeetingSeries = z.infer<typeof meetingSeries>
 
 /** One occurrence of a meeting, as every read returns it. */
 export const meetingOccurrence = z
@@ -200,15 +219,3 @@ export const meetingsResponse = z
   .strict()
 
 export const meetingEntriesResponse = calendarEntriesResponse.extend({ page: pageInfo })
-
-/** Which occurrence of a series. */
-export const occurrenceQuery = z.object({ recurrenceId: localTime }).strict()
-
-/** Cancelling one occurrence is not cancelling the series. */
-export const deleteMeetingQuery = z
-  .object({ scope: editScope.default('all'), recurrenceId: localTime.optional() })
-  .strict()
-  .refine((q) => q.scope === 'all' || q.recurrenceId !== undefined, {
-    message: 'cancelling one occurrence needs to say which',
-    path: ['recurrenceId'],
-  })

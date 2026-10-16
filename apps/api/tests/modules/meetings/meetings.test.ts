@@ -54,11 +54,44 @@ async function arrange(
   return res.json() as MeetingOccurrence
 }
 
-const patch = (ctx: Harness, id: string, payload: Record<string, unknown>) =>
+/** The whole series. */
+const editAll = (ctx: Harness, id: string, payload: Record<string, unknown>) =>
   ctx.app.inject({ method: 'PATCH', url: `/api/v1/meetings/${id}`, headers: web(ctx), payload })
 
-const cancel = (ctx: Harness, id: string, query = '') =>
-  ctx.app.inject({ method: 'DELETE', url: `/api/v1/meetings/${id}${query}`, headers: web(ctx) })
+/** One occurrence, addressed by the time the rule gave it. */
+const editOne = (ctx: Harness, id: string, at: string, payload: Record<string, unknown>) =>
+  ctx.app.inject({
+    method: 'PATCH',
+    url: `/api/v1/meetings/${id}/occurrences/${at}`,
+    headers: web(ctx),
+    payload,
+  })
+
+/** From one occurrence on: a new series takes over there. */
+const split = (ctx: Harness, id: string, from: string, payload: Record<string, unknown>) =>
+  ctx.app.inject({
+    method: 'POST',
+    url: `/api/v1/meetings/${id}/successors`,
+    headers: web(ctx),
+    payload: { from, ...payload },
+  })
+
+const cancel = (ctx: Harness, id: string) =>
+  ctx.app.inject({ method: 'DELETE', url: `/api/v1/meetings/${id}`, headers: web(ctx) })
+
+const cancelOne = (ctx: Harness, id: string, at: string) =>
+  ctx.app.inject({
+    method: 'DELETE',
+    url: `/api/v1/meetings/${id}/occurrences/${at}`,
+    headers: web(ctx),
+  })
+
+const cancelFrom = (ctx: Harness, id: string, from: string) =>
+  ctx.app.inject({
+    method: 'DELETE',
+    url: `/api/v1/meetings/${id}/occurrences?from=${from}`,
+    headers: web(ctx),
+  })
 
 async function listed(ctx: Harness, query: string): Promise<MeetingOccurrence[]> {
   const res = await ctx.app.inject({
@@ -211,9 +244,7 @@ describe('editing one occurrence', () => {
   it('moves just that one, and leaves the series where it was', async () => {
     const ctx = await setup()
     const series = await arrange(ctx)
-    const res = await patch(ctx, series.meetingId, {
-      scope: 'one',
-      recurrenceId: '2026-10-27T09:00',
+    const res = await editOne(ctx, series.meetingId, '2026-10-27T09:00', {
       startsLocal: '2026-10-27T14:00',
     })
     expect(res.statusCode, res.body).toBe(200)
@@ -237,9 +268,7 @@ describe('editing one occurrence', () => {
     // RECURRENCE-ID, not by looking near where it ended up.
     const ctx = await setup()
     const series = await arrange(ctx)
-    const res = await patch(ctx, series.meetingId, {
-      scope: 'one',
-      recurrenceId: '2026-10-27T09:00',
+    const res = await editOne(ctx, series.meetingId, '2026-10-27T09:00', {
       startsLocal: '2026-10-30T09:00',
     })
     expect(res.statusCode, res.body).toBe(200)
@@ -250,7 +279,7 @@ describe('editing one occurrence', () => {
 
     const got = await ctx.app.inject({
       method: 'GET',
-      url: `/api/v1/meetings/${series.meetingId}?recurrenceId=2026-10-27T09:00`,
+      url: `/api/v1/meetings/${series.meetingId}/occurrences/2026-10-27T09:00`,
       headers: ctx.authed,
     })
     expect(got.statusCode, got.body).toBe(200)
@@ -262,21 +291,19 @@ describe('editing one occurrence', () => {
     // reason for it to have two titles, and a calendar that allowed it would quietly fork.
     const ctx = await setup()
     const series = await arrange(ctx)
-    const res = await patch(ctx, series.meetingId, {
-      scope: 'one',
-      recurrenceId: '2026-10-27T09:00',
+    const res = await editOne(ctx, series.meetingId, '2026-10-27T09:00', {
       title: '只改这次的标题',
     })
-    expect(res.statusCode).toBe(422)
+    // Not a field an occurrence has.
+    expect(res.statusCode).toBe(400)
   })
 
   it('refuses a recurrence id the rule never produced', async () => {
     const ctx = await setup()
     const series = await arrange(ctx)
-    const res = await patch(ctx, series.meetingId, {
+    const res = await editOne(ctx, series.meetingId, '2026-10-28T09:00', {
       // A Wednesday, in a Tuesday series.
-      scope: 'one',
-      recurrenceId: '2026-10-28T09:00',
+
       startsLocal: '2026-10-28T14:00',
     })
     expect(res.statusCode).toBe(404)
@@ -285,7 +312,7 @@ describe('editing one occurrence', () => {
   it('cancels one week without cancelling the series', async () => {
     const ctx = await setup()
     const series = await arrange(ctx)
-    const res = await cancel(ctx, series.meetingId, '?scope=one&recurrenceId=2026-10-27T09:00')
+    const res = await cancelOne(ctx, series.meetingId, '2026-10-27T09:00')
     expect(res.statusCode, res.body).toBe(204)
     expect(days(await listed(ctx, '?from=2026-10-20&to=2026-11-10'))).toEqual([
       '2026-10-20',
@@ -299,15 +326,18 @@ describe('editing from one occurrence on', () => {
   it('splits the series, leaving the past exactly as it happened', async () => {
     const ctx = await setup()
     const series = await arrange(ctx)
-    const res = await patch(ctx, series.meetingId, {
-      scope: 'following',
-      recurrenceId: '2026-11-03T09:00',
+    const res = await split(ctx, series.meetingId, '2026-11-03T09:00', {
       startsLocal: '2026-11-04T09:00',
       rrule: 'FREQ=WEEKLY;BYDAY=WE',
     })
-    expect(res.statusCode, res.body).toBe(200)
+    expect(res.statusCode, res.body).toBe(201)
     // A NEW series: the old one still owns the Tuesdays before the split.
     expect((res.json() as MeetingOccurrence).meetingId).not.toBe(series.meetingId)
+    // ...read where the answer says.
+    const created = res.json() as MeetingOccurrence
+    expect(res.headers.location).toBe(
+      `/api/v1/meetings/${created.meetingId}/occurrences/${created.recurrenceId}`,
+    )
 
     expect(days(await listed(ctx, '?from=2026-10-20&to=2026-11-18'))).toEqual([
       '2026-10-20',
@@ -323,9 +353,7 @@ describe('editing from one occurrence on', () => {
     // start, as it does above.
     const ctx = await setup()
     const series = await arrange(ctx)
-    const res = await patch(ctx, series.meetingId, {
-      scope: 'following',
-      recurrenceId: '2026-11-03T09:00',
+    const res = await split(ctx, series.meetingId, '2026-11-03T09:00', {
       startsLocal: '2026-11-04T09:00',
     })
     expect(res.statusCode, res.body).toBe(422)
@@ -347,12 +375,10 @@ describe('editing from one occurrence on', () => {
       startsLocal: '2026-10-19T09:00',
       rrule: 'FREQ=DAILY',
     })
-    const res = await patch(ctx, series.meetingId, {
-      scope: 'following',
-      recurrenceId: '2026-10-20T09:00',
+    const res = await split(ctx, series.meetingId, '2026-10-20T09:00', {
       rrule: 'FREQ=WEEKLY;BYDAY=TU',
     })
-    expect(res.statusCode, res.body).toBe(200)
+    expect(res.statusCode, res.body).toBe(201)
     expect(days(await listed(ctx, '?from=2026-10-19&to=2026-11-03'))).toEqual([
       '2026-10-19',
       '2026-10-20',
@@ -365,9 +391,7 @@ describe('editing from one occurrence on', () => {
     const ctx = await setup()
     const a = await person(ctx, '陈颖')
     const series = await arrange(ctx, { ...WEEKLY, attendeeIds: [a.id] })
-    const res = await patch(ctx, series.meetingId, {
-      scope: 'following',
-      recurrenceId: '2026-11-03T09:00',
+    const res = await split(ctx, series.meetingId, '2026-11-03T09:00', {
       startsLocal: '2026-11-03T15:00',
     })
     expect((res.json() as MeetingOccurrence).attendees.map((p) => p.name)).toEqual(['陈颖'])
@@ -379,23 +403,17 @@ describe('editing from one occurrence on', () => {
     const ctx = await setup()
     const series = await arrange(ctx)
     // One before the split, one after.
-    await patch(ctx, series.meetingId, {
-      scope: 'one',
-      recurrenceId: '2026-10-27T09:00',
+    await editOne(ctx, series.meetingId, '2026-10-27T09:00', {
       startsLocal: '2026-10-27T16:00',
     })
-    await patch(ctx, series.meetingId, {
-      scope: 'one',
-      recurrenceId: '2026-11-10T09:00',
+    await editOne(ctx, series.meetingId, '2026-11-10T09:00', {
       startsLocal: '2026-11-10T17:00',
     })
 
-    const res = await patch(ctx, series.meetingId, {
-      scope: 'following',
-      recurrenceId: '2026-11-03T09:00',
+    const res = await split(ctx, series.meetingId, '2026-11-03T09:00', {
       durationMinutes: 30,
     })
-    expect(res.statusCode, res.body).toBe(200)
+    expect(res.statusCode, res.body).toBe(201)
 
     const got = await listed(ctx, '?from=2026-10-20&to=2026-11-18')
     expect(got.map((o) => o.startsLocal)).toEqual([
@@ -414,17 +432,13 @@ describe('editing from one occurrence on', () => {
     // show as an extra meeting beside the one the rule now makes.
     const ctx = await setup()
     const series = await arrange(ctx)
-    await patch(ctx, series.meetingId, {
-      scope: 'one',
-      recurrenceId: '2026-11-10T09:00',
+    await editOne(ctx, series.meetingId, '2026-11-10T09:00', {
       startsLocal: '2026-11-10T17:00',
     })
-    const res = await patch(ctx, series.meetingId, {
-      scope: 'following',
-      recurrenceId: '2026-11-03T09:00',
+    const res = await split(ctx, series.meetingId, '2026-11-03T09:00', {
       startsLocal: '2026-11-03T10:00',
     })
-    expect(res.statusCode, res.body).toBe(200)
+    expect(res.statusCode, res.body).toBe(201)
     const got = await listed(ctx, '?from=2026-10-20&to=2026-11-18')
     expect(got.map((o) => o.startsLocal)).toEqual([
       '2026-10-20T09:00',
@@ -438,11 +452,7 @@ describe('editing from one occurrence on', () => {
   it('cancels everything from one occurrence on, and keeps what came before', async () => {
     const ctx = await setup()
     const series = await arrange(ctx)
-    const res = await cancel(
-      ctx,
-      series.meetingId,
-      '?scope=following&recurrenceId=2026-11-03T09:00',
-    )
+    const res = await cancelFrom(ctx, series.meetingId, '2026-11-03T09:00')
     expect(res.statusCode, res.body).toBe(204)
     expect(days(await listed(ctx, '?from=2026-10-20&to=2026-11-18'))).toEqual([
       '2026-10-20',
@@ -455,7 +465,20 @@ describe('editing the whole series', () => {
   it('changes every occurrence', async () => {
     const ctx = await setup()
     const series = await arrange(ctx)
-    expect((await patch(ctx, series.meetingId, { title: '改了名的周会' })).statusCode).toBe(200)
+    const res = await editAll(ctx, series.meetingId, { title: '改了名的周会' })
+    expect(res.statusCode, res.body).toBe(200)
+    // The answer is the series, as `GET /meetings/:id` reads it.
+    expect(res.json()).toMatchObject({
+      id: series.meetingId,
+      title: '改了名的周会',
+      rrule: WEEKLY.rrule,
+    })
+    const read = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/meetings/${series.meetingId}`,
+      headers: ctx.authed,
+    })
+    expect(read.json()).toEqual(res.json())
     const got = await listed(ctx, '?from=2026-10-20&to=2026-11-10')
     expect(new Set(got.map((o) => o.title))).toEqual(new Set(['改了名的周会']))
   })
@@ -465,13 +488,11 @@ describe('editing the whole series', () => {
     // would leave a ghost in a schedule nobody can see it in.
     const ctx = await setup()
     const series = await arrange(ctx)
-    await patch(ctx, series.meetingId, {
-      scope: 'one',
-      recurrenceId: '2026-10-27T09:00',
+    await editOne(ctx, series.meetingId, '2026-10-27T09:00', {
       startsLocal: '2026-10-27T14:00',
     })
     expect(
-      (await patch(ctx, series.meetingId, { startsLocal: '2026-10-20T11:00' })).statusCode,
+      (await editAll(ctx, series.meetingId, { startsLocal: '2026-10-20T11:00' })).statusCode,
     ).toBe(200)
     const got = await listed(ctx, '?from=2026-10-20&to=2026-11-10')
     expect(new Set(got.map((o) => o.startsLocal.slice(11)))).toEqual(new Set(['11:00']))
@@ -481,11 +502,11 @@ describe('editing the whole series', () => {
     const ctx = await setup()
     const series = await arrange(ctx)
     // A Wednesday, in a Tuesday series.
-    const res = await patch(ctx, series.meetingId, { startsLocal: '2026-10-21T09:00' })
+    const res = await editAll(ctx, series.meetingId, { startsLocal: '2026-10-21T09:00' })
     expect(res.statusCode, res.body).toBe(422)
     expect(res.json().detail).toContain('2026-10-27T09:00')
     // With the rule moved too, it is the same series on another day.
-    const moved = await patch(ctx, series.meetingId, {
+    const moved = await editAll(ctx, series.meetingId, {
       startsLocal: '2026-10-21T09:00',
       rrule: 'FREQ=WEEKLY;BYDAY=WE',
     })
@@ -497,18 +518,34 @@ describe('editing the whole series', () => {
     ])
   })
 
-  it('takes a scope it cannot honour on a one-off and does the only thing there is', async () => {
+  it('moves a one-off by its only occurrence, which is moving the meeting', async () => {
     // A meeting that happens once has one occurrence, so "this one" and "the series" are the same
     // act. Refusing it would be pedantry about a distinction that does not exist.
     const ctx = await setup()
     const one = await arrange(ctx, { ...WEEKLY, rrule: null })
-    const res = await patch(ctx, one.meetingId, {
-      scope: 'one',
-      recurrenceId: one.recurrenceId,
-      title: '改了',
+    const res = await editOne(ctx, one.meetingId, one.recurrenceId, {
+      startsLocal: '2026-10-21T15:00',
     })
     expect(res.statusCode, res.body).toBe(200)
-    expect((res.json() as MeetingOccurrence).title).toBe('改了')
+    expect(res.json()).toMatchObject({ startsLocal: '2026-10-21T15:00', overridden: false })
+    const series = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/meetings/${one.meetingId}`,
+      headers: ctx.authed,
+    })
+    expect(series.json()).toMatchObject({ id: one.meetingId, startsLocal: '2026-10-21T15:00' })
+  })
+
+  it('has nothing after a one-off to change, and cancels it whole by its occurrence', async () => {
+    const ctx = await setup()
+    const one = await arrange(ctx, { ...WEEKLY, rrule: null })
+    expect((await split(ctx, one.meetingId, one.recurrenceId, { title: '以后' })).statusCode).toBe(
+      422,
+    )
+    // An occurrence it does not have is not one to cancel.
+    expect((await cancelOne(ctx, one.meetingId, '2026-10-27T09:00')).statusCode).toBe(404)
+    expect((await cancelOne(ctx, one.meetingId, one.recurrenceId)).statusCode).toBe(204)
+    expect((await cancel(ctx, one.meetingId)).statusCode).toBe(404)
   })
 
   it('cancels the whole thing', async () => {
@@ -607,7 +644,7 @@ describe('windows, projects and tenants', () => {
 
     const res = await ctx.app.inject({
       method: 'GET',
-      url: `/api/v1/meetings/${series.meetingId}?recurrenceId=${series.recurrenceId}`,
+      url: `/api/v1/meetings/${series.meetingId}/occurrences/${series.recurrenceId}`,
       headers: ctx.authed,
     })
     expect((res.json() as MeetingOccurrence).attendees).toEqual([])
@@ -631,11 +668,25 @@ describe('windows, projects and tenants', () => {
     }
     const seen = await theirs.app.inject({
       method: 'GET',
-      url: `/api/v1/meetings/${series.meetingId}?recurrenceId=${series.recurrenceId}`,
+      url: `/api/v1/meetings/${series.meetingId}/occurrences/${series.recurrenceId}`,
       headers: theirs.authed,
     })
     expect(seen.statusCode).toBe(404)
-    expect((await patch(theirs, series.meetingId, { title: '改名' })).statusCode).toBe(404)
+    expect((await editAll(theirs, series.meetingId, { title: '改名' })).statusCode).toBe(404)
+    const seriesSeen = await theirs.app.inject({
+      method: 'GET',
+      url: `/api/v1/meetings/${series.meetingId}`,
+      headers: theirs.authed,
+    })
+    expect(seriesSeen.statusCode).toBe(404)
+    expect(
+      (await editOne(theirs, series.meetingId, series.recurrenceId, { durationMinutes: 5 }))
+        .statusCode,
+    ).toBe(404)
+    expect(
+      (await split(theirs, series.meetingId, series.recurrenceId, { title: 'x' })).statusCode,
+    ).toBe(404)
+    expect((await cancelFrom(theirs, series.meetingId, series.recurrenceId)).statusCode).toBe(404)
     expect((await cancel(theirs, series.meetingId)).statusCode).toBe(404)
   })
 })
@@ -650,9 +701,7 @@ describe('an edit that meets a concurrent delete', () => {
     const ctx = await setup()
     const series = await arrange(ctx)
     const res = await expectBlockedWhile(ctx, deleteUncommitted(series.meetingId), () =>
-      patch(ctx, series.meetingId, {
-        scope: 'following',
-        recurrenceId: '2026-11-03T09:00',
+      split(ctx, series.meetingId, '2026-11-03T09:00', {
         title: '新周会',
       }),
     )
@@ -664,7 +713,7 @@ describe('an edit that meets a concurrent delete', () => {
     const ctx = await setup()
     const series = await arrange(ctx)
     const res = await expectBlockedWhile(ctx, deleteUncommitted(series.meetingId), () =>
-      cancel(ctx, series.meetingId, '?scope=one&recurrenceId=2026-10-27T09:00'),
+      cancelOne(ctx, series.meetingId, '2026-10-27T09:00'),
     )
     expect(res.statusCode).toBe(404)
   })

@@ -1,9 +1,9 @@
-import type { EditScope, MeetingOccurrence } from '@ctws/contracts'
+import type { MeetingOccurrence } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { problemText } from '../../../platform/http/api'
 import { DangerAction } from '../../../platform/ui/DangerZone'
 import { useForgetRecent } from '../../../shell/search/recent'
-import { cancelMeeting } from '../api'
+import { cancelMeeting, type EditScope } from '../api'
 import { ScopeAsk } from './ScopeAsk'
 
 /** A repeating meeting asks which occurrences to cancel; a one-off gets the plain question. */
@@ -16,8 +16,7 @@ export function CancelMeeting({
 }) {
   const forget = useForgetRecent()
   const drop = useMutation({
-    mutationFn: (scope: EditScope) =>
-      cancelMeeting(meeting.meetingId, { scope, recurrenceId: meeting.recurrenceId }),
+    mutationFn: (scope: EditScope) => cancelMeeting(meeting.meetingId, scope, meeting.recurrenceId),
     meta: { awaits: [['meetings']] },
     onSuccess: (_, scope) => {
       // One week of a series cancelled leaves the series; the whole of it does not.

@@ -1,7 +1,7 @@
 import {
   ruleEndDay,
   type MeetingOccurrence,
-  type UpdateMeetingInput,
+  type UpdateSeriesBody,
   type ProjectId,
 } from '@ctws/contracts'
 import { useState } from 'react'
@@ -35,7 +35,7 @@ export function MeetingForm({
   accountZone: string
   busy: boolean
   onCancel: () => void
-  onSave: (patch: UpdateMeetingInput) => void
+  onSave: (patch: UpdateSeriesBody) => void
   /** Whether anything differs from what the form opened on, for the pane's leave guard. */
   onUnsaved?: (unsaved: boolean) => void
 }) {
@@ -71,7 +71,7 @@ export function MeetingForm({
 
   const submit = () => {
     if (busy || title.trim() === '' || startsLocal === '') return
-    const patch: UpdateMeetingInput = {
+    const patch: UpdateSeriesBody = {
       title: title.trim(),
       timeZone,
       location: location.trim() || null,

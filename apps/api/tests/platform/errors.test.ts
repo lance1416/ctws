@@ -9,7 +9,7 @@ import {
   InvalidNeighbourError,
   MoveCycleError,
 } from '../../src/modules/tasks/errors'
-import { BadRuleError, OneOccurrenceLimitError } from '../../src/modules/meetings/errors'
+import { BadRuleError, OnceOnlyError } from '../../src/modules/meetings/errors'
 import { ImpossibleBirthdayError } from '../../src/modules/people/errors'
 import { WrongKindError } from '../../src/modules/reading/errors'
 import {
@@ -48,10 +48,8 @@ describe('every refusal sends exactly what it declares', () => {
     ],
     [new InboxProtectedError(), conflict('The inbox cannot be removed')],
     [
-      new OneOccurrenceLimitError(),
-      unprocessable(
-        'Only the time or the length of a single occurrence can differ from its series',
-      ),
+      new OnceOnlyError(),
+      unprocessable('This meeting happens once, so there is nothing after it to change'),
     ],
     [new WrongKindError('url', 'book'), unprocessable('A book has no url')],
     [new BothNeighboursError(), invalid('Give at most one of beforeId and afterId')],

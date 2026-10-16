@@ -1,6 +1,7 @@
 import type {
   LinksResponse,
   MeetingOccurrence,
+  MeetingSeries,
   PersonResponse,
   ReadingItemResponse,
 } from '@ctws/contracts'
@@ -53,22 +54,20 @@ describe('one object, several kinds of edge', () => {
     // Writing the guest list must not unfile the meeting.
     const other = await post<PersonResponse>(ctx, '/api/v1/people', { name: '另一个人' })
     const guests = await patch(ctx, `/api/v1/meetings/${meeting.meetingId}`, {
-      scope: 'all',
       attendeeIds: [person.id, other.id],
     })
     expect(guests.statusCode, guests.body).toBe(200)
-    const afterGuests = guests.json() as MeetingOccurrence
+    const afterGuests = guests.json() as MeetingSeries
     expect(afterGuests.projectId).toBe(project)
     expect(afterGuests.attendees.map((a) => a.name).sort()).toEqual(['另一个人', '陈颖'])
 
     // And refiling it must not empty the guest list.
     const elsewhere = await createProject(ctx, '开源')
     const moved = await patch(ctx, `/api/v1/meetings/${meeting.meetingId}`, {
-      scope: 'all',
       projectId: elsewhere,
     })
     expect(moved.statusCode, moved.body).toBe(200)
-    const afterMove = moved.json() as MeetingOccurrence
+    const afterMove = moved.json() as MeetingSeries
     expect(afterMove.projectId).toBe(elsewhere)
     expect(afterMove.attendees).toHaveLength(2)
   })
@@ -94,11 +93,10 @@ describe('one object, several kinds of edge', () => {
 
     // Unfiling the meeting leaves the reading item filed.
     const unfiled = await patch(ctx, `/api/v1/meetings/${meeting.meetingId}`, {
-      scope: 'all',
       projectId: null,
     })
     expect(unfiled.statusCode, unfiled.body).toBe(200)
-    expect((unfiled.json() as MeetingOccurrence).projectId).toBeNull()
+    expect((unfiled.json() as MeetingSeries).projectId).toBeNull()
 
     const res = await ctx.app.inject({
       method: 'GET',

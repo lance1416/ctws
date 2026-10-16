@@ -66,8 +66,9 @@ type Scalar = string | number | boolean | null | undefined
  */
 export function href(e: Pick<Endpoint, 'path'>, params: object = {}, query: object = {}): string {
   const values = params as Record<string, Scalar>
+  // A colon may stand in a path segment (RFC 3986 `pchar`), so a local time reads as itself.
   const path = e.path.replace(/:([A-Za-z]+)/g, (_, name: string) =>
-    encodeURIComponent(String(values[name])),
+    encodeURIComponent(String(values[name])).replaceAll('%3A', ':'),
   )
   // No `URLSearchParams`: this package runs without DOM or Node types.
   const qs = Object.entries(query as Record<string, Scalar>)

@@ -49,7 +49,7 @@ test('a meeting cancel the server refuses says so', async ({ page }) => {
   })
   await page.goto(`/meetings/${m.meetingId}`)
   const pane = page.getByRole('dialog', { name: 'Meetings' })
-  await refuse(page, `**/api/v1/meetings/${m.meetingId}?*`, 'DELETE')
+  await refuse(page, `**/api/v1/meetings/${m.meetingId}`, 'DELETE')
   await pane.getByRole('button', { name: 'Cancel meeting' }).click()
   await pane.getByRole('button', { name: 'Cancel meeting' }).click()
   await expect(said(page)).toBeVisible()

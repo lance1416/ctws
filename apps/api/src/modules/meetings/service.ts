@@ -1,7 +1,7 @@
 import {
   type CreateMeetingBody,
-  type EditScope,
-  type UpdateMeetingBody,
+  type SuccessorBody,
+  type UpdateSeriesBody,
   type PersonId,
   type ProjectId,
   type WorkspaceId,
@@ -15,7 +15,7 @@ import { type Actor, scoped, within } from '../../platform/db/scope'
 import { putLinks } from '../../shell/links/store'
 import { assertProjectsVisible } from '../../shell/projects/queries'
 import { assertPeopleVisible } from '../people'
-import { BadRuleError, OneOccurrenceLimitError } from './errors'
+import { BadRuleError, OnceOnlyError } from './errors'
 import { endedBefore, type LocalTime, ruleProblem } from './occurrences'
 import {
   assertOccurs,
@@ -28,7 +28,10 @@ import {
 } from './queries'
 import { meetingExceptions, meetings } from './tables'
 
-type Fields = Omit<UpdateMeetingBody, 'scope' | 'recurrenceId' | 'attendeeIds' | 'projectId'>
+type Fields = Omit<UpdateSeriesBody, 'attendeeIds' | 'projectId'>
+
+/** Which occurrences an edit or a cancel reaches. */
+type Scope = 'one' | 'following' | 'all'
 
 type Edit = {
   tx: Tx
@@ -83,11 +86,15 @@ function assertRule(rule: string | null | undefined, startsLocal: LocalTime): vo
  * A changed start or rule is checked as the series will be after the edit; a single occurrence
  * has no rule of its own.
  */
-function assertRuleFits(series: SeriesRow, scope: EditScope, patch: UpdateMeetingBody): void {
-  if (scope === 'one' || (patch.startsLocal === undefined && patch.rrule === undefined)) return
+function assertRuleFits(
+  series: SeriesRow,
+  scope: Exclude<Scope, 'one'>,
+  patch: UpdateSeriesBody,
+  from?: LocalTime,
+): void {
+  if (patch.startsLocal === undefined && patch.rrule === undefined) return
   const rule = patch.rrule !== undefined ? patch.rrule : series.rrule
-  const startsLocal =
-    patch.startsLocal ?? (scope === 'following' ? patch.recurrenceId! : series.startsLocal)
+  const startsLocal = patch.startsLocal ?? (scope === 'following' ? from! : series.startsLocal)
   assertRule(rule, startsLocal)
 }
 
@@ -95,18 +102,12 @@ function assertRuleFits(series: SeriesRow, scope: EditScope, patch: UpdateMeetin
  * One occurrence: an override of its start or length only. Title, place, guests and project
  * belong to the series.
  */
-async function editOne({ tx, workspaceId, now, series, fields, recurrenceId, ...rest }: Edit) {
+async function editOne({ tx, workspaceId, now, series, fields, recurrenceId }: Edit) {
   assertOccurs(series, recurrenceId!)
+  // The body allows nothing else: title, place and guests are the series'.
   const moved = {
     startsLocal: fields.startsLocal ?? null,
     durationMinutes: fields.durationMinutes ?? null,
-  }
-  const others = Object.keys(fields).filter((k) => k !== 'startsLocal' && k !== 'durationMinutes')
-  if (others.length > 0 || rest.attendeeIds || rest.projectId !== undefined) {
-    throw new OneOccurrenceLimitError()
-  }
-  if (moved.startsLocal === null && moved.durationMinutes === null) {
-    throw new OneOccurrenceLimitError()
   }
   await tx
     .insert(meetingExceptions)
@@ -198,8 +199,6 @@ async function editAll({ tx, workspaceId, now, series, fields, attendeeIds, proj
   if (fields.startsLocal !== undefined || fields.rrule !== undefined) {
     await tx.delete(meetingExceptions).where(eq(meetingExceptions.meetingId, series.id))
   }
-  const after = await getMeeting(tx, workspaceId, series.id)
-  return getOccurrence(tx, workspaceId, series.id, after.startsLocal)
 }
 
 /** One occurrence, as an `EXDATE`. */
@@ -235,21 +234,6 @@ async function cancelAll({ tx, workspaceId, now, series }: Cancel) {
     .where(within(scoped(meetings, workspaceId), eq(meetings.id, series.id)))
 }
 
-const EDITS: Record<EditScope, (e: Edit) => Promise<OccurrenceRow>> = {
-  one: editOne,
-  following: editFollowing,
-  all: editAll,
-}
-
-const CANCELS: Record<EditScope, (c: Cancel) => Promise<void>> = {
-  one: cancelOne,
-  following: cancelFollowing,
-  all: cancelAll,
-}
-
-/** A one-off meeting has one occurrence, so every scope means all of it. */
-const scopeFor = (series: SeriesRow, asked: EditScope): EditScope => (series.rrule ? asked : 'all')
-
 export async function createMeeting(
   db: Db,
   { workspaceId, now }: Actor,
@@ -284,42 +268,105 @@ export async function createMeeting(
   })
 }
 
-export async function updateMeeting(
+/** What an edit names besides the meeting's own fields must be in the workspace. */
+async function assertVisible(tx: Tx, workspaceId: WorkspaceId, patch: UpdateSeriesBody) {
+  if (patch.projectId) await assertProjectsVisible(tx, workspaceId, [patch.projectId])
+  if (patch.attendeeIds) await assertPeopleVisible(tx, workspaceId, patch.attendeeIds)
+}
+
+/** Changes the whole series. */
+export async function updateSeries(
   db: Db,
   { workspaceId, now }: Actor,
   id: MeetingId,
-  patch: UpdateMeetingBody,
+  patch: UpdateSeriesBody,
+): Promise<SeriesRow> {
+  return db.transaction(async (tx) => {
+    const series = await lockMeeting(tx, workspaceId, id)
+    await assertVisible(tx, workspaceId, patch)
+    assertRuleFits(series, 'all', patch)
+    const { attendeeIds, projectId, ...fields } = patch
+    const edit = { tx, workspaceId, now, series, fields, attendeeIds, projectId }
+    await editAll({ ...edit, recurrenceId: undefined })
+    return getMeeting(tx, workspaceId, id)
+  })
+}
+
+/**
+ * Moves one occurrence or changes its length. A meeting that happens once has one occurrence, so
+ * moving it is moving the meeting.
+ */
+export async function updateOccurrence(
+  db: Db,
+  { workspaceId, now }: Actor,
+  id: MeetingId,
+  recurrenceId: LocalTime,
+  fields: Pick<Fields, 'startsLocal' | 'durationMinutes'>,
 ): Promise<OccurrenceRow> {
   return db.transaction(async (tx) => {
     const series = await lockMeeting(tx, workspaceId, id)
-    if (patch.projectId) await assertProjectsVisible(tx, workspaceId, [patch.projectId])
-    if (patch.attendeeIds) await assertPeopleVisible(tx, workspaceId, patch.attendeeIds)
-    const scope = scopeFor(series, patch.scope)
-    assertRuleFits(series, scope, patch)
-    const { scope: _, recurrenceId, attendeeIds, projectId, ...fields } = patch
-    return EDITS[scope]({
+    const edit = { tx, workspaceId, now, series, fields, recurrenceId }
+    if (series.rrule) {
+      return editOne({ ...edit, attendeeIds: undefined, projectId: undefined })
+    }
+    assertOccurs(series, recurrenceId)
+    assertRuleFits(series, 'all', fields)
+    await editAll({ ...edit, attendeeIds: undefined, projectId: undefined })
+    const after = await getMeeting(tx, workspaceId, id)
+    return getOccurrence(tx, workspaceId, id, after.startsLocal)
+  })
+}
+
+/**
+ * Changes a series from one occurrence on, as a new series that takes over there. A meeting that
+ * happens once has nothing after its occurrence to change.
+ */
+export async function continueSeries(
+  db: Db,
+  { workspaceId, now }: Actor,
+  id: MeetingId,
+  { from, ...patch }: SuccessorBody,
+): Promise<OccurrenceRow> {
+  return db.transaction(async (tx) => {
+    const series = await lockMeeting(tx, workspaceId, id)
+    if (!series.rrule) throw new OnceOnlyError()
+    await assertVisible(tx, workspaceId, patch)
+    assertRuleFits(series, 'following', patch, from)
+    const { attendeeIds, projectId, ...fields } = patch
+    return editFollowing({
       tx,
       workspaceId,
       now,
       series,
       fields,
-      recurrenceId,
+      recurrenceId: from,
       attendeeIds,
       projectId,
     })
   })
 }
 
-/** Cancels a whole series, one occurrence of it, or everything from one on. */
+const CANCELS: Record<Scope, (c: Cancel) => Promise<void>> = {
+  one: cancelOne,
+  following: cancelFollowing,
+  all: cancelAll,
+}
+
+/**
+ * Cancels a whole series, one occurrence of it, or everything from one on. A meeting that happens
+ * once is cancelled whole, whichever of its occurrences is named: it has only the one.
+ */
 export async function cancelMeeting(
   db: Db,
   { workspaceId, now }: Actor,
   id: MeetingId,
-  opts: { scope: EditScope; recurrenceId?: LocalTime | undefined },
+  scope: Scope,
+  recurrenceId?: LocalTime,
 ): Promise<void> {
   await db.transaction(async (tx) => {
     const series = await lockMeeting(tx, workspaceId, id)
-    const scope = scopeFor(series, opts.scope)
-    await CANCELS[scope]({ tx, workspaceId, now, series, recurrenceId: opts.recurrenceId })
+    if (recurrenceId !== undefined && !series.rrule) assertOccurs(series, recurrenceId)
+    const reach = series.rrule ? scope : 'all'
+    await CANCELS[reach]({ tx, workspaceId, now, series, recurrenceId })
   })
 }

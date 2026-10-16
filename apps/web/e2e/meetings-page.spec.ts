@@ -528,10 +528,10 @@ test('renaming a series keeps the week that was moved on its own', async ({ page
     durationMinutes: 30,
     rrule: `FREQ=WEEKLY;BYDAY=${weekdayCode(day)}`,
   })
-  const moved = await page.request.patch(`/api/v1/meetings/${made.meetingId}`, {
-    headers: WEB,
-    data: { startsLocal: `${later}T15:00`, scope: 'one', recurrenceId: `${later}T09:00` },
-  })
+  const moved = await page.request.patch(
+    `/api/v1/meetings/${made.meetingId}/occurrences/${later}T09:00`,
+    { headers: WEB, data: { startsLocal: `${later}T15:00` } },
+  )
   expect(moved.ok(), await moved.text()).toBe(true)
 
   await page.goto(`/meetings/${made.meetingId}`)
@@ -562,15 +562,16 @@ test('renaming the first half of a split series keeps its moved week and its end
     durationMinutes: 30,
     rrule: `FREQ=WEEKLY;BYDAY=${weekdayCode(day)}`,
   })
-  const edit = async (data: object) => {
-    const res = await page.request.patch(`/api/v1/meetings/${made.meetingId}`, {
+  const edit = async (method: 'PATCH' | 'POST', path: string, data: object) => {
+    const res = await page.request.fetch(`/api/v1/meetings/${made.meetingId}${path}`, {
+      method,
       headers: WEB,
       data,
     })
     expect(res.ok(), await res.text()).toBe(true)
   }
-  await edit({ startsLocal: `${moved}T15:00`, scope: 'one', recurrenceId: `${moved}T09:00` })
-  await edit({ title: 'Sync, later', scope: 'following', recurrenceId: `${split}T09:00` })
+  await edit('PATCH', `/occurrences/${moved}T09:00`, { startsLocal: `${moved}T15:00` })
+  await edit('POST', '/successors', { from: `${split}T09:00`, title: 'Sync, later' })
 
   await page.goto(`/meetings/${made.meetingId}`)
   await editDetail(page)
@@ -615,7 +616,7 @@ test('jumping to a meeting outside the list does not leave the last one in the p
   let release = () => {}
   const held = new Promise<void>((r) => (release = r))
   await page.route(
-    (url) => url.pathname.endsWith(`/meetings/${bravo.meetingId}`),
+    (url) => url.pathname.startsWith(`/api/v1/meetings/${bravo.meetingId}/occurrences/`),
     async (route) => {
       await held
       await route.continue()

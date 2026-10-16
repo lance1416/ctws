@@ -7,11 +7,11 @@ export class BadRuleError extends DomainError {
   }
 }
 
-/** Only the time and the length of one occurrence may differ from its series. */
-export class OneOccurrenceLimitError extends DomainError {
+/** A meeting that happens once has no occurrences after its one to change. */
+export class OnceOnlyError extends DomainError {
   constructor() {
     super('unprocessable', {
-      detail: 'Only the time or the length of a single occurrence can differ from its series',
+      detail: 'This meeting happens once, so there is nothing after it to change',
     })
   }
 }
