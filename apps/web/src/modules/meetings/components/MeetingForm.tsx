@@ -79,7 +79,11 @@ export function MeetingForm({
       {...composing.bind}
       className="flex flex-col gap-4"
     >
-      <FormBar busy={busy} disabled={title.trim() === ''} onCancel={onCancel} />
+      <FormBar
+        busy={busy}
+        disabled={title.trim() === '' || startsLocal === ''}
+        onCancel={onCancel}
+      />
 
       <div>
         <label htmlFor="m-title" className={label}>

@@ -639,3 +639,17 @@ test('jumping to a meeting outside the list does not leave the last one in the p
   release()
   await expect(pane(page)).toContainText('Bravo')
 })
+
+test('a meeting with no start cannot be saved', async ({ page }) => {
+  await registerFreshUser(page)
+  const made = await apiPost(page, '/meetings', {
+    title: 'Somewhen',
+    startsLocal: `${dayOffset(1)}T09:00`,
+    timeZone: await accountZone(page),
+    durationMinutes: 30,
+  })
+  await page.goto(`/meetings/${made.meetingId}`)
+  await editDetail(page)
+  await pane(page).getByLabel('Start').fill('')
+  await expect(pane(page).getByRole('button', { name: 'Save' })).toBeDisabled()
+})
