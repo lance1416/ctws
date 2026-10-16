@@ -8,15 +8,16 @@ import {
 } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import {
-  type AnyPgColumn,
   check,
   date,
+  foreignKey,
   index,
   jsonb,
   pgTable,
   primaryKey,
   text,
   timestamp,
+  unique,
   uuid,
 } from 'drizzle-orm/pg-core'
 import { inList } from '../../platform/db/sql'
@@ -27,14 +28,12 @@ export const tasks = pgTable(
   'tasks',
   {
     id: uuid('id').$type<TaskId>().primaryKey(),
+    // The project's, carried so that every row hanging off a task can be held to its workspace by
+    // a foreign key.
+    workspaceId: uuid('workspace_id').$type<WorkspaceId>().notNull(),
     // Every task carries its project, so a project's tasks need no recursion.
-    projectId: uuid('project_id')
-      .$type<ProjectId>()
-      .notNull()
-      .references(() => projects.id, { onDelete: 'cascade' }),
-    parentId: uuid('parent_id')
-      .$type<TaskId>()
-      .references((): AnyPgColumn => tasks.id, { onDelete: 'cascade' }),
+    projectId: uuid('project_id').$type<ProjectId>().notNull(),
+    parentId: uuid('parent_id').$type<TaskId>(),
     title: text('title').notNull(),
     notes: text('notes'),
     status: text('status').$type<TaskStatus>().notNull(),
@@ -52,6 +51,18 @@ export const tasks = pgTable(
     index('tasks_project_id_idx').on(t.projectId),
     index('tasks_parent_id_idx').on(t.parentId),
     check('tasks_status_check', inList(t.status, TASK_STATUSES)),
+    unique('tasks_workspace_id_id_key').on(t.workspaceId, t.id),
+    // The project and the parent are in the task's own workspace.
+    foreignKey({
+      name: 'tasks_project_fk',
+      columns: [t.workspaceId, t.projectId],
+      foreignColumns: [projects.workspaceId, projects.id],
+    }).onDelete('cascade'),
+    foreignKey({
+      name: 'tasks_parent_fk',
+      columns: [t.workspaceId, t.parentId],
+      foreignColumns: [t.workspaceId, t.id],
+    }).onDelete('cascade'),
   ],
 )
 
@@ -60,15 +71,9 @@ export const taskDependencies = pgTable(
   'task_dependencies',
   {
     /** Has to finish first. */
-    blockerId: uuid('blocker_id')
-      .$type<TaskId>()
-      .notNull()
-      .references(() => tasks.id, { onDelete: 'cascade' }),
+    blockerId: uuid('blocker_id').$type<TaskId>().notNull(),
     /** Waits. */
-    blockedId: uuid('blocked_id')
-      .$type<TaskId>()
-      .notNull()
-      .references(() => tasks.id, { onDelete: 'cascade' }),
+    blockedId: uuid('blocked_id').$type<TaskId>().notNull(),
     workspaceId: uuid('workspace_id')
       .$type<WorkspaceId>()
       .notNull()
@@ -79,6 +84,17 @@ export const taskDependencies = pgTable(
     primaryKey({ columns: [t.blockerId, t.blockedId] }),
     index('task_dependencies_blocked_idx').on(t.blockedId),
     check('task_dependencies_not_self', sql`${t.blockerId} <> ${t.blockedId}`),
+    // Both tasks are in the dependency's workspace.
+    foreignKey({
+      name: 'task_dependencies_blocker_fk',
+      columns: [t.workspaceId, t.blockerId],
+      foreignColumns: [tasks.workspaceId, tasks.id],
+    }).onDelete('cascade'),
+    foreignKey({
+      name: 'task_dependencies_blocked_fk',
+      columns: [t.workspaceId, t.blockedId],
+      foreignColumns: [tasks.workspaceId, tasks.id],
+    }).onDelete('cascade'),
   ],
 )
 
@@ -86,11 +102,7 @@ export const taskEvents = pgTable(
   'task_events',
   {
     id: uuid('id').primaryKey(),
-    // No cascade: hard-deleting a task fails rather than erasing its history.
-    taskId: uuid('task_id')
-      .$type<TaskId>()
-      .notNull()
-      .references(() => tasks.id),
+    taskId: uuid('task_id').$type<TaskId>().notNull(),
     workspaceId: uuid('workspace_id')
       .$type<WorkspaceId>()
       .notNull()
@@ -102,6 +114,13 @@ export const taskEvents = pgTable(
   (t) => [
     index('task_events_workspace_occurred_idx').on(t.workspaceId, t.occurredAt.desc()),
     index('task_events_task_occurred_idx').on(t.taskId, t.occurredAt.desc()),
+    // In the task's workspace. No cascade: hard-deleting a task fails rather than erasing its
+    // history.
+    foreignKey({
+      name: 'task_events_task_fk',
+      columns: [t.workspaceId, t.taskId],
+      foreignColumns: [tasks.workspaceId, tasks.id],
+    }),
   ],
 )
 

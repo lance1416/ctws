@@ -16,8 +16,9 @@ beforeAll(async () => {
     with w as (insert into workspaces (id) values (gen_random_uuid()) returning id),
          p as (insert into projects (id, workspace_id, name, rank, color)
                values (gen_random_uuid(), (select id from w), 'p', 'a0', 'project-1') returning id),
-         t1 as (insert into tasks (id, project_id, title, status, rank)
-                values (gen_random_uuid(), (select id from p), 't1', 'todo', 'a0') returning id)
+         t1 as (insert into tasks (id, workspace_id, project_id, title, status, rank)
+                values (gen_random_uuid(), (select id from w), (select id from p), 't1', 'todo', 'a0')
+                returning id)
     select (select id from w) as w, (select id from t1) as t1
   `)
   const r = (seed.rows as { w: WorkspaceId; t1: TaskId }[])[0]!

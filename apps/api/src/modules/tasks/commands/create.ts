@@ -43,6 +43,7 @@ export async function createTask(db: Db, ctx: Actor, input: CreateTaskBody): Pro
       .insert(tasks)
       .values({
         id: newId(taskId),
+        workspaceId: ctx.workspaceId,
         projectId,
         parentId: input.parentId ?? null,
         title: input.title,

@@ -1,5 +1,5 @@
 import { type ProjectColor, type ProjectId, type WorkspaceId } from '@ctws/contracts'
-import { boolean, index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { boolean, index, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
 import { workspaces } from '../auth/tables'
 
 export const projects = pgTable(
@@ -20,7 +20,11 @@ export const projects = pgTable(
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index('projects_workspace_idx').on(t.workspaceId)],
+  (t) => [
+    index('projects_workspace_idx').on(t.workspaceId),
+    // What a row in the same workspace points at.
+    unique('projects_workspace_id_id_key').on(t.workspaceId, t.id),
+  ],
 )
 
 export type Project = typeof projects.$inferSelect

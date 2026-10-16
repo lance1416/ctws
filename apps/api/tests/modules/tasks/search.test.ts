@@ -244,9 +244,9 @@ describe('GET /search', () => {
     const ctx = await setup()
     const project = await createProject(ctx, 'Alpha')
     await ctx.db.execute(sql`
-      insert into tasks (id, project_id, title, status, rank)
-      select gen_random_uuid(), ${project}, 'bulk ' || g, 'backlog', lpad(g::text, 6, '0')
-      from generate_series(1, ${SEARCH_LIMIT + 5}) g
+      insert into tasks (id, workspace_id, project_id, title, status, rank)
+      select gen_random_uuid(), p.workspace_id, p.id, 'bulk ' || g, 'backlog', lpad(g::text, 6, '0')
+      from generate_series(1, ${SEARCH_LIMIT + 5}) g join projects p on p.id = ${project}
     `)
     expect(await search(ctx, 'bulk')).toHaveLength(SEARCH_LIMIT)
   })

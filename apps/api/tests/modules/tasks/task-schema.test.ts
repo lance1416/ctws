@@ -44,8 +44,8 @@ async function seed() {
     values (gen_random_uuid(), ${workspaceId}, 'p', 'a0', 'project-1') returning id
   `)
   const taskId = await id(sql`
-    insert into tasks (id, project_id, title, status, rank)
-    values (gen_random_uuid(), ${projectId}, 't', 'todo', 'a0') returning id
+    insert into tasks (id, workspace_id, project_id, title, status, rank)
+    values (gen_random_uuid(), ${workspaceId}, ${projectId}, 't', 'todo', 'a0') returning id
   `)
   await ctx.db.execute(sql`
     insert into task_events (id, task_id, workspace_id, type, payload, occurred_at)
@@ -94,19 +94,19 @@ describe('task tables', () => {
   })
 
   it('rejects a task whose status is outside the set', async () => {
-    const { projectId } = await seed()
+    const { workspaceId, projectId } = await seed()
     expect(
       await sqlStateOf(
         ctx.db.execute(sql`
-        insert into tasks (id, project_id, title, status, rank)
-        values (gen_random_uuid(), ${projectId}, 't', 'archived', 'a0')
+        insert into tasks (id, workspace_id, project_id, title, status, rank)
+        values (gen_random_uuid(), ${workspaceId}, ${projectId}, 't', 'archived', 'a0')
       `),
       ),
     ).toBe(CHECK_VIOLATION)
     await expect(
       ctx.db.execute(sql`
-        insert into tasks (id, project_id, title, status, rank)
-        values (gen_random_uuid(), ${projectId}, 't', 'in_progress', 'a0')
+        insert into tasks (id, workspace_id, project_id, title, status, rank)
+        values (gen_random_uuid(), ${workspaceId}, ${projectId}, 't', 'in_progress', 'a0')
       `),
     ).resolves.toBeDefined()
   })
@@ -157,15 +157,16 @@ describe('task tables', () => {
   })
 
   it('refuses hard deletes that would cascade onto a task with events', async () => {
-    const { projectId, taskId } = await seed()
+    const { workspaceId, projectId, taskId } = await seed()
     // Via tasks.project_id.
     expect(
       await sqlStateOf(ctx.db.execute(sql`delete from projects where id = ${projectId}`)),
     ).toBe(FOREIGN_KEY_VIOLATION)
     // Via tasks.parent_id: the event sits on the child, the parent is deleted.
     const child = await ctx.db.execute(sql`
-      insert into tasks (id, project_id, parent_id, title, status, rank)
-      values (gen_random_uuid(), ${projectId}, ${taskId}, 'c', 'todo', 'a0') returning id
+      insert into tasks (id, workspace_id, project_id, parent_id, title, status, rank)
+      values (gen_random_uuid(), ${workspaceId}, ${projectId}, ${taskId}, 'c', 'todo', 'a0')
+      returning id
     `)
     const childId = (child.rows as { id: string }[])[0]!.id
     await ctx.db.execute(sql`
@@ -177,6 +178,39 @@ describe('task tables', () => {
       FOREIGN_KEY_VIOLATION,
     )
     expect(await count('task_events', 'task_id', childId)).toBe(1)
+  })
+
+  it('keeps a task, its parent, its dependencies and its events in one workspace', async () => {
+    const mine = await seed()
+    const theirs = await seed()
+    const refused = (q: ReturnType<typeof sql>) => sqlStateOf(ctx.db.execute(q))
+    // A task filed in their project, or under their task, from my workspace.
+    expect(
+      await refused(sql`
+        insert into tasks (id, workspace_id, project_id, title, status, rank)
+        values (gen_random_uuid(), ${mine.workspaceId}, ${theirs.projectId}, 't', 'todo', 'a0')
+      `),
+    ).toBe(FOREIGN_KEY_VIOLATION)
+    expect(
+      await refused(sql`
+        insert into tasks (id, workspace_id, project_id, parent_id, title, status, rank)
+        values (gen_random_uuid(), ${mine.workspaceId}, ${mine.projectId}, ${theirs.taskId},
+                't', 'todo', 'a0')
+      `),
+    ).toBe(FOREIGN_KEY_VIOLATION)
+    // My task waiting for theirs, and an event of theirs logged in my workspace.
+    expect(
+      await refused(sql`
+        insert into task_dependencies (blocker_id, blocked_id, workspace_id)
+        values (${theirs.taskId}, ${mine.taskId}, ${mine.workspaceId})
+      `),
+    ).toBe(FOREIGN_KEY_VIOLATION)
+    expect(
+      await refused(sql`
+        insert into task_events (id, task_id, workspace_id, type, payload, occurred_at)
+        values (gen_random_uuid(), ${theirs.taskId}, ${mine.workspaceId}, 'created', '{}', now())
+      `),
+    ).toBe(FOREIGN_KEY_VIOLATION)
   })
 
   it('removes projects, tasks and events when their workspace is deleted', async () => {

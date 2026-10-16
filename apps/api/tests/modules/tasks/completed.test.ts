@@ -162,9 +162,10 @@ describe('the finished list says whether it is complete', () => {
     const pid = await createProject(ctx, 'P')
     // One under the cap: a full page that happens to be the whole history is NOT truncated.
     await ctx.db.execute(sql`
-      insert into tasks (id, project_id, title, status, rank, completed_at)
-      select gen_random_uuid(), ${pid}, 't' || g, 'done', 'a' || g, now() - (g || ' minutes')::interval
-      from generate_series(1, 200) g
+      insert into tasks (id, workspace_id, project_id, title, status, rank, completed_at)
+      select gen_random_uuid(), p.workspace_id, p.id, 't' || g, 'done', 'a' || g,
+        now() - (g || ' minutes')::interval
+      from generate_series(1, 200) g join projects p on p.id = ${pid}
     `)
     const full = await body(ctx)
     expect(full.tasks).toHaveLength(200)
@@ -172,8 +173,10 @@ describe('the finished list says whether it is complete', () => {
 
     // One more, and the answer says there is more than it shows.
     await ctx.db.execute(sql`
-      insert into tasks (id, project_id, title, status, rank, completed_at)
-      values (gen_random_uuid(), ${pid}, 'one more', 'done', 'b', now() - interval '500 minutes')
+      insert into tasks (id, workspace_id, project_id, title, status, rank, completed_at)
+      select gen_random_uuid(), workspace_id, id, 'one more', 'done', 'b',
+        now() - interval '500 minutes'
+      from projects where id = ${pid}
     `)
     const capped = await body(ctx)
     expect(capped.tasks).toHaveLength(200)

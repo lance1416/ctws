@@ -169,6 +169,13 @@
       "when": 1792114776137,
       "tag": "0023_workspace_write_only",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792121658435,
+      "tag": "0024_workspace_foreign_keys",
+      "breakpoints": true
     }
   ]
 }

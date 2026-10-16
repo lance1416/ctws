@@ -406,8 +406,8 @@ describe('the tenant join does not scan every project in the database', () => {
     // in the database the planner drives from `tasks` and probes projects by primary key, which
     // is a fine plan and tells us nothing about the filter this test is about.
     await ctx.db.execute(sql`
-      insert into tasks (id, project_id, title, status, rank)
-      select gen_random_uuid(), p.id, 't', 'todo', 'a'
+      insert into tasks (id, workspace_id, project_id, title, status, rank)
+      select gen_random_uuid(), p.workspace_id, p.id, 't', 'todo', 'a'
       from projects p where p.workspace_id <> ${workspaceId}
     `)
     await ctx.db.execute(sql`analyze projects, tasks`)
