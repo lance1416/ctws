@@ -14,9 +14,11 @@ export function ProjectChip({ projectId }: { projectId: string }) {
 
 function useLiveChoices(): Choice<string>[] {
   const projects = useProjects()
-  return (projects.data ?? [])
-    .filter((p) => !p.archivedAt)
-    .map((p) => ({ value: p.id, label: p.name, mark: <ProjectChip projectId={p.id} /> }))
+  return (projects.data ?? []).map((p) => ({
+    value: p.id,
+    label: p.name,
+    mark: <ProjectChip projectId={p.id} />,
+  }))
 }
 
 /**
