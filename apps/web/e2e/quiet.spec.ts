@@ -487,3 +487,29 @@ test('a half-failed bulk action leaves exactly what still needs doing', async ({
   await page.getByRole('button', { name: 'Mark done' }).click()
   await expect(page.locator('[data-selection-bar]')).toHaveCount(0)
 })
+
+test('a picked row that leaves the view leaves the selection too', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '改版')
+  const parent = await makeTask(page, pid, '大件')
+  await makeTask(page, pid, '藏起来的', {}, parent)
+  await makeTask(page, pid, '看得见的')
+  await openTree(page, pid)
+
+  await row(page, '藏起来的').click({ modifiers: ['Shift'] })
+  await row(page, '看得见的').click({ modifiers: ['Shift'] })
+  await expect(page.locator('[data-selection-bar]')).toContainText('2 selected')
+
+  // Folded away: what Mark done acts on is what can be seen.
+  await page.getByRole('button', { name: 'Collapse' }).click()
+  await expect(row(page, '藏起来的')).toHaveCount(0)
+  await expect(page.locator('[data-selection-bar]')).toContainText('1 selected')
+  await page.getByRole('button', { name: 'Mark done' }).click()
+  await expect(page.locator('[data-selection-bar]')).toHaveCount(0)
+
+  const after = await (await page.request.get(`/api/v1/tasks?projectId=${pid}`)).json()
+  const byTitle = Object.fromEntries(
+    (after.tasks as { title: string; status: string }[]).map((t) => [t.title, t.status]),
+  )
+  expect(byTitle).toMatchObject({ 藏起来的: 'todo', 看得见的: 'done' })
+})

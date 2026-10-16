@@ -82,7 +82,12 @@ export function TaskTree({ projectId }: { projectId: string }) {
     actions.setStatus(id, status)
   }
   const adder = useInlineAdd({ projectId, unfold: folds.unfold, onRefuse: setError })
-  const picked = useBulkSelection({ projectId, onFinished: shown.keep, onError: setError })
+  const picked = useBulkSelection({
+    projectId,
+    visible: rows.map((r) => r.id),
+    onFinished: shown.keep,
+    onError: setError,
+  })
 
   // Distance, so a plain click on the handle (to focus it) is not taken for a drag.
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))

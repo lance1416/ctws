@@ -10,16 +10,21 @@ import { moveTask, patchTask } from '../../api/tasks'
  */
 export function useBulkSelection({
   projectId,
+  visible,
   onFinished,
   onError,
 }: {
   projectId: string
+  /** The rows on screen now. A picked row that is folded, moved or deleted away is not picked. */
+  visible: readonly string[]
   /** Given the ids that really finished. */
   onFinished: (done: ReadonlySet<string>) => void
   onError: (message: string) => void
 }) {
   const qc = useQueryClient()
-  const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set())
+  const [picked, setSelected] = useState<ReadonlySet<string>>(() => new Set())
+  const onScreen = new Set(visible)
+  const selected: ReadonlySet<string> = new Set([...picked].filter((id) => onScreen.has(id)))
   const [busy, setBusy] = useState(false)
 
   const runOverSelection = async (
@@ -37,7 +42,7 @@ export function useBulkSelection({
       const left = selected.size - done.size
       onError(`${e instanceof Error ? e.message : "That didn't work"} (${left} left undone)`)
     } finally {
-      setSelected((prev) => new Set([...prev].filter((id) => !done.has(id))))
+      setSelected((prev) => new Set([...prev].filter((id) => onScreen.has(id) && !done.has(id))))
       setBusy(false)
       settle?.(done)
       await refreshQueries(qc, [projectTasksQuery(projectId).queryKey])
@@ -49,7 +54,7 @@ export function useBulkSelection({
     busy,
     toggle: (id: string) =>
       setSelected((prev) => {
-        const next = new Set(prev)
+        const next = new Set([...prev].filter((p) => onScreen.has(p)))
         if (!next.delete(id)) next.add(id)
         return next
       }),
