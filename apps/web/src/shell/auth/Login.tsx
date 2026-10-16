@@ -1,7 +1,7 @@
 import { api } from '@ctws/contracts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { WORKBENCH_PATH } from '../registry'
 import { call, problemText } from '../../platform/http/api'
 import { browserZone } from '../../platform/time/dates'
@@ -13,6 +13,9 @@ import { textbox } from '../../platform/ui/formStyles'
 export function Login() {
   const qc = useQueryClient()
   const navigate = useNavigate()
+  const location = useLocation()
+  /** The page a session ended on, which signing in again goes back to. */
+  const from = (location.state as { from?: string } | null)?.from ?? WORKBENCH_PATH
   const me = useMe()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -23,20 +26,23 @@ export function Login() {
       how === 'register'
         ? call(api.auth.register, { body: { email, password, timezone: browserZone() } })
         : call(api.auth.login, { body: { email, password } }),
-    // The session is new and the cache empty; `me` is set below.
+    // The session is new; `me` is set below.
     meta: { refresh: false, ownsError: true },
     onSuccess: (user) => {
       setError('')
+      // A session that ended under an open page left that account's reads in the cache, and
+      // this may be someone else.
+      qc.clear()
       // Seed the cache before navigating: Layout reads it and would bounce back to /login
       // if it still saw the stale null.
       qc.setQueryData(['me'], user)
-      navigate(WORKBENCH_PATH, { replace: true })
+      navigate(from, { replace: true })
     },
     onError: (e: Error) => setError(problemText(e) ?? ''),
   })
 
   if (me.isLoading) return null
-  if (me.data) return <Navigate to={WORKBENCH_PATH} replace />
+  if (me.data) return <Navigate to={from} replace />
 
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-10">

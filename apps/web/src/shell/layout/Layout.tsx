@@ -1,7 +1,7 @@
 import { api } from '@ctws/contracts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
-import { Link, Navigate, Outlet } from 'react-router-dom'
+import { Link, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { call } from '../../platform/http/api'
 import { useMe } from '../auth/useMe'
 import { Breadcrumbs } from './Breadcrumbs'
@@ -22,6 +22,7 @@ import { WriteFailure } from './WriteFailure'
 export function Layout() {
   const qc = useQueryClient()
   const me = useMe()
+  const location = useLocation()
   const leaveGuard: LeaveGuard = useRef(null)
   // Opened from the header's button, the `f` key, or the phone's tab bar.
   const [searching, setSearching] = useState(false)
@@ -49,7 +50,11 @@ export function Layout() {
       </div>
     )
   }
-  if (!me.data) return <Navigate to="/login" replace />
+  // A session that ended under the page comes back to it once signed in again; signing out does not.
+  if (!me.data) {
+    const from = logout.isSuccess ? undefined : `${location.pathname}${location.search}`
+    return <Navigate to="/login" replace state={from ? { from } : undefined} />
+  }
 
   return (
     <div className="min-h-screen">

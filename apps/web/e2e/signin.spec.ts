@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { logOut, registerFreshUser } from './helpers'
+import { holdFirstRead, logOut, makeProject, registerFreshUser } from './helpers'
 
 /**
  * The sign-in screen: Enter signs in from either field.
@@ -61,4 +61,30 @@ test('creating an account is a deliberate second press, not what Enter does', as
   // The same two fields, through Create an account, do make the account.
   await page.getByRole('button', { name: 'Create an account' }).click()
   await expect(page.getByTestId('current-user')).toHaveAccessibleName(`Account: ${email}`)
+})
+
+test('after a session ends, signing in again goes back to the page, and shows no one else’s', async ({
+  page,
+  context,
+}) => {
+  const other = await registerFreshUser(page)
+  await logOut(page)
+  await registerFreshUser(page)
+  const mine = await makeProject(page, 'Only mine')
+  await page.goto(`/projects/${mine}`)
+  await expect(page.getByRole('navigation', { name: 'Main navigation' })).toContainText('Only mine')
+
+  // The session ends behind the page's back; it finds out the next time it asks who is signed in.
+  await context.clearCookies()
+  await page.evaluate(() => window.dispatchEvent(new Event('visibilitychange')))
+  await expect(page.getByLabel('Email')).toBeVisible()
+
+  const release = await holdFirstRead(page, '**/api/v1/projects')
+  await page.getByLabel('Email').fill(other)
+  await page.getByLabel('Password').fill('correct horse battery')
+  await page.getByLabel('Password').press('Enter')
+  await expect(page.getByTestId('current-user')).toHaveAccessibleName(`Account: ${other}`)
+  await expect(page).toHaveURL(`/projects/${mine}`)
+  await expect(page.getByText('Only mine')).toHaveCount(0)
+  release()
 })
