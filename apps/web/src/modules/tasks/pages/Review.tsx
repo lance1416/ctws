@@ -41,7 +41,6 @@ function Row({
   projectId,
   today,
   from,
-  timeZone,
 }: {
   title: string
   status: (typeof REVIEW_TRANSITIONS)[ReviewList]
@@ -50,8 +49,8 @@ function Row({
   today: string
   /** The first day of the week under review. */
   from: string
-  timeZone: string
 }) {
+  const timeZone = useTimeZone()
   const text = weekDayWord(ymd(new Date(at), timeZone), today, from)
   return (
     <li data-review-row className="flex min-h-11 min-w-0">
@@ -185,7 +184,6 @@ export function Review() {
                           projectId={p.projectId}
                           today={today}
                           from={data.from}
-                          timeZone={timeZone}
                         />
                       )),
                     )}

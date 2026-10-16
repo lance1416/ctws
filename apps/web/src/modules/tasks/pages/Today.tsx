@@ -55,7 +55,6 @@ export function Today() {
       task={t}
       anyTime={anyTime}
       today={day}
-      timeZone={timeZone}
       now={now}
       saved={savedId === t.id}
       rowRef={titles.ref(t.id)}
@@ -114,7 +113,6 @@ export function Today() {
           <InProgressSection
             tasks={inProgress}
             today={day}
-            timeZone={timeZone}
             savedId={savedId}
             rowRef={titles.ref}
             onOpen={setOpenId}
@@ -134,7 +132,7 @@ export function Today() {
             </DaySection>
           )}
 
-          {doneToday.length > 0 && <DoneTodayPanel tasks={doneToday} timeZone={timeZone} />}
+          {doneToday.length > 0 && <DoneTodayPanel tasks={doneToday} />}
         </div>
 
         {movementRows.length > 0 && <MovementPanel rows={movementRows} today={day} />}

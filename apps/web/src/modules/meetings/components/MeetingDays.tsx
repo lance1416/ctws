@@ -4,6 +4,7 @@ import { clockTime } from '@ctws/core/clock'
 import { Fragment, type ReactNode } from 'react'
 import { nearDay, weekdayDay } from '../../../platform/time/dates'
 import { LINK } from '../../../platform/ui/buttonStyles'
+import { useTimeZone } from '../../../shell/auth'
 import { DaySection, ProjectRail, ROW_BODY, ROW_LIST, RowLead } from '../../../shell/rows'
 import { repeatLabel } from '../api'
 import { meetingLink } from '../logic/meetingPlace'
@@ -15,16 +16,15 @@ export function MeetingDays({
   rows,
   today,
   now,
-  accountZone,
   onOpen,
 }: {
   label: string
   rows: readonly MeetingOccurrence[]
   today: string
   now: Date
-  accountZone: string
   onOpen: (meeting: MeetingOccurrence) => void
 }) {
+  const accountZone = useTimeZone()
   // Grouped by the account's day, not `recurrenceId`'s meeting-local date: 01:00 Friday in London
   // can be Thursday evening here, and every other screen groups by the account's zone.
   const dayOf = new Intl.DateTimeFormat('en-CA', {
@@ -53,7 +53,6 @@ export function MeetingDays({
                 meeting={m}
                 today={today}
                 now={now}
-                accountZone={accountZone}
                 onOpen={onOpen}
               />
             ))}
@@ -72,15 +71,14 @@ function MeetingRow({
   meeting: m,
   today,
   now,
-  accountZone,
   onOpen,
 }: {
   meeting: MeetingOccurrence
   today: string
   now: Date
-  accountZone: string
   onOpen: (meeting: MeetingOccurrence) => void
 }) {
+  const accountZone = useTimeZone()
   const over = new Date(m.endsAt).getTime() <= now.getTime()
   const join = meetingLink(m.location)
   const said: ReactNode[] = []

@@ -4,6 +4,7 @@ import type { CompletedTaskResponse } from '@ctws/contracts'
 import { Link } from 'react-router-dom'
 import { DaySection, ProjectRail, ROW_BODY, RowLead } from '../../../shell/rows'
 import { StatusMark } from './StatusMark'
+import { useTimeZone } from '../../../shell/auth'
 
 /**
  * What I finished today. The rows are not interactive, so a stray click cannot un-finish work;
@@ -11,12 +12,11 @@ import { StatusMark } from './StatusMark'
  */
 export function DoneTodayPanel({
   tasks,
-  timeZone,
 }: {
   /** Already filtered to the server's own "today"; the panel does not decide the day. */
   tasks: CompletedTaskResponse[]
-  timeZone: string
 }) {
+  const timeZone = useTimeZone()
   return (
     <DaySection
       label="Done today"

@@ -9,13 +9,10 @@ import { useScopedEdit } from './useScopedEdit'
 /** One occurrence in the detail pane; changing when it is asks which occurrences you mean. */
 export function MeetingDetail({
   meeting,
-  accountZone,
   onClose,
   onMoved,
 }: {
   meeting: MeetingOccurrence
-  /** The account's own zone: what the clock beside the meeting's own is in. */
-  accountZone: string
   onClose: () => void
   /** A save moved it, and so may have renamed it: this is the occurrence the server now has. */
   onMoved: (occurrence: MeetingOccurrence) => void
@@ -62,7 +59,6 @@ export function MeetingDetail({
       {pane.editing ? (
         <MeetingForm
           meeting={meeting}
-          accountZone={accountZone}
           busy={edit.busy}
           onCancel={() => {
             edit.reset()
@@ -72,11 +68,7 @@ export function MeetingDetail({
           onUnsaved={pane.onUnsaved}
         />
       ) : (
-        <MeetingRead
-          meeting={meeting}
-          accountZone={accountZone}
-          onEdit={() => pane.setEditing(true)}
-        />
+        <MeetingRead meeting={meeting} onEdit={() => pane.setEditing(true)} />
       )}
     </ItemPane>
   )

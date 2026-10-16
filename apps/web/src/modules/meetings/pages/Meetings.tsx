@@ -72,14 +72,7 @@ export function Meetings() {
 
       <div className={`mt-6 ${LIST_MEASURE}`}>
         {coming.length > 0 && (
-          <MeetingDays
-            label="Coming up"
-            rows={coming}
-            today={today}
-            now={now}
-            accountZone={accountZone}
-            onOpen={open.show}
-          />
+          <MeetingDays label="Coming up" rows={coming} today={today} now={now} onOpen={open.show} />
         )}
 
         <div className="mt-8">
@@ -101,7 +94,6 @@ export function Meetings() {
                   rows={past}
                   today={today}
                   now={now}
-                  accountZone={accountZone}
                   onOpen={open.show}
                 />
               </div>

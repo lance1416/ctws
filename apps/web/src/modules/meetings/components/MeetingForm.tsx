@@ -6,6 +6,7 @@ import { boxed, field, label } from '../../../platform/ui/formStyles'
 import { useReportUnsaved } from '../../../platform/ui/unsavedGuard'
 import { FormBar } from '../../../shell/detail'
 import { ProjectPicker } from '../../../shell/projects'
+import { useTimeZone } from '../../../shell/auth'
 import { meetingValues, seriesPatch, useMeetingForm } from '../hooks/useMeetingForm'
 import {
   AttendeesPicker,
@@ -18,22 +19,19 @@ import {
 /** The meeting form, with one Save; cancelling the meeting is at the foot of the pane. */
 export function MeetingForm({
   meeting,
-  accountZone,
   busy,
   onCancel,
   onSave,
   onUnsaved,
 }: {
   meeting: MeetingOccurrence
-  /** The reader's own zone, for wording the ending's date. */
-  accountZone: string
   busy: boolean
   onCancel: () => void
   onSave: (patch: UpdateSeriesBody) => void
   /** Whether anything differs from what the form opened on, for the pane's leave guard. */
   onUnsaved?: (unsaved: boolean) => void
 }) {
-  const today = ymd(useNow(), accountZone)
+  const today = ymd(useNow(), useTimeZone())
   const { form, values, ready } = useMeetingForm(meetingValues(meeting))
   const dirty = { shouldDirty: true }
   useReportUnsaved(form.formState.isDirty && !busy, onUnsaved)

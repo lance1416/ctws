@@ -10,6 +10,7 @@ import { daysAgoIn } from '../../../platform/time/dates'
 import { leadFor, ProjectRail, ROW_BODY, RowLead } from '../../../shell/rows'
 import { MENU_ITEM, MENU_SURFACE } from '../../../platform/ui/menuSurface'
 import { useNow } from '../../../platform/time/useNow'
+import { useTimeZone } from '../../../shell/auth'
 
 /** "Added 17 days ago". A count, not a date: a pile is read to find what has gone stale. */
 export function addedLabel(createdAt: string, timeZone: string, now: Date): string {
@@ -36,17 +37,16 @@ const NEXT: Record<ReadingStatus, { status: ReadingStatus; label: string } | nul
 
 export function ReadingRow({
   item,
-  timeZone,
   today,
   onOpen,
 }: {
   item: ReadingItemResponse
-  timeZone: string
   /** The account's today, from the page. */
   today: string
   /** Opens its pane. */
   onOpen: () => void
 }) {
+  const timeZone = useTimeZone()
   const now = useNow()
   const save = useMutation({
     mutationFn: (patch: Parameters<typeof patchReadingItem>[1]) => patchReadingItem(item.id, patch),

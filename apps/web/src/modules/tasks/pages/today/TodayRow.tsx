@@ -8,6 +8,7 @@ import { opensOnClick, RowMeta, RowNote, SavedMark } from '../../components/Task
 import { TriageControl } from '../../components/TriageControl'
 import { taskCrumb } from '../../logic/crumb'
 import { lateNote } from '../../logic/dueDates'
+import { useTimeZone } from '../../../../shell/auth'
 import { triageSections, type TriagePatch } from '../../logic/triage'
 
 /** A task row on Today. Its controls wait for the pointer or keyboard, except without hover. */
@@ -15,7 +16,6 @@ export function TodayRow({
   task: t,
   anyTime,
   today,
-  timeZone,
   now,
   saved,
   rowRef,
@@ -29,7 +29,6 @@ export function TodayRow({
   /** On the day's line among timed things, an untimed row says so in the margin. */
   anyTime: boolean
   today: string
-  timeZone: string
   now: Date
   saved: boolean
   /** The title button's ref: the row's focus carrier. */
@@ -41,6 +40,7 @@ export function TodayRow({
   /** A triage action ran; its menu is gone, so focus needs somewhere to go. */
   onRan: () => void
 }) {
+  const timeZone = useTimeZone()
   const late = lateNote(t, timeZone, now)
   // A plan for a day already gone, still not done: carried over, and said so on the right.
   const carried = t.segment === 'today' && t.scheduledOn !== null && t.scheduledOn < today

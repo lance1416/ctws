@@ -6,6 +6,7 @@ import { Button } from '../../../platform/ui/Button'
 import { Field } from '../../../platform/ui/Field'
 import { CHIP } from '../../../platform/ui/formStyles'
 import { ProjectChip } from '../../../shell/projects'
+import { useTimeZone } from '../../../shell/auth'
 import { repeatLabel, withUntil } from '../api'
 import { meetingLink } from '../logic/meetingPlace'
 import { cityAndZone } from '../logic/timeZones'
@@ -13,13 +14,13 @@ import { lengthLabel } from './MeetingControls'
 
 export function MeetingRead({
   meeting,
-  accountZone,
   onEdit,
 }: {
   meeting: MeetingOccurrence
-  accountZone: string
   onEdit: () => void
 }) {
+  /** The account's own zone: what the clock beside the meeting's own is in. */
+  const accountZone = useTimeZone()
   const elsewhere = meeting.timeZone !== accountZone
   const place = meetingLink(meeting.location)
   const bare = meeting.rrule ? withUntil(meeting.rrule, null) : null

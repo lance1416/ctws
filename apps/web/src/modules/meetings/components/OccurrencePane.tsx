@@ -13,13 +13,11 @@ import { MeetingDetail } from './MeetingDetail'
  */
 export function OccurrencePane({ open }: { open: OpenOccurrence }) {
   const queryClient = useQueryClient()
-  const accountZone = useTimeZone()
   if (!open.found) return null
   return (
     <MeetingDetail
       key={occurrenceKey(open.found)}
       meeting={open.found}
-      accountZone={accountZone}
       onClose={() => open.show(null)}
       onMoved={(moved) => {
         queryClient.setQueryData(

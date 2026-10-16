@@ -15,11 +15,11 @@ import { StatusButton } from '../../components/StatusControls'
 import { StatusMark } from '../../components/StatusMark'
 import { opensOnClick, OVER_ROW, SavedMark } from '../../components/TaskRowParts'
 import { taskCrumb } from '../../logic/crumb'
+import { useTimeZone } from '../../../../shell/auth'
 
 type RowProps = {
   task: TodayTaskResponse
   today: string
-  timeZone: string
   saved: boolean
   /** The title button's ref: the row's focus carrier. */
   rowRef: (el: HTMLElement | null) => () => void
@@ -35,7 +35,6 @@ type RowProps = {
 export function InProgressSection({
   tasks,
   today,
-  timeZone,
   savedId,
   rowRef,
   onOpen,
@@ -44,7 +43,6 @@ export function InProgressSection({
 }: {
   tasks: readonly TodayTaskResponse[]
   today: string
-  timeZone: string
   savedId: string | null
   /** Each title button's ref: the row's focus carrier. */
   rowRef: (id: TaskId) => (el: HTMLElement | null) => () => void
@@ -64,7 +62,6 @@ export function InProgressSection({
               key={t.id}
               task={t}
               today={today}
-              timeZone={timeZone}
               saved={savedId === t.id}
               rowRef={rowRef(t.id)}
               onOpen={() => onOpen(t.id)}
@@ -79,18 +76,9 @@ export function InProgressSection({
 }
 
 /** The one task in progress: its title in full, in large type, with Done and Pause beside it. */
-function FocalRow({
-  task: t,
-  today,
-  timeZone,
-  saved,
-  rowRef,
-  onOpen,
-  onKeyDown,
-  onStatus,
-}: RowProps) {
+function FocalRow({ task: t, today, saved, rowRef, onOpen, onKeyDown, onStatus }: RowProps) {
   return (
-    <Row task={t} today={today} timeZone={timeZone} onOpen={onOpen} body="flex-wrap gap-y-2 py-2">
+    <Row task={t} today={today} onOpen={onOpen} body="flex-wrap gap-y-2 py-2">
       <span className="flex h-11 shrink-0 items-center">
         <StatusMark status={t.status} />
       </span>
@@ -131,18 +119,9 @@ function FocalRow({
 }
 
 /** One of several tasks in progress, as a row: its mark is the Done control. */
-function DoingRow({
-  task: t,
-  today,
-  timeZone,
-  saved,
-  rowRef,
-  onOpen,
-  onKeyDown,
-  onStatus,
-}: RowProps) {
+function DoingRow({ task: t, today, saved, rowRef, onOpen, onKeyDown, onStatus }: RowProps) {
   return (
-    <Row task={t} today={today} timeZone={timeZone} onOpen={onOpen} body="min-h-11">
+    <Row task={t} today={today} onOpen={onOpen} body="min-h-11">
       {/* On a touch screen the mark is the only Done control. */}
       <span className="flex h-11 shrink-0 items-center">
         <StatusButton
@@ -182,16 +161,15 @@ function DoingRow({
 function Row({
   task: t,
   today,
-  timeZone,
   onOpen,
   body,
   children,
-}: Pick<RowProps, 'task' | 'today' | 'timeZone' | 'onOpen'> & {
+}: Pick<RowProps, 'task' | 'today' | 'onOpen'> & {
   body: string
   children: ReactNode
 }) {
   // The server files a task planned up to today under Today, so any plan here is later.
-  const lead = leadFor(t, today, timeZone)
+  const lead = leadFor(t, today, useTimeZone())
   return (
     <li
       onClick={(e) => {

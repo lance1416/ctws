@@ -64,13 +64,7 @@ export function Reading() {
           >
             <ul className={ROW_LIST}>
               {section.map((item) => (
-                <ReadingRow
-                  key={item.id}
-                  item={item}
-                  timeZone={timeZone}
-                  today={today}
-                  onOpen={() => show(item.id)}
-                />
+                <ReadingRow key={item.id} item={item} today={today} onOpen={() => show(item.id)} />
               ))}
             </ul>
           </DaySection>
@@ -93,13 +87,7 @@ export function Reading() {
           {showFinished && (
             <ul className={`mt-1 ${ROW_LIST}`}>
               {finished.map((item) => (
-                <ReadingRow
-                  key={item.id}
-                  item={item}
-                  timeZone={timeZone}
-                  today={today}
-                  onOpen={() => show(item.id)}
-                />
+                <ReadingRow key={item.id} item={item} today={today} onOpen={() => show(item.id)} />
               ))}
             </ul>
           )}

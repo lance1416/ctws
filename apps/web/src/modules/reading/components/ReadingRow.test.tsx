@@ -1,4 +1,4 @@
-import { idFrom, readingId, type ReadingItemResponse } from '@ctws/contracts'
+import { idFrom, readingId, type ReadingItemResponse, type UserResponse } from '@ctws/contracts'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
@@ -21,10 +21,17 @@ const item = (over: Partial<ReadingItemResponse> = {}): ReadingItemResponse => (
   ...over,
 })
 
+// The account's zone is read from `me`, as the app has it once signed in.
+const signedIn = () => {
+  const client = new QueryClient()
+  client.setQueryData(['me'], { timezone: 'UTC' } as UserResponse)
+  return client
+}
+
 const render = (i: ReadingItemResponse) =>
   renderToStaticMarkup(
-    <QueryClientProvider client={new QueryClient()}>
-      <ReadingRow item={i} timeZone="UTC" today="2026-10-12" onOpen={() => {}} />
+    <QueryClientProvider client={signedIn()}>
+      <ReadingRow item={i} today="2026-10-12" onOpen={() => {}} />
     </QueryClientProvider>,
   )
 
