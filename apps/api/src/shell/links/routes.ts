@@ -3,14 +3,13 @@ import {
   candidatesResponse,
   createLinkBody,
   createLinkResponse,
-  linkIsAllowed,
   linkParams,
   linkQuery,
   linksResponse,
 } from '@ctws/contracts'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { currentUser } from '../auth/authenticated'
-import { LinkEndNotFoundError, UnknownLinkError } from './errors'
+import { LinkEndNotFoundError } from './errors'
 import { candidatesFor, exists, linksOf } from './read'
 import type { LinkRegistry } from './registry'
 import { addLink, removeLink } from './store'
@@ -76,8 +75,8 @@ export const linkRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = asy
   app.delete('/links', { schema: { querystring: linkQuery } }, async (req, reply) => {
     const { workspaceId } = currentUser(req)
     const { fromType, fromId, toType, toId, kind } = req.query
-    // A tuple the model never allows names no edge, so a 204 would mislead.
-    if (!linkIsAllowed(kind, fromType, toType)) throw new UnknownLinkError()
+    // Not checked against the model: a link stored before the model refused its kind must still
+    // be removable.
     await removeLink(
       app.db,
       workspaceId,

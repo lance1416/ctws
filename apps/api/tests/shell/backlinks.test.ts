@@ -4,6 +4,7 @@ import {
   type PersonResponse,
   type LinksResponse,
 } from '@ctws/contracts'
+import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { apiModules } from '../../src/modules'
 import { linkRegistry } from '../../src/shell/links/registry'
@@ -286,6 +287,34 @@ describe('making and removing one edge by hand', () => {
       })
     expect((await make({ type: 'task', id: task })).statusCode).toBe(400)
     expect((await make({ type: 'project', id: home })).statusCode).toBe(400)
+    expect((await linksOf(ctx, 'project', other)).map((g) => g.type)).toEqual([])
+  })
+
+  it('still removes a part of link stored before such links were refused', async () => {
+    const ctx = await setup('stranded@example.com')
+    const home = await createProject(ctx, '找工作')
+    const other = await createProject(ctx, '搬家')
+    const task = await createTask(ctx, home, '改简历')
+    await ctx.db.execute(sql`
+      insert into links (workspace_id, from_type, from_id, to_type, to_id, kind)
+      select workspace_id, 'task', ${task}, 'project', ${other}, 'belongs'
+      from projects where id = ${other}
+    `)
+
+    const removed = await ctx.app.inject({
+      method: 'DELETE',
+      url:
+        '/api/v1/links?' +
+        new URLSearchParams({
+          fromType: 'task',
+          fromId: task,
+          toType: 'project',
+          toId: other,
+          kind: 'belongs',
+        }),
+      headers: web(ctx),
+    })
+    expect(removed.statusCode, removed.body).toBe(204)
     expect((await linksOf(ctx, 'project', other)).map((g) => g.type)).toEqual([])
   })
 })
