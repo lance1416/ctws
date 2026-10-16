@@ -262,6 +262,24 @@ describe('making and removing one edge by hand', () => {
     })
     expect(nowhere.statusCode).toBe(404)
   })
+
+  it('refuses part of for a task, whose project is its own column, and for a project', async () => {
+    const ctx = await setup('partof@example.com')
+    const home = await createProject(ctx, '找工作')
+    const other = await createProject(ctx, '搬家')
+    const task = await createTask(ctx, home, '改简历')
+
+    const make = (from: { type: string; id: string }) =>
+      ctx.app.inject({
+        method: 'POST',
+        url: '/api/v1/links',
+        headers: web(ctx),
+        payload: { from, to: { type: 'project', id: other }, kind: 'belongs' },
+      })
+    expect((await make({ type: 'task', id: task })).statusCode).toBe(400)
+    expect((await make({ type: 'project', id: home })).statusCode).toBe(400)
+    expect((await linksOf(ctx, 'project', other)).map((g) => g.type)).toEqual([])
+  })
 })
 
 /**

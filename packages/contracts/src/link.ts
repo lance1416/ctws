@@ -42,6 +42,8 @@ export function linkIsAllowed(kind: string, from: string, to: string): boolean {
   if (!rule) return false
   if (rule.from !== null && rule.from !== from) return false
   if (rule.to !== null && rule.to !== to) return false
+  // A task's project is its own column, and projects do not nest.
+  if (kind === 'belongs' && (from === 'task' || from === 'project')) return false
   return !(from === to && rule.from === rule.to && rule.from !== null)
 }
 
