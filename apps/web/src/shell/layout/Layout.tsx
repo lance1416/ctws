@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { Link, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { call } from '../../platform/http/api'
-import { useMe } from '../auth/useMe'
+import { meKey, useMe } from '../auth/useMe'
 import { Breadcrumbs } from './Breadcrumbs'
 import { LAYER } from '../../platform/ui/layers'
 import { QuickCapture } from '../capture'
@@ -34,7 +34,7 @@ export function Layout() {
     onSuccess: () => {
       // Every cache, not just the session: the next sign-in may be someone else.
       qc.clear()
-      qc.setQueryData(['me'], null)
+      qc.setQueryData(meKey, null)
     },
   })
 

@@ -5,7 +5,7 @@ import { browserZone, ymd } from '../../platform/time/dates'
 import { useNow } from '../../platform/time/useNow'
 
 /** The signed-in user's key. No write but signing in or out changes what it reads. */
-const meKey = ['me'] as const
+export const meKey = ['me'] as const
 
 /**
  * The signed-in user, or null when there is no valid session. Only a 401 means signed out; any

@@ -5,7 +5,7 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { WORKBENCH_PATH } from '../registry'
 import { call, problemText } from '../../platform/http/api'
 import { browserZone } from '../../platform/time/dates'
-import { useMe } from './useMe'
+import { meKey, useMe } from './useMe'
 import { LINK } from '../../platform/ui/buttonStyles'
 import { Button } from '../../platform/ui/Button'
 import { textbox } from '../../platform/ui/formStyles'
@@ -35,7 +35,7 @@ export function Login() {
       qc.clear()
       // Seed the cache before navigating: Layout reads it and would bounce back to /login
       // if it still saw the stale null.
-      qc.setQueryData(['me'], user)
+      qc.setQueryData(meKey, user)
       navigate(from, { replace: true })
     },
     onError: (e: Error) => setError(problemText(e) ?? ''),
