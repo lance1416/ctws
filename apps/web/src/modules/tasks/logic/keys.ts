@@ -102,8 +102,5 @@ export const TREE_KEYS: KeyTable<TreeAction> = {
   ],
 }
 
-/**
- * The module's tables as the help lists them. Today's come before the tree's so the help's switch
- * names the single keys `n, s, x, j and k`.
- */
-export const TASK_KEYS = [PROJECT_PAGE_KEYS, TODAY_KEYS, TREE_KEYS] as const
+/** The module's tables in the order the help lists them. */
+export const TASK_KEYS = [PROJECT_PAGE_KEYS, TREE_KEYS, TODAY_KEYS] as const

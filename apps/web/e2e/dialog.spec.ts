@@ -374,4 +374,10 @@ test('the ? list says what the off switch silences and what → does', async ({ 
   await expect(help).toContainText('the g chords, n, s, x, j and k stop responding')
   // → opens a collapsed row; only an open one goes on to its first child.
   await expect(help).toContainText('once expanded, → goes to the first child')
+  // The tree's keys are listed before Today's.
+  const sections = await help.getByRole('heading', { level: 3 }).allTextContents()
+  expect(sections.indexOf('In the task tree (with a row focused)')).toBeGreaterThan(-1)
+  expect(sections.indexOf('In the task tree (with a row focused)')).toBeLessThan(
+    sections.indexOf('On Today (with a row focused)'),
+  )
 })

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { actionOf, pressOf } from '../../../platform/keyboard/keyTable'
-import { statusActions, TODAY_KEYS, TREE_KEYS } from './keys'
+import { statusActions, TASK_KEYS, TODAY_KEYS, TREE_KEYS } from './keys'
 
 const press = (key: string, mods: object = {}) =>
   pressOf({ key, altKey: false, ctrlKey: false, metaKey: false, shiftKey: false, ...mods })
@@ -53,5 +53,12 @@ describe('the tree keys', () => {
     expect(actionOf(TREE_KEYS, press('ArrowUp', { altKey: true }))).toBe('moveUp')
     // Shift+arrow is a selection gesture this table does not own.
     expect(actionOf(TREE_KEYS, press('ArrowUp', { shiftKey: true }))).toBeNull()
+  })
+})
+
+describe('the help', () => {
+  it('lists the tree before Today', () => {
+    const titles = TASK_KEYS.map((t) => t.title)
+    expect(titles.indexOf(TREE_KEYS.title)).toBeLessThan(titles.indexOf(TODAY_KEYS.title))
   })
 })
