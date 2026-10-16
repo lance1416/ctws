@@ -1,4 +1,10 @@
-import type { BirthdayPreviewResponse, CalendarEntry, Circle } from '@ctws/contracts'
+import {
+  type BirthdayPreviewResponse,
+  type CalendarEntry,
+  type Circle,
+  type PersonId,
+  type WorkspaceId,
+} from '@ctws/contracts'
 import {
   addDays,
   type Birthday,
@@ -22,7 +28,7 @@ import { people } from './tables'
  * has passed this year is already in `later`, for next year.
  */
 type BirthdayRow = {
-  personId: string
+  personId: PersonId
   name: string
   circle: Circle | null
   day: string
@@ -69,7 +75,7 @@ export function previewBirthday(
   return derivedFacts(b, hourBranch, today)
 }
 
-async function peopleWithBirthdays(q: Queryable, workspaceId: string) {
+async function peopleWithBirthdays(q: Queryable, workspaceId: WorkspaceId) {
   return q
     .select({
       id: people.id,
@@ -107,7 +113,7 @@ function toBirthday(p: WithBirthday): Birthday {
  */
 export async function birthdayEntries(
   q: Queryable,
-  workspaceId: string,
+  workspaceId: WorkspaceId,
   range: { from: string; to: string },
 ): Promise<CalendarEntry[]> {
   const rows = await peopleWithBirthdays(q, workspaceId)
@@ -137,7 +143,7 @@ export async function birthdayEntries(
 
 export async function listBirthdays(
   q: Queryable,
-  workspaceId: string,
+  workspaceId: WorkspaceId,
   timezone: string,
   now: Date,
 ): Promise<BirthdaysView> {

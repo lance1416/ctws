@@ -1,4 +1,4 @@
-import type { ReadingItemResponse, ReadingStatus } from '@ctws/contracts'
+import { type ReadingItemResponse, type ReadingStatus, type ProjectId } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { useState, type ReactNode } from 'react'
 import { problemText } from '../../../platform/http/api'
@@ -198,7 +198,7 @@ function ReadingForm({
   const [author, setAuthor] = useState(item.author ?? '')
   const [status, setStatus] = useState<ReadingStatus>(item.status)
   const [planOn, setPlanOn] = useState(item.planOn)
-  const [projectId, setProjectId] = useState<string | null>(item.projectId)
+  const [projectId, setProjectId] = useState<ProjectId | null>(item.projectId)
   const timeZone = useTimeZone()
   const today = ymd(useNow(), timeZone)
   useReportUnsaved([title, url, author, status, planOn, projectId], busy, onUnsaved)

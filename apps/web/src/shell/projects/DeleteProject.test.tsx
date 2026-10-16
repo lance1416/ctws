@@ -1,4 +1,4 @@
-import type { ProjectListItem } from '@ctws/contracts'
+import { idFrom, projectId, type ProjectListItem, workspaceId } from '@ctws/contracts'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter } from 'react-router-dom'
@@ -9,8 +9,8 @@ import { archivedProjectsQuery, projectsQuery } from './api'
 import { DeleteProject } from './DeleteProject'
 
 const project = (id: string, over: Partial<ProjectListItem> = {}): ProjectListItem => ({
-  id,
-  workspaceId: '00000000-0000-7000-8000-000000000000',
+  id: idFrom(projectId, id),
+  workspaceId: workspaceId.parse('00000000-0000-7000-8000-000000000000'),
   name: id,
   color: 'project-2',
   isInbox: false,
@@ -29,7 +29,7 @@ function render(id: string, live: ProjectListItem[], archived: ProjectListItem[]
     <QueryClientProvider client={client}>
       <RegistryProvider value={registry}>
         <MemoryRouter>
-          <DeleteProject id={id} />
+          <DeleteProject id={idFrom(projectId, id)} />
         </MemoryRouter>
       </RegistryProvider>
     </QueryClientProvider>,

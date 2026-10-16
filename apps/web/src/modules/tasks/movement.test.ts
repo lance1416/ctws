@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import type { ProjectMovementResponse } from '@ctws/contracts'
+import { idFrom, projectId, type ProjectMovementResponse } from '@ctws/contracts'
 import { hasMovement, movedLine, QUIET_DAYS } from './movement'
 
 const row = (p: Partial<ProjectMovementResponse> = {}): ProjectMovementResponse => ({
-  projectId: p.projectId ?? 'p',
+  projectId: p.projectId ?? idFrom(projectId, 'p'),
   projectName: p.projectName ?? 'Projects',
   doneThisWeek: p.doneThisWeek ?? 0,
   remaining: p.remaining ?? 0,

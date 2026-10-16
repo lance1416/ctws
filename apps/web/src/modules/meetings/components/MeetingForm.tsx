@@ -1,4 +1,9 @@
-import { ruleEndDay, type MeetingOccurrence, type UpdateMeetingInput } from '@ctws/contracts'
+import {
+  ruleEndDay,
+  type MeetingOccurrence,
+  type UpdateMeetingInput,
+  type ProjectId,
+} from '@ctws/contracts'
 import { useState } from 'react'
 import { ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
@@ -44,7 +49,7 @@ export function MeetingForm({
   const [rule, setRule] = useState(meeting.rrule ? withUntil(meeting.rrule, null) : null)
   const [until, setUntil] = useState(ruleEndDay(meeting.rrule))
   const [location, setLocation] = useState(meeting.location ?? '')
-  const [projectId, setProjectId] = useState<string | null>(meeting.projectId)
+  const [projectId, setProjectId] = useState<ProjectId | null>(meeting.projectId)
   const [attendeeIds, setAttendees] = useState(meeting.attendees.map((p) => p.id))
   const [note, setNote] = useState(meeting.note ?? '')
   useReportUnsaved(

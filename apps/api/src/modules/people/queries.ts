@@ -1,4 +1,11 @@
-import type { PersonChannel, RemindLead } from '@ctws/contracts'
+import {
+  type PersonChannel,
+  type RemindLead,
+  type MeetingId,
+  type WorkspaceId,
+  type PersonId,
+  type ProjectId,
+} from '@ctws/contracts'
 import type { BirthdayCalendar } from '@ctws/core'
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
@@ -10,7 +17,7 @@ import { PersonNotFoundError } from './errors'
 import { people, personChannels } from './tables'
 
 type Person = typeof people.$inferSelect
-type Named = { id: string; name: string }
+type Named<Id> = { id: Id; name: string }
 
 /** The stored half of a birthday; the rest is derived on the way out, against today. */
 export type StoredBirthday = {
@@ -35,13 +42,13 @@ export type PersonRow = Omit<
   | 'birthdayHourBranch'
   | 'birthdayRemindLead'
 > & {
-  projects: Named[]
+  projects: Named<ProjectId>[]
   channels: PersonChannel[]
   birthday: StoredBirthday | null
 }
 
 /** A live person in this workspace; every read and write goes through it. */
-export function visiblePeople(workspaceId: string) {
+export function visiblePeople(workspaceId: WorkspaceId) {
   return and(eq(people.workspaceId, workspaceId), isNull(people.deletedAt))
 }
 
@@ -64,7 +71,11 @@ function storedBirthdayOf(p: Person): StoredBirthday | null {
 }
 
 /** Attaches projects and channels to a page of people, one query each. */
-async function hydrate(q: Queryable, workspaceId: string, rows: Person[]): Promise<PersonRow[]> {
+async function hydrate(
+  q: Queryable,
+  workspaceId: WorkspaceId,
+  rows: Person[],
+): Promise<PersonRow[]> {
   if (rows.length === 0) return []
   const ids = rows.map((r) => r.id)
   const [projectsOfPerson, channels] = await Promise.all([
@@ -99,7 +110,7 @@ async function hydrate(q: Queryable, workspaceId: string, rows: Person[]): Promi
 }
 
 /** By name: a person list is read to find someone. */
-export async function listPeople(q: Queryable, workspaceId: string): Promise<PersonRow[]> {
+export async function listPeople(q: Queryable, workspaceId: WorkspaceId): Promise<PersonRow[]> {
   const rows = await q
     .select()
     .from(people)
@@ -108,7 +119,11 @@ export async function listPeople(q: Queryable, workspaceId: string): Promise<Per
   return hydrate(q, workspaceId, rows)
 }
 
-export async function getPerson(q: Queryable, workspaceId: string, id: string): Promise<PersonRow> {
+export async function getPerson(
+  q: Queryable,
+  workspaceId: WorkspaceId,
+  id: PersonId,
+): Promise<PersonRow> {
   const rows = await q
     .select()
     .from(people)
@@ -124,7 +139,7 @@ const SEARCH_LIMIT = 20
 /** By name, organisation or any address: "the one at @example.com" is a common question. */
 export async function searchPeople(
   q: Queryable,
-  workspaceId: string,
+  workspaceId: WorkspaceId,
   query: string,
 ): Promise<PersonRow[]> {
   const rows = await q
@@ -150,8 +165,8 @@ export async function searchPeople(
 /** Every id names a live person in this workspace, or none is used. */
 export async function assertPeopleVisible(
   q: Queryable,
-  workspaceId: string,
-  ids: readonly string[],
+  workspaceId: WorkspaceId,
+  ids: readonly PersonId[],
 ): Promise<void> {
   const unique = [...new Set(ids)]
   if (unique.length === 0) return
@@ -165,9 +180,9 @@ export async function assertPeopleVisible(
 /** The live people attending each meeting, by name, in one query. */
 export async function attendeesOf(
   q: Queryable,
-  workspaceId: string,
-  meetingIds: readonly string[],
-): Promise<Map<string, Named[]>> {
+  workspaceId: WorkspaceId,
+  meetingIds: readonly MeetingId[],
+): Promise<Map<string, Named<PersonId>[]>> {
   if (meetingIds.length === 0) return new Map()
   const rows = await q
     .select({ meetingId: links.fromId, id: people.id, name: people.name })

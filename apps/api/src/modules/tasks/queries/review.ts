@@ -1,4 +1,11 @@
-import { REVIEW_TRANSITIONS, type ReviewList, type ReviewResponse } from '@ctws/contracts'
+import {
+  REVIEW_TRANSITIONS,
+  type ReviewList,
+  type ReviewResponse,
+  type ProjectId,
+  type TaskId,
+  type WorkspaceId,
+} from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import type { Queryable } from '../../../platform/db/client'
 import { sqlValues } from '../../../platform/db/sql'
@@ -15,9 +22,9 @@ const LIST_FOR = Object.fromEntries(
 ) as Record<Recounted, ReviewList>
 
 type Row = {
-  project_id: string
+  project_id: ProjectId
   project_name: string
-  task_id: string
+  task_id: TaskId
   title: string
   to_status: Recounted
   at: string
@@ -30,7 +37,7 @@ type Row = {
  */
 export async function listReview(
   q: Queryable,
-  workspaceId: string,
+  workspaceId: WorkspaceId,
   timezone: string,
   range: { from?: string | undefined; to?: string | undefined },
   now: Date,

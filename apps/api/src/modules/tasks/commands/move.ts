@@ -1,4 +1,4 @@
-import { MAX_TASK_DEPTH, type MoveTaskBody } from '@ctws/contracts'
+import { MAX_TASK_DEPTH, type MoveTaskBody, type ProjectId, type TaskId } from '@ctws/contracts'
 import { rankBetween } from '@ctws/core'
 import { and, asc, desc, eq, gt, isNull, lt, ne, sql } from 'drizzle-orm'
 import type { Db, Queryable } from '../../../platform/db/client'
@@ -9,7 +9,7 @@ import { lockVisibleTask } from '../queries/scope'
 import { tasks, type Task } from '../tables'
 import { depthOf, lockTaskTree } from '../tree'
 
-type Descendant = { id: string; depth: number; live: boolean }
+type Descendant = { id: TaskId; depth: number; live: boolean }
 
 /**
  * Every row under `rootId` (itself at depth 0) and whether it is live. The cycle check reads all
@@ -19,7 +19,7 @@ type Descendant = { id: string; depth: number; live: boolean }
  * MAX_TASK_DEPTH below the moved task, which the depth check in `moveTask` always refuses; keep that
  * check after this one.
  */
-async function descendantsOf(q: Queryable, rootId: string): Promise<Descendant[]> {
+async function descendantsOf(q: Queryable, rootId: TaskId): Promise<Descendant[]> {
   const result = await q.execute(sql`
     with recursive subtree(id, depth, deleted_at) as (
       select id, 0, deleted_at from tasks where id = ${rootId}
@@ -40,7 +40,7 @@ async function descendantsOf(q: Queryable, rootId: string): Promise<Descendant[]
 export async function moveTask(
   db: Db,
   ctx: TaskCtx,
-  id: string,
+  id: TaskId,
   input: MoveTaskBody,
 ): Promise<Task> {
   if (input.beforeId !== undefined && input.afterId !== undefined) {
@@ -111,7 +111,7 @@ export async function moveTask(
  */
 async function rankFor(
   tx: Queryable,
-  args: { id: string; destProjectId: string; destParentId: string | null; input: MoveTaskBody },
+  args: { id: TaskId; destProjectId: ProjectId; destParentId: TaskId | null; input: MoveTaskBody },
 ): Promise<string> {
   const { id, destProjectId, destParentId, input } = args
   const siblings = and(

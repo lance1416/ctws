@@ -1,11 +1,11 @@
-import type { MoveTaskBody, TaskResponse } from '@ctws/contracts'
+import { type MoveTaskBody, type TaskResponse, type TaskId } from '@ctws/contracts'
 import { byRank } from '@ctws/core/rank'
 
 /**
  * The optimistic result of a move: stand-in ranks that hold the dropped order until the refetch
  * brings the server's. They are never sent anywhere.
  */
-export function applyMove(old: TaskResponse[], id: string, body: MoveTaskBody): TaskResponse[] {
+export function applyMove(old: TaskResponse[], id: TaskId, body: MoveTaskBody): TaskResponse[] {
   const moved = old.find((t) => t.id === id)
   if (!moved) return old
   const siblings = old.filter((t) => t.parentId === body.parentId && t.id !== id).sort(byRank)

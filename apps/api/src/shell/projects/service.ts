@@ -3,11 +3,14 @@ import {
   type ProjectColor,
   projectColors,
   type UpdateProjectBody,
+  type WorkspaceId,
+  type ProjectId,
+  projectId,
 } from '@ctws/contracts'
+import { newId } from '../../platform/db/ids'
 import { rankBetween } from '@ctws/core'
 import { and, desc, eq, sql } from 'drizzle-orm'
 import type { PgUpdateSetSource } from 'drizzle-orm/pg-core'
-import { v7 as uuidv7 } from 'uuid'
 import type { Db, Queryable } from '../../platform/db/client'
 import { InboxProtectedError, ProjectNotFoundError } from './errors'
 import { visibleProjects } from './queries'
@@ -22,7 +25,11 @@ function firstFreeColor(taken: readonly ProjectColor[]): ProjectColor {
   return projectColors.find((c) => !used.has(c)) ?? projectColors[0]
 }
 
-async function lockVisibleProject(q: Queryable, workspaceId: string, id: string): Promise<Project> {
+async function lockVisibleProject(
+  q: Queryable,
+  workspaceId: WorkspaceId,
+  id: ProjectId,
+): Promise<Project> {
   const [row] = await q
     .select()
     .from(projects)
@@ -33,9 +40,9 @@ async function lockVisibleProject(q: Queryable, workspaceId: string, id: string)
 }
 
 /** Created with the workspace, so capture never has to create it on the fly. */
-export async function createInbox(tx: Queryable, workspaceId: string): Promise<void> {
+export async function createInbox(tx: Queryable, workspaceId: WorkspaceId): Promise<void> {
   await tx.insert(projects).values({
-    id: uuidv7(),
+    id: newId(projectId),
     workspaceId,
     name: INBOX_NAME,
     rank: rankBetween(null, null),
@@ -47,7 +54,7 @@ export async function createInbox(tx: Queryable, workspaceId: string): Promise<v
 /** Appends a project after the last one; archived projects count for rank and colour. */
 export async function createProject(
   db: Db,
-  workspaceId: string,
+  workspaceId: WorkspaceId,
   input: CreateProjectBody,
 ): Promise<Project> {
   return db.transaction(async (tx) => {
@@ -65,7 +72,7 @@ export async function createProject(
     const [row] = await tx
       .insert(projects)
       .values({
-        id: uuidv7(),
+        id: newId(projectId),
         workspaceId,
         name: input.name,
         color: firstFreeColor(taken.map((t) => t.color)),
@@ -78,8 +85,8 @@ export async function createProject(
 
 export async function updateProject(
   db: Db,
-  workspaceId: string,
-  id: string,
+  workspaceId: WorkspaceId,
+  id: ProjectId,
   patch: UpdateProjectBody,
 ): Promise<Project> {
   return db.transaction(async (tx) => {
@@ -101,7 +108,11 @@ export async function updateProject(
 }
 
 /** Soft delete: the row stays so the event log never points at nothing. */
-export async function softDeleteProject(db: Db, workspaceId: string, id: string): Promise<void> {
+export async function softDeleteProject(
+  db: Db,
+  workspaceId: WorkspaceId,
+  id: ProjectId,
+): Promise<void> {
   await db.transaction(async (tx) => {
     const existing = await lockVisibleProject(tx, workspaceId, id)
     if (existing.isInbox) throw new InboxProtectedError()

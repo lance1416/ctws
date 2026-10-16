@@ -1,12 +1,13 @@
-import type { ProjectColor } from '@ctws/contracts'
+import { type ProjectColor, type ProjectId, type WorkspaceId } from '@ctws/contracts'
 import { boolean, index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { workspaces } from '../auth/tables'
 
 export const projects = pgTable(
   'projects',
   {
-    id: uuid('id').primaryKey(),
+    id: uuid('id').$type<ProjectId>().primaryKey(),
     workspaceId: uuid('workspace_id')
+      .$type<WorkspaceId>()
       .notNull()
       .references(() => workspaces.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),

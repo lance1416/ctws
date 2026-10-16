@@ -1,3 +1,4 @@
+import type { ProjectId } from '@ctws/contracts'
 import { useProjectRail } from '../projects/projectColor'
 
 /**
@@ -22,7 +23,7 @@ export const ROW_LIST = 'flex flex-col'
  * The 3px project strand, full height so a run of one project's rows reads as one strand. Never
  * the only carrier: six hues are shared by more projects, so the name is always shown too.
  */
-export function ProjectRail({ projectId }: { projectId: string | null }) {
+export function ProjectRail({ projectId }: { projectId: ProjectId | null }) {
   const rail = useProjectRail()
   return (
     <span

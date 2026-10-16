@@ -6,9 +6,9 @@ import { UNCOUNTED_TASK_STATUSES, type TaskStatus } from '@ctws/contracts'
  */
 
 /** One live task, flat. Deleted rows are filtered out before this. */
-export type RollupNode = {
-  id: string
-  parentId: string | null
+export type RollupNode<Id extends string = string> = {
+  id: Id
+  parentId: Id | null
   status: TaskStatus
   /** Past its deadline and not finished. */
   overdue: boolean
@@ -28,12 +28,12 @@ export type Rollup = {
  * `nodes` counts as a root, and a node a cycle keeps the walk from reaching folds as a leaf, so
  * nothing is dropped.
  */
-export function rollup(nodes: readonly RollupNode[]): Map<string, Rollup> {
+export function rollup<Id extends string>(nodes: readonly RollupNode<Id>[]): Map<Id, Rollup> {
   const byId = new Map(nodes.map((n) => [n.id, n]))
-  const parentOf = (n: RollupNode) =>
+  const parentOf = (n: RollupNode<Id>) =>
     n.parentId !== null && byId.has(n.parentId) ? n.parentId : null
 
-  const children = new Map<string | null, RollupNode[]>()
+  const children = new Map<Id | null, RollupNode<Id>[]>()
   for (const n of nodes) {
     const key = parentOf(n)
     const list = children.get(key)
@@ -43,11 +43,11 @@ export function rollup(nodes: readonly RollupNode[]): Map<string, Rollup> {
 
   // Post-order without recursion: push each node twice, and fold it the second time, by which
   // point every child already has its rollup.
-  const out = new Map<string, Rollup>()
-  const stack: { node: RollupNode; expanded: boolean }[] = (children.get(null) ?? [])
+  const out = new Map<Id, Rollup>()
+  const stack: { node: RollupNode<Id>; expanded: boolean }[] = (children.get(null) ?? [])
     .map((node) => ({ node, expanded: false }))
     .reverse()
-  const seen = new Set<string>()
+  const seen = new Set<Id>()
 
   while (stack.length > 0) {
     const frame = stack.pop()!

@@ -1,4 +1,4 @@
-import type { ProjectListItem } from '@ctws/contracts'
+import { idFrom, projectId, type ProjectListItem, workspaceId } from '@ctws/contracts'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
@@ -7,8 +7,8 @@ import { archivedProjectsQuery, projectsQuery } from './api'
 import { ProjectPicker, ProjectsPicker } from './ProjectPicker'
 
 const project = (id: string, name: string, archivedAt: string | null): ProjectListItem => ({
-  id,
-  workspaceId: '00000000-0000-7000-8000-000000000000',
+  id: idFrom(projectId, id),
+  workspaceId: workspaceId.parse('00000000-0000-7000-8000-000000000000'),
   name,
   color: 'project-2',
   isInbox: false,
@@ -29,12 +29,14 @@ function render(node: ReactNode) {
 
 describe('a chosen project that is archived', () => {
   it('keeps its name among several', () => {
-    const html = render(<ProjectsPicker chosen={['old']} onChange={() => {}} />)
+    const html = render(<ProjectsPicker chosen={[idFrom(projectId, 'old')]} onChange={() => {}} />)
     expect(html).toContain('Old flat')
   })
 
   it('keeps its name as the one', () => {
-    const html = render(<ProjectPicker value="old" onPick={() => {}} none="No project" />)
+    const html = render(
+      <ProjectPicker value={idFrom(projectId, 'old')} onPick={() => {}} none="No project" />,
+    )
     expect(html).toContain('Projects: Old flat')
   })
 })

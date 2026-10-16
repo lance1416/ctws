@@ -1,3 +1,4 @@
+import type { ProjectId } from '@ctws/contracts'
 import { PickMany, PickOne, type Choice } from '../../platform/ui/inline'
 import { useEveryProject, useProjects } from './api'
 import { useProjectRail } from './projectColor'
@@ -5,14 +6,14 @@ import { useProjectRail } from './projectColor'
 const NONE = '__no-project'
 
 /** A project's colour as the 3px mark beside its name, which is always shown with it. */
-export function ProjectChip({ projectId }: { projectId: string }) {
+export function ProjectChip({ projectId }: { projectId: ProjectId }) {
   const rail = useProjectRail()
   return (
     <span aria-hidden="true" className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(projectId)}`} />
   )
 }
 
-function useLiveChoices(): Choice<string>[] {
+function useLiveChoices(): Choice<ProjectId>[] {
   const projects = useProjects()
   return (projects.data ?? []).map((p) => ({
     value: p.id,
@@ -30,8 +31,8 @@ export function ProjectPicker({
   onPick,
   none,
 }: {
-  value: string | null
-  onPick: (id: string | null) => void
+  value: ProjectId | null
+  onPick: (id: ProjectId | null) => void
   none: string
 }) {
   const choices = useLiveChoices()
@@ -63,8 +64,8 @@ export function ProjectsPicker({
   chosen,
   onChange,
 }: {
-  chosen: readonly string[]
-  onChange: (ids: string[]) => void
+  chosen: readonly ProjectId[]
+  onChange: (ids: ProjectId[]) => void
 }) {
   // Live and archived: a project chosen before it was archived is still named.
   const projects = useEveryProject()

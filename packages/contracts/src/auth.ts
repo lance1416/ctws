@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { userId, workspaceId } from './id'
 import { canonicalTimeZone } from './common'
 
 /** Instance roles: an admin manages accounts, a member does not. */
@@ -27,10 +28,10 @@ export const loginBody = z
 
 export const userResponse = z
   .object({
-    id: z.uuid(),
+    id: userId,
     email: z.email(),
     timezone: z.string(),
-    workspaceId: z.uuid(),
+    workspaceId: workspaceId,
     role: roleSchema,
   })
   .strict()

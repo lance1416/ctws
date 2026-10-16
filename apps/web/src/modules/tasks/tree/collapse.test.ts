@@ -1,5 +1,10 @@
+import { idFrom, projectId, taskId } from '@ctws/contracts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { loadCollapsed, saveCollapsed } from './collapse'
+
+const P1 = idFrom(projectId, 'p1')
+const P2 = idFrom(projectId, 'p2')
+const t = (id: string) => idFrom(taskId, id)
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -18,14 +23,14 @@ function fakeStorage() {
 describe('collapse state', () => {
   it('round-trips through storage', () => {
     fakeStorage()
-    saveCollapsed('p1', new Set(['a', 'b']))
-    expect([...loadCollapsed('p1')].sort()).toEqual(['a', 'b'])
+    saveCollapsed(P1, new Set([t('a'), t('b')]))
+    expect([...loadCollapsed(P1)].sort()).toEqual(['a', 'b'])
   })
 
   it('keeps projects separate', () => {
     fakeStorage()
-    saveCollapsed('p1', new Set(['a']))
-    expect(loadCollapsed('p2').size).toBe(0)
+    saveCollapsed(P1, new Set([t('a')]))
+    expect(loadCollapsed(P2).size).toBe(0)
   })
 
   it('loadCollapsed returns an empty set when getItem throws', () => {
@@ -35,7 +40,7 @@ describe('collapse state', () => {
       },
       setItem: () => {},
     })
-    expect(loadCollapsed('p1').size).toBe(0)
+    expect(loadCollapsed(P1).size).toBe(0)
   })
 
   it('saveCollapsed does not throw when setItem throws', () => {
@@ -45,7 +50,7 @@ describe('collapse state', () => {
         throw new Error('SecurityError')
       },
     })
-    expect(() => saveCollapsed('p1', new Set(['a']))).not.toThrow()
+    expect(() => saveCollapsed(P1, new Set([t('a')]))).not.toThrow()
   })
 
   it('loadCollapsed returns an empty set when localStorage property access throws', () => {
@@ -57,7 +62,7 @@ describe('collapse state', () => {
       },
       configurable: true,
     })
-    expect(loadCollapsed('p1').size).toBe(0)
+    expect(loadCollapsed(P1).size).toBe(0)
     if (originalDescriptor) {
       Object.defineProperty(globalThis, 'localStorage', originalDescriptor)
     } else {
@@ -67,7 +72,7 @@ describe('collapse state', () => {
 
   it('returns an empty set for corrupt stored data', () => {
     vi.stubGlobal('localStorage', { getItem: () => '{not json', setItem: () => {} })
-    expect(loadCollapsed('p1').size).toBe(0)
+    expect(loadCollapsed(P1).size).toBe(0)
   })
 
   it('filters out non-string values in corrupt stored data', () => {
@@ -75,6 +80,6 @@ describe('collapse state', () => {
       getItem: () => '["a",1,null]',
       setItem: () => {},
     })
-    expect(loadCollapsed('p1')).toEqual(new Set(['a']))
+    expect(loadCollapsed(P1)).toEqual(new Set(['a']))
   })
 })

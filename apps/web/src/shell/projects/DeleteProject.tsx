@@ -1,3 +1,4 @@
+import type { ProjectId } from '@ctws/contracts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -11,7 +12,7 @@ import { useForgetRecent } from '../search/recent'
  * Deletes a project, live or archived, and everything in it. What goes with it is asked of the modules when the
  * question opens, not on every page load. The inbox has none: capture has to land somewhere.
  */
-export function DeleteProject({ id }: { id: string }) {
+export function DeleteProject({ id }: { id: ProjectId }) {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const { projectContents } = useRegistry()

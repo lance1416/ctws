@@ -6,7 +6,7 @@ import {
   createTaskBody,
   dependencyLists,
   dependencyParams,
-  idParams,
+  taskParams,
   moveTaskBody,
   movementResponse,
   projectTasksQuery,
@@ -130,40 +130,46 @@ export const taskRoutes: FastifyPluginAsyncZod = async (app) => {
     },
   )
 
-  app.get('/:id', { schema: { params: idParams, response: { 200: taskResponse } } }, async (req) =>
-    toTaskResponse(await visibleTask(app.db, currentUser(req).workspaceId, req.params.id)),
+  app.get(
+    '/:id',
+    { schema: { params: taskParams, response: { 200: taskResponse } } },
+    async (req) =>
+      toTaskResponse(await visibleTask(app.db, currentUser(req).workspaceId, req.params.id)),
   )
 
   app.patch(
     '/:id',
-    { schema: { params: idParams, body: updateTaskBody, response: { 200: taskResponse } } },
+    { schema: { params: taskParams, body: updateTaskBody, response: { 200: taskResponse } } },
     async (req) => toTaskResponse(await updateTask(app.db, actor(req), req.params.id, req.body)),
   )
 
   // Not part of PATCH: a move must keep the tree acyclic, within depth, and on one project.
   app.post(
     '/:id/move',
-    { schema: { params: idParams, body: moveTaskBody, response: { 200: taskResponse } } },
+    { schema: { params: taskParams, body: moveTaskBody, response: { 200: taskResponse } } },
     async (req) => toTaskResponse(await moveTask(app.db, actor(req), req.params.id, req.body)),
   )
 
-  app.delete('/:id', { schema: { params: idParams } }, async (req, reply) => {
+  app.delete('/:id', { schema: { params: taskParams } }, async (req, reply) => {
     await softDeleteTask(app.db, actor(req), req.params.id)
     return reply.status(204).send()
   })
 
   app.get(
     '/:id/dependencies',
-    { schema: { params: idParams, response: { 200: dependencyLists } } },
+    { schema: { params: taskParams, response: { 200: dependencyLists } } },
     async (req) => taskDependencyLists(app.db, currentUser(req).workspaceId, req.params.id),
   )
 
   // `:id` waits for the body's `blockerId`.
   app.post(
     '/:id/dependencies',
-    { schema: { params: idParams, body: addDependencyBody } },
+    { schema: { params: taskParams, body: addDependencyBody } },
     async (req, reply) => {
-      await addDependency(app.db, actor(req), req.params.id, req.body.blockerId)
+      await addDependency(app.db, actor(req), {
+        blockedId: req.params.id,
+        blockerId: req.body.blockerId,
+      })
       return reply.status(204).send()
     },
   )
@@ -172,7 +178,10 @@ export const taskRoutes: FastifyPluginAsyncZod = async (app) => {
     '/:id/dependencies/:blockerId',
     { schema: { params: dependencyParams } },
     async (req, reply) => {
-      await removeDependency(app.db, actor(req), req.params.id, req.params.blockerId)
+      await removeDependency(app.db, actor(req), {
+        blockedId: req.params.id,
+        blockerId: req.params.blockerId,
+      })
       return reply.status(204).send()
     },
   )

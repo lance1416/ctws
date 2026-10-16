@@ -1,6 +1,6 @@
 import { isFinished } from '../status'
 import { useSortable } from '@dnd-kit/sortable'
-import type { TaskStatus } from '@ctws/contracts'
+import { type TaskStatus, type ProjectId, type TaskId } from '@ctws/contracts'
 import type { KeyboardEvent } from 'react'
 import type { FlatRow } from '../tree/flatten'
 import { toggleDoneTarget, toggleStartTarget } from '../api/taskActions'
@@ -29,7 +29,7 @@ import { useNow } from '../../../platform/time/useNow'
 type Props = {
   row: FlatRow
   /** The project every row in this tree belongs to: the rail is one continuous spine here. */
-  projectId: string
+  projectId: ProjectId
   title: string
   status: TaskStatus
   dueAt: string | null
@@ -41,7 +41,7 @@ type Props = {
   /** This row's subtree, said in words. Only a row with children gets one. */
   rollup: string | null
   /** What is still in the way. The row dims; it does not disappear. */
-  blockedBy: readonly { id: string; title: string }[] | undefined
+  blockedBy: readonly { id: TaskId; title: string }[] | undefined
   /** True for a moment after a save from the pane: the row says it worked. */
   saved: boolean
   /** The roving tabindex: one row carries it, so the tree is one tab stop and Tab leaves it. */

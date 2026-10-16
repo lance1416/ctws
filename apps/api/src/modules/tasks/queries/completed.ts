@@ -1,3 +1,4 @@
+import type { WorkspaceId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import type { Queryable } from '../../../platform/db/client'
 import { TASK_COLUMNS, taskRowOf, type TaskRow } from './rows'
@@ -18,7 +19,7 @@ const COMPLETED_LIMIT = 200
  */
 export async function listCompleted(
   q: Queryable,
-  workspaceId: string,
+  workspaceId: WorkspaceId,
   timezone: string,
 ): Promise<{ tasks: CompletedTask[]; truncated: boolean }> {
   const result = await q.execute(sql`

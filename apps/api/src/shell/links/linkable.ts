@@ -1,4 +1,4 @@
-import type { LinkKind, ObjectType } from '@ctws/contracts'
+import { type LinkKind, type ObjectType, type WorkspaceId } from '@ctws/contracts'
 import { inArray, type SQL } from 'drizzle-orm'
 import type { AnyPgColumn } from 'drizzle-orm/pg-core'
 import type { Queryable } from '../../platform/db/client'
@@ -17,14 +17,14 @@ export type Linkable = {
    * The module's objects by id or by text, in one batch. What the workspace cannot see is left
    * out, and the shell drops the edges that pointed at it.
    */
-  rows: (q: Queryable, workspaceId: string, want: Want) => Promise<NamedRow[]>
+  rows: (q: Queryable, workspaceId: WorkspaceId, want: Want) => Promise<NamedRow[]>
   /**
    * Edges the module stores outside the edge table, for the object whose page is drawn: a task's
    * project is a column.
    */
   own?: (
     q: Queryable,
-    workspaceId: string,
+    workspaceId: WorkspaceId,
     of: { type: ObjectType; id: string },
   ) => Promise<StoredEdge[]>
 }

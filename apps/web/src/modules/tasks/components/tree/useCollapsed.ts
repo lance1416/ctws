@@ -1,8 +1,9 @@
+import { type ProjectId, type TaskId } from '@ctws/contracts'
 import { useState } from 'react'
 import { loadCollapsed, saveCollapsed } from '../../tree/collapse'
 
 /** The tree's folded rows, remembered per project. */
-export function useCollapsed(projectId: string) {
+export function useCollapsed(projectId: ProjectId) {
   const [collapsed, setCollapsed] = useState(() => loadCollapsed(projectId))
   const update = (change: (next: Set<string>) => void) => {
     const next = new Set(collapsed)
@@ -12,13 +13,13 @@ export function useCollapsed(projectId: string) {
   }
   return {
     collapsed,
-    toggle: (id: string) =>
+    toggle: (id: TaskId) =>
       update((next) => {
         if (!next.delete(id)) next.add(id)
       }),
-    fold: (id: string) => update((next) => next.add(id)),
+    fold: (id: TaskId) => update((next) => next.add(id)),
     /** Opens these rows, if any of them is folded. */
-    unfold: (ids: readonly string[]) => {
+    unfold: (ids: readonly TaskId[]) => {
       if (ids.some((id) => collapsed.has(id)))
         update((next) => ids.forEach((id) => next.delete(id)))
     },

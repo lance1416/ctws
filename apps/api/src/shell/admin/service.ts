@@ -1,4 +1,4 @@
-import type { AdminUser, Role } from '@ctws/contracts'
+import { type AdminUser, type Role, type UserId } from '@ctws/contracts'
 import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 import type { Db, Queryable } from '../../platform/db/client'
 import { LOCKS, lockFor } from '../../platform/db/locks'
@@ -32,14 +32,14 @@ export async function listUsers(db: Queryable): Promise<AdminUser[]> {
   return rows.map(toAdminUser)
 }
 
-export async function getAdminUser(db: Queryable, id: string): Promise<AdminUser> {
+export async function getAdminUser(db: Queryable, id: UserId): Promise<AdminUser> {
   const [row] = await db.select(adminColumns).from(users).where(eq(users.id, id)).limit(1)
   return toAdminUser(row!)
 }
 
 export async function updateUser(
   db: Db,
-  id: string,
+  id: UserId,
   patch: { role?: Role | undefined; disabled?: boolean | undefined },
 ): Promise<AdminUser> {
   return db.transaction(async (tx) => {

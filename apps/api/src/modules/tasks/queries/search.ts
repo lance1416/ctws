@@ -1,4 +1,4 @@
-import { SEARCH_LIMIT } from '@ctws/contracts'
+import { SEARCH_LIMIT, type WorkspaceId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import type { Queryable } from '../../../platform/db/client'
 import { textMatches } from '../../../platform/db/sql'
@@ -13,7 +13,7 @@ export type SearchTask = TaskRow & { projectArchived: boolean }
  */
 export async function searchTasks(
   q: Queryable,
-  workspaceId: string,
+  workspaceId: WorkspaceId,
   query: string,
 ): Promise<SearchTask[]> {
   const result = await q.execute(sql`

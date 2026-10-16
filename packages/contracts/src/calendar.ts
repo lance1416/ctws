@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { projectId } from './id'
 import { calendarDate, DAY_MS, EVENT_YEARS } from './common'
 
 /**
@@ -51,7 +52,7 @@ const calendarEntry = z
     endTime: z.string().nullable(),
     /** The zone it was agreed in ("EDT"), when that is not the account's. */
     zone: z.string().nullable(),
-    projectId: z.uuid().nullable(),
+    projectId: projectId.nullable(),
     projectName: z.string().nullable(),
   })
   .strict()

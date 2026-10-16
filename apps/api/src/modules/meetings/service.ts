@@ -1,6 +1,15 @@
-import type { CreateMeetingBody, EditScope, UpdateMeetingBody } from '@ctws/contracts'
+import {
+  type CreateMeetingBody,
+  type EditScope,
+  type UpdateMeetingBody,
+  type PersonId,
+  type ProjectId,
+  type WorkspaceId,
+  type MeetingId,
+  meetingId,
+} from '@ctws/contracts'
+import { newId } from '../../platform/db/ids'
 import { and, eq, sql } from 'drizzle-orm'
-import { v7 as uuidv7 } from 'uuid'
 import type { Db, Queryable } from '../../platform/db/client'
 import { putLinks } from '../../shell/links/store'
 import { assertProjectsVisible } from '../../shell/projects/queries'
@@ -23,25 +32,38 @@ type Fields = Omit<UpdateMeetingBody, 'scope' | 'recurrenceId' | 'attendeeIds' |
 
 type Edit = {
   tx: Queryable
-  workspaceId: string
+  workspaceId: WorkspaceId
   series: SeriesRow
   fields: Fields
   recurrenceId: LocalTime | undefined
-  attendeeIds: string[] | undefined
-  projectId: string | null | undefined
+  attendeeIds: PersonId[] | undefined
+  projectId: ProjectId | null | undefined
 }
 
 type Cancel = {
   tx: Queryable
-  workspaceId: string
+  workspaceId: WorkspaceId
   series: SeriesRow
   recurrenceId: LocalTime | undefined
 }
 
-const putAttendees = (q: Queryable, workspaceId: string, id: string, ids: readonly string[]) =>
-  putLinks(q, workspaceId, { type: 'meeting', id }, 'person', 'attends', ids)
+const putAttendees = (
+  q: Queryable,
+  {
+    workspaceId,
+    id,
+    attendeeIds,
+  }: { workspaceId: WorkspaceId; id: MeetingId; attendeeIds: readonly PersonId[] },
+) =>
+  putLinks(q, {
+    workspaceId,
+    from: { type: 'meeting', id },
+    toType: 'person',
+    kind: 'attends',
+    toIds: attendeeIds,
+  })
 
-const touch = (q: Queryable, workspaceId: string, id: string) =>
+const touch = (q: Queryable, workspaceId: WorkspaceId, id: MeetingId) =>
   q
     .update(meetings)
     .set({ updatedAt: sql`now()` })
@@ -106,11 +128,11 @@ async function editFollowing(e: Edit) {
     .set({ rrule: endedBefore(series.rrule!, recurrenceId), updatedAt: sql`now()` })
     .where(and(visibleMeetings(workspaceId), eq(meetings.id, series.id)))
 
-  const newId = uuidv7()
+  const nextId = newId(meetingId)
   const startsLocal = fields.startsLocal ?? recurrenceId
   const rrule = 'rrule' in fields ? (fields.rrule ?? null) : series.rrule
   await tx.insert(meetings).values({
-    id: newId,
+    id: nextId,
     workspaceId,
     title: fields.title ?? series.title,
     startsLocal,
@@ -121,8 +143,12 @@ async function editFollowing(e: Edit) {
     note: 'note' in fields ? (fields.note ?? null) : series.note,
   })
   const carried = projectId !== undefined ? projectId : series.projectId
-  await putAttendees(tx, workspaceId, newId, attendeeIds ?? series.attendees.map((p) => p.id))
-  await meetingFiling.put(tx, workspaceId, newId, carried ? [carried] : [])
+  await putAttendees(tx, {
+    workspaceId,
+    id: nextId,
+    attendeeIds: attendeeIds ?? series.attendees.map((p) => p.id),
+  })
+  await meetingFiling.put(tx, { workspaceId, id: nextId, projectIds: carried ? [carried] : [] })
   // Overrides from the split on are keyed by the old series' local times. The new series makes
   // the same ones only when it starts where the split is and keeps the rule; otherwise they would
   // name occurrences it never makes, so they go, as in `editAll`.
@@ -130,7 +156,7 @@ async function editFollowing(e: Edit) {
   await tx.execute(
     same
       ? sql`
-          update meeting_exceptions set meeting_id = ${newId}
+          update meeting_exceptions set meeting_id = ${nextId}
           where meeting_id = ${series.id} and recurrence_id >= ${recurrenceId}
         `
       : sql`
@@ -138,7 +164,7 @@ async function editFollowing(e: Edit) {
           where meeting_id = ${series.id} and recurrence_id >= ${recurrenceId}
         `,
   )
-  return getOccurrence(tx, workspaceId, newId, startsLocal)
+  return getOccurrence(tx, workspaceId, nextId, startsLocal)
 }
 
 async function editAll({ tx, workspaceId, series, fields, attendeeIds, projectId }: Edit) {
@@ -146,10 +172,14 @@ async function editAll({ tx, workspaceId, series, fields, attendeeIds, projectId
     .update(meetings)
     .set({ ...fields, updatedAt: sql`now()` })
     .where(and(visibleMeetings(workspaceId), eq(meetings.id, series.id)))
-  if (attendeeIds) await putAttendees(tx, workspaceId, series.id, attendeeIds)
+  if (attendeeIds) await putAttendees(tx, { workspaceId, id: series.id, attendeeIds })
   // `null` unfiles the meeting; absent leaves it where it is.
   if (projectId !== undefined) {
-    await meetingFiling.put(tx, workspaceId, series.id, projectId ? [projectId] : [])
+    await meetingFiling.put(tx, {
+      workspaceId,
+      id: series.id,
+      projectIds: projectId ? [projectId] : [],
+    })
   }
   // Overrides are keyed by the old local times, which a new start or rule no longer produces.
   if (fields.startsLocal !== undefined || fields.rrule !== undefined) {
@@ -209,14 +239,14 @@ const scopeFor = (series: SeriesRow, asked: EditScope): EditScope => (series.rru
 
 export async function createMeeting(
   db: Db,
-  workspaceId: string,
+  workspaceId: WorkspaceId,
   body: CreateMeetingBody,
 ): Promise<OccurrenceRow> {
   return db.transaction(async (tx) => {
     if (body.projectId) await assertProjectsVisible(tx, workspaceId, [body.projectId])
     await assertPeopleVisible(tx, workspaceId, body.attendeeIds ?? [])
     assertRule(body.rrule, body.startsLocal)
-    const id = uuidv7()
+    const id = newId(meetingId)
     await tx.insert(meetings).values({
       id,
       workspaceId,
@@ -228,16 +258,20 @@ export async function createMeeting(
       location: body.location ?? null,
       note: body.note ?? null,
     })
-    await putAttendees(tx, workspaceId, id, body.attendeeIds ?? [])
-    await meetingFiling.put(tx, workspaceId, id, body.projectId ? [body.projectId] : [])
+    await putAttendees(tx, { workspaceId, id, attendeeIds: body.attendeeIds ?? [] })
+    await meetingFiling.put(tx, {
+      workspaceId,
+      id: id,
+      projectIds: body.projectId ? [body.projectId] : [],
+    })
     return getOccurrence(tx, workspaceId, id, body.startsLocal)
   })
 }
 
 export async function updateMeeting(
   db: Db,
-  workspaceId: string,
-  id: string,
+  workspaceId: WorkspaceId,
+  id: MeetingId,
   patch: UpdateMeetingBody,
 ): Promise<OccurrenceRow> {
   return db.transaction(async (tx) => {
@@ -255,8 +289,8 @@ export async function updateMeeting(
 /** Cancels a whole series, one occurrence of it, or everything from one on. */
 export async function cancelMeeting(
   db: Db,
-  workspaceId: string,
-  id: string,
+  workspaceId: WorkspaceId,
+  id: MeetingId,
   opts: { scope: EditScope; recurrenceId?: LocalTime | undefined },
 ): Promise<void> {
   await db.transaction(async (tx) => {

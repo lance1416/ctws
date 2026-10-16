@@ -1,4 +1,4 @@
-import type { TodaySegment } from '@ctws/contracts'
+import { type TodaySegment, type WorkspaceId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import type { Queryable } from '../../../platform/db/client'
 import { dayStart, localDay } from '../../../platform/db/time'
@@ -14,7 +14,7 @@ export type TodayTask = TaskRow & { segment: TodaySegment }
  */
 export async function listToday(
   q: Queryable,
-  workspaceId: string,
+  workspaceId: WorkspaceId,
   timezone: string,
   now: Date,
 ): Promise<TodayTask[]> {

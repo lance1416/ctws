@@ -1,3 +1,4 @@
+import { type ProjectId, type TaskId, workspaceId } from '@ctws/contracts'
 import { randomUUID } from 'node:crypto'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -47,8 +48,8 @@ async function rowOf(ctx: Harness, id: string) {
     select project_id, parent_id, deleted_at, completed_at, status from tasks where id = ${id}
   `)
   return r.rows[0] as {
-    project_id: string
-    parent_id: string | null
+    project_id: ProjectId
+    parent_id: TaskId | null
     deleted_at: Date | null
     completed_at: Date | null
     status: string
@@ -660,7 +661,7 @@ describe('a write refuses a foreign workspace without going through a route', ()
     const id = await createTask(ctx, projectId, 'mine')
     const sibling = await createTask(ctx, projectId, 'sibling')
     // A workspace that exists nowhere: the point is the task is not THIS caller's to touch.
-    const stranger = { workspaceId: '99999999-9999-4999-8999-999999999999' }
+    const stranger = { workspaceId: workspaceId.parse('99999999-9999-4999-8999-999999999999') }
 
     await expect(updateTask(ctx.db, stranger, id, { title: 'stolen' })).rejects.toThrow(
       TaskNotFoundError,

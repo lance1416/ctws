@@ -1,6 +1,7 @@
+import type { TaskId } from '@ctws/contracts'
 /** "Blocked by “<task>” and 2 more": names the first blocker and counts the rest. */
 export function blockedLabel(
-  blockers: readonly { id: string; title: string }[] | undefined,
+  blockers: readonly { id: TaskId; title: string }[] | undefined,
 ): string | null {
   if (!blockers || blockers.length === 0) return null
   const [first, ...rest] = blockers

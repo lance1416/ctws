@@ -1,4 +1,4 @@
-import type { ObjectType } from '@ctws/contracts'
+import { type ObjectType, type ProjectId } from '@ctws/contracts'
 import { createContext, useContext, type ComponentType } from 'react'
 import type { RouteObject } from 'react-router-dom'
 import type {
@@ -78,9 +78,9 @@ export type Registry = {
   relations: RegisteredRelation[]
   relationFor: (type: ObjectType) => RegisteredRelation
   projectBlocks: RegisteredProjectBlock[]
-  projectHeadlines: { moduleId: string; Component: ComponentType<{ projectId: string }> }[]
+  projectHeadlines: { moduleId: string; Component: ComponentType<{ projectId: ProjectId }> }[]
   projectFacts: { moduleId: string; Facts: NonNullable<ProjectContribution['Facts']> }[]
-  projectLead: ComponentType<{ projectId: string }> | null
+  projectLead: ComponentType<{ projectId: ProjectId }> | null
   projectContents: NonNullable<ProjectContribution['contents']>[]
   help: HelpSection[]
   routes: RouteObject[]

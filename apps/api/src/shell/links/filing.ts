@@ -1,4 +1,4 @@
-import type { ObjectType } from '@ctws/contracts'
+import { type ObjectType, type ProjectId, type WorkspaceId } from '@ctws/contracts'
 import { and, asc, eq, getTableName, inArray, isNull, sql, type SQL } from 'drizzle-orm'
 import type { AnyPgColumn, PgTable } from 'drizzle-orm/pg-core'
 import type { Queryable } from '../../platform/db/client'
@@ -8,7 +8,7 @@ import { projects } from '../projects/tables'
 import { putLinks } from './store'
 import { links } from './tables'
 
-type Named = { id: string; name: string }
+type Named = { id: ProjectId; name: string }
 
 /** `l` is a `belongs` edge from the object `id` of `type` to a project. */
 const belongsFrom = (type: ObjectType, id: SQL): SQL =>
@@ -23,7 +23,7 @@ const belongsFrom = (type: ObjectType, id: SQL): SQL =>
  */
 export function filing(type: ObjectType, table: PgTable & { id: AnyPgColumn }) {
   const id = sql`${ident(getTableName(table))}.id`
-  const pick = (column: 'id' | 'name') => sql<string | null>`(
+  const pick = <T>(column: 'id' | 'name') => sql<T | null>`(
     select p.${ident(column)} from links l
     join projects p on p.id = l.to_id
     where ${belongsFrom(type, id)} and p.deleted_at is null
@@ -31,7 +31,7 @@ export function filing(type: ObjectType, table: PgTable & { id: AnyPgColumn }) {
   )`
   return {
     /** The first visible project by rank, the same one on every surface. */
-    project: { projectId: pick('id'), projectName: pick('name') },
+    project: { projectId: pick<ProjectId>('id'), projectName: pick<string>('name') },
 
     unfiled: (): SQL => sql`not exists (
       select 1 from links l join projects p on p.id = l.to_id
@@ -39,8 +39,21 @@ export function filing(type: ObjectType, table: PgTable & { id: AnyPgColumn }) {
     )`,
 
     /** Replaces the object's projects, inside the caller's transaction. */
-    put: (q: Queryable, workspaceId: string, objectId: string, projectIds: readonly string[]) =>
-      putLinks(q, workspaceId, { type, id: objectId }, 'project', 'belongs', projectIds),
+    put: (
+      q: Queryable,
+      {
+        workspaceId,
+        id,
+        projectIds,
+      }: { workspaceId: WorkspaceId; id: string; projectIds: readonly ProjectId[] },
+    ) =>
+      putLinks(q, {
+        workspaceId,
+        from: { type, id },
+        toType: 'project',
+        kind: 'belongs',
+        toIds: projectIds,
+      }),
   }
 }
 
@@ -57,7 +70,7 @@ export function projectOfSql(type: ObjectType, alias: string): SQL {
 /** The visible projects of a page of objects in one query, each list in project order. */
 export async function projectsOf(
   q: Queryable,
-  workspaceId: string,
+  workspaceId: WorkspaceId,
   type: ObjectType,
   ids: readonly string[],
 ): Promise<Map<string, Named[]>> {

@@ -1,4 +1,4 @@
-import { MAX_TASK_DEPTH } from '@ctws/contracts'
+import { MAX_TASK_DEPTH, type ProjectId, type TaskId } from '@ctws/contracts'
 import { useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { refreshQueries } from '../../../../platform/http/refresh'
@@ -15,19 +15,19 @@ export function useInlineAdd({
   unfold,
   onRefuse,
 }: {
-  projectId: string
-  unfold: (ids: readonly string[]) => void
+  projectId: ProjectId
+  unfold: (ids: readonly TaskId[]) => void
   onRefuse: (message: string | null) => void
 }) {
   const qc = useQueryClient()
   // The parent whose children it appends to (null: the root level), and the row whose handle
   // takes focus back when it is cancelled.
-  const [adding, setAdding] = useState<{ parentId: string | null; from: string } | null>(null)
+  const [adding, setAdding] = useState<{ parentId: TaskId | null; from: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const inFlight = useRef(false)
 
   /** Opens the input, unfolding the parent first so it, and what it creates, is on screen. */
-  const start = (parentId: string | null, from: string) => {
+  const start = (parentId: TaskId | null, from: string) => {
     if (parentId) unfold([parentId])
     onRefuse(null)
     setError(null)

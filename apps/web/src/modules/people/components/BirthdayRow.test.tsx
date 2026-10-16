@@ -1,4 +1,4 @@
-import type { BirthdayListRow } from '@ctws/contracts'
+import { type BirthdayListRow, idFrom, personId } from '@ctws/contracts'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter } from 'react-router-dom'
@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 import { BirthdayRow } from './BirthdayRow'
 
 const row = (over: Partial<BirthdayListRow> = {}): BirthdayListRow => ({
-  personId: '00000000-0000-0000-0000-000000000001',
+  personId: idFrom(personId, '00000000-0000-0000-0000-000000000001'),
   name: '周楠',
   circle: null,
   day: '2026-10-12',

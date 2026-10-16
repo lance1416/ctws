@@ -1,3 +1,4 @@
+import { userId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { LastAdminError } from '../../src/shell/admin/errors'
@@ -25,7 +26,7 @@ async function setup() {
     payload: { email: 'admin@example.com', password: PASSWORD, timezone: 'UTC' },
   })
   expect(res.statusCode).toBe(201)
-  return { ctx, admin: { id: res.json().id as string, cookie: cookieOf(res) } }
+  return { ctx, admin: { id: userId.parse(res.json().id), cookie: cookieOf(res) } }
 }
 
 function cookieOf(res: { headers: Record<string, unknown> }): string {
@@ -61,7 +62,7 @@ async function createUser(ctx: Ctx, adminCookie: string, email: string, role: st
     role,
   })
   expect(res.statusCode).toBe(201)
-  return { id: res.json().id as string, cookie: await login(ctx, email) }
+  return { id: userId.parse(res.json().id), cookie: await login(ctx, email) }
 }
 
 const enabledAdmins = async (ctx: Ctx) =>

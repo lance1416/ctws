@@ -1,6 +1,12 @@
-import type { Role } from '@ctws/contracts'
+import {
+  type Role,
+  type UserId,
+  type WorkspaceId,
+  userId as userIdSchema,
+  workspaceId as workspaceIdSchema,
+} from '@ctws/contracts'
+import { newId } from '../../platform/db/ids'
 import { and, eq, isNull, sql } from 'drizzle-orm'
-import { v7 as uuidv7 } from 'uuid'
 import type { Db, Queryable } from '../../platform/db/client'
 import { LOCKS, lockFor } from '../../platform/db/locks'
 import { isUniqueViolation } from '../../platform/db/sql'
@@ -18,9 +24,9 @@ export async function registerUser(
   db: Db,
   input: { email: string; password: string; timezone: string },
   opts: { explicitRole?: Role; onlyIfFirst?: boolean } = {},
-): Promise<{ userId: string; workspaceId: string; role: Role }> {
-  const userId = uuidv7()
-  const workspaceId = uuidv7()
+): Promise<{ userId: UserId; workspaceId: WorkspaceId; role: Role }> {
+  const userId = newId(userIdSchema)
+  const workspaceId = newId(workspaceIdSchema)
   // Hashed before the "is registration open" check: one path, and the limits bound the cost.
   const passwordHash = await hashPassword(input.password)
 
@@ -73,7 +79,7 @@ export async function authenticate(
   db: Queryable,
   email: string,
   password: string,
-): Promise<{ userId: string } | null> {
+): Promise<{ userId: UserId } | null> {
   const [row] = await db
     .select({ id: users.id, passwordHash: users.passwordHash })
     .from(users)
@@ -86,13 +92,13 @@ export async function authenticate(
   return (await verifyPassword(row.passwordHash, password)) ? { userId: row.id } : null
 }
 
-type AuthContext = { workspaceId: string; role: Role; timezone: string }
+type AuthContext = { workspaceId: WorkspaceId; role: Role; timezone: string }
 
 /**
  * The workspace and instance role of an enabled user, read on every request so disabling or
  * demoting an account applies at once.
  */
-export async function getAuthContext(db: Queryable, userId: string): Promise<AuthContext | null> {
+export async function getAuthContext(db: Queryable, userId: UserId): Promise<AuthContext | null> {
   const [row] = await db
     .select({
       workspaceId: workspaceMembers.workspaceId,
@@ -110,13 +116,13 @@ export async function getAuthContext(db: Queryable, userId: string): Promise<Aut
 
 export async function loadUser(
   db: Queryable,
-  userId: string,
+  userId: UserId,
   ctx: AuthContext,
 ): Promise<{
-  id: string
+  id: UserId
   email: string
   timezone: string
-  workspaceId: string
+  workspaceId: WorkspaceId
   role: Role
 }> {
   // Named columns only, so the password hash cannot reach a response.

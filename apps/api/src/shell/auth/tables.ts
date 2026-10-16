@@ -1,4 +1,4 @@
-import type { Role } from '@ctws/contracts'
+import { type Role, type UserId, type WorkspaceId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import {
   check,
@@ -14,7 +14,7 @@ import {
 export const users = pgTable(
   'users',
   {
-    id: uuid('id').primaryKey(),
+    id: uuid('id').$type<UserId>().primaryKey(),
     email: text('email').notNull(),
     passwordHash: text('password_hash').notNull(),
     // IANA zone; every day boundary in the app is decided in it.
@@ -38,6 +38,7 @@ export const sessions = pgTable(
     /** SHA-256 of the cookie token, hex. Sessions are looked up by it. */
     tokenHash: text('token_hash').notNull(),
     userId: uuid('user_id')
+      .$type<UserId>()
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
@@ -52,7 +53,7 @@ export const sessions = pgTable(
 )
 
 export const workspaces = pgTable('workspaces', {
-  id: uuid('id').primaryKey(),
+  id: uuid('id').$type<WorkspaceId>().primaryKey(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
@@ -60,9 +61,11 @@ export const workspaceMembers = pgTable(
   'workspace_members',
   {
     workspaceId: uuid('workspace_id')
+      .$type<WorkspaceId>()
       .notNull()
       .references(() => workspaces.id, { onDelete: 'cascade' }),
     userId: uuid('user_id')
+      .$type<UserId>()
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),

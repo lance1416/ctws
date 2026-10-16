@@ -1,4 +1,4 @@
-import { READING_KINDS, READING_STATUSES } from '@ctws/contracts'
+import { READING_KINDS, READING_STATUSES, type ReadingId, type WorkspaceId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { check, date, index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { inList } from '../../platform/db/sql'
@@ -7,8 +7,9 @@ import { workspaces } from '../../shell/auth/tables'
 export const readingItems = pgTable(
   'reading_items',
   {
-    id: uuid('id').primaryKey(),
+    id: uuid('id').$type<ReadingId>().primaryKey(),
     workspaceId: uuid('workspace_id')
+      .$type<WorkspaceId>()
       .notNull()
       .references(() => workspaces.id, { onDelete: 'cascade' }),
     kind: text('kind').$type<(typeof READING_KINDS)[number]>().notNull(),

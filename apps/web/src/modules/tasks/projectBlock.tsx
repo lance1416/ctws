@@ -1,3 +1,4 @@
+import type { ProjectId } from '@ctws/contracts'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Fragment, useEffect, useId, useState, type ReactNode } from 'react'
 import { isOverlayOpen } from '../../platform/keyboard/overlayState'
@@ -18,7 +19,7 @@ import { TaskTree } from './components/TaskTree'
  * "6 open, 1 overdue, 63% done. Last moved today." The percentage is the mean of the root tasks'
  * rollups, left out when nothing is scored or nothing is done.
  */
-export function ProjectNumbers({ projectId }: { projectId: string }) {
+export function ProjectNumbers({ projectId }: { projectId: ProjectId }) {
   const movement = useQuery(movementQuery())
   const timeZone = useTimeZone()
   const row = movement.data?.find((r) => r.projectId === projectId)
@@ -68,7 +69,7 @@ export const PROJECT_VIEWS = [
  * The task block's New button. It carries the `n` key, which needs a project to create into, under
  * the guards every single key obeys.
  */
-export function NewTaskAction({ projectId }: { projectId: string }) {
+export function NewTaskAction({ projectId }: { projectId: ProjectId }) {
   const [creating, setCreating] = useState(false)
   const shortcuts = useShortcutsEnabled()
 
@@ -105,7 +106,7 @@ export function NewTaskAction({ projectId }: { projectId: string }) {
 }
 
 /** The module's rows under a shell project: the tree, and the one input that adds a root task. */
-export function ProjectTasks({ projectId, view }: { projectId: string; view: string }) {
+export function ProjectTasks({ projectId, view }: { projectId: ProjectId; view: string }) {
   const [title, setTitle] = useState('')
   const failureId = useId()
   const create = useMutation({

@@ -1,4 +1,11 @@
-import { TASK_STATUSES, type TaskEventType, type TaskStatus } from '@ctws/contracts'
+import {
+  TASK_STATUSES,
+  type TaskEventType,
+  type TaskStatus,
+  type ProjectId,
+  type TaskId,
+  type WorkspaceId,
+} from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import {
   type AnyPgColumn,
@@ -19,12 +26,15 @@ import { projects } from '../../shell/projects/tables'
 export const tasks = pgTable(
   'tasks',
   {
-    id: uuid('id').primaryKey(),
+    id: uuid('id').$type<TaskId>().primaryKey(),
     // Every task carries its project, so a project's tasks need no recursion.
     projectId: uuid('project_id')
+      .$type<ProjectId>()
       .notNull()
       .references(() => projects.id, { onDelete: 'cascade' }),
-    parentId: uuid('parent_id').references((): AnyPgColumn => tasks.id, { onDelete: 'cascade' }),
+    parentId: uuid('parent_id')
+      .$type<TaskId>()
+      .references((): AnyPgColumn => tasks.id, { onDelete: 'cascade' }),
     title: text('title').notNull(),
     notes: text('notes'),
     status: text('status').$type<TaskStatus>().notNull(),
@@ -51,13 +61,16 @@ export const taskDependencies = pgTable(
   {
     /** Has to finish first. */
     blockerId: uuid('blocker_id')
+      .$type<TaskId>()
       .notNull()
       .references(() => tasks.id, { onDelete: 'cascade' }),
     /** Waits. */
     blockedId: uuid('blocked_id')
+      .$type<TaskId>()
       .notNull()
       .references(() => tasks.id, { onDelete: 'cascade' }),
     workspaceId: uuid('workspace_id')
+      .$type<WorkspaceId>()
       .notNull()
       .references(() => workspaces.id, { onDelete: 'cascade' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -75,9 +88,11 @@ export const taskEvents = pgTable(
     id: uuid('id').primaryKey(),
     // No cascade: hard-deleting a task fails rather than erasing its history.
     taskId: uuid('task_id')
+      .$type<TaskId>()
       .notNull()
       .references(() => tasks.id),
     workspaceId: uuid('workspace_id')
+      .$type<WorkspaceId>()
       .notNull()
       .references(() => workspaces.id, { onDelete: 'cascade' }),
     type: text('type').$type<TaskEventType>().notNull(),

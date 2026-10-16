@@ -1,4 +1,9 @@
-import type { CreateMeetingBody, MeetingOccurrence } from '@ctws/contracts'
+import {
+  type CreateMeetingBody,
+  type MeetingOccurrence,
+  type PersonId,
+  type ProjectId,
+} from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { createMeeting, DEFAULT_HOUR, DEFAULT_MINUTES, withUntil } from '../api'
@@ -42,8 +47,8 @@ export function NewMeetingDialog({
   const [rrule, setRrule] = useState<string | null>(null)
   const [until, setUntil] = useState<string | null>(null)
   const [location, setLocation] = useState('')
-  const [projectId, setProjectId] = useState<string | null>(null)
-  const [attendeeIds, setAttendees] = useState<string[]>([])
+  const [projectId, setProjectId] = useState<ProjectId | null>(null)
+  const [attendeeIds, setAttendees] = useState<PersonId[]>([])
 
   const startsLocal = `${day}T${clock}`
 

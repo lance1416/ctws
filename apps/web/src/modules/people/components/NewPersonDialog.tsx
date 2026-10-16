@@ -1,4 +1,4 @@
-import type { Circle, PersonResponse } from '@ctws/contracts'
+import { type Circle, type PersonResponse, type ProjectId } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { createPerson, type BirthdayDraft } from '../api'
@@ -30,7 +30,7 @@ export function NewPersonDialog({
   // One row: the dialog takes a single address.
   const channels = useChannelRows(() => [{ kind: 'email', value: '', label: null }])
   const address = channels.rows[0]!
-  const [projectIds, setProjects] = useState<string[]>([])
+  const [projectIds, setProjects] = useState<ProjectId[]>([])
   const [circle, setCircle] = useState<Circle | ''>('')
   // Folded until asked for: an open, empty date form reads as bad data.
   const [birthday, setBirthday] = useState<{ draft: BirthdayDraft; refused: boolean } | null>(null)

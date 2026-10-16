@@ -1,13 +1,14 @@
+import { type ProjectId, type WorkspaceId, type TaskId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import type { Queryable } from '../../../platform/db/client'
 import { taskOpenSql, taskVisibleSql } from './scope'
 
 export type CalendarRow = {
-  id: string
+  id: TaskId
   day: string
   title: string
   kind: 'planned' | 'due'
-  projectId: string
+  projectId: ProjectId
   projectName: string
 }
 
@@ -17,7 +18,7 @@ export type CalendarRow = {
  */
 export async function listTaskCalendar(
   q: Queryable,
-  workspaceId: string,
+  workspaceId: WorkspaceId,
   timezone: string,
   range: { from: string; to: string },
 ): Promise<CalendarRow[]> {

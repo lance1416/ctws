@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { personId, projectId } from './id'
 import { birthdayInput, birthdayResponse } from './birthday'
 import { calendarDate, instant, nameText, noteText } from './common'
 
@@ -70,12 +71,14 @@ const place = z.string().trim().min(1).max(120)
 /** Written as a whole list; the server replaces the set. */
 const channels = z.array(personChannel).max(20)
 
+export const personParams = z.object({ id: personId }).strict()
+
 export const createPersonBody = z
   .object({
     name: personName,
     org: org.nullish(),
     note: note.nullish(),
-    projectIds: z.array(z.uuid()).max(20).optional(),
+    projectIds: z.array(projectId).max(20).optional(),
     channels: channels.optional(),
     birthday: birthdayInput.nullish(),
     gender: z.enum(GENDERS).nullish(),
@@ -92,7 +95,7 @@ export const updatePersonBody = z
     name: personName.optional(),
     org: org.nullable().optional(),
     note: note.nullable().optional(),
-    projectIds: z.array(z.uuid()).max(20).optional(),
+    projectIds: z.array(projectId).max(20).optional(),
     channels: channels.optional(),
     birthday: birthdayInput.nullish(),
     gender: z.enum(GENDERS).nullish(),
@@ -107,11 +110,11 @@ export type UpdatePersonBody = z.infer<typeof updatePersonBody>
 
 export const personResponse = z
   .object({
-    id: z.uuid(),
+    id: personId,
     name: z.string(),
     org: z.string().nullable(),
     note: z.string().nullable(),
-    projects: z.array(z.object({ id: z.uuid(), name: z.string() }).strict()),
+    projects: z.array(z.object({ id: projectId, name: z.string() }).strict()),
     channels: z.array(personChannel),
     birthday: birthdayResponse.nullable(),
     gender: z.enum(GENDERS).nullable(),
@@ -130,7 +133,7 @@ export const peopleResponse = z.object({ people: z.array(personResponse) }).stri
 /** One row on the birthdays page. */
 const birthdayListRow = z
   .object({
-    personId: z.uuid(),
+    personId,
     name: z.string(),
     circle: z.enum(CIRCLES).nullable(),
     day: calendarDate,

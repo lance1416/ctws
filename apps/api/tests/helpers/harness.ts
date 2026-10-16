@@ -1,3 +1,10 @@
+import {
+  projectId as projectIdSchema,
+  type ProjectId,
+  taskId,
+  type TaskId,
+  type WorkspaceId,
+} from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { expect } from 'vitest'
 import { lockTaskTree } from '../../src/modules/tasks/tree'
@@ -38,22 +45,22 @@ export async function appWithUser(email = 'p@example.com', opts: Opts = {}): Pro
   return { ...ctx, cookie, authed: { ...clientHeader, cookie } }
 }
 
-export async function createProject(ctx: Harness, name: string): Promise<string> {
+export async function createProject(ctx: Harness, name: string): Promise<ProjectId> {
   const res = await ctx.app.inject({
     method: 'POST',
     url: '/api/v1/projects',
     headers: ctx.authed,
     payload: { name },
   })
-  return res.json().id as string
+  return projectIdSchema.parse(res.json().id)
 }
 
 export async function createTask(
   ctx: Harness,
-  projectId: string,
+  projectId: ProjectId,
   title: string,
-  parentId?: string,
-): Promise<string> {
+  parentId?: TaskId,
+): Promise<TaskId> {
   const res = await ctx.app.inject({
     method: 'POST',
     url: '/api/v1/tasks',
@@ -61,7 +68,7 @@ export async function createTask(
     payload: { projectId, title, ...(parentId ? { parentId } : {}) },
   })
   if (res.statusCode !== 201) throw new Error(`createTask: ${res.statusCode} ${res.body}`)
-  return res.json().id as string
+  return taskId.parse(res.json().id)
 }
 
 /**
@@ -70,11 +77,11 @@ export async function createTask(
  */
 export async function createChain(
   ctx: Harness,
-  projectId: string,
+  projectId: ProjectId,
   depth: number,
-): Promise<string[]> {
-  const ids: string[] = []
-  let parent: string | undefined
+): Promise<TaskId[]> {
+  const ids: TaskId[] = []
+  let parent: TaskId | undefined
   for (let i = 0; i < depth; i++) {
     parent = await createTask(ctx, projectId, `n${i}`, parent)
     ids.push(parent)
@@ -85,8 +92,8 @@ export async function createChain(
 /** A project's tasks through the listing endpoint. */
 export async function tasksOf(
   ctx: Harness,
-  projectId: string,
-): Promise<{ id: string; parentId: string | null; rank: string }[]> {
+  projectId: ProjectId,
+): Promise<{ id: TaskId; parentId: TaskId | null; rank: string }[]> {
   const res = await ctx.app.inject({
     method: 'GET',
     url: `/api/v1/tasks?projectId=${projectId}`,
@@ -99,7 +106,7 @@ export async function tasksOf(
 /** A task's events read straight from the log. */
 export async function eventsOf(
   ctx: Harness,
-  taskId: string,
+  taskId: TaskId,
 ): Promise<{ type: string; payload: unknown }[]> {
   const r = await ctx.db.execute(sql`
     select type, payload from task_events where task_id = ${taskId} order by occurred_at
@@ -111,7 +118,7 @@ export async function eventsOf(
 export async function expectBlockedByTreeLock<T>(ctx: Harness, fire: () => Promise<T>): Promise<T> {
   const { workspaceId } = (
     await ctx.app.inject({ method: 'GET', url: '/api/v1/auth/me', headers: ctx.authed })
-  ).json() as { workspaceId: string }
+  ).json() as { workspaceId: WorkspaceId }
   return expectBlockedWhile(ctx, (tx) => lockTaskTree(tx, workspaceId), fire)
 }
 

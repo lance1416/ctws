@@ -1,4 +1,4 @@
-import { DAY_MS } from '@ctws/contracts'
+import { DAY_MS, type UserId } from '@ctws/contracts'
 import { createHash, randomBytes } from 'node:crypto'
 import { and, eq, gt, lt } from 'drizzle-orm'
 import { v4 as uuidv4 } from 'uuid'
@@ -20,7 +20,7 @@ const TOUCH_AFTER_MS = 3_600_000
 
 export async function createSession(
   db: Queryable,
-  userId: string,
+  userId: UserId,
   ttlDays: number,
 ): Promise<{ token: string; expiresAt: Date }> {
   const token = newToken()
@@ -42,7 +42,7 @@ export async function findValidSession(
   db: Queryable,
   token: string,
   ttlDays: number,
-): Promise<{ userId: string; renewedUntil: Date | null } | null> {
+): Promise<{ userId: UserId; renewedUntil: Date | null } | null> {
   const hash = digest(token)
   const now = new Date()
   const [found] = await db

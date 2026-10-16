@@ -8,6 +8,8 @@ import {
   REMIND_LEAD_DEFAULT,
   REMIND_LEADS,
   type RemindLead,
+  type PersonId,
+  type WorkspaceId,
 } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { boolean, check, index, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
@@ -18,8 +20,9 @@ import { workspaces } from '../../shell/auth/tables'
 export const people = pgTable(
   'people',
   {
-    id: uuid('id').primaryKey(),
+    id: uuid('id').$type<PersonId>().primaryKey(),
     workspaceId: uuid('workspace_id')
+      .$type<WorkspaceId>()
       .notNull()
       .references(() => workspaces.id, { onDelete: 'cascade' }),
     /** vCard `FN`: the name as written, not split into parts. */
@@ -98,6 +101,7 @@ export const personChannels = pgTable(
   {
     id: uuid('id').primaryKey(),
     personId: uuid('person_id')
+      .$type<PersonId>()
       .notNull()
       .references(() => people.id, { onDelete: 'cascade' }),
     kind: text('kind').$type<(typeof CHANNEL_KINDS)[number]>().notNull(),

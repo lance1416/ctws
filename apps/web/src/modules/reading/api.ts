@@ -1,7 +1,8 @@
-import type {
-  CreateReadingItemBody,
-  ReadingItemResponse,
-  UpdateReadingItemBody,
+import {
+  type CreateReadingItemBody,
+  type ReadingItemResponse,
+  type UpdateReadingItemBody,
+  type ReadingId,
 } from '@ctws/contracts'
 import { queryOptions } from '@tanstack/react-query'
 import { apiFetch, calendarOf } from '../../platform/http/api'
@@ -37,12 +38,12 @@ export function createReadingItem(body: CreateReadingItemBody): Promise<ReadingI
 }
 
 export function patchReadingItem(
-  id: string,
+  id: ReadingId,
   body: UpdateReadingItemBody,
 ): Promise<ReadingItemResponse> {
   return apiFetch(`${BASE}/${id}`, { method: 'PATCH', body: JSON.stringify(body) })
 }
 
-export function deleteReadingItem(id: string): Promise<void> {
+export function deleteReadingItem(id: ReadingId): Promise<void> {
   return apiFetch(`${BASE}/${id}`, { method: 'DELETE' })
 }

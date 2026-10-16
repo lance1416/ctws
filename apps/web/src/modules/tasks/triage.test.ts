@@ -1,3 +1,4 @@
+import { idFrom, taskId } from '@ctws/contracts'
 import { describe, expect, it } from 'vitest'
 import { triageSections, type TriagePatch } from './triage'
 
@@ -9,7 +10,10 @@ const sectionsFor = (
   t: { id: string; segment: 'overdue' | 'today' | 'in_progress'; dueAt: string | null },
   carried: boolean,
   record: (body: TriagePatch) => void,
-) => triageSections(t, carried, TODAY, ZONE, (_id, body) => record(body))
+) =>
+  triageSections({ ...t, id: idFrom(taskId, t.id) }, carried, TODAY, ZONE, (_id, body) =>
+    record(body),
+  )
 
 const overdue = { id: 't1', segment: 'overdue' as const, dueAt: '2026-10-02T13:30:00.000Z' }
 

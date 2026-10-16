@@ -1,18 +1,19 @@
+import type { TaskId } from '@ctws/contracts'
 import { byRank } from '@ctws/core/rank'
 
 /**
  * Turns the flat task array into the ordered, indented rows the tree renders. On a flat row list a
  * drop is just "between which two rows, how far indented", which `drop.ts` works out.
  */
-export type TaskNode = {
-  id: string
-  parentId: string | null
+export type TaskNode<Id extends string = TaskId> = {
+  id: Id
+  parentId: Id | null
   rank: string
 }
 
-export type FlatRow = {
-  id: string
-  parentId: string | null
+export type FlatRow<Id extends string = TaskId> = {
+  id: Id
+  parentId: Id | null
   /** A root task is depth 1, matching the API's depth accounting. */
   depth: number
   /** A leaf is 1. Counts the whole subtree, including descendants hidden by a collapse. */
@@ -21,14 +22,17 @@ export type FlatRow = {
   collapsed: boolean
 }
 
-export function flatten(nodes: readonly TaskNode[], collapsed: ReadonlySet<string>): FlatRow[] {
+export function flatten<Id extends string>(
+  nodes: readonly TaskNode<Id>[],
+  collapsed: ReadonlySet<Id>,
+): FlatRow<Id>[] {
   const byId = new Map(nodes.map((n) => [n.id, n]))
   // A node whose parent is absent from this list becomes a root: the parent may have been
   // soft-deleted between fetches, and losing the child silently would be worse.
-  const parentOf = (n: TaskNode) =>
+  const parentOf = (n: TaskNode<Id>) =>
     n.parentId !== null && byId.has(n.parentId) ? n.parentId : null
 
-  const children = new Map<string | null, TaskNode[]>()
+  const children = new Map<Id | null, TaskNode<Id>[]>()
   for (const n of nodes) {
     const key = parentOf(n)
     const list = children.get(key)
@@ -41,8 +45,8 @@ export function flatten(nodes: readonly TaskNode[], collapsed: ReadonlySet<strin
     list.sort(byRank)
   }
 
-  const heights = new Map<string, number>()
-  const heightOf = (id: string, seen: Set<string>): number => {
+  const heights = new Map<Id, number>()
+  const heightOf = (id: Id, seen: Set<Id>): number => {
     const cached = heights.get(id)
     if (cached !== undefined) return cached
     if (seen.has(id)) return 1
@@ -54,16 +58,16 @@ export function flatten(nodes: readonly TaskNode[], collapsed: ReadonlySet<strin
     return h
   }
 
-  const rows: FlatRow[] = []
-  const visited = new Set<string>()
+  const rows: FlatRow<Id>[] = []
+  const visited = new Set<Id>()
 
-  const markVisited = (id: string) => {
+  const markVisited = (id: Id) => {
     if (visited.has(id)) return
     visited.add(id)
     for (const k of children.get(id) ?? []) markVisited(k.id)
   }
 
-  const pushRow = (n: TaskNode, depth: number, parentId: string | null) => {
+  const pushRow = (n: TaskNode<Id>, depth: number, parentId: Id | null) => {
     const kids = children.get(n.id) ?? []
     const isCollapsed = collapsed.has(n.id)
     rows.push({
@@ -77,7 +81,7 @@ export function flatten(nodes: readonly TaskNode[], collapsed: ReadonlySet<strin
     visited.add(n.id)
   }
 
-  const visit = (parent: string | null, depth: number, onPath: Set<string>) => {
+  const visit = (parent: Id | null, depth: number, onPath: Set<Id>) => {
     for (const n of children.get(parent) ?? []) {
       // Unreachable while a cycle has no entry from the roots; it keeps a walk into one from
       // hanging the page.

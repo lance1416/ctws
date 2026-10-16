@@ -1,4 +1,4 @@
-import type { DependencyRef } from '@ctws/contracts'
+import { type DependencyRef, type ProjectId, type TaskId } from '@ctws/contracts'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useState, type ReactNode } from 'react'
 import { ApiError } from '../../../platform/http/api'
@@ -54,7 +54,7 @@ function Group({ tag, children }: { tag: string; children: ReactNode }) {
   )
 }
 
-export function Dependencies({ taskId, projectId }: { taskId: string; projectId: string }) {
+export function Dependencies({ taskId, projectId }: { taskId: TaskId; projectId: ProjectId }) {
   const [adding, setAdding] = useState(false)
   const [query, setQuery] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -67,7 +67,7 @@ export function Dependencies({ taskId, projectId }: { taskId: string; projectId:
 
   const awaits = [dependenciesQuery(taskId).queryKey]
   const add = useMutation({
-    mutationFn: (blockerId: string) => addDependency(taskId, blockerId),
+    mutationFn: (blockerId: TaskId) => addDependency(taskId, blockerId),
     meta: { awaits },
     onSuccess: () => {
       setQuery('')
@@ -83,7 +83,7 @@ export function Dependencies({ taskId, projectId }: { taskId: string; projectId:
       ),
   })
   const drop = useMutation({
-    mutationFn: (blockerId: string) => removeDependency(taskId, blockerId),
+    mutationFn: (blockerId: TaskId) => removeDependency(taskId, blockerId),
     meta: { awaits },
     onSuccess: () => setError(null),
     onError: () => setError("Couldn't remove that dependency"),

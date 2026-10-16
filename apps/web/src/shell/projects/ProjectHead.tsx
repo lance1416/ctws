@@ -1,3 +1,4 @@
+import type { ProjectId } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { updateProject, useEveryProject } from './api'
 import { useRegistry } from '../registry'
@@ -5,7 +6,7 @@ import { BUTTON } from '../../platform/ui/buttonStyles'
 import { ProjectIdentity } from './ProjectIdentity'
 
 /** The head of a project's page: its name and colour, and each module's numbers about it. */
-export function ProjectHead({ id }: { id: string }) {
+export function ProjectHead({ id }: { id: ProjectId }) {
   const registry = useRegistry()
   // Live or archived: an archived project still has its page, marked as such.
   const projects = useEveryProject()
@@ -38,7 +39,7 @@ export function ProjectHead({ id }: { id: string }) {
  * Archive hides a project from the rail and live lists but keeps everything. It is undone in one
  * press, so it sits in the head; only what cannot be undone goes at the foot with Delete.
  */
-function ArchiveToggle({ id, archived }: { id: string; archived: boolean }) {
+function ArchiveToggle({ id, archived }: { id: ProjectId; archived: boolean }) {
   const toggle = useMutation({
     mutationFn: () => updateProject(id, { archived: !archived }),
     meta: { awaits: [['projects']] },

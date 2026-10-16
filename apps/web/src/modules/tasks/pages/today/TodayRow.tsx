@@ -1,4 +1,4 @@
-import type { TaskStatus, TodayTaskResponse } from '@ctws/contracts'
+import { type TaskStatus, type TodayTaskResponse, type TaskId } from '@ctws/contracts'
 import type { KeyboardEvent } from 'react'
 import { RowLead } from '../../../../shell/rows/RowLead'
 import { ProjectRail } from '../../../../shell/rows/RowParts'
@@ -36,7 +36,7 @@ export function TodayRow({
   onOpen: () => void
   onKeyDown: (e: KeyboardEvent) => void
   onStatus: (status: TaskStatus) => void
-  onPatch: (id: string, body: TriagePatch) => void
+  onPatch: (id: TaskId, body: TriagePatch) => void
   /** A triage action ran; its menu is gone, so focus needs somewhere to go. */
   onRan: () => void
 }) {

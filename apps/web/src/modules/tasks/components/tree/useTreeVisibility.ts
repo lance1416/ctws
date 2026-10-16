@@ -1,4 +1,4 @@
-import type { TaskResponse } from '@ctws/contracts'
+import { type TaskResponse, type ProjectId } from '@ctws/contracts'
 import { useMemo, useState } from 'react'
 import { isFinished } from '../../status'
 import { loadShowDone, saveShowDone } from '../../tree/collapse'
@@ -7,7 +7,7 @@ import { loadShowDone, saveShowDone } from '../../tree/collapse'
  * A finished row leaves the tree unless asked back, except a finished parent with unfinished
  * children, and a row finished right here, kept for this mount so a second `x` can undo it.
  */
-export function useTreeVisibility(projectId: string, all: readonly TaskResponse[]) {
+export function useTreeVisibility(projectId: ProjectId, all: readonly TaskResponse[]) {
   const [showDone, setShowDone] = useState(() => loadShowDone(projectId))
   const [kept, setKept] = useState<ReadonlySet<string>>(() => new Set())
 

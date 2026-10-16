@@ -1,4 +1,10 @@
-import type { TaskStatus, TodayTaskResponse } from '@ctws/contracts'
+import {
+  taskId,
+  idFrom,
+  type TaskStatus,
+  type TodayTaskResponse,
+  type TaskId,
+} from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState, type KeyboardEvent } from 'react'
 import { useShortcutsEnabled } from '../../../platform/keyboard/enabled'
@@ -49,7 +55,7 @@ export function Today() {
     .flatMap((p) =>
       p.useEntries({ from: day, to: day }).entries.map((e) => ({ ...e, moduleId: p.moduleId })),
     )
-  const [openId, setOpenId] = useState<string | null>(null)
+  const [openId, setOpenId] = useState<TaskId | null>(null)
   const rows = today.data ?? []
   const openTask = rows.find((t) => t.id === openId)
 
@@ -61,26 +67,26 @@ export function Today() {
   // A change, or the open pane, can take its row off this page; focus moves on in DOM order.
   const focus = useFocusAfterRemoval({
     ids: () =>
-      [...document.querySelectorAll<HTMLElement>('[data-today-row]')].map(
-        (el) => el.dataset.todayRow!,
+      [...document.querySelectorAll<HTMLElement>('[data-today-row]')].map((el) =>
+        idFrom(taskId, el.dataset.todayRow!),
       ),
     rowFor: (id) => document.querySelector<HTMLElement>(`[data-today-row="${id}"]`),
     heading: () => document.getElementById('today-heading'),
     open: openId,
   })
-  const setStatus = (id: string, status: TaskStatus) => {
+  const setStatus = (id: TaskId, status: TaskStatus) => {
     setError(null)
     focus.expect(id)
     actions.setStatus(id, status, () => focus.drop(id))
   }
-  const patch = (id: string, body: TriagePatch) => {
+  const patch = (id: TaskId, body: TriagePatch) => {
     setError(null)
     focus.expect(id)
     actions.patch(id, body, () => focus.drop(id))
   }
   // A triage menu unmounts after its action, so focus goes back to the row; if the row then
   // leaves the page, `focus` moves it on again.
-  const focusRow = (id: string) =>
+  const focusRow = (id: TaskId) =>
     queueMicrotask(() => document.querySelector<HTMLElement>(`[data-today-row="${id}"]`)?.focus())
   const onRowKeyDown = (e: KeyboardEvent, t: TodayTaskResponse) => {
     // `s` and `x` are single-key shortcuts, so they answer to the same off switch as `/` and `f`.

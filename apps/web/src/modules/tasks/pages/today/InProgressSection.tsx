@@ -1,4 +1,4 @@
-import type { TaskStatus, TodayTaskResponse } from '@ctws/contracts'
+import { type TaskStatus, type TodayTaskResponse, type TaskId } from '@ctws/contracts'
 import type { KeyboardEvent } from 'react'
 import { BUTTON } from '../../../../platform/ui/buttonStyles'
 import { DayEmpty, DaySection } from '../../../../shell/rows/DaySection'
@@ -28,9 +28,9 @@ export function InProgressSection({
   today: string
   timeZone: string
   savedId: string | null
-  onOpen: (id: string) => void
+  onOpen: (id: TaskId) => void
   onKeyDown: (e: KeyboardEvent, t: TodayTaskResponse) => void
-  onStatus: (id: string, status: TaskStatus) => void
+  onStatus: (id: TaskId, status: TaskStatus) => void
 }) {
   const alone = tasks.length === 1
   return (

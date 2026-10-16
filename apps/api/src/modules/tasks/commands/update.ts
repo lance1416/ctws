@@ -1,4 +1,4 @@
-import type { TaskEventType, UpdateTaskBody } from '@ctws/contracts'
+import { type TaskEventType, type UpdateTaskBody, type TaskId } from '@ctws/contracts'
 import { eq, sql } from 'drizzle-orm'
 import type { PgUpdateSetSource } from 'drizzle-orm/pg-core'
 import type { Db } from '../../../platform/db/client'
@@ -14,7 +14,7 @@ import { tasks, type Task } from '../tables'
 export async function updateTask(
   db: Db,
   ctx: TaskCtx,
-  id: string,
+  id: TaskId,
   patch: UpdateTaskBody,
 ): Promise<Task> {
   return db.transaction(async (tx) => {

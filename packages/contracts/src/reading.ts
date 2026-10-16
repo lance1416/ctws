@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { projectId, readingId } from './id'
 import { calendarDate, instant, nameText, titleText } from './common'
 
 /**
@@ -32,6 +33,8 @@ const readingUrl = z
   .refine((u) => /^https?:\/\//i.test(u), { message: 'expected an http(s) url' })
 const author = nameText
 
+export const readingParams = z.object({ id: readingId }).strict()
+
 /** What capture has: a pasted url, or a typed title. The rest is edited afterwards. */
 export const createReadingItemBody = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('link'), url: readingUrl }).strict(),
@@ -46,7 +49,7 @@ export const updateReadingItemBody = z
     url: readingUrl.optional(),
     author: author.nullable().optional(),
     status: readingStatus.optional(),
-    projectId: z.uuid().nullable().optional(),
+    projectId: projectId.nullable().optional(),
     planOn: calendarDate.nullable().optional(),
   })
   .strict()
@@ -55,7 +58,7 @@ export type UpdateReadingItemBody = z.infer<typeof updateReadingItemBody>
 
 export const readingItemResponse = z
   .object({
-    id: z.uuid(),
+    id: readingId,
     kind: z.enum(READING_KINDS),
     title: z.string().nullable(),
     url: z.string().nullable(),
@@ -63,7 +66,7 @@ export const readingItemResponse = z
     status: readingStatus,
     /** The day you mean to finish it by: a plan, not a deadline. */
     planOn: calendarDate.nullable(),
-    projectId: z.uuid().nullable(),
+    projectId: projectId.nullable(),
     projectName: z.string().nullable(),
     /** What the page itself says, kept apart from `title`; a title someone typed wins. */
     fetchedTitle: z.string().nullable(),

@@ -1,4 +1,4 @@
-import type { LinkedObject, ObjectType } from '@ctws/contracts'
+import { idFrom, type LinkedObject, type ObjectType, projectId } from '@ctws/contracts'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -79,7 +79,7 @@ export function Links({
 
   if (variant === 'aside') {
     // On a project's page every row here is linked to this project, so it wears its thread.
-    const thread = of.type === 'project' ? of.id : null
+    const thread = of.type === 'project' ? idFrom(projectId, of.id) : null
     return (
       <div className="flex flex-col gap-8">
         {groups.map((group) => {

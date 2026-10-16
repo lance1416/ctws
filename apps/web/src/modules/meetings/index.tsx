@@ -1,4 +1,9 @@
-import { occurrenceKey, parseOccurrenceKey, type MeetingOccurrence } from '@ctws/contracts'
+import {
+  occurrenceKey,
+  parseOccurrenceKey,
+  type MeetingOccurrence,
+  type MeetingId,
+} from '@ctws/contracts'
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { meetingCalendarQuery, meetingsQuery, occurrenceQuery } from './api'
@@ -24,7 +29,7 @@ const ID = 'meetings'
  * refetch. A series has many occurrences, so the series id alone does not name one.
  */
 function useOpenMeeting(pool: readonly MeetingOccurrence[]) {
-  const [open, setOpen] = useState<{ meetingId: string; recurrenceId: string } | null>(null)
+  const [open, setOpen] = useState<{ meetingId: MeetingId; recurrenceId: string } | null>(null)
   const accountZone = useTimeZone()
   const queryClient = useQueryClient()
   const listed = pool.find(
@@ -33,7 +38,7 @@ function useOpenMeeting(pool: readonly MeetingOccurrence[]) {
   // Moved to another day, it is no longer in the pool: looked up on its own, starting from what
   // the save gave back so the pane does not close while it is read.
   const one = useQuery({
-    ...occurrenceQuery(open?.meetingId ?? '', open?.recurrenceId ?? ''),
+    ...occurrenceQuery(open?.meetingId ?? null, open?.recurrenceId ?? ''),
     enabled: open !== null && !listed,
   })
   const found = listed ?? one.data ?? null

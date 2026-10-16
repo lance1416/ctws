@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { flatten, type TaskNode } from './flatten'
 
-const node = (id: string, parentId: string | null, rank: string): TaskNode => ({
+const node = (id: string, parentId: string | null, rank: string): TaskNode<string> => ({
   id,
   parentId,
   rank,
@@ -9,7 +9,7 @@ const node = (id: string, parentId: string | null, rank: string): TaskNode => ({
 
 describe('flatten', () => {
   it('returns an empty list for no nodes', () => {
-    expect(flatten([], new Set())).toEqual([])
+    expect(flatten([], new Set<string>())).toEqual([])
   })
 
   it('orders siblings by rank then id', () => {

@@ -4,7 +4,11 @@ import {
   type PersonChannel,
   REMIND_LEAD_DEFAULT,
   type UpdatePersonBody,
+  type PersonId,
+  type WorkspaceId,
+  personId,
 } from '@ctws/contracts'
+import { newId } from '../../platform/db/ids'
 import { and, eq, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import type { Db, Queryable } from '../../platform/db/client'
@@ -48,7 +52,7 @@ function birthdayColumns(b: BirthdayInput | null | undefined) {
 /** Replaces a person's channels as a set, in their given order. */
 async function putChannels(
   q: Queryable,
-  personId: string,
+  personId: PersonId,
   channels: readonly PersonChannel[],
 ): Promise<void> {
   await q.delete(personChannels).where(eq(personChannels.personId, personId))
@@ -67,13 +71,13 @@ async function putChannels(
 
 export async function createPerson(
   db: Db,
-  workspaceId: string,
+  workspaceId: WorkspaceId,
   body: CreatePersonBody,
 ): Promise<PersonRow> {
   checkBirthday(body.birthday)
   return db.transaction(async (tx) => {
     await assertProjectsVisible(tx, workspaceId, body.projectIds ?? [])
-    const id = uuidv7()
+    const id = newId(personId)
     await tx.insert(people).values({
       id,
       workspaceId,
@@ -87,7 +91,7 @@ export async function createPerson(
       circle: body.circle ?? null,
       ...birthdayColumns(body.birthday ?? undefined),
     })
-    await personFiling.put(tx, workspaceId, id, body.projectIds ?? [])
+    await personFiling.put(tx, { workspaceId, id, projectIds: body.projectIds ?? [] })
     await putChannels(tx, id, body.channels ?? [])
     return getPerson(tx, workspaceId, id)
   })
@@ -95,8 +99,8 @@ export async function createPerson(
 
 export async function updatePerson(
   db: Db,
-  workspaceId: string,
-  id: string,
+  workspaceId: WorkspaceId,
+  id: PersonId,
   patch: UpdatePersonBody,
 ): Promise<PersonRow> {
   checkBirthday(patch.birthday)
@@ -111,13 +115,17 @@ export async function updatePerson(
       .update(people)
       .set({ ...fields, ...birthdayColumns(birthday), updatedAt: sql`now()` })
       .where(and(visiblePeople(workspaceId), eq(people.id, id)))
-    if (projectIds) await personFiling.put(tx, workspaceId, id, projectIds)
+    if (projectIds) await personFiling.put(tx, { workspaceId, id, projectIds })
     if (channels) await putChannels(tx, id, channels)
     return getPerson(tx, workspaceId, id)
   })
 }
 
-export async function softDeletePerson(db: Db, workspaceId: string, id: string): Promise<void> {
+export async function softDeletePerson(
+  db: Db,
+  workspaceId: WorkspaceId,
+  id: PersonId,
+): Promise<void> {
   const deleted = await db
     .update(people)
     .set({ deletedAt: sql`now()` })

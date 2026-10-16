@@ -1,3 +1,4 @@
+import type { TaskId } from '@ctws/contracts'
 import { useEffect, useRef } from 'react'
 
 /**
@@ -12,13 +13,13 @@ export function useFocusAfterRemoval({
   open,
 }: {
   /** The rows' ids in reading order, as rendered. */
-  ids: () => readonly string[]
-  rowFor: (id: string) => HTMLElement | null
+  ids: () => readonly TaskId[]
+  rowFor: (id: TaskId) => HTMLElement | null
   heading: () => HTMLElement | null
   /** The row whose pane is open, if any. */
-  open: string | null
+  open: TaskId | null
 }) {
-  const plans = useRef(new Map<string, { order: readonly string[] }>())
+  const plans = useRef(new Map<TaskId, { order: readonly TaskId[] }>())
 
   useEffect(() => {
     for (const [self, plan] of plans.current) {
@@ -36,12 +37,12 @@ export function useFocusAfterRemoval({
     }
   })
 
-  const expect = (id: string) => {
+  const expect = (id: TaskId) => {
     plans.current.set(id, { order: ids() })
   }
   // A tick later, so a list refetched by the change has rendered (and moved focus) first; and
   // only this plan, not one a newer `expect` has made since.
-  const drop = (id: string) => {
+  const drop = (id: TaskId) => {
     const plan = plans.current.get(id)
     setTimeout(() => {
       if (plans.current.get(id) === plan) plans.current.delete(id)

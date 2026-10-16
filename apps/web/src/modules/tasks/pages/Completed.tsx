@@ -1,5 +1,5 @@
 import { taskCrumb } from '../crumb'
-import type { CompletedTaskResponse } from '@ctws/contracts'
+import { taskId, idFrom, type CompletedTaskResponse, type TaskId } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { completedQuery } from '../api/queries'
@@ -33,7 +33,7 @@ function dayHeading(day: string, today: string): string {
 /** Review's Done view, newest first. The server decides each task's day; this only groups by it. */
 export function Completed() {
   const completed = useQuery(completedQuery())
-  const [openId, setOpenId] = useState<string | null>(null)
+  const [openId, setOpenId] = useState<TaskId | null>(null)
   const timezone = useTimeZone()
   const today = ymd(useNow(), timezone)
   const heading = useRef<HTMLHeadingElement>(null)
@@ -42,8 +42,8 @@ export function Completed() {
   // An open pane can delete its task or bring it back to work: either way its row leaves.
   useFocusAfterRemoval({
     ids: () =>
-      [...document.querySelectorAll<HTMLElement>('[data-done-row]')].map(
-        (el) => el.dataset.doneRow!,
+      [...document.querySelectorAll<HTMLElement>('[data-done-row]')].map((el) =>
+        idFrom(taskId, el.dataset.doneRow!),
       ),
     rowFor: (id) => document.querySelector<HTMLElement>(`[data-done-row="${id}"]`),
     heading: () => heading.current,

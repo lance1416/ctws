@@ -1,4 +1,4 @@
-import { projectColors, type ProjectColor } from '@ctws/contracts'
+import { projectColors, type ProjectColor, type ProjectId } from '@ctws/contracts'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { useMutation } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
@@ -17,7 +17,7 @@ export function ProjectIdentity({
   name,
   color,
 }: {
-  projectId: string
+  projectId: ProjectId
   name: string
   color: ProjectColor
 }) {

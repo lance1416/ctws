@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { projectId, taskId } from './id'
 import { WINDOW_REFUSED, windowIsBounded } from './calendar'
 import { calendarDate, documentText, instant, titleText } from './common'
 
@@ -40,11 +41,13 @@ export const MAX_TASK_DEPTH = 10
 const title = titleText
 const notes = documentText
 
+export const taskParams = z.object({ id: taskId }).strict()
+
 // The server computes rank; neither create nor update accepts one.
 export const createTaskBody = z
   .object({
-    projectId: z.uuid(),
-    parentId: z.uuid().nullish(),
+    projectId: projectId,
+    parentId: taskId.nullish(),
     title,
     notes: notes.nullish(),
     status: taskStatus.default(NEW_TASK_STATUS),
@@ -68,18 +71,18 @@ export const updateTaskBody = z
 /** The neighbours the task lands between; the server computes the rank. */
 export const moveTaskBody = z
   .object({
-    projectId: z.uuid(),
-    parentId: z.uuid().nullable(),
-    beforeId: z.uuid().optional(),
-    afterId: z.uuid().optional(),
+    projectId: projectId,
+    parentId: taskId.nullable(),
+    beforeId: taskId.optional(),
+    afterId: taskId.optional(),
   })
   .strict()
 
 export const taskResponse = z
   .object({
-    id: z.uuid(),
-    projectId: z.uuid(),
-    parentId: z.uuid().nullable(),
+    id: taskId,
+    projectId: projectId,
+    parentId: taskId.nullable(),
     title: z.string(),
     notes: z.string().nullable(),
     status: taskStatus,
@@ -107,9 +110,9 @@ export type RollupResponse = z.infer<typeof rollupResponse>
 /** Another task at the end of a dependency, named with its project because one may cross. */
 const dependencyRef = z
   .object({
-    id: z.uuid(),
+    id: taskId,
     title: z.string(),
-    projectId: z.uuid(),
+    projectId: projectId,
     projectName: z.string(),
     done: z.boolean(),
   })
@@ -120,24 +123,24 @@ export const dependencyLists = z
   .object({ blockedBy: z.array(dependencyRef), blocks: z.array(dependencyRef) })
   .strict()
 
-export const addDependencyBody = z.object({ blockerId: z.uuid() }).strict()
+export const addDependencyBody = z.object({ blockerId: taskId }).strict()
 
-export const dependencyParams = z.object({ id: z.uuid(), blockerId: z.uuid() }).strict()
+export const dependencyParams = z.object({ id: taskId, blockerId: taskId }).strict()
 
-export const projectTasksQuery = z.object({ projectId: z.uuid() }).strict()
+export const projectTasksQuery = z.object({ projectId: projectId }).strict()
 
 /** A project's flat task list with each task's rollup and what is still in its way. */
 export const projectTasksResponse = z
   .object({
     tasks: z.array(taskResponse),
-    rollups: z.record(z.uuid(), rollupResponse),
+    rollups: z.record(taskId, rollupResponse),
     /** Keyed by the waiting task; unfinished blockers only. */
-    blockers: z.record(z.uuid(), z.array(dependencyRef)),
+    blockers: z.record(taskId, z.array(dependencyRef)),
   })
   .strict()
 
 /** What changed state in a window, read from the event log and grouped by project. */
-const reviewTask = z.object({ id: z.uuid(), title: z.string(), at: instant }).strict()
+const reviewTask = z.object({ id: taskId, title: z.string(), at: instant }).strict()
 
 export const reviewResponse = z
   .object({
@@ -147,7 +150,7 @@ export const reviewResponse = z
     projects: z.array(
       z
         .object({
-          projectId: z.uuid(),
+          projectId: projectId,
           projectName: z.string(),
           finished: z.array(reviewTask),
           started: z.array(reviewTask),
@@ -201,7 +204,7 @@ export type CompletedResponse = z.infer<typeof completedResponse>
 /** One project's movement: counts, never a ratio. Days are in the account's zone. */
 export const projectMovementResponse = z
   .object({
-    projectId: z.uuid(),
+    projectId: projectId,
     projectName: z.string(),
     doneThisWeek: z.number().int().nonnegative(),
     remaining: z.number().int().nonnegative(),

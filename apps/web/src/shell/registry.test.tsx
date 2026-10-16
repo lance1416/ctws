@@ -1,3 +1,4 @@
+import { idFrom, projectId } from '@ctws/contracts'
 import { QueryClient } from '@tanstack/react-query'
 import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
@@ -184,10 +185,9 @@ describe('what a module hangs on a project page', () => {
     const registry = build([notes, files])
     expect(registry.projectFacts.map((f) => [f.moduleId, f.Facts])).toEqual([['notes', NotesFacts]])
     const qc = new QueryClient()
-    expect(await Promise.all(registry.projectContents.map((c) => c(qc, 'p')))).toEqual([
-      '3 notes',
-      null,
-    ])
+    expect(
+      await Promise.all(registry.projectContents.map((c) => c(qc, idFrom(projectId, 'p')))),
+    ).toEqual(['3 notes', null])
   })
 
   it('takes the row lead from the first module that gives one', () => {

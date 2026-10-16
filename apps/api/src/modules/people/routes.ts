@@ -5,7 +5,7 @@ import {
   calendarEntriesResponse,
   calendarQuery,
   createPersonBody,
-  idParams,
+  personParams,
   peopleResponse,
   personResponse,
   searchQuery,
@@ -78,7 +78,7 @@ export const personRoutes: FastifyPluginAsyncZod = async (app) => {
 
   app.patch(
     '/:id',
-    { schema: { params: idParams, body: updatePersonBody, response: { 200: personResponse } } },
+    { schema: { params: personParams, body: updatePersonBody, response: { 200: personResponse } } },
     async (req) => {
       const updated = await updatePerson(
         app.db,
@@ -90,7 +90,7 @@ export const personRoutes: FastifyPluginAsyncZod = async (app) => {
     },
   )
 
-  app.delete('/:id', { schema: { params: idParams } }, async (req, reply) => {
+  app.delete('/:id', { schema: { params: personParams } }, async (req, reply) => {
     await softDeletePerson(app.db, currentUser(req).workspaceId, req.params.id)
     return reply.code(204).send()
   })

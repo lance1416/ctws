@@ -1,4 +1,4 @@
-import type { CalendarEntry } from '@ctws/contracts'
+import type { CalendarEntry, ProjectId } from '@ctws/contracts'
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useViewParam, ViewTabs } from '../../platform/ui/ViewTabs'
@@ -66,7 +66,7 @@ export function Calendar() {
   // The key names each project whose colour is drawn, so the colour is never the only sign of it.
   // An entry folded into "+N" draws none; the order is the rail's.
   const order = new Map(projects.data?.map((p, i) => [p.id, i]))
-  const keyed = new Map<string, string>()
+  const keyed = new Map<ProjectId, string>()
   for (const { day } of squares)
     for (const entry of (byDay.get(day) ?? []).slice(0, PER_SQUARE))
       if (entry.projectId && entry.projectName && !keyed.has(entry.projectId))

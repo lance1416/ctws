@@ -3,7 +3,7 @@ import {
   calendarQuery,
   createMeetingBody,
   deleteMeetingQuery,
-  idParams,
+  meetingParams,
   meetingOccurrence,
   meetingsResponse,
   occurrenceQuery,
@@ -44,7 +44,7 @@ export const meetingRoutes: FastifyPluginAsyncZod = async (app) => {
     '/:id',
     {
       schema: {
-        params: idParams,
+        params: meetingParams,
         querystring: occurrenceQuery,
         response: { 200: meetingOccurrence },
       },
@@ -71,7 +71,13 @@ export const meetingRoutes: FastifyPluginAsyncZod = async (app) => {
 
   app.patch(
     '/:id',
-    { schema: { params: idParams, body: updateMeetingBody, response: { 200: meetingOccurrence } } },
+    {
+      schema: {
+        params: meetingParams,
+        body: updateMeetingBody,
+        response: { 200: meetingOccurrence },
+      },
+    },
     async (req) => {
       const updated = await updateMeeting(
         app.db,
@@ -85,7 +91,7 @@ export const meetingRoutes: FastifyPluginAsyncZod = async (app) => {
 
   app.delete(
     '/:id',
-    { schema: { params: idParams, querystring: deleteMeetingQuery } },
+    { schema: { params: meetingParams, querystring: deleteMeetingQuery } },
     async (req, reply) => {
       await cancelMeeting(app.db, currentUser(req).workspaceId, req.params.id, req.query)
       return reply.code(204).send()

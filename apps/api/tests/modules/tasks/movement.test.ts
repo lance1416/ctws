@@ -1,3 +1,4 @@
+import type { ProjectId, WorkspaceId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { listProjectMovement } from '../../../src/modules/tasks/queries/movement'
@@ -15,7 +16,7 @@ import { appWithUser, createProject, createTask, type Harness } from '../../help
  */
 
 let ctx: Harness
-let workspaceId: string
+let workspaceId: WorkspaceId
 let otherAuthed: Record<string, string>
 
 beforeAll(async () => {
@@ -24,7 +25,7 @@ beforeAll(async () => {
     (
       await ctx.app.inject({ method: 'GET', url: '/api/v1/auth/me', headers: ctx.authed })
     ).json() as {
-      workspaceId: string
+      workspaceId: WorkspaceId
     }
   ).workspaceId
   // A SECOND user on the SAME app and database: two `appWithUser()` calls would be two unrelated
@@ -44,7 +45,7 @@ afterAll(async () => {
 })
 
 type Row = {
-  projectId: string
+  projectId: ProjectId
   projectName: string
   doneThisWeek: number
   remaining: number
@@ -352,7 +353,7 @@ describe('GET /tasks/movement', () => {
       headers: ctx.authed,
     })
     expect(today.statusCode).toBe(200)
-    const segmented = (today.json().tasks as { projectId: string; segment: string }[]).filter(
+    const segmented = (today.json().tasks as { projectId: ProjectId; segment: string }[]).filter(
       (t) => t.segment === 'overdue',
     )
     const fromToday = new Map<string, number>()

@@ -1,7 +1,8 @@
+import { idFrom, taskId } from '@ctws/contracts'
 import { describe, expect, it } from 'vitest'
 import { blockedLabel } from './blockedLabel'
 
-const b = (title: string) => ({ id: title, title })
+const b = (title: string) => ({ id: idFrom(taskId, title), title })
 
 describe('blockedLabel', () => {
   it('says nothing when nothing is in the way', () => {

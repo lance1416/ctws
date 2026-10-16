@@ -1,11 +1,11 @@
-import type { ReadingItemResponse } from '@ctws/contracts'
+import { idFrom, readingId, type ReadingItemResponse } from '@ctws/contracts'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { ReadingRow } from './ReadingRow'
 
 const item = (over: Partial<ReadingItemResponse> = {}): ReadingItemResponse => ({
-  id: '00000000-0000-0000-0000-000000000001',
+  id: idFrom(readingId, '00000000-0000-0000-0000-000000000001'),
   kind: 'link',
   title: null,
   url: 'https://www.linear.app/now/how-we-redesigned-issues',

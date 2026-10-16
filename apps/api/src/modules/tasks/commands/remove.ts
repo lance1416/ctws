@@ -1,3 +1,4 @@
+import type { TaskId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import type { Db } from '../../../platform/db/client'
 import { taskLog, type TaskCtx } from '../log'
@@ -8,9 +9,7 @@ import { lockTaskTree } from '../tree'
  * Soft-deletes a task and its live descendants, so no read has to check ancestors. Each gets its
  * own `deleted` event; a descendant's names the task the cascade started from.
  */
-export async function softDeleteTask(db: Db, ctx: TaskCtx, id: string): Promise<void> {
-  // As the database returns it, so the root is told apart from its descendants below.
-  id = id.toLowerCase()
+export async function softDeleteTask(db: Db, ctx: TaskCtx, id: TaskId): Promise<void> {
   await db.transaction(async (tx) => {
     await lockTaskTree(tx, ctx.workspaceId)
     const log = taskLog(tx, ctx)
@@ -30,7 +29,7 @@ export async function softDeleteTask(db: Db, ctx: TaskCtx, id: string): Promise<
       where id in (select id from subtree) and deleted_at is null
       returning id
     `)
-    for (const { id: deletedId } of result.rows as { id: string }[]) {
+    for (const { id: deletedId } of result.rows as { id: TaskId }[]) {
       await log.append(deletedId, 'deleted', deletedId === id ? {} : { cascadedFrom: id })
     }
   })

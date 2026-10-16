@@ -1,6 +1,6 @@
 import {
   createProjectBody,
-  idParams,
+  projectParams,
   projectListQuery,
   projectListResponse,
   projectResponse,
@@ -43,14 +43,20 @@ export const projectRoutes: FastifyPluginAsyncZod<{ columns: ProjectColumns }> =
 
   app.patch(
     '/projects/:id',
-    { schema: { params: idParams, body: updateProjectBody, response: { 200: projectResponse } } },
+    {
+      schema: {
+        params: projectParams,
+        body: updateProjectBody,
+        response: { 200: projectResponse },
+      },
+    },
     async (req) => {
       const row = await updateProject(app.db, currentUser(req).workspaceId, req.params.id, req.body)
       return toProjectResponse(row)
     },
   )
 
-  app.delete('/projects/:id', { schema: { params: idParams } }, async (req, reply) => {
+  app.delete('/projects/:id', { schema: { params: projectParams } }, async (req, reply) => {
     await softDeleteProject(app.db, currentUser(req).workspaceId, req.params.id)
     return reply.status(204).send()
   })

@@ -1,4 +1,4 @@
-import type { LinkKind, ObjectType } from '@ctws/contracts'
+import { type LinkKind, type ObjectType, type WorkspaceId } from '@ctws/contracts'
 import { and, eq } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
 import { links } from './tables'
@@ -12,11 +12,19 @@ export type Endpoint = { type: ObjectType; id: string }
  */
 export async function putLinks(
   q: Queryable,
-  workspaceId: string,
-  from: Endpoint,
-  toType: ObjectType,
-  kind: LinkKind,
-  toIds: readonly string[],
+  {
+    workspaceId,
+    from,
+    toType,
+    kind,
+    toIds,
+  }: {
+    workspaceId: WorkspaceId
+    from: Endpoint
+    toType: ObjectType
+    kind: LinkKind
+    toIds: readonly string[]
+  },
 ): Promise<void> {
   await q
     .delete(links)
@@ -43,14 +51,11 @@ export async function putLinks(
   )
 }
 
+/** One edge: both ends and the kind are its identity. */
+type Edge = { workspaceId: WorkspaceId; from: Endpoint; to: Endpoint; kind: LinkKind }
+
 /** Adds one edge; one that is already there is the state asked for. */
-export async function addLink(
-  q: Queryable,
-  workspaceId: string,
-  from: Endpoint,
-  to: Endpoint,
-  kind: LinkKind,
-): Promise<void> {
+export async function addLink(q: Queryable, { workspaceId, from, to, kind }: Edge): Promise<void> {
   await q
     .insert(links)
     .values({
@@ -67,10 +72,7 @@ export async function addLink(
 /** Removes one edge; one that is already gone is the same answer. */
 export async function removeLink(
   q: Queryable,
-  workspaceId: string,
-  from: Endpoint,
-  to: Endpoint,
-  kind: LinkKind,
+  { workspaceId, from, to, kind }: Edge,
 ): Promise<void> {
   await q
     .delete(links)

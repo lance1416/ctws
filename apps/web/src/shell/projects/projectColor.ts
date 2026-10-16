@@ -1,4 +1,4 @@
-import type { ProjectColor } from '@ctws/contracts'
+import { type ProjectColor, type ProjectId } from '@ctws/contracts'
 import { useEveryProject } from './api'
 
 /**
@@ -24,7 +24,7 @@ export function railClass(color: ProjectColor | undefined): string {
 }
 
 /** `(projectId) => class`, for places that hold a project id and not the project. */
-export function useProjectRail(): (projectId: string) => string {
+export function useProjectRail(): (projectId: ProjectId) => string {
   // Live and archived both: a row on an archived project keeps its colour (the shelf, a search).
   const { data } = useEveryProject()
   const byId = new Map(data?.map((p) => [p.id, p.color]) ?? [])

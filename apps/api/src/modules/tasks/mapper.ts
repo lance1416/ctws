@@ -3,6 +3,7 @@ import type {
   CompletedTaskResponse,
   DependencyRef,
   SearchTaskResponse,
+  TaskId,
   TaskResponse,
   TodayTaskResponse,
 } from '@ctws/contracts'
@@ -33,7 +34,7 @@ export function toTaskResponse(t: Task): TaskResponse {
 
 export function toTodayResponse(
   t: TodayTask,
-  blockers: Map<string, DependencyRef[]>,
+  blockers: Map<TaskId, DependencyRef[]>,
 ): TodayTaskResponse {
   return {
     ...toTaskResponse(t),

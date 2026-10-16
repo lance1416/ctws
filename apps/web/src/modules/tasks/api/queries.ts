@@ -1,3 +1,4 @@
+import { type ProjectId, type TaskId } from '@ctws/contracts'
 import { queryOptions } from '@tanstack/react-query'
 import { listCompleted } from './completed'
 import { listMovement } from './movement'
@@ -21,13 +22,13 @@ export const movementQuery = () =>
 /** The prefix every project's task list shares, for optimistic edits across all of them. */
 export const PROJECT_TASKS = ['tasks', 'list'] as const
 
-export const projectTasksQuery = (projectId: string) =>
+export const projectTasksQuery = (projectId: ProjectId) =>
   queryOptions({
     queryKey: [...PROJECT_TASKS, projectId],
     queryFn: () => listProjectTasks(projectId),
   })
 
-export const taskQuery = (id: string) =>
+export const taskQuery = (id: TaskId) =>
   queryOptions({ queryKey: ['tasks', 'one', id], queryFn: () => getTask(id), retry: false })
 
 export const taskSearchQuery = (q: string) =>
@@ -46,5 +47,5 @@ export const reviewQuery = (range: Range | null) =>
     queryFn: () => listReview(range ?? undefined),
   })
 
-export const dependenciesQuery = (id: string) =>
+export const dependenciesQuery = (id: TaskId) =>
   queryOptions({ queryKey: ['tasks', 'dependencies', id], queryFn: () => taskDependencies(id) })

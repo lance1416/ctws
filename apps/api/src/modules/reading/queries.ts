@@ -1,4 +1,10 @@
-import { FINISHED_READING_STATUSES, type CalendarEntry } from '@ctws/contracts'
+import {
+  FINISHED_READING_STATUSES,
+  type CalendarEntry,
+  type ProjectId,
+  type WorkspaceId,
+  type ReadingId,
+} from '@ctws/contracts'
 import { and, desc, eq, isNull, sql } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
 import { sqlValues, textMatches } from '../../platform/db/sql'
@@ -10,10 +16,13 @@ import { readingItems } from './tables'
 type ReadingItem = typeof readingItems.$inferSelect
 
 /** An item with the name of the project it is filed under. */
-export type ReadingItemRow = ReadingItem & { projectId: string | null; projectName: string | null }
+export type ReadingItemRow = ReadingItem & {
+  projectId: ProjectId | null
+  projectName: string | null
+}
 
 /** A live item in this workspace; every read and write goes through it. */
-export function visibleItems(workspaceId: string) {
+export function visibleItems(workspaceId: WorkspaceId) {
   return and(eq(readingItems.workspaceId, workspaceId), isNull(readingItems.deletedAt))
 }
 
@@ -23,14 +32,14 @@ const withProject = { item: readingItems, ...readingFiling.project }
 
 const rowOf = (r: {
   item: ReadingItem
-  projectId: string | null
+  projectId: ProjectId | null
   projectName: string | null
 }): ReadingItemRow => ({ ...r.item, projectId: r.projectId, projectName: r.projectName })
 
 /** Newest first: what was just saved is what you are reaching for. */
 export async function listReadingItems(
   q: Queryable,
-  workspaceId: string,
+  workspaceId: WorkspaceId,
   unfiled: boolean,
 ): Promise<ReadingItemRow[]> {
   const rows = await q
@@ -43,8 +52,8 @@ export async function listReadingItems(
 
 export async function getReadingItem(
   q: Queryable,
-  workspaceId: string,
-  id: string,
+  workspaceId: WorkspaceId,
+  id: ReadingId,
 ): Promise<ReadingItemRow> {
   const [row] = await q
     .select(withProject)
@@ -60,7 +69,7 @@ const SEARCH_LIMIT = 20
 /** By title, author or url: an untitled link is remembered by its host. */
 export async function searchReadingItems(
   q: Queryable,
-  workspaceId: string,
+  workspaceId: WorkspaceId,
   query: string,
 ): Promise<ReadingItemRow[]> {
   const rows = await q
@@ -80,7 +89,7 @@ export async function searchReadingItems(
 /** Unfinished items on the day they are planned for, for the shell's calendar. */
 export async function readingEntries(
   q: Queryable,
-  workspaceId: string,
+  workspaceId: WorkspaceId,
   range: { from: string; to: string },
 ): Promise<CalendarEntry[]> {
   const result = await q.execute(sql`
@@ -101,10 +110,10 @@ export async function readingEntries(
     order by r.plan_on, title
   `)
   type Row = {
-    id: string
+    id: ReadingId
     day: string
     title: string
-    projectId: string | null
+    projectId: ProjectId | null
     projectName: string | null
   }
   return (result.rows as Row[]).map((r) => dayEntry({ ...r, to: '/reading', kind: 'to read' }))

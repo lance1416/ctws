@@ -65,7 +65,7 @@ export const linkRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = asy
         exists(registry, app.db, workspaceId, to),
       ])
       if (!hasFrom || !hasTo) throw new LinkEndNotFoundError()
-      await addLink(app.db, workspaceId, from, to, kind)
+      await addLink(app.db, { workspaceId, from, to, kind })
       // 201 whether or not the edge was already there.
       reply.code(201)
       return { created: true }
@@ -77,13 +77,12 @@ export const linkRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = asy
     const { fromType, fromId, toType, toId, kind } = req.query
     // Not checked against the model: a link stored before the model refused its kind must still
     // be removable.
-    await removeLink(
-      app.db,
+    await removeLink(app.db, {
       workspaceId,
-      { type: fromType, id: fromId },
-      { type: toType, id: toId },
+      from: { type: fromType, id: fromId },
+      to: { type: toType, id: toId },
       kind,
-    )
+    })
     return reply.code(204).send()
   })
 }

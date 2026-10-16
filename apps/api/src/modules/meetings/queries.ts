@@ -1,4 +1,12 @@
-import { type CalendarEntry, DAY_MS, occurrenceKey } from '@ctws/contracts'
+import {
+  type CalendarEntry,
+  DAY_MS,
+  occurrenceKey,
+  type MeetingId,
+  type PersonId,
+  type ProjectId,
+  type WorkspaceId,
+} from '@ctws/contracts'
 import { clockTime, zoneAbbreviation } from '@ctws/core'
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
@@ -16,11 +24,11 @@ import {
 import { meetingExceptions, meetings } from './tables'
 import { windowOf } from './zone'
 
-type Attendee = { id: string; name: string }
+type Attendee = { id: PersonId; name: string }
 
 /** A row is a series: with its rule and exceptions it describes every occurrence. */
 export type SeriesRow = typeof meetings.$inferSelect & {
-  projectId: string | null
+  projectId: ProjectId | null
   projectName: string | null
   attendees: Attendee[]
   exceptions: Exception[]
@@ -28,19 +36,19 @@ export type SeriesRow = typeof meetings.$inferSelect & {
 
 /** One occurrence, with what a reader needs of its series. */
 export type OccurrenceRow = Occurrence & {
-  meetingId: string
+  meetingId: MeetingId
   title: string
   rrule: string | null
   overridden: boolean
   location: string | null
   note: string | null
-  projectId: string | null
+  projectId: ProjectId | null
   projectName: string | null
   attendees: Attendee[]
 }
 
 /** A live meeting in this workspace; every read and write goes through it. */
-export function visibleMeetings(workspaceId: string) {
+export function visibleMeetings(workspaceId: WorkspaceId) {
   return and(eq(meetings.workspaceId, workspaceId), isNull(meetings.deletedAt))
 }
 
@@ -51,12 +59,16 @@ const MAX_SERIES_PER_REQUEST = 500
 
 type Selected = {
   meeting: typeof meetings.$inferSelect
-  projectId: string | null
+  projectId: ProjectId | null
   projectName: string | null
 }
 
 /** Attaches attendees and exceptions to a page of series, one query each. */
-async function hydrate(q: Queryable, workspaceId: string, rows: Selected[]): Promise<SeriesRow[]> {
+async function hydrate(
+  q: Queryable,
+  workspaceId: WorkspaceId,
+  rows: Selected[],
+): Promise<SeriesRow[]> {
   if (rows.length === 0) return []
   const ids = rows.map((r) => r.meeting.id)
   const [attending, found] = await Promise.all([
@@ -107,7 +119,11 @@ function expand(series: SeriesRow, window: { from: Date; to: Date }): Occurrence
   }))
 }
 
-async function seriesOf(q: Queryable, workspaceId: string, id?: string): Promise<SeriesRow[]> {
+async function seriesOf(
+  q: Queryable,
+  workspaceId: WorkspaceId,
+  id?: MeetingId,
+): Promise<SeriesRow[]> {
   const rows = await q
     .select({ meeting: meetings, ...meetingFiling.project })
     .from(meetings)
@@ -118,7 +134,11 @@ async function seriesOf(q: Queryable, workspaceId: string, id?: string): Promise
 }
 
 /** Locks a live meeting for the rest of the transaction, so an edit reads it only once it is held. */
-export async function lockMeeting(q: Queryable, workspaceId: string, id: string): Promise<void> {
+export async function lockMeeting(
+  q: Queryable,
+  workspaceId: WorkspaceId,
+  id: MeetingId,
+): Promise<void> {
   const [row] = await q
     .select({ id: meetings.id })
     .from(meetings)
@@ -129,8 +149,8 @@ export async function lockMeeting(q: Queryable, workspaceId: string, id: string)
 
 export async function seriesById(
   q: Queryable,
-  workspaceId: string,
-  id: string,
+  workspaceId: WorkspaceId,
+  id: MeetingId,
 ): Promise<SeriesRow> {
   const [series] = await seriesOf(q, workspaceId, id)
   if (!series) throw new MeetingNotFoundError()
@@ -140,7 +160,7 @@ export async function seriesById(
 /** Every occurrence between two instants, which is how events in many zones are compared. */
 export async function listOccurrences(
   q: Queryable,
-  workspaceId: string,
+  workspaceId: WorkspaceId,
   window: { from: Date; to: Date },
 ): Promise<OccurrenceRow[]> {
   const series = await seriesOf(q, workspaceId)
@@ -158,8 +178,8 @@ function around(recurrenceId: LocalTime): { from: Date; to: Date } {
 /** One occurrence by its series and recurrence id. */
 export async function getOccurrence(
   q: Queryable,
-  workspaceId: string,
-  id: string,
+  workspaceId: WorkspaceId,
+  id: MeetingId,
   recurrenceId: LocalTime,
 ): Promise<OccurrenceRow> {
   const series = await seriesById(q, workspaceId, id)
@@ -186,7 +206,7 @@ export function assertOccurs(series: SeriesRow, recurrenceId: LocalTime): void {
  */
 export async function meetingEntries(
   q: Queryable,
-  workspaceId: string,
+  workspaceId: WorkspaceId,
   range: { from: string; to: string },
   zone: string,
 ): Promise<CalendarEntry[]> {

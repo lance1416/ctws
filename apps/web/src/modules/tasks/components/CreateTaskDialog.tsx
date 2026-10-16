@@ -1,4 +1,4 @@
-import { MAX_TASK_DEPTH, NEW_TASK_STATUS } from '@ctws/contracts'
+import { MAX_TASK_DEPTH, NEW_TASK_STATUS, type ProjectId } from '@ctws/contracts'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useRef } from 'react'
@@ -36,7 +36,7 @@ export function CreateTaskDialog({
   onClose,
 }: {
   /** The project the dialog opens on; still changeable inside it. */
-  projectId: string
+  projectId: ProjectId
   onClose: () => void
 }) {
   const composing = useComposing()

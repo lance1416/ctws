@@ -1,4 +1,4 @@
-import { DAY_MS, type RollupResponse } from '@ctws/contracts'
+import { DAY_MS, type RollupResponse, type ProjectId, type WorkspaceId } from '@ctws/contracts'
 import { afterEach, describe, expect, it } from 'vitest'
 import { BOARD_TX, listProjectTasks } from '../../../src/modules/tasks/queries/list'
 import { projectRollups } from '../../../src/modules/tasks/queries/rollup'
@@ -26,7 +26,10 @@ async function setup(timezone?: string, now?: Date): Promise<Harness> {
   return ctx
 }
 
-async function rollups(ctx: Harness, projectId: string): Promise<Record<string, RollupResponse>> {
+async function rollups(
+  ctx: Harness,
+  projectId: ProjectId,
+): Promise<Record<string, RollupResponse>> {
   const res = await ctx.app.inject({
     method: 'GET',
     url: `/api/v1/tasks?projectId=${projectId}`,
@@ -266,7 +269,7 @@ describe('one project page is one snapshot', () => {
     const child = await createTask(ctx, pid, 'child', parent)
     const { workspaceId } = (
       await ctx.app.inject({ method: 'GET', url: '/api/v1/auth/me', headers: ctx.authed })
-    ).json() as { workspaceId: string }
+    ).json() as { workspaceId: WorkspaceId }
 
     await ctx.db.transaction(async (tx) => {
       const tasks = await listProjectTasks(tx, workspaceId, pid)

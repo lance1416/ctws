@@ -2,7 +2,7 @@ import {
   calendarEntriesResponse,
   calendarQuery,
   createReadingItemBody,
-  idParams,
+  readingParams,
   readingItemResponse,
   readingItemsResponse,
   readingListQuery,
@@ -69,7 +69,7 @@ export const readingRoutes =
       '/:id',
       {
         schema: {
-          params: idParams,
+          params: readingParams,
           body: updateReadingItemBody,
           response: { 200: readingItemResponse },
         },
@@ -85,7 +85,7 @@ export const readingRoutes =
       },
     )
 
-    app.delete('/:id', { schema: { params: idParams } }, async (req, reply) => {
+    app.delete('/:id', { schema: { params: readingParams } }, async (req, reply) => {
       await softDeleteReadingItem(app.db, currentUser(req).workspaceId, req.params.id)
       return reply.code(204).send()
     })

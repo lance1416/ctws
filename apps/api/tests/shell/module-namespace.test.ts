@@ -1,3 +1,4 @@
+import type { ProjectId } from '@ctws/contracts'
 import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { appWithUser, createProject, createTask, type Harness } from '../helpers/harness'
@@ -7,7 +8,7 @@ import { appWithUser, createProject, createTask, type Harness } from '../helpers
  * project tenant check holds on every project route.
  */
 let ctx: Harness
-let projectId: string
+let projectId: ProjectId
 let otherAuthed: Record<string, string>
 
 beforeAll(async () => {

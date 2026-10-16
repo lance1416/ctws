@@ -1,4 +1,9 @@
-import type { CalendarEntry, ObjectType, ProjectListItem } from '@ctws/contracts'
+import {
+  type CalendarEntry,
+  type ObjectType,
+  type ProjectListItem,
+  type ProjectId,
+} from '@ctws/contracts'
 import type { QueryClient } from '@tanstack/react-query'
 import type { ComponentType, ReactNode } from 'react'
 import type { RouteObject } from 'react-router-dom'
@@ -39,20 +44,20 @@ export type WorkspaceModule = {
 export type ProjectContribution = {
   /** Rows on the project's page that need more than a list of edges, like the task tree. */
   Block?: {
-    Component: ComponentType<{ projectId: string; view: string }>
+    Component: ComponentType<{ projectId: ProjectId; view: string }>
     /** The block's views, the first the default; tabs in its head are drawn from two up. */
     views: readonly [BlockView, ...BlockView[]]
     /** A control in the block's head, typically its own "new". */
-    Action?: ComponentType<{ projectId: string }>
+    Action?: ComponentType<{ projectId: ProjectId }>
   }
   /** Numbers under the project's name on its page, said as a sentence. */
-  Headline?: ComponentType<{ projectId: string }>
+  Headline?: ComponentType<{ projectId: ProjectId }>
   /** Numbers for a project's row in the list (`row`) or its Workbench card (`tile`). */
   Facts?: ComponentType<{ project: ProjectListItem; place: 'row' | 'tile' }>
   /** The day in the margin of a project's row in the list. At most one module gives one. */
-  Lead?: ComponentType<{ projectId: string }>
+  Lead?: ComponentType<{ projectId: ProjectId }>
   /** What deleting a project takes with it, as a phrase ("12 tasks"), or null for nothing. */
-  contents?: (qc: QueryClient, projectId: string) => Promise<string | null>
+  contents?: (qc: QueryClient, projectId: ProjectId) => Promise<string | null>
 }
 
 type BlockView = { id: string; label: string }

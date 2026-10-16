@@ -1,4 +1,4 @@
-import type { ProjectListItem } from '@ctws/contracts'
+import { type ProjectListItem, type ProjectId } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { Fragment, type ReactNode } from 'react'
 import { movementQuery } from '../api/queries'
@@ -10,7 +10,7 @@ import { deadlineDayLead } from '../../../shell/rows/leads'
 import { RowLead } from '../../../shell/rows/RowLead'
 
 /** One project's movement: what is late, what is next, when it last moved. */
-function useMoved(projectId: string) {
+function useMoved(projectId: ProjectId) {
   const movement = useQuery(movementQuery())
   return movement.data?.find((m) => m.projectId === projectId)
 }
@@ -65,7 +65,7 @@ export function ProjectFacts({
 }
 
 /** The project's next standing deadline, in the margin of its row. */
-export function ProjectLead({ projectId }: { projectId: string }) {
+export function ProjectLead({ projectId }: { projectId: ProjectId }) {
   const m = useMoved(projectId)
   const today = ymd(useNow(), useTimeZone())
   return <RowLead lead={m?.nextDueOn ? deadlineDayLead(m.nextDueOn, today) : null} />

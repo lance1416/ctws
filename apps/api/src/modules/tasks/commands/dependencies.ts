@@ -1,3 +1,4 @@
+import type { TaskId, WorkspaceId } from '@ctws/contracts'
 import { and, eq, sql } from 'drizzle-orm'
 import type { Db, Queryable } from '../../../platform/db/client'
 import { DependencyCycleError } from '../errors'
@@ -6,15 +7,17 @@ import { visibleTask } from '../queries/scope'
 import { taskDependencies } from '../tables'
 import { lockTaskTree } from '../tree'
 
+/** `blockedId` waits for `blockerId`. */
+type Edge = { blockedId: TaskId; blockerId: TaskId }
+
 /**
  * Would `blocker -> blocked` close a loop, i.e. is `blocked` already upstream of `blocker`?
  * `union` keeps a diamond from being walked once per path.
  */
 async function wouldCycle(
   q: Queryable,
-  workspaceId: string,
-  blockerId: string,
-  blockedId: string,
+  workspaceId: WorkspaceId,
+  { blockedId, blockerId }: Edge,
 ): Promise<boolean> {
   const rows = await q.execute(sql`
     with recursive upstream(id) as (
@@ -37,8 +40,7 @@ async function wouldCycle(
 export async function addDependency(
   db: Db,
   ctx: TaskCtx,
-  blockedId: string,
-  blockerId: string,
+  { blockedId, blockerId }: Edge,
 ): Promise<void> {
   if (blockedId === blockerId) throw new DependencyCycleError()
   await db.transaction(async (tx) => {
@@ -47,7 +49,7 @@ export async function addDependency(
     // A foreign id reads as not found, never as a refusal that confirms it exists.
     await visibleTask(tx, ctx.workspaceId, blockedId)
     await visibleTask(tx, ctx.workspaceId, blockerId)
-    if (await wouldCycle(tx, ctx.workspaceId, blockerId, blockedId))
+    if (await wouldCycle(tx, ctx.workspaceId, { blockedId, blockerId }))
       throw new DependencyCycleError()
 
     const added = await tx
@@ -64,8 +66,7 @@ export async function addDependency(
 export async function removeDependency(
   db: Db,
   ctx: TaskCtx,
-  blockedId: string,
-  blockerId: string,
+  { blockedId, blockerId }: Edge,
 ): Promise<void> {
   await db.transaction(async (tx) => {
     const removed = await tx

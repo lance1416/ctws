@@ -1,3 +1,4 @@
+import type { WorkspaceId } from '@ctws/contracts'
 import { keptNote, nextOccurrence, type Birthday } from '@ctws/core'
 import { afterEach, describe, expect, it } from 'vitest'
 import { listBirthdays } from '../../../src/modules/people/birthdays'
@@ -21,9 +22,9 @@ const NOW = new Date('2026-10-13T04:00:00Z')
 const setup = (timezone = 'Asia/Shanghai'): Promise<Harness> =>
   setupWith(cleanups, undefined, { timezone, clock: () => NOW })
 
-async function workspaceOf(ctx: Harness): Promise<string> {
+async function workspaceOf(ctx: Harness): Promise<WorkspaceId> {
   const res = await ctx.app.inject({ method: 'GET', url: '/api/v1/auth/me', headers: ctx.authed })
-  return (res.json() as { workspaceId: string }).workspaceId
+  return (res.json() as { workspaceId: WorkspaceId }).workspaceId
 }
 
 async function add(ctx: Harness, name: string, birthday?: unknown, circle?: string) {

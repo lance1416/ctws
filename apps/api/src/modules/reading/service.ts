@@ -1,6 +1,12 @@
-import type { CreateReadingItemBody, UpdateReadingItemBody } from '@ctws/contracts'
+import {
+  type CreateReadingItemBody,
+  type UpdateReadingItemBody,
+  type WorkspaceId,
+  type ReadingId,
+  readingId,
+} from '@ctws/contracts'
+import { newId } from '../../platform/db/ids'
 import { and, eq, sql } from 'drizzle-orm'
-import { v7 as uuidv7 } from 'uuid'
 import type { Db } from '../../platform/db/client'
 import { assertProjectsVisible } from '../../shell/projects/queries'
 import { ReadingItemNotFoundError, WrongKindError } from './errors'
@@ -13,7 +19,7 @@ export type ReadingDeps = { unfurl: Unfurl; enabled: boolean }
 
 export async function createReadingItem(
   db: Db,
-  workspaceId: string,
+  workspaceId: WorkspaceId,
   body: CreateReadingItemBody,
 ): Promise<ReadingItemRow> {
   const values =
@@ -23,15 +29,15 @@ export async function createReadingItem(
   const [created] = await db
     .insert(readingItems)
     // The list itself is the inbox, so everything starts as to read.
-    .values({ id: uuidv7(), workspaceId, status: 'todo', ...values })
+    .values({ id: newId(readingId), workspaceId, status: 'todo', ...values })
     .returning({ id: readingItems.id })
   return getReadingItem(db, workspaceId, created!.id)
 }
 
 export async function updateReadingItem(
   db: Db,
-  workspaceId: string,
-  id: string,
+  workspaceId: WorkspaceId,
+  id: ReadingId,
   patch: UpdateReadingItemBody,
 ): Promise<ReadingItemRow> {
   return db.transaction(async (tx) => {
@@ -54,7 +60,7 @@ export async function updateReadingItem(
       .where(and(visibleItems(workspaceId), eq(readingItems.id, id)))
     // `null` unfiles the item; absent leaves it where it is.
     if (projectId !== undefined) {
-      await readingFiling.put(tx, workspaceId, id, projectId ? [projectId] : [])
+      await readingFiling.put(tx, { workspaceId, id, projectIds: projectId ? [projectId] : [] })
     }
     return getReadingItem(tx, workspaceId, id)
   })
@@ -62,8 +68,8 @@ export async function updateReadingItem(
 
 export async function softDeleteReadingItem(
   db: Db,
-  workspaceId: string,
-  id: string,
+  workspaceId: WorkspaceId,
+  id: ReadingId,
 ): Promise<void> {
   const deleted = await db
     .update(readingItems)
@@ -80,7 +86,7 @@ export async function softDeleteReadingItem(
 export async function withFetched(
   deps: ReadingDeps,
   db: Db,
-  workspaceId: string,
+  workspaceId: WorkspaceId,
   row: ReadingItemRow,
 ): Promise<ReadingItemRow> {
   if (!deps.enabled || row.kind !== 'link') return row

@@ -1,25 +1,25 @@
 import { MAX_TASK_DEPTH } from '@ctws/contracts'
 import type { FlatRow } from './flatten'
 
-type DropRequest = {
+type DropRequest<Id extends string> = {
   /** The visible rows, in display order. */
-  rows: FlatRow[]
-  draggedId: string
+  rows: FlatRow<Id>[]
+  draggedId: Id
   /** Insertion slot, 0..rows.length: the row lands between `rows[slot - 1]` and `rows[slot]`. */
   slot: number
   /** The depth the gesture is asking for, derived from the horizontal offset. */
   wantedDepth: number
 }
 
-type DropPlan =
-  | { ok: true; parentId: string | null; beforeId?: string; afterId?: string }
+type DropPlan<Id extends string> =
+  | { ok: true; parentId: Id | null; beforeId?: Id; afterId?: Id }
   | { ok: false; reason: 'own-subtree' | 'too-deep' | 'unchanged' }
 
 /**
  * Translates a drag into one move call. The API enforces the same rules, but a drop refused up
  * front is better than one that is allowed and then snaps back.
  */
-export function planDrop(req: DropRequest): DropPlan {
+export function planDrop<Id extends string>(req: DropRequest<Id>): DropPlan<Id> {
   const { rows, draggedId, slot, wantedDepth } = req
   const index = rows.findIndex((r) => r.id === draggedId)
   if (index < 0) return { ok: false, reason: 'unchanged' }
@@ -33,14 +33,14 @@ export function planDrop(req: DropRequest): DropPlan {
   if (slot > index && slot < end) return { ok: false, reason: 'own-subtree' }
 
   const outside = (i: number) => i < index || i >= end
-  let prev: FlatRow | null = null
+  let prev: FlatRow<Id> | null = null
   for (let i = slot - 1; i >= 0; i--) {
     if (outside(i)) {
       prev = rows[i]!
       break
     }
   }
-  let next: FlatRow | null = null
+  let next: FlatRow<Id> | null = null
   for (let i = slot; i < rows.length; i++) {
     if (outside(i)) {
       next = rows[i]!
@@ -85,8 +85,12 @@ export function planDrop(req: DropRequest): DropPlan {
  * Walks up from `from` to its ancestor at `depth`. Safe on the visible rows: a collapsed node
  * hides its descendants, so every ancestor of a visible row is itself visible.
  */
-function ancestorAtDepth(rows: FlatRow[], from: FlatRow, depth: number): string | null {
-  let cur: FlatRow | undefined = from
+function ancestorAtDepth<Id extends string>(
+  rows: FlatRow<Id>[],
+  from: FlatRow<Id>,
+  depth: number,
+): Id | null {
+  let cur: FlatRow<Id> | undefined = from
   // Bounded by the row count so a malformed parent chain cannot spin.
   for (let guard = 0; cur && cur.depth > depth && guard <= rows.length; guard++) {
     cur = rows.find((r) => r.id === cur!.parentId)

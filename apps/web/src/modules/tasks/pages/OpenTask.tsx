@@ -1,4 +1,4 @@
-import { idParams } from '@ctws/contracts'
+import { idFrom, taskId } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -14,8 +14,8 @@ export function OpenTask() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
   // Only an id is asked about: under /api/v1/tasks a word like `completed` names a list.
-  const isId = idParams.safeParse({ id }).success
-  const found = useQuery({ ...taskQuery(id), enabled: isId })
+  const isId = taskId.safeParse(id).success
+  const found = useQuery({ ...taskQuery(idFrom(taskId, id)), enabled: isId })
   useEffect(() => {
     if (found.data)
       navigate(`/projects/${found.data.projectId}?task=${found.data.id}`, { replace: true })

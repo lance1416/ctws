@@ -37,8 +37,6 @@ export const calendarDate = z
 /** An instant with an offset. */
 export const instant = z.iso.datetime({ offset: true })
 
-export const idParams = z.object({ id: z.uuid() }).strict()
-
 /** The zone an account is stored in: an IANA name, in its canonical spelling. */
 export const canonicalTimeZone = z.string().superRefine((value, ctx) => {
   if (value !== value.trim() || value.length === 0) {

@@ -1,4 +1,11 @@
-import type { ProjectListItem, TaskResponse } from '@ctws/contracts'
+import {
+  idFrom,
+  projectId,
+  type ProjectListItem,
+  taskId,
+  type TaskResponse,
+  workspaceId,
+} from '@ctws/contracts'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter } from 'react-router-dom'
@@ -9,8 +16,8 @@ import { archivedProjectsQuery, projectsQuery } from '../../../shell/projects/ap
 import { TaskReading } from './TaskReading'
 
 const project = (id: string, name: string, archivedAt: string | null): ProjectListItem => ({
-  id,
-  workspaceId: '00000000-0000-7000-8000-0000000000ff',
+  id: idFrom(projectId, id),
+  workspaceId: workspaceId.parse('00000000-0000-7000-8000-0000000000ff'),
   name,
   color: 'project-1',
   rank: 'a0',
@@ -21,8 +28,8 @@ const project = (id: string, name: string, archivedAt: string | null): ProjectLi
 })
 
 const task: TaskResponse = {
-  id: '00000000-0000-7000-8000-000000000001',
-  projectId: '00000000-0000-7000-8000-0000000000a2',
+  id: taskId.parse('00000000-0000-7000-8000-000000000001'),
+  projectId: projectId.parse('00000000-0000-7000-8000-0000000000a2'),
   parentId: null,
   title: 'shipped',
   notes: null,

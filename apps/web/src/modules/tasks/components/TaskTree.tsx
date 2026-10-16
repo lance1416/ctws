@@ -7,7 +7,15 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import type { MoveTaskBody, TaskResponse, TaskStatus } from '@ctws/contracts'
+import {
+  taskId,
+  idFrom,
+  type MoveTaskBody,
+  type TaskResponse,
+  type TaskStatus,
+  type ProjectId,
+  type TaskId,
+} from '@ctws/contracts'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { EMPTY_ACTION, EmptyState } from '../../../platform/ui/EmptyState'
@@ -38,7 +46,7 @@ import { useTreeVisibility } from './tree/useTreeVisibility'
 
 const NONE: readonly TaskResponse[] = []
 
-export function TaskTree({ projectId }: { projectId: string }) {
+export function TaskTree({ projectId }: { projectId: ProjectId }) {
   const qc = useQueryClient()
   const allProjects = useProjects()
   // Only the inbox dates its rows: quick capture makes it the one list that grows undecided.
@@ -59,7 +67,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
   )
 
   // The tree's single tab stop follows focus; if that row has gone, the first row takes it.
-  const [activeId, setActiveId] = useState<string | null>(null)
+  const [activeId, setActiveId] = useState<TaskId | null>(null)
   const tabId = rows.some((r) => r.id === activeId) ? activeId : (rows[0]?.id ?? null)
 
   const { openId, setOpenId } = useTreeParams({
@@ -76,7 +84,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
 
   const actions = useTaskActions(setError)
   /** Every status change the tree makes: a row finished here stays on screen, however it was. */
-  const setStatus = (id: string, status: TaskStatus) => {
+  const setStatus = (id: TaskId, status: TaskStatus) => {
     setError(null)
     if (isFinished(status)) shown.keep([id])
     actions.setStatus(id, status)
@@ -93,7 +101,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
   const move = useMutation({
-    mutationFn: ({ id, body }: { id: string; body: MoveTaskBody; unfolded?: string }) =>
+    mutationFn: ({ id, body }: { id: TaskId; body: MoveTaskBody; unfolded?: TaskId }) =>
       moveTask(id, body),
     onMutate: async ({ id, body, unfolded }) => {
       await qc.cancelQueries({ queryKey: key })
@@ -114,7 +122,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
   })
 
   /** Drops `draggedId` at `slot` at `wantedDepth`, if the plan allows it. */
-  const run = (draggedId: string, slot: number, wantedDepth: number) => {
+  const run = (draggedId: TaskId, slot: number, wantedDepth: number) => {
     if (slot < 0 || slot > rows.length) return
     const plan = planDrop({ rows, draggedId, slot, wantedDepth })
     if (!plan.ok) {
@@ -125,7 +133,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
     setError(null)
     // A row moved under a folded parent would vanish while sitting in the database, so the
     // parent opens; which one travels with the move, so a refusal can fold it again.
-    let unfolded: string | undefined
+    let unfolded: TaskId | undefined
     if (plan.parentId && folds.collapsed.has(plan.parentId)) {
       folds.unfold([plan.parentId])
       unfolded = plan.parentId
@@ -192,8 +200,8 @@ export function TaskTree({ projectId }: { projectId: string }) {
   // The pane can move or delete its task: focus then goes to a neighbouring row, not to <body>.
   useFocusAfterRemoval({
     ids: () =>
-      [...document.querySelectorAll<HTMLElement>('[data-handle-id]')].map(
-        (el) => el.dataset.handleId!,
+      [...document.querySelectorAll<HTMLElement>('[data-handle-id]')].map((el) =>
+        idFrom(taskId, el.dataset.handleId!),
       ),
     rowFor: (id) => document.querySelector<HTMLElement>(`[data-handle-id="${id}"]`),
     heading: () => document.querySelector<HTMLElement>('h1'),

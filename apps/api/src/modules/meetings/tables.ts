@@ -1,3 +1,4 @@
+import type { MeetingId, WorkspaceId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import {
   boolean,
@@ -19,8 +20,9 @@ import { workspaces } from '../../shell/auth/tables'
 export const meetings = pgTable(
   'meetings',
   {
-    id: uuid('id').primaryKey(),
+    id: uuid('id').$type<MeetingId>().primaryKey(),
     workspaceId: uuid('workspace_id')
+      .$type<WorkspaceId>()
       .notNull()
       .references(() => workspaces.id, { onDelete: 'cascade' }),
     title: text('title').notNull(),
@@ -55,6 +57,7 @@ export const meetingExceptions = pgTable(
   'meeting_exceptions',
   {
     meetingId: uuid('meeting_id')
+      .$type<MeetingId>()
       .notNull()
       .references(() => meetings.id, { onDelete: 'cascade' }),
     recurrenceId: text('recurrence_id').notNull(),

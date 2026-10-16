@@ -1,4 +1,4 @@
-import type { TaskResponse } from '@ctws/contracts'
+import { idFrom, taskId, type TaskResponse, type TaskId } from '@ctws/contracts'
 import { useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useForgetRecent } from '../../../../shell/search/recent'
@@ -17,17 +17,18 @@ export function useTreeParams({
   onRevealed,
 }: {
   tasks: readonly TaskResponse[] | undefined
-  unfold: (ids: readonly string[]) => void
+  unfold: (ids: readonly TaskId[]) => void
   showDone: boolean
   showFinished: () => void
-  onRevealed: (id: string) => void
+  onRevealed: (id: TaskId) => void
 }) {
   const [params, setParams] = useSearchParams()
   const { openId, setOpenId } = useTaskParam()
-  const reveal = params.get('reveal')
+  const revealParam = params.get('reveal')
+  const reveal = revealParam === null ? null : idFrom(taskId, revealParam)
 
   const forget = useForgetRecent()
-  const pending = useRef<string | null>(null)
+  const pending = useRef<TaskId | null>(null)
   useEffect(() => {
     if (!reveal || !tasks) return
     // Not in this project: a dead link, not a focus target to invent.
@@ -68,7 +69,7 @@ export function useTreeParams({
 /** The open task, `?task=<id>`, on a project page: the tree's and the board's alike. */
 export function useTaskParam() {
   const [params, setParams] = useSearchParams()
-  const setOpenId = (id: string | null, { replace = false }: { replace?: boolean } = {}) =>
+  const setOpenId = (id: TaskId | null, { replace = false }: { replace?: boolean } = {}) =>
     setParams(
       (prev) => {
         const next = new URLSearchParams(prev)
@@ -78,5 +79,6 @@ export function useTaskParam() {
       },
       { replace },
     )
-  return { openId: params.get('task'), setOpenId }
+  const task = params.get('task')
+  return { openId: task === null ? null : idFrom(taskId, task), setOpenId }
 }

@@ -1,3 +1,4 @@
+import type { TaskId, WorkspaceId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { Queryable } from '../../../src/platform/db/client'
@@ -5,8 +6,8 @@ import { taskLog } from '../../../src/modules/tasks/log'
 import { withDatabase } from '../../helpers/db'
 
 let ctx: Awaited<ReturnType<typeof withDatabase>>
-let workspaceId: string
-let taskId: string
+let workspaceId: WorkspaceId
+let taskId: TaskId
 
 beforeAll(async () => {
   ctx = await withDatabase()
@@ -19,9 +20,9 @@ beforeAll(async () => {
                 values (gen_random_uuid(), (select id from p), 't1', 'todo', 'a0') returning id)
     select (select id from w) as w, (select id from t1) as t1
   `)
-  const r = (seed.rows as Record<string, string>[])[0]!
-  workspaceId = r.w!
-  taskId = r.t1!
+  const r = (seed.rows as { w: WorkspaceId; t1: TaskId }[])[0]!
+  workspaceId = r.w
+  taskId = r.t1
 }, 120_000)
 
 afterAll(async () => {
@@ -35,7 +36,7 @@ async function events() {
     select type, payload, workspace_id from task_events
     where task_id = ${taskId} order by occurred_at
   `)
-  return r.rows as { type: string; payload: unknown; workspace_id: string }[]
+  return r.rows as { type: string; payload: unknown; workspace_id: WorkspaceId }[]
 }
 
 async function clear() {

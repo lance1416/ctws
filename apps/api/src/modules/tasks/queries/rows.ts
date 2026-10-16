@@ -1,4 +1,4 @@
-import type { TaskStatus } from '@ctws/contracts'
+import type { ProjectId, TaskId, TaskStatus } from '@ctws/contracts'
 import { sql, type SQL } from 'drizzle-orm'
 import { ident } from '../../../platform/db/sql'
 import type { Task } from '../tables'
@@ -34,9 +34,9 @@ const asDate = (v: unknown): Date | null => (v === null ? null : new Date(v as s
 
 export function taskRowOf(r: Record<string, unknown>): TaskRow {
   return {
-    id: r.id as string,
-    projectId: r.project_id as string,
-    parentId: (r.parent_id as string | null) ?? null,
+    id: r.id as TaskId,
+    projectId: r.project_id as ProjectId,
+    parentId: (r.parent_id as TaskId | null) ?? null,
     title: r.title as string,
     notes: (r.notes as string | null) ?? null,
     status: r.status as TaskStatus,

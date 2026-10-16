@@ -1,4 +1,9 @@
-import type { ProjectColor, ProjectListItem, ProjectResponse } from '@ctws/contracts'
+import {
+  type ProjectColor,
+  type ProjectListItem,
+  type ProjectResponse,
+  type ProjectId,
+} from '@ctws/contracts'
 import { queryOptions, useQuery, type UseQueryResult } from '@tanstack/react-query'
 import { apiFetch } from '../../platform/http/api'
 
@@ -36,7 +41,7 @@ export function createProject(body: { name: string }): Promise<ProjectResponse> 
   return apiFetch<ProjectResponse>('/projects', { method: 'POST', body: JSON.stringify(body) })
 }
 
-export function deleteProject(id: string): Promise<void> {
+export function deleteProject(id: ProjectId): Promise<void> {
   return apiFetch<void>(`/projects/${id}`, { method: 'DELETE' })
 }
 
@@ -47,7 +52,7 @@ export function inboxOf<T extends ProjectResponse>(projects: T[]): T | undefined
 
 /** Renames, recolours, archives or unarchives a project; the inbox cannot be archived. */
 export function updateProject(
-  id: string,
+  id: ProjectId,
   body: { name?: string; color?: ProjectColor; archived?: boolean },
 ): Promise<ProjectResponse> {
   return apiFetch<ProjectResponse>(`/projects/${id}`, {

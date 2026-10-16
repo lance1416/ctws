@@ -3,7 +3,7 @@ import {
   adminUpdateUserBody,
   adminUser,
   adminUserListResponse,
-  idParams,
+  userParams,
 } from '@ctws/contracts'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { adminOnly } from '../auth/authenticated'
@@ -34,7 +34,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
   app.patch(
     '/admin/users/:id',
     {
-      schema: { params: idParams, body: adminUpdateUserBody, response: { 200: adminUser } },
+      schema: { params: userParams, body: adminUpdateUserBody, response: { 200: adminUser } },
     },
     async (req, reply) => reply.send(await updateUser(app.db, req.params.id, req.body)),
   )

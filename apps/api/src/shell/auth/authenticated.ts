@@ -1,4 +1,4 @@
-import type { Role } from '@ctws/contracts'
+import { type Role, type UserId, type WorkspaceId } from '@ctws/contracts'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { AdminRequiredError } from '../admin/errors'
 import { SESSION_COOKIE, setSessionCookie } from './cookie'
@@ -6,7 +6,7 @@ import { SessionRequiredError } from './errors'
 import { getAuthContext } from './service'
 import { findValidSession } from './session'
 
-type CurrentUser = { id: string; workspaceId: string; role: Role; timezone: string }
+type CurrentUser = { id: UserId; workspaceId: WorkspaceId; role: Role; timezone: string }
 
 declare module 'fastify' {
   interface FastifyRequest {

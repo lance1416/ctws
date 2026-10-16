@@ -1,3 +1,4 @@
+import type { UserId } from '@ctws/contracts'
 import { createHash } from 'node:crypto'
 import { sql } from 'drizzle-orm'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
@@ -10,7 +11,7 @@ const sha256 = (token: string) => createHash('sha256').update(token).digest('hex
 const TTL_DAYS = 30
 
 let ctx: Awaited<ReturnType<typeof withDatabase>>
-let userId: string
+let userId: UserId
 
 beforeAll(async () => {
   ctx = await withDatabase()
@@ -19,7 +20,7 @@ beforeAll(async () => {
     values (gen_random_uuid(), 's@example.com', 'x', 'UTC', now())
     returning id
   `)
-  userId = (rows.rows as { id: string }[])[0]!.id
+  userId = (rows.rows as { id: UserId }[])[0]!.id
 }, 120_000)
 
 afterAll(async () => {
@@ -149,12 +150,12 @@ describe('sliding expiry', () => {
   const hoursAgo = (n: number) => new Date(Date.now() - n * 3_600_000)
 
   /** A user of this block's own, so the shared one above keeps whatever sessions it had. */
-  async function makeUser(email: string): Promise<string> {
+  async function makeUser(email: string): Promise<UserId> {
     const rows = await ctx.db.execute(sql`
       insert into users (id, email, password_hash, timezone, created_at)
       values (gen_random_uuid(), ${email}, 'x', 'UTC', now())
       returning id::text as id`)
-    return (rows.rows as { id: string }[])[0]!.id
+    return (rows.rows as { id: UserId }[])[0]!.id
   }
 
   beforeEach(async () => {

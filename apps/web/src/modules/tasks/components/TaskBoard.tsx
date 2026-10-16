@@ -1,4 +1,12 @@
-import { BOARD_TASK_STATUSES, type TaskResponse, type TaskStatus } from '@ctws/contracts'
+import {
+  idFrom,
+  taskId,
+  BOARD_TASK_STATUSES,
+  type TaskResponse,
+  type TaskStatus,
+  type ProjectId,
+  type TaskId,
+} from '@ctws/contracts'
 import {
   DndContext,
   PointerSensor,
@@ -63,7 +71,7 @@ function Column({
   status: TaskStatus
   tasks: TaskResponse[]
   parentOf: (t: TaskResponse) => string | null
-  onOpen: (id: string) => void
+  onOpen: (id: TaskId) => void
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status })
   return (
@@ -90,7 +98,7 @@ function Column({
   )
 }
 
-export function TaskBoard({ projectId }: { projectId: string }) {
+export function TaskBoard({ projectId }: { projectId: ProjectId }) {
   const tasks = useQuery(projectTasksQuery(projectId))
   const [error, setError] = useState<string | null>(null)
   const actions = useTaskActions(setError)
@@ -106,11 +114,11 @@ export function TaskBoard({ projectId }: { projectId: string }) {
   // takes its task away (deleted), to a neighbouring card.
   const { openId, setOpenId } = useTaskParam()
   const openTask = rows.find((t) => t.id === openId)
-  const cardFor = (id: string) => document.querySelector<HTMLElement>(`[data-board-card="${id}"]`)
+  const cardFor = (id: TaskId) => document.querySelector<HTMLElement>(`[data-board-card="${id}"]`)
   useFocusAfterRemoval({
     ids: () =>
-      [...document.querySelectorAll<HTMLElement>('[data-board-card]')].map(
-        (el) => el.dataset.boardCard!,
+      [...document.querySelectorAll<HTMLElement>('[data-board-card]')].map((el) =>
+        idFrom(taskId, el.dataset.boardCard!),
       ),
     rowFor: cardFor,
     heading: () => document.querySelector<HTMLElement>('h1'),
@@ -128,7 +136,7 @@ export function TaskBoard({ projectId }: { projectId: string }) {
 
   const onDragEnd = ({ active, over }: DragEndEvent) => {
     const status = BOARD_TASK_STATUSES.find((s) => s === over?.id)
-    const task = byId.get(String(active.id))
+    const task = byId.get(idFrom(taskId, String(active.id)))
     if (!status || !task || task.status === status) return
     setError(null)
     // The same mutation the row markers use, so a card and a marker agree on what “Done” means.

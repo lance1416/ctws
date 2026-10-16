@@ -1,10 +1,11 @@
-import type {
-  BirthdayPreviewResponse,
-  BirthdaysResponse,
-  CreatePersonBody,
-  PersonResponse,
-  RemindLead,
-  UpdatePersonBody,
+import {
+  type BirthdayPreviewResponse,
+  type BirthdaysResponse,
+  type CreatePersonBody,
+  type PersonResponse,
+  type RemindLead,
+  type UpdatePersonBody,
+  type PersonId,
 } from '@ctws/contracts'
 import { queryOptions } from '@tanstack/react-query'
 import { apiFetch, calendarOf } from '../../platform/http/api'
@@ -81,10 +82,10 @@ export function createPerson(body: CreatePersonBody): Promise<PersonResponse> {
   return apiFetch(BASE, { method: 'POST', body: JSON.stringify(body) })
 }
 
-export function patchPerson(id: string, body: UpdatePersonBody): Promise<PersonResponse> {
+export function patchPerson(id: PersonId, body: UpdatePersonBody): Promise<PersonResponse> {
   return apiFetch(`${BASE}/${id}`, { method: 'PATCH', body: JSON.stringify(body) })
 }
 
-export function deletePerson(id: string): Promise<void> {
+export function deletePerson(id: PersonId): Promise<void> {
   return apiFetch(`${BASE}/${id}`, { method: 'DELETE' })
 }

@@ -1,5 +1,5 @@
 // The forms' schemas are the wire contracts, so they refuse exactly what the server would.
-import { createTaskBody, updateTaskBody, type UpdateTaskBody } from '@ctws/contracts'
+import { createTaskBody, projectId, updateTaskBody, type UpdateTaskBody } from '@ctws/contracts'
 import { z } from 'zod'
 
 export const createTaskForm = createTaskBody
@@ -8,7 +8,7 @@ export type CreateTaskForm = z.input<typeof createTaskBody>
 export type CreateTaskValues = z.output<typeof createTaskBody>
 
 /** The update contract plus the project, which no PATCH carries: the move endpoint changes it. */
-export const detailTaskForm = updateTaskBody.extend({ projectId: z.uuid() })
+export const detailTaskForm = updateTaskBody.extend({ projectId })
 export type DetailTaskForm = z.input<typeof detailTaskForm>
 export type DetailTaskValues = z.output<typeof detailTaskForm>
 

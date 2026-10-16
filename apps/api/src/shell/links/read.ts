@@ -5,6 +5,7 @@ import {
   type LinkKind,
   type LinksResponse,
   type ObjectType,
+  type WorkspaceId,
 } from '@ctws/contracts'
 import { and, eq, or } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
@@ -25,7 +26,11 @@ function phrase(kind: LinkKind, outgoing: boolean): string {
   return outgoing ? rule.label : rule.inverse
 }
 
-async function storedEdges(q: Queryable, workspaceId: string, of: Endpoint): Promise<StoredEdge[]> {
+async function storedEdges(
+  q: Queryable,
+  workspaceId: WorkspaceId,
+  of: Endpoint,
+): Promise<StoredEdge[]> {
   const rows = await q
     .select({
       fromType: links.fromType,
@@ -51,7 +56,7 @@ async function storedEdges(q: Queryable, workspaceId: string, of: Endpoint): Pro
 export async function linksOf(
   registry: LinkRegistry,
   q: Queryable,
-  workspaceId: string,
+  workspaceId: WorkspaceId,
   of: Endpoint,
 ): Promise<LinksResponse> {
   const [stored, ...own] = await Promise.all([
@@ -128,7 +133,7 @@ export async function linksOf(
 export async function candidatesFor(
   registry: LinkRegistry,
   q: Queryable,
-  workspaceId: string,
+  workspaceId: WorkspaceId,
   of: Endpoint,
   text: string,
   perType: number,
@@ -148,7 +153,7 @@ export async function candidatesFor(
 export async function exists(
   registry: LinkRegistry,
   q: Queryable,
-  workspaceId: string,
+  workspaceId: WorkspaceId,
   end: Endpoint,
 ): Promise<boolean> {
   const rows = await registry.of(end.type).rows(q, workspaceId, { ids: [end.id] })

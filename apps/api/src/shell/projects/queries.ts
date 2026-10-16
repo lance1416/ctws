@@ -1,3 +1,4 @@
+import { type WorkspaceId, type ProjectId } from '@ctws/contracts'
 import { and, asc, desc, eq, inArray, isNotNull, isNull, sql, type SQL } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
 import { ident } from '../../platform/db/sql'
@@ -6,12 +7,12 @@ import { ProjectNotFoundError } from './errors'
 import { projects, type Project } from './tables'
 
 /** A live project in this workspace. Every read of a project, or of a task through it, uses this. */
-export function visibleProjects(workspaceId: string): SQL {
+export function visibleProjects(workspaceId: WorkspaceId): SQL {
   return and(eq(projects.workspaceId, workspaceId), isNull(projects.deletedAt))!
 }
 
 /** The same predicate for raw SQL over the alias `project`. */
-export function projectVisibleSql(project: string, workspaceId: string): SQL {
+export function projectVisibleSql(project: string, workspaceId: WorkspaceId): SQL {
   return sql`${ident(project)}.workspace_id = ${workspaceId} and ${ident(project)}.deleted_at is null`
 }
 
@@ -21,8 +22,8 @@ export function projectVisibleSql(project: string, workspaceId: string): SQL {
  */
 export async function assertProjectsVisible(
   q: Queryable,
-  workspaceId: string,
-  ids: readonly string[],
+  workspaceId: WorkspaceId,
+  ids: readonly ProjectId[],
 ): Promise<void> {
   const unique = [...new Set(ids)]
   if (unique.length === 0) return
@@ -36,9 +37,9 @@ export async function assertProjectsVisible(
 /** The stored id of a live project in this workspace, so a differently cased id compares equal. */
 export async function visibleProjectId(
   q: Queryable,
-  workspaceId: string,
-  id: string,
-): Promise<string> {
+  workspaceId: WorkspaceId,
+  id: ProjectId,
+): Promise<ProjectId> {
   const [row] = await q
     .select({ id: projects.id })
     .from(projects)
@@ -53,7 +54,7 @@ export type ProjectListRow = { project: Project; columns: Record<string, number>
 /** Inbox first, then the person's own order; archived projects only when asked for. */
 export async function listProjects(
   q: Queryable,
-  workspaceId: string,
+  workspaceId: WorkspaceId,
   opts: { archived: boolean },
   columns: ProjectColumns,
 ): Promise<ProjectListRow[]> {

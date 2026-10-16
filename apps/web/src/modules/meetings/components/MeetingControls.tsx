@@ -1,3 +1,4 @@
+import type { PersonId } from '@ctws/contracts'
 import { usePeople } from '../../people'
 import { BUTTON } from '../../../platform/ui/buttonStyles'
 import { PickMany, PickOne } from '../../../platform/ui/inline'
@@ -120,8 +121,8 @@ export function AttendeesPicker({
   value,
   onChange,
 }: {
-  value: string[]
-  onChange: (ids: string[]) => void
+  value: PersonId[]
+  onChange: (ids: PersonId[]) => void
 }) {
   const people = usePeople().data ?? []
   return (

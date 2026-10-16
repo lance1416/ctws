@@ -1,4 +1,9 @@
-import { REVIEW_TRANSITIONS, type ReviewList, type ReviewResponse } from '@ctws/contracts'
+import {
+  REVIEW_TRANSITIONS,
+  type ReviewList,
+  type ReviewResponse,
+  type ProjectId,
+} from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { reviewQuery } from '../api/queries'
@@ -37,7 +42,7 @@ function Row({
   title: string
   status: (typeof REVIEW_TRANSITIONS)[ReviewList]
   at: string
-  projectId: string
+  projectId: ProjectId
   today: string
   /** The first day of the week under review. */
   from: string

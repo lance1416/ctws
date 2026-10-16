@@ -1,4 +1,4 @@
-import type { TaskStatus } from '@ctws/contracts'
+import { type TaskStatus, type TaskId } from '@ctws/contracts'
 import type { KeyboardEvent } from 'react'
 import { useShortcutsEnabled } from '../../../../platform/keyboard/enabled'
 import type { FlatRow } from '../../tree/flatten'
@@ -20,15 +20,15 @@ export function useTreeKeys({
   toggle,
 }: {
   rows: readonly FlatRow[]
-  statusOf: (id: string) => TaskStatus
-  setStatus: (id: string, status: TaskStatus) => void
-  open: (id: string) => void
+  statusOf: (id: TaskId) => TaskStatus
+  setStatus: (id: TaskId, status: TaskStatus) => void
+  open: (id: TaskId) => void
   addChild: (row: FlatRow) => void
   addSibling: (row: FlatRow) => void
   /** Drops `id` at `slot` (an index into `rows`) at `depth`, as a drag would. */
-  move: (id: string, slot: number, depth: number) => void
+  move: (id: TaskId, slot: number, depth: number) => void
   blockLength: (index: number) => number
-  toggle: (id: string) => void
+  toggle: (id: TaskId) => void
 }) {
   const singleKeys = useShortcutsEnabled()
   const focusRow = (index: number) => {

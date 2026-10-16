@@ -1,5 +1,5 @@
 import { and, asc, desc, isNull, sql } from 'drizzle-orm'
-import type { ProjectMovementResponse } from '@ctws/contracts'
+import { type ProjectMovementResponse, type WorkspaceId } from '@ctws/contracts'
 import type { Queryable } from '../../../platform/db/client'
 import { dayStart, localDay, weekStart } from '../../../platform/db/time'
 import { visibleProjects } from '../../../shell/projects/queries'
@@ -14,7 +14,7 @@ import { openTaskCountSql, taskOpenSql } from './scope'
  */
 export async function listProjectMovement(
   q: Queryable,
-  workspaceId: string,
+  workspaceId: WorkspaceId,
   timezone: string,
   now: Date,
 ): Promise<ProjectMovementResponse[]> {

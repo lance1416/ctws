@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { projectId, workspaceId } from './id'
 import { instant, nameText } from './common'
 
 /**
@@ -15,6 +16,8 @@ export const projectColors = [
 ] as const
 const projectColor = z.enum(projectColors)
 export type ProjectColor = z.infer<typeof projectColor>
+
+export const projectParams = z.object({ id: projectId }).strict()
 
 export const createProjectBody = z
   .object({
@@ -33,8 +36,8 @@ export const updateProjectBody = z
 
 export const projectResponse = z
   .object({
-    id: z.uuid(),
-    workspaceId: z.uuid(),
+    id: projectId,
+    workspaceId,
     name: z.string(),
     color: projectColor,
     isInbox: z.boolean(),

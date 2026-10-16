@@ -1,11 +1,17 @@
-import type { DependencyRef } from '@ctws/contracts'
+import { type DependencyRef, type ProjectId, type TaskId, type WorkspaceId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import type { Queryable } from '../../../platform/db/client'
 import { ident } from '../../../platform/db/sql'
 import { groupBy } from '../../../platform/values'
 import { taskFinishedSql, taskOpenSql, taskVisibleSql, visibleTask } from './scope'
 
-type RefRow = { id: string; title: string; project_id: string; project_name: string; done: boolean }
+type RefRow = {
+  id: TaskId
+  title: string
+  project_id: ProjectId
+  project_name: string
+  done: boolean
+}
 
 const toRef = (r: RefRow): DependencyRef => ({
   id: r.id,
@@ -18,8 +24,8 @@ const toRef = (r: RefRow): DependencyRef => ({
 /** Both directions for one task, finished blockers included: the detail pane shows them all. */
 export async function taskDependencyLists(
   q: Queryable,
-  workspaceId: string,
-  taskId: string,
+  workspaceId: WorkspaceId,
+  taskId: TaskId,
 ): Promise<{ blockedBy: DependencyRef[]; blocks: DependencyRef[] }> {
   await visibleTask(q, workspaceId, taskId)
   const query = (other: 'blocker_id' | 'blocked_id', self: 'blocked_id' | 'blocker_id') => sql`
@@ -47,9 +53,9 @@ export async function taskDependencyLists(
 /** What is still in the way of each task, keyed by the waiting task; unfinished blockers only. */
 export async function blockersFor(
   q: Queryable,
-  workspaceId: string,
-  taskIds: readonly string[],
-): Promise<Map<string, DependencyRef[]>> {
+  workspaceId: WorkspaceId,
+  taskIds: readonly TaskId[],
+): Promise<Map<TaskId, DependencyRef[]>> {
   if (taskIds.length === 0) return new Map()
   const rows = await q.execute(sql`
     select
@@ -64,5 +70,5 @@ export async function blockersFor(
       and ${taskOpenSql('t')}
     order by p.rank, t.rank, t.id
   `)
-  return groupBy(rows.rows as (RefRow & { blocked_id: string })[], (r) => r.blocked_id, toRef)
+  return groupBy(rows.rows as (RefRow & { blocked_id: TaskId })[], (r) => r.blocked_id, toRef)
 }

@@ -1,4 +1,4 @@
-import type { TaskStatus, UpdateTaskBody } from '@ctws/contracts'
+import { type TaskStatus, type UpdateTaskBody, type TaskId } from '@ctws/contracts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { isFinished } from '../status'
 import { PROJECT_TASKS, todayQuery } from './queries'
@@ -24,7 +24,7 @@ export function useTaskActions(onError: (message: string) => void) {
   const qc = useQueryClient()
 
   const run = useMutation({
-    mutationFn: ({ id, body }: { id: string; body: UpdateTaskBody }) => patchTask(id, body),
+    mutationFn: ({ id, body }: { id: TaskId; body: UpdateTaskBody }) => patchTask(id, body),
     onMutate: async ({ id, body }) => {
       await qc.cancelQueries({ queryKey: PROJECT_TASKS })
       await qc.cancelQueries({ queryKey: TODAY })
@@ -54,9 +54,9 @@ export function useTaskActions(onError: (message: string) => void) {
   })
 
   return {
-    setStatus: (id: string, status: TaskStatus, after?: () => void) =>
+    setStatus: (id: TaskId, status: TaskStatus, after?: () => void) =>
       run.mutate({ id, body: { status } }, { onSettled: () => after?.() }),
-    patch: (id: string, body: UpdateTaskBody, after?: () => void) =>
+    patch: (id: TaskId, body: UpdateTaskBody, after?: () => void) =>
       run.mutate({ id, body }, { onSettled: () => after?.() }),
   }
 }

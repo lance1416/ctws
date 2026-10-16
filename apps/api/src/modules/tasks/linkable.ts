@@ -1,3 +1,4 @@
+import { idFrom, projectId, type ProjectId, taskId, type TaskId } from '@ctws/contracts'
 import { and, desc, eq } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
 import { wanted, type Linkable, type StoredEdge } from '../../shell/links/linkable'
@@ -18,7 +19,7 @@ const taskRows = (q: Queryable) =>
     .innerJoin(projects, eq(projects.id, tasks.projectId))
     .$dynamic()
 
-const belongs = (id: string, projectId: string): StoredEdge => ({
+const belongs = (id: TaskId, projectId: ProjectId): StoredEdge => ({
   fromType: 'task',
   fromId: id,
   toType: 'project',
@@ -48,8 +49,12 @@ export const taskLinkable: Linkable = {
   },
   own: async (q, workspaceId, of) => {
     if (of.type !== 'task' && of.type !== 'project') return []
-    const column = of.type === 'task' ? tasks.id : tasks.projectId
-    const rows = await taskRows(q).where(and(visibleTasks(workspaceId), eq(column, of.id)))
+    // A link's end is any kind of id; its type says which this one is.
+    const where =
+      of.type === 'task'
+        ? eq(tasks.id, idFrom(taskId, of.id))
+        : eq(tasks.projectId, idFrom(projectId, of.id))
+    const rows = await taskRows(q).where(and(visibleTasks(workspaceId), where))
     return rows.map((r) => belongs(r.id, r.projectId))
   },
 }

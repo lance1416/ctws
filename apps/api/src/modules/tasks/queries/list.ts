@@ -1,4 +1,4 @@
-import type { DependencyRef } from '@ctws/contracts'
+import { type DependencyRef, type ProjectId, type TaskId, type WorkspaceId } from '@ctws/contracts'
 import type { Rollup } from '@ctws/core'
 import { and, asc, eq, isNull } from 'drizzle-orm'
 import type { Db, Queryable } from '../../../platform/db/client'
@@ -10,8 +10,8 @@ import { projectRollups } from './rollup'
 /** Every live task of a project in sibling order, flat; the client builds the tree. */
 export async function listProjectTasks(
   q: Queryable,
-  workspaceId: string,
-  projectId: string,
+  workspaceId: WorkspaceId,
+  projectId: ProjectId,
 ): Promise<Task[]> {
   await assertProjectsVisible(q, workspaceId, [projectId])
   return q
@@ -29,14 +29,14 @@ export const BOARD_TX = { isolationLevel: 'repeatable read', accessMode: 'read o
 
 type ProjectBoard = {
   tasks: Task[]
-  rollups: Map<string, Rollup>
-  blockers: Map<string, DependencyRef[]>
+  rollups: Map<TaskId, Rollup>
+  blockers: Map<TaskId, DependencyRef[]>
 }
 
 export async function projectBoard(
   db: Db,
-  workspaceId: string,
-  projectId: string,
+  workspaceId: WorkspaceId,
+  projectId: ProjectId,
   timezone: string,
   now: Date,
 ): Promise<ProjectBoard> {

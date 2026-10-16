@@ -1,7 +1,7 @@
-import { MAX_TASK_DEPTH, type CreateTaskBody } from '@ctws/contracts'
+import { MAX_TASK_DEPTH, type CreateTaskBody, taskId } from '@ctws/contracts'
+import { newId } from '../../../platform/db/ids'
 import { rankBetween } from '@ctws/core'
 import { and, desc, eq, isNull, sql } from 'drizzle-orm'
-import { v7 as uuidv7 } from 'uuid'
 import type { Db } from '../../../platform/db/client'
 import { visibleProjectId } from '../../../shell/projects/queries'
 import { DepthLimitError } from '../errors'
@@ -41,7 +41,7 @@ export async function createTask(db: Db, ctx: TaskCtx, input: CreateTaskBody): P
     const [row] = await tx
       .insert(tasks)
       .values({
-        id: uuidv7(),
+        id: newId(taskId),
         projectId,
         parentId: input.parentId ?? null,
         title: input.title,

@@ -6,8 +6,9 @@ import {
   ruleEndDay,
   ruleEndingAt,
   type UpdateMeetingInput,
+  type MeetingId,
 } from '@ctws/contracts'
-import { queryOptions } from '@tanstack/react-query'
+import { queryOptions, skipToken } from '@tanstack/react-query'
 import { ApiError, apiFetch, calendarOf } from '../../platform/http/api'
 import { addDays } from '@ctws/core/day'
 import { shortDay } from '../../platform/time/dates'
@@ -32,39 +33,49 @@ export const meetingsQuery = (range: DayRange) =>
 
 /**
  * One occurrence of a series, wherever it falls now -- an evening in Toronto is the next day
- * here, and one week can be moved to another day. Null when it is cancelled or gone.
+ * here, and one week can be moved to another day. Null when it is cancelled or gone. No series,
+ * no request.
  */
-export const occurrenceQuery = (meetingId: string, recurrenceId: string) =>
+export const occurrenceQuery = (meetingId: MeetingId | null, recurrenceId: string) =>
   queryOptions({
     queryKey: ['meetings', 'one', meetingId, recurrenceId],
-    queryFn: async () => {
-      const at = new URLSearchParams({ recurrenceId })
-      try {
-        return await apiFetch<MeetingOccurrence>(`${BASE}/${meetingId}?${at}`)
-      } catch (e) {
-        if (e instanceof ApiError && e.status === 404) return null
-        throw e
-      }
-    },
+    queryFn:
+      meetingId === null
+        ? skipToken
+        : async () => {
+            const at = new URLSearchParams({ recurrenceId })
+            try {
+              return await apiFetch<MeetingOccurrence>(`${BASE}/${meetingId}?${at}`)
+            } catch (e) {
+              if (e instanceof ApiError && e.status === 404) return null
+              throw e
+            }
+          },
   })
 
 /**
  * A series' next occurrence within a year of `today`, else its latest one in the year before:
  * a link can name a meeting long over, and a one-off in the past is the commonest such link.
  */
-export const seriesQuery = (meetingId: string, today: string) =>
+export const seriesQuery = (meetingId: MeetingId | null, today: string) =>
   queryOptions({
     queryKey: ['meetings', 'series', meetingId, today],
-    queryFn: async () => {
-      const ahead = await listMeetings({ from: today, to: addDays(today, MAX_CALENDAR_SPAN_DAYS) })
-      const hit = ahead.find((m) => m.meetingId === meetingId)
-      if (hit) return hit
-      const behind = await listMeetings({
-        from: addDays(today, -MAX_CALENDAR_SPAN_DAYS),
-        to: today,
-      })
-      return [...behind].reverse().find((m) => m.meetingId === meetingId) ?? null
-    },
+    queryFn:
+      meetingId === null
+        ? skipToken
+        : async () => {
+            const ahead = await listMeetings({
+              from: today,
+              to: addDays(today, MAX_CALENDAR_SPAN_DAYS),
+            })
+            const hit = ahead.find((m) => m.meetingId === meetingId)
+            if (hit) return hit
+            const behind = await listMeetings({
+              from: addDays(today, -MAX_CALENDAR_SPAN_DAYS),
+              to: today,
+            })
+            return [...behind].reverse().find((m) => m.meetingId === meetingId) ?? null
+          },
   })
 
 /** Calendar entries; the day, the clock and the origin zone are all the server's. */
@@ -78,12 +89,12 @@ export function createMeeting(body: CreateMeetingBody): Promise<MeetingOccurrenc
   return apiFetch(BASE, { method: 'POST', body: JSON.stringify(body) })
 }
 
-export function patchMeeting(id: string, body: UpdateMeetingInput): Promise<MeetingOccurrence> {
+export function patchMeeting(id: MeetingId, body: UpdateMeetingInput): Promise<MeetingOccurrence> {
   return apiFetch(`${BASE}/${id}`, { method: 'PATCH', body: JSON.stringify(body) })
 }
 
 export function cancelMeeting(
-  id: string,
+  id: MeetingId,
   opts: { scope: EditScope; recurrenceId?: string },
 ): Promise<void> {
   const params = new URLSearchParams({ scope: opts.scope })

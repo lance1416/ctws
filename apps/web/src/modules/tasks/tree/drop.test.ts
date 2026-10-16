@@ -4,8 +4,8 @@ import { MAX_TASK_DEPTH } from '@ctws/contracts'
 import { planDrop } from './drop'
 
 /** Builds visible rows from `[id, depth, subtreeHeight]`, deriving parentId from the depths. */
-function rowsOf(spec: [string, number, number?][]): FlatRow[] {
-  const rows: FlatRow[] = []
+function rowsOf(spec: [string, number, number?][]): FlatRow<string>[] {
+  const rows: FlatRow<string>[] = []
   const parentAtDepth = new Map<number, string>()
   for (const [id, depth, height = 1] of spec) {
     const parentId = depth === 1 ? null : (parentAtDepth.get(depth - 1) ?? null)
@@ -17,7 +17,7 @@ function rowsOf(spec: [string, number, number?][]): FlatRow[] {
 }
 
 /** Marks a row as folded: its subtree is hidden, but `subtreeHeight` still counts it. */
-function fold(rows: FlatRow[], id: string): FlatRow[] {
+function fold(rows: FlatRow<string>[], id: string): FlatRow<string>[] {
   return rows.map((r) => (r.id === id ? { ...r, collapsed: true, hasChildren: true } : r))
 }
 

@@ -1,8 +1,9 @@
-import type { TaskResponse } from '@ctws/contracts'
+import { idFrom, projectId, taskId, type TaskResponse } from '@ctws/contracts'
 import { describe, expect, it } from 'vitest'
 import { applyMove } from './applyMove'
 
-const P = 'project'
+const P = idFrom(projectId, 'project')
+const id = (s: string) => idFrom(taskId, s)
 /** A task with only what a move reads: its id, its parent and its rank. */
 const t = (id: string, parentId: string | null, rank: string) =>
   ({ id, parentId, rank }) as TaskResponse
@@ -27,40 +28,37 @@ const TREE = [t('a', null, '1'), t('b', 'a', '1'), t('c', 'a', '2'), t('d', null
 
 describe('applyMove', () => {
   it('puts a row last under another parent', () => {
-    expect(shape(applyMove(TREE, 'd', { projectId: P, parentId: 'a' }))).toEqual([
+    expect(shape(applyMove(TREE, id('d'), { projectId: P, parentId: id('a') }))).toEqual([
       'top: a',
       'a: b c d',
     ])
   })
 
   it('puts a row before a sibling under the same parent', () => {
-    expect(shape(applyMove(TREE, 'c', { projectId: P, parentId: 'a', beforeId: 'b' }))).toEqual([
-      'top: a d',
-      'a: c b',
-    ])
+    expect(
+      shape(applyMove(TREE, id('c'), { projectId: P, parentId: id('a'), beforeId: id('b') })),
+    ).toEqual(['top: a d', 'a: c b'])
   })
 
   it('puts a row after a sibling', () => {
-    expect(shape(applyMove(TREE, 'd', { projectId: P, parentId: 'a', afterId: 'b' }))).toEqual([
-      'top: a',
-      'a: b d c',
-    ])
+    expect(
+      shape(applyMove(TREE, id('d'), { projectId: P, parentId: id('a'), afterId: id('b') })),
+    ).toEqual(['top: a', 'a: b d c'])
   })
 
   it('lifts a row to the top level', () => {
-    expect(shape(applyMove(TREE, 'b', { projectId: P, parentId: null, afterId: 'a' }))).toEqual([
-      'top: a b d',
-      'a: c',
-    ])
+    expect(
+      shape(applyMove(TREE, id('b'), { projectId: P, parentId: null, afterId: id('a') })),
+    ).toEqual(['top: a b d', 'a: c'])
   })
 
   it('takes the moved row’s children with it, their parent unchanged', () => {
-    const moved = applyMove(TREE, 'a', { projectId: P, parentId: 'd' })
+    const moved = applyMove(TREE, id('a'), { projectId: P, parentId: id('d') })
     expect(shape(moved)).toEqual(['top: d', 'a: b c', 'd: a'])
     expect(moved.find((x) => x.id === 'b')?.parentId).toBe('a')
   })
 
   it('returns the list untouched for an id it does not hold', () => {
-    expect(applyMove(TREE, 'zz', { projectId: P, parentId: null })).toBe(TREE)
+    expect(applyMove(TREE, id('zz'), { projectId: P, parentId: null })).toBe(TREE)
   })
 })

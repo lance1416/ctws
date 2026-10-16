@@ -1,4 +1,10 @@
-import { occurrenceKey, type MeetingOccurrence } from '@ctws/contracts'
+import {
+  idFrom,
+  meetingId,
+  occurrenceKey,
+  type MeetingId,
+  type MeetingOccurrence,
+} from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { Fragment, useState, type ReactNode } from 'react'
 import { useForgetWhenGone } from '../../../shell/search/recent'
@@ -44,7 +50,7 @@ function nextOfEach(rows: readonly MeetingOccurrence[], now: Date): MeetingOccur
 const WINDOW_DAYS = 31
 
 /** An occurrence by its two ids: a series has many, so its id alone does not name one. */
-type Occurrence = { meetingId: string; recurrenceId: string }
+type Occurrence = { meetingId: MeetingId; recurrenceId: string }
 
 /** One row per series, showing its next occurrence; coming up first, the past behind a toggle. */
 export function Meetings() {
@@ -56,7 +62,8 @@ export function Meetings() {
   const [showPast, setShowPast] = useState(false)
   // The open meeting is in the address as `/meetings/<id>?at=<occurrence>`. Without `at` the link
   // names only the series, so it opens the series' next occurrence.
-  const { id: openId = null } = useParams()
+  const { id } = useParams()
+  const openId = id === undefined ? null : idFrom(meetingId, id)
   const at = useSearchParams()[0].get('at')
   const navigate = useNavigate()
   const setOpen = (next: Occurrence | null, options?: { replace: boolean }) =>
@@ -87,10 +94,10 @@ export function Meetings() {
   // Asked for only once the list is in and does not have it.
   const missing = openId !== null && ahead.isSuccess && !listed
   const one = useQuery({
-    ...occurrenceQuery(openId ?? '', at ?? ''),
+    ...occurrenceQuery(openId, at ?? ''),
     enabled: missing && at !== null,
   })
-  const far = useQuery({ ...seriesQuery(openId ?? '', today), enabled: missing && at === null })
+  const far = useQuery({ ...seriesQuery(openId, today), enabled: missing && at === null })
   const fetched = at === null ? far : one
   const found = listed ?? fetched.data ?? null
   const gone = openId !== null && !found && fetched.isSuccess

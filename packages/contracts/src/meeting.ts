@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { idFrom, meetingId, personId, projectId } from './id'
 import { EVENT_YEARS, eventTimeZone, instant, noteText, titleText } from './common'
 
 /**
@@ -77,6 +78,8 @@ export function ruleEndDay(rule: string | null): string | null {
   return null
 }
 
+export const meetingParams = z.object({ id: meetingId }).strict()
+
 export const createMeetingBody = z
   .object({
     title,
@@ -86,8 +89,8 @@ export const createMeetingBody = z
     rrule: rrule.nullish(),
     location: location.nullish(),
     note: note.nullish(),
-    projectId: z.uuid().nullish(),
-    attendeeIds: z.array(z.uuid()).max(50).optional(),
+    projectId: projectId.nullish(),
+    attendeeIds: z.array(personId).max(50).optional(),
   })
   .strict()
 export type CreateMeetingBody = z.infer<typeof createMeetingBody>
@@ -111,8 +114,8 @@ export const updateMeetingBody = z
     rrule: rrule.nullable().optional(),
     location: location.nullable().optional(),
     note: note.nullable().optional(),
-    projectId: z.uuid().nullable().optional(),
-    attendeeIds: z.array(z.uuid()).max(50).optional(),
+    projectId: projectId.nullable().optional(),
+    attendeeIds: z.array(personId).max(50).optional(),
   })
   .strict()
   .refine((b) => Object.keys(b).some((k) => k !== 'scope'), {
@@ -130,7 +133,7 @@ export type UpdateMeetingInput = z.input<typeof updateMeetingBody>
 export const meetingOccurrence = z
   .object({
     /** The series. */
-    meetingId: z.uuid(),
+    meetingId,
     /** The local time the rule gave this occurrence; it does not change when the occurrence moves. */
     recurrenceId: localTime,
     title: z.string(),
@@ -145,9 +148,9 @@ export const meetingOccurrence = z
     overridden: z.boolean(),
     location: z.string().nullable(),
     note: z.string().nullable(),
-    projectId: z.uuid().nullable(),
+    projectId: projectId.nullable(),
     projectName: z.string().nullable(),
-    attendees: z.array(z.object({ id: z.uuid(), name: z.string() }).strict()),
+    attendees: z.array(z.object({ id: personId, name: z.string() }).strict()),
   })
   .strict()
 export type MeetingOccurrence = z.infer<typeof meetingOccurrence>
@@ -163,7 +166,7 @@ export const occurrenceKey = (o: OccurrenceName): string => `${o.meetingId}:${o.
 /** The occurrence an `occurrenceKey` names. A uuid has no colon, so the first one splits it. */
 export function parseOccurrenceKey(key: string): OccurrenceName {
   const at = key.indexOf(':')
-  return { meetingId: key.slice(0, at), recurrenceId: key.slice(at + 1) }
+  return { meetingId: idFrom(meetingId, key.slice(0, at)), recurrenceId: key.slice(at + 1) }
 }
 
 export const meetingsResponse = z.object({ meetings: z.array(meetingOccurrence) }).strict()

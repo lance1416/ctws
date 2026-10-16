@@ -1,4 +1,4 @@
-import { LINK_KINDS, OBJECT_TYPES } from '@ctws/contracts'
+import { LINK_KINDS, OBJECT_TYPES, type WorkspaceId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { check, index, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { inList } from '../../platform/db/sql'
@@ -12,6 +12,7 @@ export const links = pgTable(
   'links',
   {
     workspaceId: uuid('workspace_id')
+      .$type<WorkspaceId>()
       .notNull()
       .references(() => workspaces.id, { onDelete: 'cascade' }),
     fromType: text('from_type').notNull(),

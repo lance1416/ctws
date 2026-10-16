@@ -1,3 +1,4 @@
+import type { ProjectId, WorkspaceId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { listToday } from '../../../src/modules/tasks/queries/today'
@@ -336,14 +337,14 @@ describe('listToday timezone and DST', () => {
   // with its own title, looks it up by ITS OWN id, and asserts only on that row. "absent" means
   // this id is absent, never that the result is empty.
   let shared: Harness
-  let projectId: string
-  let workspaceId: string
+  let projectId: ProjectId
+  let workspaceId: WorkspaceId
   beforeAll(async () => {
     shared = await appWithUser()
     projectId = await createProject(shared, 'p')
     workspaceId = (
       await shared.db.execute(sql`select workspace_id from projects where id = ${projectId}`)
-    ).rows[0]!.workspace_id as string
+    ).rows[0]!.workspace_id as WorkspaceId
   }, 120_000)
   afterAll(async () => {
     await shared?.stop()
@@ -388,7 +389,7 @@ describe('the tenant join does not scan every project in the database', () => {
     await createTask(ctx, mine, 'due today')
     const { workspaceId } = (
       await ctx.app.inject({ method: 'GET', url: '/api/v1/auth/me', headers: ctx.authed })
-    ).json() as { workspaceId: string }
+    ).json() as { workspaceId: WorkspaceId }
 
     // Other people's data, in other workspaces. One statement, so this costs a moment.
     await ctx.db.execute(sql`

@@ -1,3 +1,4 @@
+import { idFrom, projectId } from '@ctws/contracts'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { DangerZone } from '../../platform/ui/DangerZone'
 import { Panel } from '../../platform/ui/Panel'
@@ -16,7 +17,8 @@ import { HANG } from '../../platform/ui/hang'
  * foot. A project is worked in, so it has a page; other records open as a pane over their list.
  */
 export function ProjectPage() {
-  const { id } = useParams()
+  const { id: idParam } = useParams()
+  const id = idParam === undefined ? undefined : idFrom(projectId, idParam)
   const registry = useRegistry()
   const views = useBlockViews()
   // Live or archived: an archived project still has its page.

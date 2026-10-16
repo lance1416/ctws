@@ -71,7 +71,7 @@ export function PickOne<T extends string>({
 }
 
 /** Several values from a list, shown as chips, with a “+” menu that offers the rest. */
-export function PickMany({
+export function PickMany<T extends string>({
   label,
   chosen,
   choices,
@@ -79,9 +79,9 @@ export function PickMany({
   empty,
 }: {
   label: string
-  chosen: readonly { value: string; label: string; mark?: ReactNode }[]
-  choices: readonly { value: string; label: string; mark?: ReactNode }[]
-  onChange: (next: string[]) => void
+  chosen: readonly Choice<T>[]
+  choices: readonly Choice<T>[]
+  onChange: (next: T[]) => void
   /** What to say when nothing is chosen. */
   empty: string
 }) {

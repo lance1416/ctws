@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { objectId } from './id'
 
 /**
  * A link is `from --kind--> to` between any two things. One row says both who is at a meeting and
@@ -51,7 +52,7 @@ export function linkIsAllowed(kind: string, from: string, to: string): boolean {
   return allows(rule.from, from) && allows(rule.to, to)
 }
 
-const endpoint = z.object({ type: objectType, id: z.uuid() }).strict()
+const endpoint = z.object({ type: objectType, id: objectId }).strict()
 
 export const createLinkBody = z
   .object({ from: endpoint, to: endpoint, kind: linkKind })
@@ -60,21 +61,18 @@ export const createLinkBody = z
     message: 'that is not a kind of link between those two things',
     path: ['kind'],
   })
-  // Case-blind: a uuid in upper case names the same thing.
-  .refine(
-    (l) => !(l.from.type === l.to.type && l.from.id.toLowerCase() === l.to.id.toLowerCase()),
-    {
-      message: 'a thing cannot be linked to itself',
-      path: ['to'],
-    },
-  )
+  // Both ids are already in lower case, so an upper-case copy of one cannot slip past.
+  .refine((l) => !(l.from.type === l.to.type && l.from.id === l.to.id), {
+    message: 'a thing cannot be linked to itself',
+    path: ['to'],
+  })
 export type CreateLinkBody = z.infer<typeof createLinkBody>
 
 /** The thing at the other end of an edge, with enough to draw a row and go there. */
 const linkedObject = z
   .object({
     type: objectType,
-    id: z.uuid(),
+    id: objectId,
     title: z.string(),
     /** The second line: what that kind of thing says about itself. */
     detail: z.string().nullable(),
@@ -91,7 +89,7 @@ export type LinkedObject = z.infer<typeof linkedObject>
 
 /** Something that could go at the other end, while its name is being typed. */
 const linkCandidate = z
-  .object({ type: objectType, id: z.uuid(), title: z.string(), detail: z.string().nullable() })
+  .object({ type: objectType, id: objectId, title: z.string(), detail: z.string().nullable() })
   .strict()
 export type LinkCandidate = z.infer<typeof linkCandidate>
 
@@ -101,7 +99,7 @@ export const candidatesQuery = z
     q: z.string().trim().max(200).optional(),
     /** The thing being linked from: the answer leaves out itself and what it cannot join. */
     type: objectType,
-    id: z.uuid(),
+    id: objectId,
   })
   .strict()
 
@@ -123,15 +121,15 @@ export const linksResponse = z
   .strict()
 export type LinksResponse = z.infer<typeof linksResponse>
 
-export const linkParams = z.object({ type: objectType, id: z.uuid() }).strict()
+export const linkParams = z.object({ type: objectType, id: objectId }).strict()
 
 /** Names one edge to remove: both ends and the kind are its identity. */
 export const linkQuery = z
   .object({
     fromType: objectType,
-    fromId: z.uuid(),
+    fromId: objectId,
     toType: objectType,
-    toId: z.uuid(),
+    toId: objectId,
     kind: linkKind,
   })
   .strict()

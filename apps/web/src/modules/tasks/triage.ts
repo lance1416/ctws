@@ -1,4 +1,4 @@
-import type { TodayTaskResponse } from '@ctws/contracts'
+import { type TodayTaskResponse, type TaskId } from '@ctws/contracts'
 import type { TriageSection } from './components/TriageControl'
 import { addDays } from '@ctws/core/day'
 import { nextMonday } from '../../platform/time/dates'
@@ -18,7 +18,7 @@ export function triageSections(
   carried: boolean,
   today: string,
   timeZone: string,
-  patch: (id: string, body: TriagePatch) => void,
+  patch: (id: TaskId, body: TriagePatch) => void,
 ): TriageSection[] | null {
   const tomorrow = addDays(today, 1)
   const nextWeek = nextMonday(today)

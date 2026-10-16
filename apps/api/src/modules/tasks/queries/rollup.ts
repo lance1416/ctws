@@ -1,3 +1,4 @@
+import type { ProjectId, TaskId, WorkspaceId } from '@ctws/contracts'
 import { rollup, type Rollup, type RollupNode } from '@ctws/core'
 import { sql } from 'drizzle-orm'
 import type { Queryable } from '../../../platform/db/client'
@@ -10,11 +11,11 @@ import { taskOpenSql, taskVisibleSql } from './scope'
  */
 export async function projectRollups(
   q: Queryable,
-  workspaceId: string,
-  projectId: string,
+  workspaceId: WorkspaceId,
+  projectId: ProjectId,
   timezone: string,
   now: Date,
-): Promise<Map<string, Rollup>> {
+): Promise<Map<TaskId, Rollup>> {
   const result = await q.execute(sql`
     select
       t.id,
@@ -30,5 +31,5 @@ export async function projectRollups(
     where p.id = ${projectId}
       and ${taskVisibleSql('t', 'p', workspaceId)}
   `)
-  return rollup(result.rows as RollupNode[])
+  return rollup(result.rows as RollupNode<TaskId>[])
 }
