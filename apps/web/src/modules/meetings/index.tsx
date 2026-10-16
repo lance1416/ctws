@@ -105,7 +105,8 @@ function MeetingsTodayCount() {
 function NextMeetingLine() {
   const accountZone = useTimeZone()
   const today = useTodaysMeetings()
-  const next = today.data?.find((m) => new Date(m.startsAt).getTime() > Date.now())
+  const now = useNow()
+  const next = today.data?.find((m) => new Date(m.startsAt).getTime() > now.getTime())
   if (!next) return null
   const at = clockTime(accountZone).format(new Date(next.startsAt))
   return (

@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
-import { registerFreshUser, WEB } from './helpers'
+import { TZDate } from '@date-fns/tz'
+import { accountZone, dayInZone, meetingToday, registerFreshUser, WEB } from './helpers'
 
 /**
  * THINGS: EVERY KIND OF THING IN ONE PLACE.
@@ -182,4 +183,18 @@ test('Projects counts the archived ones apart', async ({ page }) => {
   await page.reload()
   await expect(kind(page, 'Projects').locator('[data-count]')).toHaveText('1 active')
   await expect(kind(page, 'Projects').locator('[data-status]')).toHaveText('1 archived')
+})
+
+test('the next meeting moves on once the one named has started', async ({ page }) => {
+  await registerFreshUser(page)
+  const zone = await accountZone(page)
+  await meetingToday(page, 'Standup', '10:00', zone)
+  await meetingToday(page, 'Review', '11:00', zone)
+  const [y, m, d] = dayInZone(zone).split('-').map(Number) as [number, number, number]
+  await page.clock.install({ time: new TZDate(y, m - 1, d, 9, 50, 0, 0, zone) })
+  await page.goto('/things')
+  const status = kind(page, 'Meetings').locator('[data-status]')
+  await expect(status).toHaveText('Next: Standup at 10:00')
+  await page.clock.runFor('15:00')
+  await expect(status).toHaveText('Next: Review at 11:00')
 })
