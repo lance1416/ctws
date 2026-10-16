@@ -1,7 +1,7 @@
 import { DndContext, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { type TaskResponse, type TaskStatus, type ProjectId, type TaskId } from '@ctws/contracts'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Fragment, useMemo, useState } from 'react'
 import { EMPTY_ACTION, EmptyState } from '../../../platform/ui/EmptyState'
 import { useProjects } from '../../../shell/projects'
@@ -10,7 +10,7 @@ import { projectTasksQuery } from '../api'
 import { useTaskActions } from '../hooks/useTaskActions'
 import { rollupPhrase } from '../logic/rollupPhrase'
 import { isFinished } from '../logic/status'
-import { flatten } from '../logic/tree/flatten'
+import { blockLength, flatten } from '../logic/tree/flatten'
 import { NewTaskInput } from './NewTaskInput'
 import { SelectionBar } from './SelectionBar'
 import { TaskDetail } from './TaskDetail'
@@ -35,6 +35,7 @@ export function TaskTree({
   /** Puts the cursor in the box above the tree that adds a root task. */
   addFirst: () => void
 }) {
+  const qc = useQueryClient()
   const allProjects = useProjects()
   // Only the inbox dates its rows: quick capture makes it the one list that grows undecided.
   const inInbox = allProjects.data?.find((p) => p.id === projectId)?.isInbox === true
@@ -51,6 +52,11 @@ export function TaskTree({
     () => flatten(shown.visible, folds.collapsed),
     [shown.visible, folds.collapsed],
   )
+  /** The rows as the cache holds them now, a move ahead of the screen while it is drawn. */
+  const rowsNow = () => {
+    const now = qc.getQueryData(projectTasksQuery(projectId).queryKey)
+    return now ? flatten(shown.visibleOf(now.tasks), folds.collapsed) : rows
+  }
 
   // The tree's single tab stop follows focus; if that row has gone, the first row takes it.
   const [activeId, setActiveId] = useState<TaskId | null>(null)
@@ -101,20 +107,23 @@ export function TaskTree({
 
   // Distance, so a plain click on the handle (to focus it) is not taken for a drag.
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
-  const { run, blockLength, onDragEnd } = useTreeMove({ projectId, rows, folds, onError: setError })
+  const { run, onDragEnd } = useTreeMove({
+    projectId,
+    rows: rowsNow,
+    folds,
+    onError: setError,
+  })
 
   const onKeyDown = useTreeKeys({
-    rows,
+    rows: rowsNow,
     statusOf: (id) => byId.get(id)?.status ?? 'todo',
     setStatus,
     open: (id) => setOpenId(id),
     addChild: adder.addChild,
     addSibling: (row) => adder.start(row.parentId, row.id),
     move: run,
-    blockLength,
     toggle: folds.toggle,
-    focusRow: (index) => {
-      const row = rows[index]
+    focusRow: (row) => {
       if (row) handles.get(row.id)?.focus()
     },
   })
@@ -126,7 +135,7 @@ export function TaskTree({
   if (adder.adding) {
     const parentId = adder.adding.parentId
     const at = parentId === null ? -1 : rows.findIndex((r) => r.id === parentId)
-    inputSlot = at < 0 ? rows.length : at + blockLength(at)
+    inputSlot = at < 0 ? rows.length : at + blockLength(rows, at)
     inputDepth = at < 0 ? 1 : rows[at]!.depth + 1
   }
   const input = adder.adding && (
@@ -214,7 +223,7 @@ export function TaskTree({
                   focus: () => setActiveId(row.id),
                   setStatus: (status) => setStatus(row.id, status),
                   toggle: () => folds.toggle(row.id),
-                  keyDown: (e) => onKeyDown(e, i),
+                  keyDown: (e) => onKeyDown(e, row.id),
                   open: () => setOpenId(row.id),
                   toggleSelected: () => picked.toggle(row.id),
                   addChild: () => adder.addChild(row),

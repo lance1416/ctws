@@ -5,7 +5,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { moveTask, type ProjectTasks, projectTasksQuery, ROW_WRITES } from '../../api'
 import { applyMove } from '../../logic/tree/applyMove'
 import { planDrop } from '../../logic/tree/drop'
-import type { FlatRow } from '../../logic/tree/flatten'
+import { blockLength, type FlatRow } from '../../logic/tree/flatten'
 import { INDENT_PX } from '../TaskRowParts'
 import type { useCollapsed } from './useCollapsed'
 
@@ -15,12 +15,13 @@ import type { useCollapsed } from './useCollapsed'
  */
 export function useTreeMove({
   projectId,
-  rows,
+  rows: rowsNow,
   folds,
   onError,
 }: {
   projectId: ProjectId
-  rows: FlatRow<TaskId>[]
+  /** The rows as they are now, which a drop is planned against. */
+  rows: () => readonly FlatRow<TaskId>[]
   folds: Pick<ReturnType<typeof useCollapsed>, 'collapsed' | 'fold' | 'unfold'>
   /** Why a move was refused, or null when one goes ahead. */
   onError: (message: string | null) => void
@@ -49,8 +50,13 @@ export function useTreeMove({
     meta: { changes: ['task'], awaits: [key], ownsError: true },
   })
 
-  /** Drops `draggedId` at `slot` at `wantedDepth`, if the plan allows it. */
-  const run = (draggedId: TaskId, slot: number, wantedDepth: number) => {
+  /** Drops `draggedId` at `slot` (an index into `rows`) at `wantedDepth`, if the plan allows it. */
+  const run = (
+    rows: readonly FlatRow<TaskId>[],
+    draggedId: TaskId,
+    slot: number,
+    wantedDepth: number,
+  ) => {
     if (slot < 0 || slot > rows.length) return
     const plan = planDrop({ rows, draggedId, slot, wantedDepth })
     if (!plan.ok) {
@@ -72,21 +78,15 @@ export function useTreeMove({
     move.mutate({ id: draggedId, body, ...(unfolded ? { unfolded } : {}) })
   }
 
-  /** How many rows the row at `index` and its visible subtree take. */
-  const blockLength = (index: number) => {
-    let end = index + 1
-    while (end < rows.length && rows[end]!.depth > rows[index]!.depth) end++
-    return end - index
-  }
-
   const onDragEnd = ({ active, over, delta }: DragEndEvent) => {
+    const rows = rowsNow()
     const from = rows.findIndex((r) => r.id === active.id)
     const overIndex = over ? rows.findIndex((r) => r.id === over.id) : -1
     if (from < 0 || overIndex < 0) return
     // Dropping below the target lands after its whole visible block, not inside it.
-    const slot = overIndex > from ? overIndex + blockLength(overIndex) : overIndex
-    run(rows[from]!.id, slot, rows[from]!.depth + Math.round(delta.x / INDENT_PX))
+    const slot = overIndex > from ? overIndex + blockLength(rows, overIndex) : overIndex
+    run(rows, rows[from]!.id, slot, rows[from]!.depth + Math.round(delta.x / INDENT_PX))
   }
 
-  return { run, blockLength, onDragEnd }
+  return { run, onDragEnd }
 }

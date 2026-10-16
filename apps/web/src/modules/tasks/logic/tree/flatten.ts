@@ -22,6 +22,13 @@ export type FlatRow<Id extends string = TaskId> = {
   collapsed: boolean
 }
 
+/** How many rows the row at `index` and its visible subtree take. */
+export function blockLength(rows: readonly FlatRow<string>[], index: number): number {
+  let end = index + 1
+  while (end < rows.length && rows[end]!.depth > rows[index]!.depth) end++
+  return end - index
+}
+
 export function flatten<Id extends string>(
   nodes: readonly TaskNode<Id>[],
   collapsed: ReadonlySet<Id>,

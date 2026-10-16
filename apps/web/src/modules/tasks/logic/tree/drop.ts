@@ -3,7 +3,7 @@ import type { FlatRow } from './flatten'
 
 type DropRequest<Id extends string> = {
   /** The visible rows, in display order. */
-  rows: FlatRow<Id>[]
+  rows: readonly FlatRow<Id>[]
   draggedId: Id
   /** Insertion slot, 0..rows.length: the row lands between `rows[slot - 1]` and `rows[slot]`. */
   slot: number
@@ -86,7 +86,7 @@ export function planDrop<Id extends string>(req: DropRequest<Id>): DropPlan<Id> 
  * hides its descendants, so every ancestor of a visible row is itself visible.
  */
 function ancestorAtDepth<Id extends string>(
-  rows: FlatRow<Id>[],
+  rows: readonly FlatRow<Id>[],
   from: FlatRow<Id>,
   depth: number,
 ): Id | null {
