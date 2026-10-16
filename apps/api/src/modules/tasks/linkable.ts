@@ -1,10 +1,11 @@
 import { idFrom, projectId, type ProjectId, taskId, type TaskId } from '@ctws/contracts'
-import { desc, eq } from 'drizzle-orm'
+import { desc, eq, sql } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
 import { within } from '../../platform/db/scope'
+import { ident } from '../../platform/db/sql'
 import { wanted, type Linkable, type StoredEdge } from '../../shell/links/linkable'
-import { projects } from '../../shell/projects/tables'
-import { visibleTasks } from './queries/scope'
+import { projectNameOf } from '../../shell/projects'
+import { visibleTask } from './queries/scope'
 import { tasks } from './tables'
 
 const taskRows = (q: Queryable) =>
@@ -14,10 +15,9 @@ const taskRows = (q: Queryable) =>
       title: tasks.title,
       status: tasks.status,
       projectId: tasks.projectId,
-      projectName: projects.name,
+      projectName: projectNameOf(sql`${ident('tasks')}.project_id`),
     })
     .from(tasks)
-    .innerJoin(projects, eq(projects.id, tasks.projectId))
     .$dynamic()
 
 const belongs = (id: TaskId, projectId: ProjectId): StoredEdge => ({
@@ -38,7 +38,7 @@ export const taskLinkable: Linkable = {
   rows: async (q, workspaceId, want) => {
     const { where, limit } = wanted(want, tasks.id, ['tasks.title'])
     const found = await taskRows(q)
-      .where(within(visibleTasks(workspaceId), where))
+      .where(within(visibleTask(workspaceId), where))
       .orderBy(desc(tasks.createdAt), desc(tasks.id))
       .limit(limit)
     // Every reader is cross-project, so the detail names the project.
@@ -55,7 +55,7 @@ export const taskLinkable: Linkable = {
       of.type === 'task'
         ? eq(tasks.id, idFrom(taskId, of.id))
         : eq(tasks.projectId, idFrom(projectId, of.id))
-    const rows = await taskRows(q).where(within(visibleTasks(workspaceId), where))
+    const rows = await taskRows(q).where(within(visibleTask(workspaceId), where))
     return rows.map((r) => belongs(r.id, r.projectId))
   },
 }

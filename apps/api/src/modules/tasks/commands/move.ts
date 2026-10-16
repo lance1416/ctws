@@ -11,7 +11,7 @@ import { z } from 'zod'
 import type { Queryable, Tx } from '../../../platform/db/client'
 import { rowsOf } from '../../../platform/db/raw'
 import { instant } from '../../../platform/db/time'
-import { getProject } from '../../../shell/projects/queries'
+import { getProject } from '../../../shell/projects'
 import {
   BothNeighboursError,
   DepthLimitError,

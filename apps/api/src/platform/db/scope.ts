@@ -40,6 +40,16 @@ export function scoped(table: Owned, workspaceId: WorkspaceId, alias = getTableN
 export const liveUnder = (alias: string, parent: Scope): Scope =>
   confine(sql`${ident(alias)}.deleted_at is null and ${parent}`)
 
+/**
+ * The row of `table` that `id` names is one of this workspace's live rows: the confinement of a
+ * row that hangs off it, for a query that does not join `table`.
+ */
+export const scopedRow = (table: Owned, workspaceId: WorkspaceId, id: SQL): Scope =>
+  confine(sql`exists (
+    select 1 from ${table} ${ident('owner')}
+    where ${ident('owner')}.id = ${id} and ${scoped(table, workspaceId, 'owner')}
+  )`)
+
 /** The scope and a query's own conditions, all of which must hold. */
 export const within = (scope: Scope, ...conditions: (SQL | undefined)[]): SQL =>
   and(scope, ...conditions)!

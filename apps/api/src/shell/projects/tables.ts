@@ -28,3 +28,6 @@ export const projects = pgTable(
 )
 
 export type Project = typeof projects.$inferSelect
+
+/** What a module's own table points at with a foreign key: a project in its workspace. */
+export const projectKeys = { workspaceId: projects.workspaceId, id: projects.id }

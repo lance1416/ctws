@@ -1,11 +1,42 @@
 import { type WorkspaceId, type ProjectId } from '@ctws/contracts'
-import { asc, desc, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
+import { asc, desc, eq, inArray, isNotNull, isNull, sql, type SQL } from 'drizzle-orm'
 import type { Queryable, Tx } from '../../platform/db/client'
-import { scoped, within } from '../../platform/db/scope'
+import { type Scope, scoped, scopedRow, within } from '../../platform/db/scope'
+import { ident } from '../../platform/db/sql'
 import type { ProjectColumns } from '../module'
 import { projects, type Project } from './tables'
 import { type Page, type PageAsked, pageOf, spanOf } from '../../platform/db/page'
 import { NotFound } from '../../platform/errors'
+
+/** `desc` on a boolean puts true first. */
+const LIST_ORDER = [desc(projects.isInbox), asc(projects.rank), asc(projects.id)]
+
+/**
+ * A module's raw SQL that joins the relation `projects` under `alias` confines it with this. What
+ * it may read there is `id`, `name`, `rank`, `archived_at` and `is_inbox`.
+ */
+export const projectScope = (workspaceId: WorkspaceId, alias: string): Scope =>
+  scoped(projects, workspaceId, alias)
+
+/** The project that `projectId` names is live in this workspace, for a query that does not join it. */
+export const inLiveProject = (workspaceId: WorkspaceId, projectId: SQL): Scope =>
+  scopedRow(projects, workspaceId, projectId)
+
+/** The name of the project that `projectId` names, as a column of a module's query. */
+export const projectNameOf = (projectId: SQL): SQL<string> =>
+  sql<string>`(select ${ident('named')}.name from ${projects} ${ident('named')} where ${ident('named')}.id = ${projectId})`
+
+/** The live, unarchived projects in list order: inbox first, then the person's own order. */
+export async function unarchivedProjects(
+  q: Queryable,
+  workspaceId: WorkspaceId,
+): Promise<{ id: ProjectId; name: string }[]> {
+  return q
+    .select({ id: projects.id, name: projects.name })
+    .from(projects)
+    .where(within(scoped(projects, workspaceId), isNull(projects.archivedAt)))
+    .orderBy(...LIST_ORDER)
+}
 
 /**
  * Every id names a live project in this workspace, or none is used. A foreign id reads as not
@@ -95,8 +126,7 @@ export async function listProjects(
         opts.archived ? isNotNull(projects.archivedAt) : isNull(projects.archivedAt),
       ),
     )
-    // `desc` on a boolean puts true first.
-    .orderBy(desc(projects.isInbox), asc(projects.rank), asc(projects.id))
+    .orderBy(...LIST_ORDER)
     .limit(span.limit)
     .offset(span.offset)
   const { rows: page, ...info } = pageOf(rows, asked)

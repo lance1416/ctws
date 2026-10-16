@@ -2,7 +2,7 @@ import { type DependencyRef, type ProjectId, type TaskId, type WorkspaceId } fro
 import type { Rollup } from '@ctws/core'
 import { and, asc, eq, isNull } from 'drizzle-orm'
 import type { Db, Queryable } from '../../../platform/db/client'
-import { assertProjectsVisible } from '../../../shell/projects/queries'
+import { assertProjectsVisible } from '../../../shell/projects'
 import { tasks, type Task } from '../tables'
 import { blockersFor } from './dependencies'
 import { projectRollups } from './rollup'

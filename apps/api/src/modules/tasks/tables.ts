@@ -22,7 +22,7 @@ import {
 } from 'drizzle-orm/pg-core'
 import { inList } from '../../platform/db/sql'
 import { workspaces } from '../../shell/auth/tables'
-import { projects } from '../../shell/projects/tables'
+import { projectKeys } from '../../shell/projects'
 
 export const tasks = pgTable(
   'tasks',
@@ -56,7 +56,7 @@ export const tasks = pgTable(
     foreignKey({
       name: 'tasks_project_fk',
       columns: [t.workspaceId, t.projectId],
-      foreignColumns: [projects.workspaceId, projects.id],
+      foreignColumns: [projectKeys.workspaceId, projectKeys.id],
     }).onDelete('cascade'),
     foreignKey({
       name: 'tasks_parent_fk',
