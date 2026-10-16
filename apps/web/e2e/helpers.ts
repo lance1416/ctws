@@ -55,8 +55,11 @@ export async function signUpThroughForm(page: Page): Promise<string> {
 
 /** Signs out through the top-right account menu. */
 export async function logOut(page: Page): Promise<void> {
+  // Waited for: its answer clears the session cookie, and must not land after the next sign-in.
+  const out = page.waitForResponse((r) => new URL(r.url()).pathname === '/api/v1/auth/logout')
   await page.getByTestId('current-user').click()
   await page.getByRole('menuitem', { name: 'Sign out' }).click()
+  await out
 }
 
 // Submits one of the create inputs (capture, new project, new task) and waits for the POST to be
