@@ -631,7 +631,7 @@ export const api = {
     search: endpoint({
       method: 'GET',
       path: '/reading',
-      summary: 'Items whose title, author or address match q.',
+      summary: 'Items whose title, fetched title, author or address match q.',
       query: searchQueryOf(SHORT_SEARCH),
       ok: 200,
       response: readingItemsResponse,

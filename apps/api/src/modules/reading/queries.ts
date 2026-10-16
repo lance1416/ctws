@@ -86,7 +86,7 @@ export async function lockReadingItem(
   return getReadingItem(tx, workspaceId, id)
 }
 
-/** By title, author or url: an untitled link is remembered by its host. */
+/** By title, fetched title, author or url: an untitled link is remembered by its host. */
 export async function searchReadingItems(
   q: Queryable,
   workspaceId: WorkspaceId,
@@ -100,7 +100,15 @@ export async function searchReadingItems(
     .where(
       within(
         scoped(readingItems, workspaceId),
-        textMatches(['reading_items.title', 'reading_items.author', 'reading_items.url'], query),
+        textMatches(
+          [
+            'reading_items.title',
+            'reading_items.fetched_title',
+            'reading_items.author',
+            'reading_items.url',
+          ],
+          query,
+        ),
       ),
     )
     .orderBy(desc(readingItems.createdAt), desc(readingItems.id))
@@ -120,8 +128,8 @@ export async function readingEntries(
     select
       r.id,
       r.plan_on as day,
-      -- An untitled link shows its url, as everywhere else.
-      coalesce(r.title, r.url) as title,
+      -- An untitled link shows the title fetched from its page, else its url, as everywhere else.
+      coalesce(r.title, r.fetched_title, r.url) as title,
       p.id as "projectId",
       p.name as "projectName"
     from reading_items r
