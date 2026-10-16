@@ -7,7 +7,7 @@ import { format } from 'date-fns'
 /** A unique email: register is rate limited per IP, and each test needs a workspace of its own. */
 const freshEmail = () => `e2e-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`
 
-export const PASSWORD = 'correct horse battery'
+const PASSWORD = 'correct horse battery'
 
 /**
  * Registers a brand-new user over the API, in the browser's own zone as the sign-up form does, and
