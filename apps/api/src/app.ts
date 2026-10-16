@@ -1,6 +1,6 @@
 import fastifyCookie from '@fastify/cookie'
 import fastifySwagger from '@fastify/swagger'
-import Fastify, { type FastifyInstance, type onRequestHookHandler } from 'fastify'
+import Fastify, { type FastifyInstance } from 'fastify'
 import {
   jsonSchemaTransform,
   jsonSchemaTransformObject,
@@ -111,7 +111,5 @@ declare module 'fastify' {
     env: Env
     /** The current instant; tests pin it. */
     clock: () => Date
-    /** The instance-wide ceiling on auth traffic; see guards.ts. */
-    authCeiling: onRequestHookHandler
   }
 }

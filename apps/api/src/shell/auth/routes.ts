@@ -3,13 +3,13 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { currentUser } from './authenticated'
 import { clearSessionCookie, SESSION_COOKIE, setSessionCookie } from './cookie'
 import { InvalidCredentialsError } from './errors'
+import { signInLimits } from './limits'
 import { authenticate, getAuthContext, loadUser, registerUser } from './service'
 import { createSession, revokeSession } from './session'
 
 /** Registration, sign-in and sign-out: reachable without a session. */
 export const publicAuthRoutes: FastifyPluginAsyncZod = async (app) => {
-  // The guards' per-email limit, plus the instance-wide ceiling on all sign-in traffic.
-  const authLimit = { config: { rateLimit: {} }, onRequest: app.authCeiling }
+  const authLimit = signInLimits(app)
 
   app.post(
     '/auth/register',

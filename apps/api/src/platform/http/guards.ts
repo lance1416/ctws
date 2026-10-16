@@ -4,7 +4,6 @@ import { plainProblem, sendProblem } from './problem'
 
 const CSRF_HEADER = 'x-ctws-client'
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
-const CEILING_WINDOW_MS = 60_000
 
 export function requiresCsrfHeader(method: string): boolean {
   return !SAFE_METHODS.has(method)
@@ -12,38 +11,14 @@ export function requiresCsrfHeader(method: string): boolean {
 
 export async function registerGuards(app: FastifyInstance): Promise<void> {
   /**
-   * Routes that declare `config.rateLimit` are limited per email: behind a tunnel every request
-   * shares one IP. The email is in the body, so the key is read after parsing.
+   * Only routes that declare `config.rateLimit` are limited, each saying how. Limits are checked
+   * once the body is parsed, so a route can key its bucket by what the body names.
    */
   await app.register(fastifyRateLimit, {
     global: false,
-    max: app.env.authRateLimitMax,
     timeWindow: '1 minute',
     hook: 'preValidation',
-    keyGenerator: (req) => {
-      const body: unknown = req.body
-      const email =
-        body && typeof body === 'object' && 'email' in body && typeof body.email === 'string'
-          ? body.email.trim().toLowerCase()
-          : null
-      return email && email.length > 0 ? `email:${email}` : `ip:${req.ip}`
-    },
   })
-
-  /**
-   * One counter for the whole instance's sign-in traffic: per-email buckets do not bound argon2
-   * work across many addresses, and per-address buckets would grow without bound. A flood can
-   * refuse a real sign-in for the rest of the minute, but nothing else slows.
-   */
-  let window = { count: 0, until: 0 }
-  app.decorate('authCeiling', (async (_req, reply) => {
-    const now = app.clock().getTime()
-    if (now >= window.until) window = { count: 0, until: now + CEILING_WINDOW_MS }
-    window.count += 1
-    if (window.count > app.env.authCeiling) {
-      return sendProblem(reply, plainProblem(429, 'Too many sign-in attempts right now'))
-    }
-  }) satisfies onRequestHookHandler)
 
   // CSRF: a browser cannot send a custom header cross-origin without a preflight, and no origin
   // is allowed one.
@@ -52,4 +27,22 @@ export async function registerGuards(app: FastifyInstance): Promise<void> {
     if (req.headers[CSRF_HEADER]) return
     return sendProblem(reply, plainProblem(403, `Missing ${CSRF_HEADER} header`))
   })
+}
+
+/**
+ * One counter, with no key, for every request through the routes that share the hook: nothing to
+ * rotate past, and no map to grow. Past `max` in a window the rest of the window is refused.
+ */
+export function ceiling(
+  app: FastifyInstance,
+  { max, windowMs, detail }: { max: number; windowMs: number; detail: string },
+): onRequestHookHandler {
+  let window = { count: 0, until: 0 }
+  return async (_req, reply) => {
+    const now = app.clock().getTime()
+    if (now >= window.until) window = { count: 0, until: now + windowMs }
+    window.count += 1
+    if (window.count <= max) return
+    return sendProblem(reply, plainProblem(429, detail))
+  }
 }
