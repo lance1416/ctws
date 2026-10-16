@@ -36,6 +36,7 @@ const notes: WorkspaceModule = {
     contents: async () => '3 notes',
   },
   keys: [{ title: 'In a note', rows: [{ keys: 'e', does: 'Edit', presses: { e: 'edit' } }] }],
+  reads: [{ queryKey: ['notes'], of: ['reading', 'project'] }],
 }
 
 const files: WorkspaceModule = {
@@ -49,8 +50,10 @@ const files: WorkspaceModule = {
     Block: { Component: () => null, views: [{ id: 'all', label: 'All' }] },
     Lead: FilesLead,
     count: () => 4,
+    counts: ['task'],
     contents: async () => null,
   },
+  reads: [{ queryKey: ['files'], of: ['task'] }],
   keys: [
     {
       title: 'In the drive',
@@ -219,7 +222,13 @@ describe('what a module hangs on a project page', () => {
   })
 
   it('contributes nothing when only the capturing module is registered and hangs nothing', () => {
-    const bare: WorkspaceModule = { id: 'bare', label: 'Bare', routes: [], capture: notes.capture! }
+    const bare: WorkspaceModule = {
+      id: 'bare',
+      label: 'Bare',
+      routes: [],
+      capture: notes.capture!,
+      reads: [],
+    }
     const registry = build([bare], { captureModuleId: 'bare', phoneTab: 'shell:calendar' })
     expect(registry.projectBlocks).toEqual([])
     expect(registry.projectHeadlines).toEqual([])
@@ -242,7 +251,13 @@ describe('the keyboard help', () => {
 describe('where another module keeps its things', () => {
   it('keeps projects in the shell, and takes a type from a module that does not exist', () => {
     // The project entry survives every module being removed, because a project is the shell's.
-    const bare: WorkspaceModule = { id: 'bare', label: 'Bare', routes: [], capture: notes.capture! }
+    const bare: WorkspaceModule = {
+      id: 'bare',
+      label: 'Bare',
+      routes: [],
+      capture: notes.capture!,
+      reads: [],
+    }
     const shellOnly = build([bare], { captureModuleId: 'bare', phoneTab: 'shell:calendar' })
     expect(shellOnly.relations.map((r) => r.type)).toEqual(['project'])
     expect(shellOnly.relationFor('project').to('p1')).toBe('/projects/p1')
@@ -257,6 +272,26 @@ describe('where another module keeps its things', () => {
     expect(() => build([notes]).relationFor('person')).toThrow(
       'no module says where a person lives',
     )
+  })
+})
+
+describe('what a write leaves stale', () => {
+  const staleFor = build([notes, files]).staleFor
+
+  it("is every module's queries that read the kind of thing it changed", () => {
+    expect(staleFor(['reading'])).toEqual([['links'], ['notes']])
+  })
+
+  it("takes in the project list when a module counts that kind into a project's columns", () => {
+    expect(staleFor(['task'])).toEqual([['links'], ['projects'], ['files']])
+  })
+
+  it('reaches whatever names a project when a project changes', () => {
+    expect(staleFor(['project'])).toEqual([['links'], ['projects'], ['notes']])
+  })
+
+  it('is the links alone for a kind no module reads', () => {
+    expect(staleFor(['person'])).toEqual([['links']])
   })
 })
 

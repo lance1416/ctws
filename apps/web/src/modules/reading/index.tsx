@@ -1,5 +1,6 @@
 import { kindPage } from '../../shell/layout'
 import type { WorkspaceModule } from '../../shell/contract'
+import { readingKeys } from './api'
 import { ReadingCount, UnfiledLine } from './components/ReadingKind'
 import { ReadingAside, ReadingWidget } from './components/ReadingWidget'
 import { useReadingCapture, useReadingEntries, useReadingHits } from './hooks/contributions'
@@ -49,4 +50,6 @@ export const readingModule: WorkspaceModule = {
     },
   ],
   relations: [{ type: 'reading', kind: 'Reading', to: (id) => `/${READING_ID}/${id}` }],
+  // An item names its project.
+  reads: [{ queryKey: readingKeys.all, of: ['reading', 'project'] }],
 }

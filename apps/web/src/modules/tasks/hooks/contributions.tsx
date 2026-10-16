@@ -1,9 +1,9 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { refreshQueries } from '../../../platform/http/refresh'
+import { useQuery } from '@tanstack/react-query'
 import type { CaptureTargetState, SearchHit } from '../../../shell/contract'
+import { useRefresh } from '../../../shell/registry'
 import { inboxOf, useProjects } from '../../../shell/projects'
 import { ProjectRail } from '../../../shell/rows'
-import { createTask, projectTasksQuery, taskCalendarQuery, taskSearchQuery } from '../api'
+import { createTask, taskCalendarQuery, taskKeys, taskSearchQuery } from '../api'
 import { StatusMark } from '../components/StatusMark'
 import { revealHref, taskCrumb } from '../logic/crumb'
 
@@ -15,7 +15,7 @@ export function useTaskEntries(range: { from: string; to: string }) {
 
 /** Quick capture lands in the workspace inbox, found by its `isInbox` flag, never by name. */
 export function useInboxCapture(): CaptureTargetState {
-  const qc = useQueryClient()
+  const refresh = useRefresh()
   const projects = useProjects()
   const inbox = projects.data ? inboxOf(projects.data) : undefined
   return {
@@ -27,7 +27,7 @@ export function useInboxCapture(): CaptureTargetState {
             await createTask({ projectId: inbox.id, title })
             // Not awaited: the box is free for the next line once the server has this one, and
             // what is typed while the list is read again is that next line.
-            void refreshQueries(qc, [projectTasksQuery(inbox.id).queryKey])
+            void refresh(['task'], [taskKeys.list(inbox.id)])
           },
         }
       : null,

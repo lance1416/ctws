@@ -42,7 +42,7 @@ export function ProjectHead({ id }: { id: ProjectId }) {
 function ArchiveToggle({ id, archived }: { id: ProjectId; archived: boolean }) {
   const toggle = useMutation({
     mutationFn: () => updateProject(id, { archived: !archived }),
-    meta: { awaits: [projectKeys.all], ownsError: true },
+    meta: { changes: ['project'], awaits: [projectKeys.all], ownsError: true },
   })
   return (
     <div className="mt-1 flex shrink-0 flex-col items-end">

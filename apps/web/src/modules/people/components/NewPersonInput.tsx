@@ -11,7 +11,7 @@ export function NewPersonInput({ onCreated }: { onCreated: (person: PersonRespon
   const send = name.sends((text) => createPerson({ name: text }))
   const create = useMutation({
     mutationFn: send,
-    meta: { awaits: [peopleKeys.all], ownsError: true },
+    meta: { changes: ['person'], awaits: [peopleKeys.all], ownsError: true },
     onSuccess: (person) => onCreated(person),
   })
 

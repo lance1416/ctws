@@ -30,7 +30,7 @@ export function useScopedEdit(
   const save = useMutation({
     mutationFn: ({ patch, scope }: { patch: UpdateSeriesBody; scope: EditScope }) =>
       writeScoped(meeting, patch, scope),
-    meta: { awaits: [meetingKeys.all, linkKeys.all], ownsError: true },
+    meta: { changes: ['meeting'], awaits: [meetingKeys.all, linkKeys.all], ownsError: true },
   })
 
   const write = async (patch: UpdateSeriesBody, scope: EditScope) => {

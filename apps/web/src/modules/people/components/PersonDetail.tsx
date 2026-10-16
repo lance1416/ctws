@@ -12,7 +12,7 @@ export function PersonDetail({ person, onClose }: { person: PersonResponse; onCl
   // Waits for the list, so the reading that replaces the form already shows the edit.
   const save = useMutation({
     mutationFn: (patch: Parameters<typeof patchPerson>[1]) => patchPerson(person.id, patch),
-    meta: { awaits: [peopleKeys.all], ownsError: true },
+    meta: { changes: ['person'], awaits: [peopleKeys.all], ownsError: true },
   })
 
   return (

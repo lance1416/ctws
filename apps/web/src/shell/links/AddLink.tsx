@@ -4,6 +4,7 @@ import {
   kindsBetween,
   type LinkCandidate,
   type LinkKind,
+  OBJECT_TYPES,
   type ObjectType,
 } from '@ctws/contracts'
 import { useMutation, useQuery } from '@tanstack/react-query'
@@ -40,7 +41,8 @@ export function AddLink({
       if (!isLinkEdge(edge)) throw new Error(`no ${kind} link between these two`)
       return createLink(edge)
     },
-    meta: { awaits: [linkKeys.all], ownsError: true },
+    // Both ends show the edge, and the far one can be any kind of thing.
+    meta: { changes: OBJECT_TYPES, awaits: [linkKeys.all], ownsError: true },
     onSuccess: onClose,
   })
 

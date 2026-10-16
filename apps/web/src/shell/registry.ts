@@ -1,5 +1,12 @@
-import { type ObjectType, type ProjectId, type ProjectListItem } from '@ctws/contracts'
+import {
+  OBJECT_TYPES,
+  type ObjectType,
+  type ProjectId,
+  type ProjectListItem,
+} from '@ctws/contracts'
+import { useQueryClient, type QueryKey } from '@tanstack/react-query'
 import { createContext, useContext, type ComponentType } from 'react'
+import { refreshQueries, type StaleFor } from '../platform/http/refresh'
 import type { RouteObject } from 'react-router-dom'
 import type {
   CalendarContribution,
@@ -8,12 +15,15 @@ import type {
   KindEntry,
   ModulePage,
   ProjectContribution,
+  Reads,
   RelationContribution,
   ShownEntry,
   Widget,
   WorkspaceModule,
 } from './contract'
 import type { KeyTable } from '../platform/keyboard/keyTable'
+import { linkKeys } from './links/api'
+import { projectKeys } from './projects/api'
 import { ProjectsCount, ProjectsStatus } from './projects/ProjectKind'
 import { anywhereKeys, type AnywhereAction } from './shortcuts/keys'
 
@@ -114,6 +124,8 @@ export type Registry = {
   /** Every module's key tables, in module order. */
   keys: KeyTable[]
   routes: RouteObject[]
+  /** The query keys a write that changes these kinds of thing leaves stale. */
+  staleFor: StaleFor
 }
 
 const byOrder = <T extends { order?: number }>(a: T, b: T) => (a.order ?? 50) - (b.order ?? 50)
@@ -142,6 +154,16 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
   }
   const phoneTab = offered.get(config.phoneTab)
   if (!phoneTab) throw new Error(`phone tab "${config.phoneTab}" is not offered`)
+  // The account (`me`), a day's lunar name and a city's spelling change with no write here.
+  const reads: Reads[] = [
+    // An edge's far end can be anything, and the list shows its name.
+    { queryKey: linkKeys.all, of: OBJECT_TYPES },
+    {
+      queryKey: projectKeys.all,
+      of: ['project', ...modules.flatMap((m) => m.project?.counts ?? [])],
+    },
+    ...modules.flatMap((m) => m.reads),
+  ]
 
   return {
     pinned: config.pinned.flatMap((key) => {
@@ -188,6 +210,8 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
     anywhere: anywhereKeys(chords),
     keys: modules.flatMap((m) => m.keys ?? []),
     routes: modules.map((m) => ({ path: `/${m.id}`, children: m.routes })),
+    staleFor: (changes) =>
+      reads.filter((r) => r.of.some((type) => changes.includes(type))).map((r) => r.queryKey),
   }
 }
 
@@ -198,4 +222,15 @@ export function useRegistry(): Registry {
   const registry = useContext(RegistryContext)
   if (!registry) throw new Error('useRegistry needs a RegistryProvider')
   return registry
+}
+
+/**
+ * Refreshes after a write made outside a mutation: the queries that read what it `changes`, and
+ * resolves once the `awaits` ones are back.
+ */
+export function useRefresh() {
+  const qc = useQueryClient()
+  const { staleFor } = useRegistry()
+  return (changes: readonly ObjectType[], awaits?: readonly QueryKey[]) =>
+    refreshQueries(qc, staleFor(changes), awaits)
 }

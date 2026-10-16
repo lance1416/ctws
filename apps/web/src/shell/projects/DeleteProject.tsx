@@ -36,7 +36,7 @@ export function DeleteProject({ id }: { id: ProjectId }) {
   const forget = useForgetRecent()
   const remove = useMutation({
     mutationFn: () => deleteProject(id),
-    meta: { awaits: [projectKeys.all], ownsError: true },
+    meta: { changes: ['project'], awaits: [projectKeys.all], ownsError: true },
     onSuccess: () => {
       forget('project', id)
       navigate('/projects')

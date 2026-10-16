@@ -1,18 +1,30 @@
+import type { ObjectType } from '@ctws/contracts'
 import {
   MutationObserver,
   QueryClient,
   QueryObserver,
   type MutationMeta,
+  type QueryKey,
 } from '@tanstack/react-query'
 import { describe, expect, it, vi } from 'vitest'
 import { ApiError } from './api'
-import { refreshAfterWrites } from './refresh'
+import { refreshAfterWrites, type StaleFor } from './refresh'
 import { clearWriteFailure, writeFailure } from './writeFailure'
+
+/** A small app's table: which key prefixes read which kinds of thing. `me` reads none. */
+const READS: { queryKey: QueryKey; of: ObjectType[] }[] = [
+  { queryKey: ['tasks'], of: ['task', 'project'] },
+  { queryKey: ['people'], of: ['person', 'project'] },
+  { queryKey: ['projects'], of: ['project', 'task'] },
+  { queryKey: ['links'], of: ['task', 'person', 'project', 'reading', 'meeting'] },
+]
+const staleFor: StaleFor = (changes) =>
+  READS.filter((r) => r.of.some((t) => changes.includes(t))).map((r) => r.queryKey)
 
 function client() {
   const qc: QueryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
-    mutationCache: refreshAfterWrites(() => qc),
+    mutationCache: refreshAfterWrites(() => qc, staleFor),
   })
   return qc
 }
@@ -20,24 +32,43 @@ function client() {
 const write = (qc: QueryClient, meta: MutationMeta = {}) =>
   new MutationObserver(qc, { mutationFn: async () => 'ok', meta }).mutate()
 
+/** Watches `queryKey`, counting its reads. */
+function watch(qc: QueryClient, queryKey: QueryKey) {
+  const read = vi.fn(async () => 1)
+  const stop = new QueryObserver(qc, { queryKey, queryFn: read }).subscribe(() => {})
+  return { read, stop }
+}
+
+/** Lets every refetch a write started run to the end. */
+const settle = () => new Promise((r) => setTimeout(r, 20))
+
 describe('refreshing after a write', () => {
-  it('refetches every watched query after a write', async () => {
+  it('refetches the watched queries that read what the write changed, and no others', async () => {
     const qc = client()
-    const a = vi.fn(async () => 1)
-    const b = vi.fn(async () => 2)
-    const stopA = new QueryObserver(qc, { queryKey: ['tasks', 'today'], queryFn: a }).subscribe(
-      () => {},
-    )
-    const stopB = new QueryObserver(qc, { queryKey: ['people', 'list'], queryFn: b }).subscribe(
-      () => {},
-    )
-    await vi.waitFor(() => expect(a).toHaveBeenCalledTimes(1))
-    await vi.waitFor(() => expect(b).toHaveBeenCalledTimes(1))
+    const people = watch(qc, ['people', 'list'])
+    const links = watch(qc, ['links', 'person', 'p1'])
+    const projects = watch(qc, ['projects'])
+    const me = watch(qc, ['me'])
+    await vi.waitFor(() => expect(me.read).toHaveBeenCalledTimes(1))
+    await write(qc, { changes: ['person'] })
+    await settle()
+    expect(people.read).toHaveBeenCalledTimes(2)
+    expect(links.read).toHaveBeenCalledTimes(2)
+    expect(projects.read).toHaveBeenCalledTimes(1)
+    expect(me.read).toHaveBeenCalledTimes(1)
+    for (const w of [people, links, projects, me]) w.stop()
+  })
+
+  it('refetches every watched query after a write that does not say what it changed', async () => {
+    const qc = client()
+    const tasks = watch(qc, ['tasks', 'today'])
+    const me = watch(qc, ['me'])
+    await vi.waitFor(() => expect(me.read).toHaveBeenCalledTimes(1))
     await write(qc)
-    await vi.waitFor(() => expect(a).toHaveBeenCalledTimes(2))
-    await vi.waitFor(() => expect(b).toHaveBeenCalledTimes(2))
-    stopA()
-    stopB()
+    await vi.waitFor(() => expect(tasks.read).toHaveBeenCalledTimes(2))
+    await vi.waitFor(() => expect(me.read).toHaveBeenCalledTimes(2))
+    tasks.stop()
+    me.stop()
   })
 
   it('waits only for the queries the write names', async () => {
@@ -49,7 +80,7 @@ describe('refreshing after a write', () => {
     }).subscribe(() => {})
     await vi.waitFor(() => expect(calls).toBe(1))
     // Resolves although the movement refetch never lands: only `['tasks', 'list']` is awaited.
-    await expect(write(qc, { awaits: [['tasks', 'list']] })).resolves.toBe('ok')
+    await expect(write(qc, { changes: ['task'], awaits: [['tasks', 'list']] })).resolves.toBe('ok')
     expect(calls).toBe(2)
     stop()
   })
@@ -64,12 +95,26 @@ describe('refreshing after a write', () => {
       if (answer === 'before') await held
       return answer
     })
-    const observer = new QueryObserver(qc, { queryKey: ['reading', 'list'], queryFn: fn })
+    const observer = new QueryObserver(qc, { queryKey: ['people', 'list'], queryFn: fn })
     const stop = observer.subscribe(() => {})
     await vi.waitFor(() => expect(fn).toHaveBeenCalledTimes(1))
-    await write(qc, { awaits: [['reading']] })
+    await write(qc, { changes: ['person'], awaits: [['people']] })
     release()
     await vi.waitFor(() => expect(observer.getCurrentResult().data).toBe('after'))
+    stop()
+  })
+
+  it('leaves a read of something else in flight', async () => {
+    const qc = client()
+    let release!: (v: number) => void
+    const fn = vi.fn(() => new Promise<number>((r) => (release = r)))
+    const observer = new QueryObserver(qc, { queryKey: ['me'], queryFn: fn })
+    const stop = observer.subscribe(() => {})
+    await vi.waitFor(() => expect(fn).toHaveBeenCalledTimes(1))
+    await write(qc, { changes: ['task'] })
+    release(1)
+    await vi.waitFor(() => expect(observer.getCurrentResult().data).toBe(1))
+    expect(fn).toHaveBeenCalledTimes(1)
     stop()
   })
 
@@ -86,29 +131,12 @@ describe('refreshing after a write', () => {
       mutationFn: async () => {
         value = 2
       },
-      meta: { awaits: [['projects']] },
+      meta: { changes: ['project'], awaits: [['projects']] },
       onSuccess: () => {
         seen = qc.getQueryData(['projects'])
       },
     }).mutate()
     expect(seen).toBe(2)
-    stop()
-  })
-
-  it('refetches after a failed write as well', async () => {
-    const qc = client()
-    const fn = vi.fn(async () => 1)
-    const stop = new QueryObserver(qc, { queryKey: ['tasks', 'list', 'p'], queryFn: fn }).subscribe(
-      () => {},
-    )
-    await vi.waitFor(() => expect(fn).toHaveBeenCalledTimes(1))
-    const failing = new MutationObserver(qc, {
-      mutationFn: async () => {
-        throw new Error('second request failed')
-      },
-    })
-    await failing.mutate().catch(() => {})
-    await vi.waitFor(() => expect(fn).toHaveBeenCalledTimes(2))
     stop()
   })
 
@@ -131,7 +159,7 @@ describe('refreshing after a write', () => {
         throw new Error('second request failed')
       },
       onError: (_e, _v, ctx) => qc.setQueryData(['tasks', 'list', 'p'], ctx!.before),
-      meta: { awaits: [['tasks']] },
+      meta: { changes: ['task'], awaits: [['tasks']] },
     })
       .mutate()
       .catch(() => {})
@@ -139,36 +167,36 @@ describe('refreshing after a write', () => {
     stop()
   })
 
-  it('waits for the last of overlapping writes, so its answer does not undo the others', async () => {
+  it('refreshes once for overlapping writes, after the last, what each of them changed', async () => {
     const qc = client()
-    const read = vi.fn(async () => 1)
-    const stop = new QueryObserver(qc, { queryKey: ['tasks', 'list'], queryFn: read }).subscribe(
-      () => {},
-    )
-    await vi.waitFor(() => expect(read).toHaveBeenCalledTimes(1))
+    const tasks = watch(qc, ['tasks', 'list'])
+    const people = watch(qc, ['people', 'list'])
+    await vi.waitFor(() => expect(people.read).toHaveBeenCalledTimes(1))
     let finish!: (v: string) => void
     const second = new MutationObserver(qc, {
       mutationFn: () => new Promise<string>((done) => (finish = done)),
+      meta: { changes: ['person'] },
     }).mutate()
 
-    await write(qc)
+    await write(qc, { changes: ['task'] })
     // The second write's optimistic rows are still on screen; a refetch now would put them back.
-    expect(read).toHaveBeenCalledTimes(1)
+    expect(tasks.read).toHaveBeenCalledTimes(1)
     finish('ok')
     await second
-    await vi.waitFor(() => expect(read).toHaveBeenCalledTimes(2))
-    stop()
+    await vi.waitFor(() => expect(tasks.read).toHaveBeenCalledTimes(2))
+    await vi.waitFor(() => expect(people.read).toHaveBeenCalledTimes(2))
+    tasks.stop()
+    people.stop()
   })
 
   it('leaves the cache alone for a write that opts out', async () => {
     const qc = client()
-    const fn = vi.fn(async () => 1)
-    const stop = new QueryObserver(qc, { queryKey: ['me'], queryFn: fn }).subscribe(() => {})
-    await vi.waitFor(() => expect(fn).toHaveBeenCalledTimes(1))
+    const me = watch(qc, ['me'])
+    await vi.waitFor(() => expect(me.read).toHaveBeenCalledTimes(1))
     await write(qc, { refresh: false })
-    await new Promise((r) => setTimeout(r, 20))
-    expect(fn).toHaveBeenCalledTimes(1)
-    stop()
+    await settle()
+    expect(me.read).toHaveBeenCalledTimes(1)
+    me.stop()
   })
 })
 

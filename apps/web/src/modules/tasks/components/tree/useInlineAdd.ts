@@ -1,9 +1,8 @@
 import { problemText } from '../../../../platform/http/api'
 import { MAX_TASK_DEPTH, type ProjectId, type TaskId } from '@ctws/contracts'
-import { useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
-import { refreshQueries } from '../../../../platform/http/refresh'
-import { createTask, projectTasksQuery } from '../../api'
+import { useRefresh } from '../../../../shell/registry'
+import { createTask, taskKeys } from '../../api'
 import type { FlatRow } from '../../logic/tree/flatten'
 
 /**
@@ -22,7 +21,7 @@ export function useInlineAdd({
   /** Puts focus on a row's handle. */
   focus: (id: TaskId) => void
 }) {
-  const qc = useQueryClient()
+  const refresh = useRefresh()
   // The parent whose children it appends to (null: the root level), and the row whose handle
   // takes focus back when it is cancelled.
   const [adding, setAdding] = useState<{ parentId: TaskId | null; from: TaskId } | null>(null)
@@ -48,7 +47,7 @@ export function useInlineAdd({
     try {
       await createTask({ projectId, title, parentId: adding.parentId })
       // Only this list is waited for: the next Enter must not wait on unrelated refetches.
-      await refreshQueries(qc, [projectTasksQuery(projectId).queryKey])
+      await refresh(['task'], [taskKeys.list(projectId)])
       setError(null)
       return true
     } catch (e) {

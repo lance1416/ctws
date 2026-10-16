@@ -1,7 +1,7 @@
 import type { WorkspaceModule } from '../../shell/contract'
 import { topPage } from '../../shell/layout'
 import { inboxOf, projectsQuery } from '../../shell/projects'
-import { projectTasksQuery } from './api'
+import { projectTasksQuery, taskKeys } from './api'
 import {
   NewTaskAction,
   PROJECT_VIEWS,
@@ -102,6 +102,7 @@ export const taskModule: WorkspaceModule = {
     TileFacts: ProjectTileFacts,
     Lead: ProjectLead,
     count: openTasksOf,
+    counts: ['task'],
     contents: async (qc, projectId) => {
       const { tasks } = await qc.fetchQuery(projectTasksQuery(projectId))
       return tasks.length === 0 ? null : `${tasks.length} tasks`
@@ -110,4 +111,6 @@ export const taskModule: WorkspaceModule = {
   keys: TASK_KEYS,
   // No page of its own: a task's address opens its tree, where its parent and siblings are.
   relations: [{ type: 'task', kind: 'Task', to: taskPage }],
+  // A task row names its project, and search says whether that project is archived.
+  reads: [{ queryKey: taskKeys.all, of: ['task', 'project'] }],
 }

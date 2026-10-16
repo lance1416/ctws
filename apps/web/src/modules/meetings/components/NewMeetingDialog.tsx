@@ -45,7 +45,7 @@ export function NewMeetingDialog({
 
   const make = useMutation({
     mutationFn: (body: CreateMeetingBody) => createMeeting(body),
-    meta: { awaits: [meetingKeys.all], ownsError: true },
+    meta: { changes: ['meeting'], awaits: [meetingKeys.all], ownsError: true },
     onSuccess: (made) => onMade(made),
   })
 

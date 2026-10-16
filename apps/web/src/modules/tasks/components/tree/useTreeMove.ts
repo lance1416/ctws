@@ -46,7 +46,7 @@ export function useTreeMove({
       onError(problemText(e) ?? "Couldn't move it")
     },
     scope: ROW_WRITES,
-    meta: { awaits: [key], ownsError: true },
+    meta: { changes: ['task'], awaits: [key], ownsError: true },
   })
 
   /** Drops `draggedId` at `slot` at `wantedDepth`, if the plan allows it. */

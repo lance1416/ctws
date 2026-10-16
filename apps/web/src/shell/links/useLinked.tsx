@@ -1,4 +1,4 @@
-import type { LinkId, ObjectType } from '@ctws/contracts'
+import { type LinkId, OBJECT_TYPES, type ObjectType } from '@ctws/contracts'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { problemText } from '../../platform/http/api'
@@ -33,7 +33,8 @@ export function useLinked(of: Endpoint, except: readonly ObjectType[] | undefine
   const groups = (links.data ?? []).filter((g) => !except?.includes(g.type))
   const unlink = useMutation({
     mutationFn: (id: LinkId) => deleteLink(id),
-    meta: { awaits: [linkKeys.all], ownsError: true },
+    // Both ends showed the edge, and the far one can be any kind of thing.
+    meta: { changes: OBJECT_TYPES, awaits: [linkKeys.all], ownsError: true },
   })
   const add = (
     <>

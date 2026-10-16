@@ -21,7 +21,7 @@ export function AddReading() {
   )
   const add = useMutation({
     mutationFn: send,
-    meta: { awaits: [readingKeys.all], ownsError: true },
+    meta: { changes: ['reading'], awaits: [readingKeys.all], ownsError: true },
   })
 
   return (

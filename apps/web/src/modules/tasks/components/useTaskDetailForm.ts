@@ -51,7 +51,7 @@ export function useTaskDetailForm(task: TaskResponse) {
         Object.assign(patch, { projectId: values.projectId, parentId: null })
       if (Object.keys(patch).length > 0) await patchTask(task.id, patch)
     },
-    meta: { awaits: WRITE_AWAITS, ownsError: true },
+    meta: { changes: ['task'], awaits: WRITE_AWAITS, ownsError: true },
   })
 
   /** Saves what changed; `onSaved` runs once the server has it and the form is clean again. */

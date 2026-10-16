@@ -33,7 +33,7 @@ export function SideRail() {
   const send = name.sends((text) => createProject({ name: text }))
   const create = useMutation({
     mutationFn: send,
-    meta: { awaits: [projectKeys.all] },
+    meta: { changes: ['project'], awaits: [projectKeys.all] },
     onSuccess: (made) => {
       setNaming(false)
       navigate(`/projects/${made.id}`)

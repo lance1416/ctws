@@ -47,7 +47,7 @@ export function useTaskActions(onError: (message: string) => void) {
       onError(problemText(e) ?? "Couldn't save the change")
     },
     scope: ROW_WRITES,
-    meta: { awaits: [taskKeys.all], ownsError: true },
+    meta: { changes: ['task'], awaits: [taskKeys.all], ownsError: true },
   })
 
   return {

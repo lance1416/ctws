@@ -35,7 +35,7 @@ export function TaskReading({
   /** The status writes at once, outside the leave guard: nothing is ever unsaved. */
   const setStatus = useMutation({
     mutationFn: (status: TaskStatus) => patchTask(task.id, { status }),
-    meta: { awaits: WRITE_AWAITS, ownsError: true },
+    meta: { changes: ['task'], awaits: WRITE_AWAITS, ownsError: true },
   })
 
   // A deadline whose day has gone says how late, in the row's words and `missed` colour; a

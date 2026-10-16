@@ -80,7 +80,7 @@ export function CreateTaskDialog({
 
   const create = useMutation({
     mutationFn: (body: CreateTaskValues) => createTask(body),
-    meta: { awaits: [projectTasksQuery(project).queryKey], ownsError: true },
+    meta: { changes: ['task'], awaits: [projectTasksQuery(project).queryKey], ownsError: true },
   })
 
   /** `stay` is the `⌘↵` route. `handleSubmit` refuses an invalid form on both routes. */

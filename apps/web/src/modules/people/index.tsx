@@ -1,5 +1,6 @@
 import { kindPage } from '../../shell/layout'
 import type { WorkspaceModule } from '../../shell/contract'
+import { peopleKeys } from './api'
 import { BirthdayCard } from './components/BirthdayCard'
 import { NextBirthdayLine, PeopleCount } from './components/PeopleKind'
 import { useBirthdayEntries, usePeopleHits } from './hooks/contributions'
@@ -70,4 +71,6 @@ export const peopleModule: WorkspaceModule = {
       to: (id) => `/${PEOPLE_ID}/${id}`,
     },
   ],
+  // A person names the projects they are on.
+  reads: [{ queryKey: peopleKeys.all, of: ['person', 'project'] }],
 }

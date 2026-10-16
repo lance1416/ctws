@@ -1,9 +1,8 @@
 import { problemText } from '../../../../platform/http/api'
 import { type ProjectId, type TaskId } from '@ctws/contracts'
-import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { refreshQueries } from '../../../../platform/http/refresh'
-import { moveTask, patchTask, projectTasksQuery } from '../../api'
+import { useRefresh } from '../../../../shell/registry'
+import { moveTask, patchTask, taskKeys } from '../../api'
 
 /**
  * The rows Shift+click has picked. Bulk actions go one request at a time and each id leaves the
@@ -22,7 +21,7 @@ export function useBulkSelection({
   onFinished: (done: ReadonlySet<TaskId>) => void
   onError: (message: string) => void
 }) {
-  const qc = useQueryClient()
+  const refresh = useRefresh()
   const [picked, setSelected] = useState<ReadonlySet<TaskId>>(() => new Set())
   const onScreen = new Set(visible)
   const selected: ReadonlySet<TaskId> = new Set([...picked].filter((id) => onScreen.has(id)))
@@ -46,7 +45,7 @@ export function useBulkSelection({
       setSelected((prev) => new Set([...prev].filter((id) => onScreen.has(id) && !done.has(id))))
       setBusy(false)
       settle?.(done)
-      await refreshQueries(qc, [projectTasksQuery(projectId).queryKey])
+      await refresh(['task'], [taskKeys.list(projectId)])
     }
   }
 

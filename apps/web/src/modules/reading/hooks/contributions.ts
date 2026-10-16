@@ -1,13 +1,13 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { refreshQueries } from '../../../platform/http/refresh'
+import { useQuery } from '@tanstack/react-query'
 import type { CaptureTargetState, SearchHit } from '../../../shell/contract'
+import { useRefresh } from '../../../shell/registry'
 import { createReadingItem, readingCalendarQuery, readingKeys, readingSearchQuery } from '../api'
 import { READING_ID } from '../logic/id'
 import { readingLabel } from '../logic/item'
 
 /** A pasted url lands here instead of the inbox; nothing is fetched, so it is always there. */
 export function useReadingCapture(): CaptureTargetState {
-  const qc = useQueryClient()
+  const refresh = useRefresh()
   return {
     target: {
       name: 'Reading',
@@ -15,7 +15,7 @@ export function useReadingCapture(): CaptureTargetState {
       submit: async (line: string) => {
         await createReadingItem({ kind: 'link', url: line.trim() })
         // Not awaited: the capture box is free for the next line once the server has this one.
-        void refreshQueries(qc, [readingKeys.all])
+        void refresh(['reading'], [readingKeys.all])
       },
     },
   }

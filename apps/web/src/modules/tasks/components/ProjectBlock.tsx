@@ -100,7 +100,7 @@ export function ProjectTasks({ projectId, view }: { projectId: ProjectId; view: 
   const send = title.sends((text) => createTask({ projectId, title: text, parentId: null }))
   const create = useMutation({
     mutationFn: send,
-    meta: { awaits: [projectTasksQuery(projectId).queryKey], ownsError: true },
+    meta: { changes: ['task'], awaits: [projectTasksQuery(projectId).queryKey], ownsError: true },
   })
 
   return (

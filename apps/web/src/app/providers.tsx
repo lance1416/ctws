@@ -8,7 +8,7 @@ import { registry } from './registry'
 const queryClient: QueryClient = new QueryClient({
   // At most one retry: the default three hide a down server behind a spinner for seconds.
   defaultOptions: { queries: { retry: retryOnce } },
-  mutationCache: refreshAfterWrites(() => queryClient),
+  mutationCache: refreshAfterWrites(() => queryClient, registry.staleFor),
 })
 
 export function Providers({ children }: { children: ReactNode }) {

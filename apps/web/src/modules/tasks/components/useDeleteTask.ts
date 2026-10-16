@@ -32,7 +32,7 @@ export function useDeleteTask(task: TaskResponse) {
   const forget = useForgetRecent()
   const remove = useMutation({
     mutationFn: () => deleteTask(task.id),
-    meta: { awaits: WRITE_AWAITS, ownsError: true },
+    meta: { changes: ['task'], awaits: WRITE_AWAITS, ownsError: true },
     onSuccess: () => forget('task', task.id),
   })
   const message =

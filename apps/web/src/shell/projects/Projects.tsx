@@ -19,7 +19,7 @@ export function Projects() {
   const send = name.sends((text) => createProject({ name: text }))
   const create = useMutation({
     mutationFn: send,
-    meta: { awaits: [projectKeys.all], ownsError: true },
+    meta: { changes: ['project'], awaits: [projectKeys.all], ownsError: true },
   })
 
   // In the server's order, which puts the inbox first; a second sort here would drift from it.

@@ -4,7 +4,7 @@ import {
   type ProjectListItem,
   type ProjectId,
 } from '@ctws/contracts'
-import type { QueryClient } from '@tanstack/react-query'
+import type { QueryClient, QueryKey } from '@tanstack/react-query'
 import type { ComponentType, ReactNode } from 'react'
 import type { RouteObject } from 'react-router-dom'
 import type { KeyTable } from '../platform/keyboard/keyTable'
@@ -42,7 +42,15 @@ export type WorkspaceModule = {
   widgets?: readonly Widget[]
   /** Where this module's things live, for the shell's edge table and backlinks. */
   relations?: readonly RelationContribution[]
+  /**
+   * What the module's queries show, by key prefix: a write that changes one of those kinds of
+   * thing refreshes them, and no write that changes none of them does.
+   */
+  reads: readonly Reads[]
 }
+
+/** Queries under one key prefix, and every kind of thing whose change can alter their answer. */
+export type Reads = { queryKey: QueryKey; of: readonly ObjectType[] }
 
 /** What a module adds to a project. Components, so the shell never knows the module's endpoints. */
 export type ProjectContribution = {
@@ -67,6 +75,8 @@ export type ProjectContribution = {
    * module gives one; zero is shown as nothing.
    */
   count?: (project: ProjectListItem) => number
+  /** The kinds of thing whose numbers the server adds to each project's `columns` for this module. */
+  counts?: readonly ObjectType[]
   /** What deleting a project takes with it, as a phrase ("12 tasks"), or null for nothing. */
   contents?: (qc: QueryClient, projectId: ProjectId) => Promise<string | null>
 }
