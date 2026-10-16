@@ -1,6 +1,6 @@
 import { useId, useRef } from 'react'
 import { HANG_WIDTH } from '../../../platform/ui/hang'
-import { BODY_GUTTER } from '../../../shell/rows'
+import { ROW_BODY } from '../../../shell/rows'
 import { CHEVRON_PX, gutterPlus, HANDLE_PX, INDENT_PX } from './TaskRowParts'
 import { useLineEntry } from '../../../platform/ui/useLineEntry'
 
@@ -35,7 +35,7 @@ export function NewTaskInput({ depth, onCommit, onCancel, error }: Props) {
         style={{
           paddingLeft: gutterPlus((depth - 1) * INDENT_PX + HANDLE_PX + CHEVRON_PX + MARK_PX + 8),
         }}
-        className={`flex min-w-0 flex-1 flex-col justify-center ${BODY_GUTTER}`}
+        className={`${ROW_BODY} flex-col justify-center`}
       >
         <div className="flex min-h-11 items-center">
           <input

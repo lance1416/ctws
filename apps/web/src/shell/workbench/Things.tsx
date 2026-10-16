@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { useRegistry } from '../registry'
 import { KeyHint } from '../../platform/ui/KeyHint'
 import { HANG_WIDTH } from '../../platform/ui/hang'
-import { BODY_GUTTER, ProjectRail } from '../rows/RowParts'
+import { ProjectRail, ROW_BODY } from '../rows/RowParts'
 import { HANG } from '../../platform/ui/hang'
 
 /**
@@ -30,10 +30,7 @@ export function Things() {
                 )}
               </span>
               <ProjectRail projectId={null} />
-              <Link
-                to={to}
-                className={`flex min-w-0 flex-1 flex-col py-3 pr-2 pl-[var(--gutter)] hover:bg-hover ${BODY_GUTTER}`}
-              >
+              <Link to={to} className={`${ROW_BODY} flex-col py-3 pr-2 hover:bg-hover`}>
                 <span className="flex items-baseline gap-2.5">
                   <span className="text-lg font-semibold text-ink">{label}</span>
                   {Count && (

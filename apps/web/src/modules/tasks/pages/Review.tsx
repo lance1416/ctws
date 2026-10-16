@@ -8,10 +8,10 @@ import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { reviewQuery } from '../api'
 import {
-  BODY_GUTTER,
   DaySection,
   LIST_MEASURE,
   ProjectRail,
+  ROW_BODY,
   ROW_LIST,
   RowLead,
   weekDayWord,
@@ -57,9 +57,7 @@ function Row({
     <li data-review-row className="flex min-h-11 min-w-0">
       <RowLead lead={{ text, tone: 'quiet', flag: false }} dateTime={at} />
       <ProjectRail projectId={projectId} />
-      <div
-        className={`flex min-w-0 flex-1 items-start gap-2.5 py-2.5 pr-2 pl-[var(--gutter)] ${BODY_GUTTER}`}
-      >
+      <div className={`${ROW_BODY} items-start gap-2.5 py-2.5 pr-2`}>
         <span className="flex h-6 shrink-0 items-center">
           <StatusMark status={status} />
         </span>

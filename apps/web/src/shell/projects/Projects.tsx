@@ -6,7 +6,7 @@ import { LIST_MEASURE } from '../rows/leads'
 import { useLineEntry } from '../../platform/ui/useLineEntry'
 import { DaySection } from '../rows/DaySection'
 import { textbox } from '../../platform/ui/formStyles'
-import { BODY_GUTTER, ProjectRail, ROW_LIST } from '../rows/RowParts'
+import { ProjectRail, ROW_BODY, ROW_LIST } from '../rows/RowParts'
 import { PageHead } from '../../platform/ui/PageHead'
 import { HANG } from '../../platform/ui/hang'
 import { useRegistry } from '../registry'
@@ -79,9 +79,7 @@ function ProjectRow({ project: p }: { project: ProjectListItem }) {
     <li data-project-row={p.id} className="group relative flex min-h-14 min-w-0">
       {Lead && <Lead projectId={p.id} />}
       <ProjectRail projectId={p.id} />
-      <div
-        className={`flex min-w-0 flex-1 flex-col py-2.5 pr-2 pl-[var(--gutter)] group-hover:bg-hover ${BODY_GUTTER}`}
-      >
+      <div className={`${ROW_BODY} flex-col py-2.5 pr-2 group-hover:bg-hover`}>
         <Link
           to={`/projects/${p.id}`}
           className="truncate text-ink after:absolute after:inset-0 after:content-['']"

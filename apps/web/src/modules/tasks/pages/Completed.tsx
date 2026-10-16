@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { completedQuery } from '../api'
 import { useTaskActions } from '../hooks/useTaskActions'
-import { DaySection, ProjectRail, RowLead } from '../../../shell/rows'
+import { DaySection, ProjectRail, ROW_BODY, RowLead } from '../../../shell/rows'
 import { EmptyState } from '../../../platform/ui/EmptyState'
 import { DONE_LIST_MEASURE } from '../components/TaskRowParts'
 import { StatusButton } from '../components/StatusControls'
@@ -92,7 +92,7 @@ export function Completed() {
                   dateTime={t.completedAt}
                 />
                 <ProjectRail projectId={t.projectId} />
-                <span className="flex min-w-0 flex-1 items-start gap-2.5 pr-2 pl-3.5">
+                <span className={`${ROW_BODY} items-start gap-2.5 pr-2`}>
                   {/* Restoring is the way back from a mis-click: there is no general undo. */}
                   <span className="flex h-11 shrink-0 items-center">
                     <StatusButton

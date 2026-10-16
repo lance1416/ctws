@@ -4,7 +4,7 @@ import { sortByName } from '../logic/peopleOrder'
 import { BirthdayLead } from './BirthdayRow'
 import { CIRCLE_OF_ONE } from '../logic/labels'
 import { PanelEmpty } from '../../../platform/ui/Panel'
-import { BODY_GUTTER, ProjectRail } from '../../../shell/rows'
+import { ProjectRail, ROW_BODY } from '../../../shell/rows'
 
 /**
  * People on the app's row: the next birthday in the margin, the first project's colour as the
@@ -33,7 +33,7 @@ export function PeopleList({
             <Link
               to={`/people/${person.id}`}
               aria-current={open ? 'page' : undefined}
-              className={`flex min-w-0 flex-1 items-center gap-3.5 py-2 pr-2 pl-[var(--gutter)] hover:bg-hover ${BODY_GUTTER} ${
+              className={`${ROW_BODY} items-center gap-3.5 py-2 pr-2 hover:bg-hover ${
                 open ? 'bg-select' : ''
               }`}
             >

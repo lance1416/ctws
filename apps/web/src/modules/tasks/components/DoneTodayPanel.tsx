@@ -2,7 +2,7 @@ import { clockTime } from '@ctws/core/clock'
 import { LINK } from '../../../platform/ui/buttonStyles'
 import type { CompletedTaskResponse } from '@ctws/contracts'
 import { Link } from 'react-router-dom'
-import { DaySection, ProjectRail, RowLead } from '../../../shell/rows'
+import { DaySection, ProjectRail, ROW_BODY, RowLead } from '../../../shell/rows'
 import { StatusMark } from './StatusMark'
 
 /**
@@ -40,7 +40,7 @@ export function DoneTodayPanel({
               dateTime={t.completedAt}
             />
             <ProjectRail projectId={t.projectId} />
-            <span className="flex min-h-11 min-w-0 flex-1 items-center gap-2.5 pr-2 pl-3.5">
+            <span className={`${ROW_BODY} min-h-11 items-center gap-2.5 pr-2`}>
               <StatusMark status={t.status} />
               <span className="min-w-0 truncate text-ink-muted">{t.title}</span>
             </span>

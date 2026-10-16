@@ -7,7 +7,7 @@ import { blockedLabel } from '../logic/blockedLabel'
 import { ymd } from '../../../platform/time/dates'
 import { capturedLabel, lateNote } from '../logic/dueDates'
 import { useTimeZone } from '../../../shell/auth'
-import { BODY_GUTTER, leadFor, ProjectRail, RowLead } from '../../../shell/rows'
+import { leadFor, ProjectRail, ROW_BODY, RowLead } from '../../../shell/rows'
 import {
   gutterPlus,
   CHEVRON_PX,
@@ -143,7 +143,7 @@ export function TaskRow({
           44px tall, so it centres on the title whether or not a second line follows. */}
       <div
         style={{ paddingLeft: gutterPlus((row.depth - 1) * INDENT_PX) }}
-        className={`relative flex min-h-11 min-w-0 flex-1 items-start pr-2 group-hover:bg-hover ${BODY_GUTTER} ${
+        className={`${ROW_BODY} relative min-h-11 items-start pr-2 group-hover:bg-hover ${
           isDragging ? 'bg-float' : ''
         } ${
           // A selected row wears the select layer plus an ink edge: a layer alone would be hard to

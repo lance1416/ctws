@@ -6,6 +6,7 @@ import {
   DaySection,
   leadFor,
   ProjectRail,
+  ROW_BODY,
   ROW_LIST,
   RowLead,
 } from '../../../../shell/rows'
@@ -60,7 +61,7 @@ export function InProgressSection({
                 <RowLead lead={lead} />
                 <ProjectRail projectId={t.projectId} />
                 <div
-                  className={`relative flex min-w-0 flex-1 items-start gap-x-2.5 pr-2 pl-3.5 group-hover:bg-hover ${
+                  className={`${ROW_BODY} relative items-start gap-x-2.5 pr-2 group-hover:bg-hover ${
                     alone ? 'flex-wrap gap-y-2 py-2' : 'min-h-11'
                   }`}
                 >

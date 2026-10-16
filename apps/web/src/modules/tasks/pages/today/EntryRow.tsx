@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { ShownEntry } from '../../../../shell/contract'
-import { ProjectRail, RowLead } from '../../../../shell/rows'
+import { ProjectRail, ROW_BODY, RowLead } from '../../../../shell/rows'
 import { RowMeta } from '../../components/TaskRowParts'
 
 type Entry = ShownEntry & { moduleId: string }
@@ -32,7 +32,7 @@ export function EntryRow({
       <ProjectRail projectId={e.projectId} />
       <Link
         to={e.to}
-        className="flex min-h-11 min-w-0 flex-1 items-start gap-x-2.5 pr-2 pl-3.5 group-hover:bg-hover"
+        className={`${ROW_BODY} min-h-11 items-start gap-x-2.5 pr-2 group-hover:bg-hover`}
       >
         <span aria-hidden="true" className="h-11 w-7 shrink-0" />
         <span className="flex min-w-0 flex-1 flex-col py-2.5">

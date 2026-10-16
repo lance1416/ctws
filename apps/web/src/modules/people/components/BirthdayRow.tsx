@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { countdownPhrase, fullDay, MONTHS } from '../../../platform/time/dates'
 import { HANG_WIDTH } from '../../../platform/ui/hang'
 import { CIRCLE_LABELS } from '../logic/labels'
-import { BODY_GUTTER, ProjectRail } from '../../../shell/rows'
+import { ProjectRail, ROW_BODY } from '../../../shell/rows'
 
 /**
  * A birthday on the app's row: the day in the margin, then who, how old and how far off. The thread
@@ -16,7 +16,7 @@ export function BirthdayRow({ row }: { row: BirthdayListRow }) {
       <ProjectRail projectId={null} />
       <Link
         to={`/people/${row.personId}`}
-        className={`flex min-w-0 flex-1 items-center gap-2.5 pr-2 pl-[var(--gutter)] hover:bg-hover ${BODY_GUTTER}`}
+        className={`${ROW_BODY} items-center gap-2.5 pr-2 hover:bg-hover`}
       >
         <span className="min-w-0 shrink truncate text-base text-ink">{row.name}</span>
         {row.turns === null ? (

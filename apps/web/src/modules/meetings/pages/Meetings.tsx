@@ -9,10 +9,10 @@ import { OccurrencePane } from '../components/OccurrencePane'
 import { useOpenOccurrence } from '../hooks/useOpenOccurrence'
 import { NewMeetingDialog } from '../components/NewMeetingDialog'
 import {
-  BODY_GUTTER,
   DaySection,
   LIST_MEASURE,
   ProjectRail,
+  ROW_BODY,
   ROW_LIST,
   RowLead,
 } from '../../../shell/rows'
@@ -251,9 +251,7 @@ function MeetingRow({
         dateTime={m.startsAt}
       />
       <ProjectRail projectId={m.projectId} />
-      <div
-        className={`flex min-w-0 flex-1 items-start gap-2 py-2.5 pr-2 pl-[var(--gutter)] group-hover:bg-hover ${BODY_GUTTER}`}
-      >
+      <div className={`${ROW_BODY} items-start gap-2 py-2.5 pr-2 group-hover:bg-hover`}>
         <span className="flex min-w-0 flex-1 flex-col">
           <button
             type="button"

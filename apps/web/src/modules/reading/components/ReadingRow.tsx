@@ -7,7 +7,7 @@ import { readingLabel } from '../logic/item'
 import { hostOf, StatusMark } from './marks'
 import { PLAN_DAYS, type PlanDay } from '../logic/plans'
 import { daysAgoIn } from '../../../platform/time/dates'
-import { BODY_GUTTER, leadFor, ProjectRail, RowLead } from '../../../shell/rows'
+import { leadFor, ProjectRail, ROW_BODY, RowLead } from '../../../shell/rows'
 import { MENU_ITEM, MENU_SURFACE } from '../../../platform/ui/menuSurface'
 import { useNow } from '../../../platform/time/useNow'
 
@@ -79,9 +79,7 @@ export function ReadingRow({
         }
       />
       <ProjectRail projectId={item.projectId} />
-      <div
-        className={`flex min-w-0 flex-1 items-start gap-2.5 py-2.5 pr-1 pl-[var(--gutter)] group-hover:bg-hover ${BODY_GUTTER}`}
-      >
+      <div className={`${ROW_BODY} items-start gap-2.5 py-2.5 pr-1 group-hover:bg-hover`}>
         <StatusMark item={item} />
 
         <div className="min-w-0 flex-1">
