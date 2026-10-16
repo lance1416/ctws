@@ -10,7 +10,8 @@
     "./day": "./src/day.ts"
   },
   "scripts": {
-    "test": "vitest run"
+    "test": "vitest run",
+    "lint": "eslint ."
   },
   "devDependencies": {
     "vitest": "5.0.3"

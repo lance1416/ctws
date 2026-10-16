@@ -6,7 +6,8 @@
     "dev": "vite",
     "build": "tsc -p tsconfig.json --noEmit && vite build",
     "test": "vitest run",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@ctws/contracts": "workspace:*",
