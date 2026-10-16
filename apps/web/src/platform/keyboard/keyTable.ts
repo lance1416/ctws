@@ -108,7 +108,8 @@ export function useKeyTable<A extends string>(
 /**
  * The page-wide single keys of a table, bound while the caller is mounted. Every such key obeys the
  * same four guards: the off switch, not while typing, nothing held but Shift, and no open overlay.
- * `claim` sees a press that passed them first; `skipped` hears one that did not.
+ * `claim` sees a press that passed them before any other listener does, and a press it claims goes
+ * no further; `skipped` hears one that did not pass.
  */
 export function useDocumentKeys<A extends string>(
   table: KeyTable<A>,
@@ -116,17 +117,26 @@ export function useDocumentKeys<A extends string>(
   { claim, skipped }: { claim?: (e: KeyboardEvent) => boolean; skipped?: () => void } = {},
 ): void {
   const enabled = useShortcutsEnabled()
+  const guarded = (e: KeyboardEvent) =>
+    isTypingTarget(e.target) || !isBareKey(e) || isOverlayOpen()
+  // In the capture phase: the other page-wide keys and the page's own handlers come after it.
+  const onClaim = useEffectEvent((e: KeyboardEvent) => {
+    if (!guarded(e) && claim?.(e)) e.stopPropagation()
+  })
   const onKey = useEffectEvent((e: KeyboardEvent) => {
-    if (isTypingTarget(e.target) || !isBareKey(e) || isOverlayOpen()) {
+    if (guarded(e)) {
       skipped?.()
       return
     }
-    if (claim?.(e)) return
     run(table, handlers, e)
   })
   useEffect(() => {
     if (!enabled) return
+    document.addEventListener('keydown', onClaim, true)
     document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('keydown', onClaim, true)
+      document.removeEventListener('keydown', onKey)
+    }
   }, [enabled])
 }
