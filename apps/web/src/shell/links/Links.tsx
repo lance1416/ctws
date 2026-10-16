@@ -1,69 +1,7 @@
-import { idFrom, type LinkId, type ObjectType, projectId } from '@ctws/contracts'
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { deleteLink, linksQuery, type Endpoint } from './api'
-import { problemText } from '../../platform/http/api'
-import { useRegistry } from '../registry'
-import { AddLink } from './AddLink'
-import { PanelEmpty } from '../../platform/ui/Panel'
-import { BUTTON } from '../../platform/ui/buttonStyles'
-import { ProjectRail } from '../rows/RowParts'
 import { CloseIcon } from '../../platform/ui/icons'
-
-/**
- * Everything one thing is linked to, grouped by kind, and the way to link more. The edges are the
- * shell's; where another module's thing lives comes from the registry's `relations`.
- */
-function useLinked(of: Endpoint, except: readonly ObjectType[] | undefined) {
-  // Which kind the picker is for: any kind from "+ Link", one kind from a block's own `+`.
-  const [adding, setAdding] = useState<ObjectType | 'any' | null>(null)
-  const links = useQuery(linksQuery(of))
-  const groups = (links.data ?? []).filter((g) => !except?.includes(g.type))
-  const unlink = useMutation({
-    mutationFn: (id: LinkId) => deleteLink(id),
-    meta: { awaits: [['links']], ownsError: true },
-  })
-  const add = (
-    <>
-      {unlink.isError && (
-        <p role="alert" className="px-2 text-sm text-danger">
-          {problemText(unlink.error)}
-        </p>
-      )}
-      <button
-        type="button"
-        onClick={() => setAdding('any')}
-        className={`self-start ${BUTTON.link}`}
-      >
-        + Link
-      </button>
-      {adding && (
-        <AddLink
-          of={of}
-          only={adding === 'any' ? undefined : adding}
-          onClose={() => setAdding(null)}
-        />
-      )}
-    </>
-  )
-  // Nothing at all while loading: a skeleton would flash on every pane that opens.
-  const unshown = links.isError ? (
-    <PanelEmpty>Couldn't load the links.</PanelEmpty>
-  ) : groups.length === 0 && links.isLoading ? null : groups.length === 0 ? (
-    <div className="flex flex-col gap-1">
-      <PanelEmpty>Nothing linked yet.</PanelEmpty>
-      {add}
-    </div>
-  ) : undefined
-  return { groups, unlink, setAdding, add, unshown }
-}
-
-type Linked = {
-  of: Endpoint
-  /** Kinds the page already shows in a module's own block, so they are not listed twice. */
-  except?: readonly ObjectType[] | undefined
-}
+import { useRegistry } from '../registry'
+import { type Item, type Linked, useLinked } from './useLinked'
 
 /** The linked things as one list, a small heading per kind: a detail pane's. */
 export function LinkList({ of, except }: Linked) {
@@ -106,88 +44,11 @@ export function LinkList({ of, except }: Linked) {
   )
 }
 
-/** The linked things as a block per kind, each with a count and a `+`, beside a page's own block. */
-export function LinkBlocks({ of, except }: Linked) {
-  const registry = useRegistry()
-  const { groups, unlink, setAdding, add, unshown } = useLinked(of, except)
-  if (unshown !== undefined) return unshown
-  // On a project's page every row here is linked to this project, so it wears its thread.
-  const thread = of.type === 'project' ? idFrom(projectId, of.id) : null
-  return (
-    <div className="flex flex-col gap-8">
-      {groups.map((group) => {
-        const kind = registry.relationFor(group.type).kind.toLowerCase()
-        return (
-          <section key={group.type} aria-label={group.label} className="min-w-0">
-            <div className="mb-1 flex items-center gap-2">
-              <h3 className="flex items-baseline gap-2 text-base font-semibold text-ink">
-                {group.label}
-                <span data-count className="text-sm font-normal text-ink-subtle tabular-nums">
-                  {group.items.length}
-                </span>
-              </h3>
-              <button
-                type="button"
-                onClick={() => setAdding(group.type)}
-                aria-label={`Link another ${kind}`}
-                className="ml-auto flex size-[30px] items-center justify-center rounded-md text-ink-subtle hover:bg-hover hover:text-ink"
-              >
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 16 16"
-                  className="size-3.5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.7"
-                  strokeLinecap="round"
-                >
-                  <path d="M8 3v10M3 8h10" />
-                </svg>
-              </button>
-            </div>
-            <ul className="flex flex-col">
-              {group.items.map((item) => (
-                <li
-                  key={`${item.id}:${item.kind}:${String(item.outgoing)}`}
-                  className="group flex min-w-0 items-stretch"
-                >
-                  <ProjectRail projectId={thread} />
-                  <LinkedBlockRow item={item} />
-                  {item.linkId && (
-                    <button
-                      type="button"
-                      disabled={unlink.isPending}
-                      onClick={() => unlink.mutate(item.linkId!)}
-                      aria-label={`Unlink ${item.title}`}
-                      className="flex w-7 shrink-0 items-center justify-center text-ink-subtle opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-ink disabled:opacity-50 [@media(hover:none)]:opacity-100"
-                    >
-                      <CloseIcon className="h-3 w-3" strokeWidth={1.8} />
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </section>
-        )
-      })}
-      {add}
-    </div>
-  )
-}
-
 /**
  * Linked as a section of a detail pane. `-mx-2` gives the rows' hover padding back to the margin,
  * so their words line up with the pane's other labels.
  */
-export function LinkedSection({
-  of,
-  except,
-  className = '',
-}: {
-  of: Endpoint
-  except?: readonly ObjectType[] | undefined
-  className?: string
-}) {
+export function LinkedSection({ of, except, className = '' }: Linked & { className?: string }) {
   return (
     <section aria-label="Linked" className={`border-t border-rule pt-3 ${className}`}>
       <div className="-mx-2">
@@ -197,8 +58,6 @@ export function LinkedSection({
     </section>
   )
 }
-
-type Item = { type: ObjectType; id: string; title: string; detail: string | null; label: string }
 
 /** One thing at the far end of an edge, with the edge's own word at the end of the line. */
 function LinkedLine({ item }: { item: Item }) {
@@ -214,24 +73,6 @@ function LinkedLine({ item }: { item: Item }) {
         <span className="min-w-0 shrink truncate text-xs text-ink-muted">{item.detail}</span>
       )}
       {item.label && <span className="shrink-0 text-xs text-ink-subtle">{item.label}</span>}
-    </Link>
-  )
-}
-
-/** The same, its title over its detail, for a narrow block. */
-function LinkedBlockRow({ item }: { item: Item }) {
-  const where = useRegistry().relationFor(item.type)
-  return (
-    <Link
-      to={where.to(item.id)}
-      data-linked={item.id}
-      className="flex min-w-0 flex-1 items-start gap-3 py-2 pr-1 pl-3 hover:bg-hover"
-    >
-      <span className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate text-ink">{item.title}</span>
-        {item.detail && <span className="truncate text-sm text-ink-subtle">{item.detail}</span>}
-      </span>
-      {item.label && <span className="shrink-0 text-sm text-ink-muted">{item.label}</span>}
     </Link>
   )
 }
