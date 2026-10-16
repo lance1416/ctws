@@ -4,7 +4,7 @@ import { problemText } from '../../../platform/http/api'
 import { DangerAction } from '../../../platform/ui/DangerZone'
 import { useForgetRecent } from '../../../shell/search'
 import { cancelMeeting, type EditScope } from '../api'
-import { ScopeAsk } from './ScopeAsk'
+import { CancelScopeAsk } from './ScopeAsk'
 
 /** A repeating meeting asks which occurrences to cancel; a one-off gets the plain question. */
 export function CancelMeeting({
@@ -38,12 +38,10 @@ export function CancelMeeting({
       >
         {meeting.rrule
           ? (close) => (
-              <ScopeAsk
+              <CancelScopeAsk
                 what={`Cancel which occurrences of “${meeting.title}”?`}
                 onPick={(scope) => drop.mutate(scope)}
                 onCancel={close}
-                destroys
-                back="Keep it"
               />
             )
           : undefined}
