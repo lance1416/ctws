@@ -42,7 +42,7 @@ async function list(ctx: Harness): Promise<PersonResponse[]> {
 async function filedUnder(ctx: Harness, projectId: string): Promise<string[]> {
   const res = await ctx.app.inject({
     method: 'GET',
-    url: `/api/v1/links/project/${projectId}`,
+    url: `/api/v1/links?type=project&id=${projectId}`,
     headers: web(ctx),
   })
   expect(res.statusCode, res.body).toBe(200)

@@ -1,4 +1,4 @@
-import type { LinksResponse } from '@ctws/contracts'
+import { idFrom, linkId, type LinksResponse } from '@ctws/contracts'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter } from 'react-router-dom'
@@ -26,7 +26,7 @@ const groups: LinksResponse['groups'] = [
         kind: 'attends',
         label: 'attended',
         outgoing: false,
-        removable: true,
+        linkId: idFrom(linkId, '0190a7c2-6f00-7000-8000-00000000000a'),
       },
     ],
   },
@@ -42,7 +42,7 @@ const groups: LinksResponse['groups'] = [
         kind: 'belongs',
         label: '',
         outgoing: true,
-        removable: true,
+        linkId: idFrom(linkId, '0190a7c2-6f00-7000-8000-00000000000b'),
       },
     ],
   },

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { objectId } from './id'
+import { linkId, objectId } from './id'
 
 /**
  * A link is `from --kind--> to` between any two things. One row says both who is at a meeting and
@@ -79,10 +79,10 @@ const linkedObject = z
     /** The link, as read from the object whose page this is. */
     kind: linkKind,
     label: z.string(),
-    /** Which way the edge runs, so removing it knows which end is which. */
+    /** Which way the edge runs: whether it is read along the edge or against it. */
     outgoing: z.boolean(),
-    /** False for an edge a module stores itself, such as a task's project. */
-    removable: z.boolean(),
+    /** The link to remove, or null for an edge a module stores itself, such as a task's project. */
+    linkId: linkId.nullable(),
   })
   .strict()
 export type LinkedObject = z.infer<typeof linkedObject>
@@ -95,6 +95,7 @@ export type LinkCandidate = z.infer<typeof linkCandidate>
 
 export const candidatesQuery = z
   .object({
+    view: z.literal('candidates'),
     /** Empty means the most likely few. */
     q: z.string().trim().max(200).optional(),
     /** The thing being linked from: the answer leaves out itself and what it cannot join. */
@@ -121,17 +122,12 @@ export const linksResponse = z
   .strict()
 export type LinksResponse = z.infer<typeof linksResponse>
 
-export const linkParams = z.object({ type: objectType, id: objectId }).strict()
+/** The thing whose links are asked for. */
+export const linksQuery = z.object({ type: objectType, id: objectId }).strict()
 
-/** Names one edge to remove: both ends and the kind are its identity. */
-export const linkQuery = z
-  .object({
-    fromType: objectType,
-    fromId: objectId,
-    toType: objectType,
-    toId: objectId,
-    kind: linkKind,
-  })
+export const linkParams = z.object({ id: linkId }).strict()
+
+/** One edge, as stored: its id, both ends and its kind. */
+export const linkResponse = z
+  .object({ id: linkId, from: endpoint, to: endpoint, kind: linkKind })
   .strict()
-
-export const createLinkResponse = z.object({ created: z.boolean() }).strict()

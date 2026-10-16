@@ -102,7 +102,7 @@ describe('one object, several kinds of edge', () => {
 
     const res = await ctx.app.inject({
       method: 'GET',
-      url: `/api/v1/links/project/${project}`,
+      url: `/api/v1/links?type=project&id=${project}`,
       headers: web(ctx),
     })
     expect(res.statusCode, res.body).toBe(200)
@@ -146,10 +146,26 @@ describe('one object, several kinds of edge', () => {
     // than reaching across through an edge row.
     const reached = await ctx.app.inject({
       method: 'GET',
-      url: `/api/v1/links/project/${myProject}`,
+      url: `/api/v1/links?type=project&id=${myProject}`,
       headers: theirHeaders,
     })
     expect(reached.statusCode, reached.body).toBe(404)
+
+    // Nor does my link's own id reach it, to read or to remove.
+    const ours = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/links?type=project&id=${myProject}`,
+      headers: web(ctx),
+    })
+    const linkId = (ours.json() as LinksResponse).groups[0]!.items[0]!.linkId
+    for (const method of ['GET', 'DELETE'] as const) {
+      const res = await ctx.app.inject({
+        method,
+        url: `/api/v1/links/${linkId}`,
+        headers: theirHeaders,
+      })
+      expect(res.statusCode, method).toBe(404)
+    }
 
     // And mine is exactly as I left it.
     const after = await ctx.app.inject({
@@ -192,13 +208,13 @@ describe('one object, several kinds of edge', () => {
     // No write path makes these rows; the reads must not trust them if one ever did. One edge sits
     // in my workspace pointing at their project, one sits in theirs pointing from my book.
     await ctx.db.execute(sql`
-      insert into links (workspace_id, from_type, from_id, to_type, to_id, kind)
-      select workspace_id, 'person', id, 'project', ${theirProject}, 'belongs'
+      insert into links (id, workspace_id, from_type, from_id, to_type, to_id, kind)
+      select gen_random_uuid(), workspace_id, 'person', id, 'project', ${theirProject}, 'belongs'
       from people where id = ${person.id}
     `)
     await ctx.db.execute(sql`
-      insert into links (workspace_id, from_type, from_id, to_type, to_id, kind)
-      values (${theirs.workspaceId}, 'reading', ${book.id}, 'project', ${theirProject}, 'belongs')
+      insert into links (id, workspace_id, from_type, from_id, to_type, to_id, kind)
+      values (gen_random_uuid(), ${theirs.workspaceId}, 'reading', ${book.id}, 'project', ${theirProject}, 'belongs')
     `)
 
     const people = await ctx.app.inject({ method: 'GET', url: '/api/v1/people', headers: web(ctx) })

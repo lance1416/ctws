@@ -33,6 +33,29 @@ const MEANING: Record<number, string> = {
 const UNSAFE = new Set(['post', 'put', 'patch', 'delete'])
 
 /**
+ * The query parameters of views that share a path, for the document: every view's parameters,
+ * each optional, and a literal they are told apart by (`view`) as the enum of its values. The
+ * route itself validates the views as they are.
+ */
+export function documentedQuery(schema: unknown): unknown {
+  if (!(schema instanceof z.ZodUnion)) return schema
+  const shape: Record<string, z.ZodType> = {}
+  const literals: Record<string, string[]> = {}
+  for (const option of schema.options) {
+    if (!(option instanceof z.ZodObject)) return schema
+    for (const [key, field] of Object.entries(option.shape as Record<string, z.ZodType>)) {
+      if (field instanceof z.ZodLiteral) {
+        literals[key] = [...(literals[key] ?? []), ...[...field.values].map(String)]
+      } else shape[key] ??= field.optional()
+    }
+  }
+  for (const [key, values] of Object.entries(literals)) {
+    shape[key] = z.enum(values as [string, ...string[]]).optional()
+  }
+  return z.object(shape)
+}
+
+/**
  * Adds the refusals an operation can meet. Some follow from how the route is registered: 400 when
  * it takes input, 401 when it sits in the authenticated scope (it declares `security`), 403 when
  * its method needs the client header, 429 when it is rate limited. The rest are the endpoint's

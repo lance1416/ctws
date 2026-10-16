@@ -35,7 +35,7 @@ async function post<T>(ctx: Harness, url: string, payload: Record<string, unknow
 async function linksOf(ctx: Harness, type: string, id: string): Promise<LinksResponse['groups']> {
   const res = await ctx.app.inject({
     method: 'GET',
-    url: `/api/v1/links/${type}/${id}`,
+    url: `/api/v1/links?type=${type}&id=${id}`,
     headers: web(ctx),
   })
   expect(res.statusCode, res.body).toBe(200)
@@ -177,7 +177,7 @@ describe('opening a thing shows what it is connected to', () => {
 
     const reached = await ctx.app.inject({
       method: 'GET',
-      url: `/api/v1/links/person/${myPerson.id}`,
+      url: `/api/v1/links?type=person&id=${myPerson.id}`,
       headers: theirHeaders,
     })
     expect(reached.statusCode, reached.body).toBe(404)
@@ -204,6 +204,32 @@ describe('making and removing one edge by hand', () => {
       },
     })
     expect(made.statusCode, made.body).toBe(201)
+    expect(made.headers.location).toBe(`/api/v1/links/${made.json().id}`)
+    expect(made.json()).toMatchObject({
+      from: { type: 'person', id: person.id },
+      to: { type: 'reading', id: reading.id },
+      kind: 'recommends',
+    })
+
+    // Asked again, it is the same link, said with a 200; and it reads at its Location.
+    const again = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/links',
+      headers: web(ctx),
+      payload: {
+        from: { type: 'person', id: person.id },
+        to: { type: 'reading', id: reading.id },
+        kind: 'recommends',
+      },
+    })
+    expect(again.statusCode).toBe(200)
+    expect(again.json()).toEqual(made.json())
+    const read = await ctx.app.inject({
+      method: 'GET',
+      url: String(made.headers.location),
+      headers: web(ctx),
+    })
+    expect(read.json()).toEqual(made.json())
 
     // "she recommended this book" and "this book was recommended by her" are one row, read twice.
     const theirs = await linksOf(ctx, 'person', person.id)
@@ -219,21 +245,23 @@ describe('making and removing one edge by hand', () => {
       outgoing: false,
     })
 
+    // One link, read from either end, with one id.
+    expect(theirs.find((g) => g.type === 'reading')!.items[0]!.linkId).toBe(made.json().id)
+    expect(books.find((g) => g.type === 'person')!.items[0]!.linkId).toBe(made.json().id)
     const removed = await ctx.app.inject({
       method: 'DELETE',
-      url:
-        '/api/v1/links?' +
-        new URLSearchParams({
-          fromType: 'person',
-          fromId: person.id,
-          toType: 'reading',
-          toId: reading.id,
-          kind: 'recommends',
-        }),
+      url: `/api/v1/links/${made.json().id}`,
       headers: web(ctx),
     })
     expect(removed.statusCode, removed.body).toBe(204)
     expect(await linksOf(ctx, 'person', person.id)).toEqual([])
+    // Gone is gone: the id no longer names anything.
+    const twice = await ctx.app.inject({
+      method: 'DELETE',
+      url: `/api/v1/links/${made.json().id}`,
+      headers: web(ctx),
+    })
+    expect(twice.statusCode).toBe(404)
   })
 
   it('refuses a kind the model does not allow, and an end that is not there', async () => {
@@ -301,22 +329,15 @@ describe('making and removing one edge by hand', () => {
     const other = await createProject(ctx, '搬家')
     const task = await createTask(ctx, home, '改简历')
     await ctx.db.execute(sql`
-      insert into links (workspace_id, from_type, from_id, to_type, to_id, kind)
-      select workspace_id, 'task', ${task}, 'project', ${other}, 'belongs'
+      insert into links (id, workspace_id, from_type, from_id, to_type, to_id, kind)
+      select gen_random_uuid(), workspace_id, 'task', ${task}, 'project', ${other}, 'belongs'
       from projects where id = ${other}
     `)
 
+    const [stranded] = (await linksOf(ctx, 'project', other)).find((g) => g.type === 'task')!.items
     const removed = await ctx.app.inject({
       method: 'DELETE',
-      url:
-        '/api/v1/links?' +
-        new URLSearchParams({
-          fromType: 'task',
-          fromId: task,
-          toType: 'project',
-          toId: other,
-          kind: 'belongs',
-        }),
+      url: `/api/v1/links/${stranded!.linkId}`,
       headers: web(ctx),
     })
     expect(removed.statusCode, removed.body).toBe(204)
@@ -344,8 +365,8 @@ describe('an edge a module stores itself', () => {
     const person = groups.find((g) => g.type === 'person')!.items[0]!
 
     // The task's project is a column the task module keeps; the person's is a row in `links`.
-    expect(task).toMatchObject({ title: '改简历', removable: false })
-    expect(person).toMatchObject({ title: '陈颖', removable: true })
+    expect(task).toMatchObject({ title: '改简历', linkId: null })
+    expect(person).toMatchObject({ title: '陈颖', linkId: expect.any(String) })
   })
 })
 
@@ -361,7 +382,7 @@ describe('what can go at the other end', () => {
   const candidatesFor = async (ctx: Harness, type: string, id: string, q = '') => {
     const res = await ctx.app.inject({
       method: 'GET',
-      url: `/api/v1/links/candidates?type=${type}&id=${id}&q=${encodeURIComponent(q)}`,
+      url: `/api/v1/links?view=candidates&type=${type}&id=${id}&q=${encodeURIComponent(q)}`,
       headers: web(ctx),
     })
     expect(res.statusCode, res.body).toBe(200)
@@ -469,7 +490,7 @@ describe('what can go at the other end', () => {
     const theirId = (theirPerson.json() as { people: { id: string }[] }).people[0]!.id
     const refused = await ctx.app.inject({
       method: 'GET',
-      url: `/api/v1/links/candidates?type=person&id=${theirId}`,
+      url: `/api/v1/links?view=candidates&type=person&id=${theirId}`,
       headers: web(ctx),
     })
     expect(refused.statusCode).toBe(404)

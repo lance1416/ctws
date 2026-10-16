@@ -2,6 +2,7 @@ import {
   LINK_KINDS,
   type LinkCandidate,
   type LinkedObject,
+  type LinkId,
   type LinkKind,
   type LinksResponse,
   type ObjectType,
@@ -31,9 +32,10 @@ async function storedEdges(
   q: Queryable,
   workspaceId: WorkspaceId,
   of: Endpoint,
-): Promise<StoredEdge[]> {
-  const rows = await q
+): Promise<(StoredEdge & { id: LinkId })[]> {
+  return q
     .select({
+      id: links.id,
       fromType: links.fromType,
       fromId: links.fromId,
       toType: links.toType,
@@ -50,7 +52,6 @@ async function storedEdges(
         ),
       ),
     )
-  return rows as StoredEdge[]
 }
 
 /** Everything one object is connected to, read in both directions: an edge is one fact. */
@@ -65,10 +66,7 @@ export async function linksOf(
     ...registry.all.filter((l) => l.own).map((l) => l.own!(q, workspaceId, of)),
   ])
   // Only edge-table rows can be unlinked; a task's project is a NOT NULL column.
-  const edges = [
-    ...stored.map((e) => ({ ...e, removable: true })),
-    ...own.flat().map((e) => ({ ...e, removable: false })),
-  ]
+  const edges = [...stored, ...own.flat().map((e) => ({ ...e, id: null }))]
 
   // The far end of each edge, by type, so each module is asked once for the whole page.
   const wanted = new Map<ObjectType, Set<string>>()
@@ -110,7 +108,7 @@ export async function linksOf(
       kind: edge.kind,
       label: phrase(edge.kind, end.outgoing),
       outgoing: end.outgoing,
-      removable: edge.removable,
+      linkId: edge.id,
     })
     groups.set(end.type, list)
   }

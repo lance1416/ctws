@@ -6,7 +6,7 @@ import { actorOf, currentUser } from '../auth/authenticated'
 import { candidatesFor, exists, linksOf } from './read'
 import type { LinkRegistry } from './registry'
 import { linkObjects } from './service'
-import { removeLink } from './store'
+import { getLink, removeLink } from './store'
 
 /** Candidates per type, so a box full of tasks still shows people. */
 const CANDIDATES_PER_TYPE = 8
@@ -19,7 +19,7 @@ export const linkRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = asy
   serve(app, [
     on(api.links.of, async (req) => {
       const { workspaceId } = currentUser(req)
-      const of = req.params
+      const of = req.query
       // A foreign or deleted object is a 404, not an empty page.
       if (!(await exists(registry, app.db, workspaceId, of))) throw new NotFound('Object')
       return linksOf(registry, app.db, workspaceId, of)
@@ -40,23 +40,19 @@ export const linkRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = asy
       return { candidates }
     }),
 
-    // 201 whether or not the edge was already there.
-    on(api.links.create, async (req) => {
-      await linkObjects(registry, app.db, { ...actorOf(req), ...req.body })
-      return { created: true }
+    on(api.links.get, async (req) => getLink(app.db, currentUser(req).workspaceId, req.params.id)),
+
+    on(api.links.create, async (req, reply) => {
+      const { link, created } = await linkObjects(registry, app.db, {
+        ...actorOf(req),
+        ...req.body,
+      })
+      if (!created) reply.code(200)
+      return link
     }),
 
     on(api.links.remove, async (req) => {
-      const { workspaceId } = currentUser(req)
-      const { fromType, fromId, toType, toId, kind } = req.query
-      // Not checked against the model: a link stored before the model refused its kind must
-      // still be removable.
-      await removeLink(app.db, {
-        workspaceId,
-        from: { type: fromType, id: fromId },
-        to: { type: toType, id: toId },
-        kind,
-      })
+      await removeLink(app.db, { workspaceId: currentUser(req).workspaceId, id: req.params.id })
     }),
   ])
 }

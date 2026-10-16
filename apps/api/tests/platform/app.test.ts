@@ -163,6 +163,15 @@ describe('the OpenAPI document', () => {
     expect(doc.paths['/api/v1/tasks/{id}']!.delete!.responses['204']!.content).toBeUndefined()
   })
 
+  it('documents the views of one collection as one operation that names them', async () => {
+    const doc = (await ctx.app.inject({ method: 'GET', url: '/api/v1/openapi.json' })).json() as {
+      paths: Record<string, Record<string, { parameters: { name: string; schema: unknown }[] }>>
+    }
+    const params = doc.paths['/api/v1/links']!.get!.parameters
+    expect(params.find((p) => p.name === 'view')!.schema).toMatchObject({ enum: ['candidates'] })
+    expect(params.map((p) => p.name)).toEqual(expect.arrayContaining(['type', 'id', 'q']))
+  })
+
   it('documents every endpoint of the table at its own path and method', async () => {
     const doc = (await ctx.app.inject({ method: 'GET', url: '/api/v1/openapi.json' })).json() as {
       paths: Record<string, Record<string, unknown>>

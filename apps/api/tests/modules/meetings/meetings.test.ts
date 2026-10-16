@@ -553,7 +553,7 @@ describe('windows, projects and tenants', () => {
     expect(series).toMatchObject({ projectId: pid, projectName: '找工作' })
     const page = await ctx.app.inject({
       method: 'GET',
-      url: `/api/v1/links/project/${pid}`,
+      url: `/api/v1/links?type=project&id=${pid}`,
       headers: web(ctx),
     })
     const groups = (page.json() as LinksResponse).groups

@@ -1,4 +1,4 @@
-import { idFrom, type LinkedObject, type ObjectType, projectId } from '@ctws/contracts'
+import { idFrom, type LinkId, type ObjectType, projectId } from '@ctws/contracts'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -32,11 +32,7 @@ export function Links({
   const links = useQuery(linksQuery(of))
   const groups = (links.data ?? []).filter((g) => !except?.includes(g.type))
   const unlink = useMutation({
-    mutationFn: (row: LinkedObject) =>
-      // The stored row runs one way; the panel reads it from whichever end this page is.
-      row.outgoing
-        ? deleteLink(of, { type: row.type, id: row.id }, row.kind)
-        : deleteLink({ type: row.type, id: row.id }, of, row.kind),
+    mutationFn: (id: LinkId) => deleteLink(id),
     meta: { awaits: [['links']] },
   })
   const add = (
@@ -127,11 +123,11 @@ export function Links({
                       label={item.label}
                       stacked
                     />
-                    {item.removable && (
+                    {item.linkId && (
                       <button
                         type="button"
                         disabled={unlink.isPending}
-                        onClick={() => unlink.mutate(item)}
+                        onClick={() => unlink.mutate(item.linkId!)}
                         aria-label={`Unlink ${item.title}`}
                         className="flex w-7 shrink-0 items-center justify-center text-ink-subtle opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-ink disabled:opacity-50 [@media(hover:none)]:opacity-100"
                       >
@@ -171,11 +167,11 @@ export function Links({
                   label={item.label}
                 />
                 {/* Only edges in the shell's table unlink; a task's project is required. */}
-                {item.removable && (
+                {item.linkId && (
                   <button
                     type="button"
                     disabled={unlink.isPending}
-                    onClick={() => unlink.mutate(item)}
+                    onClick={() => unlink.mutate(item.linkId!)}
                     aria-label={`Unlink ${item.title}`}
                     className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-subtle opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-hover hover:text-ink disabled:opacity-50 [@media(hover:none)]:opacity-100"
                   >

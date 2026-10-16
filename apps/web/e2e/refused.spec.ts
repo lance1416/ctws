@@ -104,7 +104,7 @@ test('an unlink the server refuses says so, and the link stays', async ({ page }
     kind: 'recommends',
   })
   await page.goto(`/people/${person.id}`)
-  await refuse(page, '**/api/v1/links?*', 'DELETE')
+  await refuse(page, '**/api/v1/links/*', 'DELETE')
   await page.getByRole('button', { name: 'Unlink The C book' }).click()
   await expect(said(page)).toBeVisible()
   await expect(page.getByRole('region', { name: 'Linked' })).toContainText('The C book')

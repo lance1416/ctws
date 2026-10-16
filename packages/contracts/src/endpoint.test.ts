@@ -34,8 +34,16 @@ describe('href', () => {
     ).toBe('/a/x%20y/b/2?q=%C3%A9%26')
   })
 
-  it('gives each method and path one endpoint', () => {
-    const keys = every.map((e) => `${e.method} ${e.path}`)
-    expect(new Set(keys).size).toBe(keys.length)
+  it('shares a method and path only between views that a query tells apart', () => {
+    const byRoute = new Map<string, Endpoint[]>()
+    for (const e of every) {
+      const route = `${e.method} ${e.path}`
+      byRoute.set(route, [...(byRoute.get(route) ?? []), e])
+    }
+    for (const [route, views] of byRoute) {
+      if (views.length === 1) continue
+      for (const v of views) expect(v.query, route).toBeDefined()
+      expect(new Set(views.map((v) => v.ok)).size, route).toBe(1)
+    }
   })
 })

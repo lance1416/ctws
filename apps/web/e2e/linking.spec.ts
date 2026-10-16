@@ -107,7 +107,7 @@ test('an edge can be taken off again, and the one a module owns cannot', async (
 
   await page.goto(`/people/${person.id}`)
   const gone = page.waitForResponse(
-    (r) => r.request().method() === 'DELETE' && /\/api\/v1\/links\?/.test(r.url()),
+    (r) => r.request().method() === 'DELETE' && /\/api\/v1\/links\/[^/]+$/.test(r.url()),
   )
   await page.getByRole('button', { name: 'Unlink The Design of Everyday Things' }).click()
   await gone

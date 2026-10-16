@@ -85,7 +85,7 @@ describe('the people migration', () => {
     // Read from the meeting's end: the person is still who attended it.
     const linked = await app.inject({
       method: 'GET',
-      url: `/api/v1/links/meeting/${meeting}`,
+      url: `/api/v1/links?type=meeting&id=${meeting}`,
       headers: authed,
     })
     expect(linked.statusCode, linked.body).toBe(200)

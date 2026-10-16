@@ -176,6 +176,13 @@
       "when": 1792121658435,
       "tag": "0024_workspace_foreign_keys",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1792125961261,
+      "tag": "0025_links_id",
+      "breakpoints": true
     }
   ]
 }

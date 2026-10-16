@@ -15,7 +15,7 @@ import { publicAuthRoutes, sessionRoutes } from './shell/auth/routes'
 import { warmDummyHash } from './shell/auth/service'
 import type { Db } from './platform/db/client'
 import type { Env } from './platform/config'
-import { documentRefusals } from './platform/http/openapi'
+import { documentedQuery, documentRefusals } from './platform/http/openapi'
 import { calendarDayRoutes } from './shell/calendar/routes'
 import { registerGuards } from './platform/http/guards'
 import { linkRoutes } from './shell/links/routes'
@@ -55,7 +55,10 @@ export async function buildApp(opts: {
       },
     },
     transform: (input) => {
-      const out = jsonSchemaTransform(input)
+      const out = jsonSchemaTransform({
+        ...input,
+        schema: { ...input.schema, querystring: documentedQuery(input.schema.querystring) },
+      })
       const config = input.route.config
       // Carried to the operation for the refusal pass.
       return {
