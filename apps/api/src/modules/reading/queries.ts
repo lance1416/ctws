@@ -6,7 +6,7 @@ import {
   type ReadingId,
 } from '@ctws/contracts'
 import { desc, eq, sql } from 'drizzle-orm'
-import type { Queryable } from '../../platform/db/client'
+import type { Queryable, Tx } from '../../platform/db/client'
 import { scoped, within } from '../../platform/db/scope'
 import { sqlValues, textMatches } from '../../platform/db/sql'
 import { dayEntry } from '../../shell/calendar/entry'
@@ -46,6 +46,7 @@ export async function listReadingItems(
   return rows.map(rowOf)
 }
 
+/** One live item in this workspace. Missing, deleted and foreign ids all read as not found. */
 export async function getReadingItem(
   q: Queryable,
   workspaceId: WorkspaceId,
@@ -57,6 +58,21 @@ export async function getReadingItem(
     .where(within(scoped(readingItems, workspaceId), eq(readingItems.id, id)))
   if (!row) throw new ReadingItemNotFoundError()
   return rowOf(row)
+}
+
+/** `getReadingItem`, with the row locked first, so an edit checks the kind it then writes to. */
+export async function lockReadingItem(
+  tx: Tx,
+  workspaceId: WorkspaceId,
+  id: ReadingId,
+): Promise<ReadingItemRow> {
+  const [row] = await tx
+    .select({ id: readingItems.id })
+    .from(readingItems)
+    .where(within(scoped(readingItems, workspaceId), eq(readingItems.id, id)))
+    .for('update')
+  if (!row) throw new ReadingItemNotFoundError()
+  return getReadingItem(tx, workspaceId, id)
 }
 
 /** How many items a search returns. */

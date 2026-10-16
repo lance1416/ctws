@@ -8,7 +8,7 @@ import {
 } from '@ctws/contracts'
 import type { BirthdayCalendar } from '@ctws/core'
 import { asc, eq, inArray, sql } from 'drizzle-orm'
-import type { Queryable } from '../../platform/db/client'
+import type { Queryable, Tx } from '../../platform/db/client'
 import { scoped, within } from '../../platform/db/scope'
 import { textMatches } from '../../platform/db/sql'
 import { groupBy } from '../../platform/values'
@@ -115,6 +115,7 @@ export async function listPeople(q: Queryable, workspaceId: WorkspaceId): Promis
   return hydrate(q, workspaceId, rows)
 }
 
+/** One live person in this workspace. Missing, deleted and foreign ids all read as not found. */
 export async function getPerson(
   q: Queryable,
   workspaceId: WorkspaceId,
@@ -127,6 +128,24 @@ export async function getPerson(
   if (rows.length === 0) throw new PersonNotFoundError()
   const [row] = await hydrate(q, workspaceId, rows)
   return row!
+}
+
+/**
+ * `getPerson`, with the row locked first. An edit takes it before it replaces the channels, so two
+ * edits of one person cannot interleave their deletes and inserts.
+ */
+export async function lockPerson(
+  tx: Tx,
+  workspaceId: WorkspaceId,
+  id: PersonId,
+): Promise<PersonRow> {
+  const [row] = await tx
+    .select({ id: people.id })
+    .from(people)
+    .where(within(scoped(people, workspaceId), eq(people.id, id)))
+    .for('update')
+  if (!row) throw new PersonNotFoundError()
+  return getPerson(tx, workspaceId, id)
 }
 
 /** How many people a search returns. */

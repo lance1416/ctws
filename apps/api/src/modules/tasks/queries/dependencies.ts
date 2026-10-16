@@ -5,7 +5,7 @@ import { scoped } from '../../../platform/db/scope'
 import { ident } from '../../../platform/db/sql'
 import { taskDependencies } from '../tables'
 import { groupBy } from '../../../platform/values'
-import { taskFinishedSql, taskOpenSql, visibleTasks, visibleTask } from './scope'
+import { taskFinishedSql, taskOpenSql, visibleTasks, getTask } from './scope'
 
 type RefRow = {
   id: TaskId
@@ -29,7 +29,7 @@ export async function taskDependencyLists(
   workspaceId: WorkspaceId,
   taskId: TaskId,
 ): Promise<{ blockedBy: DependencyRef[]; blocks: DependencyRef[] }> {
-  await visibleTask(q, workspaceId, taskId)
+  await getTask(q, workspaceId, taskId)
   const query = (other: 'blocker_id' | 'blocked_id', self: 'blocked_id' | 'blocker_id') => sql`
     select
       t.id, t.title, p.id as project_id, p.name as project_name,

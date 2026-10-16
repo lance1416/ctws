@@ -129,17 +129,8 @@ async function seriesOf(
   return hydrate(q, workspaceId, rows)
 }
 
-/** Locks a live meeting for the rest of the transaction, so an edit reads it only once it is held. */
-export async function lockMeeting(q: Tx, workspaceId: WorkspaceId, id: MeetingId): Promise<void> {
-  const [row] = await q
-    .select({ id: meetings.id })
-    .from(meetings)
-    .where(within(scoped(meetings, workspaceId), eq(meetings.id, id)))
-    .for('update')
-  if (!row) throw new MeetingNotFoundError()
-}
-
-export async function seriesById(
+/** One live series in this workspace. Missing, deleted and foreign ids all read as not found. */
+export async function getMeeting(
   q: Queryable,
   workspaceId: WorkspaceId,
   id: MeetingId,
@@ -147,6 +138,21 @@ export async function seriesById(
   const [series] = await seriesOf(q, workspaceId, id)
   if (!series) throw new MeetingNotFoundError()
   return series
+}
+
+/** `getMeeting`, with the row locked first, so an edit reads the series only once it is held. */
+export async function lockMeeting(
+  tx: Tx,
+  workspaceId: WorkspaceId,
+  id: MeetingId,
+): Promise<SeriesRow> {
+  const [row] = await tx
+    .select({ id: meetings.id })
+    .from(meetings)
+    .where(within(scoped(meetings, workspaceId), eq(meetings.id, id)))
+    .for('update')
+  if (!row) throw new MeetingNotFoundError()
+  return getMeeting(tx, workspaceId, id)
 }
 
 /** Every occurrence between two instants, which is how events in many zones are compared. */
@@ -174,7 +180,7 @@ export async function getOccurrence(
   id: MeetingId,
   recurrenceId: LocalTime,
 ): Promise<OccurrenceRow> {
-  const series = await seriesById(q, workspaceId, id)
+  const series = await getMeeting(q, workspaceId, id)
   // Searched where it is now: an override can move it out of the days around its original slot.
   const at =
     series.exceptions.find((e) => e.recurrenceId === recurrenceId)?.startsLocal ?? recurrenceId

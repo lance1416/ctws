@@ -20,11 +20,11 @@ import { endedBefore, type LocalTime, ruleProblem } from './occurrences'
 import {
   assertOccurs,
   getOccurrence,
+  getMeeting,
   lockMeeting,
   meetingFiling,
   type OccurrenceRow,
   type SeriesRow,
-  seriesById,
 } from './queries'
 import { meetingExceptions, meetings } from './tables'
 
@@ -185,7 +185,7 @@ async function editAll({ tx, workspaceId, series, fields, attendeeIds, projectId
   if (fields.startsLocal !== undefined || fields.rrule !== undefined) {
     await tx.delete(meetingExceptions).where(eq(meetingExceptions.meetingId, series.id))
   }
-  const after = await seriesById(tx, workspaceId, series.id)
+  const after = await getMeeting(tx, workspaceId, series.id)
   return getOccurrence(tx, workspaceId, series.id, after.startsLocal)
 }
 
@@ -275,8 +275,7 @@ export async function updateMeeting(
   patch: UpdateMeetingBody,
 ): Promise<OccurrenceRow> {
   return db.transaction(async (tx) => {
-    await lockMeeting(tx, workspaceId, id)
-    const series = await seriesById(tx, workspaceId, id)
+    const series = await lockMeeting(tx, workspaceId, id)
     if (patch.projectId) await assertProjectsVisible(tx, workspaceId, [patch.projectId])
     if (patch.attendeeIds) await assertPeopleVisible(tx, workspaceId, patch.attendeeIds)
     const scope = scopeFor(series, patch.scope)
@@ -294,8 +293,7 @@ export async function cancelMeeting(
   opts: { scope: EditScope; recurrenceId?: LocalTime | undefined },
 ): Promise<void> {
   await db.transaction(async (tx) => {
-    await lockMeeting(tx, workspaceId, id)
-    const series = await seriesById(tx, workspaceId, id)
+    const series = await lockMeeting(tx, workspaceId, id)
     const scope = scopeFor(series, opts.scope)
     await CANCELS[scope]({ tx, workspaceId, series, recurrenceId: opts.recurrenceId })
   })

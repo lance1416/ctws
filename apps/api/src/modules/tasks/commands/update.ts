@@ -4,7 +4,7 @@ import type { PgUpdateSetSource } from 'drizzle-orm/pg-core'
 import type { Db } from '../../../platform/db/client'
 import { isoOrNull } from '../../../platform/values'
 import { taskLog, type TaskCtx } from '../log'
-import { lockVisibleTask } from '../queries/scope'
+import { lockTask } from '../queries/scope'
 import { tasks, type Task } from '../tables'
 
 /**
@@ -18,7 +18,7 @@ export async function updateTask(
   patch: UpdateTaskBody,
 ): Promise<Task> {
   return db.transaction(async (tx) => {
-    const row = await lockVisibleTask(tx, ctx.workspaceId, id)
+    const row = await lockTask(tx, ctx.workspaceId, id)
 
     const set: PgUpdateSetSource<typeof tasks> = {}
     const events: { type: TaskEventType; payload: unknown }[] = []

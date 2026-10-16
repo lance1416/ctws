@@ -4,7 +4,7 @@ import type { Db, Queryable } from '../../../platform/db/client'
 import { scoped, within } from '../../../platform/db/scope'
 import { DependencyCycleError } from '../errors'
 import { taskLog, type TaskCtx } from '../log'
-import { visibleTask } from '../queries/scope'
+import { getTask } from '../queries/scope'
 import { taskDependencies } from '../tables'
 import { lockTaskTree } from '../tree'
 
@@ -48,8 +48,8 @@ export async function addDependency(
     // The loop check is read-then-write: two opposite adds must not both pass it.
     await lockTaskTree(tx, ctx.workspaceId)
     // A foreign id reads as not found, never as a refusal that confirms it exists.
-    await visibleTask(tx, ctx.workspaceId, blockedId)
-    await visibleTask(tx, ctx.workspaceId, blockerId)
+    await getTask(tx, ctx.workspaceId, blockedId)
+    await getTask(tx, ctx.workspaceId, blockerId)
     if (await wouldCycle(tx, ctx.workspaceId, { blockedId, blockerId }))
       throw new DependencyCycleError()
 

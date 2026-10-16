@@ -3,10 +3,10 @@ import { newId } from '../../../platform/db/ids'
 import { rankBetween } from '@ctws/core'
 import { and, desc, eq, isNull, sql } from 'drizzle-orm'
 import type { Db } from '../../../platform/db/client'
-import { visibleProjectId } from '../../../shell/projects/queries'
+import { getProject } from '../../../shell/projects/queries'
 import { DepthLimitError } from '../errors'
 import { taskLog, type TaskCtx } from '../log'
-import { lockVisibleTask } from '../queries/scope'
+import { lockTask } from '../queries/scope'
 import { tasks, type Task } from '../tables'
 import { depthOf, lockTaskTree } from '../tree'
 
@@ -17,10 +17,10 @@ import { depthOf, lockTaskTree } from '../tree'
 export async function createTask(db: Db, ctx: TaskCtx, input: CreateTaskBody): Promise<Task> {
   return db.transaction(async (tx) => {
     await lockTaskTree(tx, ctx.workspaceId)
-    let projectId = await visibleProjectId(tx, ctx.workspaceId, input.projectId)
+    let projectId = (await getProject(tx, ctx.workspaceId, input.projectId)).id
 
     if (input.parentId) {
-      const parent = await lockVisibleTask(tx, ctx.workspaceId, input.parentId)
+      const parent = await lockTask(tx, ctx.workspaceId, input.parentId)
       if ((await depthOf(tx, parent.id)) + 1 > MAX_TASK_DEPTH) throw new DepthLimitError()
       projectId = parent.projectId
     }

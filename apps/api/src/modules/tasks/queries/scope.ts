@@ -49,18 +49,14 @@ const byId = (q: Queryable, workspaceId: WorkspaceId, id: TaskId) =>
     .$dynamic()
 
 /** One visible task. Missing, deleted and foreign ids all read as not found. */
-export async function visibleTask(
-  q: Queryable,
-  workspaceId: WorkspaceId,
-  id: TaskId,
-): Promise<Task> {
+export async function getTask(q: Queryable, workspaceId: WorkspaceId, id: TaskId): Promise<Task> {
   const [row] = await byId(q, workspaceId, id)
   if (!row) throw new TaskNotFoundError()
   return row.task
 }
 
-/** One visible task, locked for the rest of the transaction. */
-export async function lockVisibleTask(q: Tx, workspaceId: WorkspaceId, id: TaskId): Promise<Task> {
+/** `getTask`, with the row locked for the rest of the transaction. */
+export async function lockTask(q: Tx, workspaceId: WorkspaceId, id: TaskId): Promise<Task> {
   const [row] = await byId(q, workspaceId, id).for('update', { of: tasks })
   if (!row) throw new TaskNotFoundError()
   return row.task

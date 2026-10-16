@@ -11,7 +11,7 @@ import type { Db } from '../../platform/db/client'
 import { scoped, within } from '../../platform/db/scope'
 import { assertProjectsVisible } from '../../shell/projects/queries'
 import { ReadingItemNotFoundError, WrongKindError } from './errors'
-import { getReadingItem, readingFiling, type ReadingItemRow } from './queries'
+import { getReadingItem, lockReadingItem, readingFiling, type ReadingItemRow } from './queries'
 import { readingItems } from './tables'
 import type { Unfurl } from './unfurl/unfurl'
 
@@ -42,7 +42,7 @@ export async function updateReadingItem(
   patch: UpdateReadingItemBody,
 ): Promise<ReadingItemRow> {
   return db.transaction(async (tx) => {
-    const current = await getReadingItem(tx, workspaceId, id)
+    const current = await lockReadingItem(tx, workspaceId, id)
     // The other kind's fields: the table's check would refuse them too, but as a bare 500.
     if (patch.url !== undefined && current.kind !== 'link') throw new WrongKindError('url', 'book')
     if (patch.author !== undefined && current.kind !== 'book') {

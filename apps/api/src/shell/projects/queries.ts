@@ -1,6 +1,6 @@
 import { type WorkspaceId, type ProjectId } from '@ctws/contracts'
 import { asc, desc, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
-import type { Queryable } from '../../platform/db/client'
+import type { Queryable, Tx } from '../../platform/db/client'
 import { scoped, within } from '../../platform/db/scope'
 import type { ProjectColumns } from '../module'
 import { ProjectNotFoundError } from './errors'
@@ -24,18 +24,33 @@ export async function assertProjectsVisible(
   if (rows.length !== unique.length) throw new ProjectNotFoundError()
 }
 
-/** The stored id of a live project in this workspace, so a differently cased id compares equal. */
-export async function visibleProjectId(
+/** One live project in this workspace. Missing, deleted and foreign ids all read as not found. */
+export async function getProject(
   q: Queryable,
   workspaceId: WorkspaceId,
   id: ProjectId,
-): Promise<ProjectId> {
+): Promise<Project> {
   const [row] = await q
-    .select({ id: projects.id })
+    .select()
     .from(projects)
     .where(within(scoped(projects, workspaceId), eq(projects.id, id)))
   if (!row) throw new ProjectNotFoundError()
-  return row.id
+  return row
+}
+
+/** `getProject`, with the row locked for the rest of the transaction. */
+export async function lockProject(
+  tx: Tx,
+  workspaceId: WorkspaceId,
+  id: ProjectId,
+): Promise<Project> {
+  const [row] = await tx
+    .select()
+    .from(projects)
+    .where(within(scoped(projects, workspaceId), eq(projects.id, id)))
+    .for('update')
+  if (!row) throw new ProjectNotFoundError()
+  return row
 }
 
 /** A project and the columns modules add to it. */

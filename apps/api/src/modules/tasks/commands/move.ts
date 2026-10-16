@@ -2,10 +2,10 @@ import { MAX_TASK_DEPTH, type MoveTaskBody, type ProjectId, type TaskId } from '
 import { rankBetween } from '@ctws/core'
 import { and, asc, desc, eq, gt, isNull, lt, ne, sql } from 'drizzle-orm'
 import type { Db, Queryable } from '../../../platform/db/client'
-import { visibleProjectId } from '../../../shell/projects/queries'
+import { getProject } from '../../../shell/projects/queries'
 import { DepthLimitError, InvalidNeighbourError, MoveCycleError } from '../errors'
 import { taskLog, type TaskCtx } from '../log'
-import { lockVisibleTask } from '../queries/scope'
+import { lockTask } from '../queries/scope'
 import { tasks, type Task } from '../tables'
 import { depthOf, lockTaskTree } from '../tree'
 
@@ -49,13 +49,11 @@ export async function moveTask(
 
   return db.transaction(async (tx) => {
     await lockTaskTree(tx, ctx.workspaceId)
-    const task = await lockVisibleTask(tx, ctx.workspaceId, id)
-    const projectId = await visibleProjectId(tx, ctx.workspaceId, input.projectId)
+    const task = await lockTask(tx, ctx.workspaceId, id)
+    const projectId = (await getProject(tx, ctx.workspaceId, input.projectId)).id
 
     // A deleted parent reads as not found.
-    const parent = input.parentId
-      ? await lockVisibleTask(tx, ctx.workspaceId, input.parentId)
-      : null
+    const parent = input.parentId ? await lockTask(tx, ctx.workspaceId, input.parentId) : null
     const destProjectId = parent ? parent.projectId : projectId
     const destParentId = parent ? parent.id : null
 

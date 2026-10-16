@@ -16,7 +16,7 @@ import { scoped, within } from '../../platform/db/scope'
 import { assertProjectsVisible } from '../../shell/projects/queries'
 import { assertPossibleBirthday } from './birthdays'
 import { PersonNotFoundError } from './errors'
-import { getPerson, type PersonRow, personFiling } from './queries'
+import { getPerson, lockPerson, type PersonRow, personFiling } from './queries'
 import { people, personChannels } from './tables'
 
 const checkBirthday = (b: BirthdayInput | null | undefined): void => {
@@ -107,11 +107,11 @@ export async function updatePerson(
   checkBirthday(patch.birthday)
   return db.transaction(async (tx) => {
     // A foreign id is not found before anything is written.
-    await getPerson(tx, workspaceId, id)
+    await lockPerson(tx, workspaceId, id)
     if (patch.projectIds) await assertProjectsVisible(tx, workspaceId, patch.projectIds)
 
     const { channels, projectIds, birthday, ...fields } = patch
-    // Always touched: a new phone number is a change to the person.
+    // Touched even when only the channels change: a new phone number is a change to the person.
     await tx
       .update(people)
       .set({ ...fields, ...birthdayColumns(birthday), updatedAt: sql`now()` })

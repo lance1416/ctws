@@ -41,7 +41,7 @@ import { blockersFor, taskDependencyLists } from './queries/dependencies'
 import { projectBoard } from './queries/list'
 import { listProjectMovement } from './queries/movement'
 import { listReview } from './queries/review'
-import { visibleTask } from './queries/scope'
+import { getTask } from './queries/scope'
 import { searchTasks } from './queries/search'
 import { listToday } from './queries/today'
 
@@ -134,7 +134,7 @@ export const taskRoutes: FastifyPluginAsyncZod = async (app) => {
     '/:id',
     { schema: { params: taskParams, response: { 200: taskResponse } } },
     async (req) =>
-      toTaskResponse(await visibleTask(app.db, currentUser(req).workspaceId, req.params.id)),
+      toTaskResponse(await getTask(app.db, currentUser(req).workspaceId, req.params.id)),
   )
 
   app.patch(

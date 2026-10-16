@@ -11,9 +11,10 @@ import { newId } from '../../platform/db/ids'
 import { rankBetween } from '@ctws/core'
 import { desc, eq, sql } from 'drizzle-orm'
 import type { PgUpdateSetSource } from 'drizzle-orm/pg-core'
-import type { Db, Queryable, Tx } from '../../platform/db/client'
-import { scoped, within } from '../../platform/db/scope'
-import { InboxProtectedError, ProjectNotFoundError } from './errors'
+import type { Db, Queryable } from '../../platform/db/client'
+import { scoped } from '../../platform/db/scope'
+import { InboxProtectedError } from './errors'
+import { lockProject } from './queries'
 import { projects, type Project } from './tables'
 
 /** The quick-capture destination, one per workspace. */
@@ -23,20 +24,6 @@ const INBOX_NAME = 'Inbox'
 function firstFreeColor(taken: readonly ProjectColor[]): ProjectColor {
   const used = new Set(taken)
   return projectColors.find((c) => !used.has(c)) ?? projectColors[0]
-}
-
-async function lockVisibleProject(
-  q: Tx,
-  workspaceId: WorkspaceId,
-  id: ProjectId,
-): Promise<Project> {
-  const [row] = await q
-    .select()
-    .from(projects)
-    .where(within(scoped(projects, workspaceId), eq(projects.id, id)))
-    .for('update')
-  if (!row) throw new ProjectNotFoundError()
-  return row
 }
 
 /** Created with the workspace, so capture never has to create it on the fly. */
@@ -90,7 +77,7 @@ export async function updateProject(
   patch: UpdateProjectBody,
 ): Promise<Project> {
   return db.transaction(async (tx) => {
-    const existing = await lockVisibleProject(tx, workspaceId, id)
+    const existing = await lockProject(tx, workspaceId, id)
     // An archived inbox would drop out of the list capture reads; renaming it is fine.
     if (patch.archived === true && existing.isInbox) throw new InboxProtectedError()
 
@@ -114,7 +101,7 @@ export async function softDeleteProject(
   id: ProjectId,
 ): Promise<void> {
   await db.transaction(async (tx) => {
-    const existing = await lockVisibleProject(tx, workspaceId, id)
+    const existing = await lockProject(tx, workspaceId, id)
     if (existing.isInbox) throw new InboxProtectedError()
     await tx
       .update(projects)

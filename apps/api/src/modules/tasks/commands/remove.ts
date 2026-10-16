@@ -2,7 +2,7 @@ import type { TaskId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import type { Db } from '../../../platform/db/client'
 import { taskLog, type TaskCtx } from '../log'
-import { lockVisibleTask } from '../queries/scope'
+import { lockTask } from '../queries/scope'
 import { lockTaskTree } from '../tree'
 
 /**
@@ -13,7 +13,7 @@ export async function softDeleteTask(db: Db, ctx: TaskCtx, id: TaskId): Promise<
   await db.transaction(async (tx) => {
     await lockTaskTree(tx, ctx.workspaceId)
     const log = taskLog(tx, ctx)
-    await lockVisibleTask(tx, ctx.workspaceId, id)
+    await lockTask(tx, ctx.workspaceId, id)
 
     // The two `deleted_at is null` differ: the recursive one prunes, so an already-deleted
     // descendant keeps its own `deleted_at`; the update's one refuses to overwrite and picks the
