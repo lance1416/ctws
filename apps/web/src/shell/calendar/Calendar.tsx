@@ -1,7 +1,7 @@
 import type { CalendarEntry } from '@ctws/contracts'
 import { useState, type ReactNode } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
-import { ViewTabs } from '../../platform/ui/ViewTabs'
+import { Link } from 'react-router-dom'
+import { useViewParam, ViewTabs } from '../../platform/ui/ViewTabs'
 import { useQuery } from '@tanstack/react-query'
 import { calendarDaysQuery } from './api'
 import { useEveryProject } from '../projects/api'
@@ -27,7 +27,6 @@ export function Calendar() {
   const today = ymd(useNow(), timeZone)
   const [cursor, setCursor] = useState(today)
   const [open, setOpen] = useState<{ moduleId: string; id: string } | null>(null)
-  const [params, setParams] = useSearchParams()
   const rail = useProjectRail()
   const projects = useEveryProject()
 
@@ -41,13 +40,7 @@ export function Calendar() {
     { id: 'all', label: 'All' },
     ...providers.map((p) => ({ id: p.moduleId, label: p.label })),
   ]
-  const view = views.find((v) => v.id === params.get('view'))?.id ?? 'all'
-  const pickView = (next: string) => {
-    const copy = new URLSearchParams(params)
-    if (next === 'all') copy.delete('view')
-    else copy.set('view', next)
-    setParams(copy, { replace: true })
-  }
+  const [view, pickView] = useViewParam(views)
 
   const shown = results.filter((r) => view === 'all' || r.moduleId === view)
   const failed = shown.some((r) => r.isError)

@@ -1,14 +1,13 @@
 import { REVIEW_TRANSITIONS, type ReviewList, type ReviewResponse } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
 import { reviewQuery } from '../api/queries'
 import { DaySection } from '../../../shell/rows/DaySection'
 import { EmptyState } from '../../../platform/ui/EmptyState'
 import { RowLead } from '../../../shell/rows/RowLead'
 import { BODY_GUTTER, ProjectRail, ROW_LIST } from '../../../shell/rows/RowParts'
 import { StatusMark } from '../components/StatusMark'
-import { ViewTabs } from '../../../platform/ui/ViewTabs'
+import { useViewParam, ViewTabs } from '../../../platform/ui/ViewTabs'
 import { Completed } from './Completed'
 import { addDays } from '@ctws/core/day'
 import { monthDay, nextMonday, ymd } from '../../../platform/time/dates'
@@ -89,14 +88,7 @@ const VIEWS = [
 
 export function Review() {
   useCrumbs([{ label: 'Review' }])
-  const [params, setParams] = useSearchParams()
-  const view = VIEWS.find((v) => v.id === params.get('view'))?.id ?? 'week'
-  const pickView = (next: string) => {
-    const copy = new URLSearchParams(params)
-    if (next === 'week') copy.delete('view')
-    else copy.set('view', next)
-    setParams(copy, { replace: true })
-  }
+  const [view, pickView] = useViewParam(VIEWS)
   const [range, setRange] = useState<{ from: string; to: string } | null>(null)
   const review = useQuery({
     ...reviewQuery(range),
