@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { apiPost, registerFreshUser } from './helpers'
+import { dayOffset } from './days'
 
 /**
  * ONE PAGE FOR EVERY KIND OF THING.
@@ -30,7 +31,7 @@ async function world(page: Page) {
   })
   const meeting = await apiPost(page, '/meetings', {
     title: 'Second interview',
-    startsLocal: '2026-10-20T21:00',
+    startsLocal: `${dayOffset(5)}T21:00`,
     timeZone: 'America/Toronto',
     durationMinutes: 60,
     projectId: project.id,

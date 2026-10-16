@@ -44,6 +44,14 @@ export function nextMondayYmd(): string {
   return ymd(d)
 }
 
+/** The first `weekday` (0 is Sunday) at least `from` days after today, as a calendar day. */
+export function weekdayFrom(weekday: number, from: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() + from)
+  d.setDate(d.getDate() + ((weekday - d.getDay() + 7) % 7))
+  return ymd(d)
+}
+
 /** `n` days after `day` (negative is before). Noon UTC, so no offset can push it across a boundary. */
 export function addDaysYmd(day: string, n: number): string {
   const d = new Date(`${day}T12:00:00Z`)

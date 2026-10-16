@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { apiPost, logOut, makeProject, registerFreshUser } from './helpers'
+import { dayOffset } from './days'
 
 /**
  * A WRITE THE SERVER REFUSES SAYS SO. The button comes back either way; without a word beside it,
@@ -43,7 +44,7 @@ test('a meeting cancel the server refuses says so', async ({ page }) => {
   await registerFreshUser(page)
   const m = await apiPost(page, '/meetings', {
     title: 'Weekly',
-    startsLocal: '2026-12-01T18:00',
+    startsLocal: `${dayOffset(5)}T18:00`,
     timeZone: 'America/Toronto',
     durationMinutes: 60,
   })

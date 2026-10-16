@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { apiPost, registerFreshUser } from './helpers'
+import { dayOffset } from './days'
 
 /**
  * AN EDIT IS NOT THROWN AWAY BY A STRAY KEY. Escape, the scrim and the close button all ask first
@@ -44,7 +45,7 @@ test('Escape on an edited meeting asks before throwing the edit away', async ({ 
   await registerFreshUser(page)
   const m = await apiPost(page, '/meetings', {
     title: 'Weekly',
-    startsLocal: '2026-12-01T18:00',
+    startsLocal: `${dayOffset(5)}T18:00`,
     timeZone: 'America/Toronto',
     durationMinutes: 60,
   })

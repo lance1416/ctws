@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { TZDate } from '@date-fns/tz'
-import { addDaysYmd, dayOffset, MONTHS } from './days'
+import { addDaysYmd, dayOffset, MONTHS, weekdayFrom } from './days'
 import { accountZone, apiPost, editDetail, pickOne, registerFreshUser, WEB } from './helpers'
 
 /**
@@ -146,16 +146,18 @@ test('what has already happened is behind a toggle, not in front of you', async 
 
 test('a repeat can be given an end date, and the series really stops there', async ({ page }) => {
   await registerFreshUser(page)
+  const first = weekdayFrom(2, 7) // a Tuesday
+  const last = addDaysYmd(first, 14)
   await page.goto('/meetings')
   await page.getByRole('button', { name: 'New meeting' }).click()
 
   const form = dialog(page)
   await form.getByLabel('Title').fill('Weekly sync')
-  await form.getByLabel('Date').fill('2026-11-03') // a Tuesday
+  await form.getByLabel('Date').fill(first)
   await form.getByLabel('Start time').fill('09:00')
   await form.getByLabel('Location').fill('https://meet.example.test/abc')
   await pickOne(form, 'Repeats', 'Weekly on Tuesday')
-  await form.getByLabel('Ends').fill('2026-11-17')
+  await form.getByLabel('Ends').fill(last)
 
   const made = page.waitForResponse(
     (r) => r.request().method() === 'POST' && /\/api\/v1\/meetings$/.test(r.url()),
@@ -164,17 +166,17 @@ test('a repeat can be given an end date, and the series really stops there', asy
   const body = (await made).request().postDataJSON() as { rrule: string; location: string }
 
   // The end is written in the SAME naive space as the start, at the end of the chosen day.
-  expect(body.rrule).toBe('FREQ=WEEKLY;BYDAY=TU;UNTIL=20261117T235959Z')
+  expect(body.rrule).toBe(`FREQ=WEEKLY;BYDAY=TU;UNTIL=${last.replaceAll('-', '')}T235959Z`)
   expect(body.location).toBe('https://meet.example.test/abc')
 
   // And the server agrees: three Tuesdays, not a fourth.
-  const got = await page.request.get('/api/v1/meetings?from=2026-11-01&to=2026-11-30', {
+  const got = await page.request.get(`/api/v1/meetings?from=${first}&to=${addDaysYmd(last, 14)}`, {
     headers: WEB,
   })
   const days = ((await got.json()) as { meetings: { recurrenceId: string }[] }).meetings.map((m) =>
     m.recurrenceId.slice(0, 10),
   )
-  expect(days).toEqual(['2026-11-03', '2026-11-10', '2026-11-17'])
+  expect(days).toEqual([first, addDaysYmd(first, 7), last])
 })
 
 test('a meeting with a link can be joined from the list', async ({ page }) => {
@@ -209,7 +211,7 @@ test("a meeting pane stacks its labels over its values, at the meeting's own add
   await registerFreshUser(page)
   await apiPost(page, '/meetings', {
     title: '周会',
-    startsLocal: '2026-10-20T09:00',
+    startsLocal: `${dayOffset(5)}T09:00`,
     timeZone: 'America/Toronto',
     durationMinutes: 30,
   })

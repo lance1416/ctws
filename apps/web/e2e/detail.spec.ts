@@ -11,8 +11,13 @@ import {
   setDetailStatus,
   submitCreate,
 } from './helpers'
+import { addDaysYmd, dayOffset } from './days'
 
 const PATCH_URL = /\/tasks\/[^/]+$/
+
+/** A plan and a deadline a few days ahead, so neither reads as overdue. */
+const PLAN = dayOffset(2)
+const DUE = dayOffset(3)
 
 /** Clicks Save and resolves once the server has accepted the request, i.e. it is persisted. */
 async function save(page: Page, url: RegExp = PATCH_URL) {
@@ -77,14 +82,14 @@ test('edits persist across a reload', async ({ page }) => {
 
   await page.getByLabel('Notes', { exact: true }).fill('先问清需求')
   await setDetailStatus(page, 'In progress')
-  await page.getByLabel('Plan', { exact: true }).fill('2026-10-02')
+  await page.getByLabel('Plan', { exact: true }).fill(PLAN)
   await save(page)
 
   await page.goto(url)
   await reopen(page, '写方案')
   await expect(page.getByLabel('Notes', { exact: true })).toHaveValue('先问清需求')
   await expect(page.getByRole('radio', { name: 'In progress', exact: true })).toBeChecked()
-  await expect(page.getByLabel('Plan', { exact: true })).toHaveValue('2026-10-02')
+  await expect(page.getByLabel('Plan', { exact: true })).toHaveValue(PLAN)
 })
 
 test('title and due time persist across a reload', async ({ page }) => {
@@ -93,14 +98,14 @@ test('title and due time persist across a reload', async ({ page }) => {
   const url = page.url()
 
   await page.getByLabel('Title').fill('写方案 v2')
-  await page.getByLabel('Due', { exact: true }).fill('2026-10-03T14:30')
+  await page.getByLabel('Due', { exact: true }).fill(`${DUE}T14:30`)
   await save(page)
 
   await page.goto(url)
   await reopen(page, '写方案 v2')
   await expect(page.getByLabel('Title')).toHaveValue('写方案 v2')
   // Local wall-clock in, local wall-clock out: the instant round trip must not shift it.
-  await expect(page.getByLabel('Due', { exact: true })).toHaveValue('2026-10-03T14:30')
+  await expect(page.getByLabel('Due', { exact: true })).toHaveValue(`${DUE}T14:30`)
 })
 
 test('moves a task to another project', async ({ page }) => {
@@ -125,13 +130,13 @@ test('moves a task to another project', async ({ page }) => {
 test('clearing a date removes it rather than sending an empty string', async ({ page }) => {
   await registerFreshUser(page)
   await seedOneTask(page)
-  await page.getByLabel('Plan', { exact: true }).fill('2026-10-02')
+  await page.getByLabel('Plan', { exact: true }).fill(PLAN)
   await save(page)
 
   // The date really was stored; otherwise clearing it proves nothing.
   await page.reload()
   await reopen(page, '写方案')
-  await expect(page.getByLabel('Plan', { exact: true })).toHaveValue('2026-10-02')
+  await expect(page.getByLabel('Plan', { exact: true })).toHaveValue(PLAN)
 
   await page.getByLabel('Plan', { exact: true }).fill('')
   const res = await save(page)
@@ -154,11 +159,11 @@ test('the PATCH names the fields that changed, and only those', async ({ page })
   await seedOneTask(page)
 
   // Give the task a deadline and a plan first, so there is something the save COULD wrongly resend.
-  await page.getByLabel('Due', { exact: true }).fill('2026-10-03T09:15')
-  await page.getByLabel('Plan', { exact: true }).fill('2026-10-02')
+  await page.getByLabel('Due', { exact: true }).fill(`${DUE}T09:15`)
+  await page.getByLabel('Plan', { exact: true }).fill(PLAN)
   expect((await save(page)).request().postDataJSON()).toEqual({
-    dueAt: new Date('2026-10-03T09:15').toISOString(),
-    scheduledOn: '2026-10-02',
+    dueAt: new Date(`${DUE}T09:15`).toISOString(),
+    scheduledOn: PLAN,
   })
 
   // One field edited: one field in the body. Not the title, not the notes, and -- the point --
@@ -186,12 +191,10 @@ test('the PATCH names the fields that changed, and only those', async ({ page })
     )
   ).json()
   const task = (listed.tasks as Record<string, unknown>[])[0]!
-  expect(task.scheduledOn).toBe('2026-10-02')
+  expect(task.scheduledOn).toBe(PLAN)
   expect(task.status).toBe('in_progress')
   expect(task.notes).toBeNull()
-  expect(new Date(task.dueAt as string).toISOString()).toBe(
-    new Date('2026-10-03T09:15').toISOString(),
-  )
+  expect(new Date(task.dueAt as string).toISOString()).toBe(new Date(`${DUE}T09:15`).toISOString())
 })
 
 test('a rejected save says why and leaves the panel open', async ({ page }) => {
@@ -255,13 +258,13 @@ test.describe('due time in a non-UTC zone', () => {
   test('the due time is sent as the instant the local wall-clock time means', async ({ page }) => {
     await registerFreshUser(page)
     await seedOneTask(page)
-    await page.getByLabel('Due', { exact: true }).fill('2026-10-03T02:30')
+    await page.getByLabel('Due', { exact: true }).fill(`${DUE}T02:30`)
     const res = await save(page)
-    expect(res.request().postDataJSON()).toEqual({ dueAt: '2026-10-02T21:00:00.000Z' })
+    expect(res.request().postDataJSON()).toEqual({ dueAt: `${addDaysYmd(DUE, -1)}T21:00:00.000Z` })
 
     await page.reload()
     await reopen(page, '写方案')
-    await expect(page.getByLabel('Due', { exact: true })).toHaveValue('2026-10-03T02:30')
+    await expect(page.getByLabel('Due', { exact: true })).toHaveValue(`${DUE}T02:30`)
   })
 })
 

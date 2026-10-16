@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { apiPost, registerFreshUser } from './helpers'
+import { dayOffset } from './days'
 
 /**
  * SAYING THAT TWO THINGS ARE CONNECTED, from the interface.
@@ -76,7 +77,7 @@ test('an edge is taken off from either end, whichever way it was written', async
   })
   await apiPost(page, '/meetings', {
     title: 'Second interview',
-    startsLocal: '2026-10-20T21:00',
+    startsLocal: `${dayOffset(5)}T21:00`,
     timeZone: 'America/Toronto',
     durationMinutes: 60,
     attendeeIds: [person.id],
@@ -125,7 +126,7 @@ test('the picker offers every kind of thing, and never the object itself', async
   await apiPost(page, '/projects', { name: 'Job hunt' })
   await apiPost(page, '/meetings', {
     title: 'Second interview',
-    startsLocal: '2026-10-20T21:00',
+    startsLocal: `${dayOffset(5)}T21:00`,
     timeZone: 'America/Toronto',
     durationMinutes: 60,
   })

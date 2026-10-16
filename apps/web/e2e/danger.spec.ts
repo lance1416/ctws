@@ -1,5 +1,6 @@
 import { expect, test, type Locator } from '@playwright/test'
 import { apiPost, makeProject, makeTask, registerFreshUser, WEB } from './helpers'
+import { dayOffset } from './days'
 
 /**
  * The delete (or cancel) zone sits below everything else and never above the floor: pushed to the
@@ -41,7 +42,7 @@ test('in a short panel, Cancel meeting sits at the bottom on the same background
   await registerFreshUser(page)
   const meeting = await apiPost(page, '/meetings', {
     title: 'Weekly',
-    startsLocal: '2026-10-20T18:00',
+    startsLocal: `${dayOffset(5)}T18:00`,
     timeZone: 'America/Toronto',
     durationMinutes: 60,
   })
