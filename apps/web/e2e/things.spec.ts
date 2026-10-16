@@ -189,6 +189,6 @@ test('the next meeting moves on once the one named has started', async ({ page }
   await page.goto('/things')
   const status = kind(page, 'Meetings').locator('[data-status]')
   await expect(status).toHaveText('Next: Standup at 10:00')
-  await page.clock.runFor('15:00')
+  await page.clock.fastForward('15:00')
   await expect(status).toHaveText('Next: Review at 11:00')
 })
