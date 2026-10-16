@@ -8,3 +8,7 @@ export {
   unarchivedProjects,
 } from './queries'
 export { projectKeys } from './tables'
+
+// For the app.
+export { projectLinkable } from './linkable'
+export { projectRoutes } from './routes'

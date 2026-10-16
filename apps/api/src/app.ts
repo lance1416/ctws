@@ -8,25 +8,26 @@ import {
   validatorCompiler,
   type ZodTypeProvider,
 } from 'fastify-type-provider-zod'
-import { adminRoutes } from './shell/admin/routes'
-import { authenticated } from './shell/auth/authenticated'
-import { SESSION_COOKIE } from './shell/auth/cookie'
-import { publicAuthRoutes, sessionRoutes } from './shell/auth/routes'
-import { warmDummyHash } from './shell/auth/service'
+import { adminRoutes } from './shell/admin'
+import {
+  authenticated,
+  SESSION_COOKIE,
+  publicAuthRoutes,
+  sessionRoutes,
+  warmDummyHash,
+} from './shell/auth'
+import { calendarDayRoutes } from './shell/calendar'
+import { linkRoutes, linkRegistry } from './shell/links'
+import { projectLinkable, projectRoutes } from './shell/projects'
+import { cityRoutes } from './shell/cities'
 import type { Db } from './platform/db/client'
 import type { Env } from './platform/config'
 import { documentedQuery, documentRefusals } from './platform/http/openapi'
-import { calendarDayRoutes } from './shell/calendar/routes'
 import { registerGuards } from './platform/http/guards'
-import { linkRoutes } from './shell/links/routes'
 import { handleError } from './platform/http/errors'
 import { serveWeb } from './platform/http/web'
 import { apiModules } from './modules'
 import { unfurl, type Unfurl } from './modules/reading'
-import { linkRegistry } from './shell/links/registry'
-import { projectLinkable } from './shell/projects/linkable'
-import { projectRoutes } from './shell/projects/routes'
-import { cityRoutes } from './shell/cities/routes'
 
 /** `unfurl` and `clock` are replaceable for tests; production uses the defaults. */
 export async function buildApp(opts: {

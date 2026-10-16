@@ -1,6 +1,6 @@
 import { asc } from 'drizzle-orm'
 import { scoped, within } from '../../platform/db/scope'
-import { wanted, type Linkable } from '../../shell/links/linkable'
+import { wanted, type Linkable } from '../../shell/links'
 import { people } from './tables'
 
 export const personLinkable: Linkable = {

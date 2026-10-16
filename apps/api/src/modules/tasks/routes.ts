@@ -1,7 +1,7 @@
 import { api } from '@ctws/contracts'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { on, serve } from '../../platform/http/serve'
-import { actorOf, currentUser } from '../../shell/auth/authenticated'
+import { actorOf, currentUser } from '../../shell/auth'
 import { createTask } from './commands/create'
 import { addDependency, removeDependency } from './commands/dependencies'
 import { softDeleteTask } from './commands/remove'

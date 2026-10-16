@@ -21,7 +21,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core'
 import { inList } from '../../platform/db/sql'
-import { workspaces } from '../../shell/auth/tables'
+import { workspaceKeys } from '../../shell/auth'
 import { projectKeys } from '../../shell/projects'
 
 export const tasks = pgTable(
@@ -77,7 +77,7 @@ export const taskDependencies = pgTable(
     workspaceId: uuid('workspace_id')
       .$type<WorkspaceId>()
       .notNull()
-      .references(() => workspaces.id, { onDelete: 'cascade' }),
+      .references(() => workspaceKeys.id, { onDelete: 'cascade' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -106,7 +106,7 @@ export const taskEvents = pgTable(
     workspaceId: uuid('workspace_id')
       .$type<WorkspaceId>()
       .notNull()
-      .references(() => workspaces.id, { onDelete: 'cascade' }),
+      .references(() => workspaceKeys.id, { onDelete: 'cascade' }),
     type: text('type').$type<TaskEventType>().notNull(),
     payload: jsonb('payload').notNull(),
     occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull(),

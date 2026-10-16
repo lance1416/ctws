@@ -1,6 +1,6 @@
 import { desc } from 'drizzle-orm'
 import { scoped, within } from '../../platform/db/scope'
-import { wanted, type Linkable } from '../../shell/links/linkable'
+import { wanted, type Linkable } from '../../shell/links'
 import { readingItems } from './tables'
 
 export const readingLinkable: Linkable = {

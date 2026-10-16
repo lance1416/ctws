@@ -1,7 +1,7 @@
 import { api } from '@ctws/contracts'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { on, serve } from '../../platform/http/serve'
-import { actorOf, currentUser } from '../../shell/auth/authenticated'
+import { actorOf, currentUser } from '../../shell/auth'
 import { toReadingItemResponse } from './mapper'
 import { getReadingItem, listReadingItems, readingEntries, searchReadingItems } from './queries'
 import {

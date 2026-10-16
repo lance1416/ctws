@@ -11,7 +11,7 @@ import {
   timestamp,
   uuid,
 } from 'drizzle-orm/pg-core'
-import { workspaces } from '../../shell/auth/tables'
+import { workspaceKeys } from '../../shell/auth'
 
 /**
  * A series, after iCalendar's `VEVENT` (RFC 5545): a wall clock plus a zone and a duration, never
@@ -24,7 +24,7 @@ export const meetings = pgTable(
     workspaceId: uuid('workspace_id')
       .$type<WorkspaceId>()
       .notNull()
-      .references(() => workspaces.id, { onDelete: 'cascade' }),
+      .references(() => workspaceKeys.id, { onDelete: 'cascade' }),
     title: text('title').notNull(),
     /** `DTSTART`'s local part, `YYYY-MM-DDTHH:mm`. */
     startsLocal: text('starts_local').notNull(),

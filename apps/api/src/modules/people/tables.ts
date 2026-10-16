@@ -14,7 +14,7 @@ import {
 import { sql } from 'drizzle-orm'
 import { boolean, check, index, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { inList } from '../../platform/db/sql'
-import { workspaces } from '../../shell/auth/tables'
+import { workspaceKeys } from '../../shell/auth'
 
 /** A person, after vCard 4.0 (RFC 6350). Projects are links, not a column. */
 export const people = pgTable(
@@ -24,7 +24,7 @@ export const people = pgTable(
     workspaceId: uuid('workspace_id')
       .$type<WorkspaceId>()
       .notNull()
-      .references(() => workspaces.id, { onDelete: 'cascade' }),
+      .references(() => workspaceKeys.id, { onDelete: 'cascade' }),
     /** vCard `FN`: the name as written, not split into parts. */
     name: text('name').notNull(),
     org: text('org'),

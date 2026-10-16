@@ -2,7 +2,7 @@ import { READING_KINDS, READING_STATUSES, type ReadingId, type WorkspaceId } fro
 import { sql } from 'drizzle-orm'
 import { check, date, index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { inList } from '../../platform/db/sql'
-import { workspaces } from '../../shell/auth/tables'
+import { workspaceKeys } from '../../shell/auth'
 
 export const readingItems = pgTable(
   'reading_items',
@@ -11,7 +11,7 @@ export const readingItems = pgTable(
     workspaceId: uuid('workspace_id')
       .$type<WorkspaceId>()
       .notNull()
-      .references(() => workspaces.id, { onDelete: 'cascade' }),
+      .references(() => workspaceKeys.id, { onDelete: 'cascade' }),
     kind: text('kind').$type<(typeof READING_KINDS)[number]>().notNull(),
     /** Null for a link until someone names it; the list shows the address meanwhile. */
     title: text('title'),

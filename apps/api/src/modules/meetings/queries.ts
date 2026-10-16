@@ -11,7 +11,7 @@ import { asc, eq, inArray } from 'drizzle-orm'
 import type { Queryable, Tx } from '../../platform/db/client'
 import { scoped, within } from '../../platform/db/scope'
 import { groupBy } from '../../platform/values'
-import { filing } from '../../shell/links/filing'
+import { filing } from '../../shell/links'
 import { attendeesOf } from '../people'
 import {
   type Exception,

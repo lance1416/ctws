@@ -19,7 +19,7 @@ import { asc, isNotNull } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
 import { scoped, within } from '../../platform/db/scope'
 import { accountToday } from '../../platform/db/time'
-import { dayEntry } from '../../shell/calendar/entry'
+import { dayEntry } from '../../shell/calendar'
 import { ImpossibleBirthdayError } from './errors'
 import { people } from './tables'
 

@@ -8,7 +8,7 @@ import type {
   TodayTaskResponse,
 } from '@ctws/contracts'
 import { isoOrNull } from '../../platform/values'
-import { dayEntry } from '../../shell/calendar/entry'
+import { dayEntry } from '../../shell/calendar'
 import type { CalendarRow } from './queries/calendar'
 import type { CompletedTask } from './queries/completed'
 import type { SearchTask } from './queries/search'

@@ -72,3 +72,6 @@ export const workspaceMembers = pgTable(
   },
   (t) => [primaryKey({ columns: [t.workspaceId, t.userId] })],
 )
+
+/** What a module's own table points at with a foreign key: the workspace that owns its rows. */
+export const workspaceKeys = { id: workspaces.id }
