@@ -40,6 +40,12 @@ describe("a note's own Markdown", () => {
     expect(html).toContain('class="language-js"')
   })
 
+  it.each(['mermaid', 'Mermaid'])('draws a %s fence as a diagram, not as code', (lang) => {
+    const html = render('```' + lang + '\ngraph TD; A-->B;\n```')
+    expect(html).toContain('Drawing…')
+    expect(html).not.toContain('<pre>')
+  })
+
   it('leaves maths for KaTeX to pick up, tagged the way rehype-katex looks for it', () => {
     // KaTeX is not loaded in a static render; this pins the class `rehype-katex` keys on.
     const html = render('面积是 $\\pi r^2$ 。')

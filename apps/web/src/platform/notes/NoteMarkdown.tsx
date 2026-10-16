@@ -29,7 +29,8 @@ const components: Components = {
     if (first?.type === 'element' && first.tagName === 'code') {
       const className = first.properties?.className
       const classes = Array.isArray(className) ? className.map(String) : []
-      if (classes.includes(`language-${MERMAID_LANG}`)) {
+      // In any case: ```Mermaid is a diagram too.
+      if (classes.some((c) => c.toLowerCase() === `language-${MERMAID_LANG}`)) {
         const source = first.children
           .map((child) => (child.type === 'text' ? child.value : ''))
           .join('')

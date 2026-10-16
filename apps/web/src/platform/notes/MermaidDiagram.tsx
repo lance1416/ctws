@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { onSchemeChange, shownScheme } from '../ui/theme'
 import { purifyDiagram, scopeDiagramStyles, sizeDiagram } from './mermaidSvg'
 
 /** A counter, not `useId`: mermaid builds CSS selectors from the id, and `useId` emits `:`. */
@@ -31,14 +32,9 @@ export default function MermaidDiagram({ source }: { source: string }) {
   const host = useRef<HTMLDivElement | null>(null)
   const [state, setState] = useState<'drawing' | 'ready' | 'failed'>('drawing')
   const [failure, setFailure] = useState('')
-  // Colours are baked into the svg, so the colour scheme is a render input.
-  const [dark, setDark] = useState(() => window.matchMedia('(prefers-color-scheme: dark)').matches)
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-color-scheme: dark)')
-    const onChange = () => setDark(mq.matches)
-    mq.addEventListener('change', onChange)
-    return () => mq.removeEventListener('change', onChange)
-  }, [])
+  // Colours are baked into the svg, so the scheme the page shows (picked in the menu, else the
+  // system's) is a render input.
+  const scheme = useSyncExternalStore(onSchemeChange, shownScheme)
 
   useEffect(() => {
     let live = true
@@ -80,7 +76,7 @@ export default function MermaidDiagram({ source }: { source: string }) {
     return () => {
       live = false
     }
-  }, [source, dark])
+  }, [source, scheme])
 
   return (
     <>

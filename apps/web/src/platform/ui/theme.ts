@@ -27,3 +27,24 @@ export function applyTheme(theme: Theme): void {
     // Not kept, but this page still shows the choice.
   }
 }
+
+const SYSTEM_DARK = '(prefers-color-scheme: dark)'
+
+/** The scheme the page shows now: the chosen one, else the system's. */
+export function shownScheme(): 'light' | 'dark' {
+  const chosen = document.documentElement.getAttribute('data-theme')
+  if (chosen === 'light' || chosen === 'dark') return chosen
+  return window.matchMedia(SYSTEM_DARK).matches ? 'dark' : 'light'
+}
+
+/** Calls `listener` when `shownScheme` may have changed: a choice here, or the system's. */
+export function onSchemeChange(listener: () => void): () => void {
+  const system = window.matchMedia(SYSTEM_DARK)
+  system.addEventListener('change', listener)
+  const chosen = new MutationObserver(listener)
+  chosen.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+  return () => {
+    system.removeEventListener('change', listener)
+    chosen.disconnect()
+  }
+}

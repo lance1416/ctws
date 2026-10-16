@@ -125,6 +125,27 @@ test('a mermaid fence renders a diagram', async ({ page }) => {
   expect(overflow).toBeLessThanOrEqual(0)
 })
 
+test('a fence written ```Mermaid renders a diagram too', async ({ page }) => {
+  await seedNote(page, '```Mermaid\ngraph TD;\n  收到需求 --> 排期;\n```')
+  const diagram = notesBlock(page).locator('[data-note-diagram="ready"]')
+  await expect(diagram.locator('svg')).toContainText('排期')
+})
+
+test('a diagram follows the theme picked in the menu, not only the system one', async ({
+  page,
+}) => {
+  await page.emulateMedia({ colorScheme: 'light' })
+  await seedNote(page, '```mermaid\ngraph TD;\n  收到需求 --> 排期;\n```')
+  const box = notesBlock(page).locator('[data-note-diagram="ready"] svg .node rect').first()
+  const fill = () => box.evaluate((el) => getComputedStyle(el).fill)
+  await expect(box).toBeVisible()
+  const light = await fill()
+
+  await page.getByTestId('current-user').click()
+  await page.getByRole('menuitemradio', { name: 'Dark' }).click()
+  await expect.poll(fill).not.toBe(light)
+})
+
 // -------------------------------------------------------------- what is refused (the Markdown path)
 
 /**
