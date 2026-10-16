@@ -21,7 +21,7 @@ export function authenticated(scope: FastifyInstance): void {
   scope.addHook('onRoute', (route) => {
     route.schema = { ...route.schema, security: [{ session: [] }] }
   })
-  scope.addHook('preHandler', async (req, reply) => {
+  scope.addHook('onRequest', async (req, reply) => {
     const token = req.cookies[SESSION_COOKIE]
     const session = token ? await findValidSession(scope.db, token, scope.env.sessionTtlDays) : null
     // Read on every request, so disabling or demoting an account applies at once.
@@ -35,7 +35,7 @@ export function authenticated(scope: FastifyInstance): void {
 
 /** Nested inside an `authenticated` scope: admin accounts only. */
 export function adminOnly(scope: FastifyInstance): void {
-  scope.addHook('preHandler', async (req) => {
+  scope.addHook('onRequest', async (req) => {
     if (!hasRole(currentUser(req).role, 'admin')) throw new AdminRequiredError()
   })
 }

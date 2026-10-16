@@ -26,7 +26,7 @@ describe('the authenticated scope', () => {
     expect(uncovered).toEqual([])
   })
 
-  it('refuses a request without a session', async () => {
+  it('refuses a request without a session before validating it', async () => {
     const open: string[] = []
     for (const { path, method } of operations()) {
       if (PUBLIC.has(path)) continue
@@ -35,9 +35,10 @@ describe('the authenticated scope', () => {
         method: method.toUpperCase() as 'GET',
         url,
         headers: { 'x-ctws-client': 'web' },
+        // A body no route accepts: an anonymous caller learns nothing about the schema.
+        ...(method === 'get' ? {} : { payload: { unexpected: true } }),
       })
-      // Validation runs before the session check, so a 400 never reached it.
-      if (res.statusCode !== 401 && res.statusCode !== 400) open.push(`${method} ${path}`)
+      if (res.statusCode !== 401) open.push(`${method} ${path} ${res.statusCode}`)
     }
     expect(open).toEqual([])
   })
