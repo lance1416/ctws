@@ -147,7 +147,8 @@ export function Today() {
           key={openTask.id}
           task={openTask}
           onClose={pane.close}
-          // Marks the row; the pane stays open even when the save took the row off this page.
+          // Marks the row. A save that takes the task off this page closes the pane with it, as on
+          // every list (`useRowPane`).
           onSaved={() => setSavedId(openTask.id)}
         />
       )}
