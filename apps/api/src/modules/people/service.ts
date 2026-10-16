@@ -12,6 +12,7 @@ import { newId } from '../../platform/db/ids'
 import { eq, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import type { Db, Tx } from '../../platform/db/client'
+import { replaceRows } from '../../platform/db/replace'
 import { scoped, within } from '../../platform/db/scope'
 import { assertProjectsVisible } from '../../shell/projects/queries'
 import { assertPossibleBirthday } from './birthdays'
@@ -56,18 +57,15 @@ async function putChannels(
   personId: PersonId,
   channels: readonly PersonChannel[],
 ): Promise<void> {
-  await q.delete(personChannels).where(eq(personChannels.personId, personId))
-  if (channels.length === 0) return
-  await q.insert(personChannels).values(
-    channels.map((c, rank) => ({
-      id: uuidv7(),
-      personId,
-      kind: c.kind,
-      value: c.value,
-      label: c.label ?? null,
-      rank,
-    })),
-  )
+  const rows = channels.map((c, rank) => ({
+    id: uuidv7(),
+    personId,
+    kind: c.kind,
+    value: c.value,
+    label: c.label ?? null,
+    rank,
+  }))
+  await replaceRows(q, personChannels, eq(personChannels.personId, personId), rows)
 }
 
 export async function createPerson(

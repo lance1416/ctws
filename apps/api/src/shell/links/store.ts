@@ -1,6 +1,7 @@
 import { type LinkKind, type ObjectType, type WorkspaceId } from '@ctws/contracts'
 import { eq } from 'drizzle-orm'
 import type { Queryable, Tx } from '../../platform/db/client'
+import { replaceRows } from '../../platform/db/replace'
 import { scoped, within } from '../../platform/db/scope'
 import { links } from './tables'
 
@@ -27,29 +28,22 @@ export async function putLinks(
     toIds: readonly string[]
   },
 ): Promise<void> {
-  await q
-    .delete(links)
-    .where(
-      within(
-        scoped(links, workspaceId),
-        eq(links.fromType, from.type),
-        eq(links.fromId, from.id),
-        eq(links.toType, toType),
-        eq(links.kind, kind),
-      ),
-    )
-  const unique = [...new Set(toIds)]
-  if (unique.length === 0) return
-  await q.insert(links).values(
-    unique.map((toId) => ({
-      workspaceId,
-      fromType: from.type,
-      fromId: from.id,
-      toType,
-      toId,
-      kind,
-    })),
+  const owned = within(
+    scoped(links, workspaceId),
+    eq(links.fromType, from.type),
+    eq(links.fromId, from.id),
+    eq(links.toType, toType),
+    eq(links.kind, kind),
   )
+  const rows = [...new Set(toIds)].map((toId) => ({
+    workspaceId,
+    fromType: from.type,
+    fromId: from.id,
+    toType,
+    toId,
+    kind,
+  }))
+  await replaceRows(q, links, owned, rows)
 }
 
 /** One edge: both ends and the kind are its identity. */
