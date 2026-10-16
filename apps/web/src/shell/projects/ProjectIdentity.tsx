@@ -30,7 +30,7 @@ export function ProjectIdentity({
 
   const save = useMutation({
     mutationFn: (body: { name?: string; color?: ProjectColor }) => updateProject(projectId, body),
-    meta: { awaits: [['projects']] },
+    meta: { awaits: [['projects']], ownsError: true },
   })
 
   const commit = () => {

@@ -40,7 +40,7 @@ export function useTaskActions(onError: (message: string) => void) {
       qc.setQueryData(TODAY, ctx?.today)
       onError(problemText(e) ?? "Couldn't save the change")
     },
-    meta: { awaits: [['tasks']] },
+    meta: { awaits: [['tasks']], ownsError: true },
   })
 
   return {

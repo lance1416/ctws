@@ -67,7 +67,7 @@ export function Dependencies({ taskId, projectId }: { taskId: TaskId; projectId:
   const awaits = [dependenciesQuery(taskId).queryKey]
   const add = useMutation({
     mutationFn: (blockerId: TaskId) => addDependency(taskId, blockerId),
-    meta: { awaits },
+    meta: { awaits, ownsError: true },
     onSuccess: () => {
       setQuery('')
       setAdding(false)
@@ -83,7 +83,7 @@ export function Dependencies({ taskId, projectId }: { taskId: TaskId; projectId:
   })
   const drop = useMutation({
     mutationFn: (blockerId: TaskId) => removeDependency(taskId, blockerId),
-    meta: { awaits },
+    meta: { awaits, ownsError: true },
     onSuccess: () => setError(null),
     onError: () => setError("Couldn't remove that dependency"),
   })

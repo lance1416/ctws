@@ -18,7 +18,7 @@ export function NewPersonInput({ onCreated }: { onCreated: (person: PersonRespon
       setName('')
       return made
     },
-    meta: { awaits: [['people']] },
+    meta: { awaits: [['people']], ownsError: true },
     onSuccess: (person) => onCreated(person),
   })
 

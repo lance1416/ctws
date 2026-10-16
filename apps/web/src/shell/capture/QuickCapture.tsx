@@ -47,7 +47,7 @@ export function QuickCapture() {
       return target!
     },
     // `submit` refreshes the lists that now hold the line itself.
-    meta: { refresh: false },
+    meta: { refresh: false, ownsError: true },
     onSuccess: (target) => {
       setTitle('')
       setLanded(target)

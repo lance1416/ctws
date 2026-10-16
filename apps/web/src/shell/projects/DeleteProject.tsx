@@ -29,7 +29,7 @@ export function DeleteProject({ id }: { id: ProjectId }) {
   const forget = useForgetRecent()
   const remove = useMutation({
     mutationFn: () => deleteProject(id),
-    meta: { awaits: [['projects']] },
+    meta: { awaits: [['projects']], ownsError: true },
     onSuccess: () => {
       forget('project', id)
       navigate('/projects')

@@ -132,3 +132,13 @@ test('a sign-out the server refuses says so', async ({ page }) => {
   await logOut(page)
   await expect(said(page)).toBeVisible()
 })
+
+test("a project the rail's + makes, refused, says so", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await registerFreshUser(page)
+  await refuse(page, '**/api/v1/projects', 'POST')
+  await page.getByRole('button', { name: 'New project' }).click()
+  await page.getByRole('textbox', { name: 'New project' }).fill('Refused')
+  await page.keyboard.press('Enter')
+  await expect(said(page)).toBeVisible()
+})

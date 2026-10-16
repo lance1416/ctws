@@ -40,7 +40,7 @@ export function AddLink({
       if (!isLinkEdge(edge)) throw new Error(`no ${kind} link between these two`)
       return createLink(edge)
     },
-    meta: { awaits: [['links']] },
+    meta: { awaits: [['links']], ownsError: true },
     onSuccess: onClose,
   })
 

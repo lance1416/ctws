@@ -24,6 +24,7 @@ export function PersonRead({ person, onEdit }: { person: PersonResponse; onEdit:
   // The note alone, waiting on no refetch: the writing layer keeps its own text.
   const saveNote = useMutation({
     mutationFn: (note: string | null) => patchPerson(person.id, { note }),
+    meta: { ownsError: true },
   })
   const notes = useNoteAutosave((next) => saveNote.mutateAsync(next.trim() === '' ? null : next))
   const unsaved = notes.failed ? "Couldn't save the note" : null

@@ -33,7 +33,7 @@ export function Links({
   const groups = (links.data ?? []).filter((g) => !except?.includes(g.type))
   const unlink = useMutation({
     mutationFn: (id: LinkId) => deleteLink(id),
-    meta: { awaits: [['links']] },
+    meta: { awaits: [['links']], ownsError: true },
   })
   const add = (
     <>

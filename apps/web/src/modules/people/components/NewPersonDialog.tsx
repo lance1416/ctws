@@ -37,7 +37,7 @@ export function NewPersonDialog({
 
   const make = useMutation({
     mutationFn: createPerson,
-    meta: { awaits: [['people']] },
+    meta: { awaits: [['people']], ownsError: true },
     onSuccess: (made) => onMade(made),
   })
 

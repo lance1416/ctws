@@ -25,7 +25,7 @@ export function PersonDetail({ person, onClose }: { person: PersonResponse; onCl
   // Waits for the list, so the reading that replaces the form already shows the edit.
   const save = useMutation({
     mutationFn: (patch: Parameters<typeof patchPerson>[1]) => patchPerson(person.id, patch),
-    meta: { awaits: [['people']] },
+    meta: { awaits: [['people']], ownsError: true },
   })
   // Escape, the scrim and the close button ask first when the form has unsaved changes.
   const [unsaved, setUnsaved] = useState(false)

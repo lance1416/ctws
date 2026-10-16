@@ -2,7 +2,7 @@ import { api } from '@ctws/contracts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { Link, Navigate, Outlet } from 'react-router-dom'
-import { call, problemText } from '../../platform/http/api'
+import { call } from '../../platform/http/api'
 import { useMe } from '../auth/useMe'
 import { Breadcrumbs, BreadcrumbsProvider } from './Breadcrumbs'
 import { DetailPaneContext, useWidePane } from '../../platform/ui/paneLayout'
@@ -14,6 +14,7 @@ import { SetGround, type Ground } from './ground'
 import { Shortcuts } from '../shortcuts/Shortcuts'
 import { SideRail } from './SideRail'
 import { UserMenu } from './UserMenu'
+import { WriteFailure } from './WriteFailure'
 
 /**
  * The signed-in frame: top bar, rail, page, and the detail pane's column. The one place that
@@ -74,14 +75,8 @@ export function Layout() {
                     if (!leaveGuard.current?.(() => logout.mutate())) logout.mutate()
                   }}
                 />
-                {logout.isError && (
-                  <p
-                    role="alert"
-                    className={`absolute top-full right-0 ${LAYER.cover} mt-1 w-max max-w-[20rem] rounded-[10px] bg-float px-3 py-1.5 text-sm text-danger shadow-float`}
-                  >
-                    {problemText(logout.error)}
-                  </p>
-                )}
+                {/* Any write that fails unsaid, signing out among them, is said here. */}
+                <WriteFailure />
               </span>
             </div>
           </div>

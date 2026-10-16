@@ -89,7 +89,7 @@ function ReadingFields({
   // Waits for the list, so the reading that replaces the form already shows the edit.
   const save = useMutation({
     mutationFn: (patch: Parameters<typeof patchReadingItem>[1]) => patchReadingItem(item.id, patch),
-    meta: { awaits: [['reading']] },
+    meta: { awaits: [['reading']], ownsError: true },
   })
 
   const head = <BackHead to="/reading" label="Reading" onClose={onClose} />

@@ -6,6 +6,7 @@ import {
   type QueryClient,
   type QueryKey,
 } from '@tanstack/react-query'
+import { clearWriteFailure, reportWriteFailure } from './writeFailure'
 
 declare module '@tanstack/react-query' {
   interface Register {
@@ -14,6 +15,8 @@ declare module '@tanstack/react-query' {
       awaits?: readonly QueryKey[]
       /** False for a write after which nothing should refetch (signing out). */
       refresh?: false
+      /** True for a write that says its own failure where it happened; else the frame says it. */
+      ownsError?: true
     }
   }
 }
@@ -37,13 +40,18 @@ export async function refreshQueries(
 /**
  * Runs `refreshQueries` after every mutation. A success refreshes before the write's own
  * onSuccess, so that sees fresh data; a failure refreshes after the write's onError has rolled
- * back, since a write of two requests can fail after the first landed.
+ * back, since a write of two requests can fail after the first landed. A failure no write claims
+ * (`ownsError`) is reported for the frame to say; the next write clears it.
  */
 export function refreshAfterWrites(client: () => QueryClient): MutationCache {
   const refresh = async (meta: Mutation['meta']) => {
     if (meta?.refresh !== false) await refreshQueries(client(), meta?.awaits)
   }
   return new MutationCache({
+    onMutate: () => clearWriteFailure(),
+    onError: (error, _variables, _context, mutation) => {
+      if (!mutation.meta?.ownsError) reportWriteFailure(error)
+    },
     onSuccess: (_data, _variables, _context, mutation) => refresh(mutation.meta),
     onSettled: (_data, error, _variables, _context, mutation) =>
       error ? refresh(mutation.meta) : undefined,

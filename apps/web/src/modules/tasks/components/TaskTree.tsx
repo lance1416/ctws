@@ -117,7 +117,7 @@ export function TaskTree({ projectId }: { projectId: ProjectId }) {
       if (context?.unfolded) folds.fold(context.unfolded)
       setError(problemText(e) ?? "Couldn't move it")
     },
-    meta: { awaits: [key] },
+    meta: { awaits: [key], ownsError: true },
   })
 
   /** Drops `draggedId` at `slot` at `wantedDepth`, if the plan allows it. */

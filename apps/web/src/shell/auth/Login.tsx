@@ -23,7 +23,7 @@ export function Login() {
         ? call(api.auth.register, { body: { email, password, timezone: browserZone() } })
         : call(api.auth.login, { body: { email, password } }),
     // The session is new and the cache empty; `me` is set below.
-    meta: { refresh: false },
+    meta: { refresh: false, ownsError: true },
     onSuccess: (user) => {
       setError('')
       // Seed the cache before navigating: Layout reads it and would bounce back to /login

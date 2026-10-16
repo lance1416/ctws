@@ -5,7 +5,9 @@ import {
   type MutationMeta,
 } from '@tanstack/react-query'
 import { describe, expect, it, vi } from 'vitest'
+import { ApiError } from './api'
 import { refreshAfterWrites } from './refresh'
+import { clearWriteFailure, writeFailure } from './writeFailure'
 
 function client() {
   const qc: QueryClient = new QueryClient({
@@ -146,5 +148,37 @@ describe('refreshing after a write', () => {
     await new Promise((r) => setTimeout(r, 20))
     expect(fn).toHaveBeenCalledTimes(1)
     stop()
+  })
+})
+
+describe('a failed write nobody says', () => {
+  const failing = (qc: QueryClient, meta: MutationMeta = {}) =>
+    new MutationObserver(qc, {
+      mutationFn: async () => {
+        throw new ApiError(422, 'Unprocessable', 'That name is taken')
+      },
+      meta,
+    })
+      .mutate()
+      .catch(() => {})
+
+  it("is reported in the server's words", async () => {
+    clearWriteFailure()
+    await failing(client())
+    expect(writeFailure()?.text).toBe('That name is taken')
+  })
+
+  it('is not reported when the write says it itself', async () => {
+    clearWriteFailure()
+    await failing(client(), { ownsError: true })
+    expect(writeFailure()).toBeNull()
+  })
+
+  it('is cleared when the next write starts', async () => {
+    const qc = client()
+    await failing(qc)
+    expect(writeFailure()).not.toBeNull()
+    await write(qc)
+    expect(writeFailure()).toBeNull()
   })
 })

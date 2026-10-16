@@ -50,7 +50,7 @@ export function ReadingRow({
   const now = useNow()
   const save = useMutation({
     mutationFn: (patch: Parameters<typeof patchReadingItem>[1]) => patchReadingItem(item.id, patch),
-    meta: { awaits: [['reading']] },
+    meta: { awaits: [['reading']], ownsError: true },
   })
 
   const label = readingLabel(item)

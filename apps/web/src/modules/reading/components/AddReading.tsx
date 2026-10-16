@@ -26,7 +26,7 @@ export function AddReading() {
       setLine('')
       return made
     },
-    meta: { awaits: [['reading']] },
+    meta: { awaits: [['reading']], ownsError: true },
   })
 
   return (

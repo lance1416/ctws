@@ -19,7 +19,7 @@ export function useDestroy({
   const forget = useForgetRecent()
   return useMutation({
     mutationFn: remove,
-    meta: { awaits },
+    meta: { awaits, ownsError: true },
     onSuccess: () => {
       forget(type, id)
       onDone()

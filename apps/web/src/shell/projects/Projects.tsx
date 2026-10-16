@@ -27,7 +27,7 @@ export function Projects() {
       setName('')
       return made
     },
-    meta: { awaits: [['projects']] },
+    meta: { awaits: [['projects']], ownsError: true },
   })
 
   const submit = () => {

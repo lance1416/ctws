@@ -116,7 +116,7 @@ export function ProjectTasks({ projectId, view }: { projectId: ProjectId; view: 
       setTitle('')
       return made
     },
-    meta: { awaits: [projectTasksQuery(projectId).queryKey] },
+    meta: { awaits: [projectTasksQuery(projectId).queryKey], ownsError: true },
   })
 
   const submit = () => {
