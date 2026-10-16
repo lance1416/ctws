@@ -1,0 +1,59 @@
+import type { ProjectListItem, TaskResponse } from '@ctws/contracts'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { MemoryRouter } from 'react-router-dom'
+import { describe, expect, it } from 'vitest'
+import { registry } from '../../../app/registry'
+import { RegistryProvider } from '../../../shell/registry'
+import { archivedProjectsQuery, projectsQuery } from '../../../shell/projects/api'
+import { TaskReading } from './TaskReading'
+
+const project = (id: string, name: string, archivedAt: string | null): ProjectListItem => ({
+  id,
+  workspaceId: '00000000-0000-7000-8000-0000000000ff',
+  name,
+  color: 'project-1',
+  rank: 'a0',
+  isInbox: false,
+  archivedAt,
+  createdAt: '2026-10-01T00:00:00Z',
+  openTasks: 0,
+})
+
+const task: TaskResponse = {
+  id: '00000000-0000-7000-8000-000000000001',
+  projectId: '00000000-0000-7000-8000-0000000000a2',
+  parentId: null,
+  title: 'shipped',
+  notes: null,
+  status: 'done',
+  scheduledOn: null,
+  dueAt: null,
+  rank: 'a0',
+  manualProgress: null,
+  completedAt: '2026-10-10T09:00:00Z',
+  createdAt: '2026-10-01T00:00:00Z',
+  updatedAt: '2026-10-10T09:00:00Z',
+}
+
+describe('TaskReading', () => {
+  it('names the project of a task whose project is archived', () => {
+    const client = new QueryClient()
+    client.setQueryData(projectsQuery().queryKey, [
+      project('00000000-0000-7000-8000-0000000000a1', '在做的', null),
+    ])
+    client.setQueryData(archivedProjectsQuery().queryKey, [
+      project(task.projectId, '收起来的', '2026-10-11T00:00:00Z'),
+    ])
+    const html = renderToStaticMarkup(
+      <QueryClientProvider client={client}>
+        <RegistryProvider value={registry}>
+          <MemoryRouter>
+            <TaskReading task={task} onEdit={() => {}} onClose={() => {}} />
+          </MemoryRouter>
+        </RegistryProvider>
+      </QueryClientProvider>,
+    )
+    expect(html).toContain('收起来的')
+  })
+})

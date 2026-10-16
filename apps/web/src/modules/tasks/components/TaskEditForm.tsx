@@ -17,7 +17,7 @@ import { field, label } from '../../../platform/ui/formStyles'
 import { PickOne } from '../../../platform/ui/inline'
 import type { UnsavedGuard } from '../../../platform/ui/unsavedGuard'
 import { useTimeZone } from '../../../shell/auth/useMe'
-import { useProjects } from '../../../shell/projects/api'
+import { useEveryProject } from '../../../shell/projects/api'
 import { ProjectChip } from '../../../shell/projects/ProjectPicker'
 import { instantPhrase, moveDueToDay } from '../dueDates'
 import { DateDecisions, StatusRadios } from './TaskFields'
@@ -47,7 +47,7 @@ export function TaskEditForm({
   const { control, register, setValue, watch } = form
   const timeZone = useTimeZone()
   const today = todayIn(timeZone, useNow())
-  const projects = useProjects()
+  const projects = useEveryProject()
 
   const title = watch('title')
   const scheduledOn = watch('scheduledOn')
@@ -82,6 +82,7 @@ export function TaskEditForm({
             label="Projects"
             value={projectId}
             choices={(projects.data ?? [])
+              // A task may move only into a live project, or stay in its own archived one.
               .filter((p) => !p.archivedAt || p.id === task.projectId)
               .map((p) => ({ value: p.id, label: p.name }))}
             onPick={(id) => setValue('projectId', id, dirty)}

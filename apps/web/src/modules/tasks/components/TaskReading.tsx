@@ -8,7 +8,7 @@ import { DetailHead } from '../../../platform/ui/DetailPane'
 import { label } from '../../../platform/ui/formStyles'
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { LinkedSection } from '../../../shell/links/Links'
-import { useProjects } from '../../../shell/projects/api'
+import { useEveryProject } from '../../../shell/projects/api'
 import { ProjectChip } from '../../../shell/projects/ProjectPicker'
 import { patchTask } from '../api/tasks'
 import { instantPhrase, overdueLabel } from '../dueDates'
@@ -30,7 +30,8 @@ export function TaskReading({
   const timeZone = useTimeZone()
   const now = useNow()
   const today = todayIn(timeZone, now)
-  const projectName = useProjects().data?.find((p) => p.id === task.projectId)?.name ?? ''
+  // Live and archived: the task's project may be archived.
+  const projectName = useEveryProject().data?.find((p) => p.id === task.projectId)?.name ?? ''
 
   /** The status writes at once, outside the leave guard: nothing is ever unsaved. */
   const setStatus = useMutation({

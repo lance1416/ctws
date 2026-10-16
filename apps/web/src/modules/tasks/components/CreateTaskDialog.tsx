@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useRef } from 'react'
 import { useForm } from 'react-hook-form'
-import { useProjects } from '../../../shell/projects/api'
+import { useEveryProject } from '../../../shell/projects/api'
 import { projectTasksQuery } from '../api/queries'
 import { createTask } from '../api/tasks'
 import { dayEndIso, dayPhrase, todayIn, ymd } from '../../../platform/time/dates'
@@ -69,7 +69,7 @@ export function CreateTaskDialog({
   const scheduledOn = watch('scheduledOn')
   const dueAt = watch('dueAt')
 
-  const projects = useProjects()
+  const projects = useEveryProject()
   const tasks = useQuery(projectTasksQuery(project))
 
   /** Which named day the held instant is, so the buttons can say which one is pressed. */
@@ -136,7 +136,8 @@ export function CreateTaskDialog({
             label="Projects"
             value={project}
             choices={(projects.data ?? [])
-              .filter((p) => !p.archivedAt || p.id === project)
+              // Live projects, and the archived one the dialog was opened on.
+              .filter((p) => !p.archivedAt || p.id === projectId)
               .map((p) => ({
                 value: p.id,
                 label: p.name,

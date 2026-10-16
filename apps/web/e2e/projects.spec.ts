@@ -158,3 +158,36 @@ test('the New project box is empty for the next name once the server has the las
   await box.pressSequentially('Second', { delay: 20 })
   await expect(box).toHaveValue('Second')
 })
+
+test('a task in an archived project names that project, reading and editing', async ({ page }) => {
+  await registerFreshUser(page)
+  const old = await makeProject(page, 'Old thing')
+  await makeTask(page, old, 'Something left in it')
+  const res = await page.request.patch(`/api/v1/projects/${old}`, {
+    headers: WEB,
+    data: { archived: true },
+  })
+  expect(res.ok(), await res.text()).toBe(true)
+  await page.goto(`/projects/${old}`)
+  await page.getByRole('listitem').filter({ hasText: 'Something left in it' }).first().click()
+  const pane = page.getByRole('dialog', { name: 'Task details' })
+  await expect(pane.getByText('Old thing', { exact: true })).toBeVisible()
+
+  await pane.getByRole('button', { name: 'Edit', exact: true }).click()
+  // It may stay where it is, so the picker names where that is.
+  await expect(pane.getByRole('button', { name: 'Projects: Old thing' })).toBeVisible()
+})
+
+test('the New dialog on an archived project names that project', async ({ page }) => {
+  await registerFreshUser(page)
+  const old = await makeProject(page, 'Old thing')
+  const res = await page.request.patch(`/api/v1/projects/${old}`, {
+    headers: WEB,
+    data: { archived: true },
+  })
+  expect(res.ok(), await res.text()).toBe(true)
+  await page.goto(`/projects/${old}`)
+  await page.getByRole('button', { name: 'New…', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: 'New task' })
+  await expect(dialog.getByRole('button', { name: 'Projects: Old thing' })).toBeVisible()
+})
