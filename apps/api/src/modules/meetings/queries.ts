@@ -7,7 +7,7 @@ import {
   type WorkspaceId,
 } from '@ctws/contracts'
 import { clockTime, zoneAbbreviation } from '@ctws/core'
-import { asc, eq, inArray } from 'drizzle-orm'
+import { and, asc, eq, gt, inArray, isNull, lt, or } from 'drizzle-orm'
 import type { Queryable, Tx } from '../../platform/db/client'
 import { scoped, within } from '../../platform/db/scope'
 import { groupBy } from '../../platform/values'
@@ -94,7 +94,7 @@ const asSeries = (s: SeriesRow) => ({
   rrule: s.rrule,
 })
 
-function expand(series: SeriesRow, window: { from: Date; to: Date }): OccurrenceRow[] {
+function expand(series: SeriesRow, window: Window): OccurrenceRow[] {
   const overridden = new Set(
     series.exceptions.filter((e) => !e.cancelled).map((e) => e.recurrenceId),
   )
@@ -112,21 +112,36 @@ function expand(series: SeriesRow, window: { from: Date; to: Date }): Occurrence
   }))
 }
 
-const selectSeries = (q: Queryable, workspaceId: WorkspaceId, id?: MeetingId) =>
+type Window = { from: Date; to: Date }
+
+/** Series whose span (see `seriesBounds`) meets the window: the only ones with an occurrence in it. */
+const meets = (window: Window) =>
+  and(
+    lt(meetings.firstStartsAt, window.to),
+    or(isNull(meetings.lastEndsAt), gt(meetings.lastEndsAt, window.from)),
+  )
+
+const selectSeries = (q: Queryable, workspaceId: WorkspaceId, which: MeetingId | Window) =>
   q
     .select({ meeting: meetings, ...meetingFiling.project })
     .from(meetings)
-    .where(within(scoped(meetings, workspaceId), id ? eq(meetings.id, id) : undefined))
+    .where(
+      within(
+        scoped(meetings, workspaceId),
+        typeof which === 'string' ? eq(meetings.id, which) : meets(which),
+      ),
+    )
     .orderBy(asc(meetings.startsLocal), asc(meetings.id))
 
-/** A page of series, each to be expanded over a window whole. */
+/** A page of the series that meet a window, each to be expanded over it whole. */
 async function seriesPage(
   q: Queryable,
   workspaceId: WorkspaceId,
+  window: Window,
   asked: PageAsked,
 ): Promise<Page<SeriesRow>> {
   const span = spanOf(asked)
-  const rows = await selectSeries(q, workspaceId).limit(span.limit).offset(span.offset)
+  const rows = await selectSeries(q, workspaceId, window).limit(span.limit).offset(span.offset)
   const { rows: page, ...info } = pageOf(rows, asked)
   return { rows: await hydrate(q, workspaceId, page), ...info }
 }
@@ -164,10 +179,10 @@ export async function lockMeeting(
 export async function listOccurrences(
   q: Queryable,
   workspaceId: WorkspaceId,
-  window: { from: Date; to: Date },
+  window: Window,
   asked: PageAsked,
 ): Promise<Page<OccurrenceRow>> {
-  const { rows, page } = await seriesPage(q, workspaceId, asked)
+  const { rows, page } = await seriesPage(q, workspaceId, window, asked)
   const occurrences = rows
     .flatMap((s) => expand(s, window))
     .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
@@ -175,7 +190,7 @@ export async function listOccurrences(
 }
 
 /** A window around a local time, wide enough for any zone. */
-function around(recurrenceId: LocalTime): { from: Date; to: Date } {
+function around(recurrenceId: LocalTime): Window {
   const at = Date.parse(`${recurrenceId}:00Z`)
   return { from: new Date(at - 2 * DAY_MS), to: new Date(at + 2 * DAY_MS) }
 }

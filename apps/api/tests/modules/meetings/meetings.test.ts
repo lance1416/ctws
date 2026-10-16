@@ -301,6 +301,37 @@ describe('editing one occurrence', () => {
   })
 })
 
+/**
+ * A read looks only at the series whose span meets its window, so every write has to leave the
+ * span around wherever its occurrences now are.
+ */
+describe('a window finds an occurrence wherever a write put it', () => {
+  it('past the end of a series that has one', async () => {
+    const ctx = await setup()
+    const series = await arrange(ctx, {
+      ...WEEKLY,
+      rrule: 'FREQ=WEEKLY;BYDAY=TU;UNTIL=20261027T235959Z',
+    })
+    await editOne(ctx, series.meetingId, '2026-10-27T09:00', { startsLocal: '2026-11-20T09:00' })
+    expect(days(await listed(ctx, '?from=2026-11-20&to=2026-11-20'))).toEqual(['2026-11-20'])
+  })
+
+  it('before the start of its series', async () => {
+    const ctx = await setup()
+    const series = await arrange(ctx)
+    await editOne(ctx, series.meetingId, '2026-10-20T09:00', { startsLocal: '2026-10-13T09:00' })
+    expect(days(await listed(ctx, '?from=2026-10-13&to=2026-10-13'))).toEqual(['2026-10-13'])
+  })
+
+  it('in another year, for a meeting that happens once', async () => {
+    const ctx = await setup()
+    const once = await arrange(ctx, { ...WEEKLY, rrule: null })
+    await editOne(ctx, once.meetingId, '2026-10-20T09:00', { startsLocal: '2027-03-02T09:00' })
+    expect(days(await listed(ctx, '?from=2027-03-02&to=2027-03-02'))).toEqual(['2027-03-02'])
+    expect(await listed(ctx, '?from=2026-10-20&to=2026-10-20')).toEqual([])
+  })
+})
+
 describe('editing from one occurrence on', () => {
   it('splits the series, leaving the past exactly as it happened', async () => {
     const ctx = await setup()
