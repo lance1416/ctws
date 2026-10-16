@@ -2,7 +2,7 @@ import { type LinkKind, type ObjectType, type WorkspaceId } from '@ctws/contract
 import { eq } from 'drizzle-orm'
 import type { Queryable, Tx } from '../../platform/db/client'
 import { replaceRows } from '../../platform/db/replace'
-import { scoped, within } from '../../platform/db/scope'
+import { type Actor, scoped, within } from '../../platform/db/scope'
 import { links } from './tables'
 
 /** One end of an edge. */
@@ -16,12 +16,12 @@ export async function putLinks(
   q: Tx,
   {
     workspaceId,
+    now,
     from,
     toType,
     kind,
     toIds,
-  }: {
-    workspaceId: WorkspaceId
+  }: Actor & {
     from: Endpoint
     toType: ObjectType
     kind: LinkKind
@@ -42,6 +42,7 @@ export async function putLinks(
     toType,
     toId,
     kind,
+    createdAt: now,
   }))
   await replaceRows(q, links, owned, rows)
 }
@@ -50,7 +51,10 @@ export async function putLinks(
 type Edge = { workspaceId: WorkspaceId; from: Endpoint; to: Endpoint; kind: LinkKind }
 
 /** Adds one edge; one that is already there is the state asked for. */
-export async function addLink(q: Queryable, { workspaceId, from, to, kind }: Edge): Promise<void> {
+export async function addLink(
+  q: Queryable,
+  { workspaceId, now, from, to, kind }: Edge & { now: Date },
+): Promise<void> {
   await q
     .insert(links)
     .values({
@@ -60,6 +64,7 @@ export async function addLink(q: Queryable, { workspaceId, from, to, kind }: Edg
       toType: to.type,
       toId: to.id,
       kind,
+      createdAt: now,
     })
     .onConflictDoNothing()
 }

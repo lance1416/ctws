@@ -2,9 +2,11 @@ import { MAX_TASK_DEPTH, type MoveTaskBody, type ProjectId, type TaskId } from '
 import { rankBetween } from '@ctws/core'
 import { and, asc, desc, eq, gt, isNull, lt, ne, sql } from 'drizzle-orm'
 import type { Db, Queryable } from '../../../platform/db/client'
+import { instant } from '../../../platform/db/time'
 import { getProject } from '../../../shell/projects/queries'
 import { DepthLimitError, InvalidNeighbourError, MoveCycleError } from '../errors'
-import { taskLog, type TaskCtx } from '../log'
+import type { Actor } from '../../../platform/db/scope'
+import { taskLog } from '../log'
 import { lockTask } from '../queries/scope'
 import { tasks, type Task } from '../tables'
 import { depthOf, lockTaskTree } from '../tree'
@@ -37,12 +39,7 @@ async function descendantsOf(q: Queryable, rootId: TaskId): Promise<Descendant[]
  * Moves a task to a new parent, possibly in another project, at the slot next to the neighbour
  * the client names. Under a parent the parent's project wins, as on create.
  */
-export async function moveTask(
-  db: Db,
-  ctx: TaskCtx,
-  id: TaskId,
-  input: MoveTaskBody,
-): Promise<Task> {
+export async function moveTask(db: Db, ctx: Actor, id: TaskId, input: MoveTaskBody): Promise<Task> {
   if (input.beforeId !== undefined && input.afterId !== undefined) {
     throw new InvalidNeighbourError('Give at most one of beforeId and afterId')
   }
@@ -70,7 +67,7 @@ export async function moveTask(
 
     const [updated] = await tx
       .update(tasks)
-      .set({ parentId: destParentId, projectId: destProjectId, rank, updatedAt: sql`now()` })
+      .set({ parentId: destParentId, projectId: destProjectId, rank, updatedAt: ctx.now })
       .where(eq(tasks.id, id))
       .returning()
 
@@ -85,7 +82,7 @@ export async function moveTask(
           union
           select t.id from tasks t join subtree s on t.parent_id = s.id
         )
-        update tasks set project_id = ${destProjectId}, updated_at = now()
+        update tasks set project_id = ${destProjectId}, updated_at = ${instant(ctx.now)}
         where id in (select id from subtree) and project_id <> ${destProjectId}
       `)
     }

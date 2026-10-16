@@ -1,7 +1,8 @@
 import { sql, type SQL } from 'drizzle-orm'
 import type { Queryable } from './client'
 
-const instant = (now: Date): SQL => sql`${now.toISOString()}::timestamptz`
+/** An instant as a `timestamptz` literal for raw SQL. */
+export const instant = (now: Date): SQL => sql`${now.toISOString()}::timestamptz`
 
 /** Wall-clock time in `zone` at `now`, as a naive timestamp. */
 export const localNow = (now: Date, zone: string): SQL =>

@@ -1,5 +1,6 @@
 import { type Role, type UserId, type WorkspaceId } from '@ctws/contracts'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
+import type { Actor } from '../../platform/db/scope'
 import { AdminRequiredError } from '../admin/errors'
 import { SESSION_COOKIE, setSessionCookie } from './cookie'
 import { SessionRequiredError } from './errors'
@@ -43,4 +44,9 @@ export function adminOnly(scope: FastifyInstance): void {
 export function currentUser(req: FastifyRequest): CurrentUser {
   if (!req.user) throw new SessionRequiredError()
   return req.user
+}
+
+/** The signed-in workspace and the app clock's now, for a write. */
+export function actorOf(req: FastifyRequest): Actor {
+  return { workspaceId: currentUser(req).workspaceId, now: req.server.clock() }
 }

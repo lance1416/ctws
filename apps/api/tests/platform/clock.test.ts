@@ -1,5 +1,6 @@
+import { sql } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { appWithUser, createProject, type Harness } from '../helpers/harness'
+import { appWithUser, createProject, createTask, type Harness } from '../helpers/harness'
 
 // Noon in New York on the day DST starts: the local day runs 05:00Z to 04:00Z next day.
 const NOW = new Date('2026-03-08T16:00:00Z')
@@ -62,5 +63,32 @@ describe('the injected clock', () => {
 
   it("decides the birthdays page's today", async () => {
     expect((await get('/api/v1/people/birthdays')).today).toBe('2026-03-08')
+  })
+})
+
+describe('what a write stores', () => {
+  const send = (method: 'PATCH' | 'POST' | 'DELETE', url: string, payload?: object) =>
+    ctx.app.inject({ method, url, headers: ctx.authed, ...(payload ? { payload } : {}) })
+
+  it('takes every instant from the clock, not the database', async () => {
+    const projectId = await createProject(ctx, 'Stamped')
+    const taskId = await createTask(ctx, projectId, 'stamp me')
+    expect((await send('PATCH', `/api/v1/tasks/${taskId}`, { status: 'done' })).statusCode).toBe(
+      200,
+    )
+    expect((await send('DELETE', `/api/v1/tasks/${taskId}`)).statusCode).toBe(204)
+    expect(
+      (await send('PATCH', `/api/v1/projects/${projectId}`, { archived: true })).json(),
+    ).toMatchObject({ archivedAt: NOW.toISOString(), createdAt: NOW.toISOString() })
+
+    const task = await ctx.db.execute(sql`
+      select created_at, updated_at, completed_at, deleted_at from tasks where id = ${taskId}
+    `)
+    for (const value of Object.values(task.rows[0]!)) expect(new Date(String(value))).toEqual(NOW)
+    const events = await ctx.db.execute(sql`
+      select occurred_at from task_events where task_id = ${taskId} order by occurred_at, id
+    `)
+    expect(events.rows).toHaveLength(3)
+    for (const row of events.rows) expect(new Date(String(row.occurred_at))).toEqual(NOW)
   })
 })

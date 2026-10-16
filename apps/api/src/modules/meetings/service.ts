@@ -11,7 +11,7 @@ import {
 import { newId } from '../../platform/db/ids'
 import { eq, sql } from 'drizzle-orm'
 import type { Db, Queryable, Tx } from '../../platform/db/client'
-import { scoped, within } from '../../platform/db/scope'
+import { type Actor, scoped, within } from '../../platform/db/scope'
 import { putLinks } from '../../shell/links/store'
 import { assertProjectsVisible } from '../../shell/projects/queries'
 import { assertPeopleVisible } from '../people'
@@ -33,6 +33,7 @@ type Fields = Omit<UpdateMeetingBody, 'scope' | 'recurrenceId' | 'attendeeIds' |
 type Edit = {
   tx: Tx
   workspaceId: WorkspaceId
+  now: Date
   series: SeriesRow
   fields: Fields
   recurrenceId: LocalTime | undefined
@@ -43,6 +44,7 @@ type Edit = {
 type Cancel = {
   tx: Tx
   workspaceId: WorkspaceId
+  now: Date
   series: SeriesRow
   recurrenceId: LocalTime | undefined
 }
@@ -51,22 +53,24 @@ const putAttendees = (
   q: Tx,
   {
     workspaceId,
+    now,
     id,
     attendeeIds,
-  }: { workspaceId: WorkspaceId; id: MeetingId; attendeeIds: readonly PersonId[] },
+  }: Actor & { id: MeetingId; attendeeIds: readonly PersonId[] },
 ) =>
   putLinks(q, {
     workspaceId,
+    now,
     from: { type: 'meeting', id },
     toType: 'person',
     kind: 'attends',
     toIds: attendeeIds,
   })
 
-const touch = (q: Queryable, workspaceId: WorkspaceId, id: MeetingId) =>
+const touch = (q: Queryable, { workspaceId, now }: Actor, id: MeetingId) =>
   q
     .update(meetings)
-    .set({ updatedAt: sql`now()` })
+    .set({ updatedAt: now })
     .where(within(scoped(meetings, workspaceId), eq(meetings.id, id)))
 
 /** The expander decides whether a rule is usable, so a stored rule always happens. */
@@ -91,7 +95,7 @@ function assertRuleFits(series: SeriesRow, scope: EditScope, patch: UpdateMeetin
  * One occurrence: an override of its start or length only. Title, place, guests and project
  * belong to the series.
  */
-async function editOne({ tx, workspaceId, series, fields, recurrenceId, ...rest }: Edit) {
+async function editOne({ tx, workspaceId, now, series, fields, recurrenceId, ...rest }: Edit) {
   assertOccurs(series, recurrenceId!)
   const moved = {
     startsLocal: fields.startsLocal ?? null,
@@ -111,7 +115,7 @@ async function editOne({ tx, workspaceId, series, fields, recurrenceId, ...rest 
       target: [meetingExceptions.meetingId, meetingExceptions.recurrenceId],
       set: { cancelled: false, ...moved },
     })
-  await touch(tx, workspaceId, series.id)
+  await touch(tx, { workspaceId, now }, series.id)
   return getOccurrence(tx, workspaceId, series.id, recurrenceId!)
 }
 
@@ -120,12 +124,12 @@ async function editOne({ tx, workspaceId, series, fields, recurrenceId, ...rest 
  * past stays as it happened.
  */
 async function editFollowing(e: Edit) {
-  const { tx, workspaceId, series, fields, attendeeIds, projectId } = e
+  const { tx, workspaceId, now, series, fields, attendeeIds, projectId } = e
   const recurrenceId = e.recurrenceId!
   assertOccurs(series, recurrenceId)
   await tx
     .update(meetings)
-    .set({ rrule: endedBefore(series.rrule!, recurrenceId), updatedAt: sql`now()` })
+    .set({ rrule: endedBefore(series.rrule!, recurrenceId), updatedAt: now })
     .where(within(scoped(meetings, workspaceId), eq(meetings.id, series.id)))
 
   const nextId = newId(meetingId)
@@ -141,14 +145,22 @@ async function editFollowing(e: Edit) {
     rrule,
     location: 'location' in fields ? (fields.location ?? null) : series.location,
     note: 'note' in fields ? (fields.note ?? null) : series.note,
+    createdAt: now,
+    updatedAt: now,
   })
   const carried = projectId !== undefined ? projectId : series.projectId
   await putAttendees(tx, {
     workspaceId,
+    now,
     id: nextId,
     attendeeIds: attendeeIds ?? series.attendees.map((p) => p.id),
   })
-  await meetingFiling.put(tx, { workspaceId, id: nextId, projectIds: carried ? [carried] : [] })
+  await meetingFiling.put(tx, {
+    workspaceId,
+    now,
+    id: nextId,
+    projectIds: carried ? [carried] : [],
+  })
   // Overrides from the split on are keyed by the old series' local times. The new series makes
   // the same ones only when it starts where the split is and keeps the rule; otherwise they would
   // name occurrences it never makes, so they go, as in `editAll`.
@@ -167,16 +179,17 @@ async function editFollowing(e: Edit) {
   return getOccurrence(tx, workspaceId, nextId, startsLocal)
 }
 
-async function editAll({ tx, workspaceId, series, fields, attendeeIds, projectId }: Edit) {
+async function editAll({ tx, workspaceId, now, series, fields, attendeeIds, projectId }: Edit) {
   await tx
     .update(meetings)
-    .set({ ...fields, updatedAt: sql`now()` })
+    .set({ ...fields, updatedAt: now })
     .where(within(scoped(meetings, workspaceId), eq(meetings.id, series.id)))
-  if (attendeeIds) await putAttendees(tx, { workspaceId, id: series.id, attendeeIds })
+  if (attendeeIds) await putAttendees(tx, { workspaceId, now, id: series.id, attendeeIds })
   // `null` unfiles the meeting; absent leaves it where it is.
   if (projectId !== undefined) {
     await meetingFiling.put(tx, {
       workspaceId,
+      now,
       id: series.id,
       projectIds: projectId ? [projectId] : [],
     })
@@ -190,7 +203,7 @@ async function editAll({ tx, workspaceId, series, fields, attendeeIds, projectId
 }
 
 /** One occurrence, as an `EXDATE`. */
-async function cancelOne({ tx, workspaceId, series, recurrenceId }: Cancel) {
+async function cancelOne({ tx, workspaceId, now, series, recurrenceId }: Cancel) {
   assertOccurs(series, recurrenceId!)
   const cancelled = { cancelled: true, startsLocal: null, durationMinutes: null }
   await tx
@@ -200,14 +213,14 @@ async function cancelOne({ tx, workspaceId, series, recurrenceId }: Cancel) {
       target: [meetingExceptions.meetingId, meetingExceptions.recurrenceId],
       set: cancelled,
     })
-  await touch(tx, workspaceId, series.id)
+  await touch(tx, { workspaceId, now }, series.id)
 }
 
-async function cancelFollowing({ tx, workspaceId, series, recurrenceId }: Cancel) {
+async function cancelFollowing({ tx, workspaceId, now, series, recurrenceId }: Cancel) {
   assertOccurs(series, recurrenceId!)
   await tx
     .update(meetings)
-    .set({ rrule: endedBefore(series.rrule!, recurrenceId!), updatedAt: sql`now()` })
+    .set({ rrule: endedBefore(series.rrule!, recurrenceId!), updatedAt: now })
     .where(within(scoped(meetings, workspaceId), eq(meetings.id, series.id)))
   await tx.execute(sql`
     delete from meeting_exceptions
@@ -215,10 +228,10 @@ async function cancelFollowing({ tx, workspaceId, series, recurrenceId }: Cancel
   `)
 }
 
-async function cancelAll({ tx, workspaceId, series }: Cancel) {
+async function cancelAll({ tx, workspaceId, now, series }: Cancel) {
   await tx
     .update(meetings)
-    .set({ deletedAt: sql`now()` })
+    .set({ deletedAt: now })
     .where(within(scoped(meetings, workspaceId), eq(meetings.id, series.id)))
 }
 
@@ -239,7 +252,7 @@ const scopeFor = (series: SeriesRow, asked: EditScope): EditScope => (series.rru
 
 export async function createMeeting(
   db: Db,
-  workspaceId: WorkspaceId,
+  { workspaceId, now }: Actor,
   body: CreateMeetingBody,
 ): Promise<OccurrenceRow> {
   return db.transaction(async (tx) => {
@@ -257,11 +270,14 @@ export async function createMeeting(
       rrule: body.rrule ?? null,
       location: body.location ?? null,
       note: body.note ?? null,
+      createdAt: now,
+      updatedAt: now,
     })
-    await putAttendees(tx, { workspaceId, id, attendeeIds: body.attendeeIds ?? [] })
+    await putAttendees(tx, { workspaceId, now, id, attendeeIds: body.attendeeIds ?? [] })
     await meetingFiling.put(tx, {
       workspaceId,
-      id: id,
+      now,
+      id,
       projectIds: body.projectId ? [body.projectId] : [],
     })
     return getOccurrence(tx, workspaceId, id, body.startsLocal)
@@ -270,7 +286,7 @@ export async function createMeeting(
 
 export async function updateMeeting(
   db: Db,
-  workspaceId: WorkspaceId,
+  { workspaceId, now }: Actor,
   id: MeetingId,
   patch: UpdateMeetingBody,
 ): Promise<OccurrenceRow> {
@@ -281,20 +297,29 @@ export async function updateMeeting(
     const scope = scopeFor(series, patch.scope)
     assertRuleFits(series, scope, patch)
     const { scope: _, recurrenceId, attendeeIds, projectId, ...fields } = patch
-    return EDITS[scope]({ tx, workspaceId, series, fields, recurrenceId, attendeeIds, projectId })
+    return EDITS[scope]({
+      tx,
+      workspaceId,
+      now,
+      series,
+      fields,
+      recurrenceId,
+      attendeeIds,
+      projectId,
+    })
   })
 }
 
 /** Cancels a whole series, one occurrence of it, or everything from one on. */
 export async function cancelMeeting(
   db: Db,
-  workspaceId: WorkspaceId,
+  { workspaceId, now }: Actor,
   id: MeetingId,
   opts: { scope: EditScope; recurrenceId?: LocalTime | undefined },
 ): Promise<void> {
   await db.transaction(async (tx) => {
     const series = await lockMeeting(tx, workspaceId, id)
     const scope = scopeFor(series, opts.scope)
-    await CANCELS[scope]({ tx, workspaceId, series, recurrenceId: opts.recurrenceId })
+    await CANCELS[scope]({ tx, workspaceId, now, series, recurrenceId: opts.recurrenceId })
   })
 }

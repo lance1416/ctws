@@ -2,7 +2,7 @@ import { type ObjectType, type ProjectId, type WorkspaceId } from '@ctws/contrac
 import { asc, eq, getTableName, inArray, sql, type SQL } from 'drizzle-orm'
 import type { AnyPgColumn, PgTable } from 'drizzle-orm/pg-core'
 import type { Queryable, Tx } from '../../platform/db/client'
-import { scoped, within } from '../../platform/db/scope'
+import { type Actor, scoped, within } from '../../platform/db/scope'
 import { ident } from '../../platform/db/sql'
 import { groupBy } from '../../platform/values'
 import { projects } from '../projects/tables'
@@ -53,12 +53,14 @@ export function filing(
       q: Tx,
       {
         workspaceId,
+        now,
         id,
         projectIds,
-      }: { workspaceId: WorkspaceId; id: string; projectIds: readonly ProjectId[] },
+      }: Actor & { id: string; projectIds: readonly ProjectId[] },
     ) =>
       putLinks(q, {
         workspaceId,
+        now,
         from: { type, id },
         toType: 'project',
         kind: 'belongs',

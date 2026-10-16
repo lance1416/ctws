@@ -10,7 +10,7 @@ import {
   updateReadingItemBody,
 } from '@ctws/contracts'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
-import { currentUser } from '../../shell/auth/authenticated'
+import { actorOf, currentUser } from '../../shell/auth/authenticated'
 import { toReadingItemResponse } from './mapper'
 import { listReadingItems, readingEntries, searchReadingItems } from './queries'
 import {
@@ -58,9 +58,9 @@ export const readingRoutes =
       '/',
       { schema: { body: createReadingItemBody, response: { 201: readingItemResponse } } },
       async (req, reply) => {
-        const workspaceId = currentUser(req).workspaceId
-        const created = await createReadingItem(app.db, workspaceId, req.body)
-        const row = await withFetched(deps, app.db, workspaceId, created)
+        const actor = actorOf(req)
+        const created = await createReadingItem(app.db, actor, req.body)
+        const row = await withFetched(deps, app.db, actor.workspaceId, created)
         return reply.code(201).send(toReadingItemResponse(row))
       },
     )
@@ -75,18 +75,13 @@ export const readingRoutes =
         },
       },
       async (req) => {
-        const updated = await updateReadingItem(
-          app.db,
-          currentUser(req).workspaceId,
-          req.params.id,
-          req.body,
-        )
+        const updated = await updateReadingItem(app.db, actorOf(req), req.params.id, req.body)
         return toReadingItemResponse(updated)
       },
     )
 
     app.delete('/:id', { schema: { params: readingParams } }, async (req, reply) => {
-      await softDeleteReadingItem(app.db, currentUser(req).workspaceId, req.params.id)
+      await softDeleteReadingItem(app.db, actorOf(req), req.params.id)
       return reply.code(204).send()
     })
   }

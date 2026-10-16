@@ -7,7 +7,7 @@ import {
   updateProjectBody,
 } from '@ctws/contracts'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
-import { currentUser } from '../auth/authenticated'
+import { actorOf, currentUser } from '../auth/authenticated'
 import type { ProjectColumns } from '../module'
 import { toProjectListItem, toProjectResponse } from './mapper'
 import { listProjects } from './queries'
@@ -36,7 +36,7 @@ export const projectRoutes: FastifyPluginAsyncZod<{ columns: ProjectColumns }> =
     '/projects',
     { schema: { body: createProjectBody, response: { 201: projectResponse } } },
     async (req, reply) => {
-      const row = await createProject(app.db, currentUser(req).workspaceId, req.body)
+      const row = await createProject(app.db, actorOf(req), req.body)
       return reply.status(201).send(toProjectResponse(row))
     },
   )
@@ -51,13 +51,13 @@ export const projectRoutes: FastifyPluginAsyncZod<{ columns: ProjectColumns }> =
       },
     },
     async (req) => {
-      const row = await updateProject(app.db, currentUser(req).workspaceId, req.params.id, req.body)
+      const row = await updateProject(app.db, actorOf(req), req.params.id, req.body)
       return toProjectResponse(row)
     },
   )
 
   app.delete('/projects/:id', { schema: { params: projectParams } }, async (req, reply) => {
-    await softDeleteProject(app.db, currentUser(req).workspaceId, req.params.id)
+    await softDeleteProject(app.db, actorOf(req), req.params.id)
     return reply.status(204).send()
   })
 }

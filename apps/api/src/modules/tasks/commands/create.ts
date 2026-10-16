@@ -1,11 +1,12 @@
 import { MAX_TASK_DEPTH, type CreateTaskBody, taskId } from '@ctws/contracts'
 import { newId } from '../../../platform/db/ids'
 import { rankBetween } from '@ctws/core'
-import { and, desc, eq, isNull, sql } from 'drizzle-orm'
+import { and, desc, eq, isNull } from 'drizzle-orm'
 import type { Db } from '../../../platform/db/client'
 import { getProject } from '../../../shell/projects/queries'
 import { DepthLimitError } from '../errors'
-import { taskLog, type TaskCtx } from '../log'
+import type { Actor } from '../../../platform/db/scope'
+import { taskLog } from '../log'
 import { lockTask } from '../queries/scope'
 import { tasks, type Task } from '../tables'
 import { depthOf, lockTaskTree } from '../tree'
@@ -14,7 +15,7 @@ import { depthOf, lockTaskTree } from '../tree'
  * Appends a task after its last sibling. Under a parent it takes the parent's project; the
  * requested project must still be visible, as on move.
  */
-export async function createTask(db: Db, ctx: TaskCtx, input: CreateTaskBody): Promise<Task> {
+export async function createTask(db: Db, ctx: Actor, input: CreateTaskBody): Promise<Task> {
   return db.transaction(async (tx) => {
     await lockTaskTree(tx, ctx.workspaceId)
     let projectId = (await getProject(tx, ctx.workspaceId, input.projectId)).id
@@ -49,7 +50,9 @@ export async function createTask(db: Db, ctx: TaskCtx, input: CreateTaskBody): P
         status: input.status,
         scheduledOn: input.scheduledOn ?? null,
         dueAt: input.dueAt ? new Date(input.dueAt) : null,
-        completedAt: input.status === 'done' ? sql`now()` : null,
+        completedAt: input.status === 'done' ? ctx.now : null,
+        createdAt: ctx.now,
+        updatedAt: ctx.now,
         rank: rankBetween(last?.rank ?? null, null),
       })
       .returning()

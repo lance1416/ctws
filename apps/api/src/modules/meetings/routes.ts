@@ -10,7 +10,7 @@ import {
   updateMeetingBody,
 } from '@ctws/contracts'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
-import { currentUser } from '../../shell/auth/authenticated'
+import { actorOf, currentUser } from '../../shell/auth/authenticated'
 import { toOccurrenceResponse } from './mapper'
 import { getOccurrence, listOccurrences, meetingEntries } from './queries'
 import { cancelMeeting, createMeeting, updateMeeting } from './service'
@@ -64,7 +64,7 @@ export const meetingRoutes: FastifyPluginAsyncZod = async (app) => {
     '/',
     { schema: { body: createMeetingBody, response: { 201: meetingOccurrence } } },
     async (req, reply) => {
-      const created = await createMeeting(app.db, currentUser(req).workspaceId, req.body)
+      const created = await createMeeting(app.db, actorOf(req), req.body)
       return reply.code(201).send(toOccurrenceResponse(created))
     },
   )
@@ -79,12 +79,7 @@ export const meetingRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     },
     async (req) => {
-      const updated = await updateMeeting(
-        app.db,
-        currentUser(req).workspaceId,
-        req.params.id,
-        req.body,
-      )
+      const updated = await updateMeeting(app.db, actorOf(req), req.params.id, req.body)
       return toOccurrenceResponse(updated)
     },
   )
@@ -93,7 +88,7 @@ export const meetingRoutes: FastifyPluginAsyncZod = async (app) => {
     '/:id',
     { schema: { params: meetingParams, querystring: deleteMeetingQuery } },
     async (req, reply) => {
-      await cancelMeeting(app.db, currentUser(req).workspaceId, req.params.id, req.query)
+      await cancelMeeting(app.db, actorOf(req), req.params.id, req.query)
       return reply.code(204).send()
     },
   )

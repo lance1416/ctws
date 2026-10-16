@@ -84,7 +84,7 @@ export async function listReview(
       and ev.occurred_at >= b.t0
       and ev.occurred_at < b.t1
       and ${visibleTasks(workspaceId, { task: 't', project: 'p' })}
-    order by p.rank, p.id, ev.occurred_at desc, ev.id
+    order by p.rank, p.id, ev.occurred_at desc, ev.id desc
   `)
 
   const byProject = new Map<string, ReviewProject>()

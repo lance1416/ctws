@@ -3,7 +3,8 @@ import { eq, sql } from 'drizzle-orm'
 import type { Db, Queryable } from '../../../platform/db/client'
 import { scoped, within } from '../../../platform/db/scope'
 import { DependencyCycleError } from '../errors'
-import { taskLog, type TaskCtx } from '../log'
+import type { Actor } from '../../../platform/db/scope'
+import { taskLog } from '../log'
 import { getTask } from '../queries/scope'
 import { taskDependencies } from '../tables'
 import { lockTaskTree } from '../tree'
@@ -40,7 +41,7 @@ async function wouldCycle(
  */
 export async function addDependency(
   db: Db,
-  ctx: TaskCtx,
+  ctx: Actor,
   { blockedId, blockerId }: Edge,
 ): Promise<void> {
   if (blockedId === blockerId) throw new DependencyCycleError()
@@ -55,7 +56,7 @@ export async function addDependency(
 
     const added = await tx
       .insert(taskDependencies)
-      .values({ blockerId, blockedId, workspaceId: ctx.workspaceId })
+      .values({ blockerId, blockedId, workspaceId: ctx.workspaceId, createdAt: ctx.now })
       .onConflictDoNothing()
       .returning({ blockerId: taskDependencies.blockerId })
     if (added.length === 0) return
@@ -66,7 +67,7 @@ export async function addDependency(
 /** Forgets that `blockedId` waits for `blockerId`. Also idempotent. */
 export async function removeDependency(
   db: Db,
-  ctx: TaskCtx,
+  ctx: Actor,
   { blockedId, blockerId }: Edge,
 ): Promise<void> {
   await db.transaction(async (tx) => {

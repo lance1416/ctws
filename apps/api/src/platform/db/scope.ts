@@ -11,6 +11,13 @@ declare const confined: unique symbol
  */
 export type Scope = SQL & { readonly [confined]: true }
 
+/**
+ * Who a write acts for and when it happens: the workspace, and the instant read once from the app
+ * clock for the whole request. Every time a write stores comes from `now`, never from the
+ * database's clock, so a pinned clock pins what is written too.
+ */
+export type Actor = { workspaceId: WorkspaceId; now: Date }
+
 /** A table that holds one workspace's rows; one with `deletedAt` deletes them softly. */
 type Owned = PgTable & { workspaceId: AnyPgColumn; deletedAt?: AnyPgColumn }
 

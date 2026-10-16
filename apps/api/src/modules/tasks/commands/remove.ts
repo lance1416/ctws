@@ -1,7 +1,9 @@
 import type { TaskId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import type { Db } from '../../../platform/db/client'
-import { taskLog, type TaskCtx } from '../log'
+import { instant } from '../../../platform/db/time'
+import type { Actor } from '../../../platform/db/scope'
+import { taskLog } from '../log'
 import { lockTask } from '../queries/scope'
 import { lockTaskTree } from '../tree'
 
@@ -9,7 +11,7 @@ import { lockTaskTree } from '../tree'
  * Soft-deletes a task and its live descendants, so no read has to check ancestors. Each gets its
  * own `deleted` event; a descendant's names the task the cascade started from.
  */
-export async function softDeleteTask(db: Db, ctx: TaskCtx, id: TaskId): Promise<void> {
+export async function softDeleteTask(db: Db, ctx: Actor, id: TaskId): Promise<void> {
   await db.transaction(async (tx) => {
     await lockTaskTree(tx, ctx.workspaceId)
     const log = taskLog(tx, ctx)
@@ -25,7 +27,7 @@ export async function softDeleteTask(db: Db, ctx: TaskCtx, id: TaskId): Promise<
         union
         select t.id from tasks t join subtree s on t.parent_id = s.id where t.deleted_at is null
       )
-      update tasks set deleted_at = now(), updated_at = now()
+      update tasks set deleted_at = ${instant(ctx.now)}, updated_at = ${instant(ctx.now)}
       where id in (select id from subtree) and deleted_at is null
       returning id
     `)

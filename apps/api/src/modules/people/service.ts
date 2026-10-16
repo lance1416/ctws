@@ -5,15 +5,14 @@ import {
   REMIND_LEAD_DEFAULT,
   type UpdatePersonBody,
   type PersonId,
-  type WorkspaceId,
   personId,
 } from '@ctws/contracts'
 import { newId } from '../../platform/db/ids'
-import { eq, sql } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import type { Db, Tx } from '../../platform/db/client'
 import { replaceRows } from '../../platform/db/replace'
-import { scoped, within } from '../../platform/db/scope'
+import { type Actor, scoped, within } from '../../platform/db/scope'
 import { assertProjectsVisible } from '../../shell/projects/queries'
 import { assertPossibleBirthday } from './birthdays'
 import { PersonNotFoundError } from './errors'
@@ -70,7 +69,7 @@ async function putChannels(
 
 export async function createPerson(
   db: Db,
-  workspaceId: WorkspaceId,
+  { workspaceId, now }: Actor,
   body: CreatePersonBody,
 ): Promise<PersonRow> {
   checkBirthday(body.birthday)
@@ -89,8 +88,10 @@ export async function createPerson(
       title: body.title ?? null,
       circle: body.circle ?? null,
       ...birthdayColumns(body.birthday ?? undefined),
+      createdAt: now,
+      updatedAt: now,
     })
-    await personFiling.put(tx, { workspaceId, id, projectIds: body.projectIds ?? [] })
+    await personFiling.put(tx, { workspaceId, now, id, projectIds: body.projectIds ?? [] })
     await putChannels(tx, id, body.channels ?? [])
     return getPerson(tx, workspaceId, id)
   })
@@ -98,7 +99,7 @@ export async function createPerson(
 
 export async function updatePerson(
   db: Db,
-  workspaceId: WorkspaceId,
+  { workspaceId, now }: Actor,
   id: PersonId,
   patch: UpdatePersonBody,
 ): Promise<PersonRow> {
@@ -112,9 +113,9 @@ export async function updatePerson(
     // Touched even when only the channels change: a new phone number is a change to the person.
     await tx
       .update(people)
-      .set({ ...fields, ...birthdayColumns(birthday), updatedAt: sql`now()` })
+      .set({ ...fields, ...birthdayColumns(birthday), updatedAt: now })
       .where(within(scoped(people, workspaceId), eq(people.id, id)))
-    if (projectIds) await personFiling.put(tx, { workspaceId, id, projectIds })
+    if (projectIds) await personFiling.put(tx, { workspaceId, now, id, projectIds })
     if (channels) await putChannels(tx, id, channels)
     return getPerson(tx, workspaceId, id)
   })
@@ -122,12 +123,12 @@ export async function updatePerson(
 
 export async function softDeletePerson(
   db: Db,
-  workspaceId: WorkspaceId,
+  { workspaceId, now }: Actor,
   id: PersonId,
 ): Promise<void> {
   const deleted = await db
     .update(people)
-    .set({ deletedAt: sql`now()` })
+    .set({ deletedAt: now })
     .where(within(scoped(people, workspaceId), eq(people.id, id)))
     .returning({ id: people.id })
   if (deleted.length === 0) throw new PersonNotFoundError()

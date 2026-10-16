@@ -661,7 +661,10 @@ describe('a write refuses a foreign workspace without going through a route', ()
     const id = await createTask(ctx, projectId, 'mine')
     const sibling = await createTask(ctx, projectId, 'sibling')
     // A workspace that exists nowhere: the point is the task is not THIS caller's to touch.
-    const stranger = { workspaceId: workspaceId.parse('99999999-9999-4999-8999-999999999999') }
+    const stranger = {
+      workspaceId: workspaceId.parse('99999999-9999-4999-8999-999999999999'),
+      now: new Date(),
+    }
 
     await expect(updateTask(ctx.db, stranger, id, { title: 'stolen' })).rejects.toThrow(
       TaskNotFoundError,

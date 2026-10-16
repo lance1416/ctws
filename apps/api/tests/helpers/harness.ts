@@ -109,7 +109,7 @@ export async function eventsOf(
   taskId: TaskId,
 ): Promise<{ type: string; payload: unknown }[]> {
   const r = await ctx.db.execute(sql`
-    select type, payload from task_events where task_id = ${taskId} order by occurred_at
+    select type, payload from task_events where task_id = ${taskId} order by occurred_at, id
   `)
   return r.rows as { type: string; payload: unknown }[]
 }

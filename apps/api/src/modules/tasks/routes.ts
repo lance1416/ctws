@@ -19,15 +19,13 @@ import {
   todayResponse,
   updateTaskBody,
 } from '@ctws/contracts'
-import type { FastifyRequest } from 'fastify'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
-import { currentUser } from '../../shell/auth/authenticated'
+import { actorOf, currentUser } from '../../shell/auth/authenticated'
 import { createTask } from './commands/create'
 import { addDependency, removeDependency } from './commands/dependencies'
 import { moveTask } from './commands/move'
 import { softDeleteTask } from './commands/remove'
 import { updateTask } from './commands/update'
-import type { TaskCtx } from './log'
 import {
   toCalendarEntry,
   toCompletedResponse,
@@ -44,9 +42,6 @@ import { listReview } from './queries/review'
 import { getTask } from './queries/scope'
 import { searchTasks } from './queries/search'
 import { listToday } from './queries/today'
-
-/** The workspace a command writes and logs in. */
-const actor = (req: FastifyRequest): TaskCtx => ({ workspaceId: currentUser(req).workspaceId })
 
 export const taskRoutes: FastifyPluginAsyncZod = async (app) => {
   app.get(
@@ -125,7 +120,7 @@ export const taskRoutes: FastifyPluginAsyncZod = async (app) => {
     '/',
     { schema: { body: createTaskBody, response: { 201: taskResponse } } },
     async (req, reply) => {
-      const row = await createTask(app.db, actor(req), req.body)
+      const row = await createTask(app.db, actorOf(req), req.body)
       return reply.status(201).send(toTaskResponse(row))
     },
   )
@@ -140,18 +135,18 @@ export const taskRoutes: FastifyPluginAsyncZod = async (app) => {
   app.patch(
     '/:id',
     { schema: { params: taskParams, body: updateTaskBody, response: { 200: taskResponse } } },
-    async (req) => toTaskResponse(await updateTask(app.db, actor(req), req.params.id, req.body)),
+    async (req) => toTaskResponse(await updateTask(app.db, actorOf(req), req.params.id, req.body)),
   )
 
   // Not part of PATCH: a move must keep the tree acyclic, within depth, and on one project.
   app.post(
     '/:id/move',
     { schema: { params: taskParams, body: moveTaskBody, response: { 200: taskResponse } } },
-    async (req) => toTaskResponse(await moveTask(app.db, actor(req), req.params.id, req.body)),
+    async (req) => toTaskResponse(await moveTask(app.db, actorOf(req), req.params.id, req.body)),
   )
 
   app.delete('/:id', { schema: { params: taskParams } }, async (req, reply) => {
-    await softDeleteTask(app.db, actor(req), req.params.id)
+    await softDeleteTask(app.db, actorOf(req), req.params.id)
     return reply.status(204).send()
   })
 
@@ -166,7 +161,7 @@ export const taskRoutes: FastifyPluginAsyncZod = async (app) => {
     '/:id/dependencies',
     { schema: { params: taskParams, body: addDependencyBody } },
     async (req, reply) => {
-      await addDependency(app.db, actor(req), {
+      await addDependency(app.db, actorOf(req), {
         blockedId: req.params.id,
         blockerId: req.body.blockerId,
       })
@@ -178,7 +173,7 @@ export const taskRoutes: FastifyPluginAsyncZod = async (app) => {
     '/:id/dependencies/:blockerId',
     { schema: { params: dependencyParams } },
     async (req, reply) => {
-      await removeDependency(app.db, actor(req), {
+      await removeDependency(app.db, actorOf(req), {
         blockedId: req.params.id,
         blockerId: req.params.blockerId,
       })

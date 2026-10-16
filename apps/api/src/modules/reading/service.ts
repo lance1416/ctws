@@ -6,9 +6,9 @@ import {
   readingId,
 } from '@ctws/contracts'
 import { newId } from '../../platform/db/ids'
-import { eq, sql } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import type { Db } from '../../platform/db/client'
-import { scoped, within } from '../../platform/db/scope'
+import { type Actor, scoped, within } from '../../platform/db/scope'
 import { assertProjectsVisible } from '../../shell/projects/queries'
 import { ReadingItemNotFoundError, WrongKindError } from './errors'
 import { getReadingItem, lockReadingItem, readingFiling, type ReadingItemRow } from './queries'
@@ -20,7 +20,7 @@ export type ReadingDeps = { unfurl: Unfurl; enabled: boolean }
 
 export async function createReadingItem(
   db: Db,
-  workspaceId: WorkspaceId,
+  { workspaceId, now }: Actor,
   body: CreateReadingItemBody,
 ): Promise<ReadingItemRow> {
   const values =
@@ -30,14 +30,21 @@ export async function createReadingItem(
   const [created] = await db
     .insert(readingItems)
     // The list itself is the inbox, so everything starts as to read.
-    .values({ id: newId(readingId), workspaceId, status: 'todo', ...values })
+    .values({
+      id: newId(readingId),
+      workspaceId,
+      status: 'todo',
+      ...values,
+      createdAt: now,
+      updatedAt: now,
+    })
     .returning({ id: readingItems.id })
   return getReadingItem(db, workspaceId, created!.id)
 }
 
 export async function updateReadingItem(
   db: Db,
-  workspaceId: WorkspaceId,
+  { workspaceId, now }: Actor,
   id: ReadingId,
   patch: UpdateReadingItemBody,
 ): Promise<ReadingItemRow> {
@@ -57,11 +64,16 @@ export async function updateReadingItem(
     const { projectId, ...fields } = patch
     await tx
       .update(readingItems)
-      .set({ ...fields, updatedAt: sql`now()` })
+      .set({ ...fields, updatedAt: now })
       .where(within(scoped(readingItems, workspaceId), eq(readingItems.id, id)))
     // `null` unfiles the item; absent leaves it where it is.
     if (projectId !== undefined) {
-      await readingFiling.put(tx, { workspaceId, id, projectIds: projectId ? [projectId] : [] })
+      await readingFiling.put(tx, {
+        workspaceId,
+        now,
+        id,
+        projectIds: projectId ? [projectId] : [],
+      })
     }
     return getReadingItem(tx, workspaceId, id)
   })
@@ -69,12 +81,12 @@ export async function updateReadingItem(
 
 export async function softDeleteReadingItem(
   db: Db,
-  workspaceId: WorkspaceId,
+  { workspaceId, now }: Actor,
   id: ReadingId,
 ): Promise<void> {
   const deleted = await db
     .update(readingItems)
-    .set({ deletedAt: sql`now()` })
+    .set({ deletedAt: now })
     .where(within(scoped(readingItems, workspaceId), eq(readingItems.id, id)))
     .returning({ id: readingItems.id })
   if (deleted.length === 0) throw new ReadingItemNotFoundError()

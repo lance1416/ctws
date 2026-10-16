@@ -18,6 +18,7 @@ export const publicAuthRoutes: FastifyPluginAsyncZod = async (app) => {
       const { env, db } = app
       // Closed: only the first account gets through.
       const { userId, workspaceId, role } = await registerUser(db, req.body, {
+        now: app.clock(),
         onlyIfFirst: env.authRegistration === 'closed',
       })
       const session = await createSession(db, userId, {

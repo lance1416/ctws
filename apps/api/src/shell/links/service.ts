@@ -1,5 +1,6 @@
-import type { LinkKind, WorkspaceId } from '@ctws/contracts'
+import type { LinkKind } from '@ctws/contracts'
 import type { Db } from '../../platform/db/client'
+import type { Actor } from '../../platform/db/scope'
 import { LinkEndNotFoundError } from './errors'
 import { exists } from './read'
 import type { LinkRegistry } from './registry'
@@ -12,7 +13,7 @@ import { addLink, type Endpoint } from './store'
 export async function linkObjects(
   registry: LinkRegistry,
   db: Db,
-  edge: { workspaceId: WorkspaceId; from: Endpoint; to: Endpoint; kind: LinkKind },
+  edge: Actor & { from: Endpoint; to: Endpoint; kind: LinkKind },
 ): Promise<void> {
   await db.transaction(async (tx) => {
     const { workspaceId, from, to } = edge

@@ -26,7 +26,10 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
     { schema: { body: adminCreateUserBody, response: { 201: adminUser } } },
     async (req, reply) => {
       const { role, ...credentials } = req.body
-      const { userId } = await registerUser(app.db, credentials, { explicitRole: role })
+      const { userId } = await registerUser(app.db, credentials, {
+        now: app.clock(),
+        explicitRole: role,
+      })
       return reply.status(201).send(await getAdminUser(app.db, userId))
     },
   )
@@ -36,6 +39,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: { params: userParams, body: adminUpdateUserBody, response: { 200: adminUser } },
     },
-    async (req, reply) => reply.send(await updateUser(app.db, req.params.id, req.body)),
+    async (req, reply) =>
+      reply.send(await updateUser(app.db, req.params.id, req.body, app.clock())),
   )
 }

@@ -1,9 +1,10 @@
 import { type TaskEventType, type UpdateTaskBody, type TaskId } from '@ctws/contracts'
-import { eq, sql } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import type { PgUpdateSetSource } from 'drizzle-orm/pg-core'
 import type { Db } from '../../../platform/db/client'
 import { isoOrNull } from '../../../platform/values'
-import { taskLog, type TaskCtx } from '../log'
+import type { Actor } from '../../../platform/db/scope'
+import { taskLog } from '../log'
 import { lockTask } from '../queries/scope'
 import { tasks, type Task } from '../tables'
 
@@ -13,7 +14,7 @@ import { tasks, type Task } from '../tables'
  */
 export async function updateTask(
   db: Db,
-  ctx: TaskCtx,
+  ctx: Actor,
   id: TaskId,
   patch: UpdateTaskBody,
 ): Promise<Task> {
@@ -34,7 +35,7 @@ export async function updateTask(
     if (patch.status !== undefined && patch.status !== row.status) {
       set.status = patch.status
       // completed_at means "currently done", so leaving done clears it.
-      set.completedAt = patch.status === 'done' ? sql`now()` : null
+      set.completedAt = patch.status === 'done' ? ctx.now : null
       events.push({ type: 'status_changed', payload: { from: row.status, to: patch.status } })
     }
     if (patch.scheduledOn !== undefined && patch.scheduledOn !== row.scheduledOn) {
@@ -56,7 +57,7 @@ export async function updateTask(
     }
     if (events.length === 0) return row
 
-    set.updatedAt = sql`now()`
+    set.updatedAt = ctx.now
     const [updated] = await tx.update(tasks).set(set).where(eq(tasks.id, id)).returning()
     const log = taskLog(tx, ctx)
     for (const e of events) await log.append(id, e.type, e.payload)

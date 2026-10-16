@@ -14,7 +14,7 @@ import {
 import type { FastifyRequest } from 'fastify'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { accountToday } from '../../platform/db/time'
-import { currentUser } from '../../shell/auth/authenticated'
+import { actorOf, currentUser } from '../../shell/auth/authenticated'
 import { birthdayEntries, listBirthdays, previewBirthday } from './birthdays'
 import { toPersonResponse } from './mapper'
 import { listPeople, searchPeople } from './queries'
@@ -71,7 +71,7 @@ export const personRoutes: FastifyPluginAsyncZod = async (app) => {
     '/',
     { schema: { body: createPersonBody, response: { 201: personResponse } } },
     async (req, reply) => {
-      const created = await createPerson(app.db, currentUser(req).workspaceId, req.body)
+      const created = await createPerson(app.db, actorOf(req), req.body)
       return reply.code(201).send(toPersonResponse(created, await todayFor(req)))
     },
   )
@@ -80,18 +80,13 @@ export const personRoutes: FastifyPluginAsyncZod = async (app) => {
     '/:id',
     { schema: { params: personParams, body: updatePersonBody, response: { 200: personResponse } } },
     async (req) => {
-      const updated = await updatePerson(
-        app.db,
-        currentUser(req).workspaceId,
-        req.params.id,
-        req.body,
-      )
+      const updated = await updatePerson(app.db, actorOf(req), req.params.id, req.body)
       return toPersonResponse(updated, await todayFor(req))
     },
   )
 
   app.delete('/:id', { schema: { params: personParams } }, async (req, reply) => {
-    await softDeletePerson(app.db, currentUser(req).workspaceId, req.params.id)
+    await softDeletePerson(app.db, actorOf(req), req.params.id)
     return reply.code(204).send()
   })
 }

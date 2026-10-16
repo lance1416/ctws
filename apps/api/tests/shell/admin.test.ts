@@ -315,8 +315,8 @@ describe('last enabled admin', () => {
         sql`update users set role = 'admin' where id in (${admin.id}, ${second.id})`,
       )
       const results = await Promise.allSettled([
-        updateUser(ctx.db, second.id, { role: 'member' }),
-        updateUser(ctx.db, admin.id, { role: 'member' }),
+        updateUser(ctx.db, second.id, { role: 'member' }, new Date()),
+        updateUser(ctx.db, admin.id, { role: 'member' }, new Date()),
       ])
       expect(results.map((r) => r.status).sort(), `round ${round}`).toEqual([
         'fulfilled',

@@ -8,7 +8,7 @@ import {
   linksResponse,
 } from '@ctws/contracts'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
-import { currentUser } from '../auth/authenticated'
+import { actorOf, currentUser } from '../auth/authenticated'
 import { LinkEndNotFoundError } from './errors'
 import { candidatesFor, exists, linksOf } from './read'
 import type { LinkRegistry } from './registry'
@@ -58,8 +58,7 @@ export const linkRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = asy
     '/links',
     { schema: { body: createLinkBody, response: { 201: createLinkResponse } } },
     async (req, reply) => {
-      const { workspaceId } = currentUser(req)
-      await linkObjects(registry, app.db, { workspaceId, ...req.body })
+      await linkObjects(registry, app.db, { ...actorOf(req), ...req.body })
       // 201 whether or not the edge was already there.
       reply.code(201)
       return { created: true }

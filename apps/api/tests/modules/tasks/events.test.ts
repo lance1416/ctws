@@ -29,7 +29,7 @@ afterAll(async () => {
   await ctx?.stop()
 })
 
-const logOf = (tx: Tx) => taskLog(tx, { workspaceId })
+const logOf = (tx: Tx) => taskLog(tx, { workspaceId, now: new Date() })
 
 /** One append in a transaction of its own. */
 const append = (...args: Parameters<ReturnType<typeof logOf>['append']>) =>
@@ -38,7 +38,7 @@ const append = (...args: Parameters<ReturnType<typeof logOf>['append']>) =>
 async function events() {
   const r = await ctx.db.execute(sql`
     select type, payload, workspace_id from task_events
-    where task_id = ${taskId} order by occurred_at
+    where task_id = ${taskId} order by occurred_at, id
   `)
   return r.rows as { type: string; payload: unknown; workspace_id: WorkspaceId }[]
 }

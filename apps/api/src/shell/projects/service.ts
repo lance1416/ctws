@@ -3,7 +3,6 @@ import {
   type ProjectColor,
   projectColors,
   type UpdateProjectBody,
-  type WorkspaceId,
   type ProjectId,
   projectId,
 } from '@ctws/contracts'
@@ -12,7 +11,8 @@ import { rankBetween } from '@ctws/core'
 import { desc, eq, sql } from 'drizzle-orm'
 import type { PgUpdateSetSource } from 'drizzle-orm/pg-core'
 import type { Db, Queryable } from '../../platform/db/client'
-import { scoped } from '../../platform/db/scope'
+import { type Actor, scoped } from '../../platform/db/scope'
+import { instant } from '../../platform/db/time'
 import { InboxProtectedError } from './errors'
 import { lockProject } from './queries'
 import { projects, type Project } from './tables'
@@ -27,8 +27,9 @@ function firstFreeColor(taken: readonly ProjectColor[]): ProjectColor {
 }
 
 /** Created with the workspace, so capture never has to create it on the fly. */
-export async function createInbox(tx: Queryable, workspaceId: WorkspaceId): Promise<void> {
+export async function createInbox(tx: Queryable, { workspaceId, now }: Actor): Promise<void> {
   await tx.insert(projects).values({
+    createdAt: now,
     id: newId(projectId),
     workspaceId,
     name: INBOX_NAME,
@@ -41,7 +42,7 @@ export async function createInbox(tx: Queryable, workspaceId: WorkspaceId): Prom
 /** Appends a project after the last one; archived projects count for rank and colour. */
 export async function createProject(
   db: Db,
-  workspaceId: WorkspaceId,
+  { workspaceId, now }: Actor,
   input: CreateProjectBody,
 ): Promise<Project> {
   return db.transaction(async (tx) => {
@@ -64,6 +65,7 @@ export async function createProject(
         name: input.name,
         color: firstFreeColor(taken.map((t) => t.color)),
         rank: rankBetween(last?.rank ?? null, null),
+        createdAt: now,
       })
       .returning()
     return row!
@@ -72,7 +74,7 @@ export async function createProject(
 
 export async function updateProject(
   db: Db,
-  workspaceId: WorkspaceId,
+  { workspaceId, now }: Actor,
   id: ProjectId,
   patch: UpdateProjectBody,
 ): Promise<Project> {
@@ -85,7 +87,8 @@ export async function updateProject(
     if (patch.name !== undefined) set.name = patch.name
     if (patch.color !== undefined) set.color = patch.color
     // Re-archiving keeps the original timestamp.
-    if (patch.archived === true) set.archivedAt = sql`coalesce(${projects.archivedAt}, now())`
+    if (patch.archived === true)
+      set.archivedAt = sql`coalesce(${projects.archivedAt}, ${instant(now)})`
     if (patch.archived === false) set.archivedAt = null
     if (Object.keys(set).length === 0) return existing
 
@@ -97,15 +100,12 @@ export async function updateProject(
 /** Soft delete: the row stays so the event log never points at nothing. */
 export async function softDeleteProject(
   db: Db,
-  workspaceId: WorkspaceId,
+  { workspaceId, now }: Actor,
   id: ProjectId,
 ): Promise<void> {
   await db.transaction(async (tx) => {
     const existing = await lockProject(tx, workspaceId, id)
     if (existing.isInbox) throw new InboxProtectedError()
-    await tx
-      .update(projects)
-      .set({ deletedAt: sql`now()` })
-      .where(eq(projects.id, id))
+    await tx.update(projects).set({ deletedAt: now }).where(eq(projects.id, id))
   })
 }

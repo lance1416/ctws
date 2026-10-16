@@ -23,7 +23,7 @@ import { users, workspaceMembers, workspaces } from './tables'
 export async function registerUser(
   db: Db,
   input: { email: string; password: string; timezone: string },
-  opts: { explicitRole?: Role; onlyIfFirst?: boolean } = {},
+  opts: { now: Date; explicitRole?: Role; onlyIfFirst?: boolean },
 ): Promise<{ userId: UserId; workspaceId: WorkspaceId; role: Role }> {
   const userId = newId(userIdSchema)
   const workspaceId = newId(workspaceIdSchema)
@@ -47,14 +47,15 @@ export async function registerUser(
           email: input.email,
           passwordHash,
           timezone: input.timezone,
+          createdAt: opts.now,
           role:
             opts.explicitRole ??
             sql`case when not exists (select 1 from users) then 'admin' else 'member' end`,
         })
         .returning({ role: users.role })
-      await tx.insert(workspaces).values({ id: workspaceId })
-      await tx.insert(workspaceMembers).values({ workspaceId, userId })
-      await createInbox(tx, workspaceId)
+      await tx.insert(workspaces).values({ id: workspaceId, createdAt: opts.now })
+      await tx.insert(workspaceMembers).values({ workspaceId, userId, joinedAt: opts.now })
+      await createInbox(tx, { workspaceId, now: opts.now })
       return { userId, workspaceId, role: user!.role }
     })
   } catch (error) {

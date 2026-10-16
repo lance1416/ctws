@@ -2,6 +2,7 @@ import { type AdminUser, type Role, type UserId } from '@ctws/contracts'
 import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 import type { Db, Queryable } from '../../platform/db/client'
 import { LOCKS, lockFor } from '../../platform/db/locks'
+import { instant } from '../../platform/db/time'
 import { isoOrNull } from '../../platform/values'
 import { sessions, users } from '../auth/tables'
 import { LastAdminError, UserNotFoundError } from './errors'
@@ -28,7 +29,10 @@ function toAdminUser(
 }
 
 export async function listUsers(db: Queryable): Promise<AdminUser[]> {
-  const rows = await db.select(adminColumns).from(users).orderBy(asc(users.createdAt))
+  const rows = await db
+    .select(adminColumns)
+    .from(users)
+    .orderBy(asc(users.createdAt), asc(users.id))
   return rows.map(toAdminUser)
 }
 
@@ -41,6 +45,7 @@ export async function updateUser(
   db: Db,
   id: UserId,
   patch: { role?: Role | undefined; disabled?: boolean | undefined },
+  now: Date,
 ): Promise<AdminUser> {
   return db.transaction(async (tx) => {
     // Serialise every change to the admin set. Without this, two admins demoting each other
@@ -52,7 +57,7 @@ export async function updateUser(
       .set({
         ...(patch.role !== undefined ? { role: patch.role } : {}),
         ...(patch.disabled === true
-          ? { disabledAt: sql`coalesce(${users.disabledAt}, now())` }
+          ? { disabledAt: sql`coalesce(${users.disabledAt}, ${instant(now)})` }
           : {}),
         ...(patch.disabled === false ? { disabledAt: null } : {}),
       })
