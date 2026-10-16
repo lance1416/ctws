@@ -158,7 +158,7 @@ export default tseslint.config(
     plugins: { ctws },
     rules: {
       'ctws/clock': [
-        'warn',
+        'error',
         {
           selector: "CallExpression[callee.object.name='Date'][callee.property.name='now']",
           message: 'Read the time from the clock: app.clock in the api, useNow() in the web.',
