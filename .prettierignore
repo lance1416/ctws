@@ -2,6 +2,6 @@ docs/
 .superpowers/
 pnpm-lock.yaml
 # Vendored verbatim from the dataviz skill; reformatting it would make the next copy a diff.
-scripts/validate_palette.js
+tools/palette/validate_palette.js
 # Local scratch, excluded from the repo in .git/info/exclude.
 scratchpad/

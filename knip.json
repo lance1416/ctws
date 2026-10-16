@@ -1,7 +1,7 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "includeEntryExports": true,
-  "ignore": ["scripts/validate_palette.js"],
+  "ignore": ["tools/palette/**"],
   "workspaces": {
     ".": {
       "entry": ["tools/**/*.mjs"]

@@ -1,8 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-// @ts-expect-error -- vendored plain JS, no types; see the header in that file.
-import { validate } from '../../../../scripts/validate_palette.js'
+import { validate } from '@ctws/palette'
 
 /**
  * THE SIX PROJECT HUES ARE CHECKED BY MACHINE, NOT BY EYE: discriminability is computable, so
@@ -10,7 +9,7 @@ import { validate } from '../../../../scripts/validate_palette.js'
  *
  * It reads the real `styles.css` rather than a copy of the hexes, so editing a colour -- or a
  * SURFACE the chips sit on -- re-runs the checks. The validator is vendored at
- * `scripts/validate_palette.js`; it is not ours and is not edited here.
+ * `tools/palette/validate_palette.js`; it is not ours and is not edited here.
  */
 const css = readFileSync(fileURLToPath(new URL('./styles.css', import.meta.url)), 'utf8')
 

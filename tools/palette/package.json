@@ -1,0 +1,11 @@
+{
+  "name": "@ctws/palette",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./validate_palette.d.ts",
+      "default": "./validate_palette.js"
+    }
+  }
+}

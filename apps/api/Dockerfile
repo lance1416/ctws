@@ -9,6 +9,7 @@ COPY packages/contracts/package.json packages/contracts/
 COPY packages/core/package.json packages/core/
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
+COPY tools/palette/package.json tools/palette/
 RUN pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm --filter @ctws/api --filter @ctws/web build

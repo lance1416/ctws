@@ -79,7 +79,7 @@ export default tseslint.config(
       'apps/api/drizzle/**',
       'apps/web/test-results/**',
       'apps/web/playwright-report/**',
-      'scripts/validate_palette.js',
+      'tools/palette/validate_palette.js',
       'scratchpad/**',
       'docs/**',
       '.superpowers/**',

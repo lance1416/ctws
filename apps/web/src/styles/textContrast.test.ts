@@ -1,8 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-// @ts-expect-error -- vendored plain JS, no types; see the header in that file.
-import { contrast } from '../../../../scripts/validate_palette.js'
+import { contrast } from '@ctws/palette'
 
 /**
  * EVERY COLOURED WORD READS AT 4.5:1 WHEREVER IT CAN LAND.
