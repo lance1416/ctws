@@ -1,6 +1,8 @@
 import type { TaskId, WorkspaceId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
+import { z } from 'zod'
 import type { Queryable, Tx } from '../../platform/db/client'
+import { rowsOf } from '../../platform/db/raw'
 import { LOCKS, lockFor } from '../../platform/db/locks'
 
 /**
@@ -24,5 +26,5 @@ export async function depthOf(q: Queryable, taskId: TaskId): Promise<number> {
     )
     select count(*)::int as depth from ancestors
   `)
-  return (result.rows[0] as { depth: number }).depth
+  return rowsOf(result, z.object({ depth: z.number() }))[0]!.depth
 }

@@ -1,12 +1,17 @@
 import {
   FINISHED_READING_STATUSES,
+  calendarDate,
+  projectId,
+  readingId,
   type CalendarEntry,
   type ProjectId,
-  type WorkspaceId,
   type ReadingId,
+  type WorkspaceId,
 } from '@ctws/contracts'
 import { desc, eq, sql } from 'drizzle-orm'
+import { z } from 'zod'
 import type { Queryable, Tx } from '../../platform/db/client'
+import { rowsOf } from '../../platform/db/raw'
 import { scoped, within } from '../../platform/db/scope'
 import { sqlValues, textMatches } from '../../platform/db/sql'
 import { dayEntry } from '../../shell/calendar/entry'
@@ -120,12 +125,12 @@ export async function readingEntries(
       and r.plan_on between ${range.from}::date and ${range.to}::date
     order by r.plan_on, title
   `)
-  type Row = {
-    id: ReadingId
-    day: string
-    title: string
-    projectId: ProjectId | null
-    projectName: string | null
-  }
-  return (result.rows as Row[]).map((r) => dayEntry({ ...r, to: '/reading', kind: 'to read' }))
+  const row = z.object({
+    id: readingId,
+    day: calendarDate,
+    title: z.string(),
+    projectId: projectId.nullable(),
+    projectName: z.string().nullable(),
+  })
+  return rowsOf(result, row).map((r) => dayEntry({ ...r, to: '/reading', kind: 'to read' }))
 }

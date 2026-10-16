@@ -1,5 +1,8 @@
+import { calendarDate } from '@ctws/contracts'
 import { sql, type SQL } from 'drizzle-orm'
+import { z } from 'zod'
 import type { Queryable } from './client'
+import { rowsOf } from './raw'
 
 /** An instant as a `timestamptz` literal for raw SQL. */
 export const instant = (now: Date): SQL => sql`${now.toISOString()}::timestamptz`
@@ -25,5 +28,5 @@ export const weekStart = (now: Date, zone: string): SQL =>
 /** Today in `zone` as `YYYY-MM-DD`. */
 export async function accountToday(q: Queryable, zone: string, now: Date): Promise<string> {
   const result = await q.execute(sql`select ${localDay(now, zone)} as today`)
-  return (result.rows as { today: string }[])[0]!.today
+  return rowsOf(result, z.object({ today: calendarDate }))[0]!.today
 }

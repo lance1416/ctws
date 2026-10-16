@@ -169,7 +169,6 @@ export const reviewQuery = z
 
 // Display order. Which segment wins for a task matching several is decided in `listToday`'s SQL.
 const TODAY_SEGMENTS = ['overdue', 'today', 'in_progress'] as const
-export type TodaySegment = (typeof TODAY_SEGMENTS)[number]
 
 export const todayTaskResponse = taskResponse
   .extend({

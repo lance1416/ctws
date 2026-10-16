@@ -1,6 +1,8 @@
-import type { TaskId } from '@ctws/contracts'
+import { taskId, type TaskId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
+import { z } from 'zod'
 import type { Db } from '../../../platform/db/client'
+import { rowsOf } from '../../../platform/db/raw'
 import { instant } from '../../../platform/db/time'
 import type { Actor } from '../../../platform/db/scope'
 import { taskLog } from '../log'
@@ -31,7 +33,7 @@ export async function softDeleteTask(db: Db, ctx: Actor, id: TaskId): Promise<vo
       where id in (select id from subtree) and deleted_at is null
       returning id
     `)
-    for (const { id: deletedId } of result.rows as { id: TaskId }[]) {
+    for (const { id: deletedId } of rowsOf(result, z.object({ id: taskId }))) {
       await log.append(deletedId, 'deleted', deletedId === id ? {} : { cascadedFrom: id })
     }
   })

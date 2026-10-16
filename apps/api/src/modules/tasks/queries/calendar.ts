@@ -1,16 +1,20 @@
-import { type ProjectId, type WorkspaceId, type TaskId } from '@ctws/contracts'
+import { calendarDate, projectId, taskId, type WorkspaceId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
+import { z } from 'zod'
 import type { Queryable } from '../../../platform/db/client'
+import { rowsOf } from '../../../platform/db/raw'
 import { taskOpenSql, visibleTasks } from './scope'
 
-export type CalendarRow = {
-  id: TaskId
-  day: string
-  title: string
-  kind: 'planned' | 'due'
-  projectId: ProjectId
-  projectName: string
-}
+const calendarRow = z.object({
+  id: taskId,
+  day: calendarDate,
+  title: z.string(),
+  kind: z.enum(['planned', 'due']),
+  projectId,
+  projectName: z.string(),
+})
+
+export type CalendarRow = z.output<typeof calendarRow>
 
 /**
  * Open tasks by the day they are planned for and the day they are due, which may be two
@@ -44,5 +48,5 @@ export async function listTaskCalendar(
           between ${range.from}::date and ${range.to}::date
     order by day, title
   `)
-  return result.rows as CalendarRow[]
+  return rowsOf(result, calendarRow)
 }

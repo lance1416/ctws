@@ -1,11 +1,14 @@
 import { SEARCH_LIMIT, type WorkspaceId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
+import { z } from 'zod'
 import type { Queryable } from '../../../platform/db/client'
+import { rowsOf } from '../../../platform/db/raw'
 import { textMatches } from '../../../platform/db/sql'
-import { TASK_COLUMNS, taskRowOf, type TaskRow } from './rows'
+import { TASK_COLUMNS, taskRow } from './rows'
 import { visibleTasks } from './scope'
 
-export type SearchTask = TaskRow & { projectArchived: boolean }
+const searchRow = taskRow.extend({ projectArchived: z.boolean() })
+export type SearchTask = z.output<typeof searchRow>
 
 /**
  * Tasks whose title or notes match, finished ones and archived projects included; title matches
@@ -18,10 +21,10 @@ export async function searchTasks(
 ): Promise<SearchTask[]> {
   const result = await q.execute(sql`
     select
-      ${TASK_COLUMNS('t')},
-      p.name as project_name,
-      (p.archived_at is not null) as project_archived,
-      parent.title as parent_title
+      ${TASK_COLUMNS},
+      p.name as "projectName",
+      (p.archived_at is not null) as "projectArchived",
+      parent.title as "parentTitle"
     from tasks t
     join projects p on p.id = t.project_id
     left join tasks parent on parent.id = t.parent_id
@@ -33,8 +36,5 @@ export async function searchTasks(
       t.id
     limit ${SEARCH_LIMIT}
   `)
-  return (result.rows as Record<string, unknown>[]).map((r) => ({
-    ...taskRowOf(r),
-    projectArchived: r.project_archived as boolean,
-  }))
+  return rowsOf(result, searchRow)
 }

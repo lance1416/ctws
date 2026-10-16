@@ -1,14 +1,18 @@
-import type { WorkspaceId } from '@ctws/contracts'
+import { calendarDate, type WorkspaceId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
+import { z } from 'zod'
 import type { Queryable } from '../../../platform/db/client'
-import { TASK_COLUMNS, taskRowOf, type TaskRow } from './rows'
+import { rowsOf } from '../../../platform/db/raw'
+import { TASK_COLUMNS, taskRow } from './rows'
 import { visibleTasks } from './scope'
 
-export type CompletedTask = TaskRow & {
-  completedAt: Date
+const completedRow = taskRow.extend({
+  /** Read as every task column is, and never null here: the query keeps finished tasks only. */
+  completedAt: taskRow.shape.completedAt.pipe(z.date()),
   /** The day it was finished, in the account's zone. */
-  completedOn: string
-}
+  completedOn: calendarDate,
+})
+export type CompletedTask = z.output<typeof completedRow>
 
 /** How many finished tasks the list shows; the weekly review covers older ones. */
 const COMPLETED_LIMIT = 200
@@ -24,10 +28,10 @@ export async function listCompleted(
 ): Promise<{ tasks: CompletedTask[]; truncated: boolean }> {
   const result = await q.execute(sql`
     select
-      ${TASK_COLUMNS('t')},
-      p.name as project_name,
-      parent.title as parent_title,
-      (t.completed_at at time zone ${timezone})::date as completed_on
+      ${TASK_COLUMNS},
+      p.name as "projectName",
+      parent.title as "parentTitle",
+      (t.completed_at at time zone ${timezone})::date as "completedOn"
     from tasks t
     join projects p on p.id = t.project_id
     left join tasks parent on parent.id = t.parent_id
@@ -37,13 +41,6 @@ export async function listCompleted(
     order by t.completed_at desc, t.id
     limit ${COMPLETED_LIMIT + 1}
   `)
-  const rows = result.rows as Record<string, unknown>[]
-  return {
-    tasks: rows.slice(0, COMPLETED_LIMIT).map((r) => ({
-      ...taskRowOf(r),
-      completedAt: new Date(r.completed_at as string),
-      completedOn: r.completed_on as string,
-    })),
-    truncated: rows.length > COMPLETED_LIMIT,
-  }
+  const rows = rowsOf(result, completedRow)
+  return { tasks: rows.slice(0, COMPLETED_LIMIT), truncated: rows.length > COMPLETED_LIMIT }
 }

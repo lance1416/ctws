@@ -1,13 +1,16 @@
 import {
+  calendarDate,
+  projectId,
   REVIEW_TRANSITIONS,
+  taskId,
   type ReviewList,
   type ReviewResponse,
-  type ProjectId,
-  type TaskId,
   type WorkspaceId,
 } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
+import { z } from 'zod'
 import type { Queryable } from '../../../platform/db/client'
+import { rowsOf } from '../../../platform/db/raw'
 import { scoped } from '../../../platform/db/scope'
 import { sqlValues } from '../../../platform/db/sql'
 import { taskEvents } from '../tables'
@@ -23,14 +26,18 @@ const LIST_FOR = Object.fromEntries(
   Object.entries(REVIEW_TRANSITIONS).map(([list, status]) => [status, list]),
 ) as Record<Recounted, ReviewList>
 
-type Row = {
-  project_id: ProjectId
-  project_name: string
-  task_id: TaskId
-  title: string
-  to_status: Recounted
-  at: string
-}
+const RECOUNTED = Object.values(REVIEW_TRANSITIONS) as [Recounted, ...Recounted[]]
+
+const reviewRow = z.object({
+  project_id: projectId,
+  project_name: z.string(),
+  task_id: taskId,
+  title: z.string(),
+  to_status: z.enum(RECOUNTED),
+  at: z.string(),
+})
+
+const boundsRow = z.object({ from_day: calendarDate, to_day: calendarDate })
 
 /**
  * What changed state in a window, read from the event log rather than current status, grouped by
@@ -59,7 +66,7 @@ export async function listReview(
       (${fromLocal})::date as from_day,
       (${toLocal})::date - 1 as to_day
   `)
-  const edge = bounds.rows[0] as { from_day: string; to_day: string }
+  const edge = rowsOf(bounds, boundsRow)[0]!
 
   const result = await q.execute(sql`
     with bounds as (
@@ -80,7 +87,7 @@ export async function listReview(
     join projects p on p.id = t.project_id
     where ${scoped(taskEvents, workspaceId, 'ev')}
       and ev.type = 'status_changed'
-      and ev.payload ->> 'to' in (${sqlValues(Object.values(REVIEW_TRANSITIONS))})
+      and ev.payload ->> 'to' in (${sqlValues(RECOUNTED)})
       and ev.occurred_at >= b.t0
       and ev.occurred_at < b.t1
       and ${visibleTasks(workspaceId, { task: 't', project: 'p' })}
@@ -88,7 +95,7 @@ export async function listReview(
   `)
 
   const byProject = new Map<string, ReviewProject>()
-  for (const r of result.rows as Row[]) {
+  for (const r of rowsOf(result, reviewRow)) {
     let group = byProject.get(r.project_id)
     if (!group) {
       group = {

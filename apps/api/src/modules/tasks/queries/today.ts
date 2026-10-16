@@ -1,11 +1,14 @@
-import { type TodaySegment, type WorkspaceId } from '@ctws/contracts'
+import { todayTaskResponse, type WorkspaceId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
+import type { z } from 'zod'
 import type { Queryable } from '../../../platform/db/client'
+import { rowsOf } from '../../../platform/db/raw'
 import { dayStart, localDay } from '../../../platform/db/time'
-import { TASK_COLUMNS, taskRowOf, type TaskRow } from './rows'
+import { TASK_COLUMNS, taskRow } from './rows'
 import { taskOpenSql, visibleTasks } from './scope'
 
-export type TodayTask = TaskRow & { segment: TodaySegment }
+const todayRow = taskRow.extend({ segment: todayTaskResponse.shape.segment })
+export type TodayTask = z.output<typeof todayRow>
 
 /**
  * Open tasks in unarchived projects that are in progress, planned up to today, or due before
@@ -27,10 +30,10 @@ export async function listToday(
     ),
     picked as (
       select
-        ${TASK_COLUMNS('t')},
-        p.name as project_name,
+        ${TASK_COLUMNS},
+        p.name as "projectName",
         p.rank as project_rank,
-        parent.title as parent_title,
+        parent.title as "parentTitle",
         case
           when t.due_at is not null and t.due_at < b.t0 then 'overdue'
           when (t.scheduled_on is not null and t.scheduled_on <= b.today)
@@ -54,13 +57,10 @@ export async function listToday(
     order by
       case segment when 'overdue' then 0 when 'today' then 1 else 2 end,
       -- Within a segment only that segment's key is non-null.
-      case when segment = 'overdue' then due_at end asc,
-      case when segment = 'today' then due_at end asc nulls last,
-      case when segment = 'in_progress' then updated_at end desc,
+      case when segment = 'overdue' then "dueAt" end asc,
+      case when segment = 'today' then "dueAt" end asc nulls last,
+      case when segment = 'in_progress' then "updatedAt" end desc,
       project_rank, rank, id
   `)
-  return (result.rows as Record<string, unknown>[]).map((r) => ({
-    ...taskRowOf(r),
-    segment: r.segment as TodaySegment,
-  }))
+  return rowsOf(result, todayRow)
 }

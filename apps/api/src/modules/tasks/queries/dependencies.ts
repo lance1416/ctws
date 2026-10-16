@@ -1,19 +1,29 @@
-import { type DependencyRef, type ProjectId, type TaskId, type WorkspaceId } from '@ctws/contracts'
+import {
+  type DependencyRef,
+  projectId,
+  taskId,
+  type TaskId,
+  type WorkspaceId,
+} from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
+import { z } from 'zod'
 import type { Queryable } from '../../../platform/db/client'
+import { rowsOf } from '../../../platform/db/raw'
 import { scoped } from '../../../platform/db/scope'
 import { ident } from '../../../platform/db/sql'
 import { taskDependencies } from '../tables'
 import { groupBy } from '../../../platform/values'
 import { taskFinishedSql, taskOpenSql, visibleTasks, getTask } from './scope'
 
-type RefRow = {
-  id: TaskId
-  title: string
-  project_id: ProjectId
-  project_name: string
-  done: boolean
-}
+const refRow = z.object({
+  id: taskId,
+  title: z.string(),
+  project_id: projectId,
+  project_name: z.string(),
+  done: z.boolean(),
+})
+
+type RefRow = z.output<typeof refRow>
 
 const toRef = (r: RefRow): DependencyRef => ({
   id: r.id,
@@ -47,8 +57,8 @@ export async function taskDependencyLists(
     q.execute(query('blocked_id', 'blocker_id')),
   ])
   return {
-    blockedBy: (up.rows as RefRow[]).map(toRef),
-    blocks: (down.rows as RefRow[]).map(toRef),
+    blockedBy: rowsOf(up, refRow).map(toRef),
+    blocks: rowsOf(down, refRow).map(toRef),
   }
 }
 
@@ -72,5 +82,5 @@ export async function blockersFor(
       and ${taskOpenSql('t')}
     order by p.rank, t.rank, t.id
   `)
-  return groupBy(rows.rows as (RefRow & { blocked_id: TaskId })[], (r) => r.blocked_id, toRef)
+  return groupBy(rowsOf(rows, refRow.extend({ blocked_id: taskId })), (r) => r.blocked_id, toRef)
 }

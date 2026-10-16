@@ -1,7 +1,15 @@
-import { MAX_TASK_DEPTH, type MoveTaskBody, type ProjectId, type TaskId } from '@ctws/contracts'
+import {
+  MAX_TASK_DEPTH,
+  taskId,
+  type MoveTaskBody,
+  type ProjectId,
+  type TaskId,
+} from '@ctws/contracts'
 import { rankBetween } from '@ctws/core'
 import { and, asc, desc, eq, gt, isNull, lt, ne, sql } from 'drizzle-orm'
+import { z } from 'zod'
 import type { Db, Queryable } from '../../../platform/db/client'
+import { rowsOf } from '../../../platform/db/raw'
 import { instant } from '../../../platform/db/time'
 import { getProject } from '../../../shell/projects/queries'
 import { DepthLimitError, InvalidNeighbourError, MoveCycleError } from '../errors'
@@ -11,7 +19,9 @@ import { lockTask } from '../queries/scope'
 import { tasks, type Task } from '../tables'
 import { depthOf, lockTaskTree } from '../tree'
 
-type Descendant = { id: TaskId; depth: number; live: boolean }
+const descendant = z.object({ id: taskId, depth: z.number(), live: z.boolean() })
+
+type Descendant = z.output<typeof descendant>
 
 /**
  * Every row under `rootId` (itself at depth 0) and whether it is live. The cycle check reads all
@@ -32,7 +42,7 @@ async function descendantsOf(q: Queryable, rootId: TaskId): Promise<Descendant[]
     )
     select id, depth, (deleted_at is null) as live from subtree
   `)
-  return result.rows as Descendant[]
+  return rowsOf(result, descendant)
 }
 
 /**

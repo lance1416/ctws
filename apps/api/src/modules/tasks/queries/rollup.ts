@@ -1,9 +1,24 @@
-import type { ProjectId, TaskId, WorkspaceId } from '@ctws/contracts'
-import { rollup, type Rollup, type RollupNode } from '@ctws/core'
+import {
+  TASK_STATUSES,
+  taskId,
+  type ProjectId,
+  type TaskId,
+  type WorkspaceId,
+} from '@ctws/contracts'
+import { rollup, type Rollup } from '@ctws/core'
 import { sql } from 'drizzle-orm'
+import { z } from 'zod'
 import type { Queryable } from '../../../platform/db/client'
+import { rowsOf } from '../../../platform/db/raw'
 import { dayStart } from '../../../platform/db/time'
 import { taskOpenSql, visibleTasks } from './scope'
+
+const rollupRow = z.object({
+  id: taskId,
+  parentId: taskId.nullable(),
+  status: z.enum(TASK_STATUSES),
+  overdue: z.boolean(),
+})
 
 /**
  * Each task's rollup across one project's tree. SQL decides `overdue` with the same day boundary
@@ -31,5 +46,5 @@ export async function projectRollups(
     where p.id = ${projectId}
       and ${visibleTasks(workspaceId, { task: 't', project: 'p' })}
   `)
-  return rollup(result.rows as RollupNode<TaskId>[])
+  return rollup(rowsOf(result, rollupRow))
 }
