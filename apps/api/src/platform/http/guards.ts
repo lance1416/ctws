@@ -31,7 +31,8 @@ export async function registerGuards(app: FastifyInstance): Promise<void> {
 
 /**
  * One counter, with no key, for every request through the routes that share the hook: nothing to
- * rotate past, and no map to grow. Past `max` in a window the rest of the window is refused.
+ * rotate past, and no map to grow. Past `max` in a window the rest of the window is refused with a
+ * 429 that says when to come back.
  */
 export function ceiling(
   app: FastifyInstance,
@@ -43,6 +44,7 @@ export function ceiling(
     if (now >= window.until) window = { count: 0, until: now + windowMs }
     window.count += 1
     if (window.count <= max) return
+    reply.header('retry-after', Math.ceil((window.until - now) / 1000))
     return sendProblem(reply, plainProblem(429, detail))
   }
 }

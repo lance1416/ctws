@@ -70,6 +70,14 @@ describe('rate limiting', () => {
     // The limit is 20 per minute: the first 20 are real 401s, the rest are throttled.
     expect(codes.slice(0, 20).every((c) => c === 401)).toBe(true)
     expect(codes.slice(20).every((c) => c === 429)).toBe(true)
+
+    const refused = await attempt()
+    expect(Number(refused.headers['retry-after'])).toBeGreaterThan(0)
+    expect(refused.json()).toMatchObject({
+      type: 'about:blank',
+      status: 429,
+      title: 'Too Many Requests',
+    })
   }, 60_000)
 
   it('buckets by EMAIL, so one account under attack does not lock out the others', async () => {
@@ -102,7 +110,7 @@ describe('rate limiting', () => {
     // The ceiling is a single counter with no key, so there is nothing to rotate past it. The
     // second version of this control kept a Map keyed by `req.ip` and swept it on every request,
     // which an attacker rotating source addresses turns into the amplifier.
-    const codes: number[] = []
+    const refusals = []
     for (let i = 0; i < 70; i++) {
       const res = await ctx.app.inject({
         method: 'POST',
@@ -110,11 +118,16 @@ describe('rate limiting', () => {
         headers: { 'x-ctws-client': 'web' },
         payload: { email: `spray-${i}@example.com`, password: 'whatever at all' },
       })
-      codes.push(res.statusCode)
+      if (res.statusCode === 429) refusals.push(res)
     }
     // Every address is its own email bucket, so none of these is throttled for being repeated.
-    // The connection's own ceiling is what stops them.
-    expect(codes.filter((c) => c === 429).length).toBeGreaterThan(0)
+    // The connection's own ceiling is what stops them, and it says when to come back.
+    expect(refusals.length).toBeGreaterThan(0)
+    for (const res of refusals) {
+      const seconds = Number(res.headers['retry-after'])
+      expect(seconds).toBeGreaterThan(0)
+      expect(seconds).toBeLessThanOrEqual(60)
+    }
   }, 120_000)
 
   it('does not rate limit the health check', async () => {
