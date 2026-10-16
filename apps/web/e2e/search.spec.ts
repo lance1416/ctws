@@ -197,6 +197,12 @@ test('the search selection is announceable: combobox, listbox, activedescendant'
   await page.keyboard.press('Control+n')
   expect(await pointed()).toBe(second)
 
+  // A held modifier does not change what an arrow does here: Shift+arrow walks the list too.
+  await page.keyboard.press('Shift+ArrowUp')
+  expect(await pointed()).toBe(first)
+  await page.keyboard.press('Shift+ArrowDown')
+  expect(await pointed()).toBe(second)
+
   // Enter opens the option the pointer names -- the selection a reader was told about is the one
   // that acts.
   await page.keyboard.press('Enter')

@@ -7,7 +7,7 @@ import { recentList } from './recent'
 import { useMe } from '../auth/useMe'
 import { Modal } from '../../platform/ui/Modal'
 import { useComposing } from '../../platform/keyboard/composition'
-import { useKeyTable, type KeyTable } from '../../platform/keyboard/keyTable'
+import { pressesWith, useKeyTable, type KeyTable } from '../../platform/keyboard/keyTable'
 import { Button } from '../../platform/ui/Button'
 
 /** Long enough that typing a word does not fire a request per letter, short enough to feel live. */
@@ -27,17 +27,30 @@ type Row = {
   group: 'recent' | 'place' | 'hit'
 }
 
+/** Any modifier, or none: the box's keys mean the same with any held. */
+const ANY = { either: ['Ctrl', 'Meta', 'Alt', 'Shift'] } as const
+
 /** The box's keys: the list is walked from the box, which keeps focus. */
 const RESULT_KEYS: KeyTable<'next' | 'previous' | 'choose'> = {
   title: 'In search',
   rows: [
-    { keys: '↓ / Ctrl+N', does: 'Next result', presses: { ArrowDown: 'next', 'Ctrl+n': 'next' } },
+    {
+      keys: '↓ / Ctrl+N',
+      does: 'Next result',
+      presses: {
+        ...pressesWith('ArrowDown', 'next', ANY),
+        ...pressesWith('n', 'next', { held: ['Ctrl'], either: ['Meta', 'Alt'] }),
+      },
+    },
     {
       keys: '↑ / Ctrl+P',
       does: 'Previous result',
-      presses: { ArrowUp: 'previous', 'Ctrl+p': 'previous' },
+      presses: {
+        ...pressesWith('ArrowUp', 'previous', ANY),
+        ...pressesWith('p', 'previous', { held: ['Ctrl'], either: ['Meta', 'Alt'] }),
+      },
     },
-    { keys: 'Enter', does: 'Go to the result', presses: { Enter: 'choose' } },
+    { keys: 'Enter', does: 'Go to the result', presses: pressesWith('Enter', 'choose', ANY) },
   ],
 }
 
