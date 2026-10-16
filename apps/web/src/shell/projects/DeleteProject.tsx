@@ -19,12 +19,19 @@ export function DeleteProject({ id }: { id: ProjectId }) {
   const projects = useEveryProject()
   const project = projects.data?.find((p) => p.id === id)
 
-  /** What the modules say goes with it ("12 tasks"); null until they have all answered. */
-  const [contents, setContents] = useState<string[] | null>(null)
+  /**
+   * What the modules say goes with it ("12 tasks"); null until they have all answered, and
+   * `uncounted` when one could not say, which still leaves the question to ask.
+   */
+  const [contents, setContents] = useState<string[] | 'uncounted' | null>(null)
   const ask = async () => {
     setContents(null)
-    const parts = await Promise.all(projectContents.map((c) => c(qc, id)))
-    setContents(parts.filter((p): p is string => p !== null))
+    try {
+      const parts = await Promise.all(projectContents.map((c) => c(qc, id)))
+      setContents(parts.filter((p): p is string => p !== null))
+    } catch {
+      setContents('uncounted')
+    }
   }
   const forget = useForgetRecent()
   const remove = useMutation({
@@ -45,9 +52,11 @@ export function DeleteProject({ id }: { id: ProjectId }) {
         message={
           contents === null
             ? null
-            : contents.length === 0
-              ? `Delete “${project.name}”. This cannot be undone.`
-              : `Delete “${project.name}” and its ${contents.join(' and ')}. This cannot be undone.`
+            : contents === 'uncounted'
+              ? `Delete “${project.name}” and everything in it. This cannot be undone.`
+              : contents.length === 0
+                ? `Delete “${project.name}”. This cannot be undone.`
+                : `Delete “${project.name}” and its ${contents.join(' and ')}. This cannot be undone.`
         }
         busy={remove.isPending}
         onAsk={() => void ask()}

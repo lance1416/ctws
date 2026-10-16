@@ -355,3 +355,16 @@ test('a delete question asked on one project does not follow to the next', async
   await expect(header(page)).toContainText('Beta')
   await expect(page.getByRole('alertdialog')).toHaveCount(0)
 })
+
+test('the delete question still asks when counting what goes with the project fails', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'Alpha')
+  await page.goto(`/projects/${pid}`)
+  await page.route(`**/api/v1/tasks?projectId=${pid}`, (r) => r.fulfill({ status: 500 }))
+  await page.getByRole('button', { name: 'Delete project' }).click()
+  const ask = page.getByRole('alertdialog')
+  await expect(ask).toContainText('Delete “Alpha” and everything in it. This cannot be undone.')
+  await expect(ask.getByRole('button', { name: 'Confirm delete' })).toBeEnabled()
+})
