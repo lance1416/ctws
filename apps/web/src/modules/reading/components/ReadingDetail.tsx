@@ -1,6 +1,6 @@
 import { type ReadingItemResponse, type ReadingStatus, type ProjectId } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
-import { useState, type ReactNode } from 'react'
+import { useState } from 'react'
 import { problemText } from '../../../platform/http/api'
 import { deleteReadingItem, patchReadingItem } from '../api'
 import { readingLabel, recentEntry } from '../logic/item'
@@ -9,16 +9,12 @@ import { dayPhrase, ymd } from '../../../platform/time/dates'
 import { planChoices, type PlanDay } from '../logic/plans'
 import { useTimeZone } from '../../../shell/auth'
 import { BUTTON } from '../../../platform/ui/buttonStyles'
-import { DangerAction, DangerZone } from '../../../platform/ui/DangerZone'
-import { DetailPane } from '../../../platform/ui/DetailPane'
-import { UnsavedAsk } from '../../../platform/ui/UnsavedAsk'
-import { useReportUnsaved, useUnsavedGuard } from '../../../platform/ui/unsavedGuard'
-import { BackHead, FormBar, useDestroy } from '../../../shell/detail'
+import { DangerAction } from '../../../platform/ui/DangerZone'
+import { useReportUnsaved } from '../../../platform/ui/unsavedGuard'
+import { FormBar, ItemPane, useDestroy, useItemPane } from '../../../shell/detail'
 import { Field } from '../../../platform/ui/Field'
 import { CHIP, field, label } from '../../../platform/ui/formStyles'
 import { PickOne } from '../../../platform/ui/inline'
-import { LinkedSection } from '../../../shell/links'
-import { useRecordRecent } from '../../../shell/search'
 import { useNow } from '../../../platform/time/useNow'
 
 const STATUS_LABEL: Record<ReadingStatus, string> = {
@@ -47,42 +43,28 @@ export function ReadingDetail({
   item: ReadingItemResponse
   onClose: () => void
 }) {
-  useRecordRecent(recentEntry(item))
-  // Escape, the scrim and the close button ask first when the form has unsaved changes.
-  const [unsaved, setUnsaved] = useState(false)
-  const guard = useUnsavedGuard(unsaved)
-  const requestClose = () => guard.leave(onClose)
+  const pane = useItemPane(onClose)
   return (
-    <DetailPane label="Reading" onClose={requestClose}>
-      <ReadingFields
-        item={item}
-        onClose={requestClose}
-        ask={<UnsavedAsk guard={guard} />}
-        onUnsaved={setUnsaved}
-      />
-
-      <LinkedSection of={{ type: 'reading', id: item.id }} className="mt-4" />
-
-      <DangerZone>
-        <DeleteReading item={item} onDeleted={onClose} />
-      </DangerZone>
-    </DetailPane>
+    <ItemPane
+      pane={pane}
+      label="Reading"
+      back="/reading"
+      recent={recentEntry(item)}
+      linked={{ of: { type: 'reading', id: item.id } }}
+      danger={<DeleteReading item={item} onDeleted={onClose} />}
+    >
+      <ReadingFields item={item} pane={pane} />
+    </ItemPane>
   )
 }
 
 function ReadingFields({
   item,
-  onClose,
-  ask,
-  onUnsaved,
+  pane,
 }: {
   item: ReadingItemResponse
-  onClose: () => void
-  /** The leave guard's question, drawn under the head. */
-  ask: ReactNode
-  onUnsaved: (unsaved: boolean) => void
+  pane: Pick<ReturnType<typeof useItemPane>, 'editing' | 'setEditing' | 'onUnsaved'>
 }) {
-  const [editing, setEditing] = useState(false)
   const timeZone = useTimeZone()
   const today = ymd(useNow(), timeZone)
 
@@ -92,32 +74,24 @@ function ReadingFields({
     meta: { awaits: [['reading']], ownsError: true },
   })
 
-  const head = <BackHead to="/reading" label="Reading" onClose={onClose} />
-
-  if (editing) {
+  if (pane.editing) {
     return (
-      <div className="flex flex-col gap-4">
-        {head}
-        {ask}
-        <ReadingForm
-          item={item}
-          busy={save.isPending}
-          error={problemText(save.error)}
-          onCancel={() => {
-            save.reset()
-            setEditing(false)
-          }}
-          onSave={(patch) => save.mutate(patch, { onSuccess: () => setEditing(false) })}
-          onUnsaved={onUnsaved}
-        />
-      </div>
+      <ReadingForm
+        item={item}
+        busy={save.isPending}
+        error={problemText(save.error)}
+        onCancel={() => {
+          save.reset()
+          pane.setEditing(false)
+        }}
+        onSave={(patch) => save.mutate(patch, { onSuccess: () => pane.setEditing(false) })}
+        onUnsaved={pane.onUnsaved}
+      />
     )
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      {head}
-
+    <>
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           {item.url ? (
@@ -136,7 +110,7 @@ function ReadingFields({
             {item.kind === 'book' ? (item.author ?? 'Book') : (item.url ?? 'Link')}
           </p>
         </div>
-        <button type="button" className={BUTTON.secondary} onClick={() => setEditing(true)}>
+        <button type="button" className={BUTTON.secondary} onClick={() => pane.setEditing(true)}>
           Edit
         </button>
       </div>
@@ -169,7 +143,7 @@ function ReadingFields({
           </Field>
         </div>
       </div>
-    </div>
+    </>
   )
 }
 

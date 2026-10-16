@@ -1,63 +1,51 @@
 import type { PersonResponse } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
-import { useState } from 'react'
 import { problemText } from '../../../platform/http/api'
-import { DangerAction, DangerZone } from '../../../platform/ui/DangerZone'
-import { DetailPane } from '../../../platform/ui/DetailPane'
-import { UnsavedAsk } from '../../../platform/ui/UnsavedAsk'
-import { useUnsavedGuard } from '../../../platform/ui/unsavedGuard'
-import { BackHead, useDestroy } from '../../../shell/detail'
-import { LinkedSection } from '../../../shell/links'
-import { useRecordRecent } from '../../../shell/search'
+import { DangerAction } from '../../../platform/ui/DangerZone'
+import { ItemPane, useDestroy, useItemPane } from '../../../shell/detail'
 import { deletePerson, patchPerson } from '../api'
 import { PersonForm } from './PersonForm'
 import { PersonRead } from './PersonRead'
 
 export function PersonDetail({ person, onClose }: { person: PersonResponse; onClose: () => void }) {
-  useRecordRecent({
-    type: 'person',
-    id: person.id,
-    title: person.name,
-    to: `/people/${person.id}`,
-    kind: 'Person',
-  })
-  const [editing, setEditing] = useState(false)
+  const pane = useItemPane(onClose)
   // Waits for the list, so the reading that replaces the form already shows the edit.
   const save = useMutation({
     mutationFn: (patch: Parameters<typeof patchPerson>[1]) => patchPerson(person.id, patch),
     meta: { awaits: [['people']], ownsError: true },
   })
-  // Escape, the scrim and the close button ask first when the form has unsaved changes.
-  const [unsaved, setUnsaved] = useState(false)
-  const guard = useUnsavedGuard(unsaved)
-  const requestClose = () => guard.leave(onClose)
 
   return (
-    <DetailPane label="People" onClose={requestClose}>
-      <div className="flex flex-col gap-4">
-        <BackHead to="/people" label="People" onClose={requestClose} />
-        <UnsavedAsk guard={guard} />
-        {editing ? (
-          <PersonForm
-            person={person}
-            busy={save.isPending}
-            error={problemText(save.error)}
-            onCancel={() => {
-              save.reset()
-              setEditing(false)
-            }}
-            onSave={(patch) => save.mutate(patch, { onSuccess: () => setEditing(false) })}
-            onUnsaved={setUnsaved}
-          />
-        ) : (
-          <PersonRead person={person} onEdit={() => setEditing(true)} />
-        )}
-      </div>
-      <LinkedSection of={{ type: 'person', id: person.id }} className="mt-4" />
-      <DangerZone>
-        <DeletePerson person={person} onDeleted={onClose} />
-      </DangerZone>
-    </DetailPane>
+    <ItemPane
+      pane={pane}
+      label="People"
+      back="/people"
+      recent={{
+        type: 'person',
+        id: person.id,
+        title: person.name,
+        to: `/people/${person.id}`,
+        kind: 'Person',
+      }}
+      linked={{ of: { type: 'person', id: person.id } }}
+      danger={<DeletePerson person={person} onDeleted={onClose} />}
+    >
+      {pane.editing ? (
+        <PersonForm
+          person={person}
+          busy={save.isPending}
+          error={problemText(save.error)}
+          onCancel={() => {
+            save.reset()
+            pane.setEditing(false)
+          }}
+          onSave={(patch) => save.mutate(patch, { onSuccess: () => pane.setEditing(false) })}
+          onUnsaved={pane.onUnsaved}
+        />
+      ) : (
+        <PersonRead person={person} onEdit={() => pane.setEditing(true)} />
+      )}
+    </ItemPane>
   )
 }
 

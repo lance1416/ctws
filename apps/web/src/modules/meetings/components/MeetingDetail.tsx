@@ -1,12 +1,5 @@
 import type { MeetingOccurrence } from '@ctws/contracts'
-import { useState } from 'react'
-import { DangerZone } from '../../../platform/ui/DangerZone'
-import { DetailPane } from '../../../platform/ui/DetailPane'
-import { UnsavedAsk } from '../../../platform/ui/UnsavedAsk'
-import { useUnsavedGuard } from '../../../platform/ui/unsavedGuard'
-import { BackHead } from '../../../shell/detail'
-import { LinkedSection } from '../../../shell/links'
-import { useRecordRecent } from '../../../shell/search'
+import { ItemPane, useItemPane } from '../../../shell/detail'
 import { CancelMeeting } from './CancelMeeting'
 import { MeetingForm } from './MeetingForm'
 import { MeetingRead } from './MeetingRead'
@@ -27,80 +20,64 @@ export function MeetingDetail({
   /** A save moved it, and so may have renamed it: this is the occurrence the server now has. */
   onMoved: (occurrence: MeetingOccurrence) => void
 }) {
-  useRecordRecent({
-    type: 'meeting',
-    id: meeting.meetingId,
-    title: meeting.title,
-    to: `/meetings/${meeting.meetingId}`,
-    kind: 'Meeting',
-  })
-  const [editing, setEditing] = useState(false)
+  const pane = useItemPane(onClose)
   const edit = useScopedEdit(meeting, (moved) => {
-    setEditing(false)
+    pane.setEditing(false)
     if (moved) onMoved(moved)
   })
-  // Escape, the scrim and the close button ask first when the form has unsaved changes.
-  const [unsaved, setUnsaved] = useState(false)
-  const guard = useUnsavedGuard(unsaved)
-  const requestClose = () => guard.leave(onClose)
 
   return (
-    <DetailPane label="Meetings" onClose={requestClose}>
-      <div className="flex flex-col gap-4">
-        <BackHead
-          to="/meetings"
-          label="Meetings"
-          onClose={requestClose}
-          note={meeting.overridden && <span className="text-xs text-ink-subtle">Edited</span>}
+    <ItemPane
+      pane={pane}
+      label="Meetings"
+      back="/meetings"
+      note={meeting.overridden && <span className="text-xs text-ink-subtle">Edited</span>}
+      recent={{
+        type: 'meeting',
+        id: meeting.meetingId,
+        title: meeting.title,
+        to: `/meetings/${meeting.meetingId}`,
+        kind: 'Meeting',
+      }}
+      // People are left out: attendees are written on the meeting itself.
+      linked={{ of: { type: 'meeting', id: meeting.meetingId }, except: ['person'] }}
+      danger={<CancelMeeting meeting={meeting} onCancelled={onClose} />}
+    >
+      {/* Above the form, beside the Save that raised it. */}
+      {edit.asking && (
+        <ScopeAsk
+          what="This meeting repeats. Which occurrences does this change?"
+          onPick={edit.pick}
+          onCancel={edit.back}
+          // The form under it has a Cancel of its own, which this must not be confused with.
+          back="Keep editing"
         />
+      )}
+      {edit.failed && (
+        <p role="alert" className="text-sm text-danger">
+          {edit.failed}
+        </p>
+      )}
 
-        <UnsavedAsk guard={guard} />
-        {/* Above the form, beside the Save that raised it. */}
-        {edit.asking && (
-          <ScopeAsk
-            what="This meeting repeats. Which occurrences does this change?"
-            onPick={edit.pick}
-            onCancel={edit.back}
-            // The form under it has a Cancel of its own, which this must not be confused with.
-            back="Keep editing"
-          />
-        )}
-        {edit.failed && (
-          <p role="alert" className="text-sm text-danger">
-            {edit.failed}
-          </p>
-        )}
-
-        {editing ? (
-          <MeetingForm
-            meeting={meeting}
-            accountZone={accountZone}
-            busy={edit.busy}
-            onCancel={() => {
-              edit.reset()
-              setEditing(false)
-            }}
-            onSave={edit.submit}
-            onUnsaved={setUnsaved}
-          />
-        ) : (
-          <MeetingRead
-            meeting={meeting}
-            accountZone={accountZone}
-            onEdit={() => setEditing(true)}
-          />
-        )}
-      </div>
-
-      {/* People are left out: attendees are written on the meeting itself. */}
-      <LinkedSection
-        of={{ type: 'meeting', id: meeting.meetingId }}
-        except={['person']}
-        className="mt-4"
-      />
-      <DangerZone>
-        <CancelMeeting meeting={meeting} onCancelled={onClose} />
-      </DangerZone>
-    </DetailPane>
+      {pane.editing ? (
+        <MeetingForm
+          meeting={meeting}
+          accountZone={accountZone}
+          busy={edit.busy}
+          onCancel={() => {
+            edit.reset()
+            pane.setEditing(false)
+          }}
+          onSave={edit.submit}
+          onUnsaved={pane.onUnsaved}
+        />
+      ) : (
+        <MeetingRead
+          meeting={meeting}
+          accountZone={accountZone}
+          onEdit={() => pane.setEditing(true)}
+        />
+      )}
+    </ItemPane>
   )
 }
