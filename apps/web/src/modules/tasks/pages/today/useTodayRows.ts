@@ -31,7 +31,7 @@ export function useTodayRows({
   rows: readonly TodayTaskResponse[]
   settled: boolean
   openId: TaskId | null
-  setOpenId: (id: TaskId | null) => void
+  setOpenId: (id: TaskId | null, options?: { replace?: boolean }) => void
   setError: (message: string | null) => void
 }) {
   const keys = useKeyTable(TODAY_KEYS)

@@ -1,5 +1,13 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
-import { apiPost, registerFreshUser } from './helpers'
+import {
+  accountZone,
+  apiPost,
+  dayInZone,
+  editDetail,
+  makeProject,
+  makeTask,
+  registerFreshUser,
+} from './helpers'
 import { dayOffset } from './days'
 
 /**
@@ -75,3 +83,26 @@ test('the scrim on an edited reading item asks before throwing the edit away', a
   await expect(asked(pane)).toBeVisible()
   await expect(title).toHaveValue('The C Programming Language')
 })
+
+for (const where of ['Today', 'Done'] as const) {
+  test(`opening another task beside an edited one on ${where} asks first`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await registerFreshUser(page)
+    const pid = await makeProject(page, 'P')
+    const today = dayInZone(await accountZone(page))
+    const fields = where === 'Today' ? { scheduledOn: today } : { status: 'done' }
+    await makeTask(page, pid, 'First task', fields)
+    await makeTask(page, pid, 'Second task', fields)
+    await page.goto(where === 'Today' ? '/tasks/today' : '/tasks/review?view=done')
+
+    await page.getByRole('main').getByText('First task').click()
+    const pane = page.getByRole('dialog', { name: 'Task details' })
+    await editDetail(page)
+    await pane.getByRole('textbox', { name: 'Title' }).fill('First task, renamed')
+    await page.getByRole('main').getByText('Second task').click()
+
+    await expect(asked(pane)).toBeVisible()
+    await pane.getByRole('button', { name: 'Keep editing' }).click()
+    await expect(pane.getByRole('textbox', { name: 'Title' })).toHaveValue('First task, renamed')
+  })
+}
