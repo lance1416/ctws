@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { instant } from './common'
+import { instant, nameText } from './common'
 
 /**
  * A project's colour is a slot naming a `--color-project-N` token, not a colour value: each token
@@ -18,13 +18,13 @@ export type ProjectColor = z.infer<typeof projectColor>
 
 export const createProjectBody = z
   .object({
-    name: z.string().trim().min(1).max(200),
+    name: nameText,
   })
   .strict()
 
 export const updateProjectBody = z
   .object({
-    name: z.string().trim().min(1).max(200),
+    name: nameText,
     color: projectColor,
     archived: z.boolean(),
   })

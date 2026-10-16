@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { calendarDate, instant } from './common'
+import { calendarDate, instant, nameText, titleText } from './common'
 
 /**
  * Reading comes in two kinds: a link has a url, a book has an author and no url. A link's title
@@ -24,13 +24,13 @@ export const FINISHED_READING_STATUSES = [
 export const readingIsFinished = (status: ReadingStatus): boolean =>
   (FINISHED_READING_STATUSES as readonly ReadingStatus[]).includes(status)
 
-const readingTitle = z.string().trim().min(1).max(500)
+const readingTitle = titleText
 // http(s) only: the list renders the url as a link someone will click.
 const readingUrl = z
   .url()
   .max(2000)
   .refine((u) => /^https?:\/\//i.test(u), { message: 'expected an http(s) url' })
-const author = z.string().trim().min(1).max(200)
+const author = nameText
 
 /** What capture has: a pasted url, or a typed title. The rest is edited afterwards. */
 export const createReadingItemBody = z.discriminatedUnion('kind', [

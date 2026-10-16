@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { EVENT_YEARS, eventTimeZone, instant } from './common'
+import { EVENT_YEARS, eventTimeZone, instant, noteText, titleText } from './common'
 
 /**
  * A meeting, after iCalendar's `VEVENT` (RFC 5545): a wall clock plus a zone and a duration, so a
@@ -7,9 +7,9 @@ import { EVENT_YEARS, eventTimeZone, instant } from './common'
  * single occurrences are cancelled (`EXDATE`) or overridden (`RECURRENCE-ID`).
  */
 
-const title = z.string().trim().min(1).max(500)
+const title = titleText
 const location = z.string().trim().min(1).max(500)
-const note = z.string().max(10_000)
+const note = noteText
 
 /** A wall clock with no zone, `YYYY-MM-DDTHH:mm`, as a `datetime-local` control produces. */
 const localTime = z

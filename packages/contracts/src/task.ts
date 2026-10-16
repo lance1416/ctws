@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { WINDOW_REFUSED, windowIsBounded } from './calendar'
-import { calendarDate, instant } from './common'
+import { calendarDate, documentText, instant, titleText } from './common'
 
 export const TASK_STATUSES = ['backlog', 'todo', 'in_progress', 'done', 'cancelled'] as const
 const taskStatus = z.enum(TASK_STATUSES)
@@ -31,8 +31,8 @@ export type ReviewList = keyof typeof REVIEW_TRANSITIONS
 /** The deepest a task may sit; a root is at depth 1. */
 export const MAX_TASK_DEPTH = 10
 
-const title = z.string().trim().min(1).max(500)
-const notes = z.string().max(100_000)
+const title = titleText
+const notes = documentText
 
 // The server computes rank; neither create nor update accepts one.
 export const createTaskBody = z

@@ -2,6 +2,19 @@ import { z } from 'zod'
 
 export const DAY_MS = 86_400_000
 
+/** What a thing is called where it is listed: a task, a meeting, a book. */
+export const titleText = z.string().trim().min(1).max(500)
+
+/** Who or what something is: a project, a person, an organisation, an author. */
+export const nameText = z.string().trim().min(1).max(200)
+
+/**
+ * A task's notes are its working document (checklists, tables, diagrams), so they get room for
+ * one. A note on a person or a meeting is a few paragraphs beside the facts, and gets a tenth.
+ */
+export const documentText = z.string().max(100_000)
+export const noteText = z.string().max(10_000)
+
 /** The years a plan, a deadline or a meeting may fall in. */
 export const EVENT_YEARS = { min: 1970, max: 2200 } as const
 

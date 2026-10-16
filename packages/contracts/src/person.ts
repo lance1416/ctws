@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { birthdayInput, birthdayResponse } from './birthday'
-import { calendarDate, instant } from './common'
+import { calendarDate, instant, nameText, noteText } from './common'
 
 /**
  * A person, after vCard 4.0 (RFC 6350): a formatted name, an organisation, notes, and a
@@ -63,9 +63,9 @@ export type Gender = (typeof GENDERS)[number]
 export const CIRCLES = ['family', 'friend', 'work'] as const
 export type Circle = (typeof CIRCLES)[number]
 
-const personName = z.string().trim().min(1).max(200)
-const org = z.string().trim().min(1).max(200)
-const note = z.string().max(10_000)
+const personName = nameText
+const org = nameText
+const note = noteText
 const place = z.string().trim().min(1).max(120)
 /** Written as a whole list; the server replaces the set. */
 const channels = z.array(personChannel).max(20)
