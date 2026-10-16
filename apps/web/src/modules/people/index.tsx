@@ -1,3 +1,4 @@
+import { kindPage } from '../../shell/layout'
 import type { WorkspaceModule } from '../../shell/contract'
 import { BirthdayCard } from './components/BirthdayCard'
 import { NextBirthdayLine, PeopleCount } from './components/PeopleKind'
@@ -14,6 +15,8 @@ export { usePeople } from './hooks/usePeople'
  * No capture rule: a pasted address is likelier a note about someone than a person to file.
  * No project-page block: people reach a project as edges, which the shell draws for every kind.
  */
+const PAGE = kindPage('People')
+
 export const peopleModule: WorkspaceModule = {
   id: PEOPLE_ID,
   label: 'People',
@@ -27,11 +30,11 @@ export const peopleModule: WorkspaceModule = {
     order: 20,
   },
   routes: [
-    { index: true, element: <People /> },
+    { index: true, element: <People />, handle: PAGE },
     // Before `:id`, so a reader need not know that react-router ranks a static segment higher.
-    { path: 'birthdays', element: <Birthdays /> },
+    { path: 'birthdays', element: <Birthdays />, handle: PAGE },
     // A person has no page of their own: this is the list with their pane open.
-    { path: ':id', element: <People /> },
+    { path: ':id', element: <People />, handle: PAGE },
   ],
   search: { useHits: usePeopleHits },
   calendar: {

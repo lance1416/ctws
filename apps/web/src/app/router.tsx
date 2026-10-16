@@ -1,11 +1,14 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { Login } from '../shell/auth'
 import { Calendar } from '../shell/calendar'
-import { Layout, RouteError } from '../shell/layout'
-import { ProjectPage, Projects } from '../shell/projects'
+import { Layout, RouteError, topPage, type PageHandle } from '../shell/layout'
+import { ProjectPage, Projects, useProjectCrumbs } from '../shell/projects'
 import { WORKBENCH_PATH } from '../shell/registry'
 import { Things, Workbench } from '../shell/workbench'
 import { registry } from './registry'
+
+/** The tiles sit on the desk. */
+const WORKBENCH: PageHandle = { ...topPage('Workbench'), ground: 'desk' }
 
 export const router = createBrowserRouter([
   {
@@ -21,11 +24,15 @@ export const router = createBrowserRouter([
           {
             errorElement: <RouteError />,
             children: [
-              { index: true, element: <Workbench /> },
-              { path: '/calendar', element: <Calendar /> },
-              { path: '/projects', element: <Projects /> },
-              { path: '/projects/:id', element: <ProjectPage /> },
-              { path: '/things', element: <Things /> },
+              { index: true, element: <Workbench />, handle: WORKBENCH },
+              { path: '/calendar', element: <Calendar />, handle: topPage('Calendar') },
+              { path: '/projects', element: <Projects />, handle: topPage('Projects') },
+              {
+                path: '/projects/:id',
+                element: <ProjectPage />,
+                handle: { useCrumbs: useProjectCrumbs } satisfies PageHandle,
+              },
+              { path: '/things', element: <Things />, handle: topPage('Things') },
               ...registry.routes,
               { path: '*', element: <Navigate to={WORKBENCH_PATH} replace /> },
             ],

@@ -8,14 +8,12 @@ import { NewPersonInput } from '../components/NewPersonInput'
 import { BUTTON } from '../../../platform/ui/buttonStyles'
 import { PeopleHead } from '../components/PeopleViews'
 import { CIRCLE_LABELS } from '../logic/labels'
-import { useCrumbs } from '../../../shell/layout'
 import { GoneNotice, useOpenFromUrl } from '../../../shell/detail'
 import { QueryStatus } from '../../../platform/ui/QueryStatus'
 import { HANG } from '../../../platform/ui/hang'
 
 /** One flat list by name, filtered by circle; search does the rest. */
 export function People() {
-  useCrumbs([{ label: 'Things', to: '/things' }, { label: 'People' }])
   const people = useQuery(peopleQuery())
   // A person has no page of their own: `/people/<id>` opens them over this list.
   const { openId, open, gone, show, close } = useOpenFromUrl({

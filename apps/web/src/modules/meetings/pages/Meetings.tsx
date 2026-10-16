@@ -31,7 +31,6 @@ import { cityAndZone } from '../logic/timeZones'
 import { useTimeZone } from '../../../shell/auth'
 import { useNow } from '../../../platform/time/useNow'
 import { BUTTON, LINK } from '../../../platform/ui/buttonStyles'
-import { useCrumbs } from '../../../shell/layout'
 import { QueryStatus } from '../../../platform/ui/QueryStatus'
 import { PageHead } from '../../../platform/ui/PageHead'
 import { HANG } from '../../../platform/ui/hang'
@@ -58,7 +57,6 @@ type Occurrence = { meetingId: MeetingId; recurrenceId: string }
 
 /** One row per series, showing its next occurrence; coming up first, the past behind a toggle. */
 export function Meetings() {
-  useCrumbs([{ label: 'Things', to: '/things' }, { label: 'Meetings' }])
   const accountZone = useTimeZone()
   const now = useNow()
   const today = ymd(now, accountZone)

@@ -1,3 +1,4 @@
+import { kindPage } from '../../shell/layout'
 import type { WorkspaceModule } from '../../shell/contract'
 import { ReadingCount, UnfiledLine } from './components/ReadingKind'
 import { ReadingAside, ReadingWidget } from './components/ReadingWidget'
@@ -7,6 +8,8 @@ import { isReadingUrl } from './logic/readingUrl'
 import { Reading } from './pages/Reading'
 
 // No project-page block: reading reaches a project as edges, which the shell draws for every kind.
+const PAGE = kindPage('Reading')
+
 export const readingModule: WorkspaceModule = {
   id: READING_ID,
   label: 'Reading',
@@ -19,9 +22,9 @@ export const readingModule: WorkspaceModule = {
     order: 40,
   },
   routes: [
-    { index: true, element: <Reading /> },
+    { index: true, element: <Reading />, handle: PAGE },
     // An item has no page of its own: this is the list with its pane open.
-    { path: ':id', element: <Reading /> },
+    { path: ':id', element: <Reading />, handle: PAGE },
   ],
   capture: { useTarget: useReadingCapture, accepts: isReadingUrl },
   search: { useHits: useReadingHits },

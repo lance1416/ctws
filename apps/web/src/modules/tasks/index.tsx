@@ -1,4 +1,5 @@
 import type { WorkspaceModule } from '../../shell/contract'
+import { topPage } from '../../shell/layout'
 import { inboxOf, projectsQuery } from '../../shell/projects'
 import { projectTasksQuery } from './api'
 import {
@@ -51,8 +52,8 @@ export const taskModule: WorkspaceModule = {
     order: 10,
   },
   routes: [
-    { path: 'today', element: <Today /> },
-    { path: 'review', element: <Review /> },
+    { path: 'today', element: <Today />, handle: topPage('Today') },
+    { path: 'review', element: <Review />, handle: topPage('Review') },
     // After the pages: a static segment outranks `:id`, so `today` is never read as a task.
     { path: ':id', element: <OpenTask /> },
   ],

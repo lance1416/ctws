@@ -8,7 +8,6 @@ import { Panel, PanelEmpty } from '../../../platform/ui/Panel'
 import { MONTHS } from '../../../platform/time/dates'
 import { type Circle, CIRCLES } from '@ctws/contracts'
 import { PeopleHead } from '../components/PeopleViews'
-import { useCrumbs } from '../../../shell/layout'
 import { HANG } from '../../../platform/ui/hang'
 
 /**
@@ -16,7 +15,6 @@ import { HANG } from '../../../platform/ui/hang'
  * Filtering happens in the browser, since one person's book is a few dozen rows.
  */
 export function Birthdays() {
-  useCrumbs([{ label: 'Things', to: '/things' }, { label: 'People' }])
   const [find, setFind] = useState('')
   const [month, setMonth] = useState<number | null>(null)
   const [circle, setCircle] = useState<Circle | null>(null)

@@ -7,14 +7,12 @@ import { LIST_MEASURE } from '../rows/leads'
 import { useInlineEdit } from '../../platform/ui/useInlineEdit'
 import { DaySection } from '../rows/DaySection'
 import { textbox } from '../../platform/ui/formStyles'
-import { useCrumbs } from '../layout/Breadcrumbs'
 import { BODY_GUTTER, ProjectRail, ROW_LIST } from '../rows/RowParts'
 import { PageHead } from '../../platform/ui/PageHead'
 import { HANG } from '../../platform/ui/hang'
 import { useRegistry } from '../registry'
 
 export function Projects() {
-  useCrumbs([{ label: 'Projects' }])
   const [name, setName] = useState('')
   const projects = useProjects()
   const archivedList = useQuery(archivedProjectsQuery())

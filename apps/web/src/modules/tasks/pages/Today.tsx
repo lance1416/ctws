@@ -14,7 +14,6 @@ import { ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { HANG } from '../../../platform/ui/hang'
 import { useTimeZone } from '../../../shell/auth'
-import { useCrumbs } from '../../../shell/layout'
 import { useRegistry } from '../../../shell/registry'
 import { DayEmpty, DaySection, leadFor, ROW_LIST } from '../../../shell/rows'
 import { completedQuery, movementQuery, todayQuery } from '../api'
@@ -40,7 +39,6 @@ import { TodayRow } from './today/TodayRow'
  * week beside them. The line holds every module's dated things; the server files each task.
  */
 export function Today() {
-  useCrumbs([{ label: 'Today' }])
   const today = useQuery(todayQuery())
   const completed = useQuery(completedQuery())
   const movement = useQuery(movementQuery())

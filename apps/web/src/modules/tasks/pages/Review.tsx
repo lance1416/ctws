@@ -25,7 +25,6 @@ import { monthDay, nextMonday, ymd } from '../../../platform/time/dates'
 import { weekAfter, weekBefore } from '../logic/review'
 import { useTimeZone } from '../../../shell/auth'
 import { useNow } from '../../../platform/time/useNow'
-import { useCrumbs } from '../../../shell/layout'
 import { PageHead } from '../../../platform/ui/PageHead'
 import { HANG } from '../../../platform/ui/hang'
 
@@ -97,7 +96,6 @@ const VIEWS = [
 ]
 
 export function Review() {
-  useCrumbs([{ label: 'Review' }])
   const [view, pickView] = useViewParam(VIEWS)
   const [range, setRange] = useState<{ from: string; to: string } | null>(null)
   const review = useQuery({

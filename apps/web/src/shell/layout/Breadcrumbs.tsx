@@ -1,43 +1,18 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { usePage, type Crumbs } from './page'
 
-/** Where a step of a page's path links. */
-type Step = { label: string; to: string }
-
-/** A page's canonical path: steps that link, then the page itself, which does not. */
-export type Crumbs = readonly [] | readonly [...Step[], { label: string }]
-
-const SetCrumbs = createContext<((crumbs: Crumbs) => void) | null>(null)
-const CrumbsContext = createContext<Crumbs>([])
-
-export function BreadcrumbsProvider({ children }: { children: ReactNode }) {
-  const [crumbs, setCrumbs] = useState<Crumbs>([])
-  return (
-    <SetCrumbs.Provider value={setCrumbs}>
-      <CrumbsContext.Provider value={crumbs}>{children}</CrumbsContext.Provider>
-    </SetCrumbs.Provider>
-  )
-}
-
-/**
- * A page says where it is and the header draws it: its place in the hierarchy, not the way it was
- * reached.
- */
-export function useCrumbs(crumbs: Crumbs): void {
-  const set = useContext(SetCrumbs)
-  // By value: callers build the array inline, and a new array each render must not loop.
-  const key = JSON.stringify(crumbs)
-  useEffect(() => {
-    set?.(JSON.parse(key) as Crumbs)
-    return () => set?.([])
-  }, [set, key])
-}
-
+/** The matched page's path, which its route's handle says. */
 export function Breadcrumbs() {
-  const crumbs = useContext(CrumbsContext)
+  const page = usePage('useCrumbs')
+  // Keyed by the route, so the page's hook is always the same one in a mounted trail.
+  return page ? <Trail key={page.id} useCrumbs={page.value} /> : null
+}
+
+function Trail({ useCrumbs }: { useCrumbs: () => Crumbs }) {
+  const crumbs = useCrumbs()
   const here = crumbs.at(-1)
   if (!here) return null
-  const trail = crumbs.slice(0, -1) as readonly Step[]
+  const trail = crumbs.slice(0, -1) as readonly { label: string; to: string }[]
   return (
     <nav aria-label="Location" className="flex min-w-0 items-center gap-2 text-ink-muted">
       {/* Below 640 only the page's own name fits. */}

@@ -3,7 +3,7 @@ import { useParams, useSearchParams } from 'react-router-dom'
 import { DangerZone } from '../../platform/ui/DangerZone'
 import { Panel } from '../../platform/ui/Panel'
 import { ViewTabs } from '../../platform/ui/ViewTabs'
-import { useCrumbs } from '../layout/Breadcrumbs'
+import type { Crumbs } from '../layout/page'
 import { Links } from '../links/Links'
 import { useRegistry } from '../registry'
 import { useForgetWhenGone, useRecordRecent } from '../search/recent'
@@ -12,21 +12,30 @@ import { DeleteProject } from './DeleteProject'
 import { ProjectHead } from './ProjectHead'
 import { HANG } from '../../platform/ui/hang'
 
+/** The project the address names, live or archived: an archived project still has its page. */
+function useOpenProject() {
+  const { id: idParam } = useParams()
+  const id = idParam === undefined ? undefined : idFrom(projectId, idParam)
+  const projects = useEveryProject()
+  const project = projects.data?.find((p) => p.id === id)
+  return { id, project, gone: projects.isSuccess && !project }
+}
+
+/** The project page's path: its name once known, or that there is no such project. */
+export function useProjectCrumbs(): Crumbs {
+  const { project, gone } = useOpenProject()
+  const name = project?.name ?? (gone ? 'Not found' : null)
+  return name ? [{ label: 'Projects', to: '/projects' }, { label: name }] : []
+}
+
 /**
  * A project's page: its head, each module's block, everything linked to it, and delete at the
  * foot. A project is worked in, so it has a page; other records open as a pane over their list.
  */
 export function ProjectPage() {
-  const { id: idParam } = useParams()
-  const id = idParam === undefined ? undefined : idFrom(projectId, idParam)
+  const { id, project, gone } = useOpenProject()
   const registry = useRegistry()
   const views = useBlockViews()
-  // Live or archived: an archived project still has its page.
-  const projects = useEveryProject()
-  const project = projects.data?.find((p) => p.id === id)
-  const gone = projects.isSuccess && !project
-  const name = project?.name ?? (gone ? 'Not found' : null)
-  useCrumbs(name ? [{ label: 'Projects', to: '/projects' }, { label: name }] : [])
   useForgetWhenGone('project', id ?? null, gone)
   useRecordRecent(
     id && project

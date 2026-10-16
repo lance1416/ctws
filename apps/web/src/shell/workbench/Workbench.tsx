@@ -3,16 +3,12 @@ import { useProjects } from '../projects/api'
 import { ProjectRail } from '../rows/RowParts'
 import { Panel, PanelEmpty } from '../../platform/ui/Panel'
 import { useRegistry } from '../registry'
-import { useCrumbs } from '../layout/Breadcrumbs'
-import { useGround } from '../layout/ground'
 
 /**
  * The shell's front page: a fixed arrangement of the cards modules contribute, for the things that
  * belong to no project.
  */
 export function Workbench() {
-  useCrumbs([{ label: 'Workbench' }])
-  useGround('desk')
   const widgets = useRegistry().widgets
 
   return (

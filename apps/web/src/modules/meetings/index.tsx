@@ -1,3 +1,4 @@
+import { kindPage } from '../../shell/layout'
 import type { WorkspaceModule } from '../../shell/contract'
 import { CalendarDetail } from './components/CalendarDetail'
 import { MeetingsTodayCount, NextMeetingLine } from './components/MeetingsKind'
@@ -11,6 +12,8 @@ import { Meetings } from './pages/Meetings'
  * provider: a meeting is found by its date, and a weekly title repeats many times over.
  * No project-page block: meetings reach a project as edges, which the shell draws for every kind.
  */
+const PAGE = kindPage('Meetings')
+
 export const meetingModule: WorkspaceModule = {
   id: MEETINGS_ID,
   label: 'Meetings',
@@ -23,9 +26,9 @@ export const meetingModule: WorkspaceModule = {
     order: 30,
   },
   routes: [
-    { index: true, element: <Meetings /> },
+    { index: true, element: <Meetings />, handle: PAGE },
     // A meeting has no page of its own: this is the list with its pane open.
-    { path: ':id', element: <Meetings /> },
+    { path: ':id', element: <Meetings />, handle: PAGE },
   ],
   chords: [
     {

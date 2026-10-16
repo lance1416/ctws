@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
 import { useRegistry } from '../registry'
-import { useCrumbs } from '../layout/Breadcrumbs'
 import { KeyHint } from '../../platform/ui/KeyHint'
 import { HANG_WIDTH } from '../../platform/ui/hang'
 import { BODY_GUTTER, ProjectRail } from '../rows/RowParts'
@@ -11,7 +10,6 @@ import { HANG } from '../../platform/ui/hang'
  * or nobody would learn they exist.
  */
 export function Things() {
-  useCrumbs([{ label: 'Things' }])
   const registry = useRegistry()
   const keys = new Map(registry.chords.map((c) => [c.id, c.key]))
   return (

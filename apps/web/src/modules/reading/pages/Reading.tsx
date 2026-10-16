@@ -12,7 +12,6 @@ import { ReadingRow } from '../components/ReadingRow'
 import { useTimeZone } from '../../../shell/auth'
 import { useNow } from '../../../platform/time/useNow'
 import { ymd } from '../../../platform/time/dates'
-import { useCrumbs } from '../../../shell/layout'
 import { QueryStatus } from '../../../platform/ui/QueryStatus'
 import { PageHead } from '../../../platform/ui/PageHead'
 import { HANG } from '../../../platform/ui/hang'
@@ -24,7 +23,6 @@ const SECTIONS: { status: ReadingStatus; label: string }[] = [
 ]
 
 export function Reading() {
-  useCrumbs([{ label: 'Things', to: '/things' }, { label: 'Reading' }])
   const items = useQuery(readingQuery())
   // An item has no page of its own: `/reading/<id>` opens it over this list.
   const { open, gone, show, close } = useOpenFromUrl({

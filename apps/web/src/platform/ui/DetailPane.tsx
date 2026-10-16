@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react'
 import { tabbable } from 'tabbable'
-import { useReservePane, useWidePane } from './paneLayout'
+import { useWidePane } from './paneLayout'
 import { CloseIcon } from './icons'
 import { LAYER } from './layers'
 
@@ -28,7 +28,6 @@ export function DetailPane({
 }) {
   const panel = useRef<HTMLDivElement>(null)
   const wide = useWidePane()
-  useReservePane()
 
   // The panel is last in the DOM, and Escape only works while focus is inside.
   useEffect(() => panel.current?.focus(), [])
