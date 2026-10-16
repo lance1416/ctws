@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isSingleKey, pressOf, singleKeysOf, type KeyTable } from './keyTable'
+import { isSingleKey, pressesWith, pressOf, singleKeysOf, type KeyTable } from './keyTable'
 
 const event = (key: string, mods: object = {}) => ({
   key,
@@ -35,5 +35,16 @@ describe('the single keys of tables', () => {
       { title: 'B', rows: [{ keys: 'n x', does: '', presses: { x: 'done', n: 'new' } }] },
     ]
     expect(singleKeysOf(tables)).toEqual(['n', 'x'])
+  })
+})
+
+describe('presses with optional modifiers', () => {
+  it('are the key with the held ones and every mix of the optional ones, as pressOf writes them', () => {
+    expect(
+      Object.keys(pressesWith('Enter', 'go', { held: ['Alt'], either: ['Shift', 'Ctrl'] })).sort(),
+    ).toEqual(['Alt+Enter', 'Alt+Shift+Enter', 'Ctrl+Alt+Enter', 'Ctrl+Alt+Shift+Enter'])
+    const presses = pressesWith('ArrowDown', 'next', { either: ['Shift'] })
+    expect(presses[pressOf(event('ArrowDown', { shiftKey: true }))]).toBe('next')
+    expect(presses[pressOf(event('ArrowDown'))]).toBe('next')
   })
 })

@@ -1,5 +1,5 @@
 import type { TaskStatus } from '@ctws/contracts'
-import type { KeyTable } from '../../../platform/keyboard/keyTable'
+import { pressesWith, type KeyTable } from '../../../platform/keyboard/keyTable'
 import { toggleDoneTarget, toggleStartTarget } from './status'
 
 /** `n` needs a project to create into, so it exists only on a project page. */
@@ -43,6 +43,9 @@ export type TreeAction =
   | 'outdent'
   | 'indent'
 
+/** Alt, with or without any other modifier: the tree's Alt presses answer to them all. */
+const ALT_ANY = { held: ['Alt'], either: ['Ctrl', 'Meta', 'Shift'] } as const
+
 /**
  * A focused row in the tree: bare arrows move focus and fold, Alt+arrows move the row and change
  * its depth. Tab is unbound, so one Tab leaves the tree.
@@ -62,19 +65,38 @@ export const TREE_KEYS: KeyTable<TreeAction> = {
     },
     { keys: 'Home End', does: 'First row / last row', presses: { Home: 'first', End: 'last' } },
     { keys: 'Tab', does: 'Leave the tree (the whole tree is one tab stop)', presses: {} },
-    // Plain Enter opens the detail (the keyboard way in), so a sibling is Shift+Enter.
-    { keys: 'Enter', does: 'Open the details', presses: { Enter: 'open' } },
-    { keys: 'Shift+Enter', does: 'Add a sibling', presses: { 'Shift+Enter': 'addSibling' } },
-    { keys: 'Alt+Enter', does: 'Add a subtask', presses: { 'Alt+Enter': 'addChild' } },
+    // Enter opens the detail (the keyboard way in), so a sibling is Shift+Enter. Ctrl and Meta
+    // change none of the three.
+    {
+      keys: 'Enter',
+      does: 'Open the details',
+      presses: pressesWith('Enter', 'open', { either: ['Ctrl', 'Meta'] }),
+    },
+    {
+      keys: 'Shift+Enter',
+      does: 'Add a sibling',
+      presses: pressesWith('Enter', 'addSibling', { held: ['Shift'], either: ['Ctrl', 'Meta'] }),
+    },
+    {
+      keys: 'Alt+Enter',
+      does: 'Add a subtask',
+      presses: pressesWith('Enter', 'addChild', ALT_ANY),
+    },
     {
       keys: 'Alt+↑ Alt+↓',
       does: 'Move this row up / down',
-      presses: { 'Alt+ArrowUp': 'moveUp', 'Alt+ArrowDown': 'moveDown' },
+      presses: {
+        ...pressesWith('ArrowUp', 'moveUp', ALT_ANY),
+        ...pressesWith('ArrowDown', 'moveDown', ALT_ANY),
+      },
     },
     {
       keys: 'Alt+← Alt+→',
       does: 'Outdent / indent',
-      presses: { 'Alt+ArrowLeft': 'outdent', 'Alt+ArrowRight': 'indent' },
+      presses: {
+        ...pressesWith('ArrowLeft', 'outdent', ALT_ANY),
+        ...pressesWith('ArrowRight', 'indent', ALT_ANY),
+      },
     },
     ...STATUS_ROWS,
   ],

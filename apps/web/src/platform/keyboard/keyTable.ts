@@ -38,6 +38,24 @@ export function pressOf(e: KeyLike): string {
   return [...held, e.key].join('+')
 }
 
+type Modifier = 'Ctrl' | 'Meta' | 'Alt' | 'Shift'
+const MODIFIERS: readonly Modifier[] = ['Ctrl', 'Meta', 'Alt', 'Shift']
+
+/**
+ * Every press of a named key with `held` down and any of `either` too or not, each giving `action`:
+ * for a key whose meaning does not change with the extra modifiers.
+ */
+export function pressesWith<A extends string>(
+  key: string,
+  action: A,
+  { held = [], either }: { held?: readonly Modifier[]; either: readonly Modifier[] },
+): Record<string, A> {
+  let sets: Modifier[][] = [[...held]]
+  for (const m of either) sets = sets.flatMap((set) => [set, [...set, m]])
+  const presses = sets.map((set) => [...MODIFIERS.filter((m) => set.includes(m)), key].join('+'))
+  return Object.fromEntries(presses.map((p) => [p, action]))
+}
+
 /** A character with nothing held: the kind of key the off switch silences. */
 export const isSingleKey = (press: string): boolean => [...press].length === 1
 

@@ -34,6 +34,20 @@ describe('the tree keys', () => {
     expect(actionOf(TREE_KEYS, press('Enter', { altKey: true }))).toBe('addChild')
   })
 
+  it('open the details with Enter whether or not Ctrl or Cmd is held', () => {
+    expect(actionOf(TREE_KEYS, press('Enter', { ctrlKey: true }))).toBe('open')
+    expect(actionOf(TREE_KEYS, press('Enter', { metaKey: true }))).toBe('open')
+    expect(actionOf(TREE_KEYS, press('Enter', { ctrlKey: true, shiftKey: true }))).toBe(
+      'addSibling',
+    )
+    expect(actionOf(TREE_KEYS, press('Enter', { altKey: true, metaKey: true }))).toBe('addChild')
+  })
+
+  it('move the row with Alt+arrow whatever else is held', () => {
+    expect(actionOf(TREE_KEYS, press('ArrowUp', { altKey: true, shiftKey: true }))).toBe('moveUp')
+    expect(actionOf(TREE_KEYS, press('ArrowRight', { altKey: true, ctrlKey: true }))).toBe('indent')
+  })
+
   it('move focus with a bare arrow and the row with Alt', () => {
     expect(actionOf(TREE_KEYS, press('ArrowUp'))).toBe('previous')
     expect(actionOf(TREE_KEYS, press('ArrowUp', { altKey: true }))).toBe('moveUp')
