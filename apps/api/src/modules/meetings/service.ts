@@ -217,8 +217,12 @@ async function cancelOne({ tx, workspaceId, now, series, recurrenceId }: Cancel)
   await touch(tx, { workspaceId, now }, series.id)
 }
 
-async function cancelFollowing({ tx, workspaceId, now, series, recurrenceId }: Cancel) {
+async function cancelFollowing(c: Cancel) {
+  const { tx, workspaceId, now, series, recurrenceId } = c
   assertOccurs(series, recurrenceId!)
+  // From the first occurrence on is all of it: ending the rule there leaves a series that never
+  // happens.
+  if (recurrenceId === series.startsLocal) return cancelAll(c)
   await tx
     .update(meetings)
     .set({ rrule: endedBefore(series.rrule!, recurrenceId!), updatedAt: now })
@@ -335,7 +339,7 @@ export async function continueSeries(
     await assertVisible(tx, workspaceId, patch)
     assertRuleFits(series, 'following', patch, from)
     const { attendeeIds, projectId, ...fields } = patch
-    return editFollowing({
+    const edit = {
       tx,
       workspaceId,
       now,
@@ -344,7 +348,13 @@ export async function continueSeries(
       recurrenceId: from,
       attendeeIds,
       projectId,
-    })
+    }
+    // From the first occurrence on is the whole series, changed where it is: a split there would
+    // leave the old one with nothing left to happen.
+    if (from !== series.startsLocal) return editFollowing(edit)
+    assertOccurs(series, from)
+    await editAll(edit)
+    return getOccurrence(tx, workspaceId, id, fields.startsLocal ?? from)
   })
 }
 
