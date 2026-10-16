@@ -1,4 +1,5 @@
 import {
+  type LinkEdge,
   type LinkId,
   linkId,
   type LinkKind,
@@ -15,7 +16,14 @@ import { links } from './tables'
 /** One end of an edge. */
 export type Endpoint = { type: ObjectType; id: string }
 
-/** An edge as stored: its id, both ends and its kind. */
+/** One kind of edge leaving one object, toward one type: an allowed edge without its far end. */
+type EdgesFrom = LinkEdge extends infer Edge
+  ? Edge extends LinkEdge
+    ? { kind: Edge['kind']; from: Edge['from']; toType: Edge['to']['type'] }
+    : never
+  : never
+
+/** An edge as stored: its id, both ends and its kind. Read back, it may be one the model now refuses. */
 export type StoredLink = { id: LinkId; from: Endpoint; to: Endpoint; kind: LinkKind }
 
 const linkColumns = {
@@ -48,19 +56,7 @@ const storedOf = (r: {
  */
 export async function putLinks(
   q: Tx,
-  {
-    workspaceId,
-    now,
-    from,
-    toType,
-    kind,
-    toIds,
-  }: Actor & {
-    from: Endpoint
-    toType: ObjectType
-    kind: LinkKind
-    toIds: readonly string[]
-  },
+  { workspaceId, now, from, toType, kind, toIds }: Actor & EdgesFrom & { toIds: readonly string[] },
 ): Promise<void> {
   const wanted = [...new Set(toIds)]
   await q
@@ -142,7 +138,7 @@ export async function getLink(
  */
 export async function addLink(
   q: Queryable,
-  { workspaceId, now, from, to, kind }: Actor & Omit<StoredLink, 'id'>,
+  { workspaceId, now, from, to, kind }: Actor & LinkEdge,
 ): Promise<{ link: StoredLink; created: boolean }> {
   const [added] = await q
     .insert(links)

@@ -41,7 +41,24 @@ export const LINK_KINDS = [
   inverse: string
 }[]
 
-export type LinkKind = (typeof LINK_KINDS)[number]['kind']
+type LinkRule = (typeof LINK_KINDS)[number]
+export type LinkKind = LinkRule['kind']
+
+/** The types a rule allows at one end; `null` is any. */
+type EndOf<Types> = Types extends readonly ObjectType[] ? Types[number] : ObjectType
+type EdgeOf<Rule> = Rule extends LinkRule
+  ? {
+      kind: Rule['kind']
+      from: { type: EndOf<Rule['from']>; id: string }
+      to: { type: EndOf<Rule['to']>; id: string }
+    }
+  : never
+
+/**
+ * An edge the model allows, by kind. A `belongs` edge from a task or a project is not one, so no
+ * code can write it down: a task's project is its own column, and projects do not nest.
+ */
+export type LinkEdge = EdgeOf<LinkRule>
 const linkKind = z.enum(LINK_KINDS.map((l) => l.kind) as [LinkKind, ...LinkKind[]])
 
 /** Whether the model allows this edge. */
@@ -52,21 +69,35 @@ export function linkIsAllowed(kind: string, from: string, to: string): boolean {
   return allows(rule.from, from) && allows(rule.to, to)
 }
 
+/** Whether the model allows this edge; one it allows is a `LinkEdge`. */
+export function isLinkEdge(edge: {
+  kind: LinkKind
+  from: { type: ObjectType; id: string }
+  to: { type: ObjectType; id: string }
+}): edge is LinkEdge {
+  return linkIsAllowed(edge.kind, edge.from.type, edge.to.type)
+}
+
 const endpoint = z.object({ type: objectType, id: objectId }).strict()
 
 export const createLinkBody = z
   .object({ from: endpoint, to: endpoint, kind: linkKind })
   .strict()
-  .refine((l) => linkIsAllowed(l.kind, l.from.type, l.to.type), {
-    message: 'that is not a kind of link between those two things',
-    path: ['kind'],
+  .transform((l, ctx) => {
+    if (isLinkEdge(l)) return l
+    ctx.addIssue({
+      code: 'custom',
+      message: 'that is not a kind of link between those two things',
+      path: ['kind'],
+    })
+    return z.NEVER
   })
   // Both ids are already in lower case, so an upper-case copy of one cannot slip past.
   .refine((l) => !(l.from.type === l.to.type && l.from.id === l.to.id), {
     message: 'a thing cannot be linked to itself',
     path: ['to'],
   })
-export type CreateLinkBody = z.infer<typeof createLinkBody>
+export type CreateLinkBody = z.output<typeof createLinkBody>
 
 /** The thing at the other end of an edge, with enough to draw a row and go there. */
 const linkedObject = z

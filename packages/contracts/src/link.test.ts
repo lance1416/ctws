@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createLinkBody, kindsBetween, linkIsAllowed } from './link'
+import { createLinkBody, isLinkEdge, kindsBetween, linkIsAllowed, type LinkEdge } from './link'
 
 const id = '01931b9c-5d7e-7c3a-8f2e-1a2b3c4d5e6f'
 const other = '01931b9c-5d7e-7c3a-8f2e-1a2b3c4d5e70'
@@ -13,6 +13,22 @@ describe('belongs', () => {
   it.each(['task', 'project'])('is not an edge from a %s', (from) => {
     expect(linkIsAllowed('belongs', from, 'project')).toBe(false)
     expect(kindsBetween(from as 'task', 'project').map((k) => k.kind)).toEqual(['about'])
+  })
+
+  it('cannot be written down from a task or a project', () => {
+    // @ts-expect-error A task's project is its own column.
+    const task: LinkEdge = {
+      kind: 'belongs',
+      from: { type: 'task', id },
+      to: { type: 'project', id: other },
+    }
+    // @ts-expect-error Projects do not nest.
+    const project: LinkEdge = {
+      kind: 'belongs',
+      from: { type: 'project', id },
+      to: { type: 'project', id: other },
+    }
+    expect([task, project].filter(isLinkEdge)).toEqual([])
   })
 
   it('points only at a project', () => {

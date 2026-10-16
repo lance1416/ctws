@@ -1,4 +1,10 @@
-import { kindsBetween, type LinkCandidate, type LinkKind, type ObjectType } from '@ctws/contracts'
+import {
+  isLinkEdge,
+  kindsBetween,
+  type LinkCandidate,
+  type LinkKind,
+  type ObjectType,
+} from '@ctws/contracts'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { candidatesQuery, createLink, type Endpoint } from './api'
@@ -27,8 +33,12 @@ export function AddLink({
     enabled: chosen === null,
   })
   const make = useMutation({
-    mutationFn: (kind: LinkKind) =>
-      createLink({ from: of, to: { type: chosen!.type, id: chosen!.id }, kind }),
+    mutationFn: async (kind: LinkKind) => {
+      const edge = { from: of, to: { type: chosen!.type, id: chosen!.id }, kind }
+      // Only the kinds between the two are offered, so this holds; the type needs it said.
+      if (!isLinkEdge(edge)) throw new Error(`no ${kind} link between these two`)
+      return createLink(edge)
+    },
     meta: { awaits: [['links']] },
     onSuccess: onClose,
   })

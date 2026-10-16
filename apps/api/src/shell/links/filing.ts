@@ -1,4 +1,4 @@
-import { type ObjectType, type ProjectId, type WorkspaceId } from '@ctws/contracts'
+import { type LinkEdge, type ObjectType, type ProjectId, type WorkspaceId } from '@ctws/contracts'
 import { asc, eq, getTableName, inArray, sql, type SQL } from 'drizzle-orm'
 import type { AnyPgColumn, PgTable } from 'drizzle-orm/pg-core'
 import type { Queryable, Tx } from '../../platform/db/client'
@@ -10,6 +10,9 @@ import { putLinks } from './store'
 import { links } from './tables'
 
 type Named = { id: ProjectId; name: string }
+
+/** What is filed under projects by link: not a task, whose project is a column. */
+type Filed = Extract<LinkEdge, { kind: 'belongs' }>['from']['type']
 
 /**
  * `l` is a `belongs` edge from the object `<alias>.id` of `type` to the project `p`, all three in
@@ -29,7 +32,7 @@ const belongsFrom = (type: ObjectType, alias: string): SQL => sql`
  * the subquery it would bind to the inner row.
  */
 export function filing(
-  type: ObjectType,
+  type: Filed,
   table: PgTable & { id: AnyPgColumn; workspaceId: AnyPgColumn },
 ) {
   const name = getTableName(table)

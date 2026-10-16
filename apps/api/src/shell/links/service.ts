@@ -1,10 +1,10 @@
-import type { LinkKind } from '@ctws/contracts'
+import type { LinkEdge } from '@ctws/contracts'
 import type { Db } from '../../platform/db/client'
 import type { Actor } from '../../platform/db/scope'
 import { NotFound } from '../../platform/errors'
 import { exists } from './read'
 import type { LinkRegistry } from './registry'
-import { addLink, type Endpoint, type StoredLink } from './store'
+import { addLink, type StoredLink } from './store'
 
 /**
  * Adds an edge between two things this workspace can see. The edge table has no foreign keys at
@@ -13,7 +13,7 @@ import { addLink, type Endpoint, type StoredLink } from './store'
 export async function linkObjects(
   registry: LinkRegistry,
   db: Db,
-  edge: Actor & { from: Endpoint; to: Endpoint; kind: LinkKind },
+  edge: Actor & LinkEdge,
 ): Promise<{ link: StoredLink; created: boolean }> {
   return db.transaction(async (tx) => {
     const { workspaceId, from, to } = edge
