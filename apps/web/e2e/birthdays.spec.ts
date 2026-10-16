@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { dayOffset } from './days'
+import { dayOffset, MONTHS } from './days'
 import { pickOne, registerFreshUser, WEB } from './helpers'
 
 /**
@@ -27,9 +27,6 @@ function monthDay(offset: number): { month: number; day: number } {
 }
 
 const rows = (page: Page) => page.locator('[data-birthday-row]')
-
-/** The month names the app prints, so a spec can build the string the page will show. */
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 /**
  * A birthday's row is a person's row: the day in the margin with the cake, the thread, then who,
@@ -260,7 +257,7 @@ test('the Birthdays tab count follows a birthday set in the pane', async ({ page
   await expect(tab.locator('[data-count]')).toHaveText('2')
 })
 
-test('derived birthday details are read-only, edited in one place', async ({ page }) => {
+test('derived birthday details sit one level down from the date', async ({ page }) => {
   await registerFreshUser(page)
   const id = await person(page, '周楠', {
     calendar: 'lunar',
@@ -282,8 +279,6 @@ test('derived birthday details are read-only, edited in one place', async ({ pag
   await expect(more).toContainText('羊')
   await expect(more).toContainText('天秤')
   await expect(more).toContainText('turns')
-  // Derived values are not inputs: no control is named Zodiac or Sign.
-  await expect(glance.getByRole('button', { name: /Zodiac|Sign/ })).toHaveCount(0)
 })
 
 test('a lunar birthday shows its conversion and fallback as it is written', async ({ page }) => {

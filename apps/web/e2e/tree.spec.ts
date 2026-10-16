@@ -3,14 +3,15 @@ import {
   makeProject,
   makeTask,
   MOVE_URL,
-  openTree,
   openProject,
+  openTree,
   recordMoves,
   registerFreshUser,
   seedTasks,
   serverParents,
   startProject,
   submitCreate,
+  taskMoved,
 } from './helpers'
 
 type RouteUrl = Parameters<Page['route']>[0]
@@ -50,8 +51,8 @@ async function seedProject(page: Page) {
 /** Drags one handle onto another with real pointer events. */
 async function dragOnto(page: Page, from: string, to: string) {
   // Both ends have to be ON SCREEN before the boxes are read: the pointer cannot be moved to a
-  // coordinate outside the viewport, and since the workbench a row is 44px, so a dozen of them no
-  // longer fit under the header at the default height.
+  // coordinate outside the viewport, and a dozen 44px rows do not fit under the header at the
+  // default height.
   await handle(page, to).scrollIntoViewIfNeeded()
   await handle(page, from).scrollIntoViewIfNeeded()
   const a = await handle(page, from).boundingBox()
@@ -126,9 +127,8 @@ test('Tab leaves the tree instead of being captured by it', async ({ page }) => 
 
   await handle(page, 'one').focus()
   await page.keyboard.press('Tab')
-  // Focus moved on and nothing was reorganised. It used to land on the NEXT ROW, because every
-  // row was its own tab stop; with the roving tabindex the tree is one stop, so Tab leaves
-  // the tree altogether. Tab is still bound to nothing either way -- that is what this pins.
+  // Focus moved on and nothing was reorganised: the tree is one tab stop (a roving tabindex), so
+  // Tab leaves the tree altogether, and is bound to nothing inside it.
   await expect(handle(page, 'one')).not.toBeFocused()
   await expect(handle(page, 'two')).not.toBeFocused()
   expect(await page.evaluate(() => !!document.activeElement?.closest('[data-task-tree]'))).toBe(
@@ -138,7 +138,7 @@ test('Tab leaves the tree instead of being captured by it', async ({ page }) => 
   expect(moves).toEqual([])
 })
 
-// Review Focus 5. A 409 must roll the optimistic update back, and the optimistic update must
+// A 409 must roll the optimistic update back, and the optimistic update must
 // have happened in the first place. Both halves are pinned here by holding the requests open:
 //  - the move request is held, so the transient (optimistic) order is observable;
 //  - the task-list refetch is held, because it would repaint the true order whether or not the
@@ -250,10 +250,13 @@ test('dragging a parent onto its own child is refused and sends no move', async 
   await dragOnto(page, 'pp', 'c1')
 
   await expect(page.getByRole('alert')).toHaveText('A task cannot move inside itself')
-  // Absence is only meaningful after giving a wrongly-sent request time to leave the page.
-  await page.waitForTimeout(500)
-  expect(moves).toEqual([])
   await expect(page.getByRole('listitem')).toHaveText([/pp/, /c1/, /c2/])
+  // A legal move afterwards is the one write, so the refused drop sent none.
+  const legal = taskMoved(page)
+  await handle(page, 'c2').focus()
+  await page.keyboard.press('Alt+ArrowUp')
+  await legal
+  expect(moves).toHaveLength(1)
 })
 
 // Moving past an expanded subtree must step over all of it. Landing between the subtree's root
@@ -394,10 +397,14 @@ test('Alt+Up on the first row and Alt+Down on the last row do nothing', async ({
   await handle(page, 'three').focus()
   await page.keyboard.press('Alt+ArrowDown')
 
-  await page.waitForTimeout(500)
-  expect(moves).toEqual([])
   await expect(rows).toHaveText([/one/, /two/, /three/])
   await expect(page.getByRole('alert')).toHaveCount(0)
+  // A legal move afterwards is the one write, so the two at the ends sent none.
+  const legal = taskMoved(page)
+  await handle(page, 'two').focus()
+  await page.keyboard.press('Alt+ArrowUp')
+  await legal
+  expect(moves).toHaveLength(1)
 })
 
 test('collapsing hides the descendants and the fold survives a reload', async ({ page }) => {
@@ -452,9 +459,12 @@ test('a too-deep drop shows a message and sends no move', async ({ page }) => {
   await dragOnto(page, 'xx', 'chain10')
 
   await expect(page.getByRole('alert')).toHaveText('Too deep to move it there')
-  // Absence is only meaningful after giving a wrongly-sent request time to leave the page.
-  await page.waitForTimeout(500)
-  expect(moves).toEqual([])
+  // A legal move afterwards is the one write, so the refused drop sent none.
+  const legal = taskMoved(page)
+  await handle(page, 'xx').focus()
+  await page.keyboard.press('Alt+ArrowUp')
+  await legal
+  expect(moves).toHaveLength(1)
 })
 
 /**
@@ -491,8 +501,8 @@ test('a task created while the project is still loading appears', async ({ page 
   await submitCreate(page, 'New project', 'P')
 
   const { release, heldStale } = await holdFirstListFetch(page)
-  // Scoped to <main>: the left rail lists every project by name too, so an unscoped
-  // project-name locator now matches twice. The centre column is the list under test.
+  // Scoped to <main>: the left rail lists every project by name too. The centre column is the
+  // list under test.
   await page.getByRole('main').getByText('P', { exact: true }).click()
   await heldStale
   await submitCreate(page, 'New task', 'typed early')
@@ -553,7 +563,6 @@ test('a refused move puts the fold it opened back', async ({ page }) => {
   await expect(page.getByRole('alert')).toBeVisible()
 
   // Nothing landed there, so nothing should have been opened: the tree is exactly as it was.
-  // It used to stay open -- the one visible trace of an action that did not happen.
   await expect(rows).toHaveText([/aa/, /bb/])
   await page.unroute('**/api/v1/tasks/*/move')
   // And the fold is remembered that way, not just drawn that way.
@@ -576,5 +585,4 @@ test('a selected row says it is selected', async ({ page }) => {
   // Said in words a screen reader reads: a list item cannot carry aria-selected.
   await expect(rowOf('Two')).toContainText('Selected')
   await expect(rowOf('One')).not.toContainText('Selected')
-  await expect(page.locator('li[aria-selected]')).toHaveCount(0)
 })

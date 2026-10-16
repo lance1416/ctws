@@ -6,17 +6,15 @@ import {
   makeProject,
   makeTask,
   registerFreshUser,
+  serverTasks,
+  taskPatched,
   WEB,
 } from './helpers'
-
-/** The month names the app prints, so a spec can build the string the page will show. */
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+import { MONTHS } from './days'
 
 // The completed-work view, task deletion, and the panel's guard against losing edits on
 // navigation. As in daily.spec.ts, every claim about what changed is checked against the SERVER
 // (a fresh GET) or a reload, so an implementation that only updates the screen cannot pass.
-
-type ApiTask = { id: string; title: string; status: string }
 
 /**
  * Hours to go back so a completion lands around NOON on the day `daysAgo` before today.
@@ -36,12 +34,9 @@ async function finish(page: Page, id: string, ago?: string) {
     headers: WEB,
     data: { status: 'done' },
   })
-  expect(p.ok()).toBeTruthy()
+  expect(p.status()).toBe(200)
   if (ago) backdateCompletion(id, ago)
 }
-
-const serverTasks = async (page: Page, projectId: string): Promise<ApiTask[]> =>
-  (await (await page.request.get(`/api/v1/tasks?projectId=${projectId}`)).json()).tasks
 
 const nav = (page: Page) => page.getByRole('navigation', { name: 'Main navigation' })
 
@@ -57,9 +52,6 @@ const goCompleted = async (page: Page) => {
 const rowsIn = (page: Page, section: string | RegExp) =>
   page.getByRole('region', { name: section }).getByRole('listitem')
 
-const isTaskPatch = (r: { url: () => string; request: () => { method: () => string } }) =>
-  r.request().method() === 'PATCH' && /\/tasks\/[^/]+$/.test(r.url())
-
 // ------------------------------------------------------------------------- the completed view
 
 test('finishing a task in the tree puts it on Done with its project and parent, across projects', async ({
@@ -74,18 +66,17 @@ test('finishing a task in the tree puts it on Done with its project and parent, 
   await makeTask(page, beta, '还没做')
   await makeTask(page, beta, '放弃了', { status: 'cancelled' })
 
-  // Finish one task in each project, through the UI, the older one first.
+  // Finish one task in each project, through the UI, the older one first. A page load apart, so
+  // the order below comes from the clock, not from creation order.
   for (const [pid, title] of [
     [alpha, '写文档'],
     [beta, '修 bug'],
   ] as const) {
     await page.goto(`/projects/${pid}`)
     await page.getByRole('listitem').first().waitFor()
-    const saved = page.waitForResponse((r) => isTaskPatch(r) && r.ok())
+    const saved = taskPatched(page)
     await page.getByRole('button', { name: `Complete “${title}”` }).click()
     await saved
-    // Distinct instants: the order below must come from the clock, not from creation order.
-    await page.waitForTimeout(50)
   }
 
   await goCompleted(page)
@@ -155,7 +146,7 @@ test('a finished task can be restored from the completed list, and the server ag
 
   await page.goto('/tasks/review?view=done')
   await expect(page.getByRole('main').getByRole('listitem')).toHaveCount(2)
-  const restored = page.waitForResponse((r) => isTaskPatch(r) && r.ok())
+  const restored = taskPatched(page)
   await page.getByRole('button', { name: 'Reopen “点错了”' }).click()
   expect((await restored).request().postDataJSON()).toEqual({ status: 'backlog' })
   await expect(page.getByText('点错了')).toHaveCount(0)
@@ -242,7 +233,6 @@ test('deleting a parent states how many descendants go, cancel deletes nothing, 
   await expect(ask).toHaveCount(0)
   await expect(page.getByRole('dialog')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Delete task' })).toBeFocused()
-  await page.waitForTimeout(200)
   expect(deletes).toHaveLength(0)
   expect((await serverTasks(page, pid)).map((t) => t.title).sort()).toEqual(
     ['大块', '子一', '子二', '孙一', '旁观者'].sort(),
@@ -374,10 +364,9 @@ test('Log out with a dirty panel asks first and does not log out until discarded
   )
   await expect(page.getByLabel('Title')).toHaveValue('写方案 v2')
   await expect(page.getByTestId('current-user')).toBeVisible()
-  await page.waitForTimeout(300)
-  expect(logouts).toHaveLength(0) // no logout request was sent
+  expect(logouts).toHaveLength(0)
   // Still signed in on the server.
-  expect((await page.request.get('/api/v1/auth/me')).ok()).toBeTruthy()
+  expect((await page.request.get('/api/v1/auth/me')).status()).toBe(200)
 
   await page.getByRole('button', { name: 'Keep editing' }).click()
   await expect(page.getByLabel('Title')).toHaveValue('写方案 v2')
@@ -385,6 +374,7 @@ test('Log out with a dirty panel asks first and does not log out until discarded
   await logOut(page)
   await page.getByRole('button', { name: 'Discard changes' }).click()
   await expect(page.getByLabel('Email')).toBeVisible()
+  // The one logout sent is this one: the first press sent none.
   expect(logouts).toHaveLength(1)
   expect((await page.request.get('/api/v1/auth/me')).ok()).toBeFalsy()
 })
@@ -401,9 +391,12 @@ test('pressing Save and then a nav link at once is not mistaken for losing edits
   await editDetail(page)
   await page.getByLabel('Title').fill('写方案 v2')
 
-  // Hold the save in flight, so "click Save, then a link" is deterministic rather than a race.
+  // Hold the save in flight until the link has been followed, so "click Save, then a link" is
+  // deterministic rather than a race.
+  let release!: () => void
+  const held = new Promise<void>((r) => (release = r))
   await page.route('**/api/v1/tasks/*', async (route) => {
-    if (route.request().method() === 'PATCH') await new Promise((r) => setTimeout(r, 800))
+    if (route.request().method() === 'PATCH') await held
     await route.continue()
   })
   await page.getByRole('button', { name: 'Save' }).click()
@@ -411,9 +404,10 @@ test('pressing Save and then a nav link at once is not mistaken for losing edits
   await expect(page).toHaveURL(/\/tasks\/today$/)
   await expect(page.getByText('You have unsaved changes')).toHaveCount(0)
   // The save was not lost on the way.
-  await expect
-    .poll(async () => (await serverTasks(page, pid))[0]!.title, { timeout: 5000 })
-    .toBe('写方案 v2')
+  const saved = taskPatched(page)
+  release()
+  await saved
+  expect((await serverTasks(page, pid))[0]!.title).toBe('写方案 v2')
 })
 
 /** Delete is at the bottom of reading mode, where it is for a person or a meeting too. */

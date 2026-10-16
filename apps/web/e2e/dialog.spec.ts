@@ -109,11 +109,9 @@ test('⌘↵ creates and stays open, with the title cleared and focused', async 
   await page.keyboard.press('ControlOrMeta+Enter')
   expect(((await posted) as { title: string }).title).toBe('第一条')
 
-  // Still open, title empty and focused: adding several in a row costs no mouse and no reopen.
-  // The settle is deliberate: "it did NOT close" is a claim about a window of time, and asserted
-  // in the same breath as the response it would be satisfied by a dialog that is merely still on
-  // its way out -- which then gets caught by the title assertion instead, i.e. by the wrong one.
-  await page.waitForTimeout(300)
+  // Still open, title empty and focused: adding several in a row costs no mouse and no reopen. A
+  // dialog merely on its way out would pass these; the second create below, from the same layer,
+  // is what proves it stayed.
   await expect(dialog(page)).toBeVisible()
   await expect(titleField(page)).toHaveValue('')
   await expect(titleField(page)).toBeFocused()
@@ -191,7 +189,7 @@ test('`n` opens the dialog, obeys the off switch and is a letter while typing', 
   await seed(page)
 
   // Clicks land on the Tasks block's heading rather than the page's <h1>: the project title is
-  // an editable control now, so clicking it opens a text field and the next keypress is
+  // an editable control, so clicking it opens a text field and the next keypress is
   // typing. A block heading is the neutral spot this needs.
   // Not while typing: `n` is a letter in the capture box.
   await page.getByLabel('Capture').fill('')
@@ -281,9 +279,8 @@ test('the dialog fits 375px with no horizontal scroll', async ({ page }) => {
  * first will reach past the thing the person went on to open -- here, the search box they pressed
  * `f` for -- and pull focus back to the button that opened the list.
  *
- * The settle before the assertion is the whole point: the steal happens AFTER the search box has
- * taken focus, so an assertion made in the same breath as the keypress is satisfied by the state
- * that is about to be destroyed.
+ * The steal happens AFTER the search box has taken focus, so "focused" alone can be satisfied by
+ * the state about to be destroyed; typing into it afterwards is the proof.
  */
 test('closing the ? list and pressing f leaves focus in the search box', async ({ page }) => {
   await seed(page)
@@ -294,35 +291,31 @@ test('closing the ? list and pressing f leaves focus in the search box', async (
   await page.keyboard.press('f')
   const search = page.getByRole('combobox', { name: 'Search' })
   await expect(search).toBeVisible()
-  await page.waitForTimeout(300)
   await expect(search).toBeFocused()
-  // And typing really goes there, which is what "focused" is for.
   await page.keyboard.type('abc')
   await expect(search).toHaveValue('abc')
 })
 
-/**
- * THE MIGRATION PROOF. `ShortcutHelp` is the one overlay moved onto Radix this stage, and its five
- * behaviours are asserted one by one -- the four that were already pinned elsewhere, plus the
- * focus restoration that was not.
- */
-test('the migrated ? overlay keeps all five of its behaviours', async ({ page }) => {
+/** The `?` overlay's five behaviours, one by one. */
+test('the ? overlay opens, lists the keys, closes two ways, restores focus and holds the switch', async ({
+  page,
+}) => {
   await seed(page)
 
   // 1. `?` opens it. It is pressed from the new-task box's NEIGHBOUR -- a focusable control that
   // is not a text field -- so that "focus goes back to what opened it" below has something to go
-  // back to. (A heading is not focusable, and the page's <h1> is a rename control now.)
+  // back to. (A heading is not focusable, and the page's <h1> is a rename control.)
   await page.getByRole('button', { name: 'New…', exact: true }).focus()
   await page.keyboard.press('?')
   const help = page.getByRole('dialog', { name: 'Keyboard shortcuts' })
   await expect(help).toBeVisible()
-  // It still SAYS what it says, including the new project-page key.
+  // It says every key, including the project page's own.
   for (const key of ['/', 'f', '?', 'n', 'g t', 'Alt+Enter', 's', 'x']) {
     await expect(help.getByText(key, { exact: true }).first()).toBeVisible()
   }
 
-  // The document-level single keys stand down under an open layer, as they did before the
-  // migration: `f` here would otherwise stack a search dialog on top of the list.
+  // The document-level single keys stand down under an open layer: `f` here would otherwise stack
+  // a search dialog on top of the list.
   await page.keyboard.press('f')
   // By attribute, NOT by role: a modal layer marks the rest of the page `aria-hidden`, so a
   // search dialog stacked underneath is invisible to `getByRole` -- the role query passes
@@ -343,7 +336,7 @@ test('the migrated ? overlay keeps all five of its behaviours', async ({ page })
   // 4 again, from the toolbar button this time.
   await expect(page.getByRole('button', { name: 'Keyboard shortcuts' })).toBeFocused()
 
-  // 5. The single-key off switch is still in it and still works -- and still comes back on.
+  // 5. The single-key off switch is in it, works, and comes back on.
   await page.keyboard.press('?')
   const toggle = help.getByRole('checkbox', { name: /Single-key shortcuts/ })
   await expect(toggle).toBeChecked()

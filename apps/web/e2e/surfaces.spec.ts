@@ -1,30 +1,20 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
-import { apiPost, makeProject, makeTask, registerFreshUser, textContrast } from './helpers'
+import {
+  apiPost,
+  makeProject,
+  makeTask,
+  registerFreshUser,
+  surfaceLuminance,
+  textContrast,
+} from './helpers'
 
 /**
  * WHAT SITS ON A PLANE IS DRAWN ONE STEP FROM IT, IN BOTH SCHEMES.
  *
- * Three things the UI audit measured: in dark, the highlighted search result was the same colour
- * as the dialog it sat in; a menu opened over the overlay pane was darker than the pane; and a
- * board card was a hole in its column in dark but paper on it in light.
+ * In dark the highlighted search result is lighter than the dialog it sits in, a menu opened over
+ * the overlay pane is not darker than the pane, and in both schemes a board card is lighter than
+ * its column.
  */
-
-/** Relative luminance of a computed `rgb()`/`rgba()`, with an alpha fill laid over `under`. */
-async function lum(l: Locator, under?: Locator) {
-  const [own, base] = await Promise.all([
-    l.evaluate((el) => getComputedStyle(el).backgroundColor),
-    under ? under.evaluate((el) => getComputedStyle(el).backgroundColor) : Promise.resolve(null),
-  ])
-  const parse = (c: string) => (c.match(/[\d.]+/g) ?? []).map(Number)
-  const [r, g, b, a = 1] = parse(own)
-  const [br, bg, bb] = base ? parse(base) : [0, 0, 0]
-  const mix = (x: number, y: number) => x * a + y * (1 - a)
-  const ch = (v: number) => {
-    const s = v / 255
-    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
-  }
-  return 0.2126 * ch(mix(r!, br!)) + 0.7152 * ch(mix(g!, bg!)) + 0.0722 * ch(mix(b!, bb!))
-}
 
 const bg = (l: Locator) => l.evaluate((el) => getComputedStyle(el).backgroundColor)
 
@@ -41,10 +31,9 @@ test('in dark, the selected search result stands out', async ({ page }) => {
   const dialog = page.getByRole('dialog', { name: 'Search' })
   const chosen = dialog.locator('[role="option"][aria-selected="true"]')
   await expect(chosen).toContainText('Sam Patel')
-  // The dialog's own panel: the nearest ancestor that paints.
   const panel = chosen.locator('xpath=ancestor::*[@role="dialog"][1]')
   expect(await bg(chosen)).not.toBe('rgba(0, 0, 0, 0)')
-  expect(await lum(chosen, panel)).toBeGreaterThan(await lum(panel))
+  expect(await surfaceLuminance(chosen)).toBeGreaterThan(await surfaceLuminance(panel))
 })
 
 test('a menu opened over the overlay pane is not darker than the pane', async ({ page }) => {
@@ -61,7 +50,7 @@ test('a menu opened over the overlay pane is not darker than the pane', async ({
   await pane.getByRole('button', { name: /^Status:/ }).click()
   const menu = page.getByRole('menu')
   await expect(menu).toBeVisible()
-  expect(await lum(menu)).toBeGreaterThanOrEqual(await lum(pane))
+  expect(await surfaceLuminance(menu)).toBeGreaterThanOrEqual(await surfaceLuminance(pane))
 })
 
 test('in dark, a floating surface is lighter than the paper under it', async ({ page }) => {
@@ -76,7 +65,9 @@ test('in dark, a floating surface is lighter than the paper under it', async ({ 
   await page.getByRole('listitem').filter({ hasText: 'Ship the importer' }).first().click()
   const pane = page.locator('[role="dialog"][aria-label="Task details"]')
   await expect(pane).toBeVisible()
-  expect(await lum(pane)).toBeGreaterThan(await lum(page.getByRole('main')))
+  expect(await surfaceLuminance(pane)).toBeGreaterThan(
+    await surfaceLuminance(page.getByRole('main')),
+  )
 })
 
 for (const scheme of ['light', 'dark'] as const) {
@@ -90,7 +81,7 @@ for (const scheme of ['light', 'dark'] as const) {
     const card = page.locator('[data-board-card]').first()
     await expect(card).toBeVisible()
     const column = card.locator('xpath=ancestor::section[@data-board-column][1]')
-    expect(await lum(card)).toBeGreaterThan(await lum(column))
+    expect(await surfaceLuminance(card)).toBeGreaterThan(await surfaceLuminance(column))
   })
 }
 
@@ -106,17 +97,13 @@ for (const scheme of ['light', 'dark'] as const) {
     await registerFreshUser(page)
     const pid = await makeProject(page, '找工作')
     await makeTask(page, pid, '一条')
-    const made = await page.request.post('/api/v1/people', {
-      headers: { 'x-ctws-client': 'web' },
-      data: {
-        name: '陈颖',
-        title: 'Recruiter',
-        org: 'Acme',
-        city: 'Toronto',
-        birthday: { calendar: 'solar', month: 3, day: 9 },
-      },
+    const { id } = await apiPost(page, '/people', {
+      name: '陈颖',
+      title: 'Recruiter',
+      org: 'Acme',
+      city: 'Toronto',
+      birthday: { calendar: 'solar', month: 3, day: 9 },
     })
-    const id = ((await made.json()) as { id: string }).id
 
     // The rail's current project, and its count.
     await page.goto(`/projects/${pid}`)

@@ -45,7 +45,7 @@ test('the inbox sorts first, and is the one project with nothing to delete it wi
 
 test('capture still finds the inbox after it is renamed', async ({ page }) => {
   await registerFreshUser(page)
-  // Rename through the API: the UI has no project rename in M2b.
+  // Rename through the API.
   const projects = await page.evaluate(() =>
     fetch('/api/v1/projects', { headers: { 'x-ctws-client': 'web' } }).then((r) => r.json()),
   )

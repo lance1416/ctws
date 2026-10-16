@@ -8,9 +8,8 @@ import { format } from 'date-fns'
  * Registers a brand-new user through the UI and waits until the signed-in shell is showing.
  * Register is rate limited (20/min/IP), so every call uses a unique email. Returns that email.
  *
- * It then goes on to Today, because that is where almost every test here does its work and it is
- * where registration used to land. Signing in now opens the WORKBENCH -- the shell's own page --
- * so that step is explicit. `at` takes any path, and `'/'` stays put.
+ * Signing in opens the Workbench; it then goes on to `at`, Today by default because that is where
+ * almost every test here does its work. `'/'` stays on the Workbench.
  *
  * It CLICKS the rail rather than calling `goto`: a fresh navigation leaves focus where the
  * document-level keys (the `g` chords, `/`, `f`) cannot see it, which silently breaks every
@@ -37,19 +36,11 @@ export async function registerFreshUser(page: Page, at: string = '/tasks/today')
   return email
 }
 
-/**
- * Signs out through the account menu.
- *
- * The bar used to carry a bare `Log out` button; it is an item in the top-right account menu
- * now, which is where every workspace app of this shape puts it. One helper so the twelve call
- * sites do not each know the menu's shape.
- */
+/** Signs out through the top-right account menu. */
 export async function logOut(page: Page): Promise<void> {
   await page.getByTestId('current-user').click()
   await page.getByRole('menuitem', { name: 'Sign out' }).click()
 }
-
-/** Opens the account menu without acting, for tests about the bar itself. */
 
 // Submits one of the create inputs (capture, new project, new task) and waits for the POST to be
 // acknowledged. Without the wait the next locator's auto-wait is the only thing between the test
@@ -80,9 +71,8 @@ export async function openProject(page: Page, name: string, exact = false): Prom
       url.searchParams.has('projectId')
     )
   })
-  // Scoped to <main>: since the three-pane shell, the left rail ALSO lists every project by
-  // name, so an unscoped getByText would match two elements and fail strict mode. The project
-  // list page is the thing being exercised here, and it lives in the centre column.
+  // Scoped to <main>: the left rail also lists every project by name, and the project list page
+  // being exercised lives in the centre column.
   await page.getByRole('main').getByText(name, { exact }).click()
   await loaded
 }
@@ -104,9 +94,7 @@ export async function editDetail(page: Page): Promise<void> {
   await page.getByRole('textbox', { name: 'Title' }).waitFor()
 }
 
-// Picks a status in the open detail panel. Status there is no longer a <select> of words but the
-// same five marker shapes the rows use, as a radio group: one tab stop, arrow keys inside it.
-// The VALUE written is unchanged, which is what every caller of this is actually about.
+// Picks a status in the open detail panel: the five marker shapes the rows use, as a radio group.
 export async function setDetailStatus(page: Page, label: string): Promise<void> {
   await page.getByRole('radio', { name: label, exact: true }).check()
 }
@@ -182,11 +170,7 @@ export function backdateProjectActivity(projectId: string, ago: string): void {
   }
 }
 
-/**
- * THE APP'S OWN PICKER, which replaced every native `<select>`: the OS draws a native popup and
- * does not know this palette, so on Windows the list came up white with the page's own light-grey
- * text on it. A pick is now a press on the trigger and a press on the item.
- */
+/** The app's own picker: a press on the trigger, then a press on the item. */
 export async function pickOne(
   where: Page | Locator,
   label: string,
@@ -210,14 +194,6 @@ export async function pickOne(
     .toBe(true)
 }
 
-/**
- * A PROJECT AND A TASK, made over the API because the point of the test is what comes next.
- *
- * These were written out in fourteen spec files and thirteen, and the thirteen had grown FOUR
- * signatures between them -- a positional patch, a positional parent, an options object, and
- * neither. That is what copying a helper does: every copy is free to drift, and the drift is
- * invisible until you read two specs side by side.
- */
 /** Holds every GET matching `url` for a while, so whatever waits on that read waits visibly. */
 export async function slowReads(page: Page, url: string, ms = 400): Promise<void> {
   await page.route(url, async (r) => {
@@ -226,12 +202,10 @@ export async function slowReads(page: Page, url: string, ms = 400): Promise<void
   })
 }
 
+/** A project made over the API, for tests whose subject is what comes next. */
 export async function makeProject(page: Page, name: string): Promise<string> {
-  const res = await page.request.post('/api/v1/projects', {
-    headers: { 'x-ctws-client': 'web' },
-    data: { name },
-  })
-  expect(res.ok(), `makeProject: ${res.status()}`).toBeTruthy()
+  const res = await page.request.post('/api/v1/projects', { headers: WEB, data: { name } })
+  expect(res.ok(), `makeProject: ${res.status()}`).toBe(true)
   return ((await res.json()) as { id: string }).id
 }
 
@@ -243,22 +217,25 @@ export async function makeTask(
   patch: Record<string, unknown> = {},
   parentId: string | null = null,
 ): Promise<string> {
-  const headers = { 'x-ctws-client': 'web' }
   const res = await page.request.post('/api/v1/tasks', {
-    headers,
+    headers: WEB,
     data: { projectId, title, parentId },
   })
-  expect(res.ok(), `makeTask: ${res.status()}`).toBeTruthy()
+  expect(res.ok(), `makeTask: ${res.status()}`).toBe(true)
   const id = ((await res.json()) as { id: string }).id
   if (Object.keys(patch).length > 0) {
-    const done = await page.request.patch(`/api/v1/tasks/${id}`, { headers, data: patch })
-    expect(done.ok(), `makeTask patch: ${done.status()}`).toBeTruthy()
+    const done = await page.request.patch(`/api/v1/tasks/${id}`, { headers: WEB, data: patch })
+    expect(done.ok(), `makeTask patch: ${done.status()}`).toBe(true)
   }
   return id
 }
 
 /** The move endpoint. Tests that count writes to it share one spelling. */
 export const MOVE_URL = /\/tasks\/[^/]+\/move$/
+
+/** Waits for a move the server accepted. */
+export const taskMoved = (page: Page) =>
+  page.waitForResponse((r) => MOVE_URL.test(r.url()) && r.ok())
 
 /** Records every move request the page sends, so a test can assert that none was. */
 export function recordMoves(page: Page): string[] {
@@ -323,6 +300,55 @@ export async function seedTasks(
   return ids
 }
 
+/** A task as the server lists it. */
+export type ServerTask = {
+  id: string
+  title: string
+  status: string
+  parentId: string | null
+  scheduledOn: string | null
+  dueAt: string | null
+}
+
+/** What the server holds for a project's tasks, read fresh. */
+export async function serverTasks(page: Page, projectId: string): Promise<ServerTask[]> {
+  const res = await page.request.get(`/api/v1/tasks?projectId=${projectId}`)
+  return ((await res.json()) as { tasks: ServerTask[] }).tasks
+}
+
+/** One task the server holds, by id or by title, read fresh. */
+export async function serverTask(page: Page, projectId: string, key: string): Promise<ServerTask> {
+  const task = (await serverTasks(page, projectId)).find((t) => t.id === key || t.title === key)
+  expect(task, `task ${key} on the server`).toBeDefined()
+  return task!
+}
+
+/**
+ * A reading item made over the API: created as a link or a book, then given whatever else `patch`
+ * holds (a project, a title, an author, a plan), which the create body does not take.
+ */
+export async function makeReading(
+  page: Page,
+  create: { kind: 'link'; url: string } | { kind: 'book'; title: string },
+  patch: Record<string, unknown> = {},
+): Promise<string> {
+  const res = await page.request.post('/api/v1/reading', { headers: WEB, data: create })
+  expect(res.status(), `makeReading: ${await res.text()}`).toBe(201)
+  const id = ((await res.json()) as { id: string }).id
+  if (Object.keys(patch).length > 0) {
+    const done = await page.request.patch(`/api/v1/reading/${id}`, { headers: WEB, data: patch })
+    expect(done.ok(), `makeReading patch: ${done.status()}`).toBe(true)
+  }
+  return id
+}
+
+/** A PATCH to one task, as a response or the request behind it. */
+export const isTaskPatch = (r: { url: () => string; request: () => { method: () => string } }) =>
+  r.request().method() === 'PATCH' && /\/tasks\/[^/]+$/.test(r.url())
+
+/** Waits for a task PATCH the server accepted. */
+export const taskPatched = (page: Page) => page.waitForResponse((r) => isTaskPatch(r) && r.ok())
+
 /** The server's view of a project's tree, as title -> parent title (null for a root). */
 export async function serverParents(
   page: Page,
@@ -370,6 +396,8 @@ export async function apiPost(
 ): Promise<Record<string, string>> {
   const res = await page.request.post(`/api/v1${path}`, { headers: WEB, data })
   if (!res.ok()) throw new Error(`${path}: ${res.status()} ${await res.text()}`)
+  // A write that answers with no body (204, such as a link) hands back nothing to read.
+  if (res.status() === 204) return {}
   return (await res.json()) as Record<string, string>
 }
 
@@ -437,40 +465,50 @@ export async function holdFirstRead(page: Page, url: string): Promise<() => void
 }
 
 /**
- * WCAG 2.1 contrast of an element's text against what is really behind it: every background from
- * the element up to the page, composited in order, so a translucent layer (hover, select) counts
- * as the colour it makes on its plane rather than as itself.
+ * The colour an element's background really paints, and how its text reads on it: every
+ * background from the element up to the page, composited in order, so a translucent layer (hover,
+ * select) counts as the colour it makes on its plane rather than as itself. Luminance is WCAG 2.1's.
  */
-export async function textContrast(target: Locator): Promise<number> {
+function paint(target: Locator): Promise<{ text: number; behind: number }> {
   return target.evaluate((el) => {
-    const rgba = (c: string) => {
+    type Rgba = { r: number; g: number; b: number; a: number }
+    const rgba = (c: string): Rgba => {
       const n = c.match(/[\d.]+/g)!.map(Number)
       return { r: n[0]!, g: n[1]!, b: n[2]!, a: n[3] ?? 1 }
     }
-    const over = (
-      top: { r: number; g: number; b: number; a: number },
-      under: { r: number; g: number; b: number },
-    ) => ({
+    const over = (top: Rgba, under: Rgba): Rgba => ({
       r: top.r * top.a + under.r * (1 - top.a),
       g: top.g * top.a + under.g * (1 - top.a),
       b: top.b * top.a + under.b * (1 - top.a),
+      a: 1,
     })
-    const layers: { r: number; g: number; b: number; a: number }[] = []
+    const layers: Rgba[] = []
     for (let n: Element | null = el; n; n = n.parentElement) {
       const bg = rgba(getComputedStyle(n).backgroundColor)
       if (bg.a > 0) layers.push(bg)
     }
-    let behind = { r: 255, g: 255, b: 255 }
+    let behind: Rgba = { r: 255, g: 255, b: 255, a: 1 }
     for (const layer of layers.reverse()) behind = over(layer, behind)
     const text = over(rgba(getComputedStyle(el).color), behind)
-    const lum = ({ r, g, b }: { r: number; g: number; b: number }) => {
+    const lum = ({ r, g, b }: Rgba) => {
       const ch = (v: number) => {
         const c = v / 255
         return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
       }
       return 0.2126 * ch(r) + 0.7152 * ch(g) + 0.0722 * ch(b)
     }
-    const [hi, lo] = [lum(text), lum(behind)].sort((a, b) => b - a) as [number, number]
-    return (hi + 0.05) / (lo + 0.05)
+    return { text: lum(text), behind: lum(behind) }
   })
+}
+
+/** WCAG 2.1 contrast of an element's text against what is really behind it. */
+export async function textContrast(target: Locator): Promise<number> {
+  const { text, behind } = await paint(target)
+  const [hi, lo] = [text, behind].sort((a, b) => b - a) as [number, number]
+  return (hi + 0.05) / (lo + 0.05)
+}
+
+/** Relative luminance of the background an element really paints. */
+export async function surfaceLuminance(target: Locator): Promise<number> {
+  return (await paint(target)).behind
 }

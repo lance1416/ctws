@@ -7,12 +7,10 @@ import {
   makeTask,
   registerFreshUser,
   sidewaysScroll,
+  taskPatched,
   WEB,
 } from './helpers'
-import { dayOffset, nextMondayYmd, ymd } from './days'
-
-/** The month names the app prints, so a spec can build the string the page will show. */
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+import { dayOffset, dueAgo, MONTHS, nextMondayYmd, ymd } from './days'
 
 /**
  * THE ROW ANATOMY: a MARGIN that says when, a THREAD in the project's colour, then the body --
@@ -30,14 +28,6 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
  * - "the triage still does what it did" is provable only from the request body; the UI can agree
  *   with itself while sending nothing.
  */
-
-const DAY = 86_400_000
-
-const dueAgo = (days: number) => new Date(Date.now() - days * DAY).toISOString()
-
-const isPatch = (r: { url: () => string; request: () => { method: () => string } }) =>
-  /\/tasks\/[^/]+$/.test(r.url()) && r.request().method() === 'PATCH'
-const patched = (page: Page) => page.waitForResponse((r) => isPatch(r) && r.ok())
 
 const triage = (page: Page, title: string) =>
   page.getByRole('button', { name: `Change the dates for “${title}”` })
@@ -117,52 +107,33 @@ test('in the tree, depth indents the body and leaves the margin and the thread a
 })
 
 /**
- * THE THREAD IS ONE STRAND, not a column of pills: square, at one x, and the full height of its row,
- * so a run of one project's rows reads as one thread.
+ * A ROW WITH NOTHING UNDER ITS TITLE IS ONE LINE, 44px, dated or not and at any depth: the date is
+ * in the margin, not on a second line. 10 + 24 + 10, from the type scale's 16/24 title. And the
+ * title sits on the marker's own centre line, which the height alone does not say.
  */
-test('the thread is square, at one x, and runs the height of its row', async ({ page }) => {
-  await registerFreshUser(page)
-  const pid = await makeProject(page, 'P')
-  await makeTask(page, pid, '一条', { dueAt: dueAgo(1) })
-  await makeTask(page, pid, '两条，标题长一点的那一条')
-  await page.goto(`/projects/${pid}`)
-  await expect(page.locator('[data-task-tree] li[data-depth]')).toHaveCount(2)
-  const threads = await page.locator('[data-task-tree] li[data-depth]').evaluateAll((rows) =>
-    rows.map((li) => {
-      const t = li.querySelector('[data-project-rail]')!
-      const r = t.getBoundingClientRect()
-      return {
-        x: Math.round(r.x),
-        gap: Math.round(li.getBoundingClientRect().height - r.height),
-        radius: getComputedStyle(t).borderTopLeftRadius,
-        width: Math.round(r.width),
-      }
-    }),
-  )
-  expect(new Set(threads.map((t) => t.x)).size).toBe(1)
-  for (const t of threads) expect(t).toMatchObject({ gap: 0, radius: '0px', width: 3 })
-})
-
-/**
- * A ROW WITH NOTHING UNDER ITS TITLE IS ONE LINE, 44px, dated or not: the date is in the margin
- * now, not on a second line. 10 + 24 + 10, from the type scale's 16/24 title. And the title sits on
- * the marker's own centre line, which the height alone does not say.
- */
-test('a dated row and a bare row are both one line, 44px', async ({ page }) => {
+test('a dated row, a bare row and a nested row are all one line, 44px', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 })
   await registerFreshUser(page)
   const pid = await makeProject(page, '两种行')
   await makeTask(page, pid, '过期两天的', { dueAt: dueAgo(2) })
-  await makeTask(page, pid, '什么都没有的')
+  const bare = await makeTask(page, pid, '什么都没有的')
+  await makeTask(page, pid, '深一层的', {}, bare)
   await page.goto(`/projects/${pid}`)
   const row = (title: string) =>
     page.locator('[data-task-tree] li[data-depth]').filter({ hasText: title })
-  await expect(page.locator('[data-task-tree] li[data-depth]')).toHaveCount(2)
+  await expect(page.locator('[data-task-tree] li[data-depth]')).toHaveCount(3)
   const h = (title: string) =>
     row(title).evaluate((el) => Math.round(el.getBoundingClientRect().height))
   expect(await h('过期两天的')).toBe(44)
   expect(await h('什么都没有的')).toBe(44)
+  expect(await h('深一层的')).toBe(44)
   await expect(row('过期两天的').locator('[data-row-meta]')).toHaveCount(0)
+  // The marker inside it is 20px, not a 16px glyph left sitting in a taller row.
+  expect(
+    await row('深一层的')
+      .getByRole('img', { name: 'To do' })
+      .evaluate((el) => el.getBoundingClientRect().width),
+  ).toBe(20)
 
   const centres = (title: string) =>
     row(title).evaluate((el) => {
@@ -237,7 +208,7 @@ test('overdue: the day in the margin, how late on the right, where on the second
     headers: WEB,
     data: { dueAt: twoDaysAgo.toISOString() },
   })
-  expect(res.ok()).toBeTruthy()
+  expect(res.status()).toBe(200)
   await page.reload()
 
   const lateRow = page
@@ -418,7 +389,7 @@ test('the date control is reachable, operable and escapable by keyboard alone', 
   await expect(panel).toBeVisible()
   await page.keyboard.press('Tab')
   await expect(panel.getByRole('button', { name: 'To tomorrow' })).toBeFocused()
-  const res = patched(page)
+  const res = taskPatched(page)
   await page.keyboard.press('Enter')
   const body = (await res).request().postDataJSON() as { dueAt: string }
   expect(Object.keys(body)).toEqual(['dueAt'])
@@ -434,7 +405,7 @@ test('making a deadline next week’s plan demotes it in one request', async ({ 
   await makeTask(page, pid, '没人等下周', { dueAt: dueAgo(6) })
   await page.goto('/tasks/today')
   await triage(page, '没人等下周').click()
-  const res = patched(page)
+  const res = taskPatched(page)
   await page
     .getByRole('group', { name: 'Overdue: 没人等下周' })
     .getByRole('button', { name: 'Next week', exact: true })
@@ -461,7 +432,7 @@ test('the open date control adds no horizontal scroll at 375', async ({ page }) 
   await page.goto('/tasks/today')
   await triage(page, '窄屏上的逾期任务标题也可能很长').click()
   await expect(page.getByRole('group', { name: /^Overdue: / })).toBeVisible()
-  // 375px zero horizontal scroll is a pinned result (plan section 7); a popover anchored to the
+  // Nothing scrolls sideways at 375px; a popover anchored to the
   // right edge of a row is exactly the kind of thing that quietly breaks it.
   const over = await sidewaysScroll(page)
   expect(over).toEqual({ doc: 0, body: 0 })
@@ -649,9 +620,8 @@ test.describe('the tree on a phone', () => {
 // ------------------------------------------------------------------------- motion, on request
 
 /**
- * The app has exactly one animation: the 120ms echo of a status change the reader made. Section 7
- * says a reader who asks for no motion gets none, and a stylesheet rule is the kind of thing a
- * redesign deletes by accident.
+ * The app has exactly one animation: the 120ms echo of a status change the reader made. A reader
+ * who asks for no motion gets none.
  *
  * Both directions, because "0s under reduce" also holds for an app with no animation at all.
  */

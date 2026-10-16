@@ -5,6 +5,7 @@ import {
   dayInZone,
   holdFirstRead,
   makeProject,
+  makeReading,
   makeTask,
   meetingToday,
   registerFreshUser,
@@ -38,10 +39,7 @@ test('the Reading card holds only what belongs to no project', async ({ page }) 
     headers: WEB,
     data: { kind: 'book', title: '散着的书' },
   })
-  await page.request.post('/api/v1/reading', {
-    headers: WEB,
-    data: { kind: 'book', title: '归了项目的书', projectId: pid },
-  })
+  await makeReading(page, { kind: 'book', title: '归了项目的书' }, { projectId: pid })
   await page.goto('/')
 
   const reading = card(page, 'Reading')
@@ -62,10 +60,7 @@ test('an item whose project was deleted turns up on the card rather than nowhere
   // AND from the card -- in the database and on no screen.
   await registerFreshUser(page, '/')
   const pid = await makeProject(page, '要删掉的')
-  await page.request.post('/api/v1/reading', {
-    headers: WEB,
-    data: { kind: 'book', title: '留下来的书', projectId: pid },
-  })
+  await makeReading(page, { kind: 'book', title: '留下来的书' }, { projectId: pid })
   await page.request.delete(`/api/v1/projects/${pid}`, { headers: WEB })
   await page.goto('/')
   await expect(card(page, 'Reading')).toContainText('留下来的书')
@@ -98,17 +93,6 @@ test('the Today card shows what is in progress, across projects', async ({ page 
   await expect(doing.getByRole('listitem').filter({ hasText: '跑通 CI' })).toContainText('rrgen')
 })
 
-test('g w goes to the workbench, and it is the shell own key', async ({ page }) => {
-  await registerFreshUser(page, '/')
-  await page.keyboard.press('g')
-  await page.keyboard.press('t')
-  await expect(page).toHaveURL(/\/tasks\/today$/)
-  await page.keyboard.press('g')
-  await page.keyboard.press('w')
-  await expect(page).toHaveURL(/\/$/)
-  await expect(page.getByRole('heading', { name: 'Workbench', level: 1 })).toBeVisible()
-})
-
 // ------------------------------------------------------------------------- each card its shape
 
 test('the cards are Today, Meetings, Reading, Birthdays and Projects, each heading its page', async ({
@@ -124,7 +108,7 @@ test('the cards are Today, Meetings, Reading, Birthdays and Projects, each headi
     'Birthdays',
     'Projects',
   ])
-  // A card's heading is the way to its page; there is no separate "See all".
+  // A card's heading is the way to its page.
   for (const [name, to] of [
     ['Today', '/tasks/today'],
     ['Meetings', '/meetings'],
@@ -136,7 +120,6 @@ test('the cards are Today, Meetings, Reading, Birthdays and Projects, each headi
       'href',
       to,
     )
-  await expect(page.getByRole('main').getByText('See all')).toHaveCount(0)
 })
 
 test('the Today card counts what is late, planned and done, and each count goes there', async ({

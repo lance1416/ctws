@@ -2,15 +2,11 @@ import { expect, test } from '@playwright/test'
 import { logOut, registerFreshUser } from './helpers'
 
 /**
- * The sign-in screen (redesign stage 3). Its COPY is frozen -- `auth.spec.ts` asserts the
- * accessible names Email, Password, Create an account and Sign out, and
- * is the user's call -- so what changed is the layout, the type and the
- * rhythm, plus the one behaviour a daily tool should not make you reach for the mouse to get:
- * Enter signs in.
+ * The sign-in screen: Enter signs in from either field.
  *
- * These guards exist because the fields now live inside a <form>. A form that submits is a page
- * NAVIGATION unless it is prevented, and a login screen that reloads loses the typing and the
- * error message with it -- a regression that looks like nothing in a screenshot.
+ * The fields live inside a <form>, and a form that submits is a page NAVIGATION unless it is
+ * prevented: a login screen that reloads loses the typing and the error message with it, which
+ * looks like nothing in a screenshot.
  */
 
 test('Enter from either field signs in, without reloading the page', async ({ page }) => {

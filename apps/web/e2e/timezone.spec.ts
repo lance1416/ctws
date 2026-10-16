@@ -1,8 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { editDetail, openProject, registerFreshUser, submitCreate, WEB } from './helpers'
-
-/** The month names the app prints, so a spec can build the string the page will show. */
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+import { MONTHS } from './days'
 
 /**
  * THE ONE PLACE THE ACCOUNT'S TIMEZONE IS NOT THE RUNNER'S.

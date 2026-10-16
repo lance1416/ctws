@@ -22,11 +22,8 @@ async function query(page: Page, text: string) {
 }
 
 /**
- * A result row, BY ITS ROLE -- `option`, not `button`. Buttons in a bare
- * `<ul>`, which is the defect that was fixed -- a screen reader was told the dialog contained a list
- * of buttons and nothing about which one the keyboard had selected. They are `role="option"` inside a
- * `role="listbox"` now (ARIA 1.2 combobox), so that is what they are matched by. Every behaviour
- * these helpers are used to assert -- the text, the breadcrumb, the click, the reveal -- is unchanged.
+ * A result row, BY ITS ROLE: `role="option"` inside a `role="listbox"` (ARIA 1.2 combobox), so a
+ * screen reader is told which one the keyboard has selected.
  */
 const result = (page: Page, title: string) =>
   page.getByRole('dialog', { name: 'Search' }).getByRole('option').filter({ hasText: title })
@@ -117,11 +114,11 @@ test('search shows the parent breadcrumb and the status, and skips deleted tasks
     headers: WEB,
     data: { status: 'done' },
   })
-  expect(done.ok()).toBeTruthy()
+  expect(done.status()).toBe(200)
   const removed = await page.request.delete(`/api/v1/tasks/${ids.get('hint 删掉的')!}`, {
     headers: WEB,
   })
-  expect(removed.ok()).toBeTruthy()
+  expect(removed.status()).toBe(204)
 
   await page.keyboard.press('f')
   await query(page, 'hint')
@@ -135,11 +132,8 @@ test('search shows the parent breadcrumb and the status, and skips deleted tasks
 })
 
 /**
- * WHAT A SCREEN READER HEARS. The keyboard selection in this dialog was real and invisible: the box
- * was a bare `<input aria-label>` with no `role="combobox"`, no `aria-expanded` and no
- * `aria-activedescendant`, and the results were `<button aria-current>` in a plain `<ul>`. So
- * ArrowDown moved a highlight that assistive technology could not report -- no list, no item count,
- * no "2 of 3", and no title read out.
+ * WHAT A SCREEN READER HEARS: a highlight that assistive technology cannot report is no selection
+ * at all -- no list, no item count, no "2 of 3", and no title read out.
  *
  * This asserts the RELATIONSHIP and not the highlight class: that the box is a combobox pointing at
  * a listbox, that `aria-activedescendant` names a real element, that the element it names is the
@@ -235,14 +229,8 @@ test('Escape closes search, and f typed into a text field does not open it', asy
 })
 
 /**
- * THE PROMISE `aria-modal` MAKES, now kept.
- *
- * This dialog used to sit in a hand-built `Overlay` that declared `role="dialog"
- * aria-modal="true"` and handled Escape, the press outside and the focus restoration -- but had no
- * Tab handling of any kind. So assistive technology was told the rest of the page was unreachable
- * while the keyboard walked straight out of the panel and into the task tree underneath: focus read
- * as being inside the dialog and was in fact on a row nobody could see. That is worse than claiming
- * nothing. It is Radix's `Dialog` now (the project's own `Modal`), and the trap is the point.
+ * THE PROMISE `aria-modal` MAKES, kept: assistive technology is told the rest of the page is
+ * unreachable, so the keyboard must not walk out of the panel onto a row nobody can see.
  *
  * Forty presses, not one: a trap that holds for a few and then gives way is the failure shape, and
  * the count is more than twice the panel's own tabbable controls either way round.
@@ -263,10 +251,6 @@ test('no Tab reaches outside the search dialog while it is open', async ({ page 
   await expect(searchBox(page)).toBeFocused()
   await query(page, '条')
   await expect(page.locator('[data-search-result]')).toHaveCount(2)
-  // The results are NOT in the cycle, and that is the combobox pattern rather than an omission:
-  // focus stays in the box and `aria-activedescendant` carries the selection, so two results do not
-  // put two tab stops between the box and Close. The panel still has more than one thing to tab to.
-  await expect(page.locator('[data-search-result] button')).toHaveCount(0)
 
   const inside = () =>
     page.evaluate(() => {

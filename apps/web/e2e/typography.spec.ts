@@ -2,8 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { makeProject, makeTask, registerFreshUser } from './helpers'
 
 /**
- * THE TYPOGRAPHY RULES, pinned: the font stack, the scale as pairs, the two weights, and the
- * Han/Latin spacing.
+ * THE TYPOGRAPHY RULES, pinned: the font stack, the scale as pairs, and the Han/Latin spacing.
  *
  * Every one of them is ADOPTED from a published design system, so every guard here is a guard
  * against drifting off someone else's answer, not against drifting off a taste. What makes each one
@@ -16,10 +15,6 @@ import { makeProject, makeTask, registerFreshUser } from './helpers'
  *   set and ignored: the value parses in a browser that does nothing with it, and
  *   `getComputedStyle` would report it happily. Two spans of the same text at the same size, one
  *   opted out, must measure different widths or the feature is decoration.
- * - "no 500" is checked in the SHIPPED STYLESHEET and on the live DOM in the states that can
- *   introduce one (a selected chip, an active rail item, a running row). A DOM walk alone misses
- *   a `:checked` rule nothing on screen has triggered; a stylesheet grep alone misses an inline
- *   style.
  * - The scale is checked as PAIRS on the real elements that wear each role. Asserting the custom
  *   properties would only prove the tokens exist, not that anything uses them.
  */
@@ -204,10 +199,9 @@ test('the banner subject is 36/44, and the date heading above it is the display 
 })
 
 /**
- * ONE PAGE-TITLE STEP. Every page's own heading is the scale's 2xl (36/44, 600) -- the step the
- * project page, People and Things were redrawn at. A page left on the old 24/32 reads as a
- * section of some other page; Today's date (display) and the Workbench's hidden heading are the
- * two that are something else on purpose.
+ * ONE PAGE-TITLE STEP. Every page's own heading is the scale's 2xl (36/44, 600); a smaller one
+ * reads as a section of some other page. Today's date (display) and the Workbench's hidden heading
+ * are the two that are something else on purpose.
  */
 test('every page names itself at one step', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
@@ -231,18 +225,12 @@ test('every page names itself at one step', async ({ page }) => {
   }
 })
 
-// -------------------------------------------------------------------- 400 and 600, and no 500
-
 // ------------------------------------------------------------ mixed script: text-autospace
 
 test('text-autospace is asked for, and actually moves the glyphs', async ({ page }) => {
   await registerFreshUser(page)
 
-  // RENDERED GEOMETRY FIRST, and the computed property only afterwards: a property can be set and
-  // ignored, so the property check is the weaker claim and must not be the one that speaks when
-  // this breaks.
-  //
-  // RENDERED GEOMETRY, not the computed property. A browser that parses `text-autospace` and does
+  // RENDERED GEOMETRY FIRST, and the computed property only afterwards. A browser that parses `text-autospace` and does
   // nothing with it reports exactly the same computed value as one that honours it, so the only
   // honest measure is whether the text got wider. Two probes, same text, same font, same size,
   // one opted out: both inherit the app's own stack from <body>.
@@ -252,9 +240,8 @@ test('text-autospace is asked for, and actually moves the glyphs', async ({ page
       el.style.cssText = `position:fixed;top:-500px;left:0;white-space:pre;font-size:16px`
       // INHERITED, not set here, for the probe that is supposed to be spaced. A probe that writes
       // `text-autospace: normal` on itself measures the BROWSER and passes even when the app never
-      // opted in -- measured against a mutation that turned the app's own declaration off, which
-      // is why it is written this way. Only the opt-OUT probe overrides, because the thing being
-      // proved is that the app's cascade reaches ordinary text.
+      // opted in. Only the opt-OUT probe overrides, because the thing being proved is that the
+      // app's cascade reaches ordinary text.
       if (autospace) el.style.setProperty('text-autospace', autospace)
       // No literal spaces: the ¼-em is the engine's to insert. Two Han/Latin joins and two
       // Han/digit joins, which is what CLREQ's rule is about.

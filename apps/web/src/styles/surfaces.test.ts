@@ -6,16 +6,10 @@ import { MENU_SURFACE } from '../platform/ui/menuSurface'
 /**
  * A STATE GOES ONE STEP FROM THE PLANE IT IS ON, AND NEVER TO ANOTHER PLANE.
  *
- * Two ways this broke, both read off the source because a hover nobody pointed at leaves no trace
- * in a screenshot:
- *
- * - The hover was an opaque colour, and in each scheme it was exactly one of the four planes. On
- *   that plane a hovered row, a highlighted search result and a menu item under the keyboard
- *   changed nothing at all.
- * - Nine controls hovered to the page's own ground: in dark they sank to near-black while every
- *   other hover in the app lifts, and in light they were a second grey.
- *
- * So both states are ink LAYERS (`hover`, `select`), and no transient state names a surface.
+ * Read off the source because a hover nobody pointed at leaves no trace in a screenshot. Both
+ * states are ink LAYERS (`hover`, `select`), so they show on every plane, and no transient state
+ * names a surface: an opaque hover equal to a plane changes nothing on that plane, and a hover to
+ * the page's ground sinks in dark where every other hover lifts.
  */
 const css = readFileSync(resolve(import.meta.dirname, 'styles.css'), 'utf8')
 const SRC = resolve(import.meta.dirname, '..')

@@ -4,10 +4,8 @@ import { apiPost, registerFreshUser } from './helpers'
 /**
  * SAYING THAT TWO THINGS ARE CONNECTED, from the interface.
  *
- * The edge table shipped with no way to write an edge: the server took one and nothing in the app
- * sent one, so the sentence the whole redesign exists for -- "this book is the one Ying
- * recommended" -- was reachable with curl and nowhere else. Every edge that existed came from a
- * module's own field.
+ * "This book is the one Ying recommended" is written from the app itself, not only from a module's
+ * own field.
  */
 const picker = (page: Page) => page.getByRole('dialog').filter({ hasText: 'Link to' })
 
@@ -261,7 +259,7 @@ test('an address that is no task id says so, and asks the server nothing', async
   page.on('request', (r) => {
     if (/\/api\/v1\/tasks\/completed/.test(r.url())) asked.push(r.url())
   })
-  // The old Done page's address: under /api/v1/tasks it names a list, not a task.
+  // `completed` is not a task id: under /api/v1/tasks it names a list, so it is never fetched.
   await page.goto('/tasks/completed')
   await expect(page.getByRole('alert')).toContainText('This task is not here any more.')
   await expect(page).toHaveURL(/\/tasks\/completed$/)

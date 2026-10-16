@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { holdFirstRead, registerFreshUser, slowReads, WEB } from './helpers'
+import { holdFirstRead, makeReading, registerFreshUser, slowReads, WEB } from './helpers'
 
 /**
  * THE READING LIST -- THE SECOND MODULE, through the browser.
@@ -41,8 +41,7 @@ test('a pasted link goes to Reading; a sentence still goes to the inbox', async 
 
 /**
  * Added while the list's first read is still out: it is on the list when that read lands. The
- * refetch after the write used to be handed the read that left before it, and the book was in the
- * database and nowhere on the screen.
+ * refetch after the write must not be handed the read that left before it.
  */
 test('a book added while the list is still loading is on the list', async ({ page }) => {
   await registerFreshUser(page, '/')
@@ -84,10 +83,7 @@ test('a book moves to read → reading → finished, and the finished pile folds
   page,
 }) => {
   await registerFreshUser(page)
-  await page.request.post('/api/v1/reading', {
-    headers: WEB,
-    data: { kind: 'book', title: '设计心理学', author: 'Don Norman' },
-  })
+  await makeReading(page, { kind: 'book', title: '设计心理学' }, { author: 'Don Norman' })
   await page.goto('/reading')
 
   const section = (name: string) => page.getByRole('region', { name })
@@ -121,17 +117,6 @@ test('the rail counts what is waiting, not the size of the pile', async ({ page 
   // The count lives where every kind is listed, in the kind's own words.
   await page.goto('/things')
   await expect(page.locator('[data-kind="Reading"] [data-count]')).toHaveText('1 to read')
-})
-
-test('g l goes to Reading, in one keyspace with the task module', async ({ page }) => {
-  await registerFreshUser(page)
-  // No goto: a fresh navigation leaves focus where the document-level keys do not see it, and
-  // this is about the chord, not about where focus lands after a page load.
-  await expect(page).toHaveURL(/\/tasks\/today$/)
-  await page.keyboard.press('g')
-  await page.keyboard.press('l')
-  await expect(page).toHaveURL(/\/reading$/)
-  await expect(page.getByRole('heading', { name: 'Reading', level: 1 })).toBeVisible()
 })
 
 test('search reaches both modules from one box', async ({ page }) => {
@@ -168,15 +153,11 @@ test('a project page carries both modules, each with its own block and numbers',
     headers: WEB,
     data: { projectId: project.id, title: '配色重做', parentId: null },
   })
-  await page.request.post('/api/v1/reading', {
-    headers: WEB,
-    data: {
-      kind: 'link',
-      url: 'https://example.com/a',
-      title: '一篇相关的文章',
-      projectId: project.id,
-    },
-  })
+  await makeReading(
+    page,
+    { kind: 'link', url: 'https://example.com/a' },
+    { title: '一篇相关的文章', projectId: project.id },
+  )
   await page.goto(`/projects/${project.id}`)
 
   // The task module's block and the reading module's, side by side under one shell project.
@@ -200,21 +181,10 @@ test('a reading item is deleted from the bottom of its layer, after one question
   page,
 }) => {
   await registerFreshUser(page)
-  await page.request.post('/api/v1/reading', {
-    headers: WEB,
-    data: { kind: 'book', title: '设计心理学', author: 'Don Norman' },
-  })
+  await makeReading(page, { kind: 'book', title: '设计心理学' }, { author: 'Don Norman' })
   await page.goto('/reading')
   const deletes: string[] = []
   page.on('request', (r) => r.method() === 'DELETE' && deletes.push(r.url()))
-
-  // The row menu keeps only what can be done without opening the item.
-  await rowOf(page, '设计心理学')
-    .getByRole('button', { name: /More for/ })
-    .click()
-  await expect(page.getByRole('menuitem', { name: 'Rename' })).toHaveCount(0)
-  await expect(page.getByRole('menuitem', { name: 'Delete' })).toHaveCount(0)
-  await page.keyboard.press('Escape')
 
   await page.getByRole('button', { name: '设计心理学', exact: true }).click()
   const layer = page.getByRole('dialog', { name: 'Reading' })
@@ -304,12 +274,11 @@ test('the reading list hangs on the margin: the plan, the thread, then the item'
     data: { name: 'CTWS' },
   })
   const projectId = ((await project.json()) as { id: string }).id
-  const made = await page.request.post('/api/v1/reading', {
-    headers: WEB,
-    data: { kind: 'book', title: 'The Elements of Typographic Style', projectId },
-  })
-  expect(made.status(), await made.text()).toBe(201)
-  const { id } = (await made.json()) as { id: string }
+  const id = await makeReading(
+    page,
+    { kind: 'book', title: 'The Elements of Typographic Style' },
+    { projectId },
+  )
   // A fixed day years out, so the margin's word does not depend on today: its date.
   const planOn = '2030-05-28'
   const planned = await page.request.patch(`/api/v1/reading/${id}`, {

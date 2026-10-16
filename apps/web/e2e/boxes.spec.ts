@@ -4,10 +4,9 @@ import { makeProject, makeTask, registerFreshUser } from './helpers'
 /**
  * A BOX ONLY FOR WHAT FLOATS.
  *
- * Every block used to be a rounded, bordered, shadowed card, which is the look this redesign set
- * out to leave: a page of identical boxes says nothing about which of them matter. Now a section
- * of a page is just its heading and its rows; the only boxes are things above the page (the
- * sheet, menus, dialogs) and the Workbench's tiles, which sit on a desk of their own.
+ * A page of identical boxes says nothing about which of them matter, so a section of a page is
+ * just its heading and its rows; the only boxes are things above the page (the sheet, menus,
+ * dialogs) and the Workbench's tiles, which sit on a desk of their own.
  */
 
 /** The computed colour of a token, as `getComputedStyle` reports a fill. */

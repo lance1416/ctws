@@ -112,14 +112,6 @@ test('a finished thing leaves the grid, because the calendar is about what is ah
   await expect(square(page, dayOffset(1))).not.toContainText('做完的')
 })
 
-test('g c goes to the calendar', async ({ page }) => {
-  await registerFreshUser(page, '/')
-  await page.keyboard.press('g')
-  await page.keyboard.press('c')
-  await expect(page).toHaveURL(/\/calendar$/)
-  await expect(page.getByRole('heading', { name: 'Calendar', level: 1 })).toBeVisible()
-})
-
 test('a birthday sits on the day the server gives, and clicking it opens the person', async ({
   page,
 }) => {

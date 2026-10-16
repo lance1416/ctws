@@ -3,6 +3,7 @@ import {
   editDetail,
   makeProject,
   makeTask,
+  MOVE_URL,
   openProject,
   pickOne,
   registerFreshUser,
@@ -11,18 +12,16 @@ import {
 } from './helpers'
 
 const PATCH_URL = /\/tasks\/[^/]+$/
-const MOVE_URL = /\/tasks\/[^/]+\/move$/
 
 /** Clicks Save and resolves once the server has accepted the request, i.e. it is persisted. */
 async function save(page: Page, url: RegExp = PATCH_URL) {
   const done = page.waitForResponse((r) => url.test(r.url()) && r.request().method() !== 'GET')
   await page.getByRole('button', { name: 'Save' }).click()
   const res = await done
-  expect(res.ok()).toBeTruthy()
-  // A save now lands the pane back in READING mode -- or takes the task off this page entirely,
-  // which unmounts the pane. Either way nothing is left in EDITING mode, and waiting for that is
-  // not politeness: until it happens the form is still dirty, so anything that tries to leave
-  // meets the discard prompt instead.
+  expect(res.ok()).toBe(true)
+  // A save lands the pane back in READING mode -- or takes the task off this page entirely, which
+  // unmounts the pane. Until then the form is still dirty, so anything that tries to leave meets
+  // the discard prompt instead.
   await expect(page.getByRole('button', { name: 'Save' })).toHaveCount(0)
   return res
 }
@@ -142,10 +141,7 @@ test('clearing a date removes it rather than sending an empty string', async ({ 
 })
 
 /**
- * THE PATCH BODY IS THE DIFF, and the diff is now `react-hook-form`'s `dirtyFields` rather than six
- * hand-written comparisons. What is pinned is the BODY -- which fields the request names -- because
- * that is the observable the hand-written version produced and the thing a replacement has to
- * reproduce exactly:
+ * THE PATCH BODY IS THE DIFF. What is pinned is the BODY -- which fields the request names:
  *
  * - a field typed into is named;
  * - a field never touched is ABSENT, even when the form plainly holds a value for it (an untouched

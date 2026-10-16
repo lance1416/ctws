@@ -1,9 +1,13 @@
 import { expect, test, type Page } from '@playwright/test'
-import { editDetail, makeProject, makeTask, registerFreshUser } from './helpers'
-import { dayAfter, dayOffset, nextMondayYmd, ymd } from './days'
-
-/** The month names the app prints, so a spec can build the string the page will show. */
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+import {
+  editDetail,
+  makeProject,
+  makeTask,
+  registerFreshUser,
+  serverTask,
+  taskPatched,
+} from './helpers'
+import { dayAfter, dayOffset, MONTHS, nextMondayYmd, ymd } from './days'
 
 /**
  * THE DETAIL PANE, in the row system's own vocabulary: the five marker shapes, the plan and
@@ -11,37 +15,17 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
  * field for the days those do not cover. Not a stack of labelled native controls.
  *
  * What these guards are for:
- * - A control that LOOKS right and writes nothing, or writes something else, is the exact failure
- *   a redesign makes easy. So every one of them is asserted on the REQUEST BODY, against the
- *   values the controls they replace used to send, and then against a fresh read of the server.
+ * - A control that LOOKS right and writes nothing, or writes something else, passes any check on
+ *   the screen. So every one of them is asserted on the REQUEST BODY, and then against a fresh
+ *   read of the server.
  * - "status is told by shape" and "a plan never looks like a deadline" are claims about drawn
  *   ink, so they are measured, not read off a class name.
  * - "a destructive action is not a peer of Save" is a claim about rank, so it is measured too.
  */
 
-type ServerTask = {
-  id: string
-  status: string
-  dueAt: string | null
-  scheduledOn: string | null
-}
-async function serverTask(page: Page, projectId: string, id: string): Promise<ServerTask> {
-  const body = (await (await page.request.get(`/api/v1/tasks?projectId=${projectId}`)).json()) as {
-    tasks: ServerTask[]
-  }
-  const task = body.tasks.find((t) => t.id === id)
-  expect(task, 'the task is still in the project').toBeTruthy()
-  return task!
-}
-
-const isPatch = (r: { url: () => string; request: () => { method: () => string } }) =>
-  /\/tasks\/[^/]+$/.test(r.url()) && r.request().method() === 'PATCH'
-
 /** Presses Save and returns the PATCH the press produced, so the BODY can be asserted. */
-/** The calendar day after `day`, as a plain date string. */
-
 async function saveBody(page: Page): Promise<Record<string, unknown>> {
-  const done = page.waitForResponse((r) => isPatch(r) && r.ok())
+  const done = taskPatched(page)
   await page.getByRole('button', { name: 'Save' }).click()
   const res = await done
   return res.request().postDataJSON() as Record<string, unknown>
@@ -49,8 +33,7 @@ async function saveBody(page: Page): Promise<Record<string, unknown>> {
 
 /**
  * Opens a task's pane. `edit` presses Edit, because the pane opens in READING mode and the controls
- * these tests are about exist only in editing mode. What each control WRITES is asserted exactly as
- * before, on the request body.
+ * these tests are about exist only in editing mode.
  */
 async function openPane(page: Page, projectId: string, title: string, edit = true) {
   await page.goto(`/projects/${projectId}`)
@@ -61,14 +44,13 @@ async function openPane(page: Page, projectId: string, title: string, edit = tru
 
 // ------------------------------------------------------------------- status, as shapes not words
 
-test('the status markers write exactly what the status dropdown wrote', async ({ page }) => {
+test('the status markers write the contract’s own status value', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   const id = await makeTask(page, pid, '写方案')
   await openPane(page, pid, '写方案')
 
-  // The task starts at To do, and the group says so without anything being opened -- which is
-  // the whole complaint about the <select> it replaces.
+  // The task starts at To do, and the group says so without anything being opened.
   await expect(page.getByRole('radio', { name: 'To do', exact: true })).toBeChecked()
   for (const name of ['Backlog', 'In progress', 'Done', 'Cancelled']) {
     await expect(page.getByRole('radio', { name, exact: true })).not.toBeChecked()
@@ -135,8 +117,7 @@ test('the named deadline decisions write the day the row would show', async ({ p
   // "Next week" is the same Monday the row's triage control means.
   //
   // Through TODAY first, and not straight from "tomorrow": on a Sunday next Monday IS tomorrow,
-  // the value would not change, and the app is RIGHT to send nothing -- which used to hang this
-  // test one day in seven (`days.ts` records the Thursday version of the same trap).
+  // the value would not change, and the app is RIGHT to send nothing.
   await openPane(page, pid, '交报告')
   await page.getByRole('button', { name: 'Due today', exact: true }).click()
   await saveBody(page)
@@ -183,7 +164,7 @@ test('the named plan decisions write the same scheduledOn the exact field writes
   await expect(page.getByLabel('Plan', { exact: true })).toHaveValue(dayOffset(1))
   // THE DAY AFTER NEXT MONDAY, not a fixed offset. `dayOffset(4)` is next Monday whenever this
   // runs on a Thursday, and then "next week" below writes the value already stored -- the form is
-  // not dirty, no request is sent, and the test hangs waiting for one. It did, on a Thursday.
+  // not dirty, and no request is sent.
   const afterNextMonday = dayAfter(nextMondayYmd())
   await page.getByLabel('Plan', { exact: true }).fill(afterNextMonday)
   expect(await saveBody(page)).toEqual({ scheduledOn: afterNextMonday })
@@ -216,14 +197,14 @@ test('both dates change in one request, and nothing is saved until Save is press
   await page.getByRole('button', { name: 'Due today', exact: true }).click()
   await page.getByRole('button', { name: 'Plan for tomorrow', exact: true }).click()
   await page.getByRole('radio', { name: 'In progress', exact: true }).check()
-  // Explicit save: three decisions, and the server has heard nothing yet. (This is the guard on
-  // the rule that these controls did NOT become autosave.)
-  await page.waitForTimeout(300)
-  expect(writes, 'nothing is written before 保存').toHaveLength(0)
+  // Explicit save: three decisions, and the server has heard nothing yet -- these controls do not
+  // autosave.
+  expect(writes, 'nothing is written before Save').toHaveLength(0)
   expect((await serverTask(page, pid, id)).status).toBe('todo')
 
   const body = await saveBody(page)
   expect(Object.keys(body).sort()).toEqual(['dueAt', 'scheduledOn', 'status'])
+  // The one write is Save's, so the three presses before it sent none.
   expect(writes).toHaveLength(1)
   const after = await serverTask(page, pid, id)
   expect(after.status).toBe('in_progress')
@@ -305,8 +286,7 @@ test('the status chip wears the app’s focus ring when the keyboard reaches it'
   await openPane(page, pid, '看焦点')
 
   // The radio itself is a transparent overlay, so the ring the app draws on every other control
-  // has to be drawn on the CHIP. Without this the one control added in this stage would be the
-  // one control a keyboard user cannot see (section 7: a visible ring on every control).
+  // has to be drawn on the CHIP, or it is the one control a keyboard user cannot see.
   await page.getByRole('textbox', { name: 'Title' }).focus()
   await page.keyboard.press('Tab')
   const chip = page.getByRole('radio', { name: 'To do', exact: true }).locator('xpath=..')
@@ -341,8 +321,8 @@ test('the pane opens with the task, and Delete is not a peer of Save', async ({ 
   const title = dialog.getByRole('textbox', { name: 'Title' })
   await expect(title).toHaveValue('这条任务的标题')
   // The project is NAMED on screen, not only coloured: the chip beside it is a second channel.
-  // The picker is the app's own now -- a button that is both the label and the value -- so the
-  // name is its accessible name and its text, and there are no options to read.
+  // The picker is a button that is both the label and the value, so the name is its accessible
+  // name and its text.
   const picker = dialog.getByRole('button', { name: /^Projects/ })
   await expect(picker).toHaveAccessibleName('Projects: Workbench')
   await expect(picker).toHaveText('Workbench')
@@ -419,10 +399,12 @@ test('the pane opens in reading mode with no field, and Edit reveals them', asyn
   await expect(dialog.getByRole('button', { name: 'Delete task' })).toHaveCount(0)
 
   // Reading and then choosing to edit wrote nothing on its own: this is not autosave with a
-  // read-only skin on it.
-  await page.waitForTimeout(200)
-  expect(writes, 'nothing was written by reading or by pressing 编辑').toEqual([])
+  // read-only skin on it. Save then writes once, so the one write is Save's.
+  expect(writes, 'nothing was written by reading or by pressing Edit').toEqual([])
   expect((await serverTask(page, pid, id)).status).toBe('in_progress')
+  await dialog.getByRole('textbox', { name: 'Title' }).fill('读完了这条任务')
+  await saveBody(page)
+  expect(writes).toHaveLength(1)
 })
 
 test('Edit hands focus to the first field rather than dropping it on the body', async ({
@@ -482,8 +464,9 @@ test('finishing a task from its pane keeps focus in the pane', async ({ page }) 
   // Its row leaves the tree (finished rows are hidden), but the pane is still open and being read.
   await expect(page.getByRole('button', { name: 'Task: Finish me', exact: true })).toHaveCount(0)
   await expect(dialog.getByRole('button', { name: 'Status: Done' })).toBeVisible()
-  await page.waitForTimeout(300)
-  expect(await page.evaluate(() => !!document.activeElement?.closest('[role="dialog"]'))).toBe(true)
+  await expect
+    .poll(() => page.evaluate(() => !!document.activeElement?.closest('[role="dialog"]')))
+    .toBe(true)
 })
 
 test('a status change that fails says so', async ({ page }) => {

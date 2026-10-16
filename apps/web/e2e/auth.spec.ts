@@ -3,7 +3,7 @@ import { logOut, registerFreshUser } from './helpers'
 
 // Runs against the API container at http://localhost:3000, which serves the built web app, so the
 // page and the API are one origin. Needs AUTH_REGISTRATION=open and COOKIE_SECURE=false (plain
-// http); the SameSite default (lax) and an empty CORS_ORIGINS are what a same-origin deploy uses.
+// http).
 // Register is rate limited (20/min/IP), so each run uses a unique email.
 test('register, stay signed in across a reload, then log out', async ({ page, context }) => {
   const email = await registerFreshUser(page)

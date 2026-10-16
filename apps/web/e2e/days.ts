@@ -1,16 +1,30 @@
 /**
- * THE ONE COPY OF THE SUITE'S DATE ARITHMETIC.
- *
- * Five specs had written out their own `ymd` / `dayOffset` / `nextMondayYmd`, each a few lines
- * and each subtly its own. That is how `pane.spec.ts` came to assert that "four days from now"
- * and "next Monday" are different days -- true on six days of the week, and on Thursdays the
- * test hung waiting for a request the app was right not to send.
- *
- * THESE ARE THE RUNNER'S LOCAL DAYS, which is what the suite wants almost everywhere: the
- * browser registers its user with its own zone, so the account's days and the runner's are the
- * same. `timezone.spec.ts` is the deliberate exception and computes its own, in the zone it
- * sets; see the note there.
+ * THE SUITE'S DATE ARITHMETIC, in the runner's local days. The browser registers its user with its
+ * own zone, so the account's days and the runner's are the same; `timezone.spec.ts` sets another
+ * zone and computes its own.
  */
+
+/** The month names the app prints, so a spec can build the string the page will show. */
+export const MONTHS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+]
+
+/** One day in milliseconds. */
+export const DAY = 86_400_000
+
+/** A deadline `days` ago, as an instant. */
+export const dueAgo = (days: number): string => new Date(Date.now() - days * DAY).toISOString()
 
 /** A local calendar day, `YYYY-MM-DD`. */
 export const ymd = (d: Date): string =>

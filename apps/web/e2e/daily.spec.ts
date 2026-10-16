@@ -1,43 +1,24 @@
 import { expect, test, type Page } from '@playwright/test'
-import { editDetail, makeProject, makeTask, openTree, registerFreshUser, WEB } from './helpers'
-import { dayOffset, nextMondayYmd, ymd } from './days'
-
-/** The month names the app prints, so a spec can build the string the page will show. */
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+import {
+  editDetail,
+  makeProject,
+  makeTask,
+  openTree,
+  registerFreshUser,
+  serverTask,
+  serverTasks,
+  taskPatched,
+  WEB,
+} from './helpers'
+import { DAY, dayOffset, dueAgo, MONTHS, nextMondayYmd, ymd } from './days'
 
 // The daily loop: finishing, starting and deferring work from the list itself, the dates a tree
 // row shows, and the panel / delete guards. Every assertion that a status or date changed reads
 // the SERVER (a fresh GET), not the screen: an optimistic update that never reached the API
 // would pass any check that only looks at the UI.
 
-const DAY = 86_400_000
-
-type ApiTask = {
-  id: string
-  title: string
-  status: string
-  scheduledOn: string | null
-  dueAt: string | null
-}
-
-/** What the server holds for one task, read fresh. */
-async function serverTask(page: Page, projectId: string, title: string): Promise<ApiTask> {
-  const body = await (await page.request.get(`/api/v1/tasks?projectId=${projectId}`)).json()
-  const t = (body.tasks as ApiTask[]).find((x) => x.title === title)
-  expect(t, `task ${title} on the server`).toBeDefined()
-  return t!
-}
-
-const isPatch = (r: { url: () => string; request: () => { method: () => string } }) =>
-  /\/tasks\/[^/]+$/.test(r.url()) && r.request().method() === 'PATCH'
-const patched = (page: Page) => page.waitForResponse((r) => isPatch(r) && r.ok())
-
-const dueAgo = (days: number) => new Date(Date.now() - days * DAY).toISOString()
-
 /**
- * The row's date control. It replaced the seven inline text links an overdue row used to carry
- * (and the five a carried row carried): the actions are the same actions and send the same
- * requests, but they live inside one disclosure instead of lying on the row.
+ * The row's date control: an overdue or carried row's date actions, inside one disclosure.
  *
  * The trigger's name deliberately does not CONTAIN either group name, so `getByRole` -- which
  * matches accessible names by substring -- cannot confuse the two.
@@ -58,7 +39,7 @@ const treeRow = (page: Page, title: string) =>
     .locator('li[data-depth]')
     .filter({ has: page.getByRole('button', { name: `Task: ${title}`, exact: true }) })
 
-// ---------------------------------------------------------------------------------- F2: status
+// ----------------------------------------------------------------------------------------- status
 
 test('the status mark in a tree row finishes the task in one click, and it is saved', async ({
   page,
@@ -72,7 +53,7 @@ test('the status mark in a tree row finishes the task in one click, and it is sa
   page.on('request', (r) => {
     if (r.method() !== 'GET') requests.push(`${r.method()} ${new URL(r.url()).pathname}`)
   })
-  const done = patched(page)
+  const done = taskPatched(page)
   await page.getByRole('button', { name: 'Complete “写方案”' }).click()
   const res = await done
   // One request, carrying exactly the status: nothing else rewritten.
@@ -104,7 +85,7 @@ test('a finished task can be restored from its mark, landing on backlog', async 
   await expect(treeRow(page, '写方案')).toHaveCount(0)
   await page.getByRole('button', { name: '1 done' }).click()
 
-  const restored = patched(page)
+  const restored = taskPatched(page)
   await page.getByRole('button', { name: 'Reopen “写方案”' }).click()
   expect((await restored).request().postDataJSON()).toEqual({ status: 'backlog' })
   expect((await serverTask(page, pid, '写方案')).status).toBe('backlog')
@@ -126,7 +107,7 @@ test('starting a task from its row puts it under In progress, stopping takes it 
   await page.goBack()
   await page.getByRole('listitem').first().waitFor()
 
-  const started = patched(page)
+  const started = taskPatched(page)
   await page.getByRole('button', { name: 'Start “写方案”' }).click()
   expect((await started).request().postDataJSON()).toEqual({ status: 'in_progress' })
   expect((await serverTask(page, pid, '写方案')).status).toBe('in_progress')
@@ -135,7 +116,7 @@ test('starting a task from its row puts it under In progress, stopping takes it 
   await expect(page.getByRole('region', { name: 'In progress' }).getByText('写方案')).toBeVisible()
 
   // Stop it from the Today row: it has no date, so it leaves the page.
-  const stopped = patched(page)
+  const stopped = taskPatched(page)
   await page.getByRole('button', { name: 'Pause “写方案”' }).click()
   expect((await stopped).request().postDataJSON()).toEqual({ status: 'todo' })
   await expect(page.getByText('Nothing for today')).toBeVisible()
@@ -150,18 +131,18 @@ test('x, then s, on a focused tree row change its status, each saved', async ({ 
   const handle = page.getByRole('button', { name: 'Task: 写方案', exact: true })
 
   await handle.focus()
-  let res = patched(page)
+  let res = taskPatched(page)
   await page.keyboard.press('x')
   expect((await res).request().postDataJSON()).toEqual({ status: 'done' })
   expect((await serverTask(page, pid, '写方案')).status).toBe('done')
   // Focus did not move: the keyboard user can keep going from the same row.
   await expect(handle).toBeFocused()
 
-  res = patched(page)
+  res = taskPatched(page)
   await page.keyboard.press('x')
   expect((await res).request().postDataJSON()).toEqual({ status: 'backlog' })
 
-  res = patched(page)
+  res = taskPatched(page)
   await page.keyboard.press('s')
   expect((await res).request().postDataJSON()).toEqual({ status: 'in_progress' })
   expect((await serverTask(page, pid, '写方案')).status).toBe('in_progress')
@@ -171,8 +152,11 @@ test('x, then s, on a focused tree row change its status, each saved', async ({ 
   page.on('request', (r) => r.method() === 'PATCH' && sent.push(r.url()))
   await page.keyboard.press('Control+s')
   await page.keyboard.press('Alt+x')
-  await page.waitForTimeout(300)
-  expect(sent).toHaveLength(0)
+  // A plain key afterwards does send, so the one write proves the modified keys were handled.
+  res = taskPatched(page)
+  await page.keyboard.press('x')
+  await res
+  expect(sent).toHaveLength(1)
 })
 
 test('a Today row is finished by its mark, by x, and focus moves to the next row', async ({
@@ -190,7 +174,7 @@ test('a Today row is finished by its mark, by x, and focus moves to the next row
   const firstTitle = order[0]!.split('\n')[0]!
   const secondTitle = order[1]!.split('\n')[0]!
 
-  const first = patched(page)
+  const first = taskPatched(page)
   await page.getByRole('button', { name: `Complete “${firstTitle}”` }).click()
   expect((await first).request().postDataJSON()).toEqual({ status: 'done' })
   await expect(region.getByText(firstTitle, { exact: true })).toHaveCount(0)
@@ -199,7 +183,7 @@ test('a Today row is finished by its mark, by x, and focus moves to the next row
   expect((await serverTask(page, pid, firstTitle)).status).toBe('done')
 
   // Keyboard route on the focused row.
-  const second = patched(page)
+  const second = taskPatched(page)
   await page.keyboard.press('x')
   expect((await second).request().postDataJSON()).toEqual({ status: 'done' })
   await expect(region.getByText(secondTitle, { exact: true })).toHaveCount(0)
@@ -210,7 +194,7 @@ test('a Today row is finished by its mark, by x, and focus moves to the next row
   await expect(page.locator('[data-today-row]')).toHaveCount(1)
 })
 
-// ------------------------------------------------------------------------------ F3: overdue exits
+// ---------------------------------------------------------------------------------- overdue exits
 
 test('pushing the deadline on an overdue row keeps its time of day and takes the row out of Overdue', async ({
   page,
@@ -250,7 +234,7 @@ test('pushing the deadline on an overdue row keeps its time of day and takes the
     onDay(0).getMilliseconds(),
   )
 
-  let res = patched(page)
+  let res = taskPatched(page)
   await (
     await openTriage(page, '推到明天', 'Overdue')
   )
@@ -292,7 +276,7 @@ test('pushing the deadline on an overdue row keeps its time of day and takes the
     onDay(0).getSeconds(),
     onDay(0).getMilliseconds(),
   )
-  res = patched(page)
+  res = taskPatched(page)
   await (
     await openTriage(page, '推到下周', 'Overdue')
   )
@@ -331,7 +315,7 @@ test('only a deadline change takes a task out of Overdue: a bare scheduledOn doe
     headers: WEB,
     data: { scheduledOn: tomorrow },
   })
-  expect(p.ok()).toBeTruthy()
+  expect(p.status()).toBe(200)
   expect((await serverTask(page, pid, '过期了')).scheduledOn).toBe(tomorrow)
   expect(await segmentOf()).toBe('overdue')
   await page.goto('/tasks/today')
@@ -342,7 +326,7 @@ test('only a deadline change takes a task out of Overdue: a bare scheduledOn doe
     headers: WEB,
     data: { dueAt: new Date(Date.now() + 3 * DAY).toISOString() },
   })
-  expect(q.ok()).toBeTruthy()
+  expect(q.status()).toBe(200)
   expect(await segmentOf()).not.toBe('overdue')
 })
 
@@ -357,7 +341,7 @@ test('clearing the deadline takes a row out of Overdue and the server forgets it
   const section = page.getByRole('region', { name: 'Overdue' })
   await expect(section.getByText('不再重要')).toBeVisible()
 
-  const res = patched(page)
+  const res = taskPatched(page)
   await (
     await openTriage(page, '不再重要', 'Overdue')
   )
@@ -398,14 +382,14 @@ test('an overdue row is finished with its mark, and only overdue rows have the e
   await expect(panel).toHaveCount(0)
   await expect(triage(page, '逾期的')).toBeFocused()
 
-  const res = patched(page)
+  const res = taskPatched(page)
   await page.getByRole('button', { name: 'Complete “逾期的”' }).click()
   expect((await res).request().postDataJSON()).toEqual({ status: 'done' })
   await expect(page.getByRole('region', { name: 'Overdue' })).toHaveCount(0)
   expect((await serverTask(page, pid, '逾期的')).status).toBe('done')
 })
 
-// ------------------------------------------------------------------------------- F4: dates in tree
+// ---------------------------------------------------------------------------------- dates in tree
 
 test('the tree shows dates only where they mean something', async ({ page }) => {
   await registerFreshUser(page)
@@ -450,7 +434,7 @@ test('the tree shows dates only where they mean something', async ({ page }) => 
   await expect(treeRow(page, '今天截止')).not.toContainText('late')
 })
 
-// ---------------------------------------------------------------------------- F5: destructive guards
+// ----------------------------------------------------------------------------- destructive guards
 
 test('deleting a project asks first, names what is lost, and cancel deletes nothing', async ({
   page,
@@ -472,11 +456,10 @@ test('deleting a project asks first, names what is lost, and cancel deletes noth
 
   await ask.getByRole('button', { name: 'Cancel' }).click()
   await expect(ask).toHaveCount(0)
-  await page.waitForTimeout(200)
   expect(deletes).toHaveLength(0)
   const list = await (await page.request.get('/api/v1/projects')).json()
   expect(list.projects.map((p: { name: string }) => p.name)).toContain('待删项目')
-  expect((await serverTask(page, pid, '二')).status).toBeDefined()
+  expect(await serverTasks(page, pid)).toHaveLength(3)
   // And focus is back on the control that asked, not lost to <body>.
   await expect(del).toBeFocused()
 
@@ -487,7 +470,8 @@ test('deleting a project asks first, names what is lost, and cancel deletes noth
   await expect(ask).toHaveCount(0)
   expect(deletes).toHaveLength(0)
 
-  // Only the explicit confirmation deletes, and the server really lost it.
+  // Only the explicit confirmation deletes, and the server really lost it: the one DELETE sent
+  // is this one, so neither Cancel nor Escape sent any.
   await del.click()
   await ask.getByRole('button', { name: 'Delete' }).click()
   // The page it was on cannot survive it, so it ends on the list.
@@ -497,13 +481,10 @@ test('deleting a project asks first, names what is lost, and cancel deletes noth
   expect(after.projects.map((p: { name: string }) => p.name)).not.toContain('待删项目')
 })
 
-// The detail panel is an OVERLAY only below 1280px (design plan section 4); at or above that
-// width it is a coexisting third column, where a scrim, a click-outside and a focus trap would
-// all be wrong -- the whole point is that the list beside it stays usable. These three tests are
-// about the overlay, so they run at a width where it is one. The pane's own contract (no
-// backdrop, Tab leaves it, a click on the list is a click on the list) is pinned in
-// workbench.spec.ts, so neither half of the rule rests on the default viewport happening to be
-// 1280.
+// The detail panel is an OVERLAY only below 1280px; at or above that width it is a coexisting
+// third column, where a scrim, a click-outside and a focus trap would all be wrong. These tests are
+// about the overlay, so they run at a width where it is one. The column's own contract is pinned in
+// project.spec.ts.
 const OVERLAY_VIEWPORT = { width: 1024, height: 800 }
 
 test.describe('the panel as an overlay', () => {
@@ -594,7 +575,7 @@ test.describe('the panel as an overlay', () => {
     expect((await serverTask(page, pid, '写方案')).dueAt).toBeNull()
   })
 
-  // -------------------------------------------------------------------------------------- F7: panel
+  // ---------------------------------------------------------------------------------------- panel
 
   test('tab and shift+tab never leave the open panel', async ({ page }) => {
     await registerFreshUser(page)
@@ -630,8 +611,6 @@ test.describe('the panel as an overlay', () => {
       await page.keyboard.press('Shift+Tab')
       expect(await inside(), `after Shift+Tab ${i + 1}`).toBe(true)
     }
-    // The control the panel used to cover is not the one that gets focus.
-    await expect(page.getByTestId('current-user')).not.toBeFocused()
   })
 
   test('a click outside closes the panel, a click inside does not', async ({ page }) => {
@@ -664,9 +643,8 @@ test('the open panel leaves the chrome usable', async ({ page }) => {
   await page.getByRole('listitem').filter({ hasText: '写方案' }).click()
   await expect(page.getByRole('dialog')).toBeVisible()
 
-  // What is at the centre of each control is that control, not the panel. Capture lives in the
-  // rail now and the account menu is the bar's own control, so the pair spans both pieces of
-  // chrome the pane sits beside.
+  // What is at the centre of each control is that control, not the panel: Capture and the
+  // account menu, both in the bar the pane sits beside.
   for (const target of [page.getByPlaceholder('Capture…'), page.getByTestId('current-user')]) {
     const box = (await target.boundingBox())!
     const hit = await target.evaluate((el, p) => document.elementFromPoint(p.x, p.y) === el, {
@@ -688,11 +666,11 @@ test('saving returns the panel to reading, says so on the row, and is on the ser
   await editDetail(page)
   await page.getByLabel('Notes', { exact: true }).fill('先问清需求')
 
-  const done = page.waitForResponse((r) => isPatch(r) && r.ok())
+  const done = taskPatched(page)
   await page.getByRole('button', { name: 'Save' }).click()
   await done
   // THE PANE STAYS OPEN, in reading mode: what was just written is on screen to be read back,
-  // which is what a person does immediately after writing it. It used to close here.
+  // which is what a person does immediately after writing it.
   await expect(page.getByRole('dialog')).toHaveCount(1)
   await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
   await expect(page.getByRole('textbox', { name: 'Title' })).toHaveCount(0)
@@ -736,9 +714,8 @@ async function todaySegment(page: Page, id: string): Promise<string> {
 }
 
 /*
-  A carried plan is for TODAY now, at no particular time: it belongs under Any time, and the day it
-  was first meant for is said on the right. It used to take the margin, and the day's line -- whose
-  margin is times -- read "Oct 2, Any time, Oct 12, Oct 12": a list of old dates, not today.
+  A carried plan is for TODAY, at no particular time: it belongs under Any time, and the day it was
+  first meant for is said on the right, not in the margin, whose words on this list are times.
 */
 test('a plan carried over from days ago says so on Today, under Any time; a plan for today does not', async ({
   page,
@@ -784,7 +761,7 @@ test('moving the plan to today keeps the row, drops the mark, and changes only t
   const id = await makeTask(page, pid, '改到今天的', { scheduledOn: dayOffset(-3) })
   await makeTask(page, pid, '旁观者', { scheduledOn: dayOffset(-3) })
   await page.goto('/tasks/today')
-  const res = patched(page)
+  const res = taskPatched(page)
   await (
     await openTriage(page, '改到今天的', 'Carried over')
   )
@@ -816,7 +793,7 @@ test('moving the plan to tomorrow or next week takes the row off Today', async (
   await makeTask(page, pid, '留着的', { scheduledOn: dayOffset(-2) })
   await page.goto('/tasks/today')
 
-  let res = patched(page)
+  let res = taskPatched(page)
   await (
     await openTriage(page, '改到明天的', 'Carried over')
   )
@@ -827,7 +804,7 @@ test('moving the plan to tomorrow or next week takes the row off Today', async (
   expect((await serverTask(page, pid, '改到明天的')).scheduledOn).toBe(dayOffset(1))
   expect(await todaySegment(page, a)).toBe('absent')
 
-  res = patched(page)
+  res = taskPatched(page)
   await (
     await openTriage(page, '改到下周的', 'Carried over')
   )
@@ -852,7 +829,7 @@ test('clearing the plan removes the row from Today and the server holds none', a
   const id = await makeTask(page, pid, '不排了', { scheduledOn: dayOffset(-4) })
   await makeTask(page, pid, '另一个', { scheduledOn: dayOffset(-4) })
   await page.goto('/tasks/today')
-  const res = patched(page)
+  const res = taskPatched(page)
   await (
     await openTriage(page, '不排了', 'Carried over')
   )
@@ -881,7 +858,7 @@ test('a carried plan is not a deadline: clearing the plan leaves dueAt alone', a
   })
   await page.goto('/tasks/today')
   await expect(triage(page, '计划和今晚截止')).toBeVisible()
-  const res = patched(page)
+  const res = taskPatched(page)
   await (
     await openTriage(page, '计划和今晚截止', 'Carried over')
   )
@@ -909,7 +886,7 @@ test('making a deadline a plan moves the row out of Overdue into Today, with due
   await expect(overdue.getByText('3 days late')).toHaveCount(3)
   expect(await todaySegment(page, id)).toBe('overdue')
 
-  let res = patched(page)
+  let res = taskPatched(page)
   await (
     await openTriage(page, '没人在等', 'Overdue')
   )
@@ -935,7 +912,7 @@ test('making a deadline a plan moves the row out of Overdue into Today, with due
   ).toBeVisible()
 
   // Demoting to tomorrow leaves the list altogether; the neighbour stays overdue.
-  res = patched(page)
+  res = taskPatched(page)
   await (
     await openTriage(page, '转到明天', 'Overdue')
   )
@@ -979,7 +956,7 @@ test('after one Discard, the next unsaved edit in the same sheet is still asked 
   await expect(dialog.getByText('You have unsaved changes')).toHaveCount(0)
   await page.getByLabel('Title').fill('写方案 v3')
   const here = page.url()
-  // Opening another task is a navigation now (`?task=`): it must ask, not drop the typing.
+  // Opening another task is a navigation (`?task=`): it must ask, not drop the typing.
   await page.getByRole('listitem').filter({ hasText: '另一条' }).click()
   await expect(dialog).toContainText('You have unsaved changes')
   expect(page.url()).toBe(here)

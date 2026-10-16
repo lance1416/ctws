@@ -7,9 +7,7 @@ import {
   openDetail,
   registerFreshUser,
 } from './helpers'
-
-/** The month names the app prints, so a spec can build the string the page will show. */
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+import { dueAgo, MONTHS } from './days'
 
 /**
  * THE PROJECT PAGE as a workbench: the header banner carrying this line of
@@ -21,21 +19,16 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
  *   per project, so a banner that counted client-side would have to agree with the query that
  *   produced it. Two projects with different numbers, visited one after the other, because a
  *   banner showing workspace-wide totals passes any one-project assertion.
- * - "no percentage" cannot be left to the counts test: a bar sitting beside four correct counts
- *   passes every assertion about the counts, so it gets its own, and that one has to catch a bar
- *   drawn as a plain div rather than only a <progress>.
  * - "the detail is a column, not a layer" is only provable from BOTH ends of the width rule, and
  *   the focus trap has to be asserted present at one end and absent at the other -- a pane that
  *   always traps passes an overlay-only test, and one that never traps passes a pane-only test.
  * - "the rail is one spine" is a claim about drawn ink: a column of per-row dashes and an unbroken
  *   bar both have one rail per row at one x. Only the gaps between them tell the two apart.
  */
-const DAY = 86_400_000
 const WIDE = { width: 1440, height: 1000 }
 // 1024: the widest viewport still BELOW the 1280 threshold, so it is the case a min-width rule
 // gets wrong most easily.
 const MEDIUM = { width: 1024, height: 800 }
-const dueAgo = (n: number) => new Date(Date.now() - n * DAY).toISOString()
 const header = (page: Page) =>
   page.getByRole('region', { name: 'Project at a glance', exact: true })
 const sentence = (page: Page) => header(page).locator('[data-project-sentence]')
@@ -111,32 +104,24 @@ test('the head’s numbers follow a task added on the page, without a reload', a
 })
 
 /**
- * A percentage, never a bar: a 60% line and a 60% line nobody has touched for three weeks draw
- * the same bar, and the sentence's "Last moved" is what tells them apart.
+ * A percentage in words: the sentence's "Last moved" beside it is what tells a busy 60% from one
+ * nobody has touched for three weeks.
  */
-test('the project head says how much is done in words, and never draws a bar', async ({ page }) => {
+test('the project head says how much is done, as the mean of the root tasks', async ({ page }) => {
   await registerFreshUser(page)
   await page.setViewportSize(WIDE)
   const pid = await makeProject(page, '有进展的线')
   for (const t of ['做完一', '做完二']) await makeTask(page, pid, t, { status: 'done' })
-  await makeTask(page, pid, '没做的')
-  await makeTask(page, pid, '写了进度的', { manualProgress: 0.5 })
+  await makeTask(page, pid, '没做的', { status: 'todo' })
+  const parent = await makeTask(page, pid, '做了一半的', { status: 'todo' })
+  await makeTask(page, pid, '半边做完', { status: 'done' }, parent)
+  await makeTask(page, pid, '半边没做', { status: 'todo' }, parent)
+  // Backlog is left out of the mean, not counted as zero.
+  await makeTask(page, pid, '还没排的', { status: 'backlog' })
 
   await page.goto(`/projects/${pid}`)
-  // The mean of the four root tasks, (1 + 1 + 0 + 0.5) / 4: the same rule a parent gets, and the
-  // same number the old Progress tile showed.
+  // (1 + 1 + 0 + 0.5) / 4: the parent is the mean of its own children, the same rule all the way up.
   await expect(sentence(page)).toContainText('63% done')
-  const head = header(page)
-  await expect(head.getByRole('progressbar')).toHaveCount(0)
-  await expect(head.locator('progress, meter')).toHaveCount(0)
-  const proportional = await head.evaluate(
-    (el) =>
-      [...el.querySelectorAll<HTMLElement>('*')].filter((n) => {
-        const width = n.style.width || getComputedStyle(n).getPropertyValue('--progress')
-        return width.includes('%')
-      }).length,
-  )
-  expect(proportional, 'elements sized by a percentage inside the project head').toBe(0)
 })
 
 // -------------------------------------------------------- the tree in a panel, the detail beside it
@@ -180,9 +165,7 @@ test('the tree is a panel spanning two columns and the detail is the third, at 1
   // It coexists: the tree is still operable, and clicking another row loads it into the same
   // column with no closing step in between.
   await page.getByRole('listitem').filter({ hasText: '旁边的任务' }).click()
-  // Reading mode, so the task's name is the pane's heading rather than the value of an input. The
-  // claim is unchanged: the OTHER row's task is now in the same pane, with no closing step in
-  // between.
+  // Reading mode, so the task's name is the pane's heading rather than the value of an input.
   await expect(dialog.locator('[data-detail-title]')).toHaveText('旁边的任务')
   // ...and the detail is a sheet laid over the page -- the `float` surface -- while the tree's
   // section is no box at all, so the one thing that floats is the one thing that looks it.
@@ -231,6 +214,12 @@ test('the detail traps the keyboard at 1024 and does not at 1440', async ({ page
   await expect(page.locator('[data-detail-backdrop]')).toHaveCount(1)
   await expect(dialog).toBeFocused()
   expect(await escapes(), 'Tab stays inside the overlay').toBe(false)
+  // It lies over the centre column rather than beside it, and a press outside it closes it.
+  const overBox = (await dialog.boundingBox())!
+  const main = (await page.locator('main').first().boundingBox())!
+  expect(main.x + main.width).toBeGreaterThan(overBox.x + 1)
+  await page.locator('[data-detail-backdrop]').click({ position: { x: 5, y: 5 } })
+  await expect(dialog).toHaveCount(0)
 
   // --- a column: the trap is off ---
   await page.setViewportSize(WIDE)
@@ -249,21 +238,10 @@ test('the detail traps the keyboard at 1024 and does not at 1440', async ({ page
 })
 
 /**
- * THE TRAP MUST BE BUILT ON TAB ORDER, NOT ON A SELECTOR -- the guard for the one thing swapping in
- * `tabbable` actually buys.
- *
- * The trap used to collect its candidates with
- * `querySelectorAll('input, select, textarea, button, a[href], [tabindex]:not([tabindex="-1"])')`
- * and filter them by the `disabled` ATTRIBUTE alone. Anything in that list that the keyboard cannot
- * actually reach -- `display:none`, `visibility:hidden`, `hidden`, `inert`, a folded `<details>` --
- * still counted, and if such a thing sorted LAST then `active === last` was never true: the wrap
- * never fired and Tab walked out of a panel the reader cannot see past. That is the same shape as
- * a WCAG 2.1.2 trap.
- *
- * Today's panel contains no such control, so the trap test above holds whichever rule is in
- * force. This one PUTS one there -- a hidden button as the panel's last child -- so that what is
- * pinned is the rule itself: membership of the cycle is decided by what the keyboard can reach,
- * not by what the DOM happens to end with.
+ * THE TRAP IS BUILT ON TAB ORDER, NOT ON A SELECTOR. A control the keyboard cannot reach
+ * (`display:none`, `hidden`, `inert`, a folded `<details>`) sorting last must not stop the wrap, or
+ * Tab walks out of a panel the reader cannot see past. The panel has no such control of its own,
+ * so this plants one as its last child.
  */
 test('the overlay trap ignores a trailing control the keyboard cannot reach', async ({ page }) => {
   await registerFreshUser(page)
@@ -307,10 +285,9 @@ test('the overlay trap ignores a trailing control the keyboard cannot reach', as
 // ------------------------------------------------------------------------------ the rail, and the row
 
 /**
- * ONE SPINE, not a column of dashes. Stage 2 of the previous redesign recorded a segmented rail as
- * a defect it had to fix, and a segmented rail passes every assertion about colour, count and x --
- * the only thing that tells the two apart is whether there is a GAP between one row's rail and the
- * next's, and whether each rail is as tall as the row it belongs to.
+ * ONE SPINE, not a column of dashes. A segmented rail passes every assertion about colour, count
+ * and x; only the GAP between one row's rail and the next's, and whether each rail is as tall as
+ * its row, tell the two apart.
  */
 test('the tree’s rail reads as one continuous spine, not one dash per row', async ({ page }) => {
   await registerFreshUser(page)
@@ -337,6 +314,7 @@ test('the tree’s rail reads as one continuous spine, not one dash per row', as
         rowBottom: b.bottom,
         rowHeight: Math.round(b.height),
         radius: getComputedStyle(rail).borderTopLeftRadius,
+        width: Math.round(r.width),
       }
     })
   })
@@ -349,6 +327,7 @@ test('the tree’s rail reads as one continuous spine, not one dash per row', as
     expect(Math.abs(g.top - g.rowTop), `rail ${i} top`).toBeLessThanOrEqual(0.5)
     // ...and square, so two rails meeting read as one bar rather than two lozenges.
     expect(g.radius, `rail ${i} radius`).toBe('0px')
+    expect(g.width, `rail ${i} width`).toBe(3)
   }
   // No gap anywhere down the tree: the bottom of each rail is the top of the next.
   for (let i = 1; i < geometry.length; i++) {
@@ -360,34 +339,3 @@ test('the tree’s rail reads as one continuous spine, not one dash per row', as
   expect(geometry[0]!.top - geometry[0]!.rowTop).toBeLessThanOrEqual(0.5)
   expect(geometry.at(-1)!.rowBottom - geometry.at(-1)!.bottom).toBeLessThanOrEqual(0.5)
 })
-
-/**
- * The workbench's row metric, on the densest list in the app. 44px for a single-line row is the
- * size the first stage settled on, measured against what had actually shipped rather than against
- * the 28-30 the surveyed systems quote; the tree is the page where a row being too small to read at
- * a glance was worst.
- */
-test('a single-line tree row is 44px tall, at every depth', async ({ page }) => {
-  await registerFreshUser(page)
-  await page.setViewportSize(WIDE)
-  const pid = await makeProject(page, '行高')
-  const a = await makeTask(page, pid, '一层')
-  const b = await makeTask(page, pid, '二层', {}, a)
-  await makeTask(page, pid, '三层', {}, b)
-  await page.goto(`/projects/${pid}`)
-  await expect(page.locator('[data-task-tree] li[data-depth]')).toHaveCount(3)
-
-  const heights = await page
-    .locator('[data-task-tree] li[data-depth]')
-    .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().height)))
-  expect(heights).toEqual([44, 44, 44])
-  // The marker inside it is the workbench's 20px, not a 16px glyph left sitting in a taller row.
-  expect(
-    await page
-      .getByRole('img', { name: 'To do' })
-      .first()
-      .evaluate((el) => el.getBoundingClientRect().width),
-  ).toBe(20)
-})
-
-// ----------------------------------------------------------------------------------- the phone

@@ -54,18 +54,8 @@ test('scheduling a task through the detail panel puts it on the today page', asy
   await expect(page.getByText('Nothing for today')).toHaveCount(0)
 })
 
-test('an in-progress task appears in the banner', async ({ page }) => {
-  await registerFreshUser(page)
-  await captureAndOpen(page, '写 M2b')
-  await setDetailStatus(page, 'In progress')
-  await page.getByRole('button', { name: 'Save' }).click()
-
-  await page.getByRole('link', { name: 'Today' }).click()
-  await expect(page.getByRole('region', { name: 'In progress' }).getByText('写 M2b')).toBeVisible()
-})
-
-// The segments are decided by the server precisely so this cannot happen (Review Focus 2); this
-// asserts the page does not undo that by rendering a task into several sections.
+// The server puts each task in one segment; this asserts the page does not undo that by rendering a
+// task into several sections.
 test('a task that is both overdue and in progress is shown once', async ({ page }) => {
   await registerFreshUser(page)
   await captureAndOpen(page, '又逾期又在做')
@@ -87,15 +77,11 @@ test('a task that is both overdue and in progress is shown once', async ({ page 
 })
 
 /**
- * Since the workbench, the three segments go to three DIFFERENT panels rather than three sections
- * of one column, and the panel order is the design's rather than anything derived from a list
- * inside the page. So this pins two things instead of one: - the panel order of the workbench
- * itself, including the panels that are not segments; and - that each segment's task lands in its
- * own panel AND IN NO OTHER, which is the assertion the old section-order test was really
- * protecting (a task matching several segments rendering twice reads as "did I create this
- * twice?").
+ * The three segments go to three different panels, in the page's own order. This pins the panel
+ * order, including the panels that are not segments, and that each segment's task lands in its own
+ * panel AND IN NO OTHER: a task rendered twice reads as "did I create this twice?".
  */
-test('each segment goes to its own panel, in the workbench order, and to only one', async ({
+test("each segment goes to its own panel, in the page's order, and to only one", async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -162,9 +148,7 @@ test('an edit made from the today page is reflected without a reload', async ({ 
   await setDetailStatus(page, 'Done')
   await page.getByRole('button', { name: 'Save' }).click()
 
-  // It left the banner -- and it turned up under "Done today" without a reload, which is the other half of
-  // the same claim now that the workbench has a panel for finished work. (A bare "the text is
-  // gone from the page" would now be false, and would have been hiding this.)
+  // It left the banner -- and it turned up under "Done today" without a reload.
   await expect(
     page.getByRole('region', { name: 'In progress', exact: true }).getByText('先在做'),
   ).toHaveCount(0)
@@ -272,7 +256,7 @@ test('one task in progress is the focus, several are a list', async ({ page }) =
   await apiPost(page, '/tasks', { title: '第三件', projectId: pid, status: 'in_progress' })
   await page.reload()
   const crowded = await size('[data-doing-title]')
-  expect(crowded, '五条时落回行的字号').toBeLessThan(alone)
+  expect(crowded, 'with three in progress the title falls back to the row size').toBeLessThan(alone)
 
   // As wide as the Today column, so the buttons sit beside the content, not at the window edge.
   const [doing, today] = await Promise.all([

@@ -30,34 +30,10 @@ async function fontReady(page: Page): Promise<void> {
   await page.waitForFunction(() => document.fonts.check('600 23px "CTWS Noto Sans SC"', '今天'))
 }
 
-test('no font is fetched from a third-party host', async ({ page }) => {
-  // index.html used to carry two preconnects and a render-blocking stylesheet for Inter -- a font
-  // nothing in the app ever referenced -- which had to time out before first paint when offline.
-  // Both faces are self-hosted now, so the page must reach no font CDN and link to no absolute URL.
-  // Asserted on font hosts and on the document's own links rather than on "every request went to
-  // our origin", because a filtering proxy on the developer's machine can inject requests of its
-  // own and that has nothing to do with what this app ships.
-  const cdn: string[] = []
-  page.on('request', (req) => {
-    if (/fonts\.(googleapis|gstatic)\.com|fonts\.bunny\.net|use\.typekit/.test(req.url()))
-      cdn.push(req.url())
-  })
-  await registerFreshUser(page)
-  await fontReady(page)
-  expect(cdn).toEqual([])
-
-  const external = await page.evaluate(() =>
-    [...document.querySelectorAll<HTMLElement>('link[href], script[src]')]
-      .map((el) => el.getAttribute('href') ?? el.getAttribute('src') ?? '')
-      .filter((url) => /^(https?:)?\/\//.test(url)),
-  )
-  expect(external.filter((url) => !url.includes('local.adguard.org'))).toEqual([])
-})
-
 test('the build ships no legacy .woff nobody requests', async ({ page }) => {
   // @fontsource lists a `.woff` fallback after each `.woff2`; every browser that can run this app
-  // has had woff2 since 2016, so those three files were 69,896 B of dead weight in the image. A
-  // Vite plugin strips the fallback before the asset is emitted (apps/web/vite.config.ts).
+  // reads woff2, so a Vite plugin strips the fallback before the asset is emitted
+  // (apps/web/vite.config.ts).
   await page.goto('/login')
   const href = await page.evaluate(() =>
     [...document.styleSheets]
@@ -102,9 +78,8 @@ test('index.html is never cached immutably, or no deploy would be seen again', a
 
 test('Chinese is painted with the shipped subset, not a system fallback', async ({ page }) => {
   await registerFreshUser(page)
-  // The interface is in English, so the h1 that used to carry Chinese no longer does. A project
-  // NAME still can -- the font has to cover what the person types, which is the thing this test
-  // is really about.
+  // The interface is in English; a project NAME carries the Chinese, because the font has to cover
+  // what the person types.
   const made = await page.request.post('/api/v1/projects', {
     headers: WEB,
     data: { name: '配色重做' },

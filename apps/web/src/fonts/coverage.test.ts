@@ -46,20 +46,16 @@ describe('the self-hosted CJK subset', () => {
   })
 
   it('covers the marks a Chinese sentence is made of', () => {
-    // Not han, and not in the han rows the budget is mostly made of. These reached the shipped file
-    // only because the UI's own copy used to be Chinese; the UI is English now, the generator's scan
-    // of the source finds nothing, and a rebuild without an explicit punctuation budget silently
-    // drops them -- leaving a typed title taking its commas and brackets from a fallback face, per
-    // glyph, mid-sentence. Five of these (！《》【】～) were in fact never covered at all until the
-    // budget stopped depending on the app's own words.
+    // Not han, and not in the han rows the budget is mostly made of. The UI's copy is English, so
+    // only an explicit punctuation budget keeps them in the subset; without it a typed title takes
+    // its commas and brackets from a fallback face, per glyph, mid-sentence.
     for (const char of '、。，；：？！「」『』（）《》【】…—·～') {
       expect(covered.has(char.codePointAt(0)!), `${char} is not in the subset`).toBe(true)
     }
   })
 
   /**
-   * The one place the library's answer is not taken as given, and the only difference found between
-   * it and the 183 hand-written lines it replaced. A codepoint whose cmap entry points at the
+   * The one place the library's answer is not taken as given. A codepoint whose cmap entry points at the
    * missing glyph is not covered -- drawing it would draw a blank box, or fall back to another face,
    * which is precisely the failure the two tests above exist to catch. U+FFFF is where a format-4
    * cmap always has such an entry, by the spec's own requirement, so it is the case to pin.

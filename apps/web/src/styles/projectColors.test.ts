@@ -5,12 +5,8 @@ import { describe, expect, it } from 'vitest'
 import { validate } from '../../../../scripts/validate_palette.js'
 
 /**
- * THE SIX PROJECT HUES ARE CHECKED BY MACHINE, NOT BY EYE.
- *
- * The palette this replaced looked fine to me and was unreadable in practice -- four projects in
- * the sidebar that the user could not tell apart. The difference between those two sentences is
- * the whole reason this file exists: discriminability is computable, so no one's opinion, mine
- * included, gets to stand in for the computation.
+ * THE SIX PROJECT HUES ARE CHECKED BY MACHINE, NOT BY EYE: discriminability is computable, so
+ * the computation decides whether projects in the sidebar can be told apart.
  *
  * It reads the real `styles.css` rather than a copy of the hexes, so editing a colour -- or a
  * SURFACE the chips sit on -- re-runs the checks. The validator is vendored at
@@ -53,9 +49,8 @@ describe.each([
       // in the sidebar, and any two can be compared across a cross-project list.
       const { report, ok } = validate(pal, { mode, surface, pairs: 'all' })
       // Every check PASSES -- not merely "does not fail". The validator lets contrast under 3:1
-      // through as a WARN when a label sits beside the colour, and it always does here; this
-      // palette used to ship on that. It does not need to: a thread is 3px wide, and at 1.92:1
-      // the orange one was hard to see at all.
+      // through as a WARN when a label sits beside the colour, and it always does here; a thread
+      // is only 3px wide, so it needs the full contrast to be seen.
       const short = (report as [string, boolean | string, string][])
         .filter(([, status]) => status !== true && status !== 'pass')
         .map(([name, status, detail]) => `${name} (${String(status)}): ${detail}`)

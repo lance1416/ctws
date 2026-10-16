@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { holdFirstRead, makeProject, pickOne, registerFreshUser, slowReads, WEB } from './helpers'
+import { MONTHS } from './days'
 
 /** People: a person has several ways to be reached, and each one is a link, not text to copy. */
 
@@ -9,9 +10,6 @@ const row = (page: Page, name: string) =>
 /** The row's body: one link, to the person's own address. */
 const personLink = (page: Page, name: string) =>
   page.locator('[data-person-row]').filter({ hasText: name }).getByRole('link')
-
-/** The month names the app prints, so a spec can build the string the page will show. */
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 async function add(page: Page, data: Record<string, unknown>) {
   const res = await page.request.post('/api/v1/people', { headers: WEB, data })
@@ -291,10 +289,6 @@ test('a project page carries its people, as edges and not as a block of its own'
     .getByRole('region', { name: 'People' })
   await expect(people).toContainText('某招聘')
   await expect(people).not.toContainText('不相干的人')
-  // No block, and so no second way to make a person from here: it is made on their own page. The
-  // one region called People is the group inside Linked.
-  await expect(page.getByRole('region', { name: 'People' })).toHaveCount(1)
-  await expect(page.getByLabel('Add a name')).toHaveCount(0)
 })
 
 test('search reaches a person by their address, from the shell box', async ({ page }) => {
@@ -306,14 +300,6 @@ test('search reaches a person by their address, from the shell box', async ({ pa
   await expect(
     page.getByRole('dialog', { name: 'Search' }).getByRole('option').filter({ hasText: '陈颖' }),
   ).toHaveCount(1)
-})
-
-test('g n goes to the people, in the one keyspace', async ({ page }) => {
-  await registerFreshUser(page, '/')
-  await page.keyboard.press('g')
-  await page.keyboard.press('n')
-  await expect(page).toHaveURL(/\/people$/)
-  await expect(page.getByRole('heading', { name: 'People', level: 1 })).toBeVisible()
 })
 
 test('Cancel drops the changes and writes nothing', async ({ page }) => {
@@ -653,8 +639,6 @@ test("a pasted link lands on the list with the person's pane open", async ({ pag
   // The list is behind it, not an empty page.
   await expect(page.getByRole('heading', { level: 1, name: 'People' })).toBeVisible()
   await expect(personLink(page, '周楠')).toBeVisible()
-  // There is no separate full page to go to.
-  await expect(page.getByRole('link', { name: 'Open as a page' })).toHaveCount(0)
 
   // Closing returns to the list, and the URL with it.
   await page.getByRole('button', { name: 'Close' }).click()

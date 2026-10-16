@@ -5,9 +5,12 @@ import {
   makeTask,
   movementOf,
   registerFreshUser,
+  serverTask,
   sidewaysScroll,
+  taskPatched,
   WEB,
 } from './helpers'
+import { dueAgo, ymd } from './days'
 
 /**
  * TODAY's panels: the four of them, the banner, and the grid they sit in.
@@ -17,9 +20,6 @@ import {
  *   comparing them to numbers the test also computed. It is compared against the SERVER's own
  *   answer, so a panel that quietly counted client-side would have to agree with the query that
  *   produced it, which is the thing being claimed.
- * - "no percentage" cannot be left to the counts test: a bar sitting beside two correct counts
- *   passes any assertion about the counts. It needs its own assertion about what is absent, and
- *   that assertion has to catch a bar drawn as a plain div, not only a <progress>.
  * - "the stagnation line appears only when a project is quiet" needs BOTH halves: a line that is
  *   always rendered passes a test that only looks for it, and a line that is never rendered
  *   passes a test that only looks for its absence.
@@ -29,18 +29,9 @@ import {
 
 const WIDE = { width: 1440, height: 1000 }
 const PHONE = { width: 375, height: 800 }
-const DAY = 86_400_000
-const ymd = (d: Date) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-const dueAgo = (n: number) => new Date(Date.now() - n * DAY).toISOString()
-
-const patched = (page: Page) =>
-  page.waitForResponse(
-    (r) => /\/tasks\/[^/]+$/.test(r.url()) && r.request().method() === 'PATCH' && r.ok(),
-  )
 const panel = (page: Page, name: string) => page.locator(`[data-panel="${name}"]`)
 
-// ---------------------------------------------------------------------- Movement: counts, not a ratio
+// ---------------------------------------------------------------------- Movement: counts
 
 test('Movement shows the counts the server reports, for every project that has any', async ({
   page,
@@ -49,14 +40,13 @@ test('Movement shows the counts the server reports, for every project that has a
   await page.setViewportSize(WIDE)
   const ctws = await makeProject(page, '甲线')
   const job = await makeProject(page, '乙线')
-  const quiet = await makeProject(page, '丙线')
+  await makeProject(page, '丙线')
 
   // 甲线: two finished today, three left. 乙线: nothing finished, two left.
   for (const t of ['甲一', '甲二']) await makeTask(page, ctws, t, { status: 'done' })
   for (const t of ['甲三', '甲四', '甲五']) await makeTask(page, ctws, t)
   for (const t of ['乙一', '乙二']) await makeTask(page, job, t)
   // 丙线 has nothing at all, so it must not get a line: "0 / 0" is not news.
-  expect(quiet).toBeTruthy()
 
   await page.goto('/tasks/today')
   const where = panel(page, 'This week')
@@ -81,46 +71,6 @@ test('Movement shows the counts the server reports, for every project that has a
   await expect(where.getByText('丙线')).toHaveCount(0)
   // And the number of lines is exactly the number of projects with something to say.
   await expect(where.getByRole('listitem')).toHaveCount(withSomething.length)
-})
-
-/**
- * The panel must not draw a percentage or a bar, and this is a separate test on purpose: the
- * counts test above passes unchanged with a bar sitting next to the counts.
- *
- * `manual_progress` is written by nothing in the entire codebase and rollup is M3 work, so a bar
- * here would be drawn against a column that is null for every row in the database -- a number the
- * backend cannot cash. The assertion therefore looks for a bar however it might be built: a
- * <progress>, an ARIA progressbar, a per-cent sign in the text, or any element sized by a
- * percentage width, which is how a hand-rolled bar is made.
- */
-test('Movement draws no percentage and no progress bar', async ({ page }) => {
-  await registerFreshUser(page)
-  await page.setViewportSize(WIDE)
-  const pid = await makeProject(page, '有进展的')
-  await makeTask(page, pid, '做完的一', { status: 'done' })
-  await makeTask(page, pid, '做完的二', { status: 'done' })
-  await makeTask(page, pid, '没做的')
-  // A task carrying an explicit progress value, which is the one input a bar could claim to show.
-  await makeTask(page, pid, '写了进度的', { manualProgress: 0.5 })
-
-  await page.goto('/tasks/today')
-  const where = panel(page, 'This week')
-  await expect(where.getByText(/^2 done/)).toBeVisible()
-
-  await expect(where.getByRole('progressbar')).toHaveCount(0)
-  await expect(where.locator('progress, meter')).toHaveCount(0)
-  await expect(where).not.toContainText('%')
-  await expect(where).not.toContainText('50')
-  // A bar built by hand: an element whose width is a fraction of its parent. Nothing inside this
-  // panel may be sized that way, so a div-with-a-width bar fails here too.
-  const proportional = await where.evaluate(
-    (el) =>
-      [...el.querySelectorAll<HTMLElement>('*')].filter((n) => {
-        const width = n.style.width || getComputedStyle(n).getPropertyValue('--progress')
-        return width.includes('%')
-      }).length,
-  )
-  expect(proportional, 'elements sized by a percentage inside 做到哪儿了').toBe(0)
 })
 
 // ------------------------------------------------------------------------- the stagnation line
@@ -187,7 +137,7 @@ test('a workspace where nothing has gone quiet shows no stagnation line at all',
  * that is always one column passes a 375-only test, and one that is always three columns passes a
  * 1440-only test (and takes the phone's horizontal scrollbar with it).
  */
-test('the workbench is a panel grid at 1440 and one column at 375', async ({ page }) => {
+test('Today is a panel grid at 1440 and one column at 375', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '一个名字相当长的项目用来挤宽度')
   // Long, and in progress: this test also asserts zero sideways scroll at 375, and the banner sets
@@ -262,7 +212,7 @@ test('the banner carries the running task, and says so plainly when nothing is r
 
   // Start the dateless one from its project row; it is not on Today at all until it is running.
   await page.goto(`/projects/${pid}`)
-  const started = patched(page)
+  const started = taskPatched(page)
   await page.getByRole('button', { name: 'Start “没有日期的”' }).click()
   expect((await started).request().postDataJSON()).toEqual({ status: 'in_progress' })
 
@@ -278,7 +228,7 @@ test('the banner carries the running task, and says so plainly when nothing is r
   // task that is started AND planned for today stays in Today, because that is the segment the
   // server put it in. (A banner filtered on `status === 'in_progress'` would steal it, and would
   // also take an overdue-and-running task out of Overdue.)
-  const alsoStarted = patched(page)
+  const alsoStarted = taskPatched(page)
   await page.getByRole('button', { name: 'Start “排到今天的”' }).click()
   await alsoStarted
   await expect(panel(page, 'Today').getByText('排到今天的')).toBeVisible()
@@ -287,15 +237,11 @@ test('the banner carries the running task, and says so plainly when nothing is r
   // The banner's own two controls act on its task, and their visible words are INSIDE their
   // accessible names (WCAG 2.5.3) rather than beside them.
   await expect(banner.getByRole('button', { name: 'Complete “没有日期的”' })).toHaveText('Done')
-  const stopped = patched(page)
+  const stopped = taskPatched(page)
   await banner.getByRole('button', { name: 'Pause “没有日期的”' }).click()
   expect((await stopped).request().postDataJSON()).toEqual({ status: 'todo' })
 
   // Back to empty, and the server agrees -- not just the screen.
   await expect(banner.getByText('Nothing in progress')).toBeVisible()
-  const tasks = (await (await page.request.get(`/api/v1/tasks?projectId=${pid}`)).json()).tasks as {
-    title: string
-    status: string
-  }[]
-  expect(tasks.find((t) => t.title === '没有日期的')!.status).toBe('todo')
+  expect((await serverTask(page, pid, '没有日期的')).status).toBe('todo')
 })

@@ -276,11 +276,10 @@ test('a parent row says how its subtree stands, and a quiet one says nothing', a
   await registerFreshUser(page)
   const pid = await makeProject(page, '改版')
   const live = await makeTask(page, pid, '接入 KaTeX')
-  const done = await makeTask(page, pid, '装依赖', { status: 'done' }, live)
+  await makeTask(page, pid, '装依赖', { status: 'done' }, live)
   await makeTask(page, pid, '公式换行', { status: 'in_progress' }, live)
   const quiet = await makeTask(page, pid, '写变更日志')
   await makeTask(page, pid, '列个提纲', {}, quiet)
-  expect(done).toBeTruthy()
 
   await openTree(page, pid)
   // The rollup line, on the parent that has something to report: half its children are done and
@@ -338,7 +337,7 @@ test('a project colour can be picked from the chip that shows it', async ({ page
   const after = await (await page.request.get('/api/v1/projects')).json()
   expect(after.projects.find((p: { id: string }) => p.id === pid).color).toBe('project-5')
   expect(was).not.toBe('project-5')
-  // The chip is a control now, and it still carries the project's name beside it (WCAG 1.4.1).
+  // The chip is a control, and the project's name is beside it (WCAG 1.4.1).
   await expect(page.getByRole('heading', { level: 1, name: '改版' })).toBeVisible()
 })
 
@@ -355,8 +354,8 @@ test('a finished task opens from the Done list, not only restored from it', asyn
   await page.getByRole('button', { name: '写迁移 改版' }).click()
   const pane = page.getByRole('dialog', { name: 'Task details' })
   await expect(pane).toBeVisible()
-  // Reading it is the point: until now the only thing this list could do to a task was restore
-  // it, so looking at one meant finding it again in its project's tree.
+  // Reading it is the point: looking at a finished task does not mean finding it again in its
+  // project's tree.
   await expect(pane).toContainText('先问清需求')
   await expect(pane.getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
 })

@@ -36,7 +36,7 @@ test('a blocked row names what is in the way, and finishing that frees it', asyn
     headers: WEB,
     data: { blockerId: ci },
   })
-  expect(dep.ok()).toBeTruthy()
+  expect(dep.status()).toBe(204)
   await openTree(page, pid)
 
   // NAMED, not merely marked: the point of the phrase is that nobody has to click to find out.

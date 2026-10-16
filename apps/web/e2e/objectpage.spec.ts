@@ -4,11 +4,9 @@ import { apiPost, registerFreshUser } from './helpers'
 /**
  * ONE PAGE FOR EVERY KIND OF THING.
  *
- * A person's page did not exist: a person was a row with a pane over it, and the meetings they
- * were in, the book they recommended and the task that came out of a call with them had nowhere
- * to be shown. What is tested here is that the shell draws ONE page for a project, a person and a
- * meeting alike -- the module fills the top, the shell fills the rest from the edge table -- and
- * that following a link from one lands on another.
+ * The shell draws ONE page for a project, a person and a meeting alike -- the module fills the
+ * top, the shell fills the rest from the edge table, so the meetings a person was in and the book
+ * they recommended show on their page -- and following a link from one lands on another.
  */
 
 async function world(page: Page) {

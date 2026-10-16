@@ -3,6 +3,7 @@ import {
   apiPost,
   editDetail,
   makeProject,
+  makeTask,
   openProject,
   registerFreshUser,
   sidewaysScroll,
@@ -20,23 +21,11 @@ import {
  * `src/notes/markdown.test.tsx` settle the schema; these settle the page).
  */
 
-async function makeNoted(page: Page, projectId: string, title: string, notes: string) {
-  const res = await page.request.post('/api/v1/tasks', {
-    headers: WEB,
-    data: { projectId, title, parentId: null },
-  })
-  expect(res.ok()).toBeTruthy()
-  const id = ((await res.json()) as { id: string }).id
-  const p = await page.request.patch(`/api/v1/tasks/${id}`, { headers: WEB, data: { notes } })
-  expect(p.ok()).toBeTruthy()
-  return id
-}
-
 /** Registers, makes a project with one noted task, and opens that task's detail in READING mode. */
 async function seedNote(page: Page, notes: string, title = '读一下') {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
-  await makeNoted(page, pid, title, notes)
+  await makeTask(page, pid, title, { notes })
   await page.goto(`/projects/${pid}`)
   await page.getByRole('listitem').filter({ hasText: title }).first().click()
   await expect(page.getByRole('dialog', { name: 'Task details' })).toBeVisible()
@@ -99,9 +88,7 @@ test('a note renders maths through KaTeX', async ({ page }) => {
   /**
    * AND THE VISIBLE MATHS IS NOT THE CHARACTERS THE AUTHOR TYPED. Asserted on `.katex-html`, the
    * part KaTeX DRAWS, and not on the block's whole text: KaTeX also emits MathML with an
-   * `<annotation>` carrying the original TeX, which is what a screen reader and a copy get. The
-   * first version of this assertion read the whole subtree, found the TeX in that annotation and
-   * failed -- correctly, because the claim it was making was the wrong one.
+   * `<annotation>` carrying the original TeX, which is what a screen reader and a copy get.
    */
   const drawn = await notesBlock(page).locator('.katex-html').first().innerText()
   expect(drawn).not.toContain('\\')
@@ -371,10 +358,9 @@ test('a note with a diagram fetches mermaid and still not katex', async ({ page 
 test("KaTeX's stylesheet ships only woff2, like the app's own two faces", async ({ page }) => {
   /**
    * KaTeX lists a `.woff` AND a `.ttf` after each `.woff2`, across twenty faces -- about 700 KB of
-   * files no browser that can run this app will ever ask for. The same Vite plugin that already
-   * stripped @fontsource's legacy `.woff` now covers KaTeX too (apps/web/vite.config.ts), and this
-   * is the assertion that makes that extension real: `font.spec.ts` only ever looked at the app's
-   * OWN stylesheet, so without this the plugin's katex half had no test at all.
+   * files no browser that can run this app will ever ask for. The Vite plugin that strips
+   * @fontsource's `.woff` strips KaTeX's too (apps/web/vite.config.ts); `font.spec.ts` covers the
+   * app's own stylesheet, this the KaTeX one.
    */
   await seedNote(page, '面积 $\\pi r^2$ 。')
   await expect(notesBlock(page).locator('.katex').first()).toBeVisible()
@@ -418,7 +404,7 @@ test('the full-screen writing mode round-trips the source unchanged', async ({ p
     (r) => r.request().method() === 'PATCH' && /\/tasks\/[^/]+$/.test(r.url()),
   )
   await page.getByRole('button', { name: 'Save' }).click()
-  expect((await saved).ok()).toBeTruthy()
+  expect((await saved).status()).toBe(200)
 
   // And the SOURCE is what the server kept -- never the rendered HTML.
   await page.goto(`/projects/${pid}`)

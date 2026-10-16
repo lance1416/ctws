@@ -1,7 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { recordMoves, registerFreshUser, seedTasks, startProject } from './helpers'
-
-const MOVE_URL = /\/tasks\/[^/]+\/move$/
+import { MOVE_URL, recordMoves, registerFreshUser, seedTasks, startProject } from './helpers'
 
 const handle = (page: Page, title: string) =>
   page.getByRole('button', { name: `Task: ${title}`, exact: true })
@@ -26,9 +24,9 @@ const flat = (n: number): [string, null][] =>
   Array.from({ length: n }, (_, i) => [`r${i}`, null] as [string, null])
 
 /**
- * ONE TAB STOP FOR THE WHOLE TREE, not one PER ROW, so getting past it cost one Tab per visible row.
- * A two-row tree would pass this under the old behaviour too, which is why it runs on twelve rows
- * and asserts the press count, not merely that Tab eventually gets out.
+ * ONE TAB STOP FOR THE WHOLE TREE, not one PER ROW. A two-row tree would pass with a stop per row
+ * too, which is why it runs on twelve rows and asserts the press count, not merely that Tab
+ * eventually gets out.
  */
 test('the whole tree is one tab stop, however many rows it has', async ({ page }) => {
   await registerFreshUser(page)
@@ -53,8 +51,8 @@ test('the whole tree is one tab stop, however many rows it has', async ({ page }
   await expect(aboveTree(page)).toBeFocused()
 
   // The block's own New… is a stop too, and it comes BEFORE the box: it lives in the block
-  // header, so reading order puts it first. This is the shape the two create paths have now --
-  // the full form in the head, the one-line box leading the rows -- rather than side by side.
+  // header, so reading order puts it first: the full form in the head, the one-line box leading
+  // the rows.
   await page.getByRole('button', { name: 'New…', exact: true }).focus()
   await page.keyboard.press('Tab')
   await expect(aboveTree(page)).toBeFocused()
@@ -287,8 +285,8 @@ test('the single-key shortcuts can be turned off, and stay off after a reload', 
   await page.keyboard.press('/')
   await expect(page.getByLabel('Capture')).not.toBeFocused()
 
-  // And on a row: `s` no longer starts the task, but the widget keys still work, because a
-  // treeview with no arrow keys and one tab stop would be unreachable.
+  // And on a row: `s` does not start the task, but the widget keys still work, because a treeview
+  // with no arrow keys and one tab stop would be unreachable.
   await handle(page, 'r0').focus()
   await page.keyboard.press('s')
   await expect(row(page, 'r0').getByRole('img', { name: 'In progress' })).toHaveCount(0)

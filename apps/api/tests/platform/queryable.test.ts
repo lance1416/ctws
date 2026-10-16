@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, expectTypeOf, it } from 'vitest'
 import type { Queryable } from '../../src/platform/db/client'
 import { withDatabase } from '../helpers/db'
 
@@ -19,15 +19,11 @@ async function countUsers(q: Queryable): Promise<number> {
   return (rows.rows as { n: number }[])[0]!.n
 }
 
-// The runtime assertions below cannot prove the type relation: vitest strips types, so they
-// would still pass if `Queryable` were just `Db`. The guard is `pnpm typecheck` (tsc --noEmit
-// covers tests/): the transaction call below must compile, and the @ts-expect-error line must
-// NOT compile -- if `Queryable` became too wide or too narrow, tsc fails.
 describe('Queryable', () => {
-  it('rejects values that are neither a db nor a transaction (checked by tsc)', () => {
-    // @ts-expect-error a plain object is not a Queryable
-    const notQueryable: Queryable = { execute: () => Promise.resolve() }
-    expect(notQueryable).toBeDefined()
+  it('accepts the db and a transaction, and rejects anything else', () => {
+    expectTypeOf<typeof ctx.db>().toExtend<Queryable>()
+    expectTypeOf<Parameters<Parameters<typeof ctx.db.transaction>[0]>[0]>().toExtend<Queryable>()
+    expectTypeOf<{ execute: () => Promise<void> }>().not.toExtend<Queryable>()
   })
 
   it('sees uncommitted rows when given the transaction, and discards them on rollback', async () => {

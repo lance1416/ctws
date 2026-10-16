@@ -1,22 +1,17 @@
 import { expect, test, type Page } from '@playwright/test'
 import { TZDate } from '@date-fns/tz'
-import { addDaysYmd, dayOffset } from './days'
+import { addDaysYmd, dayOffset, MONTHS } from './days'
 import { accountZone, apiPost, editDetail, pickOne, registerFreshUser, WEB } from './helpers'
 
 /**
  * MEETINGS -- the module's own destination, and the form that fills one in once.
  *
- * What is tested here is the framing change, not a list rendering: a meeting is a kind of thing
- * with a page of its own, reached from the rail, and MADE there rather than by clicking a square
- * on a lens. Every assertion below fails against the previous shape, where the module had no
- * route at all.
+ * A meeting is a kind of thing with a page of its own, reached from Things, and MADE there rather
+ * than by clicking a square on a lens.
  */
 
 const dialog = (page: Page) => page.getByRole('dialog', { name: 'New meeting' })
 const pane = (page: Page) => page.getByRole('dialog', { name: 'Meetings' })
-
-/** The month names the app prints, so a spec can build the string the page will show. */
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 test('Things reaches meetings, and the page says when there are none', async ({ page }) => {
   // Kinds sit behind Things, not one row each in the rail.
@@ -59,8 +54,7 @@ test('a meeting is filled in once: title, time, zone, repeat and the people', as
   await dialog(page).getByRole('button', { name: 'Create' }).click()
   const body = (await made).request().postDataJSON() as Record<string, unknown>
 
-  // ONE REQUEST carries the whole meeting. The previous shape made an empty one and left the
-  // rest to the pane, which is what "create, then open it and fill it in" means.
+  // ONE REQUEST carries the whole meeting, rather than an empty one filled in from the pane.
   expect(body).toMatchObject({
     title: 'Second interview',
     startsLocal: `${dayOffset(1)}T21:00`,
@@ -79,9 +73,8 @@ test('a meeting is filled in once: title, time, zone, repeat and the people', as
 /**
  * THE AGREED ZONE IS THE HALF THAT IS NOT YOUR CLOCK, so the row carries it only when the
  * meeting's zone is not the account's, and the account's zone is the runner's (see `days.ts`).
- * Both halves are seeded: one meeting agreed HERE, one agreed where the runner is not. Written
- * down as `UTC`, the second half was a label only on a machine outside UTC -- true of every
- * machine this suite had run on, and false on CI's.
+ * Both halves are seeded: one meeting agreed HERE, one agreed where the runner is not, whatever
+ * zone the runner is in.
  */
 const HERE = Intl.DateTimeFormat().resolvedOptions().timeZone
 const ELSEWHERE = ['America/Toronto', 'Asia/Tokyo'].find((z) => z !== HERE)!
@@ -230,7 +223,7 @@ test('a meeting with a link can be joined from the list', async ({ page }) => {
 })
 
 /** A meeting pane is laid out like a person's. */
-test('a meeting pane stacks its labels over its values, and has no page to open', async ({
+test("a meeting pane stacks its labels over its values, at the meeting's own address", async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -260,9 +253,7 @@ test('a meeting pane stacks its labels over its values, and has no page to open'
   })
   expect(stacked).toBe(true)
 
-  // The pane is at the meeting's own address already: there is nowhere else to open it.
   await expect(page).toHaveURL(new RegExp('/meetings/[0-9a-f-]{36}\\?at='))
-  await expect(pane.getByRole('link', { name: 'Open as a page' })).toHaveCount(0)
 })
 
 /**

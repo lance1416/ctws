@@ -63,7 +63,7 @@ async function seed(page: Page): Promise<string> {
       headers: WEB,
       data: { projectId, title, parentId: parent ? ids.get(parent)! : null },
     })
-    expect(res.ok()).toBeTruthy()
+    expect(res.status()).toBe(201)
     ids.set(title, ((await res.json()) as { id: string }).id)
   }
   await page.goto(page.url())
@@ -202,13 +202,15 @@ test('Enter commits and reopens the input, so tasks can be added in a row', asyn
 
 test('five tasks typed one after another all land, in order', async ({ page }) => {
   // The next title is typed the moment the last row shows: an input that stayed busy for longer
-  // than its own list takes to refetch would swallow it. Every other read is slowed down, as it
-  // is under load, so waiting on any of them shows.
+  // than its own list takes to refetch would swallow it. Every other read is held until the run is
+  // over, so an input waiting on any of them never frees.
   await seed(page)
+  let release!: () => void
+  const held = new Promise<void>((r) => (release = r))
   await page.route('**/api/v1/**', async (route) => {
     const request = route.request()
     const ownList = /\/api\/v1\/tasks\?projectId=/.test(request.url())
-    if (request.method() === 'GET' && !ownList) await new Promise((r) => setTimeout(r, 800))
+    if (request.method() === 'GET' && !ownList) await held
     await route.continue()
   })
   await handle(page, 'B').focus()
@@ -221,15 +223,15 @@ test('five tasks typed one after another all land, in order', async ({ page }) =
     await created
     await expect(row(page, title)).toBeVisible()
   }
+  release()
   for (const title of titles) await expect(row(page, title)).toBeVisible()
   expect(await shape(page)).toEqual(['1:A', '2:a1', '2:a2', '1:B', ...titles.map((t) => `2:${t}`)])
 })
 
 /*
   The box is empty again only when its create is answered: an empty box says "type the next one",
-  and an Enter in it while the last create is still out is dropped. It used to be rebuilt the
-  moment the new row landed — empty, focused, and still busy — whenever the list refetched before
-  the create's own answer arrived. The second task of a quick run went nowhere, without a word.
+  and an Enter in it while the last create is still out is dropped. A box emptied when the new row
+  lands -- before the create's own answer -- would swallow the second task of a quick run.
 */
 test('the box stays as typed until its create is answered, even if the row lands first', async ({
   page,

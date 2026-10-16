@@ -1,11 +1,13 @@
 import { expect, test } from '@playwright/test'
 import {
+  apiPost,
   editDetail,
   makeProject,
   makeTask,
   openDetail,
   openTree,
   registerFreshUser,
+  sidewaysScroll,
   WEB,
 } from './helpers'
 
@@ -17,8 +19,7 @@ test('the app shell routes between today, projects and a project', async ({ page
   // something shaped like a UUID.
   const res = await page.request.get('/api/v1/projects')
   const { projects } = (await res.json()) as { projects: { id: string; name: string }[] }
-  const inbox = projects.find((p) => p.name === 'Inbox')
-  expect(inbox).toBeDefined()
+  const inbox = projects.find((p) => p.name === 'Inbox')!
 
   await page
     .getByRole('navigation', { name: 'Main navigation' })
@@ -27,10 +28,10 @@ test('the app shell routes between today, projects and a project', async ({ page
   await expect(page).toHaveURL(/\/projects$/)
   await expect(page.getByRole('heading', { name: 'Projects' })).toBeVisible()
   // Registration creates the inbox, so the project list is never empty. Scoped to <main>: the
-  // left rail lists the same projects, so two links carry this name now.
+  // left rail lists the same projects.
   await page.getByRole('main').getByRole('link', { name: 'Inbox' }).click()
 
-  await expect(page).toHaveURL(`/projects/${inbox!.id}`)
+  await expect(page).toHaveURL(`/projects/${inbox.id}`)
   await expect(page.getByRole('heading', { name: 'Inbox' })).toBeVisible()
 })
 
@@ -57,15 +58,29 @@ test('light and dark colour schemes produce different page backgrounds', async (
 // A failed fetch must say so rather than render an empty list that reads as "no projects".
 // Assert the exact text: a garbled string would still satisfy a bare "an alert exists".
 test('a failed project list shows an error, not an empty list', async ({ page }) => {
+  // Routed from the start, so every read of the list passes through here: signing in reads it
+  // more than once (the rail, then each card on the Workbench), and a read already on its way when
+  // the server starts failing would succeed and leave the page nothing to fail on.
+  let failing = false
+  let pending = 0
+  await page.route('**/api/v1/projects', async (route) => {
+    if (failing)
+      return route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: '{"title":"boom"}',
+      })
+    pending++
+    try {
+      await route.fulfill({ response: await route.fetch() })
+    } finally {
+      pending--
+    }
+  })
   await registerFreshUser(page)
-  // Nothing in flight before the server starts failing: signing in fetches the list more than
-  // once (the rail, then each card on the Workbench), and a request already on its way when the
-  // route is installed is not intercepted -- it succeeds, the page mounts onto it, and there is
-  // nothing left to fail.
-  await page.waitForLoadState('networkidle')
-  await page.route('**/api/v1/projects', (route) =>
-    route.fulfill({ status: 500, contentType: 'application/json', body: '{"title":"boom"}' }),
-  )
+  await expect(page.locator('#today-heading')).toBeVisible()
+  await expect.poll(() => pending).toBe(0)
+  failing = true
 
   await page
     .getByRole('navigation', { name: 'Main navigation' })
@@ -196,18 +211,11 @@ test('on a phone, five tabs replace the rail', async ({ page }) => {
 test('nothing scrolls sideways on a phone, whatever the page', async ({ page }) => {
   await page.setViewportSize(PHONE)
   await registerFreshUser(page, '/')
-  const res = await page.request.post('/api/v1/projects', {
-    headers: { 'x-ctws-client': 'web' },
-    data: { name: '一个名字很长很长的求职项目与面试准备' },
-  })
-  const { id } = (await res.json()) as { id: string }
+  const id = await makeProject(page, '一个名字很长很长的求职项目与面试准备')
   for (const path of ['/', '/things', `/projects/${id}`, '/people']) {
     await page.goto(path)
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
-    expect(
-      await page.evaluate(() => document.documentElement.scrollWidth),
-      `${path} scrolls sideways`,
-    ).toBeLessThanOrEqual(PHONE.width)
+    expect(await sidewaysScroll(page), `${path} scrolls sideways`).toEqual({ doc: 0, body: 0 })
   }
   // The long name truncates in the header rather than pushing it onto a second line.
   const banner = await page.getByRole('banner').boundingBox()
@@ -218,17 +226,8 @@ test('the tab bar never covers the end of the page', async ({ page }) => {
   await page.setViewportSize(PHONE)
   await registerFreshUser(page, '/')
   // Not the inbox: it cannot be deleted, so its page has no delete button to end on.
-  const made = await page.request.post('/api/v1/projects', {
-    headers: { 'x-ctws-client': 'web' },
-    data: { name: '长清单' },
-  })
-  const { id } = (await made.json()) as { id: string }
-  for (let i = 0; i < 14; i++) {
-    await page.request.post('/api/v1/tasks', {
-      headers: { 'x-ctws-client': 'web' },
-      data: { projectId: id, title: `第 ${i + 1} 件` },
-    })
-  }
+  const id = await makeProject(page, '长清单')
+  for (let i = 0; i < 14; i++) await makeTask(page, id, `第 ${i + 1} 件`)
   await page.goto(`/projects/${id}`)
   await expect(page.getByText('第 14 件')).toBeVisible()
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
@@ -253,11 +252,7 @@ test('on a phone, a detail pane ends above the tab bar, so its last control can 
 }) => {
   await page.setViewportSize(PHONE)
   await registerFreshUser(page, '/people')
-  const made = await page.request.post('/api/v1/people', {
-    headers: { 'x-ctws-client': 'web' },
-    data: { name: '要删的人' },
-  })
-  const { id } = (await made.json()) as { id: string }
+  const { id } = await apiPost(page, '/people', { name: '要删的人' })
   await page.goto(`/people/${id}`)
   const remove = page
     .getByRole('dialog', { name: 'People' })
