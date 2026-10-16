@@ -3,6 +3,9 @@ import { useEffect, useState } from 'react'
 const KEY = 'ctws.shortcuts.enabled'
 const EVENT = 'ctws:shortcuts-changed'
 
+/** What this tab was last told, for when `localStorage` cannot hold it. */
+let inThisTab = true
+
 /**
  * Per browser, not per account: single-key shortcuts can steal a screen reader's keys. Every access
  * is wrapped, because `localStorage` throws in a private window or with site data blocked.
@@ -11,7 +14,7 @@ export function shortcutsEnabled(): boolean {
   try {
     return localStorage.getItem(KEY) !== '0'
   } catch {
-    return true
+    return inThisTab
   }
 }
 
@@ -20,6 +23,7 @@ export function setShortcutsEnabled(value: boolean): void {
     localStorage.setItem(KEY, value ? '1' : '0')
   } catch {
     // Not remembered across reloads; this tab still honours it.
+    inThisTab = value
   }
   window.dispatchEvent(new Event(EVENT))
 }
