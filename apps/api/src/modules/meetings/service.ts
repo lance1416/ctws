@@ -10,7 +10,7 @@ import {
 } from '@ctws/contracts'
 import { newId } from '../../platform/db/ids'
 import { and, eq, sql } from 'drizzle-orm'
-import type { Db, Queryable } from '../../platform/db/client'
+import type { Db, Queryable, Tx } from '../../platform/db/client'
 import { putLinks } from '../../shell/links/store'
 import { assertProjectsVisible } from '../../shell/projects/queries'
 import { assertPeopleVisible } from '../people'
@@ -31,7 +31,7 @@ import { meetingExceptions, meetings } from './tables'
 type Fields = Omit<UpdateMeetingBody, 'scope' | 'recurrenceId' | 'attendeeIds' | 'projectId'>
 
 type Edit = {
-  tx: Queryable
+  tx: Tx
   workspaceId: WorkspaceId
   series: SeriesRow
   fields: Fields
@@ -41,14 +41,14 @@ type Edit = {
 }
 
 type Cancel = {
-  tx: Queryable
+  tx: Tx
   workspaceId: WorkspaceId
   series: SeriesRow
   recurrenceId: LocalTime | undefined
 }
 
 const putAttendees = (
-  q: Queryable,
+  q: Tx,
   {
     workspaceId,
     id,

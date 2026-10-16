@@ -9,7 +9,7 @@ import {
 } from '@ctws/contracts'
 import { clockTime, zoneAbbreviation } from '@ctws/core'
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
-import type { Queryable } from '../../platform/db/client'
+import type { Queryable, Tx } from '../../platform/db/client'
 import { groupBy } from '../../platform/values'
 import { filing } from '../../shell/links/filing'
 import { attendeesOf } from '../people'
@@ -134,11 +134,7 @@ async function seriesOf(
 }
 
 /** Locks a live meeting for the rest of the transaction, so an edit reads it only once it is held. */
-export async function lockMeeting(
-  q: Queryable,
-  workspaceId: WorkspaceId,
-  id: MeetingId,
-): Promise<void> {
+export async function lockMeeting(q: Tx, workspaceId: WorkspaceId, id: MeetingId): Promise<void> {
   const [row] = await q
     .select({ id: meetings.id })
     .from(meetings)

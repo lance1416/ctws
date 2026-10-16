@@ -10,7 +10,7 @@ import { expect } from 'vitest'
 import { lockTaskTree } from '../../src/modules/tasks/tree'
 import type { Unfurl } from '../../src/modules/reading/unfurl/unfurl'
 import type { Env } from '../../src/platform/config'
-import type { Queryable } from '../../src/platform/db/client'
+import type { Tx } from '../../src/platform/db/client'
 import { withApp } from './app'
 
 export type Harness = Awaited<ReturnType<typeof withApp>> & {
@@ -139,7 +139,7 @@ export async function expectBlockedByTreeLock<T>(ctx: Harness, fire: () => Promi
  */
 export async function expectBlockedWhile<T>(
   ctx: Harness,
-  take: (tx: Queryable) => Promise<unknown>,
+  take: (tx: Tx) => Promise<unknown>,
   fire: () => Promise<T>,
 ): Promise<T> {
   let release!: () => void

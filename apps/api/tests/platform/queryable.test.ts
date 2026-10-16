@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, expectTypeOf, it } from 'vitest'
-import type { Queryable } from '../../src/platform/db/client'
+import type { Queryable, Tx } from '../../src/platform/db/client'
 import { withDatabase } from '../helpers/db'
 
 let ctx: Awaited<ReturnType<typeof withDatabase>>
@@ -24,6 +24,11 @@ describe('Queryable', () => {
     expectTypeOf<typeof ctx.db>().toExtend<Queryable>()
     expectTypeOf<Parameters<Parameters<typeof ctx.db.transaction>[0]>[0]>().toExtend<Queryable>()
     expectTypeOf<{ execute: () => Promise<void> }>().not.toExtend<Queryable>()
+  })
+
+  it('lets a lock or a set-replacing write refuse the pool', () => {
+    expectTypeOf<Parameters<Parameters<typeof ctx.db.transaction>[0]>[0]>().toExtend<Tx>()
+    expectTypeOf<typeof ctx.db>().not.toExtend<Tx>()
   })
 
   it('sees uncommitted rows when given the transaction, and discards them on rollback', async () => {

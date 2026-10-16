@@ -1,6 +1,6 @@
 import { FINISHED_TASK_STATUSES, type WorkspaceId, type TaskId } from '@ctws/contracts'
 import { and, eq, isNull, sql, type SQL } from 'drizzle-orm'
-import type { Queryable } from '../../../platform/db/client'
+import type { Queryable, Tx } from '../../../platform/db/client'
 import { ident, sqlValues } from '../../../platform/db/sql'
 import { projectVisibleSql, visibleProjects } from '../../../shell/projects/queries'
 import { projects } from '../../../shell/projects/tables'
@@ -58,11 +58,7 @@ export async function visibleTask(
 }
 
 /** One visible task, locked for the rest of the transaction. */
-export async function lockVisibleTask(
-  q: Queryable,
-  workspaceId: WorkspaceId,
-  id: TaskId,
-): Promise<Task> {
+export async function lockVisibleTask(q: Tx, workspaceId: WorkspaceId, id: TaskId): Promise<Task> {
   const [row] = await byId(q, workspaceId, id).for('update', { of: tasks })
   if (!row) throw new TaskNotFoundError()
   return row.task

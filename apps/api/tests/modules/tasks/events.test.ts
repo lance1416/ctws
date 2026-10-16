@@ -1,7 +1,7 @@
 import type { TaskId, WorkspaceId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import type { Queryable } from '../../../src/platform/db/client'
+import type { Tx } from '../../../src/platform/db/client'
 import { taskLog } from '../../../src/modules/tasks/log'
 import { withDatabase } from '../../helpers/db'
 
@@ -29,7 +29,11 @@ afterAll(async () => {
   await ctx?.stop()
 })
 
-const logOf = (q: Queryable = ctx.db) => taskLog(q, { workspaceId })
+const logOf = (tx: Tx) => taskLog(tx, { workspaceId })
+
+/** One append in a transaction of its own. */
+const append = (...args: Parameters<ReturnType<typeof logOf>['append']>) =>
+  ctx.db.transaction((tx) => logOf(tx).append(...args))
 
 async function events() {
   const r = await ctx.db.execute(sql`
@@ -46,7 +50,7 @@ async function clear() {
 describe('taskLog', () => {
   it('records an event with its payload and workspace', async () => {
     await clear()
-    await logOf().append(taskId, 'status_changed', { from: 'todo', to: 'in_progress' })
+    await append(taskId, 'status_changed', { from: 'todo', to: 'in_progress' })
     const rows = await events()
     expect(rows).toEqual([
       {
@@ -59,8 +63,8 @@ describe('taskLog', () => {
 
   it('appends every event as its own row', async () => {
     await clear()
-    await logOf().append(taskId, 'title_changed', { from: 'a', to: 'ab' })
-    await logOf().append(taskId, 'title_changed', { from: 'ab', to: 'abc' })
+    await append(taskId, 'title_changed', { from: 'a', to: 'ab' })
+    await append(taskId, 'title_changed', { from: 'ab', to: 'abc' })
     expect((await events()).map((e) => e.payload)).toEqual([
       { from: 'a', to: 'ab' },
       { from: 'ab', to: 'abc' },

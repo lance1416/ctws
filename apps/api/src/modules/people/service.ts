@@ -11,7 +11,7 @@ import {
 import { newId } from '../../platform/db/ids'
 import { and, eq, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
-import type { Db, Queryable } from '../../platform/db/client'
+import type { Db, Tx } from '../../platform/db/client'
 import { assertProjectsVisible } from '../../shell/projects/queries'
 import { assertPossibleBirthday } from './birthdays'
 import { PersonNotFoundError } from './errors'
@@ -51,7 +51,7 @@ function birthdayColumns(b: BirthdayInput | null | undefined) {
 
 /** Replaces a person's channels as a set, in their given order. */
 async function putChannels(
-  q: Queryable,
+  q: Tx,
   personId: PersonId,
   channels: readonly PersonChannel[],
 ): Promise<void> {

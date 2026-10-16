@@ -11,7 +11,7 @@ import { newId } from '../../platform/db/ids'
 import { rankBetween } from '@ctws/core'
 import { and, desc, eq, sql } from 'drizzle-orm'
 import type { PgUpdateSetSource } from 'drizzle-orm/pg-core'
-import type { Db, Queryable } from '../../platform/db/client'
+import type { Db, Queryable, Tx } from '../../platform/db/client'
 import { InboxProtectedError, ProjectNotFoundError } from './errors'
 import { visibleProjects } from './queries'
 import { projects, type Project } from './tables'
@@ -26,7 +26,7 @@ function firstFreeColor(taken: readonly ProjectColor[]): ProjectColor {
 }
 
 async function lockVisibleProject(
-  q: Queryable,
+  q: Tx,
   workspaceId: WorkspaceId,
   id: ProjectId,
 ): Promise<Project> {

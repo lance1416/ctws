@@ -1,7 +1,7 @@
 import { type ObjectType, type ProjectId, type WorkspaceId } from '@ctws/contracts'
 import { and, asc, eq, getTableName, inArray, isNull, sql, type SQL } from 'drizzle-orm'
 import type { AnyPgColumn, PgTable } from 'drizzle-orm/pg-core'
-import type { Queryable } from '../../platform/db/client'
+import type { Queryable, Tx } from '../../platform/db/client'
 import { ident } from '../../platform/db/sql'
 import { groupBy } from '../../platform/values'
 import { projects } from '../projects/tables'
@@ -40,7 +40,7 @@ export function filing(type: ObjectType, table: PgTable & { id: AnyPgColumn }) {
 
     /** Replaces the object's projects, inside the caller's transaction. */
     put: (
-      q: Queryable,
+      q: Tx,
       {
         workspaceId,
         id,

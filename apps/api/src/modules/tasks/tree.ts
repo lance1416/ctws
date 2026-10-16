@@ -1,6 +1,6 @@
 import type { TaskId, WorkspaceId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
-import type { Queryable } from '../../platform/db/client'
+import type { Queryable, Tx } from '../../platform/db/client'
 import { LOCKS, lockFor } from '../../platform/db/locks'
 
 /**
@@ -8,7 +8,7 @@ import { LOCKS, lockFor } from '../../platform/db/locks'
  * dependencies. Take it as the transaction's first statement: the cascades and the loop checks
  * read from their own snapshot, so a row written after that snapshot is never visited.
  */
-export const lockTaskTree = (tx: Queryable, workspaceId: WorkspaceId): Promise<void> =>
+export const lockTaskTree = (tx: Tx, workspaceId: WorkspaceId): Promise<void> =>
   lockFor(tx, LOCKS.taskTree, workspaceId)
 
 /**

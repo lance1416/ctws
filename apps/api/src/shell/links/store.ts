@@ -1,6 +1,6 @@
 import { type LinkKind, type ObjectType, type WorkspaceId } from '@ctws/contracts'
 import { and, eq } from 'drizzle-orm'
-import type { Queryable } from '../../platform/db/client'
+import type { Queryable, Tx } from '../../platform/db/client'
 import { links } from './tables'
 
 /** One end of an edge. */
@@ -11,7 +11,7 @@ export type Endpoint = { type: ObjectType; id: string }
  * delete names both the far type and the kind, so writing one relationship leaves the others.
  */
 export async function putLinks(
-  q: Queryable,
+  q: Tx,
   {
     workspaceId,
     from,

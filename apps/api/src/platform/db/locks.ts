@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm'
-import type { Queryable } from './client'
+import type { Tx } from './client'
 
 /** Advisory lock keys, one series so they never collide. */
 export const LOCKS = {
@@ -9,7 +9,7 @@ export const LOCKS = {
 } as const
 
 /** Holds a transaction-scoped advisory lock, optionally per `scope`, until the transaction ends. */
-export async function lockFor(tx: Queryable, key: number, scope?: string): Promise<void> {
+export async function lockFor(tx: Tx, key: number, scope?: string): Promise<void> {
   await tx.execute(
     scope === undefined
       ? sql`select pg_advisory_xact_lock(${key})`

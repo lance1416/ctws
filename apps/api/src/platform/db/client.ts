@@ -11,7 +11,11 @@ export async function closeDb(db: Db): Promise<void> {
   await db.$client.end()
 }
 
-type Tx = Parameters<Parameters<Db['transaction']>[0]>[0]
+/**
+ * An open transaction. A lock, or a write that must land with others, takes this rather than
+ * `Queryable`: on the pool a lock is released as soon as its statement ends.
+ */
+export type Tx = Parameters<Parameters<Db['transaction']>[0]>[0]
 
 /** A service works the same on the pool and inside a caller's transaction. */
 export type Queryable = Db | Tx
