@@ -31,7 +31,6 @@ export const taskQuery = (id: TaskId) =>
   queryOptions({
     queryKey: ['tasks', 'one', id],
     queryFn: ({ signal }) => call(api.tasks.get, { params: { id } }, { signal }),
-    retry: false,
   })
 
 /**
