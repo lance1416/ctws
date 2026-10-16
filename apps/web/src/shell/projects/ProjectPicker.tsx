@@ -3,8 +3,6 @@ import { PickMany, PickOne, type Choice } from '../../platform/ui/inline'
 import { useEveryProject, useProjects } from './api'
 import { useProjectRail } from './projectColor'
 
-const NONE = '__no-project'
-
 /** A project's colour as the 3px mark beside its name, which is always shown with it. */
 export function ProjectChip({ projectId }: { projectId: ProjectId }) {
   const rail = useProjectRail()
@@ -40,9 +38,9 @@ export function ProjectPicker({
   return (
     <PickOne
       label="Projects"
-      value={value ?? NONE}
+      value={value}
       choices={[
-        { value: NONE, label: none },
+        { value: null, label: none },
         ...choices,
         ...(shelved
           ? [
@@ -54,7 +52,7 @@ export function ProjectPicker({
             ]
           : []),
       ]}
-      onPick={(v) => onPick(v === NONE ? null : v)}
+      onPick={onPick}
     />
   )
 }

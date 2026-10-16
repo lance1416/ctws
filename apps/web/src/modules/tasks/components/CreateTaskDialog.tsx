@@ -1,4 +1,4 @@
-import { MAX_TASK_DEPTH, NEW_TASK_STATUS, type ProjectId } from '@ctws/contracts'
+import { MAX_TASK_DEPTH, NEW_TASK_STATUS, type ProjectId, type TaskId } from '@ctws/contracts'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useRef } from 'react'
@@ -21,9 +21,6 @@ import {
 } from '../logic/taskForm'
 import { DialogFooter } from '../../../platform/ui/DialogFooter'
 import { useNow } from '../../../platform/time/useNow'
-
-/** `PickOne` has no null value, and the contract takes a uuid or null -- never the empty string. */
-const TOP_LEVEL = '__top'
 
 /**
  * A task created with its details in one request. `⌘↵` creates and stays: the title clears and
@@ -162,18 +159,18 @@ export function CreateTaskDialog({
         <div>
           <span className={label}>Put it under</span>
           <div className="mt-1.5">
-            <PickOne
+            <PickOne<TaskId | null>
               label="Put it under"
-              value={parentId ?? TOP_LEVEL}
+              value={parentId ?? null}
               /* Indented with figure spaces: a picker row renders text only. */
               choices={[
-                { value: TOP_LEVEL, label: 'Top level' },
+                { value: null, label: 'Top level' },
                 ...parents.map((p) => ({
                   value: p.id,
                   label: `${' '.repeat((p.depth - 1) * 2)}${p.title}`,
                 })),
               ]}
-              onPick={(v) => setValue('parentId', v === TOP_LEVEL ? null : v)}
+              onPick={(v) => setValue('parentId', v)}
             />
           </div>
         </div>

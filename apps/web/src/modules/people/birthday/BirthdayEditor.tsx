@@ -172,12 +172,12 @@ export function BirthdayEditor({
       <div className="flex flex-wrap items-center gap-2">
         <PickOne
           label="时辰"
-          value={hourBranch === null ? '' : String(hourBranch)}
+          value={hourBranch === null ? null : String(hourBranch)}
           choices={[
-            { value: '', label: '时辰 — not known' },
+            { value: null, label: '时辰 — not known' },
             ...HOUR_BRANCHES.map((name, i) => ({ value: String(i), label: name })),
           ]}
-          onPick={(next) => setHourBranch(next === '' ? null : Number(next))}
+          onPick={(next) => setHourBranch(next === null ? null : Number(next))}
         />
         <PickOne
           label="Tell me"

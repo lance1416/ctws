@@ -31,7 +31,7 @@ export function NewPersonDialog({
   const channels = useChannelRows(() => [{ kind: 'email', value: '', label: null }])
   const address = channels.rows[0]!
   const [projectIds, setProjects] = useState<ProjectId[]>([])
-  const [circle, setCircle] = useState<Circle | ''>('')
+  const [circle, setCircle] = useState<Circle | null>(null)
   // Folded until asked for: an open, empty date form reads as bad data.
   const [birthday, setBirthday] = useState<{ draft: BirthdayDraft; refused: boolean } | null>(null)
 

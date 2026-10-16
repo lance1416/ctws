@@ -258,12 +258,12 @@ function ReadingForm({
           <Field label="Finish by">
             <PickOne
               label="Finish by"
-              value={planOn ?? ''}
+              value={planOn}
               choices={[
-                { value: '', label: 'Not set' },
+                { value: null, label: 'Not set' },
                 ...planChoices(today, item.planOn, PLAN_LABELS),
               ]}
-              onPick={(v) => setPlanOn(v === '' ? null : v)}
+              onPick={setPlanOn}
             />
           </Field>
           <Field label="Projects">

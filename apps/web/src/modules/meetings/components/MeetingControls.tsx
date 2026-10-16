@@ -45,9 +45,6 @@ export function ZonePicker({ value, onPick }: { value: string; onPick: (zone: st
   )
 }
 
-/** `PickOne` has no null value, so "does not repeat" needs a value of its own. */
-const NO_REPEAT = '__none'
-
 /** How it repeats, named after the day `startsLocal` falls on. */
 export function RepeatPicker({
   startsLocal,
@@ -69,12 +66,12 @@ export function RepeatPicker({
   return (
     <PickOne
       label="Repeats"
-      value={value ?? NO_REPEAT}
+      value={value}
       choices={[
-        ...choices.map((c) => ({ value: c.value ?? NO_REPEAT, label: c.label })),
+        ...choices,
         ...(kept ? [{ value, label: repeatLabel(value, startsLocal, today) }] : []),
       ]}
-      onPick={(v) => onPick(v === NO_REPEAT ? null : v)}
+      onPick={onPick}
     />
   )
 }

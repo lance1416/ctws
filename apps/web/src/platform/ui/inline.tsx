@@ -4,10 +4,11 @@ import { CHIP } from './formStyles'
 import { MENU_ITEM, MENU_SURFACE } from './menuSurface'
 import { CloseIcon, PlusIcon } from './icons'
 
-export type Choice<T extends string> = { value: T; label: string; mark?: ReactNode }
+/** One choice; a `null` value is the choice of nothing ("Not set", "Top level"). */
+export type Choice<T extends string | null> = { value: T; label: string; mark?: ReactNode }
 
 /** A value chosen from a short list; picking the current value reports nothing. */
-export function PickOne<T extends string>({
+export function PickOne<T extends string | null>({
   label,
   value,
   choices,
@@ -47,7 +48,7 @@ export function PickOne<T extends string>({
         <DropdownMenu.Content align="start" sideOffset={4} className={MENU_SURFACE}>
           {choices.map((c) => (
             <DropdownMenu.Item
-              key={c.value}
+              key={c.value ?? ''}
               onSelect={() => {
                 if (c.value !== value) onPick(c.value)
               }}

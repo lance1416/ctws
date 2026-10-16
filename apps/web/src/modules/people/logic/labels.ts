@@ -14,9 +14,8 @@ export const CIRCLE_OF_ONE: Record<Circle, string> = {
   work: 'Work',
 }
 
-/** `''` is "Not set". */
-export const CIRCLE_CHOICES: Choice<Circle | ''>[] = [
-  { value: '', label: 'Not set' },
+export const CIRCLE_CHOICES: Choice<Circle | null>[] = [
+  { value: null, label: 'Not set' },
   ...CIRCLES.map((c) => ({ value: c, label: CIRCLE_LABELS[c] })),
 ]
 
@@ -26,9 +25,9 @@ export const GENDER_LABELS: Record<Gender, string> = {
   other: 'Other',
 }
 
-/** In the order of `GENDER_LABELS`; `''` is "Not set". */
-export const GENDER_CHOICES: Choice<Gender | ''>[] = [
-  { value: '', label: 'Not set' },
+/** In the order of `GENDER_LABELS`. */
+export const GENDER_CHOICES: Choice<Gender | null>[] = [
+  { value: null, label: 'Not set' },
   ...(Object.keys(GENDER_LABELS) as Gender[]).map((value) => ({
     value,
     label: GENDER_LABELS[value],

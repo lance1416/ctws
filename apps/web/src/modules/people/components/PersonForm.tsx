@@ -42,8 +42,8 @@ export function PersonForm({
   const [title, setTitle] = useState(person.title ?? '')
   const [hometown, setHometown] = useState(person.hometown ?? '')
   const [city, setCity] = useState(person.city ?? '')
-  const [gender, setGender] = useState<Gender | ''>(person.gender ?? '')
-  const [circle, setCircle] = useState<Circle | ''>(person.circle ?? '')
+  const [gender, setGender] = useState<Gender | null>(person.gender)
+  const [circle, setCircle] = useState<Circle | null>(person.circle)
   const [projectIds, setProjectIds] = useState(person.projects.map((p) => p.id))
   const channels = useChannelRows(() => byKind(person.channels).map((c) => ({ ...c, saved: true })))
   const [note, setNote] = useState(person.note ?? '')
@@ -88,8 +88,8 @@ export function PersonForm({
       title: title.trim() || null,
       hometown: hometown.trim() || null,
       city: city.trim() || null,
-      gender: gender || null,
-      circle: circle || null,
+      gender,
+      circle,
       projectIds,
       channels: channels.toSave(),
       note: note.trim() || null,
