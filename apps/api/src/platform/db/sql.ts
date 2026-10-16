@@ -47,6 +47,10 @@ export function causeChain(error: unknown): { code?: unknown; cause?: unknown }[
 export const isUniqueViolation = (error: unknown): boolean =>
   causeChain(error).some((e) => e.code === '23505')
 
+/** A CHECK constraint violation (SQLSTATE 23514) anywhere in the cause chain. */
+export const isCheckViolation = (error: unknown): boolean =>
+  causeChain(error).some((e) => e.code === '23514')
+
 /**
  * Values from a contract's list as SQL literals, comma-separated: what goes between the brackets
  * of an `in (...)`. Only for values the code names, never for input, which goes as a parameter.

@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { buildApp } from '../../src/app'
 import { withApp } from '../helpers/app'
@@ -62,6 +63,30 @@ describe('app', () => {
     expect(res.json()).toMatchObject({ status: 400, title: expect.any(String) })
 
     await validationApp.close()
+  })
+
+  it('refuses a write a database check rejects as 422 problem details, not a 500', async () => {
+    const checkedApp = await buildApp({ env: ctx.env, db: ctx.db })
+    checkedApp.post('/api/v1/__test-check', async (req) => {
+      // The real error the driver raises when a row breaks a CHECK constraint (SQLSTATE 23514).
+      await req.server.db.execute(
+        sql`do $$ begin raise check_violation using message = 'no'; end $$`,
+      )
+      return { ok: true }
+    })
+    await checkedApp.ready()
+
+    const res = await checkedApp.inject({
+      method: 'POST',
+      url: '/api/v1/__test-check',
+      headers: { 'x-ctws-client': 'web' },
+    })
+
+    expect(res.statusCode).toBe(422)
+    expect(res.headers['content-type']).toContain('application/problem+json')
+    expect(res.json()).toMatchObject({ status: 422, title: 'Unprocessable Entity' })
+
+    await checkedApp.close()
   })
 })
 

@@ -1,5 +1,6 @@
 import type { FastifyError, FastifyReply, FastifyRequest } from 'fastify'
 import { hasZodFastifySchemaValidationErrors } from 'fastify-type-provider-zod'
+import { isCheckViolation } from '../db/sql'
 import { DomainError, type ErrorKind } from '../errors'
 import { sendProblem } from './problem'
 
@@ -26,6 +27,11 @@ export function handleError(error: FastifyError, _req: FastifyRequest, reply: Fa
   }
   if (hasZodFastifySchemaValidationErrors(error)) {
     return sendProblem(reply, 400, 'Bad Request', error.message)
+  }
+  // A value the contract let through but a CHECK refuses: the request's fault, not the server's.
+  // The constraint's own message names tables and columns, so it is not sent.
+  if (isCheckViolation(error)) {
+    return sendProblem(reply, 422, 'Unprocessable Entity', 'That value is not allowed here')
   }
   const status = error.statusCode ?? 500
   // A server error never shows its message.
