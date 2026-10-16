@@ -339,3 +339,19 @@ test('the tree’s rail reads as one continuous spine, not one dash per row', as
   expect(geometry[0]!.top - geometry[0]!.rowTop).toBeLessThanOrEqual(0.5)
   expect(geometry.at(-1)!.rowBottom - geometry.at(-1)!.bottom).toBeLessThanOrEqual(0.5)
 })
+
+test('a delete question asked on one project does not follow to the next', async ({ page }) => {
+  await registerFreshUser(page)
+  await page.setViewportSize(WIDE)
+  const a = await makeProject(page, 'Alpha')
+  await makeTask(page, a, 'Only in Alpha')
+  const b = await makeProject(page, 'Beta')
+  await page.goto(`/projects/${a}`)
+  await page.getByRole('button', { name: 'Delete project' }).click()
+  await expect(page.getByRole('alertdialog')).toBeVisible()
+
+  await page.getByRole('navigation').getByRole('link', { name: 'Beta' }).click()
+  await expect(page).toHaveURL(`/projects/${b}`)
+  await expect(header(page)).toContainText('Beta')
+  await expect(page.getByRole('alertdialog')).toHaveCount(0)
+})
