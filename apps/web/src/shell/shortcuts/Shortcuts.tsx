@@ -1,12 +1,10 @@
 import { KeyHint } from '../../platform/ui/KeyHint'
 import { useQueryClient } from '@tanstack/react-query'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useRegistry } from '../registry'
-import { CHORD_TIMEOUT_MS, JUMP_PREFIX } from './chords'
-import { useShortcutsEnabled } from '../../platform/keyboard/enabled'
-import { isBareKey, isTypingTarget } from '../../platform/keyboard/keys'
-import { isOverlayOpen } from '../../platform/keyboard/overlayState'
+import { CHORD_TIMEOUT_MS } from './chords'
+import { useDocumentKeys } from '../../platform/keyboard/keyTable'
 import { SearchDialog } from '../search/SearchDialog'
 import { ShortcutHelp } from './ShortcutHelp'
 
@@ -29,56 +27,44 @@ export function Shortcuts({
   setSearch: (open: boolean) => void
 }) {
   const [help, setHelp] = useState(false)
-  const enabled = useShortcutsEnabled()
   const navigate = useNavigate()
   const qc = useQueryClient()
   const registry = useRegistry()
   // A pending `g`, forgotten after a timeout so a stray `g` does not make a later `t` navigate.
   const pending = useRef(false)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const forget = () => {
+    pending.current = false
+    if (timer.current) clearTimeout(timer.current)
+  }
 
-  useEffect(() => {
-    if (!enabled) return
-    const forget = () => {
-      pending.current = false
-      if (timer.current) clearTimeout(timer.current)
-    }
-    const onKey = (e: KeyboardEvent) => {
-      if (isTypingTarget(e.target) || !isBareKey(e)) {
-        forget()
-        return
-      }
-      if (pending.current) {
+  useDocumentKeys(
+    registry.anywhere,
+    {
+      search: () => setSearch(true),
+      help: () => setHelp(true),
+      jump: () => {
+        pending.current = true
+        timer.current = setTimeout(forget, CHORD_TIMEOUT_MS)
+      },
+    },
+    {
+      // The key after the prefix is the chord's, whatever else it would do. It is consumed even
+      // when unresolved, so it never falls through to the page's own handler.
+      claim: (e) => {
+        if (!pending.current) return false
         forget()
         const chord = registry.chordFor(e.key)
         if (chord) {
-          // Consumed even when unresolved, so it never falls through to the page's own handler.
           e.preventDefault()
           const to = chord.resolve({ queryClient: qc })
           if (to) navigate(to)
         }
-        return
-      }
-      if (isOverlayOpen()) return
-      if (e.key === JUMP_PREFIX) {
-        pending.current = true
-        timer.current = setTimeout(forget, CHORD_TIMEOUT_MS)
-      } else if (e.key === 'f') {
-        e.preventDefault()
-        setSearch(true)
-      } else if (e.key === '?') {
-        e.preventDefault()
-        setHelp(true)
-      }
-    }
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('keydown', onKey)
-      forget()
-    }
-    // Deliberately narrow: re-running between `g` and its second key would forget the chord.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- setSearch is the parent's state setter.
-  }, [enabled, navigate, qc, registry])
+        return true
+      },
+      skipped: forget,
+    },
+  )
 
   return (
     <>

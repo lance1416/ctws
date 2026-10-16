@@ -1,13 +1,10 @@
 import { type TaskStatus, type TaskId } from '@ctws/contracts'
 import type { KeyboardEvent } from 'react'
-import { useShortcutsEnabled } from '../../../../platform/keyboard/enabled'
+import { useKeyTable } from '../../../../platform/keyboard/keyTable'
+import { statusActions, TREE_KEYS } from '../../logic/keys'
 import type { FlatRow } from '../../logic/tree/flatten'
-import { statusForKey } from '../StatusControls'
 
-/**
- * The tree's keys on a focused row: bare arrows move focus and fold, Alt+arrows move the row and
- * change its depth. Tab is unbound, so one Tab leaves the tree.
- */
+/** What the tree's keys do to the row at an index, by the table in `TREE_KEYS`. */
 export function useTreeKeys({
   rows,
   statusOf,
@@ -18,6 +15,7 @@ export function useTreeKeys({
   move,
   blockLength,
   toggle,
+  focusRow,
 }: {
   rows: readonly FlatRow[]
   statusOf: (id: TaskId) => TaskStatus
@@ -29,72 +27,48 @@ export function useTreeKeys({
   move: (id: TaskId, slot: number, depth: number) => void
   blockLength: (index: number) => number
   toggle: (id: TaskId) => void
+  /** Focuses the row at an index, if there is one. */
+  focusRow: (index: number) => void
 }) {
-  const singleKeys = useShortcutsEnabled()
-  const focusRow = (index: number) => {
-    const row = rows[index]
-    if (!row) return
-    document.querySelector<HTMLElement>(`[data-handle-id="${row.id}"]`)?.focus()
-  }
+  const keys = useKeyTable(TREE_KEYS)
 
   return (e: KeyboardEvent<HTMLButtonElement>, index: number) => {
     const row = rows[index]!
-    // Bare, with no Shift either: Shift+Enter is another command and Shift+arrow a selection
-    // gesture this does not own.
-    const plain = !e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey
-    const nextStatus = singleKeys ? statusForKey(e, statusOf(row.id)) : null
-    if (nextStatus) {
-      e.preventDefault()
-      setStatus(row.id, nextStatus)
-    } else if (e.key === 'Enter' && e.altKey) {
-      e.preventDefault()
-      addChild(row)
-    } else if (e.key === 'Enter' && e.shiftKey) {
-      // Plain Enter opens the detail (the keyboard way in), so a sibling is Shift+Enter.
-      e.preventDefault()
-      addSibling(row)
-    } else if (e.key === 'Enter') {
-      e.preventDefault()
-      open(row.id)
-    } else if (e.altKey && e.key === 'ArrowUp') {
-      e.preventDefault()
-      // Over the previous sibling's whole visible block: index - 1 would land inside an expanded
-      // subtree above and drag the row into it.
-      let j = index - 1
-      while (j > 0 && rows[j]!.depth > row.depth) j--
-      move(row.id, j, row.depth)
-    } else if (e.altKey && e.key === 'ArrowDown') {
-      e.preventDefault()
-      // After the next row's whole visible block, not between it and its first child.
-      const next = index + blockLength(index)
-      if (next < rows.length) move(row.id, next + blockLength(next), row.depth)
-    } else if (e.altKey && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) {
-      e.preventDefault()
-      move(row.id, index, row.depth + (e.key === 'ArrowRight' ? 1 : -1))
-    } else if (plain && (e.key === 'ArrowDown' || (singleKeys && e.key === 'j'))) {
+    keys(e, {
+      ...statusActions(statusOf(row.id), (next) => setStatus(row.id, next)),
+      open: () => open(row.id),
+      addChild: () => addChild(row),
+      addSibling: () => addSibling(row),
+      moveUp: () => {
+        // Over the previous sibling's whole visible block: index - 1 would land inside an expanded
+        // subtree above and drag the row into it.
+        let j = index - 1
+        while (j > 0 && rows[j]!.depth > row.depth) j--
+        move(row.id, j, row.depth)
+      },
+      moveDown: () => {
+        // After the next row's whole visible block, not between it and its first child.
+        const next = index + blockLength(index)
+        if (next < rows.length) move(row.id, next + blockLength(next), row.depth)
+      },
+      indent: () => move(row.id, index, row.depth + 1),
+      outdent: () => move(row.id, index, row.depth - 1),
       // Clamped, not wrapping: a jump from bottom to top loses the person's place.
-      e.preventDefault()
-      focusRow(index + 1)
-    } else if (plain && (e.key === 'ArrowUp' || (singleKeys && e.key === 'k'))) {
-      e.preventDefault()
-      focusRow(index - 1)
-    } else if (plain && e.key === 'Home') {
-      e.preventDefault()
-      focusRow(0)
-    } else if (plain && e.key === 'End') {
-      e.preventDefault()
-      focusRow(rows.length - 1)
-    } else if (plain && e.key === 'ArrowRight') {
-      e.preventDefault()
-      if (row.hasChildren && row.collapsed) toggle(row.id)
-      else if (row.hasChildren) focusRow(index + 1)
-    } else if (plain && e.key === 'ArrowLeft') {
-      e.preventDefault()
-      if (row.hasChildren && !row.collapsed) toggle(row.id)
-      else if (row.parentId) {
-        const parent = rows.findIndex((r) => r.id === row.parentId)
-        if (parent >= 0) focusRow(parent)
-      }
-    }
+      next: () => focusRow(index + 1),
+      previous: () => focusRow(index - 1),
+      first: () => focusRow(0),
+      last: () => focusRow(rows.length - 1),
+      expand: () => {
+        if (row.hasChildren && row.collapsed) toggle(row.id)
+        else if (row.hasChildren) focusRow(index + 1)
+      },
+      collapse: () => {
+        if (row.hasChildren && !row.collapsed) toggle(row.id)
+        else if (row.parentId) {
+          const parent = rows.findIndex((r) => r.id === row.parentId)
+          if (parent >= 0) focusRow(parent)
+        }
+      },
+    })
   }
 }

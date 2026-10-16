@@ -1,4 +1,4 @@
-import { isFinished, toggleDoneTarget, toggleStartTarget } from '../logic/status'
+import { isFinished } from '../logic/status'
 import type { TaskStatus } from '@ctws/contracts'
 import { StatusMark } from './StatusMark'
 
@@ -64,15 +64,4 @@ export function StartButton({
       </svg>
     </button>
   )
-}
-
-/** The keys for the tree and Today: `x` finishes or restores, `s` starts or stops. */
-export function statusForKey(
-  e: { key: string; altKey: boolean; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean },
-  status: TaskStatus,
-): TaskStatus | null {
-  if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return null
-  if (e.key === 'x') return toggleDoneTarget(status)
-  if (e.key === 's') return toggleStartTarget(status)
-  return null
 }

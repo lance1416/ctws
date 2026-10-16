@@ -159,6 +159,10 @@ export function TaskTree({ projectId }: { projectId: ProjectId }) {
     move: run,
     blockLength,
     toggle: folds.toggle,
+    focusRow: (index) => {
+      const row = rows[index]
+      if (row) document.querySelector<HTMLElement>(`[data-handle-id="${row.id}"]`)?.focus()
+    },
   })
 
   // The input sits after the last visible row of its parent's subtree (or of the whole list for

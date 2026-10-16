@@ -7,6 +7,7 @@ import { recentList } from './recent'
 import { useMe } from '../auth/useMe'
 import { Modal } from '../../platform/ui/Modal'
 import { useComposing } from '../../platform/keyboard/composition'
+import { useKeyTable, type KeyTable } from '../../platform/keyboard/keyTable'
 import { BUTTON } from '../../platform/ui/buttonStyles'
 
 /** Long enough that typing a word does not fire a request per letter, short enough to feel live. */
@@ -24,6 +25,20 @@ type Row = {
   /** A module hit's id, its test handle. */
   hit?: string
   group: 'recent' | 'place' | 'hit'
+}
+
+/** The box's keys: the list is walked from the box, which keeps focus. */
+const RESULT_KEYS: KeyTable<'next' | 'previous' | 'choose'> = {
+  title: 'In search',
+  rows: [
+    { keys: '↓ / Ctrl+N', does: 'Next result', presses: { ArrowDown: 'next', 'Ctrl+n': 'next' } },
+    {
+      keys: '↑ / Ctrl+P',
+      does: 'Previous result',
+      presses: { ArrowUp: 'previous', 'Ctrl+p': 'previous' },
+    },
+    { keys: 'Enter', does: 'Go to the result', presses: { Enter: 'choose' } },
+  ],
 }
 
 const GROUP_LABEL: Partial<Record<Row['group'], string>> = { recent: 'Recent', place: 'Go to' }
@@ -49,6 +64,7 @@ function places(registry: Registry): Row[] {
  */
 export function SearchDialog({ onClose }: { onClose: () => void }) {
   const composing = useComposing()
+  const keys = useKeyTable(RESULT_KEYS)
   const [query, setQuery] = useState('')
   const [debounced, setDebounced] = useState('')
   const [active, setActive] = useState(0)
@@ -138,20 +154,18 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
           aria-autocomplete="list"
           aria-activedescendant={rows.length > 0 ? optionId(at) : undefined}
           {...composing.bind}
-          onKeyDown={(e) => {
-            if (e.key === 'ArrowDown' || (e.key === 'n' && e.ctrlKey)) {
-              e.preventDefault()
-              setActive(Math.min(at + 1, rows.length - 1))
-            } else if (e.key === 'ArrowUp' || (e.key === 'p' && e.ctrlKey)) {
-              e.preventDefault()
-              setActive(Math.max(at - 1, 0))
-            } else if (e.key === 'Enter' && !composing.composingNow(e)) {
-              e.preventDefault()
-              const row = rows[at]
-              // A module's hit for words not yet sent would be the previous word's: wait.
-              if (row && !(row.group === 'hit' && typing !== debounced)) choose(row)
-            }
-          }}
+          onKeyDown={(e) =>
+            keys(e, {
+              next: () => setActive(Math.min(at + 1, rows.length - 1)),
+              previous: () => setActive(Math.max(at - 1, 0)),
+              choose: () => {
+                if (composing.composingNow(e)) return false
+                const row = rows[at]
+                // A module's hit for words not yet sent would be the previous word's: wait.
+                if (row && !(row.group === 'hit' && typing !== debounced)) choose(row)
+              },
+            })
+          }
           placeholder="Search…"
           aria-label="Search"
           className="h-9 w-full bg-transparent px-0.5 text-ink placeholder:text-ink-muted"

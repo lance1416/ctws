@@ -7,6 +7,7 @@ import {
 import type { QueryClient } from '@tanstack/react-query'
 import type { ComponentType, ReactNode } from 'react'
 import type { RouteObject } from 'react-router-dom'
+import type { KeyTable } from '../platform/keyboard/keyTable'
 
 /**
  * What a module declares. The shell owns auth, the frame, overlays, projects, the edge table and
@@ -27,10 +28,11 @@ export type WorkspaceModule = {
   search?: SearchContribution
   chords?: Chord[]
   project?: ProjectContribution
-  /** Sections this module adds to the keyboard help, in its order. */
-  help?: readonly HelpSection[]
-  /** The single keys this module answers, which the help's switch turns off with the shell's. */
-  bareKeys?: readonly string[]
+  /**
+   * The module's key tables, in its order: the keyboard help shows them, the switch there silences
+   * their single keys, and the components that answer them bind their actions from them.
+   */
+  keys?: readonly KeyTable[]
   /**
    * Dated things for the shell's calendar. The server decides each entry's day in the account's
    * zone; a client turning an instant into a day would put a 23:00 deadline on the wrong square.
@@ -68,11 +70,6 @@ export type ProjectContribution = {
 }
 
 type BlockView = { id: string; label: string }
-
-export type HelpSection = {
-  title: string
-  keys: readonly (readonly [key: string, what: string])[]
-}
 
 export type RelationContribution = {
   /** Exactly one module answers for each type. */

@@ -1,15 +1,14 @@
 import type { ProjectId } from '@ctws/contracts'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Fragment, useEffect, useId, useState, type ReactNode } from 'react'
-import { isOverlayOpen } from '../../../platform/keyboard/overlayState'
-import { useShortcutsEnabled } from '../../../platform/keyboard/enabled'
-import { isBareKey, isTypingTarget } from '../../../platform/keyboard/keys'
+import { Fragment, useId, useState, type ReactNode } from 'react'
+import { useDocumentKeys } from '../../../platform/keyboard/keyTable'
 import { dayPhrase, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { textbox } from '../../../platform/ui/formStyles'
 import { useInlineEdit } from '../../../platform/ui/useInlineEdit'
 import { useTimeZone } from '../../../shell/auth'
 import { createTask, movementQuery, projectTasksQuery } from '../api'
+import { PROJECT_PAGE_KEYS } from '../logic/keys'
 import { CreateTaskDialog } from './CreateTaskDialog'
 import { TaskBoard } from './TaskBoard'
 import { TaskTree } from './TaskTree'
@@ -70,19 +69,7 @@ export const PROJECT_VIEWS = [
  */
 export function NewTaskAction({ projectId }: { projectId: ProjectId }) {
   const [creating, setCreating] = useState(false)
-  const shortcuts = useShortcutsEnabled()
-
-  useEffect(() => {
-    if (!shortcuts) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'n' || !isBareKey(e)) return
-      if (isTypingTarget(e.target) || isOverlayOpen()) return
-      e.preventDefault()
-      setCreating(true)
-    }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [shortcuts])
+  useDocumentKeys(PROJECT_PAGE_KEYS, { create: () => setCreating(true) })
 
   return (
     <>

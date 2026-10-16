@@ -5,7 +5,6 @@ import type {
   CalendarContribution,
   CaptureContribution,
   Chord,
-  HelpSection,
   KindEntry,
   ModulePage,
   ProjectContribution,
@@ -14,7 +13,9 @@ import type {
   Widget,
   WorkspaceModule,
 } from './contract'
+import type { KeyTable } from '../platform/keyboard/keyTable'
 import { ProjectsCount, ProjectsStatus } from './projects/ProjectKind'
+import { anywhereKeys, type AnywhereAction } from './shortcuts/keys'
 
 export const WORKBENCH_PATH = '/'
 
@@ -107,9 +108,10 @@ export type Registry = {
   projectLead: ComponentType<{ projectId: ProjectId }> | null
   projectCount: ((project: ProjectListItem) => number) | null
   projectContents: NonNullable<ProjectContribution['contents']>[]
-  help: HelpSection[]
-  /** Every module's single keys, in module order. */
-  bareKeys: string[]
+  /** The page-wide keys: capture, search, this help, the jumps. */
+  anywhere: KeyTable<AnywhereAction>
+  /** Every module's key tables, in module order. */
+  keys: KeyTable[]
   routes: RouteObject[]
 }
 
@@ -179,8 +181,8 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
     projectLead: modules.find((m) => m.project?.Lead)?.project?.Lead ?? null,
     projectCount: modules.find((m) => m.project?.count)?.project?.count ?? null,
     projectContents: modules.flatMap((m) => (m.project?.contents ? [m.project.contents] : [])),
-    help: modules.flatMap((m) => m.help ?? []),
-    bareKeys: [...new Set(modules.flatMap((m) => m.bareKeys ?? []))],
+    anywhere: anywhereKeys(chords),
+    keys: modules.flatMap((m) => m.keys ?? []),
     routes: modules.map((m) => ({ path: `/${m.id}`, children: m.routes })),
   }
 }

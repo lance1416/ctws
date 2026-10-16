@@ -2,6 +2,7 @@ import { idFrom, projectId } from '@ctws/contracts'
 import { QueryClient } from '@tanstack/react-query'
 import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
+import { singleKeysOf } from '../platform/keyboard/keyTable'
 import type { WorkspaceModule } from './contract'
 import { buildRegistry, useRegistry, type ShellConfig } from './registry'
 
@@ -32,8 +33,7 @@ const notes: WorkspaceModule = {
     Facts: NotesFacts,
     contents: async () => '3 notes',
   },
-  help: [{ title: 'In a note', keys: [['e', 'Edit']] }],
-  bareKeys: ['e'],
+  keys: [{ title: 'In a note', rows: [{ keys: 'e', does: 'Edit', presses: { e: 'edit' } }] }],
 }
 
 const files: WorkspaceModule = {
@@ -49,8 +49,16 @@ const files: WorkspaceModule = {
     count: () => 4,
     contents: async () => null,
   },
-  help: [{ title: 'In the drive', keys: [['u', 'Upload']] }],
-  bareKeys: ['u', 'e'],
+  keys: [
+    {
+      title: 'In the drive',
+      rows: [
+        { keys: 'u', does: 'Upload', presses: { u: 'upload' } },
+        { keys: 'e', does: 'Edit', presses: { e: 'edit' } },
+        { keys: 'Enter', does: 'Open', presses: { Enter: 'open' } },
+      ],
+    },
+  ],
 }
 
 const CONFIG: ShellConfig = {
@@ -215,11 +223,11 @@ describe('what a module hangs on a project page', () => {
 
 describe('the keyboard help', () => {
   it('takes each module’s sections in registration order', () => {
-    expect(build([notes, files]).help.map((s) => s.title)).toEqual(['In a note', 'In the drive'])
+    expect(build([notes, files]).keys.map((s) => s.title)).toEqual(['In a note', 'In the drive'])
   })
 
-  it('names every module’s single keys once, in registration order', () => {
-    expect(build([notes, files]).bareKeys).toEqual(['e', 'u'])
+  it('names every module’s single keys once, in registration order, and only those', () => {
+    expect(singleKeysOf(build([notes, files]).keys)).toEqual(['e', 'u'])
   })
 })
 

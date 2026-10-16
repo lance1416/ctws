@@ -8,7 +8,7 @@ import {
 } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState, type KeyboardEvent } from 'react'
-import { useShortcutsEnabled } from '../../../platform/keyboard/enabled'
+import { useKeyTable } from '../../../platform/keyboard/keyTable'
 import { clockTime } from '@ctws/core/clock'
 import { ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
@@ -22,11 +22,11 @@ import { useTaskActions } from '../hooks/useTaskActions'
 import { DayLine, type DayItem } from '../components/DayLine'
 import { DoneTodayPanel } from '../components/DoneTodayPanel'
 import { MovementPanel } from '../components/MovementPanel'
-import { statusForKey } from '../components/StatusControls'
 import { TaskDetail } from '../components/TaskDetail'
 import { useFocusAfterRemoval } from '../components/useFocusAfterRemoval'
 import { useSavedFlash } from '../components/useSavedFlash'
 import { TASKS_ID } from '../logic/id'
+import { statusActions, TODAY_KEYS } from '../logic/keys'
 import { hasMovement } from '../logic/movement'
 import { todaySegments } from '../logic/today'
 import type { TriagePatch } from '../logic/triage'
@@ -59,7 +59,7 @@ export function Today() {
   const openTask = rows.find((t) => t.id === openId)
 
   const [error, setError] = useState<string | null>(null)
-  const singleKeys = useShortcutsEnabled()
+  const keys = useKeyTable(TODAY_KEYS)
   const actions = useTaskActions(setError)
   const [savedId, setSavedId] = useSavedFlash()
 
@@ -87,13 +87,11 @@ export function Today() {
   // leaves the page, `focus` moves it on again.
   const focusRow = (id: TaskId) =>
     queueMicrotask(() => document.querySelector<HTMLElement>(`[data-today-row="${id}"]`)?.focus())
-  const onRowKeyDown = (e: KeyboardEvent, t: TodayTaskResponse) => {
-    // `s` and `x` are single-key shortcuts, so they answer to the same off switch as `/` and `f`.
-    const next = singleKeys ? statusForKey(e, t.status) : null
-    if (!next) return
-    e.preventDefault()
-    setStatus(t.id, next)
-  }
+  const onRowKeyDown = (e: KeyboardEvent, t: TodayTaskResponse) =>
+    keys(
+      e,
+      statusActions(t.status, (next) => setStatus(t.id, next)),
+    )
 
   const closeDetail = () => {
     const id = openId

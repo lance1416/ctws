@@ -1,48 +1,36 @@
-import type { HelpSection } from '../contract'
-import { useRegistry, type Registry } from '../registry'
+import { singleKeysOf } from '../../platform/keyboard/keyTable'
+import { useRegistry } from '../registry'
 import { setShortcutsEnabled, useShortcutsEnabled } from '../../platform/keyboard/enabled'
 import { JUMP_PREFIX } from './chords'
 import { Modal } from '../../platform/ui/Modal'
-
-/** The `?` overlay's keys, grouped by where they work. */
-const groups = (registry: Registry): HelpSection[] => [
-  {
-    title: 'Anywhere',
-    keys: [
-      ['/', 'Jump to the capture box'],
-      ['f', 'Search, or go to a page'],
-      ['?', 'This list of shortcuts'],
-      // From the key table, so a module cannot add a chord this list does not show.
-      ...registry.chords.map((c) => [`${JUMP_PREFIX} ${c.key}`, c.label] as const),
-      ['Esc', 'Close the pane or overlay'],
-    ],
-  },
-  ...registry.help,
-]
 
 /** "a, b and c". */
 const listed = (items: readonly string[]): string =>
   items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`
 
+/** The prefix is said as what it starts. */
+const spoken = (key: string) => (key === JUMP_PREFIX ? `the ${JUMP_PREFIX} chords` : key)
+
 export function ShortcutHelp({ onClose }: { onClose: () => void }) {
   const enabled = useShortcutsEnabled()
   const registry = useRegistry()
+  const tables = [registry.anywhere, ...registry.keys]
 
   return (
     <Modal title="Keyboard shortcuts" onClose={onClose}>
       <div className="px-5 py-4">
-        {groups(registry).map((group) => (
-          <section key={group.title} className="mt-4 first:mt-0">
-            <h3 className="text-sm font-semibold text-ink-muted">{group.title}</h3>
+        {tables.map((table) => (
+          <section key={table.title} className="mt-4 first:mt-0">
+            <h3 className="text-sm font-semibold text-ink-muted">{table.title}</h3>
             <dl className="mt-1">
-              {group.keys.map(([key, what]) => (
-                <div key={`${group.title}-${key}`} className="flex items-baseline gap-3 py-0.5">
+              {table.rows.map(({ keys, does }) => (
+                <div key={`${table.title}-${keys}`} className="flex items-baseline gap-3 py-0.5">
                   <dt className="w-[14ch] shrink-0">
                     <kbd className="rounded border border-rule-strong px-1.5 text-xs leading-5 text-ink-muted">
-                      {key}
+                      {keys}
                     </kbd>
                   </dt>
-                  <dd className="text-sm text-ink">{what}</dd>
+                  <dd className="text-sm text-ink">{does}</dd>
                 </div>
               ))}
             </dl>
@@ -60,10 +48,8 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
           <span>
             Single-key shortcuts
             <span className="block text-ink-muted">
-              With this off,{' '}
-              {listed(['/', 'f', '?', `the ${JUMP_PREFIX} chords`, ...registry.bareKeys])} stop
-              responding. Arrow keys, Enter, Esc and the Alt combinations are unaffected. This
-              browser only.
+              With this off, {listed(singleKeysOf(tables).map(spoken))} stop responding. Arrow keys,
+              Enter, Esc and the Alt combinations are unaffected. This browser only.
             </span>
           </span>
         </label>

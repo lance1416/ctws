@@ -5,9 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useRegistry } from '../registry'
 import type { CaptureTarget } from '../contract'
-import { useShortcutsEnabled } from '../../platform/keyboard/enabled'
-import { isBareKey, isTypingTarget } from '../../platform/keyboard/keys'
-import { isOverlayOpen } from '../../platform/keyboard/overlayState'
+import { useDocumentKeys } from '../../platform/keyboard/keyTable'
 import { useInlineEdit } from '../../platform/ui/useInlineEdit'
 import { textbox } from '../../platform/ui/formStyles'
 import { LAYER } from '../../platform/ui/layers'
@@ -22,7 +20,6 @@ export function QuickCapture() {
   // show twice wherever that task is also listed.
   const [landed, setLanded] = useState<CaptureTarget | null>(null)
   const { pathname } = useLocation()
-  const shortcuts = useShortcutsEnabled()
   useEffect(() => setLanded(null), [pathname])
   const input = useRef<HTMLInputElement>(null)
 
@@ -61,17 +58,7 @@ export function QuickCapture() {
   }
   const lineKeys = useInlineEdit({ onCommit: submit })
 
-  useEffect(() => {
-    if (!shortcuts) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== '/' || !isBareKey(e)) return
-      if (isTypingTarget(e.target) || isOverlayOpen()) return
-      e.preventDefault()
-      input.current?.focus()
-    }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [shortcuts])
+  useDocumentKeys(registry.anywhere, { capture: () => input.current?.focus() })
 
   return (
     // Messages pop under the box, so typing never moves anything in the header.

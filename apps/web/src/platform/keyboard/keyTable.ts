@@ -1,0 +1,114 @@
+import { useEffect, useEffectEvent } from 'react'
+import { useShortcutsEnabled } from './enabled'
+import { isBareKey, isTypingTarget } from './keys'
+import { isOverlayOpen } from './overlayState'
+
+/**
+ * A key table: each row is one line of the keyboard help, the presses that do it, and the action
+ * each runs. A handler for the action is bound where the action can run; the help reads the same
+ * rows. A press is written `x`, `?`, `Enter`, `Shift+Enter`, `Alt+ArrowUp`: modifiers in the order
+ * Ctrl, Meta, Alt, Shift, and a character never names Shift, which is already in it.
+ */
+type KeyRow<A extends string = string> = {
+  /** How the help writes the keys. */
+  keys: string
+  /** What the help says they do. */
+  does: string
+  /** Each press and its action. Empty for a key told here but handled by the browser or a layer. */
+  presses: Partial<Record<string, A>>
+}
+
+export type KeyTable<A extends string = string> = {
+  /** Where the keys work: the help's heading for them. */
+  title: string
+  rows: readonly KeyRow<A>[]
+}
+
+/** The fields of a key event a press is read from. */
+type KeyLike = Pick<KeyboardEvent, 'key' | 'altKey' | 'ctrlKey' | 'metaKey' | 'shiftKey'>
+
+/** The event as a table writes it. */
+export function pressOf(e: KeyLike): string {
+  const held = [
+    e.ctrlKey && 'Ctrl',
+    e.metaKey && 'Meta',
+    e.altKey && 'Alt',
+    e.shiftKey && [...e.key].length > 1 && 'Shift',
+  ].filter((m) => m !== false)
+  return [...held, e.key].join('+')
+}
+
+/** A character with nothing held: the kind of key the off switch silences. */
+export const isSingleKey = (press: string): boolean => [...press].length === 1
+
+/** The action the table gives a press, the first row's that names it. */
+export function actionOf<A extends string>(table: KeyTable<A>, press: string): A | null {
+  for (const row of table.rows) {
+    const action = row.presses[press]
+    if (action) return action
+  }
+  return null
+}
+
+/** Every single key the tables answer, once each, in table order. */
+export function singleKeysOf(tables: readonly KeyTable[]): string[] {
+  const presses = tables.flatMap((t) => t.rows.flatMap((r) => Object.keys(r.presses)))
+  return [...new Set(presses.filter(isSingleKey))]
+}
+
+/** What runs an action. Returning false declines the press, which then keeps its default. */
+export type Handlers<A extends string, E> = Partial<Record<A, (e: E) => void | false>>
+
+/** Runs the press's action if this table has one and a handler is bound; true when it ran. */
+function run<A extends string, E extends KeyLike & { preventDefault: () => void }>(
+  table: KeyTable<A>,
+  handlers: Handlers<A, E>,
+  e: E,
+): boolean {
+  const action = actionOf(table, pressOf(e))
+  const handler = action ? handlers[action] : undefined
+  if (!handler || handler(e) === false) return false
+  e.preventDefault()
+  return true
+}
+
+/**
+ * A key handler for one element, from its table, taking the actions' handlers per event (a row's
+ * depend on the row). Single keys answer only while the off switch is on; arrows, Enter and the
+ * modified presses always do.
+ */
+export function useKeyTable<A extends string>(
+  table: KeyTable<A>,
+): <E extends KeyLike & { preventDefault: () => void }>(e: E, handlers: Handlers<A, E>) => void {
+  const singleKeys = useShortcutsEnabled()
+  return (e, handlers) => {
+    if (!singleKeys && isSingleKey(pressOf(e))) return
+    run(table, handlers, e)
+  }
+}
+
+/**
+ * The page-wide single keys of a table, bound while the caller is mounted. Every such key obeys the
+ * same four guards: the off switch, not while typing, nothing held but Shift, and no open overlay.
+ * `claim` sees a press that passed them first; `skipped` hears one that did not.
+ */
+export function useDocumentKeys<A extends string>(
+  table: KeyTable<A>,
+  handlers: Handlers<A, KeyboardEvent>,
+  { claim, skipped }: { claim?: (e: KeyboardEvent) => boolean; skipped?: () => void } = {},
+): void {
+  const enabled = useShortcutsEnabled()
+  const onKey = useEffectEvent((e: KeyboardEvent) => {
+    if (isTypingTarget(e.target) || !isBareKey(e) || isOverlayOpen()) {
+      skipped?.()
+      return
+    }
+    if (claim?.(e)) return
+    run(table, handlers, e)
+  })
+  useEffect(() => {
+    if (!enabled) return
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [enabled])
+}

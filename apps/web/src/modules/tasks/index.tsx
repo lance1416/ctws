@@ -12,6 +12,7 @@ import { OpenTaskCount, TaskStatusLine, TodayCount } from './components/TaskKind
 import { TodayDate, TodayGlance } from './components/TodayGlance'
 import { useInboxCapture, useTaskEntries, useTaskHits } from './hooks/contributions'
 import { TASKS_ID, taskPage } from './logic/id'
+import { TASK_KEYS } from './logic/keys'
 import { openTasksOf } from './logic/openTasks'
 import { OpenTask } from './pages/OpenTask'
 import { Review } from './pages/Review'
@@ -101,39 +102,7 @@ export const taskModule: WorkspaceModule = {
       return tasks.length === 0 ? null : `${tasks.length} tasks`
     },
   },
-  // `n` on a project page; `s`, `x`, `j` and `k` on a focused row.
-  bareKeys: ['n', 's', 'x', 'j', 'k'],
-  help: [
-    // `n` needs a project to create into, so it exists only on a project page.
-    { title: 'On a project page', keys: [['n', 'Open the New dialog']] },
-    {
-      title: 'In the task tree (with a row focused)',
-      keys: [
-        ['↑ ↓ / j k', 'Move between rows'],
-        [
-          '← →',
-          'Collapse / expand (once collapsed, ← goes to the parent; once expanded, → goes to the first child)',
-        ],
-        ['Home End', 'First row / last row'],
-        ['Tab', 'Leave the tree (the whole tree is one tab stop)'],
-        ['Enter', 'Open the details'],
-        ['Shift+Enter', 'Add a sibling'],
-        ['Alt+Enter', 'Add a subtask'],
-        ['Alt+↑ Alt+↓', 'Move this row up / down'],
-        ['Alt+← Alt+→', 'Outdent / indent'],
-        ['s', 'Start / pause'],
-        ['x', 'Complete / reopen'],
-      ],
-    },
-    {
-      title: 'On Today (with a row focused)',
-      keys: [
-        ['s', 'Start / pause'],
-        ['x', 'Complete / reopen'],
-        ['Enter', 'Open the details'],
-      ],
-    },
-  ],
+  keys: TASK_KEYS,
   // No page of its own: a task's address opens its tree, where its parent and siblings are.
   relations: [{ type: 'task', kind: 'Task', to: taskPage }],
 }
