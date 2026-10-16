@@ -1,11 +1,16 @@
 import type {
+  LinkEdge,
   LinksResponse,
   MeetingSeries,
   PersonResponse,
   ReadingItemResponse,
+  WorkspaceId,
 } from '@ctws/contracts'
-import { sql } from 'drizzle-orm'
+import { type SQL, sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
+import type { Actor } from '../../src/platform/db/scope'
+import { addLink } from '../../src/shell/links/store'
+import { links } from '../../src/shell/links/tables'
 import { setupWith, type Harness, web, secondUser } from '../helpers/harness'
 import { createProject, createMeeting, createPerson, createReading } from '../helpers/builders'
 
@@ -196,5 +201,47 @@ describe('one object, several kinds of edge', () => {
       headers: web(ctx),
     })
     expect((unfiled.json() as { reading: ReadingItemResponse[] }).reading).toHaveLength(1)
+  })
+})
+
+describe('adding a link that is there', () => {
+  it('adds it anew when it goes between finding it there and reading it back', async () => {
+    const ctx = await setup('race@example.com')
+    const a = await createPerson(ctx, { name: '甲' })
+    const b = await createPerson(ctx, { name: '乙' })
+    const { workspaceId } = (
+      await ctx.app.inject({ method: 'GET', url: '/api/v1/auth/me', headers: ctx.authed })
+    ).json() as { workspaceId: WorkspaceId }
+    const edge = {
+      workspaceId,
+      now: new Date(),
+      from: { type: 'person', id: a.id },
+      to: { type: 'person', id: b.id },
+      kind: 'about',
+    } as Actor & LinkEdge
+    await addLink(ctx.db, edge)
+
+    // Another request deletes the edge after this insert found it and before the read-back.
+    let raced = false
+    const racing = new Proxy(ctx.db, {
+      get(db, key, receiver) {
+        if (key !== 'select' || raced) return Reflect.get(db, key, receiver)
+        raced = true
+        return (...cols: Parameters<typeof db.select>) => ({
+          from: (table: typeof links) => ({
+            where: async (where: SQL) => {
+              await db.execute(sql`delete from links`)
+              return db
+                .select(...cols)
+                .from(table)
+                .where(where)
+            },
+          }),
+        })
+      },
+    })
+    const again = await addLink(racing, edge)
+    expect(raced).toBe(true)
+    expect(again.created).toBe(true)
   })
 })
