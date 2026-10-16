@@ -556,3 +556,43 @@ test('renaming a series keeps the week that was moved on its own', async ({ page
     .meetings
   expect(held.map((m) => [m.title, m.startsLocal])).toEqual([['Sync, renamed', `${later}T15:00`]])
 })
+
+test('renaming the first half of a split series keeps its moved week and its end', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const day = dayOffset(1)
+  const moved = addDaysYmd(day, 7)
+  const split = addDaysYmd(day, 14)
+  const made = await apiPost(page, '/meetings', {
+    title: 'Sync',
+    startsLocal: `${day}T09:00`,
+    timeZone: await accountZone(page),
+    durationMinutes: 30,
+    rrule: `FREQ=WEEKLY;BYDAY=${weekdayCode(day)}`,
+  })
+  const edit = async (data: object) => {
+    const res = await page.request.patch(`/api/v1/meetings/${made.meetingId}`, {
+      headers: WEB,
+      data,
+    })
+    expect(res.ok(), await res.text()).toBe(true)
+  }
+  await edit({ startsLocal: `${moved}T15:00`, scope: 'one', recurrenceId: `${moved}T09:00` })
+  await edit({ title: 'Sync, later', scope: 'following', recurrenceId: `${split}T09:00` })
+
+  await page.goto(`/meetings/${made.meetingId}`)
+  await editDetail(page)
+  await pane(page).getByLabel('Title').fill('Sync, renamed')
+  await pane(page).getByRole('button', { name: 'Save' }).click()
+  await expect(pane(page).getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
+
+  const on = async (d: string) => {
+    const res = await page.request.get(`/api/v1/meetings?from=${d}&to=${d}`, { headers: WEB })
+    return ((await res.json()) as { meetings: { title: string; startsLocal: string }[] }).meetings
+      .map((m) => [m.title, m.startsLocal])
+      .sort()
+  }
+  expect(await on(moved)).toEqual([['Sync, renamed', `${moved}T15:00`]])
+  expect(await on(split)).toEqual([['Sync, later', `${split}T09:00`]])
+})
