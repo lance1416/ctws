@@ -13,6 +13,7 @@ import type { Queryable } from '../../../platform/db/client'
 import { rowsOf } from '../../../platform/db/raw'
 import { scoped } from '../../../platform/db/scope'
 import { sqlValues } from '../../../platform/db/sql'
+import { InvertedWindowError } from '../errors'
 import { taskEvents } from '../tables'
 import { localNow } from '../../../platform/db/time'
 import { visibleTasks } from './scope'
@@ -67,6 +68,8 @@ export async function listReview(
       (${toLocal})::date - 1 as to_day
   `)
   const edge = rowsOf(bounds, boundsRow)[0]!
+  // The contract compares two given ends; an end left to default is only known here.
+  if (edge.from_day > edge.to_day) throw new InvertedWindowError()
 
   const result = await q.execute(sql`
     with bounds as (
