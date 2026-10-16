@@ -25,8 +25,6 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER:-ctws}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}@postgres:5432/${POSTGRES_DB:-ctws}
       AUTH_REGISTRATION: closed
       COOKIE_SECURE: 'true'
-      COOKIE_SAMESITE: lax
-      CORS_ORIGINS: ''
       # Per-minute cap on auth endpoints; the app defaults to 20 when unset. Raise it if a shared
       # tunnel IP trips it (DEPLOY.md section 4).
       AUTH_RATE_LIMIT_MAX: ${AUTH_RATE_LIMIT_MAX:-20}

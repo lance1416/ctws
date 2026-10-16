@@ -56,10 +56,9 @@ with a reason, and the fold it opened is put back.
 
 A task can wait on another. A blocked task says in the list what it is waiting for.
 
-A parent shows the whole subtree rolled up: progress, how many tasks sit in each status, how many
-are overdue, how many are due soon, and when anything under it last moved. Backlog and cancelled
-tasks are left out of progress — "not counted" and "nothing done" are different answers. A leaf can
-carry a progress figure you set by hand.
+A parent shows the whole subtree rolled up: progress, how many tasks are in progress and how many
+are overdue. Backlog and cancelled tasks are left out of progress — "not counted" and "nothing
+done" are different answers.
 
 A project's tasks can be read as a tree or as a board by status. Which view you chose is in the
 address, so a reload and a shared link both land where you were. New tasks are typed straight into
@@ -162,8 +161,8 @@ design that works only because the thing is a task has mistaken a part for the w
 
 ## Accounts
 
-Sign in with an email and a password. Three roles — admin, maintainer, member — and an admin can
-create accounts and disable them. One person's data is never visible to another.
+Sign in with an email and a password. An admin can create accounts and disable them;
+everyone else is a member. One person's data is never visible to another.
 
 Each account has its own time zone, and every "today", "this week" and date is counted in it rather
 than the server's. When the server cannot be reached the app says so and says your session is fine,

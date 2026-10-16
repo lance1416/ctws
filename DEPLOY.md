@@ -45,7 +45,7 @@ echo "$GHCR_TOKEN" | docker login ghcr.io -u <owner> --password-stdin
 ```
 
 The compose file fixes the production app settings: `AUTH_REGISTRATION=closed`,
-`COOKIE_SECURE=true`, `COOKIE_SAMESITE=lax`, no CORS origins. The one exception is
+`COOKIE_SECURE=true`. The one exception is
 `AUTH_RATE_LIMIT_MAX` (requests per minute on the auth endpoints, default `20`): the compose file
 passes it through from the production env file, so set it there if a shared tunnel address trips
 the limit.
@@ -59,9 +59,6 @@ first account created becomes the instance admin. Once any user exists, `closed`
 The first-run race: while the user table is empty, whoever reaches the instance first becomes
 admin. Do not expose a fresh instance publicly before you have registered. For example, register
 through `http://127.0.0.1:3000` on the host before pointing the tunnel at it (section 4).
-
-Instances deployed before roles existed are migrated automatically: the earliest existing user
-is promoted to admin.
 
 ## 2. Deploy
 

@@ -30,7 +30,7 @@ docker compose up -d --build --wait api  # app and API on http://localhost:3000
 ```
 
 Two dev servers (hot reload): Vite serves the web app and proxies `/api` to the API, so this is
-same-origin as well and needs no CORS.
+same-origin as well.
 
 ```sh
 docker compose up -d --wait postgres
@@ -44,7 +44,6 @@ The compose API container does not migrate: run `db:migrate` against a fresh vol
 for anything that is not local dev. For plain-http local use set `COOKIE_SECURE=false`.
 
 `WEB_DIST` (set by the image) makes the API serve the web build; unset, it is API only.
-`CORS_ORIGINS` and `VITE_API_BASE` are only needed for a split (cross-origin) deployment.
 
 ## Checks
 

@@ -26,9 +26,8 @@ services:
       # Inside compose the database host is the postgres service, not localhost;
       # this overrides the value from env_file (which stays valid for host tooling).
       DATABASE_URL: postgres://${POSTGRES_USER:-ctws}:${POSTGRES_PASSWORD:-ctws}@postgres:5432/${POSTGRES_DB:-ctws}
-      # The e2e suite registers a few hundred users a minute; no production
-      # value should allow that, so the DEV stack raises it rather than the default being wrong.
-      # `compose.prod.yaml` leaves it at the shipped 60.
+      # The e2e suite registers a few hundred users a minute, so this stack raises the
+      # instance-wide sign-in ceiling; `compose.prod.yaml` leaves it at the default.
       AUTH_CEILING: ${AUTH_CEILING:-100000}
       # 出站抓取默认开着 —— 这套栈就是日常在用的那一个。要整个关掉（一个出站请求都不发）
       # 就 READING_UNFURL=false。e2e 不靠这个开关：那些用例粘的是 .invalid 的地址，永远解析不出来。

@@ -20,7 +20,7 @@ jobs:
       - run: pnpm test
       - run: pnpm build
       # The production compose file's knobs are not reachable from any test: they are strings
-      # that only mean something once Docker has interpolated them (D39). This renders it and
+      # that only mean something once Docker has interpolated them. This renders it and
       # checks the two that matter -- the one that is overridable, and the one whose default is
       # the security control it is (guards.ts's ceiling is NOT raised in production).
       - name: compose.prod.yaml renders its auth limits
@@ -81,8 +81,7 @@ jobs:
 
   # THE IMAGE IS PUBLISHED ONLY FROM A COMMIT WHOSE SUITE PASSED, which is why this job lives in
   # the test workflow instead of a `release.yml` of its own. A second workflow on the same tag push
-  # cannot see this one's result: it races the suite and wins, and that is how every release from
-  # v0.8.0 to v0.17.0 was published with two e2e tests failing. `needs` is a gate that cannot be
+  # cannot see this one's result: it races the suite and can win. `needs` is a gate that cannot be
   # forgotten.
   image:
     if: startsWith(github.ref, 'refs/tags/v')
