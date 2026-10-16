@@ -1,7 +1,7 @@
 import type { TaskResponse, TaskStatus } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { NoteBody } from '../../../platform/notes/NoteBody'
-import { dayPhrase, todayIn, ymd } from '../../../platform/time/dates'
+import { dayPhrase, todayIn } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { BUTTON } from '../../../platform/ui/buttonStyles'
 import { DetailHead } from '../../../platform/ui/DetailPane'
@@ -11,7 +11,7 @@ import { LinkedSection } from '../../../shell/links/Links'
 import { useEveryProject } from '../../../shell/projects/api'
 import { ProjectChip } from '../../../shell/projects/ProjectPicker'
 import { patchTask } from '../api/tasks'
-import { instantPhrase, overdueLabel } from '../dueDates'
+import { instantPhrase, lateNote } from '../dueDates'
 import { Dependencies } from './Dependencies'
 import { StatusPicker } from './StatusPicker'
 import { DeadlineMark, PlanMark } from './TaskRowParts'
@@ -39,12 +39,14 @@ export function TaskReading({
     meta: { awaits: WRITE_AWAITS },
   })
 
-  // A deadline whose day has gone says how late, in the row's words and `missed` colour.
-  const dueOverdue = task.dueAt !== null && ymd(new Date(task.dueAt), timeZone) < today
+  // A deadline whose day has gone says how late, in the row's words and `missed` colour; a
+  // finished task is never late, as on its row.
+  const late = lateNote(task, timeZone, now)
+  const dueOverdue = late !== null
   const dueReading = (() => {
     if (!task.dueAt) return null
     const exact = instantPhrase(task.dueAt, today, timeZone)
-    return dueOverdue ? `${exact} · ${overdueLabel(task.dueAt, timeZone, now)}` : exact
+    return late ? `${exact} · ${late}` : exact
   })()
   const planReading = task.scheduledOn ? dayPhrase(task.scheduledOn, today) : null
 

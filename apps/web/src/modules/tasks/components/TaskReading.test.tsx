@@ -56,4 +56,39 @@ describe('TaskReading', () => {
     )
     expect(html).toContain('收起来的')
   })
+
+  it.each(['done', 'cancelled'] as const)('does not call a %s task late', (status) => {
+    const html = renderToStaticMarkup(
+      <QueryClientProvider client={new QueryClient()}>
+        <RegistryProvider value={registry}>
+          <MemoryRouter>
+            <TaskReading
+              task={{ ...task, status, dueAt: '2020-01-01T12:00:00Z' }}
+              onEdit={() => {}}
+              onClose={() => {}}
+            />
+          </MemoryRouter>
+        </RegistryProvider>
+      </QueryClientProvider>,
+    )
+    expect(html).not.toContain('late')
+    expect(html).not.toContain('text-missed')
+  })
+
+  it('still calls an open task late', () => {
+    const html = renderToStaticMarkup(
+      <QueryClientProvider client={new QueryClient()}>
+        <RegistryProvider value={registry}>
+          <MemoryRouter>
+            <TaskReading
+              task={{ ...task, status: 'todo', completedAt: null, dueAt: '2020-01-01T12:00:00Z' }}
+              onEdit={() => {}}
+              onClose={() => {}}
+            />
+          </MemoryRouter>
+        </RegistryProvider>
+      </QueryClientProvider>,
+    )
+    expect(html).toContain('late')
+  })
 })
