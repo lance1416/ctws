@@ -68,6 +68,11 @@ pnpm --filter @ctws/api test         # integration; needs Docker (Testcontainers
 pnpm --filter @ctws/web test         # unit
 ```
 
+API tests make their data through the builders in `apps/api/tests/helpers/builders.ts`, one per
+entity, and a second account through `secondUser` in `harness.ts`. E2e specs share
+`apps/web/e2e/helpers.ts`: each test registers its own user over the API (`registerFreshUser`),
+and only `auth.spec.ts` goes through the sign-up form.
+
 ### End-to-end (Playwright)
 
 The e2e runs against the real image, same-origin: the API container serves the built web app and
