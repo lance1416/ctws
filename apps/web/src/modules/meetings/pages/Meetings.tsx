@@ -1,18 +1,12 @@
-import {
-  idFrom,
-  meetingId,
-  occurrenceKey,
-  type MeetingId,
-  type MeetingOccurrence,
-} from '@ctws/contracts'
+import { occurrenceKey, type MeetingOccurrence } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { Fragment, useState, type ReactNode } from 'react'
 import { useForgetWhenGone } from '../../../shell/search'
 import { GoneNotice } from '../../../shell/detail'
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { meetingsQuery, occurrenceQuery, repeatLabel, seriesQuery } from '../api'
+import { meetingsQuery, repeatLabel } from '../api'
 import { EmptyState } from '../../../platform/ui/EmptyState'
-import { MeetingDetail } from '../components/MeetingDetail'
+import { OccurrencePane } from '../components/OccurrencePane'
+import { useOpenOccurrence } from '../hooks/useOpenOccurrence'
 import { NewMeetingDialog } from '../components/NewMeetingDialog'
 import {
   BODY_GUTTER,
@@ -52,9 +46,6 @@ function nextOfEach(rows: readonly MeetingOccurrence[], now: Date): MeetingOccur
 /** How far either way the two sections reach. */
 const WINDOW_DAYS = 31
 
-/** An occurrence by its two ids: a series has many, so its id alone does not name one. */
-type Occurrence = { meetingId: MeetingId; recurrenceId: string }
-
 /** One row per series, showing its next occurrence; coming up first, the past behind a toggle. */
 export function Meetings() {
   const accountZone = useTimeZone()
@@ -62,19 +53,6 @@ export function Meetings() {
   const today = ymd(now, accountZone)
   const [making, setMaking] = useState(false)
   const [showPast, setShowPast] = useState(false)
-  // The open meeting is in the address as `/meetings/<id>?at=<occurrence>`. Without `at` the link
-  // names only the series, so it opens the series' next occurrence.
-  const { id } = useParams()
-  const openId = id === undefined ? null : idFrom(meetingId, id)
-  const at = useSearchParams()[0].get('at')
-  const navigate = useNavigate()
-  const setOpen = (next: Occurrence | null, options?: { replace: boolean }) =>
-    navigate(
-      next
-        ? `/meetings/${next.meetingId}?${new URLSearchParams({ at: next.recurrenceId })}`
-        : '/meetings',
-      options,
-    )
 
   const ahead = useQuery(meetingsQuery({ from: today, to: addDays(today, WINDOW_DAYS) }))
   const behind = useQuery({
@@ -86,37 +64,20 @@ export function Meetings() {
   // Reversed, so the most recent of each series is the one shown.
   const past = nextOfEach([...(behind.data ?? [])].reverse(), now)
   // A named occurrence is any of the listed ones, not only the row's: today's stays open after it
-  // ends and the row moves on to tomorrow's.
-  const listed =
-    at === null
-      ? [...coming, ...past].find((m) => m.meetingId === openId)
-      : [...(ahead.data ?? []), ...(behind.data ?? [])].find(
-          (m) => m.meetingId === openId && m.recurrenceId === at,
-        )
-  // Asked for only once the list is in and does not have it.
-  const missing = openId !== null && ahead.isSuccess && !listed
-  const one = useQuery({
-    ...occurrenceQuery(openId, at ?? ''),
-    enabled: missing && at !== null,
+  // ends and the row moves on to tomorrow's. Without `at` the link names only the series.
+  const open = useOpenOccurrence({
+    where: 'page',
+    listed: ({ meetingId, at }) =>
+      at === null
+        ? [...coming, ...past].find((m) => m.meetingId === meetingId)
+        : [...(ahead.data ?? []), ...(behind.data ?? [])].find(
+            (m) => m.meetingId === meetingId && m.recurrenceId === at,
+          ),
+    ready: ahead.isSuccess,
+    today,
   })
-  const far = useQuery({ ...seriesQuery(openId, today), enabled: missing && at === null })
-  const fetched = at === null ? far : one
-  const found = listed ?? fetched.data ?? null
-  const gone = openId !== null && !found && fetched.isSuccess
   // One occurrence gone is not the series gone, so only a series is forgotten.
-  useForgetWhenGone('meeting', openId, gone && at === null)
-  // While the address's occurrence is looked up, the pane keeps the one it showed: a save that
-  // moves a meeting renames it, and the pane must not close in between. Only that occurrence, or
-  // the one a save moved it to: a jump to another meeting must not show the last one meanwhile.
-  const [shown, setShown] = useState<MeetingOccurrence | null>(null)
-  const [movedTo, setMovedTo] = useState<Occurrence | null>(null)
-  if (found && found !== shown) setShown(found)
-  if (openId === null && shown) setShown(null)
-  const named = (o: Occurrence | null) =>
-    o !== null && o.meetingId === openId && (at === null || o.recurrenceId === at)
-  if (found && named(movedTo)) setMovedTo(null)
-  const kept = named(shown) || named(movedTo) ? shown : null
-  const pane = openId === null || gone ? null : (found ?? kept)
+  useForgetWhenGone('meeting', open.named?.meetingId ?? null, open.gone && open.named?.at === null)
 
   return (
     <>
@@ -144,7 +105,7 @@ export function Meetings() {
             today={today}
             now={now}
             accountZone={accountZone}
-            onOpen={setOpen}
+            onOpen={open.show}
           />
         )}
 
@@ -167,7 +128,7 @@ export function Meetings() {
                   today={today}
                   now={now}
                   accountZone={accountZone}
-                  onOpen={setOpen}
+                  onOpen={open.show}
                 />
               </div>
             ))}
@@ -180,24 +141,13 @@ export function Meetings() {
           onMade={(made) => {
             setMaking(false)
             // Straight into the pane, where what the form cannot hold (a note, a place) is edited.
-            setOpen(made)
+            open.show(made)
           }}
         />
       )}
-      {pane && (
-        <MeetingDetail
-          key={occurrenceKey(pane)}
-          meeting={pane}
-          accountZone={accountZone}
-          onClose={() => setOpen(null)}
-          onMoved={(moved) => {
-            setMovedTo(moved)
-            setOpen(moved, { replace: true })
-          }}
-        />
-      )}
+      <OccurrencePane open={open} />
       {/* Gone, or cancelled. */}
-      {gone && <GoneNotice kind="meeting" />}
+      {open.gone && <GoneNotice kind="meeting" />}
     </>
   )
 }
@@ -216,7 +166,7 @@ function Days({
   today: string
   now: Date
   accountZone: string
-  onOpen: (at: Occurrence) => void
+  onOpen: (meeting: MeetingOccurrence) => void
 }) {
   const named = new Intl.DateTimeFormat('en-US', {
     timeZone: accountZone,
@@ -285,7 +235,7 @@ function MeetingRow({
   today: string
   now: Date
   accountZone: string
-  onOpen: (at: Occurrence) => void
+  onOpen: (meeting: MeetingOccurrence) => void
 }) {
   const over = new Date(m.endsAt).getTime() <= now.getTime()
   const join = meetingLink(m.location)

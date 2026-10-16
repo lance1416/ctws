@@ -65,7 +65,7 @@ type CalendarProvider = {
   label: string
   /** A hook: the module's entries for an inclusive day range, as the shell draws them. */
   useEntries: (range: { from: string; to: string }) => { entries: ShownEntry[]; isError: boolean }
-  Detail?: CalendarContribution['Detail']
+  opens?: CalendarContribution['opens']
 }
 
 /** One entry's name on a grid: which thing, which date of it, and which occurrence. */
@@ -77,7 +77,7 @@ function calendarProvider(moduleId: string, c: CalendarContribution): CalendarPr
   return {
     moduleId,
     label: c.label,
-    ...(c.Detail ? { Detail: c.Detail } : {}),
+    ...(c.opens ? { opens: c.opens } : {}),
     useEntries: function useShownEntries(range) {
       const { entries, isError } = c.useEntries(range)
       return { isError, entries: entries.map((e) => ({ ...e, ...c.show(e), key: entryKey(e) })) }

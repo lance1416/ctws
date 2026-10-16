@@ -1,6 +1,6 @@
 import { kindPage } from '../../shell/layout'
 import type { WorkspaceModule } from '../../shell/contract'
-import { CalendarDetail } from './components/CalendarDetail'
+import { CalendarOccurrence } from './components/OccurrencePane'
 import { MeetingsTodayCount, NextMeetingLine } from './components/MeetingsKind'
 import { MeetingsAside, TodayMeetings } from './components/TodayMeetings'
 import { useMeetingEntries } from './hooks/contributions'
@@ -47,7 +47,11 @@ export const meetingModule: WorkspaceModule = {
       to: '/calendar',
       label: e.zone ? `meeting · ${e.zone} ${e.zoneTime}` : 'Meetings',
     }),
-    Detail: CalendarDetail,
+    // Clicked, it opens in a pane over the grid, named in the address like the Meetings page's.
+    opens: {
+      params: (e) => ({ meeting: e.id, at: e.recurrenceId ?? '' }),
+      Pane: CalendarOccurrence,
+    },
   },
   widgets: [
     {

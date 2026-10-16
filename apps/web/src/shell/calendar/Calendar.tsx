@@ -1,7 +1,7 @@
 import type { ProjectId } from '@ctws/contracts'
 import type { ShownEntry } from '../contract'
 import { useState, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useViewParam, ViewTabs } from '../../platform/ui/ViewTabs'
 import { useQuery } from '@tanstack/react-query'
 import { calendarDaysQuery } from './api'
@@ -25,7 +25,7 @@ export function Calendar() {
   const timeZone = useTimeZone()
   const today = ymd(useNow(), timeZone)
   const [cursor, setCursor] = useState(today)
-  const [open, setOpen] = useState<{ moduleId: string; entry: ShownEntry } | null>(null)
+  const setParams = useSearchParams()[1]
   const rail = useProjectRail()
   const projects = useEveryProject()
 
@@ -152,39 +152,48 @@ export function Calendar() {
                   )}
                 </div>
                 <ul className="flex flex-col">
-                  {entries.slice(0, PER_SQUARE).map((entry) => (
-                    <li key={entry.key} className="min-w-0">
-                      <EntryLink
-                        entry={entry}
-                        onOpen={() => setOpen({ moduleId: entry.moduleId, entry })}
-                        opens={providers.some(
-                          (p) => p.moduleId === entry.moduleId && p.Detail !== undefined,
-                        )}
-                      >
-                        {/* Kept with no project too, so every title starts at one x. */}
-                        <span
-                          aria-hidden="true"
-                          data-entry-mark
-                          className={`h-3 w-[3px] shrink-0 ${
-                            entry.projectId ? rail(entry.projectId) : ''
-                          }`}
-                        />
-                        {entry.time && (
-                          <span className="shrink-0 text-xs tabular-nums text-ink-muted">
-                            {entry.time}
-                          </span>
-                        )}
-                        <span className="truncate text-xs text-ink">{entry.title}</span>
-                        {entry.projectName && (
-                          <span className="sr-only">, {entry.projectName}</span>
-                        )}
-                        {/* The zone it was agreed in, when that differs from the account's. */}
-                        {entry.zone && (
-                          <span className="shrink-0 text-xs text-ink-subtle">{entry.zone}</span>
-                        )}
-                      </EntryLink>
-                    </li>
-                  ))}
+                  {entries.slice(0, PER_SQUARE).map((entry) => {
+                    const opens = providers.find((p) => p.moduleId === entry.moduleId)?.opens
+                    return (
+                      <li key={entry.key} className="min-w-0">
+                        <EntryLink
+                          entry={entry}
+                          onOpen={
+                            opens &&
+                            (() =>
+                              setParams((prev) => {
+                                const out = new URLSearchParams(prev)
+                                for (const [k, v] of Object.entries(opens.params(entry)))
+                                  out.set(k, v)
+                                return out
+                              }))
+                          }
+                        >
+                          {/* Kept with no project too, so every title starts at one x. */}
+                          <span
+                            aria-hidden="true"
+                            data-entry-mark
+                            className={`h-3 w-[3px] shrink-0 ${
+                              entry.projectId ? rail(entry.projectId) : ''
+                            }`}
+                          />
+                          {entry.time && (
+                            <span className="shrink-0 text-xs tabular-nums text-ink-muted">
+                              {entry.time}
+                            </span>
+                          )}
+                          <span className="truncate text-xs text-ink">{entry.title}</span>
+                          {entry.projectName && (
+                            <span className="sr-only">, {entry.projectName}</span>
+                          )}
+                          {/* The zone it was agreed in, when that differs from the account's. */}
+                          {entry.zone && (
+                            <span className="shrink-0 text-xs text-ink-subtle">{entry.zone}</span>
+                          )}
+                        </EntryLink>
+                      </li>
+                    )
+                  })}
                   {entries.length > PER_SQUARE && (
                     <li className="px-1 text-xs text-ink-subtle">+{entries.length - PER_SQUARE}</li>
                   )}
@@ -195,11 +204,7 @@ export function Calendar() {
         </div>
       </div>
 
-      {providers.map(({ moduleId, Detail }) =>
-        Detail && open?.moduleId === moduleId ? (
-          <Detail key={moduleId} entry={open.entry} onClose={() => setOpen(null)} />
-        ) : null,
-      )}
+      {providers.map(({ moduleId, opens }) => opens && <opens.Pane key={moduleId} />)}
     </>
   )
 }
@@ -207,19 +212,17 @@ export function Calendar() {
 /** A button when the entry's module opens it here, a link when the thing lives elsewhere. */
 function EntryLink({
   entry,
-  opens,
   onOpen,
   children,
 }: {
   entry: ShownEntry
-  opens: boolean
-  onOpen: () => void
+  onOpen: (() => void) | undefined
   children: ReactNode
 }) {
   const title = [entry.label, entry.title, entry.projectName].filter(Boolean).join(' · ')
   const className =
     'flex w-full min-w-0 items-center gap-1 rounded-md px-1 py-0.5 text-left hover:bg-hover'
-  return opens ? (
+  return onOpen ? (
     <button type="button" onClick={onOpen} title={title} className={className}>
       {children}
     </button>

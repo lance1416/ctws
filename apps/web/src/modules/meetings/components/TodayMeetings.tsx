@@ -1,52 +1,16 @@
-import { type MeetingId, type MeetingOccurrence, occurrenceKey } from '@ctws/contracts'
+import { occurrenceKey } from '@ctws/contracts'
 import { clockTime } from '@ctws/core/clock'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { PanelEmpty } from '../../../platform/ui/Panel'
 import { useTimeZone } from '../../../shell/auth'
 import { useProjectRail } from '../../../shell/projects'
 import { ProjectRail } from '../../../shell/rows'
-import { meetingsQuery, occurrenceQuery } from '../api'
+import { meetingsQuery } from '../api'
 import { useTodayCount } from '../hooks/useTodaysMeetings'
-import { MeetingDetail } from './MeetingDetail'
-
-/**
- * The open occurrence, held as ids and looked up on each render so the pane follows the list's
- * refetch. A series has many occurrences, so the series id alone does not name one.
- */
-function useOpenMeeting(pool: readonly MeetingOccurrence[]) {
-  const [open, setOpen] = useState<{ meetingId: MeetingId; recurrenceId: string } | null>(null)
-  const accountZone = useTimeZone()
-  const queryClient = useQueryClient()
-  const listed = pool.find(
-    (m) => m.meetingId === open?.meetingId && m.recurrenceId === open.recurrenceId,
-  )
-  // Moved to another day, it is no longer in the pool: looked up on its own, starting from what
-  // the save gave back so the pane does not close while it is read.
-  const one = useQuery({
-    ...occurrenceQuery(open?.meetingId ?? null, open?.recurrenceId ?? ''),
-    enabled: open !== null && !listed,
-  })
-  const found = listed ?? one.data ?? null
-  const pane = found ? (
-    <MeetingDetail
-      key={occurrenceKey(found)}
-      meeting={found}
-      accountZone={accountZone}
-      onClose={() => setOpen(null)}
-      onMoved={(moved) => {
-        queryClient.setQueryData(
-          occurrenceQuery(moved.meetingId, moved.recurrenceId).queryKey,
-          moved,
-        )
-        setOpen({ meetingId: moved.meetingId, recurrenceId: moved.recurrenceId })
-      }}
-    />
-  ) : null
-  return { setOpen, pane }
-}
+import { useOpenOccurrence } from '../hooks/useOpenOccurrence'
+import { OccurrencePane } from './OccurrencePane'
 
 /** The hours the Workbench's day line spans. */
 const LINE_FROM = 8
@@ -64,7 +28,15 @@ export function TodayMeetings() {
   const day = ymd(now, accountZone)
   const meetings = useQuery(meetingsQuery({ from: day, to: day }))
   const rows = meetings.data ?? []
-  const { setOpen, pane } = useOpenMeeting(rows)
+  // Moved to another day, it is no longer among the rows and is read on its own.
+  const open = useOpenOccurrence({
+    where: 'over',
+    listed: ({ meetingId, at }) =>
+      rows.find((m) => m.meetingId === meetingId && m.recurrenceId === at),
+    ready: meetings.isSuccess,
+    today: day,
+  })
+  const pane = <OccurrencePane open={open} />
   const rail = useProjectRail()
 
   if (meetings.isError) {
@@ -189,7 +161,7 @@ export function TodayMeetings() {
               <ProjectRail projectId={m.projectId} />
               <button
                 type="button"
-                onClick={() => setOpen({ meetingId: m.meetingId, recurrenceId: m.recurrenceId })}
+                onClick={() => open.show(m)}
                 className={`min-w-0 flex-1 truncate pl-3 text-left ${past ? 'text-ink-subtle' : 'text-ink'}`}
               >
                 {m.title}

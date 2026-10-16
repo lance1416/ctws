@@ -3,7 +3,7 @@ import type { SearchHit } from '../../../shell/contract'
 import { birthdayCalendarQuery, personSearchQuery } from '../api'
 import { PEOPLE_ID } from '../logic/id'
 
-/** No `Detail`: a birthday's entry links to its person's page. */
+/** No `opens`: a birthday's entry links to its person's page. */
 export function useBirthdayEntries(range: { from: string; to: string }) {
   const result = useQuery(birthdayCalendarQuery(range))
   return { entries: result.data ?? [], isError: result.isError }

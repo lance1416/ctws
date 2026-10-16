@@ -100,8 +100,14 @@ export type CalendarContribution = {
   }
   /** Where an entry goes and the words for its date: the server says only what and which it is. */
   show: (entry: CalendarEntry) => { to: string; label: string }
-  /** What opens when an entry is clicked; without it the entry links to its `to`. */
-  Detail?: ComponentType<{ entry: ShownEntry; onClose: () => void }>
+  /**
+   * What opens over the grid when an entry is clicked: the address parameters that name it, and
+   * the pane that reads them back. Without it the entry links to its `to`.
+   */
+  opens?: {
+    params: (entry: CalendarEntry) => Record<string, string>
+    Pane: ComponentType
+  }
 }
 
 export type Widget = {
