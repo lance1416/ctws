@@ -6,9 +6,9 @@ import { ProjectRail } from '../rows/RowParts'
 import { type Item, type Linked, useLinked } from './useLinked'
 
 /** The linked things as a block per kind, each with a count and a `+`, beside a page's own block. */
-export function LinkBlocks({ of, except }: Linked) {
+export function LinkBlocks({ of, types }: Linked) {
   const registry = useRegistry()
-  const { groups, unlink, setAdding, add, unshown } = useLinked(of, except)
+  const { groups, unlink, setAdding, add, unshown } = useLinked(of, types)
   if (unshown !== undefined) return unshown
   // On a project's page every row here is linked to this project, so it wears its thread.
   const thread = of.type === 'project' ? idFrom(projectId, of.id) : null

@@ -150,8 +150,21 @@ export const linksResponse = z.object({
 })
 export type LinksResponse = z.infer<typeof linksResponse>
 
-/** The thing whose links are asked for. */
-export const linksQuery = z.object({ type: objectType, id: objectId }).strict()
+/** Kinds of thing as one query parameter, comma separated: `task,person`. */
+const objectTypeList = z
+  .string()
+  .transform((list) => list.split(','))
+  .pipe(z.array(objectType).min(1))
+
+/** The thing whose links are asked for, and the kinds at the far end to list. */
+export const linksQuery = z
+  .object({
+    type: objectType,
+    id: objectId,
+    /** Every kind when left out. */
+    types: objectTypeList.optional(),
+  })
+  .strict()
 
 export const linkParams = z.object({ id: linkId }).strict()
 

@@ -19,10 +19,10 @@ export const linkRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = asy
   serve(app, [
     on(api.links.of, async (req) => {
       const { workspaceId } = currentUser(req)
-      const of = req.query
+      const { types, ...of } = req.query
       // A foreign or deleted object is a 404, not an empty page.
       if (!(await exists(registry, app.db, workspaceId, of))) throw new NotFound('Object')
-      return linksOf(registry, app.db, workspaceId, of)
+      return linksOf(registry, app.db, workspaceId, of, types)
     }),
 
     on(api.links.candidates, async (req) => {

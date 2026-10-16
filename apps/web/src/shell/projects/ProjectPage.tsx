@@ -45,10 +45,10 @@ export function ProjectPage() {
   )
 
   if (!id) return null
-  // Kinds a module already draws in its own block here are not repeated under Linked.
+  // Linked lists the kinds no module already draws in a block of its own here.
   const blockModules = new Set(registry.projectBlocks.map((b) => b.moduleId))
-  const covered = registry.relations
-    .filter((r) => r.moduleId !== null && blockModules.has(r.moduleId))
+  const linkedKinds = registry.relations
+    .filter((r) => r.moduleId === null || !blockModules.has(r.moduleId))
     .map((r) => r.type)
 
   // Keyed by the project: what was half-done on one (a rename, a delete question) does not carry
@@ -92,7 +92,7 @@ export function ProjectPage() {
             data-panel="Linked"
             className="min-w-0 @max-5xl:ml-[var(--hang)] @5xl:pt-1"
           >
-            <LinkBlocks of={{ type: 'project', id }} except={covered} />
+            <LinkBlocks of={{ type: 'project', id }} types={linkedKinds} />
           </section>
         </div>
       </div>

@@ -51,7 +51,7 @@ export function ItemPane({
   note?: ReactNode
   /** Where the item goes in the recently opened list. */
   recent: Recent
-  linked: Pick<ComponentProps<typeof LinkedSection>, 'of' | 'except'>
+  linked: Pick<ComponentProps<typeof LinkedSection>, 'of' | 'types'>
   danger: ReactNode
   children: ReactNode
 }) {
@@ -63,7 +63,7 @@ export function ItemPane({
         <UnsavedAsk guard={pane.guard} />
         {children}
       </div>
-      <LinkedSection of={linked.of} except={linked.except} className="mt-4" />
+      <LinkedSection of={linked.of} types={linked.types} className="mt-4" />
       <DangerZone>{danger}</DangerZone>
     </DetailPane>
   )

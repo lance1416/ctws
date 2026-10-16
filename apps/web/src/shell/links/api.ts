@@ -7,14 +7,18 @@ export type Endpoint = { type: ObjectType; id: string }
 /** The shell's link keys. Every one starts with `'links'`, so `all` reaches each of them. */
 export const linkKeys = {
   all: ['links'] as const,
-  of: (of: Endpoint) => ['links', of.type, of.id] as const,
+  of: (of: Endpoint, types: Kinds) => ['links', of.type, of.id, types?.join(',') ?? 'all'] as const,
   candidates: (of: Endpoint, q: string) => ['links', 'candidates', of.type, of.id, q] as const,
 }
 
-export const linksQuery = (of: Endpoint) =>
+/** The kinds of thing at the far end to list; every kind when undefined. */
+type Kinds = readonly ObjectType[] | undefined
+
+export const linksQuery = (of: Endpoint, types?: Kinds) =>
   queryOptions({
-    queryKey: linkKeys.of(of),
-    queryFn: async ({ signal }) => (await call(api.links.of, { query: of }, { signal })).groups,
+    queryKey: linkKeys.of(of, types),
+    queryFn: async ({ signal }) =>
+      (await call(api.links.of, { query: { ...of, types: types?.join(',') } }, { signal })).groups,
   })
 
 export function createLink(body: CreateLinkBody) {

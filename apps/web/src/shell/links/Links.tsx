@@ -4,8 +4,8 @@ import { useRegistry } from '../registry'
 import { type Item, type Linked, useLinked } from './useLinked'
 
 /** The linked things as one list, a small heading per kind: a detail pane's. */
-export function LinkList({ of, except }: Linked) {
-  const { groups, unlink, add, unshown } = useLinked(of, except)
+export function LinkList({ of, types }: Linked) {
+  const { groups, unlink, add, unshown } = useLinked(of, types)
   if (unshown !== undefined) return unshown
   return (
     <div className="flex flex-col gap-4">
@@ -48,12 +48,12 @@ export function LinkList({ of, except }: Linked) {
  * Linked as a section of a detail pane. `-mx-2` gives the rows' hover padding back to the margin,
  * so their words line up with the pane's other labels.
  */
-export function LinkedSection({ of, except, className = '' }: Linked & { className?: string }) {
+export function LinkedSection({ of, types, className = '' }: Linked & { className?: string }) {
   return (
     <section aria-label="Linked" className={`border-t border-rule pt-3 ${className}`}>
       <div className="-mx-2">
         <span className="block px-2 pb-1 text-xs text-ink-muted">Linked</span>
-        <LinkList of={of} except={except} />
+        <LinkList of={of} types={types} />
       </div>
     </section>
   )

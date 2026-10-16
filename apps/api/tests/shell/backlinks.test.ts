@@ -28,10 +28,15 @@ afterEach(async () => {
   for (const stop of cleanups.splice(0)) await stop()
 })
 
-async function linksOf(ctx: Harness, type: string, id: string): Promise<LinksResponse['groups']> {
+async function linksOf(
+  ctx: Harness,
+  type: string,
+  id: string,
+  types?: string,
+): Promise<LinksResponse['groups']> {
   const res = await ctx.app.inject({
     method: 'GET',
-    url: `/api/v1/links?type=${type}&id=${id}`,
+    url: `/api/v1/links?type=${type}&id=${id}${types ? `&types=${types}` : ''}`,
     headers: web(ctx),
   })
   expect(res.statusCode, res.body).toBe(200)
@@ -130,6 +135,22 @@ describe('opening a thing shows what it is connected to', () => {
     expect(titles(groups, 'meeting')).toEqual(['二面'])
     expect(titles(groups, 'person')).toEqual(['陈颖'])
     expect(titles(groups, 'reading')).toEqual(['面试准备'])
+  })
+
+  it('lists only the kinds asked for, whether an edge is a row or a column', async () => {
+    const ctx = await setup('kinds@example.com')
+    const project = await createProject(ctx, '找工作')
+    await createTask(ctx, project, '改简历')
+    await createPerson(ctx, { name: '陈颖', projectIds: [project] })
+    const groups = await linksOf(ctx, 'project', project, 'person,reading')
+    expect(groups.map((g) => g.type)).toEqual(['person'])
+    expect((await linksOf(ctx, 'project', project, 'task')).map((g) => g.type)).toEqual(['task'])
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/links?type=project&id=${project}&types=person,files`,
+      headers: web(ctx),
+    })
+    expect(res.statusCode).toBe(400)
   })
 
   it('leaves out what was deleted, rather than drawing a row nobody can open', async () => {

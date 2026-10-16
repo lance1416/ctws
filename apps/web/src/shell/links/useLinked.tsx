@@ -9,8 +9,8 @@ import { deleteLink, linkKeys, linksQuery, type Endpoint } from './api'
 
 export type Linked = {
   of: Endpoint
-  /** Kinds the page already shows in a module's own block, so they are not listed twice. */
-  except?: readonly ObjectType[] | undefined
+  /** The kinds of thing listed: a page leaves out what it already shows. Every kind when left out. */
+  types?: readonly ObjectType[] | undefined
 }
 
 /** One thing at the far end of an edge. */
@@ -26,11 +26,11 @@ export type Item = {
  * Everything one thing is linked to, grouped by kind, and the way to link more. The edges are the
  * shell's; where another module's thing lives comes from the registry's `relations`.
  */
-export function useLinked(of: Endpoint, except: readonly ObjectType[] | undefined) {
+export function useLinked(of: Endpoint, types: readonly ObjectType[] | undefined) {
   // Which kind the picker is for: any kind from "+ Link", one kind from a block's own `+`.
   const [adding, setAdding] = useState<ObjectType | 'any' | null>(null)
-  const links = useQuery(linksQuery(of))
-  const groups = (links.data ?? []).filter((g) => !except?.includes(g.type))
+  const links = useQuery(linksQuery(of, types))
+  const groups = links.data ?? []
   const unlink = useMutation({
     mutationFn: (id: LinkId) => deleteLink(id),
     // Both ends showed the edge, and the far one can be any kind of thing.

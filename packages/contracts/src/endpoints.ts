@@ -235,7 +235,7 @@ export const api = {
     of: endpoint({
       method: 'GET',
       path: '/links',
-      summary: 'Everything linked to one thing, grouped by kind of thing.',
+      summary: 'Everything linked to one thing, grouped by kind of thing, of the kinds asked for.',
       query: linksQuery,
       ok: 200,
       response: linksResponse,

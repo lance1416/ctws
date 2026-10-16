@@ -37,7 +37,10 @@ export function MeetingDetail({
         kind: 'Meeting',
       }}
       // People are left out: attendees are written on the meeting itself.
-      linked={{ of: { type: 'meeting', id: meeting.meetingId }, except: ['person'] }}
+      linked={{
+        of: { type: 'meeting', id: meeting.meetingId },
+        types: ['task', 'reading', 'meeting', 'project'],
+      }}
       danger={<CancelMeeting meeting={meeting} onCancelled={onClose} />}
     >
       {/* Above the form, beside the Save that raised it. */}

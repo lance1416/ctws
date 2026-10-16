@@ -121,7 +121,10 @@ export function TaskReading({
       </div>
 
       {/* Who or what it is about, after its own fields; the project is already in the head. */}
-      <LinkedSection of={{ type: 'task', id: task.id }} except={['project']} />
+      <LinkedSection
+        of={{ type: 'task', id: task.id }}
+        types={['task', 'reading', 'person', 'meeting']}
+      />
     </div>
   )
 }
