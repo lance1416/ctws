@@ -1,0 +1,19 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "includeEntryExports": true,
+  "ignore": ["scripts/validate_palette.js"],
+  "workspaces": {
+    ".": {
+      "entry": ["tools/**/*.mjs"]
+    },
+    "apps/api": {
+      "project": ["src/**/*.ts", "tests/**/*.ts"]
+    },
+    "apps/web": {
+      "project": ["src/**/*.{ts,tsx,css}", "e2e/**/*.ts"]
+    },
+    "packages/*": {
+      "project": ["src/**/*.ts"]
+    }
+  }
+}

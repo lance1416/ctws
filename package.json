@@ -11,6 +11,7 @@
   "scripts": {
     "typecheck": "pnpm -r --no-bail exec tsc --noEmit",
     "lint": "eslint .",
+    "knip": "knip",
     "test": "pnpm -r --no-bail test",
     "build": "pnpm -r build",
     "format": "prettier --write .",
@@ -21,6 +22,7 @@
     "eslint-import-resolver-typescript": "4.4.5",
     "eslint-plugin-boundaries": "7.2.0",
     "eslint-plugin-react-hooks": "7.1.1",
+    "knip": "6.39.0",
     "prettier": "3.9.9",
     "typescript": "5.9.3",
     "typescript-eslint": "8.71.0"
