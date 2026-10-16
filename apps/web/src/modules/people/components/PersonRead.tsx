@@ -81,10 +81,7 @@ export function PersonRead({ person, onEdit }: { person: PersonResponse; onEdit:
           <Reads label="Lives in" value={person.city} />
           <Reads label="Company" value={person.org} />
           <Reads label="Title" value={person.title} />
-          <Reads
-            label="Gender"
-            value={person.gender ? (GENDER_LABELS[person.gender] ?? null) : null}
-          />
+          <Reads label="Gender" value={person.gender ? GENDER_LABELS[person.gender] : null} />
           <Reads label="Circle" value={person.circle ? CIRCLE_LABELS[person.circle] : null} />
           <Field label="Projects">
             {person.projects.length === 0 ? (

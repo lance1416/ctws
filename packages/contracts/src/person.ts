@@ -58,6 +58,7 @@ const personChannel = z
 export type PersonChannel = z.infer<typeof personChannel>
 
 export const GENDERS = ['male', 'female', 'other'] as const
+export type Gender = (typeof GENDERS)[number]
 /** Where a person sits in your life. */
 export const CIRCLES = ['family', 'friend', 'work'] as const
 export type Circle = (typeof CIRCLES)[number]

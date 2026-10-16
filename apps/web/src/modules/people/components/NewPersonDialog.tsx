@@ -1,4 +1,4 @@
-import type { PersonResponse } from '@ctws/contracts'
+import type { Circle, PersonResponse } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { createPerson, type BirthdayDraft } from '../api'
@@ -31,7 +31,7 @@ export function NewPersonDialog({
   const channels = useChannelRows(() => [{ kind: 'email', value: '', label: null }])
   const address = channels.rows[0]!
   const [projectIds, setProjects] = useState<string[]>([])
-  const [circle, setCircle] = useState('')
+  const [circle, setCircle] = useState<Circle | ''>('')
   // Folded until asked for: an open, empty date form reads as bad data.
   const [birthday, setBirthday] = useState<{ draft: BirthdayDraft; refused: boolean } | null>(null)
 
@@ -51,7 +51,7 @@ export function NewPersonDialog({
       ...(note.trim() ? { note: note.trim() } : {}),
       ...(projectIds.length > 0 ? { projectIds } : {}),
       ...(channels.toSave().length > 0 ? { channels: channels.toSave() } : {}),
-      ...(circle ? { circle: circle as 'family' } : {}),
+      ...(circle ? { circle } : {}),
       ...(birthday ? { birthday: birthday.draft } : {}),
     })
   }

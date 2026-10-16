@@ -178,7 +178,7 @@ export default tseslint.config(
     plugins: { ctws },
     rules: {
       'ctws/enum-cast': [
-        'warn',
+        'error',
         {
           selector:
             'TSAsExpression > TSLiteralType.typeAnnotation, TSAsExpression > TSUnionType.typeAnnotation > TSLiteralType',

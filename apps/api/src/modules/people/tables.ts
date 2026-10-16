@@ -1,7 +1,9 @@
 import {
   BIRTHDAY_CALENDARS,
   CHANNEL_KINDS,
+  type Circle,
   CIRCLES,
+  type Gender,
   GENDERS,
   REMIND_LEAD_DEFAULT,
   REMIND_LEADS,
@@ -39,11 +41,11 @@ export const people = pgTable(
       .$type<RemindLead>()
       .notNull()
       .default(REMIND_LEAD_DEFAULT),
-    gender: text('gender').$type<(typeof GENDERS)[number]>(),
+    gender: text('gender').$type<Gender>(),
     hometown: text('hometown'),
     city: text('city'),
     title: text('title'),
-    circle: text('circle').$type<(typeof CIRCLES)[number]>(),
+    circle: text('circle').$type<Circle>(),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

@@ -1,4 +1,5 @@
-import { type Circle, CIRCLES, REMIND_LEADS, type RemindLead } from '@ctws/contracts'
+import { type Circle, CIRCLES, type Gender, REMIND_LEADS, type RemindLead } from '@ctws/contracts'
+import type { Choice } from '../../platform/ui/inline'
 
 export const CIRCLE_LABELS: Record<Circle, string> = {
   family: 'Family',
@@ -13,20 +14,25 @@ export const CIRCLE_OF_ONE: Record<Circle, string> = {
   work: 'Work',
 }
 
-export const CIRCLE_CHOICES = [
+/** `''` is "Not set". */
+export const CIRCLE_CHOICES: Choice<Circle | ''>[] = [
   { value: '', label: 'Not set' },
   ...CIRCLES.map((c) => ({ value: c, label: CIRCLE_LABELS[c] })),
 ]
 
-export const GENDER_LABELS: Record<string, string> = {
+export const GENDER_LABELS: Record<Gender, string> = {
   female: 'Female',
   male: 'Male',
   other: 'Other',
 }
 
-export const GENDER_CHOICES = [
+/** In the order of `GENDER_LABELS`; `''` is "Not set". */
+export const GENDER_CHOICES: Choice<Gender | ''>[] = [
   { value: '', label: 'Not set' },
-  ...Object.entries(GENDER_LABELS).map(([value, label]) => ({ value, label })),
+  ...(Object.keys(GENDER_LABELS) as Gender[]).map((value) => ({
+    value,
+    label: GENDER_LABELS[value],
+  })),
 ]
 
 /** How early to be told of a birthday. */
