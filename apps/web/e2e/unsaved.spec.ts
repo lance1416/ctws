@@ -49,6 +49,23 @@ test('Escape on a person form with nothing changed just closes', async ({ page }
   await expect(pane).toHaveCount(0)
 })
 
+test('a person whose phone is stored in an older spelling closes untouched without asking', async ({
+  page,
+}) => {
+  await registerFreshUser(page, '/people')
+  const made = await apiPost(page, '/people', {
+    name: 'Ying Chen',
+    channels: [{ kind: 'phone', value: '+86-138-0000-0000', label: null }],
+  })
+  await page.goto(`/people/${made.id}`)
+  const pane = page.getByRole('dialog', { name: 'People' })
+  await pane.getByRole('button', { name: 'Edit', exact: true }).click()
+  // The phone module has had its turn: the number is shown settled.
+  await expect(pane.getByRole('textbox', { name: 'Item 1' })).toHaveValue('+86 138 0000 0000')
+  await pane.getByLabel('Name', { exact: true }).press('Escape')
+  await expect(pane).toHaveCount(0)
+})
+
 test('Escape on an edited meeting asks before throwing the edit away', async ({ page }) => {
   await registerFreshUser(page)
   const m = await apiPost(page, '/meetings', {

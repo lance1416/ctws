@@ -22,11 +22,18 @@ const written = (c: ChannelRow) => c.value.trim() !== '' && c.value !== c.seed
  * the local code, and each row judged only once it has been left.
  */
 export function useChannelRows(initial: () => ChannelRow[]) {
-  const [held, setRows] = useState<ChannelRow[]>(() =>
-    initial().map((row) => ({ ...row, raw: true })),
-  )
+  const [opened] = useState(initial)
+  const [held, setRows] = useState<ChannelRow[]>(() => opened.map((row) => ({ ...row, raw: true })))
   const phone = usePhone()
   const region = phone?.currentRegion()
+  const save = (list: ChannelRow[]): PersonChannel[] =>
+    byKind(list)
+      .filter(written)
+      .map((c) => ({
+        kind: c.kind,
+        value: c.kind === 'phone' && phone ? phone.toE164(c.value, region) : c.value.trim(),
+        label: c.label?.trim() || null,
+      }))
   // Once the phone module is here, a row it has not seen is shown settled: a stored number
   // normalised (an old `(730) 197-4443` would otherwise fail the check and block Save), an empty
   // phone row given the local code. An edit keeps the settled row.
@@ -84,14 +91,13 @@ export function useChannelRows(initial: () => ChannelRow[]) {
     add: () => setRows((all) => [...all, { kind: 'email', value: '', label: null }]),
     remove: (at: number) => setRows((all) => all.filter((_, i) => i !== at)),
     /** The rows worth saving, in kind order, phones as E.164. */
-    toSave: (): PersonChannel[] =>
-      byKind(rows)
-        .filter(written)
-        .map((c) => ({
-          kind: c.kind,
-          value: c.kind === 'phone' && phone ? phone.toE164(c.value, region) : c.value.trim(),
-          label: c.label?.trim() || null,
-        })),
+    toSave: () => save(rows),
+    /**
+     * Whether saving would write something other than what the form opened on. Both sides are read
+     * the same way now, so a stored number in an older spelling is not a change once the phone
+     * module has normalised it.
+     */
+    changed: () => JSON.stringify(save(rows)) !== JSON.stringify(save(opened)),
   }
 }
 
