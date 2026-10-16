@@ -3,7 +3,8 @@ import { userId, workspaceId } from './id'
 import { canonicalTimeZone } from './common'
 
 /** Instance roles: an admin manages accounts, a member does not. */
-export const roleSchema = z.enum(['admin', 'member'])
+export const ROLES = ['admin', 'member'] as const
+export const roleSchema = z.enum(ROLES)
 export type Role = z.infer<typeof roleSchema>
 
 export const email = z.string().trim().toLowerCase().pipe(z.email().max(254))

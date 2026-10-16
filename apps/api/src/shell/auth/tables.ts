@@ -1,5 +1,5 @@
-import { type Role, type UserId, type WorkspaceId } from '@ctws/contracts'
-import { sql } from 'drizzle-orm'
+import { ROLES, type Role, type UserId, type WorkspaceId } from '@ctws/contracts'
+import { inList } from '../../platform/db/sql'
 import {
   check,
   index,
@@ -27,7 +27,7 @@ export const users = pgTable(
   },
   (t) => [
     uniqueIndex('users_email_key').on(t.email),
-    check('users_role_check', sql`${t.role} in ('admin', 'member')`),
+    check('users_role_check', inList(t.role, ROLES)),
   ],
 )
 
