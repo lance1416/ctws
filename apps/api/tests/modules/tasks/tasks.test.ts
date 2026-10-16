@@ -359,14 +359,14 @@ describe('delete', () => {
 describe('depth limit', () => {
   // The depth limit must be enforced on create as well as move, or a shallow
   // tree can be built and then moved into a deep one.
-  it('allows a chain exactly MAX_DEPTH deep', async () => {
+  it('allows a chain exactly MAX_TASK_DEPTH deep', async () => {
     const ctx = await setup()
     const projectId = await createProject(ctx, 'P')
     const chain = await createChain(ctx, projectId, 10)
     expect(chain).toHaveLength(10)
   })
 
-  it('refuses to create a child one level beyond MAX_DEPTH', async () => {
+  it('refuses to create a child one level beyond MAX_TASK_DEPTH', async () => {
     const ctx = await setup()
     const projectId = await createProject(ctx, 'P')
     const chain = await createChain(ctx, projectId, 10)

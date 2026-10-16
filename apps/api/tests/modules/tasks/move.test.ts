@@ -204,13 +204,13 @@ describe('POST /tasks/:id/move', () => {
   })
 
   // Must account for the moved subtree's own height, not just the node.
-  it('refuses a move that would push the subtree past MAX_DEPTH', async () => {
+  it('refuses a move that would push the subtree past MAX_TASK_DEPTH', async () => {
     const ctx = await setup()
     const p = await createProject(ctx, 'p')
     const deep = await createChain(ctx, p, 8) // deepest node sits at depth 8
     const subtree = await createChain(ctx, p, 3) // root plus two descendants: height 3
 
-    // 8 + 1 + 2 = 11 > MAX_DEPTH. Checking only the moved node's own depth (9) would pass.
+    // 8 + 1 + 2 = 11 > MAX_TASK_DEPTH. Checking only the moved node's own depth (9) would pass.
     const res = await ctx.app.inject({
       method: 'POST',
       url: `/api/v1/tasks/${subtree[0]}/move`,
@@ -222,7 +222,7 @@ describe('POST /tasks/:id/move', () => {
     expect(res.json().detail).toMatch(/nested at most/)
   })
 
-  it('allows a move that lands exactly at MAX_DEPTH', async () => {
+  it('allows a move that lands exactly at MAX_TASK_DEPTH', async () => {
     const ctx = await setup()
     const p = await createProject(ctx, 'p')
     const deep = await createChain(ctx, p, 8)

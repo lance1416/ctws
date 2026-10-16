@@ -447,7 +447,7 @@ test('a stale collapsed id on a leaf draws no chevron', async ({ page }) => {
 })
 
 // Not reachable from the keyboard (Alt+arrows can only produce clamped, legal depths), so this
-// uses the pointer: a 2-high subtree dragged in front of a row at MAX_DEPTH has nowhere legal to go.
+// uses the pointer: a 2-high subtree dragged in front of a row at MAX_TASK_DEPTH has nowhere legal to go.
 test('a too-deep drop shows a message and sends no move', async ({ page }) => {
   await registerFreshUser(page)
   const url = await startProject(page)
