@@ -56,10 +56,14 @@ export const createLinkBody = z
     message: 'that is not a kind of link between those two things',
     path: ['kind'],
   })
-  .refine((l) => !(l.from.type === l.to.type && l.from.id === l.to.id), {
-    message: 'a thing cannot be linked to itself',
-    path: ['to'],
-  })
+  // Case-blind: a uuid in upper case names the same thing.
+  .refine(
+    (l) => !(l.from.type === l.to.type && l.from.id.toLowerCase() === l.to.id.toLowerCase()),
+    {
+      message: 'a thing cannot be linked to itself',
+      path: ['to'],
+    },
+  )
 export type CreateLinkBody = z.infer<typeof createLinkBody>
 
 /** The thing at the other end of an edge, with enough to draw a row and go there. */

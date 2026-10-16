@@ -390,6 +390,20 @@ describe('delete', () => {
       'deleted',
     ])
   })
+
+  it('records the task deleted by an upper-case id as deleted itself, not by cascade', async () => {
+    const ctx = await setup()
+    const projectId = await createProject(ctx, 'P')
+    const [root, child] = await createChain(ctx, projectId, 2)
+
+    expect((await del(ctx, root!.toUpperCase())).statusCode).toBe(204)
+
+    expect((await eventsOf(ctx, root!)).at(-1)).toEqual({ type: 'deleted', payload: {} })
+    expect((await eventsOf(ctx, child!)).at(-1)).toEqual({
+      type: 'deleted',
+      payload: { cascadedFrom: root },
+    })
+  })
 })
 
 describe('depth limit', () => {

@@ -9,6 +9,8 @@ import { lockTaskTree } from '../tree'
  * own `deleted` event; a descendant's names the task the cascade started from.
  */
 export async function softDeleteTask(db: Db, ctx: TaskCtx, id: string): Promise<void> {
+  // As the database returns it, so the root is told apart from its descendants below.
+  id = id.toLowerCase()
   await db.transaction(async (tx) => {
     await lockTaskTree(tx, ctx.workspaceId)
     const log = taskLog(tx, ctx)

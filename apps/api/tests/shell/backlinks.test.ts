@@ -254,6 +254,14 @@ describe('making and removing one edge by hand', () => {
     })
     expect(itself.statusCode).toBe(400)
 
+    // The same id in upper case is still the same thing.
+    const itselfShouting = await make({
+      from: { type: 'person', id: person.id },
+      to: { type: 'person', id: person.id.toUpperCase() },
+      kind: 'about',
+    })
+    expect(itselfShouting.statusCode, itselfShouting.body).toBe(400)
+
     // An id of the right shape that names nothing is a 404, not a stored edge.
     const nowhere = await make({
       from: { type: 'person', id: person.id },
