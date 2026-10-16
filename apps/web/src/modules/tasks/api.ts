@@ -45,6 +45,12 @@ export const taskQuery = (id: TaskId) =>
  */
 export const TODAY_TASKS = ['tasks', 'today']
 
+/**
+ * The scope of the writes that move rows at once, before the server answers: they go out one at a
+ * time, so two quick moves land in the order they were made.
+ */
+export const ROW_WRITES = { id: 'tasks:rows' }
+
 // The server owns the segments and their order; nothing here re-derives either.
 export const todayQuery = (day: string) =>
   queryOptions({

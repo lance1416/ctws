@@ -139,6 +139,27 @@ describe('refreshing after a write', () => {
     stop()
   })
 
+  it('waits for the last of overlapping writes, so its answer does not undo the others', async () => {
+    const qc = client()
+    const read = vi.fn(async () => 1)
+    const stop = new QueryObserver(qc, { queryKey: ['tasks', 'list'], queryFn: read }).subscribe(
+      () => {},
+    )
+    await vi.waitFor(() => expect(read).toHaveBeenCalledTimes(1))
+    let finish!: (v: string) => void
+    const second = new MutationObserver(qc, {
+      mutationFn: () => new Promise<string>((done) => (finish = done)),
+    }).mutate()
+
+    await write(qc)
+    // The second write's optimistic rows are still on screen; a refetch now would put them back.
+    expect(read).toHaveBeenCalledTimes(1)
+    finish('ok')
+    await second
+    await vi.waitFor(() => expect(read).toHaveBeenCalledTimes(2))
+    stop()
+  })
+
   it('leaves the cache alone for a write that opts out', async () => {
     const qc = client()
     const fn = vi.fn(async () => 1)

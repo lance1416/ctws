@@ -2,7 +2,7 @@ import { problemText } from '../../../../platform/http/api'
 import { type DragEndEvent } from '@dnd-kit/core'
 import { type ProjectId, type TaskId, type TaskPosition } from '@ctws/contracts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { moveTask, type ProjectTasks, projectTasksQuery } from '../../api'
+import { moveTask, type ProjectTasks, projectTasksQuery, ROW_WRITES } from '../../api'
 import { applyMove } from '../../logic/tree/applyMove'
 import { planDrop } from '../../logic/tree/drop'
 import type { FlatRow } from '../../logic/tree/flatten'
@@ -45,6 +45,7 @@ export function useTreeMove({
       if (context?.unfolded) folds.fold(context.unfolded)
       onError(problemText(e) ?? "Couldn't move it")
     },
+    scope: ROW_WRITES,
     meta: { awaits: [key], ownsError: true },
   })
 

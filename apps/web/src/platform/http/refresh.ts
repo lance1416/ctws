@@ -40,12 +40,19 @@ export async function refreshQueries(
 /**
  * Runs `refreshQueries` after every mutation. A success refreshes before the write's own
  * onSuccess, so that sees fresh data; a failure refreshes after the write's onError has rolled
- * back, since a write of two requests can fail after the first landed. A failure no write claims
- * (`ownsError`) is reported for the frame to say; the next write clears it.
+ * back, since a write of two requests can fail after the first landed. While another write is
+ * still pending, only the last to finish refreshes: an answer read in between would put back
+ * what that write already shows. A failure no write claims (`ownsError`) is reported for the
+ * frame to say; the next write clears it.
  */
 export function refreshAfterWrites(client: () => QueryClient): MutationCache {
   const refresh = async (meta: Mutation['meta']) => {
-    if (meta?.refresh !== false) await refreshQueries(client(), meta?.awaits)
+    if (meta?.refresh === false) return
+    const qc = client()
+    // The write being settled is still counted; one that refreshes nothing (a capture wrapping
+    // the write that does) is not waited for.
+    if (qc.isMutating({ predicate: (m) => m.meta?.refresh !== false }) > 1) return
+    await refreshQueries(qc, meta?.awaits)
   }
   return new MutationCache({
     onMutate: () => clearWriteFailure(),
