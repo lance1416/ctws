@@ -62,8 +62,9 @@ export function useScopedEdit(
 }
 
 /**
- * `all` is one write, to the series. Otherwise the series' fields go to all of it, then when and
- * how long to the occurrence, or to the series that takes over from it. Answers with the
+ * `all` is one write, to the series, and so is `following`, to the series that takes over from
+ * this occurrence with every change. For `one` the series' fields go to all of it, since an
+ * occurrence has none of its own, then when and how long to the occurrence. Answers with the
  * occurrence that was moved, or null when nothing moved.
  */
 async function writeScoped(
@@ -77,13 +78,12 @@ async function writeScoped(
     // A moved series is followed to the occurrence it now starts with.
     return moves(patch) ? readOccurrence(id, series.startsLocal) : null
   }
+  if (scope === 'following') return continueSeries(id, meeting.recurrenceId, patch)
   const { startsLocal, durationMinutes, ...series } = patch
   const when = {
     ...(startsLocal !== undefined ? { startsLocal } : {}),
     ...(durationMinutes !== undefined ? { durationMinutes } : {}),
   }
   if (Object.keys(series).length > 0) await patchSeries(id, series)
-  return scope === 'one'
-    ? patchOccurrence(id, meeting.recurrenceId, when)
-    : continueSeries(id, meeting.recurrenceId, when)
+  return patchOccurrence(id, meeting.recurrenceId, when)
 }

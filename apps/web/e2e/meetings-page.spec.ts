@@ -608,3 +608,36 @@ test('a meeting with no start cannot be saved', async ({ page }) => {
   await pane(page).getByLabel('Start').fill('')
   await expect(pane(page).getByRole('button', { name: 'Save' })).toBeDisabled()
 })
+
+test('this and all later is one write, and leaves the earlier meetings as they were', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const start = dayOffset(-7)
+  const made = await apiPost(page, '/meetings', {
+    title: 'Weekly',
+    startsLocal: `${start}T09:00`,
+    timeZone: await accountZone(page),
+    durationMinutes: 30,
+    rrule: `FREQ=WEEKLY;BYDAY=${weekdayCode(start)}`,
+  })
+  const later = dayOffset(7)
+  await page.goto(`/meetings/${made.meetingId}?at=${later}T09:00`)
+  const writes: string[] = []
+  page.on('request', (r) => {
+    if (r.method() !== 'GET') writes.push(`${r.method()} ${new URL(r.url()).pathname}`)
+  })
+  await editDetail(page)
+  await pane(page).getByLabel('Title').fill('Weekly, later')
+  await pane(page).getByLabel('Start').fill(`${later}T10:00`)
+  await pane(page).getByRole('button', { name: 'Save' }).click()
+  await page.getByRole('button', { name: 'This and all later' }).click()
+  await expect(pane(page)).toContainText('Weekly, later')
+
+  expect(writes).toEqual([`POST /api/v1/meetings/${made.meetingId}/successors`])
+  const first = await page.request.get(
+    `/api/v1/meetings/${made.meetingId}/occurrences/${start}T09:00`,
+    { headers: WEB },
+  )
+  expect(((await first.json()) as { title: string }).title).toBe('Weekly')
+})
