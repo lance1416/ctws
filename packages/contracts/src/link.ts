@@ -8,7 +8,7 @@ import { linkId, objectId } from './id'
 
 /** Every kind of thing that can be at either end of a link. */
 export const OBJECT_TYPES = ['task', 'reading', 'person', 'meeting', 'project'] as const
-const objectType = z.enum(OBJECT_TYPES)
+export const objectType = z.enum(OBJECT_TYPES)
 export type ObjectType = z.infer<typeof objectType>
 
 /** The kinds of edge and what may be at each end; `null` means any type. */

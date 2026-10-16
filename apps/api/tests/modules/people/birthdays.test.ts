@@ -177,11 +177,12 @@ describe('GET /people/calendar', () => {
     expect(王颖).toMatchObject({
       day: '2026-10-10',
       title: '王颖 33',
-      kind: 'Birthday',
+      type: 'person',
+      kind: 'birthday',
       time: null,
       endTime: null,
     })
-    expect(王颖?.to).toMatch(/^\/people\/[0-9a-f-]{36}$/)
+    expect(王颖?.id).toMatch(/^[0-9a-f-]{36}$/)
     // A lunar birthday falls on its own day, not on the solar 10-10.
     expect(rows.find((r) => r.title.startsWith('周楠'))?.day).toBe('2026-10-12')
   })
@@ -194,13 +195,13 @@ describe('GET /people/calendar', () => {
     expect(rows.map((r) => r.title)).toEqual(['蒋老师'])
   })
 
-  it('carries the day in the entry id, so a window spanning a year has distinct ids', async () => {
+  it('gives each year its own entry, told apart by the day, in a window spanning a year', async () => {
     const ctx = await setup()
     await add(ctx, '王颖', { calendar: 'solar', year: 1993, month: 10, day: 10 })
     // 367 days: inside `MAX_CALENDAR_SPAN_DAYS` (370), and long enough to hold two 10-10s.
     const rows = await entries(ctx, '2026-10-09', '2027-10-11')
     expect(rows).toHaveLength(2)
-    expect(new Set(rows.map((r) => r.id)).size).toBe(2)
+    expect(new Set(rows.map((r) => r.id)).size).toBe(1)
     expect(rows.map((r) => r.day)).toEqual(['2026-10-10', '2027-10-10'])
   })
 })

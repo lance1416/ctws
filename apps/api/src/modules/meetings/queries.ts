@@ -1,7 +1,6 @@
 import {
   type CalendarEntry,
   DAY_MS,
-  occurrenceKey,
   type MeetingId,
   type PersonId,
   type ProjectId,
@@ -226,16 +225,16 @@ export async function meetingEntries(
   const entries = rows.map((m): CalendarEntry => {
     const elsewhere = m.timeZone !== zone
     return {
-      id: occurrenceKey(m),
+      type: 'meeting',
+      id: m.meetingId,
+      kind: 'occurrence',
+      recurrenceId: m.recurrenceId,
       day: localOf(m.startsAt, zone).slice(0, 10),
       title: m.title,
-      to: '/calendar',
-      kind: elsewhere
-        ? `meeting · ${zoneAbbreviation(m.startsAt, m.timeZone)} ${localOf(m.startsAt, m.timeZone).slice(11)}`
-        : 'Meetings',
       time: clockTime(m.startsAt, zone),
       endTime: clockTime(m.endsAt, zone),
       zone: elsewhere ? zoneAbbreviation(m.startsAt, m.timeZone) : null,
+      zoneTime: elsewhere ? localOf(m.startsAt, m.timeZone).slice(11) : null,
       projectId: m.projectId,
       projectName: m.projectName,
     }

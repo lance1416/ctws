@@ -75,6 +75,16 @@ export type RelationContribution = {
   to: (id: string) => string
 }
 
+/** A calendar entry as the shell draws it: the server's, with its module's route and words. */
+export type ShownEntry = CalendarEntry & {
+  /** Unique among the entries of one window: a task is planned and due, a series recurs. */
+  key: string
+  /** Where clicking it goes, inside the app. */
+  to: string
+  /** What the date is, in words: "planned", "Birthday". */
+  label: string
+}
+
 /** A module's half of the calendar; the shell merges them. */
 export type CalendarContribution = {
   /** The name in the grid's view tabs. */
@@ -84,8 +94,10 @@ export type CalendarContribution = {
     entries: CalendarEntry[]
     isError: boolean
   }
+  /** Where an entry goes and the words for its date: the server says only what and which it is. */
+  show: (entry: CalendarEntry) => { to: string; label: string }
   /** What opens when an entry is clicked; without it the entry links to its `to`. */
-  Detail?: ComponentType<{ id: string; onClose: () => void }>
+  Detail?: ComponentType<{ entry: ShownEntry; onClose: () => void }>
 }
 
 export type Widget = {

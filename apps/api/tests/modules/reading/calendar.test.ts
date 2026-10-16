@@ -46,7 +46,13 @@ describe('the reading calendar', () => {
 
     const got = await entries(ctx, '2026-10-01', '2026-10-31')
     expect(got).toHaveLength(1)
-    expect(got[0]).toMatchObject({ day: '2026-10-07', title: '设计心理学', kind: 'to read' })
+    expect(got[0]).toMatchObject({
+      type: 'reading',
+      id,
+      day: '2026-10-07',
+      title: '设计心理学',
+      kind: 'to-read',
+    })
   })
 
   it('shows an untitled link by its url rather than leaving a blank square', async () => {

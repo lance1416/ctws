@@ -151,7 +151,7 @@ export function Today() {
       }
     }),
     ...entries.map((e): DayItem => ({
-      key: `${e.moduleId}:${e.id}`,
+      key: `${e.moduleId}:${e.key}`,
       at: e.time,
       until: e.endTime,
       hasLead: e.time !== null,

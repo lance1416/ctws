@@ -41,8 +41,11 @@ describe('the task calendar', () => {
       ['2026-10-05', 'planned'],
       ['2026-10-09', 'due'],
     ])
-    // Two entries from one task need two ids, or the grid draws one and loses the other.
-    expect(new Set(got.map((e) => e.id)).size).toBe(2)
+    // Two entries from one task: the task's own id on both, told apart by what the date is.
+    expect(got.map((e) => [e.type, e.id])).toEqual([
+      ['task', id],
+      ['task', id],
+    ])
     expect(got[0]).toMatchObject({ title: '发 v0.8.0', projectName: 'CTWS' })
   })
 

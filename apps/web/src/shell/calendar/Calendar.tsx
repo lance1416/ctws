@@ -1,4 +1,5 @@
-import type { CalendarEntry, ProjectId } from '@ctws/contracts'
+import type { ProjectId } from '@ctws/contracts'
+import type { ShownEntry } from '../contract'
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useViewParam, ViewTabs } from '../../platform/ui/ViewTabs'
@@ -26,7 +27,7 @@ export function Calendar() {
   const timeZone = useTimeZone()
   const today = ymd(useNow(), timeZone)
   const [cursor, setCursor] = useState(today)
-  const [open, setOpen] = useState<{ moduleId: string; id: string } | null>(null)
+  const [open, setOpen] = useState<{ moduleId: string; entry: ShownEntry } | null>(null)
   const rail = useProjectRail()
   const projects = useEveryProject()
 
@@ -44,7 +45,7 @@ export function Calendar() {
 
   const shown = results.filter((r) => view === 'all' || r.moduleId === view)
   const failed = shown.some((r) => r.isError)
-  type Placed = CalendarEntry & { moduleId: string }
+  type Placed = ShownEntry & { moduleId: string }
   const byDay = new Map<string, Placed[]>()
   for (const { moduleId, entries } of shown) {
     for (const entry of entries) {
@@ -154,10 +155,10 @@ export function Calendar() {
                 </div>
                 <ul className="flex flex-col">
                   {entries.slice(0, PER_SQUARE).map((entry) => (
-                    <li key={entry.id} className="min-w-0">
+                    <li key={entry.key} className="min-w-0">
                       <EntryLink
                         entry={entry}
-                        onOpen={() => setOpen({ moduleId: entry.moduleId, id: entry.id })}
+                        onOpen={() => setOpen({ moduleId: entry.moduleId, entry })}
                         opens={providers.some(
                           (p) => p.moduleId === entry.moduleId && p.Detail !== undefined,
                         )}
@@ -198,7 +199,7 @@ export function Calendar() {
 
       {providers.map(({ moduleId, Detail }) =>
         Detail && open?.moduleId === moduleId ? (
-          <Detail key={moduleId} id={open.id} onClose={() => setOpen(null)} />
+          <Detail key={moduleId} entry={open.entry} onClose={() => setOpen(null)} />
         ) : null,
       )}
     </>
@@ -212,12 +213,12 @@ function EntryLink({
   onOpen,
   children,
 }: {
-  entry: CalendarEntry
+  entry: ShownEntry
   opens: boolean
   onOpen: () => void
   children: ReactNode
 }) {
-  const title = [entry.kind, entry.title, entry.projectName].filter(Boolean).join(' · ')
+  const title = [entry.label, entry.title, entry.projectName].filter(Boolean).join(' · ')
   const className =
     'flex w-full min-w-0 items-center gap-1 rounded-md px-1 py-0.5 text-left hover:bg-hover'
   return opens ? (

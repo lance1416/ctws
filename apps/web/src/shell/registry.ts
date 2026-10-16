@@ -10,6 +10,7 @@ import type {
   ModulePage,
   ProjectContribution,
   RelationContribution,
+  ShownEntry,
   Widget,
   WorkspaceModule,
 } from './contract'
@@ -58,7 +59,30 @@ type RegisteredWidget = Widget & { moduleId: string }
 type SearchProvider = { moduleId: string; moduleLabel: string } & NonNullable<
   WorkspaceModule['search']
 >
-type CalendarProvider = { moduleId: string } & CalendarContribution
+type CalendarProvider = {
+  moduleId: string
+  label: string
+  /** A hook: the module's entries for an inclusive day range, as the shell draws them. */
+  useEntries: (range: { from: string; to: string }) => { entries: ShownEntry[]; isError: boolean }
+  Detail?: CalendarContribution['Detail']
+}
+
+/** One entry's name on a grid: which thing, which date of it, and which occurrence. */
+const entryKey = (e: ShownEntry | Parameters<CalendarContribution['show']>[0]): string =>
+  [e.type, e.id, e.kind, e.day, e.recurrenceId ?? ''].join(':')
+
+/** A module's calendar, its entries given the module's route and words. */
+function calendarProvider(moduleId: string, c: CalendarContribution): CalendarProvider {
+  return {
+    moduleId,
+    label: c.label,
+    ...(c.Detail ? { Detail: c.Detail } : {}),
+    useEntries: function useShownEntries(range) {
+      const { entries, isError } = c.useEntries(range)
+      return { isError, entries: entries.map((e) => ({ ...e, ...c.show(e), key: entryKey(e) })) }
+    },
+  }
+}
 type RegisteredProjectBlock = { moduleId: string; moduleLabel: string } & NonNullable<
   ProjectContribution['Block']
 >
@@ -130,7 +154,7 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
     search: modules.flatMap((m) =>
       m.search ? [{ moduleId: m.id, moduleLabel: m.label, useHits: m.search.useHits }] : [],
     ),
-    calendar: modules.flatMap((m) => (m.calendar ? [{ moduleId: m.id, ...m.calendar }] : [])),
+    calendar: modules.flatMap((m) => (m.calendar ? [calendarProvider(m.id, m.calendar)] : [])),
     widgets: modules
       .flatMap((m) => (m.widgets ?? []).map((w) => ({ ...w, moduleId: m.id })))
       .sort(byOrder),

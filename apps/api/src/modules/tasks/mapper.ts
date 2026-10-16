@@ -66,12 +66,12 @@ export function toSearchResponse(t: SearchTask): SearchTaskResponse {
 
 export function toCalendarEntry(r: CalendarRow): CalendarEntry {
   return dayEntry({
-    // A task can be both planned and due, so the id says which.
-    id: `${r.id}:${r.kind}`,
+    // A task can be both planned and due: two entries, told apart by `kind`.
+    type: 'task',
+    id: r.id,
+    kind: r.kind,
     day: r.day,
     title: r.title,
-    to: '/tasks/today',
-    kind: r.kind,
     projectId: r.projectId,
     projectName: r.projectName,
   })

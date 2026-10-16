@@ -167,8 +167,15 @@ describe('a recurring meeting on the calendar', () => {
     await arrange(ctx)
     const got = await entries(ctx, '2026-10-20', '2026-11-10')
     expect(got.map((e) => e.day)).toEqual(['2026-10-20', '2026-10-27', '2026-11-03', '2026-11-10'])
-    // Each square needs its own id, or the grid draws one and loses the rest.
-    expect(new Set(got.map((e) => e.id)).size).toBe(4)
+    // One series, so one id; each square is told apart by which occurrence it is, or the grid
+    // draws one and loses the rest.
+    expect(new Set(got.map((e) => `${e.type}:${e.id}`)).size).toBe(1)
+    expect(got.map((e) => [e.kind, e.recurrenceId])).toEqual([
+      ['occurrence', '2026-10-20T09:00'],
+      ['occurrence', '2026-10-27T09:00'],
+      ['occurrence', '2026-11-03T09:00'],
+      ['occurrence', '2026-11-10T09:00'],
+    ])
   })
 
   it('holds 09:00 in Toronto across the DST change, and says which zone that is', async () => {
@@ -181,9 +188,8 @@ describe('a recurring meeting on the calendar', () => {
     // And when it ends, on the same clock: a meeting that has started is not yet over, and the
     // day's line can only tell the two apart with its end.
     expect(got.map((e) => e.endTime)).toEqual(['14:00', '14:00', '15:00', '15:00'])
-    expect(got[0]!.kind).toBe('meeting · EDT 09:00')
-    expect(got[2]!.kind).toBe('meeting · EST 09:00')
     expect(got.map((e) => e.zone)).toEqual(['EDT', 'EDT', 'EST', 'EST'])
+    expect(got.map((e) => e.zoneTime)).toEqual(['09:00', '09:00', '09:00', '09:00'])
   })
 
   it('keeps a Toronto meeting and a London one apart in the week between their changes', async () => {

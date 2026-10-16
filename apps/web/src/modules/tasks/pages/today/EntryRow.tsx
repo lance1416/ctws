@@ -1,10 +1,10 @@
-import type { CalendarEntry } from '@ctws/contracts'
 import { Link } from 'react-router-dom'
+import type { ShownEntry } from '../../../../shell/contract'
 import { RowLead } from '../../../../shell/rows/RowLead'
 import { ProjectRail } from '../../../../shell/rows/RowParts'
 import { RowMeta } from '../../components/TaskRowParts'
 
-type Entry = CalendarEntry & { moduleId: string }
+type Entry = ShownEntry & { moduleId: string }
 
 /**
  * Another module's entry on the day's line. The marker's column stays empty so titles line up; a
@@ -47,7 +47,7 @@ export function EntryRow({
               </span>
             )}
           </span>
-          <RowMeta breadcrumb={e.projectName ?? e.kind} />
+          <RowMeta breadcrumb={e.projectName ?? e.label} />
         </span>
       </Link>
     </li>

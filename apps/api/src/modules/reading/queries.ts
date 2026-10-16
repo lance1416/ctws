@@ -139,5 +139,5 @@ export async function readingEntries(
     projectId: projectId.nullable(),
     projectName: z.string().nullable(),
   })
-  return rowsOf(result, row).map((r) => dayEntry({ ...r, to: '/reading', kind: 'to read' }))
+  return rowsOf(result, row).map((r) => dayEntry({ ...r, type: 'reading', kind: 'to-read' }))
 }

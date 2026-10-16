@@ -126,11 +126,11 @@ export async function birthdayEntries(
       if (next.day > range.to) break
       entries.push(
         dayEntry({
-          id: `${p.id}:${next.day}`,
+          type: 'person',
+          id: p.id,
+          kind: 'birthday',
           day: next.day,
           title: next.turns === null ? p.name : `${p.name} ${next.turns}`,
-          to: `/people/${p.id}`,
-          kind: 'Birthday',
           projectId: null,
           projectName: null,
         }),

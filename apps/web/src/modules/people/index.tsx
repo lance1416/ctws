@@ -153,7 +153,11 @@ export const peopleModule: WorkspaceModule = {
     { path: ':id', element: <People /> },
   ],
   search: { useHits: usePeopleHits },
-  calendar: { label: 'Birthdays', useEntries: useBirthdayEntries },
+  calendar: {
+    label: 'Birthdays',
+    useEntries: useBirthdayEntries,
+    show: (e) => ({ to: `/people/${e.id}`, label: 'Birthday' }),
+  },
   widgets: [
     {
       id: 'birthdays',

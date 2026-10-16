@@ -1,6 +1,7 @@
 import {
   occurrenceKey,
-  parseOccurrenceKey,
+  idFrom,
+  meetingId as meetingIdSchema,
   type MeetingOccurrence,
   type MeetingId,
 } from '@ctws/contracts'
@@ -16,7 +17,7 @@ import { clockTime } from '@ctws/core/clock'
 import { ymd } from '../../platform/time/dates'
 import { useTimeZone } from '../../shell/auth/useMe'
 import { useNow } from '../../platform/time/useNow'
-import type { WorkspaceModule } from '../../shell/contract'
+import type { ShownEntry, WorkspaceModule } from '../../shell/contract'
 
 /**
  * Meetings: a page of its own, timed calendar entries, and a Workbench card for today. No search
@@ -66,14 +67,17 @@ function useMeetingEntries(range: { from: string; to: string }) {
 }
 
 /**
- * The pane for a clicked calendar entry, whose id names one occurrence of a series. A save that
+ * The pane for a clicked calendar entry, which names one occurrence of a series. A save that
  * moves it renames it, so the pane follows the name the server gives back, keeping the last one
  * on screen while it reads the new.
  */
-function CalendarDetail({ id, onClose }: { id: string; onClose: () => void }) {
+function CalendarDetail({ entry, onClose }: { entry: ShownEntry; onClose: () => void }) {
   const accountZone = useTimeZone()
   const [moved, setMoved] = useState<{ from: string; to: MeetingOccurrence } | null>(null)
-  const { meetingId, recurrenceId } = moved?.from === id ? moved.to : parseOccurrenceKey(id)
+  const { meetingId, recurrenceId } =
+    moved?.from === entry.key
+      ? moved.to
+      : { meetingId: idFrom(meetingIdSchema, entry.id), recurrenceId: entry.recurrenceId ?? '' }
   const found = useQuery({
     ...occurrenceQuery(meetingId, recurrenceId),
     placeholderData: keepPreviousData,
@@ -85,7 +89,7 @@ function CalendarDetail({ id, onClose }: { id: string; onClose: () => void }) {
       meeting={found.data}
       accountZone={accountZone}
       onClose={onClose}
-      onMoved={(to) => setMoved({ from: id, to })}
+      onMoved={(to) => setMoved({ from: entry.key, to })}
     />
   )
 }
@@ -309,7 +313,16 @@ export const meetingModule: WorkspaceModule = {
   chords: [
     { id: 'meetings', key: 'm', label: 'Go to Meetings', resolve: () => `/${ID}`, order: 16 },
   ],
-  calendar: { label: 'Meetings', useEntries: useMeetingEntries, Detail: CalendarDetail },
+  calendar: {
+    label: 'Meetings',
+    useEntries: useMeetingEntries,
+    // A meeting agreed elsewhere says where, and its time on that clock.
+    show: (e) => ({
+      to: '/calendar',
+      label: e.zone ? `meeting · ${e.zone} ${e.zoneTime}` : 'Meetings',
+    }),
+    Detail: CalendarDetail,
+  },
   widgets: [
     {
       id: 'today',

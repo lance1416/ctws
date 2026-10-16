@@ -118,7 +118,12 @@ export const taskModule: WorkspaceModule = {
       order: 40,
     },
   ],
-  calendar: { label: 'Tasks', useEntries: useTaskEntries },
+  calendar: {
+    label: 'Tasks',
+    useEntries: useTaskEntries,
+    // `planned` and `due` are the words too.
+    show: (e) => ({ to: '/tasks/today', label: e.kind }),
+  },
   widgets: [
     {
       id: 'today',

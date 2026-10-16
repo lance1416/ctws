@@ -131,7 +131,11 @@ export const readingModule: WorkspaceModule = {
   search: { useHits: useReadingHits },
   // `l` for list: `r` is the task module's Review, and the keyspace is shared across modules.
   chords: [{ id: 'reading', key: 'l', label: 'Go to Reading', resolve: () => `/${ID}`, order: 15 }],
-  calendar: { label: 'Reading', useEntries: useReadingEntries },
+  calendar: {
+    label: 'Reading',
+    useEntries: useReadingEntries,
+    show: () => ({ to: '/reading', label: 'to read' }),
+  },
   widgets: [
     {
       id: 'unfiled',
