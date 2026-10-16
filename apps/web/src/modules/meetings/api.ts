@@ -1,7 +1,6 @@
 import {
   api,
   type CreateMeetingBody,
-  MAX_CALENDAR_SPAN_DAYS,
   type MeetingOccurrence,
   type MeetingSeries,
   ruleEndDay,
@@ -11,7 +10,6 @@ import {
 } from '@ctws/contracts'
 import { queryOptions, skipToken } from '@tanstack/react-query'
 import { ApiError, call, everyPage } from '../../platform/http/api'
-import { addDays } from '@ctws/core/day'
 import { shortDay } from '../../platform/time/dates'
 
 type DayRange = { from: string; to: string }
@@ -89,20 +87,29 @@ export const seriesQuery = (meetingId: MeetingId | null, today: string) =>
     queryFn:
       meetingId === null
         ? skipToken
-        : async ({ signal }) => {
-            const ahead = await listMeetings(
-              { from: today, to: addDays(today, MAX_CALENDAR_SPAN_DAYS) },
-              signal,
-            )
-            const hit = ahead.find((m) => m.meetingId === meetingId)
-            if (hit) return hit
-            const behind = await listMeetings(
-              { from: addDays(today, -MAX_CALENDAR_SPAN_DAYS), to: today },
-              signal,
-            )
-            return [...behind].reverse().find((m) => m.meetingId === meetingId) ?? null
-          },
+        : async ({ signal }) =>
+            (await nearestOccurrence(meetingId, { from: today, order: 'asc' }, signal)) ??
+            nearestOccurrence(meetingId, { to: today, order: 'desc' }, signal),
   })
+
+/** A series' first occurrence from one end of a window, or null when it has none or is gone. */
+async function nearestOccurrence(
+  id: MeetingId,
+  window: { from: string; order: 'asc' } | { to: string; order: 'desc' },
+  signal: AbortSignal,
+): Promise<MeetingOccurrence | null> {
+  try {
+    const { occurrences } = await call(
+      api.meetings.occurrences,
+      { params: { id }, query: { ...window, limit: 1 } },
+      { signal },
+    )
+    return occurrences[0] ?? null
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) return null
+    throw e
+  }
+}
 
 /** Calendar entries; the day, the clock and the origin zone are all the server's. */
 export const meetingCalendarQuery = (range: DayRange) =>

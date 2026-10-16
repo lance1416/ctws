@@ -3,7 +3,13 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { on, serve } from '../../platform/http/serve'
 import { actorOf, currentUser } from '../../shell/auth'
 import { toOccurrenceResponse, toSeriesResponse } from './mapper'
-import { getMeeting, getOccurrence, listOccurrences, meetingEntries } from './queries'
+import {
+  getMeeting,
+  getOccurrence,
+  listOccurrences,
+  meetingEntries,
+  seriesOccurrences,
+} from './queries'
 import {
   cancelMeeting,
   continueSeries,
@@ -11,7 +17,7 @@ import {
   updateOccurrence,
   updateSeries,
 } from './service'
-import { windowOf } from './zone'
+import { windowFrom, windowOf } from './zone'
 
 export const meetingRoutes: FastifyPluginAsyncZod = async (app) => {
   serve(app, [
@@ -41,6 +47,19 @@ export const meetingRoutes: FastifyPluginAsyncZod = async (app) => {
     on(api.meetings.series, async (req) =>
       toSeriesResponse(await getMeeting(app.db, currentUser(req).workspaceId, req.params.id)),
     ),
+
+    on(api.meetings.occurrences, async (req) => {
+      const user = currentUser(req)
+      const { rows, page } = await seriesOccurrences(
+        app.db,
+        user.workspaceId,
+        req.params.id,
+        windowFrom(req.query, user.timezone),
+        req.query.order,
+        req.query,
+      )
+      return { occurrences: rows.map(toOccurrenceResponse), page }
+    }),
 
     on(api.meetings.occurrence, async (req) => {
       const { id, recurrenceId } = req.params

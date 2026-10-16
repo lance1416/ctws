@@ -13,6 +13,7 @@ import {
   calendarEntriesResponse,
   calendarQuery,
   calendarView,
+  MAX_CALENDAR_SPAN_DAYS,
 } from './calendar'
 import { viewQuery } from './common'
 import { citiesResponse, citySearchQuery } from './city'
@@ -37,6 +38,8 @@ import {
   meetingsResponse,
   occurrenceParams,
   occurrencesFromQuery,
+  seriesOccurrencesQuery,
+  seriesOccurrencesResponse,
   successorBody,
   updateOccurrenceBody,
   updateSeriesBody,
@@ -444,6 +447,18 @@ export const api = {
       params: meetingParams,
       ok: 200,
       response: meetingSeries,
+      refusals: [404],
+    }),
+    occurrences: endpoint({
+      method: 'GET',
+      path: '/meetings/:id/occurrences',
+      summary:
+        "One series' occurrences over a window of days, in time order or the reverse. A window " +
+        `given one end reaches ${MAX_CALENDAR_SPAN_DAYS} days from it.`,
+      params: meetingParams,
+      query: seriesOccurrencesQuery,
+      ok: 200,
+      response: seriesOccurrencesResponse,
       refusals: [404],
     }),
     occurrence: endpoint({

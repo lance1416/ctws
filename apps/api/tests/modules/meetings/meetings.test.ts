@@ -332,6 +332,47 @@ describe('a window finds an occurrence wherever a write put it', () => {
   })
 })
 
+describe("one series' occurrences", () => {
+  async function occurrences(ctx: Harness, id: string, query: string) {
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/meetings/${id}/occurrences?${query}`,
+      headers: ctx.authed,
+    })
+    return { status: res.statusCode, body: res.json() as { occurrences: MeetingOccurrence[] } }
+  }
+  const starts = (r: { body: { occurrences: MeetingOccurrence[] } }) =>
+    r.body.occurrences.map((o) => o.startsLocal)
+
+  it('are the next after a day, and the latest up to it, from one end of the window', async () => {
+    const ctx = await setup()
+    const series = await arrange(ctx)
+    expect(starts(await occurrences(ctx, series.meetingId, 'from=2026-10-21&limit=1'))).toEqual([
+      '2026-10-27T09:00',
+    ])
+    expect(
+      starts(await occurrences(ctx, series.meetingId, 'to=2026-11-04&order=desc&limit=2')),
+    ).toEqual(['2026-11-03T09:00', '2026-10-27T09:00'])
+  })
+
+  it('are none outside a series that has ended', async () => {
+    const ctx = await setup()
+    const once = await arrange(ctx, { ...WEEKLY, rrule: null })
+    expect(starts(await occurrences(ctx, once.meetingId, 'from=2026-10-21'))).toEqual([])
+    expect(starts(await occurrences(ctx, once.meetingId, 'to=2026-10-21&order=desc'))).toEqual([
+      '2026-10-20T09:00',
+    ])
+  })
+
+  it('need a window, and a series in this workspace', async () => {
+    const ctx = await setup()
+    const series = await arrange(ctx)
+    expect((await occurrences(ctx, series.meetingId, 'limit=1')).status).toBe(400)
+    const other = await secondUser(ctx)
+    expect((await occurrences(other, series.meetingId, 'from=2026-10-20')).status).toBe(404)
+  })
+})
+
 describe('editing from one occurrence on', () => {
   it('splits the series, leaving the past exactly as it happened', async () => {
     const ctx = await setup()

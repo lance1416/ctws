@@ -189,6 +189,23 @@ export async function listOccurrences(
   return { rows: occurrences, page }
 }
 
+/**
+ * One series' occurrences over a window, in time order or the reverse, a page at a time. Missing,
+ * deleted and foreign ids all read as not found.
+ */
+export async function seriesOccurrences(
+  q: Queryable,
+  workspaceId: WorkspaceId,
+  id: MeetingId,
+  window: Window,
+  order: 'asc' | 'desc',
+  asked: PageAsked,
+): Promise<Page<OccurrenceRow>> {
+  const all = expand(await getMeeting(q, workspaceId, id), window)
+  const { limit, offset } = spanOf(asked)
+  return pageOf((order === 'asc' ? all : all.reverse()).slice(offset, offset + limit), asked)
+}
+
 /** A window around a local time, wide enough for any zone. */
 function around(recurrenceId: LocalTime): Window {
   const at = Date.parse(`${recurrenceId}:00Z`)

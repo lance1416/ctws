@@ -216,3 +216,30 @@ export const meetingsResponse = z.object({
 })
 
 export const meetingEntriesResponse = calendarEntriesResponse.extend({ page: pageInfo })
+
+/** At most this many occurrences of one series in a page: a window is at most a year of days. */
+const SERIES_OCCURRENCE_PAGE = 400
+
+/**
+ * One series' occurrences over days in the account's zone, inclusive, in time order or the
+ * reverse. A window given one end reaches `MAX_CALENDAR_SPAN_DAYS` from it, so the nearest
+ * occurrence after a day is `from=<day>&limit=1` and the latest before it `to=<day>&order=desc`.
+ */
+export const seriesOccurrencesQuery = z
+  .object({
+    from: calendarDate.optional(),
+    to: calendarDate.optional(),
+    order: z.enum(['asc', 'desc']).default('asc'),
+    ...pageQuery(SERIES_OCCURRENCE_PAGE),
+  })
+  .strict()
+  .refine((q) => q.from !== undefined || q.to !== undefined, {
+    message: 'expected a window: from, to or both',
+    path: ['from'],
+  })
+  .refine(windowIsBounded, { message: WINDOW_REFUSED, path: ['to'] })
+
+export const seriesOccurrencesResponse = z.object({
+  occurrences: z.array(meetingOccurrence),
+  page: pageInfo,
+})

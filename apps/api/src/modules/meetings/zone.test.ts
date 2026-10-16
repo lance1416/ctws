@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { windowOf } from './zone'
+import { windowFrom, windowOf } from './zone'
 
 describe('windowOf', () => {
   it('runs to the end of a 25-hour day', () => {
@@ -15,5 +15,22 @@ describe('windowOf', () => {
       from: new Date('2026-03-08T05:00:00Z'),
       to: new Date('2026-03-09T04:00:00Z'),
     })
+  })
+})
+
+describe('windowFrom', () => {
+  it('reaches the longest window a read may ask for from the one end it is given', () => {
+    expect(windowFrom({ from: '2026-01-01' }, 'UTC')).toEqual(
+      windowOf('2026-01-01', '2027-01-06', 'UTC'),
+    )
+    expect(windowFrom({ to: '2027-01-06' }, 'UTC')).toEqual(
+      windowOf('2026-01-01', '2027-01-06', 'UTC'),
+    )
+  })
+
+  it('takes both ends as given', () => {
+    expect(windowFrom({ from: '2026-01-01', to: '2026-01-02' }, 'UTC')).toEqual(
+      windowOf('2026-01-01', '2026-01-02', 'UTC'),
+    )
   })
 })
