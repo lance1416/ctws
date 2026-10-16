@@ -1,5 +1,6 @@
 import { API_BASE, type Endpoint, type ResponseOf } from '@ctws/contracts'
 import type { FastifyInstance, FastifyReply, FastifyRequest, RouteShorthandOptions } from 'fastify'
+import { serializerCompiler } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 
 type Out<S> = S extends z.ZodType ? z.output<S> : unknown
@@ -41,7 +42,7 @@ declare module 'fastify' {
   }
 }
 
-/** The schemas of several endpoints at one method and path: any one of theirs. */
+/** The schemas of several endpoints at one method and path: any one of theirs, for the document. */
 const anyOf = (schemas: z.ZodType[]): z.ZodType =>
   schemas.length === 1 ? schemas[0]! : z.union(schemas as [z.ZodType, z.ZodType])
 
@@ -51,7 +52,8 @@ const anyOf = (schemas: z.ZodType[]): z.ZodType =>
  *
  * Several endpoints may share a method and path when each is a view of one collection, told apart
  * by its query (`?view=`, `?q=`): they become one route that takes any of their queries and hands
- * the request to the first endpoint whose query it matches.
+ * the request to the first endpoint whose query it matches. The answer is written by that view's
+ * own response schema; the route's union of them is only what the document says.
  */
 export function serve(app: FastifyInstance, served: readonly Served[]): void {
   const prefix = app.prefix.slice(API_BASE.length)
@@ -74,6 +76,12 @@ export function serve(app: FastifyInstance, served: readonly Served[]): void {
     }
     const pick = (req: FastifyRequest): Served =>
       views.find((v) => !shared || v.endpoint.query!.safeParse(req.query).success) ?? first
+    const url = e.path.slice(prefix.length)
+    const serializers = new Map<Served, (data: unknown) => string>()
+    for (const v of shared ? views : []) {
+      const schema = v.endpoint.response
+      if (schema) serializers.set(v, serializerCompiler({ schema, method: e.method, url }))
+    }
 
     const answers = views.flatMap((v) => (v.endpoint.response ? [v.endpoint.response] : []))
     const response: Record<number, z.ZodType> = {}
@@ -85,7 +93,7 @@ export function serve(app: FastifyInstance, served: readonly Served[]): void {
     app.route({
       ...first.options,
       method: e.method,
-      url: e.path.slice(prefix.length),
+      url,
       config: {
         ...first.options.config,
         refusals: [...new Set(views.flatMap((v) => v.endpoint.refusals ?? []))],
@@ -99,10 +107,13 @@ export function serve(app: FastifyInstance, served: readonly Served[]): void {
         response,
       },
       handler: async (req, reply) => {
-        const { endpoint: view, handler } = pick(req)
+        const picked = pick(req)
+        const { endpoint: view, handler } = picked
         reply.code(view.ok)
         const body = await handler(req as RequestFor<Endpoint>, reply)
         if (view.ok === 204) return reply.send()
+        const serializer = serializers.get(picked)
+        if (serializer) reply.serializer(serializer)
         if (reply.statusCode === 201 && view.location) {
           reply.header('location', `${API_BASE}${view.location(body as never)}`)
         }

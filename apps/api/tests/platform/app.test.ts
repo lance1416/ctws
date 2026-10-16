@@ -1,8 +1,9 @@
-import { api, API_BASE, type Endpoint } from '@ctws/contracts'
+import { api, API_BASE, endpoint, type Endpoint } from '@ctws/contracts'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { buildApp } from '../../src/app'
+import { on, serve } from '../../src/platform/http/serve'
 import { withApp } from '../helpers/app'
 
 let ctx: Awaited<ReturnType<typeof withApp>>
@@ -80,6 +81,35 @@ describe('app', () => {
     expect(res.json()).toMatchObject({ status: 400, title: expect.any(String) })
 
     await validationApp.close()
+  })
+
+  it("writes a view's answer by that view's schema, not by the first view of its path", async () => {
+    const viewsApp = await buildApp({ env: ctx.env, db: ctx.db, modules: ctx.modules })
+    const view = (name: string, response: z.ZodType) =>
+      endpoint({
+        method: 'GET',
+        path: '/__test-views',
+        summary: name,
+        query: z.object({ view: z.literal(name) }).strict(),
+        ok: 200,
+        response,
+      })
+    const short = view('short', z.object({ rows: z.array(z.number()) }))
+    const long = view('long', z.object({ rows: z.array(z.number()), total: z.number() }))
+    await viewsApp.register(
+      async (scope) =>
+        serve(scope, [
+          on(short, async () => ({ rows: [1] })),
+          on(long, async () => ({ rows: [1], total: 1 })),
+        ]),
+      { prefix: API_BASE },
+    )
+    await viewsApp.ready()
+
+    const res = await viewsApp.inject({ method: 'GET', url: `${API_BASE}/__test-views?view=long` })
+    expect(res.json()).toEqual({ rows: [1], total: 1 })
+
+    await viewsApp.close()
   })
 
   it('refuses a write a database check rejects as 422 problem details, not a 500', async () => {
