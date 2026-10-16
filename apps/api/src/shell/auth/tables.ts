@@ -53,7 +53,6 @@ export const sessions = pgTable(
 
 export const workspaces = pgTable('workspaces', {
   id: uuid('id').primaryKey(),
-  name: text('name').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
@@ -66,11 +65,7 @@ export const workspaceMembers = pgTable(
     userId: uuid('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    role: text('role').notNull(),
     joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [
-    primaryKey({ columns: [t.workspaceId, t.userId] }),
-    check('workspace_members_role_check', sql`${t.role} in ('owner', 'member')`),
-  ],
+  (t) => [primaryKey({ columns: [t.workspaceId, t.userId] })],
 )

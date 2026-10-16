@@ -392,8 +392,8 @@ describe('the tenant join does not scan every project in the database', () => {
 
     // Other people's data, in other workspaces. One statement, so this costs a moment.
     await ctx.db.execute(sql`
-      insert into workspaces (id, name)
-      select gen_random_uuid(), 'w' || g from generate_series(1, 200) g
+      insert into workspaces (id)
+      select gen_random_uuid() from generate_series(1, 200)
     `)
     await ctx.db.execute(sql`
       insert into projects (id, workspace_id, name, rank, color)

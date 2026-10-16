@@ -12,7 +12,7 @@ beforeAll(async () => {
   ctx = await withDatabase()
   // Seeded directly: this file tests the event log, not the task commands.
   const seed = await ctx.db.execute(sql`
-    with w as (insert into workspaces (id, name) values (gen_random_uuid(), 'w') returning id),
+    with w as (insert into workspaces (id) values (gen_random_uuid()) returning id),
          p as (insert into projects (id, workspace_id, name, rank, color)
                values (gen_random_uuid(), (select id from w), 'p', 'a0', 'project-1') returning id),
          t1 as (insert into tasks (id, project_id, title, status, rank)

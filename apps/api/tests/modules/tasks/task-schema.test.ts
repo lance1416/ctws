@@ -37,7 +37,7 @@ const CHECK_VIOLATION = '23514'
 async function seed() {
   const id = async (q: ReturnType<typeof sql>) => (await ctx.db.execute(q)).rows[0]!.id as string
   const workspaceId = await id(sql`
-    insert into workspaces (id, name) values (gen_random_uuid(), 'w') returning id
+    insert into workspaces (id) values (gen_random_uuid()) returning id
   `)
   const projectId = await id(sql`
     insert into projects (id, workspace_id, name, rank, color)

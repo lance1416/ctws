@@ -72,23 +72,6 @@ describe('migrations', () => {
     ).rejects.toMatchObject({ cause: { constraint: 'users_role_check' } })
   })
 
-  it('restricts workspace_members.role to owner and member', async () => {
-    const [u] = (
-      await ctx.db.execute(sql`
-        insert into users (id, email, password_hash, timezone)
-        values (gen_random_uuid(), 'wm@example.com', 'x', 'UTC') returning id`)
-    ).rows as { id: string }[]
-    const [w] = (
-      await ctx.db.execute(sql`
-        insert into workspaces (id, name) values (gen_random_uuid(), 'w') returning id`)
-    ).rows as { id: string }[]
-    await expect(
-      ctx.db.execute(sql`
-        insert into workspace_members (workspace_id, user_id, role)
-        values (${w!.id}, ${u!.id}, 'admin')`),
-    ).rejects.toMatchObject({ cause: { constraint: 'workspace_members_role_check' } })
-  })
-
   // Every day boundary is computed from these, so none may be a naive timestamp.
   it('stores every timestamp column as timestamptz and non-null', async () => {
     const expected = {

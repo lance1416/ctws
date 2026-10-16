@@ -46,8 +46,8 @@ export async function registerUser(
             sql`case when not exists (select 1 from users) then 'admin' else 'member' end`,
         })
         .returning({ role: users.role })
-      await tx.insert(workspaces).values({ id: workspaceId, name: 'My Workspace' })
-      await tx.insert(workspaceMembers).values({ workspaceId, userId, role: 'owner' })
+      await tx.insert(workspaces).values({ id: workspaceId })
+      await tx.insert(workspaceMembers).values({ workspaceId, userId })
       await createInbox(tx, workspaceId)
       return { userId, workspaceId, role: user!.role }
     })

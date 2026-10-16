@@ -153,9 +153,9 @@ describe('POST /admin/users', () => {
     expect(res.body).not.toContain('argon2')
 
     const members = await ctx.db.execute(sql`
-      select wm.role from workspace_members wm join users u on u.id = wm.user_id
+      select count(*)::int as n from workspace_members wm join users u on u.id = wm.user_id
       where u.email = 'new@example.com'`)
-    expect(members.rows).toEqual([{ role: 'owner' }])
+    expect(members.rows).toEqual([{ n: 1 }])
 
     // The new user can log in, and the role they were given is what /auth/me reports.
     const cookie = await login(ctx, 'new@example.com')

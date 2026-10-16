@@ -4,6 +4,7 @@ import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { buildApp } from '../../../src/app'
 import { parseEnv } from '../../../src/platform/config'
+import { hashPassword } from '../../../src/shell/auth/password'
 import { migratedTo } from '../../helpers/db'
 
 /**
@@ -24,28 +25,21 @@ describe('the people migration', () => {
   it('carries a person, their channels and both ends of their links across the rename', async () => {
     const at = await migratedTo('0019_contact_birthday_daymonth')
     stops.push(at.stop)
-    const env = parseEnv({
-      DATABASE_URL: at.connectionString,
-      AUTH_REGISTRATION: 'open',
-    })
+    const env = parseEnv({ DATABASE_URL: at.connectionString })
     const app = await buildApp({ env, db: at.db })
     await app.ready()
     stops.unshift(() => app.close())
 
-    // Registration touches only users, workspaces and projects, which the rename leaves alone.
-    const web = { 'x-ctws-client': 'web' }
-    const registered = await app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/register',
-      headers: web,
-      payload: { email: 'm@example.com', password: 'correct horse battery', timezone: 'UTC' },
-    })
-    expect(registered.statusCode, registered.body).toBe(201)
-    const authed = { ...web, cookie: String(registered.headers['set-cookie']).split(';')[0]! }
-    const member = await at.db.execute<{ workspace_id: string }>(
-      sql`select workspace_id from workspace_members limit 1`,
-    )
-    const ws = member.rows[0]!.workspace_id
+    // The account is written in that schema's own shape: today's registration writes today's.
+    const ws = randomUUID()
+    const user = randomUUID()
+    const password = 'correct horse battery'
+    await at.db.execute(sql`
+      insert into users (id, email, password_hash, timezone)
+      values (${user}, 'm@example.com', ${await hashPassword(password)}, 'UTC')`)
+    await at.db.execute(sql`insert into workspaces (id, name) values (${ws}, 'w')`)
+    await at.db.execute(sql`
+      insert into workspace_members (workspace_id, user_id, role) values (${ws}, ${user}, 'owner')`)
 
     const person = randomUUID()
     const meeting = randomUUID()
@@ -66,6 +60,16 @@ describe('the people migration', () => {
         (${ws}, 'contact', ${person}, 'meeting', ${meeting}, 'about')`)
 
     await at.migrateRest()
+
+    const web = { 'x-ctws-client': 'web' }
+    const login = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      headers: web,
+      payload: { email: 'm@example.com', password },
+    })
+    expect(login.statusCode, login.body).toBe(200)
+    const authed = { ...web, cookie: String(login.headers['set-cookie']).split(';')[0]! }
 
     const listed = await app.inject({ method: 'GET', url: '/api/v1/people', headers: authed })
     expect(listed.statusCode, listed.body).toBe(200)
