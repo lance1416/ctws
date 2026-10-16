@@ -41,13 +41,15 @@ type Options = {
 
 export async function unfurl(raw: string, opts: Options = {}): Promise<Unfurled | null> {
   const allow = opts.allow ?? isPublicAddress
-  const deadline = Date.now() + (opts.timeoutMs ?? BUDGET_MS)
+  // Elapsed time, not a date: the monotonic timer, which neither a pinned clock nor a clock
+  // adjustment can stretch.
+  const deadline = performance.now() + (opts.timeoutMs ?? BUDGET_MS)
 
   let url = checkLinkUrl(raw)
   if (!url) return null
 
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
-    const left = deadline - Date.now()
+    const left = deadline - performance.now()
     if (left <= 0) return null
     // A numeric host skips DNS, and so the lookup guard: it is checked here.
     const literal = literalAddress(url.hostname)
