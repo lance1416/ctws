@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { email, roleSchema } from './auth'
+import { email, newPassword, roleSchema } from './auth'
 import { canonicalTimeZone, instant } from './common'
 
 export const adminUser = z
@@ -17,7 +17,7 @@ export const adminUserListResponse = z.object({ users: z.array(adminUser) }).str
 export const adminCreateUserBody = z
   .object({
     email,
-    password: z.string().min(12).max(1024),
+    password: newPassword,
     timezone: canonicalTimeZone,
     role: roleSchema,
   })

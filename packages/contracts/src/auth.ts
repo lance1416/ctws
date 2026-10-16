@@ -7,10 +7,13 @@ export type Role = z.infer<typeof roleSchema>
 
 export const email = z.string().trim().toLowerCase().pipe(z.email().max(254))
 
+/** A password being set: long enough to resist guessing, short enough to hash cheaply. */
+export const newPassword = z.string().min(12).max(1024)
+
 export const registerBody = z
   .object({
     email,
-    password: z.string().min(12).max(1024),
+    password: newPassword,
     timezone: canonicalTimeZone,
   })
   .strict()
