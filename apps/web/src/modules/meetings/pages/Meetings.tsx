@@ -1,4 +1,4 @@
-import type { MeetingOccurrence } from '@ctws/contracts'
+import { occurrenceKey, type MeetingOccurrence } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { Fragment, useState, type ReactNode } from 'react'
 import { useForgetWhenGone } from '../../../shell/search/recent'
@@ -175,7 +175,7 @@ export function Meetings() {
       )}
       {pane && (
         <MeetingDetail
-          key={`${pane.meetingId}:${pane.recurrenceId}`}
+          key={occurrenceKey(pane)}
           meeting={pane}
           accountZone={accountZone}
           onClose={() => setOpen(null)}
@@ -244,7 +244,7 @@ function Days({
           <ul className={ROW_LIST}>
             {list.map((m) => (
               <MeetingRow
-                key={`${m.meetingId}:${m.recurrenceId}`}
+                key={occurrenceKey(m)}
                 meeting={m}
                 today={today}
                 now={now}

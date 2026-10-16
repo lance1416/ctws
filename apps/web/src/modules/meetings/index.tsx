@@ -1,4 +1,4 @@
-import type { MeetingOccurrence } from '@ctws/contracts'
+import { occurrenceKey, parseOccurrenceKey, type MeetingOccurrence } from '@ctws/contracts'
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { meetingCalendarQuery, meetingsQuery, occurrenceQuery } from './api'
@@ -38,7 +38,7 @@ function useOpenMeeting(pool: readonly MeetingOccurrence[]) {
   const found = listed ?? one.data ?? null
   const pane = found ? (
     <MeetingDetail
-      key={`${found.meetingId}:${found.recurrenceId}`}
+      key={occurrenceKey(found)}
       meeting={found}
       accountZone={accountZone}
       onClose={() => setOpen(null)}
@@ -67,8 +67,7 @@ function useMeetingEntries(range: { from: string; to: string }) {
 function CalendarDetail({ id, onClose }: { id: string; onClose: () => void }) {
   const accountZone = useTimeZone()
   const [moved, setMoved] = useState<{ from: string; to: MeetingOccurrence } | null>(null)
-  const [meetingId, recurrenceId] =
-    moved?.from === id ? [moved.to.meetingId, moved.to.recurrenceId] : splitEntryId(id)
+  const { meetingId, recurrenceId } = moved?.from === id ? moved.to : parseOccurrenceKey(id)
   const found = useQuery({
     ...occurrenceQuery(meetingId, recurrenceId),
     placeholderData: keepPreviousData,
@@ -76,18 +75,13 @@ function CalendarDetail({ id, onClose }: { id: string; onClose: () => void }) {
   if (!found.data) return null
   return (
     <MeetingDetail
-      key={`${found.data.meetingId}:${found.data.recurrenceId}`}
+      key={occurrenceKey(found.data)}
       meeting={found.data}
       accountZone={accountZone}
       onClose={onClose}
       onMoved={(to) => setMoved({ from: id, to })}
     />
   )
-}
-
-/** `<series uuid>:<recurrence id>`. The uuid has a fixed length, so the split is unambiguous. */
-function splitEntryId(id: string): [string, string] {
-  return [id.slice(0, 36), id.slice(37)]
 }
 
 /** Today's meetings, shared by Things' count and status line. */
@@ -224,7 +218,7 @@ function TodayMeetings() {
           const past = new Date(m.endsAt).getTime() <= now.getTime()
           return (
             <span
-              key={`${m.meetingId}:${m.recurrenceId}`}
+              key={occurrenceKey(m)}
               data-line-meeting={m.title}
               className={`absolute top-3 h-[18px] bg-select ${past ? 'opacity-55' : ''}`}
               style={{ left: `${pct(from)}%`, width: `${Math.max(pct(to) - pct(from), 1)}%` }}
@@ -257,7 +251,7 @@ function TodayMeetings() {
           const past = new Date(m.endsAt).getTime() <= now.getTime()
           return (
             <li
-              key={`${m.meetingId}:${m.recurrenceId}`}
+              key={occurrenceKey(m)}
               className="flex min-h-[38px] min-w-0 items-stretch hover:bg-hover"
             >
               <span

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { calendarQuery } from './calendar'
 import { reviewQuery } from './task'
-import { createMeetingBody } from './meeting'
+import { createMeetingBody, occurrenceKey, parseOccurrenceKey } from './meeting'
 
 /**
  * The edge's share of bounding what one request can cost. The expander bounds itself as well --
@@ -80,5 +80,16 @@ describe('windows', () => {
 
   it('refuses a window that ends before it starts', () => {
     expect(calendarQuery.safeParse({ from: '2026-11-01', to: '2026-10-01' }).success).toBe(false)
+  })
+})
+
+describe('occurrenceKey', () => {
+  it('names one occurrence and reads back the same one', () => {
+    const o = {
+      meetingId: '0190f5a8-1c2d-7e3f-8a4b-5c6d7e8f9a0b',
+      recurrenceId: '2026-10-20T09:00',
+    }
+    expect(occurrenceKey(o)).toBe('0190f5a8-1c2d-7e3f-8a4b-5c6d7e8f9a0b:2026-10-20T09:00')
+    expect(parseOccurrenceKey(occurrenceKey(o))).toEqual(o)
   })
 })

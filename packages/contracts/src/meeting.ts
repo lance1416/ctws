@@ -119,6 +119,20 @@ export const meetingOccurrence = z
   .strict()
 export type MeetingOccurrence = z.infer<typeof meetingOccurrence>
 
+type OccurrenceName = Pick<MeetingOccurrence, 'meetingId' | 'recurrenceId'>
+
+/**
+ * One occurrence as a single string, `<series uuid>:<recurrence id>`: its calendar entry's id and
+ * its key in a list. A series shows several times on one grid, so the series id alone is not one.
+ */
+export const occurrenceKey = (o: OccurrenceName): string => `${o.meetingId}:${o.recurrenceId}`
+
+/** The occurrence an `occurrenceKey` names. A uuid has no colon, so the first one splits it. */
+export function parseOccurrenceKey(key: string): OccurrenceName {
+  const at = key.indexOf(':')
+  return { meetingId: key.slice(0, at), recurrenceId: key.slice(at + 1) }
+}
+
 export const meetingsResponse = z.object({ meetings: z.array(meetingOccurrence) }).strict()
 
 /** Which occurrence of a series. */

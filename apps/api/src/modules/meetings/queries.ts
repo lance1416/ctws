@@ -1,4 +1,4 @@
-import { type CalendarEntry, DAY_MS } from '@ctws/contracts'
+import { type CalendarEntry, DAY_MS, occurrenceKey } from '@ctws/contracts'
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
 import { groupBy } from '../../platform/values'
@@ -193,8 +193,7 @@ export async function meetingEntries(
   return rows.map((m) => {
     const elsewhere = m.timeZone !== zone
     return {
-      // A series shows several times on one grid.
-      id: `${m.meetingId}:${m.recurrenceId}`,
+      id: occurrenceKey(m),
       day: localOf(m.startsAt, zone).slice(0, 10),
       title: m.title,
       to: '/calendar',
