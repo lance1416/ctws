@@ -14,6 +14,16 @@ export const READING_STATUSES = ['todo', 'reading', 'done', 'dropped'] as const
 const readingStatus = z.enum(READING_STATUSES)
 export type ReadingStatus = z.infer<typeof readingStatus>
 
+/** Off the list and off the calendar: read to the end, or given up. */
+export const FINISHED_READING_STATUSES = [
+  'done',
+  'dropped',
+] as const satisfies readonly ReadingStatus[]
+
+/** Whether the item is off the list. */
+export const readingIsFinished = (status: ReadingStatus): boolean =>
+  (FINISHED_READING_STATUSES as readonly ReadingStatus[]).includes(status)
+
 const readingTitle = z.string().trim().min(1).max(500)
 // http(s) only: the list renders the url as a link someone will click.
 const readingUrl = z

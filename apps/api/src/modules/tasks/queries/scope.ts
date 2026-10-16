@@ -1,7 +1,7 @@
 import { FINISHED_TASK_STATUSES } from '@ctws/contracts'
 import { and, eq, isNull, sql, type SQL } from 'drizzle-orm'
 import type { Queryable } from '../../../platform/db/client'
-import { ident } from '../../../platform/db/sql'
+import { ident, sqlValues } from '../../../platform/db/sql'
 import { projectVisibleSql, visibleProjects } from '../../../shell/projects/queries'
 import { projects } from '../../../shell/projects/tables'
 import { TaskNotFoundError } from '../errors'
@@ -18,7 +18,7 @@ export const visibleTasks = (workspaceId: string): SQL =>
 export const taskVisibleSql = (task: string, project: string, workspaceId: string): SQL =>
   sql`${ident(task)}.deleted_at is null and ${projectVisibleSql(project, workspaceId)}`
 
-const FINISHED = sql.raw(FINISHED_TASK_STATUSES.map((s) => `'${s}'`).join(', '))
+const FINISHED = sqlValues(FINISHED_TASK_STATUSES)
 
 /** The task under the alias is done or cancelled. */
 export const taskFinishedSql = (task: string): SQL => sql`${ident(task)}.status in (${FINISHED})`

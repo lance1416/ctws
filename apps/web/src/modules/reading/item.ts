@@ -1,4 +1,4 @@
-import type { ReadingItemResponse } from '@ctws/contracts'
+import { readingIsFinished, type ReadingItemResponse } from '@ctws/contracts'
 import { linkLabel } from '../../platform/ui/url'
 import type { Recent } from '../../shell/search/recent'
 
@@ -28,4 +28,4 @@ export function recentEntry(
 }
 
 export const isToRead = (item: Pick<ReadingItemResponse, 'status'>) =>
-  item.status === 'todo' || item.status === 'reading'
+  !readingIsFinished(item.status)

@@ -4,6 +4,7 @@ import {
   CIRCLES,
   GENDERS,
   REMIND_LEAD_DEFAULT,
+  REMIND_LEADS,
   type RemindLead,
 } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
@@ -64,7 +65,14 @@ export const people = pgTable(
       'people_birthday_hour_check',
       sql`${t.birthdayHourBranch} is null or ${t.birthdayHourBranch} between 0 and 11`,
     ),
-    check('people_birthday_lead_check', sql`${t.birthdayRemindLead} in (0, 1, 3, 7)`),
+    // Ascending, as the constraint was first written, so the schema does not drift.
+    check(
+      'people_birthday_lead_check',
+      inList(
+        t.birthdayRemindLead,
+        [...REMIND_LEADS].sort((a, b) => a - b),
+      ),
+    ),
     // The day exists in its month; February allows 29 because the year may be unknown.
     check(
       'people_birthday_daymonth_check',

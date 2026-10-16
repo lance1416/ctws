@@ -1,4 +1,4 @@
-import type { ReadingItemResponse, ReadingStatus } from '@ctws/contracts'
+import { readingIsFinished, type ReadingItemResponse, type ReadingStatus } from '@ctws/contracts'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { useMutation } from '@tanstack/react-query'
 import { problemText } from '../../../platform/http/api'
@@ -56,7 +56,7 @@ export function ReadingRow({
   })
 
   const label = readingLabel(item)
-  const finished = item.status === 'done' || item.status === 'dropped'
+  const finished = readingIsFinished(item.status)
   const next = NEXT[item.status]
   // Empty parts are dropped, and the host too when it is already the title (an untitled link).
   const meta = [

@@ -1,4 +1,4 @@
-import type { TaskResponse, TaskStatus } from '@ctws/contracts'
+import { BOARD_TASK_STATUSES, type TaskResponse, type TaskStatus } from '@ctws/contracts'
 import {
   DndContext,
   PointerSensor,
@@ -20,9 +20,6 @@ import { useTaskParam } from './tree/useTreeParams'
 import { useFocusAfterRemoval } from './useFocusAfterRemoval'
 
 // The board is flat: every task once, under its own status, with its parent named beneath it.
-
-/** Left to right in the status model's own order; `cancelled` is not a step of the work. */
-const COLUMNS: TaskStatus[] = ['backlog', 'todo', 'in_progress', 'done']
 
 /** A card opens its task in the pane on click, Enter or Space, and is dragged by the pointer. */
 function Card({
@@ -130,10 +127,9 @@ export function TaskBoard({ projectId }: { projectId: string }) {
   }
 
   const onDragEnd = ({ active, over }: DragEndEvent) => {
-    if (!over) return
-    const status = over.id as TaskStatus
+    const status = BOARD_TASK_STATUSES.find((s) => s === over?.id)
     const task = byId.get(String(active.id))
-    if (!task || task.status === status) return
+    if (!status || !task || task.status === status) return
     setError(null)
     // The same mutation the row markers use, so a card and a marker agree on what “Done” means.
     actions.setStatus(task.id, status)
@@ -159,7 +155,7 @@ export function TaskBoard({ projectId }: { projectId: string }) {
       <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragEnd={onDragEnd}>
         {/* Four columns at desk width, stacked on a phone: nothing scrolls sideways. */}
         <div className="grid min-w-0 grid-cols-1 gap-2 px-1 sm:grid-cols-2 lg:grid-cols-4">
-          {COLUMNS.map((status) => (
+          {BOARD_TASK_STATUSES.map((status) => (
             <Column
               key={status}
               status={status}

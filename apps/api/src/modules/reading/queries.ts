@@ -1,7 +1,7 @@
-import type { CalendarEntry } from '@ctws/contracts'
+import { FINISHED_READING_STATUSES, type CalendarEntry } from '@ctws/contracts'
 import { and, desc, eq, isNull, sql } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
-import { textMatches } from '../../platform/db/sql'
+import { sqlValues, textMatches } from '../../platform/db/sql'
 import { dayEntry } from '../../shell/calendar/entry'
 import { filing, projectOfSql } from '../../shell/links/filing'
 import { ReadingItemNotFoundError } from './errors'
@@ -96,7 +96,7 @@ export async function readingEntries(
     where r.workspace_id = ${workspaceId}
       and r.deleted_at is null
       and r.plan_on is not null
-      and r.status not in ('done', 'dropped')
+      and r.status not in (${sqlValues(FINISHED_READING_STATUSES)})
       and r.plan_on between ${range.from}::date and ${range.to}::date
     order by r.plan_on, title
   `)

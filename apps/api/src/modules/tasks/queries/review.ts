@@ -1,24 +1,25 @@
-import type { ReviewResponse } from '@ctws/contracts'
+import { REVIEW_TRANSITIONS, type ReviewList, type ReviewResponse } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import type { Queryable } from '../../../platform/db/client'
+import { sqlValues } from '../../../platform/db/sql'
 import { localNow } from '../../../platform/db/time'
 import { taskVisibleSql } from './scope'
 
 type ReviewProject = ReviewResponse['projects'][number]
 
-/** The three transitions a review recounts, and the list each goes in. */
-const LIST_FOR = {
-  done: 'finished',
-  in_progress: 'started',
-  cancelled: 'dropped',
-} as const satisfies Record<string, keyof ReviewProject>
+type Recounted = (typeof REVIEW_TRANSITIONS)[ReviewList]
+
+/** The list each recounted transition goes in. */
+const LIST_FOR = Object.fromEntries(
+  Object.entries(REVIEW_TRANSITIONS).map(([list, status]) => [status, list]),
+) as Record<Recounted, ReviewList>
 
 type Row = {
   project_id: string
   project_name: string
   task_id: string
   title: string
-  to_status: keyof typeof LIST_FOR
+  to_status: Recounted
   at: string
 }
 
@@ -70,7 +71,7 @@ export async function listReview(
     join projects p on p.id = t.project_id
     where ev.workspace_id = ${workspaceId}
       and ev.type = 'status_changed'
-      and ev.payload ->> 'to' in ('done', 'in_progress', 'cancelled')
+      and ev.payload ->> 'to' in (${sqlValues(Object.values(REVIEW_TRANSITIONS))})
       and ev.occurred_at >= b.t0
       and ev.occurred_at < b.t1
       and ${taskVisibleSql('t', 'p', workspaceId)}

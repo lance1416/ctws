@@ -47,9 +47,16 @@ export function causeChain(error: unknown): { code?: unknown; cause?: unknown }[
 export const isUniqueViolation = (error: unknown): boolean =>
   causeChain(error).some((e) => e.code === '23505')
 
-/** `<column> in (...)` over literal values, for CHECK constraints built from a contract's list. */
-export const inList = (column: AnyPgColumn, values: readonly string[]): SQL =>
-  sql`${column} in (${sql.join(
-    values.map((v) => sql.raw(`'${v}'`)),
+/**
+ * Values from a contract's list as SQL literals, comma-separated: what goes between the brackets
+ * of an `in (...)`. Only for values the code names, never for input, which goes as a parameter.
+ */
+export const sqlValues = (values: readonly (string | number)[]): SQL =>
+  sql.join(
+    values.map((v) => sql.raw(typeof v === 'number' ? String(v) : `'${v.replaceAll("'", "''")}'`)),
     sql`, `,
-  )})`
+  )
+
+/** `<column> in (...)` over a contract's list; CHECK constraints need literals, not parameters. */
+export const inList = (column: AnyPgColumn, values: readonly (string | number)[]): SQL =>
+  sql`${column} in (${sqlValues(values)})`

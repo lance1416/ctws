@@ -15,6 +15,19 @@ export const UNCOUNTED_TASK_STATUSES = [
   'cancelled',
 ] as const satisfies readonly TaskStatus[]
 
+/** The board's columns, left to right; `cancelled` is not a step of the work. */
+export const BOARD_TASK_STATUSES = TASK_STATUSES.filter(
+  (s): s is Exclude<TaskStatus, 'cancelled'> => s !== 'cancelled',
+)
+
+/** The transitions a review recounts, by the list each goes in. */
+export const REVIEW_TRANSITIONS = {
+  finished: 'done',
+  started: 'in_progress',
+  dropped: 'cancelled',
+} as const satisfies Record<string, TaskStatus>
+export type ReviewList = keyof typeof REVIEW_TRANSITIONS
+
 /** The deepest a task may sit; a root is at depth 1. */
 export const MAX_TASK_DEPTH = 10
 

@@ -1,4 +1,4 @@
-import type { ReviewResponse } from '@ctws/contracts'
+import { REVIEW_TRANSITIONS, type ReviewList, type ReviewResponse } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
@@ -35,7 +35,7 @@ function Row({
   timeZone,
 }: {
   title: string
-  status: 'done' | 'in_progress' | 'cancelled'
+  status: (typeof REVIEW_TRANSITIONS)[ReviewList]
   at: string
   projectId: string
   today: string
@@ -74,7 +74,10 @@ function weekSentence(total: { done: number; started: number; dropped: number })
   return `${parts.length > 0 ? `${parts.join(', ')} and ` : ''}${last}.`
 }
 
-const counted = (p: Project) => p.finished.length + p.started.length + p.dropped.length
+/** The lists in the order a project shows them. */
+const LISTS = Object.keys(REVIEW_TRANSITIONS) as ReviewList[]
+
+const counted = (p: Project) => LISTS.reduce((n, list) => n + p[list].length, 0)
 
 // Done lists what is finished now; the week view lists what happened in a window, off the event
 // log, so a task finished on Tuesday and reopened on Thursday shows only here.
@@ -173,18 +176,12 @@ export function Review() {
               {projects.map((p) => (
                 <DaySection key={p.projectId} label={p.projectName} count={counted(p)}>
                   <ul className={ROW_LIST}>
-                    {(
-                      [
-                        ['done', p.finished],
-                        ['in_progress', p.started],
-                        ['cancelled', p.dropped],
-                      ] as const
-                    ).flatMap(([status, events]) =>
-                      events.map((t) => (
+                    {LISTS.flatMap((list) =>
+                      p[list].map((t) => (
                         <Row
                           key={t.id}
                           title={t.title}
-                          status={status}
+                          status={REVIEW_TRANSITIONS[list]}
                           at={t.at}
                           projectId={p.projectId}
                           today={today}
