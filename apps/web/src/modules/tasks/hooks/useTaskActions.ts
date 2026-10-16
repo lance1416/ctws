@@ -7,7 +7,7 @@ import {
 } from '@ctws/contracts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { isFinished } from '../logic/status'
-import { patchTask, PROJECT_TASKS, type ProjectTasks, TODAY_TASKS } from '../api'
+import { patchTask, PROJECT_TASKS, type ProjectTasks, ROW_WRITES, TODAY_TASKS } from '../api'
 
 type TodayTasks = TodayTaskResponse[]
 
@@ -46,6 +46,7 @@ export function useTaskActions(onError: (message: string) => void) {
       }
       onError(problemText(e) ?? "Couldn't save the change")
     },
+    scope: ROW_WRITES,
     meta: { awaits: [['tasks']], ownsError: true },
   })
 

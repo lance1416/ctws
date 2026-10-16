@@ -588,3 +588,37 @@ test('a selected row says it is selected', async ({ page }) => {
   await expect(rowOf('Two')).toContainText('Selected')
   await expect(rowOf('One')).not.toContainText('Selected')
 })
+
+test('two quick moves reach the server one after the other, in the order they were made', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const url = await startProject(page)
+  await seedTasks(page, url, [
+    ['aa', null],
+    ['bb', null],
+    ['cc', null],
+  ])
+  const held: (() => Promise<void>)[] = []
+  const unrouteMoves = await routeMoves(page, (route) => {
+    held.push(() => route.continue())
+  })
+  const sent = recordMoves(page)
+
+  await handle(page, 'aa').focus()
+  await page.keyboard.press('Alt+ArrowDown')
+  await page.keyboard.press('Alt+ArrowDown')
+  await expect.poll(() => sent.length).toBe(1)
+  // The second waits for the first's answer rather than racing it to the server.
+  await page.waitForTimeout(300)
+  expect(sent).toHaveLength(1)
+
+  await held.shift()!()
+  await expect.poll(() => sent.length).toBe(2)
+  await held.shift()!()
+  await unrouteMoves()
+  await expect(page.getByRole('listitem')).toHaveText([/bb/, /cc/, /aa/])
+  // And the server holds the same order.
+  await page.reload()
+  await expect(page.getByRole('listitem')).toHaveText([/bb/, /cc/, /aa/])
+})
