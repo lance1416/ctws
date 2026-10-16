@@ -9,7 +9,7 @@ import { useNow } from '../../../platform/time/useNow'
 import { HANG } from '../../../platform/ui/hang'
 import { useTimeZone } from '../../../shell/auth'
 import { useRegistry } from '../../../shell/registry'
-import { DayEmpty, DaySection, leadFor, ROW_LIST } from '../../../shell/rows'
+import { DayEmpty, DaySection, dueTodayAt, leadFor, ROW_LIST } from '../../../shell/rows'
 import { completedQuery, movementQuery, todayQuery } from '../api'
 import { useTaskActions } from '../hooks/useTaskActions'
 import { DayLine, type DayItem } from '../components/DayLine'
@@ -111,10 +111,9 @@ export function Today() {
     ...planned.map((t): DayItem => {
       // A task is on the line when it is due today at a time; the end of the day is not a time.
       const lead = leadFor({ dueAt: t.dueAt, scheduledOn: null }, day, timeZone)
-      const at = lead?.tone === 'deadline' && /^\d{2}:\d{2}$/.test(lead.text) ? lead.text : null
       return {
         key: `task:${t.id}`,
-        at,
+        at: dueTodayAt(t.dueAt, day, timeZone),
         hasLead: lead !== null,
         row: ({ anyTime }) => taskRow(t, anyTime),
       }

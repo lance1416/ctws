@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { deadlineDayLead, leadFor, weekDayWord } from './leads'
+import { deadlineDayLead, dueTodayAt, leadFor, weekDayWord } from './leads'
 
 const TODAY = '2026-10-12' // a Monday
 const TZ = 'America/Toronto' // EDT, UTC-4, all of this month
@@ -94,5 +94,14 @@ describe('a day in the week under review', () => {
   })
   it('names a day before the week by its date', () => {
     expect(weekDayWord('2026-10-04', TODAY, '2026-10-05')).toBe('Oct 4')
+  })
+})
+
+describe('dueTodayAt', () => {
+  it('gives the clock of a deadline today, and nothing by the end of today or on other days', () => {
+    expect(dueTodayAt('2026-10-12T20:00:00.000Z', TODAY, TZ)).toBe('16:00')
+    expect(dueTodayAt('2026-10-13T03:59:00.000Z', TODAY, TZ)).toBeNull()
+    expect(dueTodayAt('2026-10-13T20:00:00.000Z', TODAY, TZ)).toBeNull()
+    expect(dueTodayAt(null, TODAY, TZ)).toBeNull()
   })
 })

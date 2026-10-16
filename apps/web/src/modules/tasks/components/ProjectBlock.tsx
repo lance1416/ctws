@@ -2,7 +2,7 @@ import type { ProjectId } from '@ctws/contracts'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Fragment, useId, useRef, useState, type ReactNode } from 'react'
 import { useDocumentKeys } from '../../../platform/keyboard/keyTable'
-import { dayPhrase, ymd } from '../../../platform/time/dates'
+import { dayPhrase, nearDay, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { textbox } from '../../../platform/ui/formStyles'
 import { useLineEntry } from '../../../platform/ui/useLineEntry'
@@ -34,7 +34,10 @@ export function ProjectNumbers({ projectId }: { projectId: ProjectId }) {
   // Nothing while in flight, nor for an archived project, which the movement query leaves out.
   if (!row) return null
   const today = ymd(now, timeZone)
-  const moved = row.lastActivityOn ? dayPhrase(row.lastActivityOn, today) : null
+  // Mid-sentence, a near day is lower case: "Last moved today."
+  const moved = row.lastActivityOn
+    ? (nearDay(row.lastActivityOn, today)?.toLowerCase() ?? dayPhrase(row.lastActivityOn, today))
+    : null
   // Overdue only when there is any, in the miss colour.
   const parts: ReactNode[] = [`${row.remaining} open`]
   if (row.overdue > 0) parts.push(<span className="text-missed">{row.overdue} overdue</span>)
@@ -49,10 +52,7 @@ export function ProjectNumbers({ projectId }: { projectId: ProjectId }) {
           {p}
         </Fragment>
       ))}
-      .{' '}
-      {moved
-        ? `Last moved ${/^(Today|Yesterday)$/.test(moved) ? moved.toLowerCase() : moved}.`
-        : 'Nothing has moved yet.'}
+      . {moved ? `Last moved ${moved}.` : 'Nothing has moved yet.'}
     </p>
   )
 }
