@@ -1,8 +1,7 @@
 import { type WorkspaceId, type ProjectId } from '@ctws/contracts'
-import { asc, desc, eq, inArray, isNotNull, isNull, sql, type SQL } from 'drizzle-orm'
+import { asc, desc, eq, inArray, isNotNull, isNull, type SQL } from 'drizzle-orm'
 import type { Queryable, Tx } from '../../platform/db/client'
 import { type Scope, scoped, scopedRow, within } from '../../platform/db/scope'
-import { ident } from '../../platform/db/sql'
 import type { ProjectColumns } from '../module'
 import { projects, type Project } from './tables'
 import { type Page, type PageAsked, pageOf, spanOf } from '../../platform/db/page'
@@ -21,10 +20,6 @@ export const projectScope = (workspaceId: WorkspaceId, alias: string): Scope =>
 /** The project that `projectId` names is live in this workspace, for a query that does not join it. */
 export const inLiveProject = (workspaceId: WorkspaceId, projectId: SQL): Scope =>
   scopedRow(projects, workspaceId, projectId)
-
-/** The name of the project that `projectId` names, as a column of a module's query. */
-export const projectNameOf = (projectId: SQL): SQL<string> =>
-  sql<string>`(select ${ident('named')}.name from ${projects} ${ident('named')} where ${ident('named')}.id = ${projectId})`
 
 /** The live, unarchived projects in list order: inbox first, then the person's own order. */
 export async function unarchivedProjects(

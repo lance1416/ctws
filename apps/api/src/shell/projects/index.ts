@@ -3,7 +3,6 @@ export {
   assertProjectsVisible,
   getProject,
   inLiveProject,
-  projectNameOf,
   projectScope,
   unarchivedProjects,
 } from './queries'

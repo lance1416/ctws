@@ -18,7 +18,7 @@ export const visibleTasks = (workspaceId: WorkspaceId, as: Aliases): Scope =>
   liveUnder(as.task, projectScope(workspaceId, as.project))
 
 /** `visibleTasks`, for a query builder over `tasks` alone. */
-export const visibleTask = (workspaceId: WorkspaceId): Scope =>
+const visibleTask = (workspaceId: WorkspaceId): Scope =>
   liveUnder('tasks', inLiveProject(workspaceId, sql`${ident('tasks')}.project_id`))
 
 const FINISHED = sqlValues(FINISHED_TASK_STATUSES)

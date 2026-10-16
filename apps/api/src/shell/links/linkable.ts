@@ -44,7 +44,7 @@ type OwnEdges = (
 ) => Promise<OwnEdge[]>
 
 /** The far end of an edge a module keeps, named, and how the edge runs from the page's thing. */
-export type OwnEdge = NamedRow & { kind: LinkKind; outgoing: boolean }
+type OwnEdge = NamedRow & { kind: LinkKind; outgoing: boolean }
 
 /** A module's columns, as a `Want` reads them. */
 type Columns = {
