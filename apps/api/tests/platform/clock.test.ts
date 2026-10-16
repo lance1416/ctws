@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { appWithUser, createProject, createTask, type Harness } from '../helpers/harness'
+import { appWithUser, type Harness } from '../helpers/harness'
+import { createProject, createTask } from '../helpers/builders'
 
 // Noon in New York on the day DST starts: the local day runs 05:00Z to 04:00Z next day.
 const NOW = new Date('2026-03-08T16:00:00Z')
@@ -17,15 +18,8 @@ beforeAll(async () => {
     tonight: '2026-03-09T03:30:00Z', // 23:30 EDT on the 8th: today
     tomorrow: '2026-03-09T04:30:00Z', // 00:30 EDT on the 9th: not on Today
   }
-  for (const [title, dueAt] of Object.entries(due)) {
-    const res = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/tasks',
-      headers: ctx.authed,
-      payload: { projectId, title, dueAt },
-    })
-    expect(res.statusCode).toBe(201)
-  }
+  for (const [title, dueAt] of Object.entries(due))
+    await createTask(ctx, projectId, title, undefined, { dueAt })
 })
 afterAll(async () => {
   await ctx?.stop()

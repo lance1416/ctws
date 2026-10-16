@@ -3,7 +3,8 @@ import type { AddressInfo } from 'node:net'
 import type { ReadingItemResponse } from '@ctws/contracts'
 import { afterEach, describe, expect, it } from 'vitest'
 import { unfurl } from '../../../src/modules/reading/unfurl/unfurl'
-import { setupWith, type Harness, web } from '../../helpers/harness'
+import { setupWith, type Harness } from '../../helpers/harness'
+import { createReading } from '../../helpers/builders'
 
 /**
  * A pasted link shows what its own page says. The fetch itself is tested in
@@ -35,17 +36,6 @@ async function page(body: string): Promise<string> {
   return `http://127.0.0.1:${(server.address() as AddressInfo).port}/a/b`
 }
 
-async function add(ctx: Harness, payload: Record<string, unknown>): Promise<ReadingItemResponse> {
-  const res = await ctx.app.inject({
-    method: 'POST',
-    url: '/api/v1/reading',
-    headers: web(ctx),
-    payload,
-  })
-  expect(res.statusCode, res.body).toBe(201)
-  return res.json() as ReadingItemResponse
-}
-
 const list = async (ctx: Harness): Promise<ReadingItemResponse[]> => {
   const res = await ctx.app.inject({ method: 'GET', url: '/api/v1/reading', headers: ctx.authed })
   return (res.json() as { reading: ReadingItemResponse[] }).reading
@@ -58,7 +48,7 @@ describe('a pasted link reads back its own title', () => {
       `<html><head><meta property="og:title" content="Linear 怎么重做 issue">
        <meta property="og:description" content="我们把 issue 拆成了三件事。"></head></html>`,
     )
-    const made = await add(ctx, { kind: 'link', url })
+    const made = await createReading(ctx, { kind: 'link', url })
     expect(made.fetchedTitle).toBe('Linear 怎么重做 issue')
     expect(made.fetchedSummary).toBe('我们把 issue 拆成了三件事。')
     // Stored, not only in this response.
@@ -68,7 +58,7 @@ describe('a pasted link reads back its own title', () => {
   it('keeps the item when the site does not answer', async () => {
     const ctx = await setupWith(cleanups, undefined, { unfurl: fetchAnywhere })
     // Nothing listens on this port.
-    const made = await add(ctx, { kind: 'link', url: 'http://127.0.0.1:9/nothing' })
+    const made = await createReading(ctx, { kind: 'link', url: 'http://127.0.0.1:9/nothing' })
     expect(made.fetchedTitle).toBeNull()
     expect(made.url).toBe('http://127.0.0.1:9/nothing')
     expect(await list(ctx)).toHaveLength(1)
@@ -79,14 +69,14 @@ describe('a pasted link reads back its own title', () => {
     const ctx = await setupWith(cleanups, undefined, {
       unfurl: () => Promise.reject(new Error('boom')),
     })
-    const made = await add(ctx, { kind: 'link', url: 'https://example.invalid/a' })
+    const made = await createReading(ctx, { kind: 'link', url: 'https://example.invalid/a' })
     expect(made.fetchedTitle).toBeNull()
     expect(await list(ctx)).toHaveLength(1)
   })
 
   it('does not fetch for a book, which has no address', async () => {
     const ctx = await setupWith(cleanups, undefined, { unfurl: fetchAnywhere })
-    const made = await add(ctx, { kind: 'book', title: '人月神话' })
+    const made = await createReading(ctx, { kind: 'book', title: '人月神话' })
     expect(made.fetchedTitle).toBeNull()
   })
 
@@ -96,7 +86,7 @@ describe('a pasted link reads back its own title', () => {
       unfurl: fetchAnywhere,
     })
     const url = await page('<title>不该被读到</title>')
-    const made = await add(ctx, { kind: 'link', url })
+    const made = await createReading(ctx, { kind: 'link', url })
     expect(made.fetchedTitle).toBeNull()
   })
 })

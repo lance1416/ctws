@@ -2,14 +2,14 @@ import type { DependencyRef } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
-  createProject,
-  createTask,
   eventsOf,
   expectBlockedByTreeLock,
   setupWith,
   type Harness,
   web,
+  secondUser,
 } from '../../helpers/harness'
+import { createProject, createTask } from '../../helpers/builders'
 
 /**
  * ONE TASK WAITING FOR ANOTHER.
@@ -218,19 +218,7 @@ describe('task dependencies', () => {
     const pid = await createProject(ctx, '改版')
     const mine = await createTask(ctx, pid, '我的')
 
-    const other = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/register',
-      headers: { 'x-ctws-client': 'web' },
-      payload: { email: 'other@example.com', password: 'correct horse battery', timezone: 'UTC' },
-    })
-    const theirs: Harness = {
-      ...ctx,
-      authed: {
-        'x-ctws-client': 'web',
-        cookie: String(other.headers['set-cookie']).split(';')[0]!,
-      },
-    }
+    const theirs = await secondUser(ctx)
     const theirPid = await createProject(theirs, '别人的')
     const theirTask = await createTask(theirs, theirPid, '别人的任务')
 

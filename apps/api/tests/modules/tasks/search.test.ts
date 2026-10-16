@@ -2,7 +2,8 @@ import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { SEARCH_LIMIT } from '@ctws/contracts'
 import { likePattern, textMatches } from '../../../src/platform/db/sql'
-import { appWithUser, createProject, createTask, type Harness } from '../../helpers/harness'
+import { appWithUser, type Harness, secondUser } from '../../helpers/harness'
+import { createProject, createTask } from '../../helpers/builders'
 
 const cleanups: (() => Promise<void>)[] = []
 afterEach(async () => {
@@ -222,14 +223,7 @@ describe('GET /search', () => {
 
     // A second user in the SAME database: two appWithUser() calls would be two databases, and the
     // assertion below would hold with no scoping at all.
-    const res = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/register',
-      headers: { 'x-ctws-client': 'web' },
-      payload: { email: 'other@example.com', password: 'correct horse battery', timezone: 'UTC' },
-    })
-    expect(res.statusCode).toBe(201)
-    const otherCookie = String(res.headers['set-cookie']).split(';')[0]!
+    const otherCookie = (await secondUser(ctx)).cookie
 
     expect(await search(ctx, 'secret', otherCookie)).toEqual([])
     // And the owner still finds it, so the empty result above is the scoping and not a typo.

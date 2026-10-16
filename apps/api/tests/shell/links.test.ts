@@ -1,13 +1,13 @@
 import type {
   LinksResponse,
-  MeetingOccurrence,
   MeetingSeries,
   PersonResponse,
   ReadingItemResponse,
 } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
-import { createProject, setupWith, type Harness, web } from '../helpers/harness'
+import { setupWith, type Harness, web, secondUser } from '../helpers/harness'
+import { createProject, createMeeting, createPerson, createReading } from '../helpers/builders'
 
 /**
  * THE EDGE TABLE -- what one table holding every relationship makes possible to get wrong.
@@ -26,12 +26,6 @@ afterEach(async () => {
   for (const stop of cleanups.splice(0)) await stop()
 })
 
-async function post<T>(ctx: Harness, url: string, payload: Record<string, unknown>): Promise<T> {
-  const res = await ctx.app.inject({ method: 'POST', url, headers: web(ctx), payload })
-  if (res.statusCode !== 201) throw new Error(`${url}: ${res.statusCode} ${res.body}`)
-  return res.json() as T
-}
-
 const patch = (ctx: Harness, url: string, payload: Record<string, unknown>) =>
   ctx.app.inject({ method: 'PATCH', url, headers: web(ctx), payload })
 
@@ -39,8 +33,8 @@ describe('one object, several kinds of edge', () => {
   it('replaces only the kind being written, and leaves the others where they are', async () => {
     const ctx = await setup('edges@example.com')
     const project = await createProject(ctx, '找工作')
-    const person = await post<PersonResponse>(ctx, '/api/v1/people', { name: '陈颖' })
-    const meeting = await post<MeetingOccurrence>(ctx, '/api/v1/meetings', {
+    const person = await createPerson(ctx, { name: '陈颖' })
+    const meeting = await createMeeting(ctx, {
       title: '二面',
       startsLocal: '2026-10-20T21:00',
       timeZone: 'America/Toronto',
@@ -52,7 +46,7 @@ describe('one object, several kinds of edge', () => {
     expect(meeting.attendees.map((a) => a.id)).toEqual([person.id])
 
     // Writing the guest list must not unfile the meeting.
-    const other = await post<PersonResponse>(ctx, '/api/v1/people', { name: '另一个人' })
+    const other = await createPerson(ctx, { name: '另一个人' })
     const guests = await patch(ctx, `/api/v1/meetings/${meeting.meetingId}`, {
       attendeeIds: [person.id, other.id],
     })
@@ -77,13 +71,13 @@ describe('one object, several kinds of edge', () => {
     const project = await createProject(ctx, '找工作')
     // A reading item and a meeting created in that order get ids from the same clock; nothing but
     // the type on the edge tells one from the other.
-    const reading = await post<ReadingItemResponse>(ctx, '/api/v1/reading', {
+    const reading = await createReading(ctx, {
       kind: 'link',
       url: 'https://example.test/a',
     })
     const filed = await patch(ctx, `/api/v1/reading/${reading.id}`, { projectId: project })
     expect(filed.statusCode, filed.body).toBe(200)
-    const meeting = await post<MeetingOccurrence>(ctx, '/api/v1/meetings', {
+    const meeting = await createMeeting(ctx, {
       title: '二面',
       startsLocal: '2026-10-20T21:00',
       timeZone: 'America/Toronto',
@@ -113,20 +107,10 @@ describe('one object, several kinds of edge', () => {
     // ONE app, two users: two `appWithUser()`s would be two databases, and the isolation would
     // hold trivially.
     const ctx = await setup('mine@example.com')
-    const them = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/register',
-      headers: { 'x-ctws-client': 'web' },
-      payload: { email: 'theirs@example.com', password: 'correct horse battery', timezone: 'UTC' },
-    })
-    expect(them.statusCode, them.body).toBe(201)
-    const theirHeaders = {
-      'x-ctws-client': 'web',
-      cookie: String(them.headers['set-cookie']).split(';')[0]!,
-    }
+    const theirHeaders = (await secondUser(ctx, 'theirs@example.com')).authed
 
     const myProject = await createProject(ctx, '找工作')
-    const myPerson = await post<PersonResponse>(ctx, '/api/v1/people', {
+    const myPerson = await createPerson(ctx, {
       name: '陈颖',
       projectIds: [myProject],
     })
@@ -179,26 +163,9 @@ describe('one object, several kinds of edge', () => {
 
   it('files a thing only under a project of its own workspace, whatever an edge row says', async () => {
     const ctx = await setup('filer@example.com')
-    const them = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/register',
-      headers: { 'x-ctws-client': 'web' },
-      payload: { email: 'other@example.com', password: 'correct horse battery', timezone: 'UTC' },
-    })
-    const theirs = them.json() as { workspaceId: string }
-    const theirProject = (
-      await ctx.app.inject({
-        method: 'POST',
-        url: '/api/v1/projects',
-        headers: {
-          'x-ctws-client': 'web',
-          cookie: String(them.headers['set-cookie']).split(';')[0]!,
-        },
-        payload: { name: 'Theirs' },
-      })
-    ).json().id as string
-    const person = await post<PersonResponse>(ctx, '/api/v1/people', { name: 'Ying' })
-    const book = await post<ReadingItemResponse>(ctx, '/api/v1/reading', {
+    const theirProject = await createProject(await secondUser(ctx), 'Theirs')
+    const person = await createPerson(ctx, { name: 'Ying' })
+    const book = await createReading(ctx, {
       kind: 'book',
       title: 'Middlemarch',
     })
@@ -212,7 +179,8 @@ describe('one object, several kinds of edge', () => {
     `)
     await ctx.db.execute(sql`
       insert into links (id, workspace_id, from_type, from_id, to_type, to_id, kind)
-      values (gen_random_uuid(), ${theirs.workspaceId}, 'reading', ${book.id}, 'project', ${theirProject}, 'belongs')
+      select gen_random_uuid(), workspace_id, 'reading', ${book.id}, 'project', ${theirProject}, 'belongs'
+      from projects where id = ${theirProject}
     `)
 
     const people = await ctx.app.inject({ method: 'GET', url: '/api/v1/people', headers: web(ctx) })

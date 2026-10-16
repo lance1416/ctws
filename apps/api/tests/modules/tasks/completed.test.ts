@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
-import { appWithUser, createProject, createTask } from '../../helpers/harness'
+import { appWithUser, secondUser } from '../../helpers/harness'
+import { createProject, createTask } from '../../helpers/builders'
 
 const cleanups: (() => Promise<void>)[] = []
 afterEach(async () => {
@@ -129,16 +130,7 @@ describe('GET /completed', () => {
     await finish(ctx, id, '2026-09-01T10:00:00Z')
 
     // Same app, second user: a second appWithUser() would boot an unrelated database.
-    const reg = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/register',
-      headers: { 'x-ctws-client': 'web' },
-      payload: { email: 'other@example.com', password: 'correct horse battery', timezone: 'UTC' },
-    })
-    const other = {
-      'x-ctws-client': 'web',
-      cookie: String(reg.headers['set-cookie']).split(';')[0]!,
-    }
+    const other = (await secondUser(ctx)).authed
     const res = await ctx.app.inject({
       method: 'GET',
       url: '/api/v1/tasks?view=completed',

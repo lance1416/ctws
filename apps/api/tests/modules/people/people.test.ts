@@ -1,7 +1,8 @@
 import type { LinksResponse, PersonResponse } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
-import { createProject, setupWith, type Harness, web } from '../../helpers/harness'
+import { setupWith, type Harness, web, secondUser } from '../../helpers/harness'
+import { createProject, createPerson } from '../../helpers/builders'
 
 /**
  * PEOPLE, on vCard 4.0's model (RFC 6350).
@@ -17,17 +18,6 @@ const setup = () => setupWith(cleanups)
 afterEach(async () => {
   for (const stop of cleanups.splice(0)) await stop()
 })
-
-async function add(ctx: Harness, payload: Record<string, unknown>): Promise<PersonResponse> {
-  const res = await ctx.app.inject({
-    method: 'POST',
-    url: '/api/v1/people',
-    headers: web(ctx),
-    payload,
-  })
-  if (res.statusCode !== 201) throw new Error(`add: ${res.statusCode} ${res.body}`)
-  return res.json() as PersonResponse
-}
 
 const patch = (ctx: Harness, id: string, payload: Record<string, unknown>) =>
   ctx.app.inject({ method: 'PATCH', url: `/api/v1/people/${id}`, headers: web(ctx), payload })
@@ -58,7 +48,7 @@ describe('people', () => {
     // THE WHOLE REASON TO FOLLOW vCARD. A single `email` column is wrong the first time somebody
     // has a work address and a personal one.
     const ctx = await setup()
-    const person = await add(ctx, {
+    const person = await createPerson(ctx, {
       name: '李雷',
       org: 'Acme',
       channels: [
@@ -83,7 +73,7 @@ describe('people', () => {
     // The failure mode of a replace-the-set write is orphans: the removed address goes on being
     // returned, and nobody can tell why the person has an address they deleted.
     const ctx = await setup()
-    const person = await add(ctx, {
+    const person = await createPerson(ctx, {
       name: '韩梅梅',
       channels: [
         { kind: 'email', value: 'old@acme.test' },
@@ -107,7 +97,7 @@ describe('people', () => {
     // Without touching the row, `updated_at` would say nothing changed when their phone number
     // just did.
     const ctx = await setup()
-    const person = await add(ctx, { name: '张三' })
+    const person = await createPerson(ctx, { name: '张三' })
     const after = await patch(ctx, person.id, {
       channels: [{ kind: 'phone', value: '+8613800000000' }],
     })
@@ -131,9 +121,9 @@ describe('people', () => {
 
   it('lists by name, because a person list is read to FIND someone', async () => {
     const ctx = await setup()
-    await add(ctx, { name: 'Zoe' })
-    await add(ctx, { name: 'Adam' })
-    await add(ctx, { name: 'Mina' })
+    await createPerson(ctx, { name: 'Zoe' })
+    await createPerson(ctx, { name: 'Adam' })
+    await createPerson(ctx, { name: 'Mina' })
     expect((await list(ctx)).map((c) => c.name)).toEqual(['Adam', 'Mina', 'Zoe'])
   })
 
@@ -142,8 +132,8 @@ describe('people', () => {
     const ctx = await setup()
     const hunt = await createProject(ctx, '找工作')
     const rrgen = await createProject(ctx, 'rrgen')
-    const person = await add(ctx, { name: '某维护者', projectIds: [hunt, rrgen] })
-    await add(ctx, { name: '老朋友' })
+    const person = await createPerson(ctx, { name: '某维护者', projectIds: [hunt, rrgen] })
+    await createPerson(ctx, { name: '老朋友' })
 
     expect(person.projects.map((p) => p.name).sort()).toEqual(['rrgen', '找工作'])
     // And they turn up standing on EITHER line.
@@ -156,7 +146,7 @@ describe('people', () => {
     const ctx = await setup()
     const a = await createProject(ctx, 'A')
     const b = await createProject(ctx, 'B')
-    const person = await add(ctx, { name: '换了线的人', projectIds: [a] })
+    const person = await createPerson(ctx, { name: '换了线的人', projectIds: [a] })
     const res = await patch(ctx, person.id, { projectIds: [b] })
     expect(res.statusCode).toBe(200)
     expect((res.json() as PersonResponse).projects.map((p) => p.name)).toEqual(['B'])
@@ -170,7 +160,7 @@ describe('people', () => {
   it('keeps a person when their project is deleted', async () => {
     const ctx = await setup()
     const pid = await createProject(ctx, '没了的项目')
-    const person = await add(ctx, { name: '留下来的人', projectIds: [pid] })
+    const person = await createPerson(ctx, { name: '留下来的人', projectIds: [pid] })
     await ctx.app.inject({ method: 'DELETE', url: `/api/v1/projects/${pid}`, headers: web(ctx) })
 
     const kept = (await list(ctx)).find((c) => c.id === person.id)
@@ -184,12 +174,12 @@ describe('people', () => {
   it('finds a person by their address, not only by their name', async () => {
     // "who was the one at @acme.test" is exactly the question a person list answers.
     const ctx = await setup()
-    await add(ctx, {
+    await createPerson(ctx, {
       name: '李雷',
       org: 'Acme',
       channels: [{ kind: 'email', value: 'lilei@acme.test' }],
     })
-    await add(ctx, { name: '别人' })
+    await createPerson(ctx, { name: '别人' })
 
     const hits = async (q: string) => {
       const res = await ctx.app.inject({
@@ -209,7 +199,7 @@ describe('people', () => {
 
   it('hides a deleted person from every read, and refuses to delete them twice', async () => {
     const ctx = await setup()
-    const person = await add(ctx, { name: '删掉的' })
+    const person = await createPerson(ctx, { name: '删掉的' })
     const del = () =>
       ctx.app.inject({ method: 'DELETE', url: `/api/v1/people/${person.id}`, headers: web(ctx) })
     expect((await del()).statusCode).toBe(204)
@@ -219,21 +209,9 @@ describe('people', () => {
 
   it('keeps one workspace out of another, as a not-found', async () => {
     const ctx = await setup()
-    const mine = await add(ctx, { name: '我的联系人' })
+    const mine = await createPerson(ctx, { name: '我的联系人' })
 
-    const other = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/register',
-      headers: { 'x-ctws-client': 'web' },
-      payload: { email: 'other@example.com', password: 'correct horse battery', timezone: 'UTC' },
-    })
-    const theirs: Harness = {
-      ...ctx,
-      authed: {
-        'x-ctws-client': 'web',
-        cookie: String(other.headers['set-cookie']).split(';')[0]!,
-      },
-    }
+    const theirs = await secondUser(ctx)
 
     expect(await list(theirs)).toEqual([])
     expect((await patch(theirs, mine.id, { name: '改名' })).statusCode).toBe(404)
@@ -243,19 +221,7 @@ describe('people', () => {
 
   it('refuses a project from another workspace, and writes no half a person', async () => {
     const ctx = await setup()
-    const other = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/register',
-      headers: { 'x-ctws-client': 'web' },
-      payload: { email: 'two@example.com', password: 'correct horse battery', timezone: 'UTC' },
-    })
-    const theirs: Harness = {
-      ...ctx,
-      authed: {
-        'x-ctws-client': 'web',
-        cookie: String(other.headers['set-cookie']).split(';')[0]!,
-      },
-    }
+    const theirs = await secondUser(ctx, 'two@example.com')
     const theirProject = await createProject(theirs, '别人的项目')
     const mine = await createProject(ctx, '我的项目')
 
@@ -286,7 +252,7 @@ describe('people', () => {
 describe("a person's birthday", () => {
   it('reads a solar birthday back with everything derived from it', async () => {
     const ctx = await setup()
-    const person = await add(ctx, {
+    const person = await createPerson(ctx, {
       name: '李雷',
       birthday: { calendar: 'solar', year: 1996, month: 4, day: 15, hourBranch: 6 },
     })
@@ -310,7 +276,7 @@ describe("a person's birthday", () => {
 
   it('keeps the leap month of a lunar birthday and gives its next occurrence', async () => {
     const ctx = await setup()
-    const person = await add(ctx, {
+    const person = await createPerson(ctx, {
       name: '周宇',
       birthday: { calendar: 'lunar', year: 2017, month: 6, day: 15, leapMonth: true },
     })
@@ -349,7 +315,7 @@ describe("a person's birthday", () => {
     })
     expect(bad.statusCode).toBe(400)
     expect(bad.json().detail).toContain('does not exist')
-    const ok = await add(ctx, {
+    const ok = await createPerson(ctx, {
       name: '外婆',
       birthday: { calendar: 'lunar', year: 1944, month: 12, day: 30 },
     })
@@ -358,7 +324,7 @@ describe("a person's birthday", () => {
 
   it('clears a birthday without touching the other fields', async () => {
     const ctx = await setup()
-    const person = await add(ctx, {
+    const person = await createPerson(ctx, {
       name: '王颖',
       circle: 'friend',
       hometown: '杭州',
@@ -381,7 +347,7 @@ describe("a person's birthday", () => {
   /** The constraint holds where the data lives; the contract binds only the API. */
   it('lets the database refuse half a birthday', async () => {
     const ctx = await setup()
-    const person = await add(ctx, { name: '半个' })
+    const person = await createPerson(ctx, { name: '半个' })
     await expect(
       ctx.db.execute(sql`update people set birthday_month = 4 where id = ${person.id}`),
     ).rejects.toThrow()
@@ -393,7 +359,7 @@ describe("a person's birthday", () => {
    */
   it('keeps the lead when only the date changes', async () => {
     const ctx = await setup()
-    const person = await add(ctx, {
+    const person = await createPerson(ctx, {
       name: '李雷',
       birthday: { calendar: 'solar', year: 1991, month: 10, day: 17, remindLead: 1 },
     })
@@ -412,7 +378,7 @@ describe("a person's birthday", () => {
    */
   it('resets the lead when the birthday is cleared', async () => {
     const ctx = await setup()
-    const person = await add(ctx, {
+    const person = await createPerson(ctx, {
       name: '韩梅梅',
       birthday: { calendar: 'solar', year: 1991, month: 10, day: 17, remindLead: 0 },
     })
@@ -431,7 +397,7 @@ describe("a person's birthday", () => {
    */
   it('lets the database refuse a day its month does not have', async () => {
     const ctx = await setup()
-    const person = await add(ctx, { name: '四月三十一' })
+    const person = await createPerson(ctx, { name: '四月三十一' })
     await expect(
       ctx.db.execute(
         sql`update people set birthday_calendar = 'solar', birthday_month = 4, birthday_day = 31

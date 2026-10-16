@@ -2,15 +2,14 @@ import { randomUUID } from 'node:crypto'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
-  createChain,
-  createProject,
-  createTask,
   eventsOf,
   expectBlockedByTreeLock,
   setupWith,
   tasksOf,
   type Harness,
+  secondUser,
 } from '../../helpers/harness'
+import { createChain, createProject, createTask } from '../../helpers/builders'
 
 const cleanups: (() => Promise<void>)[] = []
 
@@ -18,8 +17,6 @@ const setup = () => setupWith(cleanups)
 afterEach(async () => {
   while (cleanups.length) await cleanups.pop()!()
 })
-
-const headers = { 'x-ctws-client': 'web' }
 
 function move(
   ctx: Harness,
@@ -508,32 +505,15 @@ describe('moving a task: PATCH /tasks/:id with a position', () => {
 })
 
 describe('move workspace isolation', () => {
-  async function secondUser(ctx: Harness) {
-    const res = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/register',
-      headers,
-      payload: { email: 'other@example.com', password: 'correct horse battery', timezone: 'UTC' },
-    })
-    return { ...headers, cookie: String(res.headers['set-cookie']).split(';')[0]! }
-  }
-
   it('cannot move another workspace task', async () => {
     const ctx = await setup()
     const p = await createProject(ctx, 'mine')
     const id = await createTask(ctx, p, 'mine')
-    const bAuthed = await secondUser(ctx)
+    const b = await secondUser(ctx)
 
-    const bProject = (
-      await ctx.app.inject({
-        method: 'POST',
-        url: '/api/v1/projects',
-        headers: bAuthed,
-        payload: { name: 'theirs' },
-      })
-    ).json().id as string
+    const bProject = await createProject(b, 'theirs')
 
-    const res = await move(ctx, id, { projectId: bProject, parentId: null }, bAuthed)
+    const res = await move(ctx, id, { projectId: bProject, parentId: null }, b.authed)
     expect(res.statusCode).toBe(404)
     expect((await tasksOf(ctx, p)).map((t) => t.id)).toEqual([id])
   })
@@ -542,16 +522,9 @@ describe('move workspace isolation', () => {
     const ctx = await setup()
     const p = await createProject(ctx, 'mine')
     const id = await createTask(ctx, p, 'mine')
-    const bAuthed = await secondUser(ctx)
+    const b = await secondUser(ctx)
 
-    const bProject = (
-      await ctx.app.inject({
-        method: 'POST',
-        url: '/api/v1/projects',
-        headers: bAuthed,
-        payload: { name: 'theirs' },
-      })
-    ).json().id as string
+    const bProject = await createProject(b, 'theirs')
 
     const res = await move(ctx, id, { projectId: bProject, parentId: null })
     expect(res.statusCode).toBe(404)

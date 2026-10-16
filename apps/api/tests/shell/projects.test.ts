@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
-import { appWithUser, createProject, createTask, type Harness } from '../helpers/harness'
+import { appWithUser, type Harness, secondUser } from '../helpers/harness'
+import { createProject, createTask } from '../helpers/builders'
 
 const cleanups: (() => Promise<void>)[] = []
 afterEach(async () => {
@@ -265,14 +266,7 @@ describe('projects', () => {
     const a = await setup()
     const aId = await createProject(a, 'mine')
 
-    const second = await a.app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/register',
-      headers,
-      payload: { email: 'other@example.com', password: 'correct horse battery', timezone: 'UTC' },
-    })
-    const bCookie = String(second.headers['set-cookie']).split(';')[0]!
-    const bAuthed = { ...headers, cookie: bCookie }
+    const bAuthed = (await secondUser(a)).authed
 
     // The full list, not `ordinary()`: that filter would hide an inbox leaked from workspace A.
     // B sees exactly its own inbox and nothing of A's.
@@ -344,17 +338,8 @@ describe('project visibility', () => {
     },
   ]
 
-  async function otherWorkspace(ctx: Harness) {
-    // On the same app, hence the same database: a second `appWithUser()` would get its own
-    // database and make the isolation trivially true, so these tests could never fail.
-    const res = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/register',
-      headers,
-      payload: { email: 'other@example.com', password: 'correct horse battery', timezone: 'UTC' },
-    })
-    return { ...headers, cookie: String(res.headers['set-cookie']).split(';')[0]! }
-  }
+  /** Another workspace's session on the same app. */
+  const otherWorkspace = async (ctx: Harness) => (await secondUser(ctx)).authed
 
   const ids = async (ctx: Harness, authed: Record<string, string>, archived: boolean) => {
     const res = await ctx.app.inject({
@@ -500,14 +485,7 @@ describe('project open-task counts', () => {
     await createTask(ctx, mine, 'mine 1')
     await createTask(ctx, mine, 'mine 2')
 
-    const res = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/register',
-      headers,
-      payload: { email: 'counts@example.com', password: 'correct horse battery', timezone: 'UTC' },
-    })
-    expect(res.statusCode).toBe(201)
-    const theirs = { ...headers, cookie: String(res.headers['set-cookie']).split(';')[0]! }
+    const theirs = (await secondUser(ctx, 'counts@example.com')).authed
     const other = await ctx.app.inject({
       method: 'GET',
       url: '/api/v1/projects',

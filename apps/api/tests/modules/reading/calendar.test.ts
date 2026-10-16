@@ -1,6 +1,7 @@
 import type { CalendarEntry } from '@ctws/contracts'
 import { afterEach, describe, expect, it } from 'vitest'
-import { createProject, type Harness, setupWith, web } from '../../helpers/harness'
+import { type Harness, setupWith, web } from '../../helpers/harness'
+import { createProject, createReading } from '../../helpers/builders'
 
 const cleanups: (() => Promise<void>)[] = []
 
@@ -19,17 +20,6 @@ async function entries(ctx: Harness, from: string, to: string) {
   return (res.json() as { entries: CalendarEntry[] }).entries
 }
 
-async function add(ctx: Harness, payload: Record<string, unknown>): Promise<string> {
-  const res = await ctx.app.inject({
-    method: 'POST',
-    url: '/api/v1/reading',
-    headers: web(ctx),
-    payload,
-  })
-  expect(res.statusCode, res.body).toBe(201)
-  return (res.json() as { id: string }).id
-}
-
 const plan = (ctx: Harness, id: string, planOn: string | null) =>
   ctx.app.inject({
     method: 'PATCH',
@@ -41,7 +31,7 @@ const plan = (ctx: Harness, id: string, planOn: string | null) =>
 describe('the reading calendar', () => {
   it('answers for a finish-by date', async () => {
     const ctx = await setup()
-    const id = await add(ctx, { kind: 'book', title: '设计心理学' })
+    const id = (await createReading(ctx, { kind: 'book', title: '设计心理学' })).id
     expect((await plan(ctx, id, '2026-10-07')).statusCode).toBe(200)
 
     const got = await entries(ctx, '2026-10-01', '2026-10-31')
@@ -57,7 +47,7 @@ describe('the reading calendar', () => {
 
   it('shows an untitled link by its url rather than leaving a blank square', async () => {
     const ctx = await setup()
-    const id = await add(ctx, { kind: 'link', url: 'https://linear.app/now/a' })
+    const id = (await createReading(ctx, { kind: 'link', url: 'https://linear.app/now/a' })).id
     await plan(ctx, id, '2026-10-07')
     expect((await entries(ctx, '2026-10-01', '2026-10-31'))[0]?.title).toBe(
       'https://linear.app/now/a',
@@ -66,7 +56,7 @@ describe('the reading calendar', () => {
 
   it('drops the plan when it is cleared, and leaves out what is read', async () => {
     const ctx = await setup()
-    const read = await add(ctx, { kind: 'book', title: '读完了的' })
+    const read = (await createReading(ctx, { kind: 'book', title: '读完了的' })).id
     await plan(ctx, read, '2026-10-07')
     await ctx.app.inject({
       method: 'PATCH',
@@ -74,7 +64,7 @@ describe('the reading calendar', () => {
       headers: web(ctx),
       payload: { status: 'done' },
     })
-    const cleared = await add(ctx, { kind: 'book', title: '取消计划的' })
+    const cleared = (await createReading(ctx, { kind: 'book', title: '取消计划的' })).id
     await plan(ctx, cleared, '2026-10-07')
     expect((await plan(ctx, cleared, null)).statusCode).toBe(200)
 
@@ -84,7 +74,7 @@ describe('the reading calendar', () => {
   it('names the project, and none once the project is deleted', async () => {
     const ctx = await setup()
     const pid = await createProject(ctx, 'CTWS')
-    const id = await add(ctx, { kind: 'book', title: '设计心理学' })
+    const id = (await createReading(ctx, { kind: 'book', title: '设计心理学' })).id
     await ctx.app.inject({
       method: 'PATCH',
       url: `/api/v1/reading/${id}`,

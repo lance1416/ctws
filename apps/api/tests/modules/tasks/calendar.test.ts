@@ -1,7 +1,8 @@
 import type { CalendarEntry } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
-import { createProject, createTask, type Harness, setupWith, web } from '../../helpers/harness'
+import { type Harness, setupWith, web, secondUser } from '../../helpers/harness'
+import { createProject, createTask } from '../../helpers/builders'
 
 /**
  * The day each task entry falls on is decided here, in the account's zone: a client that turned
@@ -81,19 +82,7 @@ describe('the task calendar', () => {
     const id = await createTask(ctx, pid, '我的任务')
     await patchTask(ctx, id, { scheduledOn: '2026-10-05' })
 
-    const other = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/register',
-      headers: { 'x-ctws-client': 'web' },
-      payload: { email: 'other@example.com', password: 'correct horse battery', timezone: 'UTC' },
-    })
-    const theirs: Harness = {
-      ...ctx,
-      authed: {
-        'x-ctws-client': 'web',
-        cookie: String(other.headers['set-cookie']).split(';')[0]!,
-      },
-    }
+    const theirs = await secondUser(ctx)
     expect(await entries(theirs, '2026-10-01', '2026-10-31')).toEqual([])
   })
 })

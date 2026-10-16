@@ -1,7 +1,8 @@
 import type { ReviewResponse } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
-import { appWithUser, createProject, createTask, type Harness } from '../../helpers/harness'
+import { appWithUser, type Harness, secondUser } from '../../helpers/harness'
+import { createProject, createTask } from '../../helpers/builders'
 
 /**
  * THE WEEKLY REVIEW reads the EVENT LOG, which is the whole difference between it and Done.
@@ -163,19 +164,7 @@ describe('the weekly review', () => {
     // `appWithUser` boots its own Postgres, so two of them are two unrelated databases and an
     // isolation test built that way passes trivially. It did -- a mutation that dropped the
     // `workspace_id` filter entirely was caught by nothing until this was rewritten.
-    const other = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/register',
-      headers: { 'x-ctws-client': 'web' },
-      payload: { email: 'other@example.com', password: 'correct horse battery', timezone: 'UTC' },
-    })
-    const theirs: Harness = {
-      ...ctx,
-      authed: {
-        'x-ctws-client': 'web',
-        cookie: String(other.headers['set-cookie']).split(';')[0]!,
-      },
-    }
+    const theirs = await secondUser(ctx)
     const theirPid = await createProject(theirs, '别人的')
     const theirTask = await createTask(theirs, theirPid, '别人做完的')
     await setStatus(theirs, theirTask, 'done')

@@ -2,7 +2,8 @@ import type { ProjectId, WorkspaceId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { listProjectMovement } from '../../../src/modules/tasks/queries/movement'
-import { appWithUser, createProject, createTask, type Harness } from '../../helpers/harness'
+import { appWithUser, type Harness, secondUser } from '../../helpers/harness'
+import { createProject, createTask } from '../../helpers/builders'
 
 /**
  * MOVEMENT's server half: per-project counts and movement, in one query, through the tenant
@@ -30,14 +31,7 @@ beforeAll(async () => {
   ).workspaceId
   // A SECOND user on the SAME app and database: two `appWithUser()` calls would be two unrelated
   // databases and any isolation assertion between them would pass trivially.
-  const res = await ctx.app.inject({
-    method: 'POST',
-    url: '/api/v1/auth/register',
-    headers: { 'x-ctws-client': 'web' },
-    payload: { email: 'other@example.com', password: 'correct horse battery', timezone: 'UTC' },
-  })
-  expect(res.statusCode).toBe(201)
-  otherAuthed = { 'x-ctws-client': 'web', cookie: String(res.headers['set-cookie']).split(';')[0]! }
+  otherAuthed = (await secondUser(ctx)).authed
 }, 180_000)
 
 afterAll(async () => {

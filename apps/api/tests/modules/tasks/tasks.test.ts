@@ -5,14 +5,13 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { NotFound } from '../../../src/platform/errors'
 import { softDeleteTask, updateTask } from '../../../src/modules/tasks/service'
 import {
-  createChain,
-  createProject,
-  createTask,
   eventsOf,
   expectBlockedByTreeLock,
   setupWith,
   type Harness,
+  secondUser,
 } from '../../helpers/harness'
+import { createChain, createProject, createTask } from '../../helpers/builders'
 
 const cleanups: (() => Promise<void>)[] = []
 
@@ -20,8 +19,6 @@ const setup = () => setupWith(cleanups)
 afterEach(async () => {
   while (cleanups.length) await cleanups.pop()!()
 })
-
-const headers = { 'x-ctws-client': 'web' }
 
 function post(ctx: Harness, payload: Record<string, unknown>) {
   return ctx.app.inject({ method: 'POST', url: '/api/v1/tasks', headers: ctx.authed, payload })
@@ -296,13 +293,7 @@ describe('read one', () => {
   it('does not find another workspace’s task', async () => {
     const a = await setup()
     const id = await createTask(a, await createProject(a, 'mine'), 'not yours')
-    const res = await a.app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/register',
-      headers,
-      payload: { email: 'reader@example.com', password: 'correct horse battery', timezone: 'UTC' },
-    })
-    const other = { ...headers, cookie: String(res.headers['set-cookie']).split(';')[0]! }
+    const other = (await secondUser(a, 'reader@example.com')).authed
     expect(
       (await a.app.inject({ method: 'GET', url: `/api/v1/tasks/${id}`, headers: other }))
         .statusCode,
@@ -390,24 +381,14 @@ describe('depth limit', () => {
 })
 
 describe('workspace isolation', () => {
-  async function secondUser(ctx: Harness) {
-    const res = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/register',
-      headers,
-      payload: { email: 'other@example.com', password: 'correct horse battery', timezone: 'UTC' },
-    })
-    return { ...headers, cookie: String(res.headers['set-cookie']).split(';')[0]! }
-  }
-
   it('cannot create a task in another workspace project', async () => {
     const a = await setup()
     const projectId = await createProject(a, 'mine')
-    const bAuthed = await secondUser(a)
+    const b = await secondUser(a)
     const res = await a.app.inject({
       method: 'POST',
       url: '/api/v1/tasks',
-      headers: bAuthed,
+      headers: b.authed,
       payload: { projectId, title: 'planted' },
     })
     expect(res.statusCode).toBe(404)
@@ -417,19 +398,12 @@ describe('workspace isolation', () => {
     const a = await setup()
     const projectId = await createProject(a, 'mine')
     const parentId = await createTask(a, projectId, 'parent')
-    const bAuthed = await secondUser(a)
-    const bProject = (
-      await a.app.inject({
-        method: 'POST',
-        url: '/api/v1/projects',
-        headers: bAuthed,
-        payload: { name: 'theirs' },
-      })
-    ).json().id
+    const b = await secondUser(a)
+    const bProject = await createProject(b, 'theirs')
     const res = await a.app.inject({
       method: 'POST',
       url: '/api/v1/tasks',
-      headers: bAuthed,
+      headers: b.authed,
       payload: { projectId: bProject, parentId, title: 'planted' },
     })
     expect(res.statusCode).toBe(404)
@@ -439,15 +413,8 @@ describe('workspace isolation', () => {
     const a = await setup()
     const projectId = await createProject(a, 'mine')
     const parentId = await createTask(a, projectId, 'parent')
-    const bAuthed = await secondUser(a)
-    const bProject = (
-      await a.app.inject({
-        method: 'POST',
-        url: '/api/v1/projects',
-        headers: bAuthed,
-        payload: { name: 'theirs' },
-      })
-    ).json().id
+    const b = await secondUser(a)
+    const bProject = await createProject(b, 'theirs')
 
     // The parent is legitimately ours and its project is what would be stored, so this is about
     // the request being coherent, not about leaking anything: `move` 404s the same pair.
@@ -459,19 +426,19 @@ describe('workspace isolation', () => {
     const a = await setup()
     const projectId = await createProject(a, 'mine')
     const id = await createTask(a, projectId, 'mine')
-    const bAuthed = await secondUser(a)
+    const b = await secondUser(a)
 
     const patched = await a.app.inject({
       method: 'PATCH',
       url: `/api/v1/tasks/${id}`,
-      headers: bAuthed,
+      headers: b.authed,
       payload: { title: 'stolen' },
     })
     expect(patched.statusCode).toBe(404)
     const deleted = await a.app.inject({
       method: 'DELETE',
       url: `/api/v1/tasks/${id}`,
-      headers: bAuthed,
+      headers: b.authed,
     })
     expect(deleted.statusCode).toBe(404)
 

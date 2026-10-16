@@ -2,7 +2,8 @@ import type { ProjectId, WorkspaceId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { listToday } from '../../../src/modules/tasks/queries/today'
-import { appWithUser, createProject, createTask, type Harness } from '../../helpers/harness'
+import { appWithUser, type Harness, secondUser } from '../../helpers/harness'
+import { createProject, createTask } from '../../helpers/builders'
 
 const cleanups: (() => Promise<void>)[] = []
 afterEach(async () => {
@@ -146,15 +147,7 @@ describe('GET /today', () => {
     // Both users must live in ONE database: every appWithUser() boots its own Postgres, so two
     // of them would be isolated trivially and this test could never fail.
     const a = await setup()
-    const reg = await a.app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/register',
-      headers: { 'x-ctws-client': 'web' },
-      payload: { email: 'other@example.com', password: 'correct horse battery', timezone: 'UTC' },
-    })
-    expect(reg.statusCode).toBe(201)
-    const cookie = String(reg.headers['set-cookie']).split(';')[0]!
-    const b = { ...a, cookie, authed: { 'x-ctws-client': 'web', cookie } }
+    const b = await secondUser(a)
 
     const p = await createProject(b, 'theirs')
     const id = await createTask(b, p, 'theirs')

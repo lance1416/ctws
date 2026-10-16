@@ -2,7 +2,8 @@ import { DAY_MS, type RollupResponse, type ProjectId, type WorkspaceId } from '@
 import { afterEach, describe, expect, it } from 'vitest'
 import { BOARD_TX, listProjectTasks } from '../../../src/modules/tasks/queries/list'
 import { projectRollups } from '../../../src/modules/tasks/queries/rollup'
-import { appWithUser, createProject, createTask, type Harness } from '../../helpers/harness'
+import { appWithUser, type Harness } from '../../helpers/harness'
+import { createProject, createTask } from '../../helpers/builders'
 
 /**
  * THE HALF OF THE ROLLUP THAT IS NOT IN `@ctws/core`.

@@ -1,10 +1,4 @@
-import {
-  projectId as projectIdSchema,
-  type ProjectId,
-  taskId,
-  type TaskId,
-  type WorkspaceId,
-} from '@ctws/contracts'
+import type { ProjectId, TaskId, WorkspaceId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { expect } from 'vitest'
 import { lockTaskTree } from '../../src/modules/tasks/tree'
@@ -26,7 +20,7 @@ const clientHeader = { 'x-ctws-client': 'web' }
  * `authed` is a ready-to-use header bag carrying the session cookie.
  *
  * Each call gets its own database, so a workspace-isolation test built from two calls passes
- * trivially. Register the second user on the same app instead.
+ * trivially. Make the second user with `secondUser` instead.
  */
 export async function appWithUser(email = 'p@example.com', opts: Opts = {}): Promise<Harness> {
   const ctx = await withApp(
@@ -37,58 +31,37 @@ export async function appWithUser(email = 'p@example.com', opts: Opts = {}): Pro
       ...(opts.moduleEnv ? { moduleEnv: opts.moduleEnv } : {}),
     },
   )
+  const cookie = await register(ctx, email, opts.timezone ?? 'UTC')
+  return { ...ctx, cookie, authed: { ...clientHeader, cookie } }
+}
+
+/** Registers an account on `ctx`'s app and answers its session cookie. */
+async function register(
+  ctx: Pick<Harness, 'app'>,
+  email: string,
+  timezone: string,
+): Promise<string> {
   const res = await ctx.app.inject({
     method: 'POST',
     url: '/api/v1/auth/register',
     headers: clientHeader,
-    payload: { email, password: 'correct horse battery', timezone: opts.timezone ?? 'UTC' },
+    payload: { email, password: 'correct horse battery', timezone },
   })
-  const cookie = String(res.headers['set-cookie']).split(';')[0]!
-  return { ...ctx, cookie, authed: { ...clientHeader, cookie } }
-}
-
-export async function createProject(ctx: Harness, name: string): Promise<ProjectId> {
-  const res = await ctx.app.inject({
-    method: 'POST',
-    url: '/api/v1/projects',
-    headers: ctx.authed,
-    payload: { name },
-  })
-  return projectIdSchema.parse(res.json().id)
-}
-
-export async function createTask(
-  ctx: Harness,
-  projectId: ProjectId,
-  title: string,
-  parentId?: TaskId,
-): Promise<TaskId> {
-  const res = await ctx.app.inject({
-    method: 'POST',
-    url: '/api/v1/tasks',
-    headers: ctx.authed,
-    payload: { projectId, title, ...(parentId ? { parentId } : {}) },
-  })
-  if (res.statusCode !== 201) throw new Error(`createTask: ${res.statusCode} ${res.body}`)
-  return taskId.parse(res.json().id)
+  if (res.statusCode !== 201) throw new Error(`register: ${res.statusCode} ${res.body}`)
+  return String(res.headers['set-cookie']).split(';')[0]!
 }
 
 /**
- * A straight parent->child chain `depth` nodes long. Returns ids root-first, so
- * `chain[0]` is at depth 1 and `chain[depth - 1]` is the leaf at depth `depth`.
+ * Another account on the same app, hence the same database: what it can see of the first is a real
+ * isolation test. Builders given it act as that account.
  */
-export async function createChain(
+export async function secondUser(
   ctx: Harness,
-  projectId: ProjectId,
-  depth: number,
-): Promise<TaskId[]> {
-  const ids: TaskId[] = []
-  let parent: TaskId | undefined
-  for (let i = 0; i < depth; i++) {
-    parent = await createTask(ctx, projectId, `n${i}`, parent)
-    ids.push(parent)
-  }
-  return ids
+  email = 'other@example.com',
+  timezone = 'UTC',
+): Promise<Harness> {
+  const cookie = await register(ctx, email, timezone)
+  return { ...ctx, cookie, authed: { ...clientHeader, cookie } }
 }
 
 /** A project's tasks through the listing endpoint. */

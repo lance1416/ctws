@@ -1,19 +1,9 @@
-import type {
-  CalendarEntry,
-  LinksResponse,
-  MeetingOccurrence,
-  PersonResponse,
-} from '@ctws/contracts'
+import type { CalendarEntry, LinksResponse, MeetingOccurrence } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { Queryable } from '../../../src/platform/db/client'
-import {
-  createProject,
-  expectBlockedWhile,
-  setupWith,
-  type Harness,
-  web,
-} from '../../helpers/harness'
+import { expectBlockedWhile, setupWith, type Harness, web, secondUser } from '../../helpers/harness'
+import { createProject, createMeeting, createPerson } from '../../helpers/builders'
 
 /**
  * MEETINGS, on iCalendar's `VEVENT` (RFC 5545).
@@ -40,19 +30,8 @@ const WEEKLY = {
   rrule: 'FREQ=WEEKLY;BYDAY=TU',
 }
 
-async function arrange(
-  ctx: Harness,
-  payload: Record<string, unknown> = WEEKLY,
-): Promise<MeetingOccurrence> {
-  const res = await ctx.app.inject({
-    method: 'POST',
-    url: '/api/v1/meetings',
-    headers: web(ctx),
-    payload,
-  })
-  if (res.statusCode !== 201) throw new Error(`arrange: ${res.statusCode} ${res.body}`)
-  return res.json() as MeetingOccurrence
-}
+const arrange = (ctx: Harness, fields: Parameters<typeof createMeeting>[1] = WEEKLY) =>
+  createMeeting(ctx, fields)
 
 /** The whole series. */
 const editAll = (ctx: Harness, id: string, payload: Record<string, unknown>) =>
@@ -111,17 +90,6 @@ async function entries(ctx: Harness, from: string, to: string): Promise<Calendar
   })
   expect(res.statusCode, res.body).toBe(200)
   return (res.json() as { entries: CalendarEntry[] }).entries
-}
-
-async function person(ctx: Harness, name: string): Promise<PersonResponse> {
-  const res = await ctx.app.inject({
-    method: 'POST',
-    url: '/api/v1/people',
-    headers: web(ctx),
-    payload: { name },
-  })
-  expect(res.statusCode, res.body).toBe(201)
-  return res.json() as PersonResponse
 }
 
 const days = (got: { startsLocal: string }[]) => got.map((o) => o.startsLocal.slice(0, 10))
@@ -187,8 +155,8 @@ describe('arranging a meeting', () => {
 
   it('holds the people in the room, out of the people module', async () => {
     const ctx = await setup()
-    const a = await person(ctx, '陈颖')
-    const b = await person(ctx, '李雷')
+    const a = await createPerson(ctx, { name: '陈颖' })
+    const b = await createPerson(ctx, { name: '李雷' })
     const one = await arrange(ctx, { ...WEEKLY, attendeeIds: [a.id, b.id] })
     expect(one.attendees.map((p) => p.name)).toEqual(['李雷', '陈颖'])
   })
@@ -389,7 +357,7 @@ describe('editing from one occurrence on', () => {
 
   it('carries the guest list into the new series', async () => {
     const ctx = await setup()
-    const a = await person(ctx, '陈颖')
+    const a = await createPerson(ctx, { name: '陈颖' })
     const series = await arrange(ctx, { ...WEEKLY, attendeeIds: [a.id] })
     const res = await split(ctx, series.meetingId, '2026-11-03T09:00', {
       startsLocal: '2026-11-03T15:00',
@@ -610,21 +578,9 @@ describe('windows, projects and tenants', () => {
 
   it('refuses a person from another workspace, and arranges no half a meeting', async () => {
     const ctx = await setup()
-    const mine = await person(ctx, '我的联系人')
-    const other = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/register',
-      headers: { 'x-ctws-client': 'web' },
-      payload: { email: 'two@example.com', password: 'correct horse battery', timezone: 'UTC' },
-    })
-    const theirs: Harness = {
-      ...ctx,
-      authed: {
-        'x-ctws-client': 'web',
-        cookie: String(other.headers['set-cookie']).split(';')[0]!,
-      },
-    }
-    const stranger = await person(theirs, '别人的联系人')
+    const mine = await createPerson(ctx, { name: '我的联系人' })
+    const theirs = await secondUser(ctx, 'two@example.com')
+    const stranger = await createPerson(theirs, { name: '别人的联系人' })
 
     const res = await ctx.app.inject({
       method: 'POST',
@@ -638,7 +594,7 @@ describe('windows, projects and tenants', () => {
 
   it('leaves a deleted person out rather than naming someone unfindable', async () => {
     const ctx = await setup()
-    const a = await person(ctx, '走了的人')
+    const a = await createPerson(ctx, { name: '走了的人' })
     const series = await arrange(ctx, { ...WEEKLY, rrule: null, attendeeIds: [a.id] })
     await ctx.app.inject({ method: 'DELETE', url: `/api/v1/people/${a.id}`, headers: web(ctx) })
 
@@ -653,19 +609,7 @@ describe('windows, projects and tenants', () => {
   it('keeps one workspace out of another', async () => {
     const ctx = await setup()
     const series = await arrange(ctx)
-    const other = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/register',
-      headers: { 'x-ctws-client': 'web' },
-      payload: { email: 'three@example.com', password: 'correct horse battery', timezone: 'UTC' },
-    })
-    const theirs: Harness = {
-      ...ctx,
-      authed: {
-        'x-ctws-client': 'web',
-        cookie: String(other.headers['set-cookie']).split(';')[0]!,
-      },
-    }
+    const theirs = await secondUser(ctx, 'three@example.com')
     const seen = await theirs.app.inject({
       method: 'GET',
       url: `/api/v1/meetings/${series.meetingId}/occurrences/${series.recurrenceId}`,

@@ -1,7 +1,8 @@
 import type { ProjectId } from '@ctws/contracts'
 import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { appWithUser, createProject, createTask, type Harness } from '../helpers/harness'
+import { appWithUser, type Harness, secondUser } from '../helpers/harness'
+import { createProject, createTask } from '../helpers/builders'
 
 /**
  * The task module answers under `/api/v1/tasks/`, the shell's own surfaces stay flat, and the
@@ -17,17 +18,7 @@ beforeAll(async () => {
   await createTask(ctx, projectId, 'inside')
   // A SECOND user on the SAME app and database: two `appWithUser()` calls would be two unrelated
   // databases and any isolation assertion between them would pass trivially.
-  const res = await ctx.app.inject({
-    method: 'POST',
-    url: '/api/v1/auth/register',
-    headers: { 'x-ctws-client': 'web' },
-    payload: { email: 'intruder@example.com', password: 'correct horse battery', timezone: 'UTC' },
-  })
-  expect(res.statusCode).toBe(201)
-  otherAuthed = {
-    'x-ctws-client': 'web',
-    cookie: String(res.headers['set-cookie']).split(';')[0]!,
-  }
+  otherAuthed = (await secondUser(ctx, 'intruder@example.com')).authed
 }, 180_000)
 
 afterAll(async () => {

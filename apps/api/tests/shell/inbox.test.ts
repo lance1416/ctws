@@ -1,7 +1,8 @@
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { sqlStateOf } from '../helpers/sql'
-import { appWithUser, createProject } from '../helpers/harness'
+import { appWithUser } from '../helpers/harness'
+import { createProject } from '../helpers/builders'
 
 const cleanups: (() => Promise<void>)[] = []
 afterEach(async () => {

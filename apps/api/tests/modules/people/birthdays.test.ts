@@ -3,6 +3,7 @@ import { keptNote, nextOccurrence, type Birthday } from '@ctws/core'
 import { afterEach, describe, expect, it } from 'vitest'
 import { listBirthdays } from '../../../src/modules/people/birthdays'
 import { setupWith, type Harness, web } from '../../helpers/harness'
+import { createPerson } from '../../helpers/builders'
 
 /**
  * THE BIRTHDAYS VIEW -- one page's worth of data, segmented and counted by the server.
@@ -27,15 +28,14 @@ async function workspaceOf(ctx: Harness): Promise<WorkspaceId> {
   return (res.json() as { workspaceId: WorkspaceId }).workspaceId
 }
 
-async function add(ctx: Harness, name: string, birthday?: unknown, circle?: string) {
-  const res = await ctx.app.inject({
-    method: 'POST',
-    url: '/api/v1/people',
-    headers: web(ctx),
-    payload: { name, ...(birthday ? { birthday } : {}), ...(circle ? { circle } : {}) },
-  })
-  expect(res.statusCode, res.body).toBe(201)
-}
+type Fields = NonNullable<Parameters<typeof createPerson>[1]>
+
+const add = (
+  ctx: Harness,
+  name: string,
+  birthday?: Fields['birthday'],
+  circle?: Fields['circle'],
+) => createPerson(ctx, { name, ...(birthday ? { birthday } : {}), ...(circle ? { circle } : {}) })
 
 type Row = {
   name: string

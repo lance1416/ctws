@@ -1,15 +1,17 @@
-import {
-  OBJECT_TYPES,
-  type CandidatesResponse,
-  type PersonResponse,
-  type LinksResponse,
-} from '@ctws/contracts'
+import { OBJECT_TYPES, type CandidatesResponse, type LinksResponse } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { apiModules } from '../../src/modules'
 import { linkRegistry } from '../../src/shell/links/registry'
 import { projectLinkable } from '../../src/shell/projects/linkable'
-import { createProject, createTask, setupWith, type Harness, web } from '../helpers/harness'
+import { setupWith, type Harness, web, secondUser } from '../helpers/harness'
+import {
+  createProject,
+  createTask,
+  createMeeting,
+  createPerson,
+  createReading,
+} from '../helpers/builders'
 
 /**
  * BACKLINKS -- open a thing, see everything it is connected to.
@@ -25,12 +27,6 @@ const setup = (email: string) => setupWith(cleanups, email)
 afterEach(async () => {
   for (const stop of cleanups.splice(0)) await stop()
 })
-
-async function post<T>(ctx: Harness, url: string, payload: Record<string, unknown>): Promise<T> {
-  const res = await ctx.app.inject({ method: 'POST', url, headers: web(ctx), payload })
-  if (res.statusCode !== 201) throw new Error(`${url}: ${res.statusCode} ${res.body}`)
-  return res.json() as T
-}
 
 async function linksOf(ctx: Harness, type: string, id: string): Promise<LinksResponse['groups']> {
   const res = await ctx.app.inject({
@@ -65,7 +61,7 @@ describe('every kind of thing has a module that answers for it', () => {
 describe('opening a thing shows what it is connected to', () => {
   it('shows a person the meetings they are in, without anything written on their record', async () => {
     const ctx = await setup('back@example.com')
-    const person = await post<PersonResponse>(ctx, '/api/v1/people', {
+    const person = await createPerson(ctx, {
       name: '陈颖',
       org: 'Acme 招聘',
     })
@@ -73,8 +69,8 @@ describe('opening a thing shows what it is connected to', () => {
     for (const [title, startsLocal] of [
       ['二面', '2026-10-20T21:00'],
       ['一面', '2026-10-06T20:00'],
-    ]) {
-      await post(ctx, '/api/v1/meetings', {
+    ] as const) {
+      await createMeeting(ctx, {
         title,
         startsLocal,
         timeZone: 'America/Toronto',
@@ -102,11 +98,11 @@ describe('opening a thing shows what it is connected to', () => {
     const ctx = await setup('project@example.com')
     const project = await createProject(ctx, '找工作')
     await createTask(ctx, project, '改简历')
-    const person = await post<PersonResponse>(ctx, '/api/v1/people', {
+    const person = await createPerson(ctx, {
       name: '陈颖',
       projectIds: [project],
     })
-    const reading = await post<{ id: string }>(ctx, '/api/v1/reading', {
+    const reading = await createReading(ctx, {
       kind: 'link',
       url: 'https://example.test/a',
     })
@@ -117,7 +113,7 @@ describe('opening a thing shows what it is connected to', () => {
       payload: { title: '面试准备', projectId: project },
     })
     expect(filed.statusCode, filed.body).toBe(200)
-    await post(ctx, '/api/v1/meetings', {
+    await createMeeting(ctx, {
       title: '二面',
       startsLocal: '2026-10-20T21:00',
       timeZone: 'America/Toronto',
@@ -138,8 +134,8 @@ describe('opening a thing shows what it is connected to', () => {
 
   it('leaves out what was deleted, rather than drawing a row nobody can open', async () => {
     const ctx = await setup('gone@example.com')
-    const person = await post<PersonResponse>(ctx, '/api/v1/people', { name: '陈颖' })
-    const meeting = await post<{ meetingId: string }>(ctx, '/api/v1/meetings', {
+    const person = await createPerson(ctx, { name: '陈颖' })
+    const meeting = await createMeeting(ctx, {
       title: '二面',
       startsLocal: '2026-10-20T21:00',
       timeZone: 'America/Toronto',
@@ -159,18 +155,8 @@ describe('opening a thing shows what it is connected to', () => {
 
   it('refuses a page for a thing this workspace cannot see', async () => {
     const ctx = await setup('mine2@example.com')
-    const them = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/register',
-      headers: { 'x-ctws-client': 'web' },
-      payload: { email: 'theirs2@example.com', password: 'correct horse battery', timezone: 'UTC' },
-    })
-    expect(them.statusCode, them.body).toBe(201)
-    const theirHeaders = {
-      'x-ctws-client': 'web',
-      cookie: String(them.headers['set-cookie']).split(';')[0]!,
-    }
-    const myPerson = await post<PersonResponse>(ctx, '/api/v1/people', { name: '陈颖' })
+    const theirHeaders = (await secondUser(ctx, 'theirs2@example.com')).authed
+    const myPerson = await createPerson(ctx, { name: '陈颖' })
 
     const reached = await ctx.app.inject({
       method: 'GET',
@@ -184,8 +170,8 @@ describe('opening a thing shows what it is connected to', () => {
 describe('making and removing one edge by hand', () => {
   it('accepts a kind the model allows, and reads it back from both ends', async () => {
     const ctx = await setup('edge@example.com')
-    const person = await post<PersonResponse>(ctx, '/api/v1/people', { name: '陈颖' })
-    const reading = await post<{ id: string }>(ctx, '/api/v1/reading', {
+    const person = await createPerson(ctx, { name: '陈颖' })
+    const reading = await createReading(ctx, {
       kind: 'book',
       title: '设计心理学',
     })
@@ -263,8 +249,8 @@ describe('making and removing one edge by hand', () => {
 
   it('refuses a kind the model does not allow, and an end that is not there', async () => {
     const ctx = await setup('bad@example.com')
-    const person = await post<PersonResponse>(ctx, '/api/v1/people', { name: '陈颖' })
-    const other = await post<PersonResponse>(ctx, '/api/v1/people', { name: '另一个人' })
+    const person = await createPerson(ctx, { name: '陈颖' })
+    const other = await createPerson(ctx, { name: '另一个人' })
 
     const make = (payload: Record<string, unknown>) =>
       ctx.app.inject({ method: 'POST', url: '/api/v1/links', headers: web(ctx), payload })
@@ -355,7 +341,7 @@ describe('an edge a module stores itself', () => {
     const ctx = await setup('own@example.com')
     const project = await createProject(ctx, '找工作')
     await createTask(ctx, project, '改简历')
-    await post<PersonResponse>(ctx, '/api/v1/people', { name: '陈颖', projectIds: [project] })
+    await createPerson(ctx, { name: '陈颖', projectIds: [project] })
 
     const groups = await linksOf(ctx, 'project', project)
     const task = groups.find((g) => g.type === 'task')!.items[0]!
@@ -390,10 +376,10 @@ describe('what can go at the other end', () => {
     const ctx = await setup('cand@example.com')
     const project = await createProject(ctx, '找工作')
     await createTask(ctx, project, '改简历')
-    const person = await post<PersonResponse>(ctx, '/api/v1/people', { name: '陈颖' })
-    const other = await post<PersonResponse>(ctx, '/api/v1/people', { name: '老王' })
-    await post(ctx, '/api/v1/reading', { kind: 'book', title: '设计心理学' })
-    await post(ctx, '/api/v1/meetings', {
+    const person = await createPerson(ctx, { name: '陈颖' })
+    const other = await createPerson(ctx, { name: '老王' })
+    await createReading(ctx, { kind: 'book', title: '设计心理学' })
+    await createMeeting(ctx, {
       title: '二面',
       startsLocal: '2026-10-20T21:00',
       timeZone: 'America/Toronto',
@@ -431,9 +417,9 @@ describe('what can go at the other end', () => {
 
   it('narrows to what was typed, across the modules at once', async () => {
     const ctx = await setup('candq@example.com')
-    const person = await post<PersonResponse>(ctx, '/api/v1/people', { name: '陈颖' })
-    await post(ctx, '/api/v1/reading', { kind: 'book', title: '设计心理学' })
-    await post(ctx, '/api/v1/reading', { kind: 'book', title: '代码整洁之道' })
+    const person = await createPerson(ctx, { name: '陈颖' })
+    await createReading(ctx, { kind: 'book', title: '设计心理学' })
+    await createReading(ctx, { kind: 'book', title: '代码整洁之道' })
     await createProject(ctx, '设计系统')
 
     const found = await candidatesFor(ctx, 'person', person.id, '设计')
@@ -448,8 +434,8 @@ describe('what can go at the other end', () => {
 
   it('offers nothing from another workspace, and nothing deleted', async () => {
     const ctx = await setup('candiso@example.com')
-    const mine = await post<PersonResponse>(ctx, '/api/v1/people', { name: '陈颖' })
-    const doomed = await post<PersonResponse>(ctx, '/api/v1/people', { name: '要删掉的' })
+    const mine = await createPerson(ctx, { name: '陈颖' })
+    const doomed = await createPerson(ctx, { name: '要删掉的' })
     await ctx.app.inject({
       method: 'DELETE',
       url: `/api/v1/people/${doomed.id}`,
@@ -457,21 +443,8 @@ describe('what can go at the other end', () => {
     })
 
     // A second user in the SAME app, so the two workspaces really are rows in one database.
-    const registered = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/register',
-      headers: { 'x-ctws-client': 'web' },
-      payload: { email: 'theirs@example.com', password: 'correct horse battery', timezone: 'UTC' },
-    })
-    const theirs = {
-      'x-ctws-client': 'web',
-      cookie: String(registered.headers['set-cookie']).split(';')[0]!,
-    }
-    await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/people',
-      headers: theirs,
-      payload: { name: '别人的人' },
+    const theirPerson = await createPerson(await secondUser(ctx, 'theirs@example.com'), {
+      name: '别人的人',
     })
 
     const offered = await candidatesFor(ctx, 'person', mine.id)
@@ -479,15 +452,9 @@ describe('what can go at the other end', () => {
     expect(offered.map((c) => c.title)).not.toContain('要删掉的')
 
     // And the other workspace's object is not even a thing to ask about.
-    const theirPerson = await ctx.app.inject({
-      method: 'GET',
-      url: '/api/v1/people',
-      headers: theirs,
-    })
-    const theirId = (theirPerson.json() as { people: { id: string }[] }).people[0]!.id
     const refused = await ctx.app.inject({
       method: 'GET',
-      url: `/api/v1/links?view=candidates&type=person&id=${theirId}`,
+      url: `/api/v1/links?view=candidates&type=person&id=${theirPerson.id}`,
       headers: web(ctx),
     })
     expect(refused.statusCode).toBe(404)

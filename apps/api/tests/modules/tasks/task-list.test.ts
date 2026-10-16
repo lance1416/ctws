@@ -1,14 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
-import {
-  createChain,
-  createProject,
-  createTask,
-  setupWith,
-  tasksOf,
-  type Harness,
-} from '../../helpers/harness'
+import { setupWith, tasksOf, type Harness, secondUser } from '../../helpers/harness'
+import { createChain, createProject, createTask } from '../../helpers/builders'
 
 const cleanups: (() => Promise<void>)[] = []
 
@@ -104,16 +98,7 @@ describe('GET /tasks?projectId', () => {
     const ctx = await setup()
     const p = await createProject(ctx, 'P')
     await createTask(ctx, p, 't')
-    const res = await ctx.app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/register',
-      headers: { 'x-ctws-client': 'web' },
-      payload: { email: 'other@example.com', password: 'correct horse battery', timezone: 'UTC' },
-    })
-    const other = {
-      'x-ctws-client': 'web',
-      cookie: String(res.headers['set-cookie']).split(';')[0]!,
-    }
+    const other = (await secondUser(ctx)).authed
     expect((await list(ctx, p, other)).statusCode).toBe(404)
     expect((await list(ctx, p)).statusCode).toBe(200)
   })

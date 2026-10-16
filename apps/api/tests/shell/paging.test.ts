@@ -1,6 +1,13 @@
 import type { ProjectId } from '@ctws/contracts'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { appWithUser, createProject, createTask, type Harness, web } from '../helpers/harness'
+import { appWithUser, type Harness } from '../helpers/harness'
+import {
+  createProject,
+  createTask,
+  createMeeting,
+  createPerson,
+  createReading,
+} from '../helpers/builders'
 
 /**
  * A list that can grow without bound is read a page at a time: each answer says the limit it was
@@ -14,26 +21,16 @@ beforeAll(async () => {
   projectId = await createProject(ctx, 'Paged')
   for (const n of [1, 2, 3, 4, 5]) {
     await createProject(ctx, `P${n}`)
-    await post('/api/v1/people', { name: `Person ${n}` })
-    await post('/api/v1/reading', { kind: 'book', title: `Book ${n}` })
+    await createPerson(ctx, { name: `Person ${n}` })
+    await createReading(ctx, { kind: 'book', title: `Book ${n}` })
     await createTask(ctx, projectId, `needle ${n}`)
-    await post('/api/v1/meetings', {
-      title: `Meeting ${n}`,
-      startsLocal: `2026-10-2${n}T09:00`,
-      timeZone: 'UTC',
-      durationMinutes: 30,
-    })
+    await createMeeting(ctx, { title: `Meeting ${n}`, startsLocal: `2026-10-2${n}T09:00` })
   }
 }, 180_000)
 
 afterAll(async () => {
   await ctx?.stop()
 })
-
-async function post(url: string, payload: object) {
-  const res = await ctx.app.inject({ method: 'POST', url, headers: web(ctx), payload })
-  expect(res.statusCode, res.body).toBe(201)
-}
 
 type Paged = { page: { limit: number; nextCursor: string | null } } & Record<string, unknown>
 

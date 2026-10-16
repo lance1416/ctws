@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { appWithUser, createProject, type Harness, web } from '../helpers/harness'
+import { appWithUser, type Harness, web, secondUser } from '../helpers/harness'
+import { createProject, createPerson, createReading } from '../helpers/builders'
 
 /**
  * Every collection whose items have ids answers for one item at `/<collection>/:id`, with the
@@ -10,13 +11,7 @@ let intruder: Record<string, string>
 
 beforeAll(async () => {
   ctx = await appWithUser('reads@example.com')
-  const res = await ctx.app.inject({
-    method: 'POST',
-    url: '/api/v1/auth/register',
-    headers: { 'x-ctws-client': 'web' },
-    payload: { email: 'other@example.com', password: 'correct horse battery', timezone: 'UTC' },
-  })
-  intruder = { 'x-ctws-client': 'web', cookie: String(res.headers['set-cookie']).split(';')[0]! }
+  intruder = (await secondUser(ctx)).authed
 }, 180_000)
 
 afterAll(async () => {
@@ -24,11 +19,6 @@ afterAll(async () => {
 })
 
 const get = (url: string, headers = ctx.authed) => ctx.app.inject({ method: 'GET', url, headers })
-const post = async (url: string, payload: object) => {
-  const res = await ctx.app.inject({ method: 'POST', url, headers: web(ctx), payload })
-  expect(res.statusCode, res.body).toBe(201)
-  return res.json() as { id: string }
-}
 
 const cases = [
   {
@@ -41,14 +31,14 @@ const cases = [
   {
     name: 'a person',
     collection: '/api/v1/people',
-    make: () => post('/api/v1/people', { name: 'Ying' }),
+    make: () => createPerson(ctx),
     listed: async (id: string) =>
       (await get('/api/v1/people')).json().people.find((p: { id: string }) => p.id === id),
   },
   {
     name: 'a reading item',
     collection: '/api/v1/reading',
-    make: () => post('/api/v1/reading', { kind: 'book', title: 'Dune' }),
+    make: () => createReading(ctx),
     listed: async (id: string) =>
       (await get('/api/v1/reading')).json().reading.find((p: { id: string }) => p.id === id),
   },
