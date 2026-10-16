@@ -22,6 +22,21 @@ export class ApiError extends Error {
 }
 
 /**
+ * A success this page cannot read: the server has been updated since the page was loaded. For a
+ * write, the change went through, so the person is told that rather than to try again.
+ */
+export class OutdatedPageError extends Error {
+  constructor(wrote: boolean) {
+    super(
+      wrote
+        ? 'Saved, but CTWS has been updated since this page was opened. Reload the page.'
+        : 'CTWS has been updated since this page was opened. Reload the page.',
+    )
+    this.name = 'OutdatedPageError'
+  }
+}
+
+/**
  * What to tell a person about a failure: the server's sentence for them, else its title, else the
  * error's own message. Null for no error, or for something thrown that is not an Error.
  */
@@ -60,9 +75,31 @@ export async function call<E extends Endpoint>(
     const refusal = parseProblem(text)
     throw new ApiError(res.status, refusal?.title ?? `HTTP ${res.status}`, refusal?.detail)
   }
-  return (
-    endpoint.response ? endpoint.response.parse(JSON.parse(text)) : undefined
-  ) as ResponseOf<E>
+  if (!endpoint.response) return undefined as ResponseOf<E>
+  const answer = readAnswer(endpoint.response, JSON.parse(text))
+  if (!answer.success) throw new OutdatedPageError(endpoint.method !== 'GET')
+  return answer.data as ResponseOf<E>
+}
+
+/**
+ * Parses a success by its strict schema, dropping the fields it does not know: a page left open
+ * across a deploy meets fields added since it was built, and they are not a reason to fail. Any
+ * other mismatch is not read around.
+ */
+function readAnswer(schema: z.ZodType, data: unknown): { success: boolean; data?: unknown } {
+  for (;;) {
+    const result = schema.safeParse(data)
+    if (result.success) return result
+    const issues = result.error.issues
+    if (!issues.every((i) => i.code === 'unrecognized_keys')) return result
+    for (const issue of issues) {
+      const at = issue.path.reduce<unknown>(
+        (o, key) => (o as Record<PropertyKey, unknown>)[key],
+        data,
+      )
+      for (const key of issue.keys) delete (at as Record<string, unknown>)[key]
+    }
+  }
 }
 
 /**

@@ -1,6 +1,6 @@
 import { api } from '@ctws/contracts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ApiError, call, everyPage } from './api'
+import { ApiError, call, everyPage, OutdatedPageError } from './api'
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -55,6 +55,31 @@ describe('call', () => {
   it('parses the answer with the endpoint schema, refusing one that does not match', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(json({ ...ME, role: 'owner' })))
     await expect(call(api.auth.me)).rejects.toThrow()
+  })
+
+  it('reads an answer that has gained fields, as a page left open meets a newer server', async () => {
+    const project = {
+      id: ME.workspaceId,
+      workspaceId: ME.workspaceId,
+      name: 'P',
+      color: 'project-2',
+      isInbox: false,
+      rank: 'a0',
+      archivedAt: null,
+      createdAt: '2026-10-01T00:00:00.000Z',
+      columns: {},
+    }
+    const page = { limit: 200, nextCursor: null }
+    const newer = { projects: [{ ...project, pinned: true }], page: { ...page, total: 1 }, more: 1 }
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(json(newer)))
+    expect(await call(api.projects.list)).toEqual({ projects: [project], page })
+  })
+
+  it('says the page is out of date, not that the request failed, when a success no longer fits', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(json({ ...ME, role: 'owner' }, 201)))
+    const failure = await call(api.auth.me).catch((e: unknown) => e)
+    expect(failure).toBeInstanceOf(OutdatedPageError)
+    expect((failure as Error).message).toMatch(/reload/i)
   })
 
   it('keeps the status when an error body is not JSON', async () => {
