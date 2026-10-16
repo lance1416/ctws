@@ -1,7 +1,7 @@
 import { type CreateMeetingBody, type MeetingOccurrence } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { useRef } from 'react'
-import { createMeeting } from '../api'
+import { createMeeting, meetingKeys } from '../api'
 import { createBody, newMeeting, useMeetingForm } from '../hooks/useMeetingForm'
 import { ProjectPicker } from '../../../shell/projects'
 import { useComposing } from '../../../platform/keyboard/composition'
@@ -45,7 +45,7 @@ export function NewMeetingDialog({
 
   const make = useMutation({
     mutationFn: (body: CreateMeetingBody) => createMeeting(body),
-    meta: { awaits: [['meetings']], ownsError: true },
+    meta: { awaits: [meetingKeys.all], ownsError: true },
     onSuccess: (made) => onMade(made),
   })
 

@@ -50,35 +50,16 @@ function previewBirthday(
   )
 }
 
-export const peopleQuery = () =>
-  queryOptions({ queryKey: ['people', 'list'], queryFn: ({ signal }) => listPeople(signal) })
-
-/** The birthdays page in one request: segments, month index and circle counts, all the server's. */
-export const birthdaysQuery = () =>
-  queryOptions({
-    queryKey: ['people', 'birthdays'],
-    queryFn: ({ signal }) =>
-      call(api.people.birthdays, { query: { view: 'birthdays' } }, { signal }),
-  })
-
-export const birthdayCalendarQuery = (range: { from: string; to: string }) =>
-  queryOptions({
-    queryKey: ['people', 'calendar', range.from, range.to],
-    queryFn: async ({ signal }) =>
-      (await call(api.people.calendar, { query: { view: 'calendar', ...range } }, { signal }))
-        .entries,
-  })
-
-export const personSearchQuery = (q: string) =>
-  queryOptions({
-    queryKey: ['people', 'search', q],
-    queryFn: async ({ signal }) =>
-      (await call(api.people.search, { query: { q } }, { signal })).people,
-  })
-
-export const birthdayPreviewQuery = (draft: BirthdayDraft) =>
-  queryOptions({
-    queryKey: [
+/** This module's query keys. Every one starts with `'people'`, so `all` reaches each of them. */
+export const peopleKeys = {
+  all: ['people'] as const,
+  list: ['people', 'list'] as const,
+  birthdays: ['people', 'birthdays'] as const,
+  calendar: (range: { from: string; to: string }) =>
+    ['people', 'calendar', range.from, range.to] as const,
+  search: (q: string) => ['people', 'search', q] as const,
+  birthdayPreview: (draft: BirthdayDraft) =>
+    [
       'people',
       'birthday-preview',
       draft.calendar,
@@ -87,7 +68,38 @@ export const birthdayPreviewQuery = (draft: BirthdayDraft) =>
       draft.day,
       draft.leapMonth,
       draft.hourBranch,
-    ],
+    ] as const,
+}
+
+export const peopleQuery = () =>
+  queryOptions({ queryKey: peopleKeys.list, queryFn: ({ signal }) => listPeople(signal) })
+
+/** The birthdays page in one request: segments, month index and circle counts, all the server's. */
+export const birthdaysQuery = () =>
+  queryOptions({
+    queryKey: peopleKeys.birthdays,
+    queryFn: ({ signal }) =>
+      call(api.people.birthdays, { query: { view: 'birthdays' } }, { signal }),
+  })
+
+export const birthdayCalendarQuery = (range: { from: string; to: string }) =>
+  queryOptions({
+    queryKey: peopleKeys.calendar(range),
+    queryFn: async ({ signal }) =>
+      (await call(api.people.calendar, { query: { view: 'calendar', ...range } }, { signal }))
+        .entries,
+  })
+
+export const personSearchQuery = (q: string) =>
+  queryOptions({
+    queryKey: peopleKeys.search(q),
+    queryFn: async ({ signal }) =>
+      (await call(api.people.search, { query: { q } }, { signal })).people,
+  })
+
+export const birthdayPreviewQuery = (draft: BirthdayDraft) =>
+  queryOptions({
+    queryKey: peopleKeys.birthdayPreview(draft),
     queryFn: ({ signal }) => previewBirthday(draft, signal),
   })
 

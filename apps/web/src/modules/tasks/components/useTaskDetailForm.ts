@@ -4,7 +4,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { fromDayTimeInput, toDayTimeInput } from '../../../platform/time/dates'
 import { useTimeZone } from '../../../shell/auth'
-import { patchTask } from '../api'
+import { patchTask, taskKeys } from '../api'
 import {
   detailTaskForm,
   PATCH_KEYS,
@@ -13,7 +13,7 @@ import {
 } from '../logic/taskForm'
 
 /** What a write from the pane waits to see refetched: any edit can move a task between lists. */
-export const WRITE_AWAITS = [['tasks']]
+export const WRITE_AWAITS = [taskKeys.all]
 
 /**
  * The pane's edit form. Defaults are read when editing starts (`start`), not on every render, so a

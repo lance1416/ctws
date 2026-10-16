@@ -2,9 +2,11 @@ import type { MeetingOccurrence, UpdateSeriesBody } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 import { problemText } from '../../../platform/http/api'
+import { linkKeys } from '../../../shell/links'
 import {
   continueSeries,
   type EditScope,
+  meetingKeys,
   patchOccurrence,
   patchSeries,
   readOccurrence,
@@ -28,7 +30,7 @@ export function useScopedEdit(
   const save = useMutation({
     mutationFn: ({ patch, scope }: { patch: UpdateSeriesBody; scope: EditScope }) =>
       writeScoped(meeting, patch, scope),
-    meta: { awaits: [['meetings'], ['links']], ownsError: true },
+    meta: { awaits: [meetingKeys.all, linkKeys.all], ownsError: true },
   })
 
   const write = async (patch: UpdateSeriesBody, scope: EditScope) => {

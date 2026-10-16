@@ -4,13 +4,16 @@ import { ApiError, call } from '../../platform/http/api'
 import { browserZone, ymd } from '../../platform/time/dates'
 import { useNow } from '../../platform/time/useNow'
 
+/** The signed-in user's key. No write but signing in or out changes what it reads. */
+const meKey = ['me'] as const
+
 /**
  * The signed-in user, or null when there is no valid session. Only a 401 means signed out; any
  * other failure throws, so the shell can say the server is unreachable.
  */
 export function useMe() {
   return useQuery<UserResponse | null>({
-    queryKey: ['me'],
+    queryKey: meKey,
     queryFn: async ({ signal }) => {
       try {
         return await call(api.auth.me, {}, { signal })

@@ -7,7 +7,7 @@ import {
 } from '@ctws/contracts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { isFinished } from '../logic/status'
-import { patchTask, PROJECT_TASKS, type ProjectTasks, ROW_WRITES, TODAY_TASKS } from '../api'
+import { patchTask, type ProjectTasks, ROW_WRITES, taskKeys } from '../api'
 
 type TodayTasks = TodayTaskResponse[]
 
@@ -21,17 +21,17 @@ export function useTaskActions(onError: (message: string) => void) {
   const run = useMutation({
     mutationFn: ({ id, body }: { id: TaskId; body: UpdateTaskBody }) => patchTask(id, body),
     onMutate: async ({ id, body }) => {
-      await qc.cancelQueries({ queryKey: PROJECT_TASKS })
-      await qc.cancelQueries({ queryKey: TODAY_TASKS })
-      const tasks = qc.getQueriesData<ProjectTasks>({ queryKey: PROJECT_TASKS })
-      const today = qc.getQueriesData<TodayTasks>({ queryKey: TODAY_TASKS })
+      await qc.cancelQueries({ queryKey: taskKeys.lists })
+      await qc.cancelQueries({ queryKey: taskKeys.todays })
+      const tasks = qc.getQueriesData<ProjectTasks>({ queryKey: taskKeys.lists })
+      const today = qc.getQueriesData<TodayTasks>({ queryKey: taskKeys.todays })
       const status = body.status
       if (status) {
         // The row answers at once; the rollups wait for the refetch.
-        qc.setQueriesData<ProjectTasks>({ queryKey: PROJECT_TASKS }, (old) =>
+        qc.setQueriesData<ProjectTasks>({ queryKey: taskKeys.lists }, (old) =>
           old ? { ...old, tasks: old.tasks.map((t) => (t.id === id ? { ...t, status } : t)) } : old,
         )
-        qc.setQueriesData<TodayTasks>({ queryKey: TODAY_TASKS }, (old) =>
+        qc.setQueriesData<TodayTasks>({ queryKey: taskKeys.todays }, (old) =>
           old
             ?.map((t) => (t.id === id ? { ...t, status } : t))
             // The list never holds finished work, so a finished row leaves at once.
@@ -47,7 +47,7 @@ export function useTaskActions(onError: (message: string) => void) {
       onError(problemText(e) ?? "Couldn't save the change")
     },
     scope: ROW_WRITES,
-    meta: { awaits: [['tasks']], ownsError: true },
+    meta: { awaits: [taskKeys.all], ownsError: true },
   })
 
   return {

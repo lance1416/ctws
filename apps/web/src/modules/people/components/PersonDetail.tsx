@@ -3,7 +3,7 @@ import { useMutation } from '@tanstack/react-query'
 import { problemText } from '../../../platform/http/api'
 import { DangerAction } from '../../../platform/ui/DangerZone'
 import { ItemPane, useDestroy, useItemPane } from '../../../shell/detail'
-import { deletePerson, patchPerson } from '../api'
+import { deletePerson, patchPerson, peopleKeys } from '../api'
 import { PersonForm } from './PersonForm'
 import { PersonRead } from './PersonRead'
 
@@ -12,7 +12,7 @@ export function PersonDetail({ person, onClose }: { person: PersonResponse; onCl
   // Waits for the list, so the reading that replaces the form already shows the edit.
   const save = useMutation({
     mutationFn: (patch: Parameters<typeof patchPerson>[1]) => patchPerson(person.id, patch),
-    meta: { awaits: [['people']], ownsError: true },
+    meta: { awaits: [peopleKeys.all], ownsError: true },
   })
 
   return (
@@ -54,7 +54,7 @@ function DeletePerson({ person, onDeleted }: { person: PersonResponse; onDeleted
     type: 'person',
     id: person.id,
     remove: () => deletePerson(person.id),
-    awaits: [['people']],
+    awaits: [peopleKeys.all],
     onDone: onDeleted,
   })
   return (

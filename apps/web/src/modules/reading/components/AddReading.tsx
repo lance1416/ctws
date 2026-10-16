@@ -1,6 +1,6 @@
 import { problemText } from '../../../platform/http/api'
 import { useMutation } from '@tanstack/react-query'
-import { createReadingItem } from '../api'
+import { createReadingItem, readingKeys } from '../api'
 import { isReadingUrl } from '../logic/readingUrl'
 import { useLineEntry } from '../../../platform/ui/useLineEntry'
 import { textbox } from '../../../platform/ui/formStyles'
@@ -21,7 +21,7 @@ export function AddReading() {
   )
   const add = useMutation({
     mutationFn: send,
-    meta: { awaits: [['reading']], ownsError: true },
+    meta: { awaits: [readingKeys.all], ownsError: true },
   })
 
   return (

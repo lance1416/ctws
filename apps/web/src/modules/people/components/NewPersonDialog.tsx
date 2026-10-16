@@ -1,7 +1,7 @@
 import { type PersonResponse } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
-import { createPerson } from '../api'
+import { createPerson, peopleKeys } from '../api'
 import { createBody, newPerson, usePersonForm } from '../hooks/usePersonForm'
 import { ProjectsPicker } from '../../../shell/projects'
 import { useComposing } from '../../../platform/keyboard/composition'
@@ -37,7 +37,7 @@ export function NewPersonDialog({
 
   const make = useMutation({
     mutationFn: createPerson,
-    meta: { awaits: [['people']], ownsError: true },
+    meta: { awaits: [peopleKeys.all], ownsError: true },
     onSuccess: (made) => onMade(made),
   })
 

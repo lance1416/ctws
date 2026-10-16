@@ -4,9 +4,16 @@ import { call } from '../../platform/http/api'
 
 export type Endpoint = { type: ObjectType; id: string }
 
+/** The shell's link keys. Every one starts with `'links'`, so `all` reaches each of them. */
+export const linkKeys = {
+  all: ['links'] as const,
+  of: (of: Endpoint) => ['links', of.type, of.id] as const,
+  candidates: (of: Endpoint, q: string) => ['links', 'candidates', of.type, of.id, q] as const,
+}
+
 export const linksQuery = (of: Endpoint) =>
   queryOptions({
-    queryKey: ['links', of.type, of.id],
+    queryKey: linkKeys.of(of),
     queryFn: async ({ signal }) => (await call(api.links.of, { query: of }, { signal })).groups,
   })
 
@@ -21,7 +28,7 @@ export function deleteLink(id: LinkId): Promise<void> {
 /** Things this one could be joined to, for the picker. An empty `q` means the likely few. */
 export const candidatesQuery = (of: Endpoint, q: string) =>
   queryOptions({
-    queryKey: ['links', 'candidates', of.type, of.id, q],
+    queryKey: linkKeys.candidates(of, q),
     queryFn: async ({ signal }) =>
       (
         await call(

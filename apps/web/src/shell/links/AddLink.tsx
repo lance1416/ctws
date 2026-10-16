@@ -8,7 +8,7 @@ import {
 } from '@ctws/contracts'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
-import { candidatesQuery, createLink, type Endpoint } from './api'
+import { candidatesQuery, createLink, type Endpoint, linkKeys } from './api'
 import { useRegistry } from '../registry'
 import { Modal } from '../../platform/ui/Modal'
 import { Button } from '../../platform/ui/Button'
@@ -40,7 +40,7 @@ export function AddLink({
       if (!isLinkEdge(edge)) throw new Error(`no ${kind} link between these two`)
       return createLink(edge)
     },
-    meta: { awaits: [['links']], ownsError: true },
+    meta: { awaits: [linkKeys.all], ownsError: true },
     onSuccess: onClose,
   })
 

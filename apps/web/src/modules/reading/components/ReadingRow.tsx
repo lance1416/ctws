@@ -2,7 +2,7 @@ import { readingIsFinished, type ReadingItemResponse, type ReadingStatus } from 
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { useMutation } from '@tanstack/react-query'
 import { problemText } from '../../../platform/http/api'
-import { patchReadingItem } from '../api'
+import { patchReadingItem, readingKeys } from '../api'
 import { readingLabel } from '../logic/item'
 import { hostOf, StatusMark } from './marks'
 import { PLAN_DAYS, type PlanDay } from '../logic/plans'
@@ -50,7 +50,7 @@ export function ReadingRow({
   const now = useNow()
   const save = useMutation({
     mutationFn: (patch: Parameters<typeof patchReadingItem>[1]) => patchReadingItem(item.id, patch),
-    meta: { awaits: [['reading']], ownsError: true },
+    meta: { awaits: [readingKeys.all], ownsError: true },
   })
 
   const label = readingLabel(item)

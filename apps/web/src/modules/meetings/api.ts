@@ -33,12 +33,21 @@ async function listMeetings(range: DayRange, signal: AbortSignal): Promise<Meeti
     .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))
 }
 
-// Every key starts with `'meetings'`, so `[['meetings']]` awaits all of them, calendar included.
+/** This module's query keys. Every one starts with `'meetings'`, so `all` reaches each of them. */
+export const meetingKeys = {
+  all: ['meetings'] as const,
+  list: (range: DayRange) => ['meetings', 'list', range.from, range.to] as const,
+  occurrence: (meetingId: MeetingId | null, recurrenceId: string) =>
+    ['meetings', 'one', meetingId, recurrenceId] as const,
+  series: (meetingId: MeetingId | null, today: string) =>
+    ['meetings', 'series', meetingId, today] as const,
+  calendar: (range: DayRange) => ['meetings', 'calendar', range.from, range.to] as const,
+}
 
 /** The occurrences in a range of days, in time order. */
 export const meetingsQuery = (range: DayRange) =>
   queryOptions({
-    queryKey: ['meetings', 'list', range.from, range.to],
+    queryKey: meetingKeys.list(range),
     queryFn: ({ signal }) => listMeetings(range, signal),
   })
 
@@ -49,7 +58,7 @@ export const meetingsQuery = (range: DayRange) =>
  */
 export const occurrenceQuery = (meetingId: MeetingId | null, recurrenceId: string) =>
   queryOptions({
-    queryKey: ['meetings', 'one', meetingId, recurrenceId],
+    queryKey: meetingKeys.occurrence(meetingId, recurrenceId),
     queryFn:
       meetingId === null
         ? skipToken
@@ -76,7 +85,7 @@ export async function readOccurrence(
  */
 export const seriesQuery = (meetingId: MeetingId | null, today: string) =>
   queryOptions({
-    queryKey: ['meetings', 'series', meetingId, today],
+    queryKey: meetingKeys.series(meetingId, today),
     queryFn:
       meetingId === null
         ? skipToken
@@ -98,7 +107,7 @@ export const seriesQuery = (meetingId: MeetingId | null, today: string) =>
 /** Calendar entries; the day, the clock and the origin zone are all the server's. */
 export const meetingCalendarQuery = (range: DayRange) =>
   queryOptions({
-    queryKey: ['meetings', 'calendar', range.from, range.to],
+    queryKey: meetingKeys.calendar(range),
     queryFn: async ({ signal }) =>
       (
         await everyPage(

@@ -5,7 +5,7 @@ import { problemText } from '../../platform/http/api'
 import { Button } from '../../platform/ui/Button'
 import { PanelEmpty } from '../../platform/ui/Panel'
 import { AddLink } from './AddLink'
-import { deleteLink, linksQuery, type Endpoint } from './api'
+import { deleteLink, linkKeys, linksQuery, type Endpoint } from './api'
 
 export type Linked = {
   of: Endpoint
@@ -33,7 +33,7 @@ export function useLinked(of: Endpoint, except: readonly ObjectType[] | undefine
   const groups = (links.data ?? []).filter((g) => !except?.includes(g.type))
   const unlink = useMutation({
     mutationFn: (id: LinkId) => deleteLink(id),
-    meta: { awaits: [['links']], ownsError: true },
+    meta: { awaits: [linkKeys.all], ownsError: true },
   })
   const add = (
     <>

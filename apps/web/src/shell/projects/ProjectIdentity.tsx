@@ -2,7 +2,7 @@ import { projectColors, type ProjectColor, type ProjectId } from '@ctws/contract
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { useMutation } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
-import { updateProject } from './api'
+import { projectKeys, updateProject } from './api'
 import { problemText } from '../../platform/http/api'
 import { railClass } from './projectColor'
 import { useInlineEdit } from '../../platform/ui/useInlineEdit'
@@ -30,7 +30,7 @@ export function ProjectIdentity({
 
   const save = useMutation({
     mutationFn: (body: { name?: string; color?: ProjectColor }) => updateProject(projectId, body),
-    meta: { awaits: [['projects']], ownsError: true },
+    meta: { awaits: [projectKeys.all], ownsError: true },
   })
 
   const commit = () => {

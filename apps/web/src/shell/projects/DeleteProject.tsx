@@ -2,7 +2,7 @@ import type { ProjectId } from '@ctws/contracts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { deleteProject, useEveryProject } from './api'
+import { deleteProject, projectKeys, useEveryProject } from './api'
 import { DangerAction } from '../../platform/ui/DangerZone'
 import { problemText } from '../../platform/http/api'
 import { useRegistry } from '../registry'
@@ -36,7 +36,7 @@ export function DeleteProject({ id }: { id: ProjectId }) {
   const forget = useForgetRecent()
   const remove = useMutation({
     mutationFn: () => deleteProject(id),
-    meta: { awaits: [['projects']], ownsError: true },
+    meta: { awaits: [projectKeys.all], ownsError: true },
     onSuccess: () => {
       forget('project', id)
       navigate('/projects')

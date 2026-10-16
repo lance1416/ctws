@@ -1,6 +1,6 @@
 import type { PersonResponse } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
-import { createPerson } from '../api'
+import { createPerson, peopleKeys } from '../api'
 import { useLineEntry } from '../../../platform/ui/useLineEntry'
 import { textbox } from '../../../platform/ui/formStyles'
 
@@ -11,7 +11,7 @@ export function NewPersonInput({ onCreated }: { onCreated: (person: PersonRespon
   const send = name.sends((text) => createPerson({ name: text }))
   const create = useMutation({
     mutationFn: send,
-    meta: { awaits: [['people']], ownsError: true },
+    meta: { awaits: [peopleKeys.all], ownsError: true },
     onSuccess: (person) => onCreated(person),
   })
 

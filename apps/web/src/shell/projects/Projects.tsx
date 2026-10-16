@@ -1,7 +1,7 @@
 import type { ProjectListItem } from '@ctws/contracts'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { archivedProjectsQuery, createProject, useProjects } from './api'
+import { archivedProjectsQuery, createProject, projectKeys, useProjects } from './api'
 import { LIST_MEASURE } from '../rows/leads'
 import { useLineEntry } from '../../platform/ui/useLineEntry'
 import { DaySection } from '../rows/DaySection'
@@ -19,7 +19,7 @@ export function Projects() {
   const send = name.sends((text) => createProject({ name: text }))
   const create = useMutation({
     mutationFn: send,
-    meta: { awaits: [['projects']], ownsError: true },
+    meta: { awaits: [projectKeys.all], ownsError: true },
   })
 
   // In the server's order, which puts the inbox first; a second sort here would drift from it.

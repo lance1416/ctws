@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { createProject, useProjects } from '../projects/api'
+import { createProject, projectKeys, useProjects } from '../projects/api'
 import { useRegistry } from '../registry'
 import { railClass } from '../projects/projectColor'
 import { useLineEntry } from '../../platform/ui/useLineEntry'
@@ -33,7 +33,7 @@ export function SideRail() {
   const send = name.sends((text) => createProject({ name: text }))
   const create = useMutation({
     mutationFn: send,
-    meta: { awaits: [['projects']] },
+    meta: { awaits: [projectKeys.all] },
     onSuccess: (made) => {
       setNaming(false)
       navigate(`/projects/${made.id}`)

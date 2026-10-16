@@ -5,7 +5,7 @@ import {
 } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { problemText } from '../../../platform/http/api'
-import { deleteReadingItem, patchReadingItem } from '../api'
+import { deleteReadingItem, patchReadingItem, readingKeys } from '../api'
 import { readingLabel, recentEntry } from '../logic/item'
 import { ProjectChip, ProjectPicker } from '../../../shell/projects'
 import { dayPhrase, ymd } from '../../../platform/time/dates'
@@ -77,7 +77,7 @@ function ReadingFields({
   // Waits for the list, so the reading that replaces the form already shows the edit.
   const save = useMutation({
     mutationFn: (patch: Parameters<typeof patchReadingItem>[1]) => patchReadingItem(item.id, patch),
-    meta: { awaits: [['reading']], ownsError: true },
+    meta: { awaits: [readingKeys.all], ownsError: true },
   })
 
   if (pane.editing) {
@@ -266,7 +266,7 @@ function DeleteReading({ item, onDeleted }: { item: ReadingItemResponse; onDelet
     type: 'reading',
     id: item.id,
     remove: () => deleteReadingItem(item.id),
-    awaits: [['reading']],
+    awaits: [readingKeys.all],
     onDone: onDeleted,
   })
   return (

@@ -11,34 +11,49 @@ import { queryOptions } from '@tanstack/react-query'
 import { call } from '../../platform/http/api'
 import type { CreateTaskForm } from './logic/taskForm'
 
-// Every key starts with `'tasks'`, so `[['tasks']]` awaits all of them and nothing else.
 type Range = { from: string; to: string }
+
+/**
+ * This module's query keys. Every one starts with `'tasks'`, so `all` reaches each of them and
+ * nothing else.
+ *
+ * Today's, Done's and Movement's answers are the server's for one day, so that day (the account's,
+ * from `useAccountToday`) is in their keys: a page left open past midnight asks again. It is not
+ * sent; the server knows the account's day.
+ */
+export const taskKeys = {
+  all: ['tasks'] as const,
+  /** Every project's list, for optimistic edits across all of them. */
+  lists: ['tasks', 'list'] as const,
+  list: (projectId: ProjectId) => [...taskKeys.lists, projectId] as const,
+  one: (id: TaskId) => ['tasks', 'one', id] as const,
+  /** Today's list, whichever day it was read for. */
+  todays: ['tasks', 'today'] as const,
+  today: (day: string) => [...taskKeys.todays, day] as const,
+  completed: (day: string) => ['tasks', 'completed', day] as const,
+  movement: (day: string) => ['tasks', 'movement', day] as const,
+  search: (q: string) => ['tasks', 'search', q] as const,
+  calendar: (range: Range) => ['tasks', 'calendar', range.from, range.to] as const,
+  review: (range: Range | null) =>
+    ['tasks', 'review', range?.from ?? 'week', range?.to ?? ''] as const,
+  dependencies: (id: TaskId) => ['tasks', 'dependencies', id] as const,
+}
 
 /** The list and its rollups share one cache entry, so the numbers always match the rows. */
 export type ProjectTasks = ResponseOf<typeof api.tasks.board>
 
-/** The prefix every project's task list shares, for optimistic edits across all of them. */
-export const PROJECT_TASKS = ['tasks', 'list'] as const
-
 export const projectTasksQuery = (projectId: ProjectId) =>
   queryOptions({
-    queryKey: [...PROJECT_TASKS, projectId],
+    queryKey: taskKeys.list(projectId),
     queryFn: ({ signal }) => call(api.tasks.board, { query: { projectId } }, { signal }),
   })
 
 /** One task by its id: what a link to a task asks to find the project it lives in. */
 export const taskQuery = (id: TaskId) =>
   queryOptions({
-    queryKey: ['tasks', 'one', id],
+    queryKey: taskKeys.one(id),
     queryFn: ({ signal }) => call(api.tasks.get, { params: { id } }, { signal }),
   })
-
-/**
- * Today's, Done's and Movement's answers are the server's for one day, so that day (the account's,
- * from `useAccountToday`) is in their keys: a page left open past midnight asks again. It is not
- * sent; the server knows the account's day.
- */
-export const TODAY_TASKS = ['tasks', 'today']
 
 /**
  * The scope of the writes that move rows at once, before the server answers: they go out one at a
@@ -49,7 +64,7 @@ export const ROW_WRITES = { id: 'tasks:rows' }
 // The server owns the segments and their order; nothing here re-derives either.
 export const todayQuery = (day: string) =>
   queryOptions({
-    queryKey: [...TODAY_TASKS, day],
+    queryKey: taskKeys.today(day),
     queryFn: async ({ signal }) =>
       (await call(api.tasks.today, { query: { view: 'today' } }, { signal })).tasks,
   })
@@ -57,7 +72,7 @@ export const todayQuery = (day: string) =>
 /** Newest first; the server decides each task's day and whether this is the whole history. */
 export const completedQuery = (day: string) =>
   queryOptions({
-    queryKey: ['tasks', 'completed', day],
+    queryKey: taskKeys.completed(day),
     queryFn: ({ signal }) =>
       call(api.tasks.completed, { query: { view: 'completed' } }, { signal }),
   })
@@ -68,7 +83,7 @@ export const completedQuery = (day: string) =>
  */
 export const movementQuery = (day: string) =>
   queryOptions({
-    queryKey: ['tasks', 'movement', day],
+    queryKey: taskKeys.movement(day),
     queryFn: async ({ signal }) =>
       (await call(api.tasks.movement, { query: { view: 'movement' } }, { signal })).projects,
   })
@@ -76,14 +91,14 @@ export const movementQuery = (day: string) =>
 // The server owns the matching and the order; nothing here re-ranks or re-filters.
 export const taskSearchQuery = (q: string) =>
   queryOptions({
-    queryKey: ['tasks', 'search', q],
+    queryKey: taskKeys.search(q),
     queryFn: async ({ signal }) =>
       (await call(api.tasks.search, { query: { q } }, { signal })).tasks,
   })
 
 export const taskCalendarQuery = (range: Range) =>
   queryOptions({
-    queryKey: ['tasks', 'calendar', range.from, range.to],
+    queryKey: taskKeys.calendar(range),
     queryFn: async ({ signal }) =>
       (await call(api.tasks.calendar, { query: { view: 'calendar', ...range } }, { signal }))
         .entries,
@@ -95,7 +110,7 @@ export const taskCalendarQuery = (range: Range) =>
  */
 export const reviewQuery = (range: Range | null) =>
   queryOptions({
-    queryKey: ['tasks', 'review', range?.from ?? 'week', range?.to ?? ''],
+    queryKey: taskKeys.review(range),
     queryFn: ({ signal }) =>
       call(api.tasks.review, { query: { view: 'review', ...range } }, { signal }),
   })
@@ -103,7 +118,7 @@ export const reviewQuery = (range: Range | null) =>
 /** Both directions for one task, finished blockers included -- what the detail pane shows. */
 export const dependenciesQuery = (id: TaskId) =>
   queryOptions({
-    queryKey: ['tasks', 'dependencies', id],
+    queryKey: taskKeys.dependencies(id),
     queryFn: ({ signal }) => call(api.tasks.dependencies, { params: { id } }, { signal }),
   })
 

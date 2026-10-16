@@ -22,12 +22,21 @@ async function listProjects(archived: boolean, signal: AbortSignal): Promise<Pro
   return pages.flatMap((p) => p.projects)
 }
 
+/**
+ * The shell's project keys. The live list's key is the prefix of every other, so `all` reaches the
+ * archived shelf too.
+ */
+export const projectKeys = {
+  all: ['projects'] as const,
+  archived: ['projects', 'archived'] as const,
+}
+
 export const projectsQuery = () =>
-  queryOptions({ queryKey: ['projects'], queryFn: ({ signal }) => listProjects(false, signal) })
+  queryOptions({ queryKey: projectKeys.all, queryFn: ({ signal }) => listProjects(false, signal) })
 /** The archived projects: the server leaves them out of the list above unless asked. */
 export const archivedProjectsQuery = () =>
   queryOptions({
-    queryKey: ['projects', 'archived'],
+    queryKey: projectKeys.archived,
     queryFn: ({ signal }) => listProjects(true, signal),
   })
 
