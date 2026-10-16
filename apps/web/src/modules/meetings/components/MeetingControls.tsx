@@ -1,6 +1,6 @@
 import type { PersonId } from '@ctws/contracts'
 import { usePeople } from '../../people'
-import { BUTTON } from '../../../platform/ui/buttonStyles'
+import { Button } from '../../../platform/ui/Button'
 import { PickMany, PickOne } from '../../../platform/ui/inline'
 import { useNow } from '../../../platform/time/useNow'
 import { repeatChoices, repeatLabel } from '../api'
@@ -104,9 +104,9 @@ export function EndsPicker({
         className={className}
       />
       {until ? (
-        <button type="button" onClick={() => onChange(null)} className={BUTTON.inline}>
+        <Button look="inline" onClick={() => onChange(null)}>
           Never
-        </button>
+        </Button>
       ) : (
         <span className="text-sm text-ink-subtle">Never</span>
       )}

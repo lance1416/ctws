@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { BUTTON } from '../../platform/ui/buttonStyles'
+import { Button } from '../../platform/ui/Button'
 
 /**
  * What a route shows when it throws while drawing, instead of a blank page: what happened in plain
@@ -15,12 +15,12 @@ export function RouteError() {
           This page could not be drawn. Reloading usually fixes it.
         </p>
         <div className="mt-4 flex gap-2">
-          <button type="button" onClick={() => navigate(-1)} className={BUTTON.secondary}>
+          <Button look="secondary" onClick={() => navigate(-1)}>
             Go back
-          </button>
-          <button type="button" onClick={() => window.location.reload()} className={BUTTON.primary}>
+          </Button>
+          <Button look="primary" onClick={() => window.location.reload()}>
             Reload
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -2,7 +2,7 @@ import type { LinkId, ObjectType } from '@ctws/contracts'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { problemText } from '../../platform/http/api'
-import { BUTTON } from '../../platform/ui/buttonStyles'
+import { Button } from '../../platform/ui/Button'
 import { PanelEmpty } from '../../platform/ui/Panel'
 import { AddLink } from './AddLink'
 import { deleteLink, linksQuery, type Endpoint } from './api'
@@ -42,13 +42,9 @@ export function useLinked(of: Endpoint, except: readonly ObjectType[] | undefine
           {problemText(unlink.error)}
         </p>
       )}
-      <button
-        type="button"
-        onClick={() => setAdding('any')}
-        className={`self-start ${BUTTON.link}`}
-      >
+      <Button look="link" onClick={() => setAdding('any')} className="self-start">
         + Link
-      </button>
+      </Button>
       {adding && (
         <AddLink
           of={of}

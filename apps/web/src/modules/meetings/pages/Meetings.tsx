@@ -15,7 +15,7 @@ import { addDays } from '@ctws/core/day'
 import { ymd } from '../../../platform/time/dates'
 import { useTimeZone } from '../../../shell/auth'
 import { useNow } from '../../../platform/time/useNow'
-import { BUTTON } from '../../../platform/ui/buttonStyles'
+import { Button } from '../../../platform/ui/Button'
 import { QueryStatus } from '../../../platform/ui/QueryStatus'
 import { PageHead } from '../../../platform/ui/PageHead'
 import { HANG } from '../../../platform/ui/hang'
@@ -60,13 +60,9 @@ export function Meetings() {
     <>
       <div className={`${HANG} flex flex-wrap items-center justify-between gap-3`}>
         <PageHead>Meetings</PageHead>
-        <button
-          type="button"
-          onClick={() => setMaking(true)}
-          className={`whitespace-nowrap ${BUTTON.secondary}`}
-        >
+        <Button look="secondary" onClick={() => setMaking(true)} className="whitespace-nowrap">
           New meeting
-        </button>
+        </Button>
       </div>
 
       <QueryStatus query={ahead} />
@@ -87,13 +83,9 @@ export function Meetings() {
         )}
 
         <div className="mt-8">
-          <button
-            type="button"
-            onClick={() => setShowPast((v) => !v)}
-            className={`ml-13 sm:ml-16 ${BUTTON.inline}`}
-          >
+          <Button look="inline" onClick={() => setShowPast((v) => !v)} className="ml-13 sm:ml-16">
             {showPast ? 'Hide earlier' : 'Earlier'}
-          </button>
+          </Button>
           {showPast &&
             (past.length === 0 ? (
               <PanelEmpty hang>Nothing in the past month</PanelEmpty>

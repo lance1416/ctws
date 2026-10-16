@@ -1,6 +1,6 @@
 import { type TaskStatus, type TodayTaskResponse, type TaskId } from '@ctws/contracts'
 import type { KeyboardEvent, ReactNode } from 'react'
-import { BUTTON } from '../../../../platform/ui/buttonStyles'
+import { Button } from '../../../../platform/ui/Button'
 import {
   DayEmpty,
   DaySection,
@@ -117,14 +117,13 @@ function FocalRow({
       </button>
       {/* The visible word is in the accessible name: "Done" in “Complete “Title””. */}
       <span className="flex shrink-0 items-center gap-2 self-center">
-        <button
-          type="button"
+        <Button
+          look="primary"
           aria-label={`Complete “${t.title}”`}
           onClick={() => onStatus(toggleDoneTarget(t.status))}
-          className={BUTTON.primary}
         >
           Done
-        </button>
+        </Button>
         <Pause task={t} onStatus={onStatus} />
       </span>
     </Row>
@@ -213,13 +212,12 @@ function Row({
 
 function Pause({ task: t, onStatus }: Pick<RowProps, 'task' | 'onStatus'>) {
   return (
-    <button
-      type="button"
+    <Button
+      look="secondary"
       aria-label={`Pause “${t.title}”`}
       onClick={() => onStatus(toggleStartTarget(t.status))}
-      className={BUTTON.secondary}
     >
       Pause
-    </button>
+    </Button>
   )
 }

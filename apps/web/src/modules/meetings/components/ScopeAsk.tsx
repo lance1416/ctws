@@ -1,5 +1,5 @@
 import type { EditScope } from '../api'
-import { BUTTON } from '../../../platform/ui/buttonStyles'
+import { Button } from '../../../platform/ui/Button'
 
 type Ask = {
   /** What the change is, in the question: "Move this meeting to …". */
@@ -19,7 +19,7 @@ export function ScopeAsk({
   /** The way out's word, told apart from the form's own Cancel under it. */
   back: string
 }) {
-  return <Question {...ask} back={back} answer={BUTTON.secondary} first="answer" />
+  return <Question {...ask} back={back} answer="secondary" first="answer" />
 }
 
 /**
@@ -29,7 +29,7 @@ export function ScopeAsk({
  */
 export function CancelScopeAsk(ask: Ask) {
   // "Cancel" would say the opposite of what the way out does here.
-  return <Question {...ask} back="Keep it" answer={BUTTON.destructive} first="back" />
+  return <Question {...ask} back="Keep it" answer="destructive" first="back" />
 }
 
 function Question({
@@ -39,7 +39,7 @@ function Question({
   back,
   answer,
   first,
-}: Ask & { back: string; answer: string; first: 'back' | 'answer' }) {
+}: Ask & { back: string; answer: 'secondary' | 'destructive'; first: 'back' | 'answer' }) {
   return (
     <div
       role="alertdialog"
@@ -48,27 +48,17 @@ function Question({
     >
       <p className="w-full text-ink">{what}</p>
       <span className="flex flex-wrap items-center gap-2">
-        <button
-          autoFocus={first === 'back'}
-          type="button"
-          onClick={onCancel}
-          className={BUTTON.secondary}
-        >
+        <Button look="secondary" autoFocus={first === 'back'} onClick={onCancel}>
           {back}
-        </button>
+        </Button>
         {/* The two answers wrap as one pair, so neither ends up alone under the way out. */}
         <span className="flex items-center gap-2">
-          <button
-            autoFocus={first === 'answer'}
-            type="button"
-            onClick={() => onPick('one')}
-            className={answer}
-          >
+          <Button look={answer} autoFocus={first === 'answer'} onClick={() => onPick('one')}>
             Just this one
-          </button>
-          <button type="button" onClick={() => onPick('following')} className={answer}>
+          </Button>
+          <Button look={answer} onClick={() => onPick('following')}>
             This and all later
-          </button>
+          </Button>
         </span>
       </span>
     </div>

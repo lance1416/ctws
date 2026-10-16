@@ -8,7 +8,7 @@ import { useMe } from '../auth/useMe'
 import { Modal } from '../../platform/ui/Modal'
 import { useComposing } from '../../platform/keyboard/composition'
 import { useKeyTable, type KeyTable } from '../../platform/keyboard/keyTable'
-import { BUTTON } from '../../platform/ui/buttonStyles'
+import { Button } from '../../platform/ui/Button'
 
 /** Long enough that typing a word does not fire a request per letter, short enough to feel live. */
 const DEBOUNCE_MS = 150
@@ -179,16 +179,16 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
       {debounced.length > 0 && results.isSuccess && rows.length === 0 && (
         <div className="px-4 py-3">
           <p className="text-sm text-ink">Nothing matches</p>
-          <button
-            type="button"
+          <Button
+            look="link"
             onClick={() => {
               setQuery('')
               box.current?.focus()
             }}
-            className={`mt-3 -ml-2 ${BUTTON.link}`}
+            className="mt-3 -ml-2"
           >
             Try another word
-          </button>
+          </Button>
         </div>
       )}
       {/* The options are not buttons: focus stays in the box, and `aria-activedescendant` walks

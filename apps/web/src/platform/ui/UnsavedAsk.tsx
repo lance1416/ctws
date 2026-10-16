@@ -1,4 +1,4 @@
-import { BUTTON } from './buttonStyles'
+import { Button } from './Button'
 import type { UnsavedGuard } from './unsavedGuard'
 
 /** The leave guard's question, for a pane whose form does not draw it itself. */
@@ -12,12 +12,12 @@ export function UnsavedAsk({ guard }: { guard: UnsavedGuard }) {
           : 'You have unsaved changes. Closing will discard them.'}
       </p>
       <div className="mt-2 flex gap-2">
-        <button type="button" onClick={guard.discard} className={BUTTON.secondary}>
+        <Button look="secondary" onClick={guard.discard}>
           Discard changes
-        </button>
-        <button ref={guard.focusOn} type="button" onClick={guard.keep} className={BUTTON.primary}>
+        </Button>
+        <Button look="primary" ref={guard.focusOn} onClick={guard.keep}>
           Keep editing
-        </button>
+        </Button>
       </div>
     </div>
   )

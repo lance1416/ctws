@@ -3,7 +3,7 @@ import { useMutation } from '@tanstack/react-query'
 import { NoteBody } from '../../../platform/notes/NoteBody'
 import { dayPhrase, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
-import { BUTTON } from '../../../platform/ui/buttonStyles'
+import { Button } from '../../../platform/ui/Button'
 import { DetailHead } from '../../../platform/ui/DetailPane'
 import { label } from '../../../platform/ui/formStyles'
 import { useTimeZone } from '../../../shell/auth'
@@ -62,9 +62,9 @@ export function TaskReading({
           // “Edit”, not “Edit task”: accessible names are matched by substring in one flat
           // namespace, and the guard's “Keep editing” already contains it.
           trailing={
-            <button type="button" onClick={onEdit} className={BUTTON.secondary}>
+            <Button look="secondary" onClick={onEdit}>
               Edit
-            </button>
+            </Button>
           }
           onClose={onClose}
         />

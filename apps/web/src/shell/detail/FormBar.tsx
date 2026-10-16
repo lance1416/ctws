@@ -1,4 +1,4 @@
-import { BUTTON } from '../../platform/ui/buttonStyles'
+import { Button } from '../../platform/ui/Button'
 
 /** "Editing", Cancel and Save, at the top of a pane's edit form. */
 export function FormBar({
@@ -13,12 +13,12 @@ export function FormBar({
   return (
     <div className="flex items-center gap-2">
       <span className="flex-1 text-xs text-ink-muted">Editing</span>
-      <button type="button" className={BUTTON.secondary} onClick={onCancel}>
+      <Button look="secondary" onClick={onCancel}>
         Cancel
-      </button>
-      <button type="submit" className={BUTTON.primary} disabled={busy || disabled}>
+      </Button>
+      <Button look="primary" type="submit" disabled={busy || disabled}>
         Save
-      </button>
+      </Button>
     </div>
   )
 }

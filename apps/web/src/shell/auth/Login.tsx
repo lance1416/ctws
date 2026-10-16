@@ -6,7 +6,8 @@ import { WORKBENCH_PATH } from '../registry'
 import { call, problemText } from '../../platform/http/api'
 import { browserZone } from '../../platform/time/dates'
 import { useMe } from './useMe'
-import { BUTTON, LINK } from '../../platform/ui/buttonStyles'
+import { LINK } from '../../platform/ui/buttonStyles'
+import { Button } from '../../platform/ui/Button'
 import { textbox } from '../../platform/ui/formStyles'
 
 export function Login() {
@@ -84,13 +85,9 @@ export function Login() {
               {error}
             </p>
           )}
-          <button
-            type="submit"
-            disabled={act.isPending}
-            className={`mt-2 w-full ${BUTTON.primary}`}
-          >
+          <Button look="primary" type="submit" disabled={act.isPending} className="mt-2 w-full">
             Sign in
-          </button>
+          </Button>
           <div className="flex items-baseline gap-2 text-sm text-ink-muted">
             First time?
             <button

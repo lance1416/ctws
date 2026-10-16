@@ -2,7 +2,7 @@ import type { PersonResponse, UpdatePersonBody } from '@ctws/contracts'
 import { useState } from 'react'
 import type { UseFormRegisterReturn } from 'react-hook-form'
 import { WritingMode } from '../../../platform/notes/WritingMode'
-import { BUTTON } from '../../../platform/ui/buttonStyles'
+import { Button } from '../../../platform/ui/Button'
 import { Field } from '../../../platform/ui/Field'
 import { field, label } from '../../../platform/ui/formStyles'
 import { PickOne } from '../../../platform/ui/inline'
@@ -135,9 +135,9 @@ export function PersonForm({
                 }}
               />
               {person.birthday && (
-                <button
-                  type="button"
-                  className={`mt-2 ${BUTTON.quiet}`}
+                <Button
+                  look="quiet"
+                  className="mt-2"
                   onClick={() => {
                     form.setValue('birthday', null, dirty)
                     setBadDay(false)
@@ -145,7 +145,7 @@ export function PersonForm({
                   }}
                 >
                   Remove the birthday
-                </button>
+                </Button>
               )}
             </div>
           )}
@@ -194,9 +194,9 @@ export function PersonForm({
           <label htmlFor="c-note" className={`flex-1 ${label}`}>
             Notes
           </label>
-          <button type="button" className={BUTTON.quiet} onClick={() => setWriting(true)}>
+          <Button look="quiet" onClick={() => setWriting(true)}>
             Write in full
-          </button>
+          </Button>
         </div>
         <textarea
           id="c-note"

@@ -11,7 +11,7 @@ import { ProjectChip, ProjectPicker } from '../../../shell/projects'
 import { dayPhrase, ymd } from '../../../platform/time/dates'
 import { planChoices, type PlanDay } from '../logic/plans'
 import { useTimeZone } from '../../../shell/auth'
-import { BUTTON } from '../../../platform/ui/buttonStyles'
+import { Button } from '../../../platform/ui/Button'
 import { DangerAction } from '../../../platform/ui/DangerZone'
 import { useReportUnsaved } from '../../../platform/ui/unsavedGuard'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -116,9 +116,9 @@ function ReadingFields({
             {item.kind === 'book' ? (item.author ?? 'Book') : (item.url ?? 'Link')}
           </p>
         </div>
-        <button type="button" className={BUTTON.secondary} onClick={() => pane.setEditing(true)}>
+        <Button look="secondary" onClick={() => pane.setEditing(true)}>
           Edit
-        </button>
+        </Button>
       </div>
 
       {item.fetchedSummary && !item.title && (

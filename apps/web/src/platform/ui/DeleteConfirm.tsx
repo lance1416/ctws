@@ -1,4 +1,4 @@
-import { BUTTON } from './buttonStyles'
+import { Button } from './Button'
 
 /**
  * The in-page question before a destructive action: what is lost, then Cancel and the action.
@@ -33,12 +33,12 @@ export function DeleteConfirm({
     >
       <p className="text-ink">{message}</p>
       <span className="flex items-center gap-2">
-        <button autoFocus type="button" onClick={onCancel} className={BUTTON.secondary}>
+        <Button look="secondary" autoFocus onClick={onCancel}>
           {back}
-        </button>
-        <button type="button" disabled={busy} onClick={onConfirm} className={BUTTON.destructive}>
+        </Button>
+        <Button look="destructive" disabled={busy} onClick={onConfirm}>
           {confirm}
-        </button>
+        </Button>
       </span>
     </div>
   )

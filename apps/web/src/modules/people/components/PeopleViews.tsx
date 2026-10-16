@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { birthdaysQuery } from '../api'
-import { BUTTON } from '../../../platform/ui/buttonStyles'
+import { Button } from '../../../platform/ui/Button'
 import { NewPersonDialog } from './NewPersonDialog'
 import { PageHead } from '../../../platform/ui/PageHead'
 import { HANG } from '../../../platform/ui/hang'
@@ -18,9 +18,9 @@ export function PeopleHead() {
       <div className="flex items-center justify-between gap-3">
         <PageHead hang>People</PageHead>
         {/* Secondary: the box under the tabs is the quicker way in when a name is all you have. */}
-        <button type="button" onClick={() => setMaking(true)} className={BUTTON.secondary}>
+        <Button look="secondary" onClick={() => setMaking(true)}>
           New person
-        </button>
+        </Button>
       </div>
       <PeopleViews />
       {making && (

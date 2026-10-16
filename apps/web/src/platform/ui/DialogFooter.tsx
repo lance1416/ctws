@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { problemText } from '../http/api'
-import { BUTTON } from './buttonStyles'
+import { Button } from './Button'
 
 /** How a “new thing” dialog ends: the failure, then Cancel and the action, primary at the edge. */
 export function DialogFooter({
@@ -30,12 +30,12 @@ export function DialogFooter({
       <div className="flex flex-wrap items-center gap-2 border-t border-rule pt-4">
         {hint}
         <span className="ml-auto flex items-center gap-2">
-          <button type="button" onClick={onCancel} className={BUTTON.secondary}>
+          <Button look="secondary" onClick={onCancel}>
             Cancel
-          </button>
-          <button type="submit" disabled={disabled || busy} className={BUTTON.primary}>
+          </Button>
+          <Button look="primary" type="submit" disabled={disabled || busy}>
             {submit}
-          </button>
+          </Button>
         </span>
       </div>
     </>

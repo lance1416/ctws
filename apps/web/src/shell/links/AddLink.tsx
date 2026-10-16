@@ -11,7 +11,7 @@ import { useRef, useState } from 'react'
 import { candidatesQuery, createLink, type Endpoint } from './api'
 import { useRegistry } from '../registry'
 import { Modal } from '../../platform/ui/Modal'
-import { BUTTON } from '../../platform/ui/buttonStyles'
+import { Button } from '../../platform/ui/Button'
 
 /** Links two things in two steps, what and then how: the kinds of link depend on both ends. */
 export function AddLink({
@@ -123,12 +123,12 @@ export function AddLink({
             </p>
           )}
           <div className="flex items-center gap-2">
-            <button type="button" onClick={() => setChosen(null)} className={BUTTON.quiet}>
+            <Button look="quiet" onClick={() => setChosen(null)}>
               Back
-            </button>
-            <button type="button" onClick={onClose} className={BUTTON.quiet}>
+            </Button>
+            <Button look="quiet" onClick={onClose}>
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       )}

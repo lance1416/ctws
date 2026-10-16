@@ -11,7 +11,7 @@ import {
   ymd,
 } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
-import { BUTTON } from '../../../platform/ui/buttonStyles'
+import { Button } from '../../../platform/ui/Button'
 import { CloseButton } from '../../../platform/ui/DetailPane'
 import { field, label } from '../../../platform/ui/formStyles'
 import { PickOne } from '../../../platform/ui/inline'
@@ -87,16 +87,12 @@ export function TaskEditForm({
           />
           <span className="-mt-1 ml-auto flex shrink-0 items-center gap-1">
             <span className="flex items-center gap-2">
-              <button type="button" onClick={onCancel} className={BUTTON.secondary}>
+              <Button look="secondary" onClick={onCancel}>
                 Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={save.isPending || !title?.trim()}
-                className={BUTTON.primary}
-              >
+              </Button>
+              <Button look="primary" type="submit" disabled={save.isPending || !title?.trim()}>
                 Save
-              </button>
+              </Button>
             </span>
             <CloseButton onClick={onClose} />
           </span>
@@ -121,17 +117,12 @@ export function TaskEditForm({
               : 'You have unsaved changes. Closing will discard them.'}
           </p>
           <div className="mt-2 flex gap-2">
-            <button type="button" onClick={guard.discard} className={BUTTON.secondary}>
+            <Button look="secondary" onClick={guard.discard}>
               Discard changes
-            </button>
-            <button
-              ref={guard.focusOn}
-              type="button"
-              onClick={guard.keep}
-              className={BUTTON.primary}
-            >
+            </Button>
+            <Button look="primary" ref={guard.focusOn} onClick={guard.keep}>
               Keep editing
-            </button>
+            </Button>
           </div>
         </div>
       )}

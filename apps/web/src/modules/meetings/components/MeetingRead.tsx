@@ -1,7 +1,8 @@
 import { ruleEndDay, type MeetingOccurrence } from '@ctws/contracts'
 import { shortDay, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
-import { BUTTON, LINK } from '../../../platform/ui/buttonStyles'
+import { LINK } from '../../../platform/ui/buttonStyles'
+import { Button } from '../../../platform/ui/Button'
 import { Field } from '../../../platform/ui/Field'
 import { CHIP } from '../../../platform/ui/formStyles'
 import { ProjectChip } from '../../../shell/projects'
@@ -38,9 +39,9 @@ export function MeetingRead({
             {when} · {cityAndZone(new Date(meeting.startsAt), meeting.timeZone)}
           </p>
         </div>
-        <button type="button" className={BUTTON.secondary} onClick={onEdit}>
+        <Button look="secondary" onClick={onEdit}>
           Edit
-        </button>
+        </Button>
       </div>
 
       <div className="@container">

@@ -3,7 +3,8 @@ import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 import { NoteBody } from '../../../platform/notes/NoteBody'
 import { WritingMode } from '../../../platform/notes/WritingMode'
-import { BUTTON, LINK } from '../../../platform/ui/buttonStyles'
+import { LINK } from '../../../platform/ui/buttonStyles'
+import { Button } from '../../../platform/ui/Button'
 import { Field } from '../../../platform/ui/Field'
 import { CHIP } from '../../../platform/ui/formStyles'
 import { ProjectChip } from '../../../shell/projects'
@@ -45,9 +46,9 @@ export function PersonRead({ person, onEdit }: { person: PersonResponse; onEdit:
             {CIRCLE_LABELS[person.circle]}
           </span>
         )}
-        <button type="button" className={BUTTON.secondary} onClick={onEdit}>
+        <Button look="secondary" onClick={onEdit}>
           Edit
-        </button>
+        </Button>
       </div>
 
       {person.channels.length > 0 && (
@@ -104,9 +105,9 @@ export function PersonRead({ person, onEdit }: { person: PersonResponse; onEdit:
       <div>
         <div className="flex items-center gap-2">
           <span className="flex-1 text-xs text-ink-muted">Notes</span>
-          <button type="button" className={BUTTON.secondary} onClick={() => setWriting(true)}>
+          <Button look="secondary" onClick={() => setWriting(true)}>
             Edit notes
-          </button>
+          </Button>
         </div>
         <div data-person-notes className="mt-1.5 max-w-[68ch] text-ink">
           {person.note ? (

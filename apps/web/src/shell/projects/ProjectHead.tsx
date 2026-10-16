@@ -2,7 +2,7 @@ import type { ProjectId } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { updateProject, useEveryProject } from './api'
 import { useRegistry } from '../registry'
-import { BUTTON } from '../../platform/ui/buttonStyles'
+import { Button } from '../../platform/ui/Button'
 import { ProjectIdentity } from './ProjectIdentity'
 
 /** The head of a project's page: its name and colour, and each module's numbers about it. */
@@ -46,14 +46,14 @@ function ArchiveToggle({ id, archived }: { id: ProjectId; archived: boolean }) {
   })
   return (
     <div className="mt-1 flex shrink-0 flex-col items-end">
-      <button
-        type="button"
+      <Button
+        look="quiet"
         onClick={() => toggle.mutate()}
         disabled={toggle.isPending}
-        className={`whitespace-nowrap ${BUTTON.quiet}`}
+        className="whitespace-nowrap"
       >
         {archived ? 'Unarchive' : 'Archive'}
-      </button>
+      </Button>
       {toggle.isError && (
         <p role="alert" className="mt-1 text-sm text-danger">
           {archived ? "Couldn't unarchive." : "Couldn't archive."} Try again.
