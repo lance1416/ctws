@@ -1,5 +1,6 @@
+import { ruleEndDay } from '@ctws/contracts'
 import { describe, expect, it } from 'vitest'
-import { repeatChoices, repeatLabel, untilOf, withUntil } from './api'
+import { repeatChoices, repeatLabel, withUntil } from './api'
 
 /** A Tuesday, so the weekly choices are named after it. */
 const TUESDAY = '2026-10-20T09:00'
@@ -61,16 +62,16 @@ describe('until', () => {
   })
 
   it('reads the day back out', () => {
-    expect(untilOf('FREQ=WEEKLY;BYDAY=TU;UNTIL=20261231T235959Z')).toBe('2026-12-31')
-    expect(untilOf(WEEKLY)).toBeNull()
-    expect(untilOf(null)).toBeNull()
+    expect(ruleEndDay('FREQ=WEEKLY;BYDAY=TU;UNTIL=20261231T235959Z')).toBe('2026-12-31')
+    expect(ruleEndDay(WEEKLY)).toBeNull()
+    expect(ruleEndDay(null)).toBeNull()
   })
 
   it('replaces an ending rather than stacking a second one', () => {
     const once = withUntil(WEEKLY, '2026-12-31')
     const twice = withUntil(once, '2027-01-15')
     expect(twice).toBe('FREQ=WEEKLY;BYDAY=TU;UNTIL=20270115T235959Z')
-    expect(untilOf(twice)).toBe('2027-01-15')
+    expect(ruleEndDay(twice)).toBe('2027-01-15')
   })
 
   it('takes the ending off again', () => {

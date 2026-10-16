@@ -44,6 +44,39 @@ const durationMinutes = z
 /** The `RRULE` body, length only: the server checks it with the library that expands it (422). */
 const rrule = z.string().trim().min(1).max(500)
 
+/**
+ * `UNTIL` is in the same naive wall-clock space as the series' start, stamped `Z`, so a series
+ * ends at the local time it names; a real UTC instant would end it an evening early west of
+ * Greenwich.
+ */
+const UNTIL_STAMP = /^UNTIL=(\d{4})(\d{2})(\d{2})T\d{6}Z$/i
+
+const ruleParts = (rule: string) =>
+  rule
+    .replace(/^RRULE:/i, '')
+    .split(';')
+    .filter((part) => part !== '')
+
+/**
+ * The same rule, ending at `last`: a wall clock `YYYY-MM-DDTHH:mm:ss` in the series' zone,
+ * inclusive. A rule ends one way, so `COUNT` goes too. With `last` null the rule never ends.
+ */
+export function ruleEndingAt(rule: string, last: string | null): string {
+  const body = ruleParts(rule).filter((p) => !/^UNTIL=/i.test(p))
+  if (last === null) return body.join(';')
+  const stamp = `${last.replaceAll('-', '').replaceAll(':', '')}Z`
+  return [...body.filter((p) => !/^COUNT=/i.test(p)), `UNTIL=${stamp}`].join(';')
+}
+
+/** The day a rule stops on, as `YYYY-MM-DD`, or null when it never does. */
+export function ruleEndDay(rule: string | null): string | null {
+  for (const part of rule ? ruleParts(rule) : []) {
+    const found = UNTIL_STAMP.exec(part)
+    if (found) return `${found[1]}-${found[2]}-${found[3]}`
+  }
+  return null
+}
+
 export const createMeetingBody = z
   .object({
     title,

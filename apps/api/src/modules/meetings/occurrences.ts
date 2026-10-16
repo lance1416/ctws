@@ -1,4 +1,4 @@
-import { DAY_MS } from '@ctws/contracts'
+import { DAY_MS, ruleEndingAt } from '@ctws/contracts'
 import { TZDate } from '@date-fns/tz'
 // A default import, destructured: `rrule` is CommonJS, and a named import passes the tests but
 // fails at startup in the bundled ESM build.
@@ -264,14 +264,7 @@ export function occurrencesIn(
  * new one, which keeps the past as it happened.
  */
 export function endedBefore(rule: string, recurrenceId: LocalTime): string {
-  const body = rule
-    .replace(/^RRULE:/i, '')
-    .split(';')
-    .filter((part) => !/^(UNTIL|COUNT)=/i.test(part))
   // One minute before, in the series' naive terms: UNTIL is inclusive.
   const before = new Date(asNaive(recurrenceId).getTime() - 60_000)
-  const stamp =
-    `${before.getUTCFullYear()}${pad(before.getUTCMonth() + 1)}${pad(before.getUTCDate())}` +
-    `T${pad(before.getUTCHours())}${pad(before.getUTCMinutes())}00Z`
-  return [...body, `UNTIL=${stamp}`].join(';')
+  return ruleEndingAt(rule, before.toISOString().slice(0, 19))
 }

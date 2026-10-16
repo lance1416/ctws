@@ -1,4 +1,4 @@
-import type { MeetingOccurrence, UpdateMeetingInput } from '@ctws/contracts'
+import { ruleEndDay, type MeetingOccurrence, type UpdateMeetingInput } from '@ctws/contracts'
 import { useState } from 'react'
 import { todayIn } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
@@ -7,7 +7,7 @@ import { boxed, field, label } from '../../../platform/ui/formStyles'
 import { useReportUnsaved } from '../../../platform/ui/unsavedGuard'
 import { FormBar } from '../../../shell/detail/FormBar'
 import { ProjectPicker } from '../../../shell/projects/ProjectPicker'
-import { untilOf, withUntil } from '../api'
+import { withUntil } from '../api'
 import {
   AttendeesPicker,
   EndsPicker,
@@ -42,7 +42,7 @@ export function MeetingForm({
   // The rule without its ending, which has a control of its own: a weekly meeting that stops in
   // December is still "Weekly" in the menu.
   const [rule, setRule] = useState(meeting.rrule ? withUntil(meeting.rrule, null) : null)
-  const [until, setUntil] = useState(untilOf(meeting.rrule))
+  const [until, setUntil] = useState(ruleEndDay(meeting.rrule))
   const [location, setLocation] = useState(meeting.location ?? '')
   const [projectId, setProjectId] = useState<string | null>(meeting.projectId)
   const [attendeeIds, setAttendees] = useState(meeting.attendees.map((p) => p.id))
@@ -78,7 +78,7 @@ export function MeetingForm({
     // cancelled on their own. Compared as the form reads it, not as stored: the server ends a split
     // series a minute before the split, which `withUntil` would rewrite to the end of that day.
     const storedRule = meeting.rrule ? withUntil(meeting.rrule, null) : null
-    if (rule !== storedRule || until !== untilOf(meeting.rrule)) {
+    if (rule !== storedRule || until !== ruleEndDay(meeting.rrule)) {
       patch.rrule = rule === null ? null : withUntil(rule, until)
     }
     // Only when really changed: either one in the patch makes a repeating meeting ask its scope.

@@ -1,11 +1,11 @@
-import type { MeetingOccurrence } from '@ctws/contracts'
+import { ruleEndDay, type MeetingOccurrence } from '@ctws/contracts'
 import { shortDay, todayIn } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { BUTTON, LINK } from '../../../platform/ui/buttonStyles'
 import { Field } from '../../../platform/ui/Field'
 import { CHIP } from '../../../platform/ui/formStyles'
 import { ProjectChip } from '../../../shell/projects/ProjectPicker'
-import { repeatLabel, untilOf, withUntil } from '../api'
+import { repeatLabel, withUntil } from '../api'
 import { meetingLink } from '../meetingPlace'
 import { zoneLabel } from '../timeZones'
 import { lengthLabel } from './MeetingControls'
@@ -22,7 +22,7 @@ export function MeetingRead({
   const elsewhere = meeting.timeZone !== accountZone
   const place = meetingLink(meeting.location)
   const bare = meeting.rrule ? withUntil(meeting.rrule, null) : null
-  const until = untilOf(meeting.rrule)
+  const until = ruleEndDay(meeting.rrule)
   // The meeting's own wall clock in the app's date wording (`Oct 19, 18:00`), not the wire format.
   const today = todayIn(accountZone, useNow())
   const when = `${shortDay(meeting.startsLocal.slice(0, 10), today)}, ${meeting.startsLocal.slice(11, 16)}`

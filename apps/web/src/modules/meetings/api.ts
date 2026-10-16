@@ -3,6 +3,8 @@ import {
   type EditScope,
   MAX_CALENDAR_SPAN_DAYS,
   type MeetingOccurrence,
+  ruleEndDay,
+  ruleEndingAt,
   type UpdateMeetingInput,
 } from '@ctws/contracts'
 import { queryOptions } from '@tanstack/react-query'
@@ -149,7 +151,7 @@ function ordinal(d: number): string {
 export function repeatLabel(rule: string | null, startsLocal: string, today: string): string {
   if (!rule) return 'Does not repeat'
   // The ending is said separately, so a named rule is still recognised once it has one.
-  const ends = untilOf(rule)
+  const ends = ruleEndDay(rule)
   const tail = ends ? `, until ${shortDay(ends, today)}` : ''
   const named = repeatChoices(startsLocal).find((c) => c.value === withUntil(rule, null))
   if (named) return `${named.label}${tail}`
@@ -169,22 +171,6 @@ export function repeatLabel(rule: string | null, startsLocal: string, today: str
   return `${every > 1 ? `Every ${every} ${unit}s` : `Every ${unit}`}${tail}`
 }
 
-/**
- * `UNTIL` is in the same naive wall-clock space as the series' start, stamped `Z`: the chosen local
- * day at 23:59:59. A real UTC instant would end the series an evening early west of Greenwich.
- */
-const UNTIL = /;?UNTIL=\d{8}T\d{6}Z/i
-
-/** The day a rule stops on, as `YYYY-MM-DD`, or null when it never does. */
-export function untilOf(rule: string | null): string | null {
-  const found = rule?.match(/UNTIL=(\d{4})(\d{2})(\d{2})T\d{6}Z/i)
-  return found ? `${found[1]}-${found[2]}-${found[3]}` : null
-}
-
-/** The same rule, ending on `day` -- or never, when `day` is null. */
-export function withUntil(rule: string, day: string | null): string {
-  const bare = rule.replace(UNTIL, '')
-  if (!day) return bare
-  const [y, m, d] = day.split('-') as [string, string, string]
-  return `${bare};UNTIL=${y}${m}${d}T235959Z`
-}
+/** The same rule, ending on `day` (its last minute included), or never when `day` is null. */
+export const withUntil = (rule: string, day: string | null): string =>
+  ruleEndingAt(rule, day === null ? null : `${day}T23:59:59`)
