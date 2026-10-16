@@ -54,11 +54,19 @@ export async function signUpThroughForm(page: Page): Promise<string> {
 }
 
 /** Signs out through the top-right account menu. */
-export async function logOut(page: Page): Promise<void> {
-  // Waited for: its answer clears the session cookie, and must not land after the next sign-in.
-  const out = page.waitForResponse((r) => new URL(r.url()).pathname === '/api/v1/auth/logout')
+/** Presses Sign out in the account menu; whether it signs out is the page's to decide. */
+export async function pressSignOut(page: Page): Promise<void> {
   await page.getByTestId('current-user').click()
   await page.getByRole('menuitem', { name: 'Sign out' }).click()
+}
+
+/**
+ * Signs out, waiting for the server's answer: it clears the session cookie, and must not land
+ * after the next sign-in.
+ */
+export async function logOut(page: Page): Promise<void> {
+  const out = page.waitForResponse((r) => new URL(r.url()).pathname === '/api/v1/auth/logout')
+  await pressSignOut(page)
   await out
 }
 

@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import {
   backdateCompletion,
   editDetail,
-  logOut,
+  pressSignOut,
   makeProject,
   makeTask,
   registerFreshUser,
@@ -358,7 +358,7 @@ test('Log out with a dirty panel asks first and does not log out until discarded
 
   const logouts: string[] = []
   page.on('request', (r) => r.url().endsWith('/auth/logout') && logouts.push(r.url()))
-  await logOut(page)
+  await pressSignOut(page)
   await expect(page.getByRole('dialog')).toContainText(
     'You have unsaved changes. Leaving will discard them',
   )
@@ -371,7 +371,7 @@ test('Log out with a dirty panel asks first and does not log out until discarded
   await page.getByRole('button', { name: 'Keep editing' }).click()
   await expect(page.getByLabel('Title')).toHaveValue('写方案 v2')
 
-  await logOut(page)
+  await pressSignOut(page)
   await page.getByRole('button', { name: 'Discard changes' }).click()
   await expect(page.getByLabel('Email')).toBeVisible()
   // The one logout sent is this one: the first press sent none.
