@@ -216,3 +216,20 @@ test('a meeting says the zone abbreviation of its own date, not of today', async
   await expect(pane(page)).toContainText('Toronto · EDT')
   await expect(pane(page)).not.toContainText('EST')
 })
+
+test('a one-off meeting moved from the calendar keeps its pane rather than reopening it', async ({
+  page,
+}) => {
+  await inLondon(page)
+  await arrange(page, { ...WEEKLY_IN_TORONTO, title: 'Once', rrule: null })
+  await page.goto('/calendar')
+  await openOctober(page)
+  await square(page, '2026-10-20').getByRole('button', { name: /Once/ }).click()
+  await pane(page).getByRole('button', { name: 'Edit', exact: true }).click()
+  // A mark on the pane's own element: a pane closed and opened again is a new one, without it.
+  await pane(page).evaluate((el) => el.setAttribute('data-test-mark', ''))
+  await pane(page).getByLabel('Start').fill('2026-10-20T11:00')
+  await pane(page).getByRole('button', { name: 'Save' }).click()
+  await expect(pane(page)).toContainText('Oct 20, 11:00')
+  await expect(pane(page)).toHaveAttribute('data-test-mark', '')
+})
