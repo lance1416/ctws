@@ -95,11 +95,17 @@ export function Meetings() {
   // One occurrence gone is not the series gone, so only a series is forgotten.
   useForgetWhenGone('meeting', openId, gone && at === null)
   // While the address's occurrence is looked up, the pane keeps the one it showed: a save that
-  // moves a meeting renames it, and the pane must not close in between.
+  // moves a meeting renames it, and the pane must not close in between. Only that occurrence, or
+  // the one a save moved it to: a jump to another meeting must not show the last one meanwhile.
   const [shown, setShown] = useState<MeetingOccurrence | null>(null)
+  const [movedTo, setMovedTo] = useState<Occurrence | null>(null)
   if (found && found !== shown) setShown(found)
   if (openId === null && shown) setShown(null)
-  const pane = openId === null || gone ? null : (found ?? shown)
+  const named = (o: Occurrence | null) =>
+    o !== null && o.meetingId === openId && (at === null || o.recurrenceId === at)
+  if (found && named(movedTo)) setMovedTo(null)
+  const kept = named(shown) || named(movedTo) ? shown : null
+  const pane = openId === null || gone ? null : (found ?? kept)
 
   return (
     <>
@@ -173,7 +179,10 @@ export function Meetings() {
           meeting={pane}
           accountZone={accountZone}
           onClose={() => setOpen(null)}
-          onMoved={(moved) => setOpen(moved, { replace: true })}
+          onMoved={(moved) => {
+            setMovedTo(moved)
+            setOpen(moved, { replace: true })
+          }}
         />
       )}
       {/* Gone, or cancelled. */}

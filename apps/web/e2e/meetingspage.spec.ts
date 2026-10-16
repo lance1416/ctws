@@ -596,3 +596,46 @@ test('renaming the first half of a split series keeps its moved week and its end
   expect(await on(moved)).toEqual([['Sync, renamed', `${moved}T15:00`]])
   expect(await on(split)).toEqual([['Sync, later', `${split}T09:00`]])
 })
+
+test('jumping to a meeting outside the list does not leave the last one in the pane', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const zone = await accountZone(page)
+  const day = dayOffset(1)
+  const far = addDaysYmd(day, 60)
+  await apiPost(page, '/meetings', {
+    title: 'Alpha',
+    startsLocal: `${day}T09:00`,
+    timeZone: zone,
+    durationMinutes: 30,
+  })
+  const bravo = await apiPost(page, '/meetings', {
+    title: 'Bravo',
+    startsLocal: `${far}T09:00`,
+    timeZone: zone,
+    durationMinutes: 30,
+  })
+  await page.goto('/meetings')
+  await page.getByRole('button', { name: 'Alpha' }).click()
+  await expect(pane(page)).toContainText('Alpha')
+
+  // Bravo is past the list's month, so it is looked up on its own; hold that lookup.
+  let release = () => {}
+  const held = new Promise<void>((r) => (release = r))
+  await page.route(
+    (url) => url.pathname.endsWith(`/meetings/${bravo.meetingId}`),
+    async (route) => {
+      await held
+      await route.continue()
+    },
+  )
+  await page.evaluate((to) => {
+    history.pushState(null, '', to)
+    dispatchEvent(new PopStateEvent('popstate'))
+  }, `/meetings/${bravo.meetingId}?at=${far}T09:00`)
+  await expect(page).toHaveURL(new RegExp(`/meetings/${bravo.meetingId}`))
+  await expect(pane(page).getByText('Alpha')).toHaveCount(0)
+  release()
+  await expect(pane(page)).toContainText('Bravo')
+})
