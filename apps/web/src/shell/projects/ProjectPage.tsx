@@ -1,4 +1,5 @@
 import { idFrom, projectId } from '@ctws/contracts'
+import { Fragment } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { DangerZone } from '../../platform/ui/DangerZone'
 import { RowsPanel } from '../../platform/ui/Panel'
@@ -50,8 +51,10 @@ export function ProjectPage() {
     .filter((r) => r.moduleId !== null && blockModules.has(r.moduleId))
     .map((r) => r.type)
 
+  // Keyed by the project: what was half-done on one (a rename, a delete question) does not carry
+  // over to the next, which the router draws in the same element.
   return (
-    <>
+    <Fragment key={id}>
       <section aria-label="Project at a glance" className={`mb-8 ${HANG} min-w-0 pt-2`}>
         <ProjectHead id={id} />
       </section>
@@ -97,7 +100,7 @@ export function ProjectPage() {
       <DangerZone>
         <DeleteProject id={id} />
       </DangerZone>
-    </>
+    </Fragment>
   )
 }
 
