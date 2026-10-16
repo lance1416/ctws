@@ -1,6 +1,6 @@
 import { ruleEndDay, type MeetingOccurrence, type UpdateMeetingInput } from '@ctws/contracts'
 import { useState } from 'react'
-import { todayIn } from '../../../platform/time/dates'
+import { ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { Field } from '../../../platform/ui/Field'
 import { boxed, field, label } from '../../../platform/ui/formStyles'
@@ -34,7 +34,7 @@ export function MeetingForm({
   /** Whether anything differs from what the form opened on, for the pane's leave guard. */
   onUnsaved?: (unsaved: boolean) => void
 }) {
-  const today = todayIn(accountZone, useNow())
+  const today = ymd(useNow(), accountZone)
   const [title, setTitle] = useState(meeting.title)
   const [startsLocal, setStartsLocal] = useState(meeting.startsLocal)
   const [timeZone, setTimeZone] = useState(meeting.timeZone)

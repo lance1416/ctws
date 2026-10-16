@@ -1,4 +1,5 @@
 import { type CalendarEntry, DAY_MS, occurrenceKey } from '@ctws/contracts'
+import { clockTime, zoneAbbreviation } from '@ctws/core'
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
 import { groupBy } from '../../platform/values'
@@ -13,7 +14,7 @@ import {
   occurrencesIn,
 } from './occurrences'
 import { meetingExceptions, meetings } from './tables'
-import { clockTime, windowOf, zoneLabel } from './zone'
+import { windowOf } from './zone'
 
 type Attendee = { id: string; name: string }
 
@@ -198,11 +199,11 @@ export async function meetingEntries(
       title: m.title,
       to: '/calendar',
       kind: elsewhere
-        ? `meeting · ${zoneLabel(m.startsAt, m.timeZone)} ${localOf(m.startsAt, m.timeZone).slice(11)}`
+        ? `meeting · ${zoneAbbreviation(m.startsAt, m.timeZone)} ${localOf(m.startsAt, m.timeZone).slice(11)}`
         : 'Meetings',
       time: clockTime(m.startsAt, zone),
       endTime: clockTime(m.endsAt, zone),
-      zone: elsewhere ? zoneLabel(m.startsAt, m.timeZone) : null,
+      zone: elsewhere ? zoneAbbreviation(m.startsAt, m.timeZone) : null,
       projectId: m.projectId,
       projectName: m.projectName,
     }

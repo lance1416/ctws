@@ -3,7 +3,7 @@ import { Fragment, useEffect, useId, useState, type ReactNode } from 'react'
 import { isOverlayOpen } from '../../platform/keyboard/overlayState'
 import { useShortcutsEnabled } from '../../platform/keyboard/enabled'
 import { isBareKey, isTypingTarget } from '../../platform/keyboard/keys'
-import { dayPhrase, todayIn } from '../../platform/time/dates'
+import { dayPhrase, ymd } from '../../platform/time/dates'
 import { useNow } from '../../platform/time/useNow'
 import { textbox } from '../../platform/ui/formStyles'
 import { useInlineEdit } from '../../platform/ui/useInlineEdit'
@@ -34,7 +34,7 @@ export function ProjectNumbers({ projectId }: { projectId: string }) {
   const now = useNow()
   // Nothing while in flight, nor for an archived project, which the movement query leaves out.
   if (!row) return null
-  const today = todayIn(timeZone, now)
+  const today = ymd(now, timeZone)
   const moved = row.lastActivityOn ? dayPhrase(row.lastActivityOn, today) : null
   // Overdue only when there is any, in the miss colour.
   const parts: ReactNode[] = [`${row.remaining} open`]

@@ -3,14 +3,16 @@ import { differenceInCalendarDays, format, nextMonday as nextMondayFn } from 'da
 
 import { addDays } from '@ctws/core/day'
 
-export { addDays }
-
 /** A calendar day as "YYYY-MM-DD": the shape days are stored and sent in. */
 const DAY = 'yyyy-MM-dd'
 
-/** The browser's zone, only while the account's is not known yet. */
+/** The browser's zone, only while the account's is not known yet; UTC when it will not say. */
 export function browserZone(): string {
-  return new Intl.DateTimeFormat().resolvedOptions().timeZone
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+  } catch {
+    return 'UTC'
+  }
 }
 
 /**
@@ -21,20 +23,11 @@ export function ymd(instant: Date, timeZone: string): string {
   return format(new TZDate(instant, timeZone), DAY)
 }
 
-/** Today in `timeZone`: the day the server's `date_trunc('day', now at time zone tz)` picks. */
-export function todayIn(timeZone: string, now: Date): string {
-  return ymd(now, timeZone)
-}
-
 // Day strings carry no zone, so their arithmetic is done in UTC, where no DST rule applies.
 const dayStart = (day: string) => new TZDate(`${day}T00:00:00Z`, 'UTC')
 
 /** An instant in the wire's `…Z` form; `TZDate#toISOString` would keep the zone's offset. */
 export const utcIso = (d: Date) => new Date(d.getTime()).toISOString()
-
-/** "09:05" in `timeZone`, on a 24-hour clock. */
-export const clockTime = (timeZone: string) =>
-  new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone })
 
 /** The Monday after `day`, always strictly later. */
 export function nextMonday(day: string): string {

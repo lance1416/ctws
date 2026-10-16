@@ -7,7 +7,8 @@ import { Meetings } from './pages/Meetings'
 import { PanelEmpty } from '../../platform/ui/Panel'
 import { ProjectRail } from '../../shell/rows/RowParts'
 import { useProjectRail } from '../../shell/projects/projectColor'
-import { clockTime, todayIn } from '../../platform/time/dates'
+import { clockTime } from '@ctws/core/clock'
+import { ymd } from '../../platform/time/dates'
 import { useTimeZone } from '../../shell/auth/useMe'
 import { useNow } from '../../platform/time/useNow'
 import type { WorkspaceModule } from '../../shell/contract'
@@ -86,7 +87,7 @@ function CalendarDetail({ id, onClose }: { id: string; onClose: () => void }) {
 
 /** Today's meetings, shared by Things' count and status line. */
 function useTodaysMeetings() {
-  const day = todayIn(useTimeZone(), useNow())
+  const day = ymd(useNow(), useTimeZone())
   return useQuery(meetingsQuery({ from: day, to: day }))
 }
 
@@ -107,7 +108,7 @@ function NextMeetingLine() {
   const now = useNow()
   const next = today.data?.find((m) => new Date(m.startsAt).getTime() > now.getTime())
   if (!next) return null
-  const at = clockTime(accountZone).format(new Date(next.startsAt))
+  const at = clockTime(new Date(next.startsAt), accountZone)
   return (
     <span data-status>
       Next: {next.title} at {at}
@@ -128,19 +129,11 @@ const LABEL_FLIP = 80
 function TodayMeetings() {
   const accountZone = useTimeZone()
   const now = useNow()
-  const day = todayIn(accountZone, now)
+  const day = ymd(now, accountZone)
   const meetings = useQuery(meetingsQuery({ from: day, to: day }))
   const rows = meetings.data ?? []
   const { setOpen, pane } = useOpenMeeting(rows)
   const rail = useProjectRail()
-  // `h23`, not `clockTime`'s `hour12: false`: the line reads the hour back as a number, and some
-  // engines write midnight as 24 under `hour12: false`.
-  const clock = new Intl.DateTimeFormat('en-US', {
-    timeZone: accountZone,
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-  })
 
   if (meetings.isError) {
     return (
@@ -161,7 +154,7 @@ function TodayMeetings() {
     )
   }
 
-  const at = (d: Date) => clock.format(d)
+  const at = (d: Date) => clockTime(d, accountZone)
   const minutes = (d: Date) => {
     const [h, m] = at(d).split(':').map(Number) as [number, number]
     return h * 60 + m

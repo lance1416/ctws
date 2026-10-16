@@ -1,6 +1,7 @@
 import { TZDate } from '@date-fns/tz'
 import { format } from 'date-fns'
-import { addDays, fullDay, monthDay, weekdayOf } from '../../platform/time/dates'
+import { addDays } from '@ctws/core/day'
+import { fullDay, monthDay, weekdayOf } from '../../platform/time/dates'
 
 export type LeadTone = 'missed' | 'deadline' | 'plan' | 'time' | 'quiet'
 

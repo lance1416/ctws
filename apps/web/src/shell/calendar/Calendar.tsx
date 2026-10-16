@@ -5,7 +5,7 @@ import { ViewTabs } from '../../platform/ui/ViewTabs'
 import { useQuery } from '@tanstack/react-query'
 import { calendarDaysQuery } from './api'
 import { useEveryProject } from '../projects/api'
-import { todayIn } from '../../platform/time/dates'
+import { ymd } from '../../platform/time/dates'
 import { useRegistry } from '../registry'
 import { monthRange, monthSquares, monthTitle, shiftMonth, WEEKDAYS } from './monthGrid'
 import { useProjectRail } from '../projects/projectColor'
@@ -24,7 +24,7 @@ const PER_SQUARE = 3
 export function Calendar() {
   useCrumbs([{ label: 'Calendar' }])
   const timeZone = useTimeZone()
-  const today = todayIn(timeZone, useNow())
+  const today = ymd(useNow(), timeZone)
   const [cursor, setCursor] = useState(today)
   const [open, setOpen] = useState<{ moduleId: string; id: string } | null>(null)
   const [params, setParams] = useSearchParams()

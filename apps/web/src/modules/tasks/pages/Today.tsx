@@ -2,7 +2,8 @@ import type { TaskStatus, TodayTaskResponse } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState, type KeyboardEvent } from 'react'
 import { useShortcutsEnabled } from '../../../platform/keyboard/enabled'
-import { clockTime, todayIn } from '../../../platform/time/dates'
+import { clockTime } from '@ctws/core/clock'
+import { ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { HANG } from '../../../platform/ui/hang'
 import { useTimeZone } from '../../../shell/auth/useMe'
@@ -41,8 +42,7 @@ export function Today() {
   const timeZone = useTimeZone()
   // Kept current while the page sits open: the now line, the date and which day is today follow it.
   const now = useNow()
-  const day = todayIn(timeZone, now)
-  const clock = clockTime(timeZone)
+  const day = ymd(now, timeZone)
   // Other modules' dated things for today: one hook per provider, over the registry's fixed list.
   const entries = useRegistry()
     .calendar.filter((p) => p.moduleId !== TASKS_ID)
@@ -186,7 +186,7 @@ export function Today() {
 
           <DaySection label="Today" count={planned.length + entries.length}>
             {today.isSuccess && items.length === 0 && <DayEmpty>Nothing for today</DayEmpty>}
-            <DayLine items={items} now={clock.format(now)} />
+            <DayLine items={items} now={clockTime(now, timeZone)} />
           </DaySection>
 
           {/* Only when something is overdue: a section reading "0" every day is noise. */}
@@ -196,7 +196,7 @@ export function Today() {
             </DaySection>
           )}
 
-          {doneToday.length > 0 && <DoneTodayPanel tasks={doneToday} clock={clock} />}
+          {doneToday.length > 0 && <DoneTodayPanel tasks={doneToday} timeZone={timeZone} />}
         </div>
 
         {movementRows.length > 0 && <MovementPanel rows={movementRows} today={day} />}

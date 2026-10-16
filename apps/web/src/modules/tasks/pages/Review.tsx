@@ -10,7 +10,8 @@ import { BODY_GUTTER, ProjectRail, ROW_LIST } from '../../../shell/rows/RowParts
 import { StatusMark } from '../components/StatusMark'
 import { ViewTabs } from '../../../platform/ui/ViewTabs'
 import { Completed } from './Completed'
-import { addDays, monthDay, nextMonday, todayIn, ymd } from '../../../platform/time/dates'
+import { addDays } from '@ctws/core/day'
+import { monthDay, nextMonday, ymd } from '../../../platform/time/dates'
 import { weekAfter, weekBefore } from '../review'
 import { LIST_MEASURE, weekDayWord } from '../../../shell/rows/leads'
 import { useTimeZone } from '../../../shell/auth/useMe'
@@ -103,7 +104,7 @@ export function Review() {
     enabled: view === 'week',
   })
   const timeZone = useTimeZone()
-  const today = todayIn(timeZone, useNow())
+  const today = ymd(useNow(), timeZone)
   // The Monday this week began on, in the account's calendar -- the server's week too.
   const thisMonday = addDays(nextMonday(today), -7)
   const data = review.data

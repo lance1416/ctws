@@ -9,7 +9,8 @@ import {
 } from '@ctws/contracts'
 import { queryOptions } from '@tanstack/react-query'
 import { ApiError, apiFetch, calendarOf } from '../../platform/http/api'
-import { addDays, shortDay } from '../../platform/time/dates'
+import { addDays } from '@ctws/core/day'
+import { shortDay } from '../../platform/time/dates'
 
 const BASE = '/meetings'
 

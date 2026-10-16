@@ -5,7 +5,7 @@ import { problemText } from '../../../platform/http/api'
 import { deleteReadingItem, patchReadingItem } from '../api'
 import { readingLabel, recentEntry } from '../item'
 import { ProjectChip, ProjectPicker } from '../../../shell/projects/ProjectPicker'
-import { dayPhrase, todayIn } from '../../../platform/time/dates'
+import { dayPhrase, ymd } from '../../../platform/time/dates'
 import { planChoices, type PlanDay } from '../plans'
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { BUTTON } from '../../../platform/ui/buttonStyles'
@@ -86,7 +86,7 @@ function ReadingFields({
 }) {
   const [editing, setEditing] = useState(false)
   const timeZone = useTimeZone()
-  const today = todayIn(timeZone, useNow())
+  const today = ymd(useNow(), timeZone)
 
   // Waits for the list, so the reading that replaces the form already shows the edit.
   const save = useMutation({
@@ -200,7 +200,7 @@ function ReadingForm({
   const [planOn, setPlanOn] = useState(item.planOn)
   const [projectId, setProjectId] = useState<string | null>(item.projectId)
   const timeZone = useTimeZone()
-  const today = todayIn(timeZone, useNow())
+  const today = ymd(useNow(), timeZone)
   useReportUnsaved([title, url, author, status, planOn, projectId], busy, onUnsaved)
 
   const submit = () => {

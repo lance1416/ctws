@@ -1,4 +1,5 @@
-import { addDays, dayPhrase, nextMonday } from '../../platform/time/dates'
+import { addDays } from '@ctws/core/day'
+import { dayPhrase, nextMonday } from '../../platform/time/dates'
 
 /** When to finish something, as named days rather than a date picker. */
 export type PlanDay = 'today' | 'tomorrow' | 'thisWeek' | 'nextWeek'

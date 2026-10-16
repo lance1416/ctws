@@ -1,3 +1,4 @@
+import { clockTime } from '@ctws/core/clock'
 import { LINK } from '../../../platform/ui/buttonStyles'
 import type { CompletedTaskResponse } from '@ctws/contracts'
 import { Link } from 'react-router-dom'
@@ -12,11 +13,11 @@ import { DaySection } from '../../../shell/rows/DaySection'
  */
 export function DoneTodayPanel({
   tasks,
-  clock,
+  timeZone,
 }: {
   /** Already filtered to the server's own "today"; the panel does not decide the day. */
   tasks: CompletedTaskResponse[]
-  clock: Intl.DateTimeFormat
+  timeZone: string
 }) {
   return (
     <DaySection
@@ -33,7 +34,11 @@ export function DoneTodayPanel({
           // When it was finished is the margin.
           <li key={t.id} className="flex items-stretch">
             <RowLead
-              lead={{ text: clock.format(new Date(t.completedAt)), tone: 'quiet', flag: false }}
+              lead={{
+                text: clockTime(new Date(t.completedAt), timeZone),
+                tone: 'quiet',
+                flag: false,
+              }}
               dateTime={t.completedAt}
             />
             <ProjectRail projectId={t.projectId} />

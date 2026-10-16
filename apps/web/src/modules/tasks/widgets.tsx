@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { todayIn } from '../../platform/time/dates'
+import { ymd } from '../../platform/time/dates'
 import { useNow } from '../../platform/time/useNow'
 import { PanelEmpty } from '../../platform/ui/Panel'
 import { useTimeZone } from '../../shell/auth/useMe'
@@ -53,7 +53,7 @@ export function TodayGlance() {
   const today = useQuery(todayQuery())
   // The same list Review's Done view and Today's Done section read.
   const completed = useQuery(completedQuery())
-  const localToday = todayIn(useTimeZone(), useNow())
+  const localToday = ymd(useNow(), useTimeZone())
 
   if (today.isError) {
     return (

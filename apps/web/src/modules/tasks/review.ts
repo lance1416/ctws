@@ -1,4 +1,4 @@
-import { addDays } from '../../platform/time/dates'
+import { addDays } from '@ctws/core/day'
 
 type Week = { from: string; to: string }
 

@@ -12,9 +12,11 @@ import { DaySection } from '../../../shell/rows/DaySection'
 import { PanelEmpty } from '../../../platform/ui/Panel'
 import { RowLead } from '../../../shell/rows/RowLead'
 import { BODY_GUTTER, ProjectRail, ROW_LIST } from '../../../shell/rows/RowParts'
-import { addDays, clockTime, todayIn } from '../../../platform/time/dates'
+import { addDays } from '@ctws/core/day'
+import { clockTime } from '@ctws/core/clock'
+import { ymd } from '../../../platform/time/dates'
 import { meetingLink } from '../meetingPlace'
-import { zoneLabel } from '../timeZones'
+import { cityAndZone } from '../timeZones'
 import { LIST_MEASURE } from '../../../shell/rows/leads'
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { useNow } from '../../../platform/time/useNow'
@@ -49,7 +51,7 @@ export function Meetings() {
   useCrumbs([{ label: 'Things', to: '/things' }, { label: 'Meetings' }])
   const accountZone = useTimeZone()
   const now = useNow()
-  const today = todayIn(accountZone, now)
+  const today = ymd(now, accountZone)
   const [making, setMaking] = useState(false)
   const [showPast, setShowPast] = useState(false)
   // The open meeting is in the address as `/meetings/<id>?at=<occurrence>`. Without `at` the link
@@ -276,7 +278,6 @@ function MeetingRow({
   accountZone: string
   onOpen: (at: Occurrence) => void
 }) {
-  const clock = clockTime(accountZone)
   const over = new Date(m.endsAt).getTime() <= now.getTime()
   const join = meetingLink(m.location)
   const said: ReactNode[] = []
@@ -286,7 +287,7 @@ function MeetingRow({
   if (m.timeZone !== accountZone)
     said.push(
       <span key="zone" data-meeting-zone>
-        {m.startsLocal.slice(11)} {zoneLabel(m.timeZone, new Date(m.startsAt))}
+        {m.startsLocal.slice(11)} {cityAndZone(new Date(m.startsAt), m.timeZone)}
       </span>,
     )
   if (m.attendees.length > 0)
@@ -297,7 +298,7 @@ function MeetingRow({
     <li data-meeting-row={m.meetingId} className="group relative flex min-h-11 min-w-0">
       <RowLead
         lead={{
-          text: clock.format(new Date(m.startsAt)),
+          text: clockTime(new Date(m.startsAt), accountZone),
           tone: over ? 'quiet' : 'time',
           flag: false,
         }}

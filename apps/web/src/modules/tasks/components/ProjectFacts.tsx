@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Fragment, type ReactNode } from 'react'
 import { movementQuery } from '../api/queries'
 import { movedLine } from '../movement'
-import { shortDay, todayIn } from '../../../platform/time/dates'
+import { shortDay, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { deadlineDayLead } from '../../../shell/rows/leads'
@@ -27,7 +27,7 @@ export function ProjectFacts({
   place: 'row' | 'tile'
 }) {
   const m = useMoved(p.id)
-  const today = todayIn(useTimeZone(), useNow())
+  const today = ymd(useNow(), useTimeZone())
 
   if (place === 'tile') {
     return (
@@ -67,6 +67,6 @@ export function ProjectFacts({
 /** The project's next standing deadline, in the margin of its row. */
 export function ProjectLead({ projectId }: { projectId: string }) {
   const m = useMoved(projectId)
-  const today = todayIn(useTimeZone(), useNow())
+  const today = ymd(useNow(), useTimeZone())
   return <RowLead lead={m?.nextDueOn ? deadlineDayLead(m.nextDueOn, today) : null} />
 }

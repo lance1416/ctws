@@ -3,7 +3,7 @@ import { BUTTON } from '../../../platform/ui/buttonStyles'
 import { PickMany, PickOne } from '../../../platform/ui/inline'
 import { useNow } from '../../../platform/time/useNow'
 import { repeatChoices, repeatLabel } from '../api'
-import { ZONES, zoneLabel } from '../timeZones'
+import { cityAndZone, ZONES } from '../timeZones'
 
 // Bare controls shared by New meeting and the pane's form; label and layout are the caller's.
 
@@ -38,7 +38,7 @@ export function ZonePicker({ value, onPick }: { value: string; onPick: (zone: st
     <PickOne
       label="Time zone"
       value={value}
-      choices={ZONES.map((z) => ({ value: z, label: zoneLabel(z, now) }))}
+      choices={ZONES.map((z) => ({ value: z, label: cityAndZone(now, z) }))}
       onPick={onPick}
     />
   )

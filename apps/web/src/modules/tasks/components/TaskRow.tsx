@@ -5,7 +5,7 @@ import type { KeyboardEvent } from 'react'
 import type { FlatRow } from '../tree/flatten'
 import { toggleDoneTarget, toggleStartTarget } from '../api/taskActions'
 import { blockedLabel } from '../blockedLabel'
-import { todayIn } from '../../../platform/time/dates'
+import { ymd } from '../../../platform/time/dates'
 import { capturedLabel, lateNote } from '../dueDates'
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { leadFor } from '../../../shell/rows/leads'
@@ -108,7 +108,7 @@ export function TaskRow({
   const now = useNow()
   const late = lateNote({ status, dueAt }, timeZone, now)
   // A settled task's dates no longer tell the reader anything: its margin is empty.
-  const lead = inactive ? null : leadFor({ dueAt, scheduledOn }, todayIn(timeZone, now), timeZone)
+  const lead = inactive ? null : leadFor({ dueAt, scheduledOn }, ymd(now, timeZone), timeZone)
 
   return (
     <li

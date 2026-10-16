@@ -1,7 +1,7 @@
 import type { TaskResponse, TaskStatus } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { NoteBody } from '../../../platform/notes/NoteBody'
-import { dayPhrase, todayIn } from '../../../platform/time/dates'
+import { dayPhrase, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { BUTTON } from '../../../platform/ui/buttonStyles'
 import { DetailHead } from '../../../platform/ui/DetailPane'
@@ -29,7 +29,7 @@ export function TaskReading({
 }) {
   const timeZone = useTimeZone()
   const now = useNow()
-  const today = todayIn(timeZone, now)
+  const today = ymd(now, timeZone)
   // Live and archived: the task's project may be archived.
   const projectName = useEveryProject().data?.find((p) => p.id === task.projectId)?.name ?? ''
 

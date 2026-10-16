@@ -12,7 +12,9 @@ import { RowLead } from '../../../shell/rows/RowLead'
 import { StatusButton } from '../components/StatusControls'
 import { TaskDetail } from '../components/TaskDetail'
 import { useFocusAfterRemoval } from '../components/useFocusAfterRemoval'
-import { addDays, clockTime, MONTHS, todayIn, weekdayOf } from '../../../platform/time/dates'
+import { addDays } from '@ctws/core/day'
+import { clockTime } from '@ctws/core/clock'
+import { MONTHS, weekdayOf, ymd } from '../../../platform/time/dates'
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { useNow } from '../../../platform/time/useNow'
 import { QueryStatus } from '../../../platform/ui/QueryStatus'
@@ -33,8 +35,7 @@ export function Completed() {
   const completed = useQuery(completedQuery())
   const [openId, setOpenId] = useState<string | null>(null)
   const timezone = useTimeZone()
-  const today = todayIn(timezone, useNow())
-  const clock = clockTime(timezone)
+  const today = ymd(useNow(), timezone)
   const heading = useRef<HTMLHeadingElement>(null)
   const [error, setError] = useState<string | null>(null)
   const actions = useTaskActions(setError)
@@ -94,7 +95,11 @@ export function Completed() {
                 className="flex items-stretch"
               >
                 <RowLead
-                  lead={{ text: clock.format(new Date(t.completedAt)), tone: 'quiet', flag: false }}
+                  lead={{
+                    text: clockTime(new Date(t.completedAt), timezone),
+                    tone: 'quiet',
+                    flag: false,
+                  }}
                   dateTime={t.completedAt}
                 />
                 <ProjectRail projectId={t.projectId} />

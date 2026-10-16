@@ -1,6 +1,6 @@
 import type { BirthdayResponse, PersonResponse } from '@ctws/contracts'
 import { useState, type ReactNode } from 'react'
-import { countdownPhrase, shortDay, todayIn } from '../../../platform/time/dates'
+import { countdownPhrase, shortDay, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { Field } from '../../../platform/ui/Field'
 import { useTimeZone } from '../../../shell/auth/useMe'
@@ -58,7 +58,7 @@ export function BirthdayField({ person }: { person: PersonResponse }) {
 }
 
 function BirthdayRead({ birthday: b }: { birthday: BirthdayResponse }) {
-  const today = todayIn(useTimeZone(), useNow())
+  const today = ymd(useNow(), useTimeZone())
   return (
     <div data-birthday className="flex flex-col gap-2">
       <p className="text-sm text-ink-muted tabular-nums">

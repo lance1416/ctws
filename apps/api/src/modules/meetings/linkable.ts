@@ -1,9 +1,9 @@
+import { zoneAbbreviation } from '@ctws/core'
 import { and, desc } from 'drizzle-orm'
 import { wanted, type Linkable } from '../../shell/links/linkable'
 import { instantOf } from './occurrences'
 import { visibleMeetings } from './queries'
 import { meetings } from './tables'
-import { zoneLabel } from './zone'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
@@ -11,7 +11,7 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 function when(startsLocal: string, timeZone: string): string {
   const [date, clock] = startsLocal.split('T') as [string, string]
   const [, m, d] = date.split('-').map(Number) as [number, number, number]
-  return `${MONTHS[m - 1]} ${d}, ${clock} · ${zoneLabel(instantOf(startsLocal, timeZone), timeZone)}`
+  return `${MONTHS[m - 1]} ${d}, ${clock} · ${zoneAbbreviation(instantOf(startsLocal, timeZone), timeZone)}`
 }
 
 export const meetingLinkable: Linkable = {

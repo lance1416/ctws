@@ -1,4 +1,5 @@
-import { addDays, MONTHS } from '../../platform/time/dates'
+import { addDays } from '@ctws/core/day'
+import { MONTHS } from '../../platform/time/dates'
 
 /**
  * The month grid's arithmetic. Every date is a `YYYY-MM-DD` day in the account's zone, never a

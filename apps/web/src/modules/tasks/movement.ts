@@ -1,5 +1,6 @@
 import type { ProjectMovementResponse } from '@ctws/contracts'
-import { addDays, shortDay, weekdayOf } from '../../platform/time/dates'
+import { addDays } from '@ctws/core/day'
+import { shortDay, weekdayOf } from '../../platform/time/dates'
 
 /** How long a project with open work goes unchanged before the panel calls it quiet. */
 export const QUIET_DAYS = 7

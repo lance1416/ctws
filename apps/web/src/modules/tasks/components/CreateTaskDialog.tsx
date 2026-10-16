@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form'
 import { useEveryProject } from '../../../shell/projects/api'
 import { projectTasksQuery } from '../api/queries'
 import { createTask } from '../api/tasks'
-import { dayEndIso, dayPhrase, todayIn, ymd } from '../../../platform/time/dates'
+import { dayEndIso, dayPhrase, ymd } from '../../../platform/time/dates'
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { ProjectChip } from '../../../shell/projects/ProjectPicker'
 import { flatten } from '../tree/flatten'
@@ -42,7 +42,7 @@ export function CreateTaskDialog({
   const composing = useComposing()
   const titleField = useRef<HTMLInputElement>(null)
   const timeZone = useTimeZone()
-  const todayYmd = todayIn(timeZone, useNow())
+  const todayYmd = ymd(useNow(), timeZone)
 
   // The deadline is picked as a named day and held as the end of that day, the instant the
   // contract takes.

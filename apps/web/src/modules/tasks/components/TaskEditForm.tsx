@@ -8,7 +8,7 @@ import {
   dayPhrase,
   fromDayTimeInput,
   toDayTimeInput,
-  todayIn,
+  ymd,
 } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { BUTTON } from '../../../platform/ui/buttonStyles'
@@ -46,7 +46,7 @@ export function TaskEditForm({
   const { form, save, submit } = edit
   const { control, register, setValue, watch } = form
   const timeZone = useTimeZone()
-  const today = todayIn(timeZone, useNow())
+  const today = ymd(useNow(), timeZone)
   const projects = useEveryProject()
 
   const title = watch('title')

@@ -14,7 +14,7 @@ import { DaySection } from '../../../shell/rows/DaySection'
 import { ROW_LIST } from '../../../shell/rows/RowParts'
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { useNow } from '../../../platform/time/useNow'
-import { todayIn } from '../../../platform/time/dates'
+import { ymd } from '../../../platform/time/dates'
 import { useCrumbs } from '../../../shell/layout/Breadcrumbs'
 import { QueryStatus } from '../../../platform/ui/QueryStatus'
 import { PageHead } from '../../../platform/ui/PageHead'
@@ -38,7 +38,7 @@ export function Reading() {
   })
   const [showFinished, setShowFinished] = useState(false)
   const timeZone = useTimeZone()
-  const today = todayIn(timeZone, useNow())
+  const today = ymd(useNow(), timeZone)
 
   const rows = items.data ?? []
   const of = (status: ReadingStatus) => rows.filter((i) => i.status === status)

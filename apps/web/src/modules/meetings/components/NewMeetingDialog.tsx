@@ -4,7 +4,7 @@ import { useRef, useState } from 'react'
 import { createMeeting, DEFAULT_HOUR, DEFAULT_MINUTES, withUntil } from '../api'
 import { ProjectPicker } from '../../../shell/projects/ProjectPicker'
 import { useComposing } from '../../../platform/keyboard/composition'
-import { todayIn } from '../../../platform/time/dates'
+import { ymd } from '../../../platform/time/dates'
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { boxed, field, label } from '../../../platform/ui/formStyles'
 import { DialogFooter } from '../../../platform/ui/DialogFooter'
@@ -30,7 +30,7 @@ export function NewMeetingDialog({
   onMade: (made: MeetingOccurrence) => void
 }) {
   const accountZone = useTimeZone()
-  const today = todayIn(accountZone, useNow())
+  const today = ymd(useNow(), accountZone)
   const titleField = useRef<HTMLInputElement>(null)
   const composing = useComposing()
 

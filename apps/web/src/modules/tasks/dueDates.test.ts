@@ -129,21 +129,21 @@ describe('the account timezone decides, even when the browser is in another one'
   })
 
   it('the row wording and the server segment agree', async () => {
-    const { instantPhrase, lateNote, todayIn } = await load()
+    const { instantPhrase, lateNote, ymd } = await load()
     expect(serverSaysOverdue(DUE, NOW_CROSS)).toBe(false)
     // Not late, because the server does not think so either.
     expect(lateNote({ status: 'todo', dueAt: DUE }, ACCOUNT, NOW_CROSS)).toBeNull()
     // And the words are New York's day and New York's clock, not Kolkata's.
-    expect(instantPhrase(DUE, todayIn(ACCOUNT, NOW_CROSS), ACCOUNT)).toBe('Today, 00:30')
+    expect(instantPhrase(DUE, ymd(NOW_CROSS, ACCOUNT), ACCOUNT)).toBe('Today, 00:30')
   })
 
   it('when the account really is late, both say so, with the account day count', async () => {
-    const { instantPhrase, lateNote, todayIn } = await load()
+    const { instantPhrase, lateNote, ymd } = await load()
     // 23:00 on the 1st in New York: three calendar days before the 4th, there.
     const late = '2026-10-02T03:00:00.000Z'
     expect(serverSaysOverdue(late, NOW_CROSS)).toBe(true)
     expect(lateNote({ status: 'todo', dueAt: late }, ACCOUNT, NOW_CROSS)).toBe('3 days late')
-    expect(instantPhrase(late, todayIn(ACCOUNT, NOW_CROSS), ACCOUNT)).toBe('Oct 1, 23:00')
+    expect(instantPhrase(late, ymd(NOW_CROSS, ACCOUNT), ACCOUNT)).toBe('Oct 1, 23:00')
   })
 
   it('a deadline moved to a day lands on that day in the account calendar', async () => {

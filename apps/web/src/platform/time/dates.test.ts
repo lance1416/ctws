@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { addDays } from '@ctws/core/day'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 // Fixed non-UTC zone (+05:30, no DST), so the tests prove something on a UTC CI host too.
@@ -71,32 +72,6 @@ describe('countdownPhrase', () => {
   })
 })
 
-/** The cases that break naive date arithmetic: month ends, leap days and DST changeovers. */
-describe('addDays', () => {
-  it('crosses a month and a year', async () => {
-    const { addDays } = await load()
-    expect(addDays('2026-10-31', 1)).toBe('2026-11-01')
-    expect(addDays('2026-01-01', -1)).toBe('2025-12-31')
-    expect(addDays('2026-03-01', -1)).toBe('2026-02-28')
-  })
-
-  it('knows February', async () => {
-    const { addDays } = await load()
-    expect(addDays('2028-02-28', 1)).toBe('2028-02-29')
-    expect(addDays('2026-02-28', 1)).toBe('2026-03-01')
-  })
-
-  it('does not skip or repeat a day across a DST change', async () => {
-    const { addDays } = await load()
-    // 2026-03-29 is the spring-forward Sunday in most of Europe; 2026-11-01 is the autumn one in
-    // the US. Arithmetic in local time loses or repeats one of these.
-    expect(addDays('2026-03-28', 1)).toBe('2026-03-29')
-    expect(addDays('2026-03-29', 1)).toBe('2026-03-30')
-    expect(addDays('2026-10-31', 1)).toBe('2026-11-01')
-    expect(addDays('2026-11-01', 1)).toBe('2026-11-02')
-  })
-})
-
 describe('calendar arithmetic', () => {
   it('next Monday is always strictly later, from any weekday', async () => {
     const { nextMonday } = await load()
@@ -126,12 +101,12 @@ describe('the account timezone decides, even when the browser is in another one'
   const NOW_CROSS = new Date('2026-10-05T02:00:00.000Z')
 
   it('today, tomorrow and next Monday are the account days', async () => {
-    const { todayIn, addDays, nextMonday } = await load()
-    expect(todayIn(ACCOUNT, NOW_CROSS)).toBe('2026-10-04')
-    expect(addDays(todayIn(ACCOUNT, NOW_CROSS), 1)).toBe('2026-10-05')
+    const { nextMonday, ymd } = await load()
+    expect(ymd(NOW_CROSS, ACCOUNT)).toBe('2026-10-04')
+    expect(addDays(ymd(NOW_CROSS, ACCOUNT), 1)).toBe('2026-10-05')
     // The 4th is a Sunday in New York while the browser is on Monday the 5th: next week from
     // there is the 5th, not the 12th.
-    expect(nextMonday(todayIn(ACCOUNT, NOW_CROSS))).toBe('2026-10-05')
+    expect(nextMonday(ymd(NOW_CROSS, ACCOUNT))).toBe('2026-10-05')
   })
 
   it('the end of the day is the end of the account day', async () => {
@@ -147,7 +122,7 @@ describe('days across a DST boundary', () => {
   const NY = 'America/New_York'
 
   it('day-string arithmetic steps over the short and the long day', async () => {
-    const { addDays, nextMonday } = await load()
+    const { nextMonday } = await load()
     expect(addDays('2026-03-07', 1)).toBe('2026-03-08')
     expect(addDays('2026-03-08', 1)).toBe('2026-03-09')
     expect(addDays('2026-03-09', -1)).toBe('2026-03-08')
