@@ -48,9 +48,9 @@ describe('session', () => {
   })
 
   /**
-   * THE WHOLE POINT OF THE HASH. Anything that can read this table used to hold a working session: the
-   * token was the primary key, stored verbatim. Reading rows now gives a digest, which is not a
-   * credential -- the difference between seeing someone's tasks and being able to act as them.
+   * THE WHOLE POINT OF THE HASH. Reading this table gives a digest, not the token, and a digest is
+   * not a credential -- the difference between seeing someone's tasks and being able to act as
+   * them.
    */
   it('stores no copy of the token anywhere in the row', async () => {
     const session = await createSession(ctx.db, userId, at())

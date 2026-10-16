@@ -14,15 +14,12 @@ import { MONTHS } from './days'
  * THE ONE PLACE THE ACCOUNT'S TIMEZONE IS NOT THE RUNNER'S.
  *
  * Every other spec registers its user from a browser running in the test process's own zone, so
- * `users.timezone` always equals `TZ` and the whole suite is blind to the bug class that actually
- * bit this project three times: the server deciding which day it is in one zone while the page
- * says a day worked out in another: a reader on another machine shown a task the server has
- * filed as overdue whose own row says it is due tomorrow.
+ * `users.timezone` always equals `TZ` and those specs cannot see the server deciding which day it
+ * is in one zone while the page works the day out in another.
  *
- * Nothing new was built to close this. Playwright contexts take a `timezoneId`, the login form
- * already registers with `Intl.DateTimeFormat().resolvedOptions().timeZone`, and `test.use` sets
- * it for a file -- so the account's zone is simply a different one than the process's, and the
- * ordinary helpers work unchanged.
+ * `test.use` gives this file's browser a different `timezoneId`, registration sends the browser's
+ * zone, and so the account's zone differs from the process's while the ordinary helpers work
+ * unchanged.
  */
 
 /** The runner's own calendar day. Both zones below are deliberately far from it. */
@@ -70,7 +67,7 @@ test('today means today in the account zone, for the list and the caption alike'
   await page.getByRole('listitem').filter({ hasText: '按账户时区排的' }).click()
   await editDetail(page)
   // Wait for the write itself, not for a control to come back: the next step navigates, and a
-  // navigation that outruns its own save is the flake this suite has already paid for twice.
+  // navigation that outruns its own save would drop it.
   const saved = taskPatched(page)
   await page.getByLabel('Plan', { exact: true }).fill(dayIn(ACCOUNT_TZ))
   await page.getByRole('button', { name: 'Save' }).click()
@@ -83,8 +80,8 @@ test('today means today in the account zone, for the list and the caption alike'
     page.getByRole('region', { name: 'Today', exact: true }).getByText('按账户时区排的'),
   ).toBeVisible()
 
-  // And the page's own heading -- the date -- agrees with the server, which is the half that broke
-  // before: the day comes from the account zone, never the browser's or the runner's.
+  // And the page's own heading -- the date -- agrees with the server: the day comes from the
+  // account zone, never the browser's or the runner's.
   const [y, month, day] = dayIn(ACCOUNT_TZ).split('-').map(Number) as [number, number, number]
   const said = new Intl.DateTimeFormat('en-US', {
     weekday: 'long',
@@ -107,7 +104,7 @@ test('the runner’s today is some OTHER day, and the page says which', async ({
   await page.getByRole('listitem').filter({ hasText: '按进程时区排的' }).click()
   await editDetail(page)
   // Wait for the write itself, not for a control to come back: the next step navigates, and a
-  // navigation that outruns its own save is the flake this suite has already paid for twice.
+  // navigation that outruns its own save would drop it.
   const saved = taskPatched(page)
   await page.getByLabel('Plan', { exact: true }).fill(runnerDay())
   await page.getByRole('button', { name: 'Save' }).click()
@@ -186,8 +183,8 @@ test('a deadline inside the account day counts as today on another UTC date', as
   await listed
 
   // The server picks the segment by comparing this instant against the account day's bounds. A
-  // server that built those bounds from its OWN zone puts the task on the wrong day, which is the
-  // regression this file exists for -- and the one the rest of the suite cannot see.
+  // server that built those bounds from its OWN zone puts the task on the wrong day, which is what
+  // this file exists for -- and what the rest of the suite cannot see.
   await expect(
     page.getByRole('region', { name: 'Today', exact: true }).getByText('今天之内截止'),
   ).toBeVisible()

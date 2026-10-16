@@ -9,7 +9,7 @@ beforeAll(() => {
 
 const load = () => import('./dates')
 
-/** The account's zone; it equals the process TZ here, and `dateHints.test.ts` separates the two. */
+/** The account's zone; it equals the process TZ here. */
 const TZ = 'Asia/Kolkata'
 
 describe('due time conversion', () => {

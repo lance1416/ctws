@@ -18,8 +18,8 @@ import {
  * made. The bundle split is a claim about REQUESTS -- `mermaid` and `katex` are fetched for a note
  * that uses them and not for one that does not -- and a request only has a content-hashed chunk name
  * to be recognised by once Vite has built it. The sanitiser is a claim about what a real browser's
- * parser does with the markup, which a string comparison in node cannot settle (the unit tests in
- * `src/notes/markdown.test.tsx` settle the schema; these settle the page).
+ * parser does with the markup, which a string comparison in node cannot settle (the unit tests
+ * beside the markdown renderer settle the schema; these settle the page).
  */
 
 /** Registers, makes a project with one noted task, and opens that task's detail in READING mode. */

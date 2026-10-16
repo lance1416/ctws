@@ -4,9 +4,8 @@ import { logOut, signUpThroughForm } from './helpers'
 test('register, stay signed in across a reload, then log out', async ({ page, context }) => {
   const email = await signUpThroughForm(page)
 
-  // The account button wears the initial; the address itself is inside the menu, which is also
-  // the only place it is. A workspace id printed into the DOM as a debugging
-  // leftover -- it is read from the API here instead, where it actually comes from.
+  // The account button wears the initial; the address itself is inside the menu, the only place it
+  // is. The workspace id is not on the page, so it is read from the API.
   await expect(page.getByTestId('current-user')).toHaveAccessibleName(`Account: ${email}`)
   const me = await page.request.get('/api/v1/auth/me')
   expect(me.ok()).toBe(true)

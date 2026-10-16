@@ -43,8 +43,8 @@ test('the whole tree is one tab stop, however many rows it has', async ({ page }
 
   expect(await tabStops(page)).toBe(1)
 
-  // From the control above the tree, one Tab enters it and one more leaves it: two presses with
-  // twelve rows, where the old behaviour needed twelve.
+  // From the control above the tree, one Tab enters it and one more leaves it: two presses
+  // whatever the number of rows.
   await aboveTree(page).focus()
   await page.keyboard.press('Tab')
   expect(await inTree(page)).toBe(true)

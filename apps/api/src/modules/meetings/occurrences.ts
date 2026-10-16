@@ -79,7 +79,7 @@ export type Occurrence = {
 
 /**
  * A bound on the work one series can cost per window, passed to the walk because `between()`
- * builds its whole array first. Measured: FREQ=SECONDLY over a month is 2.6M occurrences and 5.5 s.
+ * builds its whole array first.
  */
 const HARD_LIMIT = 2000
 

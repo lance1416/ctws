@@ -367,8 +367,7 @@ test('the date control is reachable, operable and escapable by keyboard alone', 
   await makeTask(page, pid, '键盘逾期', { dueAt: dueAgo(2) })
   await page.goto('/tasks/today')
 
-  // From the row itself, one Tab reaches the control: the row gained ONE tab stop, where the old
-  // inline links added six.
+  // From the row itself, one Tab reaches the control: the row's actions are ONE tab stop.
   await page.locator('[data-today-row]').focus()
   await page.keyboard.press('Tab')
   await expect(triage(page, '键盘逾期')).toBeFocused()

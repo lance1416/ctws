@@ -492,7 +492,7 @@ export async function meetingToday(
 /**
  * Holds a list's FIRST read until the returned `release` is called. The read is sent at once, so
  * its answer is the list as it was BEFORE whatever the test then writes: the stale answer that a
- * refetch after the write must not be handed (`refreshList` in api/refresh.ts).
+ * refetch after the write must not be handed (`refreshAfterWrites`).
  */
 export async function holdFirstRead(page: Page, url: string): Promise<() => void> {
   let release!: () => void

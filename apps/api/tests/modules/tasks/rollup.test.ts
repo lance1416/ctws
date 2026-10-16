@@ -136,7 +136,7 @@ describe('rollups ride along with the task list', () => {
     const r = await rollups(ctx, pid)
     expect(r[gone]).toBeUndefined()
     // The root is a leaf again, so it falls back to its own status rather than keeping the 1 the
-    // deleted child used to give it.
+    // deleted child gave it.
     expect(r[root]!.progress).toBe(0)
   })
 })

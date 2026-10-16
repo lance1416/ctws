@@ -110,9 +110,9 @@ describe('app', () => {
 /**
  * THE DOCUMENT DESCRIBES THE REFUSALS TOO.
  *
- * Every error is RFC 9457 problem details, and the document used to say that nowhere:
- * `components.schemas` was empty and no operation listed one error response. The statuses are
- * derived from how the app is built (`openapi.ts`), so they cannot drift route by route.
+ * Every error is RFC 9457 problem details, and the document says so: the shape is defined once in
+ * `components.schemas` and every operation lists its error responses. The statuses are derived
+ * from how the app is built, so they cannot drift route by route.
  */
 describe('the OpenAPI document', () => {
   it('defines the problem shape once and points every operation at it', async () => {

@@ -1,118 +1,54 @@
 @import 'tailwindcss';
 
-/* Semantic tokens only. Components must never use a literal palette class such as
-   `bg-slate-*`: with literals, swapping the colour scheme means editing every component
-   instead of this file. Dark mode REDEFINES the same tokens below rather than sprinkling
-   `dark:` variants through the components, for the same reason.
-   `static` makes Tailwind emit every token even when no class uses it yet, so each token has
-   a light and a dark value in the built CSS.
-   The dark block must be a plain :root override, not a nested @theme: Tailwind hoists an
-   @theme inside @media out of the query, which would make the dark values apply always.
+/* Semantic tokens only: components never use a literal palette class such as `bg-slate-*`, so
+   the colour scheme lives in this file. Dark mode redefines the same tokens below instead of
+   `dark:` variants in components. `static` makes Tailwind emit every token, used or not, so each
+   has a light and a dark value in the built CSS. The dark block is a plain :root override: Tailwind
+   hoists an @theme inside @media out of the query, which would apply the dark values always.
 
-   Colour discipline:
-   - Everything that carries meaning sits in the 0.60-0.70 lightness band in dark: the first
-     palette's 0.72-0.78 at chroma 0.11-0.15 GLOWED on a near-black ground. And with the accent
-     now ink, no hue is spent on chrome: the old blue accent and the plan colour were once nearly
-     one hue, two meanings wearing one face.
-   - `plan` (teal-green) and `deadline` (warm amber) are two different FAMILIES, because they
-     are two different promises: "the day I mean to do it" against "the moment it has to be
-     finished". The shapes differ too (RowParts): colour is never the only channel.
-   - `missed` is the single red: a deadline that has already gone.
-   - `project-1..6` are categorical, for RAILS AND CHIPS ONLY -- never a text colour, never a
-     background fill, and never alone: a chip always sits beside the project's name, so colour
-     is a second channel and never the carrier of meaning (WCAG 1.4.1).
-   - Colour carries CATEGORY and URGENCY only. Task status is carried by the SHAPE of its
-     marker and by font weight, never by hue.
+   COLOUR CARRIES CATEGORY AND URGENCY ONLY; task status is the SHAPE of its marker and its weight.
+   - `plan` (teal-green) and `deadline` (amber) are different families for two different promises:
+     the day I mean to do it, and the moment it has to be done. Their shapes differ too.
+   - `missed` is the single red: a deadline that has gone.
+   - `project-1..6` are categorical, for threads and chips only, never text or a fill, and always
+     beside the project's name (WCAG 1.4.1).
+   - The accent is `ink`: the primary fill, the focus ring, the selected tab and a link (told by its
+     underline). No hue is spent on chrome.
+   In dark, everything that carries meaning sits in the 0.60-0.70 lightness band, so nothing glows
+   on the near-black ground.
 
-   FOUR SURFACES, NAMED FOR WHAT THEY ARE rather than for how high they sit -- the old names
-   (`surface`, `-panel`, `-raised`, `-sunken`) meant the page in one place and a field in another:
+   FOUR SURFACES, named for what they are:
    - `sheet`   the page you write on, and the fill of a field on it.
    - `chrome`  the header and the rail: the frame round the sheet, one step off it.
-   - `desk`    a ground that tiles sit on -- the Workbench, board columns, code fences, diagrams.
+   - `desk`    a ground that tiles sit on: the Workbench, board columns, code fences, diagrams.
    - `float`   anything above the page: the detail sheet, menus, dialogs, popovers.
-   Dark layers by LIGHTNESS and uses no shadows: desk < chrome < sheet < float, a few percent a
-   step, because a shadow on a near-black ground is invisible anyway. Light cannot -- sheet and
-   float are both white paper -- so a floating thing is lifted by `shadow-float`: one hairline ring
-   and one soft fall. In dark the same token is a 1px `rule` edge and no fall, so a floating thing
-   says `shadow-float` once and is right in both schemes.
+   Dark layers by lightness, desk < chrome < sheet < float, with no shadows. Light cannot (sheet and
+   float are both white), so `shadow-float` lifts a floating thing: a hairline ring and a soft fall,
+   and in dark a 1px `rule` edge with no fall.
 
-   THE ACCENT IS INK. There is no blue: the primary fill, the focus ring, the selected tab and a
-   link are all `ink`, and a link is told from text by its underline rather than its hue. Colour is
-   left for what MEANS something here -- a plan, a deadline, a miss, a danger, a project.
+   STATES ARE INK LAYERS over whatever plane they sit on: `hover` at 8%, `select` at 12%. An opaque
+   state colour would equal one of the planes somewhere, where a hover would change nothing.
 
-   STATES ARE INK LAYERS over whatever plane they sit on (Material's state layers): `hover` at 8%,
-   `select` at 12% (Material 2's "activated"). A layer goes down in light and up in dark from any
-   plane by construction; an opaque state colour would be exactly one of the four planes somewhere,
-   and a hover on that plane would change nothing.
+   CONTRAST is measured, not inferred from hue: text clears 4.5:1, and a control's only edge and the
+   focus ring clear 3:1, on every surface and under the hover and select layers.
+   `textContrast.test.ts` and `projectColors.test.ts` measure every pairing from this file. The third
+   grey is lifted to the second on a selected surface (the rule near the end of this file). `rule`
+   is a decorative hairline only; anything that identifies a control uses `rule-strong` or
+   `ink-muted`, and `select` is never the only sign: the selected entry is also `ink` at 600. */
 
-   CONTRAST. WCAG 2.1 relative-luminance ratios, MEASURED on every surface rather than inferred
-   from hue. Text clears 4.5:1, and a control's only edge and the focus ring clear 3:1, on every
-   surface they appear on. On the bare surfaces:
-
-     light    sheet chrome  desk  float        dark     sheet chrome  desk  float
-     ink      16.88  15.60 14.39  16.88        ink      14.52  15.32 16.00  13.31
-     muted     8.01   7.40  6.83   8.01        muted     7.50   7.92  8.27   6.88
-     subtle    6.32   5.84  5.39   6.32        subtle    6.27   6.61  6.91   5.75
-     plan      6.88   6.36  5.86   6.88        plan      7.01   7.39  7.72   6.43
-     deadline  6.85   6.33  5.84   6.85        deadline  7.72   8.15  8.51   7.08
-     missed    6.87   6.35  5.85   6.87        missed    7.04   7.42  7.75   6.45
-     rule-str  4.10   3.79  3.50   4.10        rule-str  3.50   3.70  3.86   3.21
-     select    1.27   1.27  1.27   1.27        select    1.36   1.34  1.30   1.39  (layer : plane)
-     on-ink 16.88 on ink, on-danger 6.87 on danger   on-ink 14.52 on ink, on-danger 7.04 on danger
-     code fences 4.77-6.83 on desk                   code fences 5.76-10.49 on desk
-   The coloured words were re-stepped (lightness only, hue and chroma kept) so they ALSO clear
-   4.5:1 under the hover and select layers on every surface: the plan colour once measured 4.55 on
-   paper and 3.31 on a selected row on the desk. `textContrast.test.ts` measures every one of those
-   pairings from this file. The third grey is measured bare and hovered; on a selected surface it
-   is lifted to the second (the rule near the end of this file).
-   `rule` (1.05-1.30) is a decorative hairline only, where the surface step already separates;
-   anything that identifies a control uses `rule-strong` or `ink-muted`. `select` is never the only
-   sign either: the selected entry is also set in `ink` at weight 600.
-
-   THE PROJECT COLOURS CLEAR 3:1 ON EVERY SURFACE, in both schemes. They did not until 2026-10-13:
-   the published Okabe-Ito set measured 1.92 on the desk (slot 6, light), and a 3px thread at that
-   contrast was hard to see at all. A name always sits beside them (WCAG 1.4.1), so that was legal,
-   but not good enough. `projectColors.test.ts` now requires the validator's every check to pass.
-
-   THREE VALUES DEPART FROM THE SPEC'S HEX TABLE, each because the spec's own rule -- take the
-   MEASURED ratio as the authority, not the hue -- rejects the literal value:
-     - `rule-strong`, light: `#c3cad5` measures 1.51-1.65. An input whose only affordance is its
-       edge needs 3:1 (WCAG 1.4.11). `#737e91` -> 3.50 at worst.
-     - `ink-subtle`, light: `#6b7280` fails AA as text on the chrome. Now `#59606e`, which also
-       clears a hovered row on the desk (4.60).
-     - `ink-subtle`, dark: `#86868c` measures 4.50 on a float, a pass by a rounding. Now
-       `#99999f`, which also clears a hovered row on a float (4.66). */
-
-/* The CJK face, self-hosted. ONE variable woff2 (wght 400-700), subset to all of GB2312 -- its
-   6,763 han and its punctuation rows -- plus any Chinese left in the app's own source (none, since
-   the UI went English): 1,807,656 B, one request, content-hashed by Vite into
-   /assets and served `immutable` (apps/api/src/app.ts), so it is paid once and never again.
-   Regenerate with `tools/fonts/subset-cjk-font.py`; `src/fonts/coverage.test.ts` fails if a
-   Chinese string in the source falls outside the subset.
-
-   WHY THE WHOLE OF GB2312 AND NOT THE 124.5 KiB CHROME-ONLY SUBSET: font fallback is PER GLYPH,
-   and 31% of the han in real task titles sits outside the chrome vocabulary, so a chrome-only
-   subset draws ONE task title in two faces at two weights, changing as the user types. Either the
-   subset covers what a user can type or it should not exist.
-
-   WHY ONE FILE AND NOT `unicode-range` CHUNKS: the container serves HTTP/1.1 (measured), so the
-   13-14 requests a chunked route needs cost round-trip waves; and because a page of Chinese draws
-   ~150 distinct characters from across the whole character space, a chunking measured for this app
-   fetched MORE bytes than this single file.
-
-   WHY `swap` AND NOT `optional`: CJK is full-width -- the em advance is 15.000px in every
-   candidate face and pure-CJK titles measure 0.00% width change -- and `unicode-range` below keeps
-   this face off Latin entirely, so the swap cannot move the layout. That removes the only reason
-   to prefer `optional`, which would otherwise show the system face for a whole cold-cache visit
-   and make which face you get a race. `swap` is deterministic: the designed type always arrives.
-
-   `unicode-range` is CJK ONLY, deliberately: the file does contain Latin, but Latin must keep
-   coming from Plex (its tabular figures, and its metrics, are load-bearing).
-
-   LICENSE: this file is a subset of Noto Sans SC, redistributed under the SIL Open Font License
-   1.1 -- `fonts/OFL.txt` (upstream's own license file, with its copyright line) and
-   `fonts/NOTICE.txt` travel with it. The family is renamed because the subset IS a modified
-   version and OFL reserves the name 'Source'; it carries no Reserved Font Name. */
+/* The CJK face, self-hosted: one variable woff2 (wght 400-700) holding all of GB2312, one request,
+   content-hashed into /assets and served immutable, so it is paid once. Regenerate it with
+   `tools/fonts/subset-cjk-font.py`; `coverage.test.ts` fails if a Chinese string in the source
+   falls outside it.
+   - All of GB2312, not the UI's own words: fallback is per glyph, so a narrower subset would draw
+     one typed task title in two faces at two weights.
+   - One file, not `unicode-range` chunks: the server speaks HTTP/1.1, and a page of Chinese draws
+     from across the whole range, so chunks cost more requests and more bytes.
+   - `swap`, not `optional`: CJK is full-width and this face never draws Latin, so the swap cannot
+     move the layout, and `swap` always ends on the designed face.
+   - `unicode-range` is CJK only: Latin comes from Plex, whose figures and metrics the layout needs.
+   LICENSE: a subset of Noto Sans SC under the SIL Open Font License 1.1; `fonts/OFL.txt` and
+   `fonts/NOTICE.txt` travel with it. It is renamed because a subset is a modified version. */
 @font-face {
   font-family: 'CTWS Noto Sans SC';
   src: url('../fonts/noto-sans-sc-subset.woff2') format('woff2');
@@ -123,22 +59,11 @@
 }
 
 @theme static {
-  /* THE STACK IS SEMI DESIGN'S, SPLICED. Everything from
-     `-apple-system` onward is Semi's `$font-family-regular` verbatim
-     (packages/semi-theme-default/scss/variables.scss) -- it is the only surveyed string that has
-     both the `-apple-system` preamble Element Plus lacks and the explicit CJK fallbacks Ant
-     Design lacks. Semi's head entry is `Inter`, which it names but does not ship; the two entries
-     in front here are the faces this app actually self-hosts in its place.
-     Latin is IBM Plex Sans, self-hosted and LATIN-SUBSET ONLY (see main.tsx). CJK is
-     `CTWS Noto Sans SC`, also self-hosted: one variable woff2 subset to the UI's own vocabulary
-     plus all of GB2312, 1.72 MiB, declared above. Plex is here for its tabular figures -- dates,
-     times and counts are everywhere in this app -- not for a display voice: the headings of this
-     interface are Chinese, so a Latin display face could never set them anyway.
-     The system CJK faces stay in the stack BEHIND the webfont, so a font that fails to load
-     degrades to exactly what this app rendered before it existed.
-     LATIN FIRST, NOT CJK FIRST. Apple's own zh-CN stack puts the CJK face first, which works
-     because `SF Pro SC` IS PingFang SC and PingFang's Latin was cut to sit with SF. Copying that
-     here would hand Latin to Noto and silently throw away the reason Plex was chosen. */
+  /* Semi Design's stack from `-apple-system` on (its `$font-family-regular`), with the two faces
+     this app self-hosts in front in place of Semi's `Inter`. Latin is IBM Plex Sans, for its
+     tabular figures; CJK is the subset declared above, with the system CJK faces behind it in case
+     it fails to load. LATIN FIRST: Apple's zh-CN order puts CJK first, which would hand Latin to
+     Noto and lose Plex's figures. */
   --font-sans:
     'IBM Plex Sans', 'CTWS Noto Sans SC', -apple-system, BlinkMacSystemFont, 'PingFang SC',
     'Hiragino Sans GB', 'Microsoft YaHei', 'Segoe UI', 'Helvetica Neue', Helvetica, Arial,
@@ -174,10 +99,7 @@
        lg   20/28  a sheet's or a dialog's subject, a kind's name on Things, a banner Stat
        xl   24/32  the Workbench cards' one big thing (a count, a name), Today's date on a phone
        2xl  36/44  page titles: every page's own <h1>, and the one thing in progress on Today
-       display 48/56  the date at the head of Today, at 500
-     Every step from `base` up is LARGER than the scale it replaces (15/17/23 -> 16/20/24 with a
-     new 36 on top), because the controls were too small to read at a glance. `xs` goes 13 -> 12
-     and `sm` stays at 14: those two are TDesign's published values, adopted as published. */
+       display 48/56  the date at the head of Today, at 500 */
   --text-xs: 0.75rem;
   --text-xs--line-height: 1.25rem;
   --text-sm: 0.875rem;
@@ -251,9 +173,8 @@
        4   #bb6896   62.5% 0.120 347          reddish purple
        5   #1f90c7   61.9% 0.125 236          sky blue
        6   #b57d08   63.1% 0.130  77          orange */
-  /* SYNTAX COLOURS, for highlighted code fences only (D-none; feature request 2026-10-07). They
-     are their own family rather than borrowed from `plan` / `deadline` / `missed`: those MEAN
-     something in this app, and a keyword
+  /* SYNTAX COLOURS, for highlighted code fences only. They are their own family rather than
+     borrowed from `plan` / `deadline` / `missed`: those MEAN something in this app, and a keyword
      wearing “Due”'s colour would be the one thing the colour rules here forbid.
 
      Measured on `desk`, which is the only ground a code block has, in each scheme: light
@@ -283,9 +204,8 @@
      one soft fall. Dark swaps the fall for a 1px `rule` edge (see the note at the top).
 
      THROUGH A VARIABLE, because Tailwind writes a shadow token's VALUE into the utility at build
-     time: `shadow-float` compiled to the light shadow itself, so a dark block redefining
-     `--shadow-float` changed nothing and every float in dark wore the light shadow. The utility
-     now holds `var(--float-lift)`, which each scheme sets. */
+     time, so a dark block redefining `--shadow-float` would change nothing. The utility holds
+     `var(--float-lift)`, which each scheme sets. */
   --shadow-float: var(--float-lift);
   --float-lift: 0 0 0 1px rgb(26 29 35 / 0.06), 0 16px 40px -12px rgb(26 29 35 / 0.22);
 }
@@ -414,25 +334,23 @@
  *
  * Radix positions every floating layer inside a wrapper it owns, and the `transform` it puts
  * there makes that wrapper a stacking context: `z-50` on the menu content is then compared only
- * with the menu's own children, never with the dialog scrim outside it. The menu painted under
- * the scrim, and every click aimed at the menu hit the scrim and closed the dialog.
+ * with the menu's own children, never with the dialog scrim outside it, so a menu in a dialog
+ * would paint under the scrim. The wrapper itself takes the layer.
  *
- * `50` is `LAYER.menu` (components/layers.ts), which `layers.test.ts` pins to this value.
+ * `50` is `LAYER.menu`, which `layers.test.ts` pins to this value.
  */
 [data-radix-popper-content-wrapper] {
   z-index: 50;
 }
 
-/* The body carries `text-base`, so its leading is the scale's own 24px pair -- there is no
-   `line-height` here and none on the headings any more, because a rule outside the scale is
-   exactly the unitless leading a published pair exists to replace. Every heading in the app
-   names a step.
+/* The body carries `text-base`, so its leading is the scale's own 24px pair. There is no
+   `line-height` here or on the headings: a rule outside the scale is exactly the unitless leading
+   a published pair exists to replace. Every heading in the app names a step.
 
    `text-autospace` IS THE HAN/LATIN SPACING, AND THE ONLY ONE. W3C CLREQ asks
    for no more than a quarter of a Han character's width between Han and Latin letters or digits.
    Hand-inserted spaces and tracking are the other two ways to get it; this is the engine's job,
-   and `normal` is NOT the initial value in the browsers this ships to (measured: Chromium 153 computes `no-autospace` unless
-   asked), so it has to be asked for. Chromium spends 1/8 em at each join, inside CLREQ's ceiling,
+   and `normal` is not the initial value in Chromium, so it has to be asked for. Chromium spends 1/8 em at each join, inside CLREQ's ceiling,
    and spends nothing where the author already typed a space.
 
    NO `size-adjust` AND NO `font-size-adjust`: zero occurrences across the five
@@ -440,8 +358,8 @@
    CLS, not script pairing. The pairing is handled by choosing a pair and pinning the leading in
    px, which is what the scale above does.
 
-   NO LETTER-SPACING ON HAN, ever: zero `letter-spacing` tokens across all five token files, which
-   makes the rule this app already had the unanimous prior art. */
+   NO LETTER-SPACING ON HAN, ever: none of the five surveyed token files has a `letter-spacing`
+   token. */
 body {
   @apply bg-sheet text-base text-ink;
   font-family: var(--font-sans);
@@ -451,8 +369,8 @@ body {
 
 /* Tabular figures wherever digits sit in a column and have to line up: counts in the left rail
    and on every panel heading, dates and times in the row columns, clock times on the completed
-   list, the day-counts in the Movement panel. Plex ships `tnum`, which is the reason it was chosen over
-   a face without it. Prose keeps proportional figures. */
+   list, the day-counts in the Movement panel. Plex ships `tnum`. Prose keeps proportional
+   figures. */
 .tabular-nums,
 time,
 kbd,
@@ -466,9 +384,9 @@ kbd,
    light 4.97 sheet / 4.61 chrome / 4.25 desk / 4.97 float, dark 4.60 / 4.93 / 5.33 / 4.14;
    ink-muted light 6.30 / 5.84 / 5.39 / 6.30, dark 5.50 / 5.90 / 6.38 / 4.95. Making the third grey
    pass there by itself would make it the second grey (dark `#a2a2a8` against `#a8a8ad`), and three
-   greys would be two. `textContrast.test.ts` checks this rule is still here. One rule for every selected thing -- the current page in
-   the rail, the open person, a picked filter, selected rows -- so a new one is covered by saying
-   it is selected, which it has to say for a screen reader anyway. */
+   greys would be two. `textContrast.test.ts` checks this rule is here. One rule for every selected
+   thing -- the current page in the rail, the open person, a picked filter, selected rows -- so a
+   new one is covered by saying it is selected, which it has to say for a screen reader anyway. */
 [aria-current='page'] .text-ink-subtle,
 [aria-pressed='true'] .text-ink-subtle,
 [aria-selected='true'] .text-ink-subtle {

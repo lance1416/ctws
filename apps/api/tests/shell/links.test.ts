@@ -12,11 +12,10 @@ import { createProject, createMeeting, createPerson, createReading } from '../he
 /**
  * THE EDGE TABLE -- what one table holding every relationship makes possible to get wrong.
  *
- * Each module used to own a column or a join table of its own, so one kind of relationship could
- * not reach another's storage even by accident. They now share `links`, and a write that forgot
- * to say WHICH kind it replaces would quietly take the others with it: setting a meeting's guest
- * list would unfile it from its project, and the module's own tests would all still pass, because
- * each of them looks at one kind at a time.
+ * Every module's relationships share `links`, so a write that forgot to say WHICH kind it
+ * replaces would quietly take the others with it: setting a meeting's guest list would unfile it
+ * from its project, and the module's own tests would all still pass, because each of them looks at
+ * one kind at a time.
  */
 
 const cleanups: (() => Promise<void>)[] = []

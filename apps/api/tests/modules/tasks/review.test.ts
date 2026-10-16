@@ -160,10 +160,6 @@ describe('the weekly review', () => {
       headers: { ...ctx.authed, 'x-ctws-client': 'web' },
     })
 
-    // THE SECOND USER IS REGISTERED ON THE SAME APP, which the helper's own note insists on:
-    // `appWithUser` boots its own Postgres, so two of them are two unrelated databases and an
-    // isolation test built that way passes trivially. It did -- a mutation that dropped the
-    // `workspace_id` filter entirely was caught by nothing until this was rewritten.
     const theirs = await secondUser(ctx)
     const theirPid = await createProject(theirs, '别人的')
     const theirTask = await createTask(theirs, theirPid, '别人做完的')

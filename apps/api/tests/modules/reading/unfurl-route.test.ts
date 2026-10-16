@@ -7,10 +7,9 @@ import { setupWith, type Harness } from '../../helpers/harness'
 import { createReading } from '../../helpers/builders'
 
 /**
- * A pasted link shows what its own page says. The fetch itself is tested in
- * `src/modules/reading/unfurl/unfurl.test.ts`; this covers the wiring: what is fetched is stored
- * and read back, a failed fetch never loses the item, and a title the person wrote is never
- * overwritten.
+ * A pasted link shows what its own page says. The fetch itself is tested beside `unfurl`; this
+ * covers the wiring: what is fetched is stored and read back, a failed fetch never loses the
+ * item, and a title the person wrote is never overwritten.
  *
  * The test server is on 127.0.0.1, which production refuses, so the fetch is passed in from
  * outside; the production path has no switch.
