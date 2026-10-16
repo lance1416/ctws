@@ -1,6 +1,6 @@
 import { isFinished, toggleDoneTarget, toggleStartTarget } from '../logic/status'
 import { useSortable } from '@dnd-kit/sortable'
-import { type TaskStatus, type ProjectId, type TaskId } from '@ctws/contracts'
+import { type ProjectId, type TaskId, type TaskResponse, type TaskStatus } from '@ctws/contracts'
 import type { KeyboardEvent } from 'react'
 import type { FlatRow } from '../logic/tree/flatten'
 import { blockedLabel } from '../logic/blockedLabel'
@@ -27,33 +27,33 @@ type Props = {
   row: FlatRow
   /** The project every row in this tree belongs to: the rail is one continuous spine here. */
   projectId: ProjectId
-  title: string
-  status: TaskStatus
-  dueAt: string | null
-  scheduledOn: string | null
-  /** Whether the task has notes: the notes mark sits beside the title. */
-  hasNotes: boolean
-  /** When this was captured, for the inbox's age line. Every other list passes null. */
-  capturedAt: string | null
+  /** What the row draws; missing only for the moment a moved row's list is read again. */
+  task: TaskResponse | undefined
+  /** Whether the row says how long ago it was captured: only the inbox's do. */
+  aged: boolean
   /** This row's subtree, said in words. Only a row with children gets one. */
   rollup: string | null
   /** What is still in the way. The row dims; it does not disappear. */
   blockedBy: readonly { id: TaskId; title: string }[] | undefined
-  /** True for a moment after a save from the pane: the row says it worked. */
-  saved: boolean
-  /** The roving tabindex: one row carries it, so the tree is one tab stop and Tab leaves it. */
-  tabStop: boolean
+  /**
+   * `saved` is true for a moment after a save from the pane: the row says it worked. `tabStop` is
+   * the roving tabindex: one row carries it, so the tree is one tab stop and Tab leaves it.
+   */
+  state: { saved: boolean; selected: boolean; tabStop: boolean }
   /** The handle's ref: the row's focus carrier, which the tree moves focus to. */
   handleRef: (el: HTMLElement | null) => () => void
-  onFocus: () => void
-  onSetStatus: (status: TaskStatus) => void
-  onToggle: () => void
-  onKeyDown: (e: KeyboardEvent<HTMLButtonElement>) => void
-  onOpen: () => void
-  /** Shift+click toggles this row in the selection; a plain click still opens the detail. */
-  onToggleSelected: () => void
-  selected: boolean
-  onAddChild: () => void
+  on: RowActions
+}
+
+/** What a row's parts ask the tree to do. Shift+click toggles the selection; a click opens. */
+type RowActions = {
+  focus: () => void
+  setStatus: (status: TaskStatus) => void
+  toggle: () => void
+  keyDown: (e: KeyboardEvent<HTMLButtonElement>) => void
+  open: () => void
+  toggleSelected: () => void
+  addChild: () => void
 }
 
 // 16px canvas, 1.5px stroke, same as StatusMark: glyph characters like ▸ and ⋮⋮ differ in size
@@ -79,26 +79,20 @@ function Icon({ d }: { d: string }) {
 export function TaskRow({
   row,
   projectId,
-  title,
-  status,
-  dueAt,
-  scheduledOn,
-  hasNotes,
-  capturedAt,
+  task,
+  aged,
   rollup,
   blockedBy,
-  saved,
-  tabStop,
+  state: { saved, selected, tabStop },
   handleRef,
-  onFocus,
-  onSetStatus,
-  onToggle,
-  onKeyDown,
-  onOpen,
-  onToggleSelected,
-  selected,
-  onAddChild,
+  on,
 }: Props) {
+  const title = task?.title ?? ''
+  const status = task?.status ?? 'todo'
+  const dueAt = task?.dueAt ?? null
+  const scheduledOn = task?.scheduledOn ?? null
+  const hasNotes = (task?.notes ?? '') !== ''
+  const capturedAt = aged ? (task?.createdAt ?? null) : null
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: row.id,
   })
@@ -122,10 +116,10 @@ export function TaskRow({
         // Shift picks rows instead of opening one.
         if (e.shiftKey) {
           e.preventDefault()
-          onToggleSelected()
+          on.toggleSelected()
           return
         }
-        onOpen()
+        on.open()
       }}
       style={{
         transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
@@ -173,8 +167,8 @@ export function TaskRow({
           // After the spread: dnd-kit's sortable attributes include a tabIndex of their own, and
           // letting it win would put every row back in the tab order.
           tabIndex={tabStop ? 0 : -1}
-          onFocus={onFocus}
-          onKeyDown={onKeyDown}
+          onFocus={on.focus}
+          onKeyDown={on.keyDown}
           style={{ width: HANDLE_PX }}
           className="flex h-11 shrink-0 cursor-grab touch-none items-center justify-center text-ink-muted opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
         >
@@ -191,7 +185,7 @@ export function TaskRow({
             type="button"
             aria-label={row.collapsed ? 'Expand' : 'Collapse'}
             aria-expanded={!row.collapsed}
-            onClick={onToggle}
+            onClick={on.toggle}
             style={{ width: CHEVRON_PX }}
             className="flex h-11 shrink-0 items-center justify-center text-ink-muted hover:text-ink"
           >
@@ -204,7 +198,7 @@ export function TaskRow({
           <StatusButton
             status={status}
             title={title}
-            onClick={() => onSetStatus(toggleDoneTarget(status))}
+            onClick={() => on.setStatus(toggleDoneTarget(status))}
           />
         </span>
         {/* Under the title: what it waits on, its children, or its age; never a breadcrumb. */}
@@ -246,14 +240,14 @@ export function TaskRow({
           <StartButton
             status={status}
             title={title}
-            onClick={() => onSetStatus(toggleStartTarget(status))}
+            onClick={() => on.setStatus(toggleStartTarget(status))}
           />
           {/* The pointer's way to add a subtask; the keyboard has Alt+Enter. */}
           <button
             type="button"
             tabIndex={-1}
             aria-label={`Add a subtask to “${title}”`}
-            onClick={onAddChild}
+            onClick={on.addChild}
             className="flex h-9 w-8 shrink-0 items-center justify-center rounded-md text-ink-muted hover:text-ink"
           >
             <Icon d="M8 3v10M3 8h10" />

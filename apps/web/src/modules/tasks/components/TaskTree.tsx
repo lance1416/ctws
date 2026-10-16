@@ -1,31 +1,15 @@
-import { problemText } from '../../../platform/http/api'
-import {
-  DndContext,
-  PointerSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from '@dnd-kit/core'
+import { DndContext, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import {
-  type TaskPosition,
-  type TaskResponse,
-  type TaskStatus,
-  type ProjectId,
-  type TaskId,
-} from '@ctws/contracts'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { type TaskResponse, type TaskStatus, type ProjectId, type TaskId } from '@ctws/contracts'
+import { useQuery } from '@tanstack/react-query'
 import { Fragment, useMemo, useState } from 'react'
 import { EMPTY_ACTION, EmptyState } from '../../../platform/ui/EmptyState'
 import { useProjects } from '../../../shell/projects'
 import { LIST_MEASURE, ROW_LIST } from '../../../shell/rows'
-import { moveTask, type ProjectTasks, projectTasksQuery } from '../api'
+import { projectTasksQuery } from '../api'
 import { useTaskActions } from '../hooks/useTaskActions'
 import { rollupPhrase } from '../logic/rollupPhrase'
 import { isFinished } from '../logic/status'
-import { applyMove } from '../logic/tree/applyMove'
-import { planDrop } from '../logic/tree/drop'
 import { flatten } from '../logic/tree/flatten'
 import { NewTaskInput } from './NewTaskInput'
 import { SelectionBar } from './SelectionBar'
@@ -33,11 +17,11 @@ import { TaskDetail } from './TaskDetail'
 import { TaskRow } from './TaskRow'
 import { useRowPane, useRowRefs } from './useRowPane'
 import { useSavedFlash } from './useSavedFlash'
-import { INDENT_PX } from './TaskRowParts'
 import { useBulkSelection } from './tree/useBulkSelection'
 import { useCollapsed } from './tree/useCollapsed'
 import { useInlineAdd } from './tree/useInlineAdd'
 import { useTreeKeys } from './tree/useTreeKeys'
+import { useTreeMove } from './tree/useTreeMove'
 import { useTreeParams } from './tree/useTreeParams'
 import { useTreeVisibility } from './tree/useTreeVisibility'
 
@@ -51,11 +35,9 @@ export function TaskTree({
   /** Puts the cursor in the box above the tree that adds a root task. */
   addFirst: () => void
 }) {
-  const qc = useQueryClient()
   const allProjects = useProjects()
   // Only the inbox dates its rows: quick capture makes it the one list that grows undecided.
   const inInbox = allProjects.data?.find((p) => p.id === projectId)?.isInbox === true
-  const key = projectTasksQuery(projectId).queryKey
   // The cache holds exactly what the server returns; the rows are derived, never cached.
   const tasks = useQuery(projectTasksQuery(projectId))
   const all = tasks.data?.tasks ?? NONE
@@ -119,56 +101,7 @@ export function TaskTree({
 
   // Distance, so a plain click on the handle (to focus it) is not taken for a drag.
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
-
-  const move = useMutation({
-    mutationFn: ({ id, body }: { id: TaskId; body: TaskPosition; unfolded?: TaskId }) =>
-      moveTask(id, body),
-    onMutate: async ({ id, body, unfolded }) => {
-      await qc.cancelQueries({ queryKey: key })
-      const previous = qc.getQueryData<ProjectTasks>(key)
-      // Only the rows move; the rollups are the server's arithmetic and wait for the refetch.
-      qc.setQueryData<ProjectTasks>(key, (old) =>
-        old ? { ...old, tasks: applyMove(old.tasks, id, body) } : old,
-      )
-      return { previous, unfolded }
-    },
-    onError: (e, _vars, context) => {
-      // Back to what the database holds, and the parent the drop unfolded folds again.
-      if (context?.previous) qc.setQueryData(key, context.previous)
-      if (context?.unfolded) folds.fold(context.unfolded)
-      setError(problemText(e) ?? "Couldn't move it")
-    },
-    meta: { awaits: [key], ownsError: true },
-  })
-
-  /** Drops `draggedId` at `slot` at `wantedDepth`, if the plan allows it. */
-  const run = (draggedId: TaskId, slot: number, wantedDepth: number) => {
-    if (slot < 0 || slot > rows.length) return
-    const plan = planDrop({ rows, draggedId, slot, wantedDepth })
-    if (!plan.ok) {
-      if (plan.reason === 'own-subtree') setError('A task cannot move inside itself')
-      else if (plan.reason === 'too-deep') setError('Too deep to move it there')
-      return
-    }
-    setError(null)
-    // A row moved under a folded parent would vanish while sitting in the database, so the
-    // parent opens; which one travels with the move, so a refusal can fold it again.
-    let unfolded: TaskId | undefined
-    if (plan.parentId && folds.collapsed.has(plan.parentId)) {
-      folds.unfold([plan.parentId])
-      unfolded = plan.parentId
-    }
-    const body: TaskPosition = { projectId, parentId: plan.parentId }
-    if (plan.beforeId) body.beforeId = plan.beforeId
-    if (plan.afterId) body.afterId = plan.afterId
-    move.mutate({ id: draggedId, body, ...(unfolded ? { unfolded } : {}) })
-  }
-
-  const blockLength = (index: number) => {
-    let end = index + 1
-    while (end < rows.length && rows[end]!.depth > rows[index]!.depth) end++
-    return end - index
-  }
+  const { run, blockLength, onDragEnd } = useTreeMove({ projectId, rows, folds, onError: setError })
 
   const onKeyDown = useTreeKeys({
     rows,
@@ -204,15 +137,6 @@ export function TaskTree({
       error={adder.error}
     />
   )
-
-  const onDragEnd = ({ active, over, delta }: DragEndEvent) => {
-    const from = rows.findIndex((r) => r.id === active.id)
-    const overIndex = over ? rows.findIndex((r) => r.id === over.id) : -1
-    if (from < 0 || overIndex < 0) return
-    // Dropping below the target lands after its whole visible block, not inside it.
-    const slot = overIndex > from ? overIndex + blockLength(overIndex) : overIndex
-    run(rows[from]!.id, slot, rows[from]!.depth + Math.round(delta.x / INDENT_PX))
-  }
 
   return (
     <>
@@ -271,36 +195,33 @@ export function TaskTree({
             {/* One flat list with the input keyed beside the rows, not inside the one it follows:
                 when a created row lands the input moves after it instead of being rebuilt, and an
                 Enter typed into a rebuilt box would be dropped. */}
-            {rows.flatMap((row, i) => {
-              const task = byId.get(row.id)
-              return [
-                <TaskRow
-                  key={row.id}
-                  row={row}
-                  projectId={projectId}
-                  title={task?.title ?? ''}
-                  status={task?.status ?? 'todo'}
-                  dueAt={task?.dueAt ?? null}
-                  scheduledOn={task?.scheduledOn ?? null}
-                  hasNotes={(task?.notes ?? '') !== ''}
-                  capturedAt={inInbox ? (task?.createdAt ?? null) : null}
-                  rollup={row.hasChildren ? rollupPhrase(tasks.data?.rollups[row.id]) : null}
-                  blockedBy={tasks.data?.blockers[row.id]}
-                  saved={savedId === row.id}
-                  tabStop={row.id === tabId}
-                  handleRef={handles.ref(row.id)}
-                  onFocus={() => setActiveId(row.id)}
-                  onSetStatus={(status) => setStatus(row.id, status)}
-                  onToggle={() => folds.toggle(row.id)}
-                  onKeyDown={(e) => onKeyDown(e, i)}
-                  onOpen={() => setOpenId(row.id)}
-                  selected={picked.selected.has(row.id)}
-                  onToggleSelected={() => picked.toggle(row.id)}
-                  onAddChild={() => adder.addChild(row)}
-                />,
-                ...(inputSlot === i + 1 ? [<Fragment key="new-task">{input}</Fragment>] : []),
-              ]
-            })}
+            {rows.flatMap((row, i) => [
+              <TaskRow
+                key={row.id}
+                row={row}
+                projectId={projectId}
+                task={byId.get(row.id)}
+                aged={inInbox}
+                rollup={row.hasChildren ? rollupPhrase(tasks.data?.rollups[row.id]) : null}
+                blockedBy={tasks.data?.blockers[row.id]}
+                state={{
+                  saved: savedId === row.id,
+                  selected: picked.selected.has(row.id),
+                  tabStop: row.id === tabId,
+                }}
+                handleRef={handles.ref(row.id)}
+                on={{
+                  focus: () => setActiveId(row.id),
+                  setStatus: (status) => setStatus(row.id, status),
+                  toggle: () => folds.toggle(row.id),
+                  keyDown: (e) => onKeyDown(e, i),
+                  open: () => setOpenId(row.id),
+                  toggleSelected: () => picked.toggle(row.id),
+                  addChild: () => adder.addChild(row),
+                }}
+              />,
+              ...(inputSlot === i + 1 ? [<Fragment key="new-task">{input}</Fragment>] : []),
+            ])}
           </ul>
         </SortableContext>
       </DndContext>
