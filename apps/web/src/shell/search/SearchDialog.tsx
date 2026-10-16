@@ -113,7 +113,9 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
   // A shorter result set must not leave the selection pointing past the end.
   const at = Math.min(active, Math.max(rows.length - 1, 0))
 
-  useEffect(() => setActive(0), [typing, debounced])
+  // New words start again at the top; the debounced hits landing later do not, or a row the
+  // keyboard already moved to would be lost under the Enter about to choose it.
+  useEffect(() => setActive(0), [typing])
   useEffect(() => {
     document.getElementById(optionId(at))?.scrollIntoView({ block: 'nearest' })
   }, [at])

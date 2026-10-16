@@ -409,3 +409,32 @@ test('a project deleted elsewhere leaves Recent once its page finds it gone', as
   await expect(dialog.getByRole('option', { name: /^Things/ })).toBeVisible()
   await expect(dialog.getByRole('option', { name: /Job hunt/ })).toHaveCount(0)
 })
+
+test('results landing do not pull the highlight back to the first row', async ({ page }) => {
+  await registerFreshUser(page, '/')
+  await page.request.post('/api/v1/reading', {
+    headers: WEB,
+    data: { kind: 'book', title: 'Peopleware' },
+  })
+  // The module hits arrive late, after the places have been walked.
+  let release = () => {}
+  const held = new Promise<void>((resolve) => (release = resolve))
+  await page.route(/\/api\/v1\/.*[?&]q=/, async (r) => {
+    await held
+    await r.continue()
+  })
+  await page.getByRole('banner').getByRole('button', { name: 'Search' }).click()
+  const box = searchBox(page)
+  await box.pressSequentially('e')
+  const dialog = page.getByRole('dialog', { name: 'Search' })
+  await expect(dialog.getByRole('option').nth(1)).toBeVisible()
+  await box.press('ArrowDown')
+  const second = await box.getAttribute('aria-activedescendant')
+  expect(second).toMatch(/-option-1$/)
+
+  const landed = page.waitForResponse((r) => r.url().includes('/api/v1/reading/search'))
+  release()
+  await landed
+  await expect(result(page, 'Peopleware')).toBeVisible()
+  await expect(box).toHaveAttribute('aria-activedescendant', second!)
+})
