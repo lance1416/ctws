@@ -492,7 +492,8 @@ export const api = {
       path: '/meetings/:id/successors',
       summary:
         'Change a series from one occurrence on: it ends just before `from` and a new series ' +
-        'with the changes takes over there. The answer is its first occurrence.',
+        'with the changes takes over there. The answer is its first occurrence. From the first ' +
+        'occurrence on, the series itself is changed instead.',
       params: meetingParams,
       body: successorBody,
       ok: 201,
@@ -519,7 +520,9 @@ export const api = {
     cancelFrom: endpoint({
       method: 'DELETE',
       path: '/meetings/:id/occurrences',
-      summary: 'Cancel every occurrence from `from` on: the series ends just before it.',
+      summary:
+        'Cancel every occurrence from `from` on: the series ends just before it, or is ' +
+        'cancelled whole when `from` is its first occurrence.',
       params: meetingParams,
       query: occurrencesFromQuery,
       ok: 204,

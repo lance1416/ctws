@@ -428,6 +428,27 @@ describe('editing from one occurrence on', () => {
     ])
   })
 
+  it('changes the series itself from its first occurrence on, leaving no second series', async () => {
+    const ctx = await setup()
+    const series = await arrange(ctx)
+    const res = await split(ctx, series.meetingId, WEEKLY.startsLocal, { title: '新周会' })
+    expect(res.statusCode, res.body).toBe(201)
+    expect((res.json() as MeetingOccurrence).meetingId).toBe(series.meetingId)
+    const got = await listed(ctx, '?from=2026-10-20&to=2026-11-03')
+    expect(got.map((o) => [o.meetingId, o.title])).toEqual([
+      [series.meetingId, '新周会'],
+      [series.meetingId, '新周会'],
+      [series.meetingId, '新周会'],
+    ])
+  })
+
+  it('cancels the whole series from its first occurrence on', async () => {
+    const ctx = await setup()
+    const series = await arrange(ctx)
+    expect((await cancelFrom(ctx, series.meetingId, WEEKLY.startsLocal)).statusCode).toBe(204)
+    expect((await cancel(ctx, series.meetingId)).statusCode).toBe(404)
+  })
+
   it('cancels everything from one occurrence on, and keeps what came before', async () => {
     const ctx = await setup()
     const series = await arrange(ctx)
