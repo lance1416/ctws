@@ -8,7 +8,7 @@ import {
 } from 'react'
 import { tabbable } from 'tabbable'
 import { useWidePane } from './paneLayout'
-import { CloseIcon } from './icons'
+import { Icon } from './icons'
 import { LAYER } from './layers'
 
 /**
@@ -131,7 +131,7 @@ export function CloseButton({ onClick }: { onClick: () => void }) {
       data-detail-close
       className="flex h-9 w-9 items-center justify-center rounded-md text-ink-muted hover:bg-hover hover:text-ink"
     >
-      <CloseIcon className="h-4 w-4" strokeWidth={1.5} />
+      <Icon glyph="close" className="h-4 w-4" />
     </button>
   )
 }

@@ -1,4 +1,5 @@
 import { isFinished, toggleDoneTarget, toggleStartTarget } from '../logic/status'
+import { Icon } from '../../../platform/ui/icons'
 import { useSortable } from '@dnd-kit/sortable'
 import { type ProjectId, type TaskId, type TaskResponse, type TaskStatus } from '@ctws/contracts'
 import type { KeyboardEvent } from 'react'
@@ -54,26 +55,6 @@ type RowActions = {
   open: () => void
   toggleSelected: () => void
   addChild: () => void
-}
-
-// 16px canvas, 1.5px stroke, same as StatusMark: glyph characters like ▸ and ⋮⋮ differ in size
-// and baseline from one OS font to the next.
-function Icon({ d }: { d: string }) {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      width="16"
-      height="16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d={d} />
-    </svg>
-  )
 }
 
 export function TaskRow({
@@ -189,7 +170,7 @@ export function TaskRow({
             style={{ width: CHEVRON_PX }}
             className="flex h-11 shrink-0 items-center justify-center text-ink-muted hover:text-ink"
           >
-            <Icon d={row.collapsed ? 'M6 3.5l4.5 4.5L6 12.5' : 'M3.5 6l4.5 4.5L12.5 6'} />
+            <Icon glyph={row.collapsed ? 'treeFolded' : 'treeOpen'} size={16} />
           </button>
         ) : (
           <span style={{ width: CHEVRON_PX }} className="shrink-0" aria-hidden="true" />
@@ -250,7 +231,7 @@ export function TaskRow({
             onClick={on.addChild}
             className="flex h-9 w-8 shrink-0 items-center justify-center rounded-md text-ink-muted hover:text-ink"
           >
-            <Icon d="M8 3v10M3 8h10" />
+            <Icon glyph="plusLong" size={16} />
           </button>
         </span>
       </div>

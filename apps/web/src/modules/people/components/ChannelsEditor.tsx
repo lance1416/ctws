@@ -1,7 +1,7 @@
 import { channelProblem, type ChannelKind, type PersonChannel } from '@ctws/contracts'
 import { useState } from 'react'
 import { boxed } from '../../../platform/ui/formStyles'
-import { CloseIcon, PlusIcon } from '../../../platform/ui/icons'
+import { Icon } from '../../../platform/ui/icons'
 import { PickOne } from '../../../platform/ui/inline'
 import { byKind, channelPlaceholder, KIND_CHOICES } from '../logic/channels'
 import { usePhone } from '../hooks/usePhone'
@@ -125,7 +125,7 @@ export function ChannelsEditor({ channels }: { channels: ReturnType<typeof useCh
               onClick={() => channels.remove(i)}
               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-subtle hover:bg-hover hover:text-ink"
             >
-              <CloseIcon className="h-3.5 w-3.5" strokeWidth={1.5} />
+              <Icon glyph="close" className="h-3.5 w-3.5" />
             </button>
             {channels.shown[i] !== undefined && (
               <p className="w-full text-xs text-danger">{channels.shown[i]}</p>
@@ -138,7 +138,7 @@ export function ChannelsEditor({ channels }: { channels: ReturnType<typeof useCh
         onClick={channels.add}
         className="mt-1.5 flex h-8 items-center gap-1.5 rounded-md border border-dashed border-rule-strong px-2.5 text-sm text-ink-muted hover:bg-hover hover:text-ink"
       >
-        <PlusIcon className="h-3 w-3" strokeWidth={1.8} />
+        <Icon glyph="plus" className="h-3 w-3" strokeWidth={1.8} />
         Add one
       </button>
     </>

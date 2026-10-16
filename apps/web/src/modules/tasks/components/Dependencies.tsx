@@ -4,7 +4,7 @@ import { useState, type ReactNode } from 'react'
 import { ApiError } from '../../../platform/http/api'
 import { addDependency, dependenciesQuery, removeDependency, taskSearchQuery } from '../api'
 import { field, label } from '../../../platform/ui/formStyles'
-import { CloseIcon } from '../../../platform/ui/icons'
+import { Icon } from '../../../platform/ui/icons'
 
 // The pane shows both directions and finished blockers too, the only place to remove such an
 // edge. Adding goes through search: a dependency can reach any task in any project.
@@ -36,7 +36,7 @@ function Row({
           aria-label={`Remove dependency “${task.title}”`}
           className="ml-auto h-7 w-7 shrink-0 rounded-md text-ink-subtle hover:bg-hover hover:text-ink"
         >
-          <CloseIcon className="mx-auto h-3.5 w-3.5" strokeWidth={1.5} />
+          <Icon glyph="close" className="mx-auto h-3.5 w-3.5" />
         </button>
       )}
     </li>

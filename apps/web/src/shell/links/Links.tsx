@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { CloseIcon } from '../../platform/ui/icons'
+import { Icon } from '../../platform/ui/icons'
 import { useRegistry } from '../registry'
 import { type Item, type Linked, useLinked } from './useLinked'
 
@@ -31,7 +31,7 @@ export function LinkList({ of, except }: Linked) {
                     aria-label={`Unlink ${item.title}`}
                     className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-subtle opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-hover hover:text-ink disabled:opacity-50 [@media(hover:none)]:opacity-100"
                   >
-                    <CloseIcon className="h-3 w-3" strokeWidth={1.8} />
+                    <Icon glyph="close" className="h-3 w-3" strokeWidth={1.8} />
                   </button>
                 )}
               </li>

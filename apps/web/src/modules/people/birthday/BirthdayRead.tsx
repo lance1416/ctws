@@ -1,4 +1,5 @@
 import type { BirthdayResponse, PersonResponse } from '@ctws/contracts'
+import { Icon } from '../../../platform/ui/icons'
 import { useState, type ReactNode } from 'react'
 import { countdownPhrase, shortDay, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
@@ -29,22 +30,7 @@ export function BirthdayField({ person }: { person: PersonResponse }) {
           }`}
         >
           <span className="truncate">{b ? givenDate(b) : 'Not set'}</span>
-          {b && (
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 16 16"
-              className="h-3 w-3 shrink-0 text-ink-subtle"
-            >
-              <path
-                d="M4 6.5l4 4 4-4"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          )}
+          {b && <Icon glyph="chevronDown" className="h-3 w-3 shrink-0 text-ink-subtle" />}
         </button>
       </Field>
 

@@ -2,7 +2,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import type { ReactNode } from 'react'
 import { CHIP } from './formStyles'
 import { MENU_ITEM, MENU_SURFACE } from './menuSurface'
-import { CloseIcon, PlusIcon } from './icons'
+import { Icon } from './icons'
 
 /** One choice; a `null` value is the choice of nothing ("Not set", "Top level"). */
 export type Choice<T extends string | null> = { value: T; label: string; mark?: ReactNode }
@@ -42,7 +42,7 @@ export function PickOne<T extends string | null>({
         <span className={`truncate ${current ? '' : 'text-ink-subtle'}`}>
           {current?.label ?? placeholder}
         </span>
-        <Chevron />
+        <Icon glyph="chevronDown" className="h-3 w-3 shrink-0 text-ink-subtle" />
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content align="start" sideOffset={4} className={MENU_SURFACE}>
@@ -104,7 +104,7 @@ export function PickMany<T extends string>({
             onClick={() => onChange(live.filter((v) => v !== c.value))}
             className="-mr-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-ink-subtle hover:text-ink"
           >
-            <CloseIcon className="h-3 w-3" strokeWidth={1.8} />
+            <Icon glyph="close" className="h-3 w-3" strokeWidth={1.8} />
           </button>
         </span>
       ))}
@@ -115,7 +115,7 @@ export function PickMany<T extends string>({
             aria-label={`Add ${label}`}
             className="flex h-7 w-7 items-center justify-center rounded-md border border-dashed border-rule-strong text-ink-subtle hover:bg-hover hover:text-ink"
           >
-            <PlusIcon className="h-3 w-3" strokeWidth={1.8} />
+            <Icon glyph="plus" className="h-3 w-3" strokeWidth={1.8} />
           </DropdownMenu.Trigger>
           <DropdownMenu.Portal>
             <DropdownMenu.Content align="start" sideOffset={4} className={MENU_SURFACE}>
@@ -138,20 +138,5 @@ export function PickMany<T extends string>({
         </DropdownMenu.Root>
       )}
     </span>
-  )
-}
-
-function Chevron() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3 w-3 shrink-0 text-ink-subtle">
-      <path
-        d="M4 6.5l4 4 4-4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
   )
 }

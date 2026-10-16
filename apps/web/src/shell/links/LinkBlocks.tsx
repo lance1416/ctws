@@ -1,6 +1,6 @@
 import { idFrom, projectId } from '@ctws/contracts'
 import { Link } from 'react-router-dom'
-import { CloseIcon } from '../../platform/ui/icons'
+import { Icon } from '../../platform/ui/icons'
 import { useRegistry } from '../registry'
 import { ProjectRail } from '../rows/RowParts'
 import { type Item, type Linked, useLinked } from './useLinked'
@@ -31,17 +31,7 @@ export function LinkBlocks({ of, except }: Linked) {
                 aria-label={`Link another ${kind}`}
                 className="ml-auto flex size-[30px] items-center justify-center rounded-md text-ink-subtle hover:bg-hover hover:text-ink"
               >
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 16 16"
-                  className="size-3.5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.7"
-                  strokeLinecap="round"
-                >
-                  <path d="M8 3v10M3 8h10" />
-                </svg>
+                <Icon glyph="plusLong" className="size-3.5" strokeWidth={1.7} />
               </button>
             </div>
             <ul className="flex flex-col">
@@ -60,7 +50,7 @@ export function LinkBlocks({ of, except }: Linked) {
                       aria-label={`Unlink ${item.title}`}
                       className="flex w-7 shrink-0 items-center justify-center text-ink-subtle opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-ink disabled:opacity-50 [@media(hover:none)]:opacity-100"
                     >
-                      <CloseIcon className="h-3 w-3" strokeWidth={1.8} />
+                      <Icon glyph="close" className="h-3 w-3" strokeWidth={1.8} />
                     </button>
                   )}
                 </li>

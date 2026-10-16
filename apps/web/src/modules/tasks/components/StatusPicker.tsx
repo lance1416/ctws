@@ -1,4 +1,5 @@
 import { TASK_STATUSES, type TaskStatus } from '@ctws/contracts'
+import { Icon } from '../../../platform/ui/icons'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { useState } from 'react'
 import { STATUS_LABEL } from '../logic/status'
@@ -34,16 +35,7 @@ export function StatusPicker({
           <StatusMark status={status} />
         </span>
         {STATUS_LABEL[status]}
-        <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3 w-3 text-ink-subtle">
-          <path
-            d="M4 6.5l4 4 4-4"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        <Icon glyph="chevronDown" className="h-3 w-3 text-ink-subtle" />
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content align="start" sideOffset={4} className={MENU_SURFACE}>

@@ -5,7 +5,7 @@ import { createProject, useProjects } from '../projects/api'
 import { useRegistry } from '../registry'
 import { railClass } from '../projects/projectColor'
 import { useLineEntry } from '../../platform/ui/useLineEntry'
-import { PlusIcon } from '../../platform/ui/icons'
+import { Icon } from '../../platform/ui/icons'
 
 /**
  * The left column: the pinned pages, Things, and the projects, with how much is waiting in each.
@@ -89,7 +89,7 @@ export function SideRail() {
             aria-label="New project"
             className="flex h-6 w-6 items-center justify-center rounded-md text-ink-subtle hover:bg-hover hover:text-ink"
           >
-            <PlusIcon className="h-3.5 w-3.5" strokeWidth={1.6} />
+            <Icon glyph="plus" className="h-3.5 w-3.5" strokeWidth={1.6} />
           </button>
         </div>
         {naming && (
