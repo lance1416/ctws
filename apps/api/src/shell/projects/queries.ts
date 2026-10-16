@@ -86,7 +86,7 @@ export async function lockProject(
 }
 
 /** A project and the columns modules add to it. */
-export type ProjectListRow = { project: Project; columns: Record<string, number> }
+export type ProjectRow = { project: Project; columns: Record<string, number> }
 
 /** One project, archived or not, with the columns modules add to it. */
 export async function getProjectRow(
@@ -94,7 +94,7 @@ export async function getProjectRow(
   workspaceId: WorkspaceId,
   id: ProjectId,
   columns: ProjectColumns,
-): Promise<ProjectListRow> {
+): Promise<ProjectRow> {
   const [row] = await q
     .select({ project: projects, columns })
     .from(projects)
@@ -110,7 +110,7 @@ export async function listProjects(
   opts: { archived: boolean },
   columns: ProjectColumns,
   asked: PageAsked,
-): Promise<Page<ProjectListRow>> {
+): Promise<Page<ProjectRow>> {
   const span = spanOf(asked)
   const rows = await q
     .select({ project: projects, columns })

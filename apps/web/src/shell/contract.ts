@@ -1,7 +1,7 @@
 import {
   type CalendarEntry,
   type ObjectType,
-  type ProjectListItem,
+  type ProjectResponse,
   type ProjectId,
 } from '@ctws/contracts'
 import type { QueryClient, QueryKey } from '@tanstack/react-query'
@@ -65,16 +65,16 @@ export type ProjectContribution = {
   /** Numbers under the project's name on its page, said as a sentence. */
   Headline?: ComponentType<{ projectId: ProjectId }>
   /** Numbers for a project's row in the list, said as one line. */
-  RowFacts?: ComponentType<{ project: ProjectListItem }>
+  RowFacts?: ComponentType<{ project: ProjectResponse }>
   /** Numbers for a project's Workbench card, a line each. */
-  TileFacts?: ComponentType<{ project: ProjectListItem }>
+  TileFacts?: ComponentType<{ project: ProjectResponse }>
   /** The day in the margin of a project's row in the list. At most one module gives one. */
   Lead?: ComponentType<{ projectId: ProjectId }>
   /**
    * How many of this module's things wait in a project, beside its name in the rail. At most one
    * module gives one; zero is shown as nothing.
    */
-  count?: (project: ProjectListItem) => number
+  count?: (project: ProjectResponse) => number
   /** The kinds of thing whose numbers the server adds to each project's `columns` for this module. */
   counts?: readonly ObjectType[]
   /** What deleting a project takes with it, as a phrase ("12 tasks"), or null for nothing. */

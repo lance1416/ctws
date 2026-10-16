@@ -1,4 +1,4 @@
-import { idFrom, projectId, type ProjectListItem, workspaceId } from '@ctws/contracts'
+import { idFrom, projectId, type ProjectResponse, workspaceId } from '@ctws/contracts'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 import { archivedProjectsQuery, projectsQuery } from './api'
 import { ProjectPicker, ProjectsPicker } from './ProjectPicker'
 
-const project = (id: string, name: string, archivedAt: string | null): ProjectListItem => ({
+const project = (id: string, name: string, archivedAt: string | null): ProjectResponse => ({
   id: idFrom(projectId, id),
   workspaceId: workspaceId.parse('00000000-0000-7000-8000-000000000000'),
   name,

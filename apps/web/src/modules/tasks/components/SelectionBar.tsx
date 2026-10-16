@@ -1,4 +1,4 @@
-import { type ProjectListItem, type ProjectId } from '@ctws/contracts'
+import { type ProjectResponse, type ProjectId } from '@ctws/contracts'
 import { PickOne } from '../../../platform/ui/inline'
 
 /** What to do with the picked rows; shown only while something is selected. */
@@ -12,7 +12,7 @@ export function SelectionBar({
   busy,
 }: {
   count: number
-  projects: ProjectListItem[]
+  projects: ProjectResponse[]
   currentProjectId: string
   onFinish: () => void
   onMove: (projectId: ProjectId) => void

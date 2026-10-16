@@ -32,6 +32,7 @@ export const updateProjectBody = patchOf({
   archived: z.boolean(),
 })
 
+/** A project, with the counts modules add to it, each under the name its module registered. */
 export const projectResponse = z.object({
   id: projectId,
   workspaceId,
@@ -41,13 +42,6 @@ export const projectResponse = z.object({
   rank: z.string(),
   archivedAt: instant.nullable(),
   createdAt: instant,
-})
-
-/**
- * A project in the list: the row, plus the counts modules add to it, each under the name its
- * module registered.
- */
-export const projectListItem = projectResponse.extend({
   columns: z.record(z.string(), z.number().int().nonnegative()),
 })
 
@@ -56,11 +50,10 @@ export const projectListQuery = z
   .strict()
 
 export const projectListResponse = z.object({
-  projects: z.array(projectListItem),
+  projects: z.array(projectResponse),
   page: pageInfo,
 })
 
 export type CreateProjectBody = z.infer<typeof createProjectBody>
 export type UpdateProjectBody = z.infer<typeof updateProjectBody>
 export type ProjectResponse = z.infer<typeof projectResponse>
-export type ProjectListItem = z.infer<typeof projectListItem>

@@ -1,7 +1,7 @@
 import {
   idFrom,
   projectId,
-  type ProjectListItem,
+  type ProjectResponse,
   taskId,
   type TaskResponse,
   workspaceId,
@@ -15,7 +15,7 @@ import { RegistryProvider } from '../../../shell/registry'
 import { archivedProjectsQuery, projectsQuery } from '../../../shell/projects'
 import { TaskReading } from './TaskReading'
 
-const project = (id: string, name: string, archivedAt: string | null): ProjectListItem => ({
+const project = (id: string, name: string, archivedAt: string | null): ProjectResponse => ({
   id: idFrom(projectId, id),
   workspaceId: workspaceId.parse('00000000-0000-7000-8000-0000000000ff'),
   name,

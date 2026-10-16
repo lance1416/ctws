@@ -1,9 +1,8 @@
-import type { ProjectListItem, ProjectResponse } from '@ctws/contracts'
+import type { ProjectResponse } from '@ctws/contracts'
 import { isoOrNull } from '../../platform/values'
-import type { ProjectListRow } from './queries'
-import type { Project } from './tables'
+import type { ProjectRow } from './queries'
 
-export function toProjectResponse(p: Project): ProjectResponse {
+export function toProjectResponse({ project: p, columns }: ProjectRow): ProjectResponse {
   return {
     id: p.id,
     workspaceId: p.workspaceId,
@@ -13,9 +12,6 @@ export function toProjectResponse(p: Project): ProjectResponse {
     rank: p.rank,
     archivedAt: isoOrNull(p.archivedAt),
     createdAt: p.createdAt.toISOString(),
+    columns,
   }
-}
-
-export function toProjectListItem(row: ProjectListRow): ProjectListItem {
-  return { ...toProjectResponse(row.project), columns: row.columns }
 }

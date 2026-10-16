@@ -1,4 +1,4 @@
-import { type ProjectListItem, type ProjectId } from '@ctws/contracts'
+import { type ProjectResponse, type ProjectId } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { Fragment, type ReactNode } from 'react'
 import { movementQuery } from '../api'
@@ -16,7 +16,7 @@ function useMoved(projectId: ProjectId) {
 }
 
 /** A project's tasks in numbers on its Workbench card, a line each. The open count is the server's. */
-export function ProjectTileFacts({ project: p }: { project: ProjectListItem }) {
+export function ProjectTileFacts({ project: p }: { project: ProjectResponse }) {
   const m = useMoved(p.id)
   const today = ymd(useNow(), useTimeZone())
   return (
@@ -33,7 +33,7 @@ export function ProjectTileFacts({ project: p }: { project: ProjectListItem }) {
 }
 
 /** A project's tasks in numbers on its row in the list, as one line. */
-export function ProjectRowFacts({ project: p }: { project: ProjectListItem }) {
+export function ProjectRowFacts({ project: p }: { project: ProjectResponse }) {
   const m = useMoved(p.id)
   const today = ymd(useNow(), useTimeZone())
   const said: ReactNode[] = [

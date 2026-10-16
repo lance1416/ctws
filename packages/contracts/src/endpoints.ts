@@ -55,7 +55,6 @@ import {
 } from './person'
 import {
   createProjectBody,
-  projectListItem,
   projectListQuery,
   projectListResponse,
   projectParams,
@@ -199,7 +198,7 @@ export const api = {
       summary: 'One project, archived or not.',
       params: projectParams,
       ok: 200,
-      response: projectListItem,
+      response: projectResponse,
       refusals: [404],
     }),
     create: endpoint({

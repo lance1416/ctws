@@ -1,10 +1,10 @@
-import type { ProjectListItem } from '@ctws/contracts'
+import type { ProjectResponse } from '@ctws/contracts'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { archivedProjectsQuery, projectsQuery, useEveryProject } from './api'
 
-const live = { id: 'live', name: 'Job hunt', archivedAt: null } as ProjectListItem
+const live = { id: 'live', name: 'Job hunt', archivedAt: null } as ProjectResponse
 
 function Shown() {
   const { data } = useEveryProject()

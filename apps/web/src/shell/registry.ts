@@ -2,7 +2,7 @@ import {
   OBJECT_TYPES,
   type ObjectType,
   type ProjectId,
-  type ProjectListItem,
+  type ProjectResponse,
 } from '@ctws/contracts'
 import { useQueryClient, type QueryKey } from '@tanstack/react-query'
 import { createContext, useContext, type ComponentType } from 'react'
@@ -114,10 +114,10 @@ export type Registry = {
   relationFor: (type: ObjectType) => RegisteredRelation
   projectBlocks: RegisteredProjectBlock[]
   projectHeadlines: { moduleId: string; Component: ComponentType<{ projectId: ProjectId }> }[]
-  projectRowFacts: { moduleId: string; Facts: ComponentType<{ project: ProjectListItem }> }[]
-  projectTileFacts: { moduleId: string; Facts: ComponentType<{ project: ProjectListItem }> }[]
+  projectRowFacts: { moduleId: string; Facts: ComponentType<{ project: ProjectResponse }> }[]
+  projectTileFacts: { moduleId: string; Facts: ComponentType<{ project: ProjectResponse }> }[]
   projectLead: ComponentType<{ projectId: ProjectId }> | null
-  projectCount: ((project: ProjectListItem) => number) | null
+  projectCount: ((project: ProjectResponse) => number) | null
   projectContents: NonNullable<ProjectContribution['contents']>[]
   /** The page-wide keys: capture, search, this help, the jumps. */
   anywhere: KeyTable<AnywhereAction>

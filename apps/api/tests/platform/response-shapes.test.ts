@@ -48,6 +48,21 @@ describe('a read answers with exactly the fields its contract names', () => {
     })
   })
 
+  it('a project as a write answers it, counted as a read counts it', async () => {
+    const ctx = await setupWith(cleanups)
+    const id = await createProject(ctx, 'Garden')
+    await createTask(ctx, id, 'Water')
+    const res = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/v1/projects/${id}`,
+      headers: ctx.authed,
+      payload: { name: 'Allotment' },
+    })
+    expect(res.statusCode, res.body).toBe(200)
+    expect(res.json()).toEqual(await read(ctx, `/api/v1/projects/${id}`))
+    expect(res.json()).toMatchObject({ name: 'Allotment', columns: { openTasks: 1 } })
+  })
+
   it('a task', async () => {
     const ctx = await setupWith(cleanups)
     const projectId = await createProject(ctx)

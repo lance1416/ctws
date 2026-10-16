@@ -3,7 +3,7 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { on, serve } from '../../platform/http/serve'
 import { actorOf, currentUser } from '../auth/authenticated'
 import type { ProjectColumns } from '../module'
-import { toProjectListItem, toProjectResponse } from './mapper'
+import { toProjectResponse } from './mapper'
 import { getProjectRow, listProjects } from './queries'
 import { createProject, softDeleteProject, updateProject } from './service'
 
@@ -21,22 +21,27 @@ export const projectRoutes: FastifyPluginAsyncZod<{ columns: ProjectColumns }> =
         columns,
         req.query,
       )
-      return { projects: rows.map(toProjectListItem), page }
+      return { projects: rows.map(toProjectResponse), page }
     }),
 
     on(api.projects.get, async (req) =>
-      toProjectListItem(
+      toProjectResponse(
         await getProjectRow(app.db, currentUser(req).workspaceId, req.params.id, columns),
       ),
     ),
 
-    on(api.projects.create, async (req) =>
-      toProjectResponse(await createProject(app.db, actorOf(req), req.body)),
-    ),
+    // A write answers with the project as every read gives it, its columns counted.
+    on(api.projects.create, async (req) => {
+      const made = await createProject(app.db, actorOf(req), req.body)
+      return toProjectResponse(await getProjectRow(app.db, made.workspaceId, made.id, columns))
+    }),
 
-    on(api.projects.update, async (req) =>
-      toProjectResponse(await updateProject(app.db, actorOf(req), req.params.id, req.body)),
-    ),
+    on(api.projects.update, async (req) => {
+      const changed = await updateProject(app.db, actorOf(req), req.params.id, req.body)
+      return toProjectResponse(
+        await getProjectRow(app.db, changed.workspaceId, changed.id, columns),
+      )
+    }),
 
     on(api.projects.remove, async (req) => {
       await softDeleteProject(app.db, actorOf(req), req.params.id)

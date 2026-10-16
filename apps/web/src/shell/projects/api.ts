@@ -1,15 +1,9 @@
-import {
-  api,
-  type ProjectColor,
-  type ProjectListItem,
-  type ProjectResponse,
-  type ProjectId,
-} from '@ctws/contracts'
+import { api, type ProjectColor, type ProjectResponse, type ProjectId } from '@ctws/contracts'
 import { queryOptions, useQuery, type UseQueryResult } from '@tanstack/react-query'
 import { call, everyPage } from '../../platform/http/api'
 
 /** Live or archived projects, with the counts the server's modules add to each. */
-async function listProjects(archived: boolean, signal: AbortSignal): Promise<ProjectListItem[]> {
+async function listProjects(archived: boolean, signal: AbortSignal): Promise<ProjectResponse[]> {
   const pages = await everyPage(
     (cursor) =>
       call(
@@ -40,14 +34,14 @@ export const archivedProjectsQuery = () =>
     queryFn: ({ signal }) => listProjects(true, signal),
   })
 
-export const useProjects = (): UseQueryResult<ProjectListItem[]> => useQuery(projectsQuery())
+export const useProjects = (): UseQueryResult<ProjectResponse[]> => useQuery(projectsQuery())
 
 /**
  * Live and archived together: an archived project still has its page and its colour. A shelf that
  * failed to load leaves the live ones; `isSuccess` waits for both, as only then is a project that
  * is in neither known to be gone.
  */
-export function useEveryProject(): { data: ProjectListItem[] | undefined; isSuccess: boolean } {
+export function useEveryProject(): { data: ProjectResponse[] | undefined; isSuccess: boolean } {
   const live = useProjects()
   const shelf = useQuery(archivedProjectsQuery())
   return {
@@ -65,7 +59,7 @@ export function deleteProject(id: ProjectId): Promise<void> {
 }
 
 /** The quick-capture destination, found by the `isInbox` flag: the user may rename it. */
-export function inboxOf<T extends ProjectResponse>(projects: T[]): T | undefined {
+export function inboxOf(projects: ProjectResponse[]): ProjectResponse | undefined {
   return projects.find((p) => p.isInbox)
 }
 

@@ -1,4 +1,4 @@
-import type { ProjectListItem } from '@ctws/contracts'
+import type { ProjectResponse } from '@ctws/contracts'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { archivedProjectsQuery, createProject, projectKeys, useProjects } from './api'
@@ -73,7 +73,7 @@ export function Projects() {
  * One project on the app's row. The link is stretched over the whole row but named by the project
  * alone; delete lives on the project's own page.
  */
-function ProjectRow({ project: p }: { project: ProjectListItem }) {
+function ProjectRow({ project: p }: { project: ProjectResponse }) {
   const { projectLead: Lead, projectRowFacts } = useRegistry()
   return (
     <li data-project-row={p.id} className="group relative flex min-h-14 min-w-0">
