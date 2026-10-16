@@ -1,3 +1,4 @@
+import { problemText } from '../../platform/http/api'
 import {
   isLinkEdge,
   kindsBetween,
@@ -118,7 +119,7 @@ export function AddLink({
           </div>
           {make.isError && (
             <p role="alert" className="text-sm text-danger">
-              {make.error instanceof Error ? make.error.message : "Couldn't link those"}
+              {problemText(make.error) ?? "Couldn't link those"}
             </p>
           )}
           <div className="flex items-center gap-2">

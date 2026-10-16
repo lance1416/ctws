@@ -1,3 +1,4 @@
+import { problemText } from '../../../platform/http/api'
 import { type TaskStatus, type UpdateTaskBody, type TaskId } from '@ctws/contracts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { isFinished } from '../logic/status'
@@ -37,7 +38,7 @@ export function useTaskActions(onError: (message: string) => void) {
     onError: (e, _vars, ctx) => {
       ctx?.tasks.forEach(([key, data]) => qc.setQueryData(key, data))
       qc.setQueryData(TODAY, ctx?.today)
-      onError(e instanceof Error ? e.message : "Couldn't save the change")
+      onError(problemText(e) ?? "Couldn't save the change")
     },
     meta: { awaits: [['tasks']] },
   })

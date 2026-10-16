@@ -1,3 +1,4 @@
+import { problemText } from '../../../platform/http/api'
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 import { createReadingItem } from '../api'
@@ -51,7 +52,7 @@ export function AddReading() {
       )}
       {add.isError && (
         <p role="alert" className="mt-1 text-sm text-danger">
-          {add.error instanceof Error ? add.error.message : "Couldn't add that"}
+          {problemText(add.error) ?? "Couldn't add that"}
         </p>
       )}
     </div>

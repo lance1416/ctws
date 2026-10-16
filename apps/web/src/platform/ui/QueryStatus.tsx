@@ -1,3 +1,4 @@
+import { problemText } from '../http/api'
 import { HANG } from './hang'
 /** "Loading…" while a page's main list comes, and its error if it does not. */
 export function QueryStatus({
@@ -9,9 +10,7 @@ export function QueryStatus({
   if (!query.isError) return null
   return (
     <p role="alert" className={`mt-6 ${HANG} text-danger`}>
-      {query.error instanceof Error
-        ? query.error.message
-        : "Couldn't load. Check that the server is running."}
+      {problemText(query.error) ?? "Couldn't load. Check that the server is running."}
     </p>
   )
 }

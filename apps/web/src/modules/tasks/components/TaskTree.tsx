@@ -1,3 +1,4 @@
+import { problemText } from '../../../platform/http/api'
 import {
   DndContext,
   PointerSensor,
@@ -114,7 +115,7 @@ export function TaskTree({ projectId }: { projectId: ProjectId }) {
       // Back to what the database holds, and the parent the drop unfolded folds again.
       if (context?.previous) qc.setQueryData(key, context.previous)
       if (context?.unfolded) folds.fold(context.unfolded)
-      setError(e instanceof Error ? e.message : "Couldn't move it")
+      setError(problemText(e) ?? "Couldn't move it")
     },
     meta: { awaits: [key] },
   })

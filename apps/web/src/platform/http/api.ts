@@ -21,9 +21,12 @@ export class ApiError extends Error {
   }
 }
 
-/** What to tell a person about a failed write: the server's sentence for them, else its title. */
-export function problemText(error: Error | null): string | null {
-  if (!error) return null
+/**
+ * What to tell a person about a failure: the server's sentence for them, else its title, else the
+ * error's own message. Null for no error, or for something thrown that is not an Error.
+ */
+export function problemText(error: unknown): string | null {
+  if (!(error instanceof Error)) return null
   return error instanceof ApiError ? (error.detail ?? error.message) : error.message
 }
 

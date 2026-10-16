@@ -1,3 +1,4 @@
+import { problemText } from '../../../platform/http/api'
 import {
   taskId,
   idFrom,
@@ -164,9 +165,7 @@ export function Today() {
       {today.isPending && <p className={`${HANG} text-ink-muted`}>Loading…</p>}
       {today.isError && (
         <p role="alert" className={`${HANG} text-danger`}>
-          {today.error instanceof Error
-            ? today.error.message
-            : "Couldn't load. Check that the server is running."}
+          {problemText(today.error) ?? "Couldn't load. Check that the server is running."}
         </p>
       )}
       {error && (

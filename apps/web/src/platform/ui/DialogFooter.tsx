@@ -24,9 +24,7 @@ export function DialogFooter({
     <>
       {error != null && (
         <p role="alert" className="text-sm text-danger">
-          {error instanceof Error
-            ? problemText(error)
-            : "Couldn't create it. Your answers are still here — try again."}
+          {problemText(error) ?? "Couldn't create it. Your answers are still here — try again."}
         </p>
       )}
       <div className="flex flex-wrap items-center gap-2 border-t border-rule pt-4">

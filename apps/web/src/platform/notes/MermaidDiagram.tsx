@@ -1,3 +1,4 @@
+import { problemText } from '../http/api'
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { onSchemeChange, shownScheme } from '../ui/theme'
 import { purifyDiagram, scopeDiagramStyles, sizeDiagram } from './mermaidSvg'
@@ -69,7 +70,7 @@ export default function MermaidDiagram({ source }: { source: string }) {
         setState('ready')
       } catch (err) {
         if (!live) return
-        setFailure(err instanceof Error ? err.message : "Couldn't draw the diagram")
+        setFailure(problemText(err) ?? "Couldn't draw the diagram")
         setState('failed')
       }
     })()

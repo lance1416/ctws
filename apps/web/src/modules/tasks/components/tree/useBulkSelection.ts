@@ -1,3 +1,4 @@
+import { problemText } from '../../../../platform/http/api'
 import { type ProjectId, type TaskId } from '@ctws/contracts'
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -40,7 +41,7 @@ export function useBulkSelection({
       }
     } catch (e) {
       const left = selected.size - done.size
-      onError(`${e instanceof Error ? e.message : "That didn't work"} (${left} left undone)`)
+      onError(`${problemText(e) ?? "That didn't work"} (${left} left undone)`)
     } finally {
       setSelected((prev) => new Set([...prev].filter((id) => onScreen.has(id) && !done.has(id))))
       setBusy(false)

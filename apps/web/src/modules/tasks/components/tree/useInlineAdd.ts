@@ -1,3 +1,4 @@
+import { problemText } from '../../../../platform/http/api'
 import { MAX_TASK_DEPTH, type ProjectId, type TaskId } from '@ctws/contracts'
 import { useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
@@ -48,7 +49,7 @@ export function useInlineAdd({
       setError(null)
       return true
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't create. Press Enter to try again.")
+      setError(problemText(e) ?? "Couldn't create. Press Enter to try again.")
       return false
     } finally {
       inFlight.current = false
