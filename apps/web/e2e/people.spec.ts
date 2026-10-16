@@ -1020,3 +1020,25 @@ test('the add box is empty for the next name once the server has the last', asyn
   await box.pressSequentially('韩梅梅', { delay: 20 })
   await expect(box).toHaveValue('韩梅梅')
 })
+
+test('opening the birthday picker and saving untouched writes no birthday', async ({ page }) => {
+  await registerFreshUser(page, '/people')
+  const made = await add(page, { name: '没生日' })
+  const id = ((await made.json()) as { id: string }).id
+  await page.goto(`/people/${id}`)
+  const pane = page.getByRole('dialog', { name: 'People' })
+  await pane.getByRole('button', { name: 'Edit', exact: true }).click()
+  await pane.getByRole('button', { name: 'Birthday, not set' }).click()
+  await expect(pane.getByRole('group', { name: 'Which calendar' })).toBeVisible()
+  // Looked at, not chosen: the button still says so.
+  await expect(pane.getByRole('button', { name: 'Birthday, not set' })).toBeVisible()
+  const saved = page.waitForResponse(
+    (r) => r.request().method() === 'PATCH' && r.url().includes(`/people/${id}`),
+  )
+  await pane.getByRole('button', { name: 'Save' }).click()
+  expect((await saved).request().postDataJSON()).not.toHaveProperty('birthday')
+  const { people } = (await (await page.request.get('/api/v1/people')).json()) as {
+    people: { id: string; birthday: unknown }[]
+  }
+  expect(people.find((p) => p.id === id)?.birthday).toBeNull()
+})

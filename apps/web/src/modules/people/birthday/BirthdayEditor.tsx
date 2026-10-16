@@ -65,7 +65,15 @@ export function BirthdayEditor({
 
   const report = useRef(onChange)
   report.current = onChange
+  // What the draft was made of when last reported. Mounting reports nothing: opening the controls
+  // on someone with no birthday is not choosing 1 January.
+  const reported = useRef<string | null>(null)
   useEffect(() => {
+    const now = JSON.stringify([calendar, draft.year, month, day, draft.leapMonth, hourBranch])
+    const key = `${now}:${lead}:${refused}`
+    if (reported.current === null) reported.current = key
+    if (reported.current === key) return
+    reported.current = key
     report.current(draft, refused)
     // The draft is a new object every render; what it is made of is what this listens to.
   }, [calendar, draft.year, month, day, draft.leapMonth, hourBranch, lead, refused])
