@@ -1,5 +1,5 @@
 import { PickMany, PickOne, type Choice } from '../../platform/ui/inline'
-import { useProjects } from './api'
+import { useEveryProject, useProjects } from './api'
 import { useProjectRail } from './projectColor'
 
 const NONE = '__no-project'
@@ -19,7 +19,10 @@ function useLiveChoices(): Choice<string>[] {
     .map((p) => ({ value: p.id, label: p.name, mark: <ProjectChip projectId={p.id} /> }))
 }
 
-/** One live project or none; `none` is what "none" is called here. */
+/**
+ * One live project or none; `none` is what "none" is called here. An archived project already
+ * chosen stays named.
+ */
 export function ProjectPicker({
   value,
   onPick,
@@ -30,17 +33,30 @@ export function ProjectPicker({
   none: string
 }) {
   const choices = useLiveChoices()
+  const shelved = useEveryProject().data?.find((p) => p.id === value && p.archivedAt)
   return (
     <PickOne
       label="Projects"
       value={value ?? NONE}
-      choices={[{ value: NONE, label: none }, ...choices]}
+      choices={[
+        { value: NONE, label: none },
+        ...choices,
+        ...(shelved
+          ? [
+              {
+                value: shelved.id,
+                label: shelved.name,
+                mark: <ProjectChip projectId={shelved.id} />,
+              },
+            ]
+          : []),
+      ]}
       onPick={(v) => onPick(v === NONE ? null : v)}
     />
   )
 }
 
-/** Any number of the live projects. */
+/** Any number of the live projects; one already chosen stays named after it is archived. */
 export function ProjectsPicker({
   chosen,
   onChange,
@@ -48,7 +64,8 @@ export function ProjectsPicker({
   chosen: readonly string[]
   onChange: (ids: string[]) => void
 }) {
-  const projects = useProjects()
+  // Live and archived: a project chosen before it was archived is still named.
+  const projects = useEveryProject()
   const choices = useLiveChoices()
   return (
     <PickMany
