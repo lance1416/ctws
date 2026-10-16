@@ -49,9 +49,7 @@ export async function listProjectMovement(
           and late_t.due_at is not null
           and late_t.due_at < ${todayStarts}
       )`.mapWith(Number),
-      lastActivityOn: sql<
-        string | null
-      >`(((${lastActivity}) at time zone ${timezone})::date)::text`,
+      lastActivityOn: sql<string | null>`((${lastActivity}) at time zone ${timezone})::date`,
       quietDays: sql<
         number | null
       >`(${today} - ((${lastActivity}) at time zone ${timezone})::date)`,
@@ -61,7 +59,7 @@ export async function listProjectMovement(
           and next_t.deleted_at is null
           and ${taskOpenSql('next_t')}
           and next_t.due_at >= ${todayStarts}
-      ) at time zone ${timezone})::date)::text`,
+      ) at time zone ${timezone})::date)`,
     })
     .from(projects)
     .where(within(scoped(projects, workspaceId), isNull(projects.archivedAt)))

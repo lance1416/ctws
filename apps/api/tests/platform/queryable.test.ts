@@ -46,3 +46,12 @@ describe('Queryable', () => {
     expect(await countUsers(ctx.db)).toBe(before)
   })
 })
+
+describe('the pool', () => {
+  it('reads a date as the day it names, whoever sends the query', async () => {
+    const viaDriver = await ctx.db.$client.query(`select '2026-03-01'::date as d`)
+    expect(viaDriver.rows[0]).toEqual({ d: '2026-03-01' })
+    const viaDrizzle = await ctx.db.execute(sql`select '2026-03-01'::date as d`)
+    expect(viaDrizzle.rows[0]).toEqual({ d: '2026-03-01' })
+  })
+})

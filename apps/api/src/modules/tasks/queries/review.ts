@@ -56,8 +56,8 @@ export async function listReview(
   // Asked separately: a week with nothing in it still has a heading.
   const bounds = await q.execute(sql`
     select
-      (${fromLocal})::date::text as from_day,
-      ((${toLocal})::date - 1)::text as to_day
+      (${fromLocal})::date as from_day,
+      (${toLocal})::date - 1 as to_day
   `)
   const edge = bounds.rows[0] as { from_day: string; to_day: string }
 

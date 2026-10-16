@@ -27,7 +27,7 @@ export async function listCompleted(
       ${TASK_COLUMNS('t')},
       p.name as project_name,
       parent.title as parent_title,
-      ((t.completed_at at time zone ${timezone})::date)::text as completed_on
+      (t.completed_at at time zone ${timezone})::date as completed_on
     from tasks t
     join projects p on p.id = t.project_id
     left join tasks parent on parent.id = t.parent_id

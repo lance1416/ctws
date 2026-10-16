@@ -30,13 +30,13 @@ export async function listTaskCalendar(
       where ${visibleTasks(workspaceId, { task: 't', project: 'p' })}
         and ${taskOpenSql('t')}
     )
-    select id, to_char(scheduled_on, 'YYYY-MM-DD') as day, title, 'planned' as kind,
+    select id, scheduled_on as day, title, 'planned' as kind,
            project_id as "projectId", project_name as "projectName"
     from visible
     where scheduled_on is not null
       and scheduled_on between ${range.from}::date and ${range.to}::date
     union all
-    select id, to_char((due_at at time zone ${timezone})::date, 'YYYY-MM-DD') as day, title,
+    select id, (due_at at time zone ${timezone})::date as day, title,
            'due' as kind, project_id as "projectId", project_name as "projectName"
     from visible
     where due_at is not null

@@ -107,7 +107,7 @@ export async function readingEntries(
   const result = await q.execute(sql`
     select
       r.id,
-      to_char(r.plan_on, 'YYYY-MM-DD') as day,
+      r.plan_on as day,
       -- An untitled link shows its url, as everywhere else.
       coalesce(r.title, r.url) as title,
       p.id as "projectId",

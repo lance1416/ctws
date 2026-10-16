@@ -1,10 +1,22 @@
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres'
-import { Pool } from 'pg'
+import { type CustomTypesConfig, Pool, types } from 'pg'
 
 export type Db = NodePgDatabase & { $client: Pool }
 
+/**
+ * A `date` is a calendar day, not an instant, so it stays the `YYYY-MM-DD` Postgres sends. Read as
+ * a Date it would be midnight in the server's zone, a day early once written out in UTC west of
+ * Greenwich. Set here once, so no query has to cast a day to text.
+ */
+const typeParsers: CustomTypesConfig = {
+  getTypeParser: ((oid: number, format?: 'text' | 'binary') =>
+    oid === types.builtins.DATE
+      ? (value: string) => value
+      : types.getTypeParser(oid, format)) as CustomTypesConfig['getTypeParser'],
+}
+
 export function createDb(connectionString: string): Db {
-  return drizzle(new Pool({ connectionString }))
+  return drizzle(new Pool({ connectionString, types: typeParsers }))
 }
 
 export async function closeDb(db: Db): Promise<void> {

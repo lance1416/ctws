@@ -24,6 +24,6 @@ export const weekStart = (now: Date, zone: string): SQL =>
 
 /** Today in `zone` as `YYYY-MM-DD`. */
 export async function accountToday(q: Queryable, zone: string, now: Date): Promise<string> {
-  const result = await q.execute(sql`select ${localDay(now, zone)}::text as today`)
+  const result = await q.execute(sql`select ${localDay(now, zone)} as today`)
   return (result.rows as { today: string }[])[0]!.today
 }
