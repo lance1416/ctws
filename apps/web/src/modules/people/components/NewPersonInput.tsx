@@ -20,13 +20,18 @@ export function NewPersonInput({
   const [name, setName] = useState('')
 
   const create = useMutation({
-    mutationFn: (value: string) =>
-      createPerson({ name: value, ...(projectId ? { projectIds: [projectId] } : {}) }),
-    meta: { awaits: [['people']] },
-    onSuccess: (person) => {
+    mutationFn: async (value: string) => {
+      const made = await createPerson({
+        name: value,
+        ...(projectId ? { projectIds: [projectId] } : {}),
+      })
+      // Emptied once the server has them, not after the list is read again: what is typed in the
+      // meantime is the next name.
       setName('')
-      onCreated(person)
+      return made
     },
+    meta: { awaits: [['people']] },
+    onSuccess: (person) => onCreated(person),
   })
 
   return (

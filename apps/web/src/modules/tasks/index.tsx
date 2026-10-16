@@ -35,8 +35,9 @@ function useInboxCapture(): CaptureTargetState {
           to: `/projects/${inbox.id}`,
           submit: async (title: string) => {
             await createTask({ projectId: inbox.id, title })
-            // Awaited, so the input stays busy until the list that now holds the line is refreshed.
-            await refreshQueries(qc, [projectTasksQuery(inbox.id).queryKey])
+            // Not awaited: the box is free for the next line once the server has this one, and
+            // what is typed while the list is read again is that next line.
+            void refreshQueries(qc, [projectTasksQuery(inbox.id).queryKey])
           },
         }
       : null,

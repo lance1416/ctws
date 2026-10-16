@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { holdFirstRead, makeProject, pickOne, registerFreshUser, WEB } from './helpers'
+import { holdFirstRead, makeProject, pickOne, registerFreshUser, slowReads, WEB } from './helpers'
 
 /** People: a person has several ways to be reached, and each one is a link, not text to copy. */
 
@@ -1003,4 +1003,20 @@ test('a birthday fits the phone margin', async ({ page }) => {
   const lead = page.locator('[data-person-row] [data-birthday-lead]')
   await expect(lead.locator('time')).toHaveText('May 28')
   expect(await lead.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(0)
+})
+
+test('the add box is empty for the next name once the server has the last', async ({ page }) => {
+  await registerFreshUser(page, '/people')
+  const box = page.getByLabel('Add a name')
+  await box.waitFor()
+  // The list read after the save is slow; the box must not wait for it.
+  await slowReads(page, '**/api/v1/people*')
+  const posted = page.waitForResponse(
+    (r) => r.request().method() === 'POST' && new URL(r.url()).pathname === '/api/v1/people',
+  )
+  await box.fill('李雷')
+  await box.press('Enter')
+  await posted
+  await box.pressSequentially('韩梅梅', { delay: 20 })
+  await expect(box).toHaveValue('韩梅梅')
 })

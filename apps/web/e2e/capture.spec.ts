@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { registerFreshUser, submitCreate } from './helpers'
+import { registerFreshUser, slowReads, submitCreate } from './helpers'
 
 test('capture from any page lands in the inbox', async ({ page }) => {
   await registerFreshUser(page)
@@ -128,4 +128,25 @@ test('a project is deleted from its own page, and the list loses it', async ({ p
   // Gone on the server too, not just hidden by the client cache.
   const list = await (await page.request.get('/api/v1/projects')).json()
   expect(list.projects.map((p: { name: string }) => p.name)).not.toContain('待删除')
+})
+
+test('the capture box is empty for the next line once the server has the last', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  // On the inbox's own page, whose list is read again after every capture.
+  const { projects } = await (await page.request.get('/api/v1/projects')).json()
+  await page.goto(`/projects/${projects.find((p: { isInbox: boolean }) => p.isInbox).id}`)
+  const box = page.getByLabel('Capture')
+  await expect(box).toBeEnabled()
+  // The inbox read after the save is slow; the box must not wait for it.
+  await slowReads(page, '**/api/v1/tasks?projectId=*')
+  const posted = page.waitForResponse(
+    (r) => r.request().method() === 'POST' && new URL(r.url()).pathname === '/api/v1/tasks',
+  )
+  await box.fill('first line')
+  await box.press('Enter')
+  await posted
+  await box.pressSequentially('second', { delay: 20 })
+  await expect(box).toHaveValue('second')
 })

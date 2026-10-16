@@ -33,8 +33,8 @@ function useReadingCapture(): CaptureTargetState {
       to: `/${ID}`,
       submit: async (line: string) => {
         await createReadingItem({ kind: 'link', url: line.trim() })
-        // Awaited, so the capture box stays busy until the list that now holds the line is fresh.
-        await refreshQueries(qc, [['reading']])
+        // Not awaited: the capture box is free for the next line once the server has this one.
+        void refreshQueries(qc, [['reading']])
       },
     },
     missing: false,

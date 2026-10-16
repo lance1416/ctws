@@ -150,7 +150,7 @@ export type CaptureTarget = {
   name: string
   /** Where the confirmation links to. */
   to: string
-  /** Writes the line, and leaves the lists that now contain it refreshed. */
+  /** Writes the line, and starts refreshing the lists that now contain it without waiting. */
   submit: (title: string) => Promise<unknown>
 }
 
