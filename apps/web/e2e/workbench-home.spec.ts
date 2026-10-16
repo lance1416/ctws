@@ -289,3 +289,20 @@ test('an open workbench turns the day at midnight', async ({ page }) => {
   await page.clock.runFor(5_000)
   await expect(page.getByText('Moved yesterday')).toBeVisible()
 })
+
+test('a meeting moved to another day from the Meetings card stays open', async ({ page }) => {
+  await registerFreshUser(page)
+  const zone = await accountZone(page)
+  await meetingToday(page, 'Movable', '12:00', zone)
+  const [y, m, d] = dayInZone(zone).split('-').map(Number) as [number, number, number]
+  const tomorrow = new TZDate(y, m - 1, d + 1, 12, 0, 0, 0, zone)
+  const day = tomorrow.toLocaleDateString('en-CA', { timeZone: zone })
+  await page.goto('/')
+  await card(page, 'Meetings').getByRole('button', { name: 'Movable' }).click()
+  const pane = page.getByRole('dialog', { name: 'Meetings' })
+  await pane.getByRole('button', { name: 'Edit', exact: true }).click()
+  await pane.getByLabel('Start').fill(`${day}T12:00`)
+  await pane.getByRole('button', { name: 'Save' }).click()
+  await expect(pane.getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
+  await expect(pane).toContainText('Movable')
+})

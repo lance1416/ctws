@@ -1,5 +1,5 @@
 import type { MeetingOccurrence } from '@ctws/contracts'
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { meetingCalendarQuery, meetingsQuery, occurrenceQuery } from './api'
 import { MeetingDetail } from './components/MeetingDetail'
@@ -25,16 +25,30 @@ const ID = 'meetings'
 function useOpenMeeting(pool: readonly MeetingOccurrence[]) {
   const [open, setOpen] = useState<{ meetingId: string; recurrenceId: string } | null>(null)
   const accountZone = useTimeZone()
-  const found = pool.find(
+  const queryClient = useQueryClient()
+  const listed = pool.find(
     (m) => m.meetingId === open?.meetingId && m.recurrenceId === open.recurrenceId,
   )
+  // Moved to another day, it is no longer in the pool: looked up on its own, starting from what
+  // the save gave back so the pane does not close while it is read.
+  const one = useQuery({
+    ...occurrenceQuery(open?.meetingId ?? '', open?.recurrenceId ?? ''),
+    enabled: open !== null && !listed,
+  })
+  const found = listed ?? one.data ?? null
   const pane = found ? (
     <MeetingDetail
       key={`${found.meetingId}:${found.recurrenceId}`}
       meeting={found}
       accountZone={accountZone}
       onClose={() => setOpen(null)}
-      onMoved={(moved) => setOpen({ meetingId: moved.meetingId, recurrenceId: moved.recurrenceId })}
+      onMoved={(moved) => {
+        queryClient.setQueryData(
+          occurrenceQuery(moved.meetingId, moved.recurrenceId).queryKey,
+          moved,
+        )
+        setOpen({ meetingId: moved.meetingId, recurrenceId: moved.recurrenceId })
+      }}
     />
   ) : null
   return { setOpen, pane }
@@ -137,7 +151,15 @@ function TodayMeetings() {
   }
   // Nothing until loaded: a line drawn before then would announce an empty day.
   if (!meetings.isSuccess) return null
-  if (rows.length === 0) return <PanelEmpty>No meetings today</PanelEmpty>
+  // The pane too: the one meeting of the day may have just been moved off it.
+  if (rows.length === 0) {
+    return (
+      <>
+        <PanelEmpty>No meetings today</PanelEmpty>
+        {pane}
+      </>
+    )
+  }
 
   const at = (d: Date) => clock.format(d)
   const minutes = (d: Date) => {
