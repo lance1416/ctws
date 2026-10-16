@@ -1,15 +1,15 @@
+import { UNCOUNTED_TASK_STATUSES, type TaskStatus } from '@ctws/contracts'
+
 /**
  * How far along a task tree is: a pure fold over the flat task list. `overdue` arrives already
  * decided in the account's zone.
  */
 
-export type RollupStatus = 'backlog' | 'todo' | 'in_progress' | 'done' | 'cancelled'
-
 /** One live task, flat. Deleted rows are filtered out before this. */
 export type RollupNode = {
   id: string
   parentId: string | null
-  status: RollupStatus
+  status: TaskStatus
   /** Past its deadline and not finished. */
   overdue: boolean
 }
@@ -84,15 +84,17 @@ const ownRollup = (node: RollupNode, kids: readonly Rollup[]): Rollup => ({
   overdue: node.overdue ? 1 : 0,
 })
 
+const UNCOUNTED: ReadonlySet<TaskStatus> = new Set(UNCOUNTED_TASK_STATUSES)
+
 /**
- * - `backlog` and `cancelled` are left out, whatever is under them.
+ * - `UNCOUNTED_TASK_STATUSES` (backlog, cancelled) are left out, whatever is under them.
  * - A parent is the mean of its direct children, not of the subtree's leaves, so breaking a task
  *   down does not lower its number, and the number is the average of what is shown under it.
  * - A parent whose children are all left out falls back to its own status, like a leaf.
  * - A leaf scores 1 when done, else 0 (`in_progress` is not 0.5).
  */
 function progressOf(node: RollupNode, children: readonly Rollup[]): number | null {
-  if (node.status === 'backlog' || node.status === 'cancelled') return null
+  if (UNCOUNTED.has(node.status)) return null
   const live = children.map((c) => c.progress).filter((p): p is number => p !== null)
   if (live.length === 0) return node.status === 'done' ? 1 : 0
   return live.reduce((a, b) => a + b, 0) / live.length

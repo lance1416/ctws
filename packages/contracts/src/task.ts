@@ -9,6 +9,12 @@ export type TaskStatus = z.infer<typeof taskStatus>
 /** The statuses that close a task: off Today, the calendar and every open count. */
 export const FINISHED_TASK_STATUSES = ['done', 'cancelled'] as const satisfies readonly TaskStatus[]
 
+/** Left out of progress, with everything under them: not started on purpose, or not happening. */
+export const UNCOUNTED_TASK_STATUSES = [
+  'backlog',
+  'cancelled',
+] as const satisfies readonly TaskStatus[]
+
 /** The deepest a task may sit; a root is at depth 1. */
 export const MAX_TASK_DEPTH = 10
 

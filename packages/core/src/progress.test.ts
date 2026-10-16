@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { rollup, type RollupNode, type RollupStatus } from './progress'
+import type { TaskStatus } from '@ctws/contracts'
+import { rollup, type RollupNode } from './progress'
 
 /** A live task with nothing interesting on it; override what the case is about. */
 const node = (id: string, parentId: string | null, over: Partial<RollupNode> = {}): RollupNode => ({
@@ -13,7 +14,7 @@ const node = (id: string, parentId: string | null, over: Partial<RollupNode> = {
 const progressOf = (nodes: RollupNode[], id: string) => rollup(nodes).get(id)!.progress
 
 describe('progress', () => {
-  it.each<[RollupStatus, number | null]>([
+  it.each<[TaskStatus, number | null]>([
     ['backlog', null],
     ['cancelled', null],
     ['todo', 0],
