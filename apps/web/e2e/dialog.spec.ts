@@ -371,3 +371,14 @@ test('a task made in the New dialog starts as to do, like one typed into the lis
   await dialog(page).getByRole('button', { name: 'Create', exact: true }).click()
   expect(((await posted) as Record<string, unknown>).status).toBe('todo')
 })
+
+test('the ? list says what the off switch silences and what → does', async ({ page }) => {
+  await seed(page)
+  await page.getByRole('button', { name: 'Keyboard shortcuts' }).click()
+  const help = page.getByRole('dialog', { name: 'Keyboard shortcuts' })
+  // `n` (New) is a single key too, and the switch stops it.
+  await expect(help.getByRole('checkbox', { name: /Single-key shortcuts/ })).toBeVisible()
+  await expect(help).toContainText('the g chords, n, s, x, j and k stop responding')
+  // → opens a collapsed row; only an open one goes on to its first child.
+  await expect(help).toContainText('once expanded, → goes to the first child')
+})

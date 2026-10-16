@@ -147,7 +147,10 @@ export const taskModule: WorkspaceModule = {
       title: 'In the task tree (with a row focused)',
       keys: [
         ['↑ ↓ / j k', 'Move between rows'],
-        ['← →', 'Collapse / expand (when collapsed, jump to the parent / first child)'],
+        [
+          '← →',
+          'Collapse / expand (once collapsed, ← goes to the parent; once expanded, → goes to the first child)',
+        ],
         ['Home End', 'First row / last row'],
         ['Tab', 'Leave the tree (the whole tree is one tab stop)'],
         ['Enter', 'Open the details'],

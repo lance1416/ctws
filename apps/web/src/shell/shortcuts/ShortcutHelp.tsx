@@ -56,7 +56,7 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
           <span>
             Single-key shortcuts
             <span className="block text-ink-muted">
-              With this off, /, f, ?, the g chords, s, x, j and k stop responding. Arrow keys,
+              With this off, /, f, ?, the g chords, n, s, x, j and k stop responding. Arrow keys,
               Enter, Esc and the Alt combinations are unaffected. This browser only.
             </span>
           </span>
