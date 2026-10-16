@@ -58,7 +58,7 @@ export function CreateTaskDialog({
       projectId,
       parentId: null,
       title: '',
-      status: 'backlog',
+      status: 'todo',
       scheduledOn: null,
       dueAt: null,
       notes: null,

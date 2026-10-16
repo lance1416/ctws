@@ -359,3 +359,15 @@ test('the migrated ? overlay keeps all five of its behaviours', async ({ page })
   await page.keyboard.press('?')
   await expect(help).toBeVisible()
 })
+
+test('a task made in the New dialog starts as to do, like one typed into the list', async ({
+  page,
+}) => {
+  await seed(page)
+  await openButton(page).click()
+  await expect(dialog(page).getByRole('radio', { name: 'To do', exact: true })).toBeChecked()
+  await titleField(page).fill('照常开始')
+  const posted = nextCreate(page)
+  await dialog(page).getByRole('button', { name: 'Create', exact: true }).click()
+  expect(((await posted) as Record<string, unknown>).status).toBe('todo')
+})

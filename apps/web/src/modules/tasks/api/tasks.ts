@@ -40,7 +40,7 @@ export function removeDependency(id: string, blockerId: string): Promise<void> {
   return apiFetch(`/tasks/${id}/dependencies/${blockerId}`, { method: 'DELETE' })
 }
 
-/** Without a `status` the server files the task under `backlog`. */
+/** Without a `status` the server files the task under `todo`. */
 export type NewTask = Omit<CreateTaskBody, 'status'> & { status?: CreateTaskBody['status'] }
 
 export function createTask(body: NewTask): Promise<TaskResponse> {
