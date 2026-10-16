@@ -3,7 +3,10 @@ import { sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Queryable, Tx } from '../../platform/db/client'
 import { rowsOf } from '../../platform/db/raw'
-import { LOCKS, lockFor } from '../../platform/db/locks'
+import { lockFor } from '../../platform/db/locks'
+
+/** The task tree's advisory lock, in the platform's key series. */
+const TREE_LOCK = 7_301_003
 
 /**
  * Serialises changes to the shape of one workspace's tasks: create, move, delete and new
@@ -11,7 +14,7 @@ import { LOCKS, lockFor } from '../../platform/db/locks'
  * read from their own snapshot, so a row written after that snapshot is never visited.
  */
 export const lockTaskTree = (tx: Tx, workspaceId: WorkspaceId): Promise<void> =>
-  lockFor(tx, LOCKS.taskTree, workspaceId)
+  lockFor(tx, TREE_LOCK, workspaceId)
 
 /**
  * Tasks on the path from `taskId` up to its root, itself included. Walks upward, so it costs at
