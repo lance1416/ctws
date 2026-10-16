@@ -46,21 +46,21 @@ export const calendarDate = z
 /** An instant with an offset. */
 export const instant = z.iso.datetime({ offset: true })
 
-/** The zone an account is stored in: an IANA name, in its canonical spelling. */
-export const canonicalTimeZone = z.string().superRefine((value, ctx) => {
+/**
+ * The zone an account is stored in: any IANA name the platform knows, stored as the one spelling
+ * it resolves to. Browsers send their own spelling, which can be an alias the server's ICU renames
+ * (Asia/Kolkata comes back as Asia/Calcutta), so the name is not required to match it.
+ */
+export const canonicalTimeZone = z.string().transform((value, ctx) => {
   if (value !== value.trim() || value.length === 0) {
     ctx.addIssue({ code: 'custom', message: 'timezone must not be empty or padded' })
-    return
+    return z.NEVER
   }
-  let canonical: string
   try {
-    canonical = new Intl.DateTimeFormat('en-US', { timeZone: value }).resolvedOptions().timeZone
+    return new Intl.DateTimeFormat('en-US', { timeZone: value }).resolvedOptions().timeZone
   } catch {
     ctx.addIssue({ code: 'custom', message: `unknown IANA timezone: ${value}` })
-    return
-  }
-  if (value !== canonical) {
-    ctx.addIssue({ code: 'custom', message: `timezone must be canonically cased: ${canonical}` })
+    return z.NEVER
   }
 })
 
