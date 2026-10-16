@@ -1,7 +1,7 @@
 import { type TaskStatus, type TodayTaskResponse, type TaskId } from '@ctws/contracts'
 import type { KeyboardEvent } from 'react'
 import { leadFor, ProjectRail, RowLead } from '../../../../shell/rows'
-import { toggleDoneTarget, toggleStartTarget } from '../../api/taskActions'
+import { toggleDoneTarget, toggleStartTarget } from '../../status'
 import { blockedLabel } from '../../blockedLabel'
 import { StartButton, StatusButton } from '../../components/StatusControls'
 import { opensOnClick, RowMeta, RowNote, SavedMark } from '../../components/TaskRowParts'

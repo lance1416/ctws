@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { toggleDoneTarget, toggleStartTarget } from './taskActions'
+import { toggleDoneTarget, toggleStartTarget } from './status'
 
 describe('status targets', () => {
   it('finishing and restoring', () => {

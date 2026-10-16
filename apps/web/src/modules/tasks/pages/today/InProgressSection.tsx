@@ -9,7 +9,7 @@ import {
   ROW_LIST,
   RowLead,
 } from '../../../../shell/rows'
-import { toggleDoneTarget, toggleStartTarget } from '../../api/taskActions'
+import { toggleDoneTarget, toggleStartTarget } from '../../status'
 import { StatusButton } from '../../components/StatusControls'
 import { StatusMark } from '../../components/StatusMark'
 import { opensOnClick, OVER_ROW, SavedMark } from '../../components/TaskRowParts'

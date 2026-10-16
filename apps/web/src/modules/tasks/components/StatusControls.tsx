@@ -1,6 +1,5 @@
-import { isFinished } from '../status'
+import { isFinished, toggleDoneTarget, toggleStartTarget } from '../status'
 import type { TaskStatus } from '@ctws/contracts'
-import { toggleDoneTarget, toggleStartTarget } from '../api/taskActions'
 import { StatusMark } from './StatusMark'
 
 /**

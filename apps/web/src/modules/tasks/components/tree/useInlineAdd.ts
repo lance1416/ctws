@@ -2,8 +2,7 @@ import { MAX_TASK_DEPTH, type ProjectId, type TaskId } from '@ctws/contracts'
 import { useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { refreshQueries } from '../../../../platform/http/refresh'
-import { projectTasksQuery } from '../../api/queries'
-import { createTask } from '../../api/tasks'
+import { createTask, projectTasksQuery } from '../../api'
 import type { FlatRow } from '../../tree/flatten'
 
 /**

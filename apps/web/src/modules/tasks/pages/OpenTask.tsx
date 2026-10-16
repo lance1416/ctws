@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ApiError } from '../../../platform/http/api'
 import { HANG } from '../../../platform/ui/hang'
-import { taskQuery } from '../api/queries'
+import { taskQuery } from '../api'
 
 /**
  * `/tasks/<id>`: where a link goes when all it knows is the task. A task has no page of its own,

@@ -2,8 +2,7 @@ import { type DependencyRef, type ProjectId, type TaskId } from '@ctws/contracts
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useState, type ReactNode } from 'react'
 import { ApiError } from '../../../platform/http/api'
-import { addDependency, removeDependency } from '../api/tasks'
-import { dependenciesQuery, taskSearchQuery } from '../api/queries'
+import { addDependency, dependenciesQuery, removeDependency, taskSearchQuery } from '../api'
 import { field, label } from '../../../platform/ui/formStyles'
 import { CloseIcon } from '../../../platform/ui/icons'
 

@@ -1,20 +1,9 @@
 import { type TaskStatus, type UpdateTaskBody, type TaskId } from '@ctws/contracts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { isFinished } from '../status'
-import { PROJECT_TASKS, todayQuery } from './queries'
-import { patchTask, type ProjectTasks } from './tasks'
+import { patchTask, PROJECT_TASKS, type ProjectTasks, todayQuery } from '../api'
 
 const TODAY = todayQuery().queryKey
-
-/**
- * Finish the task, or bring a finished one back. It comes back to `backlog`, not its earlier
- * status, which only the event log knows.
- */
-export const toggleDoneTarget = (s: TaskStatus): TaskStatus => (isFinished(s) ? 'backlog' : 'done')
-
-/** Start, or stop. Stopping lands on `todo`, even if the task came from `backlog`. */
-export const toggleStartTarget = (s: TaskStatus): TaskStatus =>
-  s === 'in_progress' ? 'todo' : 'in_progress'
 
 /**
  * One-click edits from a list row. Status changes are optimistic; date changes wait for the

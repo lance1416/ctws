@@ -6,7 +6,7 @@ import {
 } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { reviewQuery } from '../api/queries'
+import { reviewQuery } from '../api'
 import {
   BODY_GUTTER,
   DaySection,

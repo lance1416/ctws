@@ -4,7 +4,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { fromDayTimeInput, toDayTimeInput } from '../../../platform/time/dates'
 import { useTimeZone } from '../../../shell/auth'
-import { patchTask } from '../api/tasks'
+import { patchTask } from '../api'
 import { detailTaskForm, PATCH_KEYS, type DetailTaskForm, type DetailTaskValues } from '../taskForm'
 
 /** What a write from the pane waits to see refetched: any edit can move a task between lists. */

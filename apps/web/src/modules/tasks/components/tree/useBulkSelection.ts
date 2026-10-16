@@ -2,8 +2,7 @@ import { type ProjectId, type TaskId } from '@ctws/contracts'
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { refreshQueries } from '../../../../platform/http/refresh'
-import { projectTasksQuery } from '../../api/queries'
-import { moveTask, patchTask } from '../../api/tasks'
+import { moveTask, patchTask, projectTasksQuery } from '../../api'
 
 /**
  * The rows Shift+click has picked. Bulk actions go one request at a time and each id leaves the

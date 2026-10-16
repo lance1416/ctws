@@ -1,7 +1,7 @@
 import { type ProjectListItem, type ProjectId } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { Fragment, type ReactNode } from 'react'
-import { movementQuery } from '../api/queries'
+import { movementQuery } from '../api'
 import { movedLine } from '../movement'
 import { openTasksOf } from '../openTasks'
 import { shortDay, ymd } from '../../../platform/time/dates'

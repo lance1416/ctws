@@ -2,8 +2,7 @@ import type { TaskResponse } from '@ctws/contracts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForgetRecent } from '../../../shell/search'
-import { projectTasksQuery } from '../api/queries'
-import { deleteTask } from '../api/tasks'
+import { deleteTask, projectTasksQuery } from '../api'
 import { WRITE_AWAITS } from './useTaskDetailForm'
 
 /**
