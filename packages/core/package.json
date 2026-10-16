@@ -8,7 +8,8 @@
     ".": "./src/index.ts",
     "./lunar-names": "./src/birthday/names.ts",
     "./day": "./src/day.ts",
-    "./clock": "./src/clock.ts"
+    "./clock": "./src/clock.ts",
+    "./rank": "./src/rank.ts"
   },
   "scripts": {
     "test": "vitest run",

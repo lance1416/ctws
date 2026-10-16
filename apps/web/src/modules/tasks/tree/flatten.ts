@@ -1,3 +1,5 @@
+import { byRank } from '@ctws/core/rank'
+
 /**
  * Turns the flat task array into the ordered, indented rows the tree renders. On a flat row list a
  * drop is just "between which two rows, how far indented", which `drop.ts` works out.
@@ -34,12 +36,9 @@ export function flatten(nodes: readonly TaskNode[], collapsed: ReadonlySet<strin
     else children.set(key, [n])
   }
 
-  const byRankThenId = (a: TaskNode, b: TaskNode) =>
-    a.rank < b.rank ? -1 : a.rank > b.rank ? 1 : a.id < b.id ? -1 : 1
-
   // (rank, id): ranks are not unique, and the id breaks ties, as the server orders them.
   for (const list of children.values()) {
-    list.sort(byRankThenId)
+    list.sort(byRank)
   }
 
   const heights = new Map<string, number>()
@@ -99,7 +98,7 @@ export function flatten(nodes: readonly TaskNode[], collapsed: ReadonlySet<strin
 
   // What the walk never reached sits on a parent cycle. Each is emitted flat, as a root with no
   // descent, so corrupt data shows as an odd flat list; `drop.ts` relies on them being roots.
-  for (const n of [...nodes].sort(byRankThenId)) {
+  for (const n of [...nodes].sort(byRank)) {
     if (visited.has(n.id)) continue
     pushRow(n, 1, null)
   }

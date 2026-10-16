@@ -1,4 +1,5 @@
 import type { MoveTaskBody, TaskResponse } from '@ctws/contracts'
+import { byRank } from '@ctws/core/rank'
 
 /**
  * The optimistic result of a move: stand-in ranks that hold the dropped order until the refetch
@@ -7,9 +8,7 @@ import type { MoveTaskBody, TaskResponse } from '@ctws/contracts'
 export function applyMove(old: TaskResponse[], id: string, body: MoveTaskBody): TaskResponse[] {
   const moved = old.find((t) => t.id === id)
   if (!moved) return old
-  const siblings = old
-    .filter((t) => t.parentId === body.parentId && t.id !== id)
-    .sort((a, b) => (a.rank < b.rank ? -1 : a.rank > b.rank ? 1 : a.id < b.id ? -1 : 1))
+  const siblings = old.filter((t) => t.parentId === body.parentId && t.id !== id).sort(byRank)
   let at = siblings.length
   if (body.beforeId)
     at = Math.max(
