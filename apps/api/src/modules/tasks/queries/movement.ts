@@ -1,8 +1,8 @@
-import { and, asc, desc, isNull, sql } from 'drizzle-orm'
+import { asc, desc, isNull, sql } from 'drizzle-orm'
 import { type ProjectMovementResponse, type WorkspaceId } from '@ctws/contracts'
 import type { Queryable } from '../../../platform/db/client'
+import { scoped, within } from '../../../platform/db/scope'
 import { dayStart, localDay, weekStart } from '../../../platform/db/time'
-import { visibleProjects } from '../../../shell/projects/queries'
 import { projects } from '../../../shell/projects/tables'
 import { openTaskCountSql, taskOpenSql } from './scope'
 
@@ -64,7 +64,7 @@ export async function listProjectMovement(
       ) at time zone ${timezone})::date)::text`,
     })
     .from(projects)
-    .where(and(visibleProjects(workspaceId), isNull(projects.archivedAt)))
+    .where(within(scoped(projects, workspaceId), isNull(projects.archivedAt)))
     // The same order the rail and the project list use, so one project is in one place everywhere.
     .orderBy(desc(projects.isInbox), asc(projects.rank), asc(projects.id))
 

@@ -3,7 +3,7 @@ import { sql } from 'drizzle-orm'
 import type { Queryable } from '../../../platform/db/client'
 import { textMatches } from '../../../platform/db/sql'
 import { TASK_COLUMNS, taskRowOf, type TaskRow } from './rows'
-import { taskVisibleSql } from './scope'
+import { visibleTasks } from './scope'
 
 export type SearchTask = TaskRow & { projectArchived: boolean }
 
@@ -25,7 +25,7 @@ export async function searchTasks(
     from tasks t
     join projects p on p.id = t.project_id
     left join tasks parent on parent.id = t.parent_id
-    where ${taskVisibleSql('t', 'p', workspaceId)}
+    where ${visibleTasks(workspaceId, { task: 't', project: 'p' })}
       and ${textMatches(['t.title', 't.notes'], query)}
     order by
       case when ${textMatches(['t.title'], query)} then 0 else 1 end,

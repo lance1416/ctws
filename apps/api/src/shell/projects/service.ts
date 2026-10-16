@@ -9,11 +9,11 @@ import {
 } from '@ctws/contracts'
 import { newId } from '../../platform/db/ids'
 import { rankBetween } from '@ctws/core'
-import { and, desc, eq, sql } from 'drizzle-orm'
+import { desc, eq, sql } from 'drizzle-orm'
 import type { PgUpdateSetSource } from 'drizzle-orm/pg-core'
 import type { Db, Queryable, Tx } from '../../platform/db/client'
+import { scoped, within } from '../../platform/db/scope'
 import { InboxProtectedError, ProjectNotFoundError } from './errors'
-import { visibleProjects } from './queries'
 import { projects, type Project } from './tables'
 
 /** The quick-capture destination, one per workspace. */
@@ -33,7 +33,7 @@ async function lockVisibleProject(
   const [row] = await q
     .select()
     .from(projects)
-    .where(and(visibleProjects(workspaceId), eq(projects.id, id)))
+    .where(within(scoped(projects, workspaceId), eq(projects.id, id)))
     .for('update')
   if (!row) throw new ProjectNotFoundError()
   return row
@@ -61,13 +61,13 @@ export async function createProject(
     const [last] = await tx
       .select({ rank: projects.rank })
       .from(projects)
-      .where(visibleProjects(workspaceId))
+      .where(scoped(projects, workspaceId))
       .orderBy(desc(projects.rank), desc(projects.id))
       .limit(1)
     const taken = await tx
       .select({ color: projects.color })
       .from(projects)
-      .where(visibleProjects(workspaceId))
+      .where(scoped(projects, workspaceId))
 
     const [row] = await tx
       .insert(projects)

@@ -1,7 +1,8 @@
 import { type ObjectType, type ProjectId, type WorkspaceId } from '@ctws/contracts'
-import { and, asc, eq, getTableName, inArray, isNull, sql, type SQL } from 'drizzle-orm'
+import { asc, eq, getTableName, inArray, sql, type SQL } from 'drizzle-orm'
 import type { AnyPgColumn, PgTable } from 'drizzle-orm/pg-core'
 import type { Queryable, Tx } from '../../platform/db/client'
+import { scoped, within } from '../../platform/db/scope'
 import { ident } from '../../platform/db/sql'
 import { groupBy } from '../../platform/values'
 import { projects } from '../projects/tables'
@@ -10,9 +11,15 @@ import { links } from './tables'
 
 type Named = { id: ProjectId; name: string }
 
-/** `l` is a `belongs` edge from the object `id` of `type` to a project. */
-const belongsFrom = (type: ObjectType, id: SQL): SQL =>
-  sql`l.from_type = ${type} and l.from_id = ${id} and l.to_type = 'project' and l.kind = 'belongs'`
+/**
+ * `l` is a `belongs` edge from the object `<alias>.id` of `type` to the project `p`, all three in
+ * the object's workspace.
+ */
+const belongsFrom = (type: ObjectType, alias: string): SQL => sql`
+  l.from_type = ${type} and l.from_id = ${ident(alias)}.id
+  and l.to_type = 'project' and l.kind = 'belongs'
+  and l.workspace_id = ${ident(alias)}.workspace_id and p.workspace_id = l.workspace_id
+`
 
 /**
  * Where objects of one type are filed: their `belongs` edges to projects. Only visible projects
@@ -21,12 +28,15 @@ const belongsFrom = (type: ObjectType, id: SQL): SQL =>
  * The correlated SQL names the table literally: drizzle renders a column unqualified, and inside
  * the subquery it would bind to the inner row.
  */
-export function filing(type: ObjectType, table: PgTable & { id: AnyPgColumn }) {
-  const id = sql`${ident(getTableName(table))}.id`
+export function filing(
+  type: ObjectType,
+  table: PgTable & { id: AnyPgColumn; workspaceId: AnyPgColumn },
+) {
+  const name = getTableName(table)
   const pick = <T>(column: 'id' | 'name') => sql<T | null>`(
     select p.${ident(column)} from links l
     join projects p on p.id = l.to_id
-    where ${belongsFrom(type, id)} and p.deleted_at is null
+    where ${belongsFrom(type, name)} and p.deleted_at is null
     order by p.rank, p.id limit 1
   )`
   return {
@@ -35,7 +45,7 @@ export function filing(type: ObjectType, table: PgTable & { id: AnyPgColumn }) {
 
     unfiled: (): SQL => sql`not exists (
       select 1 from links l join projects p on p.id = l.to_id
-      where ${belongsFrom(type, id)} and p.deleted_at is null
+      where ${belongsFrom(type, name)} and p.deleted_at is null
     )`,
 
     /** Replaces the object's projects, inside the caller's transaction. */
@@ -62,7 +72,7 @@ export function projectOfSql(type: ObjectType, alias: string): SQL {
   return sql`(
     select p.id, p.name from links l
     join projects p on p.id = l.to_id and p.deleted_at is null
-    where ${belongsFrom(type, sql`${ident(alias)}.id`)}
+    where ${belongsFrom(type, alias)}
     order by p.rank, p.id limit 1
   )`
 }
@@ -80,13 +90,13 @@ export async function projectsOf(
     .from(links)
     .innerJoin(projects, eq(projects.id, links.toId))
     .where(
-      and(
-        eq(links.workspaceId, workspaceId),
+      within(
+        scoped(links, workspaceId),
+        scoped(projects, workspaceId),
         eq(links.fromType, type),
         inArray(links.fromId, [...ids]),
         eq(links.toType, 'project'),
         eq(links.kind, 'belongs'),
-        isNull(projects.deletedAt),
       ),
     )
     .orderBy(asc(projects.rank), asc(projects.id))

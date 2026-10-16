@@ -4,6 +4,7 @@ import type {
   PersonResponse,
   ReadingItemResponse,
 } from '@ctws/contracts'
+import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createProject, setupWith, type Harness, web } from '../helpers/harness'
 
@@ -160,5 +161,59 @@ describe('one object, several kinds of edge', () => {
     const mine = (after.json() as { people: PersonResponse[] }).people
     expect(mine.map((c) => c.id)).toEqual([myPerson.id])
     expect(mine[0]!.projects.map((p) => p.id)).toEqual([myProject])
+  })
+
+  it('files a thing only under a project of its own workspace, whatever an edge row says', async () => {
+    const ctx = await setup('filer@example.com')
+    const them = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      headers: { 'x-ctws-client': 'web' },
+      payload: { email: 'other@example.com', password: 'correct horse battery', timezone: 'UTC' },
+    })
+    const theirs = them.json() as { workspaceId: string }
+    const theirProject = (
+      await ctx.app.inject({
+        method: 'POST',
+        url: '/api/v1/projects',
+        headers: {
+          'x-ctws-client': 'web',
+          cookie: String(them.headers['set-cookie']).split(';')[0]!,
+        },
+        payload: { name: 'Theirs' },
+      })
+    ).json().id as string
+    const person = await post<PersonResponse>(ctx, '/api/v1/people', { name: 'Ying' })
+    const book = await post<ReadingItemResponse>(ctx, '/api/v1/reading', {
+      kind: 'book',
+      title: 'Middlemarch',
+    })
+
+    // No write path makes these rows; the reads must not trust them if one ever did. One edge sits
+    // in my workspace pointing at their project, one sits in theirs pointing from my book.
+    await ctx.db.execute(sql`
+      insert into links (workspace_id, from_type, from_id, to_type, to_id, kind)
+      select workspace_id, 'person', id, 'project', ${theirProject}, 'belongs'
+      from people where id = ${person.id}
+    `)
+    await ctx.db.execute(sql`
+      insert into links (workspace_id, from_type, from_id, to_type, to_id, kind)
+      values (${theirs.workspaceId}, 'reading', ${book.id}, 'project', ${theirProject}, 'belongs')
+    `)
+
+    const people = await ctx.app.inject({ method: 'GET', url: '/api/v1/people', headers: web(ctx) })
+    expect((people.json() as { people: PersonResponse[] }).people[0]!.projects).toEqual([])
+    const reading = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/v1/reading',
+      headers: web(ctx),
+    })
+    expect((reading.json() as { items: ReadingItemResponse[] }).items[0]!.projectId).toBeNull()
+    const unfiled = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/v1/reading?unfiled=true',
+      headers: web(ctx),
+    })
+    expect((unfiled.json() as { items: ReadingItemResponse[] }).items).toHaveLength(1)
   })
 })

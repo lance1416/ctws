@@ -1,9 +1,11 @@
 import { type DependencyRef, type ProjectId, type TaskId, type WorkspaceId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import type { Queryable } from '../../../platform/db/client'
+import { scoped } from '../../../platform/db/scope'
 import { ident } from '../../../platform/db/sql'
+import { taskDependencies } from '../tables'
 import { groupBy } from '../../../platform/values'
-import { taskFinishedSql, taskOpenSql, taskVisibleSql, visibleTask } from './scope'
+import { taskFinishedSql, taskOpenSql, visibleTasks, visibleTask } from './scope'
 
 type RefRow = {
   id: TaskId
@@ -36,8 +38,8 @@ export async function taskDependencyLists(
     join tasks t on t.id = d.${ident(other)}
     join projects p on p.id = t.project_id
     where d.${ident(self)} = ${taskId}
-      and d.workspace_id = ${workspaceId}
-      and ${taskVisibleSql('t', 'p', workspaceId)}
+      and ${scoped(taskDependencies, workspaceId, 'd')}
+      and ${visibleTasks(workspaceId, { task: 't', project: 'p' })}
     order by p.rank, t.rank, t.id
   `
   const [up, down] = await Promise.all([
@@ -64,9 +66,9 @@ export async function blockersFor(
     from task_dependencies d
     join tasks t on t.id = d.blocker_id
     join projects p on p.id = t.project_id
-    where d.workspace_id = ${workspaceId}
+    where ${scoped(taskDependencies, workspaceId, 'd')}
       and d.blocked_id in ${taskIds}
-      and ${taskVisibleSql('t', 'p', workspaceId)}
+      and ${visibleTasks(workspaceId, { task: 't', project: 'p' })}
       and ${taskOpenSql('t')}
     order by p.rank, t.rank, t.id
   `)

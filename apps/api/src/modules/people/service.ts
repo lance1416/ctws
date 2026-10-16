@@ -9,13 +9,14 @@ import {
   personId,
 } from '@ctws/contracts'
 import { newId } from '../../platform/db/ids'
-import { and, eq, sql } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import type { Db, Tx } from '../../platform/db/client'
+import { scoped, within } from '../../platform/db/scope'
 import { assertProjectsVisible } from '../../shell/projects/queries'
 import { assertPossibleBirthday } from './birthdays'
 import { PersonNotFoundError } from './errors'
-import { getPerson, type PersonRow, personFiling, visiblePeople } from './queries'
+import { getPerson, type PersonRow, personFiling } from './queries'
 import { people, personChannels } from './tables'
 
 const checkBirthday = (b: BirthdayInput | null | undefined): void => {
@@ -114,7 +115,7 @@ export async function updatePerson(
     await tx
       .update(people)
       .set({ ...fields, ...birthdayColumns(birthday), updatedAt: sql`now()` })
-      .where(and(visiblePeople(workspaceId), eq(people.id, id)))
+      .where(within(scoped(people, workspaceId), eq(people.id, id)))
     if (projectIds) await personFiling.put(tx, { workspaceId, id, projectIds })
     if (channels) await putChannels(tx, id, channels)
     return getPerson(tx, workspaceId, id)
@@ -129,7 +130,7 @@ export async function softDeletePerson(
   const deleted = await db
     .update(people)
     .set({ deletedAt: sql`now()` })
-    .where(and(visiblePeople(workspaceId), eq(people.id, id)))
+    .where(within(scoped(people, workspaceId), eq(people.id, id)))
     .returning({ id: people.id })
   if (deleted.length === 0) throw new PersonNotFoundError()
 }

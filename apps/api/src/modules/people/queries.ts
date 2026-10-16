@@ -7,8 +7,9 @@ import {
   type ProjectId,
 } from '@ctws/contracts'
 import type { BirthdayCalendar } from '@ctws/core'
-import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
+import { asc, eq, inArray, sql } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
+import { scoped, within } from '../../platform/db/scope'
 import { textMatches } from '../../platform/db/sql'
 import { groupBy } from '../../platform/values'
 import { filing, projectsOf } from '../../shell/links/filing'
@@ -45,11 +46,6 @@ export type PersonRow = Omit<
   projects: Named<ProjectId>[]
   channels: PersonChannel[]
   birthday: StoredBirthday | null
-}
-
-/** A live person in this workspace; every read and write goes through it. */
-export function visiblePeople(workspaceId: WorkspaceId) {
-  return and(eq(people.workspaceId, workspaceId), isNull(people.deletedAt))
 }
 
 export const personFiling = filing('person', people)
@@ -114,7 +110,7 @@ export async function listPeople(q: Queryable, workspaceId: WorkspaceId): Promis
   const rows = await q
     .select()
     .from(people)
-    .where(visiblePeople(workspaceId))
+    .where(scoped(people, workspaceId))
     .orderBy(asc(people.name), asc(people.id))
   return hydrate(q, workspaceId, rows)
 }
@@ -127,7 +123,7 @@ export async function getPerson(
   const rows = await q
     .select()
     .from(people)
-    .where(and(visiblePeople(workspaceId), eq(people.id, id)))
+    .where(within(scoped(people, workspaceId), eq(people.id, id)))
   if (rows.length === 0) throw new PersonNotFoundError()
   const [row] = await hydrate(q, workspaceId, rows)
   return row!
@@ -146,8 +142,8 @@ export async function searchPeople(
     .select()
     .from(people)
     .where(
-      and(
-        visiblePeople(workspaceId),
+      within(
+        scoped(people, workspaceId),
         sql`(
           ${textMatches(['people.name', 'people.org'], query)}
           or exists (
@@ -173,7 +169,7 @@ export async function assertPeopleVisible(
   const rows = await q
     .select({ id: people.id })
     .from(people)
-    .where(and(visiblePeople(workspaceId), inArray(people.id, unique)))
+    .where(within(scoped(people, workspaceId), inArray(people.id, unique)))
   if (rows.length !== unique.length) throw new PersonNotFoundError()
 }
 
@@ -189,13 +185,13 @@ export async function attendeesOf(
     .from(links)
     .innerJoin(people, eq(people.id, links.toId))
     .where(
-      and(
-        eq(links.workspaceId, workspaceId),
+      within(
+        scoped(links, workspaceId),
+        scoped(people, workspaceId),
         eq(links.fromType, 'meeting'),
         inArray(links.fromId, [...meetingIds]),
         eq(links.toType, 'person'),
         eq(links.kind, 'attends'),
-        isNull(people.deletedAt),
       ),
     )
     .orderBy(asc(people.name), asc(people.id))

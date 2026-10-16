@@ -8,9 +8,11 @@ import {
 } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import type { Queryable } from '../../../platform/db/client'
+import { scoped } from '../../../platform/db/scope'
 import { sqlValues } from '../../../platform/db/sql'
+import { taskEvents } from '../tables'
 import { localNow } from '../../../platform/db/time'
-import { taskVisibleSql } from './scope'
+import { visibleTasks } from './scope'
 
 type ReviewProject = ReviewResponse['projects'][number]
 
@@ -76,12 +78,12 @@ export async function listReview(
     join bounds b on true
     join tasks t on t.id = ev.task_id
     join projects p on p.id = t.project_id
-    where ev.workspace_id = ${workspaceId}
+    where ${scoped(taskEvents, workspaceId, 'ev')}
       and ev.type = 'status_changed'
       and ev.payload ->> 'to' in (${sqlValues(Object.values(REVIEW_TRANSITIONS))})
       and ev.occurred_at >= b.t0
       and ev.occurred_at < b.t1
-      and ${taskVisibleSql('t', 'p', workspaceId)}
+      and ${visibleTasks(workspaceId, { task: 't', project: 'p' })}
     order by p.rank, p.id, ev.occurred_at desc, ev.id
   `)
 

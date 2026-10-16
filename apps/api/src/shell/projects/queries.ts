@@ -1,20 +1,10 @@
 import { type WorkspaceId, type ProjectId } from '@ctws/contracts'
-import { and, asc, desc, eq, inArray, isNotNull, isNull, sql, type SQL } from 'drizzle-orm'
+import { asc, desc, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
-import { ident } from '../../platform/db/sql'
+import { scoped, within } from '../../platform/db/scope'
 import type { ProjectColumns } from '../module'
 import { ProjectNotFoundError } from './errors'
 import { projects, type Project } from './tables'
-
-/** A live project in this workspace. Every read of a project, or of a task through it, uses this. */
-export function visibleProjects(workspaceId: WorkspaceId): SQL {
-  return and(eq(projects.workspaceId, workspaceId), isNull(projects.deletedAt))!
-}
-
-/** The same predicate for raw SQL over the alias `project`. */
-export function projectVisibleSql(project: string, workspaceId: WorkspaceId): SQL {
-  return sql`${ident(project)}.workspace_id = ${workspaceId} and ${ident(project)}.deleted_at is null`
-}
 
 /**
  * Every id names a live project in this workspace, or none is used. A foreign id reads as not
@@ -30,7 +20,7 @@ export async function assertProjectsVisible(
   const rows = await q
     .select({ id: projects.id })
     .from(projects)
-    .where(and(visibleProjects(workspaceId), inArray(projects.id, unique)))
+    .where(within(scoped(projects, workspaceId), inArray(projects.id, unique)))
   if (rows.length !== unique.length) throw new ProjectNotFoundError()
 }
 
@@ -43,7 +33,7 @@ export async function visibleProjectId(
   const [row] = await q
     .select({ id: projects.id })
     .from(projects)
-    .where(and(visibleProjects(workspaceId), eq(projects.id, id)))
+    .where(within(scoped(projects, workspaceId), eq(projects.id, id)))
   if (!row) throw new ProjectNotFoundError()
   return row.id
 }
@@ -62,8 +52,8 @@ export async function listProjects(
     .select({ project: projects, ...columns })
     .from(projects)
     .where(
-      and(
-        visibleProjects(workspaceId),
+      within(
+        scoped(projects, workspaceId),
         opts.archived ? isNotNull(projects.archivedAt) : isNull(projects.archivedAt),
       ),
     )

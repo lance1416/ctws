@@ -15,12 +15,12 @@ import {
   lunarDateOf,
   nextOccurrence,
 } from '@ctws/core'
-import { and, asc, isNotNull } from 'drizzle-orm'
+import { asc, isNotNull } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
+import { scoped, within } from '../../platform/db/scope'
 import { accountToday } from '../../platform/db/time'
 import { dayEntry } from '../../shell/calendar/entry'
 import { ImpossibleBirthdayError } from './errors'
-import { visiblePeople } from './queries'
 import { people } from './tables'
 
 /**
@@ -90,7 +90,7 @@ async function peopleWithBirthdays(q: Queryable, workspaceId: WorkspaceId) {
       remindLead: people.birthdayRemindLead,
     })
     .from(people)
-    .where(and(visiblePeople(workspaceId), isNotNull(people.birthdayMonth)))
+    .where(within(scoped(people, workspaceId), isNotNull(people.birthdayMonth)))
     .orderBy(asc(people.name))
 }
 

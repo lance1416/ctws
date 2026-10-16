@@ -1,22 +1,24 @@
 import { FINISHED_TASK_STATUSES, type WorkspaceId, type TaskId } from '@ctws/contracts'
-import { and, eq, isNull, sql, type SQL } from 'drizzle-orm'
+import { eq, sql, type SQL } from 'drizzle-orm'
 import type { Queryable, Tx } from '../../../platform/db/client'
+import { liveUnder, type Scope, scoped, within } from '../../../platform/db/scope'
 import { ident, sqlValues } from '../../../platform/db/sql'
-import { projectVisibleSql, visibleProjects } from '../../../shell/projects/queries'
 import { projects } from '../../../shell/projects/tables'
 import { TaskNotFoundError } from '../errors'
 import { tasks, type Task } from '../tables'
 
-/**
- * A live task in a project this workspace can see; a task has no workspace of its own. Needs
- * `projects` joined.
- */
-export const visibleTasks = (workspaceId: WorkspaceId): SQL =>
-  and(isNull(tasks.deletedAt), visibleProjects(workspaceId))!
+/** How a query names the task table and the project table joined to it. */
+type Aliases = { task: string; project: string }
 
-/** The same predicate for raw SQL over the aliases `task` and `project`. */
-export const taskVisibleSql = (task: string, project: string, workspaceId: WorkspaceId): SQL =>
-  sql`${ident(task)}.deleted_at is null and ${projectVisibleSql(project, workspaceId)}`
+/** The query builder's names; raw SQL names them `t` and `p`. */
+const BUILDER: Aliases = { task: 'tasks', project: 'projects' }
+
+/**
+ * A live task in a project this workspace can see; a task has no workspace of its own, so the
+ * project is joined.
+ */
+export const visibleTasks = (workspaceId: WorkspaceId, as: Aliases = BUILDER): Scope =>
+  liveUnder(as.task, scoped(projects, workspaceId, as.project))
 
 const FINISHED = sqlValues(FINISHED_TASK_STATUSES)
 
@@ -43,7 +45,7 @@ const byId = (q: Queryable, workspaceId: WorkspaceId, id: TaskId) =>
     .select({ task: tasks })
     .from(tasks)
     .innerJoin(projects, eq(projects.id, tasks.projectId))
-    .where(and(eq(tasks.id, id), visibleTasks(workspaceId)))
+    .where(within(visibleTasks(workspaceId), eq(tasks.id, id)))
     .$dynamic()
 
 /** One visible task. Missing, deleted and foreign ids all read as not found. */

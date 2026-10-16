@@ -1,6 +1,6 @@
-import { and, desc } from 'drizzle-orm'
+import { desc } from 'drizzle-orm'
+import { scoped, within } from '../../platform/db/scope'
 import { wanted, type Linkable } from '../../shell/links/linkable'
-import { visibleItems } from './queries'
 import { readingItems } from './tables'
 
 export const readingLinkable: Linkable = {
@@ -20,7 +20,7 @@ export const readingLinkable: Linkable = {
         author: readingItems.author,
       })
       .from(readingItems)
-      .where(and(visibleItems(workspaceId), where))
+      .where(within(scoped(readingItems, workspaceId), where))
       // Newest first, like the pile: what you just saved is what you are reaching for.
       .orderBy(desc(readingItems.createdAt), desc(readingItems.id))
       .limit(limit)

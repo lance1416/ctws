@@ -1,6 +1,7 @@
 import { type LinkKind, type ObjectType, type WorkspaceId } from '@ctws/contracts'
-import { and, eq } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import type { Queryable, Tx } from '../../platform/db/client'
+import { scoped, within } from '../../platform/db/scope'
 import { links } from './tables'
 
 /** One end of an edge. */
@@ -29,8 +30,8 @@ export async function putLinks(
   await q
     .delete(links)
     .where(
-      and(
-        eq(links.workspaceId, workspaceId),
+      within(
+        scoped(links, workspaceId),
         eq(links.fromType, from.type),
         eq(links.fromId, from.id),
         eq(links.toType, toType),
@@ -77,8 +78,8 @@ export async function removeLink(
   await q
     .delete(links)
     .where(
-      and(
-        eq(links.workspaceId, workspaceId),
+      within(
+        scoped(links, workspaceId),
         eq(links.fromType, from.type),
         eq(links.fromId, from.id),
         eq(links.toType, to.type),

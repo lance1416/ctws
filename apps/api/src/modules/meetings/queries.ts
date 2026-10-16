@@ -8,8 +8,9 @@ import {
   type WorkspaceId,
 } from '@ctws/contracts'
 import { clockTime, zoneAbbreviation } from '@ctws/core'
-import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
+import { asc, eq, inArray } from 'drizzle-orm'
 import type { Queryable, Tx } from '../../platform/db/client'
+import { scoped, within } from '../../platform/db/scope'
 import { groupBy } from '../../platform/values'
 import { filing } from '../../shell/links/filing'
 import { attendeesOf } from '../people'
@@ -45,11 +46,6 @@ export type OccurrenceRow = Occurrence & {
   projectId: ProjectId | null
   projectName: string | null
   attendees: Attendee[]
-}
-
-/** A live meeting in this workspace; every read and write goes through it. */
-export function visibleMeetings(workspaceId: WorkspaceId) {
-  return and(eq(meetings.workspaceId, workspaceId), isNull(meetings.deletedAt))
 }
 
 export const meetingFiling = filing('meeting', meetings)
@@ -127,7 +123,7 @@ async function seriesOf(
   const rows = await q
     .select({ meeting: meetings, ...meetingFiling.project })
     .from(meetings)
-    .where(and(visibleMeetings(workspaceId), id ? eq(meetings.id, id) : undefined))
+    .where(within(scoped(meetings, workspaceId), id ? eq(meetings.id, id) : undefined))
     .orderBy(asc(meetings.startsLocal), asc(meetings.id))
     .limit(MAX_SERIES_PER_REQUEST)
   return hydrate(q, workspaceId, rows)
@@ -138,7 +134,7 @@ export async function lockMeeting(q: Tx, workspaceId: WorkspaceId, id: MeetingId
   const [row] = await q
     .select({ id: meetings.id })
     .from(meetings)
-    .where(and(visibleMeetings(workspaceId), eq(meetings.id, id)))
+    .where(within(scoped(meetings, workspaceId), eq(meetings.id, id)))
     .for('update')
   if (!row) throw new MeetingNotFoundError()
 }

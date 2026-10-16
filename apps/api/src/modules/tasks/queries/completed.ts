@@ -2,7 +2,7 @@ import type { WorkspaceId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import type { Queryable } from '../../../platform/db/client'
 import { TASK_COLUMNS, taskRowOf, type TaskRow } from './rows'
-import { taskVisibleSql } from './scope'
+import { visibleTasks } from './scope'
 
 export type CompletedTask = TaskRow & {
   completedAt: Date
@@ -31,7 +31,7 @@ export async function listCompleted(
     from tasks t
     join projects p on p.id = t.project_id
     left join tasks parent on parent.id = t.parent_id
-    where ${taskVisibleSql('t', 'p', workspaceId)}
+    where ${visibleTasks(workspaceId, { task: 't', project: 'p' })}
       and t.status = 'done'
       and t.completed_at is not null
     order by t.completed_at desc, t.id

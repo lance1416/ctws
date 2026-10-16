@@ -9,8 +9,9 @@ import {
   meetingId,
 } from '@ctws/contracts'
 import { newId } from '../../platform/db/ids'
-import { and, eq, sql } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import type { Db, Queryable, Tx } from '../../platform/db/client'
+import { scoped, within } from '../../platform/db/scope'
 import { putLinks } from '../../shell/links/store'
 import { assertProjectsVisible } from '../../shell/projects/queries'
 import { assertPeopleVisible } from '../people'
@@ -24,7 +25,6 @@ import {
   type OccurrenceRow,
   type SeriesRow,
   seriesById,
-  visibleMeetings,
 } from './queries'
 import { meetingExceptions, meetings } from './tables'
 
@@ -67,7 +67,7 @@ const touch = (q: Queryable, workspaceId: WorkspaceId, id: MeetingId) =>
   q
     .update(meetings)
     .set({ updatedAt: sql`now()` })
-    .where(and(visibleMeetings(workspaceId), eq(meetings.id, id)))
+    .where(within(scoped(meetings, workspaceId), eq(meetings.id, id)))
 
 /** The expander decides whether a rule is usable, so a stored rule always happens. */
 function assertRule(rule: string | null | undefined, startsLocal: LocalTime): void {
@@ -126,7 +126,7 @@ async function editFollowing(e: Edit) {
   await tx
     .update(meetings)
     .set({ rrule: endedBefore(series.rrule!, recurrenceId), updatedAt: sql`now()` })
-    .where(and(visibleMeetings(workspaceId), eq(meetings.id, series.id)))
+    .where(within(scoped(meetings, workspaceId), eq(meetings.id, series.id)))
 
   const nextId = newId(meetingId)
   const startsLocal = fields.startsLocal ?? recurrenceId
@@ -171,7 +171,7 @@ async function editAll({ tx, workspaceId, series, fields, attendeeIds, projectId
   await tx
     .update(meetings)
     .set({ ...fields, updatedAt: sql`now()` })
-    .where(and(visibleMeetings(workspaceId), eq(meetings.id, series.id)))
+    .where(within(scoped(meetings, workspaceId), eq(meetings.id, series.id)))
   if (attendeeIds) await putAttendees(tx, { workspaceId, id: series.id, attendeeIds })
   // `null` unfiles the meeting; absent leaves it where it is.
   if (projectId !== undefined) {
@@ -208,7 +208,7 @@ async function cancelFollowing({ tx, workspaceId, series, recurrenceId }: Cancel
   await tx
     .update(meetings)
     .set({ rrule: endedBefore(series.rrule!, recurrenceId!), updatedAt: sql`now()` })
-    .where(and(visibleMeetings(workspaceId), eq(meetings.id, series.id)))
+    .where(within(scoped(meetings, workspaceId), eq(meetings.id, series.id)))
   await tx.execute(sql`
     delete from meeting_exceptions
     where meeting_id = ${series.id} and recurrence_id >= ${recurrenceId!}
@@ -219,7 +219,7 @@ async function cancelAll({ tx, workspaceId, series }: Cancel) {
   await tx
     .update(meetings)
     .set({ deletedAt: sql`now()` })
-    .where(and(visibleMeetings(workspaceId), eq(meetings.id, series.id)))
+    .where(within(scoped(meetings, workspaceId), eq(meetings.id, series.id)))
 }
 
 const EDITS: Record<EditScope, (e: Edit) => Promise<OccurrenceRow>> = {

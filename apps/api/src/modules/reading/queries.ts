@@ -5,8 +5,9 @@ import {
   type WorkspaceId,
   type ReadingId,
 } from '@ctws/contracts'
-import { and, desc, eq, isNull, sql } from 'drizzle-orm'
+import { desc, eq, sql } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
+import { scoped, within } from '../../platform/db/scope'
 import { sqlValues, textMatches } from '../../platform/db/sql'
 import { dayEntry } from '../../shell/calendar/entry'
 import { filing, projectOfSql } from '../../shell/links/filing'
@@ -19,11 +20,6 @@ type ReadingItem = typeof readingItems.$inferSelect
 export type ReadingItemRow = ReadingItem & {
   projectId: ProjectId | null
   projectName: string | null
-}
-
-/** A live item in this workspace; every read and write goes through it. */
-export function visibleItems(workspaceId: WorkspaceId) {
-  return and(eq(readingItems.workspaceId, workspaceId), isNull(readingItems.deletedAt))
 }
 
 export const readingFiling = filing('reading', readingItems)
@@ -45,7 +41,7 @@ export async function listReadingItems(
   const rows = await q
     .select(withProject)
     .from(readingItems)
-    .where(and(visibleItems(workspaceId), unfiled ? readingFiling.unfiled() : undefined))
+    .where(within(scoped(readingItems, workspaceId), unfiled ? readingFiling.unfiled() : undefined))
     .orderBy(desc(readingItems.createdAt), desc(readingItems.id))
   return rows.map(rowOf)
 }
@@ -58,7 +54,7 @@ export async function getReadingItem(
   const [row] = await q
     .select(withProject)
     .from(readingItems)
-    .where(and(visibleItems(workspaceId), eq(readingItems.id, id)))
+    .where(within(scoped(readingItems, workspaceId), eq(readingItems.id, id)))
   if (!row) throw new ReadingItemNotFoundError()
   return rowOf(row)
 }
@@ -76,8 +72,8 @@ export async function searchReadingItems(
     .select(withProject)
     .from(readingItems)
     .where(
-      and(
-        visibleItems(workspaceId),
+      within(
+        scoped(readingItems, workspaceId),
         textMatches(['reading_items.title', 'reading_items.author', 'reading_items.url'], query),
       ),
     )
@@ -102,8 +98,7 @@ export async function readingEntries(
       p.name as "projectName"
     from reading_items r
     left join lateral ${projectOfSql('reading', 'r')} p on true
-    where r.workspace_id = ${workspaceId}
-      and r.deleted_at is null
+    where ${scoped(readingItems, workspaceId, 'r')}
       and r.plan_on is not null
       and r.status not in (${sqlValues(FINISHED_READING_STATUSES)})
       and r.plan_on between ${range.from}::date and ${range.to}::date

@@ -9,6 +9,7 @@ import {
 } from '@ctws/contracts'
 import { and, eq, or } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
+import { scoped, within } from '../../platform/db/scope'
 import { links } from './tables'
 import type { Endpoint } from './store'
 import type { StoredEdge } from './linkable'
@@ -41,8 +42,8 @@ async function storedEdges(
     })
     .from(links)
     .where(
-      and(
-        eq(links.workspaceId, workspaceId),
+      within(
+        scoped(links, workspaceId),
         or(
           and(eq(links.fromType, of.type), eq(links.fromId, of.id)),
           and(eq(links.toType, of.type), eq(links.toId, of.id)),

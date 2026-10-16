@@ -3,7 +3,7 @@ import { sql } from 'drizzle-orm'
 import type { Queryable } from '../../../platform/db/client'
 import { dayStart, localDay } from '../../../platform/db/time'
 import { TASK_COLUMNS, taskRowOf, type TaskRow } from './rows'
-import { taskOpenSql, taskVisibleSql } from './scope'
+import { taskOpenSql, visibleTasks } from './scope'
 
 export type TodayTask = TaskRow & { segment: TodaySegment }
 
@@ -41,7 +41,7 @@ export async function listToday(
       join projects p on p.id = t.project_id
       join bounds b on true
       left join tasks parent on parent.id = t.parent_id
-      where ${taskVisibleSql('t', 'p', workspaceId)}
+      where ${visibleTasks(workspaceId, { task: 't', project: 'p' })}
         and p.archived_at is null
         and ${taskOpenSql('t')}
         and (

@@ -3,7 +3,7 @@ import { rollup, type Rollup, type RollupNode } from '@ctws/core'
 import { sql } from 'drizzle-orm'
 import type { Queryable } from '../../../platform/db/client'
 import { dayStart } from '../../../platform/db/time'
-import { taskOpenSql, taskVisibleSql } from './scope'
+import { taskOpenSql, visibleTasks } from './scope'
 
 /**
  * Each task's rollup across one project's tree. SQL decides `overdue` with the same day boundary
@@ -29,7 +29,7 @@ export async function projectRollups(
     from tasks t
     join projects p on p.id = t.project_id
     where p.id = ${projectId}
-      and ${taskVisibleSql('t', 'p', workspaceId)}
+      and ${visibleTasks(workspaceId, { task: 't', project: 'p' })}
   `)
   return rollup(result.rows as RollupNode<TaskId>[])
 }

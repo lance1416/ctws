@@ -1,6 +1,7 @@
 import type { TaskId, WorkspaceId } from '@ctws/contracts'
-import { and, eq, sql } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import type { Db, Queryable } from '../../../platform/db/client'
+import { scoped, within } from '../../../platform/db/scope'
 import { DependencyCycleError } from '../errors'
 import { taskLog, type TaskCtx } from '../log'
 import { visibleTask } from '../queries/scope'
@@ -26,7 +27,7 @@ async function wouldCycle(
       select d.blocker_id
       from task_dependencies d
       join upstream u on u.id = d.blocked_id
-      where d.workspace_id = ${workspaceId}
+      where ${scoped(taskDependencies, workspaceId, 'd')}
     )
     select 1 from upstream where id = ${blockedId}::uuid
   `)
@@ -72,10 +73,10 @@ export async function removeDependency(
     const removed = await tx
       .delete(taskDependencies)
       .where(
-        and(
+        within(
+          scoped(taskDependencies, ctx.workspaceId),
           eq(taskDependencies.blockedId, blockedId),
           eq(taskDependencies.blockerId, blockerId),
-          eq(taskDependencies.workspaceId, ctx.workspaceId),
         ),
       )
       .returning({ blockerId: taskDependencies.blockerId })

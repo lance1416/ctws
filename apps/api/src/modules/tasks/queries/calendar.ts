@@ -1,7 +1,7 @@
 import { type ProjectId, type WorkspaceId, type TaskId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import type { Queryable } from '../../../platform/db/client'
-import { taskOpenSql, taskVisibleSql } from './scope'
+import { taskOpenSql, visibleTasks } from './scope'
 
 export type CalendarRow = {
   id: TaskId
@@ -27,7 +27,7 @@ export async function listTaskCalendar(
       select t.id, t.title, t.scheduled_on, t.due_at, p.id as project_id, p.name as project_name
       from tasks t
       join projects p on p.id = t.project_id
-      where ${taskVisibleSql('t', 'p', workspaceId)}
+      where ${visibleTasks(workspaceId, { task: 't', project: 'p' })}
         and ${taskOpenSql('t')}
     )
     select id, to_char(scheduled_on, 'YYYY-MM-DD') as day, title, 'planned' as kind,

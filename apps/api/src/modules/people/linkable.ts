@@ -1,6 +1,6 @@
-import { and, asc } from 'drizzle-orm'
+import { asc } from 'drizzle-orm'
+import { scoped, within } from '../../platform/db/scope'
 import { wanted, type Linkable } from '../../shell/links/linkable'
-import { visiblePeople } from './queries'
 import { people } from './tables'
 
 export const personLinkable: Linkable = {
@@ -11,7 +11,7 @@ export const personLinkable: Linkable = {
     const found = await q
       .select({ id: people.id, name: people.name, org: people.org })
       .from(people)
-      .where(and(visiblePeople(workspaceId), where))
+      .where(within(scoped(people, workspaceId), where))
       .orderBy(asc(people.name), asc(people.id))
       .limit(limit)
     return found.map((r) => ({ id: r.id, title: r.name, detail: r.org }))

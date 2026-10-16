@@ -6,11 +6,12 @@ import {
   readingId,
 } from '@ctws/contracts'
 import { newId } from '../../platform/db/ids'
-import { and, eq, sql } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import type { Db } from '../../platform/db/client'
+import { scoped, within } from '../../platform/db/scope'
 import { assertProjectsVisible } from '../../shell/projects/queries'
 import { ReadingItemNotFoundError, WrongKindError } from './errors'
-import { getReadingItem, readingFiling, type ReadingItemRow, visibleItems } from './queries'
+import { getReadingItem, readingFiling, type ReadingItemRow } from './queries'
 import { readingItems } from './tables'
 import type { Unfurl } from './unfurl/unfurl'
 
@@ -57,7 +58,7 @@ export async function updateReadingItem(
     await tx
       .update(readingItems)
       .set({ ...fields, updatedAt: sql`now()` })
-      .where(and(visibleItems(workspaceId), eq(readingItems.id, id)))
+      .where(within(scoped(readingItems, workspaceId), eq(readingItems.id, id)))
     // `null` unfiles the item; absent leaves it where it is.
     if (projectId !== undefined) {
       await readingFiling.put(tx, { workspaceId, id, projectIds: projectId ? [projectId] : [] })
@@ -74,7 +75,7 @@ export async function softDeleteReadingItem(
   const deleted = await db
     .update(readingItems)
     .set({ deletedAt: sql`now()` })
-    .where(and(visibleItems(workspaceId), eq(readingItems.id, id)))
+    .where(within(scoped(readingItems, workspaceId), eq(readingItems.id, id)))
     .returning({ id: readingItems.id })
   if (deleted.length === 0) throw new ReadingItemNotFoundError()
 }
@@ -96,6 +97,6 @@ export async function withFetched(
   await db
     .update(readingItems)
     .set({ fetchedTitle: facts.title, fetchedSummary: facts.summary })
-    .where(and(visibleItems(workspaceId), eq(readingItems.id, row.id)))
+    .where(within(scoped(readingItems, workspaceId), eq(readingItems.id, row.id)))
   return getReadingItem(db, workspaceId, row.id)
 }

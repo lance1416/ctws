@@ -1,8 +1,8 @@
 import { zoneAbbreviation } from '@ctws/core'
-import { and, desc } from 'drizzle-orm'
+import { desc } from 'drizzle-orm'
+import { scoped, within } from '../../platform/db/scope'
 import { wanted, type Linkable } from '../../shell/links/linkable'
 import { instantOf } from './occurrences'
-import { visibleMeetings } from './queries'
 import { meetings } from './tables'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -27,7 +27,7 @@ export const meetingLinkable: Linkable = {
         timeZone: meetings.timeZone,
       })
       .from(meetings)
-      .where(and(visibleMeetings(workspaceId), where))
+      .where(within(scoped(meetings, workspaceId), where))
       // Latest start first; a series shows once, since this is the series table.
       .orderBy(desc(meetings.startsLocal), desc(meetings.id))
       .limit(limit)
