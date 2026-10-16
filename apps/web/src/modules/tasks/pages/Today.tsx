@@ -130,7 +130,7 @@ export function Today() {
 
   return (
     <div className="mx-auto w-full max-w-[67.5rem] pt-4 sm:pt-6">
-      <DayHeading now={now} today={day} timeZone={timeZone} />
+      <DayHeading today={day} />
 
       {today.isPending && <p className={`${HANG} text-ink-muted`}>Loading…</p>}
       {today.isError && (

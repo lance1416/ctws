@@ -62,6 +62,25 @@ describe('shortDay', () => {
   })
 })
 
+describe('nearDay', () => {
+  it('names the three days around today and nothing else', async () => {
+    const { nearDay } = await load()
+    expect(nearDay('2026-10-10', '2026-10-10')).toBe('Today')
+    expect(nearDay('2026-10-11', '2026-10-10')).toBe('Tomorrow')
+    expect(nearDay('2026-10-09', '2026-10-10')).toBe('Yesterday')
+    expect(nearDay('2026-10-12', '2026-10-10')).toBeNull()
+  })
+})
+
+describe('weekdayDay and longDay', () => {
+  it('write the weekday before the date, the year only across it', async () => {
+    const { weekdayDay, longDay } = await load()
+    expect(weekdayDay('2026-10-02', '2026-10-10')).toBe('Fri, Oct 2')
+    expect(weekdayDay('2027-01-01', '2026-12-30')).toBe('Fri, Jan 1, 2027')
+    expect(longDay('2026-10-02')).toBe('Friday, October 2')
+  })
+})
+
 describe('countdownPhrase', () => {
   it('names zero today and one tomorrow, and counts the rest', async () => {
     const { countdownPhrase } = await load()

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { ymd } from '../../../platform/time/dates'
+import { weekdayDay, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { PanelEmpty } from '../../../platform/ui/Panel'
 import { useTimeZone } from '../../../shell/auth'
@@ -96,14 +96,6 @@ function GlanceCount({ to, n, word, tone }: { to: string; n: number; word: strin
 export function TodayDate() {
   const timeZone = useTimeZone()
   const now = useNow()
-  return (
-    <span className="text-sm text-ink-subtle">
-      {new Intl.DateTimeFormat('en-US', {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-        timeZone,
-      }).format(now)}
-    </span>
-  )
+  const today = ymd(now, timeZone)
+  return <span className="text-sm text-ink-subtle">{weekdayDay(today, today)}</span>
 }

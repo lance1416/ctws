@@ -63,12 +63,32 @@ export function weekdayOf(day: string, short = false): string {
   return short ? name.slice(0, 3) : name
 }
 
-/** Today, Tomorrow or Yesterday, else `shortDay`. */
-export function dayPhrase(day: string, today: string): string {
+/** Today, Tomorrow or Yesterday; null for any other day. */
+export function nearDay(day: string, today: string): string | null {
   if (day === today) return 'Today'
   if (day === addDays(today, 1)) return 'Tomorrow'
   if (day === addDays(today, -1)) return 'Yesterday'
-  return shortDay(day, today)
+  return null
+}
+
+/** Today, Tomorrow or Yesterday, else `shortDay`. */
+export function dayPhrase(day: string, today: string): string {
+  return nearDay(day, today) ?? shortDay(day, today)
+}
+
+/** `Fri, Oct 2`, or `Fri, Jan 2, 2027` outside this year. */
+export function weekdayDay(day: string, today: string): string {
+  return `${weekdayOf(day, true)}, ${shortDay(day, today)}`
+}
+
+/** `Friday, October 2`: a day as a page's heading. */
+export function longDay(day: string): string {
+  return new Intl.DateTimeFormat('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(`${day}T12:00:00Z`))
 }
 
 /** `Oct 12`, or `Apr 15, 2027` outside this year. */

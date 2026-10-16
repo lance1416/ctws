@@ -19,7 +19,7 @@ import {
 import { PanelEmpty } from '../../../platform/ui/Panel'
 import { addDays } from '@ctws/core/day'
 import { clockTime } from '@ctws/core/clock'
-import { ymd } from '../../../platform/time/dates'
+import { nearDay, weekdayDay, ymd } from '../../../platform/time/dates'
 import { meetingLink } from '../logic/meetingPlace'
 import { cityAndZone } from '../logic/timeZones'
 import { useTimeZone } from '../../../shell/auth'
@@ -168,12 +168,6 @@ function Days({
   accountZone: string
   onOpen: (meeting: MeetingOccurrence) => void
 }) {
-  const named = new Intl.DateTimeFormat('en-US', {
-    timeZone: accountZone,
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  })
   // Grouped by the account's day, not `recurrenceId`'s meeting-local date: 01:00 Friday in London
   // can be Thursday evening here, and every other screen groups by the account's zone.
   const dayOf = new Intl.DateTimeFormat('en-CA', {
@@ -189,14 +183,7 @@ function Days({
     if (list) list.push(m)
     else days.set(day, [m])
   }
-  const dayName = (day: string) =>
-    day === today
-      ? 'Today'
-      : day === addDays(today, 1)
-        ? 'Tomorrow'
-        : day === addDays(today, -1)
-          ? 'Yesterday'
-          : named.format(new Date(`${day}T12:00:00Z`))
+  const dayName = (day: string) => nearDay(day, today) ?? weekdayDay(day, today)
 
   return (
     <section aria-label={label} className="flex flex-col gap-6">

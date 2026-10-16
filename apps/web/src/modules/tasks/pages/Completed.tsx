@@ -10,22 +10,17 @@ import { DONE_LIST_MEASURE } from '../components/TaskRowParts'
 import { StatusButton } from '../components/StatusControls'
 import { TaskDetail } from '../components/TaskDetail'
 import { useRowPane, useRowRefs } from '../components/useRowPane'
-import { addDays } from '@ctws/core/day'
 import { clockTime } from '@ctws/core/clock'
-import { MONTHS, weekdayOf, ymd } from '../../../platform/time/dates'
+import { nearDay, weekdayDay, ymd } from '../../../platform/time/dates'
 import { useTimeZone } from '../../../shell/auth'
 import { useNow } from '../../../platform/time/useNow'
 import { QueryStatus } from '../../../platform/ui/QueryStatus'
 import { HANG } from '../../../platform/ui/hang'
 
-/** "Fri, Oct 2", with the year when not this year. `day` is a calendar day, not an instant. */
+/** "Yesterday · Fri, Oct 2", with the year when not this year. */
 function dayHeading(day: string, today: string): string {
-  const [y, m, d] = day.split('-').map(Number) as [number, number, number]
-  const weekday = weekdayOf(day, true)
-  const date =
-    today.slice(0, 4) === day.slice(0, 4) ? `${MONTHS[m - 1]} ${d}` : `${MONTHS[m - 1]} ${d}, ${y}`
-  const near = day === today ? 'Today · ' : day === addDays(today, -1) ? 'Yesterday · ' : ''
-  return `${near}${weekday}, ${date}`
+  const near = nearDay(day, today)
+  return near ? `${near} · ${weekdayDay(day, today)}` : weekdayDay(day, today)
 }
 
 /** Review's Done view, newest first. The server decides each task's day; this only groups by it. */
