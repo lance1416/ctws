@@ -316,3 +316,26 @@ test('the single-key shortcuts can be turned off, and stay off after a reload', 
   await page.keyboard.press('f')
   await expect(page.getByRole('combobox', { name: 'Search' })).toBeFocused()
 })
+
+test('the key after g is the chord’s alone, whether or not it names one', async ({ page }) => {
+  await registerFreshUser(page)
+  const inbox = await page.request.get('/api/v1/projects')
+  const { projects } = (await inbox.json()) as { projects: { id: string; name: string }[] }
+  await page
+    .getByRole('navigation', { name: 'Main navigation' })
+    .getByRole('link', { name: 'Inbox' })
+    .click()
+  await expect(page).toHaveURL(`/projects/${projects.find((p) => p.name === 'Inbox')!.id}`)
+
+  // On a project `n` alone opens the New dialog; after `g` it is the jump to People, only that.
+  await page.keyboard.press('g')
+  await page.keyboard.press('n')
+  await expect(page).toHaveURL(/\/people$/)
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  // `/` alone goes to Capture; after `g` it names no jump, and does nothing.
+  await page.keyboard.press('g')
+  await page.keyboard.press('/')
+  await expect(page.getByLabel('Capture')).not.toBeFocused()
+  await page.keyboard.press('/')
+  await expect(page.getByLabel('Capture')).toBeFocused()
+})
