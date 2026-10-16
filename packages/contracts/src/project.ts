@@ -13,7 +13,7 @@ export const projectColors = [
   'project-5',
   'project-6',
 ] as const
-export const projectColor = z.enum(projectColors)
+const projectColor = z.enum(projectColors)
 export type ProjectColor = z.infer<typeof projectColor>
 
 export const createProjectBody = z

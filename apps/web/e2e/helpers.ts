@@ -343,7 +343,7 @@ export async function makeReading(
 }
 
 /** A PATCH to one task, as a response or the request behind it. */
-export const isTaskPatch = (r: { url: () => string; request: () => { method: () => string } }) =>
+const isTaskPatch = (r: { url: () => string; request: () => { method: () => string } }) =>
   r.request().method() === 'PATCH' && /\/tasks\/[^/]+$/.test(r.url())
 
 /** Waits for a task PATCH the server accepted. */
