@@ -1,4 +1,4 @@
-import type { CreateTaskBody } from '@ctws/contracts'
+import { MAX_TASK_DEPTH, type CreateTaskBody } from '@ctws/contracts'
 import { rankBetween } from '@ctws/core'
 import { and, desc, eq, isNull, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
@@ -8,7 +8,7 @@ import { DepthLimitError } from '../errors'
 import { taskLog, type TaskCtx } from '../log'
 import { lockVisibleTask } from '../queries/scope'
 import { tasks, type Task } from '../tables'
-import { clearLeafProgress, depthOf, lockTaskTree, MAX_DEPTH } from '../tree'
+import { depthOf, lockTaskTree } from '../tree'
 
 /**
  * Appends a task after its last sibling. Under a parent it takes the parent's project; the
@@ -17,14 +17,12 @@ import { clearLeafProgress, depthOf, lockTaskTree, MAX_DEPTH } from '../tree'
 export async function createTask(db: Db, ctx: TaskCtx, input: CreateTaskBody): Promise<Task> {
   return db.transaction(async (tx) => {
     await lockTaskTree(tx, ctx.workspaceId)
-    const log = taskLog(tx, ctx)
     let projectId = await visibleProjectId(tx, ctx.workspaceId, input.projectId)
 
     if (input.parentId) {
       const parent = await lockVisibleTask(tx, ctx.workspaceId, input.parentId)
-      if ((await depthOf(tx, parent.id)) + 1 > MAX_DEPTH) throw new DepthLimitError()
+      if ((await depthOf(tx, parent.id)) + 1 > MAX_TASK_DEPTH) throw new DepthLimitError()
       projectId = parent.projectId
-      await clearLeafProgress(tx, log, parent)
     }
 
     const [last] = await tx
@@ -51,13 +49,12 @@ export async function createTask(db: Db, ctx: TaskCtx, input: CreateTaskBody): P
         status: input.status,
         scheduledOn: input.scheduledOn ?? null,
         dueAt: input.dueAt ? new Date(input.dueAt) : null,
-        manualProgress: input.manualProgress == null ? null : input.manualProgress.toFixed(2),
         completedAt: input.status === 'done' ? sql`now()` : null,
         rank: rankBetween(last?.rank ?? null, null),
       })
       .returning()
 
-    await log.append(row!.id, 'created', {
+    await taskLog(tx, ctx).append(row!.id, 'created', {
       from: null,
       to: { title: row!.title, status: row!.status, parentId: row!.parentId, projectId },
     })

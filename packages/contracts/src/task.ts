@@ -6,9 +6,14 @@ export const TASK_STATUSES = ['backlog', 'todo', 'in_progress', 'done', 'cancell
 const taskStatus = z.enum(TASK_STATUSES)
 export type TaskStatus = z.infer<typeof taskStatus>
 
+/** The statuses that close a task: off Today, the calendar and every open count. */
+export const FINISHED_TASK_STATUSES = ['done', 'cancelled'] as const satisfies readonly TaskStatus[]
+
+/** The deepest a task may sit; a root is at depth 1. */
+export const MAX_TASK_DEPTH = 10
+
 const title = z.string().trim().min(1).max(500)
 const notes = z.string().max(100_000)
-const manualProgress = z.number().min(0).max(1)
 
 // The server computes rank; neither create nor update accepts one.
 export const createTaskBody = z
@@ -24,7 +29,6 @@ export const createTaskBody = z
     status: taskStatus.default('todo'),
     scheduledOn: calendarDate.nullish(),
     dueAt: instant.nullish(),
-    manualProgress: manualProgress.nullish(),
   })
   .strict()
 
@@ -36,7 +40,6 @@ export const updateTaskBody = z
     status: taskStatus,
     scheduledOn: calendarDate.nullable(),
     dueAt: instant.nullable(),
-    manualProgress: manualProgress.nullable(),
   })
   .partial()
   .strict()
@@ -62,7 +65,6 @@ export const taskResponse = z
     scheduledOn: calendarDate.nullable(),
     dueAt: instant.nullable(),
     rank: z.string(),
-    manualProgress: z.number().nullable(),
     completedAt: instant.nullable(),
     createdAt: instant,
     updatedAt: instant,
@@ -74,19 +76,9 @@ const rollupResponse = z
   .object({
     /** 0..1, or null for a task the rollup leaves out (backlog, cancelled). */
     progress: z.number().min(0).max(1).nullable(),
-    counts: z
-      .object({
-        backlog: z.number().int().min(0),
-        todo: z.number().int().min(0),
-        in_progress: z.number().int().min(0),
-        done: z.number().int().min(0),
-        cancelled: z.number().int().min(0),
-      })
-      .strict(),
+    /** Across the subtree, this task included. */
+    inProgress: z.number().int().min(0),
     overdue: z.number().int().min(0),
-    dueSoon: z.number().int().min(0),
-    /** The latest logged change anywhere in the subtree. */
-    lastActivityAt: instant.nullable(),
   })
   .strict()
 export type RollupResponse = z.infer<typeof rollupResponse>
@@ -170,6 +162,7 @@ export const todayResponse = z.object({ tasks: z.array(todayTaskResponse) }).str
 
 export const completedTaskResponse = taskResponse
   .extend({
+    completedAt: instant,
     projectName: z.string(),
     parentTitle: z.string().nullable(),
     /** The day it was finished, in the account's zone. */
@@ -216,7 +209,7 @@ export type SearchTaskResponse = z.infer<typeof searchTaskResponse>
 export const searchTasksResponse = z.object({ tasks: z.array(searchTaskResponse) }).strict()
 
 // No reorder event: a pure rank change is not logged.
-const TASK_EVENT_TYPES = [
+export const TASK_EVENT_TYPES = [
   'created',
   'status_changed',
   'due_changed',
@@ -224,48 +217,14 @@ const TASK_EVENT_TYPES = [
   'moved',
   'title_changed',
   'notes_changed',
-  'progress_set',
   // Logged on the waiting task.
   'dependency_added',
   'dependency_removed',
   'deleted',
-  'restored',
 ] as const
 export type TaskEventType = (typeof TASK_EVENT_TYPES)[number]
-
-export const taskEventResponse = z
-  .object({
-    id: z.uuid(),
-    taskId: z.uuid(),
-    actorUserId: z.uuid(),
-    type: z.enum(TASK_EVENT_TYPES),
-    /** The changed fields' before and after, never a row snapshot. */
-    payload: z.record(z.string(), z.unknown()),
-    source: z.string(),
-    occurredAt: instant,
-  })
-  .strict()
-
-export const TASK_EVENTS_PAGE = { default: 50, max: 100 } as const
-
-export const taskEventsQuery = z
-  .object({
-    cursor: z.string().max(256).optional(),
-    limit: z.coerce
-      .number()
-      .int()
-      .min(1)
-      .max(TASK_EVENTS_PAGE.max)
-      .default(TASK_EVENTS_PAGE.default),
-  })
-  .strict()
-
-export const taskEventsResponse = z
-  .object({ events: z.array(taskEventResponse), nextCursor: z.string().nullable() })
-  .strict()
 
 export type CreateTaskBody = z.infer<typeof createTaskBody>
 export type UpdateTaskBody = z.infer<typeof updateTaskBody>
 export type MoveTaskBody = z.infer<typeof moveTaskBody>
 export type TaskResponse = z.infer<typeof taskResponse>
-export type TaskEventResponse = z.infer<typeof taskEventResponse>

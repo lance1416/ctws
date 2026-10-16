@@ -15,7 +15,7 @@ import { triageSections, type TriagePatch } from '../../triage'
 /** A task row on Today. Its controls wait for the pointer or keyboard, except without hover. */
 export function TodayRow({
   task: t,
-  anyTime = false,
+  anyTime,
   today,
   timeZone,
   now,
@@ -28,7 +28,7 @@ export function TodayRow({
 }: {
   task: TodayTaskResponse
   /** On the day's line among timed things, an untimed row says so in the margin. */
-  anyTime?: boolean
+  anyTime: boolean
   today: string
   timeZone: string
   now: Date
@@ -43,7 +43,7 @@ export function TodayRow({
   const late = lateNote(t, timeZone, now)
   // A plan for a day already gone, still not done: carried over, and said so on the right.
   const carried = t.segment === 'today' && t.scheduledOn !== null && t.scheduledOn < today
-  const sections = triageSections(t, carried ? 'Carried over' : null, today, timeZone, onPatch)
+  const sections = triageSections(t, carried, today, timeZone, onPatch)
   const lead =
     leadFor(
       // A plan for today, or a carried one, leaves the margin to the line's times; a carried
@@ -92,7 +92,7 @@ export function TodayRow({
           </span>
           <RowMeta breadcrumb={taskCrumb(t)} blocked={blockedLabel(t.blockedBy)} />
         </button>
-        {late && <RowNote tone="text-missed">{late}</RowNote>}
+        {late && <RowNote>{late}</RowNote>}
         {carried && (
           <span
             data-date-hint="carried"

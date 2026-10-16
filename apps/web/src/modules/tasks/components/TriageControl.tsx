@@ -14,7 +14,7 @@ type Props = {
   triggerLabel: string
   sections: TriageSection[]
   /** Called after an action ran, so the page can put focus back on the row it belongs to. */
-  onRan?: () => void
+  onRan: () => void
 }
 
 /**
@@ -110,8 +110,7 @@ export function TriageControl({ groupLabel, triggerLabel, sections, onRan }: Pro
                     setOpen(false)
                     // The action usually removes this whole control with the condition that put
                     // it on the row, so focus goes to the row rather than the trigger.
-                    if (onRan) onRan()
-                    else queueMicrotask(() => trigger.current?.focus())
+                    onRan()
                   }}
                   className="rounded-md border border-rule px-2 py-1 text-ink hover:border-rule-strong hover:bg-hover"
                 >

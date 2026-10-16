@@ -1,11 +1,6 @@
-import { eq, sql } from 'drizzle-orm'
+import { sql } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
 import { LOCKS, lockFor } from '../../platform/db/locks'
-import type { TaskLog } from './log'
-import { tasks } from './tables'
-
-/** The deepest a task may sit; a root is at depth 1. */
-export const MAX_DEPTH = 10
 
 /**
  * Serialises changes to the shape of one workspace's tasks: create, move, delete and new
@@ -17,7 +12,7 @@ export const lockTaskTree = (tx: Queryable, workspaceId: string): Promise<void> 
 
 /**
  * Tasks on the path from `taskId` up to its root, itself included. Walks upward, so it costs at
- * most MAX_DEPTH steps; deleted ancestors still count.
+ * most MAX_TASK_DEPTH steps; deleted ancestors still count.
  */
 export async function depthOf(q: Queryable, taskId: string): Promise<number> {
   const result = await q.execute(sql`
@@ -29,18 +24,4 @@ export async function depthOf(q: Queryable, taskId: string): Promise<number> {
     select count(*)::int as depth from ancestors
   `)
   return (result.rows[0] as { depth: number }).depth
-}
-
-/** Manual progress is leaf-only, so a task that gains a child loses it, and the log says so. */
-export async function clearLeafProgress(
-  tx: Queryable,
-  log: TaskLog,
-  parent: { id: string; manualProgress: string | null },
-): Promise<void> {
-  if (parent.manualProgress === null) return
-  await tx
-    .update(tasks)
-    .set({ manualProgress: null, updatedAt: sql`now()` })
-    .where(eq(tasks.id, parent.id))
-  await log.append(parent.id, 'progress_set', { from: Number(parent.manualProgress), to: null })
 }

@@ -13,7 +13,7 @@ type Props = {
   /** Resolves true when the task was created, so the input can clear and stay open. */
   onCommit: (title: string) => Promise<boolean>
   /** Why the last attempt failed, said under the box rather than above the whole tree. */
-  error?: string | null
+  error: string | null
   /** `restoreFocus` is false when the user left by clicking elsewhere. */
   onCancel: (restoreFocus: boolean) => void
 }

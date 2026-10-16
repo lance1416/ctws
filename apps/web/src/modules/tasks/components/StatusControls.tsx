@@ -46,7 +46,6 @@ export function StartButton({
     <button
       type="button"
       tabIndex={-1}
-      data-start-button
       aria-label={running ? `Pause “${title}”` : `Start “${title}”`}
       onClick={onClick}
       className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-muted hover:bg-hover hover:text-ink`}

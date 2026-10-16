@@ -4,9 +4,7 @@ import { InboxProtectedError, ProjectNotFoundError } from '../../src/shell/proje
 import {
   DependencyCycleError,
   DepthLimitError,
-  InvalidCursorError,
   InvalidNeighbourError,
-  ManualProgressOnParentError,
   MoveCycleError,
   TaskNotFoundError,
 } from '../../src/modules/tasks/errors'
@@ -42,10 +40,6 @@ describe('every refusal keeps its wire form', () => {
     [new DependencyCycleError(), conflict('That would make two tasks wait for each other')],
     [new DepthLimitError(), conflict('Tasks can be nested at most 10 levels deep')],
     [
-      new ManualProgressOnParentError(),
-      conflict('Manual progress can only be set on a task without children'),
-    ],
-    [
       new MoveCycleError(),
       conflict('A task cannot be moved under itself or one of its own descendants'),
     ],
@@ -56,7 +50,6 @@ describe('every refusal keeps its wire form', () => {
     ],
     [new WrongKindError('url', 'book'), conflict('A book has no url')],
     [new InvalidNeighbourError('x'), { status: 400, title: 'Bad Request', detail: 'x' }],
-    [new InvalidCursorError(), { status: 400, title: 'Bad Request', detail: 'Invalid cursor' }],
     [new ImpossibleBirthdayError('y'), { status: 400, title: 'Bad Request', detail: 'y' }],
     [
       new UnknownLinkError(),

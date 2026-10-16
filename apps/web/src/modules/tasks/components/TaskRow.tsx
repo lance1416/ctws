@@ -142,7 +142,6 @@ export function TaskRow({
       {/* The body is the only part indented, hovered and selected. `items-start`: each glyph is
           44px tall, so it centres on the title whether or not a second line follows. */}
       <div
-        data-row-body
         style={{ paddingLeft: gutterPlus((row.depth - 1) * INDENT_PX) }}
         className={`relative flex min-h-11 min-w-0 flex-1 items-start pr-2 group-hover:bg-hover ${BODY_GUTTER} ${
           isDragging ? 'bg-float' : ''
@@ -237,7 +236,7 @@ export function TaskRow({
           />
         </span>
         {/* How late, on the right: the margin says which day it was due. */}
-        {late && <RowNote tone="text-missed">{late}</RowNote>}
+        {late && <RowNote>{late}</RowNote>}
         {/* The hover controls sit over the body (`OVER_ROW` is opaque), reserving no width.
             Without hover they always show, so they go `static` and stay off the text. */}
         <span

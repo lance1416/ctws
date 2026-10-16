@@ -1,4 +1,4 @@
-import type { MoveTaskBody } from '@ctws/contracts'
+import { MAX_TASK_DEPTH, type MoveTaskBody } from '@ctws/contracts'
 import { rankBetween } from '@ctws/core'
 import { and, asc, desc, eq, gt, isNull, lt, ne, sql } from 'drizzle-orm'
 import type { Db, Queryable } from '../../../platform/db/client'
@@ -7,7 +7,7 @@ import { DepthLimitError, InvalidNeighbourError, MoveCycleError } from '../error
 import { taskLog, type TaskCtx } from '../log'
 import { lockVisibleTask } from '../queries/scope'
 import { tasks, type Task } from '../tables'
-import { clearLeafProgress, depthOf, lockTaskTree, MAX_DEPTH } from '../tree'
+import { depthOf, lockTaskTree } from '../tree'
 
 type Descendant = { id: string; depth: number; live: boolean }
 
@@ -16,7 +16,7 @@ type Descendant = { id: string; depth: number; live: boolean }
  * rows, the height check only live ones, and the project cascade writes all of them.
  *
  * The depth bound can cut the walk short, but only where the destination would sit more than
- * MAX_DEPTH below the moved task, which the depth check in `moveTask` always refuses; keep that
+ * MAX_TASK_DEPTH below the moved task, which the depth check in `moveTask` always refuses; keep that
  * check after this one.
  */
 async function descendantsOf(q: Queryable, rootId: string): Promise<Descendant[]> {
@@ -26,7 +26,7 @@ async function descendantsOf(q: Queryable, rootId: string): Promise<Descendant[]
       union
       select t.id, s.depth + 1, t.deleted_at
       from tasks t join subtree s on t.parent_id = s.id
-      where s.depth < ${MAX_DEPTH}
+      where s.depth < ${MAX_TASK_DEPTH}
     )
     select id, depth, (deleted_at is null) as live from subtree
   `)
@@ -49,7 +49,6 @@ export async function moveTask(
 
   return db.transaction(async (tx) => {
     await lockTaskTree(tx, ctx.workspaceId)
-    const log = taskLog(tx, ctx)
     const task = await lockVisibleTask(tx, ctx.workspaceId, id)
     const projectId = await visibleProjectId(tx, ctx.workspaceId, input.projectId)
 
@@ -67,7 +66,7 @@ export async function moveTask(
     // The parent's depth plus the moved subtree's live height, not its row count.
     const parentDepth = destParentId === null ? 0 : await depthOf(tx, destParentId)
     const liveHeight = Math.max(...subtree.filter((d) => d.live).map((d) => d.depth)) + 1
-    if (parentDepth + liveHeight > MAX_DEPTH) throw new DepthLimitError()
+    if (parentDepth + liveHeight > MAX_TASK_DEPTH) throw new DepthLimitError()
 
     const rank = await rankFor(tx, { id, destProjectId, destParentId, input })
 
@@ -81,7 +80,7 @@ export async function moveTask(
     const projectChanged = destProjectId !== task.projectId
 
     if (projectChanged) {
-      // Deleted rows too: a later restore must not bring one back into the old project.
+      // Deleted rows too: their logged history is counted by the project they sit in.
       await tx.execute(sql`
         with recursive subtree(id) as (
           select ${id}::uuid
@@ -96,13 +95,11 @@ export async function moveTask(
     // A pure reorder is not logged, so tidying up never reads as progress. The descendants the
     // cascade carried along get no event of their own.
     if (parentChanged || projectChanged) {
-      await log.append(id, 'moved', {
+      await taskLog(tx, ctx).append(id, 'moved', {
         from: { parentId: task.parentId, ...(projectChanged ? { projectId: task.projectId } : {}) },
         to: { parentId: destParentId, ...(projectChanged ? { projectId: destProjectId } : {}) },
       })
     }
-
-    if (parent && parentChanged) await clearLeafProgress(tx, log, parent)
 
     return updated!
   })

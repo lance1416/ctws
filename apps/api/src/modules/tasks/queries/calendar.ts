@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm'
 import type { Queryable } from '../../../platform/db/client'
-import { taskVisibleSql } from './scope'
+import { taskOpenSql, taskVisibleSql } from './scope'
 
 export type CalendarRow = {
   id: string
@@ -27,7 +27,7 @@ export async function listTaskCalendar(
       from tasks t
       join projects p on p.id = t.project_id
       where ${taskVisibleSql('t', 'p', workspaceId)}
-        and t.status not in ('done', 'cancelled')
+        and ${taskOpenSql('t')}
     )
     select id, to_char(scheduled_on, 'YYYY-MM-DD') as day, title, 'planned' as kind,
            project_id as "projectId", project_name as "projectName"

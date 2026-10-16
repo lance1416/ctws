@@ -1,7 +1,5 @@
+import { MAX_TASK_DEPTH } from '@ctws/contracts'
 import type { FlatRow } from './flatten'
-
-/** Must match `MAX_DEPTH` in apps/api/src/modules/tasks/tree.ts, or the server refuses drops. */
-export const MAX_DEPTH = 10
 
 export type DropRequest = {
   /** The visible rows, in display order. */
@@ -14,7 +12,7 @@ export type DropRequest = {
 }
 
 export type DropPlan =
-  | { ok: true; parentId: string | null; depth: number; beforeId?: string; afterId?: string }
+  | { ok: true; parentId: string | null; beforeId?: string; afterId?: string }
   | { ok: false; reason: 'own-subtree' | 'too-deep' | 'unchanged' }
 
 /**
@@ -53,8 +51,8 @@ export function planDrop(req: DropRequest): DropPlan {
   // Upper bound from the row above: you may become its child, never deeper in one gesture.
   const maxByPrev = prev ? prev.depth + 1 : 1
   // Upper bound from the subtree's height, mirroring the API's `parentDepth + liveHeight >
-  // MAX_DEPTH` rejection: a leaf may reach MAX_DEPTH, a height-3 subtree MAX_DEPTH - 2.
-  const maxByHeight = MAX_DEPTH - (dragged.subtreeHeight - 1)
+  // MAX_TASK_DEPTH` rejection: a leaf may reach MAX_TASK_DEPTH, a height-3 subtree two less.
+  const maxByHeight = MAX_TASK_DEPTH - (dragged.subtreeHeight - 1)
   // Lower bound from the row below: going shallower would silently re-parent that row.
   const minDepth = next ? next.depth : 1
   const maxDepth = Math.min(maxByPrev, maxByHeight)
@@ -74,15 +72,13 @@ export function planDrop(req: DropRequest): DropPlan {
   if (prev && prev.depth >= depth) {
     // The row follows whichever of prev's ancestors-or-self sits at the new depth.
     const afterId = ancestorAtDepth(rows, prev, depth)
-    if (afterId !== null) return { ok: true, parentId, depth, afterId }
+    if (afterId !== null) return { ok: true, parentId, afterId }
   }
   // Otherwise it is the first child of its new parent: land before the first sibling, if any.
   const firstSibling = rows.find(
     (r, i) => outside(i) && r.parentId === parentId && r.depth === depth,
   )
-  return firstSibling
-    ? { ok: true, parentId, depth, beforeId: firstSibling.id }
-    : { ok: true, parentId, depth }
+  return firstSibling ? { ok: true, parentId, beforeId: firstSibling.id } : { ok: true, parentId }
 }
 
 /**

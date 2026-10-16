@@ -396,8 +396,8 @@ describe('the tenant join does not scan every project in the database', () => {
       select gen_random_uuid(), 'w' || g from generate_series(1, 200) g
     `)
     await ctx.db.execute(sql`
-      insert into projects (id, workspace_id, name, rank)
-      select gen_random_uuid(), w.id, 'p' || g, 'a' || g
+      insert into projects (id, workspace_id, name, rank, color)
+      select gen_random_uuid(), w.id, 'p' || g, 'a' || g, 'project-1'
       from workspaces w, generate_series(1, 25) g
       where w.id <> ${workspaceId}
     `)

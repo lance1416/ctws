@@ -70,7 +70,6 @@ describe('create', () => {
       status: 'todo',
       notes: null,
       completedAt: null,
-      manualProgress: null,
     })
     expect(res.json().rank).toEqual(expect.any(String))
   })
@@ -138,17 +137,6 @@ describe('create', () => {
     const projectId = await createProject(ctx, 'P')
     expect((await post(ctx, { projectId, title: 'x', rank: 'a0' })).statusCode).toBe(400)
   })
-
-  it('clears manual progress on a parent that gains its first child', async () => {
-    const ctx = await setup()
-    const projectId = await createProject(ctx, 'P')
-    const parentId = (await post(ctx, { projectId, title: 'p', manualProgress: 0.5 })).json().id
-    await createTask(ctx, projectId, 'child', parentId)
-    const after = (await patch(ctx, parentId, {})).json()
-    expect(after.manualProgress).toBeNull()
-    expect((await eventsOf(ctx, parentId)).map((e) => e.type)).toEqual(['created', 'progress_set'])
-    expect((await eventsOf(ctx, parentId))[1]!.payload).toEqual({ from: 0.5, to: null })
-  })
 })
 
 describe('update', () => {
@@ -198,17 +186,12 @@ describe('update', () => {
     const ctx = await setup()
     const projectId = await createProject(ctx, 'P')
     const id = await createTask(ctx, projectId, 'x')
-    await patch(ctx, id, {
-      dueAt: '2026-10-15T23:59:00Z',
-      scheduledOn: '2026-10-14',
-      manualProgress: 0.25,
-    })
+    await patch(ctx, id, { dueAt: '2026-10-15T23:59:00Z', scheduledOn: '2026-10-14' })
     const events = (await eventsOf(ctx, id)).slice(1)
     const byType = Object.fromEntries(events.map((e) => [e.type, e.payload]))
-    expect(Object.keys(byType).sort()).toEqual(['due_changed', 'progress_set', 'scheduled_changed'])
+    expect(Object.keys(byType).sort()).toEqual(['due_changed', 'scheduled_changed'])
     expect(byType.due_changed).toEqual({ from: null, to: '2026-10-15T23:59:00.000Z' })
     expect(byType.scheduled_changed).toEqual({ from: null, to: '2026-10-14' })
-    expect(byType.progress_set).toEqual({ from: null, to: 0.25 })
   })
 
   it('records no event for a patch that changes nothing', async () => {
@@ -230,39 +213,6 @@ describe('update', () => {
     const empty = await patch(ctx, id, {})
     expect(empty.statusCode).toBe(200)
     expect(await eventsOf(ctx, id)).toHaveLength(before)
-  })
-
-  // manual_progress is leaf-only, because a derived value and a hand-typed one would
-  // contradict each other.
-  it('refuses manual progress on a task that has children', async () => {
-    const ctx = await setup()
-    const projectId = await createProject(ctx, 'P')
-    const parentId = await createTask(ctx, projectId, 'parent')
-    await createTask(ctx, projectId, 'child', parentId)
-    const res = await patch(ctx, parentId, { manualProgress: 0.5 })
-    expect(res.statusCode).toBe(409)
-    expect((await patch(ctx, parentId, {})).json().manualProgress).toBeNull()
-    expect((await eventsOf(ctx, parentId)).map((e) => e.type)).toEqual(['created'])
-  })
-
-  it('does not count a soft-deleted child as a child', async () => {
-    const ctx = await setup()
-    const projectId = await createProject(ctx, 'P')
-    const parentId = await createTask(ctx, projectId, 'parent')
-    const childId = await createTask(ctx, projectId, 'child', parentId)
-    await del(ctx, childId)
-    const res = await patch(ctx, parentId, { manualProgress: 0.5 })
-    expect(res.statusCode).toBe(200)
-    expect(res.json().manualProgress).toBe(0.5)
-  })
-
-  it('allows manual progress on a leaf', async () => {
-    const ctx = await setup()
-    const projectId = await createProject(ctx, 'P')
-    const id = await createTask(ctx, projectId, 'leaf')
-    const res = await patch(ctx, id, { manualProgress: 0.5 })
-    expect(res.statusCode).toBe(200)
-    expect(res.json().manualProgress).toBe(0.5)
   })
 
   it('sets completed_at when the status becomes done and clears it when it leaves done', async () => {
@@ -545,24 +495,20 @@ describe('guards that must not be silently dropped', () => {
     expect((await eventsOf(ctx, childId)).filter((e) => e.type === 'deleted')).toHaveLength(1)
   })
 
-  it('a no-op patch of notes, scheduledOn and manualProgress logs nothing', async () => {
+  it('a no-op patch of notes and scheduledOn logs nothing and keeps updated_at', async () => {
     const ctx = await setup()
     const projectId = await createProject(ctx, 'P')
     const id = await createTask(ctx, projectId, 'x')
-    const same = { notes: 'n', scheduledOn: '2026-10-14', manualProgress: 0.5 }
+    const same = { notes: 'n', scheduledOn: '2026-10-14' }
     await patch(ctx, id, same)
     const before = (await eventsOf(ctx, id)).length
-    expect(before).toBe(4)
+    expect(before).toBe(3)
 
     const stamp = (await patch(ctx, id, {})).json().updatedAt
 
     expect((await patch(ctx, id, same)).statusCode).toBe(200)
     expect(await eventsOf(ctx, id)).toHaveLength(before)
-    // notes_changed coalesces, so a re-logged no-op would not add a row; it would instead
-    // rewrite the existing event and bump updated_at. Neither may move.
     expect((await patch(ctx, id, {})).json().updatedAt).toBe(stamp)
-    const [notesEvent] = (await eventsOf(ctx, id)).filter((e) => e.type === 'notes_changed')
-    expect(notesEvent!.payload).toEqual({ from: null, to: 'n' })
   })
 
   it('sets completed_at on a task created as done', async () => {
@@ -713,14 +659,8 @@ describe('a write refuses a foreign workspace without going through a route', ()
     const projectId = await createProject(ctx, 'mine')
     const id = await createTask(ctx, projectId, 'mine')
     const sibling = await createTask(ctx, projectId, 'sibling')
-    const me = (
-      await ctx.app.inject({ method: 'GET', url: '/api/v1/auth/me', headers: ctx.authed })
-    ).json() as { id: string }
     // A workspace that exists nowhere: the point is the task is not THIS caller's to touch.
-    const stranger = {
-      workspaceId: '99999999-9999-4999-8999-999999999999',
-      actorUserId: me.id,
-    }
+    const stranger = { workspaceId: '99999999-9999-4999-8999-999999999999' }
 
     await expect(updateTask(ctx.db, stranger, id, { title: 'stolen' })).rejects.toThrow(
       TaskNotFoundError,

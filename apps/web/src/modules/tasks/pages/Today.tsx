@@ -199,7 +199,7 @@ export function Today() {
           {doneToday.length > 0 && <DoneTodayPanel tasks={doneToday} clock={clock} />}
         </div>
 
-        {movementRows.length > 0 && <MovementPanel rows={movement.data ?? []} today={day} />}
+        {movementRows.length > 0 && <MovementPanel rows={movementRows} today={day} />}
       </div>
 
       {openTask && (

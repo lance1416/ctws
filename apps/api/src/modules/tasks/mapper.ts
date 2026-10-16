@@ -25,7 +25,6 @@ export function toTaskResponse(t: Task): TaskResponse {
     scheduledOn: t.scheduledOn,
     dueAt: isoOrNull(t.dueAt),
     rank: t.rank,
-    manualProgress: t.manualProgress === null ? null : Number(t.manualProgress),
     completedAt: isoOrNull(t.completedAt),
     createdAt: t.createdAt.toISOString(),
     updatedAt: t.updatedAt.toISOString(),
@@ -48,6 +47,7 @@ export function toTodayResponse(
 export function toCompletedResponse(t: CompletedTask): CompletedTaskResponse {
   return {
     ...toTaskResponse(t),
+    completedAt: t.completedAt.toISOString(),
     projectName: t.projectName,
     parentTitle: t.parentTitle,
     completedOn: t.completedOn,

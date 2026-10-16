@@ -94,12 +94,8 @@ export function Completed() {
                 className="flex items-stretch"
               >
                 <RowLead
-                  lead={
-                    t.completedAt
-                      ? { text: clock.format(new Date(t.completedAt)), tone: 'quiet', flag: false }
-                      : null
-                  }
-                  dateTime={t.completedAt ?? undefined}
+                  lead={{ text: clock.format(new Date(t.completedAt)), tone: 'quiet', flag: false }}
+                  dateTime={t.completedAt}
                 />
                 <ProjectRail projectId={t.projectId} />
                 <span className="flex min-w-0 flex-1 items-start gap-2.5 pr-2 pl-3.5">

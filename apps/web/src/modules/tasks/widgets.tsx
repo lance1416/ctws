@@ -28,7 +28,7 @@ export function TodayCount() {
 export function OpenTaskCount() {
   const projects = useProjects()
   if (!projects.data) return null
-  const open = projects.data.filter((p) => !p.archivedAt).reduce((n, p) => n + p.openTasks, 0)
+  const open = projects.data.reduce((n, p) => n + p.openTasks, 0)
   return <span data-count>{open} open</span>
 }
 

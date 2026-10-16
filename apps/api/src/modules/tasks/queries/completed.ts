@@ -4,6 +4,7 @@ import { TASK_COLUMNS, taskRowOf, type TaskRow } from './rows'
 import { taskVisibleSql } from './scope'
 
 export type CompletedTask = TaskRow & {
+  completedAt: Date
   /** The day it was finished, in the account's zone. */
   completedOn: string
 }
@@ -37,9 +38,11 @@ export async function listCompleted(
   `)
   const rows = result.rows as Record<string, unknown>[]
   return {
-    tasks: rows
-      .slice(0, COMPLETED_LIMIT)
-      .map((r) => ({ ...taskRowOf(r), completedOn: r.completed_on as string })),
+    tasks: rows.slice(0, COMPLETED_LIMIT).map((r) => ({
+      ...taskRowOf(r),
+      completedAt: new Date(r.completed_at as string),
+      completedOn: r.completed_on as string,
+    })),
     truncated: rows.length > COMPLETED_LIMIT,
   }
 }

@@ -68,7 +68,6 @@ export function NotesMark() {
   return (
     <svg
       aria-hidden="true"
-      data-notes-mark
       viewBox="0 0 14 14"
       width="14"
       height="14"
@@ -151,18 +150,12 @@ export function RowMeta({
 }
 
 /** One short phrase at the end of the title's line, such as how late. Never wraps. */
-export function RowNote({
-  children,
-  tone = 'text-ink-subtle',
-}: {
-  children: ReactNode
-  tone?: string
-}) {
+export function RowNote({ children }: { children: ReactNode }) {
   return (
     <span
       data-row-note
       // Not on a phone: the margin's word and colour say it there, and the title needs the room.
-      className={`shrink-0 pt-2.5 pl-3 text-sm leading-6 whitespace-nowrap tabular-nums max-sm:hidden ${tone}`}
+      className="shrink-0 pt-2.5 pl-3 text-sm leading-6 whitespace-nowrap text-missed tabular-nums max-sm:hidden"
     >
       {children}
     </span>

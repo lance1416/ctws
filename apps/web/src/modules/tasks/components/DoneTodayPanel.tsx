@@ -33,12 +33,8 @@ export function DoneTodayPanel({
           // When it was finished is the margin.
           <li key={t.id} className="flex items-stretch">
             <RowLead
-              lead={
-                t.completedAt
-                  ? { text: clock.format(new Date(t.completedAt)), tone: 'quiet', flag: false }
-                  : null
-              }
-              dateTime={t.completedAt ?? undefined}
+              lead={{ text: clock.format(new Date(t.completedAt)), tone: 'quiet', flag: false }}
+              dateTime={t.completedAt}
             />
             <ProjectRail projectId={t.projectId} />
             <span className="flex min-h-11 min-w-0 flex-1 items-center gap-2.5 pr-2 pl-3.5">

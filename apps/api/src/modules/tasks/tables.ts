@@ -6,7 +6,6 @@ import {
   date,
   index,
   jsonb,
-  numeric,
   pgTable,
   primaryKey,
   text,
@@ -14,7 +13,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core'
 import { inList } from '../../platform/db/sql'
-import { users, workspaces } from '../../shell/auth/tables'
+import { workspaces } from '../../shell/auth/tables'
 import { projects } from '../../shell/projects/tables'
 
 export const tasks = pgTable(
@@ -34,7 +33,6 @@ export const tasks = pgTable(
     dueAt: timestamp('due_at', { withTimezone: true }),
     // COLLATE "C" is added in the migration SQL; (rank, id) is the sibling order.
     rank: text('rank').notNull(),
-    manualProgress: numeric('manual_progress', { precision: 3, scale: 2 }),
     completedAt: timestamp('completed_at', { withTimezone: true }),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -82,18 +80,13 @@ export const taskEvents = pgTable(
     workspaceId: uuid('workspace_id')
       .notNull()
       .references(() => workspaces.id, { onDelete: 'cascade' }),
-    actorUserId: uuid('actor_user_id')
-      .notNull()
-      .references(() => users.id),
     type: text('type').$type<TaskEventType>().notNull(),
     payload: jsonb('payload').notNull(),
-    source: text('source').notNull().default('user'),
     occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull(),
   },
   (t) => [
     index('task_events_workspace_occurred_idx').on(t.workspaceId, t.occurredAt.desc()),
     index('task_events_task_occurred_idx').on(t.taskId, t.occurredAt.desc()),
-    check('task_events_source_check', sql`${t.source} in ('user')`),
   ],
 )
 

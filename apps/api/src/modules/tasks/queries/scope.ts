@@ -1,3 +1,4 @@
+import { FINISHED_TASK_STATUSES } from '@ctws/contracts'
 import { and, eq, isNull, sql, type SQL } from 'drizzle-orm'
 import type { Queryable } from '../../../platform/db/client'
 import { ident } from '../../../platform/db/sql'
@@ -16,6 +17,26 @@ export const visibleTasks = (workspaceId: string): SQL =>
 /** The same predicate for raw SQL over the aliases `task` and `project`. */
 export const taskVisibleSql = (task: string, project: string, workspaceId: string): SQL =>
   sql`${ident(task)}.deleted_at is null and ${projectVisibleSql(project, workspaceId)}`
+
+const FINISHED = sql.raw(FINISHED_TASK_STATUSES.map((s) => `'${s}'`).join(', '))
+
+/** The task under the alias is done or cancelled. */
+export const taskFinishedSql = (task: string): SQL => sql`${ident(task)}.status in (${FINISHED})`
+
+/** The task under the alias is still open. */
+export const taskOpenSql = (task: string): SQL => sql`${ident(task)}.status not in (${FINISHED})`
+
+/**
+ * How many live open tasks a project has. Correlated through the literal `projects.id`: a drizzle
+ * column would render unqualified.
+ */
+export const openTaskCountSql = () =>
+  sql<number>`(
+    select count(*) from tasks open_t
+    where open_t.project_id = projects.id
+      and open_t.deleted_at is null
+      and ${taskOpenSql('open_t')}
+  )`.mapWith(Number)
 
 const byId = (q: Queryable, workspaceId: string, id: string) =>
   q

@@ -213,7 +213,6 @@ export function TaskTree({ projectId }: { projectId: string }) {
             type="button"
             onClick={shown.toggleDone}
             aria-pressed={shown.showDone}
-            data-show-done={shown.showDone ? 'on' : 'off'}
             className="min-h-8 rounded-md px-2 text-sm text-ink-muted hover:bg-hover hover:text-ink"
           >
             {shown.showDone ? 'Hide done' : `${shown.hiddenDone} done`}

@@ -4,6 +4,7 @@ import type { Queryable } from '../../../platform/db/client'
 import { dayStart, localDay, weekStart } from '../../../platform/db/time'
 import { visibleProjects } from '../../../shell/projects/queries'
 import { projects } from '../../../shell/projects/tables'
+import { openTaskCountSql, taskOpenSql } from './scope'
 
 /**
  * How each unarchived project moved: finished this week, still open, overdue, and how long since
@@ -39,17 +40,12 @@ export async function listProjectMovement(
           and done_t.completed_at is not null
           and done_t.completed_at >= ${thisWeek}
       )`.mapWith(Number),
-      remaining: sql<number>`(
-        select count(*) from tasks open_t
-        where open_t.project_id = projects.id
-          and open_t.deleted_at is null
-          and open_t.status not in ('done', 'cancelled')
-      )`.mapWith(Number),
+      remaining: openTaskCountSql(),
       overdue: sql<number>`(
         select count(*) from tasks late_t
         where late_t.project_id = projects.id
           and late_t.deleted_at is null
-          and late_t.status not in ('done', 'cancelled')
+          and ${taskOpenSql('late_t')}
           and late_t.due_at is not null
           and late_t.due_at < ${todayStarts}
       )`.mapWith(Number),
@@ -63,7 +59,7 @@ export async function listProjectMovement(
         select min(next_t.due_at) from tasks next_t
         where next_t.project_id = projects.id
           and next_t.deleted_at is null
-          and next_t.status not in ('done', 'cancelled')
+          and ${taskOpenSql('next_t')}
           and next_t.due_at >= ${todayStarts}
       ) at time zone ${timezone})::date)::text`,
     })

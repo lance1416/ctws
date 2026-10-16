@@ -8,9 +8,8 @@ export function rollupPhrase(r: RollupResponse | undefined): string | null {
   if (!r) return null
   const parts: string[] = []
   if (r.progress !== null) parts.push(`${Math.round(r.progress * 100)}%`)
-  if (r.counts.in_progress > 0) parts.push(`${r.counts.in_progress} in progress`)
+  if (r.inProgress > 0) parts.push(`${r.inProgress} in progress`)
   if (r.overdue > 0) parts.push(`${r.overdue} overdue`)
   if (parts.length === 1 && r.progress === 0) return null
-  // Not `dueSoon`: on a row it would compete with the row's own deadline, shown to the minute.
   return parts.length > 0 ? parts.join(' · ') : null
 }

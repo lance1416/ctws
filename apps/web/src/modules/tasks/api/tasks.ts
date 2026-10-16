@@ -1,5 +1,4 @@
 import type {
-  CreateTaskBody,
   DependencyRef,
   MoveTaskBody,
   RollupResponse,
@@ -7,6 +6,7 @@ import type {
   UpdateTaskBody,
 } from '@ctws/contracts'
 import { apiFetch } from '../../../platform/http/api'
+import type { CreateTaskForm } from '../taskForm'
 
 /** The list and its rollups share one cache entry, so the numbers always match the rows. */
 export type ProjectTasks = {
@@ -16,9 +16,8 @@ export type ProjectTasks = {
   blockers: Record<string, DependencyRef[]>
 }
 
-export async function listProjectTasks(projectId: string): Promise<ProjectTasks> {
-  const body = await apiFetch<ProjectTasks>(`/tasks?projectId=${projectId}`)
-  return { tasks: body.tasks, rollups: body.rollups ?? {}, blockers: body.blockers ?? {} }
+export function listProjectTasks(projectId: string): Promise<ProjectTasks> {
+  return apiFetch<ProjectTasks>(`/tasks?projectId=${projectId}`)
 }
 
 /** Both directions for one task, finished blockers included -- what the detail pane shows. */
@@ -41,9 +40,7 @@ export function removeDependency(id: string, blockerId: string): Promise<void> {
 }
 
 /** Without a `status` the server files the task under `todo`. */
-export type NewTask = Omit<CreateTaskBody, 'status'> & { status?: CreateTaskBody['status'] }
-
-export function createTask(body: NewTask): Promise<TaskResponse> {
+export function createTask(body: CreateTaskForm): Promise<TaskResponse> {
   return apiFetch<TaskResponse>('/tasks', { method: 'POST', body: JSON.stringify(body) })
 }
 

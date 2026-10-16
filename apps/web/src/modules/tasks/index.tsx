@@ -52,7 +52,7 @@ function useTaskHits(query: string) {
     ...taskSearchQuery(query),
     enabled: query.length > 0,
   })
-  const rows = query.length > 0 ? (results.data ?? []) : []
+  const rows = results.data ?? []
   const hits: SearchHit[] = rows.map((t) => ({
     id: t.id,
     // `?reveal=` makes `TaskTree` unfold the ancestors and focus the row, which may be folded away.

@@ -46,7 +46,7 @@ export function SelectionBar({
           disabled={busy}
           placeholder="Choose a project…"
           choices={projects
-            .filter((p) => p.id !== currentProjectId && !p.archivedAt)
+            .filter((p) => p.id !== currentProjectId)
             .map((p) => ({ value: p.id, label: p.name }))}
           onPick={onMove}
         />

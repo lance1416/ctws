@@ -489,32 +489,6 @@ describe('POST /tasks/:id/move', () => {
     expect((await tasksOf(ctx, p)).map((t) => t.id)).toEqual([b, c, a])
   })
 
-  // Manual progress is leaf-only. A parent gains a child by move just as it does by
-  // create, so move must clear it too, or move becomes a second way to break the invariant.
-  it('clears the new parent manual progress and logs it', async () => {
-    const ctx = await setup()
-    const p = await createProject(ctx, 'p')
-    const parent = (
-      await ctx.app.inject({
-        method: 'POST',
-        url: '/api/v1/tasks',
-        headers: ctx.authed,
-        payload: { projectId: p, title: 'parent', manualProgress: 0.5 },
-      })
-    ).json().id as string
-    const a = await createTask(ctx, p, 'a')
-
-    expect((await move(ctx, a, { projectId: p, parentId: parent })).statusCode).toBe(200)
-
-    const rows = await ctx.db.execute(sql`
-      select manual_progress from tasks where id = ${parent}
-    `)
-    expect((rows.rows[0] as { manual_progress: string | null }).manual_progress).toBeNull()
-    const logged = (await eventsOf(ctx, parent)).filter((e) => e.type === 'progress_set')
-    expect(logged).toHaveLength(1)
-    expect(logged[0]!.payload).toMatchObject({ from: 0.5, to: null })
-  })
-
   // The cycle check is read-then-write, so two concurrent moves -- A under B and B under A --
   // could each pass their own check and together commit a cycle. The guard is a workspace-keyed
   // advisory lock taken as the transaction's first statement; see expectBlockedByTreeLock for

@@ -1,3 +1,4 @@
+import { MAX_TASK_DEPTH } from '@ctws/contracts'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useRef } from 'react'
@@ -9,7 +10,6 @@ import { dayEndIso, dayPhrase, todayIn, ymd } from '../../../platform/time/dates
 import { useTimeZone } from '../../../shell/auth/useMe'
 import { ProjectChip } from '../../../shell/projects/ProjectPicker'
 import { flatten } from '../tree/flatten'
-import { MAX_DEPTH } from '../tree/drop'
 import { field, label } from '../../../platform/ui/formStyles'
 import { PickOne } from '../../../platform/ui/inline'
 import { Modal } from '../../../platform/ui/Modal'
@@ -77,7 +77,7 @@ export function CreateTaskDialog({
 
   /** The candidate parents in tree order, none collapsed and none already at the depth limit. */
   const parents = flatten(tasks.data?.tasks ?? [], new Set()).flatMap((row) => {
-    if (row.depth >= MAX_DEPTH) return []
+    if (row.depth >= MAX_TASK_DEPTH) return []
     const task = tasks.data?.tasks.find((t) => t.id === row.id)
     return task ? [{ id: row.id, depth: row.depth, title: task.title }] : []
   })

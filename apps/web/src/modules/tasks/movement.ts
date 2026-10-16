@@ -4,6 +4,10 @@ import { addDays, shortDay, weekdayOf } from '../../platform/time/dates'
 /** How long a project with open work goes unchanged before the panel calls it quiet. */
 export const QUIET_DAYS = 7
 
+/** Open work that has gone unchanged for QUIET_DAYS or more. */
+export const isQuiet = (r: ProjectMovementResponse) =>
+  r.remaining > 0 && r.quietDays !== null && r.quietDays >= QUIET_DAYS
+
 /** A project is worth a line when it has open work or finished something this week. */
 export const hasMovement = (r: ProjectMovementResponse) => r.remaining > 0 || r.doneThisWeek > 0
 
@@ -20,8 +24,7 @@ function movedWhen(day: string, today: string): string {
  * quiet. Never a ratio: the backend keeps no total to draw one against.
  */
 export function movedLine(r: ProjectMovementResponse, today: string): string {
-  if (r.remaining > 0 && r.quietDays !== null && r.quietDays >= QUIET_DAYS)
-    return `Quiet for ${r.quietDays} days`
+  if (isQuiet(r)) return `Quiet for ${r.quietDays} days`
   const done = r.doneThisWeek > 0 ? `${r.doneThisWeek} done` : null
   const when = r.lastActivityOn ? movedWhen(r.lastActivityOn, today) : null
   if (done && when) return `${done}, moved ${when}`

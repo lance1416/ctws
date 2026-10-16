@@ -13,8 +13,8 @@ export type TriagePatch = { dueAt?: string | null; scheduledOn?: string | null }
  */
 export function triageSections(
   t: Triageable,
-  /** The wording a carried plan shows, or null. */
-  carried: string | null,
+  /** A plan for a day already gone. */
+  carried: boolean,
   today: string,
   timeZone: string,
   patch: (id: string, body: TriagePatch) => void,

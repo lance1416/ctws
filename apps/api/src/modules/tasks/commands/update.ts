@@ -1,15 +1,11 @@
 import type { TaskEventType, UpdateTaskBody } from '@ctws/contracts'
-import { and, eq, isNull, sql } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import type { PgUpdateSetSource } from 'drizzle-orm/pg-core'
 import type { Db } from '../../../platform/db/client'
 import { isoOrNull } from '../../../platform/values'
-import { ManualProgressOnParentError } from '../errors'
 import { taskLog, type TaskCtx } from '../log'
 import { lockVisibleTask } from '../queries/scope'
 import { tasks, type Task } from '../tables'
-
-/** `numeric` comes back as a string. */
-const progressOf = (raw: string | null): number | null => (raw === null ? null : Number(raw))
 
 /**
  * Patches the task's own fields, one event per field that changed. A patch that changes nothing
@@ -58,23 +54,6 @@ export async function updateTask(
         })
       }
     }
-    if (patch.manualProgress !== undefined) {
-      const next = patch.manualProgress === null ? null : Number(patch.manualProgress.toFixed(2))
-      const prev = progressOf(row.manualProgress)
-      if (next !== prev) {
-        if (next !== null) {
-          const [child] = await tx
-            .select({ id: tasks.id })
-            .from(tasks)
-            .where(and(eq(tasks.parentId, id), isNull(tasks.deletedAt)))
-            .limit(1)
-          if (child) throw new ManualProgressOnParentError()
-        }
-        set.manualProgress = next === null ? null : next.toFixed(2)
-        events.push({ type: 'progress_set', payload: { from: prev, to: next } })
-      }
-    }
-
     if (events.length === 0) return row
 
     set.updatedAt = sql`now()`

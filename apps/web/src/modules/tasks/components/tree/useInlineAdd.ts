@@ -1,10 +1,10 @@
+import { MAX_TASK_DEPTH } from '@ctws/contracts'
 import { useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { refreshQueries } from '../../../../platform/http/refresh'
 import { projectTasksQuery } from '../../api/queries'
 import { createTask } from '../../api/tasks'
 import type { FlatRow } from '../../tree/flatten'
-import { MAX_DEPTH } from '../../tree/drop'
 
 /**
  * The inline new row, at the end of a parent's children, where the server appends. A refusal with
@@ -35,7 +35,7 @@ export function useInlineAdd({
   }
 
   const addChild = (row: FlatRow) => {
-    if (row.depth >= MAX_DEPTH) onRefuse('Too deep to add a subtask here')
+    if (row.depth >= MAX_TASK_DEPTH) onRefuse('Too deep to add a subtask here')
     else start(row.id, row.id)
   }
 

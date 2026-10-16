@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
+  completedTaskResponse,
   createTaskBody,
   moveTaskBody,
   projectMovementResponse,
   searchTaskResponse,
-  taskEventResponse,
+  TASK_EVENT_TYPES,
   taskResponse,
   TASK_STATUSES,
   todayTaskResponse,
@@ -12,7 +13,6 @@ import {
 } from './task'
 
 const taskStatus = taskResponse.shape.status
-const TASK_EVENT_TYPES = taskEventResponse.shape.type.options
 const TODAY_SEGMENTS = todayTaskResponse.shape.segment.options
 
 describe('task status', () => {
@@ -34,13 +34,12 @@ describe('createTaskBody', () => {
   })
 
   it('defaults the status to todo, so the rollup can see the task at all', () => {
-    // It was `backlog` until 2026-10-07. The rollup excludes a backlog node BEFORE looking at
-    // its children, so with that default every parent reported no progress
-    // however much was finished under it. `backlog` is now a bucket somebody puts work INTO.
+    // The rollup leaves a backlog node out before looking at its children, so a backlog default
+    // would give every parent no progress however much was finished under it.
     expect(createTaskBody.parse(valid).status).toBe('todo')
   })
 
-  it('still accepts an explicit backlog, which is the only way in now', () => {
+  it('accepts an explicit backlog', () => {
     expect(createTaskBody.parse({ ...valid, status: 'backlog' }).status).toBe('backlog')
   })
 
@@ -79,13 +78,6 @@ describe('updateTaskBody', () => {
     expect(updateTaskBody.safeParse({ dueAt: '2026-10-15T23:59:00Z' }).success).toBe(true)
   })
 
-  it('accepts manual progress within 0..1 and rejects outside it', () => {
-    expect(updateTaskBody.safeParse({ manualProgress: 0.5 }).success).toBe(true)
-    expect(updateTaskBody.safeParse({ manualProgress: 1 }).success).toBe(true)
-    expect(updateTaskBody.safeParse({ manualProgress: 1.5 }).success).toBe(false)
-    expect(updateTaskBody.safeParse({ manualProgress: -0.1 }).success).toBe(false)
-  })
-
   // Reparenting and reordering go through POST /tasks/:id/move, never a generic PATCH,
   // because they carry invariants a PATCH must not silently take on.
   it('cannot change parentId, projectId or rank', () => {
@@ -122,21 +114,13 @@ describe('task event types', () => {
         'due_changed',
         'moved',
         'notes_changed',
-        'progress_set',
         'dependency_added',
         'dependency_removed',
-        'restored',
         'scheduled_changed',
         'status_changed',
         'title_changed',
       ].sort(),
     )
-  })
-
-  // A pure rank change is never logged, so a tidy-up does not read as activity.
-  it('have none for reordering', () => {
-    expect([...TASK_EVENT_TYPES]).not.toContain('rank_changed')
-    expect([...TASK_EVENT_TYPES]).not.toContain('reordered')
   })
 })
 
@@ -166,7 +150,6 @@ describe('searchTaskResponse', () => {
     scheduledOn: null,
     dueAt: null,
     rank: 'm',
-    manualProgress: null,
     completedAt: null,
     createdAt: '2026-10-04T00:00:00Z',
     updatedAt: '2026-10-04T00:00:00Z',
@@ -207,6 +190,31 @@ describe('searchTaskResponse', () => {
   })
 })
 
+describe('completedTaskResponse', () => {
+  const done = {
+    id: '00000000-0000-7000-8000-000000000001',
+    projectId: '00000000-0000-7000-8000-000000000002',
+    parentId: null,
+    title: 'a',
+    notes: null,
+    status: 'done',
+    scheduledOn: null,
+    dueAt: null,
+    rank: 'm',
+    completedAt: '2026-10-04T09:00:00Z',
+    createdAt: '2026-10-04T00:00:00Z',
+    updatedAt: '2026-10-04T00:00:00Z',
+    projectName: 'Alpha',
+    parentTitle: null,
+    completedOn: '2026-10-04',
+  }
+
+  it('requires the moment it was finished', () => {
+    expect(completedTaskResponse.safeParse(done).success).toBe(true)
+    expect(completedTaskResponse.safeParse({ ...done, completedAt: null }).success).toBe(false)
+  })
+})
+
 describe('projectMovementResponse', () => {
   const base = {
     projectId: '0199f0d6-0000-7000-8000-000000000001',
@@ -234,7 +242,7 @@ describe('projectMovementResponse', () => {
 
   // Movement is counts; a ratio would have to be added to the contract on purpose.
   it('refuses a percentage, however it is spelled', () => {
-    for (const extra of [{ progress: 0.5 }, { percent: 50 }, { manualProgress: 0.5 }]) {
+    for (const extra of [{ progress: 0.5 }, { percent: 50 }]) {
       expect(
         projectMovementResponse.safeParse({ ...base, ...extra }).success,
         JSON.stringify(extra),

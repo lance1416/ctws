@@ -1,20 +1,13 @@
 import type { ProjectMovementResponse } from '@ctws/contracts'
 import { Link } from 'react-router-dom'
-import { hasMovement, movedLine, QUIET_DAYS } from '../movement'
+import { isQuiet, movedLine } from '../movement'
 import { useProjectRail } from '../../../shell/projects/projectColor'
 
 /**
  * Where each line of work got to this week, in counts, never a percentage: nothing stores the
  * progress a bar would need. A project gone quiet says so on its own line.
  */
-export function MovementPanel({
-  rows: all,
-  today,
-}: {
-  rows: ProjectMovementResponse[]
-  today: string
-}) {
-  const rows = all.filter(hasMovement)
+export function MovementPanel({ rows, today }: { rows: ProjectMovementResponse[]; today: string }) {
   const rail = useProjectRail()
 
   return (
@@ -22,7 +15,7 @@ export function MovementPanel({
       <h2 className="mb-1.5 text-base font-semibold text-ink">This week</h2>
       <ul className="flex flex-col">
         {rows.map((r) => {
-          const quiet = r.remaining > 0 && r.quietDays !== null && r.quietDays >= QUIET_DAYS
+          const quiet = isQuiet(r)
           return (
             <li key={r.projectId} className="min-w-0">
               <Link

@@ -6,8 +6,6 @@ export type TaskNode = {
   id: string
   parentId: string | null
   rank: string
-  title: string
-  status: string
 }
 
 export type FlatRow = {
@@ -58,7 +56,6 @@ export function flatten(nodes: readonly TaskNode[], collapsed: ReadonlySet<strin
   }
 
   const rows: FlatRow[] = []
-  const emitted = new Set<string>()
   const visited = new Set<string>()
 
   const markVisited = (id: string) => {
@@ -78,7 +75,6 @@ export function flatten(nodes: readonly TaskNode[], collapsed: ReadonlySet<strin
       hasChildren: kids.length > 0,
       collapsed: isCollapsed,
     })
-    emitted.add(n.id)
     visited.add(n.id)
   }
 

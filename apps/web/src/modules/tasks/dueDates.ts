@@ -11,11 +11,14 @@ import {
   ymd,
 } from '../../platform/time/dates'
 
-/** "N days late", in calendar days: a task due late yesterday is 1 day late, whatever the hour. */
+/**
+ * "N days late", in calendar days: a task due late yesterday is 1 day late, whatever the hour.
+ * Only asked once the deadline's day has gone.
+ */
 export function overdueLabel(dueIso: string, timeZone: string, now: Date): string {
-  const days = Math.max(
-    1,
-    differenceInCalendarDays(new TZDate(now, timeZone), new TZDate(new Date(dueIso), timeZone)),
+  const days = differenceInCalendarDays(
+    new TZDate(now, timeZone),
+    new TZDate(new Date(dueIso), timeZone),
   )
   return `${days} day${days === 1 ? '' : 's'} late`
 }

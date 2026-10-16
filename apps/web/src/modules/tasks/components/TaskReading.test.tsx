@@ -30,7 +30,6 @@ const task: TaskResponse = {
   scheduledOn: null,
   dueAt: null,
   rank: 'a0',
-  manualProgress: null,
   completedAt: '2026-10-10T09:00:00Z',
   createdAt: '2026-10-01T00:00:00Z',
   updatedAt: '2026-10-10T09:00:00Z',

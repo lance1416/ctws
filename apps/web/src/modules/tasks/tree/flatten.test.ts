@@ -5,8 +5,6 @@ const node = (id: string, parentId: string | null, rank: string): TaskNode => ({
   id,
   parentId,
   rank,
-  title: id,
-  status: 'todo',
 })
 
 describe('flatten', () => {

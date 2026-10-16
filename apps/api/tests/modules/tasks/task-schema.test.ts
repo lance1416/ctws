@@ -36,26 +36,22 @@ const CHECK_VIOLATION = '23514'
 // One workspace with a project, a task and an event on that task.
 async function seed() {
   const id = async (q: ReturnType<typeof sql>) => (await ctx.db.execute(q)).rows[0]!.id as string
-  const userId = await id(sql`
-    insert into users (id, email, password_hash, timezone)
-    values (gen_random_uuid(), ${`u-${Math.random()}@example.com`}, 'x', 'UTC') returning id
-  `)
   const workspaceId = await id(sql`
     insert into workspaces (id, name) values (gen_random_uuid(), 'w') returning id
   `)
   const projectId = await id(sql`
-    insert into projects (id, workspace_id, name, rank)
-    values (gen_random_uuid(), ${workspaceId}, 'p', 'a0') returning id
+    insert into projects (id, workspace_id, name, rank, color)
+    values (gen_random_uuid(), ${workspaceId}, 'p', 'a0', 'project-1') returning id
   `)
   const taskId = await id(sql`
     insert into tasks (id, project_id, title, status, rank)
     values (gen_random_uuid(), ${projectId}, 't', 'todo', 'a0') returning id
   `)
   await ctx.db.execute(sql`
-    insert into task_events (id, task_id, workspace_id, actor_user_id, type, payload, occurred_at)
-    values (gen_random_uuid(), ${taskId}, ${workspaceId}, ${userId}, 'created', '{}'::jsonb, now())
+    insert into task_events (id, task_id, workspace_id, type, payload, occurred_at)
+    values (gen_random_uuid(), ${taskId}, ${workspaceId}, 'created', '{}'::jsonb, now())
   `)
-  return { userId, workspaceId, projectId, taskId }
+  return { workspaceId, projectId, taskId }
 }
 
 describe('task tables', () => {
@@ -173,8 +169,8 @@ describe('task tables', () => {
     `)
     const childId = (child.rows as { id: string }[])[0]!.id
     await ctx.db.execute(sql`
-      insert into task_events (id, task_id, workspace_id, actor_user_id, type, payload, occurred_at)
-      select gen_random_uuid(), ${childId}, workspace_id, actor_user_id, 'created', '{}'::jsonb, now()
+      insert into task_events (id, task_id, workspace_id, type, payload, occurred_at)
+      select gen_random_uuid(), ${childId}, workspace_id, 'created', '{}'::jsonb, now()
       from task_events where task_id = ${taskId}
     `)
     expect(await sqlStateOf(ctx.db.execute(sql`delete from tasks where id = ${taskId}`))).toBe(
@@ -189,12 +185,5 @@ describe('task tables', () => {
     expect(await count('projects', 'id', projectId)).toBe(0)
     expect(await count('tasks', 'id', taskId)).toBe(0)
     expect(await count('task_events', 'workspace_id', workspaceId)).toBe(0)
-  })
-
-  it('refuses to hard delete a user who authored events', async () => {
-    const { userId } = await seed()
-    expect(await sqlStateOf(ctx.db.execute(sql`delete from users where id = ${userId}`))).toBe(
-      FOREIGN_KEY_VIOLATION,
-    )
   })
 })

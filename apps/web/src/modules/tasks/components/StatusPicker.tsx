@@ -12,12 +12,12 @@ import { MENU_ITEM, MENU_SURFACE } from '../../../platform/ui/menuSurface'
 export function StatusPicker({
   status,
   onPick,
-  busy = false,
+  busy,
 }: {
   status: TaskStatus
   onPick: (next: TaskStatus) => void
   /** A pick is being written: the menu will not open again until it lands. */
-  busy?: boolean
+  busy: boolean
 }) {
   const [open, setOpen] = useState(false)
   return (
@@ -28,7 +28,6 @@ export function StatusPicker({
         aria-disabled={busy || undefined}
         // The name carries the current value: this one button both shows and changes it.
         aria-label={`Status: ${STATUS_LABEL[status]}`}
-        data-status-picker
         className="-mx-1.5 flex h-8 items-center gap-2 rounded-md px-1.5 text-sm text-ink hover:bg-hover aria-disabled:opacity-50"
       >
         <span aria-hidden="true" className="flex">

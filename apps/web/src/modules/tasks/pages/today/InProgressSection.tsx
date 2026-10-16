@@ -40,11 +40,8 @@ export function InProgressSection({
       ) : (
         <ul className={ROW_LIST}>
           {tasks.map((t) => {
-            const lead = leadFor(
-              { dueAt: t.dueAt, scheduledOn: t.scheduledOn === today ? null : t.scheduledOn },
-              today,
-              timeZone,
-            )
+            // The server files a task planned up to today under Today, so any plan here is later.
+            const lead = leadFor(t, today, timeZone)
             return (
               <li
                 key={t.id}

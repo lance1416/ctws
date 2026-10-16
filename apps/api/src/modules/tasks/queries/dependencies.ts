@@ -3,7 +3,7 @@ import { sql } from 'drizzle-orm'
 import type { Queryable } from '../../../platform/db/client'
 import { ident } from '../../../platform/db/sql'
 import { groupBy } from '../../../platform/values'
-import { taskVisibleSql, visibleTask } from './scope'
+import { taskFinishedSql, taskOpenSql, taskVisibleSql, visibleTask } from './scope'
 
 type RefRow = { id: string; title: string; project_id: string; project_name: string; done: boolean }
 
@@ -25,7 +25,7 @@ export async function taskDependencyLists(
   const query = (other: 'blocker_id' | 'blocked_id', self: 'blocked_id' | 'blocker_id') => sql`
     select
       t.id, t.title, p.id as project_id, p.name as project_name,
-      (t.status in ('done', 'cancelled')) as done
+      (${taskFinishedSql('t')}) as done
     from task_dependencies d
     join tasks t on t.id = d.${ident(other)}
     join projects p on p.id = t.project_id
@@ -61,7 +61,7 @@ export async function blockersFor(
     where d.workspace_id = ${workspaceId}
       and d.blocked_id in ${taskIds}
       and ${taskVisibleSql('t', 'p', workspaceId)}
-      and t.status not in ('done', 'cancelled')
+      and ${taskOpenSql('t')}
     order by p.rank, t.rank, t.id
   `)
   return groupBy(rows.rows as (RefRow & { blocked_id: string })[], (r) => r.blocked_id, toRef)

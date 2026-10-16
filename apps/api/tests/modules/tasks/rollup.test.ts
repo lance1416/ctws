@@ -1,5 +1,4 @@
 import { DAY_MS, type RollupResponse } from '@ctws/contracts'
-import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { BOARD_TX, listProjectTasks } from '../../../src/modules/tasks/queries/list'
 import { projectRollups } from '../../../src/modules/tasks/queries/rollup'
@@ -9,8 +8,8 @@ import { appWithUser, createProject, createTask, type Harness } from '../../help
  * THE HALF OF THE ROLLUP THAT IS NOT IN `@ctws/core`.
  *
  * The fold is covered case by case in `packages/core/src/progress.test.ts`. What only the real
- * database can answer is the part written in SQL: the two deadline flags, decided in the ACCOUNT's
- * timezone, and the per-task last-activity max joined from the event log.
+ * database can answer is the part written in SQL: the overdue flag, decided in the ACCOUNT's
+ * timezone.
  */
 
 const cleanups: (() => Promise<void>)[] = []
@@ -105,21 +104,17 @@ describe('rollups ride along with the task list', () => {
     expect(r[root]!.progress).toBe(0.75)
   })
 
-  it('counts the whole subtree, including the node itself', async () => {
+  it('counts in-progress tasks across the subtree, including the node itself', async () => {
     const ctx = await setup()
     const pid = await createProject(ctx, 'P')
     const root = await createTask(ctx, pid, '根')
     const kid = await createTask(ctx, pid, '子', root)
-    await setStatus(ctx, kid, 'done')
+    await setStatus(ctx, root, 'in_progress')
+    await setStatus(ctx, kid, 'in_progress')
 
     const r = await rollups(ctx, pid)
-    expect(r[root]!.counts).toEqual({
-      backlog: 0,
-      todo: 1,
-      in_progress: 0,
-      done: 1,
-      cancelled: 0,
-    })
+    expect(r[root]).toEqual({ progress: 0, inProgress: 2, overdue: 0 })
+    expect(r[kid]!.inProgress).toBe(1)
   })
 
   it('leaves a soft-deleted task out of its parent entirely', async () => {
@@ -138,7 +133,6 @@ describe('rollups ride along with the task list', () => {
     expect(r[gone]).toBeUndefined()
     // The root is a leaf again, so it falls back to its own status rather than keeping the 1 the
     // deleted child used to give it.
-    expect(r[root]!.counts.done).toBe(0)
     expect(r[root]!.progress).toBe(0)
   })
 })
@@ -168,20 +162,18 @@ describe('the exclusion rule on a tree built the normal way', () => {
     // The rule itself did not change: something only recorded, not committed to, is not work in
     // flight and must not pull an average around.
     expect((await rollups(ctx, pid))[root]!.progress).toBeNull()
-    // The counts still see everything -- exclusion is about averaging, not about existing.
-    expect((await rollups(ctx, pid))[root]!.counts).toMatchObject({ backlog: 1, done: 1 })
   })
 })
 
-describe('the two deadline flags, decided in the account timezone', () => {
-  // UTC+14. Noon UTC is already the next calendar day here, which is what makes the two windows
-  // below differ from the ones a server reading its own clock would build.
+describe('the overdue flag, decided in the account timezone', () => {
+  // UTC+14. Noon UTC is already the next calendar day here, which is what makes the cut below
+  // differ from the ones a server reading its own clock would build.
   const TZ = 'Pacific/Kiritimati'
   // 02:00 on 2026-10-13 in Kiritimati, still the 12th in UTC.
   const NOW = new Date('2026-10-12T12:00:00Z')
   const dayOffset = (days: number) => new Date(NOW.getTime() + days * DAY_MS).toISOString()
 
-  it('counts a past deadline as overdue and not as due soon', async () => {
+  it('counts a past deadline as overdue, up the tree', async () => {
     const ctx = await setup(TZ, NOW)
     const pid = await createProject(ctx, 'P')
     const root = await createTask(ctx, pid, '根')
@@ -189,23 +181,20 @@ describe('the two deadline flags, decided in the account timezone', () => {
     await setDue(ctx, late, dayOffset(-3))
 
     const r = await rollups(ctx, pid)
-    expect(r[late]).toMatchObject({ overdue: 1, dueSoon: 0 })
-    expect(r[root]).toMatchObject({ overdue: 1, dueSoon: 0 })
+    expect(r[late]!.overdue).toBe(1)
+    expect(r[root]!.overdue).toBe(1)
   })
 
-  it('counts tomorrow as due soon and the day after as neither', async () => {
+  it('does not count a coming deadline', async () => {
     const ctx = await setup(TZ, NOW)
     const pid = await createProject(ctx, 'P')
     const root = await createTask(ctx, pid, '根')
     const soon = await createTask(ctx, pid, '快到期', root)
-    const later = await createTask(ctx, pid, '还早', root)
     await setDue(ctx, soon, dayOffset(1))
-    await setDue(ctx, later, dayOffset(5))
 
     const r = await rollups(ctx, pid)
-    expect(r[soon]).toMatchObject({ overdue: 0, dueSoon: 1 })
-    expect(r[later]).toMatchObject({ overdue: 0, dueSoon: 0 })
-    expect(r[root]).toMatchObject({ overdue: 0, dueSoon: 1 })
+    expect(r[soon]!.overdue).toBe(0)
+    expect(r[root]!.overdue).toBe(0)
   })
 
   it('stops counting a passed deadline once the task is finished', async () => {
@@ -217,20 +206,7 @@ describe('the two deadline flags, decided in the account timezone', () => {
 
     await setStatus(ctx, done, 'done')
     // A deadline that has passed on something already finished is not a problem to report.
-    expect((await rollups(ctx, pid))[done]).toMatchObject({ overdue: 0, dueSoon: 0 })
-  })
-
-  it('stops counting a COMING deadline once the task is finished', async () => {
-    // The same guard, on the other flag: the due-soon branch needs its own case, or it can lose
-    // the status check while the overdue case above stays green.
-    const ctx = await setup(TZ, NOW)
-    const pid = await createProject(ctx, 'P')
-    const done = await createTask(ctx, pid, '提前做完了')
-    await setDue(ctx, done, dayOffset(1))
-    expect((await rollups(ctx, pid))[done]).toMatchObject({ dueSoon: 1 })
-
-    await setStatus(ctx, done, 'done')
-    expect((await rollups(ctx, pid))[done]).toMatchObject({ overdue: 0, dueSoon: 0 })
+    expect((await rollups(ctx, pid))[done]).toMatchObject({ overdue: 0 })
   })
 
   it('does not call a deadline that passed EARLIER TODAY overdue', async () => {
@@ -244,7 +220,7 @@ describe('the two deadline flags, decided in the account timezone', () => {
     // 01:00 local: after the start of the account's day, an hour before now.
     await setDue(ctx, id, new Date(NOW.getTime() - 3_600_000).toISOString())
 
-    expect((await rollups(ctx, pid))[id]).toMatchObject({ overdue: 0, dueSoon: 1 })
+    expect((await rollups(ctx, pid))[id]).toMatchObject({ overdue: 0 })
   })
 
   it('agrees with the today view about which tasks are overdue', async () => {
@@ -265,47 +241,6 @@ describe('the two deadline flags, decided in the account timezone', () => {
     )
     expect(segments.map((t) => t.id)).toEqual([late])
     expect((await rollups(ctx, pid))[late]).toMatchObject({ overdue: 1 })
-  })
-})
-
-describe('last activity comes from the event log', () => {
-  it('is the most recent change anywhere in the subtree', async () => {
-    const ctx = await setup()
-    const pid = await createProject(ctx, 'P')
-    const root = await createTask(ctx, pid, '根')
-    const kid = await createTask(ctx, pid, '子', root)
-
-    // Backdate every event, then give the CHILD one recent event: the parent must report the
-    // child's, since the point of the metric is that a whole branch has gone quiet.
-    await ctx.db.execute(sql`update task_events set occurred_at = now() - interval '30 days'`)
-    await setStatus(ctx, kid, 'in_progress')
-
-    const r = await rollups(ctx, pid)
-    expect(r[root]!.lastActivityAt).toBe(r[kid]!.lastActivityAt)
-    const age = Date.now() - Date.parse(r[root]!.lastActivityAt!)
-    expect(age).toBeLessThan(60_000)
-  })
-
-  it('reports each node its own subtree, not the project as a whole', async () => {
-    const ctx = await setup()
-    const pid = await createProject(ctx, 'P')
-    const quiet = await createTask(ctx, pid, '放着的')
-    const busy = await createTask(ctx, pid, '在动的')
-    await ctx.db.execute(sql`update task_events set occurred_at = now() - interval '30 days'`)
-    await setStatus(ctx, busy, 'in_progress')
-
-    const r = await rollups(ctx, pid)
-    expect(Date.parse(r[busy]!.lastActivityAt!)).toBeGreaterThan(
-      Date.parse(r[quiet]!.lastActivityAt!),
-    )
-  })
-
-  it('is a fixed-width UTC instant, which is what makes the max a max', async () => {
-    const ctx = await setup()
-    const pid = await createProject(ctx, 'P')
-    const id = await createTask(ctx, pid, '一条')
-    const r = await rollups(ctx, pid)
-    expect(r[id]!.lastActivityAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/)
   })
 })
 

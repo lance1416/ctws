@@ -9,13 +9,14 @@ export function useFocusAfterRemoval({
   ids,
   rowFor,
   heading,
-  open = null,
+  open,
 }: {
   /** The rows' ids in reading order, as rendered. */
   ids: () => readonly string[]
   rowFor: (id: string) => HTMLElement | null
   heading: () => HTMLElement | null
-  open?: string | null
+  /** The row whose pane is open, if any. */
+  open: string | null
 }) {
   const plans = useRef(new Map<string, { order: readonly string[] }>())
 

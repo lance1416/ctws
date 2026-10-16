@@ -6,10 +6,7 @@ const node = (id: string, parentId: string | null, over: Partial<RollupNode> = {
   id,
   parentId,
   status: 'todo',
-  manualProgress: null,
   overdue: false,
-  dueSoon: false,
-  lastActivityAt: null,
   ...over,
 })
 
@@ -27,20 +24,8 @@ describe('progress', () => {
   })
 
   it('scores an in-progress leaf 0 rather than inventing a half', () => {
-    // 0.5 would be a number nobody entered. Saying "half done" is what manualProgress is for.
+    // 0.5 would be a number nobody entered.
     expect(progressOf([node('a', null, { status: 'in_progress' })], 'a')).toBe(0)
-  })
-
-  it('takes a leaf manual value even on a status that did not ask for one', () => {
-    // Deliberately not cross-checked against the status: an explicit value the person set
-    // is not the system's to overrule.
-    const nodes = [node('a', null, { status: 'todo', manualProgress: 0.4 })]
-    expect(progressOf(nodes, 'a')).toBe(0.4)
-  })
-
-  it('lets done win over a manual value on the same leaf', () => {
-    const nodes = [node('a', null, { status: 'done', manualProgress: 0.4 })]
-    expect(progressOf(nodes, 'a')).toBe(1)
   })
 
   it('averages the DIRECT children, not the subtree leaves', () => {
@@ -81,12 +66,12 @@ describe('progress', () => {
   })
 
   it('degrades to a leaf when every child is excluded', () => {
-    const nodes = [
-      node('a', null, { status: 'in_progress', manualProgress: 0.3 }),
+    const children = [
       node('b', 'a', { status: 'backlog' }),
       node('c', 'a', { status: 'cancelled' }),
     ]
-    expect(progressOf(nodes, 'a')).toBe(0.3)
+    expect(progressOf([node('a', null, { status: 'in_progress' }), ...children], 'a')).toBe(0)
+    expect(progressOf([node('a', null, { status: 'done' }), ...children], 'a')).toBe(1)
   })
 
   it('excludes a backlog parent whatever its children say', () => {
@@ -113,75 +98,40 @@ describe('progress', () => {
 })
 
 describe('the counts beside the percentage', () => {
-  it('counts the subtree including the node itself', () => {
+  it('counts in-progress tasks across the subtree, the node itself included', () => {
     const nodes = [
       node('a', null, { status: 'in_progress' }),
-      node('b', 'a', { status: 'done' }),
-      node('c', 'a', { status: 'backlog' }),
+      node('b', 'a', { status: 'in_progress' }),
+      node('c', 'b', { status: 'in_progress' }),
+      node('d', 'a', { status: 'backlog' }),
     ]
-    expect(rollup(nodes).get('a')!.counts).toEqual({
-      backlog: 1,
-      todo: 0,
-      in_progress: 1,
-      done: 1,
-      cancelled: 0,
-    })
-    expect(rollup(nodes).get('b')!.counts.done).toBe(1)
+    const r = rollup(nodes)
+    expect(r.get('a')!.inProgress).toBe(3)
+    expect(r.get('b')!.inProgress).toBe(2)
+    expect(r.get('d')!.inProgress).toBe(0)
   })
 
-  it('counts an excluded node, because a count is not a percentage', () => {
-    // "42% · 2 in progress · 1 overdue" has to be able to say that something IS in the backlog; the
-    // exclusion rule is about averaging, not about existing.
-    const nodes = [node('a', null, { status: 'backlog' }), node('b', 'a', { status: 'cancelled' })]
+  it('counts under an excluded node, because a count is not a percentage', () => {
+    const nodes = [
+      node('a', null, { status: 'backlog' }),
+      node('b', 'a', { status: 'in_progress' }),
+    ]
     const r = rollup(nodes).get('a')!
     expect(r.progress).toBeNull()
-    expect(r.counts).toEqual({ backlog: 1, todo: 0, in_progress: 0, done: 0, cancelled: 1 })
+    expect(r.inProgress).toBe(1)
   })
 
-  it('sums overdue and due-soon up the tree', () => {
+  it('sums overdue up the tree', () => {
     const nodes = [
       node('a', null),
       node('b', 'a', { overdue: true }),
-      node('c', 'a', { dueSoon: true }),
-      node('d', 'c', { overdue: true, dueSoon: false }),
+      node('c', 'a'),
+      node('d', 'c', { overdue: true }),
     ]
     const r = rollup(nodes)
-    expect(r.get('a')).toMatchObject({ overdue: 2, dueSoon: 1 })
-    expect(r.get('c')).toMatchObject({ overdue: 1, dueSoon: 1 })
-    expect(r.get('d')).toMatchObject({ overdue: 1, dueSoon: 0 })
-  })
-})
-
-describe('last activity', () => {
-  it('reports the most recent change anywhere in the subtree', () => {
-    const nodes = [
-      node('a', null, { lastActivityAt: '2026-09-01T10:00:00.000Z' }),
-      node('b', 'a', { lastActivityAt: '2026-10-05T08:30:00.000Z' }),
-      node('c', 'b', { lastActivityAt: '2026-09-20T23:59:59.000Z' }),
-    ]
-    const r = rollup(nodes)
-    expect(r.get('a')!.lastActivityAt).toBe('2026-10-05T08:30:00.000Z')
-    expect(r.get('b')!.lastActivityAt).toBe('2026-10-05T08:30:00.000Z')
-    // A node reports its OWN subtree, so the deepest one keeps its own date.
-    expect(r.get('c')!.lastActivityAt).toBe('2026-09-20T23:59:59.000Z')
-  })
-
-  it('is null only when nothing in the subtree has ever been logged', () => {
-    const nodes = [node('a', null), node('b', 'a', { lastActivityAt: '2026-10-05T08:30:00.000Z' })]
-    expect(rollup(nodes).get('a')!.lastActivityAt).toBe('2026-10-05T08:30:00.000Z')
-    expect(rollup([node('x', null)]).get('x')!.lastActivityAt).toBeNull()
-  })
-
-  it('compares the fixed-width UTC form, where string order IS time order', () => {
-    // The fold takes a plain string max. That is only the chronological max for this exact
-    // shape -- same width, same `Z`. A December instant must beat a September one although
-    // '1' < '9'; it does, because the year and month sit to the left of the day.
-    const nodes = [
-      node('a', null),
-      node('b', 'a', { lastActivityAt: '2026-09-30T23:59:59.999Z' }),
-      node('c', 'a', { lastActivityAt: '2026-12-01T00:00:00.000Z' }),
-    ]
-    expect(rollup(nodes).get('a')!.lastActivityAt).toBe('2026-12-01T00:00:00.000Z')
+    expect(r.get('a')!.overdue).toBe(2)
+    expect(r.get('c')!.overdue).toBe(1)
+    expect(r.get('d')!.overdue).toBe(1)
   })
 })
 
@@ -205,7 +155,7 @@ describe('inputs that are not a clean tree', () => {
     const nodes = [node('a', 'b'), node('b', 'a', { status: 'done' })]
     const r = rollup(nodes)
     expect([...r.keys()].sort()).toEqual(['a', 'b'])
-    expect(r.get('b')!.counts.done).toBe(1)
+    expect(r.get('b')!.progress).toBe(1)
   })
 
   it('is empty for no nodes at all', () => {

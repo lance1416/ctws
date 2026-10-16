@@ -259,12 +259,7 @@ describe('task dependencies', () => {
     await dependOn(ctx, b, a)
     await undepend(ctx, b, a)
 
-    const res = await ctx.app.inject({
-      method: 'GET',
-      url: `/api/v1/tasks/${b}/events`,
-      headers: ctx.authed,
-    })
-    const types = (res.json() as { events: { type: string }[] }).events.map((e) => e.type)
+    const types = (await eventsOf(ctx, b)).map((e) => e.type)
     // On the WAITING task: it is the one whose situation changed, and its history is where
     // someone looks to ask why it sat still.
     expect(types).toContain('dependency_added')

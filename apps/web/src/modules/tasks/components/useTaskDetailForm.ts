@@ -53,7 +53,6 @@ export function useTaskDetailForm(task: TaskResponse) {
   /** Saves what changed; `onSaved` runs once the server has it and the form is clean again. */
   const submit = (onSaved: () => void) =>
     form.handleSubmit((values) => {
-      if (save.isPending) return
       save.mutate(
         { values, changed: new Set(Object.keys(dirtyFields)) },
         {

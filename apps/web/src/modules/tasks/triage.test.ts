@@ -7,7 +7,7 @@ const ZONE = 'America/Toronto'
 
 const sectionsFor = (
   t: { id: string; segment: 'overdue' | 'today' | 'in_progress'; dueAt: string | null },
-  carried: string | null,
+  carried: boolean,
   record: (body: TriagePatch) => void,
 ) => triageSections(t, carried, TODAY, ZONE, (_id, body) => record(body))
 
@@ -16,7 +16,7 @@ const overdue = { id: 't1', segment: 'overdue' as const, dueAt: '2026-10-02T13:3
 describe('an overdue row', () => {
   const run = (heading: string | null, label: string): TriagePatch => {
     let sent: TriagePatch = {}
-    const sections = sectionsFor(overdue, null, (body) => {
+    const sections = sectionsFor(overdue, false, (body) => {
       sent = body
     })
     sections!
@@ -27,7 +27,7 @@ describe('an overdue row', () => {
   }
 
   it('offers the two ways out, and nothing else', () => {
-    const sections = sectionsFor(overdue, null, () => {})
+    const sections = sectionsFor(overdue, false, () => {})
     expect(sections?.map((s) => s.heading)).toEqual(['Push the deadline', 'Make it a plan'])
     expect(sections?.map((s) => s.actions.map((a) => a.label))).toEqual([
       ['To tomorrow', 'To next week', 'Clear the deadline'],
@@ -62,7 +62,7 @@ describe('a row whose plan was carried over', () => {
   const carried = { id: 't2', segment: 'today' as const, dueAt: null }
   const run = (label: string): TriagePatch => {
     let sent: TriagePatch = {}
-    const sections = sectionsFor(carried, 'Was Oct 2, carried', (body) => {
+    const sections = sectionsFor(carried, true, (body) => {
       sent = body
     })
     sections![0]!.actions.find((a) => a.label === label)!.run()
@@ -70,7 +70,7 @@ describe('a row whose plan was carried over', () => {
   }
 
   it('offers one unlabelled cluster about the PLAN', () => {
-    const sections = sectionsFor(carried, 'Was Oct 2, carried', () => {})
+    const sections = sectionsFor(carried, true, () => {})
     expect(sections).toHaveLength(1)
     expect(sections![0]!.heading).toBeNull()
     expect(sections![0]!.actions.map((a) => a.label)).toEqual([
@@ -98,12 +98,12 @@ describe('a row whose plan was carried over', () => {
 describe('a row with nothing to triage', () => {
   it('is offered nothing, so the slot stays empty', () => {
     // Planned for today: the plan is not late, so there is nothing to move it out of.
-    expect(sectionsFor({ id: 't3', segment: 'today', dueAt: null }, null, () => {})).toBeNull()
+    expect(sectionsFor({ id: 't3', segment: 'today', dueAt: null }, false, () => {})).toBeNull()
     // In progress with a deadline still ahead.
     expect(
       sectionsFor(
         { id: 't4', segment: 'in_progress', dueAt: '2026-12-01T13:30:00.000Z' },
-        null,
+        false,
         () => {},
       ),
     ).toBeNull()
@@ -111,7 +111,7 @@ describe('a row with nothing to triage', () => {
     expect(
       sectionsFor(
         { id: 't5', segment: 'today', dueAt: '2020-01-01T00:00:00.000Z' },
-        null,
+        false,
         () => {},
       ),
     ).toBeNull()

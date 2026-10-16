@@ -1,5 +1,5 @@
+import { MAX_TASK_DEPTH } from '@ctws/contracts'
 import { DomainError } from '../../platform/errors'
-import { MAX_DEPTH } from './tree'
 
 /** Missing, deleted or in another workspace: the three read the same so ids cannot be probed. */
 export class TaskNotFoundError extends DomainError {
@@ -17,13 +17,7 @@ export class DependencyCycleError extends DomainError {
 
 export class DepthLimitError extends DomainError {
   constructor() {
-    super('conflict', `Tasks can be nested at most ${MAX_DEPTH} levels deep`)
-  }
-}
-
-export class ManualProgressOnParentError extends DomainError {
-  constructor() {
-    super('conflict', 'Manual progress can only be set on a task without children')
+    super('conflict', `Tasks can be nested at most ${MAX_TASK_DEPTH} levels deep`)
   }
 }
 
@@ -38,11 +32,5 @@ export class MoveCycleError extends DomainError {
 export class InvalidNeighbourError extends DomainError {
   constructor(message: string) {
     super('invalid', message)
-  }
-}
-
-export class InvalidCursorError extends DomainError {
-  constructor() {
-    super('invalid', 'Invalid cursor')
   }
 }

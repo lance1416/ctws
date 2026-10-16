@@ -15,8 +15,6 @@ import {
   reviewResponse,
   searchQuery,
   searchTasksResponse,
-  taskEventsQuery,
-  taskEventsResponse,
   taskResponse,
   todayResponse,
   updateTaskBody,
@@ -40,7 +38,6 @@ import {
 import { listTaskCalendar } from './queries/calendar'
 import { listCompleted } from './queries/completed'
 import { blockersFor, taskDependencyLists } from './queries/dependencies'
-import { listTaskEvents } from './queries/events'
 import { projectBoard } from './queries/list'
 import { listProjectMovement } from './queries/movement'
 import { listReview } from './queries/review'
@@ -48,11 +45,8 @@ import { visibleTask } from './queries/scope'
 import { searchTasks } from './queries/search'
 import { listToday } from './queries/today'
 
-/** Who is writing, for the commands that log against the task they change. */
-const actor = (req: FastifyRequest): TaskCtx => {
-  const user = currentUser(req)
-  return { workspaceId: user.workspaceId, actorUserId: user.id }
-}
+/** The workspace a command writes and logs in. */
+const actor = (req: FastifyRequest): TaskCtx => ({ workspaceId: currentUser(req).workspaceId })
 
 export const taskRoutes: FastifyPluginAsyncZod = async (app) => {
   app.get(
@@ -181,17 +175,5 @@ export const taskRoutes: FastifyPluginAsyncZod = async (app) => {
       await removeDependency(app.db, actor(req), req.params.id, req.params.blockerId)
       return reply.status(204).send()
     },
-  )
-
-  app.get(
-    '/:id/events',
-    {
-      schema: {
-        params: idParams,
-        querystring: taskEventsQuery,
-        response: { 200: taskEventsResponse },
-      },
-    },
-    async (req) => listTaskEvents(app.db, currentUser(req).workspaceId, req.params.id, req.query),
   )
 }

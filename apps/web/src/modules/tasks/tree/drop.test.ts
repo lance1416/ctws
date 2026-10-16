@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { FlatRow } from './flatten'
-import { MAX_DEPTH, planDrop } from './drop'
+import { MAX_TASK_DEPTH } from '@ctws/contracts'
+import { planDrop } from './drop'
 
 /** Builds visible rows from `[id, depth, subtreeHeight]`, deriving parentId from the depths. */
 function rowsOf(spec: [string, number, number?][]): FlatRow[] {
@@ -30,7 +31,6 @@ describe('planDrop', () => {
     expect(planDrop({ rows, draggedId: 'a', slot: 3, wantedDepth: 1 })).toEqual({
       ok: true,
       parentId: null,
-      depth: 1,
       afterId: 'c',
     })
   })
@@ -45,7 +45,6 @@ describe('planDrop', () => {
     expect(planDrop({ rows, draggedId: 'dragged', slot: 1, wantedDepth: 2 })).toEqual({
       ok: true,
       parentId: 'parent',
-      depth: 2,
       beforeId: 'existing',
     })
   })
@@ -61,7 +60,6 @@ describe('planDrop', () => {
     expect(planDrop({ rows, draggedId: 'dragged', slot: 1, wantedDepth: 2 })).toEqual({
       ok: true,
       parentId: 'parent',
-      depth: 2,
       beforeId: 'first',
     })
   })
@@ -74,7 +72,6 @@ describe('planDrop', () => {
     expect(planDrop({ rows, draggedId: 'dragged', slot: 1, wantedDepth: 2 })).toEqual({
       ok: true,
       parentId: 'parent',
-      depth: 2,
     })
   })
 
@@ -86,7 +83,6 @@ describe('planDrop', () => {
     // You may become a's child (depth 2), never its grandchild in one gesture.
     expect(planDrop({ rows, draggedId: 'dragged', slot: 1, wantedDepth: 7 })).toMatchObject({
       ok: true,
-      depth: 2,
       parentId: 'a',
     })
   })
@@ -103,44 +99,42 @@ describe('planDrop', () => {
     // depth is clamped up to `b`'s.
     expect(planDrop({ rows, draggedId: 'dragged', slot: 1, wantedDepth: 1 })).toMatchObject({
       ok: true,
-      depth: 2,
       parentId: 'a',
     })
   })
 
   // Off by one here either rejects a legal drag or hands an illegal one to the server.
-  it('lets a leaf reach exactly MAX_DEPTH', () => {
+  it('lets a leaf reach exactly MAX_TASK_DEPTH', () => {
     const spec: [string, number, number?][] = []
-    for (let d = 1; d <= MAX_DEPTH - 1; d++) spec.push([`d${d}`, d])
+    for (let d = 1; d <= MAX_TASK_DEPTH - 1; d++) spec.push([`d${d}`, d])
     spec.push(['leaf', 1, 1])
     const rows = rowsOf(spec)
     const plan = planDrop({
       rows,
       draggedId: 'leaf',
-      slot: MAX_DEPTH - 1,
-      wantedDepth: MAX_DEPTH,
+      slot: MAX_TASK_DEPTH - 1,
+      wantedDepth: MAX_TASK_DEPTH,
     })
-    expect(plan).toMatchObject({ ok: true, depth: MAX_DEPTH, parentId: `d${MAX_DEPTH - 1}` })
+    expect(plan).toMatchObject({ ok: true, parentId: `d${MAX_TASK_DEPTH - 1}` })
   })
 
-  it('refuses to put a leaf past MAX_DEPTH by clamping, not by erroring', () => {
+  it('refuses to put a leaf past MAX_TASK_DEPTH by clamping, not by erroring', () => {
     const spec: [string, number, number?][] = []
-    for (let d = 1; d <= MAX_DEPTH; d++) spec.push([`d${d}`, d])
+    for (let d = 1; d <= MAX_TASK_DEPTH; d++) spec.push([`d${d}`, d])
     spec.push(['leaf', 1, 1])
     const rows = rowsOf(spec)
-    // The gesture asks for MAX_DEPTH + 1 under the deepest row; the deepest legal is MAX_DEPTH.
+    // The gesture asks for MAX_TASK_DEPTH + 1 under the deepest row; the deepest legal is MAX_TASK_DEPTH.
     expect(
-      planDrop({ rows, draggedId: 'leaf', slot: MAX_DEPTH, wantedDepth: MAX_DEPTH + 1 }),
+      planDrop({ rows, draggedId: 'leaf', slot: MAX_TASK_DEPTH, wantedDepth: MAX_TASK_DEPTH + 1 }),
     ).toEqual({
       ok: true,
-      parentId: `d${MAX_DEPTH - 1}`,
-      depth: MAX_DEPTH,
-      afterId: `d${MAX_DEPTH}`,
+      parentId: `d${MAX_TASK_DEPTH - 1}`,
+      afterId: `d${MAX_TASK_DEPTH}`,
     })
   })
 
   it('accounts for the dragged subtree height, not just the dragged row', () => {
-    // A height-3 subtree may sit no deeper than MAX_DEPTH - 2, so under a depth-8 row (which
+    // A height-3 subtree may sit no deeper than MAX_TASK_DEPTH - 2, so under a depth-8 row (which
     // would make it depth 9) it must clamp to 8 instead.
     const spec: [string, number, number?][] = []
     for (let d = 1; d <= 8; d++) spec.push([`d${d}`, d])
@@ -150,14 +144,13 @@ describe('planDrop', () => {
     expect(planDrop({ rows, draggedId: 'tall', slot: 8, wantedDepth: 9 })).toEqual({
       ok: true,
       parentId: 'd7',
-      depth: 8,
       afterId: 'd8',
     })
   })
 
   it('rejects a drop where no depth can fit the subtree', () => {
     // The row after the slot sets a lower bound of 9; a height-3 subtree's upper bound is
-    // MAX_DEPTH - 2 = 8.
+    // MAX_TASK_DEPTH - 2 = 8.
     const spec: [string, number, number?][] = []
     for (let d = 1; d <= 9; d++) spec.push([`d${d}`, d])
     spec.push(['d9b', 9])
@@ -210,7 +203,6 @@ describe('planDrop', () => {
     expect(planDrop({ rows, draggedId: 'dragged', slot: 0, wantedDepth: 1 })).toEqual({
       ok: true,
       parentId: null,
-      depth: 1,
       beforeId: 'a',
     })
   })
@@ -224,7 +216,6 @@ describe('planDrop', () => {
     expect(planDrop({ rows, draggedId: 'dragged', slot: 0, wantedDepth: 1 })).toEqual({
       ok: true,
       parentId: null,
-      depth: 1,
       beforeId: 'a',
     })
   })
@@ -237,9 +228,9 @@ describe('planDrop', () => {
       ['a2', 3],
     ])
     const plan = (wantedDepth: number) => planDrop({ rows, draggedId: 'x', slot: 4, wantedDepth })
-    expect(plan(1)).toEqual({ ok: true, parentId: null, depth: 1, afterId: 'a' })
-    expect(plan(2)).toEqual({ ok: true, parentId: 'a', depth: 2, afterId: 'a1' })
-    expect(plan(3)).toEqual({ ok: true, parentId: 'a1', depth: 3, afterId: 'a2' })
+    expect(plan(1)).toEqual({ ok: true, parentId: null, afterId: 'a' })
+    expect(plan(2)).toEqual({ ok: true, parentId: 'a', afterId: 'a1' })
+    expect(plan(3)).toEqual({ ok: true, parentId: 'a1', afterId: 'a2' })
   })
 
   describe('dragging a nested row that has its own subtree', () => {
@@ -254,9 +245,9 @@ describe('planDrop', () => {
       planDrop({ rows, draggedId: 'x', slot, wantedDepth })
 
     it('moves it out to the root', () => {
-      expect(plan(1, 1)).toEqual({ ok: true, parentId: null, depth: 1, afterId: 'P' })
+      expect(plan(1, 1)).toEqual({ ok: true, parentId: null, afterId: 'P' })
       // Past its own block the neighbour above is still P, not its own child xc.
-      expect(plan(3, 1)).toEqual({ ok: true, parentId: null, depth: 1, afterId: 'P' })
+      expect(plan(3, 1)).toEqual({ ok: true, parentId: null, afterId: 'P' })
     })
 
     it('treats its own position as unchanged, at either edge of its block', () => {
@@ -287,8 +278,8 @@ describe('planDrop', () => {
     expect(plan(3, 2)).toEqual({ ok: false, reason: 'unchanged' })
     // y below pins the lower bound at 2, so asking for the root clamps up to 2.
     expect(plan(3, 1)).toEqual({ ok: false, reason: 'unchanged' })
-    expect(plan(4, 1)).toEqual({ ok: true, parentId: null, depth: 1, afterId: 'P' })
-    expect(plan(4, 2)).toEqual({ ok: true, parentId: 'P', depth: 2, afterId: 'y' })
+    expect(plan(4, 1)).toEqual({ ok: true, parentId: null, afterId: 'P' })
+    expect(plan(4, 2)).toEqual({ ok: true, parentId: 'P', afterId: 'y' })
   })
 
   it('moves a nested row to a different parent, including at its block boundary', () => {
@@ -301,11 +292,11 @@ describe('planDrop', () => {
     ])
     const plan = (slot: number, wantedDepth: number) =>
       planDrop({ rows, draggedId: 'x', slot, wantedDepth })
-    expect(plan(2, 2)).toEqual({ ok: true, parentId: 'A', depth: 2, afterId: 'a1' })
+    expect(plan(2, 2)).toEqual({ ok: true, parentId: 'A', afterId: 'a1' })
     // Slots 3 and 5 are the block's own edges. The slot alone does not make a drop "unchanged":
     // the parent changes at depth 1 and does not at depth 2.
-    expect(plan(3, 1)).toEqual({ ok: true, parentId: null, depth: 1, afterId: 'B' })
-    expect(plan(5, 1)).toEqual({ ok: true, parentId: null, depth: 1, afterId: 'B' })
+    expect(plan(3, 1)).toEqual({ ok: true, parentId: null, afterId: 'B' })
+    expect(plan(5, 1)).toEqual({ ok: true, parentId: null, afterId: 'B' })
     expect(plan(3, 2)).toEqual({ ok: false, reason: 'unchanged' })
     expect(plan(5, 2)).toEqual({ ok: false, reason: 'unchanged' })
   })
