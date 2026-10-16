@@ -1,5 +1,5 @@
 import { type TaskStatus, type TodayTaskResponse, type TaskId } from '@ctws/contracts'
-import type { KeyboardEvent } from 'react'
+import type { KeyboardEvent, ReactNode } from 'react'
 import { BUTTON } from '../../../../platform/ui/buttonStyles'
 import {
   DayEmpty,
@@ -15,6 +15,18 @@ import { StatusButton } from '../../components/StatusControls'
 import { StatusMark } from '../../components/StatusMark'
 import { opensOnClick, OVER_ROW, SavedMark } from '../../components/TaskRowParts'
 import { taskCrumb } from '../../logic/crumb'
+
+type RowProps = {
+  task: TodayTaskResponse
+  today: string
+  timeZone: string
+  saved: boolean
+  /** The title button's ref: the row's focus carrier. */
+  rowRef: (el: HTMLElement | null) => () => void
+  onOpen: () => void
+  onKeyDown: (e: KeyboardEvent) => void
+  onStatus: (status: TaskStatus) => void
+}
 
 /**
  * One task in progress is the focal point, in large type with Done and Pause beside it; several
@@ -40,106 +52,174 @@ export function InProgressSection({
   onKeyDown: (e: KeyboardEvent, t: TodayTaskResponse) => void
   onStatus: (id: TaskId, status: TaskStatus) => void
 }) {
-  const alone = tasks.length === 1
+  const Row = tasks.length === 1 ? FocalRow : DoingRow
   return (
-    <DaySection label="In progress" count={alone ? undefined : tasks.length}>
+    <DaySection label="In progress" count={tasks.length === 1 ? undefined : tasks.length}>
       {tasks.length === 0 ? (
         <DayEmpty>Nothing in progress</DayEmpty>
       ) : (
         <ul className={ROW_LIST}>
-          {tasks.map((t) => {
-            // The server files a task planned up to today under Today, so any plan here is later.
-            const lead = leadFor(t, today, timeZone)
-            return (
-              <li
-                key={t.id}
-                onClick={(e) => {
-                  if (opensOnClick(e)) onOpen(t.id)
-                }}
-                className="group flex cursor-pointer items-stretch"
-              >
-                <RowLead lead={lead} />
-                <ProjectRail projectId={t.projectId} />
-                <div
-                  className={`${ROW_BODY} relative items-start gap-x-2.5 pr-2 group-hover:bg-hover ${
-                    alone ? 'flex-wrap gap-y-2 py-2' : 'min-h-11'
-                  }`}
-                >
-                  {/* Several: the mark is the Done control, and on a touch screen the only one. */}
-                  <span className="flex h-11 shrink-0 items-center">
-                    {alone ? (
-                      <StatusMark status={t.status} />
-                    ) : (
-                      <StatusButton
-                        status={t.status}
-                        title={t.title}
-                        onClick={() => onStatus(t.id, toggleDoneTarget(t.status))}
-                      />
-                    )}
-                  </span>
-                  <button
-                    type="button"
-                    ref={rowRef(t.id)}
-                    data-today-row={t.id}
-                    onClick={() => onOpen(t.id)}
-                    onKeyDown={(e) => onKeyDown(e, t)}
-                    // One: at least 12rem, so Done and Pause wrap under a short title rather than
-                    // squeeze it.
-                    className={`flex flex-1 flex-col text-left ${
-                      alone ? 'min-w-[min(12rem,100%)]' : 'min-w-0 py-2.5'
-                    }`}
-                  >
-                    <span className="flex min-w-0 items-baseline">
-                      <span
-                        data-doing-title
-                        // One: in full, on as many lines as it takes. Several: one line each.
-                        className={`font-semibold ${
-                          alone
-                            ? 'min-w-0 text-2xl [overflow-wrap:anywhere] max-sm:text-xl'
-                            : 'truncate text-base'
-                        }`}
-                      >
-                        {t.title}
-                      </span>
-                      {savedId === t.id && <SavedMark />}
-                    </span>
-                    <span className="truncate text-sm text-ink-muted">{taskCrumb(t)}</span>
-                  </button>
-                  {/* The visible word is in the accessible name: "Done" in “Complete “Title””. */}
-                  <span
-                    className={`flex shrink-0 items-center gap-2 ${
-                      alone
-                        ? 'self-center'
-                        : // Over the row, not in it: they take no width from the title.
-                          `absolute top-0 right-1 h-11 opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:hidden ${OVER_ROW}`
-                    }`}
-                  >
-                    {/* Several: the mark is already Done, so a second Done is not drawn. */}
-                    {alone && (
-                      <button
-                        type="button"
-                        aria-label={`Complete “${t.title}”`}
-                        onClick={() => onStatus(t.id, toggleDoneTarget(t.status))}
-                        className={BUTTON.primary}
-                      >
-                        Done
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      aria-label={`Pause “${t.title}”`}
-                      onClick={() => onStatus(t.id, toggleStartTarget(t.status))}
-                      className={BUTTON.secondary}
-                    >
-                      Pause
-                    </button>
-                  </span>
-                </div>
-              </li>
-            )
-          })}
+          {tasks.map((t) => (
+            <Row
+              key={t.id}
+              task={t}
+              today={today}
+              timeZone={timeZone}
+              saved={savedId === t.id}
+              rowRef={rowRef(t.id)}
+              onOpen={() => onOpen(t.id)}
+              onKeyDown={(e) => onKeyDown(e, t)}
+              onStatus={(status) => onStatus(t.id, status)}
+            />
+          ))}
         </ul>
       )}
     </DaySection>
+  )
+}
+
+/** The one task in progress: its title in full, in large type, with Done and Pause beside it. */
+function FocalRow({
+  task: t,
+  today,
+  timeZone,
+  saved,
+  rowRef,
+  onOpen,
+  onKeyDown,
+  onStatus,
+}: RowProps) {
+  return (
+    <Row task={t} today={today} timeZone={timeZone} onOpen={onOpen} body="flex-wrap gap-y-2 py-2">
+      <span className="flex h-11 shrink-0 items-center">
+        <StatusMark status={t.status} />
+      </span>
+      <button
+        type="button"
+        ref={rowRef}
+        data-today-row={t.id}
+        onClick={onOpen}
+        onKeyDown={onKeyDown}
+        // At least 12rem, so Done and Pause wrap under a short title rather than squeeze it.
+        className="flex min-w-[min(12rem,100%)] flex-1 flex-col text-left"
+      >
+        <span className="flex min-w-0 items-baseline">
+          <span
+            data-doing-title
+            // In full, on as many lines as it takes.
+            className="min-w-0 text-2xl font-semibold [overflow-wrap:anywhere] max-sm:text-xl"
+          >
+            {t.title}
+          </span>
+          {saved && <SavedMark />}
+        </span>
+        <span className="truncate text-sm text-ink-muted">{taskCrumb(t)}</span>
+      </button>
+      {/* The visible word is in the accessible name: "Done" in “Complete “Title””. */}
+      <span className="flex shrink-0 items-center gap-2 self-center">
+        <button
+          type="button"
+          aria-label={`Complete “${t.title}”`}
+          onClick={() => onStatus(toggleDoneTarget(t.status))}
+          className={BUTTON.primary}
+        >
+          Done
+        </button>
+        <Pause task={t} onStatus={onStatus} />
+      </span>
+    </Row>
+  )
+}
+
+/** One of several tasks in progress, as a row: its mark is the Done control. */
+function DoingRow({
+  task: t,
+  today,
+  timeZone,
+  saved,
+  rowRef,
+  onOpen,
+  onKeyDown,
+  onStatus,
+}: RowProps) {
+  return (
+    <Row task={t} today={today} timeZone={timeZone} onOpen={onOpen} body="min-h-11">
+      {/* On a touch screen the mark is the only Done control. */}
+      <span className="flex h-11 shrink-0 items-center">
+        <StatusButton
+          status={t.status}
+          title={t.title}
+          onClick={() => onStatus(toggleDoneTarget(t.status))}
+        />
+      </span>
+      <button
+        type="button"
+        ref={rowRef}
+        data-today-row={t.id}
+        onClick={onOpen}
+        onKeyDown={onKeyDown}
+        className="flex min-w-0 flex-1 flex-col py-2.5 text-left"
+      >
+        <span className="flex min-w-0 items-baseline">
+          <span data-doing-title className="truncate text-base font-semibold">
+            {t.title}
+          </span>
+          {saved && <SavedMark />}
+        </span>
+        <span className="truncate text-sm text-ink-muted">{taskCrumb(t)}</span>
+      </button>
+      {/* Over the row, not in it: it takes no width from the title. The mark is already Done,
+          so a second Done is not drawn. */}
+      <span
+        className={`absolute top-0 right-1 flex h-11 shrink-0 items-center gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:hidden ${OVER_ROW}`}
+      >
+        <Pause task={t} onStatus={onStatus} />
+      </span>
+    </Row>
+  )
+}
+
+/** The parts both rows share: the margin, the thread, and a body that opens the task on a click. */
+function Row({
+  task: t,
+  today,
+  timeZone,
+  onOpen,
+  body,
+  children,
+}: Pick<RowProps, 'task' | 'today' | 'timeZone' | 'onOpen'> & {
+  body: string
+  children: ReactNode
+}) {
+  // The server files a task planned up to today under Today, so any plan here is later.
+  const lead = leadFor(t, today, timeZone)
+  return (
+    <li
+      onClick={(e) => {
+        if (opensOnClick(e)) onOpen()
+      }}
+      className="group flex cursor-pointer items-stretch"
+    >
+      <RowLead lead={lead} />
+      <ProjectRail projectId={t.projectId} />
+      <div
+        className={`${ROW_BODY} relative items-start gap-x-2.5 pr-2 group-hover:bg-hover ${body}`}
+      >
+        {children}
+      </div>
+    </li>
+  )
+}
+
+function Pause({ task: t, onStatus }: Pick<RowProps, 'task' | 'onStatus'>) {
+  return (
+    <button
+      type="button"
+      aria-label={`Pause “${t.title}”`}
+      onClick={() => onStatus(toggleStartTarget(t.status))}
+      className={BUTTON.secondary}
+    >
+      Pause
+    </button>
   )
 }
