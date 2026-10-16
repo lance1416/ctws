@@ -2,8 +2,8 @@ import { idFrom, taskId, type TaskResponse, type TaskId } from '@ctws/contracts'
 import { useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useForgetRecent } from '../../../../shell/search'
-import { isFinished } from '../../status'
-import { ancestorsOf } from '../../tree/ancestors'
+import { isFinished } from '../../logic/status'
+import { ancestorsOf } from '../../logic/tree/ancestors'
 
 /**
  * `?task=<id>` is the open task. `?reveal=<id>` unfolds the task's ancestors, shows it if hidden

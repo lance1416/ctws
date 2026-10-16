@@ -1,7 +1,7 @@
 import { type TaskResponse, type ProjectId } from '@ctws/contracts'
 import { useMemo, useState } from 'react'
-import { isFinished } from '../../status'
-import { loadShowDone, saveShowDone } from '../../tree/collapse'
+import { isFinished } from '../../logic/status'
+import { loadShowDone, saveShowDone } from '../../logic/tree/collapse'
 
 /**
  * A finished row leaves the tree unless asked back, except a finished parent with unfinished

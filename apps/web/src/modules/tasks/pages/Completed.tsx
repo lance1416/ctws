@@ -1,4 +1,4 @@
-import { taskCrumb } from '../crumb'
+import { taskCrumb } from '../logic/crumb'
 import { taskId, idFrom, type CompletedTaskResponse, type TaskId } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'

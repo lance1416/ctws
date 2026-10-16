@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react'
 import { boxed } from '../../../platform/ui/formStyles'
 import { CloseIcon, PlusIcon } from '../../../platform/ui/icons'
 import { PickOne } from '../../../platform/ui/inline'
-import { byKind, channelPlaceholder, KIND_CHOICES } from '../channels'
-import { usePhone } from '../usePhone'
+import { byKind, channelPlaceholder, KIND_CHOICES } from '../logic/channels'
+import { usePhone } from '../hooks/usePhone'
 
 /**
  * One way to reach someone, as a form holds it. `touched`: left at least once, so a row still

@@ -6,14 +6,25 @@ import { ProjectRail } from '../../shell/rows'
 import { createTask, projectTasksQuery, taskCalendarQuery, taskSearchQuery } from './api'
 import { ProjectFacts, ProjectLead } from './components/ProjectFacts'
 import { StatusMark } from './components/StatusMark'
-import { revealHref, taskCrumb } from './crumb'
-import { TASKS_ID, taskPage } from './id'
-import { openTasksOf } from './openTasks'
+import { revealHref, taskCrumb } from './logic/crumb'
+import { TASKS_ID, taskPage } from './logic/id'
+import { openTasksOf } from './logic/openTasks'
 import { OpenTask } from './pages/OpenTask'
 import { Review } from './pages/Review'
 import { Today } from './pages/Today'
-import { NewTaskAction, PROJECT_VIEWS, ProjectNumbers, ProjectTasks } from './projectBlock'
-import { OpenTaskCount, TaskStatusLine, TodayCount, TodayDate, TodayGlance } from './widgets'
+import {
+  NewTaskAction,
+  PROJECT_VIEWS,
+  ProjectNumbers,
+  ProjectTasks,
+} from './components/projectBlock'
+import {
+  OpenTaskCount,
+  TaskStatusLine,
+  TodayCount,
+  TodayDate,
+  TodayGlance,
+} from './components/widgets'
 
 // Today and Review live here, not in the shell: they are defined by task semantics.
 

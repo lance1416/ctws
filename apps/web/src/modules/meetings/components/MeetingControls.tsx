@@ -4,7 +4,7 @@ import { BUTTON } from '../../../platform/ui/buttonStyles'
 import { PickMany, PickOne } from '../../../platform/ui/inline'
 import { useNow } from '../../../platform/time/useNow'
 import { repeatChoices, repeatLabel } from '../api'
-import { cityAndZone, ZONES } from '../timeZones'
+import { cityAndZone, ZONES } from '../logic/timeZones'
 
 // Bare controls shared by New meeting and the pane's form; label and layout are the caller's.
 

@@ -1,5 +1,5 @@
 import type { TaskStatus } from '@ctws/contracts'
-import { isFinished, STATUS_LABEL } from '../status'
+import { isFinished, STATUS_LABEL } from '../logic/status'
 
 /**
  * A task's status by shape, never by hue alone. Every part is always drawn and fades or scales in,

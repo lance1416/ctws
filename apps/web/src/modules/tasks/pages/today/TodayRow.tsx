@@ -1,14 +1,14 @@
 import { type TaskStatus, type TodayTaskResponse, type TaskId } from '@ctws/contracts'
 import type { KeyboardEvent } from 'react'
 import { leadFor, ProjectRail, RowLead } from '../../../../shell/rows'
-import { toggleDoneTarget, toggleStartTarget } from '../../status'
-import { blockedLabel } from '../../blockedLabel'
+import { toggleDoneTarget, toggleStartTarget } from '../../logic/status'
+import { blockedLabel } from '../../logic/blockedLabel'
 import { StartButton, StatusButton } from '../../components/StatusControls'
 import { opensOnClick, RowMeta, RowNote, SavedMark } from '../../components/TaskRowParts'
 import { TriageControl } from '../../components/TriageControl'
-import { taskCrumb } from '../../crumb'
-import { lateNote } from '../../dueDates'
-import { triageSections, type TriagePatch } from '../../triage'
+import { taskCrumb } from '../../logic/crumb'
+import { lateNote } from '../../logic/dueDates'
+import { triageSections, type TriagePatch } from '../../logic/triage'
 
 /** A task row on Today. Its controls wait for the pointer or keyboard, except without hover. */
 export function TodayRow({

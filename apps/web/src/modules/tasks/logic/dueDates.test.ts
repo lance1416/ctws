@@ -8,7 +8,7 @@ beforeAll(() => {
 })
 
 const load = async () => ({
-  ...(await import('../../platform/time/dates')),
+  ...(await import('../../../platform/time/dates')),
   ...(await import('./dueDates')),
 })
 const TZ = 'Asia/Kolkata'

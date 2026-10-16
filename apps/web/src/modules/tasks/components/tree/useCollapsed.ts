@@ -1,6 +1,6 @@
 import { type ProjectId, type TaskId } from '@ctws/contracts'
 import { useState } from 'react'
-import { loadCollapsed, saveCollapsed } from '../../tree/collapse'
+import { loadCollapsed, saveCollapsed } from '../../logic/tree/collapse'
 
 /** The tree's folded rows, remembered per project. */
 export function useCollapsed(projectId: ProjectId) {

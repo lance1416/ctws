@@ -9,10 +9,10 @@ import { CHIP } from '../../../platform/ui/formStyles'
 import { ProjectChip } from '../../../shell/projects'
 import { patchPerson } from '../api'
 import { BirthdayField } from '../birthday/BirthdayRead'
-import { byKind, channelHref, channelLabel, KIND_LABEL } from '../channels'
-import { CIRCLE_LABELS, GENDER_LABELS } from '../labels'
-import { useNoteAutosave } from '../noteAutosave'
-import { usePhone } from '../usePhone'
+import { byKind, channelHref, channelLabel, KIND_LABEL } from '../logic/channels'
+import { CIRCLE_LABELS, GENDER_LABELS } from '../logic/labels'
+import { useNoteAutosave } from '../logic/noteAutosave'
+import { usePhone } from '../hooks/usePhone'
 
 /**
  * A person, read. Besides Edit, "Edit notes" opens the writing layer at once, so a line about

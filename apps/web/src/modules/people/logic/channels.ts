@@ -1,5 +1,5 @@
 import { CHANNEL_KINDS, type ChannelKind } from '@ctws/contracts'
-import { linkLabel } from '../../platform/ui/url'
+import { linkLabel } from '../../../platform/ui/url'
 
 // How a person's channels look; whether a value is valid is the contract's `channelProblem`.
 

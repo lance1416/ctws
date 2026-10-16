@@ -1,7 +1,7 @@
 import { type TaskStatus, type TaskId } from '@ctws/contracts'
 import type { KeyboardEvent } from 'react'
 import { useShortcutsEnabled } from '../../../../platform/keyboard/enabled'
-import type { FlatRow } from '../../tree/flatten'
+import type { FlatRow } from '../../logic/tree/flatten'
 import { statusForKey } from '../StatusControls'
 
 /**

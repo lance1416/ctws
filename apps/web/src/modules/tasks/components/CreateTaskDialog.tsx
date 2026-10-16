@@ -7,7 +7,7 @@ import { ProjectChip, useEveryProject } from '../../../shell/projects'
 import { createTask, projectTasksQuery } from '../api'
 import { dayEndIso, dayPhrase, ymd } from '../../../platform/time/dates'
 import { useTimeZone } from '../../../shell/auth'
-import { flatten } from '../tree/flatten'
+import { flatten } from '../logic/tree/flatten'
 import { field, label } from '../../../platform/ui/formStyles'
 import { PickOne } from '../../../platform/ui/inline'
 import { Modal } from '../../../platform/ui/Modal'
@@ -18,7 +18,7 @@ import {
   titleProblem,
   type CreateTaskForm,
   type CreateTaskValues,
-} from '../taskForm'
+} from '../logic/taskForm'
 import { DialogFooter } from '../../../platform/ui/DialogFooter'
 import { useNow } from '../../../platform/time/useNow'
 

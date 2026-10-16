@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { refreshQueries } from '../../../../platform/http/refresh'
 import { createTask, projectTasksQuery } from '../../api'
-import type { FlatRow } from '../../tree/flatten'
+import type { FlatRow } from '../../logic/tree/flatten'
 
 /**
  * The inline new row, at the end of a parent's children, where the server appends. A refusal with

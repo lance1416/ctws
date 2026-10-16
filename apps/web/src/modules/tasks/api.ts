@@ -9,7 +9,7 @@ import {
 } from '@ctws/contracts'
 import { queryOptions } from '@tanstack/react-query'
 import { call } from '../../platform/http/api'
-import type { CreateTaskForm } from './taskForm'
+import type { CreateTaskForm } from './logic/taskForm'
 
 // Every key starts with `'tasks'`, so `[['tasks']]` awaits all of them and nothing else.
 type Range = { from: string; to: string }

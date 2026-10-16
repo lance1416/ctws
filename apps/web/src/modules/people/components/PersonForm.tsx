@@ -12,8 +12,8 @@ import { ProjectsPicker } from '../../../shell/projects'
 import type { BirthdayDraft, patchPerson } from '../api'
 import { BirthdayEditor } from '../birthday/BirthdayEditor'
 import { givenDate, plainDate } from '../birthday/text'
-import { byKind } from '../channels'
-import { CIRCLE_CHOICES, GENDER_CHOICES } from '../labels'
+import { byKind } from '../logic/channels'
+import { CIRCLE_CHOICES, GENDER_CHOICES } from '../logic/labels'
 import { ChannelsEditor, useChannelRows } from './ChannelsEditor'
 
 /**

@@ -4,7 +4,7 @@ import type { UseFormRegisterReturn } from 'react-hook-form'
 import { addDays } from '@ctws/core/day'
 import { nextMonday } from '../../../platform/time/dates'
 import { decision, label, STATUS_CHIP } from '../../../platform/ui/formStyles'
-import { STATUS_LABEL } from '../status'
+import { STATUS_LABEL } from '../logic/status'
 import { StatusMark } from './StatusMark'
 import { DeadlineMark, PlanMark } from './TaskRowParts'
 

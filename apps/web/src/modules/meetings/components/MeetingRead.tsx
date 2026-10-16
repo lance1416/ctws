@@ -6,8 +6,8 @@ import { Field } from '../../../platform/ui/Field'
 import { CHIP } from '../../../platform/ui/formStyles'
 import { ProjectChip } from '../../../shell/projects'
 import { repeatLabel, withUntil } from '../api'
-import { meetingLink } from '../meetingPlace'
-import { cityAndZone } from '../timeZones'
+import { meetingLink } from '../logic/meetingPlace'
+import { cityAndZone } from '../logic/timeZones'
 import { lengthLabel } from './MeetingControls'
 
 export function MeetingRead({

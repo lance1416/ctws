@@ -1,5 +1,5 @@
 import { type Circle, CIRCLES, type Gender, REMIND_LEADS, type RemindLead } from '@ctws/contracts'
-import type { Choice } from '../../platform/ui/inline'
+import type { Choice } from '../../../platform/ui/inline'
 
 export const CIRCLE_LABELS: Record<Circle, string> = {
   family: 'Family',

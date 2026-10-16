@@ -18,7 +18,7 @@ import { PickOne } from '../../../platform/ui/inline'
 import type { UnsavedGuard } from '../../../platform/ui/unsavedGuard'
 import { useTimeZone } from '../../../shell/auth'
 import { ProjectChip, useEveryProject } from '../../../shell/projects'
-import { instantPhrase, moveDueToDay } from '../dueDates'
+import { instantPhrase, moveDueToDay } from '../logic/dueDates'
 import { DateDecisions, StatusRadios } from './TaskFields'
 import type { useTaskDetailForm } from './useTaskDetailForm'
 

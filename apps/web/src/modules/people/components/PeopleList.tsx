@@ -1,8 +1,8 @@
 import type { PersonResponse } from '@ctws/contracts'
 import { Link } from 'react-router-dom'
-import { sortByName } from '../peopleOrder'
+import { sortByName } from '../logic/peopleOrder'
 import { BirthdayLead } from './BirthdayRow'
-import { CIRCLE_OF_ONE } from '../labels'
+import { CIRCLE_OF_ONE } from '../logic/labels'
 import { PanelEmpty } from '../../../platform/ui/Panel'
 import { BODY_GUTTER, ProjectRail } from '../../../shell/rows'
 

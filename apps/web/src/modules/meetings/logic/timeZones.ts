@@ -1,5 +1,5 @@
 import { zoneAbbreviation } from '@ctws/core/clock'
-import { browserZone } from '../../platform/time/dates'
+import { browserZone } from '../../../platform/time/dates'
 
 /**
  * A short menu of zones rather than the whole tz database; the column takes any IANA name. The

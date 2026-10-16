@@ -2,7 +2,7 @@ import type { BirthdayListRow } from '@ctws/contracts'
 import { Link } from 'react-router-dom'
 import { countdownPhrase, fullDay, MONTHS } from '../../../platform/time/dates'
 import { HANG_WIDTH } from '../../../platform/ui/hang'
-import { CIRCLE_LABELS } from '../labels'
+import { CIRCLE_LABELS } from '../logic/labels'
 import { BODY_GUTTER, ProjectRail } from '../../../shell/rows'
 
 /**

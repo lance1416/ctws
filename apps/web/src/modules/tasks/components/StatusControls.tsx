@@ -1,4 +1,4 @@
-import { isFinished, toggleDoneTarget, toggleStartTarget } from '../status'
+import { isFinished, toggleDoneTarget, toggleStartTarget } from '../logic/status'
 import type { TaskStatus } from '@ctws/contracts'
 import { StatusMark } from './StatusMark'
 

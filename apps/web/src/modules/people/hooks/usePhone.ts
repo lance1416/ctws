@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-type PhoneTools = typeof import('./phone')
+type PhoneTools = typeof import('../logic/phone')
 
 /**
  * Loads the phone module (about 80 KB) on first use, once for the whole app; until it arrives,
@@ -12,7 +12,7 @@ export function usePhone(): PhoneTools | null {
   const [tools, setTools] = useState<PhoneTools | null>(null)
   useEffect(() => {
     let alive = true
-    pending ??= import('./phone')
+    pending ??= import('../logic/phone')
     void pending.then((m) => {
       if (alive) setTools(m)
     })

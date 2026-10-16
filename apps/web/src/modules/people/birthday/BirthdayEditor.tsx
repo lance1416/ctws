@@ -13,7 +13,7 @@ import { fullDay } from '../../../platform/time/dates'
 import { textbox } from '../../../platform/ui/formStyles'
 import { PickOne } from '../../../platform/ui/inline'
 import { birthdayPreviewQuery, type BirthdayDraft } from '../api'
-import { LEAD_CHOICES, MONTH_NAMES } from '../labels'
+import { LEAD_CHOICES, MONTH_NAMES } from '../logic/labels'
 
 /** Where a draft starts: the editor's first state, and New person's before the editor reports. */
 export function birthdayDraftOf(birthday: BirthdayResponse | null): BirthdayDraft {

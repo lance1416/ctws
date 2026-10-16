@@ -9,11 +9,11 @@ import {
   ROW_LIST,
   RowLead,
 } from '../../../../shell/rows'
-import { toggleDoneTarget, toggleStartTarget } from '../../status'
+import { toggleDoneTarget, toggleStartTarget } from '../../logic/status'
 import { StatusButton } from '../../components/StatusControls'
 import { StatusMark } from '../../components/StatusMark'
 import { opensOnClick, OVER_ROW, SavedMark } from '../../components/TaskRowParts'
-import { taskCrumb } from '../../crumb'
+import { taskCrumb } from '../../logic/crumb'
 
 /**
  * One task in progress is the focal point, in large type with Done and Pause beside it; several

@@ -1,7 +1,7 @@
 import { type TodayTaskResponse, type TaskId } from '@ctws/contracts'
-import type { TriageSection } from './components/TriageControl'
+import type { TriageSection } from '../components/TriageControl'
 import { addDays } from '@ctws/core/day'
-import { nextMonday } from '../../platform/time/dates'
+import { nextMonday } from '../../../platform/time/dates'
 import { moveDueToDay } from './dueDates'
 
 type Triageable = Pick<TodayTaskResponse, 'id' | 'segment' | 'dueAt'>

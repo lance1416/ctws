@@ -1,6 +1,6 @@
 import { type TaskStatus, type UpdateTaskBody, type TaskId } from '@ctws/contracts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { isFinished } from '../status'
+import { isFinished } from '../logic/status'
 import { patchTask, PROJECT_TASKS, type ProjectTasks, todayQuery } from '../api'
 
 const TODAY = todayQuery().queryKey

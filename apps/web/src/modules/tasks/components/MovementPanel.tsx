@@ -1,6 +1,6 @@
 import type { ProjectMovementResponse } from '@ctws/contracts'
 import { Link } from 'react-router-dom'
-import { isQuiet, movedLine } from '../movement'
+import { isQuiet, movedLine } from '../logic/movement'
 import { useProjectRail } from '../../../shell/projects'
 
 /**

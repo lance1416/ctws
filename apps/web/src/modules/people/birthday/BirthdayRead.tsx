@@ -4,7 +4,7 @@ import { countdownPhrase, shortDay, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { Field } from '../../../platform/ui/Field'
 import { useTimeZone } from '../../../shell/auth'
-import { LEAD_LABELS } from '../labels'
+import { LEAD_LABELS } from '../logic/labels'
 import { givenDate } from './text'
 
 /**
