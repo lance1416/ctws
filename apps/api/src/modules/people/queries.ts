@@ -1,4 +1,6 @@
 import {
+  idFrom,
+  personId,
   type PersonChannel,
   type RemindLead,
   type MeetingId,
@@ -13,7 +15,7 @@ import { scoped, within } from '../../platform/db/scope'
 import { textMatches } from '../../platform/db/sql'
 import { groupBy } from '../../platform/values'
 import { filing, projectsOf } from '../../shell/links/filing'
-import { links } from '../../shell/links/tables'
+import { edgesFrom } from '../../shell/links/store'
 import { people, personChannels } from './tables'
 import { NotFound } from '../../platform/errors'
 import { type Page, type PageAsked, pageOf, spanOf } from '../../platform/db/page'
@@ -202,31 +204,42 @@ export async function assertPeopleVisible(
   if (rows.length !== unique.length) throw new NotFound('Person')
 }
 
-/** The live people attending each meeting, by name, in one query. */
+/** The live people attending each meeting, by name, in from the edges and then the people. */
 export async function attendeesOf(
   q: Queryable,
   workspaceId: WorkspaceId,
   meetingIds: readonly MeetingId[],
 ): Promise<Map<string, Named<PersonId>[]>> {
-  if (meetingIds.length === 0) return new Map()
-  const rows = await q
-    .select({ meetingId: links.fromId, id: people.id, name: people.name })
-    .from(links)
-    .innerJoin(people, eq(people.id, links.toId))
+  const edges = await edgesFrom(q, workspaceId, {
+    fromType: 'meeting',
+    fromIds: meetingIds,
+    toType: 'person',
+    kind: 'attends',
+  })
+  if (edges.length === 0) return new Map()
+  const attendees = await q
+    .select({ id: people.id, name: people.name })
+    .from(people)
     .where(
       within(
-        scoped(links, workspaceId),
         scoped(people, workspaceId),
-        eq(links.fromType, 'meeting'),
-        inArray(links.fromId, [...meetingIds]),
-        eq(links.toType, 'person'),
-        eq(links.kind, 'attends'),
+        inArray(
+          people.id,
+          edges.map((e) => idFrom(personId, e.toId)),
+        ),
       ),
     )
     .orderBy(asc(people.name), asc(people.id))
+  const meetingsOf = groupBy(
+    edges,
+    (e) => e.toId,
+    (e) => e.fromId,
+  )
   return groupBy(
-    rows,
+    attendees.flatMap((person) =>
+      (meetingsOf.get(person.id) ?? []).map((meetingId) => ({ meetingId, person })),
+    ),
     (r) => r.meetingId,
-    ({ id, name }) => ({ id, name }),
+    (r) => r.person,
   )
 }

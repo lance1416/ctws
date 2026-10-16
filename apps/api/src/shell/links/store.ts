@@ -5,7 +5,7 @@ import {
   type ObjectType,
   type WorkspaceId,
 } from '@ctws/contracts'
-import { and, eq, notInArray } from 'drizzle-orm'
+import { and, eq, inArray, notInArray } from 'drizzle-orm'
 import type { Queryable, Tx } from '../../platform/db/client'
 import { newId } from '../../platform/db/ids'
 import { type Actor, scoped, within } from '../../platform/db/scope'
@@ -91,6 +91,35 @@ export async function putLinks(
       })),
     )
     .onConflictDoNothing()
+}
+
+/**
+ * The edges of one kind from some objects of one type to things of another, in one query: which
+ * of those objects points at what. Whether the far ends are visible is the caller's to check.
+ */
+export async function edgesFrom(
+  q: Queryable,
+  workspaceId: WorkspaceId,
+  {
+    fromType,
+    fromIds,
+    toType,
+    kind,
+  }: { fromType: ObjectType; fromIds: readonly string[]; toType: ObjectType; kind: LinkKind },
+): Promise<{ fromId: string; toId: string }[]> {
+  if (fromIds.length === 0) return []
+  return q
+    .select({ fromId: links.fromId, toId: links.toId })
+    .from(links)
+    .where(
+      within(
+        scoped(links, workspaceId),
+        eq(links.fromType, fromType),
+        inArray(links.fromId, [...fromIds]),
+        eq(links.toType, toType),
+        eq(links.kind, kind),
+      ),
+    )
 }
 
 /** One link in this workspace; another workspace's reads as not found. */
