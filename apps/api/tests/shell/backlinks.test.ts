@@ -46,10 +46,7 @@ const titles = (groups: LinksResponse['groups'], type: string) =>
   groups.find((g) => g.type === type)?.items.map((i) => i.title) ?? []
 
 describe('every kind of thing has a module that answers for it', () => {
-  const registry = linkRegistry([
-    ...apiModules({ unfurl: async () => null, unfurlEnabled: false }).map((m) => m.linkable),
-    projectLinkable,
-  ])
+  const registry = linkRegistry([...apiModules({}).map((m) => m.linkable), projectLinkable])
 
   it('answers for every object type, in page order', () => {
     expect(registry.order).toEqual(['task', 'meeting', 'person', 'reading', 'project'])

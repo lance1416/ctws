@@ -21,19 +21,18 @@ import { linkRoutes, linkRegistry } from './shell/links'
 import { projectLinkable, projectRoutes } from './shell/projects'
 import { cityRoutes } from './shell/cities'
 import type { Db } from './platform/db/client'
+import type { ApiModule } from './shell/module'
 import type { Env } from './platform/config'
 import { documentedQuery, documentRefusals } from './platform/http/openapi'
 import { registerGuards } from './platform/http/guards'
 import { handleError } from './platform/http/errors'
 import { serveWeb } from './platform/http/web'
-import { apiModules } from './modules'
-import { unfurl, type Unfurl } from './modules/reading'
 
-/** `unfurl` and `clock` are replaceable for tests; production uses the defaults. */
+/** The app, built from the modules it is given. `clock` is replaceable for tests. */
 export async function buildApp(opts: {
   env: Env
   db: Db
-  unfurl?: Unfurl
+  modules: readonly ApiModule[]
   clock?: () => Date
 }): Promise<FastifyInstance> {
   // Ready before the first sign-in, so no request pays for hashing it.
@@ -86,10 +85,7 @@ export async function buildApp(opts: {
 
   app.get('/api/v1/openapi.json', { schema: { hide: true } }, async () => app.swagger())
 
-  const modules = apiModules({
-    unfurl: opts.unfurl ?? unfurl,
-    unfurlEnabled: opts.env.readingUnfurl,
-  })
+  const { modules } = opts
   const registry = linkRegistry([...modules.map((m) => m.linkable), projectLinkable])
   const columns = Object.assign({}, ...modules.map((m) => m.projectColumns ?? {}))
 

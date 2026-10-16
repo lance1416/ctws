@@ -1,10 +1,17 @@
-import type { ApiModule } from '../../shell/module'
+import type { ModuleDefinition } from '../../shell/module'
+import { readingConfig } from './config'
 import { readingLinkable } from './linkable'
 import { readingRoutes } from './routes'
-import type { ReadingDeps } from './service'
+import { unfurl, type Unfurl } from './unfurl/unfurl'
 
-export function readingModule(deps: ReadingDeps): ApiModule {
-  return { id: 'reading', routes: readingRoutes(deps), linkable: readingLinkable }
+/** Reading's one outside part is the fetch that reads a pasted link's own title. */
+export const readingModule: ModuleDefinition<{ unfurl: Unfurl }> = {
+  build: (env, deps) => ({
+    id: 'reading',
+    routes: readingRoutes({
+      unfurl: deps.unfurl ?? unfurl,
+      enabled: readingConfig(env).unfurl,
+    }),
+    linkable: readingLinkable,
+  }),
 }
-
-export { unfurl, type Unfurl } from './unfurl/unfurl'

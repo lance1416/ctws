@@ -92,7 +92,7 @@ describe('a pasted link reads back its own title', () => {
 
   it('never fetches when turned off', async () => {
     const ctx = await setupWith(cleanups, undefined, {
-      env: { readingUnfurl: false },
+      moduleEnv: { READING_UNFURL: 'false' },
       unfurl: fetchAnywhere,
     })
     const url = await page('<title>不该被读到</title>')

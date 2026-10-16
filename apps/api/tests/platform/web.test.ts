@@ -92,7 +92,7 @@ describe('serving the built web app', () => {
       ['WEB_DIST unset', undefined],
       ['WEB_DIST pointing at a missing directory', join(tmpdir(), 'ctws-does-not-exist')],
     ])('returns problem+json 404 for non-API paths when %s', async (_label, webDist) => {
-      const app = await buildApp({ env: { ...ctx.env, webDist }, db: ctx.db })
+      const app = await buildApp({ env: { ...ctx.env, webDist }, db: ctx.db, modules: ctx.modules })
       await app.ready()
       try {
         for (const url of ['/', '/some/deep/route']) {

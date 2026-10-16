@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
-const bool = (fallback: boolean) =>
+/** An on/off setting, `true` or `false`, `fallback` when unset. */
+export const envFlag = (fallback: boolean) =>
   z
     .enum(['true', 'false'])
     .optional()
@@ -15,12 +16,9 @@ const raw = z.object({
   AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(20),
   // Sign-in requests per minute for the whole instance.
   AUTH_CEILING: z.coerce.number().int().positive().default(600),
-  COOKIE_SECURE: bool(true),
+  COOKIE_SECURE: envFlag(true),
   // Built web app to serve (apps/web/dist). Unset or missing: the API serves no frontend.
   WEB_DIST: z.string().optional(),
-  // Whether a pasted link's own title is fetched: the API's only outbound request. Off, a link
-  // shows its host and path.
-  READING_UNFURL: bool(true),
 })
 
 export type Env = {
@@ -32,7 +30,6 @@ export type Env = {
   authCeiling: number
   cookieSecure: boolean
   webDist: string | undefined
-  readingUnfurl: boolean
 }
 
 export function parseEnv(source: Record<string, string | undefined>): Env {
@@ -58,6 +55,5 @@ export function parseEnv(source: Record<string, string | undefined>): Env {
     authCeiling: parsed.AUTH_CEILING,
     cookieSecure: parsed.COOKIE_SECURE,
     webDist: parsed.WEB_DIST || undefined,
-    readingUnfurl: parsed.READING_UNFURL,
   }
 }

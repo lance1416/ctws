@@ -11,6 +11,7 @@ import { lockTaskTree } from '../../src/modules/tasks/tree'
 import type { Unfurl } from '../../src/modules/reading/unfurl/unfurl'
 import type { Env } from '../../src/platform/config'
 import type { Tx } from '../../src/platform/db/client'
+import type { EnvSource } from '../../src/shell/module'
 import { withApp } from './app'
 
 export type Harness = Awaited<ReturnType<typeof withApp>> & {
@@ -33,6 +34,7 @@ export async function appWithUser(email = 'p@example.com', opts: Opts = {}): Pro
     {
       ...(opts.unfurl ? { unfurl: opts.unfurl } : {}),
       ...(opts.clock ? { clock: opts.clock } : {}),
+      ...(opts.moduleEnv ? { moduleEnv: opts.moduleEnv } : {}),
     },
   )
   const res = await ctx.app.inject({
@@ -187,6 +189,8 @@ export const web = (ctx: Harness) => ({ ...ctx.authed, 'x-ctws-client': 'web' })
 export type Opts = {
   unfurl?: Unfurl
   env?: Partial<Env>
+  /** The environment the modules read their own settings from. */
+  moduleEnv?: EnvSource
   clock?: () => Date
   timezone?: string
 }

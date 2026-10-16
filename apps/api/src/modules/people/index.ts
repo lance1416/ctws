@@ -1,11 +1,11 @@
-import type { ApiModule } from '../../shell/module'
+import { fixedModule } from '../../shell/module'
 import { personLinkable } from './linkable'
 import { personRoutes } from './routes'
 
-export const peopleModule: ApiModule = {
+export const peopleModule = fixedModule({
   id: 'people',
   routes: personRoutes,
   linkable: personLinkable,
-}
+})
 
 export { assertPeopleVisible, attendeesOf } from './queries'

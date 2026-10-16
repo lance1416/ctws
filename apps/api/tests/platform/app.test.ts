@@ -59,7 +59,7 @@ describe('app', () => {
   it('returns a problem-details 400 for a Zod validation failure', async () => {
     // Fresh instance: routes cannot be added to ctx.app after it is ready/listening, and
     // this throwaway route must never ship in production code.
-    const validationApp = await buildApp({ env: ctx.env, db: ctx.db })
+    const validationApp = await buildApp({ env: ctx.env, db: ctx.db, modules: ctx.modules })
     validationApp.withTypeProvider().route({
       method: 'POST',
       url: '/api/v1/__test-validation',
@@ -83,7 +83,7 @@ describe('app', () => {
   })
 
   it('refuses a write a database check rejects as 422 problem details, not a 500', async () => {
-    const checkedApp = await buildApp({ env: ctx.env, db: ctx.db })
+    const checkedApp = await buildApp({ env: ctx.env, db: ctx.db, modules: ctx.modules })
     checkedApp.post('/api/v1/__test-check', async (req) => {
       // The real error the driver raises when a row breaks a CHECK constraint (SQLSTATE 23514).
       await req.server.db.execute(

@@ -1,15 +1,21 @@
 import { meetingsModule } from './modules/meetings'
 import { peopleModule } from './modules/people'
-import { readingModule, type Unfurl } from './modules/reading'
+import { readingModule } from './modules/reading'
 import { tasksModule } from './modules/tasks'
-import type { ApiModule } from './shell/module'
+import type { ApiModule, EnvSource, ModuleDefinition } from './shell/module'
 
 /** In object-page order: an object page groups linked things in this order. */
-export function apiModules(deps: { unfurl: Unfurl; unfurlEnabled: boolean }): ApiModule[] {
-  return [
-    tasksModule,
-    meetingsModule,
-    peopleModule,
-    readingModule({ unfurl: deps.unfurl, enabled: deps.unfurlEnabled }),
-  ]
+const MODULES = [tasksModule, meetingsModule, peopleModule, readingModule] as const
+
+type DepsOf<M> = M extends ModuleDefinition<infer Deps> ? Deps : never
+type Both<U> = (U extends unknown ? (u: U) => void : never) extends (all: infer I) => void
+  ? I
+  : never
+
+/** Every module's replaceable parts, any of which a test may pass. */
+export type ModuleDeps = Partial<Both<DepsOf<(typeof MODULES)[number]>>>
+
+/** The modules, each built from the environment and whichever of its parts `deps` replaces. */
+export function apiModules(env: EnvSource, deps: ModuleDeps = {}): ApiModule[] {
+  return MODULES.map((m) => m.build(env, deps))
 }

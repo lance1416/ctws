@@ -3,6 +3,7 @@ import type { LinksResponse, PersonResponse } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { buildApp } from '../../../src/app'
+import { apiModules } from '../../../src/modules'
 import { parseEnv } from '../../../src/platform/config'
 import { hashPassword } from '../../../src/shell/auth/password'
 import { migratedTo } from '../../helpers/db'
@@ -26,7 +27,7 @@ describe('the people migration', () => {
     const at = await migratedTo('0019_contact_birthday_daymonth')
     stops.push(at.stop)
     const env = parseEnv({ DATABASE_URL: at.connectionString })
-    const app = await buildApp({ env, db: at.db })
+    const app = await buildApp({ env, db: at.db, modules: apiModules({}) })
     await app.ready()
     stops.unshift(() => app.close())
 
