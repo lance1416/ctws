@@ -60,7 +60,12 @@ export function useChannelRows(initial: () => ChannelRow[]) {
   const switched = (row: ChannelRow, kind: ChannelKind): ChannelRow => {
     const value = row.value === row.seed ? '' : row.value
     if (kind !== 'phone') return { kind, label: row.label, value }
-    if (value.trim() === '') return { kind, label: row.label, value: seed, seed }
+    // Before the phone module is here there is no code to seed: the row waits for it, unseen.
+    if (value.trim() === '') {
+      return phone
+        ? { kind, label: row.label, value: seed, seed }
+        : { kind, label: row.label, value, raw: true }
+    }
     return { kind, label: row.label, value: typed(kind, value, value) }
   }
 
