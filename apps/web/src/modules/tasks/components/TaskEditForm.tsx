@@ -60,10 +60,9 @@ export function TaskEditForm({
 
   /** Full-screen writing for the notes: a bigger place to type, inside the same form and guard. */
   const [writing, setWriting] = useState(false)
-  // The guard's question is drawn in this form; a layer over it would hide the question.
-  useEffect(() => {
-    if (guard.asking) setWriting(false)
-  }, [guard.asking])
+  // The guard's question is drawn in this form; a layer over it would hide the question, so the
+  // question closes it, in the render that asks.
+  if (writing && guard.asking) setWriting(false)
 
   // Every write here is an edit, so it says so (`shouldDirty`) to the guard and the PATCH.
   const dirty = { shouldDirty: true } as const

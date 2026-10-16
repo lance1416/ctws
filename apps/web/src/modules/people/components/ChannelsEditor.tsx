@@ -1,5 +1,5 @@
 import { channelProblem, type ChannelKind, type PersonChannel } from '@ctws/contracts'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { boxed } from '../../../platform/ui/formStyles'
 import { CloseIcon, PlusIcon } from '../../../platform/ui/icons'
 import { PickOne } from '../../../platform/ui/inline'
@@ -9,9 +9,10 @@ import { usePhone } from '../hooks/usePhone'
 /**
  * One way to reach someone, as a form holds it. `touched`: left at least once, so a row still
  * being typed is not scolded. `seed`: the country code the form put there itself; a row holding
- * only that is still empty. `saved`: as stored, untouched this time.
+ * only that is still empty. `saved`: as stored, untouched this time. `raw`: not yet seen by the
+ * phone module, which loads late.
  */
-type ChannelRow = PersonChannel & { touched?: boolean; seed?: string; saved?: boolean }
+type ChannelRow = PersonChannel & { touched?: boolean; seed?: string; saved?: boolean; raw?: true }
 
 /** A row holding only the seeded country code is not written on. */
 const written = (c: ChannelRow) => c.value.trim() !== '' && c.value !== c.seed
@@ -21,32 +22,33 @@ const written = (c: ChannelRow) => c.value.trim() !== '' && c.value !== c.seed
  * the local code, and each row judged only once it has been left.
  */
 export function useChannelRows(initial: () => ChannelRow[]) {
-  const [rows, setRows] = useState<ChannelRow[]>(initial)
+  const [held, setRows] = useState<ChannelRow[]>(() =>
+    initial().map((row) => ({ ...row, raw: true })),
+  )
   const phone = usePhone()
   const region = phone?.currentRegion()
-  // Once the phone module arrives, stored numbers are normalised (an old `(730) 197-4443` would
-  // otherwise fail the check and block Save) and empty phone rows get the local code.
-  useEffect(() => {
-    if (!phone) return
-    const code = phone.callingCodeFor(region) ?? ''
-    setRows((all) =>
-      all.map((row) =>
-        row.kind !== 'phone'
-          ? row
-          : row.value.trim() === ''
-            ? { ...row, value: code, seed: code }
-            : row.saved
-              ? { ...row, value: phone.formatPhone(phone.toE164(row.value, region), region) }
-              : row,
-      ),
-    )
-  }, [phone, region])
+  // Once the phone module is here, a row it has not seen is shown settled: a stored number
+  // normalised (an old `(730) 197-4443` would otherwise fail the check and block Save), an empty
+  // phone row given the local code. An edit keeps the settled row.
+  const settled = (row: ChannelRow): ChannelRow => {
+    if (!phone || !row.raw) return row
+    const { raw: _, ...seen } = row
+    if (row.kind !== 'phone') return seen
+    if (row.value.trim() === '') {
+      const code = phone.callingCodeFor(region) ?? ''
+      return { ...seen, value: code, seed: code }
+    }
+    return row.saved
+      ? { ...seen, value: phone.formatPhone(phone.toE164(row.value, region), region) }
+      : seen
+  }
+  const rows = held.map(settled)
 
   const seed = phone?.callingCodeFor(region) ?? ''
   const typed = (kind: ChannelKind, was: string, now: string) =>
     kind === 'phone' && phone ? phone.retype(was, now, region) : now
   const edit = (at: number, change: (row: ChannelRow) => ChannelRow) =>
-    setRows((all) => all.map((row, i) => (i === at ? change(row) : row)))
+    setRows((all) => all.map((row, i) => (i === at ? change(settled(row)) : row)))
   // The seeded code goes with the kind: it is not something a person wrote.
   const switched = (row: ChannelRow, kind: ChannelKind): ChannelRow => {
     const value = row.value === row.seed ? '' : row.value

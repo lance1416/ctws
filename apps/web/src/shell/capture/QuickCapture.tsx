@@ -1,7 +1,7 @@
 import { LINK } from '../../platform/ui/buttonStyles'
 import { KeyHint } from '../../platform/ui/KeyHint'
 import { useMutation } from '@tanstack/react-query'
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useRegistry } from '../registry'
 import type { CaptureTarget } from '../contract'
@@ -16,11 +16,11 @@ import { LAYER } from '../../platform/ui/layers'
  */
 export function QuickCapture() {
   const [title, setTitle] = useState('')
-  // Where the last line landed. Not its title: this box is on every page, so the title would
-  // show twice wherever that task is also listed.
-  const [landed, setLanded] = useState<CaptureTarget | null>(null)
+  // Where the last line landed, and the page it was said on: another page has moved on. Not its
+  // title: this box is on every page, so the title would show twice wherever that task is listed.
+  const [said, setLanded] = useState<{ target: CaptureTarget; on: string } | null>(null)
   const { pathname } = useLocation()
-  useEffect(() => setLanded(null), [pathname])
+  const landed = said?.on === pathname ? said.target : null
   const input = useRef<HTMLInputElement>(null)
 
   // One hook per module that captures; the registry's list is fixed, so the hook order is too.
@@ -47,7 +47,7 @@ export function QuickCapture() {
     meta: { refresh: false, ownsError: true },
     onSuccess: (target) => {
       setTitle('')
-      setLanded(target)
+      setLanded({ target, on: pathname })
     },
   })
 

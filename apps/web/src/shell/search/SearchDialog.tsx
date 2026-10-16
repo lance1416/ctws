@@ -67,7 +67,8 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
   const keys = useKeyTable(RESULT_KEYS)
   const [query, setQuery] = useState('')
   const [debounced, setDebounced] = useState('')
-  const [active, setActive] = useState(0)
+  // The highlighted row, for the words it was chosen under: new words start again at the top.
+  const [picked, setPicked] = useState({ at: 0, under: '' })
   const navigate = useNavigate()
   const box = useRef<HTMLInputElement>(null)
   const base = useId()
@@ -124,12 +125,11 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
             group: 'hit' as const,
           })),
         ]
-  // A shorter result set must not leave the selection pointing past the end.
+  // The debounced hits landing later keep it, or a row the keyboard already moved to would be lost
+  // under the Enter about to choose it. A shorter result set must not leave it past the end.
+  const active = picked.under === typing ? picked.at : 0
   const at = Math.min(active, Math.max(rows.length - 1, 0))
-
-  // New words start again at the top; the debounced hits landing later do not, or a row the
-  // keyboard already moved to would be lost under the Enter about to choose it.
-  useEffect(() => setActive(0), [typing])
+  const setActive = (next: number) => setPicked({ at: next, under: typing })
   useEffect(() => {
     document.getElementById(optionId(at))?.scrollIntoView({ block: 'nearest' })
     // eslint-disable-next-line react-hooks/exhaustive-deps -- optionId is fixed by useId; only a move of the selection scrolls.
