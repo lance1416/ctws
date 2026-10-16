@@ -134,12 +134,14 @@ export async function getLink(
 
 /**
  * Adds one edge. One that is already there is the state asked for: it is answered with, and
- * `created` says which.
+ * `created` says which. One deleted between the insert finding it and the read finding it is gone,
+ * so it is added again.
  */
 export async function addLink(
   q: Queryable,
-  { workspaceId, now, from, to, kind }: Actor & LinkEdge,
+  edge: Actor & LinkEdge,
 ): Promise<{ link: StoredLink; created: boolean }> {
+  const { workspaceId, now, from, to, kind } = edge
   const [added] = await q
     .insert(links)
     .values({
@@ -167,7 +169,7 @@ export async function addLink(
         eq(links.kind, kind),
       ),
     )
-  return { link: storedOf(there!), created: false }
+  return there ? { link: storedOf(there), created: false } : addLink(q, edge)
 }
 
 /** Removes one link. Not checked against the model: a link it now refuses can still go. */
