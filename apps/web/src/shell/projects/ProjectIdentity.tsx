@@ -3,6 +3,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { useMutation } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { updateProject } from './api'
+import { problemText } from '../../platform/http/api'
 import { railClass } from './projectColor'
 import { useInlineEdit } from '../../platform/ui/useInlineEdit'
 import { MENU_ITEM, MENU_SURFACE } from '../../platform/ui/menuSurface'
@@ -104,6 +105,11 @@ export function ProjectIdentity({
             {name}
           </button>
         </h1>
+      )}
+      {save.isError && (
+        <p role="alert" className="shrink-0 text-sm text-danger">
+          {problemText(save.error)}
+        </p>
       )}
     </div>
   )

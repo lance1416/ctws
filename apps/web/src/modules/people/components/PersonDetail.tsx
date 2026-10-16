@@ -71,12 +71,19 @@ function DeletePerson({ person, onDeleted }: { person: PersonResponse; onDeleted
     onDone: onDeleted,
   })
   return (
-    <DangerAction
-      label="Delete person"
-      confirmLabel="Confirm deleting this person"
-      message={`Delete “${person.name}”? This cannot be undone.`}
-      busy={drop.isPending}
-      onConfirm={() => drop.mutate()}
-    />
+    <>
+      <DangerAction
+        label="Delete person"
+        confirmLabel="Confirm deleting this person"
+        message={`Delete “${person.name}”? This cannot be undone.`}
+        busy={drop.isPending}
+        onConfirm={() => drop.mutate()}
+      />
+      {drop.isError && (
+        <p role="alert" className="text-sm text-danger">
+          {problemText(drop.error)}
+        </p>
+      )}
+    </>
   )
 }

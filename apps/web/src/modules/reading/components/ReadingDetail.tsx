@@ -315,12 +315,19 @@ function DeleteReading({ item, onDeleted }: { item: ReadingItemResponse; onDelet
     onDone: onDeleted,
   })
   return (
-    <DangerAction
-      label="Delete item"
-      confirmLabel="Confirm deleting this item"
-      message={`Delete “${readingLabel(item)}”? This cannot be undone.`}
-      busy={drop.isPending}
-      onConfirm={() => drop.mutate()}
-    />
+    <>
+      <DangerAction
+        label="Delete item"
+        confirmLabel="Confirm deleting this item"
+        message={`Delete “${readingLabel(item)}”? This cannot be undone.`}
+        busy={drop.isPending}
+        onConfirm={() => drop.mutate()}
+      />
+      {drop.isError && (
+        <p role="alert" className="text-sm text-danger">
+          {problemText(drop.error)}
+        </p>
+      )}
+    </>
   )
 }

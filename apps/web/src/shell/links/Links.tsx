@@ -3,6 +3,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { deleteLink, linksQuery, type Endpoint } from './api'
+import { problemText } from '../../platform/http/api'
 import { useRegistry } from '../registry'
 import { AddLink } from './AddLink'
 import { PanelEmpty } from '../../platform/ui/Panel'
@@ -42,6 +43,11 @@ export function Links({
   })
   const add = (
     <>
+      {unlink.isError && (
+        <p role="alert" className="px-2 text-sm text-danger">
+          {problemText(unlink.error)}
+        </p>
+      )}
       <button
         type="button"
         onClick={() => setAdding('any')}

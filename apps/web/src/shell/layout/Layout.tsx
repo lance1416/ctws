@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { Link, Navigate, Outlet } from 'react-router-dom'
-import { apiFetch } from '../../platform/http/api'
+import { apiFetch, problemText } from '../../platform/http/api'
 import { useMe } from '../auth/useMe'
 import { Breadcrumbs, BreadcrumbsProvider } from './Breadcrumbs'
 import { DetailPaneContext, useWidePane } from '../../platform/ui/paneLayout'
@@ -65,7 +65,7 @@ export function Layout() {
             <span aria-hidden="true" className="flex-1" />
             <div className="flex shrink-0 items-center gap-1 text-sm">
               <Shortcuts capture={<QuickCapture />} search={searching} setSearch={setSearching} />
-              <span className="ml-1">
+              <span className="relative ml-1">
                 <UserMenu
                   email={me.data.email}
                   onLogout={() => {
@@ -73,6 +73,14 @@ export function Layout() {
                     if (!leaveGuard.current?.(() => logout.mutate())) logout.mutate()
                   }}
                 />
+                {logout.isError && (
+                  <p
+                    role="alert"
+                    className={`absolute top-full right-0 ${LAYER.cover} mt-1 w-max max-w-[20rem] rounded-[10px] bg-float px-3 py-1.5 text-sm text-danger shadow-float`}
+                  >
+                    {problemText(logout.error)}
+                  </p>
+                )}
               </span>
             </div>
           </div>

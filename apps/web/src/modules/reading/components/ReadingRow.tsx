@@ -1,6 +1,7 @@
 import type { ReadingItemResponse, ReadingStatus } from '@ctws/contracts'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { useMutation } from '@tanstack/react-query'
+import { problemText } from '../../../platform/http/api'
 import { patchReadingItem } from '../api'
 import { readingLabel } from '../item'
 import { hostOf, StatusMark } from '../marks'
@@ -123,6 +124,11 @@ export function ReadingRow({
           {item.fetchedSummary && !item.title && (
             <p data-reading-summary className="truncate text-sm text-ink-muted">
               {item.fetchedSummary}
+            </p>
+          )}
+          {save.isError && (
+            <p role="alert" className="text-sm text-danger">
+              {problemText(save.error)}
             </p>
           )}
         </div>
