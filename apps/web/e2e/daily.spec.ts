@@ -678,8 +678,8 @@ test('saving returns the panel to reading, says so on the row, and is on the ser
   await expect(treeRow(page, '写方案').getByRole('status')).toHaveText('Saved')
   // The confirmation is momentary, not a permanent badge.
   await expect(treeRow(page, '写方案').getByRole('status')).toHaveCount(0, { timeout: 6000 })
-  const body = await (await page.request.get(`/api/v1/tasks?projectId=${pid}`)).json()
-  expect(body.tasks[0].notes).toBe('先问清需求')
+  const body = await serverTasks(page, pid)
+  expect(body[0]!.notes).toBe('先问清需求')
 })
 
 test('saving from the Today panel keeps it open and confirms on the row', async ({ page }) => {

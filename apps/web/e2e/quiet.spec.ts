@@ -7,7 +7,9 @@ import {
   openTree,
   pickOne,
   registerFreshUser,
+  serverTasks,
   submitCreate,
+  taskPatched,
   WEB,
 } from './helpers'
 import { dayOffset } from './days'
@@ -81,7 +83,7 @@ test('a row finished right here stays put, so a mis-press can be undone from it'
   await makeTask(page, pid, '配色重做')
   await openTree(page, pid)
 
-  const patched = () => page.waitForResponse((r) => r.request().method() === 'PATCH' && r.ok())
+  const patched = () => taskPatched(page)
   const handle = page.getByRole('button', { name: 'Task: 配色重做', exact: true })
   await handle.focus()
   // Each press is awaited: `x` computes the NEXT status from the current one, so firing the
@@ -132,9 +134,7 @@ test('an inbox row says how long it has been sitting there, and only when it mus
   // is a plan the line has something better to say, and the age gets out of its way.
   await row(page, '查一下 Cloudflare Tunnel').click()
   await editDetail(page)
-  const saved = page.waitForResponse(
-    (r) => r.request().method() === 'PATCH' && r.ok() && /\/api\/v1\/tasks\//.test(r.url()),
-  )
+  const saved = taskPatched(page)
   await page.getByLabel('Plan', { exact: true }).fill(new Date().toLocaleDateString('en-CA'))
   await page.getByRole('button', { name: 'Save' }).click()
   await saved
@@ -388,9 +388,9 @@ test('shift-click picks rows, and the bar finishes them in one press', async ({ 
 
   await page.getByRole('button', { name: 'Mark done' }).click()
   await expect(page.locator('[data-selection-bar]')).toHaveCount(0)
-  const after = await (await page.request.get(`/api/v1/tasks?projectId=${pid}`)).json()
+  const after = await serverTasks(page, pid)
   const byTitle = Object.fromEntries(
-    (after.tasks as { title: string; status: string }[]).map((t) => [t.title, t.status]),
+    (after as { title: string; status: string }[]).map((t) => [t.title, t.status]),
   )
   expect(byTitle).toMatchObject({ 写迁移: 'done', 补测试: 'done', 接好验证器: 'todo' })
 })
@@ -425,12 +425,10 @@ test('the bar moves the picked rows to another project', async ({ page }) => {
   await pickOne(page, 'Move to project', '求职')
 
   await expect(row(page, '改简历')).toHaveCount(0)
-  const moved = await (await page.request.get(`/api/v1/tasks?projectId=${to}`)).json()
-  expect((moved.tasks as { title: string; parentId: null }[]).map((t) => t.title)).toEqual([
-    '改简历',
-  ])
+  const moved = await serverTasks(page, to)
+  expect((moved as { title: string; parentId: null }[]).map((t) => t.title)).toEqual(['改简历'])
   // It lands at the destination's root: keeping its old parent would mean moving the parent too.
-  expect(moved.tasks[0].parentId).toBeNull()
+  expect(moved[0]!.parentId).toBeNull()
 })
 
 test('the project title gets the width it needs, not the width it can shrink to', async ({
@@ -476,9 +474,9 @@ test('a half-failed bulk action leaves exactly what still needs doing', async ({
   // again retries precisely that and does not re-do the first.
   await expect(page.locator('[data-selection-bar]')).toContainText('1 selected')
   expect(a).toBeTruthy()
-  const server = await (await page.request.get(`/api/v1/tasks?projectId=${pid}`)).json()
+  const server = await serverTasks(page, pid)
   const byTitle = Object.fromEntries(
-    (server.tasks as { title: string; status: string }[]).map((t) => [t.title, t.status]),
+    (server as { title: string; status: string }[]).map((t) => [t.title, t.status]),
   )
   expect(byTitle).toMatchObject({ 写迁移: 'done', 补测试: 'todo' })
 
@@ -507,9 +505,9 @@ test('a picked row that leaves the view leaves the selection too', async ({ page
   await page.getByRole('button', { name: 'Mark done' }).click()
   await expect(page.locator('[data-selection-bar]')).toHaveCount(0)
 
-  const after = await (await page.request.get(`/api/v1/tasks?projectId=${pid}`)).json()
+  const after = await serverTasks(page, pid)
   const byTitle = Object.fromEntries(
-    (after.tasks as { title: string; status: string }[]).map((t) => [t.title, t.status]),
+    (after as { title: string; status: string }[]).map((t) => [t.title, t.status]),
   )
   expect(byTitle).toMatchObject({ 藏起来的: 'todo', 看得见的: 'done' })
 })

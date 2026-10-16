@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { makeProject, makeTask, registerFreshUser } from './helpers'
+import { makeProject, makeTask, registerFreshUser, serverTasks, taskPatched } from './helpers'
 
 /**
  * THE BOARD, AND THE BLOCK-HEADER TABS IT IS THE FIRST USER OF.
@@ -76,13 +76,11 @@ test('every task appears once, in its own column, with its parent named', async 
 test('dragging a card to another column writes that status', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '改版')
-  const id = await makeTask(page, pid, '配色重做')
+  await makeTask(page, pid, '配色重做')
   await openBoard(page, pid)
   await expect(column(page, 'todo').locator('[data-board-card]')).toHaveCount(1)
 
-  const patched = page.waitForResponse(
-    (r) => r.request().method() === 'PATCH' && r.ok() && r.url().includes(id),
-  )
+  const patched = taskPatched(page)
   await card(page, '配色重做').hover()
   await page.mouse.down()
   // Two moves: the first clears the 5px threshold, the second lands it.
@@ -97,8 +95,8 @@ test('dragging a card to another column writes that status', async ({ page }) =>
   await expect(column(page, 'in_progress').locator('[data-board-card]')).toHaveCount(1)
   await expect(column(page, 'todo').locator('[data-board-card]')).toHaveCount(0)
 
-  const server = await (await page.request.get(`/api/v1/tasks?projectId=${pid}`)).json()
-  expect(server.tasks[0].status).toBe('in_progress')
+  const server = await serverTasks(page, pid)
+  expect(server[0]!.status).toBe('in_progress')
 })
 
 test('an empty project says so once, not four times', async ({ page }) => {

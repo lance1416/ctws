@@ -344,6 +344,7 @@ export type ServerTask = {
   parentId: string | null
   scheduledOn: string | null
   dueAt: string | null
+  notes: string | null
 }
 
 /** What the server holds for a project's tasks, read fresh. */
@@ -384,6 +385,13 @@ const isTaskPatch = (r: { url: () => string; request: () => { method: () => stri
 
 /** Waits for a task PATCH the server accepted. */
 export const taskPatched = (page: Page) => page.waitForResponse((r) => isTaskPatch(r) && r.ok())
+
+/** Waits for the server's answer to a PATCH under `/api/v1/<path>`, accepted or not. */
+export const patchAnswered = (page: Page, path: string) =>
+  page.waitForResponse(
+    (r) =>
+      r.request().method() === 'PATCH' && new URL(r.url()).pathname.startsWith(`/api/v1/${path}`),
+  )
 
 /** The server's view of a project's tree, as title -> parent title (null for a root). */
 export async function serverParents(

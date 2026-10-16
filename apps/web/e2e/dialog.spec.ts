@@ -1,5 +1,12 @@
 import { expect, test, type Page } from '@playwright/test'
-import { makeProject, makeTask, pickOne, registerFreshUser, sidewaysScroll } from './helpers'
+import {
+  makeProject,
+  makeTask,
+  pickOne,
+  registerFreshUser,
+  serverTasks,
+  sidewaysScroll,
+} from './helpers'
 import { dayOffset, ymd } from './days'
 
 /**
@@ -90,8 +97,8 @@ test('Create writes the title, project, parent, status, plan, deadline and notes
   expect(writes).toEqual(['POST /api/v1/tasks'])
 
   // The task really landed as described, read back from the server rather than from the screen.
-  const listed = await (await page.request.get(`/api/v1/tasks?projectId=${pid}`)).json()
-  const made = (listed.tasks as Record<string, unknown>[]).find((t) => t.title === '带细节的任务')!
+  const listed = await serverTasks(page, pid)
+  const made = (listed as Record<string, unknown>[]).find((t) => t.title === '带细节的任务')!
   expect(made.parentId).toBe(rootId)
   expect(made.status).toBe('in_progress')
   expect(made.scheduledOn).toBe(dayOffset(1))
@@ -129,8 +136,8 @@ test('⌘↵ creates and stays open, with the title cleared and focused', async 
 
   // Both are on the server, and the layer is still up.
   await expect(dialog(page)).toBeVisible()
-  const listed = await (await page.request.get(`/api/v1/tasks?projectId=${pid}`)).json()
-  expect((listed.tasks as { title: string }[]).map((t) => t.title).sort()).toEqual(
+  const listed = await serverTasks(page, pid)
+  expect((listed as { title: string }[]).map((t) => t.title).sort()).toEqual(
     ['放在我下面', '第一条', '第二条'].sort(),
   )
 })
@@ -243,8 +250,8 @@ test('the quick paths are untouched: the new-task box and / behave as they did',
   await expect(page.getByLabel('Capture')).toHaveValue('')
 
   // The inbox line did not go into this project.
-  const listed = await (await page.request.get(`/api/v1/tasks?projectId=${pid}`)).json()
-  expect((listed.tasks as { title: string }[]).map((t) => t.title).sort()).toEqual(
+  const listed = await serverTasks(page, pid)
+  expect((listed as { title: string }[]).map((t) => t.title).sort()).toEqual(
     ['一行就走', '放在我下面'].sort(),
   )
 })

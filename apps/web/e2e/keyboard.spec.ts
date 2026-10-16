@@ -1,5 +1,12 @@
 import { expect, test, type Page } from '@playwright/test'
-import { isMove, recordMoves, registerFreshUser, seedTasks, startProject } from './helpers'
+import {
+  isMove,
+  recordMoves,
+  registerFreshUser,
+  seedTasks,
+  serverTasks,
+  startProject,
+} from './helpers'
 
 const handle = (page: Page, title: string) =>
   page.getByRole('button', { name: `Task: ${title}`, exact: true })
@@ -170,8 +177,8 @@ test('Alt arrows still move and reparent rows, and Enter still opens the detail'
   await expect(row(page, 'r2')).toHaveAttribute('data-depth', '2')
 
   // Read the server back rather than trusting the optimistic repaint.
-  const body = await (await page.request.get(`/api/v1/tasks?projectId=${projectId}`)).json()
-  const tasks = body.tasks as { id: string; title: string; parentId: string | null }[]
+  const body = await serverTasks(page, projectId)
+  const tasks = body as { id: string; title: string; parentId: string | null }[]
   const byId = new Map(tasks.map((t) => [t.id, t.title]))
   const parents = Object.fromEntries(
     tasks.map((t) => [t.title, t.parentId ? byId.get(t.parentId) : null]),

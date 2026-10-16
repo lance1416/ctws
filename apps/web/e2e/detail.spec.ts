@@ -3,10 +3,11 @@ import {
   editDetail,
   makeProject,
   makeTask,
-  routeMoves,
   openProject,
+  patchAnswered,
   pickOne,
   registerFreshUser,
+  routeMoves,
   setDetailStatus,
   submitCreate,
 } from './helpers'
@@ -333,9 +334,7 @@ test('Edit opens on the status just picked in reading, and picking the old one b
   await page.getByRole('listitem').filter({ hasText: '换个状态' }).first().click()
   const pane = page.getByRole('dialog', { name: 'Task details' })
 
-  const written = page.waitForResponse(
-    (r) => r.request().method() === 'PATCH' && PATCH_URL.test(new URL(r.url()).pathname),
-  )
+  const written = patchAnswered(page, 'tasks/')
   await pane.getByRole('button', { name: 'Status: To do' }).click()
   await page.getByRole('menuitem', { name: 'In progress' }).click()
   await written

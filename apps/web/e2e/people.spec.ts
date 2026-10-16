@@ -1,11 +1,12 @@
 import { expect, test, type Page } from '@playwright/test'
 import {
+  apiPost,
   holdFirstRead,
   makeProject,
+  patchAnswered,
   pickOne,
   registerFreshUser,
   slowReads,
-  apiPost,
 } from './helpers'
 import { MONTHS } from './days'
 
@@ -337,10 +338,7 @@ test('after one save, the pane reads what was just written', async ({ page }) =>
   await pane.getByRole('button', { name: 'Edit', exact: true }).click()
   await pane.getByRole('textbox', { name: 'Company' }).fill('新公司')
   await pane.getByRole('textbox', { name: 'Title' }).fill('技术负责人')
-  const written = page.waitForResponse(
-    (r) =>
-      r.request().method() === 'PATCH' && new URL(r.url()).pathname.startsWith('/api/v1/people/'),
-  )
+  const written = patchAnswered(page, 'people/')
   await pane.getByRole('button', { name: 'Save' }).click()
 
   // One request carries both changes.
@@ -818,10 +816,7 @@ test('a phone number is formatted as typed, and saved in its normal form', async
   await box.fill('+8613900001234')
   await expect(box).toHaveValue('+86 139 0000 1234')
 
-  const written = page.waitForResponse(
-    (r) =>
-      r.request().method() === 'PATCH' && new URL(r.url()).pathname.startsWith('/api/v1/people/'),
-  )
+  const written = patchAnswered(page, 'people/')
   await pane.getByRole('button', { name: 'Save' }).click()
   // Saved as E.164: no spaces, and one reading anywhere in the world.
   expect((await written).request().postDataJSON()).toMatchObject({
@@ -851,10 +846,7 @@ test('a city box suggests after a few letters, and saves the standard name', asy
   await pane.getByRole('button', { name: 'Oxford, England, United Kingdom' }).click()
   await expect(pane.getByLabel('Lives in')).toHaveValue('Oxford, England, United Kingdom')
 
-  const written = page.waitForResponse(
-    (r) =>
-      r.request().method() === 'PATCH' && new URL(r.url()).pathname.startsWith('/api/v1/people/'),
-  )
+  const written = patchAnswered(page, 'people/')
   await pane.getByRole('button', { name: 'Save' }).click()
   expect((await written).request().postDataJSON()).toMatchObject({
     city: 'Oxford, England, United Kingdom',
@@ -997,9 +989,7 @@ test('opening the birthday picker and saving untouched writes no birthday', asyn
   await expect(pane.getByRole('group', { name: 'Which calendar' })).toBeVisible()
   // Looked at, not chosen: the button still says so.
   await expect(pane.getByRole('button', { name: 'Birthday, not set' })).toBeVisible()
-  const saved = page.waitForResponse(
-    (r) => r.request().method() === 'PATCH' && r.url().includes(`/people/${id}`),
-  )
+  const saved = patchAnswered(page, `people/${id}`)
   await pane.getByRole('button', { name: 'Save' }).click()
   expect((await saved).request().postDataJSON()).not.toHaveProperty('birthday')
   const { people } = (await (await page.request.get('/api/v1/people')).json()) as {

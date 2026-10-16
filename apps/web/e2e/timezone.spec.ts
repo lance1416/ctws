@@ -1,5 +1,13 @@
 import { expect, test } from '@playwright/test'
-import { editDetail, openProject, registerFreshUser, submitCreate, WEB, apiPost } from './helpers'
+import {
+  apiPost,
+  editDetail,
+  openProject,
+  registerFreshUser,
+  submitCreate,
+  taskPatched,
+  WEB,
+} from './helpers'
 import { MONTHS } from './days'
 
 /**
@@ -63,9 +71,7 @@ test('today means today in the account zone, for the list and the caption alike'
   await editDetail(page)
   // Wait for the write itself, not for a control to come back: the next step navigates, and a
   // navigation that outruns its own save is the flake this suite has already paid for twice.
-  const saved = page.waitForResponse(
-    (r) => r.request().method() === 'PATCH' && r.ok() && /\/api\/v1\/tasks\//.test(r.url()),
-  )
+  const saved = taskPatched(page)
   await page.getByLabel('Plan', { exact: true }).fill(dayIn(ACCOUNT_TZ))
   await page.getByRole('button', { name: 'Save' }).click()
   await saved
@@ -102,9 +108,7 @@ test('the runner’s today is some OTHER day, and the page says which', async ({
   await editDetail(page)
   // Wait for the write itself, not for a control to come back: the next step navigates, and a
   // navigation that outruns its own save is the flake this suite has already paid for twice.
-  const saved = page.waitForResponse(
-    (r) => r.request().method() === 'PATCH' && r.ok() && /\/api\/v1\/tasks\//.test(r.url()),
-  )
+  const saved = taskPatched(page)
   await page.getByLabel('Plan', { exact: true }).fill(runnerDay())
   await page.getByRole('button', { name: 'Save' }).click()
   await saved

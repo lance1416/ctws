@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { registerFreshUser, slowReads, submitCreate } from './helpers'
+import { registerFreshUser, serverTasks, slowReads, submitCreate } from './helpers'
 
 test('capture from any page lands in the inbox', async ({ page }) => {
   await registerFreshUser(page)
@@ -13,8 +13,8 @@ test('capture from any page lands in the inbox', async ({ page }) => {
   // `page.request` shares the page's cookies, so this is the logged-in user's own inbox.
   const projects = await (await page.request.get('/api/v1/projects')).json()
   const inbox = projects.projects.find((p: { isInbox: boolean }) => p.isInbox)
-  const tasks = await (await page.request.get(`/api/v1/tasks?projectId=${inbox.id}`)).json()
-  expect(tasks.tasks.map((t: { title: string }) => t.title)).toContain('问问房东空调')
+  const tasks = await serverTasks(page, inbox.id)
+  expect(tasks.map((t: { title: string }) => t.title)).toContain('问问房东空调')
 })
 
 test('the inbox sorts first, and is the one project with nothing to delete it with', async ({
@@ -70,8 +70,8 @@ test('capture still finds the inbox after it is renamed', async ({ page }) => {
   // below could race the request.
   await expect(page.getByPlaceholder('Capture…')).toHaveValue('')
   // Again through the API: the tree lands in Task 8.
-  const tasks = await (await page.request.get(`/api/v1/tasks?projectId=${inbox.id}`)).json()
-  expect(tasks.tasks.map((t: { title: string }) => t.title)).toContain('改名后仍然能捕获')
+  const tasks = await serverTasks(page, inbox.id)
+  expect(tasks.map((t: { title: string }) => t.title)).toContain('改名后仍然能捕获')
 })
 
 test('a blank line is not sent', async ({ page }) => {

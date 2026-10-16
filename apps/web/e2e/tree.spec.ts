@@ -1,15 +1,16 @@
 import { expect, test, type Page } from '@playwright/test'
 import {
+  isMove,
   makeProject,
   makeTask,
-  isMove,
-  routeMoves,
   openProject,
   openTree,
   recordMoves,
   registerFreshUser,
+  routeMoves,
   seedTasks,
   serverParents,
+  serverTasks,
   startProject,
   submitCreate,
   taskMoved,
@@ -435,8 +436,8 @@ test('a stale collapsed id on a leaf draws no chevron', async ({ page }) => {
   const url = await startProject(page)
   await addTask(page, 'leaf')
   const projectId = url.split('/').pop()!
-  const tasks = await (await page.request.get(`/api/v1/tasks?projectId=${projectId}`)).json()
-  const leafId = tasks.tasks[0].id as string
+  const tasks = await serverTasks(page, projectId)
+  const leafId = tasks[0]!.id
   await page.evaluate(
     ([k, v]) => localStorage.setItem(k!, v!),
     [`ctws.collapsed.${projectId}`, JSON.stringify([leafId])],

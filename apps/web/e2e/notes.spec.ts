@@ -5,6 +5,7 @@ import {
   makeProject,
   makeTask,
   openProject,
+  patchAnswered,
   registerFreshUser,
   sidewaysScroll,
   WEB,
@@ -400,9 +401,7 @@ test('the full-screen writing mode round-trips the source unchanged', async ({ p
   // Byte for byte, back in the pane's own field.
   await expect(page.getByLabel('Notes', { exact: true })).toHaveValue(written)
 
-  const saved = page.waitForResponse(
-    (r) => r.request().method() === 'PATCH' && /\/tasks\/[^/]+$/.test(r.url()),
-  )
+  const saved = patchAnswered(page, 'tasks/')
   await page.getByRole('button', { name: 'Save' }).click()
   expect((await saved).status()).toBe(200)
 
@@ -487,9 +486,7 @@ test('a person note written in the writing mode is saved without losing what is 
   })
   await page.goto(`/people/${person.id}`)
   await page.getByRole('button', { name: 'Edit notes' }).click()
-  const firstSave = page.waitForResponse(
-    (r) => r.request().method() === 'PATCH' && r.url().endsWith(`/people/${person.id}`),
-  )
+  const firstSave = patchAnswered(page, `people/${person.id}`)
   await writingSource(page).pressSequentially('first part', { delay: 20 })
   await firstSave
   await writingSource(page).pressSequentially(' and the rest', { delay: 20 })
