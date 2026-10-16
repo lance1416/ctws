@@ -69,3 +69,49 @@ describe.each(cases)('reading $name by its id', ({ collection, make, listed }) =
     expect((await get(`${collection}/${id}`)).statusCode).toBe(404)
   })
 })
+
+describe('a create says where the new thing is read', () => {
+  it.each([
+    ['/api/v1/projects', { name: 'P' }],
+    ['/api/v1/people', { name: 'Ying' }],
+    ['/api/v1/reading', { kind: 'book', title: 'Dune' }],
+  ])('POST %s answers 201 with a Location that reads it', async (collection, payload) => {
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: collection,
+      headers: web(ctx),
+      payload,
+    })
+    expect(res.statusCode).toBe(201)
+    expect(res.headers.location).toBe(`${collection}/${res.json().id}`)
+    expect((await get(String(res.headers.location))).statusCode).toBe(200)
+  })
+
+  it('does so for a task', async () => {
+    const projectId = await createProject(ctx, 'T')
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/tasks',
+      headers: web(ctx),
+      payload: { projectId, title: 'x' },
+    })
+    expect(res.headers.location).toBe(`/api/v1/tasks/${res.json().id}`)
+    expect((await get(String(res.headers.location))).json()).toEqual(res.json())
+  })
+
+  it('does so for a meeting', async () => {
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/meetings',
+      headers: web(ctx),
+      payload: {
+        title: 'Standup',
+        startsLocal: '2026-10-20T09:00',
+        timeZone: 'UTC',
+        durationMinutes: 15,
+      },
+    })
+    expect(res.statusCode).toBe(201)
+    expect((await get(String(res.headers.location))).json()).toEqual(res.json())
+  })
+})

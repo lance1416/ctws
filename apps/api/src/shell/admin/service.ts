@@ -39,7 +39,8 @@ export async function listUsers(db: Queryable): Promise<AdminUser[]> {
 
 export async function getAdminUser(db: Queryable, id: UserId): Promise<AdminUser> {
   const [row] = await db.select(adminColumns).from(users).where(eq(users.id, id)).limit(1)
-  return toAdminUser(row!)
+  if (!row) throw new NotFound('User')
+  return toAdminUser(row)
 }
 
 export async function updateUser(

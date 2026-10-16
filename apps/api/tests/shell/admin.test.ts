@@ -152,6 +152,10 @@ describe('POST /admin/users', () => {
       disabledAt: null,
     })
     expect(res.body).not.toContain('argon2')
+    // It says where the account is read, and reading it there gives the same.
+    expect(res.headers.location).toBe(`/api/v1/admin/users/${res.json().id}`)
+    const read = await call(ctx, admin.cookie, 'GET', `/admin/users/${res.json().id}`)
+    expect(read.json()).toEqual(res.json())
 
     const members = await ctx.db.execute(sql`
       select count(*)::int as n from workspace_members wm join users u on u.id = wm.user_id

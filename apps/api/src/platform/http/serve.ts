@@ -25,7 +25,8 @@ export type Served = {
 
 /**
  * Pairs an endpoint with its handler. The handler returns the success body (nothing for a 204);
- * the status is the endpoint's own unless the handler sets another it declares.
+ * the status is the endpoint's own unless the handler sets another it declares. A 201 says where
+ * the new thing is read, by the endpoint's `location`.
  */
 export const on = <E extends Endpoint>(
   endpoint: E,
@@ -71,6 +72,9 @@ export function serve(app: FastifyInstance, served: readonly Served[]): void {
         reply.code(e.ok)
         const body = await handler(req as RequestFor<Endpoint>, reply)
         if (e.ok === 204) return reply.send()
+        if (reply.statusCode === 201 && e.location) {
+          reply.header('location', `${API_BASE}${e.location(body as never)}`)
+        }
         return body
       },
     })

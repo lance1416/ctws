@@ -31,6 +31,8 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
       return getAdminUser(app.db, userId)
     }),
 
+    on(api.admin.getUser, async (req) => getAdminUser(app.db, req.params.id)),
+
     on(api.admin.updateUser, async (req) =>
       updateUser(app.db, req.params.id, req.body, app.clock()),
     ),

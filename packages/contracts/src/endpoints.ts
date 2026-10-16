@@ -9,7 +9,7 @@ import { loginBody, registerBody, userResponse } from './auth'
 import { birthdayPreviewQuery, birthdayPreviewResponse } from './birthday'
 import { calendarDaysResponse, calendarEntriesResponse, calendarQuery } from './calendar'
 import { citiesResponse, citySearchQuery } from './city'
-import { endpoint } from './endpoint'
+import { endpoint, href } from './endpoint'
 import {
   candidatesQuery,
   candidatesResponse,
@@ -73,6 +73,12 @@ import {
   updateTaskBody,
 } from './task'
 
+/** Where a thing created with an `id` is read: `path` with that id in it. */
+const itemAt =
+  (path: `/${string}/:id`) =>
+  (created: { id: string }): string =>
+    href({ path }, created)
+
 /**
  * Every operation of the API, in one table. Paths are relative to `API_BASE`; a module's
  * operations sit under its own id.
@@ -86,6 +92,7 @@ export const api = {
       body: registerBody,
       ok: 201,
       response: userResponse,
+      location: () => '/auth/me',
       refusals: [403, 409],
     }),
     login: endpoint({
@@ -129,7 +136,17 @@ export const api = {
       body: adminCreateUserBody,
       ok: 201,
       response: adminUser,
+      location: itemAt('/admin/users/:id'),
       refusals: [403, 409],
+    }),
+    getUser: endpoint({
+      method: 'GET',
+      path: '/admin/users/:id',
+      summary: 'One account.',
+      params: userParams,
+      ok: 200,
+      response: adminUser,
+      refusals: [403, 404],
     }),
     updateUser: endpoint({
       method: 'PATCH',
@@ -168,6 +185,7 @@ export const api = {
       body: createProjectBody,
       ok: 201,
       response: projectResponse,
+      location: itemAt('/projects/:id'),
     }),
     update: endpoint({
       method: 'PATCH',
@@ -310,6 +328,7 @@ export const api = {
       body: createTaskBody,
       ok: 201,
       response: taskResponse,
+      location: itemAt('/tasks/:id'),
       refusals: [404, 409],
     }),
     get: endpoint({
@@ -410,6 +429,8 @@ export const api = {
       body: createMeetingBody,
       ok: 201,
       response: meetingOccurrence,
+      location: (m: { meetingId: string; recurrenceId: string }) =>
+        href({ path: '/meetings/:id' }, { id: m.meetingId }, { recurrenceId: m.recurrenceId }),
       refusals: [404, 422],
     }),
     update: endpoint({
@@ -489,6 +510,7 @@ export const api = {
       body: createPersonBody,
       ok: 201,
       response: personResponse,
+      location: itemAt('/people/:id'),
       refusals: [404, 422],
     }),
     update: endpoint({
@@ -552,6 +574,7 @@ export const api = {
       body: createReadingItemBody,
       ok: 201,
       response: readingItemResponse,
+      location: itemAt('/reading/:id'),
     }),
     update: endpoint({
       method: 'PATCH',
