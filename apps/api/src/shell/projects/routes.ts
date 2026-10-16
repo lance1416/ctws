@@ -4,7 +4,7 @@ import { on, serve } from '../../platform/http/serve'
 import { actorOf, currentUser } from '../auth/authenticated'
 import type { ProjectColumns } from '../module'
 import { toProjectListItem, toProjectResponse } from './mapper'
-import { listProjects } from './queries'
+import { getProjectRow, listProjects } from './queries'
 import { createProject, softDeleteProject, updateProject } from './service'
 
 /** Projects belong to the shell; modules add columns to the list but do not own them. */
@@ -22,6 +22,12 @@ export const projectRoutes: FastifyPluginAsyncZod<{ columns: ProjectColumns }> =
       )
       return { projects: rows.map(toProjectListItem) }
     }),
+
+    on(api.projects.get, async (req) =>
+      toProjectListItem(
+        await getProjectRow(app.db, currentUser(req).workspaceId, req.params.id, columns),
+      ),
+    ),
 
     on(api.projects.create, async (req) =>
       toProjectResponse(await createProject(app.db, actorOf(req), req.body)),

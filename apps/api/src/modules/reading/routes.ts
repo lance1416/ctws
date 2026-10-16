@@ -3,7 +3,7 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { on, serve } from '../../platform/http/serve'
 import { actorOf, currentUser } from '../../shell/auth/authenticated'
 import { toReadingItemResponse } from './mapper'
-import { listReadingItems, readingEntries, searchReadingItems } from './queries'
+import { getReadingItem, listReadingItems, readingEntries, searchReadingItems } from './queries'
 import {
   createReadingItem,
   type ReadingDeps,
@@ -33,6 +33,12 @@ export const readingRoutes =
         const rows = await searchReadingItems(app.db, currentUser(req).workspaceId, req.query.q)
         return { items: rows.map(toReadingItemResponse) }
       }),
+
+      on(api.reading.get, async (req) =>
+        toReadingItemResponse(
+          await getReadingItem(app.db, currentUser(req).workspaceId, req.params.id),
+        ),
+      ),
 
       on(api.reading.create, async (req) => {
         const actor = actorOf(req)

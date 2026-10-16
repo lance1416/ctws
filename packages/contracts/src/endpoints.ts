@@ -38,6 +38,7 @@ import {
 } from './person'
 import {
   createProjectBody,
+  projectListItem,
   projectListQuery,
   projectListResponse,
   projectParams,
@@ -150,6 +151,15 @@ export const api = {
       query: projectListQuery,
       ok: 200,
       response: projectListResponse,
+    }),
+    get: endpoint({
+      method: 'GET',
+      path: '/projects/:id',
+      summary: 'One project, archived or not.',
+      params: projectParams,
+      ok: 200,
+      response: projectListItem,
+      refusals: [404],
     }),
     create: endpoint({
       method: 'POST',
@@ -463,6 +473,15 @@ export const api = {
       ok: 200,
       response: peopleResponse,
     }),
+    get: endpoint({
+      method: 'GET',
+      path: '/people/:id',
+      summary: 'One person.',
+      params: personParams,
+      ok: 200,
+      response: personResponse,
+      refusals: [404],
+    }),
     create: endpoint({
       method: 'POST',
       path: '/people',
@@ -516,6 +535,15 @@ export const api = {
       query: searchQuery,
       ok: 200,
       response: readingItemsResponse,
+    }),
+    get: endpoint({
+      method: 'GET',
+      path: '/reading/:id',
+      summary: 'One reading item.',
+      params: readingParams,
+      ok: 200,
+      response: readingItemResponse,
+      refusals: [404],
     }),
     create: endpoint({
       method: 'POST',

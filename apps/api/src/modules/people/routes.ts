@@ -6,7 +6,7 @@ import { on, serve } from '../../platform/http/serve'
 import { actorOf, currentUser } from '../../shell/auth/authenticated'
 import { birthdayEntries, listBirthdays, previewBirthday } from './birthdays'
 import { toPersonResponse } from './mapper'
-import { listPeople, searchPeople } from './queries'
+import { getPerson, listPeople, searchPeople } from './queries'
 import { createPerson, softDeletePerson, updatePerson } from './service'
 
 export const personRoutes: FastifyPluginAsyncZod = async (app) => {
@@ -43,6 +43,11 @@ export const personRoutes: FastifyPluginAsyncZod = async (app) => {
       const rows = await searchPeople(app.db, currentUser(req).workspaceId, req.query.q)
       const today = await todayFor(req)
       return { people: rows.map((p) => toPersonResponse(p, today)) }
+    }),
+
+    on(api.people.get, async (req) => {
+      const row = await getPerson(app.db, currentUser(req).workspaceId, req.params.id)
+      return toPersonResponse(row, await todayFor(req))
     }),
 
     on(api.people.create, async (req) => {
