@@ -2,9 +2,11 @@
 import type { TaskStatus } from '@ctws/contracts'
 import { beforeAll, describe, expect, it } from 'vitest'
 
-// Fixed non-UTC zone (+05:30, no DST), so the tests prove something on a UTC CI host too.
-beforeAll(() => {
+// Fixed non-UTC zone (+05:30, no DST), so the tests prove something on a UTC CI host too. The
+// modules are imported once here, after the zone is set, so no test pays for the cold import.
+beforeAll(async () => {
   process.env.TZ = 'Asia/Kolkata'
+  await load()
 })
 
 const load = async () => ({
