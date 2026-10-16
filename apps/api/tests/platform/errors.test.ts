@@ -1,42 +1,45 @@
 import { describe, expect, it } from 'vitest'
+import { NotFound } from '../../src/platform/errors'
 import { problemOf } from '../../src/platform/http/errors'
-import { InboxProtectedError, ProjectNotFoundError } from '../../src/shell/projects/errors'
+import { InboxProtectedError } from '../../src/shell/projects/errors'
 import {
+  BothNeighboursError,
   DependencyCycleError,
   DepthLimitError,
   InvalidNeighbourError,
   MoveCycleError,
-  TaskNotFoundError,
 } from '../../src/modules/tasks/errors'
-import {
-  BadRuleError,
-  MeetingNotFoundError,
-  OccurrenceNotFoundError,
-  OneOccurrenceLimitError,
-} from '../../src/modules/meetings/errors'
-import { ImpossibleBirthdayError, PersonNotFoundError } from '../../src/modules/people/errors'
-import { ReadingItemNotFoundError, WrongKindError } from '../../src/modules/reading/errors'
-import { LinkEndNotFoundError, UnknownLinkError } from '../../src/shell/links/errors'
+import { BadRuleError, OneOccurrenceLimitError } from '../../src/modules/meetings/errors'
+import { ImpossibleBirthdayError } from '../../src/modules/people/errors'
+import { WrongKindError } from '../../src/modules/reading/errors'
 import {
   EmailTakenError,
   InvalidCredentialsError,
   RegistrationClosedError,
   SessionRequiredError,
 } from '../../src/shell/auth/errors'
-import { AdminRequiredError, LastAdminError, UserNotFoundError } from '../../src/shell/admin/errors'
+import { AdminRequiredError, LastAdminError } from '../../src/shell/admin/errors'
 
-const notFound = { status: 404, title: 'Not Found' }
-const conflict = (detail: string) => ({ status: 409, title: 'Conflict', detail })
+const plain = (status: number, title: string) => (detail: string) => ({
+  type: 'about:blank',
+  status,
+  title,
+  detail,
+})
+const invalid = plain(400, 'Bad Request')
+const notFound = plain(404, 'Not Found')
+const conflict = plain(409, 'Conflict')
+const unprocessable = plain(422, 'Unprocessable Entity')
+const named = (status: number, slug: string, title: string) => ({
+  type: `urn:ctws:problem:${slug}`,
+  status,
+  title,
+})
 
-describe('every refusal keeps its wire form', () => {
+describe('every refusal sends exactly what it declares', () => {
   it.each([
-    [new TaskNotFoundError(), notFound],
-    [new ProjectNotFoundError(), notFound],
-    [new MeetingNotFoundError(), notFound],
-    [new OccurrenceNotFoundError(), notFound],
-    [new PersonNotFoundError(), notFound],
-    [new ReadingItemNotFoundError(), notFound],
-    [new LinkEndNotFoundError(), notFound],
+    [new NotFound('Task'), notFound('Task not found')],
+    [new NotFound('Reading item'), notFound('Reading item not found')],
     [new DependencyCycleError(), conflict('That would make two tasks wait for each other')],
     [new DepthLimitError(), conflict('Tasks can be nested at most 10 levels deep')],
     [
@@ -49,23 +52,19 @@ describe('every refusal keeps its wire form', () => {
       conflict('Only the time or the length of a single occurrence can differ from its series'),
     ],
     [new WrongKindError('url', 'book'), conflict('A book has no url')],
-    [new InvalidNeighbourError('x'), { status: 400, title: 'Bad Request', detail: 'x' }],
-    [new ImpossibleBirthdayError('y'), { status: 400, title: 'Bad Request', detail: 'y' }],
+    [new BothNeighboursError(), invalid('Give at most one of beforeId and afterId')],
     [
-      new UnknownLinkError(),
-      { status: 400, title: 'Bad Request', detail: 'that is not a kind of link' },
+      new InvalidNeighbourError(),
+      invalid('The neighbour is not a live sibling at the destination'),
     ],
-    [
-      new BadRuleError(),
-      { status: 422, title: 'Unprocessable Entity', detail: 'That repeat rule schedules nothing' },
-    ],
-    [new EmailTakenError(), { status: 409, title: 'That email is already registered' }],
-    [new RegistrationClosedError(), { status: 403, title: 'Registration is closed' }],
-    [new InvalidCredentialsError(), { status: 401, title: 'Invalid email or password' }],
-    [new SessionRequiredError(), { status: 401, title: 'Authentication required' }],
-    [new UserNotFoundError(), { status: 404, title: 'User not found' }],
-    [new LastAdminError(), { status: 409, title: 'At least one enabled admin must remain' }],
-    [new AdminRequiredError(), { status: 403, title: 'Admin role required' }],
+    [new ImpossibleBirthdayError('y'), invalid('y')],
+    [new BadRuleError(), unprocessable('That repeat rule schedules nothing')],
+    [new EmailTakenError(), named(409, 'email-taken', 'That email is already registered')],
+    [new RegistrationClosedError(), named(403, 'registration-closed', 'Registration is closed')],
+    [new InvalidCredentialsError(), named(401, 'invalid-credentials', 'Invalid email or password')],
+    [new SessionRequiredError(), named(401, 'session-required', 'Authentication required')],
+    [new LastAdminError(), named(409, 'last-admin', 'At least one enabled admin must remain')],
+    [new AdminRequiredError(), named(403, 'admin-required', 'Admin role required')],
   ])('%s', (error, expected) => {
     expect(problemOf(error)).toEqual(expected)
   })

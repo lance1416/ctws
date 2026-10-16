@@ -10,10 +10,11 @@ import { eq } from 'drizzle-orm'
 import type { Db } from '../../platform/db/client'
 import { type Actor, scoped, within } from '../../platform/db/scope'
 import { assertProjectsVisible } from '../../shell/projects/queries'
-import { ReadingItemNotFoundError, WrongKindError } from './errors'
+import { WrongKindError } from './errors'
 import { getReadingItem, lockReadingItem, readingFiling, type ReadingItemRow } from './queries'
 import { readingItems } from './tables'
 import type { Unfurl } from './unfurl/unfurl'
+import { NotFound } from '../../platform/errors'
 
 /** How the reading module reaches the outside world. */
 export type ReadingDeps = { unfurl: Unfurl; enabled: boolean }
@@ -89,7 +90,7 @@ export async function softDeleteReadingItem(
     .set({ deletedAt: now })
     .where(within(scoped(readingItems, workspaceId), eq(readingItems.id, id)))
     .returning({ id: readingItems.id })
-  if (deleted.length === 0) throw new ReadingItemNotFoundError()
+  if (deleted.length === 0) throw new NotFound('Reading item')
 }
 
 /**

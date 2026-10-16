@@ -28,6 +28,22 @@ describe('app', () => {
     expect(res.json()).toMatchObject({ status: 404, title: expect.any(String) })
   })
 
+  it("sends Fastify's own refusals as the plain problem for their status", async () => {
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      headers: { 'x-ctws-client': 'web', 'content-type': 'application/json' },
+      payload: '{"email":',
+    })
+    expect(res.statusCode).toBe(400)
+    expect(res.json()).toEqual({
+      type: 'about:blank',
+      title: 'Bad Request',
+      status: 400,
+      detail: expect.any(String),
+    })
+  })
+
   it('publishes an OpenAPI document', async () => {
     const res = await ctx.app.inject({ method: 'GET', url: '/api/v1/openapi.json' })
     expect(res.statusCode).toBe(200)

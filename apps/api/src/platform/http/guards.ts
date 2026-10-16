@@ -1,6 +1,6 @@
 import fastifyRateLimit from '@fastify/rate-limit'
 import type { FastifyInstance, onRequestHookHandler } from 'fastify'
-import { sendProblem } from './problem'
+import { plainProblem, sendProblem } from './problem'
 
 const CSRF_HEADER = 'x-ctws-client'
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
@@ -41,7 +41,7 @@ export async function registerGuards(app: FastifyInstance): Promise<void> {
     if (now >= window.until) window = { count: 0, until: now + CEILING_WINDOW_MS }
     window.count += 1
     if (window.count > app.env.authCeiling) {
-      return sendProblem(reply, 429, 'Too many sign-in attempts right now')
+      return sendProblem(reply, plainProblem(429, 'Too many sign-in attempts right now'))
     }
   }) satisfies onRequestHookHandler)
 
@@ -50,6 +50,6 @@ export async function registerGuards(app: FastifyInstance): Promise<void> {
   app.addHook('onRequest', async (req, reply) => {
     if (!requiresCsrfHeader(req.method)) return
     if (req.headers[CSRF_HEADER]) return
-    return sendProblem(reply, 403, `Missing ${CSRF_HEADER} header`)
+    return sendProblem(reply, plainProblem(403, `Missing ${CSRF_HEADER} header`))
   })
 }

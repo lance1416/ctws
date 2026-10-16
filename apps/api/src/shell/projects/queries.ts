@@ -3,8 +3,8 @@ import { asc, desc, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
 import type { Queryable, Tx } from '../../platform/db/client'
 import { scoped, within } from '../../platform/db/scope'
 import type { ProjectColumns } from '../module'
-import { ProjectNotFoundError } from './errors'
 import { projects, type Project } from './tables'
+import { NotFound } from '../../platform/errors'
 
 /**
  * Every id names a live project in this workspace, or none is used. A foreign id reads as not
@@ -21,7 +21,7 @@ export async function assertProjectsVisible(
     .select({ id: projects.id })
     .from(projects)
     .where(within(scoped(projects, workspaceId), inArray(projects.id, unique)))
-  if (rows.length !== unique.length) throw new ProjectNotFoundError()
+  if (rows.length !== unique.length) throw new NotFound('Project')
 }
 
 /** One live project in this workspace. Missing, deleted and foreign ids all read as not found. */
@@ -34,7 +34,7 @@ export async function getProject(
     .select()
     .from(projects)
     .where(within(scoped(projects, workspaceId), eq(projects.id, id)))
-  if (!row) throw new ProjectNotFoundError()
+  if (!row) throw new NotFound('Project')
   return row
 }
 
@@ -49,7 +49,7 @@ export async function lockProject(
     .from(projects)
     .where(within(scoped(projects, workspaceId), eq(projects.id, id)))
     .for('update')
-  if (!row) throw new ProjectNotFoundError()
+  if (!row) throw new NotFound('Project')
   return row
 }
 

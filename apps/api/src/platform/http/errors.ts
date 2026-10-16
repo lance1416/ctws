@@ -1,40 +1,40 @@
+import type { Problem } from '@ctws/contracts'
 import type { FastifyError, FastifyReply, FastifyRequest } from 'fastify'
 import { hasZodFastifySchemaValidationErrors } from 'fastify-type-provider-zod'
 import { isCheckViolation } from '../db/sql'
 import { DomainError, type ErrorKind } from '../errors'
-import { sendProblem } from './problem'
+import { plainProblem, sendProblem } from './problem'
 
-const KINDS: Record<ErrorKind, { status: number; title: string; detail: boolean }> = {
-  unauthenticated: { status: 401, title: 'Authentication required', detail: false },
-  forbidden: { status: 403, title: 'Forbidden', detail: true },
-  'not-found': { status: 404, title: 'Not Found', detail: false },
-  conflict: { status: 409, title: 'Conflict', detail: true },
-  invalid: { status: 400, title: 'Bad Request', detail: true },
-  unprocessable: { status: 422, title: 'Unprocessable Entity', detail: true },
+const STATUS: Record<ErrorKind, number> = {
+  unauthenticated: 401,
+  forbidden: 403,
+  'not-found': 404,
+  conflict: 409,
+  invalid: 400,
+  unprocessable: 422,
 }
 
-export function problemOf(error: DomainError): { status: number; title: string; detail?: string } {
-  const kind = KINDS[error.kind]
-  if (error.title !== undefined) return { status: kind.status, title: error.title }
-  if (!kind.detail) return { status: kind.status, title: kind.title }
-  return { status: kind.status, title: kind.title, detail: error.message }
+/** Exactly what the error declares it shows, at its kind's status. */
+export function problemOf(error: DomainError): Problem {
+  const status = STATUS[error.kind]
+  const { shown } = error
+  return 'detail' in shown
+    ? plainProblem(status, shown.detail)
+    : { type: shown.type, title: shown.title, status }
 }
 
 export function handleError(error: FastifyError, _req: FastifyRequest, reply: FastifyReply): void {
-  if (error instanceof DomainError) {
-    const p = problemOf(error)
-    return sendProblem(reply, p.status, p.title, p.detail)
-  }
+  if (error instanceof DomainError) return sendProblem(reply, problemOf(error))
   if (hasZodFastifySchemaValidationErrors(error)) {
-    return sendProblem(reply, 400, 'Bad Request', error.message)
+    return sendProblem(reply, plainProblem(400, error.message))
   }
   // A value the contract let through but a CHECK refuses: the request's fault, not the server's.
   // The constraint's own message names tables and columns, so it is not sent.
   if (isCheckViolation(error)) {
-    return sendProblem(reply, 422, 'Unprocessable Entity', 'That value is not allowed here')
+    return sendProblem(reply, plainProblem(422, 'That value is not allowed here'))
   }
   const status = error.statusCode ?? 500
-  // A server error never shows its message.
-  if (status >= 500) return sendProblem(reply, status, 'Internal Server Error')
-  sendProblem(reply, status, error.message)
+  // A server error never shows its message; Fastify's own refusals (a body too large, a rate
+  // limit) say theirs as the detail.
+  sendProblem(reply, status >= 500 ? plainProblem(status) : plainProblem(status, error.message))
 }

@@ -12,7 +12,12 @@ import type { Db, Queryable } from '../../../platform/db/client'
 import { rowsOf } from '../../../platform/db/raw'
 import { instant } from '../../../platform/db/time'
 import { getProject } from '../../../shell/projects/queries'
-import { DepthLimitError, InvalidNeighbourError, MoveCycleError } from '../errors'
+import {
+  BothNeighboursError,
+  DepthLimitError,
+  InvalidNeighbourError,
+  MoveCycleError,
+} from '../errors'
 import type { Actor } from '../../../platform/db/scope'
 import { taskLog } from '../log'
 import { lockTask } from '../queries/scope'
@@ -51,7 +56,7 @@ async function descendantsOf(q: Queryable, rootId: TaskId): Promise<Descendant[]
  */
 export async function moveTask(db: Db, ctx: Actor, id: TaskId, input: MoveTaskBody): Promise<Task> {
   if (input.beforeId !== undefined && input.afterId !== undefined) {
-    throw new InvalidNeighbourError('Give at most one of beforeId and afterId')
+    throw new BothNeighboursError()
   }
 
   return db.transaction(async (tx) => {
@@ -142,7 +147,7 @@ async function rankFor(
     .from(tasks)
     .where(and(siblings, eq(tasks.id, neighbourId)))
   if (!neighbour) {
-    throw new InvalidNeighbourError('The neighbour is not a live sibling at the destination')
+    throw new InvalidNeighbourError()
   }
 
   // Strictly before or after: ranks are not unique, and rankBetween needs before < after.

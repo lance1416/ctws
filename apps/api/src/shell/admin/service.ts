@@ -5,7 +5,8 @@ import { LOCKS, lockFor } from '../../platform/db/locks'
 import { instant } from '../../platform/db/time'
 import { isoOrNull } from '../../platform/values'
 import { sessions, users } from '../auth/tables'
-import { LastAdminError, UserNotFoundError } from './errors'
+import { LastAdminError } from './errors'
+import { NotFound } from '../../platform/errors'
 
 // Explicit columns, never the whole row: the password hash must not be selectable from here.
 const adminColumns = {
@@ -63,7 +64,7 @@ export async function updateUser(
       })
       .where(eq(users.id, id))
       .returning(adminColumns)
-    if (!updated) throw new UserNotFoundError()
+    if (!updated) throw new NotFound('User')
 
     // Same transaction as the disable, so there is no window where the account is disabled
     // but a session still exists.

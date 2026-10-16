@@ -4,8 +4,8 @@ import type { Queryable, Tx } from '../../../platform/db/client'
 import { liveUnder, type Scope, scoped, within } from '../../../platform/db/scope'
 import { ident, sqlValues } from '../../../platform/db/sql'
 import { projects } from '../../../shell/projects/tables'
-import { TaskNotFoundError } from '../errors'
 import { tasks, type Task } from '../tables'
+import { NotFound } from '../../../platform/errors'
 
 /** How a query names the task table and the project table joined to it. */
 type Aliases = { task: string; project: string }
@@ -51,13 +51,13 @@ const byId = (q: Queryable, workspaceId: WorkspaceId, id: TaskId) =>
 /** One visible task. Missing, deleted and foreign ids all read as not found. */
 export async function getTask(q: Queryable, workspaceId: WorkspaceId, id: TaskId): Promise<Task> {
   const [row] = await byId(q, workspaceId, id)
-  if (!row) throw new TaskNotFoundError()
+  if (!row) throw new NotFound('Task')
   return row.task
 }
 
 /** `getTask`, with the row locked for the rest of the transaction. */
 export async function lockTask(q: Tx, workspaceId: WorkspaceId, id: TaskId): Promise<Task> {
   const [row] = await byId(q, workspaceId, id).for('update', { of: tasks })
-  if (!row) throw new TaskNotFoundError()
+  if (!row) throw new NotFound('Task')
   return row.task
 }

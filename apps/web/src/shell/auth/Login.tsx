@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { WORKBENCH_PATH } from '../registry'
-import { apiFetch } from '../../platform/http/api'
+import { apiFetch, problemText } from '../../platform/http/api'
 import { browserZone } from '../../platform/time/dates'
 import { useMe } from './useMe'
 import { BUTTON, LINK } from '../../platform/ui/buttonStyles'
@@ -36,7 +36,7 @@ export function Login() {
       qc.setQueryData(['me'], user)
       navigate(WORKBENCH_PATH, { replace: true })
     },
-    onError: (e: Error) => setError(e.message),
+    onError: (e: Error) => setError(problemText(e) ?? ''),
   })
 
   if (me.isLoading) return null

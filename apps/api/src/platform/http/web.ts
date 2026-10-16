@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import fastifyStatic from '@fastify/static'
 import type { FastifyInstance } from 'fastify'
-import { sendProblem } from './problem'
+import { plainProblem, sendProblem } from './problem'
 
 /**
  * Serves the built web app, if there is one, after the API routes so they win. Browser
@@ -26,6 +26,6 @@ export async function serveWeb(app: FastifyInstance, webDist: string | undefined
   app.setNotFoundHandler((req, reply) => {
     const navigation = req.method === 'GET' && (req.headers.accept ?? '').includes('text/html')
     if (root && navigation && !req.url.startsWith('/api/')) return reply.sendFile('index.html')
-    return sendProblem(reply, 404, 'Not Found')
+    return sendProblem(reply, plainProblem(404))
   })
 }

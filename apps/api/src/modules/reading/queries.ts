@@ -16,8 +16,8 @@ import { scoped, within } from '../../platform/db/scope'
 import { sqlValues, textMatches } from '../../platform/db/sql'
 import { dayEntry } from '../../shell/calendar/entry'
 import { filing, projectOfSql } from '../../shell/links/filing'
-import { ReadingItemNotFoundError } from './errors'
 import { readingItems } from './tables'
+import { NotFound } from '../../platform/errors'
 
 type ReadingItem = typeof readingItems.$inferSelect
 
@@ -61,7 +61,7 @@ export async function getReadingItem(
     .select(withProject)
     .from(readingItems)
     .where(within(scoped(readingItems, workspaceId), eq(readingItems.id, id)))
-  if (!row) throw new ReadingItemNotFoundError()
+  if (!row) throw new NotFound('Reading item')
   return rowOf(row)
 }
 
@@ -76,7 +76,7 @@ export async function lockReadingItem(
     .from(readingItems)
     .where(within(scoped(readingItems, workspaceId), eq(readingItems.id, id)))
     .for('update')
-  if (!row) throw new ReadingItemNotFoundError()
+  if (!row) throw new NotFound('Reading item')
   return getReadingItem(tx, workspaceId, id)
 }
 

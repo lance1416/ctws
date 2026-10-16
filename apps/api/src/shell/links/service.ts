@@ -1,10 +1,10 @@
 import type { LinkKind } from '@ctws/contracts'
 import type { Db } from '../../platform/db/client'
 import type { Actor } from '../../platform/db/scope'
-import { LinkEndNotFoundError } from './errors'
 import { exists } from './read'
 import type { LinkRegistry } from './registry'
 import { addLink, type Endpoint } from './store'
+import { NotFound } from '../../platform/errors'
 
 /**
  * Adds an edge between two things this workspace can see. The edge table has no foreign keys at
@@ -17,8 +17,8 @@ export async function linkObjects(
 ): Promise<void> {
   await db.transaction(async (tx) => {
     const { workspaceId, from, to } = edge
-    if (!(await exists(registry, tx, workspaceId, from))) throw new LinkEndNotFoundError()
-    if (!(await exists(registry, tx, workspaceId, to))) throw new LinkEndNotFoundError()
+    if (!(await exists(registry, tx, workspaceId, from))) throw new NotFound('Object')
+    if (!(await exists(registry, tx, workspaceId, to))) throw new NotFound('Object')
     await addLink(tx, edge)
   })
 }

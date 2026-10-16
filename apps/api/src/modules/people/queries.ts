@@ -14,8 +14,8 @@ import { textMatches } from '../../platform/db/sql'
 import { groupBy } from '../../platform/values'
 import { filing, projectsOf } from '../../shell/links/filing'
 import { links } from '../../shell/links/tables'
-import { PersonNotFoundError } from './errors'
 import { people, personChannels } from './tables'
+import { NotFound } from '../../platform/errors'
 
 type Person = typeof people.$inferSelect
 type Named<Id> = { id: Id; name: string }
@@ -125,7 +125,7 @@ export async function getPerson(
     .select()
     .from(people)
     .where(within(scoped(people, workspaceId), eq(people.id, id)))
-  if (rows.length === 0) throw new PersonNotFoundError()
+  if (rows.length === 0) throw new NotFound('Person')
   const [row] = await hydrate(q, workspaceId, rows)
   return row!
 }
@@ -144,7 +144,7 @@ export async function lockPerson(
     .from(people)
     .where(within(scoped(people, workspaceId), eq(people.id, id)))
     .for('update')
-  if (!row) throw new PersonNotFoundError()
+  if (!row) throw new NotFound('Person')
   return getPerson(tx, workspaceId, id)
 }
 
@@ -189,7 +189,7 @@ export async function assertPeopleVisible(
     .select({ id: people.id })
     .from(people)
     .where(within(scoped(people, workspaceId), inArray(people.id, unique)))
-  if (rows.length !== unique.length) throw new PersonNotFoundError()
+  if (rows.length !== unique.length) throw new NotFound('Person')
 }
 
 /** The live people attending each meeting, by name, in one query. */

@@ -9,11 +9,11 @@ import {
 } from '@ctws/contracts'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { actorOf, currentUser } from '../auth/authenticated'
-import { LinkEndNotFoundError } from './errors'
 import { candidatesFor, exists, linksOf } from './read'
 import type { LinkRegistry } from './registry'
 import { linkObjects } from './service'
 import { removeLink } from './store'
+import { NotFound } from '../../platform/errors'
 
 /** Candidates per type, so a box full of tasks still shows people. */
 const CANDIDATES_PER_TYPE = 8
@@ -30,7 +30,7 @@ export const linkRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = asy
       const { workspaceId } = currentUser(req)
       const of = req.params
       // A foreign or deleted object is a 404, not an empty page.
-      if (!(await exists(registry, app.db, workspaceId, of))) throw new LinkEndNotFoundError()
+      if (!(await exists(registry, app.db, workspaceId, of))) throw new NotFound('Object')
       return linksOf(registry, app.db, workspaceId, of)
     },
   )
@@ -41,7 +41,7 @@ export const linkRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = asy
     async (req) => {
       const { workspaceId } = currentUser(req)
       const of = { type: req.query.type, id: req.query.id }
-      if (!(await exists(registry, app.db, workspaceId, of))) throw new LinkEndNotFoundError()
+      if (!(await exists(registry, app.db, workspaceId, of))) throw new NotFound('Object')
       const candidates = await candidatesFor(
         registry,
         app.db,

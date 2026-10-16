@@ -14,7 +14,6 @@ import { scoped, within } from '../../platform/db/scope'
 import { groupBy } from '../../platform/values'
 import { filing } from '../../shell/links/filing'
 import { attendeesOf } from '../people'
-import { MeetingNotFoundError, OccurrenceNotFoundError } from './errors'
 import {
   type Exception,
   type LocalTime,
@@ -24,6 +23,7 @@ import {
 } from './occurrences'
 import { meetingExceptions, meetings } from './tables'
 import { windowOf } from './zone'
+import { NotFound } from '../../platform/errors'
 
 type Attendee = { id: PersonId; name: string }
 
@@ -136,7 +136,7 @@ export async function getMeeting(
   id: MeetingId,
 ): Promise<SeriesRow> {
   const [series] = await seriesOf(q, workspaceId, id)
-  if (!series) throw new MeetingNotFoundError()
+  if (!series) throw new NotFound('Meeting')
   return series
 }
 
@@ -151,7 +151,7 @@ export async function lockMeeting(
     .from(meetings)
     .where(within(scoped(meetings, workspaceId), eq(meetings.id, id)))
     .for('update')
-  if (!row) throw new MeetingNotFoundError()
+  if (!row) throw new NotFound('Meeting')
   return getMeeting(tx, workspaceId, id)
 }
 
@@ -185,7 +185,7 @@ export async function getOccurrence(
   const at =
     series.exceptions.find((e) => e.recurrenceId === recurrenceId)?.startsLocal ?? recurrenceId
   const one = expand(series, around(at)).find((o) => o.recurrenceId === recurrenceId)
-  if (!one) throw new OccurrenceNotFoundError()
+  if (!one) throw new NotFound('Occurrence')
   return one
 }
 
@@ -195,7 +195,7 @@ export async function getOccurrence(
  */
 export function assertOccurs(series: SeriesRow, recurrenceId: LocalTime): void {
   const found = occurrencesIn(asSeries(series), [], around(recurrenceId))
-  if (!found.some((o) => o.recurrenceId === recurrenceId)) throw new OccurrenceNotFoundError()
+  if (!found.some((o) => o.recurrenceId === recurrenceId)) throw new NotFound('Occurrence')
 }
 
 /**

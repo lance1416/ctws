@@ -15,9 +15,9 @@ import { replaceRows } from '../../platform/db/replace'
 import { type Actor, scoped, within } from '../../platform/db/scope'
 import { assertProjectsVisible } from '../../shell/projects/queries'
 import { assertPossibleBirthday } from './birthdays'
-import { PersonNotFoundError } from './errors'
 import { getPerson, lockPerson, type PersonRow, personFiling } from './queries'
 import { people, personChannels } from './tables'
+import { NotFound } from '../../platform/errors'
 
 const checkBirthday = (b: BirthdayInput | null | undefined): void => {
   if (b) assertPossibleBirthday({ ...b, year: b.year ?? null })
@@ -131,5 +131,5 @@ export async function softDeletePerson(
     .set({ deletedAt: now })
     .where(within(scoped(people, workspaceId), eq(people.id, id)))
     .returning({ id: people.id })
-  if (deleted.length === 0) throw new PersonNotFoundError()
+  if (deleted.length === 0) throw new NotFound('Person')
 }
