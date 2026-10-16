@@ -40,7 +40,7 @@ test('a birthday row hangs on the margin: the day and its cake, then who, then h
   await person(page, '王颖', { calendar: 'solar', year: 1993, ...monthDay(0) }, 'friend')
   await person(page, '林哲', { calendar: 'solar', year: 1985, ...monthDay(3) }, 'work')
   const view = (await (
-    await page.request.get('/api/v1/people/birthdays', { headers: WEB })
+    await page.request.get('/api/v1/people?view=birthdays', { headers: WEB })
   ).json()) as { coming: { name: string; day: string }[] }
   await page.goto('/people/birthdays')
 

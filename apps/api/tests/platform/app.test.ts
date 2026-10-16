@@ -170,6 +170,13 @@ describe('the OpenAPI document', () => {
     const params = doc.paths['/api/v1/links']!.get!.parameters
     expect(params.find((p) => p.name === 'view')!.schema).toMatchObject({ enum: ['candidates'] })
     expect(params.map((p) => p.name)).toEqual(expect.arrayContaining(['type', 'id', 'q']))
+
+    const tasks = doc.paths['/api/v1/tasks']!.get!.parameters
+    const views = tasks.find((p) => p.name === 'view')!.schema as { enum: string[] }
+    expect([...views.enum].sort()).toEqual(['calendar', 'completed', 'movement', 'review', 'today'])
+    expect(tasks.map((p) => p.name)).toEqual(
+      expect.arrayContaining(['projectId', 'q', 'from', 'to']),
+    )
   })
 
   it('documents every endpoint of the table at its own path and method', async () => {

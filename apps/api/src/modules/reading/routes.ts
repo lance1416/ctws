@@ -22,7 +22,7 @@ export const readingRoutes =
           currentUser(req).workspaceId,
           req.query.unfiled === 'true',
         )
-        return { items: rows.map(toReadingItemResponse) }
+        return { reading: rows.map(toReadingItemResponse) }
       }),
 
       on(api.reading.calendar, async (req) => ({
@@ -31,7 +31,7 @@ export const readingRoutes =
 
       on(api.reading.search, async (req) => {
         const rows = await searchReadingItems(app.db, currentUser(req).workspaceId, req.query.q)
-        return { items: rows.map(toReadingItemResponse) }
+        return { reading: rows.map(toReadingItemResponse) }
       }),
 
       on(api.reading.get, async (req) =>

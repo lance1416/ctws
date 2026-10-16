@@ -224,12 +224,12 @@ describe('one object, several kinds of edge', () => {
       url: '/api/v1/reading',
       headers: web(ctx),
     })
-    expect((reading.json() as { items: ReadingItemResponse[] }).items[0]!.projectId).toBeNull()
+    expect((reading.json() as { reading: ReadingItemResponse[] }).reading[0]!.projectId).toBeNull()
     const unfiled = await ctx.app.inject({
       method: 'GET',
       url: '/api/v1/reading?unfiled=true',
       headers: web(ctx),
     })
-    expect((unfiled.json() as { items: ReadingItemResponse[] }).items).toHaveLength(1)
+    expect((unfiled.json() as { reading: ReadingItemResponse[] }).reading).toHaveLength(1)
   })
 })

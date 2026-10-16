@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { projectId, type ProjectId, taskId, type TaskId } from './id'
 import { WINDOW_REFUSED, windowIsBounded } from './calendar'
-import { calendarDate, documentText, instant, patchOf, titleText } from './common'
+import { calendarDate, documentText, instant, patchOf, titleText, viewQuery } from './common'
 
 export const TASK_STATUSES = ['backlog', 'todo', 'in_progress', 'done', 'cancelled'] as const
 const taskStatus = z.enum(TASK_STATUSES)
@@ -172,10 +172,10 @@ export const reviewResponse = z
   .strict()
 export type ReviewResponse = z.infer<typeof reviewResponse>
 
-export const reviewQuery = z
-  .object({ from: calendarDate.optional(), to: calendarDate.optional() })
-  .strict()
-  .refine(windowIsBounded, { message: WINDOW_REFUSED, path: ['to'] })
+export const reviewQuery = viewQuery('review', {
+  from: calendarDate.optional(),
+  to: calendarDate.optional(),
+}).refine(windowIsBounded, { message: WINDOW_REFUSED, path: ['to'] })
 
 // Display order. Which segment wins for a task matching several is decided in `listToday`'s SQL.
 const TODAY_SEGMENTS = ['overdue', 'today', 'in_progress'] as const

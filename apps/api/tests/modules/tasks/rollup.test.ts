@@ -236,7 +236,7 @@ describe('the overdue flag, decided in the account timezone', () => {
 
     const todayRes = await ctx.app.inject({
       method: 'GET',
-      url: '/api/v1/tasks/today',
+      url: '/api/v1/tasks?view=today',
       headers: ctx.authed,
     })
     const segments = (todayRes.json().tasks as { id: string; segment: string }[]).filter(

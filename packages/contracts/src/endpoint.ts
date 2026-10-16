@@ -43,7 +43,7 @@ type In<S> = S extends z.ZodType ? z.input<S> : never
 
 /** A part of a request: required unless every field in it is optional. */
 type Part<Key extends string, S> = [S] extends [z.ZodType]
-  ? object extends In<S>
+  ? Record<never, never> extends In<S>
     ? { [K in Key]?: In<S> }
     : { [K in Key]: In<S> }
   : { [K in Key]?: never }

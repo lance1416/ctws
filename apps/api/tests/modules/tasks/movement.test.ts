@@ -58,7 +58,7 @@ type Row = {
 async function movement(headers = ctx.authed): Promise<Row[]> {
   const res = await ctx.app.inject({
     method: 'GET',
-    url: '/api/v1/tasks/movement',
+    url: '/api/v1/tasks?view=movement',
     headers,
   })
   expect(res.statusCode).toBe(200)
@@ -98,7 +98,7 @@ describe('GET /tasks/movement', () => {
   it('requires authentication', async () => {
     const res = await ctx.app.inject({
       method: 'GET',
-      url: '/api/v1/tasks/movement',
+      url: '/api/v1/tasks?view=movement',
       headers: { 'x-ctws-client': 'web' },
     })
     expect(res.statusCode).toBe(401)
@@ -349,7 +349,7 @@ describe('GET /tasks/movement', () => {
 
     const today = await ctx.app.inject({
       method: 'GET',
-      url: '/api/v1/tasks/today',
+      url: '/api/v1/tasks?view=today',
       headers: ctx.authed,
     })
     expect(today.statusCode).toBe(200)

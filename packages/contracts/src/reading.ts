@@ -74,7 +74,7 @@ export const readingItemResponse = z
   .strict()
 export type ReadingItemResponse = z.infer<typeof readingItemResponse>
 
-export const readingItemsResponse = z.object({ items: z.array(readingItemResponse) }).strict()
+export const readingItemsResponse = z.object({ reading: z.array(readingItemResponse) }).strict()
 
 export const readingListQuery = z
   .object({

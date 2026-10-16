@@ -18,7 +18,7 @@ afterEach(async () => {
 async function entries(ctx: Harness, from: string, to: string) {
   const res = await ctx.app.inject({
     method: 'GET',
-    url: `/api/v1/tasks/calendar?from=${from}&to=${to}`,
+    url: `/api/v1/tasks?view=calendar&from=${from}&to=${to}`,
     headers: ctx.authed,
   })
   expect(res.statusCode, res.body).toBe(200)

@@ -73,7 +73,7 @@ async function listed(ctx: Harness, query: string): Promise<MeetingOccurrence[]>
 async function entries(ctx: Harness, from: string, to: string): Promise<CalendarEntry[]> {
   const res = await ctx.app.inject({
     method: 'GET',
-    url: `/api/v1/meetings/calendar?from=${from}&to=${to}`,
+    url: `/api/v1/meetings?view=calendar&from=${from}&to=${to}`,
     headers: ctx.authed,
   })
   expect(res.statusCode, res.body).toBe(200)

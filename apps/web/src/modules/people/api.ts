@@ -49,13 +49,14 @@ export const peopleQuery = () => queryOptions({ queryKey: ['people', 'list'], qu
 export const birthdaysQuery = () =>
   queryOptions({
     queryKey: ['people', 'birthdays'],
-    queryFn: () => call(api.people.birthdays),
+    queryFn: () => call(api.people.birthdays, { query: { view: 'birthdays' } }),
   })
 
 export const birthdayCalendarQuery = (range: { from: string; to: string }) =>
   queryOptions({
     queryKey: ['people', 'calendar', range.from, range.to],
-    queryFn: async () => (await call(api.people.calendar, { query: range })).entries,
+    queryFn: async () =>
+      (await call(api.people.calendar, { query: { view: 'calendar', ...range } })).entries,
   })
 
 export const personSearchQuery = (q: string) =>

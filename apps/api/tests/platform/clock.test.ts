@@ -35,7 +35,7 @@ describe('the injected clock', () => {
   it('decides Today in the account zone', async () => {
     const res = await ctx.app.inject({
       method: 'GET',
-      url: '/api/v1/tasks/today',
+      url: '/api/v1/tasks?view=today',
       headers: ctx.authed,
     })
     const segments = Object.fromEntries(
@@ -49,20 +49,20 @@ describe('the injected clock', () => {
 
   it('decides the review week in the account zone', async () => {
     // Sunday the 8th: the week began on Monday the 2nd.
-    expect(await get('/api/v1/tasks/review')).toMatchObject({
+    expect(await get('/api/v1/tasks?view=review')).toMatchObject({
       from: '2026-03-02',
       to: '2026-03-08',
     })
   })
 
   it('decides what is overdue and next on the movement read', async () => {
-    const { projects } = await get('/api/v1/tasks/movement')
+    const { projects } = await get('/api/v1/tasks?view=movement')
     const project = projects.find((p: { projectName: string }) => p.projectName === 'Clock')
     expect(project).toMatchObject({ overdue: 1, nextDueOn: '2026-03-08' })
   })
 
   it("decides the birthdays page's today", async () => {
-    expect((await get('/api/v1/people/birthdays')).today).toBe('2026-03-08')
+    expect((await get('/api/v1/people?view=birthdays')).today).toBe('2026-03-08')
   })
 })
 

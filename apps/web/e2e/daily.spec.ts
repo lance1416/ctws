@@ -246,7 +246,7 @@ test('pushing the deadline on an overdue row keeps its time of day and takes the
   await expect(page.getByText('推到明天')).toHaveCount(0)
   await expect(section.getByText('2 days late')).toHaveCount(2)
   // The server says so, from a fresh read, in its own segment arithmetic: not on the list at all.
-  const today = (await (await page.request.get('/api/v1/tasks/today')).json()).tasks as {
+  const today = (await (await page.request.get('/api/v1/tasks?view=today')).json()).tasks as {
     title: string
     segment: string
   }[]
@@ -302,7 +302,7 @@ test('only a deadline change takes a task out of Overdue: a bare scheduledOn doe
   const id = await makeTask(page, pid, '过期了', { dueAt: dueAgo(2) })
   const tomorrow = ymd(new Date(Date.now() + DAY))
   const segmentOf = async () => {
-    const tasks = (await (await page.request.get('/api/v1/tasks/today')).json()).tasks as {
+    const tasks = (await (await page.request.get('/api/v1/tasks?view=today')).json()).tasks as {
       id: string
       segment: string
     }[]
@@ -706,7 +706,7 @@ const rowOf = (page: Page, title: string) =>
     .filter({ has: page.locator('[data-today-row]') })
     .filter({ hasText: title })
 async function todaySegment(page: Page, id: string): Promise<string> {
-  const tasks = (await (await page.request.get('/api/v1/tasks/today')).json()).tasks as {
+  const tasks = (await (await page.request.get('/api/v1/tasks?view=today')).json()).tasks as {
     id: string
     segment: string
   }[]

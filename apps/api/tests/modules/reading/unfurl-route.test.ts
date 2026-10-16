@@ -48,7 +48,7 @@ async function add(ctx: Harness, payload: Record<string, unknown>): Promise<Read
 
 const list = async (ctx: Harness): Promise<ReadingItemResponse[]> => {
   const res = await ctx.app.inject({ method: 'GET', url: '/api/v1/reading', headers: ctx.authed })
-  return (res.json() as { items: ReadingItemResponse[] }).items
+  return (res.json() as { reading: ReadingItemResponse[] }).reading
 }
 
 describe('a pasted link reads back its own title', () => {

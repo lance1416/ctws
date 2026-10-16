@@ -11,12 +11,9 @@ const searchBox = (page: Page) => page.getByRole('combobox', { name: 'Search' })
 
 /** Types into the search box and waits for the server's answer, so no assertion races the fetch. */
 async function query(page: Page, text: string) {
-  const answered = page.waitForResponse(
-    (r) => r.url().includes('/api/v1/tasks/search?q=') && r.ok(),
-    {
-      timeout: 15_000,
-    },
-  )
+  const answered = page.waitForResponse((r) => r.url().includes('/api/v1/tasks?q=') && r.ok(), {
+    timeout: 15_000,
+  })
   await searchBox(page).fill(text)
   await answered
 }
@@ -416,7 +413,7 @@ test('results landing do not pull the highlight back to the first row', async ({
   const second = await box.getAttribute('aria-activedescendant')
   expect(second).toMatch(/-option-1$/)
 
-  const landed = page.waitForResponse((r) => r.url().includes('/api/v1/reading/search'))
+  const landed = page.waitForResponse((r) => r.url().includes('/api/v1/reading?q='))
   release()
   await landed
   await expect(result(page, 'Peopleware')).toBeVisible()

@@ -193,9 +193,9 @@ test('a nested task shows both its project and its parent in the breadcrumb', as
 // A failed fetch must not read as "nothing to do": that would tell the user they are free when the
 // app simply could not ask.
 test('a failed fetch shows an error, not the empty-state line', async ({ page }) => {
-  await page.route('**/api/v1/tasks/today', (route) =>
-    route.fulfill({ status: 500, json: { title: 'boom' } }),
-  )
+  const todayView = (url: URL) =>
+    url.pathname === '/api/v1/tasks' && url.searchParams.get('view') === 'today'
+  await page.route(todayView, (route) => route.fulfill({ status: 500, json: { title: 'boom' } }))
   await registerFreshUser(page)
   await expect(page.getByRole('alert')).toHaveText('boom')
   await expect(page.getByText('Nothing for today')).toHaveCount(0)
@@ -324,7 +324,7 @@ test('a meeting sits on the day at your own time, and says the zone it was agree
   const zone = account === 'Asia/Tokyo' ? 'Asia/Kolkata' : 'Asia/Tokyo'
   await meetingToday(page, 'Northwind intro call', '12:00', zone)
   const entries = await page.request.get(
-    `/api/v1/meetings/calendar?from=${dayInZone(account)}&to=${dayInZone(account)}`,
+    `/api/v1/meetings?view=calendar&from=${dayInZone(account)}&to=${dayInZone(account)}`,
     { headers: WEB },
   )
   const [entry] = ((await entries.json()) as { entries: { zone: string | null }[] }).entries

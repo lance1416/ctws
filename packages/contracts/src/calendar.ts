@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { projectId } from './id'
-import { calendarDate, DAY_MS, EVENT_YEARS } from './common'
+import { calendarDate, DAY_MS, EVENT_YEARS, viewQuery } from './common'
 
 /**
  * The widest window a read may ask for. A recurring series has no last occurrence, so the window
@@ -33,6 +33,12 @@ export const calendarQuery = z
   .object({ from: calendarDate, to: calendarDate })
   .strict()
   .refine(windowIsBounded, { message: WINDOW_REFUSED, path: ['to'] })
+
+/** A collection's dated things on their days: `?view=calendar&from=&to=` on its own path. */
+export const calendarView = viewQuery('calendar', { from: calendarDate, to: calendarDate }).refine(
+  windowIsBounded,
+  { message: WINDOW_REFUSED, path: ['to'] },
+)
 
 /**
  * One dated thing on the calendar. The server puts it on its day in the account's zone; `kind` is

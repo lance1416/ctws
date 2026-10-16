@@ -38,9 +38,9 @@ const get = (url: string, headers = ctx.authed) => ctx.app.inject({ method: 'GET
 
 describe('the task module answers under its own namespace', () => {
   it('serves today, completed, search and the task collection under /api/v1/tasks', async () => {
-    expect((await get('/api/v1/tasks/today')).statusCode).toBe(200)
-    expect((await get('/api/v1/tasks/completed')).statusCode).toBe(200)
-    expect((await get('/api/v1/tasks/search?q=inside')).statusCode).toBe(200)
+    expect((await get('/api/v1/tasks?view=today')).statusCode).toBe(200)
+    expect((await get('/api/v1/tasks?view=completed')).statusCode).toBe(200)
+    expect((await get('/api/v1/tasks?q=inside')).statusCode).toBe(200)
     const list = await get(`/api/v1/tasks?projectId=${projectId}`)
     expect(list.statusCode).toBe(200)
     expect((list.json().tasks as unknown[]).length).toBe(1)
@@ -57,8 +57,10 @@ describe('the OpenAPI document describes the namespaced API', () => {
   it('documents the module paths', async () => {
     const doc = (await get('/api/v1/openapi.json')).json() as { paths: Record<string, unknown> }
     const paths = Object.keys(doc.paths)
-    expect(paths).toContain('/api/v1/tasks/today')
-    expect(paths).toContain('/api/v1/tasks/search')
+    expect(paths).toContain('/api/v1/tasks')
+    expect(paths).toContain('/api/v1/tasks/{id}')
+    // A view of a collection is a query on its path, not a path of its own.
+    expect(paths.filter((p) => /\/(today|search|calendar|completed|movement)$/.test(p))).toEqual([])
     // The shell's own surface, still flat.
     expect(paths).toContain('/api/v1/projects')
   })

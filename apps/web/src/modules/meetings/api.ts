@@ -82,7 +82,8 @@ export const seriesQuery = (meetingId: MeetingId | null, today: string) =>
 export const meetingCalendarQuery = (range: DayRange) =>
   queryOptions({
     queryKey: ['meetings', 'calendar', range.from, range.to],
-    queryFn: async () => (await call(api.meetings.calendar, { query: range })).entries,
+    queryFn: async () =>
+      (await call(api.meetings.calendar, { query: { view: 'calendar', ...range } })).entries,
   })
 
 export function createMeeting(body: CreateMeetingBody): Promise<MeetingOccurrence> {

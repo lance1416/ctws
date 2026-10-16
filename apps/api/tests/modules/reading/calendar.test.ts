@@ -12,7 +12,7 @@ afterEach(async () => {
 async function entries(ctx: Harness, from: string, to: string) {
   const res = await ctx.app.inject({
     method: 'GET',
-    url: `/api/v1/reading/calendar?from=${from}&to=${to}`,
+    url: `/api/v1/reading?view=calendar&from=${from}&to=${to}`,
     headers: ctx.authed,
   })
   expect(res.statusCode, res.body).toBe(200)
@@ -104,7 +104,7 @@ describe('the reading calendar', () => {
     const ctx = await setup()
     const bad = await ctx.app.inject({
       method: 'GET',
-      url: '/api/v1/reading/calendar?from=2026-10-01',
+      url: '/api/v1/reading?view=calendar&from=2026-10-01',
       headers: ctx.authed,
     })
     expect(bad.statusCode).toBe(400)

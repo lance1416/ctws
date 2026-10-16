@@ -2,6 +2,18 @@ import { z } from 'zod'
 
 export const DAY_MS = 86_400_000
 
+/**
+ * A filtered view of a collection, asked for with `?view=<name>` on the collection's own path. It
+ * takes nothing else unless `extra` says so.
+ */
+export const viewQuery = <const V extends string, S extends z.ZodRawShape = Record<never, never>>(
+  view: V,
+  extra: S = {} as S,
+) => z.object({ view: z.literal(view), ...extra }).strict()
+
+/** A collection read with no filter: nothing in the query. */
+export const noQuery = z.object({}).strict()
+
 /** What a thing is called where it is listed: a task, a meeting, a book. */
 export const titleText = z.string().trim().min(1).max(500)
 

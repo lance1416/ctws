@@ -50,7 +50,7 @@ async function list(ctx: Harness, query = ''): Promise<ReadingItemResponse[]> {
     headers: ctx.authed,
   })
   expect(res.statusCode).toBe(200)
-  return (res.json() as { items: ReadingItemResponse[] }).items
+  return (res.json() as { reading: ReadingItemResponse[] }).reading
 }
 
 describe('reading list', () => {
@@ -176,11 +176,11 @@ describe('reading list', () => {
     const hits = async (q: string) => {
       const res = await ctx.app.inject({
         method: 'GET',
-        url: `/api/v1/reading/search?q=${encodeURIComponent(q)}`,
+        url: `/api/v1/reading?q=${encodeURIComponent(q)}`,
         headers: ctx.authed,
       })
       expect(res.statusCode).toBe(200)
-      return (res.json() as { items: ReadingItemResponse[] }).items
+      return (res.json() as { reading: ReadingItemResponse[] }).reading
     }
     expect((await hits('linear')).map((i) => i.url)).toEqual(['https://linear.app/now/redesign'])
     expect((await hits('Norman')).map((i) => i.title)).toEqual(['设计心理学'])

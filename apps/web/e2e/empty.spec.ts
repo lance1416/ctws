@@ -78,7 +78,7 @@ test('a search with no match says what search covers and clears itself', async (
   await expect(box).toBeFocused()
 
   // A query that really has no match.
-  const missed = page.waitForResponse((r) => r.url().includes('/api/v1/tasks/search?q=') && r.ok())
+  const missed = page.waitForResponse((r) => r.url().includes('/api/v1/tasks?q=') && r.ok())
   await box.fill('绝不存在的词')
   await missed
   await expect(page.getByText('Nothing matches')).toBeVisible()
@@ -91,7 +91,7 @@ test('a search with no match says what search covers and clears itself', async (
   await expect(page.getByText('Nothing matches')).toHaveCount(0)
 
   // The other half: with a match, none of the empty state is on screen.
-  const found = page.waitForResponse((r) => r.url().includes('/api/v1/tasks/search?q=') && r.ok())
+  const found = page.waitForResponse((r) => r.url().includes('/api/v1/tasks?q=') && r.ok())
   await page.keyboard.type('找得到')
   await found
   await expect(page.locator('[data-search-result]')).toHaveCount(1)

@@ -280,7 +280,7 @@ test('deleting a leaf does not claim descendants, and works from the Today panel
   await expect(page.getByText('在做的')).toHaveCount(0)
   await expect(page.getByText('另一个')).toBeVisible()
   expect((await serverTasks(page, pid)).map((t) => t.title)).toEqual(['另一个'])
-  const today = (await (await page.request.get('/api/v1/tasks/today')).json()).tasks as {
+  const today = (await (await page.request.get('/api/v1/tasks?view=today')).json()).tasks as {
     title: string
   }[]
   expect(today.map((t) => t.title)).toEqual(['另一个'])

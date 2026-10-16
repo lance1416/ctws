@@ -50,7 +50,7 @@ const cases = [
     collection: '/api/v1/reading',
     make: () => post('/api/v1/reading', { kind: 'book', title: 'Dune' }),
     listed: async (id: string) =>
-      (await get('/api/v1/reading')).json().items.find((p: { id: string }) => p.id === id),
+      (await get('/api/v1/reading')).json().reading.find((p: { id: string }) => p.id === id),
   },
 ]
 

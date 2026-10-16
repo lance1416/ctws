@@ -61,7 +61,7 @@ const setStatus = (ctx: Harness, id: string, status: string) =>
 async function blockersOnToday(ctx: Harness) {
   const res = await ctx.app.inject({
     method: 'GET',
-    url: '/api/v1/tasks/today',
+    url: '/api/v1/tasks?view=today',
     headers: ctx.authed,
   })
   return (res.json() as { tasks: { title: string; blockedBy: DependencyRef[] }[] }).tasks

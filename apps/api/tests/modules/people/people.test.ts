@@ -194,7 +194,7 @@ describe('people', () => {
     const hits = async (q: string) => {
       const res = await ctx.app.inject({
         method: 'GET',
-        url: `/api/v1/people/search?q=${encodeURIComponent(q)}`,
+        url: `/api/v1/people?q=${encodeURIComponent(q)}`,
         headers: ctx.authed,
       })
       expect(res.statusCode).toBe(200)

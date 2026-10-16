@@ -21,7 +21,7 @@ async function setup(timezone?: string) {
 async function today(ctx: Awaited<ReturnType<typeof setup>>) {
   const res = await ctx.app.inject({
     method: 'GET',
-    url: '/api/v1/tasks/today',
+    url: '/api/v1/tasks?view=today',
     headers: ctx.authed,
   })
   expect(res.statusCode).toBe(200)
@@ -52,7 +52,7 @@ describe('GET /today', () => {
     const ctx = await setup()
     const res = await ctx.app.inject({
       method: 'GET',
-      url: '/api/v1/tasks/today',
+      url: '/api/v1/tasks?view=today',
       headers: { 'x-ctws-client': 'web' },
     })
     expect(res.statusCode).toBe(401)

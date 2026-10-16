@@ -35,7 +35,7 @@ const setStatus = (ctx: Harness, id: string, status: string) =>
 async function review(ctx: Harness, query = ''): Promise<ReviewResponse> {
   const res = await ctx.app.inject({
     method: 'GET',
-    url: `/api/v1/tasks/review${query}`,
+    url: `/api/v1/tasks?view=review${query}`,
     headers: ctx.authed,
   })
   expect(res.statusCode).toBe(200)
@@ -78,7 +78,7 @@ describe('the weekly review', () => {
     // While the task itself is plainly not finished.
     const completed = await ctx.app.inject({
       method: 'GET',
-      url: '/api/v1/tasks/completed',
+      url: '/api/v1/tasks?view=completed',
       headers: ctx.authed,
     })
     expect((completed.json() as { tasks: unknown[] }).tasks).toEqual([])
@@ -121,14 +121,14 @@ describe('the weekly review', () => {
     )
     const d = (day.rows[0] as { d: string }).d
     // The far end is INCLUSIVE: a window of one day contains that whole day.
-    expect((await review(ctx, `?from=${d}&to=${d}`)).projects).toHaveLength(1)
-    expect((await review(ctx, `?from=${d}&to=${d}`)).from).toBe(d)
+    expect((await review(ctx, `&from=${d}&to=${d}`)).projects).toHaveLength(1)
+    expect((await review(ctx, `&from=${d}&to=${d}`)).from).toBe(d)
     // And a window that ends the day before does not.
     const before = await ctx.db.execute(
       sql`select ((now() - interval '11 days') at time zone 'UTC')::date::text as d`,
     )
     const b = (before.rows[0] as { d: string }).d
-    expect((await review(ctx, `?from=${b}&to=${b}`)).projects).toEqual([])
+    expect((await review(ctx, `&from=${b}&to=${b}`)).projects).toEqual([])
   })
 
   it('reports the window even when nothing happened in it', async () => {

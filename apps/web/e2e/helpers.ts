@@ -389,7 +389,7 @@ export async function openDetail(page: Page, title: string): Promise<void> {
 
 /** What the server reports for the Movement panel and the project banner, in its own words. */
 export async function movementOf(page: Page): Promise<ProjectMovementResponse[]> {
-  const res = await page.request.get('/api/v1/tasks/movement')
+  const res = await page.request.get('/api/v1/tasks?view=movement')
   return ((await res.json()) as { projects: ProjectMovementResponse[] }).projects
 }
 

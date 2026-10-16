@@ -47,7 +47,7 @@ type Row = {
 async function view(ctx: Harness) {
   const res = await ctx.app.inject({
     method: 'GET',
-    url: '/api/v1/people/birthdays',
+    url: '/api/v1/people?view=birthdays',
     headers: ctx.authed,
   })
   expect(res.statusCode, res.body).toBe(200)
@@ -141,7 +141,7 @@ describe('GET /people/birthdays', () => {
 
   it('requires a session', async () => {
     const ctx = await setup()
-    const res = await ctx.app.inject({ method: 'GET', url: '/api/v1/people/birthdays' })
+    const res = await ctx.app.inject({ method: 'GET', url: '/api/v1/people?view=birthdays' })
     expect(res.statusCode).toBe(401)
   })
 })
@@ -159,7 +159,7 @@ type Entry = {
 async function entries(ctx: Harness, from: string, to: string): Promise<Entry[]> {
   const res = await ctx.app.inject({
     method: 'GET',
-    url: `/api/v1/people/calendar?from=${from}&to=${to}`,
+    url: `/api/v1/people?view=calendar&from=${from}&to=${to}`,
     headers: ctx.authed,
   })
   expect(res.statusCode, res.body).toBe(200)
@@ -205,11 +205,11 @@ describe('GET /people/calendar', () => {
   })
 })
 
-describe('GET /people/birthdays/preview', () => {
+describe('GET /people/birthday-preview', () => {
   const preview = (ctx: Harness, query: string) =>
     ctx.app.inject({
       method: 'GET',
-      url: `/api/v1/people/birthdays/preview?${query}`,
+      url: `/api/v1/people/birthday-preview?${query}`,
       headers: ctx.authed,
     })
 
@@ -263,7 +263,7 @@ describe('GET /people/birthdays/preview', () => {
     const ctx = await setup()
     const res = await ctx.app.inject({
       method: 'GET',
-      url: '/api/v1/people/birthdays/preview?calendar=solar&month=4&day=15',
+      url: '/api/v1/people/birthday-preview?calendar=solar&month=4&day=15',
     })
     expect(res.statusCode).toBe(401)
   })
@@ -280,7 +280,7 @@ describe('a moved birthday', () => {
     const born: Birthday = { calendar: 'lunar', year: 2017, month: 6, day: 15, leapMonth: true }
     const moved = await ctx.app.inject({
       method: 'GET',
-      url: '/api/v1/people/birthdays/preview?calendar=lunar&year=2017&month=6&day=15&leap=true',
+      url: '/api/v1/people/birthday-preview?calendar=lunar&year=2017&month=6&day=15&leap=true',
       headers: ctx.authed,
     })
     expect(moved.statusCode, moved.body).toBe(200)
@@ -289,7 +289,7 @@ describe('a moved birthday', () => {
     // April 15 exists every year, so this half is null in any year.
     const still = await ctx.app.inject({
       method: 'GET',
-      url: '/api/v1/people/birthdays/preview?calendar=solar&year=1996&month=4&day=15',
+      url: '/api/v1/people/birthday-preview?calendar=solar&year=1996&month=4&day=15',
       headers: ctx.authed,
     })
     expect(still.json().next.keptNote).toBeNull()
@@ -349,7 +349,7 @@ describe('a lunar day that never happened', () => {
   const preview = (ctx: Harness, query: string) =>
     ctx.app.inject({
       method: 'GET',
-      url: `/api/v1/people/birthdays/preview?${query}`,
+      url: `/api/v1/people/birthday-preview?${query}`,
       headers: ctx.authed,
     })
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { calendarQuery } from './calendar'
+import { calendarQuery, calendarView } from './calendar'
 import { reviewQuery } from './task'
 import { meetingId } from './id'
 import { createMeetingBody, occurrenceKey, parseOccurrenceKey } from './meeting'
@@ -63,14 +63,20 @@ describe('windows', () => {
   })
 
   it('bounds the review window the SAME way, not its own way', () => {
+    const ok = { from: '2026-10-01', to: '2026-10-31' }
     for (const q of [
       { from: '9000-10-01', to: '9000-11-15' },
       { from: '2026-01-01', to: '3026-01-01' },
       { from: '2026-11-01', to: '2026-10-01' },
     ]) {
       expect(calendarQuery.safeParse(q).success, JSON.stringify(q)).toBe(false)
-      expect(reviewQuery.safeParse(q).success, JSON.stringify(q)).toBe(false)
+      expect(reviewQuery.safeParse({ view: 'review', ...q }).success, JSON.stringify(q)).toBe(false)
+      expect(calendarView.safeParse({ view: 'calendar', ...q }).success, JSON.stringify(q)).toBe(
+        false,
+      )
     }
+    expect(reviewQuery.safeParse({ view: 'review', from: '2026-10-01' }).success).toBe(true)
+    expect(calendarView.safeParse({ view: 'calendar', ...ok }).success).toBe(true)
   })
 
   it('refuses a window nobody is looking at, however narrow', () => {
