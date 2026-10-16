@@ -77,6 +77,7 @@ export function Shortcuts({
       forget()
     }
     // Deliberately narrow: re-running between `g` and its second key would forget the chord.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- setSearch is the parent's state setter.
   }, [enabled, navigate, qc, registry])
 
   return (

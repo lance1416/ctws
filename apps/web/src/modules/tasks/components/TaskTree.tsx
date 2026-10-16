@@ -202,6 +202,7 @@ export function TaskTree({ projectId }: { projectId: string }) {
   // And it unmounts without onClose. Nobody took that step, so the address is put right in place.
   useEffect(() => {
     if (openId && tasks.isSuccess && !openTask) setOpenId(null, { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- setOpenId is new each render; this reacts to the data.
   }, [openId, openTask, tasks.isSuccess])
 
   return (

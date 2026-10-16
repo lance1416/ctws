@@ -83,7 +83,7 @@ export function BirthdayEditor({
     if (reported.current === key) return
     reported.current = key
     report.current(draft, refused)
-    // The draft is a new object every render; what it is made of is what this listens to.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the draft is a new object every render; its parts are the deps.
   }, [calendar, draft.year, month, day, draft.leapMonth, hourBranch, lead, refused])
 
   return (

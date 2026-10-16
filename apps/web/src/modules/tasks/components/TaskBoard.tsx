@@ -121,6 +121,7 @@ export function TaskBoard({ projectId }: { projectId: string }) {
   })
   useEffect(() => {
     if (openId && tasks.isSuccess && !openTask) setOpenId(null, { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- setOpenId is new each render; this reacts to the data.
   }, [openId, openTask, tasks.isSuccess])
   const closeDetail = () => {
     const id = openId

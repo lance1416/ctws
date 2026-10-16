@@ -52,7 +52,7 @@ export function useFocusAfterRemoval({
     if (!open) return
     expect(open)
     return () => drop(open)
-    // `expect` and `drop` only touch the ref: the pane opening and closing is what this is about.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- expect and drop only touch the ref; this is about the pane opening.
   }, [open])
 
   return { expect, drop }

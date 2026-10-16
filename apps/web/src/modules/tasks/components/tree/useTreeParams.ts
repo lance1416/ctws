@@ -47,7 +47,7 @@ export function useTreeParams({
       },
       { replace: true },
     )
-    // Not the handlers, which are new each render: the effect is about the parameter and the data.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- not the handlers, new each render: this is about the parameter and data.
   }, [reveal, tasks, showDone, setParams, forget])
 
   // The row exists only once the unfold has rendered, so focus waits for that render.

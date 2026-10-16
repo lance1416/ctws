@@ -116,6 +116,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
   useEffect(() => setActive(0), [typing])
   useEffect(() => {
     document.getElementById(optionId(at))?.scrollIntoView({ block: 'nearest' })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- optionId is fixed by useId; only a move of the selection scrolls.
   }, [at])
 
   const choose = (row: Row) => {
