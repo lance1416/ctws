@@ -106,3 +106,51 @@ for (const where of ['Today', 'Done'] as const) {
     await expect(pane.getByRole('textbox', { name: 'Title' })).toHaveValue('First task, renamed')
   })
 }
+
+const newDialogs: [string, string, (page: Page) => Promise<unknown>][] = [
+  [
+    'New task',
+    'Title',
+    async (page) => {
+      const pid = await makeProject(page, 'P')
+      await page.goto(`/projects/${pid}`)
+      await page.getByRole('button', { name: 'New…', exact: true }).click()
+    },
+  ],
+  [
+    'New meeting',
+    'Title',
+    async (page) => {
+      await page.goto('/meetings')
+      await page.getByRole('button', { name: 'New meeting' }).click()
+    },
+  ],
+  [
+    'New person',
+    'Name',
+    async (page) => {
+      await page.goto('/people')
+      await page.getByRole('main').getByRole('button', { name: 'New person', exact: true }).click()
+    },
+  ],
+]
+
+for (const [name, field, open] of newDialogs) {
+  test(`Escape and the scrim on a typed-in ${name} dialog ask first`, async ({ page }) => {
+    await registerFreshUser(page)
+    await open(page)
+    const dialog = page.getByRole('dialog', { name })
+    const box = dialog.getByLabel(field, { exact: true })
+    await box.fill('Half typed')
+
+    await box.press('Escape')
+    await expect(asked(dialog)).toBeVisible()
+    await dialog.getByRole('button', { name: 'Keep editing' }).click()
+    await expect(box).toHaveValue('Half typed')
+
+    await page.mouse.click(5, 5)
+    await expect(asked(dialog)).toBeVisible()
+    await dialog.getByRole('button', { name: 'Discard changes' }).click()
+    await expect(dialog).toHaveCount(0)
+  })
+}

@@ -148,7 +148,9 @@ test('Escape closes the dialog and hands focus back to whatever opened it', asyn
 
   await openButton(page).click()
   await titleField(page).fill('不会被创建')
+  // A typed title is asked about first; Discard is the way out.
   await page.keyboard.press('Escape')
+  await dialog(page).getByRole('button', { name: 'Discard changes' }).click()
   await expect(dialog(page)).toHaveCount(0)
   await expect(openButton(page)).toBeFocused()
   expect(writes).toEqual([])

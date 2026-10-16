@@ -48,7 +48,13 @@ export function NewPersonDialog({
   })
 
   return (
-    <Modal title="New person" onClose={onClose} initialFocus={nameField} dismissLabel={null}>
+    <Modal
+      title="New person"
+      onClose={onClose}
+      unsaved={(values.name.trim() !== '' || address.value.trim() !== '') && !make.isPending}
+      initialFocus={nameField}
+      dismissLabel={null}
+    >
       <form
         onSubmit={(e) => void submit(e)}
         {...composing.bind}

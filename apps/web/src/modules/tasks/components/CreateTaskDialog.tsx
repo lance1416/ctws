@@ -63,6 +63,7 @@ export function CreateTaskDialog({
   const parentId = watch('parentId')
   const scheduledOn = watch('scheduledOn')
   const dueAt = watch('dueAt')
+  const typed = watch('title').trim() !== '' || (watch('notes') ?? '').trim() !== ''
 
   const projects = useEveryProject()
   const tasks = useQuery(projectTasksQuery(project))
@@ -104,6 +105,7 @@ export function CreateTaskDialog({
     <Modal
       title="New task"
       onClose={onClose}
+      unsaved={typed && !create.isPending}
       initialFocus={titleField}
       // The footer already carries Cancel.
       dismissLabel={null}

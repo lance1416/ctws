@@ -57,6 +57,7 @@ export function NewMeetingDialog({
     <Modal
       title="New meeting"
       onClose={onClose}
+      unsaved={values.title.trim() !== '' && !make.isPending}
       initialFocus={titleField}
       // The footer carries Cancel, so the header has no second dismiss.
       dismissLabel={null}
