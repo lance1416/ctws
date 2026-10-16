@@ -150,14 +150,14 @@ describe('reading list', () => {
     expect((await list(ctx, '?unfiled=true')).map((i) => i.title)).toEqual(['留下来的书'])
   })
 
-  it('refuses the fields of the other kind on a patch, as a conflict and not a crash', async () => {
+  it('refuses the fields of the other kind on a patch, as unprocessable and not a crash', async () => {
     const ctx = await setup()
     const book = await added(ctx, { kind: 'book', title: '一本书' })
     const link = await added(ctx, { kind: 'link', url: 'https://x.test/b' })
-    expect((await patch(ctx, book.id, { url: 'https://x.test/c' })).statusCode).toBe(409)
-    expect((await patch(ctx, link.id, { author: '某人' })).statusCode).toBe(409)
+    expect((await patch(ctx, book.id, { url: 'https://x.test/c' })).statusCode).toBe(422)
+    expect((await patch(ctx, link.id, { author: '某人' })).statusCode).toBe(422)
     // A book with no title is not a book; a link without one falls back to its host.
-    expect((await patch(ctx, book.id, { title: null })).statusCode).toBe(409)
+    expect((await patch(ctx, book.id, { title: null })).statusCode).toBe(422)
     expect((await patch(ctx, link.id, { title: null })).statusCode).toBe(200)
   })
 

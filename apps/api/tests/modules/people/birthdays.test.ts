@@ -356,7 +356,7 @@ describe('a lunar day that never happened', () => {
   it('refuses the 30th of a 29-day month on create, saying why', async () => {
     const ctx = await setup()
     const res = await post(ctx, { calendar: 'lunar', year: 2021, month: 1, day: 30 })
-    expect(res.statusCode, res.body).toBe(400)
+    expect(res.statusCode, res.body).toBe(422)
     expect(res.json().detail).toBe('正月 has 29 days in 2021, so there is no 三十.')
   })
 
@@ -369,14 +369,14 @@ describe('a lunar day that never happened', () => {
       day: 15,
       leapMonth: true,
     })
-    expect(res.statusCode, res.body).toBe(400)
+    expect(res.statusCode, res.body).toBe(422)
     expect(res.json().detail).toBe('There was no 闰六月 in 2018.')
   })
 
   it('refuses February 29 in a common year on create', async () => {
     const ctx = await setup()
     const res = await post(ctx, { calendar: 'solar', year: 2001, month: 2, day: 29 })
-    expect(res.statusCode, res.body).toBe(400)
+    expect(res.statusCode, res.body).toBe(422)
     expect(res.json().detail).toBe('February has 28 days in 2001, so there is no 29th.')
   })
 
@@ -390,14 +390,14 @@ describe('a lunar day that never happened', () => {
       headers: web(ctx),
       payload: { birthday: { calendar: 'lunar', year: 2021, month: 1, day: 30 } },
     })
-    expect(res.statusCode, res.body).toBe(400)
+    expect(res.statusCode, res.body).toBe(422)
     expect(res.json().detail).toBe('正月 has 29 days in 2021, so there is no 三十.')
   })
 
   it('refuses it in the preview too, before anything is saved', async () => {
     const ctx = await setup()
     const res = await preview(ctx, 'calendar=lunar&year=2021&month=1&day=30')
-    expect(res.statusCode, res.body).toBe(400)
+    expect(res.statusCode, res.body).toBe(422)
     expect(res.json().detail).toBe('正月 has 29 days in 2021, so there is no 三十.')
   })
 

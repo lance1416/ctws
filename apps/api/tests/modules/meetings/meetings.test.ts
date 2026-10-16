@@ -261,7 +261,7 @@ describe('editing one occurrence', () => {
       recurrenceId: '2026-10-27T09:00',
       title: '只改这次的标题',
     })
-    expect(res.statusCode).toBe(409)
+    expect(res.statusCode).toBe(422)
   })
 
   it('refuses a recurrence id the rule never produced', async () => {

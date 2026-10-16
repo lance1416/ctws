@@ -10,7 +10,7 @@ export class BadRuleError extends DomainError {
 /** Only the time and the length of one occurrence may differ from its series. */
 export class OneOccurrenceLimitError extends DomainError {
   constructor() {
-    super('conflict', {
+    super('unprocessable', {
       detail: 'Only the time or the length of a single occurrence can differ from its series',
     })
   }

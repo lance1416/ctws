@@ -66,10 +66,12 @@ export function BirthdayEditor({
     enabled: yearOk,
   })
 
-  // A 400 says the day does not exist, so Save would fail too; a preview that merely failed to
+  // A 400 or 422 says the day cannot be, so Save would fail too; a preview that merely failed to
   // arrive must not lock the form.
   const refused =
-    preview.isError && preview.error instanceof ApiError && preview.error.status === 400
+    preview.isError &&
+    preview.error instanceof ApiError &&
+    (preview.error.status === 400 || preview.error.status === 422)
 
   const report = useRef(onChange)
   report.current = onChange

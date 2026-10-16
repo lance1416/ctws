@@ -49,15 +49,17 @@ describe('every refusal sends exactly what it declares', () => {
     [new InboxProtectedError(), conflict('The inbox cannot be removed')],
     [
       new OneOccurrenceLimitError(),
-      conflict('Only the time or the length of a single occurrence can differ from its series'),
+      unprocessable(
+        'Only the time or the length of a single occurrence can differ from its series',
+      ),
     ],
-    [new WrongKindError('url', 'book'), conflict('A book has no url')],
+    [new WrongKindError('url', 'book'), unprocessable('A book has no url')],
     [new BothNeighboursError(), invalid('Give at most one of beforeId and afterId')],
     [
       new InvalidNeighbourError(),
-      invalid('The neighbour is not a live sibling at the destination'),
+      unprocessable('The neighbour is not a live sibling at the destination'),
     ],
-    [new ImpossibleBirthdayError('y'), invalid('y')],
+    [new ImpossibleBirthdayError('y'), unprocessable('y')],
     [new BadRuleError(), unprocessable('That repeat rule schedules nothing')],
     [new EmailTakenError(), named(409, 'email-taken', 'That email is already registered')],
     [new RegistrationClosedError(), named(403, 'registration-closed', 'Registration is closed')],

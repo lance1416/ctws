@@ -429,7 +429,7 @@ describe('POST /tasks/:id/move', () => {
     expect(res.headers['content-type']).toContain('application/problem+json')
   })
 
-  it('400s a neighbour that is not a live sibling under the destination parent', async () => {
+  it('422s a neighbour that is not a live sibling under the destination parent', async () => {
     const ctx = await setup()
     const p = await createProject(ctx, 'p')
     const other = await createProject(ctx, 'other')
@@ -440,23 +440,23 @@ describe('POST /tasks/:id/move', () => {
 
     // Right project, wrong parent.
     expect((await move(ctx, a, { projectId: p, parentId: null, afterId: child })).statusCode).toBe(
-      400,
+      422,
     )
     // Right parent (root), wrong project.
     expect(
       (await move(ctx, a, { projectId: p, parentId: null, afterId: elsewhere })).statusCode,
-    ).toBe(400)
+    ).toBe(422)
     // Does not exist at all.
     expect(
       (await move(ctx, a, { projectId: p, parentId: null, afterId: randomUUID() })).statusCode,
-    ).toBe(400)
+    ).toBe(422)
     // The moved task is not its own neighbour.
-    expect((await move(ctx, a, { projectId: p, parentId: null, afterId: a })).statusCode).toBe(400)
+    expect((await move(ctx, a, { projectId: p, parentId: null, afterId: a })).statusCode).toBe(422)
 
     expect((await tasksOf(ctx, p)).find((t) => t.id === a)!.parentId).toBeNull()
   })
 
-  it('400s a soft-deleted neighbour', async () => {
+  it('422s a soft-deleted neighbour', async () => {
     const ctx = await setup()
     const p = await createProject(ctx, 'p')
     const a = await createTask(ctx, p, 'a')
@@ -464,7 +464,7 @@ describe('POST /tasks/:id/move', () => {
     await ctx.app.inject({ method: 'DELETE', url: `/api/v1/tasks/${gone}`, headers: ctx.authed })
 
     const res = await move(ctx, a, { projectId: p, parentId: null, beforeId: gone })
-    expect(res.statusCode).toBe(400)
+    expect(res.statusCode).toBe(422)
   })
 
   it('places the task after afterId', async () => {

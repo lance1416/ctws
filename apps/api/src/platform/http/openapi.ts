@@ -22,7 +22,7 @@ const refusal = (description: string) => ({
 /**
  * Adds the refusals every operation can meet, derived from how the route is registered: 400 when
  * it takes input, 401 when it sits in the authenticated scope (it declares `security`), 429 when
- * it is rate limited. 404 and 409 depend on the handler and are not derived.
+ * it is rate limited. 404, 409 and 422 depend on the handler and are not derived.
  */
 export function documentRefusals<T extends object>(spec: T): T {
   const doc = spec as T & Spec

@@ -33,7 +33,7 @@ export class BothNeighboursError extends DomainError {
 /** A neighbour that is not a live sibling at the destination. */
 export class InvalidNeighbourError extends DomainError {
   constructor() {
-    super('invalid', {
+    super('unprocessable', {
       detail: 'The neighbour is not a live sibling at the destination',
     })
   }
