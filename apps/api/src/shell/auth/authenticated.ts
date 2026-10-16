@@ -1,7 +1,6 @@
 import { type Role, type UserId, type WorkspaceId } from '@ctws/contracts'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import type { Actor } from '../../platform/db/scope'
-import { AdminRequiredError } from '../admin/errors'
 import { SESSION_COOKIE, setSessionCookie } from './cookie'
 import { SessionRequiredError } from './errors'
 import { getAuthContext } from './service'
@@ -31,13 +30,6 @@ export function authenticated(scope: FastifyInstance): void {
     // The browser drops the cookie at its own expiry, so it slides with the session.
     if (session.renewedUntil) setSessionCookie(reply, scope.env, token, session.renewedUntil)
     req.user = { id: session.userId, ...context }
-  })
-}
-
-/** Nested inside an `authenticated` scope: admin accounts only. */
-export function adminOnly(scope: FastifyInstance): void {
-  scope.addHook('onRequest', async (req) => {
-    if (currentUser(req).role !== 'admin') throw new AdminRequiredError()
   })
 }
 

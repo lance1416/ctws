@@ -5,10 +5,19 @@ import {
   adminUserListResponse,
   userParams,
 } from '@ctws/contracts'
+import type { FastifyInstance } from 'fastify'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
-import { adminOnly } from '../auth/authenticated'
+import { currentUser } from '../auth/authenticated'
 import { registerUser } from '../auth/service'
+import { AdminRequiredError } from './errors'
 import { getAdminUser, listUsers, updateUser } from './service'
+
+/** Nested inside an `authenticated` scope: admin accounts only. */
+function adminOnly(scope: FastifyInstance): void {
+  scope.addHook('onRequest', async (req) => {
+    if (currentUser(req).role !== 'admin') throw new AdminRequiredError()
+  })
+}
 
 // Account management only. Nothing here reads or writes workspace content: an instance admin
 // administers accounts, it does not gain access to other users' data.
