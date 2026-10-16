@@ -81,3 +81,20 @@ export function useUnsavedGuard(dirty: boolean, onLeave: () => void): UnsavedGua
     },
   }
 }
+
+/**
+ * For a form that keeps its fields in state: tells `report` whether they differ from what they
+ * were when it opened. A save in flight loses nothing, so it reports false; so does closing it.
+ */
+export function useReportUnsaved(
+  values: unknown,
+  busy: boolean,
+  report: ((unsaved: boolean) => void) | undefined,
+): void {
+  const [opened] = useState(() => JSON.stringify(values))
+  const unsaved = !busy && JSON.stringify(values) !== opened
+  const latest = useRef(report)
+  latest.current = report
+  useEffect(() => latest.current?.(unsaved), [unsaved])
+  useEffect(() => () => latest.current?.(false), [])
+}

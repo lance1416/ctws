@@ -1,6 +1,6 @@
 import type { ReadingItemResponse, ReadingStatus } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { problemText } from '../../../platform/http/api'
 import { deleteReadingItem, patchReadingItem } from '../api'
 import { readingLabel, recentEntry } from '../item'
@@ -12,6 +12,8 @@ import { useTimeZone } from '../../../shell/auth/useMe'
 import { BUTTON } from '../../../platform/ui/buttonStyles'
 import { DangerAction, DangerZone } from '../../../platform/ui/DangerZone'
 import { DetailPane } from '../../../platform/ui/DetailPane'
+import { UnsavedAsk } from '../../../platform/ui/UnsavedAsk'
+import { useReportUnsaved, useUnsavedGuard } from '../../../platform/ui/unsavedGuard'
 import { BackHead } from '../../../shell/detail/BackHead'
 import { FormBar } from '../../../shell/detail/FormBar'
 import { Field } from '../../../platform/ui/Field'
@@ -49,9 +51,18 @@ export function ReadingDetail({
   onClose: () => void
 }) {
   useRecordRecent(recentEntry(item))
+  // Escape, the scrim and the close button ask first when the form has unsaved changes.
+  const [unsaved, setUnsaved] = useState(false)
+  const guard = useUnsavedGuard(unsaved, onClose)
+  const requestClose = () => guard.leave(onClose)
   return (
-    <DetailPane label="Reading" onClose={onClose}>
-      <ReadingFields item={item} onClose={onClose} />
+    <DetailPane label="Reading" onClose={requestClose}>
+      <ReadingFields
+        item={item}
+        onClose={requestClose}
+        ask={<UnsavedAsk guard={guard} />}
+        onUnsaved={setUnsaved}
+      />
 
       <LinkedSection of={{ type: 'reading', id: item.id }} className="mt-4" />
 
@@ -62,7 +73,18 @@ export function ReadingDetail({
   )
 }
 
-function ReadingFields({ item, onClose }: { item: ReadingItemResponse; onClose: () => void }) {
+function ReadingFields({
+  item,
+  onClose,
+  ask,
+  onUnsaved,
+}: {
+  item: ReadingItemResponse
+  onClose: () => void
+  /** The leave guard's question, drawn under the head. */
+  ask: ReactNode
+  onUnsaved: (unsaved: boolean) => void
+}) {
   const [editing, setEditing] = useState(false)
   const timeZone = useTimeZone()
   const today = todayIn(timeZone, useNow())
@@ -79,6 +101,7 @@ function ReadingFields({ item, onClose }: { item: ReadingItemResponse; onClose: 
     return (
       <div className="flex flex-col gap-4">
         {head}
+        {ask}
         <ReadingForm
           item={item}
           busy={save.isPending}
@@ -88,6 +111,7 @@ function ReadingFields({ item, onClose }: { item: ReadingItemResponse; onClose: 
             setEditing(false)
           }}
           onSave={(patch) => save.mutate(patch, { onSuccess: () => setEditing(false) })}
+          onUnsaved={onUnsaved}
         />
       </div>
     )
@@ -159,6 +183,7 @@ function ReadingForm({
   error,
   onCancel,
   onSave,
+  onUnsaved,
 }: {
   item: ReadingItemResponse
   busy: boolean
@@ -166,6 +191,8 @@ function ReadingForm({
   error: string | null
   onCancel: () => void
   onSave: (patch: Parameters<typeof patchReadingItem>[1]) => void
+  /** Whether anything differs from what the form opened on, for the pane's leave guard. */
+  onUnsaved: (unsaved: boolean) => void
 }) {
   const [title, setTitle] = useState(item.title ?? '')
   const [url, setUrl] = useState(item.url ?? '')
@@ -176,6 +203,7 @@ function ReadingForm({
   const timeZone = useTimeZone()
   const today = todayIn(timeZone, useNow())
   const composing = useComposing()
+  useReportUnsaved([title, url, author, status, planOn, projectId], busy, onUnsaved)
 
   const submit = () => {
     // A link's title can be cleared, and it goes back to showing its address; a book without a

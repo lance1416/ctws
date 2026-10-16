@@ -6,6 +6,7 @@ import { BUTTON } from '../../../platform/ui/buttonStyles'
 import { Field } from '../../../platform/ui/Field'
 import { field, label } from '../../../platform/ui/formStyles'
 import { PickOne } from '../../../platform/ui/inline'
+import { useReportUnsaved } from '../../../platform/ui/unsavedGuard'
 import { PickCity } from '../../../shell/cities/PickCity'
 import { FormBar } from '../../../shell/detail/FormBar'
 import { ProjectsPicker } from '../../../shell/projects/ProjectPicker'
@@ -26,6 +27,7 @@ export function PersonForm({
   error,
   onCancel,
   onSave,
+  onUnsaved,
 }: {
   person: PersonResponse
   busy: boolean
@@ -33,6 +35,8 @@ export function PersonForm({
   error: string | null
   onCancel: () => void
   onSave: (patch: Parameters<typeof patchPerson>[1]) => void
+  /** Whether anything differs from what the form opened on, for the pane's leave guard. */
+  onUnsaved?: (unsaved: boolean) => void
 }) {
   const [name, setName] = useState(person.name)
   const [org, setOrg] = useState(person.org ?? '')
@@ -51,6 +55,23 @@ export function PersonForm({
   // The server has said the day does not exist: Save would only get a 400.
   const [badDay, setBadDay] = useState(false)
   const composing = useComposing()
+  useReportUnsaved(
+    [
+      name,
+      org,
+      title,
+      hometown,
+      city,
+      gender,
+      circle,
+      projectIds,
+      channels.toSave(),
+      note,
+      birthday,
+    ],
+    busy,
+    onUnsaved,
+  )
   // Untouched, the button shows the saved birthday.
   const dayText =
     birthday === undefined

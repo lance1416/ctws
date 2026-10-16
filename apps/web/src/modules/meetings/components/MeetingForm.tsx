@@ -5,6 +5,7 @@ import { todayIn } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { Field } from '../../../platform/ui/Field'
 import { boxed, field, label } from '../../../platform/ui/formStyles'
+import { useReportUnsaved } from '../../../platform/ui/unsavedGuard'
 import { FormBar } from '../../../shell/detail/FormBar'
 import { ProjectPicker } from '../../../shell/projects/ProjectPicker'
 import { untilOf, withUntil } from '../api'
@@ -23,6 +24,7 @@ export function MeetingForm({
   busy,
   onCancel,
   onSave,
+  onUnsaved,
 }: {
   meeting: MeetingOccurrence
   /** The reader's own zone, for wording the ending's date. */
@@ -30,6 +32,8 @@ export function MeetingForm({
   busy: boolean
   onCancel: () => void
   onSave: (patch: UpdateMeetingInput) => void
+  /** Whether anything differs from what the form opened on, for the pane's leave guard. */
+  onUnsaved?: (unsaved: boolean) => void
 }) {
   const today = todayIn(accountZone, useNow())
   const [title, setTitle] = useState(meeting.title)
@@ -45,6 +49,22 @@ export function MeetingForm({
   const [attendeeIds, setAttendees] = useState(meeting.attendees.map((p) => p.id))
   const [note, setNote] = useState(meeting.note ?? '')
   const composing = useComposing()
+  useReportUnsaved(
+    [
+      title,
+      startsLocal,
+      timeZone,
+      durationMinutes,
+      rule,
+      until,
+      location,
+      projectId,
+      attendeeIds,
+      note,
+    ],
+    busy,
+    onUnsaved,
+  )
 
   const submit = () => {
     if (busy || title.trim() === '' || startsLocal === '') return

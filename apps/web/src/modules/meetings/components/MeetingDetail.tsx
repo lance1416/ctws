@@ -2,6 +2,8 @@ import type { MeetingOccurrence } from '@ctws/contracts'
 import { useState } from 'react'
 import { DangerZone } from '../../../platform/ui/DangerZone'
 import { DetailPane } from '../../../platform/ui/DetailPane'
+import { UnsavedAsk } from '../../../platform/ui/UnsavedAsk'
+import { useUnsavedGuard } from '../../../platform/ui/unsavedGuard'
 import { BackHead } from '../../../shell/detail/BackHead'
 import { LinkedSection } from '../../../shell/links/Links'
 import { useRecordRecent } from '../../../shell/search/recent'
@@ -37,17 +39,22 @@ export function MeetingDetail({
     setEditing(false)
     if (moved) onMoved(moved)
   })
+  // Escape, the scrim and the close button ask first when the form has unsaved changes.
+  const [unsaved, setUnsaved] = useState(false)
+  const guard = useUnsavedGuard(unsaved, onClose)
+  const requestClose = () => guard.leave(onClose)
 
   return (
-    <DetailPane label="Meetings" onClose={onClose}>
+    <DetailPane label="Meetings" onClose={requestClose}>
       <div className="flex flex-col gap-4">
         <BackHead
           to="/meetings"
           label="Meetings"
-          onClose={onClose}
+          onClose={requestClose}
           note={meeting.overridden && <span className="text-xs text-ink-subtle">Edited</span>}
         />
 
+        <UnsavedAsk guard={guard} />
         {/* Above the form, beside the Save that raised it. */}
         {edit.asking && (
           <ScopeAsk
@@ -74,6 +81,7 @@ export function MeetingDetail({
               setEditing(false)
             }}
             onSave={edit.submit}
+            onUnsaved={setUnsaved}
           />
         ) : (
           <MeetingRead

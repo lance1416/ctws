@@ -377,6 +377,8 @@ test('switching people with an edit open shows the other person, not that edit',
   await pane.getByRole('button', { name: 'Edit', exact: true }).click()
   await pane.getByLabel('Name', { exact: true }).fill('Ann changed')
   await personLink(page, 'Bea Beta').click()
+  // The edit is unsaved, so leaving asks first, as a task's pane does.
+  await pane.getByRole('button', { name: 'Discard changes' }).click()
   await expect(pane.getByRole('heading', { name: 'Bea Beta' })).toBeVisible()
   await expect(pane.getByRole('form', { name: 'Edit person' })).toHaveCount(0)
 })

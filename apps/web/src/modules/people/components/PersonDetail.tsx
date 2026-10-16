@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { problemText } from '../../../platform/http/api'
 import { DangerAction, DangerZone } from '../../../platform/ui/DangerZone'
 import { DetailPane } from '../../../platform/ui/DetailPane'
+import { UnsavedAsk } from '../../../platform/ui/UnsavedAsk'
+import { useUnsavedGuard } from '../../../platform/ui/unsavedGuard'
 import { BackHead } from '../../../shell/detail/BackHead'
 import { useDestroy } from '../../../shell/detail/useDestroy'
 import { LinkedSection } from '../../../shell/links/Links'
@@ -26,11 +28,16 @@ export function PersonDetail({ person, onClose }: { person: PersonResponse; onCl
     mutationFn: (patch: Parameters<typeof patchPerson>[1]) => patchPerson(person.id, patch),
     meta: { awaits: [['people']] },
   })
+  // Escape, the scrim and the close button ask first when the form has unsaved changes.
+  const [unsaved, setUnsaved] = useState(false)
+  const guard = useUnsavedGuard(unsaved, onClose)
+  const requestClose = () => guard.leave(onClose)
 
   return (
-    <DetailPane label="People" onClose={onClose}>
+    <DetailPane label="People" onClose={requestClose}>
       <div className="flex flex-col gap-4">
-        <BackHead to="/people" label="People" onClose={onClose} />
+        <BackHead to="/people" label="People" onClose={requestClose} />
+        <UnsavedAsk guard={guard} />
         {editing ? (
           <PersonForm
             person={person}
@@ -41,6 +48,7 @@ export function PersonDetail({ person, onClose }: { person: PersonResponse; onCl
               setEditing(false)
             }}
             onSave={(patch) => save.mutate(patch, { onSuccess: () => setEditing(false) })}
+            onUnsaved={setUnsaved}
           />
         ) : (
           <PersonRead person={person} onEdit={() => setEditing(true)} />
