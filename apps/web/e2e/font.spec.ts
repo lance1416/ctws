@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { registerFreshUser, WEB } from './helpers'
+import { registerFreshUser, apiPost } from './helpers'
 
 /**
  * The self-hosted CJK webfont, and the caching that makes it a one-time cost.
@@ -80,12 +80,8 @@ test('Chinese is painted with the shipped subset, not a system fallback', async 
   await registerFreshUser(page)
   // The interface is in English; a project NAME carries the Chinese, because the font has to cover
   // what the person types.
-  const made = await page.request.post('/api/v1/projects', {
-    headers: WEB,
-    data: { name: '配色重做' },
-  })
-  expect(made.ok()).toBe(true)
-  await page.goto(`/projects/${(await made.json()).id}`)
+  const made = await apiPost(page, '/projects', { name: '配色重做' })
+  await page.goto(`/projects/${made.id}`)
   await fontReady(page)
   const heading = page.getByRole('heading', { level: 1, name: '配色重做' })
   await expect(heading).toBeVisible()

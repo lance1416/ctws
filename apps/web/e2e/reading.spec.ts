@@ -1,5 +1,14 @@
 import { expect, test, type Page } from '@playwright/test'
-import { holdFirstRead, makeReading, registerFreshUser, slowReads, WEB } from './helpers'
+import {
+  apiPost,
+  holdFirstRead,
+  makeProject,
+  makeReading,
+  makeTask,
+  registerFreshUser,
+  slowReads,
+  WEB,
+} from './helpers'
 
 /**
  * THE READING LIST -- THE SECOND MODULE, through the browser.
@@ -59,9 +68,9 @@ test('a book added while the list is still loading is on the list', async ({ pag
 
 test('an untitled link is listed by host and path', async ({ page }) => {
   await registerFreshUser(page)
-  await page.request.post('/api/v1/reading', {
-    headers: WEB,
-    data: { kind: 'link', url: 'https://www.linear.invalid/now/how-we-redesigned-issues' },
+  await apiPost(page, '/reading', {
+    kind: 'link',
+    url: 'https://www.linear.invalid/now/how-we-redesigned-issues',
   })
   await page.goto('/reading')
 
@@ -105,10 +114,9 @@ test('a book moves to read → reading → finished, and the finished pile folds
 
 test('the rail counts what is waiting, not the size of the pile', async ({ page }) => {
   await registerFreshUser(page)
-  const add = (data: Record<string, unknown>) =>
-    page.request.post('/api/v1/reading', { headers: WEB, data })
+  const add = (data: Record<string, unknown>) => apiPost(page, '/reading', data)
   await add({ kind: 'book', title: '要读的' })
-  const done = await (await add({ kind: 'book', title: '读过的' })).json()
+  const done = await add({ kind: 'book', title: '读过的' })
   await page.request.patch(`/api/v1/reading/${done.id}`, {
     headers: WEB,
     data: { status: 'done' },
@@ -125,14 +133,8 @@ test('search reaches both modules from one box', async ({ page }) => {
   await registerFreshUser(page)
   const projects = await (await page.request.get('/api/v1/projects', { headers: WEB })).json()
   const inbox = projects.projects.find((p: { isInbox: boolean }) => p.isInbox)
-  await page.request.post('/api/v1/tasks', {
-    headers: WEB,
-    data: { projectId: inbox.id, title: '配色重做', parentId: null },
-  })
-  await page.request.post('/api/v1/reading', {
-    headers: WEB,
-    data: { kind: 'book', title: '配色的书' },
-  })
+  await apiPost(page, '/tasks', { projectId: inbox.id, title: '配色重做', parentId: null })
+  await apiPost(page, '/reading', { kind: 'book', title: '配色的书' })
   await page.goto('/tasks/today')
 
   await page.getByRole('button', { name: 'Search' }).click()
@@ -146,19 +148,14 @@ test('a project page carries both modules, each with its own block and numbers',
   page,
 }) => {
   await registerFreshUser(page)
-  const project = await (
-    await page.request.post('/api/v1/projects', { headers: WEB, data: { name: 'CTWS' } })
-  ).json()
-  await page.request.post('/api/v1/tasks', {
-    headers: WEB,
-    data: { projectId: project.id, title: '配色重做', parentId: null },
-  })
+  const projectId = await makeProject(page, 'CTWS')
+  await makeTask(page, projectId, '配色重做')
   await makeReading(
     page,
     { kind: 'link', url: 'https://example.com/a' },
-    { title: '一篇相关的文章', projectId: project.id },
+    { title: '一篇相关的文章', projectId },
   )
-  await page.goto(`/projects/${project.id}`)
+  await page.goto(`/projects/${projectId}`)
 
   // The task module's block and the reading module's, side by side under one shell project.
   await expect(page.getByText('配色重做')).toBeVisible()
@@ -210,9 +207,9 @@ test('a reading item is deleted from the bottom of its layer, after one question
 
 test('a reading item is edited in its layer, not in a dropdown menu', async ({ page }) => {
   await registerFreshUser(page)
-  await page.request.post('/api/v1/reading', {
-    headers: WEB,
-    data: { kind: 'link', url: 'https://www.linear.invalid/now/how-we-redesigned-issues' },
+  await apiPost(page, '/reading', {
+    kind: 'link',
+    url: 'https://www.linear.invalid/now/how-we-redesigned-issues',
   })
   await page.goto('/reading')
 
@@ -231,11 +228,8 @@ test('a reading item is edited in its layer, not in a dropdown menu', async ({ p
 
 test('a reading edit the server refuses stays open and says why', async ({ page }) => {
   await registerFreshUser(page)
-  const made = await page.request.post('/api/v1/reading', {
-    headers: WEB,
-    data: { kind: 'book', title: 'Refused book' },
-  })
-  const id = ((await made.json()) as { id: string }).id
+  const made = await apiPost(page, '/reading', { kind: 'book', title: 'Refused book' })
+  const id = made.id
   await page.goto(`/reading/${id}`)
   const layer = page.getByRole('dialog', { name: 'Reading' })
   await layer.getByRole('button', { name: 'Edit', exact: true }).click()
@@ -269,11 +263,8 @@ test('the reading list hangs on the margin: the plan, the thread, then the item'
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await registerFreshUser(page)
-  const project = await page.request.post('/api/v1/projects', {
-    headers: WEB,
-    data: { name: 'CTWS' },
-  })
-  const projectId = ((await project.json()) as { id: string }).id
+  const project = await apiPost(page, '/projects', { name: 'CTWS' })
+  const projectId = project.id
   const id = await makeReading(
     page,
     { kind: 'book', title: 'The Elements of Typographic Style' },
@@ -286,10 +277,7 @@ test('the reading list hangs on the margin: the plan, the thread, then the item'
     data: { planOn },
   })
   expect(planned.ok(), await planned.text()).toBe(true)
-  await page.request.post('/api/v1/reading', {
-    headers: WEB,
-    data: { kind: 'book', title: 'Designing Data-Intensive Applications' },
-  })
+  await apiPost(page, '/reading', { kind: 'book', title: 'Designing Data-Intensive Applications' })
   await page.goto('/reading')
 
   const row = page.locator(`[data-reading-row="${id}"]`)

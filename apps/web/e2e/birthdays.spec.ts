@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dayOffset, MONTHS } from './days'
-import { pickOne, registerFreshUser, WEB } from './helpers'
+import { pickOne, registerFreshUser, WEB, apiPost } from './helpers'
 
 /**
  * Birthdays: the lens over the people who have one.
@@ -12,12 +12,12 @@ import { pickOne, registerFreshUser, WEB } from './helpers'
 
 /** Writes a person down, birthday and all. Returns their id. */
 async function person(page: Page, name: string, birthday?: unknown, circle?: string) {
-  const res = await page.request.post('/api/v1/people', {
-    headers: WEB,
-    data: { name, ...(birthday ? { birthday } : {}), ...(circle ? { circle } : {}) },
+  const res = await apiPost(page, '/people', {
+    name,
+    ...(birthday ? { birthday } : {}),
+    ...(circle ? { circle } : {}),
   })
-  expect(res.ok()).toBe(true)
-  return ((await res.json()) as { id: string }).id
+  return res.id
 }
 
 /** The month and day `n` days from today, in the runner's zone -- which is the account's. */

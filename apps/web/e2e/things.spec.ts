@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { TZDate } from '@date-fns/tz'
-import { accountZone, dayInZone, meetingToday, registerFreshUser, WEB } from './helpers'
+import { accountZone, dayInZone, meetingToday, registerFreshUser, WEB, apiPost } from './helpers'
 
 /**
  * THINGS: EVERY KIND OF THING IN ONE PLACE.
@@ -90,11 +90,10 @@ test('a kind with nothing in it is still listed', async ({ page }) => {
 
 test('each kind says how many, and what is current', async ({ page }) => {
   await registerFreshUser(page, '/things')
-  const res = await page.request.post('/api/v1/reading', {
-    headers: WEB,
-    data: { kind: 'book', title: 'The Elements of Typographic Style' },
+  await apiPost(page, '/reading', {
+    kind: 'book',
+    title: 'The Elements of Typographic Style',
   })
-  expect(res.status(), await res.text()).toBe(201)
   await page.reload()
   await expect(kind(page, 'Reading').locator('[data-count]')).toHaveText('1 to read')
   await expect(kind(page, 'Reading').locator('[data-status]')).toHaveText('1 not in a project')
@@ -114,14 +113,10 @@ test('People says whose birthday is next, as a countdown', async ({ page }) => {
   await registerFreshUser(page, '/things')
   const soon = new Date()
   soon.setDate(soon.getDate() + 3)
-  const res = await page.request.post('/api/v1/people', {
-    headers: WEB,
-    data: {
-      name: '妈妈',
-      birthday: { calendar: 'solar', month: soon.getMonth() + 1, day: soon.getDate() },
-    },
+  await apiPost(page, '/people', {
+    name: '妈妈',
+    birthday: { calendar: 'solar', month: soon.getMonth() + 1, day: soon.getDate() },
   })
-  expect(res.status(), await res.text()).toBe(201)
   await page.reload()
   await expect(kind(page, 'People').locator('[data-status]')).toHaveText(
     'Next birthday: 妈妈 in 3 days',
@@ -131,8 +126,7 @@ test('People says whose birthday is next, as a countdown', async ({ page }) => {
 test('People counts in its own words, as every other kind does', async ({ page }) => {
   await registerFreshUser(page, '/things')
   await expect(kind(page, 'People').locator('[data-count]')).toHaveText('0 people')
-  const res = await page.request.post('/api/v1/people', { headers: WEB, data: { name: '陈颖' } })
-  expect(res.status(), await res.text()).toBe(201)
+  await apiPost(page, '/people', { name: '陈颖' })
   await page.reload()
   await expect(kind(page, 'People').locator('[data-count]')).toHaveText('1 person')
 })
@@ -173,8 +167,8 @@ test('on a phone, where there is no keyboard to press them, no key hints show', 
 /** Projects says how many lines of work are live, and how many are set aside. */
 test('Projects counts the archived ones apart', async ({ page }) => {
   await registerFreshUser(page, '/things')
-  const made = await page.request.post('/api/v1/projects', { headers: WEB, data: { name: '旧的' } })
-  const { id } = (await made.json()) as { id: string }
+  const made = await apiPost(page, '/projects', { name: '旧的' })
+  const { id } = made
   const res = await page.request.patch(`/api/v1/projects/${id}`, {
     headers: WEB,
     data: { archived: true },

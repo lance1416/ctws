@@ -8,7 +8,7 @@ import {
   meetingToday,
   registerFreshUser,
   sidewaysScroll,
-  WEB,
+  apiPost,
 } from './helpers'
 import { dayOffset } from './days'
 
@@ -29,24 +29,21 @@ async function seed(page: Page) {
   // The widest margin words: a dated deadline with its flag, and a plan for tomorrow.
   await makeTask(page, pid, 'Far deadline', { dueAt: '2030-05-28T12:00:00Z' })
   await makeTask(page, pid, 'Done one', { status: 'done' })
-  await page.request.post('/api/v1/meetings', {
-    headers: WEB,
-    data: {
-      title: 'Second interview',
-      startsLocal: `${dayOffset(1)}T14:00`,
-      timeZone: zone,
-      durationMinutes: 60,
-      projectId: pid,
-    },
+  await apiPost(page, '/meetings', {
+    title: 'Second interview',
+    startsLocal: `${dayOffset(1)}T14:00`,
+    timeZone: zone,
+    durationMinutes: 60,
+    projectId: pid,
   })
   await makeReading(
     page,
     { kind: 'book', title: 'Cracking the Coding Interview' },
     { projectId: pid, planOn: dayOffset(1) },
   )
-  await page.request.post('/api/v1/people', {
-    headers: WEB,
-    data: { name: '陈颖', birthday: { calendar: 'solar', month: 5, day: 28 } },
+  await apiPost(page, '/people', {
+    name: '陈颖',
+    birthday: { calendar: 'solar', month: 5, day: 28 },
   })
 }
 

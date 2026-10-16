@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dayOffset, MONTHS } from './days'
-import { registerFreshUser, WEB } from './helpers'
+import { registerFreshUser, apiPost } from './helpers'
 
 /**
  * MEETINGS -- the fourth module, through the browser.
@@ -22,11 +22,8 @@ test.use({ timezoneId: 'Europe/London' })
 const square = (page: Page, day: string) => page.locator(`[data-day="${day}"]`)
 const pane = (page: Page) => page.getByRole('dialog', { name: 'Meetings' })
 
-async function arrange(page: Page, data: Record<string, unknown>) {
-  const res = await page.request.post('/api/v1/meetings', { headers: WEB, data })
-  expect(res.status(), await res.text()).toBe(201)
-  return res.json() as Promise<{ meetingId: string; recurrenceId: string }>
-}
+const arrange = (page: Page, data: Record<string, unknown>) =>
+  apiPost<{ meetingId: string; recurrenceId: string }>(page, '/meetings', data)
 
 const inLondon = (page: Page) => registerFreshUser(page, '/')
 
@@ -141,7 +138,7 @@ test('cancelling one week leaves the series alone', async ({ page }) => {
 
 test('the people in the room come out of the people module', async ({ page }) => {
   await inLondon(page)
-  await page.request.post('/api/v1/people', { headers: WEB, data: { name: '陈颖' } })
+  await apiPost(page, '/people', { name: '陈颖' })
   await arrange(page, { ...WEEKLY_IN_TORONTO, rrule: null })
   await page.goto('/calendar')
   await openOctober(page)

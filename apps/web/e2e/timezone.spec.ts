@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { editDetail, openProject, registerFreshUser, submitCreate, WEB } from './helpers'
+import { editDetail, openProject, registerFreshUser, submitCreate, WEB, apiPost } from './helpers'
 import { MONTHS } from './days'
 
 /**
@@ -158,15 +158,13 @@ test('a deadline inside the account day counts as today on another UTC date', as
   )!
   expect(utcDay(due), 'the instant must land on another UTC day').not.toBe(utcDay(new Date()))
 
-  const project = await page.request.post('/api/v1/projects', {
-    headers: WEB,
-    data: { name: 'Time zone' },
+  const project = await apiPost(page, '/projects', { name: 'Time zone' })
+  const made = await apiPost(page, '/tasks', {
+    projectId: project.id,
+    title: '今天之内截止',
+    parentId: null,
   })
-  const made = await page.request.post('/api/v1/tasks', {
-    headers: WEB,
-    data: { projectId: (await project.json()).id, title: '今天之内截止', parentId: null },
-  })
-  const patched = await page.request.patch(`/api/v1/tasks/${(await made.json()).id}`, {
+  const patched = await page.request.patch(`/api/v1/tasks/${made.id}`, {
     headers: WEB,
     data: { dueAt: due.toISOString() },
   })

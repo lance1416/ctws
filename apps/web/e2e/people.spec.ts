@@ -1,5 +1,12 @@
 import { expect, test, type Page } from '@playwright/test'
-import { holdFirstRead, makeProject, pickOne, registerFreshUser, slowReads, WEB } from './helpers'
+import {
+  holdFirstRead,
+  makeProject,
+  pickOne,
+  registerFreshUser,
+  slowReads,
+  apiPost,
+} from './helpers'
 import { MONTHS } from './days'
 
 /** People: a person has several ways to be reached, and each one is a link, not text to copy. */
@@ -11,12 +18,8 @@ const row = (page: Page, name: string) =>
 const personLink = (page: Page, name: string) =>
   page.locator('[data-person-row]').filter({ hasText: name }).getByRole('link')
 
-async function add(page: Page, data: Record<string, unknown>) {
-  const res = await page.request.post('/api/v1/people', { headers: WEB, data })
-  // Asserted, so a payload the contract refuses fails here and not as an empty list on the page.
-  expect(res.status(), await res.text()).toBe(201)
-  return res
-}
+/** A person made over the API; a payload the contract refuses fails here, not as an empty list. */
+const add = (page: Page, data: Record<string, unknown>) => apiPost(page, '/people', data)
 
 test('a person keeps several addresses, and each one is a link', async ({ page }) => {
   await registerFreshUser(page, '/people')
@@ -29,7 +32,7 @@ test('a person keeps several addresses, and each one is a link', async ({ page }
       { kind: 'url', value: 'github.com/ying' },
     ],
   })
-  const id = ((await made.json()) as { id: string }).id
+  const id = made.id
   await page.goto(`/people/${id}`)
 
   // In the person's sheet: the list row says who they are, and the sheet how to reach them.
@@ -93,7 +96,7 @@ test('a person is made by typing a name, and finished in the pane', async ({ pag
 test('an edit the server refuses stays open and says why', async ({ page }) => {
   await registerFreshUser(page, '/people')
   const made = await add(page, { name: 'Refused' })
-  const id = ((await made.json()) as { id: string }).id
+  const id = made.id
   await page.goto(`/people/${id}`)
   const pane = page.getByRole('dialog', { name: 'People' })
   await pane.getByRole('button', { name: 'Edit', exact: true }).click()
@@ -198,7 +201,11 @@ test('a person row hangs on the margin: next birthday, first project, then who t
   await registerFreshUser(page, '/')
   await page.setViewportSize({ width: 1440, height: 900 })
   const hunt = await makeProject(page, '找工作')
-  const made = await add(page, {
+  const ying = await apiPost<{
+    id: string
+    projects: { id: string }[]
+    birthday: { next: { day: string } }
+  }>(page, '/people', {
     name: '陈颖',
     title: 'Engineering manager',
     org: 'Acme',
@@ -206,11 +213,6 @@ test('a person row hangs on the margin: next birthday, first project, then who t
     projectIds: [hunt],
     birthday: { calendar: 'solar', month: 3, day: 9 },
   })
-  const ying = (await made.json()) as {
-    id: string
-    projects: { id: string }[]
-    birthday: { next: { day: string } }
-  }
   await add(page, { name: 'Lena Fischer', circle: 'friend' })
   await page.goto('/people')
 
@@ -399,11 +401,8 @@ test('a person is written down properly in one form, not created then edited', a
   // A name alone is rarely all you know. The one-line box stays for the moment it is; this is
   // the other moment, and it must not mean create-then-open-to-edit.
   await registerFreshUser(page, '/people')
-  const hunt = await page.request.post('/api/v1/projects', {
-    headers: WEB,
-    data: { name: 'Job hunt' },
-  })
-  const projectId = ((await hunt.json()) as { id: string }).id
+  const hunt = await apiPost(page, '/projects', { name: 'Job hunt' })
+  const projectId = hunt.id
 
   await page.getByRole('button', { name: 'New person' }).click()
   const form = page.getByRole('dialog', { name: 'New person' })
@@ -479,14 +478,11 @@ test("the short fields' columns follow their own width, not the window's", async
   await registerFreshUser(page, '/people')
   const projectIds: string[] = []
   for (const name of ['Job hunt', 'CTWS', '开源维护', 'Reading group']) {
-    const made = await page.request.post('/api/v1/projects', { headers: WEB, data: { name } })
-    projectIds.push(((await made.json()) as { id: string }).id)
+    const made = await apiPost(page, '/projects', { name })
+    projectIds.push(made.id)
   }
-  const made = await page.request.post('/api/v1/people', {
-    headers: WEB,
-    data: { name: '陈颖', projectIds, org: 'Acme' },
-  })
-  const id = ((await made.json()) as { id: string }).id
+  const made = await apiPost(page, '/people', { name: '陈颖', projectIds, org: 'Acme' })
+  const id = made.id
 
   // A wide window but a pane of about 400px: viewport breakpoints would give three columns here.
   await page.setViewportSize({ width: 1440, height: 900 })
@@ -541,24 +537,20 @@ test('a new person can have a birthday and a circle, sent in one request', async
  */
 test('a very long link is truncated, and the pane does not widen at all', async ({ page }) => {
   await registerFreshUser(page, '/people')
-  const short = await page.request.post('/api/v1/people', {
-    headers: WEB,
-    data: { name: '短的', channels: [{ kind: 'email', value: 'a@b.test', label: null }] },
+  await apiPost(page, '/people', {
+    name: '短的',
+    channels: [{ kind: 'email', value: 'a@b.test', label: null }],
   })
-  await page.request.post('/api/v1/people', {
-    headers: WEB,
-    data: {
-      name: '长的',
-      channels: [
-        {
-          kind: 'url',
-          value: 'https://sites.google.com/site/hamzawaseem/home/publications-and-talks-2026',
-          label: null,
-        },
-      ],
-    },
+  await apiPost(page, '/people', {
+    name: '长的',
+    channels: [
+      {
+        kind: 'url',
+        value: 'https://sites.google.com/site/hamzawaseem/home/publications-and-talks-2026',
+        label: null,
+      },
+    ],
   })
-  expect(short.ok()).toBe(true)
 
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.goto('/people')
@@ -625,12 +617,9 @@ test('a very long link is truncated, and the pane does not widen at all', async 
  */
 test("a pasted link lands on the list with the person's pane open", async ({ page }) => {
   await registerFreshUser(page, '/people')
-  const made = await page.request.post('/api/v1/people', {
-    headers: WEB,
-    data: { name: '陈颖', org: 'Acme recruiting' },
-  })
-  await page.request.post('/api/v1/people', { headers: WEB, data: { name: '周楠' } })
-  const id = ((await made.json()) as { id: string }).id
+  const made = await apiPost(page, '/people', { name: '陈颖', org: 'Acme recruiting' })
+  await apiPost(page, '/people', { name: '周楠' })
+  const id = made.id
 
   await page.goto(`/people/${id}`)
   const pane = page.getByRole('dialog', { name: 'People' })
@@ -648,8 +637,8 @@ test("a pasted link lands on the list with the person's pane open", async ({ pag
 
 test('opening a person from the list puts their address in the URL', async ({ page }) => {
   await registerFreshUser(page, '/people')
-  const made = await page.request.post('/api/v1/people', { headers: WEB, data: { name: '陈颖' } })
-  const id = ((await made.json()) as { id: string }).id
+  const made = await apiPost(page, '/people', { name: '陈颖' })
+  const id = made.id
   await page.reload()
   await personLink(page, '陈颖').click()
   await expect(page).toHaveURL(new RegExp(`/people/${id}$`))
@@ -660,16 +649,10 @@ test('opening a person from the list puts their address in the URL', async ({ pa
 
 test('the pane has Linked, and Delete at the very end', async ({ page }) => {
   await registerFreshUser(page, '/people')
-  const hunt = await page.request.post('/api/v1/projects', {
-    headers: WEB,
-    data: { name: 'Job hunt' },
-  })
-  const projectId = ((await hunt.json()) as { id: string }).id
-  const made = await page.request.post('/api/v1/people', {
-    headers: WEB,
-    data: { name: '陈颖', projectIds: [projectId] },
-  })
-  const id = ((await made.json()) as { id: string }).id
+  const hunt = await apiPost(page, '/projects', { name: 'Job hunt' })
+  const projectId = hunt.id
+  const made = await apiPost(page, '/people', { name: '陈颖', projectIds: [projectId] })
+  const id = made.id
 
   await page.goto(`/people/${id}`)
   const pane = page.getByRole('dialog', { name: 'People' })
@@ -692,20 +675,17 @@ test('the pane has Linked, and Delete at the very end', async ({ page }) => {
 /** Addresses group as email, then phone, then link; written order holds only within a kind. */
 test('addresses group by kind, not by the order they were written', async ({ page }) => {
   await registerFreshUser(page, '/people')
-  const made = await page.request.post('/api/v1/people', {
-    headers: WEB,
-    data: {
-      name: '陈颖',
-      channels: [
-        { kind: 'email', value: 'first@acme.test' },
-        { kind: 'url', value: 'acme.test/ying' },
-        { kind: 'email', value: 'second@acme.test' },
-        { kind: 'phone', value: '+86 139 0000 1234' },
-        { kind: 'url', value: 'github.com/ying' },
-      ],
-    },
+  const made = await apiPost(page, '/people', {
+    name: '陈颖',
+    channels: [
+      { kind: 'email', value: 'first@acme.test' },
+      { kind: 'url', value: 'acme.test/ying' },
+      { kind: 'email', value: 'second@acme.test' },
+      { kind: 'phone', value: '+86 139 0000 1234' },
+      { kind: 'url', value: 'github.com/ying' },
+    ],
   })
-  const id = ((await made.json()) as { id: string }).id
+  const id = made.id
   await page.goto(`/people/${id}`)
   await expect(page.locator('[data-channels] li')).toHaveCount(5)
   const kinds = await page.locator('[data-channels] li span:first-child').allTextContents()
@@ -965,11 +945,10 @@ test('the New person dialog refuses a number without a country code too', async 
  */
 test('an old stored number gains its country code when the form opens', async ({ page }) => {
   await registerFreshUser(page, '/people')
-  const made = await page.request.post('/api/v1/people', {
-    headers: WEB,
-    data: { name: '陈颖', channels: [{ kind: 'phone', value: '+1 (730) 197-4443' }] },
+  await apiPost(page, '/people', {
+    name: '陈颖',
+    channels: [{ kind: 'phone', value: '+1 (730) 197-4443' }],
   })
-  expect(made.ok()).toBe(true)
   await page.reload()
   await personLink(page, '陈颖').click()
   const pane = page.getByRole('dialog', { name: 'People' })
@@ -1010,7 +989,7 @@ test('the add box is empty for the next name once the server has the last', asyn
 test('opening the birthday picker and saving untouched writes no birthday', async ({ page }) => {
   await registerFreshUser(page, '/people')
   const made = await add(page, { name: '没生日' })
-  const id = ((await made.json()) as { id: string }).id
+  const id = made.id
   await page.goto(`/people/${id}`)
   const pane = page.getByRole('dialog', { name: 'People' })
   await pane.getByRole('button', { name: 'Edit', exact: true }).click()

@@ -1,7 +1,16 @@
 import { expect, test, type Page } from '@playwright/test'
 import { TZDate } from '@date-fns/tz'
 import { dayAfter, dayOffset } from './days'
-import { accountZone, dayInZone, makeProject, makeTask, registerFreshUser, WEB } from './helpers'
+import {
+  accountZone,
+  apiPost,
+  dayInZone,
+  makeProject,
+  makeReading,
+  makeTask,
+  registerFreshUser,
+  WEB,
+} from './helpers'
 
 /**
  * THE CALENDAR -- the shell surface that is about every module at once.
@@ -13,15 +22,8 @@ import { accountZone, dayInZone, makeProject, makeTask, registerFreshUser, WEB }
 
 const square = (page: Page, day: string) => page.locator(`[data-day="${day}"]`)
 
-async function book(page: Page, title: string, planOn: string): Promise<string> {
-  const res = await page.request.post('/api/v1/reading', {
-    headers: WEB,
-    data: { kind: 'book', title },
-  })
-  const { id } = (await res.json()) as { id: string }
-  await page.request.patch(`/api/v1/reading/${id}`, { headers: WEB, data: { planOn } })
-  return id
-}
+const book = (page: Page, title: string, planOn: string) =>
+  makeReading(page, { kind: 'book', title }, { planOn })
 
 test('both modules put their dated things on one grid', async ({ page }) => {
   await registerFreshUser(page, '/')
@@ -119,11 +121,10 @@ test('a birthday sits on the day the server gives, and clicking it opens the per
   // A solar birthday today is always on this month's grid. Lunar dates are pinned by the core and
   // API tests; this checks the grid draws the day the server gives.
   const [, month, day] = dayOffset(0).split('-').map(Number) as [number, number, number]
-  const res = await page.request.post('/api/v1/people', {
-    headers: WEB,
-    data: { name: '周楠', birthday: { calendar: 'solar', year: 1991, month, day } },
+  await apiPost(page, '/people', {
+    name: '周楠',
+    birthday: { calendar: 'solar', year: 1991, month, day },
   })
-  expect(res.ok()).toBe(true)
 
   await page.goto('/calendar')
   await expect(square(page, dayOffset(0))).toContainText('周楠')
@@ -156,15 +157,12 @@ test('the calendar grid keeps to the type scale and the thread shape', async ({ 
   const pid = await makeProject(page, '找工作')
   await makeTask(page, pid, '交材料', { scheduledOn: dayOffset(0) })
   // Agreed in another zone, so the square carries the zone beside the time.
-  await page.request.post('/api/v1/meetings', {
-    headers: WEB,
-    data: {
-      title: 'Call Tokyo',
-      startsLocal: `${dayOffset(0)}T12:00`,
-      timeZone: 'Asia/Tokyo',
-      durationMinutes: 30,
-      projectId: pid,
-    },
+  await apiPost(page, '/meetings', {
+    title: 'Call Tokyo',
+    startsLocal: `${dayOffset(0)}T12:00`,
+    timeZone: 'Asia/Tokyo',
+    durationMinutes: 30,
+    projectId: pid,
   })
   await page.goto('/calendar')
   await expect(page.locator('[data-day]').getByText('交材料')).toBeVisible()

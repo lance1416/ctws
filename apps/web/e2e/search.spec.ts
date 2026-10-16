@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { registerFreshUser, seedTasks, startProject, WEB } from './helpers'
+import { registerFreshUser, seedTasks, startProject, WEB, apiPost } from './helpers'
 
 /** The row's focus carrier in the tree; its accessible name is the task title. */
 const handle = (page: Page, title: string) =>
@@ -295,8 +295,8 @@ test('search goes to places: before typing, and by name', async ({ page }) => {
 
 test('what was opened lately is first, before anything is typed', async ({ page }) => {
   await registerFreshUser(page, '/')
-  const made = await page.request.post('/api/v1/people', { headers: WEB, data: { name: '陈颖' } })
-  const { id } = (await made.json()) as { id: string }
+  const made = await apiPost(page, '/people', { name: '陈颖' })
+  const { id } = made
   await page.goto(`/people/${id}`)
   await expect(page.getByRole('dialog').getByRole('heading', { name: '陈颖' })).toBeVisible()
 
@@ -310,11 +310,8 @@ test('what was opened lately is first, before anything is typed', async ({ page 
 
 test('choosing a person in search opens that person', async ({ page }) => {
   await registerFreshUser(page, '/')
-  const made = await page.request.post('/api/v1/people', {
-    headers: WEB,
-    data: { name: 'Dana Search' },
-  })
-  const { id } = (await made.json()) as { id: string }
+  const made = await apiPost(page, '/people', { name: 'Dana Search' })
+  const { id } = made
   await page.getByRole('banner').getByRole('button', { name: 'Search' }).click()
   await query(page, 'Dana')
   await result(page, 'Dana Search').click()
@@ -324,11 +321,8 @@ test('choosing a person in search opens that person', async ({ page }) => {
 
 test('choosing a reading item in search opens that item', async ({ page }) => {
   await registerFreshUser(page, '/')
-  const made = await page.request.post('/api/v1/reading', {
-    headers: WEB,
-    data: { kind: 'book', title: 'Searchable book' },
-  })
-  const { id } = (await made.json()) as { id: string }
+  const made = await apiPost(page, '/reading', { kind: 'book', title: 'Searchable book' })
+  const { id } = made
   await page.getByRole('banner').getByRole('button', { name: 'Search' }).click()
   await query(page, 'Searchable')
   await result(page, 'Searchable book').click()
@@ -355,8 +349,8 @@ test('the groups before typing are named for a screen reader', async ({ page }) 
 
 test('a person deleted here leaves Recent at once', async ({ page }) => {
   await registerFreshUser(page, '/')
-  const made = await page.request.post('/api/v1/people', { headers: WEB, data: { name: '陈颖' } })
-  const { id } = (await made.json()) as { id: string }
+  const made = await apiPost(page, '/people', { name: '陈颖' })
+  const { id } = made
   await page.goto(`/people/${id}`)
   const pane = page.getByRole('dialog', { name: 'People' })
   await expect(pane.getByRole('heading', { name: '陈颖' })).toBeVisible()
@@ -375,11 +369,8 @@ test('a person deleted here leaves Recent at once', async ({ page }) => {
 
 test('a project deleted elsewhere leaves Recent once its page finds it gone', async ({ page }) => {
   await registerFreshUser(page, '/')
-  const made = await page.request.post('/api/v1/projects', {
-    headers: WEB,
-    data: { name: 'Job hunt' },
-  })
-  const { id } = (await made.json()) as { id: string }
+  const made = await apiPost(page, '/projects', { name: 'Job hunt' })
+  const { id } = made
   await page.goto(`/projects/${id}`)
   const here = page.getByRole('banner').locator('[aria-current="page"]')
   await expect(here).toHaveText('Job hunt')
@@ -399,10 +390,7 @@ test('a project deleted elsewhere leaves Recent once its page finds it gone', as
 
 test('results landing do not pull the highlight back to the first row', async ({ page }) => {
   await registerFreshUser(page, '/')
-  await page.request.post('/api/v1/reading', {
-    headers: WEB,
-    data: { kind: 'book', title: 'Peopleware' },
-  })
+  await apiPost(page, '/reading', { kind: 'book', title: 'Peopleware' })
   // The module hits arrive late, after the places have been walked.
   let release = () => {}
   const held = new Promise<void>((resolve) => (release = resolve))

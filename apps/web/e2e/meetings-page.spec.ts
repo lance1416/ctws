@@ -28,12 +28,9 @@ test('Things reaches meetings, and the page says when there are none', async ({ 
 
 test('a meeting is filled in once: title, time, zone, repeat and the people', async ({ page }) => {
   await registerFreshUser(page)
-  const project = await page.request.post('/api/v1/projects', {
-    headers: WEB,
-    data: { name: 'Job hunt' },
-  })
-  const projectId = ((await project.json()) as { id: string }).id
-  await page.request.post('/api/v1/people', { headers: WEB, data: { name: 'Ying Chen' } })
+  const project = await apiPost(page, '/projects', { name: 'Job hunt' })
+  const projectId = project.id
+  await apiPost(page, '/people', { name: 'Ying Chen' })
 
   await page.goto('/meetings')
   await page.getByRole('button', { name: 'New meeting' }).click()
@@ -89,16 +86,12 @@ test('the list is grouped by day, and says what was agreed when that is not your
     ['Standup', dayOffset(0), HERE],
     ['Second interview', dayOffset(2), ELSEWHERE],
   ]) {
-    const res = await page.request.post('/api/v1/meetings', {
-      headers: WEB,
-      data: {
-        title,
-        startsLocal: `${day}T14:00`,
-        timeZone: zone,
-        durationMinutes: 60,
-      },
+    await apiPost(page, '/meetings', {
+      title,
+      startsLocal: `${day}T14:00`,
+      timeZone: zone,
+      durationMinutes: 60,
     })
-    expect(res.ok()).toBe(true)
   }
 
   await page.goto('/meetings')
@@ -120,17 +113,13 @@ test('a repeating meeting is one row, not one row per occurrence', async ({ page
   // A daily standup has twenty-three occurrences in a month. A page that listed them all would
   // BE the standup: the list answers which meetings there are, the calendar answers which day.
   await registerFreshUser(page)
-  const res = await page.request.post('/api/v1/meetings', {
-    headers: WEB,
-    data: {
-      title: 'Standup',
-      startsLocal: `${dayOffset(0)}T09:30`,
-      timeZone: 'UTC',
-      durationMinutes: 15,
-      rrule: 'FREQ=DAILY',
-    },
+  await apiPost(page, '/meetings', {
+    title: 'Standup',
+    startsLocal: `${dayOffset(0)}T09:30`,
+    timeZone: 'UTC',
+    durationMinutes: 15,
+    rrule: 'FREQ=DAILY',
   })
-  expect(res.ok()).toBe(true)
 
   await page.goto('/meetings')
   await expect(page.locator('[data-meeting-row]')).toHaveCount(1)
@@ -140,14 +129,11 @@ test('a repeating meeting is one row, not one row per occurrence', async ({ page
 
 test('what has already happened is behind a toggle, not in front of you', async ({ page }) => {
   await registerFreshUser(page)
-  await page.request.post('/api/v1/meetings', {
-    headers: WEB,
-    data: {
-      title: 'Last week one-to-one',
-      startsLocal: `${dayOffset(-7)}T14:00`,
-      timeZone: 'UTC',
-      durationMinutes: 30,
-    },
+  await apiPost(page, '/meetings', {
+    title: 'Last week one-to-one',
+    startsLocal: `${dayOffset(-7)}T14:00`,
+    timeZone: 'UTC',
+    durationMinutes: 30,
   })
 
   await page.goto('/meetings')
@@ -193,25 +179,19 @@ test('a repeat can be given an end date, and the series really stops there', asy
 
 test('a meeting with a link can be joined from the list', async ({ page }) => {
   await registerFreshUser(page)
-  await page.request.post('/api/v1/meetings', {
-    headers: WEB,
-    data: {
-      title: 'Standup',
-      startsLocal: `${dayOffset(1)}T09:30`,
-      timeZone: 'UTC',
-      durationMinutes: 15,
-      location: 'https://meet.example.test/standup',
-    },
+  await apiPost(page, '/meetings', {
+    title: 'Standup',
+    startsLocal: `${dayOffset(1)}T09:30`,
+    timeZone: 'UTC',
+    durationMinutes: 15,
+    location: 'https://meet.example.test/standup',
   })
-  await page.request.post('/api/v1/meetings', {
-    headers: WEB,
-    data: {
-      title: 'In the room',
-      startsLocal: `${dayOffset(1)}T14:00`,
-      timeZone: 'UTC',
-      durationMinutes: 30,
-      location: 'Acme HQ, 3F',
-    },
+  await apiPost(page, '/meetings', {
+    title: 'In the room',
+    startsLocal: `${dayOffset(1)}T14:00`,
+    timeZone: 'UTC',
+    durationMinutes: 30,
+    location: 'Acme HQ, 3F',
   })
 
   await page.goto('/meetings')
@@ -227,16 +207,12 @@ test("a meeting pane stacks its labels over its values, at the meeting's own add
   page,
 }) => {
   await registerFreshUser(page)
-  const made = await page.request.post('/api/v1/meetings', {
-    headers: WEB,
-    data: {
-      title: '周会',
-      startsLocal: '2026-10-20T09:00',
-      timeZone: 'America/Toronto',
-      durationMinutes: 30,
-    },
+  await apiPost(page, '/meetings', {
+    title: '周会',
+    startsLocal: '2026-10-20T09:00',
+    timeZone: 'America/Toronto',
+    durationMinutes: 30,
   })
-  expect(made.ok()).toBe(true)
 
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.goto('/meetings')
@@ -264,32 +240,21 @@ test("a meeting pane stacks its labels over its values, at the meeting's own add
 test('meetings hang on the margin: the time, the thread, then the meeting', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await registerFreshUser(page)
-  const project = await page.request.post('/api/v1/projects', {
-    headers: WEB,
-    data: { name: '找工作' },
+  const project = await apiPost(page, '/projects', { name: '找工作' })
+  const projectId = project.id
+  const { meetingId } = await apiPost<{ meetingId: string }>(page, '/meetings', {
+    title: 'Second interview',
+    startsLocal: `${dayOffset(1)}T14:00`,
+    // Agreed on the account's own clock, so the margin's 14:00 is the time agreed.
+    timeZone: await accountZone(page),
+    durationMinutes: 60,
+    projectId,
   })
-  const projectId = ((await project.json()) as { id: string }).id
-  const made = await page.request.post('/api/v1/meetings', {
-    headers: WEB,
-    data: {
-      title: 'Second interview',
-      startsLocal: `${dayOffset(1)}T14:00`,
-      // Agreed on the account's own clock, so the margin's 14:00 is the time agreed.
-      timeZone: await accountZone(page),
-      durationMinutes: 60,
-      projectId,
-    },
-  })
-  expect(made.ok(), await made.text()).toBe(true)
-  const { meetingId } = (await made.json()) as { meetingId: string }
-  await page.request.post('/api/v1/meetings', {
-    headers: WEB,
-    data: {
-      title: 'Standup',
-      startsLocal: `${dayOffset(2)}T09:30`,
-      timeZone: 'UTC',
-      durationMinutes: 15,
-    },
+  await apiPost(page, '/meetings', {
+    title: 'Standup',
+    startsLocal: `${dayOffset(2)}T09:30`,
+    timeZone: 'UTC',
+    durationMinutes: 15,
   })
   await page.goto('/meetings')
 
@@ -321,17 +286,13 @@ test('meetings hang on the margin: the time, the thread, then the meeting', asyn
 test('a repeating meeting shows its next occurrence, not one already over', async ({ page }) => {
   await registerFreshUser(page)
   const zone = await accountZone(page)
-  const res = await page.request.post('/api/v1/meetings', {
-    headers: WEB,
-    data: {
-      title: 'Standup',
-      startsLocal: `${dayOffset(0)}T09:00`,
-      timeZone: zone,
-      durationMinutes: 15,
-      rrule: 'FREQ=DAILY',
-    },
+  await apiPost(page, '/meetings', {
+    title: 'Standup',
+    startsLocal: `${dayOffset(0)}T09:00`,
+    timeZone: zone,
+    durationMinutes: 15,
+    rrule: 'FREQ=DAILY',
   })
-  expect(res.ok(), await res.text()).toBe(true)
   const [y, m, d] = dayOffset(0).split('-').map(Number) as [number, number, number]
   await page.clock.install({ time: new TZDate(y, m - 1, d, 15, 0, 0, 0, zone) })
   await page.goto('/meetings')

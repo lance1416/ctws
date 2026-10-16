@@ -425,16 +425,16 @@ export const WEB = { 'x-ctws-client': 'web' }
  * subject is what comes NEXT. It throws on a refusal: a fixture that failed quietly turns the
  * real assertion into a mystery about an empty page.
  */
-export async function apiPost(
+export async function apiPost<T = { id: string } & Record<string, string>>(
   page: Page,
   path: string,
   data: Record<string, unknown>,
-): Promise<Record<string, string>> {
+): Promise<T> {
   const res = await page.request.post(`/api/v1${path}`, { headers: WEB, data })
   if (!res.ok()) throw new Error(`${path}: ${res.status()} ${await res.text()}`)
   // A write that answers with no body (204, such as a link) hands back nothing to read.
-  if (res.status() === 204) return {}
-  return (await res.json()) as Record<string, string>
+  if (res.status() === 204) return {} as T
+  return (await res.json()) as T
 }
 
 /**

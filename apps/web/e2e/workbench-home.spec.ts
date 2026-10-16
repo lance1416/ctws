@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { TZDate } from '@date-fns/tz'
 import {
   accountZone,
+  apiPost,
   dayInZone,
   holdFirstRead,
   makeProject,
@@ -35,10 +36,7 @@ test('signing in lands on the workbench, not inside a module', async ({ page }) 
 test('the Reading card holds only what belongs to no project', async ({ page }) => {
   await registerFreshUser(page, '/')
   const pid = await makeProject(page, 'CTWS')
-  await page.request.post('/api/v1/reading', {
-    headers: WEB,
-    data: { kind: 'book', title: '散着的书' },
-  })
+  await apiPost(page, '/reading', { kind: 'book', title: '散着的书' })
   await makeReading(page, { kind: 'book', title: '归了项目的书' }, { projectId: pid })
   await page.goto('/')
 
@@ -70,14 +68,8 @@ test('the Today card shows what is in progress, across projects', async ({ page 
   await registerFreshUser(page, '/')
   const a = await makeProject(page, 'CTWS')
   const b = await makeProject(page, 'rrgen')
-  const task = async (projectId: string, title: string, status?: string) => {
-    const res = await page.request.post('/api/v1/tasks', {
-      headers: WEB,
-      data: { projectId, title, parentId: null },
-    })
-    const { id } = (await res.json()) as { id: string }
-    if (status) await page.request.patch(`/api/v1/tasks/${id}`, { headers: WEB, data: { status } })
-  }
+  const task = (projectId: string, title: string, status?: string) =>
+    makeTask(page, projectId, title, status ? { status } : {})
   await task(a, '配色重做', 'in_progress')
   await task(b, '跑通 CI', 'in_progress')
   await task(a, '还没开始的')
@@ -225,17 +217,13 @@ test('a meeting on a project names it beside its colour', async ({ page }) => {
   const zone = await accountZone(page)
   const pid = await makeProject(page, '找工作')
   const day = dayInZone(zone)
-  const res = await page.request.post('/api/v1/meetings', {
-    headers: WEB,
-    data: {
-      title: 'Second interview',
-      startsLocal: `${day}T12:00`,
-      timeZone: zone,
-      durationMinutes: 60,
-      projectId: pid,
-    },
+  await apiPost(page, '/meetings', {
+    title: 'Second interview',
+    startsLocal: `${day}T12:00`,
+    timeZone: zone,
+    durationMinutes: 60,
+    projectId: pid,
   })
-  expect(res.ok(), await res.text()).toBe(true)
   await page.goto('/')
   const row = card(page, 'Meetings').getByRole('listitem').filter({ hasText: 'Second interview' })
   await expect(row).toContainText('找工作')

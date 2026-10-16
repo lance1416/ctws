@@ -3,10 +3,10 @@ import {
   makeProject,
   openProject,
   registerFreshUser,
+  seedTasks,
   serverParents,
   slowReads,
   submitCreate,
-  WEB,
 } from './helpers'
 
 const POST_TASK = /\/api\/v1\/tasks$/
@@ -52,22 +52,12 @@ async function seed(page: Page): Promise<string> {
   await submitCreate(page, 'New project', 'P')
   await openProject(page, 'P', true)
   const projectId = page.url().split('/').pop()!
-  const ids = new Map<string, string>()
-  for (const [title, parent] of [
+  await seedTasks(page, page.url(), [
     ['A', null],
     ['a1', 'A'],
     ['a2', 'A'],
     ['B', null],
-  ] as const) {
-    const res = await page.request.post('/api/v1/tasks', {
-      headers: WEB,
-      data: { projectId, title, parentId: parent ? ids.get(parent)! : null },
-    })
-    expect(res.status()).toBe(201)
-    ids.set(title, ((await res.json()) as { id: string }).id)
-  }
-  await page.goto(page.url())
-  await expect(page.getByRole('listitem')).toHaveCount(4)
+  ])
   return projectId
 }
 
