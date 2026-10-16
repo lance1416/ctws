@@ -4,7 +4,7 @@ import { DangerZone } from '../../platform/ui/DangerZone'
 import { RowsPanel } from '../../platform/ui/Panel'
 import { ViewTabs } from '../../platform/ui/ViewTabs'
 import type { Crumbs } from '../layout/page'
-import { Links } from '../links/Links'
+import { LinkBlocks } from '../links/Links'
 import { useRegistry } from '../registry'
 import { useForgetWhenGone, useRecordRecent } from '../search/recent'
 import { useEveryProject } from './api'
@@ -89,7 +89,7 @@ export function ProjectPage() {
             data-panel="Linked"
             className="min-w-0 @max-5xl:ml-15 sm:@max-5xl:ml-18 @5xl:pt-1"
           >
-            <Links of={{ type: 'project', id }} except={covered} variant="aside" />
+            <LinkBlocks of={{ type: 'project', id }} except={covered} />
           </section>
         </div>
       </div>

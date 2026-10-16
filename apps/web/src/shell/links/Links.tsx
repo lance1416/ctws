@@ -12,21 +12,10 @@ import { ProjectRail } from '../rows/RowParts'
 import { CloseIcon } from '../../platform/ui/icons'
 
 /**
- * Everything one thing is linked to, grouped by kind. The edges are the shell's; where another
- * module's thing lives comes from the registry's `relations`.
+ * Everything one thing is linked to, grouped by kind, and the way to link more. The edges are the
+ * shell's; where another module's thing lives comes from the registry's `relations`.
  */
-export function Links({
-  of,
-  except,
-  variant = 'list',
-}: {
-  of: Endpoint
-  /** Kinds the page already shows in a module's own block, so they are not listed twice. */
-  except?: readonly ObjectType[] | undefined
-  /** `aside`: each kind its own block with a count and a `+`, beside a page's own block. */
-  variant?: 'list' | 'aside'
-}) {
-  const registry = useRegistry()
+function useLinked(of: Endpoint, except: readonly ObjectType[] | undefined) {
   // Which kind the picker is for: any kind from "+ Link", one kind from a block's own `+`.
   const [adding, setAdding] = useState<ObjectType | 'any' | null>(null)
   const links = useQuery(linksQuery(of))
@@ -58,93 +47,28 @@ export function Links({
       )}
     </>
   )
-
-  if (links.isError) {
-    return <PanelEmpty>Couldn't load the links.</PanelEmpty>
-  }
   // Nothing at all while loading: a skeleton would flash on every pane that opens.
-  if (groups.length === 0) {
-    if (links.isLoading) return null
-    return (
-      <div className="flex flex-col gap-1">
-        <PanelEmpty>Nothing linked yet.</PanelEmpty>
-        {add}
-      </div>
-    )
-  }
+  const unshown = links.isError ? (
+    <PanelEmpty>Couldn't load the links.</PanelEmpty>
+  ) : groups.length === 0 && links.isLoading ? null : groups.length === 0 ? (
+    <div className="flex flex-col gap-1">
+      <PanelEmpty>Nothing linked yet.</PanelEmpty>
+      {add}
+    </div>
+  ) : undefined
+  return { groups, unlink, setAdding, add, unshown }
+}
 
-  if (variant === 'aside') {
-    // On a project's page every row here is linked to this project, so it wears its thread.
-    const thread = of.type === 'project' ? idFrom(projectId, of.id) : null
-    return (
-      <div className="flex flex-col gap-8">
-        {groups.map((group) => {
-          const kind = registry.relationFor(group.type).kind.toLowerCase()
-          return (
-            <section key={group.type} aria-label={group.label} className="min-w-0">
-              <div className="mb-1 flex items-center gap-2">
-                <h3 className="flex items-baseline gap-2 text-base font-semibold text-ink">
-                  {group.label}
-                  <span data-count className="text-sm font-normal text-ink-subtle tabular-nums">
-                    {group.items.length}
-                  </span>
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => setAdding(group.type)}
-                  aria-label={`Link another ${kind}`}
-                  className="ml-auto flex size-[30px] items-center justify-center rounded-md text-ink-subtle hover:bg-hover hover:text-ink"
-                >
-                  <svg
-                    aria-hidden="true"
-                    viewBox="0 0 16 16"
-                    className="size-3.5"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.7"
-                    strokeLinecap="round"
-                  >
-                    <path d="M8 3v10M3 8h10" />
-                  </svg>
-                </button>
-              </div>
-              <ul className="flex flex-col">
-                {group.items.map((item) => (
-                  <li
-                    key={`${item.id}:${item.kind}:${String(item.outgoing)}`}
-                    className="group flex min-w-0 items-stretch"
-                  >
-                    <ProjectRail projectId={thread} />
-                    <LinkedRow
-                      type={item.type}
-                      id={item.id}
-                      title={item.title}
-                      detail={item.detail}
-                      label={item.label}
-                      stacked
-                    />
-                    {item.linkId && (
-                      <button
-                        type="button"
-                        disabled={unlink.isPending}
-                        onClick={() => unlink.mutate(item.linkId!)}
-                        aria-label={`Unlink ${item.title}`}
-                        className="flex w-7 shrink-0 items-center justify-center text-ink-subtle opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-ink disabled:opacity-50 [@media(hover:none)]:opacity-100"
-                      >
-                        <CloseIcon className="h-3 w-3" strokeWidth={1.8} />
-                      </button>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )
-        })}
-        {add}
-      </div>
-    )
-  }
+type Linked = {
+  of: Endpoint
+  /** Kinds the page already shows in a module's own block, so they are not listed twice. */
+  except?: readonly ObjectType[] | undefined
+}
 
+/** The linked things as one list, a small heading per kind: a detail pane's. */
+export function LinkList({ of, except }: Linked) {
+  const { groups, unlink, add, unshown } = useLinked(of, except)
+  if (unshown !== undefined) return unshown
   return (
     <div className="flex flex-col gap-4">
       {groups.map((group) => (
@@ -159,13 +83,7 @@ export function Links({
                 key={`${item.id}:${item.kind}:${String(item.outgoing)}`}
                 className="group flex min-w-0 items-center"
               >
-                <LinkedRow
-                  type={item.type}
-                  id={item.id}
-                  title={item.title}
-                  detail={item.detail}
-                  label={item.label}
-                />
+                <LinkedLine item={item} />
                 {/* Only edges in the shell's table unlink; a task's project is required. */}
                 {item.linkId && (
                   <button
@@ -188,6 +106,75 @@ export function Links({
   )
 }
 
+/** The linked things as a block per kind, each with a count and a `+`, beside a page's own block. */
+export function LinkBlocks({ of, except }: Linked) {
+  const registry = useRegistry()
+  const { groups, unlink, setAdding, add, unshown } = useLinked(of, except)
+  if (unshown !== undefined) return unshown
+  // On a project's page every row here is linked to this project, so it wears its thread.
+  const thread = of.type === 'project' ? idFrom(projectId, of.id) : null
+  return (
+    <div className="flex flex-col gap-8">
+      {groups.map((group) => {
+        const kind = registry.relationFor(group.type).kind.toLowerCase()
+        return (
+          <section key={group.type} aria-label={group.label} className="min-w-0">
+            <div className="mb-1 flex items-center gap-2">
+              <h3 className="flex items-baseline gap-2 text-base font-semibold text-ink">
+                {group.label}
+                <span data-count className="text-sm font-normal text-ink-subtle tabular-nums">
+                  {group.items.length}
+                </span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setAdding(group.type)}
+                aria-label={`Link another ${kind}`}
+                className="ml-auto flex size-[30px] items-center justify-center rounded-md text-ink-subtle hover:bg-hover hover:text-ink"
+              >
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 16 16"
+                  className="size-3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.7"
+                  strokeLinecap="round"
+                >
+                  <path d="M8 3v10M3 8h10" />
+                </svg>
+              </button>
+            </div>
+            <ul className="flex flex-col">
+              {group.items.map((item) => (
+                <li
+                  key={`${item.id}:${item.kind}:${String(item.outgoing)}`}
+                  className="group flex min-w-0 items-stretch"
+                >
+                  <ProjectRail projectId={thread} />
+                  <LinkedBlockRow item={item} />
+                  {item.linkId && (
+                    <button
+                      type="button"
+                      disabled={unlink.isPending}
+                      onClick={() => unlink.mutate(item.linkId!)}
+                      aria-label={`Unlink ${item.title}`}
+                      className="flex w-7 shrink-0 items-center justify-center text-ink-subtle opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-ink disabled:opacity-50 [@media(hover:none)]:opacity-100"
+                    >
+                      <CloseIcon className="h-3 w-3" strokeWidth={1.8} />
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      })}
+      {add}
+    </div>
+  )
+}
+
 /**
  * Linked as a section of a detail pane. `-mx-2` gives the rows' hover padding back to the margin,
  * so their words line up with the pane's other labels.
@@ -205,64 +192,46 @@ export function LinkedSection({
     <section aria-label="Linked" className={`border-t border-rule pt-3 ${className}`}>
       <div className="-mx-2">
         <span className="block px-2 pb-1 text-xs text-ink-muted">Linked</span>
-        <Links of={of} except={except} />
+        <LinkList of={of} except={except} />
       </div>
     </section>
   )
 }
 
+type Item = { type: ObjectType; id: string; title: string; detail: string | null; label: string }
+
 /** One thing at the far end of an edge, with the edge's own word at the end of the line. */
-function LinkedRow({
-  type,
-  id,
-  title,
-  detail,
-  label,
-  stacked = false,
-}: {
-  type: ObjectType
-  id: string
-  title: string
-  detail: string | null
-  label: string
-  /** Title over its detail, for a narrow block. */
-  stacked?: boolean
-}) {
-  const where = useRegistry().relationFor(type)
-  if (stacked) {
-    const body = (
-      <>
-        <span className="flex min-w-0 flex-1 flex-col">
-          <span className="truncate text-ink">{title}</span>
-          {detail && <span className="truncate text-sm text-ink-subtle">{detail}</span>}
-        </span>
-        {label && <span className="shrink-0 text-sm text-ink-muted">{label}</span>}
-      </>
-    )
-    return (
-      <Link
-        to={where.to(id)}
-        data-linked={id}
-        className="flex min-w-0 flex-1 items-start gap-3 py-2 pr-1 pl-3 hover:bg-hover"
-      >
-        {body}
-      </Link>
-    )
-  }
-  const body = (
-    <>
-      <span className="min-w-0 flex-[2] truncate">{title}</span>
-      {detail && <span className="min-w-0 shrink truncate text-xs text-ink-muted">{detail}</span>}
-      {label && <span className="shrink-0 text-xs text-ink-subtle">{label}</span>}
-    </>
-  )
+function LinkedLine({ item }: { item: Item }) {
+  const where = useRegistry().relationFor(item.type)
   return (
     <Link
-      to={where.to(id)}
-      data-linked={id}
+      to={where.to(item.id)}
+      data-linked={item.id}
       className="flex min-w-0 flex-1 items-baseline gap-2 rounded-md px-2 py-1.5 text-sm text-ink hover:bg-hover"
     >
-      {body}
+      <span className="min-w-0 flex-[2] truncate">{item.title}</span>
+      {item.detail && (
+        <span className="min-w-0 shrink truncate text-xs text-ink-muted">{item.detail}</span>
+      )}
+      {item.label && <span className="shrink-0 text-xs text-ink-subtle">{item.label}</span>}
+    </Link>
+  )
+}
+
+/** The same, its title over its detail, for a narrow block. */
+function LinkedBlockRow({ item }: { item: Item }) {
+  const where = useRegistry().relationFor(item.type)
+  return (
+    <Link
+      to={where.to(item.id)}
+      data-linked={item.id}
+      className="flex min-w-0 flex-1 items-start gap-3 py-2 pr-1 pl-3 hover:bg-hover"
+    >
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="truncate text-ink">{item.title}</span>
+        {item.detail && <span className="truncate text-sm text-ink-subtle">{item.detail}</span>}
+      </span>
+      {item.label && <span className="shrink-0 text-sm text-ink-muted">{item.label}</span>}
     </Link>
   )
 }

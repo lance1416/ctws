@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 import { registry } from '../../app/registry'
 import { RegistryProvider } from '../registry'
 import { linksQuery } from './api'
-import { Links } from './Links'
+import { LinkList } from './Links'
 
 /**
  * The panel turns a type and id from the server into a link only through the registry, so these
@@ -55,7 +55,7 @@ function render(of: { type: 'person'; id: string }, data?: LinksResponse['groups
     <QueryClientProvider client={client}>
       <RegistryProvider value={registry}>
         <MemoryRouter>
-          <Links of={of} />
+          <LinkList of={of} />
         </MemoryRouter>
       </RegistryProvider>
     </QueryClientProvider>,
