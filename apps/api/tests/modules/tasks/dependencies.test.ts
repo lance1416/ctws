@@ -28,10 +28,9 @@ afterEach(async () => {
 
 const dependOn = (ctx: Harness, waits: string, on: string) =>
   ctx.app.inject({
-    method: 'POST',
-    url: `/api/v1/tasks/${waits}/dependencies`,
+    method: 'PUT',
+    url: `/api/v1/tasks/${waits}/dependencies/${on}`,
     headers: web(ctx),
-    payload: { blockerId: on },
   })
 
 const undepend = (ctx: Harness, waits: string, on: string) =>

@@ -106,11 +106,11 @@ export const taskRoutes: FastifyPluginAsyncZod = async (app) => {
       taskDependencyLists(app.db, currentUser(req).workspaceId, req.params.id),
     ),
 
-    // `:id` waits for the body's `blockerId`.
+    // `:id` waits for `:blockerId`.
     on(api.tasks.addDependency, async (req) => {
       await addDependency(app.db, actorOf(req), {
         blockedId: req.params.id,
-        blockerId: req.body.blockerId,
+        blockerId: req.params.blockerId,
       })
     }),
 

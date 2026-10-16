@@ -32,10 +32,7 @@ test('a blocked row names what is in the way, and finishing that frees it', asyn
   const pid = await makeProject(page, '改版')
   const ci = await makeTask(page, pid, '跑通 CI')
   const ship = await makeTask(page, pid, '发 v0.8.0')
-  const dep = await page.request.post(`/api/v1/tasks/${ship}/dependencies`, {
-    headers: WEB,
-    data: { blockerId: ci },
-  })
+  const dep = await page.request.put(`/api/v1/tasks/${ship}/dependencies/${ci}`, { headers: WEB })
   expect(dep.status()).toBe(204)
   await openTree(page, pid)
 
@@ -109,10 +106,7 @@ test('a dependency is removed from the pane, and the row stops waiting', async (
   const pid = await makeProject(page, '改版')
   const ci = await makeTask(page, pid, '跑通 CI')
   const ship = await makeTask(page, pid, '发 v0.8.0')
-  await page.request.post(`/api/v1/tasks/${ship}/dependencies`, {
-    headers: WEB,
-    data: { blockerId: ci },
-  })
+  await page.request.put(`/api/v1/tasks/${ship}/dependencies/${ci}`, { headers: WEB })
   await openTree(page, pid)
 
   await openPane(page, '发 v0.8.0')
@@ -130,10 +124,7 @@ test('a dependency removal that fails says so', async ({ page }) => {
   const pid = await makeProject(page, 'Stuck')
   const ci = await makeTask(page, pid, 'Green CI')
   const ship = await makeTask(page, pid, 'Ship it')
-  await page.request.post(`/api/v1/tasks/${ship}/dependencies`, {
-    headers: WEB,
-    data: { blockerId: ci },
-  })
+  await page.request.put(`/api/v1/tasks/${ship}/dependencies/${ci}`, { headers: WEB })
   await openTree(page, pid)
   await openPane(page, 'Ship it')
   await page.route('**/api/v1/tasks/*/dependencies/*', (r) =>
@@ -151,10 +142,7 @@ test('the other end shows the edge too, and offers no way to undo it from there'
   const pid = await makeProject(page, '改版')
   const ci = await makeTask(page, pid, '跑通 CI')
   const ship = await makeTask(page, pid, '发 v0.8.0')
-  await page.request.post(`/api/v1/tasks/${ship}/dependencies`, {
-    headers: WEB,
-    data: { blockerId: ci },
-  })
+  await page.request.put(`/api/v1/tasks/${ship}/dependencies/${ci}`, { headers: WEB })
   await openTree(page, pid)
 
   await openPane(page, '跑通 CI')
@@ -169,10 +157,7 @@ test('a loop is refused in words, not by silently doing nothing', async ({ page 
   const pid = await makeProject(page, '改版')
   const a = await makeTask(page, pid, '搭脚手架')
   const b = await makeTask(page, pid, '接上后端')
-  await page.request.post(`/api/v1/tasks/${b}/dependencies`, {
-    headers: WEB,
-    data: { blockerId: a },
-  })
+  await page.request.put(`/api/v1/tasks/${b}/dependencies/${a}`, { headers: WEB })
   await openTree(page, pid)
 
   // A waiting for B would close the loop.

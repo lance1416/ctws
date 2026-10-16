@@ -55,7 +55,6 @@ import {
 } from './reading'
 import { searchQuery } from './search'
 import {
-  addDependencyBody,
   completedResponse,
   createTaskBody,
   dependencyLists,
@@ -367,11 +366,10 @@ export const api = {
       refusals: [404],
     }),
     addDependency: endpoint({
-      method: 'POST',
-      path: '/tasks/:id/dependencies',
-      summary: 'Make a task wait for another.',
-      params: taskParams,
-      body: addDependencyBody,
+      method: 'PUT',
+      path: '/tasks/:id/dependencies/:blockerId',
+      summary: 'Make a task wait for another. Putting one that is there already changes nothing.',
+      params: dependencyParams,
       ok: 204,
       refusals: [404, 409],
     }),

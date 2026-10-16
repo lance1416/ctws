@@ -135,8 +135,6 @@ export const dependencyLists = z
   .object({ blockedBy: z.array(dependencyRef), blocks: z.array(dependencyRef) })
   .strict()
 
-export const addDependencyBody = z.object({ blockerId: taskId }).strict()
-
 export const dependencyParams = z.object({ id: taskId, blockerId: taskId }).strict()
 
 export const projectTasksQuery = z.object({ projectId: projectId }).strict()

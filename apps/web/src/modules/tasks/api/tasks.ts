@@ -24,7 +24,7 @@ export function taskDependencies(id: TaskId) {
 
 /** `id` is the task that waits; `blockerId` is what it waits for. */
 export function addDependency(id: TaskId, blockerId: TaskId): Promise<void> {
-  return call(api.tasks.addDependency, { params: { id }, body: { blockerId } })
+  return call(api.tasks.addDependency, { params: { id, blockerId } })
 }
 
 export function removeDependency(id: TaskId, blockerId: TaskId): Promise<void> {
