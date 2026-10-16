@@ -22,6 +22,7 @@ const ctws = {
     'class-names': restrictedSyntax,
     'button-text': restrictedSyntax,
     'shell-entry': restrictedImports,
+    'write-changes': restrictedSyntax,
   },
 }
 
@@ -203,6 +204,23 @@ export default tseslint.config(
     plugins: { ctws },
     rules: {
       'ctws/class-names': ['error', ...classNameRules()],
+    },
+  },
+  {
+    // A write says which kinds of thing it changed, so only the queries that read them refetch;
+    // one that says nothing refetches everything. Signing out says `refresh: false` instead.
+    files: ['apps/web/src/**/*.{ts,tsx}'],
+    ignores: TESTS,
+    plugins: { ctws },
+    rules: {
+      'ctws/write-changes': [
+        'error',
+        {
+          selector:
+            "CallExpression[callee.name='useMutation'] > ObjectExpression:first-child:not(:has(Property[key.name='meta'] > ObjectExpression > Property[key.name=/^(changes|refresh)$/]))",
+          message: 'Say what the write changed in meta.changes, or meta.refresh: false.',
+        },
+      ],
     },
   },
   {
