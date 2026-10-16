@@ -398,6 +398,32 @@ describe('editing from one occurrence on', () => {
     ])
   })
 
+  it('drops the far overrides when the new series starts at another time', async () => {
+    // The new series' occurrences have new recurrence ids; an override keyed by an old one would
+    // show as an extra meeting beside the one the rule now makes.
+    const ctx = await setup()
+    const series = await arrange(ctx)
+    await patch(ctx, series.meetingId, {
+      scope: 'one',
+      recurrenceId: '2026-11-10T09:00',
+      startsLocal: '2026-11-10T17:00',
+    })
+    const res = await patch(ctx, series.meetingId, {
+      scope: 'following',
+      recurrenceId: '2026-11-03T09:00',
+      startsLocal: '2026-11-03T10:00',
+    })
+    expect(res.statusCode, res.body).toBe(200)
+    const got = await listed(ctx, '?from=2026-10-20&to=2026-11-18')
+    expect(got.map((o) => o.startsLocal)).toEqual([
+      '2026-10-20T09:00',
+      '2026-10-27T09:00',
+      '2026-11-03T10:00',
+      '2026-11-10T10:00',
+      '2026-11-17T10:00',
+    ])
+  })
+
   it('cancels everything from one occurrence on, and keeps what came before', async () => {
     const ctx = await setup()
     const series = await arrange(ctx)

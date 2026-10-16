@@ -108,6 +108,7 @@ async function editFollowing(e: Edit) {
 
   const newId = uuidv7()
   const startsLocal = fields.startsLocal ?? recurrenceId
+  const rrule = 'rrule' in fields ? (fields.rrule ?? null) : series.rrule
   await tx.insert(meetings).values({
     id: newId,
     workspaceId,
@@ -115,18 +116,28 @@ async function editFollowing(e: Edit) {
     startsLocal,
     timeZone: fields.timeZone ?? series.timeZone,
     durationMinutes: fields.durationMinutes ?? series.durationMinutes,
-    rrule: 'rrule' in fields ? (fields.rrule ?? null) : series.rrule,
+    rrule,
     location: 'location' in fields ? (fields.location ?? null) : series.location,
     note: 'note' in fields ? (fields.note ?? null) : series.note,
   })
   const carried = projectId !== undefined ? projectId : series.projectId
   await putAttendees(tx, workspaceId, newId, attendeeIds ?? series.attendees.map((p) => p.id))
   await meetingFiling.put(tx, workspaceId, newId, carried ? [carried] : [])
-  // Overrides from the split on move to the new series.
-  await tx.execute(sql`
-    update meeting_exceptions set meeting_id = ${newId}
-    where meeting_id = ${series.id} and recurrence_id >= ${recurrenceId}
-  `)
+  // Overrides from the split on are keyed by the old series' local times. The new series makes
+  // the same ones only when it starts where the split is and keeps the rule; otherwise they would
+  // name occurrences it never makes, so they go, as in `editAll`.
+  const same = startsLocal === recurrenceId && rrule === series.rrule
+  await tx.execute(
+    same
+      ? sql`
+          update meeting_exceptions set meeting_id = ${newId}
+          where meeting_id = ${series.id} and recurrence_id >= ${recurrenceId}
+        `
+      : sql`
+          delete from meeting_exceptions
+          where meeting_id = ${series.id} and recurrence_id >= ${recurrenceId}
+        `,
+  )
   return getOccurrence(tx, workspaceId, newId, startsLocal)
 }
 
