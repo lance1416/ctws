@@ -4,18 +4,22 @@ import { useSearchParams } from 'react-router-dom'
 import { useForgetRecent } from '../../../../shell/search'
 import { isFinished } from '../../logic/status'
 import { ancestorsOf } from '../../logic/tree/ancestors'
+import type { RowRefs } from '../useRowPane'
 
 /**
  * `?task=<id>` is the open task. `?reveal=<id>` unfolds the task's ancestors, shows it if hidden
  * and focuses it, then is dropped so a later fold is not fought on every render.
  */
 export function useTreeParams({
+  rows,
   tasks,
   unfold,
   showDone,
   showFinished,
   onRevealed,
 }: {
+  /** The tree's rows, which the revealed one is focused among. */
+  rows: Pick<RowRefs, 'get'>
   tasks: readonly TaskResponse[] | undefined
   unfold: (ids: readonly TaskId[]) => void
   showDone: boolean
@@ -55,7 +59,7 @@ export function useTreeParams({
   useEffect(() => {
     const id = pending.current
     if (!id) return
-    const el = document.querySelector<HTMLElement>(`[data-handle-id="${id}"]`)
+    const el = rows.get(id)
     if (!el) return
     pending.current = null
     onRevealed(id)

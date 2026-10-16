@@ -18,14 +18,14 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core'
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { projectTasksQuery } from '../api'
 import { useTaskActions } from '../hooks/useTaskActions'
 import { PanelEmpty } from '../../../platform/ui/Panel'
 import { STATUS_LABEL } from '../logic/status'
 import { TaskDetail } from './TaskDetail'
 import { useTaskParam } from './tree/useTreeParams'
-import { useFocusAfterRemoval } from './useFocusAfterRemoval'
+import { type RowRefs, useRowPane, useRowRefs } from './useRowPane'
 
 // The board is flat: every task once, under its own status, with its parent named beneath it.
 
@@ -33,17 +33,27 @@ import { useFocusAfterRemoval } from './useFocusAfterRemoval'
 function Card({
   task,
   parentTitle,
+  cardRef,
   onOpen,
 }: {
   task: TaskResponse
   parentTitle: string | null
+  cardRef: (el: HTMLElement | null) => () => void
   onOpen: () => void
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: task.id })
   return (
     <li>
       <button
-        ref={setNodeRef}
+        ref={(el) => {
+          setNodeRef(el)
+          const forget = cardRef(el)
+          // A ref that returns a cleanup is not called again with null, so this says it instead.
+          return () => {
+            setNodeRef(null)
+            forget()
+          }
+        }}
         {...listeners}
         {...attributes}
         type="button"
@@ -66,11 +76,13 @@ function Column({
   status,
   tasks,
   parentOf,
+  cards,
   onOpen,
 }: {
   status: TaskStatus
   tasks: TaskResponse[]
   parentOf: (t: TaskResponse) => string | null
+  cards: RowRefs
   onOpen: (id: TaskId) => void
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status })
@@ -91,7 +103,13 @@ function Column({
       </h3>
       <ul className="flex min-h-11 flex-col gap-1.5">
         {tasks.map((t) => (
-          <Card key={t.id} task={t} parentTitle={parentOf(t)} onOpen={() => onOpen(t.id)} />
+          <Card
+            key={t.id}
+            task={t}
+            parentTitle={parentOf(t)}
+            cardRef={cards.ref(t.id)}
+            onOpen={() => onOpen(t.id)}
+          />
         ))}
       </ul>
     </section>
@@ -113,26 +131,16 @@ export function TaskBoard({ projectId }: { projectId: ProjectId }) {
   // The same pane and address as the tree's. Closed, focus goes back to the card; if the pane
   // takes its task away (deleted), to a neighbouring card.
   const { openId, setOpenId } = useTaskParam()
-  const openTask = rows.find((t) => t.id === openId)
-  const cardFor = (id: TaskId) => document.querySelector<HTMLElement>(`[data-board-card="${id}"]`)
-  useFocusAfterRemoval({
-    ids: () =>
-      [...document.querySelectorAll<HTMLElement>('[data-board-card]')].map((el) =>
-        idFrom(taskId, el.dataset.boardCard!),
-      ),
-    rowFor: cardFor,
+  const cards = useRowRefs()
+  const pane = useRowPane({
+    rows: cards,
+    tasks: rows,
+    settled: tasks.isSuccess,
+    openId,
+    setOpenId,
     heading: () => document.querySelector<HTMLElement>('h1'),
-    open: openId,
   })
-  useEffect(() => {
-    if (openId && tasks.isSuccess && !openTask) setOpenId(null, { replace: true })
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- setOpenId is new each render; this reacts to the data.
-  }, [openId, openTask, tasks.isSuccess])
-  const closeDetail = () => {
-    const id = openId
-    setOpenId(null)
-    if (id) cardFor(id)?.focus()
-  }
+  const openTask = pane.openTask
 
   const onDragEnd = ({ active, over }: DragEndEvent) => {
     const status = BOARD_TASK_STATUSES.find((s) => s === over?.id)
@@ -169,13 +177,14 @@ export function TaskBoard({ projectId }: { projectId: ProjectId }) {
               status={status}
               tasks={rows.filter((t) => t.status === status)}
               parentOf={parentOf}
+              cards={cards}
               onOpen={setOpenId}
             />
           ))}
         </div>
       </DndContext>
       {/* Cancelled tasks have no column; they stay in the tree, where they can be restored. */}
-      {openTask && <TaskDetail key={openTask.id} task={openTask} onClose={closeDetail} />}
+      {openTask && <TaskDetail key={openTask.id} task={openTask} onClose={pane.close} />}
     </>
   )
 }

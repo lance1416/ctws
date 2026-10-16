@@ -43,6 +43,8 @@ type Props = {
   saved: boolean
   /** The roving tabindex: one row carries it, so the tree is one tab stop and Tab leaves it. */
   tabStop: boolean
+  /** The handle's ref: the row's focus carrier, which the tree moves focus to. */
+  handleRef: (el: HTMLElement | null) => () => void
   onFocus: () => void
   onSetStatus: (status: TaskStatus) => void
   onToggle: () => void
@@ -87,6 +89,7 @@ export function TaskRow({
   blockedBy,
   saved,
   tabStop,
+  handleRef,
   onFocus,
   onSetStatus,
   onToggle,
@@ -162,6 +165,7 @@ export function TaskRow({
             `listeners` is just onPointerDown and our own onKeyDown owns the keyboard. */}
         <button
           type="button"
+          ref={handleRef}
           aria-label={`Task: ${title}`}
           data-handle-id={row.id}
           {...attributes}

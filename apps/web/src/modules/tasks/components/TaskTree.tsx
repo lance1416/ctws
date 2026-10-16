@@ -9,8 +9,6 @@ import {
 } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import {
-  taskId,
-  idFrom,
   type TaskPosition,
   type TaskResponse,
   type TaskStatus,
@@ -18,7 +16,7 @@ import {
   type TaskId,
 } from '@ctws/contracts'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import { EMPTY_ACTION, EmptyState } from '../../../platform/ui/EmptyState'
 import { useProjects } from '../../../shell/projects'
 import { LIST_MEASURE, ROW_LIST } from '../../../shell/rows'
@@ -33,7 +31,7 @@ import { NewTaskInput } from './NewTaskInput'
 import { SelectionBar } from './SelectionBar'
 import { TaskDetail } from './TaskDetail'
 import { TaskRow } from './TaskRow'
-import { useFocusAfterRemoval } from './useFocusAfterRemoval'
+import { useRowPane, useRowRefs } from './useRowPane'
 import { useSavedFlash } from './useSavedFlash'
 import { INDENT_PX } from './TaskRowParts'
 import { useBulkSelection } from './tree/useBulkSelection'
@@ -45,7 +43,14 @@ import { useTreeVisibility } from './tree/useTreeVisibility'
 
 const NONE: readonly TaskResponse[] = []
 
-export function TaskTree({ projectId }: { projectId: ProjectId }) {
+export function TaskTree({
+  projectId,
+  addFirst,
+}: {
+  projectId: ProjectId
+  /** Puts the cursor in the box above the tree that adds a root task. */
+  addFirst: () => void
+}) {
   const qc = useQueryClient()
   const allProjects = useProjects()
   // Only the inbox dates its rows: quick capture makes it the one list that grows undecided.
@@ -69,15 +74,26 @@ export function TaskTree({ projectId }: { projectId: ProjectId }) {
   const [activeId, setActiveId] = useState<TaskId | null>(null)
   const tabId = rows.some((r) => r.id === activeId) ? activeId : (rows[0]?.id ?? null)
 
+  // Each row's handle, which focus moves between.
+  const handles = useRowRefs()
   const { openId, setOpenId } = useTreeParams({
+    rows: handles,
     tasks: tasks.data?.tasks,
     unfold: folds.unfold,
     showDone: shown.showDone,
     showFinished: shown.showFinished,
     onRevealed: setActiveId,
   })
-  // Looked up each render, so a task that has left this project closes its own pane.
-  const openTask = tasks.data?.tasks.find((t) => t.id === openId)
+  // The pane can move or delete its task: focus then goes to a neighbouring row, not to <body>.
+  const pane = useRowPane({
+    rows: handles,
+    tasks: all,
+    settled: tasks.isSuccess,
+    openId,
+    setOpenId,
+    heading: () => document.querySelector<HTMLElement>('h1'),
+  })
+  const openTask = pane.openTask
 
   const [savedId, setSavedId] = useSavedFlash()
 
@@ -88,7 +104,12 @@ export function TaskTree({ projectId }: { projectId: ProjectId }) {
     if (isFinished(status)) shown.keep([id])
     actions.setStatus(id, status)
   }
-  const adder = useInlineAdd({ projectId, unfold: folds.unfold, onRefuse: setError })
+  const adder = useInlineAdd({
+    projectId,
+    unfold: folds.unfold,
+    onRefuse: setError,
+    focus: (id) => handles.get(id)?.focus(),
+  })
   const picked = useBulkSelection({
     projectId,
     visible: rows.map((r) => r.id),
@@ -161,7 +182,7 @@ export function TaskTree({ projectId }: { projectId: ProjectId }) {
     toggle: folds.toggle,
     focusRow: (index) => {
       const row = rows[index]
-      if (row) document.querySelector<HTMLElement>(`[data-handle-id="${row.id}"]`)?.focus()
+      if (row) handles.get(row.id)?.focus()
     },
   })
 
@@ -192,29 +213,6 @@ export function TaskTree({ projectId }: { projectId: ProjectId }) {
     const slot = overIndex > from ? overIndex + blockLength(overIndex) : overIndex
     run(rows[from]!.id, slot, rows[from]!.depth + Math.round(delta.x / INDENT_PX))
   }
-
-  // Focus goes back to the handle that opened the pane (a moved-away task has none left).
-  const closeDetail = () => {
-    const id = openId
-    setOpenId(null)
-    if (id) document.querySelector<HTMLElement>(`[data-handle-id="${id}"]`)?.focus()
-  }
-
-  // The pane can move or delete its task: focus then goes to a neighbouring row, not to <body>.
-  useFocusAfterRemoval({
-    ids: () =>
-      [...document.querySelectorAll<HTMLElement>('[data-handle-id]')].map((el) =>
-        idFrom(taskId, el.dataset.handleId!),
-      ),
-    rowFor: (id) => document.querySelector<HTMLElement>(`[data-handle-id="${id}"]`),
-    heading: () => document.querySelector<HTMLElement>('h1'),
-    open: openId,
-  })
-  // And it unmounts without onClose. Nobody took that step, so the address is put right in place.
-  useEffect(() => {
-    if (openId && tasks.isSuccess && !openTask) setOpenId(null, { replace: true })
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- setOpenId is new each render; this reacts to the data.
-  }, [openId, openTask, tasks.isSuccess])
 
   return (
     <>
@@ -260,9 +258,7 @@ export function TaskTree({ projectId }: { projectId: ProjectId }) {
               type="button"
               className={EMPTY_ACTION}
               // Puts the cursor in the input already on this page.
-              onClick={() =>
-                document.querySelector<HTMLElement>('input[aria-label="New task"]')?.focus()
-              }
+              onClick={addFirst}
             >
               {shown.hiddenDone > 0 ? 'Add another' : 'Add the first task'}
             </button>
@@ -292,6 +288,7 @@ export function TaskTree({ projectId }: { projectId: ProjectId }) {
                   blockedBy={tasks.data?.blockers[row.id]}
                   saved={savedId === row.id}
                   tabStop={row.id === tabId}
+                  handleRef={handles.ref(row.id)}
                   onFocus={() => setActiveId(row.id)}
                   onSetStatus={(status) => setStatus(row.id, status)}
                   onToggle={() => folds.toggle(row.id)}
@@ -312,7 +309,7 @@ export function TaskTree({ projectId }: { projectId: ProjectId }) {
         <TaskDetail
           key={openTask.id}
           task={openTask}
-          onClose={closeDetail}
+          onClose={pane.close}
           onSaved={() => setSavedId(openTask.id)}
         />
       )}

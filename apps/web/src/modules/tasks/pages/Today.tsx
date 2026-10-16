@@ -1,13 +1,7 @@
 import { problemText } from '../../../platform/http/api'
-import {
-  taskId,
-  idFrom,
-  type TaskStatus,
-  type TodayTaskResponse,
-  type TaskId,
-} from '@ctws/contracts'
+import { type TaskStatus, type TodayTaskResponse, type TaskId } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useState, type KeyboardEvent } from 'react'
+import { useState, type KeyboardEvent } from 'react'
 import { useKeyTable } from '../../../platform/keyboard/keyTable'
 import { clockTime } from '@ctws/core/clock'
 import { ymd } from '../../../platform/time/dates'
@@ -22,7 +16,7 @@ import { DayLine, type DayItem } from '../components/DayLine'
 import { DoneTodayPanel } from '../components/DoneTodayPanel'
 import { MovementPanel } from '../components/MovementPanel'
 import { TaskDetail } from '../components/TaskDetail'
-import { useFocusAfterRemoval } from '../components/useFocusAfterRemoval'
+import { useRowPane, useRowRefs } from '../components/useRowPane'
 import { useSavedFlash } from '../components/useSavedFlash'
 import { TASKS_ID } from '../logic/id'
 import { statusActions, TODAY_KEYS } from '../logic/keys'
@@ -54,23 +48,23 @@ export function Today() {
     )
   const [openId, setOpenId] = useState<TaskId | null>(null)
   const rows = today.data ?? []
-  const openTask = rows.find((t) => t.id === openId)
 
   const [error, setError] = useState<string | null>(null)
   const keys = useKeyTable(TODAY_KEYS)
   const actions = useTaskActions(setError)
   const [savedId, setSavedId] = useSavedFlash()
 
-  // A change, or the open pane, can take its row off this page; focus moves on in DOM order.
-  const focus = useFocusAfterRemoval({
-    ids: () =>
-      [...document.querySelectorAll<HTMLElement>('[data-today-row]')].map((el) =>
-        idFrom(taskId, el.dataset.todayRow!),
-      ),
-    rowFor: (id) => document.querySelector<HTMLElement>(`[data-today-row="${id}"]`),
+  // A change, or the open pane, can take its row off this page; focus moves on in reading order.
+  const titles = useRowRefs()
+  const pane = useRowPane({
+    rows: titles,
+    tasks: rows,
+    settled: today.isSuccess,
+    openId,
+    setOpenId,
     heading: () => document.getElementById('today-heading'),
-    open: openId,
   })
+  const { focus, openTask } = pane
   const setStatus = (id: TaskId, status: TaskStatus) => {
     setError(null)
     focus.expect(id)
@@ -83,33 +77,12 @@ export function Today() {
   }
   // A triage menu unmounts after its action, so focus goes back to the row; if the row then
   // leaves the page, `focus` moves it on again.
-  const focusRow = (id: TaskId) =>
-    queueMicrotask(() => document.querySelector<HTMLElement>(`[data-today-row="${id}"]`)?.focus())
+  const focusRow = (id: TaskId) => queueMicrotask(() => titles.get(id)?.focus())
   const onRowKeyDown = (e: KeyboardEvent, t: TodayTaskResponse) =>
     keys(
       e,
       statusActions(t.status, (next) => setStatus(t.id, next)),
     )
-
-  const closeDetail = () => {
-    const id = openId
-    setOpenId(null)
-    // After the pane unmounts, back to the row it was opened from.
-    if (id) {
-      queueMicrotask(() =>
-        (
-          document.querySelector<HTMLElement>(`[data-today-row="${id}"]`) ??
-          document.querySelector<HTMLElement>('[data-today-row], #today-heading')
-        )?.focus(),
-      )
-    }
-  }
-
-  // The pane unmounts without onClose when an edit takes its task off this page; `focus` has
-  // already moved on to a neighbour.
-  useEffect(() => {
-    if (openId && today.isSuccess && !openTask) setOpenId(null)
-  }, [openId, openTask, today.isSuccess])
 
   const taskRow = (t: TodayTaskResponse, anyTime = false) => (
     <TodayRow
@@ -120,6 +93,7 @@ export function Today() {
       timeZone={timeZone}
       now={now}
       saved={savedId === t.id}
+      rowRef={titles.ref(t.id)}
       onOpen={() => setOpenId(t.id)}
       onKeyDown={(e) => onRowKeyDown(e, t)}
       onStatus={(status) => setStatus(t.id, status)}
@@ -178,6 +152,7 @@ export function Today() {
             today={day}
             timeZone={timeZone}
             savedId={savedId}
+            rowRef={titles.ref}
             onOpen={setOpenId}
             onKeyDown={onRowKeyDown}
             onStatus={setStatus}
@@ -205,7 +180,7 @@ export function Today() {
         <TaskDetail
           key={openTask.id}
           task={openTask}
-          onClose={closeDetail}
+          onClose={pane.close}
           // Marks the row; the pane stays open even when the save took the row off this page.
           onSaved={() => setSavedId(openTask.id)}
         />

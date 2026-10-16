@@ -1,6 +1,6 @@
 import type { ProjectId } from '@ctws/contracts'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Fragment, useId, useState, type ReactNode } from 'react'
+import { Fragment, useId, useRef, useState, type ReactNode } from 'react'
 import { useDocumentKeys } from '../../../platform/keyboard/keyTable'
 import { dayPhrase, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
@@ -94,6 +94,7 @@ export function NewTaskAction({ projectId }: { projectId: ProjectId }) {
 /** The module's rows under a shell project: the tree, and the one input that adds a root task. */
 export function ProjectTasks({ projectId, view }: { projectId: ProjectId; view: string }) {
   const title = useLineEntry()
+  const box = useRef<HTMLInputElement>(null)
   const failureId = useId()
   const send = title.sends((text) => createTask({ projectId, title: text, parentId: null }))
   const create = useMutation({
@@ -106,6 +107,7 @@ export function ProjectTasks({ projectId, view }: { projectId: ProjectId; view: 
       {/* A line and Enter, inset to where the rows' bodies start. */}
       <div className="mb-1 ml-[71px] flex max-w-[52ch] flex-wrap items-center gap-2 pr-2 sm:ml-[89px]">
         <input
+          ref={box}
           {...title.field({ onSubmit: create.mutate, busy: create.isPending })}
           placeholder="New task"
           aria-label="New task"
@@ -125,7 +127,7 @@ export function ProjectTasks({ projectId, view }: { projectId: ProjectId; view: 
       {view === 'board' ? (
         <TaskBoard key={projectId} projectId={projectId} />
       ) : (
-        <TaskTree key={projectId} projectId={projectId} />
+        <TaskTree key={projectId} projectId={projectId} addFirst={() => box.current?.focus()} />
       )}
     </>
   )

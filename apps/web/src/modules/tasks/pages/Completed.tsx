@@ -1,7 +1,7 @@
 import { taskCrumb } from '../logic/crumb'
-import { taskId, idFrom, type CompletedTaskResponse, type TaskId } from '@ctws/contracts'
+import { type CompletedTaskResponse, type TaskId } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { completedQuery } from '../api'
 import { useTaskActions } from '../hooks/useTaskActions'
 import { DaySection, ProjectRail, RowLead } from '../../../shell/rows'
@@ -9,7 +9,7 @@ import { EmptyState } from '../../../platform/ui/EmptyState'
 import { DONE_LIST_MEASURE } from '../components/TaskRowParts'
 import { StatusButton } from '../components/StatusControls'
 import { TaskDetail } from '../components/TaskDetail'
-import { useFocusAfterRemoval } from '../components/useFocusAfterRemoval'
+import { useRowPane, useRowRefs } from '../components/useRowPane'
 import { addDays } from '@ctws/core/day'
 import { clockTime } from '@ctws/core/clock'
 import { MONTHS, weekdayOf, ymd } from '../../../platform/time/dates'
@@ -37,23 +37,19 @@ export function Completed() {
   const heading = useRef<HTMLHeadingElement>(null)
   const [error, setError] = useState<string | null>(null)
   const actions = useTaskActions(setError)
-  // An open pane can delete its task or bring it back to work: either way its row leaves.
-  useFocusAfterRemoval({
-    ids: () =>
-      [...document.querySelectorAll<HTMLElement>('[data-done-row]')].map((el) =>
-        idFrom(taskId, el.dataset.doneRow!),
-      ),
-    rowFor: (id) => document.querySelector<HTMLElement>(`[data-done-row="${id}"]`),
-    heading: () => heading.current,
-    open: openId,
-  })
-
   const rows = completed.data?.tasks ?? []
-  const openTask = rows.find((t) => t.id === openId)
-  // A pane whose task has left this list (deleted, brought back to work) closes itself.
-  useEffect(() => {
-    if (openId && completed.isSuccess && !openTask) setOpenId(null)
-  }, [openId, openTask, completed.isSuccess])
+  // An open pane can delete its task or bring it back to work: either way its row leaves, and
+  // the pane closes itself.
+  const titles = useRowRefs()
+  const pane = useRowPane({
+    rows: titles,
+    tasks: rows,
+    settled: completed.isSuccess,
+    openId,
+    setOpenId,
+    heading: () => heading.current,
+  })
+  const openTask = pane.openTask
   const days: { day: string; tasks: CompletedTaskResponse[] }[] = []
   for (const t of rows) {
     const last = days[days.length - 1]
@@ -117,6 +113,7 @@ export function Completed() {
                   </span>
                   <button
                     type="button"
+                    ref={titles.ref(t.id)}
                     data-done-row={t.id}
                     onClick={() => setOpenId(t.id)}
                     className="flex min-w-0 flex-1 flex-col py-2.5 text-left"
@@ -136,7 +133,7 @@ export function Completed() {
           Showing the most recent {rows.length}. Older work is in Review, week by week.
         </p>
       )}
-      {openTask && <TaskDetail key={openTask.id} task={openTask} onClose={() => setOpenId(null)} />}
+      {openTask && <TaskDetail key={openTask.id} task={openTask} onClose={pane.close} />}
     </>
   )
 }

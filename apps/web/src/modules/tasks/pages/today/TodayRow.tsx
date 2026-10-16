@@ -18,6 +18,7 @@ export function TodayRow({
   timeZone,
   now,
   saved,
+  rowRef,
   onOpen,
   onKeyDown,
   onStatus,
@@ -31,6 +32,8 @@ export function TodayRow({
   timeZone: string
   now: Date
   saved: boolean
+  /** The title button's ref: the row's focus carrier. */
+  rowRef: (el: HTMLElement | null) => () => void
   onOpen: () => void
   onKeyDown: (e: KeyboardEvent) => void
   onStatus: (status: TaskStatus) => void
@@ -74,6 +77,7 @@ export function TodayRow({
         </span>
         <button
           type="button"
+          ref={rowRef}
           data-today-row={t.id}
           onClick={onOpen}
           onKeyDown={onKeyDown}

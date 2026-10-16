@@ -24,6 +24,7 @@ export function InProgressSection({
   today,
   timeZone,
   savedId,
+  rowRef,
   onOpen,
   onKeyDown,
   onStatus,
@@ -32,6 +33,8 @@ export function InProgressSection({
   today: string
   timeZone: string
   savedId: string | null
+  /** Each title button's ref: the row's focus carrier. */
+  rowRef: (id: TaskId) => (el: HTMLElement | null) => () => void
   onOpen: (id: TaskId) => void
   onKeyDown: (e: KeyboardEvent, t: TodayTaskResponse) => void
   onStatus: (id: TaskId, status: TaskStatus) => void
@@ -75,6 +78,7 @@ export function InProgressSection({
                   </span>
                   <button
                     type="button"
+                    ref={rowRef(t.id)}
                     data-today-row={t.id}
                     onClick={() => onOpen(t.id)}
                     onKeyDown={(e) => onKeyDown(e, t)}

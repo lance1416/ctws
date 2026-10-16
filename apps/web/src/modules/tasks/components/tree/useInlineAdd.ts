@@ -14,20 +14,23 @@ export function useInlineAdd({
   projectId,
   unfold,
   onRefuse,
+  focus,
 }: {
   projectId: ProjectId
   unfold: (ids: readonly TaskId[]) => void
   onRefuse: (message: string | null) => void
+  /** Puts focus on a row's handle. */
+  focus: (id: TaskId) => void
 }) {
   const qc = useQueryClient()
   // The parent whose children it appends to (null: the root level), and the row whose handle
   // takes focus back when it is cancelled.
-  const [adding, setAdding] = useState<{ parentId: TaskId | null; from: string } | null>(null)
+  const [adding, setAdding] = useState<{ parentId: TaskId | null; from: TaskId } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const inFlight = useRef(false)
 
   /** Opens the input, unfolding the parent first so it, and what it creates, is on screen. */
-  const start = (parentId: TaskId | null, from: string) => {
+  const start = (parentId: TaskId | null, from: TaskId) => {
     if (parentId) unfold([parentId])
     onRefuse(null)
     setError(null)
@@ -59,10 +62,7 @@ export function useInlineAdd({
   const cancel = (restoreFocus: boolean) => {
     const from = adding?.from
     setAdding(null)
-    if (restoreFocus && from)
-      queueMicrotask(() =>
-        document.querySelector<HTMLElement>(`[data-handle-id="${from}"]`)?.focus(),
-      )
+    if (restoreFocus && from) queueMicrotask(() => focus(from))
   }
 
   return { adding, error, start, addChild, commit, cancel }
