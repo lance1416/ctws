@@ -18,12 +18,16 @@ export const archivedProjectsQuery = () =>
 
 export const useProjects = (): UseQueryResult<ProjectListItem[]> => useQuery(projectsQuery())
 
-/** Live and archived together: an archived project still has its page and its colour. */
+/**
+ * Live and archived together: an archived project still has its page and its colour. A shelf that
+ * failed to load leaves the live ones; `isSuccess` waits for both, as only then is a project that
+ * is in neither known to be gone.
+ */
 export function useEveryProject(): { data: ProjectListItem[] | undefined; isSuccess: boolean } {
   const live = useProjects()
   const shelf = useQuery(archivedProjectsQuery())
   return {
-    data: live.data && shelf.data ? [...live.data, ...shelf.data] : undefined,
+    data: live.data ? [...live.data, ...(shelf.data ?? [])] : undefined,
     isSuccess: live.isSuccess && shelf.isSuccess,
   }
 }
