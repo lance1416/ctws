@@ -28,13 +28,14 @@ import { useOthersToday, useTodayRows } from './today/useTodayRows'
  * week beside them. The line holds every module's dated things; the server files each task.
  */
 export function Today() {
-  const today = useQuery(todayQuery())
-  const completed = useQuery(completedQuery())
-  const movement = useQuery(movementQuery())
   const timeZone = useTimeZone()
-  // Kept current while the page sits open: the now line, the date and which day is today follow it.
+  // Kept current while the page sits open: the now line, the date and which day is today follow
+  // it, and so do the server's lists, keyed by the day.
   const now = useNow()
   const day = ymd(now, timeZone)
+  const today = useQuery(todayQuery(day))
+  const completed = useQuery(completedQuery(day))
+  const movement = useQuery(movementQuery(day))
   const entries = useOthersToday(day)
   // In the address, as on a project page: opening another row is a navigation, which the open
   // pane's unsaved-edit guard sees.

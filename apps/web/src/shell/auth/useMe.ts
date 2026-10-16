@@ -1,7 +1,8 @@
 import { api, type UserResponse } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { ApiError, call } from '../../platform/http/api'
-import { browserZone } from '../../platform/time/dates'
+import { browserZone, ymd } from '../../platform/time/dates'
+import { useNow } from '../../platform/time/useNow'
 
 /**
  * The signed-in user, or null when there is no valid session. Only a 401 means signed out; any
@@ -29,4 +30,9 @@ export function useMe() {
 export function useTimeZone(): string {
   const me = useMe()
   return me.data?.timezone ?? browserZone()
+}
+
+/** Today in the account's zone, `YYYY-MM-DD`, turning at its midnight while the page stays open. */
+export function useAccountToday(): string {
+  return ymd(useNow(), useTimeZone())
 }

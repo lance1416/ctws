@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useAccountToday } from '../../../shell/auth'
 import { useProjects } from '../../../shell/projects'
 import { todayQuery } from '../api'
 import { openTasksOf } from '../logic/openTasks'
@@ -6,7 +7,7 @@ import { todaySegments } from '../logic/today'
 
 /** The rail's count for Today. */
 export function TodayCount() {
-  const today = useQuery(todayQuery())
+  const today = useQuery(todayQuery(useAccountToday()))
   const count = today.data?.length ?? null
   if (count === null || count <= 0) return null
   return (
@@ -26,7 +27,7 @@ export function OpenTaskCount() {
 
 /** What is pressing among them, from Today's own list: what is late and what is planned. */
 export function TaskStatusLine() {
-  const today = useQuery(todayQuery())
+  const today = useQuery(todayQuery(useAccountToday()))
   const { overdue, planned } = todaySegments(today.data ?? [])
   const late = overdue.length
   const parts = [

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { weekdayDay, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { PanelEmpty } from '../../../platform/ui/Panel'
-import { useTimeZone } from '../../../shell/auth'
+import { useAccountToday, useTimeZone } from '../../../shell/auth'
 import { ProjectRail } from '../../../shell/rows'
 import { completedQuery, todayQuery } from '../api'
 import { revealHref } from '../logic/crumb'
@@ -16,10 +16,10 @@ import { StatusMark } from './StatusMark'
  * dealt with, then what is in progress. No controls.
  */
 export function TodayGlance() {
-  const today = useQuery(todayQuery())
+  const localToday = useAccountToday()
+  const today = useQuery(todayQuery(localToday))
   // The same list Review's Done view and Today's Done section read.
-  const completed = useQuery(completedQuery())
-  const localToday = ymd(useNow(), useTimeZone())
+  const completed = useQuery(completedQuery(localToday))
 
   if (today.isError) {
     return (

@@ -6,12 +6,12 @@ import { movedLine } from '../logic/movement'
 import { openTasksOf } from '../logic/openTasks'
 import { shortDay, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
-import { useTimeZone } from '../../../shell/auth'
+import { useAccountToday, useTimeZone } from '../../../shell/auth'
 import { deadlineDayLead, RowLead } from '../../../shell/rows'
 
 /** One project's movement: what is late, what is next, when it last moved. */
 function useMoved(projectId: ProjectId) {
-  const movement = useQuery(movementQuery())
+  const movement = useQuery(movementQuery(useAccountToday()))
   return movement.data?.find((m) => m.projectId === projectId)
 }
 

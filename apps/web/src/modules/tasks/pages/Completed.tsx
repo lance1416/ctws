@@ -26,11 +26,11 @@ function dayHeading(day: string, today: string): string {
 
 /** Review's Done view, newest first. The server decides each task's day; this only groups by it. */
 export function Completed() {
-  const completed = useQuery(completedQuery())
-  // In the address, so opening another row passes the open pane's unsaved-edit guard.
-  const { openId, setOpenId } = useTaskParam()
   const timezone = useTimeZone()
   const today = ymd(useNow(), timezone)
+  const completed = useQuery(completedQuery(today))
+  // In the address, so opening another row passes the open pane's unsaved-edit guard.
+  const { openId, setOpenId } = useTaskParam()
   const heading = useRef<HTMLHeadingElement>(null)
   const [error, setError] = useState<string | null>(null)
   const actions = useTaskActions(setError)

@@ -6,7 +6,7 @@ import { dayPhrase, nearDay, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { textbox } from '../../../platform/ui/formStyles'
 import { useLineEntry } from '../../../platform/ui/useLineEntry'
-import { useTimeZone } from '../../../shell/auth'
+import { useAccountToday, useTimeZone } from '../../../shell/auth'
 import { createTask, movementQuery, projectTasksQuery } from '../api'
 import { PROJECT_PAGE_KEYS } from '../logic/keys'
 import { CreateTaskDialog } from './CreateTaskDialog'
@@ -19,7 +19,7 @@ import { BODY_START } from '../../../shell/rows'
  * rollups, left out when nothing is scored or nothing is done.
  */
 export function ProjectNumbers({ projectId }: { projectId: ProjectId }) {
-  const movement = useQuery(movementQuery())
+  const movement = useQuery(movementQuery(useAccountToday()))
   const timeZone = useTimeZone()
   const row = movement.data?.find((r) => r.projectId === projectId)
   const tasks = useQuery(projectTasksQuery(projectId))
