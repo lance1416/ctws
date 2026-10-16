@@ -249,6 +249,10 @@ describe('task dependencies', () => {
     // Reading follows GET /tasks/:id: someone else's task, or none at all, is not found.
     expect((await read(theirTask)).statusCode).toBe(404)
     expect((await read('99999999-9999-4999-8999-999999999999')).statusCode).toBe(404)
+    // Removing follows it too: there is no edge of someone else's task to say is gone.
+    expect((await undepend(ctx, theirTask, mine)).statusCode).toBe(404)
+    // An edge of this workspace's task that was never there is already gone.
+    expect((await undepend(ctx, mine, theirTask)).statusCode).toBe(204)
   })
 
   it('writes the arrival and the departure into the task history', async () => {

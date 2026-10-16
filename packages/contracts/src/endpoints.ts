@@ -416,9 +416,10 @@ export const api = {
     removeDependency: endpoint({
       method: 'DELETE',
       path: '/tasks/:id/dependencies/:blockerId',
-      summary: 'Stop a task waiting for another.',
+      summary: 'Stop a task waiting for another. Removing one that is not there changes nothing.',
       params: dependencyParams,
       ok: 204,
+      refusals: [404],
     }),
   },
 

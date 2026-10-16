@@ -394,13 +394,17 @@ export async function addDependency(
   })
 }
 
-/** Forgets that `blockedId` waits for `blockerId`. Also idempotent. */
+/**
+ * Forgets that `blockedId` waits for `blockerId`. Also idempotent: an edge that is not there is
+ * already gone, but a task that is not there has no edges to ask about.
+ */
 export async function removeDependency(
   db: Db,
   ctx: Actor,
   { blockedId, blockerId }: Edge,
 ): Promise<void> {
   await db.transaction(async (tx) => {
+    await getTask(tx, ctx.workspaceId, blockedId)
     const removed = await tx
       .delete(taskDependencies)
       .where(
