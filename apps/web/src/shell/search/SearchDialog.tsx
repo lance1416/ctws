@@ -1,5 +1,6 @@
 import { KeyHint } from '../../platform/ui/KeyHint'
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useDebouncedValue } from '../../platform/time/useDebouncedValue'
 import { useNavigate } from 'react-router-dom'
 import { useRegistry, type Registry } from '../registry'
 import { federate, type ProviderResult } from './federate'
@@ -9,9 +10,6 @@ import { Modal } from '../../platform/ui/Modal'
 import { useComposing } from '../../platform/keyboard/composition'
 import { pressesWith, useKeyTable, type KeyTable } from '../../platform/keyboard/keyTable'
 import { Button } from '../../platform/ui/Button'
-
-/** Long enough that typing a word does not fire a request per letter, short enough to feel live. */
-const DEBOUNCE_MS = 150
 
 type Row = {
   key: string
@@ -79,7 +77,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
   const composing = useComposing()
   const keys = useKeyTable(RESULT_KEYS)
   const [query, setQuery] = useState('')
-  const [debounced, setDebounced] = useState('')
+  const debounced = useDebouncedValue(query.trim())
   // The highlighted row, for the words it was chosen under: new words start again at the top.
   const [picked, setPicked] = useState({ at: 0, under: '' })
   const navigate = useNavigate()
@@ -87,11 +85,6 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
   const base = useId()
   const listId = `${base}-results`
   const optionId = (i: number) => `${base}-option-${i}`
-
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(query.trim()), DEBOUNCE_MS)
-    return () => clearTimeout(timer)
-  }, [query])
 
   // One hook per provider; the registry's list is fixed, so the hook order is too.
   const registry = useRegistry()

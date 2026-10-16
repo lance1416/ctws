@@ -1,9 +1,10 @@
 import { LAYER } from '../../platform/ui/layers'
 import type { City } from '@ctws/contracts'
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useId, useState } from 'react'
 import { citiesQuery } from './api'
 import { field } from '../../platform/ui/formStyles'
+import { useDebouncedValue } from '../../platform/time/useDebouncedValue'
 
 /**
  * A city, saved in the canonical spelling picked from the server's list; a name it does not know
@@ -24,15 +25,19 @@ export function PickCity({
   const [typing, setTyping] = useState(false)
   const listId = useId()
 
+  const asked = useDebouncedValue(value.trim())
+  const searching = typing && asked.length >= 3
+  // While the words change, the last list stays up rather than blinking away.
   const hits = useQuery({
-    ...citiesQuery(value),
-    enabled: typing && value.trim().length >= 3,
+    ...citiesQuery(asked),
+    enabled: searching,
+    placeholderData: keepPreviousData,
   })
 
-  const cities = hits.data ?? []
+  const cities = searching ? (hits.data ?? []) : []
   const exact = cities.some((c) => c.label === value)
-  const listed = typing && cities.length > 0 && !exact
-  const unknown = typing && value.trim().length >= 3 && hits.isSuccess && cities.length === 0
+  const listed = cities.length > 0 && !exact
+  const unknown = searching && hits.isSuccess && !hits.isPlaceholderData && cities.length === 0
 
   return (
     <div className="relative">

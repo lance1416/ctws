@@ -7,12 +7,13 @@ import {
   OBJECT_TYPES,
   type ObjectType,
 } from '@ctws/contracts'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { candidatesQuery, createLink, type Endpoint, linkKeys } from './api'
 import { useRegistry } from '../registry'
 import { Modal } from '../../platform/ui/Modal'
 import { Button } from '../../platform/ui/Button'
+import { useDebouncedValue } from '../../platform/time/useDebouncedValue'
 
 /** Links two things in two steps, what and then how: the kinds of link depend on both ends. */
 export function AddLink({
@@ -30,9 +31,12 @@ export function AddLink({
   const [typed, setTyped] = useState('')
   const [chosen, setChosen] = useState<LinkCandidate | null>(null)
 
+  const asked = useDebouncedValue(typed.trim())
+  // While the words change, the last answer stays up rather than a blank or "Nothing matches".
   const candidates = useQuery({
-    ...candidatesQuery(of, typed),
+    ...candidatesQuery(of, asked),
     enabled: chosen === null,
+    placeholderData: keepPreviousData,
   })
   const make = useMutation({
     mutationFn: async (kind: LinkKind) => {
@@ -74,7 +78,7 @@ export function AddLink({
               Couldn't search. Check that the server is running.
             </p>
           )}
-          {candidates.isSuccess && offered.length === 0 && (
+          {candidates.isSuccess && !candidates.isPlaceholderData && offered.length === 0 && (
             <p className="px-4 py-3 text-sm text-ink-muted">Nothing matches</p>
           )}
           <ul className="max-h-80 overflow-y-auto py-1">
