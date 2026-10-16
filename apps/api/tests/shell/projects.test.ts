@@ -18,13 +18,12 @@ async function setup(email?: string): Promise<Harness> {
 // Registration creates the workspace's inbox, so a fresh workspace is not empty; these tests are
 // about ordinary projects.
 type Listed = { id: string; isInbox: boolean }
-type Named = { id: string; isInbox: boolean; name: string; color: string | null }
+type Named = { id: string; isInbox: boolean; name: string; color: string }
 const ordinary = (body: { projects: Listed[] }) => body.projects.filter((p) => !p.isInbox)
 
 describe('projects', () => {
-  // THE IDENTITY COLOUR IS A SLOT, ASSIGNED ONCE. It was derived in the browser by hashing the
-  // project id into six buckets, which collides on four projects 72% of the time -- the user had
-  // four projects wearing three colours. These pin the replacement.
+  // THE IDENTITY COLOUR IS A SLOT, ASSIGNED ONCE by the server: six buckets hashed from the id
+  // would collide on four projects 72% of the time.
   describe('identity colour', () => {
     const colorsOf = async (ctx: Harness) => {
       const res = await ctx.app.inject({
@@ -133,6 +132,29 @@ describe('projects', () => {
       payload: { name: 'x', rank: 'a0' },
     })
     expect(res.statusCode).toBe(400)
+  })
+
+  it('picks the colour itself, and never takes one away', async () => {
+    const ctx = await setup()
+    const create = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/projects',
+      headers: ctx.authed,
+      payload: { name: 'x', color: 'project-4' },
+    })
+    expect(create.statusCode).toBe(400)
+    const id = await createProject(ctx, 'x')
+    const patch = (color: unknown) =>
+      ctx.app.inject({
+        method: 'PATCH',
+        url: `/api/v1/projects/${id}`,
+        headers: ctx.authed,
+        payload: { color },
+      })
+    expect((await patch(null)).statusCode).toBe(400)
+    const recoloured = await patch('project-4')
+    expect(recoloured.statusCode).toBe(200)
+    expect(recoloured.json()).toMatchObject({ color: 'project-4' })
   })
 
   it('requires authentication', async () => {

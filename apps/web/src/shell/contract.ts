@@ -40,8 +40,8 @@ export type ProjectContribution = {
   /** Rows on the project's page that need more than a list of edges, like the task tree. */
   Block?: {
     Component: ComponentType<{ projectId: string; view: string }>
-    /** Tabs in the block's head, drawn from two up; the first is the default. */
-    views?: readonly { id: string; label: string }[]
+    /** The block's views, the first the default; tabs in its head are drawn from two up. */
+    views: readonly [BlockView, ...BlockView[]]
     /** A control in the block's head, typically its own "new". */
     Action?: ComponentType<{ projectId: string }>
   }
@@ -54,6 +54,8 @@ export type ProjectContribution = {
   /** What deleting a project takes with it, as a phrase ("12 tasks"), or null for nothing. */
   contents?: (qc: QueryClient, projectId: string) => Promise<string | null>
 }
+
+type BlockView = { id: string; label: string }
 
 export type HelpSection = {
   title: string
@@ -94,7 +96,7 @@ export type Widget = {
   /** An editorial order, not registration order. */
   order?: number
   /** How many of the Workbench's twelve columns it takes from 1024px up. */
-  span?: 4 | 6 | 8 | 12
+  span: 4 | 6 | 8
 }
 
 export type ModulePage = {

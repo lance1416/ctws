@@ -6,7 +6,8 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./lunar-names": "./src/birthday/names.ts"
+    "./lunar-names": "./src/birthday/names.ts",
+    "./day": "./src/day.ts"
   },
   "scripts": {
     "test": "vitest run"

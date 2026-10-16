@@ -1,6 +1,6 @@
 import type { CalendarEntry, Problem } from '@ctws/contracts'
 
-const BASE = import.meta.env.VITE_API_BASE ?? '/api/v1'
+const BASE = '/api/v1'
 
 /** A failed request. `status` says which refusal it was; `message` is the server's title. */
 export class ApiError extends Error {
@@ -27,12 +27,7 @@ export async function apiFetch<T = unknown>(path: string, init: RequestInit = {}
   headers.set('x-ctws-client', 'web')
   if (init.body) headers.set('content-type', 'application/json')
 
-  const res = await fetch(`${BASE}${path}`, {
-    ...init,
-    headers,
-    // Only matters for a cross-origin API; harmless on one origin.
-    credentials: 'include',
-  })
+  const res = await fetch(`${BASE}${path}`, { ...init, headers })
 
   if (res.status === 204) return undefined as T
 

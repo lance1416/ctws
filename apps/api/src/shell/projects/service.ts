@@ -17,7 +17,7 @@ import { projects, type Project } from './tables'
 const INBOX_NAME = 'Inbox'
 
 /** First free slot, so the first six projects get six colours; archived projects keep theirs. */
-function firstFreeColor(taken: readonly (string | null)[]): ProjectColor {
+function firstFreeColor(taken: readonly ProjectColor[]): ProjectColor {
   const used = new Set(taken)
   return projectColors.find((c) => !used.has(c)) ?? projectColors[0]
 }
@@ -68,7 +68,7 @@ export async function createProject(
         id: uuidv7(),
         workspaceId,
         name: input.name,
-        color: input.color ?? firstFreeColor(taken.map((t) => t.color)),
+        color: firstFreeColor(taken.map((t) => t.color)),
         rank: rankBetween(last?.rank ?? null, null),
       })
       .returning()

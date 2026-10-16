@@ -53,9 +53,8 @@ export type ShellConfig = {
 export type PinnedPage = ModulePage & { key: string }
 /** `moduleId` is null for the shell's own entries. */
 export type RegisteredKind = KindEntry & { moduleId: string | null }
-export type RegisteredChord = Chord & { moduleId: string | null }
 export type RegisteredRelation = RelationContribution & { moduleId: string | null }
-export type RegisteredWidget = Widget & { moduleId: string; moduleLabel: string }
+export type RegisteredWidget = Widget & { moduleId: string }
 export type SearchProvider = { moduleId: string; moduleLabel: string } & NonNullable<
   WorkspaceModule['search']
 >
@@ -66,19 +65,18 @@ export type RegisteredProjectBlock = { moduleId: string; moduleLabel: string } &
 
 export type Registry = {
   pinned: PinnedPage[]
-  phoneTab: PinnedPage | null
+  phoneTab: PinnedPage
+  /** The shell's own Projects first. */
   kinds: RegisteredKind[]
-  /** The shell's own kind, also first in `kinds`. */
-  projectsKind: RegisteredKind
-  chords: RegisteredChord[]
-  chordFor: (key: string) => RegisteredChord | null
+  chords: Chord[]
+  chordFor: (key: string) => Chord | null
   captures: { moduleId: string; capture: CaptureContribution }[]
   captureModuleId: string
   search: SearchProvider[]
   calendar: CalendarProvider[]
   widgets: RegisteredWidget[]
   relations: RegisteredRelation[]
-  relationFor: (type: ObjectType) => RegisteredRelation | null
+  relationFor: (type: ObjectType) => RegisteredRelation
   projectBlocks: RegisteredProjectBlock[]
   projectHeadlines: { moduleId: string; Component: ComponentType<{ projectId: string }> }[]
   projectFacts: { moduleId: string; Facts: NonNullable<ProjectContribution['Facts']> }[]
@@ -99,10 +97,9 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
     ...SHELL_PAGES.map((p) => [`shell:${p.id}`, p] as const),
     ...modules.flatMap((m) => (m.pages ?? []).map((p) => [`${m.id}:${p.id}`, p] as const)),
   ])
-  const chords: RegisteredChord[] = [
-    ...SHELL_CHORDS.map((c) => ({ ...c, moduleId: null })),
-    ...modules.flatMap((m) => (m.chords ?? []).map((c) => ({ ...c, moduleId: m.id }))),
-  ].sort((a, b) => a.order - b.order)
+  const chords = [...SHELL_CHORDS, ...modules.flatMap((m) => m.chords ?? [])].sort(
+    (a, b) => a.order - b.order,
+  )
   const relations: RegisteredRelation[] = [
     ...SHELL_RELATIONS.map((r) => ({ ...r, moduleId: null })),
     ...modules.flatMap((m) => (m.relations ?? []).map((r) => ({ ...r, moduleId: m.id }))),
@@ -113,18 +110,17 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
   if (!captures.some((c) => c.moduleId === config.captureModuleId)) {
     throw new Error(`capture module "${config.captureModuleId}" is not registered`)
   }
-  const projectsKind: RegisteredKind = { ...PROJECTS_KIND, moduleId: null }
   const phoneTab = offered.get(config.phoneTab)
+  if (!phoneTab) throw new Error(`phone tab "${config.phoneTab}" is not offered`)
 
   return {
     pinned: config.pinned.flatMap((key) => {
       const page = offered.get(key)
       return page ? [{ ...page, key }] : []
     }),
-    phoneTab: phoneTab ? { ...phoneTab, key: config.phoneTab } : null,
-    projectsKind,
+    phoneTab: { ...phoneTab, key: config.phoneTab },
     kinds: [
-      projectsKind,
+      { ...PROJECTS_KIND, moduleId: null },
       ...modules.flatMap((m) => (m.kind ? [{ ...m.kind, moduleId: m.id }] : [])).sort(byOrder),
     ],
     chords,
@@ -136,12 +132,14 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
     ),
     calendar: modules.flatMap((m) => (m.calendar ? [{ moduleId: m.id, ...m.calendar }] : [])),
     widgets: modules
-      .flatMap((m) =>
-        (m.widgets ?? []).map((w) => ({ ...w, moduleId: m.id, moduleLabel: m.label })),
-      )
+      .flatMap((m) => (m.widgets ?? []).map((w) => ({ ...w, moduleId: m.id })))
       .sort(byOrder),
     relations,
-    relationFor: (type) => relations.find((r) => r.type === type) ?? null,
+    relationFor: (type) => {
+      const found = relations.find((r) => r.type === type)
+      if (!found) throw new Error(`no module says where a ${type} lives`)
+      return found
+    },
     projectBlocks: modules.flatMap((m) =>
       m.project?.Block ? [{ moduleId: m.id, moduleLabel: m.label, ...m.project.Block }] : [],
     ),

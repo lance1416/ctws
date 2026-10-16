@@ -64,7 +64,7 @@ export async function buildApp(opts: {
     transformObject: (spec) => documentRefusals(jsonSchemaTransformObject(spec)),
   })
 
-  // CORS, CSRF and rate limiting; must precede the routes they guard.
+  // CSRF and rate limiting; must precede the routes they guard.
   await registerGuards(app)
 
   // Before the auth routes, which set and clear the cookie.

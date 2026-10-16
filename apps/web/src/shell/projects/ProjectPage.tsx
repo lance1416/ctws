@@ -51,11 +51,9 @@ export function ProjectPage() {
         <div className="grid min-w-0 grid-cols-1 items-start gap-10 @5xl:grid-cols-[minmax(0,1fr)_20rem] @5xl:gap-14">
           <div className="flex min-w-0 flex-col gap-4">
             {registry.projectBlocks.map(
-              ({ moduleId, moduleLabel, Component, Action, views: offered = [] }) => {
+              ({ moduleId, moduleLabel, Component, Action, views: offered }) => {
                 const chosen =
-                  offered.find((v) => v.id === views.picked.get(moduleId))?.id ??
-                  offered[0]?.id ??
-                  'default'
+                  offered.find((v) => v.id === views.picked.get(moduleId))?.id ?? offered[0].id
                 return (
                   <Panel
                     key={moduleId}

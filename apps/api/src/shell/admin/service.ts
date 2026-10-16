@@ -32,9 +32,9 @@ export async function listUsers(db: Queryable): Promise<AdminUser[]> {
   return rows.map(toAdminUser)
 }
 
-export async function getAdminUser(db: Queryable, id: string): Promise<AdminUser | null> {
-  const rows = await db.select(adminColumns).from(users).where(eq(users.id, id)).limit(1)
-  return rows[0] ? toAdminUser(rows[0]) : null
+export async function getAdminUser(db: Queryable, id: string): Promise<AdminUser> {
+  const [row] = await db.select(adminColumns).from(users).where(eq(users.id, id)).limit(1)
+  return toAdminUser(row!)
 }
 
 export async function updateUser(
@@ -42,12 +42,12 @@ export async function updateUser(
   id: string,
   patch: { role?: Role | undefined; disabled?: boolean | undefined },
 ): Promise<AdminUser> {
-  await db.transaction(async (tx) => {
+  return db.transaction(async (tx) => {
     // Serialise every change to the admin set. Without this, two admins demoting each other
     // concurrently would each see the other's row as still enabled (READ COMMITTED) and both commit.
     await lockFor(tx, LOCKS.adminSet)
 
-    const updated = await tx
+    const [updated] = await tx
       .update(users)
       .set({
         ...(patch.role !== undefined ? { role: patch.role } : {}),
@@ -57,8 +57,8 @@ export async function updateUser(
         ...(patch.disabled === false ? { disabledAt: null } : {}),
       })
       .where(eq(users.id, id))
-      .returning({ id: users.id })
-    if (updated.length === 0) throw new UserNotFoundError()
+      .returning(adminColumns)
+    if (!updated) throw new UserNotFoundError()
 
     // Same transaction as the disable, so there is no window where the account is disabled
     // but a session still exists.
@@ -70,9 +70,6 @@ export async function updateUser(
       .from(users)
       .where(and(eq(users.role, 'admin'), isNull(users.disabledAt)))
     if (remaining[0]!.n < 1) throw new LastAdminError()
+    return toAdminUser(updated)
   })
-
-  const user = await getAdminUser(db, id)
-  if (!user) throw new UserNotFoundError()
-  return user
 }

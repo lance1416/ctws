@@ -3,7 +3,6 @@ import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { AdminRequiredError } from '../admin/errors'
 import { SESSION_COOKIE, setSessionCookie } from './cookie'
 import { SessionRequiredError } from './errors'
-import { hasRole } from './roles'
 import { getAuthContext } from './service'
 import { findValidSession } from './session'
 
@@ -36,7 +35,7 @@ export function authenticated(scope: FastifyInstance): void {
 /** Nested inside an `authenticated` scope: admin accounts only. */
 export function adminOnly(scope: FastifyInstance): void {
   scope.addHook('onRequest', async (req) => {
-    if (!hasRole(currentUser(req).role, 'admin')) throw new AdminRequiredError()
+    if (currentUser(req).role !== 'admin') throw new AdminRequiredError()
   })
 }
 

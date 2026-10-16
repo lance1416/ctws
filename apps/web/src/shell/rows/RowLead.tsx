@@ -1,11 +1,6 @@
 import { HANG_WIDTH } from '../../platform/ui/hang'
 import type { Lead, LeadTone } from './leads'
 
-/**
- * A row's first column, saying when in one short word (`leadFor`). Right-aligned and tabular, so
- * a list's dates end at one x; on the title's own line, so word and title read as one.
- */
-
 const TONE: Record<LeadTone, string> = {
   missed: 'text-missed',
   deadline: 'text-deadline',
@@ -23,6 +18,10 @@ const SAID: Record<LeadTone, string> = {
   quiet: '',
 }
 
+/**
+ * A row's first column, saying when in one short word (`leadFor`). Right-aligned and tabular, so
+ * a list's dates end at one x; on the title's own line, so word and title read as one.
+ */
 export function RowLead({
   lead,
   dateTime,

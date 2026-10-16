@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { WORKBENCH_PATH } from '../registry'
 import { apiFetch } from '../../platform/http/api'
+import { browserZone } from '../../platform/time/dates'
 import { useMe } from './useMe'
 import { BUTTON, LINK } from '../../platform/ui/buttonStyles'
 import { textbox } from '../../platform/ui/formStyles'
@@ -22,7 +23,7 @@ export function Login() {
         method: 'POST',
         body: JSON.stringify(
           path === '/auth/register'
-            ? { email, password, timezone: browserTimezone() }
+            ? { email, password, timezone: browserZone() }
             : { email, password },
         ),
       }),
@@ -110,9 +111,4 @@ export function Login() {
       </div>
     </main>
   )
-}
-
-function browserTimezone(): string {
-  // Only the new account's starting zone; from then on `users.timezone` decides.
-  return Intl.DateTimeFormat().resolvedOptions().timeZone
 }

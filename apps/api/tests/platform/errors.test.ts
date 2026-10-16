@@ -60,11 +60,7 @@ describe('every refusal keeps its wire form', () => {
       { status: 422, title: 'Unprocessable Entity', detail: 'That repeat rule schedules nothing' },
     ],
     [new EmailTakenError(), { status: 409, title: 'That email is already registered' }],
-    [new RegistrationClosedError('closed'), { status: 403, title: 'Registration is closed' }],
-    [
-      new RegistrationClosedError('invite'),
-      { status: 403, title: 'A valid invite code is required' },
-    ],
+    [new RegistrationClosedError(), { status: 403, title: 'Registration is closed' }],
     [new InvalidCredentialsError(), { status: 401, title: 'Invalid email or password' }],
     [new SessionRequiredError(), { status: 401, title: 'Authentication required' }],
     [new UserNotFoundError(), { status: 404, title: 'User not found' }],

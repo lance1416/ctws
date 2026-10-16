@@ -27,7 +27,7 @@ export const users = pgTable(
   },
   (t) => [
     uniqueIndex('users_email_key').on(t.email),
-    check('users_role_check', sql`${t.role} in ('admin', 'maintainer', 'member')`),
+    check('users_role_check', sql`${t.role} in ('admin', 'member')`),
   ],
 )
 

@@ -1,4 +1,9 @@
-import type { PersonResponse, MeetingOccurrence, ReadingItemResponse } from '@ctws/contracts'
+import type {
+  LinksResponse,
+  MeetingOccurrence,
+  PersonResponse,
+  ReadingItemResponse,
+} from '@ctws/contracts'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createProject, setupWith, type Harness, web } from '../helpers/harness'
 
@@ -75,8 +80,9 @@ describe('one object, several kinds of edge', () => {
     const reading = await post<ReadingItemResponse>(ctx, '/api/v1/reading', {
       kind: 'link',
       url: 'https://example.test/a',
-      projectId: project,
     })
+    const filed = await patch(ctx, `/api/v1/reading/${reading.id}`, { projectId: project })
+    expect(filed.statusCode, filed.body).toBe(200)
     const meeting = await post<MeetingOccurrence>(ctx, '/api/v1/meetings', {
       title: '二面',
       startsLocal: '2026-10-20T21:00',
@@ -95,12 +101,13 @@ describe('one object, several kinds of edge', () => {
 
     const res = await ctx.app.inject({
       method: 'GET',
-      url: `/api/v1/reading?projectId=${project}`,
+      url: `/api/v1/links/project/${project}`,
       headers: web(ctx),
     })
     expect(res.statusCode, res.body).toBe(200)
-    const items = (res.json() as { items: ReadingItemResponse[] }).items
-    expect(items.map((i) => i.id)).toEqual([reading.id])
+    const groups = (res.json() as LinksResponse).groups
+    expect(groups.map((g) => g.type)).toEqual(['reading'])
+    expect(groups[0]!.items.map((i) => i.id)).toEqual([reading.id])
   })
 
   it('keeps one workspace edges out of another, though both are rows in one table', async () => {
@@ -134,17 +141,14 @@ describe('one object, several kinds of edge', () => {
     expect(theirList.statusCode, theirList.body).toBe(200)
     expect((theirList.json() as { people: PersonResponse[] }).people).toEqual([])
 
-    // My project id is a real id; filtering THEIR list by it must still find nothing rather than
-    // reaching across through an edge that carries no workspace of its own.
+    // My project id is a real id; reading its edges from THEIR session must find nothing rather
+    // than reaching across through an edge row.
     const reached = await ctx.app.inject({
       method: 'GET',
-      url: `/api/v1/people?projectId=${myProject}`,
+      url: `/api/v1/links/project/${myProject}`,
       headers: theirHeaders,
     })
-    expect([200, 404]).toContain(reached.statusCode)
-    if (reached.statusCode === 200) {
-      expect((reached.json() as { people: PersonResponse[] }).people).toEqual([])
-    }
+    expect(reached.statusCode, reached.body).toBe(404)
 
     // And mine is exactly as I left it.
     const after = await ctx.app.inject({

@@ -23,9 +23,4 @@ describe('password', () => {
   it('returns false rather than throwing on a malformed hash', async () => {
     expect(await verifyPassword('not-a-hash', 'whatever')).toBe(false)
   })
-
-  it('throws rather than returning false on a non-string argument', async () => {
-    // @ts-expect-error intentionally passing the wrong type
-    await expect(verifyPassword(null, 'whatever')).rejects.toThrow(TypeError)
-  })
 })

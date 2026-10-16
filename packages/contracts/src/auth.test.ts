@@ -36,14 +36,8 @@ describe('registerBody', () => {
     },
   )
 
-  it('rejects unknown keys', () => {
-    expect(registerBody.safeParse({ ...valid, role: 'admin' }).success).toBe(false)
-  })
-
-  // When AUTH_REGISTRATION=invite, the endpoint validates its value; the schema only ensures it is an optional string
-  it('accepts an optional invite code', () => {
-    expect(registerBody.safeParse({ ...valid, inviteCode: 'let-me-in' }).success).toBe(true)
-    expect(registerBody.safeParse(valid).success).toBe(true)
+  it.each([{ role: 'admin' }, { inviteCode: 'let-me-in' }])('rejects unknown keys %j', (extra) => {
+    expect(registerBody.safeParse({ ...valid, ...extra }).success).toBe(false)
   })
 })
 
@@ -75,8 +69,10 @@ describe('userResponse', () => {
       workspaceId: '01931b9c-5d7e-7c3a-8f2e-1a2b3c4d5e6f',
     }
     expect(userResponse.safeParse(payload).success).toBe(false)
-    expect(userResponse.safeParse({ ...payload, role: 'root' }).success).toBe(false)
-    for (const role of ['admin', 'maintainer', 'member']) {
+    for (const role of ['root', 'maintainer']) {
+      expect(userResponse.safeParse({ ...payload, role }).success).toBe(false)
+    }
+    for (const role of ['admin', 'member']) {
       expect(userResponse.safeParse({ ...payload, role }).success).toBe(true)
     }
   })

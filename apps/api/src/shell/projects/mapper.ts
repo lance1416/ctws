@@ -1,4 +1,4 @@
-import { type ProjectListItem, projectColor, type ProjectResponse } from '@ctws/contracts'
+import type { ProjectListItem, ProjectResponse } from '@ctws/contracts'
 import { isoOrNull } from '../../platform/values'
 import type { ProjectListRow } from './queries'
 import type { Project } from './tables'
@@ -8,8 +8,7 @@ export function toProjectResponse(p: Project): ProjectResponse {
     id: p.id,
     workspaceId: p.workspaceId,
     name: p.name,
-    // The column is plain text; a slot this build does not know reads as no colour.
-    color: projectColor.safeParse(p.color).data ?? null,
+    color: p.color,
     isInbox: p.isInbox,
     rank: p.rank,
     archivedAt: isoOrNull(p.archivedAt),

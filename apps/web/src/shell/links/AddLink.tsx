@@ -80,7 +80,7 @@ export function AddLink({
                     </span>
                   )}
                   <span className="shrink-0 text-xs text-ink-subtle">
-                    {registry.relationFor(c.type)?.kind}
+                    {registry.relationFor(c.type).kind}
                   </span>
                 </button>
               </li>

@@ -11,7 +11,7 @@ afterEach(async () => {
   while (cleanups.length) await cleanups.pop()!()
 })
 
-const headers = { 'x-ctws-client': 'web', origin: 'http://localhost:5173' }
+const headers = { 'x-ctws-client': 'web' }
 const PASSWORD = 'correct horse battery'
 
 async function setup() {
@@ -96,16 +96,6 @@ describe('admin endpoint access', () => {
     expect(res.headers['content-type']).toContain('application/problem+json')
   })
 
-  // Pins the current boundary: `maintainer` exists but unlocks nothing yet (see auth/roles.ts).
-  // If this test changes, a maintainer capability is being added -- make that deliberate.
-  it.each(endpoints)('%s %s returns 403 to a maintainer', async (method, url, payload) => {
-    const { ctx, admin } = await setup()
-    const maintainer = await createUser(ctx, admin.cookie, 'mt@example.com', 'maintainer')
-    const res = await call(ctx, maintainer.cookie, method, url, payload)
-    expect(res.statusCode).toBe(403)
-    expect(res.headers['content-type']).toContain('application/problem+json')
-  })
-
   it('applies a demotion on the very next request, without waiting for the session to expire', async () => {
     const { ctx, admin } = await setup()
     const second = await createUser(ctx, admin.cookie, 'second@example.com', 'admin')
@@ -152,12 +142,12 @@ describe('POST /admin/users', () => {
       email: 'new@example.com',
       password: PASSWORD,
       timezone: 'Asia/Shanghai',
-      role: 'maintainer',
+      role: 'admin',
     })
     expect(res.statusCode).toBe(201)
     expect(res.json()).toMatchObject({
       email: 'new@example.com',
-      role: 'maintainer',
+      role: 'admin',
       disabledAt: null,
     })
     expect(res.body).not.toContain('argon2')
@@ -170,7 +160,7 @@ describe('POST /admin/users', () => {
     // The new user can log in, and the role they were given is what /auth/me reports.
     const cookie = await login(ctx, 'new@example.com')
     const me = await call(ctx, cookie, 'GET', '/auth/me')
-    expect(me.json()).toMatchObject({ role: 'maintainer' })
+    expect(me.json()).toMatchObject({ role: 'admin' })
   })
 
   it('returns 409 for a duplicate email and leaves no orphan workspace', async () => {
@@ -193,9 +183,11 @@ describe('POST /admin/users', () => {
     const { ctx, admin } = await setup()
     const base = { email: 'x@example.com', password: PASSWORD, timezone: 'UTC' }
     expect((await call(ctx, admin.cookie, 'POST', '/admin/users', base)).statusCode).toBe(400)
-    expect(
-      (await call(ctx, admin.cookie, 'POST', '/admin/users', { ...base, role: 'root' })).statusCode,
-    ).toBe(400)
+    for (const role of ['root', 'maintainer']) {
+      expect(
+        (await call(ctx, admin.cookie, 'POST', '/admin/users', { ...base, role })).statusCode,
+      ).toBe(400)
+    }
   })
 })
 
@@ -204,10 +196,10 @@ describe('PATCH /admin/users/:id', () => {
     const { ctx, admin } = await setup()
     const m = await createUser(ctx, admin.cookie, 'm@example.com', 'member')
     const res = await call(ctx, admin.cookie, 'PATCH', `/admin/users/${m.id}`, {
-      role: 'maintainer',
+      role: 'admin',
     })
     expect(res.statusCode).toBe(200)
-    expect(res.json()).toMatchObject({ id: m.id, role: 'maintainer' })
+    expect(res.json()).toMatchObject({ id: m.id, role: 'admin' })
   })
 
   it('returns 404 for an unknown user and 400 for an empty patch', async () => {

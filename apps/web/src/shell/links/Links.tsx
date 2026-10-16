@@ -19,14 +19,12 @@ export function Links({
   of,
   except,
   variant = 'list',
-  className = '',
 }: {
   of: Endpoint
   /** Kinds the page already shows in a module's own block, so they are not listed twice. */
   except?: readonly ObjectType[] | undefined
   /** `aside`: each kind its own block with a count and a `+`, beside a page's own block. */
   variant?: 'list' | 'aside'
-  className?: string
 }) {
   const registry = useRegistry()
   // Which kind the picker is for: any kind from "+ Link", one kind from a block's own `+`.
@@ -83,9 +81,9 @@ export function Links({
     // On a project's page every row here is linked to this project, so it wears its thread.
     const thread = of.type === 'project' ? of.id : null
     return (
-      <div className={`flex flex-col gap-8 ${className}`}>
+      <div className="flex flex-col gap-8">
         {groups.map((group) => {
-          const kind = registry.relationFor(group.type)?.kind.toLowerCase() ?? 'thing'
+          const kind = registry.relationFor(group.type).kind.toLowerCase()
           return (
             <section key={group.type} aria-label={group.label} className="min-w-0">
               <div className="mb-1 flex items-center gap-2">
@@ -152,7 +150,7 @@ export function Links({
   }
 
   return (
-    <div className={`flex flex-col gap-4 ${className}`}>
+    <div className="flex flex-col gap-4">
       {groups.map((group) => (
         <section key={group.type} aria-label={group.label} className="flex flex-col gap-1">
           <h3 className="flex items-baseline gap-2 px-2 text-xs font-semibold text-ink-subtle">
@@ -245,10 +243,12 @@ function LinkedRow({
         {label && <span className="shrink-0 text-sm text-ink-muted">{label}</span>}
       </>
     )
-    const shape = 'flex min-w-0 flex-1 items-start gap-3 py-2 pr-1 pl-3'
-    if (!where) return <span className={shape}>{body}</span>
     return (
-      <Link to={where.to(id)} data-linked={id} className={`${shape} hover:bg-hover`}>
+      <Link
+        to={where.to(id)}
+        data-linked={id}
+        className="flex min-w-0 flex-1 items-start gap-3 py-2 pr-1 pl-3 hover:bg-hover"
+      >
         {body}
       </Link>
     )
@@ -260,11 +260,12 @@ function LinkedRow({
       {label && <span className="shrink-0 text-xs text-ink-subtle">{label}</span>}
     </>
   )
-  const shape = 'flex min-w-0 flex-1 items-baseline gap-2 rounded-md px-2 py-1.5 text-sm text-ink'
-  // No module answers for this type: still a row, so a registration mistake hides no real link.
-  if (!where) return <span className={shape}>{body}</span>
   return (
-    <Link to={where.to(id)} data-linked={id} className={`${shape} hover:bg-hover`}>
+    <Link
+      to={where.to(id)}
+      data-linked={id}
+      className="flex min-w-0 flex-1 items-baseline gap-2 rounded-md px-2 py-1.5 text-sm text-ink hover:bg-hover"
+    >
       {body}
     </Link>
   )

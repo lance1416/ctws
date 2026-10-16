@@ -12,21 +12,28 @@ export type ObjectType = z.infer<typeof objectType>
 
 /** The kinds of edge and what may be at each end; `null` means any type. */
 export const LINK_KINDS = [
-  // No label: the group it lands in is already called Projects.
-  { kind: 'belongs', from: null, to: 'project', label: '', inverse: '' },
-  { kind: 'attends', from: 'meeting', to: 'person', label: 'attendee', inverse: 'attended' },
+  // What is filed under projects by link. A task's project is its own column, and projects do
+  // not nest. No label: the group it lands in is already called Projects.
+  {
+    kind: 'belongs',
+    from: ['reading', 'meeting', 'person'],
+    to: ['project'],
+    label: '',
+    inverse: '',
+  },
+  { kind: 'attends', from: ['meeting'], to: ['person'], label: 'attendee', inverse: 'attended' },
   {
     kind: 'recommends',
-    from: 'person',
-    to: 'reading',
+    from: ['person'],
+    to: ['reading'],
     label: 'recommended',
     inverse: 'recommended by',
   },
   { kind: 'about', from: null, to: null, label: 'about', inverse: 'about' },
 ] as const satisfies readonly {
   kind: string
-  from: ObjectType | null
-  to: ObjectType | null
+  from: readonly ObjectType[] | null
+  to: readonly ObjectType[] | null
   /** Read along the edge: "this meeting -- attendee -- Ying". Empty when the group says it. */
   label: string
   /** Read against it, on the other object's page: "Ying -- attended -- this meeting". */
@@ -40,11 +47,8 @@ const linkKind = z.enum(LINK_KINDS.map((l) => l.kind) as [LinkKind, ...LinkKind[
 export function linkIsAllowed(kind: string, from: string, to: string): boolean {
   const rule = LINK_KINDS.find((l) => l.kind === kind)
   if (!rule) return false
-  if (rule.from !== null && rule.from !== from) return false
-  if (rule.to !== null && rule.to !== to) return false
-  // A task's project is its own column, and projects do not nest.
-  if (kind === 'belongs' && (from === 'task' || from === 'project')) return false
-  return !(from === to && rule.from === rule.to && rule.from !== null)
+  const allows = (types: readonly string[] | null, type: string) => !types || types.includes(type)
+  return allows(rule.from, from) && allows(rule.to, to)
 }
 
 const endpoint = z.object({ type: objectType, id: z.uuid() }).strict()

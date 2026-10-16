@@ -7,7 +7,7 @@ afterEach(async () => {
   while (cleanups.length) await cleanups.pop()!()
 })
 
-const headers = { 'x-ctws-client': 'web', origin: 'http://localhost:5173' }
+const headers = { 'x-ctws-client': 'web' }
 const creds = { email: 'me@example.com', password: 'correct horse battery' }
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 

@@ -35,7 +35,7 @@ export function TaskDetail({ task, onClose, onSaved }: Props) {
 
   // A save in flight loses nothing, so it does not trap the person who pressed Save and then a
   // link. The save resets the form's dirty state when it lands, so the guard works again after.
-  const guard = useUnsavedGuard(edit.isDirty && !edit.save.isPending, onClose)
+  const guard = useUnsavedGuard(edit.isDirty && !edit.save.isPending)
   const backToPanel = () => queueMicrotask(() => panel.current?.focus())
   const stopEditing = () => {
     edit.form.reset()

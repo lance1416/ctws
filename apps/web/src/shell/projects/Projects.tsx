@@ -8,7 +8,6 @@ import { useInlineEdit } from '../../platform/ui/useInlineEdit'
 import { DaySection } from '../rows/DaySection'
 import { textbox } from '../../platform/ui/formStyles'
 import { useCrumbs } from '../layout/Breadcrumbs'
-import { RowLead } from '../rows/RowLead'
 import { BODY_GUTTER, ProjectRail, ROW_LIST } from '../rows/RowParts'
 import { PageHead } from '../../platform/ui/PageHead'
 import { HANG } from '../../platform/ui/hang'
@@ -94,7 +93,7 @@ function ProjectRow({ project: p }: { project: ProjectListItem }) {
   const { projectLead: Lead, projectFacts } = useRegistry()
   return (
     <li data-project-row={p.id} className="group relative flex min-h-14 min-w-0">
-      {Lead ? <Lead projectId={p.id} /> : <RowLead lead={null} />}
+      {Lead && <Lead projectId={p.id} />}
       <ProjectRail projectId={p.id} />
       <div
         className={`flex min-w-0 flex-1 flex-col py-2.5 pr-2 pl-[var(--gutter)] group-hover:bg-hover ${BODY_GUTTER}`}

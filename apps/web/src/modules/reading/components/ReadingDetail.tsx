@@ -52,7 +52,7 @@ export function ReadingDetail({
   useRecordRecent(recentEntry(item))
   // Escape, the scrim and the close button ask first when the form has unsaved changes.
   const [unsaved, setUnsaved] = useState(false)
-  const guard = useUnsavedGuard(unsaved, onClose)
+  const guard = useUnsavedGuard(unsaved)
   const requestClose = () => guard.leave(onClose)
   return (
     <DetailPane label="Reading" onClose={requestClose}>

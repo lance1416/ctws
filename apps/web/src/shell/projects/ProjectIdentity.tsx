@@ -19,7 +19,7 @@ export function ProjectIdentity({
 }: {
   projectId: string
   name: string
-  color: ProjectColor | null
+  color: ProjectColor
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(name)

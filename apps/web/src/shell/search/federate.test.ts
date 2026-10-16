@@ -30,11 +30,6 @@ describe('federate', () => {
     expect(rows.map((r) => r.moduleLabel)).toEqual(['Tasks', 'Tasks', 'Notes'])
   })
 
-  it('only asks a row to name its module when there is another module to confuse it with', () => {
-    expect(federate([tasks(['a'])]).showModule).toBe(false)
-    expect(federate([tasks(['a']), notes([])]).showModule).toBe(true)
-  })
-
   it('reports one provider failure as a failure instead of a short list', () => {
     const half = federate([tasks(['a']), notes([], { isError: true, isSuccess: false })])
     expect(half.isError).toBe(true)

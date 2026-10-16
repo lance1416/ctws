@@ -144,9 +144,8 @@
     'Hiragino Sans GB', 'Microsoft YaHei', 'Segoe UI', 'Helvetica Neue', Helvetica, Arial,
     sans-serif;
 
-  /* Ant Design 5's `fontFamilyCode` seed token, verbatim (components/theme/themes/seed.ts).
-     Nothing in the app sets monospace today; the token exists so the first thing that needs one
-     adopts the surveyed answer instead of inventing a stack. */
+  /* Ant Design 5's `fontFamilyCode` seed token, verbatim (components/theme/themes/seed.ts):
+     the writing mode's source text. */
   --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
 
   /* THE SCALE IS TDESIGN'S PAIRS: 12/20, 14/22, 16/24, 20/28, 24/32,

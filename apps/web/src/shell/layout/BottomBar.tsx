@@ -10,9 +10,9 @@ import { useRegistry, WORKBENCH_PATH } from '../registry'
 export function BottomBar({ onSearch }: { onSearch: () => void }) {
   const registry = useRegistry()
   const today = registry.phoneTab
-  const TodayCount = today?.Count
+  const TodayCount = today.Count
   const calendar = registry.pinned.find((p) => p.key === 'shell:calendar')
-  const projects = registry.projectsKind
+  const projects = registry.kinds[0]!
   const tab =
     'flex min-w-0 flex-col items-center justify-center gap-0.5 text-xs leading-4 text-ink-muted'
   const link = ({ isActive }: { isActive: boolean }) =>
@@ -32,18 +32,16 @@ export function BottomBar({ onSearch }: { onSearch: () => void }) {
         </Icon>
         Workbench
       </NavLink>
-      {today && (
-        <NavLink to={today.to} end={today.end ?? false} className={link}>
-          <Icon>
-            <circle cx="11" cy="11" r="7.5" />
-            <path d="M11 5.5a5.5 5.5 0 0 1 0 11z" fill="currentColor" stroke="none" />
-          </Icon>
-          <span className="flex items-center">
-            {today.label}
-            {TodayCount && <TodayCount />}
-          </span>
-        </NavLink>
-      )}
+      <NavLink to={today.to} end={today.end ?? false} className={link}>
+        <Icon>
+          <circle cx="11" cy="11" r="7.5" />
+          <path d="M11 5.5a5.5 5.5 0 0 1 0 11z" fill="currentColor" stroke="none" />
+        </Icon>
+        <span className="flex items-center">
+          {today.label}
+          {TodayCount && <TodayCount />}
+        </span>
+      </NavLink>
       <NavLink to={projects.to} className={link}>
         <Icon>
           <path d="M4 4.5v13M8 6h10M8 11h10M8 16h7" />

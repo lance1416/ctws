@@ -54,7 +54,7 @@ export function SideRail() {
   return (
     // Hidden below 1024px, where BottomBar navigates. Sticky under the header, so a long page
     // scrolls past it rather than leaving blank space beside the sheet.
-    <div className="hidden flex-col border-rule bg-chrome lg:sticky lg:top-[calc(3.25rem+1px)] lg:flex lg:h-[calc(100vh-3.25rem-1px)] lg:overflow-y-auto lg:border-r lg:py-4 lg:pr-3 lg:pl-4">
+    <div className="sticky top-[calc(3.25rem+1px)] hidden h-[calc(100vh-3.25rem-1px)] flex-col overflow-y-auto border-r border-rule bg-chrome py-4 pr-3 pl-4 lg:flex">
       <nav aria-label="Main navigation" className="flex flex-col">
         {pinned.map(({ key, to, label, end, Count }) => (
           <NavLink
@@ -83,11 +83,11 @@ export function SideRail() {
           Things
         </Link>
 
-        <div className="mt-0 flex shrink-0 items-center gap-1 lg:mt-6">
+        <div className="mt-6 flex shrink-0 items-center gap-1">
           <NavLink
             to="/projects"
             className={({ isActive }) =>
-              `rounded-md px-2.5 py-1 font-semibold whitespace-nowrap lg:text-xs ${
+              `rounded-md px-2.5 py-1 text-xs font-semibold whitespace-nowrap ${
                 isActive ? 'text-ink' : 'text-ink-muted hover:text-ink'
               }`
             }

@@ -70,3 +70,96 @@ describe('countdownPhrase', () => {
     expect(countdownPhrase(118)).toBe('in 118 days')
   })
 })
+
+/** The cases that break naive date arithmetic: month ends, leap days and DST changeovers. */
+describe('addDays', () => {
+  it('crosses a month and a year', async () => {
+    const { addDays } = await load()
+    expect(addDays('2026-10-31', 1)).toBe('2026-11-01')
+    expect(addDays('2026-01-01', -1)).toBe('2025-12-31')
+    expect(addDays('2026-03-01', -1)).toBe('2026-02-28')
+  })
+
+  it('knows February', async () => {
+    const { addDays } = await load()
+    expect(addDays('2028-02-28', 1)).toBe('2028-02-29')
+    expect(addDays('2026-02-28', 1)).toBe('2026-03-01')
+  })
+
+  it('does not skip or repeat a day across a DST change', async () => {
+    const { addDays } = await load()
+    // 2026-03-29 is the spring-forward Sunday in most of Europe; 2026-11-01 is the autumn one in
+    // the US. Arithmetic in local time loses or repeats one of these.
+    expect(addDays('2026-03-28', 1)).toBe('2026-03-29')
+    expect(addDays('2026-03-29', 1)).toBe('2026-03-30')
+    expect(addDays('2026-10-31', 1)).toBe('2026-11-01')
+    expect(addDays('2026-11-01', 1)).toBe('2026-11-02')
+  })
+})
+
+describe('calendar arithmetic', () => {
+  it('next Monday is always strictly later, from any weekday', async () => {
+    const { nextMonday } = await load()
+    expect(nextMonday('2026-10-03')).toBe('2026-10-05') // Saturday -> Monday
+    expect(nextMonday('2026-10-04')).toBe('2026-10-05') // Sunday -> Monday
+    expect(nextMonday('2026-10-05')).toBe('2026-10-12') // Monday -> a week on, not itself
+    expect(nextMonday('2026-10-07')).toBe('2026-10-12') // Wednesday
+  })
+
+  it('says today / tomorrow / yesterday, else the date', async () => {
+    const { dayPhrase } = await load()
+    expect(dayPhrase('2026-10-03', '2026-10-03')).toBe('Today')
+    expect(dayPhrase('2026-10-04', '2026-10-03')).toBe('Tomorrow')
+    expect(dayPhrase('2026-10-02', '2026-10-03')).toBe('Yesterday')
+    expect(dayPhrase('2026-10-08', '2026-10-03')).toBe('Oct 8')
+    expect(dayPhrase('2027-01-02', '2026-10-03')).toBe('Jan 2, 2027')
+  })
+})
+
+/**
+ * The account's today is the only today. The browser is in Kolkata and the account in New York,
+ * which disagree about the day at the instant below.
+ */
+describe('the account timezone decides, even when the browser is in another one', () => {
+  const ACCOUNT = 'America/New_York'
+  // 02:00 UTC on the 5th: 07:30 on the 5th in Kolkata, but still 22:00 on the 4th in New York.
+  const NOW_CROSS = new Date('2026-10-05T02:00:00.000Z')
+
+  it('today, tomorrow and next Monday are the account days', async () => {
+    const { todayIn, addDays, nextMonday } = await load()
+    expect(todayIn(ACCOUNT, NOW_CROSS)).toBe('2026-10-04')
+    expect(addDays(todayIn(ACCOUNT, NOW_CROSS), 1)).toBe('2026-10-05')
+    // The 4th is a Sunday in New York while the browser is on Monday the 5th: next week from
+    // there is the 5th, not the 12th.
+    expect(nextMonday(todayIn(ACCOUNT, NOW_CROSS))).toBe('2026-10-05')
+  })
+
+  it('the end of the day is the end of the account day', async () => {
+    const { dayEndIso } = await load()
+    // 23:59 on the 4th in New York (EDT, -04:00) is 03:59 UTC on the 5th; the browser's zone would
+    // have made it 18:29 UTC on the 4th, a different instant and the wrong day there.
+    expect(dayEndIso('2026-10-04', ACCOUNT)).toBe('2026-10-05T03:59:00.000Z')
+  })
+})
+
+// Across a DST boundary a local day is 23 or 25 hours long.
+describe('days across a DST boundary', () => {
+  const NY = 'America/New_York'
+
+  it('day-string arithmetic steps over the short and the long day', async () => {
+    const { addDays, nextMonday } = await load()
+    expect(addDays('2026-03-07', 1)).toBe('2026-03-08')
+    expect(addDays('2026-03-08', 1)).toBe('2026-03-09')
+    expect(addDays('2026-03-09', -1)).toBe('2026-03-08')
+    expect(addDays('2026-10-31', 1)).toBe('2026-11-01')
+    expect(addDays('2026-11-01', 1)).toBe('2026-11-02')
+    // 2026-03-08 is a Sunday; the Monday after it is the 9th, short day or not.
+    expect(nextMonday('2026-03-08')).toBe('2026-03-09')
+  })
+
+  it('the end of a short day is still 23:59 there', async () => {
+    const { dayEndIso } = await load()
+    expect(dayEndIso('2026-03-08', NY)).toBe('2026-03-09T03:59:00.000Z')
+    expect(dayEndIso('2026-11-01', NY)).toBe('2026-11-02T04:59:00.000Z')
+  })
+})

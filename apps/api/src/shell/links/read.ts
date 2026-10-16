@@ -1,6 +1,5 @@
 import {
   LINK_KINDS,
-  linkIsAllowed,
   type LinkCandidate,
   type LinkedObject,
   type LinkKind,
@@ -125,7 +124,7 @@ export async function linksOf(
   }
 }
 
-/** What the picker could link to: types the model allows here, never the object itself. */
+/** What the picker could link to: anything but the object itself, since `about` joins any two. */
 export async function candidatesFor(
   registry: LinkRegistry,
   q: Queryable,
@@ -134,13 +133,8 @@ export async function candidatesFor(
   text: string,
   perType: number,
 ): Promise<LinkCandidate[]> {
-  const joinable = registry.order.filter((type) =>
-    LINK_KINDS.some(
-      (k) => linkIsAllowed(k.kind, of.type, type) || linkIsAllowed(k.kind, type, of.type),
-    ),
-  )
   const found = await Promise.all(
-    joinable.map(async (type) => {
+    registry.order.map(async (type) => {
       const rows = await registry.of(type).rows(q, workspaceId, { text, limit: perType })
       return rows
         .filter((r) => !(type === of.type && r.id === of.id))

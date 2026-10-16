@@ -2,7 +2,7 @@ import { loginBody, registerBody, userResponse } from '@ctws/contracts'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { currentUser } from './authenticated'
 import { clearSessionCookie, SESSION_COOKIE, setSessionCookie } from './cookie'
-import { InvalidCredentialsError, SessionRequiredError } from './errors'
+import { InvalidCredentialsError } from './errors'
 import { authenticate, getAuthContext, loadUser, registerUser } from './service'
 import { createSession, revokeSession } from './session'
 
@@ -16,15 +16,10 @@ export const publicAuthRoutes: FastifyPluginAsyncZod = async (app) => {
     { ...authLimit, schema: { body: registerBody, response: { 201: userResponse } } },
     async (req, reply) => {
       const { env, db } = app
-      // Closed, or invite-only without the code: only the first account gets through.
-      const openToAll =
-        env.authRegistration === 'open' ||
-        (env.authRegistration === 'invite' && req.body.inviteCode === env.authInviteCode)
-      const { userId, workspaceId, role } = await registerUser(
-        db,
-        req.body,
-        openToAll ? {} : { onlyIfFirst: env.authRegistration === 'invite' ? 'invite' : 'closed' },
-      )
+      // Closed: only the first account gets through.
+      const { userId, workspaceId, role } = await registerUser(db, req.body, {
+        onlyIfFirst: env.authRegistration === 'closed',
+      })
       const session = await createSession(db, userId, env.sessionTtlDays)
       setSessionCookie(reply, env, session.token, session.expiresAt)
       return reply.status(201).send({
@@ -49,7 +44,6 @@ export const publicAuthRoutes: FastifyPluginAsyncZod = async (app) => {
       const ctx = await getAuthContext(db, result.userId)
       if (!ctx) throw new InvalidCredentialsError()
       const user = await loadUser(db, result.userId, ctx)
-      if (!user) throw new InvalidCredentialsError()
 
       const session = await createSession(db, result.userId, env.sessionTtlDays)
       setSessionCookie(reply, env, session.token, session.expiresAt)
@@ -69,8 +63,6 @@ export const publicAuthRoutes: FastifyPluginAsyncZod = async (app) => {
 export const sessionRoutes: FastifyPluginAsyncZod = async (app) => {
   app.get('/auth/me', { schema: { response: { 200: userResponse } } }, async (req, reply) => {
     const { id, workspaceId, role, timezone } = currentUser(req)
-    const user = await loadUser(app.db, id, { workspaceId, role, timezone })
-    if (!user) throw new SessionRequiredError()
-    return reply.send(user)
+    return reply.send(await loadUser(app.db, id, { workspaceId, role, timezone }))
   })
 }

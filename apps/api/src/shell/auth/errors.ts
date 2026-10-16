@@ -7,12 +7,8 @@ export class EmailTakenError extends DomainError {
 }
 
 export class RegistrationClosedError extends DomainError {
-  constructor(mode: 'closed' | 'invite') {
-    super(
-      'forbidden',
-      'registration is closed',
-      mode === 'invite' ? 'A valid invite code is required' : 'Registration is closed',
-    )
+  constructor() {
+    super('forbidden', 'registration is closed', 'Registration is closed')
   }
 }
 

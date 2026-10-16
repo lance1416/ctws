@@ -2,11 +2,6 @@ import { TZDate } from '@date-fns/tz'
 import { format } from 'date-fns'
 import { addDays, fullDay, monthDay, weekdayOf } from '../../platform/time/dates'
 
-/**
- * The row's margin: one short word about when, nearest commitment first (a deadline before a
- * plan). Today and the zone are arguments; nothing here reads the clock.
- */
-
 export type LeadTone = 'missed' | 'deadline' | 'plan' | 'time' | 'quiet'
 
 /** What goes in the margin. `exact` is the moment in full, for the title. */
@@ -15,6 +10,10 @@ export type Lead = { text: string; tone: LeadTone; flag: boolean; exact?: string
 const weekdayOrDate = (day: string, today: string) =>
   day > today && day <= addDays(today, 6) ? weekdayOf(day, true) : monthDay(day)
 
+/**
+ * The row's margin: one short word about when, nearest commitment first (a deadline before a
+ * plan). Today and the zone are arguments; nothing here reads the clock.
+ */
 export function leadFor(
   row: { dueAt: string | null; scheduledOn: string | null },
   today: string,

@@ -13,7 +13,7 @@ afterEach(async () => {
 })
 
 const body = { email: 'new@example.com', password: 'correct horse battery', timezone: 'UTC' }
-const headers = { 'x-ctws-client': 'web', origin: 'http://localhost:5173' }
+const headers = { 'x-ctws-client': 'web' }
 
 describe('POST /api/v1/auth/register', () => {
   it('creates a user, a workspace and a membership', async () => {
@@ -117,17 +117,6 @@ describe('registration gating', () => {
     expect((await post(ctx, body)).statusCode).toBe(201)
     expect((await post(ctx, second)).statusCode).toBe(403)
   })
-
-  it('requires a matching invite code when invite-only and a user already exists', async () => {
-    const ctx = await app({ authRegistration: 'invite', authInviteCode: 'let-me-in' })
-    expect((await post(ctx, body)).statusCode).toBe(201)
-
-    const bad = await post(ctx, { ...second, inviteCode: 'wrong' })
-    expect(bad.statusCode).toBe(403)
-
-    const good = await post(ctx, { ...second, inviteCode: 'let-me-in' })
-    expect(good.statusCode).toBe(201)
-  })
 })
 
 describe('first-user bootstrap', () => {
@@ -139,13 +128,6 @@ describe('first-user bootstrap', () => {
 
     const rows = await ctx.db.execute(sql`select role from users`)
     expect(rows.rows).toEqual([{ role: 'admin' }])
-  })
-
-  it('lets the first user in when invite-only without a code', async () => {
-    const ctx = await app({ authRegistration: 'invite', authInviteCode: 'let-me-in' })
-    const res = await post(ctx, body)
-    expect(res.statusCode).toBe(201)
-    expect(res.json()).toMatchObject({ role: 'admin' })
   })
 
   it('refuses a second registration when closed', async () => {

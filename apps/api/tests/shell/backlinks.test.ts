@@ -109,12 +109,17 @@ describe('opening a thing shows what it is connected to', () => {
       name: '陈颖',
       projectIds: [project],
     })
-    await post(ctx, '/api/v1/reading', {
+    const reading = await post<{ id: string }>(ctx, '/api/v1/reading', {
       kind: 'link',
       url: 'https://example.test/a',
-      title: '面试准备',
-      projectId: project,
     })
+    const filed = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/v1/reading/${reading.id}`,
+      headers: web(ctx),
+      payload: { title: '面试准备', projectId: project },
+    })
+    expect(filed.statusCode, filed.body).toBe(200)
     await post(ctx, '/api/v1/meetings', {
       title: '二面',
       startsLocal: '2026-10-20T21:00',

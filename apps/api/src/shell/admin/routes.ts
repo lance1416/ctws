@@ -27,9 +27,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
     async (req, reply) => {
       const { role, ...credentials } = req.body
       const { userId } = await registerUser(app.db, credentials, { explicitRole: role })
-      const user = await getAdminUser(app.db, userId)
-      if (!user) throw new Error('created user not found')
-      return reply.status(201).send(user)
+      return reply.status(201).send(await getAdminUser(app.db, userId))
     },
   )
 

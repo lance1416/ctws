@@ -1,10 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { parseEnv } from '../../src/platform/config'
 
-const base = {
-  DATABASE_URL: 'postgres://u:p@localhost:5432/d',
-  CORS_ORIGINS: 'http://localhost:5173',
-}
+const base = { DATABASE_URL: 'postgres://u:p@localhost:5432/d' }
 
 describe('parseEnv', () => {
   it('defaults registration to closed', () => {
@@ -21,21 +18,7 @@ describe('parseEnv', () => {
   })
 
   it('fails fast when DATABASE_URL is missing', () => {
-    expect(() => parseEnv({ CORS_ORIGINS: base.CORS_ORIGINS })).toThrow(/DATABASE_URL/)
-  })
-
-  it('parses CORS_ORIGINS into a list', () => {
-    const env = parseEnv({ ...base, CORS_ORIGINS: 'https://a.test, https://b.test' })
-    expect(env.corsOrigins).toEqual(['https://a.test', 'https://b.test'])
-  })
-
-  it('treats CORS_ORIGINS as optional and defaults it to an empty list', () => {
-    const env = parseEnv({ DATABASE_URL: base.DATABASE_URL })
-    expect(env.corsOrigins).toEqual([])
-  })
-
-  it('treats an empty CORS_ORIGINS as an empty list', () => {
-    expect(parseEnv({ ...base, CORS_ORIGINS: '' }).corsOrigins).toEqual([])
+    expect(() => parseEnv({})).toThrow(/DATABASE_URL/)
   })
 
   it('treats WEB_DIST as optional', () => {
@@ -43,17 +26,9 @@ describe('parseEnv', () => {
     expect(parseEnv({ ...base, WEB_DIST: '/app/apps/web/dist' }).webDist).toBe('/app/apps/web/dist')
   })
 
-  // SameSite=None without Secure is silently dropped by browsers.
-  it('rejects COOKIE_SAMESITE=none without secure cookies', () => {
-    expect(() => parseEnv({ ...base, COOKIE_SAMESITE: 'none', COOKIE_SECURE: 'false' })).toThrow(
-      /SameSite=None requires Secure/i,
-    )
-  })
-
-  it('allows COOKIE_SAMESITE=none when cookies are secure', () => {
-    const env = parseEnv({ ...base, COOKIE_SAMESITE: 'none', COOKIE_SECURE: 'true' })
-    expect(env.cookieSameSite).toBe('none')
-    expect(env.cookieSecure).toBe(true)
+  it('defaults to secure cookies and accepts COOKIE_SECURE=false', () => {
+    expect(parseEnv(base).cookieSecure).toBe(true)
+    expect(parseEnv({ ...base, COOKIE_SECURE: 'false' }).cookieSecure).toBe(false)
   })
 
   // A deployment template that interpolates a password into the URL produces this, and `pg`
@@ -73,11 +48,7 @@ describe('parseEnv', () => {
     )
   })
 
-  it('requires an invite code when registration is invite-only', () => {
-    expect(() => parseEnv({ ...base, AUTH_REGISTRATION: 'invite' })).toThrow(/AUTH_INVITE_CODE/)
-  })
-
-  it('rejects an unknown AUTH_REGISTRATION value', () => {
-    expect(() => parseEnv({ ...base, AUTH_REGISTRATION: 'everyone' })).toThrow()
+  it.each(['everyone', 'invite'])('rejects AUTH_REGISTRATION=%s', (value) => {
+    expect(() => parseEnv({ ...base, AUTH_REGISTRATION: value })).toThrow()
   })
 })

@@ -19,7 +19,7 @@ const RAIL: Record<ProjectColor, string> = {
 const UNKNOWN_RAIL = 'bg-rule'
 
 /** A lookup, not a template: Tailwind only emits classes it can see. */
-export function railClass(color: ProjectColor | null | undefined): string {
+export function railClass(color: ProjectColor | undefined): string {
   return color ? RAIL[color] : UNKNOWN_RAIL
 }
 

@@ -16,7 +16,6 @@ import { useProjectRail } from '../projects/projectColor'
  */
 export const BODY_GUTTER = '[--gutter:8px] sm:[--gutter:14px]'
 
-/** No `@container`: nothing asks a list for its width. */
 export const ROW_LIST = 'flex flex-col'
 
 /**

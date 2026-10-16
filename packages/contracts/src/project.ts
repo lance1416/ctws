@@ -19,14 +19,13 @@ export type ProjectColor = z.infer<typeof projectColor>
 export const createProjectBody = z
   .object({
     name: z.string().trim().min(1).max(200),
-    color: projectColor.nullish(),
   })
   .strict()
 
 export const updateProjectBody = z
   .object({
     name: z.string().trim().min(1).max(200),
-    color: projectColor.nullable(),
+    color: projectColor,
     archived: z.boolean(),
   })
   .partial()
@@ -37,7 +36,7 @@ export const projectResponse = z
     id: z.uuid(),
     workspaceId: z.uuid(),
     name: z.string(),
-    color: projectColor.nullable(),
+    color: projectColor,
     isInbox: z.boolean(),
     rank: z.string(),
     archivedAt: instant.nullable(),

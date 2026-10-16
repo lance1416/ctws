@@ -53,7 +53,6 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
   const [debounced, setDebounced] = useState('')
   const [active, setActive] = useState(0)
   const navigate = useNavigate()
-  const list = useRef<HTMLUListElement>(null)
   const box = useRef<HTMLInputElement>(null)
   const base = useId()
   const listId = `${base}-results`
@@ -100,8 +99,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
             title: hit.title,
             meta: (
               <>
-                {results.showModule && `${hit.moduleLabel} · `}
-                {hit.meta}
+                {hit.moduleLabel} · {hit.meta}
               </>
             ),
             mark: hit.mark,
@@ -181,7 +179,6 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
       {/* The options are not buttons: focus stays in the box, and `aria-activedescendant` walks
           the list without adding a tab stop per result. */}
       <ul
-        ref={list}
         id={listId}
         role="listbox"
         aria-label="Search results"
@@ -242,31 +239,29 @@ function SearchRow({
   onHover: () => void
 }) {
   return (
-    <>
-      <li
-        id={id}
-        role="option"
-        data-search-result={row.hit}
-        aria-selected={selected}
-        onClick={onChoose}
-        onMouseEnter={onHover}
-        // A row with no rail keeps the rail's 3px, so every marker lands at one x.
-        className={`relative flex w-full cursor-pointer items-start gap-2 py-2 pr-4 pl-2 text-left ${
-          selected ? 'bg-hover' : ''
-        }`}
-      >
-        {row.rail ?? <span aria-hidden="true" className="w-[3px] shrink-0" />}
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center">{row.mark}</span>
-        <span className="flex min-w-0 flex-1 flex-col">
-          <span className="truncate text-ink">{row.title}</span>
-          {row.meta && <span className="truncate text-sm text-ink-muted">{row.meta}</span>}
-        </span>
-        {row.hint && (
-          <KeyHint className="mt-0.5 shrink-0 rounded border border-rule px-1.5 text-xs leading-5 text-ink-subtle">
-            {row.hint}
-          </KeyHint>
-        )}
-      </li>
-    </>
+    <li
+      id={id}
+      role="option"
+      data-search-result={row.hit}
+      aria-selected={selected}
+      onClick={onChoose}
+      onMouseEnter={onHover}
+      // A row with no rail keeps the rail's 3px, so every marker lands at one x.
+      className={`relative flex w-full cursor-pointer items-start gap-2 py-2 pr-4 pl-2 text-left ${
+        selected ? 'bg-hover' : ''
+      }`}
+    >
+      {row.rail ?? <span aria-hidden="true" className="w-[3px] shrink-0" />}
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center">{row.mark}</span>
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="truncate text-ink">{row.title}</span>
+        {row.meta && <span className="truncate text-sm text-ink-muted">{row.meta}</span>}
+      </span>
+      {row.hint && (
+        <KeyHint className="mt-0.5 shrink-0 rounded border border-rule px-1.5 text-xs leading-5 text-ink-subtle">
+          {row.hint}
+        </KeyHint>
+      )}
+    </li>
   )
 }

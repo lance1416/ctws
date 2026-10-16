@@ -1,3 +1,4 @@
+import type { ProjectColor } from '@ctws/contracts'
 import { boolean, index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { workspaces } from '../auth/tables'
 
@@ -9,7 +10,7 @@ export const projects = pgTable(
       .notNull()
       .references(() => workspaces.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
-    color: text('color'),
+    color: text('color').$type<ProjectColor>().notNull(),
     // One per workspace, by a partial unique index in the migration SQL.
     isInbox: boolean('is_inbox').notNull().default(false),
     // COLLATE "C" is added in the migration SQL so fractional ranks compare bytewise; not unique.

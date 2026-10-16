@@ -12,12 +12,12 @@ import { users, workspaceMembers, workspaces } from './tables'
 /**
  * Creates a user with their own workspace and inbox. Without `explicitRole` the first user ever
  * becomes admin and everyone else member; `onlyIfFirst` refuses unless there are no users yet,
- * which is how a closed or invite-only instance still takes its first account.
+ * which is how a closed instance still takes its first account.
  */
 export async function registerUser(
   db: Db,
   input: { email: string; password: string; timezone: string },
-  opts: { explicitRole?: Role; onlyIfFirst?: 'closed' | 'invite' } = {},
+  opts: { explicitRole?: Role; onlyIfFirst?: boolean } = {},
 ): Promise<{ userId: string; workspaceId: string; role: Role }> {
   const userId = uuidv7()
   const workspaceId = uuidv7()
@@ -31,7 +31,7 @@ export async function registerUser(
         await lockFor(tx, LOCKS.firstUser)
         if (opts.onlyIfFirst) {
           const existing = await tx.select({ id: users.id }).from(users).limit(1)
-          if (existing.length > 0) throw new RegistrationClosedError(opts.onlyIfFirst)
+          if (existing.length > 0) throw new RegistrationClosedError()
         }
       }
       const [user] = await tx
@@ -118,12 +118,12 @@ export async function loadUser(
   timezone: string
   workspaceId: string
   role: Role
-} | null> {
+}> {
   // Named columns only, so the password hash cannot reach a response.
   const [row] = await db
     .select({ id: users.id, email: users.email, timezone: users.timezone })
     .from(users)
     .where(eq(users.id, userId))
     .limit(1)
-  return row ? { ...row, workspaceId: ctx.workspaceId, role: ctx.role } : null
+  return { ...row!, workspaceId: ctx.workspaceId, role: ctx.role }
 }

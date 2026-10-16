@@ -8,9 +8,8 @@ export function cookieOptions(env: Env, expires?: Date): CookieSerializeOptions 
   return {
     httpOnly: true,
     secure: env.cookieSecure,
-    sameSite: env.cookieSameSite,
+    sameSite: 'lax',
     path: '/',
-    ...(env.cookieDomain ? { domain: env.cookieDomain } : {}),
     ...(expires ? { expires } : {}),
   }
 }

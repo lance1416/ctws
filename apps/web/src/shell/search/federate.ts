@@ -17,8 +17,6 @@ export type Federated = {
   isError: boolean
   /** Every provider answered. A half-answered search must not say "Nothing matches". */
   isSuccess: boolean
-  /** With one provider a module name is noise; with two, the name in text tells rows apart. */
-  showModule: boolean
 }
 
 /** Merges the search providers' answers. Pure, so a second provider can be tested without one. */
@@ -29,6 +27,5 @@ export function federate(parts: ProviderResult[]): Federated {
     ),
     isError: parts.some((p) => p.isError),
     isSuccess: parts.length > 0 && parts.every((p) => p.isSuccess),
-    showModule: parts.length > 1,
   }
 }

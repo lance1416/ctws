@@ -53,21 +53,17 @@ describe('the task module answers under its own namespace', () => {
 })
 
 describe('the OpenAPI document describes the namespaced API', () => {
-  it('documents the module paths and not the old flat ones', async () => {
+  it('documents the module paths', async () => {
     const doc = (await get('/api/v1/openapi.json')).json() as { paths: Record<string, unknown> }
     const paths = Object.keys(doc.paths)
     expect(paths).toContain('/api/v1/tasks/today')
     expect(paths).toContain('/api/v1/tasks/search')
     // The shell's own surface, still flat.
     expect(paths).toContain('/api/v1/projects')
-    // The old flat task paths are gone.
-    expect(paths).not.toContain('/api/v1/today')
-    expect(paths).not.toContain('/api/v1/completed')
-    expect(paths).not.toContain('/api/v1/projects/{id}/tasks')
   })
 })
 
-describe('the tenant chokepoint survived the move into the shell', () => {
+describe('the tenant chokepoint on the shell', () => {
   it('refuses every project surface to another workspace', async () => {
     // The intruder's own list must not contain our project...
     const theirs = (await get('/api/v1/projects', otherAuthed)).json().projects as {

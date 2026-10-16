@@ -22,9 +22,11 @@ const notes: WorkspaceModule = {
   chords: [
     { id: 'recent', key: 'n', label: 'Go to Recent', resolve: () => '/notes/recent', order: 5 },
   ],
-  widgets: [{ id: 'recent', label: 'Recent notes', to: '/notes/recent', Component: () => null }],
+  widgets: [
+    { id: 'recent', label: 'Recent notes', to: '/notes/recent', Component: () => null, span: 6 },
+  ],
   project: {
-    Block: { Component: NotesOnProject },
+    Block: { Component: NotesOnProject, views: [{ id: 'all', label: 'All' }] },
     Headline: NotesProjectNumbers,
     Facts: NotesFacts,
     contents: async () => '3 notes',
@@ -38,8 +40,12 @@ const files: WorkspaceModule = {
   kind: { label: 'Files', to: '/files/drive', order: 5 },
   routes: [{ path: 'drive' }],
   capture: { useTarget: () => ({ target: null, missing: true, unavailable: false }) },
-  widgets: [{ id: 'big', label: 'Bulky', Component: () => null }],
-  project: { Block: { Component: () => null }, Lead: FilesLead, contents: async () => null },
+  widgets: [{ id: 'big', label: 'Bulky', Component: () => null, span: 8 }],
+  project: {
+    Block: { Component: () => null, views: [{ id: 'all', label: 'All' }] },
+    Lead: FilesLead,
+    contents: async () => null,
+  },
   help: [{ title: 'In the drive', keys: [['u', 'Upload']] }],
 }
 
@@ -63,8 +69,10 @@ describe("the phone's day tab", () => {
     expect(build([notes, files]).phoneTab).toMatchObject({ key: 'notes:recent', label: 'Recent' })
   })
 
-  it('is absent when the app names a page nobody offers', () => {
-    expect(build([notes, files], { phoneTab: 'tasks:today' }).phoneTab).toBeNull()
+  it('refuses to guess when the app names a page nobody offers', () => {
+    expect(() => build([notes, files], { phoneTab: 'tasks:today' })).toThrow(
+      'phone tab "tasks:today" is not offered',
+    )
   })
 })
 
@@ -98,11 +106,13 @@ describe('the workbench widgets', () => {
   it('lays the cards out in their stated order, not in the order modules registered', () => {
     const first = {
       ...notes,
-      widgets: [{ id: 'late', label: 'Late', order: 20, Component: () => null }],
+      widgets: [{ id: 'late', label: 'Late', order: 20, Component: () => null, span: 6 as const }],
     }
     const second = {
       ...files,
-      widgets: [{ id: 'early', label: 'Early', order: 10, Component: () => null }],
+      widgets: [
+        { id: 'early', label: 'Early', order: 10, Component: () => null, span: 6 as const },
+      ],
     }
     expect(build([first, second]).widgets.map((w) => w.label)).toEqual(['Early', 'Late'])
   })
@@ -118,13 +128,14 @@ describe('the master key table', () => {
     const table = build([notes]).chords
     // `n` is declared with a lower order than all but `w`, so it slots in after it.
     expect(table.map((c) => c.key)).toEqual(['w', 'n', 'c', 'p'])
-    expect(table.map((c) => c.moduleId)).toEqual([null, 'notes', null, null])
   })
 
   it('resolves a module chord to the module own path', () => {
     const qc = new QueryClient()
     expect(build([notes]).chordFor('n')?.resolve({ queryClient: qc })).toBe('/notes/recent')
-    expect(build([files], { captureModuleId: 'files' }).chordFor('n')).toBeNull()
+    expect(
+      build([files], { captureModuleId: 'files', phoneTab: 'shell:calendar' }).chordFor('n'),
+    ).toBeNull()
     // The shell keeps its own key whatever is registered.
     expect(build([notes]).chordFor('p')?.resolve({ queryClient: qc })).toBe('/projects')
   })
@@ -186,7 +197,7 @@ describe('what a module hangs on a project page', () => {
 
   it('contributes nothing when only the capturing module is registered and hangs nothing', () => {
     const bare: WorkspaceModule = { id: 'bare', label: 'Bare', routes: [], capture: notes.capture! }
-    const registry = build([bare], { captureModuleId: 'bare' })
+    const registry = build([bare], { captureModuleId: 'bare', phoneTab: 'shell:calendar' })
     expect(registry.projectBlocks).toEqual([])
     expect(registry.projectHeadlines).toEqual([])
     expect(registry.projectFacts).toEqual([])
@@ -204,18 +215,20 @@ describe('where another module keeps its things', () => {
   it('keeps projects in the shell, and takes a type from a module that does not exist', () => {
     // The project entry survives every module being removed, because a project is the shell's.
     const bare: WorkspaceModule = { id: 'bare', label: 'Bare', routes: [], capture: notes.capture! }
-    const shellOnly = build([bare], { captureModuleId: 'bare' })
+    const shellOnly = build([bare], { captureModuleId: 'bare', phoneTab: 'shell:calendar' })
     expect(shellOnly.relations.map((r) => r.type)).toEqual(['project'])
-    expect(shellOnly.relationFor('project')?.to('p1')).toBe('/projects/p1')
+    expect(shellOnly.relationFor('project').to('p1')).toBe('/projects/p1')
     const withNotes = build([
       { ...notes, relations: [{ type: 'reading', kind: 'Note', to: (id) => `/notes/${id}` }] },
     ]).relationFor('reading')
-    expect(withNotes?.moduleId).toBe('notes')
-    expect(withNotes?.to('r1')).toBe('/notes/r1')
+    expect(withNotes.moduleId).toBe('notes')
+    expect(withNotes.to('r1')).toBe('/notes/r1')
   })
 
-  it('has no answer for a type no module claims', () => {
-    expect(build([notes]).relationFor('person')).toBeNull()
+  it('refuses to guess for a type no module claims', () => {
+    expect(() => build([notes]).relationFor('person')).toThrow(
+      'no module says where a person lives',
+    )
   })
 })
 

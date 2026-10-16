@@ -4,15 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>CTWS</title>
-    <!-- No <link> to any third-party font host. Both faces are self-hosted and imported through
-         the stylesheet: Latin from IBM Plex Sans (main.tsx), Chinese from a subsetted variable
-         Noto Sans SC (styles.css). This page used to carry two preconnects and a render-blocking
-         stylesheet for Inter, which nothing in the app ever used and which had to time out before
-         first paint when offline. -->
-    <!-- The chosen theme, before the first paint. React mounts a few hundred milliseconds later,
-         and a page that starts on the system scheme and switches when the app loads is a flash of
-         the wrong colour on every single load. Inline and synchronous on purpose; `try` because
-         a private window throws on localStorage. -->
+    <!-- The chosen theme, before the first paint, so the page does not flash the system scheme
+         until React mounts. `try` because a private window throws on localStorage. -->
     <script>
       try {
         var t = localStorage.getItem('ctws:theme')

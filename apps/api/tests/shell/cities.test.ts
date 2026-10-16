@@ -12,7 +12,7 @@ afterEach(async () => {
   for (const stop of cleanups.splice(0)) await stop()
 })
 
-type City = { label: string; name: string; region: string | null; country: string }
+type City = { label: string }
 
 async function find(ctx: Harness, q: string): Promise<City[]> {
   const res = await ctx.app.inject({
@@ -48,13 +48,13 @@ describe('GET /cities', () => {
     const ctx = await setupWith(cleanups)
     // New York City outnumbers York, but someone typing york wants York first.
     const hits = await find(ctx, 'york')
-    expect(hits[0]?.name).toBe('York')
-    expect(hits.some((c) => c.name === 'New York City')).toBe(true)
+    expect(hits[0]?.label).toMatch(/^York, /)
+    expect(hits.some((c) => c.label.startsWith('New York City, '))).toBe(true)
   })
 
   it('ignores accents: zurich finds Zürich', async () => {
     const ctx = await setupWith(cleanups)
-    expect((await find(ctx, 'zurich'))[0]?.name).toBe('Zürich')
+    expect((await find(ctx, 'zurich'))[0]?.label).toMatch(/^Zürich, /)
   })
 
   it('returns at most eight', async () => {

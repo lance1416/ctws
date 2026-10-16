@@ -6,10 +6,6 @@ export function hashPassword(plain: string): Promise<string> {
 }
 
 export async function verifyPassword(storedHash: string, plain: string): Promise<boolean> {
-  // A non-string is a programming error, not a failed sign-in.
-  if (typeof storedHash !== 'string' || typeof plain !== 'string') {
-    throw new TypeError('verifyPassword expects storedHash and plain to be strings')
-  }
   try {
     return await verify(storedHash, plain)
   } catch {

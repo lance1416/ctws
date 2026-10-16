@@ -1,28 +1,7 @@
-import { readdirSync, readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { sqlStateOf } from '../helpers/sql'
 import { appWithUser, createProject } from '../helpers/harness'
-
-// The backfill is read out of drizzle/0003_*.sql rather than copied here: a copy that drifts tests
-// nothing, because the migration is what runs in production.
-const migrationSql = readFileSync(
-  resolve(
-    __dirname,
-    '../../drizzle',
-    readdirSync(resolve(__dirname, '../../drizzle')).find((f) => /^0003_.*\.sql$/.test(f))!,
-  ),
-  'utf8',
-)
-// Block comments are stripped before the statement is picked out: `/^insert/m` matches inside a
-// `/* … */` just as happily, so a backfill somebody had commented out would be run here and this
-// test would pass against a migration that does nothing in production.
-const BACKFILL_STATEMENT = /^insert into projects[^;]*;/m.exec(
-  migrationSql.replace(/\/\*[\s\S]*?\*\//g, ''),
-)?.[0]
-if (!BACKFILL_STATEMENT) throw new Error('backfill statement not found in the 0003 migration')
-const BACKFILL_SQL = sql.raw(BACKFILL_STATEMENT)
 
 const cleanups: (() => Promise<void>)[] = []
 afterEach(async () => {
@@ -70,26 +49,11 @@ describe('inbox project', () => {
     expect(
       await sqlStateOf(
         ctx.db.execute(sql`
-          insert into projects (id, workspace_id, name, rank, is_inbox)
-          values (gen_random_uuid(), ${wsId}, 'second inbox', 'zz', true)
+          insert into projects (id, workspace_id, name, rank, is_inbox, color)
+          values (gen_random_uuid(), ${wsId}, 'second inbox', 'zz', true, 'project-1')
         `),
       ),
     ).toBe(UNIQUE_VIOLATION)
-  })
-
-  // A deployed instance's workspace predates this column; without the
-  // migration's backfill its first quick capture 500s. The backfill statement must also be
-  // idempotent, because a re-run must not create a second inbox.
-  it('backfills a workspace that has no inbox, and is idempotent', async () => {
-    const ctx = await setup()
-    await ctx.db.execute(sql`delete from projects where is_inbox`)
-    expect((await projectsOf(ctx)).filter((p) => p.isInbox)).toHaveLength(0)
-
-    for (let i = 0; i < 2; i++) await ctx.db.execute(BACKFILL_SQL)
-
-    const inboxes = (await projectsOf(ctx)).filter((p) => p.isInbox)
-    expect(inboxes).toHaveLength(1)
-    expect(inboxes[0]!.name).toBe('Inbox')
   })
 })
 

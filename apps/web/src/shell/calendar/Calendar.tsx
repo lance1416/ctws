@@ -14,14 +14,13 @@ import { useCrumbs } from '../layout/Breadcrumbs'
 import { useNow } from '../../platform/time/useNow'
 import { PageHead } from '../../platform/ui/PageHead'
 
+/** Entries a square shows before it says "+N"; three fit without scrolling. */
+const PER_SQUARE = 3
+
 /**
  * Every module's dated things on one month grid, each entry with the day and wording its module
  * gave it. Nothing is made here: a meeting has its own page and a deadline belongs to a task.
  */
-
-/** Entries a square shows before it says "+N"; three fit without scrolling. */
-const PER_SQUARE = 3
-
 export function Calendar() {
   useCrumbs([{ label: 'Calendar' }])
   const timeZone = useTimeZone()
@@ -97,11 +96,9 @@ export function Calendar() {
             ›
           </Step>
         </span>
-        {views.length > 2 && (
-          <span className="ml-auto">
-            <ViewTabs views={views} current={view} onPick={pickView} />
-          </span>
-        )}
+        <span className="ml-auto">
+          <ViewTabs views={views} current={view} onPick={pickView} />
+        </span>
       </div>
 
       {failed && (

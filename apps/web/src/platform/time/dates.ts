@@ -1,15 +1,9 @@
 import { TZDate } from '@date-fns/tz'
-import {
-  addDays as addDaysFn,
-  differenceInCalendarDays,
-  format,
-  nextMonday as nextMondayFn,
-} from 'date-fns'
+import { differenceInCalendarDays, format, nextMonday as nextMondayFn } from 'date-fns'
 
-/**
- * Dates in the account's zone, never the browser's: the server decides a thing's day in that zone.
- * `TZDate` keeps a 23- or 25-hour DST day one day long.
- */
+import { addDays } from '@ctws/core/day'
+
+export { addDays }
 
 /** A calendar day as "YYYY-MM-DD": the shape days are stored and sent in. */
 const DAY = 'yyyy-MM-dd'
@@ -19,7 +13,10 @@ export function browserZone(): string {
   return new Intl.DateTimeFormat().resolvedOptions().timeZone
 }
 
-/** Which calendar day an instant falls on, in `timeZone`. */
+/**
+ * Which calendar day an instant falls on, in `timeZone`: the account's zone, never the browser's,
+ * since the server decides a thing's day in that zone.
+ */
 export function ymd(instant: Date, timeZone: string): string {
   return format(new TZDate(instant, timeZone), DAY)
 }
@@ -38,10 +35,6 @@ export const utcIso = (d: Date) => new Date(d.getTime()).toISOString()
 /** "09:05" in `timeZone`, on a 24-hour clock. */
 export const clockTime = (timeZone: string) =>
   new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone })
-
-export function addDays(day: string, n: number): string {
-  return format(addDaysFn(dayStart(day), n), DAY)
-}
 
 /** The Monday after `day`, always strictly later. */
 export function nextMonday(day: string): string {

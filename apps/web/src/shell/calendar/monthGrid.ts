@@ -1,4 +1,4 @@
-import { MONTHS } from '../../platform/time/dates'
+import { addDays, MONTHS } from '../../platform/time/dates'
 
 /**
  * The month grid's arithmetic. Every date is a `YYYY-MM-DD` day in the account's zone, never a
@@ -13,13 +13,6 @@ const parse = (day: string): [number, number, number] =>
 const fmt = (y: number, m: number, d: number): string =>
   `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
 
-/** The day `n` days after `day`. Done in UTC, which has no DST, so no day is ever skipped. */
-export function shiftDay(day: string, n: number): string {
-  const [y, m, d] = parse(day)
-  const at = new Date(Date.UTC(y, m - 1, d + n))
-  return fmt(at.getUTCFullYear(), at.getUTCMonth() + 1, at.getUTCDate())
-}
-
 /** The month `n` months after the one `day` is in, as its first day. */
 export function shiftMonth(day: string, n: number): string {
   const [y, m] = parse(day)
@@ -27,8 +20,8 @@ export function shiftMonth(day: string, n: number): string {
   return fmt(at.getUTCFullYear(), at.getUTCMonth() + 1, 1)
 }
 
-/** 0 = Monday … 6 = Sunday. */
-function weekdayOf(day: string): number {
+/** 0 on a Monday … 6 on a Sunday. */
+function daysSinceMonday(day: string): number {
   const [y, m, d] = parse(day)
   return (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7
 }
@@ -48,13 +41,13 @@ export function monthTitle(day: string): string {
 export function monthSquares(anyDayInMonth: string): { day: string; inMonth: boolean }[] {
   const month = monthOf(anyDayInMonth)
   const first = `${month}-01`
-  const lead = weekdayOf(first)
-  const start = shiftDay(first, -lead)
-  const days = Number(shiftDay(shiftMonth(first, 1), -1).slice(8))
+  const lead = daysSinceMonday(first)
+  const start = addDays(first, -lead)
+  const days = Number(addDays(shiftMonth(first, 1), -1).slice(8))
   // Five or six weeks as the month needs: a fixed six can leave a whole row of next month.
   const weeks = Math.ceil((lead + days) / 7)
   return Array.from({ length: weeks * 7 }, (_, i) => {
-    const day = shiftDay(start, i)
+    const day = addDays(start, i)
     return { day, inMonth: monthOf(day) === month }
   })
 }

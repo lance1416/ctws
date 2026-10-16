@@ -1,9 +1,8 @@
 import { z } from 'zod'
 import { canonicalTimeZone } from './common'
 
-/** Instance roles, admin > maintainer > member. */
-const ROLES = ['admin', 'maintainer', 'member'] as const
-export const roleSchema = z.enum(ROLES)
+/** Instance roles: an admin manages accounts, a member does not. */
+export const roleSchema = z.enum(['admin', 'member'])
 export type Role = z.infer<typeof roleSchema>
 
 export const email = z.string().trim().toLowerCase().pipe(z.email().max(254))
@@ -13,7 +12,6 @@ export const registerBody = z
     email,
     password: z.string().min(12).max(1024),
     timezone: canonicalTimeZone,
-    inviteCode: z.string().optional(),
   })
   .strict()
 

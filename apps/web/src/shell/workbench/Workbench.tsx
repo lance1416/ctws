@@ -1,4 +1,3 @@
-import { useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useProjects } from '../projects/api'
 import { ProjectRail } from '../rows/RowParts'
@@ -14,13 +13,12 @@ import { useGround } from '../layout/ground'
 export function Workbench() {
   useCrumbs([{ label: 'Workbench' }])
   useGround('desk')
-  const heading = useRef<HTMLHeadingElement>(null)
   const widgets = useRegistry().widgets
 
   return (
     <div className="mx-auto w-full max-w-[73.75rem]">
       {/* The header already names this page; the heading is for a screen reader's list. */}
-      <h1 ref={heading} tabIndex={-1} className="sr-only">
+      <h1 tabIndex={-1} className="sr-only">
         Workbench
       </h1>
 
@@ -33,7 +31,7 @@ export function Workbench() {
             label={label}
             to={to}
             action={Aside ? <Aside /> : undefined}
-            className={`lg:self-stretch ${SPAN[span ?? 6]}`}
+            className={`lg:self-stretch ${SPAN[span]}`}
           >
             <Component />
           </Panel>
@@ -49,14 +47,13 @@ const SPAN = {
   4: 'lg:col-span-4',
   6: 'lg:col-span-6',
   8: 'lg:col-span-8',
-  12: 'lg:col-span-12',
 } as const
 
 /** The shell's own card, not contributed by a module: every project and its numbers. */
 function ProjectsWidget() {
   const projects = useProjects()
   const facts = useRegistry().projectFacts
-  const rows = (projects.data ?? []).filter((p) => !p.archivedAt)
+  const rows = projects.data ?? []
 
   return (
     <Panel variant="tile" label="Projects" to="/projects" className="lg:col-span-12">

@@ -64,11 +64,11 @@ describe('migrations', () => {
     expect(row!.role).toBe('member')
   })
 
-  it('restricts users.role to admin, maintainer and member', async () => {
+  it.each(['root', 'maintainer'])('restricts users.role to admin and member: %s', async (role) => {
     await expect(
       ctx.db.execute(sql`
         insert into users (id, email, password_hash, timezone, role)
-        values (gen_random_uuid(), 'bad-role@example.com', 'x', 'UTC', 'root')`),
+        values (gen_random_uuid(), ${`bad-${role}@example.com`}, 'x', 'UTC', ${role})`),
     ).rejects.toMatchObject({ cause: { constraint: 'users_role_check' } })
   })
 

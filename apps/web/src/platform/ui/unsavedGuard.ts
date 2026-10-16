@@ -20,7 +20,7 @@ export type UnsavedGuard = {
   discard: () => void
 }
 
-export function useUnsavedGuard(dirty: boolean, onLeave: () => void): UnsavedGuard {
+export function useUnsavedGuard(dirty: boolean): UnsavedGuard {
   const [askDiscard, setAskDiscard] = useState(false)
   const [logoutVia, setLogoutVia] = useState<(() => void) | null>(null)
   const [exitVia, setExitVia] = useState<(() => void) | null>(null)
@@ -76,8 +76,7 @@ export function useUnsavedGuard(dirty: boolean, onLeave: () => void): UnsavedGua
       setExitVia(null)
       if (blocker.state === 'blocked') blocker.proceed()
       else if (logoutVia) logoutVia()
-      else if (exitVia) exitVia()
-      else onLeave()
+      else exitVia?.()
     },
   }
 }

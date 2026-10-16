@@ -11,7 +11,6 @@ export async function withApp(
   const env: Env = {
     ...parseEnv({
       DATABASE_URL: database.connectionString,
-      CORS_ORIGINS: 'http://localhost:5173',
       AUTH_REGISTRATION: 'open',
     }),
     ...overrides,

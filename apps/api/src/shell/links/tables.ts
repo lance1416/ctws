@@ -23,7 +23,6 @@ export const links = pgTable(
   },
   (t) => [
     primaryKey({ columns: [t.fromType, t.fromId, t.toType, t.toId, t.kind] }),
-    index('links_from_idx').on(t.workspaceId, t.fromType, t.fromId),
     index('links_to_idx').on(t.workspaceId, t.toType, t.toId),
     check('links_type_check', inList(t.fromType, OBJECT_TYPES)),
     check('links_to_type_check', inList(t.toType, OBJECT_TYPES)),

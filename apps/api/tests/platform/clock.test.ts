@@ -63,21 +63,4 @@ describe('the injected clock', () => {
   it("decides the birthdays page's today", async () => {
     expect((await get('/api/v1/people/birthdays')).today).toBe('2026-03-08')
   })
-
-  it("decides the meetings list's default month", async () => {
-    for (const [title, startsLocal] of [
-      ['inside', '2026-03-09T09:00'],
-      ['outside', '2026-04-20T09:00'],
-    ]) {
-      const res = await ctx.app.inject({
-        method: 'POST',
-        url: '/api/v1/meetings',
-        headers: ctx.authed,
-        payload: { title, startsLocal, timeZone: 'America/New_York', durationMinutes: 30 },
-      })
-      expect(res.statusCode, res.body).toBe(201)
-    }
-    const titles = (await get('/api/v1/meetings')).meetings.map((m: { title: string }) => m.title)
-    expect(titles).toEqual(['inside'])
-  })
 })
