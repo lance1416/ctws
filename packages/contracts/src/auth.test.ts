@@ -22,7 +22,8 @@ describe('registerBody', () => {
   })
 
   // An invalid timezone is refused at the boundary.
-  it.each(['GMT+8', '', ' UTC', 'Not/AZone', 'UTC+08:00'])(
+  // An offset is not a zone: Postgres reads `+05:30` with POSIX's sign, the other way round.
+  it.each(['GMT+8', '', ' UTC', 'Not/AZone', 'UTC+08:00', '+05:30', '-08:00'])(
     'rejects invalid IANA timezone %j',
     (timezone) => {
       expect(registerBody.safeParse({ ...valid, timezone }).success).toBe(false)
