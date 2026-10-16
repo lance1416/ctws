@@ -2,15 +2,13 @@ import { expect, test, type Page } from '@playwright/test'
 import { makeProject, makeTask, registerFreshUser } from './helpers'
 
 /**
- * THE TYPOGRAPHY RULES, pinned: the font stack, the scale as pairs, and the Han/Latin spacing.
+ * THE TYPOGRAPHY RULES, pinned: the scale as pairs, and the Han/Latin spacing. The font stack is a
+ * string in styles.css, checked in `fontStack.test.ts`.
  *
  * Every one of them is ADOPTED from a published design system, so every guard here is a guard
  * against drifting off someone else's answer, not against drifting off a taste. What makes each one
  * hard to fake:
  *
- * - The stack is checked ENTRY BY ENTRY in order. `toContain('PingFang SC')` would pass on a
- *   stack that had lost `-apple-system`, or that had put the CJK face in front of the Latin one --
- *   which is the one ordering the stack explicitly refuses.
  * - `text-autospace` is checked by RENDERED GEOMETRY, not by computed style. A property can be
  *   set and ignored: the value parses in a browser that does nothing with it, and
  *   `getComputedStyle` would report it happily. Two spans of the same text at the same size, one
@@ -18,32 +16,6 @@ import { makeProject, makeTask, registerFreshUser } from './helpers'
  * - The scale is checked as PAIRS on the real elements that wear each role. Asserting the custom
  *   properties would only prove the tokens exist, not that anything uses them.
  */
-
-/** The stack, verbatim. Everything from `-apple-system` on is Semi Design's string. */
-const FONT_SANS = [
-  'IBM Plex Sans',
-  'CTWS Noto Sans SC',
-  '-apple-system',
-  'BlinkMacSystemFont',
-  'PingFang SC',
-  'Hiragino Sans GB',
-  'Microsoft YaHei',
-  'Segoe UI',
-  'Helvetica Neue',
-  'Helvetica',
-  'Arial',
-  'sans-serif',
-]
-
-/** Verbatim: Ant Design 5's `fontFamilyCode`. */
-const FONT_MONO = ['SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', 'Courier', 'monospace']
-
-/** A font-family or custom-property value as an ordered list of family names, quoting removed. */
-const families = (value: string) =>
-  value
-    .split(',')
-    .map((name) => name.trim().replace(/^["']|["']$/g, ''))
-    .filter(Boolean)
 
 /** The size/line-height pair a selector's first match computes, in px. */
 const pair = (page: Page, selector: string) =>
@@ -54,45 +26,6 @@ const pair = (page: Page, selector: string) =>
       const s = getComputedStyle(el)
       return { size: s.fontSize, line: s.lineHeight, weight: s.fontWeight }
     })
-
-// -------------------------------------------------------------------------------- the font stack
-
-test('the computed font stack is the spec string, entry for entry and in order', async ({
-  page,
-}) => {
-  await registerFreshUser(page)
-
-  const sans = families(await page.evaluate(() => getComputedStyle(document.body).fontFamily))
-
-  // THE TWO NAMED FACTS COME FIRST, then the whole list. Each is a separate reason the spec gives,
-  // and an exact-list assertion placed in front would swallow both: every mutation would report
-  // "the list differs" and neither reason would ever get to say what it is about.
-  //
-  // Latin FIRST. The stack refuses Apple's CJK-first ordering, because handing Latin to Noto would
-  // throw away the reason IBM Plex Sans is self-hosted at all.
-  expect(sans.indexOf('IBM Plex Sans'), `Latin must lead: ${sans}`).toBeLessThan(
-    sans.indexOf('CTWS Noto Sans SC'),
-  )
-  expect(
-    sans.indexOf('CTWS Noto Sans SC'),
-    `the webfont must precede the system CJK faces: ${sans}`,
-  ).toBeLessThan(sans.indexOf('PingFang SC'))
-
-  // No serif display step, and the stack names no serif family. The terminal `sans-serif` is the
-  // only place the word may appear, so a `Songti`/`Source Han Serif` step cannot be slipped in.
-  expect(
-    sans.filter((name) => /serif/i.test(name)),
-    `a serif family appeared in the stack: ${sans}`,
-  ).toEqual(['sans-serif'])
-
-  // ...and then the whole string, entry for entry.
-  expect(sans).toEqual(FONT_SANS)
-
-  const mono = await page.evaluate(() =>
-    getComputedStyle(document.documentElement).getPropertyValue('--font-mono'),
-  )
-  expect(families(mono)).toEqual(FONT_MONO)
-})
 
 // --------------------------------------------------------------------- the scale, as rem pairs
 
