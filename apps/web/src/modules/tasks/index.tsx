@@ -8,7 +8,7 @@ import {
   ProjectNumbers,
   ProjectTasks,
 } from './components/ProjectBlock'
-import { ProjectFacts, ProjectLead } from './components/ProjectFacts'
+import { ProjectLead, ProjectRowFacts, ProjectTileFacts } from './components/ProjectFacts'
 import { OpenTaskCount, TaskStatusLine, TodayCount } from './components/TaskKind'
 import { TodayDate, TodayGlance } from './components/TodayGlance'
 import { useInboxCapture, useTaskEntries, useTaskHits } from './hooks/contributions'
@@ -95,7 +95,8 @@ export const taskModule: WorkspaceModule = {
   project: {
     Block: { Component: ProjectTasks, views: PROJECT_VIEWS, Action: NewTaskAction },
     Headline: ProjectNumbers,
-    Facts: ProjectFacts,
+    RowFacts: ProjectRowFacts,
+    TileFacts: ProjectTileFacts,
     Lead: ProjectLead,
     count: openTasksOf,
     contents: async (qc, projectId) => {

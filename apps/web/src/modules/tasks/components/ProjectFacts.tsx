@@ -15,34 +15,27 @@ function useMoved(projectId: ProjectId) {
   return movement.data?.find((m) => m.projectId === projectId)
 }
 
-/**
- * A project's tasks in numbers: a sentence on its row in the list, three lines on its Workbench
- * card. The open count is the server's, never counted here.
- */
-export function ProjectFacts({
-  project: p,
-  place,
-}: {
-  project: ProjectListItem
-  place: 'row' | 'tile'
-}) {
+/** A project's tasks in numbers on its Workbench card, a line each. The open count is the server's. */
+export function ProjectTileFacts({ project: p }: { project: ProjectListItem }) {
   const m = useMoved(p.id)
   const today = ymd(useNow(), useTimeZone())
+  return (
+    <>
+      <span className="text-ink-muted tabular-nums">{openTasksOf(p)} open</span>
+      {m && m.overdue > 0 ? (
+        <span className="text-missed">{m.overdue} overdue</span>
+      ) : m?.nextDueOn ? (
+        <span className="text-deadline">Due {shortDay(m.nextDueOn, today)}</span>
+      ) : null}
+      {m && <span className="text-ink-subtle">{movedLine(m, today)}</span>}
+    </>
+  )
+}
 
-  if (place === 'tile') {
-    return (
-      <>
-        <span className="text-ink-muted tabular-nums">{openTasksOf(p)} open</span>
-        {m && m.overdue > 0 ? (
-          <span className="text-missed">{m.overdue} overdue</span>
-        ) : m?.nextDueOn ? (
-          <span className="text-deadline">Due {shortDay(m.nextDueOn, today)}</span>
-        ) : null}
-        {m && <span className="text-ink-subtle">{movedLine(m, today)}</span>}
-      </>
-    )
-  }
-
+/** A project's tasks in numbers on its row in the list, as one line. */
+export function ProjectRowFacts({ project: p }: { project: ProjectListItem }) {
+  const m = useMoved(p.id)
+  const today = ymd(useNow(), useTimeZone())
   const said: ReactNode[] = [
     <span key="open" data-count>
       {openTasksOf(p)} open

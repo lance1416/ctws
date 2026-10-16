@@ -104,7 +104,8 @@ export type Registry = {
   relationFor: (type: ObjectType) => RegisteredRelation
   projectBlocks: RegisteredProjectBlock[]
   projectHeadlines: { moduleId: string; Component: ComponentType<{ projectId: ProjectId }> }[]
-  projectFacts: { moduleId: string; Facts: NonNullable<ProjectContribution['Facts']> }[]
+  projectRowFacts: { moduleId: string; Facts: ComponentType<{ project: ProjectListItem }> }[]
+  projectTileFacts: { moduleId: string; Facts: ComponentType<{ project: ProjectListItem }> }[]
   projectLead: ComponentType<{ projectId: ProjectId }> | null
   projectCount: ((project: ProjectListItem) => number) | null
   projectContents: NonNullable<ProjectContribution['contents']>[]
@@ -175,8 +176,11 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
     projectHeadlines: modules.flatMap((m) =>
       m.project?.Headline ? [{ moduleId: m.id, Component: m.project.Headline }] : [],
     ),
-    projectFacts: modules.flatMap((m) =>
-      m.project?.Facts ? [{ moduleId: m.id, Facts: m.project.Facts }] : [],
+    projectRowFacts: modules.flatMap((m) =>
+      m.project?.RowFacts ? [{ moduleId: m.id, Facts: m.project.RowFacts }] : [],
+    ),
+    projectTileFacts: modules.flatMap((m) =>
+      m.project?.TileFacts ? [{ moduleId: m.id, Facts: m.project.TileFacts }] : [],
     ),
     projectLead: modules.find((m) => m.project?.Lead)?.project?.Lead ?? null,
     projectCount: modules.find((m) => m.project?.count)?.project?.count ?? null,

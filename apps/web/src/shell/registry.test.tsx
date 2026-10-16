@@ -10,6 +10,7 @@ import { buildRegistry, useRegistry, type ShellConfig } from './registry'
 const NotesOnProject = () => null
 const NotesProjectNumbers = () => null
 const NotesFacts = () => null
+const NotesTileFacts = () => null
 const FilesLead = () => null
 
 const notes: WorkspaceModule = {
@@ -30,7 +31,8 @@ const notes: WorkspaceModule = {
   project: {
     Block: { Component: NotesOnProject, views: [{ id: 'all', label: 'All' }] },
     Headline: NotesProjectNumbers,
-    Facts: NotesFacts,
+    RowFacts: NotesFacts,
+    TileFacts: NotesTileFacts,
     contents: async () => '3 notes',
   },
   keys: [{ title: 'In a note', rows: [{ keys: 'e', does: 'Edit', presses: { e: 'edit' } }] }],
@@ -192,9 +194,14 @@ describe('what a module hangs on a project page', () => {
     expect(headlines[0]!.Component).toBe(NotesProjectNumbers)
   })
 
-  it('collects the row facts and what a delete takes, in registration order', async () => {
+  it('collects the row and card facts and what a delete takes, in registration order', async () => {
     const registry = build([notes, files])
-    expect(registry.projectFacts.map((f) => [f.moduleId, f.Facts])).toEqual([['notes', NotesFacts]])
+    expect(registry.projectRowFacts.map((f) => [f.moduleId, f.Facts])).toEqual([
+      ['notes', NotesFacts],
+    ])
+    expect(registry.projectTileFacts.map((f) => [f.moduleId, f.Facts])).toEqual([
+      ['notes', NotesTileFacts],
+    ])
     const qc = new QueryClient()
     expect(
       await Promise.all(registry.projectContents.map((c) => c(qc, idFrom(projectId, 'p')))),
@@ -216,7 +223,8 @@ describe('what a module hangs on a project page', () => {
     const registry = build([bare], { captureModuleId: 'bare', phoneTab: 'shell:calendar' })
     expect(registry.projectBlocks).toEqual([])
     expect(registry.projectHeadlines).toEqual([])
-    expect(registry.projectFacts).toEqual([])
+    expect(registry.projectRowFacts).toEqual([])
+    expect(registry.projectTileFacts).toEqual([])
     expect(registry.projectContents).toEqual([])
   })
 })

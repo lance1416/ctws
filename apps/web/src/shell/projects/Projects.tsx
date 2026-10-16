@@ -74,7 +74,7 @@ export function Projects() {
  * alone; delete lives on the project's own page.
  */
 function ProjectRow({ project: p }: { project: ProjectListItem }) {
-  const { projectLead: Lead, projectFacts } = useRegistry()
+  const { projectLead: Lead, projectRowFacts } = useRegistry()
   return (
     <li data-project-row={p.id} className="group relative flex min-h-14 min-w-0">
       {Lead && <Lead projectId={p.id} />}
@@ -87,8 +87,8 @@ function ProjectRow({ project: p }: { project: ProjectListItem }) {
           {p.name}
         </Link>
         <span data-project-meta className="truncate text-sm text-ink-muted tabular-nums">
-          {projectFacts.map(({ moduleId, Facts }) => (
-            <Facts key={moduleId} project={p} place="row" />
+          {projectRowFacts.map(({ moduleId, Facts }) => (
+            <Facts key={moduleId} project={p} />
           ))}
         </span>
       </div>

@@ -56,8 +56,10 @@ export type ProjectContribution = {
   }
   /** Numbers under the project's name on its page, said as a sentence. */
   Headline?: ComponentType<{ projectId: ProjectId }>
-  /** Numbers for a project's row in the list (`row`) or its Workbench card (`tile`). */
-  Facts?: ComponentType<{ project: ProjectListItem; place: 'row' | 'tile' }>
+  /** Numbers for a project's row in the list, said as one line. */
+  RowFacts?: ComponentType<{ project: ProjectListItem }>
+  /** Numbers for a project's Workbench card, a line each. */
+  TileFacts?: ComponentType<{ project: ProjectListItem }>
   /** The day in the margin of a project's row in the list. At most one module gives one. */
   Lead?: ComponentType<{ projectId: ProjectId }>
   /**

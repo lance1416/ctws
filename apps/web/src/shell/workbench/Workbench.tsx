@@ -47,7 +47,7 @@ const SPAN = {
 /** The shell's own card, not contributed by a module: every project and its numbers. */
 function ProjectsWidget() {
   const projects = useProjects()
-  const facts = useRegistry().projectFacts
+  const facts = useRegistry().projectTileFacts
   const rows = projects.data ?? []
 
   return (
@@ -69,7 +69,7 @@ function ProjectsWidget() {
               <span className="flex min-w-0 flex-col text-sm">
                 <span className="truncate text-base font-semibold text-ink">{p.name}</span>
                 {facts.map(({ moduleId, Facts }) => (
-                  <Facts key={moduleId} project={p} place="tile" />
+                  <Facts key={moduleId} project={p} />
                 ))}
               </span>
             </Link>
