@@ -20,6 +20,7 @@ const ctws = {
     clock: restrictedSyntax,
     'enum-cast': restrictedSyntax,
     'class-names': restrictedSyntax,
+    'button-text': restrictedSyntax,
     'shell-entry': restrictedImports,
   },
 }
@@ -195,45 +196,78 @@ export default tseslint.config(
   // ---- Class names (Tailwind) ----
   {
     files: ['apps/web/src/**/*.{ts,tsx}'],
-    ignores: [...TESTS, 'apps/web/src/platform/ui/buttonStyles.ts'],
+    ignores: TESTS,
     plugins: { ctws },
     rules: {
       'ctws/class-names': ['error', ...classNameRules()],
     },
   },
+  {
+    // A filled button's text is `on-ink` or `on-danger`, and only BUTTON may say so.
+    files: ['apps/web/src/**/*.{ts,tsx}'],
+    ignores: [...TESTS, 'apps/web/src/platform/ui/buttonStyles.ts'],
+    plugins: { ctws },
+    rules: {
+      'ctws/button-text': [
+        'error',
+        ...textRule(`/${cls('text-on-(ink|danger)')}/`, 'A filled button comes from BUTTON.'),
+      ],
+    },
+  },
 )
 
-/**
- * Class vocabulary the design system owns. Each is checked on string literals and template
- * chunks, which is where a class list lives.
- */
-function classNameRules() {
-  const onText = (pattern, message) => [
+/** A selector on string literals and template chunks, which is where a class list lives. */
+function textRule(pattern, message) {
+  return [
     { selector: `Literal[value=${pattern}]`, message },
     { selector: `TemplateElement[value.raw=${pattern}]`, message },
   ]
-  // A class name, not part of a longer one (`rounded` is not `rounded-md`, `hover:` is fine).
-  const cls = (name) => `(?<![\\w-])${name}(?![\\w-])`
+}
+
+/** A class name, not part of a longer one (`rounded` is not `rounded-md`; `hover:` is fine). */
+function cls(name) {
+  return `(?<![\\w-])${name}(?![\\w-])`
+}
+
+/** Class vocabulary the design system owns. */
+function classNameRules() {
   const any = '[\\s\\S]*'
   return [
     // RADIUS BY ROLE: 0 for structure, 6px (`rounded-md`) for controls, 10px for what floats,
     // round for markers. A row with a corner reads as a button. Two small exceptions keep their
     // own: a key chip's 4px `rounded` (with its `border` and `text-xs`), and a note's checkbox
     // glyph (`rounded-sm align-text-top`).
-    ...onText(
+    ...textRule(
       `/${cls('rounded-(lg|xl|2xl|3xl)')}/`,
       'Off the radius scale: rounded-md for controls, rounded-[10px] for what floats.',
     ),
-    ...onText(
+    ...textRule(
       `/^(?!(?=${any}${cls('border')})(?=${any}${cls('text-xs')}))${any}${cls('rounded')}/`,
       'A bare rounded is only for a key chip (with border and text-xs).',
     ),
-    ...onText(
+    ...textRule(
       `/^(?!${any}${cls('align-text-top')})${any}${cls('rounded-sm')}/`,
       'rounded-sm is only for the note checkbox glyph.',
     ),
-    // A filled button's text is `on-ink` or `on-danger`, and only BUTTON may say so.
-    ...onText(`/${cls('text-on-(ink|danger)')}/`, 'A filled button comes from BUTTON.'),
+    // A state goes one step from the plane it is on, never to another plane: what the pointer,
+    // the keyboard or an open menu does is a layer (`bg-hover`, `bg-select`), not a surface.
+    ...textRule(
+      // `\b`, not cls(): `group-hover:` is a state too.
+      '/\\b(hover|focus|focus-visible|focus-within|active|aria-expanded|aria-selected|data-\\[highlighted\\]):bg-(sheet|chrome|desk|float)(?![\\w-])/',
+      'A transient state is a layer (bg-hover, bg-select), never a surface.',
+    ),
+    // A portalled menu with no layer paints under the pane, and five menus once had four row
+    // heights: a menu and its rows take the shared look.
+    {
+      selector:
+        "JSXOpeningElement[name.object.name='DropdownMenu'][name.property.name='Content']:not(:has(JSXAttribute[name.name='className'] Identifier[name='MENU_SURFACE']))",
+      message: 'A menu takes MENU_SURFACE, which carries its layer.',
+    },
+    {
+      selector:
+        "JSXOpeningElement[name.object.name='DropdownMenu'][name.property.name='Item']:not(:has(JSXAttribute[name.name='className'] Identifier[name='MENU_ITEM']))",
+      message: 'A menu row takes MENU_ITEM.',
+    },
     // The OS draws a native select's popup and ignores the palette.
     {
       selector: "JSXOpeningElement[name.name='select']",
