@@ -22,7 +22,7 @@ describe('registerBody', () => {
   })
 
   // An invalid timezone is refused at the boundary.
-  it.each(['GMT+8', '', 'Not/AZone', 'UTC+08:00', 'asia/shanghai'])(
+  it.each(['GMT+8', '', ' UTC', 'Not/AZone', 'UTC+08:00'])(
     'rejects invalid IANA timezone %j',
     (timezone) => {
       expect(registerBody.safeParse({ ...valid, timezone }).success).toBe(false)
@@ -33,6 +33,16 @@ describe('registerBody', () => {
     'accepts valid IANA timezone %j',
     (timezone) => {
       expect(registerBody.safeParse({ ...valid, timezone }).success).toBe(true)
+    },
+  )
+
+  // A browser names a zone in its own spelling, which can be an alias the server's ICU renames
+  // (Asia/Kolkata is Asia/Calcutta to ICU 77 and 78).
+  it.each(['Asia/Kolkata', 'Europe/Kyiv', 'Asia/Ho_Chi_Minh', 'asia/shanghai'])(
+    'accepts %j and stores the one spelling the server resolves it to',
+    (timezone) => {
+      const resolved = new Intl.DateTimeFormat('en-US', { timeZone: timezone }).resolvedOptions()
+      expect(registerBody.parse({ ...valid, timezone }).timezone).toBe(resolved.timeZone)
     },
   )
 
