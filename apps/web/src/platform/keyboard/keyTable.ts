@@ -117,8 +117,7 @@ export function useDocumentKeys<A extends string>(
   { claim, skipped }: { claim?: (e: KeyboardEvent) => boolean; skipped?: () => void } = {},
 ): void {
   const enabled = useShortcutsEnabled()
-  const guarded = (e: KeyboardEvent) =>
-    isTypingTarget(e.target) || !isBareKey(e) || isOverlayOpen()
+  const guarded = (e: KeyboardEvent) => isTypingTarget(e.target) || !isBareKey(e) || isOverlayOpen()
   // In the capture phase: the other page-wide keys and the page's own handlers come after it.
   const onClaim = useEffectEvent((e: KeyboardEvent) => {
     if (!guarded(e) && claim?.(e)) e.stopPropagation()
