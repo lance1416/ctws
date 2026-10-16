@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { projectId, readingId } from './id'
-import { calendarDate, instant, nameText, titleText } from './common'
+import { calendarDate, instant, nameText, patchOf, titleText } from './common'
 
 /**
  * Reading comes in two kinds: a link has a url, a book has an author and no url. A link's title
@@ -43,17 +43,14 @@ export const createReadingItemBody = z.discriminatedUnion('kind', [
 export type CreateReadingItemBody = z.infer<typeof createReadingItemBody>
 
 /** `kind` cannot change: a link does not become a book. */
-export const updateReadingItemBody = z
-  .object({
-    title: readingTitle.nullable().optional(),
-    url: readingUrl.optional(),
-    author: author.nullable().optional(),
-    status: readingStatus.optional(),
-    projectId: projectId.nullable().optional(),
-    planOn: calendarDate.nullable().optional(),
-  })
-  .strict()
-  .refine((b) => Object.keys(b).length > 0, { message: 'expected at least one field' })
+export const updateReadingItemBody = patchOf({
+  title: readingTitle.nullable(),
+  url: readingUrl,
+  author: author.nullable(),
+  status: readingStatus,
+  projectId: projectId.nullable(),
+  planOn: calendarDate.nullable(),
+})
 export type UpdateReadingItemBody = z.infer<typeof updateReadingItemBody>
 
 export const readingItemResponse = z

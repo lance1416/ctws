@@ -80,18 +80,23 @@ export function ruleEndDay(rule: string | null): string | null {
 
 export const meetingParams = z.object({ id: meetingId }).strict()
 
+/** What a meeting is; null clears a field. A new one needs its title, time and length. */
+const meetingFields = {
+  title,
+  startsLocal: localTime,
+  timeZone: eventTimeZone,
+  durationMinutes,
+  rrule: rrule.nullable(),
+  location: location.nullable(),
+  note: note.nullable(),
+  projectId: projectId.nullable(),
+  attendeeIds: z.array(personId).max(50),
+}
+
 export const createMeetingBody = z
-  .object({
-    title,
-    startsLocal: localTime,
-    timeZone: eventTimeZone,
-    durationMinutes,
-    rrule: rrule.nullish(),
-    location: location.nullish(),
-    note: note.nullish(),
-    projectId: projectId.nullish(),
-    attendeeIds: z.array(personId).max(50).optional(),
-  })
+  .object(meetingFields)
+  .partial()
+  .required({ title: true, startsLocal: true, timeZone: true, durationMinutes: true })
   .strict()
 export type CreateMeetingBody = z.infer<typeof createMeetingBody>
 
@@ -107,18 +112,10 @@ export const updateMeetingBody = z
     /** Required for anything but `all`. */
     scope: editScope.default('all'),
     recurrenceId: localTime.optional(),
-    title: title.optional(),
-    startsLocal: localTime.optional(),
-    timeZone: eventTimeZone.optional(),
-    durationMinutes: durationMinutes.optional(),
-    rrule: rrule.nullable().optional(),
-    location: location.nullable().optional(),
-    note: note.nullable().optional(),
-    projectId: projectId.nullable().optional(),
-    attendeeIds: z.array(personId).max(50).optional(),
+    ...z.object(meetingFields).partial().shape,
   })
   .strict()
-  .refine((b) => Object.keys(b).some((k) => k !== 'scope'), {
+  .refine((b) => Object.keys(b).some((k) => k !== 'scope' && k !== 'recurrenceId'), {
     message: 'expected at least one field',
   })
   .refine((b) => b.scope === 'all' || b.recurrenceId !== undefined, {

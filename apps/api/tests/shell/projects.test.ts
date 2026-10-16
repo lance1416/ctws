@@ -200,6 +200,18 @@ describe('projects', () => {
     expect((rows.rows as { deleted_at: unknown }[])[0]!.deleted_at).not.toBeNull()
   })
 
+  it('refuses an empty patch, as every update does', async () => {
+    const ctx = await setup()
+    const id = await createProject(ctx, 'P')
+    const res = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/v1/projects/${id}`,
+      headers: ctx.authed,
+      payload: {},
+    })
+    expect(res.statusCode).toBe(400)
+  })
+
   it('a soft-deleted project is gone even with archived=true, and cannot be patched', async () => {
     const ctx = await setup()
     const id = await createProject(ctx, 'gone')
@@ -377,10 +389,9 @@ describe('project visibility', () => {
       expect(await ids(ctx, scenario.caller(ctx, other), archived)).not.toContain(id)
     })
 
-    // updateProject: a rename, an empty patch and both archive directions.
+    // updateProject: a rename and both archive directions.
     it.each([
       ['rename', { name: 'stolen' }],
-      ['empty patch', {}],
       ['archive', { archived: true }],
       ['unarchive', { archived: false }],
     ] as const)('answers 404 to updateProject: %s', async (_label, payload) => {

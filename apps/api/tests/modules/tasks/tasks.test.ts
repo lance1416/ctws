@@ -164,6 +164,12 @@ describe('update', () => {
     })
   })
 
+  it('refuses an empty patch, as every update does', async () => {
+    const ctx = await setup()
+    const id = await createTask(ctx, await createProject(ctx, 'P'), 'x')
+    expect((await patch(ctx, id, {})).statusCode).toBe(400)
+  })
+
   it('cannot change structure through PATCH', async () => {
     const ctx = await setup()
     const projectId = await createProject(ctx, 'P')
@@ -209,10 +215,6 @@ describe('update', () => {
       dueAt: '2026-10-16T01:59:00+02:00',
     })
     expect(res.statusCode).toBe(200)
-    expect(await eventsOf(ctx, id)).toHaveLength(before)
-
-    const empty = await patch(ctx, id, {})
-    expect(empty.statusCode).toBe(200)
     expect(await eventsOf(ctx, id)).toHaveLength(before)
   })
 
@@ -476,7 +478,12 @@ describe('workspace isolation', () => {
     expect(deleted.statusCode).toBe(404)
 
     expect((await rowOf(a, id)).deleted_at).toBeNull()
-    expect((await patch(a, id, {})).json().title).toBe('mine')
+    const mine = await a.app.inject({
+      method: 'GET',
+      url: `/api/v1/tasks/${id}`,
+      headers: a.authed,
+    })
+    expect(mine.json().title).toBe('mine')
   })
 })
 

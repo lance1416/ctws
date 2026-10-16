@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { projectId, taskId } from './id'
 import { WINDOW_REFUSED, windowIsBounded } from './calendar'
-import { calendarDate, documentText, instant, titleText } from './common'
+import { calendarDate, documentText, instant, patchOf, titleText } from './common'
 
 export const TASK_STATUSES = ['backlog', 'todo', 'in_progress', 'done', 'cancelled'] as const
 const taskStatus = z.enum(TASK_STATUSES)
@@ -57,16 +57,13 @@ export const createTaskBody = z
   .strict()
 
 // No parentId, projectId or rank: those change through move, which guards the tree.
-export const updateTaskBody = z
-  .object({
-    title,
-    notes: notes.nullable(),
-    status: taskStatus,
-    scheduledOn: calendarDate.nullable(),
-    dueAt: instant.nullable(),
-  })
-  .partial()
-  .strict()
+export const updateTaskBody = patchOf({
+  title,
+  notes: notes.nullable(),
+  status: taskStatus,
+  scheduledOn: calendarDate.nullable(),
+  dueAt: instant.nullable(),
+})
 
 /** The neighbours the task lands between; the server computes the rank. */
 export const moveTaskBody = z

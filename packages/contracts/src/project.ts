@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { projectId, workspaceId } from './id'
-import { instant, nameText } from './common'
+import { instant, nameText, patchOf } from './common'
 
 /**
  * A project's colour is a slot naming a `--color-project-N` token, not a colour value: each token
@@ -25,14 +25,11 @@ export const createProjectBody = z
   })
   .strict()
 
-export const updateProjectBody = z
-  .object({
-    name: nameText,
-    color: projectColor,
-    archived: z.boolean(),
-  })
-  .partial()
-  .strict()
+export const updateProjectBody = patchOf({
+  name: nameText,
+  color: projectColor,
+  archived: z.boolean(),
+})
 
 export const projectResponse = z
   .object({

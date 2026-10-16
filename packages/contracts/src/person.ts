@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { personId, projectId } from './id'
 import { birthdayInput, birthdayResponse } from './birthday'
-import { calendarDate, instant, nameText, noteText } from './common'
+import { calendarDate, instant, nameText, noteText, patchOf } from './common'
 
 /**
  * A person, after vCard 4.0 (RFC 6350): a formatted name, an organisation, notes, and a
@@ -66,6 +66,8 @@ export type Circle = (typeof CIRCLES)[number]
 
 const personName = nameText
 const org = nameText
+/** A job title: what someone is called at their organisation. */
+const jobTitle = nameText
 const note = noteText
 const place = z.string().trim().min(1).max(120)
 /** Written as a whole list; the server replaces the set. */
@@ -73,39 +75,25 @@ const channels = z.array(personChannel).max(20)
 
 export const personParams = z.object({ id: personId }).strict()
 
-export const createPersonBody = z
-  .object({
-    name: personName,
-    org: org.nullish(),
-    note: note.nullish(),
-    projectIds: z.array(projectId).max(20).optional(),
-    channels: channels.optional(),
-    birthday: birthdayInput.nullish(),
-    gender: z.enum(GENDERS).nullish(),
-    hometown: place.nullish(),
-    city: place.nullish(),
-    title: org.nullish(),
-    circle: z.enum(CIRCLES).nullish(),
-  })
-  .strict()
+/** What can be said about a person; null clears a field. Only a name is needed to add one. */
+const personFields = {
+  name: personName,
+  org: org.nullable(),
+  note: note.nullable(),
+  projectIds: z.array(projectId).max(20),
+  channels,
+  birthday: birthdayInput.nullable(),
+  gender: z.enum(GENDERS).nullable(),
+  hometown: place.nullable(),
+  city: place.nullable(),
+  title: jobTitle.nullable(),
+  circle: z.enum(CIRCLES).nullable(),
+}
+
+export const createPersonBody = z.object(personFields).partial().required({ name: true }).strict()
 export type CreatePersonBody = z.infer<typeof createPersonBody>
 
-export const updatePersonBody = z
-  .object({
-    name: personName.optional(),
-    org: org.nullable().optional(),
-    note: note.nullable().optional(),
-    projectIds: z.array(projectId).max(20).optional(),
-    channels: channels.optional(),
-    birthday: birthdayInput.nullish(),
-    gender: z.enum(GENDERS).nullish(),
-    hometown: place.nullish(),
-    city: place.nullish(),
-    title: org.nullish(),
-    circle: z.enum(CIRCLES).nullish(),
-  })
-  .strict()
-  .refine((b) => Object.keys(b).length > 0, { message: 'expected at least one field' })
+export const updatePersonBody = patchOf(personFields)
 export type UpdatePersonBody = z.infer<typeof updatePersonBody>
 
 export const personResponse = z

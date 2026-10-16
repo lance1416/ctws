@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { userId } from './id'
 import { email, newPassword, roleSchema } from './auth'
-import { canonicalTimeZone, instant } from './common'
+import { canonicalTimeZone, instant, patchOf } from './common'
 
 export const adminUser = z
   .object({
@@ -26,14 +26,6 @@ export const adminCreateUserBody = z
   })
   .strict()
 
-export const adminUpdateUserBody = z
-  .object({
-    role: roleSchema.optional(),
-    disabled: z.boolean().optional(),
-  })
-  .strict()
-  .refine((v) => v.role !== undefined || v.disabled !== undefined, {
-    message: 'provide role and/or disabled',
-  })
+export const adminUpdateUserBody = patchOf({ role: roleSchema, disabled: z.boolean() })
 
 export type AdminUser = z.infer<typeof adminUser>

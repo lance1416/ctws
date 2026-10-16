@@ -69,6 +69,17 @@ export const eventTimeZone = z
     }
   }, 'not a time zone this system knows')
 
+/**
+ * The body of an update: any of `shape`'s fields, at least one of them, and nothing else. A field
+ * that may be cleared says so in the shape (`.nullable()`); left out, it is left as it is.
+ */
+export const patchOf = <Shape extends z.ZodRawShape>(shape: Shape) =>
+  z
+    .object(shape)
+    .partial()
+    .strict()
+    .refine((b) => Object.keys(b).length > 0, { message: 'expected at least one field' })
+
 /** RFC 9457 problem details: the shape of every refusal. */
 export const problem = z
   .object({
