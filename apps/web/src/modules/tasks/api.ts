@@ -38,17 +38,24 @@ export const taskQuery = (id: TaskId) =>
     retry: false,
   })
 
+/**
+ * Today's, Done's and Movement's answers are the server's for one day, so that day (the account's,
+ * from `useAccountToday`) is in their keys: a page left open past midnight asks again. It is not
+ * sent; the server knows the account's day.
+ */
+export const TODAY_TASKS = ['tasks', 'today']
+
 // The server owns the segments and their order; nothing here re-derives either.
-export const todayQuery = () =>
+export const todayQuery = (day: string) =>
   queryOptions({
-    queryKey: ['tasks', 'today'],
+    queryKey: [...TODAY_TASKS, day],
     queryFn: async () => (await call(api.tasks.today, { query: { view: 'today' } })).tasks,
   })
 
 /** Newest first; the server decides each task's day and whether this is the whole history. */
-export const completedQuery = () =>
+export const completedQuery = (day: string) =>
   queryOptions({
-    queryKey: ['tasks', 'completed'],
+    queryKey: ['tasks', 'completed', day],
     queryFn: () => call(api.tasks.completed, { query: { view: 'completed' } }),
   })
 
@@ -56,9 +63,9 @@ export const completedQuery = () =>
  * Per project: what is late, what is next, when it last moved. Archived projects are not in it.
  * Every number is the server's, computed in the user's timezone; nothing is re-derived here.
  */
-export const movementQuery = () =>
+export const movementQuery = (day: string) =>
   queryOptions({
-    queryKey: ['tasks', 'movement'],
+    queryKey: ['tasks', 'movement', day],
     queryFn: async () => (await call(api.tasks.movement, { query: { view: 'movement' } })).projects,
   })
 

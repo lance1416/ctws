@@ -457,3 +457,18 @@ test('the controls over a hovered row hide the title under them', async ({ page 
   // rgb(...) is opaque; rgba(..., a) with a < 1 is not.
   expect(ground).toMatch(/^rgb\(/)
 })
+
+test('an open Today asks the server again when the day turns', async ({ page }) => {
+  await registerFreshUser(page)
+  const zone = await accountZone(page)
+  const [y, m, d] = dayInZone(zone).split('-').map(Number) as [number, number, number]
+  await page.clock.install({ time: new TZDate(y, m - 1, d, 23, 59, 58, 0, zone) })
+  await page.goto('/tasks/today')
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+
+  const asked = (view: string) =>
+    page.waitForRequest((r) => new URL(r.url()).searchParams.get('view') === view)
+  const again = Promise.all([asked('today'), asked('completed'), asked('movement')])
+  await page.clock.runFor(5_000)
+  await again
+})
