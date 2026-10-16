@@ -7,7 +7,7 @@ import {
   occurrencesIn,
   type Exception,
   type Series,
-} from '../../../src/modules/meetings/occurrences'
+} from './occurrences'
 
 /**
  * EXPANDING A RECURRENCE, in the meeting's own zone.

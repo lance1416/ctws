@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  checkLinkUrl,
-  isPublicAddress,
-  literalAddress,
-} from '../../../src/modules/reading/unfurl/safe-url'
+import { checkLinkUrl, isPublicAddress, literalAddress } from './safe-url'
 
 /**
  * Which addresses an outbound fetch may reach. The address is any string someone pasted, so a

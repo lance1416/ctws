@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isUniqueViolation } from '../../../src/platform/db/sql'
+import { isUniqueViolation } from './sql'
 
 describe('isUniqueViolation', () => {
   it('matches the SQLSTATE on the error itself', () => {

@@ -2,10 +2,10 @@ import { workspaceId } from '@ctws/contracts'
 import { sql, type SQL } from 'drizzle-orm'
 import { PgDialect } from 'drizzle-orm/pg-core'
 import { describe, expect, expectTypeOf, it } from 'vitest'
-import { people } from '../../src/modules/people/tables'
-import { liveUnder, type Scope, scoped, within } from '../../src/platform/db/scope'
-import { links } from '../../src/shell/links/tables'
-import { projects } from '../../src/shell/projects/tables'
+import { people } from '../../modules/people/tables'
+import { liveUnder, type Scope, scoped, within } from './scope'
+import { links } from '../../shell/links/tables'
+import { projects } from '../../shell/projects/tables'
 
 const ws = workspaceId.parse('0190e8a1-0000-7000-8000-000000000001')
 const render = (q: SQL) => {

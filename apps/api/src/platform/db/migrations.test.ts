@@ -15,7 +15,7 @@ import { describe, expect, it } from 'vitest'
  */
 describe('migration journal', () => {
   const journal = JSON.parse(
-    readFileSync(join(import.meta.dirname, '../../drizzle/meta/_journal.json'), 'utf8'),
+    readFileSync(join(import.meta.dirname, '../../../drizzle/meta/_journal.json'), 'utf8'),
   ) as { entries: { idx: number; tag: string; when: number }[] }
 
   it('is ordered, and its timestamps increase with it', () => {

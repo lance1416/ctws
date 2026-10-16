@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { windowOf } from '../../../src/modules/meetings/zone'
+import { windowOf } from './zone'
 
 describe('windowOf', () => {
   it('runs to the end of a 25-hour day', () => {

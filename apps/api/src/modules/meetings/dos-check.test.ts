@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { occurrencesIn } from '../../../src/modules/meetings/occurrences'
+import { occurrencesIn } from './occurrences'
 
 /**
  * A hostile stored rule is not walked: it shows as the one meeting its start describes. Walking it

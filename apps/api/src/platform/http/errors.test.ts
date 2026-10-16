@@ -1,24 +1,24 @@
 import { describe, expect, it } from 'vitest'
-import { NotFound } from '../../src/platform/errors'
-import { problemOf } from '../../src/platform/http/errors'
-import { InboxProtectedError } from '../../src/shell/projects/errors'
+import { NotFound } from '../errors'
+import { problemOf } from './errors'
+import { InboxProtectedError } from '../../shell/projects/errors'
 import {
   BothNeighboursError,
   DependencyCycleError,
   DepthLimitError,
   InvalidNeighbourError,
   MoveCycleError,
-} from '../../src/modules/tasks/errors'
-import { BadRuleError, OnceOnlyError } from '../../src/modules/meetings/errors'
-import { ImpossibleBirthdayError } from '../../src/modules/people/errors'
-import { WrongKindError } from '../../src/modules/reading/errors'
+} from '../../modules/tasks/errors'
+import { BadRuleError, OnceOnlyError } from '../../modules/meetings/errors'
+import { ImpossibleBirthdayError } from '../../modules/people/errors'
+import { WrongKindError } from '../../modules/reading/errors'
 import {
   EmailTakenError,
   InvalidCredentialsError,
   RegistrationClosedError,
   SessionRequiredError,
-} from '../../src/shell/auth/errors'
-import { AdminRequiredError, LastAdminError } from '../../src/shell/admin/errors'
+} from '../../shell/auth/errors'
+import { AdminRequiredError, LastAdminError } from '../../shell/admin/errors'
 
 const plain = (status: number, title: string) => (detail: string) => ({
   type: 'about:blank',

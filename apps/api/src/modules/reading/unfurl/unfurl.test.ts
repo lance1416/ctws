@@ -1,7 +1,7 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { afterEach, describe, expect, it } from 'vitest'
-import { unfurl } from '../../../src/modules/reading/unfurl/unfurl'
+import { unfurl } from './unfurl'
 
 /**
  * Fetching a page's title. The test servers run on this machine, which the real guard refuses,
