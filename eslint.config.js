@@ -131,14 +131,17 @@ export default tseslint.config(
     },
   },
   {
-    // A module reaches the shell through an area's public entry, not a file inside it. The
-    // shell areas get their `index.ts` in phase 6; until then every such import is a warning.
-    files: ['apps/*/src/modules/**/*.{ts,tsx}'],
-    ignores: TESTS,
+    // Outside the shell, an area is reached through its public entry, not a file inside it.
+    files: [
+      'apps/*/src/modules/**/*.{ts,tsx}',
+      'apps/api/src/*.ts',
+      'apps/web/src/app/**/*.{ts,tsx}',
+      'apps/web/src/main.tsx',
+    ],
     plugins: { ctws },
     rules: {
       'ctws/shell-entry': [
-        'warn',
+        'error',
         {
           patterns: [
             {
