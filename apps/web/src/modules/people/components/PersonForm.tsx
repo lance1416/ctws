@@ -42,16 +42,12 @@ export function PersonForm({
   const { form, values, named } = usePersonForm(personValues(person))
   const dirty = { shouldDirty: true }
   const channels = useChannelRows(() => byKind(person.channels).map((c) => ({ ...c, saved: true })))
-  const [openedChannels] = useState(() => JSON.stringify(channels.toSave()))
   const [writing, setWriting] = useState(false)
   const [pickingDay, setPickingDay] = useState(false)
   // The server has said the day does not exist: Save would only get a 400.
   const [badDay, setBadDay] = useState(false)
   const { birthday } = values
-  useReportUnsaved(
-    (form.formState.isDirty || JSON.stringify(channels.toSave()) !== openedChannels) && !busy,
-    onUnsaved,
-  )
+  useReportUnsaved((form.formState.isDirty || channels.changed()) && !busy, onUnsaved)
   // Untouched, the button shows the saved birthday.
   const dayText =
     birthday === undefined
