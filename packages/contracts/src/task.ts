@@ -28,6 +28,12 @@ export const REVIEW_TRANSITIONS = {
 } as const satisfies Record<string, TaskStatus>
 export type ReviewList = keyof typeof REVIEW_TRANSITIONS
 
+/**
+ * A new task's status. `todo`, not `backlog`: the rollup skips a backlog node before its children,
+ * so a backlog default would leave a parent at no progress with every child done.
+ */
+export const NEW_TASK_STATUS = 'todo' satisfies TaskStatus
+
 /** The deepest a task may sit; a root is at depth 1. */
 export const MAX_TASK_DEPTH = 10
 
@@ -41,11 +47,7 @@ export const createTaskBody = z
     parentId: z.uuid().nullish(),
     title,
     notes: notes.nullish(),
-    /**
-     * `todo`, not `backlog`: the rollup skips a backlog node before its children, so a backlog
-     * default would leave a parent at no progress with every child done.
-     */
-    status: taskStatus.default('todo'),
+    status: taskStatus.default(NEW_TASK_STATUS),
     scheduledOn: calendarDate.nullish(),
     dueAt: instant.nullish(),
   })

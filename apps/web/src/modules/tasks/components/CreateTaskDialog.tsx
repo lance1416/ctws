@@ -1,4 +1,4 @@
-import { MAX_TASK_DEPTH } from '@ctws/contracts'
+import { MAX_TASK_DEPTH, NEW_TASK_STATUS } from '@ctws/contracts'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useRef } from 'react'
@@ -58,7 +58,7 @@ export function CreateTaskDialog({
       projectId,
       parentId: null,
       title: '',
-      status: 'todo',
+      status: NEW_TASK_STATUS,
       scheduledOn: null,
       dueAt: null,
       notes: null,
