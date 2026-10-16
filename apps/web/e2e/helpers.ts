@@ -4,26 +4,33 @@ import { expect, type Locator, type Page, type Request, type Route } from '@play
 import { TZDate } from '@date-fns/tz'
 import { format } from 'date-fns'
 
+/** A unique email: register is rate limited per IP, and each test needs a workspace of its own. */
+const freshEmail = () => `e2e-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`
+
+export const PASSWORD = 'correct horse battery'
+
 /**
- * Registers a brand-new user through the UI and waits until the signed-in shell is showing.
- * Register is rate limited (20/min/IP), so every call uses a unique email. Returns that email.
+ * Registers a brand-new user over the API, in the browser's own zone as the sign-up form does, and
+ * opens the signed-in shell. Returns the email. The session cookie lands in the page's context, so
+ * the page is signed in from its first load.
  *
  * Signing in opens the Workbench; it then goes on to `at`, Today by default because that is where
  * almost every test here does its work. `'/'` stays on the Workbench.
  *
  * It CLICKS the rail rather than calling `goto`: a fresh navigation leaves focus where the
- * document-level keys (the `g` chords, `/`, `f`) cannot see it, which silently breaks every
- * keyboard test that follows.
+ * document-level keys (the `g` chords, `/`, `f`) cannot see it.
  */
 export async function registerFreshUser(page: Page, at: string = '/tasks/today'): Promise<string> {
-  const email = `e2e-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`
+  const email = freshEmail()
+  const timezone = await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone)
+  const res = await page.request.post('/api/v1/auth/register', {
+    headers: WEB,
+    data: { email, password: PASSWORD, timezone },
+  })
+  expect(res.status(), `register: ${await res.text()}`).toBe(201)
 
   await page.goto('/')
-  await page.getByLabel('Email').fill(email)
-  await page.getByLabel('Password').fill('correct horse battery')
-  await page.getByRole('button', { name: 'Create an account' }).click()
   await page.getByTestId('current-user').waitFor()
-
   if (at === '/tasks/today') {
     await page
       .getByRole('navigation', { name: 'Main navigation' })
@@ -32,7 +39,17 @@ export async function registerFreshUser(page: Page, at: string = '/tasks/today')
   } else if (at !== '/') {
     await page.goto(at)
   }
+  return email
+}
 
+/** Registers a brand-new user through the sign-up form, for the tests whose subject it is. */
+export async function signUpThroughForm(page: Page): Promise<string> {
+  const email = freshEmail()
+  await page.goto('/')
+  await page.getByLabel('Email').fill(email)
+  await page.getByLabel('Password').fill(PASSWORD)
+  await page.getByRole('button', { name: 'Create an account' }).click()
+  await page.getByTestId('current-user').waitFor()
   return email
 }
 

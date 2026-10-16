@@ -1,12 +1,8 @@
 import { expect, test } from '@playwright/test'
-import { logOut, registerFreshUser } from './helpers'
+import { logOut, signUpThroughForm } from './helpers'
 
-// Runs against the API container at http://localhost:3000, which serves the built web app, so the
-// page and the API are one origin. Needs AUTH_REGISTRATION=open and COOKIE_SECURE=false (plain
-// http).
-// Register is rate limited (20/min/IP), so each run uses a unique email.
 test('register, stay signed in across a reload, then log out', async ({ page, context }) => {
-  const email = await registerFreshUser(page)
+  const email = await signUpThroughForm(page)
 
   // The account button wears the initial; the address itself is inside the menu, which is also
   // the only place it is. A workspace id printed into the DOM as a debugging
