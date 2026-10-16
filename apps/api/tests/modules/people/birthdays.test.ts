@@ -1,4 +1,4 @@
-import type { WorkspaceId } from '@ctws/contracts'
+import type { CalendarEntry, WorkspaceId } from '@ctws/contracts'
 import { keptNote, nextOccurrence, type Birthday } from '@ctws/core'
 import { afterEach, describe, expect, it } from 'vitest'
 import { listBirthdays } from '../../../src/modules/people/birthdays'
@@ -146,24 +146,14 @@ describe('GET /people/birthdays', () => {
   })
 })
 
-type Entry = {
-  id: string
-  day: string
-  title: string
-  to: string
-  kind: string
-  time: string | null
-  endTime: string | null
-}
-
-async function entries(ctx: Harness, from: string, to: string): Promise<Entry[]> {
+async function entries(ctx: Harness, from: string, to: string): Promise<CalendarEntry[]> {
   const res = await ctx.app.inject({
     method: 'GET',
     url: `/api/v1/people?view=calendar&from=${from}&to=${to}`,
     headers: ctx.authed,
   })
   expect(res.statusCode, res.body).toBe(200)
-  return (res.json() as { entries: Entry[] }).entries
+  return (res.json() as { entries: CalendarEntry[] }).entries
 }
 
 describe('GET /people/calendar', () => {
@@ -173,26 +163,27 @@ describe('GET /people/calendar', () => {
     await add(ctx, '周楠', { calendar: 'lunar', year: 1991, month: 9, day: 3 })
     const rows = await entries(ctx, '2026-10-01', '2026-10-31')
     expect(rows).toHaveLength(2)
-    const 王颖 = rows.find((r) => r.title.startsWith('王颖'))
+    const 王颖 = rows.find((r) => r.title === '王颖')
     expect(王颖).toMatchObject({
       day: '2026-10-10',
-      title: '王颖 33',
+      title: '王颖',
+      turns: 33,
       type: 'person',
       kind: 'birthday',
-      time: null,
-      endTime: null,
+      startsAt: null,
+      endsAt: null,
     })
     expect(王颖?.id).toMatch(/^[0-9a-f-]{36}$/)
     // A lunar birthday falls on its own day, not on the solar 10-10.
-    expect(rows.find((r) => r.title.startsWith('周楠'))?.day).toBe('2026-10-12')
+    expect(rows.find((r) => r.title === '周楠')?.day).toBe('2026-10-12')
   })
 
-  it('leaves out birthdays outside the window, and shows only the name without a year', async () => {
+  it('leaves out birthdays outside the window, and has no age without a year', async () => {
     const ctx = await setup()
     await add(ctx, '李雷', { calendar: 'solar', year: 1996, month: 4, day: 15 })
     await add(ctx, '蒋老师', { calendar: 'solar', year: null, month: 10, day: 20 })
     const rows = await entries(ctx, '2026-10-01', '2026-10-31')
-    expect(rows.map((r) => r.title)).toEqual(['蒋老师'])
+    expect(rows.map((r) => [r.title, r.turns])).toEqual([['蒋老师', null]])
   })
 
   it('gives each year its own entry, told apart by the day, in a window spanning a year', async () => {

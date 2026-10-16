@@ -1,3 +1,4 @@
+import { zoneAbbreviation } from '@ctws/core/clock'
 import { expect, test, type Page } from '@playwright/test'
 import { TZDate } from '@date-fns/tz'
 import {
@@ -327,8 +328,10 @@ test('a meeting sits on the day at your own time, and says the zone it was agree
     `/api/v1/meetings?view=calendar&from=${dayInZone(account)}&to=${dayInZone(account)}`,
     { headers: WEB },
   )
-  const [entry] = ((await entries.json()) as { entries: { zone: string | null }[] }).entries
-  expect(entry?.zone, 'the server names the zone').toBeTruthy()
+  const [entry] = (
+    (await entries.json()) as { entries: { startsAt: string; timeZone: string | null }[] }
+  ).entries
+  expect(entry?.timeZone, 'the server says which zone it was agreed in').toBe(zone)
 
   await page.goto('/tasks/today')
   const row = page
@@ -336,7 +339,9 @@ test('a meeting sits on the day at your own time, and says the zone it was agree
     .locator('[data-day-entry]')
     .filter({ hasText: 'Northwind intro call' })
   await expect(row.locator('[data-row-lead-text]')).toHaveText('12:00')
-  await expect(row.locator('[data-entry-zone]')).toHaveText(entry!.zone!)
+  await expect(row.locator('[data-entry-zone]')).toHaveText(
+    zoneAbbreviation(new Date(entry!.startsAt), zone),
+  )
 })
 
 test('a meeting already over is drawn a step quieter, above the now line', async ({ page }) => {

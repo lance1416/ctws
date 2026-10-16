@@ -1,4 +1,5 @@
 import {
+  type CalendarEntry,
   OBJECT_TYPES,
   type ObjectType,
   type ProjectId,
@@ -22,6 +23,8 @@ import type {
   WorkspaceModule,
 } from './contract'
 import type { KeyTable } from '../platform/keyboard/keyTable'
+import { useTimeZone } from './auth/useMe'
+import { said } from './calendar/said'
 import { linkKeys } from './links/api'
 import { projectKeys } from './projects/api'
 import { ProjectsCount, ProjectsStatus } from './projects/ProjectKind'
@@ -79,18 +82,25 @@ type CalendarProvider = {
 }
 
 /** One entry's name on a grid: which thing, which date of it, and which occurrence. */
-const entryKey = (e: ShownEntry | Parameters<CalendarContribution['show']>[0]): string =>
+const entryKey = (e: CalendarEntry): string =>
   [e.type, e.id, e.kind, e.day, e.recurrenceId ?? ''].join(':')
 
-/** A module's calendar, its entries given the module's route and words. */
+/** A module's calendar, its entries said and given the module's route and words. */
 function calendarProvider(moduleId: string, c: CalendarContribution): CalendarProvider {
   return {
     moduleId,
     label: c.label,
     ...(c.opens ? { opens: c.opens } : {}),
     useEntries: function useShownEntries(range) {
+      const accountZone = useTimeZone()
       const { entries, isError } = c.useEntries(range)
-      return { isError, entries: entries.map((e) => ({ ...e, ...c.show(e), key: entryKey(e) })) }
+      return {
+        isError,
+        entries: entries.map((e) => {
+          const one = said(e, accountZone)
+          return { ...one, ...c.show(one), key: entryKey(e) }
+        }),
+      }
     },
   }
 }

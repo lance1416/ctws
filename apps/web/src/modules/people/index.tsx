@@ -41,7 +41,12 @@ export const peopleModule: WorkspaceModule = {
   calendar: {
     label: 'Birthdays',
     useEntries: useBirthdayEntries,
-    show: (e) => ({ to: `/people/${e.id}`, label: 'Birthday' }),
+    // The age it turns follows the name, when the year is known.
+    show: (e) => ({
+      to: `/people/${e.id}`,
+      label: 'Birthday',
+      ...(e.turns !== null ? { title: `${e.title} ${e.turns}` } : {}),
+    }),
   },
   widgets: [
     {

@@ -6,7 +6,6 @@ import {
   type ProjectId,
   type WorkspaceId,
 } from '@ctws/contracts'
-import { clockTime, zoneAbbreviation } from '@ctws/core'
 import { and, asc, eq, gt, inArray, isNull, lt, or } from 'drizzle-orm'
 import type { Queryable, Tx } from '../../platform/db/client'
 import { scoped, within } from '../../platform/db/scope'
@@ -237,10 +236,7 @@ export function assertOccurs(series: SeriesRow, recurrenceId: LocalTime): void {
   if (!found.some((o) => o.recurrenceId === recurrenceId)) throw new NotFound('Occurrence')
 }
 
-/**
- * Occurrences for the shell's calendar, on the account's clock. A meeting in another zone also
- * carries its own time there.
- */
+/** Occurrences for the shell's calendar, each on the day it falls on in the account's zone. */
 export async function meetingEntries(
   q: Queryable,
   workspaceId: WorkspaceId,
@@ -254,22 +250,19 @@ export async function meetingEntries(
     windowOf(range.from, range.to, zone),
     asked,
   )
-  const entries = rows.map((m): CalendarEntry => {
-    const elsewhere = m.timeZone !== zone
-    return {
-      type: 'meeting',
-      id: m.meetingId,
-      kind: 'occurrence',
-      recurrenceId: m.recurrenceId,
-      day: localOf(m.startsAt, zone).slice(0, 10),
-      title: m.title,
-      time: clockTime(m.startsAt, zone),
-      endTime: clockTime(m.endsAt, zone),
-      zone: elsewhere ? zoneAbbreviation(m.startsAt, m.timeZone) : null,
-      zoneTime: elsewhere ? localOf(m.startsAt, m.timeZone).slice(11) : null,
-      projectId: m.projectId,
-      projectName: m.projectName,
-    }
-  })
+  const entries = rows.map((m): CalendarEntry => ({
+    type: 'meeting',
+    id: m.meetingId,
+    kind: 'occurrence',
+    recurrenceId: m.recurrenceId,
+    day: localOf(m.startsAt, zone).slice(0, 10),
+    title: m.title,
+    startsAt: m.startsAt.toISOString(),
+    endsAt: m.endsAt.toISOString(),
+    timeZone: m.timeZone,
+    turns: null,
+    projectId: m.projectId,
+    projectName: m.projectName,
+  }))
   return { rows: entries, page }
 }

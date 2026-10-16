@@ -124,17 +124,18 @@ export async function birthdayEntries(
     for (let cursor = range.from; ;) {
       const next = nextOccurrence(birthday, cursor)
       if (next.day > range.to) break
-      entries.push(
-        dayEntry({
+      entries.push({
+        ...dayEntry({
           type: 'person',
           id: p.id,
           kind: 'birthday',
           day: next.day,
-          title: next.turns === null ? p.name : `${p.name} ${next.turns}`,
+          title: p.name,
           projectId: null,
           projectName: null,
         }),
-      )
+        turns: next.turns,
+      })
       cursor = addDays(next.day, 1)
     }
   }

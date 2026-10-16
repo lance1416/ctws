@@ -91,8 +91,20 @@ export type RelationContribution = {
   to: (id: string) => string
 }
 
-/** A calendar entry as the shell draws it: the server's, with its module's route and words. */
-export type ShownEntry = CalendarEntry & {
+/** A calendar entry with its times said on the account's clock, as every reader of one draws it. */
+export type SaidEntry = CalendarEntry & {
+  /** The time of day in the account's zone, for a thing that has one; squares sort by it. */
+  time: string | null
+  /** When it ends on the same clock, for a thing that lasts. */
+  endTime: string | null
+  /** The zone it was agreed in ("EDT"), when that is not the account's. */
+  zone: string | null
+  /** Its time on that zone's clock, when the zone is not the account's. */
+  zoneTime: string | null
+}
+
+/** A calendar entry as the shell draws it: said, with its module's route and words. */
+export type ShownEntry = SaidEntry & {
   /** Unique among the entries of one window: a task is planned and due, a series recurs. */
   key: string
   /** Where clicking it goes, inside the app. */
@@ -110,8 +122,11 @@ export type CalendarContribution = {
     entries: CalendarEntry[]
     isError: boolean
   }
-  /** Where an entry goes and the words for its date: the server says only what and which it is. */
-  show: (entry: CalendarEntry) => { to: string; label: string }
+  /**
+   * Where an entry goes and the words for its date, and its title when the module words it: the
+   * server says only what and which it is.
+   */
+  show: (entry: SaidEntry) => { to: string; label: string; title?: string }
   /**
    * What opens over the grid when an entry is clicked: the address parameters that name it, and
    * the pane that reads them back. Without it the entry links to its `to`.

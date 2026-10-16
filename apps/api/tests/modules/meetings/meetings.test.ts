@@ -180,17 +180,18 @@ describe('a recurring meeting on the calendar', () => {
   })
 
   it('holds 09:00 in Toronto across the DST change, and says which zone that is', async () => {
-    // The account is in UTC and the meeting is in Toronto: the grid shows the ACCOUNT's clock --
-    // ...which answers when to be there -- and the meeting's own time travels beside it.
+    // The account is in UTC and the meeting is in Toronto: each entry is the instant -- which
+    // answers when to be there -- and the zone it was agreed in travels beside it.
     const ctx = await setup()
     await arrange(ctx)
     const got = await entries(ctx, '2026-10-20', '2026-11-10')
-    expect(got.map((e) => e.time)).toEqual(['13:00', '13:00', '14:00', '14:00'])
-    // And when it ends, on the same clock: a meeting that has started is not yet over, and the
-    // day's line can only tell the two apart with its end.
-    expect(got.map((e) => e.endTime)).toEqual(['14:00', '14:00', '15:00', '15:00'])
-    expect(got.map((e) => e.zone)).toEqual(['EDT', 'EDT', 'EST', 'EST'])
-    expect(got.map((e) => e.zoneTime)).toEqual(['09:00', '09:00', '09:00', '09:00'])
+    expect(got.map((e) => [e.startsAt, e.endsAt])).toEqual([
+      ['2026-10-20T13:00:00.000Z', '2026-10-20T14:00:00.000Z'],
+      ['2026-10-27T13:00:00.000Z', '2026-10-27T14:00:00.000Z'],
+      ['2026-11-03T14:00:00.000Z', '2026-11-03T15:00:00.000Z'],
+      ['2026-11-10T14:00:00.000Z', '2026-11-10T15:00:00.000Z'],
+    ])
+    expect(new Set(got.map((e) => e.timeZone))).toEqual(new Set(['America/Toronto']))
   })
 
   it('keeps a Toronto meeting and a London one apart in the week between their changes', async () => {
@@ -201,9 +202,9 @@ describe('a recurring meeting on the calendar', () => {
     await arrange(ctx, { ...WEEKLY, title: '英国', timeZone: 'Europe/London' })
 
     const got = await entries(ctx, '2026-10-27', '2026-10-27')
-    expect(got.map((e) => [e.title, e.time])).toEqual([
-      ['英国', '09:00'],
-      ['多伦多', '13:00'],
+    expect(got.map((e) => [e.title, e.startsAt])).toEqual([
+      ['英国', '2026-10-27T09:00:00.000Z'],
+      ['多伦多', '2026-10-27T13:00:00.000Z'],
     ])
   })
 })

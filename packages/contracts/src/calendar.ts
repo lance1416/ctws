@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { objectId, projectId } from './id'
 import { objectType } from './link'
-import { calendarDate, DAY_MS, EVENT_YEARS, viewQuery } from './common'
+import { calendarDate, DAY_MS, EVENT_YEARS, instant, viewQuery } from './common'
 
 /**
  * The widest window a read may ask for. A recurring series has no last occurrence, so the window
@@ -46,7 +46,7 @@ const CALENDAR_KINDS = ['planned', 'due', 'to-read', 'birthday', 'occurrence'] a
 
 /**
  * One dated thing on the calendar. The server puts it on its day in the account's zone and says
- * which thing it is; where it opens and what it is called are the web's.
+ * which thing it is and what is known of it; where it opens and how it is said are the web's.
  */
 const calendarEntry = z.object({
   type: objectType,
@@ -60,14 +60,13 @@ const calendarEntry = z.object({
     .nullable(),
   day: calendarDate,
   title: z.string(),
-  /** The time of day in the account's zone, for a thing that has one; squares sort by it. */
-  time: z.string().nullable(),
-  /** When it ends on the same clock, for a thing that lasts. */
-  endTime: z.string().nullable(),
-  /** The zone it was agreed in ("EDT"), when that is not the account's. */
-  zone: z.string().nullable(),
-  /** Its time on that zone's clock, when the zone is not the account's. */
-  zoneTime: z.string().nullable(),
+  /** When it starts and ends, for a thing at a time of day. */
+  startsAt: instant.nullable(),
+  endsAt: instant.nullable(),
+  /** The zone its time was agreed in, for a thing at a time of day. */
+  timeZone: z.string().nullable(),
+  /** The age a birthday turns, when the year of birth is known. */
+  turns: z.number().int().nullable(),
   projectId: projectId.nullable(),
   projectName: z.string().nullable(),
 })
