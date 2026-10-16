@@ -11,21 +11,23 @@ import { detailTaskForm, PATCH_KEYS, type DetailTaskForm, type DetailTaskValues 
 export const WRITE_AWAITS = [['tasks']]
 
 /**
- * The pane's edit form. Defaults are read once, at mount, so a background refetch cannot make an
- * untouched form look edited. The deadline is cut to the field's minute, so seconds are no edit.
+ * The pane's edit form. Defaults are read when editing starts (`start`), not on every render, so a
+ * background refetch cannot make an untouched form look edited. The deadline is cut to the field's
+ * minute, so seconds are no edit.
  */
 export function useTaskDetailForm(task: TaskResponse) {
   const timeZone = useTimeZone()
+  const defaults = (): DetailTaskForm => ({
+    projectId: task.projectId,
+    title: task.title,
+    notes: task.notes,
+    status: task.status,
+    scheduledOn: task.scheduledOn,
+    dueAt: fromDayTimeInput(toDayTimeInput(task.dueAt, timeZone), timeZone),
+  })
   const form = useForm<DetailTaskForm, unknown, DetailTaskValues>({
     resolver: zodResolver(detailTaskForm),
-    defaultValues: {
-      projectId: task.projectId,
-      title: task.title,
-      notes: task.notes,
-      status: task.status,
-      scheduledOn: task.scheduledOn,
-      dueAt: fromDayTimeInput(toDayTimeInput(task.dueAt, timeZone), timeZone),
-    },
+    defaultValues: defaults(),
   })
   // Read at render, which is what subscribes the form to them.
   const { dirtyFields, isDirty } = form.formState
@@ -65,5 +67,8 @@ export function useTaskDetailForm(task: TaskResponse) {
       )
     })
 
-  return { form, isDirty, save, submit }
+  /** Takes the task as it is now: the pane may have changed it since it opened (the status). */
+  const start = () => form.reset(defaults())
+
+  return { form, isDirty, save, submit, start }
 }

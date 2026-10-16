@@ -81,7 +81,14 @@ export function TaskDetail({ task, onClose, onSaved }: Props) {
           />
         ) : (
           <>
-            <TaskReading task={task} onEdit={() => setEditing(true)} onClose={requestClose} />
+            <TaskReading
+              task={task}
+              onEdit={() => {
+                edit.start()
+                setEditing(true)
+              }}
+              onClose={requestClose}
+            />
             {/* Last, under a rule: destroying the task is not a peer of saving it. */}
             <DangerZone>
               <DangerAction

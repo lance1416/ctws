@@ -1,6 +1,8 @@
 import { expect, test, type Page } from '@playwright/test'
 import {
   editDetail,
+  makeProject,
+  makeTask,
   openProject,
   pickOne,
   registerFreshUser,
@@ -323,4 +325,29 @@ test('moving a task away returns focus to a remaining row', async ({ page }) => 
 
   await expect(row(page, '写方案')).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Task: 留下', exact: true })).toBeFocused()
+})
+
+test('Edit opens on the status just picked in reading, and picking the old one back saves it', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'P')
+  await makeTask(page, pid, '换个状态')
+  await page.goto(`/projects/${pid}`)
+  await page.getByRole('listitem').filter({ hasText: '换个状态' }).first().click()
+  const pane = page.getByRole('dialog', { name: 'Task details' })
+
+  const written = page.waitForResponse(
+    (r) => r.request().method() === 'PATCH' && PATCH_URL.test(new URL(r.url()).pathname),
+  )
+  await pane.getByRole('button', { name: 'Status: To do' }).click()
+  await page.getByRole('menuitem', { name: 'In progress' }).click()
+  await written
+  await expect(pane.getByRole('button', { name: 'Status: In progress' })).toBeVisible()
+
+  await editDetail(page)
+  await expect(pane.getByRole('radio', { name: 'In progress', exact: true })).toBeChecked()
+  await setDetailStatus(page, 'To do')
+  const body = (await save(page)).request().postDataJSON()
+  expect(body).toMatchObject({ status: 'todo' })
 })
