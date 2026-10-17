@@ -242,3 +242,17 @@ describe('reading list', () => {
     expect((await list(ctx)).map((i) => i.title)).toEqual(['Orphan'])
   })
 })
+
+describe('adding in a flood', () => {
+  it('refuses an account past its adds for the minute, and leaves the others alone', async () => {
+    const ctx = await setup()
+    const other = await secondUser(ctx, 'flood-other@example.com')
+    const answers: number[] = []
+    for (let i = 0; i <= 30; i++) {
+      answers.push((await add(ctx, { kind: 'book', title: `Book ${i}` })).statusCode)
+    }
+    expect(answers.slice(0, 30)).toEqual(Array(30).fill(201))
+    expect(answers[30]).toBe(429)
+    expect((await add(other, { kind: 'book', title: 'Mine' })).statusCode).toBe(201)
+  })
+})

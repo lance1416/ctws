@@ -12,6 +12,13 @@ import {
   withFetched,
 } from './service'
 
+/**
+ * Adds a minute per account. A pasted link is fetched from its site, the API's one request out,
+ * so a script cannot turn this into a way to aim it elsewhere; not yet measured: thirty is far
+ * past anyone pasting by hand.
+ */
+const ADDS_PER_MINUTE = 30
+
 export const readingRoutes =
   (deps: ReadingDeps): FastifyPluginAsyncZod =>
   async (app) => {
@@ -46,12 +53,23 @@ export const readingRoutes =
         ),
       ),
 
-      on(api.reading.create, async (req) => {
-        const actor = actorOf(req)
-        const created = await createReadingItem(app.db, actor, req.body)
-        const row = await withFetched(deps, app.db, actor.workspaceId, created)
-        return toReadingItemResponse(row)
-      }),
+      on(
+        api.reading.create,
+        async (req) => {
+          const actor = actorOf(req)
+          const created = await createReadingItem(app.db, actor, req.body)
+          const row = await withFetched(deps, app.db, actor.workspaceId, created)
+          return toReadingItemResponse(row)
+        },
+        {
+          config: {
+            rateLimit: {
+              max: ADDS_PER_MINUTE,
+              keyGenerator: (req) => `user:${currentUser(req).id}`,
+            },
+          },
+        },
+      ),
 
       on(api.reading.update, async (req) =>
         toReadingItemResponse(
