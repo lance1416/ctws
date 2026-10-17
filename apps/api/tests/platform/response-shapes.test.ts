@@ -83,6 +83,31 @@ describe('a read answers with exactly the fields its contract names', () => {
     })
   })
 
+  it('a task as a search finds it', async () => {
+    const ctx = await setupWith(cleanups)
+    const projectId = await createProject(ctx, 'Garden')
+    const id = await createTask(ctx, projectId, 'Water the beans', undefined, { notes: 'Daily.' })
+    const { tasks } = (await read(ctx, '/api/v1/tasks?q=beans')) as { tasks: unknown[] }
+    expect(tasks).toEqual([
+      {
+        id,
+        projectId,
+        parentId: null,
+        title: 'Water the beans',
+        status: 'todo',
+        scheduledOn: null,
+        dueAt: null,
+        rank: expect.any(String),
+        completedAt: null,
+        createdAt: AT,
+        updatedAt: AT,
+        projectName: 'Garden',
+        parentTitle: null,
+        projectArchived: false,
+      },
+    ])
+  })
+
   it('a person', async () => {
     const ctx = await setupWith(cleanups)
     const projectId = await createProject(ctx, 'Work')

@@ -126,6 +126,12 @@ export const peopleListQuery = z.object(pageQuery(LIST_PAGE)).strict()
 
 export const peopleResponse = z.object({ people: z.array(personResponse), page: pageInfo })
 
+/** People as a search finds them: who, and how to tell them apart, without their notes. */
+export const personSearchResponse = z.object({
+  people: z.array(personResponse.omit({ note: true })),
+  page: pageInfo,
+})
+
 /** One row on the birthdays page. */
 const birthdayListRow = z.object({
   personId,

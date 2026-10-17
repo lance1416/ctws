@@ -78,6 +78,12 @@ export const readingItemsResponse = z.object({
   page: pageInfo,
 })
 
+/** Reading as a search finds it: what each item is called, without the summary of its page. */
+export const readingSearchResponse = z.object({
+  reading: z.array(readingItemResponse.omit({ fetchedSummary: true })),
+  page: pageInfo,
+})
+
 export const readingListQuery = z
   .object({
     /** Only the items on no project. */

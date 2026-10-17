@@ -51,6 +51,7 @@ import {
   peopleResponse,
   personParams,
   personResponse,
+  personSearchResponse,
   updatePersonBody,
 } from './person'
 import {
@@ -67,6 +68,7 @@ import {
   readingItemsResponse,
   readingListQuery,
   readingParams,
+  readingSearchResponse,
   updateReadingItemBody,
 } from './reading'
 import { SEARCH_LIMIT, searchQueryOf } from './search'
@@ -587,7 +589,7 @@ export const api = {
       summary: 'People whose name, organisation or a way to reach them matches q.',
       query: searchQueryOf(SHORT_SEARCH),
       ok: 200,
-      response: peopleResponse,
+      response: personSearchResponse,
     }),
     get: endpoint({
       method: 'GET',
@@ -651,7 +653,7 @@ export const api = {
       summary: 'Items whose title, fetched title, author or address match q.',
       query: searchQueryOf(SHORT_SEARCH),
       ok: 200,
-      response: readingItemsResponse,
+      response: readingSearchResponse,
     }),
     get: endpoint({
       method: 'GET',

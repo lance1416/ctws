@@ -224,7 +224,8 @@ export type ProjectMovementResponse = z.infer<typeof projectMovementResponse>
 
 export const movementResponse = z.object({ projects: z.array(projectMovementResponse) })
 
-export const searchTaskResponse = taskResponse.extend({
+/** A task as a search finds it: what its result says and where it goes, without its notes. */
+export const searchTaskResponse = taskResponse.omit({ notes: true }).extend({
   projectName: z.string(),
   parentTitle: z.string().nullable(),
   /** Archived projects are searched too; the result says so. */

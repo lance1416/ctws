@@ -53,8 +53,9 @@ export function toCompletedResponse(t: CompletedTask): CompletedTaskResponse {
 }
 
 export function toSearchResponse(t: SearchTask): SearchTaskResponse {
+  const { notes: _, ...summary } = toTaskResponse(t)
   return {
-    ...toTaskResponse(t),
+    ...summary,
     projectName: t.projectName,
     parentTitle: t.parentTitle,
     projectArchived: t.projectArchived,
