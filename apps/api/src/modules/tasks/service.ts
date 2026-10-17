@@ -329,9 +329,13 @@ export async function softDeleteTask(db: Db, ctx: Actor, id: TaskId): Promise<vo
       where id in (select id from subtree) and deleted_at is null
       returning id
     `)
-    for (const { id: deletedId } of rowsOf(result, z.object({ id: taskId }))) {
-      await log.append(deletedId, 'deleted', deletedId === id ? {} : { cascadedFrom: id })
-    }
+    await log.appendAll(
+      rowsOf(result, z.object({ id: taskId })).map(({ id: deletedId }) => ({
+        taskId: deletedId,
+        type: 'deleted',
+        payload: deletedId === id ? {} : { cascadedFrom: id },
+      })),
+    )
   })
 }
 
