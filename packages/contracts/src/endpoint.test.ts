@@ -27,6 +27,12 @@ describe('patchOf', () => {
   })
 })
 
+describe('the endpoint table', () => {
+  it('says what each operation does, for the published document', () => {
+    for (const e of every) expect(e.summary.trim(), `${e.method} ${e.path}`).not.toBe('')
+  })
+})
+
 describe('href', () => {
   it('fills path params, encoded, and leaves out query values that are not there', () => {
     expect(

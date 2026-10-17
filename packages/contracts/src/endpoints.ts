@@ -223,7 +223,9 @@ export const api = {
     remove: endpoint({
       method: 'DELETE',
       path: '/projects/:id',
-      summary: 'Delete a project and everything filed in it.',
+      summary:
+        'Delete a project. Its tasks, which live in it, go with it; what was filed in it by a ' +
+        'link stays, filed nowhere.',
       params: projectParams,
       ok: 204,
       refusals: [404, 409],
@@ -294,7 +296,7 @@ export const api = {
     search: endpoint({
       method: 'GET',
       path: '/cities',
-      summary: 'Cities whose name starts with the text.',
+      summary: 'Cities whose name starts with the text, then those whose name contains it.',
       query: citySearchQuery,
       ok: 200,
       response: citiesResponse,
@@ -582,7 +584,7 @@ export const api = {
     search: endpoint({
       method: 'GET',
       path: '/people',
-      summary: 'People whose name, organisation or notes match q.',
+      summary: 'People whose name, organisation or a way to reach them matches q.',
       query: searchQueryOf(SHORT_SEARCH),
       ok: 200,
       response: peopleResponse,
