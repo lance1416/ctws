@@ -34,12 +34,6 @@ export async function listProjectMovement(
   const projects = await unarchivedProjects(q, workspaceId)
   if (projects.length === 0) return []
   const project = sql`m.project_id`
-  const lastActivity = sql`(
-    select max(ev.occurred_at)
-    from task_events ev
-    join tasks ev_t on ev_t.id = ev.task_id
-    where ev_t.project_id = ${project}
-  )`
 
   const result = await q.execute(sql`
     select
@@ -61,8 +55,8 @@ export async function listProjectMovement(
           and late_t.due_at is not null
           and late_t.due_at < ${todayStarts}
       ) as overdue,
-      ((${lastActivity}) at time zone ${timezone})::date as "lastActivityOn",
-      (${today} - ((${lastActivity}) at time zone ${timezone})::date) as "quietDays",
+      last_activity.day as "lastActivityOn",
+      ${today} - last_activity.day as "quietDays",
       (((
         select min(next_t.due_at) from tasks next_t
         where next_t.project_id = ${project}
@@ -74,6 +68,13 @@ export async function listProjectMovement(
       projects.map((p) => sql`${p.id}`),
       sql`, `,
     )}]::uuid[]) as m(project_id)
+    -- The day of the project's last logged change, read once for both columns that use it.
+    cross join lateral (
+      select (max(ev.occurred_at) at time zone ${timezone})::date as day
+      from task_events ev
+      join tasks ev_t on ev_t.id = ev.task_id
+      where ev_t.project_id = ${project}
+    ) last_activity
   `)
   const moved = new Map(rowsOf(result, movementRow).map((r) => [r.projectId, r]))
 
