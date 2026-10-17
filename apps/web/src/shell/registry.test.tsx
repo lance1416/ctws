@@ -262,7 +262,10 @@ describe('where another module keeps its things', () => {
     expect(shellOnly.relations.map((r) => r.type)).toEqual(['project'])
     expect(shellOnly.relationFor('project').to('p1')).toBe('/projects/p1')
     const withNotes = build([
-      { ...notes, relations: [{ type: 'reading', kind: 'Note', to: (id) => `/notes/${id}` }] },
+      {
+        ...notes,
+        relations: [{ type: 'reading', kind: 'Note', plural: 'Notes', to: (id) => `/notes/${id}` }],
+      },
     ]).relationFor('reading')
     expect(withNotes.moduleId).toBe('notes')
     expect(withNotes.to('r1')).toBe('/notes/r1')

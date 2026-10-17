@@ -5,7 +5,6 @@ import { people } from './tables'
 
 export const personLinkable: Linkable = {
   type: 'person',
-  label: 'People',
   rows: async (q, workspaceId, want) => {
     const { where, orderBy, limit } = wanted(
       want,
@@ -18,6 +17,6 @@ export const personLinkable: Linkable = {
       .where(within(scoped(people, workspaceId), where))
       .orderBy(...orderBy)
       .limit(limit)
-    return found.map((r) => ({ id: r.id, title: r.name, detail: r.org }))
+    return found.map((r) => ({ type: 'person', id: r.id, title: r.name, org: r.org }))
   },
 }

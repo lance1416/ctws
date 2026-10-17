@@ -15,32 +15,28 @@ import { LinkList } from './Links'
 
 const groups: LinksResponse['groups'] = [
   {
-    label: 'Meetings',
     type: 'meeting',
     items: [
       {
         type: 'meeting',
         id: 'm1',
         title: 'Second interview',
-        detail: '2026-10-20 21:00 · America/Toronto',
+        startsAt: '2026-10-21T01:00:00.000Z',
+        timeZone: 'America/Toronto',
         kind: 'attends',
-        label: 'attended',
         outgoing: false,
         linkId: idFrom(linkId, '0190a7c2-6f00-7000-8000-00000000000a'),
       },
     ],
   },
   {
-    label: 'Projects',
     type: 'project',
     items: [
       {
         type: 'project',
         id: 'p1',
         title: 'Job hunt',
-        detail: null,
         kind: 'belongs',
-        label: '',
         outgoing: true,
         linkId: idFrom(linkId, '0190a7c2-6f00-7000-8000-00000000000b'),
       },
@@ -88,7 +84,8 @@ describe('what one thing is connected to', () => {
     const projectRow = /data-linked="p1".*?<\/a>/.exec(html)![0]
     expect(projectRow).toContain('Job hunt')
     expect(projectRow).not.toContain('text-ink-subtle')
-    expect(html).toContain('America/Toronto')
+    // The meeting's own module says when it is, on the meeting's own clock.
+    expect(html).toContain('Oct 20, 21:00 · EDT')
   })
 
   it('says so when there is nothing, rather than drawing an empty frame', () => {

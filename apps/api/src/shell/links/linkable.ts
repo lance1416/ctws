@@ -1,4 +1,9 @@
-import { type LinkKind, type ObjectType, type WorkspaceId } from '@ctws/contracts'
+import {
+  type LinkCandidate,
+  type LinkKind,
+  type ObjectType,
+  type WorkspaceId,
+} from '@ctws/contracts'
 import { asc, inArray, sql, type SQL } from 'drizzle-orm'
 import type { AnyPgColumn } from 'drizzle-orm/pg-core'
 import type { Queryable } from '../../platform/db/client'
@@ -11,13 +16,11 @@ import { textMatches } from '../../platform/db/sql'
 export type Linkable = {
   /** Which kind of object this names; exactly one module answers for each. */
   type: ObjectType
-  /** The heading a group of these gets on an object page. */
-  label: string
   /**
-   * The module's objects by id or by text, in one batch. What the workspace cannot see is left
-   * out, and the shell drops the edges that pointed at it.
+   * The module's objects by id or by text, in one batch, named with the facts their kind shows.
+   * What the workspace cannot see is left out, and the shell drops the edges that pointed at it.
    */
-  rows: (q: Queryable, workspaceId: WorkspaceId, want: Want) => Promise<NamedRow[]>
+  rows: (q: Queryable, workspaceId: WorkspaceId, want: Want) => Promise<LinkCandidate[]>
   /**
    * Edges the module stores in its own columns rather than the edge table, by the kind of thing at
    * their far end, read for the object whose page is drawn and named as that kind names its own:
@@ -32,9 +35,6 @@ export type Linkable = {
  */
 export type Want = { ids: readonly string[]; limit: number } | { text: string; limit: number }
 
-/** One object as the shell shows it: a line and a phrase under it. */
-type NamedRow = { id: string; title: string; detail: string | null }
-
 /** An object page's thing, and the things at the far end of the edges a module keeps for it. */
 type OwnEdges = (
   q: Queryable,
@@ -44,7 +44,7 @@ type OwnEdges = (
 ) => Promise<OwnEdge[]>
 
 /** The far end of an edge a module keeps, named, and how the edge runs from the page's thing. */
-type OwnEdge = NamedRow & { kind: LinkKind; outgoing: boolean }
+type OwnEdge = LinkCandidate & { kind: LinkKind; outgoing: boolean }
 
 /** A module's columns, as a `Want` reads them. */
 type Columns = {

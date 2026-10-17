@@ -1,4 +1,11 @@
-import { idFrom, projectId, taskId, type WorkspaceId } from '@ctws/contracts'
+import {
+  idFrom,
+  projectId,
+  taskId,
+  type TaskId,
+  type TaskStatus,
+  type WorkspaceId,
+} from '@ctws/contracts'
 import { desc, eq, sql, type SQL } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
 import { within } from '../../platform/db/scope'
@@ -21,22 +28,26 @@ const taskRows = (q: Queryable, workspaceId: WorkspaceId, where: SQL | undefined
     .where(within(visibleTasks(workspaceId, { task: 'tasks', project: 'p' }), where))
     .$dynamic()
 
-/** Every reader is cross-project, so the detail names the project. */
-const detailOf = (r: { status: string; projectName: string }) =>
-  r.status === 'done' ? `${r.projectName} · Done` : r.projectName
+/** A task as a list of things names it: every reader is cross-project, so with its project. */
+const named = (r: { id: TaskId; title: string; status: TaskStatus; projectName: string }) => ({
+  type: 'task' as const,
+  id: r.id,
+  title: r.title,
+  status: r.status,
+  projectName: r.projectName,
+})
 
 const COLUMNS = { id: tasks.id, title: tasks.title, text: ['tasks.title'] }
 
 /** A task's project is a column, not a link row: `own` reads that edge from either end. */
 export const taskLinkable: Linkable = {
   type: 'task',
-  label: 'Tasks',
   rows: async (q, workspaceId, want) => {
     const { where, orderBy, limit } = wanted(want, COLUMNS, [desc(tasks.createdAt), desc(tasks.id)])
     const found = await taskRows(q, workspaceId, where)
       .orderBy(...orderBy)
       .limit(limit)
-    return found.map((r) => ({ id: r.id, title: r.title, detail: detailOf(r) }))
+    return found.map(named)
   },
   own: {
     // A link's end is any kind of id; its type says which this one is.
@@ -44,7 +55,7 @@ export const taskLinkable: Linkable = {
       if (of.type !== 'task') return []
       const [task] = await taskRows(q, workspaceId, eq(tasks.id, idFrom(taskId, of.id)))
       if (!task) return []
-      const project = { id: task.projectId, title: task.projectName, detail: null }
+      const project = { type: 'project' as const, id: task.projectId, title: task.projectName }
       return [{ ...project, kind: 'belongs', outgoing: true }]
     },
     task: async (q, workspaceId, of, limit) => {
@@ -52,13 +63,7 @@ export const taskLinkable: Linkable = {
       const found = await taskRows(q, workspaceId, eq(tasks.projectId, idFrom(projectId, of.id)))
         .orderBy(...byTitle(tasks.title, tasks.id))
         .limit(limit)
-      return found.map((r) => ({
-        id: r.id,
-        title: r.title,
-        detail: detailOf(r),
-        kind: 'belongs',
-        outgoing: false,
-      }))
+      return found.map((r) => ({ ...named(r), kind: 'belongs', outgoing: false }))
     },
   },
 }

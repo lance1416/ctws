@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { createLinkBody, isLinkEdge, kindsBetween, linkIsAllowed, type LinkEdge } from './link'
+import {
+  createLinkBody,
+  edgeLabel,
+  isLinkEdge,
+  kindsBetween,
+  linkIsAllowed,
+  type LinkEdge,
+} from './link'
 
 const id = '01931b9c-5d7e-7c3a-8f2e-1a2b3c4d5e6f'
 const other = '01931b9c-5d7e-7c3a-8f2e-1a2b3c4d5e70'
@@ -66,5 +73,16 @@ describe('createLinkBody', () => {
 
   it('refuses a thing linked to itself', () => {
     expect(createLinkBody.safeParse(body('task', 'task', 'about', id)).success).toBe(false)
+  })
+})
+
+describe('edgeLabel', () => {
+  it('reads an edge along it from one end and against it from the other', () => {
+    expect(edgeLabel('recommends', true)).toBe('recommended')
+    expect(edgeLabel('recommends', false)).toBe('recommended by')
+  })
+
+  it('has no words for belongs, which its group heading already says', () => {
+    expect([edgeLabel('belongs', true), edgeLabel('belongs', false)]).toEqual(['', ''])
   })
 })

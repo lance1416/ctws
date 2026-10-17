@@ -1,4 +1,5 @@
 import { type LinkId, OBJECT_TYPES, type ObjectType } from '@ctws/contracts'
+export type { LinkedObject as Item } from '@ctws/contracts'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { problemText } from '../../platform/http/api'
@@ -11,15 +12,6 @@ export type Linked = {
   of: Endpoint
   /** The kinds of thing listed: a page leaves out what it already shows. Every kind when left out. */
   types?: readonly ObjectType[] | undefined
-}
-
-/** One thing at the far end of an edge. */
-export type Item = {
-  type: ObjectType
-  id: string
-  title: string
-  detail: string | null
-  label: string
 }
 
 /**

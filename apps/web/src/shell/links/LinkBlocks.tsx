@@ -1,4 +1,4 @@
-import { idFrom, projectId } from '@ctws/contracts'
+import { edgeLabel, idFrom, projectId } from '@ctws/contracts'
 import { Link } from 'react-router-dom'
 import { Icon } from '../../platform/ui/icons'
 import { useRegistry } from '../registry'
@@ -15,12 +15,13 @@ export function LinkBlocks({ of, types }: Linked) {
   return (
     <div className="flex flex-col gap-8">
       {groups.map((group) => {
-        const kind = registry.relationFor(group.type).kind.toLowerCase()
+        const where = registry.relationFor(group.type)
+        const kind = where.kind.toLowerCase()
         return (
-          <section key={group.type} aria-label={group.label} className="min-w-0">
+          <section key={group.type} aria-label={where.plural} className="min-w-0">
             <div className="mb-1 flex items-center gap-2">
               <h3 className="flex items-baseline gap-2 text-base font-semibold text-ink">
-                {group.label}
+                {where.plural}
                 <span data-count className="text-sm font-normal text-ink-subtle tabular-nums">
                   {group.items.length}
                 </span>
@@ -67,6 +68,8 @@ export function LinkBlocks({ of, types }: Linked) {
 /** The same, its title over its detail, for a narrow block. */
 function LinkedBlockRow({ item }: { item: Item }) {
   const where = useRegistry().relationFor(item.type)
+  const detail = where.describe?.(item) ?? null
+  const label = edgeLabel(item.kind, item.outgoing)
   return (
     <Link
       to={where.to(item.id)}
@@ -75,9 +78,9 @@ function LinkedBlockRow({ item }: { item: Item }) {
     >
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate text-ink">{item.title}</span>
-        {item.detail && <span className="truncate text-sm text-ink-subtle">{item.detail}</span>}
+        {detail && <span className="truncate text-sm text-ink-subtle">{detail}</span>}
       </span>
-      {item.label && <span className="shrink-0 text-sm text-ink-muted">{item.label}</span>}
+      {label && <span className="shrink-0 text-sm text-ink-muted">{label}</span>}
     </Link>
   )
 }

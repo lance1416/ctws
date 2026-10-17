@@ -14,6 +14,7 @@ import { TodayDate, TodayGlance } from './components/TodayGlance'
 import { useInboxCapture, useTaskEntries, useTaskHits } from './hooks/contributions'
 import { TASKS_ID, taskPage } from './logic/id'
 import { TASK_KEYS } from './logic/keys'
+import { describeTask } from './logic/listedTask'
 import { openTasksOf } from './logic/openTasks'
 import { OpenTask } from './pages/OpenTask'
 import { Review } from './pages/Review'
@@ -110,7 +111,9 @@ export const taskModule: WorkspaceModule = {
   },
   keys: TASK_KEYS,
   // No page of its own: a task's address opens its tree, where its parent and siblings are.
-  relations: [{ type: 'task', kind: 'Task', to: taskPage }],
+  relations: [
+    { type: 'task', kind: 'Task', plural: 'Tasks', to: taskPage, describe: describeTask },
+  ],
   // A task row names its project, and search says whether that project is archived.
   reads: [{ queryKey: taskKeys.all, of: ['task', 'project'] }],
 }

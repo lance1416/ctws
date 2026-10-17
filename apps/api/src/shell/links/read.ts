@@ -1,5 +1,4 @@
 import {
-  LINK_KINDS,
   type LinkCandidate,
   type LinkedObject,
   type LinkId,
@@ -17,15 +16,6 @@ import type { LinkRegistry } from './registry'
 
 /** How many of one kind of object a page shows. */
 const PER_GROUP = 200
-
-const kindOf = new Map(LINK_KINDS.map((k) => [k.kind as LinkKind, k]))
-
-/** The phrase for an edge, read from the object whose page this is. */
-function phrase(kind: LinkKind, outgoing: boolean): string {
-  const rule = kindOf.get(kind)
-  if (!rule) return ''
-  return outgoing ? rule.label : rule.inverse
-}
 
 /** The edge-table rows at `of`, by the far end each points at, of the kinds asked for. */
 async function storedEdges(
@@ -98,10 +88,8 @@ export async function linksOf(
       add(
         type,
         edges.flatMap((e) => {
-          const name = named.get(e.farId)
-          if (!name) return []
-          const { kind, outgoing } = e
-          return [{ type, ...name, kind, label: phrase(kind, outgoing), outgoing, linkId: e.id }]
+          const thing = named.get(e.farId)
+          return thing ? [{ ...thing, kind: e.kind, outgoing: e.outgoing, linkId: e.id }] : []
         }),
       )
     }),
@@ -113,7 +101,7 @@ export async function linksOf(
           read(q, workspaceId, of, PER_GROUP).then((rows) =>
             add(
               type,
-              rows.map((r) => ({ type, ...r, label: phrase(r.kind, r.outgoing), linkId: null })),
+              rows.map((r) => ({ ...r, linkId: null })),
             ),
           ),
         ]
@@ -134,7 +122,6 @@ export async function linksOf(
           return true
         })
         return {
-          label: registry.of(type).label,
           type,
           items: items
             // By title, by code point rather than locale, so names sort as the database sorts them.
@@ -157,9 +144,7 @@ export async function candidatesFor(
   const found = await Promise.all(
     registry.order.map(async (type) => {
       const rows = await registry.of(type).rows(q, workspaceId, { text, limit: perType })
-      return rows
-        .filter((r) => !(type === of.type && r.id === of.id))
-        .map((r) => ({ type, id: r.id, title: r.title, detail: r.detail }))
+      return rows.filter((r) => !(type === of.type && r.id === of.id))
     }),
   )
   return found.flat()

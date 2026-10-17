@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { objectId, projectId } from './id'
-import { objectType } from './link'
+import { objectType } from './object'
 import { calendarDate, DAY_MS, EVENT_YEARS, instant, viewQuery } from './common'
 
 /**

@@ -1,3 +1,4 @@
+import { edgeLabel } from '@ctws/contracts'
 import { Link } from 'react-router-dom'
 import { Icon } from '../../platform/ui/icons'
 import { useRegistry } from '../registry'
@@ -5,14 +6,19 @@ import { type Item, type Linked, useLinked } from './useLinked'
 
 /** The linked things as one list, a small heading per kind: a detail pane's. */
 export function LinkList({ of, types }: Linked) {
+  const registry = useRegistry()
   const { groups, unlink, add, unshown } = useLinked(of, types)
   if (unshown !== undefined) return unshown
   return (
     <div className="flex flex-col gap-4">
       {groups.map((group) => (
-        <section key={group.type} aria-label={group.label} className="flex flex-col gap-1">
+        <section
+          key={group.type}
+          aria-label={registry.relationFor(group.type).plural}
+          className="flex flex-col gap-1"
+        >
           <h3 className="flex items-baseline gap-2 px-2 text-xs font-semibold text-ink-subtle">
-            {group.label}
+            {registry.relationFor(group.type).plural}
             <span className="tabular-nums font-normal">{group.items.length}</span>
           </h3>
           <ul className="flex flex-col">
@@ -62,6 +68,8 @@ export function LinkedSection({ of, types, className = '' }: Linked & { classNam
 /** One thing at the far end of an edge, with the edge's own word at the end of the line. */
 function LinkedLine({ item }: { item: Item }) {
   const where = useRegistry().relationFor(item.type)
+  const detail = where.describe?.(item) ?? null
+  const label = edgeLabel(item.kind, item.outgoing)
   return (
     <Link
       to={where.to(item.id)}
@@ -69,10 +77,8 @@ function LinkedLine({ item }: { item: Item }) {
       className="flex min-w-0 flex-1 items-baseline gap-2 rounded-md px-2 py-1.5 text-sm text-ink hover:bg-hover"
     >
       <span className="min-w-0 flex-[2] truncate">{item.title}</span>
-      {item.detail && (
-        <span className="min-w-0 shrink truncate text-xs text-ink-muted">{item.detail}</span>
-      )}
-      {item.label && <span className="shrink-0 text-xs text-ink-subtle">{item.label}</span>}
+      {detail && <span className="min-w-0 shrink truncate text-xs text-ink-muted">{detail}</span>}
+      {label && <span className="shrink-0 text-xs text-ink-subtle">{label}</span>}
     </Link>
   )
 }

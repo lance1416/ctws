@@ -87,15 +87,13 @@ describe('opening a thing shows what it is connected to', () => {
     const groups = await linksOf(ctx, 'person', person.id)
     expect(titles(groups, 'meeting')).toEqual(['一面', '二面'])
     const meetings = groups.find((g) => g.type === 'meeting')!
-    expect(meetings.label).toBe('Meetings')
     // Read AGAINST the edge: the stored row says the MEETING has this person, and this is the
     // person's end of it.
-    expect(meetings.items.every((i) => i.outgoing === false)).toBe(true)
-    expect(meetings.items.every((i) => i.label === 'attended')).toBe(true)
-    // The zone is named the way a person says it, on the meeting's OWN wall clock.
-    expect(meetings.items.map((i) => i.detail)).toEqual([
-      'Oct 6, 20:00 · EDT',
-      'Oct 20, 21:00 · EDT',
+    expect(meetings.items.every((i) => i.outgoing === false && i.kind === 'attends')).toBe(true)
+    // Each series' own start, and the zone it was agreed in, for the page to say.
+    expect(meetings.items).toMatchObject([
+      { startsAt: '2026-10-07T00:00:00.000Z', timeZone: 'America/Toronto' },
+      { startsAt: '2026-10-21T01:00:00.000Z', timeZone: 'America/Toronto' },
     ])
   })
 
@@ -239,13 +237,13 @@ describe('making and removing one edge by hand', () => {
     const theirs = await linksOf(ctx, 'person', person.id)
     expect(theirs.find((g) => g.type === 'reading')!.items[0]).toMatchObject({
       title: '设计心理学',
-      label: 'recommended',
+      kind: 'recommends',
       outgoing: true,
     })
     const books = await linksOf(ctx, 'reading', reading.id)
     expect(books.find((g) => g.type === 'person')!.items[0]).toMatchObject({
       title: '陈颖',
-      label: 'recommended by',
+      kind: 'recommends',
       outgoing: false,
     })
 
@@ -422,9 +420,10 @@ describe('what can go at the other end', () => {
     // A task carries the project it is in, so two tasks of the same name can be told apart.
     expect(offered.find((c) => c.type === 'task')).toMatchObject({
       title: '改简历',
-      detail: '找工作',
+      status: 'todo',
+      projectName: '找工作',
     })
-    // ...and a finished one says so on the same line, rather than losing the project to say it.
+    // ...and a finished one says so, beside the project rather than instead of it.
     const done = await createTask(ctx, project, '投出去了')
     await ctx.app.inject({
       method: 'PATCH',
@@ -433,7 +432,10 @@ describe('what can go at the other end', () => {
       payload: { status: 'done' },
     })
     const after = await candidatesFor(ctx, 'person', person.id)
-    expect(after.find((c) => c.id === done)?.detail).toBe('找工作 · Done')
+    expect(after.find((c) => c.id === done)).toMatchObject({
+      status: 'done',
+      projectName: '找工作',
+    })
   })
 
   it('narrows to what was typed, across the modules at once', async () => {

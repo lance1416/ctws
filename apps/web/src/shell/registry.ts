@@ -52,7 +52,7 @@ const PROJECTS_KIND: KindEntry = {
 }
 
 const SHELL_RELATIONS: RelationContribution[] = [
-  { type: 'project', kind: 'Project', to: (id) => `/projects/${id}` },
+  { type: 'project', kind: 'Project', plural: 'Projects', to: (id) => `/projects/${id}` },
 ]
 
 /** What the app, not the shell, decides about its modules. */

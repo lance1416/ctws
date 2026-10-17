@@ -82,26 +82,28 @@ export function AddLink({
             <p className="px-4 py-3 text-sm text-ink-muted">Nothing matches</p>
           )}
           <ul className="max-h-80 overflow-y-auto py-1">
-            {offered.map((c) => (
-              <li key={`${c.type}:${c.id}`}>
-                <button
-                  type="button"
-                  onClick={() => setChosen(c)}
-                  data-candidate={c.id}
-                  className="flex w-full min-w-0 items-baseline gap-2 px-4 py-1.5 text-left text-sm text-ink hover:bg-hover"
-                >
-                  <span className="min-w-0 flex-1 truncate">{c.title}</span>
-                  {c.detail && (
-                    <span className="min-w-0 shrink truncate text-xs text-ink-muted">
-                      {c.detail}
-                    </span>
-                  )}
-                  <span className="shrink-0 text-xs text-ink-subtle">
-                    {registry.relationFor(c.type).kind}
-                  </span>
-                </button>
-              </li>
-            ))}
+            {offered.map((c) => {
+              const where = registry.relationFor(c.type)
+              const detail = where.describe?.(c) ?? null
+              return (
+                <li key={`${c.type}:${c.id}`}>
+                  <button
+                    type="button"
+                    onClick={() => setChosen(c)}
+                    data-candidate={c.id}
+                    className="flex w-full min-w-0 items-baseline gap-2 px-4 py-1.5 text-left text-sm text-ink hover:bg-hover"
+                  >
+                    <span className="min-w-0 flex-1 truncate">{c.title}</span>
+                    {detail && (
+                      <span className="min-w-0 shrink truncate text-xs text-ink-muted">
+                        {detail}
+                      </span>
+                    )}
+                    <span className="shrink-0 text-xs text-ink-subtle">{where.kind}</span>
+                  </button>
+                </li>
+              )
+            })}
           </ul>
         </div>
       ) : (

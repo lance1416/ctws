@@ -1,5 +1,6 @@
 import {
   type CalendarEntry,
+  type LinkCandidate,
   type ObjectType,
   type ProjectResponse,
   type ProjectId,
@@ -86,9 +87,13 @@ type BlockView = { id: string; label: string }
 export type RelationContribution = {
   /** Exactly one module answers for each type. */
   type: ObjectType
-  /** One of them, named, for the eyebrow; the API supplies the plural. */
+  /** One of them, named, for the eyebrow. */
   kind: string
+  /** Several of them: the heading where they are listed together. */
+  plural: string
   to: (id: string) => string
+  /** The line under one's title where things are listed, from what its kind carries. */
+  describe?: (thing: LinkCandidate) => string | null
 }
 
 /** A calendar entry with its times said on the account's clock, as every reader of one draws it. */

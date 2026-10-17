@@ -6,6 +6,7 @@ import { MeetingsTodayCount, NextMeetingLine } from './components/MeetingsKind'
 import { MeetingsAside, TodayMeetings } from './components/TodayMeetings'
 import { useMeetingEntries } from './hooks/contributions'
 import { MEETINGS_ID } from './logic/id'
+import { describeMeeting } from './logic/listedMeeting'
 import { Meetings } from './pages/Meetings'
 
 /**
@@ -69,7 +70,9 @@ export const meetingModule: WorkspaceModule = {
     {
       type: 'meeting',
       kind: 'Meeting',
+      plural: 'Meetings',
       to: (id) => `/${MEETINGS_ID}/${id}`,
+      describe: describeMeeting,
     },
   ],
   // An occurrence names its attendees and its project.

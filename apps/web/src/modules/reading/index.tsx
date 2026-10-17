@@ -49,7 +49,15 @@ export const readingModule: WorkspaceModule = {
       span: 8,
     },
   ],
-  relations: [{ type: 'reading', kind: 'Reading', to: (id) => `/${READING_ID}/${id}` }],
+  relations: [
+    {
+      type: 'reading',
+      kind: 'Reading',
+      plural: 'Reading',
+      to: (id) => `/${READING_ID}/${id}`,
+      describe: (t) => (t.type === 'reading' ? t.author : null),
+    },
+  ],
   // An item names its project.
   reads: [{ queryKey: readingKeys.all, of: ['reading', 'project'] }],
 }

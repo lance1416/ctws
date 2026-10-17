@@ -1,15 +1,13 @@
 import { z } from 'zod'
+import { instant } from './common'
 import { linkId, objectId } from './id'
+import { objectType, type ObjectType } from './object'
+import { TASK_STATUSES } from './task'
 
 /**
  * A link is `from --kind--> to` between any two things. One row says both who is at a meeting and
  * which meetings a person has been at.
  */
-
-/** Every kind of thing that can be at either end of a link. */
-export const OBJECT_TYPES = ['task', 'reading', 'person', 'meeting', 'project'] as const
-export const objectType = z.enum(OBJECT_TYPES)
-export type ObjectType = z.infer<typeof objectType>
 
 /** The kinds of edge and what may be at each end; `null` means any type. */
 export const LINK_KINDS = [
@@ -61,6 +59,12 @@ type EdgeOf<Rule> = Rule extends LinkRule
 export type LinkEdge = EdgeOf<LinkRule>
 const linkKind = z.enum(LINK_KINDS.map((l) => l.kind) as [LinkKind, ...LinkKind[]])
 
+/** The words for an edge, read from one end: along it ("attendee") or against it ("attended"). */
+export function edgeLabel(kind: LinkKind, outgoing: boolean): string {
+  const rule = LINK_KINDS.find((l) => l.kind === kind)!
+  return outgoing ? rule.label : rule.inverse
+}
+
 /** Whether the model allows this edge. */
 export function linkIsAllowed(kind: string, from: string, to: string): boolean {
   const rule = LINK_KINDS.find((l) => l.kind === kind)
@@ -99,31 +103,60 @@ export const createLinkBody = z
   })
 export type CreateLinkBody = z.output<typeof createLinkBody>
 
+/**
+ * A thing as a list of things names it: its title, and the facts its kind shows on the second
+ * line, which the web puts into words. `shape` is what every kind has besides.
+ */
+const thingWith = <S extends z.ZodRawShape>(shape: S) =>
+  z.discriminatedUnion('type', [
+    z.object({
+      ...shape,
+      type: z.literal('task'),
+      id: objectId,
+      title: z.string(),
+      status: z.enum(TASK_STATUSES),
+      projectName: z.string(),
+    }),
+    z.object({
+      ...shape,
+      type: z.literal('reading'),
+      id: objectId,
+      title: z.string(),
+      author: z.string().nullable(),
+    }),
+    z.object({
+      ...shape,
+      type: z.literal('person'),
+      id: objectId,
+      title: z.string(),
+      org: z.string().nullable(),
+    }),
+    // The series' own start, in its own zone: an edge is to the series, not to one occurrence.
+    z.object({
+      ...shape,
+      type: z.literal('meeting'),
+      id: objectId,
+      title: z.string(),
+      startsAt: instant,
+      timeZone: z.string(),
+    }),
+    z.object({ ...shape, type: z.literal('project'), id: objectId, title: z.string() }),
+  ])
+
+/** Something that could go at the other end, while its name is being typed. */
+const linkCandidate = thingWith({})
+export type LinkCandidate = z.infer<typeof linkCandidate>
+
 /** The thing at the other end of an edge, with enough to draw a row and go there. */
-const linkedObject = z.object({
-  type: objectType,
-  id: objectId,
-  title: z.string(),
-  /** The second line: what that kind of thing says about itself. */
-  detail: z.string().nullable(),
+const linkedObject = thingWith({
   /** The link, as read from the object whose page this is. */
   kind: linkKind,
-  label: z.string(),
   /** Which way the edge runs: whether it is read along the edge or against it. */
   outgoing: z.boolean(),
   /** The link to remove, or null for an edge a module stores itself, such as a task's project. */
   linkId: linkId.nullable(),
 })
 export type LinkedObject = z.infer<typeof linkedObject>
-
-/** Something that could go at the other end, while its name is being typed. */
-const linkCandidate = z.object({
-  type: objectType,
-  id: objectId,
-  title: z.string(),
-  detail: z.string().nullable(),
-})
-export type LinkCandidate = z.infer<typeof linkCandidate>
 
 export const candidatesQuery = z
   .object({
@@ -144,9 +177,9 @@ export function kindsBetween(from: ObjectType, to: ObjectType): typeof LINK_KIND
   return LINK_KINDS.filter((l) => linkIsAllowed(l.kind, from, to)) as unknown as typeof LINK_KINDS
 }
 
-/** Everything linked to one object, grouped the way its page shows it. */
+/** Everything linked to one object, grouped by kind the way its page shows it. */
 export const linksResponse = z.object({
-  groups: z.array(z.object({ label: z.string(), type: objectType, items: z.array(linkedObject) })),
+  groups: z.array(z.object({ type: objectType, items: z.array(linkedObject) })),
 })
 export type LinksResponse = z.infer<typeof linksResponse>
 

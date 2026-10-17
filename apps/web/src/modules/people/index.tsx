@@ -73,7 +73,9 @@ export const peopleModule: WorkspaceModule = {
     {
       type: 'person',
       kind: 'Person',
+      plural: 'People',
       to: (id) => `/${PEOPLE_ID}/${id}`,
+      describe: (t) => (t.type === 'person' ? t.org : null),
     },
   ],
   // A person names the projects they are on.

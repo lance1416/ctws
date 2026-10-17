@@ -6,7 +6,6 @@ import { projects } from './tables'
 /** Projects are the shell's own, one kind of object among the rest. */
 export const projectLinkable: Linkable = {
   type: 'project',
-  label: 'Projects',
   rows: async (q, workspaceId, want) => {
     const { where, orderBy, limit } = wanted(
       want,
@@ -19,6 +18,6 @@ export const projectLinkable: Linkable = {
       .where(within(scoped(projects, workspaceId), where))
       .orderBy(...orderBy)
       .limit(limit)
-    return found.map((r) => ({ id: r.id, title: r.name, detail: null }))
+    return found.map((r) => ({ type: 'project', id: r.id, title: r.name }))
   },
 }
