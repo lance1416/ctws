@@ -22,7 +22,7 @@ async function find(ctx: Harness, q: string): Promise<City[]> {
   })
   expect(res.statusCode, res.body).toBe(200)
   // The table is the same for everyone and changes only with a deploy.
-  expect(res.headers['cache-control']).toBe('public, max-age=86400')
+  expect(res.headers['cache-control']).toBe('private, max-age=86400')
   return (res.json() as { cities: City[] }).cities
 }
 
