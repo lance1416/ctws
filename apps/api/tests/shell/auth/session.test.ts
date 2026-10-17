@@ -1,8 +1,8 @@
-import type { UserId } from '@ctws/contracts'
+import type { UserId, WorkspaceId } from '@ctws/contracts'
 import { createHash } from 'node:crypto'
 import { sql } from 'drizzle-orm'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { createSession, findValidSession, revokeSession } from '../../../src/shell/auth/session'
+import { createSession, findSessionAccount, revokeSession } from '../../../src/shell/auth/session'
 import { withDatabase } from '../../helpers/db'
 
 const sha256 = (token: string) => createHash('sha256').update(token).digest('hex')
@@ -15,6 +15,7 @@ const at = (ttlDays = TTL_DAYS) => ({ ttlDays, now: new Date() })
 
 let ctx: Awaited<ReturnType<typeof withDatabase>>
 let userId: UserId
+let workspaceId: WorkspaceId
 
 beforeAll(async () => {
   ctx = await withDatabase()
@@ -24,6 +25,13 @@ beforeAll(async () => {
     returning id
   `)
   userId = (rows.rows as { id: UserId }[])[0]!.id
+  const made = await ctx.db.execute(sql`
+    insert into workspaces (id) values (gen_random_uuid()) returning id
+  `)
+  workspaceId = (made.rows as { id: WorkspaceId }[])[0]!.id
+  await ctx.db.execute(sql`
+    insert into workspace_members (workspace_id, user_id) values (${workspaceId}, ${userId})
+  `)
 }, 120_000)
 
 afterAll(async () => {
@@ -39,10 +47,10 @@ async function storedFor(token: string): Promise<{ id: string; token_hash: strin
 }
 
 describe('session', () => {
-  it('creates a session that resolves to its user', async () => {
+  it('creates a session that resolves to its account', async () => {
     const session = await createSession(ctx.db, userId, at())
-    expect(await findValidSession(ctx.db, session.token, at())).toEqual({
-      userId,
+    expect(await findSessionAccount(ctx.db, session.token, at())).toEqual({
+      account: { id: userId, email: 's@example.com', timezone: 'UTC', workspaceId, role: 'member' },
       renewedUntil: null,
     })
   })
@@ -71,13 +79,13 @@ describe('session', () => {
     // something else and matches nothing.
     const session = await createSession(ctx.db, userId, at())
     const stored = await storedFor(session.token)
-    expect(await findValidSession(ctx.db, stored!.token_hash, at())).toBeNull()
+    expect(await findSessionAccount(ctx.db, stored!.token_hash, at())).toBeNull()
     // Nor is the internal row id a credential.
-    expect(await findValidSession(ctx.db, stored!.id, at())).toBeNull()
+    expect(await findSessionAccount(ctx.db, stored!.id, at())).toBeNull()
   })
 
   it('returns null for an unknown token', async () => {
-    expect(await findValidSession(ctx.db, 'not-a-session-at-all', at())).toBeNull()
+    expect(await findSessionAccount(ctx.db, 'not-a-session-at-all', at())).toBeNull()
   })
 
   it('rejects an expired session', async () => {
@@ -86,13 +94,13 @@ describe('session', () => {
     await ctx.db.execute(sql`
       update sessions set expires_at = now() - interval '1 second' where id = ${stored!.id}
     `)
-    expect(await findValidSession(ctx.db, session.token, at())).toBeNull()
+    expect(await findSessionAccount(ctx.db, session.token, at())).toBeNull()
   })
 
   it('rejects a revoked session', async () => {
     const session = await createSession(ctx.db, userId, at())
     await revokeSession(ctx.db, session.token)
-    expect(await findValidSession(ctx.db, session.token, at())).toBeNull()
+    expect(await findSessionAccount(ctx.db, session.token, at())).toBeNull()
   })
 
   it('tolerates revoking a session that does not exist', async () => {
@@ -129,8 +137,8 @@ describe('session', () => {
     const bad = ['not-a-uuid', '', "' OR 1=1 --", '\u0000', 'ü'.repeat(500)]
 
     for (const value of bad) {
-      it(`findValidSession returns null for ${JSON.stringify(value.slice(0, 20))}`, async () => {
-        expect(await findValidSession(ctx.db, value, at())).toBeNull()
+      it(`findSessionAccount returns null for ${JSON.stringify(value.slice(0, 20))}`, async () => {
+        expect(await findSessionAccount(ctx.db, value, at())).toBeNull()
       })
 
       it(`revokeSession resolves for ${JSON.stringify(value.slice(0, 20))}`, async () => {
@@ -156,7 +164,10 @@ describe('sliding expiry', () => {
       insert into users (id, email, password_hash, timezone, created_at)
       values (gen_random_uuid(), ${email}, 'x', 'UTC', now())
       returning id::text as id`)
-    return (rows.rows as { id: UserId }[])[0]!.id
+    const id = (rows.rows as { id: UserId }[])[0]!.id
+    await ctx.db.execute(sql`
+      insert into workspace_members (workspace_id, user_id) values (${workspaceId}, ${id})`)
+    return id
   }
 
   beforeEach(async () => {
@@ -172,12 +183,12 @@ describe('sliding expiry', () => {
           expires_at = ${new Date(Date.now() + 3_600_000).toISOString()}`,
     )
 
-    const found = await findValidSession(ctx.db, session.token, at())
+    const found = await findSessionAccount(ctx.db, session.token, at())
 
     const after = await ctx.db.execute(sql`select expires_at, last_seen_at from sessions`)
     const row = after.rows[0] as { expires_at: string; last_seen_at: string }
     // The new expiry is reported, so the cookie can slide with it.
-    expect(found).toEqual({ userId, renewedUntil: new Date(row.expires_at) })
+    expect(found).toMatchObject({ account: { id: userId }, renewedUntil: new Date(row.expires_at) })
     // A full window from NOW, not an hour from now.
     const left = new Date(row.expires_at).getTime() - Date.now()
     expect(left).toBeGreaterThan((TTL_DAYS - 1) * 86_400_000)
@@ -189,7 +200,7 @@ describe('sliding expiry', () => {
     const session = await createSession(ctx.db, userId, at())
     const before = await ctx.db.execute(sql`select last_seen_at from sessions`)
 
-    await findValidSession(ctx.db, session.token, at())
+    await findSessionAccount(ctx.db, session.token, at())
 
     const after = await ctx.db.execute(sql`select last_seen_at from sessions`)
     expect((after.rows[0] as { last_seen_at: string }).last_seen_at).toBe(
@@ -220,10 +231,12 @@ describe('sliding expiry', () => {
 
     // Mine that was dead is gone. Mine that was alive stayed. Neither of theirs was touched --
     // not even the dead one, which is not this login's to tidy.
-    expect(await findValidSession(ctx.db, myStale.token, at())).toBeNull()
-    expect(await findValidSession(ctx.db, myLive.token, at())).toMatchObject({ userId })
-    expect(await findValidSession(ctx.db, theirLive.token, at())).toMatchObject({
-      userId: other,
+    expect(await findSessionAccount(ctx.db, myStale.token, at())).toBeNull()
+    expect(await findSessionAccount(ctx.db, myLive.token, at())).toMatchObject({
+      account: { id: userId },
+    })
+    expect(await findSessionAccount(ctx.db, theirLive.token, at())).toMatchObject({
+      account: { id: other },
     })
     expect(await storedFor(theirStale.token)).toBeDefined()
   })

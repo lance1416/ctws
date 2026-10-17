@@ -1,16 +1,13 @@
-import { type Role, type UserId, type WorkspaceId } from '@ctws/contracts'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import type { Actor } from '../../platform/db/scope'
 import { SESSION_COOKIE, setSessionCookie } from './cookie'
 import { SessionRequiredError } from './errors'
-import { getAuthContext } from './service'
-import { findValidSession } from './session'
-
-type CurrentUser = { id: UserId; workspaceId: WorkspaceId; role: Role; timezone: string }
+import type { Account } from './service'
+import { findSessionAccount } from './session'
 
 declare module 'fastify' {
   interface FastifyRequest {
-    user: CurrentUser | null
+    user: Account | null
   }
 }
 
@@ -23,17 +20,15 @@ export function authenticated(scope: FastifyInstance): void {
   scope.addHook('onRequest', async (req, reply) => {
     const token = req.cookies[SESSION_COOKIE]
     const window = { ttlDays: scope.env.sessionTtlDays, now: scope.clock() }
-    const session = token ? await findValidSession(scope.db, token, window) : null
-    // Read on every request, so disabling or demoting an account applies at once.
-    const context = session ? await getAuthContext(scope.db, session.userId) : null
-    if (!token || !session || !context) throw new SessionRequiredError()
+    const session = token ? await findSessionAccount(scope.db, token, window) : null
+    if (!token || !session) throw new SessionRequiredError()
     // The browser drops the cookie at its own expiry, so it slides with the session.
     if (session.renewedUntil) setSessionCookie(reply, scope.env, token, session.renewedUntil)
-    req.user = { id: session.userId, ...context }
+    req.user = session.account
   })
 }
 
-export function currentUser(req: FastifyRequest): CurrentUser {
+export function currentUser(req: FastifyRequest): Account {
   if (!req.user) throw new SessionRequiredError()
   return req.user
 }

@@ -1,9 +1,10 @@
 import { DAY_MS, type UserId } from '@ctws/contracts'
 import { createHash, randomBytes } from 'node:crypto'
-import { and, eq, gt, lt } from 'drizzle-orm'
+import { and, eq, gt, isNull, lt } from 'drizzle-orm'
 import { v4 as uuidv4 } from 'uuid'
 import type { Queryable } from '../../platform/db/client'
-import { sessions } from './tables'
+import { type Account, ACCOUNT, FIRST_WORKSPACE } from './service'
+import { sessions, users, workspaceMembers } from './tables'
 
 /**
  * The cookie carries a token; the database keeps only its SHA-256, so a leaked table or backup
@@ -42,28 +43,33 @@ export async function createSession(
 }
 
 /**
- * The session behind a cookie. The expiry slides: it is an idle window, renewed by use, and
- * `renewedUntil` is the new expiry for the cookie when this read renewed it. Any cookie value
- * hashes to well-formed hex, so none needs checking first.
+ * The enabled account behind a cookie's live session, in one read, made on every request so
+ * disabling or demoting an account applies at once. The expiry slides: it is an idle window,
+ * renewed by use, and `renewedUntil` is the new expiry for the cookie when this read renewed it.
+ * Any cookie value hashes to well-formed hex, so none needs checking first.
  */
-export async function findValidSession(
+export async function findSessionAccount(
   db: Queryable,
   token: string,
   { ttlDays, now }: Window,
-): Promise<{ userId: UserId; renewedUntil: Date | null } | null> {
+): Promise<{ account: Account; renewedUntil: Date | null } | null> {
   const hash = digest(token)
   const [found] = await db
-    .select({ userId: sessions.userId, lastSeenAt: sessions.lastSeenAt })
+    .select({ account: ACCOUNT, lastSeenAt: sessions.lastSeenAt })
     .from(sessions)
-    .where(and(eq(sessions.tokenHash, hash), gt(sessions.expiresAt, now)))
+    .innerJoin(users, eq(users.id, sessions.userId))
+    .innerJoin(workspaceMembers, eq(workspaceMembers.userId, users.id))
+    .where(and(eq(sessions.tokenHash, hash), gt(sessions.expiresAt, now), isNull(users.disabledAt)))
+    .orderBy(...FIRST_WORKSPACE)
     .limit(1)
   if (!found) return null
+  const { account } = found
   if (now.getTime() - found.lastSeenAt.getTime() < TOUCH_AFTER_MS) {
-    return { userId: found.userId, renewedUntil: null }
+    return { account, renewedUntil: null }
   }
   const expiresAt = new Date(now.getTime() + ttlDays * DAY_MS)
   await db.update(sessions).set({ lastSeenAt: now, expiresAt }).where(eq(sessions.tokenHash, hash))
-  return { userId: found.userId, renewedUntil: expiresAt }
+  return { account, renewedUntil: expiresAt }
 }
 
 export async function revokeSession(db: Queryable, token: string): Promise<void> {

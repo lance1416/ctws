@@ -5,7 +5,7 @@ import { currentUser } from './authenticated'
 import { clearSessionCookie, SESSION_COOKIE, setSessionCookie } from './cookie'
 import { InvalidCredentialsError } from './errors'
 import { signInLimits } from './limits'
-import { authenticate, getAuthContext, loadUser, registerUser } from './service'
+import { authenticate, loadAccount, registerUser } from './service'
 import { createSession, revokeSession } from './session'
 
 /** Registration, sign-in and sign-out: reachable without a session. */
@@ -46,9 +46,8 @@ export const publicAuthRoutes: FastifyPluginAsyncZod = async (app) => {
         const result = await authenticate(db, req.body.email, req.body.password)
         if (!result) throw new InvalidCredentialsError()
         // Everything a 200 needs is read before a session exists, so a refusal never leaves one.
-        const ctx = await getAuthContext(db, result.userId)
-        if (!ctx) throw new InvalidCredentialsError()
-        const user = await loadUser(db, result.userId, ctx)
+        const user = await loadAccount(db, result.userId)
+        if (!user) throw new InvalidCredentialsError()
 
         const session = await createSession(db, result.userId, {
           ttlDays: env.sessionTtlDays,
@@ -71,9 +70,7 @@ export const publicAuthRoutes: FastifyPluginAsyncZod = async (app) => {
 /** The signed-in account; registered inside the authenticated scope. */
 export const sessionRoutes: FastifyPluginAsyncZod = async (app) => {
   serve(app, [
-    on(api.auth.me, async (req) => {
-      const { id, workspaceId, role, timezone } = currentUser(req)
-      return loadUser(app.db, id, { workspaceId, role, timezone })
-    }),
+    // Read already, with the session that let the request in.
+    on(api.auth.me, async (req) => currentUser(req)),
   ])
 }

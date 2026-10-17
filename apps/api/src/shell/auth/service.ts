@@ -6,7 +6,7 @@ import {
   workspaceId as workspaceIdSchema,
 } from '@ctws/contracts'
 import { newId } from '../../platform/db/ids'
-import { and, eq, isNull, sql } from 'drizzle-orm'
+import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 import type { Db, Queryable } from '../../platform/db/client'
 import { LOCKS, lockFor } from '../../platform/db/locks'
 import { isUniqueViolation } from '../../platform/db/sql'
@@ -93,44 +93,35 @@ export async function authenticate(
   return (await verifyPassword(row.passwordHash, password)) ? { userId: row.id } : null
 }
 
-type AuthContext = { workspaceId: WorkspaceId; role: Role; timezone: string }
-
-/**
- * The workspace and instance role of an enabled user, read on every request so disabling or
- * demoting an account applies at once.
- */
-export async function getAuthContext(db: Queryable, userId: UserId): Promise<AuthContext | null> {
-  const [row] = await db
-    .select({
-      workspaceId: workspaceMembers.workspaceId,
-      role: users.role,
-      timezone: users.timezone,
-    })
-    .from(users)
-    .innerJoin(workspaceMembers, eq(workspaceMembers.userId, users.id))
-    .where(and(eq(users.id, userId), isNull(users.disabledAt)))
-    // `joinedAt` can tie within one transaction; the workspace id breaks it.
-    .orderBy(workspaceMembers.joinedAt, workspaceMembers.workspaceId)
-    .limit(1)
-  return row ?? null
-}
-
-export async function loadUser(
-  db: Queryable,
-  userId: UserId,
-  ctx: AuthContext,
-): Promise<{
+/** An account as a request acts for it: who, in which workspace, with which instance role. */
+export type Account = {
   id: UserId
   email: string
   timezone: string
   workspaceId: WorkspaceId
   role: Role
-}> {
-  // Named columns only, so the password hash cannot reach a response.
+}
+
+/** An account's columns, named so the password hash cannot reach a response. */
+export const ACCOUNT = {
+  id: users.id,
+  email: users.email,
+  timezone: users.timezone,
+  workspaceId: workspaceMembers.workspaceId,
+  role: users.role,
+}
+
+/** An account's first workspace: `joinedAt` can tie within one transaction; the id breaks it. */
+export const FIRST_WORKSPACE = [asc(workspaceMembers.joinedAt), asc(workspaceMembers.workspaceId)]
+
+/** An enabled account, or null for a disabled one. */
+export async function loadAccount(db: Queryable, userId: UserId): Promise<Account | null> {
   const [row] = await db
-    .select({ id: users.id, email: users.email, timezone: users.timezone })
+    .select(ACCOUNT)
     .from(users)
-    .where(eq(users.id, userId))
+    .innerJoin(workspaceMembers, eq(workspaceMembers.userId, users.id))
+    .where(and(eq(users.id, userId), isNull(users.disabledAt)))
+    .orderBy(...FIRST_WORKSPACE)
     .limit(1)
-  return { ...row!, workspaceId: ctx.workspaceId, role: ctx.role }
+  return row ?? null
 }

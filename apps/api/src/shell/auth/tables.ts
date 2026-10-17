@@ -70,7 +70,11 @@ export const workspaceMembers = pgTable(
       .references(() => users.id, { onDelete: 'cascade' }),
     joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [primaryKey({ columns: [t.workspaceId, t.userId] })],
+  // Every request finds its account's workspace by the user, not by the workspace.
+  (t) => [
+    primaryKey({ columns: [t.workspaceId, t.userId] }),
+    index('workspace_members_user_idx').on(t.userId),
+  ],
 )
 
 /** What a module's own table points at with a foreign key: the workspace that owns its rows. */
