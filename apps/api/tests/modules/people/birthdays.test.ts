@@ -1,7 +1,6 @@
-import type { CalendarEntry, WorkspaceId } from '@ctws/contracts'
+import type { CalendarEntry } from '@ctws/contracts'
 import { keptNote, nextOccurrence, type Birthday } from '@ctws/core'
 import { afterEach, describe, expect, it } from 'vitest'
-import { listBirthdays } from '../../../src/modules/people/birthdays'
 import { setupWith, type Harness, web } from '../../helpers/harness'
 import { createPerson } from '../../helpers/builders'
 
@@ -22,11 +21,6 @@ const NOW = new Date('2026-10-13T04:00:00Z')
 
 const setup = (timezone = 'Asia/Shanghai'): Promise<Harness> =>
   setupWith(cleanups, undefined, { timezone, clock: () => NOW })
-
-async function workspaceOf(ctx: Harness): Promise<WorkspaceId> {
-  const res = await ctx.app.inject({ method: 'GET', url: '/api/v1/auth/me', headers: ctx.authed })
-  return (res.json() as { workspaceId: WorkspaceId }).workspaceId
-}
 
 type Fields = NonNullable<Parameters<typeof createPerson>[1]>
 
@@ -111,19 +105,15 @@ describe('GET /people/birthdays', () => {
   /** A birthday is today for the whole of the account's day. */
   it("decides today in the account's zone, not UTC", async () => {
     // 2026-10-10T22:00Z is already 10-11 in Shanghai and still 10-10 in Los Angeles.
-    const clock = new Date('2026-10-10T22:00:00Z')
-    const shanghai = await setup('Asia/Shanghai')
+    const at = (timezone: string) =>
+      setupWith(cleanups, undefined, { timezone, clock: () => new Date('2026-10-10T22:00:00Z') })
+    const shanghai = await at('Asia/Shanghai')
     await add(shanghai, '十一号生的', { calendar: 'solar', year: 1990, month: 10, day: 11 })
-    const la = await setup('America/Los_Angeles')
+    const la = await at('America/Los_Angeles')
     await add(la, '十一号生的', { calendar: 'solar', year: 1990, month: 10, day: 11 })
 
-    const inShanghai = await listBirthdays(
-      shanghai.db,
-      await workspaceOf(shanghai),
-      'Asia/Shanghai',
-      clock,
-    )
-    const inLa = await listBirthdays(la.db, await workspaceOf(la), 'America/Los_Angeles', clock)
+    const inShanghai = await view(shanghai)
+    const inLa = await view(la)
     expect(inShanghai.today).toBe('2026-10-11')
     expect(inShanghai.coming[0]?.inDays).toBe(0)
     expect(inLa.today).toBe('2026-10-10')

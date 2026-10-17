@@ -1,5 +1,5 @@
 /** What modules may use of auth: who a request acts for, and the key their rows hang off. */
-export { actorOf, currentUser } from './authenticated'
+export { actorOf, currentUser, todayOf } from './authenticated'
 export { workspaceKeys } from './tables'
 
 // For the app, which mounts the routes and guards the rest.

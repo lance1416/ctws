@@ -18,7 +18,6 @@ import {
 import { asc, isNotNull } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
 import { scoped, within } from '../../platform/db/scope'
-import { accountToday } from '../../platform/db/time'
 import { dayEntry } from '../../shell/calendar'
 import { ImpossibleBirthdayError } from './errors'
 import { people } from './tables'
@@ -142,13 +141,12 @@ export async function birthdayEntries(
   return entries.sort((a, b) => a.day.localeCompare(b.day) || a.title.localeCompare(b.title))
 }
 
+/** The birthdays page as of `today`, the account's day. */
 export async function listBirthdays(
   q: Queryable,
   workspaceId: WorkspaceId,
-  timezone: string,
-  now: Date,
+  today: string,
 ): Promise<BirthdaysView> {
-  const today = await accountToday(q, timezone, now)
   const rows = await peopleWithBirthdays(q, workspaceId)
 
   // The lead decides the card and is not sent.
