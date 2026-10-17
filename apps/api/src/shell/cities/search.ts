@@ -16,6 +16,9 @@ const plain = (s: string): string =>
     .replace(/\p{Diacritic}/gu, '')
     .toLowerCase()
 
+/** Each city's name as a query is compared with it, worked out once rather than per query. */
+const NAMES = CITIES.map((row) => plain(row[0]))
+
 /** `Oxford, England, United Kingdom`, with a repeated part said once (`Beijing, China`). */
 function labelOf([name, region, country]: Row): string {
   const parts = [name, region, country].filter((p) => p !== '')
@@ -33,8 +36,8 @@ export function findCities(query: string): City[] {
 
   const starts: City[] = []
   const contains: City[] = []
-  for (const row of CITIES) {
-    const name = plain(row[0])
+  for (const [i, row] of CITIES.entries()) {
+    const name = NAMES[i]!
     if (name.startsWith(q)) starts.push(cityOf(row))
     else if (name.includes(q)) contains.push(cityOf(row))
     if (starts.length >= MAX_HITS) break

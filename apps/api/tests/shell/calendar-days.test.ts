@@ -25,6 +25,8 @@ describe('GET /calendar/days', () => {
       headers: ctx.authed,
     })
     expect(res.statusCode, res.body).toBe(200)
+    // A day's name never changes, so any cache may keep it.
+    expect(res.headers['cache-control']).toBe('public, max-age=86400')
     expect(res.json().days).toEqual({
       '2026-10-10': '九月初一',
       '2026-10-11': '初二',
