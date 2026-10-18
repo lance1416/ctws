@@ -1,0 +1,69 @@
+# Docker images are not here on purpose. `node:24-alpine` and `postgres:18-alpine` are major-only
+# tags, so minor and patch releases already arrive on every build; the only thing Dependabot could
+# propose is the next major, and neither is a one-line change: Node also lives in .nvmrc and
+# `engines`, and a Postgres major needs pg_upgrade on the data directory.
+
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: chore
+      prefix-development: chore
+      include: scope
+    ignore:
+      # TypeScript 7 drops the in-process compiler API that drizzle-kit uses to read the schema.
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
+    # A dependency joins the FIRST group it matches. The named groups come first: each is a set of
+    # packages that only work at matching versions, so they move together, majors included.
+    # Everything else shares one weekly minor/patch PR, and any other major gets a PR of its own.
+    groups:
+      react:
+        patterns: [react, react-dom, '@types/react', '@types/react-dom']
+      vite:
+        # vitest pins the vite it runs on, and @tailwindcss/vite must match tailwindcss exactly.
+        patterns: [vite, '@vitejs/*', vitest, tailwindcss, '@tailwindcss/*']
+      lint:
+        patterns: [eslint, 'eslint-*', '@eslint/*', typescript-eslint, '@typescript-eslint/*']
+      prettier:
+        # Its own PR: a release that formats differently fails format:check, and that should not
+        # hold back every other update in the week.
+        patterns: [prettier]
+      drizzle:
+        patterns: [drizzle-orm, drizzle-kit]
+      fastify:
+        patterns: [fastify, '@fastify/*', fastify-type-provider-zod]
+      pg:
+        patterns: [pg, '@types/pg']
+      date-fns:
+        patterns: [date-fns, '@date-fns/*']
+      markdown:
+        patterns: [unified, 'remark-*', 'rehype-*', react-markdown, katex]
+      dnd-kit:
+        patterns: ['@dnd-kit/*']
+      radix:
+        patterns: ['@radix-ui/*']
+      minor-and-patch:
+        patterns: ['*']
+        update-types: [minor, patch]
+      security:
+        applies-to: security-updates
+        patterns: ['*']
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      actions:
+        patterns: ['*']
