@@ -135,9 +135,10 @@ describe('rollups ride along with the task list', () => {
 
     const r = await rollups(ctx, pid)
     expect(r[gone]).toBeUndefined()
-    // The root is a leaf again, so it falls back to its own status rather than keeping the 1 the
-    // deleted child gave it.
-    expect(r[root]!.progress).toBe(0)
+    // The root is a leaf again. It keeps the status it last derived (done, from the child that is
+    // now gone, FR-039), so it scores as a done leaf; nothing under it is counted.
+    expect(r[root]!.progress).toBe(1)
+    expect(r[root]!.inProgress).toBe(0)
   })
 })
 
@@ -155,13 +156,14 @@ describe('the exclusion rule on a tree built the normal way', () => {
     expect((await rollups(ctx, pid))[root]!.progress).toBe(1)
   })
 
-  it('still excludes a parent somebody deliberately filed as backlog', async () => {
+  it('still excludes a parent whose every subtask is only recorded, not committed to', async () => {
     const ctx = await setup()
     const pid = await createProject(ctx, '改版')
     const root = await createTask(ctx, pid, '以后再说')
     const kid = await createTask(ctx, pid, '子', root)
-    await setStatus(ctx, kid, 'done')
-    await setStatus(ctx, root, 'backlog')
+    // A parent cannot be filed as backlog by hand any more (FR-038); it is backlog when all of
+    // its children are.
+    await setStatus(ctx, kid, 'backlog')
 
     // The rule itself did not change: something only recorded, not committed to, is not work in
     // flight and must not pull an average around.

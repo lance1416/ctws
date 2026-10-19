@@ -243,16 +243,24 @@ describe('update', () => {
     expect(await eventsOf(ctx, childId).then((e) => e.map((x) => x.type))).toEqual(['created'])
   })
 
-  it('marking every child done leaves the parent status unchanged', async () => {
+  it('marking every child done marks the parent done, as a derived change', async () => {
     const ctx = await setup()
     const projectId = await createProject(ctx, 'P')
     const parentId = await createTask(ctx, projectId, 'parent')
     const c1 = await createTask(ctx, projectId, 'c1', parentId)
     const c2 = await createTask(ctx, projectId, 'c2', parentId)
     await patch(ctx, c1, { status: 'done' })
+    // One done, one to do: in progress, not yet done.
+    expect((await rowOf(ctx, parentId)).status).toBe('in_progress')
     await patch(ctx, c2, { status: 'done' })
-    expect((await rowOf(ctx, parentId)).status).toBe('todo')
-    expect(await eventsOf(ctx, parentId).then((e) => e.map((x) => x.type))).toEqual(['created'])
+    expect((await rowOf(ctx, parentId)).status).toBe('done')
+    expect((await rowOf(ctx, parentId)).completed_at).not.toBeNull()
+    expect(await eventsOf(ctx, parentId)).toEqual([
+      expect.objectContaining({ type: 'created' }),
+      { type: 'became_parent', payload: {} },
+      { type: 'status_changed', payload: { from: 'todo', to: 'in_progress', derived: true } },
+      { type: 'status_changed', payload: { from: 'in_progress', to: 'done', derived: true } },
+    ])
   })
 })
 
@@ -329,6 +337,7 @@ describe('delete', () => {
     expect((await patch(ctx, grandchild!, { title: 'y' })).statusCode).toBe(404)
     expect(await eventsOf(ctx, child!).then((e) => e.map((x) => x.type))).toEqual([
       'created',
+      'became_parent',
       'deleted',
     ])
   })
@@ -610,7 +619,7 @@ describe('event and mutation share one transaction', () => {
     expect((await del(ctx, root!)).statusCode).toBe(500)
 
     expect((await rowOf(ctx, child!)).deleted_at).toBeNull()
-    expect((await eventsOf(ctx, root!)).map((e) => e.type)).toEqual(['created'])
+    expect((await eventsOf(ctx, root!)).map((e) => e.type)).toEqual(['created', 'became_parent'])
     expect((await eventsOf(ctx, child!)).map((e) => e.type)).toEqual(['created'])
   })
 })

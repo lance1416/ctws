@@ -203,7 +203,14 @@ describe('the OpenAPI document', () => {
 
     const tasks = doc.paths['/api/v1/tasks']!.get!.parameters
     const views = tasks.find((p) => p.name === 'view')!.schema as { enum: string[] }
-    expect([...views.enum].sort()).toEqual(['calendar', 'completed', 'movement', 'review', 'today'])
+    expect([...views.enum].sort()).toEqual([
+      'calendar',
+      'completed',
+      'movement',
+      'ready',
+      'review',
+      'today',
+    ])
     expect(tasks.map((p) => p.name)).toEqual(
       expect.arrayContaining(['projectId', 'q', 'from', 'to']),
     )

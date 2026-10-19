@@ -6,6 +6,7 @@ import { addDependency, createTask, removeDependency, softDeleteTask, updateTask
 import {
   toCalendarEntry,
   toCompletedResponse,
+  toReadyResponse,
   toSearchResponse,
   toTaskResponse,
   toTodayResponse,
@@ -15,6 +16,7 @@ import {
   getTask,
   listCompleted,
   listProjectMovement,
+  listReady,
   listReview,
   listTaskCalendar,
   listToday,
@@ -40,6 +42,11 @@ export const taskRoutes: FastifyPluginAsyncZod = async (app) => {
         rows.map((t) => t.id),
       )
       return { tasks: rows.map((t) => toTodayResponse(t, blockers)) }
+    }),
+
+    on(api.tasks.ready, async (req) => {
+      const rows = await listReady(app.db, currentUser(req).workspaceId)
+      return { tasks: rows.map(toReadyResponse) }
     }),
 
     on(api.tasks.review, async (req) => {

@@ -1,4 +1,9 @@
-import { MAX_TASK_DEPTH, WINDOW_REFUSED } from '@ctws/contracts'
+import {
+  DERIVED_PLAN_REFUSED,
+  DERIVED_STATUS_REFUSED,
+  MAX_TASK_DEPTH,
+  WINDOW_REFUSED,
+} from '@ctws/contracts'
 import { DomainError } from '../../platform/errors'
 
 /** The new edge would close a loop; a task waiting for itself is the shortest one. */
@@ -35,6 +40,15 @@ export class InvalidNeighbourError extends DomainError {
   constructor() {
     super('unprocessable', {
       detail: 'The neighbour is not a live sibling at the destination',
+    })
+  }
+}
+
+/** A PATCH that sets what a parent gets from its subtasks: its status or its planned day. */
+export class DerivedFieldError extends DomainError {
+  constructor(field: 'status' | 'scheduledOn') {
+    super('unprocessable', {
+      detail: field === 'status' ? DERIVED_STATUS_REFUSED : DERIVED_PLAN_REFUSED,
     })
   }
 }

@@ -4,16 +4,18 @@ import type { z } from 'zod'
 import type { Queryable } from '../../../platform/db/client'
 import { rowsOf } from '../../../platform/db/raw'
 import { dayStart, localDay } from '../../../platform/db/time'
-import { TASK_COLUMNS, taskRow } from './rows'
+import { isLeafSql, pathRow, pathSql, TASK_COLUMNS } from './rows'
 import { taskOpenSql, visibleTasks } from './scope'
 
-const todayRow = taskRow.extend({ segment: todayTaskResponse.shape.segment })
+const todayRow = pathRow.extend({ segment: todayTaskResponse.shape.segment })
 export type TodayTask = z.output<typeof todayRow>
 
 /**
- * Open tasks in unarchived projects that are in progress, planned up to today, or due before
+ * Open LEAVES in unarchived projects that are in progress, planned up to today, or due before
  * tomorrow. Each falls in exactly one segment (overdue, then today, then in progress) so no row
- * shows twice; a plan from an earlier day stays until it is done.
+ * shows twice; a plan from an earlier day stays until it is done. A parent never shows: its
+ * status is its children's, and the child that is in progress is the row (FR-037). A parent's
+ * deadline is its own (FR-043), but it is the calendar that shows it, not Today's list.
  */
 export async function listToday(
   q: Queryable,
@@ -34,6 +36,7 @@ export async function listToday(
         p.name as "projectName",
         p.rank as project_rank,
         parent.title as "parentTitle",
+        ${pathSql('t')} as path,
         case
           when t.due_at is not null and t.due_at < b.t0 then 'overdue'
           when (t.scheduled_on is not null and t.scheduled_on <= b.today)
@@ -47,6 +50,7 @@ export async function listToday(
       where ${visibleTasks(workspaceId, { task: 't', project: 'p' })}
         and p.archived_at is null
         and ${taskOpenSql('t')}
+        and ${isLeafSql('t')}
         and (
           (t.due_at is not null and t.due_at < b.t1)
           or (t.scheduled_on is not null and t.scheduled_on <= b.today)

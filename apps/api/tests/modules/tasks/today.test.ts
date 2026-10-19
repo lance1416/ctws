@@ -101,14 +101,15 @@ describe('GET /today', () => {
     const parent = await createTask(ctx, p, 'Release')
     const child = await createTask(ctx, p, 'tree component', parent)
     await schedule(ctx, child, { status: 'in_progress' })
-    await schedule(ctx, parent, { status: 'in_progress' })
 
     const rows = await today(ctx)
     expect(rows.find((r) => r.id === child)).toMatchObject({
       projectName: 'CTWS',
       parentTitle: 'Release',
+      path: [{ id: parent, title: 'Release' }],
     })
-    expect(rows.find((r) => r.id === parent)!.parentTitle).toBeNull()
+    // The parent is in progress too, derived from the child, but only leaves are listed.
+    expect(rows.find((r) => r.id === parent)).toBeUndefined()
   })
 
   it('excludes done, cancelled and soft-deleted tasks', async () => {

@@ -80,6 +80,7 @@ import {
   dependencyParams,
   movementResponse,
   projectTasksQuery,
+  readyResponse,
   projectTasksResponse,
   reviewQuery,
   reviewResponse,
@@ -330,6 +331,14 @@ export const api = {
       query: viewQuery('today'),
       ok: 200,
       response: todayResponse,
+    }),
+    ready: endpoint({
+      method: 'GET',
+      path: '/tasks',
+      summary: 'Leaves that could be started now: to do and waiting for nothing (view=ready).',
+      query: viewQuery('ready'),
+      ok: 200,
+      response: readyResponse,
     }),
     review: endpoint({
       method: 'GET',

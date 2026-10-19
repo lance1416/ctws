@@ -112,6 +112,16 @@ export const taskResponse = z.object({
   updatedAt: instant,
 })
 
+/**
+ * Why a PATCH to a parent's status or planned day is refused: a task with subtasks takes its
+ * status from them (FR-038) and is planned by them (FR-043). The parent's deadline is its own.
+ */
+export const DERIVED_STATUS_REFUSED = 'a task with subtasks takes its status from them'
+export const DERIVED_PLAN_REFUSED = 'a task with subtasks is planned by its subtasks'
+
+/** One step of the path from a task's project down to its parent: the tree it sits in. */
+const pathStep = z.object({ id: taskId, title: z.string() })
+
 /** Derived from a task's whole subtree, so it travels beside the task, never on it. */
 const rollupResponse = z.object({
   /** 0..1, or null for a task the rollup leaves out (backlog, cancelled). */
@@ -156,6 +166,7 @@ export const reviewResponse = z.object({
   /** The window's own bounds, as days in the account's zone. */
   from: calendarDate,
   to: calendarDate,
+  /** Leaves only: a parent's derived change is not a thing anybody did (FR-043). */
   projects: z.array(
     z.object({
       projectId: projectId,
@@ -163,6 +174,8 @@ export const reviewResponse = z.object({
       finished: z.array(reviewTask),
       started: z.array(reviewTask),
       dropped: z.array(reviewTask),
+      /** Parents whose every subtask closed in the window: a heading, not a count. */
+      closedParents: z.array(reviewTask),
     }),
   ),
 })
@@ -179,6 +192,8 @@ const TODAY_SEGMENTS = ['overdue', 'today', 'in_progress'] as const
 export const todayTaskResponse = taskResponse.extend({
   projectName: z.string(),
   parentTitle: z.string().nullable(),
+  /** Root first, parent last; empty for a task directly under its project. */
+  path: z.array(pathStep),
   segment: z.enum(TODAY_SEGMENTS),
   /** Unfinished blockers. */
   blockedBy: z.array(dependencyRef),
@@ -186,6 +201,18 @@ export const todayTaskResponse = taskResponse.extend({
 export type TodayTaskResponse = z.infer<typeof todayTaskResponse>
 
 export const todayResponse = z.object({ tasks: z.array(todayTaskResponse) })
+
+/**
+ * A leaf that could be started now: to do, waiting for nothing unfinished, in an unarchived
+ * project. What Today and the Workbench recommend as the next move (FR-041).
+ */
+const readyTaskResponse = taskResponse.extend({
+  projectName: z.string(),
+  path: z.array(pathStep),
+})
+export type ReadyTaskResponse = z.infer<typeof readyTaskResponse>
+
+export const readyResponse = z.object({ tasks: z.array(readyTaskResponse) })
 
 export const completedTaskResponse = taskResponse.extend({
   completedAt: instant,
@@ -238,7 +265,8 @@ export const searchTasksResponse = z.object({
   page: pageInfo,
 })
 
-// No reorder event: a pure rank change is not logged.
+// No reorder event: a pure rank change is not logged. A parent's `status_changed` carries
+// `derived: true` in its payload: the log says it happened, the review does not count it.
 export const TASK_EVENT_TYPES = [
   'created',
   'status_changed',
@@ -251,6 +279,9 @@ export const TASK_EVENT_TYPES = [
   'dependency_added',
   'dependency_removed',
   'deleted',
+  // A leaf got its first subtask, or a parent lost its last one (FR-039).
+  'became_parent',
+  'became_leaf',
 ] as const
 export type TaskEventType = (typeof TASK_EVENT_TYPES)[number]
 

@@ -1,4 +1,4 @@
-import type { TaskId, WorkspaceId } from '@ctws/contracts'
+import { TASK_STATUSES, type TaskId, type TaskStatus, type WorkspaceId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Queryable, Tx } from '../../platform/db/client'
@@ -15,6 +15,16 @@ const TREE_LOCK = 7_301_003
  */
 export const lockTaskTree = (tx: Tx, workspaceId: WorkspaceId): Promise<void> =>
   lockFor(tx, TREE_LOCK, workspaceId)
+
+const statusRow = z.object({ status: z.enum(TASK_STATUSES) })
+
+/** The statuses of a task's live children, in no order; empty for a leaf. */
+export async function childStatuses(q: Queryable, taskId: TaskId): Promise<TaskStatus[]> {
+  const result = await q.execute(sql`
+    select status from tasks where parent_id = ${taskId} and deleted_at is null
+  `)
+  return rowsOf(result, statusRow).map((r) => r.status)
+}
 
 /**
  * Tasks on the path from `taskId` up to its root, itself included. Walks upward, so it costs at

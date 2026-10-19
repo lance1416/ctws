@@ -118,6 +118,8 @@ describe('task event types', () => {
   it('are exactly these', () => {
     expect([...TASK_EVENT_TYPES].sort()).toEqual(
       [
+        'became_leaf',
+        'became_parent',
         'created',
         'deleted',
         'due_changed',

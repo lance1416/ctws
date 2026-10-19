@@ -3,7 +3,7 @@ import { sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Queryable } from '../../../platform/db/client'
 import { rowsOf } from '../../../platform/db/raw'
-import { TASK_COLUMNS, taskRow } from './rows'
+import { isLeafSql, TASK_COLUMNS, taskRow } from './rows'
 import { visibleTasks } from './scope'
 import { type Page, type PageAsked, pageOf, spanOf } from '../../../platform/db/page'
 
@@ -35,6 +35,8 @@ export async function listCompleted(
     where ${visibleTasks(workspaceId, { task: 't', project: 'p' })}
       and t.status = 'done'
       and t.completed_at is not null
+      -- A parent is done because its children are: they are the things finished (FR-043).
+      and ${isLeafSql('t')}
     order by t.completed_at desc, t.id
     limit ${span.limit} offset ${span.offset}
   `)

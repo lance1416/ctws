@@ -36,6 +36,8 @@ const reviewRow = z.object({
   title: z.string(),
   to_status: z.enum(RECOUNTED),
   at: z.string(),
+  /** A parent's change, worked out from its children rather than made (FR-043). */
+  derived: z.boolean(),
 })
 
 const boundsRow = z.object({ from_day: calendarDate, to_day: calendarDate })
@@ -83,7 +85,8 @@ export async function listReview(
       t.id as task_id,
       t.title,
       ev.payload ->> 'to' as to_status,
-      to_char(ev.occurred_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as at
+      to_char(ev.occurred_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as at,
+      coalesce((ev.payload ->> 'derived')::boolean, false) as derived
     from task_events ev
     join bounds b on true
     join tasks t on t.id = ev.task_id
@@ -107,8 +110,15 @@ export async function listReview(
         finished: [],
         started: [],
         dropped: [],
+        closedParents: [],
       }
       byProject.set(r.project_id, group)
+    }
+    // A parent closing is a heading over what closed it, not one more thing finished.
+    if (r.derived) {
+      if (r.to_status === 'done' && !group.closedParents.some((e) => e.id === r.task_id))
+        group.closedParents.push({ id: r.task_id, title: r.title, at: r.at })
+      continue
     }
     const list = group[LIST_FOR[r.to_status]]
     // Once per task per list; rows are newest first, so the latest is kept.

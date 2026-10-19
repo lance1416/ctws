@@ -9,7 +9,7 @@ import {
   type UpdateTaskBody,
   type WorkspaceId,
 } from '@ctws/contracts'
-import { rankBetween } from '@ctws/core'
+import { derivedStatus, rankBetween } from '@ctws/core'
 import { and, asc, desc, eq, gt, isNull, lt, ne, sql } from 'drizzle-orm'
 import type { PgUpdateSetSource } from 'drizzle-orm/pg-core'
 import { z } from 'zod'
@@ -24,13 +24,86 @@ import {
   BothNeighboursError,
   DependencyCycleError,
   DepthLimitError,
+  DerivedFieldError,
   InvalidNeighbourError,
   MoveCycleError,
 } from './errors'
 import { taskLog } from './log'
 import { getTask, lockTask, visibleTasks } from './queries'
 import { type Task, taskDependencies, tasks } from './tables'
-import { depthOf, lockTaskTree } from './tree'
+import { childStatuses, depthOf, lockTaskTree } from './tree'
+
+/**
+ * A parent's status is worked out from its children (FR-038) and written into its own `status`
+ * column, so every read that filters by status sees it without recursing. This settles the chain
+ * above a task whose status, place or existence just changed: each ancestor in turn, bottom up,
+ * written only when its derived status differs from what it holds, and logged as a
+ * `status_changed` with `derived: true` so the review can tell it from a change somebody made.
+ *
+ * `removed` says the caller just took a child away: an ancestor left with no live children has
+ * turned back into a leaf (FR-039), which is logged once and keeps the status it had derived.
+ *
+ * Runs inside the caller's transaction under the tree lock; a chain is at most MAX_TASK_DEPTH
+ * long, so the walk is bounded.
+ */
+async function settleAncestors(
+  tx: Tx,
+  ctx: Actor,
+  parentId: TaskId | null,
+  opts: { removed?: boolean } = {},
+): Promise<void> {
+  const log = taskLog(tx, ctx)
+  let id = parentId
+  let removed = opts.removed ?? false
+  while (id !== null) {
+    const [parent] = await tx.select().from(tasks).where(eq(tasks.id, id)).for('update')
+    if (!parent) return
+    const derived = derivedStatus(await childStatuses(tx, parent.id))
+    if (derived === null) {
+      // No live children left: a leaf again, keeping the last derived status.
+      if (removed) await log.append(parent.id, 'became_leaf', { status: parent.status })
+      removed = false
+    } else if (derived !== parent.status) {
+      await tx
+        .update(tasks)
+        .set({
+          status: derived,
+          completedAt: derived === 'done' ? ctx.now : null,
+          updatedAt: ctx.now,
+        })
+        .where(eq(tasks.id, parent.id))
+      await log.append(parent.id, 'status_changed', {
+        from: parent.status,
+        to: derived,
+        derived: true,
+      })
+      removed = false
+    } else {
+      // Unchanged here means unchanged above: a parent's status depends on its children alone.
+      return
+    }
+    id = parent.parentId
+  }
+}
+
+/**
+ * What happens to a leaf that is about to get its first child (FR-039): it is logged as a parent
+ * from now on, and its planned day, which only a leaf can have (FR-043), moves down to the new
+ * child when that child has none, or is dropped. Returns the planned day the child should take.
+ * Call before the child is written, while the parent is still a leaf.
+ */
+async function becomeParent(tx: Tx, ctx: Actor, parent: Task): Promise<string | null> {
+  if ((await childStatuses(tx, parent.id)).length > 0) return null
+  const log = taskLog(tx, ctx)
+  await log.append(parent.id, 'became_parent', {})
+  if (parent.scheduledOn === null) return null
+  await tx
+    .update(tasks)
+    .set({ scheduledOn: null, updatedAt: ctx.now })
+    .where(eq(tasks.id, parent.id))
+  await log.append(parent.id, 'scheduled_changed', { from: parent.scheduledOn, to: null })
+  return parent.scheduledOn
+}
 
 /**
  * Appends a task after its last sibling. Under a parent it takes the parent's project; the
@@ -41,10 +114,13 @@ export async function createTask(db: Db, ctx: Actor, input: CreateTaskBody): Pro
     await lockTaskTree(tx, ctx.workspaceId)
     let projectId = (await getProject(tx, ctx.workspaceId, input.projectId)).id
 
+    let scheduledOn = input.scheduledOn ?? null
     if (input.parentId) {
       const parent = await lockTask(tx, ctx.workspaceId, input.parentId)
       if ((await depthOf(tx, parent.id)) + 1 > MAX_TASK_DEPTH) throw new DepthLimitError()
       projectId = parent.projectId
+      const handedDown = await becomeParent(tx, ctx, parent)
+      if (scheduledOn === null) scheduledOn = handedDown
     }
 
     const [last] = await tx
@@ -70,7 +146,7 @@ export async function createTask(db: Db, ctx: Actor, input: CreateTaskBody): Pro
         title: input.title,
         notes: input.notes ?? null,
         status: input.status,
-        scheduledOn: input.scheduledOn ?? null,
+        scheduledOn,
         dueAt: input.dueAt ? new Date(input.dueAt) : null,
         completedAt: input.status === 'done' ? ctx.now : null,
         createdAt: ctx.now,
@@ -83,6 +159,7 @@ export async function createTask(db: Db, ctx: Actor, input: CreateTaskBody): Pro
       from: null,
       to: { title: row!.title, status: row!.status, parentId: row!.parentId, projectId },
     })
+    await settleAncestors(tx, ctx, row!.parentId)
     return row!
   })
 }
@@ -116,6 +193,13 @@ export async function updateTask(
  */
 async function editTask(tx: Tx, ctx: Actor, id: TaskId, patch: Fields): Promise<Task> {
   const row = await lockTask(tx, ctx.workspaceId, id)
+
+  // A parent's status and planned day are its children's to decide.
+  if (patch.status !== undefined || patch.scheduledOn !== undefined) {
+    if ((await childStatuses(tx, row.id)).length > 0) {
+      throw new DerivedFieldError(patch.status !== undefined ? 'status' : 'scheduledOn')
+    }
+  }
 
   const set: PgUpdateSetSource<typeof tasks> = {}
   const events: { type: TaskEventType; payload: unknown }[] = []
@@ -157,6 +241,11 @@ async function editTask(tx: Tx, ctx: Actor, id: TaskId, patch: Fields): Promise<
   const [updated] = await tx.update(tasks).set(set).where(eq(tasks.id, id)).returning()
   const log = taskLog(tx, ctx)
   for (const e of events) await log.append(id, e.type, e.payload)
+  if (set.status !== undefined) {
+    // A status change is a shape change for the parent: take the tree lock before settling.
+    await lockTaskTree(tx, ctx.workspaceId)
+    await settleAncestors(tx, ctx, row.parentId)
+  }
   return updated!
 }
 
@@ -216,14 +305,18 @@ async function moveTask(tx: Tx, ctx: Actor, id: TaskId, input: TaskPosition): Pr
 
   const rank = await rankFor(tx, { id, destProjectId, destParentId, input })
 
+  const parentChanged = destParentId !== task.parentId
+  const projectChanged = destProjectId !== task.projectId
+
+  // Arriving under a leaf turns it into a parent; the moved task keeps its own planned day, so
+  // what the new parent hands down goes nowhere.
+  if (parentChanged && parent) await becomeParent(tx, ctx, parent)
+
   const [updated] = await tx
     .update(tasks)
     .set({ parentId: destParentId, projectId: destProjectId, rank, updatedAt: ctx.now })
     .where(eq(tasks.id, id))
     .returning()
-
-  const parentChanged = destParentId !== task.parentId
-  const projectChanged = destProjectId !== task.projectId
 
   if (projectChanged) {
     // Deleted rows too: their logged history is counted by the project they sit in.
@@ -245,6 +338,11 @@ async function moveTask(tx: Tx, ctx: Actor, id: TaskId, input: TaskPosition): Pr
       from: { parentId: task.parentId, ...(projectChanged ? { projectId: task.projectId } : {}) },
       to: { parentId: destParentId, ...(projectChanged ? { projectId: destProjectId } : {}) },
     })
+  }
+
+  if (parentChanged) {
+    await settleAncestors(tx, ctx, task.parentId, { removed: true })
+    await settleAncestors(tx, ctx, destParentId)
   }
 
   return updated!
@@ -313,7 +411,7 @@ export async function softDeleteTask(db: Db, ctx: Actor, id: TaskId): Promise<vo
   await db.transaction(async (tx) => {
     await lockTaskTree(tx, ctx.workspaceId)
     const log = taskLog(tx, ctx)
-    await lockTask(tx, ctx.workspaceId, id)
+    const task = await lockTask(tx, ctx.workspaceId, id)
 
     // The two `deleted_at is null` differ: the recursive one prunes, so an already-deleted
     // descendant keeps its own `deleted_at`; the update's one refuses to overwrite and picks the
@@ -336,6 +434,7 @@ export async function softDeleteTask(db: Db, ctx: Actor, id: TaskId): Promise<vo
         payload: deletedId === id ? {} : { cascadedFrom: id },
       })),
     )
+    await settleAncestors(tx, ctx, task.parentId, { removed: true })
   })
 }
 
