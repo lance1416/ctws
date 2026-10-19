@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { projectId, readingId } from './id'
+import { personId, projectId, readingId } from './id'
 import { calendarDate, instant, nameText, patchOf, titleText } from './common'
 import { LIST_PAGE, pageInfo, pageQuery } from './page'
 
@@ -50,6 +50,8 @@ export const updateReadingItemBody = patchOf({
   author: author.nullable(),
   status: readingStatus,
   projectId: projectId.nullable(),
+  /** Who recommended it (FR-042): a field, one person. */
+  recommendedById: personId.nullable(),
   planOn: calendarDate.nullable(),
 })
 export type UpdateReadingItemBody = z.infer<typeof updateReadingItemBody>
@@ -65,6 +67,7 @@ export const readingItemResponse = z.object({
   planOn: calendarDate.nullable(),
   projectId: projectId.nullable(),
   projectName: z.string().nullable(),
+  recommendedBy: z.object({ id: personId, name: z.string() }).nullable(),
   /** What the page itself says, kept apart from `title`; a title someone typed wins. */
   fetchedTitle: z.string().nullable(),
   fetchedSummary: z.string().nullable(),

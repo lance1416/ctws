@@ -21,6 +21,10 @@ import { pageInfo, pageQuery } from './page'
 
 const title = titleText
 const location = z.string().trim().min(1).max(500)
+const joinUrl = z
+  .url()
+  .max(2000)
+  .refine((u) => /^https?:\/\//i.test(u), { message: 'expected an http(s) url' })
 const note = noteText
 
 /** A wall clock with no zone, `YYYY-MM-DDTHH:mm`, as a `datetime-local` control produces. */
@@ -99,6 +103,8 @@ const meetingFields = {
   durationMinutes,
   rrule: rrule.nullable(),
   location: location.nullable(),
+  /** A link to join (FR-067): "Join" is shown when there is one. */
+  joinUrl: joinUrl.nullable(),
   note: note.nullable(),
   projectId: projectId.nullable(),
   attendeeIds: z.array(personId).max(50),
@@ -146,6 +152,7 @@ export const meetingSeries = z.object({
   durationMinutes: z.number().int(),
   rrule: z.string().nullable(),
   location: z.string().nullable(),
+  joinUrl: z.string().nullable(),
   note: z.string().nullable(),
   projectId: projectId.nullable(),
   projectName: z.string().nullable(),
@@ -170,6 +177,7 @@ export const meetingOccurrence = z.object({
   /** True when this occurrence differs from its series. */
   overridden: z.boolean(),
   location: z.string().nullable(),
+  joinUrl: z.string().nullable(),
   note: z.string().nullable(),
   projectId: projectId.nullable(),
   projectName: z.string().nullable(),

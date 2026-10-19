@@ -6,12 +6,13 @@ import {
   type ProjectId,
   type WorkspaceId,
 } from '@ctws/contracts'
-import { and, asc, eq, gt, inArray, isNull, lt, or } from 'drizzle-orm'
+import { and, asc, eq, gt, inArray, isNull, lt, or, sql } from 'drizzle-orm'
+import { z } from 'zod'
 import type { Queryable, Tx } from '../../platform/db/client'
+import { rowsOf } from '../../platform/db/raw'
 import { scoped, within } from '../../platform/db/scope'
 import { groupBy } from '../../platform/values'
-import { filing } from '../../shell/links'
-import { attendeesOf } from '../people'
+import { projectNameSql } from '../../shell/projects'
 import {
   type Exception,
   type LocalTime,
@@ -28,10 +29,34 @@ type Attendee = { id: PersonId; name: string }
 
 /** A row is a series: with its rule and exceptions it describes every occurrence. */
 export type SeriesRow = typeof meetings.$inferSelect & {
-  projectId: ProjectId | null
   projectName: string | null
   attendees: Attendee[]
   exceptions: Exception[]
+}
+
+const attendeeRow = z.object({ meetingId: z.string(), id: z.string(), name: z.string() })
+
+/** The live people in each meeting, by name as a page lists them. */
+async function attendeesOf(
+  q: Queryable,
+  meetingIds: readonly MeetingId[],
+): Promise<Map<string, Attendee[]>> {
+  if (meetingIds.length === 0) return new Map()
+  const result = await q.execute(sql`
+    select a.meeting_id as "meetingId", p.id, p.name
+    from meeting_attendees a
+    join people p on p.id = a.person_id and p.deleted_at is null
+    where a.meeting_id in (${sql.join(
+      meetingIds.map((id) => sql`${id}`),
+      sql`, `,
+    )})
+    order by a.meeting_id, p.name collate "C", p.id
+  `)
+  return groupBy(
+    rowsOf(result, attendeeRow),
+    (r) => r.meetingId,
+    (r): Attendee => ({ id: r.id as PersonId, name: r.name }),
+  )
 }
 
 /** One occurrence, with what a reader needs of its series. */
@@ -41,30 +66,21 @@ export type OccurrenceRow = Occurrence & {
   rrule: string | null
   overridden: boolean
   location: string | null
+  joinUrl: string | null
   note: string | null
   projectId: ProjectId | null
   projectName: string | null
   attendees: Attendee[]
 }
 
-export const meetingFiling = filing('meeting', meetings)
-
-type Selected = {
-  meeting: typeof meetings.$inferSelect
-  projectId: ProjectId | null
-  projectName: string | null
-}
+type Selected = { meeting: typeof meetings.$inferSelect; projectName: string | null }
 
 /** Attaches attendees and exceptions to a page of series, one query each. */
-async function hydrate(
-  q: Queryable,
-  workspaceId: WorkspaceId,
-  rows: Selected[],
-): Promise<SeriesRow[]> {
+async function hydrate(q: Queryable, rows: Selected[]): Promise<SeriesRow[]> {
   if (rows.length === 0) return []
   const ids = rows.map((r) => r.meeting.id)
   const [attending, found] = await Promise.all([
-    attendeesOf(q, workspaceId, ids),
+    attendeesOf(q, ids),
     q.select().from(meetingExceptions).where(inArray(meetingExceptions.meetingId, ids)),
   ])
   const exceptionsOf = groupBy(
@@ -77,9 +93,10 @@ async function hydrate(
       durationMinutes: e.durationMinutes,
     }),
   )
-  return rows.map(({ meeting, projectId, projectName }) => ({
+  // A deleted project is kept on the row for history, but the page names only a live one.
+  return rows.map(({ meeting, projectName }) => ({
     ...meeting,
-    projectId,
+    projectId: projectName === null ? null : meeting.projectId,
     projectName,
     attendees: attending.get(meeting.id) ?? [],
     exceptions: exceptionsOf.get(meeting.id) ?? [],
@@ -104,6 +121,7 @@ function expand(series: SeriesRow, window: Window): OccurrenceRow[] {
     rrule: series.rrule,
     overridden: overridden.has(o.recurrenceId),
     location: series.location,
+    joinUrl: series.joinUrl,
     note: series.note,
     projectId: series.projectId,
     projectName: series.projectName,
@@ -122,7 +140,7 @@ const meets = (window: Window) =>
 
 const selectSeries = (q: Queryable, workspaceId: WorkspaceId, which: MeetingId | Window) =>
   q
-    .select({ meeting: meetings, ...meetingFiling.project })
+    .select({ meeting: meetings, projectName: projectNameSql(meetings.projectId) })
     .from(meetings)
     .where(
       within(
@@ -142,7 +160,7 @@ async function seriesPage(
   const span = spanOf(asked)
   const rows = await selectSeries(q, workspaceId, window).limit(span.limit).offset(span.offset)
   const { rows: page, ...info } = pageOf(rows, asked)
-  return { rows: await hydrate(q, workspaceId, page), ...info }
+  return { rows: await hydrate(q, page), ...info }
 }
 
 /** One live series in this workspace. Missing, deleted and foreign ids all read as not found. */
@@ -151,7 +169,7 @@ export async function getMeeting(
   workspaceId: WorkspaceId,
   id: MeetingId,
 ): Promise<SeriesRow> {
-  const [series] = await hydrate(q, workspaceId, await selectSeries(q, workspaceId, id))
+  const [series] = await hydrate(q, await selectSeries(q, workspaceId, id))
   if (!series) throw new NotFound('Meeting')
   return series
 }

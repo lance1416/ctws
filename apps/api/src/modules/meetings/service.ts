@@ -11,8 +11,9 @@ import {
 import { newId } from '../../platform/db/ids'
 import { eq, sql } from 'drizzle-orm'
 import type { Db, Queryable, Tx } from '../../platform/db/client'
+import { replaceRows } from '../../platform/db/replace'
 import { type Actor, scoped, within } from '../../platform/db/scope'
-import { putLinks } from '../../shell/links'
+import { eventLog } from '../../shell/events'
 import { assertProjectsVisible } from '../../shell/projects'
 import { assertPeopleVisible } from '../people'
 import { BadRuleError, OnceOnlyError } from './errors'
@@ -22,11 +23,12 @@ import {
   getOccurrence,
   getMeeting,
   lockMeeting,
-  meetingFiling,
   type OccurrenceRow,
   type SeriesRow,
 } from './queries'
-import { meetingExceptions, meetings } from './tables'
+import { meetingAttendees, meetingExceptions, meetings } from './tables'
+
+const subject = (id: MeetingId) => ({ type: 'meeting' as const, id })
 
 type Fields = Omit<UpdateSeriesBody, 'attendeeIds' | 'projectId'>
 
@@ -52,23 +54,17 @@ type Cancel = {
   recurrenceId: LocalTime | undefined
 }
 
+/** Who is in the room, as a set. */
 const putAttendees = (
   q: Tx,
-  {
-    workspaceId,
-    now,
-    id,
-    attendeeIds,
-  }: Actor & { id: MeetingId; attendeeIds: readonly PersonId[] },
+  { id, attendeeIds }: { id: MeetingId; attendeeIds: readonly PersonId[] },
 ) =>
-  putLinks(q, {
-    workspaceId,
-    now,
-    from: { type: 'meeting', id },
-    toType: 'person',
-    kind: 'attends',
-    toIds: attendeeIds,
-  })
+  replaceRows(
+    q,
+    meetingAttendees,
+    eq(meetingAttendees.meetingId, id),
+    [...new Set(attendeeIds)].map((personId) => ({ meetingId: id, personId })),
+  )
 
 const touch = (q: Queryable, { workspaceId, now }: Actor, id: MeetingId) =>
   q
@@ -154,6 +150,7 @@ async function editFollowing(e: Edit) {
   const nextId = newId(meetingId)
   const startsLocal = fields.startsLocal ?? recurrenceId
   const rrule = 'rrule' in fields ? (fields.rrule ?? null) : series.rrule
+  const carried = projectId !== undefined ? projectId : series.projectId
   await tx.insert(meetings).values({
     id: nextId,
     workspaceId,
@@ -165,23 +162,25 @@ async function editFollowing(e: Edit) {
       rrule,
     }),
     location: 'location' in fields ? (fields.location ?? null) : series.location,
+    joinUrl: 'joinUrl' in fields ? (fields.joinUrl ?? null) : series.joinUrl,
     note: 'note' in fields ? (fields.note ?? null) : series.note,
+    projectId: carried,
     createdAt: now,
     updatedAt: now,
   })
-  const carried = projectId !== undefined ? projectId : series.projectId
   await putAttendees(tx, {
-    workspaceId,
-    now,
     id: nextId,
     attendeeIds: attendeeIds ?? series.attendees.map((p) => p.id),
   })
-  await meetingFiling.put(tx, {
-    workspaceId,
-    now,
-    id: nextId,
-    projectIds: carried ? [carried] : [],
+  await eventLog(tx, { workspaceId, now }).append(subject(nextId), 'created', {
+    to: { title: fields.title ?? series.title, continuedFrom: series.id, from: recurrenceId },
   })
+  // Notes on occurrences from the split on hang on the new series (RFC-001 2.7).
+  await tx.execute(sql`
+    update notes set anchor_id = ${nextId}
+    where anchor_type = 'meeting' and anchor_id = ${series.id}
+      and occurrence_id is not null and occurrence_id >= ${recurrenceId}
+  `)
   // Overrides from the split on are keyed by the old series' local times. The new series makes
   // the same ones only when it starts where the split is and keeps the rule; otherwise they would
   // name occurrences it never makes, so they go, as in `editAll`.
@@ -202,18 +201,43 @@ async function editFollowing(e: Edit) {
 }
 
 async function editAll({ tx, workspaceId, now, series, fields, attendeeIds, projectId }: Edit) {
+  const log = eventLog(tx, { workspaceId, now })
+  for (const field of [
+    'title',
+    'startsLocal',
+    'timeZone',
+    'durationMinutes',
+    'rrule',
+    'location',
+    'joinUrl',
+  ] as const) {
+    const next = fields[field]
+    if (next !== undefined && next !== series[field]) {
+      await log.append(subject(series.id), 'field_changed', {
+        field,
+        from: series[field],
+        to: next,
+      })
+    }
+  }
+  if (projectId !== undefined && projectId !== series.projectId) {
+    await log.append(subject(series.id), 'field_changed', {
+      field: 'projectId',
+      from: series.projectId,
+      to: projectId,
+    })
+  }
   await tx
     .update(meetings)
-    .set({ ...fields, updatedAt: now })
+    // `null` unfiles the meeting; absent leaves it where it is.
+    .set({ ...fields, ...(projectId !== undefined ? { projectId } : {}), updatedAt: now })
     .where(within(scoped(meetings, workspaceId), eq(meetings.id, series.id)))
-  if (attendeeIds) await putAttendees(tx, { workspaceId, now, id: series.id, attendeeIds })
-  // `null` unfiles the meeting; absent leaves it where it is.
-  if (projectId !== undefined) {
-    await meetingFiling.put(tx, {
-      workspaceId,
-      now,
-      id: series.id,
-      projectIds: projectId ? [projectId] : [],
+  if (attendeeIds) {
+    await putAttendees(tx, { id: series.id, attendeeIds })
+    await log.append(subject(series.id), 'field_changed', {
+      field: 'attendees',
+      from: series.attendees.map((a) => a.id),
+      to: attendeeIds,
     })
   }
   // Overrides are keyed by the old local times, which a new start or rule no longer produces.
@@ -257,6 +281,7 @@ async function cancelAll({ tx, workspaceId, now, series }: Cancel) {
     .update(meetings)
     .set({ deletedAt: now })
     .where(within(scoped(meetings, workspaceId), eq(meetings.id, series.id)))
+  await eventLog(tx, { workspaceId, now }).append(subject(series.id), 'deleted', {})
 }
 
 export async function createMeeting(
@@ -280,16 +305,15 @@ export async function createMeeting(
         rrule: body.rrule ?? null,
       }),
       location: body.location ?? null,
+      joinUrl: body.joinUrl ?? null,
       note: body.note ?? null,
+      projectId: body.projectId ?? null,
       createdAt: now,
       updatedAt: now,
     })
-    await putAttendees(tx, { workspaceId, now, id, attendeeIds: body.attendeeIds ?? [] })
-    await meetingFiling.put(tx, {
-      workspaceId,
-      now,
-      id,
-      projectIds: body.projectId ? [body.projectId] : [],
+    await putAttendees(tx, { id, attendeeIds: body.attendeeIds ?? [] })
+    await eventLog(tx, { workspaceId, now }).append(subject(id), 'created', {
+      to: { title: body.title, startsLocal: body.startsLocal, projectId: body.projectId ?? null },
     })
     return getOccurrence(tx, workspaceId, id, body.startsLocal)
   })

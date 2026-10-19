@@ -17,11 +17,12 @@ import type { Db, Tx } from '../../platform/db/client'
 import { replaceRows } from '../../platform/db/replace'
 import { type Actor, scoped, within } from '../../platform/db/scope'
 import { cityTimeZone } from '../../shell/cities'
+import { eventLog } from '../../shell/events'
 import { assertProjectsVisible } from '../../shell/projects'
 import { putRoles, removeRolesOf } from '../organisations'
 import { assertPossibleBirthday } from './birthdays'
 import { assertCirclesVisible } from './circles'
-import { getPerson, lockPerson, type PersonRow, personFiling } from './queries'
+import { getPerson, lockPerson, type PersonRow, putProjects } from './queries'
 import { people, personAliases, personChannels, personCircles } from './tables'
 import { NotFound } from '../../platform/errors'
 
@@ -181,10 +182,13 @@ export async function createPerson(
       createdAt: now,
       updatedAt: now,
     })
-    await personFiling.put(tx, { workspaceId, now, id, projectIds: body.projectIds ?? [] })
+    await putProjects(tx, workspaceId, id, body.projectIds ?? [])
     await putChannels(tx, id, body.channels ?? [])
     await putAliases(tx, id, body.aliases ?? [])
     await putCircleMemberships(tx, id, body.circleIds ?? [])
+    await eventLog(tx, { workspaceId, now }).append({ type: 'person', id }, 'created', {
+      to: { name: named.name },
+    })
     return getPerson(tx, workspaceId, id)
   })
 }
@@ -226,10 +230,29 @@ export async function updatePerson(
         updatedAt: now,
       })
       .where(within(scoped(people, workspaceId), eq(people.id, id)))
-    if (projectIds) await personFiling.put(tx, { workspaceId, now, id, projectIds })
+    if (projectIds) await putProjects(tx, workspaceId, id, projectIds)
     if (channels) await putChannels(tx, id, channels)
     if (aliases) await putAliases(tx, id, aliases)
     if (circleIds) await putCircleMemberships(tx, id, circleIds)
+    const log = eventLog(tx, { workspaceId, now })
+    const named2 = nameColumns(patch, current)
+    if (named2 !== null && named2.name !== current.name) {
+      await log.append({ type: 'person', id }, 'field_changed', {
+        field: 'name',
+        from: current.name,
+        to: named2.name,
+      })
+    }
+    for (const field of ['note', 'hometown', 'city', 'gender'] as const) {
+      const next = fields[field]
+      if (next !== undefined && next !== current[field]) {
+        await log.append({ type: 'person', id }, 'field_changed', {
+          field,
+          from: current[field],
+          to: next,
+        })
+      }
+    }
     return getPerson(tx, workspaceId, id)
   })
 }

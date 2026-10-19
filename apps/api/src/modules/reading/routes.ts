@@ -1,9 +1,17 @@
-import { api } from '@ctws/contracts'
+import { api, type PersonId, type ReadingItemResponse, type WorkspaceId } from '@ctws/contracts'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
+import type { Queryable } from '../../platform/db/client'
 import { on, serve } from '../../platform/http/serve'
 import { actorOf, currentUser } from '../../shell/auth'
+import type { LinkRegistry } from '../../shell/links'
 import { toReadingItemResponse } from './mapper'
-import { getReadingItem, listReadingItems, readingEntries, searchReadingItems } from './queries'
+import {
+  getReadingItem,
+  listReadingItems,
+  readingEntries,
+  type ReadingItemRow,
+  searchReadingItems,
+} from './queries'
 import {
   createReadingItem,
   type ReadingDeps,
@@ -19,18 +27,40 @@ import {
  */
 const ADDS_PER_MINUTE = 30
 
+/** Who recommended each item, named by the people module through the registry. */
+async function respond(
+  registry: LinkRegistry,
+  q: Queryable,
+  workspaceId: WorkspaceId,
+  rows: readonly ReadingItemRow[],
+): Promise<ReadingItemResponse[]> {
+  const ids = [...new Set(rows.flatMap((r) => (r.recommendedBy ? [r.recommendedBy] : [])))]
+  const names = new Map<PersonId, string>()
+  if (ids.length > 0) {
+    for (const who of await registry
+      .of('person')
+      .rows(q, workspaceId, { ids, limit: ids.length })) {
+      names.set(who.id as PersonId, who.title)
+    }
+  }
+  return rows.map((r) => toReadingItemResponse(r, names))
+}
+
 export const readingRoutes =
-  (deps: ReadingDeps): FastifyPluginAsyncZod =>
-  async (app) => {
+  (deps: ReadingDeps): FastifyPluginAsyncZod<{ registry: LinkRegistry }> =>
+  async (app, { registry }) => {
+    const one = async (q: Queryable, workspaceId: WorkspaceId, row: ReadingItemRow) =>
+      (await respond(registry, q, workspaceId, [row]))[0]!
     serve(app, [
       on(api.reading.list, async (req) => {
+        const { workspaceId } = currentUser(req)
         const { rows, page } = await listReadingItems(
           app.db,
-          currentUser(req).workspaceId,
+          workspaceId,
           req.query.unfiled === 'true',
           req.query,
         )
-        return { reading: rows.map(toReadingItemResponse), page }
+        return { reading: await respond(registry, app.db, workspaceId, rows), page }
       }),
 
       on(api.reading.calendar, async (req) => ({
@@ -38,20 +68,15 @@ export const readingRoutes =
       })),
 
       on(api.reading.search, async (req) => {
-        const { rows, page } = await searchReadingItems(
-          app.db,
-          currentUser(req).workspaceId,
-          req.query.q,
-          req.query,
-        )
-        return { reading: rows.map(toReadingItemResponse), page }
+        const { workspaceId } = currentUser(req)
+        const { rows, page } = await searchReadingItems(app.db, workspaceId, req.query.q, req.query)
+        return { reading: await respond(registry, app.db, workspaceId, rows), page }
       }),
 
-      on(api.reading.get, async (req) =>
-        toReadingItemResponse(
-          await getReadingItem(app.db, currentUser(req).workspaceId, req.params.id),
-        ),
-      ),
+      on(api.reading.get, async (req) => {
+        const { workspaceId } = currentUser(req)
+        return one(app.db, workspaceId, await getReadingItem(app.db, workspaceId, req.params.id))
+      }),
 
       on(
         api.reading.create,
@@ -59,7 +84,7 @@ export const readingRoutes =
           const actor = actorOf(req)
           const created = await createReadingItem(app.db, actor, req.body)
           const row = await withFetched(deps, app.db, actor.workspaceId, created)
-          return toReadingItemResponse(row)
+          return one(app.db, actor.workspaceId, row)
         },
         {
           config: {
@@ -71,11 +96,11 @@ export const readingRoutes =
         },
       ),
 
-      on(api.reading.update, async (req) =>
-        toReadingItemResponse(
-          await updateReadingItem(app.db, actorOf(req), req.params.id, req.body),
-        ),
-      ),
+      on(api.reading.update, async (req) => {
+        const actor = actorOf(req)
+        const row = await updateReadingItem(registry, app.db, actor, req.params.id, req.body)
+        return one(app.db, actor.workspaceId, row)
+      }),
 
       on(api.reading.remove, async (req) => {
         await softDeleteReadingItem(app.db, actorOf(req), req.params.id)

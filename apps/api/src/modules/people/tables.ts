@@ -10,12 +10,14 @@ import {
   type RemindLead,
   type CircleId,
   type PersonId,
+  type ProjectId,
   type WorkspaceId,
 } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import {
   boolean,
   check,
+  foreignKey,
   index,
   integer,
   pgTable,
@@ -27,6 +29,7 @@ import {
 } from 'drizzle-orm/pg-core'
 import { inList } from '../../platform/db/sql'
 import { workspaceKeys } from '../../shell/auth'
+import { projectKeys } from '../../shell/projects'
 
 /** A person, after vCard 4.0 (RFC 6350). Projects are links, not a column. */
 export const people = pgTable(
@@ -126,6 +129,31 @@ export const people = pgTable(
           or (${t.birthdayCalendar} is not null and ${t.birthdayMonth} is not null and ${t.birthdayDay} is not null)`,
     ),
     index('people_birthday_idx').on(t.workspaceId, t.birthdayMonth, t.birthdayDay),
+  ],
+)
+
+/** What another module points at with a foreign key: a person. */
+export const personKeys = { id: people.id }
+
+/** The projects a person is in (FR-042): a field, replaced as a set; several at once. */
+export const personProjects = pgTable(
+  'person_projects',
+  {
+    personId: uuid('person_id')
+      .$type<PersonId>()
+      .notNull()
+      .references(() => people.id, { onDelete: 'cascade' }),
+    workspaceId: uuid('workspace_id').$type<WorkspaceId>().notNull(),
+    projectId: uuid('project_id').$type<ProjectId>().notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.personId, t.projectId] }),
+    index('person_projects_project_idx').on(t.projectId),
+    foreignKey({
+      name: 'person_projects_project_fk',
+      columns: [t.workspaceId, t.projectId],
+      foreignColumns: [projectKeys.workspaceId, projectKeys.id],
+    }).onDelete('cascade'),
   ],
 )
 

@@ -1,4 +1,4 @@
-import type { CalendarEntry, LinksResponse, MeetingOccurrence } from '@ctws/contracts'
+import type { CalendarEntry, MeetingOccurrence } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { Queryable } from '../../../src/platform/db/client'
@@ -667,13 +667,6 @@ describe('windows, projects and tenants', () => {
     const pid = await createProject(ctx, '找工作')
     const series = await arrange(ctx, { ...WEEKLY, rrule: null, projectId: pid })
     expect(series).toMatchObject({ projectId: pid, projectName: '找工作' })
-    const page = await ctx.app.inject({
-      method: 'GET',
-      url: `/api/v1/links?type=project&id=${pid}`,
-      headers: web(ctx),
-    })
-    const groups = (page.json() as LinksResponse).groups
-    expect(groups.find((g) => g.type === 'meeting')?.items.map((i) => i.title)).toEqual(['周会'])
 
     await ctx.app.inject({ method: 'DELETE', url: `/api/v1/projects/${pid}`, headers: web(ctx) })
     const after = await listed(ctx, '?from=2026-10-20&to=2026-10-21')

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { LinksResponse, PersonResponse } from '@ctws/contracts'
+import type { MeetingOccurrence, PersonResponse } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { buildApp } from '../../../src/app'
@@ -83,26 +83,22 @@ describe('the people migration', () => {
       ['email', 'mum@example.com', 'home'],
     ])
 
-    // Read from the meeting's end: the person is still who attended it.
+    // Read from the meeting's end: the person is still who attended it (0038 moved the edge).
     const linked = await app.inject({
       method: 'GET',
-      url: `/api/v1/links?type=meeting&id=${meeting}`,
+      url: `/api/v1/meetings/${meeting}`,
       headers: authed,
     })
     expect(linked.statusCode, linked.body).toBe(200)
-    const people = (linked.json() as LinksResponse).groups.filter((g) => g.type === 'person')
-    expect(people.flatMap((g) => g.items.map((i) => i.id))).toContain(person)
+    expect((linked.json() as MeetingOccurrence).attendees.map((a) => a.id)).toContain(person)
 
-    const ends = await at.db.execute<{ near: number; far: number; old: number }>(sql`
-      select count(*) filter (where from_type = 'person')::int as near,
-             count(*) filter (where to_type = 'person')::int as far,
-             count(*) filter (where from_type = 'contact' or to_type = 'contact')::int as old
-      from links`)
-    // The `about` edge has since become a relation (0030); the attendance is still a link.
-    expect(ends.rows[0]).toEqual({ near: 0, far: 1, old: 0 })
+    // The `about` edge became a relation (0030); the attendance a row of the meeting's (0038).
     const moved = await at.db.execute<{ n: number }>(sql`
       select count(*)::int as n from relations where from_type = 'person' and from_id = ${person}`)
     expect(moved.rows[0]).toEqual({ n: 1 })
+    const attends = await at.db.execute<{ n: number }>(sql`
+      select count(*)::int as n from meeting_attendees where person_id = ${person}`)
+    expect(attends.rows[0]).toEqual({ n: 1 })
 
     // Postgres 18 names NOT NULL constraints too; none of them may keep the old name.
     const stale = await at.db.execute<{ conname: string }>(sql`

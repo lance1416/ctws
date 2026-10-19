@@ -1,15 +1,8 @@
-import {
-  idFrom,
-  projectId,
-  taskId,
-  type TaskId,
-  type TaskStatus,
-  type WorkspaceId,
-} from '@ctws/contracts'
-import { desc, eq, sql, type SQL } from 'drizzle-orm'
+import { type TaskId, type TaskStatus, type WorkspaceId } from '@ctws/contracts'
+import { desc, sql, type SQL } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
 import { within } from '../../platform/db/scope'
-import { byTitle, wanted, type Linkable } from '../../shell/links'
+import { wanted, type Linkable } from '../../shell/links'
 import { visibleTasks } from './queries'
 import { tasks } from './tables'
 
@@ -39,7 +32,7 @@ const named = (r: { id: TaskId; title: string; status: TaskStatus; projectName: 
 
 const COLUMNS = { id: tasks.id, title: tasks.title, text: ['tasks.title'] }
 
-/** A task's project is a column, not a link row: `own` reads that edge from either end. */
+/** Tasks by id or by title, each with the project it is in. */
 export const taskLinkable: Linkable = {
   type: 'task',
   rows: async (q, workspaceId, want) => {
@@ -48,22 +41,5 @@ export const taskLinkable: Linkable = {
       .orderBy(...orderBy)
       .limit(limit)
     return found.map(named)
-  },
-  own: {
-    // A link's end is any kind of id; its type says which this one is.
-    project: async (q, workspaceId, of) => {
-      if (of.type !== 'task') return []
-      const [task] = await taskRows(q, workspaceId, eq(tasks.id, idFrom(taskId, of.id)))
-      if (!task) return []
-      const project = { type: 'project' as const, id: task.projectId, title: task.projectName }
-      return [{ ...project, kind: 'belongs', outgoing: true }]
-    },
-    task: async (q, workspaceId, of, limit) => {
-      if (of.type !== 'project') return []
-      const found = await taskRows(q, workspaceId, eq(tasks.projectId, idFrom(projectId, of.id)))
-        .orderBy(...byTitle(tasks.title, tasks.id))
-        .limit(limit)
-      return found.map((r) => ({ ...named(r), kind: 'belongs', outgoing: false }))
-    },
   },
 }

@@ -1,10 +1,7 @@
 import {
-  idFrom,
-  personId,
   type CircleId,
   type PersonChannel,
   type RemindLead,
-  type MeetingId,
   type OrganisationId,
   type WorkspaceId,
   type PersonId,
@@ -12,13 +9,23 @@ import {
 } from '@ctws/contracts'
 import type { BirthdayCalendar } from '@ctws/core'
 import { asc, eq, inArray, sql } from 'drizzle-orm'
+import { z } from 'zod'
+import { rowsOf } from '../../platform/db/raw'
+import { replaceRows } from '../../platform/db/replace'
 import type { Queryable, Tx } from '../../platform/db/client'
 import { scoped, within } from '../../platform/db/scope'
 import { textMatches } from '../../platform/db/sql'
 import { groupBy } from '../../platform/values'
-import { edgesFrom, filing, projectsOf } from '../../shell/links'
 import { monthOf, rolesOf } from '../organisations'
-import { circles, people, personAliases, personChannels, personCircles } from './tables'
+import {
+  circles,
+  people,
+  personAliases,
+  personChannels,
+  personCircles,
+  personProjects,
+} from './tables'
+import { projectScope } from '../../shell/projects'
 import { NotFound } from '../../platform/errors'
 import { type Page, type PageAsked, pageOf, spanOf } from '../../platform/db/page'
 
@@ -64,7 +71,46 @@ type PersonRoleRow = {
   to: string | null
 }
 
-export const personFiling = filing('person', people)
+const projectRow = z.object({ personId: z.string(), id: z.string(), name: z.string() })
+
+/** The live projects each person is in, in project order. */
+async function projectsOf(
+  q: Queryable,
+  workspaceId: WorkspaceId,
+  ids: readonly PersonId[],
+): Promise<Map<string, Named<ProjectId>[]>> {
+  const result = await q.execute(sql`
+    select pp.person_id as "personId", p.id, p.name
+    from person_projects pp
+    join projects p on p.id = pp.project_id
+    where ${projectScope(workspaceId, 'p')}
+      and pp.person_id in (${sql.join(
+        ids.map((id) => sql`${id}`),
+        sql`, `,
+      )})
+    order by p.rank, p.id
+  `)
+  return groupBy(
+    rowsOf(result, projectRow),
+    (r) => r.personId,
+    (r): Named<ProjectId> => ({ id: r.id as ProjectId, name: r.name }),
+  )
+}
+
+/** Puts a person in exactly these projects. */
+export async function putProjects(
+  tx: Tx,
+  workspaceId: WorkspaceId,
+  personId: PersonId,
+  projectIds: readonly ProjectId[],
+): Promise<void> {
+  await replaceRows(
+    tx,
+    personProjects,
+    eq(personProjects.personId, personId),
+    [...new Set(projectIds)].map((projectId) => ({ personId, workspaceId, projectId })),
+  )
+}
 
 /** The birthday columns are all present or all absent; the table's check says so. */
 function storedBirthdayOf(p: Person): StoredBirthday | null {
@@ -91,7 +137,7 @@ async function hydrate(
   if (rows.length === 0) return []
   const ids = rows.map((r) => r.id)
   const [projectsOfPerson, channels, roles, aliases, memberships] = await Promise.all([
-    projectsOf(q, workspaceId, 'person', ids),
+    projectsOf(q, workspaceId, ids),
     q
       .select()
       .from(personChannels)
@@ -258,44 +304,4 @@ export async function assertPeopleVisible(
     .from(people)
     .where(within(scoped(people, workspaceId), inArray(people.id, unique)))
   if (rows.length !== unique.length) throw new NotFound('Person')
-}
-
-/** The live people attending each meeting, by name, in from the edges and then the people. */
-export async function attendeesOf(
-  q: Queryable,
-  workspaceId: WorkspaceId,
-  meetingIds: readonly MeetingId[],
-): Promise<Map<string, Named<PersonId>[]>> {
-  const edges = await edgesFrom(q, workspaceId, {
-    fromType: 'meeting',
-    fromIds: meetingIds,
-    toType: 'person',
-    kind: 'attends',
-  })
-  if (edges.length === 0) return new Map()
-  const attendees = await q
-    .select({ id: people.id, name: people.name })
-    .from(people)
-    .where(
-      within(
-        scoped(people, workspaceId),
-        inArray(
-          people.id,
-          edges.map((e) => idFrom(personId, e.toId)),
-        ),
-      ),
-    )
-    .orderBy(asc(people.name), asc(people.id))
-  const meetingsOf = groupBy(
-    edges,
-    (e) => e.toId,
-    (e) => e.fromId,
-  )
-  return groupBy(
-    attendees.flatMap((person) =>
-      (meetingsOf.get(person.id) ?? []).map((meetingId) => ({ meetingId, person })),
-    ),
-    (r) => r.meetingId,
-    (r) => r.person,
-  )
 }

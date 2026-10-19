@@ -1,9 +1,4 @@
-import {
-  type LinkCandidate,
-  type LinkKind,
-  type ObjectType,
-  type WorkspaceId,
-} from '@ctws/contracts'
+import { type LinkCandidate, type ObjectType, type WorkspaceId } from '@ctws/contracts'
 import { asc, inArray, sql, type SQL } from 'drizzle-orm'
 import type { AnyPgColumn } from 'drizzle-orm/pg-core'
 import type { Queryable } from '../../platform/db/client'
@@ -21,12 +16,6 @@ export type Linkable = {
    * What the workspace cannot see is left out, and the shell drops the edges that pointed at it.
    */
   rows: (q: Queryable, workspaceId: WorkspaceId, want: Want) => Promise<LinkCandidate[]>
-  /**
-   * Edges the module stores in its own columns rather than the edge table, by the kind of thing at
-   * their far end, read for the object whose page is drawn and named as that kind names its own:
-   * a task's project is a column.
-   */
-  own?: Partial<Record<ObjectType, OwnEdges>>
 }
 
 /**
@@ -34,17 +23,6 @@ export type Linkable = {
  * text asks for those alone.
  */
 export type Want = { ids: readonly string[]; limit: number } | { text: string; limit: number }
-
-/** An object page's thing, and the things at the far end of the edges a module keeps for it. */
-type OwnEdges = (
-  q: Queryable,
-  workspaceId: WorkspaceId,
-  of: { type: ObjectType; id: string },
-  limit: number,
-) => Promise<OwnEdge[]>
-
-/** The far end of an edge a module keeps, named, and how the edge runs from the page's thing. */
-type OwnEdge = LinkCandidate & { kind: LinkKind; outgoing: boolean }
 
 /** A module's columns, as a `Want` reads them. */
 type Columns = {
@@ -56,7 +34,7 @@ type Columns = {
 }
 
 /** By title, by code point as an object page lists them, then by id. */
-export const byTitle = (title: SQL | AnyPgColumn, id: AnyPgColumn): SQL[] => [
+const byTitle = (title: SQL | AnyPgColumn, id: AnyPgColumn): SQL[] => [
   sql`${title} collate "C"`,
   asc(id),
 ]

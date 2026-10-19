@@ -38,15 +38,7 @@ import {
 } from './communication'
 import { citiesResponse, citySearchQuery } from './city'
 import { endpoint, href } from './endpoint'
-import {
-  candidatesQuery,
-  candidatesResponse,
-  createLinkBody,
-  linkParams,
-  linkResponse,
-  linksQuery,
-  linksResponse,
-} from './link'
+import { candidatesQuery, candidatesResponse } from './link'
 import {
   createMeetingBody,
   meetingCalendarView,
@@ -298,50 +290,13 @@ export const api = {
   },
 
   links: {
-    of: endpoint({
-      method: 'GET',
-      path: '/links',
-      summary: 'Everything linked to one thing, grouped by kind of thing, of the kinds asked for.',
-      query: linksQuery,
-      ok: 200,
-      response: linksResponse,
-      refusals: [404],
-    }),
     candidates: endpoint({
       method: 'GET',
       path: '/links',
-      summary: 'Things one thing could be linked to (view=candidates).',
+      summary: 'Things one thing could be related to, among the kinds asked for (view=candidates).',
       query: candidatesQuery,
       ok: 200,
       response: candidatesResponse,
-      refusals: [404],
-    }),
-    get: endpoint({
-      method: 'GET',
-      path: '/links/:id',
-      summary: 'One link.',
-      params: linkParams,
-      ok: 200,
-      response: linkResponse,
-      refusals: [404],
-    }),
-    create: endpoint({
-      method: 'POST',
-      path: '/links',
-      summary: 'Link two things: 201 for a new link, 200 with the one already there.',
-      body: createLinkBody,
-      ok: 201,
-      existing: true,
-      response: linkResponse,
-      location: itemAt('/links/:id'),
-      refusals: [404],
-    }),
-    remove: endpoint({
-      method: 'DELETE',
-      path: '/links/:id',
-      summary: 'Remove one link.',
-      params: linkParams,
-      ok: 204,
       refusals: [404],
     }),
   },

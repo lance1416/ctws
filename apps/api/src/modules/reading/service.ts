@@ -9,9 +9,13 @@ import { newId } from '../../platform/db/ids'
 import { eq } from 'drizzle-orm'
 import type { Db } from '../../platform/db/client'
 import { type Actor, scoped, within } from '../../platform/db/scope'
+import { eventLog } from '../../shell/events'
+import type { LinkRegistry } from '../../shell/links'
 import { assertProjectsVisible } from '../../shell/projects'
 import { WrongKindError } from './errors'
-import { getReadingItem, lockReadingItem, readingFiling, type ReadingItemRow } from './queries'
+import { getReadingItem, lockReadingItem, type ReadingItemRow } from './queries'
+
+const subject = (id: ReadingId) => ({ type: 'reading' as const, id })
 import { readingItems } from './tables'
 import type { Unfurl } from './unfurl/unfurl'
 import { NotFound } from '../../platform/errors'
@@ -28,22 +32,26 @@ export async function createReadingItem(
     body.kind === 'link'
       ? { kind: 'link' as const, url: body.url, title: null }
       : { kind: 'book' as const, url: null, title: body.title }
-  const [created] = await db
-    .insert(readingItems)
-    // The list itself is the inbox, so everything starts as to read.
-    .values({
-      id: newId(readingId),
-      workspaceId,
-      status: 'todo',
-      ...values,
-      createdAt: now,
-      updatedAt: now,
-    })
-    .returning({ id: readingItems.id })
-  return getReadingItem(db, workspaceId, created!.id)
+  return db.transaction(async (tx) => {
+    const [created] = await tx
+      .insert(readingItems)
+      // The list itself is the inbox, so everything starts as to read.
+      .values({
+        id: newId(readingId),
+        workspaceId,
+        status: 'todo',
+        ...values,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .returning({ id: readingItems.id })
+    await eventLog(tx, { workspaceId, now }).append(subject(created!.id), 'created', { to: values })
+    return getReadingItem(tx, workspaceId, created!.id)
+  })
 }
 
 export async function updateReadingItem(
+  registry: LinkRegistry,
   db: Db,
   { workspaceId, now }: Actor,
   id: ReadingId,
@@ -61,21 +69,36 @@ export async function updateReadingItem(
       throw new WrongKindError('empty title', 'book')
     }
     if (patch.projectId) await assertProjectsVisible(tx, workspaceId, [patch.projectId])
+    if (patch.recommendedById) {
+      const who = await registry
+        .of('person')
+        .rows(tx, workspaceId, { ids: [patch.recommendedById], limit: 1 })
+      if (who.length === 0) throw new NotFound('Person')
+    }
 
-    const { projectId, ...fields } = patch
-    await tx
-      .update(readingItems)
-      .set({ ...fields, updatedAt: now })
-      .where(within(scoped(readingItems, workspaceId), eq(readingItems.id, id)))
-    // `null` unfiles the item; absent leaves it where it is.
-    if (projectId !== undefined) {
-      await readingFiling.put(tx, {
-        workspaceId,
-        now,
-        id,
-        projectIds: projectId ? [projectId] : [],
+    const { recommendedById, ...fields } = patch
+    const log = eventLog(tx, { workspaceId, now })
+    for (const field of ['title', 'url', 'author', 'status', 'projectId', 'planOn'] as const) {
+      const next = fields[field]
+      if (next !== undefined && next !== current[field]) {
+        await log.append(subject(id), 'field_changed', { field, from: current[field], to: next })
+      }
+    }
+    if (recommendedById !== undefined && recommendedById !== current.recommendedBy) {
+      await log.append(subject(id), 'field_changed', {
+        field: 'recommendedBy',
+        from: current.recommendedBy,
+        to: recommendedById,
       })
     }
+    await tx
+      .update(readingItems)
+      .set({
+        ...fields,
+        ...(recommendedById !== undefined ? { recommendedBy: recommendedById } : {}),
+        updatedAt: now,
+      })
+      .where(within(scoped(readingItems, workspaceId), eq(readingItems.id, id)))
     return getReadingItem(tx, workspaceId, id)
   })
 }

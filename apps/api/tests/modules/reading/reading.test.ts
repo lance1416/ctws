@@ -1,5 +1,4 @@
-import type { LinksResponse, ReadingItemResponse } from '@ctws/contracts'
-import { sql } from 'drizzle-orm'
+import type { ReadingItemResponse } from '@ctws/contracts'
 import { afterEach, describe, expect, it } from 'vitest'
 import { setupWith, type Harness, web, secondUser } from '../../helpers/harness'
 import { createProject, createReading } from '../../helpers/builders'
@@ -93,13 +92,6 @@ describe('reading list', () => {
     const pid = await createProject(ctx, 'CTWS')
     const item = await filed(ctx, { kind: 'link', url: 'https://x.test/a' }, pid)
     expect(item).toMatchObject({ projectId: pid, projectName: 'CTWS' })
-    const page = await ctx.app.inject({
-      method: 'GET',
-      url: `/api/v1/links?type=project&id=${pid}`,
-      headers: web(ctx),
-    })
-    const groups = (page.json() as LinksResponse).groups
-    expect(groups.find((g) => g.type === 'reading')?.items.map((i) => i.id)).toEqual([item.id])
   })
 
   it('keeps an item when its project is deleted, rather than throwing a book away', async () => {
@@ -218,28 +210,6 @@ describe('reading list', () => {
     const theirProject = await createProject(theirs, '别人的项目')
     const book = await createReading(ctx, { kind: 'book', title: 'Book' })
     expect((await patch(ctx, book.id, { projectId: theirProject })).statusCode).toBe(404)
-  })
-
-  it('leaves the item as it was when filing it under a project fails', async () => {
-    const ctx = await setup()
-    const projectId = await createProject(ctx, 'Shelf')
-    const book = await createReading(ctx, { kind: 'book', title: 'Orphan' })
-    // Filing the item fails; the rename in the same edit must not survive it.
-    await ctx.db.execute(sql`
-      create function refuse_reading_filing() returns trigger language plpgsql as $$
-      begin
-        if new.from_type = 'reading' then raise exception 'refused for the test'; end if;
-        return new;
-      end $$
-    `)
-    await ctx.db.execute(sql`
-      create trigger refuse_reading_filing before insert on links
-        for each row execute function refuse_reading_filing()
-    `)
-
-    const res = await patch(ctx, book.id, { title: 'Renamed', projectId })
-    expect(res.statusCode).toBe(500)
-    expect((await list(ctx)).map((i) => i.title)).toEqual(['Orphan'])
   })
 })
 

@@ -1,7 +1,11 @@
-import type { ReadingItemResponse } from '@ctws/contracts'
+import type { PersonId, ReadingItemResponse } from '@ctws/contracts'
 import type { ReadingItemRow } from './queries'
 
-export function toReadingItemResponse(r: ReadingItemRow): ReadingItemResponse {
+/** `names` says who the recommenders are, read through the registry by the routes. */
+export function toReadingItemResponse(
+  r: ReadingItemRow,
+  names: ReadonlyMap<PersonId, string> = new Map(),
+): ReadingItemResponse {
   return {
     id: r.id,
     kind: r.kind,
@@ -12,6 +16,10 @@ export function toReadingItemResponse(r: ReadingItemRow): ReadingItemResponse {
     planOn: r.planOn,
     projectId: r.projectId,
     projectName: r.projectName,
+    recommendedBy:
+      r.recommendedBy !== null && names.has(r.recommendedBy)
+        ? { id: r.recommendedBy, name: names.get(r.recommendedBy)! }
+        : null,
     fetchedTitle: r.fetchedTitle,
     fetchedSummary: r.fetchedSummary,
     createdAt: r.createdAt.toISOString(),

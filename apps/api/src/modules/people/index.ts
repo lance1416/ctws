@@ -8,4 +8,5 @@ export const peopleModule = fixedModule({
   linkable: personLinkable,
 })
 
-export { assertPeopleVisible, attendeesOf } from './queries'
+export { assertPeopleVisible } from './queries'
+export { personKeys } from './tables'

@@ -1,7 +1,5 @@
-/** What modules may use of links: how they name their things, file them and read their edges. */
-export { filing, projectOfSql, projectsOf } from './filing'
-export { byTitle, wanted, type Linkable } from './linkable'
-export { edgesFrom, putLinks } from './store'
+/** What modules may use of the registry of things: how they name their own for the shell. */
+export { wanted, type Linkable } from './linkable'
 
 // For the app, which builds the registry from every module's linkable.
 export { linkRegistry, type LinkRegistry } from './registry'

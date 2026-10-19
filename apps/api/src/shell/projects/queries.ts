@@ -1,5 +1,6 @@
 import { type WorkspaceId, type ProjectId } from '@ctws/contracts'
-import { asc, desc, eq, inArray, isNotNull, isNull, type SQL } from 'drizzle-orm'
+import { asc, desc, eq, inArray, isNotNull, isNull, sql, type SQL } from 'drizzle-orm'
+import type { AnyPgColumn } from 'drizzle-orm/pg-core'
 import type { Queryable, Tx } from '../../platform/db/client'
 import { type Scope, scoped, scopedRow, within } from '../../platform/db/scope'
 import type { ProjectColumns } from '../module'
@@ -16,6 +17,15 @@ const LIST_ORDER = [desc(projects.isInbox), asc(projects.rank), asc(projects.id)
  */
 export const projectScope = (workspaceId: WorkspaceId, alias: string): Scope =>
   scoped(projects, workspaceId, alias)
+
+/**
+ * The name of the live project a column names, for a module's own `project_id`; null when the
+ * project is gone. Correlated, so it reads as one more column of the module's row.
+ */
+export const projectNameSql = (projectId: AnyPgColumn | SQL): SQL<string | null> =>
+  sql<string | null>`(
+    select p.name from projects p where p.id = ${projectId} and p.deleted_at is null
+  )`
 
 /** The project that `projectId` names is live in this workspace, for a query that does not join it. */
 export const inLiveProject = (workspaceId: WorkspaceId, projectId: SQL): Scope =>

@@ -1,8 +1,9 @@
-import type { MeetingId, WorkspaceId } from '@ctws/contracts'
+import type { MeetingId, PersonId, ProjectId, WorkspaceId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import {
   boolean,
   check,
+  foreignKey,
   index,
   integer,
   pgTable,
@@ -12,6 +13,8 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core'
 import { workspaceKeys } from '../../shell/auth'
+import { projectKeys } from '../../shell/projects'
+import { personKeys } from '../people'
 
 /**
  * A series, after iCalendar's `VEVENT` (RFC 5545): a wall clock plus a zone and a duration, never
@@ -33,8 +36,13 @@ export const meetings = pgTable(
     durationMinutes: integer('duration_minutes').notNull(),
     /** `RRULE` without its prefix; null when it happens once. */
     rrule: text('rrule'),
+    /** A place; a link to join is its own column (FR-067). */
     location: text('location'),
+    joinUrl: text('join_url'),
+    /** Being replaced by notes hung on the meeting; kept until the migration report is done. */
     note: text('note'),
+    /** The project it belongs to (FR-042): a field, no longer an edge. */
+    projectId: uuid('project_id').$type<ProjectId>(),
     /**
      * When the first occurrence starts and the last one ends, overrides included; the end is null
      * for a rule that never stops. Kept by the service on every write, so a read of a window can
@@ -49,11 +57,37 @@ export const meetings = pgTable(
   (t) => [
     index('meetings_workspace_idx').on(t.workspaceId),
     index('meetings_window_idx').on(t.workspaceId, t.lastEndsAt),
+    index('meetings_project_idx').on(t.projectId),
     check('meetings_duration_positive', sql`${t.durationMinutes} > 0`),
     check(
       'meetings_starts_local_shape',
       sql`${t.startsLocal} ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}$'`,
     ),
+    // The project is in the meeting's own workspace; a deleted project leaves it unfiled.
+    foreignKey({
+      name: 'meetings_project_fk',
+      columns: [t.workspaceId, t.projectId],
+      foreignColumns: [projectKeys.workspaceId, projectKeys.id],
+    }).onDelete('set null'),
+  ],
+)
+
+/** Who is in the room (FR-042): a field of the series, replaced as a set. */
+export const meetingAttendees = pgTable(
+  'meeting_attendees',
+  {
+    meetingId: uuid('meeting_id')
+      .$type<MeetingId>()
+      .notNull()
+      .references(() => meetings.id, { onDelete: 'cascade' }),
+    personId: uuid('person_id')
+      .$type<PersonId>()
+      .notNull()
+      .references(() => personKeys.id, { onDelete: 'cascade' }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.meetingId, t.personId] }),
+    index('meeting_attendees_person_idx').on(t.personId),
   ],
 )
 

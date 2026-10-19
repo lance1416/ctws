@@ -55,8 +55,18 @@ describe('the pre-redesign fixture', () => {
     // the shared change log row for row (0028).
     await at.migrateRest()
     expect(await countOf(at.db, "events where object_type = 'task'")).toBe(BEFORE.task_events)
-    // The four `about` links are relations now (0030); the other kinds are still links.
-    expect(await countOf(at.db, "relations where origin = 'manual'")).toBe(4)
-    expect(await countOf(at.db, 'links')).toBe(BEFORE.links - 4)
+    // The four `about` links are relations (0030). 0038 makes the rest the modules' own: the
+    // three attendances rows of their meetings, the six `belongs` a field of a person, a meeting
+    // or an item, and of
+    // the three recommendations the first per item is its field, the other one a relation by hand.
+    expect(await countOf(at.db, "relations where origin = 'manual'")).toBe(5)
+    expect(await countOf(at.db, 'meeting_attendees')).toBe(3)
+    expect(await countOf(at.db, 'person_projects')).toBe(3)
+    expect(
+      (await countOf(at.db, 'meetings where project_id is not null')) +
+        (await countOf(at.db, 'reading_items where project_id is not null')),
+    ).toBe(3)
+    expect(await countOf(at.db, 'reading_items where recommended_by is not null')).toBe(2)
+    expect(await countOf(at.db, "information_schema.tables where table_name = 'links'")).toBe(0)
   })
 })

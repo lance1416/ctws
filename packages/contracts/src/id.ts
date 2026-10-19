@@ -22,9 +22,6 @@ export type MeetingId = z.infer<typeof meetingId>
 export const readingId = idOf<'ReadingId'>()
 export type ReadingId = z.infer<typeof readingId>
 
-export const linkId = idOf<'LinkId'>()
-export type LinkId = z.infer<typeof linkId>
-
 export const relationId = idOf<'RelationId'>()
 export type RelationId = z.infer<typeof relationId>
 

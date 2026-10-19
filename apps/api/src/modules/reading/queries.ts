@@ -4,7 +4,6 @@ import {
   projectId,
   readingId,
   type CalendarEntry,
-  type ProjectId,
   type ReadingId,
   type WorkspaceId,
 } from '@ctws/contracts'
@@ -15,7 +14,7 @@ import { rowsOf } from '../../platform/db/raw'
 import { scoped, within } from '../../platform/db/scope'
 import { sqlValues, textMatches } from '../../platform/db/sql'
 import { dayEntry } from '../../shell/calendar'
-import { filing, projectOfSql } from '../../shell/links'
+import { projectNameSql } from '../../shell/projects'
 import { readingItems } from './tables'
 import { NotFound } from '../../platform/errors'
 import { type Page, type PageAsked, pageOf, spanOf } from '../../platform/db/page'
@@ -23,20 +22,22 @@ import { type Page, type PageAsked, pageOf, spanOf } from '../../platform/db/pag
 type ReadingItem = typeof readingItems.$inferSelect
 
 /** An item with the name of the project it is filed under. */
-export type ReadingItemRow = ReadingItem & {
-  projectId: ProjectId | null
-  projectName: string | null
-}
+export type ReadingItemRow = ReadingItem & { projectName: string | null }
 
-export const readingFiling = filing('reading', readingItems)
+const withProject = { item: readingItems, projectName: projectNameSql(readingItems.projectId) }
 
-const withProject = { item: readingItems, ...readingFiling.project }
+// A deleted project is kept on the row for history, but the page names only a live one.
+const rowOf = (r: { item: ReadingItem; projectName: string | null }): ReadingItemRow => ({
+  ...r.item,
+  projectId: r.projectName === null ? null : r.item.projectId,
+  projectName: r.projectName,
+})
 
-const rowOf = (r: {
-  item: ReadingItem
-  projectId: ProjectId | null
-  projectName: string | null
-}): ReadingItemRow => ({ ...r.item, projectId: r.projectId, projectName: r.projectName })
+/** Items filed under no project, or under one that is gone. */
+const unfiledNow = () =>
+  sql`not exists (
+    select 1 from projects p where p.id = ${readingItems.projectId} and p.deleted_at is null
+  )`
 
 /** Newest first: what was just saved is what you are reaching for. */
 export async function listReadingItems(
@@ -49,7 +50,7 @@ export async function listReadingItems(
   const rows = await q
     .select(withProject)
     .from(readingItems)
-    .where(within(scoped(readingItems, workspaceId), unfiled ? readingFiling.unfiled() : undefined))
+    .where(within(scoped(readingItems, workspaceId), unfiled ? unfiledNow() : undefined))
     .orderBy(desc(readingItems.createdAt), desc(readingItems.id))
     .limit(span.limit)
     .offset(span.offset)
@@ -130,10 +131,9 @@ export async function readingEntries(
       r.plan_on as day,
       -- An untitled link shows the title fetched from its page, else its url, as everywhere else.
       coalesce(r.title, r.fetched_title, r.url) as title,
-      p.id as "projectId",
-      p.name as "projectName"
+      r.project_id as "projectId",
+      ${projectNameSql(sql`r.project_id`)} as "projectName"
     from reading_items r
-    left join lateral ${projectOfSql('reading', 'r')} p on true
     where ${scoped(readingItems, workspaceId, 'r')}
       and r.plan_on is not null
       and r.status not in (${sqlValues(FINISHED_READING_STATUSES)})
@@ -147,5 +147,12 @@ export async function readingEntries(
     projectId: projectId.nullable(),
     projectName: z.string().nullable(),
   })
-  return rowsOf(result, row).map((r) => dayEntry({ ...r, type: 'reading', kind: 'to-read' }))
+  return rowsOf(result, row).map((r) =>
+    dayEntry({
+      ...r,
+      projectId: r.projectName === null ? null : r.projectId,
+      type: 'reading',
+      kind: 'to-read',
+    }),
+  )
 }

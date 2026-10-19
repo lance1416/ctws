@@ -1,4 +1,4 @@
-import type { LinksResponse, PersonResponse } from '@ctws/contracts'
+import type { PersonResponse } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { setupWith, type Harness, web, secondUser } from '../../helpers/harness'
@@ -28,17 +28,9 @@ async function list(ctx: Harness): Promise<PersonResponse[]> {
   return (res.json() as { people: PersonResponse[] }).people
 }
 
-/** The people on a project's page. */
-async function filedUnder(ctx: Harness, projectId: string): Promise<string[]> {
-  const res = await ctx.app.inject({
-    method: 'GET',
-    url: `/api/v1/links?type=project&id=${projectId}`,
-    headers: web(ctx),
-  })
-  expect(res.statusCode, res.body).toBe(200)
-  const groups = (res.json() as LinksResponse).groups
-  return groups.find((g) => g.type === 'person')?.items.map((i) => i.title) ?? []
-}
+/** The people in a project, as their own records say. */
+const filedUnder = async (ctx: Harness, projectId: string): Promise<string[]> =>
+  (await list(ctx)).filter((p) => p.projects.some((x) => x.id === projectId)).map((p) => p.name)
 
 const unfiled = async (ctx: Harness) =>
   (await list(ctx)).filter((p) => p.projects.length === 0).map((p) => p.name)
