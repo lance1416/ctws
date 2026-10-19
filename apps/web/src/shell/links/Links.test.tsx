@@ -1,4 +1,4 @@
-import { idFrom, linkId, type LinksResponse } from '@ctws/contracts'
+import { idFrom, relationId, type RelationsResponse } from '@ctws/contracts'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter } from 'react-router-dom'
@@ -13,7 +13,7 @@ import { LinkList } from './Links'
  * fail if a module stops declaring where its things live.
  */
 
-const groups: LinksResponse['groups'] = [
+const groups: RelationsResponse['groups'] = [
   {
     type: 'meeting',
     items: [
@@ -23,9 +23,12 @@ const groups: LinksResponse['groups'] = [
         title: 'Second interview',
         startsAt: '2026-10-21T01:00:00.000Z',
         timeZone: 'America/Toronto',
-        kind: 'attends',
+        relationId: idFrom(relationId, '0190a7c2-6f00-7000-8000-00000000000a'),
+        origin: 'mention',
+        note: null,
+        excerpt: 'Prep for the second interview with Mira.',
         outgoing: false,
-        linkId: idFrom(linkId, '0190a7c2-6f00-7000-8000-00000000000a'),
+        createdAt: '2026-10-18T10:24:00.000Z',
       },
     ],
   },
@@ -36,15 +39,18 @@ const groups: LinksResponse['groups'] = [
         type: 'project',
         id: 'p1',
         title: 'Job hunt',
-        kind: 'belongs',
+        relationId: idFrom(relationId, '0190a7c2-6f00-7000-8000-00000000000b'),
+        origin: 'manual',
+        note: null,
+        excerpt: null,
         outgoing: true,
-        linkId: idFrom(linkId, '0190a7c2-6f00-7000-8000-00000000000b'),
+        createdAt: '2026-10-18T10:24:00.000Z',
       },
     ],
   },
 ]
 
-function render(of: { type: 'person'; id: string }, data?: LinksResponse['groups']) {
+function render(of: { type: 'person'; id: string }, data?: RelationsResponse['groups']) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   if (data) client.setQueryData(linksQuery(of).queryKey, data)
   return renderToStaticMarkup(
@@ -76,14 +82,14 @@ describe('what one thing is connected to', () => {
     expect(html).toContain('href="/projects/p1"')
   })
 
-  it("shows the edge's own word, read from this end", () => {
+  it('shows the sentence that mentioned it, and no unlink for a mention', () => {
     const html = render(of, groups)
-    // "attended" is the inverse: the stored row says the meeting has this person.
-    expect(html).toContain('attended')
-    // `belongs` carries no word of its own: the group is already called Projects.
+    expect(html).toContain('Prep for the second interview with Mira.')
+    expect(html).not.toContain('Unlink Second interview')
+    // One made by hand with no note has nothing to say, and can be unlinked.
     const projectRow = /data-linked="p1".*?<\/a>/.exec(html)![0]
     expect(projectRow).toContain('Job hunt')
-    expect(projectRow).not.toContain('text-ink-subtle')
+    expect(html).toContain('Unlink Job hunt')
     // The meeting's own module says when it is, on the meeting's own clock.
     expect(html).toContain('Oct 20, 21:00 · EDT')
   })

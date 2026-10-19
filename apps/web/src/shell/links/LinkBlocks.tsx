@@ -1,16 +1,17 @@
-import { edgeLabel, idFrom, projectId } from '@ctws/contracts'
+import { idFrom, projectId } from '@ctws/contracts'
 import { Link } from 'react-router-dom'
 import { Icon } from '../../platform/ui/icons'
 import { useRegistry } from '../registry'
 import { ProjectRail } from '../rows/RowParts'
+import { whyOf } from './Links'
 import { type Item, type Linked, useLinked } from './useLinked'
 
-/** The linked things as a block per kind, each with a count and a `+`, beside a page's own block. */
+/** The related things as a block per kind, each with a count and a `+`, beside a page's own block. */
 export function LinkBlocks({ of, types }: Linked) {
   const registry = useRegistry()
   const { groups, unlink, setAdding, add, unshown } = useLinked(of, types)
   if (unshown !== undefined) return unshown
-  // On a project's page every row here is linked to this project, so it wears its thread.
+  // On a project's page every row here is related to this project, so it wears its thread.
   const thread = of.type === 'project' ? idFrom(projectId, of.id) : null
   return (
     <div className="flex flex-col gap-8">
@@ -37,17 +38,14 @@ export function LinkBlocks({ of, types }: Linked) {
             </div>
             <ul className="flex flex-col">
               {group.items.map((item) => (
-                <li
-                  key={`${item.id}:${item.kind}:${String(item.outgoing)}`}
-                  className="group flex min-w-0 items-stretch"
-                >
+                <li key={item.relationId} className="group flex min-w-0 items-stretch">
                   <ProjectRail projectId={thread} />
                   <LinkedBlockRow item={item} />
-                  {item.linkId && (
+                  {item.origin === 'manual' && (
                     <button
                       type="button"
                       disabled={unlink.isPending}
-                      onClick={() => unlink.mutate(item.linkId!)}
+                      onClick={() => unlink.mutate(item.relationId)}
                       aria-label={`Unlink ${item.title}`}
                       className="flex w-7 shrink-0 items-center justify-center text-ink-subtle opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-ink disabled:opacity-50 [@media(hover:none)]:opacity-100"
                     >
@@ -69,7 +67,7 @@ export function LinkBlocks({ of, types }: Linked) {
 function LinkedBlockRow({ item }: { item: Item }) {
   const where = useRegistry().relationFor(item.type)
   const detail = where.describe?.(item) ?? null
-  const label = edgeLabel(item.kind, item.outgoing)
+  const why = whyOf(item)
   return (
     <Link
       to={where.to(item.id)}
@@ -80,7 +78,7 @@ function LinkedBlockRow({ item }: { item: Item }) {
         <span className="truncate text-ink">{item.title}</span>
         {detail && <span className="truncate text-sm text-ink-subtle">{detail}</span>}
       </span>
-      {label && <span className="shrink-0 text-sm text-ink-muted">{label}</span>}
+      {why && <span className="shrink-0 truncate text-sm text-ink-muted">{why}</span>}
     </Link>
   )
 }

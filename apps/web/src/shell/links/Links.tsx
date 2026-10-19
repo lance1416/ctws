@@ -1,10 +1,9 @@
-import { edgeLabel } from '@ctws/contracts'
 import { Link } from 'react-router-dom'
 import { Icon } from '../../platform/ui/icons'
 import { useRegistry } from '../registry'
 import { type Item, type Linked, useLinked } from './useLinked'
 
-/** The linked things as one list, a small heading per kind: a detail pane's. */
+/** The related things as one list, a small heading per kind: a detail pane's. */
 export function LinkList({ of, types }: Linked) {
   const registry = useRegistry()
   const { groups, unlink, add, unshown } = useLinked(of, types)
@@ -23,17 +22,14 @@ export function LinkList({ of, types }: Linked) {
           </h3>
           <ul className="flex flex-col">
             {group.items.map((item) => (
-              <li
-                key={`${item.id}:${item.kind}:${String(item.outgoing)}`}
-                className="group flex min-w-0 items-center"
-              >
+              <li key={item.relationId} className="group flex min-w-0 items-center">
                 <LinkedLine item={item} />
-                {/* Only edges in the shell's table unlink; a task's project is required. */}
-                {item.linkId && (
+                {/* A mention goes with its sentence; only a relation made by hand unlinks here. */}
+                {item.origin === 'manual' && (
                   <button
                     type="button"
                     disabled={unlink.isPending}
-                    onClick={() => unlink.mutate(item.linkId!)}
+                    onClick={() => unlink.mutate(item.relationId)}
                     aria-label={`Unlink ${item.title}`}
                     className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-subtle opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-hover hover:text-ink disabled:opacity-50 [@media(hover:none)]:opacity-100"
                   >
@@ -51,8 +47,8 @@ export function LinkList({ of, types }: Linked) {
 }
 
 /**
- * Linked as a section of a detail pane. `-mx-2` gives the rows' hover padding back to the margin,
- * so their words line up with the pane's other labels.
+ * Related things as a section of a detail pane. `-mx-2` gives the rows' hover padding back to the
+ * margin, so their words line up with the pane's other labels.
  */
 export function LinkedSection({ of, types, className = '' }: Linked & { className?: string }) {
   return (
@@ -65,11 +61,14 @@ export function LinkedSection({ of, types, className = '' }: Linked & { classNam
   )
 }
 
-/** One thing at the far end of an edge, with the edge's own word at the end of the line. */
+/** The line of why: the note written by hand, or the sentence that mentioned it. */
+export const whyOf = (item: Item): string | null => item.note ?? item.excerpt
+
+/** One thing at the far end of a relation, with its why at the end of the line. */
 function LinkedLine({ item }: { item: Item }) {
   const where = useRegistry().relationFor(item.type)
   const detail = where.describe?.(item) ?? null
-  const label = edgeLabel(item.kind, item.outgoing)
+  const why = whyOf(item)
   return (
     <Link
       to={where.to(item.id)}
@@ -78,7 +77,7 @@ function LinkedLine({ item }: { item: Item }) {
     >
       <span className="min-w-0 flex-[2] truncate">{item.title}</span>
       {detail && <span className="min-w-0 shrink truncate text-xs text-ink-muted">{detail}</span>}
-      {label && <span className="shrink-0 text-xs text-ink-subtle">{label}</span>}
+      {why && <span className="min-w-0 shrink truncate text-xs text-ink-subtle">{why}</span>}
     </Link>
   )
 }

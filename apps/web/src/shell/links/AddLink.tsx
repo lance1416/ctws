@@ -1,12 +1,5 @@
 import { problemText } from '../../platform/http/api'
-import {
-  isLinkEdge,
-  kindsBetween,
-  type LinkCandidate,
-  type LinkKind,
-  OBJECT_TYPES,
-  type ObjectType,
-} from '@ctws/contracts'
+import { type LinkCandidate, OBJECT_TYPES, type ObjectType } from '@ctws/contracts'
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { candidatesQuery, createLink, type Endpoint, linkKeys } from './api'
@@ -15,14 +8,14 @@ import { Modal } from '../../platform/ui/Modal'
 import { Button } from '../../platform/ui/Button'
 import { useDebouncedValue } from '../../platform/time/useDebouncedValue'
 
-/** Links two things in two steps, what and then how: the kinds of link depend on both ends. */
+/** Relates two things: pick what, say why if you like (FR-027). No kind to choose. */
 export function AddLink({
   of,
   only,
   onClose,
 }: {
   of: Endpoint
-  /** Offer things of this one kind: the `+` on a kind's own block links one of that kind. */
+  /** Offer things of this one kind: the `+` on a kind's own block relates one of that kind. */
   only?: ObjectType | undefined
   onClose: () => void
 }) {
@@ -30,6 +23,7 @@ export function AddLink({
   const box = useRef<HTMLInputElement>(null)
   const [typed, setTyped] = useState('')
   const [chosen, setChosen] = useState<LinkCandidate | null>(null)
+  const [note, setNote] = useState('')
 
   const asked = useDebouncedValue(typed.trim())
   // While the words change, the last answer stays up rather than a blank or "Nothing matches".
@@ -39,24 +33,22 @@ export function AddLink({
     placeholderData: keepPreviousData,
   })
   const make = useMutation({
-    mutationFn: async (kind: LinkKind) => {
-      const edge = { from: of, to: { type: chosen!.type, id: chosen!.id }, kind }
-      // Only the kinds between the two are offered, so this holds; the type needs it said.
-      if (!isLinkEdge(edge)) throw new Error(`no ${kind} link between these two`)
-      return createLink(edge)
-    },
-    // Both ends show the edge, and the far one can be any kind of thing.
+    mutationFn: async () =>
+      createLink({
+        from: of,
+        to: { type: chosen!.type, id: chosen!.id },
+        ...(note.trim() ? { note: note.trim() } : {}),
+      }),
+    // Both ends show the relation, and the far one can be any kind of thing.
     meta: { changes: OBJECT_TYPES, awaits: [linkKeys.all], ownsError: true },
     onSuccess: onClose,
   })
 
   const offered = (candidates.data ?? []).filter((c) => !only || c.type === only)
-  // Read from this object, so the words are the ones its own page will show on the new row.
-  const kinds = chosen ? kindsBetween(of.type, chosen.type) : []
 
   return (
     <Modal
-      title={chosen ? `How is it related?` : 'Link to…'}
+      title={chosen ? 'Link' : 'Link to…'}
       onClose={onClose}
       initialFocus={box}
       dismissLabel={null}
@@ -111,26 +103,22 @@ export function AddLink({
           <p className="text-sm text-ink-muted">
             <span className="font-semibold text-ink">{chosen.title}</span>
           </p>
-          <div className="flex flex-wrap gap-2">
-            {kinds.map((k) => (
-              <button
-                key={k.kind}
-                type="button"
-                disabled={make.isPending}
-                onClick={() => make.mutate(k.kind)}
-                className="h-9 rounded-md border border-rule px-3 text-sm text-ink hover:border-rule-strong hover:bg-hover disabled:opacity-50"
-              >
-                {/* `belongs` has no phrase of its own, so it is named here. */}
-                {k.label || 'Part of'}
-              </button>
-            ))}
-          </div>
+          <input
+            value={note}
+            aria-label="Why"
+            placeholder="Why, in a line (optional)"
+            onChange={(e) => setNote(e.target.value)}
+            className="h-9 w-full rounded-md border border-rule bg-transparent px-3 text-sm text-ink placeholder:text-ink-muted"
+          />
           {make.isError && (
             <p role="alert" className="text-sm text-danger">
               {problemText(make.error) ?? "Couldn't link those"}
             </p>
           )}
           <div className="flex items-center gap-2">
+            <Button look="primary" onClick={() => make.mutate()} disabled={make.isPending}>
+              Link
+            </Button>
             <Button look="quiet" onClick={() => setChosen(null)}>
               Back
             </Button>

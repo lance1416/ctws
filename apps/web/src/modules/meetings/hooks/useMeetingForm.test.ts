@@ -15,6 +15,7 @@ const weekly: MeetingOccurrence = {
   rrule: 'FREQ=WEEKLY;BYDAY=TU;UNTIL=20261124T092900Z',
   overridden: false,
   location: null,
+  joinUrl: null,
   note: null,
   projectId: null,
   projectName: null,

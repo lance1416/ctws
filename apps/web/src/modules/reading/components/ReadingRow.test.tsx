@@ -14,6 +14,7 @@ const item = (over: Partial<ReadingItemResponse> = {}): ReadingItemResponse => (
   planOn: null,
   projectId: null,
   projectName: null,
+  recommendedBy: null,
   fetchedTitle: null,
   fetchedSummary: null,
   createdAt: '2026-10-10T09:00:00Z',

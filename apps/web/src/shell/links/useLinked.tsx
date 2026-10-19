@@ -1,5 +1,5 @@
-import { type LinkId, OBJECT_TYPES, type ObjectType } from '@ctws/contracts'
-export type { LinkedObject as Item } from '@ctws/contracts'
+import { OBJECT_TYPES, type ObjectType, type RelationId } from '@ctws/contracts'
+export type { RelatedObject as Item } from '@ctws/contracts'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { problemText } from '../../platform/http/api'
@@ -15,8 +15,8 @@ export type Linked = {
 }
 
 /**
- * Everything one thing is linked to, grouped by kind, and the way to link more. The edges are the
- * shell's; where another module's thing lives comes from the registry's `relations`.
+ * Everything one thing is related to, grouped by kind, and the way to relate more. The relations
+ * are the shell's; where another module's thing lives comes from the registry's `relations`.
  */
 export function useLinked(of: Endpoint, types: readonly ObjectType[] | undefined) {
   // Which kind the picker is for: any kind from "+ Link", one kind from a block's own `+`.
@@ -24,8 +24,8 @@ export function useLinked(of: Endpoint, types: readonly ObjectType[] | undefined
   const links = useQuery(linksQuery(of, types))
   const groups = links.data ?? []
   const unlink = useMutation({
-    mutationFn: (id: LinkId) => deleteLink(id),
-    // Both ends showed the edge, and the far one can be any kind of thing.
+    mutationFn: (id: RelationId) => deleteLink(id),
+    // Both ends showed the relation, and the far one can be any kind of thing.
     meta: { changes: OBJECT_TYPES, awaits: [linkKeys.all], ownsError: true },
   })
   const add = (
