@@ -28,6 +28,9 @@ export type LinkId = z.infer<typeof linkId>
 export const relationId = idOf<'RelationId'>()
 export type RelationId = z.infer<typeof relationId>
 
+export const resourceId = idOf<'ResourceId'>()
+export type ResourceId = z.infer<typeof resourceId>
+
 export const workspaceId = idOf<'WorkspaceId'>()
 export type WorkspaceId = z.infer<typeof workspaceId>
 

@@ -79,6 +79,14 @@ import {
   relationsResponse,
   updateRelationBody,
 } from './relation'
+import {
+  createResourceBody,
+  resourceParams,
+  resourceResponse,
+  resourcesQuery,
+  resourcesResponse,
+  updateResourceBody,
+} from './resource'
 import { SEARCH_LIMIT, searchQueryOf } from './search'
 import { timelineQuery, timelineResponse } from './timeline'
 import {
@@ -340,6 +348,46 @@ export const api = {
       params: relationParams,
       ok: 204,
       refusals: [404, 409],
+    }),
+  },
+
+  resources: {
+    of: endpoint({
+      method: 'GET',
+      path: '/resources',
+      summary: "One thing's resources, in the order they were put.",
+      query: resourcesQuery,
+      ok: 200,
+      response: resourcesResponse,
+      refusals: [404],
+    }),
+    create: endpoint({
+      method: 'POST',
+      path: '/resources',
+      summary: 'Hang an outside address on a thing.',
+      body: createResourceBody,
+      ok: 201,
+      response: resourceResponse,
+      location: itemAt('/resources/:id'),
+      refusals: [404],
+    }),
+    update: endpoint({
+      method: 'PATCH',
+      path: '/resources/:id',
+      summary: "Rename a resource, change its address, or pin it in its project's head.",
+      params: resourceParams,
+      body: updateResourceBody,
+      ok: 200,
+      response: resourceResponse,
+      refusals: [404, 409, 422],
+    }),
+    remove: endpoint({
+      method: 'DELETE',
+      path: '/resources/:id',
+      summary: 'Remove a resource.',
+      params: resourceParams,
+      ok: 204,
+      refusals: [404],
     }),
   },
 

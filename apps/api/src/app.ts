@@ -20,6 +20,7 @@ import { calendarDayRoutes } from './shell/calendar'
 import { linkRoutes, linkRegistry } from './shell/links'
 import { timelineRoutes } from './shell/events'
 import { relationRoutes } from './shell/relations'
+import { resourceRoutes } from './shell/resources'
 import { projectLinkable, projectRoutes } from './shell/projects'
 import { cityRoutes } from './shell/cities'
 import type { Db } from './platform/db/client'
@@ -103,6 +104,7 @@ export async function buildApp(opts: {
         await authed.register(linkRoutes, { registry })
         await authed.register(timelineRoutes, { registry, sources })
         await authed.register(relationRoutes, { registry })
+        await authed.register(resourceRoutes, { registry })
         await authed.register(calendarDayRoutes)
         await authed.register(cityRoutes)
         for (const m of modules) await authed.register(m.routes, { prefix: `/${m.id}` })
