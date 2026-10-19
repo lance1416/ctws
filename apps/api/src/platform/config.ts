@@ -19,6 +19,9 @@ const raw = z.object({
   COOKIE_SECURE: envFlag(true),
   // Built web app to serve (apps/web/dist). Unset or missing: the API serves no frontend.
   WEB_DIST: z.string().optional(),
+  // An ISO instant the whole server treats as now, for a test or acceptance stack whose "today",
+  // "overdue" and "birthday in 3 days" must come out the same on every run. Never set in production.
+  CLOCK_PINNED_AT: z.iso.datetime({ offset: true }).optional(),
 })
 
 export type Env = {
@@ -30,6 +33,8 @@ export type Env = {
   authCeiling: number
   cookieSecure: boolean
   webDist: string | undefined
+  /** The instant the server is pinned to, when it is. */
+  clockPinnedAt: Date | undefined
 }
 
 export function parseEnv(source: Record<string, string | undefined>): Env {
@@ -51,6 +56,7 @@ export function parseEnv(source: Record<string, string | undefined>): Env {
     databaseUrl: parsed.DATABASE_URL,
     sessionTtlDays: parsed.SESSION_TTL_DAYS,
     authRegistration: parsed.AUTH_REGISTRATION,
+    clockPinnedAt: parsed.CLOCK_PINNED_AT ? new Date(parsed.CLOCK_PINNED_AT) : undefined,
     authRateLimitMax: parsed.AUTH_RATE_LIMIT_MAX,
     authCeiling: parsed.AUTH_CEILING,
     cookieSecure: parsed.COOKIE_SECURE,

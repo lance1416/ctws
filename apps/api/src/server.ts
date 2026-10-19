@@ -6,6 +6,13 @@ import { parseEnv } from './platform/config'
 const env = parseEnv(process.env)
 const db = createDb(env.databaseUrl)
 // Each module reads its own settings, so a bad one stops the server here too.
-const app = await buildApp({ env, db, modules: apiModules(process.env) })
+const pinned = env.clockPinnedAt
+const app = await buildApp({
+  env,
+  db,
+  modules: apiModules(process.env),
+  // A pinned clock stands still: every request sees the same instant.
+  ...(pinned ? { clock: () => new Date(pinned.getTime()) } : {}),
+})
 
 await app.listen({ port: env.port, host: '0.0.0.0' })

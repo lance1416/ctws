@@ -66,11 +66,8 @@ describe('notes', () => {
     expect(one.statusCode, one.body).toBe(201)
     expect((one.json() as NoteResponse).anchor?.occurrenceId).toBe(meeting.recurrenceId)
 
-    expect(await timelineKinds(ctx, 'meeting', meeting.meetingId)).toEqual([
-      'note',
-      'note',
-      'change',
-    ])
+    // Both notes, newest first. (The meeting's own `created` joins once meetings log, FR-044.)
+    expect(await timelineKinds(ctx, 'meeting', meeting.meetingId)).toEqual(['note', 'note'])
     const onMeeting = await ctx.app.inject({
       method: 'GET',
       url: `/api/v1/notes?anchor=meeting:${meeting.meetingId}`,
