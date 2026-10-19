@@ -6,6 +6,8 @@ export const citySearchQuery = z.object({ q: z.string().trim().min(1).max(100) }
 const city = z.object({
   /** The stored spelling: `Oxford, England, United Kingdom`. */
   label: z.string(),
+  /** The IANA zone the city keeps time in (GeoNames): a person living there defaults to it. */
+  timeZone: z.string(),
 })
 export type City = z.infer<typeof city>
 

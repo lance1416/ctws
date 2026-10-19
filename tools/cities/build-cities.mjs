@@ -52,6 +52,7 @@ const CITY = {
   country: 8,
   admin1: 10,
   population: 14,
+  timezone: 17,
 }
 
 const rows = []
@@ -61,7 +62,7 @@ for (const line of lines('cities15000.txt')) {
   if (!country) continue
   const region = admin1.get(`${cols[CITY.country]}.${cols[CITY.admin1]}`) ?? ''
   const population = Number(cols[CITY.population]) || 0
-  rows.push([cols[CITY.name], region, country, population])
+  rows.push([cols[CITY.name], region, country, population, cols[CITY.timezone]])
 }
 
 // 人口从多到少：打三个字母时，先给的该是那个最可能被说起的城市。

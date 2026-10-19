@@ -12,7 +12,7 @@ afterEach(async () => {
   for (const stop of cleanups.splice(0)) await stop()
 })
 
-type City = { label: string }
+type City = { label: string; timeZone: string }
 
 async function find(ctx: Harness, q: string): Promise<City[]> {
   const res = await ctx.app.inject({
@@ -39,6 +39,13 @@ describe('GET /cities', () => {
     const ctx = await setupWith(cleanups)
     expect((await find(ctx, 'beijing'))[0]?.label).toBe('Beijing, China')
     expect((await find(ctx, 'shanghai'))[0]?.label).toBe('Shanghai, China')
+  })
+
+  it('says which zone a city keeps time in, so a person living there gets it by default', async () => {
+    const ctx = await setupWith(cleanups)
+    expect((await find(ctx, 'oxf'))[0]?.timeZone).toBe('Europe/London')
+    expect((await find(ctx, 'shanghai'))[0]?.timeZone).toBe('Asia/Shanghai')
+    expect((await find(ctx, 'toronto'))[0]?.timeZone).toBe('America/Toronto')
   })
 
   it('finds nothing for a misspelling', async () => {

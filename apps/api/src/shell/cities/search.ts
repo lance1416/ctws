@@ -6,7 +6,7 @@ import rows from './cities.json'
  * build time. The rows sit in memory, ordered by population, and a query scans them linearly.
  */
 
-type Row = [name: string, region: string, country: string, population: number]
+type Row = [name: string, region: string, country: string, population: number, timeZone: string]
 const CITIES = rows as Row[]
 
 /** Typing ignores case and accents: `zurich` finds `Zürich`. */
@@ -46,5 +46,5 @@ export function findCities(query: string): City[] {
 }
 
 function cityOf(row: Row): City {
-  return { label: labelOf(row) }
+  return { label: labelOf(row), timeZone: row[4] }
 }
