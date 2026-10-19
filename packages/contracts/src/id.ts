@@ -40,6 +40,9 @@ export type RoleId = z.infer<typeof roleId>
 export const circleId = idOf<'CircleId'>()
 export type CircleId = z.infer<typeof circleId>
 
+export const stageId = idOf<'StageId'>()
+export type StageId = z.infer<typeof stageId>
+
 export const workspaceId = idOf<'WorkspaceId'>()
 export type WorkspaceId = z.infer<typeof workspaceId>
 

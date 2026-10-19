@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { projectId, type ProjectId, taskId, type TaskId } from './id'
+import { projectId, type ProjectId, stageId, taskId, type TaskId } from './id'
 import { WINDOW_REFUSED, windowIsBounded } from './calendar'
 import { calendarDate, documentText, instant, patchOf, titleText, viewQuery } from './common'
 import { pageInfo, pageQuery } from './page'
@@ -60,6 +60,8 @@ export const createTaskBody = z
     status: taskStatus.default(NEW_TASK_STATUS),
     scheduledOn: calendarDate.nullish(),
     dueAt: instant.nullish(),
+    /** One of the project's stages (FR-040). */
+    stageId: stageId.nullish(),
   })
   .strict()
 
@@ -82,6 +84,7 @@ export const taskFields = {
   status: taskStatus,
   scheduledOn: calendarDate.nullable(),
   dueAt: instant.nullable(),
+  stageId: stageId.nullable(),
 }
 
 /**
@@ -107,6 +110,9 @@ export const taskResponse = z.object({
   scheduledOn: calendarDate.nullable(),
   dueAt: instant.nullable(),
   rank: z.string(),
+  stageId: stageId.nullable(),
+  /** When it reached its stage, for "5d" on the board by stage (FR-058). */
+  stageSince: instant.nullable(),
   completedAt: instant.nullable(),
   createdAt: instant,
   updatedAt: instant,
@@ -176,6 +182,17 @@ export const reviewResponse = z.object({
       dropped: z.array(reviewTask),
       /** Parents whose every subtask closed in the window: a heading, not a count. */
       closedParents: z.array(reviewTask),
+    }),
+  ),
+  /** The nodes whose stage changed in the window, newest first (FR-081). */
+  stagesMoved: z.array(
+    z.object({
+      taskId,
+      title: z.string(),
+      projectId,
+      projectName: z.string(),
+      to: z.string(),
+      at: instant,
     }),
   ),
 })
@@ -282,6 +299,8 @@ export const TASK_EVENT_TYPES = [
   // A leaf got its first subtask, or a parent lost its last one (FR-039).
   'became_parent',
   'became_leaf',
+  // From one of the project's stages to another, by name (FR-040).
+  'stage_changed',
 ] as const
 export type TaskEventType = (typeof TASK_EVENT_TYPES)[number]
 

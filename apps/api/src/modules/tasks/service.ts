@@ -19,7 +19,7 @@ import { rowsOf } from '../../platform/db/raw'
 import { type Actor, scoped, within } from '../../platform/db/scope'
 import { instant } from '../../platform/db/time'
 import { isoOrNull } from '../../platform/values'
-import { getProject } from '../../shell/projects'
+import { getProject, getStage } from '../../shell/projects'
 import { syncMentions } from '../../shell/relations'
 import {
   BothNeighboursError,
@@ -137,6 +137,9 @@ export async function createTask(db: Db, ctx: Actor, input: CreateTaskBody): Pro
       .orderBy(desc(tasks.rank), desc(tasks.id))
       .limit(1)
 
+    const stage = input.stageId
+      ? await getStage(tx, ctx.workspaceId, projectId, input.stageId)
+      : null
     const [row] = await tx
       .insert(tasks)
       .values({
@@ -149,6 +152,8 @@ export async function createTask(db: Db, ctx: Actor, input: CreateTaskBody): Pro
         status: input.status,
         scheduledOn,
         dueAt: input.dueAt ? new Date(input.dueAt) : null,
+        stageId: stage?.id ?? null,
+        stageSince: stage ? ctx.now : null,
         completedAt: input.status === 'done' ? ctx.now : null,
         createdAt: ctx.now,
         updatedAt: ctx.now,
@@ -160,6 +165,8 @@ export async function createTask(db: Db, ctx: Actor, input: CreateTaskBody): Pro
       from: null,
       to: { title: row!.title, status: row!.status, parentId: row!.parentId, projectId },
     })
+    if (stage)
+      await taskLog(tx, ctx).append(row!.id, 'stage_changed', { from: null, to: stage.name })
     await settleAncestors(tx, ctx, row!.parentId)
     if (row!.notes) await syncMentions(tx, ctx, { type: 'task', id: row!.id }, 'notes', row!.notes)
     return row!
@@ -167,7 +174,10 @@ export async function createTask(db: Db, ctx: Actor, input: CreateTaskBody): Pro
 }
 
 /** A task's own fields: everything a PATCH carries but its position. */
-type Fields = Pick<UpdateTaskBody, 'title' | 'notes' | 'status' | 'scheduledOn' | 'dueAt'>
+type Fields = Pick<
+  UpdateTaskBody,
+  'title' | 'notes' | 'status' | 'scheduledOn' | 'dueAt' | 'stageId'
+>
 
 /**
  * Applies a PATCH in one transaction: the move first, when it names a position, then the task's
@@ -236,6 +246,21 @@ async function editTask(tx: Tx, ctx: Actor, id: TaskId, patch: Fields): Promise<
         payload: { from: isoOrNull(row.dueAt), to: isoOrNull(next) },
       })
     }
+  }
+  if (patch.stageId !== undefined && patch.stageId !== row.stageId) {
+    // One of this task's project's stages, by name in the log so the review can read it.
+    const from = row.stageId
+      ? await getStage(tx, ctx.workspaceId, row.projectId, row.stageId)
+      : null
+    const to = patch.stageId
+      ? await getStage(tx, ctx.workspaceId, row.projectId, patch.stageId)
+      : null
+    set.stageId = to?.id ?? null
+    set.stageSince = to ? ctx.now : null
+    events.push({
+      type: 'stage_changed',
+      payload: { from: from?.name ?? null, to: to?.name ?? null },
+    })
   }
   if (events.length === 0) return row
 
@@ -319,19 +344,29 @@ async function moveTask(tx: Tx, ctx: Actor, id: TaskId, input: TaskPosition): Pr
 
   const [updated] = await tx
     .update(tasks)
-    .set({ parentId: destParentId, projectId: destProjectId, rank, updatedAt: ctx.now })
+    .set({
+      parentId: destParentId,
+      projectId: destProjectId,
+      rank,
+      updatedAt: ctx.now,
+      // A stage is the old project's, so it does not travel.
+      ...(projectChanged ? { stageId: null, stageSince: null } : {}),
+    })
     .where(eq(tasks.id, id))
     .returning()
 
   if (projectChanged) {
-    // Deleted rows too: their logged history is counted by the project they sit in.
+    // Deleted rows too: their logged history is counted by the project they sit in. A stage is
+    // the old project's, so it does not travel.
     await tx.execute(sql`
       with recursive subtree(id) as (
         select ${id}::uuid
         union
         select t.id from tasks t join subtree s on t.parent_id = s.id
       )
-      update tasks set project_id = ${destProjectId}, updated_at = ${instant(ctx.now)}
+      update tasks
+      set project_id = ${destProjectId}, stage_id = null, stage_since = null,
+          updated_at = ${instant(ctx.now)}
       where id in (select id from subtree) and project_id <> ${destProjectId}
     `)
   }

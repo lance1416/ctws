@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { projectId, workspaceId } from './id'
+import { projectId, stageId, workspaceId } from './id'
 import { instant, nameText, patchOf } from './common'
 import { LIST_PAGE, pageInfo, pageQuery } from './page'
 
@@ -32,6 +32,46 @@ export const updateProjectBody = patchOf({
   archived: z.boolean(),
 })
 
+/** One of a project's stages, with how many live tasks are at it. */
+const stageResponse = z.object({
+  id: stageId,
+  name: z.string(),
+  collapsed: z.boolean(),
+  count: z.number().int().nonnegative(),
+})
+export type StageResponse = z.infer<typeof stageResponse>
+
+const stageName = z.string().trim().min(1).max(60)
+
+/**
+ * A project's stages as a whole list (FR-040): the order given is the order; an entry with an
+ * `id` renames that stage, one without is new, a stage left out is removed (only an unused one
+ * may be). `mergeInto` moves this stage's tasks into another and drops it.
+ */
+export const putStagesBody = z
+  .object({
+    stages: z
+      .array(
+        z
+          .object({
+            id: stageId.optional(),
+            name: stageName,
+            collapsed: z.boolean().optional(),
+            mergeInto: stageId.optional(),
+          })
+          .strict()
+          .refine((s) => s.mergeInto === undefined || s.id !== undefined, {
+            message: 'only an existing stage can be merged into another',
+            path: ['mergeInto'],
+          }),
+      )
+      .max(50),
+  })
+  .strict()
+export type PutStagesBody = z.infer<typeof putStagesBody>
+
+export const stagesResponse = z.object({ stages: z.array(stageResponse) })
+
 /** A project, with the counts modules add to it, each under the name its module registered. */
 export const projectResponse = z.object({
   id: projectId,
@@ -43,6 +83,8 @@ export const projectResponse = z.object({
   archivedAt: instant.nullable(),
   createdAt: instant,
   columns: z.record(z.string(), z.number().int().nonnegative()),
+  /** In the project's order; empty when nothing in it has a stage. */
+  stages: z.array(stageResponse),
 })
 
 export const projectListQuery = z

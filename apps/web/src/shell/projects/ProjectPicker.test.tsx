@@ -16,6 +16,7 @@ const project = (id: string, name: string, archivedAt: string | null): ProjectRe
   archivedAt,
   createdAt: '2026-10-01T00:00:00.000Z',
   columns: {},
+  stages: [],
 })
 
 function render(node: ReactNode) {

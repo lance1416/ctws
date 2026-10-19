@@ -42,6 +42,15 @@ const reviewRow = z.object({
 
 const boundsRow = z.object({ from_day: calendarDate, to_day: calendarDate })
 
+const stageMovedRow = z.object({
+  task_id: taskId,
+  title: z.string(),
+  project_id: projectId,
+  project_name: z.string(),
+  to_stage: z.string(),
+  at: z.string(),
+})
+
 /**
  * What changed state in a window, read from the event log rather than current status, grouped by
  * project. `from` and `to` are days in the account's zone, inclusive; the default is this week to
@@ -127,5 +136,37 @@ export async function listReview(
       list.push({ id: r.task_id, title: r.title, at: r.at })
   }
 
-  return { from: edge.from_day, to: edge.to_day, projects: [...byProject.values()] }
+  const stages = await q.execute(sql`
+    with bounds as (
+      select
+        (${fromLocal} at time zone ${timezone}) as t0,
+        (${toLocal} at time zone ${timezone}) as t1
+    )
+    select
+      t.id as task_id, t.title, p.id as project_id, p.name as project_name,
+      ev.payload ->> 'to' as to_stage,
+      to_char(ev.occurred_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as at
+    from events ev
+    join bounds b on true
+    join tasks t on t.id = ev.object_id
+    join projects p on p.id = t.project_id
+    where ${scoped(events, workspaceId, 'ev')}
+      and ev.object_type = 'task'
+      and ev.type = 'stage_changed'
+      and ev.payload ->> 'to' is not null
+      and ev.occurred_at >= b.t0
+      and ev.occurred_at < b.t1
+      and ${visibleTasks(workspaceId, { task: 't', project: 'p' })}
+    order by ev.occurred_at desc, ev.id desc
+  `)
+  const stagesMoved = rowsOf(stages, stageMovedRow).map((r) => ({
+    taskId: r.task_id,
+    title: r.title,
+    projectId: r.project_id,
+    projectName: r.project_name,
+    to: r.to_stage,
+    at: r.at,
+  }))
+
+  return { from: edge.from_day, to: edge.to_day, projects: [...byProject.values()], stagesMoved }
 }

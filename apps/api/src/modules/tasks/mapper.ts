@@ -24,6 +24,8 @@ export function toTaskResponse(t: Task): TaskResponse {
     scheduledOn: t.scheduledOn,
     dueAt: isoOrNull(t.dueAt),
     rank: t.rank,
+    stageId: t.stageId,
+    stageSince: isoOrNull(t.stageSince),
     completedAt: isoOrNull(t.completedAt),
     createdAt: t.createdAt.toISOString(),
     updatedAt: t.updatedAt.toISOString(),

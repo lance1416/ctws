@@ -6,6 +6,7 @@ import type { ProjectColumns } from '../module'
 import { toProjectResponse } from './mapper'
 import { getProjectRow, listProjects } from './queries'
 import { createProject, softDeleteProject, updateProject } from './service'
+import { listStages, putStages, stagesOf } from './stages'
 
 /** Projects belong to the shell; modules add columns to the list but do not own them. */
 export const projectRoutes: FastifyPluginAsyncZod<{ columns: ProjectColumns }> = async (
@@ -21,14 +22,19 @@ export const projectRoutes: FastifyPluginAsyncZod<{ columns: ProjectColumns }> =
         columns,
         req.query,
       )
-      return { projects: rows.map(toProjectResponse), page }
+      const stages = await stagesOf(
+        app.db,
+        currentUser(req).workspaceId,
+        rows.map((r) => r.project.id),
+      )
+      return { projects: rows.map((r) => toProjectResponse(r, stages.get(r.project.id))), page }
     }),
 
-    on(api.projects.get, async (req) =>
-      toProjectResponse(
-        await getProjectRow(app.db, currentUser(req).workspaceId, req.params.id, columns),
-      ),
-    ),
+    on(api.projects.get, async (req) => {
+      const { workspaceId } = currentUser(req)
+      const row = await getProjectRow(app.db, workspaceId, req.params.id, columns)
+      return toProjectResponse(row, await listStages(app.db, workspaceId, row.project.id))
+    }),
 
     // A write answers with the project as every read gives it, its columns counted.
     on(api.projects.create, async (req) => {
@@ -40,7 +46,17 @@ export const projectRoutes: FastifyPluginAsyncZod<{ columns: ProjectColumns }> =
       const changed = await updateProject(app.db, actorOf(req), req.params.id, req.body)
       return toProjectResponse(
         await getProjectRow(app.db, changed.workspaceId, changed.id, columns),
+        await listStages(app.db, changed.workspaceId, changed.id),
       )
+    }),
+
+    on(api.projects.putStages, async (req) => {
+      const ctx = actorOf(req)
+      const stages = await app.db.transaction(async (tx) => {
+        await getProjectRow(tx, ctx.workspaceId, req.params.id, columns)
+        return putStages(tx, ctx, req.params.id, req.body)
+      })
+      return { stages }
     }),
 
     on(api.projects.remove, async (req) => {

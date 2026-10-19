@@ -2,6 +2,7 @@ import {
   TASK_STATUSES,
   type TaskStatus,
   type ProjectId,
+  type StageId,
   type TaskId,
   type WorkspaceId,
 } from '@ctws/contracts'
@@ -20,7 +21,7 @@ import {
 } from 'drizzle-orm/pg-core'
 import { inList } from '../../platform/db/sql'
 import { workspaceKeys } from '../../shell/auth'
-import { projectKeys } from '../../shell/projects'
+import { projectKeys, stageKeys } from '../../shell/projects'
 
 export const tasks = pgTable(
   'tasks',
@@ -40,6 +41,9 @@ export const tasks = pgTable(
     dueAt: timestamp('due_at', { withTimezone: true }),
     // COLLATE "C" is added in the migration SQL; (rank, id) is the sibling order.
     rank: text('rank').notNull(),
+    /** Where this has got to (FR-040), one of its project's stages, and since when. */
+    stageId: uuid('stage_id').$type<StageId>(),
+    stageSince: timestamp('stage_since', { withTimezone: true }),
     completedAt: timestamp('completed_at', { withTimezone: true }),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -61,6 +65,13 @@ export const tasks = pgTable(
       columns: [t.workspaceId, t.parentId],
       foreignColumns: [t.workspaceId, t.id],
     }).onDelete('cascade'),
+    // In the task's workspace; a stage still in use cannot be deleted, so `set null` never fires.
+    foreignKey({
+      name: 'tasks_stage_fk',
+      columns: [t.workspaceId, t.stageId],
+      foreignColumns: [stageKeys.workspaceId, stageKeys.id],
+    }).onDelete('set null'),
+    index('tasks_stage_idx').on(t.stageId),
   ],
 )
 

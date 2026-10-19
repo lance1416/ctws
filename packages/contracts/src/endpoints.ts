@@ -63,6 +63,8 @@ import {
   projectListResponse,
   projectParams,
   projectResponse,
+  putStagesBody,
+  stagesResponse,
   updateProjectBody,
 } from './project'
 import {
@@ -251,6 +253,16 @@ export const api = {
       body: updateProjectBody,
       ok: 200,
       response: projectResponse,
+      refusals: [404, 409],
+    }),
+    putStages: endpoint({
+      method: 'PUT',
+      path: '/projects/:id/stages',
+      summary: "Replace a project's stages as a list: rename, reorder, add, remove or merge.",
+      params: projectParams,
+      body: putStagesBody,
+      ok: 200,
+      response: stagesResponse,
       refusals: [404, 409],
     }),
     remove: endpoint({

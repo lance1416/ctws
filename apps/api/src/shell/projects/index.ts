@@ -6,7 +6,8 @@ export {
   projectScope,
   unarchivedProjects,
 } from './queries'
-export { projectKeys } from './tables'
+export { getStage } from './stages'
+export { projectKeys, stageKeys } from './tables'
 
 // For the app.
 export { projectLinkable } from './linkable'

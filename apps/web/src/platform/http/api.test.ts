@@ -68,6 +68,7 @@ describe('call', () => {
       archivedAt: null,
       createdAt: '2026-10-01T00:00:00.000Z',
       columns: {},
+      stages: [],
     }
     const page = { limit: 200, nextCursor: null }
     const newer = { projects: [{ ...project, pinned: true }], page: { ...page, total: 1 }, more: 1 }

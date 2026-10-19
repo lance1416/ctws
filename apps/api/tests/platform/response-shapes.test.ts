@@ -45,6 +45,7 @@ describe('a read answers with exactly the fields its contract names', () => {
       archivedAt: null,
       createdAt: AT,
       columns: { openTasks: 0 },
+      stages: [],
     })
   })
 
@@ -77,6 +78,8 @@ describe('a read answers with exactly the fields its contract names', () => {
       scheduledOn: '2026-10-20',
       dueAt: null,
       rank: expect.any(String),
+      stageId: null,
+      stageSince: null,
       completedAt: null,
       createdAt: AT,
       updatedAt: AT,
@@ -98,6 +101,8 @@ describe('a read answers with exactly the fields its contract names', () => {
         scheduledOn: null,
         dueAt: null,
         rank: expect.any(String),
+        stageId: null,
+        stageSince: null,
         completedAt: null,
         createdAt: AT,
         updatedAt: AT,
