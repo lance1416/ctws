@@ -19,7 +19,7 @@ const families = (property: string): string[] => {
 
 /** Everything from `-apple-system` on is Semi Design's string. */
 const FONT_SANS = [
-  'IBM Plex Sans',
+  'Inter Variable',
   'CTWS Noto Sans SC',
   '-apple-system',
   'BlinkMacSystemFont',
@@ -33,8 +33,16 @@ const FONT_SANS = [
   'sans-serif',
 ]
 
-/** Ant Design 5's `fontFamilyCode`. */
-const FONT_MONO = ['SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', 'Courier', 'monospace']
+/** JetBrains Mono, then Ant Design 5's `fontFamilyCode`. */
+const FONT_MONO = [
+  'JetBrains Mono Variable',
+  'SFMono-Regular',
+  'Consolas',
+  'Liberation Mono',
+  'Menlo',
+  'Courier',
+  'monospace',
+]
 
 describe('the font stack', () => {
   const sans = families('--font-sans')
@@ -45,8 +53,8 @@ describe('the font stack', () => {
 
   // Each named fact is its own assertion, so a change says which reason it breaks before the
   // whole-list comparison says only that the list differs.
-  it('puts Latin first: handing Latin to Noto would throw away the reason Plex is self-hosted', () => {
-    expect(sans.indexOf('IBM Plex Sans')).toBeLessThan(sans.indexOf('CTWS Noto Sans SC'))
+  it('puts Latin first: handing Latin to Noto would throw away the reason Inter is self-hosted', () => {
+    expect(sans.indexOf('Inter Variable')).toBeLessThan(sans.indexOf('CTWS Noto Sans SC'))
   })
 
   it('puts the webfont before the system CJK faces', () => {

@@ -108,5 +108,6 @@ the SIL Open Font License 1.1:
   upstream's own license file travels beside it: `apps/web/src/fonts/OFL.txt`, plus the
   `NOTICE.txt` the face is published with. The subset's internal family name is
   `CTWS Noto Sans SC` -- it is a modified version, and OFL reserves the name `Source`.
-- **IBM Plex Sans**, as the `@fontsource/ibm-plex-sans` dependency, whose license travels in the
-  package. Nothing of it is vendored here.
+- **Inter** and **JetBrains Mono**, as the `@fontsource-variable/inter` and
+  `@fontsource-variable/jetbrains-mono` dependencies, whose licenses travel in the packages.
+  Nothing of them is vendored here.

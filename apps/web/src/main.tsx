@@ -2,11 +2,11 @@ import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router-dom'
 import { Providers } from './app/providers'
 import { router } from './app/router'
-// IBM Plex Sans, self-hosted, Latin only, in the three weights the type scale uses. The Chinese
-// face is declared in styles.css, where it can carry a unicode-range.
-import '@fontsource/ibm-plex-sans/latin-400.css'
-import '@fontsource/ibm-plex-sans/latin-500.css'
-import '@fontsource/ibm-plex-sans/latin-600.css'
+// Inter and JetBrains Mono, self-hosted as variable fonts (SIL OFL 1.1, via fontsource). Each
+// stylesheet declares one @font-face per script with a unicode-range, so a page only fetches the
+// Latin file. The Chinese face is declared in styles.css, where it carries its own unicode-range.
+import '@fontsource-variable/inter/index.css'
+import '@fontsource-variable/jetbrains-mono/index.css'
 import './styles/styles.css'
 
 createRoot(document.getElementById('root')!).render(

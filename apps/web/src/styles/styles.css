@@ -46,7 +46,7 @@
      from across the whole range, so chunks cost more requests and more bytes.
    - `swap`, not `optional`: CJK is full-width and this face never draws Latin, so the swap cannot
      move the layout, and `swap` always ends on the designed face.
-   - `unicode-range` is CJK only: Latin comes from Plex, whose figures and metrics the layout needs.
+   - `unicode-range` is CJK only: Latin comes from Inter, whose figures and metrics the layout needs.
    LICENSE: a subset of Noto Sans SC under the SIL Open Font License 1.1; `fonts/OFL.txt` and
    `fonts/NOTICE.txt` travel with it. It is renamed because a subset is a modified version. */
 @font-face {
@@ -59,19 +59,20 @@
 }
 
 @theme static {
-  /* Semi Design's stack from `-apple-system` on (its `$font-family-regular`), with the two faces
-     this app self-hosts in front in place of Semi's `Inter`. Latin is IBM Plex Sans, for its
-     tabular figures; CJK is the subset declared above, with the system CJK faces behind it in case
-     it fails to load. LATIN FIRST: Apple's zh-CN order puts CJK first, which would hand Latin to
-     Noto and lose Plex's figures. */
+  /* The two faces this app self-hosts first, then Semi Design's stack from `-apple-system` on.
+     Latin is Inter (variable, 400 to 600 in use); CJK is the subset declared above, with the system
+     CJK faces behind it in case it fails to load. LATIN FIRST: Apple's zh-CN order puts CJK first,
+     which would hand Latin to Noto and lose Inter's figures. */
   --font-sans:
-    'IBM Plex Sans', 'CTWS Noto Sans SC', -apple-system, BlinkMacSystemFont, 'PingFang SC',
+    'Inter Variable', 'CTWS Noto Sans SC', -apple-system, BlinkMacSystemFont, 'PingFang SC',
     'Hiragino Sans GB', 'Microsoft YaHei', 'Segoe UI', 'Helvetica Neue', Helvetica, Arial,
     sans-serif;
 
-  /* Ant Design 5's `fontFamilyCode` seed token, verbatim (components/theme/themes/seed.ts):
-     the writing mode's source text. */
-  --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+  /* Times, keys and phone numbers (DES-001): JetBrains Mono, self-hosted; Ant Design 5's
+     `fontFamilyCode` stack behind it. */
+  --font-mono:
+    'JetBrains Mono Variable', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier,
+    monospace;
 
   /* THE SCALE IS TDESIGN'S PAIRS: 12/20, 14/22, 16/24, 20/28, 24/32,
      36/44, read off `style/web/theme/_font.less` and written in REM. TDesign is the only surveyed
@@ -369,7 +370,7 @@ body {
 
 /* Tabular figures wherever digits sit in a column and have to line up: counts in the left rail
    and on every panel heading, dates and times in the row columns, clock times on the completed
-   list, the day-counts in the Movement panel. Plex ships `tnum`. Prose keeps proportional
+   list, the day-counts in the Movement panel. Inter ships `tnum`. Prose keeps proportional
    figures. */
 .tabular-nums,
 time,
