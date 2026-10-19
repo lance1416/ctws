@@ -66,6 +66,7 @@ const SHELL_RELATIONS: RelationContribution[] = [
     plural: 'Messages',
     to: (id) => `/communication/${id}`,
   },
+  { type: 'note', kind: 'Note', plural: 'Notes', to: (id) => `/notes/${id}` },
 ]
 
 /** What the app, not the shell, decides about its modules. */

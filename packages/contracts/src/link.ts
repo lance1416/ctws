@@ -156,6 +156,7 @@ export const thingWith = <S extends z.ZodRawShape>(shape: S) =>
       direction: z.enum(['sent', 'received']),
       occurredAt: instant,
     }),
+    z.object({ ...shape, type: z.literal('note'), id: objectId, title: z.string() }),
   ])
 
 /** Something that could go at the other end, while its name is being typed. */

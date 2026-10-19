@@ -46,6 +46,9 @@ export type StageId = z.infer<typeof stageId>
 export const communicationId = idOf<'CommunicationId'>()
 export type CommunicationId = z.infer<typeof communicationId>
 
+export const noteId = idOf<'NoteId'>()
+export type NoteId = z.infer<typeof noteId>
+
 export const workspaceId = idOf<'WorkspaceId'>()
 export type WorkspaceId = z.infer<typeof workspaceId>
 

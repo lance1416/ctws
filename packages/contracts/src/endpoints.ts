@@ -17,6 +17,14 @@ import {
 } from './calendar'
 import { viewQuery } from './common'
 import {
+  createNoteBody,
+  noteListQuery,
+  noteParams,
+  noteResponse,
+  notesResponse,
+  updateNoteBody,
+} from './note'
+import {
   awaitingResponse,
   communicationListQuery,
   communicationOverviewResponse,
@@ -899,6 +907,54 @@ export const api = {
       path: '/communication/:id',
       summary: 'Delete an exchange.',
       params: communicationParams,
+      ok: 204,
+      refusals: [404],
+    }),
+  },
+
+  notes: {
+    list: endpoint({
+      method: 'GET',
+      path: '/notes',
+      summary: 'Every note, newest edited first; or those hung on one thing (anchor=<type>:<id>).',
+      query: noteListQuery,
+      ok: 200,
+      response: notesResponse,
+    }),
+    get: endpoint({
+      method: 'GET',
+      path: '/notes/:id',
+      summary: 'One note.',
+      params: noteParams,
+      ok: 200,
+      response: noteResponse,
+      refusals: [404],
+    }),
+    create: endpoint({
+      method: 'POST',
+      path: '/notes',
+      summary: 'Write a note, on its own or hung on a thing.',
+      body: createNoteBody,
+      ok: 201,
+      response: noteResponse,
+      location: itemAt('/notes/:id'),
+      refusals: [404],
+    }),
+    update: endpoint({
+      method: 'PATCH',
+      path: '/notes/:id',
+      summary: 'Change a note; the body is what autosave writes.',
+      params: noteParams,
+      body: updateNoteBody,
+      ok: 200,
+      response: noteResponse,
+      refusals: [404],
+    }),
+    remove: endpoint({
+      method: 'DELETE',
+      path: '/notes/:id',
+      summary: 'Delete a note.',
+      params: noteParams,
       ok: 204,
       refusals: [404],
     }),

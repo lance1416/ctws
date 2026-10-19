@@ -1,5 +1,6 @@
 import { communicationModule } from './modules/communication'
 import { meetingsModule } from './modules/meetings'
+import { notesModule } from './modules/notes'
 import { organisationsModule } from './modules/organisations'
 import { peopleModule } from './modules/people'
 import { readingModule } from './modules/reading'
@@ -14,6 +15,7 @@ const MODULES = [
   organisationsModule,
   communicationModule,
   readingModule,
+  notesModule,
 ] as const
 
 type DepsOf<M> = M extends ModuleDefinition<infer Deps> ? Deps : never

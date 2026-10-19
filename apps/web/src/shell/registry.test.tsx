@@ -263,6 +263,7 @@ describe('where another module keeps its things', () => {
       'project',
       'organisation',
       'communication',
+      'note',
     ])
     expect(shellOnly.relationFor('project').to('p1')).toBe('/projects/p1')
     const withNotes = build([

@@ -57,6 +57,7 @@ describe('every kind of thing has a module that answers for it', () => {
       'organisation',
       'communication',
       'reading',
+      'note',
       'project',
     ])
     expect([...registry.order].sort()).toEqual([...OBJECT_TYPES].sort())

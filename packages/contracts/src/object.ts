@@ -9,6 +9,7 @@ export const OBJECT_TYPES = [
   'project',
   'organisation',
   'communication',
+  'note',
 ] as const
 export const objectType = z.enum(OBJECT_TYPES)
 export type ObjectType = z.infer<typeof objectType>
