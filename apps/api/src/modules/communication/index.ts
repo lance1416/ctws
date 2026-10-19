@@ -7,7 +7,7 @@ import { communicationRoutes } from './routes'
 /** A message on another thing's timeline (FR-045): what was said with it, or about its project. */
 const messages: NonNullable<ApiModule['timelineSources']>[number] = {
   kind: 'message',
-  read: async (q, workspaceId, subject, limit) => {
+  read: async (q, workspaceId, subject, span) => {
     if (
       subject.type !== 'person' &&
       subject.type !== 'organisation' &&
@@ -16,7 +16,7 @@ const messages: NonNullable<ApiModule['timelineSources']>[number] = {
       return []
     }
     const party = { type: subject.type, id: subject.id }
-    const rows = await communicationsWith(q, workspaceId, party, limit)
+    const rows = await communicationsWith(q, workspaceId, party, span)
     return rows.map((r): TimelineEntry => ({
       kind: 'message',
       at: r.occurredAt.toISOString(),

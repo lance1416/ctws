@@ -1,5 +1,5 @@
 import { NOTE_ANCHOR_TYPES, type NoteId, type ObjectType, type WorkspaceId } from '@ctws/contracts'
-import { and, desc, eq } from 'drizzle-orm'
+import { and, desc, eq, lte } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
 import { NotFound } from '../../platform/errors'
 import { type Page, type PageAsked, pageOf, spanOf } from '../../platform/db/page'
@@ -48,7 +48,7 @@ export async function notesOn(
   q: Queryable,
   workspaceId: WorkspaceId,
   anchor: { type: ObjectType; id: string },
-  limit: number,
+  { limit, before }: { limit: number; before: Date | null },
 ): Promise<Note[]> {
   if (!(NOTE_ANCHOR_TYPES as readonly string[]).includes(anchor.type)) return []
   return q
@@ -60,6 +60,7 @@ export async function notesOn(
         and(
           eq(notes.anchorType, anchor.type as (typeof NOTE_ANCHOR_TYPES)[number]),
           eq(notes.anchorId, anchor.id),
+          before ? lte(notes.createdAt, before) : undefined,
         ),
       ),
     )

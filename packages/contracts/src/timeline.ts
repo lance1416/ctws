@@ -2,7 +2,6 @@ import { z } from 'zod'
 import { instant } from './common'
 import { objectId } from './id'
 import { objectType } from './object'
-import { pageInfo, pageQuery } from './page'
 
 /**
  * A thing's timeline (FR-045): what happened to it, and what was said, held or written about it,
@@ -15,6 +14,7 @@ export type TimelineKind = (typeof TIMELINE_KINDS)[number]
 /** One recorded change to the thing itself: the log's own row, as the module logged it. */
 const changeEntry = z.object({
   kind: z.literal('change'),
+  id: objectId,
   at: instant,
   event: z.object({ type: z.string(), payload: z.unknown() }),
 })
@@ -55,6 +55,12 @@ export type TimelineEntry = z.infer<typeof timelineEntry>
 /** How many entries a page holds; the timeline is read a segment at a time (FR-015). */
 const TIMELINE_PAGE = 100
 
+/**
+ * Where the next page starts: the last entry shown, so an entry logged while the reader scrolls
+ * shifts nothing. Opaque to callers: they hand back what `nextCursor` said and never build one.
+ */
+const timelineCursor = z.string().min(1).max(200)
+
 const kindList = z
   .string()
   .transform((list) => list.split(','))
@@ -67,8 +73,12 @@ export const timelineQuery = z
     id: objectId,
     /** Every kind when left out. */
     kinds: kindList.optional(),
-    ...pageQuery(TIMELINE_PAGE),
+    limit: z.coerce.number().int().min(1).max(TIMELINE_PAGE).default(TIMELINE_PAGE),
+    cursor: timelineCursor.optional(),
   })
   .strict()
 
-export const timelineResponse = z.object({ entries: z.array(timelineEntry), page: pageInfo })
+export const timelineResponse = z.object({
+  entries: z.array(timelineEntry),
+  page: z.object({ limit: z.number().int().positive(), nextCursor: timelineCursor.nullable() }),
+})

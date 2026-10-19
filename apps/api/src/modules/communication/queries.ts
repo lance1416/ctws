@@ -201,8 +201,9 @@ export async function communicationsWith(
   q: Queryable,
   workspaceId: WorkspaceId,
   party: Party | { type: 'project'; id: string },
-  limit: number,
+  { limit, before }: { limit: number; before: Date | null },
 ): Promise<CommunicationRow[]> {
+  const upTo = before ? lte(communications.occurredAt, before) : undefined
   const rows =
     party.type === 'project'
       ? await q
@@ -211,7 +212,7 @@ export async function communicationsWith(
           .where(
             within(
               scoped(communications, workspaceId),
-              eq(communications.projectId, idFrom(projectId, party.id)),
+              and(eq(communications.projectId, idFrom(projectId, party.id)), upTo),
             ),
           )
           .orderBy(desc(communications.occurredAt), desc(communications.id))
@@ -229,6 +230,7 @@ export async function communicationsWith(
               and(
                 eq(communicationParties.partyType, party.type),
                 eq(communicationParties.partyId, party.id),
+                upTo,
               ),
             ),
           )

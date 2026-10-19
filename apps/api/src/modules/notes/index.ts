@@ -7,8 +7,8 @@ import { noteRoutes } from './routes'
 /** The notes hung on a thing, on its timeline (FR-045). */
 const hung: NonNullable<ApiModule['timelineSources']>[number] = {
   kind: 'note',
-  read: async (q, workspaceId, subject, limit) => {
-    const rows = await notesOn(q, workspaceId, subject, limit)
+  read: async (q, workspaceId, subject, span) => {
+    const rows = await notesOn(q, workspaceId, subject, span)
     return rows.map((n): TimelineEntry => ({
       kind: 'note',
       at: n.createdAt.toISOString(),

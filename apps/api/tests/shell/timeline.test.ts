@@ -74,6 +74,32 @@ describe('GET /timeline', () => {
     expect(rest.body.page.nextCursor).toBeNull()
   })
 
+  it('neither repeats nor skips an entry logged while the reader scrolls', async () => {
+    const ctx = await appWithUser()
+    cleanups.push(ctx.stop)
+    const project = await createProject(ctx, 'P')
+    const task = await createTask(ctx, project, 'a')
+    const rename = (title: string) =>
+      ctx.app.inject({
+        method: 'PATCH',
+        url: `/api/v1/tasks/${task}`,
+        headers: ctx.authed,
+        payload: { title },
+      })
+    for (const title of ['b', 'c', 'd']) await rename(title)
+    const first = await timeline(ctx, 'task', task, '&limit=2')
+    expect(first.body.entries.map((e) => e.event.payload)).toEqual([
+      { from: 'c', to: 'd' },
+      { from: 'b', to: 'c' },
+    ])
+    // Something happens between the two reads: an offset would now show `b -> c` again.
+    await rename('e')
+    const rest = await timeline(ctx, 'task', task, `&limit=2&cursor=${first.body.page.nextCursor}`)
+    expect(rest.body.entries.map((e) => e.event.type)).toEqual(['title_changed', 'created'])
+    expect(rest.body.entries[0]!.event.payload).toEqual({ from: 'a', to: 'b' })
+    expect(rest.body.page.nextCursor).toBeNull()
+  })
+
   it("refuses another workspace's thing as not found", async () => {
     const ctx = await appWithUser()
     cleanups.push(ctx.stop)
