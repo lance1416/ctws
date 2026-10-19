@@ -4,5 +4,5 @@ export { byTitle, wanted, type Linkable } from './linkable'
 export { edgesFrom, putLinks } from './store'
 
 // For the app, which builds the registry from every module's linkable.
-export { linkRegistry } from './registry'
+export { linkRegistry, type LinkRegistry } from './registry'
 export { linkRoutes } from './routes'

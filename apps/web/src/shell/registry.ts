@@ -53,6 +53,13 @@ const PROJECTS_KIND: KindEntry = {
 
 const SHELL_RELATIONS: RelationContribution[] = [
   { type: 'project', kind: 'Project', plural: 'Projects', to: (id) => `/projects/${id}` },
+  // Until the organisations module arrives in the web app (phase 3), the shell answers for it.
+  {
+    type: 'organisation',
+    kind: 'Organisation',
+    plural: 'Organisations',
+    to: (id) => `/organisations/${id}`,
+  },
 ]
 
 /** What the app, not the shell, decides about its modules. */

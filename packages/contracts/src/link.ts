@@ -141,6 +141,13 @@ export const thingWith = <S extends z.ZodRawShape>(shape: S) =>
       timeZone: z.string(),
     }),
     z.object({ ...shape, type: z.literal('project'), id: objectId, title: z.string() }),
+    z.object({
+      ...shape,
+      type: z.literal('organisation'),
+      id: objectId,
+      title: z.string(),
+      organisationType: z.string().nullable(),
+    }),
   ])
 
 /** Something that could go at the other end, while its name is being typed. */

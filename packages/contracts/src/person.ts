@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { personId, projectId } from './id'
+import { organisationId, personId, projectId } from './id'
 import { birthdayInput, birthdayResponse } from './birthday'
 import { calendarDate, instant, nameText, noteText, patchOf } from './common'
 import { LIST_PAGE, pageInfo, pageQuery } from './page'
@@ -83,6 +83,36 @@ const channels = z.array(personChannel).max(20)
 
 export const personParams = z.object({ id: personId }).strict()
 
+/** A month, `YYYY-MM`: roles are known to the month (FR-047). */
+const month = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'expected a month like 2026-03')
+
+/** One role on the way in. No `to` means the role is current. */
+const personRoleInput = z
+  .object({
+    organisationId,
+    title: jobTitle.nullish(),
+    from: month.nullish(),
+    to: month.nullish(),
+  })
+  .strict()
+  .refine((r) => !r.from || !r.to || r.from <= r.to, {
+    message: 'The end is before the start.',
+    path: ['to'],
+  })
+export type PersonRoleInput = z.infer<typeof personRoleInput>
+
+/** A person's roles, written as a whole list; the server replaces the set. */
+export const putRolesBody = z.object({ roles: z.array(personRoleInput).max(50) }).strict()
+
+/** A role read back, with the organisation named. */
+const personRoleResponse = z.object({
+  organisationId,
+  organisationName: z.string(),
+  title: z.string().nullable(),
+  from: month.nullable(),
+  to: month.nullable(),
+})
+
 /** What can be said about a person; null clears a field. Only a name is needed to add one. */
 const personFields = {
   name: personName,
@@ -117,6 +147,8 @@ export const personResponse = z.object({
   city: z.string().nullable(),
   title: z.string().nullable(),
   circle: z.enum(CIRCLES).nullable(),
+  /** In the person's own order; a role with no `to` is current. */
+  roles: z.array(personRoleResponse),
   createdAt: instant,
   updatedAt: instant,
 })

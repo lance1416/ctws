@@ -2,6 +2,7 @@ import type { SQL } from 'drizzle-orm'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import type { TimelineSource } from './events/timeline'
 import type { Linkable } from './links/linkable'
+import type { LinkRegistry } from './links/registry'
 
 /**
  * Counts a module adds to each row of the project list, keyed by their name in its `columns`.
@@ -27,7 +28,8 @@ export const fixedModule = (module: ApiModule): ModuleDefinition => ({ build: ()
 export type ApiModule = {
   /** URL namespace: routes mount under /api/v1/<id>. */
   id: string
-  routes: FastifyPluginAsyncZod
+  /** Given the registry, so a module names another module's things without importing it. */
+  routes: FastifyPluginAsyncZod<{ registry: LinkRegistry }>
   linkable: Linkable
   projectColumns?: ProjectColumns
   /** The kinds of timeline entry this module keeps about other things. */

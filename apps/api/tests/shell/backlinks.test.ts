@@ -50,7 +50,14 @@ describe('every kind of thing has a module that answers for it', () => {
   const registry = linkRegistry([...apiModules({}).map((m) => m.linkable), projectLinkable])
 
   it('answers for every object type, in page order', () => {
-    expect(registry.order).toEqual(['task', 'meeting', 'person', 'reading', 'project'])
+    expect(registry.order).toEqual([
+      'task',
+      'meeting',
+      'person',
+      'organisation',
+      'reading',
+      'project',
+    ])
     expect([...registry.order].sort()).toEqual([...OBJECT_TYPES].sort())
   })
 

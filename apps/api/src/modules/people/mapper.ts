@@ -21,6 +21,7 @@ export function toPersonResponse(p: PersonRow, today: string): PersonResponse {
     city: p.city,
     title: p.title,
     circle: p.circle,
+    roles: p.roles,
     createdAt: p.createdAt.toISOString(),
     updatedAt: p.updatedAt.toISOString(),
   }

@@ -130,6 +130,7 @@ describe('a read answers with exactly the fields its contract names', () => {
       city: null,
       title: null,
       circle: null,
+      roles: [],
       createdAt: AT,
       updatedAt: AT,
     })

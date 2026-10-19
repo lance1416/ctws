@@ -4,6 +4,7 @@ import {
   type PersonChannel,
   type RemindLead,
   type MeetingId,
+  type OrganisationId,
   type WorkspaceId,
   type PersonId,
   type ProjectId,
@@ -15,6 +16,7 @@ import { scoped, within } from '../../platform/db/scope'
 import { textMatches } from '../../platform/db/sql'
 import { groupBy } from '../../platform/values'
 import { edgesFrom, filing, projectsOf } from '../../shell/links'
+import { monthOf, rolesOf } from '../organisations'
 import { people, personChannels } from './tables'
 import { NotFound } from '../../platform/errors'
 import { type Page, type PageAsked, pageOf, spanOf } from '../../platform/db/page'
@@ -48,6 +50,15 @@ export type PersonRow = Omit<
   projects: Named<ProjectId>[]
   channels: PersonChannel[]
   birthday: StoredBirthday | null
+  roles: PersonRoleRow[]
+}
+
+type PersonRoleRow = {
+  organisationId: OrganisationId
+  organisationName: string
+  title: string | null
+  from: string | null
+  to: string | null
 }
 
 export const personFiling = filing('person', people)
@@ -76,13 +87,14 @@ async function hydrate(
 ): Promise<PersonRow[]> {
   if (rows.length === 0) return []
   const ids = rows.map((r) => r.id)
-  const [projectsOfPerson, channels] = await Promise.all([
+  const [projectsOfPerson, channels, roles] = await Promise.all([
     projectsOf(q, workspaceId, 'person', ids),
     q
       .select()
       .from(personChannels)
       .where(inArray(personChannels.personId, ids))
       .orderBy(asc(personChannels.rank), asc(personChannels.id)),
+    rolesOf(q, workspaceId, ids),
   ])
   const channelsOf = groupBy(
     channels,
@@ -97,6 +109,13 @@ async function hydrate(
     projects: projectsOfPerson.get(p.id) ?? [],
     channels: channelsOf.get(p.id) ?? [],
     birthday: storedBirthdayOf(p),
+    roles: (roles.get(p.id) ?? []).map((r) => ({
+      organisationId: r.organisationId,
+      organisationName: r.organisationName,
+      title: r.title,
+      from: monthOf(r.fromMonth),
+      to: monthOf(r.toMonth),
+    })),
     gender: p.gender,
     hometown: p.hometown,
     city: p.city,

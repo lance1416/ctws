@@ -49,7 +49,10 @@ const elements = (app) =>
  * A module reaches another module only along an edge listed here, and only through its index.
  * The list is acyclic, so no two modules depend on each other, even through others.
  */
-const MODULE_EDGES = [['meetings', 'people']]
+const MODULE_EDGES = [
+  ['meetings', 'people'],
+  ['people', 'organisations'],
+]
 
 const element = (type, more = {}) => ({ element: { type, ...more } })
 

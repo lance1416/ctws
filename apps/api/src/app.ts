@@ -107,7 +107,9 @@ export async function buildApp(opts: {
         await authed.register(resourceRoutes, { registry })
         await authed.register(calendarDayRoutes)
         await authed.register(cityRoutes)
-        for (const m of modules) await authed.register(m.routes, { prefix: `/${m.id}` })
+        for (const m of modules) {
+          await authed.register(m.routes, { prefix: `/${m.id}`, registry })
+        }
       })
     },
     { prefix: '/api/v1' },

@@ -6,6 +6,7 @@ import {
   type createReadingItemBody,
   type createTaskBody,
   type MeetingOccurrence,
+  type OrganisationId,
   type PersonResponse,
   type ProjectId,
   type ReadingItemResponse,
@@ -65,6 +66,11 @@ export async function createChain(
   }
   return ids
 }
+
+export const createOrganisation = (
+  ctx: Harness,
+  fields: { name: string; type?: string },
+): Promise<{ id: OrganisationId; name: string }> => create(ctx, '/api/v1/organisations', fields)
 
 export const createPerson = (
   ctx: Harness,

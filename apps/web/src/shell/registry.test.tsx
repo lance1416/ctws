@@ -259,7 +259,7 @@ describe('where another module keeps its things', () => {
       reads: [],
     }
     const shellOnly = build([bare], { captureModuleId: 'bare', phoneTab: 'shell:calendar' })
-    expect(shellOnly.relations.map((r) => r.type)).toEqual(['project'])
+    expect(shellOnly.relations.map((r) => r.type)).toEqual(['project', 'organisation'])
     expect(shellOnly.relationFor('project').to('p1')).toBe('/projects/p1')
     const withNotes = build([
       {

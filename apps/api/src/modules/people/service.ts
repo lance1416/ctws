@@ -14,6 +14,7 @@ import type { Db, Tx } from '../../platform/db/client'
 import { replaceRows } from '../../platform/db/replace'
 import { type Actor, scoped, within } from '../../platform/db/scope'
 import { assertProjectsVisible } from '../../shell/projects'
+import { putRoles, removeRolesOf } from '../organisations'
 import { assertPossibleBirthday } from './birthdays'
 import { getPerson, lockPerson, type PersonRow, personFiling } from './queries'
 import { people, personChannels } from './tables'
@@ -121,15 +122,34 @@ export async function updatePerson(
   })
 }
 
-export async function softDeletePerson(
+/** Replaces a person's roles as a set, in the order given (FR-047). */
+export async function replaceRoles(
   db: Db,
-  { workspaceId, now }: Actor,
+  ctx: Actor,
   id: PersonId,
-): Promise<void> {
-  const deleted = await db
-    .update(people)
-    .set({ deletedAt: now })
-    .where(within(scoped(people, workspaceId), eq(people.id, id)))
-    .returning({ id: people.id })
-  if (deleted.length === 0) throw new NotFound('Person')
+  roles: Parameters<typeof putRoles>[3],
+): Promise<PersonRow> {
+  return db.transaction(async (tx) => {
+    await lockPerson(tx, ctx.workspaceId, id)
+    await putRoles(tx, ctx, id, roles)
+    await tx
+      .update(people)
+      .set({ updatedAt: ctx.now })
+      .where(within(scoped(people, ctx.workspaceId), eq(people.id, id)))
+    return getPerson(tx, ctx.workspaceId, id)
+  })
+}
+
+export async function softDeletePerson(db: Db, ctx: Actor, id: PersonId): Promise<void> {
+  const { workspaceId, now } = ctx
+  await db.transaction(async (tx) => {
+    const deleted = await tx
+      .update(people)
+      .set({ deletedAt: now })
+      .where(within(scoped(people, workspaceId), eq(people.id, id)))
+      .returning({ id: people.id })
+    if (deleted.length === 0) throw new NotFound('Person')
+    // The roles have no foreign key to the person (another module's table): dropped here.
+    await removeRolesOf(tx, ctx, id)
+  })
 }

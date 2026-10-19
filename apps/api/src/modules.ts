@@ -1,11 +1,18 @@
 import { meetingsModule } from './modules/meetings'
+import { organisationsModule } from './modules/organisations'
 import { peopleModule } from './modules/people'
 import { readingModule } from './modules/reading'
 import { tasksModule } from './modules/tasks'
 import type { ApiModule, EnvSource, ModuleDefinition } from './shell/module'
 
 /** In object-page order: an object page groups linked things in this order. */
-const MODULES = [tasksModule, meetingsModule, peopleModule, readingModule] as const
+const MODULES = [
+  tasksModule,
+  meetingsModule,
+  peopleModule,
+  organisationsModule,
+  readingModule,
+] as const
 
 type DepsOf<M> = M extends ModuleDefinition<infer Deps> ? Deps : never
 type Both<U> = (U extends unknown ? (u: U) => void : never) extends (all: infer I) => void
