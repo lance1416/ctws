@@ -48,6 +48,18 @@ async function changes(
 
 const CHANGES: TimelineSource = { kind: 'change', read: changes }
 
+/** What tells two entries at one instant apart: the id of what each one is about. */
+const keyOf = (e: TimelineEntry): string => {
+  switch (e.kind) {
+    case 'change':
+      return `change:${e.event.type}`
+    case 'message':
+      return `message:${e.message.id}`
+    case 'note':
+      return `note:${e.note.id}`
+  }
+}
+
 /**
  * A thing's timeline: every source's entries for it, merged newest first, one page of them. Each
  * source is asked for the whole span up to this page's end, since a page may be all of one kind;
@@ -66,6 +78,10 @@ export async function readTimeline(
   const lists = await Promise.all(
     wanted.map((s) => s.read(q, workspaceId, subject, limit + offset)),
   )
-  const merged = lists.flat().sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0))
+  // Newest first; two entries at one instant (a command's events share it) keep a fixed order by
+  // their own ids, which are time-ordered, so a page never shows a row twice or skips one.
+  const merged = lists
+    .flat()
+    .sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : keyOf(b).localeCompare(keyOf(a))))
   return pageOf(merged.slice(offset, offset + limit), asked)
 }

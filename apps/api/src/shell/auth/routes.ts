@@ -71,6 +71,10 @@ export const publicAuthRoutes: FastifyPluginAsyncZod = async (app) => {
 export const sessionRoutes: FastifyPluginAsyncZod = async (app) => {
   serve(app, [
     // Read already, with the session that let the request in.
-    on(api.auth.me, async (req) => currentUser(req)),
+    on(api.auth.me, async (req) => ({
+      ...currentUser(req),
+      now: app.clock().toISOString(),
+      clockPinned: app.env.clockPinnedAt !== undefined,
+    })),
   ])
 }

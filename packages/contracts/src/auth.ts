@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { userId, workspaceId } from './id'
-import { canonicalTimeZone } from './common'
+import { canonicalTimeZone, instant } from './common'
 
 /** Instance roles: an admin manages accounts, a member does not. */
 export const ROLES = ['admin', 'member'] as const
@@ -34,5 +34,12 @@ export const userResponse = z.object({
   workspaceId: workspaceId,
   role: roleSchema,
 })
+
+/**
+ * The signed-in account, and the server's clock: `now` is what the server calls the present,
+ * which a test or acceptance stack pins (`CLOCK_PINNED_AT`), so the page can count from the same
+ * instant the server does. When `clockPinned` is false the page may use its own clock.
+ */
+export const meResponse = userResponse.extend({ now: instant, clockPinned: z.boolean() })
 
 export type UserResponse = z.infer<typeof userResponse>

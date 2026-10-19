@@ -31,6 +31,18 @@ import { registerGuards } from './platform/http/guards'
 import { handleError } from './platform/http/errors'
 import { serveWeb } from './platform/http/web'
 
+/**
+ * The app's clock: the wall clock, or, when the environment pins one (`CLOCK_PINNED_AT`), a clock
+ * that starts at the pinned instant and runs from there. "Today" and "in 3 days" then come out
+ * the same on every run of a test or acceptance stack, while things made during a run still get
+ * moments of their own, in order.
+ */
+function clockFrom(pinnedAt: Date | undefined): () => Date {
+  if (pinnedAt === undefined) return () => new Date()
+  const startedAt = Date.now()
+  return () => new Date(pinnedAt.getTime() + (Date.now() - startedAt))
+}
+
 /** The app, built from the modules it is given. `clock` is replaceable for tests. */
 export async function buildApp(opts: {
   env: Env
@@ -48,7 +60,7 @@ export async function buildApp(opts: {
 
   app.decorate('db', opts.db)
   app.decorate('env', opts.env)
-  app.decorate('clock', opts.clock ?? (() => new Date()))
+  app.decorate('clock', opts.clock ?? clockFrom(opts.env.clockPinnedAt))
 
   await app.register(fastifySwagger, {
     openapi: {

@@ -6,7 +6,7 @@ import {
   adminUserListResponse,
   userParams,
 } from './admin'
-import { loginBody, registerBody, userResponse } from './auth'
+import { loginBody, meResponse, registerBody, userResponse } from './auth'
 import { birthdayPreviewQuery, birthdayPreviewResponse } from './birthday'
 import {
   calendarDaysResponse,
@@ -191,9 +191,9 @@ export const api = {
     me: endpoint({
       method: 'GET',
       path: '/auth/me',
-      summary: 'The signed-in account.',
+      summary: "The signed-in account, and the server's clock.",
       ok: 200,
-      response: userResponse,
+      response: meResponse,
     }),
   },
 

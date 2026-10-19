@@ -12,6 +12,8 @@ const ME = {
   timezone: 'UTC',
   workspaceId: '0190a7c2-6f00-7000-8000-000000000002',
   role: 'member',
+  now: '2026-10-01T00:00:00.000Z',
+  clockPinned: false,
 }
 
 const json = (body: unknown, status = 200) =>
