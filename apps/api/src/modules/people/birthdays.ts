@@ -9,6 +9,7 @@ import {
   addDays,
   type Birthday,
   birthdayProblem,
+  dayIn,
   factsOf,
   type Kept,
   keptNote,
@@ -80,6 +81,7 @@ async function peopleWithBirthdays(q: Queryable, workspaceId: WorkspaceId) {
       id: people.id,
       name: people.name,
       circle: people.circle,
+      timeZone: people.timeZone,
       calendar: people.birthdayCalendar,
       year: people.birthdayYear,
       month: people.birthdayMonth,
@@ -141,18 +143,24 @@ export async function birthdayEntries(
   return entries.sort((a, b) => a.day.localeCompare(b.day) || a.title.localeCompare(b.title))
 }
 
-/** The birthdays page as of `today`, the account's day. */
+/**
+ * The birthdays page as of now. "Today", and how many days away a birthday is, are counted on
+ * the person's own clock (FR-049): in Shanghai the day has begun before it has in London, and the
+ * wish should go out when it begins there. The page's own `today` is the account's.
+ */
 export async function listBirthdays(
   q: Queryable,
   workspaceId: WorkspaceId,
-  today: string,
+  now: Date,
+  accountZone: string,
 ): Promise<BirthdaysView> {
   const rows = await peopleWithBirthdays(q, workspaceId)
+  const today = dayIn(now, accountZone)
 
   // The lead decides the card and is not sent.
   const all = rows.map((p): BirthdayRow & { remindLead: number } => {
     const birthday = toBirthday(p)
-    const next = nextOccurrence(birthday, today)
+    const next = nextOccurrence(birthday, dayIn(now, p.timeZone ?? accountZone))
     return {
       personId: p.id,
       name: p.name,

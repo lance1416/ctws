@@ -46,5 +46,24 @@ export function findCities(query: string): City[] {
 }
 
 function cityOf(row: Row): City {
-  return { label: labelOf(row), timeZone: row[4] }
+  return { label: labelOf(row), key: keyOf(row), timeZone: row[4] }
+}
+
+/** `name|region|country`: the row's own name, stable across rebuilds of the table. */
+const keyOf = ([name, region, country]: Row): string => `${name}|${region}|${country}`
+
+/**
+ * The zone a city keeps time in, by its key, or by its shown label when only that is stored:
+ * namesakes then resolve to the most populous one, which is the table's order (FR-049).
+ */
+export function cityTimeZone(key: string | null, label: string | null): string | null {
+  if (key !== null) {
+    const row = CITIES.find((r) => keyOf(r) === key)
+    if (row) return row[4]
+  }
+  if (label !== null) {
+    const row = CITIES.find((r) => labelOf(r) === label)
+    if (row) return row[4]
+  }
+  return null
 }

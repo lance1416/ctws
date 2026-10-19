@@ -1,6 +1,7 @@
 import {
   idFrom,
   personId,
+  type CircleId,
   type PersonChannel,
   type RemindLead,
   type MeetingId,
@@ -17,7 +18,7 @@ import { textMatches } from '../../platform/db/sql'
 import { groupBy } from '../../platform/values'
 import { edgesFrom, filing, projectsOf } from '../../shell/links'
 import { monthOf, rolesOf } from '../organisations'
-import { people, personChannels } from './tables'
+import { circles, people, personAliases, personChannels, personCircles } from './tables'
 import { NotFound } from '../../platform/errors'
 import { type Page, type PageAsked, pageOf, spanOf } from '../../platform/db/page'
 
@@ -51,6 +52,8 @@ export type PersonRow = Omit<
   channels: PersonChannel[]
   birthday: StoredBirthday | null
   roles: PersonRoleRow[]
+  aliases: { name: string; label: string | null }[]
+  circleIds: CircleId[]
 }
 
 type PersonRoleRow = {
@@ -87,7 +90,7 @@ async function hydrate(
 ): Promise<PersonRow[]> {
   if (rows.length === 0) return []
   const ids = rows.map((r) => r.id)
-  const [projectsOfPerson, channels, roles] = await Promise.all([
+  const [projectsOfPerson, channels, roles, aliases, memberships] = await Promise.all([
     projectsOf(q, workspaceId, 'person', ids),
     q
       .select()
@@ -95,7 +98,28 @@ async function hydrate(
       .where(inArray(personChannels.personId, ids))
       .orderBy(asc(personChannels.rank), asc(personChannels.id)),
     rolesOf(q, workspaceId, ids),
+    q
+      .select()
+      .from(personAliases)
+      .where(inArray(personAliases.personId, ids))
+      .orderBy(asc(personAliases.rank), asc(personAliases.id)),
+    q
+      .select({ personId: personCircles.personId, circleId: personCircles.circleId })
+      .from(personCircles)
+      .innerJoin(circles, eq(circles.id, personCircles.circleId))
+      .where(inArray(personCircles.personId, ids))
+      .orderBy(asc(circles.rank), asc(circles.id)),
   ])
+  const aliasesOf = groupBy(
+    aliases,
+    (a) => a.personId,
+    (a) => ({ name: a.name, label: a.label }),
+  )
+  const circlesOf = groupBy(
+    memberships,
+    (m) => m.personId,
+    (m) => m.circleId,
+  )
   const channelsOf = groupBy(
     channels,
     (c) => c.personId,
@@ -104,6 +128,16 @@ async function hydrate(
   return rows.map((p) => ({
     id: p.id,
     name: p.name,
+    givenName: p.givenName,
+    middleName: p.middleName,
+    familyName: p.familyName,
+    sortKey: p.sortKey,
+    timeZone: p.timeZone,
+    timeZoneSource: p.timeZoneSource,
+    cityKey: p.cityKey,
+    hometownKey: p.hometownKey,
+    aliases: aliasesOf.get(p.id) ?? [],
+    circleIds: circlesOf.get(p.id) ?? [],
     org: p.org,
     note: p.note,
     projects: projectsOfPerson.get(p.id) ?? [],
@@ -126,7 +160,7 @@ async function hydrate(
   }))
 }
 
-/** By name: a person list is read to find someone. */
+/** Filed by the family name's letter, then by name: a person list is read to find someone. */
 export async function listPeople(
   q: Queryable,
   workspaceId: WorkspaceId,
@@ -137,7 +171,7 @@ export async function listPeople(
     .select()
     .from(people)
     .where(scoped(people, workspaceId))
-    .orderBy(asc(people.name), asc(people.id))
+    .orderBy(asc(people.sortKey), asc(people.name), asc(people.id))
     .limit(span.limit)
     .offset(span.offset)
   const { rows: page, ...info } = pageOf(rows, asked)
@@ -177,7 +211,7 @@ export async function lockPerson(
   return getPerson(tx, workspaceId, id)
 }
 
-/** By name, organisation or any address: "the one at @example.com" is a common question. */
+/** By any name, organisation or address: "the one at @example.com" is a common question. */
 export async function searchPeople(
   q: Queryable,
   workspaceId: WorkspaceId,
@@ -193,6 +227,10 @@ export async function searchPeople(
         scoped(people, workspaceId),
         sql`(
           ${textMatches(['people.name', 'people.org'], query)}
+          or exists (
+            select 1 from person_aliases al
+            where al.person_id = people.id and ${textMatches(['al.name'], query)}
+          )
           or exists (
             select 1 from person_channels ch
             where ch.person_id = people.id and ${textMatches(['ch.value'], query)}

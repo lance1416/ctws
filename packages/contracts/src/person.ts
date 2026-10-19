@@ -1,7 +1,7 @@
 import { z } from 'zod'
-import { organisationId, personId, projectId } from './id'
+import { circleId, organisationId, personId, projectId } from './id'
 import { birthdayInput, birthdayResponse } from './birthday'
-import { calendarDate, instant, nameText, noteText, patchOf } from './common'
+import { calendarDate, eventTimeZone, instant, nameText, noteText, patchOf } from './common'
 import { LIST_PAGE, pageInfo, pageQuery } from './page'
 
 /**
@@ -113,9 +113,28 @@ const personRoleResponse = z.object({
   to: month.nullable(),
 })
 
-/** What can be said about a person; null clears a field. Only a name is needed to add one. */
+/** One other name, with an optional label of your own. */
+const personAlias = z
+  .object({ name: nameText, label: z.string().trim().min(1).max(60).nullish() })
+  .strict()
+const aliasResponse = z.object({ name: z.string(), label: z.string().nullable() })
+export type PersonAlias = z.infer<typeof personAlias>
+
+/**
+ * What can be said about a person; null clears a field. The name comes as its three parts
+ * (FR-049), or as one string that the server splits the way the migration does; one or the other
+ * is needed to add someone. `timeZone` null means "from the city they live in".
+ */
 const personFields = {
   name: personName,
+  givenName: nameText,
+  middleName: nameText.nullable(),
+  familyName: nameText.nullable(),
+  aliases: z.array(personAlias).max(10),
+  circleIds: z.array(circleId).max(20),
+  timeZone: eventTimeZone.nullable(),
+  cityKey: z.string().max(240).nullable(),
+  hometownKey: z.string().max(240).nullable(),
   org: org.nullable(),
   note: note.nullable(),
   projectIds: z.array(projectId).max(20),
@@ -128,7 +147,14 @@ const personFields = {
   circle: z.enum(CIRCLES).nullable(),
 }
 
-export const createPersonBody = z.object(personFields).partial().required({ name: true }).strict()
+export const createPersonBody = z
+  .object(personFields)
+  .partial()
+  .strict()
+  .refine((b) => b.name !== undefined || b.givenName !== undefined, {
+    message: 'a person needs a name',
+    path: ['givenName'],
+  })
 export type CreatePersonBody = z.infer<typeof createPersonBody>
 
 export const updatePersonBody = patchOf(personFields)
@@ -136,7 +162,19 @@ export type UpdatePersonBody = z.infer<typeof updatePersonBody>
 
 export const personResponse = z.object({
   id: personId,
+  /** As shown: the three parts in the order their script expects. */
   name: z.string(),
+  givenName: z.string(),
+  middleName: z.string().nullable(),
+  familyName: z.string().nullable(),
+  /** The letter the person is filed under. */
+  sortKey: z.string(),
+  aliases: z.array(aliasResponse),
+  circleIds: z.array(circleId),
+  timeZone: z.string().nullable(),
+  timeZoneSource: z.enum(['city', 'manual']).nullable(),
+  cityKey: z.string().nullable(),
+  hometownKey: z.string().nullable(),
   org: z.string().nullable(),
   note: z.string().nullable(),
   projects: z.array(z.object({ id: projectId, name: z.string() })),
@@ -155,6 +193,28 @@ export const personResponse = z.object({
 export type PersonResponse = z.infer<typeof personResponse>
 
 export const peopleListQuery = z.object(pageQuery(LIST_PAGE)).strict()
+
+/** The circles, in your order, with how many people are in each. */
+export const circlesResponse = z.object({
+  circles: z.array(z.object({ id: circleId, name: z.string(), count: z.number().int() })),
+})
+
+/**
+ * The circles as a whole list, in order: one with an `id` is renamed, one without is new, one
+ * left out is deleted (its people stay, and just leave it).
+ */
+export const putCirclesBody = z
+  .object({
+    circles: z
+      .array(z.object({ id: circleId.optional(), name: z.string().trim().min(1).max(60) }).strict())
+      .max(50),
+  })
+  .strict()
+  .refine((b) => new Set(b.circles.map((c) => c.name)).size === b.circles.length, {
+    message: 'two circles cannot have the same name',
+    path: ['circles'],
+  })
+export type PutCirclesBody = z.infer<typeof putCirclesBody>
 
 export const peopleResponse = z.object({ people: z.array(personResponse), page: pageInfo })
 

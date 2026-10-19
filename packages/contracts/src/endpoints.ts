@@ -52,6 +52,8 @@ import {
   personParams,
   personResponse,
   personSearchResponse,
+  putCirclesBody,
+  circlesResponse,
   putRolesBody,
   updatePersonBody,
 } from './person'
@@ -713,6 +715,21 @@ export const api = {
       query: calendarView,
       ok: 200,
       response: calendarEntriesResponse,
+    }),
+    circles: endpoint({
+      method: 'GET',
+      path: '/people/circles',
+      summary: 'The circles you keep, in your order, with how many people are in each.',
+      ok: 200,
+      response: circlesResponse,
+    }),
+    putCircles: endpoint({
+      method: 'PUT',
+      path: '/people/circles',
+      summary: 'Replace the circles as a list: rename, add, remove; people stay.',
+      body: putCirclesBody,
+      ok: 200,
+      response: circlesResponse,
     }),
     birthdayPreview: endpoint({
       method: 'GET',

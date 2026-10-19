@@ -3,6 +3,7 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { on, serve } from '../../platform/http/serve'
 import { actorOf, currentUser, todayOf } from '../../shell/auth'
 import { birthdayEntries, listBirthdays, previewBirthday } from './birthdays'
+import { listCircles, putCircles } from './circles'
 import { toPersonResponse } from './mapper'
 import { getPerson, listPeople, searchPeople } from './queries'
 import { createPerson, replaceRoles, softDeletePerson, updatePerson } from './service'
@@ -14,9 +15,18 @@ export const personRoutes: FastifyPluginAsyncZod = async (app) => {
       return { people: rows.map((p) => toPersonResponse(p, todayOf(req))), page }
     }),
 
-    on(api.people.birthdays, async (req) =>
-      listBirthdays(app.db, currentUser(req).workspaceId, todayOf(req)),
-    ),
+    on(api.people.birthdays, async (req) => {
+      const user = currentUser(req)
+      return listBirthdays(app.db, user.workspaceId, app.clock(), user.timezone)
+    }),
+
+    on(api.people.circles, async (req) => ({
+      circles: await listCircles(app.db, currentUser(req).workspaceId),
+    })),
+
+    on(api.people.putCircles, async (req) => ({
+      circles: await app.db.transaction((tx) => putCircles(tx, actorOf(req), req.body)),
+    })),
 
     on(api.people.calendar, async (req) => ({
       entries: await birthdayEntries(app.db, currentUser(req).workspaceId, req.query),

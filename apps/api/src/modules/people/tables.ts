@@ -8,11 +8,23 @@ import {
   REMIND_LEAD_DEFAULT,
   REMIND_LEADS,
   type RemindLead,
+  type CircleId,
   type PersonId,
   type WorkspaceId,
 } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
-import { boolean, check, index, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import {
+  boolean,
+  check,
+  index,
+  integer,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  unique,
+  uuid,
+} from 'drizzle-orm/pg-core'
 import { inList } from '../../platform/db/sql'
 import { workspaceKeys } from '../../shell/auth'
 
@@ -25,8 +37,24 @@ export const people = pgTable(
       .$type<WorkspaceId>()
       .notNull()
       .references(() => workspaceKeys.id, { onDelete: 'cascade' }),
-    /** vCard `FN`: the name as written, not split into parts. */
+    /**
+     * vCard `FN`: the name as shown, worked out from the three parts below (FR-049). Kept as the
+     * column the old pages read until they are replaced; always equal to the display name.
+     */
     name: text('name').notNull(),
+    /** vCard `N`: given, middle (several as one string), family; only the given name is needed. */
+    givenName: text('given_name').notNull(),
+    middleName: text('middle_name'),
+    familyName: text('family_name'),
+    /** The letter the person is filed under, A to Z or `#`, from the family name's pinyin or initial. */
+    sortKey: text('sort_key').notNull(),
+    /** IANA zone, from the city they live in unless set by hand (FR-049). */
+    timeZone: text('time_zone'),
+    timeZoneSource: text('time_zone_source').$type<'city' | 'manual'>(),
+    /** The cities' keys in the bundled table (`name|region|country`), to tell namesakes apart. */
+    cityKey: text('city_key'),
+    hometownKey: text('hometown_key'),
+    /** Being replaced by roles at organisations; kept until the migration report is done. */
     org: text('org'),
     note: text('note'),
     /** The birthday in the calendar it was given in; the group check keeps it whole. */
@@ -55,6 +83,12 @@ export const people = pgTable(
   },
   (t) => [
     index('people_workspace_name_idx').on(t.workspaceId, t.name),
+    index('people_workspace_sort_idx').on(t.workspaceId, t.sortKey, t.name),
+    check(
+      'people_time_zone_source_check',
+      sql`(${t.timeZone} is null and ${t.timeZoneSource} is null)
+          or (${t.timeZone} is not null and ${t.timeZoneSource} in ('city', 'manual'))`,
+    ),
     check('people_birthday_calendar_check', inList(t.birthdayCalendar, BIRTHDAY_CALENDARS)),
     check('people_gender_check', inList(t.gender, GENDERS)),
     check('people_circle_check', inList(t.circle, CIRCLES)),
@@ -92,6 +126,56 @@ export const people = pgTable(
           or (${t.birthdayCalendar} is not null and ${t.birthdayMonth} is not null and ${t.birthdayDay} is not null)`,
     ),
     index('people_birthday_idx').on(t.workspaceId, t.birthdayMonth, t.birthdayDay),
+  ],
+)
+
+/** Other names a person goes by (FR-049): a Chinese name, an English name, a nickname. */
+export const personAliases = pgTable(
+  'person_aliases',
+  {
+    id: uuid('id').primaryKey(),
+    personId: uuid('person_id')
+      .$type<PersonId>()
+      .notNull()
+      .references(() => people.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    /** "Chinese name", "Nickname": free text. */
+    label: text('label'),
+    rank: integer('rank').notNull(),
+  },
+  (t) => [index('person_aliases_person_idx').on(t.personId, t.rank)],
+)
+
+/** The circles you keep (FR-049): a list of your own, in your order; a person may be in several. */
+export const circles = pgTable(
+  'circles',
+  {
+    id: uuid('id').$type<CircleId>().primaryKey(),
+    workspaceId: uuid('workspace_id')
+      .$type<WorkspaceId>()
+      .notNull()
+      .references(() => workspaceKeys.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    rank: integer('rank').notNull(),
+  },
+  (t) => [unique('circles_workspace_name_key').on(t.workspaceId, t.name)],
+)
+
+export const personCircles = pgTable(
+  'person_circles',
+  {
+    personId: uuid('person_id')
+      .$type<PersonId>()
+      .notNull()
+      .references(() => people.id, { onDelete: 'cascade' }),
+    circleId: uuid('circle_id')
+      .$type<CircleId>()
+      .notNull()
+      .references(() => circles.id, { onDelete: 'cascade' }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.personId, t.circleId] }),
+    index('person_circles_circle_idx').on(t.circleId),
   ],
 )
 

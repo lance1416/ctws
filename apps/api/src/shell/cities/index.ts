@@ -1,2 +1,5 @@
-/** City search is the app's to mount; no module uses it. */
+/** What modules may use of cities: the zone a city keeps time in. */
+export { cityTimeZone } from './search'
+
+// For the app.
 export { cityRoutes } from './routes'

@@ -248,6 +248,9 @@ importers:
       fractional-indexing:
         specifier: 4.0.0
         version: 4.0.0
+      pinyin-pro:
+        specifier: 3.29.5
+        version: 3.29.5
       tyme4ts:
         specifier: 1.5.3
         version: 1.5.3
@@ -4380,6 +4383,9 @@ packages:
   pino@10.3.1:
     resolution: {integrity: sha512-r34yH/GlQpKZbU1BvFFqOjhISRo1MNx1tWYsYvmj6KIRHSPMT2+yHOEb1SG6NMvRoHRF0a07kCOox/9yakl1vg==}
     hasBin: true
+
+  pinyin-pro@3.29.5:
+    resolution: {integrity: sha512-Fk5YoRmtdHqJWqAuzYVG/NzvzeCbaG+ZEwbY6Nbps3QAIrvQQEtcm49frcyCM8i2b5najnzPDtYqrHRYTTiuwQ==}
 
   pirates@4.0.7:
     resolution: {integrity: sha512-TfySrs/5nm8fQJDcBDuUng3VOUKsd7S+zqvbOTiGXHfxX4wK31ard+hoNuvkicM/2YFzlpDgABOevKSsB4G/FA==}
@@ -9172,6 +9178,8 @@ snapshots:
       safe-stable-stringify: 2.5.0
       sonic-boom: 4.2.1
       thread-stream: 4.2.0
+
+  pinyin-pro@3.29.5: {}
 
   pirates@4.0.7: {}
 

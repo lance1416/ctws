@@ -1,23 +1,28 @@
 import {
   type BirthdayInput,
+  type CircleId,
   type CreatePersonBody,
+  type PersonAlias,
   type PersonChannel,
   REMIND_LEAD_DEFAULT,
   type UpdatePersonBody,
   type PersonId,
   personId,
 } from '@ctws/contracts'
+import { displayName, type NameParts, sortKey, splitName } from '@ctws/core'
 import { newId } from '../../platform/db/ids'
 import { eq } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import type { Db, Tx } from '../../platform/db/client'
 import { replaceRows } from '../../platform/db/replace'
 import { type Actor, scoped, within } from '../../platform/db/scope'
+import { cityTimeZone } from '../../shell/cities'
 import { assertProjectsVisible } from '../../shell/projects'
 import { putRoles, removeRolesOf } from '../organisations'
 import { assertPossibleBirthday } from './birthdays'
+import { assertCirclesVisible } from './circles'
 import { getPerson, lockPerson, type PersonRow, personFiling } from './queries'
-import { people, personChannels } from './tables'
+import { people, personAliases, personChannels, personCircles } from './tables'
 import { NotFound } from '../../platform/errors'
 
 const checkBirthday = (b: BirthdayInput | null | undefined): void => {
@@ -51,6 +56,84 @@ function birthdayColumns(b: BirthdayInput | null | undefined) {
   }
 }
 
+/**
+ * The name's three parts and what follows from them (FR-049): given as parts, or as one string
+ * split the way the migration splits it. `current` is the stored name on an edit.
+ */
+function nameColumns(
+  input: Pick<UpdatePersonBody, 'name' | 'givenName' | 'middleName' | 'familyName'>,
+  current: NameParts | null,
+) {
+  const partsGiven =
+    input.givenName !== undefined ||
+    input.middleName !== undefined ||
+    input.familyName !== undefined
+  let parts: NameParts
+  if (partsGiven) {
+    parts = {
+      givenName: input.givenName ?? current?.givenName ?? '',
+      middleName: input.middleName === undefined ? (current?.middleName ?? null) : input.middleName,
+      familyName: input.familyName === undefined ? (current?.familyName ?? null) : input.familyName,
+    }
+  } else if (input.name !== undefined) {
+    const { why: _, ...split } = splitName(input.name)
+    parts = split
+  } else {
+    return null
+  }
+  return { ...parts, name: displayName(parts), sortKey: sortKey(parts) }
+}
+
+/**
+ * The zone a person keeps time in (FR-049): set by hand, or taken from the city they live in. On
+ * an edit, a city change moves a zone that came from the city and leaves one set by hand.
+ */
+function zoneColumns(
+  input: Pick<UpdatePersonBody, 'timeZone' | 'city' | 'cityKey'>,
+  current: Pick<PersonRow, 'timeZone' | 'timeZoneSource' | 'city' | 'cityKey'> | null,
+) {
+  const city = input.city === undefined ? (current?.city ?? null) : input.city
+  const cityKey = input.cityKey === undefined ? (current?.cityKey ?? null) : input.cityKey
+  const fromCity = () => {
+    const zone = cityTimeZone(cityKey, city)
+    return { timeZone: zone, timeZoneSource: zone === null ? null : ('city' as const) }
+  }
+  if (input.timeZone !== undefined) {
+    return input.timeZone === null
+      ? fromCity()
+      : { timeZone: input.timeZone, timeZoneSource: 'manual' as const }
+  }
+  const cityChanged = input.city !== undefined || input.cityKey !== undefined
+  if (cityChanged && current?.timeZoneSource !== 'manual') return fromCity()
+  return {}
+}
+
+/** Replaces a person's other names as a set, in their given order. */
+async function putAliases(
+  q: Tx,
+  personId: PersonId,
+  aliases: readonly PersonAlias[],
+): Promise<void> {
+  const rows = aliases.map((a, rank) => ({
+    id: uuidv7(),
+    personId,
+    name: a.name,
+    label: a.label ?? null,
+    rank,
+  }))
+  await replaceRows(q, personAliases, eq(personAliases.personId, personId), rows)
+}
+
+/** Puts a person in exactly these circles. */
+async function putCircleMemberships(
+  q: Tx,
+  personId: PersonId,
+  circleIds: readonly CircleId[],
+): Promise<void> {
+  const rows = [...new Set(circleIds)].map((circleId) => ({ personId, circleId }))
+  await replaceRows(q, personCircles, eq(personCircles.personId, personId), rows)
+}
+
 /** Replaces a person's channels as a set, in their given order. */
 async function putChannels(
   q: Tx,
@@ -76,11 +159,17 @@ export async function createPerson(
   checkBirthday(body.birthday)
   return db.transaction(async (tx) => {
     await assertProjectsVisible(tx, workspaceId, body.projectIds ?? [])
+    await assertCirclesVisible(tx, workspaceId, body.circleIds ?? [])
     const id = newId(personId)
+    const named = nameColumns(body, null)
+    if (named === null) throw new Error('a person needs a name')
     await tx.insert(people).values({
       id,
       workspaceId,
-      name: body.name,
+      ...named,
+      ...zoneColumns(body, null),
+      cityKey: body.cityKey ?? null,
+      hometownKey: body.hometownKey ?? null,
       org: body.org ?? null,
       note: body.note ?? null,
       gender: body.gender ?? null,
@@ -94,6 +183,8 @@ export async function createPerson(
     })
     await personFiling.put(tx, { workspaceId, now, id, projectIds: body.projectIds ?? [] })
     await putChannels(tx, id, body.channels ?? [])
+    await putAliases(tx, id, body.aliases ?? [])
+    await putCircleMemberships(tx, id, body.circleIds ?? [])
     return getPerson(tx, workspaceId, id)
   })
 }
@@ -107,17 +198,38 @@ export async function updatePerson(
   checkBirthday(patch.birthday)
   return db.transaction(async (tx) => {
     // A foreign id is not found before anything is written.
-    await lockPerson(tx, workspaceId, id)
+    const current = await lockPerson(tx, workspaceId, id)
     if (patch.projectIds) await assertProjectsVisible(tx, workspaceId, patch.projectIds)
+    if (patch.circleIds) await assertCirclesVisible(tx, workspaceId, patch.circleIds)
 
-    const { channels, projectIds, birthday, ...fields } = patch
+    const {
+      channels,
+      projectIds,
+      birthday,
+      aliases,
+      circleIds,
+      name: _name,
+      givenName: _g,
+      middleName: _m,
+      familyName: _f,
+      timeZone: _z,
+      ...fields
+    } = patch
     // Touched even when only the channels change: a new phone number is a change to the person.
     await tx
       .update(people)
-      .set({ ...fields, ...birthdayColumns(birthday), updatedAt: now })
+      .set({
+        ...fields,
+        ...(nameColumns(patch, current) ?? {}),
+        ...zoneColumns(patch, current),
+        ...birthdayColumns(birthday),
+        updatedAt: now,
+      })
       .where(within(scoped(people, workspaceId), eq(people.id, id)))
     if (projectIds) await personFiling.put(tx, { workspaceId, now, id, projectIds })
     if (channels) await putChannels(tx, id, channels)
+    if (aliases) await putAliases(tx, id, aliases)
+    if (circleIds) await putCircleMemberships(tx, id, circleIds)
     return getPerson(tx, workspaceId, id)
   })
 }
