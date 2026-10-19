@@ -107,7 +107,7 @@ export type CreateLinkBody = z.output<typeof createLinkBody>
  * A thing as a list of things names it: its title, and the facts its kind shows on the second
  * line, which the web puts into words. `shape` is what every kind has besides.
  */
-const thingWith = <S extends z.ZodRawShape>(shape: S) =>
+export const thingWith = <S extends z.ZodRawShape>(shape: S) =>
   z.discriminatedUnion('type', [
     z.object({
       ...shape,

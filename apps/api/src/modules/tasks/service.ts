@@ -20,6 +20,7 @@ import { type Actor, scoped, within } from '../../platform/db/scope'
 import { instant } from '../../platform/db/time'
 import { isoOrNull } from '../../platform/values'
 import { getProject } from '../../shell/projects'
+import { syncMentions } from '../../shell/relations'
 import {
   BothNeighboursError,
   DependencyCycleError,
@@ -160,6 +161,7 @@ export async function createTask(db: Db, ctx: Actor, input: CreateTaskBody): Pro
       to: { title: row!.title, status: row!.status, parentId: row!.parentId, projectId },
     })
     await settleAncestors(tx, ctx, row!.parentId)
+    if (row!.notes) await syncMentions(tx, ctx, { type: 'task', id: row!.id }, 'notes', row!.notes)
     return row!
   })
 }
@@ -245,6 +247,9 @@ async function editTask(tx: Tx, ctx: Actor, id: TaskId, patch: Fields): Promise<
     // A status change is a shape change for the parent: take the tree lock before settling.
     await lockTaskTree(tx, ctx.workspaceId)
     await settleAncestors(tx, ctx, row.parentId)
+  }
+  if (set.notes !== undefined) {
+    await syncMentions(tx, ctx, { type: 'task', id }, 'notes', updated!.notes)
   }
   return updated!
 }

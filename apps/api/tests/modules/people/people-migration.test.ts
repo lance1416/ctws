@@ -98,7 +98,11 @@ describe('the people migration', () => {
              count(*) filter (where to_type = 'person')::int as far,
              count(*) filter (where from_type = 'contact' or to_type = 'contact')::int as old
       from links`)
-    expect(ends.rows[0]).toEqual({ near: 1, far: 1, old: 0 })
+    // The `about` edge has since become a relation (0030); the attendance is still a link.
+    expect(ends.rows[0]).toEqual({ near: 0, far: 1, old: 0 })
+    const moved = await at.db.execute<{ n: number }>(sql`
+      select count(*)::int as n from relations where from_type = 'person' and from_id = ${person}`)
+    expect(moved.rows[0]).toEqual({ n: 1 })
 
     // Postgres 18 names NOT NULL constraints too; none of them may keep the old name.
     const stale = await at.db.execute<{ conname: string }>(sql`

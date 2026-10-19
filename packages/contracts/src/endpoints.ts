@@ -71,6 +71,14 @@ import {
   readingSearchResponse,
   updateReadingItemBody,
 } from './reading'
+import {
+  createRelationBody,
+  relationParams,
+  relationResponse,
+  relationsQuery,
+  relationsResponse,
+  updateRelationBody,
+} from './relation'
 import { SEARCH_LIMIT, searchQueryOf } from './search'
 import { timelineQuery, timelineResponse } from './timeline'
 import {
@@ -282,6 +290,56 @@ export const api = {
       params: linkParams,
       ok: 204,
       refusals: [404],
+    }),
+  },
+
+  relations: {
+    of: endpoint({
+      method: 'GET',
+      path: '/relations',
+      summary: 'Everything related to one thing, grouped by kind of thing, of the kinds asked for.',
+      query: relationsQuery,
+      ok: 200,
+      response: relationsResponse,
+      refusals: [404],
+    }),
+    get: endpoint({
+      method: 'GET',
+      path: '/relations/:id',
+      summary: 'One relation.',
+      params: relationParams,
+      ok: 200,
+      response: relationResponse,
+      refusals: [404],
+    }),
+    create: endpoint({
+      method: 'POST',
+      path: '/relations',
+      summary: 'Relate two things by hand: 201 for a new relation, 200 with the one already there.',
+      body: createRelationBody,
+      ok: 201,
+      existing: true,
+      response: relationResponse,
+      location: itemAt('/relations/:id'),
+      refusals: [404],
+    }),
+    update: endpoint({
+      method: 'PATCH',
+      path: '/relations/:id',
+      summary: 'Change the line of why on a relation made by hand.',
+      params: relationParams,
+      body: updateRelationBody,
+      ok: 200,
+      response: relationResponse,
+      refusals: [404, 409],
+    }),
+    remove: endpoint({
+      method: 'DELETE',
+      path: '/relations/:id',
+      summary: 'Remove a relation made by hand. One a mention made goes when the mention does.',
+      params: relationParams,
+      ok: 204,
+      refusals: [404, 409],
     }),
   },
 
