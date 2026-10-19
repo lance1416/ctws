@@ -169,6 +169,12 @@ describe('a project’s stages', () => {
     ])
     expect(clash.statusCode).toBe(409)
     expect(clash.json().detail).toBe('Applied already exists')
+    // Case does not make a different name (REQ v1.5).
+    const cased = await put(ctx, projectId, [
+      { id: a!.id, name: 'Applied' },
+      { id: b!.id, name: 'APPLIED' },
+    ])
+    expect(cased.statusCode).toBe(409)
     const merged = await put(ctx, projectId, [
       { id: a!.id, name: 'Applied' },
       { id: b!.id, name: 'Applied', mergeInto: a!.id },

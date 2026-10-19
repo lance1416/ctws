@@ -1,0 +1,2 @@
+ALTER TABLE "project_stages" DROP CONSTRAINT "project_stages_project_name_key";--> statement-breakpoint
+CREATE UNIQUE INDEX "project_stages_project_name_key" ON "project_stages" USING btree ("project_id",lower("name"));

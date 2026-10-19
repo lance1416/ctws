@@ -134,10 +134,11 @@ export async function putStages(
     if (!merged.has(s.id) && s.count > 0) throw new StageInUse(s.name, s.count)
   }
   // A new name that another kept stage already has, without a merge, is a question for the client.
+  // Case does not tell two stages apart (REQ v1.5).
   const names = new Set<string>()
   for (const e of kept) {
-    if (names.has(e.name)) throw new StageNameTaken(e.name)
-    names.add(e.name)
+    if (names.has(e.name.toLowerCase())) throw new StageNameTaken(e.name)
+    names.add(e.name.toLowerCase())
   }
 
   if (gone.length > 0) {

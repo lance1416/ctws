@@ -1,4 +1,5 @@
 import { type ProjectColor, type ProjectId, type StageId, type WorkspaceId } from '@ctws/contracts'
+import { sql } from 'drizzle-orm'
 import {
   boolean,
   foreignKey,
@@ -8,6 +9,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
 import { workspaces } from '../auth/tables'
@@ -56,7 +58,8 @@ export const projectStages = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    unique('project_stages_project_name_key').on(t.projectId, t.name),
+    // Two names that differ only in case are one stage (FR-040, REQ v1.5).
+    uniqueIndex('project_stages_project_name_key').on(t.projectId, sql`lower(${t.name})`),
     index('project_stages_project_idx').on(t.projectId, t.rank),
     unique('project_stages_workspace_id_id_key').on(t.workspaceId, t.id),
     foreignKey({
