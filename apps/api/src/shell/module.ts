@@ -1,5 +1,6 @@
 import type { SQL } from 'drizzle-orm'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
+import type { TimelineSource } from './events/timeline'
 import type { Linkable } from './links/linkable'
 
 /**
@@ -29,4 +30,6 @@ export type ApiModule = {
   routes: FastifyPluginAsyncZod
   linkable: Linkable
   projectColumns?: ProjectColumns
+  /** The kinds of timeline entry this module keeps about other things. */
+  timelineSources?: readonly TimelineSource[]
 }

@@ -13,8 +13,8 @@ import type { Queryable } from '../../../platform/db/client'
 import { rowsOf } from '../../../platform/db/raw'
 import { scoped } from '../../../platform/db/scope'
 import { sqlValues } from '../../../platform/db/sql'
+import { events } from '../../../shell/events'
 import { InvertedWindowError } from '../errors'
-import { taskEvents } from '../tables'
 import { localNow } from '../../../platform/db/time'
 import { visibleTasks } from './scope'
 
@@ -87,11 +87,12 @@ export async function listReview(
       ev.payload ->> 'to' as to_status,
       to_char(ev.occurred_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as at,
       coalesce((ev.payload ->> 'derived')::boolean, false) as derived
-    from task_events ev
+    from events ev
     join bounds b on true
-    join tasks t on t.id = ev.task_id
+    join tasks t on t.id = ev.object_id
     join projects p on p.id = t.project_id
-    where ${scoped(taskEvents, workspaceId, 'ev')}
+    where ${scoped(events, workspaceId, 'ev')}
+      and ev.object_type = 'task'
       and ev.type = 'status_changed'
       and ev.payload ->> 'to' in (${sqlValues(RECOUNTED)})
       and ev.occurred_at >= b.t0

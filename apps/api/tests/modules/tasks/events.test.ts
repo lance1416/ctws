@@ -38,14 +38,14 @@ const append = (...args: Parameters<ReturnType<typeof logOf>['append']>) =>
 
 async function events() {
   const r = await ctx.db.execute(sql`
-    select type, payload, workspace_id from task_events
-    where task_id = ${taskId} order by occurred_at, id
+    select type, payload, workspace_id from events
+    where object_type = 'task' and object_id = ${taskId} order by occurred_at, id
   `)
   return r.rows as { type: string; payload: unknown; workspace_id: WorkspaceId }[]
 }
 
 async function clear() {
-  await ctx.db.execute(sql`delete from task_events`)
+  await ctx.db.execute(sql`delete from events`)
 }
 
 describe('taskLog', () => {

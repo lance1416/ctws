@@ -71,8 +71,8 @@ export async function listProjectMovement(
     -- The day of the project's last logged change, read once for both columns that use it.
     cross join lateral (
       select (max(ev.occurred_at) at time zone ${timezone})::date as day
-      from task_events ev
-      join tasks ev_t on ev_t.id = ev.task_id
+      from events ev
+      join tasks ev_t on ev_t.id = ev.object_id and ev.object_type = 'task'
       where ev_t.project_id = ${project}
     ) last_activity
   `)

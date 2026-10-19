@@ -80,7 +80,7 @@ describe('what a write stores', () => {
     `)
     for (const value of Object.values(task.rows[0]!)) expect(new Date(String(value))).toEqual(NOW)
     const events = await ctx.db.execute(sql`
-      select occurred_at from task_events where task_id = ${taskId} order by occurred_at, id
+      select occurred_at from events where object_type = 'task' and object_id = ${taskId} order by occurred_at, id
     `)
     expect(events.rows).toHaveLength(3)
     for (const row of events.rows) expect(new Date(String(row.occurred_at))).toEqual(NOW)

@@ -596,7 +596,7 @@ describe('event and mutation share one transaction', () => {
     )
     await ctx.db.execute(
       sql.raw(`
-        create trigger refuse_event before insert on task_events for each row
+        create trigger refuse_event before insert on events for each row
           when (new.type = 'title_changed') execute function refuse_event()
       `),
     )

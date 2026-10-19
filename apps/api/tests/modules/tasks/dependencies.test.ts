@@ -302,7 +302,7 @@ describe('task dependencies', () => {
       end $$
     `)
     await ctx.db.execute(sql`
-      create trigger refuse_dependency_event before insert on task_events
+      create trigger refuse_dependency_event before insert on events
         for each row execute function refuse_dependency_event()
     `)
 

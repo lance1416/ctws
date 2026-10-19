@@ -197,6 +197,20 @@
       "when": 1792195796972,
       "tag": "0027_workspace_members_user_idx",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1792424240308,
+      "tag": "0028_events",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1792424262217,
+      "tag": "0029_drop_task_events",
+      "breakpoints": true
     }
   ]
 }

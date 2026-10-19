@@ -23,7 +23,7 @@ async function columns(table: string) {
   return r.rows as { column_name: string; data_type: string; is_nullable: string }[]
 }
 
-async function count(table: 'projects' | 'tasks' | 'task_events', col: string, id: string) {
+async function count(table: 'projects' | 'tasks' | 'events', col: string, id: string) {
   const r = await ctx.db.execute(
     sql`select count(*)::int as n from ${sql.identifier(table)} where ${sql.identifier(col)} = ${id}`,
   )
@@ -48,21 +48,21 @@ async function seed() {
     values (gen_random_uuid(), ${workspaceId}, ${projectId}, 't', 'todo', 'a0') returning id
   `)
   await ctx.db.execute(sql`
-    insert into task_events (id, task_id, workspace_id, type, payload, occurred_at)
-    values (gen_random_uuid(), ${taskId}, ${workspaceId}, 'created', '{}'::jsonb, now())
+    insert into events (id, workspace_id, object_type, object_id, type, payload, occurred_at)
+    values (gen_random_uuid(), ${workspaceId}, 'task', ${taskId}, 'created', '{}'::jsonb, now())
   `)
   return { workspaceId, projectId, taskId }
 }
 
 describe('task tables', () => {
-  it('creates projects, tasks and task_events', async () => {
+  it('creates projects, tasks and events', async () => {
     const r = await ctx.db.execute(sql`
       select table_name from information_schema.tables
-      where table_schema = 'public' and table_name in ('projects','tasks','task_events')
+      where table_schema = 'public' and table_name in ('projects','tasks','events')
     `)
     expect((r.rows as { table_name: string }[]).map((x) => x.table_name).sort()).toEqual([
+      'events',
       'projects',
-      'task_events',
       'tasks',
     ])
   })
@@ -147,40 +147,7 @@ describe('task tables', () => {
   })
 
   // Hard-deleting a task must not silently erase its history: refuse it loudly.
-  it('refuses a hard delete of a task that has events', async () => {
-    const { taskId } = await seed()
-    expect(await sqlStateOf(ctx.db.execute(sql`delete from tasks where id = ${taskId}`))).toBe(
-      FOREIGN_KEY_VIOLATION,
-    )
-    expect(await count('tasks', 'id', taskId)).toBe(1)
-    expect(await count('task_events', 'task_id', taskId)).toBe(1)
-  })
-
-  it('refuses hard deletes that would cascade onto a task with events', async () => {
-    const { workspaceId, projectId, taskId } = await seed()
-    // Via tasks.project_id.
-    expect(
-      await sqlStateOf(ctx.db.execute(sql`delete from projects where id = ${projectId}`)),
-    ).toBe(FOREIGN_KEY_VIOLATION)
-    // Via tasks.parent_id: the event sits on the child, the parent is deleted.
-    const child = await ctx.db.execute(sql`
-      insert into tasks (id, workspace_id, project_id, parent_id, title, status, rank)
-      values (gen_random_uuid(), ${workspaceId}, ${projectId}, ${taskId}, 'c', 'todo', 'a0')
-      returning id
-    `)
-    const childId = (child.rows as { id: string }[])[0]!.id
-    await ctx.db.execute(sql`
-      insert into task_events (id, task_id, workspace_id, type, payload, occurred_at)
-      select gen_random_uuid(), ${childId}, workspace_id, 'created', '{}'::jsonb, now()
-      from task_events where task_id = ${taskId}
-    `)
-    expect(await sqlStateOf(ctx.db.execute(sql`delete from tasks where id = ${taskId}`))).toBe(
-      FOREIGN_KEY_VIOLATION,
-    )
-    expect(await count('task_events', 'task_id', childId)).toBe(1)
-  })
-
-  it('keeps a task, its parent, its dependencies and its events in one workspace', async () => {
+  it('keeps a task, its parent and its dependencies in one workspace', async () => {
     const mine = await seed()
     const theirs = await seed()
     const refused = (q: ReturnType<typeof sql>) => sqlStateOf(ctx.db.execute(q))
@@ -198,19 +165,15 @@ describe('task tables', () => {
                 't', 'todo', 'a0')
       `),
     ).toBe(FOREIGN_KEY_VIOLATION)
-    // My task waiting for theirs, and an event of theirs logged in my workspace.
+    // My task waiting for theirs.
     expect(
       await refused(sql`
         insert into task_dependencies (blocker_id, blocked_id, workspace_id)
         values (${theirs.taskId}, ${mine.taskId}, ${mine.workspaceId})
       `),
     ).toBe(FOREIGN_KEY_VIOLATION)
-    expect(
-      await refused(sql`
-        insert into task_events (id, task_id, workspace_id, type, payload, occurred_at)
-        values (gen_random_uuid(), ${theirs.taskId}, ${mine.workspaceId}, 'created', '{}', now())
-      `),
-    ).toBe(FOREIGN_KEY_VIOLATION)
+    // An event names its thing by type and id, with no foreign key to hold it to a workspace:
+    // the log is read through the workspace, never through the thing (RFC-001 2.3).
   })
 
   it('removes projects, tasks and events when their workspace is deleted', async () => {
@@ -218,6 +181,6 @@ describe('task tables', () => {
     await ctx.db.execute(sql`delete from workspaces where id = ${workspaceId}`)
     expect(await count('projects', 'id', projectId)).toBe(0)
     expect(await count('tasks', 'id', taskId)).toBe(0)
-    expect(await count('task_events', 'workspace_id', workspaceId)).toBe(0)
+    expect(await count('events', 'workspace_id', workspaceId)).toBe(0)
   })
 })

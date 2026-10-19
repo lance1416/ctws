@@ -18,6 +18,7 @@ import {
 } from './shell/auth'
 import { calendarDayRoutes } from './shell/calendar'
 import { linkRoutes, linkRegistry } from './shell/links'
+import { timelineRoutes } from './shell/events'
 import { projectLinkable, projectRoutes } from './shell/projects'
 import { cityRoutes } from './shell/cities'
 import type { Db } from './platform/db/client'
@@ -88,6 +89,7 @@ export async function buildApp(opts: {
   const { modules } = opts
   const registry = linkRegistry([...modules.map((m) => m.linkable), projectLinkable])
   const columns = Object.assign({}, ...modules.map((m) => m.projectColumns ?? {}))
+  const sources = modules.flatMap((m) => m.timelineSources ?? [])
 
   await app.register(
     async (api) => {
@@ -98,6 +100,7 @@ export async function buildApp(opts: {
         await authed.register(adminRoutes)
         await authed.register(projectRoutes, { columns })
         await authed.register(linkRoutes, { registry })
+        await authed.register(timelineRoutes, { registry, sources })
         await authed.register(calendarDayRoutes)
         await authed.register(cityRoutes)
         for (const m of modules) await authed.register(m.routes, { prefix: `/${m.id}` })

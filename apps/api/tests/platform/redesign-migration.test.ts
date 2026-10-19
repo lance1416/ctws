@@ -51,8 +51,10 @@ describe('the pre-redesign fixture', () => {
       recommends: 3,
     })
 
-    // Every later migration applies to it without complaint.
+    // Every later migration applies to it without complaint, and the task history crosses into
+    // the shared change log row for row (0028).
     await at.migrateRest()
     expect(await countOf(at.db, 'links')).toBe(BEFORE.links)
+    expect(await countOf(at.db, "events where object_type = 'task'")).toBe(BEFORE.task_events)
   })
 })

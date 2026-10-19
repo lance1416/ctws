@@ -45,7 +45,7 @@ describe('the workspace keys migration', () => {
     ])
     const kept = await at.db.execute(sql`
       select (select count(*)::int from task_dependencies) as dependencies,
-             (select count(*)::int from task_events) as events`)
+             (select count(*)::int from events where object_type = 'task') as events`)
     expect(kept.rows[0]).toEqual({ dependencies: 1, events: 1 })
   })
 })

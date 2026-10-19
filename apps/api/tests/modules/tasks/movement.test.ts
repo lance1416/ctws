@@ -191,8 +191,8 @@ describe('GET /tasks/movement', () => {
     // Nine days of silence before a pinned Wednesday.
     const now = new Date('2026-10-07T04:00:00Z')
     await ctx.db.execute(sql`
-      update task_events set occurred_at = '2026-09-28T04:00:00Z'
-      where task_id in (select id from tasks where project_id = ${pid})
+      update events set occurred_at = '2026-09-28T04:00:00Z'
+      where object_type = 'task' and object_id in (select id from tasks where project_id = ${pid})
     `)
     const quiet = async () =>
       rowFor((await listProjectMovement(ctx.db, workspaceId, 'UTC', now)) as Row[], pid)

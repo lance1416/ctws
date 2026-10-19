@@ -72,6 +72,7 @@ import {
   updateReadingItemBody,
 } from './reading'
 import { SEARCH_LIMIT, searchQueryOf } from './search'
+import { timelineQuery, timelineResponse } from './timeline'
 import {
   completedQuery,
   completedResponse,
@@ -280,6 +281,19 @@ export const api = {
       summary: 'Remove one link.',
       params: linkParams,
       ok: 204,
+      refusals: [404],
+    }),
+  },
+
+  timeline: {
+    of: endpoint({
+      method: 'GET',
+      path: '/timeline',
+      summary:
+        "One thing's timeline: its changes and what other things say about it, newest first.",
+      query: timelineQuery,
+      ok: 200,
+      response: timelineResponse,
       refusals: [404],
     }),
   },

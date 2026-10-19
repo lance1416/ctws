@@ -45,7 +45,7 @@ async function review(ctx: Harness, query = ''): Promise<ReviewResponse> {
 
 /** Pushes every event logged so far back by `days`, so a window can be made to exclude them. */
 const backdate = (ctx: Harness, days: number) =>
-  ctx.db.execute(sql`update task_events set occurred_at = now() - make_interval(days => ${days})`)
+  ctx.db.execute(sql`update events set occurred_at = now() - make_interval(days => ${days})`)
 
 describe('the weekly review', () => {
   it('groups what happened by project, split by what happened', async () => {

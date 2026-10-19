@@ -1,6 +1,5 @@
 import {
   TASK_STATUSES,
-  type TaskEventType,
   type TaskStatus,
   type ProjectId,
   type TaskId,
@@ -12,7 +11,6 @@ import {
   date,
   foreignKey,
   index,
-  jsonb,
   pgTable,
   primaryKey,
   text,
@@ -95,32 +93,6 @@ export const taskDependencies = pgTable(
       columns: [t.workspaceId, t.blockedId],
       foreignColumns: [tasks.workspaceId, tasks.id],
     }).onDelete('cascade'),
-  ],
-)
-
-export const taskEvents = pgTable(
-  'task_events',
-  {
-    id: uuid('id').primaryKey(),
-    taskId: uuid('task_id').$type<TaskId>().notNull(),
-    workspaceId: uuid('workspace_id')
-      .$type<WorkspaceId>()
-      .notNull()
-      .references(() => workspaceKeys.id, { onDelete: 'cascade' }),
-    type: text('type').$type<TaskEventType>().notNull(),
-    payload: jsonb('payload').notNull(),
-    occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull(),
-  },
-  (t) => [
-    index('task_events_workspace_occurred_idx').on(t.workspaceId, t.occurredAt.desc()),
-    index('task_events_task_occurred_idx').on(t.taskId, t.occurredAt.desc()),
-    // In the task's workspace. No cascade: hard-deleting a task fails rather than erasing its
-    // history.
-    foreignKey({
-      name: 'task_events_task_fk',
-      columns: [t.workspaceId, t.taskId],
-      foreignColumns: [tasks.workspaceId, tasks.id],
-    }),
   ],
 )
 
