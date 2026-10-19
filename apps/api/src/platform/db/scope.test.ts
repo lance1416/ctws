@@ -4,7 +4,7 @@ import { PgDialect } from 'drizzle-orm/pg-core'
 import { describe, expect, expectTypeOf, it } from 'vitest'
 import { people } from '../../modules/people/tables'
 import { liveUnder, type Scope, scoped, within } from './scope'
-import { relations } from '../../shell/relations/tables'
+import { links } from '../../shell/links/tables'
 import { projects } from '../../shell/projects/tables'
 
 const ws = workspaceId.parse('0190e8a1-0000-7000-8000-000000000001')
@@ -25,7 +25,7 @@ describe('scope', () => {
       sql: '(people.workspace_id = $1 and people.deleted_at is null)',
       params: [ws],
     })
-    expect(render(scoped(relations, ws, 'l'))).toEqual({
+    expect(render(scoped(links, ws, 'l'))).toEqual({
       sql: '(l.workspace_id = $1)',
       params: [ws],
     })
@@ -38,8 +38,8 @@ describe('scope', () => {
   })
 
   it('keeps the scope when a condition is absent', () => {
-    expect(render(within(scoped(relations, ws), undefined, sql`true`)).sql).toBe(
-      '((relations.workspace_id = $1) and true)',
+    expect(render(within(scoped(links, ws), undefined, sql`true`)).sql).toBe(
+      '((links.workspace_id = $1) and true)',
     )
   })
 })

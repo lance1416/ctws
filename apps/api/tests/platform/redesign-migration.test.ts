@@ -55,7 +55,7 @@ describe('the pre-redesign fixture', () => {
     // the shared change log row for row (0028).
     await at.migrateRest()
     expect(await countOf(at.db, "events where object_type = 'task'")).toBe(BEFORE.task_events)
-    // The four `about` links are relations (0030). 0038 makes the rest the modules' own: the
+    // The four `about` links are relations (0030). 0038 copies the rest into the modules' own: the
     // three attendances rows of their meetings, the six `belongs` a field of a person, a meeting
     // or an item, and of
     // the three recommendations the first per item is its field, the other one a relation by hand.
@@ -67,6 +67,8 @@ describe('the pre-redesign fixture', () => {
         (await countOf(at.db, 'reading_items where project_id is not null')),
     ).toBe(3)
     expect(await countOf(at.db, 'reading_items where recommended_by is not null')).toBe(2)
-    expect(await countOf(at.db, "information_schema.tables where table_name = 'links'")).toBe(0)
+    // The edge table itself stays, untouched, until the cleanup release: the migration report
+    // counts the rows above against it.
+    expect(await countOf(at.db, 'links')).toBe(BEFORE.links - 4)
   })
 })

@@ -51,6 +51,46 @@ async function view<T>(ctx: Harness, which: string): Promise<T> {
   return res.json() as T
 }
 
+describe('the recent list', () => {
+  it('neither repeats nor skips a message logged while the reader scrolls', async () => {
+    const { ctx, sarah } = await setup()
+    const at = (day: number) => `2026-10-${String(day).padStart(2, '0')}T10:00:00.000Z`
+    const say = (day: number) =>
+      log(ctx, {
+        direction: 'sent',
+        channel: 'email',
+        parties: [{ type: 'person', id: sarah.id }],
+        occurredAt: at(day),
+        subject: `Day ${day}`,
+      })
+    for (const day of [1, 2, 3, 4]) expect((await say(day)).statusCode).toBe(201)
+
+    const page = async (cursor: string | null) => {
+      const res = await ctx.app.inject({
+        method: 'GET',
+        url: `/api/v1/communication?limit=2${cursor ? `&cursor=${cursor}` : ''}`,
+        headers: ctx.authed,
+      })
+      expect(res.statusCode, res.body).toBe(200)
+      return res.json() as { communications: { subject: string }[]; page: { nextCursor: string } }
+    }
+    const first = await page(null)
+    expect(first.communications.map((c) => c.subject)).toEqual(['Day 4', 'Day 3'])
+    // Something is said between the two reads: an offset would now show Day 3 again.
+    expect((await say(5)).statusCode).toBe(201)
+    const rest = await page(first.page.nextCursor)
+    expect(rest.communications.map((c) => c.subject)).toEqual(['Day 2', 'Day 1'])
+    expect(rest.page.nextCursor).toBeNull()
+
+    const bad = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/v1/communication?cursor=2',
+      headers: ctx.authed,
+    })
+    expect(bad.statusCode).toBe(400)
+  })
+})
+
 describe('logging an exchange', () => {
   it('names its parties, defaults to now, and shows on both their timelines', async () => {
     const { ctx, harbour, sarah, project } = await setup()

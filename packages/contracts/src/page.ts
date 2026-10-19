@@ -2,9 +2,9 @@ import { z } from 'zod'
 
 /**
  * Where a list's next page starts. Opaque to callers: they hand back what `nextCursor` said and
- * never build one.
+ * never build one; the list itself refuses one it did not give out.
  */
-const pageCursor = z.string().regex(/^\d{1,9}$/, 'not a cursor this list gave out')
+const pageCursor = z.string().min(1).max(80)
 
 /**
  * The paging half of a list's query: at most `max` rows, `fallback` when no limit is asked for,

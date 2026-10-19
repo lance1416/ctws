@@ -31,6 +31,31 @@ async function timelineKinds(ctx: Harness, type: string, id: string): Promise<st
   return (res.json() as { entries: { kind: string }[] }).entries.map((e) => e.kind)
 }
 
+describe('the recent list', () => {
+  it('neither repeats nor skips a note written while the reader scrolls', async () => {
+    const ctx = await setup()
+    for (const n of [1, 2, 3, 4]) {
+      expect((await write(ctx, { title: `Note ${n}`, body: 'x' })).statusCode).toBe(201)
+    }
+    const page = async (cursor: string | null) => {
+      const res = await ctx.app.inject({
+        method: 'GET',
+        url: `/api/v1/notes?limit=2${cursor ? `&cursor=${cursor}` : ''}`,
+        headers: ctx.authed,
+      })
+      expect(res.statusCode, res.body).toBe(200)
+      return res.json() as { notes: { title: string }[]; page: { nextCursor: string } }
+    }
+    const first = await page(null)
+    expect(first.notes.map((n) => n.title)).toEqual(['Note 4', 'Note 3'])
+    // A note is written between the two reads: an offset would now show Note 3 again.
+    expect((await write(ctx, { title: 'Note 5', body: 'x' })).statusCode).toBe(201)
+    const rest = await page(first.page.nextCursor)
+    expect(rest.notes.map((n) => n.title)).toEqual(['Note 2', 'Note 1'])
+    expect(rest.page.nextCursor).toBeNull()
+  })
+})
+
 describe('notes', () => {
   it('stand alone or hang on a thing, and show on its timeline', async () => {
     const ctx = await setup()

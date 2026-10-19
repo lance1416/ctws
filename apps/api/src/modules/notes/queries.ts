@@ -2,7 +2,7 @@ import { NOTE_ANCHOR_TYPES, type NoteId, type ObjectType, type WorkspaceId } fro
 import { and, desc, eq, lte } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
 import { NotFound } from '../../platform/errors'
-import { type Page, type PageAsked, pageOf, spanOf } from '../../platform/db/page'
+import { keyedPageOf, keyedSpan, type Page, type PageAsked } from '../../platform/db/page'
 import { scoped, within } from '../../platform/db/scope'
 import { type Note, notes } from './tables'
 
@@ -22,25 +22,27 @@ export async function listNotes(
   anchor: { type: ObjectType; id: string } | undefined,
   asked: PageAsked,
 ): Promise<Page<Note>> {
-  const span = spanOf(asked)
+  const span = keyedSpan(asked, { at: notes.updatedAt, id: notes.id })
   const rows = await q
     .select()
     .from(notes)
     .where(
       within(
         scoped(notes, workspaceId),
-        anchor
-          ? and(
-              eq(notes.anchorType, anchor.type as (typeof NOTE_ANCHOR_TYPES)[number]),
-              eq(notes.anchorId, anchor.id),
-            )
-          : undefined,
+        and(
+          anchor
+            ? and(
+                eq(notes.anchorType, anchor.type as (typeof NOTE_ANCHOR_TYPES)[number]),
+                eq(notes.anchorId, anchor.id),
+              )
+            : undefined,
+          span.after,
+        ),
       ),
     )
     .orderBy(desc(notes.updatedAt), desc(notes.id))
     .limit(span.limit)
-    .offset(span.offset)
-  return pageOf(rows, asked)
+  return keyedPageOf(rows, asked, (r) => ({ at: r.updatedAt, id: r.id }))
 }
 
 /** The notes hung on one thing, newest first, for its timeline; nothing for a kind notes skip. */

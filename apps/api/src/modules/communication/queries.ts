@@ -10,7 +10,7 @@ import { and, asc, desc, eq, inArray, isNull, lte, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Queryable, Tx } from '../../platform/db/client'
 import { NotFound } from '../../platform/errors'
-import { type Page, type PageAsked, pageOf, spanOf } from '../../platform/db/page'
+import { keyedPageOf, keyedSpan, type Page, type PageAsked } from '../../platform/db/page'
 import { rowsOf } from '../../platform/db/raw'
 import { scoped, within } from '../../platform/db/scope'
 import { localDay } from '../../platform/db/time'
@@ -92,15 +92,14 @@ export async function listCommunications(
   workspaceId: WorkspaceId,
   asked: PageAsked,
 ): Promise<Page<CommunicationRow>> {
-  const span = spanOf(asked)
+  const span = keyedSpan(asked, { at: communications.occurredAt, id: communications.id })
   const rows = await q
     .select()
     .from(communications)
-    .where(scoped(communications, workspaceId))
+    .where(within(scoped(communications, workspaceId), span.after))
     .orderBy(desc(communications.occurredAt), desc(communications.id))
     .limit(span.limit)
-    .offset(span.offset)
-  const { rows: page, ...info } = pageOf(rows, asked)
+  const { rows: page, ...info } = keyedPageOf(rows, asked, (r) => ({ at: r.occurredAt, id: r.id }))
   return { rows: await hydrate(q, workspaceId, page), ...info }
 }
 
