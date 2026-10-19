@@ -4,7 +4,8 @@
   "ignore": ["tools/palette/**"],
   "workspaces": {
     ".": {
-      "entry": ["tools/**/*.mjs"]
+      "entry": ["tools/**/*.mjs"],
+      "ignoreDependencies": ["@playwright/test"]
     },
     "apps/api": {
       "project": ["src/**/*.ts", "tests/**/*.ts"]
