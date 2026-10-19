@@ -1,4 +1,5 @@
 export * from './common'
+export * from './communication'
 export * from './id'
 export * from './auth'
 export * from './admin'

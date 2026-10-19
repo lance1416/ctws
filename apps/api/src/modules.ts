@@ -1,3 +1,4 @@
+import { communicationModule } from './modules/communication'
 import { meetingsModule } from './modules/meetings'
 import { organisationsModule } from './modules/organisations'
 import { peopleModule } from './modules/people'
@@ -11,6 +12,7 @@ const MODULES = [
   meetingsModule,
   peopleModule,
   organisationsModule,
+  communicationModule,
   readingModule,
 ] as const
 

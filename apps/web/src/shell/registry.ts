@@ -60,6 +60,12 @@ const SHELL_RELATIONS: RelationContribution[] = [
     plural: 'Organisations',
     to: (id) => `/organisations/${id}`,
   },
+  {
+    type: 'communication',
+    kind: 'Message',
+    plural: 'Messages',
+    to: (id) => `/communication/${id}`,
+  },
 ]
 
 /** What the app, not the shell, decides about its modules. */

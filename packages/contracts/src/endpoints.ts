@@ -16,6 +16,18 @@ import {
   MAX_CALENDAR_SPAN_DAYS,
 } from './calendar'
 import { viewQuery } from './common'
+import {
+  awaitingResponse,
+  communicationListQuery,
+  communicationOverviewResponse,
+  communicationParams,
+  communicationResponse,
+  communicationsResponse,
+  createCommunicationBody,
+  followUpsQuery,
+  replyBody,
+  updateCommunicationBody,
+} from './communication'
 import { citiesResponse, citySearchQuery } from './city'
 import { endpoint, href } from './endpoint'
 import {
@@ -806,6 +818,89 @@ export const api = {
       ok: 200,
       response: personResponse,
       refusals: [404, 422],
+    }),
+  },
+
+  communication: {
+    list: endpoint({
+      method: 'GET',
+      path: '/communication',
+      summary: 'Every exchange, newest first, a page at a time.',
+      query: communicationListQuery,
+      ok: 200,
+      response: communicationsResponse,
+    }),
+    awaiting: endpoint({
+      method: 'GET',
+      path: '/communication',
+      summary: 'Sent messages still waiting for a reply, soonest follow-up first (view=awaiting).',
+      query: viewQuery('awaiting'),
+      ok: 200,
+      response: awaitingResponse,
+    }),
+    followUps: endpoint({
+      method: 'GET',
+      path: '/communication',
+      summary: 'Waiting messages whose follow-up day is today or past (view=followups).',
+      query: followUpsQuery,
+      ok: 200,
+      response: awaitingResponse,
+    }),
+    overview: endpoint({
+      method: 'GET',
+      path: '/communication',
+      summary: 'Who has not replied, and which organisations were in touch lately (view=overview).',
+      query: viewQuery('overview'),
+      ok: 200,
+      response: communicationOverviewResponse,
+    }),
+    get: endpoint({
+      method: 'GET',
+      path: '/communication/:id',
+      summary: 'One exchange.',
+      params: communicationParams,
+      ok: 200,
+      response: communicationResponse,
+      refusals: [404],
+    }),
+    create: endpoint({
+      method: 'POST',
+      path: '/communication',
+      summary: 'Log an exchange.',
+      body: createCommunicationBody,
+      ok: 201,
+      response: communicationResponse,
+      location: itemAt('/communication/:id'),
+      refusals: [404],
+    }),
+    update: endpoint({
+      method: 'PATCH',
+      path: '/communication/:id',
+      summary: 'Change an exchange, or move its follow-up day ("Later").',
+      params: communicationParams,
+      body: updateCommunicationBody,
+      ok: 200,
+      response: communicationResponse,
+      refusals: [404, 422],
+    }),
+    reply: endpoint({
+      method: 'POST',
+      path: '/communication/:id/reply',
+      summary: 'Log the reply: a received message from the same parties, closing the wait.',
+      params: communicationParams,
+      body: replyBody,
+      ok: 201,
+      response: communicationResponse,
+      location: itemAt('/communication/:id'),
+      refusals: [404, 409],
+    }),
+    remove: endpoint({
+      method: 'DELETE',
+      path: '/communication/:id',
+      summary: 'Delete an exchange.',
+      params: communicationParams,
+      ok: 204,
+      refusals: [404],
     }),
   },
 

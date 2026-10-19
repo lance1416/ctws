@@ -55,6 +55,7 @@ describe('every kind of thing has a module that answers for it', () => {
       'meeting',
       'person',
       'organisation',
+      'communication',
       'reading',
       'project',
     ])

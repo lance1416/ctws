@@ -9,7 +9,7 @@ import { pageInfo, pageQuery } from './page'
  * newest first. Each entry is one of these kinds; a module that keeps a kind of entry (messages,
  * meetings, notes) adds its own shape here as it arrives.
  */
-const TIMELINE_KINDS = ['change'] as const
+const TIMELINE_KINDS = ['change', 'message'] as const
 export type TimelineKind = (typeof TIMELINE_KINDS)[number]
 
 /** One recorded change to the thing itself: the log's own row, as the module logged it. */
@@ -19,7 +19,23 @@ const changeEntry = z.object({
   event: z.object({ type: z.string(), payload: z.unknown() }),
 })
 
-const timelineEntry = z.discriminatedUnion('kind', [changeEntry])
+/** A message sent to or received from the thing, or logged under its project (FR-045). */
+const messageEntry = z.object({
+  kind: z.literal('message'),
+  at: instant,
+  message: z.object({
+    id: objectId,
+    direction: z.enum(['sent', 'received']),
+    channel: z.string(),
+    subject: z.string().nullable(),
+    /** The first of the body, for the row. */
+    excerpt: z.string().nullable(),
+    parties: z.array(z.object({ type: z.enum(['person', 'organisation']), id: objectId })),
+    repliedBy: objectId.nullable(),
+  }),
+})
+
+const timelineEntry = z.discriminatedUnion('kind', [changeEntry, messageEntry])
 export type TimelineEntry = z.infer<typeof timelineEntry>
 
 /** How many entries a page holds; the timeline is read a segment at a time (FR-015). */
