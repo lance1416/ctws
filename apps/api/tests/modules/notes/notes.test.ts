@@ -90,12 +90,16 @@ describe('notes', () => {
     })
     expect(one.statusCode, one.body).toBe(201)
     expect((one.json() as NoteResponse).anchor?.occurrenceId).toBe(meeting.recurrenceId)
+    // About the day it was held, whenever it was written; a series note is about no day.
+    expect((one.json() as NoteResponse).heldAt).toBe(meeting.startsAt)
+    expect((hung.json() as NoteResponse).heldAt).toBeNull()
 
-    // Both notes, newest first, then the meeting's own `created` (FR-044).
+    // Newest first: the series note (written now), the meeting's own `created` (now), then the
+    // occurrence's note, which sits on the day it was held, back in March (FR-044, FR-050).
     expect(await timelineKinds(ctx, 'meeting', meeting.meetingId)).toEqual([
       'note',
-      'note',
       'change',
+      'note',
     ])
     const onMeeting = await ctx.app.inject({
       method: 'GET',
@@ -167,5 +171,31 @@ describe('notes', () => {
       headers: ctx.authed,
     })
     expect((again.json() as { groups: unknown[] }).groups).toEqual([])
+  })
+})
+
+describe('a note on a meeting that is later deleted', () => {
+  it('keeps the day it was about, and stands on its own (FR-050)', async () => {
+    const ctx = await setup()
+    const meeting = await createMeeting(ctx, { title: 'Design review' })
+    const written = await write(ctx, {
+      body: 'Agreed on the layout.',
+      anchor: { type: 'meeting', id: meeting.meetingId, occurrenceId: meeting.recurrenceId },
+    })
+    expect(written.statusCode, written.body).toBe(201)
+    const id = (written.json() as NoteResponse).id
+    const gone = await ctx.app.inject({
+      method: 'DELETE',
+      url: `/api/v1/meetings/${meeting.meetingId}`,
+      headers: ctx.authed,
+    })
+    expect(gone.statusCode).toBe(204)
+    const read = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/notes/${id}`,
+      headers: ctx.authed,
+    })
+    expect(read.statusCode).toBe(200)
+    expect(read.json()).toMatchObject({ anchor: null, heldAt: meeting.startsAt })
   })
 })

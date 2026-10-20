@@ -59,6 +59,8 @@ export const noteResponse = z.object({
     .nullable(),
   /** Words in the body, for "1,850 words" (FR-069). */
   words: z.number().int().nonnegative(),
+  /** The occurrence a meeting note is about, kept after the meeting is gone (FR-050). */
+  heldAt: instant.nullable(),
   createdAt: instant,
   updatedAt: instant,
 })

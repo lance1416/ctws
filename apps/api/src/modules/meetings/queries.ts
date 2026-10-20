@@ -9,17 +9,12 @@ import {
 import { and, asc, eq, gt, inArray, isNull, lt, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Queryable, Tx } from '../../platform/db/client'
+import { type LocalTime, localOf } from '../../platform/zone'
 import { rowsOf } from '../../platform/db/raw'
 import { scoped, within } from '../../platform/db/scope'
 import { groupBy } from '../../platform/values'
 import { projectNameSql } from '../../shell/projects'
-import {
-  type Exception,
-  type LocalTime,
-  localOf,
-  type Occurrence,
-  occurrencesIn,
-} from './occurrences'
+import { type Exception, type Occurrence, occurrencesIn } from './occurrences'
 import { meetingExceptions, meetings } from './tables'
 import { windowOf } from './zone'
 import { NotFound } from '../../platform/errors'

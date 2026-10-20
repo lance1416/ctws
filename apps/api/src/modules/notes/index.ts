@@ -11,7 +11,8 @@ const hung: NonNullable<ApiModule['timelineSources']>[number] = {
     const rows = await notesOn(q, workspaceId, subject, span)
     return rows.map((n): TimelineEntry => ({
       kind: 'note',
-      at: n.createdAt.toISOString(),
+      // A meeting note is about the day it was held, whenever it was written (FR-050).
+      at: (n.heldAt ?? n.createdAt).toISOString(),
       note: {
         id: n.id,
         title: n.title,

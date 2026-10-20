@@ -10,6 +10,7 @@ import type { Db, Tx } from '../../platform/db/client'
 import { newId } from '../../platform/db/ids'
 import { NotFound } from '../../platform/errors'
 import { type Actor, scoped, within } from '../../platform/db/scope'
+import { instantOf } from '../../platform/zone'
 import { eventLog } from '../../shell/events'
 import { bury } from '../../shell/tombstones'
 import type { LinkRegistry } from '../../shell/links'
@@ -18,25 +19,29 @@ import { type Note, notes } from './tables'
 
 const subject = (id: NoteId) => ({ type: 'note' as const, id })
 
-/** The thing a note hangs on is one this workspace can see. */
-async function assertAnchorVisible(
+/**
+ * The columns an anchor becomes, once the thing is known to be one this workspace can see. A note
+ * on one occurrence of a meeting takes that occurrence's instant as the day it is about (FR-050);
+ * the meeting's module says which zone the occurrence's local time is in.
+ */
+async function anchorColumns(
   registry: LinkRegistry,
   tx: Tx,
   ctx: Actor,
   anchor: NoteAnchor | null | undefined,
-): Promise<void> {
-  if (!anchor) return
-  const rows = await registry
+): Promise<Pick<Note, 'anchorType' | 'anchorId' | 'occurrenceId' | 'heldAt'>> {
+  if (!anchor) return { anchorType: null, anchorId: null, occurrenceId: null, heldAt: null }
+  const [thing] = await registry
     .of(anchor.type)
     .rows(tx, ctx.workspaceId, { ids: [anchor.id], limit: 1 })
-  if (rows.length === 0) throw new NotFound('Object')
+  if (!thing) throw new NotFound('Object')
+  const occurrenceId = anchor.occurrenceId ?? null
+  const heldAt =
+    occurrenceId !== null && thing.type === 'meeting'
+      ? instantOf(occurrenceId, thing.timeZone)
+      : null
+  return { anchorType: anchor.type, anchorId: anchor.id, occurrenceId, heldAt }
 }
-
-const anchorColumns = (anchor: NoteAnchor | null) => ({
-  anchorType: anchor?.type ?? null,
-  anchorId: anchor?.id ?? null,
-  occurrenceId: anchor?.occurrenceId ?? null,
-})
 
 export async function createNote(
   registry: LinkRegistry,
@@ -45,7 +50,7 @@ export async function createNote(
   body: CreateNoteBody,
 ): Promise<Note> {
   return db.transaction(async (tx) => {
-    await assertAnchorVisible(registry, tx, ctx, body.anchor)
+    const anchored = await anchorColumns(registry, tx, ctx, body.anchor)
     const [row] = await tx
       .insert(notes)
       .values({
@@ -53,7 +58,7 @@ export async function createNote(
         workspaceId: ctx.workspaceId,
         title: body.title ?? null,
         body: body.body,
-        ...anchorColumns(body.anchor ?? null),
+        ...anchored,
         createdAt: ctx.now,
         updatedAt: ctx.now,
       })
@@ -84,7 +89,6 @@ export async function updateNote(
       .where(within(scoped(notes, ctx.workspaceId), eq(notes.id, id)))
       .for('update')
     if (!row) throw new NotFound('Note')
-    if (patch.anchor !== undefined) await assertAnchorVisible(registry, tx, ctx, patch.anchor)
     const log = eventLog(tx, ctx)
     const set: Partial<Note> = {}
     if (patch.title !== undefined && patch.title !== row.title) {
@@ -96,7 +100,7 @@ export async function updateNote(
       })
     }
     if (patch.anchor !== undefined) {
-      const next = anchorColumns(patch.anchor)
+      const next = await anchorColumns(registry, tx, ctx, patch.anchor)
       if (
         next.anchorType !== row.anchorType ||
         next.anchorId !== row.anchorId ||

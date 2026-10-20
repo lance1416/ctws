@@ -40,6 +40,7 @@ async function respond(
           }
         : null,
     words: wordCount(n.body),
+    heldAt: n.heldAt?.toISOString() ?? null,
     createdAt: n.createdAt.toISOString(),
     updatedAt: n.updatedAt.toISOString(),
   }))

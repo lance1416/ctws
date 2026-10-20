@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import { instantOf, localOf } from '../../platform/zone'
 import {
   endedBefore,
-  instantOf,
   ruleProblem,
-  localOf,
   occurrencesIn,
   seriesBounds,
   type Exception,

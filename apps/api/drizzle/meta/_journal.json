@@ -295,6 +295,13 @@
       "when": 1792500159248,
       "tag": "0041_workspace_moved_at",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1792501715295,
+      "tag": "0042_note_held_at",
+      "breakpoints": true
     }
   ]
 }

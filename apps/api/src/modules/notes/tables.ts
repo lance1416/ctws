@@ -21,6 +21,11 @@ export const notes = pgTable(
     anchorType: text('anchor_type').$type<(typeof NOTE_ANCHOR_TYPES)[number]>(),
     anchorId: uuid('anchor_id'),
     occurrenceId: text('occurrence_id'),
+    /**
+     * The instant of the occurrence a note was hung on (FR-050): a meeting note is about that day,
+     * whenever it was written, and keeps the day after the meeting is gone.
+     */
+    heldAt: timestamp('held_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

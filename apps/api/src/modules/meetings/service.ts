@@ -18,7 +18,8 @@ import { bury } from '../../shell/tombstones'
 import { assertProjectsVisible } from '../../shell/projects'
 import { assertPeopleVisible } from '../people'
 import { BadRuleError, OnceOnlyError } from './errors'
-import { endedBefore, type LocalTime, ruleProblem, type Series, seriesBounds } from './occurrences'
+import type { LocalTime } from '../../platform/zone'
+import { endedBefore, ruleProblem, type Series, seriesBounds } from './occurrences'
 import {
   assertOccurs,
   getOccurrence,

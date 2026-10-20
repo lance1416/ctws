@@ -1,5 +1,4 @@
 import { DAY_MS, ruleEndingAt } from '@ctws/contracts'
-import { TZDate } from '@date-fns/tz'
 // A default import, destructured: `rrule` is CommonJS, and a named import passes the tests but
 // fails at startup in the bundled ESM build.
 import rrulePkg from 'rrule'
@@ -15,7 +14,7 @@ type Rule = InstanceType<typeof RRule>
  */
 
 /** A wall clock with no zone: `YYYY-MM-DDTHH:mm`. */
-export type LocalTime = string
+import { instantOf, type LocalTime, localOf } from '../../platform/zone'
 
 function split(local: LocalTime): [number, number, number, number, number] {
   const [date, clock] = local.split('T') as [string, string]
@@ -36,24 +35,6 @@ function fromNaive(at: Date): LocalTime {
   return (
     `${at.getUTCFullYear()}-${pad(at.getUTCMonth() + 1)}-${pad(at.getUTCDate())}` +
     `T${pad(at.getUTCHours())}:${pad(at.getUTCMinutes())}`
-  )
-}
-
-/**
- * The instant a wall clock names in a zone. A time skipped by spring-forward resolves to the
- * instant after the jump, as calendars do.
- */
-export function instantOf(local: LocalTime, timeZone: string): Date {
-  const [y, m, d, hh, mm] = split(local)
-  return new Date(new TZDate(y, m - 1, d, hh, mm, 0, 0, timeZone).getTime())
-}
-
-/** The wall clock an instant shows in a zone; the inverse of `instantOf`. */
-export function localOf(instant: Date, timeZone: string): LocalTime {
-  const at = new TZDate(instant, timeZone)
-  return (
-    `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}` +
-    `T${pad(at.getHours())}:${pad(at.getMinutes())}`
   )
 }
 

@@ -1,6 +1,6 @@
 import { MAX_CALENDAR_SPAN_DAYS } from '@ctws/contracts'
 import { addDays } from '@ctws/core'
-import { instantOf } from './occurrences'
+import { instantOf } from '../../platform/zone'
 
 /** Two account days as the instants that bound them; `to` runs to the end of its day. */
 export function windowOf(from: string, to: string, zone: string): { from: Date; to: Date } {

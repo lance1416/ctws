@@ -1,7 +1,7 @@
 import { desc } from 'drizzle-orm'
 import { scoped, within } from '../../platform/db/scope'
 import { wanted, type Linkable } from '../../shell/links'
-import { instantOf } from './occurrences'
+import { instantOf } from '../../platform/zone'
 import { meetings } from './tables'
 
 export const meetingLinkable: Linkable = {
