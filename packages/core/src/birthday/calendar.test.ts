@@ -211,7 +211,7 @@ describe('birthdayProblem', () => {
   })
 
   it('says the year had no such leap month', () => {
-    expect(birthdayProblem(lunar(2018, 6, 15, true))).toBe('There was no 闰六月 in 2018.')
+    expect(birthdayProblem(lunar(2018, 6, 15, true))).toBe('There is no 闰六月 in 2018.')
   })
 
   it('says a common year has no 29 February', () => {

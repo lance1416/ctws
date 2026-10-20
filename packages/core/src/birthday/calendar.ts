@@ -161,7 +161,7 @@ export function birthdayProblem(b: Birthday): string | null {
   }
   const name = `${b.leapMonth ? '闰' : ''}${LUNAR_MONTHS[b.month - 1]}`
   if (b.leapMonth && LunarYear.fromYear(b.year).getLeapMonth() !== b.month) {
-    return `There was no ${name} in ${b.year}.`
+    return `There is no ${name} in ${b.year}.`
   }
   const length = LunarMonth.fromYm(b.year, b.leapMonth ? -b.month : b.month).getDayCount()
   return b.day > length
