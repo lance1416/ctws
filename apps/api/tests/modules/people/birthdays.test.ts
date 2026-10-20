@@ -370,7 +370,7 @@ describe('a lunar day that never happened', () => {
       leapMonth: true,
     })
     expect(res.statusCode, res.body).toBe(422)
-    expect(res.json().detail).toBe('There was no 闰六月 in 2018.')
+    expect(res.json().detail).toBe('There is no 闰六月 in 2018.')
   })
 
   it('refuses February 29 in a common year on create', async () => {
