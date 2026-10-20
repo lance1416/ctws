@@ -105,6 +105,7 @@ import {
   updateResourceBody,
 } from './resource'
 import { tombstoneParams, tombstoneResponse } from './tombstone'
+import { checkMigrationItemBody, migrationItemParams, migrationReportResponse } from './migration'
 import {
   createOrganisationBody,
   mergeOrganisationBody,
@@ -352,6 +353,34 @@ export const api = {
     }),
   },
 
+  migration: {
+    get: endpoint({
+      method: 'GET',
+      path: '/migration',
+      summary: 'The report of the move to the new layout; 404 until there has been one.',
+      ok: 200,
+      response: migrationReportResponse,
+      refusals: [404],
+    }),
+    check: endpoint({
+      method: 'PATCH',
+      path: '/migration/items/:key',
+      summary: 'Mark one guess in the report as looked at, or not.',
+      params: migrationItemParams,
+      body: checkMigrationItemBody,
+      ok: 200,
+      response: migrationReportResponse,
+      refusals: [404],
+    }),
+    done: endpoint({
+      method: 'POST',
+      path: '/migration/done',
+      summary: 'Done with the report: its entry and the prompt go away.',
+      ok: 200,
+      response: migrationReportResponse,
+      refusals: [404],
+    }),
+  },
   tombstones: {
     get: endpoint({
       method: 'GET',

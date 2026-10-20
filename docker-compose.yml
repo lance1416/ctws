@@ -17,6 +17,22 @@ services:
       timeout: 5s
       retries: 10
 
+  # A full dump before the api starts, so the move to the new layout always has a backup to go
+  # back to (RFC-001 3.2). Runs on every `up`; fails -> the api does not start.
+  backup:
+    image: postgres:18-alpine
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:-ctws}
+    command:
+      - sh
+      - -c
+      - pg_dump -h postgres -U ${POSTGRES_USER:-ctws} -d ${POSTGRES_DB:-ctws} -Fc -f "/backups/$(date -u +%Y%m%dT%H%M%SZ)-pre-redesign.dump"
+    volumes:
+      - backups:/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   api:
     build:
       context: .
@@ -32,6 +48,7 @@ services:
       # 出站抓取默认开着 —— 这套栈就是日常在用的那一个。要整个关掉（一个出站请求都不发）
       # 就 READING_UNFURL=false。e2e 不靠这个开关：那些用例粘的是 .invalid 的地址，永远解析不出来。
       READING_UNFURL: ${READING_UNFURL:-true}
+      BACKUPS_DIR: /backups
     healthcheck:
       test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:3000/api/v1/health']
       interval: 5s
@@ -40,8 +57,13 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      backup:
+        condition: service_completed_successfully
+    volumes:
+      - backups:/backups:ro
     ports:
       - '3000:3000'
 
 volumes:
   pgdata:
+  backups:

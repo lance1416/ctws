@@ -22,6 +22,10 @@
  *              planned day whose children partly have one
  *   meetings   a series with a note on the series; one place that is a URL, one that is an address
  *   links      belongs, attends, recommends, about
+ *   v1.5 adds  a parent whose leaves all have their own planned day; a soft-deleted task and
+ *              person with edges to them; two Cambridges (one stored as the bare name); a place
+ *              written "Zoom: https://..." (text plus a URL, so still a place); a second account
+ *              that also has a person at "Stripe" (never merged across accounts)
  */
 import { parseArgs } from 'node:util'
 
@@ -216,6 +220,62 @@ await link(T(amazon.id), P(wendy.id), 'about')
 await link(T(measure.id), M(viewing.meetingId), 'about')
 await link(R(article.id), T(stripe.id), 'about')
 await link(P(cher.id), T(headline.id), 'about')
+
+// ---- v1.5: the cases the acceptance data added -----------------------------------------------
+
+// A parent whose leaves ALL have their own planned day: its day is dropped and reported.
+const review = await task(projects['Thesis'], 'Literature review', { scheduledOn: '2026-10-25' })
+await task(projects['Thesis'], 'Read the Kleppmann chapters', {
+  parentId: review.id,
+  scheduledOn: '2026-10-23',
+})
+await task(projects['Thesis'], 'Summarise the survey papers', {
+  parentId: review.id,
+  scheduledOn: '2026-10-24',
+})
+
+// Two Cambridges: one stored as the bare name (matched by name, the largest one taken), one as
+// the full label of the other.
+const ada = await person({ name: 'Ada Clarke', city: 'Cambridge', circle: 'work' })
+await person({ name: 'Ben Shaw', city: 'Cambridge, Massachusetts, United States', circle: 'work' })
+
+// A place that is text plus a URL: not a whole URL, so it stays a place.
+await post('/meetings', {
+  title: 'Thesis check-in',
+  startsLocal: '2026-10-23T15:00',
+  timeZone: 'Europe/London',
+  durationMinutes: 30,
+  location: 'Zoom: https://zoom.us/j/123456789',
+  projectId: projects['Thesis'],
+  attendeeIds: [ada.id],
+})
+
+// A soft-deleted task and person, each with an edge to it: they become tombstones; the edges
+// are counted, not lost.
+const abandoned = await task(projects['Moving flat'], 'Compare removal companies')
+await link(P(ada.id), T(abandoned.id), 'about')
+await call('DELETE', `/tasks/${abandoned.id}`)
+const former = await person({ name: 'Former Agent', org: 'Foxtons', circle: 'work' })
+await link(T(measure.id), P(former.id), 'about')
+await call('DELETE', `/people/${former.id}`)
+
+// A second account, with its own "Stripe": organisations are made per account (FR-090).
+cookie = ''
+await post('/auth/register', {
+  email: 'other@example.com',
+  password: opt.password,
+  timezone: 'America/Toronto',
+})
+const otherProject = await post('/projects', { name: 'Side project' })
+await person({
+  name: 'Nora Diaz',
+  org: 'Stripe',
+  title: 'Account manager',
+  circle: 'work',
+  city: 'Toronto, Ontario, Canada',
+  projectIds: [otherProject.id],
+})
+await task(otherProject.id, 'Write the pitch')
 
 console.log(
   JSON.stringify(

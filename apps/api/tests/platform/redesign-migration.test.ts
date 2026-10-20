@@ -22,16 +22,17 @@ afterEach(async () => {
 
 /** What the fixture holds, counted when it was made (tools/seed/pre-redesign.mjs). */
 const BEFORE = {
-  projects: 7,
-  tasks: 17,
+  workspaces: 2,
+  projects: 9,
+  tasks: 22,
   task_dependencies: 1,
-  task_events: 18,
-  people: 5,
+  task_events: 24,
+  people: 9,
   person_channels: 2,
-  meetings: 2,
+  meetings: 3,
   meeting_exceptions: 1,
   reading_items: 2,
-  links: 16,
+  links: 21,
 }
 
 describe('the pre-redesign fixture', () => {
@@ -45,9 +46,9 @@ describe('the pre-redesign fixture', () => {
     }
     const kinds = await at.db.execute(sql`select kind, count(*)::int as n from links group by kind`)
     expect(Object.fromEntries(kinds.rows.map((r) => [r.kind, r.n]))).toEqual({
-      about: 4,
-      attends: 3,
-      belongs: 6,
+      about: 6,
+      attends: 4,
+      belongs: 8,
       recommends: 3,
     })
 
@@ -55,20 +56,21 @@ describe('the pre-redesign fixture', () => {
     // the shared change log row for row (0028).
     await at.migrateRest()
     expect(await countOf(at.db, "events where object_type = 'task'")).toBe(BEFORE.task_events)
-    // The four `about` links are relations (0030). 0038 copies the rest into the modules' own: the
-    // three attendances rows of their meetings, the six `belongs` a field of a person, a meeting
-    // or an item, and of
-    // the three recommendations the first per item is its field, the other one a relation by hand.
-    expect(await countOf(at.db, "relations where origin = 'manual'")).toBe(5)
-    expect(await countOf(at.db, 'meeting_attendees')).toBe(3)
-    expect(await countOf(at.db, 'person_projects')).toBe(3)
+    // The six `about` links are relations (0030). 0038 copies the rest into the modules' own: the
+    // four attendances rows of their meetings, the eight `belongs` a field of a person, a meeting
+    // or an item, and of the three recommendations the first per item is its field, the other one
+    // a relation by hand. Rows soft-deleted by the last release are still here: the script buries
+    // them (tests/platform/redesign-script.test.ts).
+    expect(await countOf(at.db, "relations where origin = 'manual'")).toBe(7)
+    expect(await countOf(at.db, 'meeting_attendees')).toBe(4)
+    expect(await countOf(at.db, 'person_projects')).toBe(4)
     expect(
       (await countOf(at.db, 'meetings where project_id is not null')) +
         (await countOf(at.db, 'reading_items where project_id is not null')),
-    ).toBe(3)
+    ).toBe(4)
     expect(await countOf(at.db, 'reading_items where recommended_by is not null')).toBe(2)
     // The edge table itself stays, untouched, until the cleanup release: the migration report
     // counts the rows above against it.
-    expect(await countOf(at.db, 'links')).toBe(BEFORE.links - 4)
+    expect(await countOf(at.db, 'links')).toBe(BEFORE.links - 6)
   })
 })

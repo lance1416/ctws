@@ -17,6 +17,22 @@ services:
       timeout: 5s
       retries: 10
 
+  # A full dump before the api starts, so the move to the new layout always has a backup to go
+  # back to (RFC-001 3.2). Runs on every `up`; fails -> the api does not start.
+  backup:
+    image: postgres:18-alpine
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+    command:
+      - sh
+      - -c
+      - pg_dump -h postgres -U ${POSTGRES_USER:-ctws} -d ${POSTGRES_DB:-ctws} -Fc -f "/backups/$(date -u +%Y%m%dT%H%M%SZ)-pre-redesign.dump"
+    volumes:
+      - backups:/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   api:
     image: ${IMAGE:?IMAGE must be set, e.g. ghcr.io/<owner>/ctws:v1.0.0}
     restart: unless-stopped
@@ -28,6 +44,7 @@ services:
       # Per-minute cap on auth endpoints; the app defaults to 20 when unset. Raise it if a shared
       # tunnel IP trips it (DEPLOY.md section 4).
       AUTH_RATE_LIMIT_MAX: ${AUTH_RATE_LIMIT_MAX:-20}
+      BACKUPS_DIR: /backups
     healthcheck:
       test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:3000/api/v1/health']
       interval: 5s
@@ -36,6 +53,10 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      backup:
+        condition: service_completed_successfully
+    volumes:
+      - backups:/backups:ro
     ports:
       # Loopback by default, so nothing is reachable off the box. Set API_BIND to this host's
       # LAN address when the tunnel runs elsewhere (e.g. its own LXC) -- see DEPLOY.md section 4.
@@ -43,3 +64,4 @@ services:
 
 volumes:
   pgdata:
+  backups:

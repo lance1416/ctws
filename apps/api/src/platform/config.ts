@@ -22,6 +22,12 @@ const raw = z.object({
   // An ISO instant the whole server treats as now, for a test or acceptance stack whose "today",
   // "overdue" and "birthday in 3 days" must come out the same on every run. Never set in production.
   CLOCK_PINNED_AT: z.iso.datetime({ offset: true }).optional(),
+  // Where the compose `backup` service leaves its dump; the data migration refuses to run without
+  // a dump there. Unset: no data migration is attempted (a development database with no old data).
+  BACKUPS_DIR: z.string().optional(),
+  // A step name that makes the data migration fail on purpose, to rehearse the failure path. Never
+  // set in production.
+  MIGRATION_FAIL_AT: z.string().optional(),
 })
 
 export type Env = {
@@ -35,6 +41,8 @@ export type Env = {
   webDist: string | undefined
   /** The instant the server is pinned to, when it is. */
   clockPinnedAt: Date | undefined
+  backupsDir: string | undefined
+  migrationFailAt: string | undefined
 }
 
 export function parseEnv(source: Record<string, string | undefined>): Env {
@@ -61,5 +69,7 @@ export function parseEnv(source: Record<string, string | undefined>): Env {
     authCeiling: parsed.AUTH_CEILING,
     cookieSecure: parsed.COOKIE_SECURE,
     webDist: parsed.WEB_DIST || undefined,
+    backupsDir: parsed.BACKUPS_DIR || undefined,
+    migrationFailAt: parsed.MIGRATION_FAIL_AT || undefined,
   }
 }

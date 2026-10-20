@@ -21,6 +21,7 @@ import { linkRoutes, linkRegistry } from './shell/links'
 import { timelineRoutes } from './shell/events'
 import { relationRoutes } from './shell/relations'
 import { resourceRoutes } from './shell/resources'
+import { migrationRoutes } from './shell/migration'
 import { tombstoneRoutes } from './shell/tombstones'
 import { type ProjectGraves, projectLinkable, projectRoutes } from './shell/projects'
 import { cityRoutes } from './shell/cities'
@@ -123,6 +124,7 @@ export async function buildApp(opts: {
         await authed.register(relationRoutes, { registry })
         await authed.register(resourceRoutes, { registry })
         await authed.register(tombstoneRoutes)
+        await authed.register(migrationRoutes)
         await authed.register(calendarDayRoutes)
         await authed.register(cityRoutes)
         for (const m of modules) {

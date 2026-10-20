@@ -56,6 +56,25 @@ const keyOf = ([name, region, country]: Row): string => `${name}|${region}|${cou
  * The zone a city keeps time in, by its key, or by its shown label when only that is stored:
  * namesakes then resolve to the most populous one, which is the table's order (FR-049).
  */
+/** A stored city resolved to the table: by its key, by its full label, or by its bare name. */
+export type ResolvedCity = { key: string; label: string; timeZone: string; byNameOnly: boolean }
+
+/**
+ * What the migration makes of a city the last release stored as text: the row its key or its
+ * full label names, else the most populous row with that bare name (`Cambridge`), flagged so
+ * the report can say the match was by name alone (FR-099).
+ */
+export function resolveCity(key: string | null, label: string | null): ResolvedCity | null {
+  const exact =
+    (key !== null && CITIES.find((r) => keyOf(r) === key)) ||
+    (label !== null && CITIES.find((r) => labelOf(r) === label.trim()))
+  if (exact) return { ...cityOf(exact), byNameOnly: false }
+  if (label === null) return null
+  const name = plain(label.split(',')[0]!.trim())
+  const i = NAMES.indexOf(name)
+  return i < 0 ? null : { ...cityOf(CITIES[i]!), byNameOnly: true }
+}
+
 export function cityTimeZone(key: string | null, label: string | null): string | null {
   if (key !== null) {
     const row = CITIES.find((r) => keyOf(r) === key)
