@@ -87,6 +87,8 @@ export const organisationTypesResponse = z.object({
  */
 export const organisationOverviewResponse = z.object({
   types: z.array(z.object({ type: z.string(), count: z.number().int().nonnegative() })),
+  /** With no type at all; a page may show them as "Other". */
+  untyped: z.number().int().nonnegative(),
   total: z.number().int().nonnegative(),
 })
 

@@ -1,6 +1,6 @@
 import type { MigrationItem, ObjectType, TaskStatus, WorkspaceId } from '@ctws/contracts'
 import { derivedStatus, displayName, sortKey, splitName } from '@ctws/core'
-import { sql } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { v7 as uuidv7 } from 'uuid'
@@ -8,7 +8,7 @@ import { z } from 'zod'
 import type { Db, Tx } from '../../platform/db/client'
 import { rowsOf } from '../../platform/db/raw'
 import { resolveCity } from '../cities'
-import { type MigrationCounts, migrationReports } from './tables'
+import { migrationBackup, type MigrationCounts, migrationReports } from './tables'
 
 /**
  * THE MOVE TO THE NEW LAYOUT (RFC-001 3.1, FR-090 to FR-099).
@@ -80,11 +80,19 @@ class MigrationFailure extends Error {
 const id = () => uuidv7()
 
 /**
- * The backup of record: the OLDEST dump in the directory. The `backup` service dumps before every
- * start of the new version, so the first dump is the one from before any schema migration ran;
- * a retry's dump is of a database already changed. No backup, no move (FR-090).
+ * The backup of record, chosen once per release and remembered in the database: at the first
+ * attempt it is the newest dump, the one the `backup` service made just before this start, from
+ * before any schema migration ran. A retry reuses the remembered one, since every dump made since
+ * is of a database already changed; a rollback restores a database that remembers nothing, so the
+ * next release chooses afresh (BUG-013, BUG-014). No backup, no move (FR-090).
  */
-function backupOfRecord(dir: string): { name: string; bytes: number } {
+async function backupOfRecord(
+  db: Db,
+  dir: string,
+  now: Date,
+): Promise<{ name: string; bytes: number }> {
+  const [kept] = await db.select().from(migrationBackup).where(eq(migrationBackup.key, 'current'))
+  if (kept) return { name: kept.backupRef, bytes: Number(kept.backupBytes) }
   let names: string[]
   try {
     names = readdirSync(dir).filter((n) => n.endsWith('.dump'))
@@ -92,10 +100,17 @@ function backupOfRecord(dir: string): { name: string; bytes: number } {
     throw new Error(`No backup directory at ${dir}: refusing to migrate without a backup`)
   }
   if (names.length === 0) throw new Error(`No backup in ${dir}: refusing to migrate without one`)
-  const first = names
+  const newest = names
     .map((name) => ({ name, at: statSync(join(dir, name)).mtimeMs }))
-    .sort((a, b) => a.at - b.at)[0]!
-  return { name: first.name, bytes: statSync(join(dir, first.name)).size }
+    .sort((a, b) => b.at - a.at)[0]!
+  const chosen = { name: newest.name, bytes: statSync(join(dir, newest.name)).size }
+  await db.insert(migrationBackup).values({
+    key: 'current',
+    backupRef: chosen.name,
+    backupBytes: String(chosen.bytes),
+    chosenAt: now,
+  })
+  return chosen
 }
 
 export async function runRedesignMigration(
@@ -126,7 +141,7 @@ export async function runRedesignMigration(
     )
   }
   if (opts.failAt?.step === 'backup') throw new MigrationFailure('backup')
-  const backup = backupOfRecord(opts.backupsDir)
+  const backup = await backupOfRecord(db, opts.backupsDir, opts.now)
   log(`redesign migration: backup of record ${backup.name} (${backup.bytes} bytes)`)
 
   for (const workspaceId of workspaces) {

@@ -87,7 +87,8 @@ export const organisationRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry 
     on(api.organisations.overview, async (req) => {
       const { workspaceId } = currentUser(req)
       const types = await organisationTypes(app.db, workspaceId)
-      return { types, total: await countOrganisations(app.db, workspaceId) }
+      const total = await countOrganisations(app.db, workspaceId)
+      return { types, untyped: total - types.reduce((n, t) => n + t.count, 0), total }
     }),
 
     on(api.organisations.search, async (req) => {

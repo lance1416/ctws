@@ -294,6 +294,7 @@ describe('the overview (BUG-010)', () => {
         { type: 'Company', count: 1 },
         { type: 'Law firm', count: 1 },
       ],
+      untyped: 1,
       total: 3,
     })
   })

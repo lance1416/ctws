@@ -23,8 +23,8 @@ const NOW = new Date('2026-10-20T09:00:00.000Z')
 function backupsDir(withDump = true): string {
   const dir = mkdtempSync(join(tmpdir(), 'ctws-backups-'))
   if (withDump) {
-    // The first dump, from before any schema migration, and a later one from a retry: the first
-    // is the one to go back to (BUG-013).
+    // An old dump from an earlier start, and the one the backup service made just now: the newest
+    // is the one from before this start's schema migrations (BUG-013, BUG-014).
     writeFileSync(join(dir, '20261020T085900Z-pre-redesign.dump'), 'PGDMP fake')
     const later = join(dir, '20261020T091500Z-pre-redesign.dump')
     writeFileSync(later, 'PGDMP after the schema moved')
@@ -65,7 +65,7 @@ describe('the move, on the pre-redesign data', () => {
     expect(outcome.migrated).toHaveLength(2)
     expect(outcome.failed).toEqual([])
     // The log says which backup and how many of each (release.md step 4).
-    expect(lines.some((l) => l.includes('20261020T085900Z-pre-redesign.dump'))).toBe(true)
+    expect(lines.some((l) => l.includes('20261020T091500Z-pre-redesign.dump'))).toBe(true)
 
     // Names (FR-095): a compound surname, a middle name, one word, a comma, a space inside.
     const names = await db.execute(sql`
@@ -395,6 +395,32 @@ describe('the move, on the pre-redesign data', () => {
     // The other workspace, whose counts add up, is moved; this one is as it was.
     expect(reports.rows).toHaveLength(1)
     expect(await countOf(db, "organisations where name = 'Tencent'")).toBe(0)
+  })
+
+  it('keeps the backup it chose first through a retry, and chooses anew after a rollback (BUG-014)', async () => {
+    const { db } = await moved()
+    const dir = backupsDir()
+    const attempt = (failAt?: string) =>
+      runRedesignMigration(db, {
+        backupsDir: dir,
+        failAt: parseFailAt(failAt),
+        now: NOW,
+        log: () => {},
+      })
+    await expect(attempt('meetings')).rejects.toThrow(/MIGRATION_FAIL_AT/)
+    // The failed attempt remembered its backup; a newer dump appears before the retry.
+    writeFileSync(join(dir, '20261020T093000Z-pre-redesign.dump'), 'PGDMP from the retry')
+    await attempt()
+    const refs = await db.execute(sql`select distinct backup_ref from migration_reports`)
+    expect(refs.rows).toEqual([{ backup_ref: '20261020T091500Z-pre-redesign.dump' }])
+    // A rollback restores a database that remembers nothing: the next release starts afresh.
+    // (These rows have moved once already, so the run only has to choose and then refuse.)
+    await db.execute(sql`delete from migration_reports`)
+    await db.execute(sql`delete from migration_backup`)
+    await db.execute(sql`update workspaces set moved_at = null`)
+    await expect(attempt('count')).rejects.toThrow(/MIGRATION_FAIL_AT=count/)
+    const chosen = await db.execute(sql`select backup_ref from migration_backup`)
+    expect(chosen.rows).toEqual([{ backup_ref: '20261020T093000Z-pre-redesign.dump' }])
   })
 
   it('refuses to move anything without a backup to go back to', async () => {
