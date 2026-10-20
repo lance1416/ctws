@@ -15,6 +15,7 @@ import { rowsOf } from '../../platform/db/raw'
 import { scoped, within } from '../../platform/db/scope'
 import { localDay } from '../../platform/db/time'
 import { groupBy } from '../../platform/values'
+import { afterCursor, type TimelineSpan } from '../../shell/events'
 import { projectScope } from '../../shell/projects'
 import { type Communication, communicationParties, communications } from './tables'
 
@@ -200,9 +201,13 @@ export async function communicationsWith(
   q: Queryable,
   workspaceId: WorkspaceId,
   party: Party | { type: 'project'; id: string },
-  { limit, before }: { limit: number; before: Date | null },
+  span: TimelineSpan,
 ): Promise<CommunicationRow[]> {
-  const upTo = before ? lte(communications.occurredAt, before) : undefined
+  const upTo = afterCursor(span, 'message', {
+    at: communications.occurredAt,
+    id: communications.id,
+  })
+  const limit = span.limit
   const rows =
     party.type === 'project'
       ? await q

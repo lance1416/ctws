@@ -33,7 +33,7 @@ export const updateProjectBody = patchOf({
 })
 
 /** One of a project's stages, with how many live tasks are at it. */
-const stageResponse = z.object({
+export const stageResponse = z.object({
   id: stageId,
   name: z.string(),
   collapsed: z.boolean(),

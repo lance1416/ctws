@@ -1,6 +1,6 @@
 import type { SQL } from 'drizzle-orm'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
-import type { TimelineSource } from './events/timeline'
+import type { TimelineSource } from './events'
 import type { Linkable } from './links/linkable'
 import type { LinkRegistry } from './links/registry'
 import type { ProjectGraves } from './projects/service'

@@ -190,3 +190,53 @@ describe('a project’s stages', () => {
     })
   })
 })
+
+describe('a stage merged into itself (BUG-011)', () => {
+  it('is refused with 422, and the stage stays', async () => {
+    const { ctx, projectId: project } = await setup()
+    const made = await ctx.app.inject({
+      method: 'PUT',
+      url: `/api/v1/projects/${project}/stages`,
+      headers: ctx.authed,
+      payload: { stages: [{ name: 'Applied' }] },
+    })
+    const [applied] = (made.json() as { stages: { id: string }[] }).stages
+    const res = await ctx.app.inject({
+      method: 'PUT',
+      url: `/api/v1/projects/${project}/stages`,
+      headers: ctx.authed,
+      payload: { stages: [{ id: applied!.id, name: 'Applied', mergeInto: applied!.id }] },
+    })
+    expect(res.statusCode).toBe(422)
+    const after = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/projects/${project}`,
+      headers: ctx.authed,
+    })
+    expect((after.json() as { stages: { name: string }[] }).stages.map((s) => s.name)).toEqual([
+      'Applied',
+    ])
+  })
+})
+
+describe('the board carries the stages (BUG-010)', () => {
+  it("lists them in order with each one's count", async () => {
+    const { ctx, projectId } = await setup()
+    await ctx.app.inject({
+      method: 'PUT',
+      url: `/api/v1/projects/${projectId}/stages`,
+      headers: ctx.authed,
+      payload: { stages: [{ name: 'Applied' }, { name: 'Onsite' }] },
+    })
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/tasks?projectId=${projectId}`,
+      headers: ctx.authed,
+    })
+    expect(res.statusCode, res.body).toBe(200)
+    expect((res.json() as { stages: { name: string; count: number }[] }).stages).toMatchObject([
+      { name: 'Applied', count: 0 },
+      { name: 'Onsite', count: 0 },
+    ])
+  })
+})

@@ -19,7 +19,7 @@ import {
 import { calendarDayRoutes } from './shell/calendar'
 import { linkRoutes, linkRegistry } from './shell/links'
 import { timelineRoutes } from './shell/events'
-import { relationRoutes } from './shell/relations'
+import { mentionSource, relationRoutes } from './shell/relations'
 import { resourceRoutes } from './shell/resources'
 import { migrationRoutes } from './shell/migration'
 import { tombstoneRoutes } from './shell/tombstones'
@@ -105,7 +105,7 @@ export async function buildApp(opts: {
   const { modules } = opts
   const registry = linkRegistry([...modules.map((m) => m.linkable), projectLinkable])
   const columns = Object.assign({}, ...modules.map((m) => m.projectColumns ?? {}))
-  const sources = modules.flatMap((m) => m.timelineSources ?? [])
+  const sources = [...modules.flatMap((m) => m.timelineSources ?? []), mentionSource(registry)]
   const graves: ProjectGraves = async (tx, workspaceId, projectId) =>
     (
       await Promise.all(modules.map((m) => m.projectGraves?.(tx, workspaceId, projectId) ?? []))

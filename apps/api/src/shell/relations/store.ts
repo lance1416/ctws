@@ -6,7 +6,7 @@ import {
   type WorkspaceId,
 } from '@ctws/contracts'
 import { mentionsIn } from '@ctws/core'
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray, or } from 'drizzle-orm'
 import type { Queryable, Tx } from '../../platform/db/client'
 import { newId } from '../../platform/db/ids'
 import { NotFound } from '../../platform/errors'
@@ -57,6 +57,31 @@ export async function addRelation(
   ctx: Actor,
   { from, to, note }: { from: Endpoint; to: Endpoint; note?: string | null | undefined },
 ): Promise<{ relation: Relation; created: boolean }> {
+  // The pair may already be related from the other end: a relation has no direction (FR-042).
+  const [either] = await tx
+    .select()
+    .from(relations)
+    .where(
+      within(
+        scoped(relations, ctx.workspaceId),
+        eq(relations.origin, 'manual'),
+        or(
+          and(
+            eq(relations.fromType, from.type),
+            eq(relations.fromId, from.id),
+            eq(relations.toType, to.type),
+            eq(relations.toId, to.id),
+          ),
+          and(
+            eq(relations.fromType, to.type),
+            eq(relations.fromId, to.id),
+            eq(relations.toType, from.type),
+            eq(relations.toId, from.id),
+          ),
+        ),
+      ),
+    )
+  if (either) return { relation: either, created: false }
   const [added] = await tx
     .insert(relations)
     .values({

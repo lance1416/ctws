@@ -79,8 +79,12 @@ class MigrationFailure extends Error {
 
 const id = () => uuidv7()
 
-/** The newest dump in the backups directory, or a refusal: no backup, no move (FR-090). */
-function latestBackup(dir: string): { name: string; bytes: number } {
+/**
+ * The backup of record: the OLDEST dump in the directory. The `backup` service dumps before every
+ * start of the new version, so the first dump is the one from before any schema migration ran;
+ * a retry's dump is of a database already changed. No backup, no move (FR-090).
+ */
+function backupOfRecord(dir: string): { name: string; bytes: number } {
   let names: string[]
   try {
     names = readdirSync(dir).filter((n) => n.endsWith('.dump'))
@@ -88,10 +92,10 @@ function latestBackup(dir: string): { name: string; bytes: number } {
     throw new Error(`No backup directory at ${dir}: refusing to migrate without a backup`)
   }
   if (names.length === 0) throw new Error(`No backup in ${dir}: refusing to migrate without one`)
-  const newest = names
+  const first = names
     .map((name) => ({ name, at: statSync(join(dir, name)).mtimeMs }))
-    .sort((a, b) => b.at - a.at)[0]!
-  return { name: newest.name, bytes: statSync(join(dir, newest.name)).size }
+    .sort((a, b) => a.at - b.at)[0]!
+  return { name: first.name, bytes: statSync(join(dir, first.name)).size }
 }
 
 export async function runRedesignMigration(
@@ -122,7 +126,7 @@ export async function runRedesignMigration(
     )
   }
   if (opts.failAt?.step === 'backup') throw new MigrationFailure('backup')
-  const backup = latestBackup(opts.backupsDir)
+  const backup = backupOfRecord(opts.backupsDir)
   log(`redesign migration: backup of record ${backup.name} (${backup.bytes} bytes)`)
 
   for (const workspaceId of workspaces) {

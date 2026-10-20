@@ -80,5 +80,15 @@ export const organisationTypesResponse = z.object({
   types: z.array(z.object({ type: z.string(), count: z.number().int().nonnegative() })),
 })
 
+/**
+ * The organisations overview (FR-064): each type with its count, and how many there are. The
+ * "In touch, last 30 days" table is `communication?view=overview`'s `inTouch`, which the page reads
+ * beside this.
+ */
+export const organisationOverviewResponse = z.object({
+  types: z.array(z.object({ type: z.string(), count: z.number().int().nonnegative() })),
+  total: z.number().int().nonnegative(),
+})
+
 /** Fold this organisation into another: its roles and relations move, and it goes (FR-099). */
 export const mergeOrganisationBody = z.object({ into: organisationId }).strict()

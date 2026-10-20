@@ -122,27 +122,26 @@ export const communicationRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry
                 .rows(app.db, user.workspaceId, { ids, limit: ids.length })
             ).map((o) => [o.id, o.title]),
       )
-      const inTouch: OrganisationInTouch[] = touched
-        .slice(0, OVERVIEW_ROWS)
-        .filter((t) => orgs.has(t.organisationId))
-        .map((t) => ({
-          organisationId: t.organisationId as OrganisationInTouch['organisationId'],
-          organisationName: orgs.get(t.organisationId)!,
-          peopleCount: t.peopleCount,
-          lastContact: {
-            communicationId: t.lastId as OrganisationInTouch['lastContact']['communicationId'],
-            direction: t.lastDirection,
-            occurredAt: t.lastAt,
-            subject: t.lastSubject,
-          },
-          next:
-            t.followUpOn !== null
-              ? { kind: 'follow-up', on: t.followUpOn, late: t.followUpOn < today(req) }
-              : t.unansweredDays !== null && t.unansweredDays >= NO_REPLY_AFTER_DAYS
-                ? { kind: 'no-reply', days: t.unansweredDays }
-                : { kind: 'nothing' },
-        }))
-      return { awaiting, awaitingTotal: awaitingRows.length, inTouch, inTouchTotal: touched.length }
+      // Only organisations that can still be seen count, before the table is cut to its rows.
+      const seen = touched.filter((t) => orgs.has(t.organisationId))
+      const inTouch: OrganisationInTouch[] = seen.slice(0, OVERVIEW_ROWS).map((t) => ({
+        organisationId: t.organisationId as OrganisationInTouch['organisationId'],
+        organisationName: orgs.get(t.organisationId)!,
+        peopleCount: t.peopleCount,
+        lastContact: {
+          communicationId: t.lastId as OrganisationInTouch['lastContact']['communicationId'],
+          direction: t.lastDirection,
+          occurredAt: t.lastAt,
+          subject: t.lastSubject,
+        },
+        next:
+          t.followUpOn !== null
+            ? { kind: 'follow-up', on: t.followUpOn, late: t.followUpOn < today(req) }
+            : t.unansweredDays !== null && t.unansweredDays >= NO_REPLY_AFTER_DAYS
+              ? { kind: 'no-reply', days: t.unansweredDays }
+              : { kind: 'nothing' },
+      }))
+      return { awaiting, awaitingTotal: awaitingRows.length, inTouch, inTouchTotal: seen.length }
     }),
 
     on(

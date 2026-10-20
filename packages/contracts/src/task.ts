@@ -3,6 +3,7 @@ import { projectId, type ProjectId, stageId, taskId, type TaskId } from './id'
 import { WINDOW_REFUSED, windowIsBounded } from './calendar'
 import { calendarDate, documentText, instant, patchOf, titleText, viewQuery } from './common'
 import { pageInfo, pageQuery } from './page'
+import { stageResponse } from './project'
 
 export const TASK_STATUSES = ['backlog', 'todo', 'in_progress', 'done', 'cancelled'] as const
 const taskStatus = z.enum(TASK_STATUSES)
@@ -159,6 +160,8 @@ export const projectTasksQuery = z.object({ projectId: projectId }).strict()
 
 /** A project's flat task list with each task's rollup and what is still in its way. */
 export const projectTasksResponse = z.object({
+  /** The project's stages, in order, for the board by stage (FR-058). */
+  stages: z.array(stageResponse),
   tasks: z.array(taskResponse),
   rollups: z.record(taskId, rollupResponse),
   /** Keyed by the waiting task; unfinished blockers only. */

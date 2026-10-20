@@ -86,6 +86,14 @@ export async function lockOrganisation(
 
 const typeRow = z.object({ type: z.string(), count: z.number() })
 
+/** How many organisations there are, typed or not. */
+export async function countOrganisations(q: Queryable, workspaceId: WorkspaceId): Promise<number> {
+  const result = await q.execute(
+    sql`select count(*)::int as n from organisations where ${scoped(organisations, workspaceId)}`,
+  )
+  return (result.rows[0] as { n: number }).n
+}
+
 /** The types used so far, most used first, with how many organisations have each. */
 export async function organisationTypes(
   q: Queryable,

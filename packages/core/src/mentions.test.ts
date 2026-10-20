@@ -4,6 +4,17 @@ import { mentionAddress, mentionsIn } from './mentions'
 const mira = '0199f1a2-0000-7000-8000-000000000001'
 const amazon = '0199f1a2-0000-7000-8000-000000000002'
 
+describe('a sentence with an abbreviation in it (BUG-012)', () => {
+  it('keeps "Mr." inside the sentence, and still splits at a full stop before a space', () => {
+    const m = `ctws://person/${'0190a7c2-6f00-7000-8000-00000000000a'}`
+    const text = `Mr. Smith 和 [@Mira](${m}) 说了。后面一句。 她说 OK. 然后 [@Mira](${m}) 走了.`
+    expect(mentionsIn(text).map((x) => x.excerpt)).toEqual([
+      `Mr. Smith 和 [@Mira](${m}) 说了。`,
+      `然后 [@Mira](${m}) 走了.`,
+    ])
+  })
+})
+
 describe('mentionsIn', () => {
   it('finds a mention and keeps the sentence it is in', () => {
     const text = `Ask around first. [@Mira Chen](ctws://person/${mira}) said she can look at the CV. Then apply.`

@@ -1,4 +1,5 @@
 import { api } from '@ctws/contracts'
+import { stagesOf } from '../../shell/projects'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { on, serve } from '../../platform/http/serve'
 import { actorOf, currentUser } from '../../shell/auth'
@@ -92,6 +93,10 @@ export const taskRoutes: FastifyPluginAsyncZod = async (app) => {
         app.clock(),
       )
       return {
+        stages:
+          (await stagesOf(app.db, user.workspaceId, [req.query.projectId])).get(
+            req.query.projectId,
+          ) ?? [],
         tasks: board.tasks.map(toTaskResponse),
         rollups: Object.fromEntries(board.rollups),
         blockers: Object.fromEntries(board.blockers),

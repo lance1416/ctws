@@ -113,6 +113,7 @@ import {
   organisationParams,
   organisationResponse,
   organisationsResponse,
+  organisationOverviewResponse,
   organisationTypesResponse,
   updateOrganisationBody,
 } from './organisation'
@@ -972,6 +973,15 @@ export const api = {
       query: viewQuery('types'),
       ok: 200,
       response: organisationTypesResponse,
+    }),
+    overview: endpoint({
+      method: 'GET',
+      path: '/organisations',
+      summary:
+        'The organisations overview: each type with its count, and the total (view=overview).',
+      query: viewQuery('overview'),
+      ok: 200,
+      response: organisationOverviewResponse,
     }),
     search: endpoint({
       method: 'GET',

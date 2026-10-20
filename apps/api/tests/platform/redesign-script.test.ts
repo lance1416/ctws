@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, rmSync, utimesSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { MigrationItem } from '@ctws/contracts'
@@ -22,7 +22,16 @@ const NOW = new Date('2026-10-20T09:00:00.000Z')
 /** A backups directory with one dump in it, as the compose `backup` service leaves it. */
 function backupsDir(withDump = true): string {
   const dir = mkdtempSync(join(tmpdir(), 'ctws-backups-'))
-  if (withDump) writeFileSync(join(dir, '20261020T085900Z-pre-redesign.dump'), 'PGDMP fake')
+  if (withDump) {
+    // The first dump, from before any schema migration, and a later one from a retry: the first
+    // is the one to go back to (BUG-013).
+    writeFileSync(join(dir, '20261020T085900Z-pre-redesign.dump'), 'PGDMP fake')
+    const later = join(dir, '20261020T091500Z-pre-redesign.dump')
+    writeFileSync(later, 'PGDMP after the schema moved')
+    const now = Date.now()
+    utimesSync(join(dir, '20261020T085900Z-pre-redesign.dump'), now / 1000 - 600, now / 1000 - 600)
+    utimesSync(later, now / 1000, now / 1000)
+  }
   stops.push(async () => rmSync(dir, { recursive: true, force: true }))
   return dir
 }

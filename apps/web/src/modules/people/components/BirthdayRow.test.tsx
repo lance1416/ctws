@@ -14,6 +14,7 @@ const row = (over: Partial<BirthdayListRow> = {}): BirthdayListRow => ({
   turns: 35,
   lunarDate: '农历九月初三',
   kept: [],
+  timeZone: 'Europe/London',
   ...over,
 })
 

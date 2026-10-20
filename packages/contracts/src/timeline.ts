@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { instant } from './common'
-import { objectId } from './id'
+import { objectId, relationId } from './id'
 import { objectType } from './object'
 
 /**
@@ -8,7 +8,7 @@ import { objectType } from './object'
  * newest first. Each entry is one of these kinds; a module that keeps a kind of entry (messages,
  * meetings, notes) adds its own shape here as it arrives.
  */
-const TIMELINE_KINDS = ['change', 'message', 'note'] as const
+const TIMELINE_KINDS = ['change', 'message', 'meeting', 'note', 'mention'] as const
 export type TimelineKind = (typeof TIMELINE_KINDS)[number]
 
 /** One recorded change to the thing itself: the log's own row, as the module logged it. */
@@ -35,6 +35,20 @@ const messageEntry = z.object({
   }),
 })
 
+/** One occurrence of a meeting the thing was in: a person attended it, a project held it. */
+const meetingEntry = z.object({
+  kind: z.literal('meeting'),
+  at: instant,
+  meeting: z.object({
+    meetingId: objectId,
+    recurrenceId: z.string(),
+    title: z.string(),
+    durationMinutes: z.number().int().positive(),
+    timeZone: z.string(),
+    attendees: z.array(z.object({ id: objectId, name: z.string() })),
+  }),
+})
+
 /** A note hung on the thing (FR-045, FR-050). */
 const noteEntry = z.object({
   kind: z.literal('note'),
@@ -49,7 +63,22 @@ const noteEntry = z.object({
   }),
 })
 
-const timelineEntry = z.discriminatedUnion('kind', [changeEntry, messageEntry, noteEntry])
+/** Somewhere the thing was mentioned: the sentence, and what it was written in (FR-042). */
+const mentionEntry = z.object({
+  kind: z.literal('mention'),
+  relationId,
+  at: instant,
+  from: z.object({ type: objectType, id: objectId, title: z.string() }),
+  excerpt: z.string(),
+})
+
+const timelineEntry = z.discriminatedUnion('kind', [
+  changeEntry,
+  messageEntry,
+  meetingEntry,
+  noteEntry,
+  mentionEntry,
+])
 export type TimelineEntry = z.infer<typeof timelineEntry>
 
 /** How many entries a page holds; the timeline is read a segment at a time (FR-015). */

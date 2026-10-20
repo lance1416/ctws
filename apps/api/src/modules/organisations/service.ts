@@ -19,7 +19,9 @@ import {
   assertOrganisationsVisible,
   getOrganisation,
   lockOrganisation,
+  monthOf,
   monthStart,
+  rolesOf,
 } from './queries'
 import { type Organisation, organisations, personRoles } from './tables'
 
@@ -98,8 +100,8 @@ export async function deleteOrganisation(db: Db, ctx: Actor, id: OrganisationId)
 }
 
 /**
- * Folds one organisation into another (FR-099): its roles, relations and resources move across,
- * and it is deleted. A role that would then repeat one at the target is kept too: two roles at the
+ * Folds one organisation into another (FR-099): its roles, relations, resources and the exchanges
+ * it was party to move across, and it is deleted. A role that would then repeat one at the target is kept too: two roles at the
  * same company are two roles.
  */
 export async function mergeOrganisation(
@@ -125,6 +127,18 @@ export async function mergeOrganisation(
     await tx.execute(sql`
       update resources set owner_id = ${kept.id}
       where owner_type = 'organisation' and owner_id = ${gone.id}`)
+    // The exchanges it was party to are the kept one's now; one that already named both keeps
+    // the one row (BUG-005).
+    await tx.execute(sql`
+      delete from communication_parties p
+      where p.party_type = 'organisation' and p.party_id = ${gone.id}
+        and exists (
+          select 1 from communication_parties k
+          where k.communication_id = p.communication_id
+            and k.party_type = 'organisation' and k.party_id = ${kept.id})`)
+    await tx.execute(sql`
+      update communication_parties set party_id = ${kept.id}
+      where party_type = 'organisation' and party_id = ${gone.id}`)
     await tx.delete(organisations).where(eq(organisations.id, gone.id))
     await tx.execute(
       sql`delete from events where object_type = 'organisation' and object_id = ${gone.id}`,
@@ -153,6 +167,43 @@ export async function putRoles(
     ctx.workspaceId,
     roles.map((r) => r.organisationId),
   )
+  // What changed, by organisation, before the set is replaced (FR-044).
+  const before = (await rolesOf(tx, ctx.workspaceId, [personId])).get(personId) ?? []
+  const log = eventLog(tx, ctx)
+  const person = { type: 'person' as const, id: personId }
+  const shape = (r: { title: string | null; from: string | null; to: string | null }) => ({
+    title: r.title,
+    from: r.from,
+    to: r.to,
+  })
+  const wasAt = new Map(before.map((r) => [r.organisationId, r]))
+  const nowAt = new Map(
+    roles.map((r) => [
+      r.organisationId,
+      { title: r.title ?? null, from: r.from ?? null, to: r.to ?? null },
+    ]),
+  )
+  for (const [organisationId, next] of nowAt) {
+    const was = wasAt.get(organisationId)
+    if (!was) {
+      await log.append(person, 'role_added', { organisationId, ...next })
+    } else if (
+      was.title !== next.title ||
+      monthOf(was.fromMonth) !== next.from ||
+      monthOf(was.toMonth) !== next.to
+    ) {
+      await log.append(person, 'role_changed', {
+        organisationId,
+        from: { title: was.title, from: monthOf(was.fromMonth), to: monthOf(was.toMonth) },
+        to: shape(next),
+      })
+    }
+  }
+  for (const [organisationId, was] of wasAt) {
+    if (!nowAt.has(organisationId)) {
+      await log.append(person, 'role_removed', { organisationId, title: was.title })
+    }
+  }
   await replaceRows(
     tx,
     personRoles,

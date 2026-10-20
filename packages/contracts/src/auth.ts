@@ -40,6 +40,11 @@ export const userResponse = z.object({
  * which a test or acceptance stack pins (`CLOCK_PINNED_AT`), so the page can count from the same
  * instant the server does. When `clockPinned` is false the page may use its own clock.
  */
-export const meResponse = userResponse.extend({ now: instant, clockPinned: z.boolean() })
+export const meResponse = userResponse.extend({
+  now: instant,
+  clockPinned: z.boolean(),
+  /** The report of the move to the new layout, while it is not Done: how many items wait. */
+  migrationReport: z.object({ pending: z.number().int().nonnegative() }).nullable(),
+})
 
 export type UserResponse = z.infer<typeof userResponse>

@@ -1,4 +1,5 @@
 import type { OrganisationResponse, PersonResponse } from '@ctws/contracts'
+import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createOrganisation, createPerson } from '../../helpers/builders'
 import { appWithUser, type Harness, secondUser } from '../../helpers/harness'
@@ -193,5 +194,107 @@ describe('roles', () => {
       headers: ctx.authed,
     })
     expect((person.json() as PersonResponse).roles).toEqual([])
+  })
+})
+
+describe('merging keeps what was said with the merged organisation (BUG-005)', () => {
+  it('moves the exchanges across, once each, and the overview still lists them', async () => {
+    const ctx = await setup()
+    const inc = await createOrganisation(ctx, { name: 'Dbg Inc.' })
+    const dbg = await createOrganisation(ctx, { name: 'Dbg' })
+    const say = (parties: { type: string; id: string }[]) =>
+      ctx.app.inject({
+        method: 'POST',
+        url: '/api/v1/communication',
+        headers: ctx.authed,
+        payload: { direction: 'sent', channel: 'email', parties, subject: 'Hi' },
+      })
+    const one = (await say([{ type: 'organisation', id: inc.id }])).json() as { id: string }
+    const both = (
+      await say([
+        { type: 'organisation', id: inc.id },
+        { type: 'organisation', id: dbg.id },
+      ])
+    ).json() as { id: string }
+
+    const merged = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/organisations/${inc.id}/merge`,
+      headers: ctx.authed,
+      payload: { into: dbg.id },
+    })
+    expect(merged.statusCode, merged.body).toBe(200)
+    for (const id of [one.id, both.id]) {
+      const read = await ctx.app.inject({
+        method: 'GET',
+        url: `/api/v1/communication/${id}`,
+        headers: ctx.authed,
+      })
+      expect(read.json().parties).toEqual([{ type: 'organisation', id: dbg.id, name: 'Dbg' }])
+    }
+    const overview = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/v1/communication?view=overview',
+      headers: ctx.authed,
+    })
+    expect(
+      overview.json().inTouch.map((r: { organisationName: string }) => r.organisationName),
+    ).toEqual(['Dbg'])
+    expect(overview.json().inTouchTotal).toBe(1)
+  })
+})
+
+describe('roles are logged (BUG-007)', () => {
+  it('records a role added, changed and removed on the person', async () => {
+    const ctx = await setup()
+    const org = await createOrganisation(ctx, { name: 'Acme' })
+    const person = await createPerson(ctx, { name: 'Ying' })
+    const put = (roles: object[]) =>
+      ctx.app.inject({
+        method: 'PUT',
+        url: `/api/v1/people/${person.id}/roles`,
+        headers: ctx.authed,
+        payload: { roles },
+      })
+    expect((await put([{ organisationId: org.id, title: 'Intern' }])).statusCode).toBe(200)
+    expect((await put([{ organisationId: org.id, title: 'Engineer' }])).statusCode).toBe(200)
+    expect((await put([])).statusCode).toBe(200)
+    const events = await ctx.db.execute(sql`
+      select type, payload from events where object_type = 'person' and object_id = ${person.id}
+      order by occurred_at, id`)
+    expect(events.rows.map((e) => (e as { type: string }).type)).toEqual([
+      'created',
+      'role_added',
+      'role_changed',
+      'role_removed',
+    ])
+    expect(
+      (events.rows[2] as { payload: { from: { title: string }; to: { title: string } } }).payload,
+    ).toMatchObject({
+      from: { title: 'Intern' },
+      to: { title: 'Engineer' },
+    })
+  })
+})
+
+describe('the overview (BUG-010)', () => {
+  it('counts each type, and everything', async () => {
+    const ctx = await setup()
+    await createOrganisation(ctx, { name: 'Stripe', type: 'Company' })
+    await createOrganisation(ctx, { name: 'Harbour & Lane LLP', type: 'Law firm' })
+    await createOrganisation(ctx, { name: 'Somewhere' })
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/v1/organisations?view=overview',
+      headers: ctx.authed,
+    })
+    expect(res.statusCode, res.body).toBe(200)
+    expect(res.json()).toEqual({
+      types: [
+        { type: 'Company', count: 1 },
+        { type: 'Law firm', count: 1 },
+      ],
+      total: 3,
+    })
   })
 })

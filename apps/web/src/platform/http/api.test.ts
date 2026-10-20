@@ -14,6 +14,7 @@ const ME = {
   role: 'member',
   now: '2026-10-01T00:00:00.000Z',
   clockPinned: false,
+  migrationReport: null,
 }
 
 const json = (body: unknown, status = 200) =>

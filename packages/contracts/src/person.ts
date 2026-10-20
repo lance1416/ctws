@@ -236,6 +236,8 @@ const birthdayListRow = z.object({
   lunarDate: z.string().nullable(),
   /** Which fallbacks moved the day this year. */
   kept: z.array(z.string()),
+  /** Whose day it is counted in: the person's own zone, or the account's when they have none. */
+  timeZone: z.string(),
 })
 export type BirthdayListRow = z.infer<typeof birthdayListRow>
 

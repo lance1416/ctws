@@ -222,3 +222,22 @@ describe('relations made by a mention', () => {
     expect(itemsOf(await related(ctx, 'person', mira.id), 'task').map((t) => t.id)).toEqual([task])
   })
 })
+
+describe('a relation has no direction (BUG-006)', () => {
+  it('answers with the one already there when the pair is related from the other end', async () => {
+    const { ctx, task, mira } = await setup()
+    const relate = (from: { type: string; id: string }, to: { type: string; id: string }) =>
+      ctx.app.inject({
+        method: 'POST',
+        url: '/api/v1/relations',
+        headers: ctx.authed,
+        payload: { from, to },
+      })
+    const first = await relate({ type: 'task', id: task }, { type: 'person', id: mira.id })
+    expect(first.statusCode).toBe(201)
+    const again = await relate({ type: 'person', id: mira.id }, { type: 'task', id: task })
+    expect(again.statusCode).toBe(200)
+    expect((again.json() as { id: string }).id).toBe((first.json() as { id: string }).id)
+    expect(itemsOf(await related(ctx, 'person', mira.id), 'task')).toHaveLength(1)
+  })
+})

@@ -7,6 +7,7 @@ import { InvalidCredentialsError } from './errors'
 import { signInLimits } from './limits'
 import { authenticate, loadAccount, registerUser } from './service'
 import { createSession, revokeSession } from './session'
+import { migrationPending } from '../migration'
 
 /** Registration, sign-in and sign-out: reachable without a session. */
 export const publicAuthRoutes: FastifyPluginAsyncZod = async (app) => {
@@ -75,6 +76,7 @@ export const sessionRoutes: FastifyPluginAsyncZod = async (app) => {
       ...currentUser(req),
       now: app.clock().toISOString(),
       clockPinned: app.env.clockPinnedAt !== undefined,
+      migrationReport: await migrationPending(app.db, currentUser(req).workspaceId),
     })),
   ])
 }

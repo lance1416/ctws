@@ -32,7 +32,7 @@ export type SeriesRow = typeof meetings.$inferSelect & {
 const attendeeRow = z.object({ meetingId: z.string(), id: z.string(), name: z.string() })
 
 /** The live people in each meeting, by name as a page lists them. */
-async function attendeesOf(
+export async function attendeesOf(
   q: Queryable,
   meetingIds: readonly MeetingId[],
 ): Promise<Map<string, Attendee[]>> {

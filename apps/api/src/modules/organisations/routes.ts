@@ -9,6 +9,7 @@ import {
   getOrganisation,
   listOrganisations,
   monthOf,
+  countOrganisations,
   organisationTypes,
   rolesAt,
   searchOrganisations,
@@ -82,6 +83,12 @@ export const organisationRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry 
     on(api.organisations.types, async (req) => ({
       types: await organisationTypes(app.db, currentUser(req).workspaceId),
     })),
+
+    on(api.organisations.overview, async (req) => {
+      const { workspaceId } = currentUser(req)
+      const types = await organisationTypes(app.db, workspaceId)
+      return { types, total: await countOrganisations(app.db, workspaceId) }
+    }),
 
     on(api.organisations.search, async (req) => {
       const { rows, page } = await searchOrganisations(

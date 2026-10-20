@@ -37,6 +37,7 @@ type BirthdayRow = {
   /** Only for a lunar birthday. */
   lunarDate: string | null
   kept: Kept[]
+  timeZone: string
 }
 
 type BirthdaysView = {
@@ -160,7 +161,8 @@ export async function listBirthdays(
   // The lead decides the card and is not sent.
   const all = rows.map((p): BirthdayRow & { remindLead: number } => {
     const birthday = toBirthday(p)
-    const next = nextOccurrence(birthday, dayIn(now, p.timeZone ?? accountZone))
+    const timeZone = p.timeZone ?? accountZone
+    const next = nextOccurrence(birthday, dayIn(now, timeZone))
     return {
       personId: p.id,
       name: p.name,
@@ -170,6 +172,7 @@ export async function listBirthdays(
       turns: next.turns,
       lunarDate: lunarDateOf(birthday),
       kept: next.kept,
+      timeZone,
       remindLead: p.remindLead,
     }
   })

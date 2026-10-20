@@ -93,6 +93,13 @@ export async function getStage(
  * unused stage may be. A rename onto an existing name is refused unless the entry says which
  * stage to merge into; then its tasks move there, each logged, and it goes.
  */
+/** A stage merged into itself would be a stage removed by accident. */
+class MergeIntoItself extends DomainError {
+  constructor() {
+    super('unprocessable', { detail: 'A stage cannot be merged into itself.' })
+  }
+}
+
 export async function putStages(
   tx: Tx,
   ctx: Actor,
@@ -104,6 +111,7 @@ export async function putStages(
   for (const entry of body.stages) {
     if (entry.id !== undefined && !byId.has(entry.id)) throw new NotFound('Stage')
     if (entry.mergeInto !== undefined && !byId.has(entry.mergeInto)) throw new NotFound('Stage')
+    if (entry.mergeInto !== undefined && entry.mergeInto === entry.id) throw new MergeIntoItself()
   }
 
   // Merges first: the merged stage's tasks move, then it is treated as left out.

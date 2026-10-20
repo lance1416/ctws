@@ -8,7 +8,7 @@ export {
   unarchivedProjects,
 } from './queries'
 export { type ProjectGraves } from './service'
-export { getStage } from './stages'
+export { getStage, stagesOf } from './stages'
 export { projectKeys, stageKeys } from './tables'
 
 // For the app.

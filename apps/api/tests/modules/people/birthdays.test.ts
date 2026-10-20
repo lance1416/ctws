@@ -103,6 +103,24 @@ describe('GET /people/birthdays', () => {
   })
 
   /** A birthday is today for the whole of the account's day. */
+  it('says which zone each row was counted in (BUG-010)', async () => {
+    const ctx = await setupWith(cleanups)
+    await createPerson(ctx, {
+      name: 'Lena',
+      city: 'Toronto, Ontario, Canada',
+      birthday: { calendar: 'solar', month: 12, day: 25 },
+    })
+    await createPerson(ctx, { name: 'Nobody', birthday: { calendar: 'solar', month: 12, day: 26 } })
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/v1/people?view=birthdays',
+      headers: web(ctx),
+    })
+    const rows = [...res.json().coming, ...res.json().later] as { name: string; timeZone: string }[]
+    expect(rows.find((r) => r.name === 'Lena')?.timeZone).toBe('America/Toronto')
+    expect(rows.find((r) => r.name === 'Nobody')?.timeZone).toBe('UTC')
+  })
+
   it("decides today in the account's zone, not UTC", async () => {
     // 2026-10-10T22:00Z is already 10-11 in Shanghai and still 10-10 in Los Angeles.
     const at = (timezone: string) =>

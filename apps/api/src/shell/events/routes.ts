@@ -22,7 +22,7 @@ export const timelineRoutes: FastifyPluginAsyncZod<Opts> = async (app, { registr
         workspaceId,
         subject,
         req.query.kinds,
-        req.query,
+        { ...req.query, now: app.clock() },
       )
       return { entries: rows, page }
     }),

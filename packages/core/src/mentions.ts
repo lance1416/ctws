@@ -19,8 +19,13 @@ const EXCERPT_MAX = 200
 const TYPES = OBJECT_TYPES.join('|')
 const MENTION = new RegExp(String.raw`\[@[^\]\n]+\]\(ctws://(${TYPES})/([0-9a-fA-F-]{36})\)`, 'g')
 
-/** Where one sentence ends and the next begins: a full stop in either script, or a line. */
-const SENTENCE_END = /(?<=[。．.!?！？\n])/
+/**
+ * Where one sentence ends and the next begins: a full stop in either script, or a line. A Latin
+ * full stop ends a sentence only before a space or the end, and not after a common abbreviation,
+ * so "Mr. Smith" stays in one piece.
+ */
+const SENTENCE_END =
+  /(?<=[。．!?！？\n])|(?<=\.(?<!\b(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|vs|etc|No)\.)(?<!\b[A-Za-z]\.))(?=\s|$)/
 
 /** The address of a mention of `thing`, for the editor to insert. */
 export const mentionAddress = (type: ObjectType, id: string): string => `ctws://${type}/${id}`
