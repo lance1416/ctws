@@ -354,6 +354,40 @@ describe('the move, on the pre-redesign data', () => {
     })
   })
 
+  it('refuses to serve a workspace still in the old layout when no backups directory is set', async () => {
+    const at = await migratedTo('0027_workspace_members_user_idx')
+    stops.push(at.stop)
+    await loadFixture(at.db, 'pre-redesign')
+    await at.migrateRest()
+    await expect(
+      runRedesignMigration(at.db, { backupsDir: undefined, now: NOW, log: () => {} }),
+    ).rejects.toThrow(/BACKUPS_DIR is not set/)
+    expect(await countOf(at.db, 'migration_reports')).toBe(0)
+    // Once every workspace is in the new layout, no directory is needed: a stack with no old
+    // data starts as it always did.
+    await at.db.execute(sql`update workspaces set moved_at = ${NOW}`)
+    const nothing = await runRedesignMigration(at.db, {
+      backupsDir: undefined,
+      now: NOW,
+      log: () => {},
+    })
+    expect(nothing.migrated).toEqual([])
+  })
+
+  it('rolls a workspace back when the counts do not add up, and says which', async () => {
+    const { db, run } = await moved()
+    // An edge to nothing: neither copied by 0038 nor explained by a tombstone.
+    await db.execute(sql`
+      insert into links (id, workspace_id, from_type, from_id, to_type, to_id, kind)
+      select gen_random_uuid(), ${A}, 'person', (select id from people where name = 'Cher'),
+             'project', gen_random_uuid(), 'belongs'`)
+    await expect(run()).rejects.toThrow(/count mismatch in links.belongs/)
+    const reports = await db.execute(sql`select workspace_id from migration_reports`)
+    // The other workspace, whose counts add up, is moved; this one is as it was.
+    expect(reports.rows).toHaveLength(1)
+    expect(await countOf(db, "organisations where name = 'Tencent'")).toBe(0)
+  })
+
   it('refuses to move anything without a backup to go back to', async () => {
     const at = await migratedTo('0027_workspace_members_user_idx')
     stops.push(at.stop)

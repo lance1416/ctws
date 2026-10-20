@@ -54,8 +54,11 @@ export function parseFailAt(text: string | undefined): FailAt | undefined {
 }
 
 export type MigrationOptions = {
-  /** Where the `backup` service left its dump; the newest `*.dump` there is the backup of record. */
-  backupsDir: string
+  /**
+   * Where the `backup` service left its dump; the newest `*.dump` there is the backup of record.
+   * Unset: fine while nothing is owed a move, a refusal as soon as something is.
+   */
+  backupsDir: string | undefined
   failAt?: FailAt | undefined
   now: Date
   log?: ((line: string) => void) | undefined
@@ -96,19 +99,28 @@ export async function runRedesignMigration(
   opts: MigrationOptions,
 ): Promise<MigrationOutcome> {
   const log = opts.log ?? ((line: string) => console.log(line))
+  // Owed a move: made before the redesign (no `moved_at`) and not reported on yet.
   const workspaces = rowsOf(
     await db.execute(sql`
       select w.id from workspaces w
-      where not exists (select 1 from migration_reports r where r.workspace_id = w.id)
+      where w.moved_at is null
+        and not exists (select 1 from migration_reports r where r.workspace_id = w.id)
       order by w.id`),
     z.object({ id: z.string() }),
   ).map((r) => r.id as WorkspaceId)
   const outcome: MigrationOutcome = { migrated: [], skipped: [], failed: [] }
   if (workspaces.length === 0) {
-    log('redesign migration: every workspace already moved, nothing to do')
+    log('redesign migration: every workspace is in the new layout, nothing to do')
     return outcome
   }
 
+  if (opts.backupsDir === undefined) {
+    throw new Error(
+      `${workspaces.length} workspace(s) still hold data in the old layout and BACKUPS_DIR is ` +
+        'not set: refusing to serve them unmoved. Set BACKUPS_DIR to where the backup service ' +
+        'leaves its dump (compose mounts it at /backups).',
+    )
+  }
   if (opts.failAt?.step === 'backup') throw new MigrationFailure('backup')
   const backup = latestBackup(opts.backupsDir)
   log(`redesign migration: backup of record ${backup.name} (${backup.bytes} bytes)`)
@@ -274,6 +286,7 @@ async function migrateWorkspace(tx: Tx, run: Run): Promise<MigrationCounts> {
     counts,
     items,
   })
+  await tx.execute(sql`update workspaces set moved_at = ${now} where id = ${workspaceId}`)
   return counts
 }
 

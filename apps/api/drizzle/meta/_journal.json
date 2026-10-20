@@ -288,6 +288,13 @@
       "when": 1792499040974,
       "tag": "0040_migration_reports",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1792500159248,
+      "tag": "0041_workspace_moved_at",
+      "breakpoints": true
     }
   ]
 }

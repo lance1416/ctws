@@ -10,13 +10,12 @@ const db = createDb(env.databaseUrl)
 const app = await buildApp({ env, db, modules: apiModules(process.env) })
 
 // The move to the new layout runs once per workspace, after the schema migrations (the image's
-// command) and before anyone is served. Without a backups directory nothing is attempted.
-if (env.backupsDir) {
-  await runRedesignMigration(db, {
-    backupsDir: env.backupsDir,
-    failAt: parseFailAt(env.migrationFailAt),
-    now: app.clock(),
-  })
-}
+// command) and before anyone is served: a workspace still in the old layout is never served, and
+// without a backup to go back to it is not moved either, so the server stops here (REQ section 4).
+await runRedesignMigration(db, {
+  backupsDir: env.backupsDir,
+  failAt: parseFailAt(env.migrationFailAt),
+  now: app.clock(),
+})
 
 await app.listen({ port: env.port, host: '0.0.0.0' })

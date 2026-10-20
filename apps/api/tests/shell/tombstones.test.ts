@@ -157,6 +157,33 @@ describe('a deleted person', () => {
   })
 })
 
+describe('a deleted person who was the only party of a message', () => {
+  it('leaves the message readable, with nobody on it', async () => {
+    const ctx = await setup()
+    const person = await createPerson(ctx, { name: '陈颖' })
+    const logged = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/communication',
+      headers: web(ctx),
+      payload: {
+        direction: 'sent',
+        channel: 'email',
+        parties: [{ type: 'person', id: person.id }],
+        subject: 'Hello',
+      },
+    })
+    expect(logged.statusCode, logged.body).toBe(201)
+    expect((await del(ctx, `/people/${person.id}`)).statusCode).toBe(204)
+    const read = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/communication/${(logged.json() as { id: string }).id}`,
+      headers: web(ctx),
+    })
+    expect(read.statusCode, read.body).toBe(200)
+    expect(read.json().parties).toEqual([])
+  })
+})
+
 describe('asking for a tombstone', () => {
   it("is a 404 for a thing that was never deleted, or another workspace's", async () => {
     const ctx = await setup()

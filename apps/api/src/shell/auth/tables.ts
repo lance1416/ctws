@@ -55,6 +55,12 @@ export const sessions = pgTable(
 export const workspaces = pgTable('workspaces', {
   id: uuid('id').$type<WorkspaceId>().primaryKey(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  /**
+   * When this workspace came to be in the new layout: at registration for a new one, at the end
+   * of its move for one from before the redesign. Null means the move is still owed, and the
+   * server will not serve it until then (REQ section 4).
+   */
+  movedAt: timestamp('moved_at', { withTimezone: true }),
 })
 
 export const workspaceMembers = pgTable(
