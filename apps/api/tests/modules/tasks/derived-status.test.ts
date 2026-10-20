@@ -262,3 +262,33 @@ describe('the review counts leaves', () => {
     ])
   })
 })
+
+describe('two subtasks finished at once (TC-016)', () => {
+  it('settles the parent to done every time, with one derived change, under the tree lock', async () => {
+    const { ctx, projectId } = await setup()
+    for (let round = 0; round < 10; round++) {
+      const parent = await createTask(ctx, projectId, `P${round}`)
+      const a = await createTask(ctx, projectId, 'a', parent)
+      const b = await createTask(ctx, projectId, 'b', parent)
+      // Both requests in flight together: the tree lock serialises them, so the second one reads
+      // the first one's write and the parent is settled from both.
+      const [ra, rb] = await Promise.all([
+        patchTask(ctx, a, { status: 'done' }),
+        patchTask(ctx, b, { status: 'done' }),
+      ])
+      expect(ra.statusCode, ra.body).toBe(200)
+      expect(rb.statusCode, rb.body).toBe(200)
+      expect(await statusOf(ctx, parent)).toBe('done')
+      const derived = (await eventsOf(ctx, parent)).filter(
+        (e) => e.type === 'status_changed' && (e.payload as { derived?: boolean }).derived,
+      )
+      // To do -> in progress (first child done), in progress -> done (second): two, never more.
+      // Each request's events carry the instant it began, which is before it took the lock, so
+      // the two can read in either order; what matters is that both happened, once each.
+      expect(derived.map((e) => (e.payload as { to: string }).to).sort()).toEqual([
+        'done',
+        'in_progress',
+      ])
+    }
+  })
+})

@@ -181,6 +181,39 @@ describe('relations made by a mention', () => {
     expect(itemsOf(await related(ctx, 'person', mira.id), 'task')).toEqual([])
   })
 
+  it("drops a mention of another account's thing, or of nothing, when read (TC-122)", async () => {
+    const { ctx, task, mira } = await setup()
+    const theirs = await secondUser(ctx, 'theirs@example.com')
+    const stranger = await createPerson(theirs, { name: 'Nora Diaz' })
+    const nobody = '99999999-9999-4999-8999-999999999999'
+    const written = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/v1/tasks/${task}`,
+      headers: ctx.authed,
+      payload: {
+        notes: `${mention(stranger.id)} is not mine. ${mention(nobody)} is nobody. ${mention(mira.id)} is.`,
+      },
+    })
+    expect(written.statusCode, written.body).toBe(200)
+    // The task's page names only what this account can see.
+    const groups = await related(ctx, 'task', task)
+    expect(groups.flatMap((g) => g.items.map((i) => i.id))).toEqual([mira.id])
+    // The other account sees nothing of it on their person, and this one cannot ask about theirs.
+    const onStranger = await theirs.app.inject({
+      method: 'GET',
+      url: `/api/v1/relations?type=person&id=${stranger.id}`,
+      headers: theirs.authed,
+    })
+    expect(onStranger.statusCode).toBe(200)
+    expect((onStranger.json() as RelationsResponse).groups).toEqual([])
+    const asked = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/relations?type=person&id=${stranger.id}`,
+      headers: ctx.authed,
+    })
+    expect(asked.statusCode).toBe(404)
+  })
+
   it('is made on create too', async () => {
     const { ctx, projectId, mira } = await setup()
     const task = await createTask(ctx, projectId, 'Call', undefined, {

@@ -290,6 +290,11 @@ export async function deletePerson(db: Db, ctx: Actor, id: PersonId): Promise<vo
     await tx.execute(
       sql`update reading_items set recommended_by = null where recommended_by = ${id}`,
     )
+    // A message whose last party just went waits for nobody any more (FR-048).
+    await tx.execute(sql`
+      update communications set awaiting_reply = false, updated_at = ${ctx.now}
+      where workspace_id = ${ctx.workspaceId} and awaiting_reply
+        and not exists (select 1 from communication_parties p where p.communication_id = communications.id)`)
     await tx.delete(people).where(eq(people.id, id))
   })
 }

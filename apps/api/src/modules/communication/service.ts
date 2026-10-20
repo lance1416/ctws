@@ -30,6 +30,13 @@ class NotAwaiting extends DomainError {
   }
 }
 
+/** Every party of the message has since been deleted: there is nobody to answer (FR-048). */
+class NoOneLeft extends DomainError {
+  constructor() {
+    super('conflict', { detail: 'no one is left on this message to reply' })
+  }
+}
+
 /** Every party is a person or organisation this workspace can see. */
 async function assertPartiesVisible(
   registry: LinkRegistry,
@@ -183,6 +190,7 @@ export async function logReply(
   return db.transaction(async (tx) => {
     const sent = await getCommunication(tx, ctx.workspaceId, id)
     if (sent.direction !== 'sent' || sent.repliedBy !== null) throw new NotAwaiting()
+    if (sent.parties.length === 0) throw new NoOneLeft()
     const [reply] = await tx
       .insert(communications)
       .values({

@@ -158,7 +158,7 @@ describe('a deleted person', () => {
 })
 
 describe('a deleted person who was the only party of a message', () => {
-  it('leaves the message readable, with nobody on it', async () => {
+  it('leaves the message readable with nobody on it, waiting for no one, unanswerable', async () => {
     const ctx = await setup()
     const person = await createPerson(ctx, { name: '陈颖' })
     const logged = await ctx.app.inject({
@@ -170,17 +170,33 @@ describe('a deleted person who was the only party of a message', () => {
         channel: 'email',
         parties: [{ type: 'person', id: person.id }],
         subject: 'Hello',
+        awaitingReply: true,
+        followUpOn: '2026-10-21',
       },
     })
     expect(logged.statusCode, logged.body).toBe(201)
+    const id = (logged.json() as { id: string }).id
     expect((await del(ctx, `/people/${person.id}`)).statusCode).toBe(204)
     const read = await ctx.app.inject({
       method: 'GET',
-      url: `/api/v1/communication/${(logged.json() as { id: string }).id}`,
+      url: `/api/v1/communication/${id}`,
       headers: web(ctx),
     })
     expect(read.statusCode, read.body).toBe(200)
-    expect(read.json().parties).toEqual([])
+    expect(read.json()).toMatchObject({ parties: [], awaitingReply: false })
+    const awaiting = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/v1/communication?view=awaiting',
+      headers: web(ctx),
+    })
+    expect(awaiting.json().awaiting).toEqual([])
+    const reply = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/communication/${id}/reply`,
+      headers: web(ctx),
+      payload: { body: 'Hi' },
+    })
+    expect(reply.statusCode).toBe(409)
   })
 })
 

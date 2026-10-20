@@ -88,6 +88,11 @@ export async function deleteOrganisation(db: Db, ctx: Actor, id: OrganisationId)
     await tx.execute(
       sql`delete from communication_parties where party_type = 'organisation' and party_id = ${id}`,
     )
+    // A message whose last party just went waits for nobody any more (FR-048).
+    await tx.execute(sql`
+      update communications set awaiting_reply = false, updated_at = ${ctx.now}
+      where workspace_id = ${ctx.workspaceId} and awaiting_reply
+        and not exists (select 1 from communication_parties p where p.communication_id = communications.id)`)
     await tx.delete(organisations).where(eq(organisations.id, row.id))
   })
 }
