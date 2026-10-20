@@ -1,9 +1,79 @@
 import type { ObjectType, TimelineEntry } from '@ctws/contracts'
-import { and, desc, eq } from 'drizzle-orm'
+import { and, desc, eq, sql } from 'drizzle-orm'
+import { z } from 'zod'
 import { scoped, within } from '../../platform/db/scope'
-import { afterCursor, type TimelineSource } from '../events'
+import { afterCursor, events, type TimelineSource } from '../events'
 import type { LinkRegistry } from '../links'
 import { relations } from './tables'
+
+/**
+ * An organisation's timeline carries the stage changes of the tasks related to it (FR-065): what
+ * a company's application moved to. The event is the task's own; the entry names the task and its
+ * project, so the row can read "Stage set to Shortlisted in Find a lawyer".
+ */
+export const relatedStageChanges = (registry: LinkRegistry): TimelineSource => ({
+  kind: 'change',
+  read: async (q, workspaceId, subject, span) => {
+    if (subject.type !== 'organisation') return []
+    const rows = await q
+      .select({
+        id: events.id,
+        objectId: events.objectId,
+        payload: events.payload,
+        at: events.occurredAt,
+      })
+      .from(events)
+      .where(
+        within(
+          scoped(events, workspaceId),
+          and(
+            eq(events.objectType, 'task'),
+            eq(events.type, 'stage_changed'),
+            sql`${events.objectId} in (
+              select x.from_id from relations x
+              where x.workspace_id = ${workspaceId} and x.from_type = 'task'
+                and x.to_type = 'organisation' and x.to_id = ${subject.id}
+              union
+              select x.to_id from relations x
+              where x.workspace_id = ${workspaceId} and x.to_type = 'task'
+                and x.from_type = 'organisation' and x.from_id = ${subject.id})`,
+            afterCursor(span, 'change', { at: events.occurredAt, id: events.id }),
+          ),
+        ),
+      )
+      .orderBy(desc(events.occurredAt), desc(events.id))
+      .limit(span.limit)
+    if (rows.length === 0) return []
+    const ids = [...new Set(rows.map((r) => r.objectId))]
+    const tasks = new Map(
+      (await registry.of('task').rows(q, workspaceId, { ids, limit: ids.length })).map((t) => [
+        t.id,
+        t,
+      ]),
+    )
+    return rows.flatMap((r): TimelineEntry[] => {
+      const task = tasks.get(r.objectId)
+      if (!task || task.type !== 'task') return []
+      const payload = z.object({}).passthrough().parse(r.payload)
+      return [
+        {
+          kind: 'change',
+          id: r.id,
+          at: r.at.toISOString(),
+          event: {
+            type: 'stage_changed',
+            payload: {
+              ...payload,
+              taskId: task.id,
+              taskTitle: task.title,
+              projectName: task.projectName,
+            },
+          },
+        },
+      ]
+    })
+  },
+})
 
 /**
  * Where a thing was mentioned, on its timeline (FR-042, FR-045): the sentence, and what it was

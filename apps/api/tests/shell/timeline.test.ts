@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { createMeeting, createPerson, createProject, createTask } from '../helpers/builders'
+import {
+  createMeeting,
+  createOrganisation,
+  createPerson,
+  createProject,
+  createTask,
+} from '../helpers/builders'
 import { appWithUser, type Harness, secondUser } from '../helpers/harness'
 
 /**
@@ -223,6 +229,105 @@ describe('the kinds of entry (BUG-001, BUG-009)', () => {
     })
     expect(onProject.json().entries).toHaveLength(4)
     expect(onProject.json().entries[0].meeting.meetingId).toBe(meeting.meetingId)
+  })
+
+  it("gives an organisation the meetings its people attended while there, and related nodes' stage changes (FR-065)", async () => {
+    const ctx = await appWithUser()
+    cleanups.push(ctx.stop)
+    const shopify = await createOrganisation(ctx, { name: 'Shopify' })
+    const stripe = await createOrganisation(ctx, { name: 'Stripe' })
+    const mira = await createPerson(ctx, { name: 'Mira Chen' })
+    // At Shopify from 2019-03 to 2023-08, at Stripe since 2023-09.
+    await ctx.app.inject({
+      method: 'PUT',
+      url: `/api/v1/people/${mira.id}/roles`,
+      headers: ctx.authed,
+      payload: {
+        roles: [
+          { organisationId: stripe.id, title: 'EM', from: '2023-09' },
+          { organisationId: shopify.id, title: 'Engineer', from: '2019-03', to: '2023-08' },
+        ],
+      },
+    })
+    const meet = (title: string, startsLocal: string) =>
+      createMeeting(ctx, {
+        title,
+        startsLocal,
+        timeZone: 'Europe/London',
+        durationMinutes: 30,
+        attendeeIds: [mira.id],
+      })
+    await meet('Shopify review', '2022-05-10T15:00')
+    // The last month of a tenure counts whole, so does the first.
+    await meet('Leaving drinks', '2023-08-25T18:00')
+    await meet('First day', '2019-03-01T09:00')
+    await meet('Stripe onboarding', '2023-09-04T10:00')
+    // Related to Shopify outright: counts whatever the roles say.
+    const related = await meet('Vendor call', '2024-02-01T11:00')
+    await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/relations',
+      headers: ctx.authed,
+      payload: {
+        from: { type: 'meeting', id: related.meetingId },
+        to: { type: 'organisation', id: shopify.id },
+      },
+    })
+    const titles = async (orgId: string) => {
+      const res = await ctx.app.inject({
+        method: 'GET',
+        url: `/api/v1/timeline?type=organisation&id=${orgId}&kinds=meeting`,
+        headers: ctx.authed,
+      })
+      expect(res.statusCode, res.body).toBe(200)
+      return (res.json().entries as { meeting: { title: string } }[]).map((e) => e.meeting.title)
+    }
+    expect(await titles(shopify.id)).toEqual([
+      'Vendor call',
+      'Leaving drinks',
+      'Shopify review',
+      'First day',
+    ])
+    // Mira has been at Stripe since 2023-09, so the vendor call is Stripe's too: a meeting is on
+    // the timeline of every organisation its people were at that day.
+    expect(await titles(stripe.id)).toEqual(['Vendor call', 'Stripe onboarding'])
+
+    // A node related to Shopify changes stage: that shows on Shopify's timeline, named.
+    const project = await createProject(ctx, 'Find a lawyer')
+    const task = await createTask(ctx, project, 'Shopify')
+    await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/relations',
+      headers: ctx.authed,
+      payload: { from: { type: 'task', id: task }, to: { type: 'organisation', id: shopify.id } },
+    })
+    const made = await ctx.app.inject({
+      method: 'PUT',
+      url: `/api/v1/projects/${project}/stages`,
+      headers: ctx.authed,
+      payload: { stages: [{ name: 'Shortlisted' }] },
+    })
+    const [stage] = (made.json() as { stages: { id: string }[] }).stages
+    await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/v1/tasks/${task}`,
+      headers: ctx.authed,
+      payload: { stageId: stage!.id },
+    })
+    const changes = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/timeline?type=organisation&id=${shopify.id}&kinds=change`,
+      headers: ctx.authed,
+    })
+    const staged = (
+      changes.json().entries as { event: { type: string; payload: Record<string, unknown> } }[]
+    ).filter((e) => e.event.type === 'stage_changed')
+    expect(staged).toHaveLength(1)
+    expect(staged[0]!.event.payload).toMatchObject({
+      taskTitle: 'Shopify',
+      projectName: 'Find a lawyer',
+      to: 'Shortlisted',
+    })
   })
 
   it("puts a meeting's note on the day it was held, on the project's timeline too", async () => {

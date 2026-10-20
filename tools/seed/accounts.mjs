@@ -169,6 +169,16 @@ await post('/meetings', {
   attendeeIds: [mira.id],
 })
 
+// A meeting Mira attended while she was at Shopify (2019-03 to 2023-08): it stays on Shopify's
+// timeline after she moved to Stripe (FR-065).
+await post('/meetings', {
+  title: 'Payments platform review',
+  startsLocal: '2022-05-10T15:00',
+  timeZone: 'Europe/London',
+  durationMinutes: 60,
+  attendeeIds: [mira.id],
+})
+
 const ddia = await post('/reading', {
   kind: 'book',
   title: 'Designing Data-Intensive Applications',

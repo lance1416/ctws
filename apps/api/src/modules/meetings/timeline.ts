@@ -1,4 +1,6 @@
-import type { MeetingId, TimelineEntry } from '@ctws/contracts'
+import type { MeetingId, TimelineEntry, WorkspaceId } from '@ctws/contracts'
+import { z } from 'zod'
+import { rowsOf } from '../../platform/db/raw'
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
 import { scoped, within } from '../../platform/db/scope'
@@ -8,12 +10,60 @@ import { occurrencesIn } from './occurrences'
 import { attendeesOf } from './queries'
 import { meetingExceptions, meetings } from './tables'
 
+/**
+ * For an organisation's timeline, a test of each occurrence: related series count whole; others
+ * count on the days one of their attendees held a role there. Anything else always counts.
+ */
+async function organisationFilter(
+  q: Queryable,
+  workspaceId: WorkspaceId,
+  subject: { type: string; id: string },
+  seriesIds: readonly string[],
+): Promise<(meetingId: string, attendees: readonly { id: string }[], day: string) => boolean> {
+  if (subject.type !== 'organisation') return () => true
+  const ids = sql.join(
+    seriesIds.map((id) => sql`${id}::uuid`),
+    sql`, `,
+  )
+  const related = new Set(
+    rowsOf(
+      await q.execute(sql`
+        select x.from_id::text as id from relations x
+        where x.workspace_id = ${workspaceId} and x.from_type = 'meeting' and x.from_id in (${ids})
+          and x.to_type = 'organisation' and x.to_id = ${subject.id}
+        union
+        select x.to_id::text from relations x
+        where x.workspace_id = ${workspaceId} and x.to_type = 'meeting' and x.to_id in (${ids})
+          and x.from_type = 'organisation' and x.from_id = ${subject.id}`),
+      z.object({ id: z.string() }),
+    ).map((r) => r.id),
+  )
+  const tenures = rowsOf(
+    await q.execute(sql`
+      select r.person_id::text as "personId", r.from_month::text as "from", r.to_month::text as "to"
+      from person_roles r where r.workspace_id = ${workspaceId} and r.organisation_id = ${subject.id}`),
+    z.object({ personId: z.string(), from: z.string().nullable(), to: z.string().nullable() }),
+  )
+  return (meetingId, attendees, day) =>
+    related.has(meetingId) ||
+    attendees.some((a) => tenures.some((t) => t.personId === a.id && heldOn(t, day)))
+}
+
 const DAY_MS = 24 * 60 * 60 * 1000
+
+/** A role someone held at an organisation, by the month it began and the month it ended. */
+type Tenure = { personId: string; from: string | null; to: string | null }
+
+/** Whether `day` (`YYYY-MM-DD`) falls in a tenure: both the first and the last month count whole. */
+const heldOn = (t: Tenure, day: string): boolean =>
+  (t.from === null || t.from.slice(0, 7) <= day.slice(0, 7)) &&
+  (t.to === null || day.slice(0, 7) <= t.to.slice(0, 7))
 
 /**
  * The meetings a thing was in, one entry per occurrence that has happened (FR-045): a person's
- * are the series they attend, a project's the series held under it. Occurrences come out of the
- * rule up to now, newest first.
+ * are the series they attend, a project's the series held under it, an organisation's those its
+ * people attended while they held a role there, or that were related to it outright (FR-065).
+ * Occurrences come out of the rule up to now, newest first.
  */
 export const meetingSource: TimelineSource = {
   kind: 'meeting',
@@ -25,13 +75,31 @@ export const meetingSource: TimelineSource = {
           ? sql`exists (
               select 1 from meeting_attendees a
               where a.meeting_id = ${meetings.id} and a.person_id = ${subject.id})`
-          : null
+          : subject.type === 'organisation'
+            ? sql`(exists (
+                select 1 from meeting_attendees a join person_roles r on r.person_id = a.person_id
+                where a.meeting_id = ${meetings.id} and r.organisation_id = ${subject.id})
+              or exists (
+                select 1 from relations x
+                where (x.from_type = 'meeting' and x.from_id = ${meetings.id}
+                       and x.to_type = 'organisation' and x.to_id = ${subject.id})
+                   or (x.to_type = 'meeting' and x.to_id = ${meetings.id}
+                       and x.from_type = 'organisation' and x.from_id = ${subject.id})))`
+            : null
     if (own === null) return []
     const series = await q
       .select()
       .from(meetings)
       .where(within(scoped(meetings, workspaceId), and(own, isNull(meetings.deletedAt))))
     if (series.length === 0) return []
+    // For an organisation, which occurrences count is decided per day: an attendee held a role
+    // there on that day, or the series itself is related to it (then every occurrence counts).
+    const counts = await organisationFilter(
+      q,
+      workspaceId,
+      subject,
+      series.map((s) => s.id),
+    )
     const ids = series.map((s) => s.id as MeetingId)
     const [attending, exceptions] = await Promise.all([
       attendeesOf(q, ids),
@@ -49,6 +117,7 @@ export const meetingSource: TimelineSource = {
       )
       for (const o of occurrences) {
         if (o.startsAt > until) continue
+        if (!counts(s.id, attending.get(s.id) ?? [], o.startsLocal.slice(0, 10))) continue
         entries.push({
           kind: 'meeting',
           at: o.startsAt.toISOString(),

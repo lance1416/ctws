@@ -3,4 +3,4 @@ export { syncMentions } from './store'
 
 // For the app.
 export { relationRoutes } from './routes'
-export { mentionSource } from './timeline'
+export { mentionSource, relatedStageChanges } from './timeline'
