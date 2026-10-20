@@ -11,20 +11,20 @@ import {
 } from '@ctws/contracts'
 import { displayName, type NameParts, sortKey, splitName } from '@ctws/core'
 import { newId } from '../../platform/db/ids'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import type { Db, Tx } from '../../platform/db/client'
 import { replaceRows } from '../../platform/db/replace'
 import { type Actor, scoped, within } from '../../platform/db/scope'
 import { cityTimeZone } from '../../shell/cities'
 import { eventLog } from '../../shell/events'
+import { bury } from '../../shell/tombstones'
 import { assertProjectsVisible } from '../../shell/projects'
 import { putRoles, removeRolesOf } from '../organisations'
 import { assertPossibleBirthday } from './birthdays'
 import { assertCirclesVisible } from './circles'
 import { getPerson, lockPerson, type PersonRow, putProjects } from './queries'
 import { people, personAliases, personChannels, personCircles } from './tables'
-import { NotFound } from '../../platform/errors'
 
 const checkBirthday = (b: BirthdayInput | null | undefined): void => {
   if (b) assertPossibleBirthday({ ...b, year: b.year ?? null })
@@ -275,16 +275,21 @@ export async function replaceRoles(
   })
 }
 
-export async function softDeletePerson(db: Db, ctx: Actor, id: PersonId): Promise<void> {
-  const { workspaceId, now } = ctx
+/** Deletes a person for good (FR-035): a tombstone, and the rows go. */
+export async function deletePerson(db: Db, ctx: Actor, id: PersonId): Promise<void> {
+  const { workspaceId } = ctx
   await db.transaction(async (tx) => {
-    const deleted = await tx
-      .update(people)
-      .set({ deletedAt: now })
-      .where(within(scoped(people, workspaceId), eq(people.id, id)))
-      .returning({ id: people.id })
-    if (deleted.length === 0) throw new NotFound('Person')
-    // The roles have no foreign key to the person (another module's table): dropped here.
+    const current = await lockPerson(tx, workspaceId, id)
+    await bury(tx, ctx, [{ type: 'person', id, title: current.name }])
+    // The roles have no foreign key to the person (another module's table): dropped here. So
+    // are the exchanges' parties and the items recommended; both read as "nobody" otherwise.
     await removeRolesOf(tx, ctx, id)
+    await tx.execute(
+      sql`delete from communication_parties where party_type = 'person' and party_id = ${id}`,
+    )
+    await tx.execute(
+      sql`update reading_items set recommended_by = null where recommended_by = ${id}`,
+    )
+    await tx.delete(people).where(eq(people.id, id))
   })
 }

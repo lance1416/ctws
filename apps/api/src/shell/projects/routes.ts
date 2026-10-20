@@ -5,14 +5,14 @@ import { actorOf, currentUser } from '../auth/authenticated'
 import type { ProjectColumns } from '../module'
 import { toProjectResponse } from './mapper'
 import { getProjectRow, listProjects } from './queries'
-import { createProject, softDeleteProject, updateProject } from './service'
+import { createProject, deleteProject, type ProjectGraves, updateProject } from './service'
 import { listStages, putStages, stagesOf } from './stages'
 
 /** Projects belong to the shell; modules add columns to the list but do not own them. */
-export const projectRoutes: FastifyPluginAsyncZod<{ columns: ProjectColumns }> = async (
-  app,
-  { columns },
-) => {
+export const projectRoutes: FastifyPluginAsyncZod<{
+  columns: ProjectColumns
+  graves: ProjectGraves
+}> = async (app, { columns, graves }) => {
   serve(app, [
     on(api.projects.list, async (req) => {
       const { rows, page } = await listProjects(
@@ -60,7 +60,7 @@ export const projectRoutes: FastifyPluginAsyncZod<{ columns: ProjectColumns }> =
     }),
 
     on(api.projects.remove, async (req) => {
-      await softDeleteProject(app.db, actorOf(req), req.params.id)
+      await deleteProject(app.db, actorOf(req), req.params.id, graves)
     }),
   ])
 }

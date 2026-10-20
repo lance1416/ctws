@@ -5,12 +5,13 @@ import {
   noteId,
   type UpdateNoteBody,
 } from '@ctws/contracts'
-import { eq, sql } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import type { Db, Tx } from '../../platform/db/client'
 import { newId } from '../../platform/db/ids'
 import { NotFound } from '../../platform/errors'
 import { type Actor, scoped, within } from '../../platform/db/scope'
 import { eventLog } from '../../shell/events'
+import { bury } from '../../shell/tombstones'
 import type { LinkRegistry } from '../../shell/links'
 import { syncMentions } from '../../shell/relations'
 import { type Note, notes } from './tables'
@@ -124,18 +125,23 @@ export async function updateNote(
   })
 }
 
-/** Deletes a note outright, with its log, relations and resources. */
+/** Deletes a note for good (FR-035): a tombstone that says what it hung on, and the row goes. */
 export async function deleteNote(db: Db, ctx: Actor, id: NoteId): Promise<void> {
   await db.transaction(async (tx) => {
-    const removed = await tx
-      .delete(notes)
+    const [current] = await tx
+      .select()
+      .from(notes)
       .where(within(scoped(notes, ctx.workspaceId), eq(notes.id, id)))
-      .returning({ id: notes.id })
-    if (removed.length === 0) throw new NotFound('Note')
-    await tx.execute(sql`delete from events where object_type = 'note' and object_id = ${id}`)
-    await tx.execute(sql`
-      delete from relations
-      where (from_type = 'note' and from_id = ${id}) or (to_type = 'note' and to_id = ${id})`)
-    await tx.execute(sql`delete from resources where owner_type = 'note' and owner_id = ${id}`)
+      .for('update')
+    if (!current) throw new NotFound('Note')
+    await bury(tx, ctx, [
+      {
+        type: 'note',
+        id,
+        title: current.title ?? current.body.split('\n')[0]!.slice(0, 80),
+        place: { parentType: current.anchorType, parentId: current.anchorId },
+      },
+    ])
+    await tx.delete(notes).where(eq(notes.id, id))
   })
 }

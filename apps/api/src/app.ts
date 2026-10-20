@@ -21,7 +21,8 @@ import { linkRoutes, linkRegistry } from './shell/links'
 import { timelineRoutes } from './shell/events'
 import { relationRoutes } from './shell/relations'
 import { resourceRoutes } from './shell/resources'
-import { projectLinkable, projectRoutes } from './shell/projects'
+import { tombstoneRoutes } from './shell/tombstones'
+import { type ProjectGraves, projectLinkable, projectRoutes } from './shell/projects'
 import { cityRoutes } from './shell/cities'
 import type { Db } from './platform/db/client'
 import type { ApiModule } from './shell/module'
@@ -104,6 +105,10 @@ export async function buildApp(opts: {
   const registry = linkRegistry([...modules.map((m) => m.linkable), projectLinkable])
   const columns = Object.assign({}, ...modules.map((m) => m.projectColumns ?? {}))
   const sources = modules.flatMap((m) => m.timelineSources ?? [])
+  const graves: ProjectGraves = async (tx, workspaceId, projectId) =>
+    (
+      await Promise.all(modules.map((m) => m.projectGraves?.(tx, workspaceId, projectId) ?? []))
+    ).flat()
 
   await app.register(
     async (api) => {
@@ -112,11 +117,12 @@ export async function buildApp(opts: {
         authenticated(authed)
         await authed.register(sessionRoutes)
         await authed.register(adminRoutes)
-        await authed.register(projectRoutes, { columns })
+        await authed.register(projectRoutes, { columns, graves })
         await authed.register(linkRoutes, { registry })
         await authed.register(timelineRoutes, { registry, sources })
         await authed.register(relationRoutes, { registry })
         await authed.register(resourceRoutes, { registry })
+        await authed.register(tombstoneRoutes)
         await authed.register(calendarDayRoutes)
         await authed.register(cityRoutes)
         for (const m of modules) {

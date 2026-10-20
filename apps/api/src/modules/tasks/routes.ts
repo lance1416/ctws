@@ -2,7 +2,7 @@ import { api } from '@ctws/contracts'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { on, serve } from '../../platform/http/serve'
 import { actorOf, currentUser } from '../../shell/auth'
-import { addDependency, createTask, removeDependency, softDeleteTask, updateTask } from './service'
+import { addDependency, createTask, removeDependency, deleteTask, updateTask } from './service'
 import {
   toCalendarEntry,
   toCompletedResponse,
@@ -111,7 +111,7 @@ export const taskRoutes: FastifyPluginAsyncZod = async (app) => {
     ),
 
     on(api.tasks.remove, async (req) => {
-      await softDeleteTask(app.db, actorOf(req), req.params.id)
+      await deleteTask(app.db, actorOf(req), req.params.id)
     }),
 
     on(api.tasks.dependencies, async (req) =>

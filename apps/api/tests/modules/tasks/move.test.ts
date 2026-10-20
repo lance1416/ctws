@@ -177,29 +177,6 @@ describe('moving a task: PATCH /tasks/:id with a position', () => {
     expect(await tasksOf(ctx, from)).toEqual([])
   })
 
-  // `project_id` is an identity attribute, not a visibility one: a soft-deleted descendant left
-  // behind in the old project would be restored into the wrong project later.
-  it('cascades project_id to soft-deleted descendants too', async () => {
-    const ctx = await setup()
-    const from = await createProject(ctx, 'from')
-    const to = await createProject(ctx, 'to')
-    const chain = await createChain(ctx, from, 3)
-
-    const deleted = await ctx.app.inject({
-      method: 'DELETE',
-      url: `/api/v1/tasks/${chain[2]}`,
-      headers: ctx.authed,
-    })
-    expect(deleted.statusCode).toBe(204)
-
-    expect((await move(ctx, chain[0]!, { projectId: to, parentId: null })).statusCode).toBe(200)
-
-    const rows = await ctx.db.execute(sql`
-      select project_id from tasks where id = ${chain[2]}
-    `)
-    expect((rows.rows[0] as { project_id: string }).project_id).toBe(to)
-  })
-
   // Must account for the moved subtree's own height, not just the node.
   it('refuses a move that would push the subtree past MAX_TASK_DEPTH', async () => {
     const ctx = await setup()

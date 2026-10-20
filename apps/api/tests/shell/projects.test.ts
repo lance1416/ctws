@@ -177,7 +177,7 @@ describe('projects', () => {
     expect(res.json().name).toBe('new')
   })
 
-  it('soft-deletes: the row survives but the project stops being listed', async () => {
+  it('deletes for good: the row goes, a tombstone stays, and the project stops being listed', async () => {
     const ctx = await setup()
     const id = await createProject(ctx, 'gone')
     expect(
@@ -196,9 +196,15 @@ describe('projects', () => {
       headers: ctx.authed,
     })
     expect(ordinary(list.json())).toEqual([])
-    // Spec 5.4: hard deletion would leave the event log pointing at nothing.
-    const rows = await ctx.db.execute(sql`select deleted_at from projects where id = ${id}`)
-    expect((rows.rows as { deleted_at: unknown }[])[0]!.deleted_at).not.toBeNull()
+    const rows = await ctx.db.execute(sql`select 1 from projects where id = ${id}`)
+    expect(rows.rows).toHaveLength(0)
+    const stone = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/tombstones/project/${id}`,
+      headers: ctx.authed,
+    })
+    expect(stone.statusCode).toBe(200)
+    expect(stone.json()).toMatchObject({ title: 'gone' })
   })
 
   it('refuses an empty patch, as every update does', async () => {
@@ -213,7 +219,7 @@ describe('projects', () => {
     expect(res.statusCode).toBe(400)
   })
 
-  it('a soft-deleted project is gone even with archived=true, and cannot be patched', async () => {
+  it('a deleted project is gone even with archived=true, and cannot be patched', async () => {
     const ctx = await setup()
     const id = await createProject(ctx, 'gone')
     await ctx.app.inject({ method: 'DELETE', url: `/api/v1/projects/${id}`, headers: ctx.authed })

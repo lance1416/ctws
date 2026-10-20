@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { NotFound } from '../../../src/platform/errors'
-import { softDeleteTask, updateTask } from '../../../src/modules/tasks/service'
+import { deleteTask, updateTask } from '../../../src/modules/tasks/service'
 import {
   eventsOf,
   expectBlockedByTreeLock,
@@ -42,13 +42,15 @@ async function rowOf(ctx: Harness, id: string) {
   const r = await ctx.db.execute(sql`
     select project_id, parent_id, deleted_at, completed_at, status from tasks where id = ${id}
   `)
-  return r.rows[0] as {
-    project_id: ProjectId
-    parent_id: TaskId | null
-    deleted_at: Date | null
-    completed_at: Date | null
-    status: string
-  }
+  return r.rows[0] as
+    | {
+        project_id: ProjectId
+        parent_id: TaskId | null
+        deleted_at: Date | null
+        completed_at: Date | null
+        status: string
+      }
+    | undefined
 }
 
 describe('create', () => {
@@ -97,7 +99,7 @@ describe('create', () => {
     const res = await post(ctx, { projectId: p2, parentId, title: 'child' })
     expect(res.statusCode).toBe(201)
     expect(res.json().projectId).toBe(p1)
-    expect((await rowOf(ctx, res.json().id)).project_id).toBe(p1)
+    expect((await rowOf(ctx, res.json().id))!.project_id).toBe(p1)
   })
 
   // The parent's project is what gets stored, but the client's projectId is still part of the
@@ -220,7 +222,7 @@ describe('update', () => {
 
     const done = await patch(ctx, id, { status: 'done' })
     expect(done.json().completedAt).toEqual(expect.any(String))
-    expect((await rowOf(ctx, id)).completed_at).not.toBeNull()
+    expect((await rowOf(ctx, id))!.completed_at).not.toBeNull()
 
     // Patching other fields while done must not move the completion time.
     const stamp = done.json().completedAt
@@ -228,7 +230,7 @@ describe('update', () => {
 
     const reopened = await patch(ctx, id, { status: 'todo' })
     expect(reopened.json().completedAt).toBeNull()
-    expect((await rowOf(ctx, id)).completed_at).toBeNull()
+    expect((await rowOf(ctx, id))!.completed_at).toBeNull()
   })
 
   // A parent's status is set independently and never cascades to or from its children:
@@ -239,7 +241,7 @@ describe('update', () => {
     const parentId = await createTask(ctx, projectId, 'parent')
     const childId = await createTask(ctx, projectId, 'child', parentId)
     await patch(ctx, parentId, { status: 'done' })
-    expect((await rowOf(ctx, childId)).status).toBe('todo')
+    expect((await rowOf(ctx, childId))!.status).toBe('todo')
     expect(await eventsOf(ctx, childId).then((e) => e.map((x) => x.type))).toEqual(['created'])
   })
 
@@ -251,10 +253,10 @@ describe('update', () => {
     const c2 = await createTask(ctx, projectId, 'c2', parentId)
     await patch(ctx, c1, { status: 'done' })
     // One done, one to do: in progress, not yet done.
-    expect((await rowOf(ctx, parentId)).status).toBe('in_progress')
+    expect((await rowOf(ctx, parentId))!.status).toBe('in_progress')
     await patch(ctx, c2, { status: 'done' })
-    expect((await rowOf(ctx, parentId)).status).toBe('done')
-    expect((await rowOf(ctx, parentId)).completed_at).not.toBeNull()
+    expect((await rowOf(ctx, parentId))!.status).toBe('done')
+    expect((await rowOf(ctx, parentId))!.completed_at).not.toBeNull()
     expect(await eventsOf(ctx, parentId)).toEqual([
       expect.objectContaining({ type: 'created' }),
       { type: 'became_parent', payload: {} },
@@ -310,20 +312,19 @@ describe('read one', () => {
 })
 
 describe('delete', () => {
-  // Checked through the two things "stops being listed" rests on: the deleted_at column and the
-  // task becoming unaddressable.
-  it('soft-deletes a task: row kept, flagged, and no longer addressable', async () => {
+  // The row and its log go; the task is no longer addressable, and a tombstone says what it was.
+  it('deletes a task for good: row and log gone, no longer addressable', async () => {
     const ctx = await setup()
     const projectId = await createProject(ctx, 'P')
     const id = await createTask(ctx, projectId, 'x')
     expect((await del(ctx, id)).statusCode).toBe(204)
-    expect((await rowOf(ctx, id)).deleted_at).not.toBeNull()
+    expect(await rowOf(ctx, id))!.toBeUndefined()
     expect((await patch(ctx, id, { title: 'y' })).statusCode).toBe(404)
     expect((await del(ctx, id)).statusCode).toBe(404)
-    expect((await eventsOf(ctx, id)).map((e) => e.type)).toEqual(['created', 'deleted'])
+    expect(await eventsOf(ctx, id)).toEqual([])
   })
 
-  it('soft-deleting a parent soft-deletes its descendants too', async () => {
+  it('deleting a parent deletes its descendants too, and the sibling stays', async () => {
     const ctx = await setup()
     const projectId = await createProject(ctx, 'P')
     const [root, child, grandchild] = await createChain(ctx, projectId, 3)
@@ -331,29 +332,21 @@ describe('delete', () => {
 
     expect((await del(ctx, root!)).statusCode).toBe(204)
 
-    expect((await rowOf(ctx, child!)).deleted_at).not.toBeNull()
-    expect((await rowOf(ctx, grandchild!)).deleted_at).not.toBeNull()
-    expect((await rowOf(ctx, sibling)).deleted_at).toBeNull()
+    expect(await rowOf(ctx, child!))!.toBeUndefined()
+    expect(await rowOf(ctx, grandchild!))!.toBeUndefined()
+    expect(await rowOf(ctx, sibling))!.toMatchObject({ project_id: projectId })
     expect((await patch(ctx, grandchild!, { title: 'y' })).statusCode).toBe(404)
-    expect(await eventsOf(ctx, child!).then((e) => e.map((x) => x.type))).toEqual([
-      'created',
-      'became_parent',
-      'deleted',
-    ])
   })
 
-  it('records the task deleted by an upper-case id as deleted itself, not by cascade', async () => {
+  it('finds the task by an upper-case id, and deletes it and its child', async () => {
     const ctx = await setup()
     const projectId = await createProject(ctx, 'P')
     const [root, child] = await createChain(ctx, projectId, 2)
 
     expect((await del(ctx, root!.toUpperCase())).statusCode).toBe(204)
 
-    expect((await eventsOf(ctx, root!)).at(-1)).toEqual({ type: 'deleted', payload: {} })
-    expect((await eventsOf(ctx, child!)).at(-1)).toEqual({
-      type: 'deleted',
-      payload: { cascadedFrom: root },
-    })
+    expect(await rowOf(ctx, root!))!.toBeUndefined()
+    expect(await rowOf(ctx, child!))!.toBeUndefined()
   })
 })
 
@@ -451,7 +444,7 @@ describe('workspace isolation', () => {
     })
     expect(deleted.statusCode).toBe(404)
 
-    expect((await rowOf(a, id)).deleted_at).toBeNull()
+    expect(await rowOf(a, id)).toMatchObject({ deleted_at: null })
     const mine = await a.app.inject({
       method: 'GET',
       url: `/api/v1/tasks/${id}`,
@@ -462,21 +455,6 @@ describe('workspace isolation', () => {
 })
 
 describe('guards that must not be silently dropped', () => {
-  it('a cascade does not touch or re-log a child that was already deleted', async () => {
-    const ctx = await setup()
-    const projectId = await createProject(ctx, 'P')
-    const parentId = await createTask(ctx, projectId, 'parent')
-    const childId = await createTask(ctx, projectId, 'child', parentId)
-    await del(ctx, childId)
-    const first = (await rowOf(ctx, childId)).deleted_at
-    expect(first).toEqual(expect.any(String))
-
-    await del(ctx, parentId)
-
-    expect((await rowOf(ctx, childId)).deleted_at).toEqual(first)
-    expect((await eventsOf(ctx, childId)).filter((e) => e.type === 'deleted')).toHaveLength(1)
-  })
-
   it('a no-op patch of notes and scheduledOn logs nothing and keeps updated_at', async () => {
     const ctx = await setup()
     const projectId = await createProject(ctx, 'P')
@@ -521,7 +499,7 @@ describe('guards that must not be silently dropped', () => {
 
     const res = await expectBlockedByTreeLock(ctx, () => del(ctx, parentId))
     expect(res.statusCode).toBe(204)
-    expect((await rowOf(ctx, childId)).deleted_at).toEqual(expect.any(String))
+    expect(await rowOf(ctx, childId))!.toBeUndefined()
   })
 
   it('treats tasks in a soft-deleted project as not found', async () => {
@@ -578,7 +556,7 @@ describe('event and mutation share one transaction', () => {
     const res = await patch(ctx, id, { status: 'in_progress' })
     expect(res.statusCode).toBe(500)
 
-    expect((await rowOf(ctx, id)).status).toBe('todo')
+    expect((await rowOf(ctx, id))!.status).toBe('todo')
     expect((await eventsOf(ctx, id)).map((e) => e.type)).toEqual(['created'])
   })
 
@@ -610,17 +588,26 @@ describe('event and mutation share one transaction', () => {
     expect((await eventsOf(ctx, id)).map((e) => e.type)).toEqual(['created'])
   })
 
-  it('rolls back the deleted events when the cascade fails at commit', async () => {
+  it('rolls back the tombstones and the rows when the cascade fails at commit', async () => {
     const ctx = await setup()
     const projectId = await createProject(ctx, 'P')
     const [root, child] = await createChain(ctx, projectId, 2)
     await failAtCommit(ctx)
+    // A delete no longer updates the rows it removes; the same failure, on the delete itself.
+    await ctx.db.execute(
+      sql.raw(`
+        create constraint trigger force_fail_delete after delete on tasks
+          deferrable initially deferred for each row execute function force_fail()
+      `),
+    )
 
     expect((await del(ctx, root!)).statusCode).toBe(500)
 
-    expect((await rowOf(ctx, child!)).deleted_at).toBeNull()
+    expect(await rowOf(ctx, child!))!.toMatchObject({ parent_id: root })
     expect((await eventsOf(ctx, root!)).map((e) => e.type)).toEqual(['created', 'became_parent'])
     expect((await eventsOf(ctx, child!)).map((e) => e.type)).toEqual(['created'])
+    const stones = await ctx.db.execute(sql`select 1 from tombstones where object_id = ${root}`)
+    expect(stones.rows).toHaveLength(0)
   })
 })
 
@@ -651,10 +638,10 @@ describe('a write refuses a foreign workspace without going through a route', ()
     await expect(
       updateTask(ctx.db, stranger, id, { projectId, parentId: sibling }),
     ).rejects.toThrow(NotFound)
-    await expect(softDeleteTask(ctx.db, stranger, id)).rejects.toThrow(NotFound)
+    await expect(deleteTask(ctx.db, stranger, id)).rejects.toThrow(NotFound)
 
     // Nothing moved, nothing was flagged, and no event was logged against any of it.
-    expect(await rowOf(ctx, id)).toMatchObject({ parent_id: null, deleted_at: null })
+    expect(await rowOf(ctx, id))!.toMatchObject({ parent_id: null, deleted_at: null })
     const titles = await ctx.db.execute(sql`select title from tasks where id = ${id}`)
     expect(titles.rows[0]).toMatchObject({ title: 'mine' })
     expect((await eventsOf(ctx, id)).map((e) => e.type)).toEqual(['created'])

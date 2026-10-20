@@ -6,7 +6,7 @@ import { birthdayEntries, listBirthdays, previewBirthday } from './birthdays'
 import { listCircles, putCircles } from './circles'
 import { toPersonResponse } from './mapper'
 import { getPerson, listPeople, searchPeople } from './queries'
-import { createPerson, replaceRoles, softDeletePerson, updatePerson } from './service'
+import { createPerson, replaceRoles, deletePerson, updatePerson } from './service'
 
 export const personRoutes: FastifyPluginAsyncZod = async (app) => {
   serve(app, [
@@ -67,7 +67,7 @@ export const personRoutes: FastifyPluginAsyncZod = async (app) => {
     }),
 
     on(api.people.remove, async (req) => {
-      await softDeletePerson(app.db, actorOf(req), req.params.id)
+      await deletePerson(app.db, actorOf(req), req.params.id)
     }),
 
     on(api.people.putRoles, async (req) => {

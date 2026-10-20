@@ -13,6 +13,7 @@ import { newId } from '../../platform/db/ids'
 import { replaceRows } from '../../platform/db/replace'
 import { type Actor, scoped, within } from '../../platform/db/scope'
 import { eventLog } from '../../shell/events'
+import { bury } from '../../shell/tombstones'
 import { MergeIntoItself } from './errors'
 import {
   assertOrganisationsVisible,
@@ -79,21 +80,15 @@ export async function updateOrganisation(
   })
 }
 
-/** Deletes an organisation outright; the roles at it go with it (FR-035). */
+/** Deletes an organisation for good (FR-035): a tombstone; the roles at it go with it. */
 export async function deleteOrganisation(db: Db, ctx: Actor, id: OrganisationId): Promise<void> {
   await db.transaction(async (tx) => {
     const row = await lockOrganisation(tx, ctx.workspaceId, id)
+    await bury(tx, ctx, [{ type: 'organisation', id, title: row.name }])
+    await tx.execute(
+      sql`delete from communication_parties where party_type = 'organisation' and party_id = ${id}`,
+    )
     await tx.delete(organisations).where(eq(organisations.id, row.id))
-    await tx.execute(
-      sql`delete from events where object_type = 'organisation' and object_id = ${id}`,
-    )
-    await tx.execute(sql`
-      delete from relations
-      where (from_type = 'organisation' and from_id = ${id})
-         or (to_type = 'organisation' and to_id = ${id})`)
-    await tx.execute(
-      sql`delete from resources where owner_type = 'organisation' and owner_id = ${id}`,
-    )
   })
 }
 

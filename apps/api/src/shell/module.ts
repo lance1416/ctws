@@ -3,6 +3,7 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import type { TimelineSource } from './events/timeline'
 import type { Linkable } from './links/linkable'
 import type { LinkRegistry } from './links/registry'
+import type { ProjectGraves } from './projects/service'
 
 /**
  * Counts a module adds to each row of the project list, keyed by their name in its `columns`.
@@ -34,4 +35,6 @@ export type ApiModule = {
   projectColumns?: ProjectColumns
   /** The kinds of timeline entry this module keeps about other things. */
   timelineSources?: readonly TimelineSource[]
+  /** What of this module's goes with a project when the project is deleted: the tasks in it. */
+  projectGraves?: ProjectGraves
 }

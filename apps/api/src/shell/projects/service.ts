@@ -5,12 +5,15 @@ import {
   type UpdateProjectBody,
   type ProjectId,
   projectId,
+  type WorkspaceId,
 } from '@ctws/contracts'
 import { newId } from '../../platform/db/ids'
 import { rankBetween } from '@ctws/core'
 import { desc, eq, sql } from 'drizzle-orm'
 import type { PgUpdateSetSource } from 'drizzle-orm/pg-core'
-import type { Db, Queryable } from '../../platform/db/client'
+import { eventLog } from '../events'
+import { bury, type Grave } from '../tombstones'
+import type { Db, Queryable, Tx } from '../../platform/db/client'
 import { type Actor, scoped } from '../../platform/db/scope'
 import { instant } from '../../platform/db/time'
 import { InboxProtectedError } from './errors'
@@ -68,6 +71,9 @@ export async function createProject(
         createdAt: now,
       })
       .returning()
+    await eventLog(tx, { workspaceId, now }).append({ type: 'project', id: row!.id }, 'created', {
+      to: { name: input.name },
+    })
     return row!
   })
 }
@@ -93,19 +99,53 @@ export async function updateProject(
     if (Object.keys(set).length === 0) return existing
 
     const [row] = await tx.update(projects).set(set).where(eq(projects.id, id)).returning()
+    const log = eventLog(tx, { workspaceId, now })
+    for (const field of ['name', 'color'] as const) {
+      if (patch[field] !== undefined && patch[field] !== existing[field]) {
+        await log.append({ type: 'project', id }, 'field_changed', {
+          field,
+          from: existing[field],
+          to: patch[field],
+        })
+      }
+    }
+    const wasArchived = existing.archivedAt !== null
+    if (patch.archived !== undefined && patch.archived !== wasArchived) {
+      await log.append({ type: 'project', id }, 'field_changed', {
+        field: 'archived',
+        from: wasArchived,
+        to: patch.archived,
+      })
+    }
     return row!
   })
 }
 
-/** Soft delete: the row stays so the event log never points at nothing. */
-export async function softDeleteProject(
+/**
+ * Deletes a project and every task in it, for good (FR-035): a tombstone each, then the rows go.
+ * What was filed in it from other modules (meetings, reading, people, messages) stays, unfiled,
+ * by their foreign keys. `graves` is how the tasks module names its tasks' tombstones: the shell
+ * cannot read a module's table.
+ */
+export type ProjectGraves = (
+  tx: Tx,
+  workspaceId: WorkspaceId,
+  projectId: ProjectId,
+) => Promise<Grave[]>
+
+export async function deleteProject(
   db: Db,
-  { workspaceId, now }: Actor,
+  ctx: Actor,
   id: ProjectId,
+  graves: ProjectGraves,
 ): Promise<void> {
+  const { workspaceId } = ctx
   await db.transaction(async (tx) => {
     const existing = await lockProject(tx, workspaceId, id)
     if (existing.isInbox) throw new InboxProtectedError()
-    await tx.update(projects).set({ deletedAt: now }).where(eq(projects.id, id))
+    const tasks = await graves(tx, workspaceId, id)
+    await bury(tx, ctx, [...tasks, { type: 'project', id, title: existing.name }])
+    await tx.execute(sql`delete from tasks where project_id = ${id}`)
+    await tx.delete(projects).where(eq(projects.id, id))
   })
 }

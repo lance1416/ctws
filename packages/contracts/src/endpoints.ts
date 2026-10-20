@@ -104,6 +104,7 @@ import {
   resourcesResponse,
   updateResourceBody,
 } from './resource'
+import { tombstoneParams, tombstoneResponse } from './tombstone'
 import {
   createOrganisationBody,
   mergeOrganisationBody,
@@ -351,6 +352,17 @@ export const api = {
     }),
   },
 
+  tombstones: {
+    get: endpoint({
+      method: 'GET',
+      path: '/tombstones/:type/:id',
+      summary: 'What a deleted thing was: its name, when it went, where it was.',
+      params: tombstoneParams,
+      ok: 200,
+      response: tombstoneResponse,
+      refusals: [404],
+    }),
+  },
   resources: {
     of: endpoint({
       method: 'GET',

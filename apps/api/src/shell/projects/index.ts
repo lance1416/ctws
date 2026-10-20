@@ -7,6 +7,7 @@ export {
   projectScope,
   unarchivedProjects,
 } from './queries'
+export { type ProjectGraves } from './service'
 export { getStage } from './stages'
 export { projectKeys, stageKeys } from './tables'
 

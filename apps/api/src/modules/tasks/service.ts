@@ -8,6 +8,7 @@ import {
   type TaskPosition,
   type UpdateTaskBody,
   type WorkspaceId,
+  projectId,
 } from '@ctws/contracts'
 import { derivedStatus, rankBetween } from '@ctws/core'
 import { and, asc, desc, eq, gt, isNull, lt, ne, sql } from 'drizzle-orm'
@@ -17,6 +18,7 @@ import type { Db, Queryable, Tx } from '../../platform/db/client'
 import { newId } from '../../platform/db/ids'
 import { rowsOf } from '../../platform/db/raw'
 import { type Actor, scoped, within } from '../../platform/db/scope'
+import { bury, type Grave } from '../../shell/tombstones'
 import { instant } from '../../platform/db/time'
 import { isoOrNull } from '../../platform/values'
 import { getProject, getStage } from '../../shell/projects'
@@ -444,38 +446,114 @@ async function rankFor(
 }
 
 /**
- * Soft-deletes a task and its live descendants, so no read has to check ancestors. Each gets its
- * own `deleted` event; a descendant's names the task the cascade started from.
+ * Deletes a task and everything under it, for good (FR-035): each node leaves a tombstone that
+ * says where it was, and the rows go with their log, relations and resources. A finished task is
+ * history (review, FR-043); deleting one takes it out of that history too.
  */
-export async function softDeleteTask(db: Db, ctx: Actor, id: TaskId): Promise<void> {
+export async function deleteTask(db: Db, ctx: Actor, id: TaskId): Promise<void> {
   await db.transaction(async (tx) => {
     await lockTaskTree(tx, ctx.workspaceId)
-    const log = taskLog(tx, ctx)
     const task = await lockTask(tx, ctx.workspaceId, id)
-
-    // The two `deleted_at is null` differ: the recursive one prunes, so an already-deleted
-    // descendant keeps its own `deleted_at`; the update's one refuses to overwrite and picks the
-    // rows that get an event. They disagree only on a live task under a deleted parent, which
-    // move (refusing a deleted parent), create (the visibility predicate) and the tree lock rule out.
-    const result = await tx.execute(sql`
-      with recursive subtree(id) as (
-        select ${id}::uuid
-        union
-        select t.id from tasks t join subtree s on t.parent_id = s.id where t.deleted_at is null
-      )
-      update tasks set deleted_at = ${instant(ctx.now)}, updated_at = ${instant(ctx.now)}
-      where id in (select id from subtree) and deleted_at is null
-      returning id
-    `)
-    await log.appendAll(
-      rowsOf(result, z.object({ id: taskId })).map(({ id: deletedId }) => ({
-        taskId: deletedId,
-        type: 'deleted',
-        payload: deletedId === id ? {} : { cascadedFrom: id },
-      })),
+    const graves = await subtreeGraves(tx, ctx.workspaceId, [task.id])
+    await bury(tx, ctx, graves)
+    await tx.execute(
+      sql`delete from tasks where id in (${sql.join(
+        graves.map((g) => sql`${g.id}::uuid`),
+        sql`, `,
+      )})`,
     )
     await settleAncestors(tx, ctx, task.parentId, { removed: true })
   })
+}
+
+const graveRow = z.object({
+  id: taskId,
+  parentId: taskId.nullable(),
+  title: z.string(),
+  projectId: projectId,
+  projectName: z.string(),
+  depth: z.number().int(),
+})
+
+/**
+ * The tombstones of these tasks and every live task under them, deepest last, each placed by its
+ * project, its parent and the titles above it (ancestors outside the subtree included).
+ */
+async function subtreeGraves(
+  q: Queryable,
+  workspaceId: WorkspaceId,
+  rootIds: readonly TaskId[],
+): Promise<Grave[]> {
+  if (rootIds.length === 0) return []
+  const roots = sql.join(
+    rootIds.map((id) => sql`${id}::uuid`),
+    sql`, `,
+  )
+  const result = await q.execute(sql`
+    with recursive subtree(id, depth) as (
+      select id, 0 from tasks where id in (${roots}) and deleted_at is null
+      union
+      select t.id, s.depth + 1 from tasks t join subtree s on t.parent_id = s.id
+      where t.deleted_at is null
+    ),
+    above(id, parent_id, title) as (
+      select a.id, a.parent_id, a.title from tasks a
+      where a.id in (select parent_id from tasks where id in (${roots}))
+      union
+      select a.id, a.parent_id, a.title from tasks a join above on a.id = above.parent_id
+    )
+    select t.id, t.parent_id as "parentId", t.title, t.project_id as "projectId",
+           p.name as "projectName", s.depth
+    from subtree s
+    join tasks t on t.id = s.id
+    join projects p on p.id = t.project_id
+    where ${scoped(tasks, workspaceId, 't')}
+    union all
+    select a.id, a.parent_id, a.title, null, '', -1 from above a
+    order by depth
+  `)
+  const rows = rowsOf(result, graveRow.extend({ projectId: projectId.nullable() }))
+  const titleOf = new Map(rows.map((r) => [r.id, r]))
+  const pathOf = (parentId: TaskId | null): string[] => {
+    const path: string[] = []
+    for (let at = parentId; at; at = titleOf.get(at)?.parentId ?? null) {
+      path.unshift(titleOf.get(at)!.title)
+    }
+    return path
+  }
+  return rows
+    .filter((r) => r.depth >= 0)
+    .map((r) => ({
+      type: 'task',
+      id: r.id,
+      title: r.title,
+      place: {
+        projectId: r.projectId,
+        projectName: r.projectName,
+        parentType: r.parentId ? 'task' : null,
+        parentId: r.parentId,
+        path: pathOf(r.parentId),
+      },
+    }))
+}
+
+/** The tombstones of every task in a project, for the project's own deletion. */
+export const projectGraves = async (
+  tx: Tx,
+  workspaceId: WorkspaceId,
+  projectId: ProjectId,
+): Promise<Grave[]> => {
+  const roots = await tx
+    .select({ id: tasks.id })
+    .from(tasks)
+    .where(
+      within(scoped(tasks, workspaceId), eq(tasks.projectId, projectId), isNull(tasks.parentId)),
+    )
+  return subtreeGraves(
+    tx,
+    workspaceId,
+    roots.map((r) => r.id),
+  )
 }
 
 /** `blockedId` waits for `blockerId`. */

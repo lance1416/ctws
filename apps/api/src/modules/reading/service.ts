@@ -10,6 +10,7 @@ import { eq } from 'drizzle-orm'
 import type { Db } from '../../platform/db/client'
 import { type Actor, scoped, within } from '../../platform/db/scope'
 import { eventLog } from '../../shell/events'
+import { bury } from '../../shell/tombstones'
 import type { LinkRegistry } from '../../shell/links'
 import { assertProjectsVisible } from '../../shell/projects'
 import { WrongKindError } from './errors'
@@ -103,17 +104,20 @@ export async function updateReadingItem(
   })
 }
 
-export async function softDeleteReadingItem(
-  db: Db,
-  { workspaceId, now }: Actor,
-  id: ReadingId,
-): Promise<void> {
-  const deleted = await db
-    .update(readingItems)
-    .set({ deletedAt: now })
-    .where(within(scoped(readingItems, workspaceId), eq(readingItems.id, id)))
-    .returning({ id: readingItems.id })
-  if (deleted.length === 0) throw new NotFound('Reading item')
+/** Deletes an item for good (FR-035): a tombstone, and the row goes. */
+export async function deleteReadingItem(db: Db, ctx: Actor, id: ReadingId): Promise<void> {
+  await db.transaction(async (tx) => {
+    const current = await lockReadingItem(tx, ctx.workspaceId, id)
+    await bury(tx, ctx, [
+      {
+        type: 'reading',
+        id,
+        title: current.title ?? current.fetchedTitle ?? current.url ?? '',
+        place: { projectId: current.projectId, projectName: current.projectName },
+      },
+    ])
+    await tx.delete(readingItems).where(eq(readingItems.id, id))
+  })
 }
 
 /**

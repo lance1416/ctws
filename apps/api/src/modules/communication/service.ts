@@ -7,13 +7,14 @@ import {
   type UpdateCommunicationBody,
 } from '@ctws/contracts'
 import { addDays, dayIn } from '@ctws/core'
-import { eq, sql } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import type { Db, Tx } from '../../platform/db/client'
 import { newId } from '../../platform/db/ids'
 import { DomainError } from '../../platform/errors'
 import { replaceRows } from '../../platform/db/replace'
 import type { Actor } from '../../platform/db/scope'
 import { eventLog } from '../../shell/events'
+import { bury } from '../../shell/tombstones'
 import type { LinkRegistry } from '../../shell/links'
 import { assertProjectsVisible } from '../../shell/projects'
 import { syncMentions } from '../../shell/relations'
@@ -226,16 +227,14 @@ export async function deleteCommunication(db: Db, ctx: Actor, id: CommunicationI
         .set({ repliedBy: null, updatedAt: ctx.now })
         .where(eq(communications.id, row.replyTo))
     }
+    await bury(tx, ctx, [
+      {
+        type: 'communication',
+        id,
+        title: row.subject ?? (row.body ? row.body.slice(0, 80) : row.channel),
+        place: { projectId: row.projectId },
+      },
+    ])
     await tx.delete(communications).where(eq(communications.id, row.id))
-    await tx.execute(
-      sql`delete from events where object_type = 'communication' and object_id = ${id}`,
-    )
-    await tx.execute(sql`
-      delete from relations
-      where (from_type = 'communication' and from_id = ${id})
-         or (to_type = 'communication' and to_id = ${id})`)
-    await tx.execute(
-      sql`delete from resources where owner_type = 'communication' and owner_id = ${id}`,
-    )
   })
 }

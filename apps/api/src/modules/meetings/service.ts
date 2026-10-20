@@ -14,6 +14,7 @@ import type { Db, Queryable, Tx } from '../../platform/db/client'
 import { replaceRows } from '../../platform/db/replace'
 import { type Actor, scoped, within } from '../../platform/db/scope'
 import { eventLog } from '../../shell/events'
+import { bury } from '../../shell/tombstones'
 import { assertProjectsVisible } from '../../shell/projects'
 import { assertPeopleVisible } from '../people'
 import { BadRuleError, OnceOnlyError } from './errors'
@@ -258,6 +259,7 @@ async function cancelOne({ tx, workspaceId, now, series, recurrenceId }: Cancel)
       set: cancelled,
     })
   await touch(tx, { workspaceId, now }, series.id)
+  await recomputeBounds(tx, series.id)
 }
 
 async function cancelFollowing(c: Cancel) {
@@ -274,14 +276,20 @@ async function cancelFollowing(c: Cancel) {
     delete from meeting_exceptions
     where meeting_id = ${series.id} and recurrence_id >= ${recurrenceId!}
   `)
+  await recomputeBounds(tx, series.id)
 }
 
+/** The whole series goes, for good (FR-035): a tombstone, and the row with its exceptions. */
 async function cancelAll({ tx, workspaceId, now, series }: Cancel) {
-  await tx
-    .update(meetings)
-    .set({ deletedAt: now })
-    .where(within(scoped(meetings, workspaceId), eq(meetings.id, series.id)))
-  await eventLog(tx, { workspaceId, now }).append(subject(series.id), 'deleted', {})
+  await bury(tx, { workspaceId, now }, [
+    {
+      type: 'meeting',
+      id: series.id,
+      title: series.title,
+      place: { projectId: series.projectId, projectName: series.projectName },
+    },
+  ])
+  await tx.delete(meetings).where(eq(meetings.id, series.id))
 }
 
 export async function createMeeting(
@@ -434,6 +442,5 @@ export async function cancelMeeting(
     if (recurrenceId !== undefined && !series.rrule) assertOccurs(series, recurrenceId)
     const reach = series.rrule ? scope : 'all'
     await CANCELS[reach]({ tx, workspaceId, now, series, recurrenceId })
-    await recomputeBounds(tx, id)
   })
 }

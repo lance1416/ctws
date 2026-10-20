@@ -15,7 +15,7 @@ import {
 import {
   createReadingItem,
   type ReadingDeps,
-  softDeleteReadingItem,
+  deleteReadingItem,
   updateReadingItem,
   withFetched,
 } from './service'
@@ -103,7 +103,7 @@ export const readingRoutes =
       }),
 
       on(api.reading.remove, async (req) => {
-        await softDeleteReadingItem(app.db, actorOf(req), req.params.id)
+        await deleteReadingItem(app.db, actorOf(req), req.params.id)
       }),
     ])
   }
