@@ -88,8 +88,8 @@ const mira = await post('/people', {
 })
 await put(`/people/${mira.id}/roles`, {
   roles: [
-    { organisationId: stripe.id, title: 'Engineering manager' },
-    { organisationId: shopify.id, title: 'Senior engineer', from: '2019-03', to: '2023-08' },
+    { organisationId: stripe.id, title: 'Staff engineer', from: '2026-03' },
+    { organisationId: shopify.id, title: 'Senior engineer', from: '2021-01', to: '2026-02' },
   ],
 })
 const liwen = await post('/people', {
@@ -169,8 +169,8 @@ await post('/meetings', {
   attendeeIds: [mira.id],
 })
 
-// A meeting Mira attended while she was at Shopify (2019-03 to 2023-08): it stays on Shopify's
-// timeline after she moved to Stripe (FR-065).
+// A meeting Mira attended while she was at Shopify (2021 to Feb 2026, as artboard 5 and FR-061
+// have it): it stays on Shopify's timeline, and only there, after she moved to Stripe (FR-065).
 await post('/meetings', {
   title: 'Payments platform review',
   startsLocal: '2022-05-10T15:00',
