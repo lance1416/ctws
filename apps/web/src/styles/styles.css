@@ -133,76 +133,75 @@
   --color-chrome: light-dark(#f7f8fa, #232427);
   --color-panel: light-dark(#ffffff, #2b2d30);
   --color-float: light-dark(#ffffff, #323438);
-  /* The hairline, and the edge that identifies a field or a plain button: held to 3:1 on
-     `panel`, where fields sit. Dark is one step lighter than the design's #6f737b (2.90). */
+  /* The hairline, and the edge that identifies a field or a plain button: 3:1 on all four
+     surfaces (DES-001 v1.4). */
   --color-line: light-dark(#e2e4e9, #393b40);
-  --color-line-strong: light-dark(#8a909c, #72767e);
+  --color-line-strong: light-dark(#858b96, #797d85);
   /* THE INK AT 5% AND 9%, LAID OVER WHATEVER SURFACE IT IS ON (see the note at the top). */
   --color-hover: light-dark(rgb(30 31 34 / 0.05), rgb(223 225 229 / 0.06));
   --color-select: light-dark(rgb(30 31 34 / 0.09), rgb(223 225 229 / 0.1));
-  /* Three greys of text. `subtle` is one step darker (lighter in dark) than the design's
-     #6c707e / #9ea2ac, which measured 3.95 / 4.19 on a hovered ground; these are the nearest
-     values on that hue that clear 4.5 bare and hovered. On a selection it reads as `muted`
-     (the rule near the end of this file). */
+  /* Three greys of text. On a selection `subtle` reads as `muted` (the rule near the end of
+     this file). */
   --color-ink: light-dark(#1e1f22, #dfe1e5);
   --color-muted: light-dark(#5a5f6b, #b4b8bf);
   --color-subtle: light-dark(#636775, #a4a8b2);
   --color-on-ink: light-dark(#ffffff, #1e1f22);
 
-  /* THE EIGHT KINDS (FR-002): main / `-t` text / `-bg` tint. Text values are the artboards' own
-     where the artboard draws them (reading, project), and the nearest same-hue value that clears
-     4.5:1 on every surface, hovered, and on its own tint where the design's fell short: light
-     note-t (was #6b7a1f), dark task-t (#7aa5ff), meeting-t (#b99bf8), person-t (#f58bbb),
-     project-t (#a5afc4), note-t (#a9b84f). */
-  --color-task: light-dark(#3574f0, #548af7);
-  --color-task-t: light-dark(#2457c5, #89adf5);
+  /* THE EIGHT KINDS (FR-002): main / `-t` text / `-bg` tint. Every value is the design's
+     (tokens.md, DES-001 v1.4), measured as tokens.md "对比度怎么量" says and as
+     `textContrast.test.ts` does: a text colour clears 4.5:1 on each surface, hovered, and on its
+     own tint laid over each surface hovered. Where a value had to move, only its lightness did, so
+     a word keeps its kind's hue. */
+  --color-task: light-dark(#3574f0, #568dfa);
+  --color-task-t: light-dark(#2457c5, #96b9ff);
   --color-task-bg: light-dark(rgb(53 116 240 / 0.11), rgb(84 138 247 / 0.16));
   --color-meeting: light-dark(#8150e0, #a37cf2);
-  --color-meeting-t: light-dark(#6a3bc4, #b7a6de);
+  --color-meeting-t: light-dark(#6a3bc4, #c6adfe);
   --color-meeting-bg: light-dark(rgb(129 80 224 / 0.11), rgb(163 124 242 / 0.16));
   --color-person: light-dark(#d6337a, #f06ba8);
-  --color-person-t: light-dark(#b0255f, #f68ebd);
+  --color-person-t: light-dark(#af245e, #ff9ac7);
   --color-person-bg: light-dark(rgb(214 51 122 / 0.1), rgb(240 107 168 / 0.15));
   --color-reading: light-dark(#138585, #3db8b8);
-  --color-reading-t: light-dark(#0d6e6e, #5cc9c9);
+  --color-reading-t: light-dark(#066a6a, #57cecd);
   --color-reading-bg: light-dark(rgb(19 133 133 / 0.11), rgb(61 184 184 / 0.15));
   --color-project: light-dark(#5e6a82, #8f9bb3);
-  --color-project-t: light-dark(#4a5468, #a7b1c6);
+  --color-project-t: light-dark(#4a5468, #b3bdd3);
   --color-project-bg: light-dark(rgb(94 106 130 / 0.12), rgb(143 155 179 / 0.16));
   --color-organisation: light-dark(#96613a, #c79469);
-  --color-organisation-t: light-dark(#7a4d2b, #d6aa82);
+  --color-organisation-t: light-dark(#7a4d2b, #e0b48b);
   --color-organisation-bg: light-dark(rgb(150 97 58 / 0.12), rgb(199 148 105 / 0.15));
   --color-communication: light-dark(#0e7fa3, #4cb8d8);
-  --color-communication-t: light-dark(#0b6683, #6fc8e3);
+  --color-communication-t: light-dark(#0b6683, #71cae5);
   --color-communication-bg: light-dark(rgb(14 127 163 / 0.11), rgb(76 184 216 / 0.15));
   --color-note: light-dark(#6b7a1f, #a9b84f);
-  --color-note-t: light-dark(#5d6927, #adbc53);
+  --color-note-t: light-dark(#566401, #b8c85f);
   --color-note-bg: light-dark(rgb(107 122 31 / 0.13), rgb(169 184 79 / 0.15));
 
-  /* THE THREE STATES (FR-003). Dark stop-t is the nearest passing value to the design's
-     #f58a8a (4.33 on a hovered float). `on-stop` is the text of a filled destructive button. */
+  /* THE THREE STATES (FR-003). `on-stop` is the text of a filled destructive button. */
   --color-go: light-dark(#208a3c, #5fb865);
-  --color-go-t: light-dark(#1a7032, #7cc983);
+  --color-go-t: light-dark(#166d2f, #80ce87);
   --color-go-bg: light-dark(rgb(32 138 60 / 0.11), rgb(95 184 101 / 0.15));
-  --color-warn: light-dark(#b87400, #e8a33d);
-  --color-warn-t: light-dark(#8a5600, #f0b860);
+  --color-warn: light-dark(#b16f00, #e8a33d);
+  --color-warn-t: light-dark(#885504, #f0b860);
   --color-warn-bg: light-dark(rgb(232 163 61 / 0.18), rgb(232 163 61 / 0.15));
   --color-stop: light-dark(#d13d3d, #f06a6a);
-  --color-stop-t: light-dark(#b52e2e, #dd9c9a);
+  --color-stop-t: light-dark(#b22b2c, #ff9e9d);
   --color-stop-bg: light-dark(rgb(209 61 61 / 0.1), rgb(240 106 106 / 0.15));
   --color-on-stop: light-dark(#ffffff, #1e1f22);
 
-  /* THE EIGHT PROJECT COLOURS (FR-004): a solid square with white initials, one hex for both
-     schemes. `projectColors.test.ts` measures them; it is skipped until design answers the
-     palette question raised 2026-10-21 (three pairs fail the discriminability check). */
-  --color-project-blue: #2f64c9;
-  --color-project-amber: #b45309;
-  --color-project-green: #2e7d4f;
-  --color-project-violet: #8050c8;
-  --color-project-red: #c2413a;
-  --color-project-olive: #5f7012;
-  --color-project-teal: #127a80;
-  --color-project-pink: #b83a7a;
+  /* THE EIGHT PROJECT COLOURS (FR-004, DES-001 v1.3): a solid square with white initials, one
+     hex for both schemes, always beside the project's name. `projectColors.test.ts` holds them to
+     the square's own rules: white initials at 4.5:1, chroma at least 0.10, lightness 0.49 to
+     0.58, and any two at least 12 apart. Colour-blind distance and 3:1 on the ground are not
+     asked: the initials and the name carry what the colour cannot. */
+  --color-project-blue: #2663c9;
+  --color-project-amber: #b35f00;
+  --color-project-green: #008734;
+  --color-project-violet: #814fc8;
+  --color-project-red: #c02434;
+  --color-project-olive: #6f6500;
+  --color-project-teal: #00809a;
+  --color-project-pink: #b53c8b;
   /* The initials on a project square: white in both schemes (FR-004). */
   --color-on-project: #ffffff;
 
@@ -211,7 +210,7 @@
      the one thing this file forbids. Body text at 12px, so held to 4.5:1 on `panel` and
      `ground`, bare and hovered. Not a highlight.js theme: importing one would bring a whole second
      palette with its own notion of light and dark. */
-  --color-code-keyword: light-dark(#8a3fa0, #bd9dc8);
+  --color-code-keyword: light-dark(#8a3fa0, #c58fd8);
   --color-code-string: light-dark(#1a7046, #7fc9a0);
   --color-code-number: light-dark(#9a5000, #e0a86b);
   --color-code-comment: light-dark(#606775, #a0a9b7);

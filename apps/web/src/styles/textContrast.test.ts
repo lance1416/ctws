@@ -13,8 +13,9 @@ import { KINDS, STATES, SURFACES, color, css, over, type Scheme } from './tokens
  * - `subtle` is held bare and hovered only; on a selection it is lifted to `muted` by a rule in
  *   `styles.css` (checked below). Asking it to pass there on its own would make it the second
  *   grey, and the three greys would be two.
- * - A kind's or a state's `-t` is held bare, hovered and on its own tint; not under `select`,
- *   where the design's values would have to lose most of their hue.
+ * - A kind's or a state's `-t` is held bare, hovered, and on its own tint laid over each surface
+ *   bare and hovered (a badge sits in a hovered row); not under `select`.
+ * That is tokens.md's "对比度怎么量" (DES-001 v1.4), rule for rule.
  */
 const read = (name: string, scheme: Scheme) => {
   const v = color(name, scheme)
@@ -49,9 +50,8 @@ describe.each(['light', 'dark'] as const)('text in %s', (scheme) => {
 
   it("a kind's and a state's text passes bare, hovered, and on its own tint", () => {
     const fails = [...KINDS, ...STATES].flatMap((k) => {
-      const tinted = SURFACES.map(
-        (s) =>
-          [`${k}-bg over ${s}`, over(read(`${k}-bg`, scheme), read(s, scheme))] as [string, string],
+      const tinted = grounds(['hover']).map(
+        ([at, bg]) => [`${k}-bg over ${at}`, over(read(`${k}-bg`, scheme), bg)] as [string, string],
       )
       return failing([`${k}-t`], [...grounds(['hover']), ...tinted])
     })
@@ -71,12 +71,12 @@ describe.each(['light', 'dark'] as const)('text in %s', (scheme) => {
     expect(contrast(read('on-stop', scheme), read('stop', scheme))).toBeGreaterThanOrEqual(4.5)
   })
 
-  it("a kind's or a state's main colour shows as an icon (3:1) on every surface, bare and hovered", () => {
-    expect(failing([...KINDS, ...STATES], grounds(['hover']), 3)).toEqual([])
+  it("a kind's or a state's main colour shows as an icon (3:1) on every surface, bare, hovered and selected", () => {
+    expect(failing([...KINDS, ...STATES], grounds(['hover', 'select']), 3)).toEqual([])
   })
 
-  it('the focus ring and the edge of a field show (3:1) on a block', () => {
-    expect(failing(['task', 'line-strong'], [['panel', read('panel', scheme)]], 3)).toEqual([])
+  it('the edge of a field shows (3:1) on every surface', () => {
+    expect(failing(['line-strong'], grounds([]), 3)).toEqual([])
   })
 })
 
