@@ -30,6 +30,8 @@ export type WorkspaceModule = {
   capture?: CaptureContribution
   search?: SearchContribution
   chords?: Chord[]
+  /** What this module can make from anywhere: `N` then the creator's key, and the New menu. */
+  creates?: readonly Creator[]
   project?: ProjectContribution
   /**
    * The module's key tables, in its order: the keyboard help shows them, the switch there silences
@@ -244,6 +246,21 @@ export type SearchHit = {
   meta: ReactNode
   /** The 24px marker at the head of the row. */
   mark: ReactNode
+}
+
+/**
+ * ONE WAY TO MAKE A THING (FR-026): `N` then `key` anywhere, and a row of the New menu. Either a
+ * dialog the shell mounts, given the project the page is on, or a page to go to.
+ */
+export type Creator = {
+  kind: ObjectType
+  /** The second key after `N`. One keyspace across the app. */
+  key: string
+  /** "Task", "Meeting": the menu's word. */
+  label: string
+  Dialog?: ComponentType<{ projectId: ProjectId | null; onClose: () => void }>
+  /** Where to go instead, when the kind is made on its own page. */
+  to?: string
 }
 
 /** A key in the shell's key table, read after the `g` prefix. */

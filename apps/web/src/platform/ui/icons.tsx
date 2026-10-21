@@ -37,6 +37,7 @@ import {
   Inbox,
   Keyboard,
   LayoutDashboard,
+  Link,
   MessagesSquare,
   Moon,
   PanelRight,
@@ -65,6 +66,8 @@ export const KIND_ICON = {
 } as const satisfies Record<string, IconComponent>
 export type Kind = keyof typeof KIND_ICON
 
+/** Linking one thing to another (FR-027); also a reading that is a link. */
+export const LinkIcon = Link
 /** The project that is the inbox wears this instead of initials (FR-004). */
 export const InboxIcon = Inbox
 

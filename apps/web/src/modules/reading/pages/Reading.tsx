@@ -1,9 +1,10 @@
+import { useSubjectOf } from '../../../shell/layout'
 import type { ReadingStatus } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { GoneNotice, useOpenFromUrl } from '../../../shell/detail'
 import { readingQuery } from '../api'
-import { isToRead } from '../logic/item'
+import { isToRead, readingLabel } from '../logic/item'
 import { EmptyState } from '../../../platform/ui/EmptyState'
 import { DaySection, LIST_MEASURE, ROW_LIST } from '../../../shell/rows'
 import { AddReading } from '../components/AddReading'
@@ -31,6 +32,7 @@ export function Reading() {
     type: 'reading',
     base: '/reading',
   })
+  useSubjectOf(open ? { type: 'reading', id: open.id, title: readingLabel(open) } : null)
   const [showFinished, setShowFinished] = useState(false)
   const timeZone = useTimeZone()
   const today = ymd(useNow(), timeZone)

@@ -15,6 +15,7 @@ import { TASKS_ID, taskPage } from './logic/id'
 import { TASK_KEYS } from './logic/keys'
 import { describeTask } from './logic/listedTask'
 import { openTasksOf } from './logic/openTasks'
+import { NewTask } from './components/NewTask'
 import { OpenTask } from './pages/OpenTask'
 import { Review } from './pages/Review'
 import { Today } from './pages/Today'
@@ -58,6 +59,7 @@ export const taskModule: WorkspaceModule = {
   ],
   routes: [{ path: ':id', element: <OpenTask /> }],
   capture: { kind: 'task', useTarget: useInboxCapture },
+  creates: [{ kind: 'task', key: 't', label: 'Task', Dialog: NewTask }],
   search: { useHits: useTaskHits },
   chords: [
     { id: 'today', key: 't', label: 'Go to Today', resolve: () => '/today', order: 10 },

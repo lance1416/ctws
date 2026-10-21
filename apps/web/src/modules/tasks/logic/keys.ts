@@ -2,12 +2,6 @@ import type { TaskStatus } from '@ctws/contracts'
 import { pressesWith, type KeyTable } from '../../../platform/keyboard/keyTable'
 import { toggleDoneTarget, toggleStartTarget } from './status'
 
-/** `n` needs a project to create into, so it exists only on a project page. */
-export const PROJECT_PAGE_KEYS: KeyTable<'create'> = {
-  title: 'On a project page',
-  rows: [{ keys: 'n', does: 'Open the New dialog', presses: { n: 'create' } }],
-}
-
 /** The two status keys, alike wherever a task row has focus. */
 type StatusAction = 'start' | 'complete'
 const STATUS_ROWS = [
@@ -103,4 +97,4 @@ export const TREE_KEYS: KeyTable<TreeAction> = {
 }
 
 /** The module's tables in the order the help lists them. */
-export const TASK_KEYS = [PROJECT_PAGE_KEYS, TREE_KEYS, TODAY_KEYS] as const
+export const TASK_KEYS = [TREE_KEYS, TODAY_KEYS] as const

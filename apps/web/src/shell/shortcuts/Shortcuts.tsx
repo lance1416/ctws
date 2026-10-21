@@ -1,8 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import type { Creator } from '../contract'
 import { useRegistry } from '../registry'
-import { CHORD_TIMEOUT_MS } from './chords'
+import { CHORD_TIMEOUT_MS, JUMP_PREFIX, NEW_PREFIX } from './chords'
 import { useDocumentKeys } from '../../platform/keyboard/keyTable'
 import { SearchDialog } from '../search/SearchDialog'
 import { ShortcutHelp } from './ShortcutHelp'
@@ -10,7 +11,8 @@ import { ShortcutHelp } from './ShortcutHelp'
 /**
  * The document-level keys, and the two overlays they open. The top bar's buttons do the same jobs
  * from the same state, which is the layout's: the `?` overlay holds the switch that turns the keys
- * off, so it cannot be reachable only by a key.
+ * off, so it cannot be reachable only by a key. `G` and `N` are prefixes: the next key is a
+ * jump's or a creator's, and is consumed even when it names none.
  */
 export function Shortcuts({
   search,
@@ -18,22 +20,30 @@ export function Shortcuts({
   help,
   setHelp,
   onSidebar,
+  onLink,
+  onNew,
 }: {
   search: boolean
   setSearch: (open: boolean) => void
   help: boolean
   setHelp: (open: boolean) => void
   onSidebar: () => void
+  onLink: () => void
+  onNew: (creator: Creator) => void
 }) {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const registry = useRegistry()
-  // A pending `g`, forgotten after a timeout so a stray `g` does not make a later `t` navigate.
-  const pending = useRef(false)
+  // A pending prefix, forgotten after a timeout so a stray `g` does not make a later `t` navigate.
+  const pending = useRef<typeof JUMP_PREFIX | typeof NEW_PREFIX | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const forget = () => {
-    pending.current = false
+    pending.current = null
     if (timer.current) clearTimeout(timer.current)
+  }
+  const expect = (prefix: typeof JUMP_PREFIX | typeof NEW_PREFIX) => {
+    pending.current = prefix
+    timer.current = setTimeout(forget, CHORD_TIMEOUT_MS)
   }
 
   useDocumentKeys(
@@ -42,22 +52,28 @@ export function Shortcuts({
       search: () => setSearch(true),
       help: () => setHelp(true),
       sidebar: onSidebar,
-      jump: () => {
-        pending.current = true
-        timer.current = setTimeout(forget, CHORD_TIMEOUT_MS)
-      },
+      link: onLink,
+      jump: () => expect(JUMP_PREFIX),
+      new: () => expect(NEW_PREFIX),
     },
     {
-      // The key after the prefix is the chord's, whatever else it would do. It is consumed even
-      // when unresolved, so it never falls through to the page's own handler.
       claim: (e) => {
-        if (!pending.current) return false
+        const prefix = pending.current
+        if (prefix === null) return false
         forget()
-        const chord = registry.chordFor(e.key)
-        if (chord) {
-          e.preventDefault()
-          const to = chord.resolve({ queryClient: qc })
-          if (to) navigate(to)
+        if (prefix === JUMP_PREFIX) {
+          const chord = registry.chordFor(e.key)
+          if (chord) {
+            e.preventDefault()
+            const to = chord.resolve({ queryClient: qc })
+            if (to) navigate(to)
+          }
+        } else {
+          const creator = registry.creatorFor(e.key)
+          if (creator) {
+            e.preventDefault()
+            onNew(creator)
+          }
         }
         return true
       },

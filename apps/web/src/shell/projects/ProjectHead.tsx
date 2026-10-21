@@ -4,6 +4,7 @@ import { projectKeys, updateProject, useEveryProject } from './api'
 import { useRegistry } from '../registry'
 import { Button } from '../../platform/ui/Button'
 import { ProjectIdentity } from './ProjectIdentity'
+import { NewMenu } from '../creates'
 
 /** The head of a project's page: its name and colour, and each module's numbers about it. */
 export function ProjectHead({ id }: { id: ProjectId }) {
@@ -29,6 +30,7 @@ export function ProjectHead({ id }: { id: ProjectId }) {
           <Component key={moduleId} projectId={id} />
         ))}
       </div>
+      <NewMenu className="mt-1 shrink-0" />
       {/* The inbox is where capture lands, and the server refuses to archive it. */}
       {!project.isInbox && <ArchiveToggle id={id} archived={project.archivedAt !== null} />}
     </div>

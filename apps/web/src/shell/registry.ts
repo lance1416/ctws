@@ -13,6 +13,7 @@ import type {
   CalendarContribution,
   CaptureContribution,
   Chord,
+  Creator,
   KindEntry,
   ModulePage,
   ProjectContribution,
@@ -85,6 +86,13 @@ const SHELL_RELATIONS: RelationContribution[] = [
   { type: 'note', kind: 'Note', plural: 'Notes', to: (id) => `/notes/${id}` },
 ]
 
+/** The kinds whose modules come in phase 3: `N` and the menu already lead to their places. */
+const SHELL_CREATES: Creator[] = [
+  { kind: 'organisation', key: 'o', label: 'Organisation', to: '/organisations' },
+  { kind: 'communication', key: 'x', label: 'Message', to: '/communication' },
+  { kind: 'note', key: 'n', label: 'Note', to: '/notes' },
+]
+
 /** What the app, not the shell, decides about its modules. */
 export type ShellConfig = {
   /** The rail's top tier, as `<module id or 'shell'>:<page id>`, at most five. */
@@ -145,6 +153,9 @@ export type Registry = {
   kinds: RegisteredKind[]
   chords: Chord[]
   chordFor: (key: string) => Chord | null
+  /** Every creator, modules' first, in FR-029's order of keys. */
+  creates: Creator[]
+  creatorFor: (key: string) => Creator | null
   captures: { moduleId: string; capture: CaptureContribution }[]
   captureModuleId: string
   search: SearchProvider[]
@@ -186,6 +197,10 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
     ...SHELL_RELATIONS.map((r) => ({ ...r, moduleId: null })),
     ...modules.flatMap((m) => (m.relations ?? []).map((r) => ({ ...r, moduleId: m.id }))),
   ]
+  const NEW_ORDER = 'tmpoxrnl'
+  const creates = [...modules.flatMap((m) => m.creates ?? []), ...SHELL_CREATES].sort(
+    (a, b) => NEW_ORDER.indexOf(a.key) - NEW_ORDER.indexOf(b.key),
+  )
   const captures = modules.flatMap((m) =>
     m.capture ? [{ moduleId: m.id, capture: m.capture }] : [],
   )
@@ -217,6 +232,8 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
     ],
     chords,
     chordFor: (key) => chords.find((c) => c.key === key) ?? null,
+    creates,
+    creatorFor: (key) => creates.find((c) => c.key === key) ?? null,
     captures,
     captureModuleId: config.captureModuleId,
     search: modules.flatMap((m) =>
@@ -247,7 +264,7 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
     projectLead: modules.find((m) => m.project?.Lead)?.project?.Lead ?? null,
     projectCount: modules.find((m) => m.project?.count)?.project?.count ?? null,
     projectContents: modules.flatMap((m) => (m.project?.contents ? [m.project.contents] : [])),
-    anywhere: anywhereKeys(chords),
+    anywhere: anywhereKeys(chords, creates),
     keys: modules.flatMap((m) => m.keys ?? []),
     routes: [
       ...modules.flatMap((m) => m.places ?? []),

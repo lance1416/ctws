@@ -29,6 +29,7 @@ export const readingModule: WorkspaceModule = {
   ],
   capture: { kind: 'reading', useTarget: useReadingCapture, accepts: isReadingUrl },
   search: { useHits: useReadingHits },
+  creates: [{ kind: 'reading', key: 'r', label: 'Reading', to: `/${READING_ID}` }],
   chords: [
     {
       id: 'reading',

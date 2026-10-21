@@ -1,3 +1,4 @@
+import { useSubjectOf } from '../../../shell/layout'
 import { type Circle, CIRCLES, type PersonResponse } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -22,6 +23,7 @@ export function People() {
     type: 'person',
     base: '/people',
   })
+  useSubjectOf(open ? { type: 'person', id: open.id, title: open.name } : null)
   const [circle, setCircle] = useState<Circle | null>(null)
 
   return (

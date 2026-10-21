@@ -1,14 +1,12 @@
 import type { ProjectId } from '@ctws/contracts'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Fragment, useId, useRef, useState, type ReactNode } from 'react'
-import { useDocumentKeys } from '../../../platform/keyboard/keyTable'
 import { dayPhrase, nearDay, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { textbox } from '../../../platform/ui/formStyles'
 import { useLineEntry } from '../../../platform/ui/useLineEntry'
 import { useAccountToday, useTimeZone } from '../../../shell/auth'
 import { createTask, movementQuery, projectTasksQuery } from '../api'
-import { PROJECT_PAGE_KEYS } from '../logic/keys'
 import { CreateTaskDialog } from './CreateTaskDialog'
 import { TaskBoard } from './TaskBoard'
 import { TaskTree } from './TaskTree'
@@ -64,13 +62,9 @@ export const PROJECT_VIEWS = [
   { id: 'board', label: 'Board' },
 ] as const
 
-/**
- * The task block's New button. It carries the `n` key, which needs a project to create into, under
- * the guards every single key obeys.
- */
+/** The task block's New button; `N T` anywhere does the same through the shell (FR-026). */
 export function NewTaskAction({ projectId }: { projectId: ProjectId }) {
   const [creating, setCreating] = useState(false)
-  useDocumentKeys(PROJECT_PAGE_KEYS, { create: () => setCreating(true) })
 
   return (
     <>
@@ -80,12 +74,6 @@ export function NewTaskAction({ projectId }: { projectId: ProjectId }) {
         className="flex h-8 shrink-0 items-center gap-1.5 rounded-control px-2 text-ui text-muted hover:bg-hover hover:text-ink"
       >
         New…
-        <kbd
-          aria-hidden="true"
-          className="pointer-events-none rounded-key border border-line px-1.5 text-meta leading-5 text-subtle max-sm:hidden"
-        >
-          n
-        </kbd>
       </button>
       {creating && <CreateTaskDialog projectId={projectId} onClose={() => setCreating(false)} />}
     </>

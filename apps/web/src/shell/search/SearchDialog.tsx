@@ -1,4 +1,5 @@
-import type { ObjectType } from '@ctws/contracts'
+import type { LinkCandidate, ObjectType } from '@ctws/contracts'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDebouncedValue } from '../../platform/time/useDebouncedValue'
@@ -6,13 +7,14 @@ import { useComposing } from '../../platform/keyboard/composition'
 import { keyLabel } from '../../platform/keyboard/keys'
 import { pressesWith, useKeyTable, type KeyTable } from '../../platform/keyboard/keyTable'
 import { BUTTON, KEY } from '../../platform/ui/buttonStyles'
-import { KIND_ICON, PLACE_ICON } from '../../platform/ui/icons'
+import { KIND_ICON, LinkIcon, PLACE_ICON } from '../../platform/ui/icons'
 import { Modal } from '../../platform/ui/Modal'
 import { useMe } from '../auth/useMe'
 import { useInspector } from '../layout/inspectorAddress'
 import { KIND_TEXT, KIND_TINT, PLACES } from '../layout/places'
 import { useRegistry } from '../registry'
 import { federate, type ProviderResult } from './federate'
+import { candidatesQuery, type Endpoint } from '../links/api'
 import { recentList } from './recent'
 import { grouped, KIND_WORDS, kindsWithHits, nextTab, scopesMatching, type Tab } from './view'
 
@@ -73,11 +75,20 @@ export const SEARCH_KEYS: KeyTable<'next' | 'previous' | 'open' | 'beside' | 'ta
  * the page. The combobox is written out rather than taken from a library so Escape reaches the
  * dialog and closes the whole thing.
  */
-export function SearchDialog({ onClose }: { onClose: () => void }) {
+export type Pick = {
+  /** The thing being linked from: the answer leaves it out. */
+  of: Endpoint
+  title: string
+  /** Offer this kind only, when the block it opened from holds one kind. */
+  only?: ObjectType | undefined
+  onPick: (thing: LinkCandidate) => void
+}
+
+export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pick }) {
   const composing = useComposing()
   const keys = useKeyTable(SEARCH_KEYS)
   const [query, setQuery] = useState('')
-  const [scope, setScope] = useState<ObjectType | null>(null)
+  const [scope, setScope] = useState<ObjectType | null>(pick?.only ?? null)
   const [tab, setTab] = useState<Tab>('all')
   const debounced = useDebouncedValue(query.trim())
   // The highlighted row, for the words it was chosen under: new words start again at the top.
@@ -96,7 +107,27 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
     moduleLabel: p.moduleLabel,
     ...p.useHits(debounced),
   }))
-  const results = federate(parts)
+  const found = federate(parts)
+  // As a picker (FR-027) the server's candidates are the hits: every kind, the likely few first.
+  const candidates = useQuery({
+    ...candidatesQuery(pick?.of ?? { type: 'project', id: '' }, debounced),
+    enabled: pick !== undefined,
+    placeholderData: keepPreviousData,
+  })
+  const results = pick
+    ? {
+        rows: (candidates.data ?? []).map((c) => ({
+          ...c,
+          to: registry.relationFor(c.type).to(c.id),
+          meta: registry.relationFor(c.type).describe?.(c) ?? null,
+          mark: null,
+          moduleId: '',
+          moduleLabel: '',
+        })),
+        isError: candidates.isError,
+        isSuccess: candidates.isSuccess && !candidates.isPlaceholderData,
+      }
+    : found
   // The one New that works from here before the kinds' own forms land: a task, into the inbox.
   const capture = registry.captures.find((c) => c.moduleId === registry.captureModuleId)!
   const inbox = capture.capture.useTarget()
@@ -107,7 +138,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
   const typing = query.trim()
   const typed = typing.toLocaleLowerCase()
   const scoping = scope === null && query.startsWith('/')
-  const hits = (debounced.length > 0 ? results.rows : []).filter(
+  const hits = (debounced.length > 0 || pick ? results.rows : []).filter(
     (h) => (scope ?? 'all') === 'all' || h.type === scope,
   )
   const view: Tab = scope ?? tab
@@ -116,7 +147,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
 
   const rows: Row[] = scoping
     ? scopesMatching(query.slice(1)).map((type) => ({ kind: 'scope', key: `scope:${type}`, type }))
-    : typing.length === 0 && scope === null
+    : typing.length === 0 && scope === null && !pick
       ? [
           ...recent.map((r) => ({
             kind: 'recent' as const,
@@ -139,7 +170,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
         ]
       : [
           // Places follow the typing at once; only module hits wait for the debounce.
-          ...(scope === null && view === 'all'
+          ...(scope === null && view === 'all' && !pick
             ? PLACES.filter((p) => p.label.toLocaleLowerCase().includes(typed)).map((p) => ({
                 kind: 'place' as const,
                 key: `place:${p.id}`,
@@ -188,10 +219,15 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
   const open = (row: Row, beside: boolean) => {
     if (row.kind === 'scope') return scopeTo(row.type)
     if (row.kind === 'hit' && !settled) return
+    if (pick) {
+      if (row.kind === 'hit') pick.onPick(hitsById.get(row.id)!)
+      return
+    }
     onClose()
     if (beside && row.kind !== 'place') inspector.show({ type: row.type, id: row.id })
     else navigate(row.to)
   }
+  const hitsById = new Map(pick ? (candidates.data ?? []).map((c) => [c.id, c]) : [])
   const newTask = async () => {
     if (!inbox.target) return
     await inbox.target.submit(typing, { projectId: null, date: null })
@@ -201,9 +237,13 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
 
   return (
     // `initialFocus`, not `autoFocus`: Radix moves focus itself on open, and would land on Close.
-    <Modal title="Search everything" onClose={onClose} initialFocus={box} palette>
+    <Modal title={pick?.title ?? 'Search everything'} onClose={onClose} initialFocus={box} palette>
       <div className="flex h-13 items-center gap-2.5 border-b border-line px-4">
-        <PLACE_ICON.search size={20} aria-hidden="true" className="shrink-0 text-muted" />
+        {pick ? (
+          <LinkIcon size={20} aria-hidden="true" className="shrink-0 text-muted" />
+        ) : (
+          <PLACE_ICON.search size={20} aria-hidden="true" className="shrink-0 text-muted" />
+        )}
         {scope && (
           <span
             className={`inline-flex h-6 shrink-0 items-center gap-1.5 rounded-control px-2 text-meta font-medium ${KIND_TINT[scope]} ${KIND_TEXT[scope]}`}
@@ -253,7 +293,11 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
             })
           }}
           placeholder={
-            scope ? `Search ${KIND_WORDS[scope].many.toLocaleLowerCase()}` : 'Search everything'
+            scope
+              ? `Search ${KIND_WORDS[scope].many.toLocaleLowerCase()}`
+              : pick
+                ? pick.title
+                : 'Search everything'
           }
           aria-label="Search"
           className="h-9 min-w-0 flex-1 bg-transparent text-prose text-ink placeholder:text-subtle focus-visible:outline-none"
@@ -313,7 +357,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
                 <kbd className={KEY}>Tab</kbd>
               </button>
             )}
-            {inbox.target && (
+            {inbox.target && !pick && (
               <button type="button" onClick={() => void newTask()} className={BUTTON.secondary}>
                 New task “{debounced}”<kbd className={KEY}>Enter</kbd>
               </button>
@@ -361,8 +405,8 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
       </ul>
 
       <div className="flex h-10 items-center gap-4 border-t border-line px-4 text-meta text-subtle">
-        <Legend keys="Enter">Open</Legend>
-        <Legend keys={keyLabel('Ctrl Enter')}>Open beside</Legend>
+        <Legend keys="Enter">{pick ? 'Choose' : 'Open'}</Legend>
+        {!pick && <Legend keys={keyLabel('Ctrl Enter')}>Open beside</Legend>}
         <Legend keys="Tab">Next kind</Legend>
         <Legend keys="/">Scope to a kind</Legend>
       </div>

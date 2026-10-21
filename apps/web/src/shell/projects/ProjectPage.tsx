@@ -5,6 +5,7 @@ import { DangerZone } from '../../platform/ui/DangerZone'
 import { RowsPanel } from '../../platform/ui/Panel'
 import { ViewTabs } from '../../platform/ui/ViewTabs'
 import type { Crumbs } from '../layout/page'
+import { useSubjectOf } from '../layout/subject'
 import { LinkBlocks } from '../links/LinkBlocks'
 import { useRegistry } from '../registry'
 import { useForgetWhenGone, useRecordRecent } from '../search/recent'
@@ -38,6 +39,7 @@ export function ProjectPage() {
   const registry = useRegistry()
   const views = useBlockViews()
   useForgetWhenGone('project', id ?? null, gone)
+  useSubjectOf(id && project ? { type: 'project', id, title: project.name } : null)
   useRecordRecent(
     id && project
       ? { type: 'project', id, title: project.name, to: `/projects/${id}`, kind: 'Project' }

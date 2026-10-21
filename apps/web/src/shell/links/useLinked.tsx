@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { problemText } from '../../platform/http/api'
 import { Button } from '../../platform/ui/Button'
 import { PanelEmpty } from '../../platform/ui/Panel'
-import { AddLink } from './AddLink'
+import { LinkDialog } from './LinkDialog'
 import { deleteLink, linkKeys, linksQuery, type Endpoint } from './api'
 
 export type Linked = {
@@ -39,7 +39,7 @@ export function useLinked(of: Endpoint, types: readonly ObjectType[] | undefined
         + Link
       </Button>
       {adding && (
-        <AddLink
+        <LinkDialog
           of={of}
           only={adding === 'any' ? undefined : adding}
           onClose={() => setAdding(null)}

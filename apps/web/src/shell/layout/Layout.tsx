@@ -1,9 +1,12 @@
-import { api } from '@ctws/contracts'
+import { api, idFrom, projectId as projectIdSchema } from '@ctws/contracts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
-import { Navigate, Outlet, useLocation } from 'react-router-dom'
+import { Navigate, Outlet, useLocation, useMatch, useNavigate } from 'react-router-dom'
 import { call } from '../../platform/http/api'
 import { meKey, useMe } from '../auth/useMe'
+import type { Creator } from '../contract'
+import { NewContext, rememberKind } from '../creates'
+import { LinkDialog } from '../links/LinkDialog'
 import { BottomBar } from './BottomBar'
 import { IconBar } from './IconBar'
 import { Inspector } from './Inspector'
@@ -12,6 +15,7 @@ import { placeOf } from './places'
 import { useRemembered } from './remembered'
 import { Shortcuts } from '../shortcuts/Shortcuts'
 import { Sidebar } from './Sidebar'
+import { SubjectProvider, useSubject } from './subject'
 import { TopBar } from './TopBar'
 
 /**
@@ -25,17 +29,6 @@ export function Layout() {
   const me = useMe()
   const { pathname } = useLocation()
   const leaveGuard: LeaveGuard = useRef(null)
-  const [searching, setSearching] = useState(false)
-  const [help, setHelp] = useState(false)
-  const [barExpanded, setBarExpanded] = useRemembered('ctws:iconbar', () => false)
-  // A choice made by hand is kept whatever the width (handoff §4).
-  const [sidebarOpen, setSidebarOpen] = useRemembered(
-    'ctws:sidebar',
-    () => window.matchMedia('(min-width: 1280px)').matches,
-  )
-  const place = placeOf(pathname)
-  // The pages across kinds have no list beside them (artboard 7); Review's weeks come with its batch.
-  const hasSidebar = place !== null && place.kind !== null
 
   const logout = useMutation({
     mutationFn: () => call(api.auth.logout),
@@ -66,40 +59,96 @@ export function Layout() {
   }
 
   return (
-    <div className="flex h-dvh flex-col">
-      <div className="contents max-lg:hidden">
-        <TopBar
-          email={me.data.email}
-          onSearch={() => setSearching(true)}
-          onHelp={() => setHelp(true)}
-          onLogout={() => {
-            // An open form with unsaved edits asks first, and runs the logout if let go.
-            if (!leaveGuard.current?.(() => logout.mutate())) logout.mutate()
-          }}
-        />
-      </div>
-      <div className="flex min-h-0 flex-1">
-        <div className="contents max-lg:hidden">
-          <IconBar expanded={barExpanded} setExpanded={setBarExpanded} />
-          {hasSidebar && sidebarOpen && <Sidebar place={place} />}
-        </div>
-        <div className="relative flex min-w-0 flex-1">
-          <main className="flex min-w-0 flex-1 flex-col overflow-y-auto bg-ground p-5 max-lg:pb-20">
-            <LeaveGuardContext.Provider value={leaveGuard}>
-              <Outlet />
-            </LeaveGuardContext.Provider>
-          </main>
-          <Inspector />
-        </div>
-      </div>
-      <Shortcuts
-        search={searching}
-        setSearch={setSearching}
-        help={help}
-        setHelp={setHelp}
-        onSidebar={() => setSidebarOpen(!sidebarOpen)}
+    <SubjectProvider>
+      <Frame
+        email={me.data.email}
+        leaveGuard={leaveGuard}
+        onLogout={() => {
+          // An open form with unsaved edits asks first, and runs the logout if let go.
+          if (!leaveGuard.current?.(() => logout.mutate())) logout.mutate()
+        }}
       />
-      <BottomBar onSearch={() => setSearching(true)} />
-    </div>
+    </SubjectProvider>
+  )
+}
+
+function Frame({
+  email,
+  leaveGuard,
+  onLogout,
+}: {
+  email: string
+  leaveGuard: LeaveGuard
+  onLogout: () => void
+}) {
+  const { pathname } = useLocation()
+  const navigate = useNavigate()
+  const [searching, setSearching] = useState(false)
+  const [help, setHelp] = useState(false)
+  const [linking, setLinking] = useState(false)
+  const [creating, setCreating] = useState<Creator | null>(null)
+  const [barExpanded, setBarExpanded] = useRemembered('ctws:iconbar', () => false)
+  // A choice made by hand is kept whatever the width (handoff §4).
+  const [sidebarOpen, setSidebarOpen] = useRemembered(
+    'ctws:sidebar',
+    () => window.matchMedia('(min-width: 1280px)').matches,
+  )
+  const place = placeOf(pathname)
+  // The pages across kinds have no list beside them (artboard 7); Review's weeks come with its batch.
+  const hasSidebar = place !== null && place.kind !== null
+  const subject = useSubject()
+  // What a New makes on a project page belongs to the project (FR-026).
+  const onProject = useMatch('/projects/:id')
+  const projectId = onProject?.params.id ? idFrom(projectIdSchema, onProject.params.id) : null
+
+  const openNew = (creator: Creator) => {
+    rememberKind(creator.kind)
+    if (creator.Dialog) setCreating(creator)
+    else if (creator.to) navigate(creator.to)
+  }
+
+  return (
+    <NewContext.Provider value={openNew}>
+      <div className="flex h-dvh flex-col">
+        <div className="contents max-lg:hidden">
+          <TopBar
+            email={email}
+            onSearch={() => setSearching(true)}
+            onHelp={() => setHelp(true)}
+            onLogout={onLogout}
+          />
+        </div>
+        <div className="flex min-h-0 flex-1">
+          <div className="contents max-lg:hidden">
+            <IconBar expanded={barExpanded} setExpanded={setBarExpanded} />
+            {hasSidebar && sidebarOpen && <Sidebar place={place} />}
+          </div>
+          <div className="relative flex min-w-0 flex-1">
+            <main className="flex min-w-0 flex-1 flex-col overflow-y-auto bg-ground p-5 max-lg:pb-20">
+              <LeaveGuardContext.Provider value={leaveGuard}>
+                <Outlet />
+              </LeaveGuardContext.Provider>
+            </main>
+            <Inspector />
+          </div>
+        </div>
+        <Shortcuts
+          search={searching}
+          setSearch={setSearching}
+          help={help}
+          setHelp={setHelp}
+          onSidebar={() => setSidebarOpen(!sidebarOpen)}
+          onLink={() => {
+            if (subject) setLinking(true)
+          }}
+          onNew={openNew}
+        />
+        {linking && subject && <LinkDialog of={subject} onClose={() => setLinking(false)} />}
+        {creating?.Dialog && (
+          <creating.Dialog projectId={projectId} onClose={() => setCreating(null)} />
+        )}
+        <BottomBar onSearch={() => setSearching(true)} />
+      </div>
+    </NewContext.Provider>
   )
 }

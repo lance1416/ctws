@@ -7,6 +7,7 @@ import { MeetingsAside, TodayMeetings } from './components/TodayMeetings'
 import { useMeetingEntries } from './hooks/contributions'
 import { MEETINGS_ID } from './logic/id'
 import { describeMeeting } from './logic/listedMeeting'
+import { NewMeeting } from './components/NewMeeting'
 import { Meetings } from './pages/Meetings'
 
 /**
@@ -32,6 +33,7 @@ export const meetingModule: WorkspaceModule = {
     // A meeting has no page of its own: this is the list with its pane open.
     { path: ':id', element: <Meetings />, handle: PAGE },
   ],
+  creates: [{ kind: 'meeting', key: 'm', label: 'Meeting', Dialog: NewMeeting }],
   chords: [
     {
       id: 'meetings',

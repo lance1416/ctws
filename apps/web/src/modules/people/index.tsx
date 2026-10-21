@@ -58,6 +58,7 @@ export const peopleModule: WorkspaceModule = {
       span: 4,
     },
   ],
+  creates: [{ kind: 'person', key: 'p', label: 'Person', to: `/${PEOPLE_ID}` }],
   chords: [
     {
       id: 'people',
