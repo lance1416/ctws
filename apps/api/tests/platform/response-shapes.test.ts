@@ -40,7 +40,7 @@ describe('a read answers with exactly the fields its contract names', () => {
       workspaceId: ID,
       name: 'Garden',
       color: expect.stringMatching(/^[a-z]+$/),
-      initials: 'G',
+      initials: 'GA',
       isInbox: false,
       rank: expect.any(String),
       archivedAt: null,

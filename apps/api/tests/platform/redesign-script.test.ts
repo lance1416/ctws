@@ -166,13 +166,13 @@ describe('the move, on the pre-redesign data', () => {
     expect(section('peopleWithoutCity').map((i) => i.title)).toEqual(['Cher'])
     // Every project is listed with its new colour and initials (FR-091): the six slots by hue.
     expect(section('projectColours').map((i) => [i.title, i.was, i.now])).toEqual([
-      ['Inbox', 'project-1', 'blue I'],
-      ['CTWS', 'project-1', 'blue C'],
+      ['Inbox', 'project-1', 'blue IN'],
+      ['CTWS', 'project-1', 'blue CT'],
       ['Job hunt', 'project-2', 'amber JH'],
       ['rust-analyzer', 'project-3', 'green RA'],
       ['Moving flat', 'project-4', 'pink MF'],
-      ['Find a lawyer', 'project-5', 'teal FA'],
-      ['Thesis', 'project-6', 'olive T'],
+      ['Find a lawyer', 'project-5', 'teal FL'],
+      ['Thesis', 'project-6', 'olive TH'],
     ])
     const colours = await db.execute(
       sql`select name, color, initials from projects where workspace_id = ${A} order by rank, id`,

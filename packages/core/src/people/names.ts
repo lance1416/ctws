@@ -169,3 +169,18 @@ export function sortKey(parts: NameParts): string {
     .toUpperCase()
   return /^[A-Z]$/.test(plain) ? plain : '#'
 }
+
+/**
+ * The letters on a person's avatar (FR-049): given and family initials for a Latin name (Mira Chen
+ * MC, never the middle name), the first two letters of a lone given name (Cher CH), the surname's
+ * first character for a Chinese one (李雯 李, 欧阳娜娜 欧), and a lone Chinese given name's first.
+ */
+export function avatarInitials(parts: Pick<NameParts, 'givenName' | 'familyName'>): string {
+  const given = parts.givenName.trim()
+  const family = parts.familyName?.trim() ?? ''
+  const first = (w: string) => [...w][0] ?? ''
+  if (family && CJK.test(first(family))) return first(family)
+  if (CJK.test(first(given))) return first(given)
+  if (family) return (first(given) + first(family)).toLocaleUpperCase()
+  return [...given].slice(0, 2).join('').toLocaleUpperCase()
+}

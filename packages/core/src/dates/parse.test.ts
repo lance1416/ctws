@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { daysInMonth, parseDay, parseMonth } from './parse'
+import { daysInMonth, parseDay, parseMonth, whyNotADay } from './parse'
 
 // A Wednesday.
 const TODAY = '2026-10-21'
@@ -59,4 +59,17 @@ it('knows the length of every month', () => {
   expect(daysInMonth(2026, 2)).toBe(28)
   expect(daysInMonth(2028, 2)).toBe(29)
   expect(daysInMonth(2026, 12)).toBe(31)
+})
+
+describe('whyNotADay', () => {
+  it('names a day that does not exist', () => {
+    expect(whyNotADay('31/4', TODAY)).toBe('There is no April 31.')
+    expect(whyNotADay('apr 31', TODAY)).toBe('There is no April 31.')
+    expect(whyNotADay('2027-02-29', TODAY)).toBe('There is no February 29 in 2027.')
+    expect(whyNotADay('3/13', TODAY)).toBe('There is no month 13.')
+  })
+
+  it('says how a day can be written when the words are not one', () => {
+    expect(whyNotADay('soon', TODAY)).toBe('Not a day. Try Oct 29, 29/10, tomorrow or fri.')
+  })
 })

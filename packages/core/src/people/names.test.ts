@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { displayName, sortKey, splitName } from './names'
+import { displayName, sortKey, splitName, avatarInitials } from './names'
 
 describe('splitName', () => {
   it.each([
@@ -66,5 +66,19 @@ describe('sortKey', () => {
     expect(sortKey({ givenName: 'Cher', middleName: null, familyName: null })).toBe('C')
     expect(sortKey({ givenName: 'Élodie', middleName: null, familyName: 'Égalité' })).toBe('E')
     expect(sortKey({ givenName: 'Ωmega', middleName: null, familyName: null })).toBe('#')
+  })
+})
+
+describe('avatarInitials', () => {
+  it("follows FR-049's examples", () => {
+    expect(avatarInitials({ givenName: 'Mira', familyName: 'Chen' })).toBe('MC')
+    expect(avatarInitials({ givenName: 'Cher', familyName: null })).toBe('CH')
+    expect(avatarInitials({ givenName: '雯', familyName: '李' })).toBe('李')
+    expect(avatarInitials({ givenName: '娜娜', familyName: '欧阳' })).toBe('欧')
+    expect(avatarInitials({ givenName: '娜娜', familyName: null })).toBe('娜')
+  })
+
+  it('raises Latin letters', () => {
+    expect(avatarInitials({ givenName: 'priya', familyName: 'nair' })).toBe('PN')
   })
 })

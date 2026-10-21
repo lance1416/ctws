@@ -18,24 +18,53 @@ export function parseDay(text: string, today: string): string | null {
   const weekday = weekdayOf(t.replace(/^(this|next) /, ''))
   if (weekday !== null) return nextWeekday(today, weekday, t.startsWith('next '))
 
+  const parts = datedParts(t)
+  return parts === null ? null : withYear(parts.month, parts.day, parts.year, today)
+}
+
+/** A month and day written out, with the year if given: the forms `parseDay` reads as a date. */
+function datedParts(t: string): { month: number; day: number; year: number | null } | null {
   const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(t)
-  if (iso) return dayOf(Number(iso[1]), Number(iso[2]), Number(iso[3]))
+  if (iso) return { month: Number(iso[2]), day: Number(iso[3]), year: Number(iso[1]) }
   // Day first, as the dates on this side of the Atlantic are written.
   const numeric = /^(\d{1,2})[/.-](\d{1,2})(?:[/.-](\d{2,4}))?$/.exec(t)
-  if (numeric) {
-    const year = numeric[3] === undefined ? null : fullYear(Number(numeric[3]))
-    return withYear(Number(numeric[2]), Number(numeric[1]), year, today)
-  }
+  if (numeric)
+    return {
+      month: Number(numeric[2]),
+      day: Number(numeric[1]),
+      year: numeric[3] === undefined ? null : fullYear(Number(numeric[3])),
+    }
   const monthFirst = /^([a-z]{3,9})\.? (\d{1,2})(?:st|nd|rd|th)?(?: (\d{4}))?$/.exec(t)
   const dayFirst = /^(\d{1,2})(?:st|nd|rd|th)? ([a-z]{3,9})\.?(?: (\d{4}))?$/.exec(t)
-  const m = monthFirst
+  const named = monthFirst
     ? { month: monthOf(monthFirst[1]!), day: Number(monthFirst[2]), year: monthFirst[3] }
     : dayFirst
       ? { month: monthOf(dayFirst[2]!), day: Number(dayFirst[1]), year: dayFirst[3] }
       : null
-  if (m && m.month !== null)
-    return withYear(m.month, m.day, m.year === undefined ? null : Number(m.year), today)
-  return null
+  if (!named || named.month === null) return null
+  return {
+    month: named.month,
+    day: named.day,
+    year: named.year === undefined ? null : Number(named.year),
+  }
+}
+
+/**
+ * Why `text` is not a day (FR-034), for the field to say instead of reading it: the day that does
+ * not exist, named ("There is no April 31."), or the ways a day can be written.
+ */
+export function whyNotADay(text: string, today: string): string {
+  const t = text.trim().toLocaleLowerCase().replace(/,/g, ' ').replace(/\s+/g, ' ')
+  const parts = datedParts(t)
+  if (parts && parts.month >= 1 && parts.month <= 12 && parts.day >= 1) {
+    const name = MONTHS[parts.month - 1]!
+    const said = `${name.charAt(0).toUpperCase()}${name.slice(1)} ${parts.day}`
+    if (parts.year !== null) return `There is no ${said} in ${parts.year}.`
+    // February 29 exists every few years, so only a day no year has gets here without one.
+    if (withYear(parts.month, parts.day, null, today) === null) return `There is no ${said}.`
+  }
+  if (parts && (parts.month < 1 || parts.month > 12)) return `There is no month ${parts.month}.`
+  return 'Not a day. Try Oct 29, 29/10, tomorrow or fri.'
 }
 
 /** A month typed any way: "Mar 2023", "2023-03", "03/2023", "March". Returns `YYYY-MM`. */
