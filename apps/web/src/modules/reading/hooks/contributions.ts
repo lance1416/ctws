@@ -25,10 +25,12 @@ export function useReadingHits(query: string) {
   const results = useQuery({ ...readingSearchQuery(query), enabled: query.length > 0 })
   const hits: SearchHit[] = (results.data ?? []).map((item) => ({
     id: item.id,
+    type: 'reading',
     // Its pane, not its url: a search result should not take the person out of the app.
     to: `/${READING_ID}/${item.id}`,
     title: readingLabel(item),
-    meta: [item.projectName, item.kind === 'book' ? 'Book' : 'Link'].filter(Boolean).join(' · '),
+    // One fact in the column (FR-010): its project, else what it is.
+    meta: item.projectName ?? (item.kind === 'book' ? 'Book' : 'Link'),
     mark: null,
   }))
   return { hits, isError: results.isError, isSuccess: results.isSuccess }

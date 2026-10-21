@@ -228,14 +228,14 @@ type SearchContribution = {
 export type SearchHit = {
   /** A uuid in practice, so unique across modules; also the row's test handle. */
   id: string
+  /** Which kind it is: the tab it sits under, and what the inspector opens (FR-024). */
+  type: ObjectType
   to: string
   title: string
-  /** The second line: a breadcrumb in the module's own wording. */
+  /** The column after the title: where it belongs, or when it is, in the module's own wording. */
   meta: ReactNode
   /** The 24px marker at the head of the row. */
   mark: ReactNode
-  /** The 3px identity rail at x=0, if the module has one. */
-  rail?: ReactNode
 }
 
 /** A key in the shell's key table, read after the `g` prefix. */

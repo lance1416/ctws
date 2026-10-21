@@ -16,6 +16,7 @@ export function Modal({
   initialFocus,
   dismissLabel = 'Close',
   unsaved = false,
+  palette = false,
   children,
 }: {
   title: string
@@ -29,6 +30,8 @@ export function Modal({
    * The footer's Cancel still discards: pressing it is the decision.
    */
   unsaved?: boolean
+  /** A palette (search, the key list): no title row, and wide enough for columns. */
+  palette?: boolean
   children: ReactNode
 }) {
   // These layers have no trigger element (`?` and `n` are keys), so the opener is captured during
@@ -95,14 +98,18 @@ export function Modal({
                 initialFocus.current?.focus()
               })
             }
-            className="h-fit w-full max-w-reading rounded-block bg-float shadow-float"
+            className={`h-fit w-full rounded-block bg-float shadow-float ${palette ? 'max-w-[58rem]' : 'max-w-reading'}`}
           >
-            <div className="flex items-center justify-between border-b border-line px-5 py-3">
-              <Dialog.Title className="font-medium text-ink">{title}</Dialog.Title>
-              {dismissLabel !== null && (
-                <Dialog.Close className={BUTTON.inline}>{dismissLabel}</Dialog.Close>
-              )}
-            </div>
+            {palette ? (
+              <Dialog.Title className="sr-only">{title}</Dialog.Title>
+            ) : (
+              <div className="flex items-center justify-between border-b border-line px-5 py-3">
+                <Dialog.Title className="font-medium text-ink">{title}</Dialog.Title>
+                {dismissLabel !== null && (
+                  <Dialog.Close className={BUTTON.inline}>{dismissLabel}</Dialog.Close>
+                )}
+              </div>
+            )}
             {guard.asking && (
               <div className="px-5 pt-4">
                 <UnsavedAsk guard={guard} />

@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { federate, type ProviderResult } from './federate'
 
-const hit = (id: string) => ({ id, to: `/x/${id}`, title: id, meta: id, mark: null })
+const hit = (id: string) => ({
+  id,
+  type: 'task' as const,
+  to: `/x/${id}`,
+  title: id,
+  meta: id,
+  mark: null,
+})
 
 const tasks = (ids: string[], over: Partial<ProviderResult> = {}): ProviderResult => ({
   moduleId: 'tasks',

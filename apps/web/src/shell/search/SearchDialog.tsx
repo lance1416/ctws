@@ -1,40 +1,46 @@
-import { KeyHint } from '../../platform/ui/KeyHint'
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
-import { useDebouncedValue } from '../../platform/time/useDebouncedValue'
+import type { ObjectType } from '@ctws/contracts'
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useDebouncedValue } from '../../platform/time/useDebouncedValue'
+import { useComposing } from '../../platform/keyboard/composition'
+import { keyLabel } from '../../platform/keyboard/keys'
+import { pressesWith, useKeyTable, type KeyTable } from '../../platform/keyboard/keyTable'
+import { BUTTON, KEY } from '../../platform/ui/buttonStyles'
+import { KIND_ICON, PLACE_ICON } from '../../platform/ui/icons'
+import { Modal } from '../../platform/ui/Modal'
+import { useMe } from '../auth/useMe'
+import { useInspector } from '../layout/inspectorAddress'
+import { KIND_TEXT, KIND_TINT, PLACES } from '../layout/places'
 import { useRegistry } from '../registry'
-import { PLACES } from '../layout'
 import { federate, type ProviderResult } from './federate'
 import { recentList } from './recent'
-import { useMe } from '../auth/useMe'
-import { Modal } from '../../platform/ui/Modal'
-import { useComposing } from '../../platform/keyboard/composition'
-import { pressesWith, useKeyTable, type KeyTable } from '../../platform/keyboard/keyTable'
-import { Button } from '../../platform/ui/Button'
+import { grouped, KIND_WORDS, kindsWithHits, nextTab, scopesMatching, type Tab } from './view'
 
-type Row = {
-  key: string
-  to: string
-  title: string
-  meta?: ReactNode
-  mark?: ReactNode
-  rail?: ReactNode
-  /** The `g` key that goes straight there, for a place. */
-  hint?: string
-  /** A module hit's id, its test handle. */
-  hit?: string
-  group: 'recent' | 'place' | 'hit'
-}
+/** A line the keyboard can land on: something to open, a place to go, or a kind to scope to. */
+type Row =
+  | {
+      kind: 'hit'
+      key: string
+      type: ObjectType
+      id: string
+      to: string
+      title: string
+      meta: ReactNode
+      mark: ReactNode
+    }
+  | { kind: 'recent'; key: string; type: ObjectType; id: string; to: string; title: string }
+  | { kind: 'place'; key: string; to: string; title: string; hint: string; icon: ReactNode }
+  | { kind: 'scope'; key: string; type: ObjectType }
 
 /** Any modifier, or none: the box's keys mean the same with any held. */
 const ANY = { either: ['Ctrl', 'Meta', 'Alt', 'Shift'] } as const
 
-/** The box's keys: the list is walked from the box, which keeps focus. */
-const RESULT_KEYS: KeyTable<'next' | 'previous' | 'choose'> = {
+/** The box's keys (FR-024): the list is walked from the box, which keeps focus. */
+const RESULT_KEYS: KeyTable<'next' | 'previous' | 'open' | 'beside' | 'tab' | 'back'> = {
   title: 'In search',
   rows: [
     {
-      keys: '↓ / Ctrl+N',
+      keys: '↓ / Ctrl N',
       does: 'Next result',
       presses: {
         ...pressesWith('ArrowDown', 'next', ANY),
@@ -42,42 +48,42 @@ const RESULT_KEYS: KeyTable<'next' | 'previous' | 'choose'> = {
       },
     },
     {
-      keys: '↑ / Ctrl+P',
+      keys: '↑ / Ctrl P',
       does: 'Previous result',
       presses: {
         ...pressesWith('ArrowUp', 'previous', ANY),
         ...pressesWith('p', 'previous', { held: ['Ctrl'], either: ['Meta', 'Alt'] }),
       },
     },
-    { keys: 'Enter', does: 'Go to the result', presses: pressesWith('Enter', 'choose', ANY) },
+    { keys: 'Enter', does: 'Open', presses: { Enter: 'open', 'Shift+Enter': 'open' } },
+    {
+      keys: 'Ctrl Enter',
+      does: 'Open beside, and stay on this page',
+      presses: { 'Ctrl+Enter': 'beside', 'Meta+Enter': 'beside' },
+    },
+    { keys: 'Tab', does: 'Next kind', presses: { Tab: 'tab', 'Shift+Tab': 'back' } },
+    { keys: '/', does: 'Scope to one kind', presses: {} },
   ],
 }
 
-const GROUP_LABEL: Partial<Record<Row['group'], string>> = { recent: 'Recent', place: 'Go to' }
-
-/** Every place on the icon bar (FR-019), each with its `G` key so the key is learned. */
-function places(): Row[] {
-  return PLACES.map((p) => ({
-    key: `place:${p.label}`,
-    to: p.to,
-    title: p.label,
-    group: 'place',
-    hint: `G ${p.key.toUpperCase()}`,
-  }))
-}
-
 /**
- * Federated search, opened with `f` or the header's Search button. The combobox is written out
- * rather than taken from a library so Escape reaches the dialog and closes the whole thing.
+ * SEARCH EVERYTHING (FR-024, artboard 9): one box, Ctrl K. Results sit under tabs by kind; All
+ * shows five of each. `/` scopes the box to one kind. Before anything is typed: what was opened
+ * lately, and every place with its key. Enter opens; Ctrl Enter opens in the inspector and keeps
+ * the page. The combobox is written out rather than taken from a library so Escape reaches the
+ * dialog and closes the whole thing.
  */
 export function SearchDialog({ onClose }: { onClose: () => void }) {
   const composing = useComposing()
   const keys = useKeyTable(RESULT_KEYS)
   const [query, setQuery] = useState('')
+  const [scope, setScope] = useState<ObjectType | null>(null)
+  const [tab, setTab] = useState<Tab>('all')
   const debounced = useDebouncedValue(query.trim())
   // The highlighted row, for the words it was chosen under: new words start again at the top.
   const [picked, setPicked] = useState({ at: 0, under: '' })
   const navigate = useNavigate()
+  const inspector = useInspector()
   const box = useRef<HTMLInputElement>(null)
   const base = useId()
   const listId = `${base}-results`
@@ -91,62 +97,121 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
     ...p.useHits(debounced),
   }))
   const results = federate(parts)
+  // The one New that works from here before the kinds' own forms land: a task, into the inbox.
+  const capture = registry.captures.find((c) => c.moduleId === registry.captureModuleId)!
+  const inbox = capture.capture.useTarget()
   // Read once when the dialog opens: the list must not reshuffle under the reader.
   const userId = useMe().data?.id
   const [recent] = useState(() => (userId ? recentList(userId) : []))
-  const everywhere = useMemo(() => places(), [])
-  // Places follow the typing at once and only module hits wait for the debounce, so an early
-  // Enter does not choose from the list as it was before the typing.
+
   const typing = query.trim()
   const typed = typing.toLocaleLowerCase()
-  const rows: Row[] =
-    typing.length === 0
+  const scoping = scope === null && query.startsWith('/')
+  const hits = (debounced.length > 0 ? results.rows : []).filter(
+    (h) => (scope ?? 'all') === 'all' || h.type === scope,
+  )
+  const view: Tab = scope ?? tab
+  const tabs: Tab[] = ['all', ...kindsWithHits(hits).map((k) => k.type)]
+  const groups = grouped(hits, view)
+
+  const rows: Row[] = scoping
+    ? scopesMatching(query.slice(1)).map((type) => ({ kind: 'scope', key: `scope:${type}`, type }))
+    : typing.length === 0 && scope === null
       ? [
           ...recent.map((r) => ({
+            kind: 'recent' as const,
             key: `recent:${r.type}:${r.id}`,
+            type: r.type as ObjectType,
+            id: r.id,
             to: r.to,
             title: r.title,
-            meta: r.kind,
-            group: 'recent' as const,
           })),
-          ...everywhere,
+          ...PLACES.map((p) => ({
+            kind: 'place' as const,
+            key: `place:${p.id}`,
+            to: p.to,
+            title: p.label,
+            hint: `G ${p.key.toUpperCase()}`,
+            icon: (
+              <p.icon size={16} aria-hidden="true" className={p.kind ? KIND_TEXT[p.kind] : ''} />
+            ),
+          })),
         ]
       : [
-          ...everywhere.filter((p) => p.title.toLocaleLowerCase().includes(typed)),
-          ...(debounced.length > 0 ? results.rows : []).map((hit) => ({
-            key: `${hit.moduleId}:${hit.id}`,
-            to: hit.to,
-            title: hit.title,
-            meta: (
-              <>
-                {hit.moduleLabel} · {hit.meta}
-              </>
-            ),
-            mark: hit.mark,
-            rail: hit.rail,
-            hit: hit.id,
-            group: 'hit' as const,
-          })),
+          // Places follow the typing at once; only module hits wait for the debounce.
+          ...(scope === null && view === 'all'
+            ? PLACES.filter((p) => p.label.toLocaleLowerCase().includes(typed)).map((p) => ({
+                kind: 'place' as const,
+                key: `place:${p.id}`,
+                to: p.to,
+                title: p.label,
+                hint: `G ${p.key.toUpperCase()}`,
+                icon: (
+                  <p.icon
+                    size={16}
+                    aria-hidden="true"
+                    className={p.kind ? KIND_TEXT[p.kind] : ''}
+                  />
+                ),
+              }))
+            : []),
+          ...groups.flatMap((g) =>
+            g.rows.map((hit) => ({
+              kind: 'hit' as const,
+              key: `${hit.type}:${hit.id}`,
+              type: hit.type,
+              id: hit.id,
+              to: hit.to,
+              title: hit.title,
+              meta: hit.meta,
+              mark: hit.mark,
+            })),
+          ),
         ]
   // The debounced hits landing later keep it, or a row the keyboard already moved to would be lost
   // under the Enter about to choose it. A shorter result set must not leave it past the end.
-  const active = picked.under === typing ? picked.at : 0
+  const active = picked.under === `${view}:${query}` ? picked.at : 0
   const at = Math.min(active, Math.max(rows.length - 1, 0))
-  const setActive = (next: number) => setPicked({ at: next, under: typing })
+  const setActive = (next: number) => setPicked({ at: next, under: `${view}:${query}` })
   useEffect(() => {
     document.getElementById(optionId(at))?.scrollIntoView({ block: 'nearest' })
     // eslint-disable-next-line react-hooks/exhaustive-deps -- optionId is fixed by useId; only a move of the selection scrolls.
   }, [at])
 
-  const choose = (row: Row) => {
+  const settled = typing === debounced
+  const nothing = debounced.length > 0 && !scoping && results.isSuccess && hits.length === 0
+  const scopeTo = (type: ObjectType) => {
+    setScope(type)
+    setTab('all')
+    setQuery('')
+  }
+  const open = (row: Row, beside: boolean) => {
+    if (row.kind === 'scope') return scopeTo(row.type)
+    if (row.kind === 'hit' && !settled) return
     onClose()
-    navigate(row.to)
+    if (beside && row.kind !== 'place') inspector.show({ type: row.type, id: row.id })
+    else navigate(row.to)
+  }
+  const newTask = async () => {
+    if (!inbox.target) return
+    await inbox.target.submit(typing)
+    onClose()
+    navigate(inbox.target.to)
   }
 
   return (
     // `initialFocus`, not `autoFocus`: Radix moves focus itself on open, and would land on Close.
-    <Modal title="Search" onClose={onClose} initialFocus={box}>
-      <div className="border-b border-line px-4 py-3">
+    <Modal title="Search everything" onClose={onClose} initialFocus={box} palette>
+      <div className="flex h-13 items-center gap-2.5 border-b border-line px-4">
+        <PLACE_ICON.search size={20} aria-hidden="true" className="shrink-0 text-muted" />
+        {scope && (
+          <span
+            className={`inline-flex h-6 shrink-0 items-center gap-1.5 rounded-control px-2 text-meta font-medium ${KIND_TINT[scope]} ${KIND_TEXT[scope]}`}
+          >
+            <ScopeIcon type={scope} />
+            {KIND_WORDS[scope].many}
+          </span>
+        )}
         <input
           ref={box}
           value={query}
@@ -157,50 +222,113 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
           aria-autocomplete="list"
           aria-activedescendant={rows.length > 0 ? optionId(at) : undefined}
           {...composing.bind}
-          onKeyDown={(e) =>
+          onKeyDown={(e) => {
+            // Backspace on an empty box takes the scope off.
+            if (e.key === 'Backspace' && query === '' && scope !== null) {
+              e.preventDefault()
+              setScope(null)
+              return
+            }
             keys(e, {
               next: () => setActive(Math.min(at + 1, rows.length - 1)),
               previous: () => setActive(Math.max(at - 1, 0)),
-              choose: () => {
+              open: () => {
                 if (composing.composingNow(e)) return false
                 const row = rows[at]
-                // A module's hit for words not yet sent would be the previous word's: wait.
-                if (row && !(row.group === 'hit' && typing !== debounced)) choose(row)
+                if (row) open(row, false)
+                else if (nothing && typing && inbox.target) void newTask()
+              },
+              beside: () => {
+                const row = rows[at]
+                if (row) open(row, true)
+              },
+              tab: () => {
+                if (scope !== null || tabs.length < 2) return nothing ? setScope(null) : false
+                setTab(nextTab(tabs, tab))
+              },
+              back: () => {
+                if (scope !== null || tabs.length < 2) return false
+                setTab(nextTab(tabs, tab, true))
               },
             })
+          }}
+          placeholder={
+            scope ? `Search ${KIND_WORDS[scope].many.toLocaleLowerCase()}` : 'Search everything'
           }
-          placeholder="Search…"
           aria-label="Search"
-          className="h-9 w-full bg-transparent px-0.5 text-ink placeholder:text-muted"
+          className="h-9 min-w-0 flex-1 bg-transparent text-prose text-ink placeholder:text-subtle focus-visible:outline-none"
         />
+        <kbd className={KEY}>Esc</kbd>
       </div>
+
+      {hits.length > 0 && scope === null && !scoping && (
+        <div
+          role="tablist"
+          className="flex gap-0.5 overflow-hidden border-b border-line px-2.5 py-1.5"
+        >
+          {tabs.map((t) => {
+            const n =
+              t === 'all' ? hits.length : (kindsWithHits(hits).find((k) => k.type === t)?.n ?? 0)
+            return (
+              <button
+                key={t}
+                type="button"
+                role="tab"
+                aria-selected={view === t}
+                tabIndex={-1}
+                onClick={() => setTab(t)}
+                className={`inline-flex h-7 items-center gap-1.5 rounded-control px-2.5 text-meta font-medium whitespace-nowrap ${
+                  view === t ? 'bg-select text-ink' : 'text-muted hover:bg-hover'
+                }`}
+              >
+                {t !== 'all' && <ScopeIcon type={t} size={14} />}
+                {t === 'all' ? 'All' : KIND_WORDS[t].many}
+                <span className="font-normal text-subtle tabular-nums">{n}</span>
+              </button>
+            )
+          })}
+          {8 - (tabs.length - 1) > 0 && (
+            <span className="inline-flex h-7 items-center px-2.5 text-meta text-subtle whitespace-nowrap">
+              {8 - (tabs.length - 1)} more kinds with nothing
+            </span>
+          )}
+        </div>
+      )}
+
       {results.isError && (
         <p role="alert" className="px-4 py-3 text-ui text-stop-t">
           Search failed. Check that the server is running.
         </p>
       )}
-      {debounced.length > 0 && results.isSuccess && rows.length === 0 && (
-        <div className="px-4 py-3">
-          <p className="text-ui text-ink">Nothing matches</p>
-          <Button
-            look="link"
-            onClick={() => {
-              setQuery('')
-              box.current?.focus()
-            }}
-            className="mt-3 -ml-2"
-          >
-            Try another word
-          </Button>
+      {nothing && (
+        <div className="flex flex-col items-start gap-3 px-4 py-4">
+          <p className="text-ui text-ink">
+            No {view === 'all' ? 'results' : KIND_WORDS[view].many.toLocaleLowerCase()} match “
+            {debounced}”.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {scope !== null && (
+              <button type="button" onClick={() => setScope(null)} className={BUTTON.secondary}>
+                Search every kind
+                <kbd className={KEY}>Tab</kbd>
+              </button>
+            )}
+            {inbox.target && (
+              <button type="button" onClick={() => void newTask()} className={BUTTON.secondary}>
+                New task “{debounced}”<kbd className={KEY}>Enter</kbd>
+              </button>
+            )}
+          </div>
         </div>
       )}
+
       {/* The options are not buttons: focus stays in the box, and `aria-activedescendant` walks
           the list without adding a tab stop per result. */}
       <ul
         id={listId}
         role="listbox"
         aria-label="Search results"
-        className="max-h-[52vh] overflow-y-auto"
+        className="max-h-[52vh] overflow-y-auto pb-1.5"
       >
         {runs(rows).map((run) => {
           const options = run.rows.map((row, j) => (
@@ -209,16 +337,19 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
               row={row}
               id={optionId(run.start + j)}
               selected={run.start + j === at}
-              onChoose={() => choose(row)}
+              onChoose={() => open(row, false)}
               onHover={() => setActive(run.start + j)}
             />
           ))
-          const label = GROUP_LABEL[run.group]
+          const label = runLabel(run, view)
           if (!label) return options
-          const heading = `${base}-${run.group}`
+          const heading = `${base}-${run.key}`
           return (
-            <li key={run.group} role="presentation">
-              <div id={heading} className="px-5 pt-3 pb-1 text-meta font-medium text-subtle">
+            <li key={run.key} role="presentation">
+              <div
+                id={heading}
+                className="px-4 pt-2 pb-1 text-meta font-medium tracking-[0.06em] text-subtle uppercase"
+              >
                 {label}
               </div>
               <ul role="group" aria-labelledby={heading}>
@@ -228,19 +359,59 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
           )
         })}
       </ul>
+
+      <div className="flex h-10 items-center gap-4 border-t border-line px-4 text-meta text-subtle">
+        <Legend keys="Enter">Open</Legend>
+        <Legend keys={keyLabel('Ctrl Enter')}>Open beside</Legend>
+        <Legend keys="Tab">Next kind</Legend>
+        <Legend keys="/">Scope to a kind</Legend>
+      </div>
     </Modal>
   )
 }
 
-/** Consecutive rows of one group, and where the run starts in the flat list. */
-function runs(rows: Row[]): { group: Row['group']; start: number; rows: Row[] }[] {
-  const out: { group: Row['group']; start: number; rows: Row[] }[] = []
+function Legend({ keys, children }: { keys: string; children: ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <kbd className={KEY}>{keys}</kbd>
+      {children}
+    </span>
+  )
+}
+
+/** The kind's icon in the kind's colour, at a chip's or a row's size. */
+function ScopeIcon({ type, size = 12 }: { type: ObjectType; size?: 12 | 14 }) {
+  const Icon = KIND_ICON[type]
+  return <Icon size={size} aria-hidden="true" className={KIND_TEXT[type]} />
+}
+
+type Run = {
+  key: string
+  group: Row['kind']
+  type?: ObjectType | undefined
+  start: number
+  rows: Row[]
+}
+
+/** Consecutive rows of one group (hits by kind), and where the run starts in the flat list. */
+function runs(rows: Row[]): Run[] {
+  const out: Run[] = []
   rows.forEach((row, i) => {
+    const type = row.kind === 'hit' ? row.type : undefined
+    const key = row.kind === 'hit' ? `hit:${row.type}` : row.kind
     const last = out[out.length - 1]
-    if (last && last.group === row.group) last.rows.push(row)
-    else out.push({ group: row.group, start: i, rows: [row] })
+    if (last && last.key === key) last.rows.push(row)
+    else out.push({ key, group: row.kind, type, start: i, rows: [row] })
   })
   return out
+}
+
+function runLabel(run: Run, view: Tab): string | null {
+  if (run.group === 'recent') return 'Recent'
+  if (run.group === 'place') return 'Go to'
+  if (run.group === 'scope') return 'Only'
+  if (run.type && view === 'all') return KIND_WORDS[run.type].many
+  return null
 }
 
 function SearchRow({
@@ -256,30 +427,75 @@ function SearchRow({
   onChoose: () => void
   onHover: () => void
 }) {
+  const shared = `grid min-h-10 cursor-pointer items-center gap-x-3 px-4 text-ui text-ink ${
+    selected ? 'bg-select' : ''
+  }`
+  if (row.kind === 'scope')
+    return (
+      <li
+        id={id}
+        role="option"
+        aria-selected={selected}
+        onClick={onChoose}
+        onMouseEnter={onHover}
+        className={`${shared} grid-cols-[24px_minmax(0,1fr)]`}
+      >
+        <span
+          className={`inline-grid size-6 place-items-center rounded-control ${KIND_TINT[row.type]}`}
+        >
+          <ScopeIcon type={row.type} size={14} />
+        </span>
+        <span>{KIND_WORDS[row.type].many}</span>
+      </li>
+    )
+  if (row.kind === 'place')
+    return (
+      <li
+        id={id}
+        role="option"
+        aria-selected={selected}
+        onClick={onChoose}
+        onMouseEnter={onHover}
+        className={`${shared} grid-cols-[24px_minmax(0,1fr)_auto]`}
+      >
+        <span className="inline-grid size-6 place-items-center text-muted">{row.icon}</span>
+        <span className="truncate">{row.title}</span>
+        <kbd className={KEY}>{row.hint}</kbd>
+      </li>
+    )
+  if (row.kind === 'recent')
+    return (
+      <li
+        id={id}
+        role="option"
+        aria-selected={selected}
+        onClick={onChoose}
+        onMouseEnter={onHover}
+        className={`${shared} grid-cols-[24px_minmax(0,1fr)_92px]`}
+      >
+        <span className="inline-grid size-6 place-items-center">
+          <ScopeIcon type={row.type} size={14} />
+        </span>
+        <span className="truncate">{row.title}</span>
+        <span className="text-meta text-subtle">{KIND_WORDS[row.type].one}</span>
+      </li>
+    )
   return (
     <li
       id={id}
       role="option"
-      data-search-result={row.hit}
+      data-search-result={row.id}
       aria-selected={selected}
       onClick={onChoose}
       onMouseEnter={onHover}
-      // A row with no rail keeps the rail's 3px, so every marker lands at one x.
-      className={`relative flex w-full cursor-pointer items-start gap-2 py-2 pr-4 pl-2 text-left ${
-        selected ? 'bg-hover' : ''
-      }`}
+      className={`${shared} grid-cols-[24px_minmax(0,1fr)_180px_92px]`}
     >
-      {row.rail ?? <span aria-hidden="true" className="w-[3px] shrink-0" />}
-      <span className="flex h-6 w-6 shrink-0 items-center justify-center">{row.mark}</span>
-      <span className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate text-ink">{row.title}</span>
-        {row.meta && <span className="truncate text-ui text-muted">{row.meta}</span>}
+      <span className="inline-grid size-6 place-items-center">
+        {row.mark ?? <ScopeIcon type={row.type} size={14} />}
       </span>
-      {row.hint && (
-        <KeyHint className="mt-0.5 shrink-0 rounded-key border border-line px-1.5 text-meta leading-5 text-subtle">
-          {row.hint}
-        </KeyHint>
-      )}
+      <span className="truncate">{row.title}</span>
+      <span className="truncate text-muted">{row.meta}</span>
+      <span className="text-meta text-subtle">{KIND_WORDS[row.type].one}</span>
     </li>
   )
 }

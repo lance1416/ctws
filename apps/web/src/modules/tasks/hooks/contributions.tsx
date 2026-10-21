@@ -2,7 +2,6 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import type { CaptureTargetState, SearchHit } from '../../../shell/contract'
 import { useRefresh } from '../../../shell/registry'
 import { inboxOf, useProjects } from '../../../shell/projects'
-import { ProjectRail } from '../../../shell/rows'
 import { createTask, taskCalendarQuery, taskKeys, taskSearchQuery } from '../api'
 import { StatusMark } from '../components/StatusMark'
 import { revealHref, taskCrumb } from '../logic/crumb'
@@ -46,6 +45,7 @@ export function useTaskHits(query: string) {
   const rows = results.data ?? []
   const hits: SearchHit[] = rows.map((t) => ({
     id: t.id,
+    type: 'task',
     // `?reveal=` makes `TaskTree` unfold the ancestors and focus the row, which may be folded away.
     to: revealHref(t.projectId, t.id),
     title: t.title,
@@ -56,7 +56,6 @@ export function useTaskHits(query: string) {
       </>
     ),
     mark: <StatusMark status={t.status} />,
-    rail: <ProjectRail projectId={t.projectId} />,
   }))
   return { hits, isError: results.isError, isSuccess: results.isSuccess }
 }

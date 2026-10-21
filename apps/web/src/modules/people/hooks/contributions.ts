@@ -17,11 +17,11 @@ export function usePeopleHits(query: string) {
   })
   const hits: SearchHit[] = (results.data ?? []).map((person) => ({
     id: person.id,
+    type: 'person',
     to: `/${PEOPLE_ID}/${person.id}`,
     title: person.name,
-    meta: [person.org, ...person.projects.map((p) => p.name), person.channels[0]?.value]
-      .filter(Boolean)
-      .join(' · '),
+    // One fact in the column (FR-010): where they work, else their first project.
+    meta: person.org ?? person.projects[0]?.name ?? person.channels[0]?.value ?? null,
     mark: null,
   }))
   return { hits, isError: results.isError, isSuccess: results.isSuccess }
