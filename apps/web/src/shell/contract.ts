@@ -25,6 +25,8 @@ export type WorkspaceModule = {
   kind?: KindEntry
   /** Mounted by the shell under `/<id>/`, so the paths are relative. */
   routes: RouteObject[]
+  /** Pages across kinds this module defines (Today, Review), mounted at the root (FR-019). */
+  places?: RouteObject[]
   capture?: CaptureContribution
   search?: SearchContribution
   chords?: Chord[]

@@ -1,14 +1,14 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { Login } from '../shell/auth'
 import { Calendar } from '../shell/calendar'
-import { Layout, RouteError, topPage, type PageHandle } from '../shell/layout'
+import { Layout, Placeholder, PLACES, RouteError, topPage, type PageHandle } from '../shell/layout'
 import { ProjectPage, Projects, useProjectCrumbs } from '../shell/projects'
 import { WORKBENCH_PATH } from '../shell/registry'
-import { Things, Workbench } from '../shell/workbench'
+import { Workbench } from '../shell/workbench'
 import { registry } from './registry'
 
-/** The tiles sit on the desk. */
-const WORKBENCH: PageHandle = { ...topPage('Workbench'), ground: 'desk' }
+/** The modules on the bar whose pages are still to come (EPIC-12). */
+const PLACEHOLDERS = ['organisations', 'communication', 'notes']
 
 export const router = createBrowserRouter([
   {
@@ -24,7 +24,7 @@ export const router = createBrowserRouter([
           {
             errorElement: <RouteError />,
             children: [
-              { index: true, element: <Workbench />, handle: WORKBENCH },
+              { index: true, element: <Workbench />, handle: topPage('Workbench') },
               { path: '/calendar', element: <Calendar />, handle: topPage('Calendar') },
               { path: '/projects', element: <Projects />, handle: topPage('Projects') },
               {
@@ -32,8 +32,16 @@ export const router = createBrowserRouter([
                 element: <ProjectPage />,
                 handle: { useCrumbs: useProjectCrumbs } satisfies PageHandle,
               },
-              { path: '/things', element: <Things />, handle: topPage('Things') },
+              ...PLACES.filter((p) => PLACEHOLDERS.includes(p.id)).map((p) => ({
+                path: p.to,
+                element: <Placeholder place={p} />,
+                handle: topPage(p.label),
+              })),
               ...registry.routes,
+              // The addresses the redesign retired (FR-023, FR-029): each goes where its page went.
+              { path: '/things', element: <Navigate to={WORKBENCH_PATH} replace /> },
+              { path: '/tasks/today', element: <Navigate to="/today" replace /> },
+              { path: '/tasks/review', element: <Navigate to="/review" replace /> },
               { path: '*', element: <Navigate to={WORKBENCH_PATH} replace /> },
             ],
           },

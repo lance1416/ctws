@@ -1,6 +1,5 @@
-import { KeyHint } from '../../platform/ui/KeyHint'
 import { useQueryClient } from '@tanstack/react-query'
-import { useRef, useState, type ReactNode } from 'react'
+import { useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useRegistry } from '../registry'
 import { CHORD_TIMEOUT_MS } from './chords'
@@ -8,25 +7,24 @@ import { useDocumentKeys } from '../../platform/keyboard/keyTable'
 import { SearchDialog } from '../search/SearchDialog'
 import { ShortcutHelp } from './ShortcutHelp'
 
-const button =
-  'rounded-control px-2 py-1.5 text-ui text-muted hover:text-ink whitespace-nowrap flex items-center gap-1.5'
-const hint =
-  'pointer-events-none rounded-key border border-line-strong px-1.5 text-meta leading-5 max-sm:hidden'
-
 /**
- * The document-level keys, and buttons for the same jobs: the `?` overlay holds the switch that
- * turns the keys off, so it cannot be reachable only by a key. Search state is the layout's.
+ * The document-level keys, and the two overlays they open. The top bar's buttons do the same jobs
+ * from the same state, which is the layout's: the `?` overlay holds the switch that turns the keys
+ * off, so it cannot be reachable only by a key.
  */
 export function Shortcuts({
-  capture,
   search,
   setSearch,
+  help,
+  setHelp,
+  onSidebar,
 }: {
-  capture?: ReactNode
   search: boolean
   setSearch: (open: boolean) => void
+  help: boolean
+  setHelp: (open: boolean) => void
+  onSidebar: () => void
 }) {
-  const [help, setHelp] = useState(false)
   const navigate = useNavigate()
   const qc = useQueryClient()
   const registry = useRegistry()
@@ -43,6 +41,7 @@ export function Shortcuts({
     {
       search: () => setSearch(true),
       help: () => setHelp(true),
+      sidebar: onSidebar,
       jump: () => {
         pending.current = true
         timer.current = setTimeout(forget, CHORD_TIMEOUT_MS)
@@ -68,24 +67,6 @@ export function Shortcuts({
 
   return (
     <>
-      {/* Below 1024 search is a tab in the bottom bar, and the key list is for keyboards. */}
-      <button type="button" onClick={() => setSearch(true)} className={`max-lg:hidden ${button}`}>
-        Search
-        <KeyHint hidden className={hint}>
-          f
-        </KeyHint>
-      </button>
-      {capture}
-      <button
-        type="button"
-        onClick={() => setHelp(true)}
-        aria-label="Keyboard shortcuts"
-        className={`max-lg:hidden ${button}`}
-      >
-        <kbd aria-hidden="true" className={hint}>
-          ?
-        </kbd>
-      </button>
       {search && <SearchDialog onClose={() => setSearch(false)} />}
       {help && <ShortcutHelp onClose={() => setHelp(false)} />}
     </>

@@ -2,7 +2,8 @@ import { KeyHint } from '../../platform/ui/KeyHint'
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useDebouncedValue } from '../../platform/time/useDebouncedValue'
 import { useNavigate } from 'react-router-dom'
-import { useRegistry, type Registry } from '../registry'
+import { useRegistry } from '../registry'
+import { PLACES } from '../layout'
 import { federate, type ProviderResult } from './federate'
 import { recentList } from './recent'
 import { useMe } from '../auth/useMe'
@@ -54,19 +55,15 @@ const RESULT_KEYS: KeyTable<'next' | 'previous' | 'choose'> = {
 
 const GROUP_LABEL: Partial<Record<Row['group'], string>> = { recent: 'Recent', place: 'Go to' }
 
-/** The pinned pages, Things and every kind, each showing its `g` key so the key is learned. */
-function places(registry: Registry): Row[] {
-  const keys = new Map(registry.chords.map((c) => [c.id, c.key]))
-  const all = [
-    ...registry.pinned.map((p) => ({ label: p.label, to: p.to, chord: p.chord })),
-    { label: 'Things', to: '/things', chord: undefined },
-    ...registry.kinds.map((k) => ({ label: k.label, to: k.to, chord: k.chord })),
-  ]
-  return all.map(({ label, to, chord }) => {
-    const key = chord ? keys.get(chord) : undefined
-    const place: Row = { key: `place:${label}`, to, title: label, group: 'place' }
-    return key ? { ...place, hint: `g ${key}` } : place
-  })
+/** Every place on the icon bar (FR-019), each with its `G` key so the key is learned. */
+function places(): Row[] {
+  return PLACES.map((p) => ({
+    key: `place:${p.label}`,
+    to: p.to,
+    title: p.label,
+    group: 'place',
+    hint: `G ${p.key.toUpperCase()}`,
+  }))
 }
 
 /**
@@ -97,7 +94,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
   // Read once when the dialog opens: the list must not reshuffle under the reader.
   const userId = useMe().data?.id
   const [recent] = useState(() => (userId ? recentList(userId) : []))
-  const everywhere = useMemo(() => places(registry), [registry])
+  const everywhere = useMemo(() => places(), [])
   // Places follow the typing at once and only module hits wait for the debounce, so an early
   // Enter does not choose from the list as it was before the typing.
   const typing = query.trim()

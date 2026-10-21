@@ -1,4 +1,4 @@
-import { kindPage } from '../../shell/layout'
+import { topPage } from '../../shell/layout'
 import type { WorkspaceModule } from '../../shell/contract'
 import { readingKeys } from './api'
 import { ReadingCount, UnfiledLine } from './components/ReadingKind'
@@ -9,7 +9,7 @@ import { isReadingUrl } from './logic/readingUrl'
 import { Reading } from './pages/Reading'
 
 // No project-page block: reading reaches a project as edges, which the shell draws for every kind.
-const PAGE = kindPage('Reading')
+const PAGE = topPage('Reading')
 
 export const readingModule: WorkspaceModule = {
   id: READING_ID,
@@ -29,9 +29,8 @@ export const readingModule: WorkspaceModule = {
   ],
   capture: { useTarget: useReadingCapture, accepts: isReadingUrl },
   search: { useHits: useReadingHits },
-  // `l` for list: `r` is the task module's Review, and the keyspace is shared across modules.
   chords: [
-    { id: 'reading', key: 'l', label: 'Go to Reading', resolve: () => `/${READING_ID}`, order: 15 },
+    { id: 'reading', key: 'r', label: 'Go to Reading', resolve: () => `/${READING_ID}`, order: 50 },
   ],
   calendar: {
     label: 'Reading',

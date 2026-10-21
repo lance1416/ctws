@@ -1,3 +1,2 @@
-/** The workbench's pages, for the app's router. */
-export { Things } from './Things'
+/** The workbench, for the app's router. */
 export { Workbench } from './Workbench'

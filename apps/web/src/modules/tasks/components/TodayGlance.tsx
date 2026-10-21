@@ -7,7 +7,6 @@ import { useAccountToday, useTimeZone } from '../../../shell/auth'
 import { ProjectRail } from '../../../shell/rows'
 import { completedQuery, todayQuery } from '../api'
 import { revealHref } from '../logic/crumb'
-import { taskPage } from '../logic/id'
 import { todaySegments } from '../logic/today'
 import { StatusMark } from './StatusMark'
 
@@ -39,18 +38,13 @@ export function TodayGlance() {
       <div className="mb-4 flex flex-wrap gap-1">
         {/* Late takes the miss colour, only when there is any. */}
         <GlanceCount
-          to={taskPage('today')}
+          to="/today"
           n={overdue}
           word="overdue"
           tone={overdue > 0 ? 'text-stop-t' : 'text-subtle'}
         />
-        <GlanceCount to={taskPage('today')} n={planned} word="planned" tone="text-ink" />
-        <GlanceCount
-          to={`${taskPage('review')}?view=done`}
-          n={done}
-          word="done"
-          tone="text-subtle"
-        />
+        <GlanceCount to="/today" n={planned} word="planned" tone="text-ink" />
+        <GlanceCount to="/review?view=done" n={done} word="done" tone="text-subtle" />
       </div>
       <p className="mb-1 px-2 text-meta text-subtle">In progress</p>
       {today.isSuccess && doing.length === 0 ? (

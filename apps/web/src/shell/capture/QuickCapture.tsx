@@ -1,4 +1,4 @@
-import { LINK } from '../../platform/ui/buttonStyles'
+import { KEY, LINK } from '../../platform/ui/buttonStyles'
 import { KeyHint } from '../../platform/ui/KeyHint'
 import { useMutation } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
@@ -53,7 +53,7 @@ export function QuickCapture() {
 
   return (
     // Messages pop under the box, so typing never moves anything in the header.
-    <div className="relative w-28 min-w-0 shrink sm:w-60">
+    <div className="relative w-60 min-w-0 shrink">
       <div className="relative">
         <input
           ref={input}
@@ -67,16 +67,16 @@ export function QuickCapture() {
             line.setValue(e.target.value)
             setLanded(null)
           }}
-          placeholder="Capture…"
+          placeholder="Capture"
           disabled={!fallback.target}
           aria-label="Capture"
-          className={`w-full bg-panel pr-8 disabled:opacity-50 ${textbox}`}
+          className={`w-full bg-panel pr-9 disabled:opacity-50 ${textbox}`}
         />
         <KeyHint
           hidden
-          className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded-key border border-line px-1 text-meta leading-5 text-subtle"
+          className={`${KEY} pointer-events-none absolute top-1/2 right-1.5 -translate-y-1/2`}
         >
-          /
+          C
         </KeyHint>
       </div>
       {/* Below 640 a long project name would run off the screen, so the message spans the width

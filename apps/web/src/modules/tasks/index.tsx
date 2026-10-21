@@ -1,6 +1,5 @@
 import type { WorkspaceModule } from '../../shell/contract'
 import { topPage } from '../../shell/layout'
-import { inboxOf, projectsQuery } from '../../shell/projects'
 import { projectTasksQuery, taskKeys } from './api'
 import {
   NewTaskAction,
@@ -28,7 +27,7 @@ export const taskModule: WorkspaceModule = {
   pages: [
     {
       id: 'today',
-      to: taskPage('today'),
+      to: '/today',
       label: 'Today',
       end: true,
       chord: 'today',
@@ -41,40 +40,28 @@ export const taskModule: WorkspaceModule = {
       ),
     },
     // Done is a view of Review, not a page of its own: both answer what I did.
-    { id: 'review', to: taskPage('review'), label: 'Review', end: false, chord: 'review' },
+    { id: 'review', to: '/review', label: 'Review', end: false, chord: 'review' },
   ],
   // Tasks have no list page of their own yet: they are dealt with on Today and live in their
   // projects, so that is where this kind's row goes.
   kind: {
     label: 'Tasks',
-    to: taskPage('today'),
+    to: '/today',
     Count: OpenTaskCount,
     Status: TaskStatusLine,
     order: 10,
   },
-  routes: [
-    { path: 'today', element: <Today />, handle: topPage('Today') },
-    { path: 'review', element: <Review />, handle: topPage('Review') },
-    // After the pages: a static segment outranks `:id`, so `today` is never read as a task.
-    { path: ':id', element: <OpenTask /> },
+  // Today and Review are pages across kinds, at the root (FR-019); a task's own address stays here.
+  places: [
+    { path: '/today', element: <Today />, handle: topPage('Today') },
+    { path: '/review', element: <Review />, handle: topPage('Review') },
   ],
+  routes: [{ path: ':id', element: <OpenTask /> }],
   capture: { useTarget: useInboxCapture },
   search: { useHits: useTaskHits },
   chords: [
-    { id: 'today', key: 't', label: 'Go to Today', resolve: () => taskPage('today'), order: 10 },
-    { id: 'review', key: 'r', label: 'Go to Review', resolve: () => taskPage('review'), order: 40 },
-    {
-      id: 'inbox',
-      key: 'i',
-      label: 'Go to Inbox',
-      // Read from the cache at keypress time: the rail has loaded ['projects'] by then.
-      resolve: ({ queryClient }) => {
-        const projects = queryClient.getQueryData(projectsQuery().queryKey)
-        const inbox = projects ? inboxOf(projects) : undefined
-        return inbox ? `/projects/${inbox.id}` : null
-      },
-      order: 40,
-    },
+    { id: 'today', key: 't', label: 'Go to Today', resolve: () => '/today', order: 10 },
+    { id: 'review', key: 'v', label: 'Go to Review', resolve: () => '/review', order: 20 },
   ],
   calendar: {
     label: 'Tasks',
@@ -89,7 +76,7 @@ export const taskModule: WorkspaceModule = {
     {
       id: 'today',
       label: 'Today',
-      to: taskPage('today'),
+      to: '/today',
       Component: TodayGlance,
       Aside: TodayDate,
       order: 10,

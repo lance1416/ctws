@@ -23,7 +23,7 @@ const notes: WorkspaceModule = {
   capture: { useTarget: () => ({ target: null }) },
   search: { useHits: () => ({ hits: [], isError: false, isSuccess: true }) },
   chords: [
-    { id: 'recent', key: 'n', label: 'Go to Recent', resolve: () => '/notes/recent', order: 5 },
+    { id: 'recent', key: 'q', label: 'Go to Recent', resolve: () => '/notes/recent', order: 5 },
   ],
   widgets: [
     { id: 'recent', label: 'Recent notes', to: '/notes/recent', Component: () => null, span: 6 },
@@ -143,15 +143,15 @@ describe('the workbench widgets', () => {
 describe('the master key table', () => {
   it('merges the shell chords and every module chord into one ordered table', () => {
     const table = build([notes]).chords
-    // `n` is declared with a lower order than all but `w`, so it slots in after it.
-    expect(table.map((c) => c.key)).toEqual(['w', 'n', 'c', 'p'])
+    // `q` is declared with a lower order than all but `w`, so it slots in after it.
+    expect(table.map((c) => c.key)).toEqual(['w', 'q', 'c', 'p', 'o', 'x', 'n'])
   })
 
   it('resolves a module chord to the module own path', () => {
     const qc = new QueryClient()
-    expect(build([notes]).chordFor('n')?.resolve({ queryClient: qc })).toBe('/notes/recent')
+    expect(build([notes]).chordFor('q')?.resolve({ queryClient: qc })).toBe('/notes/recent')
     expect(
-      build([files], { captureModuleId: 'files', phoneTab: 'shell:calendar' }).chordFor('n'),
+      build([files], { captureModuleId: 'files', phoneTab: 'shell:calendar' }).chordFor('q'),
     ).toBeNull()
     // The shell keeps its own key whatever is registered.
     expect(build([notes]).chordFor('p')?.resolve({ queryClient: qc })).toBe('/projects')

@@ -1,6 +1,6 @@
 import { useEffect, useEffectEvent } from 'react'
 import { useShortcutsEnabled } from './enabled'
-import { isBareKey, isTypingTarget } from './keys'
+import { isTypingTarget } from './keys'
 import { isOverlayOpen } from './overlayState'
 
 /**
@@ -106,10 +106,11 @@ export function useKeyTable<A extends string>(
 }
 
 /**
- * The page-wide single keys of a table, bound while the caller is mounted. Every such key obeys the
- * same four guards: the off switch, not while typing, nothing held but Shift, and no open overlay.
- * `claim` sees a press that passed them before any other listener does, and a press it claims goes
- * no further; `skipped` hears one that did not pass.
+ * The page-wide keys of a table, bound while the caller is mounted. Every press stands down while
+ * an overlay is open. A SINGLE KEY (`c`, `?`, `[`) also obeys the off switch and never fires while
+ * typing; a press with a modifier (Ctrl K) is a command and works from inside a field too.
+ * `claim` sees a single key that passed before any other listener does, and a press it claims goes
+ * no further; `skipped` hears a single key that did not pass.
  */
 export function useDocumentKeys<A extends string>(
   table: KeyTable<A>,
@@ -117,25 +118,29 @@ export function useDocumentKeys<A extends string>(
   { claim, skipped }: { claim?: (e: KeyboardEvent) => boolean; skipped?: () => void } = {},
 ): void {
   const enabled = useShortcutsEnabled()
-  const guarded = (e: KeyboardEvent) => isTypingTarget(e.target) || !isBareKey(e) || isOverlayOpen()
+  /** null when the press may run; otherwise why it may not. */
+  const heldBack = (e: KeyboardEvent): 'overlay' | 'single' | null => {
+    if (isOverlayOpen()) return 'overlay'
+    if (!isSingleKey(pressOf(e))) return null
+    return !enabled || isTypingTarget(e.target) ? 'single' : null
+  }
   // In the capture phase: the other page-wide keys and the page's own handlers come after it.
   const onClaim = useEffectEvent((e: KeyboardEvent) => {
-    if (!guarded(e) && claim?.(e)) e.stopPropagation()
+    if (heldBack(e) === null && isSingleKey(pressOf(e)) && claim?.(e)) e.stopPropagation()
   })
   const onKey = useEffectEvent((e: KeyboardEvent) => {
-    if (guarded(e)) {
+    if (heldBack(e) !== null) {
       skipped?.()
       return
     }
     run(table, handlers, e)
   })
   useEffect(() => {
-    if (!enabled) return
     document.addEventListener('keydown', onClaim, true)
     document.addEventListener('keydown', onKey)
     return () => {
       document.removeEventListener('keydown', onClaim, true)
       document.removeEventListener('keydown', onKey)
     }
-  }, [enabled])
+  }, [])
 }

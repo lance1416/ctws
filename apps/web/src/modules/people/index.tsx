@@ -1,4 +1,4 @@
-import { kindPage } from '../../shell/layout'
+import { topPage } from '../../shell/layout'
 import type { WorkspaceModule } from '../../shell/contract'
 import { peopleKeys } from './api'
 import { BirthdayCard } from './components/BirthdayCard'
@@ -16,7 +16,7 @@ export { usePeople } from './hooks/usePeople'
  * No capture rule: a pasted address is likelier a note about someone than a person to file.
  * No project-page block: people reach a project as edges, which the shell draws for every kind.
  */
-const PAGE = kindPage('People')
+const PAGE = topPage('People')
 
 export const peopleModule: WorkspaceModule = {
   id: PEOPLE_ID,
@@ -59,15 +59,7 @@ export const peopleModule: WorkspaceModule = {
     },
   ],
   chords: [
-    { id: 'people', key: 'n', label: 'Go to People', resolve: () => `/${PEOPLE_ID}`, order: 17 },
-    {
-      id: 'birthdays',
-      key: 'b',
-      label: 'Go to Birthdays',
-      resolve: () => `/${PEOPLE_ID}/birthdays`,
-      // Not 18: the shell's Calendar holds it, and a shared order sorts by spread order.
-      order: 19,
-    },
+    { id: 'people', key: 'e', label: 'Go to People', resolve: () => `/${PEOPLE_ID}`, order: 30 },
   ],
   relations: [
     {

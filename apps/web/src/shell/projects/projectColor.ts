@@ -21,7 +21,7 @@ const RAIL: Record<ProjectColor, string> = {
 const UNKNOWN_RAIL = 'bg-line'
 
 /** A lookup, not a template: Tailwind only emits classes it can see. */
-export function railClass(color: ProjectColor | undefined): string {
+export function squareClass(color: ProjectColor | undefined): string {
   return color ? RAIL[color] : UNKNOWN_RAIL
 }
 
@@ -30,5 +30,5 @@ export function useProjectRail(): (projectId: ProjectId) => string {
   // Live and archived both: a row on an archived project keeps its colour (the shelf, a search).
   const { data } = useEveryProject()
   const byId = new Map(data?.map((p) => [p.id, p.color]) ?? [])
-  return (projectId) => railClass(byId.get(projectId))
+  return (projectId) => squareClass(byId.get(projectId))
 }

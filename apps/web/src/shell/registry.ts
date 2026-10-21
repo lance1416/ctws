@@ -34,8 +34,24 @@ export const WORKBENCH_PATH = '/'
 
 const SHELL_CHORDS: Chord[] = [
   { id: 'workbench', key: 'w', label: 'Go to Workbench', resolve: () => WORKBENCH_PATH, order: 5 },
-  { id: 'calendar', key: 'c', label: 'Go to Calendar', resolve: () => '/calendar', order: 18 },
-  { id: 'projects', key: 'p', label: 'Go to Projects', resolve: () => '/projects', order: 20 },
+  { id: 'calendar', key: 'c', label: 'Go to Calendar', resolve: () => '/calendar', order: 15 },
+  { id: 'projects', key: 'p', label: 'Go to Projects', resolve: () => '/projects', order: 25 },
+  // Their modules come in phase 3; the bar and the keys already lead to their places.
+  {
+    id: 'organisations',
+    key: 'o',
+    label: 'Go to Organisations',
+    resolve: () => '/organisations',
+    order: 35,
+  },
+  {
+    id: 'communication',
+    key: 'x',
+    label: 'Go to Communication',
+    resolve: () => '/communication',
+    order: 45,
+  },
+  { id: 'notes', key: 'n', label: 'Go to Notes', resolve: () => '/notes', order: 55 },
 ]
 
 const SHELL_PAGES: ModulePage[] = [
@@ -233,7 +249,10 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
     projectContents: modules.flatMap((m) => (m.project?.contents ? [m.project.contents] : [])),
     anywhere: anywhereKeys(chords),
     keys: modules.flatMap((m) => m.keys ?? []),
-    routes: modules.map((m) => ({ path: `/${m.id}`, children: m.routes })),
+    routes: [
+      ...modules.flatMap((m) => m.places ?? []),
+      ...modules.map((m) => ({ path: `/${m.id}`, children: m.routes })),
+    ],
     staleFor: (changes) =>
       reads.filter((r) => r.of.some((type) => changes.includes(type))).map((r) => r.queryKey),
   }

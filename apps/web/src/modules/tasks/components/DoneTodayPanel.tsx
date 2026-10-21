@@ -22,7 +22,7 @@ export function DoneTodayPanel({
       label="Done today"
       count={tasks.length}
       action={
-        <Link to="/tasks/review?view=done" className={`text-ui ${LINK}`}>
+        <Link to="/review?view=done" className={`text-ui ${LINK}`}>
           All
         </Link>
       }

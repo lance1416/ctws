@@ -6,9 +6,6 @@ type Step = { label: string; to: string }
 /** A page's canonical path: steps that link, then the page itself, which does not. */
 export type Crumbs = readonly [] | readonly [...Step[], { label: string }]
 
-/** What a page is drawn on: the sheet, or the desk the Workbench's tiles sit on. */
-type Ground = 'sheet' | 'desk'
-
 /**
  * What a route tells the frame about its page, as its `handle`. The frame reads it from the
  * matched routes, so it holds from the page's first render rather than an effect later.
@@ -19,8 +16,6 @@ export type PageHandle = {
    * data can read it; the frame calls it once per page.
    */
   useCrumbs?: () => Crumbs
-  /** The sheet unless it says otherwise. The frame paints `main`, edge to edge. */
-  ground?: Ground
 }
 
 /** The deepest matched route's say on `key`, and that route's id. */
@@ -35,10 +30,5 @@ export function usePage<K extends keyof PageHandle>(
   return null
 }
 
-/** A page at the top of the hierarchy, named `label`. */
+/** A page at the top of the hierarchy, named `label`: a module's root or a page across kinds. */
 export const topPage = (label: string): PageHandle => ({ useCrumbs: () => [{ label }] })
-
-/** A kind's own page, under Things. */
-export const kindPage = (label: string): PageHandle => ({
-  useCrumbs: () => [{ label: 'Things', to: '/things' }, { label }],
-})

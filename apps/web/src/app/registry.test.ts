@@ -32,7 +32,7 @@ describe("the rail's pinned pages", () => {
       'w',
       't',
       'c',
-      'r',
+      'v',
     ])
   })
 })
@@ -73,23 +73,26 @@ describe('jump chords', () => {
   const chords = registry.chords
 
   it('resolves each destination, in the order the help list teaches them', () => {
-    expect(chords.map((c) => c.key).join('')).toBe('wtlmncbpri')
+    // FR-029's table, top to bottom.
+    expect(chords.map((c) => c.key).join('')).toBe('wtcvpeomxrn')
     expect(chords.map((c) => c.id)).toEqual([
       'workbench',
       'today',
-      'reading',
-      'meetings',
-      'people',
       'calendar',
-      'birthdays',
-      'projects',
       'review',
-      'inbox',
+      'projects',
+      'people',
+      'organisations',
+      'meetings',
+      'communication',
+      'reading',
+      'notes',
     ])
   })
 
   it('resolves nothing for a key that starts no jump', () => {
-    for (const key of ['q', 'g', 'f', 'T', '/', '?']) expect(registry.chordFor(key)).toBeNull()
+    for (const key of ['q', 'g', 'f', 'T', '/', '?', 'b', 'i', 'l'])
+      expect(registry.chordFor(key)).toBeNull()
   })
 
   it('has one target per key and does not use the prefix as a second key', () => {
@@ -99,10 +102,6 @@ describe('jump chords', () => {
     expect(chords.map((c) => c.key)).not.toContain(JUMP_PREFIX)
   })
 
-  it('does not take a key that is already a shortcut of its own', () => {
-    // `/` capture, `f` search, `?` help, and `s`/`x`/`j`/`k` on a row.
-    for (const taken of ['/', 'f', '?', 's', 'x', 'j', 'k']) {
-      expect(chords.map((c) => c.key)).not.toContain(taken)
-    }
-  })
+  // A chord's key may be a shortcut of its own elsewhere (`G C` and `c`, `G X` and `x`): the
+  // prefix claims the next press before anything else sees it (FR-029).
 })

@@ -4,7 +4,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { projectKeys, updateProject } from './api'
 import { problemText } from '../../platform/http/api'
-import { railClass } from './projectColor'
+import { squareClass } from './projectColor'
 import { useInlineEdit } from '../../platform/ui/useInlineEdit'
 import { MENU_ITEM, MENU_SURFACE } from '../../platform/ui/menuSurface'
 
@@ -55,7 +55,7 @@ export function ProjectIdentity({
         <DropdownMenu.Trigger
           aria-label="Project colour"
           data-project-chip={projectId}
-          className={`h-9 w-[4px] shrink-0 rounded-full ${railClass(color)}`}
+          className={`h-9 w-[4px] shrink-0 rounded-full ${squareClass(color)}`}
         />
         <DropdownMenu.Portal>
           <DropdownMenu.Content align="start" sideOffset={8} className={MENU_SURFACE}>
@@ -67,7 +67,7 @@ export function ProjectIdentity({
               >
                 <span
                   aria-hidden="true"
-                  className={`h-4 w-[3px] shrink-0 rounded-full ${railClass(slot)}`}
+                  className={`h-4 w-[3px] shrink-0 rounded-full ${squareClass(slot)}`}
                 />
                 Colour {i + 1}
                 {slot === color && <span className="ml-auto pl-3 text-subtle">Current</span>}

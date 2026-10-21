@@ -19,7 +19,7 @@ export function UserMenu({ email, onLogout }: { email: string; onLogout: () => v
       <DropdownMenu.Trigger
         data-testid="current-user"
         aria-label={`Account: ${email}`}
-        className="flex h-8 w-8 items-center justify-center rounded-full border border-line-strong text-ui font-medium text-muted uppercase hover:bg-hover hover:text-ink"
+        className="inline-grid size-7 place-items-center rounded-full bg-hover text-initials text-muted uppercase hover:text-ink"
       >
         {email.slice(0, 1)}
       </DropdownMenu.Trigger>

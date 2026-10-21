@@ -3,6 +3,8 @@ import { useRegistry } from '../registry'
 import { setShortcutsEnabled, useShortcutsEnabled } from '../../platform/keyboard/enabled'
 import { JUMP_PREFIX } from './chords'
 import { Modal } from '../../platform/ui/Modal'
+import { KEY } from '../../platform/ui/buttonStyles'
+import { keyLabel } from '../../platform/keyboard/keys'
 
 /** "a, b and c". */
 const listed = (items: readonly string[]): string =>
@@ -35,9 +37,7 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
               {table.rows.map(({ keys, does }) => (
                 <div key={`${table.title}-${keys}`} className="flex items-baseline gap-3 py-0.5">
                   <dt className="w-[14ch] shrink-0">
-                    <kbd className="rounded-key border border-line-strong px-1.5 text-meta leading-5 text-muted">
-                      {keys}
-                    </kbd>
+                    <kbd className={KEY}>{keyLabel(keys)}</kbd>
                   </dt>
                   <dd className="text-ui text-ink">{does}</dd>
                 </div>

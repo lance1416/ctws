@@ -228,9 +228,14 @@ export default tseslint.config(
     },
   },
   {
-    // A filled button's text is `on-ink` or `on-stop`, and only BUTTON may say so.
+    // A filled button's text is `on-ink` or `on-stop`, and only BUTTON may say so. The top bar's
+    // mark is the one other thing filled with ink.
     files: ['apps/web/src/**/*.{ts,tsx}'],
-    ignores: [...TESTS, 'apps/web/src/platform/ui/buttonStyles.ts'],
+    ignores: [
+      ...TESTS,
+      'apps/web/src/platform/ui/buttonStyles.ts',
+      'apps/web/src/shell/layout/TopBar.tsx',
+    ],
     plugins: { ctws },
     rules: {
       'ctws/button-text': [

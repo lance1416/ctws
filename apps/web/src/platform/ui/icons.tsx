@@ -21,9 +21,70 @@
  *            Lucide; drawn by hand) · done circle-check · cancelled circle-x
  *   time     flag; waiting on another task: lock
  */
-import { ChevronDown, ChevronRight, Plus, X } from 'lucide-react'
+import type { ComponentProps, ComponentType } from 'react'
+import {
+  BookOpen,
+  BuildingComplex,
+  CalendarClock,
+  CalendarDays,
+  ChevronDown,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Circle,
+  Folder,
+  Inbox,
+  Keyboard,
+  LayoutDashboard,
+  MessagesSquare,
+  Moon,
+  PanelRight,
+  Plus,
+  RotateCcwClock,
+  Search,
+  SquareCheckBig,
+  StickyNote,
+  Sun,
+  UserRound,
+  X,
+} from 'lucide-react'
+
+export type IconComponent = ComponentType<ComponentProps<typeof Circle>>
+
+/** The eight kinds, each in its own colour wherever it appears (FR-002). */
+export const KIND_ICON = {
+  task: SquareCheckBig,
+  meeting: CalendarClock,
+  person: UserRound,
+  reading: BookOpen,
+  project: Folder,
+  organisation: BuildingComplex,
+  communication: MessagesSquare,
+  note: StickyNote,
+} as const satisfies Record<string, IconComponent>
+export type Kind = keyof typeof KIND_ICON
+
+/** The project that is the inbox wears this instead of initials (FR-004). */
+export const InboxIcon = Inbox
+
+/** Places, always grey. */
+export const PLACE_ICON = {
+  workbench: LayoutDashboard,
+  today: Sun,
+  calendar: CalendarDays,
+  review: RotateCcwClock,
+  search: Search,
+  keys: Keyboard,
+} as const satisfies Record<string, IconComponent>
 
 export const NewIcon = Plus
 export const CloseIcon = X
+export const OpenFullIcon = PanelRight
 export const ExpandIcon = ChevronDown
 export const CollapseIcon = ChevronRight
+/** The icon bar growing to show its names, and shrinking back. */
+export const BarExpandIcon = ChevronsRight
+export const BarCollapseIcon = ChevronsLeft
+/** The theme switch shows the scheme it would switch TO. */
+export const LightIcon = Sun
+export const DarkIcon = Moon

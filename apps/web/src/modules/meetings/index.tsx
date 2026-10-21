@@ -1,4 +1,4 @@
-import { kindPage } from '../../shell/layout'
+import { topPage } from '../../shell/layout'
 import type { WorkspaceModule } from '../../shell/contract'
 import { meetingKeys } from './api'
 import { CalendarOccurrence } from './components/OccurrencePane'
@@ -14,7 +14,7 @@ import { Meetings } from './pages/Meetings'
  * provider: a meeting is found by its date, and a weekly title repeats many times over.
  * No project-page block: meetings reach a project as edges, which the shell draws for every kind.
  */
-const PAGE = kindPage('Meetings')
+const PAGE = topPage('Meetings')
 
 export const meetingModule: WorkspaceModule = {
   id: MEETINGS_ID,
@@ -38,7 +38,7 @@ export const meetingModule: WorkspaceModule = {
       key: 'm',
       label: 'Go to Meetings',
       resolve: () => `/${MEETINGS_ID}`,
-      order: 16,
+      order: 40,
     },
   ],
   calendar: {

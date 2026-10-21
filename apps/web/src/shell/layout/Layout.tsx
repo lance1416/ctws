@@ -1,32 +1,41 @@
 import { api } from '@ctws/contracts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
-import { Link, Navigate, Outlet, useLocation } from 'react-router-dom'
+import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { call } from '../../platform/http/api'
 import { meKey, useMe } from '../auth/useMe'
-import { Breadcrumbs } from './Breadcrumbs'
-import { LAYER } from '../../platform/ui/layers'
-import { QuickCapture } from '../capture'
 import { BottomBar } from './BottomBar'
+import { IconBar } from './IconBar'
+import { Inspector } from './Inspector'
 import { LeaveGuardContext, type LeaveGuard } from '../../platform/ui/leaveGuard'
-import { usePage } from './page'
+import { placeOf } from './places'
+import { useRemembered } from './remembered'
 import { Shortcuts } from '../shortcuts/Shortcuts'
-import { SideRail } from './SideRail'
-import { UserMenu } from './UserMenu'
-import { WriteFailure } from './WriteFailure'
+import { Sidebar } from './Sidebar'
+import { TopBar } from './TopBar'
 
 /**
- * The signed-in frame: top bar, rail, page, and the detail pane's column. The one place that
- * sends a visitor to /login.
+ * THE FRAME (FR-017), five regions: the top bar; the icon bar; the module's sidebar; the main
+ * area; and the inspector, when something is open in it. Below 1280 the sidebar starts hidden
+ * and the inspector covers the main area; below 1024 the phone's tab bar stands in for the top
+ * bar, the icon bar and the sidebar. The one place that sends a visitor to /login.
  */
 export function Layout() {
   const qc = useQueryClient()
   const me = useMe()
-  const location = useLocation()
+  const { pathname } = useLocation()
   const leaveGuard: LeaveGuard = useRef(null)
-  // Opened from the header's button, the `f` key, or the phone's tab bar.
   const [searching, setSearching] = useState(false)
-  const ground = usePage('ground')?.value ?? 'sheet'
+  const [help, setHelp] = useState(false)
+  const [barExpanded, setBarExpanded] = useRemembered('ctws:iconbar', () => false)
+  // A choice made by hand is kept whatever the width (handoff §4).
+  const [sidebarOpen, setSidebarOpen] = useRemembered(
+    'ctws:sidebar',
+    () => window.matchMedia('(min-width: 1280px)').matches,
+  )
+  const place = placeOf(pathname)
+  // The pages across kinds have no list beside them (artboard 7); Review's weeks come with its batch.
+  const hasSidebar = place !== null && place.kind !== null
 
   const logout = useMutation({
     mutationFn: () => call(api.auth.logout),
@@ -38,12 +47,12 @@ export function Layout() {
     },
   })
 
-  if (me.isLoading) return <div className="min-h-screen bg-panel" />
+  if (me.isLoading) return <div className="min-h-screen bg-ground" />
   // A server that is down is not a signed-out visitor, so this is not a redirect to /login. Only a
   // first load that failed means there is no app to show; a later failed check keeps the page.
   if (me.isLoadingError) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-panel p-6">
+      <div className="flex min-h-screen items-center justify-center bg-ground p-6">
         <p role="alert" className="max-w-prose text-ui text-stop-t">
           Can't reach the server. Your session is fine -- try again once it is back.
         </p>
@@ -52,59 +61,44 @@ export function Layout() {
   }
   // A session that ended under the page comes back to it once signed in again; signing out does not.
   if (!me.data) {
-    const from = logout.isSuccess ? undefined : `${location.pathname}${location.search}`
+    const from = logout.isSuccess ? undefined : `${pathname}${location.search}`
     return <Navigate to="/login" replace state={from ? { from } : undefined} />
   }
 
   return (
-    <div className="min-h-screen">
-      <header className={`sticky top-0 ${LAYER.bar} border-b border-line bg-chrome`}>
-        <div className="flex min-h-13 items-center gap-x-3 px-4 py-2 sm:gap-x-4">
-          <Link to="/" className="shrink-0 font-medium tracking-tight text-ink">
-            CTWS
-          </Link>
-          <Breadcrumbs />
-          <span aria-hidden="true" className="flex-1" />
-          <div className="flex shrink-0 items-center gap-1 text-ui">
-            <Shortcuts capture={<QuickCapture />} search={searching} setSearch={setSearching} />
-            <span className="relative ml-1">
-              <UserMenu
-                email={me.data.email}
-                onLogout={() => {
-                  // An open pane with unsaved edits asks first, and runs the logout if let go.
-                  if (!leaveGuard.current?.(() => logout.mutate())) logout.mutate()
-                }}
-              />
-              {/* Any write that fails unsaid, signing out among them, is said here. */}
-              <WriteFailure />
-            </span>
-          </div>
+    <div className="flex h-dvh flex-col">
+      <div className="contents max-lg:hidden">
+        <TopBar
+          email={me.data.email}
+          onSearch={() => setSearching(true)}
+          onHelp={() => setHelp(true)}
+          onLogout={() => {
+            // An open form with unsaved edits asks first, and runs the logout if let go.
+            if (!leaveGuard.current?.(() => logout.mutate())) logout.mutate()
+          }}
+        />
+      </div>
+      <div className="flex min-h-0 flex-1">
+        <div className="contents max-lg:hidden">
+          <IconBar expanded={barExpanded} setExpanded={setBarExpanded} />
+          {hasSidebar && sidebarOpen && <Sidebar place={place} />}
         </div>
-      </header>
-      {/* `minmax(0,1fr)`, not `1fr`: one long title would otherwise widen the page past 375px.
-            A detail pane drawn as a column (`data-detail-mode=pane`, which only DetailPane sets and
-            only where it is wide) takes a third, matching its width, from the render it opens in. */}
-      <div className="group/frame lg:grid lg:grid-cols-[16rem_minmax(0,1fr)] lg:items-start lg:has-[[data-detail-mode=pane]]:grid-cols-[16rem_minmax(0,1fr)_24rem]">
-        <SideRail />
-        {/* At least a screen tall, so DangerZone's `mt-auto` has a floor to sit on; below 1024
-              the page ends above the tab bar. */}
-        <main
-          className={`flex min-h-[calc(100vh-3.25rem)] min-w-0 flex-col px-4 pt-4 max-lg:pb-20 sm:px-6 ${
-            ground === 'desk' ? 'bg-ground' : 'bg-panel'
-          }`}
-        >
-          <div className="flex min-w-0 flex-1 flex-col">
+        <div className="relative flex min-w-0 flex-1">
+          <main className="flex min-w-0 flex-1 flex-col overflow-y-auto bg-ground p-5 max-lg:pb-20">
             <LeaveGuardContext.Provider value={leaveGuard}>
               <Outlet />
             </LeaveGuardContext.Provider>
-          </div>
-        </main>
-        {/* The pane itself is fixed; this placeholder is what takes its width out of the grid. */}
-        <div
-          aria-hidden="true"
-          className="hidden group-has-[[data-detail-mode=pane]]/frame:block"
-        />
+          </main>
+          <Inspector />
+        </div>
       </div>
+      <Shortcuts
+        search={searching}
+        setSearch={setSearching}
+        help={help}
+        setHelp={setHelp}
+        onSidebar={() => setSidebarOpen(!sidebarOpen)}
+      />
       <BottomBar onSearch={() => setSearching(true)} />
     </div>
   )

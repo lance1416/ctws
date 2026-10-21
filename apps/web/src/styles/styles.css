@@ -125,6 +125,9 @@
   --container-column: 360px;
   --container-reading: 68ch;
 
+  /* Tailwind's own palette is removed: every colour on a page is a token below. */
+  --color-*: initial;
+
   /* THE FOUR SURFACES, stacked by lightness in each scheme. */
   --color-ground: light-dark(#eef0f3, #1b1c1f);
   --color-chrome: light-dark(#f7f8fa, #232427);
@@ -200,6 +203,8 @@
   --color-project-olive: #5f7012;
   --color-project-teal: #127a80;
   --color-project-pink: #b83a7a;
+  /* The initials on a project square: white in both schemes (FR-004). */
+  --color-on-project: #ffffff;
 
   /* SYNTAX COLOURS, for highlighted code fences only. Their own family rather than borrowed
      from the kinds or states: those MEAN something here, and a keyword in `warn`'s colour would be
@@ -288,6 +293,11 @@ kbd,
 [aria-pressed='true'] .text-subtle,
 [aria-selected='true'] .text-subtle {
   color: var(--color-muted);
+}
+
+/* A key cap is set in the mono face (tokens.md); `KEY` in buttonStyles.ts draws its box. */
+kbd {
+  font-family: var(--font-mono);
 }
 
 /* ONE FOCUS RING FOR EVERYTHING FOCUSABLE: 2px in the task colour, outside the edge (handoff §4;
