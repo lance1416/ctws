@@ -8,6 +8,7 @@ import { monthDay } from '../../platform/time/dates'
 import { useTimeZone } from '../auth/useMe'
 import { ymd } from '../../platform/time/dates'
 import { useRegistry } from '../registry'
+import { PLACES } from '../layout/places'
 import { KIND_WORDS } from '../search/view'
 import { useEveryProject } from '../projects/api'
 import { ProjectSquare } from '../projects/ProjectSquare'
@@ -28,6 +29,7 @@ export function DeletedNotice({ type, id }: { type: ObjectType; id: string }) {
     retry: false,
   })
   const kind = KIND_WORDS[type].one.toLocaleLowerCase()
+  const overview = PLACES.find((p) => p.kind === type)
   if (stone.isPending) return null
   const failed = stone.isError && !(stone.error instanceof ApiError && stone.error.status === 404)
   const found = stone.data
@@ -40,7 +42,10 @@ export function DeletedNotice({ type, id }: { type: ObjectType; id: string }) {
         }
       : place?.projectId
         ? { to: `/projects/${place.projectId}`, name: place.projectName ?? 'its project' }
-        : null
+        : overview
+          ? // Nothing held it (a person, an organisation, a project): its kind's overview (DES-001).
+            { to: overview.to, name: overview.label }
+          : null
   const project = place?.projectId
     ? projects.data?.find((p) => p.id === place.projectId)
     : undefined

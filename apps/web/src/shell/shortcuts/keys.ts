@@ -34,8 +34,8 @@ export function anywhereKeys(
       })),
       ...creates.map((c) => ({
         keys: `${NEW_PREFIX.toUpperCase()} ${c.key.toUpperCase()}`,
-        // The kind's name: the group already says New. A message is logged, not made.
-        does: c.kind === 'communication' ? 'Log a message' : c.label,
+        // The kind's name: the group already says New (artboard 24).
+        does: c.label,
         presses: { [NEW_PREFIX]: 'new' as const },
         ...(c.kind === 'task' ? { was: 'n' } : {}),
       })),

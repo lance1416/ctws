@@ -86,6 +86,10 @@ test('the address of a person who is gone says so instead of showing nothing', a
   await registerFreshUser(page)
   await page.goto('/people/99999999-9999-4999-8999-999999999999')
   await expect(page.getByRole('heading', { name: 'This person was deleted' })).toBeVisible()
+  // Nothing held a person, so the way on is People's overview (DES-001 section 4).
+  await expect(page.getByText('It was in')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Open People' }).click()
+  await expect(page).toHaveURL(/\/people$/)
 })
 
 test('Linked sits beside Tasks where the page has room, and below it on a phone', async ({
