@@ -10,6 +10,7 @@ import { LinkDialog } from '../links/LinkDialog'
 import { BottomBar } from './BottomBar'
 import { IconBar } from './IconBar'
 import { Inspector } from './Inspector'
+import { BackOnline } from './Online'
 import { LeaveGuardContext, type LeaveGuard } from '../../platform/ui/leaveGuard'
 import { placeOf } from './places'
 import { useRemembered } from './remembered'
@@ -147,6 +148,7 @@ function Frame({
         {creating?.Dialog && (
           <creating.Dialog projectId={projectId} onClose={() => setCreating(null)} />
         )}
+        <BackOnline />
         <BottomBar onSearch={() => setSearching(true)} />
       </div>
     </NewContext.Provider>

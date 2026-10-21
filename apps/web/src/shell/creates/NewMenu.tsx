@@ -3,7 +3,7 @@ import { BUTTON, KEY, KEY_ON_INK } from '../../platform/ui/buttonStyles'
 import { KIND_ICON, NewIcon } from '../../platform/ui/icons'
 import { LAYER } from '../../platform/ui/layers'
 import type { Creator } from '../contract'
-import { KIND_TEXT } from '../layout/places'
+import { KIND_TEXT } from '../../platform/ui/kinds'
 import { useRegistry } from '../registry'
 import { menuOrder, recentKinds } from './recent'
 

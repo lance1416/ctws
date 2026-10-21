@@ -191,12 +191,7 @@ function ReadingForm({
       })}
       className="flex flex-col gap-4"
     >
-      <FormBar busy={busy} onCancel={onCancel} />
-      {error && (
-        <p role="alert" className="text-ui text-stop-t">
-          {error}
-        </p>
-      )}
+      <FormBar busy={busy} failed={error} onCancel={onCancel} />
 
       <div>
         <label htmlFor="r-title" className={label}>

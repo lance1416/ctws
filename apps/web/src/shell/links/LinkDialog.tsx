@@ -6,7 +6,7 @@ import { BUTTON, KEY_ON_INK } from '../../platform/ui/buttonStyles'
 import { boxed } from '../../platform/ui/formStyles'
 import { KIND_ICON } from '../../platform/ui/icons'
 import { Modal } from '../../platform/ui/Modal'
-import { KIND_TEXT } from '../layout/places'
+import { KIND_TEXT } from '../../platform/ui/kinds'
 import { SearchDialog } from '../search/SearchDialog'
 import { createLink, linkKeys, type Endpoint } from './api'
 

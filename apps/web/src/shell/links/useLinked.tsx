@@ -56,5 +56,5 @@ export function useLinked(of: Endpoint, types: readonly ObjectType[] | undefined
       {add}
     </div>
   ) : undefined
-  return { groups, unlink, setAdding, add, unshown }
+  return { links, groups, unlink, setAdding, add, unshown }
 }

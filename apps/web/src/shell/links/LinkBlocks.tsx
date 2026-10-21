@@ -1,70 +1,139 @@
-import { idFrom, projectId } from '@ctws/contracts'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CloseIcon, NewIcon } from '../../platform/ui/icons'
+import { ICON_BUTTON } from '../../platform/ui/buttonStyles'
+import { Block, BlockFailed, SkeletonRows } from '../../platform/ui/Block'
+import { CloseIcon, NewIcon, type Kind } from '../../platform/ui/icons'
 import { useRegistry } from '../registry'
-import { ProjectRail } from '../rows/RowParts'
 import { whyOf } from './Links'
 import { type Item, type Linked, useLinked } from './useLinked'
 
-/** The related things as a block per kind, each with a count and a `+`, beside a page's own block. */
+/** A block shows this many rows; the rest wait behind a line that says how many (FR-011). */
+const SHOWN = 5
+
+/**
+ * THE LINKED BLOCKS (FR-011, FR-042): what a page's thing is related to, one block per kind,
+ * each with its count and its own `+`. Five rows, then "N more"; a kind with nothing shrinks to
+ * its head and goes after the full ones. A failure stays in its block.
+ */
 export function LinkBlocks({ of, types }: Linked) {
   const registry = useRegistry()
-  const { groups, unlink, setAdding, add, unshown } = useLinked(of, types)
-  if (unshown !== undefined) return unshown
-  // On a project's page every row here is related to this project, so it wears its thread.
-  const thread = of.type === 'project' ? idFrom(projectId, of.id) : null
+  // Each block carries its own `+`, so the list's own "+ Link" is not drawn here.
+  const { links, groups, unlink, setAdding, add } = useLinked(of, types)
+  const kinds = (types ?? registry.relations.map((r) => r.type)).filter((t) => t !== of.type)
+  const byKind = new Map(groups.map((g) => [g.type, g.items]))
+  const full = kinds.filter((k) => (byKind.get(k)?.length ?? 0) > 0)
+  const empty = kinds.filter((k) => (byKind.get(k)?.length ?? 0) === 0)
+
+  if (links.isError)
+    return (
+      <Block title="Linked">
+        <BlockFailed what="linked things" onRetry={() => void links.refetch()} />
+      </Block>
+    )
+  if (links.isPending)
+    return (
+      <div className="flex flex-col gap-3">
+        {kinds.slice(0, 2).map((k) => (
+          <Block key={k} kind={k} title={registry.relationFor(k).plural}>
+            <SkeletonRows rows={2} />
+          </Block>
+        ))}
+      </div>
+    )
+
   return (
-    <div className="flex flex-col gap-8">
-      {groups.map((group) => {
-        const where = registry.relationFor(group.type)
-        const kind = where.kind.toLowerCase()
+    <div className="flex flex-col gap-3">
+      {[...full, ...empty].map((kind) => {
+        const where = registry.relationFor(kind)
+        const items = byKind.get(kind) ?? []
         return (
-          <section key={group.type} aria-label={where.plural} className="min-w-0">
-            <div className="mb-1 flex items-center gap-2">
-              <h3 className="flex items-baseline gap-2 text-prose font-medium text-ink">
-                {where.plural}
-                <span data-count className="text-ui font-normal text-subtle tabular-nums">
-                  {group.items.length}
-                </span>
-              </h3>
-              <button
-                type="button"
-                onClick={() => setAdding(group.type)}
-                aria-label={`Link another ${kind}`}
-                className="ml-auto flex size-[30px] items-center justify-center rounded-control text-subtle hover:bg-hover hover:text-ink"
-              >
-                <NewIcon size={16} className="size-3.5" strokeWidth={1.7} />
-              </button>
-            </div>
-            <ul className="flex flex-col">
-              {group.items.map((item) => (
-                <li key={item.relationId} className="group flex min-w-0 items-stretch">
-                  <ProjectRail projectId={thread} />
-                  <LinkedBlockRow item={item} />
-                  {item.origin === 'manual' && (
-                    <button
-                      type="button"
-                      disabled={unlink.isPending}
-                      onClick={() => unlink.mutate(item.relationId)}
-                      aria-label={`Unlink ${item.title}`}
-                      className="flex w-7 shrink-0 items-center justify-center text-subtle opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-ink disabled:opacity-50 [@media(hover:none)]:opacity-100"
-                    >
-                      <CloseIcon size={16} className="h-3 w-3" strokeWidth={1.8} />
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </section>
+          <KindBlock
+            key={kind}
+            kind={kind}
+            title={where.plural}
+            items={items}
+            onAdd={() => setAdding(kind)}
+            onUnlink={(id) => unlink.mutate(id)}
+            unlinking={unlink.isPending}
+          />
         )
       })}
+      {/* The picker, mounted by the hook while a `+` is pressed. */}
       {add}
     </div>
   )
 }
 
-/** The same, its title over its detail, for a narrow block. */
-function LinkedBlockRow({ item }: { item: Item }) {
+function KindBlock({
+  kind,
+  title,
+  items,
+  onAdd,
+  onUnlink,
+  unlinking,
+}: {
+  kind: Kind
+  title: string
+  items: Item[]
+  onAdd: () => void
+  onUnlink: (id: Item['relationId']) => void
+  unlinking: boolean
+}) {
+  const [all, setAll] = useState(false)
+  const shown = all ? items : items.slice(0, SHOWN)
+  const more = items.length - shown.length
+  return (
+    <Block
+      kind={kind}
+      title={title}
+      count={items.length}
+      empty={items.length === 0 ? 'None yet' : null}
+      actions={
+        <button
+          type="button"
+          onClick={onAdd}
+          aria-label={`Link a ${title.toLocaleLowerCase()}`}
+          title={`Link a ${title.toLocaleLowerCase()}`}
+          className={ICON_BUTTON}
+        >
+          <NewIcon size={16} aria-hidden="true" />
+        </button>
+      }
+    >
+      <ul className="flex flex-col py-1.5">
+        {shown.map((item) => (
+          <li key={item.relationId} className="group flex min-w-0 items-center pr-1.5">
+            <LinkedRow item={item} />
+            {/* A mention goes with its sentence; only a relation made by hand unlinks here. */}
+            {item.origin === 'manual' && (
+              <button
+                type="button"
+                disabled={unlinking}
+                onClick={() => onUnlink(item.relationId)}
+                aria-label={`Unlink ${item.title}`}
+                className={`${ICON_BUTTON} opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100`}
+              >
+                <CloseIcon size={14} aria-hidden="true" />
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+      {more > 0 && (
+        <button
+          type="button"
+          onClick={() => setAll(true)}
+          className="flex h-9 w-full items-center border-t border-line px-3 text-ui text-muted hover:bg-hover hover:text-ink"
+        >
+          {more} more
+        </button>
+      )}
+    </Block>
+  )
+}
+
+/** One linked thing: its title, where it belongs, and the line of why at the end. */
+function LinkedRow({ item }: { item: Item }) {
   const where = useRegistry().relationFor(item.type)
   const detail = where.describe?.(item) ?? null
   const why = whyOf(item)
@@ -72,13 +141,13 @@ function LinkedBlockRow({ item }: { item: Item }) {
     <Link
       to={where.to(item.id)}
       data-linked={item.id}
-      className="flex min-w-0 flex-1 items-start gap-3 py-2 pr-1 pl-3 hover:bg-hover"
+      className="grid min-h-9 min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 px-3 text-ui text-ink hover:bg-hover"
     >
-      <span className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate text-ink">{item.title}</span>
-        {detail && <span className="truncate text-ui text-subtle">{detail}</span>}
+      <span className="flex min-w-0 flex-col">
+        <span className="truncate">{item.title}</span>
+        {why && <span className="truncate text-meta text-subtle">{why}</span>}
       </span>
-      {why && <span className="shrink-0 truncate text-ui text-muted">{why}</span>}
+      {detail && <span className="truncate text-meta text-muted">{detail}</span>}
     </Link>
   )
 }

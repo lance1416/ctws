@@ -60,9 +60,11 @@ function DeletePerson({ person, onDeleted }: { person: PersonResponse; onDeleted
   return (
     <>
       <DangerAction
-        label="Delete person"
-        confirmLabel="Confirm deleting this person"
-        message={`Delete “${person.name}”? This cannot be undone.`}
+        label={`Delete ${person.name}`}
+        confirmLabel={`Delete ${person.name}`}
+        // First what goes, then what stays (FR-035).
+        message={`Delete ${person.name}? Their contact details, birthday and profile notes go. Notes about them, messages with them, and the meetings and tasks linked to them stay.`}
+        confirm={`Delete ${person.name}`}
         busy={drop.isPending}
         onConfirm={() => drop.mutate()}
       />

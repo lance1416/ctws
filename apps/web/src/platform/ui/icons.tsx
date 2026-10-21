@@ -27,6 +27,9 @@ import {
   BuildingComplex,
   CalendarClock,
   CalendarDays,
+  CircleAlert,
+  CloudCheck,
+  CloudOff,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -43,10 +46,12 @@ import {
   PanelRight,
   Plus,
   RotateCcwClock,
+  RotateCw,
   Search,
   SquareCheckBig,
   StickyNote,
   Sun,
+  Trash,
   UserRound,
   X,
 } from 'lucide-react'
@@ -92,6 +97,13 @@ export const ForwardIcon = ChevronRight
 /** The icon bar growing to show its names, and shrinking back. */
 export const BarExpandIcon = ChevronsRight
 export const BarCollapseIcon = ChevronsLeft
+/** What went wrong, trying again, and the connection (FR-032, FR-033). */
+export const AlertIcon = CircleAlert
+export const RetryIcon = RotateCw
+export const OfflineIcon = CloudOff
+export const OnlineIcon = CloudCheck
+/** Destroying something: red, and only where it destroys (FR-006). */
+export const RemoveIcon = Trash
 /** The theme switch shows the scheme it would switch TO. */
 export const LightIcon = Sun
 export const DarkIcon = Moon

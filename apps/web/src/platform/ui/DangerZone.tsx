@@ -1,8 +1,10 @@
 import { useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { BUTTON } from './buttonStyles'
 import { DeleteConfirm } from './DeleteConfirm'
 
 /**
- * Where a thing is destroyed from: last on its surface, under a rule, in red, and it always asks.
+ * WHERE A THING IS DESTROYED FROM (FR-035): last on its surface, under a rule, apart from the
+ * rest, red, naming what goes; and it always asks, once.
  */
 export function DangerZone({ children }: { children: ReactNode }) {
   return (
@@ -82,7 +84,7 @@ export function DangerAction({
             onAsk?.()
             setAsking(true)
           }}
-          className="-ml-2.5 h-9 rounded-control px-2.5 text-ui text-stop-t hover:bg-stop/10"
+          className={BUTTON.destructive}
         >
           {label}
         </button>

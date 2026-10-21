@@ -1,7 +1,8 @@
 import { Link, useLocation } from 'react-router-dom'
 import { CollapseIcon } from '../../platform/ui/icons'
 import { usePage, type Crumbs } from './page'
-import { KIND_TEXT, placeOf, type Place } from './places'
+import { placeOf, type Place } from './places'
+import { KIND_TEXT } from '../../platform/ui/kinds'
 
 /**
  * Where you are (FR-018): the module, with its icon and name, then the thing that is open. The

@@ -47,17 +47,21 @@ export function DeleteProject({ id }: { id: ProjectId }) {
   return (
     <>
       <DangerAction
-        label="Delete project"
-        confirmLabel="Confirm deleting this project"
+        label={`Delete ${project.name}`}
+        confirmLabel={`Delete ${project.name}`}
+        // First what goes, then what stays (FR-035).
         message={
           contents === null
             ? null
-            : contents === 'uncounted'
-              ? `Delete “${project.name}” and everything in it. This cannot be undone.`
-              : contents.length === 0
-                ? `Delete “${project.name}”. This cannot be undone.`
-                : `Delete “${project.name}” and its ${contents.join(' and ')}. This cannot be undone.`
+            : `Delete ${project.name}?${
+                contents === 'uncounted'
+                  ? ' Everything in it goes.'
+                  : contents.length === 0
+                    ? ''
+                    : ` Its ${contents.join(' and ')} go.`
+              } Its meetings, notes, people and reading stay, outside any project.`
         }
+        confirm={`Delete ${project.name}`}
         busy={remove.isPending}
         onAsk={() => void ask()}
         onConfirm={() => remove.mutate()}

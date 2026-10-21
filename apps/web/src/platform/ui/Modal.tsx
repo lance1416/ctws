@@ -18,6 +18,7 @@ export function Modal({
   unsaved = false,
   palette = false,
   wide = false,
+  narrow = false,
   children,
 }: {
   title: string
@@ -35,6 +36,8 @@ export function Modal({
   palette?: boolean
   /** Three columns of content (the key list). */
   wide?: boolean
+  /** One question and two buttons (a delete's). */
+  narrow?: boolean
   children: ReactNode
 }) {
   // These layers have no trigger element (`?` and `n` are keys), so the opener is captured during
@@ -101,7 +104,7 @@ export function Modal({
                 initialFocus.current?.focus()
               })
             }
-            className={`h-fit w-full rounded-block bg-float shadow-float ${wide ? 'max-w-[70rem]' : palette ? 'max-w-[58rem]' : 'max-w-reading'}`}
+            className={`h-fit w-full rounded-block bg-float shadow-float ${wide ? 'max-w-[70rem]' : narrow ? 'max-w-lg' : palette ? 'max-w-[58rem]' : 'max-w-reading'}`}
           >
             {palette ? (
               <Dialog.Title className="sr-only">{title}</Dialog.Title>

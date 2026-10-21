@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForgetWhenGone } from '../../../shell/search'
-import { GoneNotice } from '../../../shell/detail'
+import { DeletedNotice } from '../../../shell/detail'
 import { meetingsQuery } from '../api'
 import { MeetingDays } from '../components/MeetingDays'
 import { nextOfEach } from '../logic/nextOfEach'
@@ -113,7 +113,7 @@ export function Meetings() {
       )}
       <OccurrencePane open={open} />
       {/* Gone, or cancelled. */}
-      {open.gone && <GoneNotice kind="meeting" />}
+      {open.gone && open.named && <DeletedNotice type="meeting" id={open.named.meetingId} />}
     </>
   )
 }

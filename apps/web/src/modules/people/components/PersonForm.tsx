@@ -68,12 +68,7 @@ export function PersonForm({
       })}
       className="flex flex-col gap-4"
     >
-      <FormBar busy={busy} disabled={!ready} onCancel={onCancel} />
-      {error && (
-        <p role="alert" className="text-ui text-stop-t">
-          {error}
-        </p>
-      )}
+      <FormBar busy={busy} disabled={!ready} failed={error} onCancel={onCancel} />
 
       <div>
         <label htmlFor="c-name" className={label}>

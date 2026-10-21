@@ -1,11 +1,10 @@
-import { useSubjectOf } from '../../../shell/layout'
+import { ModuleEmpty, useSubjectOf } from '../../../shell/layout'
 import type { ReadingStatus } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { GoneNotice, useOpenFromUrl } from '../../../shell/detail'
+import { DeletedNotice, useOpenFromUrl } from '../../../shell/detail'
 import { readingQuery } from '../api'
 import { isToRead, readingLabel } from '../logic/item'
-import { EmptyState } from '../../../platform/ui/EmptyState'
 import { DaySection, LIST_MEASURE, ROW_LIST } from '../../../shell/rows'
 import { AddReading } from '../components/AddReading'
 import { ReadingDetail } from '../components/ReadingDetail'
@@ -26,7 +25,7 @@ const SECTIONS: { status: ReadingStatus; label: string }[] = [
 export function Reading() {
   const items = useQuery(readingQuery())
   // An item has no page of its own: `/reading/<id>` opens it over this list.
-  const { open, gone, show, close } = useOpenFromUrl({
+  const { openId, open, gone, show, close } = useOpenFromUrl({
     list: items,
     idOf: (i) => i.id,
     type: 'reading',
@@ -52,7 +51,7 @@ export function Reading() {
       </div>
 
       <QueryStatus query={items} />
-      {items.isSuccess && rows.length === 0 && <EmptyState hang title="The list is empty" />}
+      {items.isSuccess && rows.length === 0 && <ModuleEmpty kind="reading" />}
 
       {SECTIONS.map(({ status, label }) => {
         const section = of(status)
@@ -74,7 +73,7 @@ export function Reading() {
       })}
 
       {open && <ReadingDetail key={open.id} item={open} onClose={close} />}
-      {gone && <GoneNotice kind="item" />}
+      {gone && openId && <DeletedNotice type="reading" id={openId} />}
 
       {finished.length > 0 && (
         <div className={`mt-8 ${LIST_MEASURE}`}>

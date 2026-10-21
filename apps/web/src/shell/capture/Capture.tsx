@@ -9,7 +9,7 @@ import { ExpandIcon, KIND_ICON, NewIcon, PLACE_ICON } from '../../platform/ui/ic
 import { LAYER } from '../../platform/ui/layers'
 import { MENU_ITEM, MENU_SURFACE } from '../../platform/ui/menuSurface'
 import type { CaptureTarget } from '../contract'
-import { KIND_TEXT, KIND_TINT } from '../layout/places'
+import { KIND_TEXT, KIND_TINT } from '../../platform/ui/kinds'
 import { useProjects } from '../projects/api'
 import { ProjectSquare } from '../projects/ProjectSquare'
 import { useRegistry } from '../registry'

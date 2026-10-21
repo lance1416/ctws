@@ -41,9 +41,7 @@ function render(id: string, live: ProjectResponse[], archived: ProjectResponse[]
 describe('deleting a project', () => {
   it('is offered for an archived project too', () => {
     const shelved = project('old', { archivedAt: '2026-10-02T00:00:00.000Z' })
-    expect(render('old', [project('inbox', { isInbox: true })], [shelved])).toContain(
-      'Delete project',
-    )
+    expect(render('old', [project('inbox', { isInbox: true })], [shelved])).toContain('Delete old')
   })
 
   it('is not offered for the inbox', () => {

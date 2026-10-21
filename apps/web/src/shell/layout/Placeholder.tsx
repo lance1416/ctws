@@ -1,5 +1,6 @@
 import { KIND_ICON } from '../../platform/ui/icons'
-import { KIND_TEXT, KIND_TINT, type Place } from './places'
+import { type Place } from './places'
+import { KIND_TEXT, KIND_TINT } from '../../platform/ui/kinds'
 
 /** A module that has its place on the bar before its pages exist (EPIC-12): its badge and name. */
 export function Placeholder({ place }: { place: Place }) {

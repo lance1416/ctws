@@ -6,6 +6,7 @@ import { applyTheme, onSchemeChange, shownScheme } from '../../platform/ui/theme
 import { keyLabel } from '../../platform/keyboard/keys'
 import { Capture } from '../capture'
 import { Breadcrumbs } from './Breadcrumbs'
+import { OfflinePill } from './Online'
 import { UserMenu } from './UserMenu'
 import { WriteFailure } from './WriteFailure'
 
@@ -55,6 +56,7 @@ export function TopBar({
       >
         <PLACE_ICON.keys size={16} aria-hidden="true" />
       </button>
+      <OfflinePill />
       <ThemeSwitch />
       <span className="relative">
         <UserMenu email={email} onLogout={onLogout} />

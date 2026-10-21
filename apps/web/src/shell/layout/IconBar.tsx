@@ -2,7 +2,8 @@ import { Fragment } from 'react'
 import { NavLink } from 'react-router-dom'
 import { KEY } from '../../platform/ui/buttonStyles'
 import { BarCollapseIcon, BarExpandIcon } from '../../platform/ui/icons'
-import { KIND_TEXT, PAGES_BEFORE_THE_LINE, PLACES } from './places'
+import { PAGES_BEFORE_THE_LINE, PLACES } from './places'
+import { KIND_TEXT } from '../../platform/ui/kinds'
 
 /**
  * THE ICON BAR (FR-019): 52 wide, a 36px cell per entry, icons only until the button at the foot

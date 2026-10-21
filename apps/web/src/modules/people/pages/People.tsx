@@ -1,4 +1,4 @@
-import { useSubjectOf } from '../../../shell/layout'
+import { ModuleEmpty, useSubjectOf } from '../../../shell/layout'
 import { type Circle, CIRCLES, type PersonResponse } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -9,7 +9,7 @@ import { NewPersonInput } from '../components/NewPersonInput'
 import { BUTTON } from '../../../platform/ui/buttonStyles'
 import { PeopleHead } from '../components/PeopleViews'
 import { CIRCLE_LABELS } from '../logic/labels'
-import { GoneNotice, useOpenFromUrl } from '../../../shell/detail'
+import { DeletedNotice, useOpenFromUrl } from '../../../shell/detail'
 import { QueryStatus } from '../../../platform/ui/QueryStatus'
 import { HANG } from '../../../platform/ui/hang'
 
@@ -34,7 +34,7 @@ export function People() {
         <NewPersonInput onCreated={(c: PersonResponse) => show(c.id)} />
       </div>
 
-      {gone && <GoneNotice kind="person" />}
+      {gone && openId && <DeletedNotice type="person" id={openId} />}
       <QueryStatus query={people} />
       {/* One list, filtered by circle; nothing is hidden by default. */}
       {/* Less the pills' own `px-2.5`, so their words start on the hang. */}
@@ -60,7 +60,8 @@ export function People() {
         })}
       </div>
 
-      {people.isSuccess && (
+      {people.isSuccess && people.data.length === 0 && <ModuleEmpty kind="person" />}
+      {people.isSuccess && people.data.length > 0 && (
         // Narrower than the task lists, so a person's city stays near their name.
         <div className="mt-3 max-w-[48rem]">
           <PeopleList
