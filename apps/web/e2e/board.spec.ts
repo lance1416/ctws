@@ -61,10 +61,12 @@ test('every task appears once, in its own column, with its parent named', async 
   await makeTask(page, pid, '写变更日志')
   await openBoard(page, pid)
 
-  // FLAT: the parent is a card of its own, beside its children, not a container around them.
-  await expect(column(page, 'todo').locator('[data-board-card]')).toHaveCount(2)
+  // FLAT: the parent is a card of its own, beside its children, not a container around them. It
+  // sits under the status worked out from theirs (FR-038): one step started, so in progress.
+  await expect(column(page, 'todo').locator('[data-board-card]')).toHaveCount(1)
   await expect(column(page, 'done').locator('[data-board-card]')).toHaveCount(1)
-  await expect(column(page, 'in_progress').locator('[data-board-card]')).toHaveCount(1)
+  await expect(column(page, 'in_progress').locator('[data-board-card]')).toHaveCount(2)
+  await expect(column(page, 'in_progress')).toContainText('接入 KaTeX')
   await expect(card(page, '装依赖')).toHaveCount(1)
   // A card is never orphaned from the work it belongs to.
   await expect(card(page, '装依赖')).toContainText('接入 KaTeX')

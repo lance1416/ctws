@@ -59,20 +59,18 @@ test('a section of a page is not a box', async ({ page }) => {
   })
 })
 
-test('the Workbench is a desk, and its cards are tiles on it', async ({ page }) => {
+test('the Workbench is the ground, and its cards are tiles on it', async ({ page }) => {
   await registerFreshUser(page, '/')
   const tile = page.getByRole('main').locator('[data-panel]').first()
   await expect(tile).toBeVisible()
-  expect(await style(page.getByRole('main'))).toMatchObject({ fill: await token(page, 'desk') })
+  // Every page lies on the ground (FR-005); blocks and tiles are panels on it.
+  expect(await style(page.getByRole('main'))).toMatchObject({ fill: await token(page, 'ground') })
   expect(await style(tile)).toEqual({
-    fill: await token(page, 'sheet'),
+    fill: await token(page, 'panel'),
     border: '0px',
     radius: '10px',
     shadow: 'none',
   })
-  // Leaving it gives the page back its sheet.
-  await page.goto('/things')
-  expect(await style(page.getByRole('main'))).toMatchObject({ fill: await token(page, 'sheet') })
 })
 
 test('the sheet floats 12px in from the window and under the header, with a 10px radius', async ({
@@ -89,16 +87,17 @@ test('the sheet floats 12px in from the window and under the header, with a 10px
   expect(s.border).toBe('0px')
 })
 
-test('a float is lifted by a shadow in light, and edged by a rule in dark', async ({ page }) => {
+test('a float is lifted by a ring and a soft fall, in both schemes (tokens.md)', async ({
+  page,
+}) => {
   const light = await openTask(page, 'light')
   // The hairline ring, and the soft fall under it.
-  expect((await style(light)).shadow).toMatch(/0px 0px 0px 1px.*0px 16px 40px -12px/)
+  expect((await style(light)).shadow).toMatch(/0px 0px 0px 1px.*0px 8px 28px 0px/)
 
   await page.emulateMedia({ colorScheme: 'dark' })
-  const rule = await token(page, 'rule')
-  // No fall in dark -- a shadow on a near-black ground is invisible -- only the 1px edge. (The
-  // computed value leads with Tailwind's transparent ring placeholders; the lift is the tail.)
+  // Dark rings it with a visible edge and keeps a deeper fall. (The computed value leads with
+  // Tailwind's transparent ring placeholders; the lift is the tail.)
   const dark = (await style(light)).shadow
-  expect(dark.endsWith(`${rule} 0px 0px 0px 1px`), dark).toBe(true)
-  expect(dark).not.toContain('40px')
+  expect(dark, dark).toContain(`${await token(page, 'float-ring')} 0px 0px 0px 1px`)
+  expect(dark).toContain('0px 8px 28px 0px')
 })

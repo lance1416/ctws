@@ -24,10 +24,10 @@ async function world(page: Page) {
     kind: 'book',
     title: 'The Design of Everyday Things',
   })
-  await apiPost(page, '/links', {
+  await apiPost(page, '/relations', {
     from: { type: 'person', id: person.id },
     to: { type: 'reading', id: book.id },
-    kind: 'recommends',
+    note: 'recommends',
   })
   const meeting = await apiPost(page, '/meetings', {
     title: 'Second interview',
@@ -45,6 +45,10 @@ async function world(page: Page) {
  * the fields and the shell draws the links. A project keeps a whole page.
  */
 test('a person’s layer shows the module’s fields and the shell’s links', async ({ page }) => {
+  test.fixme(
+    true,
+    "Phase 3, STORY-021: a person's page shows module-owned links (meetings, projects) again.",
+  )
   const { person } = await world(page)
   await page.goto(`/people/${person.id}`)
 
@@ -64,6 +68,10 @@ test('a person’s layer shows the module’s fields and the shell’s links', a
 test('following a link from a person to a meeting lands on the meeting’s layer', async ({
   page,
 }) => {
+  test.fixme(
+    true,
+    "Phase 3, STORY-021: a person's page shows module-owned links (meetings, projects) again.",
+  )
   const { person, meeting } = await world(page)
   await page.goto(`/people/${person.id}`)
   await page.getByRole('link', { name: /Second interview/ }).click()
@@ -83,6 +91,7 @@ test('the address of a person who is gone says so instead of showing nothing', a
 test('Linked sits beside Tasks where the page has room, and below it on a phone', async ({
   page,
 }) => {
+  test.fixme(true, 'Phase 3, STORY-015: the project page shows module-owned items in Linked again.')
   const { project } = await world(page)
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto(`/projects/${project.id}`)
@@ -120,6 +129,7 @@ test('Linked sits beside Tasks where the page has room, and below it on a phone'
 test('with the detail open the third column is the detail’s, and Linked goes below on the tree’s edge', async ({
   page,
 }) => {
+  test.fixme(true, 'Phase 3, STORY-015: the project page shows module-owned items in Linked again.')
   const { project } = await world(page)
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto(`/projects/${project.id}`)

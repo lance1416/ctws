@@ -6,6 +6,8 @@ import {
   seedTasks,
   serverTasks,
   startProject,
+  captureBox,
+  openCapture,
 } from './helpers'
 
 const handle = (page: Page, title: string) =>
@@ -213,56 +215,65 @@ test('the ? overlay lists the keys, closes on Escape and on a click outside', as
   await page.keyboard.press('?')
   const dialog = page.getByRole('dialog', { name: 'Keyboard shortcuts' })
   await expect(dialog).toBeVisible()
-  // The keys it must actually name, not merely "a dialog appeared".
-  for (const key of ['/', 'f', '?', 'g t', 'Alt+Enter', 'Shift+Enter', 's', 'x']) {
-    // `.first()`: `s` and `x` are listed twice, once for the tree and once for the today page.
+  // The keys it must actually name (FR-029), each as its own cap, not merely "a dialog appeared".
+  for (const key of ['Ctrl+K', 'C', '?', '[', 'L', 'Alt+Enter', 'Shift+Enter', 's', 'x']) {
+    // `.first()`: a letter is also the second cap of a jump, and `s` and `x` are listed twice.
     await expect(dialog.getByText(key, { exact: true }).first()).toBeVisible()
   }
+  // A key that changed says what it was, for the first release after the redesign.
+  await expect(dialog.getByText('was f', { exact: true })).toBeVisible()
 
   await page.keyboard.press('Escape')
   await expect(dialog).toHaveCount(0)
 
   await page.keyboard.press('?')
   await expect(dialog).toBeVisible()
-  // Outside the panel: the backdrop, at the very top of the viewport.
-  await page.mouse.click(5, 5)
+  // Outside the panel: the scrim, at the very bottom left of the viewport.
+  const { height } = page.viewportSize()!
+  await page.mouse.click(5, height - 5)
   await expect(dialog).toHaveCount(0)
 
   // Typed into a field it is a question mark, not a shortcut.
-  await page.getByLabel('Capture').fill('')
-  await page.getByLabel('Capture').press('?')
+  const box = await openCapture(page)
+  await box.press('?')
   await expect(dialog).toHaveCount(0)
-  await expect(page.getByLabel('Capture')).toHaveValue('?')
+  await expect(box).toHaveValue('?')
 })
 
-test('g chords jump between the four destinations and not while typing', async ({ page }) => {
+test('G jumps to every place on the icon bar, and not while typing (FR-029)', async ({ page }) => {
   await registerFreshUser(page)
-  const inbox = await page.request.get('/api/v1/projects')
-  const { projects } = (await inbox.json()) as { projects: { id: string; name: string }[] }
-  const inboxId = projects.find((p) => p.name === 'Inbox')!.id
 
-  await page.keyboard.press('g')
-  await page.keyboard.press('p')
-  await expect(page).toHaveURL(/\/projects$/)
+  for (const [key, url] of [
+    ['p', /\/projects$/],
+    ['v', /\/review$/],
+    ['e', /\/people$/],
+    ['r', /\/reading$/],
+    ['m', /\/meetings$/],
+    ['o', /\/organisations$/],
+    ['x', /\/communication$/],
+    ['n', /\/notes$/],
+    ['c', /\/calendar$/],
+    ['w', /\/$/],
+    ['t', /\/today$/],
+  ] as const) {
+    await page.keyboard.press('g')
+    await page.keyboard.press(key)
+    await expect(page).toHaveURL(url)
+  }
 
-  await page.keyboard.press('g')
-  await page.keyboard.press('r')
-  await expect(page).toHaveURL(/\/tasks\/review$/)
-
-  await page.keyboard.press('g')
-  await page.keyboard.press('i')
-  await expect(page).toHaveURL(`/projects/${inboxId}`)
-
-  await page.keyboard.press('g')
-  await page.keyboard.press('t')
-  await expect(page).toHaveURL(/\/tasks\/today$/)
+  // The jumps the redesign retired do nothing now.
+  for (const gone of ['i', 'b', 'l']) {
+    await page.keyboard.press('g')
+    await page.keyboard.press(gone)
+    await expect(page).toHaveURL(/\/today$/)
+  }
 
   // In a text field, `g` then `p` is two letters of a word.
-  await page.getByLabel('Capture').fill('')
-  await page.getByLabel('Capture').press('g')
-  await page.getByLabel('Capture').press('p')
-  await expect(page).toHaveURL(/\/tasks\/today$/)
-  await expect(page.getByLabel('Capture')).toHaveValue('gp')
+  const box = await openCapture(page)
+  await box.press('g')
+  await box.press('p')
+  await expect(page).toHaveURL(/\/today$/)
+  await expect(box).toHaveValue('gp')
 })
 
 test('the single-key shortcuts can be turned off, and stay off after a reload', async ({
@@ -274,23 +285,24 @@ test('the single-key shortcuts can be turned off, and stay off after a reload', 
 
   // The switch lives in the overlay, which also has a button: with the keys off, `?` must not be
   // the only way back to the setting that turned them off.
-  await page.getByRole('button', { name: 'Keyboard shortcuts' }).click()
+  await page.getByRole('button', { name: 'Keys', exact: true }).click()
   const toggle = page.getByRole('checkbox', { name: /Single-key shortcuts/ })
   await expect(toggle).toBeChecked()
   await toggle.uncheck()
   await page.keyboard.press('Escape')
 
-  await page.keyboard.press('f')
-  await expect(page.getByRole('combobox', { name: 'Search' })).toHaveCount(0)
   await page.keyboard.press('?')
   await expect(page.getByRole('dialog', { name: 'Keyboard shortcuts' })).toHaveCount(0)
   await page.keyboard.press('g')
   await page.keyboard.press('p')
   await expect(page).toHaveURL(new RegExp(`/projects/${url.split('/').pop()!}`))
-
   await page.getByRole('heading', { name: 'Off' }).click()
-  await page.keyboard.press('/')
-  await expect(page.getByLabel('Capture')).not.toBeFocused()
+  await page.keyboard.press('c')
+  await expect(captureBox(page)).toHaveCount(0)
+  // Ctrl K is not a single key: a modified press is a command, and it still searches.
+  await page.keyboard.press('Control+k')
+  await expect(page.getByRole('combobox', { name: 'Search' })).toBeFocused()
+  await page.keyboard.press('Escape')
 
   // And on a row: `s` does not start the task, but the widget keys still work, because a treeview
   // with no arrow keys and one tab stop would be unreachable.
@@ -306,36 +318,38 @@ test('the single-key shortcuts can be turned off, and stay off after a reload', 
   // Survives a reload: it is stored, not just held in React state.
   await page.reload()
   await expect(page.getByRole('listitem')).toHaveCount(3)
-  await page.keyboard.press('f')
-  await expect(page.getByRole('combobox', { name: 'Search' })).toHaveCount(0)
+  await page.keyboard.press('?')
+  await expect(page.getByRole('dialog', { name: 'Keyboard shortcuts' })).toHaveCount(0)
 
   // And it can be turned back on again through the same button.
-  await page.getByRole('button', { name: 'Keyboard shortcuts' }).click()
+  await page.getByRole('button', { name: 'Keys', exact: true }).click()
   await page.getByRole('checkbox', { name: /Single-key shortcuts/ }).check()
   await page.keyboard.press('Escape')
-  await page.keyboard.press('f')
-  await expect(page.getByRole('combobox', { name: 'Search' })).toBeFocused()
+  await page.keyboard.press('c')
+  await expect(captureBox(page)).toBeFocused()
 })
 
-test('the key after g is the chord’s alone, whether or not it names one', async ({ page }) => {
+test('the key after G or N is the prefix’s alone, whether or not it names one', async ({
+  page,
+}) => {
   await registerFreshUser(page)
-  const inbox = await page.request.get('/api/v1/projects')
-  const { projects } = (await inbox.json()) as { projects: { id: string; name: string }[] }
-  await page
-    .getByRole('navigation', { name: 'Main navigation' })
-    .getByRole('link', { name: 'Inbox' })
-    .click()
-  await expect(page).toHaveURL(`/projects/${projects.find((p) => p.name === 'Inbox')!.id}`)
 
-  // On a project `n` alone opens the New dialog; after `g` it is the jump to People, only that.
+  // `c` alone opens Capture; after `g` it is the jump to Calendar, only that.
   await page.keyboard.press('g')
+  await page.keyboard.press('c')
+  await expect(page).toHaveURL(/\/calendar$/)
+  await expect(captureBox(page)).toHaveCount(0)
+  // `?` alone is the key list; after `g` it names no jump, and does nothing.
+  await page.keyboard.press('g')
+  await page.keyboard.press('?')
+  await expect(page.getByRole('dialog', { name: 'Keyboard shortcuts' })).toHaveCount(0)
+  await expect(page).toHaveURL(/\/calendar$/)
+  // `N` then `T` makes a task from anywhere: the New task dialog, into the inbox.
   await page.keyboard.press('n')
-  await expect(page).toHaveURL(/\/people$/)
-  await expect(page.getByRole('dialog')).toHaveCount(0)
-  // `/` alone goes to Capture; after `g` it names no jump, and does nothing.
-  await page.keyboard.press('g')
-  await page.keyboard.press('/')
-  await expect(page.getByLabel('Capture')).not.toBeFocused()
-  await page.keyboard.press('/')
-  await expect(page.getByLabel('Capture')).toBeFocused()
+  await page.keyboard.press('t')
+  await expect(page.getByRole('dialog', { name: /New task/ })).toBeVisible()
+  await page.keyboard.press('Escape')
+  // And `c` alone still captures.
+  await page.keyboard.press('c')
+  await expect(captureBox(page)).toBeFocused()
 })

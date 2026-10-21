@@ -167,9 +167,11 @@ test('the delete question: Cancel on the left, the confirm on the right', async 
   await page.getByRole('listitem').filter({ hasText: 'Ship the importer' }).first().click()
   const pane = page.getByRole('dialog', { name: 'Task details' })
   await pane.getByRole('button', { name: 'Delete task' }).click()
-  const confirm = pane.getByRole('button', { name: 'Confirm delete' })
+  // The question is a small dialog of its own, over the pane (FR-035, handoff §7).
+  const ask = page.getByRole('alertdialog')
+  const confirm = ask.getByRole('button', { name: /^Delete/ })
   await expect(confirm).toBeEnabled()
-  await leftOf(pane.getByRole('button', { name: 'Cancel', exact: true }), confirm)
+  await leftOf(ask.getByRole('button', { name: 'Cancel', exact: true }), confirm)
 })
 
 /** The computed colour of a token, as `getComputedStyle` reports a fill. */
@@ -184,6 +186,8 @@ const token = (page: Page, name: string) =>
   }, name)
 
 const fill = (l: Locator) => l.evaluate((el) => getComputedStyle(el).backgroundColor)
+/** A destroying answer is framed in red, not filled (artboard 3). */
+const edge = (l: Locator) => l.evaluate((el) => getComputedStyle(el).borderTopColor)
 
 async function meetingIn(page: Page, rrule: string | null) {
   await registerFreshUser(page)
@@ -210,11 +214,11 @@ test('cancelling a series asks like delete: red answers, Keep it to leave', asyn
   await expect(ask).toBeVisible()
   // No box of its own: the pane's plane shows through, as it does behind the delete question.
   expect(await fill(ask)).toBe('rgba(0, 0, 0, 0)')
-  const danger = await token(page, 'danger')
+  const stop = await token(page, 'stop')
   const one = ask.getByRole('button', { name: 'Just this one' })
   const later = ask.getByRole('button', { name: 'This and all later' })
-  expect(await fill(one)).toBe(danger)
-  expect(await fill(later)).toBe(danger)
+  expect(await edge(one)).toBe(stop)
+  expect(await edge(later)).toBe(stop)
   const keep = ask.getByRole('button', { name: 'Keep it' })
   // The way out comes first: to the left on one line, or on the line above when the pair of
   // answers wraps as one (a 22rem pane has no room for all three).
@@ -226,11 +230,12 @@ test('cancelling a series asks like delete: red answers, Keep it to leave', asyn
 test('a one-off meeting cancels with Cancel meeting, or Keep it to leave', async ({ page }) => {
   const pane = await meetingIn(page, null)
   await pane.getByRole('button', { name: 'Cancel meeting' }).click()
-  const confirm = pane.getByRole('button', { name: 'Cancel meeting' })
+  const ask = page.getByRole('alertdialog')
+  const confirm = ask.getByRole('button', { name: 'Cancel meeting' })
   await expect(confirm).toBeEnabled()
-  expect(await fill(confirm)).toBe(await token(page, 'danger'))
-  await leftOf(pane.getByRole('button', { name: 'Keep it' }), confirm)
-  await expect(pane.getByRole('button', { name: 'Confirm delete' })).toHaveCount(0)
+  expect(await edge(confirm)).toBe(await token(page, 'stop'))
+  await leftOf(ask.getByRole('button', { name: 'Keep it' }), confirm)
+  await expect(ask.getByRole('button', { name: /^Delete/ })).toHaveCount(0)
 })
 
 test('editing a series asks which occurrences next to Save, not below', async ({ page }) => {
@@ -337,7 +342,7 @@ test('Today: one gap under In progress, however tall the right column is', async
   // A tall right column: enough overdue rows to outgrow In progress and Today together.
   for (let i = 0; i < 8; i++)
     await makeTask(page, pid, `Overdue ${i}`, { dueAt: `${dayOffset(-2)}T09:00:00.000Z` })
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   const doing = page.getByRole('region', { name: 'In progress' })
   const today = page.getByRole('region', { name: 'Today', exact: true })
   const overdue = page.getByRole('region', { name: 'Overdue' })

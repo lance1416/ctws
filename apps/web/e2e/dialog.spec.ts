@@ -6,6 +6,8 @@ import {
   registerFreshUser,
   serverTasks,
   sidewaysScroll,
+  captureBox,
+  openCapture,
 } from './helpers'
 import { dayOffset, ymd } from './days'
 
@@ -155,11 +157,12 @@ test('Escape closes the dialog and hands focus back to whatever opened it', asyn
   await expect(openButton(page)).toBeFocused()
   expect(writes).toEqual([])
 
-  // Opened from a task row by `n`, focus goes back to THAT row rather than to the button or, worse,
+  // Opened from a task row by N T, focus goes back to THAT row rather than to the button or, worse,
   // to <body> (WCAG 2.4.3).
   const handle = page.getByRole('button', { name: 'Task: 放在我下面', exact: true })
   await handle.focus()
   await page.keyboard.press('n')
+  await page.keyboard.press('t')
   await expect(dialog(page)).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(dialog(page)).toHaveCount(0)
@@ -192,38 +195,41 @@ test('an empty title creates nothing and says so', async ({ page }) => {
   expect(writes).toEqual([])
 })
 
-test('`n` opens the dialog, obeys the off switch and is a letter while typing', async ({
+test('N T opens the dialog, obeys the off switch and is two letters while typing', async ({
   page,
 }) => {
   await seed(page)
 
-  // Clicks land on the Tasks block's heading rather than the page's <h1>: the project title is
-  // an editable control, so clicking it opens a text field and the next keypress is
-  // typing. A block heading is the neutral spot this needs.
-  // Not while typing: `n` is a letter in the capture box.
-  await page.getByLabel('Capture').fill('')
-  await page.getByLabel('Capture').press('n')
+  // Not while typing: `n` and `t` are letters in the capture box.
+  const box = await openCapture(page)
+  await box.press('n')
+  await box.press('t')
   await expect(dialog(page)).toHaveCount(0)
-  await expect(page.getByLabel('Capture')).toHaveValue('n')
+  await expect(box).toHaveValue('nt')
+  await box.press('Escape')
 
+  // Clicks land on the Tasks block's heading rather than the page's <h1>: the project title is
+  // an editable control. A block heading is the neutral spot this needs.
   await page.getByRole('heading', { name: 'Tasks', exact: true }).click()
   await page.keyboard.press('n')
+  await page.keyboard.press('t')
   await expect(dialog(page)).toBeVisible()
   await page.keyboard.press('Escape')
 
-  // It is a single-key shortcut, so the off switch governs it like every other one.
-  await page.getByRole('button', { name: 'Keyboard shortcuts' }).click()
+  // A single-key shortcut, so the off switch governs it like every other one.
+  await page.getByRole('button', { name: 'Keys', exact: true }).click()
   await page.getByRole('checkbox', { name: /Single-key shortcuts/ }).uncheck()
   await page.keyboard.press('Escape')
   await page.getByRole('heading', { name: 'Tasks', exact: true }).click()
   await page.keyboard.press('n')
+  await page.keyboard.press('t')
   await expect(dialog(page)).toHaveCount(0)
   // And the button still is the way in, which is why a key being off is not a dead end.
   await openButton(page).click()
   await expect(dialog(page)).toBeVisible()
 })
 
-test('the quick paths are untouched: the new-task box and / behave as they did', async ({
+test('the quick paths are untouched: the new-task box and capture behave as they did', async ({
   page,
 }) => {
   const { pid } = await seed(page)
@@ -240,16 +246,16 @@ test('the quick paths are untouched: the new-task box and / behave as they did',
   await expect(dialog(page)).toHaveCount(0)
   await expect(page.getByRole('listitem')).toHaveCount(2)
 
-  // `/` still jumps to capture, and capture still files to the inbox with its landing line.
+  // `c` opens capture, and capture still files to the inbox with its landing line.
   await page.getByRole('heading', { name: 'Tasks', exact: true }).click()
-  await page.keyboard.press('/')
-  await expect(page.getByLabel('Capture')).toBeFocused()
+  await page.keyboard.press('c')
+  await expect(captureBox(page)).toBeFocused()
   const captured = page.waitForResponse((r) => isCreate(r.request().method(), r.url()) && r.ok())
-  await page.getByLabel('Capture').fill('扔进收件箱')
-  await page.getByLabel('Capture').press('Enter')
+  await captureBox(page).fill('扔进收件箱')
+  await captureBox(page).press('Enter')
   await captured
   await expect(page.getByRole('status').filter({ hasText: 'Added to' })).toBeVisible()
-  await expect(page.getByLabel('Capture')).toHaveValue('')
+  await expect(captureBox(page)).toHaveValue('')
 
   // The inbox line did not go into this project.
   const listed = await serverTasks(page, pid)
@@ -291,13 +297,13 @@ test('the dialog fits 375px with no horizontal scroll', async ({ page }) => {
  * The steal happens AFTER the search box has taken focus, so "focused" alone can be satisfied by
  * the state about to be destroyed; typing into it afterwards is the proof.
  */
-test('closing the ? list and pressing f leaves focus in the search box', async ({ page }) => {
+test('closing the ? list and pressing Ctrl K leaves focus in the search box', async ({ page }) => {
   await seed(page)
 
-  await page.getByRole('button', { name: 'Keyboard shortcuts' }).click()
+  await page.getByRole('button', { name: 'Keys', exact: true }).click()
   await expect(page.getByRole('dialog', { name: 'Keyboard shortcuts' })).toBeVisible()
   await page.keyboard.press('Escape')
-  await page.keyboard.press('f')
+  await page.keyboard.press('Control+k')
   const search = page.getByRole('combobox', { name: 'Search' })
   await expect(search).toBeVisible()
   await expect(search).toBeFocused()
@@ -319,13 +325,13 @@ test('the ? overlay opens, lists the keys, closes two ways, restores focus and h
   const help = page.getByRole('dialog', { name: 'Keyboard shortcuts' })
   await expect(help).toBeVisible()
   // It says every key, including the project page's own.
-  for (const key of ['/', 'f', '?', 'n', 'g t', 'Alt+Enter', 's', 'x']) {
+  for (const key of ['Ctrl+K', 'C', '?', 'N', 'G', 'Alt+Enter', 's', 'x']) {
     await expect(help.getByText(key, { exact: true }).first()).toBeVisible()
   }
 
-  // The document-level single keys stand down under an open layer: `f` here would otherwise stack
+  // The document-level keys stand down under an open layer: Ctrl K here would otherwise stack
   // a search dialog on top of the list.
-  await page.keyboard.press('f')
+  await page.keyboard.press('Control+k')
   // By attribute, NOT by role: a modal layer marks the rest of the page `aria-hidden`, so a
   // search dialog stacked underneath is invisible to `getByRole` -- the role query passes
   // precisely in the case this is here to catch.
@@ -338,12 +344,12 @@ test('the ? overlay opens, lists the keys, closes two ways, restores focus and h
   await expect(page.getByRole('button', { name: 'New…', exact: true })).toBeFocused()
 
   // 3. A click outside closes it.
-  await page.getByRole('button', { name: 'Keyboard shortcuts' }).click()
+  await page.getByRole('button', { name: 'Keys', exact: true }).click()
   await expect(help).toBeVisible()
   await page.mouse.click(5, 5)
   await expect(help).toHaveCount(0)
   // 4 again, from the toolbar button this time.
-  await expect(page.getByRole('button', { name: 'Keyboard shortcuts' })).toBeFocused()
+  await expect(page.getByRole('button', { name: 'Keys', exact: true })).toBeFocused()
 
   // 5. The single-key off switch is in it, works, and comes back on.
   await page.keyboard.press('?')
@@ -354,7 +360,7 @@ test('the ? overlay opens, lists the keys, closes two ways, restores focus and h
   await page.getByRole('heading', { name: 'Tasks', exact: true }).click()
   await page.keyboard.press('?')
   await expect(help).toHaveCount(0)
-  await page.getByRole('button', { name: 'Keyboard shortcuts' }).click()
+  await page.getByRole('button', { name: 'Keys', exact: true }).click()
   await help.getByRole('checkbox', { name: /Single-key shortcuts/ }).check()
   await page.keyboard.press('Escape')
   await page.getByRole('heading', { name: 'Tasks', exact: true }).click()
@@ -376,11 +382,13 @@ test('a task made in the New dialog starts as to do, like one typed into the lis
 
 test('the ? list says what the off switch silences and what → does', async ({ page }) => {
   await seed(page)
-  await page.getByRole('button', { name: 'Keyboard shortcuts' }).click()
+  await page.getByRole('button', { name: 'Keys', exact: true }).click()
   const help = page.getByRole('dialog', { name: 'Keyboard shortcuts' })
-  // `n` (New) is a single key too, and the switch stops it.
+  // The N keys are single keys too, and the switch stops them.
   await expect(help.getByRole('checkbox', { name: /Single-key shortcuts/ })).toBeVisible()
-  await expect(help).toContainText('the g chords, n, s, x, j and k stop responding')
+  await expect(help).toContainText(
+    'With this off, c, l, ?, [, the G jumps, the N keys that make things, s, x, j and k stop responding',
+  )
   // → opens a collapsed row; only an open one goes on to its first child.
   await expect(help).toContainText('once expanded, → goes to the first child')
   // The tree's keys are listed before Today's.

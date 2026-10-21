@@ -14,6 +14,7 @@ import {
   startProject,
   submitCreate,
   taskMoved,
+  navLink,
 } from './helpers'
 
 type RouteUrl = Parameters<Page['route']>[0]
@@ -190,10 +191,7 @@ test('a move shows at once, and a rejected one rolls back visibly', async ({ pag
 test('a captured task shows up in the inbox tree', async ({ page }) => {
   await registerFreshUser(page)
   await submitCreate(page, 'Capture…', '买咩6')
-  await page
-    .getByRole('navigation', { name: 'Main navigation' })
-    .getByRole('link', { name: 'Projects' })
-    .click()
+  await navLink(page, 'Projects').click()
   await openProject(page, 'Inbox')
   await expect(page.getByRole('listitem').filter({ hasText: '买咩6' })).toBeVisible()
 })
@@ -496,10 +494,7 @@ async function holdFirstListFetch(page: Page, glob: RouteUrl = TASK_LIST) {
 // refetch after the create has to start a NEW request rather than be absorbed by the stale one.
 test('a task created while the project is still loading appears', async ({ page }) => {
   await registerFreshUser(page)
-  await page
-    .getByRole('navigation', { name: 'Main navigation' })
-    .getByRole('link', { name: 'Projects' })
-    .click()
+  await navLink(page, 'Projects').click()
   await submitCreate(page, 'New project', 'P')
 
   const { release, heldStale } = await holdFirstListFetch(page)
@@ -515,10 +510,7 @@ test('a task created while the project is still loading appears', async ({ page 
 
 test('a capture made while the inbox is still loading appears', async ({ page }) => {
   await registerFreshUser(page)
-  await page
-    .getByRole('navigation', { name: 'Main navigation' })
-    .getByRole('link', { name: 'Projects' })
-    .click()
+  await navLink(page, 'Projects').click()
   await expect(page.getByRole('main').getByText('Inbox')).toBeVisible()
 
   const { release, heldStale } = await holdFirstListFetch(page)

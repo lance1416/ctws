@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { makeProject, registerFreshUser } from './helpers'
+import { makeProject, registerFreshUser, captureBox, openCapture } from './helpers'
 
 /**
  * ENTER WHILE AN IME IS COMPOSING IS NOT A SUBMIT.
@@ -62,11 +62,12 @@ const answered = (page: Page, method: string, path: RegExp) =>
 test('committing English out of an IME does not file the capture', async ({ page }) => {
   await registerFreshUser(page)
   const writes = recordWrites(page)
-  await commitWithIme(page, 'input[aria-label="Capture"]', 'hello')
-  await expect(page.getByLabel('Capture')).toHaveValue('hello')
+  await openCapture(page)
+  await commitWithIme(page, 'textarea[aria-label="Capture"]', 'hello')
+  await expect(captureBox(page)).toHaveValue('hello')
 
   const filed = answered(page, 'POST', /^\/api\/v1\/tasks$/)
-  await page.getByLabel('Capture').press('Enter')
+  await captureBox(page).press('Enter')
   await filed
   await expect(page.getByText('Added to')).toBeVisible()
   expect(writes).toEqual(['POST /api/v1/tasks'])

@@ -7,6 +7,7 @@ import {
   submitCreate,
   taskPatched,
   WEB,
+  navLink,
 } from './helpers'
 import { MONTHS } from './days'
 
@@ -59,10 +60,7 @@ test('today means today in the account zone, for the list and the caption alike'
   await registerFreshUser(page)
   await submitCreate(page, 'Capture…', '按账户时区排的')
 
-  await page
-    .getByRole('navigation', { name: 'Main navigation' })
-    .getByRole('link', { name: 'Projects' })
-    .click()
+  await navLink(page, 'Projects').click()
   await openProject(page, 'Inbox')
   await page.getByRole('listitem').filter({ hasText: '按账户时区排的' }).click()
   await editDetail(page)
@@ -96,10 +94,7 @@ test('the runner’s today is some OTHER day, and the page says which', async ({
   await registerFreshUser(page)
   await submitCreate(page, 'Capture…', '按进程时区排的')
 
-  await page
-    .getByRole('navigation', { name: 'Main navigation' })
-    .getByRole('link', { name: 'Projects' })
-    .click()
+  await navLink(page, 'Projects').click()
   await openProject(page, 'Inbox')
   await page.getByRole('listitem').filter({ hasText: '按进程时区排的' }).click()
   await editDetail(page)
@@ -179,7 +174,7 @@ test('a deadline inside the account day counts as today on another UTC date', as
       new URL(r.url()).pathname === '/api/v1/tasks' &&
       new URL(r.url()).searchParams.get('view') === 'today',
   )
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   await listed
 
   // The server picks the segment by comparing this instant against the account day's bounds. A

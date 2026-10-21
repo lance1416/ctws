@@ -3,10 +3,8 @@ import { apiPost, registerFreshUser } from './helpers'
 import { dayOffset } from './days'
 
 /**
- * SAYING THAT TWO THINGS ARE CONNECTED, from the interface.
- *
- * "This book is the one Ying recommended" is written from the app itself, not only from a module's
- * own field.
+ * SAYING THAT TWO THINGS ARE CONNECTED, from the interface (FR-027): one action on anything, the
+ * search box as its picker, and one optional line of why.
  */
 const picker = (page: Page) => page.getByRole('dialog').filter({ hasText: 'Link to' })
 
@@ -20,41 +18,46 @@ async function world(page: Page) {
   return { person, book }
 }
 
-test('a book can be marked as the one someone recommended', async ({ page }) => {
+test('a book can be linked to the person who recommended it, with a line of why', async ({
+  page,
+}) => {
   const { person, book } = await world(page)
   await page.goto(`/people/${person.id}`)
   await expect(page.getByRole('region', { name: 'Linked' })).toContainText('Nothing linked yet')
 
   await page.getByRole('button', { name: '+ Link' }).click()
-  await picker(page).getByLabel('Search').fill('Everyday')
+  await picker(page).getByRole('combobox', { name: 'Search' }).fill('Everyday')
   await picker(page)
-    .getByRole('button', { name: /The Design of Everyday Things/ })
+    .getByRole('option', { name: /The Design of Everyday Things/ })
     .click()
 
-  // The SECOND question, which cannot be guessed: a person and a book can be joined two ways.
-  await expect(page.getByRole('dialog').filter({ hasText: 'How is it related?' })).toBeVisible()
+  // The one optional line; Enter sends it, and would send without it too.
+  const why = page.getByRole('textbox', { name: 'Why' })
+  await expect(why).toBeFocused()
   const made = page.waitForResponse(
-    (r) => r.request().method() === 'POST' && /\/api\/v1\/links$/.test(r.url()),
+    (r) => r.request().method() === 'POST' && /\/api\/v1\/relations$/.test(r.url()),
   )
-  await page.getByRole('button', { name: 'recommended', exact: true }).click()
+  await why.fill('she recommended it')
+  await why.press('Enter')
   expect((await made).request().postDataJSON()).toEqual({
     from: { type: 'person', id: person.id },
     to: { type: 'reading', id: book.id },
-    kind: 'recommends',
+    note: 'she recommended it',
   })
 
   const linked = page.getByRole('region', { name: 'Linked' })
   await expect(linked.getByRole('region', { name: 'Reading' })).toContainText(
     'The Design of Everyday Things',
   )
+  await expect(linked).toContainText('she recommended it')
 })
 
 test('the edge reads from both ends, written once', async ({ page }) => {
   const { person, book } = await world(page)
-  await apiPost(page, '/links', {
+  await apiPost(page, '/relations', {
     from: { type: 'person', id: person.id },
     to: { type: 'reading', id: book.id },
-    kind: 'recommends',
+    note: 'recommends',
   })
 
   // Nothing was written on the BOOK, and the book's module has no page of its own -- so this is
@@ -62,7 +65,8 @@ test('the edge reads from both ends, written once', async ({ page }) => {
   await page.goto(`/people/${person.id}`)
   const row = page.getByRole('region', { name: 'Reading' })
   await expect(row).toContainText('The Design of Everyday Things')
-  await expect(row).toContainText('recommended')
+  // Its line of why, read on this end as on the other.
+  await expect(row).toContainText('recommends')
 })
 
 test('an edge is taken off from either end, whichever way it was written', async ({ page }) => {
@@ -70,21 +74,24 @@ test('an edge is taken off from either end, whichever way it was written', async
   // the meeting they attend runs IN -- and unlinking has to name the ends the way the row has
   // them, or it deletes nothing and the row comes back on the next read.
   const { person, book } = await world(page)
-  await apiPost(page, '/links', {
+  await apiPost(page, '/relations', {
     from: { type: 'person', id: person.id },
     to: { type: 'reading', id: book.id },
-    kind: 'recommends',
+    note: 'recommends',
   })
-  await apiPost(page, '/meetings', {
+  const meeting = await apiPost(page, '/meetings', {
     title: 'Second interview',
     startsLocal: `${dayOffset(5)}T21:00`,
     timeZone: 'America/Toronto',
     durationMinutes: 60,
-    attendeeIds: [person.id],
+  })
+  await apiPost(page, '/relations', {
+    from: { type: 'meeting', id: meeting.meetingId },
+    to: { type: 'person', id: person.id },
   })
 
   await page.goto(`/people/${person.id}`)
-  // INCOMING: the guest list was written on the meeting.
+  // INCOMING: this one was written from the meeting's end.
   await page.getByRole('button', { name: 'Unlink Second interview' }).click()
   await expect(page.getByRole('region', { name: 'Meetings' })).toHaveCount(0)
   // OUTGOING: the recommendation was written here.
@@ -99,16 +106,16 @@ test('an edge is taken off from either end, whichever way it was written', async
 test('an edge can be taken off again, and the one a module owns cannot', async ({ page }) => {
   const { person, book } = await world(page)
   const project = await apiPost(page, '/projects', { name: 'Job hunt' })
-  await apiPost(page, '/links', {
+  await apiPost(page, '/relations', {
     from: { type: 'person', id: person.id },
     to: { type: 'reading', id: book.id },
-    kind: 'recommends',
+    note: 'recommends',
   })
   await apiPost(page, '/tasks', { projectId: project.id, title: 'Rewrite the CV', parentId: null })
 
   await page.goto(`/people/${person.id}`)
   const gone = page.waitForResponse(
-    (r) => r.request().method() === 'DELETE' && /\/api\/v1\/links\/[^/]+$/.test(r.url()),
+    (r) => r.request().method() === 'DELETE' && /\/api\/v1\/relations\/[^/]+$/.test(r.url()),
   )
   await page.getByRole('button', { name: 'Unlink The Design of Everyday Things' }).click()
   await gone
@@ -133,7 +140,7 @@ test('the picker offers every kind of thing, and never the object itself', async
 
   await page.goto(`/people/${person.id}`)
   await page.getByRole('button', { name: '+ Link' }).click()
-  const list = picker(page).getByRole('listitem')
+  const list = picker(page).getByRole('option')
   // One box, four kinds of thing, each saying which it is -- two titles can read the same.
   await expect(list.filter({ hasText: 'Second interview' })).toContainText('Meeting')
   await expect(list.filter({ hasText: 'Job hunt' })).toContainText('Project')
@@ -153,11 +160,12 @@ test('a task can be linked to a person, and both ends show the link', async ({ p
   await expect(pane.getByRole('region', { name: 'Linked' })).toContainText('Nothing linked yet')
 
   await pane.getByRole('button', { name: '+ Link' }).click()
-  await picker(page).getByLabel('Search').fill('Ying')
+  await picker(page).getByRole('combobox', { name: 'Search' }).fill('Ying')
   await picker(page)
-    .getByRole('button', { name: /Ying Chen/ })
+    .getByRole('option', { name: /Ying Chen/ })
     .click()
-  await page.getByRole('button', { name: 'about', exact: true }).click()
+  // No line of why: Enter skips it.
+  await page.getByRole('textbox', { name: 'Why' }).press('Enter')
 
   await expect(pane.getByRole('region', { name: 'Linked' })).toContainText('Ying Chen')
 
@@ -202,10 +210,10 @@ test('a task linked to a person opens on its own sheet, and Back returns to the 
   const { person } = await world(page)
   const project = await apiPost(page, '/projects', { name: '找工作' })
   const task = await apiPost(page, '/tasks', { title: '准备一面', projectId: project.id })
-  await apiPost(page, '/links', {
+  await apiPost(page, '/relations', {
     from: { type: 'task', id: task.id },
     to: { type: 'person', id: person.id },
-    kind: 'about',
+    note: 'about',
   })
   await page.goto(`/people/${person.id}`)
   const personPane = page.getByRole('dialog', { name: 'People' })
@@ -269,8 +277,8 @@ test('an address that is no task id says so, and asks the server nothing', async
 
 test('the task pages still answer on their own addresses', async ({ page }) => {
   await registerFreshUser(page)
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   await expect(page.locator('#today-heading')).toBeVisible()
-  await page.goto('/tasks/review')
+  await page.goto('/review')
   await expect(page.getByRole('heading', { level: 1, name: 'Review' })).toBeVisible()
 })

@@ -110,7 +110,7 @@ for (const where of ['Today', 'Done'] as const) {
     const fields = where === 'Today' ? { scheduledOn: today } : { status: 'done' }
     await makeTask(page, pid, 'First task', fields)
     await makeTask(page, pid, 'Second task', fields)
-    await page.goto(where === 'Today' ? '/tasks/today' : '/tasks/review?view=done')
+    await page.goto(where === 'Today' ? '/today' : '/review?view=done')
 
     await page.getByRole('main').getByText('First task').click()
     const pane = page.getByRole('dialog', { name: 'Task details' })

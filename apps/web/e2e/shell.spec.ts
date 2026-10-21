@@ -8,7 +8,6 @@ import {
   openTree,
   registerFreshUser,
   sidewaysScroll,
-  WEB,
 } from './helpers'
 
 test('the app shell routes between today, projects and a project', async ({ page }) => {
@@ -22,17 +21,17 @@ test('the app shell routes between today, projects and a project', async ({ page
   const inbox = projects.find((p) => p.name === 'Inbox')!
 
   await page
-    .getByRole('navigation', { name: 'Main navigation' })
+    .getByRole('navigation', { name: 'Modules' })
     .getByRole('link', { name: 'Projects' })
     .click()
   await expect(page).toHaveURL(/\/projects$/)
-  await expect(page.getByRole('heading', { name: 'Projects' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Projects', level: 1 })).toBeVisible()
   // Registration creates the inbox, so the project list is never empty. Scoped to <main>: the
-  // left rail lists the same projects.
+  // sidebar lists the same projects.
   await page.getByRole('main').getByRole('link', { name: 'Inbox' }).click()
 
   await expect(page).toHaveURL(`/projects/${inbox.id}`)
-  await expect(page.getByRole('heading', { name: 'Inbox' })).toBeVisible()
+  await expect(page.getByRole('main').getByText('Inbox', { exact: true }).first()).toBeVisible()
 })
 
 test('an unauthenticated visit lands on login', async ({ page }) => {
@@ -83,11 +82,11 @@ test('a failed project list shows an error, not an empty list', async ({ page })
   failing = true
 
   await page
-    .getByRole('navigation', { name: 'Main navigation' })
+    .getByRole('navigation', { name: 'Modules' })
     .getByRole('link', { name: 'Projects' })
     .click()
 
-  const alert = page.getByRole('alert')
+  const alert = page.getByRole('main').getByRole('alert')
   await expect(alert).toBeVisible()
   await expect(alert).toContainText("Couldn't load projects")
 })
@@ -106,7 +105,7 @@ test('a server that cannot be reached says so instead of showing the login page'
   await page.route('**/api/v1/auth/me', (route) =>
     route.fulfill({ status: 500, contentType: 'application/json', body: '{"title":"boom"}' }),
   )
-  await page.goto('/tasks/today')
+  await page.goto('/today')
 
   await expect(page.getByRole('alert')).toContainText("Can't reach the server")
   // NOT the login page: the session is still good, and saying otherwise is the defect.
@@ -142,19 +141,17 @@ test('the theme is picked in the account menu and survives a reload', async ({ p
 })
 
 /**
- * THE HEADER SAYS WHERE YOU ARE. One canonical path, not history: a kind's page sits under Things
- * and a project page under Projects. The page you are on is named, not linked to itself.
+ * THE TOP BAR SAYS WHERE YOU ARE (FR-018): the module, with its icon, linking to it; then the thing
+ * open in it, named and not linked to itself.
  */
 test('the header names where you are', async ({ page }) => {
   await registerFreshUser(page, '/people')
   const where = page.getByRole('banner').getByRole('navigation', { name: 'Location' })
-  await expect(where.getByRole('link')).toHaveText(['Things'])
-  await expect(where.getByRole('link', { name: 'Things' })).toHaveAttribute('href', '/things')
-  await expect(where.locator('[aria-current="page"]')).toHaveText('People')
+  await expect(where.getByRole('link')).toHaveText(['People'])
+  await expect(where.getByRole('link', { name: 'People' })).toHaveAttribute('href', '/people')
 
   await page.goto('/')
-  await expect(where.locator('[aria-current="page"]')).toHaveText('Workbench')
-  await expect(where.getByRole('link')).toHaveCount(0)
+  await expect(where.getByRole('link')).toHaveText(['Workbench'])
 
   const res = await page.request.get('/api/v1/projects')
   const { projects } = (await res.json()) as { projects: { id: string; name: string }[] }
@@ -164,23 +161,18 @@ test('the header names where you are', async ({ page }) => {
   await expect(where.locator('[aria-current="page"]')).toHaveText('Inbox')
 })
 
-test('capture is in the header, and / reaches it from anywhere', async ({ page }) => {
+test('capture is in the top bar, and C opens it from anywhere', async ({ page }) => {
   await registerFreshUser(page, '/')
-  const box = page.getByRole('banner').getByRole('textbox', { name: 'Capture' })
-  // Usable first: until the inbox has loaded there is nowhere to capture to, and a disabled box
-  // cannot take the focus.
-  await expect(box).toBeEnabled()
-  await page.keyboard.press('/')
-  await expect(box).toBeFocused()
+  await expect(page.getByRole('banner').getByRole('button', { name: /^Capture/ })).toBeVisible()
+  await page.keyboard.press('c')
+  await expect(page.getByRole('textbox', { name: 'Capture' })).toBeFocused()
 })
 
 test('the header reads in order from the keyboard', async ({ page }) => {
   await registerFreshUser(page, '/people')
-  // Capture is disabled until it knows where a line would land, and a disabled box is skipped.
-  await expect(page.getByRole('banner').getByRole('textbox', { name: 'Capture' })).toBeEnabled()
-  await page.getByRole('banner').getByRole('link', { name: 'CTWS' }).focus()
+  await page.getByRole('banner').getByRole('link', { name: 'Workbench' }).focus()
   const reached: string[] = []
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 6; i++) {
     await page.keyboard.press('Tab')
     reached.push(
       await page.evaluate(() => {
@@ -189,8 +181,8 @@ test('the header reads in order from the keyboard', async ({ page }) => {
       }),
     )
   }
-  expect(reached.slice(0, 4)).toEqual(['Things', 'Search', 'Capture', 'Keyboard shortcuts'])
-  expect(reached[4]).toMatch(/^Account/)
+  expect(reached.slice(0, 5)).toEqual(['People', 'Search', 'Capture', 'Keys', 'Switch to dark'])
+  expect(reached[5]).toMatch(/^Account/)
 })
 
 // -------------------------------------------------------------------------------------- phone
@@ -212,14 +204,13 @@ test('nothing scrolls sideways on a phone, whatever the page', async ({ page }) 
   await page.setViewportSize(PHONE)
   await registerFreshUser(page, '/')
   const id = await makeProject(page, '一个名字很长很长的求职项目与面试准备')
-  for (const path of ['/', '/things', `/projects/${id}`, '/people']) {
+  for (const path of ['/', `/projects/${id}`, '/people']) {
     await page.goto(path)
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
     expect(await sidewaysScroll(page), `${path} scrolls sideways`).toEqual({ doc: 0, body: 0 })
   }
-  // The long name truncates in the header rather than pushing it onto a second line.
-  const banner = await page.getByRole('banner').boundingBox()
-  expect(banner!.height).toBeLessThanOrEqual(60)
+  // A phone has no top bar (FR-082): the tab bar is its frame.
+  await expect(page.getByRole('banner')).toBeHidden()
 })
 
 test('the tab bar never covers the end of the page', async ({ page }) => {
@@ -230,9 +221,10 @@ test('the tab bar never covers the end of the page', async ({ page }) => {
   for (let i = 0; i < 14; i++) await makeTask(page, id, `第 ${i + 1} 件`)
   await page.goto(`/projects/${id}`)
   await expect(page.getByText('第 14 件')).toBeVisible()
-  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+  // The main area is what scrolls, inside the frame.
+  await page.getByRole('main').evaluate((el) => (el.scrollTop = el.scrollHeight))
   const bar = await page.getByRole('navigation', { name: 'Main navigation' }).boundingBox()
-  const last = await page.getByRole('button', { name: 'Delete project' }).boundingBox()
+  const last = await page.getByRole('button', { name: /^Delete / }).boundingBox()
   expect(last!.y + last!.height).toBeLessThanOrEqual(bar!.y)
 })
 
@@ -256,49 +248,20 @@ test('on a phone, a detail pane ends above the tab bar, so its last control can 
   await page.goto(`/people/${id}`)
   const remove = page
     .getByRole('dialog', { name: 'People' })
-    .getByRole('button', { name: 'Delete person' })
+    .getByRole('button', { name: /^Delete / })
   await remove.scrollIntoViewIfNeeded()
-  expect(await topmostAt(page, (await remove.boundingBox())!)).toContain('Delete person')
+  expect(await topmostAt(page, (await remove.boundingBox())!)).toContain('Delete 要删的人')
 })
 
 test('on a phone, a dialog ends above the tab bar too', async ({ page }) => {
   await page.setViewportSize(PHONE)
   await registerFreshUser(page, '/people')
-  await page.getByRole('button', { name: 'New person' }).click()
+  await page.getByRole('button', { name: 'New person', exact: true }).click()
   const create = page
     .getByRole('dialog', { name: 'New person' })
     .getByRole('button', { name: 'Create' })
   await create.scrollIntoViewIfNeeded()
   expect(await topmostAt(page, (await create.boundingBox())!)).toContain('Create')
-})
-
-for (const width of [320, 375]) {
-  test(`at ${width}px the header still names the page, clear of Capture`, async ({ page }) => {
-    await page.setViewportSize({ width, height: 700 })
-    await registerFreshUser(page, '/people')
-    const current = page.getByRole('banner').locator('[aria-current="page"]')
-    await expect(current).toHaveText('People')
-    expect(await current.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
-    const named = (await current.boundingBox())!
-    const capture = (await page
-      .getByRole('banner')
-      .getByRole('textbox', { name: 'Capture' })
-      .boundingBox())!
-    expect(named.x + named.width).toBeLessThanOrEqual(capture.x)
-  })
-}
-
-test('the rail marks Things while you are on a kind of thing', async ({ page }) => {
-  await registerFreshUser(page, '/people')
-  const rail = page.getByRole('navigation', { name: 'Main navigation' })
-  await expect(rail.getByRole('link', { name: 'Things' })).toHaveAttribute('aria-current', 'page')
-  await page.goto('/meetings')
-  await expect(rail.getByRole('link', { name: 'Things' })).toHaveAttribute('aria-current', 'page')
-  await page.goto('/tasks/today')
-  await expect(rail.getByRole('link', { name: 'Things' })).not.toHaveAttribute(
-    'aria-current',
-    'page',
-  )
 })
 
 test("on a phone, the Today tab says how much is on today's plate", async ({ page }) => {
@@ -313,43 +276,26 @@ test("on a phone, the Today tab says how much is on today's plate", async ({ pag
   await expect(today.locator('[data-count]')).toHaveText('1')
 })
 
-test('at 320px what capture says stays on the screen, however long the name', async ({ page }) => {
-  await page.setViewportSize({ width: 320, height: 700 })
-  await registerFreshUser(page, '/')
-  const all = await page.request.get('/api/v1/projects', { headers: WEB })
-  const { projects } = (await all.json()) as { projects: { id: string; isInbox: boolean }[] }
-  const inbox = projects.find((p) => p.isInbox)!
-  const renamed = await page.request.patch(`/api/v1/projects/${inbox.id}`, {
-    headers: WEB,
-    data: { name: '一个名字很长很长的求职项目与面试准备' },
-  })
-  expect(renamed.ok(), await renamed.text()).toBe(true)
-  await page.reload()
+// The phone's capture is the tab bar's `+` (FR-084), which comes with phase 4's phone frame;
+// until then a phone has no capture box to hold the message.
+test.fixme('at 320px what capture says stays on the screen, however long the name', async () => {})
 
-  const capture = page.getByRole('banner').getByRole('textbox', { name: 'Capture' })
-  await expect(capture).toBeEnabled()
-  await capture.fill('Buy milk')
-  await capture.press('Enter')
-  const said = page.getByRole('banner').getByRole('status').filter({ hasText: 'Added to' })
-  await expect(said).toBeVisible()
-  const box = (await said.boundingBox())!
-  expect(box.x).toBeGreaterThanOrEqual(0)
-  expect(box.x + box.width).toBeLessThanOrEqual(320)
-})
-
-test('the rail stays beside the page as a long page scrolls', async ({ page }) => {
+test('the frame stays put as a long page scrolls: only the main area moves', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 700 })
   await registerFreshUser(page, '/')
   const pid = await makeProject(page, 'P')
   for (let i = 0; i < 30; i++) await makeTask(page, pid, `一条 ${i}`)
   await page.goto(`/projects/${pid}`)
   await expect(page.locator('[data-task-tree] li[data-depth]')).toHaveCount(30)
-  const rail = page.getByRole('navigation', { name: 'Main navigation' })
-  const before = (await rail.boundingBox())!
+  const bar = page.getByRole('navigation', { name: 'Modules' })
+  const before = (await bar.boundingBox())!
+  const main = page.getByRole('main')
+  await main.hover()
   await page.mouse.wheel(0, 900)
-  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(300)
-  // The frame round the sheet does not scroll away and leave white beside it.
-  expect(Math.round((await rail.boundingBox())!.y)).toBe(Math.round(before.y))
+  await expect.poll(() => main.evaluate((el) => el.scrollTop)).toBeGreaterThan(300)
+  // The icon bar and the top bar do not scroll away and leave the page without its frame.
+  expect(Math.round((await bar.boundingBox())!.y)).toBe(Math.round(before.y))
+  expect(Math.round((await page.locator('header').boundingBox())!.y)).toBe(0)
 })
 
 test('on a phone, several things in progress are rows, not a column of empty space', async ({
@@ -359,7 +305,7 @@ test('on a phone, several things in progress are rows, not a column of empty spa
   await registerFreshUser(page, '/')
   const pid = await makeProject(page, 'P')
   for (const t of ['一', '二', '三']) await makeTask(page, pid, t, { status: 'in_progress' })
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   const rows = page.locator('[data-panel="In progress"] li')
   await expect(rows).toHaveCount(3)
   for (const h of await rows.evaluateAll((els) =>

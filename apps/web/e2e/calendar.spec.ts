@@ -182,7 +182,7 @@ test('the calendar grid keeps to the type scale and the thread shape', async ({ 
     return { sizes: [...sizes], faded }
   })
   expect(
-    found.sizes.every((s) => ['12px', '14px', '16px'].includes(s)),
+    found.sizes.every((s) => ['12px', '13px', '15px'].includes(s)),
     found.sizes.join(),
   ).toBe(true)
   expect(found.faded).toEqual([])

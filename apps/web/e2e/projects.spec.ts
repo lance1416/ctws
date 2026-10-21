@@ -102,7 +102,7 @@ test('a project is archived from its own page, and brought back the same way', a
   const pid = await makeProject(page, '旧项目')
   await makeTask(page, pid, '留下的')
   await page.goto(`/projects/${pid}`)
-  const rail = page.getByRole('navigation', { name: 'Main navigation' })
+  const rail = page.getByRole('navigation', { name: 'Projects' })
   await expect(rail.getByRole('link', { name: '旧项目' })).toBeVisible()
 
   const patched = (archived: boolean) =>

@@ -6,8 +6,9 @@ import {
   registerFreshUser,
   serverTask,
   taskPatched,
+  navLink,
 } from './helpers'
-import { dayAfter, dayOffset, MONTHS, nextMondayYmd, ymd } from './days'
+import { dayAfter, dayOffset, MONTHS, nextMondayYmd, ymd, dayWords } from './days'
 
 /**
  * THE DETAIL PANE, in the row system's own vocabulary: the five marker shapes, the plan and
@@ -161,7 +162,7 @@ test('the named plan decisions write the same scheduledOn the exact field writes
 
   // The named decision and the exact field are two ways to the SAME field, not two fields.
   await openPane(page, pid, '改简历')
-  await expect(page.getByLabel('Plan', { exact: true })).toHaveValue(dayOffset(1))
+  await expect(page.getByLabel('Plan', { exact: true })).toHaveValue(dayWords(dayOffset(1)))
   // THE DAY AFTER NEXT MONDAY, not a fixed offset. `dayOffset(4)` is next Monday whenever this
   // runs on a Thursday, and then "next week" below writes the value already stored -- the form is
   // not dirty, and no request is sent.
@@ -171,7 +172,7 @@ test('the named plan decisions write the same scheduledOn the exact field writes
 
   await openPane(page, pid, '改简历')
   await page.getByRole('button', { name: 'Plan for next week', exact: true }).click()
-  await expect(page.getByLabel('Plan', { exact: true })).toHaveValue(nextMondayYmd())
+  await expect(page.getByLabel('Plan', { exact: true })).toHaveValue(dayWords(nextMondayYmd()))
   expect(await saveBody(page)).toEqual({ scheduledOn: nextMondayYmd() })
 
   await openPane(page, pid, '改简历')
@@ -256,7 +257,8 @@ test('the pane wears the row system: two date glyphs, two colour families', asyn
       probe.style.color = `var(${token})`
       return getComputedStyle(probe).color
     }
-    const out = { deadline: read('--color-warn'), plan: read('--color-go') }
+    // The text colours of the two states (`-t`): a word is held to 4.5:1, a glyph to 3:1.
+    const out = { deadline: read('--color-warn-t'), plan: read('--color-go-t') }
     probe.remove()
     return out
   })
@@ -294,9 +296,10 @@ test('the status chip wears the app’s focus ring when the keyboard reaches it'
     const s = getComputedStyle(el)
     return { width: s.outlineWidth, style: s.outlineStyle, color: s.outlineColor }
   })
+  // The ring is the task colour, as everywhere (handoff §4).
   const ink = await page.evaluate(() => {
     const probe = document.createElement('span')
-    probe.style.color = 'var(--color-ink)'
+    probe.style.color = 'var(--color-task)'
     document.body.append(probe)
     const c = getComputedStyle(probe).color
     probe.remove()
@@ -328,7 +331,7 @@ test('the pane opens with the task, and Delete is not a peer of Save', async ({ 
   await expect(picker).toHaveText('Workbench')
   const titleSize = await title.evaluate((el) => parseFloat(getComputedStyle(el).fontSize))
   const notesSize = await dialog
-    .getByLabel('Notes', { exact: true })
+    .getByRole('textbox', { name: 'Notes', exact: true })
     .evaluate((el) => parseFloat(getComputedStyle(el).fontSize))
   expect(titleSize, 'the title is the biggest text in the pane').toBeGreaterThan(notesSize)
 
@@ -392,8 +395,10 @@ test('the pane opens in reading mode with no field, and Edit reveals them', asyn
   await editDetail(page)
   await expect(dialog.getByRole('textbox', { name: 'Title' })).toHaveValue('读一下这条任务')
   await expect(dialog.getByRole('radio', { name: 'In progress', exact: true })).toBeChecked()
-  await expect(dialog.getByLabel('Plan', { exact: true })).toHaveValue(dayOffset(1))
-  await expect(dialog.getByLabel('Notes', { exact: true })).toHaveValue('第一行\n第二行')
+  await expect(dialog.getByLabel('Plan', { exact: true })).toHaveValue(dayWords(dayOffset(1)))
+  await expect(dialog.getByRole('textbox', { name: 'Notes', exact: true })).toHaveValue(
+    '第一行\n第二行',
+  )
   await expect(dialog.getByRole('button', { name: 'Save' })).toBeVisible()
   // The form being edited has no Delete: its two ways out are Save and Cancel.
   await expect(dialog.getByRole('button', { name: 'Delete task' })).toHaveCount(0)
@@ -525,10 +530,7 @@ test('a status changed from the pane leaves nothing unsaved to walk away from', 
   await page.getByRole('menuitem', { name: 'Done' }).click()
   await expect(page.getByRole('dialog').getByRole('button', { name: 'Status: Done' })).toBeVisible()
 
-  await page
-    .getByRole('navigation', { name: 'Main navigation' })
-    .getByRole('link', { name: 'Today' })
-    .click()
-  await expect(page).toHaveURL(/\/tasks\/today$/)
+  await navLink(page, 'Today').click()
+  await expect(page).toHaveURL(/\/today$/)
   await expect(page.getByRole('button', { name: 'Keep editing' })).toHaveCount(0)
 })

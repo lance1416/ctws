@@ -34,8 +34,8 @@ test('a project delete the server refuses says so, and the page stays', async ({
   const pid = await makeProject(page, '删不掉')
   await page.goto(`/projects/${pid}`)
   await refuse(page, `**/api/v1/projects/${pid}`, 'DELETE')
-  await page.getByRole('button', { name: 'Delete project' }).click()
-  await page.getByRole('button', { name: 'Confirm delete' }).click()
+  await page.getByRole('button', { name: /^Delete / }).click()
+  await page.getByRole('button', { name: /^Delete/ }).click()
   await expect(said(page)).toBeVisible()
   await expect(page).toHaveURL(new RegExp(`/projects/${pid}$`))
 })
@@ -52,7 +52,8 @@ test('a meeting cancel the server refuses says so', async ({ page }) => {
   const pane = page.getByRole('dialog', { name: 'Meetings' })
   await refuse(page, `**/api/v1/meetings/${m.meetingId}`, 'DELETE')
   await pane.getByRole('button', { name: 'Cancel meeting' }).click()
-  await pane.getByRole('button', { name: 'Cancel meeting' }).click()
+  // The question is its own small dialog over the pane (FR-035).
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Cancel meeting' }).click()
   await expect(said(page)).toBeVisible()
   await expect(pane).toBeVisible()
 })
@@ -77,8 +78,11 @@ test('a person delete the server refuses says so, and the pane stays', async ({ 
   await page.goto(`/people/${person.id}`)
   const pane = page.getByRole('dialog', { name: 'People' })
   await refuse(page, `**/api/v1/people/${person.id}`, 'DELETE')
-  await pane.getByRole('button', { name: 'Delete person' }).click()
-  await pane.getByRole('button', { name: 'Confirm delete' }).click()
+  await pane.getByRole('button', { name: /^Delete / }).click()
+  await page
+    .getByRole('alertdialog')
+    .getByRole('button', { name: /^Delete/ })
+    .click()
   await expect(said(page)).toBeVisible()
   await expect(pane).toBeVisible()
 })
@@ -90,7 +94,10 @@ test('a reading delete the server refuses says so, and the pane stays', async ({
   const pane = page.getByRole('dialog', { name: 'Reading' })
   await refuse(page, `**/api/v1/reading/${item.id}`, 'DELETE')
   await pane.getByRole('button', { name: 'Delete item' }).click()
-  await pane.getByRole('button', { name: 'Confirm delete' }).click()
+  await page
+    .getByRole('alertdialog')
+    .getByRole('button', { name: /^Delete/ })
+    .click()
   await expect(said(page)).toBeVisible()
   await expect(pane).toBeVisible()
 })
@@ -99,13 +106,13 @@ test('an unlink the server refuses says so, and the link stays', async ({ page }
   await registerFreshUser(page)
   const person = await apiPost(page, '/people', { name: 'Ying Chen' })
   const book = await apiPost(page, '/reading', { kind: 'book', title: 'The C book' })
-  await apiPost(page, '/links', {
+  await apiPost(page, '/relations', {
     from: { type: 'person', id: person.id },
     to: { type: 'reading', id: book.id },
-    kind: 'recommends',
+    note: 'recommends',
   })
   await page.goto(`/people/${person.id}`)
-  await refuse(page, '**/api/v1/links/*', 'DELETE')
+  await refuse(page, '**/api/v1/relations/*', 'DELETE')
   await page.getByRole('button', { name: 'Unlink The C book' }).click()
   await expect(said(page)).toBeVisible()
   await expect(page.getByRole('region', { name: 'Linked' })).toContainText('The C book')
@@ -116,14 +123,14 @@ test('a project rename or recolour the server refuses says so', async ({ page })
   const pid = await makeProject(page, '改版')
   await page.goto(`/projects/${pid}`)
   await refuse(page, `**/api/v1/projects/${pid}`, 'PATCH')
-  await page.getByRole('button', { name: '改版' }).click()
+  await page.getByRole('button', { name: '改版', exact: true }).click()
   await page.getByRole('textbox', { name: 'Project name' }).fill('改版二期')
   await page.keyboard.press('Enter')
   await expect(said(page)).toBeVisible()
 
   await page.reload()
   await page.getByRole('button', { name: 'Project colour' }).click()
-  await page.getByRole('menuitem', { name: 'Colour 5' }).click()
+  await page.getByRole('menuitem', { name: 'Pink' }).click()
   await expect(said(page)).toBeVisible()
 })
 
@@ -134,12 +141,13 @@ test('a sign-out the server refuses says so', async ({ page }) => {
   await expect(said(page)).toBeVisible()
 })
 
-test("a project the rail's + makes, refused, says so", async ({ page }) => {
+test("a project the sidebar's + makes, refused, says so", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 })
-  await registerFreshUser(page)
+  await registerFreshUser(page, '/projects')
   await refuse(page, '**/api/v1/projects', 'POST')
-  await page.getByRole('button', { name: 'New project' }).click()
-  await page.getByRole('textbox', { name: 'New project' }).fill('Refused')
+  const sidebar = page.getByRole('complementary', { name: 'Projects' })
+  await sidebar.getByRole('button', { name: 'New project' }).click()
+  await sidebar.getByRole('textbox', { name: 'New project' }).fill('Refused')
   await page.keyboard.press('Enter')
   await expect(said(page)).toBeVisible()
 })

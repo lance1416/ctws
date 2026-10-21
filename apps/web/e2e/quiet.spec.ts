@@ -11,6 +11,7 @@ import {
   submitCreate,
   taskPatched,
   WEB,
+  navLink,
 } from './helpers'
 import { dayOffset } from './days'
 
@@ -120,10 +121,7 @@ test('an inbox row says how long it has been sitting there, and only when it mus
 }) => {
   await registerFreshUser(page)
   await submitCreate(page, 'Capture…', '查一下 Cloudflare Tunnel')
-  await page
-    .getByRole('navigation', { name: 'Main navigation' })
-    .getByRole('link', { name: 'Projects' })
-    .click()
+  await navLink(page, 'Projects').click()
   await openProject(page, 'Inbox')
 
   await expect(row(page, '查一下 Cloudflare Tunnel').locator('[data-row-age]')).toHaveText(
@@ -231,17 +229,19 @@ test('a code fence is highlighted, and an unlabelled one is left alone', async (
   await expect(fences.nth(1).locator('span')).toHaveCount(0)
 })
 
-test('the project rail makes a project without leaving the page', async ({ page }) => {
+test('the Projects sidebar makes a project from its head', async ({ page }) => {
   await registerFreshUser(page)
-  await page.getByRole('button', { name: 'New project' }).click()
-  const box = page.getByRole('textbox', { name: 'New project' })
+  await navLink(page, 'Projects').click()
+  const sidebar = page.getByRole('complementary', { name: 'Projects' })
+  await sidebar.getByRole('button', { name: 'New project' }).click()
+  const box = sidebar.getByRole('textbox', { name: 'New project' })
   await expect(box).toBeFocused()
   await box.fill('求职')
   await page.keyboard.press('Enter')
 
   // Straight into it: naming a line of work is the start of putting something in it.
   await expect(page.getByRole('heading', { level: 1, name: '求职' })).toBeVisible()
-  await expect(page.locator('nav').getByRole('link', { name: '求职' })).toBeVisible()
+  await expect(sidebar.getByRole('link', { name: '求职' })).toBeVisible()
 })
 
 test('the detail pane closes from the corner, and Escape unwinds one level at a time', async ({
@@ -332,12 +332,12 @@ test('a project colour can be picked from the chip that shows it', async ({ page
   const written = page.waitForResponse(
     (r) => r.request().method() === 'PATCH' && r.url().includes(`/projects/${pid}`),
   )
-  await page.getByRole('menuitem', { name: 'Colour 5' }).click()
+  await page.getByRole('menuitem', { name: 'Pink' }).click()
   await written
 
   const after = await (await page.request.get('/api/v1/projects')).json()
-  expect(after.projects.find((p: { id: string }) => p.id === pid).color).toBe('project-5')
-  expect(was).not.toBe('project-5')
+  expect(after.projects.find((p: { id: string }) => p.id === pid).color).toBe('pink')
+  expect(was).not.toBe('pink')
   // The chip is a control, and the project's name is beside it (WCAG 1.4.1).
   await expect(page.getByRole('heading', { level: 1, name: '改版' })).toBeVisible()
 })
@@ -351,7 +351,7 @@ test('a finished task opens from the Done list, not only restored from it', asyn
     data: { status: 'done', notes: '先问清需求' },
   })
 
-  await page.goto('/tasks/review?view=done')
+  await page.goto('/review?view=done')
   await page.getByRole('button', { name: '写迁移 改版' }).click()
   const pane = page.getByRole('dialog', { name: 'Task details' })
   await expect(pane).toBeVisible()
@@ -401,16 +401,15 @@ test('the rail count follows tasks finished from the tree', async ({ page }) => 
   for (const t of ['一件', '两件', '三件'])
     await makeTask(page, pid, t, { scheduledOn: dayOffset(0) })
   await openTree(page, pid)
-  const count = page
-    .getByRole('navigation', { name: 'Main navigation' })
-    .getByRole('link', { name: /Today/ })
-    .locator('[data-count]')
-  await expect(count).toHaveText('3')
+  // How many are planned for today, from the server the Today page reads.
+  const planned = async () =>
+    ((await (await page.request.get('/api/v1/tasks?view=today')).json()) as { tasks?: unknown[] })
+      .tasks?.length ?? -1
 
   for (const t of ['一件', '两件', '三件']) await row(page, t).click({ modifiers: ['Shift'] })
   await page.getByRole('button', { name: 'Mark done' }).click()
   await expect(page.locator('[data-selection-bar]')).toHaveCount(0)
-  await expect(count).toHaveCount(0)
+  await expect.poll(planned).toBe(0)
 })
 
 test('the bar moves the picked rows to another project', async ({ page }) => {

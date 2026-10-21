@@ -64,7 +64,7 @@ test('on Today, the margin ends at one x and every title starts at one x', async
   await makeTask(page, pid, '短', { dueAt: dueAgo(2) })
   await makeTask(page, pid, '中等长度的一个标题', { dueAt: dueAgo(11) })
   await makeTask(page, pid, '一个非常非常非常非常非常长的标题用来把右边挤掉', { dueAt: dueAgo(4) })
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   const section = page.getByRole('region', { name: 'Overdue' })
   await expect(section.locator('[data-row-lead="missed"]')).toHaveCount(3)
 
@@ -195,7 +195,7 @@ test('overdue: the day in the margin, how late on the right, where on the second
   const TITLE = '核对退信率并给收件人分组'
   const id = await makeTask(page, pid, TITLE, { dueAt: noon.toISOString() })
 
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   const queueRow = page
     .getByRole('region', { name: 'Today', exact: true })
     .locator('li')
@@ -312,7 +312,7 @@ test('the tree has no breadcrumb; Today says where on the second line', async ({
   await expect(child.locator('[data-row-crumb]')).toHaveCount(0)
   await expect(child).not.toContainText('面包屑')
 
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   const line = page.getByRole('region', { name: 'Overdue' }).locator('[data-row-meta]')
   await expect(line.locator('[data-row-crumb]')).toHaveText('面包屑 › 父任务')
 })
@@ -326,7 +326,7 @@ test('opening a row’s date control moves nothing on the row', async ({ page })
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '逾期的', { dueAt: dueAgo(2) })
   await makeTask(page, pid, '下面那行', { dueAt: dueAgo(2) })
-  await page.goto('/tasks/today')
+  await page.goto('/today')
 
   const row = page
     .locator('li')
@@ -365,7 +365,7 @@ test('the date control is reachable, operable and escapable by keyboard alone', 
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '键盘逾期', { dueAt: dueAgo(2) })
-  await page.goto('/tasks/today')
+  await page.goto('/today')
 
   // From the row itself, one Tab reaches the control: the row's actions are ONE tab stop.
   await page.locator('[data-today-row]').focus()
@@ -402,7 +402,7 @@ test('making a deadline next week’s plan demotes it in one request', async ({ 
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '没人等下周', { dueAt: dueAgo(6) })
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   await triage(page, '没人等下周').click()
   const res = taskPatched(page)
   await page
@@ -428,7 +428,7 @@ test('the open date control adds no horizontal scroll at 375', async ({ page }) 
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '窄屏上的逾期任务标题也可能很长', { dueAt: dueAgo(2) })
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   await triage(page, '窄屏上的逾期任务标题也可能很长').click()
   await expect(page.getByRole('group', { name: /^Overdue: / })).toBeVisible()
   // Nothing scrolls sideways at 375px; a popover anchored to the
@@ -448,7 +448,7 @@ test('a cross-project row carries its own project’s rail, at one x, beside its
   await makeTask(page, a, '甲一', { scheduledOn: dayOffset(0) })
   await makeTask(page, a, '甲二', { scheduledOn: dayOffset(0) })
   await makeTask(page, b, '乙一', { scheduledOn: dayOffset(0) })
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   const section = page.getByRole('region', { name: 'Today', exact: true })
   await expect(section.getByText('甲一')).toBeVisible()
 
@@ -480,11 +480,11 @@ test('a cross-project row carries its own project’s rail, at one x, beside its
   expect(await classOf('甲一')).toBe(await classOf('甲二'))
 })
 
-test('Done and the search results carry the same rail', async ({ page }) => {
+test('Done carries the rail, and a search result its project', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '归档测试')
   await makeTask(page, pid, '做完的事', { status: 'done' })
-  await page.goto('/tasks/review?view=done')
+  await page.goto('/review?view=done')
   await expect(page.getByText('做完的事')).toBeVisible()
   await expect(page.locator('[data-project-rail]').first()).toHaveAttribute(
     'data-project-rail',
@@ -497,12 +497,13 @@ test('Done and the search results carry the same rail', async ({ page }) => {
   const times = await rights(page, 'time')
   expect(new Set(times).size, `clock ends: ${times.join(',')}`).toBe(1)
 
-  await page.keyboard.press('f')
+  await page.keyboard.press('Control+k')
   await page.getByRole('combobox', { name: 'Search' }).fill('做完的事')
   await expect(page.locator('[data-search-result]')).toHaveCount(2)
-  const resultRails = page.locator('[data-search-result] [data-project-rail]')
-  await expect(resultRails).toHaveCount(2)
-  await expect(resultRails.first()).toHaveAttribute('data-project-rail', pid)
+  // A result wears its project's square beside where it sits (artboard 9), not a rail.
+  const squares = page.locator('[data-search-result] [data-project-square]')
+  await expect(squares).toHaveCount(2)
+  await expect(squares.first()).toHaveAttribute('data-project-square', pid)
 })
 
 // ---------------------------------------------------------------------------- the status marker
@@ -513,7 +514,7 @@ test('the status marker is the heaviest mark on the row, and still hue-free', as
   await makeTask(page, pid, '在做', { status: 'in_progress' })
   await makeTask(page, pid, '待办的', { status: 'todo', scheduledOn: dayOffset(0) })
   await makeTask(page, pid, '整理中', { status: 'backlog', scheduledOn: dayOffset(0) })
-  await page.goto('/tasks/today')
+  await page.goto('/today')
 
   const mark = (name: string) => page.getByRole('img', { name })
   // 20px at 2px of stroke: the mark is the app's core semantic, and the workbench stepped every
@@ -534,7 +535,7 @@ test('the status marker is the heaviest mark on the row, and still hue-free', as
 
   // A finished one recedes. (On Done, where every row is settled.)
   await makeTask(page, pid, '收工', { status: 'done' })
-  await page.goto('/tasks/review?view=done')
+  await page.goto('/review?view=done')
   await expect(page.getByText('收工')).toBeVisible()
   expect(await colourOf(mark('Done'))).not.toBe(bodyColour)
   expect(await mark('Done').evaluate((el) => el.getBoundingClientRect().width)).toBe(20)

@@ -61,3 +61,14 @@ export function addDaysYmd(day: string, n: number): string {
 
 /** The calendar day after `day`. */
 export const dayAfter = (day: string): string => addDaysYmd(day, 1)
+
+/**
+ * A day as the shared date field shows it once left (FR-034): "Oct 29", with the year when it is
+ * not this year's. An empty day is an empty field.
+ */
+export function dayWords(day: string): string {
+  if (!day) return ''
+  const [y, m, dd] = day.split('-').map(Number) as [number, number, number]
+  const words = `${MONTHS[m - 1]} ${dd}`
+  return y === new Date().getFullYear() ? words : `${words}, ${y}`
+}

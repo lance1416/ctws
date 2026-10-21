@@ -80,8 +80,8 @@ for (const width of [320, 375]) {
       ['/projects', '找工作'],
       ['/meetings', 'Second interview'],
       ['/reading', 'Cracking the Coding Interview'],
-      ['/tasks/review', 'Done one'],
-      ['/tasks/review?view=done', 'Done one'],
+      ['/review', 'Done one'],
+      ['/review?view=done', 'Done one'],
       ['/people', '陈颖'],
     ] as const) {
       await page.goto(path)
@@ -89,7 +89,7 @@ for (const width of [320, 375]) {
       expect(await problems(page), path).toEqual([])
     }
     // Review with its stepper at its widest: a week back, so "This week" is there too.
-    await page.goto('/tasks/review')
+    await page.goto('/review')
     await page.getByRole('button', { name: 'The week before' }).click()
     await expect(page.getByRole('button', { name: 'This week' })).toBeVisible()
     expect(await problems(page), 'review, a week back').toEqual([])
@@ -120,10 +120,10 @@ test("Today's rows, Done today and Completed start 14px past the thread on a pho
   await makeTask(page, pid, 'Finished', { status: 'done' })
   await meetingToday(page, 'Standup', '23:59', zone)
 
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   for (const title of ['Planned today', 'Under way', 'Finished', 'Standup'])
     expect(await bodyStart(page, title), title).toBe('14px')
 
-  await page.goto('/tasks/review?view=done')
+  await page.goto('/review?view=done')
   expect(await bodyStart(page, 'Finished'), 'Completed').toBe('14px')
 })

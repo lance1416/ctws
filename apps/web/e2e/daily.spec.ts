@@ -167,7 +167,7 @@ test('a Today row is finished by its mark, by x, and focus moves to the next row
   await makeTask(page, pid, '甲', { status: 'in_progress' })
   await makeTask(page, pid, '乙', { status: 'in_progress' })
   await makeTask(page, pid, '丙', { status: 'in_progress' })
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   const region = page.getByRole('region', { name: 'In progress' })
   await expect(region.getByText('甲')).toBeVisible()
   const order = await page.locator('[data-today-row]').allInnerTexts()
@@ -205,7 +205,7 @@ test('pushing the deadline on an overdue row keeps its time of day and takes the
   await makeTask(page, pid, '推到明天', { dueAt: due })
   await makeTask(page, pid, '推到下周', { dueAt: due })
   await makeTask(page, pid, '不动的', { dueAt: due })
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   const section = page.getByRole('region', { name: 'Overdue' })
   await expect(section.getByText('2 days late')).toHaveCount(3)
 
@@ -318,7 +318,7 @@ test('only a deadline change takes a task out of Overdue: a bare scheduledOn doe
   expect(p.status()).toBe(200)
   expect((await serverTask(page, pid, '过期了')).scheduledOn).toBe(tomorrow)
   expect(await segmentOf()).toBe('overdue')
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   await expect(page.getByRole('region', { name: 'Overdue' }).getByText('过期了')).toBeVisible()
 
   // Whereas moving the deadline itself does take it out.
@@ -337,7 +337,7 @@ test('clearing the deadline takes a row out of Overdue and the server forgets it
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '不再重要', { dueAt: dueAgo(3) })
   await makeTask(page, pid, '要留下', { dueAt: dueAgo(1) })
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   const section = page.getByRole('region', { name: 'Overdue' })
   await expect(section.getByText('不再重要')).toBeVisible()
 
@@ -365,7 +365,7 @@ test('an overdue row is finished with its mark, and only overdue rows have the e
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '逾期的', { dueAt: dueAgo(2) })
   await makeTask(page, pid, '在做的', { status: 'in_progress' })
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   // Exactly one date control on the page: the overdue row has one, the in-progress row has none.
   await expect(page.locator('[data-triage-trigger]')).toHaveCount(1)
   await expect(triage(page, '逾期的')).toBeVisible()
@@ -447,10 +447,12 @@ test('deleting a project asks first, names what is lost, and cancel deletes noth
   const deletes: string[] = []
   page.on('request', (r) => r.method() === 'DELETE' && deletes.push(r.url()))
 
-  const del = page.getByRole('button', { name: 'Delete project' })
+  const del = page.getByRole('button', { name: /^Delete / })
   await del.click()
-  const ask = page.getByRole('alertdialog', { name: 'Confirm deleting this project' })
-  await expect(ask).toContainText('Delete “待删项目” and its 3 tasks')
+  const ask = page.getByRole('alertdialog', { name: 'Delete 待删项目' })
+  // What goes, then what stays (FR-035).
+  await expect(ask).toContainText('Delete 待删项目? Its 3 tasks go.')
+  await expect(ask).toContainText('stay, outside any project')
   // The first click only asks.
   expect(deletes).toHaveLength(0)
 
@@ -622,7 +624,7 @@ test.describe('the panel as an overlay', () => {
     await editDetail(page)
     const dialog = page.getByRole('dialog')
 
-    await page.getByLabel('Notes', { exact: true }).click()
+    await page.getByRole('textbox', { name: 'Notes', exact: true }).click()
     // A click on a non-interactive part of the panel. The panel prints no label over the title
     // (it opens with the task itself), so this presses the Notes label instead --
     // still a dead area of the panel, which is the whole point of the assertion.
@@ -645,9 +647,12 @@ test('the open panel leaves the chrome usable', async ({ page }) => {
 
   // What is at the centre of each control is that control, not the panel: Capture and the
   // account menu, both in the bar the pane sits beside.
-  for (const target of [page.getByPlaceholder('Capture…'), page.getByTestId('current-user')]) {
+  for (const target of [
+    page.getByRole('button', { name: /^Capture/ }),
+    page.getByTestId('current-user'),
+  ]) {
     const box = (await target.boundingBox())!
-    const hit = await target.evaluate((el, p) => document.elementFromPoint(p.x, p.y) === el, {
+    const hit = await target.evaluate((el, p) => el.contains(document.elementFromPoint(p.x, p.y)), {
       x: box.x + box.width / 2,
       y: box.y + box.height / 2,
     })
@@ -664,7 +669,7 @@ test('saving returns the panel to reading, says so on the row, and is on the ser
   await openTree(page, pid)
   await page.getByRole('listitem').filter({ hasText: '写方案' }).click()
   await editDetail(page)
-  await page.getByLabel('Notes', { exact: true }).fill('先问清需求')
+  await page.getByRole('textbox', { name: 'Notes', exact: true }).fill('先问清需求')
 
   const done = taskPatched(page)
   await page.getByRole('button', { name: 'Save' }).click()
@@ -686,10 +691,10 @@ test('saving from the Today panel keeps it open and confirms on the row', async 
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '写方案', { status: 'in_progress' })
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   await page.getByRole('region', { name: 'In progress' }).getByText('写方案').click()
   await editDetail(page)
-  await page.getByLabel('Notes', { exact: true }).fill('Notes')
+  await page.getByRole('textbox', { name: 'Notes', exact: true }).fill('Notes')
   await page.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
   await expect(page.getByRole('dialog')).toHaveCount(1)
@@ -726,7 +731,7 @@ test('a plan carried over from days ago says so on Today, under Any time; a plan
   await makeTask(page, pid, '搁置的计划', { scheduledOn: old })
   await makeTask(page, pid, '昨天的计划', { scheduledOn: dayOffset(-1) })
   await makeTask(page, pid, '今天的计划', { scheduledOn: dayOffset(0) })
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   const section = page.getByRole('region', { name: 'Today', exact: true })
   await expect(section.getByText('今天的计划')).toBeVisible()
 
@@ -760,7 +765,7 @@ test('moving the plan to today keeps the row, drops the mark, and changes only t
   const pid = await makeProject(page, 'P')
   const id = await makeTask(page, pid, '改到今天的', { scheduledOn: dayOffset(-3) })
   await makeTask(page, pid, '旁观者', { scheduledOn: dayOffset(-3) })
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   const res = taskPatched(page)
   await (
     await openTriage(page, '改到今天的', 'Carried over')
@@ -791,7 +796,7 @@ test('moving the plan to tomorrow or next week takes the row off Today', async (
   const a = await makeTask(page, pid, '改到明天的', { scheduledOn: dayOffset(-2) })
   const b = await makeTask(page, pid, '改到下周的', { scheduledOn: dayOffset(-2) })
   await makeTask(page, pid, '留着的', { scheduledOn: dayOffset(-2) })
-  await page.goto('/tasks/today')
+  await page.goto('/today')
 
   let res = taskPatched(page)
   await (
@@ -828,7 +833,7 @@ test('clearing the plan removes the row from Today and the server holds none', a
   const pid = await makeProject(page, 'P')
   const id = await makeTask(page, pid, '不排了', { scheduledOn: dayOffset(-4) })
   await makeTask(page, pid, '另一个', { scheduledOn: dayOffset(-4) })
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   const res = taskPatched(page)
   await (
     await openTriage(page, '不排了', 'Carried over')
@@ -856,7 +861,7 @@ test('a carried plan is not a deadline: clearing the plan leaves dueAt alone', a
     scheduledOn: dayOffset(-2),
     dueAt: due.toISOString(),
   })
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   await expect(triage(page, '计划和今晚截止')).toBeVisible()
   const res = taskPatched(page)
   await (
@@ -881,7 +886,7 @@ test('making a deadline a plan moves the row out of Overdue into Today, with due
   const id = await makeTask(page, pid, '没人在等', { dueAt: dueAgo(3) })
   await makeTask(page, pid, '转到明天', { dueAt: dueAgo(3) })
   await makeTask(page, pid, '还逾期', { dueAt: dueAgo(3) })
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   const overdue = page.getByRole('region', { name: 'Overdue' })
   await expect(overdue.getByText('3 days late')).toHaveCount(3)
   expect(await todaySegment(page, id)).toBe('overdue')

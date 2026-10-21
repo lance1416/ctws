@@ -17,10 +17,10 @@ const PASSWORD = 'correct horse battery'
  * Signing in opens the Workbench; it then goes on to `at`, Today by default because that is where
  * almost every test here does its work. `'/'` stays on the Workbench.
  *
- * It CLICKS the rail rather than calling `goto`: a fresh navigation leaves focus where the
+ * It CLICKS the icon bar rather than calling `goto`: a fresh navigation leaves focus where the
  * document-level keys (the `g` chords, `/`, `f`) cannot see it.
  */
-export async function registerFreshUser(page: Page, at: string = '/tasks/today'): Promise<string> {
+export async function registerFreshUser(page: Page, at: string = '/today'): Promise<string> {
   const email = freshEmail()
   const timezone = await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone)
   const res = await page.request.post('/api/v1/auth/register', {
@@ -30,11 +30,15 @@ export async function registerFreshUser(page: Page, at: string = '/tasks/today')
   expect(res.status(), `register: ${await res.text()}`).toBe(201)
 
   await page.goto('/')
-  await page.getByTestId('current-user').waitFor()
-  if (at === '/tasks/today') {
+  // The main area is drawn once the session is known, on a phone too, where the account button
+  // is not shown.
+  await page.getByRole('main').waitFor()
+  if (at === '/today') {
+    // The icon bar from 1024 up; below it, the phone's tab bar.
+    const wide = (page.viewportSize()?.width ?? 1280) >= 1024
     await page
-      .getByRole('navigation', { name: 'Main navigation' })
-      .getByRole('link', { name: 'Today' })
+      .getByRole('navigation', { name: wide ? 'Modules' : 'Main navigation' })
+      .getByRole('link', { name: /^Today/ })
       .click()
   } else if (at !== '/') {
     await page.goto(at)
@@ -73,6 +77,45 @@ export async function logOut(page: Page): Promise<void> {
 // Submits one of the create inputs (capture, new project, new task) and waits for the POST to be
 // acknowledged. Without the wait the next locator's auto-wait is the only thing between the test
 // and a slow API, which is a race under load.
+/**
+ * A place on the frame's navigation: the icon bar from 1024 up, the phone's tab bar below it. The
+ * inbox is not a place; it heads the Projects sidebar.
+ */
+export function navLink(page: Page, name: string): Locator {
+  if (name === 'Inbox')
+    return page.getByRole('navigation', { name: 'Projects' }).getByRole('link', { name: /^Inbox/ })
+  const wide = (page.viewportSize()?.width ?? 1280) >= 1024
+  return page
+    .getByRole('navigation', { name: wide ? 'Modules' : 'Main navigation' })
+    .getByRole('link', { name: wide ? name : new RegExp(`^${name}`) })
+}
+
+/** The capture box's text field (FR-025). It is there only while the box is open. */
+export const captureBox = (page: Page): Locator => page.getByRole('textbox', { name: 'Capture' })
+
+/** Opens the capture box under the top bar, as its button does, unless it is open already. */
+export async function openCapture(page: Page): Promise<Locator> {
+  const box = captureBox(page)
+  if (!(await box.isVisible())) await page.getByRole('button', { name: /^Capture/ }).click()
+  await box.waitFor()
+  return box
+}
+
+/** Captures a line and leaves the box open, as Enter does, for tests about what it then says. */
+export async function captureLine(page: Page, text: string): Promise<void> {
+  const created = page.waitForResponse(
+    (r) =>
+      r.request().method() === 'POST' &&
+      r.ok() &&
+      /\/api\/v1\/(tasks|reading)$/.test(new URL(r.url()).pathname),
+  )
+  const box = await openCapture(page)
+  await box.fill(text)
+  await box.press('Enter')
+  await created
+  await expect(box).toHaveValue('')
+}
+
 export async function submitCreate(page: Page, placeholder: string, text: string): Promise<void> {
   const created = page.waitForResponse(
     (r) =>
@@ -80,8 +123,9 @@ export async function submitCreate(page: Page, placeholder: string, text: string
       r.ok() &&
       /\/api\/v1\/(tasks|projects)$/.test(new URL(r.url()).pathname),
   )
-  await page.getByPlaceholder(placeholder).fill(text)
-  await page.getByPlaceholder(placeholder).press('Enter')
+  const field = page.getByPlaceholder(placeholder)
+  await field.fill(text)
+  await field.press('Enter')
   await created
 }
 
@@ -187,8 +231,9 @@ export function backdateProjectActivity(projectId: string, ago: string): void {
       '-d',
       'ctws',
       '-c',
-      `update task_events set occurred_at = now() - interval '${ago}' ` +
-        `where task_id in (select id from tasks where project_id = '${projectId}')`,
+      // A task's history is in the shell's change log since the redesign (RFC-001).
+      `update events set occurred_at = now() - interval '${ago}' ` +
+        `where object_type = 'task' and object_id in (select id from tasks where project_id = '${projectId}')`,
     ],
     { stdio: 'pipe' },
   ).toString()
@@ -313,7 +358,7 @@ export async function openTree(page: Page, projectId: string): Promise<void> {
 /** Makes a project THROUGH THE UI and lands on its page, for tests about that route in. */
 export async function startProject(page: Page, name = 'P'): Promise<string> {
   await page
-    .getByRole('navigation', { name: 'Main navigation' })
+    .getByRole('navigation', { name: 'Modules' })
     .getByRole('link', { name: 'Projects' })
     .click()
   await submitCreate(page, 'New project', name)
@@ -566,4 +611,43 @@ export async function textContrast(target: Locator): Promise<number> {
 /** Relative luminance of the background an element really paints. */
 export async function surfaceLuminance(target: Locator): Promise<number> {
   return (await paint(target)).behind
+}
+
+/** Points at a solar day in the shared picker's grid (FR-034), paging on to its month. */
+export async function pickSolarDay(page: Page, iso: string) {
+  for (let i = 0; i < 14; i++) {
+    const cell = page.getByRole('button', { name: iso, exact: true })
+    if (await cell.isVisible()) return cell.click()
+    await page.getByRole('button', { name: 'Next month' }).click()
+  }
+  throw new Error(`no ${iso} within a year of the grid`)
+}
+
+/** Points at a lunar day in the grid, paging on by lunar month: `十二月` and `三十`. */
+export async function pickLunarDay(page: Page, month: string, day: string) {
+  for (let i = 0; i < 16; i++) {
+    const cell = page.getByRole('button', { name: `${month}${day}`, exact: true })
+    if (await cell.isVisible()) return cell.click()
+    // The grid keeps the month it has until the next one's names arrive, so wait for the head to
+    // move on: a click while it is still loading is not a second page.
+    const next = page.getByRole('button', { name: 'Next lunar month' })
+    const head = next.locator('..')
+    const before = (await head.textContent()) ?? ''
+    await next.click()
+    await expect(head).not.toHaveText(before)
+  }
+  throw new Error(`no ${month}${day} within a year of the grid`)
+}
+
+/** Switches the picker to lunar and gives it a year. */
+export async function lunarYear(page: Page, year: string) {
+  await page
+    .getByRole('radiogroup', { name: 'Which calendar' })
+    .getByRole('radio', { name: 'Lunar' })
+    .click()
+  await page.getByRole('checkbox', { name: 'Year not known' }).uncheck()
+  await page.getByRole('textbox', { name: 'Year' }).fill(year)
+  // The grid moves to that year's day once the server has converted it; paging before then would
+  // be undone when it does.
+  await expect(page.getByRole('button', { name: /月[初十廿二三]/, pressed: true })).toBeVisible()
 }

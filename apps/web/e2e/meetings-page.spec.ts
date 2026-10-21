@@ -1,26 +1,30 @@
 import { expect, test, type Page } from '@playwright/test'
 import { TZDate } from '@date-fns/tz'
 import { addDaysYmd, dayOffset, MONTHS, weekdayFrom } from './days'
-import { accountZone, apiPost, editDetail, pickOne, registerFreshUser, WEB } from './helpers'
+import {
+  accountZone,
+  apiPost,
+  editDetail,
+  pickOne,
+  registerFreshUser,
+  WEB,
+  navLink,
+} from './helpers'
 
 /**
  * MEETINGS -- the module's own destination, and the form that fills one in once.
  *
- * A meeting is a kind of thing with a page of its own, reached from Things, and MADE there rather
+ * A meeting is a kind of thing with a page of its own, reached from the icon bar, and MADE there rather
  * than by clicking a square on a lens.
  */
 
 const dialog = (page: Page) => page.getByRole('dialog', { name: 'New meeting' })
 const pane = (page: Page) => page.getByRole('dialog', { name: 'Meetings' })
 
-test('Things reaches meetings, and the page says when there are none', async ({ page }) => {
-  // Kinds sit behind Things, not one row each in the rail.
+test('the icon bar reaches meetings, and the page says when there are none', async ({ page }) => {
+  // Every kind has its place on the icon bar (FR-019).
   await registerFreshUser(page)
-  await page
-    .getByRole('navigation', { name: 'Main navigation' })
-    .getByRole('link', { name: 'Things' })
-    .click()
-  await page.locator('[data-kind="Meetings"]').getByRole('link', { name: 'Meetings' }).click()
+  await navLink(page, 'Meetings').click()
   await expect(page).toHaveURL(/\/meetings$/)
   await expect(page.getByRole('heading', { level: 1, name: 'Meetings' })).toBeVisible()
   await expect(page.getByText('Nothing in the next month')).toBeVisible()

@@ -72,7 +72,7 @@ test('after a session ends, signing in again goes back to the page, and shows no
   await registerFreshUser(page)
   const mine = await makeProject(page, 'Only mine')
   await page.goto(`/projects/${mine}`)
-  await expect(page.getByRole('navigation', { name: 'Main navigation' })).toContainText('Only mine')
+  await expect(page.getByRole('navigation', { name: 'Projects' })).toContainText('Only mine')
 
   // The session ends behind the page's back; it finds out the next time it asks who is signed in.
   // Not while a read is out: one sent before the end still answers for the session it carried.

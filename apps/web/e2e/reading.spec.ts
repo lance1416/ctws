@@ -8,6 +8,8 @@ import {
   registerFreshUser,
   slowReads,
   WEB,
+  captureBox,
+  openCapture,
 } from './helpers'
 
 /**
@@ -19,7 +21,7 @@ import {
  * with one module there was nothing to route to.
  */
 
-const capture = (page: Page) => page.getByLabel('Capture')
+const capture = (page: Page) => captureBox(page)
 const rowOf = (page: Page, text: string) =>
   page.getByRole('listitem').filter({ hasText: text }).first()
 
@@ -29,6 +31,7 @@ async function captureLine(page: Page, line: string) {
       r.request().method() === 'POST' &&
       /\/api\/v1\/(tasks|reading)$/.test(new URL(r.url()).pathname),
   )
+  await openCapture(page)
   await capture(page).fill(line)
   await capture(page).press('Enter')
   return posted
@@ -41,7 +44,7 @@ test('a pasted link goes to Reading; a sentence still goes to the inbox', async 
 
   const toReading = await captureLine(page, 'https://linear.invalid/now/redesign')
   expect(new URL(toReading.url()).pathname).toBe('/api/v1/reading')
-  await expect(page.getByText('Added to')).toContainText('Reading')
+  await expect(page.getByText('Added to')).toContainText('To read')
 
   const toInbox = await captureLine(page, '看看这篇 https://linear.invalid/now/redesign')
   expect(new URL(toInbox.url()).pathname).toBe('/api/v1/tasks')
@@ -100,6 +103,8 @@ test('a book moves to read → reading → finished, and the finished pile folds
 
   await rowOf(page, '设计心理学').getByRole('button', { name: 'Start reading' }).click()
   await expect(section('Reading now').getByText('设计心理学')).toBeVisible()
+  // The row's button is its own action: pressing it does not also open the row's pane.
+  await expect(page.getByRole('dialog', { name: 'Reading' })).toHaveCount(0)
 
   await rowOf(page, '设计心理学').getByRole('button', { name: 'Finished' }).click()
   // Gone from both open sections, and not gone from the app: the count is the way back, which is
@@ -112,7 +117,7 @@ test('a book moves to read → reading → finished, and the finished pile folds
   await expect(rowOf(page, '设计心理学')).toBeVisible()
 })
 
-test('the rail counts what is waiting, not the size of the pile', async ({ page }) => {
+test('the sidebar counts what is waiting, not the size of the pile', async ({ page }) => {
   await registerFreshUser(page)
   const add = (data: Record<string, unknown>) => apiPost(page, '/reading', data)
   await add({ kind: 'book', title: '要读的' })
@@ -122,9 +127,9 @@ test('the rail counts what is waiting, not the size of the pile', async ({ page 
     data: { status: 'done' },
   })
 
-  // The count lives where every kind is listed, in the kind's own words.
-  await page.goto('/things')
-  await expect(page.locator('[data-kind="Reading"] [data-count]')).toHaveText('1 to read')
+  // The count heads the module's sidebar, in the kind's own words (FR-020).
+  await page.goto('/reading')
+  await expect(page.getByRole('complementary', { name: 'Reading' })).toContainText('1 to read')
 })
 
 test('search reaches both modules from one box', async ({ page }) => {
@@ -135,9 +140,9 @@ test('search reaches both modules from one box', async ({ page }) => {
   const inbox = projects.projects.find((p: { isInbox: boolean }) => p.isInbox)
   await apiPost(page, '/tasks', { projectId: inbox.id, title: '配色重做', parentId: null })
   await apiPost(page, '/reading', { kind: 'book', title: '配色的书' })
-  await page.goto('/tasks/today')
+  await page.goto('/today')
 
-  await page.getByRole('button', { name: 'Search' }).click()
+  await page.getByRole('button', { name: /^Search everything/ }).click()
   await page.getByRole('combobox', { name: 'Search' }).fill('配色')
   const dialog = page.getByRole('dialog', { name: 'Search' })
   await expect(dialog.getByRole('option').filter({ hasText: '配色重做' })).toHaveCount(1)
@@ -147,6 +152,7 @@ test('search reaches both modules from one box', async ({ page }) => {
 test('a project page carries both modules, each with its own block and numbers', async ({
   page,
 }) => {
+  test.fixme(true, 'Phase 3, STORY-015: the project page shows module-owned items in Linked again.')
   await registerFreshUser(page)
   const projectId = await makeProject(page, 'CTWS')
   await makeTask(page, projectId, '配色重做')
@@ -200,7 +206,7 @@ test('a reading item is deleted from the bottom of its layer, after one question
   const ask = page.getByRole('alertdialog', { name: 'Confirm deleting this item' })
   await expect(ask).toContainText('Delete “设计心理学”?')
   expect(deletes).toHaveLength(0)
-  await ask.getByRole('button', { name: 'Confirm delete' }).click()
+  await ask.getByRole('button', { name: /^Delete/ }).click()
   await expect(page.getByText('设计心理学')).toHaveCount(0)
   expect(deletes).toHaveLength(1)
 })

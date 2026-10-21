@@ -9,6 +9,7 @@ import {
   registerFreshUser,
   sidewaysScroll,
   WEB,
+  navLink,
 } from './helpers'
 
 /**
@@ -384,7 +385,9 @@ test('the full-screen writing mode round-trips the source unchanged', async ({ p
   const pid = await seedNote(page, '第一行\n\n第二段')
   await editDetail(page)
   // The pane holds the SOURCE, which is what is stored.
-  await expect(page.getByLabel('Notes', { exact: true })).toHaveValue('第一行\n\n第二段')
+  await expect(page.getByRole('textbox', { name: 'Notes', exact: true })).toHaveValue(
+    '第一行\n\n第二段',
+  )
 
   await page.getByRole('button', { name: 'Full screen' }).click()
   await expect(writingSource(page)).toHaveValue('第一行\n\n第二段')
@@ -399,7 +402,7 @@ test('the full-screen writing mode round-trips the source unchanged', async ({ p
   await page.getByRole('button', { name: 'Leave full screen' }).click()
   await expect(writingSource(page)).toHaveCount(0)
   // Byte for byte, back in the pane's own field.
-  await expect(page.getByLabel('Notes', { exact: true })).toHaveValue(written)
+  await expect(page.getByRole('textbox', { name: 'Notes', exact: true })).toHaveValue(written)
 
   const saved = patchAnswered(page, 'tasks/')
   await page.getByRole('button', { name: 'Save' }).click()
@@ -426,10 +429,7 @@ test('the unsaved-edit guard fires from the writing mode, and the question is vi
    * route in is the app's own links, which is what the guard can act on.
    */
   await page.keyboard.press('Escape')
-  await page
-    .getByRole('navigation', { name: 'Main navigation' })
-    .getByRole('link', { name: 'Projects' })
-    .click()
+  await navLink(page, 'Projects').click()
   await openProject(page, 'P', true)
   await page.getByRole('listitem').filter({ hasText: '读一下' }).first().click()
   await editDetail(page)
@@ -446,7 +446,9 @@ test('the unsaved-edit guard fires from the writing mode, and the question is vi
   )
   await page.getByRole('button', { name: 'Keep editing' }).click()
   // The typing survived the question.
-  await expect(page.getByLabel('Notes', { exact: true })).toHaveValue('原文，又写了一段')
+  await expect(page.getByRole('textbox', { name: 'Notes', exact: true })).toHaveValue(
+    '原文，又写了一段',
+  )
   // And Discard really does leave, which is what makes the question a question. Opening the task
   // was a step in the history of its own, so Back leaves the task's sheet, onto its project.
   await page.goBack()

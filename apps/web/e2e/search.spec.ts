@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { registerFreshUser, seedTasks, startProject, WEB, apiPost } from './helpers'
+import { registerFreshUser, seedTasks, startProject, WEB, apiPost, openCapture } from './helpers'
 
 /** The row's focus carrier in the tree; its accessible name is the task title. */
 const handle = (page: Page, title: string) =>
@@ -52,7 +52,7 @@ test('search finds a task inside a collapsed subtree and leaves it visible and f
   await page.getByRole('link', { name: 'Today' }).click()
   await expect(page.locator('#today-heading')).toBeVisible()
 
-  await page.keyboard.press('f')
+  await page.keyboard.press('Control+k')
   await query(page, '针')
   await expect(result(page, '藏起来的针')).toBeVisible()
   await page.keyboard.press('Enter')
@@ -85,7 +85,7 @@ test('search reaches a task in a project other than the one being viewed', async
   await page.goto(beta)
   await expect(page.getByRole('listitem')).toHaveCount(1)
 
-  await page.keyboard.press('f')
+  await page.keyboard.press('Control+k')
   await query(page, '的活')
   // Both projects answered, and each result says which project it is in.
   await expect(result(page, 'alpha 的活')).toContainText('Alpha')
@@ -117,7 +117,7 @@ test('search shows the parent breadcrumb and the status, and skips deleted tasks
   })
   expect(removed.status()).toBe(204)
 
-  await page.keyboard.press('f')
+  await page.keyboard.press('Control+k')
   await query(page, 'hint')
 
   // `project › parent`, exactly as the Today and Done lists write it.
@@ -149,7 +149,7 @@ test('the search selection is announceable: combobox, listbox, activedescendant'
   ])
   await page.goto(url)
   await expect(page.getByRole('listitem')).toHaveCount(3)
-  await page.keyboard.press('f')
+  await page.keyboard.press('Control+k')
 
   const box = searchBox(page)
   await expect(box).toHaveRole('combobox')
@@ -209,26 +209,28 @@ test('the search selection is announceable: combobox, listbox, activedescendant'
   await expect(handle(page, second)).toBeFocused()
 })
 
-test('Escape closes search, and f typed into a text field does not open it', async ({ page }) => {
+test('Escape closes search, and Ctrl K opens it even from a text field', async ({ page }) => {
   await registerFreshUser(page)
 
-  await page.keyboard.press('f')
+  await page.keyboard.press('Control+k')
   await expect(searchBox(page)).toBeFocused()
   await page.keyboard.press('Escape')
   await expect(searchBox(page)).toHaveCount(0)
 
-  // Opened from the header button instead: closing returns focus to it rather than dropping to
+  // Opened from the top bar's box instead: closing returns focus to it rather than dropping to
   // <body> (WCAG 2.4.3), which is the behaviour the rest of this app already holds to.
-  await page.getByRole('button', { name: 'Search' }).click()
+  await page.getByRole('button', { name: /^Search everything/ }).click()
   await expect(searchBox(page)).toBeFocused()
   await page.keyboard.press('Escape')
-  await expect(page.getByRole('button', { name: 'Search' })).toBeFocused()
+  await expect(page.getByRole('button', { name: /^Search everything/ })).toBeFocused()
 
-  // The guard every document-level key needs: in the capture box, `f` is a letter.
-  await page.getByLabel('Capture').fill('')
-  await page.getByLabel('Capture').press('f')
+  // In the capture box a letter is a letter; Ctrl K is a command, and works from there too.
+  const box = await openCapture(page)
+  await box.press('f')
   await expect(searchBox(page)).toHaveCount(0)
-  await expect(page.getByLabel('Capture')).toHaveValue('f')
+  await expect(box).toHaveValue('f')
+  await box.press('Control+k')
+  await expect(searchBox(page)).toBeFocused()
 })
 
 /**
@@ -250,7 +252,7 @@ test('no Tab reaches outside the search dialog while it is open', async ({ page 
 
   // Opened from a real control, so "where focus goes back to" has an answer worth asserting.
   await handle(page, '第一条').focus()
-  await page.keyboard.press('f')
+  await page.keyboard.press('Control+k')
   await expect(searchBox(page)).toBeFocused()
   await query(page, '条')
   await expect(page.locator('[data-search-result]')).toHaveCount(2)
@@ -281,16 +283,19 @@ test('no Tab reaches outside the search dialog while it is open', async ({ page 
  */
 test('search goes to places: before typing, and by name', async ({ page }) => {
   await registerFreshUser(page, '/')
-  await page.getByRole('banner').getByRole('button', { name: 'Search' }).click()
+  await page
+    .getByRole('banner')
+    .getByRole('button', { name: /^Search everything/ })
+    .click()
   const dialog = page.getByRole('dialog', { name: 'Search' })
   // Nothing typed yet: the places are all there, each with the key that goes straight to it.
-  await expect(dialog.getByRole('option', { name: /^Things/ })).toBeVisible()
-  await expect(dialog.getByRole('option', { name: /^People/ })).toContainText('g n')
+  await expect(dialog.getByRole('option', { name: /^Organisations/ })).toBeVisible()
+  await expect(dialog.getByRole('option', { name: /^People/ })).toContainText('G E')
 
-  await searchBox(page).fill('thin')
-  await expect(dialog.getByRole('option').first()).toContainText('Things')
+  await searchBox(page).fill('organ')
+  await expect(dialog.getByRole('option').first()).toContainText('Organisations')
   await searchBox(page).press('Enter')
-  await expect(page).toHaveURL(/\/things$/)
+  await expect(page).toHaveURL(/\/organisations$/)
 })
 
 test('what was opened lately is first, before anything is typed', async ({ page }) => {
@@ -300,7 +305,10 @@ test('what was opened lately is first, before anything is typed', async ({ page 
   await page.goto(`/people/${id}`)
   await expect(page.getByRole('dialog').getByRole('heading', { name: '陈颖' })).toBeVisible()
 
-  await page.getByRole('banner').getByRole('button', { name: 'Search' }).click()
+  await page
+    .getByRole('banner')
+    .getByRole('button', { name: /^Search everything/ })
+    .click()
   const first = page.getByRole('dialog', { name: 'Search' }).getByRole('option').first()
   await expect(first).toContainText('陈颖')
   await expect(first).toContainText('Person')
@@ -312,7 +320,10 @@ test('choosing a person in search opens that person', async ({ page }) => {
   await registerFreshUser(page, '/')
   const made = await apiPost(page, '/people', { name: 'Dana Search' })
   const { id } = made
-  await page.getByRole('banner').getByRole('button', { name: 'Search' }).click()
+  await page
+    .getByRole('banner')
+    .getByRole('button', { name: /^Search everything/ })
+    .click()
   await query(page, 'Dana')
   await result(page, 'Dana Search').click()
   await expect(page).toHaveURL(new RegExp(`/people/${id}$`))
@@ -323,7 +334,10 @@ test('choosing a reading item in search opens that item', async ({ page }) => {
   await registerFreshUser(page, '/')
   const made = await apiPost(page, '/reading', { kind: 'book', title: 'Searchable book' })
   const { id } = made
-  await page.getByRole('banner').getByRole('button', { name: 'Search' }).click()
+  await page
+    .getByRole('banner')
+    .getByRole('button', { name: /^Search everything/ })
+    .click()
   await query(page, 'Searchable')
   await result(page, 'Searchable book').click()
   await expect(page).toHaveURL(new RegExp(`/reading/${id}$`))
@@ -334,7 +348,10 @@ test('Enter straight after typing goes where the typing points', async ({ page }
   // Before anything was typed the list held other places; Enter must not choose from that list
   // because the typing has not been read yet.
   await registerFreshUser(page, '/')
-  await page.getByRole('banner').getByRole('button', { name: 'Search' }).click()
+  await page
+    .getByRole('banner')
+    .getByRole('button', { name: /^Search everything/ })
+    .click()
   await searchBox(page).pressSequentially('peo')
   await searchBox(page).press('Enter')
   await expect(page).toHaveURL(/\/people$/)
@@ -342,9 +359,12 @@ test('Enter straight after typing goes where the typing points', async ({ page }
 
 test('the groups before typing are named for a screen reader', async ({ page }) => {
   await registerFreshUser(page, '/')
-  await page.getByRole('banner').getByRole('button', { name: 'Search' }).click()
+  await page
+    .getByRole('banner')
+    .getByRole('button', { name: /^Search everything/ })
+    .click()
   const goTo = page.getByRole('dialog', { name: 'Search' }).getByRole('group', { name: 'Go to' })
-  await expect(goTo.getByRole('option', { name: /^Things/ })).toBeVisible()
+  await expect(goTo.getByRole('option', { name: /^Workbench/ })).toBeVisible()
 })
 
 test('a person deleted here leaves Recent at once', async ({ page }) => {
@@ -354,16 +374,19 @@ test('a person deleted here leaves Recent at once', async ({ page }) => {
   await page.goto(`/people/${id}`)
   const pane = page.getByRole('dialog', { name: 'People' })
   await expect(pane.getByRole('heading', { name: '陈颖' })).toBeVisible()
-  await pane.getByRole('button', { name: 'Delete person' }).click()
+  await pane.getByRole('button', { name: /^Delete / }).click()
   await page
-    .getByRole('alertdialog', { name: 'Confirm deleting this person' })
-    .getByRole('button', { name: 'Confirm delete' })
+    .getByRole('alertdialog', { name: 'Delete 陈颖' })
+    .getByRole('button', { name: /^Delete/ })
     .click()
   await expect(pane).toHaveCount(0)
 
-  await page.getByRole('banner').getByRole('button', { name: 'Search' }).click()
+  await page
+    .getByRole('banner')
+    .getByRole('button', { name: /^Search everything/ })
+    .click()
   const dialog = page.getByRole('dialog', { name: 'Search' })
-  await expect(dialog.getByRole('option', { name: /^Things/ })).toBeVisible()
+  await expect(dialog.getByRole('option', { name: /^Workbench/ })).toBeVisible()
   await expect(dialog.getByRole('option', { name: /陈颖/ })).toHaveCount(0)
 })
 
@@ -382,9 +405,12 @@ test('a project deleted elsewhere leaves Recent once its page finds it gone', as
   // The header still says where this is, rather than an empty name.
   await expect(here).toHaveText('Not found')
 
-  await page.getByRole('banner').getByRole('button', { name: 'Search' }).click()
+  await page
+    .getByRole('banner')
+    .getByRole('button', { name: /^Search everything/ })
+    .click()
   const dialog = page.getByRole('dialog', { name: 'Search' })
-  await expect(dialog.getByRole('option', { name: /^Things/ })).toBeVisible()
+  await expect(dialog.getByRole('option', { name: /^Workbench/ })).toBeVisible()
   await expect(dialog.getByRole('option', { name: /Job hunt/ })).toHaveCount(0)
 })
 
@@ -398,7 +424,10 @@ test('results landing do not pull the highlight back to the first row', async ({
     await held
     await r.continue()
   })
-  await page.getByRole('banner').getByRole('button', { name: 'Search' }).click()
+  await page
+    .getByRole('banner')
+    .getByRole('button', { name: /^Search everything/ })
+    .click()
   const box = searchBox(page)
   await box.pressSequentially('e')
   const dialog = page.getByRole('dialog', { name: 'Search' })

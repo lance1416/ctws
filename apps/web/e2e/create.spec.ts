@@ -7,6 +7,9 @@ import {
   serverParents,
   slowReads,
   submitCreate,
+  captureBox,
+  navLink,
+  captureLine,
 } from './helpers'
 
 const POST_TASK = /\/api\/v1\/tasks$/
@@ -45,10 +48,7 @@ async function shape(page: Page) {
 /** A project holding A (children a1, a2) and a root B. Returns its id. */
 async function seed(page: Page): Promise<string> {
   await registerFreshUser(page)
-  await page
-    .getByRole('navigation', { name: 'Main navigation' })
-    .getByRole('link', { name: 'Projects' })
-    .click()
+  await navLink(page, 'Projects').click()
   await submitCreate(page, 'New project', 'P')
   await openProject(page, 'P', true)
   const projectId = page.url().split('/').pop()!
@@ -356,7 +356,7 @@ test('capture confirms where the task went, and the line goes on the next keystr
   const line = page.getByRole('status').filter({ hasText: 'Added to' })
   await expect(line).toHaveCount(0)
 
-  await submitCreate(page, 'Capture…', '问问房东')
+  await captureLine(page, '问问房东')
   await expect(line).toBeVisible()
   await expect(line.getByRole('link', { name: inbox.name })).toHaveAttribute(
     'href',
@@ -364,22 +364,19 @@ test('capture confirms where the task went, and the line goes on the next keystr
   )
 
   // One line, in place: a second capture does not stack another beneath it.
-  await submitCreate(page, 'Capture…', '第二件事')
+  await captureLine(page, '第二件事')
   await expect(line).toHaveCount(1)
 
-  await page.getByPlaceholder('Capture…').press('x')
+  await captureBox(page).press('x')
   await expect(line).toHaveCount(0)
 })
 
 test('the capture line goes when the user navigates away', async ({ page }) => {
   await registerFreshUser(page)
-  await submitCreate(page, 'Capture…', '问问房东')
+  await captureLine(page, '问问房东')
   const line = page.getByRole('status').filter({ hasText: 'Added to' })
   await expect(line).toBeVisible()
-  await page
-    .getByRole('navigation', { name: 'Main navigation' })
-    .getByRole('link', { name: 'Projects' })
-    .click()
+  await navLink(page, 'Projects').click()
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
   await expect(line).toHaveCount(0)
 })

@@ -6,7 +6,7 @@ import { makeProject, makeTask, openDetail, registerFreshUser, sidewaysScroll } 
 const WIDE = { width: 1440, height: 900 }
 const PHONE = { width: 375, height: 667 }
 
-const rail = (page: Page) => page.getByRole('navigation', { name: 'Main navigation' })
+const rail = (page: Page) => page.getByRole('navigation', { name: 'Projects' })
 
 // The left rail is the only place that answers "how much is waiting over there" before you
 // click. The number is the SERVER's, so it is compared against the API rather than against a
@@ -24,7 +24,7 @@ test('the left rail shows each project the open-task count the server reports', 
   await makeTask(page, busy, '取消了', { status: 'cancelled' })
   await makeTask(page, quiet, '也做完了', { status: 'done' })
 
-  await page.goto('/tasks/today')
+  await page.goto('/projects')
   const { projects } = (await (await page.request.get('/api/v1/projects')).json()) as {
     projects: { id: string; name: string; columns: { openTasks: number } }[]
   }
@@ -48,10 +48,15 @@ test('the left rail shows each project the open-task count the server reports', 
 
   // The Today destination carries its own count, from the same server list the page renders.
   await makeTask(page, busy, '今天要做的', { scheduledOn: new Date().toLocaleDateString('en-CA') })
+  // On a phone the tab bar's Today says how much is planned (the icon bar has no counts).
+  await page.setViewportSize(PHONE)
   await page.reload()
-  await expect(rail(page).getByRole('link', { name: 'Today' }).locator('[data-count]')).toHaveText(
-    '1',
-  )
+  await expect(
+    page
+      .getByRole('navigation', { name: 'Main navigation' })
+      .getByRole('link', { name: /^Today/ })
+      .locator('[data-count]'),
+  ).toHaveText('1')
 })
 
 // A page that scrolls sideways on a phone is unusable: the rail, the capture bar and the type are
@@ -74,7 +79,7 @@ test('nothing scrolls sideways at 375px', async ({ page }) => {
     ['Workbench', '/'],
     ['Projects', '/projects'],
     ['the project', `/projects/${pid}`],
-    ['Done', '/tasks/review?view=done'],
+    ['Done', '/review?view=done'],
   ] as const) {
     await page.goto(url)
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()

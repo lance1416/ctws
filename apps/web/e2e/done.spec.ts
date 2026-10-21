@@ -38,10 +38,10 @@ async function finish(page: Page, id: string, ago?: string) {
   if (ago) backdateCompletion(id, ago)
 }
 
-const nav = (page: Page) => page.getByRole('navigation', { name: 'Main navigation' })
+const nav = (page: Page) => page.getByRole('navigation', { name: 'Modules' })
 
 /**
- * Done is a VIEW of Review, not a rail row of its own: both answer what I did.
+ * Done is a VIEW of Review, not a place of its own: both answer what I did.
  */
 const goCompleted = async (page: Page) => {
   await nav(page).getByRole('link', { name: 'Review' }).click()
@@ -111,7 +111,7 @@ test('the completed list is grouped by day, newest day and newest task first', a
   await finish(page, olderA, `${hoursBackToNoon(5)} hours`)
   await finish(page, olderB, `${hoursBackToNoon(5) - 6} hours`)
 
-  await page.goto('/tasks/review?view=done')
+  await page.goto('/review?view=done')
   const headings = page.locator('section[data-panel]').getByRole('heading', { level: 2 })
   // Three days, newest first; the nearest two are told apart as Today / Yesterday.
   await expect(headings).toHaveCount(3)
@@ -144,7 +144,7 @@ test('a finished task can be restored from the completed list, and the server ag
   await finish(page, wrong)
   await finish(page, right)
 
-  await page.goto('/tasks/review?view=done')
+  await page.goto('/review?view=done')
   await expect(page.getByRole('main').getByRole('listitem')).toHaveCount(2)
   const restored = taskPatched(page)
   await page.getByRole('button', { name: 'Reopen “点错了”' }).click()
@@ -163,7 +163,7 @@ test('a finished task can be restored from the completed list, and the server ag
 
 test('with nothing finished, the view says so', async ({ page }) => {
   await registerFreshUser(page)
-  await page.goto('/tasks/review?view=done')
+  await page.goto('/review?view=done')
   await expect(page.getByText('Nothing finished yet')).toBeVisible()
 })
 
@@ -171,7 +171,7 @@ test('a restore that fails says so', async ({ page }) => {
   await registerFreshUser(page)
   const projectId = await makeProject(page, 'Undo')
   const id = await makeTask(page, projectId, 'Bring me back', { status: 'done' })
-  await page.goto('/tasks/review?view=done')
+  await page.goto('/review?view=done')
   await page.route(`**/api/v1/tasks/${id}`, (r) =>
     r.request().method() === 'PATCH' ? r.fulfill({ status: 500, body: '{}' }) : r.continue(),
   )
@@ -186,7 +186,7 @@ test('deleting a task from Done leaves focus on the list, not the page', async (
   const projectId = await makeProject(page, 'Finished')
   await makeTask(page, projectId, 'First done', { status: 'done' })
   await makeTask(page, projectId, 'Second done', { status: 'done' })
-  await page.goto('/tasks/review?view=done')
+  await page.goto('/review?view=done')
   await page.getByText('First done').click()
   await page.getByRole('button', { name: 'Delete task' }).click()
   await page
@@ -266,7 +266,7 @@ test('deleting a leaf does not claim descendants, and works from the Today panel
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '在做的', { status: 'in_progress' })
   await makeTask(page, pid, '另一个', { status: 'in_progress' })
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   await expect(page.locator('[data-today-row]')).toHaveCount(2)
 
   await page.locator('[data-today-row]').filter({ hasText: '在做的' }).click()
@@ -325,7 +325,7 @@ test('navigating away from a dirty panel asks first; keep editing stays, discard
 
   await nav(page).getByRole('link', { name: 'Review' }).click()
   await page.getByRole('button', { name: 'Discard changes' }).click()
-  await expect(page).toHaveURL(/\/tasks\/review$/)
+  await expect(page).toHaveURL(/\/review$/)
   await expect(page.getByRole('dialog')).toHaveCount(0)
   expect((await serverTasks(page, pid))[0]!.title).toBe('写方案')
 })
@@ -401,7 +401,7 @@ test('pressing Save and then a nav link at once is not mistaken for losing edits
   })
   await page.getByRole('button', { name: 'Save' }).click()
   await nav(page).getByRole('link', { name: 'Today' }).click()
-  await expect(page).toHaveURL(/\/tasks\/today$/)
+  await expect(page).toHaveURL(/\/today$/)
   await expect(page.getByText('You have unsaved changes')).toHaveCount(0)
   // The save was not lost on the way.
   const saved = taskPatched(page)

@@ -26,7 +26,7 @@ test('in dark, the selected search result stands out', async ({ page }) => {
   await registerFreshUser(page)
   await apiPost(page, '/people', { name: 'Sam Patel', org: 'IQBank' })
   await dark(page)
-  await page.getByRole('button', { name: 'Search' }).click()
+  await page.getByRole('button', { name: /^Search everything/ }).click()
   await page.getByRole('combobox', { name: 'Search' }).fill('Sam')
   const dialog = page.getByRole('dialog', { name: 'Search' })
   const chosen = dialog.locator('[role="option"][aria-selected="true"]')
@@ -108,7 +108,7 @@ for (const scheme of ['light', 'dark'] as const) {
     // The rail's current project, and its count.
     await page.goto(`/projects/${pid}`)
     const count = page
-      .getByRole('navigation', { name: 'Main navigation' })
+      .getByRole('navigation', { name: 'Projects' })
       .locator(`a[href="/projects/${pid}"] [data-count]`)
     expect(await textContrast(count), 'rail count').toBeGreaterThanOrEqual(4.5)
 

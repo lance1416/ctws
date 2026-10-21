@@ -22,7 +22,7 @@ test('an empty Today says so, and the line goes when there is something on it', 
 
   // The other half: with something on today, none of it is on the page.
   await makeTask(page, pid, '今天要做的', { scheduledOn: ymd(new Date()) })
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   await expect(
     page.getByRole('region', { name: 'Today', exact: true }).getByText('今天要做的'),
   ).toBeVisible()
@@ -56,24 +56,24 @@ test('an empty project says what the tree is for and puts the cursor in the inpu
 test('an empty Done says so, and the line goes when something is finished', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
-  await page.goto('/tasks/review?view=done')
+  await page.goto('/review?view=done')
 
   await expect(page.getByText('Nothing finished yet')).toBeVisible()
 
   await makeTask(page, pid, '做完的事', { status: 'done' })
-  await page.goto('/tasks/review?view=done')
+  await page.goto('/review?view=done')
   await expect(page.getByText('做完的事')).toBeVisible()
   await expect(page.getByText('Nothing finished yet')).toHaveCount(0)
 })
 
-test('a search with no match says what search covers and clears itself', async ({ page }) => {
+test('a search with no match says so, and offers to make it a task (FR-024)', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '找得到的任务')
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   await page.locator('#today-heading').waitFor()
 
-  await page.keyboard.press('f')
+  await page.keyboard.press('Control+k')
   const box = page.getByRole('combobox', { name: 'Search' })
   await expect(box).toBeFocused()
 
@@ -81,20 +81,16 @@ test('a search with no match says what search covers and clears itself', async (
   const missed = page.waitForResponse((r) => r.url().includes('/api/v1/tasks?q=') && r.ok())
   await box.fill('绝不存在的词')
   await missed
-  await expect(page.getByText('Nothing matches')).toBeVisible()
+  await expect(page.getByText('No results match “绝不存在的词”.')).toBeVisible()
   await expect(page.locator('[data-search-result]')).toHaveCount(0)
 
-  // The one action: empty the box and hand the cursor back, so the next word can just be typed.
-  await page.getByRole('button', { name: 'Try another word' }).click()
-  await expect(box).toHaveValue('')
-  await expect(box).toBeFocused()
-  await expect(page.getByText('Nothing matches')).toHaveCount(0)
-
-  // The other half: with a match, none of the empty state is on screen.
-  const found = page.waitForResponse((r) => r.url().includes('/api/v1/tasks?q=') && r.ok())
-  await page.keyboard.type('找得到')
-  await found
-  await expect(page.locator('[data-search-result]')).toHaveCount(1)
-  await expect(page.getByText('Nothing matches')).toHaveCount(0)
-  await expect(page.getByRole('button', { name: 'Try another word' })).toHaveCount(0)
+  // The next move: Enter makes it a task, in the inbox, and goes where it went.
+  const made = page.waitForResponse(
+    (r) => r.request().method() === 'POST' && new URL(r.url()).pathname === '/api/v1/tasks',
+  )
+  await expect(page.getByRole('button', { name: /New task “绝不存在的词”/ })).toBeVisible()
+  await box.press('Enter')
+  expect((await made).ok()).toBe(true)
+  await expect(box).toHaveCount(0)
+  await expect(page.getByText('绝不存在的词')).toBeVisible()
 })

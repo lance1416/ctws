@@ -48,7 +48,7 @@ test('Movement shows the counts the server reports, for every project that has a
   for (const t of ['乙一', '乙二']) await makeTask(page, job, t)
   // 丙线 has nothing at all, so it must not get a line: "0 / 0" is not news.
 
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   const where = panel(page, 'This week')
   await expect(where).toBeVisible()
 
@@ -93,7 +93,7 @@ test('the stagnation line names a project only while that project is really quie
   backdateProjectActivity(stale, '9 days')
   backdateProjectActivity(finished, '9 days')
 
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   const where = panel(page, 'This week')
   const server = await movementOf(page)
   const quiet = server.find((r) => r.projectId === stale)!
@@ -125,7 +125,7 @@ test('a workspace where nothing has gone quiet shows no stagnation line at all',
   const pid = await makeProject(page, '刚开的')
   await makeTask(page, pid, '刚写的')
 
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   await expect(panel(page, 'This week').getByText('刚开的')).toBeVisible()
   await expect(page.locator('[data-stagnant]')).toHaveCount(0)
 })
@@ -166,7 +166,7 @@ test('Today is a panel grid at 1440 and one column at 375', async ({ page }) => 
 
   // --- 1440: one column of sections, This week beside them ---
   await page.setViewportSize(WIDE)
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   await expect(panel(page, 'Done today')).toBeVisible()
   let b = await boxes()
   const sections = ['In progress', 'Today', 'Overdue', 'Done today'] as const
@@ -182,7 +182,7 @@ test('Today is a panel grid at 1440 and one column at 375', async ({ page }) => 
 
   // --- 375: one column, This week last, and no sideways scroll ---
   await page.setViewportSize(PHONE)
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   await expect(panel(page, 'Done today')).toBeVisible()
   b = await boxes()
   const order = Object.entries(b)
@@ -203,7 +203,7 @@ test('the banner carries the running task, and says so plainly when nothing is r
   await makeTask(page, pid, '排到今天的', { scheduledOn: ymd(new Date()) })
   await makeTask(page, pid, '没有日期的')
 
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   const banner = panel(page, 'In progress')
   // Nothing running: the banner is still there, says what would fill it, and holds no row.
   await expect(banner).toBeVisible()

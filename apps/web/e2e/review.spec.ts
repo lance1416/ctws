@@ -49,7 +49,7 @@ test('it shows work that was finished and then reopened, which Done does not', a
 
   // THE CASE THE VIEW EXISTS FOR. Finishing something on Tuesday is work done even if it came
   // back on Thursday.
-  await page.goto('/tasks/review')
+  await page.goto('/review')
   await expect(project(page, 'CTWS')).toContainText('写迁移')
 
   await page.getByRole('tab', { name: 'Done' }).click()
@@ -58,7 +58,7 @@ test('it shows work that was finished and then reopened, which Done does not', a
 
 test('a week with nothing in it still says which week it was', async ({ page }) => {
   await registerFreshUser(page)
-  await page.goto('/tasks/review')
+  await page.goto('/review')
   await expect(page.getByText('Nothing happened this week')).toBeVisible()
   // The bounds come from the server, which decided them in the account's zone; they are shown
   // even with no rows, so they cannot have been derived from the rows.
@@ -68,7 +68,7 @@ test('a week with nothing in it still says which week it was', async ({ page }) 
 test('the week is summed up before it is listed', async ({ page }) => {
   await registerFreshUser(page)
   await seed(page)
-  await page.goto('/tasks/review')
+  await page.goto('/review')
 
   // Said as one sentence under the title, the way a project's head says its numbers; read off it,
   // not counted off the rows.
@@ -89,7 +89,7 @@ test('the week steps back a whole week, and forward and This week come back to t
 }) => {
   await registerFreshUser(page)
   await seed(page)
-  await page.goto('/tasks/review')
+  await page.goto('/review')
 
   const forward = page.getByRole('button', { name: 'The week after' })
   const back = page.getByRole('button', { name: 'The week before' })
@@ -124,7 +124,7 @@ test('the week steps back a whole week, and forward and This week come back to t
 test('a line of work carries what happened to each task, by its own mark', async ({ page }) => {
   await registerFreshUser(page)
   await seed(page)
-  await page.goto('/tasks/review')
+  await page.goto('/review')
 
   const block = project(page, 'Job hunt')
   // The mark says what happened: the same glyph the task wears everywhere else in the app.
@@ -143,7 +143,7 @@ test('the week hangs on the margin: the day, the thread, then what happened', as
   await page.setViewportSize({ width: 1440, height: 900 })
   await registerFreshUser(page)
   await seed(page)
-  await page.goto('/tasks/review')
+  await page.goto('/review')
 
   const block = project(page, 'Job hunt')
   // Everything in the seed happened just now, so its day is today.

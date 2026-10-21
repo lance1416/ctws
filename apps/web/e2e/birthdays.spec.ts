@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dayOffset, MONTHS } from './days'
-import { pickOne, registerFreshUser, WEB, apiPost } from './helpers'
+import { lunarYear, pickLunarDay, pickSolarDay, registerFreshUser, WEB, apiPost } from './helpers'
 
 /**
  * Birthdays: the lens over the people who have one.
@@ -32,6 +32,7 @@ const rows = (page: Page) => page.locator('[data-birthday-row]')
  * A birthday's row is a person's row: the day in the margin with the cake, the thread, then who,
  * how old, and how far off at the far end. The heading above hangs where the threads do.
  */
+
 test('a birthday row hangs on the margin: the day and its cake, then who, then how far off', async ({
   page,
 }) => {
@@ -248,11 +249,8 @@ test('the Birthdays tab count follows a birthday set in the pane', async ({ page
 
   await page.getByRole('button', { name: 'Edit', exact: true }).click()
   await page.getByRole('button', { name: 'Birthday, not set' }).click()
-  const { month, day } = monthDay(2)
-  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August']
-  const months = [...MONTHS, 'September', 'October', 'November', 'December']
-  await pickOne(page, 'Month', new RegExp(`^${months[month - 1]}$`))
-  await pickOne(page, 'Day', new RegExp(`^${day}$`))
+  // No year: the grid is this year's, and the day is pointed at.
+  await pickSolarDay(page, dayOffset(2))
   await page.getByRole('button', { name: 'Save' }).click()
   await expect(tab.locator('[data-count]')).toHaveText('2')
 })
@@ -288,14 +286,9 @@ test('a lunar birthday shows its conversion and fallback as it is written', asyn
   // Edited like any other field: Edit opens the form, and the birthday cell opens its controls.
   await page.getByRole('button', { name: 'Edit', exact: true }).click()
   await page.getByRole('button', { name: 'Birthday, not set' }).click()
-  await page
-    .getByRole('group', { name: 'Which calendar' })
-    .getByRole('button', { name: 'Lunar' })
-    .click()
-  await page.getByRole('textbox', { name: 'Year' }).fill('1944')
-  // The app's own picker, not a native select (`layers.test.ts` forbids those).
-  await pickOne(page, 'Lunar month', '十二月')
-  await pickOne(page, 'Lunar day', '三十')
+  // The year moves the lunar grid to that year's months, through the server's conversion.
+  await lunarYear(page, '1944')
+  await pickLunarDay(page, '十二月', '三十')
   // The server computes the preview, so this waits on a response, not a local string.
   const preview = page.getByTestId('birthday-preview')
   // The solar day in the app's own words, never the wire format.
@@ -312,20 +305,16 @@ test('a day that year does not have makes the preview say which part fails', asy
   await page.goto(`/people/${id}`)
   await page.getByRole('button', { name: 'Edit', exact: true }).click()
   await page.getByRole('button', { name: 'Birthday, not set' }).click()
-  await page
-    .getByRole('group', { name: 'Which calendar' })
-    .getByRole('button', { name: 'Lunar' })
-    .click()
-  // The first lunar month of 2021 has 29 days: each part is valid, but the day never happened.
-  await page.getByRole('textbox', { name: 'Year' }).fill('2021')
-  await pickOne(page, 'Lunar month', '正月')
-  await pickOne(page, 'Lunar day', '三十')
+  // The grid offers only days that exist; a day can stop existing when the year changes under it.
+  await lunarYear(page, '1944')
+  await pickLunarDay(page, '十二月', '三十')
+  await page.getByRole('textbox', { name: 'Year' }).fill('1993')
   await expect(page.getByTestId('birthday-preview')).toContainText(
-    '正月 has 29 days in 2021, so there is no 三十.',
+    '十二月 has 29 days in 1993, so there is no 三十.',
   )
-  // The server would refuse it, so Save is disabled.
+  // The server would refuse it, so Save is disabled; the year it happened in brings it back.
   await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled()
-  await pickOne(page, 'Lunar day', '廿九')
+  await page.getByRole('textbox', { name: 'Year' }).fill('1944')
   await expect(page.getByRole('button', { name: 'Save' })).toBeEnabled()
 })
 

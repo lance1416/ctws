@@ -10,8 +10,9 @@ import {
   routeMoves,
   setDetailStatus,
   submitCreate,
+  navLink,
 } from './helpers'
-import { addDaysYmd, dayOffset } from './days'
+import { addDaysYmd, dayOffset, dayWords } from './days'
 
 const PATCH_URL = /\/tasks\/[^/]+$/
 
@@ -65,10 +66,7 @@ async function reopen(page: Page, title: string, edit = true) {
 }
 
 async function seedOneTask(page: Page, edit = true) {
-  await page
-    .getByRole('navigation', { name: 'Main navigation' })
-    .getByRole('link', { name: 'Projects' })
-    .click()
+  await navLink(page, 'Projects').click()
   await submitCreate(page, 'New project', 'P')
   await openProject(page, 'P', true)
   await submitCreate(page, 'New task', '写方案')
@@ -80,16 +78,16 @@ test('edits persist across a reload', async ({ page }) => {
   await seedOneTask(page)
   const url = page.url()
 
-  await page.getByLabel('Notes', { exact: true }).fill('先问清需求')
+  await page.getByRole('textbox', { name: 'Notes', exact: true }).fill('先问清需求')
   await setDetailStatus(page, 'In progress')
   await page.getByLabel('Plan', { exact: true }).fill(PLAN)
   await save(page)
 
   await page.goto(url)
   await reopen(page, '写方案')
-  await expect(page.getByLabel('Notes', { exact: true })).toHaveValue('先问清需求')
+  await expect(page.getByRole('textbox', { name: 'Notes', exact: true })).toHaveValue('先问清需求')
   await expect(page.getByRole('radio', { name: 'In progress', exact: true })).toBeChecked()
-  await expect(page.getByLabel('Plan', { exact: true })).toHaveValue(PLAN)
+  await expect(page.getByLabel('Plan', { exact: true })).toHaveValue(dayWords(PLAN))
 })
 
 test('title and due time persist across a reload', async ({ page }) => {
@@ -119,10 +117,7 @@ test('moves a task to another project', async ({ page }) => {
   await expect(row(page, '写方案')).toHaveCount(0)
   await expect(page.getByRole('dialog')).toHaveCount(0)
   // ...and arrives in the other one.
-  await page
-    .getByRole('navigation', { name: 'Main navigation' })
-    .getByRole('link', { name: 'Projects' })
-    .click()
+  await navLink(page, 'Projects').click()
   await openProject(page, 'Inbox')
   await expect(row(page, '写方案')).toBeVisible()
 })
@@ -136,7 +131,7 @@ test('clearing a date removes it rather than sending an empty string', async ({ 
   // The date really was stored; otherwise clearing it proves nothing.
   await page.reload()
   await reopen(page, '写方案')
-  await expect(page.getByLabel('Plan', { exact: true })).toHaveValue(PLAN)
+  await expect(page.getByLabel('Plan', { exact: true })).toHaveValue(dayWords(PLAN))
 
   await page.getByLabel('Plan', { exact: true }).fill('')
   const res = await save(page)
@@ -176,8 +171,8 @@ test('the PATCH names the fields that changed, and only those', async ({ page })
   // Edited and put back: nothing changed, so the body does not mention it. The title goes along for
   // the ride so that a request is sent at all and the assertion is about what is MISSING from it.
   await reopen(page, '写方案')
-  await page.getByLabel('Notes', { exact: true }).fill('先问清需求')
-  await page.getByLabel('Notes', { exact: true }).fill('')
+  await page.getByRole('textbox', { name: 'Notes', exact: true }).fill('先问清需求')
+  await page.getByRole('textbox', { name: 'Notes', exact: true }).fill('')
   await page.getByLabel('Title').fill('写方案 v2')
   expect((await save(page)).request().postDataJSON()).toEqual({ title: '写方案 v2' })
 
@@ -214,7 +209,7 @@ test('a rejected save says why and leaves the panel open', async ({ page }) => {
         })
       : r.continue(),
   )
-  await page.getByLabel('Notes', { exact: true }).fill('x')
+  await page.getByRole('textbox', { name: 'Notes', exact: true }).fill('x')
   await page.getByRole('button', { name: 'Save' }).click()
   // The server's sentence for the person, not its status title.
   await expect(page.getByRole('alert')).toContainText('Those notes are too long')
@@ -302,10 +297,7 @@ test('a rejected move is reported and nothing changes', async ({ page }) => {
   await unrouteMoves()
   await page.goto(url)
   await expect(row(page, '写方案')).toHaveCount(1)
-  await page
-    .getByRole('navigation', { name: 'Main navigation' })
-    .getByRole('link', { name: 'Projects' })
-    .click()
+  await navLink(page, 'Projects').click()
   await openProject(page, 'Inbox')
   await expect(row(page, '写方案')).toHaveCount(0)
 })

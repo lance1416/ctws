@@ -61,7 +61,7 @@ test('the scale follows the reader root font size: size AND leading, as a pair',
     // The margin: the meta size, on the TITLE's leading, so its word sits on the title's line.
     lead: '[data-row-lead-text]',
     panel: '[data-panel="Tasks"] h2',
-    caption: 'nav[aria-label="Main navigation"] a[href="/tasks/today"] [data-count]',
+    caption: 'nav[aria-label="Projects"] [data-count]',
   } as const
   const measure = async () =>
     Object.fromEntries(
@@ -75,16 +75,18 @@ test('the scale follows the reader root font size: size AND leading, as a pair',
 
   const base = await measure()
   expect(base).toEqual({
-    body: { size: '16px', line: '24px' },
-    // The project's name: the scale's 2xl step, the head of a page that is a place.
-    h1: { size: '36px', line: '44px' },
-    title: { size: '16px', line: '24px' },
-    lead: { size: '14px', line: '24px' },
+    // The body is the UI step (FR-008): rows, buttons, fields, block names.
+    body: { size: '13px', line: '20px' },
+    // The project's name: the title step, the head of a page.
+    h1: { size: '26px', line: '34px' },
+    // A row's title is what you wrote: the prose step.
+    title: { size: '15px', line: '24px' },
+    lead: { size: '13px', line: '24px' },
     // A section's heading is body size in semibold: with no box round it, the heading is the
     // only thing that says where a section starts, and a 20px heading over every block made a
     // page of shouting.
-    panel: { size: '16px', line: '24px' },
-    caption: { size: '12px', line: '20px' },
+    panel: { size: '15px', line: '24px' },
+    caption: { size: '12px', line: '16px' },
   })
 
   await setBrowserDefaultFontSize(page, 20)
@@ -92,20 +94,20 @@ test('the scale follows the reader root font size: size AND leading, as a pair',
     '20px',
   )
   expect(await measure()).toEqual({
-    body: { size: '20px', line: '30px' },
-    h1: { size: '45px', line: '55px' },
-    title: { size: '20px', line: '30px' },
-    lead: { size: '17.5px', line: '30px' },
-    panel: { size: '20px', line: '30px' },
-    caption: { size: '15px', line: '25px' },
+    body: { size: '16.25px', line: '25px' },
+    h1: { size: '32.5px', line: '42.5px' },
+    title: { size: '18.75px', line: '30px' },
+    lead: { size: '16.25px', line: '30px' },
+    panel: { size: '18.75px', line: '30px' },
+    caption: { size: '15px', line: '20px' },
   })
 
   // And smaller, so a floor written in px (`max(16px, ...)`) cannot hide behind the larger case.
   await setBrowserDefaultFontSize(page, 12)
-  expect((await measure()).title).toEqual({ size: '12px', line: '18px' })
+  expect((await measure()).title).toEqual({ size: '11.25px', line: '18px' })
 })
 
-test('the banner subject is 36/44, and the date heading above it is the display step', async ({
+test('the banner subject is the title step, and the date heading above it is the hero step', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 1000 })
@@ -114,7 +116,7 @@ test('the banner subject is 36/44, and the date heading above it is the display 
   await makeTask(page, pid, '正在做的这一条')
   await page.goto(`/projects/${pid}`)
   await page.getByRole('button', { name: 'Start “正在做的这一条”' }).click()
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   const banner = page.locator('[data-today-row]')
   await expect(banner).toHaveCount(1)
 
@@ -125,14 +127,14 @@ test('the banner subject is 36/44, and the date heading above it is the display 
       const s = getComputedStyle(el)
       return { size: s.fontSize, line: s.lineHeight, weight: s.fontWeight }
     })
-  expect(subject).toEqual({ size: '36px', line: '44px', weight: '600' })
+  expect(subject).toEqual({ size: '26px', line: '34px', weight: '600' })
   // The page's own heading is the date, one step above the banner: on this page the day is the
   // subject, and the one thing being done in it is the next thing said. The display step, at 500.
-  expect(await pair(page, 'h1')).toEqual({ size: '48px', line: '56px', weight: '500' })
+  expect(await pair(page, 'h1')).toEqual({ size: '40px', line: '48px', weight: '500' })
 })
 
 /**
- * ONE PAGE-TITLE STEP. Every page's own heading is the scale's 2xl (36/44, 600); a smaller one
+ * ONE PAGE-TITLE STEP. Every page's own heading is the title step (26/34, 600, FR-008); a smaller one
  * reads as a section of some other page. Today's date (display) and the Workbench's hidden heading
  * are the two that are something else on purpose.
  */
@@ -143,18 +145,17 @@ test('every page names itself at one step', async ({ page }) => {
   for (const path of [
     '/projects',
     `/projects/${pid}`,
-    '/tasks/review',
-    '/tasks/review?view=done',
+    '/review',
+    '/review?view=done',
     '/calendar',
     '/meetings',
     '/reading',
     '/people',
     '/people/birthdays',
-    '/things',
   ]) {
     await page.goto(path)
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
-    expect(await pair(page, 'h1'), path).toEqual({ size: '36px', line: '44px', weight: '600' })
+    expect(await pair(page, 'h1'), path).toEqual({ size: '26px', line: '34px', weight: '600' })
   }
 })
 
@@ -236,7 +237,7 @@ test('numeric columns keep tabular figures', async ({ page }) => {
     'font-variant-numeric',
     'tabular-nums',
   )
-  await expect(page.locator('nav[aria-label="Main navigation"] [data-count]').first()).toHaveCSS(
+  await expect(page.locator('nav[aria-label="Projects"] [data-count]').first()).toHaveCSS(
     'font-variant-numeric',
     'tabular-nums',
   )

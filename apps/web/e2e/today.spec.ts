@@ -15,14 +15,12 @@ import {
   setDetailStatus,
   submitCreate,
   WEB,
+  navLink,
 } from './helpers'
 
 async function captureAndOpen(page: Page, title: string) {
   await submitCreate(page, 'Capture…', title)
-  await page
-    .getByRole('navigation', { name: 'Main navigation' })
-    .getByRole('link', { name: 'Projects' })
-    .click()
+  await navLink(page, 'Projects').click()
   await openProject(page, 'Inbox')
   await page.getByRole('listitem').filter({ hasText: title }).click()
   // The pane opens in reading mode; every test here is about an edit.
@@ -167,10 +165,7 @@ test('an edit made from the today page is reflected without a reload', async ({ 
 test('a nested task shows both its project and its parent in the breadcrumb', async ({ page }) => {
   await registerFreshUser(page)
   await submitCreate(page, 'Capture…', '父任务')
-  await page
-    .getByRole('navigation', { name: 'Main navigation' })
-    .getByRole('link', { name: 'Projects' })
-    .click()
+  await navLink(page, 'Projects').click()
   await openProject(page, 'Inbox')
   await submitCreate(page, 'Capture…', '子任务')
   await expect(page.getByRole('listitem')).toHaveCount(2)
@@ -245,7 +240,7 @@ test('one task in progress is the focus, several are a list', async ({ page }) =
   const p = await apiPost(page, '/projects', { name: 'P' })
   const pid = p.id as string
   await apiPost(page, '/tasks', { title: '只在做这一件', projectId: pid, status: 'in_progress' })
-  await page.goto('/tasks/today')
+  await page.goto('/today')
 
   const size = (sel: string) =>
     page
@@ -278,7 +273,7 @@ test('on a phone the one thing in progress is said in full', async ({ page }) =>
   const p = await apiPost(page, '/projects', { name: 'P' })
   const title = 'Ship the Daybook redesign and redraw the canvas'
   await apiPost(page, '/tasks', { title, projectId: p.id as string, status: 'in_progress' })
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   const subject = page.locator('[data-doing-title]')
   await expect(subject).toHaveText(title)
   const cut = await subject.evaluate((el) => el.scrollWidth > el.clientWidth)
@@ -298,7 +293,7 @@ test('with one task in progress Done is the main action, with several it is a bu
   const p = await apiPost(page, '/projects', { name: 'P' })
   const pid = p.id as string
   await apiPost(page, '/tasks', { title: '只在做这一件', projectId: pid, status: 'in_progress' })
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   const fill = () =>
     page
       .getByRole('button', { name: /^Complete/ })
@@ -333,7 +328,7 @@ test('a meeting sits on the day at your own time, and says the zone it was agree
   ).entries
   expect(entry?.timeZone, 'the server says which zone it was agreed in').toBe(zone)
 
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   const row = page
     .getByRole('region', { name: 'Today', exact: true })
     .locator('[data-day-entry]')
@@ -351,7 +346,7 @@ test('a meeting already over is drawn a step quieter, above the now line', async
   // Read at 15:00, so the half-hour from midnight is over whenever this runs.
   const [y, m, d] = dayInZone(account).split('-').map(Number) as [number, number, number]
   await page.clock.setFixedTime(new TZDate(y, m - 1, d, 15, 0, 0, 0, account))
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   const row = page.locator('[data-day-entry]').filter({ hasText: 'Early call' })
   const subtle = await page.evaluate(() => {
     const probe = document.createElement('span')
@@ -370,7 +365,7 @@ test('with nothing timed today there is no now line', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '今天随时做', { scheduledOn: dayInZone(await accountZone(page)) })
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   const row = page.locator('li').filter({ has: page.locator('[data-today-row]') })
   await expect(row).toHaveCount(1)
   await expect(page.locator('[data-now-line]')).toHaveCount(0)
@@ -386,7 +381,7 @@ test('a task due today at a time is on the line once, at its time', async ({ pag
   await makeTask(page, pid, '下午交的', {
     dueAt: new TZDate(y, m - 1, d, 16, 0, 0, 0, account).toISOString(),
   })
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   const line = page.getByRole('region', { name: 'Today', exact: true })
   await expect(line.getByText('下午交的')).toHaveCount(1)
   await expect(page.getByText('下午交的')).toHaveCount(1)
@@ -412,7 +407,7 @@ test('the now line moves with the clock, and a meeting is past only once it has 
   await meetingToday(page, 'Design review', '10:00', zone, 60)
   const [y, m, d] = dayInZone(zone).split('-').map(Number) as [number, number, number]
   await page.clock.install({ time: new TZDate(y, m - 1, d, 10, 30, 0, 0, zone) })
-  await page.goto('/tasks/today')
+  await page.goto('/today')
 
   const tint = (title: string) =>
     page
@@ -437,7 +432,7 @@ test('several things in progress fit a 320px phone', async ({ page }) => {
   const p = await apiPost(page, '/projects', { name: 'P' })
   for (const title of ['第一件在做的', '第二件在做的'])
     await apiPost(page, '/tasks', { title, projectId: p.id as string, status: 'in_progress' })
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   await expect(page.locator('[data-doing-title]')).toHaveCount(2)
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBe(0)
 })
@@ -452,7 +447,7 @@ test('the controls over a hovered row hide the title under them', async ({ page 
   const p = await apiPost(page, '/projects', { name: 'P' })
   for (const title of ['一件', '两件'])
     await apiPost(page, '/tasks', { title, projectId: p.id as string, status: 'in_progress' })
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   const row = page.locator('[data-doing-title]').first()
   await row.hover()
   const ground = await page
@@ -468,7 +463,7 @@ test('an open Today asks the server again when the day turns', async ({ page }) 
   const zone = await accountZone(page)
   const [y, m, d] = dayInZone(zone).split('-').map(Number) as [number, number, number]
   await page.clock.install({ time: new TZDate(y, m - 1, d, 23, 59, 58, 0, zone) })
-  await page.goto('/tasks/today')
+  await page.goto('/today')
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
 
   const asked = (view: string) =>
