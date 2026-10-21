@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { calendarQuery, calendarView } from './calendar'
+import { calendarView, lunarDaysQuery } from './calendar'
 import { reviewQuery } from './task'
 import { meetingId } from './id'
 import { createMeetingBody, occurrenceKey, parseOccurrenceKey } from './meeting'
@@ -53,13 +53,15 @@ describe('when a meeting can start', () => {
 
 describe('windows', () => {
   it('takes the windows the app actually asks for', () => {
-    expect(calendarQuery.safeParse({ from: '2026-09-28', to: '2026-11-01' }).success).toBe(true)
-    expect(calendarQuery.safeParse({ from: '2026-01-01', to: '2026-12-31' }).success).toBe(true)
+    const view = (q: object) => calendarView.safeParse({ view: 'calendar', ...q }).success
+    expect(view({ from: '2026-09-28', to: '2026-11-01' })).toBe(true)
+    expect(view({ from: '2026-01-01', to: '2026-12-31' })).toBe(true)
   })
 
   it('refuses a window no screen shows and every series would be expanded over', () => {
     // A recurring thing has no last occurrence, so the window IS the bound.
-    expect(calendarQuery.safeParse({ from: '2026-01-01', to: '3026-01-01' }).success).toBe(false)
+    const q = { view: 'calendar', from: '2026-01-01', to: '3026-01-01' }
+    expect(calendarView.safeParse(q).success).toBe(false)
   })
 
   it('bounds the review window the SAME way, not its own way', () => {
@@ -69,7 +71,6 @@ describe('windows', () => {
       { from: '2026-01-01', to: '3026-01-01' },
       { from: '2026-11-01', to: '2026-10-01' },
     ]) {
-      expect(calendarQuery.safeParse(q).success, JSON.stringify(q)).toBe(false)
       expect(reviewQuery.safeParse({ view: 'review', ...q }).success, JSON.stringify(q)).toBe(false)
       expect(calendarView.safeParse({ view: 'calendar', ...q }).success, JSON.stringify(q)).toBe(
         false,
@@ -81,12 +82,25 @@ describe('windows', () => {
 
   it('refuses a window nobody is looking at, however narrow', () => {
     // The distance to a window is work too: a series is expanded from its own start forward to it.
-    expect(calendarQuery.safeParse({ from: '9000-10-01', to: '9000-11-15' }).success).toBe(false)
-    expect(calendarQuery.safeParse({ from: '1900-01-01', to: '1900-02-01' }).success).toBe(false)
+    const view = (q: object) => calendarView.safeParse({ view: 'calendar', ...q }).success
+    expect(view({ from: '9000-10-01', to: '9000-11-15' })).toBe(false)
+    expect(view({ from: '1900-01-01', to: '1900-02-01' })).toBe(false)
+  })
+
+  it('names lunar days as far back as a birth year goes, since nothing is expanded', () => {
+    // A lunar birthday in 1944 pages its grid through that year's months.
+    expect(lunarDaysQuery.safeParse({ from: '1944-01-01', to: '1944-03-01' }).success).toBe(true)
+    // The grid's margin round a month in the first birth year.
+    expect(lunarDaysQuery.safeParse({ from: '1849-11-22', to: '1850-01-31' }).success).toBe(true)
+    expect(lunarDaysQuery.safeParse({ from: '1700-01-01', to: '1700-02-01' }).success).toBe(false)
+    expect(lunarDaysQuery.safeParse({ from: '2026-01-01', to: '3026-01-01' }).success).toBe(false)
+    expect(lunarDaysQuery.safeParse({ from: '2026-11-01', to: '2026-10-01' }).success).toBe(false)
   })
 
   it('refuses a window that ends before it starts', () => {
-    expect(calendarQuery.safeParse({ from: '2026-11-01', to: '2026-10-01' }).success).toBe(false)
+    expect(
+      calendarView.safeParse({ view: 'calendar', from: '2026-11-01', to: '2026-10-01' }).success,
+    ).toBe(false)
   })
 })
 

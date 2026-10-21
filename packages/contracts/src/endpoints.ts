@@ -11,8 +11,8 @@ import { birthdayPreviewQuery, birthdayPreviewResponse } from './birthday'
 import {
   calendarDaysResponse,
   calendarEntriesResponse,
-  calendarQuery,
   calendarView,
+  lunarDaysQuery,
   MAX_CALENDAR_SPAN_DAYS,
 } from './calendar'
 import { viewQuery } from './common'
@@ -451,7 +451,7 @@ export const api = {
       method: 'GET',
       path: '/calendar/days',
       summary: "Each day's lunar name, for the grid.",
-      query: calendarQuery,
+      query: lunarDaysQuery,
       ok: 200,
       response: calendarDaysResponse,
     }),

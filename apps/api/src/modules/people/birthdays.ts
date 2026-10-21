@@ -122,7 +122,7 @@ export async function birthdayEntries(
   const entries: CalendarEntry[] = []
   for (const p of rows) {
     const birthday = toBirthday(p)
-    // The window is bounded by `calendarQuery`, so this turns at most a few times.
+    // The window is bounded by `calendarView`, so this turns at most a few times.
     for (let cursor = range.from; ;) {
       const next = nextOccurrence(birthday, cursor)
       if (next.day > range.to) break

@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { objectId, projectId } from './id'
 import { objectType } from './object'
+import { BIRTH_YEARS } from './birthday'
 import { calendarDate, DAY_MS, EVENT_YEARS, instant, viewQuery } from './common'
 
 /**
@@ -9,31 +10,37 @@ import { calendarDate, DAY_MS, EVENT_YEARS, instant, viewQuery } from './common'
  */
 export const MAX_CALENDAR_SPAN_DAYS = 370
 
-const FLOOR = `${EVENT_YEARS.min}-01-01`
-const CEILING = `${EVENT_YEARS.max}-12-31`
+type Window = { from?: string | undefined; to?: string | undefined }
 
-/**
- * Whether a date window is one worth answering: inside the years events happen in, ordered, and
- * no wider than `MAX_CALENDAR_SPAN_DAYS`. Either end may be absent.
- */
-export function windowIsBounded(q: {
-  from?: string | undefined
-  to?: string | undefined
-}): boolean {
-  if (q.from && (q.from < FLOOR || q.from > CEILING)) return false
-  if (q.to && (q.to < FLOOR || q.to > CEILING)) return false
+/** Ordered, inside `years`, and no wider than `MAX_CALENDAR_SPAN_DAYS`. Either end may be absent. */
+function windowWithin(q: Window, years: { min: number; max: number }): boolean {
+  const [floor, ceiling] = [`${years.min}-01-01`, `${years.max}-12-31`]
+  if (q.from && (q.from < floor || q.from > ceiling)) return false
+  if (q.to && (q.to < floor || q.to > ceiling)) return false
   if (!q.from || !q.to) return true
   if (q.to < q.from) return false
   return (Date.parse(q.to) - Date.parse(q.from)) / DAY_MS <= MAX_CALENDAR_SPAN_DAYS
 }
 
+/**
+ * Whether a window of dated things is one worth answering: inside the years events happen in. A
+ * series is expanded from its own start forward to the window, so the distance is work too.
+ */
+export const windowIsBounded = (q: Window) => windowWithin(q, EVENT_YEARS)
+
 export const WINDOW_REFUSED = 'that is not a window anybody is looking at'
 
-/** Inclusive at both ends. */
-export const calendarQuery = z
+/**
+ * A window of lunar day names, inclusive at both ends. Nothing is expanded, so it reaches back as
+ * far as a birth year can, with a year either side for the grid's margin round its month.
+ */
+export const lunarDaysQuery = z
   .object({ from: calendarDate, to: calendarDate })
   .strict()
-  .refine(windowIsBounded, { message: WINDOW_REFUSED, path: ['to'] })
+  .refine((q) => windowWithin(q, { min: BIRTH_YEARS.min - 1, max: BIRTH_YEARS.max + 1 }), {
+    message: WINDOW_REFUSED,
+    path: ['to'],
+  })
 
 /** A collection's dated things on their days: `?view=calendar&from=&to=` on its own path. */
 export const calendarView = viewQuery('calendar', { from: calendarDate, to: calendarDate }).refine(
