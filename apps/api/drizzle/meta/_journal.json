@@ -309,6 +309,13 @@
       "when": 1792509475641,
       "tag": "0043_migration_backup",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1792580877997,
+      "tag": "0044_project_initials",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,5 @@
 import type { MigrationItem, ObjectType, TaskStatus, WorkspaceId } from '@ctws/contracts'
-import { derivedStatus, displayName, sortKey, splitName } from '@ctws/core'
+import { derivedStatus, displayName, initialsOf, sortKey, splitName } from '@ctws/core'
 import { eq, sql } from 'drizzle-orm'
 import { readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
@@ -29,6 +29,7 @@ const MIGRATION_STEPS = [
   'backup',
   'count',
   'legacy-deleted',
+  'projects',
   'organisations',
   'people',
   'tasks',
@@ -250,6 +251,10 @@ async function migrateWorkspace(tx: Tx, run: Run): Promise<MigrationCounts> {
   moved.edgesToDeleted = await countDanglingEdges(tx, workspaceId)
   moved['links.about.toDeleted'] = buried.aboutDropped
 
+  // ---- projects: the six slots become eight names, by hue; initials from the name (FR-091) ----
+  step('projects')
+  await moveProjects(tx, workspaceId, now, add)
+
   // ---- organisations: from the company text on people (FR-095) -----------------------------
   step('organisations')
   const orgOf = await makeOrganisations(tx, workspaceId, now, add)
@@ -432,6 +437,51 @@ async function countDanglingEdges(tx: Tx, workspaceId: WorkspaceId): Promise<num
       or exists (select 1 from tombstones s where s.object_type = l.to_type and s.object_id = l.to_id)
     )`)
   return (result.rows[0] as { n: number }).n
+}
+
+// ---- projects --------------------------------------------------------------------------------
+
+/** The last release's six slots, each to the nearest of the eight hues (FR-091). */
+const COLOUR_OF: Record<string, string> = {
+  'project-1': 'blue',
+  'project-2': 'amber',
+  'project-3': 'green',
+  'project-4': 'pink',
+  'project-5': 'teal',
+  'project-6': 'olive',
+}
+
+async function moveProjects(
+  tx: Tx,
+  workspaceId: WorkspaceId,
+  now: Date,
+  add: (item: Omit<MigrationItem, 'checked'>) => void,
+): Promise<void> {
+  const rows = rowsOf(
+    await tx.execute(sql`
+      select id::text, name, color, initials from projects
+      where workspace_id = ${workspaceId} and deleted_at is null order by rank, id`),
+    z.object({ id: z.string(), name: z.string(), color: z.string(), initials: z.string() }),
+  )
+  for (const p of rows) {
+    const color = COLOUR_OF[p.color] ?? p.color
+    const initials = p.initials === '' ? initialsOf(p.name) : p.initials
+    await tx.execute(
+      sql`update projects set color = ${color}, initials = ${initials} where id = ${p.id}::uuid`,
+    )
+    add({
+      key: `project:${p.id}`,
+      section: 'projectColours',
+      type: 'project',
+      id: p.id,
+      title: p.name,
+      was: p.color,
+      now: `${color} ${initials}`,
+      why: 'Colour by hue, initials from the name',
+      attention: false,
+    })
+  }
+  void now
 }
 
 // ---- organisations ---------------------------------------------------------------------------

@@ -4,31 +4,40 @@ import { instant, nameText, patchOf } from './common'
 import { LIST_PAGE, pageInfo, pageQuery } from './page'
 
 /**
- * A project's colour is a slot naming a `--color-project-N` token, not a colour value: each token
- * holds a different hex in light and dark.
+ * A project's colour is one of eight names (FR-004, tokens.md), each a `--color-project-<name>`
+ * token; the square is a solid fill with the initials in white, the same hex in light and dark.
  */
 export const projectColors = [
-  'project-1',
-  'project-2',
-  'project-3',
-  'project-4',
-  'project-5',
-  'project-6',
+  'blue',
+  'amber',
+  'green',
+  'violet',
+  'red',
+  'olive',
+  'teal',
+  'pink',
 ] as const
 const projectColor = z.enum(projectColors)
 export type ProjectColor = z.infer<typeof projectColor>
+
+/** One or two characters on the square (FR-052); taken from the name unless given. */
+const initials = z.string().trim().min(1).max(2)
 
 export const projectParams = z.object({ id: projectId }).strict()
 
 export const createProjectBody = z
   .object({
     name: nameText,
+    /** A colour not yet used is chosen when left out (FR-052). */
+    color: projectColor.optional(),
+    initials: initials.optional(),
   })
   .strict()
 
 export const updateProjectBody = patchOf({
   name: nameText,
   color: projectColor,
+  initials,
   archived: z.boolean(),
 })
 
@@ -78,6 +87,7 @@ export const projectResponse = z.object({
   workspaceId,
   name: z.string(),
   color: projectColor,
+  initials: z.string(),
   isInbox: z.boolean(),
   rank: z.string(),
   archivedAt: instant.nullable(),

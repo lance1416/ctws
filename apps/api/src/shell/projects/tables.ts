@@ -24,6 +24,8 @@ export const projects = pgTable(
       .references(() => workspaces.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     color: text('color').$type<ProjectColor>().notNull(),
+    /** On the square (FR-052); the move fills it from the name for projects from before. */
+    initials: text('initials').notNull().default(''),
     // One per workspace, by a partial unique index in the migration SQL.
     isInbox: boolean('is_inbox').notNull().default(false),
     // COLLATE "C" is added in the migration SQL so fractional ranks compare bytewise; not unique.

@@ -41,7 +41,7 @@ async function seed() {
   `)
   const projectId = await id(sql`
     insert into projects (id, workspace_id, name, rank, color)
-    values (gen_random_uuid(), ${workspaceId}, 'p', 'a0', 'project-1') returning id
+    values (gen_random_uuid(), ${workspaceId}, 'p', 'a0', 'blue') returning id
   `)
   const taskId = await id(sql`
     insert into tasks (id, workspace_id, project_id, title, status, rank)

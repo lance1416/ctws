@@ -24,7 +24,7 @@ describe('the workspace keys migration', () => {
     await at.db.execute(sql`insert into workspaces (id) values (${ws})`)
     await at.db.execute(sql`
       insert into projects (id, workspace_id, name, rank, color)
-      values (${project}, ${ws}, 'p', 'a0', 'project-1')`)
+      values (${project}, ${ws}, 'p', 'a0', 'blue')`)
     await at.db.execute(sql`
       insert into tasks (id, project_id, parent_id, title, status, rank) values
         (${parent}, ${project}, null, 'parent', 'todo', 'a0'),

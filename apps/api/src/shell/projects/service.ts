@@ -8,7 +8,7 @@ import {
   type WorkspaceId,
 } from '@ctws/contracts'
 import { newId } from '../../platform/db/ids'
-import { rankBetween } from '@ctws/core'
+import { initialsOf, rankBetween } from '@ctws/core'
 import { desc, eq, sql } from 'drizzle-orm'
 import type { PgUpdateSetSource } from 'drizzle-orm/pg-core'
 import { eventLog } from '../events'
@@ -24,9 +24,11 @@ import { projects, type Project } from './tables'
 const INBOX_NAME = 'Inbox'
 
 /** First free slot, so the first six projects get six colours; archived projects keep theirs. */
-function firstFreeColor(taken: readonly ProjectColor[]): ProjectColor {
-  const used = new Set(taken)
-  return projectColors.find((c) => !used.has(c)) ?? projectColors[0]
+/** A colour not yet used; once all eight are, the least used, earliest in the list (FR-052). */
+function leastUsedColor(taken: readonly ProjectColor[]): ProjectColor {
+  const count = new Map<ProjectColor, number>(projectColors.map((c) => [c, 0]))
+  for (const c of taken) count.set(c, (count.get(c) ?? 0) + 1)
+  return [...projectColors].sort((a, b) => count.get(a)! - count.get(b)!)[0]!
 }
 
 /** Created with the workspace, so capture never has to create it on the fly. */
@@ -36,6 +38,7 @@ export async function createInbox(tx: Queryable, { workspaceId, now }: Actor): P
     id: newId(projectId),
     workspaceId,
     name: INBOX_NAME,
+    initials: initialsOf(INBOX_NAME),
     rank: rankBetween(null, null),
     color: projectColors[0],
     isInbox: true,
@@ -66,7 +69,8 @@ export async function createProject(
         id: newId(projectId),
         workspaceId,
         name: input.name,
-        color: firstFreeColor(taken.map((t) => t.color)),
+        color: input.color ?? leastUsedColor(taken.map((t) => t.color)),
+        initials: input.initials ?? initialsOf(input.name),
         rank: rankBetween(last?.rank ?? null, null),
         createdAt: now,
       })
@@ -92,6 +96,7 @@ export async function updateProject(
     const set: PgUpdateSetSource<typeof projects> = {}
     if (patch.name !== undefined) set.name = patch.name
     if (patch.color !== undefined) set.color = patch.color
+    if (patch.initials !== undefined) set.initials = patch.initials
     // Re-archiving keeps the original timestamp.
     if (patch.archived === true)
       set.archivedAt = sql`coalesce(${projects.archivedAt}, ${instant(now)})`
@@ -100,7 +105,7 @@ export async function updateProject(
 
     const [row] = await tx.update(projects).set(set).where(eq(projects.id, id)).returning()
     const log = eventLog(tx, { workspaceId, now })
-    for (const field of ['name', 'color'] as const) {
+    for (const field of ['name', 'color', 'initials'] as const) {
       if (patch[field] !== undefined && patch[field] !== existing[field]) {
         await log.append({ type: 'project', id }, 'field_changed', {
           field,

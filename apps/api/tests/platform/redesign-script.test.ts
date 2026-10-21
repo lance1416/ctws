@@ -164,6 +164,20 @@ describe('the move, on the pre-redesign data', () => {
       ['Cher', 'Singer'],
     ])
     expect(section('peopleWithoutCity').map((i) => i.title)).toEqual(['Cher'])
+    // Every project is listed with its new colour and initials (FR-091): the six slots by hue.
+    expect(section('projectColours').map((i) => [i.title, i.was, i.now])).toEqual([
+      ['Inbox', 'project-1', 'blue I'],
+      ['CTWS', 'project-1', 'blue C'],
+      ['Job hunt', 'project-2', 'amber JH'],
+      ['rust-analyzer', 'project-3', 'green RA'],
+      ['Moving flat', 'project-4', 'pink MF'],
+      ['Find a lawyer', 'project-5', 'teal FA'],
+      ['Thesis', 'project-6', 'olive T'],
+    ])
+    const colours = await db.execute(
+      sql`select name, color, initials from projects where workspace_id = ${A} order by rank, id`,
+    )
+    expect(colours.rows).toContainEqual({ name: 'Job hunt', color: 'amber', initials: 'JH' })
     expect(section('citiesByName')).toMatchObject([
       { title: 'Ada Clarke', was: 'Cambridge', now: 'Cambridge, England, United Kingdom' },
     ])
@@ -319,7 +333,11 @@ describe('the move, on the pre-redesign data', () => {
         select workspace_id = ${A} as first, items from migration_reports order by 1 desc`)
     ).rows as { first: boolean; items: MigrationItem[] }[]
     expect(reports[0]!.items.some((i) => i.title === 'Nora Diaz')).toBe(false)
-    expect(reports[1]!.items.map((i) => [i.section, i.title])).toEqual([['names', 'Nora Diaz']])
+    expect(reports[1]!.items.map((i) => [i.section, i.title])).toEqual([
+      ['projectColours', 'Inbox'],
+      ['projectColours', 'Side project'],
+      ['names', 'Nora Diaz'],
+    ])
   })
 
   it('fails one account alone when told to, moves the other, and later moves only the one left', async () => {

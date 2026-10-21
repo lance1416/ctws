@@ -11,6 +11,7 @@ export function toProjectResponse(
     workspaceId: p.workspaceId,
     name: p.name,
     color: p.color,
+    initials: p.initials,
     isInbox: p.isInbox,
     rank: p.rank,
     archivedAt: isoOrNull(p.archivedAt),

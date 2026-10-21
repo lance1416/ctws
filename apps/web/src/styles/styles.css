@@ -10,7 +10,7 @@
    - `plan` (teal-green) and `deadline` (amber) are different families for two different promises:
      the day I mean to do it, and the moment it has to be done. Their shapes differ too.
    - `missed` is the single red: a deadline that has gone.
-   - `project-1..6` are categorical, for threads and chips only, never text or a fill, and always
+   - `project-<name>` (eight, tokens.md) are categorical, for threads and chips only, never text or a fill, and always
      beside the project's name (WCAG 1.4.1).
    - The accent is `ink`: the primary fill, the focus ring, the selected tab and a link (told by its
      underline). No hue is spent on chrome.
@@ -191,12 +191,14 @@
   --color-code-fn: #2d5fb0;
   --color-code-attr: #8a5a12;
   --color-code-punct: #4a515c;
-  --color-project-1: #125d8e;
-  --color-project-2: #96440f;
-  --color-project-3: #178763;
-  --color-project-4: #bb6896;
-  --color-project-5: #1f90c7;
-  --color-project-6: #b57d08;
+  --color-project-blue: #2f64c9;
+  --color-project-amber: #b45309;
+  --color-project-green: #2e7d4f;
+  --color-project-violet: #8050c8;
+  --color-project-red: #c2413a;
+  --color-project-olive: #5f7012;
+  --color-project-teal: #127a80;
+  --color-project-pink: #b83a7a;
   /* The wash behind an overlay. It carries its own alpha, and it is a token of its own rather
      than `ink` at an opacity: `ink` is near-white in dark mode, so `bg-ink/20` LIGHTENS the page
      it is meant to dim. A scrim has to darken in both schemes. */
@@ -262,12 +264,14 @@
     --color-code-fn: #8ab4f0;
     --color-code-attr: #d9b98a;
     --color-code-punct: #a7aeb9;
-    --color-project-1: #0e9aec;
-    --color-project-2: #e1691a;
-    --color-project-3: #0aa176;
-    --color-project-4: #c41c8d;
-    --color-project-5: #08719f;
-    --color-project-6: #8e6211;
+    --color-project-blue: #2f64c9;
+    --color-project-amber: #b45309;
+    --color-project-green: #2e7d4f;
+    --color-project-violet: #8050c8;
+    --color-project-red: #c2413a;
+    --color-project-olive: #5f7012;
+    --color-project-teal: #127a80;
+    --color-project-pink: #b83a7a;
     --color-scrim: rgb(5 6 8 / 0.62);
     /* No fall in dark: the layering is done by surface lightness, and a float's edge is a rule. */
     --float-lift: 0 0 0 1px var(--color-rule);
@@ -300,12 +304,14 @@
   --color-code-fn: #8ab4f0;
   --color-code-attr: #d9b98a;
   --color-code-punct: #a7aeb9;
-  --color-project-1: #0e9aec;
-  --color-project-2: #e1691a;
-  --color-project-3: #0aa176;
-  --color-project-4: #c41c8d;
-  --color-project-5: #08719f;
-  --color-project-6: #8e6211;
+  --color-project-blue: #2f64c9;
+  --color-project-amber: #b45309;
+  --color-project-green: #2e7d4f;
+  --color-project-violet: #8050c8;
+  --color-project-red: #c2413a;
+  --color-project-olive: #5f7012;
+  --color-project-teal: #127a80;
+  --color-project-pink: #b83a7a;
   --color-scrim: rgb(5 6 8 / 0.62);
   /* No fall in dark: the layering is done by surface lightness, and a float's edge is a rule. */
   --float-lift: 0 0 0 1px var(--color-rule);

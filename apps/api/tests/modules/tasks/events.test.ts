@@ -15,7 +15,7 @@ beforeAll(async () => {
   const seed = await ctx.db.execute(sql`
     with w as (insert into workspaces (id) values (gen_random_uuid()) returning id),
          p as (insert into projects (id, workspace_id, name, rank, color)
-               values (gen_random_uuid(), (select id from w), 'p', 'a0', 'project-1') returning id),
+               values (gen_random_uuid(), (select id from w), 'p', 'a0', 'blue') returning id),
          t1 as (insert into tasks (id, workspace_id, project_id, title, status, rank)
                 values (gen_random_uuid(), (select id from w), (select id from p), 't1', 'todo', 'a0')
                 returning id)

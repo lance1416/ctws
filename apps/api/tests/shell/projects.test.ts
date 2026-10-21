@@ -35,24 +35,50 @@ describe('projects', () => {
       return (res.json() as { projects: Named[] }).projects
     }
 
-    it('gives the first six projects six different slots, inbox included', async () => {
+    it('gives the first eight projects eight different colours, inbox included', async () => {
       const ctx = await setup()
-      for (let i = 0; i < 5; i += 1) await createProject(ctx, `P${i}`)
+      for (let i = 0; i < 7; i += 1) await createProject(ctx, `P${i}`)
       const all = await colorsOf(ctx)
-      expect(all).toHaveLength(6)
-      expect(new Set(all.map((p) => p.color)).size).toBe(6)
-      // The inbox is every workspace's first project, so it holds slot 1.
-      expect(all.find((p) => p.isInbox)!.color).toBe('project-1')
+      expect(all).toHaveLength(8)
+      expect(new Set(all.map((p) => p.color)).size).toBe(8)
+      // The inbox is every workspace's first project, so it is blue.
+      expect(all.find((p) => p.isInbox)!.color).toBe('blue')
     })
 
-    it('wraps to the first slot once all six are taken', async () => {
+    it('starts from the least used once all eight are taken (FR-052)', async () => {
       const ctx = await setup()
-      for (let i = 0; i < 6; i += 1) await createProject(ctx, `P${i}`)
+      for (let i = 0; i < 8; i += 1) await createProject(ctx, `P${i}`)
       const all = await colorsOf(ctx)
-      expect(all).toHaveLength(7)
-      // Predictable rather than lucky: the SEVENTH project is the first to repeat, and it repeats
-      // the slot the inbox already holds.
-      expect(all.filter((p) => p.color === 'project-1')).toHaveLength(2)
+      expect(all).toHaveLength(9)
+      // Predictable rather than lucky: the NINTH project is the first to repeat, and it repeats
+      // the first of the equally least used, which the inbox holds.
+      expect(all.filter((p) => p.color === 'blue')).toHaveLength(2)
+    })
+
+    it('takes a colour and initials when given, and initials from the name otherwise', async () => {
+      const ctx = await setup()
+      const made = await ctx.app.inject({
+        method: 'POST',
+        url: '/api/v1/projects',
+        headers: { ...ctx.authed, ...headers },
+        payload: { name: 'Job hunt', color: 'teal' },
+      })
+      expect(made.statusCode, made.body).toBe(201)
+      expect(made.json()).toMatchObject({ color: 'teal', initials: 'JH' })
+      const given = await ctx.app.inject({
+        method: 'POST',
+        url: '/api/v1/projects',
+        headers: { ...ctx.authed, ...headers },
+        payload: { name: 'Thesis', initials: 'Th' },
+      })
+      expect(given.json()).toMatchObject({ initials: 'Th' })
+      const changed = await ctx.app.inject({
+        method: 'PATCH',
+        url: `/api/v1/projects/${(made.json() as { id: string }).id}`,
+        headers: { ...ctx.authed, ...headers },
+        payload: { initials: 'JS' },
+      })
+      expect(changed.json()).toMatchObject({ initials: 'JS' })
     })
 
     it('does not hand a new project the slot an archived one still holds', async () => {
@@ -69,10 +95,10 @@ describe('projects', () => {
       // The archived project is not in the default list, so this asserts on the slot NUMBER
       // rather than on distinctness: slot 2 is gone even though nothing visible is wearing it.
       const all = await colorsOf(ctx)
-      expect(before).toBe('project-2')
+      expect(before).toBe('amber')
       // Un-archiving must not repaint a project, which means the slot stays spoken for -- the same
       // reason an archived project keeps its rank.
-      expect(all.find((p) => p.name === 'new')!.color).toBe('project-3')
+      expect(all.find((p) => p.name === 'new')!.color).toBe('green')
     })
   })
 
@@ -135,7 +161,7 @@ describe('projects', () => {
     expect(res.statusCode).toBe(400)
   })
 
-  it('picks the colour itself, and never takes one away', async () => {
+  it('refuses a colour it does not know, and never takes one away', async () => {
     const ctx = await setup()
     const create = await ctx.app.inject({
       method: 'POST',
@@ -153,9 +179,9 @@ describe('projects', () => {
         payload: { color },
       })
     expect((await patch(null)).statusCode).toBe(400)
-    const recoloured = await patch('project-4')
+    const recoloured = await patch('violet')
     expect(recoloured.statusCode).toBe(200)
-    expect(recoloured.json()).toMatchObject({ color: 'project-4' })
+    expect(recoloured.json()).toMatchObject({ color: 'violet' })
   })
 
   it('requires authentication', async () => {

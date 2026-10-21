@@ -2,17 +2,19 @@ import { type ProjectColor, type ProjectId } from '@ctws/contracts'
 import { useEveryProject } from './api'
 
 /**
- * The six project slots. The slot is stored on the project, from the first free one, rather than
- * hashed from its id: six buckets and four projects collide 72% of the time. Each names a
- * `--color-project-N` token, whose hex differs between light and dark.
+ * The eight project colours (tokens.md). The colour is stored on the project, chosen by the server
+ * from those not yet used, rather than hashed from its id: buckets collide. Each names a
+ * `--color-project-<name>` token, the same hex in light and dark.
  */
 const RAIL: Record<ProjectColor, string> = {
-  'project-1': 'bg-project-1',
-  'project-2': 'bg-project-2',
-  'project-3': 'bg-project-3',
-  'project-4': 'bg-project-4',
-  'project-5': 'bg-project-5',
-  'project-6': 'bg-project-6',
+  blue: 'bg-project-blue',
+  amber: 'bg-project-amber',
+  green: 'bg-project-green',
+  violet: 'bg-project-violet',
+  red: 'bg-project-red',
+  olive: 'bg-project-olive',
+  teal: 'bg-project-teal',
+  pink: 'bg-project-pink',
 }
 
 /** Before the list loads, or for a project not in it: neutral, as a wrong colour would flicker. */

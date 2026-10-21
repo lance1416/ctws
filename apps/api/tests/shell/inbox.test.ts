@@ -51,7 +51,7 @@ describe('inbox project', () => {
       await sqlStateOf(
         ctx.db.execute(sql`
           insert into projects (id, workspace_id, name, rank, is_inbox, color)
-          values (gen_random_uuid(), ${wsId}, 'second inbox', 'zz', true, 'project-1')
+          values (gen_random_uuid(), ${wsId}, 'second inbox', 'zz', true, 'blue')
         `),
       ),
     ).toBe(UNIQUE_VIOLATION)
