@@ -19,16 +19,16 @@ export function UserMenu({ email, onLogout }: { email: string; onLogout: () => v
       <DropdownMenu.Trigger
         data-testid="current-user"
         aria-label={`Account: ${email}`}
-        className="flex h-8 w-8 items-center justify-center rounded-full border border-rule-strong text-sm font-semibold text-ink-muted uppercase hover:bg-hover hover:text-ink"
+        className="flex h-8 w-8 items-center justify-center rounded-full border border-line-strong text-ui font-medium text-muted uppercase hover:bg-hover hover:text-ink"
       >
         {email.slice(0, 1)}
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content align="end" sideOffset={6} className={MENU_SURFACE}>
-          <div className="truncate px-2 py-1.5 text-sm text-ink-muted">{email}</div>
-          <DropdownMenu.Separator className="my-1 h-px bg-rule" />
+          <div className="truncate px-2 py-1.5 text-ui text-muted">{email}</div>
+          <DropdownMenu.Separator className="my-1 h-px bg-line" />
 
-          <DropdownMenu.Label className="px-2 pt-1 pb-0.5 text-xs text-ink-subtle">
+          <DropdownMenu.Label className="px-2 pt-1 pb-0.5 text-meta text-subtle">
             Theme
           </DropdownMenu.Label>
           <DropdownMenu.RadioGroup
@@ -46,7 +46,7 @@ export function UserMenu({ email, onLogout }: { email: string; onLogout: () => v
               </DropdownMenu.RadioItem>
             ))}
           </DropdownMenu.RadioGroup>
-          <DropdownMenu.Separator className="my-1 h-px bg-rule" />
+          <DropdownMenu.Separator className="my-1 h-px bg-line" />
           <DropdownMenu.Item onSelect={onLogout} className={MENU_ITEM}>
             Sign out
           </DropdownMenu.Item>

@@ -41,7 +41,7 @@ export function PickCity({
 
   return (
     <div className="relative">
-      <label htmlFor={id} className="mb-1 block text-xs text-ink-muted">
+      <label htmlFor={id} className="mb-1 block text-meta text-muted">
         {label}
       </label>
       <input
@@ -59,13 +59,13 @@ export function PickCity({
           // A click on the list lands after this blur, so the list closes a beat later.
           window.setTimeout(() => setTyping(false), 120)
         }}
-        className={`${field} text-sm`}
+        className={`${field} text-ui`}
       />
 
       {listed && (
         <ul
           id={listId}
-          className={`absolute ${LAYER.menu} mt-1 max-h-56 w-full overflow-y-auto rounded-card bg-float py-1 shadow-float`}
+          className={`absolute ${LAYER.menu} mt-1 max-h-56 w-full overflow-y-auto rounded-block bg-float py-1 shadow-float`}
         >
           {cities.map((c: City) => (
             <li key={c.label}>
@@ -77,7 +77,7 @@ export function PickCity({
                   onChange(c.label)
                   setTyping(false)
                 }}
-                className="block w-full truncate px-3 py-1.5 text-left text-sm text-ink hover:bg-hover"
+                className="block w-full truncate px-3 py-1.5 text-left text-ui text-ink hover:bg-hover"
               >
                 {c.label}
               </button>
@@ -87,7 +87,7 @@ export function PickCity({
       )}
 
       {unknown && (
-        <p className="mt-1 text-xs text-ink-muted">
+        <p className="mt-1 text-meta text-muted">
           No city by that name. It will be saved as written.
         </p>
       )}

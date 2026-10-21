@@ -2,7 +2,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import type { ReactNode } from 'react'
 import { CHIP } from './formStyles'
 import { MENU_ITEM, MENU_SURFACE } from './menuSurface'
-import { Icon } from './icons'
+import { CloseIcon, ExpandIcon, NewIcon } from './icons'
 
 /** One choice; a `null` value is the choice of nothing ("Not set", "Top level"). */
 export type Choice<T extends string | null> = { value: T; label: string; mark?: ReactNode }
@@ -32,17 +32,17 @@ export function PickOne<T extends string | null>({
       <DropdownMenu.Trigger
         disabled={disabled}
         aria-label={`${label}: ${current?.label ?? placeholder}`}
-        className="-mx-1.5 flex h-8 min-w-0 items-center gap-2 rounded-md px-1.5 text-sm text-ink hover:bg-hover disabled:opacity-50"
+        className="-mx-1.5 flex h-8 min-w-0 items-center gap-2 rounded-control px-1.5 text-ui text-ink hover:bg-hover disabled:opacity-50"
       >
         {current?.mark && (
           <span aria-hidden="true" className="flex shrink-0">
             {current.mark}
           </span>
         )}
-        <span className={`truncate ${current ? '' : 'text-ink-subtle'}`}>
+        <span className={`truncate ${current ? '' : 'text-subtle'}`}>
           {current?.label ?? placeholder}
         </span>
-        <Icon glyph="chevronDown" className="h-3 w-3 shrink-0 text-ink-subtle" />
+        <ExpandIcon size={16} className="h-3 w-3 shrink-0 text-subtle" />
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content align="start" sideOffset={4} className={MENU_SURFACE}>
@@ -60,9 +60,7 @@ export function PickOne<T extends string | null>({
                 </span>
               )}
               <span className="truncate">{c.label}</span>
-              {c.value === value && (
-                <span className="ml-auto text-xs text-ink-subtle">Current</span>
-              )}
+              {c.value === value && <span className="ml-auto text-meta text-subtle">Current</span>}
             </DropdownMenu.Item>
           ))}
         </DropdownMenu.Content>
@@ -102,20 +100,20 @@ export function PickMany<T extends string>({
             type="button"
             aria-label={`Remove ${label} “${c.label}”`}
             onClick={() => onChange(live.filter((v) => v !== c.value))}
-            className="-mr-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-ink-subtle hover:text-ink"
+            className="-mr-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-control text-subtle hover:text-ink"
           >
-            <Icon glyph="close" className="h-3 w-3" strokeWidth={1.8} />
+            <CloseIcon size={16} className="h-3 w-3" strokeWidth={1.8} />
           </button>
         </span>
       ))}
-      {chosen.length === 0 && <span className="text-sm text-ink-subtle">{empty}</span>}
+      {chosen.length === 0 && <span className="text-ui text-subtle">{empty}</span>}
       {rest.length > 0 && (
         <DropdownMenu.Root modal={false}>
           <DropdownMenu.Trigger
             aria-label={`Add ${label}`}
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-dashed border-rule-strong text-ink-subtle hover:bg-hover hover:text-ink"
+            className="flex h-7 w-7 items-center justify-center rounded-control border border-dashed border-line-strong text-subtle hover:bg-hover hover:text-ink"
           >
-            <Icon glyph="plus" className="h-3 w-3" strokeWidth={1.8} />
+            <NewIcon size={16} className="h-3 w-3" strokeWidth={1.8} />
           </DropdownMenu.Trigger>
           <DropdownMenu.Portal>
             <DropdownMenu.Content align="start" sideOffset={4} className={MENU_SURFACE}>

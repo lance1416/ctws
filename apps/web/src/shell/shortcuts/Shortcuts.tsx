@@ -9,9 +9,9 @@ import { SearchDialog } from '../search/SearchDialog'
 import { ShortcutHelp } from './ShortcutHelp'
 
 const button =
-  'rounded-md px-2 py-1.5 text-sm text-ink-muted hover:text-ink whitespace-nowrap flex items-center gap-1.5'
+  'rounded-control px-2 py-1.5 text-ui text-muted hover:text-ink whitespace-nowrap flex items-center gap-1.5'
 const hint =
-  'pointer-events-none rounded border border-rule-strong px-1.5 text-xs leading-5 max-sm:hidden'
+  'pointer-events-none rounded-key border border-line-strong px-1.5 text-meta leading-5 max-sm:hidden'
 
 /**
  * The document-level keys, and buttons for the same jobs: the `?` overlay holds the switch that

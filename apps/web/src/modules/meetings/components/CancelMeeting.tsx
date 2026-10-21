@@ -47,7 +47,7 @@ export function CancelMeeting({
           : undefined}
       </DangerAction>
       {drop.isError && (
-        <p role="alert" className="text-sm text-danger">
+        <p role="alert" className="text-ui text-stop-t">
           {problemText(drop.error)}
         </p>
       )}

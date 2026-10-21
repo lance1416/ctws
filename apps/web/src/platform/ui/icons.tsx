@@ -1,46 +1,29 @@
 /**
- * The app's line glyphs, each a path on one 16px canvas, stroked in the text's colour with round
- * ends. Glyph characters like ▸ and ⋮⋮ differ in size and baseline from one OS font to the next.
+ * THE ICON VOCABULARY (FR-006, artboard 3): Lucide, 2px stroke on a 24 grid, drawn at 16 in a
+ * row, 20 in a block head, 12 in a chip, 24 in the phone's tab bar. Grey unless the icon names a
+ * kind or a state; red only when it destroys. Every icon the app draws is named here, by what it
+ * means, so the same thing wears the same glyph in the icon bar, a sidebar, a block head, a
+ * search result and a timeline; nothing else imports `lucide-react` (the lint).
+ *
+ * The board's full table, added here as each screen lands (knip holds this file to what is used):
+ *   kinds    task square-check-big · meeting calendar-clock · person user-round · reading
+ *            book-open (a link: link) · project folder (the inbox: inbox) · organisation
+ *            building-2 · communication messages-square · note sticky-note · birthday cake
+ *   places   workbench layout-dashboard · today sun · calendar calendar-days · review history ·
+ *            search search · keys keyboard · account circle-user-round
+ *   fields   email mail · phone phone · link link · hometown house · lives in map-pin-house ·
+ *            place map-pin · time zone globe · repeats repeat · duration clock · family heart ·
+ *            friends users-round · work briefcase
+ *   actions  new plus · edit pencil · open beside panel-right · open link external-link · tree
+ *            list-tree · board square-kanban · filter list-filter · drag grip-vertical · archive
+ *            archive · more ellipsis · delete trash-2 (red) · close x
+ *   status   backlog circle-dashed · to do circle · in progress a half-filled ring (not in
+ *            Lucide; drawn by hand) · done circle-check · cancelled circle-x
+ *   time     flag; waiting on another task: lock
  */
-const GLYPHS = {
-  /** The ✕ of every close and remove button. */
-  close: 'M4 4l8 8M12 4l-8 8',
-  /** The + of an "add" beside other controls. */
-  plus: 'M8 3.5v9M3.5 8h9',
-  /**
-   * The + that stands alone as a row's or a block's add. Half a unit longer each way than `plus`;
-   * merging the two would move pixels, so it waits for a design pass.
-   */
-  plusLong: 'M8 3v10M3 8h10',
-  /** A menu's or a folded section's ⌄. */
-  chevronDown: 'M4 6.5l4 4 4-4',
-  /** The tree's open (⌄) and folded (›) chevrons, a size up. */
-  treeOpen: 'M3.5 6l4.5 4.5L12.5 6',
-  treeFolded: 'M6 3.5l4.5 4.5L6 12.5',
-} as const
+import { ChevronDown, ChevronRight, Plus, X } from 'lucide-react'
 
-export function Icon({
-  glyph,
-  className,
-  strokeWidth = 1.5,
-  size,
-}: {
-  glyph: keyof typeof GLYPHS
-  className?: string
-  strokeWidth?: number
-  /** In px, when no class sizes it. */
-  size?: number
-}) {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 16 16" width={size} height={size} className={className}>
-      <path
-        d={GLYPHS[glyph]}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={strokeWidth}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
+export const NewIcon = Plus
+export const CloseIcon = X
+export const ExpandIcon = ChevronDown
+export const CollapseIcon = ChevronRight

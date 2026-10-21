@@ -22,6 +22,7 @@ const ctws = {
     'class-names': restrictedSyntax,
     'button-text': restrictedSyntax,
     'shell-entry': restrictedImports,
+    'icon-source': restrictedImports,
     'write-changes': restrictedSyntax,
   },
 }
@@ -227,14 +228,27 @@ export default tseslint.config(
     },
   },
   {
-    // A filled button's text is `on-ink` or `on-danger`, and only BUTTON may say so.
+    // A filled button's text is `on-ink` or `on-stop`, and only BUTTON may say so.
     files: ['apps/web/src/**/*.{ts,tsx}'],
     ignores: [...TESTS, 'apps/web/src/platform/ui/buttonStyles.ts'],
     plugins: { ctws },
     rules: {
       'ctws/button-text': [
         'error',
-        ...textRule(`/${cls('text-on-(ink|danger)')}/`, 'A filled button comes from BUTTON.'),
+        ...textRule(`/${cls('text-on-(ink|stop)')}/`, 'A filled button comes from BUTTON.'),
+      ],
+    },
+  },
+  {
+    // Every icon is named by what it means in `platform/ui/icons.tsx`, so the same thing wears
+    // the same glyph everywhere (FR-006); the rest of the app never reaches into Lucide.
+    files: ['apps/web/src/**/*.{ts,tsx}'],
+    ignores: ['apps/web/src/platform/ui/icons.tsx'],
+    plugins: { ctws },
+    rules: {
+      'ctws/icon-source': [
+        'error',
+        { paths: [{ name: 'lucide-react', message: 'Name the icon in platform/ui/icons.tsx.' }] },
       ],
     },
   },
@@ -257,27 +271,30 @@ function cls(name) {
 function classNameRules() {
   const any = '[\\s\\S]*'
   return [
-    // RADIUS BY ROLE: 0 for structure, 6px (`rounded-md`) for controls, 10px for what floats,
-    // round for markers. A row with a corner reads as a button. Two small exceptions keep their
-    // own: a key chip's 4px `rounded` (with its `border` and `text-xs`), and a note's checkbox
-    // glyph (`rounded-sm align-text-top`).
+    // RADIUS BY ROLE (FR-009): the named steps in styles.css (key, control, card, block, the
+    // phone's two) and `rounded-full` for a marker. Tailwind's own steps are gone from the theme,
+    // so one here would silently draw nothing.
     ...textRule(
-      `/${cls('rounded-(lg|xl|2xl|3xl)')}/`,
-      'Off the radius scale: rounded-md for controls, rounded-[10px] for what floats.',
+      `/${cls('rounded(-(none|xs|sm|md|lg|xl|2xl|3xl|4xl))?')}/`,
+      'Off the radius scale: rounded-key, -control, -card, -block, -phone-card, -phone-sheet or -full.',
     ),
+    // THE TYPE SCALE IS SIX STEPS (FR-008): hero, title, subject, prose, ui, meta, and initials.
+    // Tailwind's sizes are gone from the theme too.
     ...textRule(
-      `/^(?!(?=${any}${cls('border')})(?=${any}${cls('text-xs')}))${any}${cls('rounded')}/`,
-      'A bare rounded is only for a key chip (with border and text-xs).',
+      `/${cls('text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl)')}/`,
+      'Off the type scale: text-hero, -title, -subject, -prose, -ui, -meta or -initials.',
     ),
+    // WEIGHTS ARE 400 AND 500 (FR-007). 600 belongs to the subject and title steps themselves,
+    // and 700 to nothing.
     ...textRule(
-      `/^(?!${any}${cls('align-text-top')})${any}${cls('rounded-sm')}/`,
-      'rounded-sm is only for the note checkbox glyph.',
+      `/${cls('font-(bold|extrabold|black|semibold|light|extralight|thin)')}/`,
+      'Only font-medium; a heading step carries its own 600.',
     ),
     // A state goes one step from the plane it is on, never to another plane: what the pointer,
     // the keyboard or an open menu does is a layer (`bg-hover`, `bg-select`), not a surface.
     ...textRule(
       // `\b`, not cls(): `group-hover:` is a state too.
-      '/\\b(hover|focus|focus-visible|focus-within|active|aria-expanded|aria-selected|data-\\[highlighted\\]):bg-(sheet|chrome|desk|float)(?![\\w-])/',
+      '/\\b(hover|focus|focus-visible|focus-within|active|aria-expanded|aria-selected|data-\\[highlighted\\]):bg-(ground|chrome|panel|float)(?![\\w-])/',
       'A transient state is a layer (bg-hover, bg-select), never a surface.',
     ),
     // A portalled menu with no layer paints under the pane, and five menus once had four row

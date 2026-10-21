@@ -25,7 +25,7 @@ export function MeetingDetail({
       pane={pane}
       label="Meetings"
       back="/meetings"
-      note={meeting.overridden && <span className="text-xs text-ink-subtle">Edited</span>}
+      note={meeting.overridden && <span className="text-meta text-subtle">Edited</span>}
       recent={{
         type: 'meeting',
         id: meeting.meetingId,
@@ -51,7 +51,7 @@ export function MeetingDetail({
         />
       )}
       {edit.failed && (
-        <p role="alert" className="text-sm text-danger">
+        <p role="alert" className="text-ui text-stop-t">
           {edit.failed}
         </p>
       )}

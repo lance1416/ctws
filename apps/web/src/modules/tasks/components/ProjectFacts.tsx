@@ -21,13 +21,13 @@ export function ProjectTileFacts({ project: p }: { project: ProjectResponse }) {
   const today = ymd(useNow(), useTimeZone())
   return (
     <>
-      <span className="text-ink-muted tabular-nums">{openTasksOf(p)} open</span>
+      <span className="text-muted tabular-nums">{openTasksOf(p)} open</span>
       {m && m.overdue > 0 ? (
-        <span className="text-missed">{m.overdue} overdue</span>
+        <span className="text-stop-t">{m.overdue} overdue</span>
       ) : m?.nextDueOn ? (
-        <span className="text-deadline">Due {shortDay(m.nextDueOn, today)}</span>
+        <span className="text-warn-t">Due {shortDay(m.nextDueOn, today)}</span>
       ) : null}
-      {m && <span className="text-ink-subtle">{movedLine(m, today)}</span>}
+      {m && <span className="text-subtle">{movedLine(m, today)}</span>}
     </>
   )
 }
@@ -44,7 +44,7 @@ export function ProjectRowFacts({ project: p }: { project: ProjectResponse }) {
   // "0 overdue" is not news.
   if (m && m.overdue > 0)
     said.push(
-      <span key="late" className="text-missed">
+      <span key="late" className="text-stop-t">
         {m.overdue} overdue
       </span>,
     )

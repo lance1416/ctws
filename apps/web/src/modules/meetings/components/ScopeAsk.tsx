@@ -44,7 +44,7 @@ function Question({
     <div
       role="alertdialog"
       aria-label="This meeting repeats"
-      className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm"
+      className="flex flex-wrap items-center gap-x-2 gap-y-1 text-ui"
     >
       <p className="w-full text-ink">{what}</p>
       <span className="flex flex-wrap items-center gap-2">

@@ -86,7 +86,7 @@ export function TodayRow({
           <span className="flex min-w-0 items-baseline">
             <span
               data-row-title
-              className={`truncate ${t.status === 'in_progress' ? 'font-semibold' : ''}`}
+              className={`truncate ${t.status === 'in_progress' ? 'font-medium' : ''}`}
             >
               {t.title}
             </span>
@@ -98,7 +98,7 @@ export function TodayRow({
         {carried && (
           <span
             data-date-hint="carried"
-            className="shrink-0 pt-2.5 pl-3 text-sm leading-6 whitespace-nowrap text-plan max-sm:hidden"
+            className="shrink-0 pt-2.5 pl-3 text-ui leading-6 whitespace-nowrap text-go-t max-sm:hidden"
           >
             Carried over from {carriedFrom}
           </span>

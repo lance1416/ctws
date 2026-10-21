@@ -82,7 +82,7 @@ describe('TaskReading', () => {
       </QueryClientProvider>,
     )
     expect(html).not.toContain('late')
-    expect(html).not.toContain('text-missed')
+    expect(html).not.toContain('text-stop-t')
   })
 
   it('still calls an open task late', () => {

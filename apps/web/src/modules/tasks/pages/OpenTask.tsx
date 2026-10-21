@@ -25,7 +25,7 @@ export function OpenTask() {
   // Gone only on the server's 404; anything else is a failure to ask, and the task may still exist.
   const gone = !isId || (found.error instanceof ApiError && found.error.status === 404)
   return (
-    <p role="alert" className={`mt-4 ${HANG} text-sm text-ink-muted`}>
+    <p role="alert" className={`mt-4 ${HANG} text-ui text-muted`}>
       {gone
         ? 'This task is not here any more.'
         : "Couldn't open this task. Check that the server is running."}

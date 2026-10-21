@@ -29,7 +29,7 @@ export function NewTaskInput({ depth, onCommit, onCancel, error }: Props) {
     // The row's anatomy with the margin and thread left empty: the cursor starts where titles do.
     <li data-depth={depth} data-new-task className="flex items-stretch">
       <span aria-hidden="true" className={`shrink-0 ${HANG_WIDTH}`} />
-      <span aria-hidden="true" className="w-thread shrink-0" />
+      <span aria-hidden="true" className="w-[3px] shrink-0" />
       {/* A column, so the failure message sits under the box it is about. */}
       <div
         style={{
@@ -59,14 +59,14 @@ export function NewTaskInput({ depth, onCommit, onCancel, error }: Props) {
             aria-label="Add a task"
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? describedBy : undefined}
-            className={`h-8 w-full border-b bg-transparent text-base text-ink placeholder:text-ink-muted ${
-              error ? 'border-danger' : 'border-rule-strong'
+            className={`h-8 w-full border-b bg-transparent text-prose text-ink placeholder:text-muted ${
+              error ? 'border-stop' : 'border-line-strong'
             }`}
           />
         </div>
         {/* The typed title stays in the box after a failure. */}
         {error && (
-          <p id={describedBy} role="alert" className="pb-1 text-sm text-danger">
+          <p id={describedBy} role="alert" className="pb-1 text-ui text-stop-t">
             {error}
           </p>
         )}

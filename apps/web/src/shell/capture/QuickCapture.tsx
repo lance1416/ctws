@@ -70,11 +70,11 @@ export function QuickCapture() {
           placeholder="Capture…"
           disabled={!fallback.target}
           aria-label="Capture"
-          className={`w-full bg-sheet pr-8 disabled:opacity-50 ${textbox}`}
+          className={`w-full bg-panel pr-8 disabled:opacity-50 ${textbox}`}
         />
         <KeyHint
           hidden
-          className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border border-rule px-1 text-xs leading-5 text-ink-subtle"
+          className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded-key border border-line px-1 text-meta leading-5 text-subtle"
         >
           /
         </KeyHint>
@@ -87,7 +87,7 @@ export function QuickCapture() {
         {missing && (
           <p
             role="alert"
-            className="rounded-card bg-float px-3 py-1.5 text-sm text-danger shadow-float"
+            className="rounded-block bg-float px-3 py-1.5 text-ui text-stop-t shadow-float"
           >
             {missing}
           </p>
@@ -96,7 +96,7 @@ export function QuickCapture() {
         {unavailable && (
           <p
             role="status"
-            className="rounded-card bg-float px-3 py-1.5 text-sm text-danger shadow-float"
+            className="rounded-block bg-float px-3 py-1.5 text-ui text-stop-t shadow-float"
           >
             {unavailable}
           </p>
@@ -104,7 +104,7 @@ export function QuickCapture() {
         {landed && (
           <p
             role="status"
-            className="truncate rounded-card bg-float px-3 py-1.5 text-sm text-ink-muted shadow-float"
+            className="truncate rounded-block bg-float px-3 py-1.5 text-ui text-muted shadow-float"
           >
             Added to{' '}
             <Link to={landed.to} className={LINK}>
@@ -115,7 +115,7 @@ export function QuickCapture() {
         {capture.isError && (
           <p
             role="alert"
-            className="rounded-card bg-float px-3 py-1.5 text-sm text-danger shadow-float"
+            className="rounded-block bg-float px-3 py-1.5 text-ui text-stop-t shadow-float"
           >
             Couldn't save. Press Enter to try again.
           </p>

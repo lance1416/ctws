@@ -14,7 +14,7 @@ export const CHEVRON_PX = 20
  * The ground under controls over a hovered row's end: an opaque sheet under the hover layer, which
  * alone is translucent and would let the title show through.
  */
-export const OVER_ROW = 'bg-sheet shadow-[inset_0_0_0_100vmax_var(--color-hover)]'
+export const OVER_ROW = 'bg-panel shadow-[inset_0_0_0_100vmax_var(--color-hover)]'
 export const gutterPlus = (px: number) => `calc(var(--gutter) + ${px}px)`
 
 /** The Done view's rows carry nothing on the right, so its list is kept narrow. */
@@ -105,7 +105,7 @@ export function RowMeta({
 }) {
   const parts = [
     blocked ? (
-      <span key="blocked" data-row-blocked className="whitespace-nowrap text-ink-subtle">
+      <span key="blocked" data-row-blocked className="whitespace-nowrap text-subtle">
         {blocked}
       </span>
     ) : null,
@@ -121,7 +121,7 @@ export function RowMeta({
     ) : null,
     // Only on a line that would otherwise be empty.
     age && !breadcrumb && !rollup && !blocked ? (
-      <span key="age" data-row-age className="whitespace-nowrap text-ink-subtle">
+      <span key="age" data-row-age className="whitespace-nowrap text-subtle">
         {age}
       </span>
     ) : null,
@@ -130,7 +130,7 @@ export function RowMeta({
   return (
     <span
       data-row-meta
-      className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 text-sm text-ink-muted"
+      className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 text-ui text-muted"
     >
       {parts.map((part, i) => (
         // The separator travels with the phrase it follows, so no wrapped line starts with a ·.
@@ -138,7 +138,7 @@ export function RowMeta({
           <span className="flex min-w-0 items-baseline gap-x-1.5">
             {part}
             {i < parts.length - 1 && (
-              <span aria-hidden="true" className="text-ink-subtle">
+              <span aria-hidden="true" className="text-subtle">
                 ·
               </span>
             )}
@@ -155,7 +155,7 @@ export function RowNote({ children }: { children: ReactNode }) {
     <span
       data-row-note
       // Not on a phone: the margin's word and colour say it there, and the title needs the room.
-      className="shrink-0 pt-2.5 pl-3 text-sm leading-6 whitespace-nowrap text-missed tabular-nums max-sm:hidden"
+      className="shrink-0 pt-2.5 pl-3 text-ui leading-6 whitespace-nowrap text-stop-t tabular-nums max-sm:hidden"
     >
       {children}
     </span>
@@ -165,7 +165,7 @@ export function RowNote({ children }: { children: ReactNode }) {
 /** A momentary "Saved" after a save from the pane, inline after the title: it reserves no width. */
 export function SavedMark() {
   return (
-    <span role="status" className="ml-2 shrink-0 text-sm font-normal text-ink-muted">
+    <span role="status" className="ml-2 shrink-0 text-ui font-normal text-muted">
       Saved
     </span>
   )

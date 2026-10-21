@@ -80,7 +80,7 @@ export function Reading() {
             type="button"
             aria-pressed={showFinished}
             onClick={() => setShowFinished((v) => !v)}
-            className={`${HANG} rounded-md text-sm text-ink-muted hover:text-ink`}
+            className={`${HANG} rounded-control text-ui text-muted hover:text-ink`}
           >
             Finished <span className="tabular-nums">{finished.length}</span>
           </button>
@@ -95,7 +95,7 @@ export function Reading() {
       )}
 
       {items.isSuccess && rows.length > 0 && unfinished.length === 0 && finished.length > 0 && (
-        <p className={`mt-8 ${HANG} text-ink-muted`}>You are through the list.</p>
+        <p className={`mt-8 ${HANG} text-muted`}>You are through the list.</p>
       )}
     </>
   )

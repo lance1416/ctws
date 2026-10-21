@@ -6,10 +6,10 @@ export function QueryStatus({
 }: {
   query: { isPending: boolean; isError: boolean; error: unknown }
 }) {
-  if (query.isPending) return <p className={`mt-6 ${HANG} text-ink-muted`}>Loading…</p>
+  if (query.isPending) return <p className={`mt-6 ${HANG} text-muted`}>Loading…</p>
   if (!query.isError) return null
   return (
-    <p role="alert" className={`mt-6 ${HANG} text-danger`}>
+    <p role="alert" className={`mt-6 ${HANG} text-stop-t`}>
       {problemText(query.error) ?? "Couldn't load. Check that the server is running."}
     </p>
   )

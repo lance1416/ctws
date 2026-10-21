@@ -92,7 +92,7 @@ export function BirthdayEditor({
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
         <div
-          className="inline-flex h-9 overflow-hidden rounded-md border border-rule-strong"
+          className="inline-flex h-9 overflow-hidden rounded-control border border-line-strong"
           role="group"
           aria-label="Which calendar"
         >
@@ -105,8 +105,8 @@ export function BirthdayEditor({
                 setCalendar(c)
                 if (c === 'solar') setLeapMonth(false)
               }}
-              className={`h-[34px] px-3.5 text-sm ${
-                calendar === c ? 'bg-select font-semibold text-ink' : 'text-ink-muted'
+              className={`h-[34px] px-3.5 text-ui ${
+                calendar === c ? 'bg-select font-medium text-ink' : 'text-muted'
               }`}
             >
               {c === 'solar' ? 'Solar' : 'Lunar'}
@@ -121,7 +121,7 @@ export function BirthdayEditor({
           placeholder="Year"
           aria-label="Year"
           aria-invalid={!yearOk}
-          className={`w-20 bg-sheet tabular-nums ${textbox}`}
+          className={`w-20 bg-panel tabular-nums ${textbox}`}
         />
 
         {calendar === 'lunar' ? (
@@ -139,7 +139,7 @@ export function BirthdayEditor({
               onPick={(next) => setDay(Number(next))}
             />
             {/* Leap month and hour stay in Chinese, like the lunar month and day names. */}
-            <label className="inline-flex items-center gap-1.5 text-sm text-ink">
+            <label className="inline-flex items-center gap-1.5 text-ui text-ink">
               <input
                 type="checkbox"
                 checked={leapMonth}
@@ -187,11 +187,11 @@ export function BirthdayEditor({
         />
       </div>
 
-      <p data-testid="birthday-preview" className="min-h-5 text-xs text-ink-muted">
+      <p data-testid="birthday-preview" className="min-h-5 text-meta text-muted">
         {preview.isSuccess ? <PreviewLine facts={preview.data} /> : null}
         {/* The server's own sentence says which rule failed. */}
         {preview.isError && (
-          <span className="text-danger">
+          <span className="text-stop-t">
             {(preview.error instanceof ApiError && preview.error.detail) || 'That is not a date'}
           </span>
         )}
@@ -211,7 +211,7 @@ function PreviewLine({ facts }: { facts: BirthdayPreviewResponse }) {
   return (
     <>
       <span className="tabular-nums">{parts.join(' · ')}</span>
-      {facts.next.keptNote && <span className="block text-plan">{facts.next.keptNote}</span>}
+      {facts.next.keptNote && <span className="block text-go-t">{facts.next.keptNote}</span>}
     </>
   )
 }

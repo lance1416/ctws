@@ -76,7 +76,7 @@ export function NewPersonDialog({
                 void submit()
               }
             }}
-            className="w-full rounded-md bg-transparent py-0.5 text-lg font-semibold text-ink"
+            className="w-full rounded-control bg-transparent py-0.5 text-subject text-ink"
           />
         </div>
 
@@ -105,7 +105,7 @@ export function NewPersonDialog({
                     form.setValue('birthday', undefined, dirty)
                     setRefusedDay(false)
                   }}
-                  className="mt-1 text-sm text-ink-muted hover:text-ink"
+                  className="mt-1 text-ui text-muted hover:text-ink"
                 >
                   Not now
                 </button>
@@ -114,7 +114,7 @@ export function NewPersonDialog({
               <button
                 type="button"
                 onClick={() => form.setValue('birthday', birthdayDraftOf(null), dirty)}
-                className="h-9 rounded-md border border-dashed border-rule-strong px-3 text-sm text-ink-muted hover:border-rule-strong hover:text-ink"
+                className="h-9 rounded-control border border-dashed border-line-strong px-3 text-ui text-muted hover:border-line-strong hover:text-ink"
               >
                 Add a birthday
               </button>
@@ -158,7 +158,7 @@ export function NewPersonDialog({
             />
           </div>
           {channels.shown[0] !== undefined && (
-            <p className="mt-1.5 text-xs text-danger">{channels.shown[0]}</p>
+            <p className="mt-1.5 text-meta text-stop-t">{channels.shown[0]}</p>
           )}
         </div>
 

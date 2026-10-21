@@ -6,7 +6,7 @@ export function PageHead({ hang = false, children }: { hang?: boolean; children:
   return (
     <h1
       tabIndex={-1}
-      className={`${hang ? `${HANG} ` : ''}text-2xl font-semibold tracking-[-0.02em] focus:outline-none`}
+      className={`${hang ? `${HANG} ` : ''}text-title tracking-[-0.02em] focus:outline-none`}
     >
       {children}
     </h1>

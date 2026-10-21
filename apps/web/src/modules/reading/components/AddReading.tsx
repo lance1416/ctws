@@ -30,15 +30,15 @@ export function AddReading() {
         {...line.field({ onSubmit: add.mutate, busy: add.isPending })}
         placeholder="Paste a link, or type a book title"
         aria-label="Add to the reading list"
-        className={`w-full bg-sheet ${textbox}`}
+        className={`w-full bg-panel ${textbox}`}
       />
       {trimmed !== '' && (
-        <p className="mt-1 text-xs text-ink-subtle">
+        <p className="mt-1 text-meta text-subtle">
           {isLink ? 'Enter saves it as a link' : 'Enter saves it as a book'}
         </p>
       )}
       {add.isError && (
-        <p role="alert" className="mt-1 text-sm text-danger">
+        <p role="alert" className="mt-1 text-ui text-stop-t">
           {problemText(add.error) ?? "Couldn't add that"}
         </p>
       )}

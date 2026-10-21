@@ -40,7 +40,7 @@ export function PeopleList({
               <span
                 aria-hidden="true"
                 data-person-initial
-                className="flex size-8 shrink-0 items-center justify-center rounded-full bg-select text-sm font-semibold text-ink-muted"
+                className="flex size-8 shrink-0 items-center justify-center rounded-full bg-select text-ui font-medium text-muted"
               >
                 {initialOf(person.name)}
               </span>
@@ -49,13 +49,13 @@ export function PeopleList({
                   {person.name}
                 </span>
                 {meta && (
-                  <span data-person-meta className="truncate text-sm text-ink-subtle">
+                  <span data-person-meta className="truncate text-ui text-subtle">
                     {meta}
                   </span>
                 )}
               </span>
               {person.city && (
-                <span className="max-w-[40%] shrink-0 truncate text-sm text-ink-subtle">
+                <span className="max-w-[40%] shrink-0 truncate text-ui text-subtle">
                   {person.city}
                 </span>
               )}

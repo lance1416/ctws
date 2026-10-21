@@ -52,7 +52,7 @@ export function scopeDiagramStyles(host: Element, id: string): void {
     }
     for (let i = sheet.cssRules.length - 1; i >= 0; i -= 1) {
       const rule = sheet.cssRules[i]
-      // `#id`, `#id ...` and `#id>...` are the shapes mermaid's namespacing produces; an at-rule
+      // `#id`, `#id ...` and `#id>...` are the shapes mermaid's namespacing produces; an at-line
       // is not a `CSSStyleRule` and goes.
       const anchored =
         rule instanceof CSSStyleRule &&

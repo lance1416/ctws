@@ -5,7 +5,7 @@ import { createProject, projectKeys, useProjects } from '../projects/api'
 import { useRegistry } from '../registry'
 import { railClass } from '../projects/projectColor'
 import { useLineEntry } from '../../platform/ui/useLineEntry'
-import { Icon } from '../../platform/ui/icons'
+import { NewIcon } from '../../platform/ui/icons'
 
 /**
  * The left column: the pinned pages, Things, and the projects, with how much is waiting in each.
@@ -43,7 +43,7 @@ export function SideRail() {
   return (
     // Hidden below 1024px, where BottomBar navigates. Sticky under the header, so a long page
     // scrolls past it rather than leaving blank space beside the sheet.
-    <div className="sticky top-[calc(3.25rem+1px)] hidden h-[calc(100vh-3.25rem-1px)] flex-col overflow-y-auto border-r border-rule bg-chrome py-4 pr-3 pl-4 lg:flex">
+    <div className="sticky top-[calc(3.25rem+1px)] hidden h-[calc(100vh-3.25rem-1px)] flex-col overflow-y-auto border-r border-line bg-chrome py-4 pr-3 pl-4 lg:flex">
       <nav aria-label="Main navigation" className="flex flex-col">
         {pinned.map(({ key, to, label, end, Count }) => (
           <NavLink
@@ -51,8 +51,8 @@ export function SideRail() {
             to={to}
             end={end ?? false}
             className={({ isActive }) =>
-              `flex min-h-9 shrink-0 items-center gap-2 rounded-md px-2.5 py-1 whitespace-nowrap ${
-                isActive ? 'bg-select font-semibold text-ink' : 'text-ink-muted hover:text-ink'
+              `flex min-h-9 shrink-0 items-center gap-2 rounded-control px-2.5 py-1 whitespace-nowrap ${
+                isActive ? 'bg-select font-medium text-ink' : 'text-muted hover:text-ink'
               }`
             }
           >
@@ -65,8 +65,8 @@ export function SideRail() {
         <Link
           to="/things"
           aria-current={inThings ? 'page' : undefined}
-          className={`flex min-h-9 shrink-0 items-center gap-2 rounded-md px-2.5 py-1 whitespace-nowrap ${
-            inThings ? 'bg-select font-semibold text-ink' : 'text-ink-muted hover:text-ink'
+          className={`flex min-h-9 shrink-0 items-center gap-2 rounded-control px-2.5 py-1 whitespace-nowrap ${
+            inThings ? 'bg-select font-medium text-ink' : 'text-muted hover:text-ink'
           }`}
         >
           Things
@@ -76,8 +76,8 @@ export function SideRail() {
           <NavLink
             to="/projects"
             className={({ isActive }) =>
-              `rounded-md px-2.5 py-1 text-xs font-semibold whitespace-nowrap ${
-                isActive ? 'text-ink' : 'text-ink-muted hover:text-ink'
+              `rounded-control px-2.5 py-1 text-meta font-medium whitespace-nowrap ${
+                isActive ? 'text-ink' : 'text-muted hover:text-ink'
               }`
             }
           >
@@ -87,9 +87,9 @@ export function SideRail() {
             type="button"
             onClick={() => setNaming(true)}
             aria-label="New project"
-            className="flex h-6 w-6 items-center justify-center rounded-md text-ink-subtle hover:bg-hover hover:text-ink"
+            className="flex h-6 w-6 items-center justify-center rounded-control text-subtle hover:bg-hover hover:text-ink"
           >
-            <Icon glyph="plus" className="h-3.5 w-3.5" strokeWidth={1.6} />
+            <NewIcon size={16} className="h-3.5 w-3.5" strokeWidth={1.6} />
           </button>
         </div>
         {naming && (
@@ -108,8 +108,8 @@ export function SideRail() {
             }}
             aria-label="New project"
             aria-invalid={create.isError ? true : undefined}
-            className={`mx-2.5 block h-8 rounded-md border bg-sheet px-2 text-sm text-ink ${
-              create.isError ? 'border-danger' : 'border-rule-strong'
+            className={`mx-2.5 block h-8 rounded-control border bg-panel px-2 text-ui text-ink ${
+              create.isError ? 'border-stop' : 'border-line-strong'
             }`}
           />
         )}
@@ -122,18 +122,18 @@ export function SideRail() {
                 key={p.id}
                 to={`/projects/${p.id}`}
                 className={({ isActive }) =>
-                  `flex min-h-11 items-center gap-2.5 rounded-md py-1 pr-2 pl-2.5 ${
-                    isActive ? 'bg-select text-ink' : 'text-ink-muted hover:text-ink'
+                  `flex min-h-11 items-center gap-2.5 rounded-control py-1 pr-2 pl-2.5 ${
+                    isActive ? 'bg-select text-ink' : 'text-muted hover:text-ink'
                   }`
                 }
               >
                 <span
                   aria-hidden="true"
-                  className={`h-4 w-thread shrink-0 rounded-full ${railClass(p.color)}`}
+                  className={`h-4 w-[3px] shrink-0 rounded-full ${railClass(p.color)}`}
                 />
                 <span className="truncate">{p.name}</span>
                 {count > 0 && (
-                  <span data-count className="ml-auto pl-1 text-sm text-ink-subtle tabular-nums">
+                  <span data-count className="ml-auto pl-1 text-ui text-subtle tabular-nums">
                     {count}
                   </span>
                 )}

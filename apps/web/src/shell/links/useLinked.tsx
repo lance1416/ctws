@@ -31,7 +31,7 @@ export function useLinked(of: Endpoint, types: readonly ObjectType[] | undefined
   const add = (
     <>
       {unlink.isError && (
-        <p role="alert" className="px-2 text-sm text-danger">
+        <p role="alert" className="px-2 text-ui text-stop-t">
           {problemText(unlink.error)}
         </p>
       )}

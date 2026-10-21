@@ -33,10 +33,10 @@ export function MeetingRead({
     <>
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
-          <h2 data-detail-title className="truncate text-lg font-semibold text-ink">
+          <h2 data-detail-title className="truncate text-subject text-ink">
             {meeting.title}
           </h2>
-          <p className="truncate text-sm text-ink-muted tabular-nums">
+          <p className="truncate text-ui text-muted tabular-nums">
             {when} · {cityAndZone(new Date(meeting.startsAt), meeting.timeZone)}
           </p>
         </div>
@@ -50,7 +50,7 @@ export function MeetingRead({
           {elsewhere && (
             <Field label="Your time">
               {/* Not editable: the time was agreed in the meeting's zone; this is a conversion. */}
-              <span data-local-clock className="text-sm tabular-nums text-ink-muted">
+              <span data-local-clock className="text-ui tabular-nums text-muted">
                 {new Intl.DateTimeFormat('en-US', {
                   timeZone: accountZone,
                   month: 'short',
@@ -63,16 +63,16 @@ export function MeetingRead({
             </Field>
           )}
           <Field label="Length">
-            <span className="text-sm text-ink">{lengthLabel(meeting.durationMinutes)}</span>
+            <span className="text-ui text-ink">{lengthLabel(meeting.durationMinutes)}</span>
           </Field>
           <Field label="Repeats">
-            <span className="text-sm text-ink">
+            <span className="text-ui text-ink">
               {bare ? repeatLabel(bare, meeting.startsLocal, today) : 'Once'}
             </span>
           </Field>
           {bare && (
             <Field label="Ends">
-              <span className="text-sm tabular-nums text-ink">
+              <span className="text-ui tabular-nums text-ink">
                 {until ? shortDay(until, today) : 'Never'}
               </span>
             </Field>
@@ -86,7 +86,7 @@ export function MeetingRead({
                 </span>
               </span>
             ) : (
-              <span className="text-sm text-ink-subtle">Not on any project</span>
+              <span className="text-ui text-subtle">Not on any project</span>
             )}
           </Field>
         </div>
@@ -100,15 +100,15 @@ export function MeetingRead({
                 href={place}
                 target="_blank"
                 rel="noreferrer"
-                className={`min-w-0 flex-1 truncate text-sm ${LINK}`}
+                className={`min-w-0 flex-1 truncate text-ui ${LINK}`}
               >
                 {meeting.location}
               </a>
             ) : (
-              <span className="min-w-0 flex-1 truncate text-sm text-ink">{meeting.location}</span>
+              <span className="min-w-0 flex-1 truncate text-ui text-ink">{meeting.location}</span>
             )
           ) : (
-            <span className="text-sm text-ink-subtle">Not set</span>
+            <span className="text-ui text-subtle">Not set</span>
           )}
         </span>
       </Field>
@@ -116,7 +116,7 @@ export function MeetingRead({
       <Field label="Attendees">
         <div data-attendees className="flex flex-wrap gap-1.5">
           {meeting.attendees.length === 0 ? (
-            <span className="text-sm text-ink-subtle">Nobody yet</span>
+            <span className="text-ui text-subtle">Nobody yet</span>
           ) : (
             meeting.attendees.map((p) => (
               <span key={p.id} className={CHIP}>
@@ -129,9 +129,9 @@ export function MeetingRead({
 
       <Field label="Notes">
         {meeting.note ? (
-          <p className="max-w-reading text-sm whitespace-pre-wrap text-ink">{meeting.note}</p>
+          <p className="max-w-reading text-ui whitespace-pre-wrap text-ink">{meeting.note}</p>
         ) : (
-          <p className="text-sm text-ink-subtle">No notes yet</p>
+          <p className="text-ui text-subtle">No notes yet</p>
         )}
       </Field>
     </>

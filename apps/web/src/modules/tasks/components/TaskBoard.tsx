@@ -59,13 +59,13 @@ function Card({
         type="button"
         data-board-card={task.id}
         onClick={onOpen}
-        className={`w-full rounded-card border border-transparent bg-sheet px-2.5 py-2 text-left hover:border-rule-strong ${
+        className={`w-full rounded-block border border-transparent bg-panel px-2.5 py-2 text-left hover:border-line-strong ${
           isDragging ? 'opacity-40' : ''
         }`}
       >
-        <span className="block text-sm text-ink">{task.title}</span>
+        <span className="block text-ui text-ink">{task.title}</span>
         {parentTitle && (
-          <span className="mt-0.5 block truncate text-xs text-ink-subtle">{parentTitle}</span>
+          <span className="mt-0.5 block truncate text-meta text-subtle">{parentTitle}</span>
         )}
       </button>
     </li>
@@ -91,12 +91,12 @@ function Column({
       ref={setNodeRef}
       aria-label={STATUS_LABEL[status]}
       data-board-column={status}
-      className={`flex min-w-0 flex-col rounded-card p-2 ${isOver ? 'bg-hover' : 'bg-desk'}`}
+      className={`flex min-w-0 flex-col rounded-block p-2 ${isOver ? 'bg-hover' : 'bg-ground'}`}
     >
-      <h3 className="flex items-baseline gap-2 px-1 pb-1.5 text-sm font-semibold text-ink-muted">
+      <h3 className="flex items-baseline gap-2 px-1 pb-1.5 text-ui font-medium text-muted">
         {STATUS_LABEL[status]}
         {tasks.length > 0 && (
-          <span data-count className="text-xs text-ink-subtle tabular-nums">
+          <span data-count className="text-meta text-subtle tabular-nums">
             {tasks.length}
           </span>
         )}
@@ -154,7 +154,7 @@ export function TaskBoard({ projectId }: { projectId: ProjectId }) {
   // As the tree does: nothing while loading, and a failure said rather than four empty columns.
   if (tasks.isError)
     return (
-      <p role="alert" className="mt-4 text-sm text-danger">
+      <p role="alert" className="mt-4 text-ui text-stop-t">
         Couldn't load tasks
       </p>
     )
@@ -164,7 +164,7 @@ export function TaskBoard({ projectId }: { projectId: ProjectId }) {
   return (
     <>
       {error && (
-        <p role="alert" className="px-2 pb-1 text-sm text-danger">
+        <p role="alert" className="px-2 pb-1 text-ui text-stop-t">
           {error}
         </p>
       )}

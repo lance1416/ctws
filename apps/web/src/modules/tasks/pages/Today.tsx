@@ -99,14 +99,14 @@ export function Today() {
     <div className="mx-auto w-full max-w-[67.5rem] pt-4 sm:pt-6">
       <DayHeading today={day} />
 
-      {today.isPending && <p className={`${HANG} text-ink-muted`}>Loading…</p>}
+      {today.isPending && <p className={`${HANG} text-muted`}>Loading…</p>}
       {today.isError && (
-        <p role="alert" className={`${HANG} text-danger`}>
+        <p role="alert" className={`${HANG} text-stop-t`}>
           {problemText(today.error) ?? "Couldn't load. Check that the server is running."}
         </p>
       )}
       {error && (
-        <p role="alert" className={`mb-3 ${HANG} text-sm text-danger`}>
+        <p role="alert" className={`mb-3 ${HANG} text-ui text-stop-t`}>
           {error}
         </p>
       )}

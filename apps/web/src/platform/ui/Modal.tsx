@@ -95,10 +95,10 @@ export function Modal({
                 initialFocus.current?.focus()
               })
             }
-            className="h-fit w-full max-w-reading rounded-card bg-float shadow-float"
+            className="h-fit w-full max-w-reading rounded-block bg-float shadow-float"
           >
-            <div className="flex items-center justify-between border-b border-rule px-5 py-3">
-              <Dialog.Title className="font-semibold text-ink">{title}</Dialog.Title>
+            <div className="flex items-center justify-between border-b border-line px-5 py-3">
+              <Dialog.Title className="font-medium text-ink">{title}</Dialog.Title>
               {dismissLabel !== null && (
                 <Dialog.Close className={BUTTON.inline}>{dismissLabel}</Dialog.Close>
               )}

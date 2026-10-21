@@ -47,7 +47,7 @@ test('in a short panel, Cancel meeting sits at the bottom on the same background
     durationMinutes: 60,
   })
   await page.goto(`/meetings/${meeting.meetingId}`)
-  const zone = page.getByRole('dialog', { name: 'Meetings' }).locator('[data-danger-zone]')
+  const zone = page.getByRole('dialog', { name: 'Meetings' }).locator('[data-stop-zone]')
   await expect(zone.getByRole('button', { name: 'Cancel meeting' })).toBeVisible()
 
   const m = await measure(zone, '[role="dialog"]')
@@ -74,7 +74,7 @@ test('with long notes, Delete follows the last line instead of floating over the
   await page.goto(`/projects/${pid}`)
   await page.getByRole('listitem').filter({ hasText: 'Read the C book' }).first().click()
   const dialog = page.getByRole('dialog', { name: 'Task details' })
-  const zone = dialog.locator('[data-danger-zone]')
+  const zone = dialog.locator('[data-stop-zone]')
   await expect(zone.getByRole('button', { name: 'Delete task' })).toBeAttached()
 
   // Before scrolling it is off screen, after the notes rather than pinned over them.
@@ -95,7 +95,7 @@ test('on a short page, Delete project sits at the bottom of the screen', async (
   await registerFreshUser(page)
   const pid = await makeProject(page, 'Job hunt')
   await page.goto(`/projects/${pid}`)
-  const zone = page.locator('main [data-danger-zone]')
+  const zone = page.locator('main [data-stop-zone]')
   await expect(zone.getByRole('button', { name: 'Delete project' })).toBeVisible()
 
   const m = await measure(zone, 'main')

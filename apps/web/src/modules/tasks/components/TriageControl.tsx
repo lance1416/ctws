@@ -64,7 +64,7 @@ export function TriageControl({ groupLabel, triggerLabel, sections, onRan }: Pro
           e.stopPropagation()
           setOpen(!open)
         }}
-        className="flex h-7 w-7 items-center justify-center rounded-md text-ink-muted hover:bg-hover hover:text-ink aria-expanded:bg-hover aria-expanded:text-ink"
+        className="flex h-7 w-7 items-center justify-center rounded-control text-muted hover:bg-hover hover:text-ink aria-expanded:bg-hover aria-expanded:text-ink"
       >
         <svg
           viewBox="0 0 16 16"
@@ -92,7 +92,7 @@ export function TriageControl({ groupLabel, triggerLabel, sections, onRan }: Pro
           }}
           // `w-max` so the clusters stay on one line where there is room, capped to the viewport
           // so a narrow phone wraps them instead of growing a horizontal scrollbar.
-          className={`absolute top-full right-0 ${LAYER.menu} mt-1 flex w-max max-w-[calc(100vw-2rem)] flex-col gap-1 rounded-card bg-float p-2 text-sm shadow-float`}
+          className={`absolute top-full right-0 ${LAYER.menu} mt-1 flex w-max max-w-[calc(100vw-2rem)] flex-col gap-1 rounded-block bg-float p-2 text-ui shadow-float`}
         >
           {sections.map((section) => (
             <div
@@ -100,7 +100,7 @@ export function TriageControl({ groupLabel, triggerLabel, sections, onRan }: Pro
               className="flex flex-wrap items-center gap-1 whitespace-nowrap"
             >
               {section.heading && (
-                <span className="pr-1 text-xs text-ink-muted">{section.heading}</span>
+                <span className="pr-1 text-meta text-muted">{section.heading}</span>
               )}
               {section.actions.map((action) => (
                 <button
@@ -113,7 +113,7 @@ export function TriageControl({ groupLabel, triggerLabel, sections, onRan }: Pro
                     // it on the row, so focus goes to the row rather than the trigger.
                     onRan()
                   }}
-                  className="rounded-md border border-rule px-2 py-1 text-ink hover:border-rule-strong hover:bg-hover"
+                  className="rounded-control border border-line px-2 py-1 text-ink hover:border-line-strong hover:bg-hover"
                 >
                   {action.label}
                 </button>

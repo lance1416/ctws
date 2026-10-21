@@ -34,15 +34,15 @@ export function PersonRead({ person, onEdit }: { person: PersonResponse; onEdit:
     <>
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
-          <h2 className="truncate text-lg font-semibold text-ink">{person.name}</h2>
+          <h2 className="truncate text-subject text-ink">{person.name}</h2>
           {(person.title || person.org) && (
-            <p className="truncate text-sm text-ink-muted">
+            <p className="truncate text-ui text-muted">
               {[person.title, person.org].filter(Boolean).join(' · ')}
             </p>
           )}
         </div>
         {person.circle && (
-          <span className="shrink-0 rounded-full border border-rule px-2.5 py-1 text-xs text-ink-muted">
+          <span className="shrink-0 rounded-full border border-line px-2.5 py-1 text-meta text-muted">
             {CIRCLE_LABELS[person.circle]}
           </span>
         )}
@@ -56,16 +56,16 @@ export function PersonRead({ person, onEdit }: { person: PersonResponse; onEdit:
           <ul data-channels className="flex flex-col gap-0.5">
             {byKind(person.channels).map((c, i) => (
               <li key={i} className="flex min-w-0 items-center gap-1.5">
-                <span className="w-12 shrink-0 text-xs text-ink-muted">{KIND_LABEL[c.kind]}</span>
+                <span className="w-12 shrink-0 text-meta text-muted">{KIND_LABEL[c.kind]}</span>
                 <a
                   href={channelHref(c.kind, c.value)}
-                  className={`min-w-0 flex-1 truncate text-sm ${LINK} ${
+                  className={`min-w-0 flex-1 truncate text-ui ${LINK} ${
                     c.kind === 'phone' ? 'tabular-nums' : ''
                   }`}
                 >
                   {channelLabel(c.kind, c.value, phone?.displayPhone)}
                 </a>
-                {c.label && <span className="shrink-0 text-xs text-ink-subtle">{c.label}</span>}
+                {c.label && <span className="shrink-0 text-meta text-subtle">{c.label}</span>}
               </li>
             ))}
           </ul>
@@ -87,7 +87,7 @@ export function PersonRead({ person, onEdit }: { person: PersonResponse; onEdit:
           <Reads label="Circle" value={person.circle ? CIRCLE_LABELS[person.circle] : null} />
           <Field label="Projects">
             {person.projects.length === 0 ? (
-              <p className="text-sm text-ink-subtle">Not on any project</p>
+              <p className="text-ui text-subtle">Not on any project</p>
             ) : (
               <ul className="flex flex-wrap gap-1.5">
                 {person.projects.map((p) => (
@@ -104,7 +104,7 @@ export function PersonRead({ person, onEdit }: { person: PersonResponse; onEdit:
 
       <div>
         <div className="flex items-center gap-2">
-          <span className="flex-1 text-xs text-ink-muted">Notes</span>
+          <span className="flex-1 text-meta text-muted">Notes</span>
           <Button look="secondary" onClick={() => setWriting(true)}>
             Edit notes
           </Button>
@@ -113,11 +113,11 @@ export function PersonRead({ person, onEdit }: { person: PersonResponse; onEdit:
           {person.note ? (
             <NoteBody source={person.note} />
           ) : (
-            <p className="text-sm text-ink-subtle">No notes yet</p>
+            <p className="text-ui text-subtle">No notes yet</p>
           )}
         </div>
         {unsaved && (
-          <p role="alert" className="mt-1.5 text-sm text-danger">
+          <p role="alert" className="mt-1.5 text-ui text-stop-t">
             {unsaved}
           </p>
         )}
@@ -142,7 +142,7 @@ export function PersonRead({ person, onEdit }: { person: PersonResponse; onEdit:
 function Reads({ label, value }: { label: string; value: string | null }) {
   return (
     <Field label={label}>
-      <p className={`truncate text-sm ${value ? 'text-ink' : 'text-ink-subtle'}`}>
+      <p className={`truncate text-ui ${value ? 'text-ink' : 'text-subtle'}`}>
         {value || 'Not set'}
       </p>
     </Field>

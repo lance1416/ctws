@@ -63,7 +63,7 @@ export function DeleteProject({ id }: { id: ProjectId }) {
         onConfirm={() => remove.mutate()}
       />
       {remove.isError && (
-        <p role="alert" className="text-sm text-danger">
+        <p role="alert" className="text-ui text-stop-t">
           {problemText(remove.error)}
         </p>
       )}

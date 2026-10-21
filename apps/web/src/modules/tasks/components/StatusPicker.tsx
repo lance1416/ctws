@@ -1,5 +1,5 @@
 import { TASK_STATUSES, type TaskStatus } from '@ctws/contracts'
-import { Icon } from '../../../platform/ui/icons'
+import { ExpandIcon } from '../../../platform/ui/icons'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { useState } from 'react'
 import { STATUS_LABEL } from '../logic/status'
@@ -29,13 +29,13 @@ export function StatusPicker({
         aria-disabled={busy || undefined}
         // The name carries the current value: this one button both shows and changes it.
         aria-label={`Status: ${STATUS_LABEL[status]}`}
-        className="-mx-1.5 flex h-8 items-center gap-2 rounded-md px-1.5 text-sm text-ink hover:bg-hover aria-disabled:opacity-50"
+        className="-mx-1.5 flex h-8 items-center gap-2 rounded-control px-1.5 text-ui text-ink hover:bg-hover aria-disabled:opacity-50"
       >
         <span aria-hidden="true" className="flex">
           <StatusMark status={status} />
         </span>
         {STATUS_LABEL[status]}
-        <Icon glyph="chevronDown" className="h-3 w-3 text-ink-subtle" />
+        <ExpandIcon size={16} className="h-3 w-3 text-subtle" />
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content align="start" sideOffset={4} className={MENU_SURFACE}>
@@ -52,7 +52,7 @@ export function StatusPicker({
                 <StatusMark status={s} />
               </span>
               {STATUS_LABEL[s]}
-              {s === status && <span className="ml-auto text-xs text-ink-subtle">Current</span>}
+              {s === status && <span className="ml-auto text-meta text-subtle">Current</span>}
             </DropdownMenu.Item>
           ))}
         </DropdownMenu.Content>

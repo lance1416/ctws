@@ -17,7 +17,7 @@ export function BirthdayCard() {
   const today = view.data?.today ?? ''
   if (view.isError) {
     return (
-      <p role="alert" className="px-2 py-1.5 text-sm text-danger">
+      <p role="alert" className="px-2 py-1.5 text-ui text-stop-t">
         Couldn&apos;t load birthdays
       </p>
     )
@@ -44,14 +44,12 @@ export function BirthdayCard() {
   return (
     <div className="px-2">
       <Link to={`/${PEOPLE_ID}/${first!.personId}`} data-birthday-row className="block">
-        <span className="block text-xl font-semibold">{first!.name}</span>
+        <span className="block text-title">{first!.name}</span>
         <span className="mt-0.5 block">
           {weekdayOf(first!.day, true)}, {shortDay(first!.day, today)},{' '}
           {countdownPhrase(first!.inDays)}
         </span>
-        {first!.lunarDate && (
-          <span className="block text-sm text-ink-subtle">{first!.lunarDate}</span>
-        )}
+        {first!.lunarDate && <span className="block text-ui text-subtle">{first!.lunarDate}</span>}
       </Link>
       {more.length > 0 && (
         <ul className="mt-3.5 flex flex-col">
@@ -60,10 +58,10 @@ export function BirthdayCard() {
               <Link
                 to={`/${PEOPLE_ID}/${r.personId}`}
                 data-birthday-row
-                className="flex min-h-[30px] items-baseline gap-2.5 pt-1 text-sm hover:bg-hover"
+                className="flex min-h-[30px] items-baseline gap-2.5 pt-1 text-ui hover:bg-hover"
               >
                 <span className="min-w-0 truncate">{r.name}</span>
-                <span className="ml-auto shrink-0 text-ink-subtle tabular-nums">
+                <span className="ml-auto shrink-0 text-subtle tabular-nums">
                   {r.inDays === 0 ? 'today' : shortDay(r.day, today)}
                 </span>
               </Link>

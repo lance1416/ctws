@@ -1,7 +1,7 @@
 import { channelProblem, type ChannelKind, type PersonChannel } from '@ctws/contracts'
 import { useState } from 'react'
 import { boxed } from '../../../platform/ui/formStyles'
-import { Icon } from '../../../platform/ui/icons'
+import { CloseIcon, NewIcon } from '../../../platform/ui/icons'
 import { PickOne } from '../../../platform/ui/inline'
 import { byKind, channelPlaceholder, KIND_CHOICES } from '../logic/channels'
 import { usePhone } from '../hooks/usePhone'
@@ -128,18 +128,18 @@ export function ChannelsEditor({ channels }: { channels: ReturnType<typeof useCh
               onChange={(e) => channels.type(i, e.target.value)}
               // Judged on leaving: `+44` is not yet a number, and unfinished is not wrong.
               onBlur={() => channels.leave(i)}
-              className={`${boxed} min-w-0 flex-1 text-sm ${c.kind === 'phone' ? 'tabular-nums' : ''}`}
+              className={`${boxed} min-w-0 flex-1 text-ui ${c.kind === 'phone' ? 'tabular-nums' : ''}`}
             />
             <button
               type="button"
               aria-label={`Remove item ${i + 1}`}
               onClick={() => channels.remove(i)}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-subtle hover:bg-hover hover:text-ink"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-control text-subtle hover:bg-hover hover:text-ink"
             >
-              <Icon glyph="close" className="h-3.5 w-3.5" />
+              <CloseIcon size={16} className="h-3.5 w-3.5" />
             </button>
             {channels.shown[i] !== undefined && (
-              <p className="w-full text-xs text-danger">{channels.shown[i]}</p>
+              <p className="w-full text-meta text-stop-t">{channels.shown[i]}</p>
             )}
           </li>
         ))}
@@ -147,9 +147,9 @@ export function ChannelsEditor({ channels }: { channels: ReturnType<typeof useCh
       <button
         type="button"
         onClick={channels.add}
-        className="mt-1.5 flex h-8 items-center gap-1.5 rounded-md border border-dashed border-rule-strong px-2.5 text-sm text-ink-muted hover:bg-hover hover:text-ink"
+        className="mt-1.5 flex h-8 items-center gap-1.5 rounded-control border border-dashed border-line-strong px-2.5 text-ui text-muted hover:bg-hover hover:text-ink"
       >
-        <Icon glyph="plus" className="h-3 w-3" strokeWidth={1.8} />
+        <NewIcon size={16} className="h-3 w-3" strokeWidth={1.8} />
         Add one
       </button>
     </>

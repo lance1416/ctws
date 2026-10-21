@@ -55,7 +55,7 @@ function NowLine({ at }: { at: string }) {
   return (
     <li data-now-line className="flex h-6 items-center">
       <span
-        className={`shrink-0 pr-2 text-right text-sm font-semibold text-ink tabular-nums sm:pr-3.5 ${HANG_WIDTH}`}
+        className={`shrink-0 pr-2 text-right text-ui font-medium text-ink tabular-nums sm:pr-3.5 ${HANG_WIDTH}`}
       >
         <span className="sr-only">Now, </span>
         {at}

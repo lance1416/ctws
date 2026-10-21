@@ -1,7 +1,6 @@
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { MENU_SURFACE } from '../platform/ui/menuSurface'
+import { SURFACES, color, css, rgba } from './tokens'
 
 /**
  * A STATE GOES ONE STEP FROM THE PLANE IT IS ON, AND NEVER TO ANOTHER PLANE.
@@ -10,18 +9,33 @@ import { MENU_SURFACE } from '../platform/ui/menuSurface'
  * equal to a plane changes nothing on that plane. That no transient state names a surface is
  * the lint's (`ctws/class-names`).
  */
-const css = readFileSync(resolve(import.meta.dirname, 'styles.css'), 'utf8')
 describe('surfaces', () => {
   for (const layer of ['hover', 'select'])
     it(`makes ${layer} a layer over the plane, in every scheme`, () => {
-      const values = [...css.matchAll(new RegExp(`--color-${layer}:\\s*([^;]+);`, 'g'))].map((m) =>
-        m[1]!.trim(),
-      )
-      // Light, dark under the media query, and dark chosen by hand.
-      expect(values).toHaveLength(3)
-      for (const v of values)
-        expect(v, `an opaque ${layer} is one of the planes`).toMatch(/\/\s*0?\.\d+\)$/)
+      for (const scheme of ['light', 'dark'] as const) {
+        const v = color(layer, scheme)
+        expect(v, `--color-${layer} in ${scheme}`).not.toBeNull()
+        expect(rgba(v!)[3], `an opaque ${layer} is one of the planes`).toBeLessThan(1)
+      }
     })
+
+  it('stacks the four surfaces by lightness in dark, so a float needs no shadow there (FR-005)', () => {
+    const lum = (hex: string) =>
+      rgba(hex)
+        .slice(0, 3)
+        .reduce((a, b) => a + b, 0)
+    const [ground, chrome, panel, float] = SURFACES.map((s) => lum(color(s, 'dark')!))
+    expect(ground).toBeLessThan(chrome!)
+    expect(chrome).toBeLessThan(panel!)
+    expect(panel).toBeLessThan(float!)
+  })
+
+  it('writes every colour once, for both schemes', () => {
+    // One `light-dark()` per token rather than a dark block repeating the list: a token added to
+    // one block and not the other would paint the wrong scheme.
+    expect(css).not.toMatch(/prefers-color-scheme/)
+    for (const s of SURFACES) expect(color(s, 'light')).not.toEqual(color(s, 'dark'))
+  })
 
   it('floats a menu on the top plane, so it is never darker than what opened it', () => {
     expect(MENU_SURFACE).toContain('bg-float')

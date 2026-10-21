@@ -89,7 +89,7 @@ export function NewMeetingDialog({
                 void submit()
               }
             }}
-            className={`${field} mt-1.5 text-lg font-semibold`}
+            className={`${field} mt-1.5 text-subject`}
           />
         </div>
 

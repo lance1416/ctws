@@ -77,7 +77,7 @@ export function Calendar() {
     <>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <PageHead>Calendar</PageHead>
-        <span className="text-sm text-ink-muted tabular-nums">{monthTitle(cursor)}</span>
+        <span className="text-ui text-muted tabular-nums">{monthTitle(cursor)}</span>
         <span className="flex items-center gap-1">
           <Step label="Previous month" onClick={() => setCursor(shiftMonth(cursor, -1))}>
             ‹
@@ -95,7 +95,7 @@ export function Calendar() {
       </div>
 
       {failed && (
-        <p role="alert" className="mt-3 text-sm text-danger">
+        <p role="alert" className="mt-3 text-ui text-stop-t">
           Some entries failed to load
         </p>
       )}
@@ -103,11 +103,11 @@ export function Calendar() {
       {key.length > 0 && (
         <ul aria-label="Projects on this calendar" className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
           {key.map(([id, name]) => (
-            <li key={id} className="flex min-w-0 items-center gap-1.5 text-xs text-ink-muted">
+            <li key={id} className="flex min-w-0 items-center gap-1.5 text-meta text-muted">
               <span
                 aria-hidden="true"
                 data-key-mark
-                className={`h-3 w-thread shrink-0 ${rail(id)}`}
+                className={`h-3 w-[3px] shrink-0 ${rail(id)}`}
               />
               {name}
             </li>
@@ -115,15 +115,15 @@ export function Calendar() {
         </ul>
       )}
 
-      <div className="mt-4 min-w-0 overflow-hidden border border-rule bg-sheet">
+      <div className="mt-4 min-w-0 overflow-hidden border border-line bg-panel">
         <div className="grid grid-cols-7">
           {WEEKDAYS.map((w) => (
-            <div key={w} className="px-2 py-1.5 text-xs text-ink-subtle">
+            <div key={w} className="px-2 py-1.5 text-meta text-subtle">
               {w}
             </div>
           ))}
         </div>
-        <div className="grid grid-cols-7 border-t border-rule">
+        <div className="grid grid-cols-7 border-t border-line">
           {squares.map(({ day, inMonth }, i) => {
             const entries = byDay.get(day) ?? []
             const isToday = day === today
@@ -132,22 +132,18 @@ export function Calendar() {
                 key={day}
                 aria-label={day}
                 data-day={day}
-                className={`group relative min-h-24 min-w-0 border-rule p-1 ${
+                className={`group relative min-h-24 min-w-0 border-line p-1 ${
                   i % 7 === 6 ? '' : 'border-r'
-                } ${i < squares.length - 7 ? 'border-b' : ''} ${inMonth ? '' : 'bg-desk'}`}
+                } ${i < squares.length - 7 ? 'border-b' : ''} ${inMonth ? '' : 'bg-ground'}`}
               >
                 <div
-                  className={`px-1 text-xs tabular-nums ${
-                    isToday
-                      ? 'font-semibold text-ink'
-                      : inMonth
-                        ? 'text-ink-muted'
-                        : 'text-ink-subtle'
+                  className={`px-1 text-meta tabular-nums ${
+                    isToday ? 'font-medium text-ink' : inMonth ? 'text-muted' : 'text-subtle'
                   }`}
                 >
                   {Number(day.slice(8))}
                   {lunar.data?.[day] && (
-                    <span data-lunar-day className="ml-1.5 text-xs text-ink-subtle">
+                    <span data-lunar-day className="ml-1.5 text-meta text-subtle">
                       {lunar.data[day]}
                     </span>
                   )}
@@ -174,29 +170,29 @@ export function Calendar() {
                           <span
                             aria-hidden="true"
                             data-entry-mark
-                            className={`h-3 w-thread shrink-0 ${
+                            className={`h-3 w-[3px] shrink-0 ${
                               entry.projectId ? rail(entry.projectId) : ''
                             }`}
                           />
                           {entry.time && (
-                            <span className="shrink-0 text-xs tabular-nums text-ink-muted">
+                            <span className="shrink-0 text-meta tabular-nums text-muted">
                               {entry.time}
                             </span>
                           )}
-                          <span className="truncate text-xs text-ink">{entry.title}</span>
+                          <span className="truncate text-meta text-ink">{entry.title}</span>
                           {entry.projectName && (
                             <span className="sr-only">, {entry.projectName}</span>
                           )}
                           {/* The zone it was agreed in, when that differs from the account's. */}
                           {entry.zone && (
-                            <span className="shrink-0 text-xs text-ink-subtle">{entry.zone}</span>
+                            <span className="shrink-0 text-meta text-subtle">{entry.zone}</span>
                           )}
                         </EntryLink>
                       </li>
                     )
                   })}
                   {entries.length > PER_SQUARE && (
-                    <li className="px-1 text-xs text-ink-subtle">+{entries.length - PER_SQUARE}</li>
+                    <li className="px-1 text-meta text-subtle">+{entries.length - PER_SQUARE}</li>
                   )}
                 </ul>
               </div>
@@ -222,7 +218,7 @@ function EntryLink({
 }) {
   const title = [entry.label, entry.title, entry.projectName].filter(Boolean).join(' · ')
   const className =
-    'flex w-full min-w-0 items-center gap-1 rounded-md px-1 py-0.5 text-left hover:bg-hover'
+    'flex w-full min-w-0 items-center gap-1 rounded-control px-1 py-0.5 text-left hover:bg-hover'
   return onOpen ? (
     <button type="button" onClick={onOpen} title={title} className={className}>
       {children}
@@ -248,7 +244,7 @@ function Step({
       type="button"
       aria-label={label}
       onClick={onClick}
-      className="flex h-8 min-w-8 items-center justify-center rounded-md px-2 text-sm text-ink-muted hover:bg-hover hover:text-ink"
+      className="flex h-8 min-w-8 items-center justify-center rounded-control px-2 text-ui text-muted hover:bg-hover hover:text-ink"
     >
       {children}
     </button>

@@ -104,7 +104,7 @@ export function TaskDetail({ task, onClose, onSaved }: Props) {
           </>
         )}
         {doomed.remove.isError && (
-          <p role="alert" className="text-sm text-danger">
+          <p role="alert" className="text-ui text-stop-t">
             {problemText(doomed.remove.error) ?? "Couldn't delete it"}
           </p>
         )}

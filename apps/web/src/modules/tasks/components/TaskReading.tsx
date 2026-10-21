@@ -56,7 +56,7 @@ export function TaskReading({
           kind={
             <>
               <ProjectChip projectId={task.projectId} />
-              <span className="truncate text-sm text-ink-muted">{projectName}</span>
+              <span className="truncate text-ui text-muted">{projectName}</span>
             </>
           }
           // “Edit”, not “Edit task”: accessible names are matched by substring in one flat
@@ -68,7 +68,7 @@ export function TaskReading({
           }
           onClose={onClose}
         />
-        <h2 data-detail-title className="mt-0.5 text-lg font-semibold text-ink">
+        <h2 data-detail-title className="mt-0.5 text-subject text-ink">
           {task.title}
         </h2>
       </div>
@@ -83,25 +83,25 @@ export function TaskReading({
           />
         </div>
         {setStatus.isError && (
-          <p role="alert" className="text-sm text-danger">
+          <p role="alert" className="text-ui text-stop-t">
             Couldn't change the status
           </p>
         )}
         <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1 text-sm text-deadline">
+          <span className="flex items-center gap-1 text-ui text-warn-t">
             <DeadlineMark filled={false} />
             Due
           </span>
-          <span className={`text-sm tabular-nums ${dueOverdue ? 'text-missed' : 'text-ink'}`}>
+          <span className={`text-ui tabular-nums ${dueOverdue ? 'text-stop-t' : 'text-ink'}`}>
             {dueReading ?? 'Not set'}
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1 text-sm text-plan">
+          <span className="flex items-center gap-1 text-ui text-go-t">
             <PlanMark />
             Plan
           </span>
-          <span className="text-sm tabular-nums text-ink">{planReading ?? 'Not set'}</span>
+          <span className="text-ui tabular-nums text-ink">{planReading ?? 'Not set'}</span>
         </div>
       </div>
 
@@ -116,7 +116,7 @@ export function TaskReading({
             <NoteBody source={task.notes} />
           </div>
         ) : (
-          <p className="mt-1 text-sm text-ink-subtle">No notes yet</p>
+          <p className="mt-1 text-ui text-subtle">No notes yet</p>
         )}
       </div>
 

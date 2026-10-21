@@ -54,7 +54,7 @@ export function MeetingForm({
           id="m-title"
           autoFocus
           {...form.register('title')}
-          className={`${field} mt-1.5 text-lg font-semibold`}
+          className={`${field} mt-1.5 text-subject`}
         />
       </div>
 
@@ -67,7 +67,7 @@ export function MeetingForm({
                   type="datetime-local"
                   aria-label="Start"
                   {...form.register('startsLocal')}
-                  className={`${boxed} h-8 py-0 text-sm tabular-nums`}
+                  className={`${boxed} h-8 py-0 text-ui tabular-nums`}
                 />
                 <ZonePicker
                   value={values.timeZone}
@@ -99,7 +99,7 @@ export function MeetingForm({
                   until={values.until}
                   min={meeting.startsLocal.slice(0, 10)}
                   onChange={(day) => form.setValue('until', day, dirty)}
-                  className={`${boxed} text-sm`}
+                  className={`${boxed} text-ui`}
                 />
               </span>
             </Field>
@@ -122,7 +122,7 @@ export function MeetingForm({
           id="m-place"
           {...form.register('location')}
           placeholder="A room, an address, or a link"
-          className={`${field} mt-1.5 text-sm`}
+          className={`${field} mt-1.5 text-ui`}
         />
       </div>
 

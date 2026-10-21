@@ -38,13 +38,13 @@ export function Layout() {
     },
   })
 
-  if (me.isLoading) return <div className="min-h-screen bg-sheet" />
+  if (me.isLoading) return <div className="min-h-screen bg-panel" />
   // A server that is down is not a signed-out visitor, so this is not a redirect to /login. Only a
   // first load that failed means there is no app to show; a later failed check keeps the page.
   if (me.isLoadingError) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-sheet p-6">
-        <p role="alert" className="max-w-prose text-sm text-danger">
+      <div className="flex min-h-screen items-center justify-center bg-panel p-6">
+        <p role="alert" className="max-w-prose text-ui text-stop-t">
           Can't reach the server. Your session is fine -- try again once it is back.
         </p>
       </div>
@@ -58,14 +58,14 @@ export function Layout() {
 
   return (
     <div className="min-h-screen">
-      <header className={`sticky top-0 ${LAYER.bar} border-b border-rule bg-chrome`}>
+      <header className={`sticky top-0 ${LAYER.bar} border-b border-line bg-chrome`}>
         <div className="flex min-h-13 items-center gap-x-3 px-4 py-2 sm:gap-x-4">
-          <Link to="/" className="shrink-0 font-semibold tracking-tight text-ink">
+          <Link to="/" className="shrink-0 font-medium tracking-tight text-ink">
             CTWS
           </Link>
           <Breadcrumbs />
           <span aria-hidden="true" className="flex-1" />
-          <div className="flex shrink-0 items-center gap-1 text-sm">
+          <div className="flex shrink-0 items-center gap-1 text-ui">
             <Shortcuts capture={<QuickCapture />} search={searching} setSearch={setSearching} />
             <span className="relative ml-1">
               <UserMenu
@@ -90,7 +90,7 @@ export function Layout() {
               the page ends above the tab bar. */}
         <main
           className={`flex min-h-[calc(100vh-3.25rem)] min-w-0 flex-col px-4 pt-4 max-lg:pb-20 sm:px-6 ${
-            ground === 'desk' ? 'bg-desk' : 'bg-sheet'
+            ground === 'desk' ? 'bg-ground' : 'bg-panel'
           }`}
         >
           <div className="flex min-w-0 flex-1 flex-col">

@@ -53,7 +53,7 @@ function ProjectsWidget() {
   return (
     <Tile label="Projects" to="/projects" className="lg:col-span-12">
       {projects.isError && (
-        <p role="alert" className="px-2 py-1.5 text-sm text-danger">
+        <p role="alert" className="px-2 py-1.5 text-ui text-stop-t">
           Couldn't load projects
         </p>
       )}
@@ -66,8 +66,8 @@ function ProjectsWidget() {
               className="flex min-w-0 items-stretch gap-3 pt-0.5 pr-1 pb-1 hover:bg-hover"
             >
               <ProjectRail projectId={p.id} />
-              <span className="flex min-w-0 flex-col text-sm">
-                <span className="truncate text-base font-semibold text-ink">{p.name}</span>
+              <span className="flex min-w-0 flex-col text-ui">
+                <span className="truncate text-prose font-medium text-ink">{p.name}</span>
                 {facts.map(({ moduleId, Facts }) => (
                   <Facts key={moduleId} project={p} />
                 ))}

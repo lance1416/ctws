@@ -1,5 +1,5 @@
 import type { PersonResponse, UpdatePersonBody } from '@ctws/contracts'
-import { Icon } from '../../../platform/ui/icons'
+import { ExpandIcon } from '../../../platform/ui/icons'
 import { useState } from 'react'
 import type { UseFormRegisterReturn } from 'react-hook-form'
 import { WritingMode } from '../../../platform/notes/WritingMode'
@@ -70,7 +70,7 @@ export function PersonForm({
     >
       <FormBar busy={busy} disabled={!ready} onCancel={onCancel} />
       {error && (
-        <p role="alert" className="text-sm text-danger">
+        <p role="alert" className="text-ui text-stop-t">
           {error}
         </p>
       )}
@@ -83,7 +83,7 @@ export function PersonForm({
           id="c-name"
           autoFocus
           {...form.register('name')}
-          className={`${field} mt-1.5 text-lg font-semibold`}
+          className={`${field} mt-1.5 text-subject`}
         />
       </div>
 
@@ -101,16 +101,16 @@ export function PersonForm({
               aria-expanded={pickingDay}
               aria-label={dayText ? `Birthday, ${dayText}` : 'Birthday, not set'}
               onClick={() => setPickingDay(!pickingDay)}
-              className={`-mx-1.5 flex min-w-0 items-center gap-1.5 rounded-md px-1.5 py-0.5 text-left text-sm hover:bg-hover ${
-                dayText ? 'text-ink' : 'text-ink-subtle'
+              className={`-mx-1.5 flex min-w-0 items-center gap-1.5 rounded-control px-1.5 py-0.5 text-left text-ui hover:bg-hover ${
+                dayText ? 'text-ink' : 'text-subtle'
               }`}
             >
               <span className="truncate">{dayText ?? 'Not set'}</span>
-              <Icon glyph="chevronDown" className="h-3 w-3 shrink-0 text-ink-subtle" />
+              <ExpandIcon size={16} className="h-3 w-3 shrink-0 text-subtle" />
             </button>
           </Field>
           {pickingDay && (
-            <div className="col-span-full rounded-md border border-rule-strong p-3">
+            <div className="col-span-full rounded-control border border-line-strong p-3">
               <BirthdayEditor
                 birthday={person.birthday}
                 onChange={(draft, refused) => {
@@ -215,7 +215,7 @@ function Writes({
       <label htmlFor={id} className={label}>
         {text}
       </label>
-      <input id={id} {...registered} className={`${field} mt-1 text-sm`} />
+      <input id={id} {...registered} className={`${field} mt-1 text-ui`} />
     </div>
   )
 }

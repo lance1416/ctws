@@ -14,7 +14,7 @@ export function Things() {
   const keys = new Map(registry.chords.map((c) => [c.id, c.key]))
   return (
     <>
-      <h1 className={`${HANG} text-2xl font-semibold tracking-[-0.02em]`}>Things</h1>
+      <h1 className={`${HANG} text-title tracking-[-0.02em]`}>Things</h1>
       <ul className="mt-7 flex max-w-[48rem] flex-col">
         {registry.kinds.map(({ label, to, Count, Status, chord }) => {
           const key = chord ? keys.get(chord) : undefined
@@ -24,7 +24,7 @@ export function Things() {
                 className={`flex shrink-0 items-start justify-end pt-3.5 pr-2 sm:pr-3.5 ${HANG_WIDTH}`}
               >
                 {key && (
-                  <KeyHint className="rounded border border-rule-strong px-1.5 text-xs whitespace-nowrap text-ink-subtle">
+                  <KeyHint className="rounded-key border border-line-strong px-1.5 text-meta whitespace-nowrap text-subtle">
                     g {key}
                   </KeyHint>
                 )}
@@ -32,15 +32,15 @@ export function Things() {
               <ProjectRail projectId={null} />
               <Link to={to} className={`${ROW_BODY} flex-col py-3 pr-2 hover:bg-hover`}>
                 <span className="flex items-baseline gap-2.5">
-                  <span className="text-lg font-semibold text-ink">{label}</span>
+                  <span className="text-subject text-ink">{label}</span>
                   {Count && (
-                    <span className="text-sm text-ink-muted tabular-nums">
+                    <span className="text-ui text-muted tabular-nums">
                       <Count />
                     </span>
                   )}
                 </span>
                 {Status && (
-                  <span className="text-sm text-ink-subtle">
+                  <span className="text-ui text-subtle">
                     <Status />
                   </span>
                 )}

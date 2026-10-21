@@ -14,7 +14,7 @@ function Trail({ useCrumbs }: { useCrumbs: () => Crumbs }) {
   if (!here) return null
   const trail = crumbs.slice(0, -1) as readonly { label: string; to: string }[]
   return (
-    <nav aria-label="Location" className="flex min-w-0 items-center gap-2 text-ink-muted">
+    <nav aria-label="Location" className="flex min-w-0 items-center gap-2 text-muted">
       {/* Below 640 only the page's own name fits. */}
       {trail.map((c, i) => (
         <span key={i} className="flex shrink-0 items-center gap-2 max-sm:hidden">
@@ -26,7 +26,7 @@ function Trail({ useCrumbs }: { useCrumbs: () => Crumbs }) {
       ))}
       <span className="flex min-w-0 items-center gap-2">
         {trail.length > 0 && <Slash />}
-        <span aria-current="page" className="truncate font-semibold text-ink">
+        <span aria-current="page" className="truncate font-medium text-ink">
           {here.label}
         </span>
       </span>
@@ -36,7 +36,7 @@ function Trail({ useCrumbs }: { useCrumbs: () => Crumbs }) {
 
 function Slash() {
   return (
-    <span aria-hidden="true" className="text-ink-subtle max-sm:hidden">
+    <span aria-hidden="true" className="text-subtle max-sm:hidden">
       /
     </span>
   )

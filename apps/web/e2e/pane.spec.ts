@@ -244,7 +244,7 @@ test('the pane wears the row system: two date glyphs, two colour families', asyn
 
   const dialog = page.getByRole('dialog', { name: 'Task details' })
   const due = dialog.locator('label[for="detail-due"]')
-  const plan = dialog.locator('label[for="detail-plan"]')
+  const plan = dialog.locator('label[for="detail-go"]')
   await expect(due).toHaveText('Due')
   await expect(plan).toHaveText('Plan')
 
@@ -256,7 +256,7 @@ test('the pane wears the row system: two date glyphs, two colour families', asyn
       probe.style.color = `var(${token})`
       return getComputedStyle(probe).color
     }
-    const out = { deadline: read('--color-deadline'), plan: read('--color-plan') }
+    const out = { deadline: read('--color-warn'), plan: read('--color-go') }
     probe.remove()
     return out
   })

@@ -11,19 +11,19 @@ function themeVariables(): Record<string, string> {
   const css = getComputedStyle(document.documentElement)
   const token = (name: string) => css.getPropertyValue(name).trim()
   return {
-    background: token('--color-desk'),
-    primaryColor: token('--color-sheet'),
+    background: token('--color-ground'),
+    primaryColor: token('--color-panel'),
     primaryTextColor: token('--color-ink'),
-    primaryBorderColor: token('--color-rule-strong'),
+    primaryBorderColor: token('--color-line-strong'),
     secondaryColor: token('--color-hover'),
     tertiaryColor: token('--color-chrome'),
-    lineColor: token('--color-rule-strong'),
+    lineColor: token('--color-line-strong'),
     textColor: token('--color-ink'),
-    mainBkg: token('--color-sheet'),
-    nodeBorder: token('--color-rule-strong'),
+    mainBkg: token('--color-panel'),
+    nodeBorder: token('--color-line-strong'),
     clusterBkg: token('--color-chrome'),
-    clusterBorder: token('--color-rule'),
-    edgeLabelBackground: token('--color-desk'),
+    clusterBorder: token('--color-line'),
+    edgeLabelBackground: token('--color-ground'),
     fontFamily: token('--font-sans'),
     fontSize: '14px',
   }
@@ -81,11 +81,11 @@ export default function MermaidDiagram({ source }: { source: string }) {
 
   return (
     <>
-      {state === 'drawing' && <p className="my-3 text-sm text-ink-subtle">Drawing…</p>}
+      {state === 'drawing' && <p className="my-3 text-ui text-subtle">Drawing…</p>}
       {state === 'failed' && (
         <div className="my-3">
-          <p className="text-sm text-missed">Couldn't draw the diagram: {failure}</p>
-          <pre className="mt-1 overflow-x-auto rounded-md bg-desk p-3 text-sm">
+          <p className="text-ui text-stop-t">Couldn't draw the diagram: {failure}</p>
+          <pre className="mt-1 overflow-x-auto rounded-control bg-ground p-3 text-ui">
             <code>{source}</code>
           </pre>
         </div>

@@ -95,13 +95,13 @@ function FocalRow({ task: t, today, saved, rowRef, onOpen, onKeyDown, onStatus }
           <span
             data-doing-title
             // In full, on as many lines as it takes.
-            className="min-w-0 text-2xl font-semibold [overflow-wrap:anywhere] max-sm:text-xl"
+            className="min-w-0 text-title [overflow-wrap:anywhere] max-sm:text-title"
           >
             {t.title}
           </span>
           {saved && <SavedMark />}
         </span>
-        <span className="truncate text-sm text-ink-muted">{taskCrumb(t)}</span>
+        <span className="truncate text-ui text-muted">{taskCrumb(t)}</span>
       </button>
       {/* The visible word is in the accessible name: "Done" in “Complete “Title””. */}
       <span className="flex shrink-0 items-center gap-2 self-center">
@@ -139,12 +139,12 @@ function DoingRow({ task: t, today, saved, rowRef, onOpen, onKeyDown, onStatus }
         className="flex min-w-0 flex-1 flex-col py-2.5 text-left"
       >
         <span className="flex min-w-0 items-baseline">
-          <span data-doing-title className="truncate text-base font-semibold">
+          <span data-doing-title className="truncate text-prose font-medium">
             {t.title}
           </span>
           {saved && <SavedMark />}
         </span>
-        <span className="truncate text-sm text-ink-muted">{taskCrumb(t)}</span>
+        <span className="truncate text-ui text-muted">{taskCrumb(t)}</span>
       </button>
       {/* Over the row, not in it: it takes no width from the title. The mark is already Done,
           so a second Done is not drawn. */}

@@ -12,7 +12,7 @@ export function MovementPanel({ rows, today }: { rows: ProjectMovementResponse[]
 
   return (
     <aside aria-label="This week" data-panel="This week" className="min-w-0">
-      <h2 className="mb-1.5 text-base font-semibold text-ink">This week</h2>
+      <h2 className="mb-1.5 text-prose font-medium text-ink">This week</h2>
       <ul className="flex flex-col">
         {rows.map((r) => {
           const quiet = isQuiet(r)
@@ -21,7 +21,7 @@ export function MovementPanel({ rows, today }: { rows: ProjectMovementResponse[]
               <Link
                 to={`/projects/${r.projectId}`}
                 data-stagnant={quiet ? r.projectId : undefined}
-                className="grid grid-cols-[var(--spacing-thread)_minmax(0,1fr)_auto] items-start gap-x-3 py-[7px] pr-1 hover:bg-hover"
+                className="grid grid-cols-[3px_minmax(0,1fr)_auto] items-start gap-x-3 py-[7px] pr-1 hover:bg-hover"
               >
                 {/* Not `data-project-rail`: this is not a task row and must not be measured as
                     one. The name beside it keeps the colour from being the only signal. */}
@@ -31,12 +31,12 @@ export function MovementPanel({ rows, today }: { rows: ProjectMovementResponse[]
                   className={`self-stretch ${rail(r.projectId)}`}
                 />
                 <span className="flex min-w-0 flex-col">
-                  <span className={`truncate ${quiet ? 'text-ink-muted' : 'text-ink'}`}>
+                  <span className={`truncate ${quiet ? 'text-muted' : 'text-ink'}`}>
                     {r.projectName}
                   </span>
-                  <span className="text-sm text-ink-subtle">{movedLine(r, today)}</span>
+                  <span className="text-ui text-subtle">{movedLine(r, today)}</span>
                 </span>
-                <span className="text-sm whitespace-nowrap text-ink-subtle tabular-nums">
+                <span className="text-ui whitespace-nowrap text-subtle tabular-nums">
                   {r.remaining} open
                 </span>
               </Link>

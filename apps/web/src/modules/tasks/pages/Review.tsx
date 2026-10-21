@@ -53,7 +53,7 @@ function Row({
         <span className="flex h-6 shrink-0 items-center">
           <StatusMark status={status} />
         </span>
-        <span className={`min-w-0 truncate ${status === 'done' ? 'text-ink' : 'text-ink-muted'}`}>
+        <span className={`min-w-0 truncate ${status === 'done' ? 'text-ink' : 'text-muted'}`}>
           {title}
         </span>
       </div>
@@ -114,7 +114,7 @@ export function Review() {
             <Step label="The week before" onClick={() => setRange(weekBefore(data.from))}>
               ‹
             </Step>
-            <span className="text-center text-sm whitespace-nowrap text-ink-muted tabular-nums">
+            <span className="text-center text-ui whitespace-nowrap text-muted tabular-nums">
               {monthDay(data.from)} – {monthDay(data.to)}
             </span>
             {/* Forward stops at this week: next week has not happened. */}
@@ -129,7 +129,7 @@ export function Review() {
               <button
                 type="button"
                 onClick={() => setRange(null)}
-                className="ml-1 h-8 rounded-md px-2.5 text-sm whitespace-nowrap text-ink-muted hover:bg-hover hover:text-ink"
+                className="ml-1 h-8 rounded-control px-2.5 text-ui whitespace-nowrap text-muted hover:bg-hover hover:text-ink"
               >
                 This week
               </button>
@@ -141,7 +141,7 @@ export function Review() {
       {view === 'done' && <Completed />}
 
       {view === 'week' && review.isError && (
-        <p role="alert" className={`mt-4 ${HANG} text-sm text-danger`}>
+        <p role="alert" className={`mt-4 ${HANG} text-ui text-stop-t`}>
           Couldn't load the review
         </p>
       )}
@@ -149,7 +149,7 @@ export function Review() {
       {view === 'week' && data && (
         <>
           {weekSentence(total) && (
-            <p data-review-sentence className={`mt-1.5 ${HANG} text-ink-muted tabular-nums`}>
+            <p data-review-sentence className={`mt-1.5 ${HANG} text-muted tabular-nums`}>
               {weekSentence(total)}
             </p>
           )}
@@ -202,7 +202,7 @@ function Step({
       onClick={onClick}
       disabled={disabled}
       aria-label={label}
-      className="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted hover:bg-hover hover:text-ink disabled:opacity-30 disabled:hover:bg-transparent"
+      className="flex h-8 w-8 items-center justify-center rounded-control text-muted hover:bg-hover hover:text-ink disabled:opacity-30 disabled:hover:bg-transparent"
     >
       <span aria-hidden="true">{children}</span>
     </button>

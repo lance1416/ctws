@@ -23,11 +23,11 @@ export function DialogFooter({
   return (
     <>
       {error != null && (
-        <p role="alert" className="text-sm text-danger">
+        <p role="alert" className="text-ui text-stop-t">
           {problemText(error) ?? "Couldn't create it. Your answers are still here — try again."}
         </p>
       )}
-      <div className="flex flex-wrap items-center gap-2 border-t border-rule pt-4">
+      <div className="flex flex-wrap items-center gap-2 border-t border-line pt-4">
         {hint}
         <span className="ml-auto flex items-center gap-2">
           <Button look="secondary" onClick={onCancel}>

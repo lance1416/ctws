@@ -41,7 +41,7 @@ export function TodayMeetings() {
 
   if (meetings.isError) {
     return (
-      <p role="alert" className="px-2 py-1.5 text-sm text-danger">
+      <p role="alert" className="px-2 py-1.5 text-ui text-stop-t">
         Couldn't load today's meetings
       </p>
     )
@@ -92,16 +92,16 @@ export function TodayMeetings() {
     <>
       {/* To a screen reader the line is one sentence; the rows below are what to press. */}
       <div role="img" aria-label={name} className="relative mx-1 mb-2 h-[54px]">
-        <span className="absolute inset-x-0 top-[30px] h-px bg-rule" />
+        <span className="absolute inset-x-0 top-[30px] h-px bg-line" />
         {Array.from({ length: (LINE_TO - LINE_FROM) / 2 + 1 }, (_, i) => LINE_FROM + i * 2).map(
           (h) => (
             <span key={h}>
               <span
-                className="absolute top-[27px] h-[7px] w-px bg-rule-strong"
+                className="absolute top-[27px] h-[7px] w-px bg-line-strong"
                 style={{ left: `${pct(h * 60)}%` }}
               />
               <span
-                className="absolute top-9 -translate-x-1/2 text-xs text-ink-subtle tabular-nums"
+                className="absolute top-9 -translate-x-1/2 text-meta text-subtle tabular-nums"
                 style={{ left: `${pct(h * 60)}%` }}
               >
                 {String(h).padStart(2, '0')}
@@ -121,7 +121,7 @@ export function TodayMeetings() {
               style={{ left: `${pct(from)}%`, width: `${Math.max(pct(to) - pct(from), 1)}%` }}
             >
               <span
-                className={`absolute inset-x-0 top-0 h-0.5 ${m.projectId ? rail(m.projectId) : 'bg-ink-subtle'}`}
+                className={`absolute inset-x-0 top-0 h-0.5 ${m.projectId ? rail(m.projectId) : 'bg-subtle'}`}
               />
             </span>
           )
@@ -133,7 +133,7 @@ export function TodayMeetings() {
               style={{ left: `${pct(nowMin)}%` }}
             />
             <span
-              className={`absolute -top-1 text-xs font-semibold tabular-nums ${
+              className={`absolute -top-1 text-meta font-medium tabular-nums ${
                 pct(nowMin) > LABEL_FLIP ? '-ml-1.5 -translate-x-full' : 'ml-1.5'
               }`}
               style={{ left: `${pct(nowMin)}%` }}
@@ -152,8 +152,8 @@ export function TodayMeetings() {
               className="flex min-h-[38px] min-w-0 items-stretch hover:bg-hover"
             >
               <span
-                className={`flex w-16 shrink-0 items-center justify-end pr-3 text-sm tabular-nums ${
-                  past ? 'text-ink-subtle' : 'text-ink-muted'
+                className={`flex w-16 shrink-0 items-center justify-end pr-3 text-ui tabular-nums ${
+                  past ? 'text-subtle' : 'text-muted'
                 }`}
               >
                 {at(new Date(m.startsAt))}
@@ -162,13 +162,13 @@ export function TodayMeetings() {
               <button
                 type="button"
                 onClick={() => open.show(m)}
-                className={`min-w-0 flex-1 truncate pl-3 text-left ${past ? 'text-ink-subtle' : 'text-ink'}`}
+                className={`min-w-0 flex-1 truncate pl-3 text-left ${past ? 'text-subtle' : 'text-ink'}`}
               >
                 {m.title}
               </button>
               {/* The project by name, so its colour is never the only signal, then who attends. */}
               {(m.projectName || m.attendees.length > 0) && (
-                <span className="flex max-w-[50%] shrink-0 items-center truncate pl-3 text-sm text-ink-subtle">
+                <span className="flex max-w-[50%] shrink-0 items-center truncate pl-3 text-ui text-subtle">
                   {[m.projectName, m.attendees.map((p) => p.name).join(', ')]
                     .filter(Boolean)
                     .join(' · ')}
@@ -185,5 +185,5 @@ export function TodayMeetings() {
 
 export function MeetingsAside() {
   const count = useTodayCount()
-  return count && <span className="text-sm text-ink-subtle">{count}</span>
+  return count && <span className="text-ui text-subtle">{count}</span>
 }

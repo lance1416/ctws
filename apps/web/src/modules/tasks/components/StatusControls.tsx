@@ -23,7 +23,7 @@ export function StatusButton({
       data-status-button
       aria-label={inactive ? `Reopen “${title}”` : `Complete “${title}”`}
       onClick={onClick}
-      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md hover:bg-hover`}
+      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-control hover:bg-hover`}
     >
       <StatusMark status={status} />
     </button>
@@ -47,7 +47,7 @@ export function StartButton({
       tabIndex={-1}
       aria-label={running ? `Pause “${title}”` : `Start “${title}”`}
       onClick={onClick}
-      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-muted hover:bg-hover hover:text-ink`}
+      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-control text-muted hover:bg-hover hover:text-ink`}
     >
       <svg
         viewBox="0 0 16 16"

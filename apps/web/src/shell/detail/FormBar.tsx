@@ -12,7 +12,7 @@ export function FormBar({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="flex-1 text-xs text-ink-muted">Editing</span>
+      <span className="flex-1 text-meta text-muted">Editing</span>
       <Button look="secondary" onClick={onCancel}>
         Cancel
       </Button>

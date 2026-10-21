@@ -21,10 +21,10 @@ export function NewPersonInput({ onCreated }: { onCreated: (person: PersonRespon
         {...name.field({ onSubmit: create.mutate, busy: create.isPending })}
         placeholder="Add a name"
         aria-label="Add a name"
-        className={`w-full bg-sheet ${textbox}`}
+        className={`w-full bg-panel ${textbox}`}
       />
       {create.isError && (
-        <p role="alert" className="mt-1 text-sm text-danger">
+        <p role="alert" className="mt-1 text-ui text-stop-t">
           Couldn't create. Press Enter to try again.
         </p>
       )}

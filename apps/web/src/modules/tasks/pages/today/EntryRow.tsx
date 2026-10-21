@@ -37,11 +37,11 @@ export function EntryRow({
         <span aria-hidden="true" className="h-11 w-7 shrink-0" />
         <span className="flex min-w-0 flex-1 flex-col py-2.5">
           <span className="flex min-w-0 items-baseline gap-2">
-            <span data-row-title className={`truncate ${past ? 'text-ink-subtle' : 'text-ink'}`}>
+            <span data-row-title className={`truncate ${past ? 'text-subtle' : 'text-ink'}`}>
               {e.title}
             </span>
             {e.zone && (
-              <span data-entry-zone className="shrink-0 text-sm text-ink-subtle">
+              <span data-entry-zone className="shrink-0 text-ui text-subtle">
                 {e.zone}
               </span>
             )}

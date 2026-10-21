@@ -24,7 +24,7 @@ import type { useTaskDetailForm } from './useTaskDetailForm'
 
 /** For days the named ones miss: quieter by size, not by a fainter edge, which says "control". */
 const exact =
-  'h-9 w-full max-w-[14rem] rounded-md border border-rule-strong bg-sheet px-2 text-sm text-ink'
+  'h-9 w-full max-w-[14rem] rounded-control border border-line-strong bg-panel px-2 text-ui text-ink'
 
 /** The task's fields behind Edit, saved by one Save, with the leave guard's question inline. */
 export function TaskEditForm({
@@ -105,12 +105,12 @@ export function TaskEditForm({
             titleField.current = el
           }}
           aria-label="Title"
-          className="mt-0.5 w-full rounded-md bg-transparent py-0.5 text-lg font-semibold text-ink"
+          className="mt-0.5 w-full rounded-control bg-transparent py-0.5 text-subject text-ink"
         />
       </div>
 
       {guard.asking && (
-        <div role="alert" className="rounded-md border border-rule-strong p-3 text-sm">
+        <div role="alert" className="rounded-control border border-line-strong p-3 text-ui">
           <p className="text-ink">
             {guard.leaving
               ? 'You have unsaved changes. Leaving will discard them.'
@@ -127,7 +127,7 @@ export function TaskEditForm({
         </div>
       )}
       {save.isError && (
-        <p role="alert" className="text-sm text-danger">
+        <p role="alert" className="text-ui text-stop-t">
           {problemText(save.error)}
         </p>
       )}
@@ -167,10 +167,10 @@ export function TaskEditForm({
         today={today}
         onDay={(day) => setValue('scheduledOn', day, dirty)}
         onClear={() => setValue('scheduledOn', null, dirty)}
-        htmlFor="detail-plan"
+        htmlFor="detail-go"
         exact={
           <input
-            id="detail-plan"
+            id="detail-go"
             type="date"
             // An empty date input yields '', and the contract takes a day or null.
             {...register('scheduledOn', {
@@ -192,7 +192,7 @@ export function TaskEditForm({
           <button
             type="button"
             onClick={() => setWriting(true)}
-            className="-mb-0.5 h-7 rounded-md border border-rule px-2 text-xs text-ink-muted hover:border-rule-strong hover:text-ink"
+            className="-mb-0.5 h-7 rounded-control border border-line px-2 text-meta text-muted hover:border-line-strong hover:text-ink"
           >
             Full screen
           </button>

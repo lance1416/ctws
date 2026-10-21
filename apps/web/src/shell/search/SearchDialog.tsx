@@ -149,7 +149,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
   return (
     // `initialFocus`, not `autoFocus`: Radix moves focus itself on open, and would land on Close.
     <Modal title="Search" onClose={onClose} initialFocus={box}>
-      <div className="border-b border-rule px-4 py-3">
+      <div className="border-b border-line px-4 py-3">
         <input
           ref={box}
           value={query}
@@ -174,17 +174,17 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
           }
           placeholder="Search…"
           aria-label="Search"
-          className="h-9 w-full bg-transparent px-0.5 text-ink placeholder:text-ink-muted"
+          className="h-9 w-full bg-transparent px-0.5 text-ink placeholder:text-muted"
         />
       </div>
       {results.isError && (
-        <p role="alert" className="px-4 py-3 text-sm text-danger">
+        <p role="alert" className="px-4 py-3 text-ui text-stop-t">
           Search failed. Check that the server is running.
         </p>
       )}
       {debounced.length > 0 && results.isSuccess && rows.length === 0 && (
         <div className="px-4 py-3">
-          <p className="text-sm text-ink">Nothing matches</p>
+          <p className="text-ui text-ink">Nothing matches</p>
           <Button
             look="link"
             onClick={() => {
@@ -221,7 +221,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
           const heading = `${base}-${run.group}`
           return (
             <li key={run.group} role="presentation">
-              <div id={heading} className="px-5 pt-3 pb-1 text-xs font-semibold text-ink-subtle">
+              <div id={heading} className="px-5 pt-3 pb-1 text-meta font-medium text-subtle">
                 {label}
               </div>
               <ul role="group" aria-labelledby={heading}>
@@ -272,14 +272,14 @@ function SearchRow({
         selected ? 'bg-hover' : ''
       }`}
     >
-      {row.rail ?? <span aria-hidden="true" className="w-thread shrink-0" />}
+      {row.rail ?? <span aria-hidden="true" className="w-[3px] shrink-0" />}
       <span className="flex h-6 w-6 shrink-0 items-center justify-center">{row.mark}</span>
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate text-ink">{row.title}</span>
-        {row.meta && <span className="truncate text-sm text-ink-muted">{row.meta}</span>}
+        {row.meta && <span className="truncate text-ui text-muted">{row.meta}</span>}
       </span>
       {row.hint && (
-        <KeyHint className="mt-0.5 shrink-0 rounded border border-rule px-1.5 text-xs leading-5 text-ink-subtle">
+        <KeyHint className="mt-0.5 shrink-0 rounded-key border border-line px-1.5 text-meta leading-5 text-subtle">
           {row.hint}
         </KeyHint>
       )}

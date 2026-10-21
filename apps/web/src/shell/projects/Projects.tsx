@@ -34,16 +34,16 @@ export function Projects() {
           {...name.field({ onSubmit: create.mutate, busy: create.isPending })}
           placeholder="New project"
           aria-label="New project"
-          className={`w-full bg-sheet ${textbox}`}
+          className={`w-full bg-panel ${textbox}`}
         />
       </div>
       {projects.isError && (
-        <p role="alert" className={`mt-4 ${HANG} text-sm text-danger`}>
+        <p role="alert" className={`mt-4 ${HANG} text-ui text-stop-t`}>
           Couldn't load projects
         </p>
       )}
       {create.isError && (
-        <p role="alert" className={`mt-4 ${HANG} text-sm text-danger`}>
+        <p role="alert" className={`mt-4 ${HANG} text-ui text-stop-t`}>
           That didn't work. Try again.
         </p>
       )}
@@ -86,7 +86,7 @@ function ProjectRow({ project: p }: { project: ProjectResponse }) {
         >
           {p.name}
         </Link>
-        <span data-project-meta className="truncate text-sm text-ink-muted tabular-nums">
+        <span data-project-meta className="truncate text-ui text-muted tabular-nums">
           {projectRowFacts.map(({ moduleId, Facts }) => (
             <Facts key={moduleId} project={p} />
           ))}

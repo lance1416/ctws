@@ -105,14 +105,14 @@ function ReadingFields({
               href={item.url}
               target="_blank"
               rel="noreferrer noopener"
-              className="block truncate text-lg font-semibold text-ink hover:underline"
+              className="block truncate text-subject text-ink hover:underline"
             >
               {readingLabel(item)}
             </a>
           ) : (
-            <h2 className="truncate text-lg font-semibold text-ink">{readingLabel(item)}</h2>
+            <h2 className="truncate text-subject text-ink">{readingLabel(item)}</h2>
           )}
-          <p className="truncate text-sm text-ink-muted">
+          <p className="truncate text-ui text-muted">
             {item.kind === 'book' ? (item.author ?? 'Book') : (item.url ?? 'Link')}
           </p>
         </div>
@@ -122,16 +122,16 @@ function ReadingFields({
       </div>
 
       {item.fetchedSummary && !item.title && (
-        <p className="max-w-reading text-sm text-ink-muted">{item.fetchedSummary}</p>
+        <p className="max-w-reading text-ui text-muted">{item.fetchedSummary}</p>
       )}
 
       <div className="@container">
         <div className="grid items-start gap-x-6 gap-y-4 @xl:grid-cols-2 @2xl:grid-cols-3">
           <Field label="Status">
-            <span className="text-sm text-ink">{STATUS_LABEL[item.status]}</span>
+            <span className="text-ui text-ink">{STATUS_LABEL[item.status]}</span>
           </Field>
           <Field label="Finish by">
-            <span className={`text-sm ${item.planOn ? 'text-ink' : 'text-ink-subtle'}`}>
+            <span className={`text-ui ${item.planOn ? 'text-ink' : 'text-subtle'}`}>
               {item.planOn ? dayPhrase(item.planOn, today) : 'Not set'}
             </span>
           </Field>
@@ -144,7 +144,7 @@ function ReadingFields({
                 </span>
               </span>
             ) : (
-              <span className="text-sm text-ink-subtle">Not on any project</span>
+              <span className="text-ui text-subtle">Not on any project</span>
             )}
           </Field>
         </div>
@@ -193,7 +193,7 @@ function ReadingForm({
     >
       <FormBar busy={busy} onCancel={onCancel} />
       {error && (
-        <p role="alert" className="text-sm text-danger">
+        <p role="alert" className="text-ui text-stop-t">
           {error}
         </p>
       )}
@@ -207,7 +207,7 @@ function ReadingForm({
           autoFocus
           {...form.register('title')}
           placeholder={item.kind === 'link' ? readingLabel({ title: null, url: item.url }) : ''}
-          className={`${field} mt-1.5 text-lg font-semibold`}
+          className={`${field} mt-1.5 text-subject`}
         />
       </div>
 
@@ -216,14 +216,14 @@ function ReadingForm({
           <label htmlFor="r-url" className={label}>
             Link
           </label>
-          <input id="r-url" {...form.register('url')} className={`${field} mt-1.5 text-sm`} />
+          <input id="r-url" {...form.register('url')} className={`${field} mt-1.5 text-ui`} />
         </div>
       ) : (
         <div>
           <label htmlFor="r-author" className={label}>
             Author
           </label>
-          <input id="r-author" {...form.register('author')} className={`${field} mt-1.5 text-sm`} />
+          <input id="r-author" {...form.register('author')} className={`${field} mt-1.5 text-ui`} />
         </div>
       )}
 
@@ -279,7 +279,7 @@ function DeleteReading({ item, onDeleted }: { item: ReadingItemResponse; onDelet
         onConfirm={() => drop.mutate()}
       />
       {drop.isError && (
-        <p role="alert" className="text-sm text-danger">
+        <p role="alert" className="text-ui text-stop-t">
           {problemText(drop.error)}
         </p>
       )}

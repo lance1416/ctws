@@ -21,9 +21,9 @@ export function DaySection({
   return (
     <section aria-label={label} data-panel={label} className={`min-w-0 ${className}`}>
       <div className={`mb-1.5 ${HANG} flex min-w-0 items-baseline gap-2`}>
-        <h2 className="text-base font-semibold text-ink">{label}</h2>
+        <h2 className="text-prose font-medium text-ink">{label}</h2>
         {count !== undefined && count > 0 && (
-          <span data-count className="text-sm text-ink-subtle tabular-nums">
+          <span data-count className="text-ui text-subtle tabular-nums">
             {count}
           </span>
         )}

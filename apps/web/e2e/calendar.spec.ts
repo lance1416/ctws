@@ -261,10 +261,10 @@ test('an open calendar moves today past midnight', async ({ page }) => {
   await page.clock.install({ time: new TZDate(y, m - 1, d, 23, 59, 58, 0, zone) })
   await page.goto('/calendar')
   const mark = (day: string) => page.locator(`[data-day="${day}"] > div`).first()
-  await expect(mark(today)).toHaveClass(/font-semibold/)
+  await expect(mark(today)).toHaveClass(/font-medium/)
   await page.clock.runFor(5_000)
-  await expect(mark(dayAfter(today))).toHaveClass(/font-semibold/)
-  await expect(mark(today)).not.toHaveClass(/font-semibold/)
+  await expect(mark(dayAfter(today))).toHaveClass(/font-medium/)
+  await expect(mark(today)).not.toHaveClass(/font-medium/)
 })
 
 test('clicking a task or a reading item on the grid opens that one', async ({ page }) => {

@@ -29,7 +29,7 @@ export function DeleteConfirm({
     <div
       role="alertdialog"
       aria-label={label}
-      className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm"
+      className="flex flex-wrap items-center gap-x-3 gap-y-1 text-ui"
     >
       <p className="text-ink">{message}</p>
       <span className="flex items-center gap-2">

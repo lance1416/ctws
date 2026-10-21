@@ -44,10 +44,10 @@ export function KindGlyph({ kind }: { kind: ReadingItemResponse['kind'] }) {
 }
 
 const TONE: Record<ReadingStatus, string> = {
-  todo: 'text-ink-muted',
+  todo: 'text-muted',
   reading: 'text-ink',
-  done: 'text-ink-subtle',
-  dropped: 'text-ink-subtle',
+  done: 'text-subtle',
+  dropped: 'text-subtle',
 }
 
 /** The list row's mark, toned by status; decoration, since the line below says the kind. */

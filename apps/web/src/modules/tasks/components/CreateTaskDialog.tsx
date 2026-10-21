@@ -154,7 +154,7 @@ export function CreateTaskDialog({
             }}
             aria-label="Title"
             aria-invalid={errors.title ? true : undefined}
-            className="mt-0.5 w-full rounded-md bg-transparent py-0.5 text-lg font-semibold text-ink"
+            className="mt-0.5 w-full rounded-control bg-transparent py-0.5 text-subject text-ink"
           />
         </div>
 
@@ -216,12 +216,12 @@ export function CreateTaskDialog({
         </div>
 
         {problem && (
-          <p role="alert" className="text-sm text-danger">
+          <p role="alert" className="text-ui text-stop-t">
             {problem}
           </p>
         )}
         {create.isError && (
-          <p role="alert" className="text-sm text-danger">
+          <p role="alert" className="text-ui text-stop-t">
             Couldn't create it. Your text is still here — try again.
           </p>
         )}
@@ -231,9 +231,12 @@ export function CreateTaskDialog({
           onCancel={onClose}
           hint={
             // Both chords: one guessed from the user agent could teach the wrong key.
-            <p className="text-xs text-ink-muted">
-              <kbd className="rounded border border-rule-strong px-1.5 text-xs leading-5">⌘↵</kbd> /{' '}
-              <kbd className="rounded border border-rule-strong px-1.5 text-xs leading-5">
+            <p className="text-meta text-muted">
+              <kbd className="rounded-key border border-line-strong px-1.5 text-meta leading-5">
+                ⌘↵
+              </kbd>{' '}
+              /{' '}
+              <kbd className="rounded-key border border-line-strong px-1.5 text-meta leading-5">
                 Ctrl↵
               </kbd>{' '}
               Create and add another

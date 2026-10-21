@@ -22,7 +22,7 @@ export function DoneTodayPanel({
       label="Done today"
       count={tasks.length}
       action={
-        <Link to="/tasks/review?view=done" className={`text-sm ${LINK}`}>
+        <Link to="/tasks/review?view=done" className={`text-ui ${LINK}`}>
           All
         </Link>
       }
@@ -42,7 +42,7 @@ export function DoneTodayPanel({
             <ProjectRail projectId={t.projectId} />
             <span className={`${ROW_BODY_WIDE} min-h-11 items-center gap-2.5 pr-2`}>
               <StatusMark status={t.status} />
-              <span className="min-w-0 truncate text-ink-muted">{t.title}</span>
+              <span className="min-w-0 truncate text-muted">{t.title}</span>
             </span>
           </li>
         ))}

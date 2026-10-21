@@ -90,7 +90,7 @@ export function ReadingRow({
               rel="noreferrer noopener"
               onClick={(e) => e.stopPropagation()}
               className={`block max-w-full truncate hover:underline ${
-                finished ? 'text-ink-subtle line-through' : 'text-ink'
+                finished ? 'text-subtle line-through' : 'text-ink'
               }`}
             >
               {label}
@@ -103,21 +103,21 @@ export function ReadingRow({
                 e.stopPropagation()
                 onOpen()
               }}
-              className={`block max-w-full truncate rounded-md text-left hover:underline ${
-                finished ? 'text-ink-subtle line-through' : 'text-ink'
+              className={`block max-w-full truncate rounded-control text-left hover:underline ${
+                finished ? 'text-subtle line-through' : 'text-ink'
               }`}
             >
               {label}
             </button>
           )}
-          {meta.length > 0 && <p className="truncate text-sm text-ink-muted">{meta.join(' · ')}</p>}
+          {meta.length > 0 && <p className="truncate text-ui text-muted">{meta.join(' · ')}</p>}
           {item.fetchedSummary && !item.title && (
-            <p data-reading-summary className="truncate text-sm text-ink-muted">
+            <p data-reading-summary className="truncate text-ui text-muted">
               {item.fetchedSummary}
             </p>
           )}
           {save.isError && (
-            <p role="alert" className="text-sm text-danger">
+            <p role="alert" className="text-ui text-stop-t">
               {problemText(save.error)}
             </p>
           )}
@@ -128,7 +128,7 @@ export function ReadingRow({
             type="button"
             onClick={() => save.mutate({ status: next.status })}
             // Opacity, never `hidden`, which leaves the tab order. Always shown on touch.
-            className="h-7 shrink-0 rounded-md border border-rule-strong px-2 text-sm text-ink opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-hover [@media(hover:none)]:opacity-100"
+            className="h-7 shrink-0 rounded-control border border-line-strong px-2 text-ui text-ink opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-hover [@media(hover:none)]:opacity-100"
           >
             {next.label}
           </button>
@@ -137,7 +137,7 @@ export function ReadingRow({
         <DropdownMenu.Root>
           <DropdownMenu.Trigger
             aria-label={`More for “${label}”`}
-            className="h-7 w-7 shrink-0 rounded-md text-ink-subtle hover:bg-hover hover:text-ink"
+            className="h-7 w-7 shrink-0 rounded-control text-subtle hover:bg-hover hover:text-ink"
           >
             <svg aria-hidden="true" viewBox="0 0 16 16" className="mx-auto h-4 w-4">
               <circle cx="3.5" cy="8" r="1.25" fill="currentColor" />

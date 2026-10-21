@@ -24,8 +24,8 @@
    of a BLOCK inside a panel, so the panel-title step is the biggest one that can appear. */
 [data-note-md] h1,
 [data-note-md] h2 {
-  font-size: var(--text-lg);
-  line-height: var(--text-lg--line-height);
+  font-size: var(--text-subject);
+  line-height: var(--text-subject--line-height);
   font-weight: 600;
   margin-block: 1.25rem 0.5rem;
 }
@@ -34,8 +34,8 @@
 [data-note-md] h4,
 [data-note-md] h5,
 [data-note-md] h6 {
-  font-size: var(--text-base);
-  line-height: var(--text-base--line-height);
+  font-size: var(--text-prose);
+  line-height: var(--text-prose--line-height);
   font-weight: 600;
   margin-block: 1rem 0.375rem;
 }
@@ -64,22 +64,22 @@
 }
 
 [data-note-md] blockquote {
-  border-inline-start: 2px solid var(--color-rule);
+  border-inline-start: 2px solid var(--color-line);
   padding-inline-start: 0.875rem;
-  color: var(--color-ink-muted);
+  color: var(--color-muted);
 }
 
 /* A link is ink with an underline, as everywhere else: the underline is what tells it apart. */
 [data-note-md] a {
   color: var(--color-ink);
   text-decoration: underline;
-  text-decoration-color: var(--color-rule-strong);
+  text-decoration-color: var(--color-line-strong);
   text-underline-offset: 3px;
 }
 
 [data-note-md] hr {
   border: 0;
-  border-top: 1px solid var(--color-rule);
+  border-top: 1px solid var(--color-line);
   margin-block: 1.25rem;
 }
 
@@ -89,7 +89,7 @@
 
 [data-note-md] del {
   text-decoration: line-through;
-  color: var(--color-ink-muted);
+  color: var(--color-muted);
 }
 
 /* CODE IS `--font-mono` (Ant Design 5's `fontFamilyCode` verbatim).
@@ -116,15 +116,15 @@
    both schemes. The same reason the hover is an ink layer: in dark a plane has to go up. */
 [data-note-md] code {
   font-size: 0.875em;
-  background: var(--color-desk);
-  border: 1px solid var(--color-rule);
+  background: var(--color-ground);
+  border: 1px solid var(--color-line);
   border-radius: 0.25rem;
   padding: 0.0625rem 0.25rem;
 }
 
 [data-note-md] pre {
-  background: var(--color-desk);
-  border: 1px solid var(--color-rule);
+  background: var(--color-ground);
+  border: 1px solid var(--color-line);
   border-radius: 0.5rem;
   padding: 0.75rem;
   overflow-x: auto;
@@ -142,20 +142,20 @@
 
 [data-note-md] table {
   border-collapse: collapse;
-  font-size: var(--text-sm);
-  line-height: var(--text-sm--line-height);
+  font-size: var(--text-ui);
+  line-height: var(--text-ui--line-height);
 }
 
 [data-note-md] th,
 [data-note-md] td {
-  border: 1px solid var(--color-rule);
+  border: 1px solid var(--color-line);
   padding: 0.25rem 0.5rem;
   text-align: start;
 }
 
 [data-note-md] th {
   font-weight: 600;
-  background: var(--color-desk);
+  background: var(--color-ground);
 }
 
 /* KaTeX sets its own type; all this does is keep a long display formula from widening the pane. */

@@ -355,7 +355,7 @@ test('a meeting already over is drawn a step quieter, above the now line', async
   const row = page.locator('[data-day-entry]').filter({ hasText: 'Early call' })
   const subtle = await page.evaluate(() => {
     const probe = document.createElement('span')
-    probe.style.color = 'var(--color-ink-subtle)'
+    probe.style.color = 'var(--color-subtle)'
     document.body.append(probe)
     const c = getComputedStyle(probe).color
     probe.remove()

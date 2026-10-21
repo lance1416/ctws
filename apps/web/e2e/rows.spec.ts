@@ -32,7 +32,7 @@ import { dayOffset, dueAgo, MONTHS, nextMondayYmd, ymd } from './days'
 const triage = (page: Page, title: string) =>
   page.getByRole('button', { name: `Change the dates for “${title}”` })
 
-/** Every x of a set of cells, rounded to the pixel: sub-pixel layout noise is not a column break. */
+/** Every x of a set of cells, rounded-key to the pixel: sub-pixel layout noise is not a column break. */
 async function xs(page: Page, selector: string): Promise<number[]> {
   const boxes = await page
     .locator(selector)
@@ -43,7 +43,7 @@ async function xs(page: Page, selector: string): Promise<number[]> {
 
 // ------------------------------------------------------------------ the margin and the thread
 
-/** Where each of a set of elements ENDS, rounded to the pixel. */
+/** Where each of a set of elements ENDS, rounded-key to the pixel. */
 async function rights(page: Page, selector: string): Promise<number[]> {
   const ends = await page
     .locator(selector)

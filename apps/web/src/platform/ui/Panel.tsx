@@ -27,7 +27,7 @@ export function RowsPanel(props: Block) {
 
 /** A card on the Workbench's desk, whose step from desk to sheet is its only edge. */
 export function Tile(props: Block) {
-  return <Frame {...props} box="rounded-card bg-sheet" head="px-4 pt-3.5" body="px-1 sm:px-2" />
+  return <Frame {...props} box="rounded-block bg-panel" head="px-4 pt-3.5" body="px-1 sm:px-2" />
 }
 
 function Frame({
@@ -48,7 +48,7 @@ function Frame({
       className={`flex min-w-0 flex-col ${box} ${className}`}
     >
       <div className={`flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1 pb-1.5 ${head}`}>
-        <h2 className="text-base font-semibold text-ink">
+        <h2 className="text-prose font-medium text-ink">
           {to ? (
             <Link to={to} className="underline-offset-[3px] hover:underline">
               {label}
@@ -71,7 +71,7 @@ function Frame({
 export function PanelEmpty({ children, hang = false }: { children: ReactNode; hang?: boolean }) {
   return (
     <p
-      className={`py-1.5 text-sm text-ink-subtle ${hang ? `${HANG} pl-[calc(var(--spacing-thread)+var(--spacing)*3.5)]` : 'px-2'}`}
+      className={`py-1.5 text-ui text-subtle ${hang ? `${HANG} pl-[calc(3px+var(--spacing)*3.5)]` : 'px-2'}`}
     >
       {children}
     </p>

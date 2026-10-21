@@ -8,10 +8,10 @@ import { Button } from '../../platform/ui/Button'
 export function RouteError() {
   const navigate = useNavigate()
   return (
-    <div className="flex flex-1 items-start justify-center bg-sheet p-6 sm:pt-16">
+    <div className="flex flex-1 items-start justify-center bg-panel p-6 sm:pt-16">
       <div role="alert" className="max-w-prose">
-        <h1 className="text-lg font-semibold text-ink">Something went wrong on this page</h1>
-        <p className="mt-2 text-sm text-ink-muted">
+        <h1 className="text-subject text-ink">Something went wrong on this page</h1>
+        <p className="mt-2 text-ui text-muted">
           This page could not be drawn. Reloading usually fixes it.
         </p>
         <div className="mt-4 flex gap-2">

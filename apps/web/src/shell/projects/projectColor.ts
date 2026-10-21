@@ -18,7 +18,7 @@ const RAIL: Record<ProjectColor, string> = {
 }
 
 /** Before the list loads, or for a project not in it: neutral, as a wrong colour would flicker. */
-const UNKNOWN_RAIL = 'bg-rule'
+const UNKNOWN_RAIL = 'bg-line'
 
 /** A lookup, not a template: Tailwind only emits classes it can see. */
 export function railClass(color: ProjectColor | undefined): string {

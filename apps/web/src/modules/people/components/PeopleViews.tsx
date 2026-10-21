@@ -40,13 +40,13 @@ export function PeopleHead() {
 function PeopleViews() {
   const onBirthdays = useLocation().pathname.startsWith(BIRTHDAYS)
   const tab = (current: boolean) =>
-    `flex h-9 items-center gap-1.5 text-sm ${
+    `flex h-9 items-center gap-1.5 text-ui ${
       current
-        ? 'font-semibold text-ink shadow-[inset_0_-2px_0_currentColor]'
-        : 'text-ink-muted hover:text-ink'
+        ? 'font-medium text-ink shadow-[inset_0_-2px_0_currentColor]'
+        : 'text-muted hover:text-ink'
     }`
   return (
-    <nav aria-label="People views" className={`mt-4 ${HANG} flex gap-5 border-b border-rule`}>
+    <nav aria-label="People views" className={`mt-4 ${HANG} flex gap-5 border-b border-line`}>
       <Link
         to="/people"
         aria-current={onBirthdays ? undefined : 'page'}
@@ -71,7 +71,7 @@ function BirthdayCount() {
   const count = view.data?.coming.length ?? 0
   if (count <= 0) return null
   return (
-    <span data-count className="text-xs font-normal text-ink-subtle tabular-nums">
+    <span data-count className="text-meta font-normal text-subtle tabular-nums">
       {count}
     </span>
   )

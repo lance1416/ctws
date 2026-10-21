@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Icon } from '../../platform/ui/icons'
+import { CloseIcon } from '../../platform/ui/icons'
 import { useRegistry } from '../registry'
 import { type Item, type Linked, useLinked } from './useLinked'
 
@@ -16,7 +16,7 @@ export function LinkList({ of, types }: Linked) {
           aria-label={registry.relationFor(group.type).plural}
           className="flex flex-col gap-1"
         >
-          <h3 className="flex items-baseline gap-2 px-2 text-xs font-semibold text-ink-subtle">
+          <h3 className="flex items-baseline gap-2 px-2 text-meta font-medium text-subtle">
             {registry.relationFor(group.type).plural}
             <span className="tabular-nums font-normal">{group.items.length}</span>
           </h3>
@@ -31,9 +31,9 @@ export function LinkList({ of, types }: Linked) {
                     disabled={unlink.isPending}
                     onClick={() => unlink.mutate(item.relationId)}
                     aria-label={`Unlink ${item.title}`}
-                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-subtle opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-hover hover:text-ink disabled:opacity-50 [@media(hover:none)]:opacity-100"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-control text-subtle opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-hover hover:text-ink disabled:opacity-50 [@media(hover:none)]:opacity-100"
                   >
-                    <Icon glyph="close" className="h-3 w-3" strokeWidth={1.8} />
+                    <CloseIcon size={16} className="h-3 w-3" strokeWidth={1.8} />
                   </button>
                 )}
               </li>
@@ -52,9 +52,9 @@ export function LinkList({ of, types }: Linked) {
  */
 export function LinkedSection({ of, types, className = '' }: Linked & { className?: string }) {
   return (
-    <section aria-label="Linked" className={`border-t border-rule pt-3 ${className}`}>
+    <section aria-label="Linked" className={`border-t border-line pt-3 ${className}`}>
       <div className="-mx-2">
-        <span className="block px-2 pb-1 text-xs text-ink-muted">Linked</span>
+        <span className="block px-2 pb-1 text-meta text-muted">Linked</span>
         <LinkList of={of} types={types} />
       </div>
     </section>
@@ -73,11 +73,11 @@ function LinkedLine({ item }: { item: Item }) {
     <Link
       to={where.to(item.id)}
       data-linked={item.id}
-      className="flex min-w-0 flex-1 items-baseline gap-2 rounded-md px-2 py-1.5 text-sm text-ink hover:bg-hover"
+      className="flex min-w-0 flex-1 items-baseline gap-2 rounded-control px-2 py-1.5 text-ui text-ink hover:bg-hover"
     >
       <span className="min-w-0 flex-[2] truncate">{item.title}</span>
-      {detail && <span className="min-w-0 shrink truncate text-xs text-ink-muted">{detail}</span>}
-      {why && <span className="min-w-0 shrink truncate text-xs text-ink-subtle">{why}</span>}
+      {detail && <span className="min-w-0 shrink truncate text-meta text-muted">{detail}</span>}
+      {why && <span className="min-w-0 shrink truncate text-meta text-subtle">{why}</span>}
     </Link>
   )
 }

@@ -15,7 +15,7 @@ export function ReadingWidget() {
 
   if (items.isError) {
     return (
-      <p role="alert" className="px-2 py-1.5 text-sm text-danger">
+      <p role="alert" className="px-2 py-1.5 text-ui text-stop-t">
         Couldn't load the reading list
       </p>
     )
@@ -30,12 +30,12 @@ export function ReadingWidget() {
             className="flex min-h-[42px] min-w-0 items-stretch gap-2.5 hover:bg-hover"
           >
             <ProjectRail projectId={item.projectId} />
-            <span className="flex shrink-0 items-center text-ink-muted">
+            <span className="flex shrink-0 items-center text-muted">
               <KindGlyph kind={item.kind} />
             </span>
             <span className="flex min-w-0 flex-1 items-baseline gap-3 self-center">
               <span className="min-w-0 truncate text-ink">{readingLabel(item)}</span>
-              <span className="ml-auto min-w-0 shrink truncate text-sm text-ink-subtle">
+              <span className="ml-auto min-w-0 shrink truncate text-ui text-subtle">
                 {item.kind === 'book' ? (item.author ?? '') : (hostOf(item.url) ?? '')}
               </span>
             </span>
@@ -48,7 +48,7 @@ export function ReadingWidget() {
 
 export function ReadingAside() {
   const count = useToReadCount()
-  return count && <span className="text-sm text-ink-subtle">{count}</span>
+  return count && <span className="text-ui text-subtle">{count}</span>
 }
 
 /** How many rows a workbench card shows before it defers to its page. */

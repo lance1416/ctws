@@ -11,7 +11,7 @@ export function TodayCount() {
   const count = today.data?.length ?? null
   if (count === null || count <= 0) return null
   return (
-    <span data-count className="ml-auto pl-1 text-xs text-ink-muted">
+    <span data-count className="ml-auto pl-1 text-meta text-muted">
       {count}
     </span>
   )

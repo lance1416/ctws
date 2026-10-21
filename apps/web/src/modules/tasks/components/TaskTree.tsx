@@ -156,7 +156,7 @@ export function TaskTree({
             type="button"
             onClick={shown.toggleDone}
             aria-pressed={shown.showDone}
-            className="min-h-8 rounded-md px-2 text-sm text-ink-muted hover:bg-hover hover:text-ink"
+            className="min-h-8 rounded-control px-2 text-ui text-muted hover:bg-hover hover:text-ink"
           >
             {shown.showDone ? 'Hide done' : `${shown.hiddenDone} done`}
           </button>
@@ -172,12 +172,12 @@ export function TaskTree({
         busy={picked.busy}
       />
       {tasks.isError && (
-        <p role="alert" className="mt-4 text-sm text-danger">
+        <p role="alert" className="mt-4 text-ui text-stop-t">
           Couldn't load tasks
         </p>
       )}
       {error && (
-        <p role="alert" className="mt-4 text-sm text-danger">
+        <p role="alert" className="mt-4 text-ui text-stop-t">
           {error}
         </p>
       )}

@@ -1,5 +1,5 @@
 import { isFinished, toggleDoneTarget, toggleStartTarget } from '../logic/status'
-import { Icon } from '../../../platform/ui/icons'
+import { CollapseIcon, ExpandIcon, NewIcon } from '../../../platform/ui/icons'
 import { useSortable } from '@dnd-kit/sortable'
 import { type ProjectId, type TaskId, type TaskResponse, type TaskStatus } from '@ctws/contracts'
 import type { KeyboardEvent } from 'react'
@@ -132,7 +132,7 @@ export function TaskRow({
           <span
             key={i}
             aria-hidden="true"
-            className="pointer-events-none absolute inset-y-0 w-px bg-rule"
+            className="pointer-events-none absolute inset-y-0 w-px bg-line"
             style={{ left: gutterPlus(i * INDENT_PX + HANDLE_PX + CHEVRON_PX / 2) }}
           />
         ))}
@@ -151,7 +151,7 @@ export function TaskRow({
           onFocus={on.focus}
           onKeyDown={on.keyDown}
           style={{ width: HANDLE_PX }}
-          className="flex h-11 shrink-0 cursor-grab touch-none items-center justify-center text-ink-muted opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
+          className="flex h-11 shrink-0 cursor-grab touch-none items-center justify-center text-muted opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
         >
           <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="currentColor">
             {[5.5, 10.5].flatMap((x) =>
@@ -168,9 +168,9 @@ export function TaskRow({
             aria-expanded={!row.collapsed}
             onClick={on.toggle}
             style={{ width: CHEVRON_PX }}
-            className="flex h-11 shrink-0 items-center justify-center text-ink-muted hover:text-ink"
+            className="flex h-11 shrink-0 items-center justify-center text-muted hover:text-ink"
           >
-            <Icon glyph={row.collapsed ? 'treeFolded' : 'treeOpen'} size={16} />
+            {row.collapsed ? <CollapseIcon size={16} /> : <ExpandIcon size={16} />}
           </button>
         ) : (
           <span style={{ width: CHEVRON_PX }} className="shrink-0" aria-hidden="true" />
@@ -187,9 +187,9 @@ export function TaskRow({
           <span className="flex min-w-0 items-center">
             <span
               data-row-title
-              className={`truncate text-base ${
-                status === 'in_progress' ? 'font-semibold' : ''
-              } ${inactive ? 'text-ink-muted' : 'text-ink'} ${status === 'cancelled' ? 'line-through' : ''}`}
+              className={`truncate text-prose ${
+                status === 'in_progress' ? 'font-medium' : ''
+              } ${inactive ? 'text-muted' : 'text-ink'} ${status === 'cancelled' ? 'line-through' : ''}`}
             >
               {title}
               {saved && <SavedMark />}
@@ -197,7 +197,7 @@ export function TaskRow({
             {/* The select layer is drawn; this says it. A list item cannot carry aria-selected. */}
             {selected && <span className="sr-only">Selected</span>}
             {hasNotes && (
-              <span className="ml-2 flex shrink-0 items-center text-ink-subtle">
+              <span className="ml-2 flex shrink-0 items-center text-subtle">
                 <NotesMark />
               </span>
             )}
@@ -229,9 +229,9 @@ export function TaskRow({
             tabIndex={-1}
             aria-label={`Add a subtask to “${title}”`}
             onClick={on.addChild}
-            className="flex h-9 w-8 shrink-0 items-center justify-center rounded-md text-ink-muted hover:text-ink"
+            className="flex h-9 w-8 shrink-0 items-center justify-center rounded-control text-muted hover:text-ink"
           >
-            <Icon glyph="plusLong" size={16} />
+            <NewIcon size={16} />
           </button>
         </span>
       </div>

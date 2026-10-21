@@ -11,12 +11,12 @@ export function DayHeading({ today }: { today: string }) {
       <h1
         id="today-heading"
         tabIndex={-1}
-        className="text-display font-medium tracking-[-0.022em] focus:outline-none max-sm:text-xl max-sm:font-semibold max-sm:tracking-normal"
+        className="text-hero tracking-[-0.022em] focus:outline-none max-sm:text-title max-sm:font-medium max-sm:tracking-normal"
       >
         {longDay(today)}
       </h1>
       {lunar.data?.[today] && (
-        <span data-lunar-day className="text-ink-subtle">
+        <span data-lunar-day className="text-subtle">
           {lunar.data[today]}
         </span>
       )}

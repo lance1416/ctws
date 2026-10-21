@@ -1,6 +1,6 @@
 import { idFrom, projectId } from '@ctws/contracts'
 import { Link } from 'react-router-dom'
-import { Icon } from '../../platform/ui/icons'
+import { CloseIcon, NewIcon } from '../../platform/ui/icons'
 import { useRegistry } from '../registry'
 import { ProjectRail } from '../rows/RowParts'
 import { whyOf } from './Links'
@@ -21,9 +21,9 @@ export function LinkBlocks({ of, types }: Linked) {
         return (
           <section key={group.type} aria-label={where.plural} className="min-w-0">
             <div className="mb-1 flex items-center gap-2">
-              <h3 className="flex items-baseline gap-2 text-base font-semibold text-ink">
+              <h3 className="flex items-baseline gap-2 text-prose font-medium text-ink">
                 {where.plural}
-                <span data-count className="text-sm font-normal text-ink-subtle tabular-nums">
+                <span data-count className="text-ui font-normal text-subtle tabular-nums">
                   {group.items.length}
                 </span>
               </h3>
@@ -31,9 +31,9 @@ export function LinkBlocks({ of, types }: Linked) {
                 type="button"
                 onClick={() => setAdding(group.type)}
                 aria-label={`Link another ${kind}`}
-                className="ml-auto flex size-[30px] items-center justify-center rounded-md text-ink-subtle hover:bg-hover hover:text-ink"
+                className="ml-auto flex size-[30px] items-center justify-center rounded-control text-subtle hover:bg-hover hover:text-ink"
               >
-                <Icon glyph="plusLong" className="size-3.5" strokeWidth={1.7} />
+                <NewIcon size={16} className="size-3.5" strokeWidth={1.7} />
               </button>
             </div>
             <ul className="flex flex-col">
@@ -47,9 +47,9 @@ export function LinkBlocks({ of, types }: Linked) {
                       disabled={unlink.isPending}
                       onClick={() => unlink.mutate(item.relationId)}
                       aria-label={`Unlink ${item.title}`}
-                      className="flex w-7 shrink-0 items-center justify-center text-ink-subtle opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-ink disabled:opacity-50 [@media(hover:none)]:opacity-100"
+                      className="flex w-7 shrink-0 items-center justify-center text-subtle opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-ink disabled:opacity-50 [@media(hover:none)]:opacity-100"
                     >
-                      <Icon glyph="close" className="h-3 w-3" strokeWidth={1.8} />
+                      <CloseIcon size={16} className="h-3 w-3" strokeWidth={1.8} />
                     </button>
                   )}
                 </li>
@@ -76,9 +76,9 @@ function LinkedBlockRow({ item }: { item: Item }) {
     >
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate text-ink">{item.title}</span>
-        {detail && <span className="truncate text-sm text-ink-subtle">{detail}</span>}
+        {detail && <span className="truncate text-ui text-subtle">{detail}</span>}
       </span>
-      {why && <span className="shrink-0 truncate text-sm text-ink-muted">{why}</span>}
+      {why && <span className="shrink-0 truncate text-ui text-muted">{why}</span>}
     </Link>
   )
 }

@@ -5,7 +5,7 @@ import type { UnsavedGuard } from './unsavedGuard'
 export function UnsavedAsk({ guard }: { guard: UnsavedGuard }) {
   if (!guard.asking) return null
   return (
-    <div role="alert" className="rounded-md border border-rule-strong p-3 text-sm">
+    <div role="alert" className="rounded-control border border-line-strong p-3 text-ui">
       <p className="text-ink">
         {guard.leaving
           ? 'You have unsaved changes. Leaving will discard them.'

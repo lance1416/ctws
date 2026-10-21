@@ -108,7 +108,7 @@ export function EndsPicker({
           Never
         </Button>
       ) : (
-        <span className="text-sm text-ink-subtle">Never</span>
+        <span className="text-ui text-subtle">Never</span>
       )}
     </>
   )

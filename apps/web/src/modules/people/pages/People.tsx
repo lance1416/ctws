@@ -48,7 +48,7 @@ export function People() {
               // Filled, not bordered, so a picked filter does not look like the page's button.
               className={
                 picked
-                  ? 'h-9 rounded-md bg-select px-2.5 text-sm font-semibold text-ink'
+                  ? 'h-9 rounded-control bg-select px-2.5 text-ui font-medium text-ink'
                   : BUTTON.quiet
               }
             >

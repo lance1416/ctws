@@ -18,24 +18,24 @@ export function BirthdayRow({ row }: { row: BirthdayListRow }) {
         to={`/people/${row.personId}`}
         className={`${ROW_BODY} items-center gap-2.5 pr-2 hover:bg-hover`}
       >
-        <span className="min-w-0 shrink truncate text-base text-ink">{row.name}</span>
+        <span className="min-w-0 shrink truncate text-prose text-ink">{row.name}</span>
         {row.turns === null ? (
-          <span className="shrink-0 text-sm text-ink-subtle">year unknown</span>
+          <span className="shrink-0 text-ui text-subtle">year unknown</span>
         ) : (
-          <span className="shrink-0 text-sm text-ink-muted">turns {row.turns}</span>
+          <span className="shrink-0 text-ui text-muted">turns {row.turns}</span>
         )}
         {row.circle && (
-          <span className="shrink-0 text-xs text-ink-subtle">{CIRCLE_LABELS[row.circle]}</span>
+          <span className="shrink-0 text-meta text-subtle">{CIRCLE_LABELS[row.circle]}</span>
         )}
         <span className="flex-1" />
         {row.lunarDate && (
-          <span className="min-w-0 shrink truncate text-xs text-ink-subtle">{row.lunarDate}</span>
+          <span className="min-w-0 shrink truncate text-meta text-subtle">{row.lunarDate}</span>
         )}
         {/* The year had no such day, so it was moved; the person's page explains. */}
-        {row.kept.length > 0 && <span className="shrink-0 text-xs text-ink-subtle">moved</span>}
+        {row.kept.length > 0 && <span className="shrink-0 text-meta text-subtle">moved</span>}
         <span
-          className={`w-20 shrink-0 text-right text-sm tabular-nums ${
-            row.inDays === 0 ? 'font-semibold text-deadline' : 'text-ink-muted'
+          className={`w-20 shrink-0 text-right text-ui tabular-nums ${
+            row.inDays === 0 ? 'font-medium text-warn-t' : 'text-muted'
           }`}
         >
           {countdownPhrase(row.inDays)}
@@ -52,8 +52,8 @@ export function BirthdayLead({ next }: { next: { day: string; inDays: number } |
     <span
       data-birthday-lead
       // A 2px gap on a phone: "May 28" with its cake is 59px there, and the margin leaves 52.
-      className={`flex shrink-0 items-center justify-end gap-0.5 pr-2 text-sm whitespace-nowrap tabular-nums sm:gap-1.5 sm:pr-3.5 ${HANG_WIDTH} ${
-        next?.inDays === 0 ? 'font-semibold text-deadline' : 'text-ink-muted'
+      className={`flex shrink-0 items-center justify-end gap-0.5 pr-2 text-ui whitespace-nowrap tabular-nums sm:gap-1.5 sm:pr-3.5 ${HANG_WIDTH} ${
+        next?.inDays === 0 ? 'font-medium text-warn-t' : 'text-muted'
       }`}
     >
       {next && (

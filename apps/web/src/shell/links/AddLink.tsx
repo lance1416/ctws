@@ -55,23 +55,23 @@ export function AddLink({
     >
       {chosen === null ? (
         <div className="flex flex-col">
-          <div className="border-b border-rule px-4 py-2">
+          <div className="border-b border-line px-4 py-2">
             <input
               ref={box}
               value={typed}
               aria-label="Search"
               placeholder="Search for anything"
               onChange={(e) => setTyped(e.target.value)}
-              className="h-9 w-full bg-transparent text-ink placeholder:text-ink-muted"
+              className="h-9 w-full bg-transparent text-ink placeholder:text-muted"
             />
           </div>
           {candidates.isError && (
-            <p role="alert" className="px-4 py-3 text-sm text-danger">
+            <p role="alert" className="px-4 py-3 text-ui text-stop-t">
               Couldn't search. Check that the server is running.
             </p>
           )}
           {candidates.isSuccess && !candidates.isPlaceholderData && offered.length === 0 && (
-            <p className="px-4 py-3 text-sm text-ink-muted">Nothing matches</p>
+            <p className="px-4 py-3 text-ui text-muted">Nothing matches</p>
           )}
           <ul className="max-h-80 overflow-y-auto py-1">
             {offered.map((c) => {
@@ -83,15 +83,13 @@ export function AddLink({
                     type="button"
                     onClick={() => setChosen(c)}
                     data-candidate={c.id}
-                    className="flex w-full min-w-0 items-baseline gap-2 px-4 py-1.5 text-left text-sm text-ink hover:bg-hover"
+                    className="flex w-full min-w-0 items-baseline gap-2 px-4 py-1.5 text-left text-ui text-ink hover:bg-hover"
                   >
                     <span className="min-w-0 flex-1 truncate">{c.title}</span>
                     {detail && (
-                      <span className="min-w-0 shrink truncate text-xs text-ink-muted">
-                        {detail}
-                      </span>
+                      <span className="min-w-0 shrink truncate text-meta text-muted">{detail}</span>
                     )}
-                    <span className="shrink-0 text-xs text-ink-subtle">{where.kind}</span>
+                    <span className="shrink-0 text-meta text-subtle">{where.kind}</span>
                   </button>
                 </li>
               )
@@ -100,18 +98,18 @@ export function AddLink({
         </div>
       ) : (
         <div className="flex flex-col gap-4 px-5 py-4">
-          <p className="text-sm text-ink-muted">
-            <span className="font-semibold text-ink">{chosen.title}</span>
+          <p className="text-ui text-muted">
+            <span className="font-medium text-ink">{chosen.title}</span>
           </p>
           <input
             value={note}
             aria-label="Why"
             placeholder="Why, in a line (optional)"
             onChange={(e) => setNote(e.target.value)}
-            className="h-9 w-full rounded-md border border-rule bg-transparent px-3 text-sm text-ink placeholder:text-ink-muted"
+            className="h-9 w-full rounded-control border border-line bg-transparent px-3 text-ui text-ink placeholder:text-muted"
           />
           {make.isError && (
-            <p role="alert" className="text-sm text-danger">
+            <p role="alert" className="text-ui text-stop-t">
               {problemText(make.error) ?? "Couldn't link those"}
             </p>
           )}

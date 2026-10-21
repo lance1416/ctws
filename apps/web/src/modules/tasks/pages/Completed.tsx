@@ -66,7 +66,7 @@ export function Completed() {
       </h2>
       <QueryStatus query={completed} />
       {error && (
-        <p role="alert" className={`mb-3 ${HANG} text-sm text-danger`}>
+        <p role="alert" className={`mb-3 ${HANG} text-ui text-stop-t`}>
           {error}
         </p>
       )}
@@ -116,7 +116,7 @@ export function Completed() {
                     className="flex min-w-0 flex-1 flex-col py-2.5 text-left"
                   >
                     <span className="truncate">{t.title}</span>
-                    <span className="truncate text-sm text-ink-muted">{taskCrumb(t)}</span>
+                    <span className="truncate text-ui text-muted">{taskCrumb(t)}</span>
                   </button>
                 </span>
               </li>
@@ -126,7 +126,7 @@ export function Completed() {
       ))}
       {/* The server says whether this is all of it, so no cap is counted here. */}
       {completed.data && completed.data.page.nextCursor !== null && (
-        <p className={`mt-8 ${HANG} text-sm text-ink-muted`}>
+        <p className={`mt-8 ${HANG} text-ui text-muted`}>
           Showing the most recent {rows.length}. Older work is in Review, week by week.
         </p>
       )}

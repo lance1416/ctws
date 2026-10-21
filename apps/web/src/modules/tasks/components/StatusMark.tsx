@@ -21,7 +21,7 @@ export function StatusMark({ status }: { status: TaskStatus }) {
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={`shrink-0 ${live ? 'text-ink' : 'text-ink-muted'}`}
+      className={`shrink-0 ${live ? 'text-ink' : 'text-muted'}`}
     >
       <title>{STATUS_LABEL[status]}</title>
       <circle

@@ -41,12 +41,12 @@ export function ProjectNumbers({ projectId }: { projectId: ProjectId }) {
     : null
   // Overdue only when there is any, in the miss colour.
   const parts: ReactNode[] = [`${row.remaining} open`]
-  if (row.overdue > 0) parts.push(<span className="text-missed">{row.overdue} overdue</span>)
+  if (row.overdue > 0) parts.push(<span className="text-stop-t">{row.overdue} overdue</span>)
   // 0% is no more news than "0 overdue": a line with nothing done yet says how much is open.
   if (progress !== null && Math.round(progress * 100) > 0)
     parts.push(`${Math.round(progress * 100)}% done`)
   return (
-    <p data-project-sentence className="mt-1.5 text-ink-muted tabular-nums">
+    <p data-project-sentence className="mt-1.5 text-muted tabular-nums">
       {parts.map((p, i) => (
         <Fragment key={i}>
           {i > 0 && ', '}
@@ -77,12 +77,12 @@ export function NewTaskAction({ projectId }: { projectId: ProjectId }) {
       <button
         type="button"
         onClick={() => setCreating(true)}
-        className="flex h-8 shrink-0 items-center gap-1.5 rounded-md px-2 text-sm text-ink-muted hover:bg-hover hover:text-ink"
+        className="flex h-8 shrink-0 items-center gap-1.5 rounded-control px-2 text-ui text-muted hover:bg-hover hover:text-ink"
       >
         New…
         <kbd
           aria-hidden="true"
-          className="pointer-events-none rounded border border-rule px-1.5 text-xs leading-5 text-ink-subtle max-sm:hidden"
+          className="pointer-events-none rounded-key border border-line px-1.5 text-meta leading-5 text-subtle max-sm:hidden"
         >
           n
         </kbd>
@@ -115,12 +115,12 @@ export function ProjectTasks({ projectId, view }: { projectId: ProjectId; view: 
           aria-invalid={create.isError ? true : undefined}
           aria-describedby={create.isError ? failureId : undefined}
           // The border follows `aria-invalid` (see `textbox`), so colour and announced state agree.
-          className={`min-w-0 flex-1 basis-[22ch] bg-sheet ${textbox}`}
+          className={`min-w-0 flex-1 basis-[22ch] bg-panel ${textbox}`}
         />
       </div>
       {/* The typed title stays in the box after a failure. */}
       {create.isError && (
-        <p id={failureId} role="alert" className={`mt-1 text-sm text-danger ${BODY_START}`}>
+        <p id={failureId} role="alert" className={`mt-1 text-ui text-stop-t ${BODY_START}`}>
           Couldn't create. Press Enter to try again.
         </p>
       )}

@@ -13,7 +13,7 @@ export function WriteFailure() {
   return (
     <p
       role="alert"
-      className={`absolute top-full right-0 ${LAYER.cover} mt-1 w-max max-w-[20rem] rounded-card bg-float px-3 py-1.5 text-sm text-danger shadow-float`}
+      className={`absolute top-full right-0 ${LAYER.cover} mt-1 w-max max-w-[20rem] rounded-block bg-float px-3 py-1.5 text-ui text-stop-t shadow-float`}
     >
       {failure}
     </p>

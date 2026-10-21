@@ -15,7 +15,7 @@ export function BackHead({
   note?: ReactNode
 }) {
   const link = (
-    <Link to={to} className="rounded-md text-sm text-ink-muted hover:text-ink hover:underline">
+    <Link to={to} className="rounded-control text-ui text-muted hover:text-ink hover:underline">
       ← {label}
     </Link>
   )
@@ -24,7 +24,7 @@ export function BackHead({
       <DetailHead
         kind={
           note ? (
-            <span className="flex min-w-0 items-center gap-1.5 text-sm text-ink-muted">
+            <span className="flex min-w-0 items-center gap-1.5 text-ui text-muted">
               {link}
               {note}
             </span>

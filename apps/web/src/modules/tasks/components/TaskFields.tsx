@@ -51,14 +51,14 @@ export function StatusRadios({ id, field }: { id: string; field: UseFormRegister
 
 const DATE = {
   due: {
-    tone: 'text-deadline',
+    tone: 'text-warn-t',
     mark: <DeadlineMark filled={false} />,
     word: 'Due',
     verb: 'Due',
     clear: 'Clear the deadline',
   },
   plan: {
-    tone: 'text-plan',
+    tone: 'text-go-t',
     mark: <PlanMark />,
     word: 'Plan',
     verb: 'Plan for',
@@ -97,7 +97,7 @@ export function DateDecisions({
       {d.word}
     </>
   )
-  const headingClass = `flex items-center gap-1 text-sm ${d.tone}`
+  const headingClass = `flex items-center gap-1 text-ui ${d.tone}`
   return (
     <div>
       {htmlFor ? (
@@ -135,5 +135,5 @@ export function DateDecisions({
  */
 function DateEcho({ text }: { text: string | null }) {
   if (!text) return null
-  return <p className="mt-1 text-xs tabular-nums text-ink-muted">{text}</p>
+  return <p className="mt-1 text-meta tabular-nums text-muted">{text}</p>
 }

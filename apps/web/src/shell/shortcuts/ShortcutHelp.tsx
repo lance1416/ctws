@@ -30,16 +30,16 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
       <div className="px-5 py-4">
         {tables.map((table) => (
           <section key={table.title} className="mt-4 first:mt-0">
-            <h3 className="text-sm font-semibold text-ink-muted">{table.title}</h3>
+            <h3 className="text-ui font-medium text-muted">{table.title}</h3>
             <dl className="mt-1">
               {table.rows.map(({ keys, does }) => (
                 <div key={`${table.title}-${keys}`} className="flex items-baseline gap-3 py-0.5">
                   <dt className="w-[14ch] shrink-0">
-                    <kbd className="rounded border border-rule-strong px-1.5 text-xs leading-5 text-ink-muted">
+                    <kbd className="rounded-key border border-line-strong px-1.5 text-meta leading-5 text-muted">
                       {keys}
                     </kbd>
                   </dt>
-                  <dd className="text-sm text-ink">{does}</dd>
+                  <dd className="text-ui text-ink">{does}</dd>
                 </div>
               ))}
             </dl>
@@ -47,7 +47,7 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
         ))}
         {/* Single-key shortcuts take keys from assistive technology, so they can be turned off.
             Arrows, Enter, Esc and Alt combinations stay: a treeview cannot work without them. */}
-        <label className="mt-6 flex items-start gap-2 border-t border-rule pt-4 text-sm text-ink">
+        <label className="mt-6 flex items-start gap-2 border-t border-line pt-4 text-ui text-ink">
           <input
             type="checkbox"
             checked={enabled}
@@ -56,7 +56,7 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
           />
           <span>
             Single-key shortcuts
-            <span className="block text-ink-muted">
+            <span className="block text-muted">
               With this off,{' '}
               {listed(singleKeysOf(switchOrder(registry.anywhere, registry.keys)).map(spoken))} stop
               responding. Arrow keys, Enter, Esc and the Alt combinations are unaffected. This

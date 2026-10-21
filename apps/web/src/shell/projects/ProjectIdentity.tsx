@@ -67,10 +67,10 @@ export function ProjectIdentity({
               >
                 <span
                   aria-hidden="true"
-                  className={`h-4 w-thread shrink-0 rounded-full ${railClass(slot)}`}
+                  className={`h-4 w-[3px] shrink-0 rounded-full ${railClass(slot)}`}
                 />
                 Colour {i + 1}
-                {slot === color && <span className="ml-auto pl-3 text-ink-subtle">Current</span>}
+                {slot === color && <span className="ml-auto pl-3 text-subtle">Current</span>}
               </DropdownMenu.Item>
             ))}
           </DropdownMenu.Content>
@@ -85,14 +85,14 @@ export function ProjectIdentity({
           onBlur={commit}
           {...nameKeys}
           aria-label="Project name"
-          className="min-w-0 flex-1 rounded-md border border-rule-strong bg-sheet px-2 py-0.5 text-2xl font-semibold text-ink"
+          className="min-w-0 flex-1 rounded-control border border-line-strong bg-panel px-2 py-0.5 text-title text-ink"
         />
       ) : (
         // The type size sits on the <h1>, not the button; Preflight's `font: inherit` passes it on.
         <h1
           id="project-heading"
           tabIndex={-1}
-          className="min-w-0 flex-1 truncate text-2xl font-semibold text-ink focus:outline-none"
+          className="min-w-0 flex-1 truncate text-title text-ink focus:outline-none"
         >
           <button
             type="button"
@@ -100,14 +100,14 @@ export function ProjectIdentity({
               setDraft(name)
               setEditing(true)
             }}
-            className="-mx-1 max-w-full truncate rounded-md px-1 hover:bg-hover"
+            className="-mx-1 max-w-full truncate rounded-control px-1 hover:bg-hover"
           >
             {name}
           </button>
         </h1>
       )}
       {save.isError && (
-        <p role="alert" className="shrink-0 text-sm text-danger">
+        <p role="alert" className="shrink-0 text-ui text-stop-t">
           {problemText(save.error)}
         </p>
       )}

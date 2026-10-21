@@ -1,40 +1,33 @@
 @import 'tailwindcss';
 
 /* Semantic tokens only: components never use a literal palette class such as `bg-slate-*`, so
-   the colour scheme lives in this file. Dark mode redefines the same tokens below instead of
-   `dark:` variants in components. `static` makes Tailwind emit every token, used or not, so each
-   has a light and a dark value in the built CSS. The dark block is a plain :root override: Tailwind
-   hoists an @theme inside @media out of the query, which would apply the dark values always.
+   the colour scheme lives in this file. The values are the design's (`docs/design/2026-10-redesign/
+   tokens.md` and artboard 1), written ONCE each with `light-dark()`: the root's `color-scheme`
+   picks the side, so a chosen theme (`data-theme`) and the system's preference both resolve
+   every token without a second copy. `static` makes Tailwind emit every token, used or not.
 
-   COLOUR CARRIES CATEGORY AND URGENCY ONLY; task status is the SHAPE of its marker and its weight.
-   - `plan` (teal-green) and `deadline` (amber) are different families for two different promises:
-     the day I mean to do it, and the moment it has to be done. Their shapes differ too.
-   - `missed` is the single red: a deadline that has gone.
-   - `project-<name>` (eight, tokens.md) are categorical, for threads and chips only, never text or a fill, and always
-     beside the project's name (WCAG 1.4.1).
-   - The accent is `ink`: the primary fill, the focus ring, the selected tab and a link (told by its
-     underline). No hue is spent on chrome.
-   In dark, everything that carries meaning sits in the 0.60-0.70 lightness band, so nothing glows
-   on the near-black ground.
+   COLOUR ANSWERS TWO QUESTIONS (FR-001): what kind of thing this is, and what state it is in.
+   - The frame (top bar, icon bar, sidebar, borders, plain buttons) is grey. The primary button
+     is `ink`; one per screen.
+   - Eight KINDS, each with a main colour (icons, swatches), a text colour `-t` (words on a tint
+     or a surface) and a tint `-bg` (chips, badges) (FR-002).
+   - Three STATES borrowed from an IDE: `go` (running, progress), `warn` (due soon, waiting),
+     `stop` (overdue, destroys data). Never for a kind (FR-003). Task status itself is a SHAPE.
+   - Eight PROJECT colours, a solid square with white initials, the same hex in both schemes
+     (FR-004). Always beside the project's name.
+   - No other hue anywhere.
 
-   FOUR SURFACES, named for what they are:
-   - `sheet`   the page you write on, and the fill of a field on it.
-   - `chrome`  the header and the rail: the frame round the sheet, one step off it.
-   - `desk`    a ground that tiles sit on: the Workbench, board columns, code fences, diagrams.
-   - `float`   anything above the page: the detail sheet, menus, dialogs, popovers.
-   Dark layers by lightness, desk < chrome < sheet < float, with no shadows. Light cannot (sheet and
-   float are both white), so `shadow-float` lifts a floating thing: a hairline ring and a soft fall,
-   and in dark a 1px `rule` edge with no fall.
+   FOUR SURFACES, stacked by lightness (FR-005): `ground` (the page, behind blocks), `chrome`
+   (top bar, icon bar, sidebar), `panel` (blocks and pages), `float` (menus, the inspector,
+   popovers). Light lifts a float with `shadow-float`; dark lifts it by being lighter.
 
-   STATES ARE INK LAYERS over whatever plane they sit on: `hover` at 8%, `select` at 12%. An opaque
-   state colour would equal one of the planes somewhere, where a hover would change nothing.
+   STATES ARE INK LAYERS over whatever plane they sit on: `hover` at 5%, `select` at 9%
+   (FR-009). An opaque state colour would equal one of the planes somewhere.
 
-   CONTRAST is measured, not inferred from hue: text clears 4.5:1, and a control's only edge and the
-   focus ring clear 3:1, on every surface and under the hover and select layers.
-   `textContrast.test.ts` and `projectColors.test.ts` measure every pairing from this file. The third
-   grey is lifted to the second on a selected surface (the rule near the end of this file). `rule`
-   is a decorative hairline only; anything that identifies a control uses `rule-strong` or
-   `ink-muted`, and `select` is never the only sign: the selected entry is also `ink` at 600. */
+   CONTRAST IS MEASURED, not inferred from hue: `textContrast.test.ts` reads this file and holds
+   every text token to 4.5:1 on every surface, bare and under each layer. Where the design's
+   value fell short on one of its own surfaces, the nearest value on the same hue that passes is
+   used and the design's is noted beside it; design can move either. */
 
 /* The CJK face, self-hosted: one variable woff2 (wght 400-700) holding all of GB2312, one request,
    content-hashed into /assets and served immutable, so it is paid once. Regenerate it with
@@ -68,129 +61,137 @@
     'Hiragino Sans GB', 'Microsoft YaHei', 'Segoe UI', 'Helvetica Neue', Helvetica, Arial,
     sans-serif;
 
-  /* Times, keys and phone numbers (DES-001): JetBrains Mono, self-hosted; Ant Design 5's
-     `fontFamilyCode` stack behind it. */
+  /* Times, keys and phone numbers: JetBrains Mono, self-hosted; Ant Design 5's `fontFamilyCode`
+     stack behind it. */
   --font-mono:
     'JetBrains Mono Variable', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier,
     monospace;
 
-  /* THE SCALE IS TDESIGN'S PAIRS: 12/20, 14/22, 16/24, 20/28, 24/32,
-     36/44, read off `style/web/theme/_font.less` and written in REM. TDesign is the only surveyed
-     system that publishes size AND line-height as a pair per semantic step, and three of the six
-     steps are agreed to the pixel by Ant Design independently (14/22, 20/28, 24/32).
+  /* THE TYPE SCALE IS SIX STEPS AND ONE EXCEPTION (FR-008), and Tailwind's own sizes are
+     removed so an off-scale size has no class to reach for.
+       hero     40/48  500  the one big number on a screen
+       title    26/34  600  a page's title (tracking -0.01em)
+       subject  18/26  600  a subheading; the inspector's title
+       prose    15/24  400  what you wrote: notes, body text, a phone's rows
+       ui       13/20  400 or 500  rows, buttons, fields, block names -- the body's default
+       meta     12/16  400  counts, dates, second lines; mono text is this size too
+       initials 11/16  600  a project square's or an avatar's letters (tracking 0.02em), the only
+                            text under 12px
+     Weights: 400 and 500 everywhere; 600 only on `subject` and `title` (FR-007), never 700.
+     The lint holds `font-semibold` to those two steps.
 
-     REM, NOT PX. A px font size ignores the reader's browser default-font-size setting; TDesign
-     publishes px because it is a component library aimed at pixel-perfect designs, and that
-     constraint is not ours while the accessibility cost is. At the default 16px root every value
-     below is exactly TDesign's px (0.75rem = 12px ...), so nothing moves for a default reader and
-     everything scales for one who raised the setting. Size and leading are BOTH rem, so the pair
-     scales as a pair.
+     REM, NOT PX, so a reader who raised the browser's default size gets a larger page; at the
+     16px default every value is exactly the design's px. Line-heights are lengths, never
+     unitless, so a descendant that sets its own size does not re-multiply the leading. */
+  --text-*: initial;
+  --text-hero: 2.5rem;
+  --text-hero--line-height: 3rem;
+  --text-hero--font-weight: 500;
+  --text-title: 1.625rem;
+  --text-title--line-height: 2.125rem;
+  --text-title--font-weight: 600;
+  --text-title--letter-spacing: -0.01em;
+  --text-subject: 1.125rem;
+  --text-subject--line-height: 1.625rem;
+  --text-subject--font-weight: 600;
+  --text-prose: 0.9375rem;
+  --text-prose--line-height: 1.5rem;
+  --text-ui: 0.8125rem;
+  --text-ui--line-height: 1.25rem;
+  --text-meta: 0.75rem;
+  --text-meta--line-height: 1rem;
+  --text-initials: 0.6875rem;
+  --text-initials--line-height: 1rem;
+  --text-initials--font-weight: 600;
+  --text-initials--letter-spacing: 0.02em;
 
-     LINE-HEIGHTS AS A LENGTH, NEVER UNITLESS. A unitless line-height is a multiple of the
-     element's OWN font-size, so any descendant that sets its own size re-multiplies it and the
-     pair stops being a pair. (On the 16px step `1.5` computes to exactly 24px, which is why only a
-     token-level assertion can tell it from the length.) antd's `(size + 8) / size` is the same
-     additive 8px leading wearing a ratio.
+  /* RADIUS BY ROLE (FR-009), and Tailwind's own steps removed: `key` 4 for a key cap, `control`
+     6 for controls and chips, `card` 8 for a board card, `block` 10 for blocks and everything that
+     floats, `phone-card` 14 and `phone-sheet` 16 on the phone. Avatars are `rounded-full`. */
+  --radius-*: initial;
+  --radius-key: 4px;
+  --radius-control: 6px;
+  --radius-card: 8px;
+  --radius-block: 10px;
+  --radius-phone-card: 14px;
+  --radius-phone-sheet: 16px;
 
-     The role map, same table:
-       xs   12/20  captions: date echoes, kbd chips, counts, the deliberately demoted labels
-       sm   14/22  meta, breadcrumbs, labels: the row's second line, field labels, panel counts
-       base 16/24  body and row titles (600 when the row is in progress), notes, fields, and a
-                   section's heading (Panel's own, in 600)
-       lg   20/28  a sheet's or a dialog's subject, a kind's name on Things, a banner Stat
-       xl   24/32  the Workbench cards' one big thing (a count, a name), Today's date on a phone
-       2xl  36/44  page titles: every page's own <h1>, and the one thing in progress on Today
-       display 48/56  the date at the head of Today, at 500 */
-  --text-xs: 0.75rem;
-  --text-xs--line-height: 1.25rem;
-  --text-sm: 0.875rem;
-  --text-sm--line-height: 1.375rem;
-  --text-base: 1rem;
-  --text-base--line-height: 1.5rem;
-  --text-lg: 1.25rem;
-  --text-lg--line-height: 1.75rem;
-  --text-xl: 1.5rem;
-  --text-xl--line-height: 2rem;
-  --text-2xl: 2.25rem;
-  --text-2xl--line-height: 2.75rem;
-  /* DISPLAY 48/56, one step above the scale's top: TDesign's Display Medium
-     (`font-size-display-medium` / `font-line-height-display-medium`), the only one of its display
-     steps this app uses. It sets ONE thing -- the date at the head of Today, where the page IS a
-     day and says which first -- at weight 500. */
-  --text-display: 3rem;
-  --text-display--line-height: 3.5rem;
-
-  /* SIZES WITH A NAME. `rounded-card` is every floating surface's and card's corner: menus, panes,
-     dialogs, tiles. `max-w-reading` is the measure of running text. `w-thread` is the project
-     strand's width, and every mark that wears a project's colour beside a name. */
-  --radius-card: 10px;
+  /* WIDTHS WITH A NAME (tokens.md): the icon bar, the module sidebar, the inspector, the
+     narrowest a content column may be, and the measure of running text. */
+  --width-icon-bar: 52px;
+  --width-sidebar: 250px;
+  --width-sidebar-wide: 280px;
+  --width-inspector: 400px;
+  --container-column: 360px;
   --container-reading: 68ch;
-  --spacing-thread: 3px;
 
-  /* The four surfaces, light. The sheet is white paper; chrome and desk are two tints of the
-     table it lies on; a float is paper too, lifted by `shadow-float`. */
-  --color-sheet: #ffffff;
-  --color-chrome: #f5f6f7;
-  --color-desk: #ebedf0;
-  --color-float: #ffffff;
-  /* THE INK AT 8% AND 12%, LAID OVER WHATEVER SURFACE IT IS ON (see the note at the top). */
-  --color-hover: rgb(26 29 35 / 0.08);
-  --color-select: rgb(26 29 35 / 0.12);
-  --color-ink: #1a1d23;
-  --color-ink-muted: #4a515c;
-  --color-ink-subtle: #59606e;
-  --color-on-ink: #ffffff;
-  --color-rule: #dde2ea;
-  --color-rule-strong: #737e91;
-  /* The two date semantics: a teal-green plan against a warm amber deadline. */
-  --color-plan: #106655;
-  --color-deadline: #805000;
-  --color-missed: #a0362c;
-  /* `danger` is the same red as `missed` but a separate name on purpose: they mean different
-     things (a deadline that has gone / an action that destroys data) and could diverge. */
-  --color-danger: #a0362c;
-  --color-on-danger: #ffffff;
-  /* Categorical project identity -- rails and chips only, never alone (see the note at the top).
-     These six are OKABE-ITO'S HUES, the colourblind-safe qualitative set, not hues picked here.
-     The earlier set WAS picked here -- six evenly spread hue angles at one lightness -- and it
-     failed measurably: equal hue ANGLES are not equal DISCRIMINABILITY (the green-cyan-blue arc is
-     perceptually compressed), and at one lightness there is nothing else left to tell them apart.
-     Measured worst all-pairs distance was ΔE 11.0 against a floor of 15.
+  /* THE FOUR SURFACES, stacked by lightness in each scheme. */
+  --color-ground: light-dark(#eef0f3, #1b1c1f);
+  --color-chrome: light-dark(#f7f8fa, #232427);
+  --color-panel: light-dark(#ffffff, #2b2d30);
+  --color-float: light-dark(#ffffff, #323438);
+  /* The hairline, and the edge that identifies a field or a plain button: held to 3:1 on
+     `panel`, where fields sit. Dark is one step lighter than the design's #6f737b (2.90). */
+  --color-line: light-dark(#e2e4e9, #393b40);
+  --color-line-strong: light-dark(#8a909c, #72767e);
+  /* THE INK AT 5% AND 9%, LAID OVER WHATEVER SURFACE IT IS ON (see the note at the top). */
+  --color-hover: light-dark(rgb(30 31 34 / 0.05), rgb(223 225 229 / 0.06));
+  --color-select: light-dark(rgb(30 31 34 / 0.09), rgb(223 225 229 / 0.1));
+  /* Three greys of text. `subtle` is one step darker (lighter in dark) than the design's
+     #6c707e / #9ea2ac, which measured 3.95 / 4.19 on a hovered ground; these are the nearest
+     values on that hue that clear 4.5 bare and hovered. On a selection it reads as `muted`
+     (the rule near the end of this file). */
+  --color-ink: light-dark(#1e1f22, #dfe1e5);
+  --color-muted: light-dark(#5a5f6b, #b4b8bf);
+  --color-subtle: light-dark(#636775, #a4a8b2);
+  --color-on-ink: light-dark(#ffffff, #1e1f22);
 
-     The published hexes were shipped first and measured 1.92-4.42 against the desk. These are the
-     same hue angles, re-stepped in lightness and chroma by a search over the vendored validator:
-     the nearest set (summed ΔE to the published one) at which EVERY colour clears 3:1 on all four
-     surfaces and every check passes, all pairs. Lone slots could not move: darkened alone, 3-6
-     came too near 1 and 2 under deutan simulation, so all six step down together. Worst all-pairs
-     ΔE 15.2 normal / 8.3 deutan.
+  /* THE EIGHT KINDS (FR-002): main / `-t` text / `-bg` tint. Text values are the artboards' own
+     where the artboard draws them (reading, project), and the nearest same-hue value that clears
+     4.5:1 on every surface, hovered, and on its own tint where the design's fell short: light
+     note-t (was #6b7a1f), dark task-t (#7aa5ff), meeting-t (#b99bf8), person-t (#f58bbb),
+     project-t (#a5afc4), note-t (#a9b84f). */
+  --color-task: light-dark(#3574f0, #548af7);
+  --color-task-t: light-dark(#2457c5, #89adf5);
+  --color-task-bg: light-dark(rgb(53 116 240 / 0.11), rgb(84 138 247 / 0.16));
+  --color-meeting: light-dark(#8150e0, #a37cf2);
+  --color-meeting-t: light-dark(#6a3bc4, #b7a6de);
+  --color-meeting-bg: light-dark(rgb(129 80 224 / 0.11), rgb(163 124 242 / 0.16));
+  --color-person: light-dark(#d6337a, #f06ba8);
+  --color-person-t: light-dark(#b0255f, #f68ebd);
+  --color-person-bg: light-dark(rgb(214 51 122 / 0.1), rgb(240 107 168 / 0.15));
+  --color-reading: light-dark(#138585, #3db8b8);
+  --color-reading-t: light-dark(#0d6e6e, #5cc9c9);
+  --color-reading-bg: light-dark(rgb(19 133 133 / 0.11), rgb(61 184 184 / 0.15));
+  --color-project: light-dark(#5e6a82, #8f9bb3);
+  --color-project-t: light-dark(#4a5468, #a7b1c6);
+  --color-project-bg: light-dark(rgb(94 106 130 / 0.12), rgb(143 155 179 / 0.16));
+  --color-organisation: light-dark(#96613a, #c79469);
+  --color-organisation-t: light-dark(#7a4d2b, #d6aa82);
+  --color-organisation-bg: light-dark(rgb(150 97 58 / 0.12), rgb(199 148 105 / 0.15));
+  --color-communication: light-dark(#0e7fa3, #4cb8d8);
+  --color-communication-t: light-dark(#0b6683, #6fc8e3);
+  --color-communication-bg: light-dark(rgb(14 127 163 / 0.11), rgb(76 184 216 / 0.15));
+  --color-note: light-dark(#6b7a1f, #a9b84f);
+  --color-note-t: light-dark(#5d6927, #adbc53);
+  --color-note-bg: light-dark(rgb(107 122 31 / 0.13), rgb(169 184 79 / 0.15));
 
-     Hex, not oklch, because `projectColors.test.ts` reads these very lines and runs the palette
-     validator on them. Their OKLCH is in the comment so the structure is still legible.
+  /* THE THREE STATES (FR-003). Dark stop-t is the nearest passing value to the design's
+     #f58a8a (4.33 on a hovered float). `on-stop` is the text of a filled destructive button. */
+  --color-go: light-dark(#208a3c, #5fb865);
+  --color-go-t: light-dark(#1a7032, #7cc983);
+  --color-go-bg: light-dark(rgb(32 138 60 / 0.11), rgb(95 184 101 / 0.15));
+  --color-warn: light-dark(#b87400, #e8a33d);
+  --color-warn-t: light-dark(#8a5600, #f0b860);
+  --color-warn-bg: light-dark(rgb(232 163 61 / 0.18), rgb(232 163 61 / 0.15));
+  --color-stop: light-dark(#d13d3d, #f06a6a);
+  --color-stop-t: light-dark(#b52e2e, #dd9c9a);
+  --color-stop-bg: light-dark(rgb(209 61 61 / 0.1), rgb(240 106 106 / 0.15));
+  --color-on-stop: light-dark(#ffffff, #1e1f22);
 
-     slot  hex       OKLCH                    Okabe-Ito hue
-       1   #125d8e   46.1% 0.105 244          blue
-       2   #96440f   48.6% 0.125  47          vermillion
-       3   #178763   55.5% 0.110 165          bluish green
-       4   #bb6896   62.5% 0.120 347          reddish purple
-       5   #1f90c7   61.9% 0.125 236          sky blue
-       6   #b57d08   63.1% 0.130  77          orange */
-  /* SYNTAX COLOURS, for highlighted code fences only. They are their own family rather than
-     borrowed from `plan` / `deadline` / `missed`: those MEAN something in this app, and a keyword
-     wearing “Due”'s colour would be the one thing the colour rules here forbid.
-
-     Measured on `desk`, which is the only ground a code block has, in each scheme: light
-     4.77-6.83:1, dark 5.76-10.49:1 -- every one of them clears AA as body text, which matters
-     because this IS body text, at 14px, read character by character.
-
-     Not a highlight.js theme: importing one would bring a whole second palette with its own
-     notion of light and dark into a file whose entire point is that there is one. */
-  --color-code-keyword: #8a3fa0;
-  --color-code-string: #1a7046;
-  --color-code-number: #9a5000;
-  --color-code-comment: #616876;
-  --color-code-fn: #2d5fb0;
-  --color-code-attr: #8a5a12;
-  --color-code-punct: #4a515c;
+  /* THE EIGHT PROJECT COLOURS (FR-004): a solid square with white initials, one hex for both
+     schemes. `projectColors.test.ts` measures them; it is skipped until design answers the
+     palette question raised 2026-10-21 (three pairs fail the discriminability check). */
   --color-project-blue: #2f64c9;
   --color-project-amber: #b45309;
   --color-project-green: #2e7d4f;
@@ -199,141 +200,43 @@
   --color-project-olive: #5f7012;
   --color-project-teal: #127a80;
   --color-project-pink: #b83a7a;
-  /* The wash behind an overlay. It carries its own alpha, and it is a token of its own rather
-     than `ink` at an opacity: `ink` is near-white in dark mode, so `bg-ink/20` LIGHTENS the page
-     it is meant to dim. A scrim has to darken in both schemes. */
-  --color-scrim: rgb(26 29 35 / 0.32);
-  /* The lift under a floating thing: a hairline ring, so its edge is there even on white, and
-     one soft fall. Dark swaps the fall for a 1px `rule` edge (see the note at the top).
 
-     THROUGH A VARIABLE, because Tailwind writes a shadow token's VALUE into the utility at build
-     time, so a dark block redefining `--shadow-float` would change nothing. The utility holds
-     `var(--float-lift)`, which each scheme sets. */
-  --shadow-float: var(--float-lift);
-  --float-lift: 0 0 0 1px rgb(26 29 35 / 0.06), 0 16px 40px -12px rgb(26 29 35 / 0.22);
+  /* SYNTAX COLOURS, for highlighted code fences only. Their own family rather than borrowed
+     from the kinds or states: those MEAN something here, and a keyword in `warn`'s colour would be
+     the one thing this file forbids. Body text at 12px, so held to 4.5:1 on `panel` and
+     `ground`, bare and hovered. Not a highlight.js theme: importing one would bring a whole second
+     palette with its own notion of light and dark. */
+  --color-code-keyword: light-dark(#8a3fa0, #bd9dc8);
+  --color-code-string: light-dark(#1a7046, #7fc9a0);
+  --color-code-number: light-dark(#9a5000, #e0a86b);
+  --color-code-comment: light-dark(#606775, #a0a9b7);
+  --color-code-fn: light-dark(#2d5fb0, #8ab4f0);
+  --color-code-attr: light-dark(#8a5a12, #d9b98a);
+  --color-code-punct: light-dark(#4a515c, #a7aeb9);
+
+  /* The wash behind a dialog. A token of its own rather than `ink` at an opacity: `ink` is
+     near-white in dark, so `bg-ink/20` would LIGHTEN the page it is meant to dim. */
+  --color-scrim: light-dark(rgb(30 31 34 / 0.32), rgb(5 6 8 / 0.62));
+
+  /* The lift under a float (tokens.md "shadow"): a hairline ring and one soft fall in light; in
+     dark a visible ring and a deeper fall, since the surfaces are close in lightness. Two
+     colour tokens, because `light-dark()` is only valid where a colour is. */
+  --color-float-ring: light-dark(rgb(30 31 34 / 0.08), #45474d);
+  --color-float-fall: light-dark(rgb(30 31 34 / 0.14), rgb(0 0 0 / 0.4));
+  --shadow-float: 0 0 0 1px var(--color-float-ring), 0 8px 28px var(--color-float-fall);
 }
 
-/*
-  Dark, twice: under the system's preference unless light was chosen by hand, and under a dark
-  theme chosen by hand. Values held in JS instead would paint the wrong scheme for a frame.
-*/
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    /* Neutral greys, 1 to 3 points of blue over red: a bluer set reads as navy on a big screen. */
-    --color-sheet: #17181a;
-    --color-chrome: #111214;
-    --color-desk: #0b0c0d;
-    --color-float: #1f2023;
-    --color-hover: rgb(232 232 234 / 0.08);
-    --color-select: rgb(232 232 234 / 0.12);
-    --color-ink: #e8e8ea;
-    --color-ink-muted: #a8a8ad;
-    --color-ink-subtle: #99999f;
-    --color-on-ink: #17181a;
-    --color-rule: #242427;
-    --color-rule-strong: #6e6e73;
-    --color-plan: #61b19d;
-    --color-deadline: #d9a05b;
-    --color-missed: #f18479;
-    --color-danger: #f18479;
-    --color-on-danger: #17181a;
-    /* THE SAME SIX HUES, RE-STEPPED FOR DARK -- not the light set lightened or inverted. Dark mode
-       has a narrower usable lightness band (L 0.48-0.67 against light's 0.43-0.77), and Okabe-Ito
-       leans on lightness for two of its pairs: blue/sky share a hue within 8°, as do
-       vermillion/orange, and in light they are told apart by a 0.20 lightness gap that does not fit
-       here. Snapping the three out-of-band colours inward collapses those pairs (measured: orange
-       against vermillion ΔE 9.4). So the band is re-spent: the pair that was light-above-dark in
-       light mode is dark-above-light here. Every hue angle is carried over unchanged, so a project
-       keeps its colour across the two schemes.
-
-       Searched, then measured, not hand-tuned -- and searched again (2026-10-13) so that 4-6, which
-       measured 2.54-3.18, clear 3:1 on every surface: the nearest set that does, with every
-       validator check passing. Worst all-pairs ΔE 15.1 normal / 8.1 protan.
-
-       slot  hex       OKLCH
-         1   #0e9aec   66.1% 0.160 244
-         2   #e1691a   65.6% 0.170  48
-         3   #0aa176   62.9% 0.130 166
-         4   #c41c8d   55.5% 0.220 346
-         5   #08719f   51.9% 0.110 236
-         6   #8e6211   53.0% 0.105  76 */
-    --color-code-keyword: #c58fd8;
-    --color-code-string: #7fc9a0;
-    --color-code-number: #e0a86b;
-    --color-code-comment: #838c99;
-    --color-code-fn: #8ab4f0;
-    --color-code-attr: #d9b98a;
-    --color-code-punct: #a7aeb9;
-    --color-project-blue: #2f64c9;
-    --color-project-amber: #b45309;
-    --color-project-green: #2e7d4f;
-    --color-project-violet: #8050c8;
-    --color-project-red: #c2413a;
-    --color-project-olive: #5f7012;
-    --color-project-teal: #127a80;
-    --color-project-pink: #b83a7a;
-    --color-scrim: rgb(5 6 8 / 0.62);
-    /* No fall in dark: the layering is done by surface lightness, and a float's edge is a rule. */
-    --float-lift: 0 0 0 1px var(--color-rule);
-  }
-}
-
-/* The same values as the block above, for a dark theme chosen by hand. */
-:root[data-theme='dark'] {
-  --color-sheet: #17181a;
-  --color-chrome: #111214;
-  --color-desk: #0b0c0d;
-  --color-float: #1f2023;
-  --color-hover: rgb(232 232 234 / 0.08);
-  --color-select: rgb(232 232 234 / 0.12);
-  --color-ink: #e8e8ea;
-  --color-ink-muted: #a8a8ad;
-  --color-ink-subtle: #99999f;
-  --color-on-ink: #17181a;
-  --color-rule: #242427;
-  --color-rule-strong: #6e6e73;
-  --color-plan: #61b19d;
-  --color-deadline: #d9a05b;
-  --color-missed: #f18479;
-  --color-danger: #f18479;
-  --color-on-danger: #17181a;
-  --color-code-keyword: #c58fd8;
-  --color-code-string: #7fc9a0;
-  --color-code-number: #e0a86b;
-  --color-code-comment: #838c99;
-  --color-code-fn: #8ab4f0;
-  --color-code-attr: #d9b98a;
-  --color-code-punct: #a7aeb9;
-  --color-project-blue: #2f64c9;
-  --color-project-amber: #b45309;
-  --color-project-green: #2e7d4f;
-  --color-project-violet: #8050c8;
-  --color-project-red: #c2413a;
-  --color-project-olive: #5f7012;
-  --color-project-teal: #127a80;
-  --color-project-pink: #b83a7a;
-  --color-scrim: rgb(5 6 8 / 0.62);
-  /* No fall in dark: the layering is done by surface lightness, and a float's edge is a rule. */
-  --float-lift: 0 0 0 1px var(--color-rule);
-}
-
-/* Native controls (date pickers, scrollbars) follow the scheme too. */
+/* WHICH SIDE OF `light-dark()` IS SHOWN. The system's preference unless a theme was chosen by
+   hand; `index.html` sets `data-theme` before the first paint, so a reload never flashes the
+   other scheme. Native controls (date pickers, scrollbars) follow the same declaration. */
 :root {
   color-scheme: light dark;
 }
-
-/*
- * THE HANG: the date margin's width, past which a list's rows and a page's headings hang. One
- * value, so every indent that lines up with it (a row's text, a control's words) is computed from
- * it rather than added up by hand. `sm` is 40rem.
- */
-:root {
-  --hang: calc(var(--spacing) * 15);
+:root[data-theme='light'] {
+  color-scheme: light;
 }
-@media (width >= 40rem) {
-  :root {
-    --hang: calc(var(--spacing) * 18);
-  }
+:root[data-theme='dark'] {
+  color-scheme: dark;
 }
 
 /*
@@ -350,33 +253,23 @@
   z-index: 50;
 }
 
-/* The body carries `text-base`, so its leading is the scale's own 24px pair. There is no
-   `line-height` here or on the headings: a rule outside the scale is exactly the unitless leading
-   a published pair exists to replace. Every heading in the app names a step.
+/* The body is the `ui` step on `ground`; prose opts in where something was written. There is no
+   `line-height` here or on the headings: every heading names a step, and a rule outside the scale
+   is exactly the unitless leading a published pair exists to replace.
 
-   `text-autospace` IS THE HAN/LATIN SPACING, AND THE ONLY ONE. W3C CLREQ asks
-   for no more than a quarter of a Han character's width between Han and Latin letters or digits.
-   Hand-inserted spaces and tracking are the other two ways to get it; this is the engine's job,
-   and `normal` is not the initial value in Chromium, so it has to be asked for. Chromium spends 1/8 em at each join, inside CLREQ's ceiling,
-   and spends nothing where the author already typed a space.
-
-   NO `size-adjust` AND NO `font-size-adjust`: zero occurrences across the five
-   surveyed token files, and `size-adjust`'s documented purpose is fallback-metric matching for
-   CLS, not script pairing. The pairing is handled by choosing a pair and pinning the leading in
-   px, which is what the scale above does.
-
-   NO LETTER-SPACING ON HAN, ever: none of the five surveyed token files has a `letter-spacing`
-   token. */
+   `text-autospace` IS THE HAN/LATIN SPACING, AND THE ONLY ONE. W3C CLREQ asks for no more than a
+   quarter of a Han character's width between Han and Latin letters or digits; Chromium spends
+   1/8 em at each join and nothing where the author typed a space. `normal` is not the initial
+   value in Chromium, so it has to be asked for. NO LETTER-SPACING ON HAN, ever. */
 body {
-  @apply bg-sheet text-base text-ink;
+  @apply bg-ground text-ui text-ink;
   font-family: var(--font-sans);
   text-autospace: normal;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Tabular figures wherever digits sit in a column and have to line up: counts in the left rail
-   and on every panel heading, dates and times in the row columns, clock times on the completed
-   list, the day-counts in the Movement panel. Inter ships `tnum`. Prose keeps proportional
+/* Tabular figures wherever digits sit in a column and have to line up: counts in block heads,
+   dates and times in rows, the day-counts on Today. Inter ships `tnum`. Prose keeps proportional
    figures. */
 .tabular-nums,
 time,
@@ -386,29 +279,22 @@ kbd,
 }
 
 /* TERTIARY TEXT ON A SELECTED SURFACE READS ONE STEP UP. A selection is a state that stays, so its
-   text is held to 4.5:1 like any other -- and `ink-subtle` clears that on every plane but not on
-   the `select` layer over it. Measured (WCAG 2.1, the layer composited on its plane): ink-subtle
-   light 4.97 sheet / 4.61 chrome / 4.25 desk / 4.97 float, dark 4.60 / 4.93 / 5.33 / 4.14;
-   ink-muted light 6.30 / 5.84 / 5.39 / 6.30, dark 5.50 / 5.90 / 6.38 / 4.95. Making the third grey
-   pass there by itself would make it the second grey (dark `#a2a2a8` against `#a8a8ad`), and three
-   greys would be two. `textContrast.test.ts` checks this rule is here. One rule for every selected
-   thing -- the current page in the rail, the open person, a picked filter, selected rows -- so a
-   new one is covered by saying it is selected, which it has to say for a screen reader anyway. */
-[aria-current='page'] .text-ink-subtle,
-[aria-pressed='true'] .text-ink-subtle,
-[aria-selected='true'] .text-ink-subtle {
-  color: var(--color-ink-muted);
+   text is held to 4.5:1 like any other, and `subtle` clears that on every plane but not under the
+   `select` layer. Making it pass there by itself would make it `muted`, and three greys would be
+   two. One rule for every selected thing -- the current page in the icon bar, the open row, a
+   picked filter -- so a new one is covered by saying it is selected, which it has to say for a
+   screen reader anyway. `textContrast.test.ts` checks this rule is here. */
+[aria-current='page'] .text-subtle,
+[aria-pressed='true'] .text-subtle,
+[aria-selected='true'] .text-subtle {
+  color: var(--color-muted);
 }
 
-/* A key is a letter in the app's own face, in its box. The browser's monospace default reads as
-   code, and these are the same letters the rail and the search name. */
-kbd {
-  font-family: inherit;
-}
-
-/* One focus ring for everything focusable: ink, 2px, 2px offset -- 13.31:1 at its worst. */
+/* ONE FOCUS RING FOR EVERYTHING FOCUSABLE: 2px in the task colour, outside the edge (handoff §4;
+   the board's selected card wears the same). The browser's own ring is replaced, never removed.
+   3.75:1 on the light ground at its worst. */
 :focus-visible {
-  outline: 2px solid var(--color-ink);
+  outline: 2px solid var(--color-task);
   outline-offset: 2px;
 }
 
@@ -423,9 +309,9 @@ kbd {
   }
 }
 
-/* Containers focused only by script (the detail panel, the page heading) are not controls; a
-   ring around a whole panel is noise. Unlayered CSS beats Tailwind's layered focus:outline-none,
-   so this has to live here. */
+/* Containers focused only by script (the inspector, the page heading) are not controls; a ring
+   around a whole panel is noise. Unlayered CSS beats Tailwind's layered focus:outline-none, so
+   this has to live here. */
 [tabindex='-1']:focus-visible {
   outline: none;
 }

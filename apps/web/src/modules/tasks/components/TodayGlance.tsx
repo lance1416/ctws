@@ -23,7 +23,7 @@ export function TodayGlance() {
 
   if (today.isError) {
     return (
-      <p role="alert" className="px-2 py-1.5 text-sm text-danger">
+      <p role="alert" className="px-2 py-1.5 text-ui text-stop-t">
         Couldn't load today's tasks
       </p>
     )
@@ -42,17 +42,17 @@ export function TodayGlance() {
           to={taskPage('today')}
           n={overdue}
           word="overdue"
-          tone={overdue > 0 ? 'text-missed' : 'text-ink-subtle'}
+          tone={overdue > 0 ? 'text-stop-t' : 'text-subtle'}
         />
         <GlanceCount to={taskPage('today')} n={planned} word="planned" tone="text-ink" />
         <GlanceCount
           to={`${taskPage('review')}?view=done`}
           n={done}
           word="done"
-          tone="text-ink-subtle"
+          tone="text-subtle"
         />
       </div>
-      <p className="mb-1 px-2 text-xs text-ink-subtle">In progress</p>
+      <p className="mb-1 px-2 text-meta text-subtle">In progress</p>
       {today.isSuccess && doing.length === 0 ? (
         <PanelEmpty>Nothing in progress</PanelEmpty>
       ) : (
@@ -70,7 +70,7 @@ export function TodayGlance() {
                 <span className="flex min-w-0 items-baseline gap-2 self-center">
                   <span className="truncate text-ink">{t.title}</span>
                   {/* The name beside the rail, so the colour is never the only signal. */}
-                  <span className="max-w-[40%] shrink-0 truncate text-sm text-ink-subtle">
+                  <span className="max-w-[40%] shrink-0 truncate text-ui text-subtle">
                     {t.projectName}
                   </span>
                 </span>
@@ -87,7 +87,7 @@ export function TodayGlance() {
 function GlanceCount({ to, n, word, tone }: { to: string; n: number; word: string; tone: string }) {
   return (
     <Link to={to} className={`flex items-baseline gap-2 px-2 py-0.5 hover:bg-hover ${tone}`}>
-      <span className="text-xl font-medium tabular-nums">{n}</span> <span>{word}</span>
+      <span className="text-title tabular-nums">{n}</span> <span>{word}</span>
     </Link>
   )
 }
@@ -97,5 +97,5 @@ export function TodayDate() {
   const timeZone = useTimeZone()
   const now = useNow()
   const today = ymd(now, timeZone)
-  return <span className="text-sm text-ink-subtle">{weekdayDay(today, today)}</span>
+  return <span className="text-ui text-subtle">{weekdayDay(today, today)}</span>
 }

@@ -112,14 +112,14 @@ function MeetingRow({
             type="button"
             onClick={() => onOpen(m)}
             className={`truncate text-left after:absolute after:inset-0 after:content-[''] ${
-              over ? 'text-ink-subtle' : 'text-ink'
+              over ? 'text-subtle' : 'text-ink'
             }`}
           >
             {over && <span className="sr-only">Ended: </span>}
             {m.title}
           </button>
           {said.length > 0 && (
-            <span className="truncate text-sm text-ink-muted">
+            <span className="truncate text-ui text-muted">
               {said.map((part, i) => (
                 <Fragment key={i}>
                   {i > 0 && <span aria-hidden="true"> · </span>}
@@ -134,7 +134,7 @@ function MeetingRow({
             href={join}
             target="_blank"
             rel="noreferrer"
-            className={`relative ${LAYER.raised} shrink-0 rounded-md px-1.5 py-0.5 text-sm font-semibold ${LINK} hover:bg-hover`}
+            className={`relative ${LAYER.raised} shrink-0 rounded-control px-1.5 py-0.5 text-ui font-medium ${LINK} hover:bg-hover`}
           >
             Join
           </a>

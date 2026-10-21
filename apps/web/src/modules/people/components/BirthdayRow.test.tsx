@@ -63,8 +63,8 @@ describe('BirthdayRow', () => {
   })
 
   it("gives today's birthday the bold deadline colour and the rest a muted one", () => {
-    expect(render(row({ inDays: 0 }))).toContain('text-deadline')
-    expect(render(row({ inDays: 2 }))).not.toContain('text-deadline')
+    expect(render(row({ inDays: 0 }))).toContain('text-warn-t')
+    expect(render(row({ inDays: 2 }))).not.toContain('text-warn-t')
   })
 
   it('names the circle in English, since it is an enum and not text a person wrote', () => {

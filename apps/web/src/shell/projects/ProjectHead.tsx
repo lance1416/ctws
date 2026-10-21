@@ -13,7 +13,7 @@ export function ProjectHead({ id }: { id: ProjectId }) {
   const project = projects.data?.find((p) => p.id === id)
   if (!project) {
     return projects.isSuccess ? (
-      <p className="text-sm text-ink-muted">This project is not here any more.</p>
+      <p className="text-ui text-muted">This project is not here any more.</p>
     ) : null
   }
   return (
@@ -21,7 +21,7 @@ export function ProjectHead({ id }: { id: ProjectId }) {
       <div className="flex min-w-0 flex-1 flex-col">
         <ProjectIdentity projectId={id} name={project.name} color={project.color} />
         {project.archivedAt && (
-          <p data-project-archived className="mt-1.5 text-sm font-semibold text-ink-muted">
+          <p data-project-archived className="mt-1.5 text-ui font-medium text-muted">
             Archived
           </p>
         )}
@@ -55,7 +55,7 @@ function ArchiveToggle({ id, archived }: { id: ProjectId; archived: boolean }) {
         {archived ? 'Unarchive' : 'Archive'}
       </Button>
       {toggle.isError && (
-        <p role="alert" className="mt-1 text-sm text-danger">
+        <p role="alert" className="mt-1 text-ui text-stop-t">
           {archived ? "Couldn't unarchive." : "Couldn't archive."} Try again.
         </p>
       )}

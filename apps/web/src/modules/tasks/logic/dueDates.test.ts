@@ -79,7 +79,7 @@ describe('lateNote', () => {
 describe('instantPhrase', () => {
   it('a deadline a minute before midnight still says 23:59, not the next day', async () => {
     const { instantPhrase } = await load()
-    // A clock printed from a UTC getter in +05:30 would read 18:29 here, and a rounded one 00:00
+    // A clock printed from a UTC getter in +05:30 would read 18:29 here, and a rounded-key one 00:00
     // of the 9th.
     expect(instantPhrase(new Date(2026, 9, 8, 23, 59).toISOString(), '2026-10-03', TZ)).toBe(
       'Oct 8, 23:59',

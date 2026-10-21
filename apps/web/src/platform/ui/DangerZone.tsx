@@ -8,8 +8,8 @@ export function DangerZone({ children }: { children: ReactNode }) {
   return (
     // `mt-auto`, not `sticky`: in a flex column it drops to the floor of a short surface and
     // follows the last line of a long one. `pt-6` is the minimum gap once the margin collapses.
-    <div data-danger-zone className="mt-auto pt-6">
-      <div className="border-t border-rule py-3">{children}</div>
+    <div data-stop-zone className="mt-auto pt-6">
+      <div className="border-t border-line py-3">{children}</div>
     </div>
   )
 }
@@ -82,7 +82,7 @@ export function DangerAction({
             onAsk?.()
             setAsking(true)
           }}
-          className="-ml-2.5 h-9 rounded-md px-2.5 text-sm text-danger hover:bg-danger/10"
+          className="-ml-2.5 h-9 rounded-control px-2.5 text-ui text-stop-t hover:bg-stop/10"
         >
           {label}
         </button>

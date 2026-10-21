@@ -67,7 +67,7 @@ function DeletePerson({ person, onDeleted }: { person: PersonResponse; onDeleted
         onConfirm={() => drop.mutate()}
       />
       {drop.isError && (
-        <p role="alert" className="text-sm text-danger">
+        <p role="alert" className="text-ui text-stop-t">
           {problemText(drop.error)}
         </p>
       )}

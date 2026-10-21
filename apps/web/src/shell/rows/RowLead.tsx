@@ -2,11 +2,11 @@ import { HANG_WIDTH } from '../../platform/ui/hang'
 import type { Lead, LeadTone } from './leads'
 
 const TONE: Record<LeadTone, string> = {
-  missed: 'text-missed',
-  deadline: 'text-deadline',
-  plan: 'text-plan',
-  time: 'text-ink-muted',
-  quiet: 'text-ink-subtle',
+  missed: 'text-stop-t',
+  deadline: 'text-warn-t',
+  plan: 'text-go-t',
+  time: 'text-muted',
+  quiet: 'text-subtle',
 }
 
 /** The kind of date in words, for a screen reader: the colour and the flag only reach the eye. */
@@ -35,7 +35,7 @@ export function RowLead({
     <span
       data-row-lead={lead?.tone}
       title={lead?.exact}
-      className={`flex shrink-0 items-start justify-end gap-1 pt-2.5 pr-2 text-sm leading-6 whitespace-nowrap tabular-nums sm:pr-3.5 ${HANG_WIDTH} ${
+      className={`flex shrink-0 items-start justify-end gap-1 pt-2.5 pr-2 text-ui leading-6 whitespace-nowrap tabular-nums sm:pr-3.5 ${HANG_WIDTH} ${
         lead ? TONE[lead.tone] : ''
       }`}
     >
