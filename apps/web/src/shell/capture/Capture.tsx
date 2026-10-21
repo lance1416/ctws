@@ -195,7 +195,7 @@ export function Capture() {
               <DropdownMenu.Trigger
                 aria-label="Lands in"
                 // A task lands in a project, grey; only reading's shelf wears its kind (artboard 27).
-                className={`inline-flex h-6 max-w-36 min-w-0 shrink items-center gap-1.5 rounded-control px-2 text-meta font-medium ${
+                className={`inline-flex h-6 max-w-36 min-w-0 shrink-0 items-center gap-1.5 rounded-control px-2 text-meta font-medium ${
                   kind === 'reading' && !landing
                     ? 'bg-reading-bg text-reading-t'
                     : 'bg-project-bg text-project-t'
@@ -255,7 +255,8 @@ export function Capture() {
                 }}
                 today={today}
                 onRefusal={setRefusal}
-                className="w-32 shrink-0"
+                // Room for "Oct 29" and its two buttons; it gives way before the chip or Add do.
+                className="w-28 min-w-24 shrink"
               />
             ) : (
               <button
