@@ -80,7 +80,9 @@ export function rollup<Id extends string>(nodes: readonly RollupNode<Id>[]): Map
 
 const ownRollup = (node: RollupNode, kids: readonly Rollup[]): Rollup => ({
   progress: progressOf(node, kids),
-  inProgress: node.status === 'in_progress' ? 1 : 0,
+  // Only a leaf is worked on: a parent's status is derived from its children (FR-038), so its
+  // own "in progress" is theirs, already counted.
+  inProgress: kids.length === 0 && node.status === 'in_progress' ? 1 : 0,
   overdue: node.overdue ? 1 : 0,
 })
 

@@ -99,16 +99,20 @@ describe('progress', () => {
 })
 
 describe('the counts beside the percentage', () => {
-  it('counts in-progress tasks across the subtree, the node itself included', () => {
+  it('counts the leaves in progress across the subtree, not the parents derived from them', () => {
+    // A parent's status is its children's (FR-038): `a` and `b` read "in progress" because `c`
+    // is, and that is one task being worked on, not three.
     const nodes = [
       node('a', null, { status: 'in_progress' }),
       node('b', 'a', { status: 'in_progress' }),
       node('c', 'b', { status: 'in_progress' }),
       node('d', 'a', { status: 'backlog' }),
+      node('e', 'a', { status: 'in_progress' }),
     ]
     const r = rollup(nodes)
-    expect(r.get('a')!.inProgress).toBe(3)
-    expect(r.get('b')!.inProgress).toBe(2)
+    expect(r.get('a')!.inProgress).toBe(2)
+    expect(r.get('b')!.inProgress).toBe(1)
+    expect(r.get('c')!.inProgress).toBe(1)
     expect(r.get('d')!.inProgress).toBe(0)
   })
 

@@ -108,16 +108,16 @@ describe('rollups ride along with the task list', () => {
     expect(r[root]!.progress).toBe(0.75)
   })
 
-  it('counts in-progress tasks across the subtree, including the node itself', async () => {
+  it('counts the leaves in progress across the subtree, not the parent derived from them', async () => {
     const ctx = await setup()
     const pid = await createProject(ctx, 'P')
     const root = await createTask(ctx, pid, '根')
     const kid = await createTask(ctx, pid, '子', root)
-    await setStatus(ctx, root, 'in_progress')
     await setStatus(ctx, kid, 'in_progress')
 
+    // The root reads "in progress" because its child is (FR-038): one task being worked on.
     const r = await rollups(ctx, pid)
-    expect(r[root]).toEqual({ progress: 0, inProgress: 2, overdue: 0 })
+    expect(r[root]).toEqual({ progress: 0, inProgress: 1, overdue: 0 })
     expect(r[kid]!.inProgress).toBe(1)
   })
 
