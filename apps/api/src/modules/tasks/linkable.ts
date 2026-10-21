@@ -1,4 +1,4 @@
-import { type TaskId, type TaskStatus, type WorkspaceId } from '@ctws/contracts'
+import { type ProjectId, type TaskId, type TaskStatus, type WorkspaceId } from '@ctws/contracts'
 import { desc, sql, type SQL } from 'drizzle-orm'
 import type { Queryable } from '../../platform/db/client'
 import { within } from '../../platform/db/scope'
@@ -15,19 +15,33 @@ const taskRows = (q: Queryable, workspaceId: WorkspaceId, where: SQL | undefined
       status: tasks.status,
       projectId: tasks.projectId,
       projectName: sql<string>`p.name`,
+      parentTitle: sql<string | null>`parent.title`,
     })
     .from(tasks)
     .innerJoin(sql`projects p`, sql`p.id = ${tasks.projectId}`)
+    .leftJoin(sql`tasks parent`, sql`parent.id = ${tasks.parentId}`)
     .where(within(visibleTasks(workspaceId, { task: 'tasks', project: 'p' }), where))
     .$dynamic()
 
-/** A task as a list of things names it: every reader is cross-project, so with its project. */
-const named = (r: { id: TaskId; title: string; status: TaskStatus; projectName: string }) => ({
+/**
+ * A task as a list of things names it: every reader is cross-project, so with its project, and the
+ * task it sits under.
+ */
+const named = (r: {
+  id: TaskId
+  title: string
+  status: TaskStatus
+  projectId: ProjectId
+  projectName: string
+  parentTitle: string | null
+}) => ({
   type: 'task' as const,
   id: r.id,
   title: r.title,
   status: r.status,
+  projectId: r.projectId,
   projectName: r.projectName,
+  parentTitle: r.parentTitle,
 })
 
 const COLUMNS = { id: tasks.id, title: tasks.title, text: ['tasks.title'] }

@@ -1,6 +1,8 @@
+import { avatarInitials, currentRole } from '@ctws/core'
 import { asc } from 'drizzle-orm'
 import { scoped, within } from '../../platform/db/scope'
 import { wanted, type Linkable } from '../../shell/links'
+import { rolesOf } from '../organisations'
 import { people } from './tables'
 
 export const personLinkable: Linkable = {
@@ -12,11 +14,30 @@ export const personLinkable: Linkable = {
       [asc(people.name), asc(people.id)],
     )
     const found = await q
-      .select({ id: people.id, name: people.name, org: people.org })
+      .select({
+        id: people.id,
+        name: people.name,
+        givenName: people.givenName,
+        familyName: people.familyName,
+      })
       .from(people)
       .where(within(scoped(people, workspaceId), where))
       .orderBy(...orderBy)
       .limit(limit)
-    return found.map((r) => ({ type: 'person', id: r.id, title: r.name, org: r.org }))
+    const roles = await rolesOf(
+      q,
+      workspaceId,
+      found.map((r) => r.id),
+    )
+    return found.map((r) => ({
+      type: 'person',
+      id: r.id,
+      title: r.name,
+      initials: avatarInitials(r),
+      org:
+        currentRole(
+          (roles.get(r.id) ?? []).map((x) => ({ ...x, from: x.fromMonth, to: x.toMonth })),
+        )?.organisationName ?? null,
+    }))
   },
 }

@@ -9,7 +9,7 @@ import type { LinkRegistry } from './registry'
 /** Candidates per type, so a box full of tasks still shows people. */
 const CANDIDATES_PER_TYPE = 8
 
-/** The picker's search across every module's things; each module names its own. */
+/** The search across every module's things, for the picker and Ctrl K; each module names its own. */
 export const linkRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = async (
   app,
   { registry },
@@ -17,8 +17,9 @@ export const linkRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = asy
   serve(app, [
     on(api.links.candidates, async (req) => {
       const { workspaceId } = currentUser(req)
-      const of = { type: req.query.type, id: req.query.id }
-      if (!(await exists(registry, app.db, workspaceId, of))) throw new NotFound('Object')
+      const { type, id } = req.query
+      const of = type && id ? { type, id } : null
+      if (of && !(await exists(registry, app.db, workspaceId, of))) throw new NotFound('Object')
       const candidates = await candidatesFor(
         registry,
         app.db,

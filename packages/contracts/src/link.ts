@@ -18,7 +18,10 @@ export const thingWith = <S extends z.ZodRawShape>(shape: S) =>
       id: objectId,
       title: z.string(),
       status: z.enum(TASK_STATUSES),
+      projectId: objectId,
       projectName: z.string(),
+      /** The task it sits under, if any: with the project's square, where it is (artboard 9). */
+      parentTitle: z.string().nullable(),
     }),
     z.object({
       ...shape,
@@ -32,6 +35,9 @@ export const thingWith = <S extends z.ZodRawShape>(shape: S) =>
       type: z.literal('person'),
       id: objectId,
       title: z.string(),
+      /** The avatar's letters (FR-049). */
+      initials: z.string(),
+      /** Where they work now: the current role that began first; null with no current role. */
       org: z.string().nullable(),
     }),
     // The series' own start, in its own zone: a relation is to the series, not to one occurrence.
@@ -72,19 +78,26 @@ const objectTypeList = z
   .transform((list) => list.split(','))
   .pipe(z.array(objectType).min(1))
 
-/** The picker's question: what could this thing be related to, among which kinds (`/`, FR-024). */
+/**
+ * Things of every kind by name, among which kinds (`/`, FR-024): the link picker's question, what
+ * could this thing be related to, and search's for the kinds no module searches more closely.
+ */
 export const candidatesQuery = z
   .object({
     view: z.literal('candidates'),
     /** Empty means the most likely few. */
     q: z.string().trim().max(200).optional(),
-    /** The thing being related from: the answer leaves out itself. */
-    type: objectType,
-    id: objectId,
+    /** The thing being related from, which the answer leaves out; both or neither. */
+    type: objectType.optional(),
+    id: objectId.optional(),
     /** Only these kinds; every kind when left out. */
     kinds: objectTypeList.optional(),
   })
   .strict()
+  .refine((q) => (q.type === undefined) === (q.id === undefined), {
+    message: 'a thing is named by its type and id together',
+    path: ['id'],
+  })
 
 export const candidatesResponse = z.object({ candidates: z.array(linkCandidate) })
 export type CandidatesResponse = z.infer<typeof candidatesResponse>

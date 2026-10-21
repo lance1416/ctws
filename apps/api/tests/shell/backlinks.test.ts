@@ -118,6 +118,43 @@ describe('what can go at the other end', () => {
     })
   })
 
+  it('answers search with no thing to relate from, naming a task’s parent and a person’s work', async () => {
+    const ctx = await setup('cands@example.com')
+    const project = await createProject(ctx, 'Job hunt')
+    const parent = await createTask(ctx, project, 'Stripe')
+    await createTask(ctx, project, 'Phone screen prep', parent)
+    await createPerson(ctx, { name: 'Mira Chen' })
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/links?view=candidates&q=${encodeURIComponent('phone')}&kinds=task`,
+      headers: web(ctx),
+    })
+    expect(res.statusCode, res.body).toBe(200)
+    expect((res.json() as CandidatesResponse).candidates).toEqual([
+      expect.objectContaining({
+        title: 'Phone screen prep',
+        projectId: project,
+        projectName: 'Job hunt',
+        parentTitle: 'Stripe',
+      }),
+    ])
+    const people = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/links?view=candidates&q=mira&kinds=person`,
+      headers: web(ctx),
+    })
+    expect((people.json() as CandidatesResponse).candidates).toEqual([
+      expect.objectContaining({ title: 'Mira Chen', initials: 'MC', org: null }),
+    ])
+    // A type without its id names nothing.
+    const half = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/links?view=candidates&type=task`,
+      headers: web(ctx),
+    })
+    expect(half.statusCode).toBe(400)
+  })
+
   it('offers only the kinds asked for, when a field wants one kind of thing', async () => {
     const ctx = await setup('candk@example.com')
     const person = await createPerson(ctx, { name: '陈颖' })
