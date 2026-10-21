@@ -59,7 +59,7 @@ export function ProjectIdentity({
         />
         <DropdownMenu.Portal>
           <DropdownMenu.Content align="start" sideOffset={8} className={MENU_SURFACE}>
-            {projectColors.map((slot, i) => (
+            {projectColors.map((slot) => (
               <DropdownMenu.Item
                 key={slot}
                 onSelect={() => save.mutate({ color: slot })}
@@ -67,9 +67,10 @@ export function ProjectIdentity({
               >
                 <span
                   aria-hidden="true"
-                  className={`h-4 w-[3px] shrink-0 rounded-full ${squareClass(slot)}`}
+                  className={`size-4 shrink-0 rounded-key ${squareClass(slot)}`}
                 />
-                Colour {i + 1}
+                {/* The colour's own name (FR-004), so the swatch is never the only sign. */}
+                {slot.charAt(0).toUpperCase() + slot.slice(1)}
                 {slot === color && <span className="ml-auto pl-3 text-subtle">Current</span>}
               </DropdownMenu.Item>
             ))}
@@ -85,14 +86,14 @@ export function ProjectIdentity({
           onBlur={commit}
           {...nameKeys}
           aria-label="Project name"
-          className="min-w-0 flex-1 rounded-control border border-line-strong bg-panel px-2 py-0.5 text-title text-ink"
+          className="min-w-0 flex-1 rounded-control border border-line-strong bg-panel px-2 py-0.5 text-title tracking-normal text-ink"
         />
       ) : (
         // The type size sits on the <h1>, not the button; Preflight's `font: inherit` passes it on.
         <h1
           id="project-heading"
           tabIndex={-1}
-          className="min-w-0 flex-1 truncate text-title text-ink focus:outline-none"
+          className="min-w-0 flex-1 truncate text-title tracking-normal text-ink focus:outline-none"
         >
           <button
             type="button"

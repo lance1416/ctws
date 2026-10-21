@@ -95,7 +95,12 @@ export function DangerAction({
           label={confirmLabel}
           message={message ?? `${label}…`}
           busy={busy || message === null}
-          onConfirm={onConfirm}
+          // The question closes as it is answered: a refusal is said on the page, beside the
+          // control that asked, and a delete that goes through leaves the page anyway.
+          onConfirm={() => {
+            onConfirm()
+            close()
+          }}
           onCancel={close}
           confirm={confirm}
           back={back}

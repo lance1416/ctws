@@ -67,16 +67,20 @@ export function Capture() {
   }, [open])
 
   const add = useMutation({
-    mutationFn: async () => {
-      await target!.submit(line, { projectId, date })
+    mutationFn: async (sent: string) => {
+      await target!.submit(sent, { projectId, date })
       const project = projectId ? projects.data?.find((p) => p.id === projectId) : undefined
-      return project ? { name: project.name, to: `/projects/${project.id}` } : target!
+      return {
+        sent,
+        ...(project ? { name: project.name, to: `/projects/${project.id}` } : target!),
+      }
     },
     // `submit` refreshes the lists that now hold the line itself.
     meta: { refresh: false, ownsError: true },
-    onSuccess: ({ name, to }) => {
+    onSuccess: ({ sent, name, to }) => {
       setLanded({ name, to, on: pathname })
-      setText('')
+      // Emptied only if it still holds what was sent: what was typed since is the next line.
+      setText((now) => (now.trim() === sent ? '' : now))
       setSwitched(null)
       setDate(null)
       box.current?.focus()
@@ -92,7 +96,7 @@ export function Capture() {
     }
     if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault()
-      if (canAdd) add.mutate()
+      if (canAdd) add.mutate(line)
     }
   }
 
@@ -132,7 +136,11 @@ export function Capture() {
           <textarea
             ref={box}
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              setText(e.target.value)
+              // What was said about the last line goes once the next one starts.
+              setLanded(null)
+            }}
             onKeyDown={onKeyDown}
             rows={2}
             aria-label="Capture"
@@ -231,7 +239,7 @@ export function Capture() {
             <span aria-hidden="true" className="flex-1" />
             <button
               type="button"
-              onClick={() => add.mutate()}
+              onClick={() => add.mutate(line)}
               disabled={!canAdd}
               className={`${BUTTON.primary} h-7.5`}
             >
@@ -241,9 +249,15 @@ export function Capture() {
           </div>
           {(trouble || landed || add.isError) && (
             <div className="border-t border-line px-3 py-2 text-meta">
-              {trouble && (
+              {fallback?.missing && (
                 <p role="alert" className="text-stop-t">
-                  {trouble}
+                  {fallback.missing}
+                </p>
+              )}
+              {/* `status`, not `alert`: the projects page already alerts on the same failure. */}
+              {fallback?.unavailable && (
+                <p role="status" className="text-stop-t">
+                  {fallback.unavailable}
                 </p>
               )}
               {add.isError && (

@@ -1,5 +1,6 @@
 import { addDays, LUNAR_MONTHS } from '@ctws/core'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { useRef } from 'react'
 import { ICON_BUTTON } from '../../platform/ui/buttonStyles'
 import { BackIcon, ForwardIcon } from '../../platform/ui/icons'
 import { MONTHS } from '../../platform/time/dates'
@@ -208,7 +209,12 @@ export function LunarGrid({
   accent?: string
 }) {
   const window = useLunarWindow(anchor)
-  const month = window.data ? lunarMonthAround(window.data, anchor) : null
+  const found = window.data ? lunarMonthAround(window.data, anchor) : null
+  // While the next month's names load, the last month stays drawn with its arrows, so paging on
+  // never meets an empty box.
+  const last = useRef<ReturnType<typeof lunarMonthAround>>(null)
+  if (found) last.current = found
+  const month = found ?? last.current
   if (!month)
     return (
       <div className="flex h-56 items-center justify-center text-ui text-subtle">

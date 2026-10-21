@@ -126,7 +126,10 @@ export function ReadingRow({
         {next && (
           <button
             type="button"
-            onClick={() => save.mutate({ status: next.status })}
+            onClick={(e) => {
+              e.stopPropagation()
+              save.mutate({ status: next.status })
+            }}
             // Opacity, never `hidden`, which leaves the tab order. Always shown on touch.
             className="h-7 shrink-0 rounded-control border border-line-strong px-2 text-ui text-ink opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-hover [@media(hover:none)]:opacity-100"
           >

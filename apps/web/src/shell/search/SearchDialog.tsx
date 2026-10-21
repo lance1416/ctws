@@ -217,9 +217,11 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
     setTab('all')
     setQuery('')
   }
-  const open = (row: Row, beside: boolean) => {
+  // `typed`: from the keyboard, a hit for words not yet sent would be the previous words' (wait);
+  // a pointer chooses what it can see.
+  const open = (row: Row, beside: boolean, typed = false) => {
     if (row.kind === 'scope') return scopeTo(row.type)
-    if (row.kind === 'hit' && !settled) return
+    if (row.kind === 'hit' && typed && !settled) return
     if (pick) {
       if (row.kind === 'hit') pick.onPick(hitsById.get(row.id)!)
       return
@@ -276,12 +278,12 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
               open: () => {
                 if (composing.composingNow(e)) return false
                 const row = rows[at]
-                if (row) open(row, false)
+                if (row) open(row, false, true)
                 else if (nothing && typing && inbox.target) void newTask()
               },
               beside: () => {
                 const row = rows[at]
-                if (row) open(row, true)
+                if (row) open(row, true, true)
               },
               tab: () => {
                 if (scope !== null || tabs.length < 2) return nothing ? setScope(null) : false

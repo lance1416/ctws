@@ -7,7 +7,7 @@ import { BarExpandIcon, CloseIcon, PLACE_ICON, type IconComponent } from '../../
 import { Modal } from '../../platform/ui/Modal'
 import { useRegistry } from '../registry'
 import { SEARCH_KEYS } from '../search/SearchDialog'
-import { JUMP_PREFIX } from './chords'
+import { JUMP_PREFIX, NEW_PREFIX } from './chords'
 
 /** "a, b and c". */
 const listed = (items: readonly string[]): string =>
@@ -15,7 +15,11 @@ const listed = (items: readonly string[]): string =>
 
 /** The prefix is said as what it starts. */
 const spoken = (key: string) =>
-  key === JUMP_PREFIX ? `the ${JUMP_PREFIX.toUpperCase()} jumps` : key
+  key === JUMP_PREFIX
+    ? `the ${JUMP_PREFIX.toUpperCase()} jumps`
+    : key === NEW_PREFIX
+      ? `the ${NEW_PREFIX.toUpperCase()} keys that make things`
+      : key
 
 /**
  * The tables in the order the switch names their keys: the page-wide ones, then the modules' from

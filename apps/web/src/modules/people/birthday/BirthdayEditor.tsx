@@ -74,8 +74,9 @@ export function BirthdayEditor({
         value={draft}
         onChange={(next) => setDraft({ ...draft, ...next })}
         today={today}
+        solarOfPick={preview.data?.bornSolar ?? null}
         facts={
-          <>
+          <div data-testid="birthday-preview" className="contents">
             {preview.isSuccess && <PreviewLine facts={preview.data} />}
             {preview.isError && (
               <span role="alert" className="col-span-3 text-ui text-stop-t">
@@ -83,7 +84,7 @@ export function BirthdayEditor({
                   'That is not a date'}
               </span>
             )}
-          </>
+          </div>
         }
       />
       <PickOne
@@ -104,7 +105,7 @@ function PreviewLine({ facts }: { facts: BirthdayPreviewResponse }) {
         <>
           <span aria-hidden="true" />
           <span className="text-meta text-subtle">Born</span>
-          <span data-testid="birthday-preview" className="text-ink tabular-nums">
+          <span className="text-ink tabular-nums">
             {fullDay(facts.bornSolar)}
             {facts.bornLunar ? `, ${facts.bornLunar}` : ''}
           </span>

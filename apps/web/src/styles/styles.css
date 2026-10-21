@@ -244,6 +244,20 @@
 }
 
 /*
+ * THE HANG: the date margin's width, past which a list's rows and a page's headings hang. One
+ * value, so every indent that lines up with it (a row's text, a control's words) is computed from
+ * it rather than added up by hand. `sm` is 40rem.
+ */
+:root {
+  --hang: calc(var(--spacing) * 15);
+}
+@media (width >= 40rem) {
+  :root {
+    --hang: calc(var(--spacing) * 18);
+  }
+}
+
+/*
  * THE MENU LAYER, on the one element no component can reach.
  *
  * Radix positions every floating layer inside a wrapper it owns, and the `transform` it puts

@@ -197,7 +197,7 @@ export function CreateTaskDialog({
           onClear={() => setValue('scheduledOn', null)}
           exact={
             <DayField
-              label="Planned day"
+              label="Plan"
               value={scheduledOn ?? null}
               onChange={(day) => setValue('scheduledOn', day)}
               today={todayYmd}

@@ -18,6 +18,16 @@ export type BirthdayPick = {
 const pad = (n: number) => String(n).padStart(2, '0')
 
 /**
+ * The lunar year a picked day belongs to. A lunar year starts in late January or February, so the
+ * eleventh and twelfth months run on into the next solar year's first weeks: 十二月三十 of 1944
+ * is 12 February 1945.
+ */
+export function lunarYearOf(solar: string, lunarMonth: number): number {
+  const year = Number(solar.slice(0, 4))
+  return lunarMonth >= 11 && Number(solar.slice(5, 7)) <= 3 ? year - 1 : year
+}
+
+/**
  * THE BIRTHDAY PICKER (FR-034, artboard 11): the shared grid with a Solar / Lunar switch that
  * changes the grid itself; "Year not known" keeps only the month and day; the hour (时辰) waits
  * under the grid, folded. What the pick means (its other calendar, the sign, whether it exists)
@@ -28,12 +38,18 @@ export function BirthdayPicker({
   onChange,
   today,
   facts,
+  solarOfPick = null,
 }: {
   value: BirthdayPick
   onChange: (next: BirthdayPick) => void
   today: string
   /** The server's line about the pick: both calendars, this year's day, or why it cannot be. */
   facts?: ReactNode
+  /**
+   * The solar day the server says the pick falls on, when the year is known: a lunar grid moves
+   * there, so typing a year shows that year's months (the client holds no lunar tables).
+   */
+  solarOfPick?: string | null
 }) {
   const yearKnown = value.year !== null
   const shownYear = value.year ?? Number(today.slice(0, 4))
@@ -47,6 +63,11 @@ export function BirthdayPicker({
   useEffect(() => {
     if (solarDay) setMonth(monthOf(solarDay))
   }, [solarDay])
+  useEffect(() => {
+    if (value.calendar !== 'lunar' || !solarOfPick) return
+    setAnchor(solarOfPick)
+    setLunarSolar(solarOfPick)
+  }, [value.calendar, solarOfPick])
 
   const set = (patch: Partial<BirthdayPick>) => onChange({ ...value, ...patch })
 
@@ -124,7 +145,7 @@ export function BirthdayPicker({
               month: p.month,
               day: p.day,
               leapMonth: p.leapMonth,
-              ...(yearKnown ? { year: Number(p.solar.slice(0, 4)) } : {}),
+              ...(yearKnown ? { year: lunarYearOf(p.solar, p.month) } : {}),
             })
           }}
           accent="bg-person"

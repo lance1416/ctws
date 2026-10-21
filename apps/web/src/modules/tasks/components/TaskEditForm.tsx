@@ -176,7 +176,7 @@ export function TaskEditForm({
             render={({ field: plan }) => (
               <DayField
                 id="detail-go"
-                label="Planned day"
+                label="Plan"
                 value={plan.value ?? null}
                 onChange={(day) => setValue('scheduledOn', day, dirty)}
                 today={today}
