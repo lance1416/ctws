@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useRef } from 'react'
 import { useForm } from 'react-hook-form'
+import { DayField } from '../../../shell/dates'
 import { ProjectChip, useEveryProject } from '../../../shell/projects'
 import { createTask, projectTasksQuery } from '../api'
 import { dayEndIso, dayPhrase, ymd } from '../../../platform/time/dates'
@@ -194,6 +195,15 @@ export function CreateTaskDialog({
           pressed={(day) => scheduledOn === day}
           onDay={(day) => setValue('scheduledOn', day)}
           onClear={() => setValue('scheduledOn', null)}
+          exact={
+            <DayField
+              label="Planned day"
+              value={scheduledOn ?? null}
+              onChange={(day) => setValue('scheduledOn', day)}
+              today={todayYmd}
+              className="mt-1.5 max-w-60"
+            />
+          }
           echo={scheduledOn ? dayPhrase(scheduledOn, todayYmd) : null}
         />
 

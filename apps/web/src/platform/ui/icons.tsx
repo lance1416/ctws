@@ -28,6 +28,7 @@ import {
   CalendarClock,
   CalendarDays,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
@@ -82,6 +83,9 @@ export const CloseIcon = X
 export const OpenFullIcon = PanelRight
 export const ExpandIcon = ChevronDown
 export const CollapseIcon = ChevronRight
+/** One step back or on: a month, a year. */
+export const BackIcon = ChevronLeft
+export const ForwardIcon = ChevronRight
 /** The icon bar growing to show its names, and shrinking back. */
 export const BarExpandIcon = ChevronsRight
 export const BarCollapseIcon = ChevronsLeft

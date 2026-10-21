@@ -13,6 +13,8 @@ import { KIND_TEXT, KIND_TINT } from '../layout/places'
 import { useProjects } from '../projects/api'
 import { ProjectSquare } from '../projects/ProjectSquare'
 import { useRegistry } from '../registry'
+import { useAccountToday } from '../auth/useMe'
+import { DayField } from '../dates'
 
 type Kind = 'task' | 'reading'
 
@@ -36,6 +38,7 @@ export function Capture() {
   const landed = said?.on === pathname ? said : null
   const box = useRef<HTMLTextAreaElement>(null)
   const projects = useProjects()
+  const today = useAccountToday()
 
   // One hook per module that captures; the registry's list is fixed, so the hook order is too.
   const registry = useRegistry()
@@ -164,7 +167,7 @@ export function Capture() {
             {why}
           </p>
           <div className="mt-2.5 flex items-center gap-2 border-t border-line px-3 py-2.5">
-            <span className="text-meta text-subtle">Lands in</span>
+            <span className="text-meta whitespace-nowrap text-subtle">Lands in</span>
             <DropdownMenu.Root>
               <DropdownMenu.Trigger
                 aria-label="Lands in"
@@ -204,15 +207,16 @@ export function Capture() {
                 </DropdownMenu.Content>
               </DropdownMenu.Portal>
             </DropdownMenu.Root>
-            {/* The shared date picker (FR-034) takes this chip's place with STORY-007. */}
-            {picking ? (
-              <input
-                type="date"
-                value={date ?? ''}
-                onChange={(e) => setDate(e.target.value || null)}
-                onBlur={() => setPicking(false)}
-                aria-label="Day"
-                className="h-6 rounded-control border border-line-strong bg-panel px-1.5 text-meta text-ink"
+            {picking || date ? (
+              <DayField
+                label="Day"
+                value={date}
+                onChange={(next) => {
+                  setDate(next)
+                  if (next === null) setPicking(false)
+                }}
+                today={today}
+                className="w-40"
               />
             ) : (
               <button
@@ -221,7 +225,7 @@ export function Capture() {
                 className="inline-flex h-6 items-center gap-1.5 rounded-control bg-hover px-2 text-meta font-medium text-muted"
               >
                 <PLACE_ICON.calendar size={12} aria-hidden="true" />
-                {date ?? 'No date'}
+                No date
               </button>
             )}
             <span aria-hidden="true" className="flex-1" />

@@ -1,5 +1,6 @@
 import type { TaskResponse } from '@ctws/contracts'
 import { useEffect, useRef, useState } from 'react'
+import { DayField } from '../../../shell/dates'
 import { Controller } from 'react-hook-form'
 import { problemText } from '../../../platform/http/api'
 import { WritingMode } from '../../../platform/notes/WritingMode'
@@ -169,14 +170,19 @@ export function TaskEditForm({
         onClear={() => setValue('scheduledOn', null, dirty)}
         htmlFor="detail-go"
         exact={
-          <input
-            id="detail-go"
-            type="date"
-            // An empty date input yields '', and the contract takes a day or null.
-            {...register('scheduledOn', {
-              setValueAs: (v: unknown) => (typeof v === 'string' && v !== '' ? v : null),
-            })}
-            className={`${exact} mt-1.5`}
+          <Controller
+            name="scheduledOn"
+            control={control}
+            render={({ field: plan }) => (
+              <DayField
+                id="detail-go"
+                label="Planned day"
+                value={plan.value ?? null}
+                onChange={(day) => setValue('scheduledOn', day, dirty)}
+                today={today}
+                className="mt-1.5 max-w-60"
+              />
+            )}
           />
         }
         echo={scheduledOn ? dayPhrase(scheduledOn, today) : null}
