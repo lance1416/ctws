@@ -85,7 +85,7 @@ test('following a link from a person to a meeting lands on the meeting’s layer
 test('the address of a person who is gone says so instead of showing nothing', async ({ page }) => {
   await registerFreshUser(page)
   await page.goto('/people/99999999-9999-4999-8999-999999999999')
-  await expect(page.getByText('This person is not here any more.')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'This person was deleted' })).toBeVisible()
 })
 
 test('Linked sits beside Tasks where the page has room, and below it on a phone', async ({

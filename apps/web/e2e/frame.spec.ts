@@ -89,6 +89,30 @@ test('the icon bar expands to names and keys, and stays expanded after a reload'
   await expect(bar.getByText('Organisations', { exact: true })).toHaveCount(0)
 })
 
+test('expanding the icon bar leaves the sidebar, and the longest name fits (D2-01, D2-02)', async ({
+  page,
+}) => {
+  await registerFreshUser(page, '/projects')
+  await page.setViewportSize({ width: 1440, height: 900 })
+  const bar = page.getByRole('navigation', { name: 'Modules' })
+  await bar.getByRole('button', { name: 'Show names' }).click()
+  // Naming the icons is not hiding the sidebar: `[` is what does that.
+  await expect(page.getByRole('complementary', { name: 'Projects' })).toBeVisible()
+  expect((await bar.boundingBox())!.width).toBe(216)
+  const longest = bar.getByText('Communication', { exact: true })
+  expect(await longest.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+})
+
+test('the N prefix swallows a key that makes nothing (BUG-018)', async ({ page }) => {
+  await registerFreshUser(page)
+  const before = page.url()
+  // `L` alone links; after `N` it is a creator's key, and none is `L` yet.
+  await page.keyboard.press('n')
+  await page.keyboard.press('l')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  expect(page.url()).toBe(before)
+})
+
 test('the inspector has its own address, survives a reload and closes on Esc', async ({ page }) => {
   await registerFreshUser(page, '/people?inspect=meeting:01a15e5c-0000-7000-8000-000000000000')
   const inspector = page.getByRole('complementary', { name: 'Inspector' })

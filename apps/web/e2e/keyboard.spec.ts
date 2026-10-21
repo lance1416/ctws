@@ -216,8 +216,9 @@ test('the ? overlay lists the keys, closes on Escape and on a click outside', as
   const dialog = page.getByRole('dialog', { name: 'Keyboard shortcuts' })
   await expect(dialog).toBeVisible()
   // The keys it must actually name (FR-029), each as its own cap, not merely "a dialog appeared".
-  for (const key of ['Ctrl+K', 'C', '?', '[', 'L', 'Alt+Enter', 'Shift+Enter', 's', 'x']) {
-    // `.first()`: a letter is also the second cap of a jump, and `s` and `x` are listed twice.
+  // Letters as capitals, as every other cap (artboard 24).
+  for (const key of ['Ctrl+K', 'C', '?', '[', 'L', 'Alt+Enter', 'Shift+Enter', 'S', 'X']) {
+    // `.first()`: a letter is also the second cap of a jump, and in the switch's line.
     await expect(dialog.getByText(key, { exact: true }).first()).toBeVisible()
   }
   // A key that changed says what it was, for the first release after the redesign.
@@ -286,7 +287,7 @@ test('the single-key shortcuts can be turned off, and stay off after a reload', 
   // The switch lives in the overlay, which also has a button: with the keys off, `?` must not be
   // the only way back to the setting that turned them off.
   await page.getByRole('button', { name: 'Keys', exact: true }).click()
-  const toggle = page.getByRole('checkbox', { name: /Single-key shortcuts/ })
+  const toggle = page.getByRole('switch', { name: /Single-key shortcuts/ })
   await expect(toggle).toBeChecked()
   await toggle.uncheck()
   await page.keyboard.press('Escape')
@@ -323,7 +324,7 @@ test('the single-key shortcuts can be turned off, and stay off after a reload', 
 
   // And it can be turned back on again through the same button.
   await page.getByRole('button', { name: 'Keys', exact: true }).click()
-  await page.getByRole('checkbox', { name: /Single-key shortcuts/ }).check()
+  await page.getByRole('switch', { name: /Single-key shortcuts/ }).check()
   await page.keyboard.press('Escape')
   await page.keyboard.press('c')
   await expect(captureBox(page)).toBeFocused()

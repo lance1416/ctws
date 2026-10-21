@@ -168,7 +168,7 @@ test('a refused creation is reported at the input, which keeps what was typed', 
   await page.keyboard.press('Enter')
 
   const alert = page.getByRole('alert')
-  await expect(alert).toHaveText("Couldn't create. Press Enter to try again.")
+  await expect(alert).toContainText('Couldn’t save. What you typed is still here.')
   await expect(box).toHaveAttribute('aria-invalid', 'true')
   // The message is wired to the box, so a screen reader meets it as the box's own problem rather
   // than as a loose line somewhere on the page.

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { makeProject, makeTask, registerFreshUser } from './helpers'
+import { apiPost, makeProject, makeTask, registerFreshUser } from './helpers'
 
 /**
  * THE TYPOGRAPHY RULES, pinned: the scale as pairs, and the Han/Latin spacing. The font stack is a
@@ -142,6 +142,9 @@ test('every page names itself at one step', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await registerFreshUser(page)
   const pid = await makeProject(page, '一条线')
+  // Not empty: an empty module's page is its New alone, with no heading on screen (FR-030).
+  await apiPost(page, '/people', { name: '韩梅梅' })
+  await apiPost(page, '/reading', { kind: 'book', title: '设计心理学' })
   for (const path of [
     '/projects',
     `/projects/${pid}`,

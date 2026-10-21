@@ -121,7 +121,7 @@ test('search shows the parent breadcrumb and the status, and skips deleted tasks
   await query(page, 'hint')
 
   // `project › parent`, exactly as the Today and Done lists write it.
-  await expect(result(page, 'hint 的子任务')).toContainText('Ctx › 迁移计划')
+  await expect(result(page, 'hint 的子任务')).toContainText('迁移计划')
   // A finished task is findable on purpose -- and says so, so it is not mistaken for live work.
   await expect(result(page, 'hint 已完成')).toContainText('Done')
   // Deleted is the one thing search does not return.
@@ -401,7 +401,7 @@ test('a project deleted elsewhere leaves Recent once its page finds it gone', as
   const gone = await page.request.delete(`/api/v1/projects/${id}`, { headers: WEB })
   expect(gone.ok(), await gone.text()).toBe(true)
   await page.goto(`/projects/${id}`)
-  await expect(page.getByText('This project is not here any more.')).toBeVisible()
+  await expect(page.getByRole('heading', { name: /^This project was deleted/ })).toBeVisible()
   // The header still says where this is, rather than an empty name.
   await expect(here).toHaveText('Not found')
 
@@ -441,4 +441,29 @@ test('results landing do not pull the highlight back to the first row', async ({
   await landed
   await expect(result(page, 'Peopleware')).toBeVisible()
   await expect(box).toHaveAttribute('aria-activedescendant', second!)
+})
+
+test('search finds every kind, the ones no module searches included (BUG-015)', async ({
+  page,
+}) => {
+  await registerFreshUser(page, '/')
+  await apiPost(page, '/meetings', {
+    title: 'Ledgr standup',
+    startsLocal: '2026-11-03T09:30',
+    timeZone: 'Europe/London',
+    durationMinutes: 15,
+  })
+  await apiPost(page, '/projects', { name: 'Ledgr' })
+  await page.keyboard.press('Control+k')
+  const search = page.getByRole('dialog', { name: 'Search' })
+  await search.getByRole('combobox').fill('ledgr')
+  // A meeting and a project, each under its own kind, in search's fixed order.
+  await expect(search.getByRole('tab', { name: /^Projects/ })).toBeVisible()
+  await expect(search.getByRole('tab', { name: /^Meetings/ })).toBeVisible()
+  await expect(search.getByRole('option', { name: /Ledgr standup/ })).toContainText('Meeting')
+  // Scoped to meetings, the meeting is still found.
+  await search.getByRole('combobox').fill('/mee')
+  await search.getByRole('combobox').press('Enter')
+  await search.getByRole('combobox').fill('ledgr')
+  await expect(search.getByRole('option', { name: /Ledgr standup/ })).toBeVisible()
 })

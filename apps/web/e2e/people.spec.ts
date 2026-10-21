@@ -70,12 +70,15 @@ test('a person made while the list is still loading opens as themselves', async 
   await made
   release()
   await expect(page.getByRole('dialog', { name: 'People' })).toContainText('李雷')
-  await expect(page.getByText('This person is not here any more.')).toHaveCount(0)
+  await expect(page.getByText(/^This person was deleted/)).toHaveCount(0)
 })
 
 test('a person is made by typing a name, and finished in the pane', async ({ page }) => {
   // One line into a box, like every other thing this app makes.
-  await registerFreshUser(page, '/people')
+  await registerFreshUser(page)
+  // Someone already there: an empty People page is only its New person (FR-030).
+  await add(page, { name: '韩梅梅' })
+  await page.goto('/people')
   await page.getByLabel('Add a name').fill('李雷')
   await page.getByLabel('Add a name').press('Enter')
 
@@ -394,7 +397,11 @@ test('a new person the server refuses says why, with the form still filled in', 
         })
       : r.continue(),
   )
-  await page.getByRole('button', { name: 'New person', exact: true }).click()
+  await page
+    .getByRole('main')
+    .getByRole('button', { name: /^New person/ })
+    .first()
+    .click()
   const form = page.getByRole('dialog', { name: 'New person' })
   await form.getByLabel('Name').fill('Refused person')
   await form.getByRole('button', { name: 'Create' }).click()
@@ -409,7 +416,11 @@ test('a person is written down properly in one form, not created then edited', a
   const hunt = await apiPost(page, '/projects', { name: 'Job hunt' })
   const projectId = hunt.id
 
-  await page.getByRole('button', { name: 'New person', exact: true }).click()
+  await page
+    .getByRole('main')
+    .getByRole('button', { name: /^New person/ })
+    .first()
+    .click()
   const form = page.getByRole('dialog', { name: 'New person' })
   await form.getByLabel('Name').fill('Ying Chen')
   await form.getByLabel('Company').fill('Acme recruiting')
@@ -509,7 +520,11 @@ test("the short fields' columns follow their own width, not the window's", async
 
 test('a new person can have a birthday and a circle, sent in one request', async ({ page }) => {
   await registerFreshUser(page, '/people')
-  await page.getByRole('button', { name: 'New person', exact: true }).click()
+  await page
+    .getByRole('main')
+    .getByRole('button', { name: /^New person/ })
+    .first()
+    .click()
   const form = page.getByRole('dialog', { name: 'New person' })
   await form.getByLabel('Name').fill('外婆')
   // The birthday starts folded: a person is often just a name, and empty fields read as bad data.
@@ -887,7 +902,11 @@ test('a misspelt city is flagged but can still be saved', async ({ page }) => {
 
 test('the New person dialog formats a number too, and saves the same value', async ({ page }) => {
   await registerFreshUser(page, '/people')
-  await page.getByRole('button', { name: 'New person', exact: true }).click()
+  await page
+    .getByRole('main')
+    .getByRole('button', { name: /^New person/ })
+    .first()
+    .click()
   const form = page.getByRole('dialog', { name: 'New person' })
   await form.getByLabel('Name').fill('陈颖')
   await pickOne(form, 'Kind', 'Phone')
@@ -915,7 +934,11 @@ test('the New person dialog formats a number too, and saves the same value', asy
 
 test('the New person dialog refuses a number without a country code too', async ({ page }) => {
   await registerFreshUser(page, '/people')
-  await page.getByRole('button', { name: 'New person', exact: true }).click()
+  await page
+    .getByRole('main')
+    .getByRole('button', { name: /^New person/ })
+    .first()
+    .click()
   const form = page.getByRole('dialog', { name: 'New person' })
   await form.getByLabel('Name').fill('陈颖')
   await pickOne(form, 'Kind', 'Phone')
@@ -962,7 +985,10 @@ test('a birthday fits the phone margin', async ({ page }) => {
 })
 
 test('the add box is empty for the next name once the server has the last', async ({ page }) => {
-  await registerFreshUser(page, '/people')
+  await registerFreshUser(page)
+  // Someone already there: an empty People page is only its New person (FR-030).
+  await add(page, { name: '韩梅梅' })
+  await page.goto('/people')
   const box = page.getByLabel('Add a name')
   await box.waitFor()
   // The list read after the save is slow; the box must not wait for it.

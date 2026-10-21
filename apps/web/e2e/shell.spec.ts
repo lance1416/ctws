@@ -256,7 +256,11 @@ test('on a phone, a detail pane ends above the tab bar, so its last control can 
 test('on a phone, a dialog ends above the tab bar too', async ({ page }) => {
   await page.setViewportSize(PHONE)
   await registerFreshUser(page, '/people')
-  await page.getByRole('button', { name: 'New person', exact: true }).click()
+  await page
+    .getByRole('main')
+    .getByRole('button', { name: /^New person/ })
+    .first()
+    .click()
   const create = page
     .getByRole('dialog', { name: 'New person' })
     .getByRole('button', { name: 'Create' })

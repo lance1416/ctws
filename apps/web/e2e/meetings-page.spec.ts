@@ -37,7 +37,11 @@ test('a meeting is filled in once: title, time, zone, repeat and the people', as
   await apiPost(page, '/people', { name: 'Ying Chen' })
 
   await page.goto('/meetings')
-  await page.getByRole('button', { name: 'New meeting' }).click()
+  await page
+    .getByRole('main')
+    .getByRole('button', { name: /^New meeting/ })
+    .first()
+    .click()
 
   await dialog(page).getByLabel('Title').fill('Second interview')
   await dialog(page).getByLabel('Date').fill(dayOffset(1))
@@ -153,7 +157,11 @@ test('a repeat can be given an end date, and the series really stops there', asy
   const first = weekdayFrom(2, 7) // a Tuesday
   const last = addDaysYmd(first, 14)
   await page.goto('/meetings')
-  await page.getByRole('button', { name: 'New meeting' }).click()
+  await page
+    .getByRole('main')
+    .getByRole('button', { name: /^New meeting/ })
+    .first()
+    .click()
 
   const form = dialog(page)
   await form.getByLabel('Title').fill('Weekly sync')
@@ -417,7 +425,7 @@ test('a one-off meeting moved from its pane stays open at its new time', async (
   await moveOpenMeeting(page, `${day}T11:00`)
   await expect(page).toHaveURL(new RegExp(`at=${day}T11(%3A|:)00`))
   await expect(pane(page)).toContainText('11:00')
-  await expect(page.getByText('This meeting is not here any more.')).toHaveCount(0)
+  await expect(page.getByText(/^This meeting was deleted/)).toHaveCount(0)
 })
 
 test('this and all later, moved from the pane, stays open on the new series', async ({ page }) => {
@@ -439,7 +447,7 @@ test('this and all later, moved from the pane, stays open on the new series', as
   await moveOpenMeeting(page, `${next}T10:00`, 'This and all later')
   await expect(page).toHaveURL(new RegExp(`at=${next}T10(%3A|:)00`))
   await expect(pane(page)).toContainText('10:00')
-  await expect(page.getByText('This meeting is not here any more.')).toHaveCount(0)
+  await expect(page.getByText(/^This meeting was deleted/)).toHaveCount(0)
 })
 
 test('an occurrence that ends while its pane is open keeps the edit in it', async ({ page }) => {

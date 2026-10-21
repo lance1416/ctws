@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { makeProject, registerFreshUser, captureBox, openCapture } from './helpers'
+import { apiPost, makeProject, registerFreshUser, captureBox, openCapture } from './helpers'
 
 /**
  * ENTER WHILE AN IME IS COMPOSING IS NOT A SUBMIT.
@@ -90,7 +90,10 @@ test('committing English out of an IME does not create a task', async ({ page })
 })
 
 test('committing English out of an IME does not add a person', async ({ page }) => {
-  await registerFreshUser(page, '/people')
+  await registerFreshUser(page)
+  // Someone already there: an empty People page is only its New person (FR-030).
+  await apiPost(page, '/people', { name: '韩梅梅' })
+  await page.goto('/people')
   const writes = recordWrites(page)
 
   await commitWithIme(page, 'input[aria-label="Add a name"]', 'Ada')

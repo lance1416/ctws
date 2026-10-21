@@ -134,14 +134,22 @@ test('new-item dialogs: Cancel left, Create right, at the right edge', async ({ 
       'meeting',
       async () => {
         await page.goto('/meetings')
-        await page.getByRole('button', { name: 'New meeting' }).click()
+        await page
+          .getByRole('main')
+          .getByRole('button', { name: /^New meeting/ })
+          .first()
+          .click()
       },
     ],
     [
       'person',
       async () => {
         await page.goto('/people')
-        await page.getByRole('button', { name: 'New person' }).click()
+        await page
+          .getByRole('main')
+          .getByRole('button', { name: /^New person/ })
+          .first()
+          .click()
       },
     ],
   ]

@@ -176,7 +176,11 @@ test('the name search filters as you type', async ({ page }) => {
 test("a person written down here uses People's own dialog", async ({ page }) => {
   await registerFreshUser(page)
   await page.goto('/people/birthdays')
-  await page.getByRole('button', { name: 'New person' }).click()
+  await page
+    .getByRole('main')
+    .getByRole('button', { name: /^New person/ })
+    .first()
+    .click()
   const dialog = page.getByRole('dialog', { name: 'New person' })
   await expect(dialog).toBeVisible()
   await dialog.getByRole('textbox', { name: 'Name' }).fill('新来的')
@@ -464,9 +468,15 @@ test('a same-day reminder keeps a birthday five days out off the card', async ({
 })
 
 test('People and Birthdays share one page head', async ({ page }) => {
-  await registerFreshUser(page, '/people')
+  await registerFreshUser(page)
+  // Someone there: an empty People page is only its New person (FR-030).
+  await apiPost(page, '/people', { name: '韩梅梅' })
+  await page.goto('/people')
   const head = async () => {
-    const make = page.getByRole('main').getByRole('button', { name: 'New person', exact: true })
+    const make = page
+      .getByRole('main')
+      .getByRole('button', { name: /^New person/ })
+      .first()
     await expect(make).toBeVisible()
     return {
       box: await make.boundingBox(),

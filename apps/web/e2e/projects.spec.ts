@@ -86,7 +86,7 @@ test('an archived project opens as itself, marked archived', async ({ page }) =>
   await expect(page).toHaveURL(new RegExp(`/projects/${old}$`))
   await expect(page.getByRole('heading', { level: 1, name: 'Old thing' })).toBeVisible()
   await expect(page.locator('[data-project-archived]')).toHaveText('Archived')
-  await expect(page.getByText('This project is not here any more.')).toHaveCount(0)
+  await expect(page.getByText(/^This project was deleted/)).toHaveCount(0)
   await expect(page.getByRole('navigation', { name: 'Location' })).not.toContainText('Not found')
   await expect(page.getByText('Something left in it')).toBeVisible()
 })

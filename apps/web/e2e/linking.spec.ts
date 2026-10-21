@@ -247,7 +247,7 @@ test('a task link that fails for another reason does not say the task is gone', 
   await expect(page.getByRole('alert')).toContainText("Couldn't open this task")
   await page.unroute(`**/api/v1/tasks/${id}`)
   await page.goto(`/tasks/${id}`)
-  await expect(page.getByRole('alert')).toContainText('This task is not here any more.')
+  await expect(page.getByRole('alert')).toContainText('This task was deleted')
 })
 
 test('a task address opens the task in its project', async ({ page }) => {
@@ -270,7 +270,7 @@ test('an address that is no task id says so, and asks the server nothing', async
   })
   // `completed` is not a task id: under /api/v1/tasks it names a list, so it is never fetched.
   await page.goto('/tasks/completed')
-  await expect(page.getByRole('alert')).toContainText('This task is not here any more.')
+  await expect(page.getByRole('alert')).toContainText('There is no such task.')
   await expect(page).toHaveURL(/\/tasks\/completed$/)
   expect(asked).toEqual([])
 })

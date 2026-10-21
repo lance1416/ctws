@@ -218,7 +218,7 @@ test('N T opens the dialog, obeys the off switch and is two letters while typing
 
   // A single-key shortcut, so the off switch governs it like every other one.
   await page.getByRole('button', { name: 'Keys', exact: true }).click()
-  await page.getByRole('checkbox', { name: /Single-key shortcuts/ }).uncheck()
+  await page.getByRole('switch', { name: /Single-key shortcuts/ }).uncheck()
   await page.keyboard.press('Escape')
   await page.getByRole('heading', { name: 'Tasks', exact: true }).click()
   await page.keyboard.press('n')
@@ -325,7 +325,7 @@ test('the ? overlay opens, lists the keys, closes two ways, restores focus and h
   const help = page.getByRole('dialog', { name: 'Keyboard shortcuts' })
   await expect(help).toBeVisible()
   // It says every key, including the project page's own.
-  for (const key of ['Ctrl+K', 'C', '?', 'N', 'G', 'Alt+Enter', 's', 'x']) {
+  for (const key of ['Ctrl+K', 'C', '?', 'N', 'G', 'Alt+Enter', 'S', 'X']) {
     await expect(help.getByText(key, { exact: true }).first()).toBeVisible()
   }
 
@@ -353,7 +353,7 @@ test('the ? overlay opens, lists the keys, closes two ways, restores focus and h
 
   // 5. The single-key off switch is in it, works, and comes back on.
   await page.keyboard.press('?')
-  const toggle = help.getByRole('checkbox', { name: /Single-key shortcuts/ })
+  const toggle = help.getByRole('switch', { name: /Single-key shortcuts/ })
   await expect(toggle).toBeChecked()
   await toggle.uncheck()
   await page.keyboard.press('Escape')
@@ -361,7 +361,7 @@ test('the ? overlay opens, lists the keys, closes two ways, restores focus and h
   await page.keyboard.press('?')
   await expect(help).toHaveCount(0)
   await page.getByRole('button', { name: 'Keys', exact: true }).click()
-  await help.getByRole('checkbox', { name: /Single-key shortcuts/ }).check()
+  await help.getByRole('switch', { name: /Single-key shortcuts/ }).check()
   await page.keyboard.press('Escape')
   await page.getByRole('heading', { name: 'Tasks', exact: true }).click()
   await page.keyboard.press('?')
@@ -380,21 +380,63 @@ test('a task made in the New dialog starts as to do, like one typed into the lis
   expect(((await posted) as Record<string, unknown>).status).toBe('todo')
 })
 
-test('the ? list says what the off switch silences and what → does', async ({ page }) => {
+test('the ? list is the board’s three columns, and its switch names the keys it stops', async ({
+  page,
+}) => {
   await seed(page)
+  await page.setViewportSize({ width: 1440, height: 900 })
   await page.getByRole('button', { name: 'Keys', exact: true }).click()
   const help = page.getByRole('dialog', { name: 'Keyboard shortcuts' })
-  // The N keys are single keys too, and the switch stops them.
-  await expect(help.getByRole('checkbox', { name: /Single-key shortcuts/ })).toBeVisible()
-  await expect(help).toContainText(
-    'With this off, c, l, ?, [, the G jumps, the N keys that make things, s, x, j and k stop responding',
-  )
-  // → opens a collapsed row; only an open one goes on to its first child.
-  await expect(help).toContainText('once expanded, → goes to the first child')
-  // The tree's keys are listed before Today's.
+  // Last in the list, one line: the switch and the keys it stops, as caps (WCAG 2.1.4).
+  const toggle = help.getByRole('switch', { name: /Single-key shortcuts/ })
+  await expect(toggle).toBeVisible()
+  const line = help.locator('label:has([role="switch"])')
+  for (const cap of ['C', 'L', '?', '[', 'G', 'N', 'S', 'X', 'J', 'K'])
+    await expect(line.getByText(cap, { exact: true })).toBeVisible()
+  // The groups and their order (artboard 24): Today's row keys are the tree's, said once.
   const sections = await help.getByRole('heading', { level: 3 }).allTextContents()
-  expect(sections.indexOf('In the task tree (with a row focused)')).toBeGreaterThan(-1)
-  expect(sections.indexOf('In the task tree (with a row focused)')).toBeLessThan(
-    sections.indexOf('On Today (with a row focused)'),
-  )
+  expect(sections).toEqual([
+    'Anywhere',
+    'Go to',
+    'New',
+    'In a tree or list, with a row focused',
+    'In search',
+  ])
+  await expect(help).toContainText('Fold, or go to the parent')
+  // Three columns that fit the screen: the foot is on it.
+  const foot = help.getByText('This key changes in the redesign.', { exact: false })
+  const box = (await help.boundingBox())!
+  expect(box.y + box.height).toBeLessThanOrEqual(900)
+  await expect(foot).toBeVisible()
+})
+
+test('a layer opened by a click that left focus on the page gives focus back to that button (BUG-026)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const keys = page.getByRole('button', { name: 'Keys', exact: true })
+  // Safari on macOS: the press does not focus the button, so <body> is focused when it opens.
+  await keys.evaluate((el: HTMLElement) => {
+    ;(document.activeElement as HTMLElement | null)?.blur()
+    el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    el.click()
+  })
+  const help = page.getByRole('dialog', { name: 'Keyboard shortcuts' })
+  await expect(help).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(help).toHaveCount(0)
+  await expect(keys).toBeFocused()
+})
+
+test('Option+Tab wraps at the ends of a layer, as Tab does (BUG-026)', async ({ page }) => {
+  await registerFreshUser(page)
+  await page.keyboard.press('?')
+  const help = page.getByRole('dialog', { name: 'Keyboard shortcuts' })
+  const filter = help.getByRole('textbox', { name: 'Filter keys' })
+  await expect(filter).toBeFocused()
+  await page.keyboard.press('Alt+Shift+Tab')
+  await expect(filter).not.toBeFocused()
+  await expect(help.locator(':focus')).toHaveCount(1)
+  await page.keyboard.press('Alt+Tab')
+  await expect(filter).toBeFocused()
 })

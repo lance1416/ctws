@@ -101,6 +101,9 @@ export async function openCapture(page: Page): Promise<Locator> {
   return box
 }
 
+/** The capture box, named as the create inputs are, so `submitCreate` can reach it too. */
+const CAPTURE = 'Capture…'
+
 /** Captures a line and leaves the box open, as Enter does, for tests about what it then says. */
 export async function captureLine(page: Page, text: string): Promise<void> {
   const created = page.waitForResponse(
@@ -123,10 +126,16 @@ export async function submitCreate(page: Page, placeholder: string, text: string
       r.ok() &&
       /\/api\/v1\/(tasks|projects)$/.test(new URL(r.url()).pathname),
   )
-  const field = page.getByPlaceholder(placeholder)
+  const field =
+    placeholder === CAPTURE ? await openCapture(page) : page.getByPlaceholder(placeholder)
   await field.fill(text)
   await field.press('Enter')
   await created
+  if (placeholder === CAPTURE) {
+    // The box empties for the next line, then closes, so it covers nothing the test does next.
+    await expect(field).toHaveValue('')
+    await field.press('Escape')
+  }
 }
 
 // Opens a project from the list and waits for its task list to arrive. Creating a task while the

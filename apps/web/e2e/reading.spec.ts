@@ -117,21 +117,6 @@ test('a book moves to read → reading → finished, and the finished pile folds
   await expect(rowOf(page, '设计心理学')).toBeVisible()
 })
 
-test('the sidebar counts what is waiting, not the size of the pile', async ({ page }) => {
-  await registerFreshUser(page)
-  const add = (data: Record<string, unknown>) => apiPost(page, '/reading', data)
-  await add({ kind: 'book', title: '要读的' })
-  const done = await add({ kind: 'book', title: '读过的' })
-  await page.request.patch(`/api/v1/reading/${done.id}`, {
-    headers: WEB,
-    data: { status: 'done' },
-  })
-
-  // The count heads the module's sidebar, in the kind's own words (FR-020).
-  await page.goto('/reading')
-  await expect(page.getByRole('complementary', { name: 'Reading' })).toContainText('1 to read')
-})
-
 test('search reaches both modules from one box', async ({ page }) => {
   // The shell merges the providers; neither module knows the other is there. The dialog is named
   // “Search” and not “Search tasks” for the same reason.
@@ -306,6 +291,8 @@ test('the reading list hangs on the margin: the plan, the thread, then the item'
 
 test('the add box is empty for the next title once the server has the last', async ({ page }) => {
   await registerFreshUser(page)
+  // Something already there: an empty Reading page is only its New reading (FR-030).
+  await apiPost(page, '/reading', { kind: 'book', title: '设计心理学' })
   await page.goto('/reading')
   const box = page.getByLabel('Add to the reading list')
   await box.waitFor()

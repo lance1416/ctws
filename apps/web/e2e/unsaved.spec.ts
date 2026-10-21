@@ -139,7 +139,11 @@ const newDialogs: [string, string, (page: Page) => Promise<unknown>][] = [
     'Title',
     async (page) => {
       await page.goto('/meetings')
-      await page.getByRole('button', { name: 'New meeting' }).click()
+      await page
+        .getByRole('main')
+        .getByRole('button', { name: /^New meeting/ })
+        .first()
+        .click()
     },
   ],
   [
@@ -147,7 +151,11 @@ const newDialogs: [string, string, (page: Page) => Promise<unknown>][] = [
     'Name',
     async (page) => {
       await page.goto('/people')
-      await page.getByRole('main').getByRole('button', { name: 'New person', exact: true }).click()
+      await page
+        .getByRole('main')
+        .getByRole('button', { name: /^New person/ })
+        .first()
+        .click()
     },
   ],
 ]
