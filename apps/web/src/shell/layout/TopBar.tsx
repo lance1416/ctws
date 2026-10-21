@@ -4,7 +4,7 @@ import { KEY, ICON_BUTTON } from '../../platform/ui/buttonStyles'
 import { DarkIcon, LightIcon, PLACE_ICON } from '../../platform/ui/icons'
 import { applyTheme, onSchemeChange, shownScheme } from '../../platform/ui/theme'
 import { keyLabel } from '../../platform/keyboard/keys'
-import { QuickCapture } from '../capture'
+import { Capture } from '../capture'
 import { Breadcrumbs } from './Breadcrumbs'
 import { UserMenu } from './UserMenu'
 import { WriteFailure } from './WriteFailure'
@@ -44,7 +44,7 @@ export function TopBar({
         <span className="flex-1 text-left">Search everything</span>
         <kbd className={KEY}>{keyLabel('Ctrl K')}</kbd>
       </button>
-      <QuickCapture />
+      <Capture />
       <span aria-hidden="true" className="flex-1" />
       <button
         type="button"

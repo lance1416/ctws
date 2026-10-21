@@ -194,7 +194,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
   }
   const newTask = async () => {
     if (!inbox.target) return
-    await inbox.target.submit(typing)
+    await inbox.target.submit(typing, { projectId: null, date: null })
     onClose()
     navigate(inbox.target.to)
   }

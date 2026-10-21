@@ -192,6 +192,8 @@ export type KindEntry = {
 }
 
 export type CaptureContribution = {
+  /** Which kind the box makes when this module takes the line (FR-025's Task and Reading). */
+  kind: 'task' | 'reading'
   /** A hook: the module's default capture target, and why there is none when there is none. */
   useTarget: () => CaptureTargetState
   /**
@@ -211,13 +213,19 @@ export type CaptureTargetState = {
 }
 
 export type CaptureTarget = {
-  /** What to call the place the line landed in. */
+  /** What to call the place the line lands in when no project is picked ("Inbox", "To read"). */
   name: string
-  /** Where the confirmation links to. */
+  /** Where the confirmation links to then. */
   to: string
-  /** Writes the line, and starts refreshing the lists that now contain it without waiting. */
-  submit: (title: string) => Promise<unknown>
+  /**
+   * Writes the line into the project picked, or the default place, on the day picked if any; and
+   * starts refreshing the lists that now contain it without waiting.
+   */
+  submit: (title: string, where: CaptureWhere) => Promise<unknown>
 }
+
+/** What the box lets the person choose beside the line (FR-025). */
+type CaptureWhere = { projectId: ProjectId | null; date: string | null }
 
 type SearchContribution = {
   /** A hook: this module's hits for `query`. An empty query means idle, not "match everything". */

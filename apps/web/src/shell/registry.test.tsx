@@ -20,7 +20,7 @@ const notes: WorkspaceModule = {
   pages: [{ id: 'recent', to: '/notes/recent', label: 'Recent' }],
   kind: { label: 'Notes', to: '/notes/all', order: 25 },
   routes: [{ path: 'recent' }, { path: 'all' }],
-  capture: { useTarget: () => ({ target: null }) },
+  capture: { kind: 'task', useTarget: () => ({ target: null }) },
   search: { useHits: () => ({ hits: [], isError: false, isSuccess: true }) },
   chords: [
     { id: 'recent', key: 'q', label: 'Go to Recent', resolve: () => '/notes/recent', order: 5 },
@@ -44,7 +44,10 @@ const files: WorkspaceModule = {
   label: 'Files',
   kind: { label: 'Files', to: '/files/drive', order: 5 },
   routes: [{ path: 'drive' }],
-  capture: { useTarget: () => ({ target: null, missing: 'No drive to file into' }) },
+  capture: {
+    kind: 'reading',
+    useTarget: () => ({ target: null, missing: 'No drive to file into' }),
+  },
   widgets: [{ id: 'big', label: 'Bulky', Component: () => null, span: 8 }],
   project: {
     Block: { Component: () => null, views: [{ id: 'all', label: 'All' }] },

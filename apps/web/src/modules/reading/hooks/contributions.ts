@@ -1,7 +1,13 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import type { CaptureTargetState, SearchHit } from '../../../shell/contract'
 import { useRefresh } from '../../../shell/registry'
-import { createReadingItem, readingCalendarQuery, readingKeys, readingSearchQuery } from '../api'
+import {
+  createReadingItem,
+  patchReadingItem,
+  readingCalendarQuery,
+  readingKeys,
+  readingSearchQuery,
+} from '../api'
 import { READING_ID } from '../logic/id'
 import { readingLabel } from '../logic/item'
 
@@ -10,10 +16,15 @@ export function useReadingCapture(): CaptureTargetState {
   const refresh = useRefresh()
   return {
     target: {
-      name: 'Reading',
+      name: 'To read',
       to: `/${READING_ID}`,
-      submit: async (line: string) => {
-        await createReadingItem({ kind: 'link', url: line.trim() })
+      submit: async (line: string, { projectId, date }) => {
+        const made = await createReadingItem({ kind: 'link', url: line.trim() })
+        if (projectId || date)
+          await patchReadingItem(made.id, {
+            ...(projectId ? { projectId } : {}),
+            ...(date ? { planOn: date } : {}),
+          })
         // Not awaited: the capture box is free for the next line once the server has this one.
         void refresh(['reading'], [readingKeys.all])
       },

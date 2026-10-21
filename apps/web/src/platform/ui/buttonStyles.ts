@@ -25,6 +25,9 @@ export const BUTTON = {
 export const KEY =
   'inline-flex h-4.5 items-center rounded-key border border-b-2 border-line-strong px-1.25 font-mono text-meta text-muted'
 
+/** The key cap inside a primary button, on its ink. */
+export const KEY_ON_INK = `${KEY} border-on-ink/35 text-on-ink`
+
 /** An icon-only button (artboard 3 `.ib`): 28 square, grey until hovered. Give it `aria-label`. */
 export const ICON_BUTTON =
   'inline-grid size-7 shrink-0 place-items-center rounded-control text-muted hover:bg-hover hover:text-ink disabled:opacity-50'

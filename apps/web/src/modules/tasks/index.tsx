@@ -57,7 +57,7 @@ export const taskModule: WorkspaceModule = {
     { path: '/review', element: <Review />, handle: topPage('Review') },
   ],
   routes: [{ path: ':id', element: <OpenTask /> }],
-  capture: { useTarget: useInboxCapture },
+  capture: { kind: 'task', useTarget: useInboxCapture },
   search: { useHits: useTaskHits },
   chords: [
     { id: 'today', key: 't', label: 'Go to Today', resolve: () => '/today', order: 10 },

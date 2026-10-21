@@ -27,7 +27,7 @@ export const readingModule: WorkspaceModule = {
     // An item has no page of its own: this is the list with its pane open.
     { path: ':id', element: <Reading />, handle: PAGE },
   ],
-  capture: { useTarget: useReadingCapture, accepts: isReadingUrl },
+  capture: { kind: 'reading', useTarget: useReadingCapture, accepts: isReadingUrl },
   search: { useHits: useReadingHits },
   chords: [
     { id: 'reading', key: 'r', label: 'Go to Reading', resolve: () => `/${READING_ID}`, order: 50 },

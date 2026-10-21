@@ -23,11 +23,12 @@ export function useInboxCapture(): CaptureTargetState {
       ? {
           name: inbox.name,
           to: `/projects/${inbox.id}`,
-          submit: async (title: string) => {
-            await createTask({ projectId: inbox.id, title })
+          submit: async (title: string, { projectId, date }) => {
+            const into = projectId ?? inbox.id
+            await createTask({ projectId: into, title, ...(date ? { scheduledOn: date } : {}) })
             // Not awaited: the box is free for the next line once the server has this one, and
             // what is typed while the list is read again is that next line.
-            void refresh(['task'], [taskKeys.list(inbox.id)])
+            void refresh(['task'], [taskKeys.list(into)])
           },
         }
       : null,
