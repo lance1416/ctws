@@ -36,11 +36,11 @@ type Row =
 const ANY = { either: ['Ctrl', 'Meta', 'Alt', 'Shift'] } as const
 
 /** The box's keys (FR-024): the list is walked from the box, which keeps focus. */
-const RESULT_KEYS: KeyTable<'next' | 'previous' | 'open' | 'beside' | 'tab' | 'back'> = {
+export const SEARCH_KEYS: KeyTable<'next' | 'previous' | 'open' | 'beside' | 'tab' | 'back'> = {
   title: 'In search',
   rows: [
     {
-      keys: '↓ / Ctrl N',
+      keys: '↓ / Ctrl+N',
       does: 'Next result',
       presses: {
         ...pressesWith('ArrowDown', 'next', ANY),
@@ -48,7 +48,7 @@ const RESULT_KEYS: KeyTable<'next' | 'previous' | 'open' | 'beside' | 'tab' | 'b
       },
     },
     {
-      keys: '↑ / Ctrl P',
+      keys: '↑ / Ctrl+P',
       does: 'Previous result',
       presses: {
         ...pressesWith('ArrowUp', 'previous', ANY),
@@ -57,8 +57,8 @@ const RESULT_KEYS: KeyTable<'next' | 'previous' | 'open' | 'beside' | 'tab' | 'b
     },
     { keys: 'Enter', does: 'Open', presses: { Enter: 'open', 'Shift+Enter': 'open' } },
     {
-      keys: 'Ctrl Enter',
-      does: 'Open beside, and stay on this page',
+      keys: 'Ctrl+Enter',
+      does: 'Open beside, in the inspector',
       presses: { 'Ctrl+Enter': 'beside', 'Meta+Enter': 'beside' },
     },
     { keys: 'Tab', does: 'Next kind', presses: { Tab: 'tab', 'Shift+Tab': 'back' } },
@@ -75,7 +75,7 @@ const RESULT_KEYS: KeyTable<'next' | 'previous' | 'open' | 'beside' | 'tab' | 'b
  */
 export function SearchDialog({ onClose }: { onClose: () => void }) {
   const composing = useComposing()
-  const keys = useKeyTable(RESULT_KEYS)
+  const keys = useKeyTable(SEARCH_KEYS)
   const [query, setQuery] = useState('')
   const [scope, setScope] = useState<ObjectType | null>(null)
   const [tab, setTab] = useState<Tab>('all')

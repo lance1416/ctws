@@ -61,7 +61,14 @@ export const taskModule: WorkspaceModule = {
   search: { useHits: useTaskHits },
   chords: [
     { id: 'today', key: 't', label: 'Go to Today', resolve: () => '/today', order: 10 },
-    { id: 'review', key: 'v', label: 'Go to Review', resolve: () => '/review', order: 20 },
+    {
+      id: 'review',
+      key: 'v',
+      label: 'Go to Review',
+      resolve: () => '/review',
+      order: 20,
+      was: 'g r',
+    },
   ],
   calendar: {
     label: 'Tasks',

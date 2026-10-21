@@ -30,7 +30,14 @@ export const readingModule: WorkspaceModule = {
   capture: { kind: 'reading', useTarget: useReadingCapture, accepts: isReadingUrl },
   search: { useHits: useReadingHits },
   chords: [
-    { id: 'reading', key: 'r', label: 'Go to Reading', resolve: () => `/${READING_ID}`, order: 50 },
+    {
+      id: 'reading',
+      key: 'r',
+      label: 'Go to Reading',
+      resolve: () => `/${READING_ID}`,
+      order: 50,
+      was: 'g l',
+    },
   ],
   calendar: {
     label: 'Reading',

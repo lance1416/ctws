@@ -14,6 +14,8 @@ type KeyRow<A extends string = string> = {
   keys: string
   /** What the help says they do. */
   does: string
+  /** The key this replaced in the redesign (FR-029), shown for the first release after it. */
+  was?: string
   /** Each press and its action. Empty for a key told here but handled by the browser or a layer. */
   presses: Partial<Record<string, A>>
 }

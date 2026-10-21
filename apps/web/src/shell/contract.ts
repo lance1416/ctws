@@ -253,6 +253,8 @@ export type Chord = {
   key: string
   /** The help overlay's wording. */
   label: string
+  /** The chord this replaced in the redesign (FR-029), shown in the help for one release. */
+  was?: string
   /**
    * Where this chord goes, or null when that cannot be resolved yet. Not a hook: it runs on the
    * keypress, so a chord costs no query while nobody presses it.

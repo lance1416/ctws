@@ -13,17 +13,19 @@ export function anywhereKeys(chords: readonly Chord[]): KeyTable<AnywhereAction>
     title: 'Anywhere',
     rows: [
       {
-        keys: 'Ctrl K',
-        does: 'Search, or go to a page',
+        keys: 'Ctrl+K',
+        does: 'Search, or go to any page',
         presses: { 'Ctrl+k': 'search', 'Meta+k': 'search' },
+        was: 'f',
       },
-      { keys: 'C', does: 'Capture a thought or a link', presses: { c: 'capture' } },
+      { keys: 'C', does: 'Capture', presses: { c: 'capture' }, was: '/' },
       { keys: '?', does: 'This list of keys', presses: { '?': 'help' } },
       { keys: '[', does: 'Hide or show the sidebar', presses: { '[': 'sidebar' } },
       ...chords.map((c) => ({
         keys: `${JUMP_PREFIX.toUpperCase()} ${c.key.toUpperCase()}`,
         does: c.label,
         presses: { [JUMP_PREFIX]: 'jump' as const },
+        ...(c.was ? { was: c.was } : {}),
       })),
       { keys: 'Esc', does: 'Close the inspector or an overlay', presses: {} },
     ],

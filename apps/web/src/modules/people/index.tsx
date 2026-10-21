@@ -59,7 +59,14 @@ export const peopleModule: WorkspaceModule = {
     },
   ],
   chords: [
-    { id: 'people', key: 'e', label: 'Go to People', resolve: () => `/${PEOPLE_ID}`, order: 30 },
+    {
+      id: 'people',
+      key: 'e',
+      label: 'Go to People',
+      resolve: () => `/${PEOPLE_ID}`,
+      order: 30,
+      was: 'g n',
+    },
   ],
   relations: [
     {
