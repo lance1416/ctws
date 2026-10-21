@@ -1,0 +1,16 @@
+/**
+ * A person's avatar (FR-049, artboards 5 and 9): a round person-tinted disc with their initials.
+ * At least 24px, so the 11px letters are legible (FR-008).
+ */
+export function Avatar({ initials, size = 24 }: { initials: string; size?: 24 | 32 }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`inline-grid shrink-0 place-items-center rounded-full bg-person-bg text-initials text-person-t ${
+        size === 32 ? 'size-8' : 'size-6'
+      }`}
+    >
+      {initials}
+    </span>
+  )
+}

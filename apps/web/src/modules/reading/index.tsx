@@ -1,9 +1,10 @@
 import { topPage } from '../../shell/layout'
 import type { WorkspaceModule } from '../../shell/contract'
 import { readingKeys } from './api'
-import { ReadingCount, UnfiledLine } from './components/ReadingKind'
+import { UnfiledLine } from './components/ReadingKind'
 import { ReadingAside, ReadingWidget } from './components/ReadingWidget'
 import { useReadingCapture, useReadingEntries, useReadingHits } from './hooks/contributions'
+import { ReadingFact } from './components/ReadingFact'
 import { READING_ID } from './logic/id'
 import { isReadingUrl } from './logic/readingUrl'
 import { Reading } from './pages/Reading'
@@ -17,7 +18,6 @@ export const readingModule: WorkspaceModule = {
   kind: {
     label: 'Reading',
     to: `/${READING_ID}`,
-    Count: ReadingCount,
     Status: UnfiledLine,
     chord: 'reading',
     order: 40,
@@ -34,7 +34,7 @@ export const readingModule: WorkspaceModule = {
     {
       id: 'reading',
       key: 'r',
-      label: 'Go to Reading',
+      label: 'Reading',
       resolve: () => `/${READING_ID}`,
       order: 50,
       was: 'g l',
@@ -62,7 +62,7 @@ export const readingModule: WorkspaceModule = {
       kind: 'Reading',
       plural: 'Reading',
       to: (id) => `/${READING_ID}/${id}`,
-      describe: (t) => (t.type === 'reading' ? t.author : null),
+      Fact: ReadingFact,
     },
   ],
   // An item names its project.

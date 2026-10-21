@@ -131,6 +131,7 @@ function Frame({
               </LeaveGuardContext.Provider>
             </main>
             <Inspector />
+            <BackOnline />
           </div>
         </div>
         <Shortcuts
@@ -148,7 +149,6 @@ function Frame({
         {creating?.Dialog && (
           <creating.Dialog projectId={projectId} onClose={() => setCreating(null)} />
         )}
-        <BackOnline />
         <BottomBar onSearch={() => setSearching(true)} />
       </div>
     </NewContext.Provider>

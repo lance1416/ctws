@@ -57,8 +57,8 @@ describe('the tree keys', () => {
 })
 
 describe('the help', () => {
-  it('lists the tree before Today', () => {
-    const titles = TASK_KEYS.map((t) => t.title)
-    expect(titles.indexOf(TREE_KEYS.title)).toBeLessThan(titles.indexOf(TODAY_KEYS.title))
+  it('lists Today’s row keys with the tree’s, one group (artboard 24)', () => {
+    expect(TODAY_KEYS.title).toBe(TREE_KEYS.title)
+    expect(TASK_KEYS[0]).toBe(TREE_KEYS)
   })
 })

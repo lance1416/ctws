@@ -26,43 +26,50 @@ export function TopBar({
   onLogout: () => void
 }) {
   return (
-    <header className="flex h-12 shrink-0 items-center gap-3 border-b border-line bg-chrome pr-3 pl-2.5">
-      <Link
-        to="/"
-        aria-label="Workbench"
-        className="inline-grid size-7.5 shrink-0 place-items-center rounded-card bg-ink text-meta font-medium text-on-ink"
-      >
-        CT
-      </Link>
-      <Breadcrumbs />
-      <span aria-hidden="true" className="flex-1" />
-      <button
-        type="button"
-        onClick={onSearch}
-        className="flex h-7.5 w-90 shrink items-center gap-2 rounded-control border border-line-strong bg-panel px-2.5 text-ui text-subtle hover:bg-hover"
-      >
-        <PLACE_ICON.search size={16} aria-hidden="true" />
-        <span className="flex-1 text-left">Search everything</span>
-        <kbd className={KEY}>{keyLabel('Ctrl K')}</kbd>
-      </button>
-      <Capture />
-      <span aria-hidden="true" className="flex-1" />
-      <button
-        type="button"
-        onClick={onHelp}
-        aria-label="Keys"
-        title="Keys  ?"
-        className={ICON_BUTTON}
-      >
-        <PLACE_ICON.keys size={16} aria-hidden="true" />
-      </button>
-      <OfflinePill />
-      <ThemeSwitch />
-      <span className="relative">
-        <UserMenu email={email} onLogout={onLogout} />
-        {/* Any write that fails unsaid, signing out among them, is said here. */}
-        <WriteFailure />
-      </span>
+    // Three columns, the outer two equal: the search and capture stay centred whatever appears at
+    // either end (the Offline pill, a long breadcrumb).
+    <header className="grid h-12 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 border-b border-line bg-chrome pr-3 pl-2.5">
+      <div className="flex min-w-0 items-center gap-3">
+        <Link
+          to="/"
+          aria-label="Workbench"
+          className="inline-grid size-7.5 shrink-0 place-items-center rounded-card bg-ink text-meta font-medium text-on-ink"
+        >
+          CT
+        </Link>
+        <Breadcrumbs />
+      </div>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={onSearch}
+          className="flex h-7.5 w-90 shrink items-center gap-2 rounded-control border border-line-strong bg-panel px-2.5 text-ui text-subtle hover:bg-hover"
+        >
+          <PLACE_ICON.search size={16} aria-hidden="true" />
+          <span className="flex-1 text-left">Search everything</span>
+          <kbd className={KEY}>{keyLabel('Ctrl K')}</kbd>
+        </button>
+        <Capture />
+      </div>
+      <div className="flex items-center justify-end gap-3">
+        <button
+          type="button"
+          onClick={onHelp}
+          aria-label="Keys"
+          title="Keys  ?"
+          className={ICON_BUTTON}
+        >
+          <PLACE_ICON.keys size={16} aria-hidden="true" />
+        </button>
+        <ThemeSwitch />
+        {/* Next to the account (FR-033), so the middle of the bar never moves. */}
+        <OfflinePill />
+        <span className="relative">
+          <UserMenu email={email} onLogout={onLogout} />
+          {/* Any write that fails unsaid, signing out among them, is said here. */}
+          <WriteFailure />
+        </span>
+      </div>
     </header>
   )
 }

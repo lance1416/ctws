@@ -28,16 +28,14 @@ export function useLinked(of: Endpoint, types: readonly ObjectType[] | undefined
     // Both ends showed the relation, and the far one can be any kind of thing.
     meta: { changes: OBJECT_TYPES, awaits: [linkKeys.all], ownsError: true },
   })
-  const add = (
+  // The picker while a `+` is pressed, and what an unlink that failed said.
+  const picker = (
     <>
       {unlink.isError && (
         <p role="alert" className="px-2 text-ui text-stop-t">
           {problemText(unlink.error)}
         </p>
       )}
-      <Button look="link" onClick={() => setAdding('any')} className="self-start">
-        + Link
-      </Button>
       {adding && (
         <LinkDialog
           of={of}
@@ -45,6 +43,15 @@ export function useLinked(of: Endpoint, types: readonly ObjectType[] | undefined
           onClose={() => setAdding(null)}
         />
       )}
+    </>
+  )
+  // A list with no blocks of its own relates any kind from one line under it.
+  const add = (
+    <>
+      <Button look="link" onClick={() => setAdding('any')} className="self-start">
+        + Link
+      </Button>
+      {picker}
     </>
   )
   // Nothing at all while loading: a skeleton would flash on every pane that opens.
@@ -56,5 +63,5 @@ export function useLinked(of: Endpoint, types: readonly ObjectType[] | undefined
       {add}
     </div>
   ) : undefined
-  return { links, groups, unlink, setAdding, add, unshown }
+  return { links, groups, unlink, setAdding, add, picker, unshown }
 }

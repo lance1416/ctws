@@ -90,8 +90,9 @@ describe('what one thing is connected to', () => {
     const projectRow = /data-linked="p1".*?<\/a>/.exec(html)![0]
     expect(projectRow).toContain('Job hunt')
     expect(html).toContain('Unlink Job hunt')
-    // The meeting's own module says when it is, on the meeting's own clock.
-    expect(html).toContain('Oct 20, 21:00 · EDT')
+    // The meeting's own module says when it is, in figures (`meetingWhen` has the wording).
+    const meetingRow = /data-linked="m1".*?<\/a>/.exec(html)![0]
+    expect(meetingRow).toContain('font-mono')
   })
 
   it('says so when there is nothing, rather than drawing an empty frame', () => {

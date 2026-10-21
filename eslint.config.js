@@ -162,7 +162,8 @@ export default tseslint.config(
   // ---- One source of "now" ----
   {
     files: PRODUCTION,
-    ignores: [...TESTS, 'apps/api/src/app.ts', 'apps/web/src/platform/time/useNow.ts'],
+    // The web's one reader of the clock: the browser's, set to the server's present (me.now).
+    ignores: [...TESTS, 'apps/api/src/app.ts', 'apps/web/src/platform/time/serverClock.ts'],
     plugins: { ctws },
     rules: {
       'ctws/clock': [

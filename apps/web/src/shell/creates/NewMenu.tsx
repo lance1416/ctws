@@ -12,11 +12,17 @@ export const NewContext = createContext<(creator: Creator) => void>(() => {})
 const useOpenNew = () => useContext(NewContext)
 
 /**
- * THE NEW MENU (FR-026, artboard 9): the few kinds used lately, the rest found by typing, so the
- * menu never grows. On a project page what it makes belongs to the project. `N` then a key does
- * the same from anywhere.
+ * THE NEW MENU (FR-026, artboard 9): on a project's page, the kinds that can belong to it; the few
+ * used lately shown, the rest found by typing, so the menu never grows. What it makes belongs to
+ * the project. `N` then a key does the same from anywhere.
  */
-export function NewMenu({ className = '' }: { className?: string }) {
+export function NewMenu({
+  projectName,
+  className = '',
+}: {
+  projectName: string
+  className?: string
+}) {
   const registry = useRegistry()
   const openNew = useOpenNew()
   const [open, setOpen] = useState(false)
@@ -75,9 +81,9 @@ export function NewMenu({ className = '' }: { className?: string }) {
       {open && (
         <div
           role="menu"
-          aria-label="New"
+          aria-label={`New in ${projectName}`}
           onKeyDown={onKeyDown}
-          className={`absolute top-full right-0 ${LAYER.menu} mt-1.5 flex w-72 flex-col rounded-block bg-float pb-1.5 shadow-float`}
+          className={`absolute top-full right-0 ${LAYER.menu} mt-1.5 flex w-95 flex-col rounded-block bg-float pb-1.5 shadow-float`}
         >
           <label className="flex h-11 items-center gap-2.5 border-b border-line px-3 text-muted">
             <NewIcon size={16} aria-hidden="true" />
@@ -88,9 +94,10 @@ export function NewMenu({ className = '' }: { className?: string }) {
                 setTyped(e.target.value)
                 setAt(0)
               }}
-              placeholder="New"
+              placeholder={`New in ${projectName}`}
               aria-label="What to make"
-              className="min-w-0 flex-1 bg-transparent text-ui text-ink placeholder:text-muted focus-visible:outline-none"
+              data-bare
+              className="min-w-0 flex-1 bg-transparent text-ui text-ink placeholder:text-muted"
             />
           </label>
           {!typed && shown.length > 0 && (

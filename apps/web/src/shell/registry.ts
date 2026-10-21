@@ -27,6 +27,7 @@ import type { KeyTable } from '../platform/keyboard/keyTable'
 import { useTimeZone } from './auth/useMe'
 import { said } from './calendar/said'
 import { linkKeys } from './links/api'
+import { CommunicationFact, OrganisationFact } from './links/ShellFacts'
 import { projectKeys } from './projects/api'
 import { ProjectsCount, ProjectsStatus } from './projects/ProjectKind'
 import { anywhereKeys, type AnywhereAction } from './shortcuts/keys'
@@ -34,25 +35,25 @@ import { anywhereKeys, type AnywhereAction } from './shortcuts/keys'
 export const WORKBENCH_PATH = '/'
 
 const SHELL_CHORDS: Chord[] = [
-  { id: 'workbench', key: 'w', label: 'Go to Workbench', resolve: () => WORKBENCH_PATH, order: 5 },
-  { id: 'calendar', key: 'c', label: 'Go to Calendar', resolve: () => '/calendar', order: 15 },
-  { id: 'projects', key: 'p', label: 'Go to Projects', resolve: () => '/projects', order: 25 },
+  { id: 'workbench', key: 'w', label: 'Workbench', resolve: () => WORKBENCH_PATH, order: 5 },
+  { id: 'calendar', key: 'c', label: 'Calendar', resolve: () => '/calendar', order: 15 },
+  { id: 'projects', key: 'p', label: 'Projects', resolve: () => '/projects', order: 25 },
   // Their modules come in phase 3; the bar and the keys already lead to their places.
   {
     id: 'organisations',
     key: 'o',
-    label: 'Go to Organisations',
+    label: 'Organisations',
     resolve: () => '/organisations',
     order: 35,
   },
   {
     id: 'communication',
     key: 'x',
-    label: 'Go to Communication',
+    label: 'Communication',
     resolve: () => '/communication',
     order: 45,
   },
-  { id: 'notes', key: 'n', label: 'Go to Notes', resolve: () => '/notes', order: 55 },
+  { id: 'notes', key: 'n', label: 'Notes', resolve: () => '/notes', order: 55 },
 ]
 
 const SHELL_PAGES: ModulePage[] = [
@@ -76,12 +77,14 @@ const SHELL_RELATIONS: RelationContribution[] = [
     kind: 'Organisation',
     plural: 'Organisations',
     to: (id) => `/organisations/${id}`,
+    Fact: OrganisationFact,
   },
   {
     type: 'communication',
-    kind: 'Message',
-    plural: 'Messages',
+    kind: 'Communication',
+    plural: 'Communication',
     to: (id) => `/communication/${id}`,
+    Fact: CommunicationFact,
   },
   { type: 'note', kind: 'Note', plural: 'Notes', to: (id) => `/notes/${id}` },
 ]
@@ -89,7 +92,7 @@ const SHELL_RELATIONS: RelationContribution[] = [
 /** The kinds whose modules come in phase 3: `N` and the menu already lead to their places. */
 const SHELL_CREATES: Creator[] = [
   { kind: 'organisation', key: 'o', label: 'Organisation', to: '/organisations' },
-  { kind: 'communication', key: 'x', label: 'Message', to: '/communication' },
+  { kind: 'communication', key: 'x', label: 'Communication', to: '/communication' },
   { kind: 'note', key: 'n', label: 'Note', to: '/notes' },
 ]
 

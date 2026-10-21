@@ -7,6 +7,33 @@ import { UnsavedAsk } from './UnsavedAsk'
 import type { UnsavedGuard } from './unsavedGuard'
 
 /**
+ * The control last pressed with a pointer. Safari on macOS does not focus a button that is
+ * clicked, so a layer opened by a click would find <body> focused and have nothing to give focus
+ * back to (BUG-026); the press itself says where it came from.
+ */
+let pressed: { el: Element; at: number } | null = null
+if (typeof document !== 'undefined')
+  document.addEventListener(
+    'pointerdown',
+    (e) => {
+      const el =
+        e.target instanceof Element ? e.target.closest('button, a[href], [role="button"]') : null
+      pressed = el ? { el, at: performance.now() } : null
+    },
+    true,
+  )
+
+/** What opened a layer: the focused control, or the one just pressed when focus stayed on <body>. */
+function openerNow(): Element | null {
+  const active = document.activeElement
+  if (active && active !== document.body) return active
+  return pressed && performance.now() - pressed.at < 1000 ? pressed.el : active
+}
+
+const TABBABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+
+/**
  * A modal layer on Radix's Dialog: focus trap, Escape and press-outside are Radix's, the look is
  * ours. The detail pane is not one of these: it has to coexist with the list it opened from.
  */
@@ -19,6 +46,7 @@ export function Modal({
   palette = false,
   wide = false,
   narrow = false,
+  picker = false,
   children,
 }: {
   title: string
@@ -38,12 +66,14 @@ export function Modal({
   wide?: boolean
   /** One question and two buttons (a delete's). */
   narrow?: boolean
+  /** A palette at a picker's 380 (Link, artboard 9): no title row, one column of rows. */
+  picker?: boolean
   children: ReactNode
 }) {
   // These layers have no trigger element (`?` and `n` are keys), so the opener is captured during
   // render, before Radix moves focus into the panel, and focus goes back to it on close.
   const opener = useRef<Element | null>(null)
-  if (opener.current === null) opener.current = document.activeElement
+  if (opener.current === null) opener.current = openerNow()
 
   // The document-level single keys (`/`, `f`, `?`, the `g` chords) stand down under a layer.
   useEffect(() => {
@@ -73,6 +103,28 @@ export function Modal({
         >
           <Dialog.Content
             aria-describedby={undefined}
+            // Firefox does not bring a focused control in a tall layer into view (BUG-027).
+            onFocus={(e) => {
+              if (e.target instanceof HTMLElement) e.target.scrollIntoView({ block: 'nearest' })
+            }}
+            // Radix keeps plain Tab inside the layer; Safari's Option+Tab walks every control, and
+            // it must wrap at the ends too (BUG-026).
+            onKeyDown={(e) => {
+              if (e.key !== 'Tab' || !e.altKey || e.ctrlKey || e.metaKey) return
+              const all = [...e.currentTarget.querySelectorAll<HTMLElement>(TABBABLE)].filter(
+                (el) => el.offsetParent !== null,
+              )
+              const first = all[0]
+              const last = all.at(-1)
+              if (!first || !last) return
+              if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault()
+                first.focus()
+              } else if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault()
+                last.focus()
+              }
+            }}
             // Escape on the question is "Keep editing", as it is on a pane's.
             onEscapeKeyDown={(e) => {
               if (!guard.asking) return
@@ -104,9 +156,9 @@ export function Modal({
                 initialFocus.current?.focus()
               })
             }
-            className={`h-fit w-full rounded-block bg-float shadow-float ${wide ? 'max-w-[70rem]' : narrow ? 'max-w-lg' : palette ? 'max-w-[58rem]' : 'max-w-reading'}`}
+            className={`h-fit w-full rounded-block bg-float shadow-float ${wide ? 'max-w-[70rem]' : narrow ? 'max-w-lg' : picker ? 'max-w-[23.75rem]' : palette ? 'max-w-[58rem]' : 'max-w-reading'}`}
           >
-            {palette ? (
+            {palette || picker ? (
               <Dialog.Title className="sr-only">{title}</Dialog.Title>
             ) : (
               <div className="flex items-center justify-between border-b border-line px-5 py-3">

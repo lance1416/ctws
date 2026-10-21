@@ -67,7 +67,7 @@ export const whyOf = (item: Item): string | null => item.note ?? item.excerpt
 /** One thing at the far end of a relation, with its why at the end of the line. */
 function LinkedLine({ item }: { item: Item }) {
   const where = useRegistry().relationFor(item.type)
-  const detail = where.describe?.(item) ?? null
+  const Fact = where.Fact
   const why = whyOf(item)
   return (
     <Link
@@ -76,7 +76,11 @@ function LinkedLine({ item }: { item: Item }) {
       className="flex min-w-0 flex-1 items-baseline gap-2 rounded-control px-2 py-1.5 text-ui text-ink hover:bg-hover"
     >
       <span className="min-w-0 flex-[2] truncate">{item.title}</span>
-      {detail && <span className="min-w-0 shrink truncate text-meta text-muted">{detail}</span>}
+      {Fact && (
+        <span className="min-w-0 shrink truncate text-meta text-muted">
+          <Fact thing={item} />
+        </span>
+      )}
       {why && <span className="min-w-0 shrink truncate text-meta text-subtle">{why}</span>}
     </Link>
   )

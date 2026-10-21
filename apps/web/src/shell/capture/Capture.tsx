@@ -5,11 +5,20 @@ import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useDocumentKeys } from '../../platform/keyboard/keyTable'
 import { BUTTON, KEY, KEY_ON_INK, LINK } from '../../platform/ui/buttonStyles'
-import { ExpandIcon, KIND_ICON, NewIcon, PLACE_ICON } from '../../platform/ui/icons'
+import { useOnline } from '../../platform/http/online'
+import {
+  AlertIcon,
+  ExpandIcon,
+  InboxIcon,
+  KIND_ICON,
+  LinkIcon,
+  NewIcon,
+  PLACE_ICON,
+} from '../../platform/ui/icons'
 import { LAYER } from '../../platform/ui/layers'
 import { MENU_ITEM, MENU_SURFACE } from '../../platform/ui/menuSurface'
 import type { CaptureTarget } from '../contract'
-import { KIND_TEXT, KIND_TINT } from '../../platform/ui/kinds'
+import { KIND_TEXT } from '../../platform/ui/kinds'
 import { useProjects } from '../projects/api'
 import { ProjectSquare } from '../projects/ProjectSquare'
 import { useRegistry } from '../registry'
@@ -32,6 +41,9 @@ export function Capture() {
   const [projectId, setProjectId] = useState<ProjectId | null>(null)
   const [date, setDate] = useState<string | null>(null)
   const [picking, setPicking] = useState(false)
+  // A day the field could not read, said in the box's status line so the row does not grow.
+  const [refusal, setRefusal] = useState<string | null>(null)
+  const online = useOnline()
   // Where the last line landed, and the page it was said on: another page has moved on.
   const [said, setLanded] = useState<{ name: string; to: string; on: string } | null>(null)
   const { pathname } = useLocation()
@@ -86,7 +98,8 @@ export function Capture() {
       box.current?.focus()
     },
   })
-  const canAdd = line.length > 0 && target !== null && !add.isPending
+  // Offline, nothing can be saved, so Add waits with the line kept (FR-033).
+  const canAdd = line.length > 0 && target !== null && !add.isPending && online
 
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Escape') {
@@ -101,6 +114,8 @@ export function Capture() {
   }
 
   const KindIcon = KIND_ICON[kind]
+  // A link guessed into reading says so with the link's own icon (artboard 27).
+  const WhyIcon = kind === 'reading' && !switched ? LinkIcon : KindIcon
   const why =
     kind === 'reading'
       ? switched
@@ -171,7 +186,7 @@ export function Capture() {
             </Segment>
           </div>
           <p className="mx-3 mt-1.5 flex items-center gap-1.5 text-meta text-subtle">
-            <KindIcon size={12} aria-hidden="true" />
+            <WhyIcon size={12} aria-hidden="true" />
             {why}
           </p>
           <div className="mt-2.5 flex items-center gap-2 border-t border-line px-3 py-2.5">
@@ -179,17 +194,28 @@ export function Capture() {
             <DropdownMenu.Root>
               <DropdownMenu.Trigger
                 aria-label="Lands in"
-                className={`inline-flex h-6 items-center gap-1.5 rounded-control px-2 text-meta font-medium ${KIND_TINT[landing ? 'project' : kind]} ${KIND_TEXT[landing ? 'project' : kind]}`}
+                // A task lands in a project, grey; only reading's shelf wears its kind (artboard 27).
+                className={`inline-flex h-6 max-w-36 min-w-0 shrink items-center gap-1.5 rounded-control px-2 text-meta font-medium ${
+                  kind === 'reading' && !landing
+                    ? 'bg-reading-bg text-reading-t'
+                    : 'bg-project-bg text-project-t'
+                }`}
               >
                 {landing ? (
                   <>
                     <ProjectSquare project={landing} className="-ml-0.5 size-4 text-[9px]" />
-                    {landing.name}
+                    <span className="truncate">{landing.name}</span>
                   </>
                 ) : (
                   <>
-                    <KindIcon size={12} aria-hidden="true" />
-                    {target?.name ?? (kind === 'task' ? 'Inbox' : 'To read')}
+                    {kind === 'task' ? (
+                      <InboxIcon size={12} aria-hidden="true" className="shrink-0" />
+                    ) : (
+                      <KindIcon size={12} aria-hidden="true" className="shrink-0" />
+                    )}
+                    <span className="truncate">
+                      {target?.name ?? (kind === 'task' ? 'Inbox' : 'To read')}
+                    </span>
                   </>
                 )}
                 <ExpandIcon size={12} aria-hidden="true" />
@@ -197,7 +223,11 @@ export function Capture() {
               <DropdownMenu.Portal>
                 <DropdownMenu.Content align="start" sideOffset={6} className={MENU_SURFACE}>
                   <DropdownMenu.Item onSelect={() => setProjectId(null)} className={MENU_ITEM}>
-                    <KindIcon size={14} aria-hidden="true" className={KIND_TEXT[kind]} />
+                    {kind === 'task' ? (
+                      <InboxIcon size={14} aria-hidden="true" className="text-project" />
+                    ) : (
+                      <KindIcon size={14} aria-hidden="true" className={KIND_TEXT[kind]} />
+                    )}
                     {kind === 'task' ? (inbox?.name ?? 'Inbox') : 'To read'}
                   </DropdownMenu.Item>
                   {projects.data
@@ -224,7 +254,8 @@ export function Capture() {
                   if (next === null) setPicking(false)
                 }}
                 today={today}
-                className="w-40"
+                onRefusal={setRefusal}
+                className="w-32 shrink-0"
               />
             ) : (
               <button
@@ -241,14 +272,25 @@ export function Capture() {
               type="button"
               onClick={() => add.mutate(line)}
               disabled={!canAdd}
-              className={`${BUTTON.primary} h-7.5`}
+              className={`${BUTTON.primary} h-7.5 shrink-0`}
             >
               Add
               <kbd className={KEY_ON_INK}>Enter</kbd>
             </button>
           </div>
-          {(trouble || landed || add.isError) && (
-            <div className="border-t border-line px-3 py-2 text-meta">
+          {(trouble || landed || add.isError || refusal || !online) && (
+            <div className="flex flex-col gap-1 border-t border-line px-3 py-2 text-meta">
+              {refusal && (
+                <p role="alert" className="flex items-start gap-1 text-stop-t">
+                  <AlertIcon size={12} aria-hidden="true" className="mt-0.5 shrink-0" />
+                  {refusal}
+                </p>
+              )}
+              {!online && (
+                <p role="status" className="text-muted">
+                  You’re offline. This stays here until you can save.
+                </p>
+              )}
               {fallback?.missing && (
                 <p role="alert" className="text-stop-t">
                   {fallback.missing}
@@ -261,8 +303,16 @@ export function Capture() {
                 </p>
               )}
               {add.isError && (
-                <p role="alert" className="text-stop-t">
-                  Couldn't save. Press Enter to try again.
+                <p role="alert" className="flex items-center gap-2 text-stop-t">
+                  Couldn’t save. What you typed is still here.
+                  <button
+                    type="button"
+                    onClick={() => add.mutate(line)}
+                    disabled={!canAdd}
+                    className={LINK}
+                  >
+                    Try again
+                  </button>
                 </p>
               )}
               {landed && !add.isError && (

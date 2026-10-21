@@ -10,10 +10,10 @@ const hits = [
 ]
 
 describe('the search view (FR-024)', () => {
-  it('lists the kinds that have hits, in the fixed order, with their counts', () => {
+  it('lists the kinds that have hits, people first, in the fixed order (DES-001)', () => {
     expect(kindsWithHits(hits)).toEqual([
-      { type: 'task', n: 7 },
       { type: 'person', n: 1 },
+      { type: 'task', n: 7 },
       { type: 'meeting', n: 2 },
     ])
   })
@@ -21,8 +21,8 @@ describe('the search view (FR-024)', () => {
   it('shows at most five of a kind under All, and every one under the kind', () => {
     const all = grouped(hits, 'all')
     expect(all.map((g) => [g.type, g.rows.length, g.more])).toEqual([
-      ['task', 5, 2],
       ['person', 1, 0],
+      ['task', 5, 2],
       ['meeting', 2, 0],
     ])
     expect(grouped(hits, 'task').map((g) => [g.type, g.rows.length, g.more])).toEqual([
@@ -39,7 +39,16 @@ describe('the search view (FR-024)', () => {
   })
 
   it('offers the kinds a slash can scope to, narrowed by what follows it', () => {
-    expect(scopesMatching('')).toHaveLength(8)
+    expect(scopesMatching('')).toEqual([
+      'person',
+      'organisation',
+      'task',
+      'project',
+      'meeting',
+      'communication',
+      'reading',
+      'note',
+    ])
     expect(scopesMatching('mee')).toEqual(['meeting'])
     expect(scopesMatching('p')).toEqual(['person', 'project'])
     expect(scopesMatching('zz')).toEqual([])

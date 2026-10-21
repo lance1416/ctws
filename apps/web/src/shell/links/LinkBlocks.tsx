@@ -18,7 +18,7 @@ const SHOWN = 5
 export function LinkBlocks({ of, types }: Linked) {
   const registry = useRegistry()
   // Each block carries its own `+`, so the list's own "+ Link" is not drawn here.
-  const { links, groups, unlink, setAdding, add } = useLinked(of, types)
+  const { links, groups, unlink, setAdding, picker } = useLinked(of, types)
   const kinds = (types ?? registry.relations.map((r) => r.type)).filter((t) => t !== of.type)
   const byKind = new Map(groups.map((g) => [g.type, g.items]))
   const full = kinds.filter((k) => (byKind.get(k)?.length ?? 0) > 0)
@@ -59,7 +59,7 @@ export function LinkBlocks({ of, types }: Linked) {
         )
       })}
       {/* The picker, mounted by the hook while a `+` is pressed. */}
-      {add}
+      {picker}
     </div>
   )
 }
@@ -135,7 +135,7 @@ function KindBlock({
 /** One linked thing: its title, where it belongs, and the line of why at the end. */
 function LinkedRow({ item }: { item: Item }) {
   const where = useRegistry().relationFor(item.type)
-  const detail = where.describe?.(item) ?? null
+  const Fact = where.Fact
   const why = whyOf(item)
   return (
     <Link
@@ -147,7 +147,11 @@ function LinkedRow({ item }: { item: Item }) {
         <span className="truncate">{item.title}</span>
         {why && <span className="truncate text-meta text-subtle">{why}</span>}
       </span>
-      {detail && <span className="truncate text-meta text-muted">{detail}</span>}
+      {Fact && (
+        <span className="min-w-0 truncate text-meta text-muted">
+          <Fact thing={item} />
+        </span>
+      )}
     </Link>
   )
 }

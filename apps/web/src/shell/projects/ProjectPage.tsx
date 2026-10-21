@@ -2,6 +2,7 @@ import { idFrom, projectId } from '@ctws/contracts'
 import { Fragment } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { DangerZone } from '../../platform/ui/DangerZone'
+import { DeletedNotice } from '../detail/DeletedNotice'
 import { RowsPanel } from '../../platform/ui/Panel'
 import { ViewTabs } from '../../platform/ui/ViewTabs'
 import type { Crumbs } from '../layout/page'
@@ -47,6 +48,8 @@ export function ProjectPage() {
   )
 
   if (!id) return null
+  // An old address to a deleted project: the main area is what happened to it.
+  if (gone) return <DeletedNotice type="project" id={id} />
   // Linked lists the kinds no module already draws in a block of its own here.
   const blockModules = new Set(registry.projectBlocks.map((b) => b.moduleId))
   const linkedKinds = registry.relations

@@ -26,6 +26,11 @@ export function People() {
   useSubjectOf(open ? { type: 'person', id: open.id, title: open.name } : null)
   const [circle, setCircle] = useState<Circle | null>(null)
 
+  // An old address to someone deleted: the main area is what happened to them (artboard 23).
+  if (gone && openId) return <DeletedNotice type="person" id={openId} />
+  // Nobody yet: the badge, a line and New person, nothing else (FR-030, artboard 23).
+  if (people.isSuccess && people.data.length === 0) return <ModuleEmpty kind="person" />
+
   return (
     <>
       <PeopleHead />
@@ -34,7 +39,6 @@ export function People() {
         <NewPersonInput onCreated={(c: PersonResponse) => show(c.id)} />
       </div>
 
-      {gone && openId && <DeletedNotice type="person" id={openId} />}
       <QueryStatus query={people} />
       {/* One list, filtered by circle; nothing is hidden by default. */}
       {/* Less the pills' own `px-2.5`, so their words start on the hang. */}
@@ -60,7 +64,6 @@ export function People() {
         })}
       </div>
 
-      {people.isSuccess && people.data.length === 0 && <ModuleEmpty kind="person" />}
       {people.isSuccess && people.data.length > 0 && (
         // Narrower than the task lists, so a person's city stays near their name.
         <div className="mt-3 max-w-[48rem]">

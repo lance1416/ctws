@@ -3,6 +3,8 @@ import type { WorkspaceModule } from '../../shell/contract'
 import { peopleKeys } from './api'
 import { BirthdayCard } from './components/BirthdayCard'
 import { NextBirthdayLine, PeopleCount } from './components/PeopleKind'
+import { NewPerson } from './components/NewPerson'
+import { PersonFact, PersonMark } from './components/PersonFacts'
 import { useBirthdayEntries, usePeopleHits } from './hooks/contributions'
 import { PEOPLE_ID } from './logic/id'
 import { Birthdays } from './pages/Birthdays'
@@ -58,12 +60,12 @@ export const peopleModule: WorkspaceModule = {
       span: 4,
     },
   ],
-  creates: [{ kind: 'person', key: 'p', label: 'Person', to: `/${PEOPLE_ID}` }],
+  creates: [{ kind: 'person', key: 'p', label: 'Person', Dialog: NewPerson }],
   chords: [
     {
       id: 'people',
       key: 'e',
-      label: 'Go to People',
+      label: 'People',
       resolve: () => `/${PEOPLE_ID}`,
       order: 30,
       was: 'g n',
@@ -75,7 +77,8 @@ export const peopleModule: WorkspaceModule = {
       kind: 'Person',
       plural: 'People',
       to: (id) => `/${PEOPLE_ID}/${id}`,
-      describe: (t) => (t.type === 'person' ? t.org : null),
+      Mark: PersonMark,
+      Fact: PersonFact,
     },
   ],
   // A person names the projects they are on.

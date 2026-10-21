@@ -332,6 +332,18 @@ kbd {
   }
 }
 
+/* A FIELD THAT IS A BOX ROUND A BARE INPUT (a date field, the key filter): the ring goes round the
+   box, at its outer edge, and the input inside draws no second one (DES-001 section 4). An input
+   that is a panel's own head (search, the New menu) draws none: the panel is where focus is. */
+[data-field]:has(:is(input, textarea):focus-visible) {
+  outline: 2px solid var(--color-task);
+  outline-offset: 2px;
+}
+[data-field] :is(input, textarea):focus-visible,
+[data-bare]:focus-visible {
+  outline: none;
+}
+
 /* Containers focused only by script (the inspector, the page heading) are not controls; a ring
    around a whole panel is noise. Unlayered CSS beats Tailwind's layered focus:outline-none, so
    this has to live here. */

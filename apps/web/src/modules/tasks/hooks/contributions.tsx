@@ -1,10 +1,10 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import type { CaptureTargetState, SearchHit } from '../../../shell/contract'
 import { useRefresh } from '../../../shell/registry'
-import { inboxOf, ProjectSquare, useEveryProject, useProjects } from '../../../shell/projects'
+import { inboxOf, useProjects } from '../../../shell/projects'
 import { createTask, taskCalendarQuery, taskKeys, taskSearchQuery } from '../api'
-import { StatusMark } from '../components/StatusMark'
-import { revealHref, taskCrumb } from '../logic/crumb'
+import { TaskFact, TaskMark } from '../components/TaskFacts'
+import { revealHref } from '../logic/crumb'
 
 /** This module's dated things: a plan day and a deadline day, both decided by the server. */
 export function useTaskEntries(range: { from: string; to: string }) {
@@ -44,29 +44,26 @@ export function useTaskHits(query: string) {
     enabled: query.length > 0,
   })
   const rows = results.data ?? []
-  // The project's square beside where the task sits (artboard 9); live or archived.
-  const projects = useEveryProject()
-  const projectOf = (id: string) => projects.data?.find((p) => p.id === id)
-  const hits: SearchHit[] = rows.map((t) => ({
-    id: t.id,
-    type: 'task',
-    // `?reveal=` makes `TaskTree` unfold the ancestors and focus the row, which may be folded away.
-    to: revealHref(t.projectId, t.id),
-    title: t.title,
-    meta: (
-      <span className="inline-flex min-w-0 items-center gap-1.5">
-        {projectOf(t.projectId) && (
-          <span data-project-square={t.projectId} className="contents">
-            <ProjectSquare project={projectOf(t.projectId)!} />
-          </span>
-        )}
-        <span className="truncate">
-          {taskCrumb(t)}
-          {t.projectArchived && ', archived'}
-        </span>
-      </span>
-    ),
-    mark: <StatusMark status={t.status} />,
-  }))
+  const hits: SearchHit[] = rows.map((t) => {
+    // Drawn as the link picker draws a task, so the two lists cannot disagree (DES-001 section 4).
+    const thing = {
+      type: 'task' as const,
+      id: t.id,
+      title: t.title,
+      status: t.status,
+      projectId: t.projectId,
+      projectName: t.projectName,
+      parentTitle: t.parentTitle,
+    }
+    return {
+      id: t.id,
+      type: 'task',
+      // `?reveal=` makes `TaskTree` unfold the ancestors and focus the row, which may be folded away.
+      to: revealHref(t.projectId, t.id),
+      title: t.title,
+      meta: <TaskFact thing={thing} />,
+      mark: <TaskMark thing={thing} />,
+    }
+  })
   return { hits, isError: results.isError, isSuccess: results.isSuccess }
 }

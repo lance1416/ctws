@@ -13,7 +13,7 @@ import { TodayDate, TodayGlance } from './components/TodayGlance'
 import { useInboxCapture, useTaskEntries, useTaskHits } from './hooks/contributions'
 import { TASKS_ID, taskPage } from './logic/id'
 import { TASK_KEYS } from './logic/keys'
-import { describeTask } from './logic/listedTask'
+import { TaskFact, TaskMark } from './components/TaskFacts'
 import { openTasksOf } from './logic/openTasks'
 import { NewTask } from './components/NewTask'
 import { OpenTask } from './pages/OpenTask'
@@ -62,11 +62,11 @@ export const taskModule: WorkspaceModule = {
   creates: [{ kind: 'task', key: 't', label: 'Task', Dialog: NewTask }],
   search: { useHits: useTaskHits },
   chords: [
-    { id: 'today', key: 't', label: 'Go to Today', resolve: () => '/today', order: 10 },
+    { id: 'today', key: 't', label: 'Today', resolve: () => '/today', order: 10 },
     {
       id: 'review',
       key: 'v',
-      label: 'Go to Review',
+      label: 'Review',
       resolve: () => '/review',
       order: 20,
       was: 'g r',
@@ -108,7 +108,7 @@ export const taskModule: WorkspaceModule = {
   keys: TASK_KEYS,
   // No page of its own: a task's address opens its tree, where its parent and siblings are.
   relations: [
-    { type: 'task', kind: 'Task', plural: 'Tasks', to: taskPage, describe: describeTask },
+    { type: 'task', kind: 'Task', plural: 'Tasks', to: taskPage, Mark: TaskMark, Fact: TaskFact },
   ],
   // A task row names its project, and search says whether that project is archived.
   reads: [{ queryKey: taskKeys.all, of: ['task', 'project'] }],

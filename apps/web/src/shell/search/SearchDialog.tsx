@@ -1,23 +1,34 @@
 import type { LinkCandidate, ObjectType } from '@ctws/contracts'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { useContext, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDebouncedValue } from '../../platform/time/useDebouncedValue'
 import { useComposing } from '../../platform/keyboard/composition'
 import { keyLabel } from '../../platform/keyboard/keys'
 import { pressesWith, useKeyTable, type KeyTable } from '../../platform/keyboard/keyTable'
-import { BUTTON, KEY } from '../../platform/ui/buttonStyles'
-import { KIND_ICON, LinkIcon, PLACE_ICON } from '../../platform/ui/icons'
+import { KEY } from '../../platform/ui/buttonStyles'
+import { KIND_ICON, LinkIcon, NewIcon, PLACE_ICON } from '../../platform/ui/icons'
+import { SkeletonRows } from '../../platform/ui/Block'
 import { Modal } from '../../platform/ui/Modal'
 import { useMe } from '../auth/useMe'
+import { NewContext } from '../creates'
 import { useInspector } from '../layout/inspectorAddress'
 import { PLACES } from '../layout/places'
 import { KIND_TEXT, KIND_TINT } from '../../platform/ui/kinds'
+import type { SearchHit } from '../contract'
 import { useRegistry } from '../registry'
 import { federate, type ProviderResult } from './federate'
 import { candidatesQuery, type Endpoint } from '../links/api'
 import { recentList } from './recent'
-import { grouped, KIND_WORDS, kindsWithHits, nextTab, scopesMatching, type Tab } from './view'
+import {
+  grouped,
+  KIND_ORDER,
+  KIND_WORDS,
+  kindsWithHits,
+  nextTab,
+  scopesMatching,
+  type Tab,
+} from './view'
 
 /** A line the keyboard can land on: something to open, a place to go, or a kind to scope to. */
 type Row =
@@ -30,6 +41,8 @@ type Row =
       title: string
       meta: ReactNode
       mark: ReactNode
+      /** The fourth column: the kind's word, or a message's direction. */
+      word: string
     }
   | { kind: 'recent'; key: string; type: ObjectType; id: string; to: string; title: string }
   | { kind: 'place'; key: string; to: string; title: string; hint: string; icon: ReactNode }
@@ -43,7 +56,7 @@ export const SEARCH_KEYS: KeyTable<'next' | 'previous' | 'open' | 'beside' | 'ta
   title: 'In search',
   rows: [
     {
-      keys: '↓ / Ctrl+N',
+      keys: '↓ or Ctrl+N',
       does: 'Next result',
       presses: {
         ...pressesWith('ArrowDown', 'next', ANY),
@@ -51,23 +64,38 @@ export const SEARCH_KEYS: KeyTable<'next' | 'previous' | 'open' | 'beside' | 'ta
       },
     },
     {
-      keys: '↑ / Ctrl+P',
+      keys: '↑ or Ctrl+P',
       does: 'Previous result',
       presses: {
         ...pressesWith('ArrowUp', 'previous', ANY),
         ...pressesWith('p', 'previous', { held: ['Ctrl'], either: ['Meta', 'Alt'] }),
       },
     },
-    { keys: 'Enter', does: 'Open', presses: { Enter: 'open', 'Shift+Enter': 'open' } },
+    { keys: 'Tab', does: 'Next kind', presses: { Tab: 'tab', 'Shift+Tab': 'back' } },
+    { keys: '/', does: 'Scope to a kind', presses: {} },
     {
       keys: 'Ctrl+Enter',
       does: 'Open beside, in the inspector',
       presses: { 'Ctrl+Enter': 'beside', 'Meta+Enter': 'beside' },
     },
-    { keys: 'Tab', does: 'Next kind', presses: { Tab: 'tab', 'Shift+Tab': 'back' } },
-    { keys: '/', does: 'Scope to one kind', presses: {} },
+    { keys: 'Enter', does: 'Go to the result', presses: { Enter: 'open', 'Shift+Enter': 'open' } },
   ],
 }
+
+/** The places before anything is typed: the pages across kinds, then the kinds in search's order. */
+const PLACES_IN_ORDER = [
+  ...PLACES.filter((p) => p.kind === null),
+  ...KIND_ORDER.flatMap((k) => PLACES.filter((p) => p.kind === k)),
+]
+
+const placeRow = (p: (typeof PLACES)[number]): Row => ({
+  kind: 'place',
+  key: `place:${p.id}`,
+  to: p.to,
+  title: p.label,
+  hint: `G ${p.key.toUpperCase()}`,
+  icon: <p.icon size={16} aria-hidden="true" className={p.kind ? KIND_TEXT[p.kind] : ''} />,
+})
 
 /**
  * SEARCH EVERYTHING (FR-024, artboard 9): one box, Ctrl K. Results sit under tabs by kind; All
@@ -75,6 +103,9 @@ export const SEARCH_KEYS: KeyTable<'next' | 'previous' | 'open' | 'beside' | 'ta
  * lately, and every place with its key. Enter opens; Ctrl Enter opens in the inspector and keeps
  * the page. The combobox is written out rather than taken from a library so Escape reaches the
  * dialog and closes the whole thing.
+ *
+ * As LINK's picker (FR-027) it is the same box at 380 wide: the rows are drawn the same, and the
+ * line of why is asked at its foot once a row is chosen.
  */
 export type Pick = {
   /** The thing being linked from: the answer leaves it out. */
@@ -82,7 +113,11 @@ export type Pick = {
   title: string
   /** Offer this kind only, when the block it opened from holds one kind. */
   only?: ObjectType | undefined
-  onPick: (thing: LinkCandidate) => void
+  /** The chosen thing, with its line of why if one was written. */
+  onPick: (thing: LinkCandidate, why: string | null) => void
+  busy?: boolean
+  /** Why the last pick did not take, said at the foot. */
+  error?: string | null
 }
 
 export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pick }) {
@@ -94,21 +129,61 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
   const debounced = useDebouncedValue(query.trim())
   // The highlighted row, for the words it was chosen under: new words start again at the top.
   const [picked, setPicked] = useState({ at: 0, under: '' })
+  // As a picker: the row chosen, while its line of why is written.
+  const [chosen, setChosen] = useState<LinkCandidate | null>(null)
+  const [why, setWhy] = useState('')
   const navigate = useNavigate()
   const inspector = useInspector()
+  const openNew = useContext(NewContext)
   const box = useRef<HTMLInputElement>(null)
+  const whyBox = useRef<HTMLInputElement>(null)
   const base = useId()
   const listId = `${base}-results`
   const optionId = (i: number) => `${base}-option-${i}`
 
   // One hook per provider; the registry's list is fixed, so the hook order is too.
   const registry = useRegistry()
+  // A thing as a row: the kind's own mark and fact, the components its module's rows use too.
+  const thingHit = (c: LinkCandidate): SearchHit => {
+    const relation = registry.relationFor(c.type)
+    return {
+      id: c.id,
+      type: c.type,
+      title: c.title,
+      to: relation.to(c.id),
+      meta: relation.Fact ? <relation.Fact thing={c} /> : null,
+      mark: relation.Mark ? <relation.Mark thing={c} /> : null,
+    }
+  }
   const parts: ProviderResult[] = registry.search.map((p) => ({
     moduleId: p.moduleId,
     moduleLabel: p.moduleLabel,
     ...p.useHits(debounced),
   }))
-  const found = federate(parts)
+  // The kinds no module searches more closely come from the shell's search across every module
+  // (BUG-015): organisations, meetings, communication, notes, projects.
+  const searched = new Set(
+    registry.relations
+      .filter((r) => registry.search.some((p) => p.moduleId === r.moduleId))
+      .map((r) => r.type),
+  )
+  const others = KIND_ORDER.filter((k) => !searched.has(k))
+  const rest = useQuery({
+    ...candidatesQuery(null, debounced, others),
+    enabled: !pick && debounced.length > 0 && others.length > 0,
+    placeholderData: keepPreviousData,
+  })
+  const restRows = (rest.data ?? []).map((c) => thingHit(c))
+  const found = federate([
+    ...parts,
+    {
+      moduleId: 'shell',
+      moduleLabel: '',
+      hits: restRows,
+      isError: rest.isError,
+      isSuccess: others.length === 0 || (rest.isSuccess && !rest.isPlaceholderData),
+    },
+  ])
   // As a picker (FR-027) the server's candidates are the hits: every kind, the likely few first.
   const candidates = useQuery({
     ...candidatesQuery(pick?.of ?? { type: 'project', id: '' }, debounced),
@@ -118,10 +193,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
   const results = pick
     ? {
         rows: (candidates.data ?? []).map((c) => ({
-          ...c,
-          to: registry.relationFor(c.type).to(c.id),
-          meta: registry.relationFor(c.type).describe?.(c) ?? null,
-          mark: null,
+          ...thingHit(c),
           moduleId: '',
           moduleLabel: '',
         })),
@@ -129,7 +201,10 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
         isSuccess: candidates.isSuccess && !candidates.isPlaceholderData,
       }
     : found
-  // The one New that works from here before the kinds' own forms land: a task, into the inbox.
+  const hitsById = new Map(
+    (pick ? (candidates.data ?? []) : (rest.data ?? [])).map((c) => [c.id, c]),
+  )
+  // A task made from here goes to the inbox, as a captured line does.
   const capture = registry.captures.find((c) => c.moduleId === registry.captureModuleId)!
   const inbox = capture.capture.useTarget()
   // Read once when the dialog opens: the list must not reshuffle under the reader.
@@ -142,7 +217,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
   const hits = (debounced.length > 0 || pick ? results.rows : []).filter(
     (h) => (scope ?? 'all') === 'all' || h.type === scope,
   )
-  const view: Tab = scope ?? tab
+  const view: Tab = pick ? 'all' : (scope ?? tab)
   const tabs: Tab[] = ['all', ...kindsWithHits(hits).map((k) => k.type)]
   const groups = grouped(hits, view)
 
@@ -158,46 +233,35 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
             to: r.to,
             title: r.title,
           })),
-          ...PLACES.map((p) => ({
-            kind: 'place' as const,
-            key: `place:${p.id}`,
-            to: p.to,
-            title: p.label,
-            hint: `G ${p.key.toUpperCase()}`,
-            icon: (
-              <p.icon size={16} aria-hidden="true" className={p.kind ? KIND_TEXT[p.kind] : ''} />
-            ),
-          })),
+          ...PLACES_IN_ORDER.map(placeRow),
         ]
       : [
           // Places follow the typing at once; only module hits wait for the debounce.
           ...(scope === null && view === 'all' && !pick
-            ? PLACES.filter((p) => p.label.toLocaleLowerCase().includes(typed)).map((p) => ({
-                kind: 'place' as const,
-                key: `place:${p.id}`,
-                to: p.to,
-                title: p.label,
-                hint: `G ${p.key.toUpperCase()}`,
-                icon: (
-                  <p.icon
-                    size={16}
-                    aria-hidden="true"
-                    className={p.kind ? KIND_TEXT[p.kind] : ''}
-                  />
-                ),
-              }))
+            ? PLACES_IN_ORDER.filter((p) => p.label.toLocaleLowerCase().includes(typed)).map(
+                placeRow,
+              )
             : []),
           ...groups.flatMap((g) =>
-            g.rows.map((hit) => ({
-              kind: 'hit' as const,
-              key: `${hit.type}:${hit.id}`,
-              type: hit.type,
-              id: hit.id,
-              to: hit.to,
-              title: hit.title,
-              meta: hit.meta,
-              mark: hit.mark,
-            })),
+            g.rows.map((hit) => {
+              const thing = hitsById.get(hit.id)
+              return {
+                kind: 'hit' as const,
+                key: `${hit.type}:${hit.id}`,
+                type: hit.type,
+                id: hit.id,
+                to: hit.to,
+                title: hit.title,
+                meta: hit.meta,
+                mark: hit.mark,
+                word:
+                  thing?.type === 'communication'
+                    ? thing.direction === 'sent'
+                      ? 'Sent'
+                      : 'Received'
+                    : KIND_WORDS[hit.type].one,
+              }
+            }),
           ),
         ]
   // The debounced hits landing later keep it, or a row the keyboard already moved to would be lost
@@ -209,9 +273,28 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
     document.getElementById(optionId(at))?.scrollIntoView({ block: 'nearest' })
     // eslint-disable-next-line react-hooks/exhaustive-deps -- optionId is fixed by useId; only a move of the selection scrolls.
   }, [at])
+  useEffect(() => {
+    if (chosen) whyBox.current?.focus()
+  }, [chosen])
 
   const settled = typing === debounced
   const nothing = debounced.length > 0 && !scoping && results.isSuccess && hits.length === 0
+  // What a New from an empty result makes: the scoped kind, else a task (FR-024 "Empty").
+  const newKind: ObjectType = scope ?? 'task'
+  const creator = registry.creates.find((c) => c.kind === newKind)
+  const canNew = !pick && (newKind === 'task' ? inbox.target !== null : creator !== undefined)
+  const newLabel = `New ${KIND_WORDS[newKind].one.toLocaleLowerCase()}`
+  const makeNew = async () => {
+    if (newKind === 'task') {
+      if (!inbox.target) return
+      await inbox.target.submit(typing, { projectId: null, date: null })
+      onClose()
+      navigate(inbox.target.to)
+    } else if (creator) {
+      onClose()
+      openNew(creator)
+    }
+  }
   const scopeTo = (type: ObjectType) => {
     setScope(type)
     setTab('all')
@@ -223,27 +306,52 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
     if (row.kind === 'scope') return scopeTo(row.type)
     if (row.kind === 'hit' && typed && !settled) return
     if (pick) {
-      if (row.kind === 'hit') pick.onPick(hitsById.get(row.id)!)
+      if (row.kind === 'hit') {
+        setWhy('')
+        setChosen(hitsById.get(row.id)!)
+      }
       return
     }
     onClose()
     if (beside && row.kind !== 'place') inspector.show({ type: row.type, id: row.id })
     else navigate(row.to)
   }
-  const hitsById = new Map(pick ? (candidates.data ?? []).map((c) => [c.id, c]) : [])
-  const newTask = async () => {
-    if (!inbox.target) return
-    await inbox.target.submit(typing, { projectId: null, date: null })
-    onClose()
-    navigate(inbox.target.to)
-  }
+
+  // The foot says only the keys that do something now (DES-001 section 4).
+  const current = rows[at]
+  const legends: [string, string][] = []
+  if (current) {
+    legends.push([
+      'Enter',
+      current.kind === 'scope'
+        ? 'Scope to it'
+        : pick
+          ? 'Choose'
+          : current.kind === 'place'
+            ? 'Go'
+            : 'Open',
+    ])
+    if (!pick && (current.kind === 'hit' || current.kind === 'recent'))
+      legends.push([keyLabel('Ctrl Enter'), 'Open beside'])
+  } else if (nothing && canNew) legends.push(['Enter', newLabel])
+  if (!pick && scope === null && tabs.length > 2) legends.push(['Tab', 'Next kind'])
+  if (scope !== null && nothing && !pick?.only) legends.push(['Tab', 'Search every kind'])
+  if (scope === null && !scoping) legends.push(['/', 'Scope to a kind'])
 
   return (
     // `initialFocus`, not `autoFocus`: Radix moves focus itself on open, and would land on Close.
-    <Modal title={pick?.title ?? 'Search everything'} onClose={onClose} initialFocus={box} palette>
-      <div className="flex h-13 items-center gap-2.5 border-b border-line px-4">
+    <Modal
+      title={pick?.title ?? 'Search everything'}
+      onClose={onClose}
+      initialFocus={box}
+      palette={!pick}
+      picker={pick !== undefined}
+    >
+      <div
+        className={`flex items-center gap-2.5 border-b border-line px-4 ${pick ? 'h-11' : 'h-13'}`}
+      >
         {pick ? (
-          <LinkIcon size={20} aria-hidden="true" className="shrink-0 text-muted" />
+          <LinkIcon size={16} aria-hidden="true" className="shrink-0 text-muted" />
         ) : (
           <PLACE_ICON.search size={20} aria-hidden="true" className="shrink-0 text-muted" />
         )}
@@ -258,7 +366,10 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
         <input
           ref={box}
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value)
+            setChosen(null)
+          }}
           role="combobox"
           aria-expanded={rows.length > 0}
           aria-controls={listId}
@@ -267,7 +378,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
           {...composing.bind}
           onKeyDown={(e) => {
             // Backspace on an empty box takes the scope off.
-            if (e.key === 'Backspace' && query === '' && scope !== null) {
+            if (e.key === 'Backspace' && query === '' && scope !== null && !pick?.only) {
               e.preventDefault()
               setScope(null)
               return
@@ -279,18 +390,19 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
                 if (composing.composingNow(e)) return false
                 const row = rows[at]
                 if (row) open(row, false, true)
-                else if (nothing && typing && inbox.target) void newTask()
+                else if (nothing && typing && canNew) void makeNew()
               },
               beside: () => {
                 const row = rows[at]
-                if (row) open(row, true, true)
+                if (row && !pick) open(row, true, true)
               },
               tab: () => {
-                if (scope !== null || tabs.length < 2) return nothing ? setScope(null) : false
+                if (scope !== null || tabs.length < 2 || pick)
+                  return nothing && !pick?.only ? setScope(null) : false
                 setTab(nextTab(tabs, tab))
               },
               back: () => {
-                if (scope !== null || tabs.length < 2) return false
+                if (scope !== null || tabs.length < 2 || pick) return false
                 setTab(nextTab(tabs, tab, true))
               },
             })
@@ -303,12 +415,13 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
                 : 'Search everything'
           }
           aria-label="Search"
-          className="h-9 min-w-0 flex-1 bg-transparent text-prose text-ink placeholder:text-subtle focus-visible:outline-none"
+          data-bare
+          className={`h-9 min-w-0 flex-1 bg-transparent text-ink placeholder:text-subtle ${pick ? 'text-ui' : 'text-prose'}`}
         />
-        <kbd className={KEY}>Esc</kbd>
+        {!pick && <kbd className={KEY}>Esc</kbd>}
       </div>
 
-      {hits.length > 0 && scope === null && !scoping && (
+      {hits.length > 0 && scope === null && !scoping && !pick && (
         <div
           role="tablist"
           className="flex gap-0.5 overflow-hidden border-b border-line px-2.5 py-1.5"
@@ -342,30 +455,42 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
         </div>
       )}
 
+      {/* Grey rows while the first answer for these words is out (FR-031). */}
+      {debounced.length > 0 &&
+        !scoping &&
+        !results.isSuccess &&
+        !results.isError &&
+        hits.length === 0 && (
+          <div className="px-1 py-1.5" aria-hidden="true">
+            <SkeletonRows rows={3} />
+          </div>
+        )}
       {results.isError && (
         <p role="alert" className="px-4 py-3 text-ui text-stop-t">
           Search failed. Check that the server is running.
         </p>
       )}
       {nothing && (
-        <div className="flex flex-col items-start gap-3 px-4 py-4">
-          <p className="text-ui text-ink">
+        <div className="flex flex-col pb-1.5">
+          <p className="px-4 pt-3 pb-2 text-ui text-ink">
             No {view === 'all' ? 'results' : KIND_WORDS[view].many.toLocaleLowerCase()} match “
             {debounced}”.
           </p>
-          <div className="flex flex-wrap gap-2">
-            {scope !== null && (
-              <button type="button" onClick={() => setScope(null)} className={BUTTON.secondary}>
-                Search every kind
-                <kbd className={KEY}>Tab</kbd>
-              </button>
-            )}
-            {inbox.target && !pick && (
-              <button type="button" onClick={() => void newTask()} className={BUTTON.secondary}>
-                New task “{debounced}”<kbd className={KEY}>Enter</kbd>
-              </button>
-            )}
-          </div>
+          {/* The two next steps (FR-024 "Empty", artboard 23): a line each, the key at the end. */}
+          {scope !== null && !pick?.only && (
+            <NextStep
+              icon={<PLACE_ICON.search size={16} />}
+              keys="Tab"
+              onClick={() => setScope(null)}
+            >
+              Search every kind
+            </NextStep>
+          )}
+          {canNew && (
+            <NextStep icon={<NewIcon size={16} />} keys="Enter" onClick={() => void makeNew()}>
+              {newLabel} “{debounced}”
+            </NextStep>
+          )}
         </div>
       )}
 
@@ -383,12 +508,15 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
               key={row.key}
               row={row}
               id={optionId(run.start + j)}
-              selected={run.start + j === at}
+              selected={chosen ? row.kind === 'hit' && row.id === chosen.id : run.start + j === at}
+              compact={pick !== undefined}
               onChoose={() => open(row, false)}
-              onHover={() => setActive(run.start + j)}
+              onHover={() => {
+                if (!chosen) setActive(run.start + j)
+              }}
             />
           ))
-          const label = runLabel(run, view)
+          const label = runLabel(run, view, scope)
           if (!label) return options
           const heading = `${base}-${run.key}`
           return (
@@ -407,22 +535,81 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
         })}
       </ul>
 
-      <div className="flex h-10 items-center gap-4 border-t border-line px-4 text-meta text-subtle">
-        <Legend keys="Enter">{pick ? 'Choose' : 'Open'}</Legend>
-        {!pick && <Legend keys={keyLabel('Ctrl Enter')}>Open beside</Legend>}
-        <Legend keys="Tab">Next kind</Legend>
-        <Legend keys="/">Scope to a kind</Legend>
-      </div>
+      {pick && chosen ? (
+        <div className="flex flex-col border-t border-line">
+          <label className="flex h-11 items-center gap-2 px-3.5">
+            <input
+              ref={whyBox}
+              value={why}
+              onChange={(e) => setWhy(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !composing.composingNow(e) && !pick.busy) {
+                  e.preventDefault()
+                  pick.onPick(chosen, why.trim() || null)
+                }
+              }}
+              {...composing.bind}
+              aria-label="Why"
+              placeholder="Why, in a line (optional)"
+              data-bare
+              className="min-w-0 flex-1 bg-transparent text-ui text-ink placeholder:text-subtle"
+            />
+            <kbd className={KEY}>Enter</kbd>
+          </label>
+          {pick.error && (
+            <p role="alert" className="px-3.5 pb-2.5 text-ui text-stop-t">
+              {pick.error}
+            </p>
+          )}
+        </div>
+      ) : (
+        legends.length > 0 && (
+          <div className="flex h-10 items-center gap-4 border-t border-line px-4 text-meta text-subtle">
+            {legends.map(([k, does]) => (
+              <Legend key={`${k}:${does}`} keys={k}>
+                {does}
+              </Legend>
+            ))}
+          </div>
+        )
+      )}
     </Modal>
   )
 }
 
 function Legend({ keys, children }: { keys: string; children: ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1.5">
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
       <kbd className={KEY}>{keys}</kbd>
       {children}
     </span>
+  )
+}
+
+/** One of the empty result's next steps: an icon, what it does, and its key at the end. */
+function NextStep({
+  icon,
+  keys,
+  onClick,
+  children,
+}: {
+  icon: ReactNode
+  keys: string
+  onClick: () => void
+  children: ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="mx-1.5 grid h-9 grid-cols-[24px_minmax(0,1fr)_auto] items-center gap-x-2.5 rounded-control px-2.5 text-left text-ui text-ink hover:bg-hover"
+    >
+      <span aria-hidden="true" className="inline-grid place-items-center text-muted">
+        {icon}
+      </span>
+      <span className="truncate">{children}</span>
+      <kbd className={KEY}>{keys}</kbd>
+    </button>
   )
 }
 
@@ -430,6 +617,15 @@ function Legend({ keys, children }: { keys: string; children: ReactNode }) {
 function ScopeIcon({ type, size = 12 }: { type: ObjectType; size?: 12 | 14 }) {
   const Icon = KIND_ICON[type]
   return <Icon size={size} aria-hidden="true" className={KIND_TEXT[type]} />
+}
+
+/** A kind's icon on its tint, the mark of a row whose kind has none of its own (artboard 9). */
+function KindBadge({ type }: { type: ObjectType }) {
+  return (
+    <span className={`inline-grid size-6 place-items-center rounded-control ${KIND_TINT[type]}`}>
+      <ScopeIcon type={type} size={14} />
+    </span>
+  )
 }
 
 type Run = {
@@ -453,11 +649,11 @@ function runs(rows: Row[]): Run[] {
   return out
 }
 
-function runLabel(run: Run, view: Tab): string | null {
+function runLabel(run: Run, view: Tab, scope: ObjectType | null): string | null {
   if (run.group === 'recent') return 'Recent'
   if (run.group === 'place') return 'Go to'
   if (run.group === 'scope') return 'Only'
-  if (run.type && view === 'all') return KIND_WORDS[run.type].many
+  if (run.type && view === 'all' && scope === null) return KIND_WORDS[run.type].many
   return null
 }
 
@@ -465,12 +661,15 @@ function SearchRow({
   row,
   id,
   selected,
+  compact,
   onChoose,
   onHover,
 }: {
   row: Row
   id: string
   selected: boolean
+  /** The picker's 380: no word column, the fact at its own width. */
+  compact: boolean
   onChoose: () => void
   onHover: () => void
 }) {
@@ -487,11 +686,7 @@ function SearchRow({
         onMouseEnter={onHover}
         className={`${shared} grid-cols-[24px_minmax(0,1fr)]`}
       >
-        <span
-          className={`inline-grid size-6 place-items-center rounded-control ${KIND_TINT[row.type]}`}
-        >
-          <ScopeIcon type={row.type} size={14} />
-        </span>
+        <KindBadge type={row.type} />
         <span>{KIND_WORDS[row.type].many}</span>
       </li>
     )
@@ -520,9 +715,7 @@ function SearchRow({
         onMouseEnter={onHover}
         className={`${shared} grid-cols-[24px_minmax(0,1fr)_92px]`}
       >
-        <span className="inline-grid size-6 place-items-center">
-          <ScopeIcon type={row.type} size={14} />
-        </span>
+        <KindBadge type={row.type} />
         <span className="truncate">{row.title}</span>
         <span className="text-meta text-subtle">{KIND_WORDS[row.type].one}</span>
       </li>
@@ -535,14 +728,23 @@ function SearchRow({
       aria-selected={selected}
       onClick={onChoose}
       onMouseEnter={onHover}
-      className={`${shared} grid-cols-[24px_minmax(0,1fr)_180px_92px]`}
+      className={`${shared} ${
+        compact
+          ? 'grid-cols-[24px_minmax(0,1fr)_minmax(0,max-content)]'
+          : 'grid-cols-[24px_minmax(0,1fr)_180px_92px]'
+      }`}
     >
       <span className="inline-grid size-6 place-items-center">
-        {row.mark ?? <ScopeIcon type={row.type} size={14} />}
+        {row.mark ?? <KindBadge type={row.type} />}
       </span>
-      <span className="truncate">{row.title}</span>
-      <span className="truncate text-muted">{row.meta}</span>
-      <span className="text-meta text-subtle">{KIND_WORDS[row.type].one}</span>
+      <span className={`truncate ${selected && compact ? 'font-medium' : ''}`}>{row.title}</span>
+      <span className={`min-w-0 truncate text-muted ${compact ? 'max-w-40' : ''}`}>{row.meta}</span>
+      {/* The picker has no room for the word; its icon is aria-hidden, so the word is still said. */}
+      {compact ? (
+        <span className="sr-only">{row.word}</span>
+      ) : (
+        <span className="text-meta text-subtle">{row.word}</span>
+      )}
     </li>
   )
 }

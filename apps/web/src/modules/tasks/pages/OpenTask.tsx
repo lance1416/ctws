@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ApiError } from '../../../platform/http/api'
 import { HANG } from '../../../platform/ui/hang'
+import { DeletedNotice } from '../../../shell/detail'
 import { taskQuery } from '../api'
 
 /**
@@ -24,10 +25,11 @@ export function OpenTask() {
   if (isId && !found.isError) return null
   // Gone only on the server's 404; anything else is a failure to ask, and the task may still exist.
   const gone = !isId || (found.error instanceof ApiError && found.error.status === 404)
+  if (gone && isId) return <DeletedNotice type="task" id={id} />
   return (
     <p role="alert" className={`mt-4 ${HANG} text-ui text-muted`}>
       {gone
-        ? 'This task is not here any more.'
+        ? 'There is no such task.'
         : "Couldn't open this task. Check that the server is running."}
     </p>
   )

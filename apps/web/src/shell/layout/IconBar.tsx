@@ -7,8 +7,9 @@ import { KIND_TEXT } from '../../platform/ui/kinds'
 
 /**
  * THE ICON BAR (FR-019): 52 wide, a 36px cell per entry, icons only until the button at the foot
- * expands it to names and keys. Hovering shows the name and the key. The current module's cell is
- * selected; a kind's icon wears the kind's colour, a page's is grey.
+ * expands it to names and keys, 216 wide: room for "Communication" and its key. Hovering shows the
+ * name and the key. The current module's cell is selected; a kind's icon wears the kind's colour,
+ * a page's is grey. Expanding it leaves the sidebar where it is; `[` is what hides that.
  */
 export function IconBar({
   expanded,
@@ -22,7 +23,7 @@ export function IconBar({
     <nav
       aria-label="Modules"
       className={`flex shrink-0 flex-col gap-1 border-r border-line bg-chrome pt-2 pb-2 ${
-        expanded ? 'w-50' : 'w-icon-bar'
+        expanded ? 'w-54' : 'w-icon-bar'
       }`}
     >
       {PLACES.map((p, i) => (
@@ -57,7 +58,6 @@ export function IconBar({
       >
         <Foot size={16} aria-hidden="true" className="mx-0.5" />
         {expanded && <span className="flex-1 truncate text-left">Collapse</span>}
-        {expanded && <kbd className={KEY}>[</kbd>}
       </button>
     </nav>
   )

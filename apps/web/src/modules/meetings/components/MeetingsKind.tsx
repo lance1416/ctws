@@ -1,13 +1,7 @@
 import { clockTime } from '@ctws/core/clock'
 import { useNow } from '../../../platform/time/useNow'
 import { useTimeZone } from '../../../shell/auth'
-import { useTodayCount, useTodaysMeetings } from '../hooks/useTodaysMeetings'
-
-/** Things' count for meetings: today's, zero included. */
-export function MeetingsTodayCount() {
-  const count = useTodayCount()
-  return count && <span data-count>{count}</span>
-}
+import { useTodaysMeetings } from '../hooks/useTodaysMeetings'
 
 /** The next meeting today, if any is still to come. */
 export function NextMeetingLine() {

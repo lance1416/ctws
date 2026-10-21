@@ -2,6 +2,7 @@ import { api, type UserResponse } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { ApiError, call } from '../../platform/http/api'
 import { browserZone, ymd } from '../../platform/time/dates'
+import { setServerNow } from '../../platform/time/serverClock'
 import { useNow } from '../../platform/time/useNow'
 
 /** The signed-in user's key. No write but signing in or out changes what it reads. */
@@ -16,7 +17,11 @@ export function useMe() {
     queryKey: meKey,
     queryFn: async ({ signal }) => {
       try {
-        return await call(api.auth.me, {}, { signal })
+        const me = await call(api.auth.me, {}, { signal })
+        // A pinned server (acceptance, UAT) says what the present is; every date follows it.
+        // Otherwise the browser's own clock is the present.
+        if (me.clockPinned) setServerNow(me.now)
+        return me
       } catch (error) {
         if (error instanceof ApiError && error.status === 401) return null
         throw error

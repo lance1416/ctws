@@ -30,7 +30,7 @@ export function ProjectHead({ id }: { id: ProjectId }) {
           <Component key={moduleId} projectId={id} />
         ))}
       </div>
-      <NewMenu className="mt-1 shrink-0" />
+      <NewMenu projectName={project.name} className="mt-1 shrink-0" />
       {/* The inbox is where capture lands, and the server refuses to archive it. */}
       {!project.isInbox && <ArchiveToggle id={id} archived={project.archivedAt !== null} />}
     </div>

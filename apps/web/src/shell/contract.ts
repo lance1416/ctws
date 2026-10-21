@@ -96,8 +96,13 @@ export type RelationContribution = {
   /** Several of them: the heading where they are listed together. */
   plural: string
   to: (id: string) => string
-  /** The line under one's title where things are listed, from what its kind carries. */
-  describe?: (thing: LinkCandidate) => string | null
+  /**
+   * The row's first column where things of every kind are listed (DES-001 section 4): a status, an
+   * avatar. Without it the kind's icon on its tint stands there.
+   */
+  Mark?: ComponentType<{ thing: LinkCandidate }>
+  /** The one fact in the third column, from what the kind carries; nothing when there is none. */
+  Fact?: ComponentType<{ thing: LinkCandidate }>
 }
 
 /** A calendar entry with its times said on the account's clock, as every reader of one draws it. */
@@ -183,7 +188,7 @@ export type KindEntry = {
   /** Plural: "People", "Meetings". */
   label: string
   to: string
-  /** The count in the kind's own words ("5 to read"), zero included. */
+  /** How many there are, a bare number for the sidebar's head (FR-021), zero included. */
   Count?: ComponentType
   /** One line of what is current ("Next birthday: …"); renders nothing when there is nothing. */
   Status?: ComponentType

@@ -1,3 +1,4 @@
+import { LINK } from '../../../platform/ui/buttonStyles'
 import type { ProjectId } from '@ctws/contracts'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Fragment, useId, useRef, useState, type ReactNode } from 'react'
@@ -108,8 +109,15 @@ export function ProjectTasks({ projectId, view }: { projectId: ProjectId; view: 
       </div>
       {/* The typed title stays in the box after a failure. */}
       {create.isError && (
-        <p id={failureId} role="alert" className={`mt-1 text-ui text-stop-t ${BODY_START}`}>
-          Couldn't create. Press Enter to try again.
+        <p
+          id={failureId}
+          role="alert"
+          className={`mt-1 flex items-center gap-2 text-ui text-stop-t ${BODY_START}`}
+        >
+          Couldn’t save. What you typed is still here.
+          <button type="button" onClick={() => create.mutate(title.value.trim())} className={LINK}>
+            Try again
+          </button>
         </p>
       )}
       {/* The board is a view of this block, so the box above stays either way. */}

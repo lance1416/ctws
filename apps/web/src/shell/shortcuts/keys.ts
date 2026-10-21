@@ -23,8 +23,9 @@ export function anywhereKeys(
       },
       { keys: 'C', does: 'Capture', presses: { c: 'capture' }, was: '/' },
       { keys: 'L', does: 'Link this to something', presses: { l: 'link' } },
-      { keys: '?', does: 'This list of keys', presses: { '?': 'help' } },
-      { keys: '[', does: 'Hide or show the sidebar', presses: { '[': 'sidebar' } },
+      { keys: '?', does: 'This list', presses: { '?': 'help' } },
+      { keys: '[', does: 'Hide or show the side panel', presses: { '[': 'sidebar' } },
+      { keys: 'Esc', does: 'Close the inspector or the overlay', presses: {} },
       ...chords.map((c) => ({
         keys: `${JUMP_PREFIX.toUpperCase()} ${c.key.toUpperCase()}`,
         does: c.label,
@@ -33,11 +34,11 @@ export function anywhereKeys(
       })),
       ...creates.map((c) => ({
         keys: `${NEW_PREFIX.toUpperCase()} ${c.key.toUpperCase()}`,
-        does: `New ${c.label.toLocaleLowerCase()}`,
+        // The kind's name: the group already says New. A message is logged, not made.
+        does: c.kind === 'communication' ? 'Log a message' : c.label,
         presses: { [NEW_PREFIX]: 'new' as const },
         ...(c.kind === 'task' ? { was: 'n' } : {}),
       })),
-      { keys: 'Esc', does: 'Close the inspector or an overlay', presses: {} },
     ],
   }
 }

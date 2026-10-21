@@ -1,11 +1,16 @@
-import type { LinkCandidate } from '@ctws/contracts'
-import { clockTime, zoneAbbreviation } from '@ctws/core/clock'
-import { monthDay, ymd } from '../../../platform/time/dates'
+import { clockTime } from '@ctws/core/clock'
+import { monthDay, weekdayOf, ymd } from '../../../platform/time/dates'
 
-/** "Oct 20, 21:00 · EDT": a series' own start on its own wall clock, where things are listed. */
-export function describeMeeting(t: LinkCandidate): string | null {
-  if (t.type !== 'meeting') return null
-  const at = new Date(t.startsAt)
-  const zone = t.timeZone
-  return `${monthDay(ymd(at, zone))}, ${clockTime(at, zone)} · ${zoneAbbreviation(at, zone)}`
+const WEEK_MS = 7 * 86_400_000
+
+/**
+ * When a meeting starts, where things of every kind are listed (DES-001 section 4): within a week
+ * of now the weekday and time ("Thu 14:00"), further off the day ("Sep 30"). On the reader's clock.
+ */
+export function meetingWhen(startsAt: string, timeZone: string, now: Date): string {
+  const at = new Date(startsAt)
+  const day = ymd(at, timeZone)
+  return Math.abs(at.getTime() - now.getTime()) < WEEK_MS
+    ? `${weekdayOf(day, true)} ${clockTime(at, timeZone)}`
+    : monthDay(day)
 }

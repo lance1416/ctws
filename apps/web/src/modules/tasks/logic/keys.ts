@@ -5,8 +5,8 @@ import { toggleDoneTarget, toggleStartTarget } from './status'
 /** The two status keys, alike wherever a task row has focus. */
 type StatusAction = 'start' | 'complete'
 const STATUS_ROWS = [
-  { keys: 's', does: 'Start / pause', presses: { s: 'start' } },
-  { keys: 'x', does: 'Complete / reopen', presses: { x: 'complete' } },
+  { keys: 'S', does: 'Start or pause', presses: { s: 'start' } },
+  { keys: 'X', does: 'Complete or reopen', presses: { x: 'complete' } },
 ] as const
 
 /** What the status keys do to a task with `status`: each says the status to set. */
@@ -15,9 +15,12 @@ export const statusActions = (status: TaskStatus, set: (next: TaskStatus) => voi
   complete: () => set(toggleDoneTarget(status)),
 })
 
+/** Where a task row's keys are listed (artboard 24): Today's rows answer to the tree's keys. */
+const ROW_KEYS_TITLE = 'In a tree or list, with a row focused'
+
 /** Plain Enter on a row is the button's own click, which opens the details. */
 export const TODAY_KEYS: KeyTable<StatusAction> = {
-  title: 'On Today (with a row focused)',
+  title: ROW_KEYS_TITLE,
   rows: [...STATUS_ROWS, { keys: 'Enter', does: 'Open the details', presses: {} }],
 }
 
@@ -45,20 +48,19 @@ const ALT_ANY = { held: ['Alt'], either: ['Ctrl', 'Meta', 'Shift'] } as const
  * its depth. Tab is unbound, so one Tab leaves the tree.
  */
 export const TREE_KEYS: KeyTable<TreeAction> = {
-  title: 'In the task tree (with a row focused)',
+  title: ROW_KEYS_TITLE,
   rows: [
     {
-      keys: '↑ ↓ / j k',
+      keys: '↑ ↓ or J K',
       does: 'Move between rows',
       presses: { ArrowDown: 'next', ArrowUp: 'previous', j: 'next', k: 'previous' },
     },
     {
       keys: '← →',
-      does: 'Collapse / expand (once collapsed, ← goes to the parent; once expanded, → goes to the first child)',
+      does: 'Fold, or go to the parent',
       presses: { ArrowLeft: 'collapse', ArrowRight: 'expand' },
     },
-    { keys: 'Home End', does: 'First row / last row', presses: { Home: 'first', End: 'last' } },
-    { keys: 'Tab', does: 'Leave the tree (the whole tree is one tab stop)', presses: {} },
+    { keys: 'Home End', does: 'First or last row', presses: { Home: 'first', End: 'last' } },
     // Enter opens the detail (the keyboard way in), so a sibling is Shift+Enter. Ctrl and Meta
     // change none of the three.
     {
@@ -78,7 +80,7 @@ export const TREE_KEYS: KeyTable<TreeAction> = {
     },
     {
       keys: 'Alt+↑ Alt+↓',
-      does: 'Move this row up / down',
+      does: 'Move the row',
       presses: {
         ...pressesWith('ArrowUp', 'moveUp', ALT_ANY),
         ...pressesWith('ArrowDown', 'moveDown', ALT_ANY),
@@ -86,7 +88,7 @@ export const TREE_KEYS: KeyTable<TreeAction> = {
     },
     {
       keys: 'Alt+← Alt+→',
-      does: 'Outdent / indent',
+      does: 'Outdent or indent',
       presses: {
         ...pressesWith('ArrowLeft', 'outdent', ALT_ANY),
         ...pressesWith('ArrowRight', 'indent', ALT_ANY),

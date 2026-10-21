@@ -1,3 +1,7 @@
+import { useContext } from 'react'
+import { ICON_BUTTON } from '../../platform/ui/buttonStyles'
+import { NewIcon } from '../../platform/ui/icons'
+import { NewContext } from '../creates'
 import { useRegistry } from '../registry'
 import { ProjectsSidebar } from '../projects/ProjectsSidebar'
 import type { Place } from './places'
@@ -12,19 +16,41 @@ import type { Place } from './places'
  */
 export function Sidebar({ place }: { place: Place }) {
   const registry = useRegistry()
+  const openNew = useContext(NewContext)
   if (place.id === 'projects') return <ProjectsSidebar />
   const Count = registry.kinds.find((k) => k.label === place.label)?.Count
+  const creator = registry.creates.find((c) => c.kind === place.kind)
   return (
     <aside
       aria-label={place.label}
       className="flex w-sidebar shrink-0 flex-col border-r border-line bg-chrome"
     >
-      <SidebarHead label={place.label}>{Count && <Count />}</SidebarHead>
+      <SidebarHead
+        label={place.label}
+        action={
+          creator && (
+            <button
+              type="button"
+              onClick={() => openNew(creator)}
+              aria-label={`New ${creator.label.toLocaleLowerCase()}`}
+              title={`New ${creator.label.toLocaleLowerCase()}  N ${creator.key.toUpperCase()}`}
+              className={ICON_BUTTON}
+            >
+              <NewIcon size={16} aria-hidden="true" />
+            </button>
+          )
+        }
+      >
+        {Count && <Count />}
+      </SidebarHead>
     </aside>
   )
 }
 
-/** The head every sidebar shares: the name, the count beside it, then the module's own controls. */
+/**
+ * The head every sidebar shares (artboards 5, 8): the name, then how many there are, a bare
+ * number beside the module's New at the right end.
+ */
 export function SidebarHead({
   label,
   action,
@@ -33,13 +59,15 @@ export function SidebarHead({
   label: string
   /** The New button, at the end. */
   action?: React.ReactNode
-  /** The count, in the module's words. */
+  /** How many there are, as a number. */
   children?: React.ReactNode
 }) {
   return (
     <div className="flex h-11 shrink-0 items-center gap-2 pr-2 pl-3.5">
-      <h2 className="text-ui font-medium text-ink">{label}</h2>
-      <span className="flex-1 text-meta text-subtle tabular-nums">{children}</span>
+      <h2 className="flex-1 truncate text-ui font-medium text-ink">{label}</h2>
+      <span data-sidebar-count className="text-meta text-subtle tabular-nums">
+        {children}
+      </span>
       {action}
     </div>
   )

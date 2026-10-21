@@ -7,12 +7,7 @@ import { usePeople } from '../hooks/usePeople'
 export function PeopleCount() {
   const people = usePeople()
   if (!people.data) return null
-  const n = people.data.length
-  return (
-    <span data-count>
-      {n} {n === 1 ? 'person' : 'people'}
-    </span>
-  )
+  return <span data-count>{people.data.length}</span>
 }
 
 /** Whose birthday is next, if anyone's is recorded. */

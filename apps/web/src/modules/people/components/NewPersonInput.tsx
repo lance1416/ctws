@@ -2,6 +2,7 @@ import type { PersonResponse } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { createPerson, peopleKeys } from '../api'
 import { useLineEntry } from '../../../platform/ui/useLineEntry'
+import { LINK } from '../../../platform/ui/buttonStyles'
 import { textbox } from '../../../platform/ui/formStyles'
 
 /** Type a name and press Enter; the rest is filled in on the pane that opens. */
@@ -24,8 +25,11 @@ export function NewPersonInput({ onCreated }: { onCreated: (person: PersonRespon
         className={`w-full bg-panel ${textbox}`}
       />
       {create.isError && (
-        <p role="alert" className="mt-1 text-ui text-stop-t">
-          Couldn't create. Press Enter to try again.
+        <p role="alert" className="mt-1 flex items-center gap-2 text-ui text-stop-t">
+          Couldn’t save. What you typed is still here.
+          <button type="button" onClick={() => create.mutate(name.value.trim())} className={LINK}>
+            Try again
+          </button>
         </p>
       )}
     </div>

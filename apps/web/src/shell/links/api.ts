@@ -8,7 +8,8 @@ export type Endpoint = { type: ObjectType; id: string }
 export const linkKeys = {
   all: ['links'] as const,
   of: (of: Endpoint, types: Kinds) => ['links', of.type, of.id, types?.join(',') ?? 'all'] as const,
-  candidates: (of: Endpoint, q: string) => ['links', 'candidates', of.type, of.id, q] as const,
+  candidates: (of: Endpoint | null, q: string, kinds = '') =>
+    ['links', 'candidates', of?.type ?? '', of?.id ?? '', q, kinds] as const,
 }
 
 /** The kinds of thing at the far end to list; every kind when undefined. */
@@ -31,14 +32,25 @@ export function deleteLink(id: RelationId): Promise<void> {
 }
 
 /** Things this one could be joined to, for the picker. An empty `q` means the likely few. */
-export const candidatesQuery = (of: Endpoint, q: string) =>
+/**
+ * Things by name: what `of` could be related to, or, with no `of`, search's answer for `kinds`
+ * (the kinds no module searches more closely).
+ */
+export const candidatesQuery = (of: Endpoint | null, q: string, kinds?: readonly ObjectType[]) =>
   queryOptions({
-    queryKey: linkKeys.candidates(of, q),
+    queryKey: linkKeys.candidates(of, q, kinds?.join(',')),
     queryFn: async ({ signal }) =>
       (
         await call(
           api.links.candidates,
-          { query: { view: 'candidates', ...of, ...(q ? { q } : {}) } },
+          {
+            query: {
+              view: 'candidates',
+              ...(of ?? {}),
+              ...(q ? { q } : {}),
+              ...(kinds ? { kinds: kinds.join(',') } : {}),
+            },
+          },
           { signal },
         )
       ).candidates,

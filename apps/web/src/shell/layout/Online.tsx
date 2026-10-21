@@ -55,7 +55,8 @@ export function BackOnline() {
   return (
     <div
       role="status"
-      className={`fixed bottom-5 left-5 ${LAYER.cover} flex items-center gap-2.5 rounded-block bg-float px-3.5 py-2.5 text-ui shadow-float max-lg:bottom-20`}
+      // At the foot of the main area, clear of the icon bar's own button (artboard 23).
+      className={`absolute bottom-5 left-5 ${LAYER.cover} flex items-center gap-2.5 rounded-block bg-float px-3.5 py-2.5 text-ui shadow-float max-lg:bottom-20`}
     >
       <OnlineIcon size={16} aria-hidden="true" className="text-go" />
       <span className="font-medium text-ink">Back online</span>

@@ -8,6 +8,7 @@ import {
   readingKeys,
   readingSearchQuery,
 } from '../api'
+import { ReadingFact } from '../components/ReadingFact'
 import { READING_ID } from '../logic/id'
 import { readingLabel } from '../logic/item'
 
@@ -40,8 +41,11 @@ export function useReadingHits(query: string) {
     // Its pane, not its url: a search result should not take the person out of the app.
     to: `/${READING_ID}/${item.id}`,
     title: readingLabel(item),
-    // One fact in the column (FR-010): its project, else what it is.
-    meta: item.projectName ?? (item.kind === 'book' ? 'Book' : 'Link'),
+    meta: (
+      <ReadingFact
+        thing={{ type: 'reading', id: item.id, title: readingLabel(item), author: item.author }}
+      />
+    ),
     mark: null,
   }))
   return { hits, isError: results.isError, isSuccess: results.isSuccess }

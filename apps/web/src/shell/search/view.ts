@@ -1,10 +1,25 @@
-import { OBJECT_TYPES, type ObjectType } from '@ctws/contracts'
+import type { ObjectType } from '@ctws/contracts'
 
 /** What a search view needs to know of a hit: which kind it is. */
 export type Typed = { type: ObjectType }
 
 /** The tab open in the results: every kind, or one of them. */
 export type Tab = 'all' | ObjectType
+
+/**
+ * The kinds in search's one order (DES-001 section 4): the tabs, All's groups, the `/` list and
+ * the places before anything is typed all follow it.
+ */
+export const KIND_ORDER: readonly ObjectType[] = [
+  'person',
+  'organisation',
+  'task',
+  'project',
+  'meeting',
+  'communication',
+  'reading',
+  'note',
+]
 
 /** In the All tab a kind shows this many, the rest behind its own tab (FR-024). */
 const PER_KIND = 5
@@ -13,7 +28,7 @@ const PER_KIND = 5
 export function kindsWithHits<H extends Typed>(
   hits: readonly H[],
 ): { type: ObjectType; n: number }[] {
-  return OBJECT_TYPES.flatMap((type) => {
+  return KIND_ORDER.flatMap((type) => {
     const n = hits.filter((h) => h.type === type).length
     return n > 0 ? [{ type, n }] : []
   })
@@ -48,14 +63,14 @@ export const KIND_WORDS: Record<ObjectType, { one: string; many: string }> = {
   meeting: { one: 'Meeting', many: 'Meetings' },
   project: { one: 'Project', many: 'Projects' },
   organisation: { one: 'Organisation', many: 'Organisations' },
-  communication: { one: 'Message', many: 'Communication' },
+  communication: { one: 'Communication', many: 'Communication' },
   note: { one: 'Note', many: 'Notes' },
 }
 
 /** The kinds a `/` offers, narrowed by what is typed after it. */
 export function scopesMatching(typed: string): ObjectType[] {
   const t = typed.trim().toLocaleLowerCase()
-  return OBJECT_TYPES.filter(
+  return KIND_ORDER.filter(
     (type) =>
       t === '' ||
       KIND_WORDS[type].many.toLocaleLowerCase().startsWith(t) ||

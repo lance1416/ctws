@@ -1,7 +1,7 @@
 import { ModuleEmpty, useSubjectOf } from '../../../shell/layout'
 import type { ReadingStatus } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { DeletedNotice, useOpenFromUrl } from '../../../shell/detail'
 import { readingQuery } from '../api'
 import { isToRead, readingLabel } from '../logic/item'
@@ -33,6 +33,12 @@ export function Reading() {
   })
   useSubjectOf(open ? { type: 'reading', id: open.id, title: readingLabel(open) } : null)
   const [showFinished, setShowFinished] = useState(false)
+  // The empty page's New: the add field, focused, until the first item is in.
+  const [adding, setAdding] = useState(false)
+  const addField = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (adding) addField.current?.querySelector('input')?.focus()
+  }, [adding])
   const timeZone = useTimeZone()
   const today = ymd(useNow(), timeZone)
 
@@ -42,16 +48,21 @@ export function Reading() {
   const finished = rows.filter((i) => !isToRead(i))
   const unfinished = rows.filter(isToRead)
 
+  // An old address to something deleted: the main area is what happened to it.
+  if (gone && openId) return <DeletedNotice type="reading" id={openId} />
+  // Nothing yet: the badge, a line and the button, nothing else (FR-030, artboard 23).
+  if (items.isSuccess && rows.length === 0 && !adding)
+    return <ModuleEmpty kind="reading" onNew={() => setAdding(true)} />
+
   return (
     <>
       <PageHead hang>Reading</PageHead>
 
-      <div className={`mt-4 ${HANG} max-w-[52ch]`}>
+      <div ref={addField} className={`mt-4 ${HANG} max-w-[52ch]`}>
         <AddReading />
       </div>
 
       <QueryStatus query={items} />
-      {items.isSuccess && rows.length === 0 && <ModuleEmpty kind="reading" />}
 
       {SECTIONS.map(({ status, label }) => {
         const section = of(status)
@@ -73,7 +84,6 @@ export function Reading() {
       })}
 
       {open && <ReadingDetail key={open.id} item={open} onClose={close} />}
-      {gone && openId && <DeletedNotice type="reading" id={openId} />}
 
       {finished.length > 0 && (
         <div className={`mt-8 ${LIST_MEASURE}`}>

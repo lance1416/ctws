@@ -8,29 +8,41 @@ const ALL = [
   c('meeting', 'm', 'Meeting'),
   c('person', 'p', 'Person'),
   c('organisation', 'o', 'Organisation'),
-  c('communication', 'x', 'Message'),
+  c('communication', 'x', 'Communication'),
   c('reading', 'r', 'Reading'),
   c('note', 'n', 'Note'),
 ]
 
 describe('the New menu (FR-026)', () => {
+  it('offers only what can belong to a project: no person, no organisation', () => {
+    const { shown, hidden } = menuOrder(ALL, ['person', 'organisation'], '')
+    expect([...shown, ...hidden].map((x) => x.kind)).toEqual([
+      'task',
+      'meeting',
+      'communication',
+      'reading',
+      'note',
+    ])
+    expect(menuOrder(ALL, [], 'pe').shown).toEqual([])
+  })
+
   it('shows the kinds used lately first, then the rest in order, and only a few', () => {
     const { shown, hidden } = menuOrder(ALL, ['communication', 'meeting'], '')
-    expect(shown.map((x) => x.kind)).toEqual(['communication', 'meeting', 'task', 'person'])
-    expect(hidden.map((x) => x.kind)).toEqual(['organisation', 'reading', 'note'])
+    expect(shown.map((x) => x.kind)).toEqual(['communication', 'meeting', 'task', 'reading'])
+    expect(hidden.map((x) => x.kind)).toEqual(['note'])
   })
 
   it('keeps the fixed order when nothing was used yet', () => {
     expect(menuOrder(ALL, [], '').shown.map((x) => x.kind)).toEqual([
       'task',
       'meeting',
-      'person',
-      'organisation',
+      'communication',
+      'reading',
     ])
   })
 
-  it('finds the rest by typing', () => {
-    expect(menuOrder(ALL, [], 'me').shown.map((x) => x.label)).toEqual(['Meeting', 'Message'])
+  it('finds the rest by the start of their name: "me" leaves Meeting alone', () => {
+    expect(menuOrder(ALL, [], 'me').shown.map((x) => x.label)).toEqual(['Meeting'])
     expect(menuOrder(ALL, [], 'zz').shown).toEqual([])
   })
 })

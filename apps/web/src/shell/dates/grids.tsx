@@ -1,4 +1,4 @@
-import { addDays, LUNAR_MONTHS } from '@ctws/core'
+import { addDays, daysInMonth, LUNAR_MONTHS } from '@ctws/core'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useRef } from 'react'
 import { ICON_BUTTON } from '../../platform/ui/buttonStyles'
@@ -124,9 +124,12 @@ export function DayGrid({
   const first = `${month}-01`
   const lead = weekdayOf(first)
   const start = addDays(first, -lead)
-  const cells = Array.from({ length: 42 }, (_, i) => addDays(start, i))
+  // Only the weeks that hold one of the month's days: four, five or six rows (artboard 11).
+  const [y, m] = month.split('-').map(Number) as [number, number]
+  const weeks = Math.ceil((lead + daysInMonth(y, m)) / 7)
+  const cells = Array.from({ length: weeks * 7 }, (_, i) => addDays(start, i))
   const lunar = useQuery({
-    ...calendarDaysQuery({ from: cells[0]!, to: cells[41]! }),
+    ...calendarDaysQuery({ from: cells[0]!, to: cells.at(-1)! }),
     placeholderData: keepPreviousData,
   })
   return (

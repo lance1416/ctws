@@ -2,11 +2,11 @@ import { topPage } from '../../shell/layout'
 import type { WorkspaceModule } from '../../shell/contract'
 import { meetingKeys } from './api'
 import { CalendarOccurrence } from './components/OccurrencePane'
-import { MeetingsTodayCount, NextMeetingLine } from './components/MeetingsKind'
+import { NextMeetingLine } from './components/MeetingsKind'
 import { MeetingsAside, TodayMeetings } from './components/TodayMeetings'
 import { useMeetingEntries } from './hooks/contributions'
 import { MEETINGS_ID } from './logic/id'
-import { describeMeeting } from './logic/listedMeeting'
+import { MeetingFact } from './components/MeetingFact'
 import { NewMeeting } from './components/NewMeeting'
 import { Meetings } from './pages/Meetings'
 
@@ -23,7 +23,6 @@ export const meetingModule: WorkspaceModule = {
   kind: {
     label: 'Meetings',
     to: `/${MEETINGS_ID}`,
-    Count: MeetingsTodayCount,
     Status: NextMeetingLine,
     chord: 'meetings',
     order: 30,
@@ -38,7 +37,7 @@ export const meetingModule: WorkspaceModule = {
     {
       id: 'meetings',
       key: 'm',
-      label: 'Go to Meetings',
+      label: 'Meetings',
       resolve: () => `/${MEETINGS_ID}`,
       order: 40,
     },
@@ -74,7 +73,7 @@ export const meetingModule: WorkspaceModule = {
       kind: 'Meeting',
       plural: 'Meetings',
       to: (id) => `/${MEETINGS_ID}/${id}`,
-      describe: describeMeeting,
+      Fact: MeetingFact,
     },
   ],
   // An occurrence names its attendees and its project.

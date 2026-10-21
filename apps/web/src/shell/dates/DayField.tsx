@@ -1,8 +1,8 @@
-import { parseDay, parseMonth } from '@ctws/core'
+import { parseDay, parseMonth, whyNotADay } from '@ctws/core'
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { ICON_BUTTON } from '../../platform/ui/buttonStyles'
 import { boxed } from '../../platform/ui/formStyles'
-import { CloseIcon, PLACE_ICON } from '../../platform/ui/icons'
+import { AlertIcon, CloseIcon, PLACE_ICON } from '../../platform/ui/icons'
 import { LAYER } from '../../platform/ui/layers'
 import { MONTHS } from '../../platform/time/dates'
 import { DayGrid, MonthGrid, monthOf } from './grids'
@@ -36,6 +36,7 @@ export function DayField({
   accent,
   className = '',
   clearable = true,
+  onRefusal,
 }: {
   value: string | null
   onChange: (next: string | null) => void
@@ -49,11 +50,24 @@ export function DayField({
   accent?: string
   className?: string
   clearable?: boolean
+  /**
+   * Where a refusal is said instead of under the field, for a row the field must not grow (the
+   * capture box): the reason, or null once it is read.
+   */
+  onRefusal?: (reason: string | null) => void
 }) {
   const say = (v: string | null) =>
     v === null ? '' : mode === 'month' ? sayMonth(v) : sayDay(v, today)
   const [text, setText] = useState(() => say(value))
-  const [refused, setRefused] = useState(false)
+  const [refused, setRefusedTo] = useState(false)
+  const typedNow = text.trim()
+  // Why it was not read (FR-034): the day that does not exist, named; never "I".
+  const reason =
+    mode === 'month' ? 'Not a month. Try Mar 2023 or 03/2023.' : whyNotADay(typedNow, today)
+  const setRefused = (next: boolean) => {
+    setRefusedTo(next)
+    onRefusal?.(next ? reason : null)
+  }
   const [open, setOpen] = useState(false)
   const [shown, setShown] = useState(() => (value ?? today).slice(0, mode === 'month' ? 4 : 7))
   const box = useRef<HTMLDivElement>(null)
@@ -110,7 +124,10 @@ export function DayField({
 
   return (
     <div ref={box} className={`relative ${className}`}>
-      <div className={`flex items-center gap-1 pr-1 ${boxed} ${refused ? 'border-stop' : ''}`}>
+      <div
+        data-field
+        className={`flex items-center gap-1 pr-1 ${boxed} ${refused ? 'border-stop' : ''}`}
+      >
         <input
           id={id}
           value={text}
@@ -122,8 +139,8 @@ export function DayField({
           }}
           aria-label={label}
           aria-invalid={refused || undefined}
-          placeholder={placeholder ?? (mode === 'month' ? 'Mar 2023' : 'Oct 29, tomorrow, fri')}
-          className="min-w-0 flex-1 bg-transparent placeholder:text-subtle focus-visible:outline-none"
+          placeholder={placeholder ?? (mode === 'month' ? 'Mar 2023' : 'Oct 29')}
+          className="min-w-0 flex-1 bg-transparent placeholder:text-subtle"
         />
         {clearable && value !== null && (
           <button
@@ -145,9 +162,10 @@ export function DayField({
           <PLACE_ICON.calendar size={14} aria-hidden="true" />
         </button>
       </div>
-      {refused && (
-        <p role="alert" className="mt-1 text-meta text-stop-t">
-          “{text.trim()}” is not a day I know. Try Oct 29, 29/10, tomorrow or fri.
+      {refused && !onRefusal && (
+        <p role="alert" className="mt-1 flex items-start gap-1 text-meta text-stop-t">
+          <AlertIcon size={12} aria-hidden="true" className="mt-0.5 shrink-0" />
+          {reason}
         </p>
       )}
       {open && (

@@ -61,6 +61,8 @@ export function Shortcuts({
         const prefix = pending.current
         if (prefix === null) return false
         forget()
+        // The key after a prefix is the chord's, named or not: it reaches nothing else (BUG-018).
+        e.preventDefault()
         if (prefix === JUMP_PREFIX) {
           const chord = registry.chordFor(e.key)
           if (chord) {
