@@ -1,15 +1,24 @@
-import { type TaskResponse, type ProjectId } from '@ctws/contracts'
+import { type TaskResponse, type ProjectId, type TaskId } from '@ctws/contracts'
 import { useMemo, useState } from 'react'
 import { isFinished } from '../../logic/status'
-import { loadShowDone, saveShowDone } from '../../logic/tree/collapse'
+import { loadShownDone, saveShownDone } from '../../logic/tree/collapse'
 
-/** The tasks a tree shows: see `useTreeVisibility`. */
+/** Where a finished row is folded away: under its parent, or at the project's own top level. */
+export type DoneGroup = TaskId | 'top'
+const groupOf = (t: Pick<TaskResponse, 'parentId'>): DoneGroup => t.parentId ?? 'top'
+
+type Shown = {
+  visible: readonly TaskResponse[]
+  /** Per group, its closed rows, and how many of them are folded away. */
+  closed: Map<DoneGroup, { all: number; hidden: number }>
+}
+
+/** The tasks a tree shows, and what each group folds away: see `useTreeVisibility`. */
 function visibleTasks(
   tasks: readonly TaskResponse[],
-  showDone: boolean,
+  open: ReadonlySet<DoneGroup>,
   kept: ReadonlySet<string>,
-): readonly TaskResponse[] {
-  if (showDone) return tasks
+): Shown {
   const index = new Map(tasks.map((t) => [t.id, t]))
   const live = new Set<string>()
   for (const t of tasks) {
@@ -21,32 +30,78 @@ function visibleTasks(
       at = at.parentId === null ? undefined : index.get(at.parentId)
     }
   }
-  return tasks.filter((t) => live.has(t.id) || kept.has(t.id))
+  // A closed row shows when its group is open and its parent shows, or when it was finished
+  // right here. Memoised, and a cycle the server should never send reads as hidden.
+  const seen = new Map<string, boolean>()
+  const shows = (t: TaskResponse): boolean => {
+    const known = seen.get(t.id)
+    if (known !== undefined) return known
+    seen.set(t.id, false)
+    const parent = t.parentId === null ? undefined : index.get(t.parentId)
+    const result =
+      live.has(t.id) ||
+      kept.has(t.id) ||
+      (open.has(groupOf(t)) && (parent === undefined || shows(parent)))
+    seen.set(t.id, result)
+    return result
+  }
+  const visible = tasks.filter(shows)
+  const closed = new Map<DoneGroup, { all: number; hidden: number }>()
+  for (const t of tasks) {
+    if (live.has(t.id)) continue
+    const parent = t.parentId === null ? undefined : index.get(t.parentId)
+    // Only where it would show: under a parent that is itself on screen.
+    if (parent && !shows(parent)) continue
+    const group = groupOf(t)
+    const counts = closed.get(group) ?? { all: 0, hidden: 0 }
+    counts.all++
+    if (!shows(t)) counts.hidden++
+    closed.set(group, counts)
+  }
+  return { visible, closed }
 }
 
 /**
- * A finished row leaves the tree unless asked back, except a finished parent with unfinished
- * children, and a row finished right here, kept for this mount so a second `x` can undo it.
+ * A finished row folds away under its parent (FR-054), which says "12 done" and opens them on a
+ * press, remembered per project; the project's own finished rows fold the same way at the end. A
+ * finished parent with unfinished children stays, and so does a row finished right here, for this
+ * mount, so a second `x` can undo it.
  */
 export function useTreeVisibility(projectId: ProjectId, all: readonly TaskResponse[]) {
-  const [showDone, setShowDone] = useState(() => loadShowDone(projectId))
+  const [open, setOpen] = useState<ReadonlySet<DoneGroup>>(() => loadShownDone(projectId))
   const [kept, setKept] = useState<ReadonlySet<string>>(() => new Set())
 
-  const visibleOf = (tasks: readonly TaskResponse[]) => visibleTasks(tasks, showDone, kept)
-  const visible = useMemo(() => visibleTasks(all, showDone, kept), [all, showDone, kept])
+  const shown = useMemo(() => visibleTasks(all, open, kept), [all, open, kept])
 
-  const setShown = (next: boolean) => {
-    setShowDone(next)
-    saveShowDone(projectId, next)
+  const save = (next: ReadonlySet<DoneGroup>) => {
+    setOpen(next)
+    saveShownDone(projectId, next)
   }
   return {
-    visible,
+    visible: shown.visible,
     /** What `visible` would be for these tasks: for a list newer than the last render. */
-    visibleOf,
-    hiddenDone: all.length - visible.length,
-    showDone,
-    toggleDone: () => setShown(!showDone),
-    showFinished: () => setShown(true),
+    visibleOf: (tasks: readonly TaskResponse[]) => visibleTasks(tasks, open, kept).visible,
+    closed: shown.closed,
+    /** How many rows are folded away in all, to tell a cleared project from an empty one. */
+    hiddenDone: all.length - shown.visible.length,
+    isOpen: (group: DoneGroup) => open.has(group),
+    toggle: (group: DoneGroup) => {
+      const next = new Set(open)
+      if (!next.delete(group)) next.add(group)
+      save(next)
+    },
+    /** Opens the groups that fold this task or a finished row above it away, so it shows. */
+    reveal: (id: TaskId) => {
+      const index = new Map(all.map((t) => [t.id, t]))
+      const next = new Set(open)
+      for (
+        let at = index.get(id);
+        at;
+        at = at.parentId === null ? undefined : index.get(at.parentId)
+      )
+        if (isFinished(at.status)) next.add(groupOf(at))
+      save(next)
+    },
     /** Keeps these just-finished rows on screen. */
     keep: (ids: Iterable<string>) => setKept((prev) => new Set([...prev, ...ids])),
   }

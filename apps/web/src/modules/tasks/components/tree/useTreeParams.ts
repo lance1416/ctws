@@ -14,7 +14,6 @@ export function useTreeParams({
   rows,
   tasks,
   unfold,
-  showDone,
   showFinished,
   onRevealed,
 }: {
@@ -22,8 +21,8 @@ export function useTreeParams({
   rows: Pick<RowRefs, 'get'>
   tasks: readonly TaskResponse[] | undefined
   unfold: (ids: readonly TaskId[]) => void
-  showDone: boolean
-  showFinished: () => void
+  /** Opens what folds this finished task, or a finished row above it, away. */
+  showFinished: (id: TaskId) => void
   onRevealed: (id: TaskId) => void
 }) {
   const [params, setParams] = useSearchParams()
@@ -41,7 +40,7 @@ export function useTreeParams({
       forget('task', reveal)
       return
     }
-    if (!showDone && isFinished(target.status)) showFinished()
+    if (isFinished(target.status)) showFinished(reveal)
     unfold(ancestorsOf(tasks, reveal))
     pending.current = reveal
     setParams(
@@ -53,7 +52,7 @@ export function useTreeParams({
       { replace: true },
     )
     // eslint-disable-next-line react-hooks/exhaustive-deps -- not the handlers, new each render: this is about the parameter and data.
-  }, [reveal, tasks, showDone, setParams, forget])
+  }, [reveal, tasks, setParams, forget])
 
   // The row exists only once the unfold has rendered, so focus waits for that render.
   useEffect(() => {

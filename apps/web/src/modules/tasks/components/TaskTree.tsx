@@ -20,7 +20,7 @@ import { NewTaskInput } from './NewTaskInput'
 import { SelectionBar } from './SelectionBar'
 import { TaskDetail } from './TaskDetail'
 import { TaskRow } from './TaskRow'
-import { TREE_ROW, WIDE_ONLY } from './TaskRowParts'
+import { titleStart, TREE_ROW, WIDE_ONLY } from './TaskRowParts'
 import { useRowPane, useRowRefs } from './useRowPane'
 import { useSavedFlash } from './useSavedFlash'
 import { useBulkSelection } from './tree/useBulkSelection'
@@ -29,7 +29,7 @@ import { useInlineAdd } from './tree/useInlineAdd'
 import { useTreeKeys } from './tree/useTreeKeys'
 import { useTreeMove } from './tree/useTreeMove'
 import { useTreeParams } from './tree/useTreeParams'
-import { useTreeVisibility } from './tree/useTreeVisibility'
+import { useTreeVisibility, type DoneGroup } from './tree/useTreeVisibility'
 
 const NONE: readonly TaskResponse[] = []
 
@@ -86,8 +86,7 @@ export function TaskTree({
     rows: handles,
     tasks: tasks.data?.tasks,
     unfold: folds.unfold,
-    showDone: shown.showDone,
-    showFinished: shown.showFinished,
+    showFinished: shown.reveal,
     onRevealed: setActiveId,
   })
   // The pane can move or delete its task: focus then goes to a neighbouring row, not to <body>.
@@ -161,6 +160,39 @@ export function TaskTree({
     inputSlot = at < 0 ? rows.length : at + blockLength(rows, at)
     inputDepth = at < 0 ? 1 : rows[at]!.depth + 1
   }
+  // Each group's "12 done" goes after the last row it would show among: at the end of its
+  // parent's block, or of the list for the project's own (FR-054). Nested ones that end together
+  // are said innermost first.
+  const doneAfter = new Map<number, { group: DoneGroup; depth: number }[]>()
+  const sayDone = (at: number, group: DoneGroup, depth: number) => {
+    const counts = shown.closed.get(group)
+    if (!counts || (shown.isOpen(group) ? counts.all : counts.hidden) === 0) return
+    doneAfter.set(at, [{ group, depth }, ...(doneAfter.get(at) ?? [])])
+  }
+  rows.forEach((row, i) => {
+    if (row.hasChildren && !row.collapsed) sayDone(i + blockLength(rows, i), row.id, row.depth + 1)
+  })
+  sayDone(rows.length, 'top', 1)
+  const doneRows = (at: number) =>
+    (doneAfter.get(at) ?? []).map(({ group, depth }) => {
+      const open = shown.isOpen(group)
+      return (
+        // Not a row of the list: a way to show some. `none`, so it is not counted among them.
+        <li key={`done:${group}`} role="none" data-done-group={group} className={TREE_ROW}>
+          <div className="col-span-4" style={{ paddingLeft: titleStart(depth) }}>
+            <button
+              type="button"
+              onClick={() => shown.toggle(group)}
+              aria-pressed={open}
+              className="-ml-1.5 h-7 rounded-control px-1.5 text-meta text-muted hover:bg-hover hover:text-ink"
+            >
+              {open ? 'Hide done' : `${shown.closed.get(group)!.hidden} done`}
+            </button>
+          </div>
+        </li>
+      )
+    })
+
   const input = adder.adding && (
     <NewTaskInput
       depth={inputDepth}
@@ -172,19 +204,6 @@ export function TaskTree({
 
   return (
     <>
-      {/* Absent until there is something to say; the count is the label. */}
-      {(shown.hiddenDone > 0 || shown.showDone) && (
-        <div className="mt-2 flex justify-end">
-          <button
-            type="button"
-            onClick={shown.toggleDone}
-            aria-pressed={shown.showDone}
-            className="min-h-8 rounded-control px-2 text-ui text-muted hover:bg-hover hover:text-ink"
-          >
-            {shown.showDone ? 'Hide done' : `${shown.hiddenDone} done`}
-          </button>
-        </div>
-      )}
       <SelectionBar
         count={picked.selected.size}
         projects={allProjects.data ?? []}
@@ -264,7 +283,9 @@ export function TaskTree({
                   }}
                 />,
                 ...(inputSlot === i + 1 ? [<Fragment key="new-task">{input}</Fragment>] : []),
+                ...doneRows(i + 1),
               ])}
+              {rows.length === 0 && doneRows(0)}
             </ul>
           </SortableContext>
         </DndContext>

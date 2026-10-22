@@ -59,6 +59,37 @@ test('the tree shows what is left to do, and the count is the way back to the re
   await expect(row(page, '写迁移')).toHaveCount(0)
 })
 
+test('each parent folds its own finished rows, and says how many (FR-054)', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '改版')
+  const parent = await makeTask(page, pid, '接入 KaTeX')
+  await makeTask(page, pid, '装依赖', { status: 'done' }, parent)
+  await makeTask(page, pid, '选版本', { status: 'cancelled' }, parent)
+  await makeTask(page, pid, '公式换行', {}, parent)
+  await makeTask(page, pid, '另一件', {})
+  await openTree(page, pid)
+
+  // Under its parent, after the work still left: one line, at the children's depth.
+  await expect(row(page, '公式换行')).toBeVisible()
+  await expect(row(page, '装依赖')).toHaveCount(0)
+  const fold = page.locator(`[data-done-group]`).getByRole('button', { name: '2 done' })
+  await expect(fold).toHaveAttribute('aria-pressed', 'false')
+  // Not a row of the list: the list is the tasks.
+  await expect(page.locator('[data-task-tree]').getByRole('listitem')).toHaveCount(3)
+  // The top level has nothing finished, so it says nothing.
+  await expect(page.locator('[data-done-group="top"]')).toHaveCount(0)
+
+  await fold.click()
+  await expect(row(page, '装依赖')).toBeVisible()
+  await expect(row(page, '选版本')).toBeVisible()
+  await expect(row(page, '装依赖')).toHaveAttribute('data-depth', '2')
+  // Remembered per project.
+  await page.reload()
+  await expect(row(page, '装依赖')).toBeVisible()
+  await page.getByRole('button', { name: 'Hide done' }).click()
+  await expect(row(page, '装依赖')).toHaveCount(0)
+})
+
 test('a finished parent with unfinished children is kept, not hidden with them', async ({
   page,
 }) => {
