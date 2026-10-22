@@ -2,19 +2,18 @@ import { LINK } from '../../../platform/ui/buttonStyles'
 import type { ProjectId } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { useId, useRef } from 'react'
-import { textbox } from '../../../platform/ui/formStyles'
 import { BoardIcon, NewIcon, TreeIcon } from '../../../platform/ui/icons'
 import { useLineEntry } from '../../../platform/ui/useLineEntry'
 import { createTask, projectTasksQuery } from '../api'
-import { TaskBoard } from './TaskBoard'
+import { TaskBoard } from './board/TaskBoard'
 import { markStart, TREE_ROW } from './TaskRowParts'
 import { TaskTree } from './TaskTree'
-import { BODY_START } from '../../../shell/rows'
 
 /** The two ways to look at a project's tasks (FR-053). The first is the default. */
 export const PROJECT_VIEWS = [
   { id: 'tree', label: 'Tree', icon: TreeIcon },
-  { id: 'board', label: 'Board', icon: BoardIcon },
+  // The board takes the page's width: its columns are the view (artboard 21).
+  { id: 'board', label: 'Board', icon: BoardIcon, wide: true },
 ] as const
 
 /** The module's rows under a shell project: the tree, and the one input that adds a root task. */
@@ -41,25 +40,31 @@ export function ProjectTasks({ projectId, view }: { projectId: ProjectId; view: 
     </p>
   )
 
-  // The board has a line and Enter above its columns; the tree has it as its last row.
+  // On the board it heads To do (FR-057); in the tree it is the last row.
   if (view === 'board')
     return (
-      <>
-        <div className={`mb-1 flex max-w-[52ch] flex-col gap-1 pr-2 ${BODY_START}`}>
-          <input
-            ref={box}
-            {...field}
-            placeholder="New task"
-            aria-label="New task"
-            aria-invalid={invalid}
-            aria-describedby={describedBy}
-            // The border follows `aria-invalid` (see `textbox`), so colour and announced state agree.
-            className={`min-w-0 bg-panel ${textbox}`}
-          />
-          {failure}
-        </div>
-        <TaskBoard key={projectId} projectId={projectId} />
-      </>
+      <TaskBoard
+        key={projectId}
+        projectId={projectId}
+        add={
+          <div className="flex flex-col gap-1">
+            <label className="flex h-7.5 items-center gap-2 rounded-control px-2.5 text-subtle hover:bg-hover">
+              <NewIcon size={14} aria-hidden="true" className="shrink-0" />
+              <input
+                ref={box}
+                {...field}
+                data-bare
+                placeholder="New task"
+                aria-label="New task"
+                aria-invalid={invalid}
+                aria-describedby={describedBy}
+                className="h-7 min-w-0 flex-1 bg-transparent text-ui text-ink placeholder:text-subtle"
+              />
+            </label>
+            {failure}
+          </div>
+        }
+      />
     )
   return (
     <TaskTree

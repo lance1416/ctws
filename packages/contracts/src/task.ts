@@ -24,11 +24,6 @@ export const UNCOUNTED_TASK_STATUSES = [
  */
 export const OPEN_TASKS_COLUMN = 'openTasks'
 
-/** The board's columns, left to right; `cancelled` is not a step of the work. */
-export const BOARD_TASK_STATUSES = TASK_STATUSES.filter(
-  (s): s is Exclude<TaskStatus, 'cancelled'> => s !== 'cancelled',
-)
-
 /** The transitions a review recounts, by the list each goes in. */
 export const REVIEW_TRANSITIONS = {
   finished: 'done',

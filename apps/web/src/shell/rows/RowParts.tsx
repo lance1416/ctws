@@ -26,10 +26,6 @@ export const ROW_BODY = `flex min-w-0 flex-1 pl-[var(--gutter)] ${BODY_GUTTER}`
 /** A row body whose gutter is 14px at every width: Today's rows, Done today and Completed. */
 export const ROW_BODY_WIDE = 'flex min-w-0 flex-1 pl-[var(--gutter)] [--gutter:14px]'
 
-/** Where a row's text starts, for something above the rows to line up with: past the margin, the
- * thread and the gutter. */
-export const BODY_START = `${BODY_GUTTER} ml-[calc(var(--hang)+3px+var(--gutter))]`
-
 export const ROW_LIST = 'flex flex-col'
 
 /**

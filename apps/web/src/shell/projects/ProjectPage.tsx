@@ -78,7 +78,11 @@ function OpenProject({ id }: { id: ProjectId }) {
   // they go under it when there is no column to spare.
   const page = useRef<HTMLDivElement>(null)
   const columns = useColumns(page)
-  const { main: mainColumns, side } = splitColumns(columns)
+  // A wide view (the board) is the whole width; the blocks go under it.
+  const wide = views.find((v) => v.id === view)?.wide === true
+  const { main: mainColumns, side } = wide
+    ? { main: columns, side: columns }
+    : splitColumns(columns)
 
   return (
     <div ref={page} className="flex min-w-0 flex-1 flex-col">

@@ -80,14 +80,17 @@ export function PlanMark() {
 /**
  * A lock on the status mark's corner, for a leaf something unfinished holds up (FR-041,
  * artboard 8). Inside the 28px status button that sits at -6px, so it lands on the glyph's own
- * corner. The words are the row's, said elsewhere.
+ * corner; on a bare 16px mark (a board card) it hangs 4px past it. The words are the row's, said
+ * elsewhere.
  */
-export function WaitingBadge() {
+export function WaitingBadge({ bare = false }: { bare?: boolean }) {
   return (
     <span
       aria-hidden="true"
       data-waiting-badge
-      className="pointer-events-none absolute right-0.5 bottom-0.5 grid size-[11px] place-items-center rounded-full bg-panel text-warn"
+      className={`pointer-events-none absolute grid size-[11px] place-items-center rounded-full bg-panel text-warn ${
+        bare ? '-right-1 -bottom-1' : 'right-0.5 bottom-0.5'
+      }`}
     >
       <LockIcon size={9} />
     </span>

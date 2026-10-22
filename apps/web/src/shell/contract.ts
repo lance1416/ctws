@@ -100,7 +100,13 @@ export type ProjectContribution = {
   contents?: (qc: QueryClient, projectId: ProjectId) => Promise<string | null>
 }
 
-type ProjectView = { id: string; label: string; icon?: IconComponent }
+type ProjectView = {
+  id: string
+  label: string
+  icon?: IconComponent
+  /** It takes the page's full width, and the project's blocks go under it (the board). */
+  wide?: boolean
+}
 
 /** One of a module's things in a project, as its block lists it. */
 type ProjectThing = {

@@ -1,6 +1,6 @@
 import { idFrom, taskId } from '@ctws/contracts'
 import { describe, expect, it } from 'vitest'
-import { blockedLabel } from './blockedLabel'
+import { blockedLabel, waitingOn } from './blockedLabel'
 
 const b = (title: string) => ({ id: idFrom(taskId, title), title })
 
@@ -18,5 +18,13 @@ describe('blockedLabel', () => {
     expect(blockedLabel([b('跑通 CI'), b('写迁移'), b('补测试')])).toBe(
       'Blocked by “跑通 CI” and 2 more',
     )
+  })
+})
+
+describe('waitingOn', () => {
+  it('names what a card waits on, the first by name and the rest by count', () => {
+    expect(waitingOn(undefined)).toBeNull()
+    expect(waitingOn([b('Batch 3')])).toBe('Waiting on Batch 3')
+    expect(waitingOn([b('Batch 3'), b('Batch 4')])).toBe('Waiting on Batch 3 and 1 more')
   })
 })

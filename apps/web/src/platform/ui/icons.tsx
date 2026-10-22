@@ -68,6 +68,7 @@ import {
   UserRound,
   Video,
   X,
+  CircleDashed,
 } from 'lucide-react'
 
 export type IconComponent = ComponentType<ComponentProps<typeof Circle>>
@@ -104,6 +105,9 @@ export const NewIcon = Plus
 /** A project's two views (FR-053), and the menu of what else can be done to it. */
 export const TreeIcon = ListTree
 export const BoardIcon = SquareKanban
+/** The board's two ways to make its columns (FR-057, FR-058): by status, by stage. */
+export const ByStatusIcon = CircleDashed
+export const ByStageIcon = Flag
 export const MoreIcon = Ellipsis
 /**
  * A resource by the service its address names (FR-046, DES-001 section 4): the shape says what

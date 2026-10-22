@@ -9,3 +9,14 @@ export function blockedLabel(
     ? `Blocked by “${first!.title}”`
     : `Blocked by “${first!.title}” and ${blockers.length - 1} more`
 }
+
+/** "Waiting on <task>" and "and 2 more": the line under a board card something holds up. */
+export function waitingOn(
+  blockers: readonly { id: TaskId; title: string }[] | undefined,
+): string | null {
+  if (!blockers || blockers.length === 0) return null
+  const [first, ...rest] = blockers
+  return rest.length === 0
+    ? `Waiting on ${first!.title}`
+    : `Waiting on ${first!.title} and ${rest.length} more`
+}

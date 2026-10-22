@@ -5,7 +5,7 @@ import { STATUS_LABEL } from '../logic/status'
  * A task's status by shape, never by hue alone. Every part is always drawn and fades or scales in,
  * so a change is a transition, not a remount.
  */
-export function StatusMark({ status, size = 20 }: { status: TaskStatus; size?: 16 | 20 }) {
+export function StatusMark({ status, size = 20 }: { status: TaskStatus; size?: 14 | 16 | 20 }) {
   const half = status === 'in_progress'
   const solid = status === 'done'
   // Artboard 1: what is being worked on is green, what waits to be started muted, and the backlog
