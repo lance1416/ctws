@@ -7,6 +7,7 @@ import {
 } from '@ctws/contracts'
 import {
   addDays,
+  avatarInitials,
   type Birthday,
   birthdayProblem,
   dayIn,
@@ -30,6 +31,7 @@ import { people } from './tables'
 type BirthdayRow = {
   personId: PersonId
   name: string
+  initials: string
   circle: Circle | null
   day: string
   inDays: number
@@ -81,6 +83,8 @@ async function peopleWithBirthdays(q: Queryable, workspaceId: WorkspaceId) {
     .select({
       id: people.id,
       name: people.name,
+      givenName: people.givenName,
+      familyName: people.familyName,
       circle: people.circle,
       timeZone: people.timeZone,
       calendar: people.birthdayCalendar,
@@ -166,6 +170,7 @@ export async function listBirthdays(
     return {
       personId: p.id,
       name: p.name,
+      initials: avatarInitials(p),
       circle: p.circle,
       day: next.day,
       inDays: next.inDays,

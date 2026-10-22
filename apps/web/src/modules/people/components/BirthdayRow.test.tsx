@@ -8,6 +8,7 @@ import { BirthdayRow } from './BirthdayRow'
 const row = (over: Partial<BirthdayListRow> = {}): BirthdayListRow => ({
   personId: idFrom(personId, '00000000-0000-0000-0000-000000000001'),
   name: '周楠',
+  initials: '周',
   circle: null,
   day: '2026-10-12',
   inDays: 2,

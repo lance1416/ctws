@@ -228,6 +228,8 @@ export const personSearchResponse = z.object({
 const birthdayListRow = z.object({
   personId,
   name: z.string(),
+  /** What their avatar shows (FR-049). */
+  initials: z.string(),
   circle: z.enum(CIRCLES).nullable(),
   day: calendarDate,
   inDays: z.number(),
