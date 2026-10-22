@@ -29,6 +29,7 @@ export function useTaskDetailForm(task: TaskResponse) {
     status: task.status,
     scheduledOn: task.scheduledOn,
     dueAt: fromDayTimeInput(toDayTimeInput(task.dueAt, timeZone), timeZone),
+    stageId: task.stageId,
   })
   const form = useForm<DetailTaskForm, unknown, DetailTaskValues>({
     resolver: zodResolver(detailTaskForm),
@@ -47,8 +48,9 @@ export function useTaskDetailForm(task: TaskResponse) {
       }
       // Crossing projects is a move, which carries the subtree along; the old parent is not in
       // the new project. It goes in the same PATCH, so a refused move changes nothing else.
+      // A stage is its project's, so it does not come along.
       if (changed.has('projectId'))
-        Object.assign(patch, { projectId: values.projectId, parentId: null })
+        Object.assign(patch, { projectId: values.projectId, parentId: null, stageId: null })
       if (Object.keys(patch).length > 0) await patchTask(task.id, patch)
     },
     meta: { changes: ['task'], awaits: WRITE_AWAITS, ownsError: true },

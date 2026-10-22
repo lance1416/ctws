@@ -129,7 +129,7 @@ export function CardFace({
 }
 
 /** The deadline, coloured as in the tree's Due column; with none, the planned day, grey. */
-function DateChip({
+export function DateChip({
   task,
   today,
   timeZone,

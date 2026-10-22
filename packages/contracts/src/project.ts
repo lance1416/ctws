@@ -80,6 +80,7 @@ export const putStagesBody = z
 export type PutStagesBody = z.infer<typeof putStagesBody>
 
 export const stagesResponse = z.object({ stages: z.array(stageResponse) })
+export type StagesResponse = z.infer<typeof stagesResponse>
 
 /** A project, with the counts modules add to it, each under the name its module registered. */
 export const projectResponse = z.object({

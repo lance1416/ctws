@@ -69,6 +69,7 @@ import {
   Video,
   X,
   CircleDashed,
+  Hourglass,
 } from 'lucide-react'
 
 export type IconComponent = ComponentType<ComponentProps<typeof Circle>>
@@ -108,6 +109,8 @@ export const BoardIcon = SquareKanban
 /** The board's two ways to make its columns (FR-057, FR-058): by status, by stage. */
 export const ByStatusIcon = CircleDashed
 export const ByStageIcon = Flag
+/** How long a node has been at its stage, on the board by stage (FR-058): "5d". */
+export const InStageIcon = Hourglass
 export const MoreIcon = Ellipsis
 /**
  * A resource by the service its address names (FR-046, DES-001 section 4): the shape says what

@@ -7,11 +7,14 @@ import { leafCounts } from '../logic/tree/leafCounts'
 
 /**
  * Where a task sits, for the inspector's head, read or edited: its project (live or archived),
- * the path down to it ("Job hunt / Amazon / SDE II"), and its leaves' counts when it is a parent.
+ * the path down to it ("Job hunt / Amazon / SDE II"), its leaves' counts when it is a parent, and
+ * its project's stages.
  */
 export function useTaskPlace(task: TaskResponse) {
   const project = useEveryProject().data?.find((p) => p.id === task.projectId)
-  const tree = useQuery(projectTasksQuery(task.projectId)).data?.tasks ?? []
+  const board = useQuery(projectTasksQuery(task.projectId)).data
+  const tree = board?.tasks ?? []
+  const stages = board?.stages ?? []
   const titleOf = new Map(tree.map((t) => [t.id, t.title]))
   const path = [
     project?.name,
@@ -22,5 +25,5 @@ export function useTaskPlace(task: TaskResponse) {
   const counts = tree.some((t) => t.parentId === task.id)
     ? leafCounts(tree).get(task.id)
     : undefined
-  return { project, path, counts }
+  return { project, path, counts, stages }
 }

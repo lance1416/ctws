@@ -10,7 +10,7 @@ export type ShownColumn = { status: TaskStatus; ids: readonly TaskId[] }
  * there when it is shorter. Nowhere to go stays put.
  */
 export function cardBeside(
-  columns: readonly ShownColumn[],
+  columns: readonly { ids: readonly TaskId[] }[],
   from: TaskId,
   key: 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight',
 ): TaskId {

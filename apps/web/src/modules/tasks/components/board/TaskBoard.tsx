@@ -18,7 +18,7 @@ import {
 } from '@dnd-kit/core'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { ymd } from '../../../../platform/time/dates'
 import { useDelayed } from '../../../../platform/time/useDelayed'
 import { useNow } from '../../../../platform/time/useNow'
@@ -43,6 +43,7 @@ import { useTaskParam } from '../tree/useTreeParams'
 import { useRowPane, useRowRefs } from '../useRowPane'
 import { BoardCard, CardFace } from './BoardCard'
 import { BoardColumn, BoardStrip } from './BoardColumn'
+import { StageBoard } from './StageBoard'
 import { useBoardFolds } from './useBoardFolds'
 
 const ARROWS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'] as const
@@ -59,6 +60,7 @@ const landed = (tasks: readonly TaskResponse[], id: TaskId, to: TaskStatus) =>
  */
 export function TaskBoard({ projectId, add }: { projectId: ProjectId; add: ReactNode }) {
   const tasks = useQuery(projectTasksQuery(projectId))
+  const [params, setParams] = useSearchParams()
   if (tasks.isError)
     return (
       <div className="rounded-block border border-line bg-panel">
@@ -66,17 +68,52 @@ export function TaskBoard({ projectId, add }: { projectId: ProjectId; add: React
       </div>
     )
   if (!tasks.isSuccess) return <BoardLoading />
-  return <Board projectId={projectId} data={tasks.data} add={add} />
+  // By stage only where some node has one (FR-058); the choice is in the address, as the view is.
+  const hasStages = tasks.data.tasks.some((t) => t.stageId !== null)
+  const byStage = hasStages && params.get('columns') === 'stage'
+  const columnsSwitch = (
+    <span className="flex items-center gap-2.5">
+      <span className="text-meta text-subtle">Columns</span>
+      <Segmented
+        label="Columns"
+        segments={[
+          { id: 'status', label: 'Status', icon: ByStatusIcon },
+          {
+            id: 'stage',
+            label: 'Stage',
+            icon: ByStageIcon,
+            ...(hasStages ? {} : { unavailable: 'No stages in this project yet' }),
+          },
+        ]}
+        current={byStage ? 'stage' : 'status'}
+        onPick={(id) =>
+          setParams((prev) => {
+            const next = new URLSearchParams(prev)
+            if (id === 'stage') next.set('columns', 'stage')
+            else next.delete('columns')
+            return next
+          })
+        }
+      />
+    </span>
+  )
+  return byStage ? (
+    <StageBoard projectId={projectId} data={tasks.data} columnsSwitch={columnsSwitch} />
+  ) : (
+    <Board projectId={projectId} data={tasks.data} add={add} columnsSwitch={columnsSwitch} />
+  )
 }
 
 function Board({
   projectId,
   data,
   add,
+  columnsSwitch,
 }: {
   projectId: ProjectId
   data: ProjectTasks
   add: ReactNode
+  columnsSwitch: ReactNode
 }) {
   const all = data.tasks
   const byId = useMemo(() => new Map(all.map((t) => [t.id, t])), [all])
@@ -194,31 +231,13 @@ function Board({
   // The same 5px threshold the tree uses, so a click on a card is a click and not a drag.
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
   const lifted = drag ? byId.get(drag.id) : undefined
-  const hasStages = all.some((t) => t.stageId !== null)
   const Review = PLACE_ICON.review
 
   return (
     <div className="flex flex-col gap-3.5">
       {/* Each label stays with its switch when the line wraps on a phone. */}
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2">
-        <span className="flex items-center gap-2.5">
-          <span className="text-meta text-subtle">Columns</span>
-          {/* By stage is the next view to come (FR-058); until then only status can be picked. */}
-          <Segmented
-            label="Columns"
-            segments={[
-              { id: 'status', label: 'Status', icon: ByStatusIcon },
-              {
-                id: 'stage',
-                label: 'Stage',
-                icon: ByStageIcon,
-                unavailable: hasStages ? true : 'No stages in this project yet',
-              },
-            ]}
-            current="status"
-            onPick={() => {}}
-          />
-        </span>
+        {columnsSwitch}
         <span aria-hidden="true" className="flex-1" />
         <span className="flex items-center gap-2.5">
           <span className="text-meta text-subtle">Done shows</span>

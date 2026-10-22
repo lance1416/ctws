@@ -1,12 +1,5 @@
 import { isFinished, toggleDoneTarget, toggleStartTarget } from '../logic/status'
-import {
-  CollapseIcon,
-  ExpandIcon,
-  FlagIcon,
-  KIND_ICON,
-  LockIcon,
-  NewIcon,
-} from '../../../platform/ui/icons'
+import { CollapseIcon, ExpandIcon, FlagIcon, LockIcon, NewIcon } from '../../../platform/ui/icons'
 import { useSortable } from '@dnd-kit/sortable'
 import type { ChildCounts, TaskId, TaskResponse, TaskStatus } from '@ctws/contracts'
 import type { KeyboardEvent } from 'react'
@@ -18,12 +11,14 @@ import { treeDue, type TreeDue } from '../logic/tree/treeDue'
 import { useTimeZone } from '../../../shell/auth'
 import {
   INDENT_PX,
-  opensOnClick,
   OVER_ROW,
+  OrganisationMark,
   SavedMark,
+  StageLabel,
   TREE_ROW,
-  WaitingBadge,
   WIDE_ONLY,
+  WaitingBadge,
+  opensOnClick,
 } from './TaskRowParts'
 import { ProgressSquare } from './ProgressSquare'
 import { StartButton, StatusButton } from './StatusControls'
@@ -196,7 +191,9 @@ export function TaskRow({
           {title}
         </span>
         {organisations && organisations.length > 0 && (
-          <OrganisationMark names={organisations.map((o) => o.title)} />
+          <span className="ml-1.5 flex">
+            <OrganisationMark names={organisations.map((o) => o.title)} />
+          </span>
         )}
         {saved && <SavedMark />}
         {/* The select layer is drawn; this says it. A list item cannot carry aria-selected. */}
@@ -205,20 +202,7 @@ export function TaskRow({
       </span>
 
       <span data-row-stage className={`flex min-w-0 ${WIDE_ONLY}`}>
-        {stage && (
-          <span
-            className={`inline-flex h-5.5 min-w-0 items-center gap-1.5 rounded-control bg-hover px-2 text-meta ${
-              stage.quiet ? 'text-subtle' : 'text-ink'
-            }`}
-          >
-            <span className="sr-only">Stage </span>
-            <i
-              aria-hidden="true"
-              className={`size-1.5 shrink-0 rounded-full ${stage.quiet ? 'bg-subtle' : 'bg-muted'}`}
-            />
-            <span className="truncate">{stage.name}</span>
-          </span>
-        )}
+        {stage && <StageLabel name={stage.name} quiet={stage.quiet} />}
       </span>
 
       <span data-row-progress className={`flex min-w-0 items-center gap-2 ${WIDE_ONLY}`}>
@@ -274,25 +258,6 @@ export function TaskRow({
         </button>
       </span>
     </li>
-  )
-}
-
-/**
- * After a node's name, the organisation it is linked to (FR-047, artboard 8): the kind's building
- * on its tint, so a company's row is told from a role's at a glance. Its names, on hover and said.
- */
-function OrganisationMark({ names }: { names: readonly string[] }) {
-  const Building = KIND_ICON.organisation
-  const said = names.join(', ')
-  return (
-    <span
-      data-row-organisation
-      title={said}
-      className="ml-1.5 inline-grid size-5 shrink-0 place-items-center rounded-control bg-organisation-bg text-organisation"
-    >
-      <Building size={12} aria-hidden="true" />
-      <span className="sr-only">, {said}</span>
-    </span>
   )
 }
 

@@ -1,5 +1,5 @@
 import type { MouseEvent, ReactNode } from 'react'
-import { LockIcon } from '../../../platform/ui/icons'
+import { KIND_ICON, LockIcon } from '../../../platform/ui/icons'
 
 /** The row parts only the task lists use; the shared anatomy is `shell/rows/RowParts`. */
 
@@ -93,6 +93,47 @@ export function WaitingBadge({ bare = false }: { bare?: boolean }) {
       }`}
     >
       <LockIcon size={9} />
+    </span>
+  )
+}
+
+/**
+ * A node's stage (FR-040, DES-001 section 4): a muted dot and the name on a grey label; a stage
+ * folded by default is subtle, dot and word.
+ */
+export function StageLabel({ name, quiet }: { name: string; quiet: boolean }) {
+  return (
+    <span
+      data-stage-label
+      className={`inline-flex h-5.5 min-w-0 items-center gap-1.5 rounded-control bg-hover px-2 text-meta ${
+        quiet ? 'text-subtle' : 'text-ink'
+      }`}
+    >
+      <span className="sr-only">Stage </span>
+      <i
+        aria-hidden="true"
+        className={`size-1.5 shrink-0 rounded-full ${quiet ? 'bg-subtle' : 'bg-muted'}`}
+      />
+      <span className="truncate">{name}</span>
+    </span>
+  )
+}
+
+/**
+ * The organisation a node is linked to (FR-047, artboard 8): the kind's building on its tint, so
+ * a company's row is told from a role's at a glance. Its names, on hover and said.
+ */
+export function OrganisationMark({ names }: { names: readonly string[] }) {
+  const Building = KIND_ICON.organisation
+  const said = names.join(', ')
+  return (
+    <span
+      data-row-organisation
+      title={said}
+      className="inline-grid size-5 shrink-0 place-items-center rounded-control bg-organisation-bg text-organisation"
+    >
+      <Building size={12} aria-hidden="true" />
+      <span className="sr-only">, {said}</span>
     </span>
   )
 }

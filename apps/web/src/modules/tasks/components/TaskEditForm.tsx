@@ -25,6 +25,7 @@ import { STATUS_LABEL } from '../logic/status'
 import { DependencyRows } from './Dependencies'
 import { Field, FIELDS } from './InspectorField'
 import { ProgressSquare } from './ProgressSquare'
+import { StageDot, StagePicker } from './StageField'
 import { StatusMark } from './StatusMark'
 import { DateDecisions, StatusRadios } from './TaskFields'
 import type { useTaskDetailForm } from './useTaskDetailForm'
@@ -61,7 +62,7 @@ export function TaskEditForm({
   const timeZone = useTimeZone()
   const today = ymd(useNow(), timeZone)
   const projects = useEveryProject()
-  const { counts } = useTaskPlace(task)
+  const { counts, stages } = useTaskPlace(task)
 
   const title = watch('title')
   const status = watch('status') ?? task.status
@@ -228,6 +229,17 @@ export function TaskEditForm({
             echo={dueAt ? instantPhrase(dueAt, today, timeZone) : null}
           />
         </Field>
+        {/* Stages are this project's: a move to another leaves it without one. */}
+        {projectId === task.projectId && (
+          <Field icon={<StageDot />} name="Stage" top>
+            <StagePicker
+              projectId={task.projectId}
+              stages={stages}
+              value={watch('stageId') ?? null}
+              onChange={(stage) => setValue('stageId', stage, dirty)}
+            />
+          </Field>
+        )}
         {/* Written the moment each is named or taken away, not by Save. */}
         <DependencyRows taskId={task.id} projectId={task.projectId} editing />
       </dl>

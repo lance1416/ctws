@@ -239,6 +239,18 @@ function psql(statement: string): string {
  * the database the stack is running on. A fixed instant, not one counted back from now: the day it
  * lands on is then the same whenever the suite runs (a pinned spec's, see pinned.ts).
  */
+/**
+ * Puts a task at its stage since `at`, so "21d" can be tested without waiting three weeks. Like
+ * `completedAt`, this goes to the database: the API stamps the stage's day itself, as it should.
+ */
+export function stageSince(taskId: string, at: string): void {
+  if (!/^[0-9a-f-]{36}$/.test(taskId) || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(at)) {
+    throw new Error('stageSince: refusing a malformed argument')
+  }
+  const out = psql(`update tasks set stage_since = '${at}' where id = '${taskId}'`)
+  if (!out.includes('UPDATE 1')) throw new Error(`stageSince: no row updated: ${out}`)
+}
+
 export function completedAt(taskId: string, at: string): void {
   if (!/^[0-9a-f-]{36}$/.test(taskId) || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(at)) {
     throw new Error('completedAt: refusing a malformed argument')

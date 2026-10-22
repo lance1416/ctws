@@ -22,7 +22,9 @@ import { DependencyRows } from './Dependencies'
 import { Field, FIELDS } from './InspectorField'
 import { ProgressSquare } from './ProgressSquare'
 import { StatusMark } from './StatusMark'
+import { StageDot } from './StageField'
 import { StatusPicker } from './StatusPicker'
+import { StageLabel } from './TaskRowParts'
 import { WRITE_AWAITS } from './useTaskDetailForm'
 import { useTaskPlace } from './useTaskPlace'
 
@@ -50,7 +52,8 @@ export function TaskReading({
   const timeZone = useTimeZone()
   const now = useNow()
   const today = ymd(now, timeZone)
-  const { project, path, counts } = useTaskPlace(task)
+  const { project, path, counts, stages } = useTaskPlace(task)
+  const stage = stages.find((s) => s.id === task.stageId)
   const { pathname } = useLocation()
 
   /** The status writes at once, outside the leave guard: nothing is ever unsaved. */
@@ -155,6 +158,11 @@ export function TaskReading({
             {dueReading ?? 'Not set'}
           </span>
         </Field>
+        {stage && (
+          <Field icon={<StageDot />} name="Stage">
+            <StageLabel name={stage.name} quiet={stage.collapsed} />
+          </Field>
+        )}
         {/* Beside the fields, each only when there is one (P-07); changed in the edit. */}
         <DependencyRows taskId={task.id} projectId={task.projectId} editing={false} />
       </dl>

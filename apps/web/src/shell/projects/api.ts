@@ -1,4 +1,11 @@
-import { api, type ProjectColor, type ProjectResponse, type ProjectId } from '@ctws/contracts'
+import {
+  api,
+  type ProjectColor,
+  type ProjectId,
+  type ProjectResponse,
+  type PutStagesBody,
+  type StagesResponse,
+} from '@ctws/contracts'
 import { queryOptions, useQuery, type UseQueryResult } from '@tanstack/react-query'
 import { call, everyPage } from '../../platform/http/api'
 
@@ -69,4 +76,12 @@ export function updateProject(
   body: { name?: string; color?: ProjectColor; archived?: boolean },
 ): Promise<ProjectResponse> {
   return call(api.projects.update, { params: { id }, body })
+}
+
+/**
+ * A project's stages as a whole list (FR-040): the order given is the order, one without an id
+ * is new, one left out is removed. Answers the list as it now is.
+ */
+export function putStages(id: ProjectId, body: PutStagesBody): Promise<StagesResponse> {
+  return call(api.projects.putStages, { params: { id }, body })
 }
