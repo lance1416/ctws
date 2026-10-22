@@ -459,3 +459,44 @@ test('a status changed from the pane leaves nothing unsaved to walk away from', 
   await expect(page).toHaveURL(/\/today$/)
   await expect(page.getByRole('button', { name: 'Keep editing' })).toHaveCount(0)
 })
+
+// --------------------------------------------------------------------------- the inspector
+
+test('the task in the inspector: where it sits, its fields a line each, its resources', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'Job hunt')
+  const amazon = await makeTask(page, pid, 'Amazon')
+  const sde = await makeTask(page, pid, 'SDE II', {}, amazon)
+  await makeTask(page, pid, 'Prepare the system design round', {}, sde)
+  await page
+    .context()
+    .route(/^https:\/\/docs\.google\.com\//, (r) =>
+      r.fulfill({ contentType: 'text/html', body: '<title>outside</title>' }),
+    )
+
+  await openTaskPane(page, pid, 'Prepare the system design round', false)
+  const dialog = page.getByRole('dialog', { name: 'Task details' })
+  // The project's square, then the path down to it (FR-056).
+  await expect(dialog.locator('[data-detail-path]')).toHaveText('Job hunt / Amazon / SDE II')
+  await expect(dialog.locator('[data-detail-title]')).toHaveText('Prepare the system design round')
+  await expect(dialog.locator('dt')).toHaveText(['Status', 'Planned', 'Due'])
+  await expect(dialog.getByRole('button', { name: 'Status: To do' })).toBeVisible()
+
+  // A resource, named, with where it is from.
+  await dialog.getByRole('button', { name: 'Add a resource' }).click()
+  const form = page.getByRole('form', { name: 'Add a resource' })
+  await form.getByLabel('Address').fill('https://docs.google.com/document/d/prep/edit')
+  await form.getByLabel('Name (optional)').fill('System design prep')
+  await form.getByRole('button', { name: 'Add' }).click()
+  const resource = dialog.locator('[data-resource]')
+  await expect(resource).toHaveText('System design prepGoogle Doc')
+  await expect(resource).toHaveAttribute('href', 'https://docs.google.com/document/d/prep/edit')
+
+  // A parent: no plan of its own, and a status that is its children's (FR-038, FR-043).
+  await openTaskPane(page, pid, 'SDE II', false)
+  await expect(dialog.locator('dt')).toHaveText(['Status', 'Due'])
+  await expect(dialog.getByRole('button', { name: /^Status:/ })).toHaveCount(0)
+  await expect(dialog.locator('dd').first()).toHaveText('To do')
+})

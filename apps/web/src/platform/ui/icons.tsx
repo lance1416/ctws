@@ -55,6 +55,7 @@ import {
   MessagesSquare,
   Moon,
   PanelRight,
+  Pencil,
   Plus,
   RotateCcwClock,
   RotateCw,
@@ -121,6 +122,8 @@ export const RESOURCE_ICON = {
   web: Link,
 } as const satisfies Record<string, IconComponent>
 export const CloseIcon = X
+/** Editing what is being read, in place. */
+export const EditIcon = Pencil
 export const OpenFullIcon = PanelRight
 export const ExpandIcon = ChevronDown
 export const CollapseIcon = ChevronRight

@@ -35,12 +35,16 @@ export function freeDigit(all: readonly ResourceResponse[]): number | null {
   return null
 }
 
+/** Hangs an address on the owner. */
+export const addResource = (owner: ResourceOwner, resource: { url: string; name: string | null }) =>
+  call(api.resources.create, { body: { owner, ...resource } })
+
 /** Hangs an address on the owner, then pins it at `digit`. */
 export async function pinResource(
   owner: ResourceOwner,
   resource: { url: string; name: string | null },
   digit: number,
 ): Promise<ResourceResponse> {
-  const made = await call(api.resources.create, { body: { owner, ...resource } })
+  const made = await addResource(owner, resource)
   return call(api.resources.update, { params: { id: made.id }, body: { pinnedRank: digit } })
 }
