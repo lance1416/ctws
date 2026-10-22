@@ -11,7 +11,7 @@ import type { Crumbs } from '../layout/page'
 import { useSubjectOf } from '../layout/subject'
 import { LinkBlocks } from '../links/LinkBlocks'
 import { useRegistry } from '../registry'
-import { pinnedOf, resourcesQuery } from '../resources/api'
+import { followable, pinnedOf, resourcesQuery } from '../resources/api'
 import { useForgetWhenGone, useRecordRecent } from '../search/recent'
 import { useEveryProject } from './api'
 import { DeleteProject } from './DeleteProject'
@@ -70,8 +70,8 @@ function OpenProject({ id }: { id: ProjectId }) {
       if (next) pickView(next.id)
     },
     ...digitHandlers((digit) => {
-      const r = pinned.find((p) => p.pinnedRank === digit)
-      if (r) window.open(r.url, '_blank', 'noopener,noreferrer')
+      const url = followable(pinned.find((p) => p.pinnedRank === digit)?.url ?? '')
+      if (url) window.open(url, '_blank', 'noopener,noreferrer')
     }),
   })
   // Linked lists the kinds the page's own rows do not already show.

@@ -6,7 +6,14 @@ import { BUTTON, ICON_BUTTON, KEY } from '../../platform/ui/buttonStyles'
 import { textbox } from '../../platform/ui/formStyles'
 import { NewIcon } from '../../platform/ui/icons'
 import { LAYER } from '../../platform/ui/layers'
-import { freeDigit, pinnedOf, pinResource, resourceKeys, resourcesQuery } from '../resources/api'
+import {
+  followable,
+  freeDigit,
+  pinnedOf,
+  pinResource,
+  resourceKeys,
+  resourcesQuery,
+} from '../resources/api'
 import { ResourceIcon } from '../resources/ResourceIcon'
 
 /**
@@ -22,7 +29,7 @@ export function PinnedResources({ projectId }: { projectId: ProjectId }) {
       {pinned.map((r) => (
         <a
           key={r.id}
-          href={r.url}
+          href={followable(r.url)}
           target="_blank"
           rel="noreferrer noopener"
           data-pinned={r.pinnedRank}

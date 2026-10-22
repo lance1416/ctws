@@ -17,6 +17,13 @@ export const resourcesQuery = (owner: ResourceOwner) =>
       (await call(api.resources.of, { query: owner }, { signal })).resources,
   })
 
+/**
+ * The address to follow, only when it is http(s). The server takes no other, but a row older than
+ * that rule is never handed to a link or `window.open` as, say, `javascript:`.
+ */
+export const followable = (url: string): string | undefined =>
+  /^https?:\/\//i.test(url) ? url : undefined
+
 /** A project's pinned resources, by their digit (FR-053). */
 export const pinnedOf = (all: readonly ResourceResponse[]): ResourceResponse[] =>
   all.filter((r) => r.pinnedRank !== null).sort((a, b) => (a.pinnedRank ?? 0) - (b.pinnedRank ?? 0))
