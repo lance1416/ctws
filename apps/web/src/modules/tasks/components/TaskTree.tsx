@@ -11,7 +11,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Fragment, useMemo, useState, type ReactNode } from 'react'
 import { useDelayed } from '../../../platform/time/useDelayed'
 import { BlockFailed } from '../../../platform/ui/Block'
-import { EMPTY_ACTION, EmptyState } from '../../../platform/ui/EmptyState'
 import { useProjects } from '../../../shell/projects'
 import { projectTasksQuery } from '../api'
 import { useTaskActions } from '../hooks/useTaskActions'
@@ -37,18 +36,10 @@ const NONE: readonly TaskResponse[] = []
 
 /**
  * THE TREE (FR-054, artboard 8): one block, a row of column names, then the tasks in their
- * columns; `last` is the row that adds a task at the end.
+ * columns; `last` is the row that adds a task at the end. Empty, it is those two alone: the empty
+ * table says there is nothing, and the row is the way to add (P-06).
  */
-export function TaskTree({
-  projectId,
-  addFirst,
-  last,
-}: {
-  projectId: ProjectId
-  /** Puts the cursor in the box that adds a root task. */
-  addFirst: () => void
-  last: ReactNode
-}) {
+export function TaskTree({ projectId, last }: { projectId: ProjectId; last: ReactNode }) {
   const qc = useQueryClient()
   const allProjects = useProjects()
   // Only the inbox dates its rows: quick capture makes it the one list that grows undecided.
@@ -234,23 +225,6 @@ export function TaskTree({
         <p role="alert" className="mt-4 text-ui text-stop-t">
           {error}
         </p>
-      )}
-      {tasks.isSuccess && rows.length === 0 && !adder.adding && (
-        // Two different empties: nothing yet, and everything finished. Telling someone who just
-        // cleared their list they "have no tasks yet" reads as having lost the work.
-        <EmptyState
-          title={shown.hiddenDone > 0 ? 'This project is clear' : 'No tasks in this project yet'}
-          action={
-            <button
-              type="button"
-              className={EMPTY_ACTION}
-              // Puts the cursor in the input already on this page.
-              onClick={addFirst}
-            >
-              {shown.hiddenDone > 0 ? 'Add another' : 'Add the first task'}
-            </button>
-          }
-        />
       )}
       <div className="mt-2 rounded-block border border-line bg-panel">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>

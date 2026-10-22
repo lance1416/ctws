@@ -70,7 +70,6 @@ export function ProjectTasks({ projectId, view }: { projectId: ProjectId; view: 
     <TaskTree
       key={projectId}
       projectId={projectId}
-      addFirst={() => box.current?.focus()}
       last={
         // "New task", typed into where it will land: no dialog (FR-054).
         <div data-new-root className={`${TREE_ROW} pb-1`}>

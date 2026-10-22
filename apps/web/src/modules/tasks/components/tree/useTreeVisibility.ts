@@ -82,8 +82,6 @@ export function useTreeVisibility(projectId: ProjectId, all: readonly TaskRespon
     /** What `visible` would be for these tasks: for a list newer than the last render. */
     visibleOf: (tasks: readonly TaskResponse[]) => visibleTasks(tasks, open, kept).visible,
     closed: shown.closed,
-    /** How many rows are folded away in all, to tell a cleared project from an empty one. */
-    hiddenDone: all.length - shown.visible.length,
     isOpen: (group: DoneGroup) => open.has(group),
     toggle: (group: DoneGroup) => {
       const next = new Set(open)

@@ -151,14 +151,16 @@ test('a row finished right here stays put, so a mis-press can be undone from it'
   await expect(row(page, '配色重做').getByRole('img', { name: 'Backlog' })).toBeVisible()
 })
 
-test('a project whose every task is finished reads as cleared, not as empty', async ({ page }) => {
+test('a project whose every task is finished shows them folded, not an empty project', async ({
+  page,
+}) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '改版')
   await makeTask(page, pid, '写迁移', { status: 'done' })
-  await openTree(page, pid)
+  await page.goto(`/projects/${pid}`)
 
-  // Telling someone who just cleared their list that they have no tasks YET reads as lost work.
-  await expect(page.getByText('This project is clear')).toBeVisible()
+  // Nothing open, but the work is there: its "1 done" line, never a list with no tasks yet.
+  await expect(page.locator('[data-done-group="top"]')).toHaveText(/1 done/)
   await expect(page.getByText('No tasks in this project yet')).toHaveCount(0)
 })
 
