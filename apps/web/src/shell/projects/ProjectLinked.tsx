@@ -10,6 +10,13 @@ import { NewContext } from '../creates'
 import { LinkedRow } from '../links/LinkedRow'
 import { type Item, useLinked } from '../links/useLinked'
 import { useRegistry } from '../registry'
+import { KIND_WORDS } from '../search/view'
+
+/** "an organisation", "a note": one of a kind, as a button's name says it. */
+const aOne = (kind: ObjectType) => {
+  const one = KIND_WORDS[kind].one.toLocaleLowerCase()
+  return `${/^[aeiou]/.test(one) ? 'an' : 'a'} ${one}`
+}
 
 /** A project's blocks in FR-055's order; a kind no module draws yet is left out. */
 const ORDER: readonly ObjectType[] = [
@@ -94,7 +101,7 @@ export function ProjectLinked({
       },
       add: creator
         ? { label: `New ${creator.label.toLocaleLowerCase()}`, run: () => openNew(creator) }
-        : { label: `Link a ${where.plural.toLocaleLowerCase()}`, run: () => setAdding(kind) },
+        : { label: `Link ${aOne(kind)}`, run: () => setAdding(kind) },
       onUnlink: (id) => unlink.mutate(id),
       unlinking: unlink.isPending,
     }
@@ -214,7 +221,10 @@ function ThingRow({ row }: { row: Row }) {
       {row.initials ? (
         <Avatar initials={row.initials} />
       ) : (
-        <span className="font-mono text-meta whitespace-nowrap text-muted">{row.lead ?? ''}</span>
+        // As wide as "Nov 21 10:00", so the titles after a weekday and after a date line up.
+        <span className="min-w-[12ch] font-mono text-meta whitespace-nowrap text-muted">
+          {row.lead ?? ''}
+        </span>
       )}
       <span className="truncate">{row.title}</span>
       <span className="min-w-0 truncate text-meta text-muted">{row.fact ?? ''}</span>

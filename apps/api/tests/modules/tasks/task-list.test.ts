@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { setupWith, tasksOf, type Harness, secondUser } from '../../helpers/harness'
-import { createChain, createProject, createTask } from '../../helpers/builders'
+import { createChain, createOrganisation, createProject, createTask } from '../../helpers/builders'
 
 const cleanups: (() => Promise<void>)[] = []
 
@@ -20,6 +20,36 @@ function del(ctx: Harness, id: string) {
 }
 
 describe('GET /tasks?projectId', () => {
+  it('names the organisations each task is linked to, from either end, and no others', async () => {
+    const ctx = await setup()
+    const p = await createProject(ctx, 'Job hunt')
+    const amazon = await createTask(ctx, p, 'Amazon')
+    const stripe = await createTask(ctx, p, 'Stripe')
+    await createTask(ctx, p, 'Update the CV')
+    const aws = await createOrganisation(ctx, { name: 'Amazon Web Services' })
+    const st = await createOrganisation(ctx, { name: 'Stripe' })
+    const relate = (from: object, to: object) =>
+      ctx.app.inject({
+        method: 'POST',
+        url: '/api/v1/relations',
+        headers: ctx.authed,
+        payload: { from, to },
+      })
+    // One linked from the task, one from the organisation: a relation is one fact.
+    expect(
+      (await relate({ type: 'task', id: amazon }, { type: 'organisation', id: aws.id })).statusCode,
+    ).toBe(201)
+    expect(
+      (await relate({ type: 'organisation', id: st.id }, { type: 'task', id: stripe })).statusCode,
+    ).toBe(201)
+
+    const organisations = (await list(ctx, p)).json().organisations
+    expect(organisations).toEqual({
+      [amazon]: [{ id: aws.id, title: 'Amazon Web Services' }],
+      [stripe]: [{ id: st.id, title: 'Stripe' }],
+    })
+  })
+
   it('returns a flat array, not a nested tree', async () => {
     const ctx = await setup()
     const p = await createProject(ctx, 'P')

@@ -81,3 +81,61 @@ export async function relationsOf(
   )
   return { groups: groups.filter((g) => g !== null) }
 }
+
+/**
+ * For each of many things of one kind, the things of kind `to` related to it, named by their own
+ * module: the organisations each task in a project is linked to, for the mark after its name
+ * (FR-047, FR-054). Read in both directions, as a relation is one fact; things with none are
+ * left out.
+ */
+export async function relatedAmong(
+  registry: LinkRegistry,
+  q: Queryable,
+  workspaceId: WorkspaceId,
+  from: { type: ObjectType; ids: readonly string[] },
+  to: ObjectType,
+): Promise<Map<string, { id: string; title: string }[]>> {
+  const out = new Map<string, { id: string; title: string }[]>()
+  if (from.ids.length === 0) return out
+  const rows = await q
+    .select()
+    .from(relations)
+    .where(
+      within(
+        scoped(relations, workspaceId),
+        or(
+          and(
+            eq(relations.fromType, from.type),
+            inArray(relations.fromId, [...from.ids]),
+            eq(relations.toType, to),
+          ),
+          and(
+            eq(relations.toType, from.type),
+            inArray(relations.toId, [...from.ids]),
+            eq(relations.fromType, to),
+          ),
+        ),
+      ),
+    )
+  const pairs = rows.map((r) =>
+    r.fromType === from.type && from.ids.includes(r.fromId)
+      ? { own: r.fromId, far: r.toId }
+      : { own: r.toId, far: r.fromId },
+  )
+  const far = [...new Set(pairs.map((p) => p.far))]
+  if (far.length === 0) return out
+  const named = new Map(
+    (await registry.of(to).rows(q, workspaceId, { ids: far, limit: far.length })).map((r) => [
+      r.id,
+      r,
+    ]),
+  )
+  for (const { own, far: id } of pairs) {
+    const thing = named.get(id)
+    if (!thing) continue
+    const list = out.get(own) ?? []
+    if (!list.some((t) => t.id === id)) list.push({ id, title: thing.title })
+    out.set(own, list)
+  }
+  return out
+}

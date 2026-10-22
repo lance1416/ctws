@@ -1,5 +1,12 @@
 import { isFinished, toggleDoneTarget, toggleStartTarget } from '../logic/status'
-import { CollapseIcon, ExpandIcon, FlagIcon, LockIcon, NewIcon } from '../../../platform/ui/icons'
+import {
+  CollapseIcon,
+  ExpandIcon,
+  FlagIcon,
+  KIND_ICON,
+  LockIcon,
+  NewIcon,
+} from '../../../platform/ui/icons'
 import { useSortable } from '@dnd-kit/sortable'
 import type { ChildCounts, TaskId, TaskResponse, TaskStatus } from '@ctws/contracts'
 import type { KeyboardEvent } from 'react'
@@ -34,6 +41,8 @@ type Props = {
   stage: { name: string; quiet: boolean } | null
   /** What is still in the way: the Due column says Waiting while there is any. */
   blockedBy: readonly { id: TaskId; title: string }[] | undefined
+  /** The organisations it is linked to: a mark after its name says which (FR-047). */
+  organisations: readonly { id: string; title: string }[] | undefined
   /**
    * `saved` is true for a moment after a save from the pane: the row says it worked. `tabStop` is
    * the roving tabindex: one row carries it, so the tree is one tab stop and Tab leaves it.
@@ -66,6 +75,7 @@ export function TaskRow({
   counts,
   stage,
   blockedBy,
+  organisations,
   state: { saved, selected, tabStop },
   handleRef,
   on,
@@ -185,6 +195,9 @@ export function TaskRow({
         >
           {title}
         </span>
+        {organisations && organisations.length > 0 && (
+          <OrganisationMark names={organisations.map((o) => o.title)} />
+        )}
         {saved && <SavedMark />}
         {/* The select layer is drawn; this says it. A list item cannot carry aria-selected. */}
         {selected && <span className="sr-only">Selected</span>}
@@ -261,6 +274,25 @@ export function TaskRow({
         </button>
       </span>
     </li>
+  )
+}
+
+/**
+ * After a node's name, the organisation it is linked to (FR-047, artboard 8): the kind's building
+ * on its tint, so a company's row is told from a role's at a glance. Its names, on hover and said.
+ */
+function OrganisationMark({ names }: { names: readonly string[] }) {
+  const Building = KIND_ICON.organisation
+  const said = names.join(', ')
+  return (
+    <span
+      data-row-organisation
+      title={said}
+      className="ml-1.5 inline-grid size-5 shrink-0 place-items-center rounded-control bg-organisation-bg text-organisation"
+    >
+      <Building size={12} aria-hidden="true" />
+      <span className="sr-only">, {said}</span>
+    </span>
   )
 }
 

@@ -169,7 +169,12 @@ export function TaskTree({
   const sayDone = (at: number, group: DoneGroup, depth: number) => {
     const counts = shown.closed.get(group)
     if (!counts || (shown.isOpen(group) ? counts.all : counts.hidden) === 0) return
-    doneAfter.set(at, [{ group, depth }, ...(doneAfter.get(at) ?? [])])
+    // Deepest first, the project's own last: each closes the block it belongs to (BUG-034).
+    const here = [...(doneAfter.get(at) ?? []), { group, depth }]
+    doneAfter.set(
+      at,
+      here.sort((a, b) => b.depth - a.depth),
+    )
   }
   rows.forEach((row, i) => {
     if (row.hasChildren && !row.collapsed) sayDone(i + blockLength(rows, i), row.id, row.depth + 1)
@@ -274,6 +279,7 @@ export function TaskTree({
                   counts={row.hasChildren ? counts.get(row.id) : undefined}
                   stage={stageOf(byId.get(row.id)?.stageId ?? null)}
                   blockedBy={tasks.data?.blockers[row.id]}
+                  organisations={tasks.data?.organisations[row.id]}
                   state={{
                     saved: savedId === row.id,
                     selected: picked.selected.has(row.id),

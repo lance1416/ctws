@@ -492,6 +492,7 @@ async function holdFirstListFetch(page: Page, glob: RouteUrl = TASK_LIST) {
 
 // A task created while the project's first list fetch is still in flight must still appear: the
 // refetch after the create has to start a NEW request rather than be absorbed by the stale one.
+// The tree has no "New task" until it has loaded (BUG-039), so the task is made with N T.
 test('a task created while the project is still loading appears', async ({ page }) => {
   await registerFreshUser(page)
   await navLink(page, 'Projects').click()
@@ -502,7 +503,15 @@ test('a task created while the project is still loading appears', async ({ page 
   // list under test.
   await page.getByRole('main').getByText('P', { exact: true }).click()
   await heldStale
-  await submitCreate(page, 'New task', 'typed early')
+  await page.keyboard.press('n')
+  await page.keyboard.press('t')
+  const dialog = page.getByRole('dialog', { name: 'New task' })
+  await dialog.getByRole('textbox', { name: 'Title' }).fill('typed early')
+  const created = page.waitForResponse(
+    (r) => r.request().method() === 'POST' && r.ok() && /\/api\/v1\/tasks$/.test(r.url()),
+  )
+  await dialog.getByRole('button', { name: 'Create', exact: true }).click()
+  await created
   release()
 
   await expect(page.getByRole('listitem').filter({ hasText: 'typed early' })).toBeVisible()

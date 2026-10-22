@@ -55,7 +55,15 @@ export function ResourceAdd({
     document.addEventListener('mousedown', onDown)
     return () => document.removeEventListener('mousedown', onDown)
   }, [open])
-  const recognised = /^https?:\/\/\S+$/i.test(url.trim()) ? resourceLook(url.trim()) : null
+  const typed = url.trim()
+  const recognised = /^https?:\/\/\S+$/i.test(typed) ? resourceLook(typed) : null
+  // Said as soon as what is typed cannot become a web address, not when Pin is pressed (FR-032):
+  // "javascript:", "ftp://", and "example.com" without its scheme are not followed.
+  const refused =
+    typed !== '' &&
+    !recognised &&
+    !['https://', 'http://'].some((scheme) => scheme.startsWith(typed.toLowerCase()))
+  const why = useId()
   const submit = (e: FormEvent) => {
     e.preventDefault()
     if (recognised) save.mutate()
@@ -85,6 +93,8 @@ export function ResourceAdd({
       {open && (
         <form
           onSubmit={submit}
+          // The reason is said under the field, in our words, not by the browser's bubble.
+          noValidate
           aria-label={label}
           className={`absolute top-full ${verb === 'Pin' ? 'left-0' : 'right-0'} ${LAYER.menu} mt-1.5 flex w-96 max-w-[calc(100vw-2rem)] flex-col gap-2.5 rounded-block bg-float p-3 shadow-float`}
         >
@@ -95,10 +105,15 @@ export function ResourceAdd({
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://"
             aria-label="Address"
-            aria-invalid={save.isError ? true : undefined}
-            aria-describedby={save.isError ? failure : undefined}
+            aria-invalid={save.isError || refused ? true : undefined}
+            aria-describedby={save.isError ? failure : refused ? why : undefined}
             className={`w-full bg-panel ${textbox}`}
           />
+          {refused && (
+            <p id={why} className="-mt-1 text-meta text-stop-t">
+              Use an address that starts with https://
+            </p>
+          )}
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}

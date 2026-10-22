@@ -173,6 +173,11 @@ export const projectTasksResponse = z.object({
   rollups: z.record(taskId, rollupResponse),
   /** Keyed by the waiting task; unfinished blockers only. */
   blockers: z.record(taskId, z.array(dependencyRef)),
+  /**
+   * The organisations each task is linked to, for the mark after its name in the tree (FR-047,
+   * FR-054); a task linked to none is not a key.
+   */
+  organisations: z.record(taskId, z.array(z.object({ id: z.string(), title: z.string() }))),
 })
 
 /** What changed state in a window, read from the event log and grouped by project. */
@@ -269,7 +274,7 @@ export const projectMovementResponse = z.object({
   projectName: z.string(),
   doneThisWeek: z.number().int().nonnegative(),
   remaining: z.number().int().nonnegative(),
-  /** Late and not planned for today or later, counted as Today's Overdue is (FR-079). */
+  /** Open and due before today: deadlines missed, given another day or not (FR-079). */
   overdue: z.number().int().nonnegative(),
   lastActivityOn: calendarDate.nullable(),
   quietDays: z.number().int().nonnegative().nullable(),

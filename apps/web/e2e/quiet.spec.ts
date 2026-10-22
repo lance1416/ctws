@@ -90,6 +90,23 @@ test('each parent folds its own finished rows, and says how many (FR-054)', asyn
   await expect(row(page, '装依赖')).toHaveCount(0)
 })
 
+test('when the last parent’s block and the list end together, its own done comes first', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'Ends')
+  for (const t of ['早做完一', '早做完二', '早做完三'])
+    await makeTask(page, pid, t, { status: 'done' })
+  const last = await makeTask(page, pid, '最后一个父节点')
+  await makeTask(page, pid, '还开着', {}, last)
+  for (const t of ['子做完一', '子做完二']) await makeTask(page, pid, t, { status: 'done' }, last)
+  await openTree(page, pid)
+
+  // BUG-034: the parent's "2 done" closes its block, and only then the project's "3 done".
+  await expect(page.locator('[data-done-group]')).toHaveText([/2 done/, /3 done/])
+  await expect(page.locator('[data-done-group]').last()).toHaveAttribute('data-done-group', 'top')
+})
+
 test('a finished parent with unfinished children is kept, not hidden with them', async ({
   page,
 }) => {

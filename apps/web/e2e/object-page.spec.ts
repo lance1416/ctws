@@ -141,6 +141,16 @@ test('a project’s blocks: what is in it first, the empty ones as their heads, 
   await expect(reading).toContainText('None yet')
   expect(names.indexOf('Reading')).toBeGreaterThan(1)
 
+  // A block whose + links rather than makes names one of its kind (BUG-037).
+  await expect(
+    page.getByRole('region', { name: 'Organisations' }).getByRole('button', {
+      name: 'Link an organisation',
+    }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('region', { name: 'Notes' }).getByRole('button', { name: 'Link a note' }),
+  ).toBeVisible()
+
   // The Meetings block's + makes a meeting, in this project.
   await page
     .getByRole('region', { name: 'Meetings' })

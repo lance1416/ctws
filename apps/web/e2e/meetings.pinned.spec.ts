@@ -10,6 +10,33 @@ test.use({ timezoneId: 'Europe/London' })
 
 const pane = (page: Page) => page.getByRole('dialog', { name: 'Meetings' })
 
+test('a project’s meetings say a day in the week by its name, and one further off by its date', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const project = await apiPost(page, '/projects', { name: 'Job hunt' })
+  const meet = (title: string, startsLocal: string) =>
+    apiPost(page, '/meetings', {
+      title,
+      startsLocal,
+      timeZone: 'Europe/London',
+      durationMinutes: 30,
+      projectId: project.id,
+    })
+  // Saturday the 24th, this week; Friday, November 20, four weeks on.
+  await meet('Phone screen', '2026-10-24T10:00')
+  await meet('Onsite', '2026-11-20T10:00')
+  await page.goto(`/projects/${project.id}`)
+  const block = page.getByRole('region', { name: 'Meetings' })
+  await expect(block.locator('[data-linked]').filter({ hasText: 'Phone screen' })).toContainText(
+    'Sat 10:00',
+  )
+  // BUG-038: not "Fri 10:00", which would read as this week's Friday.
+  await expect(block.locator('[data-linked]').filter({ hasText: 'Onsite' })).toContainText(
+    'Nov 20 10:00',
+  )
+})
+
 test('a past occurrence opens as itself, not as the next one', async ({ page }) => {
   await registerFreshUser(page)
   // Weekly on Thursdays from the 8th: the 8th and the 15th are over, today's is still to come.
